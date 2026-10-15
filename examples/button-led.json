@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "button-led",
+  "nets": ["signal"],
+  "components": [
+    {"id": "SW1", "kind": "button", "net": "signal", "active_level": 1},
+    {"id": "PULL1", "kind": "pull", "net": "signal", "level": 0},
+    {"id": "LED1", "kind": "indicator", "net": "signal"}
+  ],
+  "events": [
+    {"at_ns": 10000000, "component": "SW1", "pressed": true},
+    {"at_ns": 30000000, "component": "SW1", "pressed": false}
+  ]
+}
