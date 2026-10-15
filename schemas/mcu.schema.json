@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/mcu.schema.json",
+  "title": "EmbSIM MCU description",
+  "description": "A microcontroller: core, memory map, clocks, register file, peripheral bindings, I/O electrical defaults, signals and packages (SPEC-006 §1).",
+  "type": "object",
+  "required": ["schema_version", "kind", "id", "version", "name", "vendor", "core", "memory", "clocks", "register_file", "io", "signals", "packages", "fidelity", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "mcu"},
+    "id": {"$ref": "common.schema.json#/$defs/catalog_id"},
+    "version": {"$ref": "common.schema.json#/$defs/semver"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "keywords": {"type": "array", "items": {"type": "string"}},
+    "vendor": {"$ref": "common.schema.json#/$defs/name"},
+    "family": {"$ref": "common.schema.json#/$defs/name"},
+    "core": {
+      "type": "object",
+      "required": ["backend", "model"],
+      "additionalProperties": false,
+      "properties": {
+        "backend": {"type": "string", "enum": ["cortex-m", "riscv", "avr", "mips", "pic32", "pic24", "pic16"]},
+        "model": {"type": "string", "minLength": 1},
+        "priority_bits": {"type": "integer", "minimum": 0, "maximum": 8},
+        "timing_tier": {"type": "string", "enum": ["exact", "estimated", "unmodelled"]},
+        "fpu": {"type": "boolean"},
+        "mpu": {"type": "boolean"},
+        "endian": {"type": "string", "enum": ["little", "big"]},
+        "isa": {"type": "string"}
+      }
+    },
+    "memory": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "base", "size", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "base": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+          "size": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+          "kind": {"type": "string", "enum": ["ram", "flash", "rom", "alias"]},
+          "erased": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+          "target": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+          "main": {"type": "boolean"},
+          "doc": {"type": "string"}
+        }
+      }
+    },
+    "bitband": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["base", "size", "target"],
+        "additionalProperties": false,
+        "properties": {
+          "base": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+          "size": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+          "target": {"$ref": "common.schema.json#/$defs/hex_or_size"}
+        }
+      }
+    },
+    "clocks": {
+      "type": "object",
+      "required": ["sources", "reset_core_hz"],
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "hz"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+              "hz": {"oneOf": [{"type": "integer", "minimum": 1}, {"const": "board"}]},
+              "doc": {"type": "string"}
+            }
+          }
+        },
+        "reset_core_hz": {"type": "integer", "minimum": 1},
+        "max_core_hz": {"type": "integer", "minimum": 1}
+      }
+    },
+    "register_file": {
+      "type": "object",
+      "required": ["format", "file", "vendored"],
+      "additionalProperties": false,
+      "properties": {
+        "format": {"type": "string", "enum": ["svd", "atdf", "edc"]},
+        "file": {"type": "string", "minLength": 1},
+        "vendored": {"type": "boolean"},
+        "license": {"type": "string"},
+        "lookup": {"type": "array", "items": {"type": "string"}},
+        "hash": {"$ref": "common.schema.json#/$defs/sha256"},
+        "url": {"type": "string"},
+        "version": {"type": "string"}
+      }
+    },
+    "peripherals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["match", "model"],
+        "additionalProperties": false,
+        "properties": {
+          "match": {"type": "string", "minLength": 1},
+          "model": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+          "order": {"type": "integer", "minimum": 0},
+          "params": {"type": "object"}
+        }
+      }
+    },
+    "io": {
+      "type": "object",
+      "required": ["family", "ports"],
+      "additionalProperties": false,
+      "properties": {
+        "family": {"$ref": "pin-model.schema.json#/$defs/family"},
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "pins"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*$"},
+              "pins": {"type": "integer", "minimum": 1, "maximum": 32},
+              "mask": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "Bit mask of implemented pins when not contiguous from 0."}
+            }
+          }
+        },
+        "electrical": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "voh": {"type": "number"},
+            "vol": {"type": "number"},
+            "rout": {
+              "oneOf": [
+                {"type": "number"},
+                {"type": "object", "additionalProperties": {"type": "number"}}
+              ]
+            },
+            "vih": {"type": "number"},
+            "vil": {"type": "number"},
+            "hysteresis": {"type": "number"},
+            "rpull": {"type": "number"},
+            "leak_a": {"type": "number"},
+            "slew_v_per_us": {"oneOf": [{"type": "number"}, {"type": "object", "additionalProperties": {"type": "number"}}]},
+            "ioh_max": {"type": "number"},
+            "iol_max": {"type": "number"},
+            "five_volt_tolerant": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "analog": {
+          "type": "object",
+          "description": "GPIO signal -> analog function name.",
+          "additionalProperties": {"type": "string"}
+        }
+      }
+    },
+    "signals": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"}},
+    "packages": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_-]*$"},
+      "additionalProperties": {"type": "string", "pattern": "\\.json$"}
+    },
+    "console": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"default": {"type": "string"}}
+    },
+    "fidelity": {"$ref": "common.schema.json#/$defs/fidelity"},
+    "provenance": {"$ref": "common.schema.json#/$defs/provenance"}
+  }
+}

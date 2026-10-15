@@ -1,0 +1,43 @@
+{
+  "name": "embsim-ui",
+  "private": true,
+  "version": "0.1.0",
+  "description": "EmbSIM workbench: the graphical client of the session protocol",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @embsim/workbench dev",
+    "build": "pnpm --filter @embsim/workbench build",
+    "preview": "pnpm --filter @embsim/workbench preview",
+    "typecheck": "pnpm -r --sequential typecheck",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "pnpm --filter @embsim/workbench e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "axe-core": "^4.10.0",
+    "eslint": "^9.39.0",
+    "eslint-plugin-embsim": "workspace:*",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.0.0",
+    "jsdom": "^27.0.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^3.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

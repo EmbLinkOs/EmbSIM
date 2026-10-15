@@ -1,0 +1,9 @@
+{
+  "name": "divider",
+  "ground": "gnd",
+  "components": [
+    { "id": "V1", "device": "vsource",  "params": { "dc": 5 },     "pins": ["vin", "gnd"] },
+    { "id": "R1", "device": "resistor", "params": { "r": "1k" },   "pins": ["vin", "out"] },
+    { "id": "R2", "device": "resistor", "params": { "r": "3.3k" }, "pins": ["out", "gnd"] }
+  ]
+}

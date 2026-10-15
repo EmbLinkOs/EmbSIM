@@ -1,0 +1,11 @@
+{
+  "tolerance": { "abs": 1e-6, "rel": 1e-6 },
+  "op": { "vin": 5.0, "out": 3.8372093 },
+  "op_devices": [
+    { "device": "R1", "key": "i", "equals": 1.1627907e-3, "tol": 1e-9 },
+    { "device": "V1", "key": "i", "equals": -1.1627907e-3, "tol": 1e-9 }
+  ],
+  "samples": [
+    { "t": "1ms", "nets": { "out": 3.8372093 } }
+  ]
+}

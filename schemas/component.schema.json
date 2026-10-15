@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/component.schema.json",
+  "title": "EmbSIM component description",
+  "description": "A catalog component: pins with pin models, parameters, interactive inputs and displayable outputs, model bindings, symbol, artwork, fidelity and provenance (SPEC-005).",
+  "type": "object",
+  "required": ["schema_version", "kind", "id", "version", "name", "category", "pins", "symbol", "fidelity", "provenance"],
+  "anyOf": [{"required": ["model"]}, {"required": ["functional"]}],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "component"},
+    "id": {"$ref": "common.schema.json#/$defs/catalog_id"},
+    "version": {"$ref": "common.schema.json#/$defs/semver"},
+    "name": {"type": "string", "minLength": 1},
+    "category": {
+      "type": "string",
+      "enum": ["passives", "sources", "diodes", "transistors", "switches", "inputs", "indicators", "logic", "analog", "power", "connectors", "instruments", "displays", "sensors", "mechanical", "misc"]
+    },
+    "description": {"type": "string"},
+    "keywords": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "family": {"$ref": "pin-model.schema.json#/$defs/family", "description": "Default logic family for the component's digital pins (SPEC-005 §4)."},
+    "pins": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/pin"}},
+    "params": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+      "additionalProperties": {"$ref": "#/$defs/param"}
+    },
+    "inputs": {"type": "array", "items": {"$ref": "#/$defs/input"}},
+    "outputs": {"type": "array", "items": {"$ref": "#/$defs/output"}},
+    "model": {"$ref": "#/$defs/model", "description": "Behaviour for timed and electrical sessions."},
+    "functional": {"$ref": "#/$defs/model", "description": "Behaviour under the functional policy when it differs from model."},
+    "timed": {"$ref": "#/$defs/timing", "description": "Datasheet timing used by timed sessions (SPEC-003 §5)."},
+    "symbol": {"$ref": "#/$defs/symbol"},
+    "artwork": {"$ref": "#/$defs/artwork"},
+    "fidelity": {"$ref": "common.schema.json#/$defs/fidelity"},
+    "provenance": {"$ref": "common.schema.json#/$defs/provenance"},
+    "tests": {"type": "array", "items": {"type": "string"}, "description": "Fixture files or globs relative to the component directory."}
+  },
+  "$defs": {
+    "pin": {
+      "type": "object",
+      "required": ["name", "model"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"$ref": "common.schema.json#/$defs/pin_name"},
+        "number": {"type": "integer", "minimum": 1},
+        "model": {"$ref": "pin-model.schema.json"},
+        "aliases": {"type": "array", "items": {"$ref": "common.schema.json#/$defs/pin_name"}, "uniqueItems": true},
+        "doc": {"type": "string"},
+        "required": {"type": "boolean", "default": true},
+        "power_ref": {"$ref": "common.schema.json#/$defs/pin_name", "description": "For digital pins: the name of this component's supply pin, used by bridges."},
+        "ground_ref": {"$ref": "common.schema.json#/$defs/pin_name"}
+      }
+    },
+    "param": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"type": "string", "enum": ["number", "integer", "boolean", "string", "enum", "table"]},
+        "unit": {"type": "string"},
+        "default": {
+          "oneOf": [
+            {"$ref": "common.schema.json#/$defs/si_number"},
+            {"type": "boolean"},
+            {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}}}
+          ]
+        },
+        "min": {"$ref": "common.schema.json#/$defs/si_number"},
+        "max": {"$ref": "common.schema.json#/$defs/si_number"},
+        "enum": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "doc": {"type": "string"},
+        "advanced": {"type": "boolean"},
+        "presets": {
+          "type": "object",
+          "description": "For enum parameters: values of other parameters applied when this value is chosen (a named part sets its device parameters).",
+          "additionalProperties": {"$ref": "common.schema.json#/$defs/param_values"}
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "type": {"type": "string", "enum": ["boolean", "number", "integer", "enum", "string", "bytes"]},
+        "default": {"oneOf": [{"type": "boolean"}, {"type": "number"}, {"type": "string"}]},
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "unit": {"type": "string"},
+        "enum": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "doc": {"type": "string"}
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "type": {"type": "string", "enum": ["boolean", "number", "integer", "enum", "string", "bytes", "bitmap"]},
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "unit": {"type": "string"},
+        "enum": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1},
+        "doc": {"type": "string"}
+      }
+    },
+    "model": {
+      "oneOf": [
+        {"$ref": "#/$defs/primitive_model"},
+        {"$ref": "#/$defs/composite_model"},
+        {"$ref": "#/$defs/script_model"},
+        {"$ref": "#/$defs/native_model"}
+      ]
+    },
+    "primitive_model": {
+      "type": "object",
+      "required": ["primitive"],
+      "additionalProperties": false,
+      "properties": {
+        "primitive": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "bind": {
+          "type": "object",
+          "description": "primitive parameter or input name -> this component's parameter or input name; omitted names bind by identity.",
+          "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+          "additionalProperties": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+        },
+        "params": {
+          "description": "Fixed primitive parameters not exposed by the component (a preset).",
+          "$ref": "common.schema.json#/$defs/param_values"
+        }
+      }
+    },
+    "composite_model": {
+      "type": "object",
+      "required": ["composite"],
+      "additionalProperties": false,
+      "properties": {
+        "composite": {
+          "type": "object",
+          "required": ["components", "nets", "ports"],
+          "additionalProperties": false,
+          "properties": {
+            "components": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "component"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {"$ref": "common.schema.json#/$defs/instance_id"},
+                  "component": {"$ref": "common.schema.json#/$defs/catalog_id"},
+                  "version": {"$ref": "common.schema.json#/$defs/version_range"},
+                  "params": {"$ref": "common.schema.json#/$defs/param_values"}
+                }
+              }
+            },
+            "nets": {"$ref": "common.schema.json#/$defs/nets"},
+            "ports": {
+              "type": "object",
+              "description": "This component's pin name -> internal pin reference.",
+              "additionalProperties": {"$ref": "common.schema.json#/$defs/pin_ref"}
+            }
+          }
+        }
+      }
+    },
+    "script_model": {
+      "type": "object",
+      "required": ["script", "api"],
+      "additionalProperties": false,
+      "properties": {
+        "script": {"type": "string", "pattern": "\\.lua$"},
+        "api": {"const": 1}
+      }
+    },
+    "native_model": {
+      "type": "object",
+      "required": ["native"],
+      "additionalProperties": false,
+      "properties": {
+        "native": {
+          "type": "object",
+          "required": ["plugin", "model", "abi"],
+          "additionalProperties": false,
+          "properties": {
+            "plugin": {"type": "string"},
+            "model": {"type": "string"},
+            "abi": {"type": "integer", "minimum": 1}
+          }
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tpd": {"$ref": "common.schema.json#/$defs/time"},
+        "tplh": {"$ref": "common.schema.json#/$defs/time"},
+        "tphl": {"$ref": "common.schema.json#/$defs/time"},
+        "tco": {"$ref": "common.schema.json#/$defs/time"},
+        "setup": {"$ref": "common.schema.json#/$defs/time"},
+        "hold": {"$ref": "common.schema.json#/$defs/time"},
+        "min_pulse": {"$ref": "common.schema.json#/$defs/time"},
+        "rise": {"$ref": "common.schema.json#/$defs/time"},
+        "fall": {"$ref": "common.schema.json#/$defs/time"},
+        "transport": {"type": "boolean", "description": "Transport instead of inertial delay."}
+      }
+    },
+    "symbol": {
+      "type": "object",
+      "required": ["svg", "width", "height", "pins"],
+      "additionalProperties": false,
+      "properties": {
+        "svg": {"type": "string", "pattern": "\\.svg$"},
+        "width": {"type": "integer", "minimum": 10, "multipleOf": 10},
+        "height": {"type": "integer", "minimum": 10, "multipleOf": 10},
+        "pins": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "required": ["x", "y", "side"],
+            "additionalProperties": false,
+            "properties": {
+              "x": {"type": "integer", "minimum": 0, "multipleOf": 10},
+              "y": {"type": "integer", "minimum": 0, "multipleOf": 10},
+              "side": {"type": "string", "enum": ["left", "right", "top", "bottom"]},
+              "label": {"type": "boolean", "description": "Draw the pin name beside the pin (default false)."}
+            }
+          }
+        }
+      }
+    },
+    "artwork": {
+      "type": "object",
+      "required": ["svg"],
+      "additionalProperties": false,
+      "properties": {
+        "svg": {"type": "string", "pattern": "\\.svg$"},
+        "width_mm": {"type": "number", "exclusiveMinimum": 0},
+        "height_mm": {"type": "number", "exclusiveMinimum": 0},
+        "hotspots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["input", "selector", "gesture"],
+            "additionalProperties": false,
+            "properties": {
+              "input": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+              "selector": {"type": "string", "minLength": 1},
+              "gesture": {"type": "string", "enum": ["hold", "toggle", "drag"]},
+              "axis": {"type": "string", "enum": ["x", "y", "angle"], "description": "drag only."},
+              "range": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}, "description": "drag only: input values at the two ends of the travel."},
+              "travel": {"type": "number", "description": "drag only: pixels (x, y) or degrees (angle) of travel across the range."},
+              "key": {"type": "string", "description": "Keyboard equivalent."}
+            }
+          }
+        },
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["output", "selector"],
+            "additionalProperties": false,
+            "properties": {
+              "output": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+              "selector": {"type": "string", "minLength": 1},
+              "attr": {"type": "string"},
+              "class": {"type": "string"},
+              "true": {"type": "string"},
+              "false": {"type": "string"},
+              "scale": {
+                "type": "object",
+                "required": ["from", "to"],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}},
+                  "to": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}}
+                }
+              },
+              "map": {"type": "object", "additionalProperties": {"type": "string"}, "description": "enum or integer output value -> attribute value."}
+            }
+          }
+        }
+      }
+    }
+  }
+}

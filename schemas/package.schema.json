@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/package.schema.json",
+  "title": "EmbSIM package description",
+  "description": "The physical pin map of an MCU package: pin number to signal (SPEC-006 §2).",
+  "type": "object",
+  "required": ["schema_version", "kind", "id", "name", "pins"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "package"},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*/[a-z][a-z0-9_-]*/[a-z][a-z0-9_-]*$"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "pins": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["number", "signal"],
+        "additionalProperties": false,
+        "properties": {
+          "number": {"type": "integer", "minimum": 1},
+          "signal": {"type": "string", "pattern": "^(?:[A-Z][A-Z0-9_]*|NC)$"},
+          "doc": {"type": "string"}
+        }
+      }
+    },
+    "outline": {
+      "type": "object",
+      "required": ["svg"],
+      "additionalProperties": false,
+      "properties": {
+        "svg": {"type": "string", "pattern": "\\.svg$"},
+        "width_mm": {"type": "number", "exclusiveMinimum": 0},
+        "height_mm": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "provenance": {"$ref": "common.schema.json#/$defs/provenance"}
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/component-test.schema.json",
+  "title": "EmbSIM component conformance fixture",
+  "description": "A fixture run by `embsim catalog validate` (SPEC-005 §9): a small circuit around the component under test, scenario-style inputs, and expectations on probe targets.",
+  "type": "object",
+  "required": ["kind", "circuit", "expect"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "component_test"},
+    "name": {"type": "string"},
+    "description": {"type": "string"},
+    "policy": {"$ref": "common.schema.json#/$defs/policy"},
+    "until": {"$ref": "common.schema.json#/$defs/time"},
+    "circuit": {
+      "type": "object",
+      "required": ["components", "nets"],
+      "additionalProperties": false,
+      "properties": {
+        "components": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "component"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {"$ref": "common.schema.json#/$defs/instance_id"},
+              "component": {"$ref": "common.schema.json#/$defs/catalog_id"},
+              "params": {"$ref": "common.schema.json#/$defs/param_values"}
+            }
+          }
+        },
+        "nets": {"$ref": "common.schema.json#/$defs/nets"}
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "target", "input", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "at": {"$ref": "common.schema.json#/$defs/time"},
+          "target": {"$ref": "common.schema.json#/$defs/instance_id"},
+          "input": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "value": {"oneOf": [{"type": "boolean"}, {"type": "number"}, {"type": "string"}]}
+        }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "description": "Probe target (net:, pin:, device:, output:) -> expectation with a time selector.",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^(net|pin|device|output):.+$"},
+      "additionalProperties": {"$ref": "#/$defs/expectation"}
+    }
+  },
+  "$defs": {
+    "expectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "at": {"$ref": "common.schema.json#/$defs/time"},
+        "between": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "common.schema.json#/$defs/time"}},
+        "by": {"$ref": "common.schema.json#/$defs/time"},
+        "logic": {"type": "string", "enum": ["0", "1", "Z", "X"]},
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "min_v": {"type": "number"},
+        "max_v": {"type": "number"},
+        "equals": {"oneOf": [{"type": "number"}, {"type": "string"}, {"type": "boolean"}]},
+        "contains": {"type": "string"},
+        "edges": {"type": "integer", "minimum": 0},
+        "frequency_hz": {"type": "number", "exclusiveMinimum": 0},
+        "tolerance": {"type": "number", "minimum": 0}
+      }
+    }
+  }
+}

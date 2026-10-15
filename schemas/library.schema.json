@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/library.schema.json",
+  "title": "EmbSIM library manifest",
+  "description": "The manifest at the root of a component library (SPEC-014 §1).",
+  "type": "object",
+  "required": ["schema_version", "kind", "name", "version", "license"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "library"},
+    "name": {"$ref": "common.schema.json#/$defs/name"},
+    "version": {"$ref": "common.schema.json#/$defs/semver"},
+    "description": {"type": "string"},
+    "license": {"$ref": "common.schema.json#/$defs/spdx_license"},
+    "authors": {"type": "array", "items": {"type": "string"}},
+    "homepage": {"type": "string"},
+    "depends": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"$ref": "common.schema.json#/$defs/name"},
+          "version": {"$ref": "common.schema.json#/$defs/version_range"}
+        }
+      }
+    },
+    "trusted": {"type": "boolean", "description": "Whether native plugin models of this library may be loaded (set by the project, not the library)."}
+  }
+}

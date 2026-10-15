@@ -1,0 +1,11 @@
+{
+  "name": "npn-switch",
+  "ground": "gnd",
+  "supplies": { "vcc": 3.3 },
+  "components": [
+    { "id": "V1", "device": "vsource",  "params": { "kind": "pulse", "v1": 0, "v2": 3.3, "tr": "10n", "tf": "10n", "pw": "1m", "per": "2m" }, "pins": ["ctl", "gnd"] },
+    { "id": "RB", "device": "resistor", "params": { "r": "1k" }, "pins": ["ctl", "b"] },
+    { "id": "RC", "device": "resistor", "params": { "r": 220 },  "pins": ["vcc", "c"] },
+    { "id": "Q1", "device": "bjt_npn",  "params": { "is": 1e-14, "bf": 100, "br": 1, "vaf": 100 }, "pins": ["c", "b", "gnd"] }
+  ]
+}

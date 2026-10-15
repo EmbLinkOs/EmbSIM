@@ -1,0 +1,11 @@
+{
+  "tolerance": { "abs": 0.1, "rel": 0.05 },
+  "op": { "a1": 1.8, "a2": 2.1 },
+  "op_devices": [
+    { "device": "D1", "key": "i", "min": 0.0135, "max": 0.0165 },
+    { "device": "D1", "key": "luminance", "min": 0.65, "max": 0.85 },
+    { "device": "D2", "key": "i", "min": 0.0119, "max": 0.0145 },
+    { "device": "D2", "key": "luminance", "min": 0.55, "max": 0.75 }
+  ],
+  "samples": []
+}

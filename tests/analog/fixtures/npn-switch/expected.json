@@ -1,0 +1,19 @@
+{
+  "tolerance": { "abs": 0.01, "rel": 0.02 },
+  "op": { "ctl": 0.0, "c": 3.3 },
+  "op_devices": [
+    { "device": "Q1", "key": "region", "equals": "cutoff" },
+    { "device": "Q1", "key": "ic", "max": 1e-9 }
+  ],
+  "samples": [
+    { "t": "0.5ms", "nets": { "ctl": 3.3 },
+      "devices": [
+        { "device": "Q1", "key": "region", "equals": "saturation" },
+        { "device": "Q1", "key": "vce", "min": 0.0, "max": 0.3 },
+        { "device": "Q1", "key": "ib", "min": 0.0023, "max": 0.0028 },
+        { "device": "Q1", "key": "ic", "min": 0.0136, "max": 0.0150 }
+      ] },
+    { "t": "1.5ms", "nets": { "ctl": 0.0, "c": 3.3 },
+      "devices": [ { "device": "Q1", "key": "region", "equals": "cutoff" } ] }
+  ]
+}

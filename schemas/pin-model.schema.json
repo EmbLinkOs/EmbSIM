@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/pin-model.schema.json",
+  "title": "EmbSIM pin model",
+  "description": "The electrical and logical model of one pin (SPEC-003 §2). Numeric fields may reference a component parameter as \"$name\".",
+  "type": "object",
+  "required": ["kind"],
+  "oneOf": [
+    {"$ref": "#/$defs/digital_out"},
+    {"$ref": "#/$defs/digital_in"},
+    {"$ref": "#/$defs/digital_io"},
+    {"$ref": "#/$defs/analog"},
+    {"$ref": "#/$defs/power"},
+    {"$ref": "#/$defs/passive"},
+    {"$ref": "#/$defs/nc"}
+  ],
+  "$defs": {
+    "family": {
+      "type": "string",
+      "enum": ["cmos_3v3", "cmos_5v", "ttl_5v", "lvcmos_1v8"],
+      "description": "Logic family supplying defaults for omitted electrical parameters."
+    },
+    "num": {"$ref": "common.schema.json#/$defs/si_number_or_ref"},
+    "out_fields": {
+      "type": "object",
+      "properties": {
+        "drive": {"type": "string", "enum": ["push_pull", "open_drain", "open_source", "tristate"]},
+        "strength": {"type": "string", "enum": ["supply", "strong", "weak"]},
+        "voh": {"$ref": "#/$defs/num"},
+        "vol": {"$ref": "#/$defs/num"},
+        "rout": {"$ref": "#/$defs/num"},
+        "slew_v_per_us": {"$ref": "#/$defs/num"},
+        "ioh_max": {"$ref": "#/$defs/num"},
+        "iol_max": {"$ref": "#/$defs/num"},
+        "family": {"$ref": "#/$defs/family"}
+      }
+    },
+    "in_fields": {
+      "type": "object",
+      "properties": {
+        "vih": {"$ref": "#/$defs/num"},
+        "vil": {"$ref": "#/$defs/num"},
+        "hysteresis": {"$ref": "#/$defs/num"},
+        "pull": {"type": "string", "enum": ["none", "up", "down"]},
+        "rpull": {"$ref": "#/$defs/num"},
+        "leak_a": {"$ref": "#/$defs/num"},
+        "cin": {"$ref": "#/$defs/num"},
+        "family": {"$ref": "#/$defs/family"}
+      }
+    },
+    "digital_out": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"const": "digital_out"},
+        "drive": {"type": "string", "enum": ["push_pull", "open_drain", "open_source", "tristate"]},
+        "strength": {"type": "string", "enum": ["supply", "strong", "weak"]},
+        "voh": {"$ref": "#/$defs/num"},
+        "vol": {"$ref": "#/$defs/num"},
+        "rout": {"$ref": "#/$defs/num"},
+        "slew_v_per_us": {"$ref": "#/$defs/num"},
+        "ioh_max": {"$ref": "#/$defs/num"},
+        "iol_max": {"$ref": "#/$defs/num"},
+        "family": {"$ref": "#/$defs/family"}
+      }
+    },
+    "digital_in": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"const": "digital_in"},
+        "vih": {"$ref": "#/$defs/num"},
+        "vil": {"$ref": "#/$defs/num"},
+        "hysteresis": {"$ref": "#/$defs/num"},
+        "pull": {"type": "string", "enum": ["none", "up", "down"]},
+        "rpull": {"$ref": "#/$defs/num"},
+        "leak_a": {"$ref": "#/$defs/num"},
+        "cin": {"$ref": "#/$defs/num"},
+        "family": {"$ref": "#/$defs/family"}
+      }
+    },
+    "digital_io": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"const": "digital_io"},
+        "family": {"$ref": "#/$defs/family"},
+        "initial": {"type": "string", "enum": ["in", "out"], "description": "Direction at reset (default in)."},
+        "out": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "drive": {"type": "string", "enum": ["push_pull", "open_drain", "open_source", "tristate"]},
+            "strength": {"type": "string", "enum": ["supply", "strong", "weak"]},
+            "voh": {"$ref": "#/$defs/num"},
+            "vol": {"$ref": "#/$defs/num"},
+            "rout": {"$ref": "#/$defs/num"},
+            "slew_v_per_us": {"$ref": "#/$defs/num"},
+            "ioh_max": {"$ref": "#/$defs/num"},
+            "iol_max": {"$ref": "#/$defs/num"}
+          }
+        },
+        "in": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vih": {"$ref": "#/$defs/num"},
+            "vil": {"$ref": "#/$defs/num"},
+            "hysteresis": {"$ref": "#/$defs/num"},
+            "pull": {"type": "string", "enum": ["none", "up", "down"]},
+            "rpull": {"$ref": "#/$defs/num"},
+            "leak_a": {"$ref": "#/$defs/num"},
+            "cin": {"$ref": "#/$defs/num"}
+          }
+        }
+      }
+    },
+    "analog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"const": "analog"},
+        "rin": {"$ref": "#/$defs/num"},
+        "cin": {"$ref": "#/$defs/num"}
+      }
+    },
+    "power": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "role"],
+      "properties": {
+        "kind": {"const": "power"},
+        "role": {"type": "string", "enum": ["supply", "ground"]},
+        "nominal_v": {"$ref": "#/$defs/num"},
+        "tolerance": {"$ref": "#/$defs/num"},
+        "imax": {"$ref": "#/$defs/num"}
+      }
+    },
+    "passive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {"kind": {"const": "passive"}}
+    },
+    "nc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {"kind": {"const": "nc"}}
+    }
+  }
+}

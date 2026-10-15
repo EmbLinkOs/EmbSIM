@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/recording.schema.json",
+  "title": "EmbSIM recording",
+  "description": "A recorded run: engine, project and image hashes, policy, every external input in order, and the observations replay compares (SPEC-012 §1).",
+  "type": "object",
+  "required": ["schema_version", "kind", "engine", "project", "policy", "inputs", "observations", "end"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "recording"},
+    "engine": {
+      "type": "object",
+      "required": ["version", "abi"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {"$ref": "common.schema.json#/$defs/semver"},
+        "abi": {"type": "integer", "minimum": 1},
+        "platform": {"type": "string"},
+        "build": {"type": "string"}
+      }
+    },
+    "project": {
+      "type": "object",
+      "required": ["path", "hash"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {"type": "string"},
+        "hash": {"$ref": "common.schema.json#/$defs/sha256"},
+        "name": {"type": "string"}
+      }
+    },
+    "catalog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "version"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/catalog_id"},
+          "version": {"$ref": "common.schema.json#/$defs/semver"},
+          "hash": {"$ref": "common.schema.json#/$defs/sha256"}
+        }
+      }
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["board", "path", "hash"],
+        "additionalProperties": false,
+        "properties": {
+          "board": {"$ref": "common.schema.json#/$defs/instance_id"},
+          "path": {"type": "string"},
+          "hash": {"$ref": "common.schema.json#/$defs/sha256"}
+        }
+      }
+    },
+    "scenario": {"type": "string"},
+    "policy": {"$ref": "common.schema.json#/$defs/policy"},
+    "settings": {"$ref": "common.schema.json#/$defs/settings"},
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at_ps", "seq", "target", "input", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "at_ps": {"$ref": "common.schema.json#/$defs/ps_string"},
+          "seq": {"type": "integer", "minimum": 0},
+          "target": {"type": "string"},
+          "input": {"type": "string"},
+          "value": {},
+          "origin": {"type": "string", "enum": ["scenario", "user", "serial", "debugger", "topology", "script"]}
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at_ps", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "at_ps": {"$ref": "common.schema.json#/$defs/ps_string"},
+          "kind": {"type": "string", "enum": ["irq", "probe", "serial", "diagnostic", "end"]},
+          "board": {"$ref": "common.schema.json#/$defs/instance_id"},
+          "n": {"type": "integer", "minimum": 0},
+          "probe": {"type": "string"},
+          "value": {},
+          "tolerance": {"type": "number", "minimum": 0},
+          "code": {"type": "string"},
+          "peripheral": {"type": "string"},
+          "bytes": {"type": "string"}
+        }
+      }
+    },
+    "end": {
+      "type": "object",
+      "required": ["at_ps", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "at_ps": {"$ref": "common.schema.json#/$defs/ps_string"},
+        "reason": {"type": "string", "enum": ["until", "stopped", "fatal", "assertion", "breakpoint", "idle"]},
+        "statistics": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "events": {"type": "integer", "minimum": 0},
+            "instructions": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+            "analog_steps": {"type": "integer", "minimum": 0},
+            "wall_time_s": {"type": "number", "minimum": 0}
+          }
+        }
+      }
+    }
+  }
+}

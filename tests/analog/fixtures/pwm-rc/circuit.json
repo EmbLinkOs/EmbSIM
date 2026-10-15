@@ -1,0 +1,9 @@
+{
+  "name": "pwm-rc",
+  "ground": "gnd",
+  "components": [
+    { "id": "V1", "device": "vsource",   "params": { "kind": "pulse", "v1": 0, "v2": 3.3, "tr": "1n", "tf": "1n", "pw": "0.5m", "per": "1m" }, "pins": ["pwm", "gnd"] },
+    { "id": "R1", "device": "resistor",  "params": { "r": "1k" },   "pins": ["pwm", "out"] },
+    { "id": "C1", "device": "capacitor", "params": { "c": "100n" }, "pins": ["out", "gnd"] }
+  ]
+}
