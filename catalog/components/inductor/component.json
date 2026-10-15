@@ -33,9 +33,9 @@
       "type": "number",
       "unit": "H",
       "default": "10u",
-      "doc": "Inductance",
+      "doc": "Inductance (motional inductances of low-frequency crystals reach kilohenries)",
       "min": "1p",
-      "max": "100"
+      "max": "100k"
     },
     "dcr": {
       "type": "number",
@@ -93,7 +93,7 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Linear inductance with series dcr and initial current; branch current is a solver unknown (SPEC-004 §7 inductor).",
+      "claims": "Linear inductance with series dcr and initial current; branch current is a solver unknown (SPEC-004 \u00a77 inductor).",
       "omissions": [
         "saturation",
         "core loss",

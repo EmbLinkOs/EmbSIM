@@ -11,7 +11,7 @@
   ],
   "assertions": [
     {"id": "coll-low-while-high", "between": ["0.1ms", "0.45ms"], "probe": "coll", "expect": {"max_v": 0.4}},
-    {"id": "coll-high-while-low", "between": ["0.6ms", "0.95ms"], "probe": "coll", "expect": {"min_v": 3.0}},
+    {"id": "coll-high-while-low", "between": ["0.6ms", "0.95ms"], "probe": "coll", "expect": {"min_v": 2.0}},
     {"id": "led-current", "at": "0.25ms", "probe": "iled", "expect": {"min": 0.005, "max": 0.009}},
     {"id": "led-dark", "at": "0.75ms", "probe": "iled", "expect": {"max": 0.0001}},
     {"id": "collector-current", "at": "0.25ms", "probe": "ic", "expect": {"min": 0.005, "max": 0.009}},

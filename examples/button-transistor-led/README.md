@@ -24,7 +24,9 @@ comes from a 1 kHz `pulse_source` instead.
   `led` model's `observe`), `ic` (transistor collector current), `lum` (the
   LED's normalised luminance output) and `btn`.
 - `scenarios/pulse-and-press.json` asserts the collector is below 0.4 V while
-  the pulse is high and above 3.0 V while it is low, that the LED conducts 5 to
+  the pulse is high and above 2.0 V while it is low (in cutoff the LED still
+  drops about 0.66 V from picoamp leakage through `gmin`, so the collector
+  settles near 2.6 V rather than at the rail), that the LED conducts 5 to
   9 mA ((3.3 − 1.8 − 0.1) V / 220 Ω ≈ 6.4 mA), that the pulse measures 1 kHz,
   and that the button net is `1` idle, `0` at 12 ms while pressed and `1`
   again at 35 ms.
