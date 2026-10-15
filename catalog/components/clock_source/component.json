@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/clock_source",
+  "version": "1.0.0",
+  "name": "Clock source",
+  "category": "sources",
+  "description": "Digital clock generator with frequency, duty cycle and start delay.",
+  "keywords": [
+    "clock",
+    "oscillator",
+    "source",
+    "generator"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "OUT",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull",
+        "strength": "strong",
+        "family": "cmos_3v3"
+      },
+      "aliases": [
+        "Y"
+      ]
+    }
+  ],
+  "params": {
+    "freq": {
+      "type": "number",
+      "unit": "Hz",
+      "default": "1meg",
+      "min": "1m",
+      "max": "1G",
+      "doc": "Frequency"
+    },
+    "duty": {
+      "type": "number",
+      "unit": "",
+      "default": 0.5,
+      "doc": "High fraction of the period",
+      "min": 0.01,
+      "max": 0.99
+    },
+    "td": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "min": 0,
+      "doc": "Delay before the first rising edge"
+    }
+  },
+  "model": {
+    "primitive": "clock_source"
+  },
+  "functional": {
+    "primitive": "clock_source"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 20,
+    "pins": {
+      "OUT": {
+        "x": 40,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Toggles OUT at freq with duty after td (SPEC-003 §5 clock_source).",
+      "omissions": [
+        "jitter"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; edges are exact in picoseconds (periods are rounded to 1 ps).",
+      "omissions": [
+        "jitter",
+        "rise time"
+      ]
+    },
+    "electrical": {
+      "claims": "OUT bridges to analog nets with the cmos_3v3 pin-model defaults.",
+      "omissions": [
+        "drive strength variation"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          3.3
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

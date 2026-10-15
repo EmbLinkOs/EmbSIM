@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pull-down-functional",
+  "description": "A pulled-down net goes to 1 while the button is held.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vcc",
+        "params": {
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/push_button"
+      },
+      {
+        "id": "R",
+        "component": "emblink/pull_down"
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.VCC",
+        "DUT.1"
+      ],
+      "BTN": [
+        "DUT.2",
+        "R.1",
+        "P.IN"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "10ms",
+      "target": "DUT",
+      "input": "pressed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:BTN": {
+      "at": "15ms",
+      "logic": "1"
+    },
+    "output:DUT.closed": {
+      "at": "15ms",
+      "equals": true
+    }
+  }
+}

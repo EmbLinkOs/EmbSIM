@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "kind": "toolchain",
+  "id": "gcc-avr",
+  "name": "GNU AVR (avr-gcc)",
+  "description": "GCC for 8-bit AVR; the image is an ELF for the simulator, with an Intel HEX produced by avr-objcopy for programmers.",
+  "detect": {
+    "command": [
+      "avr-gcc",
+      "--version"
+    ],
+    "version_regex": "\\) ([0-9.]+)",
+    "min_version": "7.3"
+  },
+  "targets": {
+    "atmega328p": {
+      "cc": [
+        "avr-gcc",
+        "-mmcu=atmega328p"
+      ],
+      "defines": [
+        "-DF_CPU=16000000UL"
+      ],
+      "link_flags": [
+        "-Wl,--gc-sections"
+      ],
+      "objcopy": [
+        "avr-objcopy",
+        "-O",
+        "ihex",
+        "-R",
+        ".eeprom"
+      ]
+    },
+    "atmega2560": {
+      "cc": [
+        "avr-gcc",
+        "-mmcu=atmega2560"
+      ],
+      "defines": [
+        "-DF_CPU=16000000UL"
+      ],
+      "link_flags": [
+        "-Wl,--gc-sections"
+      ],
+      "objcopy": [
+        "avr-objcopy",
+        "-O",
+        "ihex",
+        "-R",
+        ".eeprom"
+      ]
+    },
+    "atmega32u4": {
+      "cc": [
+        "avr-gcc",
+        "-mmcu=atmega32u4"
+      ],
+      "defines": [
+        "-DF_CPU=16000000UL"
+      ],
+      "link_flags": [
+        "-Wl,--gc-sections"
+      ],
+      "objcopy": [
+        "avr-objcopy",
+        "-O",
+        "ihex",
+        "-R",
+        ".eeprom"
+      ]
+    },
+    "attiny85": {
+      "cc": [
+        "avr-gcc",
+        "-mmcu=attiny85"
+      ],
+      "defines": [
+        "-DF_CPU=8000000UL"
+      ],
+      "link_flags": [
+        "-Wl,--gc-sections"
+      ],
+      "objcopy": [
+        "avr-objcopy",
+        "-O",
+        "ihex",
+        "-R",
+        ".eeprom"
+      ]
+    }
+  },
+  "steps": {
+    "compile": [
+      "${cc}",
+      "${cflags}",
+      "${defines}",
+      "${include}",
+      "-g",
+      "-Os",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Wall",
+      "-c",
+      "${source}",
+      "-o",
+      "${object}"
+    ],
+    "link": [
+      "${cc}",
+      "${cflags}",
+      "${link_flags}",
+      "-Wl,-Map=${map}",
+      "${objects}",
+      "-o",
+      "${image}"
+    ],
+    "convert": [
+      "${objcopy}",
+      "${image}",
+      "${hex}"
+    ]
+  },
+  "outputs": {
+    "image": "elf",
+    "debug": "dwarf",
+    "map": true
+  },
+  "environment": {
+    "PATH_hint": [
+      "/usr/bin",
+      "/usr/local/bin",
+      "/opt/homebrew/bin",
+      "C:/Program Files (x86)/Atmel/Studio/*/toolchain/avr8/avr8-gnu-toolchain/bin",
+      "C:/Program Files/avr-gcc/bin"
+    ]
+  }
+}

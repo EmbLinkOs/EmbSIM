@@ -1,0 +1,608 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/header",
+  "version": "1.0.0",
+  "name": "Pin header",
+  "category": "connectors",
+  "description": "Single-row pin header of up to 40 positions; the pins are isolated attachment points with no behaviour.",
+  "keywords": [
+    "header",
+    "connector",
+    "pins",
+    "jumper"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "3",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "4",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "5",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "6",
+      "number": 6,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "7",
+      "number": 7,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "8",
+      "number": 8,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "9",
+      "number": 9,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "10",
+      "number": 10,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "11",
+      "number": 11,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "12",
+      "number": 12,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "13",
+      "number": 13,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "14",
+      "number": 14,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "15",
+      "number": 15,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "16",
+      "number": 16,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "17",
+      "number": 17,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "18",
+      "number": 18,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "19",
+      "number": 19,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "20",
+      "number": 20,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "21",
+      "number": 21,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "22",
+      "number": 22,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "23",
+      "number": 23,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "24",
+      "number": 24,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "25",
+      "number": 25,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "26",
+      "number": 26,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "27",
+      "number": 27,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "28",
+      "number": 28,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "29",
+      "number": 29,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "30",
+      "number": 30,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "31",
+      "number": 31,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "32",
+      "number": 32,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "33",
+      "number": 33,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "34",
+      "number": 34,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "35",
+      "number": 35,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "36",
+      "number": 36,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "37",
+      "number": 37,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "38",
+      "number": 38,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "39",
+      "number": 39,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "40",
+      "number": 40,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    }
+  ],
+  "params": {
+    "pins": {
+      "type": "integer",
+      "default": 20,
+      "min": 1,
+      "max": 40,
+      "doc": "Number of populated positions (drawn by clients)"
+    },
+    "pitch_mm": {
+      "type": "number",
+      "unit": "mm",
+      "default": 2.54,
+      "doc": "Pin pitch",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 410,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "3": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "4": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "5": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "6": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "7": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "8": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "9": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "10": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "11": {
+        "x": 0,
+        "y": 110,
+        "side": "left"
+      },
+      "12": {
+        "x": 0,
+        "y": 120,
+        "side": "left"
+      },
+      "13": {
+        "x": 0,
+        "y": 130,
+        "side": "left"
+      },
+      "14": {
+        "x": 0,
+        "y": 140,
+        "side": "left"
+      },
+      "15": {
+        "x": 0,
+        "y": 150,
+        "side": "left"
+      },
+      "16": {
+        "x": 0,
+        "y": 160,
+        "side": "left"
+      },
+      "17": {
+        "x": 0,
+        "y": 170,
+        "side": "left"
+      },
+      "18": {
+        "x": 0,
+        "y": 180,
+        "side": "left"
+      },
+      "19": {
+        "x": 0,
+        "y": 190,
+        "side": "left"
+      },
+      "20": {
+        "x": 0,
+        "y": 200,
+        "side": "left"
+      },
+      "21": {
+        "x": 0,
+        "y": 210,
+        "side": "left"
+      },
+      "22": {
+        "x": 0,
+        "y": 220,
+        "side": "left"
+      },
+      "23": {
+        "x": 0,
+        "y": 230,
+        "side": "left"
+      },
+      "24": {
+        "x": 0,
+        "y": 240,
+        "side": "left"
+      },
+      "25": {
+        "x": 0,
+        "y": 250,
+        "side": "left"
+      },
+      "26": {
+        "x": 0,
+        "y": 260,
+        "side": "left"
+      },
+      "27": {
+        "x": 0,
+        "y": 270,
+        "side": "left"
+      },
+      "28": {
+        "x": 0,
+        "y": 280,
+        "side": "left"
+      },
+      "29": {
+        "x": 0,
+        "y": 290,
+        "side": "left"
+      },
+      "30": {
+        "x": 0,
+        "y": 300,
+        "side": "left"
+      },
+      "31": {
+        "x": 0,
+        "y": 310,
+        "side": "left"
+      },
+      "32": {
+        "x": 0,
+        "y": 320,
+        "side": "left"
+      },
+      "33": {
+        "x": 0,
+        "y": 330,
+        "side": "left"
+      },
+      "34": {
+        "x": 0,
+        "y": 340,
+        "side": "left"
+      },
+      "35": {
+        "x": 0,
+        "y": 350,
+        "side": "left"
+      },
+      "36": {
+        "x": 0,
+        "y": 360,
+        "side": "left"
+      },
+      "37": {
+        "x": 0,
+        "y": 370,
+        "side": "left"
+      },
+      "38": {
+        "x": 0,
+        "y": 380,
+        "side": "left"
+      },
+      "39": {
+        "x": 0,
+        "y": 390,
+        "side": "left"
+      },
+      "40": {
+        "x": 0,
+        "y": 400,
+        "side": "left"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "No behaviour; each pin is a net attachment point.",
+      "omissions": []
+    },
+    "timed": {
+      "claims": "No behaviour.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "No behaviour; contact resistance is ignored.",
+      "omissions": [
+        "contact resistance",
+        "capacitance"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Generic 2.54 mm pin header (Samtec TSW series datasheet)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

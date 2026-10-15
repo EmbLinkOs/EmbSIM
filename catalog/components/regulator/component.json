@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/regulator",
+  "version": "1.0.0",
+  "name": "Linear regulator (LDO)",
+  "category": "power",
+  "description": "Behavioural linear voltage regulator in the LM1117 style; the OUT pin is a supply for the nets it feeds.",
+  "keywords": [
+    "regulator",
+    "ldo",
+    "LM1117",
+    "AMS1117",
+    "power"
+  ],
+  "pins": [
+    {
+      "name": "IN",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Unregulated input"
+    },
+    {
+      "name": "OUT",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": "$vout"
+      },
+      "doc": "Regulated output"
+    },
+    {
+      "name": "GND",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "aliases": [
+        "ADJ"
+      ],
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "part": {
+      "type": "enum",
+      "enum": [
+        "LM1117-3.3",
+        "LM1117-5.0",
+        "AMS1117-3.3",
+        "generic"
+      ],
+      "default": "LM1117-3.3",
+      "doc": "Named part setting the parameters",
+      "presets": {
+        "LM1117-3.3": {
+          "vout": 3.3,
+          "dropout": 1.2,
+          "imax": 0.8,
+          "quiescent": "5m"
+        },
+        "LM1117-5.0": {
+          "vout": 5.0,
+          "dropout": 1.2,
+          "imax": 0.8,
+          "quiescent": "5m"
+        },
+        "AMS1117-3.3": {
+          "vout": 3.3,
+          "dropout": 1.3,
+          "imax": 1.0,
+          "quiescent": "5m"
+        },
+        "generic": {
+          "vout": 3.3,
+          "dropout": 1.0,
+          "imax": 1.0,
+          "quiescent": 0
+        }
+      }
+    },
+    "vout": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "doc": "Regulated output voltage",
+      "min": 0.5,
+      "max": 50
+    },
+    "dropout": {
+      "type": "number",
+      "unit": "V",
+      "default": 1.2,
+      "doc": "Minimum input-output difference for regulation",
+      "min": 0,
+      "max": 5
+    },
+    "imax": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.8,
+      "doc": "Current limit",
+      "min": "1m",
+      "max": 20
+    },
+    "quiescent": {
+      "type": "number",
+      "unit": "A",
+      "default": "5m",
+      "doc": "Ground pin current",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "regulator"
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 30,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      },
+      "GND": {
+        "x": 30,
+        "y": 30,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "OUT drives (1, supply); IN and GND are ignored.",
+      "omissions": [
+        "dropout",
+        "current"
+      ]
+    },
+    "timed": {
+      "claims": "As functional on digital nets, as electrical on analog nets.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "vout while vin > vout + dropout, otherwise tracks vin - dropout; current limited to imax; quiescent current into GND (SPEC-004 §7 regulator).",
+      "omissions": [
+        "load and line regulation",
+        "thermal shutdown",
+        "stability versus output capacitor",
+        "noise"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          20
+        ],
+        "current_a": [
+          0,
+          1.5
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "LM1117 800-mA Low-Dropout Linear Regulator datasheet (Texas Instruments)"
+      },
+      {
+        "title": "AMS1117 1A Low Dropout Voltage Regulator datasheet (Advanced Monolithic Systems)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60">
+  <rect id="base" x="4" y="4" width="52" height="52" rx="4" fill="#2b2f36" stroke="#15171b" stroke-width="1.5"/>
+  <g id="legs" stroke="#b8bcc6" stroke-width="2.5">
+    <line x1="2" y1="12" x2="8" y2="12"/><line x1="2" y1="48" x2="8" y2="48"/>
+    <line x1="52" y1="12" x2="58" y2="12"/><line x1="52" y1="48" x2="58" y2="48"/>
+  </g>
+  <circle id="ring" cx="30" cy="30" r="18" fill="#3a3f48" stroke="#15171b" stroke-width="1"/>
+  <circle id="cap" cx="30" cy="30" r="13" fill="#d8dde8" stroke="#8c93a3" stroke-width="1.5"/>
+  <circle id="cap-highlight" cx="26" cy="26" r="4" fill="#ffffff" fill-opacity="0.5"/>
+</svg>

@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/opamp",
+  "version": "1.0.0",
+  "name": "Operational amplifier",
+  "category": "analog",
+  "description": "Behavioural op-amp with open-loop gain, optional single pole and output saturation at the supplies.",
+  "keywords": [
+    "opamp",
+    "amplifier",
+    "analog"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Non-inverting input"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Inverting input"
+    },
+    {
+      "name": "OUT",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Output"
+    },
+    {
+      "name": "V+",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Positive supply; vpos when unconnected"
+    },
+    {
+      "name": "V-",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Negative supply; vneg when unconnected"
+    }
+  ],
+  "params": {
+    "gain": {
+      "type": "number",
+      "unit": "",
+      "default": "100k",
+      "doc": "Open-loop DC gain",
+      "min": 1,
+      "max": "1e9"
+    },
+    "gbw": {
+      "type": "number",
+      "unit": "Hz",
+      "default": "1meg",
+      "doc": "Gain-bandwidth product (0 = no pole)",
+      "min": 0,
+      "advanced": true
+    },
+    "vpos": {
+      "type": "number",
+      "unit": "V",
+      "default": 5,
+      "doc": "Positive saturation when V+ is unconnected",
+      "min": -100,
+      "max": 100
+    },
+    "vneg": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "Negative saturation when V- is unconnected",
+      "min": -100,
+      "max": 100
+    },
+    "rout": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Output resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rin": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1T",
+      "doc": "Differential input resistance",
+      "min": 1,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "opamp"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "+": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "-": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "V+": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "V-": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Vout = gain*(V+ - V-) saturating at the supply pins or vpos/vneg, single pole from gbw, rout and rin (SPEC-004 §7 opamp).",
+      "omissions": [
+        "input offset",
+        "bias current",
+        "slew rate",
+        "CMRR",
+        "noise",
+        "rail-to-rail limits"
+      ],
+      "range": {
+        "voltage_v": [
+          -100,
+          100
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "LM358 Low-Power Dual Operational Amplifiers datasheet (Texas Instruments)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

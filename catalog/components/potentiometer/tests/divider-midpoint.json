@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "divider-midpoint",
+  "description": "At position 0.5 the wiper sits at half the supply.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/potentiometer",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "DUT.2"
+      ],
+      "WIPER": [
+        "DUT.W"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.1",
+        "G.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "position",
+      "value": 0.5
+    }
+  ],
+  "expect": {
+    "net:WIPER": {
+      "at": "0.5ms",
+      "min_v": 1.6,
+      "max_v": 1.7
+    }
+  }
+}

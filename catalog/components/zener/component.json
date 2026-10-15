@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/zener",
+  "version": "1.0.0",
+  "name": "Zener diode",
+  "category": "diodes",
+  "description": "Zener/avalanche diode with breakdown voltage vz and dynamic resistance rz.",
+  "keywords": [
+    "zener",
+    "diode",
+    "regulator",
+    "clamp"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "vz": {
+      "type": "number",
+      "unit": "V",
+      "default": 5.1,
+      "doc": "Breakdown (Zener) voltage",
+      "min": 1,
+      "max": 200
+    },
+    "rz": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 5,
+      "doc": "Dynamic resistance in breakdown",
+      "min": 0.01,
+      "max": 1000
+    },
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "1e-14",
+      "doc": "Forward saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Forward emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.5,
+      "doc": "Forward series resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "zener"
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A wire.",
+      "omissions": [
+        "clamping"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Forward Shockley diode plus reverse breakdown at vz with slope resistance rz (SPEC-004 §7 zener).",
+      "omissions": [
+        "temperature coefficient of vz",
+        "knee softness",
+        "capacitance"
+      ],
+      "range": {
+        "current_a": [
+          -0.2,
+          0.2
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "BZX55C5V1 Zener diode datasheet (Vishay)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

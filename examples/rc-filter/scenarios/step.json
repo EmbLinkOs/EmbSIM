@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "step",
+  "description": "The output follows the exponential step response: 63 % of 3.3 V after one time constant, within 1 % of the rail after five, and decays symmetrically.",
+  "until": "5ms",
+  "policy": "electrical",
+  "inputs": [],
+  "assertions": [
+    {"id": "input-is-square", "between": ["0ms", "5ms"], "probe": "in", "expect": {"min_v": -0.01, "max_v": 3.31}},
+    {"id": "one-tau", "at": "0.1ms", "probe": "out", "expect": {"min_v": 1.95, "max_v": 2.25}},
+    {"id": "five-tau", "at": "0.5ms", "probe": "out", "expect": {"min_v": 3.2, "max_v": 3.31}},
+    {"id": "decay-one-tau", "at": "0.6ms", "probe": "out", "expect": {"min_v": 1.1, "max_v": 1.35}},
+    {"id": "decayed", "at": "1.0ms", "probe": "out", "expect": {"max_v": 0.1}},
+    {"id": "never-overshoots", "between": ["0ms", "5ms"], "probe": "out", "expect": {"min_v": -0.01, "max_v": 3.31}},
+    {"id": "converges", "always": true, "diagnostics": {"forbid": ["analog.no_convergence", "analog.timestep_too_small"]}}
+  ]
+}

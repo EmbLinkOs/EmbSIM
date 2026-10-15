@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "loopback",
+  "description": "TX wired to RX: text sent comes back decoded.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/virtual_terminal",
+        "params": {
+          "baud": 115200
+        }
+      }
+    ],
+    "nets": {
+      "LOOP": [
+        "DUT.TX",
+        "DUT.RX"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "tx_text",
+      "value": "hi"
+    }
+  ],
+  "expect": {
+    "output:DUT.rx_text": {
+      "by": "10ms",
+      "contains": "hi"
+    }
+  }
+}

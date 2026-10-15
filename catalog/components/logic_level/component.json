@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/logic_level",
+  "version": "1.0.0",
+  "name": "Logic level",
+  "category": "sources",
+  "description": "Constant logic level driver (0 or 1).",
+  "keywords": [
+    "logic",
+    "constant",
+    "high",
+    "low",
+    "source"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "OUT",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull",
+        "strength": "strong",
+        "family": "cmos_3v3"
+      },
+      "aliases": [
+        "Y"
+      ]
+    }
+  ],
+  "params": {
+    "level": {
+      "type": "integer",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "doc": "0 or 1"
+    }
+  },
+  "model": {
+    "primitive": "logic_level"
+  },
+  "functional": {
+    "primitive": "logic_level"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 20,
+    "pins": {
+      "OUT": {
+        "x": 40,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Drives (level, strong) permanently (SPEC-003 §5 logic_level).",
+      "omissions": []
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "OUT bridges to analog nets with the cmos_3v3 pin-model defaults.",
+      "omissions": [
+        "drive strength variation"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          3.3
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

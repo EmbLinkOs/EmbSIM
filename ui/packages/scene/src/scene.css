@@ -1,0 +1,448 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright 2026 Junior Deogracias */
+/* Schematic canvas and board view. */
+
+.es-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+
+.es-scene__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+  user-select: none;
+}
+
+.es-scene__svg:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--line-focus);
+}
+
+.es-scene--wire .es-scene__svg {
+  cursor: crosshair;
+}
+
+.es-scene--probe .es-scene__svg {
+  cursor: cell;
+}
+
+.es-scene__sheet {
+  fill: var(--sheet);
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.es-scene__grid-dot {
+  fill: var(--grid-major);
+}
+
+.es-scene__grid-dot--major {
+  fill: var(--line-strong);
+}
+
+/* wires and net state colours */
+.es-wire__line {
+  fill: none;
+  stroke: var(--symbol-stroke);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke var(--motion-fast) var(--ease);
+}
+
+.es-wire__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10;
+  pointer-events: stroke;
+}
+
+.es-wire:hover .es-wire__line {
+  stroke-width: 2.4;
+}
+
+.es-wire--selected .es-wire__line {
+  stroke: var(--symbol-selected);
+  stroke-width: 2.4;
+}
+
+.es-wire--low .es-wire__line,
+.es-wire--low .es-pin__dot,
+.es-wire--low text {
+  stroke: var(--signal-low);
+}
+
+.es-wire--high .es-wire__line,
+.es-wire--high text {
+  stroke: var(--signal-high);
+}
+
+.es-wire--z .es-wire__line {
+  stroke: var(--signal-z);
+  stroke-dasharray: 4 3;
+}
+
+.es-wire--x .es-wire__line {
+  stroke: var(--signal-x);
+  stroke-dasharray: 2 2;
+  stroke-width: 2.4;
+}
+
+.es-wire--analog .es-wire__line {
+  stroke: var(--signal-analog);
+}
+
+.es-junction {
+  fill: var(--symbol-stroke);
+}
+
+.es-junction.es-wire--low {
+  fill: var(--signal-low);
+}
+
+.es-junction.es-wire--high {
+  fill: var(--signal-high);
+}
+
+.es-junction.es-wire--z {
+  fill: var(--signal-z);
+}
+
+.es-junction.es-wire--x {
+  fill: var(--signal-x);
+}
+
+.es-scene__ratsnest {
+  stroke: var(--signal-z);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.8;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+/* components */
+.es-component {
+  cursor: pointer;
+  outline: none;
+}
+
+.es-component__hit {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 1;
+  transition: stroke var(--motion-fast) var(--ease);
+  vector-effect: non-scaling-stroke;
+}
+
+.es-component:hover .es-component__hit {
+  stroke: var(--line-strong);
+}
+
+.es-component--selected .es-component__hit,
+.es-component:focus-visible .es-component__hit {
+  fill: var(--accent-muted);
+  stroke: var(--symbol-selected);
+  stroke-dasharray: 3 2;
+}
+
+.es-component:focus-visible {
+  box-shadow: none;
+}
+
+.es-component__ref {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  fill: var(--text-muted);
+  pointer-events: none;
+}
+
+.es-component__value {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  fill: var(--text-faint);
+  pointer-events: none;
+}
+
+.es-symbol__fallback rect {
+  fill: var(--symbol-fill);
+  stroke: var(--signal-z);
+  stroke-dasharray: 3 2;
+}
+
+.es-symbol__fallback text {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  fill: var(--text-muted);
+}
+
+.es-symbol__pin {
+  fill: var(--symbol-pin);
+}
+
+/* pins */
+.es-pin {
+  cursor: crosshair;
+  outline: none;
+}
+
+.es-pin__hit {
+  fill: transparent;
+}
+
+.es-pin__dot {
+  fill: var(--symbol-pin);
+  transition: r var(--motion-fast) var(--ease);
+}
+
+.es-pin:hover .es-pin__dot,
+.es-pin:focus-visible .es-pin__dot,
+.es-pin--active .es-pin__dot {
+  fill: var(--accent);
+  r: 3.2;
+}
+
+.es-pin:focus-visible .es-pin__hit {
+  stroke: var(--line-focus);
+  stroke-width: 1.5;
+}
+
+.es-pin:focus-visible {
+  box-shadow: none;
+}
+
+.es-wire--high .es-pin__dot {
+  fill: var(--signal-high);
+}
+
+.es-wire--z .es-pin__dot {
+  fill: var(--signal-z);
+}
+
+.es-wire--x .es-pin__dot {
+  fill: var(--signal-x);
+}
+
+/* labels */
+.es-net-label text {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  fill: var(--text);
+  stroke: none;
+  cursor: text;
+}
+
+.es-net-label.es-wire--low text {
+  fill: var(--signal-low);
+}
+
+.es-net-label.es-wire--high text {
+  fill: var(--signal-high);
+}
+
+.es-net-label.es-wire--z text {
+  fill: var(--signal-z);
+}
+
+.es-net-label.es-wire--x text {
+  fill: var(--signal-x);
+}
+
+.es-net-label__state {
+  font-weight: 400 !important;
+  font-size: 6.5px !important;
+  fill: var(--text-muted) !important;
+}
+
+/* probes */
+.es-probe path {
+  fill: var(--accent-muted);
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+
+.es-probe text {
+  font-family: var(--font-mono);
+  font-size: 6.5px;
+  fill: var(--accent);
+}
+
+/* selection, preview */
+.es-scene__marquee {
+  fill: var(--accent-muted);
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 4 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.es-scene__wire-preview {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-dasharray: 5 3;
+  pointer-events: none;
+}
+
+.es-scene__drop-hint {
+  fill: var(--accent-muted);
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* overlays */
+.es-scene__tooltip {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-overlay);
+  box-shadow: var(--elevation-2);
+  font-size: var(--text-xs);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.es-scene__tooltip-sub {
+  color: var(--text-muted);
+}
+
+.es-scene__hud {
+  position: absolute;
+  left: var(--space-2);
+  bottom: var(--space-2);
+  display: flex;
+  gap: var(--space-3);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-raised) 85%, transparent);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  pointer-events: none;
+}
+
+.es-scene-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.es-scene-legend__bar {
+  width: 72px;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--signal-analog-min), var(--signal-analog-max));
+}
+
+.es-scene-legend__swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 14px;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-on-accent);
+}
+
+.es-scene-legend__swatch--low {
+  background: var(--signal-low);
+  color: #fff;
+}
+
+.es-scene-legend__swatch--high {
+  background: var(--signal-high);
+}
+
+.es-scene-legend__swatch--z {
+  border: 1.5px dashed var(--signal-z);
+  color: var(--signal-z);
+}
+
+.es-scene-legend__swatch--x {
+  background: var(--signal-x);
+  color: #fff;
+}
+
+/* board view */
+.es-board {
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  margin: 0 auto;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.es-board__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.es-board__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--text-muted);
+}
+
+.es-board__hotspot {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.es-board__hotspot:focus-visible {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--line-focus);
+}
+
+.es-board__hotspot[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.es-board__hotspot--drag {
+  border-radius: var(--radius-sm);
+  cursor: ns-resize;
+}
+
+.es-board__readout {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-overlay);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.es-board__state {
+  position: absolute;
+  pointer-events: none;
+}

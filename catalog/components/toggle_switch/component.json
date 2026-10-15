@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/toggle_switch",
+  "version": "1.0.0",
+  "name": "Toggle switch",
+  "category": "switches",
+  "description": "Single-pole single-throw latching switch (slide or toggle).",
+  "keywords": [
+    "switch",
+    "toggle",
+    "slide",
+    "spst"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "A"
+      ]
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "B"
+      ]
+    }
+  ],
+  "params": {
+    "ron": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "doc": "Contact resistance when closed",
+      "min": 0,
+      "max": 1000
+    },
+    "roff": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1G",
+      "doc": "Leakage resistance when open",
+      "min": "1k",
+      "advanced": true
+    },
+    "bounce": {
+      "type": "boolean",
+      "default": false,
+      "doc": "Model contact bounce"
+    },
+    "bounce_ms": {
+      "type": "number",
+      "unit": "ms",
+      "default": 5,
+      "doc": "Bounce duration",
+      "min": 0,
+      "max": 50
+    }
+  },
+  "inputs": [
+    {
+      "name": "closed",
+      "type": "boolean",
+      "default": false,
+      "doc": "Toggled by a click or Space"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "closed",
+      "type": "boolean",
+      "doc": "Contact state after bounce"
+    }
+  ],
+  "model": {
+    "primitive": "switch",
+    "bind": {
+      "ron": "ron",
+      "roff": "roff",
+      "bounce": "bounce",
+      "bounce_ms": "bounce_ms"
+    }
+  },
+  "functional": {
+    "primitive": "switch_digital"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 9,
+    "height_mm": 6,
+    "hotspots": [
+      {
+        "input": "closed",
+        "selector": "#lever",
+        "gesture": "toggle",
+        "key": "Space"
+      }
+    ],
+    "states": [
+      {
+        "output": "closed",
+        "selector": "#lever",
+        "attr": "transform",
+        "true": "translate(14 0)",
+        "false": ""
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Open or closed from the closed input (SPEC-003 §5 switch).",
+      "omissions": [
+        "bounce"
+      ]
+    },
+    "timed": {
+      "claims": "Optional bounce on each transition.",
+      "omissions": [
+        "wear"
+      ]
+    },
+    "electrical": {
+      "claims": "Resistance ron when closed, roff when open (SPEC-004 §7 switch).",
+      "omissions": [
+        "contact capacitance",
+        "wear"
+      ],
+      "range": {
+        "current_a": [
+          0,
+          2
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "C&K OS102011MA1QN1 slide switch datasheet"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

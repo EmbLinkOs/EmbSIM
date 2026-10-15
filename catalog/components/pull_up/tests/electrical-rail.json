@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "electrical-rail",
+  "description": "Equal pull-up and load resistors halve the rail.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pull_up",
+        "params": {
+          "resistance": "10k",
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "N": [
+        "DUT.1",
+        "R.1"
+      ],
+      "GND": [
+        "R.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:N": {
+      "at": "0.5ms",
+      "min_v": 1.6,
+      "max_v": 1.7
+    }
+  }
+}

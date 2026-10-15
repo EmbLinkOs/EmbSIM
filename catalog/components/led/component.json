@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/led",
+  "version": "1.0.0",
+  "name": "LED",
+  "category": "indicators",
+  "description": "Light-emitting diode; colour selects the forward characteristic. Reports current and luminance.",
+  "keywords": [
+    "led",
+    "light",
+    "indicator",
+    "diode"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "color": {
+      "type": "enum",
+      "enum": [
+        "red",
+        "green",
+        "blue",
+        "yellow",
+        "white"
+      ],
+      "default": "red",
+      "doc": "Colour; selects vf/is/n defaults"
+    },
+    "if_nom": {
+      "type": "number",
+      "unit": "A",
+      "default": "20m",
+      "doc": "Nominal forward current for full luminance",
+      "min": "1u",
+      "max": "1",
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 1,
+      "doc": "Series resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A",
+      "doc": "Forward current"
+    },
+    {
+      "name": "luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "doc": "Normalised brightness, 1 at if_nom"
+    },
+    {
+      "name": "lit",
+      "type": "boolean",
+      "doc": "Functional: anode 1 and cathode 0"
+    }
+  ],
+  "model": {
+    "primitive": "led",
+    "bind": {
+      "color": "color",
+      "if_nom": "if_nom",
+      "rs": "rs"
+    }
+  },
+  "functional": {
+    "primitive": "indicator"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 5,
+    "height_mm": 8.6,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "luminance",
+        "selector": "#glow",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "lit",
+        "selector": "#glow",
+        "attr": "opacity",
+        "true": "1",
+        "false": "0"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Lit when the anode net is 1 and the cathode net is 0 (SPEC-003 §5 indicator).",
+      "omissions": [
+        "current",
+        "brightness"
+      ]
+    },
+    "timed": {
+      "claims": "As functional on digital nets; as electrical on analog nets.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Diode with per-colour vf/is/n defaults and series rs; observe reports current and a luminance saturating at if_nom (SPEC-004 §7 led).",
+      "omissions": [
+        "temperature",
+        "ageing",
+        "reverse breakdown",
+        "capacitance"
+      ],
+      "range": {
+        "current_a": [
+          0,
+          0.05
+        ],
+        "voltage_v": [
+          -5,
+          4
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Kingbright 5 mm LED datasheets (WP7113ID, WP7113GD, WP7113QBC/D, WP7113YD, WP7113PWC)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -118,6 +118,11 @@ double esk_am_source_scale(const esk_amatrix *m);  /* 0..1 during source steppin
 es_time_t esk_integ_t(const esk_integ *in);        /* time of the trial point (ps) */
 double esk_integ_h_prev(const esk_integ *in);      /* previous accepted step (s), 0 if none */
 int esk_integ_first_order(const esk_integ *in);    /* 1 when this step is backward Euler */
+/* 1 when this step is negligible next to the previous one (a step forced by an
+ * event at the same time, or a crossing bisection): reactive devices then
+ * replace their newest history point instead of shifting history, so the LTE
+ * divided differences keep a usable spacing (the island accumulates h_prev) */
+int esk_integ_negligible(const esk_integ *in);
 /* a device whose voltage limiting (pnjlim) altered its operating point this
  * iteration calls this so Newton does not declare convergence on the
  * linearised residual (SPICE's "noncon") */

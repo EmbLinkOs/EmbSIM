@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "functional-edges",
+  "description": "Ten periods produce twenty edges.",
+  "policy": "functional",
+  "until": "10ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pulse_source",
+        "params": {
+          "pw": "500u",
+          "per": "1m"
+        }
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.+",
+        "P.IN"
+      ],
+      "GND": [
+        "DUT.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "between": [
+        "0",
+        "10ms"
+      ],
+      "edges": 20
+    }
+  }
+}

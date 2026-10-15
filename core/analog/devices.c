@@ -20,13 +20,13 @@
  * reports "i" (into pin 0) and "p" (power dissipated, watts). Junction devices
  * use SPICE's pnjlim voltage limiting on the exponentials. */
 #include "analog/analog.h"
+#include "util/num.h"
 #include <math.h>
 #include <string.h>
-#include "util/num.h"
 
-#define VT_27C 0.025852   /* kT/q at 27 degrees C, volts */
-#define EXP_ARG_MAX 80.0  /* the exponential is continued linearly beyond this */
-#define PI_D 3.14159265358979323846
+#define VT_27C      0.025852 /* kT/q at 27 degrees C, volts */
+#define EXP_ARG_MAX 80.0     /* the exponential is continued linearly beyond this */
+#define PI_D        3.14159265358979323846
 
 /* ---- shared helpers ----------------------------------------------------- */
 
@@ -49,8 +49,14 @@ static const char *ps(const esk_adev *d, const char *name, const char *def)
     return d->comp ? esk_comp_param_str(d->comp, name, def) : def;
 }
 
-static double acc_v(const esk_adev *d, int k) { return esk_island_node_v(d->isl, d->node[k]); }
-static double acc_x(const esk_adev *d, int idx) { return esk_island_node_v(d->isl, idx); }
+static double acc_v(const esk_adev *d, int k)
+{
+    return esk_island_node_v(d->isl, d->node[k]);
+}
+static double acc_x(const esk_adev *d, int idx)
+{
+    return esk_island_node_v(d->isl, idx);
+}
 
 static void param_error(esk_adev *d, const char *name, const char *why)
 {
@@ -97,7 +103,10 @@ static es_time_t s_to_ps(double s)
     return (es_time_t)ps_d; /* bounded and positive */
 }
 
-static double ps_to_s(es_time_t t) { return (double)t * 1e-12; }
+static double ps_to_s(es_time_t t)
+{
+    return (double)t * 1e-12;
+}
 
 static void set_pin_currents2(esk_adev *d, double i0)
 {
@@ -152,30 +161,41 @@ static double pnjlim(double vnew, double vold, double vt, double vcrit)
     return vnew;
 }
 
-static double vcrit_of(double is, double nvt) { return nvt * log(nvt / (sqrt(2.0) * is)); }
+static double vcrit_of(double is, double nvt)
+{
+    return nvt * log(nvt / (sqrt(2.0) * is));
+}
 
-/* LTE of a reactive element from the history of its derivative (current for a
- * capacitor, voltage for an inductor): trapezoidal h^3/12 |q'''|, backward
- * Euler h^2/2 |q''|, divided by the element value to give volts (amps). */
-static double reactive_lte(const esk_integ *in, double i_now, double i_prev, double i_prev2, int nhist, double value)
+/* LTE of a reactive element's state (charge or flux) from the history of its
+ * derivative (current for a capacitor, voltage for an inductor): trapezoidal
+ * h^3/12 |q'''|, backward Euler h^2/2 |q''|, by divided differences. The
+ * caller converts it to volts: a capacitor divides by C (the voltage error),
+ * an inductor divides by L and a current scale (see IND_LTE_SCALE_A). */
+static double reactive_lte(const esk_integ *in, double i_now, double i_prev, double i_prev2,
+                           int nhist)
 {
     double h = esk_integ_h(in), hp = esk_integ_h_prev(in);
-    double est;
-    if (!(value > 0.0) || !(h > 0.0) || nhist < 1)
+    if (!(h > 0.0) || nhist < 1)
         return 0.0;
-    if (esk_integ_first_order(in) || nhist < 2 || !(hp > 0.0)) {
-        est = 0.5 * h * fabs(i_now - i_prev);
-    } else {
+    if (esk_integ_first_order(in) || nhist < 2 || !(hp > 0.0))
+        return 0.5 * h * fabs(i_now - i_prev);
+    {
         double d1 = (i_now - i_prev) / h, d0 = (i_prev - i_prev2) / hp;
         double q3 = 2.0 * (d1 - d0) / (h + hp);
-        est = h * h * h / 12.0 * fabs(q3);
+        return h * h * h / 12.0 * fabs(q3);
     }
-    return est / value;
 }
+
+/* an inductor's current error is reported against a 1 mA scale (so the error
+ * control holds it to lte_tol mA, which keeps an RL step within 0.1 %); a
+ * voltage view (2/h · dphi) would not shrink with h on a first-order step */
+#define IND_LTE_SCALE_A 1e-3
 
 /* ---- resistor ------------------------------------------------------------ */
 
-typedef struct res_state { double g; } res_state;
+typedef struct res_state {
+    double g;
+} res_state;
 
 static es_status res_setup(esk_adev *d)
 {
@@ -204,8 +224,9 @@ static void res_accept(esk_adev *d, es_time_t t)
     set_pin_currents2(d, s->g * (acc_v(d, 0) - acc_v(d, 1)));
 }
 
-static const esk_adev_ops resistor_ops = { "resistor", sizeof(res_state), res_setup, res_load, NULL, res_accept,
-                                           NULL, NULL, NULL, observe_basic, NULL };
+static const esk_adev_ops resistor_ops = {"resistor", sizeof(res_state), res_setup, res_load,
+                                          NULL,       res_accept,        NULL,      NULL,
+                                          NULL,       observe_basic,     NULL};
 
 /* ---- capacitor ------------------------------------------------------------- */
 
@@ -215,7 +236,7 @@ typedef struct cap_state {
     double ic;
     double q_prev, i_prev, i_prev2;
     double q_trial, i_trial;
-    int nhist, trial_first;
+    int nhist, trial_first, trial_negligible;
 } cap_state;
 
 static es_status cap_setup(esk_adev *d)
@@ -242,6 +263,7 @@ static void cap_load_dc(esk_adev *d, esk_amatrix *m)
     s->q_trial = s->c * v;
     s->i_trial = 0.0;
     s->trial_first = 1;
+    s->trial_negligible = 0;
 }
 
 static void cap_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
@@ -259,6 +281,7 @@ static void cap_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
     s->q_trial = q;
     s->i_trial = ieq;
     s->trial_first = esk_integ_first_order(in);
+    s->trial_negligible = esk_integ_negligible(in);
 }
 
 static void cap_accept(esk_adev *d, es_time_t t)
@@ -267,10 +290,14 @@ static void cap_accept(esk_adev *d, es_time_t t)
     ES_UNUSED(t);
     if (s->trial_first) {
         s->nhist = 1;
-    } else if (s->nhist < 2) {
-        s->nhist++;
+        s->i_prev2 = s->i_prev;
+    } else if (s->trial_negligible && s->nhist >= 1) {
+        /* replace the newest point: the spacing to i_prev2 stays usable */
+    } else {
+        if (s->nhist < 2)
+            s->nhist++;
+        s->i_prev2 = s->i_prev;
     }
-    s->i_prev2 = s->i_prev;
     s->i_prev = s->i_trial;
     s->q_prev = s->q_trial;
     set_pin_currents2(d, s->i_trial);
@@ -279,7 +306,7 @@ static void cap_accept(esk_adev *d, es_time_t t)
 static double cap_lte(esk_adev *d, const esk_integ *in)
 {
     const cap_state *s = (const cap_state *)d->state;
-    return reactive_lte(in, s->i_trial, s->i_prev, s->i_prev2, s->nhist, s->c);
+    return reactive_lte(in, s->i_trial, s->i_prev, s->i_prev2, s->nhist) / s->c;
 }
 
 static void cap_observe(esk_adev *d, esk_json *o)
@@ -288,8 +315,9 @@ static void cap_observe(esk_adev *d, esk_json *o)
     esk_json_set_number(d->isl->a, o, "v", acc_v(d, 0) - acc_v(d, 1));
 }
 
-static const esk_adev_ops capacitor_ops = { "capacitor", sizeof(cap_state), cap_setup, cap_load_dc, cap_load_tr,
-                                            cap_accept, NULL, NULL, cap_lte, cap_observe, NULL };
+static const esk_adev_ops capacitor_ops = {"capacitor", sizeof(cap_state), cap_setup, cap_load_dc,
+                                           cap_load_tr, cap_accept,        NULL,      NULL,
+                                           cap_lte,     cap_observe,       NULL};
 
 /* ---- inductor ------------------------------------------------------------------- */
 
@@ -299,7 +327,7 @@ typedef struct ind_state {
     double ic;
     double phi_prev, v_prev, v_prev2; /* flux and inductor voltage history */
     double phi_trial, v_trial, i_trial;
-    int nhist, trial_first;
+    int nhist, trial_first, trial_negligible;
 } ind_state;
 
 static es_status ind_setup(esk_adev *d)
@@ -339,6 +367,7 @@ static void ind_load_dc(esk_adev *d, esk_amatrix *m)
     s->phi_trial = s->l * ib;
     s->v_trial = 0.0;
     s->trial_first = 1;
+    s->trial_negligible = 0;
 }
 
 static void ind_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
@@ -360,6 +389,7 @@ static void ind_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
     s->phi_trial = phi;
     s->v_trial = vl;
     s->trial_first = esk_integ_first_order(in);
+    s->trial_negligible = esk_integ_negligible(in);
 }
 
 static void ind_accept(esk_adev *d, es_time_t t)
@@ -368,10 +398,14 @@ static void ind_accept(esk_adev *d, es_time_t t)
     ES_UNUSED(t);
     if (s->trial_first) {
         s->nhist = 1;
-    } else if (s->nhist < 2) {
-        s->nhist++;
+        s->v_prev2 = s->v_prev;
+    } else if (s->trial_negligible && s->nhist >= 1) {
+        /* replace the newest point: the spacing to v_prev2 stays usable */
+    } else {
+        if (s->nhist < 2)
+            s->nhist++;
+        s->v_prev2 = s->v_prev;
     }
-    s->v_prev2 = s->v_prev;
     s->v_prev = s->v_trial;
     s->phi_prev = s->phi_trial;
     set_pin_currents2(d, acc_x(d, d->branch[0]));
@@ -380,11 +414,12 @@ static void ind_accept(esk_adev *d, es_time_t t)
 static double ind_lte(esk_adev *d, const esk_integ *in)
 {
     const ind_state *s = (const ind_state *)d->state;
-    return reactive_lte(in, s->v_trial, s->v_prev, s->v_prev2, s->nhist, s->l);
+    return reactive_lte(in, s->v_trial, s->v_prev, s->v_prev2, s->nhist) / (s->l * IND_LTE_SCALE_A);
 }
 
-static const esk_adev_ops inductor_ops = { "inductor", sizeof(ind_state), ind_setup, ind_load_dc, ind_load_tr,
-                                           ind_accept, NULL, NULL, ind_lte, observe_basic, NULL };
+static const esk_adev_ops inductor_ops = {"inductor",  sizeof(ind_state), ind_setup, ind_load_dc,
+                                          ind_load_tr, ind_accept,        NULL,      NULL,
+                                          ind_lte,     observe_basic,     NULL};
 
 /* ---- independent sources --------------------------------------------------------- */
 
@@ -393,9 +428,9 @@ enum { SRC_DC, SRC_PULSE, SRC_SINE, SRC_PWL, SRC_EXP };
 typedef struct src_state {
     int kind;
     double dc;
-    double v1, v2, td, tr, tf, pw, per;        /* pulse */
-    double vo, va, freq, phase, theta;          /* sine */
-    double td1, tau1, td2, tau2;                /* exp */
+    double v1, v2, td, tr, tf, pw, per; /* pulse */
+    double vo, va, freq, phase, theta;  /* sine */
+    double td1, tau1, td2, tau2;        /* exp */
     double value_trial;
 } src_state;
 
@@ -403,11 +438,16 @@ static void src_setup(esk_adev *d, src_state *s, const char *dc_name)
 {
     const char *kind = ps(d, "kind", "dc");
     s->kind = SRC_DC;
-    if (!strcmp(kind, "pulse")) s->kind = SRC_PULSE;
-    else if (!strcmp(kind, "sine") || !strcmp(kind, "sin")) s->kind = SRC_SINE;
-    else if (!strcmp(kind, "pwl")) s->kind = SRC_PWL;
-    else if (!strcmp(kind, "exp")) s->kind = SRC_EXP;
-    else if (strcmp(kind, "dc") != 0) param_error(d, "kind", "unknown source kind");
+    if (!strcmp(kind, "pulse"))
+        s->kind = SRC_PULSE;
+    else if (!strcmp(kind, "sine") || !strcmp(kind, "sin"))
+        s->kind = SRC_SINE;
+    else if (!strcmp(kind, "pwl"))
+        s->kind = SRC_PWL;
+    else if (!strcmp(kind, "exp"))
+        s->kind = SRC_EXP;
+    else if (strcmp(kind, "dc") != 0)
+        param_error(d, "kind", "unknown source kind");
     s->dc = pd(d, dc_name, pd(d, "value", pd(d, "dc", 0.0)));
     s->v1 = pd(d, "v1", pd(d, "i1", 0.0));
     s->v2 = pd(d, "v2", pd(d, "i2", s->dc));
@@ -444,11 +484,13 @@ static int pwl_point(const esk_adev *d, size_t k, double *t, double *v)
         const esk_json *pair = esk_json_at(pts, k);
         if (!pair || esk_json_len(pair) < 2)
             return 0;
-        return esk_json_to_double(esk_json_at(pair, 0), t) == 0 && esk_json_to_double(esk_json_at(pair, 1), v) == 0;
+        return esk_json_to_double(esk_json_at(pair, 0), t) == 0 &&
+               esk_json_to_double(esk_json_at(pair, 1), v) == 0;
     }
     if (2 * k + 1 >= esk_json_len(pts))
         return 0;
-    return esk_json_to_double(esk_json_at(pts, 2 * k), t) == 0 && esk_json_to_double(esk_json_at(pts, 2 * k + 1), v) == 0;
+    return esk_json_to_double(esk_json_at(pts, 2 * k), t) == 0 &&
+           esk_json_to_double(esk_json_at(pts, 2 * k + 1), v) == 0;
 }
 
 #define PWL_MAX_POINTS 100000
@@ -527,9 +569,15 @@ static int src_breakpoint(const esk_adev *d, const src_state *s, es_time_t after
         rel = after_s - s->td;
         k = s->per > 0.0 ? floor(rel / s->per) : 0.0;
         base = s->td + k * s->per;
-        cand[0] = base; cand[1] = base + s->tr; cand[2] = base + s->tr + s->pw; cand[3] = base + s->tr + s->pw + s->tf;
+        cand[0] = base;
+        cand[1] = base + s->tr;
+        cand[2] = base + s->tr + s->pw;
+        cand[3] = base + s->tr + s->pw + s->tf;
         base += s->per;
-        cand[4] = base; cand[5] = base + s->tr; cand[6] = base + s->tr + s->pw; cand[7] = base + s->tr + s->pw + s->tf;
+        cand[4] = base;
+        cand[5] = base + s->tr;
+        cand[6] = base + s->tr + s->pw;
+        cand[7] = base + s->tr + s->pw + s->tf;
         for (i = 0; i < 8; i++) {
             es_time_t c = s_to_ps(cand[i]);
             if (c > after && c < best)
@@ -569,8 +617,14 @@ static int src_breakpoint(const esk_adev *d, const src_state *s, es_time_t after
     }
     case SRC_EXP: {
         es_time_t c1 = s_to_ps(s->td1), c2 = s_to_ps(s->td2);
-        if (c1 > after && c1 <= c2) { *at = c1; return 1; }
-        if (c2 > after) { *at = c2; return 1; }
+        if (c1 > after && c1 <= c2) {
+            *at = c1;
+            return 1;
+        }
+        if (c2 > after) {
+            *at = c2;
+            return 1;
+        }
         return 0;
     }
     default:
@@ -593,8 +647,14 @@ static void vsrc_stamp(esk_adev *d, esk_amatrix *m, double t)
     stamp_vsrc(m, d->node[0], d->node[1], d->branch[0], v, 0.0);
 }
 
-static void vsrc_load_dc(esk_adev *d, esk_amatrix *m) { vsrc_stamp(d, m, ps_to_s(d->isl->t_accepted)); }
-static void vsrc_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in) { vsrc_stamp(d, m, ps_to_s(esk_integ_t(in))); }
+static void vsrc_load_dc(esk_adev *d, esk_amatrix *m)
+{
+    vsrc_stamp(d, m, ps_to_s(d->isl->t_accepted));
+}
+static void vsrc_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    vsrc_stamp(d, m, ps_to_s(esk_integ_t(in)));
+}
 
 static void vsrc_accept(esk_adev *d, es_time_t t)
 {
@@ -614,8 +674,9 @@ static void src_observe(esk_adev *d, esk_json *o)
     esk_json_set_number(d->isl->a, o, "value", s->value_trial);
 }
 
-static const esk_adev_ops vsource_ops = { "vsource", sizeof(src_state), vsrc_setup, vsrc_load_dc, vsrc_load_tr,
-                                          vsrc_accept, NULL, vsrc_breakpoint, NULL, src_observe, NULL };
+static const esk_adev_ops vsource_ops = {
+    "vsource", sizeof(src_state), vsrc_setup, vsrc_load_dc, vsrc_load_tr, vsrc_accept,
+    NULL,      vsrc_breakpoint,   NULL,       src_observe,  NULL};
 
 static es_status isrc_setup(esk_adev *d)
 {
@@ -631,8 +692,14 @@ static void isrc_stamp(esk_adev *d, esk_amatrix *m, double t)
     stamp_src_i(m, d->node[0], d->node[1], i);
 }
 
-static void isrc_load_dc(esk_adev *d, esk_amatrix *m) { isrc_stamp(d, m, ps_to_s(d->isl->t_accepted)); }
-static void isrc_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in) { isrc_stamp(d, m, ps_to_s(esk_integ_t(in))); }
+static void isrc_load_dc(esk_adev *d, esk_amatrix *m)
+{
+    isrc_stamp(d, m, ps_to_s(d->isl->t_accepted));
+}
+static void isrc_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    isrc_stamp(d, m, ps_to_s(esk_integ_t(in)));
+}
 
 static void isrc_accept(esk_adev *d, es_time_t t)
 {
@@ -641,15 +708,16 @@ static void isrc_accept(esk_adev *d, es_time_t t)
     set_pin_currents2(d, s->value_trial);
 }
 
-static const esk_adev_ops isource_ops = { "isource", sizeof(src_state), isrc_setup, isrc_load_dc, isrc_load_tr,
-                                          isrc_accept, NULL, vsrc_breakpoint, NULL, src_observe, NULL };
+static const esk_adev_ops isource_ops = {
+    "isource", sizeof(src_state), isrc_setup, isrc_load_dc, isrc_load_tr, isrc_accept,
+    NULL,      vsrc_breakpoint,   NULL,       src_observe,  NULL};
 
 /* ---- switch ------------------------------------------------------------------------ */
 
 typedef struct sw_state {
     double gon, goff;
-    int seen;             /* the settled input */
-    int changing, raw;    /* a change is in progress (bouncing) */
+    int seen;          /* the settled input */
+    int changing, raw; /* a change is in progress (bouncing) */
     es_time_t change_t;
     int bounce_count;
     es_time_t bounce_interval;
@@ -667,7 +735,8 @@ static int sw_input(const esk_adev *d)
     if (!esk_json_get(d->comp->inputs, "pressed") && !esk_json_get(d->comp->inputs, "closed") &&
         !esk_json_get(d->comp->inputs, "state")) {
         int v = 0;
-        if (esk_comp_param_bool(d->comp, "closed", &v) == 0 || esk_comp_param_bool(d->comp, "state", &v) == 0)
+        if (esk_comp_param_bool(d->comp, "closed", &v) == 0 ||
+            esk_comp_param_bool(d->comp, "state", &v) == 0)
             closed = v;
     }
     return closed;
@@ -732,8 +801,14 @@ static void sw_stamp(esk_adev *d, esk_amatrix *m, es_time_t t)
     esk_am_stamp_g(m, d->node[0], d->node[1], s->g_trial);
 }
 
-static void sw_load_dc(esk_adev *d, esk_amatrix *m) { sw_stamp(d, m, d->isl->t_accepted); }
-static void sw_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in) { sw_stamp(d, m, esk_integ_t(in)); }
+static void sw_load_dc(esk_adev *d, esk_amatrix *m)
+{
+    sw_stamp(d, m, d->isl->t_accepted);
+}
+static void sw_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    sw_stamp(d, m, esk_integ_t(in));
+}
 
 static void sw_accept(esk_adev *d, es_time_t t)
 {
@@ -771,8 +846,9 @@ static void sw_observe(esk_adev *d, esk_json *o)
     esk_json_set_bool(d->isl->a, o, "closed", s->g_trial == s->gon);
 }
 
-static const esk_adev_ops switch_ops = { "switch", sizeof(sw_state), sw_setup, sw_load_dc, sw_load_tr, sw_accept,
-                                         NULL, sw_breakpoint, NULL, sw_observe, NULL };
+static const esk_adev_ops switch_ops = {"switch",   sizeof(sw_state), sw_setup, sw_load_dc,
+                                        sw_load_tr, sw_accept,        NULL,     sw_breakpoint,
+                                        NULL,       sw_observe,       NULL};
 
 /* ---- potentiometer --------------------------------------------------------------------- */
 
@@ -799,14 +875,18 @@ static void pot_load(esk_adev *d, esk_amatrix *m)
     pot_state *s = (pot_state *)d->state;
     double pos = d->comp ? esk_comp_input_double(d->comp, "position", pd(d, "position", 0.5)) : 0.5;
     double r1, r2, rmin = 1e-3;
-    if (pos < 0.0) pos = 0.0;
-    if (pos > 1.0) pos = 1.0;
+    if (pos < 0.0)
+        pos = 0.0;
+    if (pos > 1.0)
+        pos = 1.0;
     if (s->log_taper)
         pos = (pow(10.0, pos) - 1.0) / 9.0;
     r1 = s->r * pos;
     r2 = s->r * (1.0 - pos);
-    if (r1 < rmin) r1 = rmin;
-    if (r2 < rmin) r2 = rmin;
+    if (r1 < rmin)
+        r1 = rmin;
+    if (r2 < rmin)
+        r2 = rmin;
     s->g1 = 1.0 / r1;
     s->g2 = 1.0 / r2;
     esk_am_stamp_g(m, d->node[0], d->node[1], s->g1);
@@ -823,8 +903,17 @@ static void pot_accept(esk_adev *d, es_time_t t)
     d->i_last[2] = -i2;
 }
 
-static const esk_adev_ops potentiometer_ops = { "potentiometer", sizeof(pot_state), pot_setup, pot_load, NULL,
-                                                pot_accept, NULL, NULL, NULL, observe_basic, NULL };
+static const esk_adev_ops potentiometer_ops = {"potentiometer",
+                                               sizeof(pot_state),
+                                               pot_setup,
+                                               pot_load,
+                                               NULL,
+                                               pot_accept,
+                                               NULL,
+                                               NULL,
+                                               NULL,
+                                               observe_basic,
+                                               NULL};
 
 /* ---- diode, led, zener ------------------------------------------------------------------ */
 
@@ -834,7 +923,7 @@ typedef struct diode_state {
     int kind;
     double is, nvt, rs, bv, vcrit, if_nom, vf;
     int has_bv;
-    double vd_old, vr_old;   /* limiting history */
+    double vd_old, vr_old; /* limiting history */
     double id_trial, vd_trial;
 } diode_state;
 
@@ -858,6 +947,15 @@ static void diode_common_setup(esk_adev *d, diode_state *s, double is_def, doubl
         s->rs = 0.0;
     }
     s->vcrit = vcrit_of(s->is, s->nvt);
+    if (s->has_bv) {
+        /* as in SPICE, `bv` is the voltage at the breakdown current `ibv` (a
+         * zener's `izt`), so the knee of the exponential is moved to match */
+        double ibv = pd(d, "ibv", pd(d, "izt", s->kind == JN_ZENER ? 5e-3 : 1e-3));
+        if (ibv > 0.0)
+            s->bv -= s->nvt * log(ibv / s->is + 1.0);
+        if (s->bv < 0.0)
+            s->bv = 0.0;
+    }
     d->nbranch = s->rs > 0.0 ? 1 : 0; /* the internal anode node A' */
 }
 
@@ -875,9 +973,13 @@ static es_status led_setup(esk_adev *d)
     const char *color = ps(d, "color", "red");
     double vf = 1.8, n = 2.0;
     s->kind = JN_LED;
-    if (!strcmp(color, "green")) vf = 2.1;
-    else if (!strcmp(color, "blue") || !strcmp(color, "white")) { vf = 2.9; n = 3.0; }
-    else if (!strcmp(color, "yellow")) vf = 2.0;
+    if (!strcmp(color, "green"))
+        vf = 2.1;
+    else if (!strcmp(color, "blue") || !strcmp(color, "white")) {
+        vf = 2.9;
+        n = 3.0;
+    } else if (!strcmp(color, "yellow"))
+        vf = 2.0;
     s->if_nom = pd(d, "if_nom", 0.02);
     s->vf = pd(d, "vf", vf);
     n = pd(d, "n", n);
@@ -895,14 +997,17 @@ static es_status zener_setup(esk_adev *d)
     diode_state *s = (diode_state *)d->state;
     double vz = pd(d, "vz", 5.1);
     s->kind = JN_ZENER;
+    if (!(vz > 0.0)) {
+        param_error(d, "vz", "must be > 0");
+        vz = 5.1;
+    }
     diode_common_setup(d, s, 1e-14, 1.0);
     if (!s->has_bv) {
+        double izt = pd(d, "izt", 5e-3);
         s->has_bv = 1;
-        s->bv = vz;
-    }
-    if (!(s->bv > 0.0)) {
-        param_error(d, "vz", "must be > 0");
-        s->bv = 5.1;
+        s->bv = vz - (izt > 0.0 ? s->nvt * log(izt / s->is + 1.0) : 0.0);
+        if (s->bv < 0.0)
+            s->bv = 0.0;
     }
     /* rz as the series resistance when given and rs is not */
     if (!has_param(d, "rs") && has_param(d, "rz")) {
@@ -944,7 +1049,10 @@ static void junction_stamp(esk_adev *d, esk_amatrix *m, diode_state *s)
     s->vd_trial = vd;
 }
 
-static void diode_load(esk_adev *d, esk_amatrix *m) { junction_stamp(d, m, (diode_state *)d->state); }
+static void diode_load(esk_adev *d, esk_amatrix *m)
+{
+    junction_stamp(d, m, (diode_state *)d->state);
+}
 
 static void diode_accept(esk_adev *d, es_time_t t)
 {
@@ -962,23 +1070,28 @@ static void diode_observe(esk_adev *d, esk_json *o)
     esk_json_set_number(a, o, "current", s->id_trial);
     if (s->kind == JN_LED) {
         double lum = s->id_trial / s->if_nom;
-        if (lum < 0.0) lum = 0.0;
-        if (lum > 1.0) lum = 1.0;
+        if (lum < 0.0)
+            lum = 0.0;
+        if (lum > 1.0)
+            lum = 1.0;
         esk_json_set_number(a, o, "luminance", lum);
     }
 }
 
-static const esk_adev_ops diode_ops = { "diode", sizeof(diode_state), diode_setup, diode_load, NULL, diode_accept,
-                                        NULL, NULL, NULL, diode_observe, NULL };
-static const esk_adev_ops led_ops = { "led", sizeof(diode_state), led_setup, diode_load, NULL, diode_accept,
-                                      NULL, NULL, NULL, diode_observe, NULL };
-static const esk_adev_ops zener_ops = { "zener", sizeof(diode_state), zener_setup, diode_load, NULL, diode_accept,
-                                        NULL, NULL, NULL, diode_observe, NULL };
+static const esk_adev_ops diode_ops = {"diode", sizeof(diode_state), diode_setup, diode_load,
+                                       NULL,    diode_accept,        NULL,        NULL,
+                                       NULL,    diode_observe,       NULL};
+static const esk_adev_ops led_ops = {"led", sizeof(diode_state), led_setup, diode_load,
+                                     NULL,  diode_accept,        NULL,      NULL,
+                                     NULL,  diode_observe,       NULL};
+static const esk_adev_ops zener_ops = {"zener", sizeof(diode_state), zener_setup, diode_load,
+                                       NULL,    diode_accept,        NULL,        NULL,
+                                       NULL,    diode_observe,       NULL};
 
 /* ---- bipolar transistors (Ebers-Moll transport model with Early effect) ------------- */
 
 typedef struct bjt_state {
-    double pol;                 /* +1 npn, -1 pnp */
+    double pol; /* +1 npn, -1 pnp */
     double is, bf, br, nf_vt, nr_vt, vaf, rb, rc, re;
     double vcrit_f, vcrit_r;
     int has_vaf;
@@ -1004,7 +1117,9 @@ static es_status bjt_setup_common(esk_adev *d, double pol)
     s->re = pd(d, "re", 0.0);
     if (!(s->is > 0.0) || !(s->bf > 0.0) || !(s->br > 0.0)) {
         param_error(d, "is/bf/br", "must be > 0");
-        s->is = 1e-15; s->bf = 100.0; s->br = 1.0;
+        s->is = 1e-15;
+        s->bf = 100.0;
+        s->br = 1.0;
     }
     if (s->has_vaf && !(s->vaf > 0.0)) {
         param_error(d, "vaf", "must be > 0");
@@ -1019,8 +1134,14 @@ static es_status bjt_setup_common(esk_adev *d, double pol)
     return ES_OK;
 }
 
-static es_status npn_setup(esk_adev *d) { return bjt_setup_common(d, 1.0); }
-static es_status pnp_setup(esk_adev *d) { return bjt_setup_common(d, -1.0); }
+static es_status npn_setup(esk_adev *d)
+{
+    return bjt_setup_common(d, 1.0);
+}
+static es_status pnp_setup(esk_adev *d)
+{
+    return bjt_setup_common(d, -1.0);
+}
 
 static void bjt_load(esk_adev *d, esk_amatrix *m)
 {
@@ -1074,9 +1195,12 @@ static void bjt_load(esk_adev *d, esk_amatrix *m)
     esk_am_stamp_f(m, c, Ic);
     esk_am_stamp_f(m, b, Ib);
     esk_am_stamp_f(m, e, Ie);
-    if (s->ic_idx >= 0) esk_am_stamp_g(m, d->node[0], c, 1.0 / s->rc);
-    if (s->ib_idx >= 0) esk_am_stamp_g(m, d->node[1], b, 1.0 / s->rb);
-    if (s->ie_idx >= 0) esk_am_stamp_g(m, d->node[2], e, 1.0 / s->re);
+    if (s->ic_idx >= 0)
+        esk_am_stamp_g(m, d->node[0], c, 1.0 / s->rc);
+    if (s->ib_idx >= 0)
+        esk_am_stamp_g(m, d->node[1], b, 1.0 / s->rb);
+    if (s->ie_idx >= 0)
+        esk_am_stamp_g(m, d->node[2], e, 1.0 / s->re);
     s->ic_trial = Ic;
     s->ib_trial = Ib;
     s->vbe_trial = vbe;
@@ -1112,10 +1236,12 @@ static void bjt_observe(esk_adev *d, esk_json *o)
     esk_json_set_string(a, o, "region", region);
 }
 
-static const esk_adev_ops bjt_npn_ops = { "bjt_npn", sizeof(bjt_state), npn_setup, bjt_load, NULL, bjt_accept,
-                                          NULL, NULL, NULL, bjt_observe, NULL };
-static const esk_adev_ops bjt_pnp_ops = { "bjt_pnp", sizeof(bjt_state), pnp_setup, bjt_load, NULL, bjt_accept,
-                                          NULL, NULL, NULL, bjt_observe, NULL };
+static const esk_adev_ops bjt_npn_ops = {"bjt_npn", sizeof(bjt_state), npn_setup, bjt_load,
+                                         NULL,      bjt_accept,        NULL,      NULL,
+                                         NULL,      bjt_observe,       NULL};
+static const esk_adev_ops bjt_pnp_ops = {"bjt_pnp", sizeof(bjt_state), pnp_setup, bjt_load,
+                                         NULL,      bjt_accept,        NULL,      NULL,
+                                         NULL,      bjt_observe,       NULL};
 
 /* ---- MOSFETs (level 1, Shichman-Hodges, body tied to source) ---------------------- */
 
@@ -1138,7 +1264,8 @@ static es_status mos_setup_common(esk_adev *d, double pol)
     s->rds = pd(d, "rds", 0.0);
     if (!(kp > 0.0) || !(w > 0.0) || !(l > 0.0)) {
         param_error(d, "kp/w/l", "must be > 0");
-        kp = 2e-5; w = l = 1e-4;
+        kp = 2e-5;
+        w = l = 1e-4;
     }
     if (s->lambda < 0.0) {
         param_error(d, "lambda", "must be >= 0");
@@ -1148,8 +1275,14 @@ static es_status mos_setup_common(esk_adev *d, double pol)
     return ES_OK;
 }
 
-static es_status nmos_setup(esk_adev *d) { return mos_setup_common(d, 1.0); }
-static es_status pmos_setup(esk_adev *d) { return mos_setup_common(d, -1.0); }
+static es_status nmos_setup(esk_adev *d)
+{
+    return mos_setup_common(d, 1.0);
+}
+static es_status pmos_setup(esk_adev *d)
+{
+    return mos_setup_common(d, -1.0);
+}
 
 static void mos_load(esk_adev *d, esk_amatrix *m)
 {
@@ -1163,7 +1296,9 @@ static void mos_load(esk_adev *d, esk_amatrix *m)
     double ids, gm, gds;
     double Id;
     if (vov <= 0.0) {
-        ids = 0.0; gm = 0.0; gds = 0.0;
+        ids = 0.0;
+        gm = 0.0;
+        gds = 0.0;
         s->region = 0;
     } else if (vds < vov) {
         double lam = 1.0 + s->lambda * vds;
@@ -1219,7 +1354,7 @@ static void mos_observe(esk_adev *d, esk_json *o)
 {
     const mos_state *s = (const mos_state *)d->state;
     esk_alloc *a = d->isl->a;
-    static const char *const names[3] = { "cutoff", "linear", "saturation" };
+    static const char *const names[3] = {"cutoff", "linear", "saturation"};
     observe_basic(d, o);
     esk_json_set_number(a, o, "id", s->id_trial);
     esk_json_set_number(a, o, "vgs", s->vgs_trial);
@@ -1227,10 +1362,12 @@ static void mos_observe(esk_adev *d, esk_json *o)
     esk_json_set_string(a, o, "region", names[s->region >= 0 && s->region < 3 ? s->region : 0]);
 }
 
-static const esk_adev_ops nmos_ops = { "nmos", sizeof(mos_state), nmos_setup, mos_load, NULL, mos_accept,
-                                       NULL, NULL, NULL, mos_observe, NULL };
-static const esk_adev_ops pmos_ops = { "pmos", sizeof(mos_state), pmos_setup, mos_load, NULL, mos_accept,
-                                       NULL, NULL, NULL, mos_observe, NULL };
+static const esk_adev_ops nmos_ops = {"nmos", sizeof(mos_state), nmos_setup, mos_load,
+                                      NULL,   mos_accept,        NULL,       NULL,
+                                      NULL,   mos_observe,       NULL};
+static const esk_adev_ops pmos_ops = {"pmos", sizeof(mos_state), pmos_setup, mos_load,
+                                      NULL,   mos_accept,        NULL,       NULL,
+                                      NULL,   mos_observe,       NULL};
 
 /* ---- behavioural op-amp ---------------------------------------------------------------- */
 
@@ -1251,7 +1388,9 @@ static es_status opamp_setup(esk_adev *d)
     s->supply_pins = d->nnodes >= 5;
     if (!(s->gain > 0.0) || !(s->rin > 0.0) || s->rout < 0.0) {
         param_error(d, "gain/rin/rout", "gain and rin must be > 0, rout >= 0");
-        s->gain = 1e5; s->rin = 1e12; s->rout = 0.0;
+        s->gain = 1e5;
+        s->rin = 1e12;
+        s->rout = 0.0;
     }
     d->nbranch = 1;
     return ES_OK;
@@ -1278,8 +1417,10 @@ static void opamp_load(esk_adev *d, esk_amatrix *m)
     if (vamp < 1e-6)
         vamp = 1e-6;
     arg = s->gain * vd / vamp;
-    if (arg > 40.0) arg = 40.0;
-    if (arg < -40.0) arg = -40.0;
+    if (arg > 40.0)
+        arg = 40.0;
+    if (arg < -40.0)
+        arg = -40.0;
     th = tanh(arg);
     vo = vmid + vamp * th;
     dvo = s->gain * (1.0 - th * th);
@@ -1318,8 +1459,9 @@ static void opamp_observe(esk_adev *d, esk_json *o)
     esk_json_set_number(d->isl->a, o, "iout", -d->i_last[2]);
 }
 
-static const esk_adev_ops opamp_ops = { "opamp", sizeof(opamp_state), opamp_setup, opamp_load, NULL, opamp_accept,
-                                        NULL, NULL, NULL, opamp_observe, NULL };
+static const esk_adev_ops opamp_ops = {"opamp", sizeof(opamp_state), opamp_setup, opamp_load,
+                                       NULL,    opamp_accept,        NULL,        NULL,
+                                       NULL,    opamp_observe,       NULL};
 
 /* ---- behavioural regulator (LDO) ----------------------------------------------------- */
 
@@ -1338,7 +1480,9 @@ static es_status reg_setup(esk_adev *d)
     s->rlim = 1e3;
     if (!(s->vout > 0.0) || s->dropout < 0.0 || !(s->imax > 0.0)) {
         param_error(d, "vout/dropout/imax", "vout and imax must be > 0, dropout >= 0");
-        s->vout = 3.3; s->dropout = 0.3; s->imax = 1.0;
+        s->vout = 3.3;
+        s->dropout = 0.3;
+        s->imax = 1.0;
     }
     d->nbranch = 1;
     return ES_OK;
@@ -1402,12 +1546,15 @@ static void reg_observe(esk_adev *d, esk_json *o)
     esk_json_set_number(d->isl->a, o, "iout", -d->i_last[1]);
 }
 
-static const esk_adev_ops regulator_ops = { "regulator", sizeof(reg_state), reg_setup, reg_load, NULL, reg_accept,
-                                            NULL, NULL, NULL, reg_observe, NULL };
+static const esk_adev_ops regulator_ops = {"regulator", sizeof(reg_state), reg_setup, reg_load,
+                                           NULL,        reg_accept,        NULL,      NULL,
+                                           NULL,        reg_observe,       NULL};
 
 /* ---- pull: a resistor to an internal level ------------------------------------------------ */
 
-typedef struct pull_state { double g, v; } pull_state;
+typedef struct pull_state {
+    double g, v;
+} pull_state;
 
 static es_status pull_setup(esk_adev *d)
 {
@@ -1439,15 +1586,16 @@ static void pull_accept(esk_adev *d, es_time_t t)
     d->i_last[0] = s->g * (acc_v(d, 0) - s->v);
 }
 
-static const esk_adev_ops pull_ops = { "pull", sizeof(pull_state), pull_setup, pull_load, NULL, pull_accept,
-                                       NULL, NULL, NULL, observe_basic, NULL };
+static const esk_adev_ops pull_ops = {"pull", sizeof(pull_state), pull_setup, pull_load,
+                                      NULL,   pull_accept,        NULL,       NULL,
+                                      NULL,   observe_basic,      NULL};
 
 /* ---- registry ------------------------------------------------------------------------------- */
 
 static const esk_adev_ops *const device_table[] = {
-    &resistor_ops, &capacitor_ops, &inductor_ops, &vsource_ops, &isource_ops, &switch_ops, &potentiometer_ops,
-    &diode_ops, &led_ops, &zener_ops, &bjt_npn_ops, &bjt_pnp_ops, &nmos_ops, &pmos_ops, &opamp_ops,
-    &regulator_ops, &pull_ops,
+    &resistor_ops,      &capacitor_ops, &inductor_ops, &vsource_ops,   &isource_ops, &switch_ops,
+    &potentiometer_ops, &diode_ops,     &led_ops,      &zener_ops,     &bjt_npn_ops, &bjt_pnp_ops,
+    &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
 };
 
 const esk_adev_ops *esk_adev_find(const char *name)

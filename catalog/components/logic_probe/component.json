@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/logic_probe",
+  "version": "1.0.0",
+  "name": "Logic probe",
+  "category": "instruments",
+  "description": "Shows the resolved logic value of a net; drives nothing.",
+  "keywords": [
+    "probe",
+    "logic",
+    "instrument",
+    "debug"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "IN",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3",
+        "pull": "none",
+        "leak_a": 0
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "name": "value",
+      "type": "enum",
+      "enum": [
+        "0",
+        "1",
+        "Z",
+        "X"
+      ],
+      "doc": "Resolved value of the net"
+    }
+  ],
+  "model": {
+    "primitive": "logic_probe"
+  },
+  "functional": {
+    "primitive": "logic_probe"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 20,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Reports the resolved value, including Z and X, without raising floating-input warnings (SPEC-003 §5 logic_probe).",
+      "omissions": []
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "A comparator bridge with cmos_3v3 thresholds and no load.",
+      "omissions": [
+        "input capacitance"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.5,
+          6
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

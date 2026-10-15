@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "kind": "toolchain",
+  "id": "xc8",
+  "name": "Microchip MPLAB XC8",
+  "description": "Microchip XC8 for 8-bit PIC; one-step build (xc8-cc compiles and links); output is ELF with COFF-style debug data plus Intel HEX.",
+  "detect": {
+    "command": [
+      "xc8-cc",
+      "--version"
+    ],
+    "version_regex": "v([0-9.]+)",
+    "min_version": "2.30"
+  },
+  "targets": {
+    "pic16f18855": {
+      "cc": [
+        "xc8-cc",
+        "-mcpu=16F18855"
+      ],
+      "link_flags": [
+        "-Wl,-Map=${map}"
+      ]
+    },
+    "pic16f877a": {
+      "cc": [
+        "xc8-cc",
+        "-mcpu=16F877A"
+      ],
+      "link_flags": [
+        "-Wl,-Map=${map}"
+      ]
+    },
+    "pic18f47q10": {
+      "cc": [
+        "xc8-cc",
+        "-mcpu=18F47Q10"
+      ],
+      "link_flags": [
+        "-Wl,-Map=${map}"
+      ]
+    },
+    "pic18f4550": {
+      "cc": [
+        "xc8-cc",
+        "-mcpu=18F4550"
+      ],
+      "link_flags": [
+        "-Wl,-Map=${map}"
+      ]
+    }
+  },
+  "steps": {
+    "compile": [
+      "${cc}",
+      "${cflags}",
+      "${defines}",
+      "${include}",
+      "-g",
+      "-O2",
+      "-c",
+      "${source}",
+      "-o",
+      "${object}"
+    ],
+    "link": [
+      "${cc}",
+      "${cflags}",
+      "${link_flags}",
+      "${objects}",
+      "-o",
+      "${image}"
+    ],
+    "convert": [
+      "xc8-cc",
+      "-mcpu=${target}",
+      "-o",
+      "${hex}",
+      "${image}"
+    ]
+  },
+  "outputs": {
+    "image": "elf",
+    "debug": "cof",
+    "map": true
+  },
+  "environment": {
+    "PATH_hint": [
+      "/opt/microchip/xc8/*/bin",
+      "/Applications/microchip/xc8/*/bin",
+      "C:/Program Files/Microchip/xc8/*/bin"
+    ]
+  }
+}

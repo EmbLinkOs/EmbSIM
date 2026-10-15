@@ -363,13 +363,13 @@
       }
     },
     "param_values": {
-      "description": "Parameter values given to an instance, by parameter name.",
+      "description": "Parameter values given to an instance, by parameter name: numbers (with SI suffix), booleans, enum/string values, tables, or \"$param\" references inside composites.",
       "type": "object",
       "propertyNames": {
         "pattern": "^[a-z][a-z0-9_]*$"
       },
       "additionalProperties": {
-        "oneOf": [
+        "anyOf": [
           {
             "$ref": "#/$defs/si_number"
           },
@@ -377,10 +377,10 @@
             "type": "boolean"
           },
           {
-            "type": "array"
+            "type": "string"
           },
           {
-            "$ref": "#/$defs/param_ref"
+            "type": "array"
           }
         ]
       }

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rail-voltage",
+  "description": "The rail holds 5 V into a 1 kΩ load.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/vcc",
+        "params": {
+          "voltage": 5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "RAIL": [
+        "DUT.VCC",
+        "R1.1"
+      ],
+      "GND": [
+        "R1.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:RAIL": {
+      "at": "0.5ms",
+      "min_v": 4.99,
+      "max_v": 5.01
+    }
+  }
+}

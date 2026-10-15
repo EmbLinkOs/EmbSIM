@@ -14,10 +14,10 @@
 
 typedef struct bridge_state {
     int is_power;
-    int disabled;          /* a duplicate or driven supply: nothing stamped */
-    int open_cur;          /* the driver is open (Z) */
-    double v_cur;          /* the source value when not ramping */
-    double r;              /* series resistance (0: ideal branch) */
+    int disabled; /* a duplicate or driven supply: nothing stamped */
+    int open_cur; /* the driver is open (Z) */
+    double v_cur; /* the source value when not ramping */
+    double r;     /* series resistance (0: ideal branch) */
     int ramping;
     es_time_t t0, t1;
     double v_from, v_to;
@@ -35,7 +35,6 @@ static int out_role(const esk_adev *d)
     return 0;
 }
 
-
 static es_time_t s_to_ps(double s)
 {
     double v;
@@ -51,14 +50,16 @@ static void raise_pin(esk_adev *d, es_severity_t sev, const char *code, const ch
 {
     esk_engine *e = d->isl->e;
     char subject[160];
-    esk_snprintf(subject, sizeof subject, "%s.%s", d->pin->comp && d->pin->comp->id ? d->pin->comp->id : "?",
+    esk_snprintf(subject, sizeof subject, "%s.%s",
+                 d->pin->comp && d->pin->comp->id ? d->pin->comp->id : "?",
                  d->pin->name ? d->pin->name : "?");
     esk_diag_raise(e->diag, sev, code, e->sched.now, "pin", subject, NULL, 0, "%s", msg);
 }
 
 static int drives_supply(const esk_adev_ops *ops)
 {
-    return !strcmp(ops->name, "vsource") || !strcmp(ops->name, "regulator") || !strcmp(ops->name, "opamp");
+    return !strcmp(ops->name, "vsource") || !strcmp(ops->name, "regulator") ||
+           !strcmp(ops->name, "opamp");
 }
 
 /* a power pin's ideal source is dropped when the node is already held */
@@ -75,12 +76,14 @@ static void check_duplicate_supply(esk_adev *d, bridge_state *s)
         esk_adev *o = isl->devs.data[i];
         if (o == d)
             break;
-        if (o->pin && o->ops == &esk_bridge_out_ops && o->pin->model.kind == ESK_PIN_POWER && o->node[0] == node) {
+        if (o->pin && o->ops == &esk_bridge_out_ops && o->pin->model.kind == ESK_PIN_POWER &&
+            o->node[0] == node) {
             const bridge_state *os = (const bridge_state *)o->state;
             if (!os->disabled) {
                 if (fabs(os->v_cur - d->pin->model.nominal_v) > 1e-9)
-                    raise_pin(d, ES_SEV_ERROR, "analog.singular_topology",
-                              "two power pins with different voltages on one net; the first one is used");
+                    raise_pin(
+                        d, ES_SEV_ERROR, "analog.singular_topology",
+                        "two power pins with different voltages on one net; the first one is used");
                 s->disabled = 1;
                 return;
             }
@@ -95,7 +98,8 @@ static void check_duplicate_supply(esk_adev *d, bridge_state *s)
             if (o->node[k] == node) {
                 s->disabled = 1;
                 raise_pin(d, ES_SEV_INFO, "analog.supply_driven",
-                          "the net is driven by a component model; the power pin's ideal source is not added");
+                          "the net is driven by a component model; the power pin's ideal source is "
+                          "not added");
                 return;
             }
         }
@@ -115,7 +119,8 @@ static void setup_pull(esk_adev *d, bridge_state *s)
             s->pull_v = m->nominal_v;
         } else {
             s->pull_v = d->isl->e->default_supply_v;
-            raise_pin(d, ES_SEV_INFO, "analog.implicit_supply", "pull-up to the session's default supply voltage");
+            raise_pin(d, ES_SEV_INFO, "analog.implicit_supply",
+                      "pull-up to the session's default supply voltage");
         }
     }
 }
@@ -225,8 +230,14 @@ static void bridge_stamp(esk_adev *d, esk_amatrix *m, es_time_t t)
     }
 }
 
-static void bridge_load_dc(esk_adev *d, esk_amatrix *m) { bridge_stamp(d, m, d->isl->t_accepted); }
-static void bridge_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in) { bridge_stamp(d, m, esk_integ_t(in)); }
+static void bridge_load_dc(esk_adev *d, esk_amatrix *m)
+{
+    bridge_stamp(d, m, d->isl->t_accepted);
+}
+static void bridge_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    bridge_stamp(d, m, esk_integ_t(in));
+}
 
 static void bridge_accept(esk_adev *d, es_time_t t)
 {
@@ -276,13 +287,17 @@ static void bridge_observe(esk_adev *d, esk_json *o)
         esk_json_set_bool(a, o, "open", s->open_cur || s->disabled);
         esk_json_set_number(a, o, "source", s->v_src_trial);
     } else {
-        esk_json_set_string(a, o, "logic", esk_logic_name(d->pin->sampled == ESK_LZ ? ESK_L0 : d->pin->sampled));
+        esk_json_set_string(a, o, "logic",
+                            esk_logic_name(d->pin->sampled == ESK_LZ ? ESK_L0 : d->pin->sampled));
     }
 }
 
-const esk_adev_ops esk_bridge_out_ops = { "bridge_out", sizeof(bridge_state), bridge_setup, bridge_load_dc,
-                                          bridge_load_tr, bridge_accept, NULL, bridge_breakpoint, NULL,
-                                          bridge_observe, bridge_set_logic };
+const esk_adev_ops esk_bridge_out_ops = {"bridge_out",   sizeof(bridge_state), bridge_setup,
+                                         bridge_load_dc, bridge_load_tr,       bridge_accept,
+                                         NULL,           bridge_breakpoint,    NULL,
+                                         bridge_observe, bridge_set_logic};
 
-const esk_adev_ops esk_bridge_in_ops = { "bridge_in", sizeof(bridge_state), bridge_setup, bridge_load_dc,
-                                         bridge_load_tr, bridge_accept, NULL, NULL, NULL, bridge_observe, NULL };
+const esk_adev_ops esk_bridge_in_ops = {
+    "bridge_in",    sizeof(bridge_state), bridge_setup, bridge_load_dc,
+    bridge_load_tr, bridge_accept,        NULL,         NULL,
+    NULL,           bridge_observe,       NULL};

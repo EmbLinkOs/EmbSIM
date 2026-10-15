@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "library",
+  "name": "emblink",
+  "version": "0.1.0",
+  "description": "The EmbSIM bundled catalog: discrete components, logic, sources, instruments, the STM32F103C8 and the Blue Pill board, and toolchain profiles.",
+  "license": "Apache-2.0",
+  "authors": ["EmbSIM contributors"],
+  "homepage": "https://emblink.dev/embsim",
+  "depends": []
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "button-led",
+  "description": "The classic button-to-LED circuit at the functional tier: a push button pulls a pulled-down net high and lights an indicator. No MCU, no firmware.",
+  "libraries": [],
+  "policy": "functional",
+  "boards": [],
+  "components": [
+    {"id": "VCC1", "component": "emblink/vcc", "params": {"voltage": 3.3}, "layout": {"x": 100, "y": 60}},
+    {"id": "SW1", "component": "emblink/push_button", "layout": {"x": 200, "y": 100}},
+    {"id": "R1", "component": "emblink/pull_down", "params": {"resistance": "10k"}, "layout": {"x": 300, "y": 160}},
+    {"id": "D1", "component": "emblink/indicator", "layout": {"x": 400, "y": 100}},
+    {"id": "GND1", "component": "emblink/gnd", "layout": {"x": 500, "y": 160}}
+  ],
+  "nets": {
+    "VCC": ["VCC1.VCC", "SW1.1"],
+    "BTN": ["SW1.2", "R1.1", "D1.A"],
+    "GND": ["D1.K", "GND1.GND"]
+  },
+  "layout": {
+    "wires": [
+      {"net": "VCC", "points": [[110, 80], [110, 110], [200, 110]]},
+      {"net": "BTN", "points": [[260, 110], [310, 110], [400, 110]]},
+      {"net": "BTN", "points": [[310, 110], [310, 160]]},
+      {"net": "GND", "points": [[460, 110], [510, 110], [510, 160]]}
+    ],
+    "labels": [{"net": "BTN", "x": 320, "y": 100}],
+    "sheet": {"width": 800, "height": 400}
+  },
+  "probes": [
+    {"id": "btn", "target": "net:BTN", "kind": "digital"},
+    {"id": "lit", "target": "output:D1.lit", "kind": "value"}
+  ],
+  "scenarios": ["scenarios/press.json"],
+  "settings": {"max_delta_cycles": 1000}
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60">
+  <rect id="body" x="6" y="6" width="48" height="48" rx="4" fill="#3b63c4" stroke="#1d2f66" stroke-width="1.5"/>
+  <g id="legs" stroke="#b8bcc6" stroke-width="2.5">
+    <line x1="14" y1="54" x2="14" y2="60"/><line x1="30" y1="54" x2="30" y2="60"/><line x1="46" y1="54" x2="46" y2="60"/>
+  </g>
+  <circle id="knob" cx="30" cy="30" r="16" fill="#d8dde8" stroke="#8c93a3" stroke-width="1.5"/>
+  <line id="knob-mark" x1="30" y1="30" x2="30" y2="16" stroke="#15171b" stroke-width="2.5" stroke-linecap="round"/>
+  <path id="arc" d="M14 42 A20 20 0 1 1 46 42" fill="none" stroke="#1d2f66" stroke-width="1" stroke-dasharray="2 2"/>
+</svg>

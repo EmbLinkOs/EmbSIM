@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reads-high",
+  "description": "A driven 1 is reported as 1.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "N": [
+        "H.OUT",
+        "DUT.IN"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.value": {
+      "at": "500ns",
+      "equals": "1"
+    }
+  }
+}

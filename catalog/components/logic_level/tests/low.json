@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "low",
+  "description": "level 0 drives 0.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "N": [
+        "DUT.OUT",
+        "P.IN"
+      ]
+    }
+  },
+  "expect": {
+    "net:N": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

@@ -2,9 +2,9 @@
 /* Copyright 2026 Junior Deogracias */
 /* test_analog.c -- the analog engine (SPEC-004): operating points, transients,
  * device models, bridges and the validation fixtures of tests/analog/fixtures. */
-#include "harness.h"
 #include "analog/analog.h"
 #include "engine/engine.h"
+#include "harness.h"
 #include "util/num.h"
 
 #ifndef EMBSIM_SOURCE_DIR
@@ -20,7 +20,8 @@ static void on_diag(void *ctx, const es_diagnostic_t *d)
     ES_UNUSED(ctx);
     if (d->severity >= ES_SEV_ERROR)
         diag_errors++;
-    fprintf(stderr, "  [diag %d] %s %s: %s\n", (int)d->severity, d->code, d->subject ? d->subject : "", d->message);
+    fprintf(stderr, "  [diag %d] %s %s: %s\n", (int)d->severity, d->code,
+            d->subject ? d->subject : "", d->message);
 }
 
 /* ---- circuit building ------------------------------------------------------ */
@@ -50,7 +51,8 @@ static const esk_model_ops *ops_for(const char *kind)
     return NULL;
 }
 
-static const esk_model_ops power_ops = { "power", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 };
+static const esk_model_ops power_ops = {"power", 0,    NULL, NULL, NULL, NULL,
+                                        NULL,    NULL, NULL, NULL, 0};
 
 static esk_net *net_of(esk_engine *e, const char *name)
 {
@@ -77,7 +79,7 @@ static esk_comp *add_dev(esk_engine *e, const char *kind, const char *id, const 
     esk_json *params = params_json ? parse(params_json) : NULL;
     const esk_model_ops *ops = ops_for(kind);
     esk_pin_model models[8];
-    const char *names[8] = { "p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7" };
+    const char *names[8] = {"p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"};
     esk_comp *c = NULL;
     int k;
     es_status st;
@@ -99,7 +101,8 @@ static esk_comp *add_dev(esk_engine *e, const char *kind, const char *id, const 
     return c;
 }
 
-static esk_comp *add_dev2(esk_engine *e, const char *kind, const char *id, const char *params, const char *n1, const char *n2)
+static esk_comp *add_dev2(esk_engine *e, const char *kind, const char *id, const char *params,
+                          const char *n1, const char *n2)
 {
     const char *nets[2];
     nets[0] = n1;
@@ -107,8 +110,8 @@ static esk_comp *add_dev2(esk_engine *e, const char *kind, const char *id, const
     return add_dev(e, kind, id, params, nets, 2);
 }
 
-static esk_comp *add_dev3(esk_engine *e, const char *kind, const char *id, const char *params, const char *n1, const char *n2,
-                          const char *n3)
+static esk_comp *add_dev3(esk_engine *e, const char *kind, const char *id, const char *params,
+                          const char *n1, const char *n2, const char *n3)
 {
     const char *nets[3];
     nets[0] = n1;
@@ -208,7 +211,8 @@ static void test_supply_pin_divider(void)
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
     add_power(&e, "P", "vcc", 3.3);
-    add_power(&e, "P2", "vcc", 3.3); /* a second supply pin on the same net must not make it singular */
+    add_power(&e, "P2", "vcc",
+              3.3); /* a second supply pin on the same net must not make it singular */
     add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vcc", "out");
     add_dev2(&e, "resistor", "R2", "{\"r\": \"2k\"}", "out", "gnd");
     engine_run(&e);
@@ -293,7 +297,8 @@ static void test_rl_transient(void)
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
     /* the source steps from 0 to 5 V at t = 0 (pulse), so the current ramps with tau = L/R */
-    add_dev2(&e, "vsource", "V1", "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 5, \"tr\": \"1n\", \"pw\": 1, \"per\": 2}",
+    add_dev2(&e, "vsource", "V1",
+             "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 5, \"tr\": \"1n\", \"pw\": 1, \"per\": 2}",
              "vin", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": 100}", "vin", "mid");
     add_dev2(&e, "inductor", "L1", "{\"l\": \"10m\"}", "mid", "gnd");
@@ -310,7 +315,7 @@ static void test_rl_transient(void)
 
 static void test_diode_curve(void)
 {
-    static const double currents[5] = { 1e-6, 1e-4, 1e-3, 1e-2, 5e-2 };
+    static const double currents[5] = {1e-6, 1e-4, 1e-3, 1e-2, 5e-2};
     int k;
     for (k = 0; k < 5; k++) {
         esk_engine e;
@@ -463,7 +468,8 @@ static void test_nmos_switch(void)
     add_power(&e, "P", "vcc", 3.3);
     add_dev2(&e, "vsource", "V1", "{\"dc\": 3.3}", "g", "gnd");
     add_dev2(&e, "resistor", "RD", "{\"r\": 220}", "vcc", "d");
-    add_dev3(&e, "nmos", "M1", "{\"vto\": 2, \"kp\": 100e-6, \"w\": 1000e-6, \"l\": 1e-6}", "d", "g", "gnd");
+    add_dev3(&e, "nmos", "M1", "{\"vto\": 2, \"kp\": 100e-6, \"w\": 1000e-6, \"l\": 1e-6}", "d",
+             "g", "gnd");
     engine_run(&e);
     CHECK(v_of(&e, "d") < 0.2);
     CHECK_STR(obs_str(&e, "M1", "region", region, sizeof region), "linear");
@@ -474,7 +480,8 @@ static void test_nmos_switch(void)
     add_power(&e, "P", "vcc", 3.3);
     add_dev2(&e, "vsource", "V1", "{\"dc\": 0}", "g", "gnd");
     add_dev2(&e, "resistor", "RD", "{\"r\": 220}", "vcc", "d");
-    add_dev3(&e, "nmos", "M1", "{\"vto\": 2, \"kp\": 100e-6, \"w\": 1000e-6, \"l\": 1e-6}", "d", "g", "gnd");
+    add_dev3(&e, "nmos", "M1", "{\"vto\": 2, \"kp\": 100e-6, \"w\": 1000e-6, \"l\": 1e-6}", "d",
+             "g", "gnd");
     engine_run(&e);
     CHECK(v_of(&e, "d") > 3.29);
     CHECK_STR(obs_str(&e, "M1", "region", region, sizeof region), "cutoff");
@@ -486,7 +493,8 @@ static void test_nmos_switch(void)
     add_power(&e, "P", "vcc", 3.3);
     add_dev2(&e, "vsource", "V1", "{\"dc\": 0}", "g", "gnd");
     add_dev2(&e, "resistor", "RD", "{\"r\": 220}", "d", "gnd");
-    add_dev3(&e, "pmos", "M1", "{\"vto\": -2, \"kp\": 100e-6, \"w\": 1000e-6, \"l\": 1e-6}", "d", "g", "vcc");
+    add_dev3(&e, "pmos", "M1", "{\"vto\": -2, \"kp\": 100e-6, \"w\": 1000e-6, \"l\": 1e-6}", "d",
+             "g", "vcc");
     engine_run(&e);
     CHECK(v_of(&e, "d") > 3.1);
     CHECK_EQ(diag_errors, 0);
@@ -500,7 +508,8 @@ static void test_pulse_rc(void)
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
     add_dev2(&e, "vsource", "V1",
-             "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 3.3, \"tr\": \"1n\", \"tf\": \"1n\", \"pw\": \"0.5m\", \"per\": \"1m\"}",
+             "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 3.3, \"tr\": \"1n\", \"tf\": \"1n\", "
+             "\"pw\": \"0.5m\", \"per\": \"1m\"}",
              "vin", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "out");
     add_dev2(&e, "capacitor", "C1", "{\"c\": \"100n\"}", "out", "gnd");
@@ -522,7 +531,8 @@ static void test_sine_source(void)
     esk_engine e;
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
-    add_dev2(&e, "vsource", "V1", "{\"kind\": \"sine\", \"vo\": 1, \"va\": 2, \"freq\": 1000}", "vin", "gnd");
+    add_dev2(&e, "vsource", "V1", "{\"kind\": \"sine\", \"vo\": 1, \"va\": 2, \"freq\": 1000}",
+             "vin", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "gnd");
     engine_run(&e);
     CHECK_NEAR(v_of(&e, "vin"), 1.0, 1e-9);
@@ -538,7 +548,8 @@ static void test_pwl_source(void)
     esk_engine e;
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
-    add_dev2(&e, "vsource", "V1", "{\"kind\": \"pwl\", \"points\": [[0, 0], [\"1m\", 2], [\"2m\", 2], [\"3m\", 0]]}",
+    add_dev2(&e, "vsource", "V1",
+             "{\"kind\": \"pwl\", \"points\": [[0, 0], [\"1m\", 2], [\"2m\", 2], [\"3m\", 0]]}",
              "vin", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "gnd");
     engine_run(&e);
@@ -619,8 +630,9 @@ static void watcher_on_input(esk_comp *c, esk_pin *pin)
     s->last = esk_pin_read(pin);
 }
 
-static const esk_model_ops watcher_ops = { "watcher", sizeof(watcher_state), NULL, NULL, NULL, watcher_on_input,
-                                           NULL, NULL, NULL, NULL, 0 };
+static const esk_model_ops watcher_ops = {
+    "watcher", sizeof(watcher_state), NULL, NULL, NULL, watcher_on_input, NULL, NULL, NULL, NULL,
+    0};
 
 static esk_comp *add_watcher(esk_engine *e, const char *id, const char *net, esk_pull pull)
 {
@@ -631,7 +643,8 @@ static esk_comp *add_watcher(esk_engine *e, const char *id, const char *net, esk
     m.kind = ESK_PIN_DIGITAL_IN;
     m.pull = pull;
     m.rpull = 10000.0;
-    CHECK(esk_engine_add_comp(e, id, "watcher", &watcher_ops, &name, &m, 1, NULL, NULL, &c) == ES_OK);
+    CHECK(esk_engine_add_comp(e, id, "watcher", &watcher_ops, &name, &m, 1, NULL, NULL, &c) ==
+          ES_OK);
     if (c) {
         CHECK(esk_engine_connect(e, &c->pins[0], net_of(e, net)) == ES_OK);
         esk_pin_watch(&c->pins[0], 1);
@@ -648,7 +661,8 @@ static void test_comparator_bridge(void)
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
     add_dev2(&e, "vsource", "V1",
-             "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 3.3, \"tr\": \"1n\", \"tf\": \"1n\", \"pw\": \"0.5m\", \"per\": \"1m\"}",
+             "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 3.3, \"tr\": \"1n\", \"tf\": \"1n\", "
+             "\"pw\": \"0.5m\", \"per\": \"1m\"}",
              "vin", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "out");
     add_dev2(&e, "capacitor", "C1", "{\"c\": \"100n\"}", "out", "gnd");
@@ -671,7 +685,8 @@ static void test_comparator_bridge(void)
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
     add_dev2(&e, "vsource", "V1",
-             "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 3.3, \"tr\": \"1n\", \"tf\": \"1n\", \"pw\": \"0.5m\", \"per\": \"1m\"}",
+             "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 3.3, \"tr\": \"1n\", \"tf\": \"1n\", "
+             "\"pw\": \"0.5m\", \"per\": \"1m\"}",
              "vin", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "out");
     add_dev2(&e, "capacitor", "C1", "{\"c\": \"100n\"}", "out", "gnd");
@@ -714,7 +729,8 @@ static void test_pull_up_input(void)
 }
 
 /* a driver: a component with one digital_out pin */
-static const esk_model_ops driver_ops = { "driver", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 };
+static const esk_model_ops driver_ops = {"driver", 0,    NULL, NULL, NULL, NULL,
+                                         NULL,     NULL, NULL, NULL, 0};
 
 static esk_comp *add_driver(esk_engine *e, const char *id, const char *net)
 {
@@ -775,7 +791,8 @@ static void test_opamp_inverting(void)
     add_dev2(&e, "vsource", "V1", "{\"dc\": 0.5}", "vin", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "inv");
     add_dev2(&e, "resistor", "R2", "{\"r\": \"10k\"}", "inv", "out");
-    add_dev3(&e, "opamp", "U1", "{\"gain\": 1e5, \"vpos\": 12, \"vneg\": -12}", "gnd", "inv", "out");
+    add_dev3(&e, "opamp", "U1", "{\"gain\": 1e5, \"vpos\": 12, \"vneg\": -12}", "gnd", "inv",
+             "out");
     engine_run(&e);
     CHECK_NEAR(v_of(&e, "out"), -5.0, 0.01);
     CHECK_NEAR(v_of(&e, "inv"), 0.0, 1e-3);
@@ -786,7 +803,8 @@ static void test_opamp_inverting(void)
     add_dev2(&e, "vsource", "V1", "{\"dc\": 2}", "vin", "gnd");
     add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "inv");
     add_dev2(&e, "resistor", "R2", "{\"r\": \"10k\"}", "inv", "out");
-    add_dev3(&e, "opamp", "U1", "{\"gain\": 1e5, \"vpos\": 12, \"vneg\": -12}", "gnd", "inv", "out");
+    add_dev3(&e, "opamp", "U1", "{\"gain\": 1e5, \"vpos\": 12, \"vneg\": -12}", "gnd", "inv",
+             "out");
     engine_run(&e);
     CHECK(v_of(&e, "out") < -11.5 && v_of(&e, "out") > -12.01);
     CHECK_EQ(diag_errors, 0);
@@ -823,7 +841,8 @@ static void test_pull_device(void)
     esk_engine e;
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
-    add_dev(&e, "pull", "PU1", "{\"level\": 1, \"voltage\": 3.3, \"r\": \"10k\"}", (const char *const[]){ "n" }, 1);
+    add_dev(&e, "pull", "PU1", "{\"level\": 1, \"voltage\": 3.3, \"r\": \"10k\"}",
+            (const char *const[]){"n"}, 1);
     add_dev2(&e, "resistor", "R1", "{\"r\": \"10k\"}", "n", "gnd");
     engine_run(&e);
     CHECK_NEAR(v_of(&e, "n"), 1.65, 1e-6);
@@ -838,7 +857,9 @@ static void test_bounce(void)
     esk_json *v;
     engine_open(&e);
     add_power(&e, "G", "gnd", 0.0);
-    sw = add_dev2(&e, "switch", "S1", "{\"ron\": 1, \"bounce\": {\"count\": 4, \"interval\": \"100us\"}}", "btn", "gnd");
+    sw =
+        add_dev2(&e, "switch", "S1",
+                 "{\"ron\": 1, \"bounce\": {\"count\": 4, \"interval\": \"100us\"}}", "btn", "gnd");
     w = add_watcher(&e, "U1", "btn", ESK_PULL_UP);
     engine_run(&e);
     ws = (watcher_state *)w->state;
@@ -879,7 +900,8 @@ static void test_observe_json(void)
     o = esk_island_observe(esk_engine_net(&e, "out")->island);
     CHECK(o != NULL);
     CHECK_NEAR(esk_json_get_num(esk_json_get(o, "nodes"), "out", 0.0), 2.5, 1e-6);
-    CHECK_NEAR(esk_json_get_num(esk_json_get(esk_json_get(o, "devices"), "R2"), "i", 0.0), 2.5e-3, 1e-9);
+    CHECK_NEAR(esk_json_get_num(esk_json_get(esk_json_get(o, "devices"), "R2"), "i", 0.0), 2.5e-3,
+               1e-9);
     esk_json_free(&A, o);
     esk_engine_free(&e);
 }
@@ -958,7 +980,7 @@ static int fixture_build(esk_engine *e, const esk_json *circuit)
         const esk_json *pins = esk_json_get(c, "pins");
         const esk_json *params = esk_json_get(c, "params");
         const char *nets[8];
-        const char *names[8] = { "p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7" };
+        const char *names[8] = {"p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"};
         esk_pin_model models[8];
         const esk_model_ops *ops = ops_for(esk_json_get_str(c, "device", ""));
         esk_comp *comp = NULL;
@@ -972,8 +994,8 @@ static int fixture_build(esk_engine *e, const esk_json *circuit)
             esk_pin_model_family(NULL, &models[k]);
             models[k].kind = ESK_PIN_PASSIVE;
         }
-        if (esk_engine_add_comp(e, esk_json_get_str(c, "id", "?"), ops->name, ops, names, models, (uint32_t)np, params,
-                                NULL, &comp) != ES_OK)
+        if (esk_engine_add_comp(e, esk_json_get_str(c, "id", "?"), ops->name, ops, names, models,
+                                (uint32_t)np, params, NULL, &comp) != ES_OK)
             return -1;
         for (k = 0; k < np; k++)
             if (nets[k] && esk_engine_connect(e, &comp->pins[k], net_of(e, nets[k])) != ES_OK)
@@ -982,7 +1004,8 @@ static int fixture_build(esk_engine *e, const esk_json *circuit)
     return 0;
 }
 
-static void fixture_check_nets(esk_engine *e, const esk_json *nets, double abs_tol, double rel_tol, const char *when)
+static void fixture_check_nets(esk_engine *e, const esk_json *nets, double abs_tol, double rel_tol,
+                               const char *when)
 {
     size_t i;
     for (i = 0; i < esk_json_len(nets); i++) {
@@ -1011,7 +1034,8 @@ static void fixture_check_devices(esk_engine *e, const esk_json *checks, const c
             char buf[64];
             if (strcmp(obs_str(e, dev, key, buf, sizeof buf), esk_json_str(eq)) != 0) {
                 t_failures++;
-                fprintf(stderr, "fixture %s: %s.%s = %s, expected %s\n", when, dev, key, buf, esk_json_str(eq));
+                fprintf(stderr, "fixture %s: %s.%s = %s, expected %s\n", when, dev, key, buf,
+                        esk_json_str(eq));
             }
         } else {
             double got = obs_num(e, dev, key);
@@ -1024,7 +1048,8 @@ static void fixture_check_devices(esk_engine *e, const esk_json *checks, const c
             }
             if (got < lo || got > hi) {
                 t_failures++;
-                fprintf(stderr, "fixture %s: %s.%s = %g, expected in [%g, %g]\n", when, dev, key, got, lo, hi);
+                fprintf(stderr, "fixture %s: %s.%s = %g, expected in [%g, %g]\n", when, dev, key,
+                        got, lo, hi);
             }
         }
     }
@@ -1058,7 +1083,7 @@ static void run_fixture(const char *dir)
         es_time_t t = 0;
         char when[64];
         if (esk_json_to_time(esk_json_get(s, "t"), &t) != 0) {
-            CHECK(!"sample time");
+            CHECK(0 && "sample time");
             continue;
         }
         esk_snprintf(when, sizeof when, "%s@%s", dir, esk_json_get_str(s, "t", "?"));

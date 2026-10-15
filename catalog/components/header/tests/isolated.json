@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "isolated",
+  "description": "Adjacent header pins are not connected to each other.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/header",
+        "params": {
+          "pins": 20
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "A": [
+        "V1.+",
+        "DUT.1"
+      ],
+      "B": [
+        "DUT.2",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:B": {
+      "at": "0.5ms",
+      "min_v": -0.01,
+      "max_v": 0.01
+    }
+  }
+}

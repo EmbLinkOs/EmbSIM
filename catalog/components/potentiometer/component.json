@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/potentiometer",
+  "version": "1.0.0",
+  "name": "Potentiometer",
+  "category": "inputs",
+  "description": "Three-terminal variable resistor with a wiper driven by the position input.",
+  "keywords": [
+    "potentiometer",
+    "pot",
+    "trimmer",
+    "variable resistor",
+    "knob"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "End (position 0)"
+    },
+    {
+      "name": "W",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Wiper"
+    },
+    {
+      "name": "2",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "End (position 1)"
+    }
+  ],
+  "params": {
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10k",
+      "doc": "End-to-end resistance",
+      "min": 1,
+      "max": "10M"
+    },
+    "taper": {
+      "type": "enum",
+      "enum": [
+        "linear",
+        "log"
+      ],
+      "default": "linear",
+      "doc": "Resistance law along the travel"
+    }
+  },
+  "inputs": [
+    {
+      "name": "position",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "doc": "Wiper position, 0 at pin 1 to 1 at pin 2"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "position",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "doc": "Wiper position as applied"
+    }
+  ],
+  "model": {
+    "primitive": "potentiometer",
+    "bind": {
+      "r": "resistance",
+      "taper": "taper"
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 30,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      },
+      "W": {
+        "x": 30,
+        "y": 30,
+        "side": "bottom"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 9.5,
+    "height_mm": 9.5,
+    "hotspots": [
+      {
+        "input": "position",
+        "selector": "#knob",
+        "gesture": "drag",
+        "axis": "angle",
+        "range": [
+          0,
+          1
+        ],
+        "travel": 270
+      }
+    ],
+    "states": [
+      {
+        "output": "position",
+        "selector": "#knob-mark",
+        "attr": "transform",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            -135,
+            135
+          ]
+        }
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Two resistors r*position and r*(1-position) (log taper applies a 10 % mid-point law); position changes are breakpoints (SPEC-004 §7 potentiometer).",
+      "omissions": [
+        "wiper resistance",
+        "noise while turning",
+        "end-stop resistance"
+      ],
+      "range": {
+        "current_a": [
+          -0.1,
+          0.1
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Bourns 3386 trimming potentiometer datasheet"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

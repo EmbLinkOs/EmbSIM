@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/nmos",
+  "version": "1.0.0",
+  "name": "N-channel MOSFET",
+  "category": "transistors",
+  "description": "N-channel enhancement MOSFET (SPICE level 1); a named part selects vto, kp and lambda.",
+  "keywords": [
+    "transistor",
+    "mosfet",
+    "nmos",
+    "2N7000",
+    "IRLZ44N"
+  ],
+  "pins": [
+    {
+      "name": "D",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Drain"
+    },
+    {
+      "name": "G",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Gate"
+    },
+    {
+      "name": "S",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Source (body tied)"
+    }
+  ],
+  "params": {
+    "part": {
+      "type": "enum",
+      "enum": [
+        "generic",
+        "2N7000",
+        "IRLZ44N"
+      ],
+      "default": "2N7000",
+      "doc": "Named part setting the model parameters",
+      "presets": {
+        "generic": {
+          "vto": 2,
+          "kp": "0.05",
+          "lambda": 0.01
+        },
+        "2N7000": {
+          "vto": 2.0,
+          "kp": "0.04",
+          "lambda": 0.02
+        },
+        "IRLZ44N": {
+          "vto": 1.5,
+          "kp": "5",
+          "lambda": 0.005
+        }
+      }
+    },
+    "vto": {
+      "type": "number",
+      "unit": "V",
+      "default": 2.0,
+      "doc": "Threshold voltage",
+      "min": -20,
+      "max": 20
+    },
+    "kp": {
+      "type": "number",
+      "unit": "A/V^2",
+      "default": "0.04",
+      "doc": "Transconductance parameter (with w/l = 1)",
+      "min": "1u",
+      "max": 100
+    },
+    "lambda": {
+      "type": "number",
+      "unit": "1/V",
+      "default": 0.02,
+      "doc": "Channel-length modulation",
+      "min": 0,
+      "max": 1,
+      "advanced": true
+    },
+    "w": {
+      "type": "number",
+      "unit": "m",
+      "default": 1,
+      "doc": "Channel width (scaled units)",
+      "min": "1n",
+      "advanced": true
+    },
+    "l": {
+      "type": "number",
+      "unit": "m",
+      "default": 1,
+      "doc": "Channel length (scaled units)",
+      "min": "1n",
+      "advanced": true
+    },
+    "cgs": {
+      "type": "number",
+      "unit": "F",
+      "default": 0,
+      "doc": "Gate-source capacitance",
+      "min": 0,
+      "advanced": true
+    },
+    "cgd": {
+      "type": "number",
+      "unit": "F",
+      "default": 0,
+      "doc": "Gate-drain capacitance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "nmos"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "G": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "D": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "S": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Shichman-Hodges level 1 with cutoff, linear and saturation regions, lambda, optional cgs/cgd; body tied to source (SPEC-004 §7 nmos/pmos).",
+      "omissions": [
+        "body diode",
+        "subthreshold conduction",
+        "temperature",
+        "avalanche",
+        "gate charge nonlinearity"
+      ],
+      "range": {
+        "current_a": [
+          -5,
+          5
+        ],
+        "voltage_v": [
+          -60,
+          60
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "2N7000 N-Channel Enhancement Mode Field Effect Transistor datasheet (onsemi)"
+      },
+      {
+        "title": "IRLZ44N HEXFET Power MOSFET datasheet (Infineon)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

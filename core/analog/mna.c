@@ -7,54 +7,56 @@
  * stepping, and a transient of trapezoidal steps with backward-Euler restarts,
  * LTE step control, exact breakpoints and bisected comparator crossings. */
 #include "analog/analog.h"
+#include "util/num.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include "util/num.h"
 
-#define MNA_MAX_SUBSTEPS 1000000   /* substeps of one esk_island_step call (CS-17) */
-#define MNA_MAX_CATCHUP 100000     /* step calls one touch may issue */
-#define MNA_MAX_BISECT 128         /* bisections for one crossing */
+#define MNA_MAX_SUBSTEPS  1000000 /* substeps of one esk_island_step call (CS-17) */
+#define MNA_MAX_CATCHUP   100000  /* step calls one touch may issue */
+#define MNA_MAX_BISECT    128     /* bisections for one crossing */
 #define MNA_TOUCH_STEP_PS ES_PS_PER_NS
 #define MNA_START_STEP_PS ES_PS_PER_NS
-#define MNA_PS_TO_S 1e-12
+#define MNA_PS_TO_S       1e-12
 
 enum { INTEG_TRAP = 0, INTEG_BE = 1 };
 
 struct esk_integ {
-    double h;        /* trial step, seconds */
-    double h_prev;   /* previous accepted step, seconds (0 if none) */
-    es_time_t t_ps;  /* time of the trial point */
+    double h;       /* trial step, seconds */
+    double h_prev;  /* previous accepted step, seconds (0 if none) */
+    es_time_t t_ps; /* time of the trial point */
     int method;
+    int negligible;
 };
 
 struct esk_amatrix {
-    double *J;       /* n*n, row-major */
-    double *f;       /* n */
-    double *x;       /* the iterate the stamps are evaluated at */
+    double *J; /* n*n, row-major */
+    double *f; /* n */
+    double *x; /* the iterate the stamps are evaluated at */
     int n;
     double source_scale;
     int dc;
-    int noncon;      /* a device limited its voltage this iteration */
+    int noncon; /* a device limited its voltage this iteration */
 };
 
 typedef struct mna {
     esk_amatrix m;
     esk_integ in;
-    int nnodes;              /* including ground */
-    int nextra;              /* branch currents and internal nodes */
+    int nnodes; /* including ground */
+    int nextra; /* branch currents and internal nodes */
     int n;
     double *J, *f, *x_iter, *x_old, *dx;
     int *piv;
     int allocated;
     int started, running, in_step;
-    int restart;             /* next step is backward Euler and small */
-    int touched;             /* a touch arrived during a step */
+    int restart; /* next step is backward Euler and small */
+    int touched; /* a touch arrived during a step */
     double gmin_eff;
     double h_prev_s;
-    es_time_t bracket_hi;    /* a crossing lies before this time (0: none) */
+    es_time_t bracket_hi; /* a crossing lies before this time (0: none) */
     es_time_t h_before_bracket;
+    es_time_t h_prop_ps; /* the last error-control proposal, before clipping to events */
     uint32_t consecutive_rej;
     ESK_VEC(esk_net *) extra_grounds;
     int diag_implicit_ground;
@@ -67,7 +69,8 @@ static void island_subject(const esk_island *isl, char *buf, size_t cap)
     esk_snprintf(buf, cap, "island %u", (unsigned)isl->id);
 }
 
-static void raise_isl(esk_island *isl, es_severity_t sev, const char *code, es_time_t t, const char *fmt, ...)
+static void raise_isl(esk_island *isl, es_severity_t sev, const char *code, es_time_t t,
+                      const char *fmt, ...)
 {
     char subject[32], msg[240];
     va_list ap;
@@ -116,7 +119,8 @@ static void devices_on(const esk_island *isl, int idx, char *buf, size_t cap)
         for (k = 0; k < d->nbranch && !hit; k++)
             hit = d->branch[k] == idx;
         if (hit) {
-            len += esk_snprintf(buf + len, len < cap ? cap - len : 0, "%s%s", count ? "," : "", dev_name(d));
+            len += esk_snprintf(buf + len, len < cap ? cap - len : 0, "%s%s", count ? "," : "",
+                                dev_name(d));
             count++;
         }
     }
@@ -125,7 +129,7 @@ static void devices_on(const esk_island *isl, int idx, char *buf, size_t cap)
 static void report_no_convergence(esk_island *isl, es_time_t t, const char *stage)
 {
     mna *p = (mna *)isl->priv;
-    int worst[3] = { -1, -1, -1 };
+    int worst[3] = {-1, -1, -1};
     int i, k;
     char msg[240], name[48], devs[96];
     size_t len = 0;
@@ -145,8 +149,8 @@ static void report_no_convergence(esk_island *isl, es_time_t t, const char *stag
     for (k = 0; k < 3 && worst[k] >= 0; k++) {
         row_name(isl, worst[k], name, sizeof name);
         devices_on(isl, worst[k] + 1, devs, sizeof devs);
-        len += esk_snprintf(msg + len, len < sizeof msg ? sizeof msg - len : 0, " %s (%.3g, via %s)", name,
-                            fabs(p->f[worst[k]]), devs);
+        len += esk_snprintf(msg + len, len < sizeof msg ? sizeof msg - len : 0,
+                            " %s (%.3g, via %s)", name, fabs(p->f[worst[k]]), devs);
     }
     raise_isl(isl, ES_SEV_ERROR, "analog.no_convergence", t, "%s", msg);
 }
@@ -174,7 +178,10 @@ double esk_am_x(const esk_amatrix *m, int idx)
     return m->x[idx - 1];
 }
 
-double esk_am_v(const esk_amatrix *m, int n1, int n2) { return esk_am_x(m, n1) - esk_am_x(m, n2); }
+double esk_am_v(const esk_amatrix *m, int n1, int n2)
+{
+    return esk_am_x(m, n1) - esk_am_x(m, n2);
+}
 
 void esk_am_stamp_g(esk_amatrix *m, int n1, int n2, double g)
 {
@@ -193,13 +200,19 @@ void esk_am_stamp_i(esk_amatrix *m, int n1, int n2, double i)
     esk_am_stamp_f(m, n2, -i);
 }
 
-double esk_am_source_scale(const esk_amatrix *m) { return m->source_scale; }
-void esk_am_noncon(esk_amatrix *m) { m->noncon++; }
+double esk_am_source_scale(const esk_amatrix *m)
+{
+    return m->source_scale;
+}
+void esk_am_noncon(esk_amatrix *m)
+{
+    m->noncon++;
+}
 
 /* ---- integration ----------------------------------------------------------- */
 
-void esk_integ_companion(const esk_integ *in, double q_now, double q_prev, double i_prev, double c, double *geq,
-                         double *ieq)
+void esk_integ_companion(const esk_integ *in, double q_now, double q_prev, double i_prev, double c,
+                         double *geq, double *ieq)
 {
     double h = in->h > 0 ? in->h : 1e-15;
     if (in->method == INTEG_BE) {
@@ -211,10 +224,26 @@ void esk_integ_companion(const esk_integ *in, double q_now, double q_prev, doubl
     }
 }
 
-double esk_integ_h(const esk_integ *in) { return in->h; }
-double esk_integ_h_prev(const esk_integ *in) { return in->h_prev; }
-es_time_t esk_integ_t(const esk_integ *in) { return in->t_ps; }
-int esk_integ_first_order(const esk_integ *in) { return in->method == INTEG_BE; }
+double esk_integ_h(const esk_integ *in)
+{
+    return in->h;
+}
+double esk_integ_h_prev(const esk_integ *in)
+{
+    return in->h_prev;
+}
+es_time_t esk_integ_t(const esk_integ *in)
+{
+    return in->t_ps;
+}
+int esk_integ_first_order(const esk_integ *in)
+{
+    return in->method == INTEG_BE;
+}
+int esk_integ_negligible(const esk_integ *in)
+{
+    return in->negligible;
+}
 
 /* ---- linear solver ----------------------------------------------------------- */
 
@@ -357,7 +386,8 @@ static int newton(esk_island *isl, int dc, int *bad_row)
                 return 1; /* NaN */
             p->x_old[i] = p->x_iter[i];
             nx = p->x_iter[i] + p->dx[i];
-            tol = isl->p.reltol * fmax(fabs(nx), fabs(p->x_old[i])) + (i + 1 < p->nnodes ? isl->p.vntol : isl->p.abstol);
+            tol = isl->p.reltol * fmax(fabs(nx), fabs(p->x_old[i])) +
+                  (i + 1 < p->nnodes ? isl->p.vntol : isl->p.abstol);
             if (fabs(p->dx[i]) > tol)
                 dx_small = 0;
             p->x_iter[i] = nx;
@@ -371,7 +401,8 @@ static void report_singular(esk_island *isl, int row, es_time_t t)
     char name[48], devs[96];
     row_name(isl, row, name, sizeof name);
     devices_on(isl, row + 1, devs, sizeof devs);
-    raise_isl(isl, ES_SEV_ERROR, "analog.singular_topology", t, "singular matrix at %s (devices: %s)", name, devs);
+    raise_isl(isl, ES_SEV_ERROR, "analog.singular_topology", t,
+              "singular matrix at %s (devices: %s)", name, devs);
 }
 
 /* ---- accepted solutions -------------------------------------------------------- */
@@ -417,7 +448,8 @@ static int bridge_input_role(const esk_adev *d)
         return 0;
     if (d->ops != &esk_bridge_in_ops && d->ops != &esk_bridge_out_ops)
         return 0;
-    return pin->model.kind == ESK_PIN_DIGITAL_IN || (pin->model.kind == ESK_PIN_DIGITAL_IO && !pin->is_output);
+    return pin->model.kind == ESK_PIN_DIGITAL_IN ||
+           (pin->model.kind == ESK_PIN_DIGITAL_IO && !pin->is_output);
 }
 
 static void thresholds(const esk_pin *pin, double *up, double *down)
@@ -683,8 +715,8 @@ static int node_of_pin(const esk_island *isl, const esk_pin *pin)
     return 0;
 }
 
-es_status esk_island_add_device(esk_island *isl, esk_comp *c, const esk_adev_ops *ops, esk_pin **pins, int npins,
-                                esk_adev **out)
+es_status esk_island_add_device(esk_island *isl, esk_comp *c, const esk_adev_ops *ops,
+                                esk_pin **pins, int npins, esk_adev **out)
 {
     mna *p = (mna *)isl->priv;
     esk_adev *d;
@@ -821,6 +853,7 @@ static es_status operating_point(esk_island *isl, es_time_t t)
     p->in.h_prev = 0.0;
     p->in.t_ps = t;
     p->in.method = INTEG_TRAP;
+    p->in.negligible = 0;
     p->gmin_eff = isl->p.gmin;
     p->m.source_scale = 1.0;
     memset(p->x_iter, 0, (size_t)p->n * sizeof *p->x_iter);
@@ -894,7 +927,8 @@ static es_status start_or_reset(esk_island *isl)
     p->nnodes = (int)isl->nets.len;
     if (isl->nets.data[0] == NULL && !p->diag_implicit_ground) {
         p->diag_implicit_ground = 1;
-        raise_isl(isl, ES_SEV_INFO, "analog.implicit_ground", 0, "no ground net; an implicit ground node was added");
+        raise_isl(isl, ES_SEV_INFO, "analog.implicit_ground", 0,
+                  "no ground net; an implicit ground node was added");
     }
     isl->failed = 0;
     isl->steps = isl->rejections = isl->newton_iters = 0;
@@ -906,6 +940,7 @@ static es_status start_or_reset(esk_island *isl)
     p->touched = 0;
     p->bracket_hi = 0;
     p->h_before_bracket = 0;
+    p->h_prop_ps = MNA_START_STEP_PS;
     p->consecutive_rej = 0;
     p->h_prev_s = 0.0;
     st = setup_devices(isl);
@@ -941,7 +976,10 @@ es_status esk_island_start(esk_island *isl)
     return st;
 }
 
-es_status esk_island_reset(esk_island *isl) { return start_or_reset(isl); }
+es_status esk_island_reset(esk_island *isl)
+{
+    return start_or_reset(isl);
+}
 
 /* ---- transient ------------------------------------------------------------------- */
 
@@ -952,7 +990,8 @@ static es_time_t next_breakpoint(esk_island *isl, es_time_t after)
     for (i = 0; i < isl->devs.len; i++) {
         esk_adev *d = isl->devs.data[i];
         es_time_t at = ES_TIME_MAX;
-        if (d->ops->next_breakpoint && d->ops->next_breakpoint(d, after, &at) && at > after && at < best)
+        if (d->ops->next_breakpoint && d->ops->next_breakpoint(d, after, &at) && at > after &&
+            at < best)
             best = at;
     }
     return best;
@@ -999,7 +1038,8 @@ static es_time_t clamp_h(const esk_island *isl, double h_s)
     return h;
 }
 
-static es_status fail_step(esk_island *isl, es_time_t t, const char *code, es_severity_t sev, const char *msg)
+static es_status fail_step(esk_island *isl, es_time_t t, const char *code, es_severity_t sev,
+                           const char *msg)
 {
     raise_isl(isl, sev, code, t, "%s", msg);
     isl->failed = 1;
@@ -1025,7 +1065,7 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
         es_time_t h = isl->h_next_ps ? isl->h_next_ps : isl->p.h_max_ps;
         es_time_t tn, bp;
         int method = INTEG_TRAP;
-        int hit_bp = 0, bad = -1, r, i;
+        int bad = -1, r, i;
         double lte, tol;
         if (p->touched) {
             p->touched = 0;
@@ -1043,10 +1083,8 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
         if (esk_time_add(t, h, &tn) || tn > until)
             tn = until;
         bp = next_breakpoint(isl, t);
-        if (bp <= tn) {
+        if (bp <= tn)
             tn = bp;
-            hit_bp = 1;
-        }
         if (p->bracket_hi > t && p->bracket_hi < tn)
             tn = p->bracket_hi;
         h = tn - t;
@@ -1055,6 +1093,8 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
         p->in.h_prev = p->h_prev_s;
         p->in.t_ps = tn;
         p->in.method = method;
+        p->in.negligible =
+            method == INTEG_TRAP && p->h_prev_s > 0.0 && p->in.h < 1e-3 * p->h_prev_s;
         memcpy(p->x_iter, isl->x, (size_t)p->n * sizeof *p->x_iter);
         r = newton(isl, 0, &bad);
         if (r == 2) {
@@ -1110,6 +1150,7 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
                 return fail_step(isl, tn, "analog.timestep_too_small", ES_SEV_ERROR, msg);
             }
             isl->h_next_ps = clamp_h(isl, h_new * MNA_PS_TO_S);
+            p->h_prop_ps = isl->h_next_ps;
             p->restart = method == INTEG_BE;
             continue;
         }
@@ -1134,9 +1175,10 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
             publish(isl, tn);
             isl->steps++;
             p->consecutive_rej = 0;
-            p->h_prev_s = p->in.h;
+            p->h_prev_s = p->in.negligible ? p->h_prev_s + p->in.h : p->in.h;
             p->restart = 0;
-            isl->h_next_ps = p->bracket_hi && p->h_before_bracket ? p->h_before_bracket : clamp_h(isl, 2.0 * p->in.h);
+            isl->h_next_ps = p->bracket_hi && p->h_before_bracket ? p->h_before_bracket
+                                                                  : clamp_h(isl, 2.0 * p->in.h);
             p->bracket_hi = 0;
             p->h_before_bracket = 0;
             deliver_crossings(isl, tn);
@@ -1150,23 +1192,27 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
         publish(isl, tn);
         isl->steps++;
         p->consecutive_rej = 0;
-        p->h_prev_s = p->in.h;
+        p->h_prev_s = p->in.negligible ? p->h_prev_s + p->in.h : p->in.h;
         p->restart = 0;
         {
+            /* the proposal grows from the larger of this step and the last unclipped
+             * proposal, so a step cut short by an event does not throttle the next */
             double h_s = p->in.h, h_new;
+            double h_base = (double)p->h_prop_ps * MNA_PS_TO_S;
+            if (h_base < h_s)
+                h_base = h_s;
             if (lte > 0.0)
                 h_new = h_s * pow(tol / lte, 1.0 / 3.0);
             else
-                h_new = 2.0 * h_s;
-            if (h_new > 2.0 * h_s)
-                h_new = 2.0 * h_s;
+                h_new = 2.0 * h_base;
+            if (h_new > 2.0 * h_base)
+                h_new = 2.0 * h_base;
             if (h_new < h_s / 4.0)
                 h_new = h_s / 4.0;
             if (method == INTEG_BE && h_new < h_s)
                 h_new = h_s; /* the first-order estimate is pessimistic; trapezoidal follows */
-            if (hit_bp && h_new > h_s)
-                h_new = h_s;
-            isl->h_next_ps = clamp_h(isl, h_new);
+            p->h_prop_ps = clamp_h(isl, h_new);
+            isl->h_next_ps = p->h_prop_ps;
         }
         if (p->bracket_hi) {
             if (tn >= p->bracket_hi) {
@@ -1210,6 +1256,7 @@ void esk_island_touch(esk_island *isl, es_time_t now)
     p->restart = 1;
     if (isl->h_next_ps > MNA_TOUCH_STEP_PS)
         isl->h_next_ps = MNA_TOUCH_STEP_PS;
+    p->h_prop_ps = isl->h_next_ps;
     p->bracket_hi = 0;
     p->h_before_bracket = 0;
     schedule_local(isl, isl->t_accepted > now ? isl->t_accepted : now);
@@ -1260,7 +1307,8 @@ esk_json *esk_island_observe(esk_island *isl)
             esk_json_object_set(a, devs, d->comp->id, od);
         } else if (d->pin && d->pin->comp && d->pin->comp->id) {
             char key[160];
-            esk_snprintf(key, sizeof key, "%s.%s", d->pin->comp->id, d->pin->name ? d->pin->name : "?");
+            esk_snprintf(key, sizeof key, "%s.%s", d->pin->comp->id,
+                         d->pin->name ? d->pin->name : "?");
             esk_json_object_set(a, devs, key, od);
         } else {
             esk_json_free(a, od);

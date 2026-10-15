@@ -650,8 +650,8 @@ def check_fidelity(report: Report, file: Path, doc: dict, base_dir: Path) -> set
         if not str(decl.get("claims", "")).strip():
             report.error(file, ptr("fidelity", tier, "claims"), "fidelity.missing", "claims must not be empty")
         for i, ref in enumerate(decl.get("validation") or []):
-            if isinstance(ref, str) and not re.match(r"^[a-z]+:", ref) and not (base_dir / ref).exists():
-                report.error(file, ptr("fidelity", tier, "validation", i), "catalog.file_missing", f"validation reference {ref} does not exist")
+            if isinstance(ref, str) and not re.match(r"^[a-z]+:", ref) and not (base_dir / ref).exists() and not sorted(base_dir.glob(ref)):
+                report.error(file, ptr("fidelity", tier, "validation", i), "catalog.file_missing", f"validation reference {ref} matches no file")
     return tiers
 
 
@@ -911,19 +911,35 @@ def _walk_values(obj: Any, prefix: str = "") -> Iterable[tuple[str, Any]]:
 
 def check_component_test(report: Report, file: Path, doc: dict, index: Index) -> None:
     base = file.parent
-    inst = check_instances_params(report, file, "/circuit/components", (doc.get("circuit") or {}).get("components", []), index)
-    # the fixture must exercise the component it sits beside
-    own = base.parent / "component.json"
-    if base.name == "tests" and own.exists():
-        try:
-            with open(own, "r", encoding="utf-8") as fh:
-                own_id = json.load(fh).get("id")
-        except (OSError, json.JSONDecodeError):
-            own_id = None
-        if own_id and own_id not in {c.get("component") for c in (doc.get("circuit") or {}).get("components", [])}:
-            report.error(file, "/circuit/components", "catalog.test_subject", f"fixture does not instantiate {own_id}")
+    circuit = doc.get("circuit") or {}
+    inst = check_instances_params(report, file, "/circuit/components", circuit.get("components", []), index)
+    boards: dict[str, dict] = {}
+    for i, b in enumerate(circuit.get("boards") or []):
+        bd = index.board(b.get("board", ""))
+        if bd is None:
+            report.error(file, ptr("circuit", "boards", i, "board"), "catalog.not_found", f"board {b.get('board')} not found")
+        elif b.get("id") in inst or b.get("id") in boards:
+            report.error(file, ptr("circuit", "boards", i, "id"), "catalog.duplicate_instance", f"instance {b.get('id')} declared twice")
+        else:
+            boards[b["id"]] = bd
+    # the fixture must exercise the component or board it sits beside
+    for own_name, key in (("component.json", "component"), ("board.json", "board")):
+        own = base.parent / own_name
+        if base.name == "tests" and own.exists():
+            try:
+                with open(own, "r", encoding="utf-8") as fh:
+                    own_id = json.load(fh).get("id")
+            except (OSError, json.JSONDecodeError):
+                own_id = None
+            used = {c.get(key) for c in circuit.get(key + "s", []) or []}
+            if own_id and own_id not in used:
+                report.error(file, "/circuit", "catalog.test_subject", f"fixture does not instantiate {own_id}")
 
     def resolve(i: str, pin: str) -> tuple[bool, str]:
+        if i in boards:
+            if pin not in (boards[i].get("ports") or {}):
+                return False, f"board {i} ({boards[i].get('id')}) has no port {pin}"
+            return True, ""
         d = inst.get(i)
         if d is None:
             return False, f"instance {i} is not declared in the circuit"
@@ -956,7 +972,10 @@ def check_component_test(report: Report, file: Path, doc: dict, index: Index) ->
             report.error(file, node, "catalog.not_found", f"net {rest} is not declared")
         elif kind in ("pin", "device", "output"):
             i, _, sub = rest.partition(".")
-            if i not in inst:
+            if i in boards:
+                if kind == "pin" and sub not in (boards[i].get("ports") or {}):
+                    report.error(file, node, "catalog.pin_unknown", f"board {i} has no port {sub}")
+            elif i not in inst:
                 report.error(file, node, "catalog.not_found", f"instance {i} is not declared")
             elif kind == "pin" and sub not in component_pin_names(inst[i]):
                 report.error(file, node, "catalog.pin_unknown", f"{i} has no pin {sub}")

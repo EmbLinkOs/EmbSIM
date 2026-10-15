@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bjt_npn",
+  "version": "1.0.0",
+  "name": "NPN transistor",
+  "category": "transistors",
+  "description": "NPN bipolar junction transistor; a named part selects Ebers-Moll parameters.",
+  "keywords": [
+    "transistor",
+    "bjt",
+    "npn",
+    "2N3904",
+    "BC547",
+    "2N2222"
+  ],
+  "pins": [
+    {
+      "name": "C",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    }
+  ],
+  "params": {
+    "part": {
+      "type": "enum",
+      "enum": [
+        "generic",
+        "2N3904",
+        "BC547",
+        "2N2222"
+      ],
+      "default": "2N3904",
+      "doc": "Named part setting the model parameters",
+      "presets": {
+        "generic": {
+          "is": "1e-14",
+          "bf": 100,
+          "br": 1,
+          "vaf": 100
+        },
+        "2N3904": {
+          "is": "6.73f",
+          "bf": 416,
+          "br": 0.737,
+          "vaf": 74
+        },
+        "BC547": {
+          "is": "1.8e-14",
+          "bf": 290,
+          "br": 4,
+          "vaf": 63
+        },
+        "2N2222": {
+          "is": "14.3f",
+          "bf": 256,
+          "br": 6.09,
+          "vaf": 74
+        }
+      }
+    },
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "6.73f",
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 416,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 0.737,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "vaf": {
+      "type": "number",
+      "unit": "V",
+      "default": 74,
+      "doc": "Forward Early voltage",
+      "min": 1,
+      "max": 1000,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_npn"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Ebers-Moll with Early effect (vaf) and series rb/rc/re; charges and Gummel-Poon high-injection terms are not set by the presets (SPEC-004 §7 bjt).",
+      "omissions": [
+        "junction capacitances",
+        "transit time",
+        "temperature",
+        "breakdown",
+        "quasi-saturation"
+      ],
+      "range": {
+        "current_a": [
+          -0.5,
+          0.5
+        ],
+        "voltage_v": [
+          -40,
+          40
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "2N3904 NPN General Purpose Amplifier datasheet (onsemi)"
+      },
+      {
+        "title": "BC547 NPN general purpose transistors datasheet (Nexperia)"
+      },
+      {
+        "title": "2N2222A Small Signal Switching Transistor datasheet (STMicroelectronics)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

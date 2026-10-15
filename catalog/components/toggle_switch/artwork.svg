@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40">
+  <rect id="body" x="4" y="10" width="52" height="22" rx="3" fill="#2b2f36" stroke="#15171b" stroke-width="1.5"/>
+  <g id="legs" stroke="#b8bcc6" stroke-width="2.5">
+    <line x1="12" y1="32" x2="12" y2="39"/><line x1="30" y1="32" x2="30" y2="39"/><line x1="48" y1="32" x2="48" y2="39"/>
+  </g>
+  <rect id="slot" x="14" y="15" width="32" height="12" rx="2" fill="#15171b"/>
+  <rect id="lever" x="16" y="13" width="14" height="16" rx="2" fill="#d8dde8" stroke="#8c93a3" stroke-width="1.2"/>
+  <text x="18" y="8" font-family="sans-serif" font-size="6" fill="#b8bcc6">OFF</text>
+  <text x="38" y="8" font-family="sans-serif" font-size="6" fill="#b8bcc6">ON</text>
+</svg>

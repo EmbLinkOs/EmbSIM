@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/gnd",
+  "version": "1.0.0",
+  "name": "Ground",
+  "category": "power",
+  "description": "Ground reference symbol.",
+  "keywords": [
+    "gnd",
+    "ground",
+    "vss",
+    "0V"
+  ],
+  "pins": [
+    {
+      "name": "GND",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "aliases": [
+        "-",
+        "1"
+      ]
+    }
+  ],
+  "model": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 20,
+    "height": 20,
+    "pins": {
+      "GND": {
+        "x": 10,
+        "y": 0,
+        "side": "top"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Drives (0, supply) onto its net (SPEC-003 §3).",
+      "omissions": []
+    },
+    "timed": {
+      "claims": "As functional on digital nets, reference node on analog nets.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "The island's reference node (0 V).",
+      "omissions": [
+        "ground impedance"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

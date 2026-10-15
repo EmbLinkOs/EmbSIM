@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "kind": "toolchain",
+  "id": "gcc-arm",
+  "name": "GNU Arm Embedded (arm-none-eabi-gcc)",
+  "description": "GCC for bare-metal Arm Cortex-M and Cortex-R targets.",
+  "detect": {
+    "command": [
+      "arm-none-eabi-gcc",
+      "--version"
+    ],
+    "version_regex": "\\) ([0-9.]+)",
+    "min_version": "10.3"
+  },
+  "targets": {
+    "cortex-m0": {
+      "cc": [
+        "arm-none-eabi-gcc",
+        "-mthumb",
+        "-mcpu=cortex-m0"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "cortex-m0plus": {
+      "cc": [
+        "arm-none-eabi-gcc",
+        "-mthumb",
+        "-mcpu=cortex-m0plus"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "cortex-m3": {
+      "cc": [
+        "arm-none-eabi-gcc",
+        "-mthumb",
+        "-mcpu=cortex-m3"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "cortex-m4": {
+      "cc": [
+        "arm-none-eabi-gcc",
+        "-mthumb",
+        "-mcpu=cortex-m4"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "cortex-m4f": {
+      "cc": [
+        "arm-none-eabi-gcc",
+        "-mthumb",
+        "-mcpu=cortex-m4",
+        "-mfloat-abi=hard",
+        "-mfpu=fpv4-sp-d16"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "cortex-m7f": {
+      "cc": [
+        "arm-none-eabi-gcc",
+        "-mthumb",
+        "-mcpu=cortex-m7",
+        "-mfloat-abi=hard",
+        "-mfpu=fpv5-d16"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "cortex-m33": {
+      "cc": [
+        "arm-none-eabi-gcc",
+        "-mthumb",
+        "-mcpu=cortex-m33"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    }
+  },
+  "steps": {
+    "compile": [
+      "${cc}",
+      "${cflags}",
+      "${defines}",
+      "${include}",
+      "-g",
+      "-O2",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Wall",
+      "-c",
+      "${source}",
+      "-o",
+      "${object}"
+    ],
+    "link": [
+      "${cc}",
+      "${cflags}",
+      "${link_flags}",
+      "-T${linker_script}",
+      "-Wl,-Map=${map}",
+      "${objects}",
+      "-o",
+      "${image}"
+    ],
+    "convert": null
+  },
+  "outputs": {
+    "image": "elf",
+    "debug": "dwarf",
+    "map": true
+  },
+  "environment": {
+    "PATH_hint": [
+      "/usr/bin",
+      "/usr/local/bin",
+      "/opt/gcc-arm-none-eabi/bin",
+      "/Applications/ArmGNUToolchain/*/arm-none-eabi/bin",
+      "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/*/bin"
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "red-220r-3v3",
+  "description": "A red LED (vf about 1.8 V) through 220 Ω from 3.3 V passes 5 to 9 mA.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/led",
+        "params": {
+          "color": "red"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "LED_A": [
+        "R1.2",
+        "DUT.A"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.K",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.i": {
+      "at": "0.5ms",
+      "min": 0.005,
+      "max": 0.009
+    },
+    "output:DUT.luminance": {
+      "at": "0.5ms",
+      "min": 0.2,
+      "max": 0.5
+    }
+  }
+}

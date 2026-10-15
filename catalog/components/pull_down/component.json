@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/pull_down",
+  "version": "1.0.0",
+  "name": "Pull-down resistor",
+  "category": "passives",
+  "description": "Resistor to the ground rail; a weak 0 driver on digital nets.",
+  "keywords": [
+    "pull",
+    "pulldown",
+    "resistor",
+    "bias"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10k",
+      "doc": "Pull resistance",
+      "min": 1,
+      "max": "100M"
+    }
+  },
+  "model": {
+    "primitive": "pull",
+    "params": {
+      "level": 0
+    },
+    "bind": {
+      "r": "resistance"
+    }
+  },
+  "functional": {
+    "primitive": "pull",
+    "params": {
+      "level": 0
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 20,
+    "height": 40,
+    "pins": {
+      "1": {
+        "x": 10,
+        "y": 0,
+        "side": "top"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A weak (0, weak) driver on its net (SPEC-003 §3 pulls).",
+      "omissions": [
+        "resistance"
+      ]
+    },
+    "timed": {
+      "claims": "As functional on digital nets, as electrical on analog nets.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Resistor r from the net to ground (SPEC-004 §7 pull).",
+      "omissions": [
+        "tolerance",
+        "noise"
+      ],
+      "range": {
+        "current_a": [
+          -0.05,
+          0.05
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

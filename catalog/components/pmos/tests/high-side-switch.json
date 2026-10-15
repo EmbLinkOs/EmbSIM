@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "high-side-switch",
+  "description": "Gate grounded with the source at 3.3 V turns the PMOS on; the load rises above 2.7 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/pmos",
+        "params": {
+          "part": "BS250"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "DUT.S"
+      ],
+      "LOAD": [
+        "DUT.D",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.G",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:LOAD": {
+      "at": "0.5ms",
+      "min_v": 2.7,
+      "max_v": 3.3
+    }
+  }
+}

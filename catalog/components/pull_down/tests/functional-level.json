@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "functional-level",
+  "description": "An otherwise undriven net reads 0.",
+  "policy": "functional",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pull_down"
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "N": [
+        "DUT.1",
+        "P.IN"
+      ]
+    }
+  },
+  "expect": {
+    "net:N": {
+      "at": "0.5ms",
+      "logic": "0"
+    }
+  }
+}

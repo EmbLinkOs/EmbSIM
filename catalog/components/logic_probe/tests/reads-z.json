@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reads-z",
+  "description": "An undriven net is reported as Z.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "N": [
+        "DUT.IN"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.value": {
+      "at": "500ns",
+      "equals": "Z"
+    }
+  }
+}

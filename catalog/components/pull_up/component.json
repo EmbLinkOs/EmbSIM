@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/pull_up",
+  "version": "1.0.0",
+  "name": "Pull-up resistor",
+  "category": "passives",
+  "description": "Resistor to the supply rail; a weak 1 driver on digital nets.",
+  "keywords": [
+    "pull",
+    "pullup",
+    "resistor",
+    "bias"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10k",
+      "doc": "Pull resistance",
+      "min": 1,
+      "max": "100M"
+    },
+    "voltage": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "doc": "Rail the resistor pulls to",
+      "min": 0,
+      "max": 50
+    }
+  },
+  "model": {
+    "primitive": "pull",
+    "params": {
+      "level": 1
+    },
+    "bind": {
+      "r": "resistance",
+      "voltage": "voltage"
+    }
+  },
+  "functional": {
+    "primitive": "pull",
+    "params": {
+      "level": 1
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 20,
+    "height": 40,
+    "pins": {
+      "1": {
+        "x": 10,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A weak (1, weak) driver on its net (SPEC-003 §3 pulls).",
+      "omissions": [
+        "resistance"
+      ]
+    },
+    "timed": {
+      "claims": "As functional on digital nets, as electrical on analog nets.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Resistor r from the net to voltage (SPEC-004 §7 pull).",
+      "omissions": [
+        "tolerance",
+        "noise"
+      ],
+      "range": {
+        "current_a": [
+          -0.05,
+          0.05
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

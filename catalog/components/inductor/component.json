@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/inductor",
+  "version": "1.0.0",
+  "name": "Inductor",
+  "category": "passives",
+  "description": "Ideal inductor with optional winding resistance and initial current.",
+  "keywords": [
+    "inductor",
+    "coil",
+    "passive",
+    "L"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "inductance": {
+      "type": "number",
+      "unit": "H",
+      "default": "10u",
+      "doc": "Inductance",
+      "min": "1p",
+      "max": "100"
+    },
+    "dcr": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Winding (DC) resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "ic": {
+      "type": "number",
+      "unit": "A",
+      "default": 0,
+      "doc": "Initial current at t=0 (pin 1 to pin 2)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "inductor",
+    "bind": {
+      "l": "inductance",
+      "dcr": "dcr",
+      "ic": "ic"
+    }
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A wire.",
+      "omissions": [
+        "everything inductive"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical when its nets are analog; otherwise a wire.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Linear inductance with series dcr and initial current; branch current is a solver unknown (SPEC-004 §7 inductor).",
+      "omissions": [
+        "saturation",
+        "core loss",
+        "parasitic capacitance"
+      ],
+      "range": {
+        "current_a": [
+          -10,
+          10
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

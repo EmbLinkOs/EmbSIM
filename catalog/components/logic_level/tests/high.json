@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "high",
+  "description": "level 1 drives 1.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "N": [
+        "DUT.OUT",
+        "P.IN"
+      ]
+    }
+  },
+  "expect": {
+    "net:N": {
+      "at": "500ns",
+      "logic": "1"
+    }
+  }
+}

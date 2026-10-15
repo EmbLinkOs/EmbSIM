@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "low-side-switch",
+  "description": "Gate at 3.3 V turns a 2N7000 on; the 220 Ω load pulls the drain below 0.6 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "RD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/nmos",
+        "params": {
+          "part": "2N7000"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "RD.1",
+        "DUT.G"
+      ],
+      "DRAIN": [
+        "RD.2",
+        "DUT.D"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.S",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:DRAIN": {
+      "at": "0.5ms",
+      "max_v": 0.6
+    }
+  }
+}
