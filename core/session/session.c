@@ -699,6 +699,7 @@ esk_json *esk_session_snapshot(es_session *s, const esk_json *include)
     }
     if (want(include, "components") || want(include, "outputs")) {
         esk_json *comps = esk_json_new_object(s->a);
+        esk_json *outs = want(include, "outputs") ? esk_json_new_object(s->a) : NULL;
         for (i = 0; comps && i < s->eng.comps.len; i++) {
             esk_comp *c = s->eng.comps.data[i];
             esk_json *o = esk_json_new_object(s->a);
@@ -713,6 +714,8 @@ esk_json *esk_session_snapshot(es_session *s, const esk_json *include)
             esk_json_set_string(s->a, o, "model", c->ops->name);
             if (c->ops->observe)
                 c->ops->observe(c, outputs);
+            if (outs && esk_json_len(outputs))
+                esk_json_object_set(s->a, outs, c->id, esk_json_clone(s->a, outputs));
             esk_json_object_set(s->a, o, "outputs", outputs);
             if (want(include, "components")) {
                 esk_json *pins = esk_json_new_object(s->a);
@@ -737,7 +740,12 @@ esk_json *esk_session_snapshot(es_session *s, const esk_json *include)
             }
             esk_json_object_set(s->a, comps, c->id, o);
         }
-        esk_json_object_set(s->a, root, "components", comps);
+        if (want(include, "components"))
+            esk_json_object_set(s->a, root, "components", comps);
+        else
+            esk_json_free(s->a, comps);
+        if (outs)
+            esk_json_object_set(s->a, root, "outputs", outs);
     }
     if (want(include, "boards")) {
         esk_json *arr = esk_json_new_array(s->a);
