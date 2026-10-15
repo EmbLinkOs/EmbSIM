@@ -29,6 +29,7 @@ typedef struct esk_probe {
     int has_last;
     uint64_t dropped;
     int subscribed;     /* waveform stream active */
+    int threshold;      /* a digital probe on an analog net: logic from the voltage, changes only */
     uint32_t stream_seq;
     es_time_t next_sample;
     esk_event_handle sample_event;

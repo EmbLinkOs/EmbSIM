@@ -279,6 +279,15 @@ static double probe_value(es_session *s, esk_probe *p)
     double v = 0.0;
     switch (p->kind) {
     case ESK_PROBE_DIGITAL:
+        if (p->net && p->net->island) {
+            /* threshold with the default family's levels and hysteresis */
+            double volts = p->net->voltage;
+            if (!p->has_last)
+                return volts >= 1.4 ? 1.0 : 0.0;
+            if (p->last >= 1.0)
+                return volts < 0.8 ? 0.0 : 1.0;
+            return volts > 2.0 ? 1.0 : 0.0;
+        }
         return p->net ? (double)esk_net_value(p->net) : 2.0;
     case ESK_PROBE_ANALOG:
         if (p->net)
@@ -309,13 +318,23 @@ static void probe_sample_cb(void *ctx, void *arg, es_time_t now)
     es_session *s = (es_session *)ctx;
     esk_probe *p = (esk_probe *)arg;
     p->sample_event = 0;
-    probe_push(p, now, probe_value(s, p));
+    {
+        double v = probe_value(s, p);
+        if (!p->threshold || !p->has_last || v != p->last)
+            probe_push(p, now, v);
+    }
     if (p->period_ps && now <= ES_TIME_MAX - p->period_ps)
         esk_sched_at(&s->eng.sched, now + p->period_ps, ESK_EV_PROBE, probe_sample_cb, s, p, &p->sample_event);
 }
 
 static void probe_start(es_session *s, esk_probe *p)
 {
+    /* a digital probe on a net that became analog thresholds the voltage (SPEC-003 §4) */
+    if (p->kind == ESK_PROBE_DIGITAL && p->net && p->net->island && !p->threshold) {
+        p->threshold = 1;
+        if (!p->period_ps)
+            p->period_ps = (es_time_t)(1e12 / (p->rate_hz > 0 ? p->rate_hz : 100000.0));
+    }
     p->len = p->head = 0;
     p->has_last = 0;
     p->dropped = 0;
@@ -392,7 +411,9 @@ es_status esk_session_probe_add(es_session *s, const char *name, const char *tar
         goto notfound;
     }
     p->rate_hz = rate_hz;
-    if (p->kind == ESK_PROBE_ANALOG || p->kind == ESK_PROBE_VALUE) {
+    if (p->kind == ESK_PROBE_DIGITAL && p->net && p->net->island)
+        p->threshold = 1;
+    if (p->kind == ESK_PROBE_ANALOG || p->kind == ESK_PROBE_VALUE || p->threshold) {
         if (rate_hz <= 0)
             rate_hz = p->kind == ESK_PROBE_ANALOG ? 100000.0 : 10000.0;
         p->period_ps = (es_time_t)(1e12 / rate_hz);
@@ -883,7 +904,7 @@ static void probes_sample_now(es_session *s)
     size_t i;
     for (i = 0; i < s->probes.len; i++) {
         esk_probe *p = s->probes.data[i];
-        if (p->cap && p->kind != ESK_PROBE_DIGITAL) {
+        if (p->cap && (p->kind != ESK_PROBE_DIGITAL || p->threshold)) {
             es_time_t last = p->len ? p->ring[(p->head + p->len - 1) % p->cap].time_ps : 0;
             if (!p->len || last < s->eng.sched.now)
                 probe_push(p, s->eng.sched.now, probe_value(s, p));

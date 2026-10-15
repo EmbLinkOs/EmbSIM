@@ -128,6 +128,7 @@ struct esk_engine {
     esk_net_change_fn on_net_change; /* probes and clients */
     void *on_net_change_ctx;
     int partitioned;
+    int in_reset;            /* floating-input diagnostics are suppressed while models initialise */
     uint64_t signal_events;
 };
 

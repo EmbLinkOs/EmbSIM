@@ -413,6 +413,8 @@ static void pin_contribution(const esk_pin *p, esk_logic *v, esk_strength *s)
         *v = m->power_ground ? ESK_L0 : ESK_L1;
         *s = ESK_STR_SUPPLY;
         return;
+    case ESK_PIN_PASSIVE:
+    case ESK_PIN_ANALOG:
     case ESK_PIN_DIGITAL_OUT:
     case ESK_PIN_DIGITAL_IO:
         if (m->kind == ESK_PIN_DIGITAL_IO && !p->is_output)
@@ -551,7 +553,7 @@ void esk_pin_drive(esk_pin *p, esk_logic value, esk_strength strength, es_time_t
 {
     esk_engine *e = p->comp->e;
     es_time_t at;
-    if (p->model.kind != ESK_PIN_DIGITAL_OUT && p->model.kind != ESK_PIN_DIGITAL_IO)
+    if (p->model.kind == ESK_PIN_DIGITAL_IN || p->model.kind == ESK_PIN_POWER || p->model.kind == ESK_PIN_NC)
         return;
     p->drive_strength = strength;
     /* inertial delay: a newer change supersedes a pending one */
@@ -588,7 +590,7 @@ esk_logic esk_pin_read(esk_pin *p)
         /* an input with a pull reads its pull */
         if (p->model.pull == ESK_PULL_UP) v = ESK_L1;
         else if (p->model.pull == ESK_PULL_DOWN) v = ESK_L0;
-        else if (!p->floating_reported && p->net) {
+        else if (!p->floating_reported && p->net && !e->in_reset) {
             p->floating_reported = 1;
             esk_diag_raise(e->diag, ES_SEV_WARNING, "net.floating_input", e->sched.now, "pin", p->name, NULL, 0,
                            "%s.%s sampled net %s with no driver and no pull", p->comp->id, p->name, p->net->name);
@@ -597,7 +599,7 @@ esk_logic esk_pin_read(esk_pin *p)
         p->floating_reported = 0;
     }
     if (v == ESK_LX) {
-        if (!p->unknown_reported && p->net) {
+        if (!p->unknown_reported && p->net && !e->in_reset) {
             p->unknown_reported = 1;
             esk_diag_raise(e->diag, ES_SEV_WARNING, "net.unknown_input", e->sched.now, "pin", p->name, NULL, 0,
                            "%s.%s sampled X on net %s", p->comp->id, p->name, p->net->name);
@@ -997,6 +999,11 @@ es_status esk_engine_reset(esk_engine *e)
         if (st != ES_OK)
             return st;
     }
+    /* static contributions (power pins, pulls) resolve before any model looks */
+    e->in_reset = 1;
+    for (i = 0; i < e->nets.len; i++)
+        if (!e->nets.data[i]->island)
+            update_net(e, e->nets.data[i]);
     for (i = 0; i < e->comps.len; i++) {
         esk_comp *c = e->comps.data[i];
         if (c->ops->reset)
@@ -1004,6 +1011,7 @@ es_status esk_engine_reset(esk_engine *e)
     }
     /* apply pending drives at time 0 and resolve every digital net */
     st = esk_sched_advance(&e->sched, 0);
+    e->in_reset = 0;
     for (i = 0; i < e->nets.len; i++)
         if (!e->nets.data[i]->island)
             update_net(e, e->nets.data[i]);

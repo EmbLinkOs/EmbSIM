@@ -128,10 +128,25 @@ static void evaluate(es_session *s, assertion *a)
     } else {
         /* between / by: samples in the window plus the value at the window start */
         size_t i;
-        int have, any_ok = 0, all_ok = 1, edges = 0;
+        int have, any_ok = 0, all_ok = 1, edges = 0, analog = p->kind != ESK_PROBE_DIGITAL;
         double first = sample_at(p, a->t0, &have), last_v = first, v_last = first;
         const esk_json *edges_j = esk_json_get(expect, "edges");
         const esk_json *freq_j = esk_json_get(expect, "frequency_hz");
+        double lo = first, hi = first, mid = 0, band = 0;
+        int level = 0;
+        if (analog && (edges_j || freq_j)) {
+            /* threshold at mid-range with 10 % hysteresis before counting edges */
+            for (i = 0; i < p->len; i++) {
+                const es_sample_t *smp = &p->ring[(p->head + i) % p->cap];
+                if (smp->time_ps < a->t0 || smp->time_ps > a->t1)
+                    continue;
+                if (smp->value < lo) lo = smp->value;
+                if (smp->value > hi) hi = smp->value;
+            }
+            mid = (lo + hi) / 2;
+            band = (hi - lo) * 0.1;
+            level = first > mid;
+        }
         if (have) {
             int ok = expect_value(s, expect, first, p, why, sizeof why);
             any_ok |= ok;
@@ -146,8 +161,12 @@ static void evaluate(es_session *s, assertion *a)
                 any_ok |= ok;
                 all_ok &= ok;
             }
-            if (smp->value != v_last)
+            if (analog && (edges_j || freq_j)) {
+                if (level && smp->value < mid - band) { level = 0; edges++; }
+                else if (!level && smp->value > mid + band) { level = 1; edges++; }
+            } else if (smp->value != v_last) {
                 edges++;
+            }
             v_last = smp->value;
             last_v = smp->value;
         }

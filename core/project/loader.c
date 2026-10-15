@@ -225,8 +225,14 @@ static es_status instantiate(es_session *s, const char *id, const esk_catalog_it
         return ES_ESCHEMA;
     }
     if (!primitive) {
-        ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s uses a composite, scripted or native model, which M0 does not load%s", item->id, "");
-        return ES_EUNSUPPORTED;
+        /* an empty composite is a pin-only part (a supply symbol, a header): no behaviour */
+        const esk_json *comp = esk_json_get(binding, "composite");
+        if (comp && esk_json_len(esk_json_get(comp, "components")) == 0) {
+            primitive = "none";
+        } else {
+            ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s uses a composite, scripted or native model, which this version does not load%s", item->id, "");
+            return ES_EUNSUPPORTED;
+        }
     }
     ops = esk_registry_find(&s->reg, primitive);
     if (!ops) {
@@ -754,6 +760,9 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
         }
     }
     apply_settings(s, esk_json_get(project, "settings"));
+    st = esk_engine_partition(&s->eng);
+    if (st != ES_OK)
+        return st;
     /* probes */
     probes = esk_json_get(project, "probes");
     for (i = 0; i < esk_json_len(probes); i++) {
@@ -765,9 +774,6 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             ld_diag(s, ES_SEV_WARNING, "probe.invalid", esk_json_get_str(pe, "id", "probe"), "probe %s could not be created: %s",
                     esk_json_get_str(pe, "target", "?"), es_strerror(ps));
     }
-    st = esk_engine_partition(&s->eng);
-    if (st != ES_OK)
-        return st;
     s->loaded = 1;
     return ES_OK;
 }

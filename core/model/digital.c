@@ -36,6 +36,9 @@ static esk_pin *pin_or_null(esk_comp *c, const char *name) { return esk_comp_pin
 /* ---- wire (functional stand-in for passives; nets are merged by the loader) */
 
 static const esk_model_ops wire_ops = { "wire", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 };
+/* a part with pins and no behaviour of its own (a supply symbol, a header, a
+ * connector): its pin models do all the work; nets are not merged */
+static const esk_model_ops none_ops = { "none", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 };
 
 /* ---- gates ----------------------------------------------------------------- */
 
@@ -577,7 +580,7 @@ static const esk_model_ops vt_ops = { "virtual_terminal", sizeof(vt_state), vt_c
 /* ---- the table ------------------------------------------------------------- */
 
 static const esk_model_ops *const digital_table[] = {
-    &wire_ops, &buffer_ops, &inverter_ops, &and_ops, &nand_ops, &or_ops, &nor_ops, &xor_ops, &xnor_ops,
+    &wire_ops, &none_ops, &buffer_ops, &inverter_ops, &and_ops, &nand_ops, &or_ops, &nor_ops, &xor_ops, &xnor_ops,
     &tristate_ops, &dff_ops, &clock_ops, &pulse_ops, &level_ops, &pull_ops, &button_ops, &switch_ops,
     &indicator_ops, &probe_ops, &vt_ops
 };
