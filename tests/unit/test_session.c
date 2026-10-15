@@ -61,6 +61,22 @@ static const char *GND = "{\"schema_version\":1,\"kind\":\"component\",\"id\":\"
     "\"model\":{\"primitive\":\"wire\"},\"functional\":{\"primitive\":\"wire\"},"
     "\"symbol\":{\"svg\":\"symbol.svg\",\"width\":20,\"height\":20,\"pins\":{\"-\":{\"x\":10,\"y\":0,\"side\":\"top\"}}},"
     "\"fidelity\":{\"functional\":{\"claims\":\"ground\",\"omissions\":[]}},\"provenance\":{\"author\":\"test\",\"license\":\"Apache-2.0\"}}";
+static const char *INVERTER = "{\"schema_version\":1,\"kind\":\"component\",\"id\":\"t/inverter\",\"version\":\"1.0.0\",\"name\":\"Inverter\",\"category\":\"logic\","
+    "\"family\":\"cmos_3v3\",\"pins\":[{\"name\":\"A\",\"number\":1,\"model\":{\"kind\":\"digital_in\"}},{\"name\":\"Y\",\"number\":2,\"model\":{\"kind\":\"digital_out\"}}],"
+    "\"params\":{},\"model\":{\"primitive\":\"inverter\"},\"functional\":{\"primitive\":\"inverter\"},"
+    "\"symbol\":{\"svg\":\"symbol.svg\",\"width\":40,\"height\":20,\"pins\":{\"A\":{\"x\":0,\"y\":10,\"side\":\"left\"},\"Y\":{\"x\":40,\"y\":10,\"side\":\"right\"}}},"
+    "\"fidelity\":{\"functional\":{\"claims\":\"not\",\"omissions\":[]}},\"provenance\":{\"author\":\"test\",\"license\":\"Apache-2.0\"}}";
+/* a composite: two inverters in series, with a parameter passed down */
+static const char *DOUBLE_INV = "{\"schema_version\":1,\"kind\":\"component\",\"id\":\"t/double_inv\",\"version\":\"1.0.0\",\"name\":\"Double inverter\",\"category\":\"logic\","
+    "\"family\":\"cmos_3v3\",\"pins\":[{\"name\":\"IN\",\"number\":1,\"model\":{\"kind\":\"digital_in\"}},{\"name\":\"OUT\",\"number\":2,\"model\":{\"kind\":\"digital_out\"}}],"
+    "\"params\":{},\"model\":{\"composite\":{\"components\":[{\"id\":\"I1\",\"component\":\"t/inverter\"},{\"id\":\"I2\",\"component\":\"t/inverter\"}],"
+    "\"nets\":{\"M\":[\"I1.Y\",\"I2.A\"]},\"ports\":{\"IN\":\"I1.A\",\"OUT\":\"I2.Y\"}}},"
+    "\"symbol\":{\"svg\":\"symbol.svg\",\"width\":60,\"height\":20,\"pins\":{\"IN\":{\"x\":0,\"y\":10,\"side\":\"left\"},\"OUT\":{\"x\":60,\"y\":10,\"side\":\"right\"}}},"
+    "\"fidelity\":{\"functional\":{\"claims\":\"buffer\",\"omissions\":[]}},\"provenance\":{\"author\":\"test\",\"license\":\"Apache-2.0\"}}";
+static const char *COMPOSITE_PROJECT = "{\"schema_version\":1,\"kind\":\"project\",\"name\":\"composite\",\"policy\":\"functional\",\"libraries\":[\"LIBDIR\"],"
+    "\"components\":[{\"id\":\"V1\",\"component\":\"t/vcc\"},{\"id\":\"X1\",\"component\":\"t/double_inv\"},{\"id\":\"D1\",\"component\":\"t/led\"}],"
+    "\"nets\":{\"IN\":[\"V1.+\",\"X1.IN\"],\"OUT\":[\"X1.OUT\",\"D1.A\"]}}";
+
 static const char *PROJECT = "{\"schema_version\":1,\"kind\":\"project\",\"name\":\"button-led\",\"policy\":\"functional\",\"libraries\":[\"LIBDIR\"],"
     "\"components\":[{\"id\":\"V1\",\"component\":\"t/vcc\",\"params\":{\"voltage\":5}},{\"id\":\"SW1\",\"component\":\"t/button\"},"
     "{\"id\":\"R1\",\"component\":\"t/pull_down\"},{\"id\":\"D1\",\"component\":\"t/led\",\"params\":{\"color\":\"green\"}},{\"id\":\"G1\",\"component\":\"t/gnd\"}],"
@@ -95,6 +111,8 @@ static void setup_library(void)
     write_file("components/pull_down/component.json", PULL);
     write_file("components/led/component.json", LED);
     write_file("components/gnd/component.json", GND);
+    write_file("components/inverter/component.json", INVERTER);
+    write_file("components/double_inv/component.json", DOUBLE_INV);
     write_file("components/led/symbol.svg", "<svg xmlns='http://www.w3.org/2000/svg'/>");
 }
 
@@ -254,6 +272,28 @@ static void test_determinism(void)
     free(proj);
 }
 
+static void test_composite(void)
+{
+    es_session *s = NULL;
+    es_session_config_t cfg;
+    char *proj = subst(COMPOSITE_PROJECT);
+    memset(&cfg, 0, sizeof cfg);
+    CHECK(es_session_create(&cfg, &s) == ES_OK);
+    es_session_set_diagnostic_handler(s, show_diag, NULL);
+    CHECK(es_session_load_json(s, proj, strlen(proj), lib_dir) == ES_OK);
+    CHECK(esk_engine_comp(&s->eng, "X1.I1") != NULL);
+    CHECK(esk_engine_comp(&s->eng, "X1.I2") != NULL);
+    CHECK(esk_engine_net(&s->eng, "X1.M") != NULL);
+    CHECK(es_session_advance(s, 1000) == ES_OK);
+    CHECK(esk_net_value(esk_engine_net(&s->eng, "IN")) == ESK_L1);
+    CHECK(esk_net_value(esk_engine_net(&s->eng, "X1.M")) == ESK_L0);
+    CHECK(esk_net_value(esk_engine_net(&s->eng, "OUT")) == ESK_L1);
+    /* the external net and the internal port net are one node: OUT is also reachable as X1.I2 pin Y's net */
+    CHECK(esk_comp_pin(esk_engine_comp(&s->eng, "X1.I2"), "Y")->net == esk_engine_net(&s->eng, "OUT"));
+    es_session_destroy(s);
+    free(proj);
+}
+
 static void test_bad_project(void)
 {
     es_session *s = NULL;
@@ -280,5 +320,6 @@ setup_library();
 RUN(test_load_and_run);
 RUN(test_scenario_and_rpc);
 RUN(test_determinism);
+RUN(test_composite);
 RUN(test_bad_project);
 TEST_MAIN_END
