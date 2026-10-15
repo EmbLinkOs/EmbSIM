@@ -1,13 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+# Thin wrapper over the CMake presets for Unix users. `make CC=tcc` builds with TinyCC.
+PRESET ?= dev
 CC ?= cc
-PYTHON ?= python3
-CFLAGS ?= -O2 -g -std=c99 -Wall -Wextra -Werror -pedantic
+BUILD = build/$(PRESET)
 
-.PHONY: all test clean
+.PHONY: all test clean examples format
 all:
-	$(PYTHON) scripts/build.py --cc "$(CC)" --cflags="$(CFLAGS)"
+	cmake -S . -B $(BUILD) -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER="$(CC)" >/dev/null
+	cmake --build $(BUILD) --parallel
 
 test: all
-	PYTHONPATH=python $(PYTHON) -m unittest discover -s tests -v
+	ctest --test-dir $(BUILD) --output-on-failure --no-tests=error
+
+examples: all
+	python3 tools/ci/run_examples.py --build $(BUILD)
 
 clean:
-	$(PYTHON) -c "import shutil; shutil.rmtree('build', ignore_errors=True)"
+	rm -rf build

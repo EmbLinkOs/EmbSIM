@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/EmbLinkOs/EmbSIM/security/advisories/new
+    about: Report a vulnerability privately.

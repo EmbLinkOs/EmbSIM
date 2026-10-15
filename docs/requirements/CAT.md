@@ -1,0 +1,66 @@
+# CAT - Catalog and Descriptions
+
+Group `CAT`. Design: 02 §6, §7; SPEC-005, SPEC-006, SPEC-007, SPEC-014; ADR-006, ADR-017.
+
+Each requirement has a statement, a rationale, a status (Accepted, FUTURE),
+a verification method and a trace to the design. Verification names the
+test or review that establishes it; STATUS.md records whether it passed.
+
+---
+
+### CAT-001  Schemas for every description kind
+**Statement.** Component, MCU, package, board, project, scenario, recording, toolchain and library files shall have JSON Schema 2020-12 definitions in schemas/ and be validated by the core and the Python tool.
+**Rationale.** ADR-006.
+**Status.** Accepted 2026-10-15
+**Verification.** Schema tests with valid and invalid fixtures; unknown-field rejection.
+**Trace.** ADR-006
+
+### CAT-002  Mandatory fidelity declarations
+**Statement.** A description without a fidelity declaration shall be refused.
+**Rationale.** ADR-011.
+**Status.** Accepted 2026-10-15
+**Verification.** Validation tests.
+**Trace.** SPEC-005 §6
+
+### CAT-003  Provenance and licences
+**Statement.** Every description shall carry provenance; vendored third-party material shall carry its licence and a hash.
+**Rationale.** ADR-017.
+**Status.** Accepted 2026-10-15
+**Verification.** Licence check in CI.
+**Trace.** ADR-017; SPEC-005 §11
+
+### CAT-004  Boards are data
+**Statement.** A board shall be describable entirely in board.json with catalog components, nets, ports and artwork; adding a board requires no C.
+**Rationale.** P5.
+**Status.** Accepted 2026-10-15
+**Verification.** The Blue Pill, nRF52840 DK and Pico boards exist as descriptions; an independent contributor adds one (M3).
+**Trace.** SPEC-006 §3
+
+### CAT-005  Alignment with EmbLinkRTOS descriptions
+**Statement.** Board and MCU descriptions shall share field names with the RTOS hardware schema where concepts coincide and an importer shall produce drafts from RTOS board YAML.
+**Rationale.** Ecosystem sharing.
+**Status.** Accepted 2026-10-15
+**Verification.** Importer test on the RTOS repository's board files.
+**Trace.** SPEC-006 §4
+
+### CAT-006  Conformance fixtures per entry
+**Statement.** Every catalog component and board shall ship at least one fixture and validation shall run them.
+**Rationale.** Earned support.
+**Status.** Accepted 2026-10-15
+**Verification.** catalog validate in CI.
+**Trace.** SPEC-005 §9; SPEC-014 §3
+
+### CAT-007  Project layout separate from electrical truth
+**Statement.** Projects shall keep nets as the electrical truth and layout as presentation; a client edits both in one transaction.
+**Rationale.** No rendering-dependent behaviour.
+**Status.** Accepted 2026-10-15
+**Verification.** Loader ignores layout for simulation (test).
+**Trace.** SPEC-007 §1
+
+### CAT-008  Migration
+**Statement.** Schema version changes shall ship with a migration tool that reports what it could not convert.
+**Rationale.** Long-lived projects.
+**Status.** Accepted 2026-10-15 (FUTURE until schema 2)
+**Verification.** Migration tests when a version changes.
+**Trace.** SPEC-007 §4
+

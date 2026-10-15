@@ -1,0 +1,439 @@
+# 06 - Architecture Decision Records
+
+Each record: context, decision, alternatives, consequences, status. Records
+are referenced from documents 02 to 05 and from the specifications by number.
+A **Proposed** record becomes **Accepted** on the project owner's review; the
+ones marked Accepted here were taken at the 1.0 baseline on 2026-10-15.
+
+---
+
+## ADR-001 A dependency-free C core as a library, built by GCC, Clang, TinyCC, EmbCC and MSVC
+
+**Context.** The reusable simulator code (EmbCC's `tools/embsim`, 37 000
+lines) is ISO C99 with no dependencies and compiles with EmbCC itself. The
+earlier EmbSIM foundation chose a C99 kernel behind a shared-library ABI. The
+owner requires the simulator to work with EmbCC, GCC, TinyCC and Clang; the
+simulator must embed in other tools and run on three operating systems.
+
+**Decision.** `libembsim` is written in C99 plus a documented C11 subset
+behind portability macros (`ES_STATIC_ASSERT`, `ES_INLINE`, `ES_NORETURN`),
+with no third-party runtime dependency. Optional subsystems vendor
+permissively licensed C under `third_party/` behind build options. The public
+API is `include/embsim/*.h` with an `es_` prefix, opaque handles, explicit
+ownership and status returns; its ABI is versioned (SPEC-001). CI builds the
+core with GCC, Clang and TinyCC on Linux, Apple Clang on macOS, MSVC on
+Windows, and EmbCC's Linux host target when the compiler is available.
+
+**Alternatives.** Rust core (strong safety, but no reuse of the C
+interpreters without FFI wrappers, no TinyCC or EmbCC build, a second
+toolchain for every contributor); C++ (richer abstractions, loses TinyCC and
+EmbCC); Python core (the earlier foundation's orchestration; too slow for
+instruction execution and analog solving, and a runtime dependency).
+
+**Consequences.** Discipline on undefined behaviour and manual memory
+management; a coding standard with banned constructs; every optional feature
+has a build switch and a documented fallback.
+
+**Status.** Accepted.
+
+## ADR-002 Integer picosecond time base with rational clocks
+
+**Context.** The foundation used nanoseconds; core clocks like 72 MHz have
+fractional-nanosecond periods, and timers derived through prescalers drift if
+periods are rounded. Analog solvers need fine step boundaries.
+
+**Decision.** `es_time_t` is unsigned 64-bit picoseconds. Clocks are rational
+periods with phase accumulators (03 §1). The protocol exchanges time as a
+decimal string. Picosecond resolution is also the default threshold-crossing
+bracket for analog bridges' lower bound; the practical default is 100 ps.
+
+**Alternatives.** Nanoseconds (insufficient resolution); femtoseconds (2^64 fs
+is five hours, too short); double seconds (not deterministic across
+platforms, accumulates error); multiple local time bases (the EmbCC
+simulator's per-core cycle counts: cannot order events across cores and
+islands).
+
+**Consequences.** 213 days of range; every conversion from cycles goes through
+a clock; clients must use big-integer-safe handling.
+
+**Status.** Accepted.
+
+## ADR-003 One net graph with electrical pin models and solver islands; no board callbacks
+
+**Context.** The EmbCC simulator wires boards through `struct board_io`
+callbacks (`pin_out`, `pin_in`, `analog`, `spi`): each board hard-codes what
+is on each pin and cannot host a user circuit. The foundation had nets with
+digital drivers but no electrical meaning.
+
+**Decision.** Every connection is a net joining pins; every pin carries a pin
+model (SPEC-003 §2); the engine partitions nets into digital and analog
+islands and inserts bridges. MCU GPIO models expose pin models like any
+component. Boards are composites of catalog components on nets. There are no
+pin callbacks between boards and MCUs.
+
+**Alternatives.** Keep callbacks and add a net layer for user circuits only
+(two connectivity models, a board's LED would behave differently from a
+user's); SystemC-style channels (a C++ dependency and a different time
+model).
+
+**Consequences.** Boards become data; the MCU GPIO models must be rewritten
+against pin models (the register behaviour is reused); performance work goes
+into island partitioning and event batching rather than callbacks.
+
+**Status.** Accepted.
+
+## ADR-004 An in-core MNA analog engine; ngspice as an offline validation reference
+
+**Context.** The earlier plan deferred the solver choice pending an experiment
+with an established SPICE engine. Requirements: deterministic coupling with
+the event scheduler at picosecond boundaries, live topology edits, embedding
+without dependencies on three platforms, convergence diagnostics addressed to
+circuit nodes the user sees, and the modest circuit sizes around an MCU.
+
+**Decision.** The analog engine is written in the core (03 §5): MNA,
+Newton-Raphson, trapezoidal/BDF2 with LTE step control, dense and sparse
+direct solvers, device models from the standard literature. ngspice is a
+development-time reference: golden fixtures are generated by scripts that run
+ngspice on the same netlists and are committed with versions and tolerances.
+No SPICE engine is linked into the product.
+
+**Alternatives.** Link libngspice (BSD licence is acceptable; but its
+timestep control cannot be driven by an external scheduler at event
+granularity without patches, its global state forbids multiple islands and
+sessions, it is a 300 000-line dependency to build on Windows, and
+interactive rewiring requires restarts); a co-simulation adapter over a
+socket (nondeterministic timing, slow); XSPICE's event-driven extensions
+(same engine constraints).
+
+**Consequences.** The team owns numerical robustness; model coverage grows
+with fixtures; cross-checking against ngspice is a CI duty; an
+ngspice-adapter remains possible later for high-fidelity validation runs.
+
+**Status.** Accepted.
+
+## ADR-005 Reuse EmbCC's cores and peripheral models by extraction behind the backend contract
+
+**Context.** Document 09: the EmbCC simulator holds validated interpreters for
+five core families, register-file loaders for SVD/ATDF/EDC, peripheral models
+for STM32, nRF52, RP2040, PIC32 and PIC24, a GDB stub, loaders and analyses,
+with golden fixtures held against QEMU. It terminates the process on errors,
+uses a global `struct sim`, prints to stdout, and models boards through
+callbacks.
+
+**Decision.** Extract the core interpreters, bus, register files, peripheral
+models, loaders, GDB stub and analyses into `core/mcu/` behind SPEC-009's
+contract, one family at a time, keeping file-level provenance (origin
+repository, commit, path, Apache notice) in each file header and in
+`NOTICE`. Mechanical changes are made on extraction: `die()` to status
+returns, globals into instance structs, output to session streams, board
+callbacks to pin models. EmbCC's golden fixtures are imported as EmbSIM
+differential tests before any behavioural change. Upstream authorship is
+provenance, never a commit trailer.
+
+**Alternatives.** Link EmbCC's `tools/embsim` as a library unchanged (its
+error handling and globals make that unsafe for multiple instances); rewrite
+the interpreters (years of validated work discarded); depend on QEMU or
+Renode (large dependencies, no electrical model, slower iteration, different
+licences).
+
+**Consequences.** EmbSIM owns a fork of the simulator parts of EmbCC; fixes
+are ported in both directions by hand with commit references; EmbCC may later
+consume `libembsim` for `embsim` itself (owner's decision, 08 §Q3).
+
+**Status.** Accepted.
+
+## ADR-006 JSON descriptions validated by JSON Schema 2020-12; YAML through importers; alignment with EmbLinkRTOS hardware descriptions
+
+**Context.** Components, MCUs, packages, boards, projects, scenarios and
+libraries must be authored by people and consumed by a dependency-free C
+core, a TypeScript workbench and Python tools. EmbLinkRTOS fixed YAML with
+JSON Schema for SoC and board descriptions (its SPEC-014).
+
+**Decision.** The canonical, machine-consumed format is JSON (UTF-8, no
+comments) validated by JSON Schema 2020-12 files in `schemas/`. The core
+contains a small JSON parser and a schema-shaped validator for the
+constraints that matter at load; the Python validator applies the full
+schemas in CI. Authors may write YAML; `embsim validate` and the importers
+convert it. Board and MCU descriptions share field names and semantics with
+EmbLinkRTOS's board and SoC YAML where the concepts coincide (`soc`,
+`oscillators`, `leds`, `buttons`, `pins`, `console`), and an importer turns an
+RTOS board file into an EmbSIM board draft.
+
+**Alternatives.** YAML canonical (needs a YAML parser in the C core: a
+dependency or a large vendored one); S-expressions (KiCad's choice;
+unfamiliar to most authors, no schema tooling); a custom DSL (tooling cost).
+
+**Consequences.** Schemas are versioned (`schema_version`) with a migration
+tool; a JSON file can be generated from anything; the workbench edits JSON
+through forms, never asks users to type it.
+
+**Status.** Accepted.
+
+## ADR-007 One session protocol (JSON-RPC 2.0) for every client; the workbench contains no simulation
+
+**Context.** The foundation's rule that GUI code holds no simulation
+behaviour is kept. Clients: a desktop app, a browser, the CLI, test harnesses,
+other EmbLink tools, IDEs.
+
+**Decision.** SPEC-008 defines one method set over stdio, WebSocket and
+in-process transports. The CLI uses the in-process transport and so exercises
+the same methods the workbench uses. Observations are notifications and
+binary streams; controls are requests; every external change is a request
+that acquires a timestamp in the session.
+
+**Alternatives.** FFI from the workbench to the core (Tauri can do it, but
+browser mode could not, and the protocol would exist anyway for CI); gRPC
+(a large dependency for the C side); a REST-only API (no streams, no
+notifications; the foundation's polling showed the limits).
+
+**Consequences.** The protocol is a public contract with its own versioning
+and conformance tests; latency of a round trip bounds interactive feel, so
+the stdio transport stays local and the message set stays lean.
+
+**Status.** Accepted.
+
+## ADR-008 Workbench technology: TypeScript, React and Vite; Tauri 2 desktop shell; browser delivery from the CLI
+
+**Context.** Requirements: three platforms from one source, a polished and
+accessible interface, high-performance canvases for schematics and
+waveforms, offline operation, a small install, contributors who know web
+technology. Tools available in the development environment: Node 22, pnpm,
+Rust 1.97.
+
+**Decision.** The workbench is a TypeScript application built with Vite and
+React, with a small state store, SVG scenes for schematic and board views and
+canvas/WebGL for waveforms. Desktop packaging uses Tauri 2 (a Rust shell
+around the platform webview) which spawns `embsim sidecar`. `embsim serve`
+delivers the same assets to a browser. The UI code never imports Tauri APIs
+directly; a platform adapter hides file dialogs, menus and the sidecar.
+
+**Alternatives.** Electron (consistent rendering, but 150 MB installs and
+higher memory); Qt/QML (native, but a C++ build and a second design system
+for the browser mode); Dear ImGui (excellent for instruments, but immediate-
+mode text rendering and accessibility fall short of the interface
+requirements); Flutter (good, but Dart is foreign to the EmbLink ecosystem);
+Svelte or Solid (lighter than React; React chosen for the size of its
+ecosystem of accessible components and contributors).
+
+**Consequences.** Rust is required only to build the desktop shell, not the
+simulator; webview differences across platforms are tested in CI with
+Playwright; the design system is implemented once in CSS tokens and shared
+components.
+
+**Status.** Accepted.
+
+## ADR-009 Extension tiers: declarative composites, sandboxed Lua behavioural models, explicit native plugins
+
+**Context.** Users must add components and boards without the core team. Most
+parts are compositions of primitives or simple behaviours (a sensor's
+transfer function, a display controller's command set); some need native
+speed. Untrusted native code cannot be made safe by a shared-library loader.
+
+**Decision.** Three tiers: (1) **declarative** descriptions composing
+primitive and other components with parameters, no code; (2) **scripted**
+behavioural models in Lua 5.4 (vendored, MIT), sandboxed with no `io`, `os` or
+`debug` libraries, a bounded instruction budget per evaluation and a small
+API (pins, parameters, state, time, scheduling, bus transactions) specified in
+SPEC-013; (3) **native** plugins implementing the primitive model ABI, loaded
+only from paths the user names explicitly, marked trusted in the project, and
+versioned by ABI number. WebAssembly as a fourth tier is FUTURE, pending a
+maintained C runtime.
+
+**Alternatives.** Python models (a runtime dependency in the core; slow); only
+native plugins (unsafe sharing); only declarative (cannot express a display
+controller).
+
+**Consequences.** The Lua tier becomes the main authoring path for sensors,
+displays and protocol devices; a conformance harness runs the same fixtures
+against any tier.
+
+**Status.** Accepted.
+
+## ADR-010 Toolchain profiles: the simulator runs images; building is a described, optional convenience
+
+**Context.** The owner requires EmbCC, GCC, TinyCC, Clang and Microchip XC
+compilers to work. The simulator's contract is the image format; compilers
+differ in invocation, targets and output formats.
+
+**Decision.** `libembsim` loads ELF (with DWARF) and Intel HEX and never
+invokes a compiler. Toolchain profiles (SPEC-010) are JSON descriptions with
+detection and command templates per target and output interpretation; the
+CLI and workbench run them for build-and-run; projects reference a profile
+optionally. EmbSIM itself builds under TinyCC, which is what "TinyCC support"
+can mean for a host-only compiler.
+
+**Alternatives.** Bake toolchain knowledge into the core (couples the core to
+tools that change); require one toolchain (contradicts the requirement).
+
+**Consequences.** A profile can be added by users; XC8 support for PIC16/18
+depends on a core that does not exist yet and is tracked as FUTURE.
+
+**Status.** Accepted.
+
+## ADR-011 Fidelity declarations are mandatory; unsupported behaviour is observable under a session policy
+
+**Context.** A catalog grows faster than validation; users must know what to
+trust. The EmbCC simulator silently reads zero for unmodelled peripheral
+space.
+
+**Decision.** Every component, MCU, peripheral and core model declares
+fidelity per tier with claims, operating range, omissions, provenance and
+validation references (SPEC-005 §6). The session policy (`strict`, `warn`,
+`permissive`) decides what an unsupported access or an out-of-range use does
+(04 §4). Clients display fidelity and policy prominently; `strict` is the CI
+default.
+
+**Alternatives.** Best effort everywhere (unusable for verification);
+refuse everything unsupported (unusable for exploration).
+
+**Consequences.** Validation refuses a model without a declaration; the
+catalog shows what is validated against what; STATUS.md stays honest with
+little effort.
+
+**Status.** Accepted.
+
+## ADR-012 Virtual-time recordings of external inputs are the replay contract
+
+**Context.** The EmbCC simulator records inputs by instruction step and
+covers only the console and the debugger; EmbSIM has many input kinds, many
+cores and analog islands.
+
+**Decision.** SPEC-012: a recording is the ordered list of external inputs
+with virtual timestamps and sequence numbers, the identities of everything
+that shaped the run, and the discrete observations used to verify replay
+(interrupt entries per core, probe events, run end). Replay is exact for
+discrete state; analog values are compared with tolerances.
+
+**Alternatives.** Full state checkpoints (large, version-fragile; may come
+later for save and resume); step-based records (not meaningful across cores
+and islands).
+
+**Consequences.** Determinism of the scheduler ordering becomes a tested
+invariant; every input path goes through the session command path.
+
+**Status.** Accepted.
+
+## ADR-013 Build and repository tooling: CMake with presets for the core and CLI; pnpm for the workbench; Cargo for the desktop shell; a thin Makefile; Python only for tools and CI
+
+**Context.** Three platforms, five C compilers, a web application and a Rust
+shell in one repository.
+
+**Decision.** `CMakeLists.txt` with `CMakePresets.json` builds `libembsim`,
+`embsim` and the C tests on every platform and compiler; a thin `Makefile`
+wraps the common presets for Unix users and keeps a TinyCC path
+(`make CC=tcc`); `ui/` is a pnpm workspace built by Vite; `desktop/` is a
+Cargo crate built by the Tauri CLI; `tools/` are Python 3.10+ scripts used by
+CI and authors, never required to build or run the simulator.
+
+**Alternatives.** Meson (fine, less familiar to Windows contributors); a
+single hand-written Makefile (the EmbCC way; no MSVC without a second
+script); Bazel (heavy).
+
+**Consequences.** CI has three toolchains; release packaging lives in
+`desktop/` and `packaging/`.
+
+**Status.** Accepted.
+
+## ADR-014 Single repository; commits in the owner's identity; three stable merge checks
+
+**Context.** The owner requires every commit and pull request in their name
+with no co-author trailers. The RTOS repository established a policy of named
+required checks and a branch ruleset.
+
+**Decision.** EmbSIM is one repository holding core, CLI, catalog, workbench,
+desktop shell, tools, tests and docs. Commits use the repository owner's Git
+identity; no `Co-authored-by` or assistant trailers; a policy check rejects
+them. Required checks on `main`: `CI merge gate`, `Documentation build`,
+`Repository policy` (docs/engineering/repository-workflow.md).
+
+**Alternatives.** Separate repositories per client (slower cross-cutting
+changes while the protocol is young).
+
+**Consequences.** A monorepo CI with path-aware jobs; a later split remains
+possible along the protocol boundary.
+
+**Status.** Accepted.
+
+## ADR-015 Instruction timing is a declared estimate per core, with an exactness tier where a datasheet allows it
+
+**Context.** The EmbCC interpreters estimate cycles from a cost table except
+on AVR, where they are exact. Users must not mistake simulator timing for
+hardware timing.
+
+**Decision.** Each core backend declares a timing tier: `exact` (per
+datasheet, AVR), `estimated` (documented cost table, Cortex-M and others),
+`unmodelled` (one cycle per instruction). Every client labels timing with the
+tier; STATUS.md lists tiers; benchmarks compare against hardware or QEMU
+where fixtures exist. Peripheral timing (baud rates, timer periods) is exact
+with respect to the modelled clock tree regardless of the core tier.
+
+**Alternatives.** Claim cycle accuracy (false); model pipelines and caches
+(FUTURE per core when a validated model exists).
+
+**Consequences.** Timing-margin analysis uses min/max tiers of component
+models, not the core's estimate.
+
+**Status.** Accepted.
+
+## ADR-016 Multiple MCUs, boards and cores share one scheduler and no mutable global state
+
+**Context.** The EmbCC simulator has one global `struct sim`. Projects need
+several boards and multicore parts.
+
+**Decision.** Every instance (session, MCU, core, peripheral, island,
+component) owns its state; the session's scheduler orders their events;
+backends and models are reentrant with respect to instances. A conformance
+test runs two sessions in one process with interleaved commands and asserts
+identical results to two separate processes.
+
+**Alternatives.** One MCU per process with inter-process wiring (slow,
+nondeterministic).
+
+**Consequences.** Extraction from EmbCC moves file-scope state into instance
+structs before anything else.
+
+**Status.** Accepted.
+
+## ADR-017 Catalog provenance and licensing: only redistributable descriptions are vendored; device packs are referenced
+
+**Context.** Vendor register descriptions and board artwork carry licences
+that vary from Apache-2.0 (most CMSIS-SVD packs) to proprietary (Microchip
+device packs, board photographs).
+
+**Decision.** The catalog vendors only files whose licence permits
+redistribution, each with its licence file and a provenance record (source,
+URL, version, hash). Other inputs are referenced by name and resolved from a
+user-supplied path (`--dfp`, library settings), as EmbCC's simulator does.
+Artwork is original SVG drawn for EmbSIM or licensed for redistribution,
+never a vendor photograph.
+
+**Alternatives.** Vendor everything (legal exposure); vendor nothing (poor
+out-of-box experience).
+
+**Consequences.** A licence check in CI; a provenance field in every schema.
+
+**Status.** Accepted.
+
+## ADR-018 Cortex-M on the Blue Pill (STM32F103C8) is the first firmware target; RISC-V and AVR follow; Microchip families after
+
+**Context.** The first acceptance scenario needs one MCU with a validated
+interpreter, a redistributable register description, a common board and
+toolchains the owner names (EmbCC, GCC, Clang). EmbCC already models the Blue
+Pill with ST's SVD and its F1 GPIO, RCC, USART and TIM models; the RTOS
+project's first targets are Cortex-M and RISC-V.
+
+**Decision.** M1 extracts the Cortex-M backend and the STM32F1 models and
+ships the Blue Pill as the first board, then the nRF52840 DK and the Pico
+(already modelled in EmbCC) as the next Cortex-M boards; M4 adds RISC-V
+(`virt`, then a SiFive or ESP32-C3 board), AVR (Arduino Uno) and the
+Microchip families (Explorer 16/32, Curiosity) with XC16 and XC32 profiles.
+
+**Alternatives.** Arduino Uno first (simplest core, exact timing, huge
+audience; but its 8-bit AVR hides the register-file machinery the other
+families need); Pico first (two cores and a boot ROM add complexity to the
+first slice).
+
+**Consequences.** ST's SVD redistribution terms are checked before vendoring;
+until then the Blue Pill's register file is user-supplied as in EmbCC.
+
+**Status.** Accepted.

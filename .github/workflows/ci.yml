@@ -1,19 +1,105 @@
-name: validation
-on: [push, pull_request]
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+# Build matrix of ADR-001 and ADR-013: the core and CLI with GCC, Clang and
+# TinyCC on Linux, Apple Clang on macOS, MSVC on Windows; the workbench
+# typecheck, lint, build and smoke; the Python tools; catalog validation.
+# Third-party actions pinned to tags until reviewed SHAs are recorded:
+# ilammy/msvc-dev-cmd@v1, pnpm/action-setup@v4, actions/setup-node@v4.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
 permissions:
   contents: read
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  test:
+  core:
+    name: core (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+        include:
+          - { name: linux-gcc,   os: ubuntu-24.04, preset: ci-gcc }
+          - { name: linux-clang, os: ubuntu-24.04, preset: ci-clang }
+          - { name: linux-tcc,   os: ubuntu-24.04, preset: ci-tcc }
+          - { name: macos-clang, os: macos-14,     preset: ci-clang }
+          - { name: windows-msvc, os: windows-2022, preset: ci-msvc }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang tcc
+      - name: Install tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
       - uses: ilammy/msvc-dev-cmd@v1
         if: runner.os == 'Windows'
-      - run: python scripts/build.py --test
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }} --output-on-failure --no-tests=error
+      - name: Run the examples headless
+        run: python3 tools/ci/run_examples.py --build build/${{ matrix.preset }}
+
+  tools:
+    name: tools and catalog
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install --quiet jsonschema
+      - run: python3 -m unittest discover -s tools -p 'test_*.py' -v
+      - run: python3 tools/validate.py --all
+
+  workbench:
+    name: workbench
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: ui
+      - run: pnpm typecheck
+        working-directory: ui
+      - run: pnpm lint
+        working-directory: ui
+      - run: pnpm build
+        working-directory: ui
+      - run: pnpm test
+        working-directory: ui
+
+  merge_gate:
+    name: CI merge gate
+    runs-on: ubuntu-24.04
+    needs: [core, tools, workbench]
+    if: always()
+    steps:
+      - name: Require every job to succeed
+        run: |
+          echo '${{ toJSON(needs) }}' | python3 -c '
+          import json, sys
+          needs = json.load(sys.stdin)
+          bad = {k: v["result"] for k, v in needs.items() if v["result"] != "success"}
+          print(bad or "all jobs succeeded")
+          sys.exit(1 if bad else 0)'

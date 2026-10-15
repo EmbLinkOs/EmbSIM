@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+name: Feature or model request
+description: A component, board, MCU family, instrument or capability.
+title: "[Feature]: "
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options: [Component model, Board, MCU or peripheral, Workbench feature, CLI or protocol, Toolchain profile, Other]
+    validations: { required: true }
+  - type: textarea
+    id: need
+    attributes: { label: Need, description: What you are trying to do and why existing features do not cover it. Cite the datasheet or reference manual where relevant. }
+    validations: { required: true }
+  - type: textarea
+    id: evidence
+    attributes: { label: Validation, description: How the result could be checked (fixture, measurement, reference tool). }

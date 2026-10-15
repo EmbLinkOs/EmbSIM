@@ -1,0 +1,128 @@
+# SPEC-007 - Project and Scenario Format
+
+**Status:** Accepted 2026-10-15. **Builds on:** 02 §5; ADR-006, ADR-012.
+**Schemas:** `schemas/project.schema.json`, `schemas/scenario.schema.json`.
+**Requirements:** `docs/requirements/CAT.md`, `docs/requirements/VER.md`.
+
+---
+
+## 1. Project
+
+```json
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "button-transistor-led",
+  "description": "The acceptance scenario of 01 §8.",
+  "libraries": ["./lib"],
+  "policy": "electrical",
+  "boards": [
+    {"id": "B1", "board": "emblink/bluepill",
+     "firmware": {"image": "build/blink.elf", "format": "elf", "toolchain": "gcc-arm", "sources": ["src/main.c"]},
+     "layout": {"x": 100, "y": 100, "rotation": 0}}
+  ],
+  "components": [
+    {"id": "SW1", "component": "emblink/push_button", "params": {"bounce": true}, "layout": {"x": 400, "y": 120}},
+    {"id": "R1", "component": "emblink/resistor", "params": {"resistance": "1k"}, "layout": {"x": 400, "y": 220, "rotation": 90}},
+    {"id": "Q1", "component": "emblink/bjt_npn", "params": {"part": "2N3904"}, "layout": {"x": 500, "y": 240}},
+    {"id": "R2", "component": "emblink/resistor", "params": {"resistance": 220}, "layout": {"x": 500, "y": 140}},
+    {"id": "D1", "component": "emblink/led", "params": {"color": "red"}, "layout": {"x": 500, "y": 80}}
+  ],
+  "nets": {
+    "BTN":  ["B1.A0", "SW1.1"],
+    "GND":  ["B1.GND", "SW1.2", "Q1.E"],
+    "3V3":  ["B1.3V3", "D1.A"],
+    "BASE": ["B1.C13", "R1.1"],
+    "Q1B":  ["R1.2", "Q1.B"],
+    "LED_K": ["D1.K", "R2.1"],
+    "COLL": ["R2.2", "Q1.C"]
+  },
+  "layout": {"wires": [{"net": "BTN", "points": [[380, 120], [300, 120], [300, 150]]}], "labels": [], "sheet": {"width": 1600, "height": 1000}},
+  "probes": [
+    {"id": "coll", "target": "net:COLL", "kind": "analog", "rate_hz": 1000000},
+    {"id": "btn", "target": "net:BTN", "kind": "digital"},
+    {"id": "ic", "target": "device:Q1.ic", "kind": "analog"},
+    {"id": "uart", "target": "serial:B1.USART1", "kind": "serial"}
+  ],
+  "scenarios": ["scenarios/press.json"],
+  "settings": {"core_quantum_ps": "1000000000", "max_delta_cycles": 10000, "crossing_resolution_ps": 100}
+}
+```
+
+Rules:
+
+- `libraries` are resolved relative to the project file, then the user
+  library directory, then the bundled catalog (SPEC-014).
+- `policy` is `functional`, `timed` or `electrical` (SPEC-003 §4; ADR-011);
+  the CLI and workbench may override it per run, recorded in the recording.
+- `boards[].firmware.image` is relative to the project; `format` is `elf`
+  or `hex` (inferred from the extension when absent); `toolchain` and
+  `sources` are for `embsim build` only.
+- `nets` reference `<instance>.<pin>` for components and
+  `<board>.<port>` for boards; a pin appears in at most one net; the loader
+  merges nets joined through board ports.
+- `layout` is presentation only: wire geometry, label positions, sheet size.
+  The electrical truth is `nets`. A client that edits wires updates both in
+  one `project.transaction`.
+- `probes[].target` kinds: `net:NAME`, `pin:INSTANCE.PIN`,
+  `device:INSTANCE.QUANTITY` (currents, powers, model outputs),
+  `reg:BOARD.PERIPHERAL.REGISTER`, `mem:BOARD:ADDR:LEN`, `var:BOARD:SYMBOL`
+  (DWARF), `serial:BOARD.PERIPHERAL`, `output:INSTANCE.NAME`. `kind` selects
+  the sample type (`digital`, `analog`, `serial`, `value`); `rate_hz` resamples
+  analog probes for instruments; absent, samples are at accepted steps.
+- `settings` override SPEC-002 defaults for this project.
+
+## 2. Scenario
+
+```json
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "press-and-release",
+  "until": "60ms",
+  "policy": "electrical",
+  "inputs": [
+    {"at": "10ms", "target": "SW1", "input": "pressed", "value": true},
+    {"at": "30ms", "target": "SW1", "input": "pressed", "value": false},
+    {"at": "5ms",  "target": "B1.USART1", "input": "rx", "value": "hello\n"},
+    {"at": "40ms", "target": "B1", "input": "reset", "value": true}
+  ],
+  "assertions": [
+    {"id": "button-seen", "at": "12ms", "probe": "btn", "expect": {"logic": "0"}},
+    {"id": "led-on", "between": ["11ms", "29ms"], "probe": "coll", "expect": {"max_v": 0.4}},
+    {"id": "led-current", "at": "20ms", "probe": "ic", "expect": {"min": 0.008, "max": 0.015}},
+    {"id": "banner", "by": "50ms", "probe": "uart", "expect": {"contains": "ready"}},
+    {"id": "no-contention", "always": true, "diagnostics": {"forbid": ["net.contention", "mcu.unsupported_access"]}}
+  ]
+}
+```
+
+- Times are strings with a unit (`ps`, `ns`, `us`, `ms`, `s`) and an optional
+  decimal; the loader converts exactly to picoseconds and refuses sub-
+  picosecond fractions. Inputs may appear in any order; equal times keep file
+  order (they become `EXTERNAL` events in sequence).
+- `target` is a component, a board (inputs: `reset`, `power`), or a board
+  peripheral (`rx` bytes for a serial peripheral, `voltage` for an ADC
+  terminal through a component). `input` names an entry in the target's
+  description.
+- Assertions: `at` samples the probe at a time; `between` checks every
+  sample in a window; `by` checks that the expectation holds at some time up
+  to the bound; `always` with `diagnostics.forbid` fails on any listed
+  diagnostic. `expect` keys: `logic` (`0|1|Z|X`), `min`, `max`, `min_v`,
+  `max_v`, `equals`, `contains`, `edges` (a count), `frequency_hz` with
+  `tolerance`.
+- A run with a scenario ends at `until`; the report (SPEC-008 §8) lists each
+  assertion with pass, fail and the observed value.
+
+## 3. Recording link
+
+A run with `--record` produces a recording (SPEC-012) whose `inputs` are the
+scenario's inputs plus any interactive ones, in `EXTERNAL` order. A
+recording can be converted to a scenario (`embsim record to-scenario`),
+which is how an interactive session becomes a regression test.
+
+## 4. Migration
+
+`schema_version` increments on incompatible change; `embsim migrate` rewrites
+files in place and reports what it could not convert. Within a version, new
+optional fields may be added.

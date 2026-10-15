@@ -1,0 +1,6 @@
+{
+  "name": "input.set presses the push button at now",
+  "method": "input.set",
+  "params": {"target": "SW1", "input": "pressed", "value": true},
+  "expect": {"result": {"at_ps": "10000000000", "seq": "<number>"}}
+}

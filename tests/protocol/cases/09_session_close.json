@@ -1,0 +1,6 @@
+{
+  "name": "session.close ends the session on this transport",
+  "method": "session.close",
+  "params": {},
+  "expect": {"result": {}}
+}

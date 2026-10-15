@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+name: Bug report
+description: Behaviour that differs from a current contract or from the hardware.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: Check docs/STATUS.md before reporting a planned feature as broken.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Scheduler / time, Nets / digital engine, Analog engine, MCU runtime / peripherals, Catalog / descriptions, Protocol / CLI, Workbench, Toolchains, Build / CI, Documentation, Unsure]
+    validations: { required: true }
+  - type: input
+    id: revision
+    attributes: { label: Source revision, placeholder: Output of git rev-parse HEAD }
+    validations: { required: true }
+  - type: input
+    id: platform
+    attributes: { label: Platform and compiler, placeholder: Ubuntu 24.04, GCC 13; or macOS 14, Apple Clang 15 }
+    validations: { required: true }
+  - type: textarea
+    id: reproduction
+    attributes: { label: Reproduction, description: Project, scenario or recording file, exact commands, and the firmware image or sources when relevant. }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: Expected and observed, description: What the contract, the datasheet or the hardware does; what EmbSIM did. Attach the JSON report or diagnostics. }
+    validations: { required: true }

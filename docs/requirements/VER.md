@@ -1,0 +1,38 @@
+# VER - Verification, Record and Replay
+
+Group `VER`. Design: 04 §8; SPEC-012.
+
+Each requirement has a statement, a rationale, a status (Accepted, FUTURE),
+a verification method and a trace to the design. Verification names the
+test or review that establishes it; STATUS.md records whether it passed.
+
+---
+
+### VER-001  Recording of all external inputs
+**Statement.** Every EXTERNAL event shall be recorded with time, sequence, target, input and value, with the identities of the project, images, catalog and engine.
+**Rationale.** ADR-012.
+**Status.** Accepted 2026-10-15
+**Verification.** Recording tests cover each input kind.
+**Trace.** SPEC-012 §1
+
+### VER-002  Replay divergence report
+**Statement.** Replay shall compare recorded observations in order and report the first divergence with both values.
+**Rationale.** Debuggability.
+**Status.** Accepted 2026-10-15
+**Verification.** Replay tests with an injected divergence.
+**Trace.** SPEC-012 §2
+
+### VER-003  Recording to scenario
+**Statement.** A recording shall convert to a scenario with assertions chosen by the user.
+**Rationale.** Interactive to regression.
+**Status.** Accepted 2026-10-15
+**Verification.** CLI test.
+**Trace.** SPEC-012 §3
+
+### VER-004  Differential suites
+**Statement.** CI shall run EmbCC golden fixtures (per extracted family), ngspice analog fixtures and QEMU-derived expectations where available.
+**Rationale.** Evidence.
+**Status.** Accepted 2026-10-15
+**Verification.** CI jobs.
+**Trace.** 07 §2
+

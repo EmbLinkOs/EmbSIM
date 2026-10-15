@@ -1,0 +1,6 @@
+{
+  "name": "observe.snapshot of nets and outputs at now",
+  "method": "observe.snapshot",
+  "params": {"include": ["nets", "outputs"]},
+  "expect": {"result": {"now_ps": "10000000000", "nets": "<any>", "outputs": "<any>"}}
+}

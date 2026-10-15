@@ -1,0 +1,156 @@
+# SPEC-004 - Analog Engine and Mixed-Signal Bridges
+
+**Status:** Accepted 2026-10-15. **Builds on:** 03 §5, §6; SPEC-002 §6;
+SPEC-003 §4; ADR-004. **Requirements:** `docs/requirements/ANA.md`.
+
+---
+
+## 1. Scope
+
+The per-island analog solver, its device model interface, numerical methods,
+diagnostics, validation fixtures and the bridges to digital islands.
+
+## 2. Formulation
+
+Modified nodal analysis. Unknowns are node voltages (ground is node 0, fixed
+at 0 V) and the branch currents of voltage sources, inductors and other
+current-defined elements. Each device contributes stamps to the Jacobian `J`
+and residual `f` for the current operating point; the engine solves
+`J Δx = -f` and iterates (Newton-Raphson) until `|Δx| < reltol·|x| + abstol`
+for every unknown and the residual norm is under `iabstol`, or `max_iter`
+(default 100) is reached.
+
+Defaults (per session, overridable per island in the project): `reltol
+1e-3`, `vntol 1e-6` V, `abstol 1e-12` A, `gmin 1e-12` S, `max_iter 100`,
+`h_min 1 ps`, `h_max` from the island's fastest source or 1 ms, `lte_tol
+1e-3`, `method trapezoidal` with BDF2 fallback after two rejections.
+
+## 3. Operating point
+
+1. Try direct Newton from the initial guess (zeros, or the last accepted
+   solution after a topology transaction).
+2. On failure, gmin stepping: `gmin` from 1e-2 down to the configured value in
+   decade steps, each converged from the previous.
+3. On failure, source stepping: all independent sources scaled from 0 to 1 in
+   steps halved on failure.
+4. On failure, `analog.no_convergence` (fatal in `strict`, error otherwise:
+   the island freezes at its last state and reports) naming the three nodes
+   with the largest residuals and the devices attached.
+
+## 4. Transient
+
+- Integration state per reactive device (charge or flux history for
+  trapezoidal and BDF2); the engine owns the step proposal from the local
+  truncation error estimate (`h_new = h · (lte_tol / lte)^(1/3)`, clamped to
+  `[h/4, 2h]`).
+- Breakpoints: every source reports its next discontinuity (pulse edges, PWL
+  corners, a bridge's scheduled transition); the step never crosses one.
+- Scheduler coupling is SPEC-002 §6: proposals are clipped to the next event;
+  bridge crossings cause retries with bisection to `crossing_resolution_ps`.
+- A step is accepted when Newton converges and the LTE is under tolerance;
+  otherwise `h` is halved and retried; `max_step_rejections` consecutive
+  rejections raise `analog.step_failure`.
+- Timestep too small (`h < h_min`) raises `analog.timestep_too_small` naming
+  the device with the largest LTE contribution.
+
+## 5. Linear solver
+
+Dense LU with partial pivoting for islands up to 64 unknowns; a sparse
+direct solver (Markowitz ordering computed once per topology, numeric
+refactorization per Newton step) above that. Pivot order is a function of
+the topology only, so results are deterministic for a given platform and
+flags. Singular matrices (a floating node, two ideal sources in parallel)
+are detected at topology time and reported as `analog.singular_topology`
+naming the node; `gmin` to ground is added to every node so a floating node
+yields 0 V with a warning rather than a failure.
+
+## 6. Device model interface
+
+```c
+typedef struct esk_adev_ops {
+    const char *name;
+    int  (*setup)(esk_adev *d, esk_island *isl);          /* allocate nodes/branches, validate params */
+    void (*load_dc)(esk_adev *d, esk_amatrix *m);          /* stamps for the operating point */
+    void (*load_tr)(esk_adev *d, esk_amatrix *m, const esk_integ *in); /* stamps with integration state */
+    void (*accept)(esk_adev *d, es_time_t t);              /* a step was accepted: commit history */
+    int  (*next_breakpoint)(esk_adev *d, es_time_t after, es_time_t *at);
+    double (*lte)(esk_adev *d, const esk_integ *in);       /* local truncation error contribution */
+    void (*observe)(esk_adev *d, esk_obs *o);              /* currents, powers, derived outputs (LED luminance) */
+} esk_adev_ops;
+```
+
+Devices are registered in the model registry as primitives and bound from
+component descriptions by name. Parameters are typed, with units and
+ranges, from the description (SPEC-005 §4).
+
+## 7. Device models, version 1
+
+| Primitive | Parameters (SI, defaults) | Equations and notes |
+|---|---|---|
+| `resistor` | `r` (Ω, required), `tc1`, `tc2` (0), `temp` (27 °C) | linear; `r` must be > 0 |
+| `capacitor` | `c` (F, required), `ic` (V, none), `esr` (0) | trapezoidal/BDF2 companion |
+| `inductor` | `l` (H, required), `ic` (A, none), `dcr` (0) | branch current unknown |
+| `vsource` | `kind`: `dc`, `pulse`, `sine`, `pwl`, `exp`; standard SPICE parameters | reports breakpoints; `dc` default |
+| `isource` | same kinds | |
+| `vcvs`, `vccs`, `cccs`, `ccvs` | `gain` | linear dependent sources |
+| `switch` | `ron` (1 mΩ), `roff` (1 GΩ), `state` (bool, an interactive input), `bounce` (optional: count, interval) | resistance switched by the input; bounce generates breakpoints |
+| `potentiometer` | `r` (Ω), `position` (0..1, interactive), `taper` (`linear`, `log`) | two resistors |
+| `diode` | `is` (1e-14 A), `n` (1), `rs` (0), `bv` (none), `ibv`, `cj0` (0), `vj`, `m`, `tt` (0) | Shockley with series `rs`, optional breakdown, junction and diffusion capacitance; limiting on the exponential (pnjlim) |
+| `led` | diode parameters with defaults per `color` (`red`, `green`, `blue`, `yellow`, `white`): `vf` typical and `is`/`n` fitted; `if_nom` (20 mA); `efficiency` curve | `observe` reports current and a normalised luminance (0..1 at `if_nom`, saturating) for the workbench |
+| `zener` | diode plus `vz`, `rz` | breakdown model |
+| `bjt_npn`, `bjt_pnp` | `is`, `bf` (100), `br` (1), `nf`, `nr`, `vaf` (none), `rb`, `rc`, `re` (0), `cje`, `cjc`, `tf`, `tr` (0) | Ebers-Moll with Early effect and optional charges; Gummel-Poon parameters (`ikf`, `ise`, `ne`) accepted and used when present |
+| `nmos`, `pmos` | level-1: `vto`, `kp`, `lambda`, `gamma`, `phi`, `w`, `l`, `cgs`, `cgd`, `cgb`; `rds` (none) | Shichman-Hodges with cutoff, linear, saturation; body tied to source unless a `B` pin is connected |
+| `opamp` | `gain` (1e5), `vsat` from supply pins or `vpos`/`vneg`, `gbw` (none), `rout` (0), `rin` (1e12) | behavioural with saturation; single-pole when `gbw` is given |
+| `comparator` | `vhyst` (0), `tpd` (0), output pin model from description | outputs through a digital_out pin model (a bridge) |
+| `regulator` | `vout`, `dropout`, `imax`, `quiescent` | behavioural LDO: `vout` while `vin > vout + dropout`, else tracks; current limit |
+| `adc_terminal` | `rin`, `cin`, `sample_time` | an MCU's analog input; `observe` samples the node for the peripheral model |
+| `dac_source` | `vref`, `bits`, `rout`, `settling` | an MCU's analog output or PWM filter source |
+
+A model's `electrical` fidelity declaration lists which effects are
+implemented; a parameter outside the declared range raises
+`analog.param_out_of_range` at load.
+
+## 8. Bridges (SPEC-003 §4 restated numerically)
+
+- **Thevenin driver**: for value `1`, a source `voh` in series with `rout`;
+  for `0`, `vol` through `rout`; for `Z`, open. A transition ramps linearly
+  at the pin's slew rate (V/µs) from the current source value; the ramp's
+  start and end are breakpoints. `rout` depends on the configured drive
+  strength when the MCU description gives a table.
+- **Comparator**: the node voltage versus `vih`/`vil` with hysteresis;
+  crossings are detected by sign change of `v - threshold` between accepted
+  steps and bisected to `crossing_resolution_ps`; the digital value changes
+  at the bracketed time as a `SIGNAL` event with the pin's `tpd`.
+- **Pull**: `rpull` to the supply or ground node of the island; the supply
+  node is the net of the pin's `power` reference in the component description
+  (`vdd_pin`), else an implicit ideal source at the family's nominal voltage,
+  reported as `analog.implicit_supply` (info).
+- **ADC terminal** and **DAC source** as in §7.
+
+## 9. Observations
+
+Per island per accepted step: node voltages; per device: currents, power
+and model-specific outputs (luminance, operating region, Vce, Ic). Probes
+subscribe to any of these (`probe.add` with target `net:`, `pin:`,
+`device:U3.ic`). Samples are emitted at accepted steps (variable rate) and
+optionally resampled at a fixed probe rate for instruments.
+
+## 10. Validation fixtures
+
+`tests/analog/fixtures/<name>/` holds `circuit.json` (an EmbSIM project or
+a bare island), `expected.json` (operating point or sampled waveform with
+tolerances), and `source.md` naming the generator: an ngspice netlist and
+version (`tools/analog/ngspice_fixture.py` regenerates), or an analytic
+derivation. Required at M0: RC charge and discharge, RL, voltage divider,
+diode forward curve at five currents, LED with series resistor at 3.3 V and
+5 V, NPN common-emitter switch (cutoff and saturation), NPN emitter follower,
+NMOS switch, PWM into an RC filter (ripple and mean), op-amp inverting
+amplifier, comparator with hysteresis, potentiometer divider, bouncing switch
+into a pull-up (crossing events count).
+
+## 11. Diagnostics
+
+`analog.no_convergence`, `analog.step_failure`, `analog.timestep_too_small`,
+`analog.singular_topology`, `analog.param_out_of_range`,
+`analog.implicit_supply`, `analog.overvoltage` (a device's declared absolute
+maximum exceeded, warning), `analog.overcurrent`.

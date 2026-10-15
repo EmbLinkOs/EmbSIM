@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+name: Repository
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Repository policy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Validate the policy checker
+        run: python3 -m unittest discover -s tools/repository -p 'test_*.py' -v
+      - name: Check commit identity and trailers
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 tools/repository/check_commits.py --base "$BASE_SHA" --head "$HEAD_SHA"
+      - name: Banned constructs and licence headers
+        run: python3 tools/repository/check_banned.py
