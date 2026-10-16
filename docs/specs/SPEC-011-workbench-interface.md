@@ -225,3 +225,19 @@ references. It excludes firmware contents and board internals. This inventory is
 not a default-resolved or procurement-qualified BOM. CSV quoting and leading
 formula escaping apply to all cells. Organization controls respect read-only,
 busy, inside-view and layout-preview boundaries.
+
+## Schematic visual language
+
+Idle wires use a configurable theme-aware color distinct from component strokes.
+Selected tracks have a separate selection stroke/halo; live state coloring must
+not obscure selection. Exposed symbol pins render hollow circular terminals with
+larger pointer targets, keyboard activation and hover/focus feedback. Wiring uses
+a pencil cursor; editable component bodies use grab/grabbing, respecting locks
+and read-only views. Navigation shall not hide terminals or annotations.
+
+Reference/name/primary-value annotations use catalog defaults when no explicit
+parameter overrides them, with SI formatting and units. Deterministic candidate
+positions minimize intersections with bodies, terminal neighborhoods, prior labels
+and track bounding boxes; they do not alter geometry or guarantee an overlap-free
+dense sheet. Compact reference/value labels and idle-wire color persist as device
+appearance preferences, independent of project and electrical data.

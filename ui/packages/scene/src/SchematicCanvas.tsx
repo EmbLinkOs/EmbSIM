@@ -9,6 +9,7 @@
 
 import type { Layout, NetState, ProbeInfo, Project, SymbolDescription, Wire } from '@embsim/protocol';
 import { memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type Ref } from 'react';
+import { componentValue, placeComponentLabels } from './componentLabels';
 import { ComponentSymbol } from './ComponentSymbol';
 import {
   GRID,
@@ -41,6 +42,8 @@ export interface SceneSymbol {
   svg: string;
   /** The parameter shown as the value label (e.g. "resistance"). */
   valueParam?: string;
+  valueDefault?: unknown;
+  valueUnit?: string;
 }
 
 export type SceneCatalog = Record<string, SceneSymbol>;
@@ -175,16 +178,6 @@ export function AnalogLegend({ range = [0, 3.3] }: { range?: [number, number] })
   );
 }
 
-function formatValue(v: unknown): string {
-  if (typeof v === 'number') {
-    if (Math.abs(v) >= 1e6) return `${v / 1e6}M`;
-    if (Math.abs(v) >= 1e3) return `${v / 1e3}k`;
-    if (Math.abs(v) < 1e-3 && v !== 0) return `${(v * 1e6).toPrecision(3)}µ`;
-    return String(v);
-  }
-  return String(v ?? '');
-}
-
 interface PlacedComponent {
   id: string;
   componentId: string;
@@ -220,7 +213,7 @@ const PartView = memo(
     return (
       <g
         data-component={c.id}
-        className={`es-component${selected ? ' es-component--selected' : ''}`}
+        className={`es-component${c.layout.locked ? ' es-component--locked' : ''}${selected ? ' es-component--selected' : ''}`}
         role="group"
         aria-label={c.id}
         transform={offset ? `translate(${offset.x} ${offset.y})` : undefined}
@@ -236,14 +229,6 @@ const PartView = memo(
             </text>
           </g>
         )}
-        <text className="es-component__ref" x={c.bounds.x} y={c.bounds.y - 3}>
-          {c.id}
-        </text>
-        {c.value && (
-          <text className="es-component__value" x={c.bounds.x + c.bounds.width + 3} y={c.bounds.y + c.bounds.height / 2 + 3}>
-            {c.value}
-          </text>
-        )}
         {showPins &&
           c.pins.map((pin, i) => {
             const vis = pinVisuals[i] ?? IDLE;
@@ -251,7 +236,7 @@ const PartView = memo(
               <g
                 key={pin.name}
                 data-pin={`${c.id}.${pin.name}`}
-                className={`es-pin es-wire--${vis.kind}${activePin === pin.name ? ' es-pin--active' : ''}`}
+                className={`es-pin${pin.net ? ' es-pin--connected' : ''} es-wire--${vis.kind}${activePin === pin.name ? ' es-pin--active' : ''}`}
                 tabIndex={0}
                 role="button"
                 aria-label={`Pin ${c.id}.${pin.name}${pin.net ? `, net ${pin.net}` : ', unconnected'}${live && pin.net ? `, ${vis.text}` : ''}`}
@@ -259,8 +244,8 @@ const PartView = memo(
                 onPointerEnter={(e) => onHover(`${c.id}.${pin.name}`, pin.net ? (live ? `${pin.net} · ${vis.text}` : `net ${pin.net}`) : 'unconnected', e.clientX, e.clientY)}
                 onPointerLeave={onLeave}
               >
-                <circle className="es-pin__hit" r={6} />
-                <circle className="es-pin__dot" r={pin.net ? 1.8 : 2.4} style={vis.color ? { fill: vis.color } : undefined} />
+                <circle className="es-pin__hit" r={7} />
+                <circle className="es-pin__dot" r={3.2} style={vis.color ? { stroke: vis.color } : undefined} />
               </g>
             );
           })}
@@ -288,8 +273,9 @@ const WireView = memo(
     const pts = wire.points.map(([x, y]) => `${x},${y}`).join(' ');
     return (
       <g data-wire={index} role={selectable ? 'button' : 'img'} tabIndex={selectable ? 0 : undefined} aria-label={`Track ${index + 1}, net ${wire.net}${selected ? ' selected' : ''}`} className={`es-wire es-wire--${vis.kind}${selected ? ' es-wire--selected' : ''}`}>
+        {selected && <polyline className="es-wire__selection" points={pts} />}
         <polyline className="es-wire__hit" points={pts} />
-        <polyline className="es-wire__line" points={pts} style={vis.color ? { stroke: vis.color } : undefined} onPointerEnter={(e) => onHover(wire.net, sub, e.clientX, e.clientY)} onPointerLeave={onLeave} />
+        <polyline className="es-wire__line" points={pts} style={vis.color && !selected ? { stroke: vis.color } : undefined} onPointerEnter={(e) => onHover(wire.net, sub, e.clientX, e.clientY)} onPointerLeave={onLeave} />
       </g>
     );
   },
@@ -374,10 +360,12 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         net: pinNet.get(`${c.id}.${name}`),
       }));
       const valueParam = symbol?.valueParam;
-      const value = valueParam && c.params?.[valueParam] !== undefined ? formatValue(c.params[valueParam]) : '';
+      const value = valueParam === 'dc' && typeof c.params?.kind === 'string' && c.params.kind !== 'dc' ? c.params.kind : valueParam ? componentValue(c.params?.[valueParam] ?? symbol?.valueDefault, symbol?.valueUnit) : '';
       return { id: c.id, componentId: c.component, layout, symbol, bounds: symbolBounds(layout, sym, 4), pins, value };
     });
   }, [project.components, project.boards, catalog, pinNet]);
+
+  const componentLabels = useMemo(() => placeComponentLabels(placed.map((part) => ({ id: part.id, bounds: part.bounds, pins: part.pins.map((pin) => pin.point), name: part.symbol?.name ?? part.componentId.split('/').at(-1) ?? part.componentId, value: part.value })), wires, appearance.labels !== 'compact'), [placed, wires, appearance.labels]);
 
   const placedById = useMemo(() => new Map(placed.map((p) => [p.id, p])), [placed]);
 
@@ -593,6 +581,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
 
   useEffect(() => {
     gesture.current = null;
+    svgRef.current?.removeAttribute('data-dragging');
     setWirePreview(null);
     setDragOffset(null);
     setMarquee(null);
@@ -692,6 +681,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       if (!readOnly && mode === 'select' && ids.includes(id) && !ids.some((partId) => placedById.get(partId)?.layout.locked)) {
         svg.setPointerCapture(e.pointerId);
         gesture.current = { kind: 'move', ids, start: world, moved: false };
+        svg.setAttribute('data-dragging', 'component');
       }
       return;
     }
@@ -704,6 +694,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       return;
     }
     svg.setPointerCapture(e.pointerId);
+    svg.setAttribute('data-dragging', 'pan');
     gesture.current = { kind: 'pan', startX: e.clientX, startY: e.clientY, vp: vpRef.current, moved: false };
   };
 
@@ -752,6 +743,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const onPointerUp = (e: ReactPointerEvent<SVGSVGElement>) => {
     const g = gesture.current;
     gesture.current = null;
+    svgRef.current?.removeAttribute('data-dragging');
     const svg = svgRef.current;
     if (svg?.hasPointerCapture(e.pointerId)) svg.releasePointerCapture(e.pointerId);
     const world = toWorld(e.clientX, e.clientY);
@@ -800,6 +792,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
 
   const cancelGesture = () => {
     gesture.current = null;
+    svgRef.current?.removeAttribute('data-dragging');
     setWirePreview(null);
     setDragOffset(null);
     setGuides({});
@@ -1045,7 +1038,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const routeBlocked = !!wiring && !wiring.manual && smartWires && !smartPreview;
   const wiringPreview = wiring ? smartPreview ?? extendWirePath(wiring.from.point, wiring.legs, wiring.cursor, wiring.horizontalFirst) : null;
   const showPins = !readOnly || mode === 'probe';
-  const cursorClass = mode === 'wire' ? 'es-scene--wire' : mode === 'probe' ? 'es-scene--probe' : '';
+  const cursorClass = mode === 'wire' || wiring ? 'es-scene--wire' : mode === 'probe' ? 'es-scene--probe' : '';
 
   const mapRects = [...placed.map((p) => p.bounds), visibleWorld];
   const mapX = Math.min(0, ...mapRects.map((r) => r.x)) - 40;
@@ -1054,7 +1047,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const mapH = Math.max(100, ...mapRects.map((r) => r.y + r.height)) - mapY + 40;
 
   return (
-    <div className={`es-scene es-scene--${appearance.palette} ${cursorClass} ${className ?? ''}`.trim()}>
+    <div className={`es-scene es-scene--${appearance.palette} es-scene--wire-${appearance.wireColor ?? 'green'} ${cursorClass} ${readOnly ? 'es-scene--readonly' : ''} ${className ?? ''}`.trim()}>
       <div ref={backgroundRef} className="es-scene__background" style={canvasBackground(appearance, viewport, showGrid)} aria-hidden="true" />
       <svg
         ref={svgRef}
@@ -1119,6 +1112,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
                   onSelectionChange({ components: group.members, wires: [] });
                   if (!readOnly && mode === 'select' && !group.members.some((id) => placedById.get(id)?.layout.locked)) {
                     svgRef.current?.setPointerCapture(e.pointerId);
+                    svgRef.current?.setAttribute('data-dragging', 'component');
                     gesture.current = { kind: 'move', ids: group.members, start: toWorld(e.clientX, e.clientY), moved: false };
                   }
                 }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onSelectionChange({ components: group.members, wires: [] }); } }}>
@@ -1183,6 +1177,19 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             })}
           </g>
 
+          <g className="es-scene__layer es-scene__layer--component-labels" pointerEvents="none">
+            {visible.map((part) => {
+              const label = componentLabels.get(part.id);
+              if (!label) return null;
+              const offset = selection.components.includes(part.id) ? dragOffset : null;
+              return <g key={part.id} data-component-label={part.id} transform={`translate(${label.x + (offset?.x ?? 0)} ${label.y + (offset?.y ?? 0)})`}>
+                <title>{`${part.id} · ${part.symbol?.name ?? part.componentId}${part.value ? ` · ${part.value}` : ''}`}</title>
+                <text className="es-component__ref" x={0} y={11}>{part.id}</text>
+                {label.name && <text className="es-component__name" x={0} y={23}>{label.name}</text>}
+                {part.value && <text className="es-component__value" x={0} y={label.name ? 36 : 24}>{part.value}</text>}
+              </g>;
+            })}
+          </g>
           <g className="es-scene__layer es-scene__layer--selection">
             {guides.x !== undefined && <line className="es-scene__alignment-guide" x1={guides.x} x2={guides.x} y1={visibleWorld.y} y2={visibleWorld.y + visibleWorld.height} />}
             {guides.y !== undefined && <line className="es-scene__alignment-guide" y1={guides.y} y2={guides.y} x1={visibleWorld.x} x2={visibleWorld.x + visibleWorld.width} />}
