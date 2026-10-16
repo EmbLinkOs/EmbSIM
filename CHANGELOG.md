@@ -211,6 +211,11 @@ versions follow semantic versioning. There is no release yet.
   `millis`, `analogRead`, `analogWrite`, `attachInterrupt`, `Serial`)
   builds them with the IDE's flags against a pinned checkout of the core
   and runs them under scenarios, in CI's linux-gcc job.
+- ST's STM32F1 HAL on the Blue Pill: `tests/vendor/stm32cube` builds an
+  application (the clock tree from HSE through the PLL, `HAL_Delay`, EXTI,
+  a TIM2 interrupt, the UART both ways) with ST's unmodified HAL, CMSIS
+  device files, startup and linker script, at pinned commits, and runs it
+  under a scenario, in CI's linux-gcc job.
 
 ### Changed
 - The analog fixtures are checked against ngspice too: `ngspice.json` beside

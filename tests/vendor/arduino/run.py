@@ -18,16 +18,16 @@ sketch's scenario.json, whose assertions must all pass.
 
 Without avr-gcc, or without --core (or ARDUINO_CORE_AVR), it skips."""
 import argparse
-import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
+sys.path.insert(0, str(HERE.parent))
+from vendor_run import run_scenario, sh  # noqa: E402
 # platform.txt: compiler.{c,cpp,S}.flags and compiler.c.elf.flags (warnings
 # off, as compiler.warning_flags is by default); boards.txt: uno.build.*
 BOARD = ["-mmcu=atmega328p", "-DF_CPU=16000000L", "-DARDUINO=10819", "-DARDUINO_AVR_UNO",
@@ -40,10 +40,6 @@ CPP_FLAGS = ["-c", "-g", "-Os", "-w", "-std=gnu++11", "-fpermissive", "-fno-exce
 S_FLAGS = ["-c", "-g", "-x", "assembler-with-cpp", "-flto"]
 ELF_FLAGS = ["-w", "-Os", "-g", "-flto", "-fuse-linker-plugin", "-Wl,--gc-sections",
              "-mmcu=atmega328p"]
-
-
-def sh(cmd, **kw):
-    subprocess.run([str(c) for c in cmd], check=True, **kw)
 
 
 def build_core(core: Path, out: Path) -> Path:
@@ -77,29 +73,6 @@ def build_sketch(core: Path, lib: Path, sketch: Path, out: Path) -> Path:
     return elf
 
 
-def run_sketch(embsim: Path, name: str, elf: Path, work: Path) -> bool:
-    d = work / name
-    d.mkdir()
-    shutil.copy(HERE / "project.json", d / "project.json")
-    shutil.copy(elf, d / "sketch.elf")
-    scenario = HERE / "sketches" / name / "scenario.json"
-    p = subprocess.run([str(embsim), "run", str(d / "project.json"), "--scenario", str(scenario), "--json"],
-                       capture_output=True, text=True)
-    try:
-        report = json.loads(p.stdout)
-    except json.JSONDecodeError:
-        print(f"FAIL  {name}: embsim did not report\n{p.stdout[-2000:]}{p.stderr[-2000:]}")
-        return False
-    results = report.get("assertions") or []
-    failed = [a for a in results if not a.get("ok")]
-    for a in results:
-        print(f"  {'ok  ' if a.get('ok') else 'FAIL'} {name}/{a.get('id')}"
-              + ("" if a.get("ok") else f": expected {a.get('expected')}, observed {a.get('observed')!r}"))
-    ok = p.returncode == 0 and report.get("ok") and results and not failed
-    print(f"{'ok  ' if ok else 'FAIL'}  {name}: {len(results) - len(failed)}/{len(results)} assertions")
-    return bool(ok)
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--core", default=os.environ.get("ARDUINO_CORE_AVR"), help="an ArduinoCore-avr checkout")
@@ -125,7 +98,8 @@ def main() -> int:
         bad = 0
         for name in names:
             elf = build_sketch(core, lib, HERE / "sketches" / name / f"{name}.ino", work)
-            bad += not run_sketch(Path(args.embsim), name, elf, work)
+            bad += not run_scenario(Path(args.embsim), HERE / "project.json", name, elf,
+                                    HERE / "sketches" / name / "scenario.json", work)
     return 1 if bad else 0
 
 

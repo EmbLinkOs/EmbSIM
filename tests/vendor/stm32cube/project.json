@@ -1,0 +1,87 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "stm32cube-vendor",
+ "description": "A Blue Pill running an application built with ST's unmodified STM32F1 HAL and CMSIS device files (tests/vendor/stm32cube/run.py puts the image beside this file as sketch.elf): a button on PA0, a terminal on PA9/PA10 at 115200 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/bluepill",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "SW1",
+   "component": "emblink/push_button",
+   "layout": {
+    "x": 700,
+    "y": 300
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  }
+ ],
+ "nets": {
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "SW1.2",
+   "VT1.GND"
+  ],
+  "BTN": [
+   "B1.A0",
+   "SW1.1"
+  ],
+  "UART_TX": [
+   "B1.A9",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.A10",
+   "VT1.TX"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "pc13",
+   "target": "net:B1.PC13",
+   "kind": "digital"
+  }
+ ]
+}

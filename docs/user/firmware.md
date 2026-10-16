@@ -81,7 +81,9 @@ ELF in the build folder) or with avr-gcc and the flags of the core's
 sketch.elf --console`. `tests/vendor/arduino` builds two sketches against
 the unmodified ArduinoCore-avr and checks `delay`, `millis`,
 `analogRead`, `analogWrite`, `attachInterrupt` and `Serial` against
-scenarios.
+scenarios. `tests/vendor/stm32cube` does the same for ST's STM32F1 HAL on
+the Blue Pill: the HAL's own startup file, system file and linker script,
+unchanged.
 
 On the nRF52840, EasyDMA reaches RAM only: a UARTE buffer in flash (a
 string literal) is a warning (`mcu.easydma_range`) and nothing is sent,

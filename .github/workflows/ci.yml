@@ -63,6 +63,19 @@ jobs:
           git -C "$RUNNER_TEMP/ArduinoCore-avr" fetch -q --depth 1 https://github.com/arduino/ArduinoCore-avr.git 11b9130371e8447920edb65a75706a6c951e51fc
           git -C "$RUNNER_TEMP/ArduinoCore-avr" checkout -q FETCH_HEAD
           python3 tests/vendor/arduino/run.py --core "$RUNNER_TEMP/ArduinoCore-avr" --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: STM32 HAL applications on the unmodified STM32F1 HAL
+        if: matrix.name == 'linux-gcc'
+        run: |
+          fetch() { # directory, repository, commit[, sparse path]
+            git init -q "$RUNNER_TEMP/st/$1"
+            git -C "$RUNNER_TEMP/st/$1" fetch -q --depth 1 --filter=blob:none "$2" "$3"
+            if [ -n "$4" ]; then git -C "$RUNNER_TEMP/st/$1" sparse-checkout set --no-cone "$4"; fi
+            git -C "$RUNNER_TEMP/st/$1" checkout -q FETCH_HEAD
+          }
+          fetch stm32f1xx_hal_driver https://github.com/STMicroelectronics/stm32f1xx_hal_driver.git bd368aa335c529641d2e567574885e02deacc64a
+          fetch cmsis_device_f1 https://github.com/STMicroelectronics/cmsis_device_f1.git c8e9a4a4f16b6d2cb2a2083cbe5161025280fb22
+          fetch CMSIS_5 https://github.com/ARM-software/CMSIS_5.git 55b19837f5703e418ca37894d5745b1dc05e4c91 /CMSIS/Core/Include/
+          python3 tests/vendor/stm32cube/run.py --st "$RUNNER_TEMP/st" --embsim build/${{ matrix.preset }}/bin/embsim
 
   tools:
     name: tools and catalog
