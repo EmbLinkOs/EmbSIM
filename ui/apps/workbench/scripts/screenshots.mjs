@@ -47,17 +47,18 @@ async function serve(project) {
 }
 
 /** One shot: a fresh server and page, `act` drives it, then the screenshot. */
-async function shot(browser, name, project, act, { dark = false } = {}) {
+async function shot(browser, name, project, act, { dark = false, scale = 1, element = null } = {}) {
   if (only && !only.has(name)) return;
   const srv = await serve(project);
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, colorScheme: dark ? 'dark' : 'light' });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, colorScheme: dark ? 'dark' : 'light', deviceScaleFactor: scale });
   page.setDefaultTimeout(10000);
   try {
     await page.goto(srv.url);
     await page.getByTestId('run-toggle').waitFor();
     await wait(1200);
     await act(page);
-    await page.screenshot({ path: `${out}/${name}.png` });
+    if (element) await page.locator(element).first().screenshot({ path: `${out}/${name}.png` });
+    else await page.screenshot({ path: `${out}/${name}.png` });
     console.log(`${name}.png`);
   } finally {
     await page.close();
@@ -85,6 +86,8 @@ const browser = await chromium.launch(chromiumPath ? { executablePath: chromiumP
 const transistor = 'examples/button-transistor-led/project.json';
 const bluepill = 'examples/bluepill-button-led/project.json';
 const counter = 'examples/counter-bus/project.json';
+const showcase = 'examples/display-showcase/project.json';
+const flasher = 'examples/kicad-flasher/project.json';
 
 try {
   await shot(browser, 'design-transistor', transistor, async () => {});
@@ -98,6 +101,18 @@ try {
     await perspective(page, 2);
     await run(page, 1500);
   });
+  // M3: the catalog's displays and actuators on the board view, and an imported KiCad netlist
+  await shot(browser, 'run-showcase', showcase, async (page) => {
+    await perspective(page, 2);
+    await run(page, 3500);
+  });
+  // the same board view up close
+  await shot(browser, 'board-showcase', showcase, async (page) => {
+    await perspective(page, 2);
+    await run(page, 3500);
+  }, { scale: 3, element: '.es-board svg' });
+  await shot(browser, 'design-showcase', showcase, async (page) => run(page, 1500));
+  await shot(browser, 'design-flasher', flasher, async (page) => run(page, 1500));
   await shot(browser, 'design-bluepill', bluepill, async () => {});
   await shot(browser, 'design-bluepill-dark', bluepill, async () => {}, { dark: true });
   await shot(browser, 'inside-bluepill', bluepill, async (page) => {

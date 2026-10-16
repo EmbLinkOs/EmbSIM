@@ -51,6 +51,22 @@ versions follow semantic versioning. There is no release yet.
 - `embsim serve --allow-origin`; a sanitizer CI job (GCC address and
   undefined-behaviour sanitizers).
 
+- M3 catalog and SDK: the Lua model tier (SPEC-013 §2) with Lua 5.4.7
+  vendored, per-instance states, an instruction budget and memory cap, and
+  I2C and SPI slaves decoded in C; `embsim catalog validate` in the engine
+  (each item under each declared policy, its fixtures run), `catalog new`
+  templates for components, Lua models and boards, `catalog install` into
+  user libraries (`$EMBSIM_LIBRARIES`).
+- The catalog grows to 101 components with 150 fixtures: 74HC and CD4000
+  logic, counters, decoders, latches, the 555, regulators, displays
+  (HD44780 LCD, SSD1306 OLED, MAX7219), EEPROMs, a real-time clock,
+  sensors, a servo, a stepper driver and a buzzer.
+- Importers: EmbLinkRTOS board YAML (`rtos2board.py`), DeviceTree sources
+  (`dts2board.py`) and KiCad netlists (`kicad2project.py`);
+  `examples/display-showcase` and `examples/kicad-flasher`.
+- Board view artwork states with value maps, formats and text; scenario
+  text expectations on value probes.
+
 ### Removed
 - The draft 0.1 foundation (Python runtime, HTTP server, single-page UI);
   its kernel semantics and visual direction are retained in the baseline.

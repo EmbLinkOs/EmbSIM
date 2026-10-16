@@ -32,7 +32,10 @@ exit criteria still open (the three-platform run of the acceptance
 scenario from the workbench, the `gcc-arm` profile) are in STATUS.md. M2
 is implemented (the inside of a board or composite opens read-only); its
 installers and three-platform smoke run in CI (Chromium, not the platform
-webviews). M3 to M6 are planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
+webviews). M3 is implemented: 101 components each validated by the engine
+with its fixtures, the Lua tier, the SDK commands and the three importers;
+archive and URL installation and Lua's analog access are open (STATUS.md).
+M4 to M6 are planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
 
 ## 3. Specification work order
 

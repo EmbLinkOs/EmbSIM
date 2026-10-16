@@ -259,18 +259,35 @@ def convert(netlist: Path, policy: str):
             supplies += 1
             comps.append({"id": f"PWR{supplies}", "component": "emblink/vcc", "params": {"voltage": v}})
             pins.append(f"PWR{supplies}.VCC")
-    # a simple grid: a row per kind of part
-    rows = {}
-    for c in comps:
-        rows.setdefault(c["component"], []).append(c)
-    y = 60
-    for _, row in sorted(rows.items()):
-        for i, c in enumerate(row):
-            c["layout"] = {"x": 60 + 120 * i, "y": y}
-        y += 100
+    # a grid, four parts to a row, and at every connected pin a short stub
+    # with its net's label: readable without routing a single wire
+    symbols = {}
+    x = y = 0
+    row_h = 0
+    for i, c in enumerate(comps):
+        sym = json.loads((CATALOG / c["component"].split("/")[1] / "component.json").read_text())["symbol"]
+        symbols[c["id"]] = sym
+        if i and i % 4 == 0:
+            x, y, row_h = 0, y + row_h + 80, 0
+        c["layout"] = {"x": 60 + x, "y": 60 + y}
+        x += max(sym["width"], 60) + 120
+        row_h = max(row_h, sym["height"])
+    wires, labels = [], []
+    step = {"left": (-20, 0), "right": (20, 0), "top": (0, -20), "bottom": (0, 20)}
+    for net, pins in nets.items():
+        for ref in pins:
+            iid, pin = ref.split(".", 1)
+            comp = next(c for c in comps if c["id"] == iid)
+            pos = symbols[iid]["pins"].get(pin)
+            if not pos:
+                continue
+            px, py = comp["layout"]["x"] + pos["x"], comp["layout"]["y"] + pos["y"]
+            dx, dy = step.get(pos["side"], (20, 0))
+            wires.append({"net": net, "points": [[px, py], [px + dx, py + dy]]})
+            labels.append({"net": net, "x": px + dx, "y": py + dy})
     project = {"schema_version": 1, "kind": "project", "name": netlist.stem, "policy": policy,
                "description": f"Imported from {netlist.name} by tools/importers/kicad2project.py.",
-               "components": comps, "nets": nets}
+               "components": comps, "nets": nets, "layout": {"wires": wires, "labels": labels}}
     return project, warnings
 
 
