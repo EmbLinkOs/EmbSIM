@@ -34,7 +34,11 @@
 #define RF_MAX_REGS 64
 #define RF_MAX_FIELDS 32
 
-static const struct esk_dev_ops rf_plain_ops;
+static u32 plain_read(void *ctx, u32 off, int n);
+static void plain_write(void *ctx, u32 off, int n, u32 v);
+static const struct esk_dev_ops rf_plain_ops = {
+    "registers", plain_read, plain_write, 0, 0, 0,
+};
 
 void esk_rf_diag(struct esk_mach *m, int severity, const char *code, const char *fmt, ...)
 {
@@ -219,7 +223,14 @@ static void sort_regs(struct esk_rf_reg **r, int n)
     }
 }
 
-static const struct esk_dev_ops rf_map_ops;
+static u32 map_read(void *ctx, u32 off, int n);
+static void map_write(void *ctx, u32 off, int n, u32 v);
+static void map_reset(void *ctx);
+static void map_tick(void *ctx, u32 cycles);
+static int map_next_event(void *ctx, u32 *cycles);
+static const struct esk_dev_ops rf_map_ops = {
+    "registers", map_read, map_write, map_reset, map_tick, map_next_event,
+};
 
 es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, char *why, size_t cap)
 {
@@ -666,10 +677,6 @@ static int map_next_event(void *ctx, u32 *cycles)
     return any;
 }
 
-static const struct esk_dev_ops rf_map_ops = {
-    "registers", map_read, map_write, map_reset, map_tick, map_next_event,
-};
-
 /* a peripheral with no model: the register file alone, said once */
 static void plain_note(struct esk_rf_periph *p)
 {
@@ -694,10 +701,6 @@ static void plain_write(void *ctx, u32 off, int n, u32 v)
     plain_note(p);
     esk_rf_write(p, off, n, v);
 }
-
-static const struct esk_dev_ops rf_plain_ops = {
-    "registers", plain_read, plain_write, 0, 0, 0,
-};
 
 es_status esk_rf_bind(struct esk_mach *m, const esk_json *binding, char *missing, size_t cap)
 {
