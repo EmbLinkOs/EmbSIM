@@ -347,7 +347,7 @@ static void test_bluepill_golden(void)
     CHECK(strstr(b->log, "mcu.clock_gated: a read at pc") != NULL);
     CHECK(strstr(b->log, "GPIOA.IDR reads as 0 while its clock is off (RCC.APB2ENR.IOPAEN is 0)") != NULL);
     CHECK(strstr(b->log, "USART2.BRR is ignored while its clock is off (RCC.APB1ENR.USART2EN is 0)") != NULL);
-    CHECK(strstr(b->log, "mcu.bus_fault: a word write at 0x40024000") != NULL);
+    CHECK(strstr(b->log, "mcu.bus_error: a word write at 0x40024000") != NULL);
     board_free(b);
     free(b);
 }

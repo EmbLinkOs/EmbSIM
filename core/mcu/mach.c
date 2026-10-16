@@ -174,7 +174,7 @@ void esk_mach_bus_error(struct esk_mach *m, u32 addr, int n, int write)
     snprintf(msg, sizeof msg, "%s at 0x%08lx (pc 0x%08lx): nothing is mapped there",
              n >= 1 && n <= 4 ? kinds[write != 0][n] : "an access", (unsigned long)addr,
              (unsigned long)(m->cpu ? m->cpu->ops->pc(m->cpu) : 0));
-    m->host.diag(m->host.ctx, ES_SEV_WARNING, "mcu.bus_fault", msg);
+    m->host.diag(m->host.ctx, ES_SEV_WARNING, "mcu.bus_error", msg);
 }
 
 struct esk_rx_port *esk_mach_rx_find(struct esk_mach *m, const char *unit)

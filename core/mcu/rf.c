@@ -537,11 +537,11 @@ static void hole(struct esk_rf *rf, u32 a, int n, int write)
             (!in || rf->p[i].end - rf->p[i].base < in->end - in->base))
             in = &rf->p[i];
     if (in)
-        esk_rf_diag(m, ES_SEV_WARNING, "mcu.bus_fault", "%s at 0x%08lx (pc 0x%08lx): %s has no register at +0x%03lx",
+        esk_rf_diag(m, ES_SEV_WARNING, "mcu.bus_error", "%s at 0x%08lx (pc 0x%08lx): %s has no register at +0x%03lx",
                     access_kind(n, write), (unsigned long)a, (unsigned long)m->cpu->ops->pc(m->cpu),
                     in->name, (unsigned long)(a - in->base));
     else
-        esk_rf_diag(m, ES_SEV_WARNING, "mcu.bus_fault", "%s at 0x%08lx (pc 0x%08lx): no peripheral of %s is there",
+        esk_rf_diag(m, ES_SEV_WARNING, "mcu.bus_error", "%s at 0x%08lx (pc 0x%08lx): no peripheral of %s is there",
                     access_kind(n, write), (unsigned long)a, (unsigned long)m->cpu->ops->pc(m->cpu),
                     rf->device);
 }

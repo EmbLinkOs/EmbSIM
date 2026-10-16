@@ -600,7 +600,7 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
                 return ES_EUNSUPPORTED;
             }
             c = bi->mcu;
-            if (target[n] == '.' && esk_str_eq(input, "tx_text")) {
+            if (target[n] == '.' && (esk_str_eq(input, "tx_text") || esk_str_eq(input, "serial"))) {
                 esk_snprintf(unit_input, sizeof unit_input, "serial:%s", target + n + 1);
                 input = unit_input;
             }

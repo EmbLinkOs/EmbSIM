@@ -110,6 +110,29 @@
       }
     },
     {
+      "id": "transistor-saturated",
+      "between": [
+        "3.1ms",
+        "4.9ms"
+      ],
+      "probe": "coll",
+      "expect": {
+        "max_v": 0.3
+      }
+    },
+    {
+      "id": "collector-current",
+      "between": [
+        "3.1ms",
+        "4.9ms"
+      ],
+      "probe": "ic",
+      "expect": {
+        "min": 0.004,
+        "max": 0.008
+      }
+    },
+    {
       "id": "banner",
       "at": "8ms",
       "probe": "console",
@@ -149,7 +172,7 @@
           "net.contention",
           "analog.no_convergence",
           "mcu.lockup",
-          "mcu.bus_fault",
+          "mcu.bus_error",
           "mcu.clock_gated"
         ]
       }

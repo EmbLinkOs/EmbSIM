@@ -6,9 +6,12 @@ The M1 acceptance circuit: the bundled Blue Pill board running
 - USB 5 V feeds the board's regulator, which holds 3.3 V for the MCU.
 - A push button from A0 to ground. The firmware sets PA0 as an input with
   its internal pull-up and listens on EXTI line 0, both edges.
-- An external red LED with a 1 kΩ resistor from C13 to ground. The EXTI
-  interrupt drives PC13 high while the button is held, so the LED lights
-  (and the board's own LED, lit by a low PC13, goes out).
+- A red LED from the board's 3.3 V through 220 Ω to the collector of a
+  2N3904 NPN transistor, whose base PC13 drives through 1 kΩ. The EXTI
+  interrupt drives PC13 high while the button is held, so the transistor
+  saturates and the LED lights (and the board's own LED, lit by a low PC13,
+  goes out). This is the acceptance scenario of
+  [01 §8](../../docs/architecture/01-vision-and-principles.md).
 - A virtual terminal on A9 (the MCU's USART1 TX) and A10 (RX). The firmware
   prints a banner and "pressed"/"released" at 115200 baud; the terminal
   decodes the TX pin's waveform. What the terminal sends is decoded by the
@@ -16,7 +19,9 @@ The M1 acceptance circuit: the bundled Blue Pill board running
 
 The scenario presses the button from 3 ms to 5 ms and types `ok` at 6 ms,
 then checks the 3.3 V rail, the button net, PC13, the LED current (dark
-below 0.1 mA before and after, at least 0.5 mA while pressed), the console
+below 0.1 mA before and after, at least 0.5 mA while pressed), the
+transistor's operating point while pressed (collector below 0.3 V, collector
+current between 4 and 8 mA), the console
 (`serial:B1`) and the terminal's text.
 
 ```sh
