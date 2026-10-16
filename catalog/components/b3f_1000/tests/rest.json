@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rest",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/b3f_1000"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10000
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.1"
+      ],
+      "OUT": [
+        "DUT.3",
+        "R.1"
+      ],
+      "GND": [
+        "V.-",
+        "R.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "500us",
+      "min_v": -0.001,
+      "max_v": 0.01
+    }
+  },
+  "inputs": [
+    {
+      "at": "100us",
+      "target": "DUT",
+      "input": "pressed",
+      "value": false
+    }
+  ]
+}

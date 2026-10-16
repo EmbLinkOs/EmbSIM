@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "wiper-0.2",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bourns_3296w_104"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.2"
+      ],
+      "WIPER": [
+        "DUT.W"
+      ],
+      "GND": [
+        "V.-",
+        "DUT.1",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:WIPER": {
+      "at": "500us",
+      "min_v": 0.998,
+      "max_v": 1.002
+    }
+  },
+  "inputs": [
+    {
+      "at": "100us",
+      "target": "DUT",
+      "input": "position",
+      "value": 0.2
+    }
+  ]
+}

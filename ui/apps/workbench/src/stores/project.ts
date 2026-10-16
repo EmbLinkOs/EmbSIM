@@ -9,7 +9,8 @@
 import { CommandStack, GRID, boardSymbol, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
 import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
 import { create } from 'zustand';
-import { getClient } from '../connection';
+import { getClient, primeStores } from '../connection';
+import { useInstruments } from './instruments';
 import { diffProject } from './projectDiff';
 
 export interface CatalogEntry {
@@ -169,7 +170,11 @@ async function applyEdits(edits: ProjectEdit[]): Promise<void> {
   if (!tx) throw new Error('transaction did not return an id');
   try {
     await c.project.transaction({ op: 'edit', tx, edits });
-    await c.project.transaction({ op: 'commit', tx });
+    const committed = await c.project.transaction({ op: 'commit', tx });
+    if (committed.restarted) {
+      useInstruments.getState().clearRecords();
+      await primeStores(c);
+    }
   } catch (e) {
     await c.project.transaction({ op: 'abort', tx }).catch(() => undefined);
     throw e;

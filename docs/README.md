@@ -3,6 +3,7 @@
 | Where | What |
 |---|---|
 | [Component library](../catalog/README.md) | Named parts, categories, source status, model limits and executable fixtures |
+| [Interactive library](engineering/interactive-library.md) | Explorer, next named batch, electrical models, four circuit examples and regression commands |
 | [Manufacturer source review](engineering/named-part-sources.md) | Reviewed PDF revisions, package facts and remaining qualification gaps |
 | [STATUS.md](STATUS.md) | What is implemented and with what evidence: the only support matrix |
 | [gallery/](gallery/README.md) | Screenshots of the workbench at each milestone |

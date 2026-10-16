@@ -1,0 +1,663 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "light-controlled-switch",
+  "description": "A GL5528 light divider drives a 2N3904 LED switch; a two-way terminal block exposes the supply connections.",
+  "libraries": [
+    "../../catalog"
+  ],
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V1",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 5
+      },
+      "layout": {
+        "x": 60,
+        "y": 100
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 15000
+      },
+      "layout": {
+        "x": 250,
+        "y": 140
+      }
+    },
+    {
+      "id": "LDR1",
+      "component": "emblink/gl5528",
+      "layout": {
+        "x": 390,
+        "y": 150
+      }
+    },
+    {
+      "id": "RB",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 640,
+        "y": 140
+      }
+    },
+    {
+      "id": "Q1",
+      "component": "emblink/bjt_2n3904",
+      "layout": {
+        "x": 730,
+        "y": 130
+      }
+    },
+    {
+      "id": "RL",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 1000
+      },
+      "layout": {
+        "x": 730,
+        "y": 40
+      }
+    },
+    {
+      "id": "LED1",
+      "component": "emblink/led",
+      "layout": {
+        "x": 830,
+        "y": 90
+      }
+    },
+    {
+      "id": "J1",
+      "component": "emblink/phoenix_mc_381_2",
+      "layout": {
+        "x": 60,
+        "y": 320
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 730,
+        "y": 350
+      }
+    }
+  ],
+  "nets": {
+    "VCC": [
+      "V1.+",
+      "R1.1",
+      "RL.1",
+      "J1.1"
+    ],
+    "SENSE": [
+      "R1.2",
+      "LDR1.1",
+      "RB.1"
+    ],
+    "BASE": [
+      "RB.2",
+      "Q1.B"
+    ],
+    "LED_A": [
+      "RL.2",
+      "LED1.A"
+    ],
+    "SWITCHED": [
+      "LED1.K",
+      "Q1.C"
+    ],
+    "GND": [
+      "V1.-",
+      "LDR1.2",
+      "Q1.E",
+      "J1.2",
+      "G.GND"
+    ]
+  },
+  "probes": [
+    {
+      "id": "collector",
+      "target": "net:SWITCHED",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "sense",
+      "target": "net:SENSE",
+      "kind": "analog",
+      "rate_hz": 100000
+    }
+  ],
+  "scenarios": [
+    "scenarios/interact.json"
+  ],
+  "layout": {
+    "sheet": {
+      "width": 1200,
+      "height": 1000
+    },
+    "labels": [
+      {
+        "net": "VCC",
+        "x": 40,
+        "y": -50
+      },
+      {
+        "net": "SENSE",
+        "x": 330,
+        "y": 140
+      },
+      {
+        "net": "BASE",
+        "x": 720,
+        "y": 140
+      },
+      {
+        "net": "LED_A",
+        "x": 810,
+        "y": 40
+      },
+      {
+        "net": "SWITCHED",
+        "x": 910,
+        "y": 90
+      },
+      {
+        "net": "GND",
+        "x": 40,
+        "y": 570
+      }
+    ],
+    "wires": [
+      {
+        "net": "VCC",
+        "points": [
+          [
+            90,
+            100
+          ],
+          [
+            90,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            250,
+            150
+          ],
+          [
+            230,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            730,
+            50
+          ],
+          [
+            710,
+            50
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            60,
+            340
+          ],
+          [
+            40,
+            340
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            40,
+            -40
+          ],
+          [
+            710,
+            -40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            90,
+            80
+          ],
+          [
+            90,
+            -40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            230,
+            150
+          ],
+          [
+            230,
+            -40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            710,
+            50
+          ],
+          [
+            710,
+            -40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            40,
+            340
+          ],
+          [
+            40,
+            -40
+          ]
+        ]
+      },
+      {
+        "net": "SENSE",
+        "points": [
+          [
+            310,
+            150
+          ],
+          [
+            330,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "SENSE",
+        "points": [
+          [
+            390,
+            170
+          ],
+          [
+            370,
+            170
+          ]
+        ]
+      },
+      {
+        "net": "SENSE",
+        "points": [
+          [
+            640,
+            150
+          ],
+          [
+            620,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "SENSE",
+        "points": [
+          [
+            330,
+            150
+          ],
+          [
+            370,
+            150
+          ],
+          [
+            370,
+            170
+          ]
+        ]
+      },
+      {
+        "net": "SENSE",
+        "points": [
+          [
+            370,
+            170
+          ],
+          [
+            370,
+            140
+          ],
+          [
+            620,
+            140
+          ],
+          [
+            620,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            700,
+            150
+          ],
+          [
+            720,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            730,
+            150
+          ],
+          [
+            710,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            720,
+            150
+          ],
+          [
+            710,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "LED_A",
+        "points": [
+          [
+            790,
+            50
+          ],
+          [
+            810,
+            50
+          ]
+        ]
+      },
+      {
+        "net": "LED_A",
+        "points": [
+          [
+            830,
+            100
+          ],
+          [
+            810,
+            100
+          ]
+        ]
+      },
+      {
+        "net": "LED_A",
+        "points": [
+          [
+            810,
+            50
+          ],
+          [
+            810,
+            100
+          ]
+        ]
+      },
+      {
+        "net": "SWITCHED",
+        "points": [
+          [
+            890,
+            100
+          ],
+          [
+            910,
+            100
+          ]
+        ]
+      },
+      {
+        "net": "SWITCHED",
+        "points": [
+          [
+            770,
+            130
+          ],
+          [
+            770,
+            110
+          ]
+        ]
+      },
+      {
+        "net": "SWITCHED",
+        "points": [
+          [
+            910,
+            100
+          ],
+          [
+            910,
+            120
+          ],
+          [
+            770,
+            120
+          ],
+          [
+            770,
+            110
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            90,
+            140
+          ],
+          [
+            90,
+            160
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            550,
+            170
+          ],
+          [
+            570,
+            170
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            770,
+            170
+          ],
+          [
+            770,
+            190
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            60,
+            360
+          ],
+          [
+            40,
+            360
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            740,
+            350
+          ],
+          [
+            740,
+            330
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            40,
+            580
+          ],
+          [
+            770,
+            580
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            90,
+            160
+          ],
+          [
+            50,
+            160
+          ],
+          [
+            50,
+            580
+          ],
+          [
+            90,
+            580
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            570,
+            170
+          ],
+          [
+            570,
+            580
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            770,
+            190
+          ],
+          [
+            770,
+            580
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            40,
+            360
+          ],
+          [
+            40,
+            580
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            740,
+            330
+          ],
+          [
+            760,
+            330
+          ],
+          [
+            760,
+            580
+          ],
+          [
+            740,
+            580
+          ]
+        ]
+      }
+    ]
+  }
+}

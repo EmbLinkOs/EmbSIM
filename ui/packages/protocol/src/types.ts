@@ -189,6 +189,8 @@ export interface ArtworkState {
   map?: Record<string, string>;
   /** A template whose "{}" takes the (scaled) value; attr "text" sets the element's text. */
   format?: string;
+  /** Optional fixed decimal places after scaling, for numeric artwork text. */
+  precision?: number;
 }
 
 export interface ArtworkDescription {
@@ -211,7 +213,7 @@ export interface FidelityDeclaration {
 export interface Provenance {
   author?: string;
   license?: string;
-  sources?: { title: string; url?: string; date?: string }[];
+  sources?: { title: string; url?: string; date?: string; rev?: string; hash?: string; notes?: string }[];
 }
 
 export interface ManufacturerPart {

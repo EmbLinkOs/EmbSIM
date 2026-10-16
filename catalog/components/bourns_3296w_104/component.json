@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bourns_3296w_104",
+  "version": "1.0.0",
+  "name": "3296W-1-104LF",
+  "category": "inputs",
+  "description": "Bourns 3296W linear trimmer; interactive wiper position from 0 to 1.",
+  "keywords": [
+    "inputs",
+    "3296W-1-104LF",
+    "Bourns",
+    "3296W through-hole"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "End (position 0)"
+    },
+    {
+      "name": "W",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Wiper"
+    },
+    {
+      "name": "2",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "End (position 1)"
+    }
+  ],
+  "params": {
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 100000,
+      "doc": "End-to-end resistance",
+      "min": 1,
+      "max": "10M"
+    },
+    "taper": {
+      "type": "enum",
+      "enum": [
+        "linear",
+        "log"
+      ],
+      "default": "linear",
+      "doc": "Resistance law along the travel"
+    }
+  },
+  "model": {
+    "primitive": "potentiometer",
+    "bind": {
+      "r": "resistance",
+      "taper": "taper"
+    }
+  },
+  "inputs": [
+    {
+      "name": "position",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "doc": "Wiper position, 0 at pin 1 to 1 at pin 2"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "position",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "doc": "Wiper position as applied"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 80,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "2": {
+        "x": 160,
+        "y": 30,
+        "side": "right"
+      },
+      "W": {
+        "x": 80,
+        "y": 80,
+        "side": "bottom"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9,
+    "hotspots": [
+      {
+        "input": "position",
+        "selector": "#control",
+        "gesture": "drag",
+        "axis": "x",
+        "range": [
+          0,
+          1
+        ],
+        "travel": 130
+      }
+    ],
+    "states": [
+      {
+        "output": "position",
+        "selector": "#reading",
+        "attr": "text",
+        "format": "{} %",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            100
+          ]
+        },
+        "precision": 0
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Bourns 3296W linear trimmer; interactive wiper position from 0 to 1.",
+      "omissions": [
+        "manufacturer PDF review pending",
+        "wiper contact noise/resistance",
+        "25-turn mechanical travel",
+        "tolerance and power rating",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Bourns 3296 reference; manufacturer PDF review pending",
+        "url": "https://www.bourns.com/docs/product-datasheets/3296.pdf",
+        "notes": "End numbering and wiper follow ECAD convention; verify mechanical orientation before transferring to hardware."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "3296W-1-104LF",
+    "manufacturer": "Bourns",
+    "package": "3296W through-hole",
+    "datasheet": "https://www.bourns.com/docs/product-datasheets/3296.pdf"
+  }
+}

@@ -37,8 +37,12 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
     static const char *const two[] = { "1", "2" }, *const src[] = { "+", "-" }, *const pot[] = { "1", "W", "2" },
                              *const dio[] = { "A", "K" }, *const bjt[] = { "C", "B", "E" }, *const mos[] = { "D", "G", "S" },
                              *const amp[] = { "+", "-", "OUT", "V+", "V-" }, *const reg[] = { "IN", "OUT", "GND" },
-                             *const one[] = { "1" };
+                             *const env[] = { "1", "2" }, *const opto[] = { "A", "K", "C", "E" },
+                             *const relay[] = { "S+", "S-", "COM", "NC", "NO" },
+                             *const spdt[] = { "COM", "NC", "NO" }, *const one[] = { "1" };
     static const struct { const char *name; const char *const *pins; int n; } table[] = {
+        { "environment_resistor", env, 2 }, { "photodiode", dio, 2 }, { "optocoupler", opto, 4 },
+        { "relay_contacts", relay, 5 }, { "spdt_contact", spdt, 3 },
         { "resistor", two, 2 }, { "capacitor", two, 2 }, { "inductor", two, 2 }, { "switch", two, 2 },
         { "vsource", src, 2 }, { "isource", src, 2 }, { "potentiometer", pot, 3 }, { "diode", dio, 2 },
         { "led", dio, 2 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
@@ -1646,6 +1650,7 @@ static const esk_adev_ops *const device_table[] = {
     &potentiometer_ops, &diode_ops,     &led_ops,      &zener_ops,     &bjt_npn_ops, &bjt_pnp_ops,
     &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
+    &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,
 };
 
 const esk_adev_ops *esk_adev_find(const char *name)

@@ -57,3 +57,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Verification.** Unit test with times beyond 2^53.
 **Trace.** SPEC-011 §5
 
+
+### UI-008  Component discovery and inspection before placement
+**Statement.** The library shall combine categorized browsing, manufacturer/package/model filters and keyboard-accessible previews, expose model omissions and disable placement for unsupported policies. Waveforms and controls shall remain usable after component placement restarts a circuit.
+**Rationale.** Users must understand a component's identity and simulation support before using it.
+**Status.** Accepted 2026-10-16; initial explorer implemented.
+**Verification.** Library filter tests, accessibility checks, and `tests/browser/test_library.py` against the actual engine.
+**Trace.** SPEC-011 §2; SPEC-005 §8

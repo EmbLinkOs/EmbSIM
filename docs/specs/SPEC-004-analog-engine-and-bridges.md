@@ -136,6 +136,26 @@ in the table above exists. Pin order is binding for native analog devices.
 Fixtures exercise DC, temperature changes, comparator loading, 555 latch/reset,
 and an RC astable against the nominal `1.44 / ((RA + 2 RB) C)` frequency.
 
+### Interactive electrical catalog devices
+
+`environment_resistor` has pins `1`, `2` and an external temperature (NTC beta
+law) or illuminance (LDR power law) input. `photodiode` has `A`, `K`, a reference
+irradiance input, reverse photocurrent and a simple forward knee. `optocoupler`
+has `A`, `K`, `C`, `E`, an LED knee and nominal CTR capped by collector saturation
+resistance; no galvanic input-output stamp is introduced. These are low-frequency
+approximations with per-entry limits, not full device or optical models.
+
+`relay_contacts` senses `S+`/`S-` across the separate coil resistance and switches
+`COM` between `NC` and `NO` after persistent pickup/dropout thresholds and delays.
+Only accepted solver times commit state; rejected trials cannot advance a switch.
+Its monitoring interval is 100 us; switching affects the following solve, for up
+to 200 us timing error. Package composites reuse the existing R/L primitives for
+coil dynamics. `spdt_contact` exposes `COM`, `NC`, `NO` controlled by `pressed`.
+`pushbutton4` preserves the permanent pad pairs 1/2 and 3/4 and accepts unused
+duplicate pads left open; `pressed` bridges the pairs through finite resistance.
+These two manual contacts omit bounce. See [the interactive library record](../engineering/interactive-library.md)
+for equations, sources, default assumptions and executable examples.
+
 ## 8. Bridges (SPEC-003 §4 restated numerically)
 
 - **Thevenin driver**: for value `1`, a source `voh` in series with `rout`;

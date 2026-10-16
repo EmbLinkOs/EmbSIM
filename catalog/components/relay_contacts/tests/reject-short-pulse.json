@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reject-short-pulse",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 5,
+          "td": 0.001,
+          "tr": 1e-06,
+          "tf": 1e-06,
+          "pw": 0.002,
+          "per": 0.02
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/relay_contacts"
+      },
+      {
+        "id": "RN",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "RO",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.S+"
+      ],
+      "NC": [
+        "DUT.NC",
+        "RN.1"
+      ],
+      "NO": [
+        "DUT.NO",
+        "RO.1"
+      ],
+      "GND": [
+        "V.-",
+        "DUT.S-",
+        "RN.2",
+        "RO.2",
+        "G.GND",
+        "VC.-"
+      ],
+      "CONTACT": [
+        "VC.+",
+        "DUT.COM"
+      ]
+    }
+  },
+  "expect": {
+    "net:NO": {
+      "at": "6ms",
+      "min_v": -0.001,
+      "max_v": 0.01
+    },
+    "net:NC": {
+      "at": "6ms",
+      "min_v": 4.99,
+      "max_v": 5.01
+    }
+  }
+}

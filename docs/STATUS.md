@@ -9,7 +9,7 @@ does not mean the described behaviour exists.
 
 | Area | Current implementation | Evidence and limits |
 |---|---|---|
-| Design | Architecture 01 to 09 (ADR-001 to ADR-020), SPEC-001 to SPEC-014, 92 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
+| Design | Architecture 01 to 09 (ADR-001 to ADR-020), SPEC-001 to SPEC-014, 94 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
 | Repository | CMake presets, Makefile wrapper, CI matrix, documentation and policy workflows, templates, ruleset JSON, policy and banned-construct checkers | Local runs of the checkers; remote workflow results are recorded here when observed |
 | Core: scheduler and time | Rational clocks, class-ordered event heap, delta-cycle bound, cancellation by generation (SPEC-002) | `test_sched`: ordering, cancellation, overflow, limits, 72 MHz and 32.768 kHz clocks exact over 10^9 edges |
 | Core: nets and digital engine | Pin models and logic families, four-value resolution with strengths, contention and floating diagnostics, inertial delays, islands and bridges, the model API; gates, flip-flop, sources, pulls, transmission-gate switches, indicator, probe, UART virtual terminal (SPEC-003) | `test_engine`: resolution, floating inputs, gate timing, inertial pulses, clock, switch, UART loopback |
@@ -26,7 +26,7 @@ does not mean the described behaviour exists.
 | Debug | Breakpoints by address, symbol, or file and line; watchpoints; step, halt, continue; registers and memory read and write; Thumb disassembler; ELF symbols; DWARF 2 to 5 line tables; `debug.*` methods; GDB remote protocol server (`embsim gdb`) | `test_mcu` (source lines), `tests/protocol/test_gdb.py` (registers, memory, breakpoints, step, continue over RSP); LLDB debugged the example through `embsim gdb` in this workspace |
 | Toolchains | Detection from the profiles' version commands, builds by template expansion (`embsim build`, `embsim toolchains`, `toolchain.detect`, `toolchain.build`) (SPEC-010 subset) | `tests/protocol/test_build.py`; the EmbCC and Clang profiles built the example here; the gcc-arm, TinyCC and XC profiles are not exercised (not installed) |
 | CLI | `run`, `validate`, `serve` (with `--allow-origin`), `sidecar`, `catalog` (`list`, `validate`, `new`, `install`), `board`, `models`, `gdb`, `build`, `toolchains`, `version` | `tools/ci/run_examples.py`: seven examples validate and pass their scenarios (14 steps): counter-bus, button-led, button-transistor-led, rc-filter, bluepill-button-led with its firmware (the LED driven through an NPN transistor as 01 §8 describes), display-showcase 6/6, kicad-flasher |
-| Catalog | 128 components in 19 categories with symbols, artwork and 256 component fixtures (passives, sources, semiconductors, 74HC and CD4000 logic, the 555, regulators, displays: 7-segment, HD44780 LCD, SSD1306 OLED, MAX7219; I2C and SPI devices: 24C02 and 25LC040 EEPROMs, DS1307, sensors; actuators: servo, stepper driver, buzzer); STM32F103C8 MCU with its register description and LQFP48 package; Blue Pill board with artwork; eight toolchain profiles; JSON Schemas for every kind; the Python validator with semantic checks | `embsim catalog validate catalog`: 131 ok, 0 broken, 0 invalid, 259 fixtures run (including three boards) (`catalog_fixtures`); `tools/validate.py --all`: 443 files, 0 errors; the tools' unit tests: 119 tests; the STM32F103C8's register description written from RM0008 (ADR-020) |
+| Catalog | 147 components in 20 categories with symbols, artwork and 308 component fixtures (passives, sources, semiconductors, 74HC and CD4000 logic, the 555, regulators, displays: 7-segment, HD44780 LCD, SSD1306 OLED, MAX7219; I2C and SPI devices: 24C02 and 25LC040 EEPROMs, DS1307, sensors; actuators: servo, stepper driver, buzzer); STM32F103C8 MCU with its register description and LQFP48 package; Blue Pill board with artwork; eight toolchain profiles; JSON Schemas for every kind; the Python validator with semantic checks | `embsim catalog validate catalog`: 150 ok, 0 broken, 0 invalid, 311 fixtures run (including three boards) (`catalog_fixtures`); `tools/validate.py --all`: 522 files, 0 errors; the tools' unit tests: 119 tests; the STM32F103C8's register description written from RM0008 (ADR-020) |
 | Workbench | TypeScript workspace: typed protocol client and mock session, design system with light and dark themes; schematic editing against the engine through project transactions (place, wire, move, rotate, mirror, delete, copy, paste, duplicate, net labels and renames, buses with their live value, undo and redo, save to the project file); boards drawn as blocks of their ports, and the inside of a board or composite part opened on a read-only, live sheet; board view with each board's artwork and live LEDs, buttons and jumpers; oscilloscope, logic analyzer with UART, SPI and I2C decoders, serial terminal, meters with units; board view artwork states with value maps, formats and text (SPEC-005 §8); the Debug perspective (source, disassembly, registers, breakpoints, memory, peripherals, console); Verify reports "not available"; command palette; platform adapter; Tauri 2 desktop shell with the engine as sidecar and its icon | `pnpm typecheck`, `lint`, `test` (75 tests incl. axe, the decoders and artwork states), `build` pass; Playwright smoke (open, run, press, observe, export; keyboard place and wire; theme) passes in Chromium; editing, copy and paste, and save checked in Chromium against `embsim serve`; the Blue Pill's boot banner decoded from USART1 frame by frame; `tools/perf/large_project.py` 500 inverters with 1,499 wires and 1,000 labels measured by `scripts/perf.mjs` in headless software-rendered Chromium: pan and part drag 16.8 ms at the 95th percentile, zoom 33 ms; usable at 1024x700. The desktop shell is built and run here on Linux (WebKitGTK 4.1 under Xvfb) with the Blue Pill example loaded, and its deb is built by `tauri build`; macOS and Windows installers come from CI |
 
 Observed on 2026-10-16 in this workspace: Ubuntu 24.04, GCC 13.3 and Clang 18.1, CMake 3.28, Python 3.13, Node 22. `ctest` on the GCC Debug build: 21 of 21 targets pass (test_analog, test_avr, test_engine, test_host, test_json, test_lua, test_mcu, test_riscv, test_sched, test_session, catalog_fixtures, tools_unittests, catalog_sdk, importers, docs_integrity, banned_constructs, protocol_conformance, gdb_server, firmware_build, multiboard, examples_headless); the same pass on the Clang, TinyCC and AddressSanitizer builds. The CI matrix (Linux with GCC, Clang and TinyCC; macOS with Clang; Windows with MSVC; the workbench; tools and catalog; documentation; repository policy) was observed green on the M0 pull request and on the M1 pull request (EmbLinkOs/EmbSIM#2, head 9bc3d42, 2026-10-16) the M2 pull request (EmbLinkOs/EmbSIM#3, all 17 checks) and the M3 pull request (EmbLinkOs/EmbSIM#4, all 17 checks), which ran the Blue Pill golden fixture, the GDB server and the firmware build on all three platforms.
@@ -104,6 +104,48 @@ Combined integration evidence on Linux, GCC 14.2 and Python 3.12:
   This is evidence for the merged baseline; the source-review branch needs its
   own CI results.
 - No UI or native engine code is changed by this source-review follow-up.
+
+## Interactive library and circuit examples
+
+Based on main `5cc2762` after PR #8. The [interactive library record](engineering/interactive-library.md)
+lists 18 new named entries, a reusable relay contact controller, the manufacturer
+source status and all electrical approximation boundaries. The catalog totals
+147 components, including 44 named parts; 38 have a reviewed manufacturer source,
+while six retain explicitly unreviewed references. No vendor qualification is implied.
+
+The explorer adds grouped categories/counts, multiword search, manufacturer and
+package filters, model-tier and named-part filters, and Overview/Pins/Models
+previews. Unsupported policy/broken entries cannot be placed or dragged. New
+artwork is original and supports live input hotspots and readable decimal values.
+Six native electrical primitives cover environmental resistance, photodiodes,
+optocouplers, relay contact timing, SPDT switches and four-pad tactile buttons.
+The B3F-1000 fixtures include permanent pad pairs and unused duplicate pads.
+
+Four wired examples cover a temperature divider/adjustable alarm, a light-controlled
+transistor switch, an optocoupled input with offset grounds, and a transistor relay
+driver with an R/L coil and external flyback diode. Each has a CLI scenario and
+GUI controls. The real-engine browser test caught a restart/subscription defect;
+structural edits now reload runtime bindings and restore waveforms.
+
+Observed locally on Linux, GCC 14.2, Python 3.12 and Node 24:
+
+- All 23 development and 23 Address/undefined-behavior sanitizer CTest outcomes
+  pass. The firmware-build wrapper explicitly skips compilation without a cross
+  compiler; other targets execute, including the M4 multiboard examples.
+- Engine catalog validation: 150 valid items, no broken/invalid entries and 311
+  fixtures. The independent runner passes 308 component fixtures / 897 assertions.
+- All 15 example projects validate and their scenarios pass (30 CLI invocations).
+- All 522 JSON files validate; 119 Python tool tests pass. Documentation integrity
+  checks 94 documents and 94 requirements with no problems.
+- Workbench typecheck, lint, build and 82 UI tests pass, including accessibility
+  checks, combined library filtering and numeric artwork formatting.
+- `tests/browser/test_library.py` passes in Chromium against the actual engine:
+  manufacturer/package search, category browsing, preview sections, placement,
+  light/dark themes, live press/release, refreshed input controls and waveform
+  samples that cross the expected high/low limits after the placement restart.
+
+The new branch still needs its own remote macOS/Windows/TinyCC and desktop checks.
+Local evidence must not be confused with the green checks recorded for older merges.
 
 ## Specified but unimplemented
 

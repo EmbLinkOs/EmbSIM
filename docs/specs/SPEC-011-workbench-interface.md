@@ -33,6 +33,20 @@ formatting and a raw picosecond tooltip), policy selector, diagnostics badge,
 theme toggle; command palette; status bar with engine version, timing tier
 of each board, protocol latency.
 
+### Component discovery
+
+The Library groups categories with counts and keeps unknown/custom categories
+browsable. Multiword search intersects with manufacturer, package, fidelity-tier
+and named-part filters. Clear filters recovers empty results. Selecting Preview
+must not mutate the project: Overview, Pins and Models expose identity, controls,
+numbered terminals and model omissions before placement. Source review is shown
+separately from electrical qualification. Place and drag require a model for the
+current project policy and a non-broken entry. All controls support keyboard use.
+
+After a circuit transaction reports `restarted: true`, the client reloads runtime
+inputs/probes, clears obsolete records and restores waveform subscriptions. A
+layout-only transaction must preserve the run and its accumulated measurements.
+
 ## 3. Scene rendering
 
 - SVG scene graph: a viewport group with pan and zoom (wheel, pinch, keys);

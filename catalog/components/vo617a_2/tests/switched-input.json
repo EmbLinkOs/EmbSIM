@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "switched-input",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VIN",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "VOUT",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "RI",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 390
+        }
+      },
+      {
+        "id": "RP",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10000
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/vo617a_2"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "OFFSET",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2
+        }
+      },
+      {
+        "id": "SW",
+        "component": "emblink/d2f_01l"
+      }
+    ],
+    "nets": {
+      "INPUT": [
+        "VIN.+",
+        "SW.COM"
+      ],
+      "ANODE": [
+        "RI.2",
+        "DUT.A"
+      ],
+      "IG": [
+        "VIN.-",
+        "DUT.K",
+        "OFFSET.+"
+      ],
+      "GND": [
+        "OFFSET.-",
+        "VOUT.-",
+        "DUT.E",
+        "G.GND"
+      ],
+      "VCC": [
+        "VOUT.+",
+        "RP.1"
+      ],
+      "OUT": [
+        "RP.2",
+        "DUT.C"
+      ],
+      "SW_ON": [
+        "SW.NO",
+        "RI.1"
+      ],
+      "SW_REST": [
+        "SW.NC"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "500us",
+      "min_v": -0.001,
+      "max_v": 0.05
+    }
+  },
+  "inputs": [
+    {
+      "at": "100us",
+      "target": "SW",
+      "input": "pressed",
+      "value": true
+    }
+  ]
+}
