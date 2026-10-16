@@ -52,7 +52,12 @@
           "derived_from": {"type": "string", "description": "A peripheral whose registers this one has at its own base"},
           "description": {"type": "string"},
           "interrupts": {"type": "array", "items": {"type": "string"}},
-          "registers": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/register"}}
+          "registers": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/register"}},
+          "reserved": {
+            "type": "array",
+            "description": "Ranges of offsets with no register that read 0 and ignore writes, as the part documents them (a PLIC's registers for sources past its last): [offset, size]; any other address with no register is a bus error",
+            "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/hex"}}
+          }
         },
         "oneOf": [
           {"required": ["registers"], "not": {"required": ["derived_from"]}},

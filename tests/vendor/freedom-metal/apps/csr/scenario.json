@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "csr",
+  "until": "100ms",
+  "description": "software/csr: machine-mode CSRs read, written and read back through freedom-metal's csr.h.",
+  "assertions": [
+    {
+      "id": "csr",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "read 0x0, write 0xdeadbeef, read 0xdeadbeef"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

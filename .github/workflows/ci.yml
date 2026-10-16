@@ -42,7 +42,7 @@ jobs:
           sudo apt-get install -y ninja-build clang tcc
       - name: Install firmware toolchains (the build test's GNU and clang profiles)
         if: matrix.name == 'linux-gcc'
-        run: sudo apt-get install -y lld gcc-arm-none-eabi gcc-avr avr-libc
+        run: sudo apt-get install -y lld gcc-arm-none-eabi gcc-avr avr-libc gcc-riscv64-unknown-elf picolibc-riscv64-unknown-elf
       - name: Install tools (macOS)
         if: runner.os == 'macOS'
         run: brew install ninja
@@ -83,6 +83,17 @@ jobs:
           git -C "$RUNNER_TEMP/pico-sdk" fetch -q --depth 1 https://github.com/raspberrypi/pico-sdk.git 079c6f39023649b154152db30f1d781e884879bc
           git -C "$RUNNER_TEMP/pico-sdk" checkout -q FETCH_HEAD
           python3 tests/vendor/pico-sdk/run.py --sdk "$RUNNER_TEMP/pico-sdk" --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: SiFive's examples on the unmodified freedom-metal
+        if: matrix.name == 'linux-gcc'
+        run: |
+          git init -q "$RUNNER_TEMP/freedom-e-sdk"
+          git -C "$RUNNER_TEMP/freedom-e-sdk" fetch -q --depth 1 --filter=blob:none https://github.com/sifive/freedom-e-sdk.git 4518a22c213d7fec6e23e20d24a2ba646014f6dd
+          git -C "$RUNNER_TEMP/freedom-e-sdk" sparse-checkout set bsp/sifive-hifive1-revb software
+          git -C "$RUNNER_TEMP/freedom-e-sdk" checkout -q FETCH_HEAD
+          git init -q "$RUNNER_TEMP/freedom-metal"
+          git -C "$RUNNER_TEMP/freedom-metal" fetch -q --depth 1 https://github.com/sifive/freedom-metal.git 1cec4a23a7ed7350db79a392be65acd51acd5412
+          git -C "$RUNNER_TEMP/freedom-metal" checkout -q FETCH_HEAD
+          python3 tests/vendor/freedom-metal/run.py --sdk "$RUNNER_TEMP/freedom-e-sdk" --metal "$RUNNER_TEMP/freedom-metal" --embsim build/${{ matrix.preset }}/bin/embsim
 
   tools:
     name: tools and catalog

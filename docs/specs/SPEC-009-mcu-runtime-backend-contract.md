@@ -110,7 +110,10 @@ models and clock gates (`esk_rf_bind`).
 * An access to a peripheral with a register file and no model warns
   `mcu.unsupported_access` once per peripheral; the register file's
   behaviour (reset values, access types) still holds.
-* An access inside the span to no register is `mcu.bus_error`.
+* An access inside the span to no register is `mcu.bus_error`, unless a
+  peripheral's `reserved` ranges (offset and size) hold it: the offsets the
+  part documents as reading 0 and ignoring writes (a PLIC's registers for
+  sources past its last), which do so silently.
 * A binding that names a model the build does not have is `mcu.model_missing`.
 
 The bus can follow the part's own rules. The MCU description's

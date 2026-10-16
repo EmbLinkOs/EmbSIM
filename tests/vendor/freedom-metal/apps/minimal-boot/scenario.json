@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "minimal-boot",
+  "until": "100ms",
+  "description": "software/minimal-boot: freedom-metal's boot without its constructors and C library start-up.",
+  "assertions": [
+    {
+      "id": "boot",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "minimal-boot"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}
