@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc74",
+  "version": "1.0.0",
+  "name": "74HC74 dual D flip-flop",
+  "category": "logic",
+  "description": "Two positive-edge D flip-flops with active-low asynchronous preset and clear (clear wins), in the 14-pin package.",
+  "keywords": [
+    "logic",
+    "74HC",
+    "74HC74",
+    "flip-flop",
+    "dff",
+    "register"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "1CLR_N",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1D",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1CLK",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1PRE_N",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1Q",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1QN",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 7,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "2QN",
+      "number": 8,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2Q",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2PRE_N",
+      "number": 10,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2CLK",
+      "number": 11,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2D",
+      "number": 12,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2CLR_N",
+      "number": 13,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 14,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "F1",
+          "component": "emblink/dff"
+        },
+        {
+          "id": "C1",
+          "component": "emblink/inverter"
+        },
+        {
+          "id": "P1",
+          "component": "emblink/inverter"
+        },
+        {
+          "id": "F2",
+          "component": "emblink/dff"
+        },
+        {
+          "id": "C2",
+          "component": "emblink/inverter"
+        },
+        {
+          "id": "P2",
+          "component": "emblink/inverter"
+        }
+      ],
+      "nets": {
+        "VCC": [
+          "F1.VCC",
+          "C1.VCC",
+          "P1.VCC",
+          "F2.VCC",
+          "C2.VCC",
+          "P2.VCC"
+        ],
+        "GND": [
+          "F1.GND",
+          "C1.GND",
+          "P1.GND",
+          "F2.GND",
+          "C2.GND",
+          "P2.GND"
+        ],
+        "R1": [
+          "C1.Y",
+          "F1.R"
+        ],
+        "S1": [
+          "P1.Y",
+          "F1.S"
+        ],
+        "R2": [
+          "C2.Y",
+          "F2.R"
+        ],
+        "S2": [
+          "P2.Y",
+          "F2.S"
+        ]
+      },
+      "ports": {
+        "VCC": "F1.VCC",
+        "GND": "F1.GND",
+        "1CLR_N": "C1.A",
+        "1PRE_N": "P1.A",
+        "1D": "F1.D",
+        "1CLK": "F1.CLK",
+        "1Q": "F1.Q",
+        "1QN": "F1.QN",
+        "2CLR_N": "C2.A",
+        "2PRE_N": "P2.A",
+        "2D": "F2.D",
+        "2CLK": "F2.CLK",
+        "2Q": "F2.Q",
+        "2QN": "F2.QN"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Each half is emblink/dff with inverters on PRE_N and CLR_N; the first clock level after power-up is not an edge.",
+      "omissions": [
+        "setup and hold",
+        "the both-low state (Q and QN both high on the real part)"
+      ]
+    },
+    "timed": {
+      "claims": "Delays of the inner parts.",
+      "omissions": [
+        "setup and hold"
+      ]
+    },
+    "electrical": {
+      "claims": "As functional with the cmos_3v3 pin bridges.",
+      "omissions": [
+        "supply current"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC74 datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 90,
+    "height": 120,
+    "pins": {
+      "1D": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1CLK": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "1PRE_N": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "1CLR_N": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "2D": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "2CLK": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "2PRE_N": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "2CLR_N": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "1Q": {
+        "x": 90,
+        "y": 20,
+        "side": "right"
+      },
+      "1QN": {
+        "x": 90,
+        "y": 30,
+        "side": "right"
+      },
+      "2Q": {
+        "x": 90,
+        "y": 70,
+        "side": "right"
+      },
+      "2QN": {
+        "x": 90,
+        "y": 80,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 40,
+        "y": 120,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

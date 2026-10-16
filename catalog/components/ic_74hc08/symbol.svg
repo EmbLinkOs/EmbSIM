@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 110" width="80" height="110" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="60" height="90" rx="2"/>
+  <line class="s" id="pin-1a" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">1A</text>
+  <line class="s" id="pin-1b" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">1B</text>
+  <line class="s" id="pin-2a" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">2A</text>
+  <line class="s" id="pin-2b" x1="0" y1="50" x2="10" y2="50"/><text class="p" x="13" y="52">2B</text>
+  <line class="s" id="pin-3a" x1="0" y1="60" x2="10" y2="60"/><text class="p" x="13" y="62">3A</text>
+  <line class="s" id="pin-3b" x1="0" y1="70" x2="10" y2="70"/><text class="p" x="13" y="72">3B</text>
+  <line class="s" id="pin-4a" x1="0" y1="80" x2="10" y2="80"/><text class="p" x="13" y="82">4A</text>
+  <line class="s" id="pin-4b" x1="0" y1="90" x2="10" y2="90"/><text class="p" x="13" y="92">4B</text>
+  <line class="s" id="pin-1y" x1="80" y1="20" x2="70" y2="20"/><text class="p" x="67" y="22" text-anchor="end">1Y</text>
+  <line class="s" id="pin-2y" x1="80" y1="40" x2="70" y2="40"/><text class="p" x="67" y="42" text-anchor="end">2Y</text>
+  <line class="s" id="pin-3y" x1="80" y1="60" x2="70" y2="60"/><text class="p" x="67" y="62" text-anchor="end">3Y</text>
+  <line class="s" id="pin-4y" x1="80" y1="80" x2="70" y2="80"/><text class="p" x="67" y="82" text-anchor="end">4Y</text>
+  <line class="s" id="pin-vcc" x1="40" y1="0" x2="40" y2="10"/>
+  <line class="s" id="pin-gnd" x1="40" y1="110" x2="40" y2="100"/>
+  <text class="t" x="40.0" y="19" text-anchor="middle">74HC08</text>
+</svg>

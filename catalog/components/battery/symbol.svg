@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <line class="s" id="pin-plus" x1="0" y1="20" x2="24" y2="20"/>
+  <line class="s" id="pin-minus" x1="60" y1="20" x2="36" y2="20"/>
+  <line class="s" x1="24" y1="6" x2="24" y2="34"/><line class="s" x1="30" y1="12" x2="30" y2="28" style="stroke-width:3"/>
+  <line class="s" x1="36" y1="6" x2="36" y2="34" style="stroke-width:1.5"/>
+  <text class="t" x="12" y="12">+</text>
+</svg>

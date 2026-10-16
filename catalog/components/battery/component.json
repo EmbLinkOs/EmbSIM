@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/battery",
+  "version": "1.0.0",
+  "name": "Battery",
+  "category": "sources",
+  "description": "A cell or battery as an ideal source behind its internal resistance: coin cells, alkaline AA/AAA/9 V, a LiPo or an 18650.",
+  "keywords": [
+    "battery",
+    "cell",
+    "CR2032",
+    "AA",
+    "9V",
+    "LiPo",
+    "18650",
+    "coin cell"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative"
+    }
+  ],
+  "params": {
+    "part": {
+      "type": "enum",
+      "enum": [
+        "CR2032",
+        "AA",
+        "AAA",
+        "9V",
+        "LiPo-1S",
+        "18650"
+      ],
+      "default": "CR2032",
+      "doc": "Named cell setting voltage and internal resistance",
+      "presets": {
+        "CR2032": {
+          "voltage": 3.0,
+          "r_internal": 15
+        },
+        "AA": {
+          "voltage": 1.5,
+          "r_internal": 0.15
+        },
+        "AAA": {
+          "voltage": 1.5,
+          "r_internal": 0.25
+        },
+        "9V": {
+          "voltage": 9.0,
+          "r_internal": 1.7
+        },
+        "LiPo-1S": {
+          "voltage": 3.7,
+          "r_internal": 0.05
+        },
+        "18650": {
+          "voltage": 3.6,
+          "r_internal": 0.04
+        }
+      }
+    },
+    "voltage": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.0,
+      "min": 0.5,
+      "max": 60,
+      "doc": "Open-circuit voltage"
+    },
+    "r_internal": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 15,
+      "min": "1m",
+      "max": 1000,
+      "doc": "Internal resistance"
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "V",
+          "component": "emblink/vsource",
+          "params": {
+            "kind": "dc",
+            "dc": "$voltage"
+          }
+        },
+        {
+          "id": "R",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r_internal"
+          }
+        }
+      ],
+      "nets": {
+        "CELL": [
+          "V.+",
+          "R.1"
+        ]
+      },
+      "ports": {
+        "+": "R.2",
+        "-": "V.-"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "A constant source behind a constant internal resistance (emblink/vsource and emblink/resistor).",
+      "omissions": [
+        "discharge: the voltage never falls",
+        "temperature",
+        "pulse-load recovery"
+      ],
+      "range": {
+        "current_a": [
+          -0.5,
+          5
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Energizer CR2032, E91 (AA), 522 (9V) product datasheets (internal resistance orders of magnitude)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "-": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

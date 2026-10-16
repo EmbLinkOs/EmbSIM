@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/electrolytic_capacitor",
+  "version": "1.0.0",
+  "name": "Electrolytic capacitor",
+  "category": "passives",
+  "description": "Polarised aluminium electrolytic capacitor: bulk decoupling and supply filtering.",
+  "keywords": [
+    "capacitor",
+    "electrolytic",
+    "polarised",
+    "bulk",
+    "decoupling"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "1"
+      ],
+      "doc": "Positive (longer lead)"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "2"
+      ],
+      "doc": "Negative (stripe)"
+    }
+  ],
+  "params": {
+    "capacitance": {
+      "type": "number",
+      "unit": "F",
+      "default": "100u",
+      "min": "100n",
+      "max": "1",
+      "doc": "Capacitance"
+    },
+    "esr": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.1,
+      "min": 0,
+      "max": 100,
+      "doc": "Equivalent series resistance"
+    },
+    "rated_v": {
+      "type": "number",
+      "unit": "V",
+      "default": 16,
+      "min": 2,
+      "max": 500,
+      "doc": "Rated voltage (informative)",
+      "advanced": true
+    },
+    "ic": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "Initial voltage",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "capacitor",
+    "bind": {
+      "c": "capacitance",
+      "esr": "esr",
+      "ic": "ic"
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Linear capacitance with ESR and initial condition (SPEC-004 §7 capacitor).",
+      "omissions": [
+        "polarity: reverse bias is not diagnosed",
+        "leakage current",
+        "ESR frequency dependence",
+        "ageing"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          500
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Typical aluminium electrolytic datasheet values (ESR order of magnitude)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "-": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/r2r_dac_4bit",
+  "version": "1.0.0",
+  "name": "4-bit R-2R DAC",
+  "category": "analog",
+  "description": "A 4-bit R-2R resistor ladder: OUT = Vref x (D3/2 + D2/4 + D1/8 + D0/16) when the inputs switch between Vref and ground and OUT is lightly loaded.",
+  "keywords": [
+    "dac",
+    "r-2r",
+    "ladder",
+    "resistor network",
+    "digital to analog"
+  ],
+  "pins": [
+    {
+      "name": "D0",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Bit 0 (LSB)"
+    },
+    {
+      "name": "D1",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Bit 1"
+    },
+    {
+      "name": "D2",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Bit 2"
+    },
+    {
+      "name": "D3",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Bit 3 (MSB)"
+    },
+    {
+      "name": "OUT",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Analog output (ladder impedance R)"
+    },
+    {
+      "name": "GND",
+      "number": 6,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Ladder termination"
+    }
+  ],
+  "params": {
+    "r": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10k",
+      "min": 100,
+      "max": "1meg",
+      "doc": "R"
+    },
+    "r2": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "20k",
+      "min": 200,
+      "max": "2meg",
+      "doc": "2R (keep at twice r)"
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "RT",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r2"
+          }
+        },
+        {
+          "id": "R0",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r2"
+          }
+        },
+        {
+          "id": "RA",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r"
+          }
+        },
+        {
+          "id": "R1",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r2"
+          }
+        },
+        {
+          "id": "RB",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r"
+          }
+        },
+        {
+          "id": "R2",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r2"
+          }
+        },
+        {
+          "id": "RC",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r"
+          }
+        },
+        {
+          "id": "R3",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$r2"
+          }
+        }
+      ],
+      "nets": {
+        "N0": [
+          "RT.2",
+          "R0.2",
+          "RA.1"
+        ],
+        "N1": [
+          "RA.2",
+          "R1.2",
+          "RB.1"
+        ],
+        "N2": [
+          "RB.2",
+          "R2.2",
+          "RC.1"
+        ],
+        "N3": [
+          "RC.2",
+          "R3.2"
+        ]
+      },
+      "ports": {
+        "GND": "RT.1",
+        "D0": "R0.1",
+        "D1": "R1.1",
+        "D2": "R2.1",
+        "D3": "R3.1",
+        "OUT": "R3.2"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Eight emblink/resistor in the R-2R topology; the output impedance is R.",
+      "omissions": [
+        "resistor tolerance and matching",
+        "driver output resistance"
+      ],
+      "range": {
+        "voltage_v": [
+          -50,
+          50
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Standard R-2R ladder (any data-conversion text)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 70,
+    "pins": {
+      "D3": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "D2": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "D1": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D0": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "GND": {
+        "x": 30,
+        "y": 70,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

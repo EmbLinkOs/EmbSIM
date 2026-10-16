@@ -72,6 +72,15 @@ static void mcu_signal_model(const char *sig, const char *family, esk_pin_model 
 
 /* ---- parameters ------------------------------------------------------------ */
 
+/* a resolved number parameter: an integer parameter stays an integer (scripted
+ * models see 4, not 4.0) */
+static esk_json *num_param(esk_alloc *a, const char *type, double d)
+{
+    if (!strcmp(type, "integer") && d >= -9.0e15 && d <= 9.0e15 && d == (double)(int64_t)d)
+        return esk_json_new_integer(a, (int64_t)d);
+    return esk_json_new_number(a, d);
+}
+
 static es_status build_params(es_session *s, const char *id, const esk_json *desc, const esk_json *inst_params, esk_json **out)
 {
     esk_json *params = esk_json_new_object(s->a);
@@ -89,7 +98,7 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
             double d;
             const char *type = esk_json_get_str(pd, "type", "number");
             if ((!strcmp(type, "number") || !strcmp(type, "integer")) && esk_json_to_double(def, &d) == 0)
-                v = esk_json_new_number(s->a, d);
+                v = num_param(s->a, type, d);
             else
                 v = esk_json_clone(s->a, def);
             if (!v || esk_json_object_set(s->a, params, pd->key, v)) {
@@ -124,7 +133,7 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
                 st = ES_ESCHEMA;
                 continue;
             }
-            v = esk_json_new_number(s->a, d);
+            v = num_param(s->a, type, d);
         } else if (!strcmp(type, "boolean")) {
             if (iv->type != ESK_JSON_BOOL) {
                 ld_diag(s, ES_SEV_ERROR, "schema.type", id, "parameter %s of %s must be a boolean", iv->key, id);

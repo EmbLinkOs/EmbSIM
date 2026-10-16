@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/schmitt_inverter",
+  "version": "1.0.0",
+  "name": "Schmitt-trigger inverter",
+  "category": "logic",
+  "description": "Inverter with hysteresis on its input (one gate of a 74HC14): slow or noisy edges give one clean output transition.",
+  "keywords": [
+    "logic",
+    "inverter",
+    "schmitt",
+    "hysteresis",
+    "74HC14"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "vih": 1.8,
+        "vil": 1.0
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 14,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "GND",
+      "number": 7,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {},
+  "model": {
+    "primitive": "inverter"
+  },
+  "functional": {
+    "primitive": "inverter"
+  },
+  "timed": {
+    "tpd": "15ns"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Y = not A, zero delay.",
+      "omissions": [
+        "delay"
+      ]
+    },
+    "timed": {
+      "claims": "Inertial propagation delay tpd.",
+      "omissions": [
+        "separate rise/fall delays"
+      ]
+    },
+    "electrical": {
+      "claims": "The input comparator bridge switches at the family's thresholds with the pin model's hysteresis (SPEC-004 §8).",
+      "omissions": [
+        "threshold spread over supply and temperature",
+        "supply current"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC14 datasheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "Y": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

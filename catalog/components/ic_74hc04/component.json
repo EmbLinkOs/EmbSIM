@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc04",
+  "version": "1.0.0",
+  "name": "74HC04 hex inverter",
+  "category": "logic",
+  "description": "74HC04 hex inverter in its 14-pin package: 6 independent inverter gates (emblink/inverter) sharing VCC (14) and GND (7).",
+  "keywords": [
+    "logic",
+    "74HC",
+    "74HC04",
+    "inverter",
+    "DIP-14",
+    "package"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "1A",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1Y",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2A",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2Y",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "3A",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "3Y",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 7,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "4Y",
+      "number": 8,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "4A",
+      "number": 9,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "5Y",
+      "number": 10,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "5A",
+      "number": 11,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "6Y",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "6A",
+      "number": 13,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 14,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "G1",
+          "component": "emblink/inverter"
+        },
+        {
+          "id": "G2",
+          "component": "emblink/inverter"
+        },
+        {
+          "id": "G3",
+          "component": "emblink/inverter"
+        },
+        {
+          "id": "G4",
+          "component": "emblink/inverter"
+        },
+        {
+          "id": "G5",
+          "component": "emblink/inverter"
+        },
+        {
+          "id": "G6",
+          "component": "emblink/inverter"
+        }
+      ],
+      "nets": {
+        "VCC": [
+          "G1.VCC",
+          "G2.VCC",
+          "G3.VCC",
+          "G4.VCC",
+          "G5.VCC",
+          "G6.VCC"
+        ],
+        "GND": [
+          "G1.GND",
+          "G2.GND",
+          "G3.GND",
+          "G4.GND",
+          "G5.GND",
+          "G6.GND"
+        ]
+      },
+      "ports": {
+        "1A": "G1.A",
+        "1Y": "G1.Y",
+        "2A": "G2.A",
+        "2Y": "G2.Y",
+        "3A": "G3.A",
+        "3Y": "G3.Y",
+        "4A": "G4.A",
+        "4Y": "G4.Y",
+        "5A": "G5.A",
+        "5Y": "G5.Y",
+        "6A": "G6.A",
+        "6Y": "G6.Y",
+        "VCC": "G1.VCC",
+        "GND": "G1.GND"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Each gate as emblink/inverter.",
+      "omissions": [
+        "shared supply current",
+        "package thermal limits"
+      ]
+    },
+    "timed": {
+      "claims": "Each gate's tpd as emblink/inverter.",
+      "omissions": [
+        "supply-dependent delay"
+      ]
+    },
+    "electrical": {
+      "claims": "Each gate as emblink/inverter; pins bridge with the cmos_3v3 defaults.",
+      "omissions": [
+        "shared supply current",
+        "ground bounce"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC04 datasheet (pinout)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 90,
+    "pins": {
+      "1A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2A": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "3A": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "4A": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "5A": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "6A": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "1Y": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "2Y": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "3Y": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "4Y": {
+        "x": 80,
+        "y": 50,
+        "side": "right"
+      },
+      "5Y": {
+        "x": 80,
+        "y": 60,
+        "side": "right"
+      },
+      "6Y": {
+        "x": 80,
+        "y": 70,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 40,
+        "y": 90,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -82,6 +82,8 @@ void esk_island_destroy(esk_island *isl);
 /* add a net; returns its node index (the first ground net added becomes node 0) */
 int esk_island_add_net(esk_island *isl, esk_net *net, int is_ground);
 /* add a device for a component whose analog pins are on this island; pin order = description order */
+/* the pin names a primitive's nodes follow (NULL when it has no table) */
+const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n);
 es_status esk_island_add_device(esk_island *isl, esk_comp *c, const esk_adev_ops *ops, esk_pin **pins, int npins, esk_adev **out);
 /* add a bridge device for a digital pin on this island */
 es_status esk_island_add_bridge(esk_island *isl, esk_pin *pin, esk_adev **out);

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "a0",
+  "description": "A=0 gives Y=1.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/schmitt_inverter"
+      }
+    ],
+    "nets": {
+      "N_A": [
+        "L0.OUT",
+        "DUT.A"
+      ],
+      "N_Y": [
+        "DUT.Y"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_Y": {
+      "at": "500ns",
+      "logic": "1"
+    }
+  }
+}

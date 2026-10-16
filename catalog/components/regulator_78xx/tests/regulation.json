@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "regulation",
+  "description": "9 V in, 100 ohm load: a 7805 holds 5 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 9
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/regulator_78xx",
+        "params": {
+          "part": "7805"
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "DUT.IN"
+      ],
+      "VOUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.GND",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VOUT": {
+      "at": "0.5ms",
+      "min_v": 4.9,
+      "max_v": 5.1
+    }
+  }
+}

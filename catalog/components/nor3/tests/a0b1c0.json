@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "a0b1c0",
+  "description": "A=0, B=1, C=0 gives Y=0.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/nor3"
+      }
+    ],
+    "nets": {
+      "N_A": [
+        "L0.OUT",
+        "DUT.A"
+      ],
+      "N_B": [
+        "L1.OUT",
+        "DUT.B"
+      ],
+      "N_C": [
+        "L2.OUT",
+        "DUT.C"
+      ],
+      "N_Y": [
+        "DUT.Y"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_Y": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

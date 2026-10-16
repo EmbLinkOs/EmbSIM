@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/tristate_buffer",
+  "version": "1.0.0",
+  "name": "Tri-state buffer",
+  "category": "logic",
+  "description": "Non-inverting buffer with an active-high output enable: Y follows A while OE is 1 and is released (Z) while OE is 0, as one gate of a 74HC125 with the enable inverted.",
+  "keywords": [
+    "logic",
+    "buffer",
+    "tristate",
+    "three-state",
+    "bus"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "OE",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Output enable, active high",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 14,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "GND",
+      "number": 7,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {},
+  "model": {
+    "primitive": "tristate_buffer"
+  },
+  "functional": {
+    "primitive": "tristate_buffer"
+  },
+  "timed": {
+    "tpd": "12ns"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Y = A while OE = 1, Z while OE = 0, X while OE is unknown.",
+      "omissions": [
+        "enable and disable times"
+      ]
+    },
+    "timed": {
+      "claims": "Inertial propagation delay tpd.",
+      "omissions": [
+        "separate enable/disable times"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge with the cmos_3v3 defaults; a released output is open.",
+      "omissions": [
+        "leakage",
+        "output current limits"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC125 datasheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "Y": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "OE": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      },
+      "VCC": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

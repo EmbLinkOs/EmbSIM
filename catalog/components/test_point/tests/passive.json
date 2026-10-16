@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "passive",
+  "description": "A test point on a divider leaves it at 1.65 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "R2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/test_point"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "MID": [
+        "R1.2",
+        "R2.1",
+        "DUT.1"
+      ],
+      "GND": [
+        "V1.-",
+        "R2.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:MID": {
+      "at": "0.5ms",
+      "min_v": 1.64,
+      "max_v": 1.66
+    }
+  }
+}

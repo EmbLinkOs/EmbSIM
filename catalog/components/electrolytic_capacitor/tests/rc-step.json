@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rc-step",
+  "description": "3.3 V step through 100 ohm into 10 uF (tau = 1 ms): about 2.09 V after one tau.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/pulse_source",
+        "params": {
+          "v1": 0,
+          "v2": 3.3,
+          "td": "0",
+          "tr": "1n",
+          "tf": "1n",
+          "pw": "10m",
+          "per": "20m"
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/electrolytic_capacitor",
+        "params": {
+          "capacitance": "10u",
+          "esr": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "OUT": [
+        "R1.2",
+        "DUT.+"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "1ms",
+      "min_v": 1.95,
+      "max_v": 2.25
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "quarter",
+  "description": "3.3 V across 10 k, wiper at 0.25 from end 1: about 0.825 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/trimmer_potentiometer",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "DUT.2"
+      ],
+      "WIPER": [
+        "DUT.W"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.1",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:WIPER": {
+      "at": "0.5ms",
+      "min_v": 0.8,
+      "max_v": 0.85
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "position",
+      "value": 0.25
+    }
+  ]
+}
