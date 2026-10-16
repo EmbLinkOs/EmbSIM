@@ -265,6 +265,13 @@ versions follow semantic versioning. There is no release yet.
   nrfx_timer, nrfx_rtc, nrfx_gpiote) with the unmodified nrfx 4.6.0 and
   its MDK's system file, startup and linker script, and runs it under a
   scenario in CI's linux-gcc job.
+- The RP2040's PWM and ADC: eight PWM slices on their pins (the fractional
+  divider, free-running and phase-correct, CC and TOP double-buffered,
+  inversion, the wrap interrupt) and the ADC (96 clk_adc cycles a
+  conversion from GPIO26-29 and the temperature sensor, START_ONCE and
+  START_MANY with DIV, round robin, the FIFO and its interrupt).
+  `tests/vendor/pico-sdk`'s `pwm_adc` runs the SDK's `hardware_pwm` and
+  `hardware_adc` on them.
 - The STM32F1's SPI and I2C masters on their pins: SPI1 and SPI2 in modes
   0 to 3 at their baud prescaler, 8 or 16 bits, TXE, RXNE and BSY; I2C1
   and I2C2 on open-drain SCL and SDA with START, repeated START, STOP,

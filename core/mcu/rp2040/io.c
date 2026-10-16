@@ -10,9 +10,10 @@
  *     (5), GPIO_OUT and GPIO_OE (sio.c); UART (2), a TX or RTS pin driven
  *     high (the line idle; the frames on it come from the MCU runtime) and
  *     RX and CTS pins inputs, by the function table's pattern (GPIO0-3
- *     UART0, 4-11 UART1, 12-19 UART0, 20-27 UART1, 28-29 UART0); any other
- *     function does not drive the pin (its peripheral is not modelled), nor
- *     does NULL (0x1f, out of reset);
+ *     UART0, 4-11 UART1, 12-19 UART0, 20-27 UART1, 28-29 UART0); PWM (4),
+ *     its slice's channel's output (pwm.c); any other function does not
+ *     drive the pin (its peripheral is not modelled), nor does NULL (0x1f,
+ *     out of reset);
  *   - OUTOVER and OEOVER then pass, invert, or force them low or high
  *     (OEOVER: disable or enable), and the pad's OD disables the output;
  *   - the pin is the output where enabled; else what the board drives on
@@ -30,7 +31,7 @@
  *
  * Not modelled: DORMANT_WAKE, the pads' drive
  * strength, slew and Schmitt trigger, the QSPI bank's pins and interrupts,
- * and the other functions' peripherals (SPI, I2C, PWM, PIO, the clock pins,
+ * and the other functions' peripherals (SPI, I2C, PIO, the clock pins,
  * USB). */
 #include <stdio.h>
 #include <string.h>
@@ -83,6 +84,10 @@ static void peri(const struct io *x, int n, int *out, int *oe)
         if (uart_signal(n) == 0 || uart_signal(n) == 3)
             *out = *oe = 1; /* TX idle, RTS not asserted */
         break;
+    case F_PWM:
+        *out = esk_rp2040_pwm_out(x->s, n);
+        *oe = 1;
+        break;
     default:
         break;
     }
@@ -110,7 +115,7 @@ static void settle(struct io *x)
         memset(&o, 0, sizeof o);
         o.drive = drive ? pout : -1;
         o.pull = pue && !pde ? 1 : pde && !pue ? 2 : 0;
-        o.af = func == F_UART; /* the peripherals modelled: the UARTs */
+        o.af = func == F_UART || func == F_PWM; /* the peripherals modelled: the UARTs, PWM */
         o.analog = !fld(x->pad[n], x->m_ie) && !drive;
         if (s->host.pin_cfg && (!x->known || memcmp(&x->out[n], &o, sizeof o) != 0))
             s->host.pin_cfg(s->host.ctx, n / 16, n % 16, &o);

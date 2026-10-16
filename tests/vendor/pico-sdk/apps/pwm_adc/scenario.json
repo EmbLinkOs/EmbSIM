@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "pwm_adc",
+  "until": "1.2s",
+  "description": "hardware_pwm: slice 0 at 1 kHz (125 MHz / 125 / 1000) on GP16 (25 %, then 75 %) and GP17 (75 %), its wrap interrupt once a period. hardware_adc: ADC2 on GP28's 1.0 V source (floor(1.0 * 4096 / 3.3) = 1241), the temperature sensor's 0.706 V (876), ADC0 on GP16's PWM through a 10 kOhm, 4.7 uF low-pass (0.8 and 2.5 V to 0.1 V); then 50 ms of free-running conversions at 1 kHz (DIV 47999), round robin over ADC0 and ADC2, through the FIFO and its interrupt.",
+  "assertions": [
+    {
+      "id": "clocks",
+      "at": "20ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "clk_sys 125000000 Hz"
+      }
+    },
+    {
+      "id": "quarter",
+      "at": "600ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "ms=520 wraps=520 adc2=1241 temp=876 rc=0.8V"
+      }
+    },
+    {
+      "id": "three-quarters",
+      "at": "1.1s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "ms=1039 wraps=1039 adc2=1241 temp=876 rc=2.5V"
+      }
+    },
+    {
+      "id": "fifo",
+      "at": "1.2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "fifo: 50 conversions, last rc=2.5V adc2=1241\r\ndone"
+      }
+    },
+    {
+      "id": "pwm-frequency",
+      "between": [
+        "100ms",
+        "1s"
+      ],
+      "probe": "pwm_b",
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.001
+      }
+    },
+    {
+      "id": "pwm-edges",
+      "between": [
+        "100ms",
+        "600ms"
+      ],
+      "probe": "pwm_b",
+      "expect": {
+        "edges": 1000
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

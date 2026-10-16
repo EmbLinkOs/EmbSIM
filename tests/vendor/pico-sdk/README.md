@@ -7,6 +7,7 @@ by the SDK's own CMake, runs on `emblink/pico` and passes its scenario.
 | Application | What it checks |
 | --- | --- |
 | `sdk_tour` | `runtime_init`'s clocks (`clock_get_hz(clk_sys)` 125 MHz from the crystal through PLL_SYS); `sqrtf`, `sinf`, `sqrt`, `exp` and `printf`'s `%f` through the bootrom's float and double tables; the SIO divider; `multicore_launch_core1` and the FIFO; `flash_range_erase` and `flash_range_program` through the bootrom, read back through the XIP; `add_repeating_timer_ms` toggling the LED; `gpio_set_irq_enabled_with_callback` on a button; stdio on UART0 at 115200 baud, `printf` out and `getchar_timeout_us` in |
+| `pwm_adc` | `hardware_pwm`: slice 0 at 1 kHz on GP16 and GP17 (`pwm_config_set_clkdiv_int`, `pwm_config_set_wrap`, `pwm_set_chan_level`), its wrap interrupt; `hardware_adc`: `adc_read` on GP28's 1.0 V source, the temperature sensor and GP16's PWM through an RC low-pass on GP26, then `adc_run` round robin over ADC0 and ADC2 at 1 kHz (`adc_set_clkdiv`) into the FIFO, drained by `ADC_IRQ_FIFO` |
 
 The SDK runs as it is because EmbSIM's ROM carries the bootrom's documented
 functions, done by the host (ADR-021): the bootrom's own code is not

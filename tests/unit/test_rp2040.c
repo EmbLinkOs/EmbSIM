@@ -482,6 +482,103 @@ static void test_rom(void)
     rp_close(&f);
 }
 
+static int v_pin(void *ctx, int port, int bit, double *v)
+{
+    (void)ctx;
+    if (port * 16 + bit == 26) {
+        *v = 1.65;
+        return 1;
+    }
+    if (port * 16 + bit == 28) {
+        *v = 1.0;
+        return 1;
+    }
+    return 0;
+}
+
+static void test_pwm_adc(void)
+{
+    rp f;
+    u32 ctr;
+    if (!rp_open(&f, 1))
+        return;
+    f.m.host.pin_volts = v_pin;
+    clocks_125(&f);
+    wr(&f, 0x4000c000u + 0x3000u, (1u << 0) | (1u << 5) | (1u << 8) | (1u << 14)); /* ADC, IO, PADS, PWM */
+    /* slice 0: 125 MHz / 125 = 1 count a microsecond, TOP 999, A 250, B 750 */
+    wr(&f, 0x40050004u, 125u << 4);
+    wr(&f, 0x40050010u, 999);
+    wr(&f, 0x4005000cu, 250u | 750u << 16);
+    wr(&f, 0x400500a8u, 1);  /* INTE.CH0 */
+    wr(&f, 0x40050000u, 1);  /* CSR.EN */
+    CHECK_EQ(rd(&f, 0x400500a0u), 1u); /* EN mirrors it */
+    CHECK_EQ(esk_rp2040_pwm_out(&f.m, 16), 1);
+    CHECK_EQ(esk_rp2040_pwm_out(&f.m, 17), 1);
+    esk_mach_run(&f.m, 30000, 0); /* 240 counts */
+    CHECK_EQ(esk_rp2040_pwm_out(&f.m, 16), 1);
+    esk_mach_run(&f.m, 2000, 0); /* past 250 */
+    CHECK_EQ(esk_rp2040_pwm_out(&f.m, 16), 0);
+    CHECK_EQ(esk_rp2040_pwm_out(&f.m, 17), 1);
+    esk_mach_run(&f.m, 92000, 0); /* 992 counts */
+    CHECK_EQ(rd(&f, 0x400500a4u), 0u);
+    esk_mach_run(&f.m, 2000, 0); /* the wrap at 1000 counts */
+    CHECK_EQ(rd(&f, 0x400500a4u), 1u);
+    CHECK_EQ(rd(&f, 0x400500b0u), 1u); /* INTS */
+    ctr = rd(&f, 0x40050008u);
+    CHECK(ctr <= 16u);
+    CHECK_EQ(esk_rp2040_pwm_out(&f.m, 16), 1);
+    wr(&f, 0x400500a4u, 1); /* INTR written 1: cleared */
+    CHECK_EQ(rd(&f, 0x400500a4u), 0u);
+    /* CC is double-buffered while the slice runs */
+    wr(&f, 0x4005000cu, 900u | 750u << 16);
+    esk_mach_run(&f.m, 40000, 0); /* ~ 336 counts: still A 250 */
+    CHECK_EQ(esk_rp2040_pwm_out(&f.m, 16), 0);
+    esk_mach_run(&f.m, 100000, 0); /* past the next wrap: A 900 */
+    CHECK_EQ(esk_rp2040_pwm_out(&f.m, 16), 1);
+
+    /* the ADC: clk_adc from the 12 MHz crystal, 96 of its cycles a
+     * conversion (8 us, 1000 cycles of clk_sys); GPIO26 at 1.65 V is 2048 */
+    wr(&f, 0x4004c000u, 1); /* CS.EN, clk_adc stopped */
+    CHECK(rd(&f, 0x4004c000u) & (1u << 8)); /* READY */
+    wr(&f, 0x4004c000u, 1u | 1u << 2); /* START_ONCE */
+    esk_mach_run(&f.m, 5000, 0);
+    CHECK_EQ(rd(&f, 0x4004c000u) & (1u << 8), 0u); /* never done without its clock */
+    wr(&f, 0x4004c000u, 0);
+    wr(&f, 0x40008060u, (3u << 5) | (1u << 11)); /* CLK_ADC: the crystal, enabled */
+    wr(&f, 0x4004c000u, 1);
+    wr(&f, 0x4004c000u, 1u | 1u << 2);
+    CHECK_EQ(rd(&f, 0x4004c000u) & (1u << 8), 0u);
+    esk_mach_run(&f.m, 990, 0);
+    CHECK_EQ(rd(&f, 0x4004c000u) & (1u << 8), 0u);
+    esk_mach_run(&f.m, 20, 0);
+    CHECK(rd(&f, 0x4004c000u) & (1u << 8));
+    CHECK_EQ(rd(&f, 0x4004c004u), 2048u);
+    /* the temperature sensor: 0.706 V is 876 */
+    wr(&f, 0x4004c000u, 1u | 1u << 1 | 4u << 12 | 1u << 2);
+    esk_mach_run(&f.m, 1100, 0);
+    CHECK_EQ(rd(&f, 0x4004c004u), 876u);
+    /* round robin over AINSEL 0 and 2 into the FIFO, THRESH 2 */
+    wr(&f, 0x4004c008u, 1u | 2u << 24); /* FCS: EN, THRESH 2 */
+    wr(&f, 0x4004c018u, 1);             /* INTE.FIFO */
+    wr(&f, 0x4004c000u, 1u | 0u << 12 | 0x5u << 16 | 1u << 3); /* START_MANY, RROBIN 0 and 2 */
+    esk_mach_run(&f.m, 1500, 0); /* one conversion */
+    CHECK_EQ(rd(&f, 0x4004c008u) >> 16 & 15u, 1u);
+    CHECK_EQ(rd(&f, 0x4004c014u), 0u);
+    esk_mach_run(&f.m, 1000, 0); /* two */
+    CHECK_EQ(rd(&f, 0x4004c014u), 1u); /* INTR.FIFO at THRESH */
+    wr(&f, 0x4004c000u, 1); /* stop */
+    esk_mach_run(&f.m, 2000, 0);
+    CHECK_EQ(rd(&f, 0x4004c00cu), 2048u); /* AINSEL 0: GPIO26 */
+    CHECK_EQ(rd(&f, 0x4004c00cu), 1241u); /* AINSEL 2: GPIO28 at 1.0 V */
+    esk_mach_run(&f.m, 10, 0);
+    while (rd(&f, 0x4004c008u) >> 16 & 15u)
+        (void)rd(&f, 0x4004c00cu);
+    CHECK(rd(&f, 0x4004c008u) & (1u << 8)); /* EMPTY */
+    (void)rd(&f, 0x4004c00cu);
+    CHECK(rd(&f, 0x4004c008u) & (1u << 10)); /* UNDER */
+    rp_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_boot);
 RUN(test_no_boot2);
@@ -493,4 +590,5 @@ RUN(test_divider);
 RUN(test_uart_bit_time);
 RUN(test_core1);
 RUN(test_rom);
+RUN(test_pwm_adc);
 TEST_MAIN_END

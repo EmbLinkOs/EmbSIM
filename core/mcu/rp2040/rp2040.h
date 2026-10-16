@@ -78,7 +78,7 @@ void *esk_rp_model(struct esk_mach *m, const char *name, const struct esk_dev_op
 extern const struct esk_dev_ops esk_rp2040_resets_ops, esk_rp2040_clocks_ops, esk_rp2040_xosc_ops,
     esk_rp2040_rosc_ops, esk_rp2040_pll_ops, esk_rp2040_psm_ops, esk_rp2040_watchdog_ops,
     esk_rp2040_timer_ops, esk_rp2040_pads_ops, esk_rp2040_io_ops, esk_rp2040_sio_ops,
-    esk_rp2040_uart_ops, esk_rp2040_ssi_ops;
+    esk_rp2040_uart_ops, esk_rp2040_ssi_ops, esk_rp2040_pwm_ops, esk_rp2040_adc_ops;
 void *esk_rp2040_resets_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_clocks_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_xosc_create(struct esk_mach *m, struct esk_rf_periph *p);
@@ -92,6 +92,10 @@ void *esk_rp2040_io_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_sio_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_uart_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_ssi_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_rp2040_pwm_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_rp2040_adc_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* the PWM channel's output on a pin whose function is PWM (pwm.c) */
+int esk_rp2040_pwm_out(struct esk_mach *m, int pin);
 
 /* boot2's CRC: CRC-32/MPEG-2, the bootrom's (boot.c) */
 u32 esk_rp2040_crc32(const u8 *p, u32 n);
