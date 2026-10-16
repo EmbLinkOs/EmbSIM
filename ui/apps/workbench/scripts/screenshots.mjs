@@ -99,6 +99,23 @@ try {
     await holdButton(page, 'SW1', 800);
     await wait(600);
   });
+  await shot(browser, 'decode-bluepill', bluepill, async (page) => {
+    // the boot banner on USART1, decoded: advance 3 ms, then zoom where it is
+    await perspective(page, 2);
+    await wait(500);
+    for (let i = 0; i < 3; i++) {
+      await page.getByRole('button', { name: 'Advance by 1ms' }).click();
+      await wait(400);
+    }
+    const box = await page.getByRole('img', { name: /^Logic analyzer/ }).boundingBox();
+    await page.mouse.move(box.x + 72 + (box.width - 80) * 0.055, box.y + 40);
+    for (let i = 0; i < 3; i++) {
+      await page.mouse.wheel(0, -400);
+      await wait(150);
+    }
+    await page.mouse.move(box.x + box.width / 2, box.y - 60);
+    await wait(500);
+  });
   await shot(browser, 'debug-bluepill', bluepill, async (page) => {
     await perspective(page, 3);
     await wait(800);

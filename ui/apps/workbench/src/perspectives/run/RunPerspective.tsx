@@ -4,7 +4,7 @@ import { Button, DockLayout, IconButton, Tabs, Tooltip, useToast, type Command, 
 import { followWindow, LogicAnalyzer, Oscilloscope, SerialTerminal, type ScopeTrace } from '@embsim/instruments';
 import { AnalogLegend, SchematicCanvas } from '@embsim/scene';
 import { Download, Locate, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { errorMessage, exportCsv, exportVcd, inputs as inputActions, probes as probeActions } from '../../actions';
 import { platform } from '../../platform/platform';
 import { useRegisterCommands } from '../../shell/commands';
@@ -39,13 +39,19 @@ export function RunPerspective() {
         .filter((t) => t.record),
     [inst.probes, inst.records],
   );
+  const records = inst.records;
+  const lookupRecord = useCallback((id: string) => records.get(id), [records]);
+  // a digital probe's decoder comes from its definition in the project
   const logicChannels = useMemo(
     () =>
       inst.probes
         .filter((p) => p.kind === 'digital')
-        .map((p) => ({ record: inst.records.get(p.probe as string)! }))
+        .map((p) => ({
+          record: inst.records.get(p.probe as string)!,
+          decode: p.decode ?? project?.probes?.find((d) => d.id === (p.id ?? String(p.probe)))?.decode,
+        }))
         .filter((c) => c.record),
-    [inst.probes, inst.records],
+    [inst.probes, inst.records, project?.probes],
   );
 
   const exportAs = async (kind: 'csv' | 'vcd') => {
@@ -116,7 +122,7 @@ export function RunPerspective() {
       <Oscilloscope traces={scopeTraces} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedScope} onSelect={inst.setSelectedScope} revision={inst.revision} />
     ) },
     { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, content: (
-      <LogicAnalyzer channels={logicChannels} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
+      <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
     {
       id: 'bottom',

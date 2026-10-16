@@ -202,7 +202,24 @@
     {
       "id": "tx",
       "target": "net:UART_TX",
-      "kind": "digital"
+      "kind": "digital",
+      "decode": {
+        "protocol": "uart",
+        "params": {
+          "baud": 115200
+        }
+      }
+    },
+    {
+      "id": "rx",
+      "target": "net:UART_RX",
+      "kind": "digital",
+      "decode": {
+        "protocol": "uart",
+        "params": {
+          "baud": 115200
+        }
+      }
     },
     {
       "id": "terminal",

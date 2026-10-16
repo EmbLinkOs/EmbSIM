@@ -12,12 +12,15 @@ import { useTimeInteraction, type Cursors } from './interaction';
 import { Measure } from './Oscilloscope';
 import { ticks, timeToX, unitLabel, type TimeWindow } from './timeAxis';
 import { cssVar, useCanvas } from './useCanvas';
+import { decode, type Annotation, type DecoderSpec, type RecordLookup } from './decoders';
 import { DIGITAL_X, DIGITAL_Z, type WaveformRecord } from './waveform';
 
 export interface LogicChannel {
   record: WaveformRecord;
   color?: string;
   visible?: boolean;
+  /** A protocol decoder whose annotations show under the channel. */
+  decode?: DecoderSpec;
 }
 
 export interface LogicAnalyzerProps {
@@ -32,14 +35,17 @@ export interface LogicAnalyzerProps {
   revision?: number;
   label?: string;
   className?: string;
+  /** The other records a decoder reads (SPI data, I2C SDA), by probe id. */
+  lookup?: RecordLookup;
 }
 
+const ANN = 18; // the annotation row under a decoded channel
 const PLOT_LEFT = 72;
 const PLOT_BOTTOM = 22;
 const PLOT_TOP = 6;
 const ROW = 30;
 
-export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, onCursorsChange, now, selected, onSelect, revision = 0, label = 'Logic analyzer', className }: LogicAnalyzerProps) {
+export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, onCursorsChange, now, selected, onSelect, revision = 0, label = 'Logic analyzer', className, lookup }: LogicAnalyzerProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const visible = channels.filter((c) => c.visible !== false);
   const current = channels.find((c) => c.record.id === selected) ?? visible[0] ?? null;
@@ -54,6 +60,15 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
     return { pf, edges, la, lb };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, win.start, end, cursors.a, cursors.b, revision]);
+
+  // decoded frames in the window, per decoded channel
+  const annotations = useMemo(() => {
+    const out = new Map<string, Annotation[]>();
+    const find: RecordLookup = lookup ?? ((id) => channels.find((c) => c.record.id === id)?.record);
+    for (const c of visible) if (c.decode) out.set(c.record.id, decode(c.decode, c.record, win.start, end, find));
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible.map((c) => c.record.id + (c.decode?.protocol ?? '')).join(), win.start, end, revision, lookup]);
 
   const { ref, size, redraw } = useCanvas((ctx, { width, height }) => {
     const el = wrapRef.current;
@@ -97,10 +112,37 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
     ctx.textAlign = 'left';
     ctx.fillText(unitLabel(tk.unit), PLOT_LEFT + pw - 18, PLOT_TOP + ph + 5);
 
+    const drawAnnotations = (c: CanvasRenderingContext2D, anns: Annotation[], y: number, plotWidth: number) => {
+      c.textBaseline = 'middle';
+      c.textAlign = 'center';
+      for (const a of anns) {
+        const x0 = PLOT_LEFT + Math.max(0, timeToX(a.start, win, plotWidth));
+        const x1 = PLOT_LEFT + Math.min(plotWidth, timeToX(a.end, win, plotWidth));
+        if (x1 < PLOT_LEFT || x0 > PLOT_LEFT + plotWidth) continue;
+        const tone = a.kind === 'error' ? colors.x : a.kind === 'start' || a.kind === 'stop' ? colors.z : a.kind === 'address' ? colors.cursorB : colors.high;
+        if (a.kind === 'start' || a.kind === 'stop') {
+          c.fillStyle = tone;
+          c.fillText(a.text, x0, y + ANN / 2);
+          continue;
+        }
+        const w = Math.max(1, x1 - x0);
+        c.strokeStyle = tone;
+        c.lineWidth = 1;
+        c.strokeRect(Math.round(x0) + 0.5, y + 2.5, Math.max(1, Math.round(w) - 1), ANN - 5);
+        if (c.measureText(a.text).width + 4 <= w) {
+          c.fillStyle = tone;
+          c.fillText(a.text, x0 + w / 2, y + ANN / 2);
+        }
+      }
+    };
     const buckets = Math.floor(pw);
-    visible.forEach((ch, row) => {
-      const top = PLOT_TOP + row * ROW;
+    let nextTop = PLOT_TOP;
+    visible.forEach((ch) => {
+      const top = nextTop;
+      const anns = annotations.get(ch.record.id);
+      nextTop += ROW + (anns ? ANN : 0);
       if (top + ROW > PLOT_TOP + ph + 2) return;
+      if (anns) drawAnnotations(ctx, anns, top + ROW - 2, pw);
       const yHigh = top + 5;
       const yLow = top + ROW - 7;
       const yMid = (yHigh + yLow) / 2;
@@ -197,7 +239,7 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
 
   useEffect(() => {
     redraw();
-  }, [redraw, win, cursors, now, revision, channels, selected]);
+  }, [redraw, win, cursors, now, revision, channels, selected, annotations]);
   const handlers = useTimeInteraction(wrapRef, { window: win, onWindowChange, cursors, onCursorsChange, plotLeft: PLOT_LEFT, width: size.width });
 
   const level = (v: number) => (Number.isNaN(v) ? '—' : v === DIGITAL_Z ? 'Z' : v === DIGITAL_X ? 'X' : String(v));
