@@ -3,6 +3,7 @@
 /* rpc.c -- the session protocol's method table (SPEC-008 §5) over the
  * in-process transport. Every transport ends here. */
 #include "session/session_priv.h"
+#include "mcu/mcu.h"
 #include <string.h>
 #include "host/host.h"
 #include "util/num.h"
@@ -62,7 +63,8 @@ static es_status m_session_open(rpc_ctx *r)
     esk_json_set_string(s->a, r->result, "engine", es_version().string);
     esk_json_set_integer(s->a, r->result, "abi", es_abi_version());
     {
-        static const char *const names[] = { "analog", "digital", "catalog", "scenario", "record.inputs", "streams.json", "observe.subscribe" };
+        static const char *const names[] = { "analog", "digital", "catalog", "scenario", "record.inputs", "streams.json", "observe.subscribe",
+                                             "mcu", "debug", "toolchain" };
         size_t i;
         for (i = 0; i < ES_COUNTOF(names); i++)
             esk_json_array_push(s->a, caps, esk_json_new_string(s->a, names[i]));
@@ -107,11 +109,20 @@ static es_status m_session_info(rpc_ctx *r)
     for (i = 0; i < s->boards.len; i++) {
         esk_json *b = obj(r);
         if (!b) break;
-        esk_json_set_string(s->a, b, "id", s->boards.data[i]->id);
-        esk_json_set_string(s->a, b, "board", s->boards.data[i]->board_id);
-        esk_json_set_string(s->a, b, "runtime", "none");
+        esk_board_inst *bi = s->boards.data[i];
+        int live = bi->mcu && esk_mcu_machine(bi->mcu) != NULL;
+        esk_json_set_string(s->a, b, "id", bi->id);
+        esk_json_set_string(s->a, b, "board", bi->board_id);
+        if (bi->mcu)
+            esk_json_set_string(s->a, b, "mcu", bi->mcu->kind);
+        esk_json_set_string(s->a, b, "runtime", live ? "cortex-m" : "none");
+        if (bi->mcu)
+            esk_json_set_string(s->a, b, "component", bi->mcu->id);
+        if (bi->firmware)
+            esk_json_set_string(s->a, b, "image", esk_json_get_str(bi->firmware, "image", ""));
+        esk_json_set_string(s->a, b, "timing_tier", live ? "instruction" : "none");
         esk_json_array_push(s->a, boards, b);
-        esk_json_set_string(s->a, tiers, s->boards.data[i]->id, "unmodelled");
+        esk_json_set_string(s->a, tiers, bi->id, live ? "instruction" : "none");
     }
     esk_json_object_set(s->a, r->result, "boards", boards);
     esk_json_object_set(s->a, r->result, "timing_tiers", tiers);

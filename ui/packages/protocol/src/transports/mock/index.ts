@@ -137,6 +137,11 @@ export class MockTransport extends TransportBase implements Transport {
       },
 
       'debug.breakpoint': () => noBoard(),
+      'debug.breakpoints': () => noBoard(),
+      'debug.halt': () => noBoard(),
+      'debug.continue': () => noBoard(),
+      'debug.step': () => noBoard(),
+      'debug.symbol': () => noBoard(),
       'debug.registers': () => noBoard(),
       'debug.set_register': () => noBoard(),
       'debug.memory': () => noBoard(),

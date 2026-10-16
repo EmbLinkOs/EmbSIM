@@ -25,6 +25,8 @@ export type Capability =
   | 'debug.dwarf'
   | 'streams.binary'
   | 'toolchain'
+  | 'debug'
+  | 'mcu'
   | 'record'
   | 'scenario'
   | (string & {});
@@ -251,7 +253,12 @@ export interface SessionOpenResult {
 export interface BoardInfo {
   id: string;
   board: string;
+  /** The MCU description's id. */
   mcu?: string;
+  /** The MCU's component (B1.U1), whose outputs carry its state and serial text. */
+  component?: string;
+  /** The core backend running its firmware, or "none". */
+  runtime?: string;
   timing_tier: TimingTier;
   image?: string;
 }
@@ -389,28 +396,62 @@ export interface WaveformSamples {
 }
 
 // --- debug -----------------------------------------------------------------
+// Addresses and register values are numbers (32-bit, exact in JSON).
 
 export interface Register {
   name: string;
-  value: string;
+  /** The register's number in GDB's target description. */
+  regnum: number;
+  value: number;
 }
 
 export interface Frame {
-  pc: string;
+  pc: number;
   function?: string;
   file?: string;
   line?: number;
 }
 
+/** Where a board's core is (debug.where, and the debug.stopped notification). */
+export interface Where {
+  board: string;
+  pc: number;
+  function?: string;
+  offset?: number;
+  /** Why the core is stopped: breakpoint, watchpoint, step, halt; absent while it runs. */
+  stopped?: string;
+  reason?: string;
+  now_ps: string;
+  instructions: number;
+  cycles: number;
+}
+
+export interface Instruction {
+  address: number;
+  size: number;
+  encoding: number;
+  text: string;
+  /** The symbol that starts here. */
+  label?: string;
+}
+
+export interface Breakpoint {
+  kind: 'code' | 'read' | 'write' | 'access';
+  pc?: number;
+  address?: number;
+  length?: number;
+  function?: string;
+  offset?: number;
+}
+
 export interface Peripheral {
   name: string;
-  base: string;
-  registers: {
-    name: string;
-    offset: number;
-    value: string;
-    fields?: { name: string; bit: number; width: number; value: number; doc?: string }[];
-  }[];
+  base: number;
+  /** The behavioural model bound to it, or "registers" for the register file alone. */
+  model: string;
+  /** Its clock is enabled (an access while it is off reads 0). */
+  clock: boolean;
+  registers: { name: string; offset: number; value: number }[];
 }
 
 // --- reports (SPEC-008 §8) --------------------------------------------------
