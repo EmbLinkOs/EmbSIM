@@ -73,7 +73,7 @@ export const useVerify = create<VerifyState>((set) => ({
   setRecordingOn: (recordingOn) => set({ recordingOn }),
   openDraft: (path, scenario) => set({ draft: { path, scenario: normalizeScenario(scenario), dirty: path === null }, results: {} }),
   closeDraft: () => set({ draft: null, results: {} }),
-  editDraft: (fn) => set((st) => (st.draft ? { draft: { ...st.draft, scenario: fn(st.draft.scenario), dirty: true } } : {})),
+  editDraft: (fn) => set((st) => (st.draft ? { draft: { ...st.draft, scenario: fn(st.draft.scenario), dirty: true }, results: {} } : {})),
   markSaved: (path) => set((st) => (st.draft ? { draft: { ...st.draft, path, dirty: false } } : {})),
   setReport: (report) =>
     set({

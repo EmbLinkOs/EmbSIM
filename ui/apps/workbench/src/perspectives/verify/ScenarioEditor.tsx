@@ -16,6 +16,7 @@ import { errorMessage } from '../../actions';
 import { getClient } from '../../connection';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
+import { expectationProblem, scenarioProblems } from '../../stores/scenarioValidation';
 import { emptyScenario, formatValue, parseValue, useVerify, whenOf, withWhen, type AssertionWhen } from '../../stores/verify';
 
 // a project without scenarios or probes: the same empty list each render (a
@@ -130,15 +131,22 @@ function DraftEditor({ canRun }: { canRun: boolean }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const [savePath, setSavePath] = useState(draft.path ?? `scenarios/${draft.scenario.name || 'scenario'}.json`);
+  const [expectDraft, setExpectDraft] = useState<Record<number, string>>({});
   const sc = draft.scenario;
-  const problems = [
-    ...(sc.until !== undefined ? [timeError(sc.until)].filter(Boolean) : []),
-    ...sc.inputs.map((i) => timeError(i.at)).filter(Boolean),
-  ];
+  const problems = scenarioProblems(sc);
+  for (const [index, text] of Object.entries(expectDraft)) {
+    try {
+      const error = expectationProblem(JSON.parse(text));
+      if (error) problems.push(`Assertion ${Number(index) + 1}: ${error}`);
+    } catch {
+      problems.push(`Assertion ${Number(index) + 1}: expectation must be valid JSON.`);
+    }
+  }
   const ids = sc.assertions.map((a) => a.id);
   const duplicate = ids.find((id, k) => ids.indexOf(id) !== k);
 
   const run = async () => {
+    if (problems.length) return;
     setBusy('run');
     try {
       const r = await getClient().scenario.run({ scenario: sc });
@@ -152,6 +160,7 @@ function DraftEditor({ canRun }: { canRun: boolean }) {
     }
   };
   const save = async () => {
+    if (problems.length) return;
     const path = draft.path ?? savePath.trim();
     setBusy('save');
     try {
@@ -199,8 +208,14 @@ function DraftEditor({ canRun }: { canRun: boolean }) {
         />
         {!draft.path && <Input label="File" mono value={savePath} onChange={(e) => setSavePath(e.target.value)} hint="relative to the project's folder" />}
       </div>
+      {problems.length > 0 && (
+        <div role="alert" className="wb-verify__validation">
+          <strong>Fix these before running or saving:</strong>
+          <ul>{problems.map((problem, index) => <li key={index}>{problem}</li>)}</ul>
+        </div>
+      )}
       <InputsTable inputs={sc.inputs} onChange={(inputs) => edit((s) => ({ ...s, inputs }))} />
-      <AssertionsTable assertions={sc.assertions} duplicate={duplicate} onChange={(assertions) => edit((s) => ({ ...s, assertions }))} />
+      <AssertionsTable expectDraft={expectDraft} setExpectDraft={setExpectDraft} assertions={sc.assertions} duplicate={duplicate} onChange={(assertions) => edit((s) => ({ ...s, assertions }))} />
     </div>
   );
 }
@@ -294,10 +309,9 @@ function expectText(a: ScenarioAssertion): string {
   return a.expect ? JSON.stringify(a.expect) : '';
 }
 
-function AssertionsTable({ assertions, duplicate, onChange }: { assertions: ScenarioAssertion[]; duplicate?: string; onChange: (a: ScenarioAssertion[]) => void }) {
+function AssertionsTable({ assertions, duplicate, onChange, expectDraft, setExpectDraft }: { expectDraft: Record<number, string>; setExpectDraft: React.Dispatch<React.SetStateAction<Record<number, string>>>; assertions: ScenarioAssertion[]; duplicate?: string; onChange: (a: ScenarioAssertion[]) => void }) {
   const probes = useProject((s) => s.project?.probes ?? NO_PROBES);
   const results = useVerify((s) => s.results);
-  const [expectDraft, setExpectDraft] = useState<Record<number, string>>({});
   const set = (k: number, a: ScenarioAssertion) => onChange(assertions.map((x, j) => (j === k ? a : x)));
   const add = () => {
     let n = assertions.length + 1;
@@ -344,7 +358,7 @@ function AssertionsTable({ assertions, duplicate, onChange }: { assertions: Scen
               if (when !== 'always' && expectDraft[k] !== undefined) {
                 try {
                   const v = JSON.parse(expectDraft[k]!) as unknown;
-                  if (!v || typeof v !== 'object' || Array.isArray(v)) expectError = 'an object: {"logic": "1"}';
+                  expectError = expectationProblem(v);
                 } catch {
                   expectError = 'JSON: {"min_v": 3.0}';
                 }
@@ -360,7 +374,7 @@ function AssertionsTable({ assertions, duplicate, onChange }: { assertions: Scen
                       label={`Assertion ${k + 1} timing`}
                       size="sm"
                       value={when}
-                      onValueChange={(w) => set(k, withWhen(a, w))}
+                      onValueChange={(w) => { setExpectDraft((d) => { const next = { ...d }; delete next[k]; return next; }); set(k, withWhen(a, w)); }}
                       options={[
                         { value: 'at', label: 'at' },
                         { value: 'between', label: 'between' },
@@ -400,6 +414,7 @@ function AssertionsTable({ assertions, duplicate, onChange }: { assertions: Scen
                           set(k, { ...a, diagnostics: { forbid: v.split(',').map((s) => s.trim()).filter(Boolean) } });
                           return;
                         }
+                        useVerify.getState().editDraft((s) => s);
                         setExpectDraft((d) => ({ ...d, [k]: v }));
                         try {
                           const parsed = JSON.parse(v) as unknown;
@@ -416,7 +431,10 @@ function AssertionsTable({ assertions, duplicate, onChange }: { assertions: Scen
                     />
                   </td>
                   <td>
-                    <Button size="sm" variant="ghost" icon={<Trash2 />} aria-label={`Remove assertion ${k + 1}`} onClick={() => onChange(assertions.filter((_, j) => j !== k))} />
+                    <Button size="sm" variant="ghost" icon={<Trash2 />} aria-label={`Remove assertion ${k + 1}`} onClick={() => {
+                      setExpectDraft((d) => Object.fromEntries(Object.entries(d).filter(([index]) => Number(index) !== k).map(([index, value]) => [Number(index) > k ? Number(index) - 1 : Number(index), value])));
+                      onChange(assertions.filter((_, j) => j !== k));
+                    }} />
                   </td>
                 </tr>
               );

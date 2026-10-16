@@ -64,3 +64,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16; initial explorer implemented.
 **Verification.** Library filter tests, accessibility checks, and `tests/browser/test_library.py` against the actual engine.
 **Trace.** SPEC-011 §2; SPEC-005 §8
+
+### UI-009  Scenario draft validation
+**Statement.** The scenario editor shall prevent Run and Save for invalid visible drafts, preserve invalid expectation text for correction, explain validation errors, and clear previous assertion results on edits.
+**Rationale.** A successful run must describe the assertions the user sees.
+**Status.** Accepted 2026-10-16; editor validation implemented.
+**Verification.** Scenario validation unit tests and ScenarioEditor interaction regressions for malformed JSON, correction and invalid times.
+**Trace.** SPEC-011 §2; SPEC-007 §2

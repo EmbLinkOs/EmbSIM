@@ -7,7 +7,7 @@
 
 import { TooltipProvider, ToastProvider } from '@embsim/design';
 import type { Project } from '@embsim/protocol';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
@@ -28,6 +28,33 @@ describe('scenario editor', () => {
   afterEach(() => {
     useVerify.getState().closeDraft();
     useProject.setState({ project: null });
+  });
+
+
+  it('blocks run and save while expectation JSON is invalid and recovers when corrected', async () => {
+    useProject.setState({ project: bare });
+    useSession.setState({ capabilities: ['scenario', 'scenario.edit'], running: false });
+    useVerify.getState().openDraft(null, { ...emptyScenario(), assertions: [
+      { id: 'check', at: '10ms', probe: 'led', expect: { logic: '1' } },
+    ] });
+    render(<TooltipProvider><ToastProvider><ScenarioEditor /></ToastProvider></TooltipProvider>);
+    const run = screen.getByRole('button', { name: 'Run' }) as HTMLButtonElement;
+    const save = screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
+    expect(run.disabled).toBe(false);
+    useVerify.setState({ results: { check: { ok: true, observed: 1 } } });
+    fireEvent.change(screen.getByLabelText('Assertion 1 expectation'), { target: { value: '{broken' } });
+    expect(run.disabled).toBe(true);
+    expect(save.disabled).toBe(true);
+    expect(useVerify.getState().results).toEqual({});
+    expect(useVerify.getState().draft?.dirty).toBe(true);
+    expect(screen.getByRole('alert').textContent).toContain('valid JSON');
+    fireEvent.change(screen.getByLabelText('Assertion 1 expectation'), { target: { value: '{"logic":"0"}' } });
+    expect(run.disabled).toBe(false);
+    expect(save.disabled).toBe(false);
+    expect(useVerify.getState().draft?.scenario.assertions[0]?.expect).toEqual({ logic: '0' });
+    fireEvent.change(screen.getByLabelText('Assertion 1 time'), { target: { value: '-2ms' } });
+    expect(run.disabled).toBe(true);
+    expect(save.disabled).toBe(true);
   });
 
   it('renders a project without scenarios or probes', async () => {

@@ -5,6 +5,15 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Scenario editor hardening
+
+Based on main `d5d3f51`. The Verify editor checks draft timing, assertion IDs,
+input identifiers and expectation fields before Run or Save. Invalid JSON remains
+visible and blocks execution instead of silently using an earlier expectation.
+Edits clear previous assertion badges. Project binding and model-specific value
+validation remain engine responsibilities. This change does not qualify electrical
+models or complete the remaining release gates.
+
 ## Implemented subset
 
 | Area | Current implementation | Evidence and limits |

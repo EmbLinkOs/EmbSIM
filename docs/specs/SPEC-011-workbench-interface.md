@@ -47,6 +47,17 @@ After a circuit transaction reports `restarted: true`, the client reloads runtim
 inputs/probes, clears obsolete records and restores waveform subscriptions. A
 layout-only transaction must preserve the run and its accumulated measurements.
 
+### Scenario draft validation
+
+Run and Save are disabled when the visible draft contains invalid expectation
+JSON, duplicate or invalid assertion IDs, invalid timing, reversed windows,
+missing input/probe identifiers or invalid expectation fields. Times are
+non-negative and cannot exceed the scenario duration. A visible error summary
+explains corrections. Editing clears assertion badges from the previous run.
+Invalid JSON remains visible for correction and must never silently execute the
+previous valid expectation. The engine remains authoritative for whether target,
+input and probe identifiers resolve in the project and for model-specific values.
+
 ## 3. Scene rendering
 
 - SVG scene graph: a viewport group with pan and zoom (wheel, pinch, keys);
