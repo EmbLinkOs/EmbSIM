@@ -300,7 +300,7 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     if (record) {
         esk_json *extra = esk_json_new_array(s->a), *rec;
         char *text;
-        size_t len;
+        size_t len = 0;
         for (i = 0; extra && i < nprobes; i++)
             esk_json_array_push(s->a, extra, esk_json_new_string(s->a, probes[i]));
         rec = esk_record_document(s, project, scenario, report, extra);
@@ -461,7 +461,7 @@ static int cmd_record(int argc, char **argv)
     esk_alloc a;
     esk_json *rec, *sc;
     char *text;
-    size_t len;
+    size_t len = 0;
     int i, rc = 0;
     if (argc < 1 || strcmp(argv[0], "to-scenario")) { usage(); return 2; }
     for (i = 1; i < argc; i++) {

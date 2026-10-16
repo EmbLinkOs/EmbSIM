@@ -158,8 +158,8 @@ static int cov_build(cov *c, esk_an *a)
     /* the functions, in the file of their first line; the ones without a
      * line go in their own list */
     for (k = 0; k < a->nfn; k++) {
-        const char *file;
-        u32 line;
+        const char *file = NULL;
+        u32 line = 0;
         int fi = -1;
         c->fn_all++;
         c->fn_hit += esk_an_count_at(a, a->fn[k].lo) != 0;

@@ -577,7 +577,7 @@ static int call(struct pic24_state *ps, u32 to, u32 ret)
     if (push(ps, (u16)(ret | sfa)) || push(ps, (u16)(ret >> 16 & 0x7f)))
         return 0;
     if (ps->e)
-        ps->corcon &= (u16)~CORCON_SFA;
+        ps->corcon &= (u16)(0xffffu ^ CORCON_SFA);
     jump(ps, to);
     return 1;
 }
@@ -856,7 +856,7 @@ static void do_end(struct pic24_state *ps)
     ps->doend = ps->dostack[dl].doend;
     ps->corcon = (u16)((ps->corcon & ~CORCON_DL) | (u32)dl << 8);
     if (!dl)
-        ps->sr &= (u16)~SR_DA;
+        ps->sr &= (u16)(0xffffu ^ SR_DA);
     ps->edt = 0;
 }
 
@@ -1550,7 +1550,7 @@ static int exec(struct pic24_state *ps, u32 i)
             if (!pop(ps, &v))
                 set_w(ps, 14, v);
             if (ps->e)
-                ps->corcon &= (u16)~CORCON_SFA;
+                ps->corcon &= (u16)(0xffffu ^ CORCON_SFA);
             return 1;
         }
         return bad_opcode(ps);
@@ -1699,7 +1699,7 @@ static void enter(struct pic24_state *ps, u32 vector, int ipl, int irq)
         ps->trap = 0;                           /* a stack that cannot take it */
     }
     if (ps->e)
-        ps->corcon &= (u16)~CORCON_SFA;
+        ps->corcon &= (u16)(0xffffu ^ CORCON_SFA);
     if (ipl < 8 && ps->intc && ps->intc->nstdis && ps->intc->nstdis(ps->intc->ctx))
         ipl = 7;
     ps->sr = (u16)((ps->sr & ~(SR_IPL | SR_RA)) | (u32)(ipl & 7) << 5);
@@ -1785,7 +1785,7 @@ static void step(struct esk_cpu *c)
         ps->traps |= (u8)(1u << (ps->trap - 1));
         ps->trap = 0;
         if (repeating)
-            ps->sr &= (u16)~SR_RA;
+            ps->sr &= (u16)(0xffffu ^ SR_RA);
         ps->pc = ps->npc;
         return;
     }
@@ -1794,7 +1794,7 @@ static void step(struct esk_cpu *c)
             ps->rcount--;
             return;                             /* again: the PC stays */
         }
-        ps->sr &= (u16)~SR_RA;
+        ps->sr &= (u16)(0xffffu ^ SR_RA);
     }
     if ((ps->sr & SR_DA) && ps->pc == ps->doend && ps->dsp)
         do_end(ps);
