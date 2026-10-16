@@ -108,7 +108,7 @@ struct es_session {
  * project's reload (esk_session_analyses_apply, after a load) */
 es_status esk_session_analyze(es_session *s, const char *board, unsigned what, char *why, size_t cap);
 void esk_session_analyses_apply(es_session *s);
-/* the boards' coverage, profile or stack reports (`which`: one ESK_AN_*) as
+/* the boards' coverage, profile, stack or fault reports (`which`: one ESK_AN_*) as
  * text in format `fmt` (ESK_AN_TEXT, ...), one board's or every board's;
  * ES_ESTATE when it is not on */
 es_status esk_session_analysis_text(es_session *s, const char *board, unsigned which, int fmt, esk_strbuf *out,
@@ -116,10 +116,10 @@ es_status esk_session_analysis_text(es_session *s, const char *board, unsigned w
 /* {BOARD: the coverage, profile or stack JSON}; `detail`: every file's line
  * counts, every function's profile and depth */
 esk_json *esk_session_analysis_json(es_session *s, const char *board, unsigned which, int detail);
-/* "coverage", "the profile", "the stack analysis" */
+/* "coverage", "the profile", "the stack analysis", "the fault report" */
 const char *esk_session_analysis_name(unsigned which);
-/* a run's report gains "coverage", "profile" and "stack" summaries when they
- * are on */
+/* a run's report gains "coverage", "profile", "stack" and "faults"
+ * summaries when they are on */
 void esk_session_analysis_report(es_session *s, esk_json *report);
 
 /* loader.c */

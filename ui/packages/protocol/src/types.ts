@@ -524,6 +524,28 @@ export interface StackReport {
   functions: { name: string; deepest: number; frame: number; incl: number }[];
 }
 
+/** One board's faults (analysis.faults) as its cores took them, the first sixteen. */
+export interface FaultReport {
+  count: number;
+  faults: {
+    core: number;
+    /** The exception's number as the core gives it (absent for a lockup). */
+    exception?: number;
+    lockup?: boolean;
+    /** "HardFault", "load access fault", "address error trap". */
+    name: string;
+    pc: number;
+    /** "fn+0x6 (file.c:12)" */
+    where: string;
+    /** One line, as the mcu.fault diagnostic gives it. */
+    summary: string;
+    handler?: string;
+    backtrace: { pc: number; where: string }[];
+    /** The whole report: registers decoded, the instruction, the backtrace. */
+    text: string;
+  }[];
+}
+
 export interface Instruction {
   address: number;
   size: number;
@@ -576,6 +598,7 @@ export interface Report {
   coverage?: Record<string, CoverageReport>;
   profile?: Record<string, ProfileReport>;
   stack?: Record<string, StackReport>;
+  faults?: Record<string, FaultReport>;
 }
 
 /** An input of a scenario (SPEC-007 §2): at a time, a target's input set. */

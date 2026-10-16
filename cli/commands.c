@@ -34,7 +34,8 @@ static void usage(void)
           "      [--image [ID=]FILE] [--until-text TEXT] [--console]\n"
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]]\n"
-          "      [--stack FILE [--stack-format text|json]] [--board ID]\n"
+          "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
+          "      [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
@@ -288,13 +289,13 @@ static int an_format(const char *name, unsigned which)
     if (!strcmp(name, "json")) return -2;
     if (!strcmp(name, "text")) return ESK_AN_TEXT;
     if (which == ESK_AN_COVERAGE) return !strcmp(name, "lcov") ? ESK_AN_LCOV : -1;
-    if (which == ESK_AN_STACK) return -1;
+    if (which == ESK_AN_STACK || which == ESK_AN_FAULT) return -1;
     if (!strcmp(name, "collapsed")) return ESK_AN_COLLAPSED;
     if (!strcmp(name, "collapsed-insns")) return ESK_AN_COLLAPSED_INSNS;
     return -1;
 }
 
-/* the coverage, profile or stack report into `path` ("-": stderr) */
+/* the coverage, profile, stack or fault report into `path` ("-": stderr) */
 static int write_analysis(es_session *s, const char *board, unsigned which, int fmt, const char *path)
 {
     esk_strbuf b;
@@ -329,8 +330,8 @@ static int write_analysis(es_session *s, const char *board, unsigned which, int 
 static int cmd_run(int argc, char **argv, const char *argv0)
 {
     const char *project = NULL, *scenario = NULL, *policy = NULL, *record = NULL, *library = NULL;
-    const char *coverage = NULL, *profile = NULL, *stack = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
-    int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, console = 0;
+    const char *coverage = NULL, *profile = NULL, *stack = NULL, *faults = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
+    int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, fault_fmt = ESK_AN_TEXT, console = 0;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -351,16 +352,21 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--coverage") && more) coverage = argv[++i];
         else if (!strcmp(a, "--profile") && more) profile = argv[++i];
         else if (!strcmp(a, "--stack") && more) stack = argv[++i];
+        else if (!strcmp(a, "--faults") && more) faults = argv[++i];
         else if (!strcmp(a, "--board") && more) board = argv[++i];
         else if (!strcmp(a, "--target") && more) target = argv[++i];
         else if (!strcmp(a, "--image") && more) image = argv[++i];
         else if (!strcmp(a, "--until-text") && more) until_text = argv[++i];
         else if (!strcmp(a, "--console")) console = 1;
-        else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format")) && more) {
-            unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : ESK_AN_PROFILE;
+        else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
+                  !strcmp(a, "--faults-format")) && more) {
+            unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
             int f = an_format(argv[++i], which);
             if (f == -1) { fprintf(stderr, "embsim: %s: no format %s\n", a, argv[i]); return 2; }
-            if (which == ESK_AN_COVERAGE) cov_fmt = f; else if (which == ESK_AN_STACK) stack_fmt = f; else prof_fmt = f;
+            if (which == ESK_AN_COVERAGE) cov_fmt = f;
+            else if (which == ESK_AN_STACK) stack_fmt = f;
+            else if (which == ESK_AN_FAULT) fault_fmt = f;
+            else prof_fmt = f;
         }
         else if (!strcmp(a, "--json")) opt_json = 1;
         else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
@@ -388,11 +394,12 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         if (esk_session_probe_add(s, NULL, probes[i], NULL, 0, NULL) != ES_OK)
             fprintf(stderr, "embsim: warning: probe %s not created\n", probes[i]);
     }
-    if (coverage || profile || stack) {
+    if (coverage || profile || stack || faults) {
         char why[160];
-        unsigned what = (coverage ? ESK_AN_COVERAGE : 0u) | (profile ? ESK_AN_PROFILE : 0u) | (stack ? ESK_AN_STACK : 0u);
+        unsigned what = (coverage ? ESK_AN_COVERAGE : 0u) | (profile ? ESK_AN_PROFILE : 0u) | (stack ? ESK_AN_STACK : 0u) |
+                        (faults ? ESK_AN_FAULT : 0u);
         if (esk_session_analyze(s, board, what, why, sizeof why) != ES_OK) {
-            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : "--stack", why);
+            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : stack ? "--stack" : "--faults", why);
             es_session_destroy(s);
             return 2;
         }
@@ -478,6 +485,8 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     if (profile && !write_analysis(s, board, ESK_AN_PROFILE, prof_fmt, profile) && !rc)
         rc = 2;
     if (stack && !write_analysis(s, board, ESK_AN_STACK, stack_fmt, stack) && !rc)
+        rc = 2;
+    if (faults && !write_analysis(s, board, ESK_AN_FAULT, fault_fmt, faults) && !rc)
         rc = 2;
     if (opt_json)
         print_json(report, s->a);

@@ -6,7 +6,7 @@ machine-readable report of SPEC-008 §8.
 
 | Command | What it does |
 |---|---|
-| `embsim run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--coverage FILE] [--profile FILE] [--stack FILE] [--board ID] [--json]` | loads the project, runs it headless to `--until` (default 50 ms) or through the scenario's inputs and assertions, prints nets, outputs, assertions and statistics; with `--coverage`, `--profile` and `--stack`, writes the firmware's coverage, profile and stack depths (below); exit 0 ok, 1 an assertion failed, 2 usage or load error, 3 a fatal diagnostic |
+| `embsim run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--coverage FILE] [--profile FILE] [--stack FILE] [--faults FILE] [--board ID] [--json]` | loads the project, runs it headless to `--until` (default 50 ms) or through the scenario's inputs and assertions, prints nets, outputs, assertions and statistics; with `--coverage`, `--profile`, `--stack` and `--faults`, writes the firmware's coverage, profile, stack depths and faults (below); exit 0 ok, 1 an assertion failed, 2 usage or load error, 3 a fatal diagnostic |
 | `embsim run --target BOARD --image FILE [--until T] [--until-text TEXT] [--console] [--json]` | one board of the catalog (`emblink/arduino_uno`) running an image, with no project: the way an RTOS's or a library's test runner uses the simulator as an emulated target ([CI](ci.md)). `--console` prints the board's console as the run goes (to stderr with `--json`); `--until-text` ends the run at the millisecond the text appears on a console (ended reason `until_text`), exit 1 when it never does. With a project, `--image [ID=]FILE` replaces a board's image |
 | `embsim replay RECORDING [--allow-drift] [--json]` | runs a recording again: its project from reset, its inputs at their times, to its end, comparing what the run observes with what was recorded, in order; exit 0 when all match, 4 at the first divergence (both observations printed, or in `divergence` with `--json`), 2 when the project or an image changed since the recording unless `--allow-drift` |
 | `embsim record to-scenario RECORDING [-o FILE] [--assert probes,serial\|none] [--name N]` | a scenario from a recording: its inputs at their times, and assertions on each digital probe's last level and edges and each serial probe's text |
@@ -50,9 +50,9 @@ sees the same thing from the same start. In the workbench, the protocol's
 `record.start` and `record.stop` record from the moment recording starts;
 replay compares from there.
 
-## Coverage, profile and stacks
+## Coverage, profile, stacks and faults
 
-`--coverage FILE`, `--profile FILE` and `--stack FILE` watch every board's firmware (one
+`--coverage FILE`, `--profile FILE`, `--stack FILE` and `--faults FILE` watch every board's firmware (one
 board's with `--board ID`) instruction by instruction and write, at the end
 of the run, which source lines and functions ran and where the time went
 (`-` writes to stderr). Functions come from the image's ELF symbol table,
@@ -83,10 +83,18 @@ stripped ELF is refused.
   process stack (PSP, an RTOS's threads) is reported beside its main stack.
   The main stack going past its limit is the error diagnostic
   `mcu.stack_overflow`, naming where; the run goes on.
+- `--faults-format text` (the default): each fault the firmware took, as
+  its core took it: a Cortex-M's HardFault, MemManage, BusFault or
+  UsageFault with HFSR and CFSR in words (`FORCED`, `PRECISERR at
+  0x30000000`), a RISC-V exception with mcause and mtval, a MIPS exception
+  with BadVAddr, a PIC24 trap; the instruction, the registers (a Cortex-M's
+  stacked frame), a backtrace from the image's `.debug_frame` (build with
+  `-g`), else from the calls the core was seen to make, and the handler it
+  goes to. Each is also the error diagnostic `mcu.fault`; the run goes on.
 - `json` for any: what the protocol's `analysis.coverage`,
-  `analysis.profile` and `analysis.stack` return (SPEC-008 §5). With
-  `--json`, the run's report also carries `coverage`, `profile` and `stack`
-  summaries.
+  `analysis.profile`, `analysis.stack` and `analysis.faults` return
+  (SPEC-008 §5). With `--json`, the run's report also carries `coverage`,
+  `profile`, `stack` and `faults` summaries.
 
 Calls and returns are recognized from each core's instructions (BL and BX
 on a Cortex-M, JAL and JALR on RISC-V, CALL and RET on an AVR, MIPS's JAL

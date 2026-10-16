@@ -28,6 +28,7 @@ IMAGES = {
                                      "common/stm32f103c8.ld"),
     "stack-overflow/stack-overflow.elf": (["common/startup.c", "stack-overflow/main.c"],
                                           "stack-overflow/stack.ld"),
+    "fault/fault.elf": (["common/startup.c", "fault/main.c"], "common/stm32f103c8.ld"),
 }
 
 

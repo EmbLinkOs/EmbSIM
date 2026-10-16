@@ -440,10 +440,11 @@ int esk_elf_label(const u8 *f, size_t len, const char *name, u32 *value);
 /* the function or object holding `addr`: 1, its name and the offset in it */
 int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap, u32 *offset);
 /* each defined function of an ELF image's symbol table: its name (in the
- * image), its address without the Thumb or MIPS16 bit, and its size; and
- * each global label in code, with size 0 */
-void esk_elf_functions(const u8 *f, size_t len, void (*fn)(void *ctx, const char *name, u32 addr, u32 size),
-                       void *ctx);
+ * image), its address without the Thumb or MIPS16 bit, its size, and
+ * whether it is weak (an alias startup code gives each handler); and each
+ * global label in code, with size 0 */
+void esk_elf_functions(const u8 *f, size_t len,
+                       void (*fn)(void *ctx, const char *name, u32 addr, u32 size, int weak), void *ctx);
 
 /* ---- cores ---------------------------------------------------------------- */
 

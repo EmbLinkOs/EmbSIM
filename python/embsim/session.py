@@ -218,11 +218,11 @@ class Session:
             params["name"] = name
         return self.call("record.to_scenario", **params)["scenario"]
 
-    # ---- the firmware's coverage, profile and stacks (SPEC-008 §5 analysis) -
+    # ---- the firmware's coverage, profile, stacks and faults (SPEC-008 §5) --
 
     def analyze(self, coverage: bool = True, profile: bool = True, board: Optional[str] = None,
-                stack: bool = False) -> None:
-        params: dict = {"coverage": coverage, "profile": profile, "stack": stack}
+                stack: bool = False, faults: bool = False) -> None:
+        params: dict = {"coverage": coverage, "profile": profile, "stack": stack, "faults": faults}
         if board:
             params["board"] = board
         self.call("analysis.start", **params)
@@ -252,6 +252,16 @@ class Session:
         if board:
             params["board"] = board
         r = self.call("analysis.stack", **params)
+        return r["boards"] if format == "json" else r["text"]
+
+    def faults(self, board: Optional[str] = None, format: str = "json") -> Any:
+        """Each board's faults as its cores took them ({board: {count,
+        faults: [...]}}: decoded, with a backtrace and the handler), or the
+        report as text."""
+        params: dict = {"format": format}
+        if board:
+            params["board"] = board
+        r = self.call("analysis.faults", **params)
         return r["boards"] if format == "json" else r["text"]
 
     # ---- the debugger (SPEC-008 debug) -------------------------------------

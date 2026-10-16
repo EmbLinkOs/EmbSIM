@@ -3,7 +3,8 @@
 /* Modifications copyright 2026 Junior Deogracias */
 /* analysis.h -- what a run measures of its firmware beyond its counts
  * (SPEC-009 §12): the code it covered (coverage.c), where its time went
- * (profile.c) and how deep its stacks went (stack.c).
+ * (profile.c), how deep its stacks went (stack.c) and what its faults were
+ * (fault.c).
  *
  * Both watch the run one instruction at a time: when a machine has an
  * analysis, the run loop (mach.c), or smp.c for each core, steps the core
@@ -20,8 +21,9 @@
  * (tools/embsim/analysis.h, analysis.c, coverage.c, profile.c, commit
  * aa4f10a): the call and return recognition and the report formats are
  * EmbCC's (stack.c: tools/embsim/stack.c, without the .su and embrt
- * comparisons); the per-core stacks, the reports into buffers and as JSON,
- * and an overflow as a diagnostic rather than the run's end are EmbSIM's. */
+ * comparisons; fault.c: tools/embsim/fault.c); the per-core stacks, the
+ * reports into buffers and as JSON, and an overflow and a fault as
+ * diagnostics rather than lines on stderr are EmbSIM's. */
 #ifndef ESK_MCU_ANALYSIS_H
 #define ESK_MCU_ANALYSIS_H
 
@@ -32,7 +34,9 @@
 struct esk_dwarf;
 
 /* the analyses a machine runs */
-enum { ESK_AN_COVERAGE = 1, ESK_AN_PROFILE = 2, ESK_AN_STACK = 4 };
+enum { ESK_AN_COVERAGE = 1, ESK_AN_PROFILE = 2, ESK_AN_STACK = 4, ESK_AN_FAULT = 8 };
+/* the analyses that follow the program's calls */
+#define ESK_AN_CALLS (ESK_AN_PROFILE | ESK_AN_STACK | ESK_AN_FAULT)
 
 /* report formats: coverage takes TEXT and LCOV; the profile TEXT and the
  * two collapsed-stack forms (by cycles, by instructions) */
@@ -91,7 +95,16 @@ int esk_an_stack(esk_an *a, const char *name, esk_strbuf *out);
  * [{name, deepest, frame, incl}]} by depth, at most `top` (0: all) */
 esk_json *esk_an_stack_json(esk_an *a, esk_alloc *al, int top);
 
-/* ---- shared by analysis.c, coverage.c, profile.c and stack.c ---- */
+/* ---- the faults (fault.c) ---- */
+
+/* the report, appended to `out`: each fault as the core took it (decoded,
+ * its instruction, its registers, a backtrace, its handler), a lockup */
+int esk_an_faults(esk_an *a, const char *name, esk_strbuf *out);
+/* {count, faults: [{core, exception, name, pc, where, summary, handler,
+ * backtrace: [{pc, where}], text}]}, at most ESK_AN_FAULTS of them */
+esk_json *esk_an_faults_json(esk_an *a, esk_alloc *al);
+
+/* ---- shared by analysis.c, coverage.c, profile.c, stack.c and fault.c ---- */
 
 #define ESK_AN_CORES 4
 #define ESK_AN_DEPTH 4096
@@ -100,6 +113,7 @@ esk_json *esk_an_stack_json(esk_an *a, esk_alloc *al, int top);
 typedef struct esk_an_fn {
     u32 lo, hi;
     const char *name;
+    int weak; /* a weak symbol: a strong one at its address names it */
 } esk_an_fn;
 
 /* an address range the analysis counts instructions in, a count per
@@ -127,6 +141,22 @@ typedef struct esk_an_frame {
     u32 sp;   /* the stack pointer at its first instruction */
     u32 min;  /* the lowest while it was on the stack */
 } esk_an_frame;
+
+#define ESK_AN_FAULTS 16
+#define ESK_AN_BT 32
+
+/* a fault the core took, decoded at the end of the step that took it */
+typedef struct esk_an_fault {
+    int core, n;      /* the exception's number as the core gave it */
+    u32 pc;           /* the faulting instruction (or the one it returns to) */
+    int lockup;       /* the core locked up: no handler followed */
+    char name[40];    /* "HardFault", "illegal instruction" */
+    char summary[240];
+    char handler[96];
+    u32 bt[ESK_AN_BT];
+    int nbt;
+    char *text;       /* the report (esk_strdup) */
+} esk_an_fault;
 
 /* a step's exception entries and returns, in order */
 typedef struct esk_an_ev {
@@ -190,6 +220,10 @@ struct esk_an {
     int ovf, ovf_core, ovf_entry;
     u32 ovf_pc, ovf_sp, ovf_limit;
     const char *ovf_why;
+    /* the faults (fault.c): the first ESK_AN_FAULTS, how many in all, and
+     * whether a lockup is reported (once a reset) */
+    esk_an_fault faults[ESK_AN_FAULTS];
+    int nfaults, fault_count, lockup_seen;
 };
 
 /* stack.c's part of the step (analysis.c): set up, the machine reset, the
@@ -207,6 +241,14 @@ void esk_an_stack_entered(esk_an *a, esk_an_core *k, struct esk_cpu *c, u32 pc1,
  * main and process stack pointers, 1 when the process one is in use */
 u32 esk_an_sp(const esk_an *a, struct esk_cpu *c);
 int esk_an_sps(const esk_an *a, struct esk_cpu *c, u32 *msp, u32 *psp);
+
+/* fault.c's part of the step: whether exception n is a fault; a fault the
+ * step took (n, returning to ret), and its end (a lockup); the records
+ * cleared */
+int esk_an_is_fault(const esk_an *a, int n);
+void esk_an_fault_taken(esk_an *a, esk_an_core *k, struct esk_cpu *c, int n, u32 ret);
+void esk_an_fault_step(esk_an *a, esk_an_core *k, struct esk_cpu *c);
+void esk_an_fault_clear(esk_an *a);
 
 /* the function holding pc: an index into fns, or -1 */
 int esk_an_fn_at(const esk_an *a, u32 pc);

@@ -133,11 +133,12 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `record.replay({path} | {recording}, allow_drift?) -> {ok, compared, divergence?: {index, expected, observed}, drift: [{what, recorded, now}]}`: the recording's project loaded into the session and replayed (SPEC-012 §2); `recording` is the document itself, as `record.stop` returns it without a path
 - `record.to_scenario({path} | {recording}, assert?: ["probes", "serial"], name?) -> {scenario}`: the recording as a SPEC-007 scenario (SPEC-012 §3)
 
-### analysis (the firmware's coverage, profile and stacks)
-- `analysis.start({board?, coverage?, profile?, stack?}) -> {coverage,
-  profile, stack}`: the boards' MCUs (one board's, or every board's with
-  firmware) are watched from now on, counting from zero; coverage and the
-  profile by default, the stacks when `stack` is true. They stay on across
+### analysis (the firmware's coverage, profile, stacks and faults)
+- `analysis.start({board?, coverage?, profile?, stack?, faults?}) ->
+  {coverage, profile, stack, faults}`: the boards' MCUs (one board's, or
+  every board's with firmware) are watched from now on, counting from zero;
+  coverage and the profile by default, the stacks and the faults when
+  `stack` and `faults` are true. They stay on across
   a reset, a reload and a new image. `analysis.stop({})` turns them off.
 - `analysis.coverage({board?, format?, detail?}) -> {boards: {ID: {lines:
   {hit, total}, functions: {hit, total}, insns, files: [{path, lines,
@@ -161,6 +162,11 @@ Notation: `method(params) -> result`. Params and results are objects.
   the first overflow past the limit, the functions by depth (without
   `detail`, the first ten) with their own frame and their depth with their
   callees in bytes (SPEC-009 §12); with `format` `text`, `{text}`.
+- `analysis.faults({board?, format?}) -> {boards: {ID: {count, faults:
+  [{core, exception?, lockup?, name, pc, where, summary, handler?,
+  backtrace: [{pc, where}], text}]}}}`: each fault the cores took, the
+  first 16 (SPEC-009 §12), `text` the whole decoded report; with `format`
+  `text`, `{text}`.
 - Each is -32001 until `analysis.start` turns it on.
 
 ### toolchain

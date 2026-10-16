@@ -468,7 +468,7 @@ void esk_an_step(esk_an *a, int core, struct esk_cpu *c)
     int ran;
     k->pc0 = pc0;
     k->nev = 0;
-    if (a->what & (ESK_AN_PROFILE | ESK_AN_STACK))
+    if (a->what & ESK_AN_CALLS)
         k->kind = step_kind(a, k, c, pc0);
     if ((a->what & ESK_AN_STACK) && k->tail_fn == -2)
         esk_an_stack_first(a, k, c, pc0);
@@ -487,7 +487,16 @@ void esk_an_step(esk_an *a, int core, struct esk_cpu *c)
             a->code_last = i;
         }
     }
-    if (a->what & (ESK_AN_PROFILE | ESK_AN_STACK)) {
+    if (a->what & ESK_AN_FAULT) {
+        /* a fault the step took, now that its entry is done; the shadow
+         * stack is still the faulting code's */
+        int i;
+        for (i = 0; i < k->nev; i++)
+            if (k->ev[i].entry && esk_an_is_fault(a, k->ev[i].n))
+                esk_an_fault_taken(a, k, c, k->ev[i].n, k->ev[i].ret);
+        esk_an_fault_step(a, k, c);
+    }
+    if (a->what & ESK_AN_CALLS) {
         int node = cur_node(a, k, pc0);
         /* the step's counts to the path it ran on, before the call or the
          * return it made */
@@ -514,7 +523,7 @@ typedef struct fn_list {
     int oom;
 } fn_list;
 
-static void add_fn(void *ctx, const char *name, u32 addr, u32 size)
+static void add_fn(void *ctx, const char *name, u32 addr, u32 size, int weak)
 {
     fn_list *l = (fn_list *)ctx;
     if (!name[0] || l->oom)
@@ -533,17 +542,23 @@ static void add_fn(void *ctx, const char *name, u32 addr, u32 size)
     l->fn[l->n].lo = addr & ~1u;
     l->fn[l->n].hi = (addr & ~1u) + size;
     l->fn[l->n].name = name; /* in the image; copied below */
+    l->fn[l->n].weak = weak;
     l->n++;
     l->names += strlen(name) + 1;
 }
 
-/* by address, then the larger first (an alias of the same size: the first
- * in the table) */
+/* by address, then the larger first, then a strong symbol before its weak
+ * aliases (startup code's Default_Handler, not the handler it stands in
+ * for), then by name */
 static int fn_before(const esk_an_fn *x, const esk_an_fn *y)
 {
     if (x->lo != y->lo)
         return x->lo < y->lo;
-    return x->hi > y->hi;
+    if (x->hi != y->hi)
+        return x->hi > y->hi;
+    if (x->weak != y->weak)
+        return y->weak;
+    return strcmp(x->name, y->name) < 0;
 }
 
 static void sort_fns(esk_an_fn *f, int n)
@@ -687,6 +702,7 @@ void esk_an_restart(esk_an *a)
     }
     if (a->what & ESK_AN_STACK)
         esk_an_stack_restart(a);
+    a->lockup_seen = 0;
 }
 
 void esk_an_clear(esk_an *a)
@@ -701,6 +717,7 @@ void esk_an_clear(esk_an *a)
     a->cycles0 = a->m->cycles;
     if (a->what & ESK_AN_STACK)
         esk_an_stack_clear(a);
+    esk_an_fault_clear(a);
 }
 
 unsigned esk_an_what(const esk_an *a) { return a ? a->what : 0; }
@@ -714,6 +731,7 @@ void esk_an_free(esk_an *a)
     al = a->a;
     if (a->fn_minsp)
         esk_an_stack_free(a);
+    esk_an_fault_clear(a);
     for (i = 0; i < a->ncode; i++)
         esk_free(al, a->code[i].count, ((size_t)(a->code[i].hi - a->code[i].lo) / 2 + 1) * sizeof(u64));
     if (a->code)

@@ -253,3 +253,20 @@ own frame (the most it moved sp below its entry, what `-fstack-usage`
 reports; an AVR's and a PIC24's return address counted as the callee's, as
 their compilers do); its depth with its callees, not its interrupt
 handlers. A PIC24's stack grows up: compared mirrored, reported as W15.
+
+The fault report (`fault.c`) decodes each fault at the end of the step
+that took it (the cores report an entry before stacking it): a Cortex-M's
+HardFault, MemManage, BusFault and UsageFault (HFSR and CFSR in words,
+MMFAR and BFAR when valid, the stacked frame), a RISC-V exception other
+than an interrupt, ECALL or EBREAK (mcause, mtval), a MIPS exception other
+than an interrupt, SYSCALL or BREAK (Cause's code, BadVAddr, the delay
+slot), a PIC24 trap (the core's account of it, W0-W15 and SR as the trap
+found them). Each gets the instruction disassembled with its function and
+line, the registers, a backtrace by the image's `.debug_frame` (CIE
+versions 1, 3 and 4, without DWARF expressions; through a Cortex-M's
+exception frame when the unwinding reaches EXC_RETURN), else by the shadow
+stack's calls, and the handler the core goes to (a vector without the
+Thumb bit, or one that is no function's start, named as none). A function
+is named by its strong symbol over the weak aliases at its address. Each
+fault raises `mcu.fault` (error) with its summary; a lockup is recorded
+too and stays `mcu.lockup`. The first 16 are kept, all counted.

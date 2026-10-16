@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
+/* Portions copyright 2026 Téo Motsou and contributors (EmbLinkOs/EmbCC): the call frame information */
 /* dwarf.c -- source lines from an ELF image's DWARF line tables (.debug_line,
  * versions 2 to 5, 32-bit DWARF), for the debugger (SPEC-009 §10): the file
  * and line of an address, and the addresses of a file's line.
@@ -11,7 +12,11 @@
  * separator. Version 5's entry formats are read for the forms compilers
  * use (string, line_strp, strp, udata, data1-16, block). An XC16 image's
  * (EM_DSPIC30F) debug sections hold each byte in the low half of a 16-bit
- * unit, as its program memory does: they are read packed. */
+ * unit, as its program memory does: they are read packed.
+ *
+ * The call frame information (.debug_frame) for the fault analysis's
+ * backtraces (fault.c): the rules at a pc, from its FDE's and its CIE's
+ * instructions; DWARF expressions are not read (EmbCC's image.c cfi_at). */
 #include <string.h>
 
 #include "mcu/dwarf.h"
@@ -569,4 +574,204 @@ const char *esk_dwarf_file(const esk_dwarf *d, const char *file)
         if (names(d->files[i], file))
             return d->files[i];
     return NULL;
+}
+
+/* ---- the call frame information (.debug_frame) ----------------------------------- */
+
+typedef struct cie {
+    u32 code_align;
+    s64 data_align;
+    int ra;
+    const u8 *init, *init_end;
+} cie;
+
+static int read_cie(const u8 *fr, u32 frlen, u32 off, cie *c)
+{
+    rd r;
+    u32 len, ver;
+    const char *aug;
+    r.p = fr + off;
+    r.end = fr + frlen;
+    r.bad = 0;
+    len = u32_(&r);
+    if (r.bad || len >= 0xfffffff0u || len > (u32)(r.end - r.p))
+        return 0;
+    r.end = r.p + len;
+    if (u32_(&r) != 0xffffffffu)
+        return 0;
+    ver = u8_(&r);
+    aug = cstr(&r);
+    if (*aug || (ver != 1 && ver != 3 && ver != 4))
+        return 0;
+    if (ver == 4) {
+        (void)u8_(&r); /* address_size */
+        (void)u8_(&r); /* segment_selector_size */
+    }
+    c->code_align = (u32)uleb(&r);
+    c->data_align = sleb(&r);
+    c->ra = (int)(ver == 1 ? u8_(&r) : uleb(&r));
+    c->init = r.p;
+    c->init_end = r.end;
+    return !r.bad;
+}
+
+static void set_rule(esk_cfi_row *row, u64 reg, int how, s64 off)
+{
+    if (reg < ESK_CFI_REGS) {
+        row->how[reg] = (u8)how;
+        row->off[reg] = off;
+    }
+}
+
+static void restore_rule(esk_cfi_row *row, u64 reg, const esk_cfi_row *init)
+{
+    if (reg < ESK_CFI_REGS && init) {
+        row->how[reg] = init->how[reg];
+        row->off[reg] = init->off[reg];
+    }
+}
+
+/* the CFI instructions from address `loc` up to the row for `pc`; `init`
+ * the CIE's row, which DW_CFA_restore goes back to (NULL while running the
+ * CIE's own instructions). 0 for what is not understood (an expression) */
+static int run_cfi(const u8 *p, const u8 *end, const cie *c, u64 loc, u32 pc, esk_cfi_row *row,
+                   const esk_cfi_row *init)
+{
+    rd r;
+    esk_cfi_row stack[8];
+    int sp = 0;
+    r.p = p;
+    r.end = end;
+    r.bad = 0;
+    while (r.p < r.end && !r.bad) {
+        u32 op = u8_(&r), hi = op & 0xc0u, lo = op & 0x3fu;
+        u64 reg = lo, adv = 0;
+        if (hi == 0x40u) {
+            adv = lo; /* advance_loc */
+        } else if (hi == 0x80u) {
+            set_rule(row, reg, ESK_CFI_OFFSET, (s64)uleb(&r) * c->data_align); /* offset */
+            continue;
+        } else if (hi == 0xc0u) {
+            restore_rule(row, reg, init); /* restore */
+            continue;
+        } else {
+            switch (op) {
+            case 0x00: /* nop */
+                continue;
+            case 0x01: { /* set_loc */
+                u64 to = u32_(&r);
+                if (to > pc)
+                    return 1;
+                loc = to;
+                continue;
+            }
+            case 0x02: adv = u8_(&r); break;
+            case 0x03: adv = u16_(&r); break;
+            case 0x04: adv = u32_(&r); break;
+            case 0x05: /* offset_extended */
+            case 0x11: /* offset_extended_sf */
+            case 0x14: /* val_offset */
+            case 0x15: { /* val_offset_sf */
+                s64 off;
+                reg = uleb(&r);
+                off = (op == 0x05 || op == 0x14 ? (s64)uleb(&r) : sleb(&r)) * c->data_align;
+                set_rule(row, reg, op >= 0x14 ? ESK_CFI_VALOFF : ESK_CFI_OFFSET, off);
+                continue;
+            }
+            case 0x06: /* restore_extended */
+                restore_rule(row, uleb(&r), init);
+                continue;
+            case 0x07: /* undefined */
+            case 0x08: /* same_value */
+                reg = uleb(&r);
+                set_rule(row, reg, op == 0x07 ? ESK_CFI_UNDEF : ESK_CFI_SAME, 0);
+                continue;
+            case 0x09: { /* register */
+                u64 r2;
+                reg = uleb(&r);
+                r2 = uleb(&r);
+                set_rule(row, reg, ESK_CFI_REG, (s64)r2);
+                continue;
+            }
+            case 0x0a: /* remember_state */
+                if (sp == 8)
+                    return 0;
+                stack[sp++] = *row;
+                continue;
+            case 0x0b: /* restore_state: the CFA rule with them */
+                if (!sp)
+                    return 0;
+                *row = stack[--sp];
+                continue;
+            case 0x0c: /* def_cfa */
+                row->cfa_reg = (int)uleb(&r);
+                row->cfa_off = (s64)uleb(&r);
+                continue;
+            case 0x0d: /* def_cfa_register */
+                row->cfa_reg = (int)uleb(&r);
+                continue;
+            case 0x0e: /* def_cfa_offset */
+                row->cfa_off = (s64)uleb(&r);
+                continue;
+            case 0x12: /* def_cfa_sf */
+                row->cfa_reg = (int)uleb(&r);
+                row->cfa_off = sleb(&r) * c->data_align;
+                continue;
+            case 0x13: /* def_cfa_offset_sf */
+                row->cfa_off = sleb(&r) * c->data_align;
+                continue;
+            case 0x2e: /* GNU_args_size */
+                (void)uleb(&r);
+                continue;
+            default: /* the expressions */
+                return 0;
+            }
+        }
+        /* an advance: the row so far holds up to loc + adv */
+        loc += adv * c->code_align;
+        if (loc > pc)
+            return 1;
+    }
+    return !r.bad;
+}
+
+int esk_dwarf_cfi(const u8 *elf, size_t len, u32 pc, esk_cfi_row *row)
+{
+    u32 frlen = 0, off = 0;
+    const u8 *fr = section(elf, len, ".debug_frame", &frlen);
+    if (!fr)
+        return 0;
+    while (frlen - off >= 8) {
+        rd r;
+        u32 n, next, cie_ptr, start, range;
+        r.p = fr + off;
+        r.end = fr + frlen;
+        r.bad = 0;
+        n = u32_(&r);
+        if (!n || n >= 0xfffffff0u || n > (u32)(r.end - r.p))
+            return 0;
+        next = off + 4 + n;
+        r.end = r.p + n;
+        cie_ptr = u32_(&r);
+        if (cie_ptr == 0xffffffffu) {
+            off = next;
+            continue;
+        }
+        start = u32_(&r);
+        range = u32_(&r);
+        if (!r.bad && pc - start < range) {
+            cie c;
+            esk_cfi_row init;
+            if (cie_ptr >= frlen || !read_cie(fr, frlen, cie_ptr, &c))
+                return 0;
+            memset(&init, 0, sizeof init);
+            init.ra = c.ra;
+            if (!run_cfi(c.init, c.init_end, &c, 0, 0xffffffffu, &init, NULL))
+                return 0;
+            *row = init;
+            return run_cfi(r.p, r.end, &c, start, pc, row, &init);
+        }
+        off = next;
+    }
+    return 0;
 }

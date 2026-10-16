@@ -5,11 +5,12 @@
 // instruction by instruction from analysis.start; each source file's lines
 // and functions hit, the source with each line's count, and where the cycles
 // went by function, and how deep each stack went (its own frame and its
-// depth with its callees, by function; an overflow past the link's limit).
+// depth with its callees, by function; an overflow past the link's limit),
+// and each fault the firmware took, decoded, with its backtrace.
 // lcov and collapsed stacks download for genhtml and a flame graph.
 
 import { Badge, Button, EmptyState, Select, Table, useToast, type Column } from '@embsim/design';
-import type { CoverageReport, HitTotal, ProfileReport, StackReport } from '@embsim/protocol';
+import type { CoverageReport, FaultReport, HitTotal, ProfileReport, StackReport } from '@embsim/protocol';
 import { Activity, Download, Flame, RefreshCw, Square } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage } from '../../actions';
@@ -45,6 +46,7 @@ export function CoveragePanel() {
   const [cov, setCov] = useState<CoverageReport | null>(null);
   const [prof, setProf] = useState<ProfileReport | null>(null);
   const [stack, setStack] = useState<StackReport | null>(null);
+  const [faults, setFaults] = useState<FaultReport | null>(null);
   const [file, setFile] = useState<string | null>(null);
   const can = capabilities.includes('analysis');
   const id = board || mcus[0]?.id || '';
@@ -59,11 +61,13 @@ export function CoveragePanel() {
       setOn(true);
       // the stacks when they are measured (an older engine has no analysis.stack)
       setStack(await c.analysis.stack({ board: id, detail: false }).then((r) => r.boards?.[id] ?? null, () => null));
+      setFaults(await c.analysis.faults({ board: id }).then((r) => r.boards?.[id] ?? null, () => null));
     } catch (e) {
       setOn(false);
       setCov(null);
       setProf(null);
       setStack(null);
+      setFaults(null);
       if (!errorMessage(e).includes('not on')) toast({ kind: 'error', title: 'Coverage', description: errorMessage(e) });
     }
   };
@@ -75,7 +79,7 @@ export function CoveragePanel() {
 
   const start = async () => {
     try {
-      await getClient().analysis.start({ stack: true });
+      await getClient().analysis.start({ stack: true, faults: true });
       setOn(true);
       await refresh();
     } catch (e) {
@@ -88,6 +92,7 @@ export function CoveragePanel() {
     setCov(null);
     setProf(null);
     setStack(null);
+    setFaults(null);
   };
   const download = async (what: 'lcov' | 'collapsed') => {
     try {
@@ -174,10 +179,31 @@ export function CoveragePanel() {
               <Table label="Functions by self cycles" columns={fnColumns} rows={prof.functions} rowKey={(f) => f.name} />
             </>
           )}
+          {faults && faults.count > 0 && <Faults faults={faults} />}
           {stack && <Stacks stack={stack} />}
         </>
       )}
     </div>
+  );
+}
+
+/** Each fault the cores took: its summary, and the whole report on demand. */
+function Faults({ faults }: { faults: FaultReport }) {
+  return (
+    <>
+      <div className="es-row">
+        <span className="es-caps">Faults</span>
+        <Badge tone="danger">{faults.count}</Badge>
+      </div>
+      {faults.faults.map((f, i) => (
+        <details key={`${i}-${f.pc}`} className="wb-verify__divergence" role="alert">
+          <summary>
+            <code>{f.summary}</code>
+          </summary>
+          <pre className="wb-cov__fault">{f.text}</pre>
+        </details>
+      ))}
+    </>
   );
 }
 

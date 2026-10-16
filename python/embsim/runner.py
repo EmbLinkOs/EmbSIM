@@ -54,6 +54,10 @@ class RunResult:
     def stack(self) -> dict:
         return self.report.get("stack") or {}
 
+    @property
+    def faults(self) -> dict:
+        return self.report.get("faults") or {}
+
 
 def _exec(argv: Sequence[str], cwd: Optional[PathLike], timeout: Optional[float]) -> RunResult:
     p = subprocess.run(list(argv), capture_output=True, text=True, cwd=str(cwd) if cwd else None, timeout=timeout)
@@ -68,6 +72,7 @@ def run(project: PathLike, *, scenario: Optional[PathLike] = None, until: Option
         policy: Optional[str] = None, probes: Sequence[str] = (), record: Optional[PathLike] = None,
         coverage: Optional[PathLike] = None, coverage_format: str = "lcov", profile: Optional[PathLike] = None,
         profile_format: str = "collapsed", stack: Optional[PathLike] = None, stack_format: str = "text",
+        faults: Optional[PathLike] = None, faults_format: str = "text",
         board: Optional[str] = None, embsim: Optional[str] = None,
         cwd: Optional[PathLike] = None, timeout: Optional[float] = 600.0) -> RunResult:
     """`embsim run PROJECT --json` with the given options."""
@@ -88,6 +93,8 @@ def run(project: PathLike, *, scenario: Optional[PathLike] = None, until: Option
         argv += ["--profile", str(profile), "--profile-format", profile_format]
     if stack:
         argv += ["--stack", str(stack), "--stack-format", stack_format]
+    if faults:
+        argv += ["--faults", str(faults), "--faults-format", faults_format]
     if board:
         argv += ["--board", board]
     return _exec(argv, cwd, timeout)

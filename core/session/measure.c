@@ -79,7 +79,10 @@ static char *image_dir(es_session *s, const esk_board_inst *bi)
 
 const char *esk_session_analysis_name(unsigned which)
 {
-    return which == ESK_AN_COVERAGE ? "coverage" : which == ESK_AN_STACK ? "the stack analysis" : "the profile";
+    return which == ESK_AN_COVERAGE ? "coverage"
+         : which == ESK_AN_STACK    ? "the stack analysis"
+         : which == ESK_AN_FAULT    ? "the fault report"
+                                    : "the profile";
 }
 
 es_status esk_session_analysis_text(es_session *s, const char *board, unsigned which, int fmt, esk_strbuf *out,
@@ -98,6 +101,8 @@ es_status esk_session_analysis_text(es_session *s, const char *board, unsigned w
             continue;
         if (which == ESK_AN_STACK) {
             ok = esk_an_stack(a, bi->id, out);
+        } else if (which == ESK_AN_FAULT) {
+            ok = esk_an_faults(a, bi->id, out);
         } else if (which == ESK_AN_COVERAGE) {
             char *dir = image_dir(s, bi);
             ok = esk_an_coverage(a, fmt, bi->id, dir, out);
@@ -130,6 +135,7 @@ esk_json *esk_session_analysis_json(es_session *s, const char *board, unsigned w
             continue;
         j = which == ESK_AN_COVERAGE ? esk_an_coverage_json(a, s->a, detail)
           : which == ESK_AN_STACK    ? esk_an_stack_json(a, s->a, detail ? 0 : 10)
+          : which == ESK_AN_FAULT    ? esk_an_faults_json(a, s->a)
                                      : esk_an_profile_json(a, s->a, detail ? 0 : 10);
         if (j)
             esk_json_object_set(s->a, out, bi->id, j);
@@ -147,4 +153,6 @@ void esk_session_analysis_report(es_session *s, esk_json *report)
         esk_json_object_set(s->a, report, "profile", esk_session_analysis_json(s, NULL, ESK_AN_PROFILE, 0));
     if (s->an_what & ESK_AN_STACK)
         esk_json_object_set(s->a, report, "stack", esk_session_analysis_json(s, NULL, ESK_AN_STACK, 0));
+    if (s->an_what & ESK_AN_FAULT)
+        esk_json_object_set(s->a, report, "faults", esk_session_analysis_json(s, NULL, ESK_AN_FAULT, 0));
 }

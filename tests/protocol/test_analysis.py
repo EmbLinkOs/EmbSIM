@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Junior Deogracias
-"""The firmware's coverage, profile and stacks (SPEC-008 §5 analysis,
-SPEC-009 §12):
+"""The firmware's coverage, profile, stacks and faults (SPEC-008 §5
+analysis, SPEC-009 §12):
 
   - every example whose boards run firmware, its first scenario run with
     --coverage, --profile and --stack as JSON, then again as lcov, collapsed
@@ -16,6 +16,11 @@ SPEC-009 §12):
     (tests/firmware/stack-overflow) raises mcu.stack_overflow once, naming
     the function, and its depths add up: main's with its callees is its own
     frame and the recursion's;
+  - a firmware that loads from an address nothing answers
+    (tests/firmware/fault) raises mcu.fault once: a HardFault escalated
+    from a precise bus error, BFAR the address, the instruction, and a
+    backtrace from .debug_frame through the calls that made it, the handler
+    the strong symbol at the vector's address; with no fault, none;
   - the gcov-style text shows the source with its counts;
   - a project without firmware is refused (exit 2);
   - over the protocol (`embsim sidecar`): analysis.coverage before
@@ -179,6 +184,47 @@ def check_overflow(embsim, tmp):
     return problems
 
 
+def check_fault(embsim, tmp):
+    problems = []
+    elf = ROOT / "tests" / "firmware" / "fault" / "fault.elf"
+    out = tmp / "faults.txt"
+    r = run([embsim, "run", "--target", "emblink/bluepill", "--image", elf, "--until", "2ms", "--json",
+             "--faults", out])
+    if r.returncode:
+        return [f"exit {r.returncode}: {r.stderr.strip()}"]
+    report = json.loads(r.stdout)
+    rep_f = report.get("faults", {}).get("B1", {})
+    faults = rep_f.get("faults", [])
+    if rep_f.get("count") != 1 or len(faults) != 1:
+        return [f"the faults: {rep_f}"]
+    f = faults[0]
+    if f["name"] != "HardFault" or f["exception"] != 3 or not f["where"].startswith("peek (main.c:"):
+        problems.append(f"the fault: {f['name']} {f.get('exception')} {f['where']}")
+    if "FORCED, PRECISERR at 0x30000000" not in f["summary"]:
+        problems.append(f"the summary: {f['summary']}")
+    names = [b["where"].split(" ")[0].split("+")[0] for b in f["backtrace"]]
+    if names != ["peek", "read_sensor", "main", "Reset_Handler"]:
+        problems.append(f"the backtrace: {names}")
+    if not f.get("handler", "").startswith("Default_Handler at 0x"):
+        problems.append(f"the handler: {f.get('handler')}")
+    diags = [d for d in report["diagnostics"] if d["code"] == "mcu.fault"]
+    if len(diags) != 1 or diags[0]["severity"] != "error" or "PRECISERR" not in diags[0]["message"]:
+        problems.append(f"the diagnostics: {diags}")
+    text = out.read_text() if out.exists() else ""
+    for want in ("BFAR  0x30000000 (BFARVALID)", "backtrace (.debug_frame):", "stacked frame at 0x", "instruction 0x"):
+        if want not in text:
+            problems.append(f"the text report has no {want!r}")
+    # a firmware that does not fault: none
+    ok = ROOT / "tests" / "firmware" / "stack-overflow" / "stack-overflow.elf"
+    r = run([embsim, "run", "--target", "emblink/bluepill", "--image", ok, "--until", "2ms", "--json", "--faults", "-"])
+    clean = json.loads(r.stdout).get("faults", {}).get("B1", {}) if not r.returncode else {}
+    if clean.get("count") != 0 or clean.get("faults"):
+        problems.append(f"a firmware without faults: {clean}")
+    if not problems:
+        print("ok    a load from nothing: mcu.fault, HardFault (FORCED, PRECISERR), peek <- read_sensor <- main")
+    return problems
+
+
 def check_protocol(embsim):
     problems = []
     project = ROOT / "examples" / "bluepill-button-led" / "project.json"
@@ -191,8 +237,8 @@ def check_protocol(embsim):
         except EmbsimError as e:
             if e.code != -32001:
                 problems.append(f"analysis.coverage before analysis.start: {e.code}")
-        started = client.call("analysis.start", {"stack": True})
-        if started != {"coverage": True, "profile": True, "stack": True}:
+        started = client.call("analysis.start", {"stack": True, "faults": True})
+        if started != {"coverage": True, "profile": True, "stack": True, "faults": True}:
             problems.append(f"analysis.start: {started}")
         client.call("control.advance", {"until": "20ms"})
         cov = client.call("analysis.coverage", {})["boards"]["B1"]
@@ -213,6 +259,9 @@ def check_protocol(embsim):
         text = client.call("analysis.stack", {"format": "text"})["text"]
         if "main stack (MSP): top 0x20005000" not in text:
             problems.append(f"analysis.stack as text: {text[:200]}")
+        faults = client.call("analysis.faults", {})["boards"]["B1"]
+        if faults != {"count": 0, "faults": []}:
+            problems.append(f"analysis.faults: {faults}")
         client.call("analysis.stop", {})
         try:
             client.call("analysis.profile", {})
@@ -222,7 +271,7 @@ def check_protocol(embsim):
     finally:
         client.close()
     if not problems:
-        print("ok    the protocol: analysis.start, coverage, profile and stack as JSON and text, analysis.stop")
+        print("ok    the protocol: analysis.start, coverage, profile, stack and faults as JSON and text, analysis.stop")
     return problems
 
 
@@ -254,6 +303,10 @@ def main() -> int:
         problems = check_overflow(args.embsim, tmp)
         for p in problems:
             print(f"FAIL  the stack overflow: {p}")
+        failures += bool(problems)
+        problems = check_fault(args.embsim, tmp)
+        for p in problems:
+            print(f"FAIL  the fault: {p}")
         failures += bool(problems)
         # no firmware: refused
         r = run([args.embsim, "run", ROOT / "examples" / "button-led" / "project.json", "--coverage", tmp / "x"])

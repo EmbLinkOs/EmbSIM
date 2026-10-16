@@ -151,6 +151,16 @@ versions follow semantic versioning. There is no release yet.
   frame and its depth with its callees; the error diagnostic
   `mcu.stack_overflow` when the main stack goes past its limit, naming the
   function. Extracted from EmbCC's `stack.c`; `tests/firmware/stack-overflow`.
+- The fault report (M5, SPEC-009 §12): `embsim run --faults` (text, JSON)
+  and `analysis.faults`; each fault as the core takes it, decoded (a
+  Cortex-M's HFSR and CFSR, MMFAR and BFAR; RISC-V's mcause and mtval;
+  MIPS's Cause and BadVAddr; a PIC24 trap), with the instruction, the
+  registers, a backtrace from the image's `.debug_frame` (read by the new
+  CFI reader in `dwarf.c`) or the shadow stack, and the handler; the error
+  diagnostic `mcu.fault`. Extracted from EmbCC's `fault.c`;
+  `tests/firmware/fault`.
+- The analyses name a function by its strong symbol, not a weak alias at
+  the same address (startup code's `Default_Handler`).
 - The Verify perspective (M5): the scenario editor (a scenario's inputs
   and assertions edited in place, run with each result in its row, saved
   into the project: `scenario.get`, `scenario.save`), recordings replayed

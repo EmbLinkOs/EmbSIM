@@ -25,6 +25,7 @@ import type {
   ProbeKind,
   ProfileReport,
   StackReport,
+  FaultReport,
   Project,
   Recording,
   ReplayResult,
@@ -158,10 +159,10 @@ export interface Methods {
   'catalog.validate': { params: { path: string }; result: { ok: boolean; diagnostics: DiagnosticRecord[] } };
   'catalog.libraries': { params: Record<string, never>; result: { libraries: { path: string; name: string; version: string; items: number }[] } };
 
-  // analysis: the firmware's coverage, profile and stacks (SPEC-008 §5)
+  // analysis: the firmware's coverage, profile, stacks and faults (SPEC-008 §5)
   'analysis.start': {
-    params: { board?: string; coverage?: boolean; profile?: boolean; stack?: boolean };
-    result: { coverage: boolean; profile: boolean; stack: boolean };
+    params: { board?: string; coverage?: boolean; profile?: boolean; stack?: boolean; faults?: boolean };
+    result: { coverage: boolean; profile: boolean; stack: boolean; faults: boolean };
   };
   'analysis.stop': { params: Record<string, never>; result: Record<string, never> };
   'analysis.coverage': {
@@ -175,6 +176,10 @@ export interface Methods {
   'analysis.stack': {
     params: { board?: string; format?: 'json' | 'text'; detail?: boolean };
     result: { boards?: Record<string, StackReport>; text?: string };
+  };
+  'analysis.faults': {
+    params: { board?: string; format?: 'json' | 'text' };
+    result: { boards?: Record<string, FaultReport>; text?: string };
   };
 
   // record
@@ -264,6 +269,7 @@ export const METHOD_NAMES = [
   'analysis.coverage',
   'analysis.profile',
   'analysis.stack',
+  'analysis.faults',
   'record.start',
   'record.stop',
   'record.replay',
