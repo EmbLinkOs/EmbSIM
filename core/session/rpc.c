@@ -66,8 +66,9 @@ static es_status m_session_open(rpc_ctx *r)
     esk_json_set_string(s->a, r->result, "engine", es_version().string);
     esk_json_set_integer(s->a, r->result, "abi", es_abi_version());
     {
-        static const char *const names[] = { "analog", "digital", "catalog", "scenario", "record.inputs", "streams.json", "observe.subscribe",
-                                             "mcu", "debug", "toolchain" };
+        static const char *const names[] = { "analog", "digital", "catalog", "scenario", "scenario.edit", "record", "record.inputs",
+                                             "record.replay", "streams.json", "observe.subscribe", "mcu", "debug", "toolchain",
+                                             "analysis" };
         size_t i;
         for (i = 0; i < ES_COUNTOF(names); i++)
             esk_json_array_push(s->a, caps, esk_json_new_string(s->a, names[i]));
@@ -785,28 +786,80 @@ static es_status m_record_stop(rpc_ctx *r)
 }
 
 /* the recording at `path`: its project loaded into this session, replayed */
-static es_status m_record_replay(rpc_ctx *r)
+/* the recording a request names: {path} read from a file, or {recording}
+ * itself; NULL after fail() */
+static esk_json *request_recording(rpc_ctx *r)
 {
     es_session *s = r->s;
     const char *path = pstr(r, "path", NULL);
-    char *text = NULL, *dir, *proj;
+    const esk_json *inline_rec = esk_json_get(r->params, "recording");
+    char *text = NULL;
     size_t len = 0;
     int line;
     const char *err;
     esk_json *rec;
-    es_status st;
-    if (!path)
-        return fail(r, -32602, "record.replay needs a path");
-    if (esk_host_read_file(s->a, path, &text, &len) != ES_OK)
-        return fail(r, -32602, "the recording cannot be read");
-    rec = esk_json_parse(s->a, text, len, &line, &err);
-    esk_free(s->a, text, len + 1);
+    if (inline_rec) {
+        rec = esk_json_clone(s->a, inline_rec);
+    } else {
+        if (!path) {
+            fail(r, -32602, "a recording's path or the recording is required");
+            return NULL;
+        }
+        if (esk_host_read_file(s->a, path, &text, &len) != ES_OK) {
+            fail(r, -32602, "the recording cannot be read");
+            return NULL;
+        }
+        rec = esk_json_parse(s->a, text, len, &line, &err);
+        esk_free(s->a, text, len + 1);
+    }
     if (!rec || !esk_str_eq(esk_json_get_str(rec, "kind", ""), "recording")) {
         esk_json_free(s->a, rec);
-        return fail(r, -32602, "the file is not a recording");
+        fail(r, -32602, "not a recording");
+        return NULL;
     }
+    return rec;
+}
+
+static es_status m_record_to_scenario(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    esk_json *rec = request_recording(r), *sc;
+    const esk_json *what = esk_json_get(r->params, "assert");
+    int probes = 1, serial = 1;
+    size_t i;
+    if (!rec)
+        return ES_EPROTO;
+    if (what) {
+        probes = serial = 0;
+        for (i = 0; i < esk_json_len(what); i++) {
+            probes |= esk_str_eq(esk_json_str(esk_json_at(what, i)), "probes");
+            serial |= esk_str_eq(esk_json_str(esk_json_at(what, i)), "serial");
+        }
+    }
+    sc = esk_record_to_scenario(s->a, rec, pstr(r, "name", NULL), probes, serial);
+    esk_json_free(s->a, rec);
+    if (!sc)
+        return ES_ENOMEM;
+    r->result = obj(r);
+    if (!r->result) {
+        esk_json_free(s->a, sc);
+        return ES_ENOMEM;
+    }
+    esk_json_object_set(s->a, r->result, "scenario", sc);
+    return ES_OK;
+}
+
+static es_status m_record_replay(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    char *dir, *proj;
+    esk_json *rec = request_recording(r);
+    es_status st;
+    if (!rec)
+        return ES_EPROTO;
     proj = esk_strdup(s->a, esk_json_get_str(esk_json_get(rec, "project"), "path", ""));
-    if (proj && !esk_host_file_exists(proj)) {
+    if (proj && path && !esk_host_file_exists(proj)) {
         dir = esk_host_dirname(s->a, path);
         esk_strfree(s->a, proj);
         proj = esk_host_path_join(s->a, dir ? dir : ".", esk_json_get_str(esk_json_get(rec, "project"), "path", ""));
@@ -857,6 +910,95 @@ static es_status m_scenario_run(rpc_ctx *r)
     r->result = esk_scenario_run(r->s, sc, dir ? dir : r->s->base_dir, until);
     esk_json_free(r->s->a, loaded);
     esk_strfree(r->s->a, dir);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+/* a scenario file of the project: a relative path inside the project's
+ * folder (no "..", not absolute), as its `scenarios` list names them */
+static char *scenario_path(rpc_ctx *r, const char *path)
+{
+    const char *p;
+    if (!path || !path[0] || path[0] == '/' || path[0] == '\\' || strchr(path, ':'))
+        return NULL;
+    for (p = path; *p; p++)
+        if (p[0] == '.' && p[1] == '.' && (p == path || p[-1] == '/' || p[-1] == '\\'))
+            return NULL;
+    return esk_host_path_join(r->s->a, r->s->base_dir ? r->s->base_dir : ".", path);
+}
+
+static es_status m_scenario_get(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    char *full = scenario_path(r, path), *text = NULL;
+    size_t len = 0;
+    int line;
+    const char *err;
+    esk_json *sc;
+    if (!full)
+        return fail(r, -32602, "a scenario path inside the project's folder is required");
+    if (esk_host_read_file(s->a, full, &text, &len) != ES_OK) {
+        esk_strfree(s->a, full);
+        return fail_status(r, ES_EIO);
+    }
+    esk_strfree(s->a, full);
+    sc = esk_json_parse(s->a, text, len, &line, &err);
+    esk_free(s->a, text, len + 1);
+    if (!sc)
+        return fail(r, -32602, err);
+    r->result = obj(r);
+    if (!r->result) {
+        esk_json_free(s->a, sc);
+        return ES_ENOMEM;
+    }
+    esk_json_set_string(s->a, r->result, "path", path);
+    esk_json_object_set(s->a, r->result, "scenario", sc);
+    return ES_OK;
+}
+
+/* scenario.save({path, scenario, add?}): written with two-space indents; with
+ * `add`, the project's `scenarios` list gains the path (project.save keeps it) */
+static es_status m_scenario_save(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    const esk_json *sc = esk_json_get(r->params, "scenario");
+    char *full, *text;
+    size_t len = 0, i;
+    es_status st;
+    esk_strbuf b;
+    if (!sc || !esk_json_is(sc, ESK_JSON_OBJECT))
+        return fail(r, -32602, "scenario is required");
+    full = scenario_path(r, path);
+    if (!full)
+        return fail(r, -32602, "a scenario path inside the project's folder is required");
+    esk_strbuf_init(&b, s->a);
+    text = esk_json_write(&b, sc, 2) == 0 && esk_strbuf_putc(&b, '\n') == 0 ? esk_strbuf_detach(&b, &len) : NULL;
+    if (!text) {
+        esk_strbuf_free(&b);
+        esk_strfree(s->a, full);
+        return ES_ENOMEM;
+    }
+    st = esk_host_write_file(full, text, len);
+    esk_free(s->a, text, len + 1);
+    esk_strfree(s->a, full);
+    if (st != ES_OK)
+        return fail_status(r, ES_EIO);
+    if (esk_json_get_bool(r->params, "add", 0) && s->project) {
+        esk_json *list = (esk_json *)esk_json_get(s->project, "scenarios");
+        int found = 0;
+        if (!list) {
+            esk_json_object_set(s->a, s->project, "scenarios", esk_json_new_array(s->a));
+            list = (esk_json *)esk_json_get(s->project, "scenarios");
+        }
+        for (i = 0; list && i < esk_json_len(list); i++)
+            found |= esk_str_eq(esk_json_str(esk_json_at(list, i)), path);
+        if (list && !found)
+            esk_json_array_push(s->a, list, esk_json_new_string(s->a, path));
+    }
+    r->result = obj(r);
+    if (r->result)
+        esk_json_set_string(s->a, r->result, "path", path);
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
@@ -1080,7 +1222,9 @@ static const method methods[] = {
     { "analysis.start", m_analysis_start }, { "analysis.stop", m_analysis_stop },
     { "analysis.coverage", m_analysis_coverage }, { "analysis.profile", m_analysis_profile },
     { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_record_replay },
-    { "scenario.run", m_scenario_run }, { "diagnostics.list", m_diagnostics_list },
+    { "record.to_scenario", m_record_to_scenario },
+    { "scenario.run", m_scenario_run }, { "scenario.get", m_scenario_get }, { "scenario.save", m_scenario_save },
+    { "diagnostics.list", m_diagnostics_list },
     { "toolchain.detect", m_toolchain_detect }, { "toolchain.build", m_toolchain_build },
 };
 

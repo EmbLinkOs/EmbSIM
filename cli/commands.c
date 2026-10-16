@@ -13,6 +13,7 @@
 #include "embsim/embsim.h"
 #include "host/host.h"
 #include "mcu/analysis.h"
+#include "mcu/mcu.h"
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
 #include "sdk.h"
@@ -29,6 +30,8 @@ static void usage(void)
 {
     fputs("usage: embsim <command> [options]\n"
           "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json]\n"
+          "  run --target BOARD --image FILE [options]   one board of the catalog running an image, no project\n"
+          "      [--image [ID=]FILE] [--until-text TEXT] [--console]\n"
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]] [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
@@ -155,6 +158,128 @@ static void print_human_report(es_session *s, const esk_json *report)
     }
 }
 
+/* the boards' consoles followed during a run: what was printed of each, and
+ * whether `until_text` has appeared */
+#define FOLLOW_BOARDS 16
+
+typedef struct follow {
+    const char *until_text;
+    FILE *out; /* where --console prints, or NULL */
+    u64 printed[FOLLOW_BOARDS];
+} follow;
+
+static int follow_consoles(es_session *s, follow *f)
+{
+    size_t i, need = f->until_text ? strlen(f->until_text) : 0;
+    int found = 0;
+    for (i = 0; i < s->boards.len && i < FOLLOW_BOARDS; i++) {
+        esk_board_inst *bi = s->boards.data[i];
+        size_t len = 0, fresh, window;
+        u64 total = 0;
+        const char *text;
+        if (!bi->mcu)
+            continue;
+        text = esk_mcu_console(bi->mcu, &len, &total);
+        fresh = total - f->printed[i] > len ? len : (size_t)(total - f->printed[i]);
+        if (fresh && f->out) {
+            fwrite(text + len - fresh, 1, fresh, f->out);
+            fflush(f->out);
+        }
+        /* the new text, and what came before it that a match may start in */
+        window = fresh + need > len ? len : fresh + (need ? need - 1 : 0);
+        if (need && fresh && strstr(text + len - window, f->until_text))
+            found = 1;
+        f->printed[i] = total;
+    }
+    return found;
+}
+
+/* a project of one catalog board running `image` (--target BOARD --image FILE) */
+static es_status load_target(es_session *s, const char *target, const char *image)
+{
+    esk_json *p = esk_json_new_object(s->a), *boards = esk_json_new_array(s->a), *b = esk_json_new_object(s->a);
+    esk_json *fw = esk_json_new_object(s->a), *probes = esk_json_new_array(s->a), *pr = esk_json_new_object(s->a);
+    const char *base = strrchr(image, '/'), *dot;
+    char name[64], *text = NULL;
+    size_t len = 0;
+    es_status st = ES_ENOMEM;
+    base = base ? base + 1 : image;
+    esk_snprintf(name, sizeof name, "%s", base);
+    dot = strrchr(name, '.');
+    if (dot && dot != name)
+        name[dot - name] = 0;
+    if (p && boards && b && fw && probes && pr) {
+        esk_json_set_integer(s->a, p, "schema_version", 1);
+        esk_json_set_string(s->a, p, "kind", "project");
+        esk_json_set_string(s->a, p, "name", name);
+        esk_json_set_string(s->a, b, "id", "B1");
+        esk_json_set_string(s->a, b, "board", target);
+        esk_json_set_string(s->a, fw, "image", image);
+        esk_json_object_set(s->a, b, "firmware", fw);
+        fw = NULL;
+        esk_json_array_push(s->a, boards, b);
+        b = NULL;
+        esk_json_object_set(s->a, p, "boards", boards);
+        boards = NULL;
+        esk_json_set_string(s->a, pr, "id", "console");
+        esk_json_set_string(s->a, pr, "target", "serial:B1");
+        esk_json_set_string(s->a, pr, "kind", "serial");
+        esk_json_array_push(s->a, probes, pr);
+        pr = NULL;
+        esk_json_object_set(s->a, p, "probes", probes);
+        probes = NULL;
+        text = esk_json_format(s->a, p, 0, &len);
+    }
+    if (text) {
+        st = es_session_load_json(s, text, len, ".");
+        esk_free(s->a, text, len + 1);
+    }
+    esk_json_free(s->a, p);
+    esk_json_free(s->a, boards);
+    esk_json_free(s->a, b);
+    esk_json_free(s->a, fw);
+    esk_json_free(s->a, probes);
+    esk_json_free(s->a, pr);
+    return st;
+}
+
+/* --image [ID=]FILE over a project's board: its firmware replaced */
+static int override_image(es_session *s, const char *arg)
+{
+    const char *eq = strchr(arg, '=');
+    const char *path = eq ? eq + 1 : arg;
+    char id[64], why[160], *data = NULL;
+    size_t len = 0, i;
+    esk_board_inst *target = NULL;
+    int n = 0;
+    id[0] = 0;
+    if (eq)
+        esk_snprintf(id, sizeof id, "%.*s", (int)(eq - arg), arg);
+    for (i = 0; i < s->boards.len; i++) {
+        esk_board_inst *bi = s->boards.data[i];
+        if (!bi->mcu || (id[0] && !esk_str_eq(bi->id, id)))
+            continue;
+        target = bi;
+        n++;
+    }
+    if (n != 1) {
+        fprintf(stderr, "embsim: --image: %s\n", n ? "the project has several boards: give --image ID=FILE"
+                                                     : "no such board with an MCU");
+        return 0;
+    }
+    if (esk_host_read_file(s->a, path, &data, &len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot read %s\n", path);
+        return 0;
+    }
+    if (esk_mcu_set_image(target->mcu, (const unsigned char *)data, len, why, sizeof why) != ES_OK) {
+        fprintf(stderr, "embsim: %s: %s\n", path, why);
+        esk_free(s->a, data, len + 1);
+        return 0;
+    }
+    esk_free(s->a, data, len + 1);
+    return 1;
+}
+
 /* a report format's name: ESK_AN_*, -2 for JSON, -1 for none */
 static int an_format(const char *name, int coverage)
 {
@@ -201,8 +326,8 @@ static int write_analysis(es_session *s, const char *board, int coverage, int fm
 static int cmd_run(int argc, char **argv, const char *argv0)
 {
     const char *project = NULL, *scenario = NULL, *policy = NULL, *record = NULL, *library = NULL;
-    const char *coverage = NULL, *profile = NULL, *board = NULL;
-    int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT;
+    const char *coverage = NULL, *profile = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
+    int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, console = 0;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -223,6 +348,10 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--coverage") && more) coverage = argv[++i];
         else if (!strcmp(a, "--profile") && more) profile = argv[++i];
         else if (!strcmp(a, "--board") && more) board = argv[++i];
+        else if (!strcmp(a, "--target") && more) target = argv[++i];
+        else if (!strcmp(a, "--image") && more) image = argv[++i];
+        else if (!strcmp(a, "--until-text") && more) until_text = argv[++i];
+        else if (!strcmp(a, "--console")) console = 1;
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format")) && more) {
             int cov = a[2] == 'c', f = an_format(argv[++i], cov);
             if (f == -1) { fprintf(stderr, "embsim: %s: no format %s\n", a, argv[i]); return 2; }
@@ -233,11 +362,20 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!project) project = a;
         else { fprintf(stderr, "embsim: one project at a time\n"); return 2; }
     }
-    if (!project) { usage(); return 2; }
+    if (!project && !target) { usage(); return 2; }
+    if (project && target) { fprintf(stderr, "embsim: a project or --target, not both\n"); return 2; }
+    if (target && !image) { fprintf(stderr, "embsim: --target needs --image FILE\n"); return 2; }
+    if (scenario && (until_text || console)) { fprintf(stderr, "embsim: --until-text and --console run without a scenario\n"); return 2; }
     s = open_session(policy, argv0, library);
     if (!s) return 2;
-    if (es_session_load_file(s, project) != ES_OK) {
-        fprintf(stderr, "embsim: cannot load %s\n", project);
+    if (target ? load_target(s, target, image) != ES_OK : es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", target ? target : project);
+        es_session_destroy(s);
+        return 2;
+    }
+    if (target)
+        project = image; /* the run's name in its report and recording */
+    else if (image && !override_image(s, image)) {
         es_session_destroy(s);
         return 2;
     }
@@ -284,13 +422,31 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     } else {
         uint64_t t0 = esk_host_monotonic_ms();
         es_status st;
+        int seen = 0;
         if (record)
             (void)esk_session_do_reset(s); /* from reset, as a scenario and a replay run */
-        st = esk_session_do_advance(s, until);
+        if (until_text || console) {
+            /* a millisecond at a time, following the consoles */
+            follow f;
+            es_time_t at = s->eng.sched.now;
+            memset(&f, 0, sizeof f);
+            f.until_text = until_text && until_text[0] ? until_text : NULL;
+            f.out = console ? (opt_json ? stderr : stdout) : NULL;
+            st = ES_OK;
+            while (st == ES_OK && !s->diag.fatal && at < until && !seen) {
+                at = until - at > ES_PS_PER_MS ? at + ES_PS_PER_MS : until;
+                st = esk_session_do_advance(s, at);
+                seen = follow_consoles(s, &f);
+            }
+        } else {
+            st = esk_session_do_advance(s, until);
+        }
         s->wall_time_s = (double)(esk_host_monotonic_ms() - t0) / 1000.0;
-        report = esk_session_report(s, s->diag.fatal ? s->diag.fatal_code : st == ES_OK ? "until" : es_strerror(st), NULL);
+        report = esk_session_report(s, s->diag.fatal ? s->diag.fatal_code : seen ? "until_text" : st == ES_OK ? "until" : es_strerror(st), NULL);
         if (st != ES_OK || s->diag.fatal)
             rc = 3;
+        else if (until_text && !seen)
+            rc = 1; /* the text the run waited for never came */
     }
     if (!report) {
         fputs("embsim: out of memory\n", stderr);

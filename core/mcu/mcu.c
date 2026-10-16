@@ -23,6 +23,7 @@ typedef struct mcu_uart {
     struct esk_rx_port *rx;
     char *text; /* what it sent, the last MCU_TEXT_CAP - 1 bytes */
     size_t text_len;
+    u64 text_total; /* the bytes of text it ever sent */
     u64 tx_bytes, rx_bytes;
     /* the TX pin's waveform */
     esk_pin *tx_pin;
@@ -439,6 +440,7 @@ static void text_append(mcu_uart *u, int c)
     }
     u->text[u->text_len++] = (char)c;
     u->text[u->text_len] = 0;
+    u->text_total++;
 }
 
 static void tx_bit_cb(void *ctx, void *arg, es_time_t now)
@@ -726,6 +728,7 @@ static void mcu_reset(esk_comp *c)
         u->tx_ev = u->in_ev = u->rx_ev = 0;
         u->text_len = 0;
         u->text[0] = 0;
+        u->text_total = 0;
         u->tx_bytes = u->rx_bytes = 0;
         u->inq_len = u->inq_head = 0;
         u->rx_busy = 0;
@@ -901,9 +904,10 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
     memcpy(copy, image, len);
     /* the new image must load before it replaces the old one */
     if (esk_mach_load_image(&st->m, copy, len, &entry, why, cap) != ES_OK) {
+        char again[160]; /* the old image back; `why` keeps the new one's reason */
         esk_free(e->a, copy, len);
         if (st->image)
-            (void)esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, cap);
+            (void)esk_mach_load_image(&st->m, st->image, st->image_len, &entry, again, sizeof again);
         return ES_EINVAL;
     }
     if (st->image)
@@ -951,6 +955,15 @@ esk_an *esk_mcu_analysis(const esk_comp *c)
 {
     const mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
     return st ? st->an : NULL;
+}
+
+const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    mcu_uart *u = st && st->attached ? uart_named(st, st->console, 0) : NULL;
+    *len = u ? u->text_len : 0;
+    *total = u ? u->text_total : 0;
+    return u ? u->text : "";
 }
 
 const char *esk_mcu_image_name(const esk_comp *c)
