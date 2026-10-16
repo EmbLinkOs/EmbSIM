@@ -2,7 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import { describe, expect, it } from 'vitest';
 import type { Project, ComponentDescription } from '@embsim/protocol';
-import { commonParameters, parameterValue } from './selectionProperties';
+import { commonParameters, parameterValue } from './parameterEditing';
 import type { CatalogEntry } from '../../stores/project';
 
 describe('shared property editing', () => {

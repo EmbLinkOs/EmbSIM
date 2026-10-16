@@ -5,6 +5,22 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Schematic cross-platform CI corrections
+
+The authoring PR's first hosted run exposed an extensionless-import collision:
+`SelectionProperties.tsx` and `selectionProperties.ts` resolved to the helper on
+case-insensitive filesystems. The helper is now `parameterEditing.ts`, and the
+repository policy checks ambiguous source-module paths with regression fixtures.
+An unchanged delayed server refresh also invalidated active wire drafts; refresh
+now retains revision identity when canonical project content is unchanged, while
+real changes still invalidate stale drafts. The selection browser assertion now
+checks the logical selection rather than counting only viewport-mounted symbols.
+Failed browser jobs retain screenshots and traces for diagnosis.
+
+Local verification: 138 UI tests across 32 files, typecheck, lint and build pass;
+source-path policy and its fixtures pass. The hosted cross-platform rerun is
+pending; the original failures are not treated as passes.
+
 ## Schematic authoring and repair milestone
 
 Based on merged main `2183be8` (including PR #29's native peripheral changes),

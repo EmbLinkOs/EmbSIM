@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { errorMessage } from '../../actions';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
-import { commonParameters, parameterValue } from './selectionProperties';
+import { commonParameters, parameterValue } from './parameterEditing';
 
 /** Exact placement and batch editing share the normal transactional history. */
 export function SelectionProperties() {

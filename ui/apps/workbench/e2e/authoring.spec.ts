@@ -80,7 +80,7 @@ test('context actions, exact placement, shared parameters and one-step undo', as
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Set resistance', exact: true }).check();
   await expect(page.getByLabel('Shared resistance', { exact: false })).not.toHaveValue('4.7k');
-  await expect(page.locator('.es-component--selected')).toHaveCount(3);
+  await expect(page.getByText('3 items selected', { exact: true })).toBeVisible();
 });
 
 test('check report locates and repairs undrawn nets without changing connectivity', async ({ page }, info) => {

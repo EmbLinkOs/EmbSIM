@@ -216,7 +216,9 @@ export const useProject = create<ProjectState>((set, get) => ({
   async refresh() {
     const c = getClient();
     const { project } = await c.project.get({});
-    set({ project });
+    // Duplicate project.changed notifications must not invalidate active drafts.
+    // A new object identity represents an actual content revision, not a fetch.
+    if (JSON.stringify(get().project) !== JSON.stringify(project)) set({ project });
     await get().ensureCatalog(projectIds(project));
     const topology = await c.project.topology({}).catch(() => null);
     set({ topology });

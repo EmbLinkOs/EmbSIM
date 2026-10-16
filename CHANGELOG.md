@@ -5,6 +5,13 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Cross-platform schematic fixes
+
+- Remove an ambiguous case-insensitive source import that broke macOS/Windows
+  workbench and desktop builds; add a portable module-path policy check.
+- Keep unchanged server refreshes from cancelling active drawing drafts. Correct
+  selection verification for offscreen symbols and retain failed browser traces.
+
 ### Schematic authoring workbench
 
 - Reshape existing orthogonal tracks with draggable/keyboard segment handles,

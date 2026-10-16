@@ -12,7 +12,7 @@ import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
 import { FidelityBadges } from './LibraryPanel';
 import { WireProperties } from './WireProperties';
-import { parameterValue } from './selectionProperties';
+import { parameterValue } from './parameterEditing';
 import { SelectionProperties } from './SelectionProperties';
 
 const UNIT_LABEL: Record<string, string> = { ohm: 'Ω', F: 'F', V: 'V', A: 'A', ms: 'ms', W: 'W', '%': '%' };

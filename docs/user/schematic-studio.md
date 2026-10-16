@@ -207,7 +207,8 @@ Table parameters are not batch editable. Unlike layout changes, parameter change
 can restart the circuit according to the existing transaction contract.
 
 Concurrent edits are rejected while the previous operation finishes; retry after
-it completes. Position, batch and track drafts reject stale project revisions.
+it completes. Position, batch and track drafts reject stale project revisions. Repeated server
+notifications with unchanged project content do not cancel an active draft.
 Failed undo/redo operations retain their history entry for retry. Focus mode
 restores the prior panel order and sizes without remounting the canvas.
 

@@ -27,3 +27,5 @@ jobs:
         run: python3 tools/repository/check_commits.py --base "$BASE_SHA" --head "$HEAD_SHA"
       - name: Banned constructs and licence headers
         run: python3 tools/repository/check_banned.py
+      - name: Portable source module paths
+        run: python3 tools/repository/check_source_paths.py
