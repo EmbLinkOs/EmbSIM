@@ -5,6 +5,22 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Workbench layout pass (2026-10-17)
+
+Panels fold to a titled rail and unfold from it, the choice kept with the
+layout. The Run perspective folds the instrument with nothing to show (the
+oscilloscope of a project with only digital probes) and gives its actions to
+the other. Meters read in SI prefixes down to femto (residue below that
+shows as about zero) and leave growing texts to the Serial tab. A compact
+window starts with the Inspector folded, and the sheet navigator steps aside
+on a narrow canvas. The Debug perspective demangles C++ names.
+
+| | |
+|---|---|
+| ![Run: oscilloscope folded, logic analyzer and SI meters](workbench-layout/wide-run.png) | ![Design at 1024 pixels: the Inspector folded to a rail](workbench-layout/compact-design.png) |
+
+[Debug with demangled C++ names](workbench-layout/wide-debug.png).
+
 ## Arduino SPI and Wire on the Uno (2026-10-16)
 
 A sketch built with the unmodified ArduinoCore-avr (`tests/vendor/arduino/sketches/spi_wire`)

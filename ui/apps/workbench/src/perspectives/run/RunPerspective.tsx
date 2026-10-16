@@ -59,6 +59,8 @@ export function RunPerspective() {
     [inst.probes, inst.records, project?.probes],
   );
 
+  const noScope = scopeTraces.length === 0;
+
   const exportAs = async (kind: 'csv' | 'vcd') => {
     const ids = inst.probes.map((p) => p.probe as string);
     const from = win.start;
@@ -123,10 +125,12 @@ export function RunPerspective() {
     { id: 'controls', title: 'Controls', content: <ControlsPanel />, weight: 1, minSize: 120 },
   ];
   const centre: DockItem[] = [
-    { id: 'scope', title: 'Oscilloscope', flush: true, weight: 1.3, minSize: 140, actions: instrumentActions, content: (
+    // an instrument with no probe of its kind folds to its rail until the user opens it; the
+    // shared window's actions go with the one that shows something
+    { id: 'scope', title: 'Oscilloscope', flush: true, weight: 1.3, minSize: 140, collapsible: true, defaultCollapsed: noScope && logicChannels.length > 0, actions: noScope && logicChannels.length > 0 ? undefined : instrumentActions, content: (
       <Oscilloscope traces={scopeTraces} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedScope} onSelect={inst.setSelectedScope} revision={inst.revision} />
     ) },
-    { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, content: (
+    { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0 && !noScope, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
       <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
     {

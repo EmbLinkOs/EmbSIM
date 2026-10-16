@@ -8,6 +8,7 @@
 import { formatFrequency, formatTime, type Time } from '@embsim/protocol';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTimeInteraction, type Cursors } from './interaction';
+import { axisLabels, formatMeterValue } from './Meter';
 import { ticks, timeToX, unitLabel, type TimeWindow } from './timeAxis';
 import { cssVar, useCanvas } from './useCanvas';
 import type { WaveformRecord } from './waveform';
@@ -48,14 +49,7 @@ function niceStep(range: number, target: number): number {
 }
 
 function fmt(v: number, unit: string): string {
-  if (!Number.isFinite(v)) return '—';
-  const a = Math.abs(v);
-  if (unit === 'A' && a < 1) return `${(v * 1e3).toFixed(3)} mA`;
-  if (a >= 100) return `${v.toFixed(1)} ${unit}`;
-  if (a >= 1) return `${v.toFixed(3)} ${unit}`;
-  if (a >= 1e-3) return `${(v * 1e3).toFixed(2)} m${unit}`;
-  if (a === 0) return `0 ${unit}`;
-  return `${(v * 1e6).toFixed(2)} µ${unit}`;
+  return formatMeterValue(v, unit, 4);
 }
 
 export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onCursorsChange, now, selected, onSelect, revision = 0, label = 'Oscilloscope', className }: OscilloscopeProps) {
@@ -143,14 +137,17 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     const unit = current?.record.unit ?? '';
-    for (let v = Math.ceil(lo / vStep) * vStep; v <= hi; v += vStep) {
+    const levels: number[] = [];
+    for (let v = Math.ceil(lo / vStep) * vStep; v <= hi + vStep * 1e-9; v += vStep) levels.push(v);
+    const labels = axisLabels(levels, vStep, unit);
+    levels.forEach((v, i) => {
       const y = Math.round(yOf(v)) + 0.5;
       ctx.beginPath();
       ctx.moveTo(PLOT_LEFT, y);
       ctx.lineTo(PLOT_LEFT + pw, y);
       ctx.stroke();
-      ctx.fillText(fmt(v, unit), PLOT_LEFT - 6, y);
-    }
+      ctx.fillText(labels[i]!, PLOT_LEFT - 6, y);
+    });
 
     // Traces: one min/max column per pixel.
     const buckets = Math.floor(pw);

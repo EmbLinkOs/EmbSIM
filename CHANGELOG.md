@@ -104,6 +104,22 @@ versions follow semantic versioning. There is no release yet.
 - Added an evidence-based 1.0 release readiness checklist.
 
 ### Added
+- Workbench layout: dock panels fold to a titled rail (`collapsible`,
+  `defaultCollapsed`), the user's choice kept with the order and sizes. The
+  Run perspective folds the oscilloscope or the logic analyzer when it has
+  no probe of its kind and moves the window's actions to the other; Design's
+  Library, Inspector and lower panel fold, and a window under 1200 pixels
+  starts with the Inspector folded. The sheet navigator stays off a canvas
+  narrower than 640 pixels.
+- Meters and the oscilloscope share one SI formatter: prefixes down to
+  femto, residue below that as about zero, axis labels with one prefix and
+  the decimals the step needs (no more clipped "00.00 m"). Growing texts
+  (a terminal's, an EEPROM's dump) stay off the meters.
+- The Debug perspective demangles C++ names (Itanium ABI: nested names,
+  internal linkage, constructors and destructors, const members, the
+  builtin and qualified types, substitutions, simple templates), keeping the
+  mangled name as the tooltip. Verify's texts lose their spec references
+  and its badges show only what is unavailable.
 - Component explorer with grouped categories, manufacturer/package/model filters,
   multiword search and pre-placement Overview/Pins/Models sheets.
 - 18 named interactive parts plus reusable relay contacts: NTCs, GL5528, BPW34/S,

@@ -986,6 +986,60 @@ a {
   box-shadow: none;
 }
 
+.es-dock__pane--collapsed {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* a folded panel: its title on a rail that unfolds it */
+.es-dock__rail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 6px);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--text-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.es-dock__rail:hover,
+.es-dock__rail:focus-visible {
+  color: var(--text);
+  background: var(--surface-hover, var(--surface-raised));
+}
+
+.es-dock__rail svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.es-dock--row > .es-dock__pane--collapsed .es-dock__rail {
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: var(--space-3) 0;
+}
+
+.es-dock--row > .es-dock__pane--collapsed .es-dock__rail-title {
+  writing-mode: vertical-rl;
+}
+
+.es-dock__rail-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .es-dock__slot {
   flex: 1;
   min-height: 0;

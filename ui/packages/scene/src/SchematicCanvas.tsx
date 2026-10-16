@@ -1216,7 +1216,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
           </g>
         </g>
       </svg>
-      {showMinimap && (
+      {/* a narrow canvas keeps its sheet: the navigator would cover a third of it */}
+      {showMinimap && size.width >= 640 && (
         <div className="es-scene__navigator" aria-label="Sheet navigator">
           <span>Navigator</span>
           <svg viewBox={`${mapX} ${mapY} ${mapW} ${mapH}`} preserveAspectRatio="none" role="img" aria-label="Schematic overview. Click to navigate." onClick={(e) => {

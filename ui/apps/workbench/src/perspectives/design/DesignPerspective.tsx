@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { Badge, Button, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
+import { Badge, Button, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useMediaQuery, useToast, type Command, type DockItem } from '@embsim/design';
 import { EMPTY_SELECTION, SchematicCanvas, routeConnection, type CanvasContext, type CanvasMode, type SchematicIssue, type SchematicCanvasHandle } from '@embsim/scene';
 import { ArrowLeft, Cable, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,6 +24,7 @@ import { SchematicContextMenu, type ContextAction } from './SchematicContextMenu
 import { LayoutStudio, SchematicToolbar, type CanvasDisplay, type LayoutPreview } from './SchematicTools';
 
 export function DesignPerspective() {
+  const compact = useMediaQuery('(max-width: 1199px)');
   const project = useProject((s) => s.project);
   const sceneCatalog = useProject((s) => s.sceneCatalog);
   const store = useProject();
@@ -308,6 +309,7 @@ export function DesignPerspective() {
       title: bottomTab === 'objects' ? 'Objects' : bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : bottomTab === 'checks' ? 'Checks' : 'Board',
       flush: true,
       weight: 1,
+      collapsible: true,
       minSize: bottomTab === 'checks' || bottomTab === 'objects' ? 260 : 120,
       content: (
         <Tabs<'nets' | 'board' | 'studio' | 'checks' | 'objects'>
@@ -327,10 +329,11 @@ export function DesignPerspective() {
     },
   ];
 
+  // a compact window gives the sheet the Inspector's width until the user opens it
   const items: DockItem[] = [
-    ...(display.focusMode ? [] : [{ id: 'library', title: 'Library', content: <LibraryPanel onPlace={placeAtCentre} />, flush: true, weight: 1, minSize: 220 }]),
+    ...(display.focusMode ? [] : [{ id: 'library', title: 'Library', content: <LibraryPanel onPlace={placeAtCentre} />, flush: true, weight: 1, minSize: 220, collapsible: true }]),
     { id: 'centre', title: 'Schematic', bare: true, weight: 3.2, minSize: 360, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.design.centre.${project?.name ?? 'none'}`} /> },
-    ...(display.focusMode ? [] : [{ id: 'inspector', title: 'Inspector', content: <InspectorPanel />, weight: 1.2, minSize: 260 }]),
+    ...(display.focusMode ? [] : [{ id: 'inspector', title: 'Inspector', content: <InspectorPanel />, weight: 1.2, minSize: 260, collapsible: true, defaultCollapsed: compact }]),
   ];
 
   const contextSelection = context?.value.selection ?? selection;

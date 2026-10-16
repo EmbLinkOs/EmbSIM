@@ -29,7 +29,7 @@ export function RecordingsPanel() {
       await getClient().record.start({});
       setRecording(true);
     } catch (e) {
-      toast({ kind: 'error', title: 'record.start failed', description: errorMessage(e) });
+      toast({ kind: 'error', title: 'Recording could not start', description: errorMessage(e) });
     }
   };
   const stop = async () => {
@@ -39,14 +39,14 @@ export function RecordingsPanel() {
       if (r.recording) useVerify.getState().addRecording(r.recording);
       else toast({ kind: 'success', title: 'Recorded', description: r.path });
     } catch (e) {
-      toast({ kind: 'error', title: 'record.stop failed', description: errorMessage(e) });
+      toast({ kind: 'error', title: 'Recording could not stop', description: errorMessage(e) });
     }
   };
   return (
     <div className="wb-verify__pane" role="region" aria-label="Recordings">
       <div className="es-row">
         <span className="wb-placeholder__title">Recordings</span>
-        <Badge tone={can ? 'accent' : 'warning'}>{can ? 'available' : 'not available'}</Badge>
+        {!can && <Badge tone="warning">not available</Badge>}
         {recording && <Badge tone="danger">recording</Badge>}
       </div>
       <div className="es-muted">

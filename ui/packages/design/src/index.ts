@@ -2,6 +2,7 @@
 // Copyright 2026 Junior Deogracias
 export { cx } from './cx';
 export * from './theme';
+export { useMediaQuery } from './useMediaQuery';
 export { Button, IconButton, type ButtonProps, type IconButtonProps, type ButtonVariant } from './components/Button';
 export { Toggle, ToggleButton, type ToggleProps, type ToggleButtonProps } from './components/Toggle';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './components/SegmentedControl';
