@@ -1,104 +1,247 @@
 {
- "schema_version": 1,
- "kind": "project",
- "name": "pico-sdk-vendor",
- "description": "A Raspberry Pi Pico running an application built with the unmodified Pico SDK (tests/vendor/pico-sdk/run.py puts the image beside this file as sketch.elf): USB power, a button on GP15, a terminal on GP0/GP1 at 115200 baud.",
- "policy": "electrical",
- "boards": [
-  {
-   "id": "B1",
-   "board": "emblink/pico",
-   "layout": {
-    "x": 300,
-    "y": 260
-   },
-   "firmware": {
-    "image": "sketch.elf",
-    "format": "elf"
-   }
-  }
- ],
- "components": [
-  {
-   "id": "USB",
-   "component": "emblink/vsource",
-   "params": {
-    "kind": "dc",
-    "dc": 5
-   },
-   "layout": {
-    "x": 720,
-    "y": 60
-   }
+  "schema_version": 1,
+  "kind": "project",
+  "name": "pico-sdk-vendor",
+  "description": "A Raspberry Pi Pico running an application built with the unmodified Pico SDK (tests/vendor/pico-sdk/run.py puts the image beside this file as sketch.elf): USB power, a button on GP15, a terminal on GP0/GP1 at 115200 baud. GP16's PWM through a 10 kOhm, 4.7 uF low-pass into GP26 (ADC0), a 1.0 V source on GP28 (ADC2). A 25LC040 SPI EEPROM on SPI0 (GP5 its CS, GP6 SCK, GP4 MISO, GP7 MOSI) and a 24C02 I2C EEPROM at 0x50 on I2C0 (GP21 SCL, GP20 SDA, 4.7 kOhm pull-ups).",
+  "policy": "electrical",
+  "boards": [
+    {
+      "id": "B1",
+      "board": "emblink/pico",
+      "layout": {
+        "x": 300,
+        "y": 260
+      },
+      "firmware": {
+        "image": "sketch.elf",
+        "format": "elf"
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "USB",
+      "component": "emblink/vsource",
+      "params": {
+        "kind": "dc",
+        "dc": 5
+      },
+      "layout": {
+        "x": 720,
+        "y": 60
+      }
+    },
+    {
+      "id": "SW1",
+      "component": "emblink/push_button",
+      "layout": {
+        "x": 700,
+        "y": 300
+      }
+    },
+    {
+      "id": "VT1",
+      "component": "emblink/virtual_terminal",
+      "params": {
+        "baud": 115200
+      },
+      "layout": {
+        "x": 720,
+        "y": 520
+      }
+    },
+    {
+      "id": "GND1",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 900,
+        "y": 200
+      }
+    },
+    {
+      "id": "V1",
+      "component": "emblink/vsource",
+      "params": {
+        "kind": "dc",
+        "dc": 1.0
+      },
+      "layout": {
+        "x": 720,
+        "y": 700
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 520,
+        "y": 700
+      }
+    },
+    {
+      "id": "C1",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": 4.7e-06
+      },
+      "layout": {
+        "x": 420,
+        "y": 760
+      }
+    },
+    {
+      "id": "U2",
+      "component": "emblink/eeprom_25lc040",
+      "layout": {
+        "x": 120,
+        "y": 700
+      }
+    },
+    {
+      "id": "U3",
+      "component": "emblink/eeprom_24c02",
+      "layout": {
+        "x": 120,
+        "y": 880
+      }
+    },
+    {
+      "id": "R2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 4700
+      },
+      "layout": {
+        "x": 300,
+        "y": 860
+      }
+    },
+    {
+      "id": "R3",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 4700
+      },
+      "layout": {
+        "x": 340,
+        "y": 860
+      }
+    }
+  ],
+  "nets": {
+    "USB5V": [
+      "USB.+",
+      "B1.VBUS"
+    ],
+    "GND": [
+      "B1.GND",
+      "GND1.GND",
+      "USB.-",
+      "SW1.2",
+      "VT1.GND",
+      "V1.-",
+      "C1.2",
+      "U2.GND",
+      "U3.GND",
+      "U3.A0",
+      "U3.A1",
+      "U3.A2",
+      "U3.WP"
+    ],
+    "BTN": [
+      "B1.GP15",
+      "SW1.1"
+    ],
+    "UART_TX": [
+      "B1.GP0",
+      "VT1.RX"
+    ],
+    "UART_RX": [
+      "B1.GP1",
+      "VT1.TX"
+    ],
+    "VIN": [
+      "B1.GP28",
+      "V1.+"
+    ],
+    "PWM_A": [
+      "B1.GP16",
+      "R1.1"
+    ],
+    "RC": [
+      "R1.2",
+      "C1.1",
+      "B1.GP26"
+    ],
+    "3V3": [
+      "B1.3V3",
+      "U2.VCC",
+      "U2.WP_N",
+      "U2.HOLD_N",
+      "U3.VCC",
+      "R2.1",
+      "R3.1"
+    ],
+    "EE_CS": [
+      "B1.GP5",
+      "U2.CS_N"
+    ],
+    "SPI_SCK": [
+      "B1.GP6",
+      "U2.SCK"
+    ],
+    "SPI_MISO": [
+      "B1.GP4",
+      "U2.SO"
+    ],
+    "SPI_MOSI": [
+      "B1.GP7",
+      "U2.SI"
+    ],
+    "I2C_SDA": [
+      "B1.GP20",
+      "U3.SDA",
+      "R3.2"
+    ],
+    "I2C_SCL": [
+      "B1.GP21",
+      "U3.SCL",
+      "R2.2"
+    ]
   },
-  {
-   "id": "SW1",
-   "component": "emblink/push_button",
-   "layout": {
-    "x": 700,
-    "y": 300
-   }
-  },
-  {
-   "id": "VT1",
-   "component": "emblink/virtual_terminal",
-   "params": {
-    "baud": 115200
-   },
-   "layout": {
-    "x": 720,
-    "y": 520
-   }
-  },
-  {
-   "id": "GND1",
-   "component": "emblink/gnd",
-   "layout": {
-    "x": 900,
-    "y": 200
-   }
-  }
- ],
- "nets": {
-  "USB5V": [
-   "USB.+",
-   "B1.VBUS"
-  ],
-  "GND": [
-   "B1.GND",
-   "GND1.GND",
-   "USB.-",
-   "SW1.2",
-   "VT1.GND"
-  ],
-  "BTN": [
-   "B1.GP15",
-   "SW1.1"
-  ],
-  "UART_TX": [
-   "B1.GP0",
-   "VT1.RX"
-  ],
-  "UART_RX": [
-   "B1.GP1",
-   "VT1.TX"
+  "probes": [
+    {
+      "id": "console",
+      "target": "serial:B1",
+      "kind": "serial"
+    },
+    {
+      "id": "terminal",
+      "target": "serial:VT1",
+      "kind": "serial"
+    },
+    {
+      "id": "led",
+      "target": "net:B1.GPIO25",
+      "kind": "digital"
+    },
+    {
+      "id": "pwm_b",
+      "target": "net:B1.GPIO17",
+      "kind": "digital"
+    },
+    {
+      "id": "sck",
+      "target": "net:SPI_SCK",
+      "kind": "digital"
+    },
+    {
+      "id": "scl",
+      "target": "net:I2C_SCL",
+      "kind": "digital"
+    }
   ]
- },
- "probes": [
-  {
-   "id": "console",
-   "target": "serial:B1",
-   "kind": "serial"
-  },
-  {
-   "id": "terminal",
-   "target": "serial:VT1",
-   "kind": "serial"
-  },
-  {
-   "id": "led",
-   "target": "net:B1.GPIO25",
-   "kind": "digital"
-  }
- ]
 }

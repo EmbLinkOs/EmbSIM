@@ -10,9 +10,14 @@
  *     (5), GPIO_OUT and GPIO_OE (sio.c); UART (2), a TX or RTS pin driven
  *     high (the line idle; the frames on it come from the MCU runtime) and
  *     RX and CTS pins inputs, by the function table's pattern (GPIO0-3
- *     UART0, 4-11 UART1, 12-19 UART0, 20-27 UART1, 28-29 UART0); any other
- *     function does not drive the pin (its peripheral is not modelled), nor
- *     does NULL (0x1f, out of reset);
+ *     UART0, 4-11 UART1, 12-19 UART0, 20-27 UART1, 28-29 UART0); PWM (4),
+ *     its slice's channel's output (pwm.c); SPI (1), the unit's CSn, SCK
+ *     and TX driven, RX an input (spi.c; GPIO0-7 SPI0, 8-15 SPI1, 16-23
+ *     SPI0, 24-29 SPI1, in the order RX, CSn, SCK, TX); I2C (3), SDA and
+ *     SCL open-drain, the output low and enabled while the unit pulls the
+ *     line low (i2c.c; I2C0 on GPIO 0-1, 4-5, ..., I2C1 on 2-3, 6-7, ...,
+ *     SDA on the even pin); any other function does not drive the pin (its
+ *     peripheral is not modelled), nor does NULL (0x1f, out of reset);
  *   - OUTOVER and OEOVER then pass, invert, or force them low or high
  *     (OEOVER: disable or enable), and the pad's OD disables the output;
  *   - the pin is the output where enabled; else what the board drives on
@@ -30,8 +35,7 @@
  *
  * Not modelled: DORMANT_WAKE, the pads' drive
  * strength, slew and Schmitt trigger, the QSPI bank's pins and interrupts,
- * and the other functions' peripherals (SPI, I2C, PWM, PIO, the clock pins,
- * USB). */
+ * and the other functions' peripherals (PIO, the clock pins, USB). */
 #include <stdio.h>
 #include <string.h>
 
@@ -69,6 +73,9 @@ static int over(int v, int mode) { return mode == 0 ? v : mode == 1 ? !v : mode 
 /* the UART on pin n (0 or 1), and its signal there: 0 TX, 1 RX, 2 CTS, 3 RTS */
 static int uart_unit(int n) { return ((n + 4) >> 3) & 1; }
 static int uart_signal(int n) { return n & 3; }
+/* the SPI unit and signal (RP_SPI_*), the I2C unit and signal (RP_I2C_*) */
+static int spi_unit(int n) { return (n >> 3) & 1; }
+static int i2c_unit(int n) { return (n >> 1) & 1; }
 
 /* what the function gives the pin: its output and output enable */
 static void peri(const struct io *x, int n, int *out, int *oe)
@@ -83,6 +90,20 @@ static void peri(const struct io *x, int n, int *out, int *oe)
         if (uart_signal(n) == 0 || uart_signal(n) == 3)
             *out = *oe = 1; /* TX idle, RTS not asserted */
         break;
+    case F_PWM:
+        *out = esk_rp2040_pwm_out(x->s, n);
+        *oe = 1;
+        break;
+    case F_SPI:
+        if ((n & 3) != RP_SPI_RX && esk_rp2040_spi_out(x->s, spi_unit(n), n & 3, out))
+            *oe = 1;
+        break;
+    case F_I2C: {
+        int level = 1;
+        if (esk_rp2040_i2c_out(x->s, i2c_unit(n), n & 1, &level))
+            *oe = !level; /* open-drain: the output 0, enabled to pull low */
+        break;
+    }
     default:
         break;
     }
@@ -110,7 +131,7 @@ static void settle(struct io *x)
         memset(&o, 0, sizeof o);
         o.drive = drive ? pout : -1;
         o.pull = pue && !pde ? 1 : pde && !pue ? 2 : 0;
-        o.af = func == F_UART; /* the peripherals modelled: the UARTs */
+        o.af = func == F_UART || func == F_PWM || func == F_SPI || func == F_I2C; /* the peripherals modelled */
         o.analog = !fld(x->pad[n], x->m_ie) && !drive;
         if (s->host.pin_cfg && (!x->known || memcmp(&x->out[n], &o, sizeof o) != 0))
             s->host.pin_cfg(s->host.ctx, n / 16, n % 16, &o);
@@ -220,6 +241,27 @@ int esk_rp2040_uart_pin(struct esk_mach *s, const char *unit, int tx, int *port,
             return 0;
         }
     return -1;
+}
+
+int esk_rp2040_func_in(struct esk_mach *s, int func, int unit, int signal, int *level)
+{
+    struct io *x = io_of(s);
+    int n;
+    if (!x || esk_rf_gated(x->p) || esk_rf_gated(x->pads))
+        return 0;
+    for (n = 0; n < NPIN; n++) {
+        int u, sig;
+        if ((int)fld(x->ctrl[n], x->m_funcsel) != func)
+            continue;
+        u = func == F_SPI ? spi_unit(n) : i2c_unit(n);
+        sig = func == F_SPI ? (n & 3) : (n & 1);
+        if (u != unit || sig != signal)
+            continue;
+        settle(x);
+        *level = (x->status[n]->value & x->st_inperi) != 0;
+        return 1;
+    }
+    return 0;
 }
 
 static u32 io_read(void *ctx, u32 off, int n)

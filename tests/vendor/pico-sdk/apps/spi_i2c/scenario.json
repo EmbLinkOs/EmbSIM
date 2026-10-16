@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "spi_i2c",
+  "until": "100ms",
+  "description": "hardware_spi and hardware_i2c against the catalog's EEPROMs. SPI0 (mode 0, spi_init's 125 MHz / (2 * 32) = 1953125 Hz) to a 25LC040, its CS a GPIO: WREN sets its latch (status 02), WRITE of six bytes, RDSR polled through its 5 ms write cycle, READ returns them, spi_write_blocking leaves it idle and drained; 1099 bytes in all, 16 SCK edges each. I2C0 (i2c_init's 125 MHz / 313 = 399361 Hz, 4.7 kOhm pull-ups) to a 24C02 at 0x50: a six-byte i2c_write_blocking, address-only writes NACKed through its write cycle, a current-address read, a random read (a write without STOP, then a read after a repeated START), and 0x51 unanswered (PICO_ERROR_GENERIC); 2634 SCL edges, every START, byte and STOP of it.",
+  "assertions": [
+    {
+      "id": "spi",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "spi: 1953125 Hz\r\nspi: status 02 after WREN, write cycle over after 538 polls, read RP2040\r\nspi: busy 0, readable 0 after spi_write_blocking"
+      }
+    },
+    {
+      "id": "i2c-write",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "i2c: 399361 Hz\r\ni2c: wrote 6\r\ni2c: ready again after 5100 us (114 NACKs)"
+      }
+    },
+    {
+      "id": "i2c-read",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "i2c: current 1 S\r\ni2c: random 4 DK24"
+      }
+    },
+    {
+      "id": "i2c-absent",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "i2c: 0x51 does not answer (-1)\r\ndone"
+      }
+    },
+    {
+      "id": "sck",
+      "between": [
+        "0ms",
+        "100ms"
+      ],
+      "probe": "sck",
+      "expect": {
+        "edges": 17584
+      }
+    },
+    {
+      "id": "scl",
+      "between": [
+        "0ms",
+        "100ms"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 2634
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

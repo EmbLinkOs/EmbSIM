@@ -57,6 +57,15 @@ void esk_rp2040_pins_changed(struct esk_mach *m);
 /* where a UART's TX or RX is: the first pin whose function is that */
 int esk_rp2040_uart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
 
+/* the functions (FUNCSEL) with peripherals on the pins, and their signals */
+enum { RP_FUNC_SPI = 1, RP_FUNC_I2C = 3 };
+enum { RP_SPI_RX, RP_SPI_CSN, RP_SPI_SCK, RP_SPI_TX };
+enum { RP_I2C_SDA, RP_I2C_SCL };
+/* a peripheral's input: the first pin whose function is the unit's signal,
+ * as it reaches the peripheral (after the pad's IE and INOVER); 0 when no
+ * pin has it */
+int esk_rp2040_func_in(struct esk_mach *m, int func, int unit, int signal, int *level);
+
 /* ---- between the models --------------------------------------------- */
 
 /* n microsecond ticks came: the timer counts (timer.c); and the ticks
@@ -78,7 +87,8 @@ void *esk_rp_model(struct esk_mach *m, const char *name, const struct esk_dev_op
 extern const struct esk_dev_ops esk_rp2040_resets_ops, esk_rp2040_clocks_ops, esk_rp2040_xosc_ops,
     esk_rp2040_rosc_ops, esk_rp2040_pll_ops, esk_rp2040_psm_ops, esk_rp2040_watchdog_ops,
     esk_rp2040_timer_ops, esk_rp2040_pads_ops, esk_rp2040_io_ops, esk_rp2040_sio_ops,
-    esk_rp2040_uart_ops, esk_rp2040_ssi_ops;
+    esk_rp2040_uart_ops, esk_rp2040_ssi_ops, esk_rp2040_pwm_ops, esk_rp2040_adc_ops, esk_rp2040_spi_ops,
+    esk_rp2040_i2c_ops;
 void *esk_rp2040_resets_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_clocks_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_xosc_create(struct esk_mach *m, struct esk_rf_periph *p);
@@ -92,6 +102,17 @@ void *esk_rp2040_io_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_sio_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_uart_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_rp2040_ssi_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_rp2040_pwm_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_rp2040_adc_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_rp2040_spi_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_rp2040_i2c_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* the PWM channel's output on a pin whose function is PWM (pwm.c) */
+int esk_rp2040_pwm_out(struct esk_mach *m, int pin);
+/* what an SPI unit drives on its CSn, SCK and TX (spi.c), and the level an
+ * I2C unit leaves SCL or SDA at, 0 pulled low, 1 released (i2c.c): 0 when
+ * the unit has no model or is held in reset */
+int esk_rp2040_spi_out(struct esk_mach *m, int unit, int signal, int *out);
+int esk_rp2040_i2c_out(struct esk_mach *m, int unit, int signal, int *level);
 
 /* boot2's CRC: CRC-32/MPEG-2, the bootrom's (boot.c) */
 u32 esk_rp2040_crc32(const u8 *p, u32 n);
