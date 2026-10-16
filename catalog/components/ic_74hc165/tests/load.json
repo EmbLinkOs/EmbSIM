@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "load",
+  "description": "PL_N low with D7=1: Q7=1, Q7_N=0.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc165"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.D7"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.PL_N",
+        "DUT.CE_N"
+      ],
+      "Q7": [
+        "DUT.Q7"
+      ],
+      "Q7N": [
+        "DUT.Q7_N"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q7": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:Q7N": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/jk_flip_flop",
+  "version": "1.0.0",
+  "name": "JK flip-flop",
+  "category": "logic",
+  "description": "Positive-edge JK flip-flop with active-low asynchronous preset and clear (one half of a 74HC109 with K true): J=K=1 toggles.",
+  "keywords": [
+    "logic",
+    "flip-flop",
+    "jk",
+    "toggle",
+    "74HC109"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "J",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CLK",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "PRE_N",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Active-low preset",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CLR_N",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Active-low clear",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "QN",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Rising-edge JK behaviour; PRE_N and CLR_N act at once (clear wins); unconnected PRE_N/CLR_N are inactive.",
+      "omissions": [
+        "setup and hold"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "setup and hold"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "setup and hold",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC109 datasheet (function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "J": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "CLK": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "K": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "Q": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "QN": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "PRE_N": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "CLR_N": {
+        "x": 20,
+        "y": 60,
+        "side": "bottom"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

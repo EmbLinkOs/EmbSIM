@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "count",
+  "description": "Ten clock edges at 1 kHz: Q = 10 (Q1 and Q3 high) and the count output says 10.",
+  "policy": "functional",
+  "until": "11ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc161"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.MR_N",
+        "DUT.PE_N",
+        "DUT.CEP",
+        "DUT.CET"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.D0",
+        "DUT.D1",
+        "DUT.D2",
+        "DUT.D3"
+      ],
+      "CP": [
+        "CK.OUT",
+        "DUT.CP"
+      ],
+      "Q0": [
+        "DUT.Q0"
+      ],
+      "Q1": [
+        "DUT.Q1"
+      ],
+      "Q2": [
+        "DUT.Q2"
+      ],
+      "Q3": [
+        "DUT.Q3"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q0": {
+      "at": "10.2ms",
+      "logic": "0"
+    },
+    "net:Q1": {
+      "at": "10.2ms",
+      "logic": "1"
+    },
+    "net:Q2": {
+      "at": "10.2ms",
+      "logic": "0"
+    },
+    "net:Q3": {
+      "at": "10.2ms",
+      "logic": "1"
+    },
+    "output:DUT.count": {
+      "at": "10.2ms",
+      "equals": 10
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "astable",
+  "description": "R1 = 1 k, R2 = 10 k, C = 100 nF: about 686 Hz.",
+  "policy": "functional",
+  "until": "60ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/timer_555",
+        "params": {
+          "r1": "1k",
+          "r2": "10k",
+          "c": "100n"
+        }
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.RESET"
+      ],
+      "OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "between": [
+        "10ms",
+        "60ms"
+      ],
+      "frequency_hz": 685.7,
+      "tolerance": 0.03
+    }
+  }
+}

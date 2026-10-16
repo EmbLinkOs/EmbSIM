@@ -1,0 +1,303 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc138",
+  "version": "1.0.0",
+  "name": "74HC138 3-to-8 decoder",
+  "category": "logic",
+  "description": "3-to-8 line decoder/demultiplexer with active-low outputs (74HC138): with E1_N and E2_N low and E3 high, the output selected by A2-A0 goes low; address decoding and chip selects.",
+  "keywords": [
+    "logic",
+    "decoder",
+    "demultiplexer",
+    "74HC138",
+    "chip select"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A0",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A2",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "E1_N",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "E2_N",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "E3",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y7_N",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "Y6_N",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y5_N",
+      "number": 10,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y4_N",
+      "number": 11,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y3_N",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y2_N",
+      "number": 13,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y1_N",
+      "number": 14,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y0_N",
+      "number": 15,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Function table of the 74HC138.",
+      "omissions": [
+        "glitches during address changes"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "glitches during address changes"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "glitches during address changes",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC138 datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 110,
+    "pins": {
+      "A0": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "A1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "A2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "E1_N": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "E2_N": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "E3": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "Y0_N": {
+        "x": 70,
+        "y": 20,
+        "side": "right"
+      },
+      "Y1_N": {
+        "x": 70,
+        "y": 30,
+        "side": "right"
+      },
+      "Y2_N": {
+        "x": 70,
+        "y": 40,
+        "side": "right"
+      },
+      "Y3_N": {
+        "x": 70,
+        "y": 50,
+        "side": "right"
+      },
+      "Y4_N": {
+        "x": 70,
+        "y": 60,
+        "side": "right"
+      },
+      "Y5_N": {
+        "x": 70,
+        "y": 70,
+        "side": "right"
+      },
+      "Y6_N": {
+        "x": 70,
+        "y": 80,
+        "side": "right"
+      },
+      "Y7_N": {
+        "x": 70,
+        "y": 90,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 110,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

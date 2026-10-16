@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 140" width="70" height="140" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="50" height="120" rx="2"/>
+  <line class="s" id="pin-1a0" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">1A0</text>
+  <line class="s" id="pin-1a1" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">1A1</text>
+  <line class="s" id="pin-1a2" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">1A2</text>
+  <line class="s" id="pin-1a3" x1="0" y1="50" x2="10" y2="50"/><text class="p" x="13" y="52">1A3</text>
+  <line class="s" id="pin-1oe-n" x1="0" y1="60" x2="10" y2="60"/><text class="p" x="13" y="62">1OE_N</text>
+  <line class="s" id="pin-2a0" x1="0" y1="80" x2="10" y2="80"/><text class="p" x="13" y="82">2A0</text>
+  <line class="s" id="pin-2a1" x1="0" y1="90" x2="10" y2="90"/><text class="p" x="13" y="92">2A1</text>
+  <line class="s" id="pin-2a2" x1="0" y1="100" x2="10" y2="100"/><text class="p" x="13" y="102">2A2</text>
+  <line class="s" id="pin-2a3" x1="0" y1="110" x2="10" y2="110"/><text class="p" x="13" y="112">2A3</text>
+  <line class="s" id="pin-2oe-n" x1="0" y1="120" x2="10" y2="120"/><text class="p" x="13" y="122">2OE_N</text>
+  <line class="s" id="pin-1y0" x1="70" y1="20" x2="60" y2="20"/><text class="p" x="57" y="22" text-anchor="end">1Y0</text>
+  <line class="s" id="pin-1y1" x1="70" y1="30" x2="60" y2="30"/><text class="p" x="57" y="32" text-anchor="end">1Y1</text>
+  <line class="s" id="pin-1y2" x1="70" y1="40" x2="60" y2="40"/><text class="p" x="57" y="42" text-anchor="end">1Y2</text>
+  <line class="s" id="pin-1y3" x1="70" y1="50" x2="60" y2="50"/><text class="p" x="57" y="52" text-anchor="end">1Y3</text>
+  <line class="s" id="pin-2y0" x1="70" y1="80" x2="60" y2="80"/><text class="p" x="57" y="82" text-anchor="end">2Y0</text>
+  <line class="s" id="pin-2y1" x1="70" y1="90" x2="60" y2="90"/><text class="p" x="57" y="92" text-anchor="end">2Y1</text>
+  <line class="s" id="pin-2y2" x1="70" y1="100" x2="60" y2="100"/><text class="p" x="57" y="102" text-anchor="end">2Y2</text>
+  <line class="s" id="pin-2y3" x1="70" y1="110" x2="60" y2="110"/><text class="p" x="57" y="112" text-anchor="end">2Y3</text>
+  <line class="s" id="pin-vcc" x1="30" y1="0" x2="30" y2="10"/>
+  <line class="s" id="pin-gnd" x1="30" y1="140" x2="30" y2="130"/>
+  <text class="t" x="35.0" y="19" text-anchor="middle">74HC244</text>
+</svg>

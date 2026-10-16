@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc595",
+  "version": "1.0.0",
+  "name": "74HC595 shift register",
+  "category": "logic",
+  "description": "8-bit serial-in, parallel-out shift register with output latches (74HC595): DS shifts in on SHCP rising, STCP rising copies the register to Q0-Q7, OE_N high releases the outputs; Q7S chains to the next device.",
+  "keywords": [
+    "logic",
+    "shift register",
+    "74HC595",
+    "sipo",
+    "led driver",
+    "port expander"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "Q1",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q2",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q3",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q4",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q5",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q6",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q7",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "Q7S",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Serial output (cascade)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "MR_N",
+      "number": 10,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Master reset of the shift register, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SHCP",
+      "number": 11,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Shift clock",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "STCP",
+      "number": 12,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Storage (latch) clock",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "OE_N",
+      "number": 13,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Output enable, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "DS",
+      "number": 14,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Serial data",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q0",
+      "number": 15,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "shift",
+      "type": "integer",
+      "min": 0,
+      "max": 255,
+      "doc": "Shift register (bit 0 = Q0's stage)"
+    },
+    {
+      "name": "latch",
+      "type": "integer",
+      "min": 0,
+      "max": 255,
+      "doc": "Output latch"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Shift on SHCP rising, latch on STCP rising, asynchronous MR_N clears the shift register, OE_N releases Q0-Q7.",
+      "omissions": [
+        "setup and hold",
+        "output current per pin"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "setup and hold",
+        "output current per pin"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "setup and hold",
+        "output current per pin",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC595 datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 130,
+    "pins": {
+      "DS": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SHCP": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "STCP": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "MR_N": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "OE_N": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "Q0": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "Q1": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "Q2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "Q3": {
+        "x": 60,
+        "y": 50,
+        "side": "right"
+      },
+      "Q4": {
+        "x": 60,
+        "y": 60,
+        "side": "right"
+      },
+      "Q5": {
+        "x": 60,
+        "y": 70,
+        "side": "right"
+      },
+      "Q6": {
+        "x": 60,
+        "y": 80,
+        "side": "right"
+      },
+      "Q7": {
+        "x": 60,
+        "y": 90,
+        "side": "right"
+      },
+      "Q7S": {
+        "x": 60,
+        "y": 110,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 130,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

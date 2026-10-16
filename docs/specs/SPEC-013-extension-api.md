@@ -60,6 +60,9 @@ sensors whose electrical side is a composite.
   `true`, `false`, `"0"`, `"1"`, `"z"` (the same as `ctx.release`) and
   `"x"`; strengths are `"strong"` (default), `"weak"` and `"supply"`; the
   delay defaults to 0.
+- **Policy.** `ctx.policy` is `"functional"`, `"timed"` or `"electrical"`;
+  a model applies its datasheet delays only when it is not `"functional"`
+  (SPEC-003 §5: functional sessions have no delays).
 - **Wake-ups.** Tokens are 0 to 7; a new `wake_at` with a token replaces
   the pending one; a time in the past is an error.
 - **Lifecycle.** At every reset the instance gets a fresh `ctx.state`,

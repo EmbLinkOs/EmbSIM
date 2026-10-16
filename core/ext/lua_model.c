@@ -11,7 +11,7 @@
  *
  * An instance: its own environment table (its globals and file-scope locals
  * are its own), the module table its chunk returns, and a ctx table:
- *   ctx.id, ctx.params, ctx.state, ctx.pins[name].value / .level / .name,
+ *   ctx.id, ctx.policy, ctx.params, ctx.state, ctx.pins[name].value / .level / .name,
  *   ctx.now(), ctx.drive(pin, value, strength?, delay_ps?), ctx.release(pin),
  *   ctx.wake_at(time_ps, token?), ctx.cancel(token?), ctx.input(name),
  *   ctx.diag(severity, code, message).
@@ -402,6 +402,8 @@ static void push_ctx(lua_State *L, esk_comp *c)
     lua_createtable(L, 0, 12);
     lua_pushstring(L, c->id);
     lua_setfield(L, -2, "id");
+    lua_pushstring(L, c->e->policy == ESK_POLICY_FUNCTIONAL ? "functional" : c->e->policy == ESK_POLICY_TIMED ? "timed" : "electrical");
+    lua_setfield(L, -2, "policy");
     push_json(L, c->params, 0);
     if (lua_isnil(L, -1)) {
         lua_pop(L, 1);

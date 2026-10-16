@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/pattern_generator",
+  "version": "1.0.0",
+  "name": "Digital pattern generator",
+  "category": "instruments",
+  "description": "Plays a list of 16-bit words onto OUT0..OUT15, one word per period: a stimulus for buses, protocols and fixtures. Push-pull, or open-drain (a 1 releases the pin) for I2C and other wired-AND lines.",
+  "keywords": [
+    "pattern",
+    "generator",
+    "stimulus",
+    "word generator",
+    "bit-bang",
+    "test"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "OUT0",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT1",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT2",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT3",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT4",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT5",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT6",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT7",
+      "number": 8,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT8",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT9",
+      "number": 10,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT10",
+      "number": 11,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT11",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT12",
+      "number": 13,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT13",
+      "number": 14,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT14",
+      "number": 15,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    },
+    {
+      "name": "OUT15",
+      "number": 16,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "required": false
+    }
+  ],
+  "params": {
+    "pattern": {
+      "type": "string",
+      "default": "1,0",
+      "doc": "Hexadecimal words (bit i drives OUTi), separated by commas or spaces"
+    },
+    "period": {
+      "type": "number",
+      "unit": "s",
+      "default": "1u",
+      "min": "1n",
+      "max": 10,
+      "doc": "Duration of each word"
+    },
+    "start": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "doc": "When the first word is applied"
+    },
+    "idle": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 65535,
+      "doc": "Word before the start (as a decimal number)"
+    },
+    "repeat": {
+      "type": "boolean",
+      "default": false,
+      "doc": "Start again after the last word"
+    },
+    "drive": {
+      "type": "enum",
+      "enum": [
+        "push_pull",
+        "open_drain"
+      ],
+      "default": "push_pull",
+      "doc": "Output stage"
+    }
+  },
+  "outputs": [
+    {
+      "name": "step",
+      "type": "integer",
+      "doc": "Words played since reset"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Each word is applied at once on all outputs at its step time; open drain releases ones.",
+      "omissions": [
+        "output edge rates"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "output edge rates"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "output edge rates",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Generic digital pattern generator (EmbSIM instrument)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 170,
+    "pins": {
+      "OUT0": {
+        "x": 80,
+        "y": 10,
+        "side": "right"
+      },
+      "OUT1": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "OUT2": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "OUT3": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "OUT4": {
+        "x": 80,
+        "y": 50,
+        "side": "right"
+      },
+      "OUT5": {
+        "x": 80,
+        "y": 60,
+        "side": "right"
+      },
+      "OUT6": {
+        "x": 80,
+        "y": 70,
+        "side": "right"
+      },
+      "OUT7": {
+        "x": 80,
+        "y": 80,
+        "side": "right"
+      },
+      "OUT8": {
+        "x": 80,
+        "y": 90,
+        "side": "right"
+      },
+      "OUT9": {
+        "x": 80,
+        "y": 100,
+        "side": "right"
+      },
+      "OUT10": {
+        "x": 80,
+        "y": 110,
+        "side": "right"
+      },
+      "OUT11": {
+        "x": 80,
+        "y": 120,
+        "side": "right"
+      },
+      "OUT12": {
+        "x": 80,
+        "y": 130,
+        "side": "right"
+      },
+      "OUT13": {
+        "x": 80,
+        "y": 140,
+        "side": "right"
+      },
+      "OUT14": {
+        "x": 80,
+        "y": 150,
+        "side": "right"
+      },
+      "OUT15": {
+        "x": 80,
+        "y": 160,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

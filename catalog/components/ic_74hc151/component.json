@@ -1,0 +1,298 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc151",
+  "version": "1.0.0",
+  "name": "74HC151 8-input multiplexer",
+  "category": "logic",
+  "description": "8-input multiplexer with complementary outputs (74HC151): Y is the input chosen by S2-S0 while E_N is low.",
+  "keywords": [
+    "logic",
+    "multiplexer",
+    "mux",
+    "data selector",
+    "74HC151"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "I3",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "I2",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "I1",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "I0",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y_N",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "E_N",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Enable, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "S2",
+      "number": 9,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "S1",
+      "number": 10,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "S0",
+      "number": 11,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "I7",
+      "number": 12,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "I6",
+      "number": 13,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "I5",
+      "number": 14,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "I4",
+      "number": 15,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Function table of the 74HC151.",
+      "omissions": [
+        "glitches during select changes"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "glitches during select changes"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "glitches during select changes",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC151 datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 160,
+    "pins": {
+      "I0": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "I1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "I2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "I3": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "I4": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "I5": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "I6": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "I7": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "S0": {
+        "x": 0,
+        "y": 110,
+        "side": "left"
+      },
+      "S1": {
+        "x": 0,
+        "y": 120,
+        "side": "left"
+      },
+      "S2": {
+        "x": 0,
+        "y": 130,
+        "side": "left"
+      },
+      "E_N": {
+        "x": 0,
+        "y": 140,
+        "side": "left"
+      },
+      "Y": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "Y_N": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 160,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

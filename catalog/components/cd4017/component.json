@@ -1,0 +1,324 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/cd4017",
+  "version": "1.0.0",
+  "name": "CD4017 decade counter",
+  "category": "logic",
+  "description": "Decade counter with ten decoded outputs (CD4017): each CP0 rising edge (CP1_N low) moves the high output from Q0 to Q9 and round; MR resets to Q0; CO is high for counts 0-4. The classic LED chaser.",
+  "keywords": [
+    "logic",
+    "counter",
+    "decade",
+    "johnson",
+    "CD4017",
+    "chaser",
+    "sequencer"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "Q5",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "Q1",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "Q0",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "Q2",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "Q6",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "Q7",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "Q3",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "VSS",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "Q8",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "Q4",
+      "number": 10,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "Q9",
+      "number": 11,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "CO",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Carry out",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "CP1_N",
+      "number": 13,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Clock inhibit, active high (tie low to count)",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "CP0",
+      "number": 14,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Clock, rising edge",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "MR",
+      "number": 15,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Master reset, active high",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "VDD",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "count",
+      "type": "integer",
+      "min": 0,
+      "max": 9,
+      "doc": "Active output"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Counts on CP0 rising while CP1_N is low; MR resets; CO high for 0-4.",
+      "omissions": [
+        "counting on CP1_N falling edges",
+        "the 5-stage Johnson counter's internal states"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "counting on CP1_N falling edges",
+        "the 5-stage Johnson counter's internal states"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "counting on CP1_N falling edges",
+        "the 5-stage Johnson counter's internal states",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments CD4017B datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 150,
+    "pins": {
+      "CP0": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "CP1_N": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "MR": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "Q0": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "Q1": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "Q2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "Q3": {
+        "x": 60,
+        "y": 50,
+        "side": "right"
+      },
+      "Q4": {
+        "x": 60,
+        "y": 60,
+        "side": "right"
+      },
+      "Q5": {
+        "x": 60,
+        "y": 70,
+        "side": "right"
+      },
+      "Q6": {
+        "x": 60,
+        "y": 80,
+        "side": "right"
+      },
+      "Q7": {
+        "x": 60,
+        "y": 90,
+        "side": "right"
+      },
+      "Q8": {
+        "x": 60,
+        "y": 100,
+        "side": "right"
+      },
+      "Q9": {
+        "x": 60,
+        "y": 110,
+        "side": "right"
+      },
+      "CO": {
+        "x": 60,
+        "y": 130,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "VSS": {
+        "x": 30,
+        "y": 150,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}
