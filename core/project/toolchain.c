@@ -4,7 +4,15 @@
  *
  * Detection runs a profile's `detect.command` and reads its version with
  * `detect.version_regex`, of the form "PREFIX([0-9.]+)SUFFIX" (the profiles'
- * only shape; PREFIX may escape a parenthesis as "\\)").
+ * only shape; PREFIX may escape a parenthesis as "\\)"). A GNU cross
+ * toolchain is installed under more than one program prefix (xPack's
+ * riscv-none-elf-, SiFive's and the distributions' riscv64-unknown-elf-):
+ * with `detect.prefix` (the command's program begins with it) and
+ * `detect.alternatives`, the first prefix whose program runs is the
+ * toolchain's, and a build puts it in place of `detect.prefix` at the head
+ * of every command it runs. An alternative may be {prefix, link_flags}:
+ * that installation's link flags take the place of the target's (its C
+ * library differs: xPack's newlib, the distributions' picolibc).
  *
  * A build expands the profile's step templates. Variables come from the
  * profile's target (cc, link_flags), the board's settings for the profile
@@ -63,26 +71,87 @@ static void version_of(const char *regex, const char *text, char *out, size_t ca
     out[n] = 0;
 }
 
+/* the detect command's program under `prefix` instead of `detect.prefix`
+ * (NULL: as written), into buf */
+static const char *program_as(const esk_json *detect, const char *prefix, char *buf, size_t cap)
+{
+    const char *prog = esk_json_str(esk_json_at(esk_json_get(detect, "command"), 0));
+    const char *own = esk_json_get_str(detect, "prefix", "");
+    size_t n = strlen(own);
+    if (!prog || !prefix || !n || strncmp(prog, own, n) != 0)
+        return prog;
+    esk_snprintf(buf, cap, "%s%s", prefix, prog + n);
+    return buf;
+}
+
+/* runs the detect command with its program under `prefix`: ES_OK with the
+ * exit code and the output, or ES_ENOTFOUND */
+static es_status probe(es_session *s, const esk_json *detect, const char *prefix, int *code, char **outp,
+                       size_t *len)
+{
+    const esk_json *cmd = esk_json_get(detect, "command");
+    const char *argv[16];
+    char buf[128];
+    size_t i, n = esk_json_len(cmd);
+    if (!n || n >= ES_COUNTOF(argv))
+        return ES_ENOTFOUND;
+    for (i = 0; i < n; i++)
+        argv[i] = esk_json_str(esk_json_at(cmd, i));
+    argv[0] = program_as(detect, prefix, buf, sizeof buf);
+    argv[n] = NULL;
+    return esk_host_run(s->a, argv, NULL, 16384, code, outp, len);
+}
+
+static const char *alt_prefix(const esk_json *alt)
+{
+    return esk_json_str(alt) ? esk_json_str(alt) : esk_json_get_str(alt, "prefix", NULL);
+}
+
+/* the alternative the toolchain is installed under: NULL for the detect
+ * command's own prefix (also when none runs), else the first alternative
+ * that does */
+static const esk_json *installed_alt(es_session *s, const esk_json *detect)
+{
+    const esk_json *alts = esk_json_get(detect, "alternatives");
+    size_t i, len = 0;
+    char *outp = NULL;
+    int code = -1;
+    es_status st = probe(s, detect, NULL, &code, &outp, &len);
+    if (outp)
+        esk_free(s->a, outp, len + 1);
+    if (st == ES_OK && code == 0)
+        return NULL;
+    for (i = 0; esk_json_get(detect, "prefix") && i < esk_json_len(alts); i++) {
+        const esk_json *alt = esk_json_at(alts, i);
+        outp = NULL;
+        code = -1;
+        st = alt_prefix(alt) ? probe(s, detect, alt_prefix(alt), &code, &outp, &len) : ES_ENOTFOUND;
+        if (outp)
+            esk_free(s->a, outp, len + 1);
+        if (st == ES_OK && code == 0)
+            return alt;
+    }
+    return NULL;
+}
+
 static esk_json *detect_one(es_session *s, const esk_catalog_item *it)
 {
-    const esk_json *detect = esk_json_get(it->desc, "detect"), *cmd = esk_json_get(detect, "command");
-    const char *argv[16];
-    size_t i, n = esk_json_len(cmd), len = 0;
-    char *outp = NULL, version[32];
+    const esk_json *detect = esk_json_get(it->desc, "detect");
+    const char *prefix = alt_prefix(installed_alt(s, detect)), *prog;
+    size_t len = 0;
+    char *outp = NULL, version[32], buf[128];
     int code = -1;
-    es_status st = ES_ENOTFOUND;
+    es_status st;
     esk_json *o = esk_json_new_object(s->a);
     if (!o)
         return NULL;
     esk_json_set_string(s->a, o, "name", it->id);
     esk_json_set_string(s->a, o, "title", esk_json_get_str(it->desc, "name", it->id));
-    if (n && n < ES_COUNTOF(argv)) {
-        for (i = 0; i < n; i++)
-            argv[i] = esk_json_str(esk_json_at(cmd, i));
-        argv[n] = NULL;
-        st = esk_host_run(s->a, argv, NULL, 16384, &code, &outp, &len);
-    }
+    st = probe(s, detect, prefix, &code, &outp, &len);
     esk_json_set_bool(s->a, o, "found", st == ES_OK && code == 0);
+    prog = program_as(detect, prefix, buf, sizeof buf);
+    if (st == ES_OK && code == 0 && prog)
+        esk_json_set_string(s->a, o, "program", prog);
     if (st == ES_OK) {
         version_of(esk_json_get_str(detect, "version_regex", ""), outp, version, sizeof version);
         if (version[0])
@@ -112,6 +181,8 @@ es_status esk_toolchain_detect(es_session *s, esk_json **out)
 typedef struct build {
     es_session *s;
     const esk_json *profile, *ptarget, *board_tc, *fw;
+    const char *prefix_from, *prefix_to; /* the program prefix the toolchain is installed under */
+    const esk_json *alt_link_flags;      /* that installation's link flags, for the target's */
     char *dir;          /* the project's directory */
     char *image;        /* the image's path */
     char *map;
@@ -249,7 +320,7 @@ static es_status expand(build *b, const esk_json *tmpl, const char **argv, size_
              * variables: ${map}) */
             const esk_json *lists[2];
             size_t k, l;
-            lists[0] = esk_json_get(b->ptarget, "link_flags");
+            lists[0] = b->alt_link_flags ? b->alt_link_flags : esk_json_get(b->ptarget, "link_flags");
             lists[1] = esk_json_get(b->fw, "link_flags");
             for (l = 0; l < 2; l++)
                 for (k = 0; k < esk_json_len(lists[l]) && *n + 1 < MAX_ARGS; k++) {
@@ -288,6 +359,15 @@ static int run_step(build *b, const esk_json *tmpl, esk_json *steps)
     int code = -1;
     es_status st = expand(b, tmpl, argv, &n);
     esk_json *rec = esk_json_new_object(b->s->a), *av = esk_json_new_array(b->s->a);
+    if (st == ES_OK && n && b->prefix_to && argv[0] &&
+        strncmp(argv[0], b->prefix_from, strlen(b->prefix_from)) == 0) {
+        size_t l = strlen(b->prefix_to) + strlen(argv[0]) + 1;
+        char *p = (char *)esk_malloc(b->s->a, l);
+        if (p) {
+            esk_snprintf(p, l, "%s%s", b->prefix_to, argv[0] + strlen(b->prefix_from));
+            argv[0] = own(b, p) ? p : argv[0];
+        }
+    }
     if (!rec || !av) {
         esk_json_free(b->s->a, rec);
         esk_json_free(b->s->a, av);
@@ -361,6 +441,12 @@ es_status esk_toolchain_build(es_session *s, const char *board_id, const char *p
     if (!tc)
         return ES_ENOTFOUND;
     b.profile = tc->desc;
+    if (esk_json_get(esk_json_get(b.profile, "detect"), "alternatives")) {
+        b.prefix_from = esk_json_get_str(esk_json_get(b.profile, "detect"), "prefix", NULL);
+        const esk_json *alt = b.prefix_from ? installed_alt(s, esk_json_get(b.profile, "detect")) : NULL;
+        b.prefix_to = alt_prefix(alt);
+        b.alt_link_flags = alt ? esk_json_get(alt, "link_flags") : NULL;
+    }
     b.board_tc = esk_json_get(esk_json_get(bi->item->desc, "toolchains"), profile_id);
     /* the board names the profile's target: by triple (clang, EmbCC) or by
      * CPU (the GNU and XC profiles key their targets so) */

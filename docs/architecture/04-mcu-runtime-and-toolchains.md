@@ -140,7 +140,7 @@ toolchain and build for a target:
 |---|---|---|---|---|
 | `embcc` | `embcc --version` | every EmbCC target (`--target=thumbv7m-none-eabi`, `riscv32-unknown-elf`, `avr`, `mipsel-none-elf --mcu=`, ...) | ELF | DWARF |
 | `gcc-arm` | `arm-none-eabi-gcc` | Cortex-M, Cortex-A/R | ELF | DWARF |
-| `gcc-riscv` | `riscv64-unknown-elf-gcc`, `riscv32-...` | RISC-V | ELF | DWARF |
+| `gcc-riscv` | `riscv-none-elf-gcc`, `riscv64-unknown-elf-gcc`, `riscv32-unknown-elf-gcc` | RISC-V | ELF | DWARF |
 | `gcc-avr` | `avr-gcc` | AVR | ELF | DWARF |
 | `clang` | `clang --target=` with a sysroot and a linker (`lld`) | Cortex-M, RISC-V | ELF | DWARF |
 | `xc8` | `xc8-cc` | PIC16/18 | HEX (+ ELF with DWARF where XC8 emits it) | partial |

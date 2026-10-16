@@ -166,6 +166,25 @@ static void test_alu_and_cycles(void)
     fe_close(&f);
 }
 
+/* a store at a negative offset (S-type imm[11:5] negative): GCC's stack
+ * frames are full of them */
+static void test_store_negative_offset(void)
+{
+    const u32 prog[] = { lui(1, 0x80001), addi(2, 0, 0x5a), sw(2, 1, -64), lw(3, 1, -64),
+                         sw(2, 1, -2048), JAL_SELF };
+    fe f;
+    u32 v = 0;
+    if (!fe_open(&f, prog, sizeof prog / sizeof prog[0], NULL, 0))
+        return;
+    esk_mach_run(&f.m, 0xffffff, 5);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x80000fc0u, 4, &v), 0);
+    CHECK_EQ(v, 0x5au);
+    CHECK_EQ(x(&f, 3), 0x5au);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x80000800u, 4, &v), 0);
+    CHECK_EQ(v, 0x5au);
+    fe_close(&f);
+}
+
 static void test_ecall_trap(void)
 {
     const u32 prog[] = { lui(1, BASE >> 12), addi(1, 1, 0x100), csrrw(0, 0x305, 1), ECALL, JAL_SELF };
@@ -414,6 +433,7 @@ static void test_disassembler(void)
 
 TEST_MAIN_BEGIN
 RUN(test_alu_and_cycles);
+RUN(test_store_negative_offset);
 RUN(test_ecall_trap);
 RUN(test_clint_timer);
 RUN(test_uart_frame);

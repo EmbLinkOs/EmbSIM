@@ -174,7 +174,7 @@ Notation: `method(params) -> result`. Params and results are objects.
 - Each is -32001 until `analysis.start` turns it on.
 
 ### toolchain
-- `toolchain.detect({}) -> {profiles: [{name, found, version, path}]}`
+- `toolchain.detect({}) -> {profiles: [{name, title, found, version, program}]}` (`program`: the detect command's program as found, under the prefix the toolchain is installed with, SPEC-010 §1)
 - `toolchain.build({board, profile?}) -> {ok, log, image}`
 
 ### scenario
