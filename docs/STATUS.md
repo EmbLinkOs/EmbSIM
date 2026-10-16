@@ -5,6 +5,25 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Continuous canvas appearance and reloads
+
+A viewport-covering, world-anchored background replaces the finite SVG sheet
+surface that exposed a gray strip after panning. Engineering, line, dot, cross
+and plain patterns have paper, warm, graphite and blueprint palettes in both
+themes. Spacing, line/dot weight and contrast are adjustable. Validated local
+preferences persist through reloads and apply to Design, inside and Run views;
+editing snap and electrical data remain independent. System typography, rounded
+chrome and restrained shadows refine the schematic workspace.
+
+Reload testing exposed a native-server stall while the old WebSocket remained
+attached. Auxiliary HTTP requests are now serviced between session polls without
+replacing its notification target. Host/origin restrictions remain enforced; a
+second session upgrade returns HTTP 409 and incomplete auxiliary headers have a
+250 ms deadline. The regression covers asset delivery while the circuit is
+running, time advancement, authority rejection, busy upgrades and partial requests.
+ADR-022 records the proposed decision for review. Final integration evidence is
+recorded with this branch.
+
 ## Schematic Studio
 
 The Design perspective now includes connected auto-placement, route-only planning,

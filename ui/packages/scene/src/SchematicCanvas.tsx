@@ -29,6 +29,7 @@ import {
 } from './geometry';
 import { busText, busValue } from './bus';
 import { routeConnection } from './autoLayout';
+import { canvasBackground, DEFAULT_CANVAS_APPEARANCE, type CanvasAppearance } from './canvasAppearance';
 
 export interface SceneSymbol {
   name: string;
@@ -91,6 +92,7 @@ export interface SchematicCanvasProps {
   probes?: ProbeInfo[];
   readOnly?: boolean;
   showGrid?: boolean;
+  appearance?: CanvasAppearance;
   showAirwires?: boolean;
   showMinimap?: boolean;
   smartWires?: boolean;
@@ -116,7 +118,6 @@ export interface SchematicCanvasProps {
 
 const MIN_ZOOM = 0.15;
 const MAX_ZOOM = 10;
-const DEFAULT_SHEET = { width: 1600, height: 1000 };
 
 export type NetVisual = { kind: 'low' | 'high' | 'z' | 'x' | 'analog' | 'idle'; color?: string; text: string };
 
@@ -289,6 +290,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     probes,
     readOnly,
     showGrid = true,
+    appearance = DEFAULT_CANVAS_APPEARANCE,
     showAirwires = true,
     showMinimap = false,
     smartWires = false,
@@ -309,6 +311,9 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     label = 'Schematic',
   } = props;
 
+  const backgroundRef = useRef<HTMLDivElement>(null);
+  const appearanceRef = useRef({ appearance, showGrid });
+  appearanceRef.current = { appearance, showGrid };
   const svgRef = useRef<SVGSVGElement>(null);
   const sceneRef = useRef<SVGGElement>(null);
   const vpRef = useRef<Viewport>({ x: 40, y: 40, k: 1 });
@@ -323,7 +328,6 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const [announcement, setAnnouncement] = useState('');
   const rafRef = useRef<number | null>(null);
 
-  const sheet = project.layout?.sheet ?? DEFAULT_SHEET;
   const wires = useMemo(() => project.layout?.wires ?? [], [project.layout?.wires]);
   const labels = useMemo(() => project.layout?.labels ?? [], [project.layout?.labels]);
   const buses = useMemo(() => project.layout?.buses ?? [], [project.layout?.buses]);
@@ -375,6 +379,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
 
   const setViewport = useCallback((next: Viewport, commit = true) => {
     vpRef.current = next;
+    if (backgroundRef.current) Object.assign(backgroundRef.current.style, canvasBackground(appearanceRef.current.appearance, next, appearanceRef.current.showGrid));
     sceneRef.current?.setAttribute('transform', `translate(${next.x} ${next.y}) scale(${next.k})`);
     if (commit) {
       // the transform above moves the scene at once; React (culling, the
@@ -905,7 +910,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const mapH = Math.max(100, ...mapRects.map((r) => r.y + r.height)) - mapY + 40;
 
   return (
-    <div className={`es-scene ${cursorClass} ${className ?? ''}`.trim()}>
+    <div className={`es-scene es-scene--${appearance.palette} ${cursorClass} ${className ?? ''}`.trim()}>
+      <div ref={backgroundRef} className="es-scene__background" style={canvasBackground(appearance, viewport, showGrid)} aria-hidden="true" />
       <svg
         ref={svgRef}
         className="es-scene__svg"
@@ -924,21 +930,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         onDrop={onDrop}
         onPointerLeave={() => setHover(null)}
       >
-        <defs>
-          <pattern id="es-grid-minor" width={GRID} height={GRID} patternUnits="userSpaceOnUse">
-            <circle cx={0} cy={0} r={0.6} className="es-scene__grid-dot" />
-          </pattern>
-          <pattern id="es-grid-major" width={GRID * 10} height={GRID * 10} patternUnits="userSpaceOnUse">
-            <rect width={GRID * 10} height={GRID * 10} fill="url(#es-grid-minor)" />
-            <circle cx={0} cy={0} r={1.1} className="es-scene__grid-dot es-scene__grid-dot--major" />
-          </pattern>
-        </defs>
         <g ref={sceneRef} transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.k})`}>
-          <g className="es-scene__layer es-scene__layer--sheet">
-            <rect className="es-scene__sheet" x={0} y={0} width={sheet.width} height={sheet.height} />
-            {showGrid && viewport.k > 0.35 && <rect x={0} y={0} width={sheet.width} height={sheet.height} fill="url(#es-grid-major)" pointerEvents="none" />}
-          </g>
-
           <g className="es-scene__layer es-scene__layer--wires">
             {showAirwires && ratsnest.map((r, i) => (
               <line key={`rat-${i}`} className="es-scene__ratsnest" x1={r.a.x} y1={r.a.y} x2={r.b.x} y2={r.b.y} />

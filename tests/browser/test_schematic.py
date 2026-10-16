@@ -175,7 +175,7 @@ def main():
                 page.get_by_label("Component or net", exact=True).fill("OUT")
                 page.get_by_label("Component or net", exact=True).press("Enter")
                 page.get_by_role("button", name="View", exact=True).click()
-                page.get_by_label("Dot grid", exact=True).uncheck()
+                page.get_by_label("Show grid", exact=True).uncheck()
                 page.get_by_role(
                     "checkbox", name="Sheet navigator", exact=True
                 ).uncheck()

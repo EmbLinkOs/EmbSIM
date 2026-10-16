@@ -72,3 +72,30 @@ test('schematic studio: worker preview, apply, undo and focus mode', async ({ pa
   await page.getByLabel('Component or net', { exact: true }).press('Enter');
   await expect(page.getByRole('button', { name: 'Focus', exact: true })).toBeEnabled();
 });
+
+test('canvas appearance persists and covers the panned workspace', async ({ page }) => {
+  await page.goto('/?mock=1');
+  const canvas = page.getByRole('application', { name: 'Schematic canvas' });
+  await expect(canvas).toBeVisible();
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await page.getByRole('radio', { name: 'Dots', exact: true }).press('Space');
+  await page.getByRole('radio', { name: 'Warm', exact: true }).press('Space');
+  await page.getByLabel('Grid spacing', { exact: true }).selectOption('40');
+  await page.reload();
+  await expect(canvas).toBeVisible();
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Dots', exact: true })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Warm', exact: true })).toBeChecked();
+  await expect(page.getByLabel('Grid spacing', { exact: true })).toHaveValue('40');
+  await page.getByRole('button', { name: 'Close tools', exact: true }).click();
+  const before = await page.locator('.es-scene__background').evaluate((el) => (el as HTMLElement).style.backgroundPosition);
+  await canvas.focus();
+  for (let i = 0; i < 30; i++) await canvas.press('ArrowLeft');
+  const after = await page.locator('.es-scene__background').evaluate((el) => (el as HTMLElement).style.backgroundPosition);
+  expect(after).not.toBe(before);
+  expect(await page.locator('.es-scene__background').evaluate((el) => {
+    const background = el.getBoundingClientRect();
+    const viewport = el.parentElement!.getBoundingClientRect();
+    return background.width === viewport.width && background.height === viewport.height && background.left === viewport.left && background.top === viewport.top;
+  })).toBe(true);
+});
