@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "nrfx_periph",
+  "until": "1s",
+  "description": "nrfx_spim, nrfx_twim, nrfx_pwm and nrfx_saadc on the DK. SPIM2 (4 MHz, mode 0, the driver's CS on D10) to a 25LC040: WREN sets its latch, WRITE of six bytes, RDSR polled through its 5 ms write cycle, READ returns them; 1247 bytes, 16 SCK edges each, after SCK's one from Z to its idle 0 as nrfx configures it. TWIM0 (400 kHz, 4.7 kOhm pull-ups) to a 24C02 at 0x50: a page write, address-only writes NACKed through the write cycle, TXRX (a repeated START by LASTTX_STARTRX), a write without STOP (suspended by LASTTX_SUSPEND) then a read after a repeated START, and 0x51 answered by nobody (ERRORSRC.ANACK, nrfx's -EFAULT); 2346 SCL edges, every START, byte and STOP of it. PWM0 looping one sequence of individual values: OUT1 (D5) at 1 kHz exactly, OUT0 (D3) at 25 % through a 10 kOhm, 4.7 uF low-pass into AIN1. The SAADC after offset calibration, 12 bits, gain 1/6, the 0.6 V reference: AIN2's 1.0 V source floor(1.0 / 6 / 0.6 * 4096) = 1137, VDD's 3.0 V 3413, the low-pass charging to a quarter of VDD.",
+  "assertions": [
+    {
+      "id": "spim",
+      "at": "1s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "spim: status 02 after WREN, write cycle over after 614 polls, read nRF52!"
+      }
+    },
+    {
+      "id": "twim",
+      "at": "1s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "twim: page write 0\r\ntwim: ready again after 95 NACKs\r\ntwim: txrx 0 TWIM!\r\ntwim: tx no stop, rx 0 WIM\r\ntwim: 0x51 -14"
+      }
+    },
+    {
+      "id": "saadc",
+      "at": "1s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "saadc after 400 ms: rc=859 (755 mV) vin=1137 vdd=3413\r\ndone"
+      }
+    },
+    {
+      "id": "sck",
+      "between": [
+        "0ms",
+        "1s"
+      ],
+      "probe": "sck",
+      "expect": {
+        "edges": 19953
+      }
+    },
+    {
+      "id": "scl",
+      "between": [
+        "0ms",
+        "1s"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 2346
+      }
+    },
+    {
+      "id": "pwm-frequency",
+      "between": [
+        "500ms",
+        "1s"
+      ],
+      "probe": "pwm1",
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.001
+      }
+    },
+    {
+      "id": "pwm-edges",
+      "between": [
+        "500ms",
+        "1s"
+      ],
+      "probe": "pwm1",
+      "expect": {
+        "edges": 1000
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup",
+          "mcu.easydma_range"
+        ]
+      }
+    }
+  ]
+}

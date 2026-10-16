@@ -260,11 +260,12 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Armv7E-M (Cortex-M4 with the single-precision FPU) execution by the Cortex-M core extracted from EmbCC; every register of nrf52840.svd with its reset value, shared address spaces as one peripheral; behavioural models of CLOCK (HFXO's debounce, LFCLK), the GPIO ports (direction, drive modes, pulls, SENSE, LATCH and DETECT), GPIOTE (event and task channels, PORT), UART0/UARTE0 and UARTE1 (the UART's RXD FIFO, EasyDMA buffers, SHORTS, frames at BAUDRATE's rate on their PSEL pins), TIMER0-4 (timer and counter modes, compares, shorts) and RTC0-2 (prescaled 24-bit counters, compares, overflow), extracted from EmbCC but GPIOTE; FICR carries a part's factory words.",
+      "claims": "Armv7E-M (Cortex-M4 with the single-precision FPU) execution by the Cortex-M core extracted from EmbCC; every register of nrf52840.svd with its reset value, shared address spaces as one peripheral; behavioural models of CLOCK (HFXO's debounce, LFCLK), the GPIO ports (direction, drive modes, pulls, SENSE, LATCH and DETECT), GPIOTE (event and task channels, PORT), UART0/UARTE0 and UARTE1 (the UART's RXD FIFO, EasyDMA buffers, SHORTS, frames at BAUDRATE's rate on their PSEL pins), TIMER0-4 (timer and counter modes, compares, shorts) and RTC0-2 (prescaled 24-bit counters, compares, overflow), extracted from EmbCC but GPIOTE; and, written for EmbSIM, SPIM0-3 (EasyDMA transfers in modes 0 to 3 at FREQUENCY's rates on their PSEL pins, ORC, END_START, SPIM3's CSN), TWIM0-1 (START, repeated START and STOP on open-drain SCL and SDA at 100, 250 or 400 kbps, EasyDMA buffers, LASTTX and LASTRX with their shorts, SUSPEND and RESUME, ERRORSRC's ANACK and DNACK), PWM0-3 (the four channels from EasyDMA sequences in the Common, Grouped, Individual and WaveForm decodings, Up and UpAndDown counting, REFRESH, ENDDELAY, LOOP and the shorts) and the SAADC (eight channels on AIN0-7, VDD and VDDH/5, single-ended and differential, the gains and references, 8 to 14 bits, oversampling and burst, the limits, scans into Data RAM at TACQ + 2 us a conversion, the local timer); FICR carries a part's factory words.",
       "omissions": [
         "the radio",
         "PPI and the DPPI-like EGUs",
-        "SPIM, SPIS, TWIM, TWIS, SAADC, PWM, PDM, I2S, QDEC, COMP (plain registers)",
+        "SPIS, TWIS, the legacy SPI and TWI, PDM, I2S, QDEC, COMP (plain registers)",
+        "SPIM's and TWIM's EasyDMA lists, clock stretching by an I2C slave, arbitration; the SAADC's resistor ladders, its load on the circuit, noise and offset and gain errors",
         "USBD",
         "QSPI",
         "the CryptoCell",
@@ -274,7 +275,8 @@
       ],
       "validation": [
         "repo:tests/unit/test_nrf52.c",
-        "repo:examples/nrf52840dk-blink"
+        "repo:examples/nrf52840dk-blink",
+        "repo:tests/vendor/nrfx"
       ]
     },
     "timed": {

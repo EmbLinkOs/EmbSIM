@@ -11,7 +11,9 @@
  *   - a peripheral that takes the pin overrides it: a UART's TXD drives
  *     high between its frames (the frames on the line come from the MCU
  *     runtime), its RXD is an input; a GPIOTE channel in task mode drives
- *     its pin;
+ *     its pin; SPIM's SCK, MOSI (and SPIM3's CSN) and PWM's outputs drive
+ *     theirs, SPIM's MISO is an input; TWIM's SCL and SDA pull low or let
+ *     go (PIN_CNF's pull then applies);
  *   - IN is each pin with its input buffer connected (PIN_CNF.INPUT 0, or a
  *     peripheral's input): an output what it drives, else what the board
  *     drives, else the pull (PULL up 1, down 0), else 0; a disconnected
@@ -57,7 +59,8 @@ static void gpio_dir(struct ngpio *g, u32 dir)
     }
 }
 
-static void gpio_update(struct ngpio *g, const signed char *role, const signed char *te_drive, const u8 *te_watch)
+static void gpio_update(struct ngpio *g, const signed char *role, const signed char *te_drive, const u8 *te_watch,
+                        const signed char *pd, const u8 *pod)
 {
     struct esk_mach *s = g->x.s;
     u32 out = esk_nrfp_rd(&g->x, 0x504), in = 0, dir = 0, sense = 0;
@@ -66,7 +69,7 @@ static void gpio_update(struct ngpio *g, const signed char *role, const signed c
         struct esk_rf_reg *r = esk_nrfp_reg(&g->x, 0x700u + 4u * (u32)i);
         u32 c = r ? (u32)r->value : 0, drive = c >> 8 & 7u, pull = c >> 2 & 3u, sn = c >> 16 & 3u;
         int pin = 32 * g->port + i, uart = role[pin], te = te_drive[pin];
-        int connected = !(c & 2u) || uart == 2 || te_watch[pin], lvl, ext = 0;
+        int connected = !(c & 2u) || uart == 2 || te_watch[pin] || pd[pin] >= 0, lvl, ext = 0;
         esk_mach_pin o;
         memset(&o, 0, sizeof o);
         o.drive = -1;
@@ -79,6 +82,12 @@ static void gpio_update(struct ngpio *g, const signed char *role, const signed c
         } else if (te >= 0) {
             o.drive = te;
             o.af = 1;
+        } else if (pd[pin] >= 0) {
+            o.af = 1;
+            if (pd[pin] < 2) {
+                o.drive = pd[pin];
+                o.open_drain = pod[pin];
+            }
         } else if (c & 1u) {
             int v = (int)(out >> i & 1u);
             int let_go = v ? (drive == 6 || drive == 7) : (drive == 4 || drive == 5);
@@ -118,19 +127,23 @@ void esk_nrf_pins_changed(struct esk_mach *s)
 {
     struct ngpio *p0 = port_of(s, 0);
     u32 levels[2] = { 0, 0 };
-    signed char role[NRF_PINS], te_drive[NRF_PINS];
-    u8 te_watch[NRF_PINS];
+    signed char role[NRF_PINS], te_drive[NRF_PINS], pd[NRF_PINS];
+    u8 te_watch[NRF_PINS], pod[NRF_PINS];
     int k, detect = 0;
     if (!p0 || p0->busy)
         return;
     p0->busy = 1;
     esk_nrf_uart_roles(s, role);
     esk_nrf_gpiote_roles(s, te_drive, te_watch);
+    memset(pd, -1, sizeof pd);
+    memset(pod, 0, sizeof pod);
+    esk_nrf_spim_roles(s, pd, pod);
+    esk_nrf_pwm_roles(s, pd);
     for (k = 0; k < 2; k++) {
         struct ngpio *g = port_of(s, k);
         if (!g)
             continue;
-        gpio_update(g, role, te_drive, te_watch);
+        gpio_update(g, role, te_drive, te_watch, pd, pod);
         levels[k] = g->level;
         detect |= g->detect_bits != 0;
     }

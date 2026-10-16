@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "nrfx-vendor",
- "description": "An nRF52840 DK running an application built with Nordic's unmodified nrfx drivers and MDK (tests/vendor/nrfx/run.py puts the image beside this file as sketch.elf): USB power, a button on D2 (P1.03), a terminal on the virtual COM port's pins (P0.06 TX, P0.08 RX) at 115200 baud.",
+ "description": "An nRF52840 DK running an application built with Nordic's unmodified nrfx drivers and MDK (tests/vendor/nrfx/run.py puts the image beside this file as sketch.elf): USB power, a button on D2 (P1.03), a terminal on the virtual COM port's pins (P0.06 TX, P0.08 RX) at 115200 baud. A 25LC040 SPI EEPROM on the Arduino SPI pins (D10 CS, D13 SCK, D11 MOSI, D12 MISO), a 24C02 I2C EEPROM at 0x50 on SDA (P0.26) and SCL (P0.27) with 4.7 kOhm pull-ups to VDD, D3 through a 10 kOhm, 4.7 uF low-pass into A0 (AIN1), a 1.0 V source on A1 (AIN2).",
  "policy": "electrical",
  "boards": [
   {
@@ -57,6 +57,78 @@
     "x": 760,
     "y": 300
    }
+  },
+  {
+   "id": "U2",
+   "component": "emblink/eeprom_25lc040",
+   "layout": {
+    "x": 760,
+    "y": 480
+   }
+  },
+  {
+   "id": "U3",
+   "component": "emblink/eeprom_24c02",
+   "layout": {
+    "x": 760,
+    "y": 660
+   }
+  },
+  {
+   "id": "R2",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 4700
+   },
+   "layout": {
+    "x": 620,
+    "y": 640
+   }
+  },
+  {
+   "id": "R3",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 4700
+   },
+   "layout": {
+    "x": 660,
+    "y": 640
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 10000
+   },
+   "layout": {
+    "x": 120,
+    "y": 560
+   }
+  },
+  {
+   "id": "C1",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": 4.7e-06
+   },
+   "layout": {
+    "x": 120,
+    "y": 660
+   }
+  },
+  {
+   "id": "V1",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 1.0
+   },
+   "layout": {
+    "x": 40,
+    "y": 760
+   }
   }
  ],
  "nets": {
@@ -69,7 +141,15 @@
    "GND1.GND",
    "USB.-",
    "SW1.2",
-   "VT1.GND"
+   "VT1.GND",
+   "U2.GND",
+   "U3.GND",
+   "U3.A0",
+   "U3.A1",
+   "U3.A2",
+   "U3.WP",
+   "C1.2",
+   "V1.-"
   ],
   "BTN": [
    "B1.D2",
@@ -82,6 +162,54 @@
   "UART_RX": [
    "B1.P0_08",
    "VT1.TX"
+  ],
+  "VDD": [
+   "B1.VDD",
+   "U2.VCC",
+   "U2.WP_N",
+   "U2.HOLD_N",
+   "U3.VCC",
+   "R2.1",
+   "R3.1"
+  ],
+  "EE_CS": [
+   "B1.D10",
+   "U2.CS_N"
+  ],
+  "SPI_SCK": [
+   "B1.D13",
+   "U2.SCK"
+  ],
+  "SPI_MOSI": [
+   "B1.D11",
+   "U2.SI"
+  ],
+  "SPI_MISO": [
+   "B1.D12",
+   "U2.SO"
+  ],
+  "I2C_SDA": [
+   "B1.SDA",
+   "U3.SDA",
+   "R3.2"
+  ],
+  "I2C_SCL": [
+   "B1.SCL",
+   "U3.SCL",
+   "R2.2"
+  ],
+  "PWM_OUT0": [
+   "B1.D3",
+   "R1.1"
+  ],
+  "RC": [
+   "R1.2",
+   "C1.1",
+   "B1.A0"
+  ],
+  "VIN": [
+   "B1.A1",
+   "V1.+"
   ]
  },
  "probes": [
@@ -98,6 +226,21 @@
   {
    "id": "led1",
    "target": "net:B1.GPIO13",
+   "kind": "digital"
+  },
+  {
+   "id": "pwm1",
+   "target": "net:B1.GPIO38",
+   "kind": "digital"
+  },
+  {
+   "id": "sck",
+   "target": "net:SPI_SCK",
+   "kind": "digital"
+  },
+  {
+   "id": "scl",
+   "target": "net:I2C_SCL",
    "kind": "digital"
   }
  ]
