@@ -1,0 +1,265 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+"""Real-engine layout preview, apply/undo/redo and navigation regression."""
+import argparse
+import json
+from pathlib import Path
+import socket
+import subprocess
+import tempfile
+import time
+import urllib.request
+
+from playwright.sync_api import expect, sync_playwright
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--embsim", required=True, type=Path)
+    parser.add_argument("--chromium")
+    parser.add_argument("--screenshots", type=Path)
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[2]
+    with tempfile.TemporaryDirectory(prefix="embsim-schematic-") as tmp:
+        out = args.screenshots or Path(tmp)
+        out.mkdir(parents=True, exist_ok=True)
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        server = subprocess.Popen(
+            [
+                str(args.embsim.resolve()),
+                "serve",
+                str(root / "examples/optocoupled-input/project.json"),
+                "--port",
+                str(port),
+                "--ui",
+                str(root / "ui/apps/workbench/dist"),
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            for _ in range(50):
+                try:
+                    urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=1)
+                    break
+                except OSError:
+                    time.sleep(0.1)
+            with sync_playwright() as p:
+                browser = p.chromium.launch(
+                    executable_path=args.chromium,
+                    headless=True,
+                    args=["--no-sandbox", "--no-proxy-server"],
+                )
+                page = browser.new_page(
+                    viewport={"width": 1600, "height": 1000}, color_scheme="light"
+                )
+                sent, received, errors = [], [], []
+                page.on("pageerror", lambda e: errors.append(str(e)))
+
+                def websocket(ws):
+                    ws.on(
+                        "framesent",
+                        lambda f: (
+                            sent.append(json.loads(f)) if isinstance(f, str) else None
+                        ),
+                    )
+                    ws.on(
+                        "framereceived",
+                        lambda f: (
+                            received.append(json.loads(f))
+                            if isinstance(f, str)
+                            else None
+                        ),
+                    )
+
+                page.on("websocket", websocket)
+                page.goto(f"http://127.0.0.1:{port}/")
+                expect(
+                    page.get_by_role("application", name="Schematic canvas")
+                ).to_be_visible(timeout=15000)
+                expect(
+                    page.get_by_role("button", name="Auto layout", exact=True)
+                ).to_be_enabled()
+
+                def projects():
+                    ids = {f["id"] for f in sent if f.get("method") == "project.get"}
+                    return [
+                        f["result"]["project"]
+                        for f in received
+                        if f.get("id") in ids and "result" in f
+                    ]
+
+                page.wait_for_timeout(250)
+                original = projects()[-1]
+                # The protocol materializes an omitted empty bus list on layout edits.
+                original.setdefault("layout", {}).setdefault("buses", [])
+                before_transactions = len(
+                    [f for f in sent if f.get("method") == "project.transaction"]
+                )
+                page.get_by_role("button", name="Auto layout", exact=True).click()
+                expect(
+                    page.get_by_role("region", name="Layout studio", exact=True)
+                ).to_be_visible()
+                page.get_by_role("button", name="Preview layout", exact=True).click()
+                expect(
+                    page.get_by_text("Preview · not applied", exact=True)
+                ).to_be_visible()
+                expect(page.get_by_text("Layout preview", exact=True)).to_be_visible()
+                assert (
+                    len([f for f in sent if f.get("method") == "project.transaction"])
+                    == before_transactions
+                ), "Preview mutated the engine"
+                page.wait_for_timeout(200)
+                page.screenshot(
+                    path=str(out / "studio-preview-light.png"), full_page=True
+                )
+                page.get_by_role("button", name="Apply layout", exact=True).click()
+                expect(page.get_by_text("Layout applied", exact=True)).to_be_visible()
+                page.wait_for_timeout(200)
+                applied = projects()[-1]
+                assert (
+                    original["nets"] == applied["nets"]
+                ), "Layout changed electrical nets"
+                assert original.get("boards", []) == applied.get(
+                    "boards", []
+                ), "This example has no moved boards"
+
+                def electrical(project):
+                    return [
+                        {k: v for k, v in c.items() if k != "layout"}
+                        for c in project["components"]
+                    ]
+
+                assert electrical(original) == electrical(
+                    applied
+                ), "Layout changed component values"
+                assert applied != original, "Apply must change actual engine geometry"
+                edits = [
+                    e
+                    for f in sent
+                    if f.get("method") == "project.transaction"
+                    for e in f.get("params", {}).get("edits", [])
+                ]
+                assert edits and all(
+                    "set_layout" in e for e in edits
+                ), "Only layout edits are allowed"
+                commits = {
+                    f["id"]
+                    for f in sent
+                    if f.get("method") == "project.transaction"
+                    and f.get("params", {}).get("op") == "commit"
+                }
+                commit_results = [
+                    f["result"]
+                    for f in received
+                    if f.get("id") in commits and isinstance(f.get("result"), dict)
+                ]
+                assert commit_results and all(
+                    not r.get("restarted", False) for r in commit_results
+                ), "Layout restarted simulation or lacked a commit result"
+                # Undo and redo go through the server, not only the visible preview.
+                page.get_by_role("button", name="Undo", exact=False).first.click()
+                page.wait_for_timeout(250)
+                assert (
+                    projects()[-1] == original
+                ), "One Undo must restore all old layout fields"
+                page.get_by_role("button", name="Redo", exact=False).first.click()
+                page.wait_for_timeout(250)
+                assert projects()[-1] == applied, "Redo must restore the applied plan"
+                page.get_by_role("button", name="Find", exact=True).click()
+                page.get_by_label("Component or net", exact=True).fill("SW1")
+                page.get_by_label("Component or net", exact=True).press("Enter")
+                page.get_by_role("button", name="Find", exact=True).click()
+                page.get_by_label("Component or net", exact=True).fill("OUT")
+                page.get_by_label("Component or net", exact=True).press("Enter")
+                page.get_by_role("button", name="View", exact=True).click()
+                page.get_by_label("Dot grid", exact=True).uncheck()
+                page.get_by_role(
+                    "checkbox", name="Sheet navigator", exact=True
+                ).uncheck()
+                expect(
+                    page.get_by_role("checkbox", name="Sheet navigator", exact=True)
+                ).not_to_be_checked()
+                page.get_by_role(
+                    "checkbox", name="Focus canvas (hide side panels)", exact=True
+                ).check()
+                expect(
+                    page.get_by_role("region", name="Library", exact=True)
+                ).to_have_count(0)
+                page.get_by_role(
+                    "checkbox", name="Focus canvas (hide side panels)", exact=True
+                ).uncheck()
+                expect(
+                    page.get_by_role("region", name="Library", exact=True)
+                ).to_be_visible()
+                page.get_by_role("button", name="Close tools", exact=True).click()
+                page.get_by_role("button", name="Switch to dark theme").click()
+                page.get_by_role("button", name="Zoom to fit", exact=True).click()
+                page.wait_for_timeout(200)
+                page.screenshot(path=str(out / "studio-dark.png"), full_page=True)
+                page.set_viewport_size({"width": 1024, "height": 700})
+                assert page.evaluate(
+                    "document.documentElement.scrollWidth <= innerWidth"
+                ), "Compact viewport overflows"
+                expect(
+                    page.get_by_role("button", name="Preview layout", exact=True)
+                ).to_be_visible()
+                page.screenshot(path=str(out / "studio-compact.png"), full_page=True)
+                page.set_viewport_size({"width": 1600, "height": 1000})
+                # The requested connect-then-arrange workflow: add two real parts,
+                # wire their pins from the keyboard, then undo connection + layout.
+                page.get_by_label("Search components", exact=True).fill(
+                    "emblink/resistor"
+                )
+                page.get_by_role("button", name="Place Resistor", exact=True).click()
+                page.wait_for_timeout(200)
+                page.get_by_role("button", name="Place Resistor", exact=True).click()
+                page.wait_for_timeout(200)
+                added = projects()[-1]
+                new_ids = [
+                    c["id"]
+                    for c in added["components"]
+                    if c["id"] not in {x["id"] for x in applied["components"]}
+                ]
+                assert len(new_ids) == 2, new_ids
+                page.get_by_role("button", name="View", exact=True).click()
+                page.get_by_role(
+                    "checkbox", name="Auto arrange after connecting", exact=True
+                ).check()
+                page.get_by_role("button", name="Close tools", exact=True).click()
+                page.get_by_role("button", name="Zoom to fit", exact=True).click()
+                page.wait_for_timeout(200)
+                page.locator(f'[data-pin="{new_ids[0]}.2"]').press("Enter")
+                page.locator(f'[data-pin="{new_ids[1]}.1"]').press("Enter")
+                page.wait_for_timeout(300)
+                connected = projects()[-1]
+                assert any(
+                    {f"{new_ids[0]}.2", f"{new_ids[1]}.1"} <= set(pins)
+                    for pins in connected["nets"].values()
+                ), "Keyboard wire did not connect both pins"
+                assert [
+                    c.get("layout")
+                    for c in connected["components"]
+                    if c["id"] in new_ids
+                ] != [
+                    c.get("layout") for c in added["components"] if c["id"] in new_ids
+                ], "Connect should automatically arrange the joined parts"
+                page.get_by_role("button", name="Undo", exact=True).click()
+                page.wait_for_timeout(250)
+                assert (
+                    projects()[-1] == added
+                ), "One Undo must restore both connectivity and placement"
+                assert not errors, errors
+                browser.close()
+                print(
+                    "PASS: real-engine preview, layout-only apply, exact undo/redo, finder, connect-then-arrange, view controls, themes and compact viewport"
+                )
+        finally:
+            server.terminate()
+            server.wait(timeout=10)
+
+
+if __name__ == "__main__":
+    main()

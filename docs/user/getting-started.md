@@ -1,6 +1,7 @@
 # Getting started
 
-EmbSIM is in its M0 foundation; this page grows with the implementation.
+EmbSIM is under active development. See the [project status](../STATUS.md) for
+implemented behavior, evidence and limitations.
 
 ## Build the command line
 
@@ -23,6 +24,11 @@ cmake --preset dev && cmake --build --preset dev && ctest --preset dev --output-
 
 The desktop application (`desktop/`) wraps the same workbench; see
 `ui/README.md` for development.
+
+## Design a circuit
+
+The [Schematic Studio guide](schematic-studio.md) covers connected auto-layout,
+smart routing, preview/apply/undo, alignment, search and navigation.
 
 ## Run firmware
 

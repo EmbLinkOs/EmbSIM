@@ -58,6 +58,31 @@ Invalid JSON remains visible for correction and must never silently execute the
 previous valid expectation. The engine remains authoritative for whether target,
 input and probe identifiers resolve in the project and for model-specific values.
 
+### Schematic Studio
+
+The schematic ribbon provides connectivity-driven placement, route-only previews,
+alignment/distribution, component/net search, selection focus and canvas display
+options. Placement supports both axes, compact/comfortable spacing, whole-sheet
+and selected-component scopes. Unselected components are fixed obstacles. Existing
+rotations and mirrors are preserved. Preview must not send edits; applying a plan
+uses one undoable transaction containing presentation fields only. A stale preview
+cannot be applied. Route failures remain visible as unresolved geometry; electrical
+nets remain authoritative. Planning runs in a bounded worker task.
+
+An opt-in automatic arrangement mode combines a new connection with placement of
+its joined-net components and routing of affected nets in one undoable edit.
+Obstacle-aware wiring previews paths, including a blocked-path indication. If no
+clear path is found, completing a connection joins its pins with an undrawn
+airwire and an explicit warning. Smart wiring
+reroutes incident nets after movement. Rotation/mirroring reroute incident nets.
+Magnetic drag guides use the same grid-compatible delta for preview and commit.
+
+Find searches parts, boards, nets and pin membership. A selected net spotlights its
+wires. F focuses selected parts; 0 fits the sheet. A navigator depicts the viewport
+and supports recentering plus a keyboard-accessible fit action. Grid, airwires,
+navigator, side-panel focus mode, magnetic guides and smart-wiring preferences are controllable in View.
+The [user guide](../user/schematic-studio.md) records the heuristic boundaries.
+
 ## 3. Scene rendering
 
 - SVG scene graph: a viewport group with pan and zoom (wheel, pinch, keys);

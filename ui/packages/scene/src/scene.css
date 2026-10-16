@@ -478,3 +478,16 @@
   font-weight: 400;
   fill: var(--text-muted);
 }
+
+/* Overview stays outside the scene transform and follows both themes. */
+.es-scene__navigator { position: absolute; right: 14px; bottom: 14px; width: 150px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 4px 18px #00000012; display: grid; gap: 6px; font-size: 10px; color: var(--text-muted); }
+.es-scene__navigator > span { text-transform: uppercase; letter-spacing: 0.12em; }
+.es-scene__navigator svg { width: 100%; height: 76px; cursor: crosshair; background: var(--sheet); border-radius: 5px; }
+.es-scene__map-wire { stroke: var(--text-muted); stroke-width: 1; fill: none; vector-effect: non-scaling-stroke; opacity: 0.45; }
+.es-scene__map-part { fill: var(--text-muted); opacity: 0.45; }
+.es-scene__map-part.is-selected { fill: var(--symbol-selected); opacity: 1; }
+.es-scene__map-viewport { stroke: var(--symbol-selected); stroke-width: 1.2; fill: var(--symbol-selected); fill-opacity: 0.06; vector-effect: non-scaling-stroke; }
+.es-scene__navigator button { display: flex; justify-content: space-between; border: 0; border-radius: 4px; color: var(--text-muted); background: transparent; font: inherit; cursor: pointer; }
+.es-scene__navigator button:hover { color: var(--text); background: var(--surface-sunken); }
+.es-scene__alignment-guide { stroke: var(--symbol-selected); stroke-width: 1; stroke-dasharray: 5 4; opacity: 0.65; pointer-events: none; vector-effect: non-scaling-stroke; }
+.es-scene__wire-preview.is-blocked { stroke: var(--danger); }

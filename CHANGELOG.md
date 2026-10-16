@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Schematic Studio
+
+- Connected auto-placement, obstacle-aware orthogonal routing and layout previews
+  with whole-sheet/selection scopes, two directions and spacing presets. Apply is
+  one undoable layout-only transaction; stale previews cannot apply.
+- Opt-in auto-arrangement after connecting, free-space component placement,
+  smart wire previews, rerouting after transforms, magnetic drag guides,
+  alignment/distribution, component/net finder, net spotlight, selection focus,
+  side-panel focus mode, undrawn-connection counts, minimap and display controls in a new schematic tool ribbon.
+- Layout planning runs in an embedded worker; desktop policy permits the bundled
+  worker. Added a user guide and native-engine schematic workflow regression.
+
+
 ### Scenario editor reliability
 
 - Run and Save now reject invalid visible expectation JSON, assertion timing,

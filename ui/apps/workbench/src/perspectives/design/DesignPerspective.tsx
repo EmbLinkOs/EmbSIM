@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { Badge, Button, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
-import { EMPTY_SELECTION, SchematicCanvas, type CanvasMode, type SchematicCanvasHandle } from '@embsim/scene';
+import { EMPTY_SELECTION, SchematicCanvas, routeConnection, type CanvasMode, type SchematicCanvasHandle } from '@embsim/scene';
 import { ArrowLeft, Cable, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage, probes as probeActions } from '../../actions';
 import { useRegisterCommands } from '../../shell/commands';
 import { insideSource, insideView } from '../../stores/inside';
@@ -16,6 +16,7 @@ import { BoardPanel } from '../BoardPanel';
 import { InspectorPanel } from './InspectorPanel';
 import { LibraryPanel } from './LibraryPanel';
 import { NetsPanel } from './NetsPanel';
+import { LayoutStudio, SchematicToolbar, type CanvasDisplay, type LayoutPreview } from './SchematicTools';
 
 export function DesignPerspective() {
   const project = useProject((s) => s.project);
@@ -32,7 +33,14 @@ export function DesignPerspective() {
   const { toast } = useToast();
   const canvasRef = useRef<SchematicCanvasHandle>(null);
   const [rename, setRename] = useState<{ net: string; value: string } | null>(null);
-  const [bottomTab, setBottomTab] = useState<'nets' | 'board'>('nets');
+  const [bottomTab, setBottomTab] = useState<'nets' | 'board' | 'studio'>('nets');
+  const [preview, setPreview] = useState<LayoutPreview | null>(null);
+  const [display, setDisplay] = useState<CanvasDisplay>({ grid: true, airwires: true, minimap: true, smartWires: true, autoArrange: false, guides: true, focusMode: false });
+  const spotlight = useSelection((s) => s.net);
+  const previewProject = preview?.source === project ? preview.result.project : null;
+  useEffect(() => {
+    if (previewProject) canvasRef.current?.zoomToFit();
+  }, [previewProject]);
   const inside = useLayout((s) => s.inside);
   const setInside = useLayout((s) => s.setInside);
   const catalog = useProject((s) => s.catalog);
@@ -62,6 +70,9 @@ export function DesignPerspective() {
   const commands = useMemo<Command[]>(
     () => [
       { id: 'canvas.fit', label: 'Zoom to fit', group: 'Schematic', icon: <Maximize2 />, shortcut: '0', run: () => canvasRef.current?.zoomToFit() },
+      { id: 'canvas.focus-mode', label: display.focusMode ? 'Show schematic side panels' : 'Focus canvas: hide side panels', group: 'Schematic', run: () => setDisplay((d) => ({ ...d, focusMode: !d.focusMode })) },
+      { id: 'canvas.auto-layout', label: 'Open Layout Studio', group: 'Schematic', keywords: ['auto', 'arrange', 'route'], run: () => setBottomTab('studio') },
+      { id: 'canvas.focus-selection', label: 'Focus selection', group: 'Schematic', shortcut: 'F', disabled: !selection.components.length, run: () => canvasRef.current?.focusComponents(selection.components) },
       { id: 'canvas.zoom-in', label: 'Zoom in', group: 'Schematic', icon: <ZoomIn />, shortcut: '+', run: () => canvasRef.current?.zoomBy(1.25) },
       { id: 'canvas.zoom-out', label: 'Zoom out', group: 'Schematic', icon: <ZoomOut />, shortcut: '-', run: () => canvasRef.current?.zoomBy(0.8) },
       { id: 'canvas.mode.select', label: 'Select tool', group: 'Schematic', icon: <MousePointer2 />, keywords: ['pointer'], run: () => setMode('select') },
@@ -140,7 +151,7 @@ export function DesignPerspective() {
         run: () => placeAtCentre(id),
       })),
     ],
-    [selection, store, sceneCatalog, placeAtCentre, setMode, setSelection, fail, toast, project?.layout?.buses],
+    [selection, store, sceneCatalog, placeAtCentre, setMode, setSelection, fail, toast, project?.layout?.buses, display.focusMode],
   );
   useRegisterCommands('design', commands);
 
@@ -215,15 +226,21 @@ export function DesignPerspective() {
   ) : project ? (
     <SchematicCanvas
       handle={canvasRef}
-      project={project}
+      project={previewProject ?? project}
       catalog={sceneCatalog}
       mode={mode}
       selection={selection}
-      onSelectionChange={setSelection}
+      onSelectionChange={previewProject ? () => undefined : setSelection}
       live={running}
       netStates={nets}
-      readOnly={!editable}
-      onMove={(ids, dx, dy) => void store.moveComponents(ids, dx, dy).catch(fail('Move failed'))}
+      readOnly={!editable || !!previewProject}
+      showGrid={display.grid}
+      showAirwires={display.airwires}
+      showMinimap={display.minimap}
+      smartWires={display.smartWires && !display.autoArrange}
+      alignmentGuides={display.guides}
+      highlightNet={spotlight}
+      onMove={(ids, dx, dy) => void store.moveComponents(ids, dx, dy, display.smartWires).catch(fail('Move failed'))}
       onRotate={(ids) => void store.rotateComponents(ids).catch(fail('Rotate failed'))}
       onMirror={(ids) => void store.mirrorComponents(ids).catch(fail('Mirror failed'))}
       onLabelWire={(w) => void store.labelWire(w).catch(fail('Label failed'))}
@@ -231,7 +248,12 @@ export function DesignPerspective() {
         void store.deleteSelection(sel).catch(fail('Delete failed'));
         setSelection({ components: [], wires: [] });
       }}
-      onWire={(from, to, points) => void store.wire(from, to, points).catch(fail('Wire failed'))}
+      onWire={(from, to, points) => {
+        const path = display.smartWires && !display.autoArrange ? routeConnection(project, sceneCatalog, from, 'component' in to ? to : { point: to.point, net: to.net }) : points;
+        void store.wire(from, to, path ?? [], display.autoArrange).then(() => {
+          if (!path) toast({ kind: 'warning', title: 'Connected with an airwire', description: 'No clear drawn route. Rearrange the parts or use Layout Studio to route the connection.' });
+        }).catch(fail('Wire failed'));
+      }}
       onPlace={(id, at) => void store.placeComponent(id, at).then((cid) => cid && setSelection({ components: [cid], wires: [] })).catch(fail('Place failed'))}
       onRenameNet={(net) => setRename({ net, value: net })}
       onNetClick={(net) => {
@@ -246,21 +268,22 @@ export function DesignPerspective() {
   ) : null;
 
   const centre: DockItem[] = [
-    { id: 'canvas', title: 'Schematic', content: canvas, actions: canvasActions, flush: true, weight: 3, minSize: 200 },
+    { id: 'canvas', title: 'Schematic', content: <div className="wb-schematic-workspace">{canvas}{previewProject && <div className="wb-schematic-preview-banner"><Badge tone="accent">Layout preview</Badge><span>Review in Layout Studio · not applied</span><Button size="sm" variant="ghost" onClick={() => setPreview(null)}>Discard</Button></div>}</div>, actions: canvasActions, flush: true, weight: 3, minSize: 200 },
     {
       id: 'bottom',
-      title: bottomTab === 'nets' ? 'Nets' : 'Board',
+      title: bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : 'Board',
       flush: true,
       weight: 1,
       minSize: 120,
       content: (
-        <Tabs<'nets' | 'board'>
+        <Tabs<'nets' | 'board' | 'studio'>
           label="Design details"
           value={bottomTab}
           onValueChange={setBottomTab}
           items={[
             { value: 'nets', label: 'Nets', content: <NetsPanel live={running} /> },
             { value: 'board', label: 'Board', content: <BoardPanel interactive={false} /> },
+            { value: 'studio', label: 'Layout Studio', content: <LayoutStudio preview={preview} onPreview={setPreview} onApplied={() => canvasRef.current?.zoomToFit()} /> },
           ]}
         />
       ),
@@ -268,14 +291,15 @@ export function DesignPerspective() {
   ];
 
   const items: DockItem[] = [
-    { id: 'library', title: 'Library', content: <LibraryPanel onPlace={placeAtCentre} />, flush: true, weight: 1, minSize: 220 },
+    ...(display.focusMode ? [] : [{ id: 'library', title: 'Library', content: <LibraryPanel onPlace={placeAtCentre} />, flush: true, weight: 1, minSize: 220 }]),
     { id: 'centre', title: 'Schematic', bare: true, weight: 3.2, minSize: 360, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.design.centre.${project?.name ?? 'none'}`} /> },
-    { id: 'inspector', title: 'Inspector', content: <InspectorPanel />, weight: 1.2, minSize: 260 },
+    ...(display.focusMode ? [] : [{ id: 'inspector', title: 'Inspector', content: <InspectorPanel />, weight: 1.2, minSize: 260 }]),
   ];
 
   return (
-    <div className="wb-perspective">
-      <DockLayout direction="row" items={items} storageKey={`embsim.layout.design.${project?.name ?? 'none'}`} />
+    <div className="wb-perspective wb-design-studio">
+      {!insideOf && <SchematicToolbar canvas={canvasRef} display={display} onDisplay={setDisplay} onStudio={() => setBottomTab('studio')} onPreview={setPreview} />}
+      <DockLayout direction="row" items={items} storageKey={`embsim.layout.design.${project?.name ?? 'none'}.${display.focusMode ? 'focus' : 'panels'}`} />
       <Dialog
         open={rename !== null}
         onOpenChange={(open) => !open && setRename(null)}
