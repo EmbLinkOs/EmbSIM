@@ -32,7 +32,7 @@ rows of [STATUS.md](../STATUS.md); update both together.
 | Coverage, profile and stacks | `analysis` (`tests/protocol/test_analysis.py`) | the nine firmware examples (Cortex-M3, M0+ on both cores, M4F, AVR, RISC-V, MIPS32, PIC24, two boards at once) measured twice alike; the profile's functions add up to the instructions and cycles; lcov agrees with the JSON line for line; the collapsed stacks add up to the cycles; each board's stack within its limit; gcov-style text with the source; a recursion 40 calls deep on a 2 KiB stack (`tests/firmware/stack-overflow`) raises `mcu.stack_overflow` once in `deep`, main's depth its frame plus the recursion's; a load from an address nothing answers (`tests/firmware/fault`) is one `mcu.fault`, a HardFault FORCED from PRECISERR with BFAR, backtraced peek, read_sensor, main, Reset_Handler, handled by `Default_Handler`; a project without firmware refused; `analysis.*` over the protocol |
 | Emulated target | `run_target` (`tests/protocol/test_target.py`) | `--console` streams the Uno's console; `--until-text` ends at the same millisecond on two runs and exits 1 when the text never comes; `--image ID=FILE` and an image for another core refused |
 | Python client | `python_client` (`python/tests/test_session.py`) | a session's time, inputs, serial text, a probe's samples, a scenario, a recording replayed and made a scenario, coverage, the profile, the debugger; `run()` with a recording and lcov, `replay()` matching and diverging (exit 4) |
-| EmbLinkRTOS | `ctest --preset avr-uno-embsim` in EmbLinkRTOS | its nine Arduino Uno conformance tests (smoke, first execution, thread, sched, time, irq, sem, mutex, notify) pass on EmbSIM's Uno in 4.4 s, avr-gcc 7.3 images unchanged |
+| EmbLinkRTOS | `ctest --preset avr-uno-embsim` in EmbLinkRTOS | its nine Arduino Uno conformance tests (smoke, first execution, thread, sched, time, irq, sem, mutex, notify) pass on EmbSIM's Uno in 4.4 s, avr-gcc 7.3 images unchanged; in its CI, EmbLinkOs/EmbLinkRTOS#12's `avr-embsim` job builds EmbSIM's `main` and passes them |
 | Cost | by hand, release build | the Pico's two-core scenario in 0.89 s, 0.95 s with coverage, 0.88 s with the profile, 0.85 s with both: within the run-to-run noise |
 | Builds | GCC, Clang, TinyCC, ASan/UBSan, a GCC release build with `_FORTIFY_SOURCE`; MSVC in CI | the new code builds warning-free under each |
 | Gallery | `scripts/screenshots.mjs` | the [M5 shots](../gallery/README.md): a scenario run in the editor, coverage of the Blue Pill's firmware (light and dark), a recording replayed and made a scenario |
@@ -81,6 +81,5 @@ rows of [STATUS.md](../STATUS.md); update both together.
 ## Known gaps
 
 The PIC24's fault decoding is not exercised by a test (CI has no XC16); analog observations and full event traces are not recorded
-(SPEC-012 §5); EmbLinkRTOS's `avr-embsim` CI job checks out EmbSIM's `main`,
-so it passes once this branch is merged; the scenario editor's assertion
+(SPEC-012 §5); the scenario editor's assertion
 expectations are edited as JSON.
