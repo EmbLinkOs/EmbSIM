@@ -508,11 +508,6 @@ void esk_host_interrupt_install(void)
 int esk_host_interrupted(void) { return g_interrupted != 0; }
 void esk_host_interrupt_clear(void) { g_interrupted = 0; }
 
-#else
-typedef int esk_host_posix_not_built; /* ISO C forbids an empty translation unit */
-#endif
-
-#include <sys/stat.h>
 es_status esk_host_mkdir_p(const char *path)
 {
     char buf[1024];
@@ -534,3 +529,7 @@ es_status esk_host_mkdir_p(const char *path)
     }
     return ES_OK;
 }
+
+#else
+typedef int esk_host_posix_not_built; /* ISO C forbids an empty translation unit */
+#endif
