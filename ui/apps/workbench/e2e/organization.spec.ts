@@ -16,6 +16,9 @@ test('organize a circuit, lock placement, export inventory and undo', async ({ p
   await expect(objects.getByRole('button', { name: 'Input filter · 2 parts', exact: true })).toBeVisible();
   await objects.getByRole('button', { name: 'Input filter · 2 parts', exact: true }).click();
   const beforeMove = await page.locator('[data-component="R1"] .es-component__hit').getAttribute('x');
+  // Wait for an unobscured, stable target before capturing raw pointer coordinates.
+  await header.click({ trial: true });
+  await expect(page.getByRole('application', { name: 'Schematic canvas' })).not.toHaveClass(/es-scene__svg--moving/);
   const box = (await header.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down(); await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 40, { steps: 4 }); await page.mouse.up();

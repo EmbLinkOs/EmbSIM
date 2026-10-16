@@ -24,7 +24,13 @@ files and documentation integrity all pass. All 36 native CTest entries pass
 (90.71 seconds); the local firmware-build wrapper explicitly skips because no
 supported cross compiler is installed. The hosted matrix exercises compiler and
 platform coverage. Native screenshots are in the [gallery](gallery/README.md).
-Hosted cross-platform validation is pending for this PR.
+The first hosted macOS browser run caught a focus/drag race: Objects navigation
+scheduled viewport focus after the test had read its pointer coordinates. Direct
+navigation now focuses synchronously unless a preview must first be discarded;
+the drag regression verifies a stable unobscured header before reading coordinates.
+The corrected organization workflow passes 10 consecutive local browser runs;
+typecheck, lint and production build pass. Hosted cross-platform validation is
+pending for this correction.
 
 ## Schematic cross-platform CI corrections
 

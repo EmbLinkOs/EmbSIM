@@ -316,7 +316,7 @@ export function DesignPerspective() {
           value={bottomTab}
           onValueChange={setBottomTab}
           items={[
-            { value: 'objects', label: 'Objects', content: <ObjectsPanel writable={!previewProject && !insideOf} onFocus={(ids) => { setPreview(null); requestAnimationFrame(() => canvasRef.current?.focusComponents(ids)); }} /> },
+            { value: 'objects', label: 'Objects', content: <ObjectsPanel writable={!previewProject && !insideOf} onFocus={(ids) => { setPreview(null); if (previewProject) requestAnimationFrame(() => canvasRef.current?.focusComponents(ids)); else canvasRef.current?.focusComponents(ids); }} /> },
             { value: 'checks', label: `Checks${checks.pending ? ' …' : ` ${checks.issues.length}`}`, content: <SchematicChecksPanel {...checks} selected={selectedIssue} onFocus={focusIssue} onRoute={routeNet} onRefresh={checks.refresh} writable={editable && !store.busy && !previewProject && !insideOf} /> },
             { value: 'nets', label: 'Nets', content: <NetsPanel live={running} /> },
             { value: 'board', label: 'Board', content: <BoardPanel interactive={false} /> },
