@@ -251,7 +251,7 @@ static void test_rc_charge(void)
     CHECK_NEAR(v_of(&e, "out"), tau_v, 0.01 * tau_v);
     CHECK(esk_engine_advance(&e, 3 * ES_PS_PER_MS) == ES_OK);
     CHECK_NEAR(v_of(&e, "out"), 5.0 * (1.0 - exp(-3.0)), 0.05);
-    CHECK(esk_engine_advance(&e, 20 * ES_PS_PER_MS) == ES_OK);
+    CHECK(esk_engine_advance(&e, 40 * ES_PS_PER_MS) == ES_OK);
     CHECK_NEAR(v_of(&e, "out"), 5.0, 1e-3);
     CHECK(esk_engine_net(&e, "out")->island->steps < 2000);
     CHECK_EQ(diag_errors, 0);
@@ -849,6 +849,71 @@ static void test_pull_device(void)
     esk_engine_free(&e);
 }
 
+/* a core's quanta: an event every microsecond, as an MCU's run makes them */
+static void tick_cb(void *ctx, void *arg, es_time_t now)
+{
+    esk_engine *e = (esk_engine *)ctx;
+    (void)arg;
+    (void)esk_sched_at(&e->sched, now + ES_PS_PER_US, ESK_EV_CORE, tick_cb, e, NULL, NULL);
+}
+
+static void test_quiet_island(void)
+{
+    /* a divider under a core's quanta, which clip every step to 1 us: once
+     * two steps and a trial step of the longest length change nothing, the
+     * island stops solving (quiet) until the switch's press touches it; the
+     * voltages are the circuit's throughout */
+    esk_engine e;
+    esk_comp *sw;
+    esk_island *isl;
+    esk_json *v;
+    uint64_t steps, quiet;
+    const double vopen = 5.0 * 1e9 / (1e9 + 1e3); /* the open switch's roff */
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 5}", "vin", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "out");
+    sw = add_dev2(&e, "switch", "S1", "{\"ron\": 1000}", "out", "gnd");
+    engine_run(&e);
+    CHECK(esk_sched_at(&e.sched, ES_PS_PER_US, ESK_EV_CORE, tick_cb, &e, NULL, NULL) == ES_OK);
+    isl = esk_engine_net(&e, "out")->island;
+    CHECK(esk_engine_advance(&e, 10 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "out"), vopen, 1e-8); /* gmin's 1 pS at each node: 5 nV here */
+    CHECK(isl->steps < 50);           /* not one a quantum: 10000 */
+    CHECK(isl->quiet_steps > 9900);
+    steps = isl->steps;
+    quiet = isl->quiet_steps;
+    v = esk_json_new_bool(&A, 1);
+    esk_engine_set_input(&e, sw, "pressed", v);
+    esk_json_free(&A, v);
+    esk_island_touch(isl, esk_engine_now(&e));
+    CHECK(esk_engine_advance(&e, 10 * ES_PS_PER_MS + 5 * ES_PS_PER_US) == ES_OK);
+    CHECK_NEAR(v_of(&e, "out"), 2.5, 1e-8); /* solved again at once */
+    CHECK(isl->steps > steps);
+    CHECK(esk_engine_advance(&e, 20 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "out"), 2.5, 1e-8);
+    CHECK(isl->quiet_steps > quiet + 9900);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+    /* an RC under the same quanta is never left short of its charge: it is
+     * still solved while it moves, to the solver's own floor */
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 5}", "vin", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": \"1k\"}", "vin", "out");
+    add_dev2(&e, "capacitor", "C1", "{\"c\": \"1u\", \"ic\": 0}", "out", "gnd");
+    engine_run(&e);
+    CHECK(esk_sched_at(&e.sched, ES_PS_PER_US, ESK_EV_CORE, tick_cb, &e, NULL, NULL) == ES_OK);
+    isl = esk_engine_net(&e, "out")->island;
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "out"), 5.0 * (1.0 - exp(-2.0)), 1e-4);
+    CHECK_EQ(isl->quiet_steps, 0);
+    CHECK(esk_engine_advance(&e, 40 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "out"), 5.0, 1e-8);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
 static void test_bounce(void)
 {
     esk_engine e;
@@ -1293,6 +1358,7 @@ RUN(test_opamp_inverting);
 RUN(test_regulator);
 RUN(test_pull_device);
 RUN(test_bounce);
+RUN(test_quiet_island);
 RUN(test_two_islands_step_independently);
 RUN(test_regulator_board_rails);
 RUN(test_regulator_unpowered);

@@ -72,6 +72,7 @@ struct esk_island {
     es_time_t h_next_ps;          /* proposed next step */
     esk_event_handle step_event;
     uint64_t steps, rejections, newton_iters;
+    uint64_t quiet_steps;         /* steps a steady island took without a solve */
     int failed;                   /* frozen after a fatal diagnostic */
     void *priv;                   /* solver-private */
 };
