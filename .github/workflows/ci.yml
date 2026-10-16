@@ -56,6 +56,13 @@ jobs:
         run: ctest --preset ${{ matrix.preset }} --output-on-failure --no-tests=error
       - name: Run the examples headless
         run: python3 tools/ci/run_examples.py --build build/${{ matrix.preset }}
+      - name: Arduino sketches on the unmodified ArduinoCore-avr
+        if: matrix.name == 'linux-gcc'
+        run: |
+          git init -q "$RUNNER_TEMP/ArduinoCore-avr"
+          git -C "$RUNNER_TEMP/ArduinoCore-avr" fetch -q --depth 1 https://github.com/arduino/ArduinoCore-avr.git 11b9130371e8447920edb65a75706a6c951e51fc
+          git -C "$RUNNER_TEMP/ArduinoCore-avr" checkout -q FETCH_HEAD
+          python3 tests/vendor/arduino/run.py --core "$RUNNER_TEMP/ArduinoCore-avr" --embsim build/${{ matrix.preset }}/bin/embsim
 
   tools:
     name: tools and catalog

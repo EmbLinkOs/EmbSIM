@@ -285,6 +285,48 @@ static void test_adc(void)
     uno_close(&u);
 }
 
+static void test_timer0_fast_pwm_overflow(void)
+{
+    /* Timer0 in fast PWM at /1, then a run of nops: TOV0 sets as the
+     * counter goes from TOP to BOTTOM, so a read of TCNT0 at 255 finds it
+     * clear (Arduino's micros() counts on it) and at 0 finds it set */
+    u16 prog[400];
+    size_t n = 0, i;
+    int tops = 0, wraps = 0;
+    u8 last;
+    uno u;
+    memset(prog, 0, sizeof prog);
+    prog[n++] = ldi(16, 0x03);
+    prog[n++] = out(0x24, 16); /* TCCR0A: fast PWM, TOP 0xFF */
+    prog[n++] = ldi(16, 0x01);
+    prog[n++] = out(0x25, 16); /* TCCR0B: /1 */
+    n = sizeof prog / sizeof prog[0] - 1;
+    prog[n++] = rjmp(-1);
+    if (!uno_open(&u, prog, n))
+        return;
+    esk_mach_run(&u.m, 0xffffff, 4);
+    last = data(&u, 0x46);
+    for (i = 0; i < 390; i++) {
+        u8 cnt, tov;
+        esk_mach_run(&u.m, 0xffffff, 1); /* a nop: one clock */
+        cnt = data(&u, 0x46);            /* TCNT0 */
+        tov = data(&u, 0x35) & 1;        /* TIFR0.TOV0 */
+        CHECK_EQ(cnt, (u8)(last + 1));
+        if (cnt == 255) {
+            CHECK_EQ(tov, 0);
+            tops++;
+        }
+        if (cnt == 0) {
+            CHECK_EQ(tov, 1);
+            wraps++;
+            CHECK_EQ(esk_bus_debug_write(&u.m.bus, ESK_AVR_DATA + 0x35, 1, 1), 0);
+        }
+        last = cnt;
+    }
+    CHECK(tops >= 1 && wraps >= 1);
+    uno_close(&u);
+}
+
 static void test_disassembler(void)
 {
     char t[64];
@@ -303,6 +345,7 @@ static void test_disassembler(void)
 TEST_MAIN_BEGIN
 RUN(test_flags_and_cycles);
 RUN(test_timer0_interrupt);
+RUN(test_timer0_fast_pwm_overflow);
 RUN(test_usart_frame);
 RUN(test_ports);
 RUN(test_adc);

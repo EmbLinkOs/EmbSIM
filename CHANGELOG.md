@@ -206,6 +206,12 @@ versions follow semantic versioning. There is no release yet.
   the register schema; `core.prog_end` and `core.ram_base` in the MCU
   schema); the XC16 profile's `pic24fj1024gb610` target.
 
+- Arduino sketches built with the unmodified ArduinoCore-avr run on the
+  Uno: `tests/vendor/arduino` (Blink and a tour of the core: `delay`,
+  `millis`, `analogRead`, `analogWrite`, `attachInterrupt`, `Serial`)
+  builds them with the IDE's flags against a pinned checkout of the core
+  and runs them under scenarios, in CI's linux-gcc job.
+
 ### Changed
 - The analog fixtures are checked against ngspice too: `ngspice.json` beside
   each (`tools/analog/ngspice_fixture.py`, `--check` in CI), compared by
@@ -227,6 +233,12 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The ATmega328P's timers set TOVn in fast PWM a timer clock early, as the
+  counter reached TOP rather than as it went on to BOTTOM, so a read of
+  TCNTn at TOP found the flag already set. The Arduino core's `micros()`
+  counted that overflow twice and then ran back by 1024 µs, and `delay()`
+  returned early: Blink blinked at 9 Hz, not 0.5 Hz. `test_avr` follows the flag
+  clock by clock.
 - `embsim build` with a GNU profile found no target for any board: the
   boards name a GNU target by `cpu`, the build looked for `target` only.
   The gcc-avr profile's convert step (`${objcopy}`, `${hex}`) and its
