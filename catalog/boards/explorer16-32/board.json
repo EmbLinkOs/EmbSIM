@@ -1,0 +1,1265 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "emblink/explorer16-32",
+  "version": "1.0.0",
+  "name": "Explorer 16/32 (PIC32MX795F512L PIM)",
+  "description": "Microchip's Explorer 16/32 development board with the PIC32MX795F512L plug-in module: an 8 MHz crystal on the primary oscillator and a 32.768 kHz one on the secondary, eight LEDs D3 to D10 on RA0 to RA7 (active high), the push buttons S3 (RD6), S6 (RD7) and S4 (RD13) to ground with pull-ups, MCLR's S1, a 3.3 V regulator from VIN, and UART2 on RF5 (TX) and RF4 (RX) to the USB-UART bridge, the session's console.",
+  "keywords": [
+    "explorer 16",
+    "explorer 16/32",
+    "dm240001-2",
+    "pic32",
+    "pic32mx",
+    "pim"
+  ],
+  "revision": "DM240001-2 with MA320003",
+  "mcu": {
+    "ref": "microchip/pic32mx795f512l",
+    "package": "tqfp100",
+    "instance": "U1"
+  },
+  "oscillators": {
+    "hse": {
+      "hz": 8000000,
+      "source": "external_crystal",
+      "component": "Y1"
+    }
+  },
+  "components": [
+    {
+      "id": "U2",
+      "component": "emblink/regulator",
+      "params": {
+        "part": "generic",
+        "vout": 3.3,
+        "dropout": 0.3,
+        "imax": 1.0,
+        "quiescent": 0
+      },
+      "doc": "3.3 V from VIN (the board's MCP1727 LDO, fed from the USB-C 5 V or the 9 V barrel)"
+    },
+    {
+      "id": "Y1",
+      "component": "emblink/crystal",
+      "params": {
+        "hz": "8meg"
+      },
+      "doc": "The PIM's 8 MHz crystal on OSC1/OSC2 (the primary oscillator)"
+    },
+    {
+      "id": "Y2",
+      "component": "emblink/crystal",
+      "params": {
+        "hz": "32.768k"
+      },
+      "doc": "The 32.768 kHz crystal on SOSCI/SOSCO"
+    },
+    {
+      "id": "D3",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "LED D3 on RA0, active high"
+    },
+    {
+      "id": "R_D3",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "D4",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "LED D4 on RA1, active high"
+    },
+    {
+      "id": "R_D4",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "D5",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "LED D5 on RA2, active high"
+    },
+    {
+      "id": "R_D5",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "D6",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "LED D6 on RA3, active high"
+    },
+    {
+      "id": "R_D6",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "D7",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "LED D7 on RA4, active high"
+    },
+    {
+      "id": "R_D7",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "D8",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "LED D8 on RA5, active high"
+    },
+    {
+      "id": "R_D8",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "D9",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "LED D9 on RA6, active high"
+    },
+    {
+      "id": "R_D9",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "D10",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "LED D10 on RA7, active high"
+    },
+    {
+      "id": "R_D10",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "S3",
+      "component": "emblink/push_button",
+      "doc": "Push button S3 on RD6, to ground"
+    },
+    {
+      "id": "R_S3",
+      "component": "emblink/pull_up",
+      "params": {
+        "resistance": "10k",
+        "voltage": 3.3
+      },
+      "doc": "RD6 pulled up"
+    },
+    {
+      "id": "S6",
+      "component": "emblink/push_button",
+      "doc": "Push button S6 on RD7, to ground"
+    },
+    {
+      "id": "R_S6",
+      "component": "emblink/pull_up",
+      "params": {
+        "resistance": "10k",
+        "voltage": 3.3
+      },
+      "doc": "RD7 pulled up"
+    },
+    {
+      "id": "S4",
+      "component": "emblink/push_button",
+      "doc": "Push button S4 on RD13, to ground"
+    },
+    {
+      "id": "R_S4",
+      "component": "emblink/pull_up",
+      "params": {
+        "resistance": "10k",
+        "voltage": 3.3
+      },
+      "doc": "RD13 pulled up"
+    },
+    {
+      "id": "S1",
+      "component": "emblink/push_button",
+      "doc": "MCLR: resets the PIC32"
+    },
+    {
+      "id": "R_MCLR",
+      "component": "emblink/pull_up",
+      "params": {
+        "resistance": "10k",
+        "voltage": 3.3
+      },
+      "doc": "MCLR pulled up"
+    },
+    {
+      "id": "J1",
+      "component": "emblink/header",
+      "params": {
+        "pins": 20
+      },
+      "doc": "The PICtail Plus edge, left: 3.3 V, port B's analog pins, port D"
+    },
+    {
+      "id": "J2",
+      "component": "emblink/header",
+      "params": {
+        "pins": 20
+      },
+      "doc": "The PICtail Plus edge, right: VIN, ports E, G, F and A's upper pins"
+    },
+    {
+      "id": "J_USB",
+      "component": "emblink/header",
+      "params": {
+        "pins": 2
+      },
+      "doc": "The MCP2221A USB-UART bridge's side of UART2: RF5 (U2TX) and RF4 (U2RX); the session's serial console"
+    },
+    {
+      "id": "J_ICSP",
+      "component": "emblink/header",
+      "params": {
+        "pins": 5
+      },
+      "doc": "The PICkit/ICSP header: MCLR, 3.3 V, GND, PGED2 (RB7), PGEC2 (RB6)"
+    }
+  ],
+  "nets": {
+    "VIN": [
+      "U2.IN",
+      "J2.1"
+    ],
+    "3V3": [
+      "U2.OUT",
+      "U1.VDD",
+      "U1.AVDD",
+      "U1.VUSB3V3",
+      "U1.VCAP",
+      "J1.1",
+      "J_ICSP.2"
+    ],
+    "GND": [
+      "U2.GND",
+      "U1.VSS",
+      "U1.AVSS",
+      "J1.2",
+      "J1.20",
+      "J2.2",
+      "J_ICSP.3",
+      "S1.2",
+      "D3.K",
+      "D4.K",
+      "D5.K",
+      "D6.K",
+      "D7.K",
+      "D8.K",
+      "D9.K",
+      "D10.K",
+      "S3.2",
+      "S6.2",
+      "S4.2"
+    ],
+    "MCLR": [
+      "U1.NRST",
+      "R_MCLR.1",
+      "S1.1",
+      "J_ICSP.1"
+    ],
+    "VBUS": [
+      "U1.VBUS"
+    ],
+    "RG15": [
+      "U1.RG15"
+    ],
+    "RE5": [
+      "U1.RE5",
+      "J2.8"
+    ],
+    "RE6": [
+      "U1.RE6",
+      "J2.9"
+    ],
+    "RE7": [
+      "U1.RE7",
+      "J2.10"
+    ],
+    "RC1": [
+      "U1.RC1"
+    ],
+    "RC2": [
+      "U1.RC2"
+    ],
+    "RC3": [
+      "U1.RC3"
+    ],
+    "RC4": [
+      "U1.RC4"
+    ],
+    "RG6": [
+      "U1.RG6",
+      "J2.11"
+    ],
+    "RG7": [
+      "U1.RG7",
+      "J2.12"
+    ],
+    "RG8": [
+      "U1.RG8",
+      "J2.13"
+    ],
+    "RG9": [
+      "U1.RG9",
+      "J2.14"
+    ],
+    "RA0": [
+      "U1.RA0",
+      "R_D3.1"
+    ],
+    "RE8": [
+      "U1.RE8"
+    ],
+    "RE9": [
+      "U1.RE9"
+    ],
+    "RB5": [
+      "U1.RB5",
+      "J1.8"
+    ],
+    "RB4": [
+      "U1.RB4",
+      "J1.7"
+    ],
+    "RB3": [
+      "U1.RB3",
+      "J1.6"
+    ],
+    "RB2": [
+      "U1.RB2",
+      "J1.5"
+    ],
+    "RB1": [
+      "U1.RB1",
+      "J1.4"
+    ],
+    "RB0": [
+      "U1.RB0",
+      "J1.3"
+    ],
+    "RB6": [
+      "U1.RB6",
+      "J_ICSP.5"
+    ],
+    "RB7": [
+      "U1.RB7",
+      "J_ICSP.4"
+    ],
+    "RA9": [
+      "U1.RA9",
+      "J2.17"
+    ],
+    "RA10": [
+      "U1.RA10",
+      "J2.18"
+    ],
+    "RB8": [
+      "U1.RB8"
+    ],
+    "RB9": [
+      "U1.RB9"
+    ],
+    "RB10": [
+      "U1.RB10"
+    ],
+    "RB11": [
+      "U1.RB11"
+    ],
+    "RA1": [
+      "U1.RA1",
+      "R_D4.1"
+    ],
+    "RF13": [
+      "U1.RF13"
+    ],
+    "RF12": [
+      "U1.RF12"
+    ],
+    "RB12": [
+      "U1.RB12"
+    ],
+    "RB13": [
+      "U1.RB13"
+    ],
+    "RB14": [
+      "U1.RB14"
+    ],
+    "RB15": [
+      "U1.RB15"
+    ],
+    "RD14": [
+      "U1.RD14"
+    ],
+    "RD15": [
+      "U1.RD15"
+    ],
+    "RF4": [
+      "U1.RF4",
+      "J_USB.2",
+      "J2.15"
+    ],
+    "RF5": [
+      "U1.RF5",
+      "J_USB.1",
+      "J2.16"
+    ],
+    "RF3": [
+      "U1.RF3"
+    ],
+    "RF2": [
+      "U1.RF2"
+    ],
+    "RF8": [
+      "U1.RF8"
+    ],
+    "RG3": [
+      "U1.RG3"
+    ],
+    "RG2": [
+      "U1.RG2"
+    ],
+    "RA2": [
+      "U1.RA2",
+      "R_D5.1"
+    ],
+    "RA3": [
+      "U1.RA3",
+      "R_D6.1"
+    ],
+    "RA4": [
+      "U1.RA4",
+      "R_D7.1"
+    ],
+    "RA5": [
+      "U1.RA5",
+      "R_D8.1"
+    ],
+    "RC12": [
+      "U1.RC12",
+      "Y1.1"
+    ],
+    "RC15": [
+      "U1.RC15",
+      "Y1.2"
+    ],
+    "RA14": [
+      "U1.RA14",
+      "J2.19"
+    ],
+    "RA15": [
+      "U1.RA15",
+      "J2.20"
+    ],
+    "RD8": [
+      "U1.RD8",
+      "J1.15"
+    ],
+    "RD9": [
+      "U1.RD9",
+      "J1.16"
+    ],
+    "RD10": [
+      "U1.RD10",
+      "J1.17"
+    ],
+    "RD11": [
+      "U1.RD11",
+      "J1.18"
+    ],
+    "RD0": [
+      "U1.RD0",
+      "J1.9"
+    ],
+    "RC13": [
+      "U1.RC13",
+      "Y2.1"
+    ],
+    "RC14": [
+      "U1.RC14",
+      "Y2.2"
+    ],
+    "RD1": [
+      "U1.RD1",
+      "J1.10"
+    ],
+    "RD2": [
+      "U1.RD2",
+      "J1.11"
+    ],
+    "RD3": [
+      "U1.RD3",
+      "J1.12"
+    ],
+    "RD12": [
+      "U1.RD12",
+      "J1.19"
+    ],
+    "RD13": [
+      "U1.RD13",
+      "S4.1",
+      "R_S4.1"
+    ],
+    "RD4": [
+      "U1.RD4",
+      "J1.13"
+    ],
+    "RD5": [
+      "U1.RD5",
+      "J1.14"
+    ],
+    "RD6": [
+      "U1.RD6",
+      "S3.1",
+      "R_S3.1"
+    ],
+    "RD7": [
+      "U1.RD7",
+      "S6.1",
+      "R_S6.1"
+    ],
+    "RF0": [
+      "U1.RF0"
+    ],
+    "RF1": [
+      "U1.RF1"
+    ],
+    "RG1": [
+      "U1.RG1"
+    ],
+    "RG0": [
+      "U1.RG0"
+    ],
+    "RA6": [
+      "U1.RA6",
+      "R_D9.1"
+    ],
+    "RA7": [
+      "U1.RA7",
+      "R_D10.1"
+    ],
+    "RE0": [
+      "U1.RE0",
+      "J2.3"
+    ],
+    "RE1": [
+      "U1.RE1",
+      "J2.4"
+    ],
+    "RG14": [
+      "U1.RG14"
+    ],
+    "RG12": [
+      "U1.RG12"
+    ],
+    "RG13": [
+      "U1.RG13"
+    ],
+    "RE2": [
+      "U1.RE2",
+      "J2.5"
+    ],
+    "RE3": [
+      "U1.RE3",
+      "J2.6"
+    ],
+    "RE4": [
+      "U1.RE4",
+      "J2.7"
+    ],
+    "LED_D3": [
+      "R_D3.2",
+      "D3.A"
+    ],
+    "LED_D4": [
+      "R_D4.2",
+      "D4.A"
+    ],
+    "LED_D5": [
+      "R_D5.2",
+      "D5.A"
+    ],
+    "LED_D6": [
+      "R_D6.2",
+      "D6.A"
+    ],
+    "LED_D7": [
+      "R_D7.2",
+      "D7.A"
+    ],
+    "LED_D8": [
+      "R_D8.2",
+      "D8.A"
+    ],
+    "LED_D9": [
+      "R_D9.2",
+      "D9.A"
+    ],
+    "LED_D10": [
+      "R_D10.2",
+      "D10.A"
+    ]
+  },
+  "ports": {
+    "3V3": {
+      "net": "3V3",
+      "connector": "J1",
+      "pin": 1,
+      "doc": "J1 pin 1: 3.3 V out of the regulator"
+    },
+    "GND": {
+      "net": "GND",
+      "connector": "J1",
+      "pin": 2,
+      "doc": "J1 pin 2"
+    },
+    "RB0": {
+      "net": "RB0",
+      "connector": "J1",
+      "pin": 3,
+      "doc": "J1 pin 3: AN0"
+    },
+    "RB1": {
+      "net": "RB1",
+      "connector": "J1",
+      "pin": 4,
+      "doc": "J1 pin 4: AN1"
+    },
+    "RB2": {
+      "net": "RB2",
+      "connector": "J1",
+      "pin": 5,
+      "doc": "J1 pin 5: AN2"
+    },
+    "RB3": {
+      "net": "RB3",
+      "connector": "J1",
+      "pin": 6,
+      "doc": "J1 pin 6: AN3"
+    },
+    "RB4": {
+      "net": "RB4",
+      "connector": "J1",
+      "pin": 7,
+      "doc": "J1 pin 7: AN4 (the TC1047A's output on the real board: not fitted here)"
+    },
+    "RB5": {
+      "net": "RB5",
+      "connector": "J1",
+      "pin": 8,
+      "doc": "J1 pin 8: AN5 (the potentiometer R6's wiper on the real board: not fitted here, the ADC is not modelled)"
+    },
+    "RD0": {
+      "net": "RD0",
+      "connector": "J1",
+      "pin": 9,
+      "doc": "J1 pin 9"
+    },
+    "RD1": {
+      "net": "RD1",
+      "connector": "J1",
+      "pin": 10,
+      "doc": "J1 pin 10"
+    },
+    "RD2": {
+      "net": "RD2",
+      "connector": "J1",
+      "pin": 11,
+      "doc": "J1 pin 11"
+    },
+    "RD3": {
+      "net": "RD3",
+      "connector": "J1",
+      "pin": 12,
+      "doc": "J1 pin 12"
+    },
+    "RD4": {
+      "net": "RD4",
+      "connector": "J1",
+      "pin": 13,
+      "doc": "J1 pin 13"
+    },
+    "RD5": {
+      "net": "RD5",
+      "connector": "J1",
+      "pin": 14,
+      "doc": "J1 pin 14"
+    },
+    "RD8": {
+      "net": "RD8",
+      "connector": "J1",
+      "pin": 15,
+      "doc": "J1 pin 15"
+    },
+    "RD9": {
+      "net": "RD9",
+      "connector": "J1",
+      "pin": 16,
+      "doc": "J1 pin 16"
+    },
+    "RD10": {
+      "net": "RD10",
+      "connector": "J1",
+      "pin": 17,
+      "doc": "J1 pin 17"
+    },
+    "RD11": {
+      "net": "RD11",
+      "connector": "J1",
+      "pin": 18,
+      "doc": "J1 pin 18"
+    },
+    "RD12": {
+      "net": "RD12",
+      "connector": "J1",
+      "pin": 19,
+      "doc": "J1 pin 19"
+    },
+    "GND_2": {
+      "net": "GND",
+      "connector": "J1",
+      "pin": 20,
+      "doc": "J1 pin 20"
+    },
+    "VIN": {
+      "net": "VIN",
+      "connector": "J2",
+      "pin": 1,
+      "doc": "J2 pin 1: The board's supply in, 5 V (USB-C) or 9 V (the barrel jack)"
+    },
+    "GND_3": {
+      "net": "GND",
+      "connector": "J2",
+      "pin": 2,
+      "doc": "J2 pin 2"
+    },
+    "RE0": {
+      "net": "RE0",
+      "connector": "J2",
+      "pin": 3,
+      "doc": "J2 pin 3"
+    },
+    "RE1": {
+      "net": "RE1",
+      "connector": "J2",
+      "pin": 4,
+      "doc": "J2 pin 4"
+    },
+    "RE2": {
+      "net": "RE2",
+      "connector": "J2",
+      "pin": 5,
+      "doc": "J2 pin 5"
+    },
+    "RE3": {
+      "net": "RE3",
+      "connector": "J2",
+      "pin": 6,
+      "doc": "J2 pin 6"
+    },
+    "RE4": {
+      "net": "RE4",
+      "connector": "J2",
+      "pin": 7,
+      "doc": "J2 pin 7"
+    },
+    "RE5": {
+      "net": "RE5",
+      "connector": "J2",
+      "pin": 8,
+      "doc": "J2 pin 8"
+    },
+    "RE6": {
+      "net": "RE6",
+      "connector": "J2",
+      "pin": 9,
+      "doc": "J2 pin 9"
+    },
+    "RE7": {
+      "net": "RE7",
+      "connector": "J2",
+      "pin": 10,
+      "doc": "J2 pin 10"
+    },
+    "RG6": {
+      "net": "RG6",
+      "connector": "J2",
+      "pin": 11,
+      "doc": "J2 pin 11"
+    },
+    "RG7": {
+      "net": "RG7",
+      "connector": "J2",
+      "pin": 12,
+      "doc": "J2 pin 12"
+    },
+    "RG8": {
+      "net": "RG8",
+      "connector": "J2",
+      "pin": 13,
+      "doc": "J2 pin 13"
+    },
+    "RG9": {
+      "net": "RG9",
+      "connector": "J2",
+      "pin": 14,
+      "doc": "J2 pin 14"
+    },
+    "RF4": {
+      "net": "RF4",
+      "connector": "J2",
+      "pin": 15,
+      "doc": "J2 pin 15: U2RX: the USB-UART bridge's TX"
+    },
+    "RF5": {
+      "net": "RF5",
+      "connector": "J2",
+      "pin": 16,
+      "doc": "J2 pin 16: U2TX: the USB-UART bridge's RX"
+    },
+    "RA9": {
+      "net": "RA9",
+      "connector": "J2",
+      "pin": 17,
+      "doc": "J2 pin 17"
+    },
+    "RA10": {
+      "net": "RA10",
+      "connector": "J2",
+      "pin": 18,
+      "doc": "J2 pin 18"
+    },
+    "RA14": {
+      "net": "RA14",
+      "connector": "J2",
+      "pin": 19,
+      "doc": "J2 pin 19"
+    },
+    "RA15": {
+      "net": "RA15",
+      "connector": "J2",
+      "pin": 20,
+      "doc": "J2 pin 20"
+    }
+  },
+  "leds": [
+    {
+      "name": "d3",
+      "component": "D3",
+      "gpio": "RA0",
+      "active": "high",
+      "color": "red"
+    },
+    {
+      "name": "d4",
+      "component": "D4",
+      "gpio": "RA1",
+      "active": "high",
+      "color": "red"
+    },
+    {
+      "name": "d5",
+      "component": "D5",
+      "gpio": "RA2",
+      "active": "high",
+      "color": "red"
+    },
+    {
+      "name": "d6",
+      "component": "D6",
+      "gpio": "RA3",
+      "active": "high",
+      "color": "red"
+    },
+    {
+      "name": "d7",
+      "component": "D7",
+      "gpio": "RA4",
+      "active": "high",
+      "color": "red"
+    },
+    {
+      "name": "d8",
+      "component": "D8",
+      "gpio": "RA5",
+      "active": "high",
+      "color": "red"
+    },
+    {
+      "name": "d9",
+      "component": "D9",
+      "gpio": "RA6",
+      "active": "high",
+      "color": "red"
+    },
+    {
+      "name": "d10",
+      "component": "D10",
+      "gpio": "RA7",
+      "active": "high",
+      "color": "red"
+    }
+  ],
+  "buttons": [
+    {
+      "name": "s3",
+      "component": "S3",
+      "gpio": "RD6",
+      "active": "low"
+    },
+    {
+      "name": "s6",
+      "component": "S6",
+      "gpio": "RD7",
+      "active": "low"
+    },
+    {
+      "name": "s4",
+      "component": "S4",
+      "gpio": "RD13",
+      "active": "low"
+    }
+  ],
+  "console": {
+    "peripheral": "UART2",
+    "tx": "RF5",
+    "rx": "RF4",
+    "baud": 115200
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 150,
+    "height_mm": 100,
+    "hotspots": [
+      {
+        "component": "D3",
+        "selector": "#led-d3",
+        "output": "luminance"
+      },
+      {
+        "component": "D4",
+        "selector": "#led-d4",
+        "output": "luminance"
+      },
+      {
+        "component": "D5",
+        "selector": "#led-d5",
+        "output": "luminance"
+      },
+      {
+        "component": "D6",
+        "selector": "#led-d6",
+        "output": "luminance"
+      },
+      {
+        "component": "D7",
+        "selector": "#led-d7",
+        "output": "luminance"
+      },
+      {
+        "component": "D8",
+        "selector": "#led-d8",
+        "output": "luminance"
+      },
+      {
+        "component": "D9",
+        "selector": "#led-d9",
+        "output": "luminance"
+      },
+      {
+        "component": "D10",
+        "selector": "#led-d10",
+        "output": "luminance"
+      },
+      {
+        "component": "S3",
+        "selector": "#btn-s3",
+        "input": "pressed"
+      },
+      {
+        "component": "S6",
+        "selector": "#btn-s6",
+        "input": "pressed"
+      },
+      {
+        "component": "S4",
+        "selector": "#btn-s4",
+        "input": "pressed"
+      },
+      {
+        "component": "S1",
+        "selector": "#btn-s1",
+        "input": "pressed"
+      },
+      {
+        "port": "3V3",
+        "selector": "#pin-3v3"
+      },
+      {
+        "port": "GND",
+        "selector": "#pin-gnd"
+      },
+      {
+        "port": "RB0",
+        "selector": "#pin-rb0"
+      },
+      {
+        "port": "RB1",
+        "selector": "#pin-rb1"
+      },
+      {
+        "port": "RB2",
+        "selector": "#pin-rb2"
+      },
+      {
+        "port": "RB3",
+        "selector": "#pin-rb3"
+      },
+      {
+        "port": "RB4",
+        "selector": "#pin-rb4"
+      },
+      {
+        "port": "RB5",
+        "selector": "#pin-rb5"
+      },
+      {
+        "port": "RD0",
+        "selector": "#pin-rd0"
+      },
+      {
+        "port": "RD1",
+        "selector": "#pin-rd1"
+      },
+      {
+        "port": "RD2",
+        "selector": "#pin-rd2"
+      },
+      {
+        "port": "RD3",
+        "selector": "#pin-rd3"
+      },
+      {
+        "port": "RD4",
+        "selector": "#pin-rd4"
+      },
+      {
+        "port": "RD5",
+        "selector": "#pin-rd5"
+      },
+      {
+        "port": "RD8",
+        "selector": "#pin-rd8"
+      },
+      {
+        "port": "RD9",
+        "selector": "#pin-rd9"
+      },
+      {
+        "port": "RD10",
+        "selector": "#pin-rd10"
+      },
+      {
+        "port": "RD11",
+        "selector": "#pin-rd11"
+      },
+      {
+        "port": "RD12",
+        "selector": "#pin-rd12"
+      },
+      {
+        "port": "GND_2",
+        "selector": "#pin-gnd_2"
+      },
+      {
+        "port": "VIN",
+        "selector": "#pin-vin"
+      },
+      {
+        "port": "GND_3",
+        "selector": "#pin-gnd_3"
+      },
+      {
+        "port": "RE0",
+        "selector": "#pin-re0"
+      },
+      {
+        "port": "RE1",
+        "selector": "#pin-re1"
+      },
+      {
+        "port": "RE2",
+        "selector": "#pin-re2"
+      },
+      {
+        "port": "RE3",
+        "selector": "#pin-re3"
+      },
+      {
+        "port": "RE4",
+        "selector": "#pin-re4"
+      },
+      {
+        "port": "RE5",
+        "selector": "#pin-re5"
+      },
+      {
+        "port": "RE6",
+        "selector": "#pin-re6"
+      },
+      {
+        "port": "RE7",
+        "selector": "#pin-re7"
+      },
+      {
+        "port": "RG6",
+        "selector": "#pin-rg6"
+      },
+      {
+        "port": "RG7",
+        "selector": "#pin-rg7"
+      },
+      {
+        "port": "RG8",
+        "selector": "#pin-rg8"
+      },
+      {
+        "port": "RG9",
+        "selector": "#pin-rg9"
+      },
+      {
+        "port": "RF4",
+        "selector": "#pin-rf4"
+      },
+      {
+        "port": "RF5",
+        "selector": "#pin-rf5"
+      },
+      {
+        "port": "RA9",
+        "selector": "#pin-ra9"
+      },
+      {
+        "port": "RA10",
+        "selector": "#pin-ra10"
+      },
+      {
+        "port": "RA14",
+        "selector": "#pin-ra14"
+      },
+      {
+        "port": "RA15",
+        "selector": "#pin-ra15"
+      }
+    ]
+  },
+  "toolchains": {
+    "clang": {
+      "target": "mipsel-none-elf",
+      "linker_script": "pic32mx795f512l.ld"
+    },
+    "embcc": {
+      "target": "mipsel-none-elf",
+      "linker_script": "pic32mx795f512l.ld"
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Nets, ports, the eight LEDs, the buttons with their pull-ups and MCLR's S1 as logic-level parts; the console is UART2 on the USB-UART bridge's pins.",
+      "omissions": [
+        "the potentiometer R6 on RB5 and the ADC it is read with",
+        "the LCD, the 25LC256 EEPROM, the TC1047A temperature sensor and the mikroBUS sockets",
+        "S5 (on RA7 with D10 on the real board)",
+        "the USB-UART bridge itself (the session's serial port stands for it)",
+        "the PIM's other parts (the USB connector, the second crystal's load capacitors)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "as functional"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "The 3.3 V regulator from VIN, the LEDs with their series resistors, the buttons' and MCLR's pull-ups and the crystals as BVD equivalents; GPIO bridges use the MCU's pin-model defaults.",
+      "omissions": [
+        "decoupling",
+        "the supply selection (USB-C, barrel jack, the PICkit)",
+        "ESD diodes"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Explorer 16/32 Development Board User's Guide",
+        "rev": "DS50002583"
+      },
+      {
+        "title": "PIC32MX795F512L Plug-In Module (MA320003) information sheet"
+      }
+    ],
+    "notes": "Artwork is an original SVG drawn for EmbSIM to the board's layout of LEDs, buttons and the PIM; no Microchip artwork or logo is used."
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

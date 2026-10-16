@@ -42,6 +42,16 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
                                rp2040-uart.c, rp2040-ssi.c
   core/mcu/nrf52/              tools/embsim/nrf52.c (CLOCK, the GPIO ports,
                                the UARTs, TIMER, RTC; gpiote.c is EmbSIM's)
+  core/mcu/mips/mips.h, mips.c tools/embsim/mips.h, mips.c (without the
+                               FPU, the DSP ASE and microMIPS)
+  core/mcu/mips/mips16.c       tools/embsim/mips16.c
+  core/mcu/mips/cost.h         tools/bench/cost.h (mips_cost)
+  core/mcu/mips/disasm.c       tools/embsim/disasm.c (dis_mips)
+  core/mcu/pic32/              tools/embsim/pic32.h, pic32-evic.c,
+                               pic32-cru.c, pic32-tmr.c, pic32-gpio.c,
+                               pic32-uart.c
+  tools/importers/edc2regs.py  tools/embsim/edc.c (its reading of a PIC32's
+                               EDC, written again in Python)
   tests/firmware/bluepill-golden/
                                tests/golden/embsim-bluepill/ (bluepill.c,
                                bluepill.txt, bluepill-err.txt)
@@ -62,3 +72,9 @@ carries its own licence beside it:
                                2010 - 2024 Nordic Semiconductor ASA;
                                BSD-3-Clause
                                (catalog/mcus/nordic/nrf52840/LICENSES/)
+  catalog/mcus/microchip/pic32mx795f512l/registers.json, tqfp100.json
+                               converted from Microchip's PIC32MX device
+                               pack (Microchip.PIC32MX_DFP 1.7.380),
+                               Copyright (c) 2026 Microchip Technology Inc.;
+                               Apache-2.0
+                               (catalog/mcus/microchip/pic32mx795f512l/LICENSES/)

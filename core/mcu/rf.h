@@ -24,7 +24,7 @@
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/svd-map.h. The register
  * file is built from EmbSIM's JSON register descriptions instead of a
  * CMSIS-SVD file (ADR-019): an SVD converts to one with tools/importers/svd2regs.py.
- * Tracing and PIC32 CLR/SET/INV registers are not carried over yet.
+ * Tracing is not carried over yet.
  *
  * A part's bus can add rules (the MCU description's register_file
  * bus_rules):
@@ -35,7 +35,15 @@
  *                          a read there reads the register;
  *   ESK_RF_WIDE_WRITES     a byte or halfword write to a 32-bit register
  *                          writes the whole register, the value repeated
- *                          across the bus's byte lanes (the RP2040's APB). */
+ *                          across the bus's byte lanes (the RP2040's APB).
+ * A register the description marks clr_set_inv has three more after it
+ * (a PIC32's): +4 clears the bits a write sets, +8 sets them and +0xC
+ * inverts them, as an atomic alias does; a read of them gives 0.
+ *
+ * The description's interrupt table is kept for the models that find an
+ * interrupt by name (esk_rf_irq_named), with each one's vector where
+ * requests share them (esk_rf_vector), and its pins table for the models
+ * that find a function's pin (esk_rf_pin). */
 #ifndef ESK_MCU_RF_H
 #define ESK_MCU_RF_H
 
@@ -63,6 +71,7 @@ struct esk_rf_reg {
     int bytes; /* 4, 2 for a halfword register, 1 for a byte (an AVR's) */
     u64 value, reset;
     u64 once;  /* the write-once bits written since reset */
+    int sci;   /* CLR, SET and INV registers follow it */
     const char *name;
     struct esk_rf_periph *p;
     struct esk_rf_field *f;
@@ -118,6 +127,13 @@ struct esk_rf {
     struct esk_rf_periph *tk[ESK_RF_TICKERS];
     int ntk;
     int faults;
+    /* the description's interrupt table, vectors and pins */
+    const char **irq_name;
+    int *irq_num, *irq_vec;
+    int nirq;
+    const char **pin_name;
+    int *pin_at; /* port * 32 + bit, port 0 being A */
+    int npin;
 };
 
 /* Build the register file from a register description and put it on the
@@ -154,6 +170,12 @@ u64 esk_rf_fields(const struct esk_rf_reg *r);
 /* the peripheral's interrupt: the first whose name has `want` in it, else
  * its first; -1 when it has none */
 int esk_rf_irq(const struct esk_rf_periph *p, const char *want);
+/* the interrupt of that name in the description's table, or -1 */
+int esk_rf_irq_named(const struct esk_rf *rf, const char *name);
+/* the vector interrupt `irq` is taken through: the description's, else irq */
+int esk_rf_vector(const struct esk_rf *rf, int irq);
+/* the port pin function `name` is on, as port * 32 + bit (port A 0), or -1 */
+int esk_rf_pin(const struct esk_rf *rf, const char *name);
 /* pend that interrupt in the core */
 void esk_rf_interrupt(struct esk_rf_periph *p, int irq);
 /* the model's clock starts (1) or stops: while it runs, its tick hook is

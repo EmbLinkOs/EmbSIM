@@ -24,6 +24,7 @@
  * JSON description instead of an SVD file. */
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "mcu/rf.h"
@@ -149,6 +150,7 @@ static es_status read_regs(struct esk_mach *m, struct esk_rf_periph *p, const es
         }
         r->addr = base + (u32)off;
         r->bytes = (int)(size / 8u);
+        r->sci = esk_json_get_bool(rj, "clr_set_inv", 0);
         r->reset = r->value = reset;
         r->p = p;
         r->nf = nf ? (int)nf : 1;
@@ -212,6 +214,88 @@ static es_status read_irqs(struct esk_mach *m, struct esk_rf_periph *p, const es
     return ES_OK;
 }
 
+/* the description's interrupt table, with the vectors, and its pins */
+static es_status read_tables(struct esk_mach *m, struct esk_rf *rf, const esk_json *desc, char *why,
+                             size_t cap)
+{
+    const esk_json *t = esk_json_get(desc, "interrupts"), *v = esk_json_get(desc, "vectors");
+    const esk_json *pins = esk_json_get(desc, "pins");
+    size_t i, n = t ? esk_json_len(t) : 0, np = pins ? esk_json_len(pins) : 0;
+    if (n) {
+        rf->irq_name = (const char **)esk_mach_alloc(m, n * sizeof *rf->irq_name);
+        rf->irq_num = (int *)esk_mach_alloc(m, n * sizeof *rf->irq_num);
+        rf->irq_vec = (int *)esk_mach_alloc(m, n * sizeof *rf->irq_vec);
+        if (!rf->irq_name || !rf->irq_num || !rf->irq_vec)
+            return ES_ENOMEM;
+    }
+    for (i = 0; i < n; i++) {
+        const esk_json *e = esk_json_at(t, i);
+        const char *k = e ? e->key : NULL;
+        const esk_json *vj = v && k ? esk_json_get(v, k) : NULL;
+        u64 x = 0, vec = 0;
+        if (!k || num(e, &x) || x > 239 || (vj && (num(vj, &vec) || vec > 255))) {
+            snprintf(why, cap, "interrupt %s: a bad number or vector", k ? k : "?");
+            return ES_ESCHEMA;
+        }
+        rf->irq_name[i] = esk_mach_strdup(m, k);
+        if (!rf->irq_name[i])
+            return ES_ENOMEM;
+        rf->irq_num[i] = (int)x;
+        rf->irq_vec[i] = vj ? (int)vec : (int)x;
+    }
+    rf->nirq = (int)n;
+    if (np) {
+        rf->pin_name = (const char **)esk_mach_alloc(m, np * sizeof *rf->pin_name);
+        rf->pin_at = (int *)esk_mach_alloc(m, np * sizeof *rf->pin_at);
+        if (!rf->pin_name || !rf->pin_at)
+            return ES_ENOMEM;
+    }
+    for (i = 0; i < np; i++) {
+        const esk_json *e = esk_json_at(pins, i);
+        const char *k = e ? e->key : NULL, *at = esk_json_str(e);
+        long bit = -1;
+        if (at && at[0] == 'R' && at[1] >= 'A' && at[1] <= 'K' && at[2] >= '0' && at[2] <= '9')
+            bit = strtol(at + 2, NULL, 10);
+        if (!k || bit < 0 || bit > 31) {
+            snprintf(why, cap, "pin function %s: not on a port pin (RA0 to RK31)", k ? k : "?");
+            return ES_ESCHEMA;
+        }
+        rf->pin_name[i] = esk_mach_strdup(m, k);
+        if (!rf->pin_name[i])
+            return ES_ENOMEM;
+        rf->pin_at[i] = (at[1] - 'A') * 32 + (int)bit;
+    }
+    rf->npin = (int)np;
+    return ES_OK;
+}
+
+int esk_rf_irq_named(const struct esk_rf *rf, const char *name)
+{
+    int i;
+    for (i = 0; rf && name && i < rf->nirq; i++)
+        if (!strcmp(rf->irq_name[i], name))
+            return rf->irq_num[i];
+    return -1;
+}
+
+int esk_rf_vector(const struct esk_rf *rf, int irq)
+{
+    int i;
+    for (i = 0; rf && i < rf->nirq; i++)
+        if (rf->irq_num[i] == irq)
+            return rf->irq_vec[i];
+    return irq;
+}
+
+int esk_rf_pin(const struct esk_rf *rf, const char *name)
+{
+    int i;
+    for (i = 0; rf && name && i < rf->npin; i++)
+        if (!strcmp(rf->pin_name[i], name))
+            return rf->pin_at[i];
+    return -1;
+}
+
 static void sort_regs(struct esk_rf_reg **r, int n)
 {
     int i, j;
@@ -270,6 +354,9 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, cha
     rf->p = (struct esk_rf_periph *)esk_mach_alloc(m, np * sizeof *rf->p);
     if (!rf->p || !rf->device)
         return ES_ENOMEM;
+    st = read_tables(m, rf, desc, why, cap);
+    if (st != ES_OK)
+        return st;
     for (i = 0; i < np; i++) {
         const esk_json *pj = esk_json_at(list, i), *src = pj;
         struct esk_rf_periph *p = &rf->p[i];
@@ -316,7 +403,7 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, cha
             return ES_ESCHEMA;
         }
     rf->lo = rf->reg[0]->addr & ~0x3ffu;
-    rf->hi = rf->reg[rf->nreg - 1]->addr + 4u;
+    rf->hi = rf->reg[rf->nreg - 1]->addr + (rf->reg[rf->nreg - 1]->sci ? 16u : 4u);
     for (i = 0; (rules & ESK_RF_ATOMIC_ALIASES) && i < np; i++)
         if (rf->p[i].base < 0xd0000000u && rf->p[i].end + 0x3000u > rf->hi)
             rf->hi = rf->p[i].end + 0x3000u; /* its clear alias */
@@ -653,6 +740,21 @@ static void alias_write(struct esk_rf_reg *r, int kind, u32 v)
         p->ops->write(p->ctx, r->addr - p->base, 4, (u32)w);
 }
 
+/* a PIC32's CLR, SET and INV registers: the register 4, 8 or 12 bytes
+ * below names, if it has them, and which (as atomic_alias's kinds: 3
+ * clear, 2 set, 1 invert) */
+static struct esk_rf_reg *sci_alias(struct esk_rf *rf, u32 a, int n, int *kind)
+{
+    struct esk_rf_reg *r;
+    if (!(a & 0xcu) || reg_at(rf, a, n))
+        return 0;
+    r = reg_at(rf, a & ~0xfu, 4);
+    if (!r || !r->sci || r->addr != (a & ~0xfu))
+        return 0;
+    *kind = (a & 0xcu) == 4u ? 3 : (a & 0xcu) == 8u ? 2 : 1;
+    return r;
+}
+
 static u32 map_read(void *ctx, u32 off, int n)
 {
     struct esk_rf *rf = (struct esk_rf *)ctx;
@@ -662,6 +764,8 @@ static u32 map_read(void *ctx, u32 off, int n)
     int kind = 0;
     if (atomic_alias(rf, a, n, &kind))
         a &= ~0x3000u; /* a read there is the register's */
+    else if (sci_alias(rf, a, n, &kind))
+        return 0;
     r = reg_at(rf, a, n);
     if (!r) {
         hole(rf, a, n, 0);
@@ -688,10 +792,14 @@ static void map_write(void *ctx, u32 off, int n, u32 v)
     int kind = 0;
     struct esk_rf_reg *r = atomic_alias(rf, a, n, &kind);
     struct esk_rf_periph *p;
-    if (r)
+    if (r) {
         a &= ~0x3000u; /* the register the alias names */
-    else
+    } else if ((r = sci_alias(rf, a, n, &kind)) != NULL) {
+        a = r->addr;
+        v = n == 4 ? v : v << (8 * (off & 3u)); /* the bytes written, in place */
+    } else {
         r = reg_at(rf, a, n);
+    }
     if (r && n < 4 && r->bytes == 4 && (rf->rules & ESK_RF_WIDE_WRITES)) {
         /* the byte or halfword across the bus's four lanes, to the whole
          * register */

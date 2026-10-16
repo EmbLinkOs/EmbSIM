@@ -345,6 +345,17 @@ class ProjectTests(Base):
         self.assertCode(r, "catalog.not_found")
         self.assertCode(r, "catalog.input_unknown")
 
+    def test_scenario_board_component_input(self):
+        # a board's own push button, B1.S3: its component's inputs
+        ex = self.tmp / "ex"
+        shutil.copytree(validate.ROOT / "examples" / "explorer16-pic32mx", ex)
+        scen = ex / "scenarios" / "blink.json"
+        self.assertClean(self.check(scen))
+        s = json.loads(scen.read_text())
+        s["inputs"][0]["input"] = "kicked"
+        scen.write_text(json.dumps(s))
+        self.assertCode(self.check(scen), "catalog.input_unknown")
+
     def test_scenario_probe_must_exist(self):
         s = copy.deepcopy(SCENARIO)
         s["assertions"][0]["probe"] = "nope"

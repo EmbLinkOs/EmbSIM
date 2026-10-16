@@ -10,6 +10,7 @@ point: check it against the schematic, then run
 | `dts2board.py` | a Zephyr or Linux board `.dts` | `boards/<name>/board.json` with a power fixture |
 | `kicad2project.py` | a KiCad netlist (KiCad 5 to 8, S-expression) | a `project.json` |
 | `svd2regs.py` | a CMSIS-SVD file | a register description for an MCU (SPEC-009 §5) |
+| `edc2regs.py` | a PIC32's EDC file from Microchip's device pack (`edc/PART.PIC`, with `atdf/PART.atdf` for the shared vectors) | a register description with CLR/SET/INV registers, the interrupt vectors and the pin functions, and optionally the package's pin map |
 
 The board importers share `boardgen.py`: the MCU is found in the catalog
 from the SoC name (`--mcu` overrides), and the draft gets what the board
@@ -30,4 +31,11 @@ MCU belongs in a board.
 
 The RTOS importer needs PyYAML (`pip install pyyaml`). Test data is in
 `testdata/`; `tools/test_importers.py` and `tests/protocol/test_importers.py`
-run the three on it, the second through the engine.
+run the board and netlist importers on it, the second through the engine,
+and the first runs `edc2regs.py` on a made-up PIC32 (`mini.PIC`).
+
+`edc2regs.py` reads the EDC rather than the ATDF for a PIC32MX's
+registers: the PIC32MX ATDF places 35 peripherals 0xC low and leaves out
+port G and the change notices. Microchip's device packs are Apache-2.0, so
+a description made from one may be shipped with the pack's licence
+(`catalog/mcus/microchip/pic32mx795f512l/` is).

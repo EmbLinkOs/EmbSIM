@@ -6,6 +6,7 @@
 
 #include "mcu/avr/avr.h"
 #include "mcu/nrf52/nrf52.h"
+#include "mcu/pic32/pic32.h"
 #include "mcu/rf.h"
 #include "mcu/riscv/riscv.h"
 #include "mcu/rp2040/rp2040.h"
@@ -53,6 +54,12 @@ static const struct esk_rf_model_type model_types[] = {
     { "rp2040-sio", &esk_rp2040_sio_ops, esk_rp2040_sio_create },
     { "rp2040-uart", &esk_rp2040_uart_ops, esk_rp2040_uart_create },
     { "rp2040-ssi", &esk_rp2040_ssi_ops, esk_rp2040_ssi_create },
+    { "pic32-evic", &esk_pic32_evic_ops, esk_pic32_evic_create },
+    { "pic32-osc", &esk_pic32_osc_ops, esk_pic32_osc_create },
+    { "pic32-cfg", &esk_pic32_cfg_ops, esk_pic32_cfg_create },
+    { "pic32-tmr", &esk_pic32_tmr_ops, esk_pic32_tmr_create },
+    { "pic32-gpio", &esk_pic32_gpio_ops, esk_pic32_gpio_create },
+    { "pic32-uart", &esk_pic32_uart_ops, esk_pic32_uart_create },
 };
 
 const struct esk_rf_model_type *esk_rf_model_find(const char *name)

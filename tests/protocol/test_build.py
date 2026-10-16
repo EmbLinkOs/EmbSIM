@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Junior Deogracias
 """`embsim build` with each toolchain profile found on this host (clang with
-ld.lld, embcc): the Blue Pill, Uno, HiFive1, Pico and nRF52840 DK examples copied to a
+ld.lld, embcc): the Blue Pill, Uno, HiFive1, Pico, nRF52840 DK and Explorer 16/32
+examples copied to a
 temporary directory, their images removed, built from their sources, then
 their scenarios run. Profiles not installed are skipped, and an example for
 a clang built without its backend; with none, the test passes with SKIP."""
@@ -20,6 +21,7 @@ EXAMPLES = [  # directory, image, scenario, the clang target it needs
     ("hifive1-blink", "blink.elf", "blink.json", "riscv32"),
     ("pico-blink-serial", "blink-serial.elf", "blink.json", "thumb"),
     ("nrf52840dk-blink", "blink.elf", "blink.json", "thumb"),
+    ("explorer16-pic32mx", "blink-serial.elf", "blink.json", "mipsel"),
 ]
 
 

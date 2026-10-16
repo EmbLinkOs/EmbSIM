@@ -931,6 +931,11 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
                 snprintf(name, sizeof name, "GPIO%d", port * 16 + bit);
                 st->gpio[port][bit] = esk_comp_pin(c, name);
             }
+            if (!st->gpio[port][bit]) {
+                /* a PIC's: RA0, RD6 */
+                snprintf(name, sizeof name, "R%c%d", 'A' + port, bit);
+                st->gpio[port][bit] = esk_comp_pin(c, name);
+            }
             if (st->gpio[port][bit] && st->gpio[port][bit]->model.kind == ESK_PIN_DIGITAL_IO)
                 esk_pin_watch(st->gpio[port][bit], 1);
             else
