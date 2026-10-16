@@ -16,9 +16,9 @@
      "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "CMAKE_C_COMPILER": "tcc"}},
     {"name": "ci-msvc", "inherits": "base", "generator": "Ninja",
      "cacheVariables": {"CMAKE_BUILD_TYPE": "RelWithDebInfo", "CMAKE_C_COMPILER": "cl"}},
-    {"name": "asan", "inherits": "base", "generator": "Ninja", "displayName": "Address and UB sanitizers",
-     "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "CMAKE_C_COMPILER": "clang",
-       "CMAKE_C_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+    {"name": "asan", "inherits": "base", "generator": "Ninja", "displayName": "Address and UB sanitizers (GCC, whose runtime ships with it)",
+     "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug", "CMAKE_C_COMPILER": "gcc",
+       "CMAKE_C_FLAGS": "-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer",
        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"}}
   ],
   "buildPresets": [

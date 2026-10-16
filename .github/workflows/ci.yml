@@ -32,6 +32,7 @@ jobs:
           - { name: linux-tcc,   os: ubuntu-24.04, preset: ci-tcc }
           - { name: macos-clang, os: macos-14,     preset: ci-clang }
           - { name: windows-msvc, os: windows-2022, preset: ci-msvc }
+          - { name: linux-asan,  os: ubuntu-24.04, preset: asan }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install tools (Linux)

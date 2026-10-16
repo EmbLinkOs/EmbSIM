@@ -80,8 +80,8 @@ static void test_resolution(void)
         CHECK(esk_net_value(n) == ESK_LX);
         CHECK(diag_count_code("net.contention") >= 1);
     }
+    esk_engine_free(&e); /* its components use the registry's models */
     esk_registry_free(&r);
-    esk_engine_free(&e);
 }
 
 static void test_floating(void)
@@ -107,8 +107,8 @@ static void test_floating(void)
     /* with a pull the input reads the pull */
     probe->pins[0].model.pull = ESK_PULL_UP;
     CHECK(esk_pin_read(&probe->pins[0]) == ESK_L1);
+    esk_engine_free(&e); /* its components use the registry's models */
     esk_registry_free(&r);
-    esk_engine_free(&e);
 }
 
 static void test_gates_and_delay(void)
@@ -166,8 +166,8 @@ static void test_gates_and_delay(void)
     /* the clock: 1 MHz, so at 2.5 us it has made 5 edges (toggles) */
     esk_engine_advance(&e, 2500000);
     CHECK(esk_net_value(clk) == ESK_L1); /* starts low at 0, toggles at 0.5, 1, 1.5, 2, 2.5 -> high */
+    esk_engine_free(&e); /* its components use the registry's models */
     esk_registry_free(&r);
-    esk_engine_free(&e);
 }
 
 static void test_switch_gate(void)
@@ -211,8 +211,8 @@ static void test_switch_gate(void)
         CHECK(esk_net_value(n2) == ESK_L0);
         CHECK(n2->strength == ESK_STR_WEAK);
     }
+    esk_engine_free(&e); /* its components use the registry's models */
     esk_registry_free(&r);
-    esk_engine_free(&e);
 }
 
 static void test_virtual_terminal(void)
@@ -249,8 +249,8 @@ static void test_virtual_terminal(void)
         CHECK_STR(esk_json_get_str(o, "rx_text", ""), "hi!");
         esk_json_free(&A, o);
     }
+    esk_engine_free(&e); /* its components use the registry's models */
     esk_registry_free(&r);
-    esk_engine_free(&e);
 }
 
 TEST_MAIN_BEGIN
