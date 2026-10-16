@@ -63,7 +63,8 @@ export function DebugPerspective() {
   }
 
   const left: DockItem[] = [
-    { id: 'disassembly', title: 'Disassembly', weight: 2.2, content: <DisassemblyPanel /> },
+    { id: 'source', title: 'Source', weight: 2.2, content: <SourcePanel /> },
+    { id: 'disassembly', title: 'Disassembly', weight: 1.6, content: <DisassemblyPanel /> },
     { id: 'console', title: 'Console', weight: 1, content: <ConsolePanel /> },
   ];
   const right: DockItem[] = [
@@ -95,7 +96,9 @@ function DebugToolbar() {
     await tryClient()?.control.reset({});
     await useDebug.getState().refresh();
   };
-  const place = where ? `${where.function ? `${where.function}+${where.offset ?? 0}` : ''} ${hex32(where.pc)}` : '';
+  const place = where
+    ? `${where.function ? `${where.function}+${where.offset ?? 0}` : ''} ${hex32(where.pc)}${where.file ? ` · ${where.file.split(/[\\/]/).pop()}:${where.line}` : ''}`
+    : '';
   return (
     <div className="wb-debug__toolbar" role="toolbar" aria-label="Debugger">
       <Bug aria-hidden size={16} />
@@ -130,6 +133,54 @@ function DebugToolbar() {
         </span>
       )}
       {error && <span className="wb-debug__error" role="alert">{error}</span>}
+    </div>
+  );
+}
+
+function SourcePanel() {
+  const source = useDebug((s) => s.source);
+  const where = useDebug((s) => s.where);
+  const lineBps = useDebug((s) => s.lineBreakpoints);
+  const toggle = useDebug((s) => s.toggleLineBreakpoint);
+  const current = useRef<HTMLTableRowElement | null>(null);
+  useEffect(() => current.current?.scrollIntoView({ block: 'center' }), [where?.line, source]);
+  if (!source) {
+    return (
+      <EmptyState title="No source">
+        {where && !where.file ? 'The image has no line information: build it with -g.' : 'Halt the core to see the line it is at.'}
+      </EmptyState>
+    );
+  }
+  const code = new Set(source.lines);
+  const lines = source.text.split('\n');
+  const here = where?.file === source.file ? where.line : undefined;
+  return (
+    <div className="wb-debug__scroll">
+      <div className="wb-debug__file">{source.path}</div>
+      <table className="wb-debug__table wb-debug__src" aria-label={`Source of ${source.file}`}>
+        <tbody>
+          {lines.map((text, k) => {
+            const n = k + 1;
+            const set = lineBps.includes(`${source.file}:${n}`);
+            return (
+              <tr key={n} ref={n === here ? current : undefined} className={n === here ? 'is-pc' : undefined}>
+                <td className="wb-debug__gutter">
+                  {code.has(n) && (
+                    <button
+                      type="button"
+                      className={set ? 'wb-debug__bp is-set' : 'wb-debug__bp'}
+                      aria-label={`${set ? 'Remove' : 'Set'} breakpoint at line ${n}`}
+                      onClick={() => void toggle(source.file, n)}
+                    />
+                  )}
+                </td>
+                <td className="wb-debug__addr">{n}</td>
+                <td className="wb-debug__text">{text || ' '}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

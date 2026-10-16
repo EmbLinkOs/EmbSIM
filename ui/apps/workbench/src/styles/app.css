@@ -713,3 +713,19 @@
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
+
+.wb-debug__src .wb-debug__text {
+  white-space: pre;
+}
+
+.wb-debug__src tr.is-pc {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.wb-debug__file {
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--line);
+}

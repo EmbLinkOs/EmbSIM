@@ -50,6 +50,9 @@ int esk_mcu_is(const esk_comp *c);
 es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len, char *why, size_t cap);
 /* the machine, for the debugger; NULL for another component */
 struct esk_mach *esk_mcu_machine(esk_comp *c);
+/* the image's DWARF line tables, or NULL without them */
+struct esk_dwarf;
+const struct esk_dwarf *esk_mcu_dwarf(const esk_comp *c);
 /* the firmware image as loaded, for symbols */
 const unsigned char *esk_mcu_image(const esk_comp *c, size_t *len);
 /* the engine time of the machine's current cycle */

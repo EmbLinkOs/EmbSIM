@@ -14,7 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "host/host.h"
 #include "mcu/cortexm/cortexm.h"
+#include "mcu/dwarf.h"
 #include "mcu/mcu.h"
 #include "mcu/rf.h"
 #include "protocol/wsutil.h"
@@ -98,26 +100,72 @@ static es_status address_of(dbg *d, u32 *addr)
 static void describe_pc(dbg *d, esk_json *o, u32 pc)
 {
     char name[128];
-    u32 off = 0;
+    u32 off = 0, line = 0;
     size_t len = 0;
+    const char *file = NULL;
     const unsigned char *img = image(d, &len);
+    const esk_dwarf *dw = esk_mcu_dwarf(d->mcu);
     esk_json_set_integer(d->s->a, o, "pc", (int64_t)pc);
     if (img && esk_elf_symbol_at(img, len, pc, name, sizeof name, &off)) {
         esk_json_set_string(d->s->a, o, "function", name);
         esk_json_set_integer(d->s->a, o, "offset", (int64_t)off);
     }
+    if (dw && esk_dwarf_line_at(dw, pc, &file, &line)) {
+        esk_json_set_string(d->s->a, o, "file", file);
+        esk_json_set_integer(d->s->a, o, "line", (int64_t)line);
+    }
 }
 
 /* ---- the methods --------------------------------------------------------------- */
+
+/* a breakpoint on each statement of file:line */
+static es_status line_breakpoint(dbg *d, const char *file, u32 line)
+{
+    const esk_dwarf *dw = esk_mcu_dwarf(d->mcu);
+    const char *op = esk_json_get_str(d->params, "op", "add");
+    esk_json *addrs;
+    u32 at[16];
+    int n, i;
+    char id[300];
+    if (!dw)
+        return fail(d, -32602, "the image has no DWARF line information (build it with -g)");
+    n = esk_dwarf_line_addrs(dw, file, line, at, 16);
+    if (!n)
+        return fail(d, -32602, "no code at that line");
+    d->result = obj(d);
+    addrs = esk_json_new_array(d->s->a);
+    if (!d->result || !addrs) {
+        esk_json_free(d->s->a, addrs);
+        return ES_ENOMEM;
+    }
+    for (i = 0; i < n; i++) {
+        if (esk_str_eq(op, "remove"))
+            (void)esk_mach_bp_remove(d->m, at[i]);
+        else if (esk_mach_bp_add(d->m, at[i]) != 0) {
+            esk_json_free(d->s->a, addrs);
+            return fail(d, -32602, "too many breakpoints");
+        }
+        esk_json_array_push(d->s->a, addrs, esk_json_new_integer(d->s->a, (int64_t)at[i]));
+    }
+    esk_snprintf(id, sizeof id, "line:%s:%lu", file, (unsigned long)line);
+    esk_json_set_string(d->s->a, d->result, "id", id);
+    esk_json_set_integer(d->s->a, d->result, "address", (int64_t)at[0]);
+    esk_json_object_set(d->s->a, d->result, "addresses", addrs);
+    return ES_OK;
+}
 
 static es_status m_breakpoint(dbg *d)
 {
     const char *op = esk_json_get_str(d->params, "op", "add");
     const char *kind = esk_json_get_str(d->params, "kind", "code");
-    u32 addr = 0, len = 4;
+    const char *file = esk_json_get_str(d->params, "file", NULL);
+    u32 addr = 0, len = 4, line = 0;
     int r, wk;
     char id[48];
-    es_status st = address_of(d, &addr);
+    es_status st;
+    if (file && pu32(d, "line", &line) == 0)
+        return line_breakpoint(d, file, line);
+    st = address_of(d, &addr);
     if (st != ES_OK)
         return st;
     (void)pu32(d, "length", &len);
@@ -433,6 +481,80 @@ static es_status m_peripherals(dbg *d)
     return ES_OK;
 }
 
+/* a source file the image's DWARF names: its text, and the lines with code */
+static es_status m_source(dbg *d)
+{
+    const esk_dwarf *dw = esk_mcu_dwarf(d->mcu);
+    const char *want = esk_json_get_str(d->params, "file", NULL), *name;
+    char *path = NULL, *text = NULL;
+    size_t len = 0, i;
+    esk_json *lines;
+    u32 last = 0;
+    if (!dw)
+        return fail(d, -32602, "the image has no DWARF line information (build it with -g)");
+    if (!want)
+        return fail(d, -32602, "file is required");
+    name = esk_dwarf_file(dw, want);
+    if (!name)
+        return fail(d, -32602, "the image's line tables name no such file");
+    /* as named; a relative name from the project's directory */
+    path = esk_host_path_join(d->s->a, d->s->base_dir ? d->s->base_dir : ".", name);
+    if (!path)
+        return ES_ENOMEM;
+    if (esk_host_read_file(d->s->a, path, &text, &len) != ES_OK) {
+        /* the image's own directory, as a build.sh beside the sources has it */
+        const char *img = d->board->firmware ? esk_json_get_str(d->board->firmware, "image", NULL) : NULL;
+        char *dir = NULL, *base = NULL;
+        if (img) {
+            base = esk_host_path_join(d->s->a, d->s->base_dir ? d->s->base_dir : ".", img);
+            dir = base ? esk_host_dirname(d->s->a, base) : NULL;
+        }
+        esk_strfree(d->s->a, path);
+        path = dir ? esk_host_path_join(d->s->a, dir, name) : NULL;
+        esk_strfree(d->s->a, dir);
+        esk_strfree(d->s->a, base);
+        if (!path || esk_host_read_file(d->s->a, path, &text, &len) != ES_OK) {
+            esk_strfree(d->s->a, path);
+            return fail(d, -32602, "the source file cannot be read");
+        }
+    }
+    d->result = obj(d);
+    lines = esk_json_new_array(d->s->a);
+    if (d->result && lines) {
+        esk_json_set_string(d->s->a, d->result, "file", name);
+        esk_json_set_string(d->s->a, d->result, "path", path);
+        esk_json_set_string(d->s->a, d->result, "text", text);
+        /* the lines a breakpoint can go on, ascending */
+        u32 *ln = (u32 *)esk_malloc(d->s->a, (dw->nrows ? dw->nrows : 1) * sizeof *ln);
+        size_t n = 0, gap, k, j;
+        for (i = 0; ln && i < dw->nrows; i++) {
+            const esk_dwarf_row *r = &dw->rows[i];
+            if (!r->end && r->stmt && r->file >= 0 && !strcmp(dw->files[r->file], name))
+                ln[n++] = r->line;
+        }
+        for (gap = n / 2; gap > 0; gap /= 2)
+            for (k = gap; k < n; k++) {
+                u32 t = ln[k];
+                for (j = k; j >= gap && ln[j - gap] > t; j -= gap)
+                    ln[j] = ln[j - gap];
+                ln[j] = t;
+            }
+        for (k = 0; k < n; k++)
+            if (!k || ln[k] != last) {
+                esk_json_array_push(d->s->a, lines, esk_json_new_integer(d->s->a, (int64_t)ln[k]));
+                last = ln[k];
+            }
+        if (ln)
+            esk_free(d->s->a, ln, (dw->nrows ? dw->nrows : 1) * sizeof *ln);
+        esk_json_object_set(d->s->a, d->result, "lines", lines);
+        lines = NULL;
+    }
+    esk_json_free(d->s->a, lines);
+    esk_free(d->s->a, text, len + 1);
+    esk_strfree(d->s->a, path);
+    return d->result ? ES_OK : ES_ENOMEM;
+}
+
 static es_status m_symbol(dbg *d)
 {
     u32 addr = 0;
@@ -459,7 +581,7 @@ static const dbg_method dbg_methods[] = {
     { "debug.registers", m_registers },   { "debug.set_register", m_set_register },
     { "debug.memory", m_memory },         { "debug.write_memory", m_write_memory },
     { "debug.disassemble", m_disassemble }, { "debug.peripherals", m_peripherals },
-    { "debug.symbol", m_symbol },
+    { "debug.symbol", m_symbol },         { "debug.source", m_source },
 };
 
 int esk_debug_has(const char *method)

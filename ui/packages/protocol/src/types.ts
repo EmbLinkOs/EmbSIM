@@ -418,12 +418,24 @@ export interface Where {
   pc: number;
   function?: string;
   offset?: number;
+  /** The source line, from the image's DWARF. */
+  file?: string;
+  line?: number;
   /** Why the core is stopped: breakpoint, watchpoint, step, halt; absent while it runs. */
   stopped?: string;
   reason?: string;
   now_ps: string;
   instructions: number;
   cycles: number;
+}
+
+/** A source file the image's DWARF names (debug.source). */
+export interface SourceFile {
+  file: string;
+  path: string;
+  text: string;
+  /** The lines that have code: where a breakpoint can go. */
+  lines: number[];
 }
 
 export interface Instruction {

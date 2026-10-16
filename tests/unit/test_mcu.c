@@ -561,6 +561,42 @@ static void test_breakpoint_continue_equivalence(void)
     free(stopped);
 }
 
+/* source-level debugging from the image's DWARF line tables */
+static void test_source_lines(void)
+{
+    es_session *s = NULL;
+    esk_alloc a;
+    char path[1024];
+    esk_json *r;
+    esk_alloc_init(&a, NULL);
+    snprintf(path, sizeof path, "%s/examples/bluepill-button-led/project.json", EMBSIM_SOURCE_DIR);
+    if (es_session_create(NULL, &s) != ES_OK || es_session_load_file(s, path) != ES_OK) {
+        FAIL("the example does not load");
+        es_session_destroy(s);
+        return;
+    }
+    esk_json_free(&a, rpc(s, &a, "control.reset", "{}"));
+    esk_json_free(&a, rpc(s, &a, "input.set", "{\"target\":\"SW1\",\"input\":\"pressed\",\"value\":true,\"at\":\"3ms\"}"));
+    /* the handler's led(pressed) line */
+    r = rpc(s, &a, "debug.breakpoint", "{\"board\":\"B1\",\"op\":\"add\",\"file\":\"main.c\",\"line\":68}");
+    CHECK(r != NULL && esk_json_len(esk_json_get(r, "addresses")) >= 1);
+    esk_json_free(&a, r);
+    r = rpc(s, &a, "control.advance", "{\"until\":\"8ms\"}");
+    CHECK(r && esk_json_get(r, "stopped"));
+    if (r && esk_json_get(r, "stopped")) {
+        const esk_json *w = esk_json_get(r, "stopped");
+        CHECK_STR(esk_json_get_str(w, "function", ""), "EXTI0_IRQHandler");
+        CHECK(strstr(esk_json_get_str(w, "file", ""), "main.c") != NULL);
+        CHECK_EQ(esk_json_get_int(w, "line", 0), 68);
+    }
+    esk_json_free(&a, r);
+    r = rpc(s, &a, "debug.source", "{\"board\":\"B1\",\"file\":\"main.c\"}");
+    CHECK(r != NULL && strstr(esk_json_get_str(r, "text", ""), "void EXTI0_IRQHandler(void)") != NULL);
+    CHECK(r != NULL && esk_json_len(esk_json_get(r, "lines")) > 10);
+    esk_json_free(&a, r);
+    es_session_destroy(s);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_hello);
 RUN(test_quanta_and_breakpoints);
@@ -568,4 +604,5 @@ RUN(test_bluepill_golden);
 RUN(test_bluepill_input);
 RUN(test_session_runtime);
 RUN(test_breakpoint_continue_equivalence);
+RUN(test_source_lines);
 TEST_MAIN_END

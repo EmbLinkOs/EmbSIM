@@ -29,6 +29,7 @@ import type {
   SessionOpenParams,
   SessionOpenResult,
   Snapshot,
+  SourceFile,
   Topology,
   WaveformSamples,
   Where,
@@ -118,9 +119,11 @@ export interface Methods {
       kind?: 'code' | 'read' | 'write' | 'access';
       address?: number | string;
       symbol?: string;
+      file?: string;
+      line?: number;
       length?: number;
     };
-    result: { id: string; address: number };
+    result: { id: string; address: number; addresses?: number[] };
   };
   'debug.breakpoints': { params: { board: string }; result: { breakpoints: Breakpoint[] } };
   'debug.where': { params: { board: string }; result: Where };
@@ -133,6 +136,7 @@ export interface Methods {
   'debug.write_memory': { params: { board: string; address: number | string; base64: string }; result: { written: number } };
   'debug.disassemble': { params: { board: string; address?: number | string; symbol?: string; count?: number }; result: { insns: Instruction[] } };
   'debug.peripherals': { params: { board: string; name?: string }; result: { peripherals: Peripheral[] } };
+  'debug.source': { params: { board: string; file: string }; result: SourceFile };
   'debug.symbol': { params: { board: string; symbol?: string; address?: number | string }; result: { address: number; pc: number; function?: string; offset?: number } };
   'debug.variables': { params: { board: string; frame?: number }; result: { variables: { name: string; type: string; value: string }[] } };
   'debug.gdb': { params: { board: string; op: 'start' | 'stop'; port?: number }; result: { port: number } };
@@ -205,6 +209,7 @@ export const METHOD_NAMES = [
   'debug.continue',
   'debug.step',
   'debug.symbol',
+  'debug.source',
   'debug.registers',
   'debug.set_register',
   'debug.memory',

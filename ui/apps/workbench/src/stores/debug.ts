@@ -6,7 +6,7 @@
 // the actions that move it. Every value comes from the server; nothing is
 // decoded or simulated here.
 
-import type { Breakpoint, Instruction, Peripheral, Register, Where } from '@embsim/protocol';
+import type { Breakpoint, Instruction, Peripheral, Register, SourceFile, Where } from '@embsim/protocol';
 import { create } from 'zustand';
 import { tryClient } from '../connection';
 import { useSession } from './session';
@@ -22,6 +22,10 @@ export interface DebugState {
   memAddress: number;
   memory: Uint8Array | null;
   peripherals: Peripheral[];
+  /** The source file at the PC, when the image has DWARF. */
+  source: SourceFile | null;
+  /** Line breakpoints set from the source view, as "file:line". */
+  lineBreakpoints: string[];
   busy: boolean;
   error: string | null;
 }
@@ -38,6 +42,7 @@ export interface DebugActions {
   setRegister(name: string, value: string): Promise<void>;
   loadMemory(address?: number | string): Promise<void>;
   loadPeripherals(): Promise<void>;
+  toggleLineBreakpoint(file: string, line: number): Promise<void>;
 }
 
 export const hex32 = (v: number) => '0x' + (v >>> 0).toString(16).padStart(8, '0');
@@ -83,6 +88,8 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
     memAddress: 0x20000000,
     memory: null,
     peripherals: [],
+    source: null,
+    lineBreakpoints: [],
     busy: false,
     error: null,
 
@@ -108,7 +115,28 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
           for (const r of get().regs) previous[r.name] = r.value;
         }
         set({ where, regs: regs.regs, previous, insns: dis.insns, breakpoints: bps.breakpoints });
+        if (where.file && where.file !== get().source?.file) {
+          try {
+            set({ source: await c.debug.source({ board, file: where.file }) });
+          } catch {
+            set({ source: null }); // the file is not on this machine
+          }
+        }
       }, false);
+    },
+
+    toggleLineBreakpoint: async (file, line) => {
+      const key = `${file}:${line}`;
+      const has = get().lineBreakpoints.includes(key);
+      await withBoard(async (board) => {
+        const c = tryClient()!;
+        await c.debug.breakpoint({ board, op: has ? 'remove' : 'add', file, line });
+        const bps = await c.debug.breakpoints({ board });
+        set({
+          breakpoints: bps.breakpoints,
+          lineBreakpoints: has ? get().lineBreakpoints.filter((k) => k !== key) : [...get().lineBreakpoints, key],
+        });
+      });
     },
 
     step: async (count = 1) => {

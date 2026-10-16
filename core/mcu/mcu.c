@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "mcu/build.h"
+#include "mcu/dwarf.h"
 #include "mcu/mcu.h"
 #include "util/str.h"
 
@@ -56,6 +57,7 @@ typedef struct mcu_state {
     unsigned char *image;
     size_t image_len;
     char *image_name;
+    esk_dwarf dwarf; /* the image's source lines, empty without DWARF */
     es_time_t quantum_ps;
     /* time: the engine time of the machine's current cycle */
     es_time_t t;
@@ -662,6 +664,8 @@ static void mcu_destroy(esk_comp *c)
         esk_mach_free(&st->m);
     if (st->image)
         esk_free(e->a, st->image, st->image_len);
+    if (st->dwarf.a)
+        esk_dwarf_free(&st->dwarf);
     esk_strfree(e->a, st->image_name);
     st->image = NULL;
     st->attached = 0;
@@ -784,6 +788,12 @@ const esk_model_ops esk_mcu_ops = { "mcu", sizeof(mcu_state), mcu_create, mcu_de
 
 int esk_mcu_is(const esk_comp *c) { return c && c->ops == &esk_mcu_ops; }
 
+const esk_dwarf *esk_mcu_dwarf(const esk_comp *c)
+{
+    const mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    return st && st->attached && st->dwarf.nrows ? &st->dwarf : NULL;
+}
+
 const unsigned char *esk_mcu_image(const esk_comp *c, size_t *len)
 {
     const mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
@@ -862,6 +872,9 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
         esk_free(e->a, st->image, st->image_len);
     st->image = copy;
     st->image_len = len;
+    if (st->dwarf.a)
+        esk_dwarf_free(&st->dwarf);
+    (void)esk_dwarf_load(&st->dwarf, e->a, st->image, st->image_len);
     catch_up(st, e->sched.now);
     mcu_reset_now(st);
     return ES_OK;
@@ -915,6 +928,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
         st2 = esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, cap);
         if (st2 != ES_OK)
             return st2;
+        (void)esk_dwarf_load(&st->dwarf, e->a, st->image, st->image_len);
     }
     map_rx_pins(st);
     (void)uart_named(st, st->console, 1);
