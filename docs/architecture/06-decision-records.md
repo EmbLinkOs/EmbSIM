@@ -602,3 +602,39 @@ follows the rails, and checks a TTL driver's levels and a description's
 override.
 
 **Status.** Accepted (M6).
+
+---
+
+## ADR-024 Transactional schematic repair and scoped drawing checks
+
+**Context.** Manual wire creation alone cannot support sustained drafting. Users
+need to reshape existing tracks, edit repeated parts precisely and find drawing
+problems without accidentally changing electrical connectivity. Browser diagnostics
+must not be confused with the authoritative native simulator's validation.
+
+**Decision.** Express repair operations through the existing project-diff and
+transaction history. Shift a selected segment perpendicularly while retaining its
+original endpoints and same-net interior contacts through spurs. Keep geometry
+clearing distinct from terminal disconnection. Batch only matching parameter
+contracts with explicit field inclusion and mixed-value indication. Reject stale
+source revisions and concurrent mutation snapshots; keep failed history entries.
+Run deterministic structural and bounding-box checks in a cancellable inline worker,
+key results to the project/catalog revision, and provide target navigation and
+ordinary transactional routing repair. Classify unused pins as information and
+state the report's limited scope in the interface.
+
+**Alternatives.** Rebuild connectivity from drawn line intersections (conflicts with
+SPEC-007's authoritative nets). Let each field create its own batch transaction
+(partial edits and excessive undo steps). Run checks on the canvas event loop or
+silently reuse old results (blocks interaction or presents obsolete findings).
+Present visual checks as ERC (overstates what the descriptions and engine verify).
+
+**Consequences.** Repair is undoable and layout-only where intended. Extra spur
+tracks may be introduced to preserve junction contacts. Later automatic routing
+can replace manually edited geometry; this is not a persistent constraint system.
+Bounding rectangles include whitespace and can produce warnings needing review.
+Pairwise geometry checks are not qualified for arbitrary sheet sizes; worker
+cancellation and a 20-second deadline bound their lifetime. Full electrical rules,
+physical clearance checking and large-sheet qualification remain future work.
+
+**Status.** Proposed; implemented for review in this pull request (2026-10-16).

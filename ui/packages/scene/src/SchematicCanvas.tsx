@@ -30,9 +30,12 @@ import {
 } from './geometry';
 import { busText, busValue } from './bus';
 import { routeConnection } from './autoLayout';
+import { shiftWireSegment } from './wireEditing';
 import { canvasBackground, DEFAULT_CANVAS_APPEARANCE, type CanvasAppearance } from './canvasAppearance';
 
 export interface SceneSymbol {
+  /** Authoritative terminal names; symbols may omit hidden terminals. */
+  terminals?: string[];
   name: string;
   symbol: SymbolDescription;
   svg: string;
@@ -73,10 +76,20 @@ export interface SchematicCanvasHandle {
   zoomToFit(): void;
   focusComponents(ids: string[]): void;
   focusNet(net: string): void;
+  focusPoint(point: Point): void;
+  focusWires(indices: number[]): void;
   zoomBy(factor: number): void;
   resetZoom(): void;
   focus(): void;
   getViewport(): Viewport;
+}
+
+export interface CanvasContext {
+  x: number;
+  y: number;
+  point: Point;
+  selection: Selection;
+  net?: string;
 }
 
 export interface SchematicCanvasProps {
@@ -99,6 +112,9 @@ export interface SchematicCanvasProps {
   smartWires?: boolean;
   alignmentGuides?: boolean;
   highlightNet?: string | null;
+  issueMarker?: { point: Point; label: string; severity: 'error' | 'warning' | 'info' };
+  onReshapeWire?: (index: number, segment: number, offset: number, source: Project) => void;
+  onCanvasContext?: (context: CanvasContext) => void;
   onMove?: (ids: string[], dx: number, dy: number) => void;
   onRotate?: (ids: string[]) => void;
   onMirror?: (ids: string[]) => void;
@@ -256,6 +272,7 @@ const PartView = memo(
 );
 
 interface WireViewProps {
+  selectable: boolean;
   index: number;
   wire: Wire;
   vis: NetVisual;
@@ -267,16 +284,16 @@ interface WireViewProps {
 
 /** One drawn wire: re-rendered only when its points, selection or net state change. */
 const WireView = memo(
-  function WireView({ index, wire, vis, selected, sub, onHover, onLeave }: WireViewProps) {
+  function WireView({ selectable, index, wire, vis, selected, sub, onHover, onLeave }: WireViewProps) {
     const pts = wire.points.map(([x, y]) => `${x},${y}`).join(' ');
     return (
-      <g data-wire={index} className={`es-wire es-wire--${vis.kind}${selected ? ' es-wire--selected' : ''}`}>
+      <g data-wire={index} role={selectable ? 'button' : 'img'} tabIndex={selectable ? 0 : undefined} aria-label={`Track ${index + 1}, net ${wire.net}${selected ? ' selected' : ''}`} className={`es-wire es-wire--${vis.kind}${selected ? ' es-wire--selected' : ''}`}>
         <polyline className="es-wire__hit" points={pts} />
         <polyline className="es-wire__line" points={pts} style={vis.color ? { stroke: vis.color } : undefined} onPointerEnter={(e) => onHover(wire.net, sub, e.clientX, e.clientY)} onPointerLeave={onLeave} />
       </g>
     );
   },
-  (a, b) => a.wire === b.wire && a.index === b.index && a.selected === b.selected && a.sub === b.sub && a.vis.kind === b.vis.kind && a.vis.color === b.vis.color && a.onHover === b.onHover,
+  (a, b) => a.selectable === b.selectable && a.wire === b.wire && a.index === b.index && a.selected === b.selected && a.sub === b.sub && a.vis.kind === b.vis.kind && a.vis.color === b.vis.color && a.onHover === b.onHover,
 );
 
 export function SchematicCanvas(props: SchematicCanvasProps) {
@@ -298,7 +315,10 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     smartWires = false,
     alignmentGuides = true,
     highlightNet,
+    issueMarker,
     onMove,
+    onReshapeWire,
+    onCanvasContext,
     onRotate,
     onMirror,
     onLabelWire,
@@ -330,7 +350,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const [announcement, setAnnouncement] = useState('');
   const rafRef = useRef<number | null>(null);
 
-  const wires = useMemo(() => project.layout?.wires ?? [], [project.layout?.wires]);
+  const [wirePreview, setWirePreview] = useState<{ source: Project; wires: Wire[] } | null>(null);
+  const wires = useMemo(() => wirePreview?.source === project ? wirePreview.wires : project.layout?.wires ?? [], [project, wirePreview]);
   const labels = useMemo(() => project.layout?.labels ?? [], [project.layout?.labels]);
   const buses = useMemo(() => project.layout?.buses ?? [], [project.layout?.buses]);
 
@@ -438,6 +459,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     resetZoom: () => setViewport({ x: 40, y: 40, k: 1 }),
     focus: () => svgRef.current?.focus(),
     getViewport: () => vpRef.current,
+    focusWires: (indices) => focusBounds(wires.flatMap((w, i) => indices.includes(i) ? w.points.map(([x, y]) => ({ x, y, width: 0, height: 0 })) : [])),
+    focusPoint: (point) => focusBounds([{ x: point.x - 80, y: point.y - 60, width: 160, height: 120 }]),
     focusComponents: (ids) => focusBounds(placed.filter((p) => ids.includes(p.id)).map((p) => p.bounds)),
     focusNet: (net) => focusBounds([
       ...(pinsByNet[net] ?? []).map((p) => ({ ...p, width: 0, height: 0 })),
@@ -560,12 +583,22 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   // --- pointer handling on the svg -----------------------------------------
 
   const gesture = useRef<
+    | { kind: 'reshape'; index: number; segment: number; start: Point; source: Project; horizontal: boolean; offset: number }
     | { kind: 'pan'; startX: number; startY: number; vp: Viewport; moved: boolean }
     | { kind: 'move'; ids: string[]; start: Point; moved: boolean }
     | { kind: 'marquee'; start: Point; additive: boolean }
     | { kind: 'wire'; moved: boolean }
     | null
   >(null);
+
+  useEffect(() => {
+    gesture.current = null;
+    setWirePreview(null);
+    setDragOffset(null);
+    setMarquee(null);
+    setGuides({});
+    setWiring(null);
+  }, [project]);
 
   const onPointerDown = (e: ReactPointerEvent<SVGSVGElement>) => {
     if (e.button !== 0 && e.button !== 1) return;
@@ -574,6 +607,18 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     if (!svg) return;
     const world = toWorld(e.clientX, e.clientY);
     svg.focus({ preventScroll: true });
+
+    const segmentEl = target.closest('[data-wire-segment]');
+    if (segmentEl && e.button === 0 && !readOnly && onReshapeWire && !wiring) {
+      const index = Number(segmentEl.getAttribute('data-wire-index'));
+      const segment = Number(segmentEl.getAttribute('data-wire-segment'));
+      const edge = wireSegments(wires[index]!)[segment];
+      if (!edge) return;
+      e.preventDefault();
+      svg.setPointerCapture(e.pointerId);
+      gesture.current = { kind: 'reshape', index, segment, source: project, start: world, horizontal: edge[0].y === edge[1].y, offset: 0 };
+      return;
+    }
 
     const pinEl = target.closest('[data-pin]');
     const compEl = target.closest('[data-component]');
@@ -675,7 +720,12 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       setWiring((w) => (w ? { ...w, cursor: pin ? pin.point : snapPoint(world) } : w));
     }
     if (!g) return;
-    if (g.kind === 'pan') {
+    if (g.kind === 'reshape') {
+      const offset = snap(g.horizontal ? world.y - g.start.y : world.x - g.start.x);
+      g.offset = offset;
+      const result = shiftWireSegment(g.source.layout?.wires ?? [], g.index, g.segment, offset, pinsByNet);
+      setWirePreview(result ? { source: g.source, wires: result } : null);
+    } else if (g.kind === 'pan') {
       const dx = e.clientX - g.startX;
       const dy = e.clientY - g.startY;
       if (!g.moved && Math.hypot(dx, dy) < 3) return;
@@ -706,6 +756,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     if (svg?.hasPointerCapture(e.pointerId)) svg.releasePointerCapture(e.pointerId);
     const world = toWorld(e.clientX, e.clientY);
     if (!g) return;
+    if (g.kind === 'reshape') {
+      setWirePreview(null);
+      if (!readOnly && project === g.source && g.offset) onReshapeWire?.(g.index, g.segment, g.offset, g.source);
+      return;
+    }
     if (g.kind === 'pan') {
       if (g.moved) setViewportState(vpRef.current);
       else if (mode !== 'probe') onSelectionChange(EMPTY_SELECTION);
@@ -743,6 +798,27 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     }
   };
 
+  const cancelGesture = () => {
+    gesture.current = null;
+    setWirePreview(null);
+    setDragOffset(null);
+    setGuides({});
+    setMarquee(null);
+  };
+
+  const openContext = (target: Element, x: number, y: number) => {
+    if (!onCanvasContext) return;
+    cancelGesture();
+    setWiring(null);
+    const component = target.closest('[data-component]')?.getAttribute('data-component');
+    const wireIndex = target.closest('[data-wire]')?.getAttribute('data-wire') ?? target.closest('[data-wire-index]')?.getAttribute('data-wire-index');
+    const index = wireIndex === undefined ? -1 : Number(wireIndex);
+    const contextSelection = component ? (selection.components.includes(component) ? selection : { components: [component], wires: [] }) :
+      index >= 0 ? (selection.wires.includes(index) ? selection : { components: [], wires: [index] }) : selection;
+    onSelectionChange(contextSelection);
+    onCanvasContext({ x, y, point: toWorld(x, y), selection: contextSelection, net: index >= 0 ? wires[index]?.net : undefined });
+  };
+
   const onDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     const target = e.target as Element;
     // the press captured the pointer, so the event may target the svg itself:
@@ -759,6 +835,24 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const onKeyDown = (e: KeyboardEvent<SVGSVGElement>) => {
     const target = e.target as Element;
     const onPin = target.closest('[data-pin]');
+    if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+      e.preventDefault();
+      const box = target.getBoundingClientRect();
+      openContext(target, box.x + box.width / 2, box.y + box.height / 2);
+      return;
+    }
+    const segmentEl = target.closest('[data-wire-segment]');
+    if (segmentEl && !readOnly && onReshapeWire && e.key.startsWith('Arrow')) {
+      e.preventDefault();
+      const index = Number(segmentEl.getAttribute('data-wire-index'));
+      const segment = Number(segmentEl.getAttribute('data-wire-segment'));
+      const edge = wireSegments(wires[index]!)[segment];
+      if (!edge) return;
+      const horizontal = edge[0].y === edge[1].y;
+      const delta = horizontal ? (e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0) : (e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0);
+      if (delta) onReshapeWire(index, segment, delta * GRID * (e.shiftKey ? 5 : 1), project);
+      return;
+    }
     const onComponent = target.closest('[data-component]');
     if (wiring && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
       e.preventDefault();
@@ -777,6 +871,13 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       if (pin) finishWire(pin);
       else if (wire) finishWire({ net: wire.wire.net, point: wire.point });
       else addWireBend(wiring.cursor);
+      return;
+    }
+    const wireEl = target.closest('[data-wire]');
+    if (wireEl && !wiring && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      const index = Number(wireEl.getAttribute('data-wire'));
+      onSelectionChange(e.shiftKey ? { components: selection.components, wires: selection.wires.includes(index) ? selection.wires.filter((i) => i !== index) : [...selection.wires, index] } : { components: [], wires: [index] });
       return;
     }
     if (e.key === 'Enter' || (e.key === ' ' && !wiring)) {
@@ -811,6 +912,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       return;
     }
     if (e.key === 'Escape') {
+      cancelGesture();
       if (wiring) {
         setWiring(null);
         setAnnouncement('Wiring cancelled.');
@@ -876,7 +978,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       case 'f':
       case 'F':
         e.preventDefault();
-        focusBounds(placed.filter((p) => selection.components.includes(p.id)).map((p) => p.bounds));
+        focusBounds([...placed.filter((p) => selection.components.includes(p.id)).map((p) => p.bounds), ...wires.flatMap((w, i) => selection.wires.includes(i) ? w.points.map(([x, y]) => ({ x, y, width: 0, height: 0 })) : [])]);
         break;
       case '0':
         e.preventDefault();
@@ -964,7 +1066,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={() => { cancelGesture(); setWiring(null); }}
+        onContextMenu={(e) => { if (onCanvasContext) { e.preventDefault(); openContext(e.target as Element, e.clientX, e.clientY); } }}
         onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
         onDragOver={onDragOver}
@@ -979,7 +1082,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             ))}
             {wires.map((w, i) => {
               const vis = netVisual(w.net);
-              return <g key={`w-${i}`} opacity={highlightNet && highlightNet !== w.net ? 0.18 : 1}><WireView index={i} wire={w} vis={vis} selected={selection.wires.includes(i)} sub={live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`} onHover={showHover} onLeave={hideHover} /></g>;
+              return <g key={`w-${i}`} opacity={highlightNet && highlightNet !== w.net ? 0.18 : 1}><WireView selectable={!readOnly} index={i} wire={w} vis={vis} selected={selection.wires.includes(i)} sub={live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`} onHover={showHover} onLeave={hideHover} /></g>;
             })}
             {buses.map((b, i) => {
               const pts = b.points.map(([x, y]) => `${x},${y}`).join(' ');
@@ -1059,6 +1162,22 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {guides.x !== undefined && <line className="es-scene__alignment-guide" x1={guides.x} x2={guides.x} y1={visibleWorld.y} y2={visibleWorld.y + visibleWorld.height} />}
             {guides.y !== undefined && <line className="es-scene__alignment-guide" y1={guides.y} y2={guides.y} x1={visibleWorld.x} x2={visibleWorld.x + visibleWorld.width} />}
             {marquee && <rect className="es-scene__marquee" x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height} />}
+            {issueMarker && <g className={`es-scene__issue-marker es-scene__issue-marker--${issueMarker.severity}`} pointerEvents="none" role="img" aria-label={issueMarker.label}>
+              <circle cx={issueMarker.point.x} cy={issueMarker.point.y} r={12 / viewport.k} />
+              <circle cx={issueMarker.point.x} cy={issueMarker.point.y} r={3 / viewport.k} />
+            </g>}
+            {!readOnly && !wiring && !wirePreview && mode === 'select' && onReshapeWire && selection.wires.length === 1 && (() => {
+              const index = selection.wires[0]!;
+              const wire = wires[index];
+              return wire && wireSegments(wire).map(([a, b], segment) => a.x === b.x || a.y === b.y ? (
+                <circle key={`${index}:${segment}`} data-wire-index={index} data-wire-segment={segment}
+                  className="es-scene__segment-handle" cx={(a.x + b.x) / 2} cy={(a.y + b.y) / 2} r={5 / viewport.k}
+                  role="button" tabIndex={0} aria-label={`Move ${wire.net} segment ${segment + 1} ${a.y === b.y ? 'vertically' : 'horizontally'}`}
+                  style={{ cursor: a.y === b.y ? 'ns-resize' : 'ew-resize' }}>
+                  <title>Drag to reshape · arrows move by 10 · Shift moves by 50 · Escape cancels</title>
+                </circle>
+              ) : null);
+            })()}
             {wiring?.legs.map((leg, i) => { const p = leg.at(-1)!; return <circle className="es-scene__wire-waypoint" key={i} cx={p[0]} cy={p[1]} r={3 / viewport.k} fill="var(--accent)" pointerEvents="none" />; })}
             {wiringPreview && <polyline className={`es-scene__wire-preview${routeBlocked ? ' is-blocked' : ''}`} points={wiringPreview.map(([x, y]) => `${x},${y}`).join(' ')} />}
             {dropHint && <rect className="es-scene__drop-hint" x={dropHint.x - 5} y={dropHint.y - 5} width={10} height={10} />}

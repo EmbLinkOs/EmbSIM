@@ -47,7 +47,7 @@ function load(key: string | undefined): Persisted | null {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Persisted;
-    if (!Array.isArray(parsed.order) || typeof parsed.weights !== 'object') return null;
+    if (!Array.isArray(parsed.order) || !parsed.order.every((id) => typeof id === 'string') || !parsed.weights || typeof parsed.weights !== 'object' || Array.isArray(parsed.weights)) return null;
     return parsed;
   } catch {
     return null;
@@ -57,21 +57,30 @@ function load(key: string | undefined): Persisted | null {
 function save(key: string | undefined, state: Persisted): void {
   if (!key) return;
   try {
-    localStorage.setItem(key, JSON.stringify(state));
+    localStorage.setItem(key, JSON.stringify({ order: state.order, weights: state.weights }));
   } catch {
     // Storage may be unavailable (private mode); layout then lives for the session only.
   }
 }
 
+function initialState(items: DockItem[], key: string | undefined): Persisted & { key?: string } {
+  const stored = load(key);
+  const ids = items.map((item) => item.id);
+  const order = stored ? [...stored.order.filter((id) => ids.includes(id)), ...ids.filter((id) => !stored.order.includes(id))] : ids;
+  const weights: Record<string, number> = {};
+  for (const item of items) {
+    const weight = stored?.weights?.[item.id];
+    weights[item.id] = typeof weight === 'number' && Number.isFinite(weight) && weight > 0 ? weight : item.weight ?? 1;
+  }
+  return { key, order: [...new Set(order)], weights };
+}
+
 export function DockLayout({ direction, items, storageKey, className }: DockLayoutProps) {
   const ids = useMemo(() => items.map((i) => i.id), [items]);
-  const [state, setState] = useState<Persisted>(() => {
-    const stored = load(storageKey);
-    const order = stored ? [...stored.order.filter((id) => ids.includes(id)), ...ids.filter((id) => !stored.order.includes(id))] : ids;
-    const weights: Record<string, number> = {};
-    for (const item of items) weights[item.id] = stored?.weights[item.id] ?? item.weight ?? 1;
-    return { order, weights };
-  });
+  const [state, setState] = useState(() => initialState(items, storageKey));
+  // Switch preference namespaces before effects can save the previous layout
+  // under the new key. Stable item keys preserve the mounted canvas/viewport.
+  if (state.key !== storageKey) setState(initialState(items, storageKey));
 
   // Keep the order in sync when the item set changes (a perspective adds a panel).
   useEffect(() => {
@@ -80,7 +89,7 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
       const weights = { ...s.weights };
       for (const item of items) weights[item.id] ??= item.weight ?? 1;
       if (order.length === s.order.length && order.every((id, i) => id === s.order[i]) && Object.keys(weights).length === Object.keys(s.weights).length) return s;
-      return { order, weights };
+      return { ...s, order, weights };
     });
   }, [ids, items]);
 

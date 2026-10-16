@@ -16,6 +16,7 @@ export {
   type SceneCatalog,
   type SceneSymbol,
   type CanvasMode,
+  type CanvasContext,
   type Selection,
   type PinRef,
   type NetRef,
@@ -27,3 +28,5 @@ export { busText, busValue } from './bus';
 export { BoardView, type BoardViewProps, type BoardItem } from './BoardView';
 export { autoPlace, autoRoute, createLayout, arrange, layoutParts, routeConnection, freePlacement, type LayoutOptions, type LayoutResult, type Arrangement } from './autoLayout';
 export { canvasBackground, normalizeAppearance, DEFAULT_CANVAS_APPEARANCE, type CanvasAppearance, type CanvasPalette, type GridStyle } from './canvasAppearance';
+export { shiftWireSegment, projectPinPoints, cleanWirePoints, segmentContacts } from './wireEditing';
+export { checkSchematic, type SchematicIssue, type CheckSeverity } from './schematicChecks';

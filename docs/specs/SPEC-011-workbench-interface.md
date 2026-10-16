@@ -176,3 +176,34 @@ Finishing on a pin or wire commits the complete polyline in one transaction.
 Explicit bends take precedence over smart routing and auto-arrange at completion;
 subsequent layout operations may replace the geometry. Crossings alone do not
 create net membership. This workflow does not promise clearance validation.
+
+### Schematic authoring and repair
+
+A selected orthogonal track shall support perpendicular segment reshaping with a
+live preview, fixed original endpoints, and preserved same-net pin/branch contacts
+using connecting spurs where needed. Pointer release commits one layout-only
+transaction; Escape and pointer cancellation discard the gesture. Segment handles
+and numeric segment/offset controls support keyboard operation. Reshaping never
+changes net membership. Stale source revisions cannot commit.
+
+The inspector shall support snapped coordinates, quarter-turn rotation and mirror
+for parts and boards, relative group movement, and one-transaction batch parameter
+editing. Batch fields require matching type/unit/range/enum contracts across the
+selection; mixed values require deliberate inclusion and a valid new value.
+Unchanged placement shall not regenerate manual tracks. Layout edits preserve
+firmware and electrical parameters; parameter edits retain native restart behavior.
+
+Contextual actions shall be available by pointer and Shift+F10, keyboard navigable,
+viewport bounded, focus restoring and disabled for unavailable mutations. Clearing
+drawn geometry shall be separate from disconnecting terminals. Both use ordinary
+transactional history. Overlapping mutations shall reject rather than apply a diff
+computed from an obsolete snapshot; failed undo/redo shall retain the history item.
+
+A worker-backed structural/drawing report shall identify invalid terminal/net
+references, repeated memberships, missing descriptions, small nets, unused pins,
+off-grid origins, undrawn connectivity, overlapping symbol bounds, nonorthogonal
+geometry, wires through bounds and ambiguous foreign-net contacts. Each result
+shall identify its target, severity and scope, support navigation/filtering and
+provide net-routing repair where relevant. Reports shall apply only to their
+source revision, use a bounded cancellable worker, and surface failures. These
+checks shall not be represented as electrical-rule or physical-clearance validation.

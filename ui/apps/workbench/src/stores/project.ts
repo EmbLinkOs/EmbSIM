@@ -6,7 +6,7 @@
 // pure function on the project; its effect reaches the server as a
 // transaction (see projectDiff.ts) and comes back through refresh().
 
-import { CommandStack, GRID, boardSymbol, freePlacement, autoRoute, createLayout, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
+import { CommandStack, shiftWireSegment, projectPinPoints, GRID, boardSymbol, freePlacement, autoRoute, createLayout, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
 import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
 import { create } from 'zustand';
 import { getClient, primeStores } from '../connection';
@@ -59,6 +59,12 @@ export interface ProjectState {
   mutate(label: string, fn: (p: Project) => Project | null): Promise<void>;
   placeComponent(componentId: string, at: { x: number; y: number }): Promise<string | null>;
   moveComponents(ids: string[], dx: number, dy: number, reroute?: boolean): Promise<void>;
+  reshapeWire(index: number, segment: number, offset: number, source: Project): Promise<void>;
+  setPartLayout(id: string, layout: Layout, source: Project): Promise<void>;
+  setBatchParams(ids: string[], values: Record<string, string | number | boolean>, source: Project): Promise<void>;
+  eraseWireGeometry(indices: number[]): Promise<void>;
+  disconnectPin(pin: string): Promise<void>;
+  rerouteNets(nets: string[]): Promise<string[]>;
   rotateComponents(ids: string[]): Promise<void>;
   mirrorComponents(ids: string[]): Promise<void>;
   deleteSelection(selection: Selection): Promise<void>;
@@ -76,7 +82,7 @@ export interface ProjectState {
   clipboard: Clip | null;
   copySelection(selection: Selection): void;
   /** Pastes the clipboard, offset from where it was copied; the new parts' ids. */
-  paste(): Promise<string[]>;
+  paste(at?: { x: number; y: number }): Promise<string[]>;
   duplicate(selection: Selection): Promise<string[]>;
 }
 
@@ -143,9 +149,9 @@ function sceneEntry(entry: CatalogEntry): SceneCatalog[string] {
     const { symbol, svg } = boardSymbol(d.name, d.ports ?? {});
     // its description gains the symbol so pin geometry works as for parts
     entry.description = { ...d, symbol };
-    return { name: d.name, symbol, svg };
+    return { name: d.name, symbol, svg, terminals: Object.keys(symbol.pins) };
   }
-  return { name: d.name, symbol: d.symbol, svg: entry.files.symbol ?? '', valueParam: VALUE_PARAM[d.id] };
+  return { name: d.name, symbol: d.symbol, svg: entry.files.symbol ?? '', terminals: d.pins.map((p) => p.name), valueParam: VALUE_PARAM[d.id] };
 }
 
 /** The parts and boards of a project, which place, move and delete alike. */
@@ -240,6 +246,8 @@ export const useProject = create<ProjectState>((set, get) => ({
   },
 
   async mutate(label, fn) {
+    if (!get().editable) throw new Error('This project is read-only.');
+    if (get().busy || get().commands.isBusy) throw new Error('An edit is still finishing. Try again when it completes.');
     const before = get().project;
     if (!before) return;
     const after = fn(clone(before));
@@ -283,13 +291,15 @@ export const useProject = create<ProjectState>((set, get) => ({
     if (clip) set({ clipboard: clip });
   },
 
-  async paste() {
+  async paste(at) {
     const clip = get().clipboard;
     if (!clip) return [];
     const step = (clip.pastes + 1) * 4 * GRID;
     let ids: string[] = [];
     await get().mutate(`Paste ${clip.components.length > 1 ? `${clip.components.length} parts` : clip.components[0]!.id}`, (p) => {
-      const r = withClip(p, clip, step, step, freeId);
+      const dx = at ? snap(at.x) - Math.min(...clip.components.map((c) => c.layout?.x ?? 0)) : step;
+      const dy = at ? snap(at.y) - Math.min(...clip.components.map((c) => c.layout?.y ?? 0)) : step;
+      const r = withClip(p, clip, dx, dy, freeId);
       ids = r.ids;
       return r.project;
     });
@@ -324,9 +334,13 @@ export const useProject = create<ProjectState>((set, get) => ({
   },
 
   async moveComponents(ids, dx, dy, reroute = false) {
+    if (![dx, dy].every(Number.isFinite)) throw new Error('Offsets must be finite numbers.');
+    dx = snap(dx); dy = snap(dy);
+    if (!dx && !dy) return;
     const catalog = get().catalog;
     await get().mutate(`Move ${ids.length > 1 ? `${ids.length} components` : ids[0]}`, (p) => {
-      const moved = new Map<string, { x: number; y: number }>(); // old pin position → new
+      const moved = new Map<string, { x: number; y: number }>(); // net + old pin position → new
+      const memberships = new Map(Object.entries(p.nets).flatMap(([net, pins]) => pins.map((pin) => [pin, net] as const)));
       for (const c of placeables(p)) {
         if (!ids.includes(c.id)) continue;
         const sym = catalog[catalogId(c)]?.description.symbol;
@@ -336,7 +350,8 @@ export const useProject = create<ProjectState>((set, get) => ({
           for (const pin of Object.keys(sym.pins)) {
             const a = pinPosition(before, sym, pin);
             const b = pinPosition(after, sym, pin);
-            if (a && b) moved.set(`${a.x},${a.y}`, b);
+            const net = memberships.get(`${c.id}.${pin}`);
+            if (a && b && net !== undefined) moved.set(`${net}:${a.x},${a.y}`, b);
           }
         }
         c.layout = after;
@@ -346,14 +361,14 @@ export const useProject = create<ProjectState>((set, get) => ({
         const pts = w.points;
         const first = pts[0];
         const last = pts[pts.length - 1];
-        if (first && moved.has(`${first[0]},${first[1]}`)) {
-          const n = moved.get(`${first[0]},${first[1]}`)!;
+        if (first && moved.has(`${w.net}:${first[0]},${first[1]}`)) {
+          const n = moved.get(`${w.net}:${first[0]},${first[1]}`)!;
           const next = pts[1];
           pts[0] = [n.x, n.y];
           if (next && next[0] !== n.x && next[1] !== n.y) pts.splice(1, 0, next[1] === first[1] ? [n.x, next[1]] : [next[0], n.y]);
         }
-        if (last && pts.length > 1 && moved.has(`${last[0]},${last[1]}`)) {
-          const n = moved.get(`${last[0]},${last[1]}`)!;
+        if (last && pts.length > 1 && moved.has(`${w.net}:${last[0]},${last[1]}`)) {
+          const n = moved.get(`${w.net}:${last[0]},${last[1]}`)!;
           const prev = pts[pts.length - 2]!;
           pts[pts.length - 1] = [n.x, n.y];
           if (prev[0] !== n.x && prev[1] !== n.y) pts.splice(pts.length - 1, 0, prev[1] === last[1] ? [n.x, prev[1]] : [prev[0], n.y]);
@@ -361,6 +376,67 @@ export const useProject = create<ProjectState>((set, get) => ({
       }
       return reroute ? rerouteParts(p, get().sceneCatalog, ids) : p;
     });
+  },
+
+  async reshapeWire(index, segment, offset, source) {
+    if (get().project !== source) throw new Error('The project changed while reshaping. Select the wire and try again.');
+    await get().mutate('Reshape wire segment', (p) => {
+      const wires = shiftWireSegment(p.layout?.wires ?? [], index, segment, offset, projectPinPoints(p, get().sceneCatalog));
+      if (!wires) return null;
+      p.layout = { ...p.layout, wires };
+      return p;
+    });
+  },
+
+  async setPartLayout(id, layout, source) {
+    if (get().project !== source) throw new Error('The project changed. Review the position and try again.');
+    if (![layout.x, layout.y].every(Number.isFinite)) throw new Error('Coordinates must be finite numbers.');
+    if (layout.rotation !== undefined && ![0, 90, 180, 270].includes(layout.rotation)) throw new Error('Rotation must be a quarter turn.');
+    await get().mutate(`Position ${id}`, (p) => {
+      const part = placeables(p).find((c) => c.id === id);
+      if (!part) return null;
+      const next = { ...layout, x: snap(layout.x), y: snap(layout.y) };
+      const before = part.layout ?? { x: 0, y: 0 };
+      if (before.x === next.x && before.y === next.y && (before.rotation ?? 0) === (next.rotation ?? 0) && !!before.mirror === !!next.mirror) return null;
+      part.layout = next;
+      return rerouteParts(p, get().sceneCatalog, [id]);
+    });
+  },
+
+  async setBatchParams(ids, values, source) {
+    if (get().project !== source) throw new Error('The project changed. Review the selected properties and try again.');
+    await get().mutate(`Set properties on ${ids.length} parts`, (p) => {
+      for (const c of p.components) if (ids.includes(c.id)) c.params = { ...c.params, ...values };
+      return p;
+    });
+  },
+
+  async eraseWireGeometry(indices) {
+    await get().mutate('Remove drawn tracks (keep connections)', (p) => {
+      p.layout = { ...p.layout, wires: (p.layout?.wires ?? []).filter((_, i) => !indices.includes(i)) };
+      return p;
+    });
+  },
+
+  async disconnectPin(pin) {
+    await get().mutate(`Disconnect ${pin}`, (p) => {
+      const net = Object.keys(p.nets).find((n) => p.nets[n]!.includes(pin));
+      if (!net) return null;
+      p.nets[net] = p.nets[net]!.filter((ref) => ref !== pin);
+      if (!p.nets[net]!.length) delete p.nets[net];
+      p.layout = { ...p.layout, labels: (p.layout?.labels ?? []).filter((l) => Object.hasOwn(p.nets, l.net)), buses: (p.layout?.buses ?? []).map((b) => ({ ...b, nets: b.nets.filter((n) => Object.hasOwn(p.nets, n)) })).filter((b) => b.nets.length) };
+      return autoRoute(p, get().sceneCatalog, new Set([net])).project;
+    });
+  },
+
+  async rerouteNets(nets) {
+    let warnings: string[] = [];
+    await get().mutate(`Route ${nets.length} net${nets.length === 1 ? '' : 's'}`, (p) => {
+      const result = autoRoute(p, get().sceneCatalog, new Set(nets));
+      warnings = result.warnings;
+      return result.project;
+    });
+    return warnings;
   },
 
   async rotateComponents(ids) {
@@ -385,12 +461,14 @@ export const useProject = create<ProjectState>((set, get) => ({
     if (selection.components.length === 0 && selection.wires.length === 0) return;
     await get().mutate('Delete', (p) => {
       const removedPins = new Set<string>();
+      const memberships = new Map(Object.entries(p.nets).flatMap(([net, pins]) => pins.map((pin) => [pin, net] as const)));
       for (const c of placeables(p)) {
         if (!selection.components.includes(c.id)) continue;
         const sym = catalog[catalogId(c)]?.description.symbol;
         for (const pin of Object.keys(sym?.pins ?? {})) {
           const pos = sym ? pinPosition(c.layout ?? { x: 0, y: 0 }, sym, pin) : null;
-          if (pos) removedPins.add(`${pos.x},${pos.y}`);
+          const net = memberships.get(`${c.id}.${pin}`);
+          if (pos && net !== undefined) removedPins.add(`${net}:${pos.x},${pos.y}`);
         }
       }
       p.components = p.components.filter((c) => !selection.components.includes(c.id));
@@ -413,7 +491,7 @@ export const useProject = create<ProjectState>((set, get) => ({
       wires.forEach((w, i) => {
         const first = w.points[0]!;
         const last = w.points[w.points.length - 1]!;
-        const touchesRemoved = removedPins.has(`${first[0]},${first[1]}`) || removedPins.has(`${last[0]},${last[1]}`);
+        const touchesRemoved = removedPins.has(`${w.net}:${first[0]},${first[1]}`) || removedPins.has(`${w.net}:${last[0]},${last[1]}`);
         if (selection.wires.includes(i)) {
           // Deleting a wire disconnects the pins at its ends.
           for (const end of [first, last]) {
@@ -425,7 +503,7 @@ export const useProject = create<ProjectState>((set, get) => ({
           }
           return;
         }
-        if (!touchesRemoved) keep.push(w);
+        if (!touchesRemoved && Object.hasOwn(p.nets, w.net)) keep.push(w);
       });
       const buses = (p.layout?.buses ?? []).map((b) => ({ ...b, nets: b.nets.filter((n) => n in p.nets) })).filter((b) => b.nets.length > 0);
       p.layout = { ...(p.layout ?? {}), wires: keep, labels: (p.layout?.labels ?? []).filter((l) => l.net in p.nets), buses };

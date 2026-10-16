@@ -151,3 +151,95 @@ Manual routes give you geometric control and can cross bodies or other nets;
 crossings do not by themselves create electrical connections. This is not a
 clearance checker. Later automatic rerouting or layout operations can replace
 manual geometry; waypoints are not persistent routing constraints.
+
+## Repair an existing route
+
+Select a track with a click, or Tab to a track and press Enter/Space. A selected
+track exposes a handle at each orthogonal segment's midpoint. Drag a handle
+perpendicular to the track; the live preview is the geometry that will be saved.
+Release to commit one undoable layout edit. Escape or a cancelled pointer gesture
+discards the preview. On a focused handle, arrows move in the permitted direction
+by 10 units; Shift moves by 50.
+
+For exact keyboard editing, use **Selected track** in the inspector. Choose a
+segment, enter **Segment offset** and apply **Move track segment**. Positive values
+move horizontal segments down and vertical segments right. Values snap to 10
+sheet units. Original endpoints stay fixed, and contacts with same-net pins or
+branches keep a connecting spur to the moved track. Foreign nets never merge as
+a result of reshaping. Manual tracks can still cross symbol bounds or other nets;
+review the Checks report after editing. Automatic routing may replace the shape.
+
+Right-click a part, track or sheet, or press **Shift+F10** on a focused canvas
+item, for contextual actions. The menu preserves an existing multi-selection
+when you right-click one of its members. Use arrows/Home/End to navigate and
+Escape to close. Copy/duplicate support components; mixed board/component
+selections disable those actions. **Paste here** anchors the copied components'
+minimum origin to the clicked sheet point. Copying does not copy a board or its
+firmware. Rotate, mirror, label, reroute, fit, select-all and delete are also
+available where applicable. Mutation actions disable during an edit or a read-only
+view. A menu tied to an old project revision cannot act on a newer project.
+
+**Remove drawn tracks (keep connections)** and **Clear drawing** remove only
+presentation geometry. Pins retain their net membership, and airwires reveal the
+missing drawing. In contrast, the existing **Delete selection** action removes
+selected parts and disconnects pins at the endpoints of deleted tracks. Both
+operations are undoable. In the net inspector, **Disconnect** explicitly removes
+one terminal from its net and regenerates that net's remaining drawing. Terminal
+names select their owning part; **Route net** regenerates just that net.
+
+## Exact placement and shared properties
+
+A selected component or board exposes **Position X/Y**, quarter-turn **Rotation**
+and **Mirror symbol** in the inspector. Apply commits a single layout transaction
+and reroutes incident nets. Coordinates are sheet units, not PCB millimetres, and
+origins snap to the 10-unit editing grid. Applying an unchanged placement is a
+no-op, preserving manual wire geometry. Firmware and electrical parameters do not
+change when positioning a board.
+
+For a group, **Offset X/Y** translates the selection together. **Shared parameters**
+contains only parameters whose type, unit, range and enum definitions agree across
+every selected component. Mixed values are marked and left blank. Check **Set …**
+for each property you intend to change, enter its value, then **Apply shared
+properties**. All chosen properties on all selected components commit in one
+transaction and undo together. Numbers accept SI suffixes and declared bounds;
+integers must be whole numbers. Boolean and enum values require explicit choices.
+Table parameters are not batch editable. Unlike layout changes, parameter changes
+can restart the circuit according to the existing transaction contract.
+
+Concurrent edits are rejected while the previous operation finishes; retry after
+it completes. Position, batch and track drafts reject stale project revisions.
+Failed undo/redo operations retain their history entry for retry. Focus mode
+restores the prior panel order and sizes without remounting the canvas.
+
+## Locate and repair drawing problems
+
+Open **Checks** from the ribbon or Design details tabs. The report updates from
+the latest project in a cancellable worker, without running simulation in the
+browser. Stale results disappear while the current revision is being checked;
+worker failure or timeout is displayed with a **Recheck** action. The report does
+not mutate the circuit.
+
+- **Errors:** absent terminal references, repeated terminal membership, duplicate
+  component/board references, and wires naming undeclared nets.
+- **Warnings:** unavailable descriptions, nets with fewer than two pins, overlapping
+  symbol bounds, nonorthogonal/invalid track geometry, tracks through symbol
+  bounds, and visually touching/overlapping tracks belonging to different nets.
+- **Information:** unused terminals, off-grid origins and electrically connected
+  nets with undrawn links or declared terminals without symbol anchors. Unused
+  pins can be intentional, especially on boards. Hidden terminals are checked
+  against the component declaration and are not invented as visible anchors.
+
+Filter by severity or reference/net/check text. Select a result to highlight and
+locate its target. Previous/Next navigates the filtered results; the details explain
+what was found. **Route this net** is available for applicable drawing problems
+and commits through ordinary undo history. Lists render the first 200 matching
+results; filters and Previous/Next still reach the complete report.
+
+Bounding-box checks include symbol whitespace and can need human interpretation.
+Ordinary perpendicular crossings of different nets are allowed; endpoint touches
+and collinear overlaps are flagged as visually ambiguous, without joining their
+nets. These checks do **not** validate electrical drive compatibility, power
+integrity, physical clearance, analog accuracy or firmware behavior. They do not
+replace the native loader, simulation diagnostics, Verify scenarios or a future
+full electrical-rule checker. There is no performance qualification for very
+large sheets; work is isolated in a worker with a 20-second deadline.

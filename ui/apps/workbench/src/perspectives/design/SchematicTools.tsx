@@ -3,7 +3,7 @@
 import { Badge, Button, IconButton, Input, Select, useToast } from '@embsim/design';
 import type { Project } from '@embsim/protocol';
 import { type Arrangement, type LayoutOptions, type LayoutResult, type SchematicCanvasHandle } from '@embsim/scene';
-import { AlignStartHorizontal, AlignStartVertical, ArrowDownUp, ArrowLeftRight, Focus, Grid2X2, Network, Route, Search, Sparkles, X } from 'lucide-react';
+import { AlignStartHorizontal, AlignStartVertical, ArrowDownUp, ArrowLeftRight, ClipboardCheck, Focus, Grid2X2, Network, Route, Search, Sparkles, X } from 'lucide-react';
 import { useMemo, useState, type RefObject } from 'react';
 import { errorMessage } from '../../actions';
 import { useProject } from '../../stores/project';
@@ -27,8 +27,11 @@ export function applyLayoutFields(current: Project, planned: Project): Project {
   return current;
 }
 
-export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDisplay }: {
+export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDisplay, onChecks, checkCount, checking }: {
   canvas: RefObject<SchematicCanvasHandle | null>;
+  onChecks?(): void;
+  checkCount?: number;
+  checking?: boolean;
   onStudio(): void;
   onPreview(preview: LayoutPreview): void;
   display: CanvasDisplay;
@@ -76,6 +79,7 @@ export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDispl
         <Button size="sm" icon={<Sparkles />} disabled={!project || !editable || busy} onClick={onStudio}>Auto layout</Button>
         <Button size="sm" variant="ghost" icon={<AlignStartHorizontal />} disabled={!editable || busy || selection.components.length < 2} onClick={() => { setMenu(menu === 'arrange' ? null : 'arrange'); setFinder(false); }}>Arrange</Button>
         <Button size="sm" variant="ghost" icon={<Focus />} disabled={!selection.components.length && !selectedNet} onClick={() => selectedNet ? canvas.current?.focusNet(selectedNet) : canvas.current?.focusComponents(selection.components)}>Focus</Button>
+        {onChecks && <Button size="sm" variant="ghost" icon={<ClipboardCheck />} onClick={onChecks}>Checks{checking ? ' …' : checkCount ? ` ${checkCount}` : ''}</Button>}
         <Button size="sm" variant="ghost" icon={<Search />} onClick={() => { setFinder(!finder); setMenu(null); }}>Find</Button>
         <Button size="sm" variant="ghost" icon={<Grid2X2 />} onClick={() => { setMenu(menu === 'view' ? null : 'view'); setFinder(false); }}>View</Button>
       </div>

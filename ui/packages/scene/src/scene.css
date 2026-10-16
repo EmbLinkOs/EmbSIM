@@ -496,3 +496,22 @@
 .es-component__ref { font-size: 11px; fill: var(--text); paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }
 .es-component__value { font-size: 9px; fill: var(--text-muted); paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }
 .es-net-label text { font-size: 10px; paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }
+
+.es-scene__segment-handle {
+  fill: var(--canvas-paper);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  pointer-events: all;
+}
+.es-scene__segment-handle:hover,
+.es-scene__segment-handle:focus-visible {
+  fill: var(--accent);
+  stroke: var(--canvas-paper);
+  outline: none;
+}
+.es-scene__issue-marker circle { fill: none; stroke: var(--warning); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.es-scene__issue-marker--error circle { stroke: var(--danger); }
+.es-scene__issue-marker--info circle { stroke: var(--accent); }
+.es-wire[role='button']:focus-visible { outline: none; }
+.es-wire[role='button']:focus-visible .es-wire__line { stroke: var(--accent); stroke-width: 3; }

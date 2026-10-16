@@ -283,10 +283,115 @@ def main():
                 assert (
                     projects()[-1] == added
                 ), "One Undo must remove the entire manual connection"
+                # Repair an existing track: only layout edits, unchanged electrical data.
+                index = next(
+                    i
+                    for i, w in enumerate(added["layout"]["wires"])
+                    if len(w["points"]) > 1
+                    and w["points"][0] != w["points"][1]
+                    and (
+                        w["points"][0][0] == w["points"][1][0]
+                        or w["points"][0][1] == w["points"][1][1]
+                    )
+                )
+                page.locator(f'[data-wire="{index}"]').press("Enter")
+                start_frames = len(sent)
+                page.get_by_label("Segment offset", exact=True).fill("30")
+                page.get_by_role(
+                    "button", name="Move track segment", exact=True
+                ).click()
+                page.wait_for_timeout(300)
+                reshaped = projects()[-1]
+                assert reshaped["nets"] == added["nets"]
+                assert reshaped["components"] == added["components"]
+                original_track = added["layout"]["wires"][index]["points"]
+                changed_track = reshaped["layout"]["wires"][index]["points"]
+                assert changed_track != original_track
+                assert (
+                    changed_track[0] == original_track[0]
+                    and changed_track[-1] == original_track[-1]
+                )
+                edits = [
+                    e
+                    for f in sent[start_frames:]
+                    if f.get("method") == "project.transaction"
+                    for e in f.get("params", {}).get("edits", [])
+                ]
+                assert edits and all("set_layout" in e for e in edits), edits
+                page.get_by_role("button", name="Undo", exact=True).click()
+                page.wait_for_timeout(250)
+                assert projects()[-1] == added
+                # Set both fresh resistors in one transaction, then restore exactly.
+                page.get_by_role("application", name="Schematic canvas").press("Escape")
+                for component_id in new_ids:
+                    page.locator(
+                        f'[data-component="{component_id}"] [role="button"]'
+                    ).first.press("Space")
+                page.get_by_role("checkbox", name="Set resistance", exact=True).check()
+                page.get_by_label("Shared resistance", exact=False).fill("2.2k")
+                page.get_by_role(
+                    "button", name="Apply shared properties", exact=True
+                ).click()
+                page.wait_for_timeout(400)
+                batch = projects()[-1]
+                assert all(
+                    c.get("params", {}).get("resistance") in ("2.2k", 2200)
+                    for c in batch["components"]
+                    if c["id"] in new_ids
+                )
+                assert batch["nets"] == added["nets"]
+                page.get_by_role("button", name="Undo", exact=True).click()
+                page.wait_for_timeout(300)
+                assert projects()[-1] == added
+                # Erasing drawing must keep the electrical net and become a navigable check.
+                page.locator(f'[data-wire="{index}"]').press("Enter")
+                net_name = added["layout"]["wires"][index]["net"]
+                page.get_by_role("button", name="Clear drawing", exact=True).click()
+                page.wait_for_timeout(250)
+                erased = projects()[-1]
+                assert erased["nets"] == added["nets"]
+                assert not any(w["net"] == net_name for w in erased["layout"]["wires"])
+                page.get_by_role("button", name="Checks", exact=False).click()
+                result = page.locator(f'[data-check-id="undrawn-net:{net_name}"]')
+                expect(result).to_be_visible(timeout=10000)
+                result.click()
+                expect(
+                    page.get_by_role("button", name="Locate on sheet", exact=True)
+                ).to_be_visible()
+                page.get_by_role("button", name="View", exact=True).click()
+                page.get_by_label("Show grid", exact=True).check()
+                page.get_by_role("checkbox", name="Sheet navigator", exact=True).check()
+                page.get_by_role("button", name="Close tools", exact=True).click()
+                page.get_by_label("Search components", exact=True).fill("")
+                page.get_by_role("button", name="Zoom to fit", exact=True).click()
+                expect(
+                    page.get_by_role("button", name="Auto layout", exact=True)
+                ).to_be_enabled()
+                page.wait_for_timeout(200)
+                page.screenshot(
+                    path=str(out / "authoring-checks-dark.png"), full_page=True
+                )
+                page.get_by_role("button", name="Switch to light theme").click()
+                expect(
+                    page.get_by_role("button", name="Auto layout", exact=True)
+                ).to_be_enabled()
+                page.wait_for_timeout(200)
+                page.screenshot(
+                    path=str(out / "authoring-checks-light.png"), full_page=True
+                )
+                page.set_viewport_size({"width": 1024, "height": 700})
+                assert page.evaluate(
+                    "document.documentElement.scrollWidth <= innerWidth"
+                ), "Checks overflow the compact viewport"
+                page.screenshot(path=str(out / "authoring-compact.png"), full_page=True)
+                page.set_viewport_size({"width": 1600, "height": 1000})
+                page.get_by_role("button", name="Undo", exact=True).click()
+                page.wait_for_timeout(300)
+                assert projects()[-1] == added
                 assert not errors, errors
                 browser.close()
                 print(
-                    "PASS: real-engine preview, layout-only apply, exact undo/redo, finder, connect-then-arrange, manual routing, view controls, themes and compact viewport"
+                    "PASS: real-engine preview, layout-only apply, exact undo/redo, finder, connect-then-arrange, manual routing, segment repair, batch properties, structural checks, view controls, themes and compact viewport"
                 )
         finally:
             server.terminate()
