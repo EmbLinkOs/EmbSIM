@@ -198,8 +198,7 @@ static void uart_tick(void *ctx, u32 cycles)
     struct uart *u = (struct uart *)ctx;
     struct esk_mach *s = u->s;
     int changed = 0;
-    if (s->cycles - cycles < u->since)
-        cycles = (u32)(s->cycles - u->since); /* the instruction that started it */
+    cycles = esk_mach_after(s, cycles, u->since); /* the instruction that started it */
     if (u->busy) {
         if (u->left > cycles) {
             u->left -= cycles;

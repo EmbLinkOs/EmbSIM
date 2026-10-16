@@ -24,6 +24,7 @@
         "backend": {"type": "string", "enum": ["cortex-m", "riscv", "avr", "mips", "pic32", "pic24", "pic16"]},
         "model": {"type": "string", "minLength": 1},
         "priority_bits": {"type": "integer", "minimum": 0, "maximum": 8},
+        "cores": {"type": "integer", "minimum": 1, "maximum": 2, "description": "Cores of the model sharing the part (the RP2040's two Cortex-M0+): core 0 runs from reset, the others wait for the part to launch them"},
         "timing_tier": {"type": "string", "enum": ["exact", "estimated", "unmodelled"]},
         "reset_pc": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "Where the core starts after reset (a RISC-V core's reset vector, or the entry its boot ROM jumps to)"},
         "prog_end": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "A PIC24's program memory's end, as a program address (its configuration words are the last words before it)"},

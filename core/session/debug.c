@@ -259,6 +259,8 @@ static es_status where(dbg *d)
     esk_json_set_integer(d->s->a, o, "instructions", (int64_t)d->m->insns);
     esk_json_set_integer(d->s->a, o, "cycles", (int64_t)d->m->cycles);
     esk_json_set_integer(d->s->a, o, "ram", (int64_t)main_ram(d));
+    if (esk_cortexm_cores(d->m) > 1)
+        esk_json_set_integer(d->s->a, o, "core", esk_cortexm_core(d->m)); /* the one that runs next */
     d->result = o;
     return ES_OK;
 }

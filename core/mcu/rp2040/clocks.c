@@ -691,9 +691,13 @@ void esk_rp2040_bootrom_resets(struct esk_mach *s)
 
 /* ---- PSM: every domain powered but those forced off ------------------------ */
 
+/* FRCE_OFF.PROC1 powers core 1 off; cleared, core 1 starts in its bootrom
+ * (sio.c) */
 struct psm {
+    struct esk_mach *s;
     struct esk_rf_periph *p;
     struct esk_rf_reg *off, *done;
+    u64 m_proc1;
 };
 
 static void psm_done(struct psm *m)
@@ -710,6 +714,8 @@ static void psm_write(void *ctx, u32 off, int n, u32 v)
     struct psm *m = (struct psm *)ctx;
     esk_rf_write(m->p, off, n, v);
     psm_done(m);
+    if (m->m_proc1 && !m->s->bus.debug)
+        esk_rp2040_core1_power(m->s, !(m->off->value & m->m_proc1));
 }
 
 static void psm_reset(void *ctx) { psm_done((struct psm *)ctx); }
@@ -723,11 +729,13 @@ void *esk_rp2040_psm_create(struct esk_mach *s, struct esk_rf_periph *p)
     struct psm *m = (struct psm *)esk_mach_alloc(s, sizeof *m);
     if (!m)
         return 0;
+    m->s = s;
     m->p = p;
     m->off = esk_rf_reg(p, "FRCE_OFF");
     m->done = esk_rf_reg(p, "DONE");
     if (!m->off || !m->done)
         return 0;
+    m->m_proc1 = esk_rf_mask(m->off, "PROC1");
     esk_rf_set_reset(m->done, esk_rf_fields(m->done));
     return m;
 }
@@ -793,8 +801,7 @@ static void wd_tick(void *ctx, u32 cycles)
     u32 per = esk_rp2040_tick_cycles(s), n;
     if (!ref || !sys || !per)
         return;
-    if (s->cycles - cycles < w->since)
-        cycles = (u32)(s->cycles - w->since); /* the instruction that started it */
+    cycles = esk_mach_after(s, cycles, w->since); /* the instruction that started it */
     w->acc += (u64)cycles * ref;
     one = sys * per;
     if (w->acc < one)

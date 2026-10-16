@@ -2,8 +2,8 @@
 /* Copyright 2026 Junior Deogracias */
 /* test_rp2040.c -- the RP2040's models (SPEC-009) on the machine the
  * catalog's description builds: the boot through boot2, the bus rules, the
- * resets, the clocks, the timer on the watchdog's tick, the SIO's divider
- * and the UART's bit time. The program's accesses are made from here, as a
+ * resets, the clocks, the timer on the watchdog's tick, the SIO's divider,
+ * the UART's bit time and core 1. The program's accesses are made from here, as a
  * core's would be. */
 #include "harness.h"
 #include "mcu/build.h"
@@ -316,6 +316,52 @@ static void test_uart_bit_time(void)
     rp_close(&f);
 }
 
+/* Core 1: waiting in its bootrom out of reset, having sent core 0 a 0;
+ * launched by the SDK's sequence through the FIFO, each word echoed; its
+ * CPUID; a WFE that core 0's SEV ends; powered off and on by the PSM. The
+ * programs as llvm-mc assembles them:
+ *   core 1 (0x20002000): ldr r0, =SIO; ldr r1, [r0]; ldr r2, =0x20003000;
+ *                        str r1, [r2]; wfe; movs r1, #7; str r1, [r2, #4]; b .
+ *   core 0 (0x10000200): ldr r0, =0x20003000; 1: ldr r1, [r0]; cmp r1, #1;
+ *                        bne 1b; sev; b . */
+static void test_core1(void)
+{
+    static const u32 c1[6] = { 0x68014803u, 0x60114a03u, 0x2107bf20u, 0xe7fe6051u, 0xd0000000u, 0x20003000u };
+    static const u32 c0[4] = { 0x68014802u, 0xd1fc2901u, 0xe7febf40u, 0x20003000u };
+    const u32 seq[6] = { 0, 0, 1, 0x10000100u, 0x20003800u, 0x20002001u };
+    rp f;
+    u32 i;
+    if (!rp_open(&f, 1))
+        return;
+    CHECK_EQ(esk_cortexm_cores(&f.m), 2);
+    CHECK(esk_cortexm_core_booting(&f.m, 1));
+    CHECK_EQ(rd(&f, 0xd0000000u), 0u);           /* CPUID: core 0 */
+    CHECK_EQ(rd(&f, 0xd0000050u) & 3u, 3u);      /* FIFO_ST: VLD (the bootrom's 0), RDY */
+    CHECK_EQ(rd(&f, 0xd0000058u), 0u);
+    CHECK_EQ(rd(&f, 0xd0000050u) & 1u, 0u);
+    for (i = 0; i < 6; i++)
+        put(&f, 0x20002000u + 4u * i, c1[i]);
+    for (i = 0; i < 4; i++)
+        put(&f, 0x10000200u + 4u * i, c0[i]);
+    for (i = 0; i < 6; i++) {
+        wr(&f, 0xd0000054u, seq[i]);
+        CHECK_EQ(rd(&f, 0xd0000058u), seq[i]); /* the echo */
+    }
+    CHECK(esk_cortexm_core_running(&f.m, 1));
+    esk_mach_run(&f.m, 4000, 0);
+    CHECK_EQ(rd(&f, 0x20003000u), 1u); /* core 1's CPUID */
+    CHECK_EQ(rd(&f, 0x20003004u), 7u); /* past its WFE: core 0's SEV */
+    CHECK(f.m.asleep);                 /* both at their branch to themselves */
+    /* the PSM: core 1 off, then on again in its bootrom */
+    (void)rd(&f, 0xd0000058u);
+    wr(&f, 0x40010004u + 0x2000u, 1u << 16);
+    CHECK(!esk_cortexm_core_running(&f.m, 1) && !esk_cortexm_core_booting(&f.m, 1));
+    wr(&f, 0x40010004u + 0x3000u, 1u << 16);
+    CHECK(esk_cortexm_core_booting(&f.m, 1));
+    CHECK_EQ(rd(&f, 0xd0000050u) & 1u, 1u); /* its 0 */
+    rp_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_boot);
 RUN(test_no_boot2);
@@ -325,4 +371,5 @@ RUN(test_clocks);
 RUN(test_timer_alarm);
 RUN(test_divider);
 RUN(test_uart_bit_time);
+RUN(test_core1);
 TEST_MAIN_END

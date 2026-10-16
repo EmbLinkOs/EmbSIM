@@ -120,8 +120,7 @@ static void tmr_tick(void *ctx, u32 cycles)
     struct tmr *t = (struct tmr *)ctx;
     struct esk_mach *s = t->s;
     u64 d = divisor(t), a;
-    if (s->cycles - cycles < t->since)
-        cycles = (u32)(s->cycles - t->since); /* the instruction that started it */
+    cycles = esk_mach_after(s, cycles, t->since); /* the instruction that started it */
     a = t->acc + cycles;
     if (a < d) {
         t->acc = a;

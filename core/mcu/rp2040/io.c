@@ -22,13 +22,13 @@
  *     inverts or forces it): what GPIO_IN reads, and the interrupt's;
  *   - the interrupts (INTR0-3): LEVEL_LOW and LEVEL_HIGH follow the input
  *     after IRQOVER, EDGE_LOW and EDGE_HIGH latch its falls and rises until
- *     written with 1; PROC0_INTS is (INTR | PROC0_INTF) & PROC0_INTE, and
- *     any bit of it raises IO_IRQ_BANK0, when it sets and when a write
- *     leaves it set;
+ *     written with 1; PROCn_INTS is (INTR | PROCn_INTF) & PROCn_INTE, and
+ *     any bit of it raises IO_IRQ_BANK0 on core n, when it sets and when a
+ *     write leaves it set;
  *   - GPIOn_STATUS shows each stage: OUTFROMPERI, OUTTOPAD, OEFROMPERI,
  *     OETOPAD, INFROMPAD, INTOPERI, IRQFROMPAD, IRQTOPROC.
  *
- * Not modelled: PROC1's interrupts (core 1), DORMANT_WAKE, the pads' drive
+ * Not modelled: DORMANT_WAKE, the pads' drive
  * strength, slew and Schmitt trigger, the QSPI bank's pins and interrupts,
  * and the other functions' peripherals (SPI, I2C, PWM, PIO, the clock pins,
  * USB). */
@@ -46,7 +46,7 @@ struct io {
     struct esk_mach *s;
     struct esk_rf_periph *p, *pads;
     struct esk_rf_reg *status[NPIN], *ctrl[NPIN], *pad[NPIN];
-    struct esk_rf_reg *intr[4], *inte[4], *intf[4], *ints[4];
+    struct esk_rf_reg *intr[4], *inte[2][4], *intf[2][4], *ints[2][4]; /* PROC0, PROC1 */
     u64 m_funcsel, m_outover, m_oeover, m_inover, m_irqover;
     u64 m_od, m_ie, m_pue, m_pde;
     u64 st_outperi, st_outpad, st_oeperi, st_oepad, st_inpad, st_inperi, st_irqpad, st_irqproc;
@@ -158,16 +158,21 @@ static void settle(struct io *x)
 
 static void irqs(struct io *x, int again)
 {
-    int any = 0, was = 0, r;
-    for (r = 0; r < 4; r++) {
-        u64 v = (x->intr[r]->value | x->intf[r]->value) & x->inte[r]->value;
-        was |= x->ints[r]->value != 0;
-        if (v != x->ints[r]->value)
-            esk_rf_hw(x->ints[r], v);
-        any |= v != 0;
+    int c, r;
+    for (c = 0; c < 2; c++) {
+        int any = 0, was = 0;
+        if (!x->inte[c][0])
+            continue;
+        for (r = 0; r < 4; r++) {
+            u64 v = (x->intr[r]->value | x->intf[c][r]->value) & x->inte[c][r]->value;
+            was |= x->ints[c][r]->value != 0;
+            if (v != x->ints[c][r]->value)
+                esk_rf_hw(x->ints[c][r], v);
+            any |= v != 0;
+        }
+        if (any && (!was || again) && x->irq >= 0)
+            esk_cortexm_core_interrupt(x->s, c, 16 + x->irq);
     }
-    if (any && (!was || again))
-        esk_rf_interrupt(x->p, x->irq);
 }
 
 void esk_rp2040_sio_pins(struct esk_mach *s, u32 out, u32 oe)
@@ -277,7 +282,7 @@ void *esk_rp2040_io_create(struct esk_mach *s, struct esk_rf_periph *p)
 {
     struct io *x = (struct io *)esk_mach_alloc(s, sizeof *x);
     char nm[32];
-    int n, r;
+    int n, r, c;
     if (!x)
         return 0;
     memset(x, 0, sizeof *x);
@@ -299,14 +304,20 @@ void *esk_rp2040_io_create(struct esk_mach *s, struct esk_rf_periph *p)
     for (r = 0; r < 4; r++) {
         (void)snprintf(nm, sizeof nm, "INTR%d", r);
         x->intr[r] = esk_rf_reg(p, nm);
-        (void)snprintf(nm, sizeof nm, "PROC0_INTE%d", r);
-        x->inte[r] = esk_rf_reg(p, nm);
-        (void)snprintf(nm, sizeof nm, "PROC0_INTF%d", r);
-        x->intf[r] = esk_rf_reg(p, nm);
-        (void)snprintf(nm, sizeof nm, "PROC0_INTS%d", r);
-        x->ints[r] = esk_rf_reg(p, nm);
-        if (!x->intr[r] || !x->inte[r] || !x->intf[r] || !x->ints[r])
+        for (c = 0; c < 2; c++) {
+            (void)snprintf(nm, sizeof nm, "PROC%d_INTE%d", c, r);
+            x->inte[c][r] = esk_rf_reg(p, nm);
+            (void)snprintf(nm, sizeof nm, "PROC%d_INTF%d", c, r);
+            x->intf[c][r] = esk_rf_reg(p, nm);
+            (void)snprintf(nm, sizeof nm, "PROC%d_INTS%d", c, r);
+            x->ints[c][r] = esk_rf_reg(p, nm);
+            if (!x->inte[c][r] || !x->intf[c][r] || !x->ints[c][r])
+                x->inte[c][r] = x->intf[c][r] = x->ints[c][r] = 0;
+        }
+        if (!x->intr[r] || !x->inte[0][r])
             return 0;
+        if (!x->inte[1][r])
+            x->inte[1][0] = 0; /* PROC1's are all there, or none is used */
     }
     x->m_funcsel = esk_rf_mask(x->ctrl[0], "FUNCSEL");
     x->m_outover = esk_rf_mask(x->ctrl[0], "OUTOVER");

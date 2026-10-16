@@ -327,6 +327,16 @@ char *esk_mach_strdup(struct esk_mach *m, const char *s);
 /* a device on the bus, keeping time if it has a tick or next_event hook */
 es_status esk_mach_add_dev(struct esk_mach *m, u32 base, u32 size, const struct esk_dev_ops *ops,
                            void *ctx);
+/* of a tick's `cycles` (they end now), those after `since`, the cycle a
+ * device's clock started: all of them, or the part of the instruction that
+ * started it; 0 when it started after them (another core's instruction,
+ * ahead of the machine's time: mcu/cortexm/smp.c) */
+ES_INLINE u32 esk_mach_after(const struct esk_mach *m, u32 cycles, u64 since)
+{
+    if (m->cycles - cycles >= since)
+        return cycles;
+    return m->cycles > since ? (u32)(m->cycles - since) : 0;
+}
 /* end the run: state, and the reason */
 void esk_mach_end(struct esk_mach *m, int state, const char *fmt, ...);
 /* a byte of the program's console output */
@@ -393,6 +403,24 @@ int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap,
  * its own devices on the bus; ES_ENOTFOUND for an unknown model */
 es_status esk_cortexm_create(struct esk_mach *m, const char *model, int prio_bits,
                              struct esk_cpu **out);
+/* `cores` Cortex-M cores of one model sharing the machine (mcu/cortexm/smp.c):
+ * core 0 runs from reset, the others wait to be launched; with 1, as
+ * esk_cortexm_create */
+es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio_bits, int cores,
+                                 struct esk_cpu **out);
+/* the cores, and the one whose access is in progress (a debugger's: the one
+ * that runs next) */
+int esk_cortexm_cores(struct esk_mach *m);
+int esk_cortexm_core(struct esk_mach *m);
+/* exception n pends on one core's NVIC only */
+void esk_cortexm_core_interrupt(struct esk_mach *m, int core, int n);
+/* a core other than core 0 powered off (reset, idle) or on (waiting in its
+ * bootrom to be launched); whether it waits so, or runs (or sleeps) */
+void esk_cortexm_core_power(struct esk_mach *m, int core, int on);
+int esk_cortexm_core_booting(struct esk_mach *m, int core);
+int esk_cortexm_core_running(struct esk_mach *m, int core);
+/* a waiting core starts at `entry` with its stack and vector table */
+void esk_cortexm_core_launch(struct esk_mach *m, int core, u32 vtor, u32 sp, u32 entry);
 /* an AVR core of `model` ("atmega328p"), with its own devices on the bus
  * (mcu/avr/avr.h) */
 es_status esk_avr_create(struct esk_mach *m, const char *model, struct esk_cpu **out);

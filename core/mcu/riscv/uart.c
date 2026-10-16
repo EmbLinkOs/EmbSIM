@@ -103,8 +103,7 @@ static void ua_tick(void *ctx, u32 cycles)
     struct fe_uart *u = (struct fe_uart *)ctx;
     if (!u->running)
         return;
-    if (u->s->cycles - cycles < u->since)
-        cycles = (u32)(u->s->cycles - u->since);
+    cycles = esk_mach_after(u->s, cycles, u->since);
     if (u->left > cycles) {
         u->left -= cycles;
         return;

@@ -17,8 +17,8 @@
  * The ROM's vector table gives the bootrom's stack top (0x20041f00), its
  * header the bootrom's magic and version (B2's, 3), and its table lookup
  * finds no function: the bootrom's functions (flash programming, the
- * float library, memcpy, reset_usb_boot) are not there. Core 1 stays in
- * the bootrom's wait for its vector: it never runs. */
+ * float library, memcpy, reset_usb_boot) are not there. Core 1 waits in
+ * its bootrom until core 0 launches it; sio.c answers for that bootrom. */
 #include <stdio.h>
 #include <string.h>
 

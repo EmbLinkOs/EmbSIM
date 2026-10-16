@@ -98,6 +98,9 @@ u32 esk_rp2040_crc32(const u8 *p, u32 n);
 /* the bootrom's flash boot, at a reset (boot.c), and the peripherals it
  * takes out of reset (clocks.c) */
 void esk_rp2040_boot(struct esk_mach *m);
+/* sio.c: core 1 powered off by the PSM (FRCE_OFF.PROC1), or on again into
+ * its bootrom */
+void esk_rp2040_core1_power(struct esk_mach *m, int on);
 void esk_rp2040_bootrom_resets(struct esk_mach *m);
 
 #endif

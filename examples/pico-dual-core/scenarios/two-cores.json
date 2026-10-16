@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "two-cores",
+  "until": "2.2s",
+  "description": "Core 0's banner; core 1 launched, its CPUID and the counter both cores added to under a spinlock; core 1's answers from its own divider; the LED's 1 Hz blink from core 1's timer alarm; a button press taken by core 1 and printed by core 0; the terminal's text echoed in upper case.",
+  "inputs": [
+    {
+      "at": "1.2s",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.25s",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1.5s",
+      "target": "VT1",
+      "input": "tx_text",
+      "value": "two cores"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "20ms",
+      "probe": "console",
+      "expect": {
+        "contains": "pico: two cores, clk_sys 125000 kHz, core 0 CPUID 0"
+      }
+    },
+    {
+      "id": "core1",
+      "at": "20ms",
+      "probe": "console",
+      "expect": {
+        "contains": "core 1 CPUID 1, shared 2000"
+      }
+    },
+    {
+      "id": "divide-10",
+      "at": "20ms",
+      "probe": "console",
+      "expect": {
+        "contains": "core 1: 10 * 1000 / 7 = 1428"
+      }
+    },
+    {
+      "id": "divide-1000",
+      "at": "20ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "core 1: 1000 * 1000 / 7 = 142857"
+      }
+    },
+    {
+      "id": "led-off",
+      "at": "0.4s",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "led-on",
+      "at": "0.6s",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "2.2s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 4
+      }
+    },
+    {
+      "id": "button",
+      "at": "1.3s",
+      "probe": "console",
+      "expect": {
+        "contains": "button 1 (core 1)"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "1.6s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "TWO CORES"
+      }
+    }
+  ]
+}

@@ -442,7 +442,9 @@ void esk_cm_exec16(struct esk_cm_state *cs, u32 h)
             }
             u32 hint = h >> 4 & 15;
             if (hint == 2 || hint == 3)
-                esk_cm_wfx_idle(cs);
+                esk_cm_wait(cs, hint == 2);
+            else if (hint == 4)
+                esk_cm_sev(cs);
             return;
         }
         esk_cm_undef(cs);
@@ -749,7 +751,9 @@ static void branch_misc(struct esk_cm_state *cs, u32 h1, u32 h2)
             return;
         }
         if ((h2 & 0xff) == 2 || (h2 & 0xff) == 3)
-            esk_cm_wfx_idle(cs);
+            esk_cm_wait(cs, (h2 & 0xff) == 2);
+        else if ((h2 & 0xff) == 4)
+            esk_cm_sev(cs);
         return;
     case 0x3b:                          /* CLREX, DSB, DMB, ISB */
         if ((h2 >> 4 & 15) == 2) {

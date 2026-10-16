@@ -71,8 +71,7 @@ static void tim_tick(void *ctx, u32 cycles)
     struct ntimer *t = (struct ntimer *)ctx;
     struct esk_mach *s = t->x.s;
     u32 per = tim_period(t);
-    if (s->cycles - cycles < t->since)
-        cycles = (u32)(s->cycles - t->since);
+    cycles = esk_mach_after(s, cycles, t->since);
     t->frac += cycles;
     while (t->frac >= per && t->on) {
         t->frac -= per;

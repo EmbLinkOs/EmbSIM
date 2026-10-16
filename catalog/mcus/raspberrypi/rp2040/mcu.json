@@ -18,6 +18,7 @@
     "backend": "cortex-m",
     "model": "cortex-m0plus",
     "priority_bits": 2,
+    "cores": 2,
     "timing_tier": "estimated",
     "fpu": false,
     "mpu": true,
@@ -308,10 +309,10 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Armv6-M (Cortex-M0+) execution on core 0 by the Cortex-M core extracted from EmbCC; every register of RP2040.svd with its reset value, on the part's bus rules (the atomic XOR, set and clear aliases; byte writes across the word); behavioural models extracted from EmbCC of RESETS (peripherals held in reset), the clocks (XOSC, ROSC, PLL_SYS, PLL_USB, the clock generators and FC0; clk_sys is the core's clock), PSM, the watchdog (its microsecond tick, its counter and the chip reset), the timer (its 64-bit count and four alarms), IO_BANK0 and PADS_BANK0 (function select, overrides, pulls, the four interrupt kinds), the SIO (GPIO, spinlocks, the divider, core 0's FIFO), UART0 and UART1 (PL011 FIFOs, interrupts, frames at the divisor's baud rate on their pins) and the SSI with the Pico's W25Q16JV flash behind it; and a stand-in for the bootrom that checks boot2's CRC, copies it to SRAM and enters it.",
+      "claims": "Armv6-M (Cortex-M0+) execution on both cores by the Cortex-M core extracted from EmbCC, interleaved on one clock with each core's NVIC, SysTick and event register (WFE, SEV); core 1 launched through its bootrom's FIFO handshake and powered off and on by the PSM; every register of RP2040.svd with its reset value, on the part's bus rules (the atomic XOR, set and clear aliases; byte writes across the word); behavioural models extracted from EmbCC of RESETS (peripherals held in reset), the clocks (XOSC, ROSC, PLL_SYS, PLL_USB, the clock generators and FC0; clk_sys is the core's clock), PSM, the watchdog (its microsecond tick, its counter and the chip reset), the timer (its 64-bit count and four alarms), IO_BANK0 and PADS_BANK0 (function select, overrides, pulls, the four interrupt kinds, to each core's own summary), the SIO (GPIO, spinlocks, each core's view: CPUID, a divider each, the FIFOs between the cores and SIO_IRQ_PROC0/1), UART0 and UART1 (PL011 FIFOs, interrupts, frames at the divisor's baud rate on their pins) and the SSI with the Pico's W25Q16JV flash behind it; and a stand-in for the bootrom that checks boot2's CRC, copies it to SRAM and enters it.",
       "omissions": [
-        "core 1 (it never leaves the bootrom's wait)",
         "the bootrom's code and its function table (flash programming, the float library, memcpy, the USB boot)",
+        "a debugger's choice of core (it sees the one that runs next)",
         "the XIP cache",
         "SPI, I2C, PWM, the ADC, DMA, the PIOs, USB and the RTC (plain registers)",
         "the interpolators",
@@ -320,7 +321,8 @@
       ],
       "validation": [
         "repo:tests/unit/test_rp2040.c",
-        "repo:examples/pico-blink-serial"
+        "repo:examples/pico-blink-serial",
+        "repo:examples/pico-dual-core"
       ]
     },
     "timed": {

@@ -60,8 +60,7 @@ static void rtc_tick(void *ctx, u32 cycles)
     u64 one;
     if (!esk_nrf_lfclk_on(s))
         return;
-    if (s->cycles - cycles < r->since)
-        cycles = (u32)(s->cycles - r->since);
+    cycles = esk_mach_after(s, cycles, r->since);
     one = (u64)NRF_CPU_HZ * (r->presc + 1u);
     r->acc += (u64)cycles * 32768u;
     while (r->acc >= one) {
