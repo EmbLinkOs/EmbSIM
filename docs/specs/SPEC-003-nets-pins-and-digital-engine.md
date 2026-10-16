@@ -139,3 +139,13 @@ contact bounce) does.
 `net.power_short` (two supplies of different nominal voltage on one net),
 `net.unconnected_required_pin`, `sched.delta_overflow`, `dig.setup_violation`,
 `dig.hold_violation`, `dig.min_pulse_violation`, `island.requires_electrical`.
+
+### Implemented packaged HC gates
+
+`hc_package` binds the complete 14-pin HC00/02/04/08/32/86 variants. `gate`
+selects NAND/NOR/inverter/AND/OR/XOR; four 2-input channels or six inverters
+are independent. Logical pins are `1A`, `1B`, `1Y` etc.; physical pin numbers
+come from each description. `VCC` and `GND` are sensed inputs rather than ideal
+sources. VCC=0 releases outputs; unknown rails produce X. Timed/electrical runs
+use the declared inertial `tpd`, functional runs use zero delay. Electrical
+amplitude is the nominal 5 V CMOS family, not a full supply-dependent IC model.

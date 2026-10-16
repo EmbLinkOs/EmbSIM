@@ -25,6 +25,43 @@ does not mean the described behaviour exists.
 
 Observed on 2026-10-16 in this workspace: Ubuntu 24.04, GCC 13.3 and Clang 18.1, CMake 3.28, Python 3.13, Node 22. `ctest` on the GCC Debug build: 14 of 14 targets pass (test_analog, test_engine, test_host, test_json, test_sched, test_session, test_mcu, tools_unittests, docs_integrity, banned_constructs, protocol_conformance, gdb_server, firmware_build, examples_headless); the same 14 pass on the Clang build. The CI matrix (Linux with GCC, Clang and TinyCC; macOS with Clang; Windows with MSVC; the workbench; tools and catalog; documentation; repository policy) was observed green on the M0 pull request and on the M1 pull request (EmbLinkOs/EmbSIM#2, head 9bc3d42, 2026-10-16), which ran the Blue Pill golden fixture, the GDB server and the firmware build on all three platforms.
 
+## First named-part catalog batch (component work)
+
+The catalog now contains 64 components, including 26 manufacturer/package entries
+and a generic open-collector comparator channel. The named batch adds discrete
+semiconductors, four regulators, full LM358P/LM393P packages, NE555P, LM35DZ,
+TMP36GT9Z and six full 74HC packages. `part` metadata is searchable and shown
+in the inspector; all named parts have original symbols and package illustrations.
+See [the catalog guide](../catalog/README.md) for the inventory, exact supported
+behaviors and source-review limits. Manufacturer PDFs were blocked by the current
+cloud proxy; no manufacturer qualification is claimed. Pin maps are cross-checked
+against the cited upstream KiCad reference where available; TMP36 TO-92 review
+remains pending. This is partial M3 catalog work, not completion of M3.
+
+Evidence from the component-work branch on Linux, GCC 14.2, Python 3.12 and Node 24:
+
+- `ctest --preset dev --output-on-failure --no-tests=error`: 16/16 target outcomes
+  successful. `firmware_build` explicitly skips without a cross compiler; all
+  other targets execute. The new native catalog test has 23 checks.
+- `catalog_fixtures` executes all 155 component fixtures through the CLI, including
+  all old fixtures, not only schema validation. It checks nominal outputs, all HC
+  channels and delays, loaded electrical rails, comparator pull-ups, sensor endpoints,
+  555 retained state/reset/divider and RC oscillation, and solver health.
+- Address/undefined-behavior sanitizer tests execute the native core and examples.
+  After correcting new metadata schema errors, the affected `tools_unittests`,
+  `catalog_fixtures` and `test_catalog` sanitizer targets all pass (3/3).
+- Python tools: 112 tests. `tools/validate.py --all`: 258 files, no errors/warnings.
+- Workbench typecheck, lint, production build and 70 existing tests pass.
+  A real-engine Chromium check verifies named-part search, manufacturer/package
+  labels, the inspector's datasheet link, and the Run view without page errors.
+- `examples/temperature-alarm` passes six assertions through the CLI. Its LM35DZ,
+  LM393P and 2N3904 circuit lights and extinguishes an LED as temperature changes.
+
+macOS, Windows and TinyCC have not been rerun locally for this batch. Existing
+CI defines those checks; remote results must be observed before claiming them.
+The earlier workbench Debug and hold-state findings are intentionally outside
+this component batch.
+
 ## Specified but unimplemented
 
 MCU families beyond the STM32F1 and cores beyond Cortex-M3/M4 (SPEC-009,

@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bat54",
+  "version": "1.0.0",
+  "name": "BAT54",
+  "category": "diodes",
+  "description": "BAT54 (SOT-23). Parameterized diode approximation for low-frequency circuit development; not a vendor SPICE model.",
+  "keywords": [
+    "Nexperia",
+    "BAT54",
+    "SOT-23",
+    "diode",
+    "rectifier",
+    "1N4148",
+    "1N4007"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    },
+    {
+      "name": "NC",
+      "number": 2,
+      "model": {
+        "kind": "nc"
+      },
+      "doc": "Not connected",
+      "required": false
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "200n",
+      "doc": "Saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1.05,
+      "doc": "Emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 2,
+      "doc": "Series resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "bv": {
+      "type": "number",
+      "unit": "V",
+      "default": 30,
+      "doc": "Reverse breakdown voltage",
+      "min": 0.1,
+      "max": 10000,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "diode"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 180,
+    "height": 80,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "NC": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "K": {
+        "x": 180,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Parameterized diode approximation; DC/low-frequency fixture coverage only.",
+      "omissions": [
+        "temperature dependence",
+        "reverse recovery beyond tt",
+        "noise",
+        "manufacturer min/max tolerances",
+        "thermal or destructive behavior",
+        "device-to-device spread",
+        "unverified high-frequency behavior",
+        "no manufacturer model qualification",
+        "junction capacitances",
+        "charge storage and reverse recovery"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "BAT54 manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://assets.nexperia.com/documents/data-sheet/BAT54_SER.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Nexperia",
+    "mpn": "BAT54",
+    "package": "SOT-23",
+    "datasheet": "https://assets.nexperia.com/documents/data-sheet/BAT54_SER.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

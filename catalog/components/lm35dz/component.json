@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "category": "sensors",
+  "description": "LM35DZ: externally controlled ambient temperature converted to voltage. No thermal dynamics.",
+  "pins": [
+    {
+      "name": "OUT",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "OUT"
+    },
+    {
+      "name": "VS",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "VS"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "GND"
+    }
+  ],
+  "params": {
+    "slope": {
+      "type": "number",
+      "default": 0.01,
+      "unit": "V/degC"
+    },
+    "offset": {
+      "type": "number",
+      "default": 0,
+      "unit": "V"
+    },
+    "rout": {
+      "type": "number",
+      "default": 0.1,
+      "unit": "ohm",
+      "min": 0
+    },
+    "headroom": {
+      "type": "number",
+      "default": 0.1,
+      "unit": "V",
+      "min": 0
+    }
+  },
+  "model": {
+    "primitive": "temperature_sensor"
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Nominal Vout = 0 V + 10 mV/degC * temperature; finite output resistance; supply clipping.",
+      "omissions": [
+        "accuracy grade",
+        "self-heating",
+        "thermal time constant",
+        "supply current",
+        "noise",
+        "LM35 negative-temperature bias circuit",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          5
+        ]
+      }
+    }
+  },
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "default": 25,
+      "min": 0,
+      "max": 100,
+      "unit": "degC",
+      "doc": "Ambient temperature, degrees Celsius; user/scenario controlled."
+    }
+  ],
+  "outputs": [
+    {
+      "name": "vout",
+      "type": "number",
+      "unit": "V",
+      "doc": "Output voltage relative to circuit ground."
+    }
+  ],
+  "id": "emblink/lm35dz",
+  "name": "LM35DZ",
+  "version": "1.0.0",
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "LM35DZ",
+    "package": "TO-92",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/lm35.pdf"
+  },
+  "keywords": [
+    "Texas Instruments",
+    "LM35DZ",
+    "TO-92"
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "LM35DZ manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.ti.com/lit/ds/symlink/lm35.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Sensor_Temperature.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 180,
+    "height": 80,
+    "pins": {
+      "VS": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "GND": {
+        "x": 180,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

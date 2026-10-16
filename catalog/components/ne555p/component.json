@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "category": "timers",
+  "description": "NE555P PDIP-8 behavioral timer: resistor divider, SR memory, active-low reset, discharge switch and finite output drive.",
+  "pins": [
+    {
+      "name": "TRIG",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "TRIG"
+    },
+    {
+      "name": "THRESH",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "THRESH"
+    },
+    {
+      "name": "RESET",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "RESET"
+    },
+    {
+      "name": "CTRL",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "CTRL"
+    },
+    {
+      "name": "OUT",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "OUT"
+    },
+    {
+      "name": "DISCH",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "DISCH"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "GND"
+    }
+  ],
+  "params": {
+    "rout": {
+      "type": "number",
+      "default": 20,
+      "unit": "ohm",
+      "min": 1
+    },
+    "rdis": {
+      "type": "number",
+      "default": 10,
+      "unit": "ohm",
+      "min": 1
+    },
+    "sample_interval": {
+      "type": "number",
+      "unit": "s",
+      "default": "1u",
+      "min": "1n",
+      "max": "1m",
+      "advanced": true,
+      "doc": "Maximum threshold-sampling interval. State changes affect the following solve; timing error up to twice this interval."
+    }
+  },
+  "model": {
+    "primitive": "timer555"
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Divider/control pin, one-third trigger and two-thirds threshold, reset priority, discharge transistor and retained state. Thresholds are sampled at accepted solver steps. Latch decisions commit only after accepted steps; event timing may be up to twice sample_interval late. Default 1 us targets low-frequency use.",
+      "omissions": [
+        "propagation delay",
+        "supply current beyond divider",
+        "output stage asymmetry",
+        "temperature",
+        "threshold tolerances",
+        "crossing-time interpolation",
+        "supply ramp guarantees",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          5
+        ]
+      }
+    }
+  },
+  "outputs": [
+    {
+      "name": "high",
+      "type": "boolean",
+      "doc": "Accepted latch state."
+    },
+    {
+      "name": "vout",
+      "type": "number",
+      "unit": "V"
+    }
+  ],
+  "id": "emblink/ne555p",
+  "name": "NE555P",
+  "version": "1.0.0",
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "NE555P",
+    "package": "PDIP-8",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/ne555.pdf"
+  },
+  "keywords": [
+    "Texas Instruments",
+    "NE555P",
+    "PDIP-8"
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "NE555P manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.ti.com/lit/ds/symlink/ne555.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Timer.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 180,
+    "height": 100,
+    "pins": {
+      "GND": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "TRIG": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "RESET": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "CTRL": {
+        "x": 180,
+        "y": 80,
+        "side": "right"
+      },
+      "THRESH": {
+        "x": 180,
+        "y": 60,
+        "side": "right"
+      },
+      "DISCH": {
+        "x": 180,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 180,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

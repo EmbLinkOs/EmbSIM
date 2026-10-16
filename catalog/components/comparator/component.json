@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "category": "comparators",
+  "description": "Smooth DC open-collector comparator; external pull-up required.",
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "+"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "-"
+    },
+    {
+      "name": "OUT",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "OUT"
+    },
+    {
+      "name": "V+",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "V+"
+    },
+    {
+      "name": "V-",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "V-"
+    }
+  ],
+  "params": {
+    "ron": {
+      "type": "number",
+      "default": 40,
+      "unit": "ohm",
+      "min": 1
+    },
+    "roff": {
+      "type": "number",
+      "default": "1T",
+      "unit": "ohm",
+      "min": 1
+    },
+    "transition": {
+      "type": "number",
+      "default": "1m",
+      "unit": "V",
+      "min": "1u"
+    },
+    "min_supply": {
+      "type": "number",
+      "default": 2,
+      "unit": "V",
+      "min": 0
+    }
+  },
+  "model": {
+    "primitive": "comparator_oc"
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Open collector: finite on resistance for V+input < V-input; high impedance otherwise.",
+      "omissions": [
+        "propagation delay",
+        "input common-mode limits",
+        "offset",
+        "bias currents",
+        "supply current",
+        "hysteresis",
+        "unpowered leakage accuracy"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "id": "emblink/comparator",
+  "version": "1.0.0",
+  "name": "Open-collector comparator",
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Behavioral open-collector transfer function"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 180,
+    "height": 80,
+    "pins": {
+      "+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "V+": {
+        "x": 180,
+        "y": 40,
+        "side": "right"
+      },
+      "V-": {
+        "x": 180,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  }
+}

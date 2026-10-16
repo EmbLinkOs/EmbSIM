@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "dc-into-1k",
-  "description": "1 mA into 1 kΩ develops 1 V.",
+  "description": "1 mA flowing from ground (+) into OUT (-) through 1 kohm develops +1 V.",
   "policy": "electrical",
   "until": "1ms",
   "circuit": {
@@ -29,11 +29,11 @@
     ],
     "nets": {
       "OUT": [
-        "DUT.+",
+        "DUT.-",
         "R1.1"
       ],
       "GND": [
-        "DUT.-",
+        "DUT.+",
         "R1.2",
         "G.GND"
       ]

@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/l7805cv",
+  "version": "1.0.0",
+  "name": "L7805CV",
+  "category": "power",
+  "description": "L7805CV (TO-220-3). Parameterized regulator approximation for low-frequency circuit development; not a vendor SPICE model.",
+  "keywords": [
+    "STMicroelectronics",
+    "L7805CV",
+    "TO-220-3",
+    "regulator",
+    "ldo",
+    "LM1117",
+    "AMS1117",
+    "power"
+  ],
+  "pins": [
+    {
+      "name": "IN",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Unregulated input"
+    },
+    {
+      "name": "OUT",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": "$vout"
+      },
+      "doc": "Regulated output"
+    },
+    {
+      "name": "GND",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "aliases": [
+        "ADJ"
+      ],
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "vout": {
+      "type": "number",
+      "unit": "V",
+      "default": 5,
+      "doc": "Regulated output voltage",
+      "min": 0.5,
+      "max": 50
+    },
+    "dropout": {
+      "type": "number",
+      "unit": "V",
+      "default": 2,
+      "doc": "Minimum input-output difference for regulation",
+      "min": 0,
+      "max": 5
+    },
+    "imax": {
+      "type": "number",
+      "unit": "A",
+      "default": 1,
+      "doc": "Current limit",
+      "min": "1m",
+      "max": 20
+    },
+    "quiescent": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.005,
+      "doc": "Ground pin current",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "regulator"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 30,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      },
+      "GND": {
+        "x": 30,
+        "y": 30,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Parameterized regulator approximation; DC/low-frequency fixture coverage only.",
+      "omissions": [
+        "load and line regulation",
+        "thermal shutdown",
+        "stability versus output capacitor",
+        "noise",
+        "manufacturer min/max tolerances",
+        "thermal or destructive behavior",
+        "device-to-device spread",
+        "unverified high-frequency behavior",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "L7805CV manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.st.com/resource/en/datasheet/l78.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Regulator_Linear.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "STMicroelectronics",
+    "mpn": "L7805CV",
+    "package": "TO-220-3",
+    "datasheet": "https://www.st.com/resource/en/datasheet/l78.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

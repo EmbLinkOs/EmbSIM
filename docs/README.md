@@ -2,6 +2,7 @@
 
 | Where | What |
 |---|---|
+| [Component library](../catalog/README.md) | Named parts, categories, source status, model limits and executable fixtures |
 | [STATUS.md](STATUS.md) | What is implemented and with what evidence: the only support matrix |
 | [gallery/](gallery/README.md) | Screenshots of the workbench at each milestone |
 | [architecture/](architecture/README.md) | Vision, system architecture, engines, MCU runtime, workbench, decision records, roadmap, open questions, reuse assessment |

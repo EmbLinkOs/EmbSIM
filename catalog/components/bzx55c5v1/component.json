@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bzx55c5v1",
+  "version": "1.0.0",
+  "name": "BZX55C5V1",
+  "category": "diodes",
+  "description": "BZX55C5V1 (DO-35). Parameterized zener approximation for low-frequency circuit development; not a vendor SPICE model.",
+  "keywords": [
+    "Vishay",
+    "BZX55C5V1",
+    "DO-35",
+    "zener",
+    "diode",
+    "regulator",
+    "clamp"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "vz": {
+      "type": "number",
+      "unit": "V",
+      "default": 5.1,
+      "doc": "Breakdown (Zener) voltage",
+      "min": 1,
+      "max": 200
+    },
+    "rz": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 35,
+      "doc": "Dynamic resistance in breakdown",
+      "min": 0.01,
+      "max": 1000
+    },
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "1e-14",
+      "doc": "Forward saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1,
+      "doc": "Forward emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.5,
+      "doc": "Forward series resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "zener"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Parameterized zener approximation; DC/low-frequency fixture coverage only.",
+      "omissions": [
+        "temperature coefficient of vz",
+        "knee softness",
+        "capacitance",
+        "manufacturer min/max tolerances",
+        "thermal or destructive behavior",
+        "device-to-device spread",
+        "unverified high-frequency behavior",
+        "no manufacturer model qualification",
+        "junction capacitances",
+        "charge storage and reverse recovery"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "BZX55C5V1 manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.vishay.com/docs/85604/bzx55.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Vishay",
+    "mpn": "BZX55C5V1",
+    "package": "DO-35",
+    "datasheet": "https://www.vishay.com/docs/85604/bzx55.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "temperature-alarm",
+  "description": "LM35DZ at 5 V, LM393P dual comparator, a 2N3904 LED driver; threshold nominally 70 degrees Celsius.",
+  "libraries": [],
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "VS",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 5
+      },
+      "layout": {
+        "x": 60,
+        "y": 40
+      }
+    },
+    {
+      "id": "REF",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 0.7
+      },
+      "layout": {
+        "x": 60,
+        "y": 360
+      }
+    },
+    {
+      "id": "S1",
+      "component": "emblink/lm35dz",
+      "layout": {
+        "x": 240,
+        "y": 40
+      }
+    },
+    {
+      "id": "U1",
+      "component": "emblink/lm393p",
+      "layout": {
+        "x": 470,
+        "y": 80
+      }
+    },
+    {
+      "id": "RP",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "layout": {
+        "x": 390,
+        "y": 280
+      }
+    },
+    {
+      "id": "RB",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "layout": {
+        "x": 700,
+        "y": 180
+      }
+    },
+    {
+      "id": "Q1",
+      "component": "emblink/bjt_2n3904",
+      "layout": {
+        "x": 850,
+        "y": 180
+      }
+    },
+    {
+      "id": "RL",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 330
+      },
+      "layout": {
+        "x": 700,
+        "y": 40
+      }
+    },
+    {
+      "id": "D1",
+      "component": "emblink/led",
+      "layout": {
+        "x": 850,
+        "y": 40
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 60,
+        "y": 460
+      }
+    }
+  ],
+  "nets": {
+    "VCC": [
+      "VS.+",
+      "S1.VS",
+      "U1.VCC",
+      "RP.1",
+      "RL.1"
+    ],
+    "GND": [
+      "VS.-",
+      "REF.-",
+      "S1.GND",
+      "U1.GND",
+      "U1.IN2+",
+      "Q1.E",
+      "G.GND"
+    ],
+    "TEMP": [
+      "S1.OUT",
+      "U1.IN1+"
+    ],
+    "REFERENCE": [
+      "REF.+",
+      "U1.IN1-",
+      "U1.IN2-"
+    ],
+    "UNUSED": [
+      "U1.OUT2"
+    ],
+    "ALARM": [
+      "U1.OUT1",
+      "RP.2",
+      "RB.1"
+    ],
+    "BASE": [
+      "RB.2",
+      "Q1.B"
+    ],
+    "COLLECTOR": [
+      "Q1.C",
+      "D1.K"
+    ],
+    "LED_A": [
+      "RL.2",
+      "D1.A"
+    ]
+  },
+  "probes": [
+    {
+      "id": "temp",
+      "target": "net:TEMP",
+      "kind": "analog"
+    },
+    {
+      "id": "alarm",
+      "target": "net:ALARM",
+      "kind": "analog"
+    },
+    {
+      "id": "led",
+      "target": "device:D1.i",
+      "kind": "value"
+    }
+  ],
+  "scenarios": [
+    "scenarios/temperature.json"
+  ],
+  "settings": {
+    "h_max": "1us"
+  },
+  "layout": {
+    "labels": [
+      {
+        "net": "VCC",
+        "x": 90,
+        "y": 40
+      },
+      {
+        "net": "GND",
+        "x": 90,
+        "y": 80
+      },
+      {
+        "net": "REFERENCE",
+        "x": 90,
+        "y": 360
+      },
+      {
+        "net": "GND",
+        "x": 90,
+        "y": 400
+      },
+      {
+        "net": "VCC",
+        "x": 240,
+        "y": 60
+      },
+      {
+        "net": "TEMP",
+        "x": 240,
+        "y": 80
+      },
+      {
+        "net": "GND",
+        "x": 420,
+        "y": 60
+      },
+      {
+        "net": "ALARM",
+        "x": 470,
+        "y": 100
+      },
+      {
+        "net": "REFERENCE",
+        "x": 470,
+        "y": 120
+      },
+      {
+        "net": "TEMP",
+        "x": 470,
+        "y": 140
+      },
+      {
+        "net": "GND",
+        "x": 470,
+        "y": 160
+      },
+      {
+        "net": "GND",
+        "x": 650,
+        "y": 160
+      },
+      {
+        "net": "REFERENCE",
+        "x": 650,
+        "y": 140
+      },
+      {
+        "net": "UNUSED",
+        "x": 650,
+        "y": 120
+      },
+      {
+        "net": "VCC",
+        "x": 650,
+        "y": 100
+      },
+      {
+        "net": "VCC",
+        "x": 390,
+        "y": 290
+      },
+      {
+        "net": "ALARM",
+        "x": 450,
+        "y": 290
+      },
+      {
+        "net": "ALARM",
+        "x": 700,
+        "y": 190
+      },
+      {
+        "net": "BASE",
+        "x": 760,
+        "y": 190
+      },
+      {
+        "net": "BASE",
+        "x": 850,
+        "y": 200
+      },
+      {
+        "net": "COLLECTOR",
+        "x": 890,
+        "y": 180
+      },
+      {
+        "net": "GND",
+        "x": 890,
+        "y": 220
+      },
+      {
+        "net": "VCC",
+        "x": 700,
+        "y": 50
+      },
+      {
+        "net": "LED_A",
+        "x": 760,
+        "y": 50
+      },
+      {
+        "net": "LED_A",
+        "x": 850,
+        "y": 50
+      },
+      {
+        "net": "COLLECTOR",
+        "x": 910,
+        "y": 50
+      },
+      {
+        "net": "GND",
+        "x": 70,
+        "y": 460
+      }
+    ],
+    "sheet": {
+      "width": 1100,
+      "height": 650
+    }
+  }
+}

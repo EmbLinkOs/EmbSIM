@@ -105,6 +105,18 @@ function ComponentInspector({ id }: { id: string }) {
         {desc?.description && ` — ${desc.description}`}
       </div>
       <OpenInsideButton id={id} />
+      {desc?.part && (
+        <section className="wb-inspector__section" aria-label="Manufacturer part">
+          <h3>Manufacturer part</h3>
+          <dl className="wb-kv">
+            <dt>Manufacturer</dt><dd>{desc.part.manufacturer}</dd>
+            <dt>Part number</dt><dd className="es-mono">{desc.part.mpn}</dd>
+            <dt>Package</dt><dd>{desc.part.package}</dd>
+          </dl>
+          <a href={desc.part.datasheet} target="_blank" rel="noopener noreferrer">Manufacturer datasheet ↗</a>
+          <p className="es-muted">Behavioral model. Read the fidelity limits before using results.</p>
+        </section>
+      )}
 
       <section className="wb-inspector__section" aria-label="Parameters">
         <h3>Parameters</h3>

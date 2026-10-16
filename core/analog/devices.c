@@ -20,6 +20,7 @@
  * reports "i" (into pin 0) and "p" (power dissipated, watts). Junction devices
  * use SPICE's pnjlim voltage limiting on the exponentials. */
 #include "analog/analog.h"
+#include "analog/named.h"
 #include "util/num.h"
 #include <math.h>
 #include <string.h>
@@ -1372,7 +1373,7 @@ static const esk_adev_ops pmos_ops = {"pmos", sizeof(mos_state), pmos_setup, mos
 /* ---- behavioural op-amp ---------------------------------------------------------------- */
 
 typedef struct opamp_state {
-    double gain, rin, rout, vpos, vneg;
+    double gain, rin, rout, vpos, vneg, headroom_high, headroom_low;
     int supply_pins;
     double vout_trial;
 } opamp_state;
@@ -1380,6 +1381,8 @@ typedef struct opamp_state {
 static es_status opamp_setup(esk_adev *d)
 {
     opamp_state *s = (opamp_state *)d->state;
+    s->headroom_high = pd(d, "headroom_high", 0.0);
+    s->headroom_low = pd(d, "headroom_low", 0.0);
     s->gain = pd(d, "gain", 1e5);
     s->rin = pd(d, "rin", 1e12);
     s->rout = pd(d, "rout", 0.0);
@@ -1412,6 +1415,9 @@ static void opamp_load(esk_adev *d, esk_amatrix *m)
         vpos = vneg;
         vneg = t;
     }
+    vpos -= s->headroom_high;
+    vneg += s->headroom_low;
+    if (vpos < vneg) vpos = vneg;
     vamp = 0.5 * (vpos - vneg);
     vmid = 0.5 * (vpos + vneg);
     if (vamp < 1e-6)
@@ -1611,6 +1617,7 @@ static const esk_adev_ops *const device_table[] = {
     &resistor_ops,      &capacitor_ops, &inductor_ops, &vsource_ops,   &isource_ops, &switch_ops,
     &potentiometer_ops, &diode_ops,     &led_ops,      &zener_ops,     &bjt_npn_ops, &bjt_pnp_ops,
     &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
+    &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
 };
 
 const esk_adev_ops *esk_adev_find(const char *name)

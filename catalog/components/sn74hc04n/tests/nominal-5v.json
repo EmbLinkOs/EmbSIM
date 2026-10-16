@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "nominal-5v",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "LO",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 0
+        }
+      },
+      {
+        "id": "HI",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/sn74hc04n"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RL2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RL3",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RL4",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RL5",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RL6",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      }
+    ],
+    "nets": {
+      "LOW": [
+        "LO.+",
+        "DUT.GND",
+        "DUT.1A",
+        "DUT.2A",
+        "DUT.5A",
+        "DUT.6A",
+        "LO.-",
+        "HI.-",
+        "G.GND",
+        "RL1.2",
+        "RL2.2",
+        "RL3.2",
+        "RL4.2",
+        "RL5.2",
+        "RL6.2"
+      ],
+      "HIGH": [
+        "HI.+",
+        "DUT.VCC",
+        "DUT.3A",
+        "DUT.4A"
+      ],
+      "Y1": [
+        "DUT.1Y",
+        "RL1.1"
+      ],
+      "Y2": [
+        "DUT.2Y",
+        "RL2.1"
+      ],
+      "Y3": [
+        "DUT.3Y",
+        "RL3.1"
+      ],
+      "Y4": [
+        "DUT.4Y",
+        "RL4.1"
+      ],
+      "Y5": [
+        "DUT.5Y",
+        "RL5.1"
+      ],
+      "Y6": [
+        "DUT.6Y",
+        "RL6.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:Y1": {
+      "at": "50us",
+      "min_v": 4.7,
+      "max_v": 5.01
+    },
+    "net:Y2": {
+      "at": "50us",
+      "min_v": 4.7,
+      "max_v": 5.01
+    },
+    "net:Y3": {
+      "at": "50us",
+      "min_v": -0.01,
+      "max_v": 0.1
+    },
+    "net:Y4": {
+      "at": "50us",
+      "min_v": -0.01,
+      "max_v": 0.1
+    },
+    "net:Y5": {
+      "at": "50us",
+      "min_v": 4.7,
+      "max_v": 5.01
+    },
+    "net:Y6": {
+      "at": "50us",
+      "min_v": 4.7,
+      "max_v": 5.01
+    }
+  }
+}

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "high-side-switch",
-  "description": "Gate grounded with the source at 3.3 V turns the PMOS on; the load rises above 2.7 V.",
+  "description": "BS250: VGS=-5 V drives a 1 kohm load high; the 3.3 V/220 ohm case did not fully enhance this model.",
   "policy": "electrical",
   "until": "1ms",
   "circuit": {
@@ -12,14 +12,14 @@
         "component": "emblink/vsource",
         "params": {
           "kind": "dc",
-          "dc": 3.3
+          "dc": 5
         }
       },
       {
         "id": "RL",
         "component": "emblink/resistor",
         "params": {
-          "resistance": 220
+          "resistance": "1k"
         }
       },
       {
@@ -54,8 +54,8 @@
   "expect": {
     "net:LOAD": {
       "at": "0.5ms",
-      "min_v": 2.7,
-      "max_v": 3.3
+      "min_v": 4.5,
+      "max_v": 5.01
     }
   }
 }

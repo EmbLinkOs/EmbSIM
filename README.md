@@ -47,6 +47,11 @@ then [`docs/architecture/01-vision-and-principles.md`](docs/architecture/01-visi
 - **Linux, macOS and Windows** from one source tree; the core builds with
   GCC, Clang, TinyCC, MSVC and EmbCC.
 
+The [component library guide](catalog/README.md) lists the first 26 named
+manufacturer/package entries, category coverage, model limits and executable
+fixtures. This is a first batch, not Proteus-scale catalog coverage or
+manufacturer-qualified device accuracy.
+
 ## Repository layout
 
 | Path | Content |

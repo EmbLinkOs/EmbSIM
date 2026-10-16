@@ -310,6 +310,11 @@ static double probe_value(es_session *s, esk_probe *p)
                     v = q->u.number.value;
                 else if (q && q->type == ESK_JSON_BOOL)
                     v = q->u.boolean ? 1.0 : 0.0;
+                else if (q && q->type == ESK_JSON_STRING) {
+                    const char *text = esk_json_str(q);
+                    if (text && (!strcmp(text, "0") || !strcmp(text, "1") || !strcmp(text, "Z") || !strcmp(text, "X")))
+                        v = (double)esk_logic_from_name(text);
+                }
                 esk_json_free(s->a, out);
             }
         }

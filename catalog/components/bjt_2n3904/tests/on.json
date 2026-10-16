@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "saturated-switch",
+  "description": "Base drive 0.26 mA with a 1 k\u03a9 collector load saturates: Vce under 0.4 V, Ic about 3 mA.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RC",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bjt_2n3904"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "RB.1",
+        "RC.1"
+      ],
+      "BASE": [
+        "RB.2",
+        "DUT.B"
+      ],
+      "COLL": [
+        "RC.2",
+        "DUT.C"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.E",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:COLL": {
+      "at": "0.5ms",
+      "max_v": 0.4
+    },
+    "device:DUT.ic": {
+      "at": "0.5ms",
+      "min": 0.0028,
+      "max": 0.0034
+    }
+  }
+}

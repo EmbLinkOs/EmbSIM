@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "propagation-delay",
+  "policy": "timed",
+  "until": "2us",
+  "circuit": {
+    "components": [
+      {
+        "id": "LO",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "HI",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/sn74hc08n"
+      },
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1meg"
+        }
+      }
+    ],
+    "nets": {
+      "LOW": [
+        "LO.Y",
+        "DUT.GND",
+        "DUT.2A",
+        "DUT.3B"
+      ],
+      "HIGH": [
+        "HI.Y",
+        "DUT.VCC",
+        "DUT.2B",
+        "DUT.3A",
+        "DUT.4A",
+        "DUT.4B",
+        "DUT.1B"
+      ],
+      "Y1": [
+        "DUT.1Y"
+      ],
+      "Y2": [
+        "DUT.2Y"
+      ],
+      "Y3": [
+        "DUT.3Y"
+      ],
+      "Y4": [
+        "DUT.4Y"
+      ],
+      "CLOCK": [
+        "CK.OUT",
+        "DUT.1A"
+      ]
+    }
+  },
+  "expect": {
+    "net:Y1": {
+      "at": "505ns",
+      "logic": "0"
+    },
+    "pin:DUT.1Y": {
+      "at": "530ns",
+      "logic": "1"
+    }
+  }
+}

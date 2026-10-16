@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "astable",
+  "description": "RA=RB=10 kohm, C=10 nF: nominal 1.44/(RA+2 RB)/C = 4.8 kHz.",
+  "policy": "electrical",
+  "until": "3ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "RA",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "C",
+        "component": "emblink/capacitor",
+        "params": {
+          "capacitance": "10n"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ne555p"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "RA.1",
+        "DUT.VCC",
+        "DUT.RESET"
+      ],
+      "DISCH": [
+        "RA.2",
+        "RB.1",
+        "DUT.DISCH"
+      ],
+      "CAP": [
+        "RB.2",
+        "C.1",
+        "DUT.TRIG",
+        "DUT.THRESH"
+      ],
+      "OUT": [
+        "DUT.OUT"
+      ],
+      "CTRL": [
+        "DUT.CTRL"
+      ],
+      "GND": [
+        "V.-",
+        "C.2",
+        "DUT.GND",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "between": [
+        "500us",
+        "3ms"
+      ],
+      "frequency_hz": 4800,
+      "tolerance": 0.15
+    }
+  }
+}

@@ -43,7 +43,7 @@ export function LibraryPanel({ onPlace }: LibraryPanelProps) {
       if (category && i.category !== category) return false;
       if (!q) return true;
       const d = catalog[i.id]?.description;
-      return [i.id, i.name, i.category, d?.description ?? '', ...(d?.keywords ?? [])].some((t) => t.toLowerCase().includes(q));
+      return [i.id, i.name, i.category, d?.description ?? '', d?.part?.manufacturer ?? '', d?.part?.mpn ?? '', d?.part?.package ?? '', ...(d?.keywords ?? [])].some((t) => t.toLowerCase().includes(q));
     });
   }, [items, catalog, query, category]);
 
@@ -87,6 +87,7 @@ function LibraryItem({ item, onPlace }: { item: CatalogItem; onPlace: (id: strin
       <span className="wb-library__thumb">{entry ? <SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={entry.description.symbol} size={40} /> : null}</span>
       <span>
         <div className="wb-library__name">{item.name}</div>
+        {entry?.description.part && <div className="es-muted" style={{ fontSize: 'var(--text-xs)' }}>{entry.description.part.manufacturer} · {entry.description.part.package}</div>}
         <div className="wb-library__meta">
           <span className="es-mono">{item.id}</span>
           <FidelityBadges tiers={item.fidelity_tiers} />
