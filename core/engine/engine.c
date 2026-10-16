@@ -69,6 +69,10 @@ void esk_pin_model_family(const char *family, esk_pin_model *m)
     } else {
         m->voh = 2.9; m->vol = 0.4; m->rout = 25.0; m->vih = 2.0; m->vil = 0.8; m->hyst = 0.2; m->nominal_v = 3.3;
     }
+    /* a CMOS output's transistors pull to its rails: voh and vol are the
+     * levels at the rated load, which rout gives; a TTL totem pole's open
+     * high level is below the supply, so its sources are voh and vol */
+    m->rails = !family || strcmp(family, "ttl_5v") != 0;
 }
 
 static int get_d(const esk_json *o, const char *k, double *v)
@@ -98,7 +102,7 @@ int esk_pin_model_parse(const esk_json *obj, const char *family, esk_pin_model *
         /* nested out/in objects or flat fields */
         const esk_json *o2 = esk_json_get(obj, "out"), *i2 = esk_json_get(obj, "in");
         if (o2) { esk_pin_model tmp; esk_json *dummy = NULL; ES_UNUSED(dummy);
-            if (esk_pin_model_parse(o2, family, &tmp) == 0) { out->drive = tmp.drive; out->strength = tmp.strength; out->voh = tmp.voh; out->vol = tmp.vol; out->rout = tmp.rout; out->slew_v_per_us = tmp.slew_v_per_us; out->has_electrical |= tmp.has_electrical; } }
+            if (esk_pin_model_parse(o2, family, &tmp) == 0) { out->drive = tmp.drive; out->strength = tmp.strength; out->voh = tmp.voh; out->vol = tmp.vol; out->rout = tmp.rout; out->voc_set = tmp.voc_set; out->voc_high = tmp.voc_high; out->voc_low = tmp.voc_low; out->slew_v_per_us = tmp.slew_v_per_us; out->has_electrical |= tmp.has_electrical; } }
         if (i2) { esk_pin_model tmp;
             if (esk_pin_model_parse(i2, family, &tmp) == 0) { out->vih = tmp.vih; out->vil = tmp.vil; out->hyst = tmp.hyst; out->pull = tmp.pull; out->rpull = tmp.rpull; out->leak_a = tmp.leak_a; out->has_electrical |= tmp.has_electrical; } }
     }
@@ -130,6 +134,8 @@ int esk_pin_model_parse(const esk_json *obj, const char *family, esk_pin_model *
         else if (!strcmp(s, "supply")) out->power_ground = 0;
         else return -1;
     }
+    if (get_d(obj, "voc_high", &v)) { out->voc_high = v; out->voc_set |= 1; out->has_electrical = 1; }
+    if (get_d(obj, "voc_low", &v)) { out->voc_low = v; out->voc_set |= 2; out->has_electrical = 1; }
     if (get_d(obj, "voh", &v)) { out->voh = v; out->has_electrical = 1; }
     if (get_d(obj, "vol", &v)) { out->vol = v; out->has_electrical = 1; }
     if (get_d(obj, "rout", &v)) { out->rout = v; out->has_electrical = 1; }
@@ -803,9 +809,9 @@ void esk_pin_bridge_target(const esk_pin *p, double *v, double *r, int *open)
         return;
     }
     if (dv == ESK_L1 && m->drive != ESK_DRIVE_OPEN_DRAIN) {
-        *v = m->voh;
+        *v = (m->voc_set & 1) ? m->voc_high : m->rails && m->nominal_v > 0.0 ? m->nominal_v : m->voh;
     } else if (dv == ESK_L0 && m->drive != ESK_DRIVE_OPEN_SOURCE) {
-        *v = m->vol;
+        *v = (m->voc_set & 2) ? m->voc_low : m->rails ? 0.0 : m->vol;
     } else {
         *open = 1;
         *v = 0.0;

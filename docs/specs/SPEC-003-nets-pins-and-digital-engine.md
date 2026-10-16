@@ -76,9 +76,15 @@ After load and after every topology transaction, nets are partitioned:
   component through zero-delay buffers only for diagnostics (they are solved
   independently).
 - A `digital_out` pin on an analog net gets a **Thevenin bridge**: a source
-  of `voh` (value 1) or `vol` (value 0) through `rout`, open for `Z`, with the
-  pin's slew rate limiting the source transition; an `open_drain` output
-  drives `vol` through `rout` or is open.
+  of the driver's open-circuit high level (value 1) or low level (value 0)
+  through `rout`, open for `Z`, with the pin's slew rate limiting the source
+  transition; an `open_drain` output drives its low level through `rout` or
+  is open. The open-circuit levels are `voc_high` and `voc_low` when the pin
+  model gives them; otherwise a CMOS family's (`cmos_3v3`, `cmos_5v`,
+  `lvcmos_1v8`, and a pin with no family) are its rails, `nominal_v` and
+  0 V, and `voh` and `vol` remain the levels the datasheet guarantees at its
+  rated load, which `rout` reproduces; a TTL family's (`ttl_5v`) are `voh`
+  and `vol`, a totem pole's high output being below its supply (ADR-023).
 - A `digital_in` pin on an analog net gets a **comparator bridge**: the pin
   samples `1` when the node voltage rises above `vih`, `0` when it falls below
   `vil`, and keeps its value between them (hysteresis); crossings are events

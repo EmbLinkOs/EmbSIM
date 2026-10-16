@@ -732,17 +732,22 @@ static void test_pull_up_input(void)
 static const esk_model_ops driver_ops = {"driver", 0,    NULL, NULL, NULL, NULL,
                                          NULL,     NULL, NULL, NULL, 0};
 
-static esk_comp *add_driver(esk_engine *e, const char *id, const char *net)
+static esk_comp *add_driver_of(esk_engine *e, const char *id, const char *net, const char *family)
 {
     esk_pin_model m;
     const char *name = "OUT";
     esk_comp *c = NULL;
-    esk_pin_model_family("cmos_3v3", &m);
+    esk_pin_model_family(family, &m);
     m.kind = ESK_PIN_DIGITAL_OUT;
     CHECK(esk_engine_add_comp(e, id, "driver", &driver_ops, &name, &m, 1, NULL, NULL, &c) == ES_OK);
     if (c)
         CHECK(esk_engine_connect(e, &c->pins[0], net_of(e, net)) == ES_OK);
     return c;
+}
+
+static esk_comp *add_driver(esk_engine *e, const char *id, const char *net)
+{
+    return add_driver_of(e, id, net, "cmos_3v3");
 }
 
 static void test_thevenin_bridge(void)
@@ -764,15 +769,16 @@ static void test_thevenin_bridge(void)
     CHECK(esk_engine_advance(&e, ES_PS_PER_MS) == ES_OK);
     esk_pin_drive(&drv->pins[0], ESK_L1, ESK_STR_STRONG, 0);
     CHECK(esk_engine_advance(&e, ES_PS_PER_MS + 10 * ES_PS_PER_US) == ES_OK);
-    /* the source ramped to voh = 2.9 at 500 V/us: 5.8 ns; after 10 us the pin is near 2.9 */
-    CHECK(v_of(&e, "pin") > 2.5 && v_of(&e, "pin") <= 2.9);
+    /* a CMOS output's source is its rail (ADR-023), ramped at 500 V/us: 6.6 ns;
+     * after 10 us the pin is near 3.3, less rout's share of the load */
+    CHECK(v_of(&e, "pin") > 2.9 && v_of(&e, "pin") <= 3.3);
     CHECK(esk_engine_advance(&e, 3 * ES_PS_PER_MS) == ES_OK);
-    CHECK_NEAR(v_of(&e, "out"), 2.9 * 100000.0 / 101025.0, 1e-3);
+    CHECK_NEAR(v_of(&e, "out"), 3.3 * 100000.0 / 101025.0, 1e-3);
     CHECK_EQ(w->pins[0].sampled, ESK_L1);
     CHECK_EQ(ws->calls, 2);
     esk_pin_drive(&drv->pins[0], ESK_L0, ESK_STR_STRONG, 0);
     CHECK(esk_engine_advance(&e, 6 * ES_PS_PER_MS) == ES_OK);
-    CHECK_NEAR(v_of(&e, "out"), 0.4 * 100000.0 / 101025.0, 1e-3);
+    CHECK_NEAR(v_of(&e, "out"), 0.0, 1e-3);
     CHECK_EQ(w->pins[0].sampled, ESK_L0);
     CHECK_EQ(ws->calls, 3);
     esk_pin_release(&drv->pins[0]);
@@ -781,6 +787,52 @@ static void test_thevenin_bridge(void)
     CHECK_NEAR(v_of(&e, "out"), 0.0, 1e-3);
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
+}
+
+/* a TTL totem pole's open high level is below its supply: voh and vol are
+ * its sources; a description's voc_high and voc_low override a family's */
+static void test_driver_levels(void)
+{
+    esk_engine e;
+    esk_comp *ttl, *cmos;
+    esk_pin_model m;
+    esk_json *o;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    ttl = add_driver_of(&e, "TTL", "a", "ttl_5v");
+    add_dev2(&e, "resistor", "RA", "{\"r\": \"10k\"}", "a", "gnd");
+    cmos = add_driver_of(&e, "CMOS", "b", "cmos_5v");
+    add_dev2(&e, "resistor", "RB", "{\"r\": \"10k\"}", "b", "gnd");
+    engine_run(&e);
+    esk_pin_drive(&ttl->pins[0], ESK_L1, ESK_STR_STRONG, 0);
+    esk_pin_drive(&cmos->pins[0], ESK_L1, ESK_STR_STRONG, 0);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "a"), 2.7 * 10000.0 / 10050.0, 1e-3);
+    CHECK_NEAR(v_of(&e, "b"), 5.0 * 10000.0 / 10025.0, 1e-3);
+    esk_pin_drive(&ttl->pins[0], ESK_L0, ESK_STR_STRONG, 0);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "a"), 0.4 * 10000.0 / 10050.0, 1e-3);
+    esk_engine_free(&e);
+    {
+        static const char text[] = "{\"kind\": \"digital_out\", \"voc_high\": 3.0, \"voc_low\": 0.1}";
+        o = esk_json_parse(&A, text, sizeof text - 1, NULL, NULL);
+        CHECK(o != NULL);
+        CHECK(esk_pin_model_parse(o, "cmos_3v3", &m) == 0);
+        esk_json_free(&A, o);
+    }
+    {
+        esk_pin p;
+        double v, r;
+        int open;
+        memset(&p, 0, sizeof p);
+        p.model = m;
+        p.drive_value = ESK_L1;
+        esk_pin_bridge_target(&p, &v, &r, &open);
+        CHECK_NEAR(v, 3.0, 1e-12);
+        p.drive_value = ESK_L0;
+        esk_pin_bridge_target(&p, &v, &r, &open);
+        CHECK_NEAR(v, 0.1, 1e-12);
+    }
 }
 
 static void test_opamp_inverting(void)
@@ -1354,6 +1406,7 @@ RUN(test_switch_input);
 RUN(test_comparator_bridge);
 RUN(test_pull_up_input);
 RUN(test_thevenin_bridge);
+RUN(test_driver_levels);
 RUN(test_opamp_inverting);
 RUN(test_regulator);
 RUN(test_pull_device);

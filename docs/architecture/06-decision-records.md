@@ -570,3 +570,35 @@ static transfer and request timeouts still bound its work. Tests cover pixel
 uniformity, preferences, active-session asset delivery and request restrictions.
 
 **Status.** Proposed; implemented for review in this pull request (2026-10-16).
+
+---
+
+## ADR-023 A CMOS output's Thevenin source is its rail; VOH and VOL are the levels at the rated load
+
+**Context.** SPEC-003 §4 gave a digital output on an analog net a source of
+`voh` or `vol` through `rout`. Those are a datasheet's guaranteed levels at
+the rated current (an STM32F103's 0.4 V at 8 mA): a CMOS output's
+transistors pull to its rails, and at a light load it sits within
+millivolts of them. With the levels as sources, a Blue Pill's PWM through a
+10 kOhm, 4.7 uF low-pass averaged between 0.4 V and 2.9 V, so 25 % read
+1.0 V on the ADC where the part reads 0.8 V; any measured output, an LED's
+current or a divider's voltage, was off the same way.
+
+**Decision.** A pin model has open-circuit levels, `voc_high` and
+`voc_low`, behind `rout`. When a description does not give them, a CMOS
+family's are its rails (`nominal_v`, which follows an MCU's io supply, and
+0 V) and a TTL family's are `voh` and `vol` (a totem pole's high level is a
+diode drop below VCC whatever the load). `voh`, `vol` and `rout` keep their
+meaning: with the rails as sources, `rout` gives the drop at a load.
+
+**Alternatives.** Deriving the source from `voh` and a rated current (one
+more parameter per family, and the same rails for CMOS). Keeping the levels
+and lowering `rout` (wrong at every load but one).
+
+**Consequences.** CMOS outputs on analog nets measure as on the part;
+currents through them rise accordingly (an LED from a 3.3 V output). The
+component fixtures and the examples' scenarios pass unchanged; `test_analog`
+follows the rails, and checks a TTL driver's levels and a description's
+override.
+
+**Status.** Accepted (M6).
