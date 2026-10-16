@@ -10,8 +10,10 @@
  *     choice, as for the STM32's ports); a one written to PINxn toggles
  *     PORTxn;
  *   - a peripheral can take a pin over: USART0's transmitter drives PD1 and
- *     its receiver makes PD0 an input whatever DDRD says; a timer's output
- *     compare unit drives its OC pin while the pin's DDxn is 1;
+ *     its receiver makes PD0 an input whatever DDRD says, the SPI master
+ *     makes MISO (PB4) an input, the TWI pulls SDA (PC4) and SCL (PC5) low
+ *     or lets them go; a timer's output compare unit, or the SPI master's
+ *     MOSI (PB3) and SCK (PB5), drives its pin while the pin's DDxn is 1;
  *   - each pin's configuration as it changes goes to the MCU runtime
  *     (esk_mach_host.pin_cfg), what the circuit drives comes back
  *     (pin_in), and PINx's changes go to the external interrupts.
@@ -149,6 +151,15 @@ int esk_avr_pin_level(struct esk_mach *m, int port, int bit)
     return g && bit < g->npins ? (int)(g->pin->value >> bit & 1) : 0;
 }
 
+int esk_avr_pin_read(struct esk_mach *m, int port, int bit)
+{
+    struct avr_port *g = port_of(m, port);
+    if (!g || bit < 0 || bit >= g->npins)
+        return 0;
+    update(g);
+    return (int)(g->pin->value >> bit & 1);
+}
+
 void esk_avr_pin_override(struct esk_mach *m, int port, int bit, int level)
 {
     struct avr_port *g = port_of(m, port);
@@ -158,7 +169,8 @@ void esk_avr_pin_override(struct esk_mach *m, int port, int bit, int level)
     update(g);
 }
 
-/* the USART's hold on PD1 and PD0 (usart.c) */
+/* a peripheral's hold on a pin: the USART's on PD1 and PD0 (usart.c), the
+ * SPI's on MISO (spi.c), the TWI's on SDA and SCL (twi.c) */
 void esk_avr_pin_force(struct esk_mach *m, int port, int bit, int how)
 {
     struct avr_port *g = port_of(m, port);

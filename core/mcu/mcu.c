@@ -73,6 +73,10 @@ typedef struct mcu_state {
     esk_event_handle ev;
     es_time_t ev_at;
     int pin_changed;
+    /* a pin on an analog island changed in the quantum: how long its edge
+     * ramps, and the time the next quantum waits for it to (the core goes
+     * on from where it stopped then, less than a cycle behind) */
+    es_time_t settle_ps, settle_to;
     int held, boot_fail, stopped, ended_reported;
     int fresh; /* the first quantum after a reset looks at NRST and BOOT0 */
     const char *stop_why;
@@ -241,7 +245,16 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
     st->ev = 0;
     if (!runnable(st))
         return;
-    catch_up(st, now);
+    if (now < st->settle_to) {
+        /* an earlier quantum (a wake-up) comes before the circuit has its
+         * pins' last changes: it waits for them, as one more change to a
+         * pin would take the place of one not yet applied */
+        schedule_at(st, st->settle_to);
+        return;
+    }
+    if (now > st->settle_to)
+        catch_up(st, now);
+    st->settle_to = 0;
     if (st->fresh) {
         /* the pins the reset looks at, now that the circuit has settled */
         st->fresh = 0;
@@ -280,6 +293,7 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
     st->q_cyc = st->m.cycles;
     st->q_hz = hz;
     st->pin_changed = 0;
+    st->settle_ps = 0;
     st->m.return_on_sleep = 1;
     {
         u64 insns0 = st->m.insns, stepping = st->steps;
@@ -315,7 +329,20 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         schedule_sleep(st);
         return;
     }
-    schedule_at(st, st->pin_changed ? st->t + 1 : st->t);
+    if (st->pin_changed) {
+        /* the circuit sees the change before the core goes on; an edge on an
+         * analog island first ramps to its level, so a device it clocks
+         * answers (a comparator crosses) before the core's next instruction
+         * can look at the answer: up to a cycle, as no instruction is
+         * shorter */
+        es_time_t gap = st->settle_ps ? st->settle_ps : 1, cycle = cycles_to_ps(1, hz, NULL);
+        if (gap >= cycle)
+            gap = cycle > 1 ? cycle - 1 : 1;
+        st->settle_to = st->t + gap;
+        schedule_at(st, st->settle_to);
+        return;
+    }
+    schedule_at(st, st->t);
 }
 
 /* ---- pins ------------------------------------------------------------------ */
@@ -381,8 +408,20 @@ static void h_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
                      (void *)(uintptr_t)((unsigned)port << 8 | (unsigned)bit), &q->ev) != ES_OK)
         esk_comp_diag(st->c, ES_SEV_FATAL, "sched.queue_full", "a pin change cannot be scheduled");
     if (st->in_quantum) {
+        esk_pin *p = st->gpio[port][bit];
         st->m.yield = 1;
         st->pin_changed = 1;
+        if (p->net && p->net->island && p->model.slew_v_per_us > 0.0) {
+            /* the whole swing between the driver's open-circuit levels
+             * (esk_pin_bridge_target's) bounds the ramp to any threshold */
+            const esk_pin_model *pm = &p->model;
+            double hi = (pm->voc_set & 1) ? pm->voc_high : pm->rails && pm->nominal_v > 0.0 ? pm->nominal_v : pm->voh;
+            double lo = (pm->voc_set & 2) ? pm->voc_low : pm->rails ? 0.0 : pm->vol;
+            double us = (hi > lo ? hi - lo : lo - hi) / pm->slew_v_per_us;
+            es_time_t ramp = us > 0.0 ? (es_time_t)(us * 1e6) + 1 : 1;
+            if (ramp > st->settle_ps)
+                st->settle_ps = ramp;
+        }
     }
 }
 

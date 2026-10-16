@@ -11,6 +11,8 @@
  *   exint.c   INT0, INT1 and the pin-change interrupts
  *   timer.c   Timer/Counter0 and 2 (8-bit) and 1 (16-bit), their OC pins
  *   usart.c   USART0 at its baud rate, on PD1 and PD0
+ *   spi.c     the SPI as a master, on PB2 to PB5
+ *   twi.c     the TWI (I2C) as a master, on PC4 and PC5
  *   adc.c     the 10-bit ADC from the pins' voltages
  *   cpu.c     CLKPR (the clock prescaler), SMCR, MCUCR's PUD
  *   eeprom.c  the 1 KiB EEPROM
@@ -55,7 +57,8 @@ int esk_avr_disasm(u32 pc, unsigned w, unsigned w2, char *text, size_t cap);
 /* ---- the ATmega328P's peripherals ------------------------------------- */
 
 extern const struct esk_dev_ops esk_avr_port_ops, esk_avr_exint_ops, esk_avr_tc8_ops,
-    esk_avr_tc16_ops, esk_avr_usart_ops, esk_avr_adc_ops, esk_avr_cpu_ops, esk_avr_eeprom_ops;
+    esk_avr_tc16_ops, esk_avr_usart_ops, esk_avr_adc_ops, esk_avr_cpu_ops, esk_avr_eeprom_ops, esk_avr_spi_ops,
+    esk_avr_twi_ops;
 void *esk_avr_port_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_exint_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_tc8_create(struct esk_mach *m, struct esk_rf_periph *p);
@@ -64,12 +67,16 @@ void *esk_avr_usart_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_adc_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_cpu_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_eeprom_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_avr_spi_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_avr_twi_create(struct esk_mach *m, struct esk_rf_periph *p);
 
 /* MCUCR.PUD: the pull-ups are disabled */
 int esk_avr_pud(struct esk_mach *m);
 /* a port's pins as the program sees them (PINx), and an output compare
  * unit taking a pin over (level -1 gives it back to PORTx) */
 int esk_avr_pin_level(struct esk_mach *m, int port, int bit);
+/* a pin's level now: its port looks at the circuit again first */
+int esk_avr_pin_read(struct esk_mach *m, int port, int bit);
 void esk_avr_pin_override(struct esk_mach *m, int port, int bit, int level);
 /* a peripheral holds a pin whatever DDRx says: -1 lets go, 0 or 1 drives
  * it, 2 makes it an input (PORTx's pull-up still applies) */

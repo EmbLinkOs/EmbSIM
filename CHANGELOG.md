@@ -313,6 +313,16 @@ versions follow semantic versioning. There is no release yet.
   START_MANY with DIV, round robin, the FIFO and its interrupt).
   `tests/vendor/pico-sdk`'s `pwm_adc` runs the SDK's `hardware_pwm` and
   `hardware_adc` on them.
+- The ATmega328P's SPI and TWI masters on their pins: the SPI (MOSI and
+  SCK while DDRB makes them outputs, MISO an input, modes 0 to 3, DORD, the
+  clock from SPR and SPI2X, WCOL, SPIF cleared by SPSR then SPDR or by its
+  vector, SS's mode fault) and the TWI (open-drain SDA and SCL, the
+  datasheet's master transmitter and receiver statuses, START, repeated
+  START, STOP and STOP with START, TWEA's ACK, TWWC, SCL from TWBR and the
+  prescaler, the vector while TWINT and TWIE). `tests/vendor/arduino`'s
+  `spi_wire` runs the core's SPI and Wire libraries against the catalog's
+  25LC040 and 24C02; `run.py` builds the core's libraries a sketch
+  includes, as the IDE's builder does.
 - The RP2040's SPI and I2C masters on their pins: the PL022s (eight-entry
   FIFOs, 4 to 16 bits in modes 0 to 3 at clk_peri / (CPSDVSR * (1 + SCR)),
   CSn framing each frame, loopback, overrun and the interrupts) and the
@@ -406,6 +416,19 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- An MCU's pin edge on an analog net reached the circuit after the core
+  had gone on to its next edges: the next quantum started 1 ps later,
+  before the edge's ramp had crossed a device's threshold, so a 25LC040
+  clocked at 4 MHz through the Uno's D13 (whose L LED makes the net
+  analog) answered a bit late. The next quantum now waits out the ramp
+  (less than a cycle, the core going on from where it stopped), and a
+  quantum that a wake-up brings earlier waits too: a second change to a
+  pin had taken the place of one not yet applied, losing a clock pulse.
+- Every pin change cost the core an idle cycle: the quantum after it began
+  1 ps later and the core caught up to that time in whole cycles. The
+  core now goes on from the cycle it stopped at, so firmware that toggles
+  pins runs at its own speed (nrfx_periph's polling loops show it: 616
+  RDSR polls, 94 NACKed address polls).
 - The engine never sent `serial.data` (SPEC-008 §6), so the workbench's
   Serial terminal stayed empty while the firmware printed: the text was
   there only for a client that asked with `probe.read`. After each

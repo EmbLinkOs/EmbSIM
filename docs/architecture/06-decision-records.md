@@ -466,7 +466,12 @@ cheaper, but inputs would be seen up to a quantum late.
 
 **Consequences.** Inputs from digital events are exact; inputs that come
 from an analog comparator crossing are seen at the start of the quantum
-after the crossing, at most `core_quantum_ps` late. A breakpoint splits a
+after the crossing, at most `core_quantum_ps` late. The exception is the
+core's own edge on an analog net: the next quantum waits out the edge's
+ramp (its swing at the pin's slew rate, less than a cycle), so a device the
+edge clocks answers before the core's next instruction (an SPI slave on a
+clock line with an LED); the core goes on from where it stopped, its
+timing unchanged. A breakpoint splits a
 quantum without changing the run: the M1 test compares a stopped and
 continued run with an uninterrupted one instruction for instruction.
 
