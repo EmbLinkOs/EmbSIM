@@ -41,6 +41,11 @@ python3 -m unittest discover -s tools/repository -p 'test_*.py' -v
 python3 tools/repository/check_commits.py --base "$(git rev-parse main)" --head HEAD
 ```
 
+The same rule covers pull request descriptions, review replies and
+comments: no assistant-attribution line or footer of any kind. A tool that
+appends one on creation is corrected by editing the text right after, and
+the edit is checked by reading the description back.
+
 When maintainers join, `OWNER_EMAILS` in the checker becomes the list of
 maintainers and a DCO-style sign-off may replace it; that change is an ADR.
 
