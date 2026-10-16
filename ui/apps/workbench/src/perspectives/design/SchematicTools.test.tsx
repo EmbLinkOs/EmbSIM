@@ -46,3 +46,14 @@ describe('layout preview revision guard', () => {
     expect(screen.getByRole('alert').textContent).toContain('Generate a fresh preview');
   });
 });
+
+describe('locked layout boundary', () => {
+  it('never accepts movement or unlocking from a planner', () => {
+    const current = base(); current.components[0]!.layout!.locked = true;
+    const proposed = base(); proposed.components[0]!.layout = { x: 900, y: 900, locked: false };
+    proposed.boards![0]!.layout!.locked = true;
+    const result = applyLayoutFields(structuredClone(current), proposed);
+    expect(result.components[0]!.layout).toEqual(current.components[0]!.layout);
+    expect(result.boards![0]!.layout?.locked).toBeUndefined();
+  });
+});

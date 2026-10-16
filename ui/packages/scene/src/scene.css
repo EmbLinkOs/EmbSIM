@@ -515,3 +515,10 @@
 .es-scene__issue-marker--info circle { stroke: var(--accent); }
 .es-wire[role='button']:focus-visible { outline: none; }
 .es-wire[role='button']:focus-visible .es-wire__line { stroke: var(--accent); stroke-width: 3; }
+
+.es-schematic-group > rect { fill: var(--surface-raised); fill-opacity: .14; stroke: var(--text-muted); stroke-opacity: .45; stroke-dasharray: 6 5; }
+.es-schematic-group > g { cursor: pointer; }
+.es-schematic-group > g rect { fill: var(--surface-raised); stroke: var(--line); }
+.es-schematic-group text { fill: var(--text-muted); font: 11px var(--font-sans); }
+.es-schematic-group > g:focus-visible rect { stroke: var(--accent); stroke-width: 2; }
+.es-placement-lock { fill: var(--text-muted); font: 8px var(--font-mono); letter-spacing: .8px; }

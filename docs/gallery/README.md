@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Circuit organization (2026-10-16)
+
+Captured against the native engine by `tests/browser/test_schematic.py`. The
+Objects panel selects an input-stage group; both member resistors have locked
+placement while their parameters remain editable. The regression verifies native
+metadata, blocked dragging and undo before capturing light/dark/compact views.
+
+| | |
+|---|---|
+| ![Named group and object browser in light theme](circuit-organization/light.png) | ![Named group and object browser in dark theme](circuit-organization/dark.png) |
+
+[Compact 1024-pixel workspace](circuit-organization/compact.png).
+
 ## Schematic authoring and repair (2026-10-16)
 
 Captured from the native engine by `tests/browser/test_schematic.py` after track

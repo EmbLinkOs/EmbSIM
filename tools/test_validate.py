@@ -289,6 +289,18 @@ class ProjectTests(Base):
         self.assertClean(self.check(path))
         self.assertClean(self.check(path.parent / "scenarios" / "press.json"))
 
+    def test_schematic_organization(self):
+        p = copy.deepcopy(PROJECT)
+        ids = [part["id"] for part in p["components"][:2]]
+        p["components"][0]["layout"] = {"x": 0, "y": 0, "locked": True}
+        p["layout"] = {"groups": [{"id": "input", "name": "Input", "members": ids}]}
+        self.assertClean(self.check(self.write_project(p)))
+        p["layout"]["groups"][0]["members"].append("missing")
+        self.assertCode(self.check(self.write_project(p)), "catalog.not_found")
+        p["layout"]["groups"][0]["members"] = ids
+        p["layout"]["groups"].append({"id": "other", "name": "Other", "members": [ids[0]]})
+        self.assertCode(self.check(self.write_project(p)), "catalog.duplicate")
+
     def test_unknown_component(self):
         p = copy.deepcopy(PROJECT)
         p["components"][1]["component"] = "emblink/no_such_part"

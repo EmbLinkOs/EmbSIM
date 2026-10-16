@@ -213,11 +213,19 @@ def main():
                 page.get_by_label("Search components", exact=True).fill(
                     "emblink/resistor"
                 )
+
+                def wait_component_count(count):
+                    for _ in range(100):
+                        if projects() and len(projects()[-1]["components"]) == count:
+                            return projects()[-1]
+                        page.wait_for_timeout(50)
+                    raise AssertionError(f"Engine did not reach {count} components")
+
+                count = len(projects()[-1]["components"])
                 page.get_by_role("button", name="Place Resistor", exact=True).click()
-                page.wait_for_timeout(200)
+                wait_component_count(count + 1)
                 page.get_by_role("button", name="Place Resistor", exact=True).click()
-                page.wait_for_timeout(200)
-                added = projects()[-1]
+                added = wait_component_count(count + 2)
                 new_ids = [
                     c["id"]
                     for c in added["components"]
@@ -388,10 +396,89 @@ def main():
                 page.get_by_role("button", name="Undo", exact=True).click()
                 page.wait_for_timeout(300)
                 assert projects()[-1] == added
+                # Organization is exercised against the real transaction server.
+                page.get_by_role("tab", name="Objects", exact=True).click()
+                objects = page.get_by_role("region", name="Schematic objects")
+                objects.get_by_role("button", name="R1", exact=True).click()
+                objects.get_by_role("button", name="R2", exact=True).click(
+                    modifiers=["Shift"]
+                )
+                page.get_by_label("Group name", exact=True).fill("Input stage")
+                page.get_by_role("button", name="Group selection", exact=True).click()
+                expect(
+                    page.get_by_role(
+                        "button", name="Select group Input stage", exact=True
+                    )
+                ).to_have_count(1)
+                objects.get_by_role("button", name="Lock group", exact=True).click()
+                expect(
+                    objects.get_by_role("button", name="Unlock R1", exact=True)
+                ).to_be_visible()
+                page.wait_for_timeout(250)
+                organized = projects()[-1]
+                assert organized["nets"] == added["nets"]
+                assert organized["layout"]["groups"][0]["members"] == ["R1", "R2"]
+                assert all(
+                    c.get("layout", {}).get("locked")
+                    for c in organized["components"]
+                    if c["id"] in ["R1", "R2"]
+                )
+                objects.get_by_role("button", name="R1", exact=True).click()
+                expect(page.get_by_label("Position X", exact=True)).to_be_disabled()
+                hit = page.locator('[data-component="R1"] .es-component__hit')
+                box = hit.bounding_box()
+                assert box
+                transactions = len(
+                    [f for f in sent if f.get("method") == "project.transaction"]
+                )
+                page.mouse.move(
+                    box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+                )
+                page.mouse.down()
+                page.mouse.move(
+                    box["x"] + box["width"] / 2 + 40,
+                    box["y"] + box["height"] / 2 + 30,
+                    steps=4,
+                )
+                page.mouse.up()
+                page.wait_for_timeout(150)
+                assert transactions == len(
+                    [f for f in sent if f.get("method") == "project.transaction"]
+                ), "Locked drag created a transaction"
+                objects.get_by_role(
+                    "button", name="Input stage · 2 parts", exact=True
+                ).click()
+                page.screenshot(
+                    path=str(out / "organization-light.png"), full_page=True
+                )
+                page.get_by_role("button", name="Switch to dark theme").click()
+                page.screenshot(path=str(out / "organization-dark.png"), full_page=True)
+                page.get_by_role("button", name="Switch to light theme").click()
+                page.set_viewport_size({"width": 1024, "height": 700})
+                assert page.evaluate(
+                    "document.documentElement.scrollWidth <= innerWidth"
+                )
+                page.screenshot(
+                    path=str(out / "organization-compact.png"), full_page=True
+                )
+                page.set_viewport_size({"width": 1600, "height": 1000})
+                page.get_by_role("button", name="Undo", exact=True).click()
+                expect(
+                    objects.get_by_role("button", name="Lock R1", exact=True)
+                ).to_be_visible()
+                page.get_by_role("button", name="Undo", exact=True).click()
+                expect(page.locator("[data-group]")).to_have_count(0)
+                page.wait_for_timeout(250)
+                restored = projects()[-1]
+                restored.get("layout", {}).pop("groups", None)
+                for component in restored["components"]:
+                    if component.get("layout", {}).get("locked") is False:
+                        component["layout"].pop("locked")
+                assert restored == added
                 assert not errors, errors
                 browser.close()
                 print(
-                    "PASS: real-engine preview, layout-only apply, exact undo/redo, finder, connect-then-arrange, manual routing, segment repair, batch properties, structural checks, view controls, themes and compact viewport"
+                    "PASS: real-engine preview, layout-only apply, exact undo/redo, finder, connect-then-arrange, manual routing, segment repair, batch properties, structural checks, persistent groups, native locks, view controls, themes and compact viewport"
                 )
         finally:
             server.terminate()

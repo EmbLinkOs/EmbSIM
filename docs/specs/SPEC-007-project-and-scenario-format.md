@@ -62,7 +62,16 @@ Rules:
   `<board>.<port>` for boards; a pin appears in at most one net; the loader
   merges nets joined through board ports.
 - `layout` is presentation only: wire geometry, label positions, buses,
-  sheet size. A bus (`{name, nets, points}`) draws a group of nets as one
+  sheet size and optional `groups: [{id, name, members}]`. Group IDs and names
+  are nonempty strings. Members are unique existing top-level component/board
+  instance IDs, and an instance belongs to at most one group. Groups have no
+  electrical meaning or hierarchy. Deleting instances prunes group membership
+  and removes empty groups.
+  Instance placement accepts `locked?: boolean` (default false). A locked
+  instance's x/y/rotation/mirror cannot change through layout edits until an
+  explicit `locked: false` is supplied. Omitting the flag preserves an existing
+  lock. Locks do not restrict parameter changes, routing or explicit deletion.
+  A bus (`{name, nets, points}`) draws a group of nets as one
   line; the nets keep their own connections in `nets`. While the circuit
   runs the bus shows its value, the first net being bit 0.
   The electrical truth is `nets`. A client that edits wires updates both in

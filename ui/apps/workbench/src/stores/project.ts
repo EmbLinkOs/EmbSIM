@@ -58,6 +58,7 @@ export interface ProjectState {
   /** Runs an edit as an undoable command; `fn` returns the next project or null for no-op. */
   mutate(label: string, fn: (p: Project) => Project | null): Promise<void>;
   placeComponent(componentId: string, at: { x: number; y: number }): Promise<string | null>;
+  setPlacementLocked(ids: string[], locked: boolean): Promise<void>;
   moveComponents(ids: string[], dx: number, dy: number, reroute?: boolean): Promise<void>;
   reshapeWire(index: number, segment: number, offset: number, source: Project): Promise<void>;
   setPartLayout(id: string, layout: Layout, source: Project): Promise<void>;
@@ -88,6 +89,7 @@ export interface ProjectState {
 
 export interface Clip {
   components: ProjectComponent[];
+  groups?: NonNullable<Project['layout']>['groups'];
   nets: Record<string, string[]>;
   wires: Wire[];
   /** How many times it was pasted: each paste lands further off. */
@@ -108,7 +110,7 @@ export function clipOf(p: Project, selection: Selection): Clip | null {
     if (own.length >= 2) nets[net] = own;
   }
   const wires = (p.layout?.wires ?? []).filter((w) => w.net in nets && Object.values(p.nets[w.net] ?? []).every(inside));
-  return structuredClone({ components, nets, wires, pastes: 0 });
+  return structuredClone({ components, nets, wires, groups: (p.layout?.groups ?? []).filter((g) => g.members.every((id) => components.some((c) => c.id === id))), pastes: 0 });
 }
 
 /** The project with `clip` added at (dx, dy), its parts and nets renamed. */
@@ -120,7 +122,7 @@ export function withClip(p: Project, clip: Clip, dx: number, dy: number, nextId:
     used.add(id);
     rename.set(c.id, id);
     const l = c.layout ?? { x: 0, y: 0 };
-    p.components.push({ ...structuredClone(c), id, layout: { ...l, x: l.x + dx, y: l.y + dy } });
+    p.components.push({ ...structuredClone(c), id, layout: { ...l, x: l.x + dx, y: l.y + dy, locked: false } });
   }
   const pin = (x: string) => {
     const [id, ...rest] = x.split('.');
@@ -135,6 +137,11 @@ export function withClip(p: Project, clip: Clip, dx: number, dy: number, nextId:
   }
   const wires = clip.wires.map((w) => ({ net: netName.get(w.net) ?? w.net, points: w.points.map(([x, y]) => [x + dx, y + dy] as [number, number]) }));
   if (wires.length) p.layout = { ...(p.layout ?? {}), wires: [...(p.layout?.wires ?? []), ...wires] };
+  for (const group of clip.groups ?? []) {
+    const groups = p.layout?.groups ?? [];
+    let n = 1; while (groups.some((g) => g.id === `group-${n}`)) n++;
+    p.layout = { ...p.layout, groups: [...groups, { ...group, id: `group-${n}`, name: `${group.name} copy`, members: group.members.map((id) => rename.get(id)!) }] };
+  }
   return { project: p, ids: [...rename.values()] };
 }
 
@@ -335,12 +342,20 @@ export const useProject = create<ProjectState>((set, get) => ({
     return id;
   },
 
+  async setPlacementLocked(ids, locked) {
+    await get().mutate(locked ? 'Lock placement' : 'Unlock placement', (p) => {
+      for (const c of placeables(p)) if (ids.includes(c.id)) c.layout = { ...(c.layout ?? { x: 0, y: 0 }), locked };
+      return p;
+    });
+  },
+
   async moveComponents(ids, dx, dy, reroute = false) {
     if (![dx, dy].every(Number.isFinite)) throw new Error('Offsets must be finite numbers.');
     dx = snap(dx); dy = snap(dy);
     if (!dx && !dy) return;
     const catalog = get().catalog;
     await get().mutate(`Move ${ids.length > 1 ? `${ids.length} components` : ids[0]}`, (p) => {
+      assertUnlocked(p, ids);
       const moved = new Map<string, { x: number; y: number }>(); // net + old pin position → new
       const memberships = new Map(Object.entries(p.nets).flatMap(([net, pins]) => pins.map((pin) => [pin, net] as const)));
       for (const c of placeables(p)) {
@@ -397,7 +412,8 @@ export const useProject = create<ProjectState>((set, get) => ({
     await get().mutate(`Position ${id}`, (p) => {
       const part = placeables(p).find((c) => c.id === id);
       if (!part) return null;
-      const next = { ...layout, x: snap(layout.x), y: snap(layout.y) };
+      assertUnlocked(p, [id]);
+      const next = { ...layout, x: snap(layout.x), y: snap(layout.y), locked: part.layout?.locked };
       const before = part.layout ?? { x: 0, y: 0 };
       if (before.x === next.x && before.y === next.y && (before.rotation ?? 0) === (next.rotation ?? 0) && !!before.mirror === !!next.mirror) return null;
       part.layout = next;
@@ -444,6 +460,7 @@ export const useProject = create<ProjectState>((set, get) => ({
   async rotateComponents(ids) {
     const catalog = get().catalog;
     await get().mutate(`Rotate ${ids.join(', ')}`, (p) => {
+      assertUnlocked(p, ids);
       const targets = placeables(p).filter((c) => ids.includes(c.id));
       const layouts = rotateLayouts(targets.map((c) => ({ layout: c.layout ?? { x: 0, y: 0 }, symbol: catalog[catalogId(c)]?.description.symbol ?? { width: 60, height: 20 } })));
       targets.forEach((c, i) => (c.layout = layouts[i] as Layout));
@@ -453,6 +470,7 @@ export const useProject = create<ProjectState>((set, get) => ({
 
   async mirrorComponents(ids) {
     await get().mutate(`Mirror ${ids.join(', ')}`, (p) => {
+      assertUnlocked(p, ids);
       for (const c of placeables(p)) if (ids.includes(c.id)) c.layout = { ...(c.layout ?? { x: 0, y: 0 }), mirror: !c.layout?.mirror };
       return rerouteParts(p, get().sceneCatalog, ids);
     });
@@ -462,6 +480,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     const catalog = get().catalog;
     if (selection.components.length === 0 && selection.wires.length === 0) return;
     await get().mutate('Delete', (p) => {
+      if (p.layout?.groups) p.layout.groups = p.layout.groups.map((g) => ({ ...g, members: g.members.filter((id) => !selection.components.includes(id)) })).filter((g) => g.members.length);
       const removedPins = new Set<string>();
       const memberships = new Map(Object.entries(p.nets).flatMap(([net, pins]) => pins.map((pin) => [pin, net] as const)));
       for (const c of placeables(p)) {
@@ -624,3 +643,8 @@ export const useProject = create<ProjectState>((set, get) => ({
 }));
 
 export { GRID };
+
+function assertUnlocked(project: Project, ids: string[]) {
+  const locked = [...project.components, ...(project.boards ?? [])].filter((p) => ids.includes(p.id) && p.layout?.locked);
+  if (locked.length) throw new Error(`Unlock placement first: ${locked.map((p) => p.id).join(', ')}`);
+}

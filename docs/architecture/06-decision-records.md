@@ -638,3 +638,34 @@ cancellation and a 20-second deadline bound their lifetime. Full electrical rule
 physical clearance checking and large-sheet qualification remain future work.
 
 **Status.** Proposed; implemented for review in this pull request (2026-10-16).
+
+---
+
+## ADR-025 Persistent flat schematic groups and native placement locks
+
+**Context.** Larger schematics need named organization and protection of completed
+placement. Client-only flags would be lost on save and bypassed by native edits.
+Groups must not silently turn into electrical connectivity or simulator hierarchy.
+
+**Decision.** Store flat groups under project.layout.groups and boolean placement
+locks in instance layouts. Each top-level instance belongs to at most one group.
+Native loading and transactions validate memberships; instance removal prunes
+empty groups. Locked placement requires an explicit unlock before changing
+position/orientation; omitted flags preserve existing locks. Automatic placement
+uses locked bodies as fixed obstacles; direct transforms refuse mixed locked
+selections atomically. Existing diff/transaction history persists organization
+without resetting simulation. Copied complete component groups remap identifiers
+and unlock copies. Export top-level explicit-data inventory through the existing
+platform adapter rather than claiming an effective manufacturing BOM.
+
+**Alternatives.** Local browser-only metadata (fails cross-client persistence).
+Treating groups as composite electrical models (changes connectivity and scope).
+Partially moving locked selections (surprising relative placement changes).
+
+**Consequences.** Groups remain visual and flat; no hierarchical sheet editing is
+introduced. Placement locks do not prevent explicit deletion or electrical edits.
+Routing can replace manual geometry near a fixed component. Export groups exact
+explicit parameters; defaults, unit equivalence and board internals are not
+resolved. Existing schema version remains 1 with optional additive fields.
+
+**Status.** Proposed; implemented for review in this pull request (2026-10-16).

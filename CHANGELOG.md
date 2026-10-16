@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Circuit organization
+
+- Persist named presentation groups, display selectable group outlines, and browse
+  parts/groups by reference, model or group name in the Objects panel.
+- Lock part/board placement through the inspector or object browser; native
+  transactions enforce locks, automatic placement uses locked parts as fixed
+  obstacles, and mixed locked selections cannot be moved or arranged partially.
+- Support group creation, rename, reassignment, ungroup, group locking and undo;
+  deleting members prunes empty groups. Complete copied component groups receive
+  new group/member identities and unlocked placement.
+- Disable library placement controls during pending/read-only edits so rapid
+  placement cannot race a transaction already finishing.
+- Export deterministic, aggregated top-level parts-list CSV through the platform
+  file adapter. Inventory includes explicit parameters, not board internals or
+  procurement-qualified effective part values.
+
 ### Cross-platform schematic fixes
 
 - Remove an ambiguous case-insensitive source import that broke macOS/Windows

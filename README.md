@@ -67,6 +67,9 @@ entries, searchable categories, model limits and executable fixtures. The
 controls and four wired GUI/CLI examples. The models declare their approximation
 boundaries; catalog presence does not imply manufacturer-qualified accuracy.
 
+The schematic also provides persistent named groups, placement locks, a searchable
+Objects panel and top-level CSV parts inventory.
+
 The [schematic authoring guide](docs/user/schematic-studio.md) covers connected
 layout previews, configurable drafting surfaces, manual wire bends and segment
 repair, exact placement, shared-property editing, and navigable drawing checks.

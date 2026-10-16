@@ -29,6 +29,8 @@ export function SelectionProperties() {
   }, [part, shared]);
   if (!project || !ids.length) return null;
   const disabled = !store.editable || store.busy || store.commands.isBusy;
+  const locked = [...project.components, ...(project.boards ?? [])].some((c) => ids.includes(c.id) && c.layout?.locked);
+  const placementDisabled = disabled || locked;
   const validPosition = x.trim() !== '' && y.trim() !== '' && [Number(x), Number(y)].every(Number.isFinite);
   const batchErrors = shared.filter((p) => enabled[p.name]).map((p) => parameterValue(p.param, values[p.name] ?? '').error).filter(Boolean);
   const fail = (e: unknown) => toast({ kind: 'error', title: 'Properties not applied', description: errorMessage(e) });
@@ -39,22 +41,24 @@ export function SelectionProperties() {
       <section className="wb-inspector__section" aria-label="Placement">
         <h3>{ids.length === 1 ? 'Placement' : `Move ${ids.length} selected items`}</h3>
         <p className="es-muted">{ids.length === 1 ? 'Sheet coordinates · snapped to 10 units' : 'Relative offset for the entire selection'}</p>
+        <Button size="sm" disabled={disabled} onClick={() => void store.setPlacementLocked(ids, !locked).catch(fail)}>{locked ? 'Unlock placement' : 'Lock placement'}</Button>
+        {locked && <p className="es-muted">Unlock the selection to change placement. Parameters remain editable.</p>}
         <form onSubmit={(e) => {
-          e.preventDefault(); if (disabled || !validPosition) return;
+          e.preventDefault(); if (placementDisabled || !validPosition) return;
           const operation = part ? store.setPartLayout(part.id, { ...part.layout, x: Number(x), y: Number(y), rotation: Number(rotation), mirror }, project) : store.moveComponents(ids, Number(x), Number(y), true);
           void operation.then(() => toast({ kind: 'success', title: 'Placement applied', duration: 1500 })).catch(fail);
         }}>
           <div className="wb-properties-pair">
-            <Input label={part ? 'Position X' : 'Offset X'} mono value={x} onChange={(e) => setX(e.target.value)} disabled={disabled} />
-            <Input label={part ? 'Position Y' : 'Offset Y'} mono value={y} onChange={(e) => setY(e.target.value)} disabled={disabled} />
+            <Input label={part ? 'Position X' : 'Offset X'} mono value={x} onChange={(e) => setX(e.target.value)} disabled={placementDisabled} />
+            <Input label={part ? 'Position Y' : 'Offset Y'} mono value={y} onChange={(e) => setY(e.target.value)} disabled={placementDisabled} />
           </div>
           {part && <>
-            <Select label="Rotation" value={rotation} options={[0, 90, 180, 270].map((n) => ({ value: String(n), label: `${n}°` }))} onValueChange={setRotation} disabled={disabled} />
-            <label className="wb-property-toggle"><input type="checkbox" checked={mirror} onChange={(e) => setMirror(e.target.checked)} disabled={disabled} />Mirror symbol</label>
+            <Select label="Rotation" value={rotation} options={[0, 90, 180, 270].map((n) => ({ value: String(n), label: `${n}°` }))} onValueChange={setRotation} disabled={placementDisabled} />
+            <label className="wb-property-toggle"><input type="checkbox" checked={mirror} onChange={(e) => setMirror(e.target.checked)} disabled={placementDisabled} />Mirror symbol</label>
             {symbol && <p className="es-muted">Symbol {symbol.width} × {symbol.height} sheet units</p>}
           </>}
           {!validPosition && <p role="alert" className="wb-properties-error">Enter finite X and Y coordinates.</p>}
-          <Button type="submit" size="sm" disabled={disabled || !validPosition}>Apply placement</Button>
+          <Button type="submit" size="sm" disabled={placementDisabled || !validPosition}>Apply placement</Button>
         </form>
       </section>
       {ids.length > 1 && <section className="wb-inspector__section" aria-label="Shared parameters">

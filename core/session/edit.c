@@ -14,7 +14,7 @@
  *   add_board {id, board, layout?, firmware?}
  *   remove_board {id}
  *   set_layout {id, layout}         a component's or a board's placement
- *   set_layout {wires?, labels?, buses?}  the drawing
+ *   set_layout {wires?, labels?, buses?, groups?}  the drawing
  *
  * Everything but set_layout changes the circuit: `*structural` is set so
  * the commit rebuilds the session. A net left with no pins is removed. */
@@ -67,6 +67,79 @@ static long find_id(const esk_json *arr, const char *id)
     return -1;
 }
 
+static int validate_groups(const esk_json *project, const esk_json *v, char *why, size_t cap)
+{
+    if (!v)
+        return 0;
+    if (v->type != ESK_JSON_ARRAY)
+        return err(why, cap, "groups must be an array%s", NULL);
+    size_t gi, mi, gj, mj;
+    for (gi = 0; gi < esk_json_len(v); gi++) {
+        const esk_json *g = esk_json_at(v, gi), *members = esk_json_get(g, "members");
+        const char *gid = esk_json_get_str(g, "id", ""), *name = esk_json_get_str(g, "name", "");
+        if (!*gid || !*name || !esk_json_is(members, ESK_JSON_ARRAY) || !esk_json_len(members))
+            return err(why, cap, "set_layout: invalid group %s", gid);
+        for (gj = 0; gj < gi; gj++)
+            if (esk_str_eq(gid, esk_json_get_str(esk_json_at(v, gj), "id", "")))
+                return err(why, cap, "set_layout: duplicate group %s", gid);
+        for (mi = 0; mi < esk_json_len(members); mi++) {
+            const char *member = esk_json_str(esk_json_at(members, mi));
+            if (!member || (find_id(esk_json_get(project, "components"), member) < 0 &&
+                            find_id(esk_json_get(project, "boards"), member) < 0))
+                return err(why, cap, "set_layout: unknown group member %s", member);
+            for (gj = 0; gj <= gi; gj++) {
+                const esk_json *previous = esk_json_get(esk_json_at(v, gj), "members");
+                for (mj = 0; mj < (gj == gi ? mi : esk_json_len(previous)); mj++)
+                    if (esk_str_eq(member, esk_json_str(esk_json_at(previous, mj))))
+                        return err(why, cap, "set_layout: repeated group member %s", member);
+            }
+        }
+    }
+    return 0;
+}
+
+static int validate_placement(const esk_json *layout, const char *id, char *why, size_t cap)
+{
+    const char *const numbers[] = {"x", "y", "rotation"};
+    const char *const flags[] = {"mirror", "locked"};
+    size_t i;
+    if (!layout)
+        return 0;
+    if (layout->type != ESK_JSON_OBJECT)
+        return err(why, cap, "invalid placement for %s", id);
+    for (i = 0; i < 3; i++) {
+        const esk_json *value = esk_json_get(layout, numbers[i]);
+        if (value && value->type != ESK_JSON_NUMBER)
+            return err(why, cap, "invalid placement number for %s", id);
+        if (value && i == 2 && value->u.number.value != 0 && value->u.number.value != 90 &&
+            value->u.number.value != 180 && value->u.number.value != 270)
+            return err(why, cap, "invalid placement rotation for %s", id);
+    }
+    for (i = 0; i < 2; i++) {
+        const esk_json *value = esk_json_get(layout, flags[i]);
+        if (value && value->type != ESK_JSON_BOOL)
+            return err(why, cap, "invalid placement flag for %s", id);
+    }
+    return 0;
+}
+
+int esk_project_validate_organization(const esk_json *project, char *why, size_t cap)
+{
+    const char *const lists[] = {"components", "boards"};
+    size_t k, i;
+    for (k = 0; k < 2; k++) {
+        const esk_json *parts = esk_json_get(project, lists[k]);
+        for (i = 0; i < esk_json_len(parts); i++) {
+            const esk_json *part = esk_json_at(parts, i);
+            if (validate_placement(esk_json_get(part, "layout"), esk_json_get_str(part, "id", ""),
+                                   why, cap))
+                return -1;
+        }
+    }
+    return validate_groups(project, esk_json_get(esk_json_get(project, "layout"), "groups"), why,
+                           cap);
+}
+
 /* removes `pin` from every net; with `prefix`, every pin "prefix.X" */
 static void drop_pins(esk_alloc *a, esk_json *nets, const char *pin, int prefix)
 {
@@ -100,7 +173,8 @@ static int rename_member(esk_alloc *a, esk_json *obj, const char *from, const ch
     return 0;
 }
 
-static int set_string_in(esk_alloc *a, esk_json *arr, const char *key, const char *from, const char *to)
+static int set_string_in(esk_alloc *a, esk_json *arr, const char *key, const char *from,
+                         const char *to)
 {
     size_t i;
     for (i = 0; i < esk_json_len(arr); i++) {
@@ -111,8 +185,8 @@ static int set_string_in(esk_alloc *a, esk_json *arr, const char *key, const cha
     return 0;
 }
 
-static int add_item(esk_alloc *a, esk_json *project, const char *list, const esk_json *spec, const char *kind_key,
-                    char *why, size_t cap)
+static int add_item(esk_alloc *a, esk_json *project, const char *list, const esk_json *spec,
+                    const char *kind_key, char *why, size_t cap)
 {
     const char *id = esk_json_get_str(spec, "id", NULL);
     esk_json *arr = array_member(a, project, list), *copy;
@@ -120,7 +194,8 @@ static int add_item(esk_alloc *a, esk_json *project, const char *list, const esk
         return err(why, cap, "%s needs an id and a catalog id", list);
     if (!arr)
         return -1;
-    if (find_id(esk_json_get(project, "components"), id) >= 0 || find_id(esk_json_get(project, "boards"), id) >= 0)
+    if (find_id(esk_json_get(project, "components"), id) >= 0 ||
+        find_id(esk_json_get(project, "boards"), id) >= 0)
         return err(why, cap, "%s is already used", id);
     copy = esk_json_clone(a, spec);
     if (!copy || esk_json_array_push(a, arr, copy)) {
@@ -130,8 +205,8 @@ static int add_item(esk_alloc *a, esk_json *project, const char *list, const esk
     return 0;
 }
 
-int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit, int *structural, char *why,
-                           size_t cap)
+int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit, int *structural,
+                           char *why, size_t cap)
 {
     const esk_json *e;
     esk_json *nets;
@@ -152,12 +227,26 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
     }
     if (esk_str_eq(e->key, "remove_component") || esk_str_eq(e->key, "remove_board")) {
         const char *id = esk_json_get_str(e, "id", "");
-        esk_json *arr = esk_json_get_mut(project, esk_str_eq(e->key, "remove_board") ? "boards" : "components");
+        esk_json *arr =
+            esk_json_get_mut(project, esk_str_eq(e->key, "remove_board") ? "boards" : "components");
         long i = find_id(arr, id);
         if (i < 0)
             return err(why, cap, "no %s to remove", id);
         *structural = 1;
         esk_json_remove_at(a, arr, (size_t)i);
+        {
+            esk_json *groups = esk_json_get_mut(esk_json_get_mut(project, "layout"), "groups");
+            size_t gi = esk_json_len(groups);
+            while (gi--) {
+                esk_json *members = esk_json_get_mut(esk_json_at_mut(groups, gi), "members");
+                size_t mi = esk_json_len(members);
+                while (mi--)
+                    if (esk_str_eq(id, esk_json_str(esk_json_at(members, mi))))
+                        esk_json_remove_at(a, members, mi);
+                if (!esk_json_len(members))
+                    esk_json_remove_at(a, groups, gi);
+            }
+        }
         drop_pins(a, nets, id, 1);
         return 0;
     }
@@ -206,7 +295,8 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
     }
     if (esk_str_eq(e->key, "rename_net")) {
         const char *from = esk_json_get_str(e, "from", NULL), *to = esk_json_get_str(e, "to", NULL);
-        esk_json *layout = esk_json_get_mut(project, "layout"), *probes = esk_json_get_mut(project, "probes");
+        esk_json *layout = esk_json_get_mut(project, "layout"),
+                 *probes = esk_json_get_mut(project, "probes");
         size_t i;
         if (!from || !to || !*to)
             return err(why, cap, "rename_net needs from and to%s", NULL);
@@ -264,25 +354,55 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
             }
             if (i < 0 || !l || l->type != ESK_JSON_OBJECT)
                 return err(why, cap, "set_layout: no component or board %s", id);
+            if (validate_placement(l, id, why, cap))
+                return -1;
+            {
+                const esk_json *old = esk_json_get(esk_json_at(arr, (size_t)i), "layout");
+                const esk_json *lock = esk_json_get(l, "locked");
+                static const char *const fields[] = {"x", "y", "rotation", "mirror"};
+                size_t field;
+                if (lock && lock->type != ESK_JSON_BOOL)
+                    return err(why, cap, "set_layout: invalid lock for %s", id);
+                if (esk_json_get_bool(old, "locked", 0) && (!lock || lock->u.boolean)) {
+                    for (field = 0; field < 4; field++) {
+                        double before = field == 3 ? esk_json_get_bool(old, fields[field], 0)
+                                                   : esk_json_get_num(old, fields[field], 0);
+                        double after = field == 3 ? esk_json_get_bool(l, fields[field], 0)
+                                                  : esk_json_get_num(l, fields[field], 0);
+                        if (before != after)
+                            return err(why, cap, "set_layout: placement is locked for %s", id);
+                    }
+                }
+            }
             copy = esk_json_clone(a, l);
+            if (copy && !esk_json_get(l, "locked") &&
+                esk_json_get_bool(esk_json_get(esk_json_at(arr, (size_t)i), "layout"), "locked",
+                                  0)) {
+                if (esk_json_set_bool(a, copy, "locked", 1)) {
+                    esk_json_free(a, copy);
+                    return -1;
+                }
+            }
             if (!copy || esk_json_object_set(a, esk_json_at_mut(arr, (size_t)i), "layout", copy)) {
                 esk_json_free(a, copy);
                 return -1;
             }
             return 0;
         } else {
-            static const char *const keys[] = { "wires", "labels", "buses" };
+            static const char *const keys[] = {"wires", "labels", "buses", "groups"};
             esk_json *layout = object_member(a, project, "layout");
             size_t k;
             if (!layout)
                 return -1;
-            for (k = 0; k < 3; k++) {
+            for (k = 0; k < 4; k++) {
                 const esk_json *v = esk_json_get(e, keys[k]);
                 esk_json *copy;
                 if (!v)
                     continue;
                 if (v->type != ESK_JSON_ARRAY)
                     return err(why, cap, "set_layout: %s is a list", keys[k]);
+                if (k == 3 && validate_groups(project, v, why, cap))
+                    return -1;
                 copy = esk_json_clone(a, v);
                 if (!copy || esk_json_object_set(a, layout, keys[k], copy)) {
                     esk_json_free(a, copy);

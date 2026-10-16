@@ -1083,3 +1083,16 @@
 .wb-schematic-checks__toolbar, .wb-schematic-checks > .wb-checks-scope { flex-shrink: 0; }
 .wb-checks-body { min-height: 0; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
 .wb-checks-empty.wb-properties-error { color: var(--danger); }
+
+/* A dense, searchable assembly outline with quiet native-style controls. */
+.wb-objects { padding: var(--space-3); height: 100%; overflow: auto; }
+.wb-objects__toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: var(--space-2); }
+.wb-objects__toolbar > div { min-width: 160px; flex: 1; }
+.wb-objects__groups { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-2) 0; }
+.wb-objects__group { display: flex; gap: 4px; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-raised); }
+.wb-objects__table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--text-sm); }
+.wb-objects__table th, .wb-objects__table td { border-bottom: 1px solid var(--line); padding: 6px 10px; }
+.wb-objects__table th { color: var(--text-muted); font-weight: 500; }
+.wb-objects__table tr[aria-selected="true"] { background: var(--surface-raised); }
+.wb-objects__table td:first-child button { font: inherit; color: var(--accent); background: transparent; border: 0; cursor: pointer; }
+.wb-objects__table thead { position: sticky; top: 0; background: var(--surface); z-index: 1; }
