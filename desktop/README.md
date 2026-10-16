@@ -14,14 +14,24 @@ in release mode.
 ```sh
 cmake --preset release && cmake --build --preset release   # the engine
 python3 desktop/prepare-sidecar.py                         # copy it as the sidecar
-cargo install tauri-cli --version '^2'                     # once
-cd desktop/src-tauri && cargo tauri dev                     # or: cargo tauri build
+cd desktop && npx @tauri-apps/cli@2 dev                    # a window on the Vite dev server
+cd desktop && npx @tauri-apps/cli@2 build                  # the installers
 ```
 
-`cargo tauri build` produces AppImage and deb on Linux, dmg on macOS and msi
-on Windows, bundling the engine and the `catalog/` library.
+`tauri build` produces AppImage and deb on Linux, dmg on macOS and msi on
+Windows, bundling the engine and the `catalog/` library. CI builds all four
+on every pull request and keeps them as artifacts.
+
+`embsim-desktop PROJECT.json` opens a project at start; otherwise the
+workbench opens one from its file dialog. The workbench's errors are
+printed on the shell's standard error (the webview's console is not
+visible). The engine accepts the webview's connection because the shell
+starts it with `--allow-origin` for the webview's origin (SPEC-008 §1).
+
+`make-icons.py` draws the application icon into `src-tauri/icons`.
 
 ## Status
 
-The shell has not been built in CI yet; the browser delivery (`embsim serve`)
-runs the same workbench and is the tested path in M0 (see `docs/STATUS.md`).
+Built and run on Linux (WebKitGTK 4.1, under Xvfb) in this workspace: the
+window shows the workbench with the engine's project loaded. macOS and
+Windows builds are CI's; see `docs/STATUS.md` for what has been observed.

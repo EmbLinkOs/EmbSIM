@@ -90,10 +90,88 @@ jobs:
       - run: pnpm test
         working-directory: ui
 
+  smoke:
+    # SPEC-011 §6.7: open, run, press, observe, export, on every platform
+    name: workbench smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: ui
+      - run: pnpm build
+        working-directory: ui
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: ui/apps/workbench
+      - run: pnpm e2e
+        working-directory: ui/apps/workbench
+
+  desktop:
+    # the installers (ADR-008): the Tauri shell with the engine as its sidecar
+    name: desktop (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, bundles: 'deb,appimage' }
+          - { os: macos-14, bundles: 'dmg' }
+          - { os: windows-2022, bundles: 'msi' }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libwebkit2gtk-4.1-dev librsvg2-dev patchelf libssl-dev
+      - name: Install tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: ui
+      - name: Build the engine
+        run: |
+          cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/release
+      - run: python3 desktop/prepare-sidecar.py
+      - name: Build the installers
+        run: npx --yes @tauri-apps/cli@2 build --bundles ${{ matrix.bundles }}
+        working-directory: desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: embsim-desktop-${{ runner.os }}
+          path: |
+            desktop/src-tauri/target/release/bundle/deb/*.deb
+            desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+
   merge_gate:
     name: CI merge gate
     runs-on: ubuntu-24.04
-    needs: [core, tools, workbench]
+    needs: [core, tools, workbench, smoke, desktop]
     if: always()
     steps:
       - name: Require every job to succeed
