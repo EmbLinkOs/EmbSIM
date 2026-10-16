@@ -325,6 +325,13 @@ versions follow semantic versioning. There is no release yet.
   START_MANY with DIV, round robin, the FIFO and its interrupt).
   `tests/vendor/pico-sdk`'s `pwm_adc` runs the SDK's `hardware_pwm` and
   `hardware_adc` on them.
+- The FE310's PWM and SPI on their pins: PWM0-2 (the count scaled to
+  pwms, comparators with center, gang, deglitch and sticky, zerocmp,
+  enalways and enoneshot, their PLIC sources, the channels on IOF1) and
+  SPI1 and SPI2 in single-wire mode (8-entry FIFOs, modes 0 to 3, csmode
+  AUTO, HOLD and OFF, the four delays, the watermark interrupts). The GPIO
+  keeps IOF0's and IOF1's drive apart and applies out_xor to them.
+  `tests/vendor/freedom-metal` runs SiFive's example-pwm and example-spi.
 - The ATmega328P's SPI and TWI masters on their pins: the SPI (MOSI and
   SCK while DDRB makes them outputs, MISO an input, modes 0 to 3, DORD, the
   clock from SPR and SPI2X, WCOL, SPIF cleared by SPSR then SPDR or by its

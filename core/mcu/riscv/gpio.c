@@ -8,8 +8,10 @@
  *     pull-up (about 50 k);
  *   - iof_en gives the pin to a hardware function, iof_sel picking IOF0 or
  *     IOF1: the UARTs' TX pins are driven by them (idle high, the frames on
- *     the line from the MCU runtime), their RX pins are inputs; a function
- *     with no model lets the pin go;
+ *     the line from the MCU runtime), their RX pins are inputs; the PWMs
+ *     (IOF1), the SPI and the I2C (IOF0) drive their pins as their models
+ *     say, out_xor inverting what they drive; a function with no model, or
+ *     an input, lets the pin go;
  *   - rise_ip, fall_ip, high_ip and low_ip latch the input's edges and
  *     levels (a one written clears a bit; a level bit sets again while the
  *     level lasts), and each pin with an enabled pending bit raises its
@@ -25,7 +27,7 @@ struct fe_gpio {
     struct esk_rf_periph *p;
     struct esk_rf_reg *in_val, *in_en, *out_en, *out_val, *pue, *rise_ie, *rise_ip, *fall_ie, *fall_ip,
         *high_ie, *high_ip, *low_ie, *low_ip, *iof_en, *iof_sel, *out_xor;
-    int iof_level[NPINS]; /* a hardware function's drive, -1 when it lets go */
+    int iof_level[2][NPINS]; /* IOF0's and IOF1's drive, -1 when they let go */
     esk_mach_pin out[NPINS];
     int known;
     u32 src; /* the PLIC sources raised */
@@ -70,9 +72,13 @@ static void update(struct fe_gpio *g)
         o.drive = -1;
         if (iof >> i & 1) {
             /* IOF0 on GPIO17 and 18 is UART0's and UART1's TX: idle high */
-            int tx = !(v32(g->iof_sel) >> i & 1) && (i == 17 || i == 18);
+            int sel = (int)(v32(g->iof_sel) >> i & 1), lvl0 = g->iof_level[sel][i];
+            int tx = !sel && (i == 17 || i == 18);
             o.af = 1;
-            o.drive = g->iof_level[i] >= 0 ? g->iof_level[i] : tx ? 1 : -1;
+            if (lvl0 >= 0)
+                o.drive = lvl0 ^ (int)(v32(g->out_xor) >> i & 1);
+            else
+                o.drive = tx ? 1 : -1;
         } else if (oe >> i & 1) {
             o.drive = (int)(ov >> i & 1);
         }
@@ -118,9 +124,6 @@ static void gp_write(void *ctx, u32 off, int n, u32 v)
 static void gp_reset(void *ctx)
 {
     struct fe_gpio *g = (struct fe_gpio *)ctx;
-    int i;
-    for (i = 0; i < NPINS; i++)
-        g->iof_level[i] = -1;
     g->known = 0;
     g->src = 0;
     update(g);
@@ -146,13 +149,30 @@ int esk_fe310_gpio_iof(struct esk_mach *m, int pin, int *sel)
     return (int)(v32(g->iof_en) >> pin & 1);
 }
 
-void esk_fe310_gpio_iof_level(struct esk_mach *m, int pin, int level)
+void esk_fe310_gpio_iof_level(struct esk_mach *m, int iof, int pin, int level)
 {
     struct fe_gpio *g = gpio_of(m);
-    if (!g || pin < 0 || pin >= NPINS || g->iof_level[pin] == level)
+    if (!g || iof < 0 || iof > 1 || pin < 0 || pin >= NPINS || g->iof_level[iof][pin] == level)
         return;
-    g->iof_level[pin] = level;
+    g->iof_level[iof][pin] = level;
     update(g);
+}
+
+int esk_fe310_pin_read(struct esk_mach *m, int pin)
+{
+    struct fe_gpio *g = gpio_of(m);
+    struct esk_mach *s = m;
+    int ext = 0;
+    if (!g || pin < 0 || pin >= NPINS)
+        return 0;
+    update(g);
+    if (g->out[pin].drive == 0)
+        return 0; /* pulled low here, whatever else drives it */
+    if (s->host.pin_in && s->host.pin_in(s->host.ctx, pin / 16, pin % 16, &ext))
+        return ext != 0;
+    if (g->out[pin].drive == 1)
+        return 1;
+    return g->out[pin].pull == 1;
 }
 
 void *esk_fe310_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)
@@ -183,7 +203,7 @@ void *esk_fe310_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)
         !g.iof_sel || !g.out_xor)
         return 0;
     for (i = 0; i < NPINS; i++)
-        g.iof_level[i] = -1;
+        g.iof_level[0][i] = g.iof_level[1][i] = -1;
     s->pins_changed = esk_fe310_pins_changed;
     s->uart_pin = esk_fe310_uart_pin;
     c = (struct fe_gpio *)esk_mach_alloc(s, sizeof *c);

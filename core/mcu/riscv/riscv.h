@@ -13,6 +13,8 @@
  *   gpio.c    the FE310's GPIO: 32 pins with their interrupts and IOFs
  *   uart.c    the FE310's UART: FIFOs, watermarks, the baud divisor
  *   prci.c    the clocks: HFROSC, HFXOSC and the PLL
+ *   pwm.c     PWM0-2: the counters, comparators and their pins
+ *   spi.c     SPI1 and SPI2: the FIFOs, the frames on the pins, CS modes
  *
  * The devices drive the core's interrupt lines (MSIP, MTIP, MEIP in mip)
  * with esk_riscv_line; the CLINT gives the core its `time`.
@@ -136,13 +138,15 @@ int esk_riscv_disasm(u32 pc, u32 insn, char *text, size_t cap);
 /* ---- the FE310's peripherals ------------------------------------------- */
 
 extern const struct esk_dev_ops esk_fe310_clint_ops, esk_fe310_plic_ops, esk_fe310_gpio_ops,
-    esk_fe310_uart_ops, esk_fe310_prci_ops, esk_fe310_aon_ops;
+    esk_fe310_uart_ops, esk_fe310_prci_ops, esk_fe310_aon_ops, esk_fe310_pwm_ops, esk_fe310_spi_ops;
 void *esk_fe310_clint_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_plic_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_uart_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_prci_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_aon_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_fe310_pwm_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_fe310_spi_create(struct esk_mach *m, struct esk_rf_periph *p);
 
 /* plic.c: a source's level changed (GPIO n is source 8 + n, UART0 3) */
 void esk_fe310_plic_source(struct esk_mach *m, int source, int level);
@@ -150,7 +154,11 @@ void esk_fe310_plic_source(struct esk_mach *m, int source, int level);
 int esk_fe310_gpio_iof(struct esk_mach *m, int pin, int *sel);
 void esk_fe310_pins_changed(struct esk_mach *m);
 int esk_fe310_uart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
-/* the UART's TX pin level while its IOF drives it */
-void esk_fe310_gpio_iof_level(struct esk_mach *m, int pin, int level);
+/* what IOF0 or IOF1 drives on pin n while the GPIO gives it the pin: 0 or
+ * 1, or -1 to let it go (an input, an open drain's 1) */
+void esk_fe310_gpio_iof_level(struct esk_mach *m, int iof, int pin, int level);
+/* pin n's level now: its own drive if it pulls low, else the circuit's,
+ * else its drive or its pull-up */
+int esk_fe310_pin_read(struct esk_mach *m, int pin);
 
 #endif
