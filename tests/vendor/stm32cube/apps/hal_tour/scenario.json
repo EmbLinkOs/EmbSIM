@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "hal_tour",
+  "until": "1.6s",
+  "description": "The clock tree as the HAL reports it (72 MHz from the crystal through the PLL, APB1 at 36 MHz); HAL_GetTick against TIM2's 10 Hz interrupt; the L LED toggled every 253.4 ms (HAL_Delay(250) waits 251 ticks, then the line's 2.4 ms on the wire: six toggles from 256 ms to 1522 ms); a button press through EXTI0; a character typed on the terminal echoed through the UART's receive interrupt.",
+  "inputs": [
+    {
+      "at": "600ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "650ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "900ms",
+      "target": "VT1",
+      "input": "tx_text",
+      "value": "h"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "clocks",
+      "at": "20ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "SYSCLK 72000000 Hz, PCLK1 36000000 Hz"
+      }
+    },
+    {
+      "id": "tick",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "tick=256 tim2=2 presses=0"
+      }
+    },
+    {
+      "id": "button",
+      "at": "800ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "presses=1"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "1.3s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "echo h"
+      }
+    },
+    {
+      "id": "tim2",
+      "at": "1.6s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "tick=1522 tim2=15"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "1.6s"
+      ],
+      "probe": "pc13",
+      "expect": {
+        "edges": 6
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+ "generator": "ngspice-42 (tools/analog/ngspice_fixture.py)",
+ "netlist": [
+  "* rl (EmbSIM analog fixture)",
+  "VV1 vin 0 PULSE(0.0 5.0 0.0 1e-09 1e-09 1.0 2.0)",
+  "RR1 vin mid 100.0",
+  "LL1 mid 0 0.01",
+  ".options reltol=1e-6 abstol=1e-15 vntol=1e-9 chgtol=1e-18 temp=26.85 tnom=26.85",
+  ".control",
+  "tran 1e-06 0.0010001 0 1e-06",
+  "meas tran OP_mid find v(mid) at=0",
+  "meas tran S0_mid find v(mid) at=4.9999999999999996e-05",
+  "meas tran S1_mid find v(mid) at=9.999999999999999e-05",
+  "meas tran S2_mid find v(mid) at=0.0003",
+  "meas tran S3_mid find v(mid) at=0.001",
+  "quit",
+  ".endc",
+  ".end"
+ ],
+ "op": {
+  "mid": 0.0
+ },
+ "samples": [
+  {
+   "t": "50us",
+   "nets": {
+    "mid": 3.032693
+   }
+  },
+  {
+   "t": "100us",
+   "nets": {
+    "mid": 1.839414
+   }
+  },
+  {
+   "t": "300us",
+   "nets": {
+    "mid": 0.2489334
+   }
+  },
+  {
+   "t": "1000us",
+   "nets": {
+    "mid": 0.0002269826
+   }
+  }
+ ]
+}

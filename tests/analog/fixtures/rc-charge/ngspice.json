@@ -1,0 +1,57 @@
+{
+ "generator": "ngspice-42 (tools/analog/ngspice_fixture.py)",
+ "netlist": [
+  "* rc-charge (EmbSIM analog fixture)",
+  "VV1 vin 0 DC 5.0",
+  "RR1 vin out 1000.0",
+  "CC1 out 0 1e-06",
+  ".ic v(out)=0.0",
+  ".options reltol=1e-6 abstol=1e-15 vntol=1e-9 chgtol=1e-18 temp=26.85 tnom=26.85",
+  ".control",
+  "tran 1e-05 0.010001 0 1e-05",
+  "meas tran OP_out find v(out) at=0",
+  "meas tran S0_out find v(out) at=0.0005",
+  "meas tran S1_out find v(out) at=0.001",
+  "meas tran S2_out find v(out) at=0.002",
+  "meas tran S3_out find v(out) at=0.003",
+  "meas tran S4_out find v(out) at=0.01",
+  "quit",
+  ".endc",
+  ".end"
+ ],
+ "op": {
+  "out": 0.0
+ },
+ "samples": [
+  {
+   "t": "500us",
+   "nets": {
+    "out": 1.967322
+   }
+  },
+  {
+   "t": "1000us",
+   "nets": {
+    "out": 3.160595
+   }
+  },
+  {
+   "t": "2000us",
+   "nets": {
+    "out": 4.323326
+   }
+  },
+  {
+   "t": "3000us",
+   "nets": {
+    "out": 4.751068
+   }
+  },
+  {
+   "t": "10000us",
+   "nets": {
+    "out": 4.999773
+   }
+  }
+ ]
+}

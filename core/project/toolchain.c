@@ -115,6 +115,7 @@ typedef struct build {
     char *dir;          /* the project's directory */
     char *image;        /* the image's path */
     char *map;
+    char *hex;          /* the image as Intel HEX: its path with .hex for its extension */
     char *linker_script;
     char *build_dir;
     const char *source, *object;
@@ -183,8 +184,10 @@ static const char *scalar(build *b, const char *name)
     if (!strcmp(name, "object")) return b->object;
     if (!strcmp(name, "image")) return b->image;
     if (!strcmp(name, "map")) return b->map;
+    if (!strcmp(name, "hex")) return b->hex;
     if (!strcmp(name, "linker_script")) return b->linker_script;
     if (!strcmp(name, "target")) return esk_json_get_str(b->board_tc, "target", NULL);
+    if (!strcmp(name, "cpu")) return esk_json_get_str(b->board_tc, "cpu", NULL);
     return NULL;
 }
 
@@ -236,21 +239,29 @@ static es_status expand(build *b, const esk_json *tmpl, const char **argv, size_
             continue;
         if (!strcmp(t, "${cc}")) {
             push_list(argv, n, esk_json_get(b->ptarget, "cc"));
+        } else if (!strcmp(t, "${objcopy}")) {
+            push_list(argv, n, esk_json_get(b->ptarget, "objcopy"));
         } else if (!strcmp(t, "${cflags}") || !strcmp(t, "${flags}")) {
             push_list(argv, n, esk_json_get(b->board_tc, "flags"));
             push_list(argv, n, esk_json_get(b->fw, "flags"));
         } else if (!strcmp(t, "${link_flags}")) {
-            /* the profile's: they may name the build's variables (${map}) */
-            const esk_json *lf = esk_json_get(b->ptarget, "link_flags");
-            size_t k;
-            for (k = 0; k < esk_json_len(lf) && *n + 1 < MAX_ARGS; k++) {
-                const char *f = esk_json_str(esk_json_at(lf, k));
-                if (f && (st = push_one(b, f, argv, n)) != ES_OK)
-                    return st;
-            }
+            /* the profile's, then the project's (they may name the build's
+             * variables: ${map}) */
+            const esk_json *lists[2];
+            size_t k, l;
+            lists[0] = esk_json_get(b->ptarget, "link_flags");
+            lists[1] = esk_json_get(b->fw, "link_flags");
+            for (l = 0; l < 2; l++)
+                for (k = 0; k < esk_json_len(lists[l]) && *n + 1 < MAX_ARGS; k++) {
+                    const char *f = esk_json_str(esk_json_at(lists[l], k));
+                    if (f && (st = push_one(b, f, argv, n)) != ES_OK)
+                        return st;
+                }
         } else if (!strcmp(t, "${link}")) {
             push_list(argv, n, esk_json_get(b->board_tc, "link"));
         } else if (!strcmp(t, "${defines}")) {
+            /* the target's (written as flags: -DF_CPU=16000000UL), then the project's */
+            push_list(argv, n, esk_json_get(b->ptarget, "defines"));
             if (push_prefixed(b, argv, n, esk_json_get(b->fw, "defines"), "-D", 0))
                 return ES_ENOMEM;
         } else if (!strcmp(t, "${include}")) {
@@ -351,7 +362,10 @@ es_status esk_toolchain_build(es_session *s, const char *board_id, const char *p
         return ES_ENOTFOUND;
     b.profile = tc->desc;
     b.board_tc = esk_json_get(esk_json_get(bi->item->desc, "toolchains"), profile_id);
-    b.ptarget = esk_json_get(esk_json_get(b.profile, "targets"), esk_json_get_str(b.board_tc, "target", ""));
+    /* the board names the profile's target: by triple (clang, EmbCC) or by
+     * CPU (the GNU and XC profiles key their targets so) */
+    b.ptarget = esk_json_get(esk_json_get(b.profile, "targets"),
+                             esk_json_get_str(b.board_tc, "target", esk_json_get_str(b.board_tc, "cpu", "")));
     if (!b.ptarget && esk_json_len(esk_json_get(b.profile, "targets")) == 1)
         b.ptarget = esk_json_at(esk_json_get(b.profile, "targets"), 0);
     report = esk_json_new_object(s->a);
@@ -369,6 +383,19 @@ es_status esk_toolchain_build(es_session *s, const char *board_id, const char *p
             b.map = esk_strdup(s->a, m);
             esk_free(s->a, m, l);
         }
+        {
+            const char *dot = strrchr(b.image, '.'), *sep = strrchr(b.image, '/'), *bs = strrchr(b.image, '\\');
+            if (bs && (!sep || bs > sep))
+                sep = bs;
+            size_t stem = dot && (!sep || dot > sep) ? (size_t)(dot - b.image) : strlen(b.image);
+            m = (char *)esk_malloc(s->a, stem + 5);
+            if (m) {
+                memcpy(m, b.image, stem);
+                memcpy(m + stem, ".hex", 5);
+                b.hex = esk_strdup(s->a, m);
+                esk_free(s->a, m, stem + 5);
+            }
+        }
     }
     {
         const char *ls = esk_json_get_str(b.fw, "linker_script", NULL);
@@ -377,7 +404,7 @@ es_status esk_toolchain_build(es_session *s, const char *board_id, const char *p
         else if ((ls = esk_json_get_str(b.board_tc, "linker_script", NULL)) != NULL)
             b.linker_script = esk_host_path_join(s->a, bi->item->dir, ls);
     }
-    if (!report || !steplog || !b.dir || !b.build_dir || !b.image || !b.map) {
+    if (!report || !steplog || !b.dir || !b.build_dir || !b.image || !b.map || !b.hex) {
         st = ES_ENOMEM;
         goto done;
     }
@@ -457,6 +484,7 @@ done:
     esk_strfree(s->a, b.build_dir);
     esk_strfree(s->a, b.image);
     esk_strfree(s->a, b.map);
+    esk_strfree(s->a, b.hex);
     esk_strfree(s->a, b.linker_script);
     return st;
 }

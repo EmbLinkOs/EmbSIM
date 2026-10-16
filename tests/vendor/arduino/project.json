@@ -1,0 +1,131 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-vendor",
+ "description": "An Arduino Uno running a sketch built with the unmodified ArduinoCore-avr (tests/vendor/arduino/run.py puts the image beside this file as sketch.elf): a potentiometer on A0, a button on D2, a terminal on D0/D1 at 115200 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "POT",
+   "component": "emblink/potentiometer",
+   "params": {
+    "resistance": "10k"
+   },
+   "layout": {
+    "x": 700,
+    "y": 180
+   }
+  },
+  {
+   "id": "SW1",
+   "component": "emblink/push_button",
+   "layout": {
+    "x": 700,
+    "y": 300
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "POT.2"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "POT.1",
+   "SW1.2",
+   "VT1.GND"
+  ],
+  "A0": [
+   "B1.A0",
+   "POT.W"
+  ],
+  "BTN": [
+   "B1.D2",
+   "SW1.1"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "d13",
+   "target": "net:B1.PB5",
+   "kind": "digital"
+  },
+  {
+   "id": "d9",
+   "target": "net:B1.PB1",
+   "kind": "digital"
+  },
+  {
+   "id": "d6",
+   "target": "net:B1.PD6",
+   "kind": "digital"
+  }
+ ]
+}

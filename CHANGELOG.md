@@ -219,7 +219,21 @@ versions follow semantic versioning. There is no release yet.
   the register schema; `core.prog_end` and `core.ram_base` in the MCU
   schema); the XC16 profile's `pic24fj1024gb610` target.
 
+- Arduino sketches built with the unmodified ArduinoCore-avr run on the
+  Uno: `tests/vendor/arduino` (Blink and a tour of the core: `delay`,
+  `millis`, `analogRead`, `analogWrite`, `attachInterrupt`, `Serial`)
+  builds them with the IDE's flags against a pinned checkout of the core
+  and runs them under scenarios, in CI's linux-gcc job.
+- ST's STM32F1 HAL on the Blue Pill: `tests/vendor/stm32cube` builds an
+  application (the clock tree from HSE through the PLL, `HAL_Delay`, EXTI,
+  a TIM2 interrupt, the UART both ways) with ST's unmodified HAL, CMSIS
+  device files, startup and linker script, at pinned commits, and runs it
+  under a scenario, in CI's linux-gcc job.
+
 ### Changed
+- The analog fixtures are checked against ngspice too: `ngspice.json` beside
+  each (`tools/analog/ngspice_fixture.py`, `--check` in CI), compared by
+  `test_analog` within 2 mV + 0.2 %.
 - A toolchain profile's `link_flags` may name the build's variables: the XC
   profiles' `-Wl,-Map=${map}` was passed through as written.
 - The DWARF line reader takes XC16 images (their debug sections hold a byte
@@ -237,6 +251,19 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The ATmega328P's timers set TOVn in fast PWM a timer clock early, as the
+  counter reached TOP rather than as it went on to BOTTOM, so a read of
+  TCNTn at TOP found the flag already set. The Arduino core's `micros()`
+  counted that overflow twice and then ran back by 1024 µs, and `delay()`
+  returned early: Blink blinked at 9 Hz, not 0.5 Hz. `test_avr` follows the flag
+  clock by clock.
+- `embsim build` with a GNU profile found no target for any board: the
+  boards name a GNU target by `cpu`, the build looked for `target` only.
+  The gcc-avr profile's convert step (`${objcopy}`, `${hex}`) and its
+  target's `-DF_CPU` were not expanded, and it ignored a project's linker
+  script. A project's firmware takes `link_flags` for the link alone. The
+  gcc-arm profile now builds the Blue Pill, Pico and nRF52840 DK examples
+  and gcc-avr the Uno, each passing its scenario.
 - A digital input on an analog net heard of a threshold crossing when the
   analog step that found it began, up to a step early (0.9 ms on a slow
   ramp); it now hears of it at the crossing's own time, to the bisection's

@@ -1,0 +1,29 @@
+{
+ "generator": "ngspice-42 (tools/analog/ngspice_fixture.py)",
+ "netlist": [
+  "* pot-divider (EmbSIM analog fixture)",
+  "VV1 top 0 DC 3.3",
+  "RP1a 0 w 3000.0",
+  "RP1b w top 7000.0",
+  "RRL w 0 10000.0",
+  ".options reltol=1e-6 abstol=1e-15 vntol=1e-9 chgtol=1e-18 temp=26.85 tnom=26.85",
+  ".control",
+  "tran 1e-07 0.00010000999999999999 0 1e-07",
+  "meas tran OP_w find v(w) at=0",
+  "meas tran S0_w find v(w) at=9.999999999999999e-05",
+  "quit",
+  ".endc",
+  ".end"
+ ],
+ "op": {
+  "w": 0.8181818
+ },
+ "samples": [
+  {
+   "t": "100us",
+   "nets": {
+    "w": 0.8181818
+   }
+  }
+ ]
+}

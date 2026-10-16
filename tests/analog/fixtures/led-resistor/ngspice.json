@@ -1,0 +1,27 @@
+{
+ "generator": "ngspice-42 (tools/analog/ngspice_fixture.py)",
+ "netlist": [
+  "* led-resistor (EmbSIM analog fixture)",
+  "VSUP_vcc vcc 0 DC 3.3",
+  "VSUP_v5 v5 0 DC 5.0",
+  "RR1 vcc a1 100.0",
+  "DD1 a1 0 DM_D1",
+  "RR2 v5 a2 220.0",
+  "DD2 a2 0 DM_D2",
+  ".model DM_D1 D(IS=1.5194820168876127e-17 N=2.0 RS=0.0)",
+  ".model DM_D2 D(IS=4.589934549288112e-20 N=2.0 RS=0.0)",
+  ".options reltol=1e-6 abstol=1e-15 vntol=1e-9 chgtol=1e-18 temp=26.85 tnom=26.85",
+  ".control",
+  "tran 1e-06 0.0010001 0 1e-06",
+  "meas tran OP_a1 find v(a1) at=0",
+  "meas tran OP_a2 find v(a2) at=0",
+  "quit",
+  ".endc",
+  ".end"
+ ],
+ "op": {
+  "a1": 1.785618,
+  "a2": 2.07882
+ },
+ "samples": []
+}

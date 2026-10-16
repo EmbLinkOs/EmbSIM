@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "blink",
+  "until": "4.5s",
+  "description": "The L LED on for a second and off for a second, from the core's delay() and its Timer0 millis().",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "blink",
+      "between": [
+        "500ms",
+        "4.5s"
+      ],
+      "probe": "d13",
+      "expect": {
+        "frequency_hz": 0.5,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "off",
+      "at": "1.5s",
+      "probe": "d13",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "on",
+      "at": "2.5s",
+      "probe": "d13",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault"
+        ]
+      }
+    }
+  ]
+}

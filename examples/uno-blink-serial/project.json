@@ -24,6 +24,9 @@
      "-ffreestanding",
      "-fno-builtin"
     ],
+    "link_flags": [
+     "-nostartfiles"
+    ],
     "linker_script": "firmware/atmega328p.ld"
    }
   }

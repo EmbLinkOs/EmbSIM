@@ -74,6 +74,17 @@ over to the vector table at 0x10000100. The bootrom's functions (its
 float library, flash programming) are not there: an image built with the
 Pico SDK that calls them stops at a null pointer.
 
+Arduino sketches run on `emblink/arduino_uno` as built: compile the core
+and the sketch with the IDE (Sketch > Export Compiled Binary keeps the
+ELF in the build folder) or with avr-gcc and the flags of the core's
+`platform.txt`, then `embsim run --target emblink/arduino_uno --image
+sketch.elf --console`. `tests/vendor/arduino` builds two sketches against
+the unmodified ArduinoCore-avr and checks `delay`, `millis`,
+`analogRead`, `analogWrite`, `attachInterrupt` and `Serial` against
+scenarios. `tests/vendor/stm32cube` does the same for ST's STM32F1 HAL on
+the Blue Pill: the HAL's own startup file, system file and linker script,
+unchanged.
+
 On the nRF52840, EasyDMA reaches RAM only: a UARTE buffer in flash (a
 string literal) is a warning (`mcu.easydma_range`) and nothing is sent,
 as on the part.

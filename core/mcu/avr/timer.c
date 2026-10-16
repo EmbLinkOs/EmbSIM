@@ -11,8 +11,11 @@
  *     a timer started mid-way has a partial first period;
  *   - every waveform mode counts as the datasheet says (normal, CTC with
  *     OCRnA or ICR1 as TOP, fast PWM and the dual-slope phase correct and
- *     phase and frequency correct modes) and sets its flags: TOVn at MAX
- *     (normal), at TOP (fast PWM) or at BOTTOM (dual-slope); OCFnA and
+ *     phase and frequency correct modes) and sets its flags: TOVn as the
+ *     counter goes from MAX (normal, CTC) or TOP (fast PWM) to BOTTOM, the
+ *     clock after it was MAX or TOP (the datasheet's timing diagrams: a read
+ *     of TCNTn at TOP finds TOVn clear, as Arduino's micros() relies on),
+ *     or at BOTTOM (dual-slope); OCFnA and
  *     OCFnB when the counter reaches the compare value; ICF1 at TOP when
  *     ICR1 is TOP. The flags clear by writing them a one, or as their
  *     vector is entered;
@@ -169,17 +172,15 @@ static u8 clock1(const struct avr_tc *t, u16 *cnt, int *down, int *ev)
         u16 wrap = k == K_NORMAL ? max_of(t) : tp;
         if (*cnt == wrap || *cnt >= max_of(t)) {
             /* at TOP; or past it at MAX (TOP was lowered under the count) */
-            if (*cnt == max_of(t) && k != K_FAST)
-                f |= TOV; /* MAX to BOTTOM */
+            if (*cnt == max_of(t) || k == K_FAST)
+                f |= TOV; /* MAX to BOTTOM; fast PWM's TOP to BOTTOM */
             *cnt = 0;
             *ev |= EV_BOTTOM;
         } else {
             (*cnt)++;
         }
-        if (k == K_FAST && *cnt == tp) {
-            f |= TOV; /* at TOP */
+        if (k == K_FAST && *cnt == tp)
             *ev |= EV_TOP;
-        }
     }
     if (*cnt == t->ocr_now[0])
         f |= OCFA;

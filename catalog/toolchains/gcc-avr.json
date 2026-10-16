@@ -110,6 +110,7 @@
       "${cc}",
       "${cflags}",
       "${link_flags}",
+      "-T${linker_script}",
       "-Wl,-Map=${map}",
       "${objects}",
       "-o",
