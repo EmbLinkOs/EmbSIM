@@ -8,5 +8,6 @@ frameworks are fetched, not vendored; CI's linux-gcc job pins them.
 | --- | --- | --- |
 | `arduino/` | ArduinoCore-avr (Blink, a tour of the core) | `emblink/arduino_uno` |
 | `stm32cube/` | ST's STM32F1 HAL and CMSIS device files | `emblink/bluepill` |
+| `pico-sdk/` | The Raspberry Pi Pico SDK | `emblink/pico` |
 
 `vendor_run.py` is what their runners share.

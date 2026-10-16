@@ -15,10 +15,9 @@
  * the XIP, GPIO26-29's input enables off, the rest in reset.
  *
  * The ROM's vector table gives the bootrom's stack top (0x20041f00), its
- * header the bootrom's magic and version (B2's, 3), and its table lookup
- * finds no function: the bootrom's functions (flash programming, the
- * float library, memcpy, reset_usb_boot) are not there. Core 1 waits in
- * its bootrom until core 0 launches it; sio.c answers for that bootrom. */
+ * header the bootrom's magic and version (B2's, 3); its function and data
+ * tables, and the functions themselves, are rom.c's. Core 1 waits in its
+ * bootrom until core 0 launches it; sio.c answers for that bootrom. */
 #include <stdio.h>
 #include <string.h>
 
@@ -31,8 +30,8 @@
  *     .word dead + 1            @ 0x08: NMI
  *     .word dead + 1            @ 0x0c: HardFault
  *     .byte 'M', 'u', 1, 3      @ 0x10: magic, version 1, ROM version 3 (B2)
- *     .hword table, table, lookup + 1, 0
- * lookup:                       @ 0x1c: rom_table_lookup finds nothing
+ *     .hword table, table, lookup + 1, 0  @ 0x14: rom.c's tables replace these
+ * lookup:                       @ 0x1c: unused (rom.c's lookup replaces it)
  *     movs r0, #0
  *     bx lr
  * reset:                        @ 0x20: enter boot2, as the bootrom does
@@ -43,7 +42,7 @@
  * dead:                         @ 0x28: the USB boot's wait
  *     wfi
  *     b dead
- * table:                        @ 0x2c: the function and data tables, empty
+ * table:                        @ 0x2c: empty tables, unused
  *     .hword 0, 0
  *     .word 0x20041f01          @ 0x30: the literal pool */
 static const u8 rom_image[] = {
@@ -71,7 +70,7 @@ u32 esk_rp2040_crc32(const u8 *p, u32 n)
 
 void esk_rp2040_boot(struct esk_mach *s)
 {
-    struct esk_region *rom = esk_bus_region(&s->bus, 0, (u32)sizeof rom_image);
+    struct esk_region *rom = esk_bus_region(&s->bus, 0, 0x4000u);
     struct esk_region *f = esk_bus_region(&s->bus, FLASH_BASE, 256);
     struct esk_region *m = esk_bus_region(&s->bus, BOOT2_AT, 256);
     struct esk_rf_periph *p;
@@ -81,6 +80,8 @@ void esk_rp2040_boot(struct esk_mach *s)
     if (!rom || !f || !m)
         return;
     memcpy(rom->mem + (0 - rom->base), rom_image, sizeof rom_image);
+    esk_rp2040_rom(rom->mem + (0 - rom->base), 0x4000u);
+    esk_rp2040_rom_install(s);
     b2 = f->mem + (FLASH_BASE - f->base);
     sum = esk_rp2040_crc32(b2, 252);
     want = (u32)b2[252] | (u32)b2[253] << 8 | (u32)b2[254] << 16 | (u32)b2[255] << 24;

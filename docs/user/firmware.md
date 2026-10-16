@@ -70,9 +70,10 @@ A Pico image starts with boot2, the 256 bytes the RP2040's bootrom checks
 by their CRC-32, copies to SRAM and enters; without a good one the part
 waits in its USB boot and the session says so (`mcu.no_boot2`).
 `examples/pico-blink-serial/firmware/boot2.c` is a minimal boot2 that hands
-over to the vector table at 0x10000100. The bootrom's functions (its
-float library, flash programming) are not there: an image built with the
-Pico SDK that calls them stops at a null pointer.
+over to the vector table at 0x10000100. The bootrom's functions are
+there, done by EmbSIM (ADR-021): an image built with the Pico SDK runs
+unmodified, its float and double arithmetic, memcpy and flash programming
+included (`tests/vendor/pico-sdk`).
 
 Arduino sketches run on `emblink/arduino_uno` as built: compile the core
 and the sketch with the IDE (Sketch > Export Compiled Binary keeps the

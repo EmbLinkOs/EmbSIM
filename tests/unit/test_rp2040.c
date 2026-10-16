@@ -362,6 +362,126 @@ static void test_core1(void)
     rp_close(&f);
 }
 
+/* ---- the bootrom's functions (rom.c) ---------------------------------------------- */
+
+static void set_reg(rp *f, int n, u32 v)
+{
+    u8 b[4] = { (u8)v, (u8)(v >> 8), (u8)(v >> 16), (u8)(v >> 24) };
+    CHECK_EQ(f->m.cpu->ops->reg_write(f->m.cpu, n, b), 4);
+}
+
+static u16 rom16(rp *f, u32 a) { return (u16)(rd(f, a & ~3u) >> (8 * (a & 2u))); }
+
+/* a call of the ROM function at `fn` with r0-r3, returning to the program's
+ * loop (test_rom's, which never sleeps); *cycles gets the cycles it took */
+static u32 rom_fn(rp *f, u32 fn, u32 a, u32 b, u32 c, u32 d, u32 *hi, u64 *cycles)
+{
+    u64 c0;
+    int i;
+    set_reg(f, 0, a);
+    set_reg(f, 1, b);
+    set_reg(f, 2, c);
+    set_reg(f, 3, d);
+    set_reg(f, 14, 0x10000201u);
+    set_reg(f, 15, fn & ~1u);
+    c0 = f->m.cycles;
+    for (i = 0; i < 10 && reg(f, 15) != 0x10000200u; i++)
+        esk_mach_run(&f->m, 100000000u, 1);
+    CHECK_EQ(reg(f, 15), 0x10000200u);
+    if (hi)
+        *hi = reg(f, 1);
+    if (cycles)
+        *cycles = f->m.cycles - c0;
+    return reg(f, 0);
+}
+
+static u32 code(char a, char b) { return (u32)(u8)a | (u32)(u8)b << 8; }
+
+static u32 rom_lookup(rp *f, u32 table, u32 c)
+{
+    return rom_fn(f, rom16(f, 0x18), table, c, 0, 0, 0, 0);
+}
+
+static u32 fbits(float x)
+{
+    u32 v;
+    memcpy(&v, &x, 4);
+    return v;
+}
+
+static void test_rom(void)
+{
+    rp f;
+    u32 funcs, data, fn, sf, sd, hi, i, hz;
+    u64 cyc;
+    if (!rp_open(&f, 1))
+        return;
+    put(&f, 0x10000200u, 0xe7fdbf00u); /* nop; b to the nop: a loop that does not sleep */
+    esk_mach_run(&f.m, 1000, 20);      /* into the program */
+    CHECK_EQ(rd(&f, 0x10u) >> 24, 3u); /* version 3, B2 */
+    funcs = rom16(&f, 0x14);
+    data = rom16(&f, 0x16);
+    CHECK_EQ(rom_lookup(&f, funcs, code('Z', 'Z')), 0u); /* no such function */
+    fn = rom_lookup(&f, funcs, code('P', '3'));
+    CHECK(fn != 0 && (fn & 1u));
+    CHECK_EQ(rom_fn(&f, fn, 0xf0f0f0f1u, 0, 0, 0, 0, 0), 17u);
+    CHECK_EQ(rom_fn(&f, rom_lookup(&f, funcs, code('L', '3')), 0, 0, 0, 0, 0, 0), 32u);
+    CHECK_EQ(rom_fn(&f, rom_lookup(&f, funcs, code('T', '3')), 0x80u, 0, 0, 0, 0, 0), 7u);
+    CHECK_EQ(rom_fn(&f, rom_lookup(&f, funcs, code('R', '3')), 1u, 0, 0, 0, 0, 0), 0x80000000u);
+    /* memset and memcpy, through the bus */
+    CHECK_EQ(rom_fn(&f, rom_lookup(&f, funcs, code('M', 'S')), 0x20004000u, 0x5a, 7, 0, 0, 0), 0x20004000u);
+    CHECK_EQ(rd(&f, 0x20004004u) & 0xffffffu, 0x5a5a5au);
+    CHECK_EQ(rom_fn(&f, rom_lookup(&f, funcs, code('M', 'C')), 0x20004100u, 0x20004000u, 8, 0, 0, 0),
+             0x20004100u);
+    CHECK_EQ(rd(&f, 0x20004100u), 0x5a5a5a5au);
+    /* the flash: a sector erased, a page programmed (bits cleared only) */
+    put(&f, 0x10010000u, 0x12345678u);
+    rom_fn(&f, rom_lookup(&f, funcs, code('R', 'E')), 0x10000u, 0x1000u, 0x10000u, 0xd8u, 0, &cyc);
+    CHECK_EQ(rd(&f, 0x10010000u), 0xffffffffu);
+    hz = f.m.core_hz ? f.m.core_hz(&f.m) : f.m.reset_hz; /* the ROSC's, out of the boot */
+    CHECK(cyc > (u64)hz * 40 / 1000); /* a sector's 45 ms, not a block's 150 */
+    CHECK(cyc < (u64)hz * 100 / 1000);
+    put(&f, 0x20004200u, 0x0f0f00ffu);
+    rom_fn(&f, rom_lookup(&f, funcs, code('R', 'P')), 0x10000u, 0x20004200u, 4, 0, 0, 0);
+    CHECK_EQ(rd(&f, 0x10010000u), 0x0f0f00ffu);
+    put(&f, 0x20004200u, 0xffff0f0fu);
+    rom_fn(&f, rom_lookup(&f, funcs, code('R', 'P')), 0x10000u, 0x20004200u, 4, 0, 0, 0);
+    CHECK_EQ(rd(&f, 0x10010000u), 0x0f0f000fu);
+    /* the float table: version 3's 32 entries */
+    sf = rom_lookup(&f, data, code('S', 'F'));
+    sd = rom_lookup(&f, data, code('S', 'D'));
+    CHECK(sf != 0 && sd != 0);
+    CHECK_EQ(rd(&f, (sf - 2) & ~3u) >> (8 * ((sf - 2) & 3u)) & 0xffu, 32u);
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x00), fbits(1.5f), fbits(2.25f), 0, 0, 0, &cyc), fbits(3.75f));
+    CHECK(cyc >= 50u);
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x0c), fbits(1.0f), fbits(3.0f), 0, 0, 0, 0), 0x3eaaaaabu);
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x18), fbits(2.0f), 0, 0, 0, 0, 0), 0x3fb504f3u);
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x00), 1u, 0, 0, 0, 0, 0), 0u);              /* a denormal is 0 */
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x08), fbits(1e-30f), fbits(1e-10f), 0, 0, 0, 0), 0u); /* flushed */
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x04), 0x7f800000u, 0x7f800000u, 0, 0, 0, 0), 0x7f800000u); /* no NaN */
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x1c), fbits(-1.5f), 0, 0, 0, 0, 0), (u32)-2); /* towards -inf */
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x1c), fbits(3e9f), 0, 0, 0, 0, 0), 0x7fffffffu); /* saturated */
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x24), fbits(-1.0f), 0, 0, 0, 0, 0), 0u);
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x2c), 16777217u, 0, 0, 0, 0, 0), fbits(16777216.0f)); /* to even */
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x30), 3u, 1u, 0, 0, 0, 0), fbits(1.5f));  /* fix2float */
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x20), fbits(1.5f), 4u, 0, 0, 0, 0), 24u); /* float2fix */
+    CHECK_EQ(rom_fn(&f, rd(&f, sf + 0x7c), fbits(1.5f), 0, 0, 0, &hi, 0), 0u);
+    CHECK_EQ(hi, 0x3ff80000u);
+    /* the double table */
+    CHECK_EQ(rom_fn(&f, rd(&f, sd + 0x00), 0, 0x3ff00000u, 0, 0x40000000u, &hi, 0), 0u);
+    CHECK_EQ(hi, 0x40080000u); /* 1 + 2 */
+    CHECK_EQ(rom_fn(&f, rd(&f, sd + 0x18), 0, 0x40000000u, 0, 0, &hi, 0), 0x667f3bcdu);
+    CHECK_EQ(hi, 0x3ff6a09eu); /* sqrt 2 */
+    CHECK_EQ(rom_fn(&f, rd(&f, sd + 0x7c), 0x9999999au, 0x3fb99999u, 0, 0, 0, 0), 0x3dcccccdu); /* 0.1 */
+    CHECK_EQ(rom_fn(&f, rd(&f, sd + 0x1c), 0, 0xc0040000u, 0, 0, 0, 0), (u32)-3); /* -2.5 to -3 */
+    /* every entry of both tables is a function in the ROM */
+    for (i = 0; i < 32; i++) {
+        CHECK((rd(&f, sf + 4u * i) & 1u) && rd(&f, sf + 4u * i) < 0x4000u);
+        CHECK((rd(&f, sd + 4u * i) & 1u) && rd(&f, sd + 4u * i) < 0x4000u);
+    }
+    rp_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_boot);
 RUN(test_no_boot2);
@@ -372,4 +492,5 @@ RUN(test_timer_alarm);
 RUN(test_divider);
 RUN(test_uart_bit_time);
 RUN(test_core1);
+RUN(test_rom);
 TEST_MAIN_END

@@ -425,6 +425,8 @@ void esk_cm_exec16(struct esk_cm_state *cs, u32 h)
                 esk_cm_semihost(cs);
                 return;
             }
+            if (cs->sim->rom_call && esk_cm_rom_call(cs, h & 0xff))
+                return;
             if (cs->model->arch == ARCH_V7M) {
                 cs->hfsr |= 1u << 31;       /* DEBUGEVT */
             }

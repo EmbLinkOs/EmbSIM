@@ -571,7 +571,7 @@ struct resets {
     struct esk_mach *s;
     struct esk_rf_periph *p;
     struct esk_rf_reg *reset, *done;
-    u64 mask; /* the bits with a peripheral */
+    u64 mask; /* RESET's blocks */
     struct esk_rf_periph *held[32][2];
 };
 
@@ -647,6 +647,8 @@ void *esk_rp2040_resets_create(struct esk_mach *s, struct esk_rf_periph *p)
         const char *names[2];
         if (!f->name || f->width != 1 || f->lsb >= 32)
             continue;
+        /* every block reports its reset done, modelled or not (JTAG, TBMAN) */
+        r->mask |= (u64)1 << f->lsb;
         names[0] = f->name;
         names[1] = 0;
         if (!strcmp(f->name, "USBCTRL")) {
@@ -668,7 +670,6 @@ void *esk_rp2040_resets_create(struct esk_mach *s, struct esk_rf_periph *p)
             q->gate_held = 1;
             q->gate_name = g;
             r->held[f->lsb][k] = q;
-            r->mask |= (u64)1 << f->lsb;
         }
     }
     corrections(s);
