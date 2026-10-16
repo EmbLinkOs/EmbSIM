@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "four-bit",
+  "description": "4-bit init (0x3, 0x3, 0x3, 0x2), function set 0x28, display on, then 'A' on line 1.",
+  "policy": "functional",
+  "until": "70us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "0,30,230,30,30,230,30,30,230,30,20,220,20,20,220,20,80,280,80,0,200,0,c0,2c0,c0,0,200,0,10,210,10,0,200,0,60,260,60,140,340,140,110,310,110",
+          "period": "1u"
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lcd1602"
+      }
+    ],
+    "nets": {
+      "D4": [
+        "PG.OUT4",
+        "DUT.D4"
+      ],
+      "D5": [
+        "PG.OUT5",
+        "DUT.D5"
+      ],
+      "D6": [
+        "PG.OUT6",
+        "DUT.D6"
+      ],
+      "D7": [
+        "PG.OUT7",
+        "DUT.D7"
+      ],
+      "RS": [
+        "PG.OUT8",
+        "DUT.RS"
+      ],
+      "E": [
+        "PG.OUT9",
+        "DUT.E"
+      ],
+      "RW": [
+        "L.OUT",
+        "DUT.RW"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.line1": {
+      "at": "60us",
+      "equals": "A               "
+    },
+    "output:DUT.four_bit": {
+      "at": "60us",
+      "equals": true
+    }
+  }
+}

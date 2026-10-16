@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 60" width="70" height="60" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="50" height="40" rx="2"/>
+  <line class="s" id="pin-si" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">SI</text>
+  <line class="s" id="pin-sck" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">SCK</text>
+  <line class="s" id="pin-cs-n" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">CS_N</text>
+  <line class="s" id="pin-so" x1="70" y1="20" x2="60" y2="20"/><text class="p" x="57" y="22" text-anchor="end">SO</text>
+  <line class="s" id="pin-wp-n" x1="70" y1="30" x2="60" y2="30"/><text class="p" x="57" y="32" text-anchor="end">WP_N</text>
+  <line class="s" id="pin-hold-n" x1="70" y1="40" x2="60" y2="40"/><text class="p" x="57" y="42" text-anchor="end">HOLD_N</text>
+  <line class="s" id="pin-vcc" x1="30" y1="0" x2="30" y2="10"/>
+  <line class="s" id="pin-gnd" x1="30" y1="60" x2="30" y2="50"/>
+  <text class="t" x="35.0" y="19" text-anchor="middle">25LC040</text>
+</svg>

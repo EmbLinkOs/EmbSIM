@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "sixteenth",
+  "description": "MS1-MS3 high: ten pulses move 10/16 of a step.",
+  "policy": "functional",
+  "until": "11ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/a4988"
+      }
+    ],
+    "nets": {
+      "STEP": [
+        "CK.OUT",
+        "DUT.STEP"
+      ],
+      "HI": [
+        "H.OUT",
+        "DUT.DIR",
+        "DUT.RESET_N",
+        "DUT.SLEEP_N",
+        "DUT.MS1",
+        "DUT.MS2",
+        "DUT.MS3"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.ENABLE_N"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.position": {
+      "at": "10.2ms",
+      "equals": 0.625
+    }
+  }
+}

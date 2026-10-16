@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/eeprom_24c02",
+  "version": "1.0.0",
+  "name": "24C02 I2C EEPROM",
+  "category": "misc",
+  "description": "2-kbit (256 x 8) serial EEPROM on I2C (24C02 / AT24C02): byte and 8-byte page writes with a write cycle during which it does not acknowledge, sequential reads, write protect.",
+  "keywords": [
+    "memory",
+    "eeprom",
+    "24C02",
+    "AT24C02",
+    "i2c",
+    "non-volatile",
+    "storage"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A0",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Address bit 0 (see the address parameter)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Address bit 1",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A2",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Address bit 2",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "SDA",
+      "number": 5,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCL",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "WP",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Write protect, active high",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "address": {
+      "type": "integer",
+      "default": 80,
+      "min": 80,
+      "max": 87,
+      "doc": "I2C address, 80 (0x50) + A2..A0 as wired"
+    },
+    "twr": {
+      "type": "number",
+      "unit": "s",
+      "default": "5m",
+      "min": 0,
+      "max": "20m",
+      "doc": "Write cycle time"
+    }
+  },
+  "outputs": [
+    {
+      "name": "dump",
+      "type": "string",
+      "doc": "The 256 bytes in hexadecimal"
+    },
+    {
+      "name": "writes",
+      "type": "integer"
+    },
+    {
+      "name": "busy",
+      "type": "boolean",
+      "doc": "In a write cycle"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Byte and page writes committed at STOP, page wrap, sequential reads, no ACK during the write cycle, WP high blocks writes.",
+      "omissions": [
+        "A0-A2 are not read: set the address parameter",
+        "endurance and retention",
+        "contents are not kept between sessions"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "A0-A2 are not read: set the address parameter",
+        "endurance and retention",
+        "contents are not kept between sessions"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "A0-A2 are not read: set the address parameter",
+        "endurance and retention",
+        "contents are not kept between sessions",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Microchip AT24C02 datasheet (protocol, page size, tWR)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "SDA": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCL": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "WP": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "A0": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "A1": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "A2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/rotary_encoder",
+  "version": "1.0.0",
+  "name": "Rotary encoder",
+  "category": "inputs",
+  "description": "Incremental rotary encoder module with push switch (KY-040): each detent is one full quadrature cycle on CLK (A) and DT (B), A leading for clockwise; SW pulls low while pressed. Position and press are interactive inputs.",
+  "keywords": [
+    "encoder",
+    "rotary",
+    "quadrature",
+    "KY-040",
+    "knob",
+    "input"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "CLK",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Channel A",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "DT",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Channel B",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SW",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Push switch: low while pressed, weak high otherwise",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "GND",
+      "number": 5,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "step_time": {
+      "type": "number",
+      "unit": "s",
+      "default": "2m",
+      "min": "10u",
+      "max": 1,
+      "doc": "Duration of one detent's quadrature cycle"
+    }
+  },
+  "inputs": [
+    {
+      "name": "position",
+      "type": "number",
+      "min": -100000,
+      "max": 100000,
+      "default": 0,
+      "doc": "Detents from the start (whole numbers)"
+    },
+    {
+      "name": "pressed",
+      "type": "boolean",
+      "default": false,
+      "doc": "The shaft is pushed"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "count",
+      "type": "integer",
+      "doc": "Detents turned so far"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Clean quadrature, one full cycle per detent at step_time; the switch as a strong low or weak high.",
+      "omissions": [
+        "contact bounce",
+        "the module's pull-up resistors (outputs are driven)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "contact bounce",
+        "the module's pull-up resistors (outputs are driven)"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "contact bounce",
+        "the module's pull-up resistors (outputs are driven)",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "KY-040 rotary encoder module (pinout, quadrature direction)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "CLK": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "DT": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "SW": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

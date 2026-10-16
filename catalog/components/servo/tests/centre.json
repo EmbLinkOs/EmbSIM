@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "centre",
+  "description": "1.5 ms pulses every 20 ms: 90°.",
+  "policy": "functional",
+  "until": "26ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PW",
+        "component": "emblink/pulse_source",
+        "params": {
+          "td": "1m",
+          "pw": "1.5m",
+          "per": "20m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/servo"
+      }
+    ],
+    "nets": {
+      "SIG": [
+        "PW.+",
+        "DUT.SIG"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.angle": {
+      "at": "25ms",
+      "min": 89.9,
+      "max": 90.1
+    },
+    "output:DUT.pulse_us": {
+      "at": "25ms",
+      "min": 1499,
+      "max": 1501
+    }
+  }
+}

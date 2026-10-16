@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/pcf8574",
+  "version": "1.0.0",
+  "name": "PCF8574 I2C IO expander",
+  "category": "misc",
+  "description": "8-bit quasi-bidirectional I/O expander on I2C (PCF8574, address 0x20): a written 1 is a weak pull-up the pin can read through, a 0 a strong low; reads return the pin levels; INT_N goes low when an input changes. Drives the common I2C LCD backpacks.",
+  "keywords": [
+    "io expander",
+    "PCF8574",
+    "i2c",
+    "gpio",
+    "port",
+    "lcd backpack"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A0",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Address bit 0 (see the address parameter)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A2",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "P0",
+      "number": 4,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "P1",
+      "number": 5,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "P2",
+      "number": 6,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "P3",
+      "number": 7,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "P4",
+      "number": 9,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "P5",
+      "number": 10,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "P6",
+      "number": 11,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "P7",
+      "number": 12,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "INT_N",
+      "number": 13,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Interrupt, open drain: an input changed since the last read",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCL",
+      "number": 14,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SDA",
+      "number": 15,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "address": {
+      "type": "integer",
+      "default": 32,
+      "min": 32,
+      "max": 39,
+      "doc": "I2C address, 32 (0x20) + A2..A0 as wired (PCF8574A: use 56-63)"
+    }
+  },
+  "outputs": [
+    {
+      "name": "latch",
+      "type": "integer",
+      "min": 0,
+      "max": 255
+    },
+    {
+      "name": "port",
+      "type": "integer",
+      "min": 0,
+      "max": 255,
+      "doc": "Pin levels"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Quasi-bidirectional ports (weak 1, strong 0), reads of the pin levels, INT_N set on input change and cleared by a read or write.",
+      "omissions": [
+        "the strong pull-up pulse on a 0-to-1 write",
+        "A0-A2 are not read: set the address parameter"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "the strong pull-up pulse on a 0-to-1 write",
+        "A0-A2 are not read: set the address parameter"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "the strong pull-up pulse on a 0-to-1 write",
+        "A0-A2 are not read: set the address parameter",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "NXP PCF8574 datasheet (quasi-bidirectional I/O, interrupt)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 110,
+    "pins": {
+      "SDA": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCL": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "INT_N": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "A0": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "A1": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "A2": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "P0": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "P1": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "P2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "P3": {
+        "x": 60,
+        "y": 50,
+        "side": "right"
+      },
+      "P4": {
+        "x": 60,
+        "y": 60,
+        "side": "right"
+      },
+      "P5": {
+        "x": 60,
+        "y": 70,
+        "side": "right"
+      },
+      "P6": {
+        "x": 60,
+        "y": 80,
+        "side": "right"
+      },
+      "P7": {
+        "x": 60,
+        "y": 90,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 110,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

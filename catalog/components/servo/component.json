@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/servo",
+  "version": "1.0.0",
+  "name": "Hobby servo",
+  "category": "mechanical",
+  "description": "RC hobby servo (SG90 class): the width of each pulse on SIG sets the horn angle, from min_pulse (0°) to max_pulse (the full range), refreshed every 20 ms; the horn turns on the board view.",
+  "keywords": [
+    "servo",
+    "SG90",
+    "motor",
+    "pwm",
+    "rc",
+    "actuator"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "SIG",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Control pulses",
+      "power_ref": "V+"
+    },
+    {
+      "name": "V+",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "min_pulse": {
+      "type": "number",
+      "unit": "s",
+      "default": "1m",
+      "min": "0.4m",
+      "max": "1.5m",
+      "doc": "Pulse width at 0°"
+    },
+    "max_pulse": {
+      "type": "number",
+      "unit": "s",
+      "default": "2m",
+      "min": "1.5m",
+      "max": "3m",
+      "doc": "Pulse width at the end of the range"
+    },
+    "range": {
+      "type": "number",
+      "unit": "deg",
+      "default": 180,
+      "min": 10,
+      "max": 360,
+      "doc": "Travel"
+    },
+    "initial": {
+      "type": "number",
+      "unit": "deg",
+      "default": 90,
+      "min": 0,
+      "max": 360,
+      "doc": "Angle at power-up"
+    }
+  },
+  "outputs": [
+    {
+      "name": "angle",
+      "type": "number",
+      "unit": "deg"
+    },
+    {
+      "name": "pulse_us",
+      "type": "number",
+      "unit": "us"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 32,
+    "height_mm": 23,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "angle",
+        "selector": "#horn",
+        "attr": "transform",
+        "format": "rotate({} 24 33)",
+        "scale": {
+          "from": [
+            0,
+            180
+          ],
+          "to": [
+            90,
+            -90
+          ]
+        }
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Angle linear in pulse width between min_pulse and max_pulse, clamped; pulses outside 0.4-3 ms are ignored.",
+      "omissions": [
+        "speed and inertia (the horn moves at once)",
+        "torque and stall current",
+        "dead band"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "speed and inertia (the horn moves at once)",
+        "torque and stall current",
+        "dead band"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "speed and inertia (the horn moves at once)",
+        "torque and stall current",
+        "dead band",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "TowerPro SG90 datasheet (pulse widths, period)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "SIG": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "V+": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

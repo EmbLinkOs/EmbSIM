@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "half-scale",
+  "description": "1.65 V on CH0 with a 3.3 V reference: code 512.",
+  "policy": "electrical",
+  "until": "96us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,0,2,0,2,0,2,0,2,0,2,0,2,1,3,0,1,3,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,0,4,4",
+          "period": "1u"
+        }
+      },
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1.65
+        }
+      },
+      {
+        "id": "V2",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mcp3008"
+      }
+    ],
+    "nets": {
+      "DIN": [
+        "PG.OUT0",
+        "DUT.DIN"
+      ],
+      "CLK": [
+        "PG.OUT1",
+        "DUT.CLK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.CS_N"
+      ],
+      "IN": [
+        "V1.+",
+        "DUT.CH0"
+      ],
+      "REF": [
+        "V2.+",
+        "DUT.VREF"
+      ],
+      "GND": [
+        "V1.-",
+        "V2.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.last_code": {
+      "at": "76us",
+      "min": 511,
+      "max": 513
+    },
+    "output:DUT.last_channel": {
+      "at": "76us",
+      "equals": 0
+    }
+  }
+}
