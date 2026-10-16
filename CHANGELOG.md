@@ -129,6 +129,11 @@ versions follow semantic versioning. There is no release yet.
   pins the PPS gives them; the Explorer 16/32 with the PIC24FJ1024GB610 PIM
   and `examples/explorer16-pic24`, built by XC16. The `mcu.trap`
   diagnostic.
+- The RP2040's second core: two Cortex-M0+ cores on one clock
+  (`core.cores`; each core's NVIC, SysTick, CPUID, divider and FIFO; WFE and
+  SEV between them; core 1 launched through its bootrom's FIFO handshake and
+  powered by the PSM; IO_BANK0's PROC1 interrupts), and
+  `examples/pico-dual-core`, built by clang and EmbCC.
 - `edc2regs.py` converts a PIC24's EDC (`config_words` and `pps_outputs` in
   the register schema; `core.prog_end` and `core.ram_base` in the MCU
   schema); the XC16 profile's `pic24fj1024gb610` target.

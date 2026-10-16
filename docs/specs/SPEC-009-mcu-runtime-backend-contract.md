@@ -64,6 +64,23 @@ watchpoint, a lockup, a semihosting exit, a reset request, a device's
 devices see every cycle. M1 implements Cortex-M3 (Thumb-2, the NVIC, SCB,
 SysTick, DWT, the FPU for M4F images); its timing tier is `instruction`.
 
+A part with several cores of one model (the MCU description's
+`core.cores`, the RP2040's 2) is one machine with one core interface
+(`cortexm/smp.c`). Each core keeps its own time; a step runs the core
+furthest behind, the machine's time is the earliest running core's, and
+the devices see it as it advances, so the cores share one clock and an
+access sees the time of the core making it (up to an instruction ahead of
+the machine's; a device whose clock that instruction started counts from
+it, `esk_mach_after`). Each core has its own NVIC,
+SCB, SysTick and DWT, reached by its own accesses; an interrupt line
+reaches every core's NVIC, and a part's model can pend one core's only
+(`esk_cortexm_core_interrupt`). A core sleeps alone; the machine sleeps
+when none runs. SEV sets every core's event register and wakes a core
+waiting in WFE. Cores other than core 0 wait out of reset until the part's
+model launches them (`esk_cortexm_core_launch`) or powers them off
+(`esk_cortexm_core_power`); the model finds the core making an access with
+`esk_cortexm_core`. The debugger sees the core that runs next.
+
 ## 4. Bus
 
 Per machine: memory regions (RAM, flash, ROM; erased value; mirrors),

@@ -115,7 +115,7 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `debug.breakpoint({board, op: "add"|"remove", kind: "code"|"read"|"write"|"access", address|symbol|file+line, length?}) -> {id}`
 - `debug.registers({board}) -> {regs: [{name, value}]}`; `debug.set_register({board, name, value})`
 - `debug.memory({board, address, length}) -> {base64}`; `debug.write_memory({board, address, base64})`; the address is a program address, as the core's `phys` hook maps it to the bus (a MIPS core's kseg0 and kseg1), and so for the GDB server's
-- `debug.where({board}) -> {pc, function, file, line, frames: [...], ram}` (DWARF); `ram` is the part's main RAM (its largest RAM region), where a memory view starts
+- `debug.where({board}) -> {pc, function, file, line, frames: [...], ram, core?}` (DWARF); `ram` is the part's main RAM (its largest RAM region), where a memory view starts; `core`, on a part with several cores, is the one the program counter and the registers are (the one that runs next)
 - `debug.variables({board, frame?}) -> {...}`
 - `debug.disassemble({board, address, count}) -> {insns: [...]}`
 - `debug.peripherals({board}) -> {peripherals: [{name, base, model, clock, reset, registers: [{name, offset, value, fields: [...]}]}]}`; `clock` false while the peripheral's clock is off, `reset` true while it is held in reset (the RP2040's RESETS)

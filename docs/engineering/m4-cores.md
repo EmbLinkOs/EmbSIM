@@ -6,7 +6,7 @@ is the source for the M4 rows of [STATUS.md](../STATUS.md); update both
 together. Part 1 is the AVR, the RISC-V core and two boards on one line;
 part 2 (below) the Raspberry Pi Pico and the nRF52840 DK; part 3 the
 PIC32MX795F512L and the Explorer 16/32; part 4 the PIC24FJ1024GB610 on the
-same board.
+same board; part 5 the RP2040's second core.
 
 ## What exists
 
@@ -67,7 +67,8 @@ added as a source: power a board's regulated rail from a voltage source.
 | Builds | `firmware_build` | the five boards' examples built by clang and by EmbCC, each scenario passing |
 | Debug | `scripts/screenshots.mjs` | the Debug perspective stopped in the Pico's timer interrupt and the DK's RTC interrupt (the [M4 part 2 shots](../gallery/README.md)) |
 
-Known gaps: the RP2040's core 1, its bootrom's function table, PIO, DMA,
+Known gaps: the RP2040's bootrom's function table (core 1 since added: part
+5 below), PIO, DMA,
 SPI, I2C, PWM, the ADC, USB and the XIP cache; the nRF52840's radio, PPI,
 the serial buses, SAADC, PWM and USB; Pico SDK and nrfx images are not run
 (the examples use the registers directly).
@@ -124,3 +125,25 @@ interrupt pins. A data-space segment with contents in an image is loaded as
 program memory (XC16 puts initial data in `.dinit`, so its images have
 none). No dsPIC33 part is in the catalog, and the core's dsPIC33E mode
 (the DSP engine, the DO loops) is not tested here.
+
+## Part 5: the RP2040's second core
+
+| Area | Files | Contract |
+|---|---|---|
+| Cores | `core/mcu/cortexm/smp.c`, `cortexm.c`, `thumb.c`, `systick.c`, `build.c` | SPEC-009 §3: `core.cores` cores of one model on one machine, each on its own time and the machine on the earliest running core's; each core's NVIC, SCB, SysTick and DWT reached by its own accesses; WFE and SEV with the event register (a single core's WFE after its own SEV goes on at once); a core asleep alone; cores past core 0 wait to be launched; the debugger sees the core that runs next |
+| RP2040 | `core/mcu/rp2040/sio.c`, `io.c`, `clocks.c`; `catalog/mcus/raspberrypi/rp2040` (`cores` 2) | SPEC-009 §6: CPUID, a divider and the FIFOs per core, SIO_IRQ_PROC0 and PROC1 to their own core; IO_BANK0's PROC0 and PROC1 interrupt summaries to their own core; PSM's FRCE_OFF.PROC1 powers core 1 off and on; core 1's bootrom answered by the SIO: out of reset it sends core 0 a 0, then echoes each word and starts core 1 after 0, 0, 1, the vector table, the stack and the entry |
+| Example | `examples/pico-dual-core` | firmware on the registers that launches core 1 as the pico-sdk's `multicore_launch_core1` does |
+| Debug | `core/session/debug.c`, `DebugPerspective.tsx` | `debug.where` names the core (`core`) on a part with two; the toolbar shows it ([M4 part 5 shots](../gallery/README.md)) |
+
+| Check | Where | What it shows |
+|---|---|---|
+| Core 1 | `test_rp2040` (825 checks) | core 1 waiting at reset with its 0 in core 0's FIFO; the launch sequence echoed word by word; core 1's CPUID 1; its WFE ended by core 0's SEV; the PSM powering it off and on into its bootrom |
+| The Pico | `examples/pico-dual-core` 9/9 | firmware built by clang and by EmbCC: core 1 launched, 2000 from both cores adding to one counter under spinlock 31, three answers from core 1's divider while core 0 prints with its own, the LED's 1 Hz from core 1's timer alarm, the button through IO_BANK0's PROC1 interrupt, the terminal echoed by core 0 |
+| Builds | `firmware_build` | the dual-core example built by clang and by EmbCC, its scenario passing |
+
+Known gaps: the debugger cannot pick a core (it sees the one that runs
+next, so a breakpoint stops either); a device another core accessed in the
+same instruction's time may see the two cores' times differ by an
+instruction; the SIO's FIFO interrupt is raised
+when VLD, WOF or ROE sets, not held while they stay set; the
+interpolators; Pico SDK images still need the bootrom's function table.

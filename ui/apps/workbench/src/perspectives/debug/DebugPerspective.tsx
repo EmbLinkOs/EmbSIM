@@ -97,7 +97,7 @@ function DebugToolbar() {
     await useDebug.getState().refresh();
   };
   const place = where
-    ? `${where.function ? `${where.function}+${where.offset ?? 0}` : ''} ${hex32(where.pc)}${where.file ? ` · ${where.file.split(/[\\/]/).pop()}:${where.line}` : ''}`
+    ? `${where.core !== undefined ? `core ${where.core} · ` : ''}${where.function ? `${where.function}+${where.offset ?? 0}` : ''} ${hex32(where.pc)}${where.file ? ` · ${where.file.split(/[\\/]/).pop()}:${where.line}` : ''}`
     : '';
   return (
     <div className="wb-debug__toolbar" role="toolbar" aria-label="Debugger">

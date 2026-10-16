@@ -95,6 +95,7 @@ const pico = 'examples/pico-blink-serial/project.json';
 const dk = 'examples/nrf52840dk-blink/project.json';
 const explorer = 'examples/explorer16-pic32mx/project.json';
 const explorer24 = 'examples/explorer16-pic24/project.json';
+const picoDual = 'examples/pico-dual-core/project.json';
 
 /** the Debug perspective stopped at a breakpoint on `symbol` */
 async function debugAt(page, symbol, ms) {
@@ -194,6 +195,12 @@ try {
     await run(page, 2700);
   }, { scale: 2, element: '.es-board svg' });
   await shot(browser, 'debug-explorer16-pic24', explorer24, (page) => debugAt(page, '__T1Interrupt', 1500));
+  // M4 part 5: the Pico's two cores
+  await shot(browser, 'run-pico-dual-core', picoDual, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'debug-pico-core1', picoDual, (page) => debugAt(page, 'sio_irq_proc1', 1500));
   await shot(browser, 'design-two-boards', twoBoards, async (page) => run(page, 2000));
   await shot(browser, 'run-two-boards', twoBoards, async (page) => {
     await perspective(page, 2);

@@ -16,6 +16,17 @@ schematic symbols are rendered by the shared workbench.
 | ![Library explorer, light](component-library/library-light.png) | **Discover and inspect.** Manufacturer/package filters, multiword search, source reference status and a preview before placement, alongside the wired optocoupler circuit. |
 | ![Library explorer, dark](component-library/library-dark.png) | **Place a real package.** B3F-1000's numbered pads and model limits in dark mode. The explorer is also checked at 1024 × 700. |
 
+## M4 core families and boards, part 5 (2026-10-16)
+
+The Pico runs both of its RP2040's cores: core 0 launches core 1 through
+its bootrom's FIFO handshake, and the two share a counter, the FIFOs and the
+LED.
+
+| | |
+|---|---|
+| ![The Pico's two cores running](m4-5/run-pico-dual-core.png) | **Two cores running.** `examples/pico-dual-core`: core 1 blinking the LED from its timer alarm and taking the button, core 0 printing on the terminal what core 1 answers through the FIFO. |
+| ![Debugging core 1](m4-5/debug-pico-core1.png) | **Debugging core 1.** Stopped in `sio_irq_proc1` on core 1, which the toolbar names: its registers, its source line, the disassembly from flash, while core 0's banner is half printed. |
+
 ## M4 core families and boards, part 4 (2026-10-16)
 
 The same Explorer 16/32 with its PIC24 plug-in module: an XC16 image on the

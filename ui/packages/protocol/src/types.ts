@@ -454,6 +454,8 @@ export interface Where {
   cycles: number;
   /** The part's main RAM, where a memory view starts. */
   ram?: number;
+  /** On a part with several cores, the one the registers and the program counter are (the one that runs next). */
+  core?: number;
 }
 
 /** A source file the image's DWARF names (debug.source). */
