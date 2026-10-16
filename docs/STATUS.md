@@ -5,6 +5,18 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Release hardening
+
+The [1.0 readiness checklist](engineering/release-readiness.md) tracks release
+gates separately from implementation milestones. Debugger board selection now
+clears inspected state and rejects responses from an earlier selection; delayed
+and overlapping request regressions are covered in the workbench store tests.
+Observed on this branch: all 86 UI tests, TypeScript checks, lint and the
+production build pass. Documentation integrity checks 103 documents and 95
+requirements with no problems. Native code is unchanged; native and platform
+CI results have not been rerun locally for this slice. This is not a declaration
+of 1.0 readiness.
+
 ## Implemented subset
 
 | Area | Current implementation | Evidence and limits |
