@@ -5,8 +5,12 @@
 #include <string.h>
 
 #include "mcu/avr/avr.h"
+#include "mcu/nrf52/nrf52.h"
+#include "mcu/pic24/pic24.h"
+#include "mcu/pic32/pic32.h"
 #include "mcu/rf.h"
 #include "mcu/riscv/riscv.h"
+#include "mcu/rp2040/rp2040.h"
 #include "mcu/stm32/stm32.h"
 
 static const struct esk_rf_model_type model_types[] = {
@@ -18,6 +22,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "stm32-tim", &esk_stm32_tim_ops, esk_stm32_tim_create },
     { "stm32f1-flash", &esk_stm32_storage_ops, esk_stm32_storage_create },
     { "stm32-pwr", &esk_stm32_storage_ops, esk_stm32_storage_create },
+    { "storage", &esk_stm32_storage_ops, esk_stm32_storage_create },
     { "avr-port", &esk_avr_port_ops, esk_avr_port_create },
     { "avr-exint", &esk_avr_exint_ops, esk_avr_exint_create },
     { "avr-tc8", &esk_avr_tc8_ops, esk_avr_tc8_create },
@@ -31,6 +36,37 @@ static const struct esk_rf_model_type model_types[] = {
     { "fe310-gpio", &esk_fe310_gpio_ops, esk_fe310_gpio_create },
     { "fe310-uart", &esk_fe310_uart_ops, esk_fe310_uart_create },
     { "fe310-prci", &esk_fe310_prci_ops, esk_fe310_prci_create },
+    { "nrf-clock", &esk_nrf_clock_ops, esk_nrf_clock_create },
+    { "nrf-gpio", &esk_nrf_gpio_ops, esk_nrf_gpio_create },
+    { "nrf-gpiote", &esk_nrf_gpiote_ops, esk_nrf_gpiote_create },
+    { "nrf-uart", &esk_nrf_uart_ops, esk_nrf_uart_create },
+    { "nrf-timer", &esk_nrf_timer_ops, esk_nrf_timer_create },
+    { "nrf-rtc", &esk_nrf_rtc_ops, esk_nrf_rtc_create },
+    { "rp2040-resets", &esk_rp2040_resets_ops, esk_rp2040_resets_create },
+    { "rp2040-clocks", &esk_rp2040_clocks_ops, esk_rp2040_clocks_create },
+    { "rp2040-xosc", &esk_rp2040_xosc_ops, esk_rp2040_xosc_create },
+    { "rp2040-rosc", &esk_rp2040_rosc_ops, esk_rp2040_rosc_create },
+    { "rp2040-pll", &esk_rp2040_pll_ops, esk_rp2040_pll_create },
+    { "rp2040-psm", &esk_rp2040_psm_ops, esk_rp2040_psm_create },
+    { "rp2040-watchdog", &esk_rp2040_watchdog_ops, esk_rp2040_watchdog_create },
+    { "rp2040-timer", &esk_rp2040_timer_ops, esk_rp2040_timer_create },
+    { "rp2040-pads", &esk_rp2040_pads_ops, esk_rp2040_pads_create },
+    { "rp2040-io", &esk_rp2040_io_ops, esk_rp2040_io_create },
+    { "rp2040-sio", &esk_rp2040_sio_ops, esk_rp2040_sio_create },
+    { "rp2040-uart", &esk_rp2040_uart_ops, esk_rp2040_uart_create },
+    { "rp2040-ssi", &esk_rp2040_ssi_ops, esk_rp2040_ssi_create },
+    { "pic32-evic", &esk_pic32_evic_ops, esk_pic32_evic_create },
+    { "pic32-osc", &esk_pic32_osc_ops, esk_pic32_osc_create },
+    { "pic32-cfg", &esk_pic32_cfg_ops, esk_pic32_cfg_create },
+    { "pic32-tmr", &esk_pic32_tmr_ops, esk_pic32_tmr_create },
+    { "pic32-gpio", &esk_pic32_gpio_ops, esk_pic32_gpio_create },
+    { "pic32-uart", &esk_pic32_uart_ops, esk_pic32_uart_create },
+    { "pic24-intc", &esk_pic24_intc_ops, esk_pic24_intc_create },
+    { "pic24-osc", &esk_pic24_osc_ops, esk_pic24_osc_create },
+    { "pic24-pps", &esk_pic24_pps_ops, esk_pic24_pps_create },
+    { "pic24-tmr", &esk_pic24_tmr_ops, esk_pic24_tmr_create },
+    { "pic24-gpio", &esk_pic24_gpio_ops, esk_pic24_gpio_create },
+    { "pic24-uart", &esk_pic24_uart_ops, esk_pic24_uart_create },
 };
 
 const struct esk_rf_model_type *esk_rf_model_find(const char *name)

@@ -60,6 +60,17 @@
       "link_flags": [
         "-nostdlib"
       ]
+    },
+    "mipsel-none-elf": {
+      "cc": [
+        "embcc",
+        "--target=mipsel-none-elf"
+      ],
+      "link_flags": [
+        "-nostdlib",
+        "-Wl,--gc-sections"
+      ],
+      "doc": "Bare-metal MIPS32r2, little-endian (a PIC32MX's M4K)"
     }
   },
   "steps": {

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A made-up PIC32 for tools/test_importers.py: two peripherals, a register
+     without CLR/SET/INV, a device ID, two interrupt requests and two pins. -->
+<edc:PIC xmlns:edc="http://crownking/edc" xmlns:ltx="http://crownking/ltx" edc:name="PIC32MXTEST" edc:arch="32xxxx">
+  <edc:InterruptList>
+    <edc:Interrupt edc:cname="UART_1" edc:irq="24"/>
+    <edc:InterruptRequest edc:cname="UART1_RX" edc:irq="27"/>
+    <edc:InterruptRequest edc:cname="UART1_TX" edc:irq="28"/>
+  </edc:InterruptList>
+  <edc:PhysicalSpace>
+    <edc:DeviceIDSector edc:value="0x4307053">
+      <edc:DEVIDToRev edc:value="0x10000000"/>
+      <edc:DEVIDToRev edc:value="0x50000000"/>
+    </edc:DeviceIDSector>
+    <edc:SFRDataSector edc:beginaddr="0x1f806000">
+      <edc:SFRDef edc:cname="U1MODE" edc:nzwidth="0x20" edc:access="----------------n-nnn-nnnnnnnnnn" edc:por="----------------00000-0000000000" edc:portals="CLR SET INV" ltx:baseofperipheral="UART1 UART1A" edc:_addr="0x1F806000">
+        <edc:SFRModeList>
+          <edc:SFRMode edc:id="DS.0">
+            <edc:SFRFieldDef edc:cname="STSEL" edc:mask="0x1" edc:nzwidth="0x1"/>
+            <edc:AdjustPoint edc:offset="14"/>
+            <edc:SFRFieldDef edc:cname="ON" edc:mask="0x1" edc:nzwidth="0x1"/>
+          </edc:SFRMode>
+        </edc:SFRModeList>
+      </edc:SFRDef>
+      <edc:SFRDef edc:cname="U1RXREG" edc:nzwidth="0x20" edc:access="-----------------------rrrrrrrrr" edc:por="-----------------------000000000" ltx:memberofperipheral="UART1" edc:_addr="0x1F806030"/>
+      <edc:SFRDef edc:cname="DEVID" edc:nzwidth="0x20" edc:access="rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr" edc:por="00000000000000000000000000000000" edc:grp="CFG" edc:_addr="0x1F80F220"/>
+    </edc:SFRDataSector>
+  </edc:PhysicalSpace>
+  <edc:PinList>
+    <edc:Pin><edc:VirtualPin edc:name="RF2"/><edc:VirtualPin edc:name="U1RX"/></edc:Pin>
+    <edc:Pin><edc:VirtualPin edc:name="VDD"/></edc:Pin>
+    <edc:Pin><edc:VirtualPin edc:name="RD6"/><edc:VirtualPin edc:name="CN15"/></edc:Pin>
+  </edc:PinList>
+</edc:PIC>

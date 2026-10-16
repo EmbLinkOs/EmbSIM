@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-rails",
+  "description": "5 V on VIN: the regulator makes the 3.3 V rail, MCLR and the buttons' lines are pulled up to it.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/explorer16-32"
+      }
+    ],
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "5V": [
+        "VS.+",
+        "B1.VIN"
+      ],
+      "GND": [
+        "VS.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "R33": [
+        "B1.3V3"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R33": {
+      "at": "5ms",
+      "min_v": 3.2,
+      "max_v": 3.4
+    }
+  }
+}

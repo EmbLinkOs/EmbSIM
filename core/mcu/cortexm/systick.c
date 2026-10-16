@@ -20,6 +20,8 @@ struct systick {
     struct esk_mach *sim;
     u32 csr, rvr, cvr;
     int running;                    /* CSR.ENABLE, as esk_mach_clock knows it */
+    void (*pend)(void *ctx, int n); /* a multi-core part's: its own core */
+    void *pend_ctx;
 };
 
 static u32 reg_read(struct systick *t, u32 o)
@@ -72,7 +74,9 @@ static void st_tick(void *ctx, u32 c)
         }
         if (--t->cvr == 0) {
             t->csr |= 1u << 16;
-            if (t->csr & 2)
+            if ((t->csr & 2) && t->pend)
+                t->pend(t->pend_ctx, 15);
+            else if (t->csr & 2)
                 t->sim->cpu->ops->interrupt(t->sim->cpu, 15);
         }
     }
@@ -104,4 +108,11 @@ void *esk_systick_create(struct esk_mach *s)
     if (t)
         t->sim = s;
     return t;
+}
+
+void esk_systick_target(void *systick, void (*pend)(void *ctx, int n), void *ctx)
+{
+    struct systick *t = (struct systick *)systick;
+    t->pend = pend;
+    t->pend_ctx = ctx;
 }

@@ -271,6 +271,7 @@ esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *
             esk_json_free(s->a, inc);
         }
     }
+    esk_session_analysis_report(s, root);
     return root;
 }
 

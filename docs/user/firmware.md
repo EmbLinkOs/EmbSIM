@@ -62,8 +62,21 @@ embsim build examples/bluepill-button-led/project.json
 embsim build PROJECT --toolchain embcc  # another profile
 ```
 
-The Uno and HiFive1 examples build with Clang (its `avr` and
-`riscv32-unknown-elf` targets, with lld) and with EmbCC.
+The Uno, HiFive1, Pico and nRF52840 DK examples build with Clang (its
+`avr`, `riscv32-unknown-elf`, `thumbv6m-none-eabi` and
+`thumbv7em-none-eabihf` targets, with lld) and with EmbCC.
+
+A Pico image starts with boot2, the 256 bytes the RP2040's bootrom checks
+by their CRC-32, copies to SRAM and enters; without a good one the part
+waits in its USB boot and the session says so (`mcu.no_boot2`).
+`examples/pico-blink-serial/firmware/boot2.c` is a minimal boot2 that hands
+over to the vector table at 0x10000100. The bootrom's functions (its
+float library, flash programming) are not there: an image built with the
+Pico SDK that calls them stops at a null pointer.
+
+On the nRF52840, EasyDMA reaches RAM only: a UARTE buffer in flash (a
+string literal) is a warning (`mcu.easydma_range`) and nothing is sent,
+as on the part.
 
 Profiles live in `catalog/toolchains/` (EmbCC, Clang, GNU Arm and others):
 each names its compiler, how to detect its version and the compile and link

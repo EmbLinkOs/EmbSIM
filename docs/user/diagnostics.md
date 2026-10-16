@@ -19,7 +19,7 @@ default and a subject.
 | `catalog.instantiate` | error | id | a component could not be instantiated |
 | `fidelity.tier_missing` | error | id | the session policy needs a fidelity tier the model does not declare |
 | `analog.param_out_of_range` | error | instance, param | a parameter is outside its declared range |
-| `net.contention` | warning | net | two drivers of equal strength disagree |
+| `net.contention` | warning | net | two drivers of equal strength disagree (two opposing weak pulls are a divider and are not reported) |
 | `net.floating_input` | warning | pin | an input sampled a net with no driver and no pull |
 | `net.unknown_input` | warning | pin | an input sampled X |
 | `net.power_short` | error | net | two supplies with different nominal voltage on one net |
@@ -44,7 +44,14 @@ default and a subject.
 | `mcu.unsupported_access` | warning | board, register, pc | the first access to a peripheral with registers and no model |
 | `mcu.clock_gated` | warning | board, register, pc | an access to a peripheral whose clock is off: reads 0, writes ignored |
 | `mcu.bus_error` | warning | board, address, pc | nothing answered an access: the core takes a bus fault |
+| `mcu.held_in_reset` | warning | board, register, pc | an access to a peripheral its reset controller holds in reset (the RP2040's RESETS): reads its reset values, writes ignored |
+| `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot |
+| `mcu.watchdog_reset` | info | board | the watchdog reset the chip (its counter reached 0, or CTRL.TRIGGER) |
+| `mcu.easydma_range` | warning | board, peripheral | an nRF52840 EasyDMA buffer outside Data RAM: nothing is moved |
+| `mcu.locked_write` | warning | board, register, pc | a write to a PIC32's OSCCON while SYSKEY's unlock sequence has not been written, or to a byte of a PIC24's OSCCON without its own unlock sequence: ignored, as on the part (the first one) |
+| `mcu.trap` | warning | board, pc | a PIC24 trap (an address, stack or math error, an oscillator failure): the core takes its vector; the first ten are reported |
 | `mcu.boot_mode` | warning | board | BOOT0 selects system memory, which is not modelled |
+| `analysis.unavailable` | warning | board | coverage or the profile was on, and a reloaded project's board cannot be measured (no firmware, no function symbols) |
 | `mcu.exit` | info | board | the firmware exited through semihosting, with its status |
 | `mcu.lockup` | error | board | the core locked up (a fault with nowhere to go) |
 | `input.rejected` | warning | component | a component refused an input |

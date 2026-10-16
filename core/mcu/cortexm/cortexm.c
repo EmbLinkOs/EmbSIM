@@ -22,7 +22,9 @@
  * skipping time or ending the run, so the MCU runtime decides how far to
  * fast-forward against the session's other events (ADR-019); the cycles
  * of a taken branch reach the devices as well as the core's count; an
- * unreadable vector table locks the core up instead of exiting. */
+ * unreadable vector table locks the core up instead of exiting; WFE and
+ * SEV keep the event register (a WFE after a SEV goes on at once), and a
+ * second core shares the machine through smp.c. */
 #include <stdio.h>
 #include <string.h>
 
@@ -291,6 +293,7 @@ static void lockup(struct esk_cm_state *cs, const char *why)
 static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
 {
     int fp_frame = cs->model->fpu && (cs->control & 4);
+    esk_mach_exc(cs->sim, esk_cortexm_core(cs->sim), n, ret & ~1u);
     u32 frame = fp_frame ? 0x68 : 0x20;
     /* PushStack: with CCR.STKALIGN (always on ARMv6-M) the frame is
      * 8-aligned, and xPSR bit 9 records that 4 bytes were skipped */
@@ -403,6 +406,7 @@ static int pending_to_take(struct esk_cm_state *cs)
 static void exc_return(struct esk_cm_state *cs, u32 ret)
 {
     int n = (int)cs->ipsr;
+    esk_mach_exc_return(cs->sim, esk_cortexm_core(cs->sim));
     cs->active[n] = 0;
     if (n == EXC_HARD || n == EXC_NMI)
         cs->faultmask = 0;
@@ -503,6 +507,24 @@ int esk_cm_wfx_idle(struct esk_cm_state *cs)
         return 0;
     cs->sim->asleep = 1;
     return 1;
+}
+
+void esk_cm_wait(struct esk_cm_state *cs, int wfe)
+{
+    if (wfe && cs->event) {
+        cs->event = 0;
+        return;
+    }
+    cs->in_wfe = wfe;
+    (void)esk_cm_wfx_idle(cs);
+}
+
+void esk_cm_sev(struct esk_cm_state *cs)
+{
+    if (cs->sev)
+        cs->sev(cs->sev_ctx);
+    else
+        cs->event = 1;
 }
 
 /* A halfword of code: from memory, or from a device that answers there (a
@@ -650,11 +672,15 @@ static void cpu_reset(struct esk_cpu *c)
     struct esk_mach *s = k->sim;
     const struct cpu_model *model = k->model;
     int prio_bits = k->prio_bits;
+    void (*sev)(void *) = k->sev;
+    void *sev_ctx = k->sev_ctx;
     memset(k, 0, sizeof *k);
     k->cpu = keep;
     k->sim = s;
     k->model = model;
     k->prio_bits = prio_bits;
+    k->sev = sev;
+    k->sev_ctx = sev_ctx;
     k->tbit = 1;
     k->fpccr = 0xC0000000u;
     struct esk_cm_state *cs = k;
@@ -934,31 +960,47 @@ static const struct esk_cpu_ops cortexm_ops = {
 /* the core of an MCU: the model, its NVIC's priority bits, and its own
  * devices on the bus (SysTick inside the system control space, so first;
  * the rest of the private peripheral bus last) */
-es_status esk_cortexm_create(struct esk_mach *s, const char *model, int prio_bits,
-                             struct esk_cpu **out)
+struct esk_cm_state *esk_cm_new(struct esk_mach *s, const char *model, int prio_bits)
 {
     const struct cpu_model *m = 0;
     struct esk_cm_state *k;
-    void *st, *dw;
     size_t i;
     for (i = 0; i < sizeof cpus / sizeof cpus[0]; i++)
         if (!strcmp(cpus[i].name, model))
             m = &cpus[i];
-    if (!m)
-        return ES_ENOTFOUND;
-    if (prio_bits < 2 || prio_bits > 8)
-        return ES_EINVAL;
+    if (!m || prio_bits < 2 || prio_bits > 8)
+        return 0;
     k = (struct esk_cm_state *)esk_mach_alloc(s, sizeof *k);
-    st = esk_systick_create(s);
-    dw = esk_dwt_create(s);
-    if (!k || !st || !dw)
-        return ES_ENOMEM;
+    if (!k)
+        return 0;
     k->cpu.ops = &cortexm_ops;
     k->sim = s;
     k->model = m;
     k->prio_bits = prio_bits;
     k->tbit = 1;
     k->fpccr = 0xC0000000u;
+    return k;
+}
+
+es_status esk_cortexm_create(struct esk_mach *s, const char *model, int prio_bits,
+                             struct esk_cpu **out)
+{
+    struct esk_cm_state *k;
+    void *st, *dw;
+    size_t i;
+    int known = 0;
+    for (i = 0; i < sizeof cpus / sizeof cpus[0]; i++)
+        if (!strcmp(cpus[i].name, model))
+            known = 1;
+    if (!known)
+        return ES_ENOTFOUND;
+    if (prio_bits < 2 || prio_bits > 8)
+        return ES_EINVAL;
+    k = esk_cm_new(s, model, prio_bits);
+    st = esk_systick_create(s);
+    dw = esk_dwt_create(s);
+    if (!k || !st || !dw)
+        return ES_ENOMEM;
     s->cpu = &k->cpu;
     s->bus.snoop = excl_snoop;
     s->bus.snoop_ctx = k;

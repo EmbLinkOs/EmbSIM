@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "blink",
+  "until": "2.2s",
+  "description": "The banner with the part's FICR number and the FPU's sqrt(2); LED1's 1 Hz blink from RTC1; a button press through GPIOTE; the terminal's text echoed in upper case through EasyDMA.",
+  "inputs": [
+    {
+      "at": "1.2s",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.25s",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1.5s",
+      "target": "VT1",
+      "input": "tx_text",
+      "value": "nordic"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "20ms",
+      "probe": "console",
+      "expect": {
+        "contains": "nrf52840: part 52840, sqrt(2) = 1.41421 by the FPU"
+      }
+    },
+    {
+      "id": "terminal-banner",
+      "at": "20ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "sqrt(2) = 1.41421"
+      }
+    },
+    {
+      "id": "led-off",
+      "at": "0.4s",
+      "probe": "led1",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "led-on",
+      "at": "0.6s",
+      "probe": "led1",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "2.2s"
+      ],
+      "probe": "led1",
+      "expect": {
+        "edges": 4
+      }
+    },
+    {
+      "id": "button",
+      "at": "1.3s",
+      "probe": "console",
+      "expect": {
+        "contains": "button 1"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "1.6s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "NORDIC"
+      }
+    }
+  ]
+}

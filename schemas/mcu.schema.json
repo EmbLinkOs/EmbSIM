@@ -24,8 +24,11 @@
         "backend": {"type": "string", "enum": ["cortex-m", "riscv", "avr", "mips", "pic32", "pic24", "pic16"]},
         "model": {"type": "string", "minLength": 1},
         "priority_bits": {"type": "integer", "minimum": 0, "maximum": 8},
+        "cores": {"type": "integer", "minimum": 1, "maximum": 2, "description": "Cores of the model sharing the part (the RP2040's two Cortex-M0+): core 0 runs from reset, the others wait for the part to launch them"},
         "timing_tier": {"type": "string", "enum": ["exact", "estimated", "unmodelled"]},
         "reset_pc": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "Where the core starts after reset (a RISC-V core's reset vector, or the entry its boot ROM jumps to)"},
+        "prog_end": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "A PIC24's program memory's end, as a program address (its configuration words are the last words before it)"},
+        "ram_base": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "A PIC24's RAM's start, as a data address (W15 out of reset)"},
         "fpu": {"type": "boolean"},
         "mpu": {"type": "boolean"},
         "endian": {"type": "string", "enum": ["little", "big"]},
@@ -98,7 +101,8 @@
         "lookup": {"type": "array", "items": {"type": "string"}},
         "hash": {"$ref": "common.schema.json#/$defs/sha256"},
         "url": {"type": "string"},
-        "version": {"type": "string"}
+        "version": {"type": "string"},
+        "bus_rules": {"type": "array", "uniqueItems": true, "items": {"type": "string", "enum": ["atomic_aliases", "wide_writes"]}, "description": "The part's own bus rules: atomic_aliases, each peripheral's registers again at +0x1000 (XOR), +0x2000 (set) and +0x3000 (clear) below 0xD0000000 (the RP2040's); wide_writes, a byte or halfword write to a 32-bit register writes the whole register, the value repeated across the byte lanes"}
       }
     },
     "peripherals": {

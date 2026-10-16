@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M5 verification (2026-10-16)
+
+A run becomes a repeatable, measured check: scenarios edited and run in
+place, recordings replayed identically or turned into scenarios, and the
+firmware's coverage and profile from its core.
+
+| | |
+|---|---|
+| ![The scenario editor after a run](m5/verify-scenario.png) | **Edit and run a scenario.** `scenarios/press.json` of the Blue Pill example opened in the editor: its inputs timeline and its sixteen assertions, each row with its result after the run, the report below. |
+| ![Coverage of the Blue Pill's firmware](m5/verify-coverage.png) | **Coverage and profile.** After a run with the button pressed: each source file's lines and functions hit, `main.c` with each line's count, and where the cycles went by function. |
+| ![Coverage, dark](m5/verify-coverage-dark.png) | **The same, dark.** The source view starts at the first line with code; lines that never ran are marked. |
+| ![A recording replayed and made a scenario](m5/verify-recording.png) | **Record, replay, convert.** A session recorded while the button was held, replayed identically (291 observations), and turned into a scenario now open in the editor with its inputs and assertions. |
+
 ## Interactive component library (2026-10-16)
 
 Captured by `tests/browser/test_library.py` against the native engine, including
@@ -15,6 +28,66 @@ schematic symbols are rendered by the shared workbench.
 |---|---|
 | ![Library explorer, light](component-library/library-light.png) | **Discover and inspect.** Manufacturer/package filters, multiword search, source reference status and a preview before placement, alongside the wired optocoupler circuit. |
 | ![Library explorer, dark](component-library/library-dark.png) | **Place a real package.** B3F-1000's numbered pads and model limits in dark mode. The explorer is also checked at 1024 × 700. |
+
+## M4 core families and boards, part 5 (2026-10-16)
+
+The Pico runs both of its RP2040's cores: core 0 launches core 1 through
+its bootrom's FIFO handshake, and the two share a counter, the FIFOs and the
+LED.
+
+| | |
+|---|---|
+| ![The Pico's two cores running](m4-5/run-pico-dual-core.png) | **Two cores running.** `examples/pico-dual-core`: core 1 blinking the LED from its timer alarm and taking the button, core 0 printing on the terminal what core 1 answers through the FIFO. |
+| ![Debugging core 1](m4-5/debug-pico-core1.png) | **Debugging core 1.** Stopped in `sio_irq_proc1` on core 1, which the toolbar names: its registers, its source line, the disassembly from flash, while core 0's banner is half printed. |
+
+## M4 core families and boards, part 4 (2026-10-16)
+
+The same Explorer 16/32 with its PIC24 plug-in module: an XC16 image on the
+PIC24FJ1024GB610, the 8 MHz crystal through the 96 MHz PLL to a 16 MHz FCY,
+UART2 on the USB-UART bridge by the Peripheral Pin Select.
+
+| | |
+|---|---|
+| ![The Explorer 16/32 with the PIC24 running](m4-4/run-explorer16-pic24.png) | **The PIC24 running.** `examples/explorer16-pic24`: D3 blinking from Timer1's interrupt, the banner with FOSC, FCY and the FOSCSEL word read back by a table read on the terminal. |
+| ![The PIC24 PIM up close](m4-4/board-explorer16-pic24.png) | **The PIC24 PIM.** The Explorer's artwork with the PIC24FJ1024GB610 plug-in module (MA240023), live. |
+| ![Debugging the PIC24](m4-4/debug-explorer16-pic24.png) | **Debugging the PIC24.** Stopped at `_T1Interrupt`'s first instruction: XC16's line table on the source, the PIC24 disassembly at program addresses, W0 to W15, RAM at data address 0x0800, and the device pack's peripherals with their models. |
+| ![The PIC24 Explorer's schematic](m4-4/design-explorer16-pic24.png) | **Design, Explorer 16/32 with the PIC24.** 5 V on VIN and the terminal on RF5 and RF4. |
+
+## M4 core families and boards, part 3 (2026-10-16)
+
+An Explorer 16/32 runs its PIC32MX795F512L's MIPS32 M4K: the 8 MHz crystal
+through the PLL to 80 MHz from the configuration words, with firmware built
+by clang and by EmbCC.
+
+| | |
+|---|---|
+| ![The Explorer 16/32 running](m4-3/run-explorer16.png) | **The Explorer 16/32 running.** `examples/explorer16-pic32mx`: D3 blinking from Timer1's interrupt, S3, S6, S4 and MCLR as controls, the banner with SYSCLK and PBCLK on the terminal through UART2. |
+| ![The Explorer up close](m4-3/board-explorer16.png) | **The Explorer's artwork.** The PIC32MX795F512L PIM, D3 to D10, the buttons, the crystals, the USB-UART bridge and the PICtail edge, live. |
+| ![Debugging the PIC32MX](m4-3/debug-explorer16.png) | **Debugging the PIC32MX.** Stopped in `isr` at Timer1's first interrupt: the source, the MIPS32 disassembly from program flash at 0x9D000000, the MIPS registers, the RAM, and the device pack's peripherals with their models. |
+| ![The Explorer's schematic](m4-3/design-explorer16.png) | **Design, Explorer 16/32.** 5 V on VIN and the terminal on the USB-UART bridge's RF5 and RF4. |
+
+## M4 core families and boards, part 2 (2026-10-16)
+
+A Raspberry Pi Pico boots its RP2040 through boot2 and an nRF52840 DK runs
+its Cortex-M4F, each with firmware built by clang and by EmbCC.
+
+| | |
+|---|---|
+| ![The Pico running](m4-2/run-pico.png) | **The Pico running.** `examples/pico-blink-serial` on the RP2040's Cortex-M0+ at 125 MHz from PLL_SYS: the LED on GPIO25 lit by the timer's alarm, the banner on the terminal. |
+| ![The Pico up close](m4-2/board-pico.png) | **The Pico's artwork.** Its 40-pin edge, the RP2040, the W25Q16 flash, BOOTSEL and the user LED, live. |
+| ![Debugging the RP2040](m4-2/debug-pico.png) | **Debugging the RP2040.** Stopped at the timer's alarm interrupt: the source, the Armv6-M disassembly, the registers, and RP2040.svd's peripherals with the ones RESETS holds marked "in reset". |
+| ![The Pico's schematic](m4-2/design-pico.png) | **Design, Pico.** The button and the terminal on GP15, GP0 and GP1, VBUS from a 5 V source. |
+| ![The nRF52840 DK running](m4-2/run-nrf52840dk.png) | **The nRF52840 DK running.** `examples/nrf52840dk-blink`: LED1 toggled by RTC1 on the 32.768 kHz crystal, the banner with FICR's part number and the FPU's sqrt(2). |
+| ![The DK up close](m4-2/board-nrf52840dk.png) | **The DK's artwork.** Its four LEDs and buttons, the Arduino headers and the virtual COM port's pins. |
+| ![Debugging the nRF52840](m4-2/debug-nrf52840dk.png) | **Debugging the nRF52840.** Stopped in RTC1's interrupt: the source, the Thumb-2 disassembly, the registers and nrf52840.svd's peripherals. |
+| ![The DK's schematic](m4-2/design-nrf52840dk.png) | **Design, DK.** The button on D2 and the terminal on P0.06 and P0.08. |
+| ![Two boards on one line](m4-2/run-two-boards.png) | **Two boards.** As in part 1. |
+| ![The Uno running](m4-2/run-uno.png) | **The Uno running.** As in part 1. |
+| ![The HiFive1 running](m4-2/run-hifive1.png) | **The HiFive1 running.** As in part 1. |
+| ![Display showcase](m4-2/board-showcase.png) | **Displays.** |
+| ![Design, Blue Pill](m4-2/design-bluepill.png) | **Design, Blue Pill.** |
+| ![Debug, Blue Pill](m4-2/debug-bluepill.png) | **Debug, Blue Pill.** |
+| ![Dark theme](m4-2/design-bluepill-dark.png) | **Dark theme.** |
 
 ## M4 core families and boards, part 1 (2026-10-16)
 

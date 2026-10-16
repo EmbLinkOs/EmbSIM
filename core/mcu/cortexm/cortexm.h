@@ -90,6 +90,12 @@ struct esk_cm_state {
     u32 cpacr, fpccr, fpcar, fpdscr;
     u32 demcr;
     char xml[4096];                 /* the target description, built on demand */
+
+    /* the event register (WFE and SEV), and whether the wait in progress
+     * is a WFE's; a multi-core part's SEV reaches its other cores (smp.c) */
+    int event, in_wfe;
+    void (*sev)(void *ctx);
+    void *sev_ctx;
 };
 
 
@@ -113,6 +119,12 @@ int esk_cm_exec_prio(struct esk_cm_state *cs);
 int esk_cm_cond_passed(struct esk_cm_state *cs, u32 cond);
 void esk_cm_it_advance(struct esk_cm_state *cs);
 int esk_cm_wfx_idle(struct esk_cm_state *cs);
+/* WFI (wfe 0) and WFE (wfe 1): the core waits, unless an exception is
+ * pending or, for WFE, the event register is set (it is cleared); SEV */
+void esk_cm_wait(struct esk_cm_state *cs, int wfe);
+void esk_cm_sev(struct esk_cm_state *cs);
+/* a core's state without its devices on the bus: smp.c's second core */
+struct esk_cm_state *esk_cm_new(struct esk_mach *m, const char *model, int prio_bits);
 void esk_cm_semihost(struct esk_cm_state *cs);
 
 /* cortexm-thumb.c */
@@ -237,6 +249,8 @@ int esk_dis_thumb(u32 pc, u32 h1, u32 h2, char *b, size_t n);
 /* the core's own devices (systick.c, scs.c, dwt.c) */
 extern const struct esk_dev_ops esk_systick_ops, esk_scs_ops, esk_dwt_ops;
 void *esk_systick_create(struct esk_mach *m);
+/* where the SysTick exception goes: `pend(ctx, 15)`, else the machine's core */
+void esk_systick_target(void *systick, void (*pend)(void *ctx, int n), void *ctx);
 void *esk_dwt_create(struct esk_mach *m);
 
 #endif

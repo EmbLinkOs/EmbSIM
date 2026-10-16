@@ -1,0 +1,510 @@
+{
+ "schema_version": 1,
+ "kind": "package",
+ "id": "microchip/pic24fj1024gb610/tqfp100",
+ "name": "TQFP100",
+ "description": "PIC24FJ1024GB610 in its 100-lead TQFP (12 x 12 mm): the pins by number, as the device pack's EDC lists them (with pin 86, VBAT, which it leaves out), each named by its port pin (or its supply); the doc lists its functions. MCLR is NRST.",
+ "pins": [
+  {
+   "number": 1,
+   "signal": "RG15",
+   "doc": "OCM1C / CTED3 / IOCG15 / RG15"
+  },
+  {
+   "number": 2,
+   "signal": "VDD"
+  },
+  {
+   "number": 3,
+   "signal": "RE5",
+   "doc": "IC4 / CTED4 / PMD5 / IOCE5 / RE5"
+  },
+  {
+   "number": 4,
+   "signal": "RE6",
+   "doc": "SCL3 / IC5 / PMD6 / IOCE6 / RE6"
+  },
+  {
+   "number": 5,
+   "signal": "RE7",
+   "doc": "SDA3 / IC6 / PMD7 / IOCE7 / RE7"
+  },
+  {
+   "number": 6,
+   "signal": "RC1",
+   "doc": "RPI38 / OCM1D / IOCC1 / RC1"
+  },
+  {
+   "number": 7,
+   "signal": "RC2",
+   "doc": "RPI39 / OCM2C / IOCC2 / RC2"
+  },
+  {
+   "number": 8,
+   "signal": "RC3",
+   "doc": "RPI40 / OCM2D / IOCC3 / RC3"
+  },
+  {
+   "number": 9,
+   "signal": "RC4",
+   "doc": "AN16 / RPI41 / OCM3C / PMCS2 / IOCC4 / RC4"
+  },
+  {
+   "number": 10,
+   "signal": "RG6",
+   "doc": "AN17 / C1IND / RP21 / OCM1A / PMA5 / IOCG6 / RG6"
+  },
+  {
+   "number": 11,
+   "signal": "RG7",
+   "doc": "AN18 / C1INC / RP26 / OCM1B / PMA4 / IOCG7 / RG7"
+  },
+  {
+   "number": 12,
+   "signal": "RG8",
+   "doc": "AN19 / C2IND / RP19 / OCM2A / PMA3 / IOCG8 / RG8"
+  },
+  {
+   "number": 13,
+   "signal": "NRST",
+   "doc": "MCLR: the master clear, active low"
+  },
+  {
+   "number": 14,
+   "signal": "RG9",
+   "doc": "AN20 / C1INC / C2INC / C3INC / RP27 / OCM2B / PMA2 / PMALU / IOCG9 / RG9"
+  },
+  {
+   "number": 15,
+   "signal": "VSS"
+  },
+  {
+   "number": 16,
+   "signal": "VDD"
+  },
+  {
+   "number": 17,
+   "signal": "RA0",
+   "doc": "TMS / OCM3D / CTED14 / IOCA0 / RA0"
+  },
+  {
+   "number": 18,
+   "signal": "RE8",
+   "doc": "RPI33 / PMCS1 / IOCE8 / RE8"
+  },
+  {
+   "number": 19,
+   "signal": "RE9",
+   "doc": "AN21 / RPI34 / PMA19 / IOCE9 / RE9"
+  },
+  {
+   "number": 20,
+   "signal": "RB5",
+   "doc": "PGEC3 / AN5 / C1INA / RP18 / OCM3A / IOCB5 / RB5"
+  },
+  {
+   "number": 21,
+   "signal": "RB4",
+   "doc": "PGED3 / AN4 / C1INB / RP28 / USBOEN / OCM3B / IOCB4 / RB4"
+  },
+  {
+   "number": 22,
+   "signal": "RB3",
+   "doc": "AN3 / C2INA / IOCB3 / RB3"
+  },
+  {
+   "number": 23,
+   "signal": "RB2",
+   "doc": "AN2 / CTCMP / C2INB / RP13 / CTED13 / IOCB2 / RB2"
+  },
+  {
+   "number": 24,
+   "signal": "RB1",
+   "doc": "PGEC1 / ALTVREF- / ALTCVREF- / AN1 / RP1 / CTED12 / IOCB1 / RB1"
+  },
+  {
+   "number": 25,
+   "signal": "RB0",
+   "doc": "PGED1 / ALTVREF+ / ALTCVREF+ / AN0 / RP0 / IOCB0 / RB0"
+  },
+  {
+   "number": 26,
+   "signal": "RB6",
+   "doc": "PGEC2 / AN6 / RP6 / IOCB6 / RB6"
+  },
+  {
+   "number": 27,
+   "signal": "RB7",
+   "doc": "PGED2 / AN7 / RP7 / U6TX / IOCB7 / RB7"
+  },
+  {
+   "number": 28,
+   "signal": "RA9",
+   "doc": "VREF- / CVREF- / PMA7 / IOCA9 / RA9"
+  },
+  {
+   "number": 29,
+   "signal": "RA10",
+   "doc": "VREF+ / CVREF+ / PMA6 / IOCA10 / RA10"
+  },
+  {
+   "number": 30,
+   "signal": "AVDD"
+  },
+  {
+   "number": 31,
+   "signal": "AVSS"
+  },
+  {
+   "number": 32,
+   "signal": "RB8",
+   "doc": "AN8 / RP8 / PWRGT / IOCB8 / RB8"
+  },
+  {
+   "number": 33,
+   "signal": "RB9",
+   "doc": "AN9 / TMPR / RP9 / T1CK / IOCB9 / RB9"
+  },
+  {
+   "number": 34,
+   "signal": "RB10",
+   "doc": "CVREF / AN10 / PMA13 / IOCB10 / RB10"
+  },
+  {
+   "number": 35,
+   "signal": "RB11",
+   "doc": "AN11 / REFI / PMA12 / IOCB11 / RB11"
+  },
+  {
+   "number": 36,
+   "signal": "VSS"
+  },
+  {
+   "number": 37,
+   "signal": "VDD"
+  },
+  {
+   "number": 38,
+   "signal": "RA1",
+   "doc": "TCK / IOCA1 / RA1"
+  },
+  {
+   "number": 39,
+   "signal": "RF13",
+   "doc": "RP31 / IOCF13 / RF13"
+  },
+  {
+   "number": 40,
+   "signal": "RF12",
+   "doc": "RPI32 / CTED7 / PMA18 / IOCF12 / RF12"
+  },
+  {
+   "number": 41,
+   "signal": "RB12",
+   "doc": "AN12 / U6RX / CTED2 / PMA11 / IOCB12 / RB12"
+  },
+  {
+   "number": 42,
+   "signal": "RB13",
+   "doc": "AN13 / CTED1 / PMA10 / IOCB13 / RB13"
+  },
+  {
+   "number": 43,
+   "signal": "RB14",
+   "doc": "AN14 / RP14 / CTED5 / CTPLS / PMA1 / PMALH / IOCB14 / RB14"
+  },
+  {
+   "number": 44,
+   "signal": "RB15",
+   "doc": "AN15 / RP29 / CTED6 / PMA0 / PMALL / IOCB15 / RB15"
+  },
+  {
+   "number": 45,
+   "signal": "VSS"
+  },
+  {
+   "number": 46,
+   "signal": "VDD"
+  },
+  {
+   "number": 47,
+   "signal": "RD14",
+   "doc": "RPI43 / IOCD14 / RD14"
+  },
+  {
+   "number": 48,
+   "signal": "RD15",
+   "doc": "RP5 / IOCD15 / RD15"
+  },
+  {
+   "number": 49,
+   "signal": "RF4",
+   "doc": "RP10 / PMA9 / IOCF4 / RF4"
+  },
+  {
+   "number": 50,
+   "signal": "RF5",
+   "doc": "RP17 / PMA8 / IOCF5 / RF5"
+  },
+  {
+   "number": 51,
+   "signal": "RF3",
+   "doc": "RP16 / USBID / IOCF3 / RF3"
+  },
+  {
+   "number": 52,
+   "signal": "RF2",
+   "doc": "RP30 / IOCF2 / RF2"
+  },
+  {
+   "number": 53,
+   "signal": "RF8",
+   "doc": "RP15 / IOCF8 / RF8"
+  },
+  {
+   "number": 54,
+   "signal": "RF7",
+   "doc": "Vbus / IOCF7 / RF7"
+  },
+  {
+   "number": 55,
+   "signal": "VUSB3V3"
+  },
+  {
+   "number": 56,
+   "signal": "RG3",
+   "doc": "D- / IOCG3 / RG3"
+  },
+  {
+   "number": 57,
+   "signal": "RG2",
+   "doc": "D+ / IOCG2 / RG2"
+  },
+  {
+   "number": 58,
+   "signal": "RA2",
+   "doc": "SCL2 / IOCA2 / RA2"
+  },
+  {
+   "number": 59,
+   "signal": "RA3",
+   "doc": "SDA2 / PMA20 / IOCA3 / RA3"
+  },
+  {
+   "number": 60,
+   "signal": "RA4",
+   "doc": "TDI / PMA21 / IOCA4 / RA4"
+  },
+  {
+   "number": 61,
+   "signal": "RA5",
+   "doc": "TDO / IOCA5 / RA5"
+  },
+  {
+   "number": 62,
+   "signal": "VDD"
+  },
+  {
+   "number": 63,
+   "signal": "RC12",
+   "doc": "OSCI / CLKI / IOCC12 / RC12"
+  },
+  {
+   "number": 64,
+   "signal": "RC15",
+   "doc": "OSCO / CLKO / IOCC15 / RC15"
+  },
+  {
+   "number": 65,
+   "signal": "VSS"
+  },
+  {
+   "number": 66,
+   "signal": "RA14",
+   "doc": "RPI36 / SCL1 / PMA22 / IOCA14 / RA14"
+  },
+  {
+   "number": 67,
+   "signal": "RA15",
+   "doc": "RPI35 / SDA1 / PMBE1 / IOCA15 / RA15"
+  },
+  {
+   "number": 68,
+   "signal": "RD8",
+   "doc": "CLC4OUT / RP2 / U6RTS / U6BCLK / IOCD8 / RD8"
+  },
+  {
+   "number": 69,
+   "signal": "RD9",
+   "doc": "RP4 / PMACK2 / IOCD9 / RD9"
+  },
+  {
+   "number": 70,
+   "signal": "RD10",
+   "doc": "RP3 / PMA15 / PMCS2 / IOCD10 / RD10"
+  },
+  {
+   "number": 71,
+   "signal": "RD11",
+   "doc": "RP12 / PMA14 / PMCS1 / IOCD11 / RD11"
+  },
+  {
+   "number": 72,
+   "signal": "RD0",
+   "doc": "CLC3OUT / RP11 / U6CTS / INT0 / IOCD0 / RD0"
+  },
+  {
+   "number": 73,
+   "signal": "RC13",
+   "doc": "SOSCI / C3IND / IOCC13 / RC13"
+  },
+  {
+   "number": 74,
+   "signal": "RC14",
+   "doc": "SOSCO / C3INC / RPI37 / PWRLCLK / IOCC14 / RC14"
+  },
+  {
+   "number": 75,
+   "signal": "VSS"
+  },
+  {
+   "number": 76,
+   "signal": "RD1",
+   "doc": "RP24 / U5TX / IOCD1 / RD1"
+  },
+  {
+   "number": 77,
+   "signal": "RD2",
+   "doc": "RP23 / PMACK1 / IOCD2 / RD2"
+  },
+  {
+   "number": 78,
+   "signal": "RD3",
+   "doc": "RP22 / PMBE0 / IOCD3 / RD3"
+  },
+  {
+   "number": 79,
+   "signal": "RD12",
+   "doc": "RPI42 / OCM3E / PMD12 / IOCD12 / RD12"
+  },
+  {
+   "number": 80,
+   "signal": "RD13",
+   "doc": "OCM3F / PMD13 / IOCD13 / RD13"
+  },
+  {
+   "number": 81,
+   "signal": "RD4",
+   "doc": "RP25 / PMWR / PMENB / IOCD4 / RD4"
+  },
+  {
+   "number": 82,
+   "signal": "RD5",
+   "doc": "RP20 / PMRD / PMWRn / IOCD5 / RD5"
+  },
+  {
+   "number": 83,
+   "signal": "RD6",
+   "doc": "C3INB / U5RX / OC4 / PMD14 / IOCD6 / RD6"
+  },
+  {
+   "number": 84,
+   "signal": "RD7",
+   "doc": "C3INA / U5RTS / U5BCLK / OC5 / PMD15 / IOCD7 / RD7"
+  },
+  {
+   "number": 85,
+   "signal": "VCAP"
+  },
+  {
+   "number": 86,
+   "signal": "VBAT",
+   "doc": "VBAT: the RTCC's backup supply (the device pack's PinList leaves this pin out; the data sheet's pin 86)"
+  },
+  {
+   "number": 87,
+   "signal": "RF0",
+   "doc": "U5CTS / OC6 / PMD11 / IOCF0 / RF0"
+  },
+  {
+   "number": 88,
+   "signal": "RF1",
+   "doc": "PMD10 / IOCF1 / RF1"
+  },
+  {
+   "number": 89,
+   "signal": "RG1",
+   "doc": "PMD9 / IOCG1 / RG1"
+  },
+  {
+   "number": 90,
+   "signal": "RG0",
+   "doc": "PMD8 / IOCG0 / RG0"
+  },
+  {
+   "number": 91,
+   "signal": "RA6",
+   "doc": "AN23 / OCM1E / IOCA6 / RA6"
+  },
+  {
+   "number": 92,
+   "signal": "RA7",
+   "doc": "AN22 / OCM1F / PMA17 / IOCA7 / RA7"
+  },
+  {
+   "number": 93,
+   "signal": "RE0",
+   "doc": "PMD0 / IOCE0 / RE0"
+  },
+  {
+   "number": 94,
+   "signal": "RE1",
+   "doc": "PMD1 / IOCE1 / RE1"
+  },
+  {
+   "number": 95,
+   "signal": "RG14",
+   "doc": "CTED11 / PMA16 / IOCG14 / RG14"
+  },
+  {
+   "number": 96,
+   "signal": "RG12",
+   "doc": "OCM2E / IOCG12 / RG12"
+  },
+  {
+   "number": 97,
+   "signal": "RG13",
+   "doc": "OCM2F / CTED10 / IOCG13 / RG13"
+  },
+  {
+   "number": 98,
+   "signal": "RE2",
+   "doc": "PMD2 / IOCE2 / RE2"
+  },
+  {
+   "number": 99,
+   "signal": "RE3",
+   "doc": "CTED9 / PMD3 / IOCE3 / RE3"
+  },
+  {
+   "number": 100,
+   "signal": "RE4",
+   "doc": "LVDIN / CTED8 / PMD4 / IOCE4 / RE4"
+  }
+ ],
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "Microchip.PIC24F-GA-GB_DFP (edc/PIC24FJ1024GB610.PIC, its PinList)",
+    "rev": "1.11.479"
+   },
+   {
+    "title": "PIC24FJ1024GA610/GB610 Family Data Sheet (the 100-pin TQFP's pin diagram)",
+    "rev": "DS30010074"
+   }
+  ],
+  "notes": "Generated by tools/importers/edc2regs.py from Microchip's Apache-2.0 device pack."
+ }
+}

@@ -24,7 +24,9 @@ reset (state `no_image`); `esk_mcu_set_image` loads one later.
 
 The machine owns: the bus, one core, its devices (the register file and the
 core's system devices), breakpoints, the host hooks through which the runtime
-sees its outputs (`out`, `readc`, `pin_cfg`, `pin_in`, `uart_tx`, `diag`),
+sees its outputs (`out`, `readc`, `pin_cfg`, `pin_in`, `uart_tx`, `diag`, and
+`exc`, which each core calls as it enters an exception or interrupt, for a
+recording's observations: SPEC-012 §1),
 the receive ports of its UARTs, and the flags the core and devices raise
 (`asleep`, `yield`, `reset_req`, the stop reasons). It is EmbCC's
 `struct sim` made per instance: no file-scope state (CS-1); every allocation
@@ -64,6 +66,23 @@ watchpoint, a lockup, a semihosting exit, a reset request, a device's
 devices see every cycle. M1 implements Cortex-M3 (Thumb-2, the NVIC, SCB,
 SysTick, DWT, the FPU for M4F images); its timing tier is `instruction`.
 
+A part with several cores of one model (the MCU description's
+`core.cores`, the RP2040's 2) is one machine with one core interface
+(`cortexm/smp.c`). Each core keeps its own time; a step runs the core
+furthest behind, the machine's time is the earliest running core's, and
+the devices see it as it advances, so the cores share one clock and an
+access sees the time of the core making it (up to an instruction ahead of
+the machine's; a device whose clock that instruction started counts from
+it, `esk_mach_after`). Each core has its own NVIC,
+SCB, SysTick and DWT, reached by its own accesses; an interrupt line
+reaches every core's NVIC, and a part's model can pend one core's only
+(`esk_cortexm_core_interrupt`). A core sleeps alone; the machine sleeps
+when none runs. SEV sets every core's event register and wakes a core
+waiting in WFE. Cores other than core 0 wait out of reset until the part's
+model launches them (`esk_cortexm_core_launch`) or powers them off
+(`esk_cortexm_core_power`); the model finds the core making an access with
+`esk_cortexm_core`. The debugger sees the core that runs next.
+
 ## 4. Bus
 
 Per machine: memory regions (RAM, flash, ROM; erased value; mirrors),
@@ -93,6 +112,32 @@ models and clock gates (`esk_rf_bind`).
   behaviour (reset values, access types) still holds.
 * An access inside the span to no register is `mcu.bus_error`.
 * A binding that names a model the build does not have is `mcu.model_missing`.
+
+The bus can follow the part's own rules. The MCU description's
+`register_file.bus_rules` names them: `atomic_aliases` (each peripheral's
+registers again at +0x1000 XOR, +0x2000 set, +0x3000 clear, the RP2040's)
+and `wide_writes` (a byte or halfword written across the word). A register
+the description marks `clr_set_inv` (a PIC32's) has three more after it:
++4 clears the bits written as 1, +8 sets them, +0xC inverts them; a read of
+them gives 0, and edc2regs.py marks the registers whose EDC entry has them.
+
+The description's `interrupts` table is kept for the models that find an
+interrupt by name (`esk_rf_irq_named`). Where requests share vectors (a
+PIC32MX's), `vectors` gives each request's vector (`esk_rf_vector`).
+`pins` names the port pin each of the part's pin functions is on (CN15:
+RD6), for the models that find one (`esk_rf_pin`); a PIC24's remappable
+pins are there too (RP17: RF5). `pps_outputs` gives a Peripheral Pin
+Select's output functions their numbers (U2TX: 5, `esk_rf_pps_out`), and
+`config_words` the configuration words' program addresses (FOSCSEL:
+0x0ABF18, `esk_rf_config`), for the models that read them at reset.
+
+A PIC24's two address spaces share the bus: program memory at 0, each
+24-bit word at twice its program address in four bytes (an XC16 image's
+layout, through the core's `phys` hook), and the data space at 0x2000000,
+its SFRs and RAM by their data addresses. The MCU description's
+`core.prog_end` and `core.ram_base` give the program memory's end and the
+RAM's start (W15 out of reset). The machine's cycles are instruction
+cycles: the core's clock is FCY.
 
 ## 6. Peripheral models
 
@@ -173,3 +218,22 @@ table. Variables (DWARF info) are not implemented in M1.
    `Provenance: EmbLinkOs/EmbCC <file>`; `NOTICE` lists the files.
 7. The family's EmbCC golden fixtures pass (`tests/firmware/bluepill-golden`,
    with documented deltas) before any behavioural change is accepted.
+
+## 12. Analyses
+
+A machine may carry analyses (`core/mcu/analysis.h`): coverage and the
+profile. With one, the run loop steps each core through `esk_an_step`
+(smp.c for each core of a part with several), which notes the pc and the
+machine's instruction and cycle counts around the core's own step. Coverage
+counts each executed instruction by address, a count per halfword of the
+image's functions; the profile gives each step's instructions and cycles to
+the call path its pc is on. Calls and returns are recognized from the
+instruction the core executes (EmbCC's rules, `analysis.c`): a call that
+links to inside its own function, not its entry, is a far branch. Each
+core reports an exception's entry with its return address
+(`esk_mach_exc(m, core, n, ret)`) and its return (`esk_mach_exc_return`):
+RETFIE, MRET, ERET, RETI and a Cortex-M's EXC_RETURN. Each core has its own
+shadow stack and root path. Functions are the ELF's function symbols and
+its global labels in code; one without a size runs to the next, at most
+4 KiB. A machine without analyses steps as before. Reports: SPEC-008 §5
+`analysis.*`, `embsim run --coverage`, `--profile`.

@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "kind": "package",
+  "id": "raspberrypi/rp2040/qfn56",
+  "name": "QFN56",
+  "description": "56-lead QFN, 7 x 7 mm (RP2040). The pins are listed by signal; the numbers are this description's order, not the package's physical pin numbers (boards connect by signal).",
+  "pins": [
+    {
+      "number": 1,
+      "signal": "VDD",
+      "doc": "IOVDD: 3.3 V I/O supply"
+    },
+    {
+      "number": 2,
+      "signal": "VDD_CORE",
+      "doc": "DVDD: 1.1 V core supply"
+    },
+    {
+      "number": 3,
+      "signal": "VDD_VREG",
+      "doc": "VREG_VIN: the core regulator's input"
+    },
+    {
+      "number": 4,
+      "signal": "VREG_VOUT",
+      "doc": "The core regulator's 1.1 V output"
+    },
+    {
+      "number": 5,
+      "signal": "VDD_USB",
+      "doc": "USB_VDD: the USB PHY's 3.3 V"
+    },
+    {
+      "number": 6,
+      "signal": "VDD_ADC",
+      "doc": "ADC_AVDD: the ADC's 3.3 V supply and reference"
+    },
+    {
+      "number": 7,
+      "signal": "GND"
+    },
+    {
+      "number": 8,
+      "signal": "NRST",
+      "doc": "RUN: the chip's enable, active high (low resets)"
+    },
+    {
+      "number": 9,
+      "signal": "OSC_IN",
+      "doc": "XIN: the 12 MHz crystal"
+    },
+    {
+      "number": 10,
+      "signal": "OSC_OUT",
+      "doc": "XOUT"
+    },
+    {
+      "number": 11,
+      "signal": "SWCLK",
+      "doc": "Serial wire debug clock"
+    },
+    {
+      "number": 12,
+      "signal": "SWDIO",
+      "doc": "Serial wire debug data"
+    },
+    {
+      "number": 13,
+      "signal": "TESTEN",
+      "doc": "Factory test, tied to ground"
+    },
+    {
+      "number": 14,
+      "signal": "QSPI_SCLK",
+      "doc": "Flash clock"
+    },
+    {
+      "number": 15,
+      "signal": "QSPI_SS",
+      "doc": "Flash chip select (BOOTSEL on the Pico)"
+    },
+    {
+      "number": 16,
+      "signal": "QSPI_SD0"
+    },
+    {
+      "number": 17,
+      "signal": "QSPI_SD1"
+    },
+    {
+      "number": 18,
+      "signal": "QSPI_SD2"
+    },
+    {
+      "number": 19,
+      "signal": "QSPI_SD3"
+    },
+    {
+      "number": 20,
+      "signal": "USB_DP"
+    },
+    {
+      "number": 21,
+      "signal": "USB_DM"
+    },
+    {
+      "number": 22,
+      "signal": "GPIO0"
+    },
+    {
+      "number": 23,
+      "signal": "GPIO1"
+    },
+    {
+      "number": 24,
+      "signal": "GPIO2"
+    },
+    {
+      "number": 25,
+      "signal": "GPIO3"
+    },
+    {
+      "number": 26,
+      "signal": "GPIO4"
+    },
+    {
+      "number": 27,
+      "signal": "GPIO5"
+    },
+    {
+      "number": 28,
+      "signal": "GPIO6"
+    },
+    {
+      "number": 29,
+      "signal": "GPIO7"
+    },
+    {
+      "number": 30,
+      "signal": "GPIO8"
+    },
+    {
+      "number": 31,
+      "signal": "GPIO9"
+    },
+    {
+      "number": 32,
+      "signal": "GPIO10"
+    },
+    {
+      "number": 33,
+      "signal": "GPIO11"
+    },
+    {
+      "number": 34,
+      "signal": "GPIO12"
+    },
+    {
+      "number": 35,
+      "signal": "GPIO13"
+    },
+    {
+      "number": 36,
+      "signal": "GPIO14"
+    },
+    {
+      "number": 37,
+      "signal": "GPIO15"
+    },
+    {
+      "number": 38,
+      "signal": "GPIO16"
+    },
+    {
+      "number": 39,
+      "signal": "GPIO17"
+    },
+    {
+      "number": 40,
+      "signal": "GPIO18"
+    },
+    {
+      "number": 41,
+      "signal": "GPIO19"
+    },
+    {
+      "number": 42,
+      "signal": "GPIO20"
+    },
+    {
+      "number": 43,
+      "signal": "GPIO21"
+    },
+    {
+      "number": 44,
+      "signal": "GPIO22"
+    },
+    {
+      "number": 45,
+      "signal": "GPIO23"
+    },
+    {
+      "number": 46,
+      "signal": "GPIO24"
+    },
+    {
+      "number": 47,
+      "signal": "GPIO25"
+    },
+    {
+      "number": 48,
+      "signal": "GPIO26"
+    },
+    {
+      "number": 49,
+      "signal": "GPIO27"
+    },
+    {
+      "number": 50,
+      "signal": "GPIO28"
+    },
+    {
+      "number": 51,
+      "signal": "GPIO29"
+    }
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "RP2040 Datasheet, 1.4.3 pin descriptions",
+        "rev": "build-date 2024-10-15"
+      }
+    ]
+  }
+}

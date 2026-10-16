@@ -50,15 +50,27 @@ static es_status connect_or_union(graph *g, esk_pin *pin, int rec, int via_port)
 static void rec_union(graph *g, int x, int y);
 static int rec_get(graph *g, const char *name, int project_level);
 
+/* an MCU description's io.electrical: its supply sets the GPIO pins' high
+ * level and pulls (a 3.0 V nRF52840 on its DK); the logic family's levels
+ * and thresholds stay, since the datasheets' VOH and VOL are worst cases
+ * at full load */
+static void mcu_electrical(const esk_json *el, esk_pin_model *m)
+{
+    double v;
+    if (el && esk_json_get(el, "vdd") && esk_json_to_double(esk_json_get(el, "vdd"), &v) == 0 && v > 0)
+        m->nominal_v = v;
+}
+
 static void mcu_signal_model(const char *sig, const char *family, esk_pin_model *m)
 {
     esk_pin_model_family(family, m);
-    if (!strncmp(sig, "VSS", 3) || !strcmp(sig, "GND")) {
+    if (!strncmp(sig, "VSS", 3) || !strcmp(sig, "GND") || !strcmp(sig, "AVSS")) {
         m->kind = ESK_PIN_POWER; m->power_ground = 1; m->nominal_v = 0.0;
     } else if (!strncmp(sig, "VDD", 3) || !strcmp(sig, "VBAT") || !strcmp(sig, "VCC") || !strcmp(sig, "VREF+") ||
-               !strcmp(sig, "AVCC")) {
+               !strcmp(sig, "AVCC") || !strcmp(sig, "AVDD") || !strcmp(sig, "VUSB3V3") || !strcmp(sig, "VCAP")) {
         m->kind = ESK_PIN_POWER; m->power_ground = 0;
     } else if ((sig[0] == 'P' && sig[1] >= 'A' && sig[1] <= 'Z' && sig[2] >= '0' && sig[2] <= '9') ||
+               (sig[0] == 'R' && sig[1] >= 'A' && sig[1] <= 'K' && sig[2] >= '0' && sig[2] <= '9') ||
                (!strncmp(sig, "GPIO", 4) && sig[4] >= '0' && sig[4] <= '9')) {
         m->kind = ESK_PIN_DIGITAL_IO; m->pull = ESK_PULL_NONE;
     } else if (!strncmp(sig, "OSC", 3) || !strncmp(sig, "XTAL", 4) || !strcmp(sig, "AREF")) {
@@ -172,7 +184,8 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
             st = ES_ESCHEMA;
         }
     }
-    /* enum-driven presets: a param definition may carry "presets": {value: {param: value}} */
+    /* enum-driven presets: a param definition may carry "presets": {value: {param: value}};
+     * a parameter the instance gives itself is kept (a "generic" part with its own vout) */
     for (i = 0; i < esk_json_len(pdefs); i++) {
         const esk_json *pd = esk_json_at(pdefs, i);
         const esk_json *presets = esk_json_get(pd, "presets");
@@ -181,7 +194,10 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
         size_t k;
         for (k = 0; k < esk_json_len(preset); k++) {
             const esk_json *pv = esk_json_at(preset, k);
-            esk_json *v = esk_json_clone(s->a, pv);
+            esk_json *v;
+            if (inst_params && esk_json_get(inst_params, pv->key))
+                continue;
+            v = esk_json_clone(s->a, pv);
             if (!v || esk_json_object_set(s->a, params, pv->key, v)) {
                 esk_json_free(s->a, v);
                 st = ES_ENOMEM;
@@ -741,6 +757,8 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
                     continue;
                 names[n] = sig;
                 mcu_signal_model(sig, family, &models[n]);
+                if (models[n].kind == ESK_PIN_DIGITAL_IO)
+                    mcu_electrical(esk_json_get(esk_json_get(mi->desc, "io"), "electrical"), &models[n]);
                 n++;
             }
             esk_snprintf(scoped, sizeof scoped, "%s.%s", bid, uid);
@@ -1039,6 +1057,7 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
                     esk_json_get_str(pe, "target", "?"), es_strerror(ps));
     }
     s->loaded = 1;
+    esk_session_analyses_apply(s);
     return ES_OK;
 }
 
@@ -1066,6 +1085,8 @@ void esk_project_unload(es_session *s)
     esk_engine_init(&s->eng, s->a, &s->diag, s->eng.policy);
     s->eng.on_net_change = esk_session_on_net_change;
     s->eng.on_net_change_ctx = s;
+    s->eng.on_irq = esk_record_irq;
+    s->eng.on_irq_ctx = s;
     esk_json_free(s->a, s->project);
     s->project = NULL;
     esk_strfree(s->a, s->base_dir);

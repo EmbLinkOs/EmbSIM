@@ -3,11 +3,13 @@
 /* rpc.c -- the session protocol's method table (SPEC-008 §5) over the
  * in-process transport. Every transport ends here. */
 #include "session/session_priv.h"
+#include "mcu/analysis.h"
 #include "mcu/mcu.h"
 #include <stdlib.h>
 #include <string.h>
 #include "host/host.h"
 #include "util/num.h"
+#include "util/sha256.h"
 #include "util/str.h"
 
 #define PROTOCOL_VERSION "1.0"
@@ -64,8 +66,9 @@ static es_status m_session_open(rpc_ctx *r)
     esk_json_set_string(s->a, r->result, "engine", es_version().string);
     esk_json_set_integer(s->a, r->result, "abi", es_abi_version());
     {
-        static const char *const names[] = { "analog", "digital", "catalog", "scenario", "record.inputs", "streams.json", "observe.subscribe",
-                                             "mcu", "debug", "toolchain" };
+        static const char *const names[] = { "analog", "digital", "catalog", "scenario", "scenario.edit", "record", "record.inputs",
+                                             "record.replay", "streams.json", "observe.subscribe", "mcu", "debug", "toolchain",
+                                             "analysis" };
         size_t i;
         for (i = 0; i < ES_COUNTOF(names); i++)
             esk_json_array_push(s->a, caps, esk_json_new_string(s->a, names[i]));
@@ -657,52 +660,230 @@ static es_status m_catalog_models(rpc_ctx *r)
     return ES_OK;
 }
 
+/* ---- the firmware's coverage and profile (SPEC-008 §5 analysis) ---------------------------- */
+
+static es_status m_analysis_start(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    char why[160];
+    unsigned what = (esk_json_get_bool(r->params, "coverage", 1) ? ESK_AN_COVERAGE : 0u) |
+                    (esk_json_get_bool(r->params, "profile", 1) ? ESK_AN_PROFILE : 0u);
+    es_status st;
+    if (!s->loaded)
+        return fail(r, -32001, "no project is loaded");
+    if (!what)
+        return fail(r, -32602, "analysis.start needs coverage or profile");
+    st = esk_session_analyze(s, pstr(r, "board", NULL), what, why, sizeof why);
+    if (st == ES_ENOMEM)
+        return st;
+    if (st != ES_OK)
+        return fail(r, -32602, why);
+    r->result = obj(r);
+    if (r->result) {
+        esk_json_set_bool(s->a, r->result, "coverage", (what & ESK_AN_COVERAGE) != 0);
+        esk_json_set_bool(s->a, r->result, "profile", (what & ESK_AN_PROFILE) != 0);
+    }
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+static es_status m_analysis_stop(rpc_ctx *r)
+{
+    char why[160];
+    (void)esk_session_analyze(r->s, NULL, 0, why, sizeof why);
+    r->result = obj(r);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+/* analysis.coverage and analysis.profile: JSON, or a report as text */
+static es_status analysis_report(rpc_ctx *r, int coverage)
+{
+    es_session *s = r->s;
+    const char *fmt = pstr(r, "format", "json"), *board = pstr(r, "board", NULL);
+    unsigned bit = coverage ? ESK_AN_COVERAGE : ESK_AN_PROFILE;
+    int f;
+    if (!(s->an_what & bit))
+        return fail(r, -32001, coverage ? "coverage is not on (analysis.start)" : "the profile is not on (analysis.start)");
+    if (esk_str_eq(fmt, "json")) {
+        r->result = obj(r);
+        if (r->result)
+            esk_json_object_set(s->a, r->result, "boards",
+                                esk_session_analysis_json(s, board, coverage, esk_json_get_bool(r->params, "detail", 1)));
+        return r->result ? ES_OK : ES_ENOMEM;
+    }
+    f = esk_str_eq(fmt, "text") ? ESK_AN_TEXT
+      : coverage && esk_str_eq(fmt, "lcov") ? ESK_AN_LCOV
+      : !coverage && esk_str_eq(fmt, "collapsed") ? ESK_AN_COLLAPSED
+      : !coverage && esk_str_eq(fmt, "collapsed-insns") ? ESK_AN_COLLAPSED_INSNS : -1;
+    if (f < 0)
+        return fail(r, -32602, "no such format");
+    {
+        esk_strbuf b;
+        char why[160];
+        es_status st;
+        esk_strbuf_init(&b, s->a);
+        st = esk_session_analysis_text(s, board, coverage, f, &b, why, sizeof why);
+        if (st == ES_OK && !b.oom) {
+            r->result = obj(r);
+            if (r->result)
+                esk_json_set_string(s->a, r->result, "text", b.data ? b.data : "");
+        }
+        esk_strbuf_free(&b);
+        if (st != ES_OK && st != ES_ENOMEM)
+            return fail(r, -32602, why);
+    }
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+static es_status m_analysis_coverage(rpc_ctx *r) { return analysis_report(r, 1); }
+static es_status m_analysis_profile(rpc_ctx *r) { return analysis_report(r, 0); }
+
 /* ---- record, scenario, diagnostics -------------------------------------------------------- */
 
 static es_status m_record_start(rpc_ctx *r)
 {
-    r->s->recording = 1;
-    esk_strfree(r->s->a, r->s->record_path);
-    r->s->record_path = pstr(r, "path", NULL) ? esk_strdup(r->s->a, pstr(r, "path", NULL)) : NULL;
+    es_session *s = r->s;
+    esk_record_start(s);
+    if (s->eng.sched.now == 0 && !s->input_seq) {
+        /* nothing has run: from reset, as a replay starts (the reset logs the
+         * probes' levels) */
+        (void)esk_session_do_reset(s);
+    } else {
+        s->record_from = s->eng.sched.now; /* replay compares from here */
+        s->record_from_seq = s->input_seq;
+        esk_record_levels(s, s->record_from); /* the digital probes' levels as it starts */
+    }
+    esk_strfree(s->a, s->record_path);
+    s->record_path = pstr(r, "path", NULL) ? esk_strdup(s->a, pstr(r, "path", NULL)) : NULL;
     r->result = obj(r);
+    if (r->result)
+        esk_json_set_u64_string(s->a, r->result, "from_ps", s->record_from);
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
 static es_status m_record_stop(rpc_ctx *r)
 {
     es_session *s = r->s;
-    r->s->recording = 0;
+    esk_json *report, *rec;
     r->result = obj(r);
     if (!r->result) return ES_ENOMEM;
+    report = esk_session_report(s, "stopped", NULL);
+    rec = report ? esk_record_document(s, s->project_path, NULL, report, NULL) : NULL;
+    esk_json_free(s->a, report);
+    s->recording = 0;
+    if (!rec) return ES_ENOMEM;
     esk_json_object_set(s->a, r->result, "inputs", esk_json_clone(s->a, s->inputs_log));
     esk_json_set_integer(s->a, r->result, "count", (int64_t)esk_json_len(s->inputs_log));
+    esk_json_set_integer(s->a, r->result, "observations", (int64_t)esk_json_len(esk_json_get(rec, "observations")));
     if (s->record_path) {
-        esk_json *rec = obj(r);
-        if (rec) {
-            esk_json *eng = obj(r);
-            char *text;
-            size_t len;
-            esk_json_set_integer(s->a, rec, "schema_version", 1);
-            esk_json_set_string(s->a, rec, "kind", "recording");
-            if (eng) {
-                esk_json_set_string(s->a, eng, "version", es_version().string);
-                esk_json_set_integer(s->a, eng, "abi", es_abi_version());
-                esk_json_object_set(s->a, rec, "engine", eng);
+        size_t len;
+        char *text = esk_json_format(s->a, rec, 1, &len), h[72];
+        if (text) {
+            esk_sha256_text(text, len, h);
+            if (esk_host_write_file(s->record_path, text, len) == ES_OK) {
+                esk_json_set_string(s->a, r->result, "path", s->record_path);
+                esk_json_set_string(s->a, r->result, "hash", h);
             }
-            esk_json_set_string(s->a, rec, "project", s->project_path ? s->project_path : "");
-            esk_json_set_string(s->a, rec, "policy", policy_name(s->eng.policy));
-            esk_json_object_set(s->a, rec, "inputs", esk_json_clone(s->a, s->inputs_log));
-            esk_json_set_u64_string(s->a, rec, "end_ps", s->eng.sched.now);
-            text = esk_json_format(s->a, rec, 2, &len);
-            if (text) {
-                esk_host_write_file(s->record_path, text, len);
-                esk_free(s->a, text, len + 1);
-            }
-            esk_json_free(s->a, rec);
-            esk_json_set_string(s->a, r->result, "path", s->record_path);
+            esk_free(s->a, text, len + 1);
+        }
+    } else {
+        esk_json_object_set(s->a, r->result, "recording", rec);
+        rec = NULL;
+    }
+    esk_json_free(s->a, rec);
+    return ES_OK;
+}
+
+/* the recording at `path`: its project loaded into this session, replayed */
+/* the recording a request names: {path} read from a file, or {recording}
+ * itself; NULL after fail() */
+static esk_json *request_recording(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    const esk_json *inline_rec = esk_json_get(r->params, "recording");
+    char *text = NULL;
+    size_t len = 0;
+    int line;
+    const char *err;
+    esk_json *rec;
+    if (inline_rec) {
+        rec = esk_json_clone(s->a, inline_rec);
+    } else {
+        if (!path) {
+            fail(r, -32602, "a recording's path or the recording is required");
+            return NULL;
+        }
+        if (esk_host_read_file(s->a, path, &text, &len) != ES_OK) {
+            fail(r, -32602, "the recording cannot be read");
+            return NULL;
+        }
+        rec = esk_json_parse(s->a, text, len, &line, &err);
+        esk_free(s->a, text, len + 1);
+    }
+    if (!rec || !esk_str_eq(esk_json_get_str(rec, "kind", ""), "recording")) {
+        esk_json_free(s->a, rec);
+        fail(r, -32602, "not a recording");
+        return NULL;
+    }
+    return rec;
+}
+
+static es_status m_record_to_scenario(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    esk_json *rec = request_recording(r), *sc;
+    const esk_json *what = esk_json_get(r->params, "assert");
+    int probes = 1, serial = 1;
+    size_t i;
+    if (!rec)
+        return ES_EPROTO;
+    if (what) {
+        probes = serial = 0;
+        for (i = 0; i < esk_json_len(what); i++) {
+            probes |= esk_str_eq(esk_json_str(esk_json_at(what, i)), "probes");
+            serial |= esk_str_eq(esk_json_str(esk_json_at(what, i)), "serial");
         }
     }
+    sc = esk_record_to_scenario(s->a, rec, pstr(r, "name", NULL), probes, serial);
+    esk_json_free(s->a, rec);
+    if (!sc)
+        return ES_ENOMEM;
+    r->result = obj(r);
+    if (!r->result) {
+        esk_json_free(s->a, sc);
+        return ES_ENOMEM;
+    }
+    esk_json_object_set(s->a, r->result, "scenario", sc);
     return ES_OK;
+}
+
+static es_status m_record_replay(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    char *dir, *proj;
+    esk_json *rec = request_recording(r);
+    es_status st;
+    if (!rec)
+        return ES_EPROTO;
+    proj = esk_strdup(s->a, esk_json_get_str(esk_json_get(rec, "project"), "path", ""));
+    if (proj && path && !esk_host_file_exists(proj)) {
+        dir = esk_host_dirname(s->a, path);
+        esk_strfree(s->a, proj);
+        proj = esk_host_path_join(s->a, dir ? dir : ".", esk_json_get_str(esk_json_get(rec, "project"), "path", ""));
+        esk_strfree(s->a, dir);
+    }
+    st = proj ? es_session_load_file(s, proj) : ES_ENOMEM;
+    esk_strfree(s->a, proj);
+    if (st != ES_OK) {
+        esk_json_free(s->a, rec);
+        return fail(r, -32000, "the recording's project does not load");
+    }
+    st = esk_record_replay(s, rec, esk_json_get_bool(r->params, "allow_drift", 0), &r->result);
+    esk_json_free(s->a, rec);
+    if (st == ES_ESTATE)
+        return ES_OK; /* the result says the project or an image changed */
+    return st;
 }
 
 static es_status m_scenario_run(rpc_ctx *r)
@@ -737,6 +918,95 @@ static es_status m_scenario_run(rpc_ctx *r)
     r->result = esk_scenario_run(r->s, sc, dir ? dir : r->s->base_dir, until);
     esk_json_free(r->s->a, loaded);
     esk_strfree(r->s->a, dir);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+/* a scenario file of the project: a relative path inside the project's
+ * folder (no "..", not absolute), as its `scenarios` list names them */
+static char *scenario_path(rpc_ctx *r, const char *path)
+{
+    const char *p;
+    if (!path || !path[0] || path[0] == '/' || path[0] == '\\' || strchr(path, ':'))
+        return NULL;
+    for (p = path; *p; p++)
+        if (p[0] == '.' && p[1] == '.' && (p == path || p[-1] == '/' || p[-1] == '\\'))
+            return NULL;
+    return esk_host_path_join(r->s->a, r->s->base_dir ? r->s->base_dir : ".", path);
+}
+
+static es_status m_scenario_get(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    char *full = scenario_path(r, path), *text = NULL;
+    size_t len = 0;
+    int line;
+    const char *err;
+    esk_json *sc;
+    if (!full)
+        return fail(r, -32602, "a scenario path inside the project's folder is required");
+    if (esk_host_read_file(s->a, full, &text, &len) != ES_OK) {
+        esk_strfree(s->a, full);
+        return fail_status(r, ES_EIO);
+    }
+    esk_strfree(s->a, full);
+    sc = esk_json_parse(s->a, text, len, &line, &err);
+    esk_free(s->a, text, len + 1);
+    if (!sc)
+        return fail(r, -32602, err);
+    r->result = obj(r);
+    if (!r->result) {
+        esk_json_free(s->a, sc);
+        return ES_ENOMEM;
+    }
+    esk_json_set_string(s->a, r->result, "path", path);
+    esk_json_object_set(s->a, r->result, "scenario", sc);
+    return ES_OK;
+}
+
+/* scenario.save({path, scenario, add?}): written with two-space indents; with
+ * `add`, the project's `scenarios` list gains the path (project.save keeps it) */
+static es_status m_scenario_save(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    const esk_json *sc = esk_json_get(r->params, "scenario");
+    char *full, *text;
+    size_t len = 0, i;
+    es_status st;
+    esk_strbuf b;
+    if (!sc || !esk_json_is(sc, ESK_JSON_OBJECT))
+        return fail(r, -32602, "scenario is required");
+    full = scenario_path(r, path);
+    if (!full)
+        return fail(r, -32602, "a scenario path inside the project's folder is required");
+    esk_strbuf_init(&b, s->a);
+    text = esk_json_write(&b, sc, 2) == 0 && esk_strbuf_putc(&b, '\n') == 0 ? esk_strbuf_detach(&b, &len) : NULL;
+    if (!text) {
+        esk_strbuf_free(&b);
+        esk_strfree(s->a, full);
+        return ES_ENOMEM;
+    }
+    st = esk_host_write_file(full, text, len);
+    esk_free(s->a, text, len + 1);
+    esk_strfree(s->a, full);
+    if (st != ES_OK)
+        return fail_status(r, ES_EIO);
+    if (esk_json_get_bool(r->params, "add", 0) && s->project) {
+        esk_json *list = (esk_json *)esk_json_get(s->project, "scenarios");
+        int found = 0;
+        if (!list) {
+            esk_json_object_set(s->a, s->project, "scenarios", esk_json_new_array(s->a));
+            list = (esk_json *)esk_json_get(s->project, "scenarios");
+        }
+        for (i = 0; list && i < esk_json_len(list); i++)
+            found |= esk_str_eq(esk_json_str(esk_json_at(list, i)), path);
+        if (list && !found)
+            esk_json_array_push(s->a, list, esk_json_new_string(s->a, path));
+    }
+    r->result = obj(r);
+    if (r->result)
+        esk_json_set_string(s->a, r->result, "path", path);
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
@@ -957,8 +1227,12 @@ static const method methods[] = {
     { "observe.snapshot", m_observe_snapshot }, { "observe.subscribe", m_observe_subscribe }, { "observe.unsubscribe", m_observe_unsubscribe },
     { "catalog.list", m_catalog_list }, { "catalog.get", m_catalog_get }, { "catalog.libraries", m_catalog_libraries },
     { "catalog.models", m_catalog_models }, { "catalog.validate", m_unavailable },
-    { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_unavailable },
-    { "scenario.run", m_scenario_run }, { "diagnostics.list", m_diagnostics_list },
+    { "analysis.start", m_analysis_start }, { "analysis.stop", m_analysis_stop },
+    { "analysis.coverage", m_analysis_coverage }, { "analysis.profile", m_analysis_profile },
+    { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_record_replay },
+    { "record.to_scenario", m_record_to_scenario },
+    { "scenario.run", m_scenario_run }, { "scenario.get", m_scenario_get }, { "scenario.save", m_scenario_save },
+    { "diagnostics.list", m_diagnostics_list },
     { "toolchain.detect", m_toolchain_detect }, { "toolchain.build", m_toolchain_build },
 };
 

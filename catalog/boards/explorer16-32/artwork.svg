@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+<defs>
+  <radialGradient id="glow-red" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff5a4a" stop-opacity="1"/><stop offset="100%" stop-color="#ff5a4a" stop-opacity="0"/></radialGradient>
+</defs>
+<style>.pcb{fill:#0f5c2e;stroke:#08331a;stroke-width:3}.silk{fill:#f2f4f8;font-family:sans-serif;font-size:12px}.silks{fill:#f2f4f8;font-family:sans-serif;font-size:8px;text-anchor:middle}.silkn{fill:#f2f4f8;font-family:sans-serif;font-size:6px;text-anchor:middle}.pad{fill:#d9b94a;stroke:#8a6f1c;stroke-width:1}.hole{fill:#06210f}.chip{fill:#17181c;stroke:#000;stroke-width:1}.pim{fill:#2a6fb0;stroke:#123a5f;stroke-width:2}.metal{fill:#b8bcc6;stroke:#6b7079;stroke-width:1.5}.logo{fill:#f2f4f8;font-family:sans-serif;font-weight:bold}.btn{fill:#cfd3da;stroke:#6b7079}</style>
+<rect id="pcb" class="pcb" x="2" y="2" width="596" height="396" rx="12"/>
+<circle id="pin-vin" class="pad" cx="60.0" cy="22" r="8"><title>J2 pin 1: VIN</title></circle>
+<circle class="hole" cx="60.0" cy="22" r="3.5"/>
+<text class="silks" x="60.0" y="44">VIN</text>
+<circle id="pin-gnd_3" class="pad" cx="85.4" cy="22" r="8"><title>J2 pin 2: GND</title></circle>
+<circle class="hole" cx="85.4" cy="22" r="3.5"/>
+<text class="silks" x="85.4" y="44">GND</text>
+<circle id="pin-re0" class="pad" cx="110.8" cy="22" r="8"><title>J2 pin 3: RE0</title></circle>
+<circle class="hole" cx="110.8" cy="22" r="3.5"/>
+<text class="silks" x="110.8" y="44">RE0</text>
+<circle id="pin-re1" class="pad" cx="136.2" cy="22" r="8"><title>J2 pin 4: RE1</title></circle>
+<circle class="hole" cx="136.2" cy="22" r="3.5"/>
+<text class="silks" x="136.2" y="44">RE1</text>
+<circle id="pin-re2" class="pad" cx="161.6" cy="22" r="8"><title>J2 pin 5: RE2</title></circle>
+<circle class="hole" cx="161.6" cy="22" r="3.5"/>
+<text class="silks" x="161.6" y="44">RE2</text>
+<circle id="pin-re3" class="pad" cx="187.0" cy="22" r="8"><title>J2 pin 6: RE3</title></circle>
+<circle class="hole" cx="187.0" cy="22" r="3.5"/>
+<text class="silks" x="187.0" y="44">RE3</text>
+<circle id="pin-re4" class="pad" cx="212.4" cy="22" r="8"><title>J2 pin 7: RE4</title></circle>
+<circle class="hole" cx="212.4" cy="22" r="3.5"/>
+<text class="silks" x="212.4" y="44">RE4</text>
+<circle id="pin-re5" class="pad" cx="237.8" cy="22" r="8"><title>J2 pin 8: RE5</title></circle>
+<circle class="hole" cx="237.8" cy="22" r="3.5"/>
+<text class="silks" x="237.8" y="44">RE5</text>
+<circle id="pin-re6" class="pad" cx="263.2" cy="22" r="8"><title>J2 pin 9: RE6</title></circle>
+<circle class="hole" cx="263.2" cy="22" r="3.5"/>
+<text class="silks" x="263.2" y="44">RE6</text>
+<circle id="pin-re7" class="pad" cx="288.6" cy="22" r="8"><title>J2 pin 10: RE7</title></circle>
+<circle class="hole" cx="288.6" cy="22" r="3.5"/>
+<text class="silks" x="288.6" y="44">RE7</text>
+<circle id="pin-rg6" class="pad" cx="314.0" cy="22" r="8"><title>J2 pin 11: RG6</title></circle>
+<circle class="hole" cx="314.0" cy="22" r="3.5"/>
+<text class="silks" x="314.0" y="44">RG6</text>
+<circle id="pin-rg7" class="pad" cx="339.4" cy="22" r="8"><title>J2 pin 12: RG7</title></circle>
+<circle class="hole" cx="339.4" cy="22" r="3.5"/>
+<text class="silks" x="339.4" y="44">RG7</text>
+<circle id="pin-rg8" class="pad" cx="364.8" cy="22" r="8"><title>J2 pin 13: RG8</title></circle>
+<circle class="hole" cx="364.8" cy="22" r="3.5"/>
+<text class="silks" x="364.8" y="44">RG8</text>
+<circle id="pin-rg9" class="pad" cx="390.2" cy="22" r="8"><title>J2 pin 14: RG9</title></circle>
+<circle class="hole" cx="390.2" cy="22" r="3.5"/>
+<text class="silks" x="390.2" y="44">RG9</text>
+<circle id="pin-rf4" class="pad" cx="415.6" cy="22" r="8"><title>J2 pin 15: RF4</title></circle>
+<circle class="hole" cx="415.6" cy="22" r="3.5"/>
+<text class="silks" x="415.6" y="44">RF4</text>
+<circle id="pin-rf5" class="pad" cx="441.0" cy="22" r="8"><title>J2 pin 16: RF5</title></circle>
+<circle class="hole" cx="441.0" cy="22" r="3.5"/>
+<text class="silks" x="441.0" y="44">RF5</text>
+<circle id="pin-ra9" class="pad" cx="466.4" cy="22" r="8"><title>J2 pin 17: RA9</title></circle>
+<circle class="hole" cx="466.4" cy="22" r="3.5"/>
+<text class="silks" x="466.4" y="44">RA9</text>
+<circle id="pin-ra10" class="pad" cx="491.8" cy="22" r="8"><title>J2 pin 18: RA10</title></circle>
+<circle class="hole" cx="491.8" cy="22" r="3.5"/>
+<text class="silks" x="491.8" y="44">RA10</text>
+<circle id="pin-ra14" class="pad" cx="517.2" cy="22" r="8"><title>J2 pin 19: RA14</title></circle>
+<circle class="hole" cx="517.2" cy="22" r="3.5"/>
+<text class="silks" x="517.2" y="44">RA14</text>
+<circle id="pin-ra15" class="pad" cx="542.6" cy="22" r="8"><title>J2 pin 20: RA15</title></circle>
+<circle class="hole" cx="542.6" cy="22" r="3.5"/>
+<text class="silks" x="542.6" y="44">RA15</text>
+<circle id="pin-3v3" class="pad" cx="60.0" cy="378" r="8"><title>J1 pin 1: 3V3</title></circle>
+<circle class="hole" cx="60.0" cy="378" r="3.5"/>
+<text class="silks" x="60.0" y="364">3V3</text>
+<circle id="pin-gnd" class="pad" cx="85.4" cy="378" r="8"><title>J1 pin 2: GND</title></circle>
+<circle class="hole" cx="85.4" cy="378" r="3.5"/>
+<text class="silks" x="85.4" y="364">GND</text>
+<circle id="pin-rb0" class="pad" cx="110.8" cy="378" r="8"><title>J1 pin 3: RB0</title></circle>
+<circle class="hole" cx="110.8" cy="378" r="3.5"/>
+<text class="silks" x="110.8" y="364">RB0</text>
+<circle id="pin-rb1" class="pad" cx="136.2" cy="378" r="8"><title>J1 pin 4: RB1</title></circle>
+<circle class="hole" cx="136.2" cy="378" r="3.5"/>
+<text class="silks" x="136.2" y="364">RB1</text>
+<circle id="pin-rb2" class="pad" cx="161.6" cy="378" r="8"><title>J1 pin 5: RB2</title></circle>
+<circle class="hole" cx="161.6" cy="378" r="3.5"/>
+<text class="silks" x="161.6" y="364">RB2</text>
+<circle id="pin-rb3" class="pad" cx="187.0" cy="378" r="8"><title>J1 pin 6: RB3</title></circle>
+<circle class="hole" cx="187.0" cy="378" r="3.5"/>
+<text class="silks" x="187.0" y="364">RB3</text>
+<circle id="pin-rb4" class="pad" cx="212.4" cy="378" r="8"><title>J1 pin 7: RB4</title></circle>
+<circle class="hole" cx="212.4" cy="378" r="3.5"/>
+<text class="silks" x="212.4" y="364">RB4</text>
+<circle id="pin-rb5" class="pad" cx="237.8" cy="378" r="8"><title>J1 pin 8: RB5</title></circle>
+<circle class="hole" cx="237.8" cy="378" r="3.5"/>
+<text class="silks" x="237.8" y="364">RB5</text>
+<circle id="pin-rd0" class="pad" cx="263.2" cy="378" r="8"><title>J1 pin 9: RD0</title></circle>
+<circle class="hole" cx="263.2" cy="378" r="3.5"/>
+<text class="silks" x="263.2" y="364">RD0</text>
+<circle id="pin-rd1" class="pad" cx="288.6" cy="378" r="8"><title>J1 pin 10: RD1</title></circle>
+<circle class="hole" cx="288.6" cy="378" r="3.5"/>
+<text class="silks" x="288.6" y="364">RD1</text>
+<circle id="pin-rd2" class="pad" cx="314.0" cy="378" r="8"><title>J1 pin 11: RD2</title></circle>
+<circle class="hole" cx="314.0" cy="378" r="3.5"/>
+<text class="silks" x="314.0" y="364">RD2</text>
+<circle id="pin-rd3" class="pad" cx="339.4" cy="378" r="8"><title>J1 pin 12: RD3</title></circle>
+<circle class="hole" cx="339.4" cy="378" r="3.5"/>
+<text class="silks" x="339.4" y="364">RD3</text>
+<circle id="pin-rd4" class="pad" cx="364.8" cy="378" r="8"><title>J1 pin 13: RD4</title></circle>
+<circle class="hole" cx="364.8" cy="378" r="3.5"/>
+<text class="silks" x="364.8" y="364">RD4</text>
+<circle id="pin-rd5" class="pad" cx="390.2" cy="378" r="8"><title>J1 pin 14: RD5</title></circle>
+<circle class="hole" cx="390.2" cy="378" r="3.5"/>
+<text class="silks" x="390.2" y="364">RD5</text>
+<circle id="pin-rd8" class="pad" cx="415.6" cy="378" r="8"><title>J1 pin 15: RD8</title></circle>
+<circle class="hole" cx="415.6" cy="378" r="3.5"/>
+<text class="silks" x="415.6" y="364">RD8</text>
+<circle id="pin-rd9" class="pad" cx="441.0" cy="378" r="8"><title>J1 pin 16: RD9</title></circle>
+<circle class="hole" cx="441.0" cy="378" r="3.5"/>
+<text class="silks" x="441.0" y="364">RD9</text>
+<circle id="pin-rd10" class="pad" cx="466.4" cy="378" r="8"><title>J1 pin 17: RD10</title></circle>
+<circle class="hole" cx="466.4" cy="378" r="3.5"/>
+<text class="silks" x="466.4" y="364">RD10</text>
+<circle id="pin-rd11" class="pad" cx="491.8" cy="378" r="8"><title>J1 pin 18: RD11</title></circle>
+<circle class="hole" cx="491.8" cy="378" r="3.5"/>
+<text class="silks" x="491.8" y="364">RD11</text>
+<circle id="pin-rd12" class="pad" cx="517.2" cy="378" r="8"><title>J1 pin 19: RD12</title></circle>
+<circle class="hole" cx="517.2" cy="378" r="3.5"/>
+<text class="silks" x="517.2" y="364">RD12</text>
+<circle id="pin-gnd_2" class="pad" cx="542.6" cy="378" r="8"><title>J1 pin 20: GND</title></circle>
+<circle class="hole" cx="542.6" cy="378" r="3.5"/>
+<text class="silks" x="542.6" y="364">GND</text>
+<g id="pim"><rect class="pim" x="215" y="110" width="170" height="170" rx="6"/><rect class="chip" x="250" y="145" width="100" height="100" rx="3"/><text class="logo" x="300" y="190" font-size="11" text-anchor="middle">PIC32MX</text><text class="logo" x="300" y="206" font-size="11" text-anchor="middle">795F512L</text><text class="silks" x="300" y="270">PIM MA320003</text></g>
+<g id="crystal"><rect class="metal" x="395" y="150" width="34" height="16" rx="6"/><text class="silks" x="412" y="178">8MHz</text><rect class="metal" x="395" y="190" width="22" height="10" rx="5"/><text class="silks" x="406" y="212">32k</text></g>
+<g id="d3"><rect x="463" y="300" width="14" height="9" rx="1.5" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-d3" x="465" y="302" width="10" height="5" rx="1" fill="#f6c9c4"/><circle id="led-d3-glow" cx="470" cy="304.5" r="18" fill="url(#glow-red)" opacity="0"/><text class="silks" x="470" y="322">D3</text></g>
+<g id="d4"><rect x="435" y="300" width="14" height="9" rx="1.5" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-d4" x="437" y="302" width="10" height="5" rx="1" fill="#f6c9c4"/><circle id="led-d4-glow" cx="442" cy="304.5" r="18" fill="url(#glow-red)" opacity="0"/><text class="silks" x="442" y="322">D4</text></g>
+<g id="d5"><rect x="407" y="300" width="14" height="9" rx="1.5" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-d5" x="409" y="302" width="10" height="5" rx="1" fill="#f6c9c4"/><circle id="led-d5-glow" cx="414" cy="304.5" r="18" fill="url(#glow-red)" opacity="0"/><text class="silks" x="414" y="322">D5</text></g>
+<g id="d6"><rect x="379" y="300" width="14" height="9" rx="1.5" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-d6" x="381" y="302" width="10" height="5" rx="1" fill="#f6c9c4"/><circle id="led-d6-glow" cx="386" cy="304.5" r="18" fill="url(#glow-red)" opacity="0"/><text class="silks" x="386" y="322">D6</text></g>
+<g id="d7"><rect x="351" y="300" width="14" height="9" rx="1.5" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-d7" x="353" y="302" width="10" height="5" rx="1" fill="#f6c9c4"/><circle id="led-d7-glow" cx="358" cy="304.5" r="18" fill="url(#glow-red)" opacity="0"/><text class="silks" x="358" y="322">D7</text></g>
+<g id="d8"><rect x="323" y="300" width="14" height="9" rx="1.5" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-d8" x="325" y="302" width="10" height="5" rx="1" fill="#f6c9c4"/><circle id="led-d8-glow" cx="330" cy="304.5" r="18" fill="url(#glow-red)" opacity="0"/><text class="silks" x="330" y="322">D8</text></g>
+<g id="d9"><rect x="295" y="300" width="14" height="9" rx="1.5" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-d9" x="297" y="302" width="10" height="5" rx="1" fill="#f6c9c4"/><circle id="led-d9-glow" cx="302" cy="304.5" r="18" fill="url(#glow-red)" opacity="0"/><text class="silks" x="302" y="322">D9</text></g>
+<g id="d10"><rect x="267" y="300" width="14" height="9" rx="1.5" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-d10" x="269" y="302" width="10" height="5" rx="1" fill="#f6c9c4"/><circle id="led-d10-glow" cx="274" cy="304.5" r="18" fill="url(#glow-red)" opacity="0"/><text class="silks" x="274" y="322">D10</text></g>
+<g id="btn-s3"><rect class="btn" x="65" y="230" width="30" height="30" rx="3"/><circle cx="80" cy="245" r="10" fill="#2b2f36" stroke="#000"/><text class="silks" x="80" y="272">S3</text><text class="silkn" x="80" y="281">RD6</text></g>
+<g id="btn-s6"><rect class="btn" x="117" y="230" width="30" height="30" rx="3"/><circle cx="132" cy="245" r="10" fill="#2b2f36" stroke="#000"/><text class="silks" x="132" y="272">S6</text><text class="silkn" x="132" y="281">RD7</text></g>
+<g id="btn-s4"><rect class="btn" x="169" y="230" width="30" height="30" rx="3"/><circle cx="184" cy="245" r="10" fill="#2b2f36" stroke="#000"/><text class="silks" x="184" y="272">S4</text><text class="silkn" x="184" y="281">RD13</text></g>
+<g id="btn-s1"><rect class="btn" x="221" y="230" width="30" height="30" rx="3"/><circle cx="236" cy="245" r="10" fill="#2b2f36" stroke="#000"/><text class="silks" x="236" y="272">S1</text><text class="silkn" x="236" y="281">MCLR</text></g>
+<g id="usb"><rect class="metal" x="530" y="150" width="70" height="44" rx="6"/><rect x="545" y="162" width="44" height="20" rx="8" fill="#5b616b"/><text class="silks" x="520" y="214">USB-UART (UART2)</text></g>
+<g id="icsp"><rect class="pad" x="36" y="104" width="9" height="12"/><rect class="pad" x="48" y="104" width="9" height="12"/><rect class="pad" x="60" y="104" width="9" height="12"/><rect class="pad" x="72" y="104" width="9" height="12"/><rect class="pad" x="84" y="104" width="9" height="12"/><text class="silks" x="60" y="98">ICSP</text></g>
+<text class="logo" x="300" y="88" font-size="16" text-anchor="middle">Explorer 16/32</text><text class="silks" x="300" y="101">EmbSIM</text>
+</svg>

@@ -74,6 +74,11 @@ struct es_session {
     uint64_t input_seq;
     int recording;
     char *record_path;
+    /* what the run observed while recording (record.c) */
+    esk_json *observations;
+    int obs_truncated;
+    es_time_t record_from; /* record.start's time: its observations begin there */
+    uint64_t record_from_seq; /* and the inputs given before it */
     /* run state */
     int running;
     double speed;
@@ -89,10 +94,29 @@ struct es_session {
     uint64_t last_observe_ms;
     char *client_name;
     int opened;
+    /* the firmware analyses on (measure.c): ESK_AN_* bits, on one board or
+     * on every board with firmware (NULL) */
+    unsigned an_what;
+    char *an_board;
     /* statistics */
     uint64_t rpc_count;
     double wall_time_s;
 };
+
+/* measure.c: the analyses `what` (ESK_AN_*) on `board`'s MCU, or every
+ * board's with firmware (NULL); 0 turns them off. They stay on across a
+ * project's reload (esk_session_analyses_apply, after a load) */
+es_status esk_session_analyze(es_session *s, const char *board, unsigned what, char *why, size_t cap);
+void esk_session_analyses_apply(es_session *s);
+/* the boards' coverage (`coverage`) or profile reports as text in format
+ * `fmt` (ESK_AN_*), one board's or every board's; ES_ESTATE when it is not on */
+es_status esk_session_analysis_text(es_session *s, const char *board, int coverage, int fmt, esk_strbuf *out,
+                                    char *why, size_t cap);
+/* {BOARD: coverage or profile JSON}; `detail`: every file's line counts,
+ * every function's profile */
+esk_json *esk_session_analysis_json(es_session *s, const char *board, int coverage, int detail);
+/* a run's report gains "coverage" and "profile" summaries when they are on */
+void esk_session_analysis_report(es_session *s, esk_json *report);
 
 /* loader.c */
 es_status esk_project_load(es_session *s, const esk_json *project, const char *base_dir);
@@ -133,5 +157,27 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
 esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *assertions);
 /* probes sampled from net changes */
 void esk_session_on_net_change(void *ctx, esk_net *net);
+/* record.c: recordings (SPEC-012): observations from now on; a core's
+ * interrupt entry (the engine's on_irq); a probe's sample; the document
+ * (its end observations added); replay's comparison of two observation
+ * lists (ok, or the first divergence); a recording as a scenario */
+void esk_record_start(es_session *s);
+void esk_record_irq(void *ctx, esk_comp *mcu, int core, int cores, int n, es_time_t at);
+void esk_record_probe(es_session *s, const esk_probe *p, es_time_t at, double v);
+/* each digital probe's level now, as observations at `at` (a recording
+ * that starts in a running session begins with them) */
+void esk_record_levels(es_session *s, es_time_t at);
+esk_json *esk_record_document(es_session *s, const char *project_path, const char *scenario,
+                              const esk_json *report, const esk_json *extra_probes);
+esk_json *esk_record_compare(es_session *s, const esk_json *want, const esk_json *got);
+/* the identities that changed since the recording: [{what, recorded, now}] */
+esk_json *esk_record_drift(es_session *s, const esk_json *rec);
+/* replay a recording on the session, its project loaded: from reset, its
+ * inputs at their times, to its end; the observations compared from its
+ * start (from_ps). *result: {ok, compared, divergence?, drift}; ES_ESTATE
+ * (and drift) when the project or an image changed and allow_drift is 0 */
+es_status esk_record_replay(es_session *s, const esk_json *rec, int allow_drift, esk_json **result);
+esk_json *esk_record_to_scenario(esk_alloc *a, const esk_json *rec, const char *name, int with_probes,
+                                 int with_serial);
 
 #endif

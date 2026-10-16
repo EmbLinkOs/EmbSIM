@@ -9,6 +9,8 @@
 #include <string.h>
 
 #include "mcu/build.h"
+#include "mcu/mips/mips.h"
+#include "mcu/pic24/pic24.h"
 #include "mcu/rf.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -86,14 +88,22 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         }
     }
     if (esk_str_eq(esk_json_get_str(core, "backend", ""), "cortex-m")) {
-        st = esk_cortexm_create(m, esk_json_get_str(core, "model", ""),
-                                (int)esk_json_get_int(core, "priority_bits", 4), &cpu);
+        st = esk_cortexm_create_smp(m, esk_json_get_str(core, "model", ""),
+                                    (int)esk_json_get_int(core, "priority_bits", 4),
+                                    (int)esk_json_get_int(core, "cores", 1), &cpu);
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "avr")) {
         st = esk_avr_create(m, esk_json_get_str(core, "model", ""), &cpu);
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "riscv")) {
         u32 reset_pc = 0;
         (void)u32_of(esk_json_get(core, "reset_pc"), &reset_pc);
         st = esk_riscv_create(m, esk_json_get_str(core, "model", ""), reset_pc, &cpu);
+    } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "mips")) {
+        st = esk_mips_create(m, esk_json_get_str(core, "model", ""), &cpu);
+    } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "pic24")) {
+        u32 prog_end = 0, ram_base = 0;
+        (void)u32_of(esk_json_get(core, "prog_end"), &prog_end);
+        (void)u32_of(esk_json_get(core, "ram_base"), &ram_base);
+        st = esk_pic24_create(m, esk_json_get_str(core, "model", ""), prog_end, (u16)ram_base, &cpu);
     } else {
         snprintf(why, cap, "the %s core backend is not available", esk_json_get_str(core, "backend", "?"));
         return ES_EUNSUPPORTED;
@@ -110,7 +120,12 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         m->vdd = esk_json_get_num(esk_json_get(io, "electrical"), "vdd", dflt);
     }
     if (regs) {
-        st = esk_rf_create(m, regs, why, cap);
+        int rules = esk_rf_rules(esk_json_get(esk_json_get(mcu, "register_file"), "bus_rules"));
+        if (rules < 0) {
+            snprintf(why, cap, "register_file.bus_rules names a rule there is not");
+            return ES_ESCHEMA;
+        }
+        st = esk_rf_create(m, regs, rules, why, cap);
         if (st != ES_OK)
             return st;
         st = esk_rf_bind(m, esk_json_get(mcu, "peripherals"), missing, sizeof missing);

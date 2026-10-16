@@ -234,6 +234,12 @@ typedef struct esk_mach_host {
     /* the voltage on a pin's net, for an ADC: 1 and *v, or 0 when the pin
      * is not connected */
     int (*pin_volts)(void *ctx, int port, int bit, double *v);
+    /* a core enters exception or interrupt n (its own numbering: a
+     * Cortex-M's exception number, an AVR's vector, 16 + a RISC-V
+     * interrupt's cause or the cause of an exception, 16 + a MIPS
+     * interrupt's vector or an exception's ExcCode, a PIC24's vector
+     * number), for a recording's observations */
+    void (*exc)(void *ctx, int core, int n);
 } esk_mach_host;
 
 /* ---- the machine ---------------------------------------------------------- */
@@ -316,6 +322,11 @@ struct esk_mach {
     esk_mach_alloc_rec *allocs;
     size_t nallocs, cap_allocs;
     int oom;
+    /* the analyses watching the run (analysis.h), or 0; `steps_cores`: the
+     * core interface steps its cores itself, through esk_mach_step_core
+     * (smp.c) */
+    struct esk_an *an;
+    int steps_cores;
 };
 
 es_status esk_mach_init(struct esk_mach *m, esk_alloc *a);
@@ -327,6 +338,45 @@ char *esk_mach_strdup(struct esk_mach *m, const char *s);
 /* a device on the bus, keeping time if it has a tick or next_event hook */
 es_status esk_mach_add_dev(struct esk_mach *m, u32 base, u32 size, const struct esk_dev_ops *ops,
                            void *ctx);
+/* of a tick's `cycles` (they end now), those after `since`, the cycle a
+ * device's clock started: all of them, or the part of the instruction that
+ * started it; 0 when it started after them (another core's instruction,
+ * ahead of the machine's time: mcu/cortexm/smp.c) */
+ES_INLINE u32 esk_mach_after(const struct esk_mach *m, u32 cycles, u64 since)
+{
+    if (m->cycles - cycles >= since)
+        return cycles;
+    return m->cycles > since ? (u32)(m->cycles - since) : 0;
+}
+/* the analyses' hooks (analysis.c) */
+struct esk_an;
+void esk_an_step(struct esk_an *a, int core, struct esk_cpu *cpu);
+void esk_an_exc(struct esk_an *a, int core, int n, u32 ret);
+void esk_an_exc_return(struct esk_an *a, int core);
+/* a core enters exception or interrupt n (esk_mach_host.exc), to return to
+ * `ret` */
+ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n, u32 ret)
+{
+    if (m->host.exc)
+        m->host.exc(m->host.ctx, core, n);
+    if (m->an)
+        esk_an_exc(m->an, core, n, ret);
+}
+/* a core returns from an exception (RETFIE, MRET, ERET, RETI, a Cortex-M's
+ * EXC_RETURN) */
+ES_INLINE void esk_mach_exc_return(struct esk_mach *m, int core)
+{
+    if (m->an)
+        esk_an_exc_return(m->an, core);
+}
+/* one step of core `core`'s interface `cpu`, watched by the analyses */
+ES_INLINE void esk_mach_step_core(struct esk_mach *m, int core, struct esk_cpu *cpu)
+{
+    if (m->an)
+        esk_an_step(m->an, core, cpu);
+    else
+        cpu->ops->step(cpu);
+}
 /* end the run: state, and the reason */
 void esk_mach_end(struct esk_mach *m, int state, const char *fmt, ...);
 /* a byte of the program's console output */
@@ -386,6 +436,11 @@ es_status esk_mach_load_image(struct esk_mach *m, const u8 *data, size_t len, u3
 int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value);
 /* the function or object holding `addr`: 1, its name and the offset in it */
 int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap, u32 *offset);
+/* each defined function of an ELF image's symbol table: its name (in the
+ * image), its address without the Thumb or MIPS16 bit, and its size; and
+ * each global label in code, with size 0 */
+void esk_elf_functions(const u8 *f, size_t len, void (*fn)(void *ctx, const char *name, u32 addr, u32 size),
+                       void *ctx);
 
 /* ---- cores ---------------------------------------------------------------- */
 
@@ -393,6 +448,24 @@ int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap,
  * its own devices on the bus; ES_ENOTFOUND for an unknown model */
 es_status esk_cortexm_create(struct esk_mach *m, const char *model, int prio_bits,
                              struct esk_cpu **out);
+/* `cores` Cortex-M cores of one model sharing the machine (mcu/cortexm/smp.c):
+ * core 0 runs from reset, the others wait to be launched; with 1, as
+ * esk_cortexm_create */
+es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio_bits, int cores,
+                                 struct esk_cpu **out);
+/* the cores, and the one whose access is in progress (a debugger's: the one
+ * that runs next) */
+int esk_cortexm_cores(struct esk_mach *m);
+int esk_cortexm_core(struct esk_mach *m);
+/* exception n pends on one core's NVIC only */
+void esk_cortexm_core_interrupt(struct esk_mach *m, int core, int n);
+/* a core other than core 0 powered off (reset, idle) or on (waiting in its
+ * bootrom to be launched); whether it waits so, or runs (or sleeps) */
+void esk_cortexm_core_power(struct esk_mach *m, int core, int on);
+int esk_cortexm_core_booting(struct esk_mach *m, int core);
+int esk_cortexm_core_running(struct esk_mach *m, int core);
+/* a waiting core starts at `entry` with its stack and vector table */
+void esk_cortexm_core_launch(struct esk_mach *m, int core, u32 vtor, u32 sp, u32 entry);
 /* an AVR core of `model` ("atmega328p"), with its own devices on the bus
  * (mcu/avr/avr.h) */
 es_status esk_avr_create(struct esk_mach *m, const char *model, struct esk_cpu **out);

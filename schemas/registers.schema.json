@@ -19,6 +19,26 @@
       "description": "Interrupt names to their numbers (0 is the first external interrupt: ARM exception 16)",
       "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 239}
     },
+    "vectors": {
+      "type": "object",
+      "description": "Interrupt names to the vector each is taken through, where requests share vectors (a PIC32MX's UART error, receive and transmit requests are its one vector); without it, an interrupt's vector is its number",
+      "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 255}
+    },
+    "pins": {
+      "type": "object",
+      "description": "A part's pin functions by name to the port pin each is on (CN15: RD6), for models that find a function's pin (change notices, a peripheral's own pins)",
+      "additionalProperties": {"type": "string", "pattern": "^R[A-K][0-9]{1,2}$"}
+    },
+    "pps_outputs": {
+      "type": "object",
+      "description": "A part's Peripheral Pin Select output functions by name to the number an RPORx field selects them with (U2TX: 5)",
+      "additionalProperties": {"type": "integer", "minimum": 1, "maximum": 127}
+    },
+    "config_words": {
+      "type": "object",
+      "description": "A part's configuration words by name to their address in program memory (FOSCSEL: 0x0ABF18), for the models that read them at reset (a PIC24's oscillator)",
+      "additionalProperties": {"$ref": "#/$defs/hex"}
+    },
     "peripherals": {
       "type": "array",
       "minItems": 1,
@@ -52,6 +72,7 @@
         "offset": {"$ref": "#/$defs/hex"},
         "reset": {"$ref": "#/$defs/hex"},
         "size": {"enum": [8, 16, 32]},
+        "clr_set_inv": {"type": "boolean", "description": "A PIC32's: the register has CLR, SET and INV registers at +4, +8 and +0xC, where a write clears, sets or inverts the bits written as 1"},
         "description": {"type": "string"},
         "fields": {
           "type": "array",

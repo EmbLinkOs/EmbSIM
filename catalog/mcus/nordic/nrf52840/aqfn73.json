@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "kind": "package",
+  "id": "nordic/nrf52840/aqfn73",
+  "name": "aQFN73",
+  "description": "73-ball aQFN, 7 x 7 mm (nRF52840-QIAA). The pins are listed by signal; the numbers are this description's order, not the package's ball names (boards connect by signal). GPIOn is P(n / 32).(n % 32).",
+  "pins": [
+    {
+      "number": 1,
+      "signal": "VDD",
+      "doc": "1.7 to 3.6 V supply (3.0 V on the DK)"
+    },
+    {
+      "number": 2,
+      "signal": "VDDH",
+      "doc": "High-voltage supply (2.5 to 5.5 V)"
+    },
+    {
+      "number": 3,
+      "signal": "VBUS",
+      "doc": "USB's 5 V"
+    },
+    {
+      "number": 4,
+      "signal": "GND"
+    },
+    {
+      "number": 5,
+      "signal": "OSC_IN",
+      "doc": "XC1: the 32 MHz crystal"
+    },
+    {
+      "number": 6,
+      "signal": "OSC_OUT",
+      "doc": "XC2"
+    },
+    {
+      "number": 7,
+      "signal": "SWDIO",
+      "doc": "Serial wire debug data"
+    },
+    {
+      "number": 8,
+      "signal": "SWDCLK",
+      "doc": "Serial wire debug clock"
+    },
+    {
+      "number": 9,
+      "signal": "USB_DP"
+    },
+    {
+      "number": 10,
+      "signal": "USB_DM"
+    },
+    {
+      "number": 11,
+      "signal": "ANT",
+      "doc": "The radio's antenna"
+    },
+    {
+      "number": 12,
+      "signal": "GPIO0",
+      "doc": "P0.00: XL1, the 32.768 kHz crystal"
+    },
+    {
+      "number": 13,
+      "signal": "GPIO1",
+      "doc": "P0.01: XL2"
+    },
+    {
+      "number": 14,
+      "signal": "GPIO2",
+      "doc": "P0.02"
+    },
+    {
+      "number": 15,
+      "signal": "GPIO3",
+      "doc": "P0.03"
+    },
+    {
+      "number": 16,
+      "signal": "GPIO4",
+      "doc": "P0.04"
+    },
+    {
+      "number": 17,
+      "signal": "GPIO5",
+      "doc": "P0.05"
+    },
+    {
+      "number": 18,
+      "signal": "GPIO6",
+      "doc": "P0.06"
+    },
+    {
+      "number": 19,
+      "signal": "GPIO7",
+      "doc": "P0.07"
+    },
+    {
+      "number": 20,
+      "signal": "GPIO8",
+      "doc": "P0.08"
+    },
+    {
+      "number": 21,
+      "signal": "GPIO9",
+      "doc": "P0.09"
+    },
+    {
+      "number": 22,
+      "signal": "GPIO10",
+      "doc": "P0.10"
+    },
+    {
+      "number": 23,
+      "signal": "GPIO11",
+      "doc": "P0.11"
+    },
+    {
+      "number": 24,
+      "signal": "GPIO12",
+      "doc": "P0.12"
+    },
+    {
+      "number": 25,
+      "signal": "GPIO13",
+      "doc": "P0.13"
+    },
+    {
+      "number": 26,
+      "signal": "GPIO14",
+      "doc": "P0.14"
+    },
+    {
+      "number": 27,
+      "signal": "GPIO15",
+      "doc": "P0.15"
+    },
+    {
+      "number": 28,
+      "signal": "GPIO16",
+      "doc": "P0.16"
+    },
+    {
+      "number": 29,
+      "signal": "GPIO17",
+      "doc": "P0.17"
+    },
+    {
+      "number": 30,
+      "signal": "GPIO18",
+      "doc": "P0.18: nRESET when UICR.PSELRESET selects it"
+    },
+    {
+      "number": 31,
+      "signal": "GPIO19",
+      "doc": "P0.19"
+    },
+    {
+      "number": 32,
+      "signal": "GPIO20",
+      "doc": "P0.20"
+    },
+    {
+      "number": 33,
+      "signal": "GPIO21",
+      "doc": "P0.21"
+    },
+    {
+      "number": 34,
+      "signal": "GPIO22",
+      "doc": "P0.22"
+    },
+    {
+      "number": 35,
+      "signal": "GPIO23",
+      "doc": "P0.23"
+    },
+    {
+      "number": 36,
+      "signal": "GPIO24",
+      "doc": "P0.24"
+    },
+    {
+      "number": 37,
+      "signal": "GPIO25",
+      "doc": "P0.25"
+    },
+    {
+      "number": 38,
+      "signal": "GPIO26",
+      "doc": "P0.26"
+    },
+    {
+      "number": 39,
+      "signal": "GPIO27",
+      "doc": "P0.27"
+    },
+    {
+      "number": 40,
+      "signal": "GPIO28",
+      "doc": "P0.28"
+    },
+    {
+      "number": 41,
+      "signal": "GPIO29",
+      "doc": "P0.29"
+    },
+    {
+      "number": 42,
+      "signal": "GPIO30",
+      "doc": "P0.30"
+    },
+    {
+      "number": 43,
+      "signal": "GPIO31",
+      "doc": "P0.31"
+    },
+    {
+      "number": 44,
+      "signal": "GPIO32",
+      "doc": "P1.00"
+    },
+    {
+      "number": 45,
+      "signal": "GPIO33",
+      "doc": "P1.01"
+    },
+    {
+      "number": 46,
+      "signal": "GPIO34",
+      "doc": "P1.02"
+    },
+    {
+      "number": 47,
+      "signal": "GPIO35",
+      "doc": "P1.03"
+    },
+    {
+      "number": 48,
+      "signal": "GPIO36",
+      "doc": "P1.04"
+    },
+    {
+      "number": 49,
+      "signal": "GPIO37",
+      "doc": "P1.05"
+    },
+    {
+      "number": 50,
+      "signal": "GPIO38",
+      "doc": "P1.06"
+    },
+    {
+      "number": 51,
+      "signal": "GPIO39",
+      "doc": "P1.07"
+    },
+    {
+      "number": 52,
+      "signal": "GPIO40",
+      "doc": "P1.08"
+    },
+    {
+      "number": 53,
+      "signal": "GPIO41",
+      "doc": "P1.09"
+    },
+    {
+      "number": 54,
+      "signal": "GPIO42",
+      "doc": "P1.10"
+    },
+    {
+      "number": 55,
+      "signal": "GPIO43",
+      "doc": "P1.11"
+    },
+    {
+      "number": 56,
+      "signal": "GPIO44",
+      "doc": "P1.12"
+    },
+    {
+      "number": 57,
+      "signal": "GPIO45",
+      "doc": "P1.13"
+    },
+    {
+      "number": 58,
+      "signal": "GPIO46",
+      "doc": "P1.14"
+    },
+    {
+      "number": 59,
+      "signal": "GPIO47",
+      "doc": "P1.15"
+    }
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "nRF52840 Product Specification, 7.1 aQFN73 ball assignments",
+        "rev": "v1.1"
+      }
+    ]
+  }
+}

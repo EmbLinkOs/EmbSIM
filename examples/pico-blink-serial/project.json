@@ -1,0 +1,374 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "pico-blink-serial",
+ "description": "A Raspberry Pi Pico running firmware/main.c on its RP2040 (Cortex-M0+), booted from flash through boot2: the PLL takes clk_sys to 125 MHz, the LED on GPIO25 blinks at 1 Hz from the timer's alarm, a button on GP15 interrupts through IO_BANK0 and is counted, and what a virtual terminal on GP0/GP1 sends at 115200 baud comes back in upper case.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/pico",
+   "layout": {
+    "x": 300,
+    "y": 120
+   },
+   "firmware": {
+    "image": "firmware/blink-serial.elf",
+    "format": "elf",
+    "toolchain": "clang",
+    "sources": [
+     "firmware/boot2.c",
+     "firmware/startup.c",
+     "firmware/main.c"
+    ],
+    "flags": [
+     "-ffreestanding",
+     "-fno-builtin"
+    ],
+    "linker_script": "firmware/rp2040.ld"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 640,
+    "y": 500
+   }
+  },
+  {
+   "id": "SW1",
+   "component": "emblink/push_button",
+   "layout": {
+    "x": 100,
+    "y": 520
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 40,
+    "y": 140
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 640,
+    "y": 340
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "SW1.2",
+   "VT1.GND"
+  ],
+  "BTN": [
+   "B1.GP15",
+   "SW1.1"
+  ],
+  "UART_TX": [
+   "B1.GP0",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.GP1",
+   "VT1.TX"
+  ]
+ },
+ "layout": {
+  "wires": [
+   {
+    "net": "USB5V",
+    "points": [
+     [
+      670,
+      500
+     ],
+     [
+      670,
+      480
+     ]
+    ]
+   },
+   {
+    "net": "USB5V",
+    "points": [
+     [
+      460,
+      540
+     ],
+     [
+      480,
+      540
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      300,
+      200
+     ],
+     [
+      280,
+      200
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      650,
+      340
+     ],
+     [
+      650,
+      320
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      670,
+      540
+     ],
+     [
+      670,
+      560
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      160,
+      530
+     ],
+     [
+      180,
+      530
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      70,
+      180
+     ],
+     [
+      70,
+      200
+     ]
+    ]
+   },
+   {
+    "net": "BTN",
+    "points": [
+     [
+      300,
+      540
+     ],
+     [
+      280,
+      540
+     ]
+    ]
+   },
+   {
+    "net": "BTN",
+    "points": [
+     [
+      100,
+      530
+     ],
+     [
+      80,
+      530
+     ]
+    ]
+   },
+   {
+    "net": "UART_TX",
+    "points": [
+     [
+      300,
+      160
+     ],
+     [
+      280,
+      160
+     ]
+    ]
+   },
+   {
+    "net": "UART_TX",
+    "points": [
+     [
+      40,
+      150
+     ],
+     [
+      20,
+      150
+     ]
+    ]
+   },
+   {
+    "net": "UART_RX",
+    "points": [
+     [
+      300,
+      180
+     ],
+     [
+      280,
+      180
+     ]
+    ]
+   },
+   {
+    "net": "UART_RX",
+    "points": [
+     [
+      40,
+      170
+     ],
+     [
+      20,
+      170
+     ]
+    ]
+   }
+  ],
+  "labels": [
+   {
+    "net": "USB5V",
+    "x": 670,
+    "y": 480
+   },
+   {
+    "net": "USB5V",
+    "x": 480,
+    "y": 540
+   },
+   {
+    "net": "GND",
+    "x": 280,
+    "y": 200
+   },
+   {
+    "net": "GND",
+    "x": 650,
+    "y": 320
+   },
+   {
+    "net": "GND",
+    "x": 670,
+    "y": 560
+   },
+   {
+    "net": "GND",
+    "x": 180,
+    "y": 530
+   },
+   {
+    "net": "GND",
+    "x": 70,
+    "y": 200
+   },
+   {
+    "net": "BTN",
+    "x": 280,
+    "y": 540
+   },
+   {
+    "net": "BTN",
+    "x": 80,
+    "y": 530
+   },
+   {
+    "net": "UART_TX",
+    "x": 280,
+    "y": 160
+   },
+   {
+    "net": "UART_TX",
+    "x": 20,
+    "y": 150
+   },
+   {
+    "net": "UART_RX",
+    "x": 280,
+    "y": 180
+   },
+   {
+    "net": "UART_RX",
+    "x": 20,
+    "y": 170
+   }
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "led",
+   "target": "net:B1.GPIO25",
+   "kind": "digital"
+  },
+  {
+   "id": "btn",
+   "target": "net:BTN",
+   "kind": "digital"
+  },
+  {
+   "id": "tx",
+   "target": "net:UART_TX",
+   "kind": "digital",
+   "decode": {
+    "protocol": "uart",
+    "params": {
+     "baud": 115200
+    }
+   }
+  },
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  }
+ ],
+ "scenarios": [
+  "scenarios/blink.json"
+ ]
+}

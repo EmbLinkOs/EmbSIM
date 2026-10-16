@@ -12,6 +12,8 @@
 #include <string.h>
 #include "embsim/embsim.h"
 #include "host/host.h"
+#include "mcu/analysis.h"
+#include "mcu/mcu.h"
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
 #include "sdk.h"
@@ -28,6 +30,12 @@ static void usage(void)
 {
     fputs("usage: embsim <command> [options]\n"
           "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json]\n"
+          "  run --target BOARD --image FILE [options]   one board of the catalog running an image, no project\n"
+          "      [--image [ID=]FILE] [--until-text TEXT] [--console]\n"
+          "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
+          "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]] [--board ID]\n"
+          "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
+          "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
@@ -41,7 +49,7 @@ static void usage(void)
           "  board list|info ID\n"
           "  models                      list the model primitives\n"
           "  version\n"
-          "Times: 10ms, 1.5us, 12345ps. Exit codes: 0 ok, 1 assertion failed, 2 usage/load, 3 fatal diagnostic.\n",
+          "Times: 10ms, 1.5us, 12345ps. Exit codes: 0 ok, 1 assertion failed, 2 usage/load, 3 fatal diagnostic, 4 replay diverged.\n",
           stderr);
 }
 
@@ -150,9 +158,176 @@ static void print_human_report(es_session *s, const esk_json *report)
     }
 }
 
+/* the boards' consoles followed during a run: what was printed of each, and
+ * whether `until_text` has appeared */
+#define FOLLOW_BOARDS 16
+
+typedef struct follow {
+    const char *until_text;
+    FILE *out; /* where --console prints, or NULL */
+    u64 printed[FOLLOW_BOARDS];
+} follow;
+
+static int follow_consoles(es_session *s, follow *f)
+{
+    size_t i, need = f->until_text ? strlen(f->until_text) : 0;
+    int found = 0;
+    for (i = 0; i < s->boards.len && i < FOLLOW_BOARDS; i++) {
+        esk_board_inst *bi = s->boards.data[i];
+        size_t len = 0, fresh, window;
+        u64 total = 0;
+        const char *text;
+        if (!bi->mcu)
+            continue;
+        text = esk_mcu_console(bi->mcu, &len, &total);
+        fresh = total - f->printed[i] > len ? len : (size_t)(total - f->printed[i]);
+        if (fresh && f->out) {
+            fwrite(text + len - fresh, 1, fresh, f->out);
+            fflush(f->out);
+        }
+        /* the new text, and what came before it that a match may start in */
+        window = fresh + need > len ? len : fresh + (need ? need - 1 : 0);
+        if (need && fresh && strstr(text + len - window, f->until_text))
+            found = 1;
+        f->printed[i] = total;
+    }
+    return found;
+}
+
+/* a project of one catalog board running `image` (--target BOARD --image FILE) */
+static es_status load_target(es_session *s, const char *target, const char *image)
+{
+    esk_json *p = esk_json_new_object(s->a), *boards = esk_json_new_array(s->a), *b = esk_json_new_object(s->a);
+    esk_json *fw = esk_json_new_object(s->a), *probes = esk_json_new_array(s->a), *pr = esk_json_new_object(s->a);
+    const char *base = strrchr(image, '/'), *dot;
+    char name[64], *text = NULL;
+    size_t len = 0;
+    es_status st = ES_ENOMEM;
+    base = base ? base + 1 : image;
+    esk_snprintf(name, sizeof name, "%s", base);
+    dot = strrchr(name, '.');
+    if (dot && dot != name)
+        name[dot - name] = 0;
+    if (p && boards && b && fw && probes && pr) {
+        esk_json_set_integer(s->a, p, "schema_version", 1);
+        esk_json_set_string(s->a, p, "kind", "project");
+        esk_json_set_string(s->a, p, "name", name);
+        esk_json_set_string(s->a, b, "id", "B1");
+        esk_json_set_string(s->a, b, "board", target);
+        esk_json_set_string(s->a, fw, "image", image);
+        esk_json_object_set(s->a, b, "firmware", fw);
+        fw = NULL;
+        esk_json_array_push(s->a, boards, b);
+        b = NULL;
+        esk_json_object_set(s->a, p, "boards", boards);
+        boards = NULL;
+        esk_json_set_string(s->a, pr, "id", "console");
+        esk_json_set_string(s->a, pr, "target", "serial:B1");
+        esk_json_set_string(s->a, pr, "kind", "serial");
+        esk_json_array_push(s->a, probes, pr);
+        pr = NULL;
+        esk_json_object_set(s->a, p, "probes", probes);
+        probes = NULL;
+        text = esk_json_format(s->a, p, 0, &len);
+    }
+    if (text) {
+        st = es_session_load_json(s, text, len, ".");
+        esk_free(s->a, text, len + 1);
+    }
+    esk_json_free(s->a, p);
+    esk_json_free(s->a, boards);
+    esk_json_free(s->a, b);
+    esk_json_free(s->a, fw);
+    esk_json_free(s->a, probes);
+    esk_json_free(s->a, pr);
+    return st;
+}
+
+/* --image [ID=]FILE over a project's board: its firmware replaced */
+static int override_image(es_session *s, const char *arg)
+{
+    const char *eq = strchr(arg, '=');
+    const char *path = eq ? eq + 1 : arg;
+    char id[64], why[160], *data = NULL;
+    size_t len = 0, i;
+    esk_board_inst *target = NULL;
+    int n = 0;
+    id[0] = 0;
+    if (eq)
+        esk_snprintf(id, sizeof id, "%.*s", (int)(eq - arg), arg);
+    for (i = 0; i < s->boards.len; i++) {
+        esk_board_inst *bi = s->boards.data[i];
+        if (!bi->mcu || (id[0] && !esk_str_eq(bi->id, id)))
+            continue;
+        target = bi;
+        n++;
+    }
+    if (n != 1) {
+        fprintf(stderr, "embsim: --image: %s\n", n ? "the project has several boards: give --image ID=FILE"
+                                                     : "no such board with an MCU");
+        return 0;
+    }
+    if (esk_host_read_file(s->a, path, &data, &len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot read %s\n", path);
+        return 0;
+    }
+    if (esk_mcu_set_image(target->mcu, (const unsigned char *)data, len, why, sizeof why) != ES_OK) {
+        fprintf(stderr, "embsim: %s: %s\n", path, why);
+        esk_free(s->a, data, len + 1);
+        return 0;
+    }
+    esk_free(s->a, data, len + 1);
+    return 1;
+}
+
+/* a report format's name: ESK_AN_*, -2 for JSON, -1 for none */
+static int an_format(const char *name, int coverage)
+{
+    if (!strcmp(name, "json")) return -2;
+    if (!strcmp(name, "text")) return ESK_AN_TEXT;
+    if (coverage) return !strcmp(name, "lcov") ? ESK_AN_LCOV : -1;
+    if (!strcmp(name, "collapsed")) return ESK_AN_COLLAPSED;
+    if (!strcmp(name, "collapsed-insns")) return ESK_AN_COLLAPSED_INSNS;
+    return -1;
+}
+
+/* the coverage or profile report into `path` ("-": stderr) */
+static int write_analysis(es_session *s, const char *board, int coverage, int fmt, const char *path)
+{
+    esk_strbuf b;
+    char why[160];
+    int ok = 1;
+    esk_strbuf_init(&b, s->a);
+    if (fmt == -2) {
+        esk_json *j = esk_session_analysis_json(s, board, coverage, 1);
+        ok = j != NULL;
+        if (j) {
+            (void)esk_json_write(&b, j, 1);
+            (void)esk_strbuf_putc(&b, '\n');
+        }
+        esk_json_free(s->a, j);
+        why[0] = 0;
+    } else if (esk_session_analysis_text(s, board, coverage, fmt, &b, why, sizeof why) != ES_OK) {
+        ok = 0;
+    }
+    if (!ok || b.oom) {
+        fprintf(stderr, "embsim: %s: %s\n", coverage ? "coverage" : "profile", why[0] ? why : "out of memory");
+        ok = 0;
+    } else if (!strcmp(path, "-")) {
+        fwrite(b.data, 1, b.len, stderr);
+    } else if (esk_host_write_file(path, b.data, b.len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot write %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    return ok;
+}
+
 static int cmd_run(int argc, char **argv, const char *argv0)
 {
     const char *project = NULL, *scenario = NULL, *policy = NULL, *record = NULL, *library = NULL;
+    const char *coverage = NULL, *profile = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
+    int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, console = 0;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -170,16 +345,37 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--record") && more) record = argv[++i];
         else if (!strcmp(a, "--library") && more) library = argv[++i];
         else if (!strcmp(a, "--probe") && more) { if (nprobes < 32) probes[nprobes++] = argv[++i]; }
+        else if (!strcmp(a, "--coverage") && more) coverage = argv[++i];
+        else if (!strcmp(a, "--profile") && more) profile = argv[++i];
+        else if (!strcmp(a, "--board") && more) board = argv[++i];
+        else if (!strcmp(a, "--target") && more) target = argv[++i];
+        else if (!strcmp(a, "--image") && more) image = argv[++i];
+        else if (!strcmp(a, "--until-text") && more) until_text = argv[++i];
+        else if (!strcmp(a, "--console")) console = 1;
+        else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format")) && more) {
+            int cov = a[2] == 'c', f = an_format(argv[++i], cov);
+            if (f == -1) { fprintf(stderr, "embsim: %s: no format %s\n", a, argv[i]); return 2; }
+            if (cov) cov_fmt = f; else prof_fmt = f;
+        }
         else if (!strcmp(a, "--json")) opt_json = 1;
         else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
         else if (!project) project = a;
         else { fprintf(stderr, "embsim: one project at a time\n"); return 2; }
     }
-    if (!project) { usage(); return 2; }
+    if (!project && !target) { usage(); return 2; }
+    if (project && target) { fprintf(stderr, "embsim: a project or --target, not both\n"); return 2; }
+    if (target && !image) { fprintf(stderr, "embsim: --target needs --image FILE\n"); return 2; }
+    if (scenario && (until_text || console)) { fprintf(stderr, "embsim: --until-text and --console run without a scenario\n"); return 2; }
     s = open_session(policy, argv0, library);
     if (!s) return 2;
-    if (es_session_load_file(s, project) != ES_OK) {
-        fprintf(stderr, "embsim: cannot load %s\n", project);
+    if (target ? load_target(s, target, image) != ES_OK : es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", target ? target : project);
+        es_session_destroy(s);
+        return 2;
+    }
+    if (target)
+        project = image; /* the run's name in its report and recording */
+    else if (image && !override_image(s, image)) {
         es_session_destroy(s);
         return 2;
     }
@@ -187,8 +383,17 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         if (esk_session_probe_add(s, NULL, probes[i], NULL, 0, NULL) != ES_OK)
             fprintf(stderr, "embsim: warning: probe %s not created\n", probes[i]);
     }
+    if (coverage || profile) {
+        char why[160];
+        unsigned what = (coverage ? ESK_AN_COVERAGE : 0u) | (profile ? ESK_AN_PROFILE : 0u);
+        if (esk_session_analyze(s, board, what, why, sizeof why) != ES_OK) {
+            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : "--profile", why);
+            es_session_destroy(s);
+            return 2;
+        }
+    }
     if (record)
-        s->recording = 1;
+        esk_record_start(s);
     if (scenario) {
         char *text;
         size_t len;
@@ -216,11 +421,32 @@ static int cmd_run(int argc, char **argv, const char *argv0)
             rc = s->diag.fatal ? 3 : 1;
     } else {
         uint64_t t0 = esk_host_monotonic_ms();
-        es_status st = esk_session_do_advance(s, until);
+        es_status st;
+        int seen = 0;
+        if (record)
+            (void)esk_session_do_reset(s); /* from reset, as a scenario and a replay run */
+        if (until_text || console) {
+            /* a millisecond at a time, following the consoles */
+            follow f;
+            es_time_t at = s->eng.sched.now;
+            memset(&f, 0, sizeof f);
+            f.until_text = until_text && until_text[0] ? until_text : NULL;
+            f.out = console ? (opt_json ? stderr : stdout) : NULL;
+            st = ES_OK;
+            while (st == ES_OK && !s->diag.fatal && at < until && !seen) {
+                at = until - at > ES_PS_PER_MS ? at + ES_PS_PER_MS : until;
+                st = esk_session_do_advance(s, at);
+                seen = follow_consoles(s, &f);
+            }
+        } else {
+            st = esk_session_do_advance(s, until);
+        }
         s->wall_time_s = (double)(esk_host_monotonic_ms() - t0) / 1000.0;
-        report = esk_session_report(s, s->diag.fatal ? s->diag.fatal_code : st == ES_OK ? "until" : es_strerror(st), NULL);
+        report = esk_session_report(s, s->diag.fatal ? s->diag.fatal_code : seen ? "until_text" : st == ES_OK ? "until" : es_strerror(st), NULL);
         if (st != ES_OK || s->diag.fatal)
             rc = 3;
+        else if (until_text && !seen)
+            rc = 1; /* the text the run waited for never came */
     }
     if (!report) {
         fputs("embsim: out of memory\n", stderr);
@@ -228,31 +454,203 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         return 2;
     }
     if (record) {
+        esk_json *extra = esk_json_new_array(s->a), *rec;
         char *text;
-        size_t len;
-        esk_json *rec = esk_json_new_object(s->a);
-        if (rec) {
-            esk_json_set_integer(s->a, rec, "schema_version", 1);
-            esk_json_set_string(s->a, rec, "kind", "recording");
-            esk_json_set_string(s->a, rec, "engine", EMBSIM_VERSION_STRING);
-            esk_json_set_string(s->a, rec, "project", project);
-            esk_json_set_string(s->a, rec, "policy", esk_json_get_str(report, "policy", ""));
-            esk_json_object_set(s->a, rec, "inputs", esk_json_clone(s->a, s->inputs_log));
-            esk_json_object_set(s->a, rec, "end", esk_json_clone(s->a, esk_json_get(report, "ended")));
-            text = esk_json_format(s->a, rec, 2, &len);
-            if (text) {
-                esk_host_write_file(record, text, len);
-                esk_free(s->a, text, len + 1);
-            }
-            esk_json_free(s->a, rec);
-        }
+        size_t len = 0;
+        for (i = 0; extra && i < nprobes; i++)
+            esk_json_array_push(s->a, extra, esk_json_new_string(s->a, probes[i]));
+        rec = esk_record_document(s, project, scenario, report, extra);
+        esk_json_free(s->a, extra);
+        text = rec ? esk_json_format(s->a, rec, 1, &len) : NULL;
+        if (!text || esk_host_write_file(record, text, len) != ES_OK)
+            fprintf(stderr, "embsim: cannot write the recording %s\n", record);
+        if (text)
+            esk_free(s->a, text, len + 1);
+        esk_json_free(s->a, rec);
     }
+    if (coverage && !write_analysis(s, board, 1, cov_fmt, coverage) && !rc)
+        rc = 2;
+    if (profile && !write_analysis(s, board, 0, prof_fmt, profile) && !rc)
+        rc = 2;
     if (opt_json)
         print_json(report, s->a);
     else
         print_human_report(s, report);
     esk_json_free(s->a, report);
     es_session_destroy(s);
+    return rc;
+}
+
+static esk_json *read_json_file(esk_alloc *a, const char *path)
+{
+    char *text;
+    size_t len;
+    int line;
+    const char *err;
+    esk_json *j;
+    if (esk_host_read_file(a, path, &text, &len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot read %s\n", path);
+        return NULL;
+    }
+    j = esk_json_parse(a, text, len, &line, &err);
+    esk_free(a, text, len + 1);
+    if (!j)
+        fprintf(stderr, "embsim: %s:%d: %s\n", path, line, err);
+    return j;
+}
+
+/* the recording's project: as recorded, else beside the recording */
+static char *recorded_project(esk_alloc *a, const char *rec_path, const char *path)
+{
+    char *dir, *full;
+    if (esk_host_file_exists(path))
+        return esk_strdup(a, path);
+    dir = esk_host_dirname(a, rec_path);
+    full = esk_host_path_join(a, dir ? dir : ".", path);
+    esk_strfree(a, dir);
+    return full;
+}
+
+static void print_obs(const char *label, const esk_json *o, esk_alloc *a)
+{
+    size_t len = 0;
+    char *t = o ? esk_json_format(a, o, 0, &len) : NULL;
+    printf("  %s %s\n", label, t ? t : "(none)");
+    if (t)
+        esk_free(a, t, len + 1);
+}
+
+/* replay REC: the recording's project, its inputs at their times, and its
+ * observations compared in order (SPEC-012 §2) */
+static int cmd_replay(int argc, char **argv, const char *argv0)
+{
+    const char *rec_path = NULL, *library = NULL;
+    int allow_drift = 0, i, rc = 0;
+    esk_alloc a;
+    esk_json *rec, *drift = NULL, *cmp = NULL, *out;
+    char *project;
+    es_session *s;
+    es_time_t end = 0;
+    es_status st;
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "--allow-drift")) allow_drift = 1;
+        else if (!strcmp(argv[i], "--json")) opt_json = 1;
+        else if (!strcmp(argv[i], "--library") && i + 1 < argc) library = argv[++i];
+        else if (argv[i][0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", argv[i]); return 2; }
+        else if (!rec_path) rec_path = argv[i];
+        else { fprintf(stderr, "embsim: one recording at a time\n"); return 2; }
+    }
+    if (!rec_path) { usage(); return 2; }
+    esk_alloc_init(&a, NULL);
+    rec = read_json_file(&a, rec_path);
+    if (!rec)
+        return 2;
+    if (!esk_str_eq(esk_json_get_str(rec, "kind", ""), "recording") ||
+        esk_json_to_time(esk_json_get(esk_json_get(rec, "end"), "at_ps"), &end)) {
+        fprintf(stderr, "embsim: %s is not a recording\n", rec_path);
+        esk_json_free(&a, rec);
+        return 2;
+    }
+    project = recorded_project(&a, rec_path, esk_json_get_str(esk_json_get(rec, "project"), "path", ""));
+    s = project ? open_session(esk_json_get_str(rec, "policy", NULL), argv0, library) : NULL;
+    if (!s || es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load the recording's project %s\n", project ? project : "?");
+        if (s) es_session_destroy(s);
+        esk_strfree(&a, project);
+        esk_json_free(&a, rec);
+        return 2;
+    }
+    st = esk_record_replay(s, rec, allow_drift, &cmp);
+    drift = cmp ? esk_json_clone(s->a, esk_json_get(cmp, "drift")) : NULL;
+    if (st == ES_ESTATE) {
+        for (i = 0; i < (int)esk_json_len(drift); i++) {
+            const esk_json *d = esk_json_at(drift, (size_t)i);
+            fprintf(stderr, "embsim: %s changed since the recording (%s, now %s)\n", esk_json_get_str(d, "what", "?"),
+                    esk_json_get_str(d, "recorded", ""), esk_json_get_str(d, "now", ""));
+        }
+        fputs("embsim: replay refuses a changed project or image; --allow-drift replays it anyway\n", stderr);
+        esk_json_free(s->a, cmp);
+        esk_json_free(s->a, drift);
+        es_session_destroy(s);
+        esk_strfree(&a, project);
+        esk_json_free(&a, rec);
+        return 2;
+    }
+    if (!cmp) {
+        fputs("embsim: out of memory\n", stderr);
+        rc = 2;
+    } else if (!esk_json_get_bool(cmp, "ok", 0)) {
+        rc = 4;
+    }
+    if (cmp && opt_json) {
+        out = esk_json_clone(s->a, cmp);
+        if (out) {
+            esk_json_object_set(s->a, out, "drift", drift ? esk_json_clone(s->a, drift) : esk_json_new_array(s->a));
+            print_json(out, s->a);
+            esk_json_free(s->a, out);
+        }
+    } else if (cmp) {
+        for (i = 0; i < (int)esk_json_len(drift); i++)
+            printf("drift: %s changed since the recording\n", esk_json_get_str(esk_json_at(drift, (size_t)i), "what", "?"));
+        if (rc == 0) {
+            printf("replay: %d observations match (%s)\n", (int)esk_json_get_int(cmp, "compared", 0), rec_path);
+        } else {
+            const esk_json *d = esk_json_get(cmp, "divergence");
+            printf("replay: diverged at observation %d of %d\n", (int)esk_json_get_int(d, "index", 0) + 1,
+                   (int)esk_json_len(esk_json_get(rec, "observations")));
+            print_obs("expected", esk_json_get(d, "expected"), s->a);
+            print_obs("observed", esk_json_get(d, "observed"), s->a);
+        }
+    }
+    esk_json_free(s->a, cmp);
+    esk_json_free(s->a, drift);
+    es_session_destroy(s);
+    esk_strfree(&a, project);
+    esk_json_free(&a, rec);
+    return rc;
+}
+
+/* record to-scenario REC [-o FILE] [--assert probes,serial|none] */
+static int cmd_record(int argc, char **argv)
+{
+    const char *rec_path = NULL, *outp = NULL, *assert_what = "probes,serial", *name = NULL;
+    esk_alloc a;
+    esk_json *rec, *sc;
+    char *text;
+    size_t len = 0;
+    int i, rc = 0;
+    if (argc < 1 || strcmp(argv[0], "to-scenario")) { usage(); return 2; }
+    for (i = 1; i < argc; i++) {
+        if ((!strcmp(argv[i], "-o") || !strcmp(argv[i], "--output")) && i + 1 < argc) outp = argv[++i];
+        else if (!strcmp(argv[i], "--assert") && i + 1 < argc) assert_what = argv[++i];
+        else if (!strcmp(argv[i], "--name") && i + 1 < argc) name = argv[++i];
+        else if (argv[i][0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", argv[i]); return 2; }
+        else if (!rec_path) rec_path = argv[i];
+        else { fprintf(stderr, "embsim: one recording at a time\n"); return 2; }
+    }
+    if (!rec_path) { usage(); return 2; }
+    esk_alloc_init(&a, NULL);
+    rec = read_json_file(&a, rec_path);
+    if (!rec)
+        return 2;
+    sc = esk_record_to_scenario(&a, rec, name, strstr(assert_what, "probes") != NULL, strstr(assert_what, "serial") != NULL);
+    text = sc ? esk_json_format(&a, sc, 2, &len) : NULL;
+    if (!text) {
+        fputs("embsim: out of memory\n", stderr);
+        rc = 2;
+    } else if (outp) {
+        if (esk_host_write_file(outp, text, len) != ES_OK) {
+            fprintf(stderr, "embsim: cannot write %s\n", outp);
+            rc = 2;
+        }
+    } else {
+        fwrite(text, 1, len, stdout);
+        fputc('\n', stdout);
+    }
+    if (text)
+        esk_free(&a, text, len + 1);
+    esk_json_free(&a, sc);
+    esk_json_free(&a, rec);
     return rc;
 }
 
@@ -621,6 +1019,8 @@ int embsim_cli_main(int argc, char **argv)
     cmd = argv[1];
     if (!strcmp(cmd, "run")) return cmd_run(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "validate")) return cmd_validate(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "replay")) return cmd_replay(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "record")) return cmd_record(argc - 2, argv + 2);
     if (!strcmp(cmd, "serve")) return cmd_serve(argc - 2, argv + 2, argv[0], 0);
     if (!strcmp(cmd, "sidecar")) return cmd_serve(argc - 2, argv + 2, argv[0], 1);
     if (!strcmp(cmd, "gdb")) return cmd_gdb(argc - 2, argv + 2, argv[0]);

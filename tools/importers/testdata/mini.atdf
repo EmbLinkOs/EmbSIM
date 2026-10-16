@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<avr-tools-device-file>
+  <devices><device name="PIC32MXTEST"><interrupts>
+    <interrupt index="24" irq-index="27" name="UART1_RX"/>
+    <interrupt index="24" irq-index="28" name="UART1_TX"/>
+  </interrupts></device></devices>
+</avr-tools-device-file>

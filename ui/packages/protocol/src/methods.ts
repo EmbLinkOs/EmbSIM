@@ -12,6 +12,7 @@ import type {
   Breakpoint,
   CatalogItem,
   ComponentDescription,
+  CoverageReport,
   DiagnosticRecord,
   DurationString,
   InputEntry,
@@ -22,10 +23,14 @@ import type {
   Policy,
   ProbeInfo,
   ProbeKind,
+  ProfileReport,
   Project,
+  Recording,
+  ReplayResult,
   PsString,
   Register,
   Report,
+  Scenario,
   SessionInfo,
   SessionOpenParams,
   SessionOpenResult,
@@ -152,10 +157,32 @@ export interface Methods {
   'catalog.validate': { params: { path: string }; result: { ok: boolean; diagnostics: DiagnosticRecord[] } };
   'catalog.libraries': { params: Record<string, never>; result: { libraries: { path: string; name: string; version: string; items: number }[] } };
 
+  // analysis: the firmware's coverage and profile (SPEC-008 §5)
+  'analysis.start': {
+    params: { board?: string; coverage?: boolean; profile?: boolean };
+    result: { coverage: boolean; profile: boolean };
+  };
+  'analysis.stop': { params: Record<string, never>; result: Record<string, never> };
+  'analysis.coverage': {
+    params: { board?: string; format?: 'json' | 'text' | 'lcov'; detail?: boolean };
+    result: { boards?: Record<string, CoverageReport>; text?: string };
+  };
+  'analysis.profile': {
+    params: { board?: string; format?: 'json' | 'text' | 'collapsed' | 'collapsed-insns'; detail?: boolean };
+    result: { boards?: Record<string, ProfileReport>; text?: string };
+  };
+
   // record
-  'record.start': { params: { path?: string }; result: Record<string, never> };
-  'record.stop': { params: Record<string, never>; result: { path?: string; inputs?: number | unknown[]; hash?: string } };
-  'record.replay': { params: { path: string }; result: { ok: boolean; divergence?: { at_ps: PsString; expected: unknown; observed: unknown } } };
+  'record.start': { params: { path?: string }; result: { from_ps?: PsString } };
+  'record.stop': {
+    params: Record<string, never>;
+    result: { path?: string; inputs?: number | unknown[]; hash?: string; count?: number; observations?: number; recording?: Recording };
+  };
+  'record.replay': { params: ({ path: string } | { recording: Recording }) & { allow_drift?: boolean }; result: ReplayResult };
+  'record.to_scenario': {
+    params: ({ path: string } | { recording: Recording }) & { assert?: ('probes' | 'serial')[]; name?: string };
+    result: { scenario: Scenario };
+  };
 
   // toolchain
   'toolchain.detect': { params: Record<string, never>; result: { profiles: { name: string; found: boolean; version?: string; path?: string }[] } };
@@ -166,7 +193,9 @@ export interface Methods {
 
   // scenario
   /** SPEC-008 wraps the report in `{report}`; the 0.1 server returns the report itself. */
-  'scenario.run': { params: { path: string } | { scenario: Record<string, unknown> }; result: { report: Report } | Report };
+  'scenario.run': { params: ({ path: string } | { scenario: Scenario | Record<string, unknown> }) & { until?: string }; result: { report: Report } | Report };
+  'scenario.get': { params: { path: string }; result: { path: string; scenario: Scenario } };
+  'scenario.save': { params: { path: string; scenario: Scenario; add?: boolean }; result: { path: string } };
 }
 
 export type MethodName = keyof Methods;
@@ -225,12 +254,19 @@ export const METHOD_NAMES = [
   'catalog.get',
   'catalog.validate',
   'catalog.libraries',
+  'analysis.start',
+  'analysis.stop',
+  'analysis.coverage',
+  'analysis.profile',
   'record.start',
   'record.stop',
   'record.replay',
+  'record.to_scenario',
   'toolchain.detect',
   'toolchain.build',
   'scenario.run',
+  'scenario.get',
+  'scenario.save',
 ] as const satisfies readonly MethodName[];
 
 // Compile-time check: the runtime list covers every key of `Methods`.

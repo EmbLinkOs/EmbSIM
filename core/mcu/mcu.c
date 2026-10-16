@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "mcu/analysis.h"
 #include "mcu/build.h"
 #include "mcu/dwarf.h"
 #include "mcu/mcu.h"
@@ -22,6 +23,7 @@ typedef struct mcu_uart {
     struct esk_rx_port *rx;
     char *text; /* what it sent, the last MCU_TEXT_CAP - 1 bytes */
     size_t text_len;
+    u64 text_total; /* the bytes of text it ever sent */
     u64 tx_bytes, rx_bytes;
     /* the TX pin's waveform */
     esk_pin *tx_pin;
@@ -78,6 +80,8 @@ typedef struct mcu_state {
     mcu_uart uart[MCU_UARTS];
     int nuart;
     char console[16];
+    esk_an *an;      /* the analyses watching the firmware, or NULL */
+    unsigned an_what;
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -201,7 +205,10 @@ static int runnable(const mcu_state *st)
 static void wake(mcu_state *st)
 {
     esk_engine *e = st->c->e;
-    if (!runnable(st) || st->m.asleep)
+    /* a core not yet started since its reset starts when the reset said,
+     * whatever the pins do meanwhile (its first quantum reads them): so a
+     * session as loaded runs as one reset does */
+    if (!runnable(st) || st->m.asleep || (st->fresh && st->ev))
         return;
     schedule_at(st, st->t > e->sched.now ? st->t : e->sched.now);
 }
@@ -345,17 +352,23 @@ static void pin_apply_cb(void *ctx, void *arg, es_time_t now)
     apply_cfg(st, port, bit);
 }
 
+static void map_rx_pins(mcu_state *st);
+
 static void h_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
 {
     mcu_state *st = (mcu_state *)ctx;
     esk_engine *e = st->c->e;
     mcu_pinq *q;
     es_time_t at;
+    int was_af;
     if (port < 0 || port >= MCU_PORTS || bit < 0 || bit > 15 || !st->gpio[port][bit])
         return;
     q = &st->pq[port][bit];
+    was_af = q->known && q->cfg.af;
     q->cfg = *cfg;
     q->known = 1;
+    if (was_af != (cfg->af != 0))
+        map_rx_pins(st); /* a UART's RX may have come to this pin or left it */
     at = local_now(st);
     if (at < e->sched.now)
         at = e->sched.now;
@@ -430,6 +443,7 @@ static void text_append(mcu_uart *u, int c)
     }
     u->text[u->text_len++] = (char)c;
     u->text[u->text_len] = 0;
+    u->text_total++;
 }
 
 static void tx_bit_cb(void *ctx, void *arg, es_time_t now)
@@ -600,6 +614,15 @@ static void h_out(void *ctx, int stream, int c)
         text_append(u, c);
 }
 
+/* a core enters an exception or interrupt: the session's, at the core's time */
+static void h_exc(void *ctx, int core, int n)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_engine *e = st->c->e;
+    if (e->on_irq)
+        e->on_irq(e->on_irq_ctx, st->c, core, esk_cortexm_cores(&st->m), n, local_now(st));
+}
+
 static void h_diag(void *ctx, int severity, const char *code, const char *msg)
 {
     mcu_state *st = (mcu_state *)ctx;
@@ -650,6 +673,8 @@ static void mcu_reset_now(mcu_state *st)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
     esk_mach_reset(&st->m);
+    if (st->an)
+        esk_an_restart(st->an);
     st->stopped = 0;
     st->ended_reported = 0;
     st->boot_fail = 0;
@@ -675,6 +700,9 @@ static void mcu_destroy(esk_comp *c)
     esk_engine *e = c->e;
     if (!st)
         return;
+    esk_an_free(st->an);
+    st->an = NULL;
+    st->m.an = NULL;
     if (st->attached)
         esk_mach_free(&st->m);
     if (st->image)
@@ -703,6 +731,7 @@ static void mcu_reset(esk_comp *c)
         u->tx_ev = u->in_ev = u->rx_ev = 0;
         u->text_len = 0;
         u->text[0] = 0;
+        u->text_total = 0;
         u->tx_bytes = u->rx_bytes = 0;
         u->inq_len = u->inq_head = 0;
         u->rx_busy = 0;
@@ -878,9 +907,10 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
     memcpy(copy, image, len);
     /* the new image must load before it replaces the old one */
     if (esk_mach_load_image(&st->m, copy, len, &entry, why, cap) != ES_OK) {
+        char again[160]; /* the old image back; `why` keeps the new one's reason */
         esk_free(e->a, copy, len);
         if (st->image)
-            (void)esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, cap);
+            (void)esk_mach_load_image(&st->m, st->image, st->image_len, &entry, again, sizeof again);
         return ES_EINVAL;
     }
     if (st->image)
@@ -890,9 +920,59 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
     if (st->dwarf.a)
         esk_dwarf_free(&st->dwarf);
     (void)esk_dwarf_load(&st->dwarf, e->a, st->image, st->image_len);
+    if (st->an_what)
+        (void)esk_mcu_analyze(c, st->an_what, why, cap); /* the new image's functions */
     catch_up(st, e->sched.now);
     mcu_reset_now(st);
     return ES_OK;
+}
+
+es_status esk_mcu_analyze(esk_comp *c, unsigned what, char *why, size_t cap)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    es_status r;
+    if (!st || !st->attached)
+        return ES_EINVAL;
+    esk_an_free(st->an);
+    st->an = NULL;
+    st->m.an = NULL;
+    st->an_what = what;
+    if (!what)
+        return ES_OK;
+    if (!st->image) {
+        esk_snprintf(why, cap, "the board has no firmware image");
+        return ES_EINVAL;
+    }
+    r = esk_an_create(&st->m, what, st->image, st->image_len, st->dwarf.nrows ? &st->dwarf : NULL,
+                      esk_cortexm_cores(&st->m), &st->an);
+    if (r == ES_EINVAL)
+        esk_snprintf(why, cap, "%s has no function symbols (an ELF image with its symbol table is needed)",
+                     st->image_name);
+    else if (r != ES_OK)
+        esk_snprintf(why, cap, "out of memory");
+    st->m.an = st->an;
+    return r;
+}
+
+esk_an *esk_mcu_analysis(const esk_comp *c)
+{
+    const mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    return st ? st->an : NULL;
+}
+
+const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    mcu_uart *u = st && st->attached ? uart_named(st, st->console, 0) : NULL;
+    *len = u ? u->text_len : 0;
+    *total = u ? u->text_total : 0;
+    return u ? u->text : "";
+}
+
+const char *esk_mcu_image_name(const esk_comp *c)
+{
+    const mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    return st ? st->image_name : NULL;
 }
 
 es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t cap)
@@ -912,6 +992,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.pin_in = h_pin_in;
     st->m.host.uart_tx = h_uart_tx;
     st->m.host.diag = h_diag;
+    st->m.host.exc = h_exc;
     st->m.host.pin_volts = h_pin_volts;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     snprintf(st->console, sizeof st->console, "%s", su->console ? su->console : "USART1");
@@ -923,6 +1004,11 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
                 /* a part that numbers its pins GPIO0..n (an FE310's): port
                  * k holds GPIO 16k to 16k + 15 */
                 snprintf(name, sizeof name, "GPIO%d", port * 16 + bit);
+                st->gpio[port][bit] = esk_comp_pin(c, name);
+            }
+            if (!st->gpio[port][bit]) {
+                /* a PIC's: RA0, RD6 */
+                snprintf(name, sizeof name, "R%c%d", 'A' + port, bit);
                 st->gpio[port][bit] = esk_comp_pin(c, name);
             }
             if (st->gpio[port][bit] && st->gpio[port][bit]->model.kind == ESK_PIN_DIGITAL_IO)

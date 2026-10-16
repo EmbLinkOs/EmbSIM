@@ -81,6 +81,25 @@
         "-nostdlib",
         "-Wl,--gc-sections"
       ]
+    },
+    "mipsel-none-elf": {
+      "cc": [
+        "clang",
+        "--target=mipsel-linux-gnu",
+        "-march=mips32r2",
+        "-msoft-float",
+        "-mno-abicalls",
+        "-fno-pic",
+        "-G0"
+      ],
+      "link_flags": [
+        "-fuse-ld=lld",
+        "-nostdlib",
+        "-nostartfiles",
+        "-static",
+        "-Wl,--gc-sections"
+      ],
+      "doc": "Bare-metal MIPS32r2 (a PIC32MX's M4K), o32, little-endian, soft float, static code (no abicalls, no small data). The driver is given the Linux triple because clang's generic driver links MIPS through the host's gcc; with -nostdlib, -nostartfiles and -static the image is the same bare-metal ELF, linked by lld."
     }
   },
   "steps": {

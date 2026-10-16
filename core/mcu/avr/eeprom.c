@@ -85,8 +85,7 @@ static void ee_tick(void *ctx, u32 cycles)
     struct avr_eeprom *e = (struct avr_eeprom *)ctx;
     if (!e->running)
         return;
-    if (e->s->cycles - cycles < e->since)
-        cycles = (u32)(e->s->cycles - e->since);
+    cycles = esk_mach_after(e->s, cycles, e->since);
     if (e->left > cycles) {
         e->left -= cycles;
         return;

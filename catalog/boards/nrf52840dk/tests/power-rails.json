@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-rails",
+  "description": "5 V on the 5V pin: the regulator makes the 3.0 V VDD rail, and the buttons' lines float to their pull-up only once the firmware sets one (here, low through no pull: the LEDs' cathodes sit near VDD).",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nrf52840dk"
+      }
+    ],
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "5V": [
+        "VS.+",
+        "B1.5V"
+      ],
+      "GND": [
+        "VS.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "RAIL": [
+        "B1.VDD"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:RAIL": {
+      "at": "5ms",
+      "min_v": 2.9,
+      "max_v": 3.1
+    }
+  }
+}

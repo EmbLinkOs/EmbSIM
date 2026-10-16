@@ -154,8 +154,7 @@ static void us_tick(void *ctx, u32 cycles)
     struct avr_usart *u = (struct avr_usart *)ctx;
     if (!u->running)
         return;
-    if (u->s->cycles - cycles < u->since)
-        cycles = (u32)(u->s->cycles - u->since);
+    cycles = esk_mach_after(u->s, cycles, u->since);
     if (u->left > cycles) {
         u->left -= cycles;
         return;

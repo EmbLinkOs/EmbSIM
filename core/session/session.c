@@ -191,6 +191,8 @@ es_status es_session_create(const es_session_config_t *cfg, es_session **out)
     s->observe_rate_hz = 30.0;
     s->eng.on_net_change = esk_session_on_net_change;
     s->eng.on_net_change_ctx = s;
+    s->eng.on_irq = esk_record_irq;
+    s->eng.on_irq_ctx = s;
     s->inputs_log = esk_json_new_array(s->a);
     *out = s;
     return ES_OK;
@@ -211,8 +213,10 @@ void es_session_destroy(es_session *s)
     esk_strfree(s->a, s->catalog_dir);
     esk_strfree(s->a, s->project_path);
     esk_strfree(s->a, s->client_name);
+    esk_strfree(s->a, s->an_board);
     esk_strfree(s->a, s->record_path);
     esk_json_free(s->a, s->inputs_log);
+    esk_json_free(s->a, s->observations);
     esk_json_free(s->a, s->tx_project);
     while (s->n_allow_origin > 0)
         esk_strfree(s->a, s->allow_origin[--s->n_allow_origin]);
@@ -265,9 +269,11 @@ es_status es_session_load_file(es_session *s, const char *path)
 
 /* ---- probes ------------------------------------------------------------------- */
 
-static void probe_push(esk_probe *p, es_time_t t, double v)
+static void probe_push(es_session *s, esk_probe *p, es_time_t t, double v)
 {
     size_t idx;
+    if (s->recording)
+        esk_record_probe(s, p, t, v);
     if (!p->cap)
         return;
     if (p->len == p->cap) {
@@ -333,7 +339,7 @@ static void probe_sample_cb(void *ctx, void *arg, es_time_t now)
     {
         double v = probe_value(s, p);
         if (!p->threshold || !p->has_last || v != p->last)
-            probe_push(p, now, v);
+            probe_push(s, p, now, v);
     }
     if (p->period_ps && now <= ES_TIME_MAX - p->period_ps)
         esk_sched_at(&s->eng.sched, now + p->period_ps, ESK_EV_PROBE, probe_sample_cb, s, p, &p->sample_event);
@@ -351,7 +357,7 @@ static void probe_start(es_session *s, esk_probe *p)
     p->has_last = 0;
     p->dropped = 0;
     p->sample_event = 0;
-    probe_push(p, s->eng.sched.now, probe_value(s, p));
+    probe_push(s, p, s->eng.sched.now, probe_value(s, p));
     if (p->period_ps)
         esk_sched_at(&s->eng.sched, s->eng.sched.now + p->period_ps, ESK_EV_PROBE, probe_sample_cb, s, p, &p->sample_event);
 }
@@ -363,7 +369,7 @@ void esk_session_on_net_change(void *ctx, esk_net *net)
     for (i = 0; i < s->probes.len; i++) {
         esk_probe *p = s->probes.data[i];
         if (p->kind == ESK_PROBE_DIGITAL && p->net == net)
-            probe_push(p, s->eng.sched.now, (double)esk_net_value(net));
+            probe_push(s, p, s->eng.sched.now, (double)esk_net_value(net));
     }
 }
 
@@ -653,6 +659,8 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
         esk_json_set_string(s->a, rec, "target", target);
         esk_json_set_string(s->a, rec, "input", input);
         esk_json_object_set(s->a, rec, "value", esk_json_clone(s->a, value));
+        if (at == s->eng.sched.now)
+            esk_json_set_bool(s->a, rec, "immediate", 1);
         if (s->inputs_log)
             esk_json_array_push(s->a, s->inputs_log, rec);
         if (s->notify) {
@@ -935,6 +943,8 @@ es_status esk_session_do_reset(es_session *s)
     s->running = 0;
     esk_diag_reset(&s->diag);
     st = esk_engine_reset(&s->eng);
+    if (s->recording)
+        esk_record_start(s); /* a reset starts the recording's observations again */
     for (i = 0; i < s->probes.len; i++) {
         s->probes.data[i]->next_sample = 0;
         s->probes.data[i]->stream_seq = 0;
@@ -955,7 +965,7 @@ static void probes_sample_now(es_session *s)
         if (p->cap && (p->kind != ESK_PROBE_DIGITAL || p->threshold)) {
             es_time_t last = p->len ? p->ring[(p->head + p->len - 1) % p->cap].time_ps : 0;
             if (!p->len || last < s->eng.sched.now)
-                probe_push(p, s->eng.sched.now, probe_value(s, p));
+                probe_push(s, p, s->eng.sched.now, probe_value(s, p));
         }
     }
 }

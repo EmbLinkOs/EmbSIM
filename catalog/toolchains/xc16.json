@@ -45,6 +45,18 @@
         "-Wl,--local-stack",
         "-Wl,-Map=${map}"
       ]
+    },
+    "pic24fj1024gb610": {
+      "cc": [
+        "xc16-gcc",
+        "-mcpu=24FJ1024GB610"
+      ],
+      "link_flags": [
+        "-Wl,--script=p24FJ1024GB610.gld",
+        "-Wl,--gc-sections",
+        "-Wl,--local-stack",
+        "-Wl,-Map=${map}"
+      ]
     }
   },
   "steps": {

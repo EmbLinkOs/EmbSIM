@@ -1,0 +1,305 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "explorer16-pic24",
+ "description": "An Explorer 16/32 with its PIC24FJ1024GB610 PIM running firmware/main.c (built with XC16) on the PIC24F core: the 8 MHz crystal through the 96 MHz PLL to a 32 MHz FOSC (16 MHz FCY), D3 blinking at 1 Hz from Timer1's interrupt, S3 counted through the interrupt-on-change and shown on D4-D10, and what a virtual terminal on UART2 (RF5/RF4, by the PPS) sends at 115200 baud echoed in upper case.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/explorer16-32-pic24",
+   "layout": {
+    "x": 300,
+    "y": 120
+   },
+   "firmware": {
+    "image": "firmware/blink-serial.elf",
+    "format": "elf",
+    "toolchain": "xc16",
+    "sources": [
+     "firmware/main.c"
+    ]
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "PSU",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 40,
+    "y": 140
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 760,
+    "y": 300
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 40,
+    "y": 420
+   }
+  }
+ ],
+ "nets": {
+  "VIN5V": [
+   "PSU.+",
+   "B1.VIN"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "PSU.-",
+   "VT1.GND"
+  ],
+  "UART_TX": [
+   "B1.RF5",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.RF4",
+   "VT1.TX"
+  ]
+ },
+ "layout": {
+  "wires": [
+   {
+    "net": "VIN5V",
+    "points": [
+     [
+      70,
+      140
+     ],
+     [
+      70,
+      120
+     ]
+    ]
+   },
+   {
+    "net": "VIN5V",
+    "points": [
+     [
+      460,
+      160
+     ],
+     [
+      480,
+      160
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      300,
+      180
+     ],
+     [
+      280,
+      180
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      50,
+      420
+     ],
+     [
+      50,
+      400
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      70,
+      180
+     ],
+     [
+      70,
+      200
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      790,
+      340
+     ],
+     [
+      790,
+      360
+     ]
+    ]
+   },
+   {
+    "net": "UART_TX",
+    "points": [
+     [
+      460,
+      460
+     ],
+     [
+      480,
+      460
+     ]
+    ]
+   },
+   {
+    "net": "UART_TX",
+    "points": [
+     [
+      760,
+      310
+     ],
+     [
+      740,
+      310
+     ]
+    ]
+   },
+   {
+    "net": "UART_RX",
+    "points": [
+     [
+      460,
+      440
+     ],
+     [
+      480,
+      440
+     ]
+    ]
+   },
+   {
+    "net": "UART_RX",
+    "points": [
+     [
+      760,
+      330
+     ],
+     [
+      740,
+      330
+     ]
+    ]
+   }
+  ],
+  "labels": [
+   {
+    "net": "VIN5V",
+    "x": 70,
+    "y": 120
+   },
+   {
+    "net": "VIN5V",
+    "x": 480,
+    "y": 160
+   },
+   {
+    "net": "GND",
+    "x": 280,
+    "y": 180
+   },
+   {
+    "net": "GND",
+    "x": 50,
+    "y": 400
+   },
+   {
+    "net": "GND",
+    "x": 70,
+    "y": 200
+   },
+   {
+    "net": "GND",
+    "x": 790,
+    "y": 360
+   },
+   {
+    "net": "UART_TX",
+    "x": 480,
+    "y": 460
+   },
+   {
+    "net": "UART_TX",
+    "x": 740,
+    "y": 310
+   },
+   {
+    "net": "UART_RX",
+    "x": 480,
+    "y": 440
+   },
+   {
+    "net": "UART_RX",
+    "x": 740,
+    "y": 330
+   }
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "d3",
+   "target": "net:B1.RA0",
+   "kind": "digital"
+  },
+  {
+   "id": "d4",
+   "target": "net:B1.RA1",
+   "kind": "digital"
+  },
+  {
+   "id": "s3",
+   "target": "net:B1.RD6",
+   "kind": "digital"
+  },
+  {
+   "id": "tx",
+   "target": "net:UART_TX",
+   "kind": "digital",
+   "decode": {
+    "protocol": "uart",
+    "params": {
+     "baud": 115200
+    }
+   }
+  },
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  }
+ ],
+ "scenarios": [
+  "scenarios/blink.json"
+ ]
+}

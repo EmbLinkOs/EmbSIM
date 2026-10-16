@@ -28,6 +28,42 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
   core/mcu/stm32/gpio_f1.c     tools/embsim/stm32f1-gpio.c
   core/mcu/stm32/usart.c       tools/embsim/stm32-usart.c
   core/mcu/stm32/tim.c         tools/embsim/stm32-tim.c
+  core/mcu/avr/avr.h, avr.c    tools/embsim/avr.h, avr.c
+  core/mcu/avr/cost.h          tools/bench/cost.h (avr_cost)
+  core/mcu/avr/timer.c         tools/embsim/avr-timer16.c (TC1's counting)
+  core/mcu/avr/usart.c         tools/embsim/avr-usart.c
+  core/mcu/riscv/riscv.h, riscv.c
+                               tools/embsim/riscv.h, riscv.c
+  core/mcu/riscv/cost.h        tools/bench/cost.h (rv_cost)
+  core/mcu/riscv/disasm.c      tools/embsim/disasm.c (dis_riscv)
+  core/mcu/riscv/clint.c       tools/embsim/clint.c
+  core/mcu/rp2040/             tools/embsim/rp2040.h, rp2040.c,
+                               rp2040-io.c, rp2040-sio.c, rp2040-timer.c,
+                               rp2040-uart.c, rp2040-ssi.c
+  core/mcu/nrf52/              tools/embsim/nrf52.c (CLOCK, the GPIO ports,
+                               the UARTs, TIMER, RTC; gpiote.c is EmbSIM's)
+  core/mcu/mips/mips.h, mips.c tools/embsim/mips.h, mips.c (without the
+                               FPU, the DSP ASE and microMIPS)
+  core/mcu/mips/mips16.c       tools/embsim/mips16.c
+  core/mcu/mips/cost.h         tools/bench/cost.h (mips_cost)
+  core/mcu/mips/disasm.c       tools/embsim/disasm.c (dis_mips)
+  core/mcu/pic32/              tools/embsim/pic32.h, pic32-evic.c,
+                               pic32-cru.c, pic32-tmr.c, pic32-gpio.c,
+                               pic32-uart.c
+  core/mcu/pic24/pic24.h, pic24.c
+                               tools/embsim/pic24.h, pic24.c
+  core/mcu/pic24/dsp.c         tools/embsim/pic24-dsp.c
+  core/mcu/pic24/disasm.c      tools/embsim/disasm.c (dis_pic24)
+  core/mcu/pic24/intc.c, osc.c, tmr.c, gpio.c
+                               tools/embsim/pic24-intc.c, pic24-osc.c,
+                               pic24-tmr.c, pic32-gpio.c (its PIC24 part);
+                               uart.c is EmbSIM's
+  core/mcu/analysis.h, analysis.c, coverage.c, profile.c
+                               tools/embsim/analysis.h, analysis.c,
+                               coverage.c, profile.c (the call and return
+                               recognition, the report formats)
+  tools/importers/edc2regs.py  tools/embsim/edc.c (its reading of a PIC32's
+                               and a PIC24's EDC, written again in Python)
   tests/firmware/bluepill-golden/
                                tests/golden/embsim-bluepill/ (bluepill.c,
                                bluepill.txt, bluepill-err.txt)
@@ -37,3 +73,26 @@ carries its own licence beside it:
 
   third_party/lua/             Lua 5.4.7, Copyright (C) 1994-2024 Lua.org,
                                PUC-Rio; MIT licence (third_party/lua/LICENSE)
+  catalog/mcus/raspberrypi/rp2040/registers.json
+                               converted from Raspberry Pi's RP2040.svd
+                               (pico-sdk 2.0.0), Copyright (c) 2024
+                               Raspberry Pi Ltd.; BSD-3-Clause
+                               (catalog/mcus/raspberrypi/rp2040/LICENSES/)
+  catalog/mcus/nordic/nrf52840/registers.json
+                               converted from Nordic Semiconductor's
+                               nrf52840.svd (nrfx 3.4.0), Copyright (c)
+                               2010 - 2024 Nordic Semiconductor ASA;
+                               BSD-3-Clause
+                               (catalog/mcus/nordic/nrf52840/LICENSES/)
+  catalog/mcus/microchip/pic32mx795f512l/registers.json, tqfp100.json
+                               converted from Microchip's PIC32MX device
+                               pack (Microchip.PIC32MX_DFP 1.7.380),
+                               Copyright (c) 2026 Microchip Technology Inc.;
+                               Apache-2.0
+                               (catalog/mcus/microchip/pic32mx795f512l/LICENSES/)
+  catalog/mcus/microchip/pic24fj1024gb610/registers.json, tqfp100.json
+                               converted from Microchip's PIC24F-GA-GB
+                               device pack (Microchip.PIC24F-GA-GB_DFP
+                               1.11.479), Copyright (c) 2026 Microchip
+                               Technology Inc.; Apache-2.0
+                               (catalog/mcus/microchip/pic24fj1024gb610/LICENSES/)

@@ -127,6 +127,10 @@ struct esk_engine {
     double default_supply_v;
     esk_net_change_fn on_net_change; /* probes and clients */
     void *on_net_change_ctx;
+    /* an MCU's core enters an exception or interrupt, at its own time (a
+     * recording's observations, SPEC-012 §1) */
+    void (*on_irq)(void *ctx, esk_comp *mcu, int core, int cores, int n, es_time_t at);
+    void *on_irq_ctx;
     int partitioned;
     int in_reset;            /* floating-input diagnostics are suppressed while models initialise */
     uint64_t signal_events;

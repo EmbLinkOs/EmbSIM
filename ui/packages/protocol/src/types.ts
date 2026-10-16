@@ -452,6 +452,10 @@ export interface Where {
   now_ps: string;
   instructions: number;
   cycles: number;
+  /** The part's main RAM, where a memory view starts. */
+  ram?: number;
+  /** On a part with several cores, the one the registers and the program counter are (the one that runs next). */
+  core?: number;
 }
 
 /** A source file the image's DWARF names (debug.source). */
@@ -461,6 +465,42 @@ export interface SourceFile {
   text: string;
   /** The lines that have code: where a breakpoint can go. */
   lines: number[];
+}
+
+export interface HitTotal {
+  hit: number;
+  total: number;
+}
+
+/** One board's coverage (analysis.coverage, SPEC-008 §5). */
+export interface CoverageReport {
+  lines: HitTotal;
+  functions: HitTotal;
+  insns: number;
+  files: {
+    path: string;
+    lines: HitTotal;
+    /** With `detail`: each function's entries; without, the file's counts. */
+    functions: { name: string; line: number; count: number }[] | HitTotal;
+    /** With `detail`: [line, count] for each line that has code. */
+    counts?: [number, number][];
+  }[];
+  no_lines?: { name: string; count: number }[];
+}
+
+/** One board's profile (analysis.profile), by self cycles. */
+export interface ProfileReport {
+  insns: number;
+  cycles: number;
+  elapsed_cycles: number;
+  functions: {
+    name: string;
+    self_insns: number;
+    self_cycles: number;
+    incl_insns: number;
+    incl_cycles: number;
+    calls: number;
+  }[];
 }
 
 export interface Instruction {
@@ -488,6 +528,8 @@ export interface Peripheral {
   model: string;
   /** Its clock is enabled (an access while it is off reads 0). */
   clock: boolean;
+  /** It is held in reset (an access reads its reset values, a write is ignored). */
+  reset?: boolean;
   registers: { name: string; offset: number; value: number }[];
 }
 
@@ -509,4 +551,58 @@ export interface Report {
     analog_steps?: number;
     wall_time_s?: number;
   };
+  /** With the analyses on: each board's coverage and first functions. */
+  coverage?: Record<string, CoverageReport>;
+  profile?: Record<string, ProfileReport>;
+}
+
+/** An input of a scenario (SPEC-007 §2): at a time, a target's input set. */
+export interface ScenarioInput {
+  at: string;
+  target: string;
+  input: string;
+  value: unknown;
+}
+
+/** An assertion of a scenario: when (`at`, `between`, `by`, `always`), on
+ * what (`probe`, or `diagnostics.forbid`), and what is expected. */
+export interface ScenarioAssertion {
+  id: string;
+  at?: string;
+  between?: [string, string];
+  by?: string;
+  always?: boolean;
+  probe?: string;
+  expect?: Record<string, unknown>;
+  diagnostics?: { forbid: string[] };
+}
+
+export interface Scenario {
+  schema_version: number;
+  kind: 'scenario';
+  name: string;
+  description?: string;
+  until?: string;
+  policy?: Policy;
+  inputs: ScenarioInput[];
+  assertions: ScenarioAssertion[];
+}
+
+/** A recording (SPEC-012 §1), as record.stop returns it without a path. */
+export interface Recording {
+  schema_version: number;
+  kind: 'recording';
+  project: { path: string; hash: string };
+  inputs: unknown[];
+  observations: { at_ps: PsString; kind: string; [k: string]: unknown }[];
+  end: { at_ps: PsString; reason: string };
+  [k: string]: unknown;
+}
+
+/** record.replay's result (SPEC-012 §2). */
+export interface ReplayResult {
+  ok: boolean;
+  compared?: number;
+  divergence?: { index: number; expected: unknown; observed: unknown };
+  drift?: { what: string; recorded: string; now: string }[];
 }

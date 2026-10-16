@@ -124,8 +124,7 @@ static void adc_tick(void *ctx, u32 cycles)
     struct avr_adc *a = (struct avr_adc *)ctx;
     if (!a->running)
         return;
-    if (a->s->cycles - cycles < a->since)
-        cycles = (u32)(a->s->cycles - a->since);
+    cycles = esk_mach_after(a->s, cycles, a->since);
     if (a->left > cycles) {
         a->left -= cycles;
         return;

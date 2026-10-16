@@ -99,6 +99,87 @@ versions follow semantic versioning. There is no release yet.
   takes pins named GPIOn and gives an ADC its pin's voltage; the regulator
   model converges with a supply on its output; the board view scopes each
   artwork's styles and gradient ids and colours an LED by its parameter.
+- M4 part 2: the RP2040 (Cortex-M0+) with its register file converted from
+  Raspberry Pi's RP2040.svd, its resets, clocks and PLLs, watchdog tick and
+  timer, IO_BANK0 and pads, SIO (GPIO, spinlocks, divider, FIFO), PL011
+  UARTs, SSI and a bootrom stand-in that boots boot2, and the Raspberry Pi
+  Pico; the nRF52840 (Cortex-M4F) with its register file converted from
+  Nordic's nrf52840.svd, CLOCK, the GPIO ports, GPIOTE, UARTE with EasyDMA,
+  TIMER and RTC, and the nRF52840 DK. `examples/pico-blink-serial` and
+  `examples/nrf52840dk-blink`, built by clang and EmbCC.
+- The register file's bus rules (the RP2040's atomic aliases and byte
+  writes) and peripherals held in reset, shown as "in reset" in the Debug
+  perspective (`debug.peripherals` reports `reset`).
+- M4 part 3: the MIPS32 core (the PIC32MX's M4K with MIPS16e, and QEMU
+  malta's 24Kc) and the PIC32MX795F512L with its register file converted
+  from Microchip's PIC32MX device pack: the EVIC, the oscillator from the
+  configuration words, Timer1-5, ports A-G with the change notices and
+  UART1-6; the Explorer 16/32 with the PIC32MX795F512L PIM and
+  `examples/explorer16-pic32mx`, built by clang and EmbCC.
+- `tools/importers/edc2regs.py`: a PIC32's EDC to a register description
+  with CLR/SET/INV registers, shared vectors and pin functions
+  (`clr_set_inv`, `vectors` and `pins` in the register schema).
+- The clang and EmbCC profiles build `mipsel-none-elf`; a scenario may press
+  a board's own button (`B1.S3`).
+- M4 part 4: the PIC24 core (the PIC24F, with EmbCC's dsPIC33E mode) and the
+  PIC24FJ1024GB610 with its register file converted from Microchip's
+  PIC24F-GA-GB device pack: the interrupt controller, the oscillator from
+  the configuration words with OSCCON's unlock sequences and the PPS lock,
+  Timer1-5, ports A-G with the interrupt-on-change, and UART1-6 timed on the
+  pins the PPS gives them; the Explorer 16/32 with the PIC24FJ1024GB610 PIM
+  and `examples/explorer16-pic24`, built by XC16. The `mcu.trap`
+  diagnostic.
+- Record and replay (M5, SPEC-012): recordings with the project's and
+  images' SHA-256 and observations (interrupt entries per core, digital
+  probe transitions, serial text, diagnostics); `embsim replay` with a
+  first-divergence report (exit 4) and drift refusal (`--allow-drift`);
+  `embsim record to-scenario`; `record.replay` over the protocol;
+  `tools/verify/compare_reports.py`; a determinism and replay test over
+  every example (`record_replay`).
+- Coverage and profiling from the backends (M5, SPEC-009 §12): every core
+  (Cortex-M, AVR, RISC-V, MIPS, PIC24, and each of the RP2040's two) watched
+  instruction by instruction; `embsim run --coverage` (gcov-style text with
+  the source, lcov, JSON) and `--profile` (by function, self and inclusive,
+  collapsed stacks for flame graphs, JSON); `analysis.start`, `.stop`,
+  `.coverage`, `.profile` over the protocol; the run report's `coverage`
+  and `profile` summaries; the `analysis` test over every firmware example.
+  Extracted from EmbCC's analyses, with per-core call stacks.
+- The Verify perspective (M5): the scenario editor (a scenario's inputs
+  and assertions edited in place, run with each result in its row, saved
+  into the project: `scenario.get`, `scenario.save`), recordings replayed
+  with the divergence shown or turned into a scenario
+  (`record.to_scenario`), coverage with each file's source and counts and
+  the functions by cycles.
+- Recordings made in a running session replay identically: they begin
+  with the digital probes' levels and carry `from_ps` and `from_seq`;
+  inputs given at the paused instant are `immediate`.
+- The Python client (`python/embsim`, `pip install ./python`): `Session`,
+  `run()`, `replay()`, a pytest fixture.
+- `embsim run --target BOARD --image FILE` with `--console` and
+  `--until-text`: a catalog board as an emulated target for test runners,
+  with no project; `--image ID=FILE` over a project. `docs/user/ci.md`.
+  EmbLinkRTOS's Arduino Uno conformance suite runs this way.
+- The RP2040's second core: two Cortex-M0+ cores on one clock
+  (`core.cores`; each core's NVIC, SysTick, CPUID, divider and FIFO; WFE and
+  SEV between them; core 1 launched through its bootrom's FIFO handshake and
+  powered by the PSM; IO_BANK0's PROC1 interrupts), and
+  `examples/pico-dual-core`, built by clang and EmbCC.
+- `edc2regs.py` converts a PIC24's EDC (`config_words` and `pps_outputs` in
+  the register schema; `core.prog_end` and `core.ram_base` in the MCU
+  schema); the XC16 profile's `pic24fj1024gb610` target.
+
+### Changed
+- A toolchain profile's `link_flags` may name the build's variables: the XC
+  profiles' `-Wl,-Map=${map}` was passed through as written.
+- The DWARF line reader takes XC16 images (their debug sections hold a byte
+  in each 16-bit unit), so the Debug perspective shows a PIC24's source.
+- Two weak pulls that disagree on a net are a divider, no longer reported
+  as `net.contention`.
+- A component's own parameters win over its part preset's.
+- The runtime finds a UART's RX pin again when a pin's function changes.
+- An MCU's GPIO pins take their high level and pulls from its description's
+  supply (`io.electrical.vdd`): the nRF52840 DK's 3.0 V.
+- The runtime and the loader take PIC pin names (RA0, RD6) as GPIO pins.
 
 ### Removed
 - The draft 0.1 foundation (Python runtime, HTTP server, single-page UI);

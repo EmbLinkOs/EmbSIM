@@ -91,6 +91,11 @@ const flasher = 'examples/kicad-flasher/project.json';
 const uno = 'examples/uno-blink-serial/project.json';
 const hifive = 'examples/hifive1-blink/project.json';
 const twoBoards = 'examples/two-boards-uart/project.json';
+const pico = 'examples/pico-blink-serial/project.json';
+const dk = 'examples/nrf52840dk-blink/project.json';
+const explorer = 'examples/explorer16-pic32mx/project.json';
+const explorer24 = 'examples/explorer16-pic24/project.json';
+const picoDual = 'examples/pico-dual-core/project.json';
 
 /** the Debug perspective stopped at a breakpoint on `symbol` */
 async function debugAt(page, symbol, ms) {
@@ -147,6 +152,115 @@ try {
     await run(page, 2700);
   }, { scale: 2, element: '.es-board svg' });
   await shot(browser, 'debug-hifive1', hifive, (page) => debugAt(page, 'trap_entry', 1500));
+  // M4 part 2: the Raspberry Pi Pico (RP2040) and the nRF52840 DK
+  await shot(browser, 'design-pico', pico, async (page) => run(page, 1500));
+  await shot(browser, 'run-pico', pico, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'board-pico', pico, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  }, { scale: 3, element: '.es-board svg' });
+  await shot(browser, 'debug-pico', pico, (page) => debugAt(page, 'timer_irq_0', 1500));
+  await shot(browser, 'design-nrf52840dk', dk, async (page) => run(page, 1500));
+  await shot(browser, 'run-nrf52840dk', dk, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'board-nrf52840dk', dk, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  }, { scale: 2, element: '.es-board svg' });
+  await shot(browser, 'debug-nrf52840dk', dk, (page) => debugAt(page, 'rtc1_irq', 1500));
+  // M4 part 3: the Explorer 16/32 with its PIC32MX795F512L (MIPS32 M4K)
+  await shot(browser, 'design-explorer16', explorer, async (page) => run(page, 1500));
+  await shot(browser, 'run-explorer16', explorer, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'board-explorer16', explorer, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  }, { scale: 2, element: '.es-board svg' });
+  await shot(browser, 'debug-explorer16', explorer, (page) => debugAt(page, 'isr', 1500));
+  // M4 part 4: the Explorer 16/32 with its PIC24FJ1024GB610 (an XC16 image)
+  await shot(browser, 'design-explorer16-pic24', explorer24, async (page) => run(page, 1500));
+  await shot(browser, 'run-explorer16-pic24', explorer24, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'board-explorer16-pic24', explorer24, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  }, { scale: 2, element: '.es-board svg' });
+  await shot(browser, 'debug-explorer16-pic24', explorer24, (page) => debugAt(page, '__T1Interrupt', 1500));
+  // M4 part 5: the Pico's two cores
+  await shot(browser, 'run-pico-dual-core', picoDual, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'debug-pico-core1', picoDual, (page) => debugAt(page, 'sio_irq_proc1', 1500));
+  // M5: verification. A scenario opened, edited in place and run; coverage of
+  // the Blue Pill's firmware with its source; a recording replayed
+  const verifyRegion = (page, name) => page.getByRole('region', { name });
+  await shot(browser, 'verify-scenario', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Scenario editor').getByRole('button', { name: 'Open' }).first().click();
+    await wait(600);
+    await verifyRegion(page, 'Scenario editor').getByRole('button', { name: 'Run', exact: true }).click();
+    await wait(2500);
+  });
+  await shot(browser, 'verify-coverage', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Measure' }).click();
+    await wait(400);
+    await perspective(page, 2);
+    await run(page, 1200);
+    await holdButton(page, 'SW1', 500);
+    await wait(500);
+    await page.getByTestId('run-toggle').click();
+    await perspective(page, 4);
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Refresh' }).click();
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByText('./main.c', { exact: true }).click();
+    await wait(1200);
+  });
+  await shot(browser, 'verify-coverage-dark', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Measure' }).click();
+    await perspective(page, 2);
+    await run(page, 1200);
+    await page.getByTestId('run-toggle').click();
+    await perspective(page, 4);
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Refresh' }).click();
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByText('./main.c', { exact: true }).click();
+    await wait(1200);
+  }, { dark: true });
+  await shot(browser, 'verify-recording', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Recordings').getByRole('button', { name: 'Record', exact: true }).click();
+    await perspective(page, 2);
+    await run(page, 800);
+    await holdButton(page, 'SW1', 400);
+    await wait(400);
+    await page.getByTestId('run-toggle').click();
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Recordings').getByRole('button', { name: 'Stop', exact: true }).click();
+    await wait(500);
+    await verifyRegion(page, 'Recordings').getByRole('button', { name: 'Replay', exact: true }).click();
+    await wait(3000);
+    await verifyRegion(page, 'Recordings').getByRole('button', { name: 'To scenario' }).click();
+    await wait(1200);
+  });
   await shot(browser, 'design-two-boards', twoBoards, async (page) => run(page, 2000));
   await shot(browser, 'run-two-boards', twoBoards, async (page) => {
     await perspective(page, 2);

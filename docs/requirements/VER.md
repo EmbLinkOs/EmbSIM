@@ -29,6 +29,13 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Verification.** CLI test.
 **Trace.** SPEC-012 §3
 
+### VER-005  Coverage and profile
+**Statement.** A run shall report, per board, the firmware's source lines and functions executed (as lcov) and its instructions and cycles by function and call path (as collapsed stacks), deterministically.
+**Rationale.** A CI run against an emulated target measures what it tested and where the time went.
+**Status.** Accepted 2026-10-16
+**Verification.** `tests/protocol/test_analysis.py` (`analysis` in CTest).
+**Trace.** SPEC-009 §12, SPEC-008 §5
+
 ### VER-004  Differential suites
 **Statement.** CI shall run EmbCC golden fixtures (per extracted family), ngspice analog fixtures and QEMU-derived expectations where available.
 **Rationale.** Evidence.

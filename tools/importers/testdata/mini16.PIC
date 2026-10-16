@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A made-up PIC24 for tools/test_importers.py: a core register (left to the
+     core), an interrupt controller register, two UARTs in one module (split
+     into UART1 and UART2), a port, two interrupts, a configuration word and
+     three pins, one with a PPS output function. -->
+<edc:PIC xmlns:edc="http://crownking/edc" edc:name="PIC24FJTEST" edc:arch="16xxxx">
+  <edc:InterruptList>
+    <edc:Interrupt edc:cname="T1Interrupt" edc:irq="3"/>
+    <edc:Interrupt edc:cname="U2RXInterrupt" edc:irq="30"/>
+  </edc:InterruptList>
+  <edc:ProgramSpace>
+    <edc:ProgramSubspace>
+      <edc:DCRDef edc:cname="FOSCSEL" edc:_addr="0xABF18"/>
+    </edc:ProgramSubspace>
+  </edc:ProgramSpace>
+  <edc:DataSpace>
+    <edc:SFRDataSector edc:beginaddr="0x0">
+      <edc:SFRDef edc:cname="WREG0" edc:nzwidth="0x10" edc:access="nnnnnnnnnnnnnnnn" edc:por="0000000000000000" edc:_modsrc="CPU.Module" edc:_addr="0x0"/>
+      <edc:SFRDef edc:cname="INTCON1" edc:nzwidth="0x10" edc:access="n--------------n" edc:por="0000000000000000" edc:_modsrc="INT.Module" edc:_addr="0x80">
+        <edc:SFRModeList>
+          <edc:SFRMode edc:id="DS.0">
+            <edc:AdjustPoint edc:offset="15"/>
+            <edc:SFRFieldDef edc:cname="NSTDIS" edc:mask="0x1" edc:nzwidth="0x1"/>
+          </edc:SFRMode>
+        </edc:SFRModeList>
+      </edc:SFRDef>
+      <edc:SFRDef edc:cname="U1MODE" edc:nzwidth="0x10" edc:access="n---------------" edc:por="0000000000000000" edc:_modsrc="UART.Module" edc:_addr="0x398">
+        <edc:SFRModeList>
+          <edc:SFRMode edc:id="DS.0">
+            <edc:AdjustPoint edc:offset="15"/>
+            <edc:SFRFieldDef edc:cname="UARTEN" edc:mask="0x1" edc:nzwidth="0x1"/>
+          </edc:SFRMode>
+        </edc:SFRModeList>
+      </edc:SFRDef>
+      <edc:SFRDef edc:cname="U1STA" edc:nzwidth="0x10" edc:access="-------r--------" edc:por="0000000100000000" edc:_modsrc="UART.Module" edc:_addr="0x39A"/>
+      <edc:SFRDef edc:cname="U2MODE" edc:nzwidth="0x10" edc:access="n---------------" edc:por="0000000000000000" edc:_modsrc="UART.Module" edc:_addr="0x3AE"/>
+      <edc:SFRDef edc:cname="TRISA" edc:nzwidth="0x10" edc:access="---------------n" edc:por="---------------1" edc:_modsrc="PORT.Module" edc:_addr="0x600"/>
+      <edc:SFRDef edc:cname="PORTA" edc:nzwidth="0x10" edc:access="---------------n" edc:por="---------------x" edc:_modsrc="PORT.Module" edc:_addr="0x602"/>
+    </edc:SFRDataSector>
+  </edc:DataSpace>
+  <edc:PinList>
+    <edc:Pin>
+      <edc:VirtualPin edc:name="RP5"/>
+      <edc:VirtualPin edc:name="RA0"/>
+    </edc:Pin>
+    <edc:Pin>
+      <edc:VirtualPin edc:name="Vdd"/>
+    </edc:Pin>
+    <edc:Pin>
+      <edc:VirtualPin edc:name="MCLR"/>
+    </edc:Pin>
+  </edc:PinList>
+  <edc:VirtualPinList>
+    <edc:VirtualPin edc:name="U2TX" edc:ppsval="5"/>
+  </edc:VirtualPinList>
+</edc:PIC>

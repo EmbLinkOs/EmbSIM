@@ -37,9 +37,16 @@ with its fixtures, the Lua tier, the SDK commands and the three importers;
 archive and URL installation and Lua's analog access are open (STATUS.md).
 M4 is under way: the AVR (the Arduino Uno) and RISC-V (the HiFive1 Rev B)
 backends run their boards' firmware, built by clang and EmbCC, and a
-two-board project exchanges bytes deterministically; PIC24, PIC32, the
-nRF52840 DK, the Pico and the Explorer 16/32 are open. M5 and M6 are
-planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
+two-board project exchanges bytes deterministically; the Raspberry Pi Pico
+(the RP2040's core 0) and the nRF52840 DK run theirs, and so does the
+Explorer 16/32 with its PIC32MX795F512L (the MIPS32 M4K) and with its
+PIC24FJ1024GB610 (an XC16 image); the Pico runs both of its cores. M5 is
+implemented: a recorded scenario replays identically (every example, and
+recordings made in a running session), and EmbLinkRTOS's Arduino Uno
+conformance suite runs on EmbSIM as an emulated target (its CI job joins
+once this branch is merged); the coverage, profile, Python client, CI
+documentation and the Verify perspective are in STATUS.md. M6 is planned,
+not delivered. Do not bulk-copy all EmbCC boards and call them supported.
 
 ## 3. Specification work order
 

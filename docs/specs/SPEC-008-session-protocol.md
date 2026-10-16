@@ -114,11 +114,11 @@ Notation: `method(params) -> result`. Params and results are objects.
 ### debug (per board MCU)
 - `debug.breakpoint({board, op: "add"|"remove", kind: "code"|"read"|"write"|"access", address|symbol|file+line, length?}) -> {id}`
 - `debug.registers({board}) -> {regs: [{name, value}]}`; `debug.set_register({board, name, value})`
-- `debug.memory({board, address, length}) -> {base64}`; `debug.write_memory({board, address, base64})`
-- `debug.where({board}) -> {pc, function, file, line, frames: [...]}` (DWARF)
+- `debug.memory({board, address, length}) -> {base64}`; `debug.write_memory({board, address, base64})`; the address is a program address, as the core's `phys` hook maps it to the bus (a MIPS core's kseg0 and kseg1), and so for the GDB server's
+- `debug.where({board}) -> {pc, function, file, line, frames: [...], ram, core?}` (DWARF); `ram` is the part's main RAM (its largest RAM region), where a memory view starts; `core`, on a part with several cores, is the one the program counter and the registers are (the one that runs next)
 - `debug.variables({board, frame?}) -> {...}`
 - `debug.disassemble({board, address, count}) -> {insns: [...]}`
-- `debug.peripherals({board}) -> {peripherals: [{name, base, registers: [{name, offset, value, fields: [...]}]}]}`
+- `debug.peripherals({board}) -> {peripherals: [{name, base, model, clock, reset, registers: [{name, offset, value, fields: [...]}]}]}`; `clock` false while the peripheral's clock is off, `reset` true while it is held in reset (the RP2040's RESETS)
 - `debug.gdb({board, op: "start"|"stop", port}) -> {port}`
 - `control.step({mode: "instruction", board})` and `control.run` honour breakpoints; a stop is reported by `debug.stopped` notification.
 
@@ -129,15 +129,42 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `catalog.libraries({}) -> {libraries: [{path, name, version, items}]}`
 
 ### record
-- `record.start({path?}) -> {}`; `record.stop({}) -> {path, inputs, hash}`
-- `record.replay({path}) -> {ok, divergence?: {at_ps, expected, observed}}`
+- `record.start({path?}) -> {from_ps}`; `record.stop({}) -> {path, hash, inputs, count, observations}` (with no path, `recording` is the document itself)
+- `record.replay({path} | {recording}, allow_drift?) -> {ok, compared, divergence?: {index, expected, observed}, drift: [{what, recorded, now}]}`: the recording's project loaded into the session and replayed (SPEC-012 §2); `recording` is the document itself, as `record.stop` returns it without a path
+- `record.to_scenario({path} | {recording}, assert?: ["probes", "serial"], name?) -> {scenario}`: the recording as a SPEC-007 scenario (SPEC-012 §3)
+
+### analysis (the firmware's coverage and profile)
+- `analysis.start({board?, coverage?, profile?}) -> {coverage, profile}`:
+  the boards' MCUs (one board's, or every board's with firmware) are
+  watched from now on, counting from zero; both analyses by default. They
+  stay on across a reset, a reload and a new image. `analysis.stop({})`
+  turns them off.
+- `analysis.coverage({board?, format?, detail?}) -> {boards: {ID: {lines:
+  {hit, total}, functions: {hit, total}, insns, files: [{path, lines,
+  functions: [{name, line, count}], counts: [[line, count]...]}],
+  no_lines?}}}`; with `format` `text` or `lcov`, `{text}` (gcov's layout,
+  an lcov tracefile). A line has code when the line table puts an address
+  range of it inside a function; its count is its most-executed
+  instruction's, a function's its first instruction's.
+- `analysis.profile({board?, format?, detail?}) -> {boards: {ID: {insns,
+  cycles, elapsed_cycles, functions: [{name, self_insns, self_cycles,
+  incl_insns, incl_cycles, calls}]}}}` by self cycles (without `detail`,
+  the first ten); with `format` `text`, `collapsed` or `collapsed-insns`,
+  `{text}` (the report; collapsed stacks by cycles or instructions, a
+  machine's cores rooted at `core0`, `core1`). `cycles` are the steps'
+  (a sleeping core's time is no step's); `elapsed_cycles` the machine's.
+- Both are -32001 until `analysis.start`.
 
 ### toolchain
 - `toolchain.detect({}) -> {profiles: [{name, found, version, path}]}`
 - `toolchain.build({board, profile?}) -> {ok, log, image}`
 
 ### scenario
-- `scenario.run({path} | {scenario}) -> {report}` (SPEC-007 §2; the session is reset first)
+- `scenario.run({path} | {scenario}, until?) -> {report}` (SPEC-007 §2; the session is reset first)
+- `scenario.get({path}) -> {path, scenario}` and `scenario.save({path, scenario, add?}) -> {path}`:
+  a scenario file of the project, `path` relative to its folder (no `..`, not
+  absolute), written with two-space indents; `add` lists it in the project's
+  `scenarios` (`project.save` keeps the list). The scenario editor's.
 
 ## 6. Notifications (server to client)
 
@@ -163,7 +190,10 @@ stream are in order; different streams are independent.
 report: `{engine, protocol, project: {name, hash}, images: [{board, path,
 hash}], policy, until_ps, ended: {reason, now_ps}, assertions: [{id, ok,
 observed, expected, at_ps}], diagnostics: [...], statistics: {events,
-instructions: {board: n}, analog_steps, wall_time_s}}`.
+instructions: {board: n}, analog_steps, wall_time_s}}`. With the analyses
+on, it has `coverage` (each board's totals and files' counts, as
+`analysis.coverage` without `detail`) and `profile` (each board's first ten
+functions).
 
 ## 9. CLI exit codes
 

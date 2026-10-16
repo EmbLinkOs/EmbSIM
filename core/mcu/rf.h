@@ -24,8 +24,26 @@
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/svd-map.h. The register
  * file is built from EmbSIM's JSON register descriptions instead of a
  * CMSIS-SVD file (ADR-019): an SVD converts to one with tools/importers/svd2regs.py.
- * Tracing, PIC32 CLR/SET/INV registers and RP2040 atomic aliases are not
- * carried over yet. */
+ * Tracing is not carried over yet.
+ *
+ * A part's bus can add rules (the MCU description's register_file
+ * bus_rules):
+ *   ESK_RF_ATOMIC_ALIASES  each peripheral's registers again at +0x1000,
+ *                          where a write XORs its bits into the register,
+ *                          +0x2000 sets them and +0x3000 clears them (the
+ *                          RP2040's, below 0xD0000000: the SIO has none);
+ *                          a read there reads the register;
+ *   ESK_RF_WIDE_WRITES     a byte or halfword write to a 32-bit register
+ *                          writes the whole register, the value repeated
+ *                          across the bus's byte lanes (the RP2040's APB).
+ * A register the description marks clr_set_inv has three more after it
+ * (a PIC32's): +4 clears the bits a write sets, +8 sets them and +0xC
+ * inverts them, as an atomic alias does; a read of them gives 0.
+ *
+ * The description's interrupt table is kept for the models that find an
+ * interrupt by name (esk_rf_irq_named), with each one's vector where
+ * requests share them (esk_rf_vector), and its pins table for the models
+ * that find a function's pin (esk_rf_pin). */
 #ifndef ESK_MCU_RF_H
 #define ESK_MCU_RF_H
 
@@ -53,6 +71,7 @@ struct esk_rf_reg {
     int bytes; /* 4, 2 for a halfword register, 1 for a byte (an AVR's) */
     u64 value, reset;
     u64 once;  /* the write-once bits written since reset */
+    int sci;   /* CLR, SET and INV registers follow it */
     const char *name;
     struct esk_rf_periph *p;
     struct esk_rf_field *f;
@@ -74,9 +93,12 @@ struct esk_rf_periph {
     void *ctx;
     const char *model; /* the model's name, 0 for the register file alone */
     /* its clock gate: while `gate`'s `gate_mask` bits are clear, a read
-     * gives 0 and a write is ignored (the RCC model sets it) */
+     * gives 0 and a write is ignored (the RCC model sets it); with
+     * gate_held, the peripheral is held in reset while they are set: a
+     * read gives its registers' reset values */
     struct esk_rf_reg *gate;
     u64 gate_mask;
+    int gate_held;
     const char *gate_name; /* RCC.APB1ENR.USART2EN */
     int gate_warned, plain_warned;
 };
@@ -91,6 +113,8 @@ struct esk_rf_model_type {
 
 #define ESK_RF_TICKERS 32
 
+enum { ESK_RF_ATOMIC_ALIASES = 1, ESK_RF_WIDE_WRITES = 2 };
+
 struct esk_rf {
     struct esk_mach *m;
     const char *device;
@@ -99,14 +123,32 @@ struct esk_rf {
     struct esk_rf_reg **reg; /* every register, by address */
     int nreg;
     u32 lo, hi;              /* the span the bus device covers */
+    int rules;               /* ESK_RF_ATOMIC_ALIASES, ESK_RF_WIDE_WRITES */
     struct esk_rf_periph *tk[ESK_RF_TICKERS];
     int ntk;
     int faults;
+    /* the description's interrupt table, vectors and pins */
+    const char **irq_name;
+    int *irq_num, *irq_vec;
+    int nirq;
+    const char **pin_name;
+    int *pin_at; /* port * 32 + bit, port 0 being A */
+    int npin;
+    /* the configuration words' addresses (program addresses), by name */
+    const char **cfg_name;
+    u32 *cfg_at;
+    int ncfg;
+    /* the PPS output functions' numbers, by name */
+    const char **pps_name;
+    int *pps_fn;
+    int npps;
 };
 
 /* Build the register file from a register description and put it on the
- * bus. Errors name the problem in `why`. */
-es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, char *why, size_t why_cap);
+ * bus, with the part's bus rules. Errors name the problem in `why`. */
+es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, char *why, size_t why_cap);
+/* the rules a description's bus_rules names: -1 for an unknown one */
+int esk_rf_rules(const esk_json *names);
 /* bind the models of `binding` (an MCU description's "peripherals": an
  * array of {"match": glob, "model": name}); unknown model names are left as
  * plain register files and reported in `missing` (a comma list) */
@@ -116,6 +158,8 @@ const struct esk_rf_model_type *esk_rf_model_find(const char *name);
 /* ---- for the models --------------------------------------------------- */
 
 int esk_rf_gated(const struct esk_rf_periph *p);
+/* the peripheral's registers to their reset values, and its model's reset */
+void esk_rf_periph_reset(struct esk_rf_periph *p);
 struct esk_rf_periph *esk_rf_periph(struct esk_rf *rf, const char *name);
 struct esk_rf_periph *esk_rf_periph_at(struct esk_rf *rf, int i);
 struct esk_rf_reg *esk_rf_reg(struct esk_rf_periph *p, const char *name);
@@ -134,6 +178,16 @@ u64 esk_rf_fields(const struct esk_rf_reg *r);
 /* the peripheral's interrupt: the first whose name has `want` in it, else
  * its first; -1 when it has none */
 int esk_rf_irq(const struct esk_rf_periph *p, const char *want);
+/* the interrupt of that name in the description's table, or -1 */
+int esk_rf_irq_named(const struct esk_rf *rf, const char *name);
+/* the vector interrupt `irq` is taken through: the description's, else irq */
+int esk_rf_vector(const struct esk_rf *rf, int irq);
+/* the port pin function `name` is on, as port * 32 + bit (port A 0), or -1 */
+int esk_rf_pin(const struct esk_rf *rf, const char *name);
+/* the address of the configuration word of that name, or dflt */
+u32 esk_rf_config(const struct esk_rf *rf, const char *name, u32 dflt);
+/* the number of the PPS output function of that name (U2TX), or -1 */
+int esk_rf_pps_out(const struct esk_rf *rf, const char *name);
 /* pend that interrupt in the core */
 void esk_rf_interrupt(struct esk_rf_periph *p, int irq);
 /* the model's clock starts (1) or stops: while it runs, its tick hook is

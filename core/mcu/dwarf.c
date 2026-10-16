@@ -9,7 +9,9 @@
  * the table names it, joined to its directory when relative; matching a
  * request ("main.c", "firmware/main.c") compares path suffixes at a
  * separator. Version 5's entry formats are read for the forms compilers
- * use (string, line_strp, strp, udata, data1-16, block). */
+ * use (string, line_strp, strp, udata, data1-16, block). An XC16 image's
+ * (EM_DSPIC30F) debug sections hold each byte in the low half of a 16-bit
+ * unit, as its program memory does: they are read packed. */
 #include <string.h>
 
 #include "mcu/dwarf.h"
@@ -421,11 +423,31 @@ static void sort_rows(esk_dwarf_row *r, size_t n)
         }
 }
 
+#define EM_DSPIC30F 118
+
+/* a section of an XC16 image packed: its even bytes; NULL when out of memory */
+static u8 *packed(esk_alloc *a, const u8 *sec, u32 *size)
+{
+    u32 i, n = *size / 2;
+    u8 *p = (u8 *)esk_malloc(a, n ? n : 1);
+    if (!p)
+        return NULL;
+    for (i = 0; i < n; i++)
+        p[i] = sec[2 * i];
+    *size = n;
+    return p;
+}
+
+static es_status load(esk_dwarf *d, const u8 *sec, u32 size, const u8 *line_str, u32 line_str_len,
+                      const u8 *str, u32 str_len);
+
 es_status esk_dwarf_load(esk_dwarf *d, esk_alloc *a, const u8 *f, size_t len)
 {
-    u32 size = 0, line_str_len = 0, str_len = 0;
+    u32 size = 0, line_str_len = 0, str_len = 0, n[3];
     const u8 *sec, *line_str, *str;
-    rd r;
+    u8 *pk[3] = { NULL, NULL, NULL };
+    es_status st;
+    int i;
     memset(d, 0, sizeof *d);
     d->a = a;
     sec = section(f, len, ".debug_line", &size);
@@ -433,6 +455,28 @@ es_status esk_dwarf_load(esk_dwarf *d, esk_alloc *a, const u8 *f, size_t len)
         return ES_ENOTFOUND;
     line_str = section(f, len, ".debug_line_str", &line_str_len);
     str = section(f, len, ".debug_str", &str_len);
+    if (le16(f + 18) != EM_DSPIC30F)
+        return load(d, sec, size, line_str, line_str_len, str, str_len);
+    n[0] = size;
+    n[1] = line_str_len;
+    n[2] = str_len;
+    pk[0] = packed(a, sec, &size);
+    pk[1] = line_str ? packed(a, line_str, &line_str_len) : NULL;
+    pk[2] = str ? packed(a, str, &str_len) : NULL;
+    st = !pk[0] || (line_str && !pk[1]) || (str && !pk[2])
+             ? ES_ENOMEM
+             : load(d, pk[0], size, pk[1], line_str_len, pk[2], str_len);
+    for (i = 0; i < 3; i++)
+        if (pk[i])
+            esk_free(a, pk[i], n[i] / 2 ? n[i] / 2 : 1);
+    return st;
+}
+
+/* every unit of .debug_line into rows */
+static es_status load(esk_dwarf *d, const u8 *sec, u32 size, const u8 *line_str, u32 line_str_len,
+                      const u8 *str, u32 str_len)
+{
+    rd r;
     r.p = sec;
     r.end = sec + size;
     r.bad = 0;

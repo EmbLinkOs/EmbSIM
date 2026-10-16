@@ -1,0 +1,415 @@
+{
+  "schema_version": 1,
+  "kind": "mcu",
+  "id": "microchip/pic32mx795f512l",
+  "version": "1.0.0",
+  "name": "PIC32MX795F512L",
+  "description": "Microchip PIC32MX795F512L: a MIPS32 M4K core at up to 80 MHz, 512 KiB of program flash, 12 KiB of boot flash, 128 KiB of RAM, USB OTG, Ethernet, two CAN controllers, six UARTs; the Explorer 16/32's PIC32MX PIM (MA320003).",
+  "keywords": [
+    "pic32",
+    "pic32mx",
+    "pic32mx795f512l",
+    "mips",
+    "m4k",
+    "microchip",
+    "explorer 16"
+  ],
+  "vendor": "microchip",
+  "family": "pic32mx",
+  "core": {
+    "backend": "mips",
+    "model": "pic32mx",
+    "timing_tier": "estimated",
+    "fpu": false,
+    "mpu": false,
+    "endian": "little",
+    "isa": "MIPS32 Release 2 with MIPS16e"
+  },
+  "memory": [
+    {
+      "name": "ram",
+      "base": "0x00000000",
+      "size": "128K",
+      "kind": "ram",
+      "main": true,
+      "doc": "Data RAM at physical 0 (kseg0 0x80000000, kseg1 0xA0000000); the bus matrix's partitions (BMX) are not modelled"
+    },
+    {
+      "name": "flash",
+      "base": "0x1D000000",
+      "size": "512K",
+      "kind": "flash",
+      "erased": "0xFFFFFFFF",
+      "doc": "Program flash (kseg0 0x9D000000, kseg1 0xBD000000)"
+    },
+    {
+      "name": "boot",
+      "base": "0x1FC00000",
+      "size": "12K",
+      "kind": "flash",
+      "erased": "0xFFFFFFFF",
+      "doc": "Boot flash (kseg1 0xBFC00000: the reset vector), the configuration words DEVCFG3..DEVCFG0 in its last 16 bytes"
+    }
+  ],
+  "clocks": {
+    "sources": [
+      {
+        "name": "frc",
+        "hz": 8000000,
+        "doc": "The internal fast RC oscillator"
+      },
+      {
+        "name": "hse",
+        "hz": "board",
+        "doc": "The primary oscillator: the board's crystal on OSC1/OSC2 (8 MHz on the Explorer 16/32's PIM)"
+      },
+      {
+        "name": "sosc",
+        "hz": 32768,
+        "doc": "The secondary oscillator, a 32.768 kHz crystal on SOSCI/SOSCO"
+      },
+      {
+        "name": "lprc",
+        "hz": 31250,
+        "doc": "The low-power RC oscillator"
+      }
+    ],
+    "reset_core_hz": 8000000,
+    "max_core_hz": 80000000
+  },
+  "register_file": {
+    "format": "embsim",
+    "file": "registers.json",
+    "vendored": true,
+    "license": "Apache-2.0 (converted from Microchip's PIC32MX device pack, Copyright (c) 2026 Microchip Technology Inc.; LICENSES/Apache-2.0.txt)"
+  },
+  "peripherals": [
+    {
+      "match": "INT",
+      "model": "pic32-evic",
+      "order": 0
+    },
+    {
+      "match": "OSC",
+      "model": "pic32-osc",
+      "order": 1
+    },
+    {
+      "match": "CFG",
+      "model": "pic32-cfg"
+    },
+    {
+      "match": "TMR*",
+      "model": "pic32-tmr"
+    },
+    {
+      "match": "GPIO",
+      "model": "pic32-gpio"
+    },
+    {
+      "match": "UART*",
+      "model": "pic32-uart"
+    },
+    {
+      "match": "BMX",
+      "model": "storage"
+    },
+    {
+      "match": "PCACHE",
+      "model": "storage"
+    },
+    {
+      "match": "RCON",
+      "model": "storage"
+    },
+    {
+      "match": "ICD",
+      "model": "storage"
+    },
+    {
+      "match": "WDT",
+      "model": "pic32-wdt"
+    },
+    {
+      "match": "ADC10",
+      "model": "pic32-adc10"
+    },
+    {
+      "match": "SPI*",
+      "model": "pic32-spi"
+    },
+    {
+      "match": "I2C*",
+      "model": "pic32-i2c"
+    },
+    {
+      "match": "ICAP*",
+      "model": "pic32-ic"
+    },
+    {
+      "match": "OCMP*",
+      "model": "pic32-oc"
+    },
+    {
+      "match": "PMP",
+      "model": "pic32-pmp"
+    },
+    {
+      "match": "RTCC",
+      "model": "pic32-rtcc"
+    },
+    {
+      "match": "DMAC*",
+      "model": "pic32-dma"
+    },
+    {
+      "match": "USB",
+      "model": "pic32-usb"
+    },
+    {
+      "match": "ETH",
+      "model": "pic32-eth"
+    },
+    {
+      "match": "CAN*",
+      "model": "pic32-can"
+    },
+    {
+      "match": "NVM",
+      "model": "pic32-nvm"
+    },
+    {
+      "match": "CMP*",
+      "model": "pic32-cmp"
+    },
+    {
+      "match": "CVR",
+      "model": "pic32-cmp"
+    }
+  ],
+  "io": {
+    "family": "cmos_3v3",
+    "ports": [
+      {
+        "name": "A",
+        "pins": 16,
+        "mask": "0xC6FF"
+      },
+      {
+        "name": "B",
+        "pins": 16,
+        "mask": "0xFFFF"
+      },
+      {
+        "name": "C",
+        "pins": 16,
+        "mask": "0xF01E"
+      },
+      {
+        "name": "D",
+        "pins": 16,
+        "mask": "0xFFFF"
+      },
+      {
+        "name": "E",
+        "pins": 16,
+        "mask": "0x03FF"
+      },
+      {
+        "name": "F",
+        "pins": 16,
+        "mask": "0x313F"
+      },
+      {
+        "name": "G",
+        "pins": 16,
+        "mask": "0xF3CF"
+      }
+    ],
+    "electrical": {
+      "vdd": 3.3,
+      "voh": 2.4,
+      "vol": 0.4,
+      "rout": 60,
+      "vih": 2.15,
+      "vil": 0.66,
+      "hysteresis": 0.1,
+      "rpull": 15000,
+      "leak_a": 1e-06,
+      "ioh_max": 0.01,
+      "iol_max": 0.01
+    }
+  },
+  "signals": [
+    "RG15",
+    "VDD",
+    "RE5",
+    "RE6",
+    "RE7",
+    "RC1",
+    "RC2",
+    "RC3",
+    "RC4",
+    "RG6",
+    "RG7",
+    "RG8",
+    "NRST",
+    "RG9",
+    "VSS",
+    "RA0",
+    "RE8",
+    "RE9",
+    "RB5",
+    "RB4",
+    "RB3",
+    "RB2",
+    "RB1",
+    "RB0",
+    "RB6",
+    "RB7",
+    "RA9",
+    "RA10",
+    "AVDD",
+    "AVSS",
+    "RB8",
+    "RB9",
+    "RB10",
+    "RB11",
+    "RA1",
+    "RF13",
+    "RF12",
+    "RB12",
+    "RB13",
+    "RB14",
+    "RB15",
+    "RD14",
+    "RD15",
+    "RF4",
+    "RF5",
+    "RF3",
+    "RF2",
+    "RF8",
+    "VBUS",
+    "VUSB3V3",
+    "RG3",
+    "RG2",
+    "RA2",
+    "RA3",
+    "RA4",
+    "RA5",
+    "RC12",
+    "RC15",
+    "RA14",
+    "RA15",
+    "RD8",
+    "RD9",
+    "RD10",
+    "RD11",
+    "RD0",
+    "RC13",
+    "RC14",
+    "RD1",
+    "RD2",
+    "RD3",
+    "RD12",
+    "RD13",
+    "RD4",
+    "RD5",
+    "RD6",
+    "RD7",
+    "VCAP",
+    "RF0",
+    "RF1",
+    "RG1",
+    "RG0",
+    "RA6",
+    "RA7",
+    "RE0",
+    "RE1",
+    "RG14",
+    "RG12",
+    "RG13",
+    "RE2",
+    "RE3",
+    "RE4"
+  ],
+  "packages": {
+    "tqfp100": "tqfp100.json"
+  },
+  "console": {
+    "default": "UART2"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "MIPS32r2 execution with MIPS16e by the M4K core extracted from EmbCC (EIC mode, two register sets, fixed mapping, the core timer); every special function register of the device pack's EDC with its power-on value and its CLR, SET and INV registers; behavioural models extracted from EmbCC of the EVIC (shared vectors, priorities and subpriorities, single- and multi-vector modes, the shadow set by FSRSSEL and SS0), the oscillator (the configuration words' clock, the PLL, the switch, PBDIV, SYSKEY's lock), Timer1 to Timer5 (prescalers, 32-bit pairs), ports A to G (TRIS, LAT, ODC, the change notices and their pull-ups, port B's analog pins) and UART1 to UART6 (FIFOs, persistent interrupts, frames at the baud rate on their pins).",
+      "omissions": [
+        "the ADC, SPI, I2C, input capture, output compare, the PMP, the RTCC, DMA, USB, Ethernet, CAN and the comparators (plain registers)",
+        "the watchdog (plain registers: it never resets the part)",
+        "flash programming (NVM)",
+        "the prefetch cache and the bus matrix's partitions",
+        "sleep and idle",
+        "the external interrupt pins (INTx)",
+        "the debugger's ICD registers (plain storage)"
+      ],
+      "validation": [
+        "repo:tests/unit/test_mips.c",
+        "repo:tests/unit/test_pic32.c",
+        "repo:examples/explorer16-pic32mx"
+      ]
+    },
+    "timed": {
+      "claims": "Instruction timing estimated from EmbCC's MIPS32 cost table (ADR-015): 1 cycle, 2 for a load or a multiply, 18 for a divide; flash runs at the core's speed. The core timer counts every other SYSCLK cycle; the timers and UARTs count PBCLK exactly against SYSCLK.",
+      "omissions": [
+        "flash wait states (the prefetch cache hides most once it is on)",
+        "the divider's operand-dependent time",
+        "interrupt latency beyond the instruction in progress"
+      ],
+      "validation": [
+        "repo:tests/unit/test_pic32.c"
+      ]
+    },
+    "electrical": {
+      "claims": "GPIO pin-model defaults at 3.3 V from the data sheet's DC characteristics (VOH 2.4 V, VOL 0.4 V, VIH 0.65 VDD, VIL 0.2 VDD, the change-notice pull-ups).",
+      "omissions": [
+        "the 5 V tolerant pins",
+        "drive strength beyond one output resistance",
+        "ESD structures",
+        "the core regulator (VCAP)"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ],
+        "current_a": [
+          -0.01,
+          0.01
+        ]
+      },
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "PIC32MX5XX/6XX/7XX Family Data Sheet",
+        "rev": "DS60001156"
+      },
+      {
+        "title": "PIC32 Family Reference Manual (sections 2 the M4K, 6 oscillators, 8 interrupts, 12 I/O ports, 14 timers, 21 UART)"
+      },
+      {
+        "title": "Microchip.PIC32MX_DFP (edc/PIC32MX795F512L.PIC, atdf/PIC32MX795F512L.atdf)",
+        "rev": "1.7.380",
+        "url": "https://packs.download.microchip.com/"
+      },
+      {
+        "title": "EmbLinkOs/EmbCC tools/embsim (the MIPS core and the PIC32 models, extracted at commit aa4f10a)",
+        "rev": "aa4f10a"
+      }
+    ],
+    "notes": "registers.json and tqfp100.json are converted from Microchip's device pack under its Apache-2.0 licence (LICENSES/) by tools/importers/edc2regs.py; the rest is written for EmbSIM."
+  }
+}

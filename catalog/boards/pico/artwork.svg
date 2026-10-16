@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 510 210" width="510" height="210">
+<defs>
+  <radialGradient id="glow-green" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#5dff8a" stop-opacity="1"/><stop offset="100%" stop-color="#5dff8a" stop-opacity="0"/></radialGradient>
+</defs>
+<style>.pcb{fill:#1f6b3a;stroke:#0f3a1f;stroke-width:3}.silk{fill:#f2f4f8;font-family:sans-serif;font-size:12px}.silks{fill:#f2f4f8;font-family:sans-serif;font-size:8px;text-anchor:middle}.silkn{fill:#f2f4f8;font-family:sans-serif;font-size:5.5px;text-anchor:middle}.silke{fill:#f2f4f8;font-family:sans-serif;font-size:8px;text-anchor:end}.pad{fill:#d9b94a;stroke:#8a6f1c;stroke-width:1}.hole{fill:#0e2416}.chip{fill:#17181c;stroke:#000;stroke-width:1}.metal{fill:#b8bcc6;stroke:#6b7079;stroke-width:1.5}.logo{fill:#f2f4f8;font-family:sans-serif;font-weight:bold}</style>
+<rect id="pcb" class="pcb" x="2" y="2" width="506" height="206" rx="10"/>
+<g id="usb"><rect class="metal" x="-4" y="70" width="58" height="70" rx="4"/><rect x="6" y="88" width="38" height="34" rx="3" fill="#8f949e"/></g>
+<circle id="pin-vbus" class="pad" cx="14.0" cy="14" r="8"><title>J2 pin 21: VBUS</title></circle>
+<circle class="hole" cx="14.0" cy="14" r="3.5"/>
+<text class="silks" x="14.0" y="36">VBUS</text>
+<circle id="pin-vsys" class="pad" cx="39.4" cy="14" r="8"><title>J2 pin 22: VSYS</title></circle>
+<circle class="hole" cx="39.4" cy="14" r="3.5"/>
+<text class="silks" x="39.4" y="36">VSYS</text>
+<circle id="pin-gnd_8" class="pad" cx="64.8" cy="14" r="8"><title>J2 pin 23: GND 8</title></circle>
+<circle class="hole" cx="64.8" cy="14" r="3.5"/>
+<text class="silks" x="64.8" y="36">GND</text>
+<circle id="pin-3v3_en" class="pad" cx="90.2" cy="14" r="8"><title>J2 pin 24: 3V3_EN</title></circle>
+<circle class="hole" cx="90.2" cy="14" r="3.5"/>
+<text class="silkn" x="90.2" y="36">3V3_EN</text>
+<circle id="pin-3v3" class="pad" cx="115.6" cy="14" r="8"><title>J2 pin 25: 3V3</title></circle>
+<circle class="hole" cx="115.6" cy="14" r="3.5"/>
+<text class="silks" x="115.6" y="36">3V3</text>
+<circle id="pin-adc_vref" class="pad" cx="141.0" cy="14" r="8"><title>J2 pin 26: ADC_VREF</title></circle>
+<circle class="hole" cx="141.0" cy="14" r="3.5"/>
+<text class="silkn" x="141.0" y="36">ADC_VREF</text>
+<circle id="pin-gp28" class="pad" cx="166.4" cy="14" r="8"><title>J2 pin 27: GP28</title></circle>
+<circle class="hole" cx="166.4" cy="14" r="3.5"/>
+<text class="silks" x="166.4" y="36">GP28</text>
+<circle id="pin-gnd_7" class="pad" cx="191.8" cy="14" r="8"><title>J2 pin 28: GND 7</title></circle>
+<circle class="hole" cx="191.8" cy="14" r="3.5"/>
+<text class="silks" x="191.8" y="36">GND</text>
+<circle id="pin-gp27" class="pad" cx="217.2" cy="14" r="8"><title>J2 pin 29: GP27</title></circle>
+<circle class="hole" cx="217.2" cy="14" r="3.5"/>
+<text class="silks" x="217.2" y="36">GP27</text>
+<circle id="pin-gp26" class="pad" cx="242.6" cy="14" r="8"><title>J2 pin 30: GP26</title></circle>
+<circle class="hole" cx="242.6" cy="14" r="3.5"/>
+<text class="silks" x="242.6" y="36">GP26</text>
+<circle id="pin-run" class="pad" cx="268.0" cy="14" r="8"><title>J2 pin 31: RUN</title></circle>
+<circle class="hole" cx="268.0" cy="14" r="3.5"/>
+<text class="silks" x="268.0" y="36">RUN</text>
+<circle id="pin-gp22" class="pad" cx="293.4" cy="14" r="8"><title>J2 pin 32: GP22</title></circle>
+<circle class="hole" cx="293.4" cy="14" r="3.5"/>
+<text class="silks" x="293.4" y="36">GP22</text>
+<circle id="pin-gnd_6" class="pad" cx="318.8" cy="14" r="8"><title>J2 pin 33: GND 6</title></circle>
+<circle class="hole" cx="318.8" cy="14" r="3.5"/>
+<text class="silks" x="318.8" y="36">GND</text>
+<circle id="pin-gp21" class="pad" cx="344.2" cy="14" r="8"><title>J2 pin 34: GP21</title></circle>
+<circle class="hole" cx="344.2" cy="14" r="3.5"/>
+<text class="silks" x="344.2" y="36">GP21</text>
+<circle id="pin-gp20" class="pad" cx="369.6" cy="14" r="8"><title>J2 pin 35: GP20</title></circle>
+<circle class="hole" cx="369.6" cy="14" r="3.5"/>
+<text class="silks" x="369.6" y="36">GP20</text>
+<circle id="pin-gp19" class="pad" cx="395.0" cy="14" r="8"><title>J2 pin 36: GP19</title></circle>
+<circle class="hole" cx="395.0" cy="14" r="3.5"/>
+<text class="silks" x="395.0" y="36">GP19</text>
+<circle id="pin-gp18" class="pad" cx="420.4" cy="14" r="8"><title>J2 pin 37: GP18</title></circle>
+<circle class="hole" cx="420.4" cy="14" r="3.5"/>
+<text class="silks" x="420.4" y="36">GP18</text>
+<circle id="pin-gnd_5" class="pad" cx="445.8" cy="14" r="8"><title>J2 pin 38: GND 5</title></circle>
+<circle class="hole" cx="445.8" cy="14" r="3.5"/>
+<text class="silks" x="445.8" y="36">GND</text>
+<circle id="pin-gp17" class="pad" cx="471.2" cy="14" r="8"><title>J2 pin 39: GP17</title></circle>
+<circle class="hole" cx="471.2" cy="14" r="3.5"/>
+<text class="silks" x="471.2" y="36">GP17</text>
+<circle id="pin-gp16" class="pad" cx="496.6" cy="14" r="8"><title>J2 pin 40: GP16</title></circle>
+<circle class="hole" cx="496.6" cy="14" r="3.5"/>
+<text class="silks" x="496.6" y="36">GP16</text>
+<circle id="pin-gp0" class="pad" cx="14.0" cy="196" r="8"><title>J1 pin 1: GP0</title></circle>
+<circle class="hole" cx="14.0" cy="196" r="3.5"/>
+<text class="silks" x="14.0" y="182">GP0</text>
+<circle id="pin-gp1" class="pad" cx="39.4" cy="196" r="8"><title>J1 pin 2: GP1</title></circle>
+<circle class="hole" cx="39.4" cy="196" r="3.5"/>
+<text class="silks" x="39.4" y="182">GP1</text>
+<circle id="pin-gnd" class="pad" cx="64.8" cy="196" r="8"><title>J1 pin 3: GND</title></circle>
+<circle class="hole" cx="64.8" cy="196" r="3.5"/>
+<text class="silks" x="64.8" y="182">GND</text>
+<circle id="pin-gp2" class="pad" cx="90.2" cy="196" r="8"><title>J1 pin 4: GP2</title></circle>
+<circle class="hole" cx="90.2" cy="196" r="3.5"/>
+<text class="silks" x="90.2" y="182">GP2</text>
+<circle id="pin-gp3" class="pad" cx="115.6" cy="196" r="8"><title>J1 pin 5: GP3</title></circle>
+<circle class="hole" cx="115.6" cy="196" r="3.5"/>
+<text class="silks" x="115.6" y="182">GP3</text>
+<circle id="pin-gp4" class="pad" cx="141.0" cy="196" r="8"><title>J1 pin 6: GP4</title></circle>
+<circle class="hole" cx="141.0" cy="196" r="3.5"/>
+<text class="silks" x="141.0" y="182">GP4</text>
+<circle id="pin-gp5" class="pad" cx="166.4" cy="196" r="8"><title>J1 pin 7: GP5</title></circle>
+<circle class="hole" cx="166.4" cy="196" r="3.5"/>
+<text class="silks" x="166.4" y="182">GP5</text>
+<circle id="pin-gnd_2" class="pad" cx="191.8" cy="196" r="8"><title>J1 pin 8: GND 2</title></circle>
+<circle class="hole" cx="191.8" cy="196" r="3.5"/>
+<text class="silks" x="191.8" y="182">GND</text>
+<circle id="pin-gp6" class="pad" cx="217.2" cy="196" r="8"><title>J1 pin 9: GP6</title></circle>
+<circle class="hole" cx="217.2" cy="196" r="3.5"/>
+<text class="silks" x="217.2" y="182">GP6</text>
+<circle id="pin-gp7" class="pad" cx="242.6" cy="196" r="8"><title>J1 pin 10: GP7</title></circle>
+<circle class="hole" cx="242.6" cy="196" r="3.5"/>
+<text class="silks" x="242.6" y="182">GP7</text>
+<circle id="pin-gp8" class="pad" cx="268.0" cy="196" r="8"><title>J1 pin 11: GP8</title></circle>
+<circle class="hole" cx="268.0" cy="196" r="3.5"/>
+<text class="silks" x="268.0" y="182">GP8</text>
+<circle id="pin-gp9" class="pad" cx="293.4" cy="196" r="8"><title>J1 pin 12: GP9</title></circle>
+<circle class="hole" cx="293.4" cy="196" r="3.5"/>
+<text class="silks" x="293.4" y="182">GP9</text>
+<circle id="pin-gnd_3" class="pad" cx="318.8" cy="196" r="8"><title>J1 pin 13: GND 3</title></circle>
+<circle class="hole" cx="318.8" cy="196" r="3.5"/>
+<text class="silks" x="318.8" y="182">GND</text>
+<circle id="pin-gp10" class="pad" cx="344.2" cy="196" r="8"><title>J1 pin 14: GP10</title></circle>
+<circle class="hole" cx="344.2" cy="196" r="3.5"/>
+<text class="silks" x="344.2" y="182">GP10</text>
+<circle id="pin-gp11" class="pad" cx="369.6" cy="196" r="8"><title>J1 pin 15: GP11</title></circle>
+<circle class="hole" cx="369.6" cy="196" r="3.5"/>
+<text class="silks" x="369.6" y="182">GP11</text>
+<circle id="pin-gp12" class="pad" cx="395.0" cy="196" r="8"><title>J1 pin 16: GP12</title></circle>
+<circle class="hole" cx="395.0" cy="196" r="3.5"/>
+<text class="silks" x="395.0" y="182">GP12</text>
+<circle id="pin-gp13" class="pad" cx="420.4" cy="196" r="8"><title>J1 pin 17: GP13</title></circle>
+<circle class="hole" cx="420.4" cy="196" r="3.5"/>
+<text class="silks" x="420.4" y="182">GP13</text>
+<circle id="pin-gnd_4" class="pad" cx="445.8" cy="196" r="8"><title>J1 pin 18: GND 4</title></circle>
+<circle class="hole" cx="445.8" cy="196" r="3.5"/>
+<text class="silks" x="445.8" y="182">GND</text>
+<circle id="pin-gp14" class="pad" cx="471.2" cy="196" r="8"><title>J1 pin 19: GP14</title></circle>
+<circle class="hole" cx="471.2" cy="196" r="3.5"/>
+<text class="silks" x="471.2" y="182">GP14</text>
+<circle id="pin-gp15" class="pad" cx="496.6" cy="196" r="8"><title>J1 pin 20: GP15</title></circle>
+<circle class="hole" cx="496.6" cy="196" r="3.5"/>
+<text class="silks" x="496.6" y="182">GP15</text>
+<g id="mcu"><rect class="chip" x="225" y="70" width="70" height="70" rx="4"/><text class="logo" x="232" y="102" font-size="12">RP2040</text><text class="silks" x="260" y="118">Raspberry Pi</text></g>
+<g id="flash"><rect class="chip" x="110" y="76" width="44" height="34" rx="3"/><text class="silks" x="132" y="124">W25Q16</text></g>
+<g id="crystal"><rect class="metal" x="320" y="88" width="34" height="18" rx="6"/><text class="silks" x="337" y="118">12MHz</text></g>
+<g id="btn-bootsel"><rect x="160" y="128" width="34" height="34" rx="3" fill="#cfd3da" stroke="#6b7079"/><circle cx="177" cy="145" r="11" fill="#f4f4f4" stroke="#9aa0aa"/><text class="silks" x="177" y="172">BOOTSEL</text></g>
+<g id="led"><rect x="70" y="40" width="16" height="10" rx="2" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-green" x="73" y="42" width="10" height="6" rx="1" fill="#c4f0cf"/><circle id="led-green-glow" cx="78" cy="45" r="22" fill="url(#glow-green)" opacity="0"/><text class="silks" x="78" y="62">LED</text></g>
+<g id="swd"><circle class="pad" cx="488" cy="80" r="5"/><circle class="pad" cx="488" cy="105" r="5"/><circle class="pad" cx="488" cy="130" r="5"/><text class="silke" x="478" y="83">SWCLK</text><text class="silke" x="478" y="108">GND</text><text class="silke" x="478" y="133">SWDIO</text></g>
+<text class="logo" x="372" y="150" font-size="18">Pico</text><text class="silks" x="400" y="164">EmbSIM</text>
+</svg>

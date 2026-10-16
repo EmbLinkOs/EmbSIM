@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "embsim"
+version = "0.1.0"
+description = "The EmbSIM embedded simulator from Python: sessions over its protocol, headless runs, pytest fixtures"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Junior Deogracias" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Topic :: Software Development :: Embedded Systems",
+  "Topic :: Software Development :: Testing",
+]
+
+[project.optional-dependencies]
+pytest = ["pytest>=7"]
+
+[project.entry-points.pytest11]
+embsim = "embsim.pytest_plugin"
+
+[tool.setuptools]
+packages = ["embsim"]

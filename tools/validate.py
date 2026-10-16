@@ -1448,7 +1448,17 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
                 spec = next(x for x in ctx.components[inst]["inputs"] if x.get("name") == inp.get("input"))
                 _check_input_value(report, file, node + "/value", spec, inp.get("value"))
         elif inst in ctx.boards:
-            if periph:
+            parts = {c.get("id"): c for c in ctx.boards[inst].get("components") or []}
+            if periph in parts:
+                # one of the board's own components (its push button)
+                cd = index.component(parts[periph].get("component", ""))
+                specs = {x.get("name"): x for x in (cd or {}).get("inputs") or []}
+                if inp.get("input") not in specs:
+                    report.error(file, node + "/input", "catalog.input_unknown",
+                                 f"{target} ({parts[periph].get('component')}) has no input {inp.get('input')}")
+                else:
+                    _check_input_value(report, file, node + "/value", specs[inp.get("input")], inp.get("value"))
+            elif periph:
                 if inp.get("input") not in ("rx", "voltage"):
                     report.error(file, node + "/input", "catalog.input_unknown", f"peripheral input must be rx or voltage, not {inp.get('input')}")
             elif inp.get("input") not in ("reset", "power"):

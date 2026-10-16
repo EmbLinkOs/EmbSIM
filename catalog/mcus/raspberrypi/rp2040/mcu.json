@@ -1,0 +1,379 @@
+{
+  "schema_version": 1,
+  "kind": "mcu",
+  "id": "raspberrypi/rp2040",
+  "version": "1.0.0",
+  "name": "RP2040",
+  "description": "Raspberry Pi RP2040: two Arm Cortex-M0+ cores at up to 133 MHz, 264 KiB of SRAM, a 16 KiB boot ROM, external QSPI flash executed in place; the Raspberry Pi Pico's MCU.",
+  "keywords": [
+    "rp2040",
+    "raspberry pi",
+    "pico",
+    "cortex-m0+",
+    "cortex-m0plus"
+  ],
+  "vendor": "raspberrypi",
+  "family": "rp2",
+  "core": {
+    "backend": "cortex-m",
+    "model": "cortex-m0plus",
+    "priority_bits": 2,
+    "cores": 2,
+    "timing_tier": "estimated",
+    "fpu": false,
+    "mpu": true,
+    "endian": "little"
+  },
+  "memory": [
+    {
+      "name": "rom",
+      "base": "0x00000000",
+      "size": "16K",
+      "kind": "rom",
+      "doc": "Boot ROM; the bootrom's code is not shipped: EmbSIM's stand-in boots boot2 from flash as it does (core/mcu/rp2040/boot.c)"
+    },
+    {
+      "name": "flash",
+      "base": "0x10000000",
+      "size": "2M",
+      "kind": "flash",
+      "erased": "0xFFFFFFFF",
+      "doc": "XIP: the external QSPI flash read in place (the Pico's 2 MiB W25Q16JV); the cache is not modelled"
+    },
+    {
+      "name": "flash_noalloc",
+      "base": "0x11000000",
+      "size": "2M",
+      "kind": "alias",
+      "target": "0x10000000",
+      "doc": "XIP without allocating in the cache"
+    },
+    {
+      "name": "flash_nocache",
+      "base": "0x12000000",
+      "size": "2M",
+      "kind": "alias",
+      "target": "0x10000000",
+      "doc": "XIP bypassing the cache"
+    },
+    {
+      "name": "flash_nocache_noalloc",
+      "base": "0x13000000",
+      "size": "2M",
+      "kind": "alias",
+      "target": "0x10000000",
+      "doc": "XIP bypassing the cache, no allocation"
+    },
+    {
+      "name": "xip_sram",
+      "base": "0x15000000",
+      "size": "16K",
+      "kind": "ram",
+      "doc": "The XIP cache's 16 KiB as SRAM (when the cache is disabled)"
+    },
+    {
+      "name": "sram",
+      "base": "0x20000000",
+      "size": "264K",
+      "kind": "ram",
+      "main": true,
+      "doc": "SRAM0-3 striped (256 KiB) then SRAM4 and SRAM5 (4 KiB each); the non-striped aliases at 0x21000000 are not mapped"
+    }
+  ],
+  "clocks": {
+    "sources": [
+      {
+        "name": "rosc",
+        "hz": 6500000,
+        "doc": "Ring oscillator, about 6.5 MHz: clk_ref and clk_sys out of reset"
+      },
+      {
+        "name": "hse",
+        "hz": "board",
+        "doc": "XOSC: the board's crystal (12 MHz on the Pico)"
+      }
+    ],
+    "reset_core_hz": 6500000,
+    "max_core_hz": 133000000
+  },
+  "register_file": {
+    "format": "embsim",
+    "file": "registers.json",
+    "vendored": true,
+    "license": "BSD-3-Clause (converted from Raspberry Pi's RP2040.svd, Copyright (c) 2024 Raspberry Pi Ltd.; LICENSES/BSD-3-Clause.txt)",
+    "bus_rules": [
+      "atomic_aliases",
+      "wide_writes"
+    ]
+  },
+  "peripherals": [
+    {
+      "match": "RESETS",
+      "model": "rp2040-resets",
+      "order": 0
+    },
+    {
+      "match": "CLOCKS",
+      "model": "rp2040-clocks"
+    },
+    {
+      "match": "XOSC",
+      "model": "rp2040-xosc"
+    },
+    {
+      "match": "ROSC",
+      "model": "rp2040-rosc"
+    },
+    {
+      "match": "PLL_*",
+      "model": "rp2040-pll"
+    },
+    {
+      "match": "PSM",
+      "model": "rp2040-psm"
+    },
+    {
+      "match": "WATCHDOG",
+      "model": "rp2040-watchdog"
+    },
+    {
+      "match": "TIMER",
+      "model": "rp2040-timer"
+    },
+    {
+      "match": "PADS_BANK0",
+      "model": "rp2040-pads"
+    },
+    {
+      "match": "IO_QSPI",
+      "model": "rp2040-pads"
+    },
+    {
+      "match": "PADS_QSPI",
+      "model": "rp2040-pads"
+    },
+    {
+      "match": "IO_BANK0",
+      "model": "rp2040-io"
+    },
+    {
+      "match": "SIO",
+      "model": "rp2040-sio"
+    },
+    {
+      "match": "UART*",
+      "model": "rp2040-uart"
+    },
+    {
+      "match": "SSI",
+      "model": "rp2040-ssi"
+    },
+    {
+      "match": "SYSINFO",
+      "model": "storage"
+    },
+    {
+      "match": "SYSCFG",
+      "model": "storage"
+    },
+    {
+      "match": "BUSCTRL",
+      "model": "storage"
+    },
+    {
+      "match": "VREG_AND_CHIP_RESET",
+      "model": "storage"
+    },
+    {
+      "match": "TBMAN",
+      "model": "storage"
+    },
+    {
+      "match": "XIP_CTRL",
+      "model": "storage"
+    },
+    {
+      "match": "SPI*",
+      "model": "rp2040-spi"
+    },
+    {
+      "match": "I2C*",
+      "model": "rp2040-i2c"
+    },
+    {
+      "match": "PWM",
+      "model": "rp2040-pwm"
+    },
+    {
+      "match": "ADC",
+      "model": "rp2040-adc"
+    },
+    {
+      "match": "DMA",
+      "model": "rp2040-dma"
+    },
+    {
+      "match": "PIO*",
+      "model": "rp2040-pio"
+    },
+    {
+      "match": "USB*",
+      "model": "rp2040-usb"
+    },
+    {
+      "match": "RTC",
+      "model": "rp2040-rtc"
+    }
+  ],
+  "io": {
+    "family": "cmos_3v3",
+    "ports": [
+      {
+        "name": "GPIO",
+        "pins": 30,
+        "mask": "0x3FFFFFFF"
+      }
+    ],
+    "electrical": {
+      "vdd": 3.3,
+      "voh": 2.62,
+      "vol": 0.5,
+      "rout": 60,
+      "vih": 2.0,
+      "vil": 0.8,
+      "hysteresis": 0.2,
+      "rpull": 50000,
+      "leak_a": 1e-06,
+      "ioh_max": 0.012,
+      "iol_max": 0.012
+    }
+  },
+  "signals": [
+    "VDD",
+    "VDD_CORE",
+    "VDD_VREG",
+    "VREG_VOUT",
+    "VDD_USB",
+    "VDD_ADC",
+    "GND",
+    "NRST",
+    "OSC_IN",
+    "OSC_OUT",
+    "SWCLK",
+    "SWDIO",
+    "TESTEN",
+    "QSPI_SCLK",
+    "QSPI_SS",
+    "QSPI_SD0",
+    "QSPI_SD1",
+    "QSPI_SD2",
+    "QSPI_SD3",
+    "USB_DP",
+    "USB_DM",
+    "GPIO0",
+    "GPIO1",
+    "GPIO2",
+    "GPIO3",
+    "GPIO4",
+    "GPIO5",
+    "GPIO6",
+    "GPIO7",
+    "GPIO8",
+    "GPIO9",
+    "GPIO10",
+    "GPIO11",
+    "GPIO12",
+    "GPIO13",
+    "GPIO14",
+    "GPIO15",
+    "GPIO16",
+    "GPIO17",
+    "GPIO18",
+    "GPIO19",
+    "GPIO20",
+    "GPIO21",
+    "GPIO22",
+    "GPIO23",
+    "GPIO24",
+    "GPIO25",
+    "GPIO26",
+    "GPIO27",
+    "GPIO28",
+    "GPIO29"
+  ],
+  "packages": {
+    "qfn56": "qfn56.json"
+  },
+  "console": {
+    "default": "UART0"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Armv6-M (Cortex-M0+) execution on both cores by the Cortex-M core extracted from EmbCC, interleaved on one clock with each core's NVIC, SysTick and event register (WFE, SEV); core 1 launched through its bootrom's FIFO handshake and powered off and on by the PSM; every register of RP2040.svd with its reset value, on the part's bus rules (the atomic XOR, set and clear aliases; byte writes across the word); behavioural models extracted from EmbCC of RESETS (peripherals held in reset), the clocks (XOSC, ROSC, PLL_SYS, PLL_USB, the clock generators and FC0; clk_sys is the core's clock), PSM, the watchdog (its microsecond tick, its counter and the chip reset), the timer (its 64-bit count and four alarms), IO_BANK0 and PADS_BANK0 (function select, overrides, pulls, the four interrupt kinds, to each core's own summary), the SIO (GPIO, spinlocks, each core's view: CPUID, a divider each, the FIFOs between the cores and SIO_IRQ_PROC0/1), UART0 and UART1 (PL011 FIFOs, interrupts, frames at the divisor's baud rate on their pins) and the SSI with the Pico's W25Q16JV flash behind it; and a stand-in for the bootrom that checks boot2's CRC, copies it to SRAM and enters it.",
+      "omissions": [
+        "the bootrom's code and its function table (flash programming, the float library, memcpy, the USB boot)",
+        "a debugger's choice of core (it sees the one that runs next)",
+        "the XIP cache",
+        "SPI, I2C, PWM, the ADC, DMA, the PIOs, USB and the RTC (plain registers)",
+        "the interpolators",
+        "DORMANT and SLEEP",
+        "the QSPI bank's pins"
+      ],
+      "validation": [
+        "repo:tests/unit/test_rp2040.c",
+        "repo:examples/pico-blink-serial",
+        "repo:examples/pico-dual-core"
+      ]
+    },
+    "timed": {
+      "claims": "Instruction timing estimated from EmbCC's Cortex-M0+ cost table (ADR-015): single-cycle ALU, 2-cycle loads and stores, 3 cycles for a taken branch; flash runs at the core's speed (no cache misses). The timer counts the watchdog's microsecond tick of clk_ref exactly against clk_sys.",
+      "omissions": [
+        "XIP cache misses",
+        "bus contention",
+        "the divider's 8 cycles but in CSR.READY"
+      ],
+      "validation": [
+        "repo:tests/unit/test_rp2040.c"
+      ]
+    },
+    "electrical": {
+      "claims": "GPIO pin-model defaults at 3.3 V from the datasheet (4 mA drive, 50 k pulls).",
+      "omissions": [
+        "drive strength and slew settings",
+        "the Schmitt trigger setting",
+        "ESD structures"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.5,
+          3.63
+        ],
+        "current_a": [
+          -0.012,
+          0.012
+        ]
+      },
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "RP2040 Datasheet",
+        "rev": "build-date 2024-10-15"
+      },
+      {
+        "title": "RP2040.svd (raspberrypi/pico-sdk)",
+        "rev": "2.0.0",
+        "url": "https://github.com/raspberrypi/pico-sdk"
+      },
+      {
+        "title": "EmbLinkOs/EmbCC tools/embsim (RP2040 models, extracted at commit aa4f10a)",
+        "rev": "aa4f10a"
+      }
+    ],
+    "notes": "registers.json is converted from Raspberry Pi's RP2040.svd under its BSD-3-Clause licence (LICENSES/); the rest is written for EmbSIM."
+  }
+}

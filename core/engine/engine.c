@@ -519,7 +519,9 @@ static void update_net(esk_engine *e, esk_net *n)
         return;
     }
     resolve_net(e, n, &v, &s, &a, &b);
-    if (v == ESK_LX && !n->contention_reported && a && b) {
+    /* two pulls that disagree are a divider, not a fight: X, but no
+     * diagnostic (a pad's pull-down meeting a terminal's pull-up) */
+    if (v == ESK_LX && s >= ESK_STR_STRONG && !n->contention_reported && a && b) {
         n->contention_reported = 1;
         esk_diag_raise(e->diag, ES_SEV_WARNING, "net.contention", e->sched.now, "net", n->name, NULL, 0,
                        "drivers %s.%s and %s.%s disagree at equal strength", a->comp->id, a->name, b->comp->id, b->name);
