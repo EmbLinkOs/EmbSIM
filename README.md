@@ -13,6 +13,10 @@ real firmware in them with source-level debugging (M1). Nothing is released
 yet: [`docs/STATUS.md`](docs/STATUS.md) is the only inventory of what exists
 and with what evidence.
 
+![The workbench debugging the Blue Pill's firmware](docs/gallery/m1/debug-bluepill.png)
+
+The [gallery](docs/gallery/README.md) shows the workbench at each milestone.
+
 Start with [`docs/README.md`](docs/README.md) for the design reading order,
 then [`docs/architecture/01-vision-and-principles.md`](docs/architecture/01-vision-and-principles.md).
 

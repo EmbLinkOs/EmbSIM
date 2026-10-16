@@ -23,7 +23,7 @@ does not mean the described behaviour exists.
 | Catalog | 37 components with symbols, artwork and 54 fixtures; STM32F103C8 MCU with its register description and LQFP48 package; Blue Pill board with artwork; eight toolchain profiles; JSON Schemas for every kind; the Python validator with semantic checks | `tools/validate.py --all`: 125 files, 0 errors; the tools' unit tests: 108 tests; the STM32F103C8's register description written from RM0008 (ADR-020) |
 | Workbench | TypeScript workspace: typed protocol client and mock session, design system with light and dark themes, schematic canvas, board view with hotspots, oscilloscope, logic analyzer, serial terminal, meters, the four perspectives (the Debug perspective: source, disassembly, registers, breakpoints, memory, peripherals and console; Verify reports "not available"), command palette, platform adapter; Tauri 2 desktop shell with the engine as sidecar | `pnpm typecheck`, `lint`, `test` (56 tests incl. axe), `build` pass; driven in Chromium against `embsim serve` on the transistor example (live net voltages, a 1.000 kHz collector waveform, 6.83 mA LED current) and on the Blue Pill example (a breakpoint on `EXTI0_IRQHandler` hit by a button press, stepped, shown at `main.c:65`). The desktop shell has not been compiled (no WebKitGTK development files here) |
 
-Observed on 2026-10-16 in this workspace: Ubuntu 24.04, GCC 13.3 and Clang 18.1, CMake 3.28, Python 3.13, Node 22. `ctest` on the GCC Debug build: 14 of 14 targets pass (test_analog, test_engine, test_host, test_json, test_sched, test_session, test_mcu, tools_unittests, docs_integrity, banned_constructs, protocol_conformance, gdb_server, firmware_build, examples_headless); the same 14 pass on the Clang build. The M0 baseline's CI matrix (Linux, macOS and Windows; GCC, Clang, MSVC and TinyCC) was observed green on its pull request; the M1 changes are recorded here when their run is observed.
+Observed on 2026-10-16 in this workspace: Ubuntu 24.04, GCC 13.3 and Clang 18.1, CMake 3.28, Python 3.13, Node 22. `ctest` on the GCC Debug build: 14 of 14 targets pass (test_analog, test_engine, test_host, test_json, test_sched, test_session, test_mcu, tools_unittests, docs_integrity, banned_constructs, protocol_conformance, gdb_server, firmware_build, examples_headless); the same 14 pass on the Clang build. The CI matrix (Linux with GCC, Clang and TinyCC; macOS with Clang; Windows with MSVC; the workbench; tools and catalog; documentation; repository policy) was observed green on the M0 pull request and on the M1 pull request (EmbLinkOs/EmbSIM#2, head 9bc3d42, 2026-10-16), which ran the Blue Pill golden fixture, the GDB server and the firmware build on all three platforms.
 
 ## Specified but unimplemented
 
@@ -51,8 +51,8 @@ Recorded as it happens: the checks listed above, on the dates given.
 - Five USART timing deltas from EmbCC's Blue Pill fixture are documented in
   `tests/firmware/bluepill-golden/deltas.json` (frames on the pin take
   their full duration; EmbCC's are instantaneous).
-- `esk_host_run` on Windows (CreateProcess) has not run here; CI exercises
-  it.
+- `esk_host_run` on Windows (CreateProcess) is exercised only by CI
+  (`firmware_build` passed on the M1 run).
 - Comparator-bridge crossings are delivered with the island step's start
   time as `now` for the reacting model (the crossing time is bracketed but
   not yet used as the event time); SPEC-004 §8 is therefore met only to

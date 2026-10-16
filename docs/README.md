@@ -3,6 +3,7 @@
 | Where | What |
 |---|---|
 | [STATUS.md](STATUS.md) | What is implemented and with what evidence: the only support matrix |
+| [gallery/](gallery/README.md) | Screenshots of the workbench at each milestone |
 | [architecture/](architecture/README.md) | Vision, system architecture, engines, MCU runtime, workbench, decision records, roadmap, open questions, reuse assessment |
 | [specs/](specs/index.md) | SPEC-001 to SPEC-014: the contracts |
 | [requirements/](requirements/index.md) | Numbered requirements with verification methods |
