@@ -159,7 +159,7 @@ static void smp_step(struct esk_cpu *cpu)
     m->asleep = 0;
     x->cur = i;
     x->stepping = 1;
-    x->c[i]->cpu.ops->step(&x->c[i]->cpu);
+    esk_mach_step_core(m, i, &x->c[i]->cpu);
     x->stepping = 0;
     slept = m->asleep;
     x->lt[i] = m->cycles;
@@ -390,6 +390,7 @@ es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio
     m->bus.snoop = smp_snoop;
     m->bus.snoop_ctx = x;
     m->cpu = &x->cpu;
+    m->steps_cores = 1;
     *out = &x->cpu;
     return ES_OK;
 }

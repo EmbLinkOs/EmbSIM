@@ -322,6 +322,11 @@ struct esk_mach {
     esk_mach_alloc_rec *allocs;
     size_t nallocs, cap_allocs;
     int oom;
+    /* the analyses watching the run (analysis.h), or 0; `steps_cores`: the
+     * core interface steps its cores itself, through esk_mach_step_core
+     * (smp.c) */
+    struct esk_an *an;
+    int steps_cores;
 };
 
 es_status esk_mach_init(struct esk_mach *m, esk_alloc *a);
@@ -343,11 +348,34 @@ ES_INLINE u32 esk_mach_after(const struct esk_mach *m, u32 cycles, u64 since)
         return cycles;
     return m->cycles > since ? (u32)(m->cycles - since) : 0;
 }
-/* a core enters exception or interrupt n (esk_mach_host.exc) */
-ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n)
+/* the analyses' hooks (analysis.c) */
+struct esk_an;
+void esk_an_step(struct esk_an *a, int core, struct esk_cpu *cpu);
+void esk_an_exc(struct esk_an *a, int core, int n, u32 ret);
+void esk_an_exc_return(struct esk_an *a, int core);
+/* a core enters exception or interrupt n (esk_mach_host.exc), to return to
+ * `ret` */
+ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n, u32 ret)
 {
     if (m->host.exc)
         m->host.exc(m->host.ctx, core, n);
+    if (m->an)
+        esk_an_exc(m->an, core, n, ret);
+}
+/* a core returns from an exception (RETFIE, MRET, ERET, RETI, a Cortex-M's
+ * EXC_RETURN) */
+ES_INLINE void esk_mach_exc_return(struct esk_mach *m, int core)
+{
+    if (m->an)
+        esk_an_exc_return(m->an, core);
+}
+/* one step of core `core`'s interface `cpu`, watched by the analyses */
+ES_INLINE void esk_mach_step_core(struct esk_mach *m, int core, struct esk_cpu *cpu)
+{
+    if (m->an)
+        esk_an_step(m->an, core, cpu);
+    else
+        cpu->ops->step(cpu);
 }
 /* end the run: state, and the reason */
 void esk_mach_end(struct esk_mach *m, int state, const char *fmt, ...);
@@ -408,6 +436,11 @@ es_status esk_mach_load_image(struct esk_mach *m, const u8 *data, size_t len, u3
 int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value);
 /* the function or object holding `addr`: 1, its name and the offset in it */
 int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap, u32 *offset);
+/* each defined function of an ELF image's symbol table: its name (in the
+ * image), its address without the Thumb or MIPS16 bit, and its size; and
+ * each global label in code, with size 0 */
+void esk_elf_functions(const u8 *f, size_t len, void (*fn)(void *ctx, const char *name, u32 addr, u32 size),
+                       void *ctx);
 
 /* ---- cores ---------------------------------------------------------------- */
 

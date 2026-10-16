@@ -3,6 +3,7 @@
 /* rpc.c -- the session protocol's method table (SPEC-008 §5) over the
  * in-process transport. Every transport ends here. */
 #include "session/session_priv.h"
+#include "mcu/analysis.h"
 #include "mcu/mcu.h"
 #include <stdlib.h>
 #include <string.h>
@@ -658,6 +659,83 @@ static es_status m_catalog_models(rpc_ctx *r)
     return ES_OK;
 }
 
+/* ---- the firmware's coverage and profile (SPEC-008 §5 analysis) ---------------------------- */
+
+static es_status m_analysis_start(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    char why[160];
+    unsigned what = (esk_json_get_bool(r->params, "coverage", 1) ? ESK_AN_COVERAGE : 0u) |
+                    (esk_json_get_bool(r->params, "profile", 1) ? ESK_AN_PROFILE : 0u);
+    es_status st;
+    if (!s->loaded)
+        return fail(r, -32001, "no project is loaded");
+    if (!what)
+        return fail(r, -32602, "analysis.start needs coverage or profile");
+    st = esk_session_analyze(s, pstr(r, "board", NULL), what, why, sizeof why);
+    if (st == ES_ENOMEM)
+        return st;
+    if (st != ES_OK)
+        return fail(r, -32602, why);
+    r->result = obj(r);
+    if (r->result) {
+        esk_json_set_bool(s->a, r->result, "coverage", (what & ESK_AN_COVERAGE) != 0);
+        esk_json_set_bool(s->a, r->result, "profile", (what & ESK_AN_PROFILE) != 0);
+    }
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+static es_status m_analysis_stop(rpc_ctx *r)
+{
+    char why[160];
+    (void)esk_session_analyze(r->s, NULL, 0, why, sizeof why);
+    r->result = obj(r);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+/* analysis.coverage and analysis.profile: JSON, or a report as text */
+static es_status analysis_report(rpc_ctx *r, int coverage)
+{
+    es_session *s = r->s;
+    const char *fmt = pstr(r, "format", "json"), *board = pstr(r, "board", NULL);
+    unsigned bit = coverage ? ESK_AN_COVERAGE : ESK_AN_PROFILE;
+    int f;
+    if (!(s->an_what & bit))
+        return fail(r, -32001, coverage ? "coverage is not on (analysis.start)" : "the profile is not on (analysis.start)");
+    if (esk_str_eq(fmt, "json")) {
+        r->result = obj(r);
+        if (r->result)
+            esk_json_object_set(s->a, r->result, "boards",
+                                esk_session_analysis_json(s, board, coverage, esk_json_get_bool(r->params, "detail", 1)));
+        return r->result ? ES_OK : ES_ENOMEM;
+    }
+    f = esk_str_eq(fmt, "text") ? ESK_AN_TEXT
+      : coverage && esk_str_eq(fmt, "lcov") ? ESK_AN_LCOV
+      : !coverage && esk_str_eq(fmt, "collapsed") ? ESK_AN_COLLAPSED
+      : !coverage && esk_str_eq(fmt, "collapsed-insns") ? ESK_AN_COLLAPSED_INSNS : -1;
+    if (f < 0)
+        return fail(r, -32602, "no such format");
+    {
+        esk_strbuf b;
+        char why[160];
+        es_status st;
+        esk_strbuf_init(&b, s->a);
+        st = esk_session_analysis_text(s, board, coverage, f, &b, why, sizeof why);
+        if (st == ES_OK && !b.oom) {
+            r->result = obj(r);
+            if (r->result)
+                esk_json_set_string(s->a, r->result, "text", b.data ? b.data : "");
+        }
+        esk_strbuf_free(&b);
+        if (st != ES_OK && st != ES_ENOMEM)
+            return fail(r, -32602, why);
+    }
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+static es_status m_analysis_coverage(rpc_ctx *r) { return analysis_report(r, 1); }
+static es_status m_analysis_profile(rpc_ctx *r) { return analysis_report(r, 0); }
+
 /* ---- record, scenario, diagnostics -------------------------------------------------------- */
 
 static es_status m_record_start(rpc_ctx *r)
@@ -999,6 +1077,8 @@ static const method methods[] = {
     { "observe.snapshot", m_observe_snapshot }, { "observe.subscribe", m_observe_subscribe }, { "observe.unsubscribe", m_observe_unsubscribe },
     { "catalog.list", m_catalog_list }, { "catalog.get", m_catalog_get }, { "catalog.libraries", m_catalog_libraries },
     { "catalog.models", m_catalog_models }, { "catalog.validate", m_unavailable },
+    { "analysis.start", m_analysis_start }, { "analysis.stop", m_analysis_stop },
+    { "analysis.coverage", m_analysis_coverage }, { "analysis.profile", m_analysis_profile },
     { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_record_replay },
     { "scenario.run", m_scenario_run }, { "diagnostics.list", m_diagnostics_list },
     { "toolchain.detect", m_toolchain_detect }, { "toolchain.build", m_toolchain_build },

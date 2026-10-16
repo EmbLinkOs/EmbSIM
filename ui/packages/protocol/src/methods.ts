@@ -12,6 +12,7 @@ import type {
   Breakpoint,
   CatalogItem,
   ComponentDescription,
+  CoverageReport,
   DiagnosticRecord,
   DurationString,
   InputEntry,
@@ -22,6 +23,7 @@ import type {
   Policy,
   ProbeInfo,
   ProbeKind,
+  ProfileReport,
   Project,
   PsString,
   Register,
@@ -152,10 +154,28 @@ export interface Methods {
   'catalog.validate': { params: { path: string }; result: { ok: boolean; diagnostics: DiagnosticRecord[] } };
   'catalog.libraries': { params: Record<string, never>; result: { libraries: { path: string; name: string; version: string; items: number }[] } };
 
+  // analysis: the firmware's coverage and profile (SPEC-008 §5)
+  'analysis.start': {
+    params: { board?: string; coverage?: boolean; profile?: boolean };
+    result: { coverage: boolean; profile: boolean };
+  };
+  'analysis.stop': { params: Record<string, never>; result: Record<string, never> };
+  'analysis.coverage': {
+    params: { board?: string; format?: 'json' | 'text' | 'lcov'; detail?: boolean };
+    result: { boards?: Record<string, CoverageReport>; text?: string };
+  };
+  'analysis.profile': {
+    params: { board?: string; format?: 'json' | 'text' | 'collapsed' | 'collapsed-insns'; detail?: boolean };
+    result: { boards?: Record<string, ProfileReport>; text?: string };
+  };
+
   // record
   'record.start': { params: { path?: string }; result: Record<string, never> };
   'record.stop': { params: Record<string, never>; result: { path?: string; inputs?: number | unknown[]; hash?: string } };
-  'record.replay': { params: { path: string }; result: { ok: boolean; divergence?: { at_ps: PsString; expected: unknown; observed: unknown } } };
+  'record.replay': {
+    params: { path: string; allow_drift?: boolean };
+    result: { ok: boolean; compared?: number; divergence?: { index: number; expected: unknown; observed: unknown } };
+  };
 
   // toolchain
   'toolchain.detect': { params: Record<string, never>; result: { profiles: { name: string; found: boolean; version?: string; path?: string }[] } };
@@ -225,6 +245,10 @@ export const METHOD_NAMES = [
   'catalog.get',
   'catalog.validate',
   'catalog.libraries',
+  'analysis.start',
+  'analysis.stop',
+  'analysis.coverage',
+  'analysis.profile',
   'record.start',
   'record.stop',
   'record.replay',

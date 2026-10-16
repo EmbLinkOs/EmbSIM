@@ -298,3 +298,31 @@ int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap,
     *offset = addr - best_v;
     return 1;
 }
+
+/* whether section `k` holds instructions (SHF_EXECINSTR) */
+static int exec_section(const u8 *f, size_t len, u32 k)
+{
+    u32 shoff = le32(f + 32), shentsize = le16(f + 46), shnum = le16(f + 48);
+    if (k >= shnum || (u64)shoff + (u64)(k + 1) * shentsize > len)
+        return 0;
+    return (le32(f + shoff + (size_t)k * shentsize + 8) & 4u) != 0;
+}
+
+void esk_elf_functions(const u8 *f, size_t len, void (*fn)(void *ctx, const char *name, u32 addr, u32 size),
+                       void *ctx)
+{
+    const u8 *syms, *strs;
+    u32 n, sl, i;
+    if (!symtab(f, len, &syms, &n, &strs, &sl))
+        return;
+    for (i = 0; i < n; i++) {
+        const u8 *s = syms + (size_t)i * 16u;
+        u32 type = s[12] & 15u, bind = s[12] >> 4, shndx = le16(s + 14);
+        if (shndx == 0 || shndx >= 0xff00u)
+            continue; /* undefined, absolute, common */
+        /* a function; or an assembler's global label in code (libgcc's
+         * division helpers, a C runtime's entry), which has no size */
+        if (type == 2 || (type == 0 && bind != 0 && exec_section(f, len, shndx)))
+            fn(ctx, sym_name(strs, sl, le32(s)), le32(s + 4) & ~1u, type == 2 ? le32(s + 8) : 0);
+    }
+}

@@ -172,6 +172,10 @@ export class MockTransport extends TransportBase implements Transport {
       'catalog.validate': () => ({ ok: true, diagnostics: [] }),
       'catalog.libraries': () => ({ libraries: [{ path: '<mock>', name: 'emblink', version: '0.1.0', items: catalogItems().length }] }),
 
+      'analysis.start': () => notSupported('analysis'),
+      'analysis.stop': () => ({}),
+      'analysis.coverage': () => notSupported('analysis'),
+      'analysis.profile': () => notSupported('analysis'),
       'record.start': () => notSupported('record'),
       'record.stop': () => notSupported('record'),
       'record.replay': () => notSupported('record'),

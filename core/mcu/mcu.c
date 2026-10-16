@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "mcu/analysis.h"
 #include "mcu/build.h"
 #include "mcu/dwarf.h"
 #include "mcu/mcu.h"
@@ -78,6 +79,8 @@ typedef struct mcu_state {
     mcu_uart uart[MCU_UARTS];
     int nuart;
     char console[16];
+    esk_an *an;      /* the analyses watching the firmware, or NULL */
+    unsigned an_what;
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -665,6 +668,8 @@ static void mcu_reset_now(mcu_state *st)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
     esk_mach_reset(&st->m);
+    if (st->an)
+        esk_an_restart(st->an);
     st->stopped = 0;
     st->ended_reported = 0;
     st->boot_fail = 0;
@@ -690,6 +695,9 @@ static void mcu_destroy(esk_comp *c)
     esk_engine *e = c->e;
     if (!st)
         return;
+    esk_an_free(st->an);
+    st->an = NULL;
+    st->m.an = NULL;
     if (st->attached)
         esk_mach_free(&st->m);
     if (st->image)
@@ -905,9 +913,50 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
     if (st->dwarf.a)
         esk_dwarf_free(&st->dwarf);
     (void)esk_dwarf_load(&st->dwarf, e->a, st->image, st->image_len);
+    if (st->an_what)
+        (void)esk_mcu_analyze(c, st->an_what, why, cap); /* the new image's functions */
     catch_up(st, e->sched.now);
     mcu_reset_now(st);
     return ES_OK;
+}
+
+es_status esk_mcu_analyze(esk_comp *c, unsigned what, char *why, size_t cap)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    es_status r;
+    if (!st || !st->attached)
+        return ES_EINVAL;
+    esk_an_free(st->an);
+    st->an = NULL;
+    st->m.an = NULL;
+    st->an_what = what;
+    if (!what)
+        return ES_OK;
+    if (!st->image) {
+        esk_snprintf(why, cap, "the board has no firmware image");
+        return ES_EINVAL;
+    }
+    r = esk_an_create(&st->m, what, st->image, st->image_len, st->dwarf.nrows ? &st->dwarf : NULL,
+                      esk_cortexm_cores(&st->m), &st->an);
+    if (r == ES_EINVAL)
+        esk_snprintf(why, cap, "%s has no function symbols (an ELF image with its symbol table is needed)",
+                     st->image_name);
+    else if (r != ES_OK)
+        esk_snprintf(why, cap, "out of memory");
+    st->m.an = st->an;
+    return r;
+}
+
+esk_an *esk_mcu_analysis(const esk_comp *c)
+{
+    const mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    return st ? st->an : NULL;
+}
+
+const char *esk_mcu_image_name(const esk_comp *c)
+{
+    const mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    return st ? st->image_name : NULL;
 }
 
 es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t cap)

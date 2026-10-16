@@ -1057,6 +1057,7 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
                     esk_json_get_str(pe, "target", "?"), es_strerror(ps));
     }
     s->loaded = 1;
+    esk_session_analyses_apply(s);
     return ES_OK;
 }
 

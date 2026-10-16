@@ -213,6 +213,7 @@ void es_session_destroy(es_session *s)
     esk_strfree(s->a, s->catalog_dir);
     esk_strfree(s->a, s->project_path);
     esk_strfree(s->a, s->client_name);
+    esk_strfree(s->a, s->an_board);
     esk_strfree(s->a, s->record_path);
     esk_json_free(s->a, s->inputs_log);
     esk_json_free(s->a, s->observations);

@@ -63,7 +63,11 @@ text (`--assert serial`), both by default.
 `embsim run PROJECT --scenario S --json --policy strict --record out.rec`
 is the CI contract: exit code and report (SPEC-008 §8). Reports and
 recordings are artifacts; `tools/verify/compare_reports.py` diffs two
-reports (for a firmware change) ignoring wall time.
+reports (for a firmware change) ignoring wall time. `--coverage FILE
+--coverage-format lcov` and `--profile FILE --profile-format collapsed`
+add the firmware's coverage and profile (SPEC-009 §12) as artifacts a CI's
+coverage service and a flame graph read; the report carries their
+summaries.
 
 ## 5. Determinism tests
 

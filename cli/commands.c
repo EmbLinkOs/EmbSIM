@@ -12,6 +12,7 @@
 #include <string.h>
 #include "embsim/embsim.h"
 #include "host/host.h"
+#include "mcu/analysis.h"
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
 #include "sdk.h"
@@ -28,6 +29,8 @@ static void usage(void)
 {
     fputs("usage: embsim <command> [options]\n"
           "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json]\n"
+          "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
+          "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]] [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
@@ -152,9 +155,54 @@ static void print_human_report(es_session *s, const esk_json *report)
     }
 }
 
+/* a report format's name: ESK_AN_*, -2 for JSON, -1 for none */
+static int an_format(const char *name, int coverage)
+{
+    if (!strcmp(name, "json")) return -2;
+    if (!strcmp(name, "text")) return ESK_AN_TEXT;
+    if (coverage) return !strcmp(name, "lcov") ? ESK_AN_LCOV : -1;
+    if (!strcmp(name, "collapsed")) return ESK_AN_COLLAPSED;
+    if (!strcmp(name, "collapsed-insns")) return ESK_AN_COLLAPSED_INSNS;
+    return -1;
+}
+
+/* the coverage or profile report into `path` ("-": stderr) */
+static int write_analysis(es_session *s, const char *board, int coverage, int fmt, const char *path)
+{
+    esk_strbuf b;
+    char why[160];
+    int ok = 1;
+    esk_strbuf_init(&b, s->a);
+    if (fmt == -2) {
+        esk_json *j = esk_session_analysis_json(s, board, coverage, 1);
+        ok = j != NULL;
+        if (j) {
+            (void)esk_json_write(&b, j, 1);
+            (void)esk_strbuf_putc(&b, '\n');
+        }
+        esk_json_free(s->a, j);
+        why[0] = 0;
+    } else if (esk_session_analysis_text(s, board, coverage, fmt, &b, why, sizeof why) != ES_OK) {
+        ok = 0;
+    }
+    if (!ok || b.oom) {
+        fprintf(stderr, "embsim: %s: %s\n", coverage ? "coverage" : "profile", why[0] ? why : "out of memory");
+        ok = 0;
+    } else if (!strcmp(path, "-")) {
+        fwrite(b.data, 1, b.len, stderr);
+    } else if (esk_host_write_file(path, b.data, b.len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot write %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    return ok;
+}
+
 static int cmd_run(int argc, char **argv, const char *argv0)
 {
     const char *project = NULL, *scenario = NULL, *policy = NULL, *record = NULL, *library = NULL;
+    const char *coverage = NULL, *profile = NULL, *board = NULL;
+    int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -172,6 +220,14 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--record") && more) record = argv[++i];
         else if (!strcmp(a, "--library") && more) library = argv[++i];
         else if (!strcmp(a, "--probe") && more) { if (nprobes < 32) probes[nprobes++] = argv[++i]; }
+        else if (!strcmp(a, "--coverage") && more) coverage = argv[++i];
+        else if (!strcmp(a, "--profile") && more) profile = argv[++i];
+        else if (!strcmp(a, "--board") && more) board = argv[++i];
+        else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format")) && more) {
+            int cov = a[2] == 'c', f = an_format(argv[++i], cov);
+            if (f == -1) { fprintf(stderr, "embsim: %s: no format %s\n", a, argv[i]); return 2; }
+            if (cov) cov_fmt = f; else prof_fmt = f;
+        }
         else if (!strcmp(a, "--json")) opt_json = 1;
         else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
         else if (!project) project = a;
@@ -188,6 +244,15 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     for (i = 0; i < nprobes; i++) {
         if (esk_session_probe_add(s, NULL, probes[i], NULL, 0, NULL) != ES_OK)
             fprintf(stderr, "embsim: warning: probe %s not created\n", probes[i]);
+    }
+    if (coverage || profile) {
+        char why[160];
+        unsigned what = (coverage ? ESK_AN_COVERAGE : 0u) | (profile ? ESK_AN_PROFILE : 0u);
+        if (esk_session_analyze(s, board, what, why, sizeof why) != ES_OK) {
+            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : "--profile", why);
+            es_session_destroy(s);
+            return 2;
+        }
     }
     if (record)
         esk_record_start(s);
@@ -247,6 +312,10 @@ static int cmd_run(int argc, char **argv, const char *argv0)
             esk_free(s->a, text, len + 1);
         esk_json_free(s->a, rec);
     }
+    if (coverage && !write_analysis(s, board, 1, cov_fmt, coverage) && !rc)
+        rc = 2;
+    if (profile && !write_analysis(s, board, 0, prof_fmt, profile) && !rc)
+        rc = 2;
     if (opt_json)
         print_json(report, s->a);
     else

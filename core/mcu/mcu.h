@@ -63,5 +63,14 @@ int esk_mcu_stopped(const esk_comp *c, const char **why);
 void esk_mcu_resume(esk_comp *c, u64 steps);
 /* stop the core where it is, as a debugger's interrupt does */
 void esk_mcu_halt(esk_comp *c);
+/* the analyses `what` (ESK_AN_COVERAGE, ESK_AN_PROFILE: mcu/analysis.h)
+ * watch the firmware from now on, counting from zero; 0 turns them off. A
+ * new image (esk_mcu_set_image) keeps them on, counting again. Errors name
+ * the problem in `why` */
+struct esk_an;
+es_status esk_mcu_analyze(esk_comp *c, unsigned what, char *why, size_t cap);
+struct esk_an *esk_mcu_analysis(const esk_comp *c);
+/* the firmware image's name as the project gives it */
+const char *esk_mcu_image_name(const esk_comp *c);
 
 #endif

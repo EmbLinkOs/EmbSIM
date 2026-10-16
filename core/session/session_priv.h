@@ -93,10 +93,29 @@ struct es_session {
     uint64_t last_observe_ms;
     char *client_name;
     int opened;
+    /* the firmware analyses on (measure.c): ESK_AN_* bits, on one board or
+     * on every board with firmware (NULL) */
+    unsigned an_what;
+    char *an_board;
     /* statistics */
     uint64_t rpc_count;
     double wall_time_s;
 };
+
+/* measure.c: the analyses `what` (ESK_AN_*) on `board`'s MCU, or every
+ * board's with firmware (NULL); 0 turns them off. They stay on across a
+ * project's reload (esk_session_analyses_apply, after a load) */
+es_status esk_session_analyze(es_session *s, const char *board, unsigned what, char *why, size_t cap);
+void esk_session_analyses_apply(es_session *s);
+/* the boards' coverage (`coverage`) or profile reports as text in format
+ * `fmt` (ESK_AN_*), one board's or every board's; ES_ESTATE when it is not on */
+es_status esk_session_analysis_text(es_session *s, const char *board, int coverage, int fmt, esk_strbuf *out,
+                                    char *why, size_t cap);
+/* {BOARD: coverage or profile JSON}; `detail`: every file's line counts,
+ * every function's profile */
+esk_json *esk_session_analysis_json(es_session *s, const char *board, int coverage, int detail);
+/* a run's report gains "coverage" and "profile" summaries when they are on */
+void esk_session_analysis_report(es_session *s, esk_json *report);
 
 /* loader.c */
 es_status esk_project_load(es_session *s, const esk_json *project, const char *base_dir);

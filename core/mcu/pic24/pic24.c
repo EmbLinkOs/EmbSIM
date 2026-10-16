@@ -1062,6 +1062,7 @@ static int table_write(struct pic24_state *ps, u32 i)
 static int retfie(struct pic24_state *ps)
 {
     u16 hi, lo;
+    esk_mach_exc_return(ps->sim, 0);
     if (pop(ps, &hi) || pop(ps, &lo))
         return 1;
     ps->sr = (u16)((ps->sr & 0xff00) | (hi >> 8));
@@ -1693,7 +1694,7 @@ static void enter(struct pic24_state *ps, u32 vector, int ipl, int irq)
                    (ret >> 16 & 0x7f));
     u16 sfa = ps->e && (ps->corcon & CORCON_SFA) ? 1 : 0;
     ps->trap = 0;
-    esk_mach_exc(s, 0, irq < 0 ? (int)(vector - 4) / 2 : irq + 8);
+    esk_mach_exc(s, 0, irq < 0 ? (int)(vector - 4) / 2 : irq + 8, ret);
     if (push(ps, (u16)(ret | sfa)) || push(ps, hi)) {
         ps->trap = 0;                           /* a stack that cannot take it */
     }

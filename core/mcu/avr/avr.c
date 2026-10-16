@@ -227,7 +227,7 @@ static void take_interrupt(esk_avr *as)
     int v = as->pend, i;
     u32 c = as->sleeping ? 8 : 4;
     as->sleeping = 0;
-    esk_mach_exc(s, 0, v);
+    esk_mach_exc(s, 0, v, as->pc * 2);
     push_pc(as, as->pc);
     as->sreg &= (u8)~SREG_I;
     as->pc = (u32)v * 2;
@@ -595,6 +595,7 @@ static int exec(esk_avr *as, u16 w, u16 w2)
                 as->npc = pop_pc(as);
                 return 1;
             case 0x9518: /* RETI */
+                esk_mach_exc_return(as->sim, 0);
                 as->npc = pop_pc(as);
                 as->sreg |= SREG_I;
                 as->inhibit = 1;

@@ -467,6 +467,42 @@ export interface SourceFile {
   lines: number[];
 }
 
+export interface HitTotal {
+  hit: number;
+  total: number;
+}
+
+/** One board's coverage (analysis.coverage, SPEC-008 §5). */
+export interface CoverageReport {
+  lines: HitTotal;
+  functions: HitTotal;
+  insns: number;
+  files: {
+    path: string;
+    lines: HitTotal;
+    /** With `detail`: each function's entries; without, the file's counts. */
+    functions: { name: string; line: number; count: number }[] | HitTotal;
+    /** With `detail`: [line, count] for each line that has code. */
+    counts?: [number, number][];
+  }[];
+  no_lines?: { name: string; count: number }[];
+}
+
+/** One board's profile (analysis.profile), by self cycles. */
+export interface ProfileReport {
+  insns: number;
+  cycles: number;
+  elapsed_cycles: number;
+  functions: {
+    name: string;
+    self_insns: number;
+    self_cycles: number;
+    incl_insns: number;
+    incl_cycles: number;
+    calls: number;
+  }[];
+}
+
 export interface Instruction {
   address: number;
   size: number;

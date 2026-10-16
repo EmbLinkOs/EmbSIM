@@ -136,6 +136,14 @@ versions follow semantic versioning. There is no release yet.
   `embsim record to-scenario`; `record.replay` over the protocol;
   `tools/verify/compare_reports.py`; a determinism and replay test over
   every example (`record_replay`).
+- Coverage and profiling from the backends (M5, SPEC-009 §12): every core
+  (Cortex-M, AVR, RISC-V, MIPS, PIC24, and each of the RP2040's two) watched
+  instruction by instruction; `embsim run --coverage` (gcov-style text with
+  the source, lcov, JSON) and `--profile` (by function, self and inclusive,
+  collapsed stacks for flame graphs, JSON); `analysis.start`, `.stop`,
+  `.coverage`, `.profile` over the protocol; the run report's `coverage`
+  and `profile` summaries; the `analysis` test over every firmware example.
+  Extracted from EmbCC's analyses, with per-core call stacks.
 - The RP2040's second core: two Cortex-M0+ cores on one clock
   (`core.cores`; each core's NVIC, SysTick, CPUID, divider and FIFO; WFE and
   SEV between them; core 1 launched through its bootrom's FIFO handshake and

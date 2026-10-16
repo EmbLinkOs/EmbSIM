@@ -6,7 +6,7 @@ machine-readable report of SPEC-008 §8.
 
 | Command | What it does |
 |---|---|
-| `embsim run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json]` | loads the project, runs it headless to `--until` (default 50 ms) or through the scenario's inputs and assertions, prints nets, outputs, assertions and statistics; exit 0 ok, 1 an assertion failed, 2 usage or load error, 3 a fatal diagnostic |
+| `embsim run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--coverage FILE] [--profile FILE] [--board ID] [--json]` | loads the project, runs it headless to `--until` (default 50 ms) or through the scenario's inputs and assertions, prints nets, outputs, assertions and statistics; with `--coverage` and `--profile`, writes the firmware's coverage and profile (below); exit 0 ok, 1 an assertion failed, 2 usage or load error, 3 a fatal diagnostic |
 | `embsim replay RECORDING [--allow-drift] [--json]` | runs a recording again: its project from reset, its inputs at their times, to its end, comparing what the run observes with what was recorded, in order; exit 0 when all match, 4 at the first divergence (both observations printed, or in `divergence` with `--json`), 2 when the project or an image changed since the recording unless `--allow-drift` |
 | `embsim record to-scenario RECORDING [-o FILE] [--assert probes,serial\|none] [--name N]` | a scenario from a recording: its inputs at their times, and assertions on each digital probe's last level and edges and each serial probe's text |
 | `embsim validate PATH...` | loads each project through the real loader and reports its diagnostics (descriptions are validated against the schemas by `tools/validate.py`) |
@@ -48,6 +48,49 @@ A run that records starts from reset, as a scenario does, so `embsim replay`
 sees the same thing from the same start. In the workbench, the protocol's
 `record.start` and `record.stop` record from the moment recording starts;
 replay compares from there.
+
+## Coverage and profile
+
+`--coverage FILE` and `--profile FILE` watch every board's firmware (one
+board's with `--board ID`) instruction by instruction and write, at the end
+of the run, which source lines and functions ran and where the time went
+(`-` writes to stderr). Functions come from the image's ELF symbol table,
+lines from its DWARF line tables, so build it with `-g`; a HEX image or a
+stripped ELF is refused.
+
+- `--coverage-format text` (the default): per source file, its lines and
+  functions hit, and the source with each line's count beside it, as gcov
+  lays it out (`#####` a line with code that never ran, `-` a line with
+  none). A line's count is its most-executed instruction's, a function's its
+  first instruction's: the times it was entered.
+- `--coverage-format lcov`: an lcov tracefile (`TN` the board, `SF`, `FN`,
+  `FNDA`, `DA`, `LF`, `LH`), which `genhtml` and CI coverage services read.
+- `--profile-format text` (the default): each function's own and inclusive
+  instructions and cycles, and its calls, by own cycles. The cycles are the
+  instructions' (and exception entries'); the time a core sleeps in WFI is
+  no instruction's, and the header gives the machine's elapsed cycles beside
+  them.
+- `--profile-format collapsed` (or `collapsed-insns`): one line per call
+  path, `Reset_Handler;main;putc 1234`, by cycles (or instructions), for
+  `flamegraph.pl`, speedscope and inferno; a part's second core's paths
+  start with `core1`, and several boards' with the board's ID.
+- `json` for either: what the protocol's `analysis.coverage` and
+  `analysis.profile` return (SPEC-008 §5). With `--json`, the run's report
+  also carries `coverage` and `profile` summaries.
+
+Calls and returns are recognized from each core's instructions (BL and BX
+on a Cortex-M, JAL and JALR on RISC-V, CALL and RET on an AVR, MIPS's JAL
+and JR after their delay slots, a PIC24's CALL and RETURN), and exception
+entries and returns from the core itself, so a handler's time is its own.
+The analyses cost little: the Pico's two-core scenario runs in the same
+wall time with both on.
+
+```sh
+embsim run examples/bluepill-button-led/project.json --scenario examples/bluepill-button-led/scenarios/press.json \
+    --coverage cov.info --coverage-format lcov --profile prof.folded --profile-format collapsed
+genhtml cov.info -o coverage-html
+flamegraph.pl prof.folded > profile.svg
+```
 
 Diagnostics go to stderr as `embsim: <severity>: <code> (<subject>)` followed by
 the message; their codes are listed in [diagnostics](diagnostics.md).

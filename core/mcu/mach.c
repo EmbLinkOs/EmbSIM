@@ -262,7 +262,10 @@ u64 esk_mach_run(struct esk_mach *m, u64 budget, u64 max_insns)
             break;
         }
         m->bp_skip = 0;
-        m->cpu->ops->step(m->cpu);
+        if (m->an && !m->steps_cores)
+            esk_an_step(m->an, 0, m->cpu);
+        else
+            m->cpu->ops->step(m->cpu);
         if (m->bus.watch_hit) {
             m->stop_watch = 1;
             break;

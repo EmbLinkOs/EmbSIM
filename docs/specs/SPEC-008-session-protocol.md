@@ -132,6 +132,28 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `record.start({path?}) -> {from_ps}`; `record.stop({}) -> {path, hash, inputs, count, observations}` (with no path, `recording` is the document itself)
 - `record.replay({path, allow_drift?}) -> {ok, compared, divergence?: {index, expected, observed}, drift: [{what, recorded, now}]}`: the recording's project loaded into the session and replayed (SPEC-012 §2)
 
+### analysis (the firmware's coverage and profile)
+- `analysis.start({board?, coverage?, profile?}) -> {coverage, profile}`:
+  the boards' MCUs (one board's, or every board's with firmware) are
+  watched from now on, counting from zero; both analyses by default. They
+  stay on across a reset, a reload and a new image. `analysis.stop({})`
+  turns them off.
+- `analysis.coverage({board?, format?, detail?}) -> {boards: {ID: {lines:
+  {hit, total}, functions: {hit, total}, insns, files: [{path, lines,
+  functions: [{name, line, count}], counts: [[line, count]...]}],
+  no_lines?}}}`; with `format` `text` or `lcov`, `{text}` (gcov's layout,
+  an lcov tracefile). A line has code when the line table puts an address
+  range of it inside a function; its count is its most-executed
+  instruction's, a function's its first instruction's.
+- `analysis.profile({board?, format?, detail?}) -> {boards: {ID: {insns,
+  cycles, elapsed_cycles, functions: [{name, self_insns, self_cycles,
+  incl_insns, incl_cycles, calls}]}}}` by self cycles (without `detail`,
+  the first ten); with `format` `text`, `collapsed` or `collapsed-insns`,
+  `{text}` (the report; collapsed stacks by cycles or instructions, a
+  machine's cores rooted at `core0`, `core1`). `cycles` are the steps'
+  (a sleeping core's time is no step's); `elapsed_cycles` the machine's.
+- Both are -32001 until `analysis.start`.
+
 ### toolchain
 - `toolchain.detect({}) -> {profiles: [{name, found, version, path}]}`
 - `toolchain.build({board, profile?}) -> {ok, log, image}`
@@ -163,7 +185,10 @@ stream are in order; different streams are independent.
 report: `{engine, protocol, project: {name, hash}, images: [{board, path,
 hash}], policy, until_ps, ended: {reason, now_ps}, assertions: [{id, ok,
 observed, expected, at_ps}], diagnostics: [...], statistics: {events,
-instructions: {board: n}, analog_steps, wall_time_s}}`.
+instructions: {board: n}, analog_steps, wall_time_s}}`. With the analyses
+on, it has `coverage` (each board's totals and files' counts, as
+`analysis.coverage` without `detail`) and `profile` (each board's first ten
+functions).
 
 ## 9. CLI exit codes
 

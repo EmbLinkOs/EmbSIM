@@ -53,7 +53,7 @@ void rv_illegal(struct rv_state *rs)
 static void trap_enter(struct rv_state *rs, u64 cause, u64 tval, int intr)
 {
     u64 st = rs->mstatus;
-    esk_mach_exc(rs->sim, 0, (int)(intr ? 16 + (cause & 0xffff) : cause & 0xffff));
+    esk_mach_exc(rs->sim, 0, (int)(intr ? 16 + (cause & 0xffff) : cause & 0xffff), (u32)rs->pc);
     rs->mepc = rs->pc;
     rs->mcause = intr ? (1ull << (rs->xlen - 1)) | cause : cause;
     rs->mtval = rv_xl(rs, tval);
@@ -617,6 +617,7 @@ static void sys_insn(struct rv_state *rs, u32 i, u32 rd, u32 f3)
             rv_illegal(rs);
             return;
         }
+        esk_mach_exc_return(rs->sim, 0);
         u64 st = rs->mstatus;
         int mpp = (int)((st >> 11) & 3);
         st = (st & ~(u64)MSTATUS_MIE) | ((st & MSTATUS_MPIE) ? MSTATUS_MIE : 0);

@@ -218,3 +218,22 @@ table. Variables (DWARF info) are not implemented in M1.
    `Provenance: EmbLinkOs/EmbCC <file>`; `NOTICE` lists the files.
 7. The family's EmbCC golden fixtures pass (`tests/firmware/bluepill-golden`,
    with documented deltas) before any behavioural change is accepted.
+
+## 12. Analyses
+
+A machine may carry analyses (`core/mcu/analysis.h`): coverage and the
+profile. With one, the run loop steps each core through `esk_an_step`
+(smp.c for each core of a part with several), which notes the pc and the
+machine's instruction and cycle counts around the core's own step. Coverage
+counts each executed instruction by address, a count per halfword of the
+image's functions; the profile gives each step's instructions and cycles to
+the call path its pc is on. Calls and returns are recognized from the
+instruction the core executes (EmbCC's rules, `analysis.c`): a call that
+links to inside its own function, not its entry, is a far branch. Each
+core reports an exception's entry with its return address
+(`esk_mach_exc(m, core, n, ret)`) and its return (`esk_mach_exc_return`):
+RETFIE, MRET, ERET, RETI and a Cortex-M's EXC_RETURN. Each core has its own
+shadow stack and root path. Functions are the ELF's function symbols and
+its global labels in code; one without a size runs to the next, at most
+4 KiB. A machine without analyses steps as before. Reports: SPEC-008 §5
+`analysis.*`, `embsim run --coverage`, `--profile`.
