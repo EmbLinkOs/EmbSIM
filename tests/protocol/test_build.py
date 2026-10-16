@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Junior Deogracias
 """`embsim build` with each toolchain profile found on this host (clang with
-ld.lld, embcc): the Blue Pill, Uno, HiFive1, Pico (one core and two), nRF52840 DK
-and Explorer 16/32 examples copied to a
-temporary directory, their images removed, built from their sources, then
-their scenarios run. Profiles not installed are skipped, and an example for
-a clang built without its backend; with none, the test passes with SKIP."""
+ld.lld, embcc, and the GNU profiles gcc-arm, gcc-avr and gcc-riscv): the Blue
+Pill, Uno, HiFive1, Pico (one core and two), nRF52840 DK and Explorer 16/32
+examples copied to a temporary directory, their images removed, built from
+their sources, then their scenarios run. A GNU profile builds the examples
+of its family; profiles not installed are skipped, and an example for a
+clang built without its backend; with none, the test passes with SKIP."""
 import argparse
 import shutil
 import subprocess
@@ -26,6 +27,10 @@ EXAMPLES = [  # directory, image, scenario, the clang target it needs
 ]
 
 
+# the examples a GNU profile builds: those of its family
+GNU = {"gcc-arm": "thumb", "gcc-avr": "avr", "gcc-riscv": "riscv32"}
+
+
 def clang_targets() -> str:
     try:
         return subprocess.run(["clang", "--print-targets"], capture_output=True, text=True, timeout=60).stdout
@@ -41,6 +46,7 @@ def available(embsim: str) -> list[str]:
         profiles.append("clang")
     if "embcc" in found:
         profiles.append("embcc")
+    profiles += [p for p in GNU if p in found]
     return profiles
 
 
@@ -50,7 +56,7 @@ def main() -> int:
     args = ap.parse_args()
     profiles = available(args.embsim)
     if not profiles:
-        print("SKIP: no firmware toolchain (clang with ld.lld, or embcc) on this host")
+        print("SKIP: no firmware toolchain (clang with ld.lld, embcc, or a GNU profile) on this host")
         return 0
     failures = 0
     targets = clang_targets()
@@ -58,6 +64,8 @@ def main() -> int:
         for name, image, scenario, need in EXAMPLES:
             if prof == "clang" and need not in targets:
                 print(f"skip  {prof}: {name} (this clang has no {need} backend)")
+                continue
+            if prof in GNU and GNU[prof] != need:
                 continue
             with tempfile.TemporaryDirectory() as tmp:
                 ex = Path(tmp) / "ex"

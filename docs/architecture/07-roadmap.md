@@ -27,9 +27,10 @@ CI evidence for all of it. Everything else is after 1.0.
 | **M6 Release 1.0** | Performance work, platform validation, documentation site, packaging, signing, support policy | 01 §8 in full; STATUS.md lists evidence for every claim |
 
 M0 is delivered. M1 is implemented on the Blue Pill (STM32F103C8) with the
-`embcc` and `clang` profiles exercised; its evidence and the parts of its
-exit criteria still open (the three-platform run of the acceptance
-scenario from the workbench, the `gcc-arm` profile) are in STATUS.md. M2
+`embcc`, `clang` and `gcc-arm` profiles exercised (an unmodified GCC ELF
+passes the acceptance scenario); its evidence and the part of its exit
+criteria still open (the three-platform run of the acceptance scenario
+from the workbench) are in STATUS.md. M2
 is implemented (the inside of a board or composite opens read-only); its
 installers and three-platform smoke run in CI (Chromium, not the platform
 webviews). M3 is implemented: 101 components each validated by the engine

@@ -224,6 +224,13 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- `embsim build` with a GNU profile found no target for any board: the
+  boards name a GNU target by `cpu`, the build looked for `target` only.
+  The gcc-avr profile's convert step (`${objcopy}`, `${hex}`) and its
+  target's `-DF_CPU` were not expanded, and it ignored a project's linker
+  script. A project's firmware takes `link_flags` for the link alone. The
+  gcc-arm profile now builds the Blue Pill, Pico and nRF52840 DK examples
+  and gcc-avr the Uno, each passing its scenario.
 - A digital input on an analog net heard of a threshold crossing when the
   analog step that found it began, up to a step early (0.9 ms on a slow
   ramp); it now hears of it at the crossing's own time, to the bisection's
