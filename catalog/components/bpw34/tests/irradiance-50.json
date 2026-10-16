@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "irradiance-50",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10000
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bpw34"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.K"
+      ],
+      "SENSE": [
+        "DUT.A",
+        "R.1"
+      ],
+      "GND": [
+        "R.2",
+        "V.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:SENSE": {
+      "at": "500us",
+      "min_v": 2.498,
+      "max_v": 2.502
+    }
+  },
+  "inputs": [
+    {
+      "at": "100us",
+      "target": "DUT",
+      "input": "irradiance",
+      "value": 50
+    }
+  ]
+}

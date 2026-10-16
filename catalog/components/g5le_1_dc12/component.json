@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/g5le_1_dc12",
+  "version": "1.0.0",
+  "name": "G5LE-1 DC12",
+  "category": "mechanical",
+  "description": "G5LE-1 SPDT relay with R/L coil, hysteretic pickup, 10 ms operate and 5 ms release delay; independent contact circuit.",
+  "keywords": [
+    "mechanical",
+    "G5LE-1 DC12",
+    "Omron",
+    "PCB relay SPDT"
+  ],
+  "pins": [
+    {
+      "name": "COIL+",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "COIL+"
+    },
+    {
+      "name": "COIL-",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "COIL-"
+    },
+    {
+      "name": "COM",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "COM"
+    },
+    {
+      "name": "NC",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "NC"
+    },
+    {
+      "name": "NO",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "NO"
+    }
+  ],
+  "params": {
+    "coil_r": {
+      "type": "number",
+      "default": 360,
+      "doc": "Nominal winding DC resistance; coil temperature and tolerance are omitted.",
+      "unit": "ohm",
+      "min": 1,
+      "max": 100000
+    },
+    "coil_l": {
+      "type": "number",
+      "default": 0.1,
+      "doc": "Illustrative winding inductance, not measured manufacturer data; affects pickup and flyback decay.",
+      "unit": "H",
+      "min": 1e-06,
+      "max": 100
+    },
+    "pickup": {
+      "type": "number",
+      "default": 9.0,
+      "doc": "Pickup threshold across the coil resistance (proportional to coil current), rather than across the whole inductive winding.",
+      "unit": "V",
+      "min": 0.01,
+      "max": 1000
+    },
+    "dropout": {
+      "type": "number",
+      "default": 1.2000000000000002,
+      "doc": "Dropout threshold across the coil resistance; below pickup to provide hysteresis.",
+      "unit": "V",
+      "min": 0,
+      "max": 1000
+    },
+    "operate_s": {
+      "type": "number",
+      "default": 0.01,
+      "doc": "Continuous time above pickup required before closing the normally-open contact.",
+      "unit": "s",
+      "min": 0,
+      "max": 10
+    },
+    "release_s": {
+      "type": "number",
+      "default": 0.005,
+      "doc": "Continuous time below dropout required before returning to the normally-closed contact.",
+      "unit": "s",
+      "min": 0,
+      "max": 10
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "R",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$coil_r"
+          }
+        },
+        {
+          "id": "L",
+          "component": "emblink/inductor",
+          "params": {
+            "inductance": "$coil_l",
+            "ic": 0
+          }
+        },
+        {
+          "id": "K",
+          "component": "emblink/relay_contacts",
+          "params": {
+            "pickup": "$pickup",
+            "dropout": "$dropout",
+            "operate_s": "$operate_s",
+            "release_s": "$release_s"
+          }
+        }
+      ],
+      "nets": {
+        "SENSE": [
+          "R.2",
+          "L.1",
+          "K.S-"
+        ],
+        "POWER": [
+          "R.1",
+          "K.S+"
+        ],
+        "RETURN": [
+          "L.2"
+        ],
+        "COM": [
+          "K.COM"
+        ],
+        "NC": [
+          "K.NC"
+        ],
+        "NO": [
+          "K.NO"
+        ]
+      },
+      "ports": {
+        "COIL+": "R.1",
+        "COIL-": "L.2",
+        "COM": "K.COM",
+        "NC": "K.NC",
+        "NO": "K.NO"
+      }
+    }
+  },
+  "inputs": [],
+  "outputs": [],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 80,
+    "pins": {
+      "COIL+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "COIL-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "COM": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "NC": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      },
+      "NO": {
+        "x": 160,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "G5LE-1 SPDT relay with R/L coil, hysteretic pickup, 10 ms operate and 5 ms release delay; independent contact circuit.",
+      "omissions": [
+        "coil inductance is illustrative, not measured",
+        "contact bounce/arcing",
+        "magnetic saturation",
+        "temperature rise",
+        "certified isolation behavior",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "url": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5le.pdf",
+        "hash": "sha256:faf3b16409722ace13979dec61565d44942894d59509fdaa68a408ed2eba1827",
+        "title": "Omron G5LE K100-E1-08",
+        "rev": "March 2018",
+        "date": "2026-10-16",
+        "notes": "Manufacturer source reviewed, PDF pages 1\u20134. Package/nominal reference only; model not manufacturer-qualified."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "G5LE-1 DC12",
+    "manufacturer": "Omron",
+    "package": "PCB relay SPDT",
+    "datasheet": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5le.pdf"
+  }
+}

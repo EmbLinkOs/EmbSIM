@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/relay_contacts",
+  "version": "1.0.0",
+  "name": "Relay contact controller",
+  "category": "mechanical",
+  "description": "SPDT contact controller with hysteresis and persistent pickup/release delay. Sense pins measure coil resistor voltage.",
+  "keywords": [
+    "mechanical",
+    "Relay contact controller"
+  ],
+  "pins": [
+    {
+      "name": "S+",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "S+"
+    },
+    {
+      "name": "S-",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "S-"
+    },
+    {
+      "name": "COM",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "COM"
+    },
+    {
+      "name": "NC",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "NC"
+    },
+    {
+      "name": "NO",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "NO"
+    }
+  ],
+  "params": {
+    "pickup": {
+      "type": "number",
+      "default": 3.75,
+      "doc": "Pickup threshold across the coil resistance (proportional to coil current), rather than across the whole inductive winding.",
+      "unit": "V",
+      "min": 0.01,
+      "max": 1000
+    },
+    "dropout": {
+      "type": "number",
+      "default": 0.5,
+      "doc": "Dropout threshold across the coil resistance; below pickup to provide hysteresis.",
+      "unit": "V",
+      "min": 0,
+      "max": 1000
+    },
+    "operate_s": {
+      "type": "number",
+      "default": 0.01,
+      "doc": "Continuous time above pickup required before closing the normally-open contact.",
+      "unit": "s",
+      "min": 0,
+      "max": 10
+    },
+    "release_s": {
+      "type": "number",
+      "default": 0.005,
+      "doc": "Continuous time below dropout required before returning to the normally-closed contact.",
+      "unit": "s",
+      "min": 0,
+      "max": 10
+    },
+    "ron": {
+      "type": "number",
+      "default": 0.1,
+      "doc": "Closed-contact resistance. Contact bounce and arcing are not modeled by this part.",
+      "unit": "ohm",
+      "min": 0.001,
+      "max": 1000
+    },
+    "roff": {
+      "type": "number",
+      "default": 10000000000.0,
+      "doc": "Open-contact leakage resistance. This is not an insulation-rating simulation.",
+      "unit": "ohm",
+      "min": 1000000.0,
+      "max": 1000000000000000.0
+    }
+  },
+  "model": {
+    "primitive": "relay_contacts"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "name": "energized",
+      "type": "boolean"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 80,
+    "pins": {
+      "S+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "S-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "COM": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "NC": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      },
+      "NO": {
+        "x": 160,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9,
+    "states": [
+      {
+        "output": "energized",
+        "selector": "#reading",
+        "attr": "text",
+        "format": "{}",
+        "map": {
+          "true": "On",
+          "false": "Off"
+        }
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "SPDT contact controller with hysteresis and persistent pickup/release delay. Sense pins measure coil resistor voltage.",
+      "omissions": [
+        "mechanical bounce",
+        "contact arcing",
+        "magnetic saturation",
+        "contact travel",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

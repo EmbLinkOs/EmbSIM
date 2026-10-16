@@ -67,6 +67,7 @@
         "misc",
         "amplifiers",
         "comparators",
+        "optoelectronics",
         "timers"
       ]
     },
@@ -784,6 +785,7 @@
                 },
                 "description": "enum or integer output value -> attribute value."
               },
+              "precision": {"type": "integer", "minimum": 0, "maximum": 6},
               "format": {
                 "type": "string",
                 "description": "A template whose \"{}\" takes the output's value (after scale for numbers): rotate({} 30 30), a colour, a path. attr \"text\" sets the element's text."

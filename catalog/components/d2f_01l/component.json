@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/d2f_01l",
+  "version": "1.0.0",
+  "name": "D2F-01L",
+  "category": "switches",
+  "description": "Omron D2F-01L SPDT lever microswitch; resting COM-NC and pressed COM-NO.",
+  "keywords": [
+    "switches",
+    "D2F-01L",
+    "Omron",
+    "PCB microswitch"
+  ],
+  "pins": [
+    {
+      "name": "COM",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "COM"
+    },
+    {
+      "name": "NC",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "NC"
+    },
+    {
+      "name": "NO",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "NO"
+    }
+  ],
+  "params": {
+    "ron": {
+      "type": "number",
+      "default": 0.1,
+      "doc": "Closed-contact resistance. Contact bounce and arcing are not modeled by this part.",
+      "unit": "ohm",
+      "min": 0.001,
+      "max": 1000
+    },
+    "roff": {
+      "type": "number",
+      "default": 10000000000.0,
+      "doc": "Open-contact leakage resistance. This is not an insulation-rating simulation.",
+      "unit": "ohm",
+      "min": 1000000.0,
+      "max": 1000000000000000.0
+    }
+  },
+  "model": {
+    "primitive": "spdt_contact"
+  },
+  "inputs": [
+    {
+      "name": "pressed",
+      "type": "boolean",
+      "default": false,
+      "doc": "Press the lever; release returns to NC."
+    }
+  ],
+  "outputs": [],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 70,
+    "pins": {
+      "COM": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "NC": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      },
+      "NO": {
+        "x": 160,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9,
+    "hotspots": [
+      {
+        "input": "pressed",
+        "selector": "#control",
+        "gesture": "hold"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Omron D2F-01L SPDT lever microswitch; resting COM-NC and pressed COM-NO.",
+      "omissions": [
+        "bounce",
+        "mechanical travel/hysteresis",
+        "contact arcing",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "url": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-d2f.pdf",
+        "hash": "sha256:d3f2ed08101cf7ec6f57577643225f73faa5475026dda0072bcddf2d99fb04db",
+        "title": "Omron D2F B036-E1-12",
+        "rev": "March 2018",
+        "date": "2026-10-16",
+        "notes": "Manufacturer source reviewed, PDF pages 2, 4, 6. Package/nominal reference only; model not manufacturer-qualified."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "D2F-01L",
+    "manufacturer": "Omron",
+    "package": "PCB microswitch",
+    "datasheet": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-d2f.pdf"
+  }
+}

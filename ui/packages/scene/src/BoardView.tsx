@@ -105,7 +105,8 @@ export function applyState(root: Element, state: ArtworkState, value: OutputValu
     }
   }
   if (state.format !== undefined) {
-    setValue(el, attr, value === undefined ? '' : state.format.split('{}').join(String(v)));
+    const text = typeof v === 'number' && Number.isFinite(v) && state.precision !== undefined ? v.toFixed(Math.max(0, Math.min(6, state.precision))) : String(v);
+    setValue(el, attr, value === undefined ? '' : state.format.split('{}').join(text));
     return;
   }
   if (typeof value === 'number' && attr === 'opacity') {

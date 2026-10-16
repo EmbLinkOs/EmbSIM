@@ -11,7 +11,7 @@ the command line in continuous integration and replays deterministically.
 catalog and workbench run circuits (M0); a Blue Pill's STM32F103C8 runs
 real firmware in them with source-level debugging (M1); the workbench
 edits circuits against the engine, decodes serial buses and ships as a
-desktop application (M2); a catalog of 101 components, each checked by
+desktop application (M2); a catalog of 147 components, each checked by
 the engine against its fixtures, with Lua models, a component SDK and
 importers for board files, DeviceTree and KiCad netlists (M3); an Arduino
 Uno's AVR and a HiFive1's RISC-V core run their firmware too, and boards
@@ -52,10 +52,11 @@ then [`docs/architecture/01-vision-and-principles.md`](docs/architecture/01-visi
 - **Linux, macOS and Windows** from one source tree; the core builds with
   GCC, Clang, TinyCC, MSVC and EmbCC.
 
-The [component library guide](catalog/README.md) lists the first 26 named
-manufacturer/package entries, category coverage, model limits and executable
-fixtures. This is a first batch, not Proteus-scale catalog coverage or
-manufacturer-qualified device accuracy.
+The [component library guide](catalog/README.md) covers 44 named manufacturer/package
+entries, searchable categories, model limits and executable fixtures. The
+[interactive library](docs/engineering/interactive-library.md) adds previews, live
+controls and four wired GUI/CLI examples. The models declare their approximation
+boundaries; catalog presence does not imply manufacturer-qualified accuracy.
 
 ## Repository layout
 

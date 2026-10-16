@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "paired-pads",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/b3f_1000"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10000
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.1"
+      ],
+      "PAIR": [
+        "DUT.2",
+        "R.1"
+      ],
+      "GND": [
+        "V.-",
+        "R.2",
+        "DUT.3",
+        "DUT.4",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:PAIR": {
+      "at": "500us",
+      "min_v": 4.99,
+      "max_v": 5.01
+    }
+  }
+}

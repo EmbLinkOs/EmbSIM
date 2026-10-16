@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/gl5528",
+  "version": "1.0.0",
+  "name": "GL5528",
+  "category": "sensors",
+  "description": "GL5528 CdS photoresistor with a nominal power-law light response: 15 kohm at 10 lux, capped at 1 Mohm in darkness.",
+  "keywords": [
+    "sensors",
+    "GL5528",
+    "Senba Sensing",
+    "Radial CdS cell"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "1"
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "2"
+    }
+  ],
+  "params": {
+    "law": {
+      "type": "enum",
+      "enum": [
+        "ldr"
+      ],
+      "default": "ldr",
+      "doc": "Resistance law. This entry selects the illuminance power law."
+    },
+    "r_ref": {
+      "type": "number",
+      "default": 15000,
+      "doc": "Illustrative resistance at the reference illuminance, not a fitted manufacturer value.",
+      "unit": "ohm",
+      "min": 1,
+      "max": 1000000000.0
+    },
+    "lux_ref": {
+      "type": "number",
+      "default": 10,
+      "doc": "Illuminance at which r_ref is specified.",
+      "unit": "lx",
+      "min": 0.001,
+      "max": 1000000.0
+    },
+    "gamma": {
+      "type": "number",
+      "default": 0.7,
+      "doc": "Exponent in R = r_ref * (illuminance / lux_ref)^(-gamma).",
+      "min": 0.1,
+      "max": 2
+    },
+    "r_dark": {
+      "type": "number",
+      "default": 1000000.0,
+      "doc": "Maximum resistance used in darkness; also caps the low-light power law.",
+      "unit": "ohm",
+      "min": 1,
+      "max": 1000000000000.0
+    }
+  },
+  "model": {
+    "primitive": "environment_resistor"
+  },
+  "inputs": [
+    {
+      "name": "illuminance",
+      "type": "number",
+      "min": 0,
+      "max": 1000,
+      "default": 10,
+      "unit": "lx",
+      "doc": "External environment; change live while running."
+    }
+  ],
+  "outputs": [
+    {
+      "name": "resistance",
+      "type": "number",
+      "unit": "ohm"
+    },
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 60,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9,
+    "hotspots": [
+      {
+        "input": "illuminance",
+        "selector": "#control",
+        "gesture": "drag",
+        "axis": "x",
+        "range": [
+          0,
+          1000
+        ],
+        "travel": 130
+      }
+    ],
+    "states": [
+      {
+        "output": "resistance",
+        "selector": "#reading",
+        "attr": "text",
+        "format": "{} kohm",
+        "scale": {
+          "from": [
+            0,
+            1000000.0
+          ],
+          "to": [
+            0,
+            1000
+          ]
+        },
+        "precision": 1
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "GL5528 CdS photoresistor with a nominal power-law light response: 15 kohm at 10 lux, capped at 1 Mohm in darkness.",
+      "omissions": [
+        "manufacturer source review pending",
+        "spectral response",
+        "response time",
+        "illumination history",
+        "self-heating",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "GL55 family reference; manufacturer revision and numerical fit unverified",
+        "url": "https://www.senba-sensing.com/products/gl55-series-photo-resistor.html",
+        "notes": "ECAD lead numbers; nonpolar device. Nominal educational fit, not an extracted manufacturer model."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "GL5528",
+    "manufacturer": "Senba Sensing",
+    "package": "Radial CdS cell",
+    "datasheet": "https://www.senba-sensing.com/products/gl55-series-photo-resistor.html"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "independent-terminals",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/phoenix_mc_381_2"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.1"
+      ],
+      "GND": [
+        "V.-",
+        "DUT.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VCC": {
+      "at": "500us",
+      "min_v": 4.99,
+      "max_v": 5.01
+    },
+    "net:GND": {
+      "at": "500us",
+      "min_v": -0.001,
+      "max_v": 0.001
+    }
+  }
+}

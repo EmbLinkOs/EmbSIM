@@ -10,6 +10,11 @@ function svg(inner: string): Element {
 }
 
 describe('applyState', () => {
+  it('formats scaled artwork text without changing the underlying measurement', () => {
+    const root = svg('<text id="reading"/>');
+    applyState(root, { output: 'i', selector: '#reading', attr: 'text', format: '{} mA', precision: 2, scale: { from: [0, 0.05], to: [0, 50] } }, 0.009512345);
+    expect(root.querySelector('#reading')!.textContent).toBe('9.51 mA');
+  });
   it('toggles a class by truth', () => {
     const root = svg('<path id="a"/>');
     applyState(root, { output: 'seg_a', selector: '#a', class: 'on' }, true);

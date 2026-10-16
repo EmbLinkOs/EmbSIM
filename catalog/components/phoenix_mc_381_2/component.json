@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/phoenix_mc_381_2",
+  "version": "1.0.0",
+  "name": "MC 1,5/2-ST-3,81",
+  "category": "connectors",
+  "description": "Independent numbered terminals for a Phoenix Contact 3.81 mm PCB plug. Connect nets to each terminal; adjacent terminals are never shorted.",
+  "keywords": [
+    "connectors",
+    "MC 1,5/2-ST-3,81",
+    "Phoenix Contact",
+    "2-way 3.81 mm"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "1"
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "2"
+    }
+  ],
+  "params": {},
+  "model": {
+    "primitive": "none"
+  },
+  "inputs": [],
+  "outputs": [],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 60,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Independent numbered terminals for a Phoenix Contact 3.81 mm PCB plug. Connect nets to each terminal; adjacent terminals are never shorted.",
+      "omissions": [
+        "manufacturer mechanical drawing review pending",
+        "mating mechanics",
+        "contact resistance",
+        "creepage and current rating",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "Independent numbered terminals for a Phoenix Contact 3.81 mm PCB plug. Connect nets to each terminal; adjacent terminals are never shorted.",
+      "omissions": [
+        "manufacturer mechanical drawing review pending",
+        "mating mechanics",
+        "contact resistance",
+        "creepage and current rating",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "Independent numbered terminals for a Phoenix Contact 3.81 mm PCB plug. Connect nets to each terminal; adjacent terminals are never shorted.",
+      "omissions": [
+        "manufacturer mechanical drawing review pending",
+        "mating mechanics",
+        "contact resistance",
+        "creepage and current rating",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Phoenix Contact product reference; drawing review pending",
+        "url": "https://www.phoenixcontact.com/en-us/products/pcb-plug-mc-15-2-st-381-1803578"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "MC 1,5/2-ST-3,81",
+    "manufacturer": "Phoenix Contact",
+    "package": "2-way 3.81 mm",
+    "datasheet": "https://www.phoenixcontact.com/en-us/products/pcb-plug-mc-15-2-st-381-1803578"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "energized",
+  "policy": "electrical",
+  "until": "25ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/g5le_1_dc5"
+      },
+      {
+        "id": "RN",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "RO",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "COIL": [
+        "V.+",
+        "DUT.COIL+"
+      ],
+      "CONTACT": [
+        "VC.+",
+        "DUT.COM"
+      ],
+      "NC": [
+        "DUT.NC",
+        "RN.1"
+      ],
+      "NO": [
+        "DUT.NO",
+        "RO.1"
+      ],
+      "GND": [
+        "V.-",
+        "VC.-",
+        "DUT.COIL-",
+        "RN.2",
+        "RO.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:NC": {
+      "at": "20ms",
+      "min_v": -0.001,
+      "max_v": 0.01
+    },
+    "net:NO": {
+      "at": "20ms",
+      "min_v": 4.99,
+      "max_v": 5.01
+    }
+  }
+}

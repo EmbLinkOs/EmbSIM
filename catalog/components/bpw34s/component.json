@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bpw34s",
+  "version": "1.0.0",
+  "name": "BPW34S",
+  "category": "optoelectronics",
+  "description": "Silicon PIN photodiode: nominal 50 uA at 10 W/m2 and 950 nm, reverse-biased; simple forward knee.",
+  "keywords": [
+    "optoelectronics",
+    "BPW34S",
+    "Vishay",
+    "Leaded top-view"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "A"
+    },
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "K"
+    }
+  ],
+  "params": {
+    "sensitivity": {
+      "type": "number",
+      "default": 5e-06,
+      "doc": "Nominal reverse photocurrent per irradiance at the 950 nm reference wavelength.",
+      "unit": "A/(W/m2)",
+      "min": 0,
+      "max": 0.01
+    },
+    "vf": {
+      "type": "number",
+      "default": 0.6,
+      "doc": "Forward knee voltage of the piecewise-linear input diode approximation.",
+      "unit": "V",
+      "min": 0,
+      "max": 5
+    },
+    "r_forward": {
+      "type": "number",
+      "default": 20,
+      "doc": "Forward slope resistance above the knee; the model does not include a precision diode curve.",
+      "unit": "ohm",
+      "min": 0.01,
+      "max": 1000000.0
+    },
+    "r_shunt": {
+      "type": "number",
+      "default": 10000000000.0,
+      "doc": "Photodiode leakage shunt resistance.",
+      "unit": "ohm",
+      "min": 1,
+      "max": 1000000000000000.0
+    }
+  },
+  "model": {
+    "primitive": "photodiode"
+  },
+  "inputs": [
+    {
+      "name": "irradiance",
+      "type": "number",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "unit": "W/m2",
+      "doc": "External environment; change live while running."
+    }
+  ],
+  "outputs": [
+    {
+      "name": "photocurrent",
+      "type": "number",
+      "unit": "A"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 60,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "K": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9,
+    "hotspots": [
+      {
+        "input": "irradiance",
+        "selector": "#control",
+        "gesture": "drag",
+        "axis": "x",
+        "range": [
+          0,
+          100
+        ],
+        "travel": 130
+      }
+    ],
+    "states": [
+      {
+        "output": "photocurrent",
+        "selector": "#reading",
+        "attr": "text",
+        "format": "{} uA",
+        "scale": {
+          "from": [
+            0,
+            0.001
+          ],
+          "to": [
+            0,
+            1000
+          ]
+        },
+        "precision": 1
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Silicon PIN photodiode: nominal 50 uA at 10 W/m2 and 950 nm, reverse-biased; simple forward knee.",
+      "omissions": [
+        "junction capacitance",
+        "transit time",
+        "spectral variation",
+        "temperature response",
+        "reverse breakdown",
+        "precision forward characteristic",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "url": "https://www.vishay.com/docs/81521/bpw34.pdf",
+        "hash": "sha256:848a480a7dabad95338765a9d6646ca25223db77c4f426aa5218eb7778687c65",
+        "title": "Vishay 81521 BPW34/BPW34S",
+        "rev": "2.1, 23 August 2011",
+        "date": "2026-10-16",
+        "notes": "Manufacturer source reviewed, PDF pages 1\u20132, 4. Package/nominal reference only; model not manufacturer-qualified."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "BPW34S",
+    "manufacturer": "Vishay",
+    "package": "Leaded top-view",
+    "datasheet": "https://www.vishay.com/docs/81521/bpw34.pdf"
+  }
+}

@@ -1,5 +1,8 @@
 # Named-part manufacturer source review
 
+Scope: the first 26-entry named-part batch. The [interactive follow-up](interactive-library.md)
+records later entries separately.
+
 Reviewed 2026-10-16, after merging the M4 runtime work and the first named-part
 batch. This records package identity, pin functions and selected operating facts,
 not vendor approval or electrical model qualification. No manufacturer PDFs,

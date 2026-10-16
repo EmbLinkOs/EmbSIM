@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/b3f_1000",
+  "version": "1.0.0",
+  "name": "B3F-1000",
+  "category": "switches",
+  "description": "Omron B3F-1000 6 mm tactile switch; pads 1/2 and 3/4 remain internally paired, pressing bridges the two pairs. Unused duplicate pads may be left open.",
+  "keywords": [
+    "switches",
+    "B3F-1000",
+    "Omron",
+    "6 x 6 mm through-hole"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "1"
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "2"
+    },
+    {
+      "name": "3",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "3"
+    },
+    {
+      "name": "4",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "4"
+    }
+  ],
+  "params": {
+    "ron": {
+      "type": "number",
+      "default": 0.1,
+      "doc": "Closed-contact resistance. Contact bounce and arcing are not modeled by this part.",
+      "unit": "ohm",
+      "min": 0.001,
+      "max": 1000
+    },
+    "roff": {
+      "type": "number",
+      "default": 10000000000.0,
+      "doc": "Open-contact leakage resistance. This is not an insulation-rating simulation.",
+      "unit": "ohm",
+      "min": 1000000.0,
+      "max": 1000000000000000.0
+    }
+  },
+  "model": {
+    "primitive": "pushbutton4"
+  },
+  "inputs": [
+    {
+      "name": "pressed",
+      "type": "boolean",
+      "default": false,
+      "doc": "Hold the tactile button; release opens the contact."
+    }
+  ],
+  "outputs": [
+    {
+      "name": "closed",
+      "type": "boolean"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 60,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "3": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      },
+      "4": {
+        "x": 160,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9,
+    "hotspots": [
+      {
+        "input": "pressed",
+        "selector": "#control",
+        "gesture": "hold"
+      }
+    ],
+    "states": [
+      {
+        "output": "closed",
+        "selector": "#reading",
+        "attr": "text",
+        "format": "{}",
+        "map": {
+          "true": "Pressed",
+          "false": "Released"
+        }
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Omron B3F-1000 6 mm tactile switch; pads 1/2 and 3/4 remain internally paired, pressing bridges the two pairs. Unused duplicate pads may be left open.",
+      "omissions": [
+        "contact bounce",
+        "actuation force/travel",
+        "contact wear",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "url": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-b3f.pdf",
+        "hash": "sha256:be9cf69e5f43fb7689448a2097c19858e5643c0e2e49cd77d018881543e27a1f",
+        "title": "Omron B3F A070-E1-08",
+        "rev": "October 2014",
+        "date": "2026-10-16",
+        "notes": "Manufacturer source reviewed, PDF pages 1, 3\u20134. Package/nominal reference only; model not manufacturer-qualified. Top-view drawing on page 4: pads 1/2 permanently common, pads 3/4 permanently common. Actual package leads are unmarked."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "B3F-1000",
+    "manufacturer": "Omron",
+    "package": "6 x 6 mm through-hole",
+    "datasheet": "https://omronfs.omron.com/en_US/ecb/products/pdf/en-b3f.pdf"
+  }
+}

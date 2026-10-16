@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ntcle100e3103jb0",
+  "version": "1.0.0",
+  "name": "NTCLE100E3103JB0",
+  "category": "sensors",
+  "description": "NTC beta-law temperature-dependent resistor; R25 and B25/85 from the selected family ordering row.",
+  "keywords": [
+    "sensors",
+    "NTCLE100E3103JB0",
+    "Vishay",
+    "Radial bead"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "1"
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "2"
+    }
+  ],
+  "params": {
+    "r25": {
+      "type": "number",
+      "default": 10000,
+      "doc": "Nominal zero-power resistance at 25 degrees Celsius; tolerance is not sampled.",
+      "unit": "ohm",
+      "min": 1,
+      "max": 1000000000.0
+    },
+    "beta": {
+      "type": "number",
+      "default": 3977,
+      "doc": "Constant nominal B25/85 coefficient for the beta-law approximation; not the full manufacturer curve.",
+      "unit": "K",
+      "min": 1,
+      "max": 10000
+    }
+  },
+  "model": {
+    "primitive": "environment_resistor"
+  },
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "min": -40,
+      "max": 125,
+      "default": 25,
+      "unit": "degC",
+      "doc": "External environment; change live while running."
+    }
+  ],
+  "outputs": [
+    {
+      "name": "resistance",
+      "type": "number",
+      "unit": "ohm"
+    },
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 60,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9,
+    "hotspots": [
+      {
+        "input": "temperature",
+        "selector": "#control",
+        "gesture": "drag",
+        "axis": "x",
+        "range": [
+          -40,
+          125
+        ],
+        "travel": 130
+      }
+    ],
+    "states": [
+      {
+        "output": "resistance",
+        "selector": "#reading",
+        "attr": "text",
+        "format": "{} kohm",
+        "scale": {
+          "from": [
+            0,
+            1000000.0
+          ],
+          "to": [
+            0,
+            1000
+          ]
+        },
+        "precision": 1
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "NTC beta-law temperature-dependent resistor; R25 and B25/85 from the selected family ordering row.",
+      "omissions": [
+        "thermal inertia",
+        "self-heating",
+        "full manufacturer resistance curve",
+        "R25/B tolerance",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "url": "https://www.vishay.com/docs/29049/ntcle100.pdf",
+        "hash": "sha256:f9d6153738198dc705ed681c3b55e70a6571f8fee13a4ed7b2b41e49973cb9c9",
+        "title": "Vishay 29049 NTCLE100E3",
+        "rev": "7 May 2025",
+        "date": "2026-10-16",
+        "notes": "Manufacturer source reviewed, PDF pages 1\u20132. Package/nominal reference only; model not manufacturer-qualified."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "NTCLE100E3103JB0",
+    "manufacturer": "Vishay",
+    "package": "Radial bead",
+    "datasheet": "https://www.vishay.com/docs/29049/ntcle100.pdf"
+  }
+}
