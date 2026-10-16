@@ -8,12 +8,13 @@
 
 import type {
   BoardInfo,
+  Breakpoint,
   CatalogItem,
   ComponentDescription,
   DiagnosticRecord,
   DurationString,
-  Frame,
   InputEntry,
+  Instruction,
   Layout,
   ObserveUpdate,
   Peripheral,
@@ -28,8 +29,10 @@ import type {
   SessionOpenParams,
   SessionOpenResult,
   Snapshot,
+  SourceFile,
   Topology,
   WaveformSamples,
+  Where,
   ControlState,
 } from './types';
 
@@ -108,29 +111,34 @@ export interface Methods {
     result: Record<string, never>;
   };
 
-  // debug
+  // debug (SPEC-008 §5, SPEC-009 §10)
   'debug.breakpoint': {
     params: {
       board: string;
       op: 'add' | 'remove';
       kind?: 'code' | 'read' | 'write' | 'access';
-      id?: string;
-      address?: string;
+      address?: number | string;
       symbol?: string;
       file?: string;
       line?: number;
       length?: number;
     };
-    result: { id: string };
+    result: { id: string; address: number; addresses?: number[] };
   };
+  'debug.breakpoints': { params: { board: string }; result: { breakpoints: Breakpoint[] } };
+  'debug.where': { params: { board: string }; result: Where };
+  'debug.halt': { params: { board: string }; result: Where };
+  'debug.continue': { params: { board: string }; result: Where };
+  'debug.step': { params: { board: string; count?: number }; result: Where };
   'debug.registers': { params: { board: string }; result: { regs: Register[] } };
-  'debug.set_register': { params: { board: string; name: string; value: string }; result: Record<string, never> };
-  'debug.memory': { params: { board: string; address: string; length: number }; result: { base64: string } };
-  'debug.write_memory': { params: { board: string; address: string; base64: string }; result: Record<string, never> };
-  'debug.where': { params: { board: string }; result: { pc: string; function?: string; file?: string; line?: number; frames: Frame[] } };
+  'debug.set_register': { params: { board: string; name: string; value: number | string }; result: { regs: Register[] } };
+  'debug.memory': { params: { board: string; address?: number | string; symbol?: string; length: number }; result: { address: number; base64: string } };
+  'debug.write_memory': { params: { board: string; address: number | string; base64: string }; result: { written: number } };
+  'debug.disassemble': { params: { board: string; address?: number | string; symbol?: string; count?: number }; result: { insns: Instruction[] } };
+  'debug.peripherals': { params: { board: string; name?: string }; result: { peripherals: Peripheral[] } };
+  'debug.source': { params: { board: string; file: string }; result: SourceFile };
+  'debug.symbol': { params: { board: string; symbol?: string; address?: number | string }; result: { address: number; pc: number; function?: string; offset?: number } };
   'debug.variables': { params: { board: string; frame?: number }; result: { variables: { name: string; type: string; value: string }[] } };
-  'debug.disassemble': { params: { board: string; address: string; count: number }; result: { insns: { address: string; bytes: string; text: string }[] } };
-  'debug.peripherals': { params: { board: string }; result: { peripherals: Peripheral[] } };
   'debug.gdb': { params: { board: string; op: 'start' | 'stop'; port?: number }; result: { port: number } };
 
   // catalog
@@ -149,7 +157,10 @@ export interface Methods {
 
   // toolchain
   'toolchain.detect': { params: Record<string, never>; result: { profiles: { name: string; found: boolean; version?: string; path?: string }[] } };
-  'toolchain.build': { params: { board: string; profile?: string }; result: { ok: boolean; log: string; image?: string } };
+  'toolchain.build': {
+    params: { board?: string; profile?: string };
+    result: { ok: boolean; board: string; profile: string; log: string; image: string; steps: { argv: string[]; exit: number; output?: string }[] };
+  };
 
   // scenario
   /** SPEC-008 wraps the report in `{report}`; the 0.1 server returns the report itself. */
@@ -192,6 +203,13 @@ export const METHOD_NAMES = [
   'observe.snapshot',
   'observe.subscribe',
   'debug.breakpoint',
+  'debug.breakpoints',
+  'debug.where',
+  'debug.halt',
+  'debug.continue',
+  'debug.step',
+  'debug.symbol',
+  'debug.source',
   'debug.registers',
   'debug.set_register',
   'debug.memory',
@@ -225,7 +243,7 @@ export interface Notifications {
   'observe.update': ObserveUpdate;
   'waveform.samples': WaveformSamples;
   'control.state': ControlState;
-  'debug.stopped': { board: string; reason: string; pc: string; breakpoint?: string };
+  'debug.stopped': Where;
   'serial.data': { target: string; base64: string };
   'project.changed': { tx: string; summary: string };
   'record.input': { at_ps: PsString; seq: number; target: string; input: string };

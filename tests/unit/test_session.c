@@ -218,8 +218,10 @@ static void test_scenario_and_rpc(void)
                     CHECK_STR(esk_json_get_str(esk_json_get(esk_json_get(esk_json_get(j, "result"), "nets"), "SIG"), "logic", ""), "1");
                 if (i == 3)
                     CHECK_STR(esk_json_get_str(esk_json_get(j, "result"), "now_ps", ""), "1000000000");
-                if (i == 5 || i == 6)
+                if (i == 5)
                     CHECK(esk_json_get_int(esk_json_get(j, "error"), "code", 0) == -32601);
+                if (i == 6) /* this project has no board B1 */
+                    CHECK(esk_json_get_int(esk_json_get(j, "error"), "code", 0) == -32602);
                 if (i == 7)
                     CHECK(esk_json_get_int(esk_json_get(j, "error"), "code", 0) == -32700);
                 if (i < 5)

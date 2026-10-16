@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* commands.c -- the embsim subcommands (05 §2, SPEC-008 §8-§9): run,
- * validate, serve, sidecar, catalog, board, models, version. The CLI is a
+ * validate, serve, sidecar, gdb, build, toolchains, catalog, board, models,
+ * version. The CLI is a
  * client of the session protocol like every other interface. */
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200112L
@@ -29,6 +30,9 @@ static void usage(void)
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open]\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
+          "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
+          "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
+          "  toolchains                  the toolchain profiles found on this host\n"
           "  catalog list|search QUERY|info ID|libraries [--library DIR]\n"
           "  board list|info ID\n"
           "  models                      list the model primitives\n"
@@ -349,6 +353,108 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
     return 0;
 }
 
+static void gdb_listening(void *ctx, int port)
+{
+    ES_UNUSED(ctx);
+    printf("embsim: GDB server on 127.0.0.1:%d (target extended-remote :%d)\n", port, port);
+    fflush(stdout);
+}
+
+static int cmd_gdb(int argc, char **argv, const char *argv0)
+{
+    const char *project = NULL, *host = "127.0.0.1", *board = NULL, *library = NULL;
+    int port = 3333, i;
+    es_session *s;
+    es_status st;
+    for (i = 0; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if (!strcmp(a, "--port") && more) port = atoi(argv[++i]);
+        else if (!strcmp(a, "--host") && more) host = argv[++i];
+        else if (!strcmp(a, "--board") && more) board = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
+        else project = a;
+    }
+    if (!project) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", project);
+        es_session_destroy(s);
+        return 2;
+    }
+    st = es_serve_gdb(s, board, host, port, gdb_listening, NULL);
+    es_session_destroy(s);
+    if (st != ES_OK) {
+        fprintf(stderr, "embsim: gdb server: %s\n", st == ES_ENOTFOUND ? "no board with firmware" : es_strerror(st));
+        return 2;
+    }
+    return 0;
+}
+
+static int cmd_build(int argc, char **argv, const char *argv0)
+{
+    const char *project = NULL, *board = NULL, *profile = NULL, *library = NULL;
+    int i, ok;
+    es_session *s;
+    esk_json *rep = NULL;
+    es_status st;
+    for (i = 0; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if (!strcmp(a, "--board") && more) board = argv[++i];
+        else if (!strcmp(a, "--toolchain") && more) profile = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (!strcmp(a, "--json")) opt_json = 1;
+        else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
+        else project = a;
+    }
+    if (!project) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", project);
+        es_session_destroy(s);
+        return 2;
+    }
+    st = esk_toolchain_build(s, board, profile, &rep);
+    if (st != ES_OK || !rep) {
+        fprintf(stderr, "embsim: build: %s\n", st == ES_ENOTFOUND ? "no board with firmware, or no such toolchain profile" : es_strerror(st));
+        es_session_destroy(s);
+        return 2;
+    }
+    ok = esk_json_get_bool(rep, "ok", 0);
+    if (opt_json) {
+        char *t = esk_json_format(s->a, rep, 2, NULL);
+        if (t) { printf("%s\n", t); esk_strfree(s->a, t); }
+    } else {
+        fputs(esk_json_get_str(rep, "log", ""), stdout);
+        printf("%s: %s (%s)\n", ok ? "built" : "failed", esk_json_get_str(rep, "image", "?"), esk_json_get_str(rep, "profile", "?"));
+    }
+    esk_json_free(s->a, rep);
+    es_session_destroy(s);
+    return ok ? 0 : 1;
+}
+
+static int cmd_toolchains(const char *argv0)
+{
+    es_session *s = open_session(NULL, argv0, NULL);
+    esk_json *arr = NULL;
+    size_t k;
+    if (!s) return 2;
+    if (esk_toolchain_detect(s, &arr) == ES_OK) {
+        for (k = 0; k < esk_json_len(arr); k++) {
+            const esk_json *p = esk_json_at(arr, k);
+            printf("%-10s %-9s %-10s %s\n", esk_json_get_str(p, "name", ""), esk_json_get_bool(p, "found", 0) ? "found" : "not found",
+                   esk_json_get_str(p, "version", ""), esk_json_get_str(p, "title", ""));
+        }
+    }
+    esk_json_free(s->a, arr);
+    es_session_destroy(s);
+    return 0;
+}
+
 static int cmd_catalog(int argc, char **argv, const char *argv0)
 {
     const char *sub = argc ? argv[0] : "list", *library = NULL, *arg = NULL;
@@ -448,6 +554,9 @@ int embsim_cli_main(int argc, char **argv)
     if (!strcmp(cmd, "validate")) return cmd_validate(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "serve")) return cmd_serve(argc - 2, argv + 2, argv[0], 0);
     if (!strcmp(cmd, "sidecar")) return cmd_serve(argc - 2, argv + 2, argv[0], 1);
+    if (!strcmp(cmd, "gdb")) return cmd_gdb(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "build")) return cmd_build(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "toolchains")) return cmd_toolchains(argv[0]);
     if (!strcmp(cmd, "catalog")) return cmd_catalog(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "board")) return cmd_board(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "models")) return cmd_models(argv[0]);

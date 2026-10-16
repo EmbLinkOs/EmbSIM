@@ -41,7 +41,7 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Rationale.** Embedding, multiple sessions, the workbench's stability.
 **Status.** Accepted 2026-10-15
 **Verification.** CI grep for exit/abort/printf in core/; API tests inject failures and assert statuses.
-**Trace.** SPEC-001 §3; SPEC-009 §8
+**Trace.** SPEC-001 §3; SPEC-009 §11
 
 ### SYS-006  Instance isolation
 **Statement.** Two sessions in one process shall not share mutable state; interleaved commands on both shall yield results identical to separate processes.

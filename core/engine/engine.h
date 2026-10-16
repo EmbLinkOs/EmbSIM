@@ -163,6 +163,13 @@ esk_logic esk_net_value(const esk_net *n);
 /* resolve a digital net ignoring the drivers of `excluded` (transmission-gate models) */
 void esk_net_resolve_excluding(const esk_net *n, const esk_comp *excluded, esk_logic *v, esk_strength *s);
 void esk_pin_set_direction(esk_pin *p, int output);
+/* the level the pin's net has, as the pin sees it, without diagnostics: the
+ * resolved value of a digital net (ESK_LZ when nothing drives it), the
+ * comparator's state on an analog one */
+esk_logic esk_pin_level(const esk_pin *p);
+/* the pin's model (pull, drive mode) changed: resolve its net again, or
+ * retarget its bridge */
+void esk_pin_refresh(esk_pin *p);
 void esk_pin_watch(esk_pin *p, int watch);
 es_status esk_comp_wake_at(esk_comp *c, es_time_t t, uint32_t token);
 void esk_comp_wake_cancel(esk_comp *c, uint32_t token);

@@ -2,29 +2,213 @@
   "schema_version": 1,
   "kind": "project",
   "name": "bluepill-button-led",
-  "description": "The acceptance circuit around a Blue Pill without firmware: USB 5 V feeds the board's regulator; a push button to ground on A0 (the MCU's pin is a placeholder input); an external red LED with a 1 k series resistor on C13. The MCU runtime arrives in M1.",
+  "description": "The M1 acceptance circuit: a Blue Pill running firmware/main.c. USB 5 V feeds the board's regulator; a push button from A0 to ground; a red LED from the board's 3.3 V through a 220 ohm resistor to the collector of an NPN transistor whose base C13 drives through 1 k. The firmware turns the transistor on while the button is held, by EXTI interrupt, and reports each change on USART1, which a virtual terminal on A9 and A10 reads and talks to; the firmware echoes what it receives in upper case.",
   "policy": "electrical",
   "boards": [
-    {"id": "B1", "board": "emblink/bluepill", "layout": {"x": 300, "y": 120}}
+    {
+      "id": "B1",
+      "board": "emblink/bluepill",
+      "layout": {
+        "x": 300,
+        "y": 120
+      },
+      "firmware": {
+        "image": "firmware/button-led.elf",
+        "format": "elf",
+        "toolchain": "clang",
+        "sources": [
+          "firmware/startup.c",
+          "firmware/main.c"
+        ],
+        "flags": [
+          "-ffreestanding",
+          "-fno-builtin"
+        ],
+        "linker_script": "firmware/stm32f103c8.ld"
+      }
+    }
   ],
   "components": [
-    {"id": "USB", "component": "emblink/vcc", "params": {"voltage": 5}, "layout": {"x": 100, "y": 40}},
-    {"id": "SW1", "component": "emblink/push_button", "layout": {"x": 700, "y": 180, "rotation": 90}},
-    {"id": "R1", "component": "emblink/resistor", "params": {"resistance": "1k"}, "layout": {"x": 700, "y": 300}},
-    {"id": "D1", "component": "emblink/led", "params": {"color": "red"}, "layout": {"x": 820, "y": 300, "rotation": 90}},
-    {"id": "GND1", "component": "emblink/gnd", "layout": {"x": 700, "y": 420}}
+    {
+      "id": "USB",
+      "component": "emblink/vcc",
+      "params": {
+        "voltage": 5
+      },
+      "layout": {
+        "x": 100,
+        "y": 40
+      }
+    },
+    {
+      "id": "SW1",
+      "component": "emblink/push_button",
+      "layout": {
+        "x": 700,
+        "y": 180,
+        "rotation": 90
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1k"
+      },
+      "layout": {
+        "x": 700,
+        "y": 300
+      }
+    },
+    {
+      "id": "D1",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "layout": {
+        "x": 820,
+        "y": 160,
+        "rotation": 90
+      }
+    },
+    {
+      "id": "R2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 220
+      },
+      "layout": {
+        "x": 820,
+        "y": 240,
+        "rotation": 90
+      }
+    },
+    {
+      "id": "Q1",
+      "component": "emblink/bjt_npn",
+      "params": {
+        "part": "2N3904"
+      },
+      "layout": {
+        "x": 820,
+        "y": 320
+      }
+    },
+    {
+      "id": "GND1",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 700,
+        "y": 420
+      }
+    },
+    {
+      "id": "VT1",
+      "component": "emblink/virtual_terminal",
+      "layout": {
+        "x": 900,
+        "y": 60
+      }
+    }
   ],
   "nets": {
-    "USB5V": ["USB.VCC", "B1.5V"],
-    "BTN": ["B1.A0", "SW1.1"],
-    "GND": ["B1.GND", "SW1.2", "D1.K", "GND1.GND"],
-    "LED_IN": ["B1.C13", "R1.1"],
-    "LED_A": ["R1.2", "D1.A"]
+    "USB5V": [
+      "USB.VCC",
+      "B1.5V"
+    ],
+    "BTN": [
+      "B1.A0",
+      "SW1.1"
+    ],
+    "3V3": [
+      "B1.3V3",
+      "D1.A"
+    ],
+    "GND": [
+      "B1.GND",
+      "SW1.2",
+      "Q1.E",
+      "GND1.GND",
+      "VT1.GND"
+    ],
+    "LED_IN": [
+      "B1.C13",
+      "R1.1"
+    ],
+    "BASE": [
+      "R1.2",
+      "Q1.B"
+    ],
+    "LED_K": [
+      "D1.K",
+      "R2.1"
+    ],
+    "COLL": [
+      "R2.2",
+      "Q1.C"
+    ],
+    "UART_TX": [
+      "B1.A9",
+      "VT1.RX"
+    ],
+    "UART_RX": [
+      "B1.A10",
+      "VT1.TX"
+    ]
   },
   "probes": [
-    {"id": "rail3v3", "target": "net:B1.3V3", "kind": "analog", "rate_hz": 100000},
-    {"id": "btn", "target": "net:BTN", "kind": "digital"},
-    {"id": "led", "target": "device:D1.i", "kind": "analog", "rate_hz": 100000}
+    {
+      "id": "rail3v3",
+      "target": "net:B1.3V3",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "btn",
+      "target": "net:BTN",
+      "kind": "digital"
+    },
+    {
+      "id": "pc13",
+      "target": "net:LED_IN",
+      "kind": "digital"
+    },
+    {
+      "id": "led",
+      "target": "device:D1.i",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "ic",
+      "target": "device:Q1.ic",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "coll",
+      "target": "net:COLL",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "console",
+      "target": "serial:B1",
+      "kind": "serial"
+    },
+    {
+      "id": "tx",
+      "target": "net:UART_TX",
+      "kind": "digital"
+    },
+    {
+      "id": "terminal",
+      "target": "serial:VT1",
+      "kind": "serial"
+    }
   ],
-  "scenarios": ["scenarios/press.json"]
+  "scenarios": [
+    "scenarios/press.json"
+  ]
 }

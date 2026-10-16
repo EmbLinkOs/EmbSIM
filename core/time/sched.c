@@ -26,6 +26,7 @@ void esk_sched_free(esk_sched *s)
 void esk_sched_reset(esk_sched *s)
 {
     size_t i;
+    s->stop_requested = 0;
     s->len = 0;
     s->now = 0;
     s->seq = 0;
@@ -220,7 +221,8 @@ es_status esk_sched_advance(esk_sched *s, es_time_t until)
     if (until < s->now)
         return ES_ETIME;
     while ((r = esk_sched_run_one(s, until)) == 1)
-        ;
+        if (s->stop_requested)
+            return ES_OK; /* now stays at the stopping event's time */
     if (r < 0)
         return ES_ELIMIT;
     s->now = until;

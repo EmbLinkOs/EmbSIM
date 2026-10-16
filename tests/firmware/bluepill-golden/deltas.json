@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "about": "Where EmbSIM's run of bluepill.c differs from EmbCC's expected output (bluepill.txt, QEMU's values for the Q lines), and why. Each delta replaces one line; the test applies them and compares.",
+  "deltas": [
+    {
+      "embcc": "Q USART1.SR-reset 000000c0",
+      "embsim": "Q USART1.SR-reset 00000000",
+      "reason": "EmbSIM's USART sends at its baud rate (RM0008 27.3.2): just after puts_ writes the line's last byte to DR the shift register is still sending the one before, so TXE and TC are 0. EmbCC and QEMU send a byte in no time."
+    },
+    {
+      "embcc": "Q USART1.SR 000000c0",
+      "embsim": "Q USART1.SR 00000000",
+      "reason": "The same: the last byte of \"at 72 MHz\\n\" waits in DR."
+    },
+    {
+      "embcc": "Q USART1.SR-tc-cleared 00000080",
+      "embsim": "Q USART1.SR-tc-cleared 00000000",
+      "reason": "TXE is still 0 (the bytes of the previous line are being sent)."
+    },
+    {
+      "embcc": "M USART1.SR-ones 000000c0",
+      "embsim": "M USART1.SR-ones 00000000",
+      "reason": "TXE and TC are still 0 for the same reason."
+    },
+    {
+      "embcc": "Q USART1.irqs 00000001",
+      "embsim": "Q USART1.irqs 00000000",
+      "reason": "TXEIE is enabled while a byte waits in DR; the firmware's bounded wait (1000 iterations, about 5000 cycles) ends before the frame in progress (6250 cycles at 115200 baud and 72 MHz) frees DR, so no TXE interrupt comes in time, as on the part."
+    }
+  ]
+}

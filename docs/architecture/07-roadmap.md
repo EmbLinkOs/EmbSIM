@@ -26,8 +26,11 @@ CI evidence for all of it. Everything else is after 1.0.
 | **M5 Verification** | Scenario editor, assertions, recordings, replay divergence reports, coverage and profiling from the backends, CI runner documentation, Python client | a recorded scenario replays identically; EmbLinkRTOS's CI uses EmbSIM as an emulated target |
 | **M6 Release 1.0** | Performance work, platform validation, documentation site, packaging, signing, support policy | 01 §8 in full; STATUS.md lists evidence for every claim |
 
-M0 is the implementation this baseline starts; M1 to M6 are planned, not
-delivered. Do not bulk-copy all EmbCC boards and call them supported.
+M0 is delivered. M1 is implemented on the Blue Pill (STM32F103C8) with the
+`embcc` and `clang` profiles exercised; its evidence and the parts of its
+exit criteria still open (the three-platform run of the acceptance
+scenario from the workbench, the `gcc-arm` profile) are in STATUS.md. M2
+to M6 are planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
 
 ## 3. Specification work order
 

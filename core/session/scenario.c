@@ -108,7 +108,7 @@ static void evaluate(es_session *s, assertion *a)
         const char *text = "";
         if (out && p->comp->ops->observe) {
             p->comp->ops->observe(p->comp, out);
-            text = esk_json_get_str(out, "rx_text", "");
+            text = esk_json_get_str(out, p->quantity ? p->quantity : "rx_text", "");
         }
         a->observed = esk_json_new_string(s->a, text);
         if (contains && !strstr(text, contains)) {

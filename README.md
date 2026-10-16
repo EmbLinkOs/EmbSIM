@@ -7,11 +7,11 @@ hardware would have, and lets you press its buttons, turn its pots, probe its
 wires and debug its code while it runs. The same experiment runs headless from
 the command line in continuous integration and replays deterministically.
 
-**Current phase: M0 foundation.** The architecture, specifications and
-requirements are accepted; the core library, command line, protocol, catalog
-and workbench shell are being built against them. Nothing is supported yet:
-[`docs/STATUS.md`](docs/STATUS.md) is the only inventory of what exists and
-with what evidence.
+**Current phase: M1 firmware.** The core library, command line, protocol,
+catalog and workbench run circuits (M0), and a Blue Pill's STM32F103C8 runs
+real firmware in them with source-level debugging (M1). Nothing is released
+yet: [`docs/STATUS.md`](docs/STATUS.md) is the only inventory of what exists
+and with what evidence.
 
 Start with [`docs/README.md`](docs/README.md) for the design reading order,
 then [`docs/architecture/01-vision-and-principles.md`](docs/architecture/01-vision-and-principles.md).
@@ -21,9 +21,10 @@ then [`docs/architecture/01-vision-and-principles.md`](docs/architecture/01-visi
 - **Real firmware.** Unmodified ELF and Intel HEX images from EmbCC, GCC,
   Clang and Microchip XC toolchains; source-level debugging through DWARF and
   the GDB remote protocol.
-- **Real register behaviour.** Peripherals instantiated from the vendor's
-  SVD, ATDF or EDC register descriptions with behavioural models; unsupported
-  accesses are observable, never silently absorbed.
+- **Real register behaviour.** Peripherals instantiated from register
+  descriptions written from the reference manuals (vendor SVD files convert
+  with a tool) with behavioural models; unsupported accesses are observable,
+  never silently absorbed.
 - **Real electronics.** A dependency-free analog engine (modified nodal
   analysis) for the circuit around the MCU: resistors, capacitors, diodes,
   LEDs, transistors, op-amps, regulators, with mixed-signal bridges to the
@@ -64,7 +65,7 @@ then [`docs/architecture/01-vision-and-principles.md`](docs/architecture/01-visi
 cmake --preset dev            # GCC or Clang; see CMakePresets.json for others
 cmake --build --preset dev
 ctest --preset dev --output-on-failure
-./build/dev/cli/embsim run examples/button-led/project.json --until 50ms --json
+./build/dev/bin/embsim run examples/button-led/project.json --until 50ms --json
 ```
 
 `make` wraps the common presets on Unix (`make`, `make test`, `make CC=tcc`).

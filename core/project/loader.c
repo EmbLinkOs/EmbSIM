@@ -7,6 +7,7 @@
 #include "project/loader.h"
 #include <string.h>
 #include "host/host.h"
+#include "mcu/mcu.h"
 #include "util/num.h"
 #include "util/str.h"
 
@@ -61,8 +62,10 @@ static void mcu_signal_model(const char *sig, const char *family, esk_pin_model 
         m->kind = ESK_PIN_ANALOG;
     } else if (!strcmp(sig, "NC")) {
         m->kind = ESK_PIN_NC;
+    } else if (!strcmp(sig, "NRST")) {
+        m->kind = ESK_PIN_DIGITAL_IN; m->pull = ESK_PULL_UP; /* its internal pull-up */
     } else {
-        m->kind = ESK_PIN_DIGITAL_IN; m->pull = ESK_PULL_UP; /* NRST, BOOT0 */
+        m->kind = ESK_PIN_DIGITAL_IN; m->pull = ESK_PULL_NONE; /* BOOT0 and the like: the board sets them */
     }
 }
 
@@ -568,6 +571,74 @@ static es_status connect_or_union(graph *g, esk_pin *pin, int rec, int via_port)
 
 /* ---- boards (SPEC-006 §3) --------------------------------------------------- */
 
+/* the board's firmware on its MCU's runtime (SPEC-009): the image, the register
+ * description beside the MCU description, the board's oscillator */
+static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_catalog_item *board,
+                                 const esk_catalog_item *mi, esk_comp *mc)
+{
+    const char *rel = esk_json_get_str(bi->firmware, "image", NULL);
+    const esk_json *rfd = esk_json_get(mi->desc, "register_file");
+    const esk_json *hse = esk_json_get(esk_json_get(board->desc, "oscillators"), "hse");
+    char *path = NULL, *rpath = NULL, *img = NULL, *rtext = NULL, why[256];
+    size_t len = 0, rlen = 0;
+    esk_json *regs = NULL;
+    esk_mcu_setup su;
+    es_status st = ES_OK;
+    int line = 0;
+    const char *err = NULL;
+    why[0] = 0;
+    memset(&su, 0, sizeof su);
+    if (!rel) {
+        ld_diag(s, ES_SEV_ERROR, "schema.missing_field", bi->id, "the firmware of %s has no image%s", bi->id, "");
+        return ES_ESCHEMA;
+    }
+    path = esk_host_path_join(s->a, s->base_dir, rel);
+    if (!path)
+        return ES_ENOMEM;
+    if (esk_host_read_file(s->a, path, &img, &len) != ES_OK) {
+        /* not built yet: the MCU waits for its image (embsim build) */
+        esk_diag_raise(&s->diag, ES_SEV_WARNING, "mcu.no_image", 0, "board", bi->id, NULL, 0,
+                       "%s: %s cannot be read; build the firmware (embsim build) to run it", bi->id, path);
+        img = NULL;
+        len = 0;
+    }
+    if (esk_str_eq(esk_json_get_str(rfd, "format", ""), "embsim")) {
+        rpath = esk_host_path_join(s->a, mi->dir, esk_json_get_str(rfd, "file", "registers.json"));
+        if (rpath && esk_host_read_file(s->a, rpath, &rtext, &rlen) == ES_OK) {
+            regs = esk_json_parse(s->a, rtext, rlen, &line, &err);
+            esk_free(s->a, rtext, rlen + 1);
+        }
+        if (!regs)
+            esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.register_file", 0, "board", bi->id, NULL, 0,
+                           "%s: the register description %s cannot be read", bi->id, rpath ? rpath : "?");
+    } else {
+        esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.register_file", 0, "board", bi->id, NULL, 0,
+                       "%s: register files of format %s are converted first (tools/importers/svd2regs.py)", bi->id,
+                       esk_json_get_str(rfd, "format", "?"));
+    }
+    if (regs) {
+        su.mcu = mi->desc;
+        su.regs = regs;
+        su.hse_hz = (u32)esk_json_get_int(hse, "hz", 0);
+        su.image = (const unsigned char *)img;
+        su.image_len = len;
+        su.image_name = rel;
+        su.console = esk_json_get_str(esk_json_get(mi->desc, "console"), "default", "USART1");
+        su.quantum_ps = s->core_quantum_ps;
+        st = esk_mcu_attach(mc, &su, why, sizeof why);
+        if (st != ES_OK)
+            esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.image", 0, "board", bi->id, NULL, 0, "%s: %s", bi->id, why);
+    } else {
+        st = ES_ESCHEMA;
+    }
+    esk_json_free(s->a, regs);
+    if (img)
+        esk_free(s->a, img, len + 1);
+    esk_strfree(s->a, path);
+    esk_strfree(s->a, rpath);
+    return st;
+}
+
 static es_status load_board(es_session *s, graph *g, const esk_json *entry, const esk_json *components_in_project)
 {
     const char *bid = esk_json_get_str(entry, "id", NULL);
@@ -644,14 +715,20 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
                 n++;
             }
             esk_snprintf(scoped, sizeof scoped, "%s.%s", bid, uid);
-            st = esk_engine_add_comp(&s->eng, scoped, mref, &mcu_placeholder_ops, names, models, (uint32_t)n, NULL, mi->desc, &mc);
+            st = esk_engine_add_comp(&s->eng, scoped, mref, bi->firmware ? &esk_mcu_ops : &mcu_placeholder_ops, names, models,
+                                     (uint32_t)n, NULL, mi->desc, &mc);
             esk_free(s->a, names, (np ? np : 1) * sizeof *names);
             esk_free(s->a, models, (np ? np : 1) * sizeof *models);
             if (st != ES_OK)
                 return st;
             bi->mcu = mc;
-            esk_diag_raise(&s->diag, ES_SEV_WARNING, "mcu.no_runtime", 0, "board", bid, NULL, 0,
-                           "%s: firmware execution is not available in this version; the MCU's pins are passive placeholders", mref);
+            if (bi->firmware)
+                st = attach_firmware(s, bi, item, mi, mc);
+            else
+                esk_diag_raise(&s->diag, ES_SEV_INFO, "mcu.no_firmware", 0, "board", bid, NULL, 0,
+                               "%s has no firmware: its MCU's pins stay inputs, as a blank part's do", bid);
+            if (st != ES_OK)
+                return st;
         }
     }
     /* on-board components */
@@ -791,6 +868,8 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
     memset(&g, 0, sizeof g);
     g.s = s;
     esk_map_init(&g.rec_by_name, s->a);
+    /* settings first: the MCU runtime reads its quantum when a board is loaded */
+    apply_settings(s, esk_json_get(project, "settings"));
     /* boards */
     boards = esk_json_get(project, "boards");
     comps = esk_json_get(project, "components");
@@ -909,7 +988,6 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             }
         }
     }
-    apply_settings(s, esk_json_get(project, "settings"));
     st = esk_engine_partition(&s->eng);
     if (st != ES_OK)
         return st;

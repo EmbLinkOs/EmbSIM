@@ -56,6 +56,12 @@ ES_API void es_free(void *p);
  * Both return when the client disconnects or the host interrupts them. */
 ES_API es_status es_serve_stdio(es_session *s);
 ES_API es_status es_serve_websocket(es_session *s, const char *host, int port, const char *ui_dir, int open_browser);
+/* Serve the GDB remote protocol for a board's MCU (NULL: the first with
+ * firmware) on host:port (port 0: any); `listening` is told the port before
+ * the server waits for its one connection. Returns when the debugger
+ * detaches, kills the target or the firmware ends. */
+ES_API es_status es_serve_gdb(es_session *s, const char *board, const char *host, int port,
+                              void (*listening)(void *ctx, int port), void *ctx);
 
 #ifdef __cplusplus
 }

@@ -2,19 +2,25 @@
   "schema_version": 1,
   "kind": "scenario",
   "name": "press",
-  "until": "3ms",
+  "until": "8ms",
   "inputs": [
     {
-      "at": "1ms",
+      "at": "3ms",
       "target": "SW1",
       "input": "pressed",
       "value": true
     },
     {
-      "at": "2ms",
+      "at": "5ms",
       "target": "SW1",
       "input": "pressed",
       "value": false
+    },
+    {
+      "at": "6ms",
+      "target": "VT1",
+      "input": "tx_text",
+      "value": "ok"
     }
   ],
   "assertions": [
@@ -22,7 +28,7 @@
       "id": "regulated",
       "between": [
         "0.5ms",
-        "3ms"
+        "8ms"
       ],
       "probe": "rail3v3",
       "expect": {
@@ -32,29 +38,130 @@
     },
     {
       "id": "button-released",
-      "at": "0.5ms",
+      "at": "2.5ms",
       "probe": "btn",
       "expect": {
-        "logic": "0"
+        "logic": "1"
       }
     },
     {
       "id": "button-pressed",
-      "at": "1.5ms",
+      "at": "4ms",
       "probe": "btn",
       "expect": {
         "logic": "0"
       }
     },
     {
-      "id": "led-dark",
+      "id": "pc13-low-before",
+      "at": "2.9ms",
+      "probe": "pc13",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "pc13-follows-press",
+      "at": "3.1ms",
+      "probe": "pc13",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "pc13-follows-release",
+      "at": "5.1ms",
+      "probe": "pc13",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "led-dark-before",
       "between": [
-        "0ms",
-        "3ms"
+        "0.5ms",
+        "2.9ms"
       ],
       "probe": "led",
       "expect": {
         "max": 0.0001
+      }
+    },
+    {
+      "id": "led-lit",
+      "between": [
+        "3.1ms",
+        "4.9ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "min": 0.0005
+      }
+    },
+    {
+      "id": "led-dark-after",
+      "between": [
+        "5.1ms",
+        "8ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "max": 0.0001
+      }
+    },
+    {
+      "id": "transistor-saturated",
+      "between": [
+        "3.1ms",
+        "4.9ms"
+      ],
+      "probe": "coll",
+      "expect": {
+        "max_v": 0.3
+      }
+    },
+    {
+      "id": "collector-current",
+      "between": [
+        "3.1ms",
+        "4.9ms"
+      ],
+      "probe": "ic",
+      "expect": {
+        "min": 0.004,
+        "max": 0.008
+      }
+    },
+    {
+      "id": "banner",
+      "at": "8ms",
+      "probe": "console",
+      "expect": {
+        "contains": "EmbSIM Blue Pill demo"
+      }
+    },
+    {
+      "id": "reported",
+      "at": "8ms",
+      "probe": "console",
+      "expect": {
+        "contains": "pressed\r\nreleased\r\n"
+      }
+    },
+    {
+      "id": "terminal-banner",
+      "at": "8ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "EmbSIM Blue Pill demo"
+      }
+    },
+    {
+      "id": "terminal-echo",
+      "at": "8ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "released\r\nOK"
       }
     },
     {
@@ -63,7 +170,10 @@
       "diagnostics": {
         "forbid": [
           "net.contention",
-          "analog.no_convergence"
+          "analog.no_convergence",
+          "mcu.lockup",
+          "mcu.bus_error",
+          "mcu.clock_gated"
         ]
       }
     }

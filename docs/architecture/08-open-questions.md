@@ -5,7 +5,7 @@ proceeds on the recommendation until the owner decides otherwise.
 
 | # | Question | Recommendation | Affects |
 |---|---|---|---|
-| Q1 | Redistribution of ST's STM32F103 SVD in the catalog: its licence must be read and recorded | Vendor only if Apache-2.0 or equivalent; otherwise keep the EmbCC behaviour (user-supplied path) and document it | ADR-017, ADR-018, M1 |
+| Q1 | Redistribution of ST's STM32F103 SVD in the catalog: its licence must be read and recorded | **Closed by ADR-020 (M1):** ST's EULA is not an open licence; the SVD is not vendored. The register description is written from RM0008 and SVD files convert with `tools/importers/svd2regs.py` | ADR-017, ADR-018, ADR-020 |
 | Q2 | Default session policy in the workbench: `warn` (exploration) or `strict` (verification) | `warn` in the workbench, `strict` in the CLI unless `--policy` says otherwise; both display it | ADR-011, SPEC-008 |
 | Q3 | Should EmbCC's `embsim` later be rebuilt on `libembsim`, so one implementation serves both projects? | Yes, after M4, when every EmbCC family passes its fixtures in EmbSIM; until then both exist and fixes are ported by hand with commit references | ADR-005 |
 | Q4 | Workbench state store (Zustand or Redux Toolkit) and component library (Radix primitives) | Zustand and Radix primitives with the project's own design system; revisit only if accessibility testing finds gaps | ADR-008, SPEC-011 |

@@ -90,7 +90,7 @@
       "required": ["format", "file", "vendored"],
       "additionalProperties": false,
       "properties": {
-        "format": {"type": "string", "enum": ["svd", "atdf", "edc"]},
+        "format": {"type": "string", "enum": ["embsim", "svd", "atdf", "edc"], "description": "embsim: a register description (registers.schema.json) beside the MCU description; svd, atdf, edc: a vendor file found through lookup and converted on load"},
         "file": {"type": "string", "minLength": 1},
         "vendored": {"type": "boolean"},
         "license": {"type": "string"},

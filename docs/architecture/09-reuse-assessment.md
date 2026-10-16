@@ -32,7 +32,7 @@ fixtures (`tests/golden/embsim*.sh`).
 | Boards (`boards.c`, `mcu-boards.c`, `pic-boards.c`) | 1 900 | **redesign** (ADR-003) | become board descriptions and catalog components; the Explorer's LCD, EEPROM and sensors become Lua or C component models |
 | Run loop and CLI (`run.c`, `main.c`, `trace.c`, `semihost.c`) | 1 400 | **redesign** | the session, scheduler and CLI replace them; semihosting is kept as a core feature |
 
-Required mechanical changes on extraction (SPEC-009 §8): 247 `die()` calls
+Required mechanical changes on extraction (SPEC-009 §11): 247 `die()` calls
 become status returns; the global `struct sim` becomes an instance passed
 explicitly; `putchar`/`stdout` become session streams; `struct board_io`
 becomes pin models; `u32 cycles` ticks become scheduler time through the

@@ -3,6 +3,7 @@
 /* rpc.c -- the session protocol's method table (SPEC-008 §5) over the
  * in-process transport. Every transport ends here. */
 #include "session/session_priv.h"
+#include "mcu/mcu.h"
 #include <string.h>
 #include "host/host.h"
 #include "util/num.h"
@@ -62,7 +63,8 @@ static es_status m_session_open(rpc_ctx *r)
     esk_json_set_string(s->a, r->result, "engine", es_version().string);
     esk_json_set_integer(s->a, r->result, "abi", es_abi_version());
     {
-        static const char *const names[] = { "analog", "digital", "catalog", "scenario", "record.inputs", "streams.json", "observe.subscribe" };
+        static const char *const names[] = { "analog", "digital", "catalog", "scenario", "record.inputs", "streams.json", "observe.subscribe",
+                                             "mcu", "debug", "toolchain" };
         size_t i;
         for (i = 0; i < ES_COUNTOF(names); i++)
             esk_json_array_push(s->a, caps, esk_json_new_string(s->a, names[i]));
@@ -107,11 +109,20 @@ static es_status m_session_info(rpc_ctx *r)
     for (i = 0; i < s->boards.len; i++) {
         esk_json *b = obj(r);
         if (!b) break;
-        esk_json_set_string(s->a, b, "id", s->boards.data[i]->id);
-        esk_json_set_string(s->a, b, "board", s->boards.data[i]->board_id);
-        esk_json_set_string(s->a, b, "runtime", "none");
+        esk_board_inst *bi = s->boards.data[i];
+        int live = bi->mcu && esk_mcu_machine(bi->mcu) != NULL;
+        esk_json_set_string(s->a, b, "id", bi->id);
+        esk_json_set_string(s->a, b, "board", bi->board_id);
+        if (bi->mcu)
+            esk_json_set_string(s->a, b, "mcu", bi->mcu->kind);
+        esk_json_set_string(s->a, b, "runtime", live ? "cortex-m" : "none");
+        if (bi->mcu)
+            esk_json_set_string(s->a, b, "component", bi->mcu->id);
+        if (bi->firmware)
+            esk_json_set_string(s->a, b, "image", esk_json_get_str(bi->firmware, "image", ""));
+        esk_json_set_string(s->a, b, "timing_tier", live ? "instruction" : "none");
         esk_json_array_push(s->a, boards, b);
-        esk_json_set_string(s->a, tiers, s->boards.data[i]->id, "unmodelled");
+        esk_json_set_string(s->a, tiers, bi->id, live ? "instruction" : "none");
     }
     esk_json_object_set(s->a, r->result, "boards", boards);
     esk_json_object_set(s->a, r->result, "timing_tiers", tiers);
@@ -263,6 +274,7 @@ static es_status m_control_run(rpc_ctx *r)
     if (sp && sp->type == ESK_JSON_NUMBER && sp->u.number.value >= 0)
         s->speed = sp->u.number.value;
     s->run_until = ptime(r, "until", &until) == 0 ? until : ES_TIME_MAX;
+    esk_debug_resume_all(s);
     s->running = 1;
     s->last_host_ms = esk_host_monotonic_ms();
     r->result = obj(r);
@@ -287,8 +299,13 @@ static es_status m_control_step(rpc_ctx *r)
     const char *mode = pstr(r, "mode", "event");
     es_status st;
     if (!r->s->loaded) return fail_status(r, ES_ESTATE);
-    if (!strcmp(mode, "instruction"))
-        return fail(r, -32601, "instruction stepping needs the MCU runtime, which this version does not include");
+    if (!strcmp(mode, "instruction")) {
+        int code = 0;
+        st = esk_debug_call(r->s, "debug.step", r->params, &r->result, &code, r->err_msg, sizeof r->err_msg);
+        if (code)
+            r->err_code = code;
+        return st;
+    }
     st = es_session_step(r->s);
     if (st != ES_OK) return fail_status(r, st);
     r->result = obj(r);
@@ -310,11 +327,17 @@ static es_status m_control_advance(rpc_ctx *r)
         if (esk_time_add(s->eng.sched.now, by, &until))
             return fail_status(r, ES_ETIME);
     }
+    esk_debug_resume_all(s);
     st = esk_session_do_advance(s, until);
     if (st != ES_OK) return fail_status(r, st);
     r->result = obj(r);
     if (!r->result) return ES_ENOMEM;
     esk_json_set_u64_string(s->a, r->result, "now_ps", s->eng.sched.now);
+    {
+        esk_json *info = NULL;
+        if (esk_debug_stopped_board(s, &info) && info)
+            esk_json_object_set(s->a, r->result, "stopped", info);
+    }
     esk_session_emit_observations(s, 1);
     return ES_OK;
 }
@@ -495,7 +518,7 @@ static es_status m_probe_read(rpc_ctx *r)
         esk_json *out = obj(r);
         if (out && p->comp->ops->observe) {
             p->comp->ops->observe(p->comp, out);
-            esk_json_set_string(r->s->a, r->result, "text", esk_json_get_str(out, "rx_text", ""));
+            esk_json_set_string(r->s->a, r->result, "text", esk_json_get_str(out, p->quantity ? p->quantity : "rx_text", ""));
         }
         esk_json_free(r->s->a, out);
         return ES_OK;
@@ -719,6 +742,29 @@ static es_status m_diagnostics_list(rpc_ctx *r)
     return ES_OK;
 }
 
+static es_status m_toolchain_detect(rpc_ctx *r)
+{
+    esk_json *arr = NULL;
+    es_status st = esk_toolchain_detect(r->s, &arr);
+    if (st != ES_OK) return fail_status(r, st);
+    r->result = obj(r);
+    if (!r->result) {
+        esk_json_free(r->s->a, arr);
+        return ES_ENOMEM;
+    }
+    esk_json_object_set(r->s->a, r->result, "profiles", arr);
+    return ES_OK;
+}
+
+static es_status m_toolchain_build(rpc_ctx *r)
+{
+    es_status st = esk_toolchain_build(r->s, pstr(r, "board", NULL), pstr(r, "profile", NULL), &r->result);
+    if (st == ES_ENOTFOUND) return fail(r, -32602, "no such board with firmware, or no such toolchain profile");
+    if (st != ES_OK) return fail_status(r, st);
+    esk_session_emit_observations(r->s, 1);
+    return ES_OK;
+}
+
 static es_status m_unavailable(rpc_ctx *r)
 {
     return fail(r, -32601, "this method needs a subsystem this version does not include (see docs/STATUS.md)");
@@ -744,7 +790,7 @@ static const method methods[] = {
     { "catalog.models", m_catalog_models }, { "catalog.validate", m_unavailable },
     { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_unavailable },
     { "scenario.run", m_scenario_run }, { "diagnostics.list", m_diagnostics_list },
-    { "toolchain.detect", m_unavailable }, { "toolchain.build", m_unavailable },
+    { "toolchain.detect", m_toolchain_detect }, { "toolchain.build", m_toolchain_build },
 };
 
 es_status esk_rpc_dispatch(es_session *s, const esk_json *req, esk_json **response)
@@ -770,12 +816,13 @@ es_status esk_rpc_dispatch(es_session *s, const esk_json *req, esk_json **respon
         for (i = 0; i < ES_COUNTOF(methods); i++) {
             if (!strcmp(methods[i].name, name)) {
                 found = 1;
-                if (strncmp(name, "debug.", 6) == 0)
-                    st = m_unavailable(&r);
-                else
-                    st = methods[i].fn(&r);
+                st = methods[i].fn(&r);
                 break;
             }
+        }
+        if (!found && esk_debug_has(name)) {
+            found = 1;
+            st = esk_debug_call(s, name, r.params, &r.result, &r.err_code, r.err_msg, sizeof r.err_msg);
         }
         if (!found) {
             if (esk_str_has_prefix(name, "debug.") || esk_str_has_prefix(name, "toolchain."))

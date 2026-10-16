@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+"""tools/importers/svd2regs.py on a small SVD written for the test."""
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "importers"))
+import svd2regs  # noqa: E402
+
+SVD = """<?xml version="1.0"?>
+<device>
+  <name>TOY</name>
+  <size>32</size>
+  <peripherals>
+    <peripheral>
+      <name>UART0</name>
+      <baseAddress>0x40001000</baseAddress>
+      <interrupt><name>UART0</name><value>3</value></interrupt>
+      <registers>
+        <register>
+          <name>SR</name><addressOffset>0x0</addressOffset><resetValue>0xC0</resetValue>
+          <fields>
+            <field><name>RXNE</name><bitOffset>5</bitOffset><bitWidth>1</bitWidth>
+              <access>read-write</access><modifiedWriteValues>zeroToClear</modifiedWriteValues></field>
+            <field><name>TXE</name><bitRange>[7:7]</bitRange><access>read-only</access></field>
+            <field><name>ERR</name><lsb>8</lsb><msb>9</msb><modifiedWriteValues>oneToClear</modifiedWriteValues></field>
+          </fields>
+        </register>
+        <register><name>DR</name><addressOffset>0x4</addressOffset><size>16</size></register>
+        <register><name>DR_ALT</name><addressOffset>0x4</addressOffset><alternateRegister>DR</alternateRegister></register>
+        <register><name>BUF%s</name><addressOffset>0x10</addressOffset><dim>2</dim><dimIncrement>4</dimIncrement></register>
+        <cluster><name>CH[%s]</name><addressOffset>0x20</addressOffset><dim>2</dim><dimIncrement>8</dimIncrement>
+          <register><name>CTRL</name><addressOffset>0x0</addressOffset><access>write-only</access></register>
+        </cluster>
+      </registers>
+    </peripheral>
+    <peripheral derivedFrom="UART0">
+      <name>UART1</name><baseAddress>0x40002000</baseAddress>
+      <interrupt><name>UART1</name><value>4</value></interrupt>
+    </peripheral>
+  </peripherals>
+</device>
+"""
+
+
+class Svd2Regs(unittest.TestCase):
+    def test_convert(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "toy.svd"
+            p.write_text(SVD)
+            doc = svd2regs.convert(p, "toy/registers")
+        self.assertEqual(doc["device"], "TOY")
+        self.assertEqual(doc["interrupts"], {"UART0": 3, "UART1": 4})
+        u0, u1 = doc["peripherals"]
+        self.assertEqual(u1, {"name": "UART1", "base": "0x40002000", "interrupts": ["UART1"], "derived_from": "UART0"})
+        regs = {r["name"]: r for r in u0["registers"]}
+        self.assertEqual(sorted(regs), ["BUF0", "BUF1", "CH0_CTRL", "CH1_CTRL", "DR", "SR"])
+        self.assertEqual(regs["SR"]["reset"], "0x000000C0")
+        self.assertEqual(regs["SR"]["fields"], [["RXNE", 5, 1, "rc_w0"], ["TXE", 7, 1, "r"], ["ERR", 8, 2, "rc_w1"]])
+        self.assertEqual(regs["DR"]["size"], 16)
+        self.assertEqual(regs["BUF1"]["offset"], "0x14")
+        self.assertEqual(regs["CH1_CTRL"], {"name": "CH1_CTRL", "offset": "0x28", "fields": [["CH1_CTRL", 0, 32, "w"]]})
+        json.dumps(doc)
+
+
+if __name__ == "__main__":
+    unittest.main()
