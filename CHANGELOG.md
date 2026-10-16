@@ -5,6 +5,12 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Scenario editor reliability
+
+- Run and Save now reject invalid visible expectation JSON, assertion timing,
+  duplicate IDs, missing identifiers and invalid expectation fields. Errors are
+  listed in the editor; edits clear assertion badges from a previous run.
+
 ### Debugger reliability
 
 - Board switches clear inspected state and discard late responses from the previous
