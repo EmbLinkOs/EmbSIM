@@ -11,6 +11,16 @@
  * and WFI waits for them. mcycle counts the estimated cycles (cost.h),
  * minstret the instructions, and `time` reads the CLINT's mtime.
  *
+ * Physical memory protection is the privileged architecture's (version
+ * 1.11, granularity 4 bytes): the part's entries (pmp_entries, 16 unless
+ * its description says) are OFF, TOR, NA4 or NAPOT; the lowest-numbered
+ * entry that matches any byte of an access decides it, and fails it unless
+ * it matches every byte; it binds machine mode only when locked, and user
+ * mode always; a user-mode access no entry matches fails when the part has
+ * any entry. Loads and stores are checked at mstatus.MPP's privilege when
+ * MPRV is set; fetches at the core's. A locked entry's pmpcfg and pmpaddr,
+ * and the pmpaddr below a locked TOR entry, ignore writes.
+ *
  * Ordinary loads and stores may be misaligned; LR, SC and the AMOs may not.
  * SC succeeds when the reservation's address and the value LR read are
  * still there. A compressed instruction is expanded into the 32-bit
@@ -23,7 +33,8 @@
  * instructions); the interrupt lines are the devices' (no built-in CLINT);
  * WFI and a jump to itself put the machine to sleep for the runtime to
  * fast-forward (ADR-019); the reset pc is the MCU description's; the GDB
- * target description is built in the core's own buffer. */
+ * target description is built in the core's own buffer; the PMP checks
+ * accesses (EmbCC's kept its CSRs only). */
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -67,6 +78,114 @@ static void trap_enter(struct rv_state *rs, u64 cause, u64 tval, int intr)
     rs->pc = intr && (rs->mtvec & 1) ? base + 4 * cause : base;
 }
 
+/* ---- physical memory protection ------------------------------------------ */
+
+#define PMP_R 1u
+#define PMP_W 2u
+#define PMP_X 4u
+#define PMP_L 0x80u
+enum { PMP_OFF, PMP_TOR, PMP_NA4, PMP_NAPOT };
+
+/* entry i's configuration byte: RV32's pmpcfg0-3 hold four each, RV64's
+ * even pmpcfg eight */
+static u8 pmp_cfg(const struct rv_state *rs, int i)
+{
+    if (rs->xlen == 32)
+        return (u8)(rs->pmpcfg[i / 4] >> (8 * (i % 4)));
+    return (u8)(rs->pmpcfg[(i / 8) * 2] >> (8 * (i % 8)));
+}
+
+static void pmp_changed(struct rv_state *rs)
+{
+    int i;
+    rs->pmp_any = 0;
+    for (i = 0; i < rs->npmp; i++)
+        if (pmp_cfg(rs, i) >> 3 & 3)
+            rs->pmp_any = 1;
+}
+
+/* the privilege loads and stores are checked at */
+static int data_priv(const struct rv_state *rs)
+{
+    if (rs->priv == PRV_M && (rs->mstatus & MSTATUS_MPRV))
+        return (int)((rs->mstatus >> 11) & 3);
+    return rs->priv;
+}
+
+/* nonzero when the PMP fails n bytes at `a` for `perm` at privilege `priv` */
+static int pmp_denies(const struct rv_state *rs, u64 a, int n, int priv, u32 perm)
+{
+    int i;
+    if (!rs->pmp_any)
+        return priv < PRV_M && rs->npmp > 0;
+    for (i = 0; i < rs->npmp; i++) {
+        u8 c = pmp_cfg(rs, i);
+        u64 y = rs->pmpaddr[i], lo, hi;
+        switch (c >> 3 & 3) {
+        case PMP_TOR:
+            lo = i ? rs->pmpaddr[i - 1] << 2 : 0;
+            hi = y << 2;
+            break;
+        case PMP_NA4:
+            lo = y << 2;
+            hi = lo + 4;
+            break;
+        case PMP_NAPOT: {
+            int t = 0;
+            while (t < 64 && (y >> t & 1))
+                t++;
+            if (t >= 61) {
+                lo = 0;
+                hi = ~(u64)0;
+            } else {
+                lo = (y & ~(((u64)1 << t) - 1)) << 2;
+                hi = lo + ((u64)8 << t);
+            }
+            break;
+        }
+        default:
+            continue;
+        }
+        if (lo >= hi || a + (u64)n <= lo || a >= hi)
+            continue;
+        if (a < lo || a + (u64)n > hi)
+            return 1; /* some bytes, not all */
+        if (priv == PRV_M && !(c & PMP_L))
+            return 0;
+        return (c & perm) != perm;
+    }
+    return priv < PRV_M;
+}
+
+static void pmpcfg_write(struct rv_state *rs, int reg, u64 v)
+{
+    int per = rs->xlen == 32 ? 4 : 8, first = rs->xlen == 32 ? reg * 4 : (reg / 2) * 8, k;
+    u64 old = rs->pmpcfg[reg], nv = 0;
+    if (rs->xlen != 32 && (reg & 1))
+        return;
+    for (k = 0; k < per; k++) {
+        u8 ob = (u8)(old >> (8 * k)), b = (u8)(v >> (8 * k));
+        if (first + k >= rs->npmp)
+            b = 0;
+        else if (ob & PMP_L)
+            b = ob;
+        else
+            b &= 0x9f; /* bits 5 and 6 are reserved */
+        nv |= (u64)b << (8 * k);
+    }
+    rs->pmpcfg[reg] = nv;
+    pmp_changed(rs);
+}
+
+static void pmpaddr_write(struct rv_state *rs, int i, u64 v)
+{
+    if (i >= rs->npmp || (pmp_cfg(rs, i) & PMP_L))
+        return;
+    if (i + 1 < rs->npmp && (pmp_cfg(rs, i + 1) & PMP_L) && (pmp_cfg(rs, i + 1) >> 3 & 3) == PMP_TOR)
+        return;
+    rs->pmpaddr[i] = rv_xl(rs, v) & (rs->xlen == 32 ? 0xffffffffull : 0x3fffffffffffffull);
+}
+
 /* ---- memory ------------------------------------------------------------- */
 
 /* A load or store of the core's. A debugger's watchpoint stops the
@@ -78,6 +197,10 @@ u64 rv_load(struct rv_state *rs, u64 a, int n)
     if (rs->trap)
         return 0;
     if ((a >> 32) || ((a + (u64)n - 1) >> 32)) {
+        rv_trap(rs, EXC_LOAD_ACCESS, a);
+        return 0;
+    }
+    if ((rs->pmp_any || data_priv(rs) < PRV_M) && pmp_denies(rs, a, n, data_priv(rs), PMP_R)) {
         rv_trap(rs, EXC_LOAD_ACCESS, a);
         return 0;
     }
@@ -114,6 +237,10 @@ void rv_store(struct rv_state *rs, u64 a, int n, u64 v)
     if (rs->trap)
         return;
     if ((a >> 32) || ((a + (u64)n - 1) >> 32)) {
+        rv_trap(rs, EXC_STORE_ACCESS, a);
+        return;
+    }
+    if ((rs->pmp_any || data_priv(rs) < PRV_M) && pmp_denies(rs, a, n, data_priv(rs), PMP_W)) {
         rv_trap(rs, EXC_STORE_ACCESS, a);
         return;
     }
@@ -287,10 +414,9 @@ static void csr_wr(struct rv_state *rs, u32 csr, u64 v)
         return;
     }
     if (csr >= 0x3a0 && csr <= 0x3af)
-        rs->pmpcfg[csr - 0x3a0] = rv_xl(rs, v);
+        pmpcfg_write(rs, (int)(csr - 0x3a0), rv_xl(rs, v));
     else if (csr >= 0x3b0 && csr <= 0x3ef)
-        rs->pmpaddr[csr - 0x3b0] = rv_xl(rs, v) & (x32 ? 0xffffffffull
-                                                   : 0x3fffffffffffffull);
+        pmpaddr_write(rs, (int)(csr - 0x3b0), v);
     /* the rest (misa, medeleg, mideleg, mip, the event counters) keep
      * their values */
 }
@@ -965,6 +1091,10 @@ static void step(struct esk_cpu *c)
         return;
     }
     size = (h0 & 3) == 3 ? 4 : 2;
+    if ((rs->pmp_any || rs->priv < PRV_M) && pmp_denies(rs, rs->pc, size, rs->priv, PMP_X)) {
+        trap_enter(rs, EXC_IFETCH_ACCESS, rs->pc, 0);
+        return;
+    }
     insn = size == 4 ? h0 | h1 << 16 : h0;
     cost = (u32)esk_rv_cost(insn, size, &br);
     rs->cyc_now = s->cycles;
@@ -1026,7 +1156,9 @@ static void cpu_reset(struct esk_cpu *c)
     u64 (*mtime)(void *) = k->mtime;
     void *mtime_ctx = k->mtime_ctx;
     u32 reset_pc = k->reset_pc;
+    int npmp = k->npmp;
     memset(k, 0, sizeof *k);
+    k->npmp = npmp;
     k->cpu = keep;
     k->sim = s;
     k->mtime = mtime;
@@ -1293,6 +1425,12 @@ void esk_riscv_mtime_source(struct esk_mach *m, u64 (*mtime)(void *ctx), void *c
     }
 }
 
+void esk_riscv_pmp_entries(struct esk_cpu *c, int n)
+{
+    struct rv_state *k = (struct rv_state *)c;
+    k->npmp = n < 0 ? 0 : n > 64 ? 64 : n;
+}
+
 es_status esk_riscv_create(struct esk_mach *m, const char *model, u32 reset_pc, struct esk_cpu **out)
 {
     struct rv_state *k;
@@ -1307,6 +1445,7 @@ es_status esk_riscv_create(struct esk_mach *m, const char *model, u32 reset_pc, 
     k->priv = PRV_M;
     k->reset_pc = reset_pc;
     k->pc = reset_pc;
+    k->npmp = 16;
     m->cpu = &k->cpu;
     *out = &k->cpu;
     return ES_OK;

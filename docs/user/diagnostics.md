@@ -47,7 +47,7 @@ default and a subject.
 | `mcu.held_in_reset` | warning | board, register, pc | an access to a peripheral its reset controller holds in reset (the RP2040's RESETS): reads its reset values, writes ignored |
 | `mcu.usb_boot` | warning | board | the program called the RP2040's `reset_to_usb_boot`: the part waits in its USB boot, which is not modelled |
 | `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot |
-| `mcu.watchdog_reset` | info | board | the watchdog reset the chip (its counter reached 0, or CTRL.TRIGGER) |
+| `mcu.watchdog_reset` | info | board | the watchdog reset the chip (the RP2040's counter reached 0 or CTRL.TRIGGER; the FE310's comparator fired with wdogrsten) |
 | `mcu.easydma_range` | warning | board, peripheral | an nRF52840 EasyDMA buffer outside Data RAM: nothing is moved |
 | `mcu.locked_write` | warning | board, register, pc | a write to a PIC32's OSCCON while SYSKEY's unlock sequence has not been written, or to a byte of a PIC24's OSCCON without its own unlock sequence: ignored, as on the part (the first one) |
 | `mcu.trap` | warning | board, pc | a PIC24 trap (an address, stack or math error, an oscillator failure): the core takes its vector; the first ten are reported |

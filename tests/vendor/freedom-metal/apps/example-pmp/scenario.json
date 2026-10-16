@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "example-pmp",
+  "until": "200ms",
+  "description": "software/example-pmp: PMP entry 0, locked, NAPOT over a 128-byte array, read-only: machine mode's store to it is a store access fault, the handler steps over it, and main returns the word it could not change (exit 0, where the store would have made it 6).",
+  "assertions": [
+    {
+      "id": "attempt",
+      "at": "200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Attempting to write to protected address"
+      }
+    },
+    {
+      "id": "exit",
+      "at": "200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Attempting to write to protected address\nexit 0"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

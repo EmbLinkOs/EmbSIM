@@ -15,11 +15,14 @@ pinned commits. As the SDK's scripts/standalone.mk does for the board
 metal-platform.h and metal-inline.h become metal/machine.h,
 metal/machine/platform.h and metal/machine/inline.h; freedom-metal's src
 and gloss build libmetal.a and libmetal-gloss.a; each example links
-against them with metal.default.lds. Two things differ from the SDK's
-build, both for the toolchain: GCC 12 and later name the CSR and fence.i
+against them with metal.default.lds. Three things differ from the SDK's
+build, two for the toolchain: GCC 12 and later name the CSR and fence.i
 extensions (-march=rv32imac_zicsr_zifencei), and Ubuntu's toolchain has
 picolibc where SiFive's has newlib, so picolibc_stdio.c gives picolibc's
-stdio freedom-metal's tty as freedom-metal's gloss gives newlib's.
+stdio freedom-metal's tty as freedom-metal's gloss gives newlib's; and
+exit_report.c, wrapped around metal_shutdown, prints an example's exit
+status ("exit 0") before freedom-metal's shutdown spins, for the
+scenarios to see.
 
 Each example under apps/ (its scenario.json; the sources are the SDK's)
 then runs this directory's project.json under it, and its assertions must
@@ -51,7 +54,7 @@ BSP = "bsp/sifive-hifive1-revb"
 CFLAGS = ["-march=rv32imac_zicsr_zifencei", "-mabi=ilp32", "-mcmodel=medlow", "-ffunction-sections",
           "-fdata-sections", "--specs=picolibc.specs", "-DMTIME_RATE_HZ_DEF=32768", "-Os", "-g",
           "-DMETAL_WAIT_CYCLE=0"]
-LDFLAGS = ["-Wl,--gc-sections", "-nostartfiles", "-nostdlib"]
+LDFLAGS = ["-Wl,--gc-sections", "-nostartfiles", "-nostdlib", "-Wl,--wrap=metal_shutdown"]
 LDLIBS = ["-Wl,--start-group", "-lc", "-lgcc", "-lm", "-lmetal", "-lmetal-gloss", "-Wl,--end-group"]
 
 
@@ -84,7 +87,7 @@ def build_app(sdk: Path, flags: list, name: str, out: Path) -> Path:
     src = sdk / "software" / name
     elf = out / (name + ".elf")
     sh([CC, *flags, *LDFLAGS, "-L", out, "-T", sdk / BSP / "metal.default.lds",
-        *sorted(src.glob("*.[cS]")), HERE / "picolibc_stdio.c", *LDLIBS, "-o", elf])
+        *sorted(src.glob("*.[cS]")), HERE / "picolibc_stdio.c", HERE / "exit_report.c", *LDLIBS, "-o", elf])
     return elf
 
 

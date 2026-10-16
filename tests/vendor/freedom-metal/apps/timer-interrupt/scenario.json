@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "timer-interrupt",
+  "until": "100ms",
+  "description": "software/timer-interrupt: mtimecmp at 0, so the CLINT's timer interrupt is pending as soon as it is enabled; its handler runs once and moves mtimecmp on; main returns 0 only when it ran exactly once (99 otherwise).",
+  "assertions": [
+    {
+      "id": "exit",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "equals": "exit 0\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

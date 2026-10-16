@@ -781,7 +781,9 @@
         },
         {
           "name": "WDOGCMP0",
-          "offset": "0x20"
+          "offset": "0x20",
+          "reset": "0x0000FFFF",
+          "description": "The manual leaves its reset value undefined (X); all ones here, as RTCCMP0"
         },
         {
           "name": "RTCCFG",
@@ -801,7 +803,9 @@
         },
         {
           "name": "RTCCMP0",
-          "offset": "0x60"
+          "offset": "0x60",
+          "reset": "0xFFFFFFFF",
+          "description": "The manual leaves its reset value undefined (X); all ones here, so rtcip0 is low out of reset as it is on a board, where firmware writes rtccfg before it (freedom-metal's metal_rtc_set_compare)"
         },
         {
           "name": "LFROSCCFG",

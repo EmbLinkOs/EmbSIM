@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "return-pass",
+  "until": "100ms",
+  "description": "software/return-pass: main returns 0 through freedom-metal's exit, reported by exit_report.c.",
+  "assertions": [
+    {
+      "id": "exit",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "equals": "exit 0\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

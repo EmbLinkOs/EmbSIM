@@ -27,7 +27,9 @@ static u32 sw(u32 rs2, u32 rs1, s32 imm)
 static u32 csrrw(u32 rd, u32 csr, u32 rs1) { return csr << 20 | rs1 << 15 | 1u << 12 | rd << 7 | 0x73; }
 static u32 csrrs(u32 rd, u32 csr, u32 rs1) { return csr << 20 | rs1 << 15 | 2u << 12 | rd << 7 | 0x73; }
 static u32 csrrsi(u32 rd, u32 csr, u32 z) { return csr << 20 | z << 15 | 6u << 12 | rd << 7 | 0x73; }
+static u32 lw(u32 rd, u32 rs1, s32 imm) { return i_type(0x03, 2, rd, rs1, imm); }
 #define ECALL 0x00000073u
+#define MRET 0x30200073u
 #define WFI 0x10500073u
 #define JAL_SELF 0x0000006fu
 
@@ -241,6 +243,164 @@ static void test_plic_reserved(void)
     fe_close(&f);
 }
 
+/* ---- the PMP ---------------------------------------------------------------- */
+
+static void test_pmp_locked_napot(void)
+{
+    /* entry 0: NAPOT over 64 bytes at 0x80000100, read-only and locked, so
+     * it binds machine mode: a load passes, a store faults; the locked
+     * entry ignores writes; entries 8 and up (pmpcfg2) are not the FE310's */
+    const u32 prog[] = { lui(1, BASE >> 12), addi(1, 1, 0x100), csrrw(0, 0x305, 1),
+                         lui(5, 0x20000), addi(5, 5, 0x47), csrrw(0, 0x3b0, 5),
+                         addi(6, 0, 0x99), csrrw(0, 0x3a0, 6),
+                         csrrw(0, 0x3a0, 0), csrrs(13, 0x3a0, 0), csrrw(0, 0x3b0, 0), csrrs(14, 0x3b0, 0),
+                         csrrw(0, 0x3a2, 6), csrrs(15, 0x3a2, 0),
+                         lui(7, 0x80000), addi(7, 7, 0x100), lw(8, 7, 0), sw(6, 7, 0), JAL_SELF };
+    const u32 handler[] = { csrrs(11, 0x342, 0), csrrs(12, 0x343, 0), JAL_SELF };
+    fe f;
+    u32 v = 1;
+    if (!fe_open(&f, prog, sizeof prog / sizeof prog[0], handler, 3))
+        return;
+    esk_mach_run(&f.m, 0xffffff, 21);
+    CHECK_EQ(x(&f, 13), 0x99u);
+    CHECK_EQ(x(&f, 14), 0x20000047u);
+    CHECK_EQ(x(&f, 15), 0u);
+    CHECK_EQ(x(&f, 11), 7u);           /* a store access fault */
+    CHECK_EQ(x(&f, 12), 0x80000100u);  /* at the protected word */
+    CHECK_EQ(x(&f, 32), BASE + 0x108u);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x80000100u, 4, &v), 0);
+    CHECK_EQ(v, 0u);                    /* not written */
+    fe_close(&f);
+}
+
+/* an mret to user mode at BASE + 0x80, which holds an ecall; with
+ * `open`, entry 0 first covers everything with RWX (NAPOT, all ones) */
+static u32 user_cause(int open)
+{
+    u32 prog[40];
+    const u32 head[] = { lui(1, BASE >> 12), addi(1, 1, 0x100), csrrw(0, 0x305, 1),
+                         lui(5, BASE >> 12), addi(5, 5, 0x80), csrrw(0, 0x341, 5),
+                         addi(6, 0, -1), csrrw(0, 0x3b0, 6), addi(7, 0, 0x1f), csrrw(0, 0x3a0, 7), MRET };
+    const u32 handler[] = { csrrs(11, 0x342, 0), JAL_SELF };
+    fe f;
+    size_t i;
+    u32 cause;
+    for (i = 0; i < 40; i++)
+        prog[i] = JAL_SELF;
+    for (i = 0; i < sizeof head / sizeof head[0]; i++)
+        prog[i] = head[i];
+    if (!open)
+        prog[9] = addi(0, 0, 0); /* no entry is turned on */
+    prog[32] = ECALL;
+    if (!fe_open(&f, prog, 40, handler, 2))
+        return 0;
+    esk_mach_run(&f.m, 0xffffff, 14);
+    cause = x(&f, 11);
+    fe_close(&f);
+    return cause;
+}
+
+static void test_pmp_user_mode(void)
+{
+    /* user mode is allowed only what an entry gives it */
+    CHECK_EQ(user_cause(0), 1u); /* an instruction access fault */
+    CHECK_EQ(user_cause(1), 8u); /* the ecall, from user mode */
+}
+
+/* ---- the always-on domain ------------------------------------------------------ */
+
+#define AON 0x10000000u
+#define PLIC_PENDING0 0x0c001000u
+
+static u32 rd(fe *f, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_read(&f->m.bus, a, 4, &v), 0);
+    return v;
+}
+
+static void wd_write(fe *f, u32 off, u32 v)
+{
+    CHECK_EQ(esk_bus_write(&f->m.bus, AON + 0x1c, 4, 0x51F15Eu), 0); /* wdogkey */
+    CHECK_EQ(esk_bus_write(&f->m.bus, AON + off, 4, v), 0);
+}
+
+static void test_aon_rtc(void)
+{
+    /* rtccmp0 at 32768 counts of the 32.768 kHz clock: one second, 14.4M
+     * cycles at the HFROSC's 14.4 MHz; then rtcip0 and PLIC source 2 */
+    static const u32 prog[] = { JAL_SELF };
+    fe f;
+    if (!fe_open(&f, prog, 1, 0, 0))
+        return;
+    CHECK_EQ(rd(&f, AON + 0x60), 0xffffffffu); /* rtccmp0 out of reset: rtcip0 low */
+    CHECK_EQ(esk_bus_write(&f.m.bus, AON + 0x60, 4, 32768), 0);
+    CHECK_EQ(esk_bus_write(&f.m.bus, AON + 0x40, 4, 0x1000), 0); /* rtcenalways */
+    esk_mach_run(&f.m, 14400000u - 200u, 0); /* 32767.5 clocks */
+    CHECK_EQ(rd(&f, AON + 0x48), 32767u);
+    CHECK_EQ(rd(&f, AON + 0x40) >> 28 & 1, 0u);
+    CHECK_EQ(rd(&f, PLIC_PENDING0) >> 2 & 1, 0u);
+    esk_mach_run(&f.m, 400, 0); /* 32768.4 */
+    CHECK_EQ(rd(&f, AON + 0x50), 32768u);         /* rtcs */
+    CHECK_EQ(rd(&f, AON + 0x40) >> 28 & 1, 1u);   /* rtcip0 */
+    CHECK_EQ(rd(&f, PLIC_PENDING0) >> 2 & 1, 1u);
+    CHECK_EQ(esk_bus_write(&f.m.bus, AON + 0x60, 4, 40000), 0);
+    CHECK_EQ(rd(&f, AON + 0x40) >> 28 & 1, 0u);   /* a level: low again */
+    fe_close(&f);
+}
+
+static void test_aon_watchdog(void)
+{
+    /* writes without the key are ignored; wdogcmp0 100 with wdogzerocmp:
+     * the comparator fires at count 100 and the count is back to 0 a clock
+     * later, so after 150 clocks it is 49; wdogip0 is sticky and is PLIC
+     * source 1; the food zeroes the count */
+    static const u32 prog[] = { JAL_SELF };
+    fe f;
+    if (!fe_open(&f, prog, 1, 0, 0))
+        return;
+    CHECK_EQ(esk_bus_write(&f.m.bus, AON + 0x00, 4, 0x1000), 0);
+    CHECK_EQ(rd(&f, AON + 0x00), 0u);
+    wd_write(&f, 0x20, 100);
+    wd_write(&f, 0x00, 0x1200); /* wdogenalways, wdogzerocmp, scale 0 */
+    CHECK_EQ(rd(&f, AON + 0x1c), 0u); /* locked again */
+    esk_mach_run(&f.m, 65918, 0); /* 150 clocks of 32.768 kHz at 14.4 MHz */
+    CHECK_EQ(rd(&f, AON + 0x08), 49u);
+    CHECK_EQ(rd(&f, AON + 0x00) >> 28 & 1, 1u);
+    CHECK_EQ(rd(&f, PLIC_PENDING0) >> 1 & 1, 1u);
+    CHECK_EQ(esk_bus_write(&f.m.bus, AON + 0x18, 4, 0xD09F00Du), 0); /* no key: ignored */
+    CHECK(rd(&f, AON + 0x08) != 0u);
+    wd_write(&f, 0x18, 0xD09F00Du);
+    CHECK_EQ(rd(&f, AON + 0x08), 0u);
+    wd_write(&f, 0x00, 0x1200); /* wdogip0 cleared */
+    CHECK_EQ(rd(&f, AON + 0x00) >> 28 & 1, 0u);
+    fe_close(&f);
+}
+
+static void test_aon_watchdog_reset(void)
+{
+    /* with wdogrsten the comparator resets the chip; the always-on domain
+     * keeps its registers, and pmucause says the watchdog did it */
+    static const u32 prog[] = { JAL_SELF };
+    fe f;
+    if (!fe_open(&f, prog, 1, 0, 0))
+        return;
+    CHECK_EQ(rd(&f, AON + 0x144), 0u);
+    CHECK_EQ(esk_bus_write(&f.m.bus, AON + 0x80, 4, 0x1234), 0); /* backup0 */
+    wd_write(&f, 0x20, 10);
+    wd_write(&f, 0x00, 0x1100); /* wdogenalways, wdogrsten */
+    esk_mach_run(&f.m, 14400000u, 0);
+    CHECK(f.m.reset_req);
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, AON + 0x80), 0x1234u);
+    CHECK_EQ(rd(&f, AON + 0x144), 0x200u);
+    CHECK_EQ(rd(&f, AON + 0x00) & 0x1100u, 0x1100u);
+    esk_mach_reset(&f.m); /* not the watchdog's: everything resets */
+    CHECK_EQ(rd(&f, AON + 0x80), 0u);
+    CHECK_EQ(rd(&f, AON + 0x144), 0u);
+    fe_close(&f);
+}
+
 static void test_disassembler(void)
 {
     char t[96];
@@ -258,5 +418,10 @@ RUN(test_ecall_trap);
 RUN(test_clint_timer);
 RUN(test_uart_frame);
 RUN(test_plic_reserved);
+RUN(test_pmp_locked_napot);
+RUN(test_pmp_user_mode);
+RUN(test_aon_rtc);
+RUN(test_aon_watchdog);
+RUN(test_aon_watchdog_reset);
 RUN(test_disassembler);
 TEST_MAIN_END

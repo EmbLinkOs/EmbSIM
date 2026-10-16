@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "software-interrupt",
+  "until": "100ms",
+  "description": "software/software-interrupt: msip set through the CLINT, the machine software interrupt taken and cleared by its handler; main returns 0 only when the handler ran (99 otherwise).",
+  "assertions": [
+    {
+      "id": "exit",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "equals": "exit 0\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}
