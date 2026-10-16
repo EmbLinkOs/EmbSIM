@@ -93,6 +93,25 @@ versions follow semantic versioning. There is no release yet.
   takes pins named GPIOn and gives an ADC its pin's voltage; the regulator
   model converges with a supply on its output; the board view scopes each
   artwork's styles and gradient ids and colours an LED by its parameter.
+- M4 part 2: the RP2040 (Cortex-M0+) with its register file converted from
+  Raspberry Pi's RP2040.svd, its resets, clocks and PLLs, watchdog tick and
+  timer, IO_BANK0 and pads, SIO (GPIO, spinlocks, divider, FIFO), PL011
+  UARTs, SSI and a bootrom stand-in that boots boot2, and the Raspberry Pi
+  Pico; the nRF52840 (Cortex-M4F) with its register file converted from
+  Nordic's nrf52840.svd, CLOCK, the GPIO ports, GPIOTE, UARTE with EasyDMA,
+  TIMER and RTC, and the nRF52840 DK. `examples/pico-blink-serial` and
+  `examples/nrf52840dk-blink`, built by clang and EmbCC.
+- The register file's bus rules (the RP2040's atomic aliases and byte
+  writes) and peripherals held in reset, shown as "in reset" in the Debug
+  perspective (`debug.peripherals` reports `reset`).
+
+### Changed
+- Two weak pulls that disagree on a net are a divider, no longer reported
+  as `net.contention`.
+- A component's own parameters win over its part preset's.
+- The runtime finds a UART's RX pin again when a pin's function changes.
+- An MCU's GPIO pins take their high level and pulls from its description's
+  supply (`io.electrical.vdd`): the nRF52840 DK's 3.0 V.
 
 ### Removed
 - The draft 0.1 foundation (Python runtime, HTTP server, single-page UI);

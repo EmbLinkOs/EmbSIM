@@ -15,7 +15,9 @@ desktop application (M2); a catalog of 101 components, each checked by
 the engine against its fixtures, with Lua models, a component SDK and
 importers for board files, DeviceTree and KiCad netlists (M3); an Arduino
 Uno's AVR and a HiFive1's RISC-V core run their firmware too, and boards
-of different families talk to each other in one circuit (M4, part 1).
+of different families talk to each other in one circuit (M4, part 1); a
+Raspberry Pi Pico boots its RP2040 through boot2 and an nRF52840 DK runs
+its Cortex-M4F with EasyDMA and the FPU (M4, part 2).
 Nothing is released
 yet: [`docs/STATUS.md`](docs/STATUS.md) is the only inventory of what exists
 and with what evidence.

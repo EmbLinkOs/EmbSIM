@@ -44,6 +44,10 @@ default and a subject.
 | `mcu.unsupported_access` | warning | board, register, pc | the first access to a peripheral with registers and no model |
 | `mcu.clock_gated` | warning | board, register, pc | an access to a peripheral whose clock is off: reads 0, writes ignored |
 | `mcu.bus_error` | warning | board, address, pc | nothing answered an access: the core takes a bus fault |
+| `mcu.held_in_reset` | warning | board, register, pc | an access to a peripheral its reset controller holds in reset (the RP2040's RESETS): reads its reset values, writes ignored |
+| `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot |
+| `mcu.watchdog_reset` | info | board | the watchdog reset the chip (its counter reached 0, or CTRL.TRIGGER) |
+| `mcu.easydma_range` | warning | board, peripheral | an nRF52840 EasyDMA buffer outside Data RAM: nothing is moved |
 | `mcu.boot_mode` | warning | board | BOOT0 selects system memory, which is not modelled |
 | `mcu.exit` | info | board | the firmware exited through semihosting, with its status |
 | `mcu.lockup` | error | board | the core locked up (a fault with nowhere to go) |

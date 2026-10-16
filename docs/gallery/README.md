@@ -5,6 +5,29 @@ evolves. Newer milestones come first. Every set from M1 on is captured by
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M4 core families and boards, part 2 (2026-10-16)
+
+A Raspberry Pi Pico boots its RP2040 through boot2 and an nRF52840 DK runs
+its Cortex-M4F, each with firmware built by clang and by EmbCC.
+
+| | |
+|---|---|
+| ![The Pico running](m4-2/run-pico.png) | **The Pico running.** `examples/pico-blink-serial` on the RP2040's Cortex-M0+ at 125 MHz from PLL_SYS: the LED on GPIO25 lit by the timer's alarm, the banner on the terminal. |
+| ![The Pico up close](m4-2/board-pico.png) | **The Pico's artwork.** Its 40-pin edge, the RP2040, the W25Q16 flash, BOOTSEL and the user LED, live. |
+| ![Debugging the RP2040](m4-2/debug-pico.png) | **Debugging the RP2040.** Stopped at the timer's alarm interrupt: the source, the Armv6-M disassembly, the registers, and RP2040.svd's peripherals with the ones RESETS holds marked "in reset". |
+| ![The Pico's schematic](m4-2/design-pico.png) | **Design, Pico.** The button and the terminal on GP15, GP0 and GP1, VBUS from a 5 V source. |
+| ![The nRF52840 DK running](m4-2/run-nrf52840dk.png) | **The nRF52840 DK running.** `examples/nrf52840dk-blink`: LED1 toggled by RTC1 on the 32.768 kHz crystal, the banner with FICR's part number and the FPU's sqrt(2). |
+| ![The DK up close](m4-2/board-nrf52840dk.png) | **The DK's artwork.** Its four LEDs and buttons, the Arduino headers and the virtual COM port's pins. |
+| ![Debugging the nRF52840](m4-2/debug-nrf52840dk.png) | **Debugging the nRF52840.** Stopped in RTC1's interrupt: the source, the Thumb-2 disassembly, the registers and nrf52840.svd's peripherals. |
+| ![The DK's schematic](m4-2/design-nrf52840dk.png) | **Design, DK.** The button on D2 and the terminal on P0.06 and P0.08. |
+| ![Two boards on one line](m4-2/run-two-boards.png) | **Two boards.** As in part 1. |
+| ![The Uno running](m4-2/run-uno.png) | **The Uno running.** As in part 1. |
+| ![The HiFive1 running](m4-2/run-hifive1.png) | **The HiFive1 running.** As in part 1. |
+| ![Display showcase](m4-2/board-showcase.png) | **Displays.** |
+| ![Design, Blue Pill](m4-2/design-bluepill.png) | **Design, Blue Pill.** |
+| ![Debug, Blue Pill](m4-2/debug-bluepill.png) | **Debug, Blue Pill.** |
+| ![Dark theme](m4-2/design-bluepill-dark.png) | **Dark theme.** |
+
 ## M4 core families and boards, part 1 (2026-10-16)
 
 An Arduino Uno's AVR and a HiFive1's RISC-V core run their firmware, and

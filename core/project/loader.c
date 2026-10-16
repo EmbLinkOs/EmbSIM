@@ -50,6 +50,17 @@ static es_status connect_or_union(graph *g, esk_pin *pin, int rec, int via_port)
 static void rec_union(graph *g, int x, int y);
 static int rec_get(graph *g, const char *name, int project_level);
 
+/* an MCU description's io.electrical: its supply sets the GPIO pins' high
+ * level and pulls (a 3.0 V nRF52840 on its DK); the logic family's levels
+ * and thresholds stay, since the datasheets' VOH and VOL are worst cases
+ * at full load */
+static void mcu_electrical(const esk_json *el, esk_pin_model *m)
+{
+    double v;
+    if (el && esk_json_get(el, "vdd") && esk_json_to_double(esk_json_get(el, "vdd"), &v) == 0 && v > 0)
+        m->nominal_v = v;
+}
+
 static void mcu_signal_model(const char *sig, const char *family, esk_pin_model *m)
 {
     esk_pin_model_family(family, m);
@@ -745,6 +756,8 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
                     continue;
                 names[n] = sig;
                 mcu_signal_model(sig, family, &models[n]);
+                if (models[n].kind == ESK_PIN_DIGITAL_IO)
+                    mcu_electrical(esk_json_get(esk_json_get(mi->desc, "io"), "electrical"), &models[n]);
                 n++;
             }
             esk_snprintf(scoped, sizeof scoped, "%s.%s", bid, uid);

@@ -2,7 +2,7 @@
 <defs>
   <radialGradient id="glow-green" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#5dff8a" stop-opacity="1"/><stop offset="100%" stop-color="#5dff8a" stop-opacity="0"/></radialGradient>
 </defs>
-<style>.pcb{fill:#1f6b3a;stroke:#0f3a1f;stroke-width:3}.silk{fill:#f2f4f8;font-family:sans-serif;font-size:12px}.silks{fill:#f2f4f8;font-family:sans-serif;font-size:8px;text-anchor:middle}.pad{fill:#d9b94a;stroke:#8a6f1c;stroke-width:1}.hole{fill:#0e2416}.chip{fill:#17181c;stroke:#000;stroke-width:1}.metal{fill:#b8bcc6;stroke:#6b7079;stroke-width:1.5}.logo{fill:#f2f4f8;font-family:sans-serif;font-weight:bold}</style>
+<style>.pcb{fill:#1f6b3a;stroke:#0f3a1f;stroke-width:3}.silk{fill:#f2f4f8;font-family:sans-serif;font-size:12px}.silks{fill:#f2f4f8;font-family:sans-serif;font-size:8px;text-anchor:middle}.silkn{fill:#f2f4f8;font-family:sans-serif;font-size:5.5px;text-anchor:middle}.silke{fill:#f2f4f8;font-family:sans-serif;font-size:8px;text-anchor:end}.pad{fill:#d9b94a;stroke:#8a6f1c;stroke-width:1}.hole{fill:#0e2416}.chip{fill:#17181c;stroke:#000;stroke-width:1}.metal{fill:#b8bcc6;stroke:#6b7079;stroke-width:1.5}.logo{fill:#f2f4f8;font-family:sans-serif;font-weight:bold}</style>
 <rect id="pcb" class="pcb" x="2" y="2" width="506" height="206" rx="10"/>
 <g id="usb"><rect class="metal" x="-4" y="70" width="58" height="70" rx="4"/><rect x="6" y="88" width="38" height="34" rx="3" fill="#8f949e"/></g>
 <circle id="pin-vbus" class="pad" cx="14.0" cy="14" r="8"><title>J2 pin 21: VBUS</title></circle>
@@ -16,13 +16,13 @@
 <text class="silks" x="64.8" y="36">GND</text>
 <circle id="pin-3v3_en" class="pad" cx="90.2" cy="14" r="8"><title>J2 pin 24: 3V3_EN</title></circle>
 <circle class="hole" cx="90.2" cy="14" r="3.5"/>
-<text class="silks" x="90.2" y="36">3V3_EN</text>
+<text class="silkn" x="90.2" y="36">3V3_EN</text>
 <circle id="pin-3v3" class="pad" cx="115.6" cy="14" r="8"><title>J2 pin 25: 3V3</title></circle>
 <circle class="hole" cx="115.6" cy="14" r="3.5"/>
 <text class="silks" x="115.6" y="36">3V3</text>
 <circle id="pin-adc_vref" class="pad" cx="141.0" cy="14" r="8"><title>J2 pin 26: ADC_VREF</title></circle>
 <circle class="hole" cx="141.0" cy="14" r="3.5"/>
-<text class="silks" x="141.0" y="36">ADC_VREF</text>
+<text class="silkn" x="141.0" y="36">ADC_VREF</text>
 <circle id="pin-gp28" class="pad" cx="166.4" cy="14" r="8"><title>J2 pin 27: GP28</title></circle>
 <circle class="hole" cx="166.4" cy="14" r="3.5"/>
 <text class="silks" x="166.4" y="36">GP28</text>
@@ -130,6 +130,6 @@
 <g id="crystal"><rect class="metal" x="320" y="88" width="34" height="18" rx="6"/><text class="silks" x="337" y="118">12MHz</text></g>
 <g id="btn-bootsel"><rect x="160" y="128" width="34" height="34" rx="3" fill="#cfd3da" stroke="#6b7079"/><circle cx="177" cy="145" r="11" fill="#f4f4f4" stroke="#9aa0aa"/><text class="silks" x="177" y="172">BOOTSEL</text></g>
 <g id="led"><rect x="70" y="40" width="16" height="10" rx="2" fill="#f4f4f4" stroke="#9aa0aa"/><rect id="led-green" x="73" y="42" width="10" height="6" rx="1" fill="#c4f0cf"/><circle id="led-green-glow" cx="78" cy="45" r="22" fill="url(#glow-green)" opacity="0"/><text class="silks" x="78" y="62">LED</text></g>
-<g id="swd"><circle class="pad" cx="488" cy="80" r="5"/><circle class="pad" cx="488" cy="105" r="5"/><circle class="pad" cx="488" cy="130" r="5"/><text class="silks" x="470" y="83">SWCLK</text><text class="silks" x="472" y="108">GND</text><text class="silks" x="470" y="133">SWDIO</text></g>
+<g id="swd"><circle class="pad" cx="488" cy="80" r="5"/><circle class="pad" cx="488" cy="105" r="5"/><circle class="pad" cx="488" cy="130" r="5"/><text class="silke" x="478" y="83">SWCLK</text><text class="silke" x="478" y="108">GND</text><text class="silke" x="478" y="133">SWDIO</text></g>
 <text class="logo" x="372" y="150" font-size="18">Pico</text><text class="silks" x="400" y="164">EmbSIM</text>
 </svg>

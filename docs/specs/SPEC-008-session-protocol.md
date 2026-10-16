@@ -118,7 +118,7 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `debug.where({board}) -> {pc, function, file, line, frames: [...]}` (DWARF)
 - `debug.variables({board, frame?}) -> {...}`
 - `debug.disassemble({board, address, count}) -> {insns: [...]}`
-- `debug.peripherals({board}) -> {peripherals: [{name, base, registers: [{name, offset, value, fields: [...]}]}]}`
+- `debug.peripherals({board}) -> {peripherals: [{name, base, model, clock, reset, registers: [{name, offset, value, fields: [...]}]}]}`; `clock` false while the peripheral's clock is off, `reset` true while it is held in reset (the RP2040's RESETS)
 - `debug.gdb({board, op: "start"|"stop", port}) -> {port}`
 - `control.step({mode: "instruction", board})` and `control.run` honour breakpoints; a stop is reported by `debug.stopped` notification.
 

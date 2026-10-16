@@ -372,6 +372,7 @@ function PeripheralsPanel() {
           <div key={p.name} className="wb-debug__periph">
             <button type="button" className="wb-debug__periph-head" aria-expanded={open === p.name} onClick={() => setOpen(open === p.name ? null : p.name)}>
               <strong>{p.name}</strong> <code>{hex32(p.base)}</code> <span className="wb-debug__model">{p.model}</span>
+              {p.reset && <Badge tone="warning">in reset</Badge>}
               {!p.clock && <Badge tone="warning">clock off</Badge>}
             </button>
             {open === p.name && (

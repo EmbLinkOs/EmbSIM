@@ -473,7 +473,8 @@ static es_status m_peripherals(dbg *d)
         esk_json_set_string(d->s->a, po, "name", p->name);
         esk_json_set_integer(d->s->a, po, "base", (int64_t)p->base);
         esk_json_set_string(d->s->a, po, "model", p->model ? p->model : "registers");
-        esk_json_set_bool(d->s->a, po, "clock", !esk_rf_gated(p));
+        esk_json_set_bool(d->s->a, po, "clock", p->gate_held || !esk_rf_gated(p));
+        esk_json_set_bool(d->s->a, po, "reset", p->gate_held && esk_rf_gated(p));
         for (k = 0; k < p->nreg; k++) {
             esk_json *r = obj(d);
             if (!r)

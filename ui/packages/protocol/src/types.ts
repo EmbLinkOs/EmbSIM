@@ -486,6 +486,8 @@ export interface Peripheral {
   model: string;
   /** Its clock is enabled (an access while it is off reads 0). */
   clock: boolean;
+  /** It is held in reset (an access reads its reset values, a write is ignored). */
+  reset?: boolean;
   registers: { name: string; offset: number; value: number }[];
 }
 
