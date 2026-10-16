@@ -46,6 +46,8 @@ typedef struct esk_mcu_setup {
  * name the problem in `why`. */
 es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t cap);
 int esk_mcu_is(const esk_comp *c);
+/* a new firmware image (a rebuild): loaded, then the MCU resets */
+es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len, char *why, size_t cap);
 /* the machine, for the debugger; NULL for another component */
 struct esk_mach *esk_mcu_machine(esk_comp *c);
 /* the firmware image as loaded, for symbols */

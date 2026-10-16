@@ -363,6 +363,103 @@ es_status esk_host_open_browser(const char *url)
     return r > 32 ? ES_OK : ES_EIO;
 }
 
+/* one argument as CommandLineToArgv reads it back: quoted when it holds a
+ * blank or a quote, backslashes doubled before a quote */
+static void quote_arg(esk_strbuf *b, const char *arg)
+{
+    const char *p;
+    if (*arg && !strpbrk(arg, " \t\"")) {
+        esk_strbuf_puts(b, arg);
+        return;
+    }
+    esk_strbuf_putc(b, '"');
+    for (p = arg;; p++) {
+        size_t bs = 0;
+        while (*p == '\\') {
+            p++;
+            bs++;
+        }
+        if (!*p) {
+            while (bs--) {
+                esk_strbuf_putc(b, '\\');
+                esk_strbuf_putc(b, '\\');
+            }
+            break;
+        }
+        if (*p == '"') {
+            while (bs--) {
+                esk_strbuf_putc(b, '\\');
+                esk_strbuf_putc(b, '\\');
+            }
+            esk_strbuf_putc(b, '\\');
+            esk_strbuf_putc(b, '"');
+            continue;
+        }
+        while (bs--)
+            esk_strbuf_putc(b, '\\');
+        esk_strbuf_putc(b, *p);
+    }
+    esk_strbuf_putc(b, '"');
+}
+
+es_status esk_host_run(esk_alloc *a, const char *const *argv, const char *cwd, size_t cap, int *exit_code,
+                       char **output, size_t *len)
+{
+    SECURITY_ATTRIBUTES sa;
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    HANDLE rd = NULL, wr = NULL;
+    esk_strbuf cmd, out;
+    char buf[4096];
+    DWORD got = 0, code = 0;
+    size_t i;
+    BOOL ok;
+    *exit_code = -1;
+    *output = NULL;
+    *len = 0;
+    if (!argv || !argv[0])
+        return ES_EINVAL;
+    memset(&sa, 0, sizeof sa);
+    sa.nLength = sizeof sa;
+    sa.bInheritHandle = TRUE;
+    if (!CreatePipe(&rd, &wr, &sa, 0))
+        return ES_EIO;
+    SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0);
+    esk_strbuf_init(&cmd, a);
+    for (i = 0; argv[i]; i++) {
+        if (i)
+            esk_strbuf_putc(&cmd, ' ');
+        quote_arg(&cmd, argv[i]);
+    }
+    memset(&si, 0, sizeof si);
+    si.cb = sizeof si;
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = wr;
+    si.hStdError = wr;
+    memset(&pi, 0, sizeof pi);
+    ok = !cmd.oom && CreateProcessA(NULL, cmd.data, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, cwd, &si, &pi);
+    esk_strbuf_free(&cmd);
+    CloseHandle(wr);
+    if (!ok) {
+        CloseHandle(rd);
+        return ES_ENOTFOUND;
+    }
+    esk_strbuf_init(&out, a);
+    while (ReadFile(rd, buf, (DWORD)sizeof buf, &got, NULL) && got > 0) {
+        if (out.len < cap)
+            esk_strbuf_append(&out, buf, (size_t)got < cap - out.len ? (size_t)got : cap - out.len);
+    }
+    CloseHandle(rd);
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    *exit_code = (int)code;
+    *output = esk_strbuf_detach(&out, len);
+    return *output ? ES_OK : ES_ENOMEM;
+}
+
 /* ---- standard streams ---------------------------------------------------- */
 
 static struct {

@@ -33,7 +33,8 @@
               "sources": {"type": "array", "items": {"type": "string"}},
               "flags": {"type": "array", "items": {"type": "string"}},
               "defines": {"type": "array", "items": {"type": "string"}},
-              "include": {"type": "array", "items": {"type": "string"}}
+              "include": {"type": "array", "items": {"type": "string"}},
+              "linker_script": {"type": "string", "minLength": 1, "description": "The linker script, relative to the project; without one, the board's for the profile (SPEC-006 §3)"}
             }
           },
           "layout": {"$ref": "common.schema.json#/$defs/layout"},

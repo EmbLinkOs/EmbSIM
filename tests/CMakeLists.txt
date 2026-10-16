@@ -28,6 +28,8 @@ if(Python3_Interpreter_FOUND)
              --embsim $<TARGET_FILE:embsim_cli> --project ${CMAKE_SOURCE_DIR}/examples/bluepill-button-led/project.json
              --elf ${CMAKE_SOURCE_DIR}/examples/bluepill-button-led/firmware/button-led.elf
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    add_test(NAME firmware_build COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_build.py
+             --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     add_test(NAME examples_headless COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/ci/run_examples.py --build ${CMAKE_BINARY_DIR}
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   endif()

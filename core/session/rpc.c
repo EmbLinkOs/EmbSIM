@@ -731,6 +731,29 @@ static es_status m_diagnostics_list(rpc_ctx *r)
     return ES_OK;
 }
 
+static es_status m_toolchain_detect(rpc_ctx *r)
+{
+    esk_json *arr = NULL;
+    es_status st = esk_toolchain_detect(r->s, &arr);
+    if (st != ES_OK) return fail_status(r, st);
+    r->result = obj(r);
+    if (!r->result) {
+        esk_json_free(r->s->a, arr);
+        return ES_ENOMEM;
+    }
+    esk_json_object_set(r->s->a, r->result, "profiles", arr);
+    return ES_OK;
+}
+
+static es_status m_toolchain_build(rpc_ctx *r)
+{
+    es_status st = esk_toolchain_build(r->s, pstr(r, "board", NULL), pstr(r, "profile", NULL), &r->result);
+    if (st == ES_ENOTFOUND) return fail(r, -32602, "no such board with firmware, or no such toolchain profile");
+    if (st != ES_OK) return fail_status(r, st);
+    esk_session_emit_observations(r->s, 1);
+    return ES_OK;
+}
+
 static es_status m_unavailable(rpc_ctx *r)
 {
     return fail(r, -32601, "this method needs a subsystem this version does not include (see docs/STATUS.md)");
@@ -756,7 +779,7 @@ static const method methods[] = {
     { "catalog.models", m_catalog_models }, { "catalog.validate", m_unavailable },
     { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_unavailable },
     { "scenario.run", m_scenario_run }, { "diagnostics.list", m_diagnostics_list },
-    { "toolchain.detect", m_unavailable }, { "toolchain.build", m_unavailable },
+    { "toolchain.detect", m_toolchain_detect }, { "toolchain.build", m_toolchain_build },
 };
 
 es_status esk_rpc_dispatch(es_session *s, const esk_json *req, esk_json **response)

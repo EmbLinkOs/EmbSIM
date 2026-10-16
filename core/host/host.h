@@ -84,6 +84,13 @@ es_status esk_host_sock_local_port(esk_host_sock s, int *port);
  * effort: ES_OK when the launcher was started, ES_EUNSUPPORTED or ES_EIO
  * otherwise. The URL is passed as one argument, never through a shell. */
 es_status esk_host_open_browser(const char *url);
+/* Run a program (argv[0] searched on PATH; never through a shell) in `cwd`
+ * (NULL: the current directory) and wait for it. Its stdout and stderr,
+ * together, go into *output (len + 1 bytes, NUL-terminated; release with
+ * esk_free(a, *output, *len + 1)), at most `cap` bytes kept; its exit status
+ * into *exit_code. ES_ENOTFOUND when the program cannot be started. */
+es_status esk_host_run(esk_alloc *a, const char *const *argv, const char *cwd, size_t cap, int *exit_code,
+                       char **output, size_t *len);
 
 /* ---- standard streams (the stdio transport) ------------------------------ */
 

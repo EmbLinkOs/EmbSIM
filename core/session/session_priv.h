@@ -90,6 +90,9 @@ struct es_session {
 
 /* loader.c */
 es_status esk_project_load(es_session *s, const esk_json *project, const char *base_dir);
+/* toolchain.c: the profiles found on this host; a board's firmware built */
+es_status esk_toolchain_detect(es_session *s, esk_json **out);
+es_status esk_toolchain_build(es_session *s, const char *board_id, const char *profile_id, esk_json **out);
 /* debug.c: the debug.* methods; the board whose MCU is stopped (1, and a
  * description of where); every stopped core resumed */
 int esk_debug_has(const char *method);

@@ -21,9 +21,10 @@
           "firmware/main.c"
         ],
         "flags": [
-          "-O2",
-          "-g"
-        ]
+          "-ffreestanding",
+          "-fno-builtin"
+        ],
+        "linker_script": "firmware/stm32f103c8.ld"
       }
     }
   ],

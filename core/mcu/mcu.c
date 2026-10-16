@@ -622,6 +622,13 @@ static void mcu_reset_now(mcu_state *st)
     for (r = 0; r < st->m.bus.nrg; r++)
         if (!st->m.bus.rg[r].mirror)
             esk_bus_erase(&st->m.bus.rg[r]);
+    if (!st->image) {
+        /* no image yet: the part sits blank, its pins inputs */
+        esk_mach_reset(&st->m);
+        st->boot_fail = 1;
+        st->t = e->sched.now;
+        return;
+    }
     if (esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
@@ -743,7 +750,8 @@ static void mcu_observe(esk_comp *c, esk_json *out)
     const char *state;
     if (!st->attached)
         return;
-    state = st->boot_fail                         ? "boot_mode"
+    state = !st->image                            ? "no_image"
+            : st->boot_fail                       ? "boot_mode"
             : st->held                            ? "reset"
             : st->m.state == ESK_MACH_EXIT        ? "exited"
             : st->m.state == ESK_MACH_LOCKUP      ? "lockup"
@@ -830,6 +838,35 @@ void esk_mcu_halt(esk_comp *c)
     }
 }
 
+es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len, char *why, size_t cap)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    esk_engine *e;
+    unsigned char *copy;
+    u32 entry = 0;
+    if (!st || !st->attached || !len)
+        return ES_EINVAL;
+    e = c->e;
+    copy = (unsigned char *)esk_malloc(e->a, len);
+    if (!copy)
+        return ES_ENOMEM;
+    memcpy(copy, image, len);
+    /* the new image must load before it replaces the old one */
+    if (esk_mach_load_image(&st->m, copy, len, &entry, why, cap) != ES_OK) {
+        esk_free(e->a, copy, len);
+        if (st->image)
+            (void)esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, cap);
+        return ES_EINVAL;
+    }
+    if (st->image)
+        esk_free(e->a, st->image, st->image_len);
+    st->image = copy;
+    st->image_len = len;
+    catch_up(st, e->sched.now);
+    mcu_reset_now(st);
+    return ES_OK;
+}
+
 es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t cap)
 {
     mcu_state *st = state_of(c);
@@ -837,7 +874,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     es_status st2;
     int port, bit;
     char name[8];
-    if (!esk_mcu_is(c) || !su->image || !su->image_len)
+    if (!esk_mcu_is(c))
         return ES_EINVAL;
     esk_mach_init(&st->m, e->a);
     st->attached = 1;
@@ -865,14 +902,16 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st2 = esk_mach_build(&st->m, su->mcu, su->regs, su->hse_hz, why, cap);
     if (st2 != ES_OK)
         return st2;
-    st->image = (unsigned char *)esk_malloc(e->a, su->image_len);
     st->image_name = esk_strdup(e->a, su->image_name ? su->image_name : "firmware");
-    if (!st->image || !st->image_name)
+    if (!st->image_name)
         return ES_ENOMEM;
-    memcpy(st->image, su->image, su->image_len);
-    st->image_len = su->image_len;
-    {
+    if (su->image && su->image_len) {
         u32 entry = 0;
+        st->image = (unsigned char *)esk_malloc(e->a, su->image_len);
+        if (!st->image)
+            return ES_ENOMEM;
+        memcpy(st->image, su->image, su->image_len);
+        st->image_len = su->image_len;
         st2 = esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, cap);
         if (st2 != ES_OK)
             return st2;

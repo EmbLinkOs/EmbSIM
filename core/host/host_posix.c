@@ -400,6 +400,74 @@ es_status esk_host_open_browser(const char *url)
     return ES_OK;
 }
 
+es_status esk_host_run(esk_alloc *a, const char *const *argv, const char *cwd, size_t cap, int *exit_code,
+                       char **output, size_t *len)
+{
+    int fds[2], status = 0, exec_err[2];
+    pid_t pid;
+    esk_strbuf out;
+    char buf[4096];
+    ssize_t n;
+    *exit_code = -1;
+    *output = NULL;
+    *len = 0;
+    if (!argv || !argv[0])
+        return ES_EINVAL;
+    if (pipe(fds) != 0)
+        return ES_EIO;
+    if (pipe(exec_err) != 0) {
+        close(fds[0]);
+        close(fds[1]);
+        return ES_EIO;
+    }
+    (void)fcntl(exec_err[1], F_SETFD, FD_CLOEXEC);
+    pid = fork();
+    if (pid < 0) {
+        close(fds[0]);
+        close(fds[1]);
+        close(exec_err[0]);
+        close(exec_err[1]);
+        return ES_EIO;
+    }
+    if (pid == 0) {
+        int e;
+        close(fds[0]);
+        close(exec_err[0]);
+        dup2(fds[1], 1);
+        dup2(fds[1], 2);
+        close(fds[1]);
+        if (cwd && chdir(cwd) != 0)
+            _exit(126);
+        execvp(argv[0], (char *const *)argv);
+        e = errno;
+        if (write(exec_err[1], &e, sizeof e) < 0)
+            _exit(127);
+        _exit(127);
+    }
+    close(fds[1]);
+    close(exec_err[1]);
+    esk_strbuf_init(&out, a);
+    while ((n = read(fds[0], buf, sizeof buf)) > 0 || (n < 0 && errno == EINTR)) {
+        if (n > 0 && out.len < cap)
+            esk_strbuf_append(&out, buf, (size_t)n < cap - out.len ? (size_t)n : cap - out.len);
+    }
+    close(fds[0]);
+    while (waitpid(pid, &status, 0) < 0 && errno == EINTR)
+        ;
+    {
+        int e = 0;
+        ssize_t got = read(exec_err[0], &e, sizeof e);
+        close(exec_err[0]);
+        if (got == (ssize_t)sizeof e) {
+            esk_strbuf_free(&out);
+            return ES_ENOTFOUND;
+        }
+    }
+    *exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : 128 + (WIFSIGNALED(status) ? WTERMSIG(status) : 0);
+    *output = esk_strbuf_detach(&out, len); /* NUL-terminated, len + 1 bytes */
+    return *output ? ES_OK : ES_ENOMEM;
+}
+
 /* ---- standard streams ---------------------------------------------------- */
 
 /* stdin is read through our own buffer (not FILE's) so readiness can be

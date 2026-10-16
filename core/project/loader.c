@@ -596,9 +596,11 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
     if (!path)
         return ES_ENOMEM;
     if (esk_host_read_file(s->a, path, &img, &len) != ES_OK) {
-        esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.image", 0, "board", bi->id, NULL, 0, "%s: cannot read %s", bi->id, path);
-        esk_strfree(s->a, path);
-        return ES_ENOTFOUND;
+        /* not built yet: the MCU waits for its image (embsim build) */
+        esk_diag_raise(&s->diag, ES_SEV_WARNING, "mcu.no_image", 0, "board", bi->id, NULL, 0,
+                       "%s: %s cannot be read; build the firmware (embsim build) to run it", bi->id, path);
+        img = NULL;
+        len = 0;
     }
     if (esk_str_eq(esk_json_get_str(rfd, "format", ""), "embsim")) {
         rpath = esk_host_path_join(s->a, mi->dir, esk_json_get_str(rfd, "file", "registers.json"));
@@ -630,7 +632,8 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         st = ES_ESCHEMA;
     }
     esk_json_free(s->a, regs);
-    esk_free(s->a, img, len + 1);
+    if (img)
+        esk_free(s->a, img, len + 1);
     esk_strfree(s->a, path);
     esk_strfree(s->a, rpath);
     return st;
