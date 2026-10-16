@@ -28,6 +28,19 @@ terminal empty.
 | | |
 |---|---|
 | ![Pico SDK SPI and I2C results in the Serial terminal](serial-analog-peripherals/serial-pico-spi-i2c.png) | ![nrfx TWIM, PWM and SAADC results in the Serial terminal](serial-analog-peripherals/serial-nrf52840dk-periph.png) |
+## Schematic graphics and interaction (2026-10-16)
+
+Captured from the native engine with `tests/browser/test_schematic.py`: separate
+wire/symbol colors, hollow pin sockets and nearby reference/name/effective-value
+annotations. No model values or electrical connections are changed for styling.
+The browser regression also checks direct wiring, exact undo and group operations.
+
+| | |
+|---|---|
+| ![Colored wires and component labels on paper](schematic-graphics/light.png) | ![Theme-aware wires and labels in dark mode](schematic-graphics/dark.png) |
+
+[Terminal and annotation detail](schematic-graphics/terminal-detail.png) ·
+[Compact workspace](schematic-graphics/compact.png).
 
 ## Circuit organization (2026-10-16)
 

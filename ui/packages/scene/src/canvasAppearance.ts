@@ -5,6 +5,8 @@ import type { CSSProperties } from 'react';
 export type GridStyle = 'engineering' | 'lines' | 'dots' | 'crosses' | 'blank';
 export type CanvasPalette = 'paper' | 'warm' | 'graphite' | 'blueprint';
 export interface CanvasAppearance {
+  wireColor: 'green' | 'blue' | 'teal' | 'violet';
+  labels: 'detailed' | 'compact';
   style: GridStyle;
   palette: CanvasPalette;
   spacing: 10 | 20 | 40;
@@ -12,11 +14,13 @@ export interface CanvasAppearance {
   contrast: number;
 }
 export const DEFAULT_CANVAS_APPEARANCE: CanvasAppearance = {
-  style: 'engineering', palette: 'paper', spacing: 20, weight: .8, contrast: .12,
+  wireColor: 'green', labels: 'detailed', style: 'engineering', palette: 'paper', spacing: 20, weight: .8, contrast: .12,
 };
 export function normalizeAppearance(value: unknown): CanvasAppearance {
   const v = value && typeof value === 'object' ? value as Record<string, unknown> : {};
   return {
+    wireColor: ['green', 'blue', 'teal', 'violet'].includes(String(v.wireColor)) ? v.wireColor as CanvasAppearance['wireColor'] : DEFAULT_CANVAS_APPEARANCE.wireColor,
+    labels: v.labels === 'compact' ? 'compact' : 'detailed',
     style: ['engineering', 'lines', 'dots', 'crosses', 'blank'].includes(String(v.style)) ? v.style as GridStyle : DEFAULT_CANVAS_APPEARANCE.style,
     palette: ['paper', 'warm', 'graphite', 'blueprint'].includes(String(v.palette)) ? v.palette as CanvasPalette : DEFAULT_CANVAS_APPEARANCE.palette,
     spacing: [10, 20, 40].includes(Number(v.spacing)) ? Number(v.spacing) as CanvasAppearance['spacing'] : DEFAULT_CANVAS_APPEARANCE.spacing,

@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Schematic visual language and direct manipulation
+
+- Separate idle wire color from graphite component symbols, with persistent green,
+  blue, teal and violet choices and a distinct selected-track halo/highlight.
+  Selection remains visible over live analog and digital signal coloring.
+- Draw connected and unconnected symbol terminals as hollow circular sockets;
+  show pencil cursors at terminals/while wiring and grab/grabbing cursors for
+  movable parts. Keep terminals and annotations visible during navigation.
+- Display references, component names and effective primary parameter values with
+  units, including catalog defaults. Choose deterministic nearby annotation slots
+  to reduce body/pin/label/track collisions; offer compact reference/value labels.
+
 ### Circuit organization
 
 - Persist named presentation groups, display selectable group outlines, and browse

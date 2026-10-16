@@ -433,15 +433,7 @@
   pointer-events: none;
 }
 
-/* While the view zooms or pans, the details that cost the most to paint
-   are left out; they return when it settles (SchematicCanvas). */
-.es-scene__svg--moving .es-component__ref,
-.es-scene__svg--moving .es-component__value,
-.es-scene__svg--moving .es-pin,
-.es-scene__svg--moving .es-net-label text,
-.es-scene__svg--moving .es-symbol text {
-  display: none;
-}
+/* Pin sockets and annotations remain visible during pan, zoom and focus. */
 
 /* A bus: a group of nets drawn as one thick line, its name and, while the
    circuit runs, its value (SPEC-007 layout.buses). */
@@ -522,3 +514,40 @@
 .es-schematic-group text { fill: var(--text-muted); font: 11px var(--font-sans); }
 .es-schematic-group > g:focus-visible rect { stroke: var(--accent); stroke-width: 2; }
 .es-placement-lock { fill: var(--text-muted); font: 8px var(--font-mono); letter-spacing: .8px; }
+
+/* Separate drawing roles: graphite symbols, configurable colored copper,
+   violet selection and outlined terminal sockets. Live state colors stay intact. */
+:root { --wire-green: #68d6a0; --wire-blue: #83b7ff; --wire-teal: #57d1d1; --wire-violet: #c4a1ff; --wire-selected: #e0b0ff; --terminal-ink: #edb473; }
+:root[data-theme='light'] { --wire-green: #20764c; --wire-blue: #2865b5; --wire-teal: #137679; --wire-violet: #7950b1; --wire-selected: #9a35ba; --terminal-ink: #925522; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) { --wire-green: #20764c; --wire-blue: #2865b5; --wire-teal: #137679; --wire-violet: #7950b1; --wire-selected: #9a35ba; --terminal-ink: #925522; }
+}
+.es-scene { --wire-color: var(--wire-green); --draw-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3 21l1-6L17 2l5 5L9 20z' fill='%23fff' stroke='%23243149' stroke-width='1.6'/%3E%3Cpath d='M5 15l4 4M15 4l5 5M3 21l4-1-3-3z' fill='%233475ce' stroke='%23243149' stroke-width='1.4'/%3E%3C/svg%3E") 3 21, crosshair; }
+.es-scene--wire-blue { --wire-color: var(--wire-blue); }
+.es-scene--wire-teal { --wire-color: var(--wire-teal); }
+.es-scene--wire-violet { --wire-color: var(--wire-violet); }
+.es-wire--idle .es-wire__line { stroke: var(--wire-color); stroke-width: 1.8; }
+.es-junction.es-wire--idle { fill: var(--wire-color); }
+.es-wire__selection { fill: none; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.es-wire.es-wire--selected .es-wire__line,
+.es-wire[role='button']:focus-visible .es-wire__line { stroke: var(--wire-selected); stroke-width: 3; }
+.es-wire[role='button'] { cursor: pointer; }
+.es-pin .es-pin__dot { fill: var(--canvas-paper, var(--sheet)); stroke: var(--terminal-ink); stroke-width: 1.3; transition: stroke 100ms, r 100ms; }
+.es-pin--connected .es-pin__dot { stroke: var(--wire-color); }
+.es-pin.es-wire--high .es-pin__dot { stroke: var(--signal-high); }
+.es-pin.es-wire--low .es-pin__dot { stroke: var(--signal-low); }
+.es-pin.es-wire--z .es-pin__dot { stroke: var(--signal-z); }
+.es-pin.es-wire--x .es-pin__dot { stroke: var(--signal-x); }
+.es-pin:hover .es-pin__dot, .es-pin:focus-visible .es-pin__dot, .es-pin--active .es-pin__dot { fill: var(--canvas-paper, var(--sheet)); stroke: var(--wire-selected); stroke-width: 2; r: 4.2; }
+.es-scene--wire .es-scene__svg, .es-pin { cursor: var(--draw-cursor); }
+.es-component { cursor: grab; }
+.es-component--locked { cursor: default; }
+.es-scene__svg[data-dragging], .es-scene__svg[data-dragging] * { cursor: grabbing !important; }
+.es-component__ref { font-weight: 650; }
+.es-component__name { font: 10px var(--font-sans); fill: var(--text-muted); }
+.es-component__value { font-size: 10px; fill: var(--wire-color); }
+.es-component__name, .es-component__value, .es-component__ref { paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 3; stroke-linejoin: round; pointer-events: none; }
+.es-scene--wire .es-component { cursor: var(--draw-cursor); }
+.es-scene--probe .es-pin { cursor: cell; }
+.es-wire:not(.es-wire--selected):hover .es-wire__line { stroke-width: 2.6; }
+.es-scene--readonly .es-component { cursor: default; }

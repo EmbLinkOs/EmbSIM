@@ -91,6 +91,18 @@ def main():
                         if f.get("id") in ids and "result" in f
                     ]
 
+                def wait_project_until(predicate):
+                    for _ in range(100):
+                        if projects() and predicate(projects()[-1]):
+                            return projects()[-1]
+                        page.wait_for_timeout(50)
+                    raise AssertionError(
+                        "Canonical project did not reach the expected revision"
+                    )
+
+                def wait_project(expected):
+                    return wait_project_until(lambda project: project == expected)
+
                 page.wait_for_timeout(250)
                 original = projects()[-1]
                 # The protocol materializes an omitted empty bus list on layout edits.
@@ -242,7 +254,12 @@ def main():
                 page.locator(f'[data-pin="{new_ids[0]}.2"]').press("Enter")
                 page.locator(f'[data-pin="{new_ids[1]}.1"]').press("Enter")
                 page.wait_for_timeout(300)
-                connected = projects()[-1]
+                connected = wait_project_until(
+                    lambda project: any(
+                        {f"{new_ids[0]}.2", f"{new_ids[1]}.1"} <= set(pins)
+                        for pins in project["nets"].values()
+                    )
+                )
                 assert any(
                     {f"{new_ids[0]}.2", f"{new_ids[1]}.1"} <= set(pins)
                     for pins in connected["nets"].values()
@@ -255,7 +272,7 @@ def main():
                     c.get("layout") for c in added["components"] if c["id"] in new_ids
                 ], "Connect should automatically arrange the joined parts"
                 page.get_by_role("button", name="Undo", exact=True).click()
-                page.wait_for_timeout(250)
+                wait_project(added)
                 assert (
                     projects()[-1] == added
                 ), "One Undo must restore both connectivity and placement"
@@ -275,7 +292,12 @@ def main():
                 ), "Unfinished bends must not mutate the project"
                 page.locator(f'[data-pin="{new_ids[1]}.1"]').press("Enter")
                 page.wait_for_timeout(300)
-                manual = projects()[-1]
+                manual = wait_project_until(
+                    lambda project: any(
+                        {f"{new_ids[0]}.2", f"{new_ids[1]}.1"} <= set(pins)
+                        for pins in project["nets"].values()
+                    )
+                )
                 assert any(
                     {f"{new_ids[0]}.2", f"{new_ids[1]}.1"} <= set(pins)
                     for pins in manual["nets"].values()
@@ -287,7 +309,7 @@ def main():
                     waypoint in w["points"] for w in manual["layout"]["wires"]
                 ), "Native project lost the explicit bend"
                 page.get_by_role("button", name="Undo", exact=True).click()
-                page.wait_for_timeout(250)
+                wait_project(added)
                 assert (
                     projects()[-1] == added
                 ), "One Undo must remove the entire manual connection"
@@ -475,6 +497,21 @@ def main():
                     if component.get("layout", {}).get("locked") is False:
                         component["layout"].pop("locked")
                 assert restored == added
+                page.get_by_role(
+                    "application", name="Schematic canvas", exact=True
+                ).press("Escape")
+                page.get_by_role("button", name="View", exact=True).click()
+                page.get_by_role(
+                    "checkbox", name="Focus canvas (hide side panels)", exact=True
+                ).check()
+                page.get_by_role("button", name="Close tools", exact=True).click()
+                page.get_by_role("button", name="Zoom to fit", exact=True).click()
+                expect(page.locator(".es-scene__svg--moving")).to_have_count(0)
+                expect(page.locator(".es-pin__dot").first).to_be_visible()
+                expect(page.locator(".es-component__value").first).to_be_visible()
+                page.screenshot(path=str(out / "drafting-light.png"), full_page=True)
+                page.get_by_role("button", name="Switch to dark theme").click()
+                page.screenshot(path=str(out / "drafting-dark.png"), full_page=True)
                 assert not errors, errors
                 browser.close()
                 print(
