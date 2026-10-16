@@ -22,4 +22,5 @@ export {
   type Viewport,
   type NetVisual,
 } from './SchematicCanvas';
+export { boardSymbol, portGroups, type BoardPort } from './boardSymbol';
 export { BoardView, type BoardViewProps, type BoardItem } from './BoardView';

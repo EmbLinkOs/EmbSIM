@@ -4,6 +4,7 @@
  * in-process transport. Every transport ends here. */
 #include "session/session_priv.h"
 #include "mcu/mcu.h"
+#include <stdlib.h>
 #include <string.h>
 #include "host/host.h"
 #include "util/num.h"
@@ -605,11 +606,16 @@ static es_status m_catalog_list(rpc_ctx *r)
 static es_status m_catalog_get(rpc_ctx *r)
 {
     const char *id = pstr(r, "id", NULL);
-    const char *kind = pstr(r, "kind", "component");
+    const char *kind = pstr(r, "kind", NULL);
     const esk_catalog_item *it;
     esk_json *files;
     if (!id) return fail(r, -32602, "id is required");
-    it = esk_catalog_find(r->s->catalog, kind, id);
+    /* without a kind: a component, else a board, else an MCU */
+    it = esk_catalog_find(r->s->catalog, kind ? kind : "component", id);
+    if (!it && !kind)
+        it = esk_catalog_find(r->s->catalog, "board", id);
+    if (!it && !kind)
+        it = esk_catalog_find(r->s->catalog, "mcu", id);
     if (!it) return fail_status(r, ES_ENOTFOUND);
     r->result = obj(r);
     files = obj(r);
@@ -786,7 +792,9 @@ static es_status m_project_transaction(rpc_ctx *r)
 {
     es_session *s = r->s;
     const char *op = pstr(r, "op", "");
-    int tx = (int)esk_json_get_int(r->params, "tx", 0);
+    const esk_json *txj = esk_json_get(r->params, "tx");
+    /* the id is a string (SPEC-008); a number is accepted too */
+    int tx = txj && txj->type == ESK_JSON_STRING ? atoi(esk_json_str(txj)) : (int)esk_json_get_int(r->params, "tx", 0);
     if (esk_str_eq(op, "begin")) {
         if (!s->loaded || !s->project)
             return fail_status(r, ES_ESTATE);
@@ -799,7 +807,11 @@ static es_status m_project_transaction(rpc_ctx *r)
         s->tx_structural = 0;
         r->result = obj(r);
         if (!r->result) return ES_ENOMEM;
-        esk_json_set_integer(s->a, r->result, "tx", s->tx_id);
+        {
+            char id[16];
+            esk_snprintf(id, sizeof id, "%d", s->tx_id);
+            esk_json_set_string(s->a, r->result, "tx", id);
+        }
         return ES_OK;
     }
     if (!s->tx_project || tx != s->tx_id)

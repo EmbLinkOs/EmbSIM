@@ -6,8 +6,8 @@
 // pure function on the project; its effect reaches the server as a
 // transaction (see projectDiff.ts) and comes back through refresh().
 
-import { CommandStack, GRID, pinPosition, rotateLayouts, snap, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
-import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
+import { CommandStack, GRID, boardSymbol, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
+import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
 import { create } from 'zustand';
 import { getClient } from '../connection';
 import { diffProject } from './projectDiff';
@@ -73,8 +73,23 @@ function clone<T>(v: T): T {
 }
 
 function sceneEntry(entry: CatalogEntry): SceneCatalog[string] {
-  return { name: entry.description.name, symbol: entry.description.symbol, svg: entry.files.symbol ?? '', valueParam: VALUE_PARAM[entry.description.id] };
+  const d = entry.description as ComponentDescription & { kind?: string; ports?: Record<string, BoardPort> };
+  if (d.kind === 'board') {
+    // a board has no drawn symbol: a block of its ports stands for it
+    const { symbol, svg } = boardSymbol(d.name, d.ports ?? {});
+    // its description gains the symbol so pin geometry works as for parts
+    entry.description = { ...d, symbol };
+    return { name: d.name, symbol, svg };
+  }
+  return { name: d.name, symbol: d.symbol, svg: entry.files.symbol ?? '', valueParam: VALUE_PARAM[d.id] };
 }
+
+/** The parts and boards of a project, which place, move and delete alike. */
+function placeables(p: Project): (ProjectComponent | ProjectBoard)[] {
+  return [...p.components, ...(p.boards ?? [])];
+}
+const catalogId = (x: ProjectComponent | ProjectBoard) => ('board' in x ? x.board : x.component);
+const projectIds = (p: Project) => [...p.components.map((x) => x.component), ...(p.boards ?? []).map((b) => b.board)];
 
 /** Applies a diff through one transaction. */
 async function applyEdits(edits: ProjectEdit[]): Promise<void> {
@@ -106,7 +121,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     const c = getClient();
     const [{ project }, { items }] = await Promise.all([c.project.get({}), c.catalog.list({})]);
     set({ project, items });
-    await get().ensureCatalog([...new Set([...items.map((i) => i.id), ...project.components.map((x) => x.component)])]);
+    await get().ensureCatalog([...new Set([...items.map((i) => i.id), ...projectIds(project)])]);
     const topology = await c.project.topology({}).catch(() => null);
     set({ topology });
   },
@@ -115,7 +130,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     const c = getClient();
     const { project } = await c.project.get({});
     set({ project });
-    await get().ensureCatalog(project.components.map((x) => x.component));
+    await get().ensureCatalog(projectIds(project));
     const topology = await c.project.topology({}).catch(() => null);
     set({ topology });
   },
@@ -177,7 +192,8 @@ export const useProject = create<ProjectState>((set, get) => ({
   nextId(componentId) {
     const short = componentId.split('/').pop() ?? 'U';
     const prefix = PREFIX[short] ?? 'U';
-    const used = new Set(get().project?.components.map((c) => c.id) ?? []);
+    const project = get().project;
+    const used = new Set(project ? placeables(project).map((c) => c.id) : []);
     for (let n = 1; n < 10_000; n++) if (!used.has(`${prefix}${n}`)) return `${prefix}${n}`;
     return `${prefix}${Date.now()}`;
   },
@@ -201,9 +217,9 @@ export const useProject = create<ProjectState>((set, get) => ({
     const catalog = get().catalog;
     await get().mutate(`Move ${ids.length > 1 ? `${ids.length} components` : ids[0]}`, (p) => {
       const moved = new Map<string, { x: number; y: number }>(); // old pin position → new
-      for (const c of p.components) {
+      for (const c of placeables(p)) {
         if (!ids.includes(c.id)) continue;
-        const sym = catalog[c.component]?.description.symbol;
+        const sym = catalog[catalogId(c)]?.description.symbol;
         const before = c.layout ?? { x: 0, y: 0 };
         const after = { ...before, x: before.x + dx, y: before.y + dy };
         if (sym) {
@@ -240,8 +256,8 @@ export const useProject = create<ProjectState>((set, get) => ({
   async rotateComponents(ids) {
     const catalog = get().catalog;
     await get().mutate(`Rotate ${ids.join(', ')}`, (p) => {
-      const targets = p.components.filter((c) => ids.includes(c.id));
-      const layouts = rotateLayouts(targets.map((c) => ({ layout: c.layout ?? { x: 0, y: 0 }, symbol: catalog[c.component]?.description.symbol ?? { width: 60, height: 20 } })));
+      const targets = placeables(p).filter((c) => ids.includes(c.id));
+      const layouts = rotateLayouts(targets.map((c) => ({ layout: c.layout ?? { x: 0, y: 0 }, symbol: catalog[catalogId(c)]?.description.symbol ?? { width: 60, height: 20 } })));
       targets.forEach((c, i) => (c.layout = layouts[i] as Layout));
       return p;
     });
@@ -249,7 +265,7 @@ export const useProject = create<ProjectState>((set, get) => ({
 
   async mirrorComponents(ids) {
     await get().mutate(`Mirror ${ids.join(', ')}`, (p) => {
-      for (const c of p.components) if (ids.includes(c.id)) c.layout = { ...(c.layout ?? { x: 0, y: 0 }), mirror: !c.layout?.mirror };
+      for (const c of placeables(p)) if (ids.includes(c.id)) c.layout = { ...(c.layout ?? { x: 0, y: 0 }), mirror: !c.layout?.mirror };
       return p;
     });
   },
@@ -259,23 +275,24 @@ export const useProject = create<ProjectState>((set, get) => ({
     if (selection.components.length === 0 && selection.wires.length === 0) return;
     await get().mutate('Delete', (p) => {
       const removedPins = new Set<string>();
-      for (const c of p.components) {
+      for (const c of placeables(p)) {
         if (!selection.components.includes(c.id)) continue;
-        const sym = catalog[c.component]?.description.symbol;
+        const sym = catalog[catalogId(c)]?.description.symbol;
         for (const pin of Object.keys(sym?.pins ?? {})) {
           const pos = sym ? pinPosition(c.layout ?? { x: 0, y: 0 }, sym, pin) : null;
           if (pos) removedPins.add(`${pos.x},${pos.y}`);
         }
       }
       p.components = p.components.filter((c) => !selection.components.includes(c.id));
+      if (p.boards) p.boards = p.boards.filter((b) => !selection.components.includes(b.id));
       for (const net of Object.keys(p.nets)) {
         p.nets[net] = p.nets[net]!.filter((pin) => !selection.components.includes(pin.split('.')[0] ?? ''));
         if (p.nets[net]!.length === 0) delete p.nets[net];
       }
       const wires = p.layout?.wires ?? [];
       const pinAt = new Map<string, string>();
-      for (const c of p.components) {
-        const sym = catalog[c.component]?.description.symbol;
+      for (const c of placeables(p)) {
+        const sym = catalog[catalogId(c)]?.description.symbol;
         if (!sym) continue;
         for (const pin of Object.keys(sym.pins)) {
           const pos = pinPosition(c.layout ?? { x: 0, y: 0 }, sym, pin);

@@ -7,6 +7,7 @@
 // the bottom fails when they disagree.
 
 import type {
+  ProjectBoard,
   BoardInfo,
   Breakpoint,
   CatalogItem,
@@ -43,7 +44,8 @@ export type ProjectEdit =
   | { connect: { net: string; pin: string } }
   | { disconnect: { pin: string } }
   | { rename_net: { from: string; to: string } }
-  | { add_board: { id: string; board: string; layout?: Layout } }
+  | { add_board: { id: string; board: string; layout?: Layout; firmware?: ProjectBoard['firmware'] } }
+  | { remove_board: { id: string } }
   | { set_layout: { id?: string; layout?: Layout; wires?: Project['layout'] extends infer L ? (L extends { wires?: infer W } ? W : never) : never; labels?: NonNullable<Project['layout']>['labels'] } };
 
 export interface Methods {

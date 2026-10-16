@@ -595,10 +595,17 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
     for (const pr of p.probes ?? []) if (pr.target === `net:${from}`) pr.target = `net:${to}`;
   } else if ('add_board' in edit) {
     (p.boards ??= []).push({ id: edit.add_board.id, board: edit.add_board.board, layout: edit.add_board.layout });
+  } else if ('remove_board' in edit) {
+    const id = edit.remove_board.id;
+    p.boards = (p.boards ?? []).filter((b) => b.id !== id);
+    for (const net of Object.keys(p.nets)) {
+      p.nets[net] = p.nets[net]!.filter((pin) => pin.split('.')[0] !== id);
+      if (p.nets[net]!.length === 0) delete p.nets[net];
+    }
   } else if ('set_layout' in edit) {
     const e = edit.set_layout;
     if (e.id) {
-      const c = p.components.find((x) => x.id === e.id);
+      const c = p.components.find((x) => x.id === e.id) ?? p.boards?.find((x) => x.id === e.id);
       if (c && e.layout) c.layout = e.layout;
     }
     p.layout ??= {};

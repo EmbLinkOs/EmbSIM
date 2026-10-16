@@ -213,7 +213,9 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   }, [project.nets]);
 
   const placed = useMemo<PlacedComponent[]>(() => {
-    return project.components.map((c) => {
+    // boards are drawn as blocks of their ports, beside the components
+    const boards = (project.boards ?? []).map((b) => ({ id: b.id, component: b.board, params: undefined, layout: b.layout }));
+    return [...project.components, ...boards].map((c) => {
       const symbol = catalog[c.component];
       const layout = c.layout ?? { x: 0, y: 0 };
       const sym = symbol?.symbol ?? { svg: '', width: 60, height: 20, pins: {} };
@@ -226,7 +228,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       const value = valueParam && c.params?.[valueParam] !== undefined ? formatValue(c.params[valueParam]) : '';
       return { id: c.id, componentId: c.component, layout, symbol, bounds: symbolBounds(layout, sym, 4), pins, value };
     });
-  }, [project.components, catalog, pinNet]);
+  }, [project.components, project.boards, catalog, pinNet]);
 
   const placedById = useMemo(() => new Map(placed.map((p) => [p.id, p])), [placed]);
 
