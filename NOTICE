@@ -3,11 +3,23 @@ Copyright 2026 Junior Deogracias and contributors
 
 Licensed under the Apache License, Version 2.0 (LICENSE).
 
-EmbSIM is designed to include code extracted from EmbLinkOs/EmbCC
-(tools/embsim, tools/embsvd; Apache-2.0, Copyright 2026 Téo Motsou and
-contributors). Each extracted file keeps its original header and carries a
-provenance line naming the EmbCC commit and path; the files are listed here
-as they are brought in. No file has been extracted yet.
+EmbSIM includes code extracted from EmbLinkOs/EmbCC (Apache-2.0, Copyright
+2026 Téo Motsou and contributors). Each extracted file keeps EmbCC's
+copyright line, adds the modifications notice, and carries a provenance line
+naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
+
+  core/mcu/mach.h, mach.c      tools/embsim/sim.h, run.c
+  core/mcu/bus.c               tools/embsim/bus.c
+  core/mcu/semihost.c          tools/embsim/semihost.c
+  core/mcu/image.c             tools/embsim/loader.c
+  core/mcu/cortexm/cortexm.h   tools/embsim/cortexm.h
+  core/mcu/cortexm/cortexm.c   tools/embsim/cortexm.c
+  core/mcu/cortexm/thumb.c     tools/embsim/cortexm-thumb.c
+  core/mcu/cortexm/fpu.c       tools/embsim/cortexm-fpu.c
+  core/mcu/cortexm/scs.c       tools/embsim/scs.c
+  core/mcu/cortexm/systick.c   tools/embsim/systick.c
+  core/mcu/cortexm/dwt.c       tools/embsim/dwt.c
+  core/mcu/cortexm/cost.h      tools/bench/cost.h
 
 Third-party material vendored under third_party/ and catalog/**/LICENSES/
 carries its own licence beside it. None is vendored yet.
