@@ -176,7 +176,7 @@ const struct esk_dev_ops esk_pic32_tmr_ops = {
 
 static struct tmr *timer_of(struct esk_mach *s, int n)
 {
-    char nm[8];
+    char nm[16];
     struct esk_rf_periph *p;
     snprintf(nm, sizeof nm, "TMR%d", n);
     p = esk_rf_periph(s->rf, nm);

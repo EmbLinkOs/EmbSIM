@@ -65,7 +65,7 @@ static int rx_on(const struct uart *u) { return on(u) && (u->sta->value & STA_UR
 
 static struct uart *uart_n(struct esk_mach *s, int n)
 {
-    char nm[8];
+    char nm[16];
     struct esk_rf_periph *p;
     snprintf(nm, sizeof nm, "UART%d", n);
     p = s->rf ? esk_rf_periph(s->rf, nm) : 0;

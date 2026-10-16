@@ -53,11 +53,12 @@ struct smp {
     int stepping;
 };
 
-static const struct esk_cpu_ops smp_ops;
+static void smp_step(struct esk_cpu *cpu);
 
+/* the machine's cores, when they are smp.c's (its step is ours) */
 static struct smp *smp_of(struct esk_mach *m)
 {
-    return m->cpu && m->cpu->ops == &smp_ops ? (struct smp *)m->cpu : 0;
+    return m->cpu && m->cpu->ops->step == smp_step ? (struct smp *)m->cpu : 0;
 }
 
 /* the running core furthest behind, or core 0 when none runs */
