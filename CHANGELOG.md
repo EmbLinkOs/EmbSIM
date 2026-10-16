@@ -203,6 +203,9 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The Verify perspective went blank for a project without scenarios or
+  probes: the scenario editor's store selectors made a new empty list on
+  every render, which rendered again without end.
 - Restore runtime input lists and waveform subscriptions when component placement
   or another structural edit restarts the engine; retain layout-only measurements.
 - Catalog clock frequency binding, timed `tpd` application, functional pulse

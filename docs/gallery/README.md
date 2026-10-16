@@ -5,6 +5,16 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M5 stacks and faults (2026-10-16)
+
+The firmware's stacks and faults measured from its core: how deep each
+stack went, by function, and each fault decoded as the core took it.
+
+| | |
+|---|---|
+| ![The Blue Pill's stack depths](m5-2/verify-stacks.png) | **How deep the stacks went.** After a run with the button pressed: the main stack's 40 of 20,472 bytes (down to `_ebss`), and by function the deepest stack pointer, its own frame and its depth with its callees; the interrupt handler is deepest, on the frame its entry stacked. |
+| ![A HardFault decoded](m5-2/verify-faults.png) | **A fault, decoded.** `tests/firmware/fault` loads from 0x30000000, where nothing answers: the HardFault it escalates to with HFSR and CFSR in words, BFAR, the faulting `ldr`, the stacked frame, and the backtrace `peek`, `read_sensor`, `main`, `Reset_Handler` from `.debug_frame`; its handler is `Default_Handler`. |
+
 ## M5 verification (2026-10-16)
 
 A run becomes a repeatable, measured check: scenarios edited and run in

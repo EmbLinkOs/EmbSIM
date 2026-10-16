@@ -96,6 +96,7 @@ const dk = 'examples/nrf52840dk-blink/project.json';
 const explorer = 'examples/explorer16-pic32mx/project.json';
 const explorer24 = 'examples/explorer16-pic24/project.json';
 const picoDual = 'examples/pico-dual-core/project.json';
+const faulting = 'tests/firmware/fault/project.json';
 
 /** the Debug perspective stopped at a breakpoint on `symbol` */
 async function debugAt(page, symbol, ms) {
@@ -260,6 +261,39 @@ try {
     await wait(3000);
     await verifyRegion(page, 'Recordings').getByRole('button', { name: 'To scenario' }).click();
     await wait(1200);
+  });
+  // M5, the stacks and the faults: how deep the Blue Pill's stack went, by
+  // function; a load from nothing decoded as the HardFault it becomes
+  await shot(browser, 'verify-stacks', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Measure' }).click();
+    await perspective(page, 2);
+    await run(page, 1200);
+    await holdButton(page, 'SW1', 500);
+    await wait(500);
+    await page.getByTestId('run-toggle').click();
+    await perspective(page, 4);
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Refresh' }).click();
+    await wait(800);
+    await page.getByRole('table', { name: 'Functions by stack depth' }).scrollIntoViewIfNeeded();
+    await wait(400);
+  });
+  await shot(browser, 'verify-faults', faulting, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Measure' }).click();
+    await wait(300);
+    await run(page, 600);
+    await page.getByTestId('run-toggle').click();
+    await wait(500);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Refresh' }).click();
+    await wait(800);
+    await verifyRegion(page, 'Coverage').locator('details summary').first().click();
+    await wait(300);
+    await verifyRegion(page, 'Coverage').locator('details').first().scrollIntoViewIfNeeded();
+    await wait(400);
   });
   await shot(browser, 'design-two-boards', twoBoards, async (page) => run(page, 2000));
   await shot(browser, 'run-two-boards', twoBoards, async (page) => {
