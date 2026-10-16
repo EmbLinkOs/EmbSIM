@@ -452,6 +452,8 @@ export interface Where {
   now_ps: string;
   instructions: number;
   cycles: number;
+  /** The part's main RAM, where a memory view starts. */
+  ram?: number;
 }
 
 /** A source file the image's DWARF names (debug.source). */

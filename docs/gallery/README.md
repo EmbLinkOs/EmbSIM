@@ -16,6 +16,19 @@ schematic symbols are rendered by the shared workbench.
 | ![Library explorer, light](component-library/library-light.png) | **Discover and inspect.** Manufacturer/package filters, multiword search, source reference status and a preview before placement, alongside the wired optocoupler circuit. |
 | ![Library explorer, dark](component-library/library-dark.png) | **Place a real package.** B3F-1000's numbered pads and model limits in dark mode. The explorer is also checked at 1024 × 700. |
 
+## M4 core families and boards, part 3 (2026-10-16)
+
+An Explorer 16/32 runs its PIC32MX795F512L's MIPS32 M4K: the 8 MHz crystal
+through the PLL to 80 MHz from the configuration words, with firmware built
+by clang and by EmbCC.
+
+| | |
+|---|---|
+| ![The Explorer 16/32 running](m4-3/run-explorer16.png) | **The Explorer 16/32 running.** `examples/explorer16-pic32mx`: D3 blinking from Timer1's interrupt, S3, S6, S4 and MCLR as controls, the banner with SYSCLK and PBCLK on the terminal through UART2. |
+| ![The Explorer up close](m4-3/board-explorer16.png) | **The Explorer's artwork.** The PIC32MX795F512L PIM, D3 to D10, the buttons, the crystals, the USB-UART bridge and the PICtail edge, live. |
+| ![Debugging the PIC32MX](m4-3/debug-explorer16.png) | **Debugging the PIC32MX.** Stopped in `isr` at Timer1's first interrupt: the source, the MIPS32 disassembly from program flash at 0x9D000000, the MIPS registers, the RAM, and the device pack's peripherals with their models. |
+| ![The Explorer's schematic](m4-3/design-explorer16.png) | **Design, Explorer 16/32.** 5 V on VIN and the terminal on the USB-UART bridge's RF5 and RF4. |
+
 ## M4 core families and boards, part 2 (2026-10-16)
 
 A Raspberry Pi Pico boots its RP2040 through boot2 and an nRF52840 DK runs

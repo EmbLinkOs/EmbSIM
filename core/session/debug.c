@@ -224,6 +224,27 @@ static es_status m_breakpoints(dbg *d)
     return ES_OK;
 }
 
+/* the part's main RAM, where a memory view starts: its largest RAM region */
+static u32 main_ram(const dbg *d)
+{
+    const struct esk_bus *b = &d->m->bus;
+    u32 base = 0, size = 0;
+    int i;
+    for (i = 0; i < b->nrg; i++)
+        if (b->rg[i].kind == ESK_MEM_RAM && !b->rg[i].mirror && b->rg[i].size > size) {
+            base = b->rg[i].base;
+            size = b->rg[i].size;
+        }
+    return base;
+}
+
+/* a program address as the bus has it (a MIPS core's kseg0 and kseg1) */
+static u32 bus_addr(const dbg *d, u32 a)
+{
+    struct esk_cpu *c = d->m->cpu;
+    return c->ops->phys ? c->ops->phys(c, a) : a;
+}
+
 static es_status where(dbg *d)
 {
     const char *why = NULL;
@@ -237,6 +258,7 @@ static es_status where(dbg *d)
     esk_json_set_u64_string(d->s->a, o, "now_ps", d->s->eng.sched.now);
     esk_json_set_integer(d->s->a, o, "instructions", (int64_t)d->m->insns);
     esk_json_set_integer(d->s->a, o, "cycles", (int64_t)d->m->cycles);
+    esk_json_set_integer(d->s->a, o, "ram", (int64_t)main_ram(d));
     d->result = o;
     return ES_OK;
 }
@@ -365,7 +387,7 @@ static es_status m_memory(dbg *d)
     }
     for (i = 0; i < len; i++) {
         u32 v = 0;
-        buf[i] = esk_bus_debug_read(&d->m->bus, addr + i, 1, &v) == 0 ? (unsigned char)v : 0;
+        buf[i] = esk_bus_debug_read(&d->m->bus, bus_addr(d, addr + i), 1, &v) == 0 ? (unsigned char)v : 0;
     }
     esk_base64_encode(buf, len, b64, cap);
     d->result = obj(d);
@@ -390,7 +412,7 @@ static es_status m_write_memory(dbg *d)
         return fail(d, -32602, "base64 is required");
     n = esk_base64_decode(b64, strlen(b64), buf, sizeof buf);
     for (i = 0; i < n; i++)
-        if (esk_bus_debug_write(&d->m->bus, addr + (u32)i, 1, buf[i]) != 0)
+        if (esk_bus_debug_write(&d->m->bus, bus_addr(d, addr + (u32)i), 1, buf[i]) != 0)
             return fail(d, -32602, "nothing is mapped at that address");
     d->result = obj(d);
     if (!d->result)
@@ -432,8 +454,8 @@ static es_status m_disassemble(dbg *d)
             esk_json_free(d->s->a, o);
             break;
         }
-        (void)esk_bus_debug_read(&d->m->bus, addr, 2, &h1);
-        (void)esk_bus_debug_read(&d->m->bus, addr + 2, 2, &h2);
+        (void)esk_bus_debug_read(&d->m->bus, bus_addr(d, addr), 2, &h1);
+        (void)esk_bus_debug_read(&d->m->bus, bus_addr(d, addr + 2), 2, &h2);
         esk_json_set_integer(d->s->a, o, "address", (int64_t)addr);
         esk_json_set_integer(d->s->a, o, "size", size);
         esk_json_set_integer(d->s->a, o, "encoding", (int64_t)(size == 4 ? h1 << 16 | h2 : h1));

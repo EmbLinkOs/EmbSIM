@@ -35,7 +35,8 @@ the Explorer 16/32 are the rest of M4 and are not here.
 
 ## Known gaps
 
-PIC24, PIC32, the nRF52840 DK, the Pico and the Explorer 16/32; EmbCC's
+PIC24, PIC32, the nRF52840 DK, the Pico and the Explorer 16/32 (since
+added: parts 2 and 3 below; the PIC24 is still open); EmbCC's
 QEMU-refereed golden fixtures for the AVR and RISC-V are not run here (QEMU
 is not installed), the cores' own tests above stand for them. The
 ATmega328P's SPI, TWI, watchdog and analog comparator, and the FE310's
@@ -69,3 +70,28 @@ Known gaps: the RP2040's core 1, its bootrom's function table, PIO, DMA,
 SPI, I2C, PWM, the ADC, USB and the XIP cache; the nRF52840's radio, PPI,
 the serial buses, SAADC, PWM and USB; Pico SDK and nrfx images are not run
 (the examples use the registers directly).
+
+## Part 3: the PIC32MX795F512L and the Explorer 16/32
+
+| Area | Files | Contract |
+|---|---|---|
+| MIPS32 core | `core/mcu/mips/` | SPEC-009 §2: MIPS32r2 with MIPS16e from EmbCC, its state a parameter; the M4K (`pic32mx`: EIC mode, two register sets, fixed mapping, the core timer) and the 24Kc (`24kc`: compatibility-mode interrupts, the TLB); WAIT and an idle loop sleep for the runtime; the disassembler; images at their kseg0/kseg1 addresses through the core's `phys` hook |
+| Register file | `core/mcu/rf.c`, `rf.h` | SPEC-009 §5: CLR, SET and INV registers (`clr_set_inv`), the description's interrupt `vectors` and pin functions (`pins`) |
+| Importer | `tools/importers/edc2regs.py` | a PIC32 EDC from Microchip's Apache-2.0 device pack to a register description and a package; the vectors from the pack's ATDF |
+| PIC32MX | `core/mcu/pic32/`; `catalog/mcus/microchip/pic32mx795f512l` | SPEC-009 §6: the EVIC (shared vectors, priorities, the shadow set), the oscillator from the configuration words with the PLL and SYSKEY's lock (SYSCLK is the core's clock), Timer1-5, ports A-G with the change notices, UART1-6 timed at their baud rate on their pins, from EmbCC; registers and the TQFP100 converted from Microchip.PIC32MX_DFP 1.7.380 (`LICENSES/`) |
+| Board | `catalog/boards/explorer16-32` | SPEC-006 §3: the Explorer 16/32 with the PIC32MX795F512L PIM: D3-D10, S3, S4, S6, MCLR, UART2 on the USB-UART bridge, the crystals, a power fixture, the linker script |
+| Runtime and tools | `core/project/loader.c`, `core/mcu/mcu.c`, `catalog/toolchains/`, `tools/validate.py` | PIC pin names (RA0) are GPIO; clang and EmbCC build `mipsel-none-elf`; a scenario may press a board's own button (`B1.S3`) |
+
+| Check | Where | What it shows |
+|---|---|---|
+| MIPS32 | `test_mips` (168 checks) | ALU results and a delay slot, a syscall in a delay slot (EPC, Cause.BD), an address error and eret, the core timer in compatibility mode at Compare x 2 cycles and in EIC mode through a controller's vector, MIPS16e through jalx and EXTEND, ll and sc, the M4K's PRId and Config, the disassembler |
+| PIC32MX | `test_pic32` | CLR, SET and INV on LATA and TRISA and the pins they drive; the clock from erased and set configuration words (4 MHz, 80 MHz), OSCCON locked and unlocked; Timer1's flag at 800 cycles; a change notice from the board; UART2's 696-cycle bit at 115200 baud and its persistent transmit interrupt; the example's image |
+| The Explorer | `examples/explorer16-pic32mx` 8/8 | firmware built by clang and by EmbCC: SYSCLK 80000 kHz and PBCLK 40000 kHz from OSCCON and the configuration words, D3's 1 Hz from Timer1's interrupt, S3 through the change notice counted on D4, a terminal's text echoed in upper case through UART2's receive interrupt |
+| Builds | `firmware_build` | the six boards' examples built by clang and by EmbCC, each scenario passing |
+
+Known gaps: the PIC32MX's ADC, SPI, I2C, input capture, output compare,
+PMP, RTCC, DMA, USB, Ethernet, CAN and the watchdog (plain registers); the
+prefetch cache and the bus matrix's partitions; the FPU, DSP ASE and
+microMIPS of the PIC32MZ's core; the Explorer's LCD, EEPROM, potentiometer
+and temperature sensor. XC32 and Harmony images are not run here (the
+example uses the registers directly). The PIC24 is still open.

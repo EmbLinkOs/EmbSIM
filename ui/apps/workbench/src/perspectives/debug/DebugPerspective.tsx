@@ -318,10 +318,14 @@ function MemoryPanel() {
   const address = useDebug((s) => s.memAddress);
   const load = useDebug((s) => s.loadMemory);
   const where = useDebug((s) => s.where);
-  const [text, setText] = useState('0x20000000');
+  const [text, setText] = useState(`0x${address.toString(16).padStart(8, '0')}`);
+  const chosen = useDebug((s) => s.memChosen);
+  useEffect(() => {
+    if (!chosen) setText(`0x${address.toString(16).padStart(8, '0')}`);
+  }, [address, chosen]);
   useEffect(() => {
     void load();
-  }, [load, where?.pc]);
+  }, [load, where?.pc, where?.ram]);
   const rows: { at: number; bytes: number[] }[] = [];
   if (memory) for (let i = 0; i < memory.length; i += 16) rows.push({ at: address + i, bytes: Array.from(memory.slice(i, i + 16)) });
   return (

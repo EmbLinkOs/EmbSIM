@@ -94,6 +94,20 @@ models and clock gates (`esk_rf_bind`).
 * An access inside the span to no register is `mcu.bus_error`.
 * A binding that names a model the build does not have is `mcu.model_missing`.
 
+The bus can follow the part's own rules. The MCU description's
+`register_file.bus_rules` names them: `atomic_aliases` (each peripheral's
+registers again at +0x1000 XOR, +0x2000 set, +0x3000 clear, the RP2040's)
+and `wide_writes` (a byte or halfword written across the word). A register
+the description marks `clr_set_inv` (a PIC32's) has three more after it:
++4 clears the bits written as 1, +8 sets them, +0xC inverts them; a read of
+them gives 0, and edc2regs.py marks the registers whose EDC entry has them.
+
+The description's `interrupts` table is kept for the models that find an
+interrupt by name (`esk_rf_irq_named`). Where requests share vectors (a
+PIC32MX's), `vectors` gives each request's vector (`esk_rf_vector`).
+`pins` names the port pin each of the part's pin functions is on (CN15:
+RD6), for the models that find one (`esk_rf_pin`).
+
 ## 6. Peripheral models
 
 ```c

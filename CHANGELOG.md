@@ -110,6 +110,17 @@ versions follow semantic versioning. There is no release yet.
 - The register file's bus rules (the RP2040's atomic aliases and byte
   writes) and peripherals held in reset, shown as "in reset" in the Debug
   perspective (`debug.peripherals` reports `reset`).
+- M4 part 3: the MIPS32 core (the PIC32MX's M4K with MIPS16e, and QEMU
+  malta's 24Kc) and the PIC32MX795F512L with its register file converted
+  from Microchip's PIC32MX device pack: the EVIC, the oscillator from the
+  configuration words, Timer1-5, ports A-G with the change notices and
+  UART1-6; the Explorer 16/32 with the PIC32MX795F512L PIM and
+  `examples/explorer16-pic32mx`, built by clang and EmbCC.
+- `tools/importers/edc2regs.py`: a PIC32's EDC to a register description
+  with CLR/SET/INV registers, shared vectors and pin functions
+  (`clr_set_inv`, `vectors` and `pins` in the register schema).
+- The clang and EmbCC profiles build `mipsel-none-elf`; a scenario may press
+  a board's own button (`B1.S3`).
 
 ### Changed
 - Two weak pulls that disagree on a net are a divider, no longer reported
@@ -118,6 +129,7 @@ versions follow semantic versioning. There is no release yet.
 - The runtime finds a UART's RX pin again when a pin's function changes.
 - An MCU's GPIO pins take their high level and pulls from its description's
   supply (`io.electrical.vdd`): the nRF52840 DK's 3.0 V.
+- The runtime and the loader take PIC pin names (RA0, RD6) as GPIO pins.
 
 ### Removed
 - The draft 0.1 foundation (Python runtime, HTTP server, single-page UI);

@@ -20,6 +20,8 @@ export interface DebugState {
   insns: Instruction[];
   breakpoints: Breakpoint[];
   memAddress: number;
+  /** the memory view's address was chosen, not the part's RAM */
+  memChosen: boolean;
   memory: Uint8Array | null;
   peripherals: Peripheral[];
   /** The source file at the PC, when the image has DWARF. */
@@ -88,6 +90,7 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
     insns: [],
     breakpoints: [],
     memAddress: 0x20000000,
+    memChosen: false,
     memory: null,
     peripherals: [],
     source: null,
@@ -95,7 +98,7 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
     busy: false,
     error: null,
 
-    setBoard: (board) => set({ board, where: null, regs: [], insns: [], breakpoints: [] }),
+    setBoard: (board) => set({ board, where: null, regs: [], insns: [], breakpoints: [], memChosen: false }),
 
     refresh: async () => {
       await withBoard(async (board) => {
@@ -117,6 +120,7 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
           for (const r of get().regs) previous[r.name] = r.value;
         }
         set({ where, regs: regs.regs, previous, insns: dis.insns, breakpoints: bps.breakpoints });
+        if (!get().memChosen && where.ram !== undefined && where.ram !== get().memAddress) set({ memAddress: where.ram });
         if (where.file && where.file !== get().source?.file) {
           try {
             set({ source: await c.debug.source({ board, file: where.file }) });
@@ -204,7 +208,7 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
         const params = typeof a === 'number' ? { address: a } : a;
         const r = await tryClient()!.debug.memory({ board, ...params, length: 256 });
         const bytes = Uint8Array.from(atob(r.base64), (ch) => ch.charCodeAt(0));
-        set({ memAddress: r.address, memory: bytes });
+        set({ memAddress: r.address, memory: bytes, memChosen: get().memChosen || address !== undefined });
       }, typeof address === 'string');
     },
 

@@ -48,6 +48,7 @@ default and a subject.
 | `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot |
 | `mcu.watchdog_reset` | info | board | the watchdog reset the chip (its counter reached 0, or CTRL.TRIGGER) |
 | `mcu.easydma_range` | warning | board, peripheral | an nRF52840 EasyDMA buffer outside Data RAM: nothing is moved |
+| `mcu.locked_write` | warning | board, register, pc | a write to a PIC32's OSCCON while SYSKEY's unlock sequence has not been written: ignored, as on the part (the first one) |
 | `mcu.boot_mode` | warning | board | BOOT0 selects system memory, which is not modelled |
 | `mcu.exit` | info | board | the firmware exited through semihosting, with its status |
 | `mcu.lockup` | error | board | the core locked up (a fault with nowhere to go) |

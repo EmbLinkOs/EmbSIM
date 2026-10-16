@@ -251,6 +251,13 @@ static int report(gdb *g, int why)
     return send(g, buf);
 }
 
+/* a program address as the bus has it (a MIPS core's kseg0 and kseg1) */
+static u32 bus_addr(const gdb *g, u32 a)
+{
+    struct esk_cpu *c = g->m->cpu;
+    return c->ops->phys ? c->ops->phys(c, a) : a;
+}
+
 /* the bytes up to the first that cannot be read (a partial read, as the
  * protocol allows: a debugger's cache line may run past a peripheral) */
 static size_t mem_read(gdb *g, u32 a, unsigned char *b, size_t n)
@@ -258,7 +265,7 @@ static size_t mem_read(gdb *g, u32 a, unsigned char *b, size_t n)
     size_t i;
     for (i = 0; i < n; i++) {
         u32 v = 0;
-        if (esk_bus_debug_read(&g->m->bus, a + (u32)i, 1, &v) != 0)
+        if (esk_bus_debug_read(&g->m->bus, bus_addr(g, a + (u32)i), 1, &v) != 0)
             break;
         b[i] = (unsigned char)v;
     }
@@ -269,7 +276,7 @@ static int mem_write(gdb *g, u32 a, const unsigned char *b, size_t n)
 {
     size_t i;
     for (i = 0; i < n; i++)
-        if (esk_bus_debug_write(&g->m->bus, a + (u32)i, 1, b[i]) != 0)
+        if (esk_bus_debug_write(&g->m->bus, bus_addr(g, a + (u32)i), 1, b[i]) != 0)
             return -1;
     return 0;
 }
