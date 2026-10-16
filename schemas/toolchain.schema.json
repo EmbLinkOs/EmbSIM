@@ -19,8 +19,28 @@
       "properties": {
         "command": {"$ref": "#/$defs/argv"},
         "version_regex": {"type": "string"},
-        "min_version": {"type": "string"}
-      }
+        "min_version": {"type": "string"},
+        "prefix": {"type": "string", "minLength": 1, "description": "The program prefix the command's program begins with (a GNU cross toolchain's, as riscv-none-elf-)"},
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {"type": "string", "minLength": 1},
+              {
+                "type": "object",
+                "required": ["prefix"],
+                "additionalProperties": false,
+                "properties": {
+                  "prefix": {"type": "string", "minLength": 1},
+                  "link_flags": {"$ref": "#/$defs/argv", "description": "This installation's link flags, in place of the target's (its C library differs)"}
+                }
+              }
+            ]
+          },
+          "description": "Other prefixes the toolchain is installed under, tried in order when the command's own program does not run: the first that does takes `prefix`'s place at the head of every command a build runs"
+        }
+      },
+      "dependentRequired": {"alternatives": ["prefix"]}
     },
     "targets": {
       "type": "object",

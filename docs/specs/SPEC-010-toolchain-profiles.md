@@ -29,6 +29,18 @@ on:** 04 §9; ADR-010. **Schema:** `schemas/toolchain.schema.json`.
 }
 ```
 
+A GNU cross toolchain may be installed under more than one program prefix
+(the gcc-riscv profile: xPack's `riscv-none-elf-`, SiFive's and the
+distributions' `riscv64-unknown-elf-`). `detect.prefix` names the prefix
+the command's program begins with and `detect.alternatives` the others, in
+order: detection tries the command as written, then under each
+alternative, and the first that runs is the toolchain. A build puts that
+prefix in place of `detect.prefix` at the head of every command it runs.
+An alternative written as `{prefix, link_flags}` also brings its own link
+flags in place of the target's, for an installation whose C library
+differs (xPack's newlib with `nano.specs`, Debian's and Ubuntu's picolibc
+with `picolibc.specs`).
+
 Profiles shipped in `catalog/toolchains/`: `embcc`, `gcc-arm`, `gcc-riscv`,
 `gcc-avr`, `clang`, `xc8`, `xc16`, `xc32`. Boards contribute per-profile
 target settings (SPEC-006 §3 `toolchains`); a project names the profile and
