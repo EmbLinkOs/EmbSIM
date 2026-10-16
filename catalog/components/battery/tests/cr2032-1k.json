@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "cr2032-1k",
+  "description": "A CR2032 (3.0 V, 15 ohm) into 1 k: about 2.956 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/battery",
+        "params": {
+          "part": "CR2032"
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.+",
+        "RL.1"
+      ],
+      "GND": [
+        "DUT.-",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": 2.94,
+      "max_v": 2.97
+    }
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/clock_divider",
+  "version": "1.0.0",
+  "name": "Clock divider",
+  "category": "logic",
+  "description": "Divides the frequency of CLK by n (rising edges), with a 50 % duty cycle for even n: a prescaler or a slow tick from a crystal clock.",
+  "keywords": [
+    "logic",
+    "divider",
+    "prescaler",
+    "frequency",
+    "counter"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "CLK",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "OUT",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "n": {
+      "type": "integer",
+      "default": 2,
+      "min": 2,
+      "max": 1000000,
+      "doc": "Division ratio"
+    },
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "OUT completes one period every n rising edges of CLK.",
+      "omissions": [
+        "setup and hold"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "setup and hold"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "setup and hold",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Generic counter-based divider"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "CLK": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "anode",
+  "description": "Common anode: segments b and c low with COM high show 1.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/seven_segment",
+        "params": {
+          "common": "anode"
+        }
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.A",
+        "DUT.D",
+        "DUT.E",
+        "DUT.F",
+        "DUT.G",
+        "DUT.DP",
+        "DUT.COM"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.B",
+        "DUT.C"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.char": {
+      "at": "500ns",
+      "equals": "1"
+    }
+  }
+}

@@ -135,7 +135,10 @@ bind to. Both are exposed by name in snapshots and probes.
   view with `hotspots` (an `input`, an element `selector`, a `gesture`:
   `hold`, `toggle`, `drag` with an axis and range) and `states` (an `output`
   bound to an attribute or a CSS class of a selector; numeric outputs may
-  map to `opacity` or `fill` through a `scale`).
+  map to `opacity` or `fill` through a `scale`; `map` looks an enum or
+  integer value up; `format` puts the value, scaled first when a `scale` is
+  given, into a template such as `rotate({} 30 30)`, and the pseudo-attribute
+  `text` sets an element's text, so displays show strings and paths).
 - Both are rendered by any client; a client may substitute a generic symbol
   when a file is missing, with a warning.
 

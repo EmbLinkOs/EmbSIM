@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "50cm",
+  "description": "50 cm: ECHO rises 250 us after the trigger and stays high 2.9 ms.",
+  "policy": "functional",
+  "until": "6ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "TG",
+        "component": "emblink/pulse_source",
+        "params": {
+          "td": "1m",
+          "pw": "10u",
+          "per": "1"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hc_sr04"
+      }
+    ],
+    "nets": {
+      "TRIG": [
+        "TG.+",
+        "DUT.TRIG"
+      ],
+      "ECHO": [
+        "DUT.ECHO"
+      ]
+    }
+  },
+  "expect": {
+    "net:ECHO": {
+      "at": "3ms",
+      "logic": "1"
+    },
+    "output:DUT.echo_us": {
+      "at": "5ms",
+      "equals": 2915
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "distance_cm",
+      "value": 50
+    }
+  ]
+}

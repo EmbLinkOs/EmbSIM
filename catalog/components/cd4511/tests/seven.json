@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "seven",
+  "description": "BCD 7 (A, B, C high): segments a, b, c lit, d and g dark.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L3",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L4",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L6",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/cd4511"
+      }
+    ],
+    "nets": {
+      "N_A": [
+        "L0.OUT",
+        "DUT.A"
+      ],
+      "N_B": [
+        "L1.OUT",
+        "DUT.B"
+      ],
+      "N_C": [
+        "L2.OUT",
+        "DUT.C"
+      ],
+      "N_D": [
+        "L3.OUT",
+        "DUT.D"
+      ],
+      "N_LT_N": [
+        "L4.OUT",
+        "DUT.LT_N"
+      ],
+      "N_BL_N": [
+        "L5.OUT",
+        "DUT.BL_N"
+      ],
+      "N_LE": [
+        "L6.OUT",
+        "DUT.LE"
+      ],
+      "N_SA": [
+        "DUT.SA"
+      ],
+      "N_SB": [
+        "DUT.SB"
+      ],
+      "N_SC": [
+        "DUT.SC"
+      ],
+      "N_SD": [
+        "DUT.SD"
+      ],
+      "N_SG": [
+        "DUT.SG"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_SA": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_SB": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_SC": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_SD": {
+      "at": "500ns",
+      "logic": "0"
+    },
+    "net:N_SG": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

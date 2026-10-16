@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/cd4511",
+  "version": "1.0.0",
+  "name": "CD4511 BCD to 7-segment decoder",
+  "category": "logic",
+  "description": "BCD-to-7-segment latch/decoder/driver (CD4511) for common-cathode displays: SA-SG light the digit given on D-A; codes above 9 blank; LT_N lights every segment, BL_N blanks, LE high holds the input.",
+  "keywords": [
+    "logic",
+    "decoder",
+    "7-segment",
+    "bcd",
+    "CD4511",
+    "display driver"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "B",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "C",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "LT_N",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Lamp test, active low",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "BL_N",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Blanking, active low",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "LE",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Latch enable: holds the input while high",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "A",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "VSS",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "SE",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SD",
+      "number": 10,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SC",
+      "number": 11,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SB",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SA",
+      "number": 13,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SG",
+      "number": 14,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SF",
+      "number": 15,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "VDD",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "digit",
+      "type": "integer",
+      "min": 0,
+      "max": 15,
+      "doc": "Latched BCD code"
+    },
+    {
+      "name": "segments",
+      "type": "string",
+      "doc": "Lit segments, a-g"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Function table of the CD4511 (BCD 0-9, blank above 9, lamp test, blanking, latch).",
+      "omissions": [
+        "segment drive current (the real part sources up to 25 mA)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "segment drive current (the real part sources up to 25 mA)"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "segment drive current (the real part sources up to 25 mA)",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments CD4511B datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 110,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "B": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "C": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "LE": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "BL_N": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "LT_N": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "SA": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "SB": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "SC": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "SD": {
+        "x": 60,
+        "y": 50,
+        "side": "right"
+      },
+      "SE": {
+        "x": 60,
+        "y": 60,
+        "side": "right"
+      },
+      "SF": {
+        "x": 60,
+        "y": 70,
+        "side": "right"
+      },
+      "SG": {
+        "x": 60,
+        "y": 80,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "VSS": {
+        "x": 30,
+        "y": 110,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

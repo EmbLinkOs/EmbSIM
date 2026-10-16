@@ -4,7 +4,8 @@
  * the MNA solver of mna.c, parameters read from the component instance,
  * interactive inputs for the switch and potentiometer, and observations.
  *
- * Pin order (d->node[k] follows the component description's pin order):
+ * Pin order (d->node[k]): the engine binds the component's pins by these names
+ * (or their aliases) when all are connected, else in the description's order:
  *
  *   resistor, capacitor, inductor, switch   "1", "2"
  *   vsource, isource                        "+", "-"      (current flows + -> - inside the source)
@@ -28,6 +29,30 @@
 #define VT_27C      0.025852 /* kT/q at 27 degrees C, volts */
 #define EXP_ARG_MAX 80.0     /* the exponential is continued linearly beyond this */
 #define PI_D        3.14159265358979323846
+
+/* ---- the pin names of each primitive (the table above) ---------------------- */
+
+const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
+{
+    static const char *const two[] = { "1", "2" }, *const src[] = { "+", "-" }, *const pot[] = { "1", "W", "2" },
+                             *const dio[] = { "A", "K" }, *const bjt[] = { "C", "B", "E" }, *const mos[] = { "D", "G", "S" },
+                             *const amp[] = { "+", "-", "OUT", "V+", "V-" }, *const reg[] = { "IN", "OUT", "GND" },
+                             *const one[] = { "1" };
+    static const struct { const char *name; const char *const *pins; int n; } table[] = {
+        { "resistor", two, 2 }, { "capacitor", two, 2 }, { "inductor", two, 2 }, { "switch", two, 2 },
+        { "vsource", src, 2 }, { "isource", src, 2 }, { "potentiometer", pot, 3 }, { "diode", dio, 2 },
+        { "led", dio, 2 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
+        { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
+    };
+    size_t i;
+    for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)
+        if (!strcmp(table[i].name, ops->name)) {
+            *n = table[i].n;
+            return table[i].pins;
+        }
+    *n = 0;
+    return NULL;
+}
 
 /* ---- shared helpers ----------------------------------------------------- */
 

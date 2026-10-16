@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc244",
+  "version": "1.0.0",
+  "name": "74HC244 octal buffer",
+  "category": "logic",
+  "description": "Octal buffer/line driver with three-state outputs in two banks of four (74HC244): Y follows A while the bank's OE_N is low and is released while it is high; bus drivers and level isolation.",
+  "keywords": [
+    "logic",
+    "buffer",
+    "line driver",
+    "three-state",
+    "74HC244",
+    "bus"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "1OE_N",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Output enable of bank 1, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1A0",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2Y0",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1A1",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2Y1",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1A2",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2Y2",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1A3",
+      "number": 8,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2Y3",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 10,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "2A3",
+      "number": 11,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1Y3",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2A2",
+      "number": 13,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1Y2",
+      "number": 14,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2A1",
+      "number": 15,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1Y1",
+      "number": 16,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2A0",
+      "number": 17,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "1Y0",
+      "number": 18,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "2OE_N",
+      "number": 19,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Output enable of bank 2, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 20,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Function table of the 74HC244.",
+      "omissions": [
+        "output enable and disable times",
+        "bus-hold"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "output enable and disable times",
+        "bus-hold"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "output enable and disable times",
+        "bus-hold",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC244 datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 140,
+    "pins": {
+      "1A0": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1A1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "1A2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "1A3": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "1OE_N": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "2A0": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "2A1": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "2A2": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "2A3": {
+        "x": 0,
+        "y": 110,
+        "side": "left"
+      },
+      "2OE_N": {
+        "x": 0,
+        "y": 120,
+        "side": "left"
+      },
+      "1Y0": {
+        "x": 70,
+        "y": 20,
+        "side": "right"
+      },
+      "1Y1": {
+        "x": 70,
+        "y": 30,
+        "side": "right"
+      },
+      "1Y2": {
+        "x": 70,
+        "y": 40,
+        "side": "right"
+      },
+      "1Y3": {
+        "x": 70,
+        "y": 50,
+        "side": "right"
+      },
+      "2Y0": {
+        "x": 70,
+        "y": 80,
+        "side": "right"
+      },
+      "2Y1": {
+        "x": 70,
+        "y": 90,
+        "side": "right"
+      },
+      "2Y2": {
+        "x": 70,
+        "y": 100,
+        "side": "right"
+      },
+      "2Y3": {
+        "x": 70,
+        "y": 110,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 140,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

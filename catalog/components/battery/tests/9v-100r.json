@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "9v-100r",
+  "description": "A 9 V battery (1.7 ohm) into 100 ohm: about 8.85 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/battery",
+        "params": {
+          "part": "9V"
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.+",
+        "RL.1"
+      ],
+      "GND": [
+        "DUT.-",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": 8.8,
+      "max_v": 8.9
+    }
+  }
+}

@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc165",
+  "version": "1.0.0",
+  "name": "74HC165 shift register",
+  "category": "logic",
+  "description": "8-bit parallel-in, serial-out shift register (74HC165): PL_N low loads D0-D7, then each CP rising (CE_N low) shifts toward Q7 with DS entering at D0; reads buttons and switches with three pins.",
+  "keywords": [
+    "logic",
+    "shift register",
+    "74HC165",
+    "piso",
+    "input expander"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "PL_N",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Parallel load, active low (asynchronous)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CP",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Clock",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D4",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D5",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D6",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D7",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q7_N",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "Q7",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "DS",
+      "number": 10,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Serial input",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D0",
+      "number": 11,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D1",
+      "number": 12,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D2",
+      "number": 13,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D3",
+      "number": 14,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CE_N",
+      "number": 15,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Clock enable, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "shift",
+      "type": "integer",
+      "min": 0,
+      "max": 255,
+      "doc": "Shift register (bit 7 = Q7)"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Asynchronous parallel load while PL_N is low; shift on CP rising when CE_N is low and PL_N high.",
+      "omissions": [
+        "setup and hold"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "setup and hold"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "setup and hold",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC165 datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 160,
+    "pins": {
+      "D0": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "D1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "D2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D3": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "D4": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "D5": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "D6": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "D7": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "DS": {
+        "x": 0,
+        "y": 110,
+        "side": "left"
+      },
+      "CP": {
+        "x": 0,
+        "y": 120,
+        "side": "left"
+      },
+      "CE_N": {
+        "x": 0,
+        "y": 130,
+        "side": "left"
+      },
+      "PL_N": {
+        "x": 0,
+        "y": 140,
+        "side": "left"
+      },
+      "Q7": {
+        "x": 70,
+        "y": 20,
+        "side": "right"
+      },
+      "Q7_N": {
+        "x": 70,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 160,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

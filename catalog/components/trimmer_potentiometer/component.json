@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/trimmer_potentiometer",
+  "version": "1.0.0",
+  "name": "Trimmer potentiometer",
+  "category": "passives",
+  "description": "Multi-turn trimmer (3296 style): a potentiometer set once with a screwdriver to calibrate a divider.",
+  "keywords": [
+    "trimmer",
+    "potentiometer",
+    "trimpot",
+    "3296",
+    "calibration",
+    "divider"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "End 1 (position 0)"
+    },
+    {
+      "name": "W",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Wiper"
+    },
+    {
+      "name": "2",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "End 2 (position 1)"
+    }
+  ],
+  "params": {
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10k",
+      "min": 10,
+      "max": "10meg",
+      "doc": "End-to-end resistance"
+    }
+  },
+  "inputs": [
+    {
+      "name": "position",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "doc": "Wiper position from end 1"
+    }
+  ],
+  "model": {
+    "primitive": "potentiometer",
+    "bind": {
+      "r": "resistance"
+    },
+    "params": {
+      "taper": "linear"
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Two resistors split at the wiper position, linear taper (SPEC-004 §7 potentiometer).",
+      "omissions": [
+        "end resistance",
+        "wiper contact resistance",
+        "temperature coefficient"
+      ],
+      "range": {
+        "power_w": [
+          0,
+          0.5
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Bourns 3296 trimming potentiometer datasheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "W": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

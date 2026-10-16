@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "seven",
+  "description": "Segments a, b, c lit with COM low: the display shows 7.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/seven_segment"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.A",
+        "DUT.B",
+        "DUT.C"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.D",
+        "DUT.E",
+        "DUT.F",
+        "DUT.G",
+        "DUT.DP",
+        "DUT.COM"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.char": {
+      "at": "500ns",
+      "equals": "7"
+    },
+    "output:DUT.seg_a": {
+      "at": "500ns",
+      "equals": true
+    },
+    "output:DUT.seg_g": {
+      "at": "500ns",
+      "equals": false
+    }
+  }
+}

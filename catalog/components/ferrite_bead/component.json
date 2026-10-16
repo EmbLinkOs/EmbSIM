@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ferrite_bead",
+  "version": "1.0.0",
+  "name": "Ferrite bead",
+  "category": "passives",
+  "description": "SMD ferrite bead for supply filtering: a small series inductance with its DC resistance (BLM18 style).",
+  "keywords": [
+    "ferrite",
+    "bead",
+    "emi",
+    "filter",
+    "inductor"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "inductance": {
+      "type": "number",
+      "unit": "H",
+      "default": "1.5u",
+      "min": "1n",
+      "max": "100u",
+      "doc": "Low-frequency inductance"
+    },
+    "dcr": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.15,
+      "min": 0,
+      "max": 10,
+      "doc": "DC resistance"
+    },
+    "z100mhz": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 600,
+      "min": 1,
+      "max": 5000,
+      "doc": "Impedance at 100 MHz (informative)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "inductor",
+    "bind": {
+      "l": "inductance",
+      "dcr": "dcr"
+    }
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A wire.",
+      "omissions": [
+        "everything electrical"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical when its nets are analog; otherwise a wire.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Inductance with series DC resistance (SPEC-004 §7 inductor).",
+      "omissions": [
+        "the resistive high-frequency impedance that makes a bead a bead",
+        "saturation with current"
+      ],
+      "range": {
+        "current_a": [
+          0,
+          2
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Murata BLM18 series datasheet (DCR and impedance orders of magnitude)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

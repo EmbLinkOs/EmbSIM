@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/dht22",
+  "version": "1.0.0",
+  "name": "DHT22 temperature and humidity sensor",
+  "category": "sensors",
+  "description": "Temperature and relative-humidity sensor with a single-wire protocol (DHT22 / AM2302): after the host holds DATA low for 1 ms and releases it, the sensor answers with 80 us low, 80 us high and 40 bits (50 us low, then 26 us high for 0 or 70 us for 1): humidity x10, temperature x10 and a checksum. Temperature and humidity are interactive inputs.",
+  "keywords": [
+    "sensor",
+    "temperature",
+    "humidity",
+    "DHT22",
+    "AM2302",
+    "one-wire",
+    "weather"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "VCC",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "DATA",
+      "number": 2,
+      "model": {
+        "kind": "digital_io"
+      },
+      "doc": "Open drain; needs a pull-up",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "NC",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {},
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "min": -40,
+      "max": 80,
+      "unit": "degC",
+      "default": 25
+    },
+    {
+      "name": "humidity",
+      "type": "number",
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "default": 50
+    }
+  ],
+  "outputs": [
+    {
+      "name": "readings",
+      "type": "integer",
+      "doc": "Answers sent since reset"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The AM2302 single-bus timing and data format (16-bit humidity and temperature x10, sign bit, checksum).",
+      "omissions": [
+        "the 2 s minimum between readings",
+        "sensor response time",
+        "timing tolerances (nominal values only)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "the 2 s minimum between readings",
+        "sensor response time",
+        "timing tolerances (nominal values only)"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "the 2 s minimum between readings",
+        "sensor response time",
+        "timing tolerances (nominal values only)",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Aosong AM2302 datasheet (single-bus communication)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "DATA": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "NC": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

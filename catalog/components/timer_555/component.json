@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/timer_555",
+  "version": "1.0.0",
+  "name": "555 timer",
+  "category": "analog",
+  "description": "NE555 timer as a behavioural block: astable at f = 1.44 / ((R1 + 2 R2) C) with the datasheet's high and low times, or a monostable pulse of 1.1 R1 C started by TRIG falling. The timing comes from the r1, r2 and c parameters rather than from the parts wired to THR and TRIG.",
+  "keywords": [
+    "timer",
+    "555",
+    "NE555",
+    "oscillator",
+    "astable",
+    "monostable",
+    "one-shot"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "GND",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "TRIG",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Trigger (monostable: falling edge starts the pulse)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "OUT",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "RESET",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Reset, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CTRL",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Control voltage (not modelled)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "THR",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Threshold (not modelled: timing from parameters)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "DIS",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Discharge (open drain, low while OUT is low)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "mode": {
+      "type": "enum",
+      "enum": [
+        "astable",
+        "monostable"
+      ],
+      "default": "astable",
+      "doc": "Free-running or one pulse per trigger"
+    },
+    "r1": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1k",
+      "min": 100,
+      "max": "10meg",
+      "doc": "R1 (VCC to DIS)"
+    },
+    "r2": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10k",
+      "min": 0,
+      "max": "10meg",
+      "doc": "R2 (DIS to THR/TRIG), astable only"
+    },
+    "c": {
+      "type": "number",
+      "unit": "F",
+      "default": "100n",
+      "min": "100p",
+      "max": "10m",
+      "doc": "Timing capacitor"
+    }
+  },
+  "outputs": [
+    {
+      "name": "output",
+      "type": "boolean",
+      "doc": "OUT level"
+    },
+    {
+      "name": "frequency_hz",
+      "type": "number",
+      "unit": "Hz",
+      "doc": "Astable frequency"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Astable: first high ln3 (R1+R2) C, then ln2 (R1+R2) C high and ln2 R2 C low; monostable: 1.1 R1 C per TRIG falling edge; RESET low forces OUT low.",
+      "omissions": [
+        "timing from the actual THR/TRIG/CTRL voltages",
+        "output current",
+        "supply-dependent timing"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "timing from the actual THR/TRIG/CTRL voltages",
+        "output current",
+        "supply-dependent timing"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "timing from the actual THR/TRIG/CTRL voltages",
+        "output current",
+        "supply-dependent timing",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments NE555 datasheet (timing equations)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 70,
+    "pins": {
+      "TRIG": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "THR": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "CTRL": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "RESET": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 70,
+        "y": 20,
+        "side": "right"
+      },
+      "DIS": {
+        "x": 70,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 70,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

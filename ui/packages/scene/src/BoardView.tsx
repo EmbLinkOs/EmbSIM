@@ -61,7 +61,21 @@ function cssEscape(s: string): string {
   return s.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
 }
 
-function applyState(root: Element, state: ArtworkState, value: OutputValue | undefined): void {
+/** Sets an attribute, or the element's text for the pseudo-attribute "text"; an empty value removes the attribute. */
+function setValue(el: Element, attr: string, text: string): void {
+  if (attr === 'text') el.textContent = text;
+  else if (text === '') el.removeAttribute(attr);
+  else el.setAttribute(attr, text);
+}
+
+/**
+ * Applies one artwork state (SPEC-005 §8): a class toggled by truth; an
+ * enum or integer looked up in `map`; a value put into the `format`
+ * template ("rotate({} 30 30)", "{}" for a colour, a path or text), after
+ * `scale` for numbers; a number scaled into the attribute; a number as
+ * opacity; otherwise `true`/`false` strings.
+ */
+export function applyState(root: Element, state: ArtworkState, value: OutputValue | undefined): void {
   const el = root.querySelector(state.selector);
   if (!el) return;
   if (state.class) {
@@ -69,21 +83,33 @@ function applyState(root: Element, state: ArtworkState, value: OutputValue | und
     return;
   }
   const attr = state.attr ?? 'opacity';
+  if (state.map && value !== undefined) {
+    const m = state.map[String(value)];
+    if (m !== undefined) {
+      setValue(el, attr, m);
+      return;
+    }
+  }
+  let v: OutputValue | undefined = value;
   if (typeof value === 'number' && state.scale) {
     const [lo, hi] = Array.isArray(state.scale) ? state.scale : state.scale.from;
     const [a, b] = Array.isArray(state.scale) ? [0, 1] : (state.scale.to ?? [0, 1]);
     const t = hi === lo ? 0 : Math.max(0, Math.min(1, (value - lo) / (hi - lo)));
-    const v = a + t * (b - a);
-    el.setAttribute(attr, attr === 'opacity' ? v.toFixed(3) : String(v));
+    v = a + t * (b - a);
+    if (state.format === undefined) {
+      setValue(el, attr, attr === 'opacity' ? v.toFixed(3) : String(v));
+      return;
+    }
+  }
+  if (state.format !== undefined) {
+    setValue(el, attr, value === undefined ? '' : state.format.split('{}').join(String(v)));
     return;
   }
   if (typeof value === 'number' && attr === 'opacity') {
     el.setAttribute(attr, Math.max(0, Math.min(1, value)).toFixed(3));
     return;
   }
-  const text = value ? state.true ?? '1' : state.false ?? '';
-  if (text === '') el.removeAttribute(attr);
-  else el.setAttribute(attr, text);
+  setValue(el, attr, value ? state.true ?? '1' : state.false ?? '');
 }
 
 function describeOutput(name: string, value: OutputValue | undefined): string {

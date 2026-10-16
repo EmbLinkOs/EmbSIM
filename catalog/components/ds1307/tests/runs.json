@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "runs",
+  "description": "Started at 2026-10-16 12:00:00, the clock reads 12:00:02 after 2.5 s.",
+  "policy": "functional",
+  "until": "2.6s",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ds1307",
+        "params": {
+          "start": "2026-10-16 12:00:00"
+        }
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.time": {
+      "at": "2.5s",
+      "contains": "2026-10-16 12:00:02"
+    }
+  }
+}

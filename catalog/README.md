@@ -72,7 +72,7 @@ an empty selection. It preserves source fixtures. Analog waveform checks sample
 at 1 MHz; functional/timed digital checks observe changes. A fixture requiring
 faster analog sampling needs a more explicit rate contract before being added.
 CTest runs all component fixtures on every core CI platform. This complements
-schema checks; `catalog.validate` in the session protocol remains unimplemented.
+schema checks and the engine’s `embsim catalog validate catalog` command.
 
 ## Timing and operating boundaries
 
@@ -101,5 +101,7 @@ Continue in separate validated batches: optoelectronics and thermistors; relays,
 motor drivers and displays; then I2C/SPI temperature, pressure, motion and light
 sensors, EEPROMs and interface ICs. Protocol devices must implement real register
 maps, addressing, timing and error behavior before joining the supported catalog.
-Lua/native plugins, 100-component coverage and the remaining M3 SDK gates remain
-roadmap work; this batch does not complete M3.
+The merged M3 work already includes Lua devices, bus sensors, displays and SDK
+commands. These named-package entries add package identity and electrical models
+alongside those generic/family entries. Native plugins, independent datasheet
+qualification and broader operating-corner coverage remain future work.

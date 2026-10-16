@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "hello",
+  "description": "8-bit init, then 'Hi!' on line 1 and 'OK' at the start of line 2.",
+  "policy": "functional",
+  "until": "71us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "0,38,238,38,c,20c,c,1,201,1,6,206,6,148,348,148,169,369,169,121,321,121,c0,2c0,c0,14f,34f,14f,14b,34b,14b",
+          "period": "1u"
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lcd1602"
+      }
+    ],
+    "nets": {
+      "D0": [
+        "PG.OUT0",
+        "DUT.D0"
+      ],
+      "D1": [
+        "PG.OUT1",
+        "DUT.D1"
+      ],
+      "D2": [
+        "PG.OUT2",
+        "DUT.D2"
+      ],
+      "D3": [
+        "PG.OUT3",
+        "DUT.D3"
+      ],
+      "D4": [
+        "PG.OUT4",
+        "DUT.D4"
+      ],
+      "D5": [
+        "PG.OUT5",
+        "DUT.D5"
+      ],
+      "D6": [
+        "PG.OUT6",
+        "DUT.D6"
+      ],
+      "D7": [
+        "PG.OUT7",
+        "DUT.D7"
+      ],
+      "RS": [
+        "PG.OUT8",
+        "DUT.RS"
+      ],
+      "E": [
+        "PG.OUT9",
+        "DUT.E"
+      ],
+      "RW": [
+        "L.OUT",
+        "DUT.RW"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.line1": {
+      "at": "51us",
+      "equals": "Hi!             "
+    },
+    "output:DUT.line2": {
+      "at": "51us",
+      "contains": "OK"
+    },
+    "output:DUT.on": {
+      "at": "51us",
+      "equals": true
+    }
+  }
+}

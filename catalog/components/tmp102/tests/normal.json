@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "normal",
+  "description": "25 °C: ALERT stays released (pulled up).",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PU3",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tmp102"
+      }
+    ],
+    "nets": {
+      "ALERT": [
+        "DUT.ALERT",
+        "PU3.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:ALERT": {
+      "at": "500ns",
+      "logic": "1"
+    }
+  }
+}

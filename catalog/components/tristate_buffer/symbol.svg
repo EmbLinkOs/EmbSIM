@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <line class="s" id="pin-a" x1="0" y1="20" x2="12" y2="20"/>
+  <line class="s" id="pin-y" x1="60" y1="20" x2="48" y2="20"/>
+  <line class="s" id="pin-oe" x1="30" y1="0" x2="30" y2="11"/>
+  <line class="s" id="pin-gnd" x1="30" y1="40" x2="30" y2="29"/>
+  <polygon class="f" points="12,4 12,36 48,20"/>
+  <line class="s" id="pin-vcc" x1="0" y1="40" x2="4" y2="40"/>
+</svg>

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "input",
+  "description": "An unconnected CH5 set to 0.825 V (single-ended): code 256.",
+  "policy": "functional",
+  "until": "80us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,0,2,0,2,0,2,0,2,0,2,0,2,1,3,0,1,3,1,3,0,2,1,3,0,2,0,2,0,2,0,2,0,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,0,4,4",
+          "period": "1u"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mcp3008"
+      }
+    ],
+    "nets": {
+      "DIN": [
+        "PG.OUT0",
+        "DUT.DIN"
+      ],
+      "CLK": [
+        "PG.OUT1",
+        "DUT.CLK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.CS_N"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.last_code": {
+      "at": "70us",
+      "equals": 256
+    },
+    "output:DUT.last_channel": {
+      "at": "70us",
+      "equals": 5
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "ch5",
+      "value": 0.825
+    }
+  ]
+}

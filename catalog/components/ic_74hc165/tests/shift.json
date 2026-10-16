@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "shift",
+  "description": "D0 loaded as 1 then seven clock edges bring it to Q7.",
+  "policy": "functional",
+  "until": "8ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "PL",
+        "component": "emblink/pulse_source",
+        "params": {
+          "td": "0.1m",
+          "pw": "0.2m",
+          "per": "1",
+          "v1": 3.3,
+          "v2": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc165"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.D0"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.CE_N",
+        "DUT.DS",
+        "DUT.D1",
+        "DUT.D2",
+        "DUT.D3",
+        "DUT.D4",
+        "DUT.D5",
+        "DUT.D6",
+        "DUT.D7"
+      ],
+      "PL": [
+        "PL.+",
+        "DUT.PL_N"
+      ],
+      "CP": [
+        "CK.OUT",
+        "DUT.CP"
+      ],
+      "Q7": [
+        "DUT.Q7"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q7": {
+      "at": "6ms",
+      "logic": "0"
+    },
+    "output:DUT.shift": {
+      "at": "7.2ms",
+      "equals": 128
+    }
+  }
+}

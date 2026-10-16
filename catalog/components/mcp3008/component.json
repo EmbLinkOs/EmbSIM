@@ -1,0 +1,404 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/mcp3008",
+  "version": "1.0.0",
+  "name": "MCP3008 8-channel ADC",
+  "category": "analog",
+  "description": "10-bit, 8-channel successive-approximation ADC with SPI (MCP3008): start bit, single-ended or differential channel select, a null bit and the result MSB first. Inputs read the node voltage of their pin, or an interactive voltage when unconnected.",
+  "keywords": [
+    "adc",
+    "MCP3008",
+    "analog to digital",
+    "spi",
+    "converter",
+    "10-bit"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "CH0",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Analog input 0"
+    },
+    {
+      "name": "CH1",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Analog input 1"
+    },
+    {
+      "name": "CH2",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Analog input 2"
+    },
+    {
+      "name": "CH3",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Analog input 3"
+    },
+    {
+      "name": "CH4",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Analog input 4"
+    },
+    {
+      "name": "CH5",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Analog input 5"
+    },
+    {
+      "name": "CH6",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Analog input 6"
+    },
+    {
+      "name": "CH7",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Analog input 7"
+    },
+    {
+      "name": "DGND",
+      "number": 9,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "CS_N",
+      "number": 10,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Chip select, active low",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "DIN",
+      "number": 11,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "DOUT",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "CLK",
+      "number": 13,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "VDD",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "AGND",
+      "number": 14,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "VREF",
+      "number": 15,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Reference (the vref parameter when unconnected)"
+    }
+  ],
+  "params": {
+    "vref": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "min": 0.25,
+      "max": 5.5,
+      "doc": "Reference when VREF is unconnected"
+    }
+  },
+  "inputs": [
+    {
+      "name": "ch0",
+      "type": "number",
+      "min": 0,
+      "max": 5.5,
+      "unit": "V",
+      "default": 0,
+      "doc": "CH0 voltage when the pin is unconnected"
+    },
+    {
+      "name": "ch1",
+      "type": "number",
+      "min": 0,
+      "max": 5.5,
+      "unit": "V",
+      "default": 0,
+      "doc": "CH1 voltage when the pin is unconnected"
+    },
+    {
+      "name": "ch2",
+      "type": "number",
+      "min": 0,
+      "max": 5.5,
+      "unit": "V",
+      "default": 0,
+      "doc": "CH2 voltage when the pin is unconnected"
+    },
+    {
+      "name": "ch3",
+      "type": "number",
+      "min": 0,
+      "max": 5.5,
+      "unit": "V",
+      "default": 0,
+      "doc": "CH3 voltage when the pin is unconnected"
+    },
+    {
+      "name": "ch4",
+      "type": "number",
+      "min": 0,
+      "max": 5.5,
+      "unit": "V",
+      "default": 0,
+      "doc": "CH4 voltage when the pin is unconnected"
+    },
+    {
+      "name": "ch5",
+      "type": "number",
+      "min": 0,
+      "max": 5.5,
+      "unit": "V",
+      "default": 0,
+      "doc": "CH5 voltage when the pin is unconnected"
+    },
+    {
+      "name": "ch6",
+      "type": "number",
+      "min": 0,
+      "max": 5.5,
+      "unit": "V",
+      "default": 0,
+      "doc": "CH6 voltage when the pin is unconnected"
+    },
+    {
+      "name": "ch7",
+      "type": "number",
+      "min": 0,
+      "max": 5.5,
+      "unit": "V",
+      "default": 0,
+      "doc": "CH7 voltage when the pin is unconnected"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "last_code",
+      "type": "integer",
+      "min": 0,
+      "max": 1023
+    },
+    {
+      "name": "last_channel",
+      "type": "integer",
+      "min": 0,
+      "max": 7
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The SPI bit protocol of the datasheet's figure 6-1; the sample is taken after the fourth configuration bit: code = 1024 Vin / Vref, clamped.",
+      "omissions": [
+        "sampling capacitance and source impedance",
+        "INL/DNL and offset",
+        "conversion clock limits",
+        "LSB-first data after the MSB-first word"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "sampling capacitance and source impedance",
+        "INL/DNL and offset",
+        "conversion clock limits",
+        "LSB-first data after the MSB-first word"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "sampling capacitance and source impedance",
+        "INL/DNL and offset",
+        "conversion clock limits",
+        "LSB-first data after the MSB-first word",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Microchip MCP3004/3008 datasheet (SPI communication, channel table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 110,
+    "pins": {
+      "CH0": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "CH1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "CH2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "CH3": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "CH4": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "CH5": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "CH6": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "CH7": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "CS_N": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "DIN": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "DOUT": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "CLK": {
+        "x": 80,
+        "y": 50,
+        "side": "right"
+      },
+      "VREF": {
+        "x": 80,
+        "y": 70,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "DGND": {
+        "x": 30,
+        "y": 110,
+        "side": "bottom"
+      },
+      "AGND": {
+        "x": 40,
+        "y": 110,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

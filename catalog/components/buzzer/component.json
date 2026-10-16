@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/buzzer",
+  "version": "1.0.0",
+  "name": "Buzzer",
+  "category": "indicators",
+  "description": "Piezo buzzer: an active one sounds while + is high and - low; a passive one sounds at the frequency of the square wave on + (tone_hz), silent 50 ms after the last edge.",
+  "keywords": [
+    "buzzer",
+    "piezo",
+    "beeper",
+    "sound",
+    "tone",
+    "alarm"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Positive (signal)"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Negative"
+    }
+  ],
+  "params": {
+    "kind": {
+      "type": "enum",
+      "enum": [
+        "passive",
+        "active"
+      ],
+      "default": "passive",
+      "doc": "Passive (driven with a tone) or active (built-in oscillator)"
+    },
+    "tone": {
+      "type": "number",
+      "unit": "Hz",
+      "default": 2700,
+      "min": 100,
+      "max": 10000,
+      "doc": "Tone of an active buzzer"
+    }
+  },
+  "outputs": [
+    {
+      "name": "sounding",
+      "type": "boolean"
+    },
+    {
+      "name": "tone_hz",
+      "type": "number",
+      "unit": "Hz"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 12,
+    "height_mm": 12,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "sounding",
+        "selector": "#waves",
+        "attr": "opacity",
+        "true": "1",
+        "false": "0"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Sounding and tone from the logic levels on its pins.",
+      "omissions": [
+        "sound pressure",
+        "resonance",
+        "coil current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "sound pressure",
+        "resonance",
+        "coil current"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "sound pressure",
+        "resonance",
+        "coil current",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Murata PKM / TDK PS series piezo buzzer datasheets"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 20,
+    "pins": {
+      "+": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "-": {
+        "x": 40,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

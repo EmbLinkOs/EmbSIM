@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 50" width="70" height="50" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="50" height="30" rx="2"/>
+  <line class="s" id="pin-scl" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">SCL</text>
+  <line class="s" id="pin-sda" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">SDA</text>
+  <line class="s" id="pin-vcc" x1="30" y1="0" x2="30" y2="10"/>
+  <line class="s" id="pin-gnd" x1="30" y1="50" x2="30" y2="40"/>
+  <text class="t" x="35.0" y="19" text-anchor="middle">SSD1306</text>
+</svg>

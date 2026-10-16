@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/tmp102",
+  "version": "1.0.0",
+  "name": "TMP102 temperature sensor",
+  "category": "sensors",
+  "description": "Digital temperature sensor on I2C (TMP102): 12-bit readings at 0.0625 °C, configuration, T(low) and T(high) registers and an open-drain ALERT output in comparator mode. The temperature is an interactive input.",
+  "keywords": [
+    "sensor",
+    "temperature",
+    "TMP102",
+    "i2c",
+    "thermometer"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "SCL",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "ALERT",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Open drain, low while too hot (comparator mode)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "ADD0",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Address select (see the address parameter)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 5,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "SDA",
+      "number": 6,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    }
+  ],
+  "params": {
+    "address": {
+      "type": "integer",
+      "default": 72,
+      "min": 72,
+      "max": 75,
+      "doc": "I2C address, 72 (0x48) to 75 by ADD0 wiring"
+    }
+  },
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "min": -55,
+      "max": 150,
+      "unit": "degC",
+      "default": 25,
+      "doc": "Die temperature"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "unit": "degC"
+    },
+    {
+      "name": "alert",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pointer, temperature, configuration and limit registers; comparator-mode ALERT with hysteresis between T(low) and T(high).",
+      "omissions": [
+        "conversion timing (readings are immediate)",
+        "shutdown, one-shot and extended modes",
+        "the fault queue",
+        "ADD0 is not read"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "conversion timing (readings are immediate)",
+        "shutdown, one-shot and extended modes",
+        "the fault queue",
+        "ADD0 is not read"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "conversion timing (readings are immediate)",
+        "shutdown, one-shot and extended modes",
+        "the fault queue",
+        "ADD0 is not read",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments TMP102 datasheet (register map, comparator mode)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 50,
+    "pins": {
+      "SDA": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCL": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "ALERT": {
+        "x": 70,
+        "y": 20,
+        "side": "right"
+      },
+      "ADD0": {
+        "x": 70,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 50,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

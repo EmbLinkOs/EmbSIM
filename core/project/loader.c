@@ -5,6 +5,7 @@
  * models, boards as composites with a placeholder MCU (no runtime in M0),
  * nets merged through board ports and functional wires, probes, settings. */
 #include "project/loader.h"
+#include "ext/lua_model.h"
 #include <string.h>
 #include "host/host.h"
 #include "mcu/mcu.h"
@@ -71,6 +72,15 @@ static void mcu_signal_model(const char *sig, const char *family, esk_pin_model 
 
 /* ---- parameters ------------------------------------------------------------ */
 
+/* a resolved number parameter: an integer parameter stays an integer (scripted
+ * models see 4, not 4.0) */
+static esk_json *num_param(esk_alloc *a, const char *type, double d)
+{
+    if (!strcmp(type, "integer") && d >= -9.0e15 && d <= 9.0e15 && d == (double)(int64_t)d)
+        return esk_json_new_integer(a, (int64_t)d);
+    return esk_json_new_number(a, d);
+}
+
 static es_status build_params(es_session *s, const char *id, const esk_json *desc, const esk_json *inst_params, esk_json **out)
 {
     esk_json *params = esk_json_new_object(s->a);
@@ -88,7 +98,7 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
             double d;
             const char *type = esk_json_get_str(pd, "type", "number");
             if ((!strcmp(type, "number") || !strcmp(type, "integer")) && esk_json_to_double(def, &d) == 0)
-                v = esk_json_new_number(s->a, d);
+                v = num_param(s->a, type, d);
             else
                 v = esk_json_clone(s->a, def);
             if (!v || esk_json_object_set(s->a, params, pd->key, v)) {
@@ -123,7 +133,7 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
                 st = ES_ESCHEMA;
                 continue;
             }
-            v = esk_json_new_number(s->a, d);
+            v = num_param(s->a, type, d);
         } else if (!strcmp(type, "boolean")) {
             if (iv->type != ESK_JSON_BOOL) {
                 ld_diag(s, ES_SEV_ERROR, "schema.type", id, "parameter %s of %s must be a boolean", iv->key, id);
@@ -388,17 +398,34 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
             st = expand_composite(s, g, id, item, comp, params, depth, out);
             esk_json_free(s->a, params);
             return st;
+        } else if (esk_json_get_str(binding, "script", NULL)) {
+            const char *script = esk_json_get_str(binding, "script", NULL);
+            char why[512], name[256];
+            size_t len = 0;
+            char *src = esk_catalog_read_item_file(s->catalog, item, script, &len);
+            if (!src) {
+                ld_diag(s, ES_SEV_ERROR, "catalog.file_missing", id, "%s names the script %s, which is not in its directory", item->id, script);
+                return ES_ENOTFOUND;
+            }
+            esk_snprintf(name, sizeof name, "@%s/%s", item->id, script);
+            st = esk_lua_register(&s->eng, item->id, src, len, name, why, sizeof why);
+            esk_free(s->catalog->a, src, len + 1);
+            if (st != ES_OK) {
+                ld_diag(s, ES_SEV_ERROR, st == ES_EUNSUPPORTED ? "catalog.model_unsupported" : "ext.error", id, "%s: %s", item->id, why);
+                return st;
+            }
+            primitive = "lua";
         } else {
-            ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s uses a scripted or native model, which this version does not load%s", item->id, "");
+            ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s uses a native model, which this version does not load%s", item->id, "");
             return ES_EUNSUPPORTED;
         }
     }
-    ops = esk_registry_find(&s->reg, primitive);
+    ops = esk_str_eq(primitive, "lua") && esk_json_get_str(binding, "script", NULL) ? esk_lua_ops() : esk_registry_find(&s->reg, primitive);
     if (!ops) {
         ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s binds unknown primitive %s", item->id, primitive);
         return ES_EUNSUPPORTED;
     }
-    if (s->eng.policy != ESK_POLICY_ELECTRICAL && esk_model_is_electrical_only(ops)) {
+    if (s->eng.policy == ESK_POLICY_FUNCTIONAL && esk_model_is_electrical_only(ops)) {
         ld_diag(s, ES_SEV_ERROR, "island.requires_electrical", id, "%s has no functional model (primitive %s is electrical)", item->id, primitive);
         return ES_EUNSUPPORTED;
     }

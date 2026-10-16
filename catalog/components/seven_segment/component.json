@@ -1,0 +1,313 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/seven_segment",
+  "version": "1.0.0",
+  "name": "7-segment display",
+  "category": "displays",
+  "description": "One-digit 7-segment LED display with decimal point, common cathode or common anode: a segment lights when its pin and COM are at opposite levels. Shows the digit on the board view.",
+  "keywords": [
+    "display",
+    "7-segment",
+    "seven segment",
+    "led",
+    "digit",
+    "common cathode",
+    "common anode"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "B",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "C",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "D",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "E",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "F",
+      "number": 9,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "G",
+      "number": 10,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "DP",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "COM",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "aliases": [
+        "COM2"
+      ],
+      "doc": "Common cathode or anode (pins 3 and 8)"
+    }
+  ],
+  "params": {
+    "common": {
+      "type": "enum",
+      "enum": [
+        "cathode",
+        "anode"
+      ],
+      "default": "cathode",
+      "doc": "Common cathode or common anode"
+    },
+    "color": {
+      "type": "enum",
+      "enum": [
+        "red"
+      ],
+      "default": "red",
+      "doc": "Segment colour",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "char",
+      "type": "string",
+      "doc": "The character the lit segments form, ? when none"
+    },
+    {
+      "name": "seg_a",
+      "type": "boolean"
+    },
+    {
+      "name": "seg_b",
+      "type": "boolean"
+    },
+    {
+      "name": "seg_c",
+      "type": "boolean"
+    },
+    {
+      "name": "seg_d",
+      "type": "boolean"
+    },
+    {
+      "name": "seg_e",
+      "type": "boolean"
+    },
+    {
+      "name": "seg_f",
+      "type": "boolean"
+    },
+    {
+      "name": "seg_g",
+      "type": "boolean"
+    },
+    {
+      "name": "seg_dp",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 12.7,
+    "height_mm": 19,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "seg_a",
+        "selector": "#seg-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_b",
+        "selector": "#seg-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_c",
+        "selector": "#seg-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_d",
+        "selector": "#seg-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_e",
+        "selector": "#seg-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_f",
+        "selector": "#seg-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_g",
+        "selector": "#seg-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_dp",
+        "selector": "#seg-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A segment is lit when its pin and COM are at opposite logic levels (an unconnected COM counts as the right one).",
+      "omissions": [
+        "forward voltage and current (use series resistors in electrical sessions)",
+        "brightness",
+        "multiplexing persistence"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "forward voltage and current (use series resistors in electrical sessions)",
+        "brightness",
+        "multiplexing persistence"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "forward voltage and current (use series resistors in electrical sessions)",
+        "brightness",
+        "multiplexing persistence",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Kingbright SC56-11 / SA56-11 datasheets (pinout)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 90,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "D": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "E": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "F": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "G": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "DP": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "COM": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

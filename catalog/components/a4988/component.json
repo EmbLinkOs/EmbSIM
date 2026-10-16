@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/a4988",
+  "version": "1.0.0",
+  "name": "A4988 stepper driver",
+  "category": "power",
+  "description": "Microstepping bipolar stepper driver module (A4988 carrier): each STEP rising edge moves one full step or a 1/2, 1/4, 1/8 or 1/16 microstep set by MS1-MS3, in the direction of DIR, while enabled and awake; the shaft position and angle are outputs.",
+  "keywords": [
+    "stepper",
+    "motor driver",
+    "A4988",
+    "microstepping",
+    "step dir",
+    "3d printer"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "ENABLE_N",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Enable, active low",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "MS1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "MS2",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "MS3",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "RESET_N",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Reset, active low",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SLEEP_N",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Sleep, active low",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "STEP",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "One microstep per rising edge",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "DIR",
+      "number": 8,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Direction",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "VMOT",
+      "number": 9,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 12,
+        "tolerance": 0.5
+      },
+      "required": false,
+      "doc": "Motor supply"
+    },
+    {
+      "name": "PGND",
+      "number": 10,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "2B",
+      "number": 11,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Coil output (not driven)"
+    },
+    {
+      "name": "2A",
+      "number": 12,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Coil output (not driven)"
+    },
+    {
+      "name": "1A",
+      "number": 13,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Coil output (not driven)"
+    },
+    {
+      "name": "1B",
+      "number": 14,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Coil output (not driven)"
+    },
+    {
+      "name": "VDD",
+      "number": 15,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "GND",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "steps_per_rev": {
+      "type": "integer",
+      "default": 200,
+      "min": 4,
+      "max": 10000,
+      "doc": "Full steps per revolution of the motor"
+    }
+  },
+  "outputs": [
+    {
+      "name": "position",
+      "type": "number",
+      "doc": "Full steps from the start (fractional with microstepping)"
+    },
+    {
+      "name": "angle_deg",
+      "type": "number",
+      "unit": "deg"
+    },
+    {
+      "name": "microsteps",
+      "type": "integer"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "STEP/DIR counting with the MS1-MS3 resolution table, ENABLE_N, RESET_N (home) and SLEEP_N; unconnected RESET_N and SLEEP_N count as inactive.",
+      "omissions": [
+        "coil currents and the motor (the coil pins are not driven)",
+        "missed steps and acceleration limits",
+        "current limiting and decay modes"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "coil currents and the motor (the coil pins are not driven)",
+        "missed steps and acceleration limits",
+        "current limiting and decay modes"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "coil currents and the motor (the coil pins are not driven)",
+        "missed steps and acceleration limits",
+        "current limiting and decay modes",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Allegro A4988 datasheet (microstep resolution table)"
+      },
+      {
+        "title": "Pololu A4988 carrier pinout"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 130,
+    "pins": {
+      "STEP": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "DIR": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "MS1": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "MS2": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "MS3": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "ENABLE_N": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "RESET_N": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "SLEEP_N": {
+        "x": 0,
+        "y": 110,
+        "side": "left"
+      },
+      "1A": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "1B": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "2A": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "2B": {
+        "x": 80,
+        "y": 50,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "VMOT": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 130,
+        "side": "bottom"
+      },
+      "PGND": {
+        "x": 40,
+        "y": 130,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

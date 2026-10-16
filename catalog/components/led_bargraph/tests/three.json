@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "three",
+  "description": "A1-A3 high with K low: level 3.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/led_bargraph"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.A1",
+        "DUT.A2",
+        "DUT.A3"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.K",
+        "DUT.A4",
+        "DUT.A5",
+        "DUT.A6",
+        "DUT.A7",
+        "DUT.A8"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.level": {
+      "at": "500ns",
+      "equals": 3
+    },
+    "output:DUT.lit4": {
+      "at": "500ns",
+      "equals": false
+    }
+  }
+}

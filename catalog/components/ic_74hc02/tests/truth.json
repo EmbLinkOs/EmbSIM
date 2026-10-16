@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "truth",
+  "description": "1A=0, 1B=0, 2A=1, 2B=0.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L3",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc02"
+      }
+    ],
+    "nets": {
+      "N_1A": [
+        "L0.OUT",
+        "DUT.1A"
+      ],
+      "N_1B": [
+        "L1.OUT",
+        "DUT.1B"
+      ],
+      "N_2A": [
+        "L2.OUT",
+        "DUT.2A"
+      ],
+      "N_2B": [
+        "L3.OUT",
+        "DUT.2B"
+      ],
+      "N_1Y": [
+        "DUT.1Y"
+      ],
+      "N_2Y": [
+        "DUT.2Y"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_1Y": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_2Y": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

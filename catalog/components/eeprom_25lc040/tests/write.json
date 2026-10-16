@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "write",
+  "description": "WREN, then WRITE 0x5A, 0xC3 at 0x010: both bytes in memory and the latch cleared.",
+  "policy": "functional",
+  "until": "133us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,0,2,0,2,0,2,0,2,1,3,1,3,0,2,0,0,4,0,0,2,0,2,0,2,0,2,0,2,0,2,1,3,0,2,0,0,2,0,2,0,2,1,3,0,2,0,2,0,2,0,2,0,0,2,1,3,0,2,1,3,1,3,0,2,1,3,0,2,0,1,3,1,3,0,2,0,2,0,2,0,2,1,3,1,3,0,0,4,4",
+          "period": "1u"
+        }
+      },
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/eeprom_25lc040"
+      }
+    ],
+    "nets": {
+      "SI": [
+        "PG.OUT0",
+        "DUT.SI"
+      ],
+      "SCK": [
+        "PG.OUT1",
+        "DUT.SCK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.CS_N"
+      ],
+      "HI": [
+        "H.OUT",
+        "DUT.WP_N",
+        "DUT.HOLD_N"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.writes": {
+      "at": "113us",
+      "equals": 2
+    },
+    "output:DUT.dump": {
+      "at": "113us",
+      "contains": "5AC3"
+    },
+    "output:DUT.write_enabled": {
+      "at": "113us",
+      "equals": false
+    }
+  }
+}

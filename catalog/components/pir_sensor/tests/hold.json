@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "hold",
+  "description": "Motion from 1 ms to 2 ms with a 10 ms hold: OUT high at 5 ms, low at 15 ms.",
+  "policy": "functional",
+  "until": "16ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pir_sensor",
+        "params": {
+          "hold": "10m"
+        }
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "5ms",
+      "logic": "1"
+    },
+    "output:DUT.active": {
+      "at": "15ms",
+      "equals": false
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": true
+    },
+    {
+      "at": "2ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": false
+    }
+  ]
+}

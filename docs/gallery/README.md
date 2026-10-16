@@ -5,6 +5,29 @@ evolves. Newer milestones come first. Every set from M1 on is captured by
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M3 catalog and SDK (2026-10-16)
+
+The catalog grows to 101 components, each validated by the engine against
+its fixtures; parts can be written in Lua; boards and circuits come from
+EmbLinkRTOS board files, DeviceTree and KiCad netlists.
+
+| | |
+|---|---|
+| ![The display showcase's board view](m3/board-showcase.png) | **Displays and actuators.** `examples/display-showcase` in the board view: a 16x2 LCD and an SSD1306 OLED written over their buses by pattern generators, a MAX7219 module over SPI, a 74HC161 counting into a CD4511 and a 7-segment digit and an RGB LED, a CD4017 chasing a bar graph, a servo at 45 degrees and a 555 sounding a buzzer. |
+| ![The showcase running](m3/run-showcase.png) | **The showcase running.** The parts' outputs as meters and traces: the counter's count, the servo's angle, the buzzer's tone near 1.9 kHz, the bar graph's lit segment. |
+| ![The showcase's schematic](m3/design-showcase.png) | **Design, showcase.** Twenty-two catalog parts on one sheet, connected by net labels. |
+| ![A KiCad netlist imported](m3/design-flasher.png) | **Imported from KiCad.** `examples/kicad-flasher`, drawn by `tools/importers/kicad2project.py` from a KiCad netlist: a 9 V battery, a 7805, a 555 astable with its timing taken from R1, R2 and C1, and the LED it flashes at 6.9 Hz. |
+| ![Design, Blue Pill](m3/design-bluepill.png) | **Design, Blue Pill.** The library's 101 components by category. |
+| ![Decoded serial](m3/decode-bluepill.png) | **Decoding.** As in M2. |
+| ![Inside the Blue Pill](m3/inside-bluepill.png) | **Hierarchy.** As in M2. |
+| ![A bus counting](m3/design-counter.png) | **Buses.** As in M2. |
+| ![The counter on the logic analyzer](m3/run-counter.png) | **The counter running.** |
+| ![Run, Blue Pill](m3/run-bluepill.png) | **Run, Blue Pill.** |
+| ![Dark theme](m3/design-bluepill-dark.png) | **Dark theme.** |
+| ![Debug](m3/debug-bluepill.png) | **Debug.** |
+| ![Design, transistor circuit](m3/design-transistor.png) | **Design, transistor circuit.** |
+| ![Run, transistor circuit](m3/run-transistor.png) | **Run, transistor circuit.** |
+
 ## M2 workbench (2026-10-16)
 
 The workbench edits the circuit against the engine, draws boards, decodes

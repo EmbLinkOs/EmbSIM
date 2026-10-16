@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "blink",
+  "until": "1s",
+  "description": "The 555 flashes the LED at 1.44 / ((R1 + 2 R2) C1) = 6.86 Hz from the 7805's 5 V.",
+  "assertions": [
+    {
+      "id": "rate",
+      "between": [
+        "0.2s",
+        "1s"
+      ],
+      "probe": "out",
+      "expect": {
+        "frequency_hz": 6.86,
+        "tolerance": 0.1
+      }
+    },
+    {
+      "id": "rail",
+      "at": "0.5s",
+      "probe": "vcc",
+      "expect": {
+        "min_v": 4.9,
+        "max_v": 5.1
+      }
+    },
+    {
+      "id": "lit",
+      "between": [
+        "0.2s",
+        "1s"
+      ],
+      "probe": "led",
+      "expect": {
+        "max": 2
+      }
+    }
+  ]
+}

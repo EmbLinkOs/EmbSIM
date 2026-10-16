@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ssd1306",
+  "version": "1.0.0",
+  "name": "SSD1306 OLED 128x64",
+  "category": "displays",
+  "description": "0.96 inch 128x64 monochrome OLED module with an SSD1306 controller on I2C (address 0x3C): the command set for display on/off, addressing modes, column and page windows, contrast and inversion, and the display RAM, drawn pixel for pixel on the board view.",
+  "keywords": [
+    "display",
+    "oled",
+    "SSD1306",
+    "128x64",
+    "i2c",
+    "graphic",
+    "0.96"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "GND",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "VCC",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.2
+      },
+      "required": false
+    },
+    {
+      "name": "SCL",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SDA",
+      "number": 4,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    }
+  ],
+  "params": {
+    "address": {
+      "type": "integer",
+      "default": 60,
+      "min": 60,
+      "max": 61,
+      "doc": "I2C address: 60 (0x3C) or 61 (0x3D)"
+    }
+  },
+  "outputs": [
+    {
+      "name": "on",
+      "type": "boolean"
+    },
+    {
+      "name": "lit_pixels",
+      "type": "integer"
+    },
+    {
+      "name": "pixels",
+      "type": "string",
+      "doc": "SVG path of the lit pixels (one unit per pixel)"
+    },
+    {
+      "name": "contrast",
+      "type": "integer"
+    },
+    {
+      "name": "inverted",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 27,
+    "height_mm": 18,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "pixels",
+        "selector": "#pixels",
+        "attr": "d",
+        "format": "{}"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "SSD1306 I2C control bytes (Co, D/C), the fundamental, addressing and hardware commands with their argument counts, page/horizontal/vertical addressing into 1 KiB of display RAM, inversion and entire-display-on.",
+      "omissions": [
+        "scrolling (commands accepted, not animated)",
+        "contrast as brightness",
+        "the SPI and parallel interfaces",
+        "charge-pump timing"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "scrolling (commands accepted, not animated)",
+        "contrast as brightness",
+        "the SPI and parallel interfaces",
+        "charge-pump timing"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "scrolling (commands accepted, not animated)",
+        "contrast as brightness",
+        "the SPI and parallel interfaces",
+        "charge-pump timing",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Solomon Systech SSD1306 datasheet rev 1.1 (command table, I2C interface)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 50,
+    "pins": {
+      "SCL": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SDA": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 50,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

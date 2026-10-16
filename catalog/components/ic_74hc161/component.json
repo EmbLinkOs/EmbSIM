@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc161",
+  "version": "1.0.0",
+  "name": "74HC161 4-bit counter",
+  "category": "logic",
+  "description": "Presettable synchronous 4-bit binary counter with asynchronous master reset (74HC161): counts on CP rising while CEP and CET are high, loads D0-D3 while PE_N is low; TC is high at 15 with CET.",
+  "keywords": [
+    "logic",
+    "counter",
+    "74HC161",
+    "binary",
+    "synchronous",
+    "presettable"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "MR_N",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Asynchronous master reset, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CP",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Clock, rising edge",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D0",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D1",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D2",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "D3",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CEP",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Count enable",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "PE_N",
+      "number": 9,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Parallel enable (load), active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CET",
+      "number": 10,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Count enable carry",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q3",
+      "number": 11,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q2",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q1",
+      "number": 13,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q0",
+      "number": 14,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "TC",
+      "number": 15,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Terminal count",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "count",
+      "type": "integer",
+      "min": 0,
+      "max": 15,
+      "doc": "Counter value"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Synchronous count and load on CP rising, asynchronous reset, TC = (Q = 15) and CET.",
+      "omissions": [
+        "setup and hold",
+        "the CP-to-TC delay is the same as CP-to-Q"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "setup and hold",
+        "the CP-to-TC delay is the same as CP-to-Q"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "setup and hold",
+        "the CP-to-TC delay is the same as CP-to-Q",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC161 datasheet (pinout, function table)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 120,
+    "pins": {
+      "D0": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "D1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "D2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D3": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "CEP": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "CET": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "PE_N": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "CP": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "Q0": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "Q1": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "Q2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "Q3": {
+        "x": 60,
+        "y": 50,
+        "side": "right"
+      },
+      "TC": {
+        "x": 60,
+        "y": 70,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      },
+      "MR_N": {
+        "x": 20,
+        "y": 120,
+        "side": "bottom"
+      },
+      "GND": {
+        "x": 30,
+        "y": 120,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -1,6 +1,6 @@
 # SPEC-013 - Extension API (Lua Behavioural Models)
 
-**Status:** Accepted in outline 2026-10-15; completed before M3. **Builds
+**Status:** Accepted 2026-10-15; §2.1 records the M3 implementation. **Builds
 on:** ADR-009; SPEC-005 §5. **Requirements:** `docs/requirements/EXT.md`.
 
 ---
@@ -50,6 +50,63 @@ code, message)`, `ctx.bus` helpers for I²C and SPI slave behaviour
 implemented in C over the pins so a scripted device never bit-bangs a
 protocol itself, `ctx.analog` read-only node voltages for behavioural
 sensors whose electrical side is a composite.
+
+### 2.1 As implemented (M3)
+
+- **Levels.** `ctx.pins[name].value` reads the pin (with the floating and
+  unknown diagnostics of `esk_pin_read`); `.level` reads it without them;
+  both are `0`, `1`, `"z"` (nothing drives the net) or `"x"` (unknown).
+  `.name` and `.connected` describe the pin; `.voltage` is the node
+  voltage of an analog net, and on a digital net 0 V or the default supply
+  for a 1 (read-only: a script cannot drive an analog node, §3). `ctx.drive` accepts `0`, `1`,
+  `true`, `false`, `"0"`, `"1"`, `"z"` (the same as `ctx.release`) and
+  `"x"`; strengths are `"strong"` (default), `"weak"` and `"supply"`; the
+  delay defaults to 0.
+- **Policy.** `ctx.policy` is `"functional"`, `"timed"` or `"electrical"`;
+  a model applies its datasheet delays only when it is not `"functional"`
+  (SPEC-003 §5: functional sessions have no delays).
+- **Wake-ups.** Tokens are 0 to 7; a new `wake_at` with a token replaces
+  the pending one; a time in the past is an error.
+- **Lifecycle.** At every reset the instance gets a fresh `ctx.state`,
+  then `M.create(ctx)` and `M.reset(ctx)` run (either may be absent), so a
+  model drives its initial outputs in either. Every digital input and
+  bidirectional pin is watched; `M.on_input(ctx, pin)` gets the pin's name.
+- **Inputs and outputs.** `M.on_set(ctx, name, value)` returning `false`
+  refuses the value (the input is not set); a missing `on_set` refuses
+  every input. `ctx.input(name)` reads an input's current value.
+  `M.observe(ctx)` returns a table whose string keys become outputs.
+- **Isolation.** The chunk runs once per instance with its own environment
+  table, so file-scope locals and globals belong to the instance; the
+  environment reads through to a shared base holding the allowed globals and
+  the `string`, `table`, `math` and `utf8` libraries (`string.dump`
+  removed). Only text chunks are loaded. `print(...)` is an `ext.print`
+  information diagnostic.
+- **Determinism.** The interpreter's string-hash seed and `table.sort`
+  pivot are constants and `math.random` is seeded with 0 when the state is
+  created, so a session replays identically. Iteration with `pairs` over
+  tables keyed by tables or functions depends on addresses; a model that
+  needs a stable order sorts its keys.
+- **Failures.** A syntax error refuses the load (`ext.error`). A runtime
+  error, or an evaluation past `lua_budget` (1 000 000 instructions,
+  `ext.budget_exceeded`), is an error diagnostic naming the component; that
+  instance stops until the next reset and the rest of the circuit runs on.
+  The Lua state's memory is capped at 64 MiB.
+- **Buses.** `ctx.bus.i2c_slave(address, handlers, pins?)` decodes I²C
+  from the pins' edges: 7-bit address, open drain (the model's SDA is
+  released for 1 and pulled up outside), repeated START, no clock stretching.
+  Handlers: `start(ctx, "read"|"write")` (returning `false` leaves the
+  address unacknowledged, as a device busy with a write cycle does),
+  `write(ctx, byte)` (returning `false` sends a NACK), `read(ctx) -> byte`, `stop(ctx)`. Pins default to
+  `SDA` and `SCL`. `ctx.bus.spi_slave(handlers, options?)` decodes 8-bit
+  frames, MSB first, in modes 0 to 3 (`options.mode`), CS active low,
+  releasing MISO while not selected. Handlers: `select(ctx) -> first byte`,
+  `transfer(ctx, byte) -> next byte`, `deselect(ctx)`. Pins default to
+  `SCK`/`SCLK`/`CLK`, `MOSI`/`SDI`/`DIN`/`SI`, `MISO`/`SDO`/`DOUT`/`SO` (optional)
+  and `CS`/`SS`/`CE`/`NSS`; `options` may name them (`sck`, `mosi`, `miso`, `cs`).
+  A model registers its devices in `M.create`; each reset registers them
+  again.
+- **Not yet implemented:** `ctx.analog` (pins carry `.voltage` instead);
+  the `lua_budget` setting (the default applies).
 
 ## 3. Electrical scripted models
 

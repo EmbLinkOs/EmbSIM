@@ -7,15 +7,17 @@ hardware would have, and lets you press its buttons, turn its pots, probe its
 wires and debug its code while it runs. The same experiment runs headless from
 the command line in continuous integration and replays deterministically.
 
-**Current phase: M2 workbench.** The core library, command line, protocol,
+**Current phase: M3 catalog and SDK.** The core library, command line, protocol,
 catalog and workbench run circuits (M0); a Blue Pill's STM32F103C8 runs
 real firmware in them with source-level debugging (M1); the workbench
 edits circuits against the engine, decodes serial buses and ships as a
-desktop application (M2). Nothing is released
+desktop application (M2); a catalog of 101 components, each checked by
+the engine against its fixtures, with Lua models, a component SDK and
+importers for board files, DeviceTree and KiCad netlists (M3). Nothing is released
 yet: [`docs/STATUS.md`](docs/STATUS.md) is the only inventory of what exists
 and with what evidence.
 
-![The workbench decoding the Blue Pill's serial output](docs/gallery/m2/decode-bluepill.png)
+![The board view of the display showcase: LCD, OLED, MAX7219, 7-segment digit, RGB LED, bar graph, servo and buzzer](docs/gallery/m3/board-showcase.png)
 
 The [gallery](docs/gallery/README.md) shows the workbench at each milestone.
 

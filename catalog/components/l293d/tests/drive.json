@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "drive",
+  "description": "Pair 1 enabled with 1A=1, 2A=0 drives forward; pair 2 disabled releases 3Y.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L3",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L4",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/l293d"
+      }
+    ],
+    "nets": {
+      "N_EN12": [
+        "L0.OUT",
+        "DUT.EN12"
+      ],
+      "N_1A": [
+        "L1.OUT",
+        "DUT.1A"
+      ],
+      "N_2A": [
+        "L2.OUT",
+        "DUT.2A"
+      ],
+      "N_EN34": [
+        "L3.OUT",
+        "DUT.EN34"
+      ],
+      "N_3A": [
+        "L4.OUT",
+        "DUT.3A"
+      ],
+      "N_1Y": [
+        "DUT.1Y"
+      ],
+      "N_2Y": [
+        "DUT.2Y"
+      ],
+      "N_3Y": [
+        "DUT.3Y"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_1Y": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_2Y": {
+      "at": "500ns",
+      "logic": "0"
+    },
+    "net:N_3Y": {
+      "at": "500ns",
+      "logic": "Z"
+    }
+  }
+}

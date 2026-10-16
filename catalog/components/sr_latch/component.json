@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/sr_latch",
+  "version": "1.0.0",
+  "name": "SR latch",
+  "category": "logic",
+  "description": "Set-reset latch with active-low inputs (NAND latch, as in a 74HC279): S_N sets Q, R_N resets it; both low drive Q and QN high.",
+  "keywords": [
+    "logic",
+    "latch",
+    "sr",
+    "set reset",
+    "debounce",
+    "74HC279"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "S_N",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Active-low set",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "R_N",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Active-low reset",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "QN",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "NAND latch truth table; holds with both inputs high.",
+      "omissions": [
+        "metastability"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "metastability"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "metastability",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC279 datasheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 50,
+    "pins": {
+      "S_N": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "R_N": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "Q": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "QN": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 50,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

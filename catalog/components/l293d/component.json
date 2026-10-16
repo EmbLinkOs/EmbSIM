@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/l293d",
+  "version": "1.0.0",
+  "name": "L293D dual H-bridge",
+  "category": "power",
+  "description": "Quadruple half-H driver (L293D) for two DC motors or one stepper: each output follows its input while the pair's enable is high and is released while low; motor1/motor2 report forward, reverse, brake or coast.",
+  "keywords": [
+    "motor driver",
+    "h-bridge",
+    "L293D",
+    "dc motor",
+    "stepper",
+    "half-h"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "EN12",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Enable of drivers 1 and 2",
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "1A",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "1Y",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "GND2",
+      "number": 5,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "2Y",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "2A",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "VCC2",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 12,
+        "tolerance": 0.5
+      },
+      "required": false,
+      "doc": "Motor supply"
+    },
+    {
+      "name": "EN34",
+      "number": 9,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Enable of drivers 3 and 4",
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "3A",
+      "number": 10,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "3Y",
+      "number": 11,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "GND3",
+      "number": 12,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "GND4",
+      "number": 13,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "4Y",
+      "number": 14,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "4A",
+      "number": 15,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC1"
+    },
+    {
+      "name": "VCC1",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {},
+  "outputs": [
+    {
+      "name": "motor1",
+      "type": "enum",
+      "enum": [
+        "forward",
+        "reverse",
+        "brake",
+        "coast"
+      ]
+    },
+    {
+      "name": "motor2",
+      "type": "enum",
+      "enum": [
+        "forward",
+        "reverse",
+        "brake",
+        "coast"
+      ]
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Half-H outputs follow their inputs while enabled, released while disabled; the pair's motor state.",
+      "omissions": [
+        "output drive as voltages at VCC2 (outputs are logic levels)",
+        "the output clamp diodes",
+        "thermal shutdown",
+        "current limits (600 mA)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "output drive as voltages at VCC2 (outputs are logic levels)",
+        "the output clamp diodes",
+        "thermal shutdown",
+        "current limits (600 mA)"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "output drive as voltages at VCC2 (outputs are logic levels)",
+        "the output clamp diodes",
+        "thermal shutdown",
+        "current limits (600 mA)",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments L293/L293D datasheet (function table, pinout)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 100,
+    "pins": {
+      "EN12": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1A": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "2A": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "EN34": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "3A": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "4A": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "1Y": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "2Y": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "3Y": {
+        "x": 80,
+        "y": 60,
+        "side": "right"
+      },
+      "4Y": {
+        "x": 80,
+        "y": 70,
+        "side": "right"
+      },
+      "VCC1": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      },
+      "VCC2": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 20,
+        "y": 100,
+        "side": "bottom"
+      },
+      "GND2": {
+        "x": 30,
+        "y": 100,
+        "side": "bottom"
+      },
+      "GND3": {
+        "x": 40,
+        "y": 100,
+        "side": "bottom"
+      },
+      "GND4": {
+        "x": 50,
+        "y": 100,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

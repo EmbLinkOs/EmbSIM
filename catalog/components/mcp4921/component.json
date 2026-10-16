@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/mcp4921",
+  "version": "1.0.0",
+  "name": "MCP4921 12-bit DAC",
+  "category": "analog",
+  "description": "12-bit voltage-output DAC with SPI (MCP4921): 16-bit command words with gain and shutdown bits, latched on CS rising (or LDAC_N falling). The output voltage is reported as an output value.",
+  "keywords": [
+    "dac",
+    "MCP4921",
+    "digital to analog",
+    "spi",
+    "converter",
+    "12-bit"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "VDD",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "CS_N",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Chip select, active low",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SCK",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "SDI",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "LDAC_N",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Latch, active low (tie low to update on CS rising)",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "VREF",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Reference (the vref parameter when unconnected)"
+    },
+    {
+      "name": "AVSS",
+      "number": 7,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "VOUT",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Output (reported as the vout output; not driven)"
+    }
+  ],
+  "params": {
+    "vref": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "min": 0.04,
+      "max": 5.5,
+      "doc": "Reference when VREF is unconnected"
+    },
+    "vdd": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "min": 2.7,
+      "max": 5.5,
+      "doc": "Supply: the output cannot exceed it"
+    }
+  },
+  "outputs": [
+    {
+      "name": "code",
+      "type": "integer",
+      "min": 0,
+      "max": 4095
+    },
+    {
+      "name": "vout",
+      "type": "number",
+      "unit": "V"
+    },
+    {
+      "name": "active",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Command word decoding (channel A only, buffer, gain, shutdown), CS-rising and LDAC_N latching; vout = Vref x gain x code / 4096 limited to VDD.",
+      "omissions": [
+        "VOUT is not driven onto its net (a script cannot drive an analog node)",
+        "settling time",
+        "INL/DNL"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "VOUT is not driven onto its net (a script cannot drive an analog node)",
+        "settling time",
+        "INL/DNL"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "VOUT is not driven onto its net (a script cannot drive an analog node)",
+        "settling time",
+        "INL/DNL",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Microchip MCP4901/4911/4921 datasheet (write command register)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 90,
+    "pins": {
+      "SDI": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCK": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "CS_N": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "LDAC_N": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "VREF": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "VOUT": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "AVSS": {
+        "x": 40,
+        "y": 90,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "magenta",
+  "description": "Red and blue on, green off, COM low: #ff00ff.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/rgb_led"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.R",
+        "DUT.B"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.G",
+        "DUT.COM"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.color": {
+      "at": "500ns",
+      "equals": "#ff00ff"
+    }
+  }
+}

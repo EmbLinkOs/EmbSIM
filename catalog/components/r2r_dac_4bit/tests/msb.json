@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "msb",
+  "description": "D3 at 3.3 V, the other bits at ground: OUT = 3.3 V / 2.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/r2r_dac_4bit"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VREF": [
+        "V1.+",
+        "DUT.D3"
+      ],
+      "OUT": [
+        "DUT.OUT"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.D0",
+        "DUT.D1",
+        "DUT.D2",
+        "DUT.GND",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": 1.64,
+      "max_v": 1.66
+    }
+  }
+}

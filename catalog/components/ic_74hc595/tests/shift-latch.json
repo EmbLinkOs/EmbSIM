@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "shift-latch",
+  "description": "Five ones shifted in at 1 kHz, then latched at 5.2 ms: Q0-Q4 high, Q5 low.",
+  "policy": "functional",
+  "until": "7ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "SH",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "ST",
+        "component": "emblink/pulse_source",
+        "params": {
+          "td": "5.2m",
+          "pw": "0.1m",
+          "per": "1"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc595"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.DS",
+        "DUT.MR_N"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.OE_N"
+      ],
+      "SHCP": [
+        "SH.OUT",
+        "DUT.SHCP"
+      ],
+      "STCP": [
+        "ST.+",
+        "DUT.STCP"
+      ],
+      "Q4": [
+        "DUT.Q4"
+      ],
+      "Q5": [
+        "DUT.Q5"
+      ],
+      "Q0": [
+        "DUT.Q0"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q0": {
+      "at": "4ms",
+      "logic": "0"
+    },
+    "net:Q4": {
+      "at": "6ms",
+      "logic": "1"
+    },
+    "net:Q5": {
+      "at": "6ms",
+      "logic": "0"
+    },
+    "output:DUT.latch": {
+      "at": "6ms",
+      "equals": 31
+    }
+  }
+}

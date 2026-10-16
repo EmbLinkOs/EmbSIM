@@ -11,6 +11,10 @@ foreach(src ${EMBSIM_UNIT_TESTS})
   add_test(NAME ${name} COMMAND ${name})
 endforeach()
 
+# every catalog item instantiates under its declared policies and passes its
+# fixtures (SPEC-014 §3)
+add_test(NAME catalog_fixtures COMMAND embsim_cli catalog validate ${CMAKE_SOURCE_DIR}/catalog)
+
 # Python-based checks run under CTest when an interpreter is available: the
 # tools' unit tests, documentation integrity, repository policy checks, and the
 # protocol conformance suite over the stdio and WebSocket transports.
@@ -18,9 +22,13 @@ find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
   add_test(NAME tools_unittests COMMAND ${Python3_EXECUTABLE} -m unittest discover -s ${CMAKE_SOURCE_DIR}/tools -p "test_*.py"
            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  add_test(NAME catalog_sdk COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_sdk.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  add_test(NAME importers COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_importers.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   add_test(NAME docs_integrity COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/docs/check_docs.py)
   add_test(NAME banned_constructs COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/repository/check_banned.py)
-  add_test(NAME catalog_fixtures COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/run_fixtures.py
+  add_test(NAME catalog_fixture_assertions COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/run_fixtures.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   if(EXISTS ${CMAKE_SOURCE_DIR}/examples/button-led/project.json)
     add_test(NAME protocol_conformance COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/run_conformance.py

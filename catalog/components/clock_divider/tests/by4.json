@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "by4",
+  "description": "1 kHz divided by 4: 250 Hz.",
+  "policy": "functional",
+  "until": "40ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/clock_divider",
+        "params": {
+          "n": 4
+        }
+      }
+    ],
+    "nets": {
+      "CLK": [
+        "CK.OUT",
+        "DUT.CLK"
+      ],
+      "OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "between": [
+        "0",
+        "40ms"
+      ],
+      "frequency_hz": 250,
+      "tolerance": 0.05
+    }
+  }
+}

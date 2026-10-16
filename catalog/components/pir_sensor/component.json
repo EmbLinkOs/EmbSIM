@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/pir_sensor",
+  "version": "1.0.0",
+  "name": "PIR motion sensor",
+  "category": "sensors",
+  "description": "Passive-infrared motion sensor module (HC-SR501 in retrigger mode): OUT goes high when motion starts and stays high for the hold time after it ends. Motion is an interactive input.",
+  "keywords": [
+    "sensor",
+    "pir",
+    "motion",
+    "HC-SR501",
+    "presence",
+    "infrared"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "VCC",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "OUT",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "hold": {
+      "type": "number",
+      "unit": "s",
+      "default": 3,
+      "min": "1m",
+      "max": 300,
+      "doc": "Time OUT stays high after motion ends"
+    }
+  },
+  "inputs": [
+    {
+      "name": "motion",
+      "type": "boolean",
+      "default": false,
+      "doc": "Something moves in front of the sensor"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "active",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "OUT follows motion with the hold time, retriggerable.",
+      "omissions": [
+        "the warm-up period",
+        "sensitivity and range",
+        "single-trigger mode"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "the warm-up period",
+        "sensitivity and range",
+        "single-trigger mode"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "the warm-up period",
+        "sensitivity and range",
+        "single-trigger mode",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "HC-SR501 PIR module documentation (retrigger mode, hold potentiometer)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "OUT": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

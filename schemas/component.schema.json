@@ -82,7 +82,7 @@
     },
     "family": {
       "$ref": "pin-model.schema.json#/$defs/family",
-      "description": "Default logic family for the component's digital pins (SPEC-005 \u00a74)."
+      "description": "Default logic family for the component's digital pins (SPEC-005 §4)."
     },
     "pins": {
       "type": "array",
@@ -122,7 +122,7 @@
     },
     "timed": {
       "$ref": "#/$defs/timing",
-      "description": "Datasheet timing used by timed sessions (SPEC-003 \u00a75)."
+      "description": "Datasheet timing used by timed sessions (SPEC-003 §5)."
     },
     "symbol": {
       "$ref": "#/$defs/symbol"
@@ -783,6 +783,10 @@
                   "type": "string"
                 },
                 "description": "enum or integer output value -> attribute value."
+              },
+              "format": {
+                "type": "string",
+                "description": "A template whose \"{}\" takes the output's value (after scale for numbers): rotate({} 30 30), a colour, a path. attr \"text\" sets the element's text."
               }
             }
           }

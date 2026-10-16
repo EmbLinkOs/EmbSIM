@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "load",
+  "description": "PE_N low loads D = 0b0101 at the first clock edge.",
+  "policy": "functional",
+  "until": "4ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc161"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.MR_N",
+        "DUT.CEP",
+        "DUT.CET",
+        "DUT.D0",
+        "DUT.D2"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.PE_N",
+        "DUT.D1",
+        "DUT.D3"
+      ],
+      "CP": [
+        "CK.OUT",
+        "DUT.CP"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.count": {
+      "at": "3ms",
+      "equals": 5
+    }
+  }
+}

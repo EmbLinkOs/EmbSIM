@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "enabled",
+  "description": "OE=1, A=1: Y=1.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tristate_buffer"
+      }
+    ],
+    "nets": {
+      "N_OE": [
+        "L0.OUT",
+        "DUT.OE"
+      ],
+      "N_A": [
+        "L1.OUT",
+        "DUT.A"
+      ],
+      "N_Y": [
+        "DUT.Y"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_Y": {
+      "at": "500ns",
+      "logic": "1"
+    }
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "5plus2carry",
+  "description": "5 + 2 + 1 = 8: S3 high, no carry out.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L3",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L4",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L6",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L7",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L8",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc283"
+      }
+    ],
+    "nets": {
+      "N_A0": [
+        "L0.OUT",
+        "DUT.A0"
+      ],
+      "N_A1": [
+        "L1.OUT",
+        "DUT.A1"
+      ],
+      "N_A2": [
+        "L2.OUT",
+        "DUT.A2"
+      ],
+      "N_A3": [
+        "L3.OUT",
+        "DUT.A3"
+      ],
+      "N_B0": [
+        "L4.OUT",
+        "DUT.B0"
+      ],
+      "N_B1": [
+        "L5.OUT",
+        "DUT.B1"
+      ],
+      "N_B2": [
+        "L6.OUT",
+        "DUT.B2"
+      ],
+      "N_B3": [
+        "L7.OUT",
+        "DUT.B3"
+      ],
+      "N_CIN": [
+        "L8.OUT",
+        "DUT.CIN"
+      ],
+      "N_S3": [
+        "DUT.S3"
+      ],
+      "N_S0": [
+        "DUT.S0"
+      ],
+      "N_COUT": [
+        "DUT.COUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_S3": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_S0": {
+      "at": "500ns",
+      "logic": "0"
+    },
+    "net:N_COUT": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

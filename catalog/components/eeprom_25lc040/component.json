@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/eeprom_25lc040",
+  "version": "1.0.0",
+  "name": "25LC040 SPI EEPROM",
+  "category": "misc",
+  "description": "4-kbit (512 x 8) SPI EEPROM (25LC040): READ, WRITE with 16-byte pages, WREN, WRDI and RDSR with the write-in-progress and write-enable bits; the ninth address bit is in the instruction.",
+  "keywords": [
+    "memory",
+    "eeprom",
+    "25LC040",
+    "spi",
+    "non-volatile",
+    "storage"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "CS_N",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Chip select, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SO",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "doc": "Serial data out",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "WP_N",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Write protect, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "SI",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Serial data in",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCK",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "HOLD_N",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Hold (not modelled)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "twc": {
+      "type": "number",
+      "unit": "s",
+      "default": "5m",
+      "min": 0,
+      "max": "20m",
+      "doc": "Write cycle time"
+    }
+  },
+  "outputs": [
+    {
+      "name": "dump",
+      "type": "string",
+      "doc": "The 512 bytes in hexadecimal"
+    },
+    {
+      "name": "writes",
+      "type": "integer"
+    },
+    {
+      "name": "write_enabled",
+      "type": "boolean",
+      "doc": "The WEL latch"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Instruction set, page wrap, write enable latch, write cycle with WIP, WP_N.",
+      "omissions": [
+        "block protection bits (WRSR is ignored)",
+        "HOLD_N",
+        "contents are not kept between sessions"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "block protection bits (WRSR is ignored)",
+        "HOLD_N",
+        "contents are not kept between sessions"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "block protection bits (WRSR is ignored)",
+        "HOLD_N",
+        "contents are not kept between sessions",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Microchip 25AA040/25LC040 datasheet (instruction set, status register)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 60,
+    "pins": {
+      "SI": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCK": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "CS_N": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "SO": {
+        "x": 70,
+        "y": 20,
+        "side": "right"
+      },
+      "WP_N": {
+        "x": 70,
+        "y": 30,
+        "side": "right"
+      },
+      "HOLD_N": {
+        "x": 70,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

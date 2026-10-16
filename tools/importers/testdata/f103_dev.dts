@@ -1,0 +1,88 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* A Zephyr-style board DTS for the importer tests (not a real board). */
+/dts-v1/;
+#include <st/f1/stm32f103X8.dtsi>
+#include <st/f1/stm32f103c(8-b)tx-pinctrl.dtsi>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "F103 development board";
+	compatible = "emblink,f103-dev";
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,shell-uart = &usart1;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led_blue: led_0 {
+			gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
+			label = "Blue LED";
+		};
+		led_1 {
+			gpios = <&gpiob 12 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	keys {
+		compatible = "gpio-keys";
+		user_button: button {
+			label = "User";
+			gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+
+	dht22 {
+		compatible = "aosong,dht";
+		dio-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+		dht22;
+	};
+
+	aliases {
+		led0 = &led_blue;
+		sw0 = &user_button;
+	};
+};
+
+&clk_hse {
+	clock-frequency = <DT_FREQ_M(8)>;
+	status = "okay";
+};
+
+&usart1 {
+	pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pb6 &i2c1_sda_pb7>;
+	pinctrl-names = "default";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	oled: ssd1306@3c {
+		compatible = "solomon,ssd1306fb";
+		reg = <0x3c>;
+	};
+	rtc@68 {
+		compatible = "maxim,ds1307";
+		reg = <0x68>;
+	};
+};
+
+&spi1 {
+	pinctrl-0 = <&spi1_sck_master_pa5 &spi1_miso_master_pa6 &spi1_mosi_master_pa7>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpioa 4 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	adc@0 {
+		compatible = "microchip,mcp3008";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+	};
+};

@@ -130,6 +130,10 @@ struct esk_engine {
     int partitioned;
     int in_reset;            /* floating-input diagnostics are suppressed while models initialise */
     uint64_t signal_events;
+    /* the scripted-model host (core/ext), created by the loader at the first
+     * scripted component and freed after the components */
+    void *ext;
+    void (*ext_free)(void *ext);
 };
 
 /* lifecycle */
