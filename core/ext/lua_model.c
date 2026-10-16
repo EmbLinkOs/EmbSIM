@@ -15,7 +15,9 @@
  *   ctx.now(), ctx.drive(pin, value, strength?, delay_ps?), ctx.release(pin),
  *   ctx.wake_at(time_ps, token?), ctx.cancel(token?), ctx.input(name),
  *   ctx.diag(severity, code, message).
- * Levels are 0 and 1, "z" (nothing drives the net) and "x" (unknown); a
+ * ctx.pins[name].voltage is the node voltage on an analog net (the level
+ * times the supply on a digital one). Levels are 0 and 1, "z" (nothing
+ * drives the net) and "x" (unknown); a
  * drive accepts those, booleans and "0"/"1". Tokens are 0 to 7.
  *
  * Callbacks: reset (a fresh ctx.state, then M.create and M.reset),
@@ -363,6 +365,16 @@ static int pin_field(lua_State *L)
         lua_pushstring(L, p->name);
     else if (!strcmp(k, "connected"))
         lua_pushboolean(L, p->net != NULL);
+    else if (!strcmp(k, "voltage")) {
+        /* an analog net's node voltage; a digital net's level as 0 V or the supply */
+        const esk_net *n = p->net;
+        double volts = 0.0;
+        if (n && n->island)
+            volts = n->voltage;
+        else if (n && esk_net_value(n) == ESK_L1)
+            volts = p->comp->e->default_supply_v;
+        lua_pushnumber(L, (lua_Number)volts);
+    }
     else
         lua_pushnil(L);
     return 1;
@@ -567,7 +579,12 @@ static void i2c_edge(esk_comp *c, i2c_slave *b, esk_pin *p)
                 b->phase = I2C_IGNORE;
                 return;
             }
-            call_handler(c, b->handlers, "start", 1, 0, (b->shift & 1) ? "read" : "write", 0, NULL);
+            /* start returning false NACKs the address (a device busy with a write cycle) */
+            call_handler(c, b->handlers, "start", 1, 0, (b->shift & 1) ? "read" : "write", 0, &refused);
+            if (refused) {
+                b->phase = I2C_IGNORE;
+                return;
+            }
             b->phase = (b->shift & 1) ? I2C_READ : I2C_WRITE;
             b->addressed = 1;
             b->slot = 1;

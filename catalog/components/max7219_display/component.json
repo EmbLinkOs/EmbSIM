@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/max7219_display",
+  "version": "1.0.0",
+  "name": "MAX7219 8-digit display",
+  "category": "displays",
+  "description": "An 8-digit 7-segment display module driven by a MAX7219: 16-bit frames shifted on CLK rising (MSB first) and latched when CS rises set the digits, the code-B decode mode, intensity, scan limit and shutdown. The display shows on the board view.",
+  "keywords": [
+    "display",
+    "MAX7219",
+    "7-segment",
+    "8-digit",
+    "spi",
+    "led driver",
+    "module"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "DIN",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Serial data in",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CS",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Load (latches on the rising edge)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CLK",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "DOUT",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Serial data out (cascade)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 5,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "GND",
+      "number": 6,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {},
+  "outputs": [
+    {
+      "name": "text",
+      "type": "string",
+      "doc": "The eight digits, left to right"
+    },
+    {
+      "name": "on",
+      "type": "boolean"
+    },
+    {
+      "name": "intensity",
+      "type": "integer",
+      "min": 0,
+      "max": 15
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 82,
+    "height_mm": 20,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "text",
+        "selector": "#digits",
+        "attr": "text",
+        "format": "{}"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The MAX7219 register map: digits, decode mode, intensity, scan limit, shutdown and display test; DOUT shifts the frame out 16 clocks later.",
+      "omissions": [
+        "the segment and digit driver pins (the display is part of the module)",
+        "multiplexing and brightness",
+        "no-op chaining semantics beyond DOUT"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "the segment and digit driver pins (the display is part of the module)",
+        "multiplexing and brightness",
+        "no-op chaining semantics beyond DOUT"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "the segment and digit driver pins (the display is part of the module)",
+        "multiplexing and brightness",
+        "no-op chaining semantics beyond DOUT",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Analog Devices (Maxim) MAX7219 datasheet (register map, serial interface)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 60,
+    "pins": {
+      "DIN": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "CS": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "CLK": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "DOUT": {
+        "x": 70,
+        "y": 20,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -56,7 +56,9 @@ sensors whose electrical side is a composite.
 - **Levels.** `ctx.pins[name].value` reads the pin (with the floating and
   unknown diagnostics of `esk_pin_read`); `.level` reads it without them;
   both are `0`, `1`, `"z"` (nothing drives the net) or `"x"` (unknown).
-  `.name` and `.connected` describe the pin. `ctx.drive` accepts `0`, `1`,
+  `.name` and `.connected` describe the pin; `.voltage` is the node
+  voltage of an analog net, and on a digital net 0 V or the default supply
+  for a 1 (read-only: a script cannot drive an analog node, §3). `ctx.drive` accepts `0`, `1`,
   `true`, `false`, `"0"`, `"1"`, `"z"` (the same as `ctx.release`) and
   `"x"`; strengths are `"strong"` (default), `"weak"` and `"supply"`; the
   delay defaults to 0.
@@ -92,8 +94,9 @@ sensors whose electrical side is a composite.
 - **Buses.** `ctx.bus.i2c_slave(address, handlers, pins?)` decodes I²C
   from the pins' edges: 7-bit address, open drain (the model's SDA is
   released for 1 and pulled up outside), repeated START, no clock stretching.
-  Handlers: `start(ctx, "read"|"write")`, `write(ctx, byte)` (returning
-  `false` sends a NACK), `read(ctx) -> byte`, `stop(ctx)`. Pins default to
+  Handlers: `start(ctx, "read"|"write")` (returning `false` leaves the
+  address unacknowledged, as a device busy with a write cycle does),
+  `write(ctx, byte)` (returning `false` sends a NACK), `read(ctx) -> byte`, `stop(ctx)`. Pins default to
   `SDA` and `SCL`. `ctx.bus.spi_slave(handlers, options?)` decodes 8-bit
   frames, MSB first, in modes 0 to 3 (`options.mode`), CS active low,
   releasing MISO while not selected. Handlers: `select(ctx) -> first byte`,
@@ -102,8 +105,8 @@ sensors whose electrical side is a composite.
   and `CS`/`SS`/`CE`/`NSS`; `options` may name them (`sck`, `mosi`, `miso`, `cs`).
   A model registers its devices in `M.create`; each reset registers them
   again.
-- **Not yet implemented:** `ctx.analog`; the `lua_budget` setting (the
-  default applies).
+- **Not yet implemented:** `ctx.analog` (pins carry `.voltage` instead);
+  the `lua_budget` setting (the default applies).
 
 ## 3. Electrical scripted models
 

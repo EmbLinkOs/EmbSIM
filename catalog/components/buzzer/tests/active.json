@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "active",
+  "description": "An active buzzer sounds while + is high.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/buzzer",
+        "params": {
+          "kind": "active"
+        }
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.+"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.-"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.sounding": {
+      "at": "500ns",
+      "equals": true
+    }
+  }
+}
