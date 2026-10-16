@@ -51,10 +51,9 @@ Evidence from the component-work branch on Linux, GCC 14.2, Python 3.12 and Node
   all old fixtures, not only schema validation. It checks nominal outputs, all HC
   channels and delays, loaded electrical rails, comparator pull-ups, sensor endpoints,
   555 retained state/reset/divider and RC oscillation, and solver health.
-- Address/undefined-behavior sanitizer tests execute the native core and examples.
-  Before integration with M3, the affected tools, fixture runner and native
-  catalog sanitizer targets passed (3/3). This is not sanitizer evidence for
-  the newly merged Lua code.
+- The combined Address/undefined-behavior sanitizer build passes all 20 CTest
+  outcomes, including Lua, catalog instantiation, fixture assertions and examples.
+  The firmware-build wrapper explicitly skips without a cross compiler.
 - Python tools: 119 tests. `tools/validate.py --all`: 422 files, no errors/warnings.
 - Workbench typecheck, lint, production build and 75 existing tests pass.
   A real-engine Chromium check verifies named-part search, manufacturer/package
