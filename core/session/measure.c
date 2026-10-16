@@ -77,7 +77,12 @@ static char *image_dir(es_session *s, const esk_board_inst *bi)
     return dir;
 }
 
-es_status esk_session_analysis_text(es_session *s, const char *board, int coverage, int fmt, esk_strbuf *out,
+const char *esk_session_analysis_name(unsigned which)
+{
+    return which == ESK_AN_COVERAGE ? "coverage" : which == ESK_AN_STACK ? "the stack analysis" : "the profile";
+}
+
+es_status esk_session_analysis_text(es_session *s, const char *board, unsigned which, int fmt, esk_strbuf *out,
                                     char *why, size_t cap)
 {
     size_t i;
@@ -89,9 +94,11 @@ es_status esk_session_analysis_text(es_session *s, const char *board, int covera
         esk_an *a = bi->mcu ? esk_mcu_analysis(bi->mcu) : NULL;
         int ok;
         if (!a || (board && !esk_str_eq(board, bi->id)) ||
-            !(esk_an_what(a) & (coverage ? ESK_AN_COVERAGE : ESK_AN_PROFILE)))
+            !(esk_an_what(a) & which))
             continue;
-        if (coverage) {
+        if (which == ESK_AN_STACK) {
+            ok = esk_an_stack(a, bi->id, out);
+        } else if (which == ESK_AN_COVERAGE) {
             char *dir = image_dir(s, bi);
             ok = esk_an_coverage(a, fmt, bi->id, dir, out);
             esk_strfree(s->a, dir);
@@ -104,14 +111,14 @@ es_status esk_session_analysis_text(es_session *s, const char *board, int covera
         n++;
     }
     if (!n) {
-        esk_snprintf(why, cap, "%s is not on%s%s", coverage ? "coverage" : "the profile", board ? " for board " : "",
+        esk_snprintf(why, cap, "%s is not on%s%s", esk_session_analysis_name(which), board ? " for board " : "",
                      board ? board : "");
         return ES_ESTATE;
     }
     return ES_OK;
 }
 
-esk_json *esk_session_analysis_json(es_session *s, const char *board, int coverage, int detail)
+esk_json *esk_session_analysis_json(es_session *s, const char *board, unsigned which, int detail)
 {
     esk_json *out = esk_json_new_object(s->a);
     size_t i;
@@ -121,7 +128,9 @@ esk_json *esk_session_analysis_json(es_session *s, const char *board, int covera
         esk_json *j;
         if (!a || (board && !esk_str_eq(board, bi->id)))
             continue;
-        j = coverage ? esk_an_coverage_json(a, s->a, detail) : esk_an_profile_json(a, s->a, detail ? 0 : 10);
+        j = which == ESK_AN_COVERAGE ? esk_an_coverage_json(a, s->a, detail)
+          : which == ESK_AN_STACK    ? esk_an_stack_json(a, s->a, detail ? 0 : 10)
+                                     : esk_an_profile_json(a, s->a, detail ? 0 : 10);
         if (j)
             esk_json_object_set(s->a, out, bi->id, j);
     }
@@ -133,7 +142,9 @@ void esk_session_analysis_report(es_session *s, esk_json *report)
     if (!s->an_what)
         return;
     if (s->an_what & ESK_AN_COVERAGE)
-        esk_json_object_set(s->a, report, "coverage", esk_session_analysis_json(s, NULL, 1, 0));
+        esk_json_object_set(s->a, report, "coverage", esk_session_analysis_json(s, NULL, ESK_AN_COVERAGE, 0));
     if (s->an_what & ESK_AN_PROFILE)
-        esk_json_object_set(s->a, report, "profile", esk_session_analysis_json(s, NULL, 0, 0));
+        esk_json_object_set(s->a, report, "profile", esk_session_analysis_json(s, NULL, ESK_AN_PROFILE, 0));
+    if (s->an_what & ESK_AN_STACK)
+        esk_json_object_set(s->a, report, "stack", esk_session_analysis_json(s, NULL, ESK_AN_STACK, 0));
 }

@@ -51,6 +51,7 @@ default and a subject.
 | `mcu.locked_write` | warning | board, register, pc | a write to a PIC32's OSCCON while SYSKEY's unlock sequence has not been written, or to a byte of a PIC24's OSCCON without its own unlock sequence: ignored, as on the part (the first one) |
 | `mcu.trap` | warning | board, pc | a PIC24 trap (an address, stack or math error, an oscillator failure): the core takes its vector; the first ten are reported |
 | `mcu.boot_mode` | warning | board | BOOT0 selects system memory, which is not modelled |
+| `mcu.stack_overflow` | error | board | with the stack analysis on (`--stack`, `analysis.start({stack: true})`), the main stack went past its limit (the link's `__stack_limit`, or into `.data` and `.bss`): the stack pointer, the limit and where it came from, the instruction and its function; once a reset, the run goes on |
 | `analysis.unavailable` | warning | board | coverage or the profile was on, and a reloaded project's board cannot be measured (no firmware, no function symbols) |
 | `mcu.exit` | info | board | the firmware exited through semihosting, with its status |
 | `mcu.lockup` | error | board | the core locked up (a fault with nowhere to go) |

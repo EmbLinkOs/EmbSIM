@@ -58,10 +58,11 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
                                tools/embsim/pic24-intc.c, pic24-osc.c,
                                pic24-tmr.c, pic32-gpio.c (its PIC24 part);
                                uart.c is EmbSIM's
-  core/mcu/analysis.h, analysis.c, coverage.c, profile.c
+  core/mcu/analysis.h, analysis.c, coverage.c, profile.c, stack.c
                                tools/embsim/analysis.h, analysis.c,
-                               coverage.c, profile.c (the call and return
-                               recognition, the report formats)
+                               coverage.c, profile.c, stack.c (the call and
+                               return recognition, the stacks' limits and
+                               depths, the report formats)
   tools/importers/edc2regs.py  tools/embsim/edc.c (its reading of a PIC32's
                                and a PIC24's EDC, written again in Python)
   tests/firmware/bluepill-golden/

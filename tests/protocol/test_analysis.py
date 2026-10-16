@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Junior Deogracias
-"""The firmware's coverage and profile (SPEC-008 §5 analysis, SPEC-012 §4):
+"""The firmware's coverage, profile and stacks (SPEC-008 §5 analysis,
+SPEC-009 §12):
 
   - every example whose boards run firmware, its first scenario run with
-    --coverage and --profile as JSON, then again as lcov and collapsed
-    stacks: each board covers some of its lines and functions; the profile's
-    functions add up to its instructions and cycles; the lcov tracefile
-    agrees with the JSON, line for line; the collapsed stacks add up to the
-    cycles; and the two runs, in two processes, measure the same;
+    --coverage, --profile and --stack as JSON, then again as lcov, collapsed
+    stacks and text: each board covers some of its lines and functions; the
+    profile's functions add up to its instructions and cycles; the lcov
+    tracefile agrees with the JSON, line for line; the collapsed stacks add
+    up to the cycles; each board's stack went down from its top, within its
+    limit, main's depth with its callees at least its own frame; and the two
+    runs, in two processes, measure the same;
+  - a firmware that recurses below its link's __stack_limit
+    (tests/firmware/stack-overflow) raises mcu.stack_overflow once, naming
+    the function, and its depths add up: main's with its callees is its own
+    frame and the recursion's;
   - the gcov-style text shows the source with its counts;
   - a project without firmware is refused (exit 2);
   - over the protocol (`embsim sidecar`): analysis.coverage before
-    analysis.start is an error; after it, and a run, both reports come back,
+    analysis.start is an error; after it, and a run, the reports come back,
     as JSON and as text; analysis.stop turns them off.
 
     test_analysis.py --embsim PATH [--only NAME,...]
@@ -67,19 +74,38 @@ def lcov_records(text):
 def check_example(embsim, project, scenario, tmp):
     name = project.parent.name
     problems = []
-    cov_j, prof_j = tmp / f"{name}-cov.json", tmp / f"{name}-prof.json"
-    cov_l, prof_c = tmp / f"{name}.lcov", tmp / f"{name}.folded"
+    cov_j, prof_j, stk_j = tmp / f"{name}-cov.json", tmp / f"{name}-prof.json", tmp / f"{name}-stack.json"
+    cov_l, prof_c, stk_t = tmp / f"{name}.lcov", tmp / f"{name}.folded", tmp / f"{name}-stack.txt"
     a = run([embsim, "run", project, "--scenario", scenario, "--json", "--coverage", cov_j, "--coverage-format",
-             "json", "--profile", prof_j, "--profile-format", "json"])
+             "json", "--profile", prof_j, "--profile-format", "json", "--stack", stk_j, "--stack-format", "json"])
     b = run([embsim, "run", project, "--scenario", scenario, "--json", "--coverage", cov_l, "--coverage-format",
-             "lcov", "--profile", prof_c, "--profile-format", "collapsed"])
+             "lcov", "--profile", prof_c, "--profile-format", "collapsed", "--stack", stk_t])
     if a.returncode or b.returncode:
         return [f"runs exited {a.returncode} and {b.returncode}: {a.stderr.strip()} {b.stderr.strip()}"]
     ra, rb = json.loads(a.stdout), json.loads(b.stdout)
-    cov, prof = json.loads(cov_j.read_text()), json.loads(prof_j.read_text())
+    cov, prof, stk = json.loads(cov_j.read_text()), json.loads(prof_j.read_text()), json.loads(stk_j.read_text())
     # the two runs, in two processes, measure the same
-    if ra.get("coverage") != rb.get("coverage") or ra.get("profile") != rb.get("profile"):
+    if any(ra.get(k) != rb.get(k) for k in ("coverage", "profile", "stack")):
         problems.append("two runs measured differently")
+    if set(stk) != set(cov) or set(ra.get("stack") or {}) != set(stk):
+        problems.append(f"the stack reports name {sorted(stk)}, coverage {sorted(cov)}")
+    text = stk_t.read_text()
+    for board, st in stk.items():
+        main = [s for s in st["stacks"] if s["core"] == 0][0]
+        # a PIC24's grows up: its W15 values, deepest the highest
+        up = "pic24" in name
+        if not 0 < main.get("used", 0) == abs(main["top"] - main["deepest"]):
+            problems.append(f"{board}: stack {main}")
+        lo, hi = (main["top"], main.get("limit")) if up else (main.get("limit"), main["top"])
+        if "limit" in main and not lo < main["deepest"] < hi:
+            problems.append(f"{board}: the stack {main} is not within its limit")
+        if "overflow" in st:
+            problems.append(f"{board}: an overflow: {st['overflow']}")
+        m = [f for f in st["functions"] if f["name"] in ("main", "_main")]
+        if not m or m[0]["incl"] < m[0]["frame"]:
+            problems.append(f"{board}: main's depth {m}")
+        if f"embsim stack: {board}\n" not in text:
+            problems.append(f"{board}: not in the stack report as text")
     if set(ra.get("coverage") or {}) != set(cov) or not cov:
         problems.append(f"the report's coverage names {sorted(ra.get('coverage') or {})}, the file {sorted(cov)}")
     lcov = lcov_records(cov_l.read_text())
@@ -116,7 +142,40 @@ def check_example(embsim, project, scenario, tmp):
             problems.append(f"{board}: the collapsed stacks add up to {folded.get(board)}, not {p['cycles']}")
     if not problems:
         boards = ", ".join(f"{b} {c['lines']['hit']}/{c['lines']['total']} lines" for b, c in cov.items())
-        print(f"ok    {name}: {boards}; profile, lcov and collapsed stacks agree")
+        depth = ", ".join(f"{b} {s['stacks'][0].get('used', 0)} bytes of stack" for b, s in stk.items())
+        print(f"ok    {name}: {boards}; {depth}; profile, lcov and collapsed stacks agree")
+    return problems
+
+
+def check_overflow(embsim, tmp):
+    problems = []
+    elf = ROOT / "tests" / "firmware" / "stack-overflow" / "stack-overflow.elf"
+    out = tmp / "overflow.txt"
+    r = run([embsim, "run", "--target", "emblink/bluepill", "--image", elf, "--until", "5ms", "--json", "--stack", out])
+    if r.returncode:
+        return [f"exit {r.returncode}: {r.stderr.strip()}"]
+    report = json.loads(r.stdout)
+    st = report.get("stack", {}).get("B1", {})
+    ovf = st.get("overflow", {})
+    if ovf.get("function") != "deep" or ovf.get("limit_from") != "__stack_limit" or not ovf["sp"] < ovf["limit"]:
+        problems.append(f"the overflow: {ovf}")
+    diags = [d for d in report["diagnostics"] if d["code"] == "mcu.stack_overflow"]
+    if len(diags) != 1 or diags[0]["severity"] != "error" or "(deep)" not in diags[0]["message"]:
+        problems.append(f"the diagnostics: {diags}")
+    fns = {f["name"]: f for f in st.get("functions", [])}
+    deep, main = fns.get("deep", {}), fns.get("main", {})
+    if deep.get("frame", 0) < 48 or deep.get("incl", 0) < 40 * deep.get("frame", 0):
+        problems.append(f"deep: {deep}")
+    if main.get("incl") != main.get("frame", 0) + deep.get("incl", 0):
+        problems.append(f"main's depth {main} is not its frame and deep's {deep.get('incl')}")
+    msp = st["stacks"][0]
+    if msp.get("size") != 2048 or msp.get("used", 0) <= 2048:
+        problems.append(f"the main stack: {msp}")
+    text = out.read_text() if out.exists() else ""
+    if "OVERFLOW: sp 0x" not in text or "(__stack_limit), at 0x" not in text:
+        problems.append(f"the text report: {text[:300]}")
+    if not problems:
+        print(f"ok    a recursion below __stack_limit: mcu.stack_overflow in deep, {msp['used']} of {msp['size']} bytes")
     return problems
 
 
@@ -132,8 +191,8 @@ def check_protocol(embsim):
         except EmbsimError as e:
             if e.code != -32001:
                 problems.append(f"analysis.coverage before analysis.start: {e.code}")
-        started = client.call("analysis.start", {})
-        if started != {"coverage": True, "profile": True}:
+        started = client.call("analysis.start", {"stack": True})
+        if started != {"coverage": True, "profile": True, "stack": True}:
             problems.append(f"analysis.start: {started}")
         client.call("control.advance", {"until": "20ms"})
         cov = client.call("analysis.coverage", {})["boards"]["B1"]
@@ -148,6 +207,12 @@ def check_protocol(embsim):
         folded = client.call("analysis.profile", {"format": "collapsed"})["text"]
         if "Reset_Handler;main " not in folded:
             problems.append("analysis.profile as collapsed stacks has no Reset_Handler;main")
+        stack = client.call("analysis.stack", {})["boards"]["B1"]
+        if not stack["stacks"][0].get("used") or "overflow" in stack:
+            problems.append(f"analysis.stack: {stack['stacks']}")
+        text = client.call("analysis.stack", {"format": "text"})["text"]
+        if "main stack (MSP): top 0x20005000" not in text:
+            problems.append(f"analysis.stack as text: {text[:200]}")
         client.call("analysis.stop", {})
         try:
             client.call("analysis.profile", {})
@@ -157,7 +222,7 @@ def check_protocol(embsim):
     finally:
         client.close()
     if not problems:
-        print("ok    the protocol: analysis.start, coverage and profile as JSON and text, analysis.stop")
+        print("ok    the protocol: analysis.start, coverage, profile and stack as JSON and text, analysis.stop")
     return problems
 
 
@@ -186,6 +251,10 @@ def main() -> int:
             failures += 1
         else:
             print("ok    the coverage text shows the source beside the counts")
+        problems = check_overflow(args.embsim, tmp)
+        for p in problems:
+            print(f"FAIL  the stack overflow: {p}")
+        failures += bool(problems)
         # no firmware: refused
         r = run([args.embsim, "run", ROOT / "examples" / "button-led" / "project.json", "--coverage", tmp / "x"])
         if r.returncode != 2 or "firmware" not in r.stderr:

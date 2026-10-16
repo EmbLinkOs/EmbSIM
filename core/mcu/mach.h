@@ -434,6 +434,9 @@ es_status esk_mach_load_image(struct esk_mach *m, const u8 *data, size_t len, u3
 /* an ELF image's symbol `name` (a function's address without the Thumb bit):
  * 1 and its value, or 0 */
 int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value);
+/* a symbol of any kind but a section's or a file's, defined or absolute (the
+ * link's __stack_limit, _end): 1 and its value, or 0 */
+int esk_elf_label(const u8 *f, size_t len, const char *name, u32 *value);
 /* the function or object holding `addr`: 1, its name and the offset in it */
 int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap, u32 *offset);
 /* each defined function of an ELF image's symbol table: its name (in the

@@ -176,6 +176,7 @@ export class MockTransport extends TransportBase implements Transport {
       'analysis.stop': () => ({}),
       'analysis.coverage': () => notSupported('analysis'),
       'analysis.profile': () => notSupported('analysis'),
+      'analysis.stack': () => notSupported('analysis'),
       'record.start': () => notSupported('record'),
       'record.stop': () => notSupported('record'),
       'record.replay': () => notSupported('record'),

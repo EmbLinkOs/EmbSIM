@@ -339,6 +339,8 @@ static void push(esk_an *a, esk_an_core *k, struct esk_cpu *c, int parent, u32 r
         return; /* deeper than any stack can be */
     f = &k->fr[k->nfr++];
     f->ret = ret;
+    f->sp = esk_an_sp(a, c);
+    f->min = f->sp;
     f->exc = exc;
     f->vec = target;
     if (exc)
@@ -347,14 +349,24 @@ static void push(esk_an *a, esk_an_core *k, struct esk_cpu *c, int parent, u32 r
     a->node[f->node].calls++;
 }
 
+/* the frames from i up are over */
+static void pop_to(esk_an *a, esk_an_core *k, int i)
+{
+    int j;
+    if (a->what & ESK_AN_STACK)
+        for (j = k->nfr - 1; j >= i; j--)
+            esk_an_stack_pop(a, k, j);
+    k->nfr = i;
+}
+
 /* a transfer that may be a return, to `to`: the frame that returns there,
  * above the innermost exception's, is popped with the frames above it */
-static void ret_to(esk_an_core *k, u32 to)
+static void ret_to(esk_an *a, esk_an_core *k, u32 to)
 {
     int i;
     for (i = k->nfr - 1; i >= 0 && !k->fr[i].exc; i--)
         if (k->fr[i].ret == to) {
-            k->nfr = i;
+            pop_to(a, k, i);
             return;
         }
 }
@@ -372,7 +384,7 @@ static void follow(esk_an *a, esk_an_core *k, struct esk_cpu *c, int node, u32 p
                 while (j >= 0 && !k->fr[j].exc)
                     j--;
                 if (j >= 0)
-                    k->nfr = j;
+                    pop_to(a, k, j);
                 node = k->nfr ? k->fr[k->nfr - 1].node : k->root;
             }
         }
@@ -388,7 +400,7 @@ static void follow(esk_an *a, esk_an_core *k, struct esk_cpu *c, int node, u32 p
             return;
         push(a, k, c, node, k->pc0 + (u32)k->size, pc1, 0);
     } else if (k->kind == K_RET)
-        ret_to(k, pc1);
+        ret_to(a, k, pc1);
 }
 
 /* ---- the step ------------------------------------------------------------ */
@@ -456,8 +468,10 @@ void esk_an_step(esk_an *a, int core, struct esk_cpu *c)
     int ran;
     k->pc0 = pc0;
     k->nev = 0;
-    if (a->what & ESK_AN_PROFILE)
+    if (a->what & (ESK_AN_PROFILE | ESK_AN_STACK))
         k->kind = step_kind(a, k, c, pc0);
+    if ((a->what & ESK_AN_STACK) && k->tail_fn == -2)
+        esk_an_stack_first(a, k, c, pc0);
     c->ops->step(c);
     di = m->insns - i0;
     dc = m->cycles - c0;
@@ -473,12 +487,18 @@ void esk_an_step(esk_an *a, int core, struct esk_cpu *c)
             a->code_last = i;
         }
     }
-    if (a->what & ESK_AN_PROFILE) {
+    if (a->what & (ESK_AN_PROFILE | ESK_AN_STACK)) {
         int node = cur_node(a, k, pc0);
         /* the step's counts to the path it ran on, before the call or the
          * return it made */
         a->node[node].insns += di;
         a->node[node].cycles += dc;
+        if (a->what & ESK_AN_STACK) {
+            int entered = 0, i;
+            for (i = 0; i < k->nev; i++)
+                entered |= k->ev[i].entry;
+            esk_an_stack_step(a, k, c, ran, entered, k->kind != K_CALL);
+        }
         follow(a, k, c, node, c->ops->pc(c), ran);
     }
     k->nev = 0;
@@ -556,6 +576,8 @@ es_status esk_an_create(struct esk_mach *m, unsigned what, const u8 *elf, size_t
     a->m = m;
     a->what = what;
     a->dw = dw;
+    a->elf = elf;
+    a->elf_len = len;
     a->arch = esk_str_eq(nm, "riscv") ? AN_RV : esk_str_eq(nm, "avr") ? AN_AVR
             : esk_str_eq(nm, "mips") ? AN_MIPS : esk_str_eq(nm, "pic24") ? AN_PIC24 : AN_ARM;
     a->ncores = cores < 1 ? 1 : cores > ESK_AN_CORES ? ESK_AN_CORES : cores;
@@ -639,8 +661,12 @@ es_status esk_an_create(struct esk_mach *m, unsigned what, const u8 *elf, size_t
         }
         a->core[i].root = a->ncores > 1 ? new_node(a, 0, -3 - i) : 0;
     }
+    if ((what & ESK_AN_STACK) && esk_an_stack_init(a) != ES_OK) {
+        esk_an_free(a);
+        return ES_ENOMEM;
+    }
     esk_an_restart(a);
-    a->cycles0 = m->cycles;
+    esk_an_clear(a);
     *out = a;
     return ES_OK;
 }
@@ -659,6 +685,8 @@ void esk_an_restart(esk_an *a)
         k->slot_kind = K_OTHER;
         k->nev = 0;
     }
+    if (a->what & ESK_AN_STACK)
+        esk_an_stack_restart(a);
 }
 
 void esk_an_clear(esk_an *a)
@@ -671,6 +699,8 @@ void esk_an_clear(esk_an *a)
     }
     a->insns = a->cycles = 0;
     a->cycles0 = a->m->cycles;
+    if (a->what & ESK_AN_STACK)
+        esk_an_stack_clear(a);
 }
 
 unsigned esk_an_what(const esk_an *a) { return a ? a->what : 0; }
@@ -682,6 +712,8 @@ void esk_an_free(esk_an *a)
     if (!a)
         return;
     al = a->a;
+    if (a->fn_minsp)
+        esk_an_stack_free(a);
     for (i = 0; i < a->ncode; i++)
         esk_free(al, a->code[i].count, ((size_t)(a->code[i].hi - a->code[i].lo) / 2 + 1) * sizeof(u64));
     if (a->code)

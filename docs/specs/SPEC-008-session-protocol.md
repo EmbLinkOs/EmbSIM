@@ -133,12 +133,12 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `record.replay({path} | {recording}, allow_drift?) -> {ok, compared, divergence?: {index, expected, observed}, drift: [{what, recorded, now}]}`: the recording's project loaded into the session and replayed (SPEC-012 §2); `recording` is the document itself, as `record.stop` returns it without a path
 - `record.to_scenario({path} | {recording}, assert?: ["probes", "serial"], name?) -> {scenario}`: the recording as a SPEC-007 scenario (SPEC-012 §3)
 
-### analysis (the firmware's coverage and profile)
-- `analysis.start({board?, coverage?, profile?}) -> {coverage, profile}`:
-  the boards' MCUs (one board's, or every board's with firmware) are
-  watched from now on, counting from zero; both analyses by default. They
-  stay on across a reset, a reload and a new image. `analysis.stop({})`
-  turns them off.
+### analysis (the firmware's coverage, profile and stacks)
+- `analysis.start({board?, coverage?, profile?, stack?}) -> {coverage,
+  profile, stack}`: the boards' MCUs (one board's, or every board's with
+  firmware) are watched from now on, counting from zero; coverage and the
+  profile by default, the stacks when `stack` is true. They stay on across
+  a reset, a reload and a new image. `analysis.stop({})` turns them off.
 - `analysis.coverage({board?, format?, detail?}) -> {boards: {ID: {lines:
   {hit, total}, functions: {hit, total}, insns, files: [{path, lines,
   functions: [{name, line, count}], counts: [[line, count]...]}],
@@ -153,7 +153,15 @@ Notation: `method(params) -> result`. Params and results are objects.
   `{text}` (the report; collapsed stacks by cycles or instructions, a
   machine's cores rooted at `core0`, `core1`). `cycles` are the steps'
   (a sleeping core's time is no step's); `elapsed_cycles` the machine's.
-- Both are -32001 until `analysis.start`.
+- `analysis.stack({board?, format?, detail?}) -> {boards: {ID: {stacks:
+  [{core, name, top, deepest, used, limit?, limit_from?, size?}],
+  overflow?: {core, pc, function, sp, limit, limit_from}, functions:
+  [{name, deepest, frame, incl}]}}}`: each core's stacks (`msp` and `psp`
+  on a Cortex-M, else `stack`; addresses as the stack pointer holds them),
+  the first overflow past the limit, the functions by depth (without
+  `detail`, the first ten) with their own frame and their depth with their
+  callees in bytes (SPEC-009 §12); with `format` `text`, `{text}`.
+- Each is -32001 until `analysis.start` turns it on.
 
 ### toolchain
 - `toolchain.detect({}) -> {profiles: [{name, found, version, path}]}`

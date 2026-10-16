@@ -144,6 +144,13 @@ versions follow semantic versioning. There is no release yet.
   `.coverage`, `.profile` over the protocol; the run report's `coverage`
   and `profile` summaries; the `analysis` test over every firmware example.
   Extracted from EmbCC's analyses, with per-core call stacks.
+- Stack depths (M5, SPEC-009 §12): `embsim run --stack` (text, JSON) and
+  `analysis.stack`; each core's main stack (and a Cortex-M's process
+  stack): its top, its deepest point and its limit from the link
+  (`__stack_limit`, the end of `.data` and `.bss`); each function's own
+  frame and its depth with its callees; the error diagnostic
+  `mcu.stack_overflow` when the main stack goes past its limit, naming the
+  function. Extracted from EmbCC's `stack.c`; `tests/firmware/stack-overflow`.
 - The Verify perspective (M5): the scenario editor (a scenario's inputs
   and assertions edited in place, run with each result in its row, saved
   into the project: `scenario.get`, `scenario.save`), recordings replayed

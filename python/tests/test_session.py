@@ -111,7 +111,7 @@ class SessionTest(unittest.TestCase):
         s = self.s
         with self.assertRaises(EmbsimError):
             s.coverage()
-        s.analyze()
+        s.analyze(stack=True)
         s.advance(until="20ms")
         cov = s.coverage()["B1"]
         self.assertGreater(cov["lines"]["hit"], 0)
@@ -119,6 +119,10 @@ class SessionTest(unittest.TestCase):
         prof = s.profile("B1")["B1"]
         self.assertEqual(prof["functions"][0]["name"], "main")
         self.assertIn("Reset_Handler;main", s.profile(format="collapsed"))
+        msp = s.stack("B1")["B1"]["stacks"][0]
+        self.assertEqual(msp["top"], 0x20005000)
+        self.assertGreater(msp["used"], 0)
+        self.assertIn("main stack (MSP)", s.stack(format="text"))
         where = s.where("B1")
         self.assertIn("pc", where)
         regs = s.registers("B1")

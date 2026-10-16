@@ -274,6 +274,23 @@ int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value)
     return 0;
 }
 
+int esk_elf_label(const u8 *f, size_t len, const char *name, u32 *value)
+{
+    const u8 *syms, *strs;
+    u32 n, sl, i;
+    if (!symtab(f, len, &syms, &n, &strs, &sl))
+        return 0;
+    for (i = 0; i < n; i++) {
+        const u8 *s = syms + (size_t)i * 16u;
+        u32 type = s[12] & 15u, shndx = le16(s + 14);
+        if (type <= 2 && shndx != 0 && shndx != 0xfff2u && !strcmp(sym_name(strs, sl, le32(s)), name)) {
+            *value = type == 2 ? le32(s + 4) & ~1u : le32(s + 4);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap, u32 *offset)
 {
     const u8 *syms, *strs, *best = NULL;

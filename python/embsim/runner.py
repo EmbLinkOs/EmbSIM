@@ -50,6 +50,10 @@ class RunResult:
     def profile(self) -> dict:
         return self.report.get("profile") or {}
 
+    @property
+    def stack(self) -> dict:
+        return self.report.get("stack") or {}
+
 
 def _exec(argv: Sequence[str], cwd: Optional[PathLike], timeout: Optional[float]) -> RunResult:
     p = subprocess.run(list(argv), capture_output=True, text=True, cwd=str(cwd) if cwd else None, timeout=timeout)
@@ -63,7 +67,8 @@ def _exec(argv: Sequence[str], cwd: Optional[PathLike], timeout: Optional[float]
 def run(project: PathLike, *, scenario: Optional[PathLike] = None, until: Optional[str] = None,
         policy: Optional[str] = None, probes: Sequence[str] = (), record: Optional[PathLike] = None,
         coverage: Optional[PathLike] = None, coverage_format: str = "lcov", profile: Optional[PathLike] = None,
-        profile_format: str = "collapsed", board: Optional[str] = None, embsim: Optional[str] = None,
+        profile_format: str = "collapsed", stack: Optional[PathLike] = None, stack_format: str = "text",
+        board: Optional[str] = None, embsim: Optional[str] = None,
         cwd: Optional[PathLike] = None, timeout: Optional[float] = 600.0) -> RunResult:
     """`embsim run PROJECT --json` with the given options."""
     argv = [find_embsim(embsim), "run", str(project), "--json"]
@@ -81,6 +86,8 @@ def run(project: PathLike, *, scenario: Optional[PathLike] = None, until: Option
         argv += ["--coverage", str(coverage), "--coverage-format", coverage_format]
     if profile:
         argv += ["--profile", str(profile), "--profile-format", profile_format]
+    if stack:
+        argv += ["--stack", str(stack), "--stack-format", stack_format]
     if board:
         argv += ["--board", board]
     return _exec(argv, cwd, timeout)

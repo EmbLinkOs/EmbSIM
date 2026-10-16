@@ -503,6 +503,27 @@ export interface ProfileReport {
   }[];
 }
 
+/** One board's stacks (analysis.stack): addresses as the core's stack
+ * pointer holds them (a PIC24's W15, which grows up). */
+export interface StackReport {
+  stacks: {
+    core: number;
+    /** "msp" or "psp" on a Cortex-M, else "stack". */
+    name: string;
+    top?: number;
+    deepest?: number;
+    used?: number;
+    /** The link's limit, the end of .data and .bss, or the RAM's end. */
+    limit?: number;
+    limit_from?: string;
+    size?: number;
+  }[];
+  /** The first time the main stack went past its limit (mcu.stack_overflow). */
+  overflow?: { core: number; pc: number; function: string; sp: number; limit: number; limit_from: string };
+  /** By depth: the deepest point, the function's own frame and its depth with its callees, in bytes. */
+  functions: { name: string; deepest: number; frame: number; incl: number }[];
+}
+
 export interface Instruction {
   address: number;
   size: number;
@@ -554,6 +575,7 @@ export interface Report {
   /** With the analyses on: each board's coverage and first functions. */
   coverage?: Record<string, CoverageReport>;
   profile?: Record<string, ProfileReport>;
+  stack?: Record<string, StackReport>;
 }
 
 /** An input of a scenario (SPEC-007 §2): at a time, a target's input set. */
