@@ -293,11 +293,14 @@ static char *expected(const char *rel)
     size_t len = 0;
     unsigned char *t = slurp(rel, &len);
     char *s;
+    size_t i, n = 0;
     if (!t)
         return NULL;
     s = (char *)malloc(len + 1);
-    memcpy(s, t, len);
-    s[len] = 0;
+    for (i = 0; i < len; i++) /* a checkout may turn the newlines into CRLF */
+        if (t[i] != '\r')
+            s[n++] = (char)t[i];
+    s[n] = 0;
     free(t);
     return s;
 }
