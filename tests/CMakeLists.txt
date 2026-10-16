@@ -24,6 +24,8 @@ if(Python3_Interpreter_FOUND)
            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   add_test(NAME catalog_sdk COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_sdk.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  add_test(NAME importers COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_importers.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   add_test(NAME docs_integrity COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/docs/check_docs.py)
   add_test(NAME banned_constructs COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/repository/check_banned.py)
   if(EXISTS ${CMAKE_SOURCE_DIR}/examples/button-led/project.json)

@@ -288,6 +288,19 @@ static esk_json *validate_item(es_catalog *cat, const esk_catalog_item *it, int 
     esk_json_set_string(a, o, "id", it->id);
     esk_json_set_string(a, o, "kind", it->kind);
     esk_json_set_string(a, o, "path", it->path);
+    /* an importer's placeholder is unfinished work (SPEC-006 §4) */
+    {
+        const esk_json *cl = esk_json_get(it->desc, "components");
+        size_t c;
+        for (c = 0; c < esk_json_len(cl); c++) {
+            const esk_json *ci = esk_json_at(cl, c);
+            if (esk_json_get_bool(ci, "todo", 0)) {
+                char buf[200];
+                esk_snprintf(buf, sizeof buf, "catalog.todo: %s is an unfinished importer placeholder", esk_json_get_str(ci, "id", "?"));
+                esk_json_array_push(a, problems, esk_json_new_string(a, buf));
+            }
+        }
+    }
     declared_policies(it->desc, pols, &npol);
     if (esk_str_eq(it->kind, "board"))
         npol = 1; /* a board is a circuit; one load checks it */

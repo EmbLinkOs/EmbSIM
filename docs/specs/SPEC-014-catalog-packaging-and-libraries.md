@@ -71,6 +71,12 @@ required fields and a fixture skeleton; `tools/import/` holds the importers
 - **Distribution.** `embsim catalog install DIR [--to LIBRARIES_DIR]
   [--force]` validates and copies a directory (files beginning with `.` are
   left out). Zip archives and URLs are not supported yet.
+- **Importers** (`tools/importers/`, its README): `rtos2board.py`
+  (EmbLinkRTOS board YAML) and `dts2board.py` (Zephyr/Linux DeviceTree
+  source, read without dtc) write a board draft with a power fixture;
+  `kicad2project.py` turns a KiCad netlist into a project; `svd2regs.py`
+  makes MCU register descriptions. Unknown devices become `todo`
+  components, which validation refuses (SPEC-006 §4).
 - **Authoring.** `embsim catalog new component|board NAME [--library DIR]
   [--lua]` writes `library.json` when missing and a part whose fixture
   passes: a two-terminal resistance, a Lua toggle flip-flop, or an

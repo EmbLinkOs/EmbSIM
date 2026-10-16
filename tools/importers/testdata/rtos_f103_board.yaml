@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# A board in EmbLinkRTOS's board description format (its SPEC-014 §4),
+# for the importer tests.
+schema_version: 0
+kind: board
+name: f103_sensor_board
+vendor: emblink
+soc: st/stm32f1/stm32f103c8.yaml
+oscillators: { hse: { hz: 8MHz, source: external_crystal }, lse: { hz: 32768, source: external_crystal } }
+pins:
+  usart1: { tx: PA9.af0, rx: PA10.af0 }
+  i2c1:   { scl: PB6.af0, sda: PB7.af0 }
+  spi1:   { sck: PA5.af0, miso: PA6.af0, mosi: PA7.af0 }
+devices:
+  - { name: temp, compatible: "ti,tmp102", bus: i2c1, address: 0x48, irq: PB0 }
+  - { name: adc, compatible: "microchip,mcp3008", bus: spi1, cs: PA4 }
+  - { name: imu, compatible: "invensense,mpu6050", bus: i2c1, address: 0x68 }
+console: { device: usart1, baud: 115200 }
+leds: [ { name: status, gpio: PC13, active: low }, { name: red, gpio: PB12 } ]
+buttons: [ { name: user, gpio: PA0, active: low } ]
+flash_partitions:
+  - { name: app, base: 0x08000000, size: 64K }
+defaults: { CONFIG_EMB_PROFILE: base }
