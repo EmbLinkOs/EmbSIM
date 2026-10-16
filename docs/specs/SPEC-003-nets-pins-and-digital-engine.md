@@ -85,7 +85,9 @@ After load and after every topology transaction, nets are partitioned:
   0 V, and `voh` and `vol` remain the levels the datasheet guarantees at its
   rated load, which `rout` reproduces; a TTL family's (`ttl_5v`) are `voh`
   and `vol`, a totem pole's high output being below its supply (ADR-023).
-- A `digital_in` pin on an analog net gets a **comparator bridge**: the pin
+- A `digital_in` pin on an analog net, and a `digital_io` pin that is an
+  input or drives `Z` (an open-drain line let go), gets a **comparator
+  bridge**: the pin
   samples `1` when the node voltage rises above `vih`, `0` when it falls below
   `vil`, and keeps its value between them (hysteresis); crossings are events
   with the analog bracket resolution. Its pull is a resistor `rpull` to the

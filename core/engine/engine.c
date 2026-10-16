@@ -837,7 +837,7 @@ void esk_pin_refresh(esk_pin *p)
     if (!p->net)
         return;
     if (p->bridge && p->net->island) {
-        if (!p->is_output && p->model.kind == ESK_PIN_DIGITAL_IO) {
+        if ((!p->is_output || p->drive_value == ESK_LZ) && p->model.kind == ESK_PIN_DIGITAL_IO) {
             /* back to an input: the comparator starts from where the node sits */
             double vn = p->net->voltage, mid = (p->model.vih + p->model.vil) / 2.0;
             p->sampled = vn > mid ? ESK_L1 : ESK_L0;

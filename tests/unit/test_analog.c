@@ -835,6 +835,44 @@ static void test_driver_levels(void)
     }
 }
 
+/* an open-drain line: two digital_io pins on a pulled-up node, each
+ * driving 0 or letting go. One that lets go is an input: its comparator
+ * follows the node, as an I2C device's SDA must */
+static void test_released_io_samples(void)
+{
+    esk_engine e;
+    esk_comp *a, *b;
+    esk_pin_model m;
+    const char *name = "IO";
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_power(&e, "V", "vdd", 3.3);
+    add_dev2(&e, "resistor", "RP", "{\"r\": \"4.7k\"}", "vdd", "line");
+    esk_pin_model_family("cmos_3v3", &m);
+    m.kind = ESK_PIN_DIGITAL_IO;
+    m.drive = ESK_DRIVE_OPEN_DRAIN;
+    CHECK(esk_engine_add_comp(&e, "A", "driver", &driver_ops, &name, &m, 1, NULL, NULL, &a) == ES_OK);
+    CHECK(esk_engine_add_comp(&e, "B", "driver", &driver_ops, &name, &m, 1, NULL, NULL, &b) == ES_OK);
+    CHECK(esk_engine_connect(&e, &a->pins[0], net_of(&e, "line")) == ES_OK);
+    CHECK(esk_engine_connect(&e, &b->pins[0], net_of(&e, "line")) == ES_OK);
+    engine_run(&e);
+    /* both start as outputs and let go */
+    esk_pin_set_direction(&a->pins[0], 1);
+    esk_pin_set_direction(&b->pins[0], 1);
+    esk_pin_release(&a->pins[0]);
+    esk_pin_release(&b->pins[0]);
+    CHECK(esk_engine_advance(&e, 10 * ES_PS_PER_US) == ES_OK);
+    CHECK_EQ(esk_pin_level(&b->pins[0]), ESK_L1);
+    esk_pin_drive(&a->pins[0], ESK_L0, ESK_STR_STRONG, 0);
+    CHECK(esk_engine_advance(&e, 20 * ES_PS_PER_US) == ES_OK);
+    CHECK(v_of(&e, "line") < 0.1);
+    CHECK_EQ(esk_pin_level(&b->pins[0]), ESK_L0);
+    esk_pin_release(&a->pins[0]);
+    CHECK(esk_engine_advance(&e, 30 * ES_PS_PER_US) == ES_OK);
+    CHECK_EQ(esk_pin_level(&b->pins[0]), ESK_L1);
+    esk_engine_free(&e);
+}
+
 static void test_opamp_inverting(void)
 {
     esk_engine e;
@@ -1407,6 +1445,7 @@ RUN(test_comparator_bridge);
 RUN(test_pull_up_input);
 RUN(test_thevenin_bridge);
 RUN(test_driver_levels);
+RUN(test_released_io_samples);
 RUN(test_opamp_inverting);
 RUN(test_regulator);
 RUN(test_pull_device);

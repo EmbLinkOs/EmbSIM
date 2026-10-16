@@ -455,8 +455,9 @@ static int bridge_input_role(const esk_adev *d)
         return 0;
     if (d->ops != &esk_bridge_in_ops && d->ops != &esk_bridge_out_ops)
         return 0;
+    /* a digital_io pin driven Z (an open-drain line let go) is an input */
     return pin->model.kind == ESK_PIN_DIGITAL_IN ||
-           (pin->model.kind == ESK_PIN_DIGITAL_IO && !pin->is_output);
+           (pin->model.kind == ESK_PIN_DIGITAL_IO && (!pin->is_output || pin->drive_value == ESK_LZ));
 }
 
 static void thresholds(const esk_pin *pin, double *up, double *down)
