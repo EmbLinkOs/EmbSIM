@@ -33,21 +33,6 @@
   cursor: cell;
 }
 
-.es-scene__sheet {
-  fill: var(--sheet);
-  stroke: var(--line);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.es-scene__grid-dot {
-  fill: var(--grid-major);
-}
-
-.es-scene__grid-dot--major {
-  fill: var(--line-strong);
-}
-
 /* wires and net state colours */
 .es-wire__line {
   fill: none;
@@ -507,3 +492,7 @@
 .es-scene__svg { position: relative; }
 .es-scene__navigator { border-radius: 14px; background: color-mix(in srgb, var(--surface-raised) 92%, transparent); backdrop-filter: blur(16px); box-shadow: 0 6px 24px #00000012, inset 0 1px 0 #ffffff12; }
 .es-scene__navigator svg { background: var(--canvas-paper, var(--sheet)); }
+/* Drafting labels stay distinct from the grid and crossing geometry. */
+.es-component__ref { font-size: 11px; fill: var(--text); paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }
+.es-component__value { font-size: 9px; fill: var(--text-muted); paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }
+.es-net-label text { font-size: 10px; paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }

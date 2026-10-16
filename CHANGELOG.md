@@ -11,7 +11,8 @@ versions follow semantic versioning. There is no release yet.
   strip during pan and zoom. Add engineering/line/dot/cross/plain patterns, four
   theme-aware palettes and adjustable spacing, weight and contrast.
 - Appearance preferences persist across reloads and apply to Design, inside and
-  Run schematics; restrained system-style chrome and keyboard-accessible controls.
+  Run schematics; restrained system-style chrome, clearer drafting labels and
+  keyboard-accessible controls.
 - The native server now serves static assets while its session WebSocket is
   active, fixing browser reload stalls. Auxiliary requests preserve authority
   checks, reject another session upgrade and use a bounded header deadline.

@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Canvas appearance (2026-10-16)
+
+Captured against the native engine with `tests/browser/test_canvas_appearance.py`.
+The continuous background covers negative coordinates as well as the original
+sheet area. Appearance preferences survive three consecutive native-server reloads.
+
+![Continuous paper workspace in focus mode](canvas-appearance/paper-workspace.png)
+
+| | |
+|---|---|
+| ![Paper engineering grid and controls](canvas-appearance/engineering-paper.png) | ![Blueprint surface in dark theme](canvas-appearance/blueprint-dark.png) |
+| ![Warm surface with dots](canvas-appearance/warm-dots.png) | ![Graphite surface with crosses](canvas-appearance/graphite-crosses.png) |
+
 ## Schematic Studio (2026-10-16)
 
 Captured against the native engine with `tests/browser/test_schematic.py`.

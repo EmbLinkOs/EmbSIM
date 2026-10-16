@@ -2,7 +2,7 @@
 // Copyright 2026 Junior Deogracias
 //
 // SchematicCanvas: the SVG scene graph of SPEC-011 §3. One viewport group
-// carries pan and zoom; layers are grid, wires, components, labels,
+// carries pan and zoom; a continuous CSS background sits behind wires, components, labels,
 // selection and probes. Components outside the viewport are not mounted.
 // Editing callbacks describe intents (move, wire, delete); the owner turns
 // them into project transactions and feeds the new project back in.
@@ -383,7 +383,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     sceneRef.current?.setAttribute('transform', `translate(${next.x} ${next.y}) scale(${next.k})`);
     if (commit) {
       // the transform above moves the scene at once; React (culling, the
-      // grid) catches up when the wheel or the drag pauses, not every frame,
+      // HUD) catches up when the wheel or the drag pauses, not every frame,
       // and the small text and pin dots are left out while it moves
       svgRef.current?.classList.add('es-scene__svg--moving');
       if (rafRef.current !== null) clearTimeout(rafRef.current);

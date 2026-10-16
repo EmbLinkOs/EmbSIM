@@ -2,6 +2,7 @@
 # Copyright 2026 Junior Deogracias
 """Real-engine canvas backgrounds, grid preferences and pan/reload regression."""
 import argparse
+import re
 from pathlib import Path
 import socket
 import subprocess
@@ -12,7 +13,7 @@ from playwright.sync_api import expect, sync_playwright
 from PIL import Image
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--embsim", required=True, type=Path)
     parser.add_argument("--chromium")
@@ -60,7 +61,7 @@ def main():
                 canvas = page.get_by_role("application", name="Schematic canvas")
                 expect(canvas).to_be_visible(timeout=15000)
 
-                def choose(name):
+                def choose(name: str) -> None:
                     radio = page.get_by_role("radio", name=name, exact=True)
                     radio.focus()
                     radio.press("Space")
@@ -139,9 +140,14 @@ def main():
                     )
                     for f in [0.05, 0.25, 0.5, 0.75, 0.95]
                 ]
-                assert (
-                    len(set(samples)) == 1
-                ), f"Panned background has a seam: {samples}"
+                color = page.locator(".es-scene__background").evaluate(
+                    "(el) => getComputedStyle(el).backgroundColor"
+                )
+                expected = tuple(int(v) for v in re.findall(r"[0-9]+", color)[:3])
+                assert set(samples) == {
+                    expected
+                }, f"Panned background has a seam or wrong surface: {samples}, expected {expected}"
+
                 page.get_by_role("button", name="View", exact=True).click()
                 page.get_by_role("button", name="Reset appearance", exact=True).click()
                 expect(
@@ -157,6 +163,15 @@ def main():
                 expect(
                     page.get_by_role("region", name="Canvas appearance", exact=True)
                 ).to_be_visible()
+                page.set_viewport_size({"width": 1600, "height": 1000})
+                page.get_by_role(
+                    "checkbox", name="Focus canvas (hide side panels)", exact=True
+                ).check()
+                page.get_by_role("button", name="Close tools", exact=True).click()
+                page.get_by_role("button", name="Switch to light theme").click()
+                page.get_by_role("button", name="Zoom to fit", exact=True).click()
+                page.wait_for_timeout(150)
+                page.screenshot(path=str(out / "paper-workspace.png"), full_page=True)
                 assert not errors, errors
                 browser.close()
                 print(
