@@ -376,8 +376,8 @@ The PIC32MX's ADC, SPI, I2C, DMA, USB,
 Ethernet, CAN and watchdog; the PIC24FJ1024GB610's ADC, SPI, I2C, capture
 and compare modules, EPMP, RTCC, DMA, USB, watchdog and flash programming,
 and a dsPIC33 part; and the PIC32MZ's FPU, DSP ASE and microMIPS; the
-RP2040's PIO, DMA, SPI, I2C, PWM, ADC and USB;
-the nRF52840's radio, PPI, SPIM, TWIM, SAADC and PWM; the RISC-V F and D
+RP2040's PIO, DMA, SPI and I2C slave modes and USB;
+the nRF52840's radio, PPI, SPIS and TWIS; the RISC-V F and D
 extensions; on the STM32F1 DMA, SPI and I2C slave modes, the ADC's
 injected group and the timers' input capture, on the ATmega328P SPI, TWI, the watchdog and the
 analog comparator, on the FE310 the PMU, SPI, PWM and I2C (their
@@ -421,10 +421,9 @@ Recorded as it happens: the checks listed above, on the dates given.
 - An FE310 starts at 0x20010000, where the HiFive1's bootloader jumps: the
   mask ROM and the bootloader are not simulated.
 - The RP2040's bootrom is a stand-in (`core/mcu/rp2040/boot.c`): it boots
-  boot2 from flash as the bootrom does, but its function table is empty,
-  so a Pico SDK image that calls the bootrom's functions (its float
-  library, flash programming) does not run; the BOOTSEL button has no
-  effect; the XIP cache is not modelled.
+  boot2 from flash as the bootrom does and the host does its documented
+  functions (ADR-021), but the BOOTSEL button has no effect and the XIP
+  cache is not modelled.
 
 ## Updating this page
 
