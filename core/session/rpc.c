@@ -901,7 +901,7 @@ static es_status m_project_save(rpc_ctx *r)
     es_session *s = r->s;
     const char *path = pstr(r, "path", NULL);
     char *full, *text;
-    size_t len;
+    size_t len = 0;
     es_status st;
     if (!s->project)
         return fail_status(r, ES_ESTATE);
