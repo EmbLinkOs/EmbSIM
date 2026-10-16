@@ -77,6 +77,38 @@ export function DesignPerspective() {
         disabled: selection.components.length === 0,
         run: () => void store.rotateComponents(selection.components).catch(fail('Rotate failed')),
       },
+      {
+        id: 'canvas.copy',
+        label: 'Copy selection',
+        group: 'Schematic',
+        shortcut: 'Ctrl+C',
+        disabled: selection.components.length === 0,
+        run: () => store.copySelection(selection),
+      },
+      {
+        id: 'canvas.paste',
+        label: 'Paste',
+        group: 'Schematic',
+        shortcut: 'Ctrl+V',
+        disabled: !store.clipboard,
+        run: () => void store.paste().then((ids) => ids.length && setSelection({ components: ids, wires: [] })).catch(fail('Paste failed')),
+      },
+      {
+        id: 'canvas.duplicate',
+        label: 'Duplicate selection',
+        group: 'Schematic',
+        shortcut: 'Ctrl+D',
+        disabled: selection.components.length === 0,
+        run: () => void store.duplicate(selection).then((ids) => ids.length && setSelection({ components: ids, wires: [] })).catch(fail('Duplicate failed')),
+      },
+      {
+        id: 'canvas.label',
+        label: 'Label the selected wire’s net',
+        group: 'Schematic',
+        shortcut: 'L',
+        disabled: selection.wires.length !== 1,
+        run: () => void store.labelWire(selection.wires[0]!).catch(fail('Label failed')),
+      },
       ...Object.entries(sceneCatalog).map(([id, s]) => ({
         id: `place.${id}`,
         label: `Place ${s.name}`,
@@ -85,7 +117,7 @@ export function DesignPerspective() {
         run: () => placeAtCentre(id),
       })),
     ],
-    [selection, store, sceneCatalog, placeAtCentre, setMode, fail],
+    [selection, store, sceneCatalog, placeAtCentre, setMode, setSelection, fail],
   );
   useRegisterCommands('design', commands);
 
@@ -128,6 +160,7 @@ export function DesignPerspective() {
       onMove={(ids, dx, dy) => void store.moveComponents(ids, dx, dy).catch(fail('Move failed'))}
       onRotate={(ids) => void store.rotateComponents(ids).catch(fail('Rotate failed'))}
       onMirror={(ids) => void store.mirrorComponents(ids).catch(fail('Mirror failed'))}
+      onLabelWire={(w) => void store.labelWire(w).catch(fail('Label failed'))}
       onDelete={(sel) => {
         void store.deleteSelection(sel).catch(fail('Delete failed'));
         setSelection({ components: [], wires: [] });

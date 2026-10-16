@@ -88,6 +88,8 @@ export interface SchematicCanvasProps {
   onMove?: (ids: string[], dx: number, dy: number) => void;
   onRotate?: (ids: string[]) => void;
   onMirror?: (ids: string[]) => void;
+  /** L on one selected wire: label its net there. */
+  onLabelWire?: (wire: number) => void;
   onDelete?: (selection: Selection) => void;
   onWire?: (from: PinRef, to: PinRef | NetRef, points: [number, number][]) => void;
   onPlace?: (componentId: string, at: Point) => void;
@@ -178,6 +180,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     onMove,
     onRotate,
     onMirror,
+    onLabelWire,
     onDelete,
     onWire,
     onPlace,
@@ -653,6 +656,13 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         if (selection.components.length && !readOnly) {
           e.preventDefault();
           onRotate?.(selection.components);
+        }
+        break;
+      case 'l':
+      case 'L':
+        if (selection.wires.length === 1 && !readOnly) {
+          e.preventDefault();
+          onLabelWire?.(selection.wires[0]!);
         }
         break;
       case 'm':

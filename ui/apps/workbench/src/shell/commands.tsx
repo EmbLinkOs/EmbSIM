@@ -243,6 +243,10 @@ export function useGlobalShortcuts(commands: Command[]): void {
       if (e.key === 'F7') return run('control.advance');
       if (mod && !e.shiftKey && e.key === 'z' && !isEditable(document.activeElement)) return run('edit.undo');
       if (mod && (e.key === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z')) && !isEditable(document.activeElement)) return run('edit.redo');
+      // copying text the user selected stays the browser's
+      if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'c' && !e.shiftKey && !window.getSelection()?.toString()) return run('canvas.copy');
+      if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'v' && !e.shiftKey) return run('canvas.paste');
+      if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'd') return run('canvas.duplicate');
       if (mod && e.key === 'o') return run('project.open');
       if (mod && e.key === 's') return run('project.save');
       if (mod && ['1', '2', '3', '4'].includes(e.key)) return run(`perspective.${(['design', 'run', 'debug', 'verify'] as const)[Number(e.key) - 1]}`);
