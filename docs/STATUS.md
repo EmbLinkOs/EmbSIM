@@ -5,6 +5,26 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Schematic graphics and interaction milestone
+
+Branch `schematic/visual-interaction`, based on merged PR #34 (`333f091`), separates
+idle wire color from component strokes, strengthens selection feedback, renders
+hollow pin sockets and adds pencil/grab/grabbing cursor cues. Reference/name/value
+annotations include effective catalog defaults and SI units, with deterministic
+candidate placement and a compact option. Device appearance preferences include
+wire palette and label detail. Navigation no longer hides pins and annotations.
+Candidate placement reduces collisions; it does not guarantee an overlap-free
+dense drawing or move electrical geometry.
+
+Local validation passes 149 UI tests across 34 files, typecheck, lint and
+production build; 36 repeated browser workflows plus three focused visual checks;
+and the real-engine schematic regression, including direct drawing, exact undo,
+track editing and group operations. The visual checks cover selected wires during
+simulation, hollow sockets, pencil/grab cursors, catalog defaults, persistent color
+and label settings, and visible pins/details during navigation. Native light/dark,
+terminal-detail and compact screenshots are in the [gallery](gallery/README.md).
+Hosted platform validation is pending for this PR.
+
 ## Circuit organization milestone
 
 Branch `schematic/circuit-organization`, based on merged PR #31 (`322817a`), adds

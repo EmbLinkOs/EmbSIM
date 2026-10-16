@@ -4,6 +4,30 @@ The Design perspective combines the component library, schematic canvas,
 inspector and Layout Studio. The schematic ribbon keeps layout, arrangement,
 focus, search and display controls together. Tools work in light and dark themes.
 
+## Read and manipulate the drawing
+
+Idle wires use engineering green, distinct from graphite component bodies.
+**View → Wire color** offers green, blue, teal and violet; the choice is saved on
+this device alongside the grid settings. Click a wire or focus it and press Enter
+or Space to select it. A violet stroke and background halo mark the selected
+track, including while simulation signal colors are active. Live colors still
+represent digital/analog state; the drawing palette does not replace those values.
+
+Each visible symbol terminal has a hollow circular socket. Hover it for its pin
+and net details; the pencil cursor indicates that you can start or finish a wire
+there. Click or drag between sockets, or activate them with the keyboard. The
+pencil stays active while wiring. Movable bodies use a grab hand, changing to a
+closed hand during drag; locked/read-only bodies do not advertise dragging.
+Terminals and annotations remain visible while focusing, panning and zooming.
+
+Annotations show the reference, component name and primary parameter value when
+available. Values use effective explicit/catalog-default data and SI units (for
+example `4.7 kΩ` or `100 nF`). Nearby candidate positions are scored against
+symbols, terminals, previously placed labels and tracks. This reduces overlap
+without moving the circuit; very dense drawings can still need more spacing.
+**View → Component labels → Reference and value** hides names for a compact view.
+Long names are abbreviated visually; full identity remains in component details.
+
 ## Organize a larger circuit
 
 Open **Objects** in Design details, or use the command palette's **Open schematic

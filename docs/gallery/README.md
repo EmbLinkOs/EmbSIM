@@ -5,6 +5,20 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Schematic graphics and interaction (2026-10-16)
+
+Captured from the native engine with `tests/browser/test_schematic.py`: separate
+wire/symbol colors, hollow pin sockets and nearby reference/name/effective-value
+annotations. No model values or electrical connections are changed for styling.
+The browser regression also checks direct wiring, exact undo and group operations.
+
+| | |
+|---|---|
+| ![Colored wires and component labels on paper](schematic-graphics/light.png) | ![Theme-aware wires and labels in dark mode](schematic-graphics/dark.png) |
+
+[Terminal and annotation detail](schematic-graphics/terminal-detail.png) ·
+[Compact workspace](schematic-graphics/compact.png).
+
 ## Circuit organization (2026-10-16)
 
 Captured against the native engine by `tests/browser/test_schematic.py`. The

@@ -24,5 +24,7 @@ describe('continuous canvas appearance', () => {
     expect(normalizeAppearance({ style: 'injected', palette: 'url(x)', spacing: 7, weight: Infinity, contrast: NaN })).toEqual(DEFAULT_CANVAS_APPEARANCE);
     expect(normalizeAppearance({ weight: 10, contrast: -2 })).toMatchObject({ weight: 2, contrast: .05 });
     expect(normalizeAppearance(null)).toEqual(DEFAULT_CANVAS_APPEARANCE);
+    expect(normalizeAppearance({ wireColor: 'url(invalid)', labels: 'invalid' })).toEqual(DEFAULT_CANVAS_APPEARANCE);
+    expect(normalizeAppearance({ wireColor: 'blue', labels: 'compact' })).toMatchObject({ wireColor: 'blue', labels: 'compact' });
   });
 });
