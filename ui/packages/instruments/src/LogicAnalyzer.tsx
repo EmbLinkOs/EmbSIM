@@ -116,8 +116,12 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
       const d = ch.record.decimate(win.start, end, buckets);
       const color = ch.color ?? colors.high;
       ctx.lineWidth = 1.5;
-      let prevLevel: number | null = null;
-      for (let i = 0; i < buckets; i++) {
+      // a probe reports changes only: the level before the window holds
+      // until its first change, and nothing is drawn past the present
+      const held = ch.record.valueAt(win.start);
+      let prevLevel: number | null = Number.isFinite(held) ? held : null;
+      const stop = now !== undefined && now < end ? Math.max(0, Math.floor(timeToX(now, win, pw))) : buckets;
+      for (let i = 0; i < Math.min(buckets, stop + 1); i++) {
         if (d.count[i] === 0) {
           if (prevLevel === null) continue;
           // Extend the previous level across unsampled columns.

@@ -52,6 +52,9 @@ interface StateOverlay {
   rect: { left: number; top: number; width: number; height: number };
 }
 
+/** The key of a hotspot's input in an item's inputs: "pressed", or "SW_RESET.pressed" on a board. */
+const inputKey = (h: Hotspot) => (h.target ? `${h.target}.${h.input}` : h.input);
+
 /** CSS.escape with a fallback for environments without it (jsdom). */
 function cssEscape(s: string): string {
   if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(s);
@@ -113,7 +116,12 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
     for (const item of items) {
       const root = svg.querySelector(`[data-board-item="${cssEscape(item.id)}"]`);
       if (!root) continue;
-      for (const s of item.states ?? []) applyState(root, s, item.outputs?.[s.output]);
+      // an output the session does not report (an LED's `lit` under the
+      // electrical tier) leaves the artwork to the outputs it does report
+      for (const s of item.states ?? []) {
+        const v = item.outputs?.[s.output];
+        if (v !== undefined) applyState(root, s, v);
+      }
     }
   }, [items]);
 
@@ -132,7 +140,7 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
         const el = root.querySelector(h.selector);
         if (!el) continue;
         const r = el.getBoundingClientRect();
-        next.push({ key: `${item.id}:${h.input}`, item, hotspot: h, rect: { left: r.left - wrapRect.left, top: r.top - wrapRect.top, width: r.width, height: r.height } });
+        next.push({ key: `${item.id}:${h.target ?? ''}:${h.input}`, item, hotspot: h, rect: { left: r.left - wrapRect.left, top: r.top - wrapRect.top, width: r.width, height: r.height } });
       }
       const seen = new Set<string>();
       for (const s of item.states ?? []) {
@@ -159,7 +167,7 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
   const set = useCallback(
     (item: BoardItem, hotspot: Hotspot, value: unknown, say?: string) => {
       if (disabled) return;
-      onInput?.(item.id, hotspot.input, value);
+      onInput?.(hotspot.target ? `${item.id}.${hotspot.target}` : item.id, hotspot.input, value);
       if (say) setAnnouncement(say);
     },
     [disabled, onInput],
@@ -190,12 +198,12 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
       {overlays.map((o) => {
         const { item, hotspot: h } = o;
         const pos: CSSProperties = { left: o.rect.left, top: o.rect.top, width: o.rect.width, height: o.rect.height };
-        const name = `${item.label} ${h.label ?? h.input}`;
+        const name = `${item.label} ${h.label ?? (h.target ? `${h.target} ${h.input}` : h.input)}`;
         if (h.gesture === 'drag') {
           const min = h.min ?? 0;
           const max = h.max ?? 1;
           const step = h.step ?? (max - min) / 100;
-          const current = dragValue[o.key] ?? Number(item.inputs?.[h.input] ?? min);
+          const current = dragValue[o.key] ?? Number(item.inputs?.[inputKey(h)] ?? min);
           const commit = (v: number) => {
             const clamped = Math.max(min, Math.min(max, v));
             setDragValue((d) => ({ ...d, [o.key]: clamped }));
@@ -248,7 +256,7 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
             </div>
           );
         }
-        const pressed = Boolean(item.inputs?.[h.input]);
+        const pressed = Boolean(item.inputs?.[inputKey(h)]);
         if (h.gesture === 'toggle') {
           return (
             <button

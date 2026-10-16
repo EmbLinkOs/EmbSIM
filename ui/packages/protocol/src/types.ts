@@ -156,6 +156,8 @@ export type HotspotGesture = 'hold' | 'toggle' | 'drag';
 
 export interface Hotspot {
   input: string;
+  /** A board's hotspot acts on one of its components ("SW_RESET"), not on the board. */
+  target?: string;
   selector: string;
   gesture: HotspotGesture;
   axis?: 'x' | 'y' | 'angle';
