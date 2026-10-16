@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "pulse-and-press",
+  "description": "While the 1 kHz pulse is high the transistor saturates and the LED conducts 5 to 9 mA; while it is low the collector sits at the rail. The button net is high through the pull-up and low while pressed.",
+  "until": "40ms",
+  "policy": "electrical",
+  "inputs": [
+    {"at": "10ms", "target": "SW1", "input": "pressed", "value": true},
+    {"at": "30ms", "target": "SW1", "input": "pressed", "value": false}
+  ],
+  "assertions": [
+    {"id": "coll-low-while-high", "between": ["0.1ms", "0.45ms"], "probe": "coll", "expect": {"max_v": 0.4}},
+    {"id": "coll-high-while-low", "between": ["0.6ms", "0.95ms"], "probe": "coll", "expect": {"min_v": 2.0}},
+    {"id": "led-current", "at": "0.25ms", "probe": "iled", "expect": {"min": 0.005, "max": 0.009}},
+    {"id": "led-dark", "at": "0.75ms", "probe": "iled", "expect": {"max": 0.0001}},
+    {"id": "collector-current", "at": "0.25ms", "probe": "ic", "expect": {"min": 0.005, "max": 0.009}},
+    {"id": "led-visible", "at": "0.25ms", "probe": "lum", "expect": {"min": 0.2}},
+    {"id": "pulse-frequency", "between": ["0ms", "10ms"], "probe": "pulse", "expect": {"frequency_hz": 1000, "tolerance": 0.01}},
+    {"id": "btn-idle-high", "at": "5ms", "probe": "btn", "expect": {"logic": "1"}},
+    {"id": "btn-pressed-low", "at": "12ms", "probe": "btn", "expect": {"logic": "0"}},
+    {"id": "btn-released-high", "at": "35ms", "probe": "btn", "expect": {"logic": "1"}},
+    {"id": "converges", "always": true, "diagnostics": {"forbid": ["analog.no_convergence", "analog.singular_topology", "net.contention"]}}
+  ]
+}

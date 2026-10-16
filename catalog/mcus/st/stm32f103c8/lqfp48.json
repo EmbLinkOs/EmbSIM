@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "kind": "package",
+  "id": "st/stm32f103c8/lqfp48",
+  "name": "LQFP48",
+  "description": "48-pin low-profile quad flat package, 7 x 7 mm, 0.5 mm pitch (STM32F103C8T6).",
+  "pins": [
+    {
+      "number": 1,
+      "signal": "VBAT"
+    },
+    {
+      "number": 2,
+      "signal": "PC13"
+    },
+    {
+      "number": 3,
+      "signal": "PC14",
+      "doc": "PC14-OSC32_IN"
+    },
+    {
+      "number": 4,
+      "signal": "PC15",
+      "doc": "PC15-OSC32_OUT"
+    },
+    {
+      "number": 5,
+      "signal": "OSC_IN",
+      "doc": "PD0-OSC_IN"
+    },
+    {
+      "number": 6,
+      "signal": "OSC_OUT",
+      "doc": "PD1-OSC_OUT"
+    },
+    {
+      "number": 7,
+      "signal": "NRST"
+    },
+    {
+      "number": 8,
+      "signal": "VSSA"
+    },
+    {
+      "number": 9,
+      "signal": "VDDA"
+    },
+    {
+      "number": 10,
+      "signal": "PA0"
+    },
+    {
+      "number": 11,
+      "signal": "PA1"
+    },
+    {
+      "number": 12,
+      "signal": "PA2"
+    },
+    {
+      "number": 13,
+      "signal": "PA3"
+    },
+    {
+      "number": 14,
+      "signal": "PA4"
+    },
+    {
+      "number": 15,
+      "signal": "PA5"
+    },
+    {
+      "number": 16,
+      "signal": "PA6"
+    },
+    {
+      "number": 17,
+      "signal": "PA7"
+    },
+    {
+      "number": 18,
+      "signal": "PB0"
+    },
+    {
+      "number": 19,
+      "signal": "PB1"
+    },
+    {
+      "number": 20,
+      "signal": "PB2"
+    },
+    {
+      "number": 21,
+      "signal": "PB10"
+    },
+    {
+      "number": 22,
+      "signal": "PB11"
+    },
+    {
+      "number": 23,
+      "signal": "VSS"
+    },
+    {
+      "number": 24,
+      "signal": "VDD"
+    },
+    {
+      "number": 25,
+      "signal": "PB12"
+    },
+    {
+      "number": 26,
+      "signal": "PB13"
+    },
+    {
+      "number": 27,
+      "signal": "PB14"
+    },
+    {
+      "number": 28,
+      "signal": "PB15"
+    },
+    {
+      "number": 29,
+      "signal": "PA8"
+    },
+    {
+      "number": 30,
+      "signal": "PA9"
+    },
+    {
+      "number": 31,
+      "signal": "PA10"
+    },
+    {
+      "number": 32,
+      "signal": "PA11"
+    },
+    {
+      "number": 33,
+      "signal": "PA12"
+    },
+    {
+      "number": 34,
+      "signal": "PA13",
+      "doc": "JTMS-SWDIO"
+    },
+    {
+      "number": 35,
+      "signal": "VSS"
+    },
+    {
+      "number": 36,
+      "signal": "VDD"
+    },
+    {
+      "number": 37,
+      "signal": "PA14",
+      "doc": "JTCK-SWCLK"
+    },
+    {
+      "number": 38,
+      "signal": "PA15",
+      "doc": "JTDI"
+    },
+    {
+      "number": 39,
+      "signal": "PB3",
+      "doc": "JTDO"
+    },
+    {
+      "number": 40,
+      "signal": "PB4",
+      "doc": "NJTRST"
+    },
+    {
+      "number": 41,
+      "signal": "PB5"
+    },
+    {
+      "number": 42,
+      "signal": "PB6"
+    },
+    {
+      "number": 43,
+      "signal": "PB7"
+    },
+    {
+      "number": 44,
+      "signal": "BOOT0"
+    },
+    {
+      "number": 45,
+      "signal": "PB8"
+    },
+    {
+      "number": 46,
+      "signal": "PB9"
+    },
+    {
+      "number": 47,
+      "signal": "VSS"
+    },
+    {
+      "number": 48,
+      "signal": "VDD"
+    }
+  ],
+  "outline": {
+    "svg": "lqfp48.svg",
+    "width_mm": 9,
+    "height_mm": 9
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "STM32F103x8 STM32F103xB datasheet, Figure 3 LQFP48 pinout and Table 5 pin definitions",
+        "rev": "17"
+      }
+    ]
+  }
+}

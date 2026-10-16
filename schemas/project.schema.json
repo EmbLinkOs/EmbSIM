@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/project.schema.json",
+  "title": "EmbSIM project",
+  "description": "A project: libraries, policy, boards with firmware, component instances, nets (the electrical truth), presentation layout, probes, scenarios and settings (SPEC-007 §1).",
+  "type": "object",
+  "required": ["schema_version", "kind", "name", "policy", "nets"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "project"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "libraries": {"type": "array", "items": {"type": "string"}, "description": "Library directories relative to the project file (SPEC-014 §2)."},
+    "policy": {"$ref": "common.schema.json#/$defs/policy"},
+    "boards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "board"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/instance_id"},
+          "board": {"$ref": "common.schema.json#/$defs/catalog_id"},
+          "version": {"$ref": "common.schema.json#/$defs/version_range"},
+          "firmware": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "image": {"type": "string", "minLength": 1},
+              "format": {"type": "string", "enum": ["elf", "hex"]},
+              "toolchain": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+              "sources": {"type": "array", "items": {"type": "string"}},
+              "flags": {"type": "array", "items": {"type": "string"}},
+              "defines": {"type": "array", "items": {"type": "string"}},
+              "include": {"type": "array", "items": {"type": "string"}}
+            }
+          },
+          "layout": {"$ref": "common.schema.json#/$defs/layout"},
+          "settings": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "sram_size": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "Resize of the MCU's main RAM region."},
+              "flash_size": {"$ref": "common.schema.json#/$defs/hex_or_size"}
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "component"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/instance_id"},
+          "component": {"$ref": "common.schema.json#/$defs/catalog_id"},
+          "version": {"$ref": "common.schema.json#/$defs/version_range"},
+          "params": {"$ref": "common.schema.json#/$defs/param_values"},
+          "layout": {"$ref": "common.schema.json#/$defs/layout"},
+          "doc": {"type": "string"}
+        }
+      }
+    },
+    "nets": {"$ref": "common.schema.json#/$defs/nets"},
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "wires": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["net", "points"],
+            "additionalProperties": false,
+            "properties": {
+              "net": {"type": "string"},
+              "points": {"type": "array", "minItems": 2, "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}}}
+            }
+          }
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["net", "x", "y"],
+            "additionalProperties": false,
+            "properties": {
+              "net": {"type": "string"},
+              "x": {"type": "number"},
+              "y": {"type": "number"},
+              "rotation": {"type": "number", "enum": [0, 90, 180, 270]}
+            }
+          }
+        },
+        "sheet": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "width": {"type": "number", "exclusiveMinimum": 0},
+            "height": {"type": "number", "exclusiveMinimum": 0}
+          }
+        }
+      }
+    },
+    "probes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "target", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"},
+          "target": {"type": "string", "pattern": "^(net|pin|device|reg|mem|var|serial|output):.+$"},
+          "kind": {"type": "string", "enum": ["digital", "analog", "serial", "value"]},
+          "rate_hz": {"type": "number", "exclusiveMinimum": 0},
+          "decode": {
+            "type": "object",
+            "required": ["protocol"],
+            "additionalProperties": false,
+            "properties": {
+              "protocol": {"type": "string", "enum": ["uart", "spi", "i2c"]},
+              "params": {"type": "object"}
+            }
+          },
+          "doc": {"type": "string"}
+        }
+      }
+    },
+    "scenarios": {"type": "array", "items": {"type": "string", "pattern": "\\.json$"}},
+    "settings": {"$ref": "common.schema.json#/$defs/settings"}
+  }
+}

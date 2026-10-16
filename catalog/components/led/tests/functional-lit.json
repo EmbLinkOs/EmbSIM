@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "functional-lit",
+  "description": "Anode 1, cathode 0: lit.",
+  "policy": "functional",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/led",
+        "params": {
+          "color": "green"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.A"
+      ],
+      "GND": [
+        "DUT.K",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit": {
+      "at": "0.5ms",
+      "equals": true
+    }
+  }
+}

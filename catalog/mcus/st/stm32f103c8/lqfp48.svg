@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+<style>.b{fill:#2a2d33;stroke:#111;stroke-width:1}.p{fill:#c8ccd4;stroke:#555;stroke-width:0.5}.t{font-family:sans-serif;font-size:5px;fill:#ddd}</style>
+<rect class="b" x="40.0" y="40.0" width="100" height="100" rx="4"/>
+<circle cx="50.0" cy="50.0" r="3" fill="#888"/>
+<text class="t" x="90.0" y="88.0" text-anchor="middle">STM32F103</text><text class="t" x="90.0" y="96.0" text-anchor="middle">C8T6</text>
+<rect class="p" id="pin-1" x="26.0" y="45.7" width="14" height="4"><title>1 VBAT</title></rect>
+<rect class="p" id="pin-2" x="26.0" y="53.4" width="14" height="4"><title>2 PC13</title></rect>
+<rect class="p" id="pin-3" x="26.0" y="61.1" width="14" height="4"><title>3 PC14</title></rect>
+<rect class="p" id="pin-4" x="26.0" y="68.8" width="14" height="4"><title>4 PC15</title></rect>
+<rect class="p" id="pin-5" x="26.0" y="76.5" width="14" height="4"><title>5 OSC_IN</title></rect>
+<rect class="p" id="pin-6" x="26.0" y="84.2" width="14" height="4"><title>6 OSC_OUT</title></rect>
+<rect class="p" id="pin-7" x="26.0" y="91.8" width="14" height="4"><title>7 NRST</title></rect>
+<rect class="p" id="pin-8" x="26.0" y="99.5" width="14" height="4"><title>8 VSSA</title></rect>
+<rect class="p" id="pin-9" x="26.0" y="107.2" width="14" height="4"><title>9 VDDA</title></rect>
+<rect class="p" id="pin-10" x="26.0" y="114.9" width="14" height="4"><title>10 PA0</title></rect>
+<rect class="p" id="pin-11" x="26.0" y="122.6" width="14" height="4"><title>11 PA1</title></rect>
+<rect class="p" id="pin-12" x="26.0" y="130.3" width="14" height="4"><title>12 PA2</title></rect>
+<rect class="p" id="pin-13" x="45.7" y="140.0" width="4" height="14"><title>13 PA3</title></rect>
+<rect class="p" id="pin-14" x="53.4" y="140.0" width="4" height="14"><title>14 PA4</title></rect>
+<rect class="p" id="pin-15" x="61.1" y="140.0" width="4" height="14"><title>15 PA5</title></rect>
+<rect class="p" id="pin-16" x="68.8" y="140.0" width="4" height="14"><title>16 PA6</title></rect>
+<rect class="p" id="pin-17" x="76.5" y="140.0" width="4" height="14"><title>17 PA7</title></rect>
+<rect class="p" id="pin-18" x="84.2" y="140.0" width="4" height="14"><title>18 PB0</title></rect>
+<rect class="p" id="pin-19" x="91.8" y="140.0" width="4" height="14"><title>19 PB1</title></rect>
+<rect class="p" id="pin-20" x="99.5" y="140.0" width="4" height="14"><title>20 PB2</title></rect>
+<rect class="p" id="pin-21" x="107.2" y="140.0" width="4" height="14"><title>21 PB10</title></rect>
+<rect class="p" id="pin-22" x="114.9" y="140.0" width="4" height="14"><title>22 PB11</title></rect>
+<rect class="p" id="pin-23" x="122.6" y="140.0" width="4" height="14"><title>23 VSS</title></rect>
+<rect class="p" id="pin-24" x="130.3" y="140.0" width="4" height="14"><title>24 VDD</title></rect>
+<rect class="p" id="pin-25" x="140.0" y="130.3" width="14" height="4"><title>25 PB12</title></rect>
+<rect class="p" id="pin-26" x="140.0" y="122.6" width="14" height="4"><title>26 PB13</title></rect>
+<rect class="p" id="pin-27" x="140.0" y="114.9" width="14" height="4"><title>27 PB14</title></rect>
+<rect class="p" id="pin-28" x="140.0" y="107.2" width="14" height="4"><title>28 PB15</title></rect>
+<rect class="p" id="pin-29" x="140.0" y="99.5" width="14" height="4"><title>29 PA8</title></rect>
+<rect class="p" id="pin-30" x="140.0" y="91.8" width="14" height="4"><title>30 PA9</title></rect>
+<rect class="p" id="pin-31" x="140.0" y="84.2" width="14" height="4"><title>31 PA10</title></rect>
+<rect class="p" id="pin-32" x="140.0" y="76.5" width="14" height="4"><title>32 PA11</title></rect>
+<rect class="p" id="pin-33" x="140.0" y="68.8" width="14" height="4"><title>33 PA12</title></rect>
+<rect class="p" id="pin-34" x="140.0" y="61.1" width="14" height="4"><title>34 PA13</title></rect>
+<rect class="p" id="pin-35" x="140.0" y="53.4" width="14" height="4"><title>35 VSS</title></rect>
+<rect class="p" id="pin-36" x="140.0" y="45.7" width="14" height="4"><title>36 VDD</title></rect>
+<rect class="p" id="pin-37" x="130.3" y="26.0" width="4" height="14"><title>37 PA14</title></rect>
+<rect class="p" id="pin-38" x="122.6" y="26.0" width="4" height="14"><title>38 PA15</title></rect>
+<rect class="p" id="pin-39" x="114.9" y="26.0" width="4" height="14"><title>39 PB3</title></rect>
+<rect class="p" id="pin-40" x="107.2" y="26.0" width="4" height="14"><title>40 PB4</title></rect>
+<rect class="p" id="pin-41" x="99.5" y="26.0" width="4" height="14"><title>41 PB5</title></rect>
+<rect class="p" id="pin-42" x="91.8" y="26.0" width="4" height="14"><title>42 PB6</title></rect>
+<rect class="p" id="pin-43" x="84.2" y="26.0" width="4" height="14"><title>43 PB7</title></rect>
+<rect class="p" id="pin-44" x="76.5" y="26.0" width="4" height="14"><title>44 BOOT0</title></rect>
+<rect class="p" id="pin-45" x="68.8" y="26.0" width="4" height="14"><title>45 PB8</title></rect>
+<rect class="p" id="pin-46" x="61.1" y="26.0" width="4" height="14"><title>46 PB9</title></rect>
+<rect class="p" id="pin-47" x="53.4" y="26.0" width="4" height="14"><title>47 VSS</title></rect>
+<rect class="p" id="pin-48" x="45.7" y="26.0" width="4" height="14"><title>48 VDD</title></rect>
+</svg>

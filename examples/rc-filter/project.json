@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "rc-filter",
+  "description": "A first-order RC low-pass (10 kΩ, 10 nF, tau = 100 us) driven by a 1 kHz 0 to 3.3 V pulse; probes on both sides of the resistor.",
+  "libraries": [],
+  "policy": "electrical",
+  "boards": [],
+  "components": [
+    {"id": "V1", "component": "emblink/pulse_source", "params": {"v1": 0, "v2": 3.3, "td": 0, "tr": "10n", "tf": "10n", "pw": "500u", "per": "1m"}, "layout": {"x": 100, "y": 140}},
+    {"id": "R1", "component": "emblink/resistor", "params": {"resistance": "10k"}, "layout": {"x": 250, "y": 100}},
+    {"id": "C1", "component": "emblink/capacitor", "params": {"capacitance": "10n"}, "layout": {"x": 400, "y": 140, "rotation": 90}},
+    {"id": "GND1", "component": "emblink/gnd", "layout": {"x": 400, "y": 240}}
+  ],
+  "nets": {
+    "IN": ["V1.+", "R1.1"],
+    "OUT": ["R1.2", "C1.1"],
+    "GND": ["V1.-", "C1.2", "GND1.GND"]
+  },
+  "layout": {
+    "wires": [
+      {"net": "IN", "points": [[130, 140], [130, 110], [250, 110]]},
+      {"net": "OUT", "points": [[310, 110], [410, 110], [410, 140]]},
+      {"net": "GND", "points": [[130, 180], [130, 240], [410, 240], [410, 200]]}
+    ],
+    "labels": [{"net": "IN", "x": 180, "y": 100}, {"net": "OUT", "x": 340, "y": 100}],
+    "sheet": {"width": 600, "height": 320}
+  },
+  "probes": [
+    {"id": "in", "target": "net:IN", "kind": "analog", "rate_hz": 1000000},
+    {"id": "out", "target": "net:OUT", "kind": "analog", "rate_hz": 1000000}
+  ],
+  "scenarios": ["scenarios/step.json"],
+  "settings": {"h_max": "5us", "lte_tol": 0.001}
+}

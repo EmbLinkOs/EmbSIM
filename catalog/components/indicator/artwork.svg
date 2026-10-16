@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <defs>
+    <radialGradient id="ind-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3bff6e" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#3bff6e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect id="bezel" x="6" y="6" width="28" height="28" rx="14" fill="#2b2f36" stroke="#15171b" stroke-width="1.5"/>
+  <circle id="lens" cx="20" cy="20" r="9" fill="#1f5a30"/>
+  <circle id="glow" cx="20" cy="20" r="14" fill="url(#ind-grad)" opacity="0"/>
+</svg>

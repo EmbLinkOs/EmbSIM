@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/isource",
+  "version": "1.0.0",
+  "name": "Current source",
+  "category": "sources",
+  "description": "Independent current source: dc, pulse, sine or piecewise-linear; current flows from + out through the circuit and back into -.",
+  "keywords": [
+    "source",
+    "current",
+    "isource"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      }
+    }
+  ],
+  "params": {
+    "kind": {
+      "type": "enum",
+      "enum": [
+        "dc",
+        "pulse",
+        "sine",
+        "pwl"
+      ],
+      "default": "dc",
+      "doc": "Waveform"
+    },
+    "dc": {
+      "type": "number",
+      "unit": "A",
+      "default": 5,
+      "doc": "DC value (kind dc) or offset"
+    },
+    "v1": {
+      "type": "number",
+      "unit": "A",
+      "default": 0,
+      "doc": "pulse: initial value"
+    },
+    "v2": {
+      "type": "number",
+      "unit": "A",
+      "default": 3.3,
+      "doc": "pulse: pulsed value"
+    },
+    "td": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "min": 0,
+      "doc": "pulse/sine: delay before the first edge"
+    },
+    "tr": {
+      "type": "number",
+      "unit": "s",
+      "default": "10n",
+      "min": 0,
+      "doc": "pulse: rise time"
+    },
+    "tf": {
+      "type": "number",
+      "unit": "s",
+      "default": "10n",
+      "min": 0,
+      "doc": "pulse: fall time"
+    },
+    "pw": {
+      "type": "number",
+      "unit": "s",
+      "default": "500u",
+      "min": 0,
+      "doc": "pulse: pulse width"
+    },
+    "per": {
+      "type": "number",
+      "unit": "s",
+      "default": "1m",
+      "min": "1p",
+      "doc": "pulse: period"
+    },
+    "vo": {
+      "type": "number",
+      "unit": "A",
+      "default": 0,
+      "doc": "sine: offset"
+    },
+    "va": {
+      "type": "number",
+      "unit": "A",
+      "default": 1,
+      "doc": "sine: amplitude"
+    },
+    "freq": {
+      "type": "number",
+      "unit": "Hz",
+      "default": "1k",
+      "min": 0,
+      "doc": "sine: frequency"
+    },
+    "phase": {
+      "type": "number",
+      "unit": "deg",
+      "default": 0,
+      "doc": "sine: phase",
+      "advanced": true
+    },
+    "points": {
+      "type": "table",
+      "default": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "doc": "pwl: [time_s, value] breakpoints"
+    }
+  },
+  "model": {
+    "primitive": "isource"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "+": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "-": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Ideal current source with SPICE-style dc/pulse/sine/pwl parameters (SPEC-004 §7 isource).",
+      "omissions": [
+        "compliance limit",
+        "output conductance"
+      ],
+      "range": {
+        "current_a": [
+          -10,
+          10
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

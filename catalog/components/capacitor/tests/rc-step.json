@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rc-step",
+  "description": "RC with tau = 1 ms reaches 63 % of 3.3 V after 1 ms.",
+  "policy": "electrical",
+  "until": "5ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/pulse_source",
+        "params": {
+          "v1": 0,
+          "v2": 3.3,
+          "td": "0",
+          "tr": "1n",
+          "tf": "1n",
+          "pw": "10m",
+          "per": "20m"
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/capacitor",
+        "params": {
+          "capacitance": "1u"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "OUT": [
+        "R1.2",
+        "DUT.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "1ms",
+      "min_v": 1.9,
+      "max_v": 2.3
+    }
+  }
+}

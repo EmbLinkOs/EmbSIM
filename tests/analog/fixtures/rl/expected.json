@@ -1,0 +1,13 @@
+{
+  "tolerance": { "abs": 0.002, "rel": 0.01 },
+  "op": { "vin": 0.0, "mid": 0.0 },
+  "samples": [
+    { "t": "50us",  "nets": { "mid": 3.0326533 },
+      "devices": [ { "device": "L1", "key": "i", "equals": 0.019673467, "tol": 0.0002 } ] },
+    { "t": "100us", "nets": { "mid": 1.8393972 },
+      "devices": [ { "device": "L1", "key": "i", "equals": 0.031606028, "tol": 0.0003 } ] },
+    { "t": "300us", "nets": { "mid": 0.2489353 } },
+    { "t": "1ms",   "nets": { "mid": 0.0002270 }, "abs": 0.001,
+      "devices": [ { "device": "L1", "key": "i", "equals": 0.05, "tol": 0.0001 } ] }
+  ]
+}

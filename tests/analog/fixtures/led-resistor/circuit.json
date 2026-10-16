@@ -1,0 +1,11 @@
+{
+  "name": "led-resistor",
+  "ground": "gnd",
+  "supplies": { "vcc": 3.3, "v5": 5.0 },
+  "components": [
+    { "id": "R1", "device": "resistor", "params": { "r": 100 }, "pins": ["vcc", "a1"] },
+    { "id": "D1", "device": "led",      "params": { "color": "red" }, "pins": ["a1", "gnd"] },
+    { "id": "R2", "device": "resistor", "params": { "r": 220 }, "pins": ["v5", "a2"] },
+    { "id": "D2", "device": "led",      "params": { "color": "green" }, "pins": ["a2", "gnd"] }
+  ]
+}

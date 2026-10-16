@@ -1,0 +1,6 @@
+{
+  "name": "input.set at a past time is an error",
+  "method": "input.set",
+  "params": {"target": "SW1", "input": "pressed", "value": false, "at": "1ms"},
+  "expect": {"error": {"code": "<number>", "message": "<string>"}}
+}

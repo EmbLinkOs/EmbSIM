@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "toolchain",
+  "id": "embcc",
+  "name": "EmbCC (EmbLink C compiler)",
+  "description": "The EmbLink EmbCC compiler and linker; targets are named by LLVM-style triples and the linker takes memory regions on the command line.",
+  "detect": {
+    "command": [
+      "embcc",
+      "--version"
+    ],
+    "version_regex": "embcc ([0-9.]+)",
+    "min_version": "0.3.0"
+  },
+  "targets": {
+    "thumbv7m-none-eabi": {
+      "cc": [
+        "embcc",
+        "--target=thumbv7m-none-eabi"
+      ],
+      "link_flags": [
+        "--gc-sections"
+      ]
+    },
+    "thumbv6m-none-eabi": {
+      "cc": [
+        "embcc",
+        "--target=thumbv6m-none-eabi"
+      ],
+      "link_flags": [
+        "--gc-sections"
+      ]
+    },
+    "thumbv7em-none-eabihf": {
+      "cc": [
+        "embcc",
+        "--target=thumbv7em-none-eabihf"
+      ],
+      "link_flags": [
+        "--gc-sections"
+      ]
+    },
+    "riscv32-unknown-elf": {
+      "cc": [
+        "embcc",
+        "--target=riscv32-unknown-elf",
+        "-march=rv32imac",
+        "-mabi=ilp32"
+      ],
+      "link_flags": [
+        "--gc-sections"
+      ]
+    },
+    "avr": {
+      "cc": [
+        "embcc",
+        "--target=avr"
+      ],
+      "link_flags": []
+    }
+  },
+  "steps": {
+    "compile": [
+      "${cc}",
+      "${cflags}",
+      "${defines}",
+      "${include}",
+      "-g",
+      "-O2",
+      "-c",
+      "${source}",
+      "-o",
+      "${object}"
+    ],
+    "link": [
+      "${cc}",
+      "${cflags}",
+      "${link_flags}",
+      "${link}",
+      "${objects}",
+      "-o",
+      "${image}"
+    ],
+    "convert": null
+  },
+  "outputs": {
+    "image": "elf",
+    "debug": "dwarf",
+    "map": false
+  },
+  "environment": {
+    "PATH_hint": [
+      "/usr/local/bin",
+      "~/.emblink/bin",
+      "C:/Program Files/EmbLink/bin"
+    ]
+  }
+}

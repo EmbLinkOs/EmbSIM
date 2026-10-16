@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}</style>
+  <line class="s" id="pin-d" x1="0" y1="10" x2="10" y2="10"/>
+  <line class="s" id="pin-clk" x1="0" y1="30" x2="10" y2="30"/>
+  <line class="s" id="pin-s" x1="30" y1="0" x2="30" y2="10"/>
+  <line class="s" id="pin-r" x1="30" y1="60" x2="30" y2="50"/>
+  <line class="s" id="pin-q" x1="60" y1="10" x2="50" y2="10"/>
+  <line class="s" id="pin-qn" x1="60" y1="30" x2="50" y2="30"/>
+  <line class="s" id="pin-vcc" x1="50" y1="0" x2="50" y2="10"/>
+  <line class="s" id="pin-gnd" x1="50" y1="60" x2="50" y2="50"/>
+  <rect class="f" x="10" y="2" width="40" height="56"/><text class="t" x="13" y="13">D</text><text class="t" x="13" y="33">CLK</text><polygon class="s" points="10,26 15,30 10,34"/><text class="t" x="43" y="13">Q</text><text class="t" x="40" y="33">QN</text><text class="t" x="27" y="10">S</text><text class="t" x="27" y="56">R</text>
+</svg>

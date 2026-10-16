@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "lit",
+  "description": "A=1, K=0: lit.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/indicator"
+      }
+    ],
+    "nets": {
+      "A": [
+        "H.OUT",
+        "DUT.A"
+      ],
+      "K": [
+        "L.OUT",
+        "DUT.K"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": true
+    }
+  }
+}

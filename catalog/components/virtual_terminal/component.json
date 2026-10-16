@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/virtual_terminal",
+  "version": "1.0.0",
+  "name": "Virtual terminal",
+  "category": "instruments",
+  "description": "UART encoder/decoder on two nets: text sent through tx_text is serialised on TX; frames on RX are decoded into rx_text.",
+  "keywords": [
+    "uart",
+    "serial",
+    "terminal",
+    "console",
+    "instrument"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "RX",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3",
+        "pull": "up"
+      },
+      "doc": "Receives frames (connect to the device's TX)"
+    },
+    {
+      "name": "TX",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull",
+        "strength": "strong",
+        "family": "cmos_3v3"
+      },
+      "doc": "Transmits frames (connect to the device's RX); idles high"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    }
+  ],
+  "params": {
+    "baud": {
+      "type": "integer",
+      "unit": "baud",
+      "default": 115200,
+      "min": 50,
+      "max": 10000000,
+      "doc": "Bit rate"
+    },
+    "data_bits": {
+      "type": "integer",
+      "default": 8,
+      "min": 5,
+      "max": 9,
+      "doc": "Data bits per frame"
+    },
+    "parity": {
+      "type": "enum",
+      "enum": [
+        "none",
+        "even",
+        "odd"
+      ],
+      "default": "none",
+      "doc": "Parity"
+    },
+    "stop_bits": {
+      "type": "integer",
+      "default": 1,
+      "min": 1,
+      "max": 2,
+      "doc": "Stop bits"
+    },
+    "invert": {
+      "type": "boolean",
+      "default": false,
+      "doc": "Inverted (RS-232 style) logic levels"
+    }
+  },
+  "inputs": [
+    {
+      "name": "tx_text",
+      "type": "string",
+      "default": "",
+      "doc": "Text appended to the transmit queue"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "rx_text",
+      "type": "string",
+      "doc": "Decoded received text"
+    },
+    {
+      "name": "rx_errors",
+      "type": "integer",
+      "doc": "Framing and parity errors"
+    }
+  ],
+  "model": {
+    "primitive": "virtual_terminal"
+  },
+  "functional": {
+    "primitive": "virtual_terminal"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "RX": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "TX": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "8N1-style framing at baud with configurable bits, parity and stop bits; byte timing exact to the bit (SPEC-003 §5 virtual_terminal).",
+      "omissions": [
+        "flow control",
+        "break detection"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "baud rate tolerance"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge with cmos_3v3 defaults; RX has a weak pull-up.",
+      "omissions": [
+        "line drivers",
+        "RS-232 levels beyond invert"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          5.5
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

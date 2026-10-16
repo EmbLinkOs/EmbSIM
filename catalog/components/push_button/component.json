@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/push_button",
+  "version": "1.0.0",
+  "name": "Push button",
+  "category": "switches",
+  "description": "Momentary tactile switch, normally open; closed while pressed.",
+  "keywords": [
+    "button",
+    "tactile",
+    "switch",
+    "momentary"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "A"
+      ]
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "B"
+      ]
+    }
+  ],
+  "params": {
+    "ron": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "doc": "Contact resistance when closed",
+      "min": 0,
+      "max": 1000
+    },
+    "roff": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1G",
+      "doc": "Leakage resistance when open",
+      "min": "1k",
+      "advanced": true
+    },
+    "bounce": {
+      "type": "boolean",
+      "default": false,
+      "doc": "Model contact bounce on press and release"
+    },
+    "bounce_ms": {
+      "type": "number",
+      "unit": "ms",
+      "default": 2,
+      "doc": "Bounce duration",
+      "min": 0,
+      "max": 50
+    }
+  },
+  "inputs": [
+    {
+      "name": "pressed",
+      "type": "boolean",
+      "default": false,
+      "doc": "Held while the pointer is down; Space when focused"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "closed",
+      "type": "boolean",
+      "doc": "Contact state after bounce"
+    }
+  ],
+  "model": {
+    "primitive": "switch",
+    "bind": {
+      "ron": "ron",
+      "roff": "roff",
+      "bounce": "bounce",
+      "bounce_ms": "bounce_ms"
+    }
+  },
+  "functional": {
+    "primitive": "push_button_digital"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 6,
+    "height_mm": 6,
+    "hotspots": [
+      {
+        "input": "pressed",
+        "selector": "#cap",
+        "gesture": "hold",
+        "key": "Space"
+      }
+    ],
+    "states": [
+      {
+        "output": "closed",
+        "selector": "#cap",
+        "attr": "transform",
+        "true": "translate(0 1) scale(0.96)",
+        "false": ""
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Open or closed from the pressed input; no timing (SPEC-003 §5 push_button).",
+      "omissions": [
+        "bounce"
+      ]
+    },
+    "timed": {
+      "claims": "Optional bounce as a burst of toggles spread over bounce_ms on press and release.",
+      "omissions": [
+        "wear",
+        "temperature"
+      ]
+    },
+    "electrical": {
+      "claims": "Resistance ron when closed, roff when open; bounce generates breakpoints (SPEC-004 §7 switch).",
+      "omissions": [
+        "contact capacitance",
+        "arcing",
+        "wear"
+      ],
+      "range": {
+        "current_a": [
+          0,
+          0.1
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Omron B3F tactile switch datasheet"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

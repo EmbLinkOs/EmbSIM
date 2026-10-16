@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/vcc",
+  "version": "1.0.0",
+  "name": "Supply (VCC)",
+  "category": "power",
+  "description": "Ideal supply rail symbol; the net it touches is held at the configured voltage.",
+  "keywords": [
+    "vcc",
+    "vdd",
+    "supply",
+    "power",
+    "rail"
+  ],
+  "pins": [
+    {
+      "name": "VCC",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": "$voltage"
+      },
+      "aliases": [
+        "+",
+        "1"
+      ]
+    }
+  ],
+  "params": {
+    "voltage": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "doc": "Rail voltage",
+      "min": 0,
+      "max": 50
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 20,
+    "height": 20,
+    "pins": {
+      "VCC": {
+        "x": 10,
+        "y": 20,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Drives (1, supply) onto its net (SPEC-003 §3).",
+      "omissions": []
+    },
+    "timed": {
+      "claims": "As functional on digital nets, ideal source on analog nets.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Ideal voltage source of nominal_v between the net and ground (SPEC-003 §4 power pin).",
+      "omissions": [
+        "output impedance",
+        "current limit",
+        "ripple"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          50
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

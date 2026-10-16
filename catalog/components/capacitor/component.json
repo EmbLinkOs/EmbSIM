@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/capacitor",
+  "version": "1.0.0",
+  "name": "Capacitor",
+  "category": "passives",
+  "description": "Ideal capacitor with optional ESR and initial voltage.",
+  "keywords": [
+    "capacitor",
+    "passive",
+    "C"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "capacitance": {
+      "type": "number",
+      "unit": "F",
+      "default": "100n",
+      "doc": "Capacitance",
+      "min": "1f",
+      "max": "10"
+    },
+    "esr": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Equivalent series resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "ic": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "Initial voltage at t=0 (pin 1 relative to pin 2)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "capacitor",
+    "bind": {
+      "c": "capacitance",
+      "esr": "esr",
+      "ic": "ic"
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical; a capacitor has no logic-level meaning.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Linear capacitance with ESR and initial condition, trapezoidal/BDF2 companion (SPEC-004 §7 capacitor).",
+      "omissions": [
+        "dielectric absorption",
+        "leakage",
+        "ESL",
+        "voltage coefficient"
+      ],
+      "range": {
+        "voltage_v": [
+          -100,
+          100
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

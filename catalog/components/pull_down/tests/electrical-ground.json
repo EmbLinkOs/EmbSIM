@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "electrical-ground",
+  "description": "Equal series and pull-down resistors halve the rail.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pull_down",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vcc",
+        "params": {
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.VCC",
+        "R.1"
+      ],
+      "N": [
+        "R.2",
+        "DUT.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:N": {
+      "at": "0.5ms",
+      "min_v": 1.6,
+      "max_v": 1.7
+    }
+  }
+}

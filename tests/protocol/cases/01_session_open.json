@@ -1,0 +1,6 @@
+{
+  "name": "session.open negotiates the protocol version and capabilities",
+  "method": "session.open",
+  "params": {"client": "conformance/0.1", "protocol": "1.0", "streams": "base64"},
+  "expect": {"result": {"protocol": "1.0", "engine": "<string>", "abi": "<number>", "capabilities": "<array>"}}
+}

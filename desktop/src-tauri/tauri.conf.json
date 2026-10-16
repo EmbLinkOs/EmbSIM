@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "EmbSIM",
+  "version": "0.1.0",
+  "identifier": "dev.emblink.embsim",
+  "build": {
+    "frontendDist": "../../ui/apps/workbench/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm --dir ../ui dev",
+    "beforeBuildCommand": "pnpm --dir ../ui build"
+  },
+  "app": {
+    "windows": [
+      { "title": "EmbSIM", "width": 1440, "height": 900, "minWidth": 1024, "minHeight": 700 }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:*; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["appimage", "deb", "dmg", "msi"],
+    "externalBin": ["binaries/embsim"],
+    "resources": { "../../catalog": "catalog" },
+    "category": "DeveloperTool",
+    "shortDescription": "Virtual electronics workbench",
+    "license": "Apache-2.0"
+  }
+}

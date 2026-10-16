@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/toolchain.schema.json",
+  "title": "EmbSIM toolchain profile",
+  "description": "How `embsim build` detects and drives a compiler: targets, step command templates with ${placeholders}, outputs and environment hints (SPEC-010 §1).",
+  "type": "object",
+  "required": ["schema_version", "kind", "id", "name", "detect", "targets", "steps", "outputs"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "toolchain"},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "detect": {
+      "type": "object",
+      "required": ["command"],
+      "additionalProperties": false,
+      "properties": {
+        "command": {"$ref": "#/$defs/argv"},
+        "version_regex": {"type": "string"},
+        "min_version": {"type": "string"}
+      }
+    },
+    "targets": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_+-]*$"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["cc"],
+        "additionalProperties": false,
+        "properties": {
+          "cc": {"$ref": "#/$defs/argv"},
+          "cflags": {"$ref": "#/$defs/argv"},
+          "link_flags": {"$ref": "#/$defs/argv"},
+          "defines": {"$ref": "#/$defs/argv"},
+          "objcopy": {"$ref": "#/$defs/argv"},
+          "doc": {"type": "string"}
+        }
+      }
+    },
+    "steps": {
+      "type": "object",
+      "required": ["compile", "link"],
+      "additionalProperties": false,
+      "properties": {
+        "compile": {"$ref": "#/$defs/argv"},
+        "link": {"$ref": "#/$defs/argv"},
+        "convert": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/argv"}]},
+        "post": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/argv"}]}
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "required": ["image"],
+      "additionalProperties": false,
+      "properties": {
+        "image": {"type": "string", "enum": ["elf", "hex", "bin"]},
+        "debug": {"type": "string", "enum": ["dwarf", "elf", "cof", "none"]},
+        "map": {"type": "boolean"}
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "PATH_hint": {"type": "array", "items": {"type": "string"}},
+        "variables": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    }
+  },
+  "$defs": {
+    "argv": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  }
+}

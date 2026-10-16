@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Junior Deogracias
+cmake_minimum_required(VERSION 3.21)
+project(EmbSIM VERSION 0.1.0 LANGUAGES C)
+
+option(EMBSIM_BUILD_SHARED "Build libembsim as a shared library" OFF)
+option(EMBSIM_BUILD_TESTS "Build the C tests" ON)
+option(EMBSIM_SERVER "Build the WebSocket server (needs host sockets)" ON)
+option(EMBSIM_WERROR "Treat warnings as errors" ON)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+if(MSVC)
+  set(EMBSIM_C_FLAGS /W4 /wd4200 /wd4204 /wd4221 /utf-8 /D_CRT_SECURE_NO_WARNINGS)
+  if(EMBSIM_WERROR)
+    list(APPEND EMBSIM_C_FLAGS /WX)
+  endif()
+elseif(CMAKE_C_COMPILER_ID STREQUAL "TinyCC")
+  set(EMBSIM_C_FLAGS -Wall)
+  if(EMBSIM_WERROR)
+    list(APPEND EMBSIM_C_FLAGS -Werror)
+  endif()
+else()
+  set(EMBSIM_C_FLAGS -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion
+      -Wstrict-prototypes -Wmissing-prototypes -Wvla -Wno-unused-parameter)
+  if(EMBSIM_WERROR)
+    list(APPEND EMBSIM_C_FLAGS -Werror)
+  endif()
+endif()
+
+file(GLOB_RECURSE EMBSIM_CORE_SOURCES CONFIGURE_DEPENDS core/*.c)
+if(NOT EMBSIM_SERVER)
+  list(FILTER EMBSIM_CORE_SOURCES EXCLUDE REGEX "core/protocol/ws\\.c$")
+endif()
+
+if(EMBSIM_BUILD_SHARED)
+  add_library(embsim SHARED ${EMBSIM_CORE_SOURCES})
+  target_compile_definitions(embsim PRIVATE ES_BUILD_SHARED PUBLIC ES_SHARED)
+else()
+  add_library(embsim STATIC ${EMBSIM_CORE_SOURCES})
+endif()
+target_include_directories(embsim PUBLIC include PRIVATE core)
+target_compile_options(embsim PRIVATE ${EMBSIM_C_FLAGS})
+target_compile_definitions(embsim PRIVATE EMBSIM_VERSION_STRING="${PROJECT_VERSION}"
+  EMBSIM_CATALOG_DIR="${CMAKE_SOURCE_DIR}/catalog"
+  EMBSIM_VERSION_MAJOR=${PROJECT_VERSION_MAJOR} EMBSIM_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+  EMBSIM_VERSION_PATCH=${PROJECT_VERSION_PATCH})
+if(EMBSIM_SERVER)
+  target_compile_definitions(embsim PRIVATE EMBSIM_SERVER=1)
+  if(WIN32)
+    target_link_libraries(embsim PUBLIC ws2_32)
+  endif()
+endif()
+if(NOT MSVC)
+  target_link_libraries(embsim PUBLIC m)
+endif()
+set_target_properties(embsim PROPERTIES C_VISIBILITY_PRESET hidden)
+
+add_executable(embsim_cli cli/main.c cli/commands.c)
+set_target_properties(embsim_cli PROPERTIES OUTPUT_NAME embsim)
+target_link_libraries(embsim_cli PRIVATE embsim)
+target_include_directories(embsim_cli PRIVATE core)
+target_compile_options(embsim_cli PRIVATE ${EMBSIM_C_FLAGS})
+target_compile_definitions(embsim_cli PRIVATE EMBSIM_VERSION_STRING="${PROJECT_VERSION}")
+
+if(EMBSIM_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
+
+install(TARGETS embsim embsim_cli)
+install(DIRECTORY include/embsim DESTINATION include)

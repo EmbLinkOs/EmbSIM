@@ -1,0 +1,6 @@
+{
+  "name": "an unknown method is -32601",
+  "method": "nosuch.method",
+  "params": {},
+  "expect": {"error": {"code": -32601, "message": "<string>"}}
+}

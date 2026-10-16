@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reference",
+  "description": "The ground net reads 0 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "P": [
+        "V1.+"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:GND": {
+      "at": "0.5ms",
+      "min_v": -0.001,
+      "max_v": 0.001
+    }
+  }
+}

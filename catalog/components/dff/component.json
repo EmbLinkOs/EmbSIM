@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/dff",
+  "version": "1.0.0",
+  "name": "D flip-flop",
+  "category": "logic",
+  "description": "Positive-edge-triggered D flip-flop with active-high asynchronous set and reset.",
+  "keywords": [
+    "logic",
+    "flip-flop",
+    "dff",
+    "register",
+    "sequential"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "D",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CLK",
+      "number": 3,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "power_ref": "VCC",
+      "doc": "Rising edge samples D"
+    },
+    {
+      "name": "S",
+      "number": 4,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3",
+        "pull": "down"
+      },
+      "power_ref": "VCC",
+      "required": false,
+      "doc": "Asynchronous set, active high"
+    },
+    {
+      "name": "R",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3",
+        "pull": "down"
+      },
+      "power_ref": "VCC",
+      "required": false,
+      "doc": "Asynchronous reset, active high"
+    },
+    {
+      "name": "Q",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull",
+        "strength": "strong",
+        "family": "cmos_3v3"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "QN",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull",
+        "strength": "strong",
+        "family": "cmos_3v3"
+      },
+      "power_ref": "VCC",
+      "doc": "Inverted output"
+    },
+    {
+      "name": "VCC",
+      "number": 14,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "GND",
+      "number": 7,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    }
+  ],
+  "model": {
+    "primitive": "dff"
+  },
+  "functional": {
+    "primitive": "dff"
+  },
+  "timed": {
+    "tco": "15ns",
+    "setup": "5ns",
+    "hold": "2ns",
+    "min_pulse": "10ns"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "D": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "CLK": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "S": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "R": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      },
+      "Q": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      },
+      "QN": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 50,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Q follows D on each rising CLK edge; S and R override asynchronously (SPEC-003 §5 dff).",
+      "omissions": [
+        "timing"
+      ]
+    },
+    "timed": {
+      "claims": "Clock-to-Q delay tco; setup and hold violations raise a warning and sample X.",
+      "omissions": [
+        "metastability resolution time"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the cmos_3v3 defaults; the function is digital.",
+      "omissions": [
+        "supply current"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "74HC74 Dual D-type flip-flop datasheet (Nexperia)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

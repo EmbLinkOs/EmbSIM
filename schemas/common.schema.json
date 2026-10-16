@@ -1,0 +1,389 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/common.schema.json",
+  "title": "EmbSIM shared definitions",
+  "description": "Definitions shared by every EmbSIM description schema: SI-suffixed numbers, times, identifiers, fidelity and provenance blocks (SPEC-005 §4, §6, §11; SPEC-007 §2).",
+  "$defs": {
+    "si_number": {
+      "description": "A number, or a string with an optional SI suffix (T G M meg k m u µ n p f); M and meg are mega, m is milli.",
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string",
+          "pattern": "^[+-]?(?:[0-9]+\\.?[0-9]*|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?(?:meg|MEG|Meg|[TGMkKmunpfµ])?$"
+        }
+      ]
+    },
+    "param_ref": {
+      "description": "A reference to a parameter of the enclosing component: \"$name\".",
+      "type": "string",
+      "pattern": "^\\$[a-z][a-z0-9_]*$"
+    },
+    "si_number_or_ref": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/si_number"
+        },
+        {
+          "$ref": "#/$defs/param_ref"
+        }
+      ]
+    },
+    "number_or_ref": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "$ref": "#/$defs/param_ref"
+        }
+      ]
+    },
+    "time": {
+      "description": "A time: digits with a unit (ps, ns, us, ms, s) and an optional decimal, or a picosecond count as a digit string.",
+      "type": "string",
+      "pattern": "^(?:[0-9]+(?:\\.[0-9]+)?\\s?(?:ps|ns|us|ms|s)|[0-9]+)$"
+    },
+    "ps_string": {
+      "description": "A picosecond count as a decimal digit string (exact beyond 2^53).",
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "version_range": {
+      "description": "A semantic version or a range (^1.2.0, ~1.2, >=1.0 <2.0).",
+      "type": "string",
+      "pattern": "^[\\^~>=<]*[0-9]+(?:\\.[0-9]+){0,2}(?:-[0-9A-Za-z.-]+)?(?:\\s*[,<>=]*\\s*[0-9]+(?:\\.[0-9]+){0,2})?$"
+    },
+    "name": {
+      "description": "A library, component, board or MCU name: [a-z][a-z0-9_-]*, at most 64 characters.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "maxLength": 64
+    },
+    "catalog_id": {
+      "description": "<library>/<name> (SPEC-005 §1) or <vendor>/<part> (SPEC-006 §1).",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*/[a-z][a-z0-9_-]*$"
+    },
+    "instance_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "pin_name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_+\\-/~#]+$",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "pin_ref": {
+      "description": "<instance>.<pin> (a pin name or alias for components, a signal for MCUs, a port for boards, a pin number for connectors).",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*\\.[A-Za-z0-9_+\\-/~#]+$"
+    },
+    "nets": {
+      "description": "Net name to list of pin references; every pin appears in at most one net.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9_+\\-/.~#]+$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/$defs/pin_ref"
+        }
+      }
+    },
+    "policy": {
+      "type": "string",
+      "enum": [
+        "functional",
+        "timed",
+        "electrical"
+      ]
+    },
+    "spdx_license": {
+      "description": "An SPDX licence identifier or expression.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9.+-]+(?:\\s(?:OR|AND|WITH)\\s[A-Za-z0-9.+-]+)*$"
+    },
+    "fidelity_tier": {
+      "type": "object",
+      "required": [
+        "claims"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "claims": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Prose stating what is modelled."
+        },
+        "omissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Known unmodelled effects."
+        },
+        "range": {
+          "type": "object",
+          "description": "Operating limits by quantity: [min, max].",
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "validation": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fixture files or external references."
+        }
+      }
+    },
+    "fidelity": {
+      "description": "Per-tier declaration: null (not provided) or a declaration. At least one tier must be declared (checked semantically).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "functional": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/fidelity_tier"
+            }
+          ]
+        },
+        "timed": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/fidelity_tier"
+            }
+          ]
+        },
+        "electrical": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/fidelity_tier"
+            }
+          ]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "rev": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "license": {
+          "$ref": "#/$defs/spdx_license"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "license"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "license": {
+          "$ref": "#/$defs/spdx_license"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        "imported_from": {
+          "type": "string",
+          "description": "Set by importers (SPEC-006 §4)."
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "hex_or_size": {
+      "description": "An address or size: decimal, 0x hexadecimal, or decimal with a K/M/G power-of-two suffix.",
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "string",
+          "pattern": "^(?:0x[0-9A-Fa-f]+|[0-9]+[KMG]?)$"
+        }
+      ]
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "settings": {
+      "description": "Overrides of SPEC-002 and SPEC-004 session defaults.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "core_quantum_ps": {
+          "$ref": "#/$defs/ps_string"
+        },
+        "max_delta_cycles": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "crossing_resolution_ps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_events": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reltol": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "vntol": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "abstol": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "gmin": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_iter": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "h_min": {
+          "$ref": "#/$defs/time"
+        },
+        "h_max": {
+          "$ref": "#/$defs/time"
+        },
+        "lte_tol": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "trapezoidal",
+            "bdf2",
+            "backward_euler"
+          ]
+        },
+        "strict": {
+          "type": "boolean"
+        }
+      }
+    },
+    "layout": {
+      "description": "Presentation placement of an instance on the schematic sheet.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotation": {
+          "type": "number",
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ]
+        },
+        "mirror": {
+          "type": "boolean"
+        }
+      }
+    },
+    "param_values": {
+      "description": "Parameter values given to an instance, by parameter name: numbers (with SI suffix), booleans, enum/string values, tables, or \"$param\" references inside composites.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/si_number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "array"
+          }
+        ]
+      }
+    }
+  }
+}

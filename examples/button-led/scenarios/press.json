@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "press",
+  "description": "Press the button at 10 ms, release at 30 ms; the net is 1 while held and the indicator follows.",
+  "until": "50ms",
+  "policy": "functional",
+  "inputs": [
+    {"at": "10ms", "target": "SW1", "input": "pressed", "value": true},
+    {"at": "30ms", "target": "SW1", "input": "pressed", "value": false}
+  ],
+  "assertions": [
+    {"id": "idle-low", "at": "5ms", "probe": "btn", "expect": {"logic": "0"}},
+    {"id": "pressed-high", "at": "12ms", "probe": "btn", "expect": {"logic": "1"}},
+    {"id": "held-high", "between": ["11ms", "29ms"], "probe": "btn", "expect": {"logic": "1"}},
+    {"id": "released-low", "at": "35ms", "probe": "btn", "expect": {"logic": "0"}},
+    {"id": "led-lit", "at": "20ms", "probe": "lit", "expect": {"equals": true}},
+    {"id": "led-off", "at": "40ms", "probe": "lit", "expect": {"equals": false}},
+    {"id": "two-edges", "between": ["0ms", "50ms"], "probe": "btn", "expect": {"edges": 2}},
+    {"id": "clean", "always": true, "diagnostics": {"forbid": ["net.contention", "net.floating_input", "net.unknown_input"]}}
+  ]
+}

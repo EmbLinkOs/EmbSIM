@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/scenario.schema.json",
+  "title": "EmbSIM scenario",
+  "description": "Timed inputs and assertions for a headless or interactive run of a project (SPEC-007 §2).",
+  "type": "object",
+  "required": ["schema_version", "kind", "name", "until"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "scenario"},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "until": {"$ref": "common.schema.json#/$defs/time"},
+    "policy": {"$ref": "common.schema.json#/$defs/policy"},
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "target", "input", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "at": {"$ref": "common.schema.json#/$defs/time"},
+          "target": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)?$", "description": "A component, a board, or BOARD.PERIPHERAL."},
+          "input": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "value": {"oneOf": [{"type": "boolean"}, {"type": "number"}, {"type": "string"}]}
+        }
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/assertion"}
+    }
+  },
+  "$defs": {
+    "expect": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "logic": {"type": "string", "enum": ["0", "1", "Z", "X"]},
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "min_v": {"type": "number"},
+        "max_v": {"type": "number"},
+        "equals": {"oneOf": [{"type": "number"}, {"type": "string"}, {"type": "boolean"}]},
+        "contains": {"type": "string"},
+        "edges": {"type": "integer", "minimum": 0},
+        "frequency_hz": {"type": "number", "exclusiveMinimum": 0},
+        "tolerance": {"type": "number", "minimum": 0}
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "oneOf": [
+        {"required": ["at", "probe", "expect"]},
+        {"required": ["between", "probe", "expect"]},
+        {"required": ["by", "probe", "expect"]},
+        {"required": ["always", "diagnostics"]}
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"},
+        "doc": {"type": "string"},
+        "at": {"$ref": "common.schema.json#/$defs/time"},
+        "between": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "common.schema.json#/$defs/time"}},
+        "by": {"$ref": "common.schema.json#/$defs/time"},
+        "always": {"const": true},
+        "probe": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"},
+        "expect": {"$ref": "#/$defs/expect"},
+        "diagnostics": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "forbid": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+$"}},
+            "require": {"type": "array", "items": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+$"}}
+          }
+        }
+      }
+    }
+  }
+}

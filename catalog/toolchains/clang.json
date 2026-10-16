@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "kind": "toolchain",
+  "id": "clang",
+  "name": "LLVM Clang (bare-metal targets)",
+  "description": "Clang with an explicit target triple and lld; libc comes from a picolibc or newlib sysroot given through CFLAGS when needed.",
+  "detect": {
+    "command": [
+      "clang",
+      "--version"
+    ],
+    "version_regex": "clang version ([0-9.]+)",
+    "min_version": "15.0"
+  },
+  "targets": {
+    "thumbv7m-none-eabi": {
+      "cc": [
+        "clang",
+        "--target=thumbv7m-none-eabi",
+        "-mcpu=cortex-m3",
+        "-mthumb"
+      ],
+      "link_flags": [
+        "-fuse-ld=lld",
+        "-nostdlib",
+        "-nostartfiles",
+        "-Wl,--gc-sections"
+      ]
+    },
+    "thumbv6m-none-eabi": {
+      "cc": [
+        "clang",
+        "--target=thumbv6m-none-eabi",
+        "-mcpu=cortex-m0plus",
+        "-mthumb"
+      ],
+      "link_flags": [
+        "-fuse-ld=lld",
+        "-nostdlib",
+        "-nostartfiles",
+        "-Wl,--gc-sections"
+      ]
+    },
+    "thumbv7em-none-eabihf": {
+      "cc": [
+        "clang",
+        "--target=thumbv7em-none-eabihf",
+        "-mcpu=cortex-m4",
+        "-mfpu=fpv4-sp-d16",
+        "-mfloat-abi=hard",
+        "-mthumb"
+      ],
+      "link_flags": [
+        "-fuse-ld=lld",
+        "-nostdlib",
+        "-nostartfiles",
+        "-Wl,--gc-sections"
+      ]
+    },
+    "riscv32-unknown-elf": {
+      "cc": [
+        "clang",
+        "--target=riscv32-unknown-elf",
+        "-march=rv32imac_zicsr",
+        "-mabi=ilp32"
+      ],
+      "link_flags": [
+        "-fuse-ld=lld",
+        "-nostdlib",
+        "-nostartfiles",
+        "-Wl,--gc-sections"
+      ]
+    }
+  },
+  "steps": {
+    "compile": [
+      "${cc}",
+      "${cflags}",
+      "${defines}",
+      "${include}",
+      "-g",
+      "-O2",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Wall",
+      "-c",
+      "${source}",
+      "-o",
+      "${object}"
+    ],
+    "link": [
+      "${cc}",
+      "${cflags}",
+      "${link_flags}",
+      "-T${linker_script}",
+      "-Wl,-Map=${map}",
+      "${objects}",
+      "-o",
+      "${image}"
+    ],
+    "convert": null
+  },
+  "outputs": {
+    "image": "elf",
+    "debug": "dwarf",
+    "map": true
+  },
+  "environment": {
+    "PATH_hint": [
+      "/usr/bin",
+      "/usr/local/bin",
+      "/opt/homebrew/opt/llvm/bin",
+      "/usr/lib/llvm-*/bin",
+      "C:/Program Files/LLVM/bin"
+    ]
+  }
+}

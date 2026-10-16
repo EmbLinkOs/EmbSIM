@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dc-into-1k",
+  "description": "1 mA into 1 kΩ develops 1 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/isource",
+        "params": {
+          "kind": "dc",
+          "dc": "1m"
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.+",
+        "R1.1"
+      ],
+      "GND": [
+        "DUT.-",
+        "R1.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": 0.99,
+      "max_v": 1.01
+    }
+  }
+}

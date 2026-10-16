@@ -1,0 +1,9 @@
+{
+  "name": "rl",
+  "ground": "gnd",
+  "components": [
+    { "id": "V1", "device": "vsource",  "params": { "kind": "pulse", "v1": 0, "v2": 5, "tr": "1n", "tf": "1n", "pw": 1, "per": 2 }, "pins": ["vin", "gnd"] },
+    { "id": "R1", "device": "resistor", "params": { "r": 100 },   "pins": ["vin", "mid"] },
+    { "id": "L1", "device": "inductor", "params": { "l": "10m" }, "pins": ["mid", "gnd"] }
+  ]
+}

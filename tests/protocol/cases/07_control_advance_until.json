@@ -1,0 +1,6 @@
+{
+  "name": "control.advance until an absolute time",
+  "method": "control.advance",
+  "params": {"until": "25ms"},
+  "expect": {"result": {"now_ps": "25000000000"}}
+}

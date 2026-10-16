@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "1mhz",
+  "description": "A 1 MHz clock measured over 100 periods.",
+  "policy": "functional",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1meg",
+          "duty": 0.5
+        }
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "CLK": [
+        "DUT.OUT",
+        "P.IN"
+      ]
+    }
+  },
+  "expect": {
+    "net:CLK": {
+      "between": [
+        "0",
+        "100us"
+      ],
+      "frequency_hz": 1000000,
+      "tolerance": 0.001
+    }
+  }
+}

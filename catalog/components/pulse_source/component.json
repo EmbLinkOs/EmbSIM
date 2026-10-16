@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/pulse_source",
+  "version": "1.0.0",
+  "name": "Pulse source",
+  "category": "sources",
+  "description": "Voltage source preset to a periodic pulse (vsource kind pulse); a digital pulse source under the functional policy.",
+  "keywords": [
+    "source",
+    "pulse",
+    "clock",
+    "square",
+    "generator"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive terminal"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative terminal"
+    }
+  ],
+  "params": {
+    "v1": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "pulse: initial value"
+    },
+    "v2": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "doc": "pulse: pulsed value"
+    },
+    "td": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "min": 0,
+      "doc": "pulse/sine: delay before the first edge"
+    },
+    "tr": {
+      "type": "number",
+      "unit": "s",
+      "default": "10n",
+      "min": 0,
+      "doc": "pulse: rise time"
+    },
+    "tf": {
+      "type": "number",
+      "unit": "s",
+      "default": "10n",
+      "min": 0,
+      "doc": "pulse: fall time"
+    },
+    "pw": {
+      "type": "number",
+      "unit": "s",
+      "default": "500u",
+      "min": 0,
+      "doc": "pulse: pulse width"
+    },
+    "per": {
+      "type": "number",
+      "unit": "s",
+      "default": "1m",
+      "min": "1p",
+      "doc": "pulse: period"
+    }
+  },
+  "outputs": [
+    {
+      "name": "voltage",
+      "type": "number",
+      "unit": "V",
+      "doc": "Instantaneous source value"
+    }
+  ],
+  "model": {
+    "primitive": "vsource",
+    "params": {
+      "kind": "pulse"
+    }
+  },
+  "functional": {
+    "primitive": "pulse_source"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "+": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "-": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A digital pulse train with td, pw and per; v1/v2 map to 0/1 (SPEC-003 §5 pulse_source).",
+      "omissions": [
+        "rise and fall times"
+      ]
+    },
+    "timed": {
+      "claims": "As functional on digital nets, as electrical on analog nets.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "vsource kind pulse with v1, v2, td, tr, tf, pw, per (SPEC-004 §7 vsource).",
+      "omissions": [
+        "source impedance",
+        "jitter"
+      ],
+      "range": {
+        "voltage_v": [
+          -1000,
+          1000
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "session.info reports the loaded project and the clock",
+  "method": "session.info",
+  "params": {},
+  "expect": {"result": {"project": "<any>", "policy": "<string>", "now_ps": "<ps>", "running": false, "speed": "<number>", "boards": "<array>", "islands": "<any>", "limits": "<object>", "timing_tiers": "<any>"}}
+}

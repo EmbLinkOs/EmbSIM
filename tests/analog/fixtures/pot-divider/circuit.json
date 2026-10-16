@@ -1,0 +1,9 @@
+{
+  "name": "pot-divider",
+  "ground": "gnd",
+  "components": [
+    { "id": "V1", "device": "vsource",       "params": { "dc": 3.3 }, "pins": ["top", "gnd"] },
+    { "id": "P1", "device": "potentiometer", "params": { "r": "10k", "position": 0.3 }, "pins": ["gnd", "w", "top"] },
+    { "id": "RL", "device": "resistor",      "params": { "r": "10k" }, "pins": ["w", "gnd"] }
+  ]
+}

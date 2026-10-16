@@ -1,0 +1,6 @@
+{
+  "name": "control.advance by a duration with a unit string",
+  "method": "control.advance",
+  "params": {"by": "10ms"},
+  "expect": {"result": {"now_ps": "10000000000"}}
+}

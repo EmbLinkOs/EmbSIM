@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "toggle-functional",
+  "description": "Closing the switch drives the pulled-down net to 1.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vcc",
+        "params": {
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/toggle_switch"
+      },
+      {
+        "id": "R",
+        "component": "emblink/pull_down"
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.VCC",
+        "DUT.1"
+      ],
+      "OUT": [
+        "DUT.2",
+        "R.1",
+        "P.IN"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "10ms",
+      "target": "DUT",
+      "input": "closed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:OUT": {
+      "at": "15ms",
+      "logic": "1"
+    }
+  }
+}

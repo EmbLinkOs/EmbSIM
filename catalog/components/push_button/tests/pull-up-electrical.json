@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pull-up-electrical",
+  "description": "Pressing shorts the pulled-up net to ground.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vcc",
+        "params": {
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/push_button"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.VCC",
+        "R.1"
+      ],
+      "BTN": [
+        "R.2",
+        "DUT.1"
+      ],
+      "GND": [
+        "DUT.2",
+        "G.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "10ms",
+      "target": "DUT",
+      "input": "pressed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:BTN": {
+      "at": "15ms",
+      "max_v": 0.05
+    }
+  }
+}

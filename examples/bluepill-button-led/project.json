@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "bluepill-button-led",
+  "description": "The acceptance circuit around a Blue Pill without firmware: USB 5 V feeds the board's regulator; a push button to ground on A0 (the MCU's pin is a placeholder input); an external red LED with a 1 k series resistor on C13. The MCU runtime arrives in M1.",
+  "policy": "electrical",
+  "boards": [
+    {"id": "B1", "board": "emblink/bluepill", "layout": {"x": 300, "y": 120}}
+  ],
+  "components": [
+    {"id": "USB", "component": "emblink/vcc", "params": {"voltage": 5}, "layout": {"x": 100, "y": 40}},
+    {"id": "SW1", "component": "emblink/push_button", "layout": {"x": 700, "y": 180, "rotation": 90}},
+    {"id": "R1", "component": "emblink/resistor", "params": {"resistance": "1k"}, "layout": {"x": 700, "y": 300}},
+    {"id": "D1", "component": "emblink/led", "params": {"color": "red"}, "layout": {"x": 820, "y": 300, "rotation": 90}},
+    {"id": "GND1", "component": "emblink/gnd", "layout": {"x": 700, "y": 420}}
+  ],
+  "nets": {
+    "USB5V": ["USB.VCC", "B1.5V"],
+    "BTN": ["B1.A0", "SW1.1"],
+    "GND": ["B1.GND", "SW1.2", "D1.K", "GND1.GND"],
+    "LED_IN": ["B1.C13", "R1.1"],
+    "LED_A": ["R1.2", "D1.A"]
+  },
+  "probes": [
+    {"id": "rail3v3", "target": "net:B1.3V3", "kind": "analog", "rate_hz": 100000},
+    {"id": "btn", "target": "net:BTN", "kind": "digital"},
+    {"id": "led", "target": "device:D1.i", "kind": "analog", "rate_hz": 100000}
+  ],
+  "scenarios": ["scenarios/press.json"]
+}

@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/diode",
+  "version": "1.0.0",
+  "name": "Diode",
+  "category": "diodes",
+  "description": "Silicon junction diode (1N4148/1N4007 class) with the Shockley model.",
+  "keywords": [
+    "diode",
+    "rectifier",
+    "1N4148",
+    "1N4007"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "part": {
+      "type": "enum",
+      "enum": [
+        "generic",
+        "1N4148",
+        "1N4007"
+      ],
+      "default": "1N4148",
+      "doc": "Named part setting the model parameters",
+      "presets": {
+        "1N4148": {
+          "is": "2.52n",
+          "n": 1.752,
+          "rs": 0.568,
+          "bv": 100
+        },
+        "1N4007": {
+          "is": "76.9n",
+          "n": 1.45,
+          "rs": 0.042,
+          "bv": 1000
+        },
+        "generic": {
+          "is": "1e-14",
+          "n": 1,
+          "rs": 0,
+          "bv": 100
+        }
+      }
+    },
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "2.52n",
+      "doc": "Saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1.752,
+      "doc": "Emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.568,
+      "doc": "Series resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "bv": {
+      "type": "number",
+      "unit": "V",
+      "default": 100,
+      "doc": "Reverse breakdown voltage",
+      "min": 0.1,
+      "max": 10000,
+      "advanced": true
+    },
+    "cj0": {
+      "type": "number",
+      "unit": "F",
+      "default": "4p",
+      "doc": "Zero-bias junction capacitance",
+      "min": 0,
+      "advanced": true
+    },
+    "tt": {
+      "type": "number",
+      "unit": "s",
+      "default": "11.5n",
+      "doc": "Transit time",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "diode"
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A wire; direction is not enforced.",
+      "omissions": [
+        "forward drop",
+        "blocking"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Shockley equation with series rs, breakdown bv, junction (cj0) and diffusion (tt) charge (SPEC-004 §7 diode).",
+      "omissions": [
+        "temperature dependence",
+        "reverse recovery beyond tt",
+        "noise"
+      ],
+      "range": {
+        "current_a": [
+          -0.001,
+          1
+        ],
+        "voltage_v": [
+          -1000,
+          2
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "1N4148 High-speed diodes datasheet (Nexperia)"
+      },
+      {
+        "title": "1N4007 General purpose rectifier datasheet (Vishay)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

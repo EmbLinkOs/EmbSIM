@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/crystal",
+  "version": "1.0.0",
+  "name": "Quartz crystal",
+  "category": "passives",
+  "description": "Two-terminal quartz crystal as a Butterworth-Van Dyke equivalent circuit; the MCU oscillator is modelled by the board's oscillators block.",
+  "keywords": [
+    "crystal",
+    "quartz",
+    "oscillator",
+    "resonator"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "hz": {
+      "type": "number",
+      "unit": "Hz",
+      "default": "8meg",
+      "min": 1000,
+      "max": "100meg",
+      "doc": "Nominal frequency (informational for the oscillator model)"
+    },
+    "c0": {
+      "type": "number",
+      "unit": "F",
+      "default": "5p",
+      "doc": "Shunt capacitance",
+      "min": 0,
+      "advanced": true
+    },
+    "cm": {
+      "type": "number",
+      "unit": "F",
+      "default": "20f",
+      "doc": "Motional capacitance",
+      "min": "1e-18",
+      "advanced": true
+    },
+    "lm": {
+      "type": "number",
+      "unit": "H",
+      "default": "20m",
+      "doc": "Motional inductance",
+      "min": "1n",
+      "advanced": true
+    },
+    "rm": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 50,
+      "doc": "Motional resistance",
+      "min": 0.01,
+      "advanced": true
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "C0",
+          "component": "emblink/capacitor",
+          "params": {
+            "capacitance": "$c0"
+          }
+        },
+        {
+          "id": "CM",
+          "component": "emblink/capacitor",
+          "params": {
+            "capacitance": "$cm"
+          }
+        },
+        {
+          "id": "LM",
+          "component": "emblink/inductor",
+          "params": {
+            "inductance": "$lm"
+          }
+        },
+        {
+          "id": "RM",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$rm"
+          }
+        }
+      ],
+      "nets": {
+        "P1": [
+          "C0.1",
+          "CM.1"
+        ],
+        "M1": [
+          "CM.2",
+          "LM.1"
+        ],
+        "M2": [
+          "LM.2",
+          "RM.1"
+        ],
+        "P2": [
+          "C0.2",
+          "RM.2"
+        ]
+      },
+      "ports": {
+        "1": "C0.1",
+        "2": "C0.2"
+      }
+    }
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A wire; oscillation is not modelled at this tier.",
+      "omissions": [
+        "everything"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Butterworth-Van Dyke equivalent: C0 in parallel with series Lm-Cm-Rm, composed from catalog passives.",
+      "omissions": [
+        "overtones",
+        "drive-level dependence",
+        "ageing",
+        "temperature"
+      ],
+      "range": {
+        "voltage_v": [
+          -5,
+          5
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "HC-49/S crystal unit datasheet (Abracon ABL series)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

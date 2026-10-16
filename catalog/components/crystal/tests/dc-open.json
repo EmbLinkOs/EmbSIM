@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dc-open",
+  "description": "A crystal blocks DC: the load sees 0 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/crystal"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "V1.+",
+        "DUT.1"
+      ],
+      "OUT": [
+        "DUT.2",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.9ms",
+      "min_v": -0.01,
+      "max_v": 0.01
+    }
+  }
+}

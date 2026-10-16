@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The workbench window: start the engine sidecar, open and save files.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    { "identifier": "shell:allow-spawn", "allow": [{ "name": "binaries/embsim", "sidecar": true, "args": true }] }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/indicator",
+  "version": "1.0.0",
+  "name": "Indicator",
+  "category": "indicators",
+  "description": "Functional LED-like probe: lit when its anode net is 1 and its cathode net is 0. No electrical model.",
+  "keywords": [
+    "indicator",
+    "lamp",
+    "led",
+    "probe",
+    "functional"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "Anode (lit when 1 and K is 0)"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "lit",
+      "type": "boolean",
+      "doc": "True while A is 1 and K is 0"
+    }
+  ],
+  "model": {
+    "primitive": "indicator"
+  },
+  "functional": {
+    "primitive": "indicator"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 5,
+    "height_mm": 5,
+    "states": [
+      {
+        "output": "lit",
+        "selector": "#glow",
+        "attr": "opacity",
+        "true": "1",
+        "false": "0"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "lit = (A == 1) and (K == 0); X or Z on either pin is not lit (SPEC-003 §5 indicator).",
+      "omissions": [
+        "current",
+        "brightness"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; updates on the same delta cycle as its inputs.",
+      "omissions": []
+    },
+    "electrical": null
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

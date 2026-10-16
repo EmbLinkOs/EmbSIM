@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/resistor",
+  "version": "1.0.0",
+  "name": "Resistor",
+  "category": "passives",
+  "description": "Ideal linear resistor with optional temperature coefficients.",
+  "keywords": [
+    "resistor",
+    "passive",
+    "R"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1k",
+      "doc": "Resistance",
+      "min": "1m",
+      "max": "1G"
+    },
+    "tc1": {
+      "type": "number",
+      "unit": "1/K",
+      "default": 0,
+      "doc": "First-order temperature coefficient",
+      "advanced": true
+    },
+    "tc2": {
+      "type": "number",
+      "unit": "1/K^2",
+      "default": 0,
+      "doc": "Second-order temperature coefficient",
+      "advanced": true
+    },
+    "temp": {
+      "type": "number",
+      "unit": "degC",
+      "default": 27,
+      "doc": "Operating temperature",
+      "min": -55,
+      "max": 175,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "resistor",
+    "bind": {
+      "r": "resistance",
+      "tc1": "tc1",
+      "tc2": "tc2",
+      "temp": "temp"
+    }
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A wire: both pins are the same logic node.",
+      "omissions": [
+        "resistance",
+        "pulls formed with other parts"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical when its nets are analog; otherwise a wire.",
+      "omissions": [
+        "noise"
+      ]
+    },
+    "electrical": {
+      "claims": "Linear resistance r with tc1/tc2 temperature dependence (SPEC-004 §7 resistor).",
+      "omissions": [
+        "thermal noise",
+        "self-heating",
+        "parasitic inductance and capacitance",
+        "power rating"
+      ],
+      "range": {
+        "current_a": [
+          -1,
+          1
+        ],
+        "voltage_v": [
+          -250,
+          250
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": []
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

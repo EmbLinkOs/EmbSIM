@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "mylib/my_part",
+  "version": "0.1.0",
+  "name": "My part",
+  "category": "misc",
+  "description": "One sentence on what this part is.",
+  "keywords": ["example"],
+  "pins": [
+    {"name": "1", "number": 1, "model": {"kind": "passive"}, "doc": "First terminal"},
+    {"name": "2", "number": 2, "model": {"kind": "passive"}, "doc": "Second terminal"}
+  ],
+  "params": {
+    "resistance": {"type": "number", "unit": "ohm", "default": "1k", "min": "1m", "max": "1G", "doc": "Resistance"}
+  },
+  "inputs": [],
+  "outputs": [],
+  "model": {"primitive": "resistor", "bind": {"r": "resistance"}},
+  "functional": {"primitive": "wire"},
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "1": {"x": 0, "y": 10, "side": "left"},
+      "2": {"x": 60, "y": 10, "side": "right"}
+    }
+  },
+  "fidelity": {
+    "functional": {"claims": "A wire.", "omissions": ["resistance"]},
+    "timed": {"claims": "As electrical when its nets are analog; otherwise a wire.", "omissions": []},
+    "electrical": {
+      "claims": "Linear resistance r (SPEC-004 §7 resistor).",
+      "omissions": ["noise", "self-heating"],
+      "range": {"current_a": [-1, 1]},
+      "validation": ["tests/*.json"]
+    }
+  },
+  "provenance": {
+    "author": "Your name",
+    "license": "Apache-2.0",
+    "sources": [{"title": "Datasheet title", "url": "https://example.com/datasheet.pdf"}]
+  },
+  "tests": ["tests/*.json"]
+}

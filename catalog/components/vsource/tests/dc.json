@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dc",
+  "description": "A 2.5 V dc source into 1 kΩ.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 2.5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.+",
+        "R1.1"
+      ],
+      "GND": [
+        "DUT.-",
+        "R1.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": 2.49,
+      "max_v": 2.51
+    }
+  }
+}

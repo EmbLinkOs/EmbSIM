@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "kind": "toolchain",
+  "id": "gcc-riscv",
+  "name": "GNU RISC-V Embedded (riscv-none-elf-gcc / riscv64-unknown-elf-gcc)",
+  "description": "GCC for bare-metal RISC-V; the xPack riscv-none-elf prefix is tried first, then the SiFive riscv64-unknown-elf prefix through the PATH hint.",
+  "detect": {
+    "command": [
+      "riscv-none-elf-gcc",
+      "--version"
+    ],
+    "version_regex": "\\) ([0-9.]+)",
+    "min_version": "10.2"
+  },
+  "targets": {
+    "rv32imac": {
+      "cc": [
+        "riscv-none-elf-gcc",
+        "-march=rv32imac_zicsr",
+        "-mabi=ilp32",
+        "-mcmodel=medlow"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "rv32imc": {
+      "cc": [
+        "riscv-none-elf-gcc",
+        "-march=rv32imc_zicsr",
+        "-mabi=ilp32",
+        "-mcmodel=medlow"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "rv32imafc": {
+      "cc": [
+        "riscv-none-elf-gcc",
+        "-march=rv32imafc_zicsr",
+        "-mabi=ilp32f",
+        "-mcmodel=medlow"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    },
+    "rv64imac": {
+      "cc": [
+        "riscv-none-elf-gcc",
+        "-march=rv64imac_zicsr",
+        "-mabi=lp64",
+        "-mcmodel=medany"
+      ],
+      "link_flags": [
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+        "--specs=nano.specs",
+        "--specs=nosys.specs"
+      ]
+    }
+  },
+  "steps": {
+    "compile": [
+      "${cc}",
+      "${cflags}",
+      "${defines}",
+      "${include}",
+      "-g",
+      "-O2",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Wall",
+      "-c",
+      "${source}",
+      "-o",
+      "${object}"
+    ],
+    "link": [
+      "${cc}",
+      "${cflags}",
+      "${link_flags}",
+      "-T${linker_script}",
+      "-Wl,-Map=${map}",
+      "${objects}",
+      "-o",
+      "${image}"
+    ],
+    "convert": null
+  },
+  "outputs": {
+    "image": "elf",
+    "debug": "dwarf",
+    "map": true
+  },
+  "environment": {
+    "PATH_hint": [
+      "/usr/bin",
+      "/usr/local/bin",
+      "/opt/riscv/bin",
+      "~/.local/xPacks/@xpack-dev-tools/riscv-none-elf-gcc/*/.content/bin",
+      "C:/Program Files/xPacks/riscv-none-elf-gcc/*/bin"
+    ]
+  }
+}

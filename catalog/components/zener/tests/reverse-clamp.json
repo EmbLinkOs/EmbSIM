@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reverse-clamp",
+  "description": "12 V through 1 kΩ into a 5.1 V Zener clamps near 5.1 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 12
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/zener",
+        "params": {
+          "vz": 5.1,
+          "rz": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "R1.1"
+      ],
+      "VZ": [
+        "R1.2",
+        "DUT.K"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.A",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VZ": {
+      "at": "0.5ms",
+      "min_v": 4.9,
+      "max_v": 5.4
+    }
+  }
+}

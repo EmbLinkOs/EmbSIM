@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "kind": "mcu",
+  "id": "st/stm32f103c8",
+  "version": "1.0.0",
+  "name": "STM32F103C8",
+  "description": "STMicroelectronics STM32F103C8: Arm Cortex-M3 at up to 72 MHz, 64 KiB flash, 20 KiB SRAM, medium-density performance line.",
+  "keywords": ["stm32", "stm32f1", "cortex-m3", "blue pill"],
+  "vendor": "st",
+  "family": "stm32f1",
+  "core": {"backend": "cortex-m", "model": "cortex-m3", "priority_bits": 4, "timing_tier": "estimated", "fpu": false, "mpu": false, "endian": "little"},
+  "memory": [
+    {"name": "flash", "base": "0x08000000", "size": "64K", "kind": "flash", "erased": "0xFFFFFFFF"},
+    {"name": "flash_alias", "base": "0x00000000", "size": "64K", "kind": "alias", "target": "0x08000000", "doc": "Boot alias when BOOT0 is low"},
+    {"name": "sram", "base": "0x20000000", "size": "20K", "kind": "ram", "main": true},
+    {"name": "system_memory", "base": "0x1FFFF000", "size": "2K", "kind": "rom", "doc": "ST bootloader; contents not shipped"},
+    {"name": "option_bytes", "base": "0x1FFFF800", "size": 16, "kind": "flash", "erased": "0xFFFFFFFF"}
+  ],
+  "bitband": [
+    {"base": "0x22000000", "size": "0x02000000", "target": "0x20000000"},
+    {"base": "0x42000000", "size": "0x02000000", "target": "0x40000000"}
+  ],
+  "clocks": {
+    "sources": [
+      {"name": "hsi", "hz": 8000000, "doc": "Internal RC"},
+      {"name": "hse", "hz": "board", "doc": "External crystal or clock, 4 to 16 MHz"},
+      {"name": "lsi", "hz": 40000, "doc": "Internal low-speed RC"},
+      {"name": "lse", "hz": "board", "doc": "External 32.768 kHz crystal"}
+    ],
+    "reset_core_hz": 8000000,
+    "max_core_hz": 72000000
+  },
+  "register_file": {
+    "format": "svd",
+    "file": "STM32F103xx.svd",
+    "vendored": false,
+    "license": "see provenance (STMicroelectronics CMSIS-SVD pack terms)",
+    "lookup": ["device_pack", "EMBSIM_SVD_PATH"],
+    "url": "https://github.com/STMicroelectronics/cmsis-device-f1"
+  },
+  "peripherals": [
+    {"match": "RCC", "model": "stm32-rcc", "order": 0},
+    {"match": "FLASH", "model": "stm32f1-flash", "order": 1},
+    {"match": "GPIO*", "model": "stm32f1-gpio"},
+    {"match": "AFIO", "model": "stm32f1-afio"},
+    {"match": "EXTI", "model": "stm32-exti"},
+    {"match": "USART*", "model": "stm32-usart"},
+    {"match": "TIM*", "model": "stm32-tim"},
+    {"match": "ADC*", "model": "stm32f1-adc"},
+    {"match": "SPI*", "model": "stm32-spi"},
+    {"match": "I2C*", "model": "stm32-i2c"},
+    {"match": "IWDG", "model": "stm32-iwdg"},
+    {"match": "PWR", "model": "stm32-pwr"}
+  ],
+  "io": {
+    "family": "cmos_3v3",
+    "ports": [
+      {"name": "A", "pins": 16},
+      {"name": "B", "pins": 16},
+      {"name": "C", "pins": 16},
+      {"name": "D", "pins": 2}
+    ],
+    "electrical": {
+      "voh": 2.9,
+      "vol": 0.4,
+      "rout": {"2MHz": 60, "10MHz": 40, "50MHz": 25},
+      "vih": 1.83,
+      "vil": 1.16,
+      "hysteresis": 0.2,
+      "rpull": 40000,
+      "leak_a": 1e-6,
+      "slew_v_per_us": {"2MHz": 25, "10MHz": 110, "50MHz": 350},
+      "ioh_max": 0.02,
+      "iol_max": 0.02,
+      "five_volt_tolerant": ["PA8", "PA9", "PA10", "PA11", "PA12", "PA13", "PA14", "PA15",
+                              "PB2", "PB3", "PB4", "PB6", "PB7", "PB8", "PB9", "PB10", "PB11", "PB12", "PB13", "PB14", "PB15",
+                              "PD0", "PD1"]
+    },
+    "analog": {
+      "PA0": "ADC12_IN0", "PA1": "ADC12_IN1", "PA2": "ADC12_IN2", "PA3": "ADC12_IN3",
+      "PA4": "ADC12_IN4", "PA5": "ADC12_IN5", "PA6": "ADC12_IN6", "PA7": "ADC12_IN7",
+      "PB0": "ADC12_IN8", "PB1": "ADC12_IN9"
+    }
+  },
+  "signals": ["VDD", "VSS", "VDDA", "VSSA", "VBAT", "NRST", "BOOT0", "OSC_IN", "OSC_OUT", "OSC32_IN", "OSC32_OUT",
+              "PA0", "PA1", "PA2", "PA3", "PA4", "PA5", "PA6", "PA7", "PA8", "PA9", "PA10", "PA11", "PA12", "PA13", "PA14", "PA15",
+              "PB0", "PB1", "PB2", "PB3", "PB4", "PB5", "PB6", "PB7", "PB8", "PB9", "PB10", "PB11", "PB12", "PB13", "PB14", "PB15",
+              "PC13", "PC14", "PC15", "PD0", "PD1"],
+  "packages": {"lqfp48": "lqfp48.json"},
+  "console": {"default": "USART1"},
+  "fidelity": {
+    "functional": {
+      "claims": "Memory map, package pin map, GPIO signal names and clock tree constants are described; no behavioural models yet (M1): the core executes no instructions and no peripheral model is bound until the Cortex-M backend and the stm32 peripheral models land.",
+      "omissions": ["instruction execution", "all peripherals", "interrupts", "GPIO register behaviour"],
+      "validation": []
+    },
+    "timed": {
+      "claims": "No behavioural models yet (M1). When present, instruction timing is estimated from a per-class cost table (ADR-015), not cycle-exact.",
+      "omissions": ["flash wait states", "bus arbitration", "pipeline effects"],
+      "validation": []
+    },
+    "electrical": {
+      "claims": "GPIO pin-model defaults from the datasheet: voh/vol, rout by configured speed, vih/vil with hysteresis, 40 k pulls, 5 V tolerant pin list (SPEC-003 §2). No behavioural models yet (M1).",
+      "omissions": ["ESD structures", "supply current", "ADC input impedance", "injection current"],
+      "range": {"voltage_v": [-0.3, 5.5], "current_a": [-0.025, 0.025]},
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {"title": "RM0008 Reference manual: STM32F101xx, STM32F102xx, STM32F103xx, STM32F105xx and STM32F107xx advanced Arm-based 32-bit MCUs", "rev": "21"},
+      {"title": "STM32F103x8 STM32F103xB datasheet: Medium-density performance line Arm-based 32-bit MCU", "rev": "17"},
+      {"title": "PM0056 Programming manual: STM32F10xxx/20xxx/21xxx/L1xxxx Cortex-M3", "rev": "6"}
+    ],
+    "notes": "The SVD register file is not vendored; it is resolved from a device pack or EMBSIM_SVD_PATH (ADR-017)."
+  }
+}

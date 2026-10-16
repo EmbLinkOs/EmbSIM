@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "capture-one",
+  "description": "With D high, Q is 1 after the first rising clock edge.",
+  "policy": "functional",
+  "until": "5us",
+  "circuit": {
+    "components": [
+      {
+        "id": "HD",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1meg"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/dff"
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "D": [
+        "HD.OUT",
+        "DUT.D"
+      ],
+      "CLK": [
+        "CK.OUT",
+        "DUT.CLK"
+      ],
+      "Q": [
+        "DUT.Q",
+        "P.IN"
+      ],
+      "QN": [
+        "DUT.QN"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q": {
+      "by": "2us",
+      "logic": "1"
+    },
+    "net:QN": {
+      "at": "3us",
+      "logic": "0"
+    }
+  }
+}

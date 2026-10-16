@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/xor2",
+  "version": "1.0.0",
+  "name": "2-input XOR",
+  "category": "logic",
+  "description": "2-input XOR, CMOS 3.3 V family; propagation delay from the timed section.",
+  "keywords": [
+    "logic",
+    "gate",
+    "xor",
+    "2-input"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Y",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull",
+        "strength": "strong",
+        "family": "cmos_3v3"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 14,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "GND",
+      "number": 7,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    }
+  ],
+  "model": {
+    "primitive": "xor"
+  },
+  "functional": {
+    "primitive": "xor"
+  },
+  "timed": {
+    "tpd": "10ns"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "B": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "Y": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Boolean xor evaluated on every input change, zero delay (SPEC-003 §5).",
+      "omissions": [
+        "delay",
+        "X handling beyond propagation"
+      ]
+    },
+    "timed": {
+      "claims": "Inertial propagation delay tpd from the timed section.",
+      "omissions": [
+        "separate rise/fall delays",
+        "setup/hold"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the cmos_3v3 pin-model defaults (SPEC-004 §8); the function itself is digital.",
+      "omissions": [
+        "output current limits",
+        "supply current",
+        "input capacitance"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "74HC00/HC08/HC32/HC86/HC04 datasheets (Nexperia) for the timing order of magnitude"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

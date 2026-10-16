@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "a1",
+  "description": "A=1 gives Y=1.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "HA",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/buffer"
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "A": [
+        "HA.OUT",
+        "DUT.A"
+      ],
+      "Y": [
+        "DUT.Y",
+        "P.IN"
+      ]
+    }
+  },
+  "expect": {
+    "net:Y": {
+      "at": "500ns",
+      "logic": "1"
+    }
+  }
+}

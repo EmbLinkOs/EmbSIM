@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "not-lit",
+  "description": "A floating cathode does not light the indicator.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/indicator"
+      }
+    ],
+    "nets": {
+      "A": [
+        "H.OUT",
+        "DUT.A"
+      ],
+      "K": [
+        "DUT.K"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": false
+    }
+  }
+}

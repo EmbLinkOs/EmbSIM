@@ -1,0 +1,9 @@
+{
+  "name": "rc-charge",
+  "ground": "gnd",
+  "components": [
+    { "id": "V1", "device": "vsource",   "params": { "dc": 5 },   "pins": ["vin", "gnd"] },
+    { "id": "R1", "device": "resistor",  "params": { "r": "1k" }, "pins": ["vin", "out"] },
+    { "id": "C1", "device": "capacitor", "params": { "c": "1u", "ic": 0 }, "pins": ["out", "gnd"] }
+  ]
+}

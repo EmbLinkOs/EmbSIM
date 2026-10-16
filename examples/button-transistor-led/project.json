@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "button-transistor-led",
+  "description": "Electrical tier, no MCU: a 1 kHz pulse drives a 2N3904 through 1 kΩ; the collector pulls a red LED and 220 Ω from the 3.3 V rail. A push button with a 10 kΩ pull-up is probed digitally beside it.",
+  "libraries": [],
+  "policy": "electrical",
+  "boards": [],
+  "components": [
+    {"id": "VCC1", "component": "emblink/vcc", "params": {"voltage": 3.3}, "layout": {"x": 500, "y": 40}},
+    {"id": "GND1", "component": "emblink/gnd", "layout": {"x": 500, "y": 360}},
+    {"id": "V1", "component": "emblink/pulse_source", "params": {"v1": 0, "v2": 3.3, "td": 0, "tr": "10n", "tf": "10n", "pw": "500u", "per": "1m"}, "layout": {"x": 100, "y": 240}},
+    {"id": "R1", "component": "emblink/resistor", "params": {"resistance": "1k"}, "layout": {"x": 300, "y": 240}},
+    {"id": "Q1", "component": "emblink/bjt_npn", "params": {"part": "2N3904"}, "layout": {"x": 500, "y": 240}},
+    {"id": "R2", "component": "emblink/resistor", "params": {"resistance": 220}, "layout": {"x": 500, "y": 140, "rotation": 90}},
+    {"id": "D1", "component": "emblink/led", "params": {"color": "red"}, "layout": {"x": 500, "y": 80, "rotation": 90}},
+    {"id": "SW1", "component": "emblink/push_button", "layout": {"x": 700, "y": 240, "rotation": 90}},
+    {"id": "R3", "component": "emblink/pull_up", "params": {"resistance": "10k", "voltage": 3.3}, "layout": {"x": 700, "y": 140}}
+  ],
+  "nets": {
+    "3V3": ["VCC1.VCC", "D1.A"],
+    "GND": ["GND1.GND", "V1.-", "Q1.E", "SW1.2"],
+    "PULSE": ["V1.+", "R1.1"],
+    "BASE": ["R1.2", "Q1.B"],
+    "LED_K": ["D1.K", "R2.1"],
+    "COLL": ["R2.2", "Q1.C"],
+    "BTN": ["SW1.1", "R3.1"]
+  },
+  "layout": {
+    "wires": [
+      {"net": "PULSE", "points": [[130, 240], [300, 250]]},
+      {"net": "BASE", "points": [[360, 250], [500, 260]]},
+      {"net": "COLL", "points": [[540, 240], [540, 200]]},
+      {"net": "LED_K", "points": [[540, 140], [540, 100]]},
+      {"net": "3V3", "points": [[510, 60], [540, 60], [540, 80]]},
+      {"net": "GND", "points": [[540, 280], [540, 360], [510, 360]]},
+      {"net": "BTN", "points": [[700, 180], [700, 240]]}
+    ],
+    "labels": [{"net": "COLL", "x": 560, "y": 220}, {"net": "BTN", "x": 720, "y": 210}],
+    "sheet": {"width": 1000, "height": 500}
+  },
+  "probes": [
+    {"id": "coll", "target": "net:COLL", "kind": "analog", "rate_hz": 1000000},
+    {"id": "pulse", "target": "net:PULSE", "kind": "analog", "rate_hz": 1000000},
+    {"id": "iled", "target": "device:D1.i", "kind": "analog", "rate_hz": 100000},
+    {"id": "ic", "target": "device:Q1.ic", "kind": "analog", "rate_hz": 100000},
+    {"id": "lum", "target": "output:D1.luminance", "kind": "value"},
+    {"id": "btn", "target": "net:BTN", "kind": "digital"}
+  ],
+  "scenarios": ["scenarios/pulse-and-press.json"],
+  "settings": {"crossing_resolution_ps": 100, "reltol": 0.001, "h_max": "10us"}
+}

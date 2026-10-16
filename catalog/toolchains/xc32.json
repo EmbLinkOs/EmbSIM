@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "toolchain",
+  "id": "xc32",
+  "name": "Microchip MPLAB XC32",
+  "description": "Microchip XC32 (GCC-based) for PIC32MX/MZ (MIPS32) and SAM (Cortex-M); ELF with DWARF plus Intel HEX through xc32-bin2hex.",
+  "detect": {
+    "command": [
+      "xc32-gcc",
+      "--version"
+    ],
+    "version_regex": "\\) v?([0-9.]+)",
+    "min_version": "3.01"
+  },
+  "targets": {
+    "pic32mx270f256b": {
+      "cc": [
+        "xc32-gcc",
+        "-mprocessor=32MX270F256B"
+      ],
+      "link_flags": [
+        "-Wl,--gc-sections",
+        "-Wl,--defsym=_min_heap_size=1024",
+        "-Wl,-Map=${map}"
+      ]
+    },
+    "pic32mx795f512l": {
+      "cc": [
+        "xc32-gcc",
+        "-mprocessor=32MX795F512L"
+      ],
+      "link_flags": [
+        "-Wl,--gc-sections",
+        "-Wl,--defsym=_min_heap_size=1024",
+        "-Wl,-Map=${map}"
+      ]
+    },
+    "pic32mz2048efh144": {
+      "cc": [
+        "xc32-gcc",
+        "-mprocessor=32MZ2048EFH144"
+      ],
+      "link_flags": [
+        "-Wl,--gc-sections",
+        "-Wl,--defsym=_min_heap_size=1024",
+        "-Wl,-Map=${map}"
+      ]
+    },
+    "atsamd21g18a": {
+      "cc": [
+        "xc32-gcc",
+        "-mprocessor=ATSAMD21G18A",
+        "-mthumb"
+      ],
+      "link_flags": [
+        "-Wl,--gc-sections",
+        "-Wl,-Map=${map}"
+      ]
+    }
+  },
+  "steps": {
+    "compile": [
+      "${cc}",
+      "${cflags}",
+      "${defines}",
+      "${include}",
+      "-g",
+      "-O1",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Wall",
+      "-c",
+      "${source}",
+      "-o",
+      "${object}"
+    ],
+    "link": [
+      "${cc}",
+      "${cflags}",
+      "${link_flags}",
+      "${objects}",
+      "-o",
+      "${image}"
+    ],
+    "convert": [
+      "xc32-bin2hex",
+      "${image}"
+    ]
+  },
+  "outputs": {
+    "image": "elf",
+    "debug": "dwarf",
+    "map": true
+  },
+  "environment": {
+    "PATH_hint": [
+      "/opt/microchip/xc32/*/bin",
+      "/Applications/microchip/xc32/*/bin",
+      "C:/Program Files/Microchip/xc32/*/bin"
+    ]
+  }
+}
