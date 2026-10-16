@@ -7,6 +7,7 @@ runs on `emblink/nrf52840dk` and passes its scenario.
 | Application | What it checks |
 | --- | --- |
 | `nrfx_tour` | `nrfx_clock` starting the HFXO and the LFXO, with an event for each; `nrfx_uarte` on UARTE0 at 115200 baud on the virtual COM port's pins, blocking transmits out and characters in through the driver's continuous RX buffers (`NRFX_UARTE_EVT_RX_BUF_REQUEST`, `RX_DONE`); `nrfx_timer` on TIMER1 at 1 MHz, 32 bits wide, with a compare every 100 ms and its CLEAR short, toggling LED1; `nrfx_rtc` on RTC1 from the LFCLK, its counter and a compare at one second; `nrfx_gpiote` with a channel on a button on D2 (P1.03, pulled up), its falling edge |
+| `nrfx_periph` | `nrfx_spim` on SPIM2 (4 MHz, mode 0, the driver's CS) to a 25LC040: WREN, WRITE, RDSR polled through its write cycle, READ; `nrfx_twim` on TWIM0 at 400 kHz to a 24C02: a page write, address-only writes NACKed through its write cycle, TXRX with its repeated START, a TX without STOP (suspended) then an RX, an absent address's `-EFAULT`; `nrfx_pwm` looping a sequence of individual values on PWM0 at 1 kHz exactly; `nrfx_saadc` offset-calibrated, in simple mode at 12 bits, reading a 1.0 V source (1137), VDD (3413) and the PWM through an RC low-pass; every SCK and SCL edge counted |
 
 Nordic's and Arm's files are not vendored; `run.py` takes checkouts of
 [nrfx](https://github.com/NordicSemiconductor/nrfx) (which carries the MDK
@@ -28,7 +29,8 @@ drivers' sources, the MDK's `system_nrf52840.c` and
 `gcc_startup_nrf52840.S`, all unchanged, for `NRF52840_XXAA`
 (`-mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -O2`), and linked with
 the MDK's `nrf52840_xxaa.ld` and newlib-nano. `project.json` (the DK on USB
-power, a button on D2, a terminal on P0.06/P0.08) then runs the image under
+power, a button on D2, a terminal on P0.06/P0.08, the two EEPROMs, the RC
+low-pass and the 1.0 V source) then runs the image under
 the application's `scenario.json`. Without arm-none-eabi-gcc or the
 checkouts it skips.
 

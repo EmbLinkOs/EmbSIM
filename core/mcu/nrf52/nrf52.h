@@ -77,16 +77,25 @@ int esk_nrf_pin_level(struct esk_mach *m, int pin);
 void esk_nrf_uart_roles(struct esk_mach *m, signed char *role);
 void esk_nrf_gpiote_roles(struct esk_mach *m, signed char *drive, u8 *watch);
 int esk_nrf_uart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
+/* what SPIM, TWIM (spim.c) and PWM (pwm.c) do with each pin: drive[n] 0
+ * or 1 for a level they drive, 2 for an input (or an open-drain line let
+ * go), left as it was (-1) for the pins they do not take; od[n] 1 for
+ * TWIM's open-drain lines */
+void esk_nrf_spim_roles(struct esk_mach *m, signed char *drive, u8 *od);
+void esk_nrf_pwm_roles(struct esk_mach *m, signed char *drive);
 /* the ports' levels and DETECT signal after a change, for GPIOTE */
 void esk_nrf_gpiote_levels(struct esk_mach *m, const u32 *levels, int detect);
 
 extern const struct esk_dev_ops esk_nrf_clock_ops, esk_nrf_gpio_ops, esk_nrf_gpiote_ops, esk_nrf_uart_ops,
-    esk_nrf_timer_ops, esk_nrf_rtc_ops;
+    esk_nrf_timer_ops, esk_nrf_rtc_ops, esk_nrf_spim_ops, esk_nrf_pwm_ops, esk_nrf_saadc_ops;
 void *esk_nrf_clock_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_nrf_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_nrf_gpiote_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_nrf_uart_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_nrf_timer_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_nrf_rtc_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_nrf_spim_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_nrf_pwm_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_nrf_saadc_create(struct esk_mach *m, struct esk_rf_periph *p);
 
 #endif

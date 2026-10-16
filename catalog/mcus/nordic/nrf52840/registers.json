@@ -12113,8 +12113,19 @@
   {
    "name": "SAADC",
    "base": "0x40007000",
+   "description": "Reserved (read 0, writes ignored): +0x640 to +0x648 and +0xFFC, undocumented registers the workaround for anomaly 212 in Nordic's errata (nrfx's saadc_anomaly_212_workaround_apply) saves and restores",
    "interrupts": [
     "SAADC"
+   ],
+   "reserved": [
+    [
+     "0x640",
+     "0xC"
+    ],
+    [
+     "0xFFC",
+     "0x4"
+    ]
    ],
    "registers": [
     {
