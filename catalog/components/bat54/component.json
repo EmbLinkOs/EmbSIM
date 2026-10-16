@@ -131,8 +131,9 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "BAT54 manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://assets.nexperia.com/documents/data-sheet/BAT54_SER.pdf"
+        "title": "Nexperia BAT54 manufacturer datasheet (unavailable; source review incomplete)",
+        "url": "https://assets.nexperia.com/documents/data-sheet/BAT54_SER.pdf",
+        "notes": "Checked 2026-10-16: original URL returned HTTP 404; alternative manufacturer document requests returned CDN Access Denied HTML. No PDF revision or hash verified. Pin mapping remains a KiCad reference, not manufacturer-reviewed."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

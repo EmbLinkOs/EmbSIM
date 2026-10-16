@@ -133,8 +133,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "L7812CV manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.st.com/resource/en/datasheet/l78.pdf"
+        "title": "STMicroelectronics DS0422 manufacturer datasheet",
+        "url": "https://www.st.com/resource/en/datasheet/l78.pdf",
+        "rev": "38, February 2025",
+        "date": "2026-10-16",
+        "hash": "sha256:ccba643d1b7ced872f7048c58d32edf23cc165febedc984a8592254c47b0ca1a",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3, 18. TO-220: IN1, GND2, OUT3; tab GND. Review selects the 12 V L7812C table. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

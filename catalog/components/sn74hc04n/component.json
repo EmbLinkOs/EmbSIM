@@ -228,8 +228,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "SN74HC04N manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.ti.com/lit/ds/symlink/sn74hc04.pdf"
+        "title": "Texas Instruments SCLS078H manufacturer datasheet",
+        "url": "https://www.ti.com/lit/ds/symlink/sn74hc04.pdf",
+        "rev": "April 2021",
+        "date": "2026-10-16",
+        "hash": "sha256:88c27f11aa0807882025ae0fead9926764543d1e77519b1599da13d2ec73fc1b",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. N/PDIP-14 pin table; all six inverter channels; VCC14, GND7. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

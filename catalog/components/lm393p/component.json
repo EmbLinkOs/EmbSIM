@@ -169,8 +169,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "LM393P manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.ti.com/lit/ds/symlink/lm393.pdf"
+        "title": "Texas Instruments SLCS005AH manufacturer datasheet",
+        "url": "https://www.ti.com/lit/ds/symlink/lm393.pdf",
+        "rev": "April 2025",
+        "date": "2026-10-16",
+        "hash": "sha256:f28830c2f4cbd9ef6a1cd6788a840fa2b92caafee366d53385f88d1cf24e9456",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. PDIP-8: OUT1=1, IN1-=2, IN1+=3, GND4, IN2+=5, IN2-=6, OUT2=7, VCC8. Select legacy LM393, not LM393B electrical tables. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

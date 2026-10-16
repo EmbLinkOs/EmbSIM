@@ -155,8 +155,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "2N3906 manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.onsemi.com/pdf/datasheet/2n3906-d.pdf"
+        "title": "onsemi 2N3906/D manufacturer datasheet",
+        "url": "https://www.onsemi.com/pdf/datasheet/2n3906-d.pdf",
+        "rev": "4, February 2010",
+        "date": "2026-10-16",
+        "hash": "sha256:bb53444a2afe667c0260aabf21e5dc3e1b516e9c45e9008dcd9a2fc6be1c7596",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 8. TO-92 case 29 style 1: E1, B2, C3. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

@@ -68,6 +68,6 @@ test or review that establishes it; STATUS.md records whether it passed.
 ### CAT-009  Named part identity and executable evidence
 **Statement.** Named manufacturer parts shall declare manufacturer, exact part number, package and datasheet URL, a physical number for every terminal, honest model limits, and executable behavioral fixtures. Presence in the library shall not imply datasheet qualification.
 **Rationale.** A generic transistor symbol cannot stand in for every package or accuracy grade.
-**Status.** Accepted 2026-10-16; first named-part batch implemented, manufacturer PDF qualification pending.
-**Verification.** Schema/semantic validation, `tools/test_catalog_parts.py`, and `catalog_fixtures` under CTest.
+**Status.** Accepted 2026-10-16; first named-part batch implemented; 25 of 26 entries have manufacturer package/source review with revision and hash. BAT54 source and electrical model qualification remain open.
+**Verification.** Schema/semantic validation, reviewed package maps in `tools/test_catalog_parts.py`, `catalog_fixtures` and `catalog_fixture_assertions` under CTest; source record in `docs/engineering/named-part-sources.md`.
 **Trace.** SPEC-005 §2; SPEC-004 §7; catalog/README.md

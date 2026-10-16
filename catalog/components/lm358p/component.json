@@ -188,8 +188,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "LM358P manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.ti.com/lit/ds/symlink/lm358.pdf"
+        "title": "Texas Instruments SLOS068AB manufacturer datasheet",
+        "url": "https://www.ti.com/lit/ds/symlink/lm358.pdf",
+        "rev": "October 2024",
+        "date": "2026-10-16",
+        "hash": "sha256:8277dff7b89138c63b3582d37f378065a1dea3cae5ed1e2926ddc2779eb7e3a2",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. PDIP-8: OUT1=1, IN1-=2, IN1+=3, V-=4, IN2+=5, IN2-=6, OUT2=7, V+=8. Select legacy LM358, not LM358B electrical tables. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

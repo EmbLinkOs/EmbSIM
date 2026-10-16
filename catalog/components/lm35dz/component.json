@@ -68,15 +68,16 @@
         "supply current",
         "noise",
         "LM35 negative-temperature bias circuit",
-        "no manufacturer model qualification"
+        "no manufacturer model qualification",
+        "supply-dependent accuracy and out-of-range operation"
       ],
       "validation": [
         "tests/*.json"
       ],
       "range": {
         "voltage_v": [
-          0,
-          5
+          4,
+          30
         ]
       }
     }
@@ -119,8 +120,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "LM35DZ manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.ti.com/lit/ds/symlink/lm35.pdf"
+        "title": "Texas Instruments SNIS159H manufacturer datasheet",
+        "url": "https://www.ti.com/lit/ds/symlink/lm35.pdf",
+        "rev": "December 2017",
+        "date": "2026-10-16",
+        "hash": "sha256:673b1c075b8f5a0653f77906c897ea5aec41a1dec02514770587100587c05eb9",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 3, 4, 8, 23. TO-92 bottom view: VS1, OUT2, GND3. LM35D grade 0 to 100 C; nominal 10 mV/C, 4 to 30 V supply. Ground-adjacent output behavior is not qualified. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

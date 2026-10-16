@@ -6,6 +6,9 @@ versions follow semantic versioning. There is no release yet.
 ## Unreleased
 
 ### Added
+- Manufacturer source review for 25 named parts: exact PDF revisions, hashes,
+  dates and pin-map references; TMP36 TO-92 map confirmed directly. Sensor
+  supply endpoint and shifted-ground fixtures; full package pin-map regressions.
 - First named-part catalog batch: 26 manufacturer/package entries for discrete
   semiconductors, regulators, LM358P, LM393P, NE555P, LM35DZ, TMP36GT9Z and
   six complete 74HC gate packages. Original symbols/artwork, searchable part
