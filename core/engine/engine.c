@@ -636,6 +636,23 @@ void esk_pin_set_direction(esk_pin *p, int output)
     }
 }
 
+void esk_pin_output(esk_pin *p, esk_logic value, esk_strength strength)
+{
+    if (p->model.kind != ESK_PIN_DIGITAL_IO || p->is_output) {
+        esk_pin_drive(p, value, strength, 0);
+        return;
+    }
+    if (p->pending) {
+        esk_sched_cancel(&p->comp->e->sched, p->pending);
+        p->pending = 0;
+    }
+    p->drive_strength = strength;
+    if (p->drive_value != value)
+        p->comp->e->signal_events++;
+    p->drive_value = p->pending_value = value;
+    esk_pin_set_direction(p, 1);
+}
+
 void esk_pin_watch(esk_pin *p, int watch) { p->watched = watch != 0; }
 
 /* ---- wake-ups ------------------------------------------------------------ */

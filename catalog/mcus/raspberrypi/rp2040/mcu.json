@@ -309,12 +309,14 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Armv6-M (Cortex-M0+) execution on both cores by the Cortex-M core extracted from EmbCC, interleaved on one clock with each core's NVIC, SysTick and event register (WFE, SEV); core 1 launched through its bootrom's FIFO handshake and powered off and on by the PSM; every register of RP2040.svd with its reset value, on the part's bus rules (the atomic XOR, set and clear aliases; byte writes across the word); behavioural models extracted from EmbCC of RESETS (peripherals held in reset), the clocks (XOSC, ROSC, PLL_SYS, PLL_USB, the clock generators and FC0; clk_sys is the core's clock), PSM, the watchdog (its microsecond tick, its counter and the chip reset), the timer (its 64-bit count and four alarms), IO_BANK0 and PADS_BANK0 (function select, overrides, pulls, the four interrupt kinds, to each core's own summary), the SIO (GPIO, spinlocks, each core's view: CPUID, a divider each, the FIFOs between the cores and SIO_IRQ_PROC0/1), UART0 and UART1 (PL011 FIFOs, interrupts, frames at the divisor's baud rate on their pins) and the SSI with the Pico's W25Q16JV flash behind it; and a stand-in for the bootrom that checks boot2's CRC, copies it to SRAM and enters it.",
+      "claims": "Armv6-M (Cortex-M0+) execution on both cores by the Cortex-M core extracted from EmbCC, interleaved on one clock with each core's NVIC, SysTick and event register (WFE, SEV); core 1 launched through its bootrom's FIFO handshake and powered off and on by the PSM; every register of RP2040.svd with its reset value, on the part's bus rules (the atomic XOR, set and clear aliases; byte writes across the word); behavioural models extracted from EmbCC of RESETS (peripherals held in reset), the clocks (XOSC, ROSC, PLL_SYS, PLL_USB, the clock generators and FC0; clk_sys is the core's clock), PSM, the watchdog (its microsecond tick, its counter and the chip reset), the timer (its 64-bit count and four alarms), IO_BANK0 and PADS_BANK0 (function select, overrides, pulls, the four interrupt kinds, to each core's own summary), the SIO (GPIO, spinlocks, each core's view: CPUID, a divider each, the FIFOs between the cores and SIO_IRQ_PROC0/1), UART0 and UART1 (PL011 FIFOs, interrupts, frames at the divisor's baud rate on their pins) and the SSI with the Pico's W25Q16JV flash behind it; the PWM's eight slices written for EmbSIM (the fractional divider, free-running and phase-correct counting, CC and TOP double-buffered, inversion, the wrap interrupt) on their pins, and the ADC (96 clk_adc cycles a conversion from GPIO26-29's voltages and the temperature sensor, START_ONCE and START_MANY with DIV, round robin, the FIFO with SHIFT, THRESH, OVER and UNDER, its interrupt); SPI0 and SPI1 as masters (the PL022's FIFOs, 4 to 16 bits in Motorola's modes 0 to 3 at its prescaler and SCR, CSn around each frame, loopback, overrun, the interrupts) and I2C0 and I2C1 as masters (DW_apb_i2c's command and receive FIFOs, START, repeated START and STOP on open-drain SCL and SDA at the HCNT and LCNT counts, the bus held between commands, the aborts and their source, the raw interrupts and their clear registers) on their pins, written for EmbSIM; and a stand-in for the bootrom that checks boot2's CRC, copies it to SRAM and enters it.",
       "omissions": [
         "the bootrom's code and its function table (flash programming, the float library, memcpy, the USB boot)",
         "a debugger's choice of core (it sees the one that runs next)",
         "the XIP cache",
-        "SPI, I2C, PWM, the ADC, DMA, the PIOs, USB and the RTC (plain registers)",
+        "DMA, the PIOs, USB and the RTC (plain registers)",
+        "SPI and I2C slave modes, TI's and Microwire's SPI formats, the SPI receive timeout, 10-bit I2C addresses, general call and START bytes, clock stretching by an I2C slave, arbitration, the I2C spike filter",
+        "PWM's gated and edge-counting DIVMODEs and phase advance; the ADC's error flags and DMA requests",
         "the interpolators",
         "DORMANT and SLEEP",
         "the QSPI bank's pins"
@@ -322,7 +324,8 @@
       "validation": [
         "repo:tests/unit/test_rp2040.c",
         "repo:examples/pico-blink-serial",
-        "repo:examples/pico-dual-core"
+        "repo:examples/pico-dual-core",
+        "repo:tests/vendor/pico-sdk"
       ]
     },
     "timed": {

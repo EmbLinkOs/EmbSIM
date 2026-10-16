@@ -178,6 +178,11 @@ esk_logic esk_net_value(const esk_net *n);
 /* resolve a digital net ignoring the drivers of `excluded` (transmission-gate models) */
 void esk_net_resolve_excluding(const esk_net *n, const esk_comp *excluded, esk_logic *v, esk_strength *s);
 void esk_pin_set_direction(esk_pin *p, int output);
+/* a digital_io pin an output driving `value` now: the direction and the
+ * level change together, the net never seeing the level the pin held as
+ * an input (a pulled-low input that becomes an output driving 0 makes no
+ * edge); on an output, esk_pin_drive with no delay */
+void esk_pin_output(esk_pin *p, esk_logic value, esk_strength strength);
 /* the level the pin's net has, as the pin sees it, without diagnostics: the
  * resolved value of a digital net (ESK_LZ when nothing drives it), the
  * comparator's state on an analog one */
