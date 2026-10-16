@@ -54,12 +54,25 @@ Notation: `method(params) -> result`. Params and results are objects.
 ### project
 - `project.load({path} | {json, base_dir}) -> {name, diagnostics: [...]}`
 - `project.get({}) -> {project}` (the canonical JSON, with resolved library versions)
-- `project.save({path?}) -> {path}`
+- `project.save({path?}) -> {path}`: the project's JSON (two-space indent) to
+  `path`, relative to the project's folder, or to the file it was loaded
+  from; `ES_EIO` when it cannot be written
 - `project.validate({path} | {json}) -> {ok, diagnostics}`
 - `project.transaction({op: "begin"}) -> {tx}`;
   `project.transaction({op: "edit", tx, edits: [{add_component}, {remove_component}, {set_param}, {connect, net, pin}, {disconnect, pin}, {rename_net}, {add_board}, {set_layout}]}) -> {}`;
-  `project.transaction({op: "commit", tx}) -> {applied, diagnostics, islands}`;
-  `project.transaction({op: "abort", tx}) -> {}`
+  `project.transaction({op: "commit", tx}) -> {applied, restarted, diagnostics}`;
+  `project.transaction({op: "abort", tx}) -> {}`.
+  One transaction is open at a time (a second `begin` is `ES_ESTATE`). Edits
+  collect on a copy of the project; an edit that cannot apply (an unknown
+  instance, a used id) fails with `-32602` and leaves the copy as it was
+  before that edit. A commit of `set_layout` edits only (placement, wires,
+  labels) replaces the project's JSON and the run goes on. A commit that
+  changes the circuit loads the edited project in a scratch session first:
+  if it does not load, the commit fails with `ES_ESCHEMA`, the errors are
+  raised as diagnostics and the project stays as it was; otherwise the
+  session is rebuilt from it and restarts at time 0 (`restarted: true`).
+  `remove_board {id}` is accepted beside the edits above. Edits made while
+  running pause the run when they restart it.
 - `project.topology({}) -> {nets: [{name, island, pins: [...], state}], islands: [{id, kind, nets}]}`
 
 ### control

@@ -555,6 +555,27 @@ int esk_json_object_set(esk_alloc *a, esk_json *obj, const char *key, esk_json *
     return push_item(a, obj, v);
 }
 
+int esk_json_remove_at(esk_alloc *a, esk_json *j, size_t i)
+{
+    if (!j || (j->type != ESK_JSON_ARRAY && j->type != ESK_JSON_OBJECT) || i >= j->u.array.len)
+        return -1;
+    esk_json_free(a, j->u.array.items[i]);
+    memmove(&j->u.array.items[i], &j->u.array.items[i + 1], (j->u.array.len - i - 1) * sizeof j->u.array.items[0]);
+    j->u.array.len--;
+    return 0;
+}
+
+int esk_json_remove(esk_alloc *a, esk_json *obj, const char *key)
+{
+    size_t i;
+    if (!obj || obj->type != ESK_JSON_OBJECT)
+        return -1;
+    for (i = 0; i < obj->u.array.len; i++)
+        if (esk_str_eq(obj->u.array.items[i]->key, key))
+            return esk_json_remove_at(a, obj, i);
+    return -1;
+}
+
 #define SETTER(name, T, ctor) \
     int name(esk_alloc *a, esk_json *obj, const char *key, T v) \
     { esk_json *j = ctor(a, v); if (!j) return -1; if (esk_json_object_set(a, obj, key, j)) { esk_json_free(a, j); return -1; } return 0; }
@@ -579,6 +600,20 @@ const esk_json *esk_json_get(const esk_json *obj, const char *key)
         if (esk_str_eq(obj->u.array.items[i]->key, key))
             return obj->u.array.items[i];
     return NULL;
+}
+esk_json *esk_json_get_mut(esk_json *obj, const char *key)
+{
+    size_t i;
+    if (!obj || obj->type != ESK_JSON_OBJECT || !key)
+        return NULL;
+    for (i = 0; i < obj->u.array.len; i++)
+        if (esk_str_eq(obj->u.array.items[i]->key, key))
+            return obj->u.array.items[i];
+    return NULL;
+}
+esk_json *esk_json_at_mut(esk_json *j, size_t i)
+{
+    return j && (j->type == ESK_JSON_ARRAY || j->type == ESK_JSON_OBJECT) && i < j->u.array.len ? j->u.array.items[i] : NULL;
 }
 size_t esk_json_len(const esk_json *j)
 {

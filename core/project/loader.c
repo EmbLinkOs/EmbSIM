@@ -839,10 +839,17 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
         ld_diag(s, ES_SEV_ERROR, "schema.type", "project", "kind must be \"project\"%s%s", "", "");
         return ES_ESCHEMA;
     }
-    esk_project_unload(s);
-    s->project = esk_json_clone(s->a, project);
-    s->base_dir = esk_strdup(s->a, base_dir ? base_dir : ".");
-    s->name = esk_strdup(s->a, esk_json_get_str(project, "name", "project"));
+    {
+        /* copied before the unload: `project` or `base_dir` may be the
+         * session's own (a reload of the project as it stands) */
+        esk_json *copy = esk_json_clone(s->a, project);
+        char *dir = esk_strdup(s->a, base_dir ? base_dir : ".");
+        esk_project_unload(s);
+        s->project = copy;
+        s->base_dir = dir;
+    }
+    project = s->project;
+    s->name = project ? esk_strdup(s->a, esk_json_get_str(project, "name", "project")) : NULL;
     if (!s->project || !s->base_dir || !s->name)
         return ES_ENOMEM;
     policy = esk_json_get_str(project, "policy", NULL);

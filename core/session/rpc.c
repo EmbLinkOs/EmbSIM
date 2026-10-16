@@ -765,6 +765,163 @@ static es_status m_toolchain_build(rpc_ctx *r)
     return ES_OK;
 }
 
+/* ---- project editing ------------------------------------------------------------------ */
+
+/* the diagnostics raised since `before`, as a JSON list */
+static esk_json *diags_since(es_session *s, size_t before)
+{
+    esk_json *all = esk_diag_to_json(&s->diag), *recent = esk_json_new_array(s->a);
+    size_t i;
+    for (i = before; all && recent && i < esk_json_len(all); i++)
+        esk_json_array_push(s->a, recent, esk_json_clone(s->a, esk_json_at(all, i)));
+    esk_json_free(s->a, all);
+    return recent;
+}
+
+/* begin, edit, commit, abort (SPEC-008 §5). Edits collect on a copy of
+ * the project; a commit that only moves or draws keeps the run going, one
+ * that changes the circuit is checked in a scratch session first, then
+ * rebuilds this one from the edited project and restarts it at time 0. */
+static es_status m_project_transaction(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *op = pstr(r, "op", "");
+    int tx = (int)esk_json_get_int(r->params, "tx", 0);
+    if (esk_str_eq(op, "begin")) {
+        if (!s->loaded || !s->project)
+            return fail_status(r, ES_ESTATE);
+        if (s->tx_project)
+            return fail_status(r, ES_ESTATE); /* one transaction at a time */
+        s->tx_project = esk_json_clone(s->a, s->project);
+        if (!s->tx_project)
+            return ES_ENOMEM;
+        s->tx_id = ++s->tx_last;
+        s->tx_structural = 0;
+        r->result = obj(r);
+        if (!r->result) return ES_ENOMEM;
+        esk_json_set_integer(s->a, r->result, "tx", s->tx_id);
+        return ES_OK;
+    }
+    if (!s->tx_project || tx != s->tx_id)
+        return fail(r, -32602, "no such open transaction");
+    if (esk_str_eq(op, "edit")) {
+        const esk_json *edits = esk_json_get(r->params, "edits");
+        char why[256];
+        size_t i;
+        if (!edits || edits->type != ESK_JSON_ARRAY)
+            return fail(r, -32602, "edits is a list");
+        for (i = 0; i < esk_json_len(edits); i++) {
+            why[0] = 0;
+            if (esk_project_apply_edit(s->a, s->tx_project, esk_json_at(edits, i), &s->tx_structural, why, sizeof why))
+                return fail(r, -32602, why[0] ? why : "the edit could not be applied");
+        }
+        r->result = obj(r);
+        return r->result ? ES_OK : ES_ENOMEM;
+    }
+    if (esk_str_eq(op, "abort")) {
+        esk_json_free(s->a, s->tx_project);
+        s->tx_project = NULL;
+        r->result = obj(r);
+        return r->result ? ES_OK : ES_ENOMEM;
+    }
+    if (esk_str_eq(op, "commit")) {
+        esk_json *edited = s->tx_project;
+        size_t before = s->diag.len;
+        int applied = 1, restarted = 0;
+        s->tx_project = NULL;
+        if (!s->tx_structural) {
+            esk_json_free(s->a, s->project);
+            s->project = edited;
+            edited = NULL;
+        } else {
+            es_session *tmp = NULL;
+            es_session_config_t cfg;
+            es_status st;
+            memset(&cfg, 0, sizeof cfg);
+            cfg.catalog = s->catalog;
+            st = es_session_create(&cfg, &tmp);
+            if (st == ES_OK)
+                st = esk_project_load(tmp, edited, s->base_dir);
+            if (st != ES_OK || esk_diag_count(&tmp->diag, ES_SEV_ERROR) > 0) {
+                /* the edited project does not load: report why, keep the old one */
+                esk_json *d = tmp ? esk_diag_to_json(&tmp->diag) : NULL;
+                size_t i;
+                applied = 0;
+                for (i = 0; d && i < esk_json_len(d); i++) {
+                    const esk_json *x = esk_json_at(d, i);
+                    if (esk_str_eq(esk_json_get_str(x, "severity", ""), "error"))
+                        esk_diag_raise(&s->diag, ES_SEV_ERROR, esk_json_get_str(x, "code", "project.edit"), s->eng.sched.now,
+                                       "project", s->name ? s->name : "", NULL, 0, "%s", esk_json_get_str(x, "message", ""));
+                }
+                esk_json_free(tmp ? tmp->a : s->a, d);
+            }
+            es_session_destroy(tmp);
+            if (applied) {
+                s->running = 0;
+                st = esk_project_load(s, edited, s->base_dir);
+                if (st == ES_OK)
+                    st = esk_session_do_reset(s);
+                if (st != ES_OK) {
+                    esk_json_free(s->a, edited);
+                    return fail_status(r, st);
+                }
+                restarted = 1;
+            }
+        }
+        esk_json_free(s->a, edited);
+        r->result = obj(r);
+        if (!r->result) return ES_ENOMEM;
+        esk_json_set_bool(s->a, r->result, "applied", applied);
+        esk_json_set_bool(s->a, r->result, "restarted", restarted);
+        esk_json_object_set(s->a, r->result, "diagnostics", diags_since(s, before));
+        esk_session_emit_observations(s, 1);
+        if (!applied)
+            return fail_status(r, ES_ESCHEMA); /* the edited project does not load: its diagnostics say why */
+        return ES_OK;
+    }
+    return fail(r, -32602, "op is begin, edit, commit or abort");
+}
+
+/* writes the project's JSON to `path` (relative to the project's folder) or
+ * to the file it was loaded from */
+static es_status m_project_save(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    char *full, *text;
+    size_t len;
+    es_status st;
+    if (!s->project)
+        return fail_status(r, ES_ESTATE);
+    if (!path)
+        path = s->project_path;
+    if (!path)
+        return fail(r, -32602, "the project has no file: give a path");
+    full = path[0] != '/' && s->base_dir && path != s->project_path ? esk_host_path_join(s->a, s->base_dir, path)
+                                                                     : esk_strdup(s->a, path);
+    {
+        esk_strbuf b;
+        esk_strbuf_init(&b, s->a);
+        text = full && esk_json_write(&b, s->project, 2) == 0 && esk_strbuf_putc(&b, '\n') == 0 ? esk_strbuf_detach(&b, &len) : NULL;
+        if (!text)
+            esk_strbuf_free(&b);
+    }
+    if (!text) {
+        esk_strfree(s->a, full);
+        return ES_ENOMEM;
+    }
+    st = esk_host_write_file(full, text, len);
+    esk_free(s->a, text, len + 1);
+    if (st != ES_OK) {
+        esk_strfree(s->a, full);
+        return fail_status(r, ES_EIO);
+    }
+    r->result = obj(r);
+    if (r->result) esk_json_set_string(s->a, r->result, "path", full);
+    esk_strfree(s->a, full);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
 static es_status m_unavailable(rpc_ctx *r)
 {
     return fail(r, -32601, "this method needs a subsystem this version does not include (see docs/STATUS.md)");
@@ -778,7 +935,7 @@ static const method methods[] = {
     { "session.open", m_session_open }, { "session.close", m_session_close }, { "session.info", m_session_info },
     { "session.policy", m_session_policy },
     { "project.load", m_project_load }, { "project.get", m_project_get }, { "project.validate", m_project_validate },
-    { "project.topology", m_project_topology }, { "project.transaction", m_unavailable }, { "project.save", m_unavailable },
+    { "project.topology", m_project_topology }, { "project.transaction", m_project_transaction }, { "project.save", m_project_save },
     { "control.run", m_control_run }, { "control.pause", m_control_pause }, { "control.step", m_control_step },
     { "control.advance", m_control_advance }, { "control.reset", m_control_reset }, { "control.speed", m_control_speed },
     { "input.set", m_input_set }, { "input.press", m_input_press }, { "input.release", m_input_release },

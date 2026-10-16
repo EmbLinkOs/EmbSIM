@@ -302,6 +302,173 @@ static void test_composite(void)
     free(proj);
 }
 
+/* one request; the parsed response, or NULL */
+static esk_json *call(es_session *s, const char *method, const char *params)
+{
+    char req[4096], *res = NULL;
+    size_t len = 0;
+    int line;
+    const char *err;
+    esk_json *j = NULL;
+    snprintf(req, sizeof req, "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"%s\",\"params\":%s}", method, params);
+    if (es_session_rpc(s, req, strlen(req), &res, &len) == ES_OK && res)
+        j = esk_json_parse(s->a, res, len, &line, &err);
+    es_free(res);
+    return j;
+}
+
+static int64_t err_code(const esk_json *j) { return esk_json_get_int(esk_json_get(j, "error"), "code", 0); }
+
+static size_t net_pins(es_session *s, const char *net)
+{
+    return esk_json_len(esk_json_get(esk_json_get(s->project, "nets"), net));
+}
+
+static void test_edit_transactions(void)
+{
+    es_session *s = NULL;
+    es_session_config_t cfg;
+    char *proj = subst(PROJECT);
+    esk_json *j;
+    char params[2048];
+    int64_t tx;
+    memset(&cfg, 0, sizeof cfg);
+    CHECK(es_session_create(&cfg, &s) == ES_OK);
+    CHECK(es_session_load_json(s, proj, strlen(proj), lib_dir) == ES_OK);
+    j = call(s, "control.advance", "{\"by\":\"2ms\"}");
+    esk_json_free(s->a, j);
+
+    /* no transaction open */
+    j = call(s, "project.transaction", "{\"op\":\"edit\",\"tx\":9,\"edits\":[]}");
+    CHECK(err_code(j) == -32602);
+    esk_json_free(s->a, j);
+
+    /* moving a part keeps the run */
+    j = call(s, "project.transaction", "{\"op\":\"begin\"}");
+    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    CHECK(tx > 0);
+    esk_json_free(s->a, j);
+    j = call(s, "project.transaction", "{\"op\":\"begin\"}");
+    CHECK(err_code(j) == -32000 + ES_ESTATE); /* one at a time */
+    esk_json_free(s->a, j);
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"set_layout\":{\"id\":\"D1\",\"layout\":{\"x\":120,\"y\":40}}},"
+             "{\"set_layout\":{\"wires\":[{\"net\":\"SIG\",\"points\":[[0,0],[10,0]]}]}}]}", (int)tx);
+    j = call(s, "project.transaction", params);
+    CHECK(j && esk_json_get(j, "error") == NULL);
+    esk_json_free(s->a, j);
+    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":%d}", (int)tx);
+    j = call(s, "project.transaction", params);
+    CHECK(esk_json_get_bool(esk_json_get(j, "result"), "applied", 0) == 1);
+    CHECK(esk_json_get_bool(esk_json_get(j, "result"), "restarted", 1) == 0);
+    esk_json_free(s->a, j);
+    CHECK(s->eng.sched.now == (es_time_t)2000000000);
+    {
+        const esk_json *comps = esk_json_get(s->project, "components");
+        size_t i;
+        for (i = 0; i < esk_json_len(comps); i++)
+            if (esk_str_eq(esk_json_get_str(esk_json_at(comps, i), "id", ""), "D1"))
+                CHECK(esk_json_get_int(esk_json_get(esk_json_at(comps, i), "layout"), "x", 0) == 120);
+        CHECK(esk_json_len(esk_json_get(esk_json_get(s->project, "layout"), "wires")) == 1);
+    }
+
+    /* adding and wiring a part rebuilds the circuit */
+    j = call(s, "project.transaction", "{\"op\":\"begin\"}");
+    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    esk_json_free(s->a, j);
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"add_component\":{\"id\":\"D2\",\"component\":\"t/led\"}},"
+             "{\"connect\":{\"net\":\"SIG\",\"pin\":\"D2.A\"}},{\"rename_net\":{\"from\":\"SIG\",\"to\":\"BUTTON\"}},"
+             "{\"set_param\":{\"id\":\"D1\",\"param\":\"color\",\"value\":\"red\"}}]}", (int)tx);
+    j = call(s, "project.transaction", params);
+    CHECK(j && esk_json_get(j, "error") == NULL);
+    esk_json_free(s->a, j);
+    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":%d}", (int)tx);
+    j = call(s, "project.transaction", params);
+    CHECK(esk_json_get_bool(esk_json_get(j, "result"), "restarted", 0) == 1);
+    esk_json_free(s->a, j);
+    CHECK(s->eng.sched.now == 0);
+    CHECK(net_pins(s, "BUTTON") == 4);
+    CHECK(net_pins(s, "SIG") == 0);
+    CHECK_STR(esk_json_get_str(esk_json_at(esk_json_get(s->project, "probes"), 0), "target", ""), "net:BUTTON");
+    CHECK_STR(esk_json_get_str(esk_json_at(esk_json_get(esk_json_get(s->project, "layout"), "wires"), 0), "net", ""), "BUTTON");
+    j = call(s, "input.press", "{\"target\":\"SW1\"}");
+    esk_json_free(s->a, j);
+    j = call(s, "control.advance", "{\"by\":\"1ms\"}");
+    esk_json_free(s->a, j);
+    j = call(s, "observe.snapshot", "{\"include\":[\"nets\"]}");
+    CHECK_STR(esk_json_get_str(esk_json_get(esk_json_get(esk_json_get(j, "result"), "nets"), "BUTTON"), "logic", ""), "1");
+    esk_json_free(s->a, j);
+
+    /* a part the catalog does not have: the commit fails, nothing changes */
+    j = call(s, "project.transaction", "{\"op\":\"begin\"}");
+    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    esk_json_free(s->a, j);
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"add_component\":{\"id\":\"X9\",\"component\":\"t/nothing\"}}]}", (int)tx);
+    esk_json_free(s->a, call(s, "project.transaction", params));
+    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":%d}", (int)tx);
+    j = call(s, "project.transaction", params);
+    CHECK(err_code(j) == -32000 + ES_ESCHEMA);
+    esk_json_free(s->a, j);
+    CHECK(esk_json_len(esk_json_get(s->project, "components")) == 6);
+
+    /* removing a part drops its pins; an aborted edit changes nothing */
+    j = call(s, "project.transaction", "{\"op\":\"begin\"}");
+    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    esk_json_free(s->a, j);
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"remove_component\":{\"id\":\"D2\"}},{\"disconnect\":{\"pin\":\"G1.-\"}}]}", (int)tx);
+    esk_json_free(s->a, call(s, "project.transaction", params));
+    snprintf(params, sizeof params, "{\"op\":\"abort\",\"tx\":%d}", (int)tx);
+    esk_json_free(s->a, call(s, "project.transaction", params));
+    CHECK(net_pins(s, "BUTTON") == 4);
+    j = call(s, "project.transaction", "{\"op\":\"begin\"}");
+    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    esk_json_free(s->a, j);
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"remove_component\":{\"id\":\"D2\"}},{\"disconnect\":{\"pin\":\"G1.-\"}}]}", (int)tx);
+    esk_json_free(s->a, call(s, "project.transaction", params));
+    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":%d}", (int)tx);
+    esk_json_free(s->a, call(s, "project.transaction", params));
+    CHECK(net_pins(s, "BUTTON") == 3);
+    CHECK(net_pins(s, "GND") == 1);
+
+    /* save writes the project as it now is */
+    {
+        esk_alloc a;
+        char *dir, *path, *text = NULL;
+        size_t len = 0;
+        esk_alloc_init(&a, NULL);
+        dir = esk_host_temp_dir(&a);
+        path = esk_host_path_join(&a, dir ? dir : ".", "embsim-test-saved.json");
+        snprintf(params, sizeof params, "{\"path\":\"");
+        {
+            size_t n = strlen(params);
+            const char *c;
+            for (c = path; c && *c && n + 3 < sizeof params; c++) {
+                if (*c == '\\' || *c == '"')
+                    params[n++] = '\\';
+                params[n++] = *c;
+            }
+            params[n] = 0;
+        }
+        strcat(params, "\"}");
+        j = call(s, "project.save", params);
+        CHECK(j && esk_json_get(j, "error") == NULL);
+        esk_json_free(s->a, j);
+        CHECK(esk_host_read_file(&a, path, &text, &len) == ES_OK);
+        if (text) {
+            int line;
+            const char *err;
+            esk_json *saved = esk_json_parse(&a, text, len, &line, &err);
+            CHECK(saved != NULL);
+            CHECK(net_pins(s, "BUTTON") == esk_json_len(esk_json_get(esk_json_get(saved, "nets"), "BUTTON")));
+            esk_json_free(&a, saved);
+            esk_free(&a, text, len + 1);
+        }
+        esk_strfree(&a, path);
+        esk_strfree(&a, dir);
+    }
+    es_session_destroy(s);
+    free(proj);
+}
+
 static void test_bad_project(void)
 {
     es_session *s = NULL;
@@ -330,4 +497,5 @@ RUN(test_scenario_and_rpc);
 RUN(test_determinism);
 RUN(test_composite);
 RUN(test_bad_project);
+RUN(test_edit_transactions);
 TEST_MAIN_END

@@ -59,6 +59,9 @@ struct es_session {
     char *name;
     int loaded;
     int policy_forced;      /* the session config fixed the policy; the project cannot change it */
+    /* project.transaction: the project as edited between begin and commit */
+    esk_json *tx_project;
+    int tx_id, tx_last, tx_structural;
     ESK_VEC(esk_board_inst *) boards;
     ESK_VEC(esk_probe *) probes;
     uint32_t next_probe_id;
@@ -90,6 +93,11 @@ struct es_session {
 
 /* loader.c */
 es_status esk_project_load(es_session *s, const esk_json *project, const char *base_dir);
+/* edit.c: one project.transaction edit applied to a project's JSON; 0 or
+ * -1 with the reason in `why`. `*structural` is set unless it only moves
+ * or draws. */
+int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit, int *structural, char *why,
+                           size_t cap);
 /* toolchain.c: the profiles found on this host; a board's firmware built */
 es_status esk_toolchain_detect(es_session *s, esk_json **out);
 es_status esk_toolchain_build(es_session *s, const char *board_id, const char *profile_id, esk_json **out);

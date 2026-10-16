@@ -207,6 +207,7 @@ void es_session_destroy(es_session *s)
     esk_strfree(s->a, s->client_name);
     esk_strfree(s->a, s->record_path);
     esk_json_free(s->a, s->inputs_log);
+    esk_json_free(s->a, s->tx_project);
     esk_diag_free(&s->diag);
     tmp = s->alloc;
     esk_free(&tmp, s, sizeof *s);
