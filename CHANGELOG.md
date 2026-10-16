@@ -6,6 +6,14 @@ versions follow semantic versioning. There is no release yet.
 ## Unreleased
 
 ### Added
+- First named-part catalog batch: 26 manufacturer/package entries for discrete
+  semiconductors, regulators, LM358P, LM393P, NE555P, LM35DZ, TMP36GT9Z and
+  six complete 74HC gate packages. Original symbols/artwork, searchable part
+  identity and inspector details, documented approximation/source-review limits.
+- Open-collector comparator, temperature-sensor and 555 behavioral primitives;
+  op-amp DC output headroom; packaged HC rail sensing and per-channel timing.
+- Executable catalog fixture runner in CTest and a named-part temperature alarm.
+
 - Architecture baseline v1.0: vision, system architecture, simulation engine,
   MCU runtime and toolchains, workbench and protocol, ADR-001 to ADR-020,
   roadmap, open questions, reuse assessment.
@@ -70,3 +78,8 @@ versions follow semantic versioning. There is no release yet.
 ### Removed
 - The draft 0.1 foundation (Python runtime, HTTP server, single-page UI);
   its kernel semantics and visual direction are retained in the baseline.
+
+### Fixed
+- Catalog clock frequency binding, timed `tpd` application, functional pulse
+  source terminal/period binding, and logic-probe output/value observation.
+- Legacy current-source fixture polarity and an underdriven PMOS fixture load.

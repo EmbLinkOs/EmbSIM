@@ -14,8 +14,11 @@
 static es_time_t tpd(const esk_comp *c)
 {
     double v;
+    es_time_t delay;
     if (c->e->policy == ESK_POLICY_FUNCTIONAL)
         return 0;
+    if (esk_json_to_time(esk_json_get(c->params, "tpd"), &delay) == 0)
+        return delay;
     if (esk_comp_param_double(c, "tpd_ps", &v) == 0 && v >= 0)
         return (es_time_t)v;
     if (esk_comp_param_double(c, "tpd_ns", &v) == 0 && v >= 0)
@@ -108,6 +111,71 @@ GATE(or, G_OR)
 GATE(nor, G_NOR)
 GATE(xor, G_XOR)
 GATE(xnor, G_XNOR)
+
+/* Full 14-pin HC packages. Every channel is independent; VCC/GND are
+ * sensed inputs, never ideal supplies injected into the user's circuit.
+ * Electrical output levels are the fixed 5 V HC family approximation. */
+typedef struct hc_state {
+    esk_pin *a[6], *b[6], *y[6], *vcc, *gnd;
+    int count;
+    const char *gate;
+} hc_state;
+
+static es_status hc_create(esk_comp *c)
+{
+    hc_state *s = (hc_state *)c->state;
+    int i;
+    char name[8];
+    s->gate = esk_comp_param_str(c, "gate", "nand");
+    s->count = !strcmp(s->gate, "inverter") ? 6 : 4;
+    if (strcmp(s->gate, "nand") && strcmp(s->gate, "nor") && strcmp(s->gate, "and") &&
+        strcmp(s->gate, "or") && strcmp(s->gate, "xor") && strcmp(s->gate, "inverter"))
+        return ES_EINVAL;
+    s->vcc = esk_comp_pin(c, "VCC");
+    s->gnd = esk_comp_pin(c, "GND");
+    if (!s->vcc || !s->gnd) return ES_ESCHEMA;
+    for (i = 0; i < s->count; i++) {
+        esk_snprintf(name, sizeof name, "%dA", i + 1);
+        s->a[i] = esk_comp_pin(c, name);
+        esk_snprintf(name, sizeof name, "%dB", i + 1);
+        s->b[i] = esk_comp_pin(c, name);
+        esk_snprintf(name, sizeof name, "%dY", i + 1);
+        s->y[i] = esk_comp_pin(c, name);
+        if (!s->a[i] || !s->y[i] || (s->count == 4 && !s->b[i])) return ES_ESCHEMA;
+    }
+    watch_all_inputs(c);
+    return ES_OK;
+}
+
+static esk_logic hc_value(const hc_state *s, int i)
+{
+    esk_logic a = esk_pin_read(s->a[i]);
+    esk_logic b = s->b[i] ? esk_pin_read(s->b[i]) : ESK_L0;
+    int invert = !strcmp(s->gate, "nand") || !strcmp(s->gate, "nor") || s->count == 6;
+    esk_logic result;
+    if (s->count == 6) result = a <= ESK_L1 ? a : ESK_LX;
+    else if (!strcmp(s->gate, "and") || !strcmp(s->gate, "nand"))
+        result = a == ESK_L0 || b == ESK_L0 ? ESK_L0 : a == ESK_L1 && b == ESK_L1 ? ESK_L1 : ESK_LX;
+    else if (!strcmp(s->gate, "or") || !strcmp(s->gate, "nor"))
+        result = a == ESK_L1 || b == ESK_L1 ? ESK_L1 : a == ESK_L0 && b == ESK_L0 ? ESK_L0 : ESK_LX;
+    else result = a <= ESK_L1 && b <= ESK_L1 ? (a == b ? ESK_L0 : ESK_L1) : ESK_LX;
+    return invert && result <= ESK_L1 ? (result == ESK_L1 ? ESK_L0 : ESK_L1) : result;
+}
+
+static void hc_update(esk_comp *c)
+{
+    hc_state *s = (hc_state *)c->state;
+    esk_logic power = esk_pin_read(s->vcc), ground = esk_pin_read(s->gnd);
+    int i;
+    for (i = 0; i < s->count; i++) {
+        esk_logic value = power == ESK_L0 ? ESK_LZ :
+                          power != ESK_L1 || ground != ESK_L0 ? ESK_LX : hc_value(s, i);
+        esk_pin_drive(s->y[i], value, ESK_STR_STRONG, tpd(c));
+    }
+}
+static void hc_input(esk_comp *c, esk_pin *p) { ES_UNUSED(p); hc_update(c); }
+static const esk_model_ops hc_ops = { "hc_package", sizeof(hc_state), hc_create, NULL,
+    hc_update, hc_input, NULL, NULL, NULL, NULL, 0 };
 
 /* ---- tristate buffer: A, OE (active high), Y --------------------------------- */
 
@@ -267,7 +335,7 @@ static const esk_model_ops clock_ops = { "clock_source", sizeof(clk_state), clk_
  * source); delay_ps or td (s), width_ps or pw (s), per (s: repeats when longer
  * than the width; 0 is a single pulse), level (or v2 above v1: active high) */
 
-typedef struct pulse_state { esk_pin *out; es_time_t delay, width, period, next; int level; } pulse_state;
+typedef struct pulse_state { esk_pin *out, *ground; es_time_t delay, width, period, next; int level; } pulse_state;
 
 static es_time_t seconds_param(const esk_comp *c, const char *ps_name, const char *s_name, es_time_t def)
 {
@@ -287,6 +355,9 @@ static es_status pulse_create(esk_comp *c)
     if (!s->out)
         s->out = pin_or_null(c, "+");
     if (!s->out) return ES_ESCHEMA;
+    s->ground = pin_or_null(c, "-");
+    s->out->model.kind = ESK_PIN_DIGITAL_OUT;
+    if (s->ground) s->ground->model.kind = ESK_PIN_DIGITAL_OUT;
     s->delay = seconds_param(c, "delay_ps", "td", 0);
     s->width = seconds_param(c, "width_ps", "pw", 1000000);
     if (!s->width)
@@ -308,6 +379,7 @@ static void pulse_reset(esk_comp *c)
 {
     pulse_state *s = (pulse_state *)c->state;
     esk_pin_drive(s->out, s->level ? ESK_L0 : ESK_L1, ESK_STR_STRONG, 0);
+    if (s->ground) esk_pin_drive(s->ground, ESK_L0, ESK_STR_STRONG, 0);
     s->next = s->delay;
     esk_comp_wake_at(c, s->delay, 0);
 }
@@ -316,7 +388,10 @@ static void pulse_time(esk_comp *c, uint32_t token)
     pulse_state *s = (pulse_state *)c->state;
     if (token == 0) {
         esk_pin_drive(s->out, s->level ? ESK_L1 : ESK_L0, ESK_STR_STRONG, 0);
-        esk_comp_wake_at(c, esk_comp_now(c) + s->width, 1);
+        {
+            es_time_t next;
+            if (esk_time_add(esk_comp_now(c), s->width, &next) == 0) esk_comp_wake_at(c, next, 1);
+        }
     } else {
         esk_pin_drive(s->out, s->level ? ESK_L0 : ESK_L1, ESK_STR_STRONG, 0);
         if (s->period && esk_time_add(s->next, s->period, &s->next) == 0)
@@ -624,7 +699,7 @@ static const esk_model_ops vt_ops = { "virtual_terminal", sizeof(vt_state), vt_c
 static const esk_model_ops *const digital_table[] = {
     &wire_ops, &none_ops, &buffer_ops, &inverter_ops, &and_ops, &nand_ops, &or_ops, &nor_ops, &xor_ops, &xnor_ops,
     &tristate_ops, &dff_ops, &clock_ops, &pulse_ops, &level_ops, &pull_ops, &button_ops, &switch_ops,
-    &indicator_ops, &probe_ops, &vt_ops
+    &indicator_ops, &probe_ops, &vt_ops, &hc_ops
 };
 
 const esk_model_ops *const *esk_digital_models(size_t *n)

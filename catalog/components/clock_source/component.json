@@ -54,10 +54,16 @@
     }
   },
   "model": {
-    "primitive": "clock_source"
+    "primitive": "clock_source",
+    "bind": {
+      "hz": "freq"
+    }
   },
   "functional": {
-    "primitive": "clock_source"
+    "primitive": "clock_source",
+    "bind": {
+      "hz": "freq"
+    }
   },
   "symbol": {
     "svg": "symbol.svg",
@@ -73,7 +79,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Toggles OUT at freq with duty after td (SPEC-003 §5 clock_source).",
+      "claims": "Toggles OUT at freq with duty after td (SPEC-003 \u00a75 clock_source).",
       "omissions": [
         "jitter"
       ]

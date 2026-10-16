@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "regulation",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 6.5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm1117_3v3"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V1.+",
+        "DUT.IN"
+      ],
+      "VOUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.GND",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VOUT": {
+      "at": "50us",
+      "min_v": 3.1999999999999997,
+      "max_v": 3.4
+    }
+  }
+}

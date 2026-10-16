@@ -214,6 +214,13 @@ export interface Provenance {
   sources?: { title: string; url?: string; date?: string }[];
 }
 
+export interface ManufacturerPart {
+  manufacturer: string;
+  mpn: string;
+  package: string;
+  datasheet: string;
+}
+
 export interface ComponentDescription {
   schema_version: 1;
   kind: 'component' | 'board';
@@ -221,6 +228,7 @@ export interface ComponentDescription {
   version: string;
   name: string;
   category: string;
+  part?: ManufacturerPart;
   description?: string;
   keywords?: string[];
   pins: PinDescription[];

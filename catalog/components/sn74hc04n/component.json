@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "category": "logic",
+  "description": "SN74HC04N: 6 independent inverters in a complete 14-pin DIP package. Nominal 5 V model.",
+  "pins": [
+    {
+      "name": "1A",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "1A"
+    },
+    {
+      "name": "1Y",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "1Y"
+    },
+    {
+      "name": "2A",
+      "number": 3,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "2A"
+    },
+    {
+      "name": "2Y",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "2Y"
+    },
+    {
+      "name": "3A",
+      "number": 5,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "3A"
+    },
+    {
+      "name": "3Y",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "3Y"
+    },
+    {
+      "name": "4A",
+      "number": 9,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "4A"
+    },
+    {
+      "name": "4Y",
+      "number": 8,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "4Y"
+    },
+    {
+      "name": "5A",
+      "number": 11,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "5A"
+    },
+    {
+      "name": "5Y",
+      "number": 10,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "5Y"
+    },
+    {
+      "name": "6A",
+      "number": 13,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "6A"
+    },
+    {
+      "name": "6Y",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "6Y"
+    },
+    {
+      "name": "VCC",
+      "number": 14,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "Supply sense; not an ideal power source."
+    },
+    {
+      "name": "GND",
+      "number": 7,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "Ground reference sense."
+    }
+  ],
+  "params": {},
+  "model": {
+    "primitive": "hc_package",
+    "params": {
+      "gate": "inverter"
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "All channels implement their four-valued truth table; VCC low releases outputs; invalid/floating rails produce X.",
+      "omissions": [
+        "analog supply ramp behavior",
+        "input clamp diodes",
+        "supply current"
+      ]
+    },
+    "timed": {
+      "claims": "Nominal fixed 12 ns inertial delay; not a datasheet worst-case guarantee.",
+      "omissions": [
+        "analog supply ramp behavior",
+        "input clamp diodes",
+        "supply current"
+      ]
+    },
+    "electrical": {
+      "claims": "Nominal 5 V CMOS input thresholds and output Thevenin drivers (5/0 V, 25 ohm) with the digital channel behavior. Supply-voltage tracking is not modeled.",
+      "omissions": [
+        "analog supply ramp behavior",
+        "input clamp diodes",
+        "supply current",
+        "voltage-dependent delays",
+        "output current limits",
+        "supply tracking below nominal"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          5
+        ]
+      }
+    }
+  },
+  "functional": {
+    "primitive": "hc_package",
+    "params": {
+      "gate": "inverter"
+    }
+  },
+  "timed": {
+    "tpd": "12ns"
+  },
+  "family": "cmos_5v",
+  "id": "emblink/sn74hc04n",
+  "name": "SN74HC04N",
+  "version": "1.0.0",
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "SN74HC04N",
+    "package": "PDIP-14",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/sn74hc04.pdf"
+  },
+  "keywords": [
+    "Texas Instruments",
+    "SN74HC04N",
+    "PDIP-14"
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "SN74HC04N manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.ti.com/lit/ds/symlink/sn74hc04.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/74xx.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 180,
+    "height": 160,
+    "pins": {
+      "1A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1Y": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "2A": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "2Y": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "3A": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "3Y": {
+        "x": 0,
+        "y": 120,
+        "side": "left"
+      },
+      "GND": {
+        "x": 0,
+        "y": 140,
+        "side": "left"
+      },
+      "4Y": {
+        "x": 180,
+        "y": 140,
+        "side": "right"
+      },
+      "4A": {
+        "x": 180,
+        "y": 120,
+        "side": "right"
+      },
+      "5Y": {
+        "x": 180,
+        "y": 100,
+        "side": "right"
+      },
+      "5A": {
+        "x": 180,
+        "y": 80,
+        "side": "right"
+      },
+      "6Y": {
+        "x": 180,
+        "y": 60,
+        "side": "right"
+      },
+      "6A": {
+        "x": 180,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 180,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

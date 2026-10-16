@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "temperature-minus40",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tmp36gt9z"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "100k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VS.+",
+        "DUT.VS"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "R.1"
+      ],
+      "GND": [
+        "VS.-",
+        "DUT.GND",
+        "R.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "50us",
+      "min_v": 0.09799999999999998,
+      "max_v": 0.10199999999999998
+    }
+  },
+  "inputs": [
+    {
+      "at": "10us",
+      "target": "DUT",
+      "input": "temperature",
+      "value": -40
+    }
+  ]
+}

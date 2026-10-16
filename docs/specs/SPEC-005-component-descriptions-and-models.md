@@ -62,6 +62,17 @@ Required: `schema_version`, `kind`, `id`, `version`, `name`, `category`,
 `pins`, `model` or `functional` (at least one), `symbol`, `fidelity`,
 `provenance`. Unknown fields are errors (`schema.unknown_field`).
 
+### Named manufacturer parts (additive schema-1 extension)
+
+An optional `part` object has four required nonempty strings: `manufacturer`,
+`mpn`, `package`, and `datasheet` (an HTTPS URL). It identifies a selected
+physical variant; it does not imply manufacturer model qualification. Named
+parts must number every terminal. Distinct package mappings use distinct catalog
+entries. Abstract parts omit this object. The workbench searches and displays
+these fields alongside fidelity. The category set additionally includes
+`amplifiers`, `comparators`, and `timers`; existing categories remain valid.
+See [the catalog guide](../../catalog/README.md) for current source-review status.
+
 ## 3. Pins
 
 Each pin: `name` (unique; what nets reference), `number` (physical, unique,

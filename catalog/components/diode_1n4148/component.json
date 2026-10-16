@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/diode_1n4148",
+  "version": "1.0.0",
+  "name": "1N4148",
+  "category": "diodes",
+  "description": "1N4148 (DO-35). Parameterized diode approximation for low-frequency circuit development; not a vendor SPICE model.",
+  "keywords": [
+    "Vishay",
+    "1N4148",
+    "DO-35",
+    "diode",
+    "rectifier",
+    "1N4007"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "2.52n",
+      "doc": "Saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1.752,
+      "doc": "Emission coefficient",
+      "min": 0.5,
+      "max": 5,
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.568,
+      "doc": "Series resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "bv": {
+      "type": "number",
+      "unit": "V",
+      "default": 100,
+      "doc": "Reverse breakdown voltage",
+      "min": 0.1,
+      "max": 10000,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "diode"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Parameterized diode approximation; DC/low-frequency fixture coverage only.",
+      "omissions": [
+        "temperature dependence",
+        "reverse recovery beyond tt",
+        "noise",
+        "manufacturer min/max tolerances",
+        "thermal or destructive behavior",
+        "device-to-device spread",
+        "unverified high-frequency behavior",
+        "no manufacturer model qualification",
+        "junction capacitances",
+        "charge storage and reverse recovery"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "1N4148 manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.vishay.com/docs/81857/1n4148.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Vishay",
+    "mpn": "1N4148",
+    "package": "DO-35",
+    "datasheet": "https://www.vishay.com/docs/81857/1n4148.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

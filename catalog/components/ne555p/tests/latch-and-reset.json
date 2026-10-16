@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "latch-and-reset",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "VT",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 5,
+          "v2": 0,
+          "td": "10u",
+          "tr": "1n",
+          "tf": "1n",
+          "pw": "10u",
+          "per": "1"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ne555p"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "VR",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 5,
+          "v2": 0,
+          "td": "60u",
+          "tr": "1n",
+          "tf": "1n",
+          "pw": "30u",
+          "per": "1"
+        }
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VS.+",
+        "DUT.VCC",
+        "RD.1"
+      ],
+      "TRIGGER": [
+        "VT.+",
+        "DUT.TRIG"
+      ],
+      "GROUND": [
+        "VS.-",
+        "VT.-",
+        "DUT.THRESH",
+        "R.2",
+        "DUT.GND",
+        "G.GND",
+        "VR.-"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "R.1"
+      ],
+      "DIS": [
+        "DUT.DISCH",
+        "RD.2"
+      ],
+      "CONTROL": [
+        "DUT.CTRL"
+      ],
+      "RESET": [
+        "VR.+",
+        "DUT.RESET"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "40us",
+      "min_v": 3.1,
+      "max_v": 3.4
+    },
+    "pin:DUT.OUT": {
+      "at": "80us",
+      "max_v": 0.2
+    }
+  }
+}

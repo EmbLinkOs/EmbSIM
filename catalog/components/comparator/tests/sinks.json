@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "sinks",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "VP",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 1
+        }
+      },
+      {
+        "id": "VM",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/comparator"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VS.+",
+        "R.1",
+        "DUT.V+"
+      ],
+      "P": [
+        "VP.+",
+        "DUT.+"
+      ],
+      "M": [
+        "VM.+",
+        "DUT.-"
+      ],
+      "OUT": [
+        "R.2",
+        "DUT.OUT"
+      ],
+      "GND": [
+        "VS.-",
+        "VP.-",
+        "VM.-",
+        "DUT.V-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "50us",
+      "max_v": 0.1
+    }
+  }
+}

@@ -64,7 +64,10 @@
         "displays",
         "sensors",
         "mechanical",
-        "misc"
+        "misc",
+        "amplifiers",
+        "comparators",
+        "timers"
       ]
     },
     "description": {
@@ -139,6 +142,35 @@
         "type": "string"
       },
       "description": "Fixture files or globs relative to the component directory."
+    },
+    "part": {
+      "type": "object",
+      "required": [
+        "manufacturer",
+        "mpn",
+        "package",
+        "datasheet"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "manufacturer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mpn": {
+          "type": "string",
+          "minLength": 1
+        },
+        "package": {
+          "type": "string",
+          "minLength": 1
+        },
+        "datasheet": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^https://"
+        }
+      }
     }
   },
   "$defs": {

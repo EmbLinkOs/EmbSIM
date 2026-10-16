@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "truth-3-functional",
+  "policy": "functional",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "LO",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "HI",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/sn74hc32n"
+      }
+    ],
+    "nets": {
+      "LOW": [
+        "LO.Y",
+        "DUT.GND",
+        "DUT.2A",
+        "DUT.2B",
+        "DUT.3A",
+        "DUT.4B"
+      ],
+      "HIGH": [
+        "HI.Y",
+        "DUT.VCC",
+        "DUT.1A",
+        "DUT.1B",
+        "DUT.3B",
+        "DUT.4A"
+      ],
+      "Y1": [
+        "DUT.1Y"
+      ],
+      "Y2": [
+        "DUT.2Y"
+      ],
+      "Y3": [
+        "DUT.3Y"
+      ],
+      "Y4": [
+        "DUT.4Y"
+      ]
+    }
+  },
+  "expect": {
+    "net:Y1": {
+      "at": "50us",
+      "logic": "1"
+    },
+    "net:Y2": {
+      "at": "50us",
+      "logic": "0"
+    },
+    "net:Y3": {
+      "at": "50us",
+      "logic": "1"
+    },
+    "net:Y4": {
+      "at": "50us",
+      "logic": "1"
+    }
+  }
+}

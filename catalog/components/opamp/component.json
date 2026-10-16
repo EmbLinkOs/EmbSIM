@@ -103,6 +103,22 @@
       "doc": "Differential input resistance",
       "min": 1,
       "advanced": true
+    },
+    "headroom_high": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "min": 0,
+      "advanced": true,
+      "doc": "DC output margin below positive supply."
+    },
+    "headroom_low": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "min": 0,
+      "advanced": true,
+      "doc": "DC output margin above negative supply."
     }
   },
   "model": {
@@ -147,7 +163,7 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Vout = gain*(V+ - V-) saturating at the supply pins or vpos/vneg, single pole from gbw, rout and rin (SPEC-004 §7 opamp).",
+      "claims": "Vout = gain*(V+ - V-) saturating at the supply pins or vpos/vneg, single pole from gbw, rout and rin (SPEC-004 \u00a77 opamp).",
       "omissions": [
         "input offset",
         "bias current",

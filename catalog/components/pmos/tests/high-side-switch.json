@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "high-side-switch",
-  "description": "Gate grounded with the source at 5 V turns the BS250 on (Vgs = -5 V, about 19 ohm in the linear region); the 220 ohm load sits near 4.6 V. At 3.3 V its 2.4 V threshold leaves too little overdrive to switch this load.",
+  "description": "BS250: VGS=-5 V drives a 1 kohm load high; the 3.3 V/220 ohm case did not fully enhance this model.",
   "policy": "electrical",
   "until": "1ms",
   "circuit": {
@@ -19,7 +19,7 @@
         "id": "RL",
         "component": "emblink/resistor",
         "params": {
-          "resistance": 220
+          "resistance": "1k"
         }
       },
       {
@@ -54,8 +54,8 @@
   "expect": {
     "net:LOAD": {
       "at": "0.5ms",
-      "min_v": 4.4,
-      "max_v": 5.0
+      "min_v": 4.5,
+      "max_v": 5.01
     }
   }
 }

@@ -73,7 +73,11 @@ Required: `schema_version`, `kind`, `id`, `version`, `name`, `category`,
 `functional`. Unknown fields are errors (`schema.unknown_field`): the schemas
 are closed. `category` is one of `passives`, `sources`, `diodes`,
 `transistors`, `switches`, `inputs`, `indicators`, `logic`, `analog`, `power`,
-`connectors`, `instruments`, `displays`, `sensors`, `mechanical`, `misc`.
+`connectors`, `instruments`, `displays`, `sensors`, `mechanical`, `misc`,
+`amplifiers`, `comparators`, `timers`. Named physical parts also declare
+`part: {manufacturer, mpn, package, datasheet}` and number every pin. The HTTPS
+datasheet URL is a reference, not proof of qualification; record source review
+and model omissions separately. See [the catalog guide](../catalog/README.md).
 
 ### Pins
 
@@ -255,8 +259,9 @@ names.
 
 ## 5. Fixtures
 
-`tests/*.json` are conformance fixtures (`kind: "component_test"`) that
-`embsim catalog validate` runs. Keep expectations simple and physically
+`tests/*.json` are conformance fixtures (`kind: "component_test"`). Run them
+with `python3 tools/catalog/run_fixtures.py --embsim build/dev/bin/embsim`; CTest
+runs this too, alongside `embsim catalog validate catalog`. Keep expectations simple and physically
 right; a component whose fixtures fail is listed as *broken*, not hidden.
 
 ```json

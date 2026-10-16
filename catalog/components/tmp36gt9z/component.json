@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "category": "sensors",
+  "description": "TMP36GT9Z: externally controlled ambient temperature converted to voltage. No thermal dynamics.",
+  "pins": [
+    {
+      "name": "OUT",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "OUT"
+    },
+    {
+      "name": "VS",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "VS"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "GND"
+    }
+  ],
+  "params": {
+    "slope": {
+      "type": "number",
+      "default": 0.01,
+      "unit": "V/degC"
+    },
+    "offset": {
+      "type": "number",
+      "default": 0.5,
+      "unit": "V"
+    },
+    "rout": {
+      "type": "number",
+      "default": 0.1,
+      "unit": "ohm",
+      "min": 0
+    },
+    "headroom": {
+      "type": "number",
+      "default": 0.1,
+      "unit": "V",
+      "min": 0
+    }
+  },
+  "model": {
+    "primitive": "temperature_sensor"
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Nominal Vout = 0.5 V + 10 mV/degC * temperature; finite output resistance; supply clipping.",
+      "omissions": [
+        "accuracy grade",
+        "self-heating",
+        "thermal time constant",
+        "supply current",
+        "noise",
+        "LM35 negative-temperature bias circuit",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          5
+        ]
+      }
+    }
+  },
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "default": 25,
+      "min": -40,
+      "max": 125,
+      "unit": "degC",
+      "doc": "Ambient temperature, degrees Celsius; user/scenario controlled."
+    }
+  ],
+  "outputs": [
+    {
+      "name": "vout",
+      "type": "number",
+      "unit": "V",
+      "doc": "Output voltage relative to circuit ground."
+    }
+  ],
+  "id": "emblink/tmp36gt9z",
+  "name": "TMP36GT9Z",
+  "version": "1.0.0",
+  "part": {
+    "manufacturer": "Analog Devices",
+    "mpn": "TMP36GT9Z",
+    "package": "TO-92",
+    "datasheet": "https://www.analog.com/media/en/technical-documentation/data-sheets/TMP35_36_37.pdf"
+  },
+  "keywords": [
+    "Analog Devices",
+    "TMP36GT9Z",
+    "TO-92"
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "TMP36GT9Z manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.analog.com/media/en/technical-documentation/data-sheets/TMP35_36_37.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Sensor_Temperature.lib",
+        "notes": "Legacy TMP36xS is SOT-23. This is not evidence for the TO-92 mapping; manufacturer pinout review remains pending."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 180,
+    "height": 80,
+    "pins": {
+      "VS": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "GND": {
+        "x": 180,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}
