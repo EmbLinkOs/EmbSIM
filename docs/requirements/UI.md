@@ -85,3 +85,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16; continuous backgrounds and preference controls implemented.
 **Verification.** Canvas appearance/storage unit tests; Playwright persistence/pan smoke; `tests/browser/test_canvas_appearance.py` for patterns, palettes, reload and pixel checks across a panned viewport.
 **Trace.** SPEC-011 §2; ADR-022
+
+### UI-012  Manual wire waypoints
+**Statement.** The schematic shall support orthogonal bend placement, live elbow flipping, removal of unfinished bends, cancellation without mutation, and one undoable completed connection. Explicit bends shall survive smart-routing and auto-arrange preferences at completion.
+**Rationale.** Precise circuit drafting with pointer and keyboard.
+**Status.** Accepted 2026-10-16
+**Verification.** Geometry unit tests and Playwright manual-wire workflow.
+**Trace.** SPEC-011 Manual wire authoring

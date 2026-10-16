@@ -58,7 +58,7 @@ and its missing drawn path is shown as an airwire when airwires are enabled.
   Click the overview to recenter, or use its keyboard-accessible Fit sheet button.
 - **View → Focus canvas** hides side panels for more drawing space. Restore them
   from the same menu; the command palette also exposes this action.
-- **View** toggles the dot grid, airwires, navigator, magnetic guides,
+- **View** configures the grid and toggles airwires, navigator, magnetic guides,
   obstacle-aware wiring and automatic arrangement after connecting.
 - Existing pan, zoom, Shift-drag selection, copy/paste, duplicate, rotate, mirror,
   net labels, buses and hierarchy remain available.
@@ -132,3 +132,22 @@ and pixel uniformity across a viewport panned beyond the old sheet edge:
 python3 tests/browser/test_canvas_appearance.py --embsim build/dev/bin/embsim \
   --chromium /usr/bin/chromium --screenshots /tmp/embsim-canvas
 ```
+
+## Deliberate wire bends
+
+Start at a pin (or a wire in Wire mode), then click empty sheet space to commit
+an orthogonal bend. Continue adding bends and finish at a pin or an existing wire.
+The visible route is retained when completed: smart routing and automatic
+arrangement do not replace a route with explicitly placed bends.
+
+While drawing, **Space** flips the live elbow, **Backspace/Delete** removes the
+last committed bend, and **Escape** cancels without modifying the project.
+Arrow keys move the routing cursor by one editing grid step (Shift: five steps);
+**Enter** on the canvas commits a bend or connects at the cursor. You can also
+Tab to a destination pin and press Enter. Bend markers show committed waypoints.
+The completed connection is one undoable edit; unfinished bends create no history.
+
+Manual routes give you geometric control and can cross bodies or other nets;
+crossings do not by themselves create electrical connections. This is not a
+clearance checker. Later automatic rerouting or layout operations can replace
+manual geometry; waypoints are not persistent routing constraints.
