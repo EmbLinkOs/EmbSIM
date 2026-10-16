@@ -229,6 +229,12 @@ versions follow semantic versioning. There is no release yet.
   a TIM2 interrupt, the UART both ways) with ST's unmodified HAL, CMSIS
   device files, startup and linker script, at pinned commits, and runs it
   under a scenario, in CI's linux-gcc job.
+- The RP2040's bootrom functions (ADR-021): its tables and their functions
+  (the lookup, bit operations, memcpy and memset, flash erase and program,
+  reset_to_usb_boot, the float and double libraries) done by the host from
+  `bkpt` stubs in the ROM, so unmodified Pico SDK images run;
+  `tests/vendor/pico-sdk` builds one with the SDK's own CMake and runs it on
+  the Pico in CI's linux-gcc job.
 
 ### Changed
 - The analog fixtures are checked against ngspice too: `ngspice.json` beside
@@ -251,6 +257,9 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The RP2040's RESETS reported RESET_DONE only for the blocks with a
+  register description, so the Pico SDK's start-up waited for JTAG, TBMAN
+  and the rest without end; every block reports its reset done.
 - The ATmega328P's timers set TOVn in fast PWM a timer clock early, as the
   counter reached TOP rather than as it went on to BOTTOM, so a read of
   TCNTn at TOP found the flag already set. The Arduino core's `micros()`

@@ -192,6 +192,13 @@ the session's serial input (`input.serial`, target `BOARD` or
 `BOARD.UNIT`) at the UART's baud rate. Semihosting exit ends the board's run
 with its status (`mcu.exit`); a lockup is `mcu.lockup`.
 
+A part's ROM whose code is not shipped may hold its documented functions as
+`bkpt #n` and a return; the machine's `rom_call` does them with the calling
+core's registers, flags and memory, and charges their cycles (ADR-021). The
+RP2040's bootrom functions and tables are done this way
+(`core/mcu/rp2040/rom.c`); a program that calls its `reset_to_usb_boot`
+waits in the USB boot (`mcu.usb_boot`).
+
 ## 10. Debug unit
 
 Breakpoints (by address, symbol, or file and line) and watchpoints per

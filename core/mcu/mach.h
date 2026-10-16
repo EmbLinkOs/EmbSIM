@@ -266,6 +266,8 @@ struct esk_rx_port {
 
 #define ESK_MACH_RX_PORTS 8
 
+struct esk_rom_call;
+
 struct esk_mach {
     esk_alloc *a;
     struct esk_bus bus;
@@ -327,6 +329,10 @@ struct esk_mach {
      * (smp.c) */
     struct esk_an *an;
     int steps_cores;
+    /* the ROM's host functions (struct esk_rom_call): 1 when `bkpt #n` at
+     * `pc` is one, 0 for an ordinary breakpoint instruction */
+    int (*rom_call)(struct esk_mach *m, u32 pc, unsigned n, struct esk_rom_call *c);
+    void *rom_ctx;
 };
 
 es_status esk_mach_init(struct esk_mach *m, esk_alloc *a);
@@ -422,6 +428,23 @@ struct esk_semi_ops {
  * Returns 1 with the result for r0 in *ret, or 0 when r0 is unchanged. */
 int esk_semihost(struct esk_mach *m, const struct esk_semi_ops *ops, void *ctx, u32 op, u32 arg,
                  u32 *ret);
+
+/* ---- a ROM's functions done by the host ---------------------------------- */
+
+/* A part's ROM may hold functions EmbSIM carries out in C instead of
+ * running their code (the RP2040's bootrom, which is not shipped): each is
+ * `bkpt #n` followed by a return, and a core that executes it calls the
+ * machine's `rom_call` with n and the call's registers. */
+struct esk_rom_call {
+    u32 r[4];      /* r0-r3 as the call finds them; as the function leaves them */
+    int set_flags; /* the function sets APSR's N, Z, C and V from nzcv */
+    u32 nzcv;      /* N 8, Z 4, C 2, V 1 */
+    u32 cycles;    /* the cycles it takes beyond the bkpt's */
+    /* the calling core's view of memory; after an access that faulted,
+     * `faulted` is 1 and the core takes the fault */
+    const struct esk_semi_ops *mem;
+    void *mem_ctx;
+};
 
 /* ---- images (image.c) ------------------------------------------------------ */
 

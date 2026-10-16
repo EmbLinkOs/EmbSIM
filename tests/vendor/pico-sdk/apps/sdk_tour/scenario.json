@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "sdk_tour",
+  "until": "1.5s",
+  "description": "The clocks as the SDK's runtime_init leaves them (clk_sys 125 MHz from the crystal through PLL_SYS); float and double results through the bootrom's tables; the SIO divider; core 1 launched and answering through the FIFO; the flash erased and programmed through the bootrom and read back through the XIP; the LED toggled by a repeating timer every 250 ms; a button press through a GPIO interrupt; a character typed on the terminal echoed.",
+  "inputs": [
+    {
+      "at": "700ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "750ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "900ms",
+      "target": "VT1",
+      "input": "tx_text",
+      "value": "k"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "clocks",
+      "at": "20ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "clk_sys 125000000 Hz, clk_peri 125000000 Hz"
+      }
+    },
+    {
+      "id": "float",
+      "at": "60ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "float 1.414214 0.479426, double 1.414213562 7.389056099"
+      }
+    },
+    {
+      "id": "divider",
+      "at": "60ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "divider 10309 r 30"
+      }
+    },
+    {
+      "id": "core1",
+      "at": "60ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "core1 says 145"
+      }
+    },
+    {
+      "id": "flash",
+      "at": "80ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "flash ok"
+      }
+    },
+    {
+      "id": "button",
+      "at": "1.2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "presses=1"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "1.2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "echo k"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "1.5s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 5
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.lockup",
+          "mcu.bus_error"
+        ]
+      }
+    }
+  ]
+}

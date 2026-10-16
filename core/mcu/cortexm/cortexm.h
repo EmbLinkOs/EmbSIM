@@ -96,11 +96,16 @@ struct esk_cm_state {
     int event, in_wfe;
     void (*sev)(void *ctx);
     void *sev_ctx;
+
+    /* the cycles an instruction takes beyond its cost (a ROM host
+     * function's), charged when it completes */
+    u32 extra_cycles;
 };
 
 
 /* cortexm.c */
 void esk_cm_undef(struct esk_cm_state *cs);
+int esk_cm_rom_call(struct esk_cm_state *cs, unsigned n);
 u32 esk_cm_ld_bus(struct esk_cm_state *cs, u32 a, int n);
 void esk_cm_st_bus(struct esk_cm_state *cs, u32 a, int n, u32 v);
 void esk_cm_bx_to(struct esk_cm_state *cs, u32 a);

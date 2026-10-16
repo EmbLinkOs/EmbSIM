@@ -76,6 +76,13 @@ jobs:
           fetch cmsis_device_f1 https://github.com/STMicroelectronics/cmsis_device_f1.git c8e9a4a4f16b6d2cb2a2083cbe5161025280fb22
           fetch CMSIS_5 https://github.com/ARM-software/CMSIS_5.git 55b19837f5703e418ca37894d5745b1dc05e4c91 /CMSIS/Core/Include/
           python3 tests/vendor/stm32cube/run.py --st "$RUNNER_TEMP/st" --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: Pico SDK applications on the unmodified SDK
+        if: matrix.name == 'linux-gcc'
+        run: |
+          git init -q "$RUNNER_TEMP/pico-sdk"
+          git -C "$RUNNER_TEMP/pico-sdk" fetch -q --depth 1 https://github.com/raspberrypi/pico-sdk.git 079c6f39023649b154152db30f1d781e884879bc
+          git -C "$RUNNER_TEMP/pico-sdk" checkout -q FETCH_HEAD
+          python3 tests/vendor/pico-sdk/run.py --sdk "$RUNNER_TEMP/pico-sdk" --embsim build/${{ matrix.preset }}/bin/embsim
 
   tools:
     name: tools and catalog

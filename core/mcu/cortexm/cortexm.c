@@ -484,6 +484,31 @@ void esk_cm_semihost(struct esk_cm_state *cs)
         cs->R[0] = r0;
 }
 
+/* `bkpt #n` in a ROM whose functions the host does (mach.h): 1 when it was
+ * one; its registers, flags and cycles are the core's when no access of
+ * it faulted */
+int esk_cm_rom_call(struct esk_cm_state *cs, unsigned n)
+{
+    struct esk_rom_call c;
+    memset(&c, 0, sizeof c);
+    memcpy(c.r, cs->R, sizeof c.r);
+    c.mem = &semi_mem;
+    c.mem_ctx = cs;
+    if (!cs->sim->rom_call(cs->sim, cs->pc, n, &c))
+        return 0;
+    if (cs->fault_exc)
+        return 1;
+    memcpy(cs->R, c.r, sizeof c.r);
+    if (c.set_flags) {
+        cs->N = (c.nzcv & 8u) != 0;
+        cs->Z = (c.nzcv & 4u) != 0;
+        cs->C = (c.nzcv & 2u) != 0;
+        cs->V = (c.nzcv & 1u) != 0;
+    }
+    cs->extra_cycles += c.cycles;
+    return 1;
+}
+
 /* ---- the run --------------------------------------------------------- */
 
 /* an exception is pending that would end a wait */
@@ -614,6 +639,7 @@ static void step(struct esk_cpu *c)
         }
         cs->other_sp = sother;
         cs->fault_exc = 0;
+        cs->extra_cycles = 0;
         if (exc == FAULT_WATCH) {
             /* not run: the debugger stops here, and the instruction is
              * counted when it does run (its --trace line comes again) */
@@ -640,6 +666,11 @@ static void step(struct esk_cpu *c)
     if (br && cs->npc != cs->pc + (u32)size) {
         s->cycles += 2;
         cost += 2;
+    }
+    if (cs->extra_cycles) {
+        s->cycles += cs->extra_cycles;
+        cost += cs->extra_cycles;
+        cs->extra_cycles = 0;
     }
     if (s->counting)
         esk_mach_advance(s, cost);
