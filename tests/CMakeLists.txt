@@ -24,6 +24,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME protocol_conformance COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/run_conformance.py
              --embsim $<TARGET_FILE:embsim_cli> --project ${CMAKE_SOURCE_DIR}/examples/button-led/project.json --port 18765
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    add_test(NAME gdb_server COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_gdb.py
+             --embsim $<TARGET_FILE:embsim_cli> --project ${CMAKE_SOURCE_DIR}/examples/bluepill-button-led/project.json
+             --elf ${CMAKE_SOURCE_DIR}/examples/bluepill-button-led/firmware/button-led.elf
+             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     add_test(NAME examples_headless COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/ci/run_examples.py --build ${CMAKE_BINARY_DIR}
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   endif()

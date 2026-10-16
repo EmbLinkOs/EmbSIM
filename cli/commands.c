@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* commands.c -- the embsim subcommands (05 §2, SPEC-008 §8-§9): run,
- * validate, serve, sidecar, catalog, board, models, version. The CLI is a
+ * validate, serve, sidecar, gdb, catalog, board, models, version. The CLI is a
  * client of the session protocol like every other interface. */
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200112L
@@ -29,6 +29,7 @@ static void usage(void)
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open]\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
+          "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
           "  catalog list|search QUERY|info ID|libraries [--library DIR]\n"
           "  board list|info ID\n"
           "  models                      list the model primitives\n"
@@ -349,6 +350,46 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
     return 0;
 }
 
+static void gdb_listening(void *ctx, int port)
+{
+    ES_UNUSED(ctx);
+    printf("embsim: GDB server on 127.0.0.1:%d (target extended-remote :%d)\n", port, port);
+    fflush(stdout);
+}
+
+static int cmd_gdb(int argc, char **argv, const char *argv0)
+{
+    const char *project = NULL, *host = "127.0.0.1", *board = NULL, *library = NULL;
+    int port = 3333, i;
+    es_session *s;
+    es_status st;
+    for (i = 0; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if (!strcmp(a, "--port") && more) port = atoi(argv[++i]);
+        else if (!strcmp(a, "--host") && more) host = argv[++i];
+        else if (!strcmp(a, "--board") && more) board = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
+        else project = a;
+    }
+    if (!project) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", project);
+        es_session_destroy(s);
+        return 2;
+    }
+    st = es_serve_gdb(s, board, host, port, gdb_listening, NULL);
+    es_session_destroy(s);
+    if (st != ES_OK) {
+        fprintf(stderr, "embsim: gdb server: %s\n", st == ES_ENOTFOUND ? "no board with firmware" : es_strerror(st));
+        return 2;
+    }
+    return 0;
+}
+
 static int cmd_catalog(int argc, char **argv, const char *argv0)
 {
     const char *sub = argc ? argv[0] : "list", *library = NULL, *arg = NULL;
@@ -448,6 +489,7 @@ int embsim_cli_main(int argc, char **argv)
     if (!strcmp(cmd, "validate")) return cmd_validate(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "serve")) return cmd_serve(argc - 2, argv + 2, argv[0], 0);
     if (!strcmp(cmd, "sidecar")) return cmd_serve(argc - 2, argv + 2, argv[0], 1);
+    if (!strcmp(cmd, "gdb")) return cmd_gdb(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "catalog")) return cmd_catalog(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "board")) return cmd_board(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "models")) return cmd_models(argv[0]);
