@@ -47,7 +47,7 @@ static void usage(void)
           "  catalog list|search QUERY|info ID|libraries [--library DIR]\n"
           "  catalog validate [LIBRARY_DIR] [--library DEPENDENCY] [--json]\n"
           "  catalog new component|board NAME [--library DIR] [--lua]\n"
-          "  catalog install LIBRARY_DIR [--to LIBRARIES_DIR] [--force]\n"
+          "  catalog install LIBRARY_DIR|ARCHIVE.zip|URL [--to LIBRARIES_DIR] [--force]\n"
           "  board list|info ID\n"
           "  models                      list the model primitives\n"
           "  version\n"

@@ -576,6 +576,14 @@ void esk_host_interrupt_install(void)
 int esk_host_interrupted(void) { return g_interrupted != 0; }
 void esk_host_interrupt_clear(void) { g_interrupted = 0; }
 
+es_status esk_host_remove(const char *path)
+{
+    struct stat st;
+    if (lstat(path, &st) != 0)
+        return errno == ENOENT ? ES_ENOTFOUND : ES_EIO;
+    return (S_ISDIR(st.st_mode) ? rmdir(path) : unlink(path)) == 0 ? ES_OK : ES_EIO;
+}
+
 es_status esk_host_mkdir_p(const char *path)
 {
     char buf[1024];

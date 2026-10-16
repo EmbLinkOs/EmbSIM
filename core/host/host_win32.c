@@ -589,6 +589,18 @@ void esk_host_interrupt_install(void)
 int esk_host_interrupted(void) { return g_interrupted != 0; }
 void esk_host_interrupt_clear(void) { InterlockedExchange(&g_interrupted, 0); }
 
+es_status esk_host_remove(const char *path)
+{
+    DWORD attr = GetFileAttributesA(path);
+    if (attr == INVALID_FILE_ATTRIBUTES)
+        return ES_ENOTFOUND;
+    if (attr & FILE_ATTRIBUTE_DIRECTORY)
+        return RemoveDirectoryA(path) ? ES_OK : ES_EIO;
+    if (attr & FILE_ATTRIBUTE_READONLY)
+        (void)SetFileAttributesA(path, attr & ~(DWORD)FILE_ATTRIBUTE_READONLY);
+    return DeleteFileA(path) ? ES_OK : ES_EIO;
+}
+
 es_status esk_host_mkdir_p(const char *path)
 {
     char buf[1024];

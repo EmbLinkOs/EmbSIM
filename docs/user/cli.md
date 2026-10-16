@@ -19,7 +19,7 @@ machine-readable report of SPEC-008 §8.
 | `embsim catalog list [KIND] \| search QUERY \| info ID \| libraries [--library DIR]` | browses the bundled catalog and extra libraries |
 | `embsim catalog validate [DIR] [--library DEP] [--json]` | instantiates every part of a library and runs its fixtures (bundled catalog by default); exit 1 unless all are ok |
 | `embsim catalog new component\|board NAME [--library DIR] [--lua]` | writes a part that validates as written (SDK, `sdk/README.md`) |
-| `embsim catalog install DIR [--to LIBRARIES_DIR] [--force]` | validates a library and copies it into the user library directory |
+| `embsim catalog install DIR\|ARCHIVE.zip\|URL [--to LIBRARIES_DIR] [--force]` | validates a library and copies it into the user library directory: a directory, a zip archive of one (the library at its top or in its top directory), or an `http(s)://` URL to such an archive, fetched with `curl` (SPEC-014 §6) |
 | `embsim board list \| info ID` | boards and their descriptions |
 | `embsim models` | the model primitives the core implements, digital and electrical |
 | `embsim version` | engine, protocol and ABI versions |

@@ -68,9 +68,18 @@ required fields and a fixture skeleton; `tools/import/` holds the importers
   assertion per expectation. Items are `ok`, `broken` or `invalid`; schema and
   reference checks remain `tools/validate.py`'s, which indexes the library
   holding the paths it is given.
-- **Distribution.** `embsim catalog install DIR [--to LIBRARIES_DIR]
-  [--force]` validates and copies a directory (files beginning with `.` are
-  left out). Zip archives and URLs are not supported yet.
+- **Distribution.** `embsim catalog install DIR|ARCHIVE.zip|URL [--to
+  LIBRARIES_DIR] [--force]` validates and copies a directory (files and
+  directories beginning with `.` are left out). A zip archive holds the
+  library at its top or in its one top directory (where its `library.json`
+  is); its stored and deflated entries (`core/util/zip.c`, `inflate.c`;
+  CRC-32 checked; ZIP64, encryption and multi-disk archives refused) are
+  unpacked into a staging directory under the host's temporary directory,
+  validated there, copied, and the staging directory removed. An entry
+  outside the library (an absolute path, a drive, `..`) refuses the whole
+  archive, and a library whose `name` is not a plain directory name is
+  refused. An `http://` or `https://` URL is fetched by the host's `curl`
+  (on `PATH`) into the temporary directory first.
 - **Importers** (`tools/importers/`, its README): `rtos2board.py`
   (EmbLinkRTOS board YAML) and `dts2board.py` (Zephyr/Linux DeviceTree
   source, read without dtc) write a board draft with a power fixture;

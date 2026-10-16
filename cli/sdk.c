@@ -3,10 +3,13 @@
 /* sdk.c -- the authoring commands of SPEC-014 §4-5:
  *   embsim catalog new component NAME [--library DIR] [--lua]
  *   embsim catalog new board NAME [--library DIR]
- *   embsim catalog install DIR [--to LIBRARIES_DIR] [--force]
+ *   embsim catalog install DIR|ZIP|URL [--to LIBRARIES_DIR] [--force]
  * `new` writes a template that validates as written (its fixture passes), so
  * an author starts from a working part and changes it; `install` validates a
- * library and copies it into the user library directory. */
+ * library and copies it into the user library directory. A zip archive (its
+ * library.json at its top or in its one top directory) is unpacked into a
+ * staging directory first, which is removed after; a URL is fetched with the
+ * host's curl into one. */
 #include "sdk.h"
 
 #include <stdio.h>
@@ -18,6 +21,7 @@
 #include "project/catalog.h"
 #include "util/json.h"
 #include "util/str.h"
+#include "util/zip.h"
 
 /* ---- templates: @LIB@, @NAME@ and @TITLE@ are replaced -------------------- */
 
@@ -479,11 +483,121 @@ static int copy_tree(esk_alloc *a, const char *from, const char *to)
     return rc;
 }
 
+/* a library's name as a directory name: no separators, no "..", no leading
+ * dot (an archive's library.json names the directory it is installed in) */
+static int safe_name(const char *n)
+{
+    return n && n[0] && n[0] != '.' && !strpbrk(n, "/\\:") && strcmp(n, "..") != 0;
+}
+
+/* an archive's entry name as a relative path under the staging directory:
+ * no absolute path, drive, backslash, ".." or hidden component */
+static int safe_entry(const char *rel)
+{
+    const char *p = rel;
+    if (!rel[0] || rel[0] == '/' || strchr(rel, '\\') || strchr(rel, ':'))
+        return 0;
+    while (*p) {
+        const char *e = strchr(p, '/');
+        size_t n = e ? (size_t)(e - p) : strlen(p);
+        if (n == 0 || p[0] == '.')
+            return 0; /* "a//b", "..", ".git": not a library's files */
+        p += n;
+        if (*p == '/')
+            p++;
+    }
+    return 1;
+}
+
+/* the zip archive `path` unpacked into `stage`: its library.json at the
+ * top, or in its one top directory, is the library's */
+static int unpack(esk_alloc *a, const char *path, const char *stage)
+{
+    char *data = NULL, why[160];
+    size_t len = 0, i, plen = 0;
+    esk_zip z;
+    const char *prefix = NULL;
+    int rc = 0, files = 0;
+    if (esk_host_read_file(a, path, &data, &len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot read %s\n", path);
+        return -1;
+    }
+    if (esk_zip_open(&z, a, (const uint8_t *)data, len, why, sizeof why) != ES_OK) {
+        fprintf(stderr, "embsim: %s: %s\n", path, why);
+        esk_free(a, data, len + 1);
+        return -1;
+    }
+    for (i = 0; i < z.n; i++) {
+        const char *n = z.e[i].name, *slash = strchr(n, '/');
+        if (!strcmp(n, "library.json") || (slash && !strcmp(slash + 1, "library.json") && slash != n)) {
+            size_t pl = slash && strcmp(n, "library.json") ? (size_t)(slash - n) + 1 : 0;
+            if (!prefix || pl < plen) {
+                prefix = n;
+                plen = pl;
+            }
+        }
+    }
+    if (!prefix) {
+        fprintf(stderr, "embsim: %s has no library.json at its top or in its top directory\n", path);
+        rc = -1;
+    }
+    for (i = 0; rc == 0 && i < z.n; i++) {
+        const esk_zip_entry *e = &z.e[i];
+        uint8_t *body = NULL;
+        size_t blen = 0;
+        char *dst, *dir;
+        if (e->dir || strncmp(e->name, prefix, plen) != 0)
+            continue; /* a directory, or outside the library */
+        if (!safe_entry(e->name + plen)) {
+            if (strncmp(e->name + plen, ".", 1) == 0 || strstr(e->name + plen, "/."))
+                continue; /* .git, editor files: left out, as from a directory */
+            fprintf(stderr, "embsim: %s: the entry %s is not a path inside the library\n", path, e->name);
+            rc = -1;
+            break;
+        }
+        if (esk_zip_read(&z, i, &body, &blen, why, sizeof why) != ES_OK) {
+            fprintf(stderr, "embsim: %s: %s: %s\n", path, e->name, why);
+            rc = -1;
+            break;
+        }
+        dst = esk_host_path_join(a, stage, e->name + plen);
+        dir = dst ? esk_host_dirname(a, dst) : NULL;
+        if (!dir || esk_host_mkdir_p(dir) != ES_OK || esk_host_write_file(dst, body, blen) != ES_OK) {
+            fprintf(stderr, "embsim: cannot write %s\n", dst ? dst : stage);
+            rc = -1;
+        }
+        files++;
+        esk_strfree(a, dir);
+        esk_strfree(a, dst);
+        esk_free(a, body, blen + 1);
+    }
+    esk_zip_close(&z);
+    esk_free(a, data, len + 1);
+    return rc == 0 && files ? 0 : -1;
+}
+
+/* the URL fetched into `file` by the host's curl */
+static int fetch(esk_alloc *a, const char *url, const char *file)
+{
+    const char *argv[] = { "curl", "-fsSL", "--proto", "=https,http", "-o", file, url, NULL };
+    char *out = NULL;
+    size_t len = 0;
+    int code = -1;
+    es_status st = esk_host_run(a, argv, NULL, 4096, &code, &out, &len);
+    if (st == ES_ENOTFOUND)
+        fputs("embsim: installing from a URL needs curl on PATH (or download the archive and install the file)\n", stderr);
+    else if (st != ES_OK || code != 0)
+        fprintf(stderr, "embsim: cannot fetch %s: %s", url, out && len ? out : "curl failed\n");
+    if (out)
+        esk_free(a, out, len + 1);
+    return st == ES_OK && code == 0 ? 0 : -1;
+}
+
 static int cmd_install(int argc, char **argv, es_catalog *deps)
 {
-    const char *src = NULL, *to_opt = NULL;
+    const char *src = NULL, *to_opt = NULL, *lib;
     int force = 0, i, rc;
-    char *to, *name, *dst, *report = NULL;
+    char *to, *name, *dst, *report = NULL, *stage = NULL, *download = NULL, *tmp = NULL;
     esk_alloc a;
     es_status st;
     for (i = 0; i < argc; i++) {
@@ -495,52 +609,95 @@ static int cmd_install(int argc, char **argv, es_catalog *deps)
             src = argv[i];
     }
     if (!src) {
-        fputs("usage: embsim catalog install LIBRARY_DIR [--to LIBRARIES_DIR] [--force]\n", stderr);
+        fputs("usage: embsim catalog install LIBRARY_DIR|ARCHIVE.zip|URL [--to LIBRARIES_DIR] [--force]\n", stderr);
         return 2;
     }
     esk_alloc_init(&a, NULL);
+    lib = src;
+    if (!esk_host_is_dir(src)) {
+        /* an archive, or a URL to one: unpacked into a staging directory */
+        char leaf[48];
+        int url = !strncmp(src, "https://", 8) || !strncmp(src, "http://", 7);
+        tmp = esk_host_temp_dir(&a);
+        esk_snprintf(leaf, sizeof leaf, "embsim-install-%llu", (unsigned long long)esk_host_monotonic_ms());
+        stage = tmp ? esk_host_path_join(&a, tmp, leaf) : NULL;
+        if (stage && url) {
+            esk_snprintf(leaf, sizeof leaf, "embsim-download-%llu.zip", (unsigned long long)esk_host_monotonic_ms());
+            download = esk_host_path_join(&a, tmp, leaf);
+        }
+        if (!stage || (url && !download)) {
+            fputs("embsim: no temporary directory to unpack into\n", stderr);
+            rc = 1;
+            goto done;
+        }
+        if (!url && !esk_host_file_exists(src)) {
+            fprintf(stderr, "embsim: %s is neither a library directory nor an archive\n", src);
+            rc = 2;
+            goto done;
+        }
+        if ((url && fetch(&a, src, download) != 0) || unpack(&a, url ? download : src, stage) != 0) {
+            rc = 1;
+            goto done;
+        }
+        lib = stage;
+    }
     {
-        char *lj = esk_host_path_join(&a, src, "library.json");
+        char *lj = esk_host_path_join(&a, lib, "library.json");
         int ok = lj && esk_host_file_exists(lj);
         esk_strfree(&a, lj);
-        if (!esk_host_is_dir(src) || !ok) {
+        if (!esk_host_is_dir(lib) || !ok) {
             fprintf(stderr, "embsim: %s is not a library directory (no library.json)\n", src);
-            return 2;
+            rc = 2;
+            goto done;
         }
     }
-    st = es_catalog_validate(deps, src, &report);
+    st = es_catalog_validate(deps, lib, &report);
     if (!report) {
         fprintf(stderr, "embsim: cannot validate %s: %s\n", src, es_strerror(st));
-        return 1;
-    }
-    if (st != ES_OK && !force) {
-        fprintf(stderr, "embsim: %s does not validate; run  embsim catalog validate %s  (or install with --force)\n", src, src);
-        es_free(report);
-        return 1;
+        rc = 1;
+        goto done;
     }
     es_free(report);
-    name = library_name(&a, src);
+    if (st != ES_OK && !force) {
+        fprintf(stderr, "embsim: %s does not validate; run  embsim catalog validate %s  (or install with --force)\n", src,
+                lib == src ? src : "on its unpacked directory");
+        rc = 1;
+        goto done;
+    }
+    name = library_name(&a, lib);
     to = to_opt ? esk_strdup(&a, to_opt) : esk_catalog_user_dir(&a);
-    if (!name || !to) {
-        fputs("embsim: no user library directory; pass --to DIR\n", stderr);
+    if (!name || !to || !safe_name(name)) {
+        if (name && !safe_name(name))
+            fprintf(stderr, "embsim: the library's name \"%s\" cannot be a directory's name\n", name);
+        else
+            fputs("embsim: no user library directory; pass --to DIR\n", stderr);
         esk_strfree(&a, name);
         esk_strfree(&a, to);
-        return 1;
+        rc = 1;
+        goto done;
     }
     dst = esk_host_path_join(&a, to, name);
     if (dst && esk_host_is_dir(dst) && !force) {
         fprintf(stderr, "embsim: %s is installed already at %s (--force replaces its files)\n", name, dst);
         rc = 1;
     } else {
-        rc = dst && copy_tree(&a, src, dst) == 0 ? 0 : 1;
+        rc = dst && copy_tree(&a, lib, dst) == 0 ? 0 : 1;
         if (rc == 0)
-            printf("installed %s in %s\n", name, dst);
+            printf("installed %s in %s%s%s\n", name, dst, lib == src ? "" : " from ", lib == src ? "" : src);
         else
             fprintf(stderr, "embsim: cannot copy %s to %s\n", src, dst ? dst : to);
     }
     esk_strfree(&a, dst);
     esk_strfree(&a, to);
     esk_strfree(&a, name);
+done:
+    if (stage)
+        (void)esk_host_remove_tree(&a, stage);
+    if (download)
+        (void)esk_host_remove(download);
+    esk_strfree(&a, stage);
+    esk_strfree(&a, download);
+    esk_strfree(&a, tmp);
     return rc;
 }
 

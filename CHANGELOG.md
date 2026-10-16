@@ -161,6 +161,11 @@ versions follow semantic versioning. There is no release yet.
   `tests/firmware/fault`.
 - The analyses name a function by its strong symbol, not a weak alias at
   the same address (startup code's `Default_Handler`).
+- `embsim catalog install` takes a zip archive of a library (at its top or
+  in its one top directory) or an `http(s)://` URL to one (fetched with
+  `curl`), as SPEC-014 §4 has it: unpacked into a staging directory,
+  validated, copied, the staging removed; an entry outside the library is
+  refused. EmbSIM's own DEFLATE decoder and zip reader (`core/util/`).
 - The Verify perspective (M5): the scenario editor (a scenario's inputs
   and assertions edited in place, run with each result in its row, saved
   into the project: `scenario.get`, `scenario.save`), recordings replayed

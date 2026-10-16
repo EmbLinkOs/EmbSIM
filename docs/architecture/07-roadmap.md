@@ -34,7 +34,8 @@ is implemented (the inside of a board or composite opens read-only); its
 installers and three-platform smoke run in CI (Chromium, not the platform
 webviews). M3 is implemented: 101 components each validated by the engine
 with its fixtures, the Lua tier, the SDK commands and the three importers;
-archive and URL installation and Lua's analog access are open (STATUS.md).
+libraries install from a directory, a zip archive or a URL; Lua's analog
+access is open (STATUS.md).
 M4 is under way: the AVR (the Arduino Uno) and RISC-V (the HiFive1 Rev B)
 backends run their boards' firmware, built by clang and EmbCC, and a
 two-board project exchanges bytes deterministically; the Raspberry Pi Pico
