@@ -34,6 +34,21 @@ versions follow semantic versioning. There is no release yet.
 - `examples/bluepill-button-led` runs its firmware: button by EXTI, LED
   through an NPN transistor, a terminal on USART1.
 
+- M2 workbench: schematic editing reaches the engine through project
+  transactions and `project.save` (place, wire, move, rotate, delete,
+  copy, paste, duplicate, net labels, undo, redo, save); boards drawn on
+  the schematic as blocks of their ports and in the board view with their
+  artwork; UART, SPI and I2C decoders on the logic analyzer; meters with
+  units; a 500-part schematic near 60 Hz with its generator and frame-time
+  script; the Blue Pill example drawn with wires and labels.
+- Desktop: the Tauri shell builds and runs (Linux, WebKitGTK), opens a
+  project given on its command line, waits for the engine before
+  connecting, forwards the workbench's errors, has its icon; CI builds
+  deb, AppImage, dmg and msi installers and runs the Playwright smoke on
+  Linux, macOS and Windows.
+- `embsim serve --allow-origin`; a sanitizer CI job (GCC address and
+  undefined-behaviour sanitizers).
+
 ### Removed
 - The draft 0.1 foundation (Python runtime, HTTP server, single-page UI);
   its kernel semantics and visual direction are retained in the baseline.
