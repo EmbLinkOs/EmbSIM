@@ -306,6 +306,18 @@ versions follow semantic versioning. There is no release yet.
   IC_TX_ABRT_SOURCE, the raw interrupts and their clear registers).
   `tests/vendor/pico-sdk`'s `spi_i2c` runs the SDK's `hardware_spi` and
   `hardware_i2c` against the catalog's 25LC040 and 24C02.
+- The nRF52840's SPIM, TWIM, PWM and SAADC on their pins: SPIM0-3 (EasyDMA
+  transfers in modes 0 to 3, ORC, END_START), TWIM0-1 (open-drain START,
+  repeated START and STOP, EasyDMA, LASTTX and LASTRX with their shorts,
+  SUSPEND and RESUME, ERRORSRC), PWM0-3 (EasyDMA sequences in the four
+  decodings, Up and UpAndDown counting, REFRESH, ENDDELAY, loops and
+  shorts) and the SAADC (AIN0-7, VDD and VDDH/5, gains and references, 8
+  to 14 bits, oversampling, limits, scans into Data RAM). The register file
+  keeps TWIM's SHORTS bits beside SPIM's in their shared space, and
+  answers the registers nrfx's workaround for SAADC anomaly 212 touches.
+  `tests/vendor/nrfx`'s `nrfx_periph` runs nrfx_spim, nrfx_twim, nrfx_pwm
+  and nrfx_saadc against the catalog's 25LC040 and 24C02, an RC low-pass
+  and a 1.0 V source.
 - A pin that turns from an input into an output takes its new level at
   once (`esk_pin_output`): an input pulled low that starts driving 0 no
   longer shows a zero-width Z on its net.

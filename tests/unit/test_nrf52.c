@@ -85,6 +85,17 @@ static int r_pin_in(void *ctx, int port, int bit, int *level)
     return 1;
 }
 
+/* the analog inputs: 1.0 V on P0.04 (AIN2) */
+static int r_pin_volts(void *ctx, int port, int bit, double *v)
+{
+    (void)ctx;
+    if (16 * port + bit == 4) {
+        *v = 1.0;
+        return 1;
+    }
+    return 0;
+}
+
 static int nf_open(nf *f)
 {
     char why[200];
@@ -102,6 +113,7 @@ static int nf_open(nf *f)
     f->m.host.uart_tx = r_uart;
     f->m.host.diag = r_diag;
     f->m.host.pin_in = r_pin_in;
+    f->m.host.pin_volts = r_pin_volts;
     st = esk_mach_build(&f->m, f->mcu, f->regs, 32000000u, why, sizeof why);
     if (st != ES_OK) {
         FAIL(why);
@@ -253,6 +265,164 @@ static void test_rtc_compare(void)
     nf_close(&f);
 }
 
+static void test_spim_twim(void)
+{
+    nf f;
+    u32 v = 0;
+    if (!nf_open(&f))
+        return;
+    /* SPIM2 at 8 MHz (4 cycles a half bit): one byte out, two in, the
+     * second clocking out ORC; MISO (P1.14) held high */
+    f.ext[46] = 1;
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000200u, 1, 0xa5u), 0);
+    wr(&f, 0x40023508u, 0x2fu);        /* PSEL.SCK P1.15 */
+    wr(&f, 0x4002350cu, 0x2du);        /* PSEL.MOSI P1.13 */
+    wr(&f, 0x40023510u, 0x2eu);        /* PSEL.MISO P1.14 */
+    wr(&f, 0x40023524u, 0x80000000u);  /* 8 Mbps */
+    wr(&f, 0x400235c0u, 0x3cu);        /* ORC */
+    wr(&f, 0x40023544u, 0x20000200u);
+    wr(&f, 0x40023548u, 1);
+    wr(&f, 0x40023534u, 0x20000300u);
+    wr(&f, 0x40023538u, 2);
+    wr(&f, 0x40023500u, 7);            /* ENABLE: SPIM */
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 47), 0); /* SCK idles at CPOL 0 */
+    wr(&f, 0x40023010u, 1);            /* START */
+    CHECK_EQ(rd(&f, 0x4002314cu), 1u); /* STARTED */
+    esk_mach_run(&f.m, 80, 0);
+    CHECK_EQ(rd(&f, 0x40023120u), 1u); /* ENDTX after the first byte, 64 cycles */
+    CHECK_EQ(rd(&f, 0x40023118u), 0u);
+    esk_mach_run(&f.m, 60, 0);
+    CHECK_EQ(rd(&f, 0x40023118u), 1u); /* END after 16 bits, 128 cycles */
+    CHECK_EQ(rd(&f, 0x40023110u), 1u); /* ENDRX */
+    CHECK_EQ(rd(&f, 0x4002354cu), 1u); /* TXD.AMOUNT */
+    CHECK_EQ(rd(&f, 0x4002353cu), 2u); /* RXD.AMOUNT */
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x20000300u, 2, &v), 0);
+    CHECK_EQ(v, 0xffffu);
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 45), 0); /* MOSI: ORC's last bit */
+
+    /* TWIM0 at 400 kHz: nobody answers 0x50 (SDA, P0.26, pulled high) */
+    f.ext[26] = f.ext[27] = 1; /* the pull-ups */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000400u, 1, 0x07u), 0);
+    wr(&f, 0x40003508u, 27);           /* PSEL.SCL */
+    wr(&f, 0x4000350cu, 26);           /* PSEL.SDA */
+    wr(&f, 0x40003524u, 0x06400000u);  /* 400 kbps: 80 cycles a half period */
+    wr(&f, 0x40003588u, 0x50);         /* ADDRESS */
+    wr(&f, 0x40003544u, 0x20000400u);
+    wr(&f, 0x40003548u, 1);
+    wr(&f, 0x40003534u, 0x20000500u);
+    wr(&f, 0x40003538u, 2);
+    wr(&f, 0x40003200u, (1u << 7) | (1u << 12)); /* LASTTX_STARTRX, LASTRX_STOP */
+    CHECK_EQ(rd(&f, 0x40003200u), (1u << 7) | (1u << 12));
+    wr(&f, 0x40003500u, 6);            /* ENABLE: TWIM */
+    wr(&f, 0x40003008u, 1);            /* STARTTX */
+    CHECK_EQ(rd(&f, 0x40003150u), 1u); /* TXSTARTED */
+    esk_mach_run(&f.m, 3000, 0);
+    CHECK_EQ(rd(&f, 0x40003124u), 1u); /* ERROR */
+    CHECK_EQ(rd(&f, 0x400034c4u), 2u); /* ERRORSRC.ANACK */
+    CHECK_EQ(rd(&f, 0x40003104u), 0u); /* held until STOP */
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 27), 0);
+    wr(&f, 0x40003014u, 1);            /* STOP */
+    esk_mach_run(&f.m, 400, 0);
+    CHECK_EQ(rd(&f, 0x40003104u), 1u); /* STOPPED */
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 27), 1);
+    wr(&f, 0x400034c4u, 2);            /* ERRORSRC written 1: cleared */
+    CHECK_EQ(rd(&f, 0x400034c4u), 0u);
+
+    /* a slave that pulls SDA low whenever it is let go: everything is
+     * ACKed and reads 0; one byte written, two read after a repeated
+     * START (LASTTX_STARTRX), then the STOP (LASTRX_STOP) */
+    f.ext[26] = 0;
+    wr(&f, 0x40003104u, 0);
+    wr(&f, 0x40003124u, 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000500u, 2, 0x5555u), 0);
+    wr(&f, 0x40003008u, 1);            /* STARTTX */
+    esk_mach_run(&f.m, 12000, 0);      /* 4 + 27 bits and the STARTs, 160 cycles each */
+    CHECK_EQ(rd(&f, 0x40003160u), 1u); /* LASTTX */
+    CHECK_EQ(rd(&f, 0x4000314cu), 1u); /* RXSTARTED, by the short */
+    CHECK_EQ(rd(&f, 0x4000315cu), 1u); /* LASTRX */
+    CHECK_EQ(rd(&f, 0x40003104u), 1u); /* STOPPED */
+    CHECK_EQ(rd(&f, 0x40003124u), 0u);
+    CHECK_EQ(rd(&f, 0x4000354cu), 1u);
+    CHECK_EQ(rd(&f, 0x4000353cu), 2u);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x20000500u, 2, &v), 0);
+    CHECK_EQ(v, 0u);
+    nf_close(&f);
+}
+
+static void test_pwm_saadc(void)
+{
+    nf f;
+    u32 v = 0;
+    if (!nf_open(&f))
+        return;
+    /* PWM0 at 1 MHz (64 cycles a count), COUNTERTOP 100: OUT0 (P1.04) high
+     * for 25 counts (bit 15, FallingEdge), OUT1 (P1.06) for 50 */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000600u, 4, (0x8000u | 25u) | (0x8000u | 50u) << 16), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000604u, 4, 0), 0);
+    wr(&f, 0x4001c560u, 0x24u);        /* PSEL.OUT[0] P1.04 */
+    wr(&f, 0x4001c564u, 0x26u);        /* PSEL.OUT[1] P1.06 */
+    wr(&f, 0x4001c50cu, 4);            /* PRESCALER: 1 MHz */
+    wr(&f, 0x4001c508u, 100);          /* COUNTERTOP */
+    wr(&f, 0x4001c510u, 2);            /* DECODER: Individual */
+    wr(&f, 0x4001c520u, 0x20000600u);  /* SEQ[0].PTR */
+    wr(&f, 0x4001c524u, 4);            /* SEQ[0].CNT */
+    wr(&f, 0x4001c500u, 1);            /* ENABLE */
+    wr(&f, 0x4001c008u, 1);            /* SEQSTART[0] */
+    CHECK_EQ(rd(&f, 0x4001c108u), 1u); /* SEQSTARTED[0] */
+    CHECK_EQ(rd(&f, 0x4001c110u), 1u); /* SEQEND[0]: its one step is loaded */
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 36), 1);
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 38), 1);
+    esk_mach_run(&f.m, 1500, 0);       /* 23 counts */
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 36), 1);
+    esk_mach_run(&f.m, 200, 0);        /* past 25 */
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 36), 0);
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 38), 1);
+    esk_mach_run(&f.m, 1700, 0);       /* past 50 */
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 38), 0);
+    CHECK_EQ(rd(&f, 0x4001c118u), 0u);
+    esk_mach_run(&f.m, 3200, 0);       /* past 100: the period's end */
+    CHECK_EQ(rd(&f, 0x4001c118u), 1u); /* PWMPERIODEND */
+    CHECK_EQ(esk_nrf_pin_level(&f.m, 36), 1); /* the step holds: LOOP 0 */
+    wr(&f, 0x4001c004u, 1);            /* STOP */
+    CHECK_EQ(rd(&f, 0x4001c104u), 0u);
+    esk_mach_run(&f.m, 6500, 0);
+    CHECK_EQ(rd(&f, 0x4001c104u), 1u); /* STOPPED at the period's end */
+
+    /* SAADC, 12 bits, gain 1/6, the 0.6 V reference, 10 us acquisitions:
+     * AIN2's 1.0 V and VDD's 3.0 V */
+    wr(&f, 0x40007510u, 3);            /* CH[0].PSELP: AIN2 */
+    wr(&f, 0x40007518u, 2u << 16);     /* CH[0].CONFIG: gain 1/6, TACQ 10 us */
+    wr(&f, 0x4000751cu, 1000u << 16 | 0xff9cu); /* CH[0].LIMIT: -100 to 1000 */
+    wr(&f, 0x40007520u, 9);            /* CH[1].PSELP: VDD */
+    wr(&f, 0x40007528u, 2u << 16);
+    wr(&f, 0x400075f0u, 2);            /* RESOLUTION: 12 bits */
+    wr(&f, 0x4000762cu, 0x20000700u);
+    wr(&f, 0x40007630u, 2);
+    wr(&f, 0x40007500u, 1);            /* ENABLE */
+    CHECK_EQ(rd(&f, 0x40007640u), 0u); /* reserved: anomaly 212's registers */
+    wr(&f, 0x40007ffcu, 1);
+    wr(&f, 0x4000700cu, 1);            /* CALIBRATEOFFSET */
+    esk_mach_run(&f.m, 1300, 0);
+    CHECK_EQ(rd(&f, 0x40007110u), 1u); /* CALIBRATEDONE after 20 us */
+    wr(&f, 0x40007000u, 1);            /* START */
+    CHECK_EQ(rd(&f, 0x40007100u), 1u); /* STARTED */
+    wr(&f, 0x40007004u, 1);            /* SAMPLE */
+    CHECK_EQ(rd(&f, 0x40007400u), 1u); /* STATUS: busy */
+    esk_mach_run(&f.m, 800, 0);        /* 12 us a conversion: 768 cycles */
+    CHECK_EQ(rd(&f, 0x40007108u), 1u); /* DONE */
+    CHECK_EQ(rd(&f, 0x40007118u), 1u); /* CH[0].LIMITH: 1137 > 1000 */
+    CHECK_EQ(rd(&f, 0x40007104u), 0u);
+    esk_mach_run(&f.m, 800, 0);
+    CHECK_EQ(rd(&f, 0x40007104u), 1u); /* END */
+    CHECK_EQ(rd(&f, 0x40007634u), 2u); /* RESULT.AMOUNT */
+    CHECK_EQ(rd(&f, 0x40007400u), 0u);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x20000700u, 4, &v), 0);
+    CHECK_EQ(v & 0xffffu, 1137u);      /* floor(1.0 / 6 / 0.6 * 4096) */
+    CHECK_EQ(v >> 16, 3413u);          /* VDD, 3.0 V */
+    CHECK_EQ(f.warnings, 0);
+    nf_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_ficr);
 RUN(test_clock);
@@ -260,4 +430,6 @@ RUN(test_gpio_and_gpiote);
 RUN(test_uarte_dma);
 RUN(test_timer_compare);
 RUN(test_rtc_compare);
+RUN(test_spim_twim);
+RUN(test_pwm_saadc);
 TEST_MAIN_END
