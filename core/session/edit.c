@@ -14,7 +14,7 @@
  *   add_board {id, board, layout?, firmware?}
  *   remove_board {id}
  *   set_layout {id, layout}         a component's or a board's placement
- *   set_layout {wires?, labels?}    the drawing
+ *   set_layout {wires?, labels?, buses?}  the drawing
  *
  * Everything but set_layout changes the circuit: `*structural` is set so
  * the commit rebuilds the session. A net left with no pins is removed. */
@@ -220,6 +220,26 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
         if (layout && (set_string_in(a, esk_json_get_mut(layout, "wires"), "net", from, to) ||
                        set_string_in(a, esk_json_get_mut(layout, "labels"), "net", from, to)))
             return -1;
+        /* a bus lists its nets by name */
+        {
+            esk_json *buses = layout ? esk_json_get_mut(layout, "buses") : NULL;
+            for (i = 0; i < esk_json_len(buses); i++) {
+                esk_json *members = esk_json_get_mut(esk_json_at_mut(buses, i), "nets");
+                size_t m;
+                for (m = 0; m < esk_json_len(members); m++) {
+                    esk_json *x = esk_json_at_mut(members, m);
+                    if (esk_str_eq(esk_json_str(x), from)) {
+                        esk_json *nx = esk_json_new_string(a, to);
+                        if (!nx)
+                            return -1;
+                        esk_strfree(a, nx->key);
+                        nx->key = NULL;
+                        esk_json_free(a, x);
+                        members->u.array.items[m] = nx;
+                    }
+                }
+            }
+        }
         for (i = 0; i < esk_json_len(probes); i++) {
             esk_json *p = esk_json_at_mut(probes, i);
             const char *t = esk_json_get_str(p, "target", "");
@@ -251,12 +271,12 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
             }
             return 0;
         } else {
-            static const char *const keys[] = { "wires", "labels" };
+            static const char *const keys[] = { "wires", "labels", "buses" };
             esk_json *layout = object_member(a, project, "layout");
             size_t k;
             if (!layout)
                 return -1;
-            for (k = 0; k < 2; k++) {
+            for (k = 0; k < 3; k++) {
                 const esk_json *v = esk_json_get(e, keys[k]);
                 esk_json *copy;
                 if (!v)

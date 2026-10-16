@@ -26,6 +26,7 @@ import {
   type Point,
   type Rect,
 } from './geometry';
+import { busText, busValue } from './bus';
 
 export interface SceneSymbol {
   name: string;
@@ -308,6 +309,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const sheet = project.layout?.sheet ?? DEFAULT_SHEET;
   const wires = useMemo(() => project.layout?.wires ?? [], [project.layout?.wires]);
   const labels = useMemo(() => project.layout?.labels ?? [], [project.layout?.labels]);
+  const buses = useMemo(() => project.layout?.buses ?? [], [project.layout?.buses]);
 
   const pinNet = useMemo(() => {
     const map = new Map<string, string>();
@@ -906,6 +908,20 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {wires.map((w, i) => {
               const vis = netVisual(w.net);
               return <WireView key={`w-${i}`} index={i} wire={w} vis={vis} selected={selection.wires.includes(i)} sub={live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`} onHover={showHover} onLeave={hideHover} />;
+            })}
+            {buses.map((b, i) => {
+              const pts = b.points.map(([x, y]) => `${x},${y}`).join(' ');
+              const [x0, y0] = b.points[0]!;
+              const value = live ? busText(busValue(b.nets, netStates, analogRange), b.nets.length) : '';
+              return (
+                <g key={`b-${i}`} data-bus={b.name} className="es-bus" aria-label={`Bus ${b.name}: ${b.nets.join(', ')}${value ? `, ${value}` : ''}`} role="img">
+                  <polyline className="es-bus__line" points={pts} />
+                  <text className="es-bus__name" x={x0 + 4} y={y0 - 5}>
+                    {b.name}
+                    {value && <tspan className="es-bus__value">{` = ${value}`}</tspan>}
+                  </text>
+                </g>
+              );
             })}
             {junctions.map((j, i) => {
               const vis = netVisual(j.net);

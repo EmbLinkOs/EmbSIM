@@ -66,6 +66,9 @@ export interface ProjectState {
   renameNet(from: string, to: string): Promise<void>;
   /** A label naming the net of wire `index`, at the middle of its first segment. */
   labelWire(index: number): Promise<void>;
+  /** A bus of the selected wires' nets, drawn beside them; its name. */
+  groupIntoBus(wires: number[]): Promise<string | null>;
+  removeBus(name: string): Promise<void>;
   loadProjectJson(json: Project): Promise<void>;
   nextId(componentId: string): string;
   /** Parts copied with the nets and wires wholly between them. */
@@ -415,7 +418,8 @@ export const useProject = create<ProjectState>((set, get) => ({
         }
         if (!touchesRemoved) keep.push(w);
       });
-      p.layout = { ...(p.layout ?? {}), wires: keep, labels: (p.layout?.labels ?? []).filter((l) => l.net in p.nets) };
+      const buses = (p.layout?.buses ?? []).map((b) => ({ ...b, nets: b.nets.filter((n) => n in p.nets) })).filter((b) => b.nets.length > 0);
+      p.layout = { ...(p.layout ?? {}), wires: keep, labels: (p.layout?.labels ?? []).filter((l) => l.net in p.nets), buses };
       return p;
     });
   },
@@ -467,6 +471,7 @@ export const useProject = create<ProjectState>((set, get) => ({
       delete p.nets[from];
       for (const w of p.layout?.wires ?? []) if (w.net === from) w.net = name;
       for (const l of p.layout?.labels ?? []) if (l.net === from) l.net = name;
+      for (const b of p.layout?.buses ?? []) b.nets = b.nets.map((n) => (n === from ? name : n));
       for (const pr of p.probes ?? []) if (pr.target === `net:${from}`) pr.target = `net:${name}`;
       return p;
     });
@@ -479,6 +484,40 @@ export const useProject = create<ProjectState>((set, get) => ({
       if (!w || !a || !b) return null;
       const at = { x: snap((a[0] + b[0]) / 2), y: snap((a[1] + b[1]) / 2) };
       p.layout = { ...(p.layout ?? {}), labels: [...(p.layout?.labels ?? []), { net: w.net, ...at }] };
+      return p;
+    });
+  },
+
+  async groupIntoBus(wires) {
+    let name: string | null = null;
+    await get().mutate('Group into a bus', (p) => {
+      const all = p.layout?.wires ?? [];
+      const chosen = wires.map((i) => all[i]).filter((w): w is Wire => Boolean(w));
+      const nets = [...new Set(chosen.map((w) => w.net))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      if (nets.length < 2) return null;
+      // the name the nets share ("D0".."D7" give "D"), else BUSn
+      let prefix = nets[0]!;
+      for (const n of nets) while (!n.startsWith(prefix)) prefix = prefix.slice(0, -1);
+      prefix = prefix.replace(/[_\d]+$/, '');
+      const used = new Set((p.layout?.buses ?? []).map((b) => b.name));
+      let candidate = prefix.length >= 1 ? prefix : 'BUS1';
+      for (let k = 1; used.has(candidate); k++) candidate = `${prefix || 'BUS'}${k}`;
+      name = candidate;
+      // a vertical line left of the wires, over their height
+      const xs = chosen.flatMap((w) => w.points.map(([x]) => x));
+      const ys = chosen.flatMap((w) => w.points.map(([, y]) => y));
+      const x = snap(Math.min(...xs) - 2 * GRID);
+      const points: [number, number][] = [[x, snap(Math.min(...ys))], [x, snap(Math.max(...ys))]];
+      p.layout = { ...(p.layout ?? {}), buses: [...(p.layout?.buses ?? []), { name: candidate, nets, points }] };
+      return p;
+    });
+    return name;
+  },
+
+  async removeBus(name) {
+    await get().mutate(`Remove bus ${name}`, (p) => {
+      if (!p.layout?.buses?.some((b) => b.name === name)) return null;
+      p.layout = { ...p.layout, buses: p.layout.buses.filter((b) => b.name !== name) };
       return p;
     });
   },

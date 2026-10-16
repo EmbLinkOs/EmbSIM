@@ -86,8 +86,9 @@ export function diffProject(before: Project, after: Project): ProjectEdit[] {
   // Presentation layout.
   const wiresChanged = JSON.stringify(before.layout?.wires ?? []) !== JSON.stringify(after.layout?.wires ?? []);
   const labelsChanged = JSON.stringify(before.layout?.labels ?? []) !== JSON.stringify(after.layout?.labels ?? []);
-  if (wiresChanged || labelsChanged) {
-    edits.push({ set_layout: { wires: after.layout?.wires ?? [], labels: after.layout?.labels ?? [] } });
+  const busesChanged = JSON.stringify(before.layout?.buses ?? []) !== JSON.stringify(after.layout?.buses ?? []);
+  if (wiresChanged || labelsChanged || busesChanged) {
+    edits.push({ set_layout: { wires: after.layout?.wires ?? [], labels: after.layout?.labels ?? [], buses: after.layout?.buses ?? [] } });
   }
   return edits;
 }

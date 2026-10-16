@@ -352,7 +352,8 @@ static void test_edit_transactions(void)
     CHECK(err_code(j) == -32000 + ES_ESTATE); /* one at a time */
     esk_json_free(s->a, j);
     snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":\"%d\",\"edits\":[{\"set_layout\":{\"id\":\"D1\",\"layout\":{\"x\":120,\"y\":40}}},"
-             "{\"set_layout\":{\"wires\":[{\"net\":\"SIG\",\"points\":[[0,0],[10,0]]}]}}]}", (int)tx);
+             "{\"set_layout\":{\"wires\":[{\"net\":\"SIG\",\"points\":[[0,0],[10,0]]}],"
+             "\"buses\":[{\"name\":\"B\",\"nets\":[\"SIG\",\"VCC\"],\"points\":[[0,20],[40,20]]}]}}]}", (int)tx);
     j = call(s, "project.transaction", params);
     CHECK(j && esk_json_get(j, "error") == NULL);
     esk_json_free(s->a, j);
@@ -390,6 +391,7 @@ static void test_edit_transactions(void)
     CHECK(net_pins(s, "SIG") == 0);
     CHECK_STR(esk_json_get_str(esk_json_at(esk_json_get(s->project, "probes"), 0), "target", ""), "net:BUTTON");
     CHECK_STR(esk_json_get_str(esk_json_at(esk_json_get(esk_json_get(s->project, "layout"), "wires"), 0), "net", ""), "BUTTON");
+    CHECK_STR(esk_json_str(esk_json_at(esk_json_get(esk_json_at(esk_json_get(esk_json_get(s->project, "layout"), "buses"), 0), "nets"), 0)), "BUTTON");
     j = call(s, "input.press", "{\"target\":\"SW1\"}");
     esk_json_free(s->a, j);
     j = call(s, "control.advance", "{\"by\":\"1ms\"}");

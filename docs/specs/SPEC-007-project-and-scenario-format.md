@@ -61,7 +61,10 @@ Rules:
 - `nets` reference `<instance>.<pin>` for components and
   `<board>.<port>` for boards; a pin appears in at most one net; the loader
   merges nets joined through board ports.
-- `layout` is presentation only: wire geometry, label positions, sheet size.
+- `layout` is presentation only: wire geometry, label positions, buses,
+  sheet size. A bus (`{name, nets, points}`) draws a group of nets as one
+  line; the nets keep their own connections in `nets`. While the circuit
+  runs the bus shows its value, the first net being bit 0.
   The electrical truth is `nets`. A client that edits wires updates both in
   one `project.transaction`.
 - `probes[].target` kinds: `net:NAME`, `pin:INSTANCE.PIN`,

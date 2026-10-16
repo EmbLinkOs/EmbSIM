@@ -84,12 +84,19 @@ mkdirSync(out, { recursive: true });
 const browser = await chromium.launch(chromiumPath ? { executablePath: chromiumPath } : {});
 const transistor = 'examples/button-transistor-led/project.json';
 const bluepill = 'examples/bluepill-button-led/project.json';
+const counter = 'examples/counter-bus/project.json';
 
 try {
   await shot(browser, 'design-transistor', transistor, async () => {});
   await shot(browser, 'run-transistor', transistor, async (page) => {
     await perspective(page, 2);
     await run(page, 2500);
+  });
+  // the counter running: the bus Q shows the count
+  await shot(browser, 'design-counter', counter, (page) => run(page, 1200));
+  await shot(browser, 'run-counter', counter, async (page) => {
+    await perspective(page, 2);
+    await run(page, 1500);
   });
   await shot(browser, 'design-bluepill', bluepill, async () => {});
   await shot(browser, 'design-bluepill-dark', bluepill, async () => {}, { dark: true });

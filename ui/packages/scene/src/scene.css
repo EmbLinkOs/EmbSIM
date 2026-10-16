@@ -457,3 +457,24 @@
 .es-scene__svg--moving .es-symbol text {
   display: none;
 }
+
+/* A bus: a group of nets drawn as one thick line, its name and, while the
+   circuit runs, its value (SPEC-007 layout.buses). */
+.es-bus__line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+.es-bus__name {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--accent-strong, var(--accent));
+}
+.es-bus__value {
+  font-weight: 400;
+  fill: var(--text-muted);
+}

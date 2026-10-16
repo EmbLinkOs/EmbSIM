@@ -23,4 +23,5 @@ export {
   type NetVisual,
 } from './SchematicCanvas';
 export { boardSymbol, portGroups, type BoardPort } from './boardSymbol';
+export { busText, busValue } from './bus';
 export { BoardView, type BoardViewProps, type BoardItem } from './BoardView';

@@ -109,6 +109,24 @@ export function DesignPerspective() {
         disabled: selection.wires.length !== 1,
         run: () => void store.labelWire(selection.wires[0]!).catch(fail('Label failed')),
       },
+      {
+        id: 'canvas.bus',
+        label: 'Group the selected wires into a bus',
+        group: 'Schematic',
+        disabled: selection.wires.length < 2,
+        run: () =>
+          void store
+            .groupIntoBus(selection.wires)
+            .then((name) => name && toast({ kind: 'success', title: `Bus ${name}`, duration: 2000 }))
+            .catch(fail('Bus failed')),
+      },
+      ...(project?.layout?.buses ?? []).map((b) => ({
+        id: `bus.remove.${b.name}`,
+        label: `Remove bus ${b.name}`,
+        group: 'Schematic',
+        keywords: ['bus', ...b.nets],
+        run: () => void store.removeBus(b.name).catch(fail('Remove failed')),
+      })),
       ...Object.entries(sceneCatalog).map(([id, s]) => ({
         id: `place.${id}`,
         label: `Place ${s.name}`,
@@ -117,7 +135,7 @@ export function DesignPerspective() {
         run: () => placeAtCentre(id),
       })),
     ],
-    [selection, store, sceneCatalog, placeAtCentre, setMode, setSelection, fail],
+    [selection, store, sceneCatalog, placeAtCentre, setMode, setSelection, fail, toast, project?.layout?.buses],
   );
   useRegisterCommands('design', commands);
 

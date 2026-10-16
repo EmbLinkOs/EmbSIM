@@ -611,6 +611,7 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
     p.layout ??= {};
     if (e.wires) p.layout.wires = e.wires;
     if (e.labels) p.layout.labels = e.labels;
+    if (e.buses) p.layout.buses = e.buses;
   }
 }
 
