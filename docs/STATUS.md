@@ -7,12 +7,18 @@ does not mean the described behaviour exists.
 
 ## Scenario editor hardening
 
-Based on main `d5d3f51`. The Verify editor checks draft timing, assertion IDs,
+Integrated with main `7ddeafb` after PR #14. The Verify editor checks draft timing, assertion IDs,
 input identifiers and expectation fields before Run or Save. Invalid JSON remains
 visible and blocks execution instead of silently using an earlier expectation.
 Edits clear previous assertion badges. Project binding and model-specific value
 validation remain engine responsibilities. This change does not qualify electrical
 models or complete the remaining release gates.
+
+Observed locally: 92 UI tests pass, including editor correction and validation
+regressions; TypeScript checks, lint and the production build pass. Documentation
+integrity checks 103 documents and 96 requirements with no problems. Native code
+is unchanged. This branch still needs its own platform CI results.
+
 ## Release hardening
 
 The [1.0 readiness checklist](engineering/release-readiness.md) tracks release
@@ -22,7 +28,9 @@ and overlapping request regressions are covered in the workbench store tests.
 Observed on this branch: all 86 UI tests, TypeScript checks, lint and the
 production build pass. Documentation integrity checks 103 documents and 95
 requirements with no problems. Native code is unchanged; native and platform
-CI results have not been rerun locally for this slice. This is not a declaration
+CI results have not been rerun locally for this slice. PR #14 was subsequently
+observed with all 17 remote checks passing, including platform builds, desktop
+and browser smoke jobs. This is not a declaration
 of 1.0 readiness.
 
 ## Implemented subset
