@@ -231,3 +231,73 @@ export function rotateLayouts(layouts: { layout: Layout; symbol: Pick<SymbolDesc
     return { ...layout, x: snap(nx - symbol.width / 2), y: snap(ny - symbol.height / 2), rotation: (normalizeRotation(layout.rotation) + 90) % 360 };
   });
 }
+
+/** Grid-compatible magnetic alignment of a dragged group to existing edges
+ * and centers. The same delta is used for preview and commit. */
+export function magneticDrag(moving: Rect[], fixed: Rect[], delta: Point, tolerance = 12): { delta: Point; x?: number; y?: number } {
+  const result: { delta: Point; x?: number; y?: number } = { delta: { x: snap(delta.x), y: snap(delta.y) } };
+  if (!moving.length || !fixed.length) return result;
+  for (const axis of ['x', 'y'] as const) {
+    const dim = axis === 'x' ? 'width' : 'height';
+    let distance = tolerance + 1;
+    let guide: number | undefined;
+    let chosen = result.delta[axis];
+    for (const m of moving) for (const f of fixed) for (const factor of [0, 0.5, 1]) {
+      const at = m[axis] + m[dim] * factor;
+      for (const targetFactor of [0, 0.5, 1]) {
+        const target = f[axis] + f[dim] * targetFactor;
+        const difference = target - at - result.delta[axis];
+        const candidate = snap(result.delta[axis] + difference);
+        if (Math.abs(difference) < distance && Math.abs(at + candidate - target) < .01) {
+          distance = Math.abs(difference); chosen = candidate; guide = target;
+        }
+      }
+    }
+    if (distance <= tolerance) { result.delta[axis] = chosen; result[axis] = guide; }
+  }
+  return result;
+}
+
+/** Missing drawn connections between pin groups, including two disconnected
+ * clusters whose pins already touch wires. A nearest-tree gives n-1 airwires
+ * without duplicate lines. Connectivity here is visual; nets stay authoritative. */
+export function findAirwires(pins: Point[], wires: Wire[]): { a: Point; b: Point }[] {
+  if (pins.length < 2) return [];
+  const parent = Array.from({ length: pins.length + wires.length }, (_, i) => i);
+  const root = (n: number): number => { while (parent[n] !== n) { parent[n] = parent[parent[n]!]!; n = parent[n]!; } return n; };
+  const join = (a: number, b: number) => { parent[root(a)] = root(b); };
+  const segments = wires.map(wireSegments);
+  for (let i = 0; i < pins.length; i++) {
+    for (let j = 0; j < i; j++) if (pointsEqual(pins[i]!, pins[j]!)) join(i, j);
+    for (let j = 0; j < wires.length; j++) if (segments[j]!.some(([a, b]) => distanceToSegment(pins[i]!, a, b) < .01)) join(i, pins.length + j);
+  }
+  const intersects = ([a, b]: [Point, Point], [c, d]: [Point, Point]) => {
+    if (a.x === b.x && c.y === d.y) return a.x >= Math.min(c.x, d.x) && a.x <= Math.max(c.x, d.x) && c.y >= Math.min(a.y, b.y) && c.y <= Math.max(a.y, b.y);
+    if (a.y === b.y && c.x === d.x) return c.x >= Math.min(a.x, b.x) && c.x <= Math.max(a.x, b.x) && a.y >= Math.min(c.y, d.y) && a.y <= Math.max(c.y, d.y);
+    return [a, b].some((p) => distanceToSegment(p, c, d) < .01) || [c, d].some((p) => distanceToSegment(p, a, b) < .01);
+  };
+  for (let i = 0; i < wires.length; i++) for (let j = 0; j < i; j++) {
+    if (root(pins.length + i) !== root(pins.length + j) && segments[i]!.some((a) => segments[j]!.some((b) => intersects(a, b)))) join(pins.length + i, pins.length + j);
+  }
+  const grouped = new Map<number, Point[]>();
+  pins.forEach((p, i) => { const key = root(i); const list = grouped.get(key) ?? []; list.push(p); grouped.set(key, list); });
+  const groups = [...grouped.values()];
+  const visited = new Set<number>();
+  const best = groups.map(() => ({ distance: Infinity, a: pins[0]!, b: pins[0]! }));
+  const lines: { a: Point; b: Point }[] = [];
+  let next = 0;
+  while (visited.size < groups.length) {
+    visited.add(next);
+    for (let i = 0; i < groups.length; i++) if (!visited.has(i)) {
+      for (const a of groups[next]!) for (const b of groups[i]!) {
+        const distance = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        if (distance < best[i]!.distance) best[i] = { distance, a, b };
+      }
+    }
+    let closest = Infinity; let candidate = -1;
+    best.forEach((entry, i) => { if (!visited.has(i) && entry.distance < closest) { closest = entry.distance; candidate = i; } });
+    if (candidate < 0) break;
+    lines.push({ a: best[candidate]!.a, b: best[candidate]!.b }); next = candidate;
+  }
+  return lines;
+}

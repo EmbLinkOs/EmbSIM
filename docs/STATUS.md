@@ -5,6 +5,24 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Schematic Studio
+
+The Design perspective now includes connected auto-placement, route-only planning,
+whole-sheet and selected scopes, spacing/direction options, reviewable worker
+previews, layout-only application and single-step undo. Placement avoids existing
+symbols; an opt-in connect-then-arrange mode combines connectivity and layout in
+one edit. Smart wire previews and transform rerouting use exact pin anchors,
+obstacle clearance and foreign-net track reservations. Missing geometry remains
+an airwire with a warning; disconnected drawn clusters are counted correctly.
+
+The ribbon adds alignment/distribution, component/net search, net spotlight,
+selection focus, side-panel focus mode and display controls. The canvas adds a
+navigator and grid-compatible magnetic drag guides. The
+[user guide](user/schematic-studio.md) documents heuristics and limits, including
+unchanged label/bus positions, allowed crossings and bounded planning searches.
+The desktop worker policy permits the bundled worker; installers still require
+platform CI evidence. Final integration evidence is recorded with this branch.
+
 ## Scenario editor hardening
 
 Integrated with main `7ddeafb` after PR #14. The Verify editor checks draft timing, assertion IDs,

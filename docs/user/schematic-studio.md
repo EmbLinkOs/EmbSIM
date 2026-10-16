@@ -1,0 +1,106 @@
+# Schematic Studio
+
+The Design perspective combines the component library, schematic canvas,
+inspector and Layout Studio. The schematic ribbon keeps layout, arrangement,
+focus, search and display controls together. Tools work in light and dark themes.
+
+## Connect first, then arrange
+
+1. Place parts from the library. Placement chooses nearby free space rather than
+   covering an existing symbol. Drag a part to choose its approximate position.
+2. Connect pins with the Wire tool, or activate a pin with Enter and then activate
+   the destination pin. Obstacle-aware wiring previews a clear orthogonal path.
+   A red preview indicates that no clear route was found. Completing that
+   connection still joins the pins electrically and leaves a visible airwire
+   with a warning, rather than drawing through another component.
+3. Open **Auto layout**, choose Whole sheet or Selection, Left to right or Top
+   to bottom, and Comfortable or Compact spacing. Choose **Preview layout**.
+4. Review the proposed schematic, moved-part and route counts, and any routing
+   notes. The preview has not changed the project. **Apply layout** commits the
+   geometry as one undoable edit; **Discard preview** restores the current view.
+5. Save the project using the workbench's existing Save command.
+
+For automatic arrangement as you build, enable **View → Auto arrange after
+connecting**. Each connection arranges the components on the joined net and
+reroutes their affected nets. The connection and its placement share one Undo.
+This option starts off so existing manually arranged circuits remain predictable.
+
+**Route only** redraws connections without moving parts. Selection scope affects
+nets incident to the selected components; the other components remain fixed.
+A full-sheet route replaces manual wire geometry, so use the preview to review it.
+Existing labels and bus drawings keep their positions.
+
+## Precise arrangement
+
+Select two or more components to enable **Arrange**: align left, right, top,
+bottom, horizontal centers or vertical centers. Three or more enable horizontal
+and vertical distribution with equal edge gaps. Arrangement is previewed before
+application and reroutes affected nets. Alignment can intentionally place symbols
+on the same line; inspect the result for overlaps before applying it.
+
+Dragging shows magnetic alignment guides at other parts' edges and centers.
+The committed position uses the same snapped delta as the preview. Turn the
+magnetic guides off in View when you want only ordinary grid snapping.
+Obstacle-aware wires follow moved parts and are regenerated after rotation or
+mirroring. If a path cannot be found, the connection remains an electrical net
+and its missing drawn path is shown as an airwire when airwires are enabled.
+
+## Navigate and inspect
+
+- **Find** searches component IDs, component names, board IDs, net names and pin
+  membership. Enter focuses the first result; every result is keyboard accessible.
+- **Focus** frames selected components or the selected net. Press **F** on the
+  canvas to focus selected components; **0** fits the full schematic.
+- Finding a net spotlights its wires. Click its ribbon badge to clear the spotlight.
+- The canvas counts undrawn connections; airwires also reveal separated drawn
+  clusters, even when every pin already touches some wire.
+- The **Navigator** shows component positions, wires and the current viewport.
+  Click the overview to recenter, or use its keyboard-accessible Fit sheet button.
+- **View → Focus canvas** hides side panels for more drawing space. Restore them
+  from the same menu; the command palette also exposes this action.
+- **View** toggles the dot grid, airwires, navigator, magnetic guides,
+  obstacle-aware wiring and automatic arrangement after connecting.
+- Existing pan, zoom, Shift-drag selection, copy/paste, duplicate, rotate, mirror,
+  net labels, buses and hierarchy remain available.
+
+## What layout guarantees
+
+Preview planning runs in a separate worker. It preserves IDs, component values,
+firmware, electrical net membership, rotations and mirrors. Applying a preview
+accepts only component/board positions and wire geometry from the planner.
+Layout-only transactions preserve the running simulation. If the project changes
+while a preview exists, Apply is disabled until a fresh preview is generated.
+
+Placement uses deterministic connectivity groups with fixed obstacles outside the
+selection. This is a geometric heuristic, not electrical signal-direction analysis.
+Shared named supply rails do not merge existing signal groups; supply-only
+symbols are attached to a connected owner where possible. Routing uses exact
+transformed pin anchors, five units of body clearance, outward pin leads, a
+bend penalty, and a bounded orthogonal visibility-grid search. Every failed or
+unknown-anchor route is reported; it is never replaced by a fabricated connection.
+
+The router reserves previously drawn foreign-net tracks against collinear
+overlap; perpendicular crossings remain allowed. It does not globally optimize
+crossings or label positions. Review complex schematics, especially dense or unusual custom symbols.
+Drawn crossings do not change electrical connectivity; the project's named nets
+are authoritative. These tools improve authoring but do not qualify circuit models.
+
+## Regression evidence
+
+Algorithm tests cover deterministic placement, fixed parts, transformed and
+unsnapped anchors, obstacle avoidance, missing/blocked anchors, arrangement,
+free-space placement and unchanged circuit data. The transaction-boundary test
+rejects accidental planner changes to firmware, values or nets.
+
+The real-engine browser regression exercises Preview without edits, Apply through
+layout-only transactions, whole-operation Undo/Redo, finder and view controls,
+connect-then-arrange, both themes and the supported compact viewport:
+
+```sh
+pnpm --dir ui build
+python3 tests/browser/test_schematic.py --embsim build/dev/bin/embsim \
+  --chromium /usr/bin/chromium --screenshots /tmp/embsim-schematic
+```
+
+Python Playwright and a browser are required for this optional native-engine check.
+Platform CI separately covers the workbench unit and standard smoke tests.
