@@ -67,16 +67,16 @@
         "thermal time constant",
         "supply current",
         "noise",
-        "LM35 negative-temperature bias circuit",
-        "no manufacturer model qualification"
+        "no manufacturer model qualification",
+        "supply-dependent accuracy and out-of-range operation"
       ],
       "validation": [
         "tests/*.json"
       ],
       "range": {
         "voltage_v": [
-          0,
-          5
+          2.7,
+          5.5
         ]
       }
     }
@@ -119,15 +119,20 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "TMP36GT9Z manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.analog.com/media/en/technical-documentation/data-sheets/TMP35_36_37.pdf"
+        "title": "Analog Devices TMP35/TMP36/TMP37 manufacturer datasheet",
+        "url": "https://www.analog.com/media/en/technical-documentation/data-sheets/TMP35_36_37.pdf",
+        "rev": "H, May 2015",
+        "date": "2026-10-16",
+        "hash": "sha256:6ce062fb73f0bebb61f82775aca0be56903c2b8484a7fc89a0cf71961189f8ee",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 3, 19. Figure 4 TO-92 bottom view: VS1, OUT2, GND3. TMP36GT9Z ordering code on page 19. Nominal 500 mV offset + 10 mV/C; -40 to 125 C; supply 2.7 to 5.5 V. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
         "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Sensor_Temperature.lib",
-        "notes": "Legacy TMP36xS is SOT-23. This is not evidence for the TO-92 mapping; manufacturer pinout review remains pending."
+        "notes": "Legacy TMP36xS is SOT-23 and is not TO-92 evidence. The TO-92 map is independently verified by manufacturer Figure 4, page 1."
       }
-    ]
+    ],
+    "notes": "TO-92 map verified against manufacturer Figure 4, page 1; the legacy KiCad SOT-23 entry is not TO-92 evidence."
   },
   "tests": [
     "tests/*.json"

@@ -117,7 +117,10 @@ implemented; a parameter outside the declared range raises
   required; no delay, common-mode enforcement or offset model.
 - `temperature_sensor`: pins `OUT`, `VS`, `GND`; externally set `temperature`
   in °C, `offset + slope * temperature`, finite `rout`, supply clipping using
-  `headroom`. No thermal integration or accuracy/noise model.
+  `headroom`. Output observation is relative to the device's `GND`, which need
+  not be global zero. LM35DZ declares a 4..30 V supply envelope and TMP36GT9Z
+  2.7..5.5 V, with endpoint fixtures for nominal transfer only. No thermal
+  integration, supply-dependent accuracy, out-of-range behavior or noise model.
 - `timer555`: pins `TRIG`, `THRESH`, `RESET`, `CTRL`, `OUT`, `DISCH`, `VCC`,
   `GND`; 5 kΩ + 10 kΩ divider, trigger at half CTRL, threshold at CTRL,
   reset priority, accepted-step latch and discharge. `sample_interval` bounds

@@ -116,8 +116,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "1N4007 manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.vishay.com/docs/88503/1n4001.pdf"
+        "title": "Vishay 88503 manufacturer datasheet",
+        "url": "https://www.vishay.com/docs/88503/1n4001.pdf",
+        "rev": "29 April 2020",
+        "date": "2026-10-16",
+        "hash": "sha256:56a77c6615c90c11993d37d94e67f335cf3a2d1fe00f25d2a1a4833834356d07",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 2. DO-41, cathode band. A2/K1 numbering is an ECAD convention; no manufacturer-numbered axial leads. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

@@ -9,7 +9,7 @@ does not mean the described behaviour exists.
 
 | Area | Current implementation | Evidence and limits |
 |---|---|---|
-| Design | Architecture 01 to 09 (ADR-001 to ADR-020), SPEC-001 to SPEC-014, 91 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
+| Design | Architecture 01 to 09 (ADR-001 to ADR-020), SPEC-001 to SPEC-014, 92 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
 | Repository | CMake presets, Makefile wrapper, CI matrix, documentation and policy workflows, templates, ruleset JSON, policy and banned-construct checkers | Local runs of the checkers; remote workflow results are recorded here when observed |
 | Core: scheduler and time | Rational clocks, class-ordered event heap, delta-cycle bound, cancellation by generation (SPEC-002) | `test_sched`: ordering, cancellation, overflow, limits, 72 MHz and 32.768 kHz clocks exact over 10^9 edges |
 | Core: nets and digital engine | Pin models and logic families, four-value resolution with strengths, contention and floating diagnostics, inertial delays, islands and bridges, the model API; gates, flip-flop, sources, pulls, transmission-gate switches, indicator, probe, UART virtual terminal (SPEC-003) | `test_engine`: resolution, floating inputs, gate timing, inertial pulses, clock, switch, UART loopback |
@@ -26,7 +26,7 @@ does not mean the described behaviour exists.
 | Debug | Breakpoints by address, symbol, or file and line; watchpoints; step, halt, continue; registers and memory read and write; Thumb disassembler; ELF symbols; DWARF 2 to 5 line tables; `debug.*` methods; GDB remote protocol server (`embsim gdb`) | `test_mcu` (source lines), `tests/protocol/test_gdb.py` (registers, memory, breakpoints, step, continue over RSP); LLDB debugged the example through `embsim gdb` in this workspace |
 | Toolchains | Detection from the profiles' version commands, builds by template expansion (`embsim build`, `embsim toolchains`, `toolchain.detect`, `toolchain.build`) (SPEC-010 subset) | `tests/protocol/test_build.py`; the EmbCC and Clang profiles built the example here; the gcc-arm, TinyCC and XC profiles are not exercised (not installed) |
 | CLI | `run`, `validate`, `serve` (with `--allow-origin`), `sidecar`, `catalog` (`list`, `validate`, `new`, `install`), `board`, `models`, `gdb`, `build`, `toolchains`, `version` | `tools/ci/run_examples.py`: seven examples validate and pass their scenarios (14 steps): counter-bus, button-led, button-transistor-led, rc-filter, bluepill-button-led with its firmware (the LED driven through an NPN transistor as 01 §8 describes), display-showcase 6/6, kicad-flasher |
-| Catalog | 128 components in 19 categories with symbols, artwork and 251 component fixtures (passives, sources, semiconductors, 74HC and CD4000 logic, the 555, regulators, displays: 7-segment, HD44780 LCD, SSD1306 OLED, MAX7219; I2C and SPI devices: 24C02 and 25LC040 EEPROMs, DS1307, sensors; actuators: servo, stepper driver, buzzer); STM32F103C8 MCU with its register description and LQFP48 package; Blue Pill board with artwork; eight toolchain profiles; JSON Schemas for every kind; the Python validator with semantic checks | `embsim catalog validate catalog`: 129 ok, 0 broken, 0 invalid, 252 fixtures run (including the board) (`catalog_fixtures`); `tools/validate.py --all`: 422 files, 0 errors; the tools' unit tests: 119 tests; the STM32F103C8's register description written from RM0008 (ADR-020) |
+| Catalog | 128 components in 19 categories with symbols, artwork and 256 component fixtures (passives, sources, semiconductors, 74HC and CD4000 logic, the 555, regulators, displays: 7-segment, HD44780 LCD, SSD1306 OLED, MAX7219; I2C and SPI devices: 24C02 and 25LC040 EEPROMs, DS1307, sensors; actuators: servo, stepper driver, buzzer); STM32F103C8 MCU with its register description and LQFP48 package; Blue Pill board with artwork; eight toolchain profiles; JSON Schemas for every kind; the Python validator with semantic checks | `embsim catalog validate catalog`: 131 ok, 0 broken, 0 invalid, 259 fixtures run (including three boards) (`catalog_fixtures`); `tools/validate.py --all`: 443 files, 0 errors; the tools' unit tests: 119 tests; the STM32F103C8's register description written from RM0008 (ADR-020) |
 | Workbench | TypeScript workspace: typed protocol client and mock session, design system with light and dark themes; schematic editing against the engine through project transactions (place, wire, move, rotate, mirror, delete, copy, paste, duplicate, net labels and renames, buses with their live value, undo and redo, save to the project file); boards drawn as blocks of their ports, and the inside of a board or composite part opened on a read-only, live sheet; board view with each board's artwork and live LEDs, buttons and jumpers; oscilloscope, logic analyzer with UART, SPI and I2C decoders, serial terminal, meters with units; board view artwork states with value maps, formats and text (SPEC-005 §8); the Debug perspective (source, disassembly, registers, breakpoints, memory, peripherals, console); Verify reports "not available"; command palette; platform adapter; Tauri 2 desktop shell with the engine as sidecar and its icon | `pnpm typecheck`, `lint`, `test` (75 tests incl. axe, the decoders and artwork states), `build` pass; Playwright smoke (open, run, press, observe, export; keyboard place and wire; theme) passes in Chromium; editing, copy and paste, and save checked in Chromium against `embsim serve`; the Blue Pill's boot banner decoded from USART1 frame by frame; `tools/perf/large_project.py` 500 inverters with 1,499 wires and 1,000 labels measured by `scripts/perf.mjs` in headless software-rendered Chromium: pan and part drag 16.8 ms at the 95th percentile, zoom 33 ms; usable at 1024x700. The desktop shell is built and run here on Linux (WebKitGTK 4.1 under Xvfb) with the Blue Pill example loaded, and its deb is built by `tauri build`; macOS and Windows installers come from CI |
 
 Observed on 2026-10-16 in this workspace: Ubuntu 24.04, GCC 13.3 and Clang 18.1, CMake 3.28, Python 3.13, Node 22. `ctest` on the GCC Debug build: 21 of 21 targets pass (test_analog, test_avr, test_engine, test_host, test_json, test_lua, test_mcu, test_riscv, test_sched, test_session, catalog_fixtures, tools_unittests, catalog_sdk, importers, docs_integrity, banned_constructs, protocol_conformance, gdb_server, firmware_build, multiboard, examples_headless); the same pass on the Clang, TinyCC and AddressSanitizer builds. The CI matrix (Linux with GCC, Clang and TinyCC; macOS with Clang; Windows with MSVC; the workbench; tools and catalog; documentation; repository policy) was observed green on the M0 pull request and on the M1 pull request (EmbLinkOs/EmbSIM#2, head 9bc3d42, 2026-10-16) the M2 pull request (EmbLinkOs/EmbSIM#3, all 17 checks) and the M3 pull request (EmbLinkOs/EmbSIM#4, all 17 checks), which ran the Blue Pill golden fixture, the GDB server and the firmware build on all three platforms.
@@ -39,10 +39,10 @@ semiconductors, four regulators, full LM358P/LM393P packages, NE555P, LM35DZ,
 TMP36GT9Z and six full 74HC packages. `part` metadata is searchable and shown
 in the inspector; all named parts have original symbols and package illustrations.
 See [the catalog guide](../catalog/README.md) for the inventory, exact supported
-behaviors and source-review limits. Manufacturer PDFs were blocked by the current
-cloud proxy; no manufacturer qualification is claimed. Pin maps are cross-checked
-against the cited upstream KiCad reference where available; TMP36 TO-92 review
-remains pending. This batch supplements the merged M3 implementation.
+behaviors and source-review limits. Manufacturer access was blocked during the
+initial batch; the follow-up source review below records the recovered evidence.
+No manufacturer qualification of the electrical models is claimed.
+This batch supplements the merged M3 implementation.
 
 Evidence from the component-work branch on Linux, GCC 14.2, Python 3.12 and Node 24:
 
@@ -68,6 +68,42 @@ macOS, Windows and TinyCC have not been rerun locally for this batch. Existing
 CI defines those checks; remote results must be observed before claiming them.
 The earlier workbench Debug and hold-state findings are intentionally outside
 this component batch.
+
+## Manufacturer source review after the M4 merge
+
+Based on main `22deb05`, including both the named-part and M4 merges. Reviewed
+25 named entries against 23 manufacturer PDFs; the three L78 entries share a
+source. Each entry now records revision, SHA-256, review date and page references.
+[The source record](engineering/named-part-sources.md) distinguishes reviewed
+package facts from model qualification. TMP36GT9Z's TO-92 map is confirmed from
+Figure 4 and its exact ordering code from the ordering guide. The onsemi 2N7000
+link and the Infineon redirect are replaced by working manufacturer PDF URLs.
+Nexperia BAT54 remains reference-only: the document URL is unavailable and the
+manufacturer CDN denies alternative document requests.
+
+The five new electrical fixtures check LM35DZ at 4 and 30 V, TMP36GT9Z at 2.7
+and 5.5 V, and a TMP36 with its ground at 1.2 V. The latter checks both absolute
+net voltage and the sensor's output observation relative to its own ground.
+Nominal transfer and pin identity are covered; electrical accuracy, thermal
+behavior and operating corners remain unqualified. The existing pin-map
+regression now checks every terminal of all 25 source-reviewed entries.
+
+Combined integration evidence on Linux, GCC 14.2 and Python 3.12:
+
+- All 23 development CTest outcomes pass after the two merges; the firmware
+  build wrapper reports its missing cross compiler explicitly.
+- Current engine catalog validation: 131 valid items (128 components, three
+  boards), no broken or invalid entries, 259 fixtures including the boards.
+- The independent fixture runner passes 256 component fixtures and 782
+  assertions; all 119 Python tools tests pass.
+- Schema/semantic validation: 443 files, no errors or warnings. Documentation
+  integrity: 89 documents, 92 requirements, no problems.
+- Both merged PRs ([#5](https://github.com/EmbLinkOs/EmbSIM/pull/5) and
+  [#6](https://github.com/EmbLinkOs/EmbSIM/pull/6)) were observed with all 17
+  checks passing, including macOS/Windows core, desktop and browser smoke jobs.
+  This is evidence for the merged baseline; the source-review branch needs its
+  own CI results.
+- No UI or native engine code is changed by this source-review follow-up.
 
 ## Specified but unimplemented
 

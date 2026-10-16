@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "supply-min-4v",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 4
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm35dz"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "100k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VS.+",
+        "DUT.VS"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "R.1"
+      ],
+      "GND": [
+        "VS.-",
+        "DUT.GND",
+        "R.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "50us",
+      "min_v": 0.998,
+      "max_v": 1.002
+    }
+  },
+  "inputs": [
+    {
+      "at": "10us",
+      "target": "DUT",
+      "input": "temperature",
+      "value": 100
+    }
+  ],
+  "description": "Nominal transfer at a manufacturer supply endpoint; no accuracy or supply rejection qualification."
+}

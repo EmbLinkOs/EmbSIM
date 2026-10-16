@@ -139,8 +139,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "BSS138 manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.onsemi.com/pdf/datasheet/bss138-d.pdf"
+        "title": "onsemi BSS138/D manufacturer datasheet",
+        "url": "https://www.onsemi.com/pdf/datasheet/bss138-d.pdf",
+        "rev": "7, April 2024",
+        "date": "2026-10-16",
+        "hash": "sha256:ba7a267f5eebb2cb32333517a387df863bb2137fa8799787d2204fc12c68c291",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1. SOT-23-3: G1, S2, D3. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

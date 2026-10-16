@@ -124,8 +124,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "BZX55C5V1 manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.vishay.com/docs/85604/bzx55.pdf"
+        "title": "Vishay 85604 manufacturer datasheet",
+        "url": "https://www.vishay.com/docs/85604/bzx55.pdf",
+        "rev": "2.0, 7 November 2024",
+        "date": "2026-10-16",
+        "hash": "sha256:f32a337b23a25f8ce84cdeec8a532ddeed894b7982848d1ed78be29fb7f34902",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 2, 5. DO-35, cathode band. C5V1 nominal 5.1 V, 4.8 to 5.4 V at 5 mA. A2/K1 numbering is an ECAD convention, not a manufacturer lead number. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

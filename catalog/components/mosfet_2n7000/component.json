@@ -138,8 +138,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "2N7000 manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.onsemi.com/pdf/datasheet/2n7000-d.pdf"
+        "title": "onsemi 2N7000/D manufacturer datasheet",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/2n7000-d.pdf",
+        "rev": "8, April 2011",
+        "date": "2026-10-16",
+        "hash": "sha256:b9cfecc7be11b19ac817e3160d6c862494f28cae0bdc3e826ab83ab15749c228",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 2, 5. TO-92 case 29 style 22: S1, G2, D3. PDF has an extra cover; heading specifies Pb-free 2N7000G. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
@@ -154,7 +158,7 @@
     "manufacturer": "onsemi",
     "mpn": "2N7000",
     "package": "TO-92",
-    "datasheet": "https://www.onsemi.com/pdf/datasheet/2n7000-d.pdf"
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/2n7000-d.pdf"
   },
   "artwork": {
     "svg": "artwork.svg"

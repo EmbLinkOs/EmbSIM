@@ -224,8 +224,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "SN74HC86N manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.ti.com/lit/ds/symlink/sn74hc86.pdf"
+        "title": "Texas Instruments SCLS100F manufacturer datasheet",
+        "url": "https://www.ti.com/lit/ds/symlink/sn74hc86.pdf",
+        "rev": "April 2021",
+        "date": "2026-10-16",
+        "hash": "sha256:695a554fd72f6e9aaed4650af27c6ba419c6635bb241587f486c70fe564a3906",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. N/PDIP-14 pin table; four XOR channels; VCC14, GND7. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",

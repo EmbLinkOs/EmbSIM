@@ -138,8 +138,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "IRLZ44N manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.infineon.com/dgdl/irlz44npbf.pdf"
+        "title": "Infineon PD-94831 manufacturer datasheet",
+        "url": "https://www.infineon.com/assets/row/public/documents/24/49/infineon-irlz44n-datasheet-en.pdf",
+        "rev": "11 November 2003",
+        "date": "2026-10-16",
+        "hash": "sha256:b4f1361a4486b8ec84206012a3e4a985111203d140fa6da8d4190b867c9ba077",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 2, 8. TO-220AB: G1, D2, S3, tab D. Manufacturer-hosted legacy IRLZ44NPbF document; catalog retains the IRLZ44N family name. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
@@ -154,7 +158,7 @@
     "manufacturer": "Infineon",
     "mpn": "IRLZ44N",
     "package": "TO-220-3",
-    "datasheet": "https://www.infineon.com/dgdl/irlz44npbf.pdf"
+    "datasheet": "https://www.infineon.com/assets/row/public/documents/24/49/infineon-irlz44n-datasheet-en.pdf"
   },
   "artwork": {
     "svg": "artwork.svg"

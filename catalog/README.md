@@ -38,22 +38,26 @@ TO-220 tabs duplicate pin 2. The LM1117 SOT-223 tab duplicates OUT (pin 2).
 
 ## Evidence and source status
 
-Package maps were cross-checked where present in the public KiCad symbol
-library, revision `4e17d7595f9691d45d97aea8ad64572652fb5bed`; the per-entry
-provenance cites the relevant file. The named library retains its own original
-symbols and artwork. TMP36's TO-92 mapping is a reference mapping pending a
-manufacturer PDF check; the cited legacy KiCad entry is its SOT-23 variant and
-must not be treated as evidence for the TO-92 package.
+The manufacturer source review now covers 25 of the 26 named entries, with
+exact PDF revisions, SHA-256 hashes, dates and page references in each entry's
+`provenance.sources`. See [the review record](../docs/engineering/named-part-sources.md)
+for the checked package maps, selected operating facts and unresolved sources.
+TMP36GT9Z's TO-92 map is confirmed by Analog Devices Figure 4, page 1. Nexperia
+BAT54 remains reference-only because its original PDF URL is unavailable and
+alternative manufacturer requests return CDN Access Denied responses. The cloud
+proxy now permits manufacturer access; this remaining failure is at the source.
 
-Manufacturer datasheet URLs are supplied for independent inspection. Direct
-manufacturer PDF retrieval in the current cloud instance is blocked by the
-network proxy (CONNECT HTTP 403). Therefore the initial source review does not
-claim to verify those documents. Existing generic model parameters were reused
-where appropriate; BAT54, BZX55C5V1 and BSS138 use explicitly approximate nominal
-fits. The 1N4007 uses an illustrative 7 nA / n=1.8 forward fit instead of the
-legacy rectifier preset's implausibly low forward curve. None is presented as
-an extracted manufacturer model. A future qualification pass must record the
-actual datasheet revision, operating point, tolerances, and independent results.
+The named library retains its own original symbols and artwork. KiCad family
+references remain supplementary, pinned to revision
+`4e17d7595f9691d45d97aea8ad64572652fb5bed`. The legacy TMP36xS symbol is SOT-23
+and is not evidence for the TO-92 map.
+
+Source review does not qualify the electrical models. Existing generic model
+parameters were reused where appropriate; BAT54, BZX55C5V1 and BSS138 use
+explicitly approximate nominal fits. The 1N4007 uses an illustrative 7 nA / n=1.8
+forward fit instead of the legacy rectifier preset's implausibly low forward
+curve. None is presented as an extracted manufacturer model. Electrical
+qualification still needs operating points, tolerances and independent results.
 
 ## Run the component fixtures
 
@@ -84,10 +88,13 @@ schema checks and the engine’s `embsim catalog validate catalog` command.
   up to twice `sample_interval` late. Reduce it for faster circuits and establish
   convergence. The default is intended for low-frequency experiments. It is not
   a substitute for the part's maximum-frequency/propagation specifications.
-- LM35DZ's exposed temperature range is 0..100 °C at the tested 5 V supply;
-  TMP36GT9Z is -40..125 °C at 5 V. Noise, self-heating, response time, calibration
-  and supply-current effects are absent. LM35 negative-temperature circuitry is
-  not modeled. Inputs outside those declared ranges are unsupported.
+- LM35DZ's exposed temperature range is 0..100 °C with a 4..30 V supply;
+  TMP36GT9Z is -40..125 °C with a 2.7..5.5 V supply. Supply endpoint fixtures
+  check nominal transfers; the TMP36 shifted-ground fixture checks both the
+  absolute output voltage and its reported voltage relative to the sensor ground.
+  Noise, self-heating, response time, calibration and supply-current effects are absent. LM35 negative-temperature circuitry is
+  not modeled. LM35DZ at 0 °C is ideal extrapolation: the real near-ground
+  output behavior is not qualified. Inputs outside the declared ranges are unsupported.
 - LM393P outputs require external pull-ups and load-dependent voltage checks.
   An unloaded logic-high expectation is not valid when the output also drives a
   transistor base through a resistor.

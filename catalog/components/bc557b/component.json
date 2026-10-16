@@ -156,8 +156,12 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "BC557B manufacturer datasheet (reference; retrieval pending network access)",
-        "url": "https://www.onsemi.com/pdf/datasheet/bc556b-d.pdf"
+        "title": "onsemi BC556B/D manufacturer datasheet",
+        "url": "https://www.onsemi.com/pdf/datasheet/bc556b-d.pdf",
+        "rev": "3, March 2007",
+        "date": "2026-10-16",
+        "hash": "sha256:31320e9bd66cfb411793400a59db09238c6e144f3a7483a82005b1c954527c65",
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1, 8. TO-92 case 29 style 17: C1, B2, E3. Package/source review only; electrical model is not manufacturer-qualified."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
