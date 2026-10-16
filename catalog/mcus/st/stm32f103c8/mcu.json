@@ -293,26 +293,38 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Memory map, package pin map, GPIO signal names and clock tree constants are described; no behavioural models yet (M1): the core executes no instructions and no peripheral model is bound until the Cortex-M backend and the stm32 peripheral models land.",
+      "claims": "Cortex-M3 instruction execution (Thumb-2, NVIC, SCB, SysTick, DWT, semihosting) extracted from EmbCC; every register of the RM0008 description with its reset value and access type; behavioural models of RCC (HSI, HSE, PLL, bus prescalers and clock gates), GPIO (modes, ODR/BSRR/BRR, IDR from the pin's net), AFIO (EXTI routing, USART1 remap), EXTI (edges, pending, interrupts), USART (8N1 frames at the baud rate on TX and from RX, interrupts), TIM1 to TIM4 time base (prescaler, auto-reload, update interrupt), FLASH and PWR registers. Other peripherals keep their register values and raise mcu.unsupported_access on first access.",
       "omissions": [
-        "instruction execution",
-        "all peripherals",
-        "interrupts",
-        "GPIO register behaviour"
+        "ADC",
+        "SPI",
+        "I2C",
+        "DMA",
+        "CAN",
+        "USB",
+        "RTC and backup domain",
+        "timer capture, compare and PWM output",
+        "IWDG and WWDG",
+        "flash programming",
+        "low-power modes beyond WFI"
       ],
-      "validation": []
+      "validation": [
+        "repo:tests/firmware/bluepill-golden",
+        "repo:tests/unit/test_mcu.c"
+      ]
     },
     "timed": {
-      "claims": "No behavioural models yet (M1). When present, instruction timing is estimated from a per-class cost table (ADR-015), not cycle-exact.",
+      "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact; peripherals count the cycles of their bus clock exactly from the clock tree (ADR-019).",
       "omissions": [
         "flash wait states",
         "bus arbitration",
-        "pipeline effects"
+        "pipeline effects beyond branch refill"
       ],
-      "validation": []
+      "validation": [
+        "repo:tests/firmware/bluepill-golden/deltas.json"
+      ]
     },
     "electrical": {
-      "claims": "GPIO pin-model defaults from the datasheet: voh/vol, rout by configured speed, vih/vil with hysteresis, 40 k pulls, 5 V tolerant pin list (SPEC-003 \u00a72). No behavioural models yet (M1).",
+      "claims": "GPIO pin-model defaults from the datasheet: voh/vol, rout by configured speed, vih/vil with hysteresis, 40 k pulls, 5 V tolerant pin list (SPEC-003 §2). The GPIO model applies direction, push-pull or open-drain drive and the weak pulls to the pins as the firmware configures them.",
       "omissions": [
         "ESD structures",
         "supply current",
@@ -347,8 +359,16 @@
       {
         "title": "PM0056 Programming manual: STM32F10xxx/20xxx/21xxx/L1xxxx Cortex-M3",
         "rev": "6"
+      },
+      {
+        "title": "PM0075 Programming manual: STM32F10xxx Flash memory microcontrollers",
+        "rev": "2"
+      },
+      {
+        "title": "EmbLinkOs/EmbCC tools/embsim (Cortex-M core and STM32 models, extracted at commit aa4f10a)",
+        "rev": "aa4f10a"
       }
     ],
-    "notes": "The SVD register file is not vendored; it is resolved from a device pack or EMBSIM_SVD_PATH (ADR-017)."
+    "notes": "The register description is written for EmbSIM from RM0008 and checked against ST's SVD on a developer's machine; no vendor file is shipped (ADR-020)."
   }
 }

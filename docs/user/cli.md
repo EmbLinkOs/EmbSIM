@@ -10,6 +10,9 @@ machine-readable report of SPEC-008 §8.
 | `embsim validate PATH...` | loads each project through the real loader and reports its diagnostics (descriptions are validated against the schemas by `tools/validate.py`) |
 | `embsim serve PROJECT [--port N] [--host H] [--ui DIR] [--open]` | the WebSocket endpoint on loopback plus the workbench assets (the built `ui/apps/workbench/dist` when present, else a built-in console page) |
 | `embsim sidecar [PROJECT]` | the protocol over stdin and stdout, one JSON object per line, for the desktop shell and IDEs |
+| `embsim gdb PROJECT [--board B] [--port N] [--host H]` | runs the project and serves GDB's remote protocol for one board's MCU on loopback (default port 3333): `target extended-remote :3333` in GDB, `gdb-remote 3333` in LLDB; see [firmware](firmware.md) |
+| `embsim build PROJECT [--board B] [--toolchain T]` | builds a board's firmware from its `firmware` block (sources, flags, linker script) with the named or the block's toolchain profile, writing the block's `image` |
+| `embsim toolchains` | the toolchain profiles and whether each is found on this host, with its version |
 | `embsim catalog list [KIND] \| search QUERY \| info ID \| libraries [--library DIR]` | browses the bundled catalog and extra libraries |
 | `embsim board list \| info ID` | boards and their descriptions |
 | `embsim models` | the model primitives the core implements, digital and electrical |

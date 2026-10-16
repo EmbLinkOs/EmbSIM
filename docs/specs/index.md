@@ -15,7 +15,7 @@ Acceptance of a specification does not mean the feature exists; see
 | [SPEC-006](SPEC-006-mcu-package-and-board-descriptions.md) | MCU, package and board descriptions | Accepted |
 | [SPEC-007](SPEC-007-project-and-scenario-format.md) | Project and scenario format | Accepted |
 | [SPEC-008](SPEC-008-session-protocol.md) | Session protocol | Accepted |
-| [SPEC-009](SPEC-009-mcu-runtime-backend-contract.md) | MCU runtime backend contract | Accepted in outline (final before M1) |
+| [SPEC-009](SPEC-009-mcu-runtime-backend-contract.md) | MCU runtime backend contract | Accepted (revised for M1) |
 | [SPEC-010](SPEC-010-toolchain-profiles.md) | Toolchain profiles | Accepted in outline (final before M1) |
 | [SPEC-011](SPEC-011-workbench-interface.md) | Workbench interface | Accepted |
 | [SPEC-012](SPEC-012-record-replay-and-verification.md) | Record, replay and verification | Accepted in outline (final before M1) |

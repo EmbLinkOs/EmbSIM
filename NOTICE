@@ -20,6 +20,9 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
   core/mcu/cortexm/systick.c   tools/embsim/systick.c
   core/mcu/cortexm/dwt.c       tools/embsim/dwt.c
   core/mcu/cortexm/cost.h      tools/bench/cost.h
+  core/mcu/cortexm/disasm.c    tools/embsim/disasm.c (the Thumb part)
+  core/session/gdb.c           tools/embsim/gdb.c (the protocol's shape,
+                               written again over the session)
   core/mcu/rf.h, rf.c          tools/embsim/svd-map.h, svd-map.c
   core/mcu/stm32/rcc.c         tools/embsim/stm32-rcc.c
   core/mcu/stm32/gpio_f1.c     tools/embsim/stm32f1-gpio.c

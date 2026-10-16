@@ -16,17 +16,17 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Trace.** 04 §9; SPEC-010
 
 ### MCU-002  Backend contract
-**Statement.** Every core backend shall implement esk_core_ops of SPEC-009 §3 with no process exit, no global state and status returns.
+**Statement.** Every core backend shall implement esk_cpu_ops of SPEC-009 §3 with no process exit, no global state and status returns.
 **Rationale.** ADR-005, ADR-016.
 **Status.** Accepted 2026-10-15
 **Verification.** Extraction checklist review; two-instance test.
-**Trace.** SPEC-009 §3, §8
+**Trace.** SPEC-009 §3, §11
 
 ### MCU-003  Register files from vendor descriptions
-**Statement.** Peripheral registers shall be instantiated from SVD, ATDF or EDC with the field semantics of 04 §4.
+**Statement.** Peripheral registers shall be instantiated from register descriptions (EmbSIM JSON, converted from SVD, ATDF or EDC; ADR-020) with the field semantics of 04 §4.
 **Rationale.** Real register behaviour.
 **Status.** Accepted 2026-10-15
-**Verification.** Register-file tests on the EmbCC svd fixtures.
+**Verification.** Register-file tests; the Blue Pill golden fixture with the description converted from ST's SVD.
 **Trace.** 04 §4; SPEC-009 §5
 
 ### MCU-004  Unsupported-access policy
@@ -61,7 +61,7 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Statement.** A core family is complete only when its EmbCC golden fixtures pass as EmbSIM differential tests.
 **Rationale.** Guard against regressions.
 **Status.** Accepted 2026-10-15
-**Verification.** tests/differential/embcc per family in CI.
+**Verification.** The family's EmbCC golden fixtures in tests/firmware (the Blue Pill's in M1), run by tests/unit/test_mcu.c in CI.
 **Trace.** ADR-005; 09 §1
 
 ### MCU-009  Multiple MCUs and cores

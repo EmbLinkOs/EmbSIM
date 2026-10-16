@@ -436,4 +436,71 @@ first slice).
 **Consequences.** ST's SVD redistribution terms are checked before vendoring;
 until then the Blue Pill's register file is user-supplied as in EmbCC.
 
-**Status.** Accepted.
+**Status.** Accepted; the register-file consequence is superseded by ADR-020.
+
+## ADR-019 An MCU runs in quanta on the session's scheduler; its peripherals keep time inside the machine
+
+**Context.** EmbCC's simulator steps one instruction at a time and tells its
+running peripherals after each one how many cycles passed (`tick`), asking
+them when their next interrupt comes (`next_event`) to skip idle waits.
+SPEC-009 §6 first asked for peripherals that schedule their own session
+events instead. The golden fixtures EmbCC's models pass depend on their
+exact per-instruction timekeeping, and SPEC-009 §11.7 requires those fixtures
+to pass before any behavioural change.
+
+**Decision.** The MCU runtime (`core/mcu/mcu.c`) runs the machine as one
+CORE event per quantum: up to the next session event that is not an analog
+step, at most `core_quantum_ps` (1 µs by default), and ending early when a
+pin changes so the circuit sees every edge at the instruction that made it.
+Analog islands step up to the quantum's end. Inside the machine the
+peripherals keep EmbCC's `tick` and `next_event` while their clocks run; a
+sleeping core (WFI, WFE, a branch to itself) costs nothing: its next quantum
+is the time its devices' next event comes, or the pin change that wakes it.
+Cycles become picoseconds exactly, at the core clock the clock model reports
+(the RCC ends a quantum when HCLK changes).
+
+**Alternatives.** Peripherals as session events (SPEC-009's first text):
+cleaner idle detection but a rewrite of every extracted model before its
+fixtures could vouch for it. A fixed quantum without the next-event bound:
+cheaper, but inputs would be seen up to a quantum late.
+
+**Consequences.** Inputs from digital events are exact; inputs that come
+from an analog comparator crossing are seen at the start of the quantum
+after the crossing, at most `core_quantum_ps` late. A breakpoint splits a
+quantum without changing the run: the M1 test compares a stopped and
+continued run with an uninterrupted one instruction for instruction.
+
+**Status.** Accepted (M1).
+
+## ADR-020 Register descriptions are EmbSIM JSON written from the reference manuals; vendor SVD files convert with a tool
+
+**Context.** ST's STM32F103xx.svd (from the cmsis-svd-data collection,
+version 1.3) carries STMicroelectronics' End User License Agreement: copies
+for developing and distributing tools are allowed with its notices kept,
+but it is not an open-source licence, and reverse engineering is
+restricted. EmbCC requires the user to supply the file. Open question Q1
+asked whether to vendor it. A test suite that runs on every platform cannot
+depend on a file the user supplies.
+
+**Decision.** The core reads one register format, EmbSIM's JSON register
+description (`schemas/registers.schema.json`): peripherals, registers,
+fields with the reference manuals' access notation (rw, r, w, rc_w0, rc_w1,
+rc_r, rs, t), and the interrupt table. The STM32F103's
+(`catalog/mcus/st/stm32f103c8/registers.json`) is written from RM0008 Rev 21
+and PM0075, licensed with the project; ST's SVD is used only to check its
+addresses and reset values on a developer's machine and is not shipped.
+`tools/importers/svd2regs.py` converts any SVD a user holds into a
+description for their own use. An MCU description names the format
+(`register_file.format: "embsim"`).
+
+**Alternatives.** Vendor the SVD with ST's licence beside it (legal review
+per vendor; non-free content in the catalog). Parse SVD in the core (EmbCC's
+1600-line reader with its exits; still needs a file the tests cannot ship).
+
+**Consequences.** The Blue Pill runs out of the box and in CI. Where the
+manual and ST's SVD disagree, the manual wins (TIM ARR resets to 0xFFFF, SPI
+I2SPR to 0x0002). Adding a part means writing or converting its description;
+the validator checks overlaps, field widths, access codes and interrupt
+names. Q1 is closed.
+
+**Status.** Accepted (M1).
