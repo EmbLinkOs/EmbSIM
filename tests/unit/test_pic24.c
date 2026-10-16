@@ -203,9 +203,15 @@ static void test_instructions(void)
                                 0x200075u, 0x090011u, 0xd88205u, 0x37ffffu };
     pt t;
     char text[64];
-    CHECK_EQ(MOV_LIT(0x1234, 0), 0x212340u);
-    CHECK_EQ(MOV_WF(2, 0x900), 0x884802u);
-    CHECK_EQ(MOV_FW(0x900, 3), 0x804803u);
+    /* the encoders against the words above (held in locals: MSVC's C4127
+     * takes a comparison of two constants for a mistake) */
+    u32 enc[3];
+    enc[0] = MOV_LIT(0x1234, 0);
+    enc[1] = MOV_WF(2, 0x900);
+    enc[2] = MOV_FW(0x900, 3);
+    CHECK_EQ(enc[0], 0x212340u);
+    CHECK_EQ(enc[1], 0x884802u);
+    CHECK_EQ(enc[2], 0x804803u);
     if (!pt_open(&t, code, sizeof code / sizeof code[0], 0))
         return;
     CHECK_EQ(reg(&t, 17), 0u);     /* the PC at the reset GOTO */
