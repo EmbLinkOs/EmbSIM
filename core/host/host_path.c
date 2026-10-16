@@ -95,9 +95,13 @@ char *esk_host_path_join(esk_alloc *a, const char *base, const char *rel)
     if (is_absolute(rel) || !*base) {
         esk_strbuf_puts(&raw, rel);
     } else {
+        size_t blen = strlen(base);
         esk_strbuf_puts(&raw, base);
         if (*rel) {
-            esk_strbuf_putc(&raw, ESK_PATH_SEP);
+            /* no second separator after a base that ends in one: "/" + ".." must not
+             * become "//..", which Windows reads as the start of a UNC path */
+            if (!is_sep(base[blen - 1]))
+                esk_strbuf_putc(&raw, ESK_PATH_SEP);
             esk_strbuf_puts(&raw, rel);
         }
     }
