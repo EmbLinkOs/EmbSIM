@@ -10,7 +10,7 @@ test('colored selectable tracks, terminal sockets, semantic cursors and readable
   const symbol = await page.locator('[data-component="R1"] .es-symbol path, [data-component="R1"] .es-symbol line, [data-component="R1"] .es-symbol rect').first().evaluate((el) => getComputedStyle(el).stroke);
   expect(initial).not.toBe(symbol);
   await wire.press('Enter');
-  expect(await line.evaluate((el) => getComputedStyle(el).stroke)).not.toBe(initial);
+  await expect.poll(() => line.evaluate((el) => getComputedStyle(el).stroke)).not.toBe(initial);
   await expect(wire.locator('.es-wire__selection')).toHaveCount(1);
   const selectedStroke = await line.evaluate((el) => {
     const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');

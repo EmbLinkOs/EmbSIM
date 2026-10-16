@@ -67,6 +67,7 @@ test('context actions, exact placement, shared parameters and one-step undo', as
   await expect(menu).toHaveCount(0);
   await first.press('Shift+F10');
   await page.getByRole('menuitem', { name: 'Duplicate', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^R4, / })).toHaveAttribute('aria-pressed', 'true');
   // Select the source in addition to the duplicated part, retaining both.
   await first.press('Space');
   await page.getByRole('button', { name: /^R2, / }).press('Space');

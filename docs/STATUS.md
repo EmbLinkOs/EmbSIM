@@ -23,7 +23,10 @@ track editing and group operations. The visual checks cover selected wires durin
 simulation, hollow sockets, pencil/grab cursors, catalog defaults, persistent color
 and label settings, and visible pins/details during navigation. Native light/dark,
 terminal-detail and compact screenshots are in the [gallery](gallery/README.md).
-Hosted platform validation is pending for this PR.
+The first hosted macOS browser run exposed immediate assertions before selection
+color transitions and duplicate selection completion. The browser checks now wait
+for the resulting color and selected duplicate before continuing. Hosted platform
+validation is pending for this correction.
 
 ## Circuit organization milestone
 
