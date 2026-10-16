@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "kicad-flasher",
+  "policy": "electrical",
+  "description": "Imported from flasher.net by tools/importers/kicad2project.py.",
+  "components": [
+    {
+      "id": "BT1",
+      "component": "emblink/battery",
+      "params": {
+        "part": "9V"
+      },
+      "layout": {
+        "x": 60,
+        "y": 60
+      }
+    },
+    {
+      "id": "U1",
+      "component": "emblink/regulator_78xx",
+      "params": {
+        "part": "7805"
+      },
+      "layout": {
+        "x": 60,
+        "y": 560
+      }
+    },
+    {
+      "id": "U2",
+      "component": "emblink/timer_555",
+      "params": {
+        "mode": "astable",
+        "r1": "1k",
+        "r2": "10k",
+        "c": "10u"
+      },
+      "layout": {
+        "x": 60,
+        "y": 760
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1k"
+      },
+      "layout": {
+        "x": 60,
+        "y": 660
+      }
+    },
+    {
+      "id": "R2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "layout": {
+        "x": 180,
+        "y": 660
+      }
+    },
+    {
+      "id": "R3",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "330"
+      },
+      "layout": {
+        "x": 300,
+        "y": 660
+      }
+    },
+    {
+      "id": "C1",
+      "component": "emblink/electrolytic_capacitor",
+      "params": {
+        "capacitance": "10u"
+      },
+      "layout": {
+        "x": 60,
+        "y": 260
+      }
+    },
+    {
+      "id": "C2",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "10n"
+      },
+      "layout": {
+        "x": 60,
+        "y": 160
+      }
+    },
+    {
+      "id": "D1",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "layout": {
+        "x": 60,
+        "y": 460
+      }
+    },
+    {
+      "id": "PWR1",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 60,
+        "y": 360
+      }
+    }
+  ],
+  "nets": {
+    "N_BT1_+": [
+      "BT1.+",
+      "U1.IN"
+    ],
+    "GND": [
+      "BT1.-",
+      "U1.GND",
+      "U2.GND",
+      "C1.-",
+      "C2.2",
+      "D1.K",
+      "PWR1.GND"
+    ],
+    "+5V": [
+      "U1.OUT",
+      "U2.VCC",
+      "U2.RESET",
+      "R1.1"
+    ],
+    "DIS": [
+      "R1.2",
+      "R2.1",
+      "U2.DIS"
+    ],
+    "THR": [
+      "R2.2",
+      "U2.THR",
+      "U2.TRIG",
+      "C1.+"
+    ],
+    "CV": [
+      "U2.CTRL",
+      "C2.1"
+    ],
+    "OUT": [
+      "U2.OUT",
+      "R3.1"
+    ],
+    "N_D1_A": [
+      "R3.2",
+      "D1.A"
+    ]
+  },
+  "probes": [
+    {
+      "id": "out",
+      "target": "net:OUT",
+      "kind": "digital"
+    },
+    {
+      "id": "led",
+      "target": "output:D1.luminance",
+      "kind": "value",
+      "rate_hz": 1000
+    },
+    {
+      "id": "vcc",
+      "target": "net:+5V",
+      "kind": "analog",
+      "rate_hz": 1000
+    }
+  ],
+  "scenarios": [
+    "scenarios/blink.json"
+  ]
+}

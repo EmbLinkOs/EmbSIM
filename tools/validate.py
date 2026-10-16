@@ -1487,7 +1487,7 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
                 report.error(file, node + "/expect/logic", "schema.type", f"logic expectation on a {pkind} probe")
             if pkind == "digital" and any(k in exp for k in ("min_v", "max_v", "contains")):
                 report.error(file, node + "/expect", "schema.type", "voltage or text expectation on a digital probe")
-            if "contains" in exp and pkind != "serial":
+            if "contains" in exp and pkind not in ("serial", "value"):
                 report.error(file, node + "/expect/contains", "schema.type", f"contains expectation on a {pkind} probe")
 
 
