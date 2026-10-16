@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/registers.schema.json",
+  "title": "EmbSIM register description",
+  "description": "An MCU's peripheral registers for the register file (SPEC-006 §5, SPEC-009 §5): peripherals at their base addresses, registers at offsets with reset values, fields with their access in the reference manuals' notation, and the interrupt table. Converted from CMSIS-SVD by tools/importers/svd2regs.py or written from a reference manual.",
+  "type": "object",
+  "required": ["schema_version", "kind", "id", "version", "device", "interrupts", "peripherals"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "registers"},
+    "id": {"type": "string", "minLength": 1},
+    "version": {"$ref": "common.schema.json#/$defs/semver"},
+    "device": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "source": {"type": "string", "description": "The document the description was written from, or the file it was converted from"},
+    "interrupts": {
+      "type": "object",
+      "description": "Interrupt names to their numbers (0 is the first external interrupt: ARM exception 16)",
+      "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 239}
+    },
+    "peripherals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "base"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+          "base": {"$ref": "#/$defs/hex"},
+          "derived_from": {"type": "string", "description": "A peripheral whose registers this one has at its own base"},
+          "description": {"type": "string"},
+          "interrupts": {"type": "array", "items": {"type": "string"}},
+          "registers": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/register"}}
+        },
+        "oneOf": [
+          {"required": ["registers"], "not": {"required": ["derived_from"]}},
+          {"required": ["derived_from"], "not": {"required": ["registers"]}}
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "hex": {"type": "string", "pattern": "^0x[0-9A-Fa-f]{1,8}$"},
+    "register": {
+      "type": "object",
+      "required": ["name", "offset"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+        "offset": {"$ref": "#/$defs/hex"},
+        "reset": {"$ref": "#/$defs/hex"},
+        "size": {"enum": [16, 32]},
+        "description": {"type": "string"},
+        "fields": {
+          "type": "array",
+          "description": "[name, lsb, width] or [name, lsb, width, access]; without fields the register is one read-write field",
+          "items": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 4,
+            "prefixItems": [
+              {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+              {"type": "integer", "minimum": 0, "maximum": 31},
+              {"type": "integer", "minimum": 1, "maximum": 32},
+              {"enum": ["rw", "r", "w", "w1", "rw1", "rc_w0", "rc_w1", "rc_r", "rs", "t"]}
+            ]
+          }
+        }
+      }
+    }
+  }
+}

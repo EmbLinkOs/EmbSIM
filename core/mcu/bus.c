@@ -141,6 +141,7 @@ static int rd(struct esk_bus *b, u32 a, int n, u32 *v)
         return 0;
     }
     b->fail_addr = a;
+    b->unmapped = 1;
     return -1;
 }
 
@@ -175,6 +176,7 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
         return 0;
     }
     b->fail_addr = a;
+    b->unmapped = 1;
     return -1;
 }
 

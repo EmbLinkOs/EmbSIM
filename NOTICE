@@ -20,6 +20,14 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
   core/mcu/cortexm/systick.c   tools/embsim/systick.c
   core/mcu/cortexm/dwt.c       tools/embsim/dwt.c
   core/mcu/cortexm/cost.h      tools/bench/cost.h
+  core/mcu/rf.h, rf.c          tools/embsim/svd-map.h, svd-map.c
+  core/mcu/stm32/rcc.c         tools/embsim/stm32-rcc.c
+  core/mcu/stm32/gpio_f1.c     tools/embsim/stm32f1-gpio.c
+  core/mcu/stm32/usart.c       tools/embsim/stm32-usart.c
+  core/mcu/stm32/tim.c         tools/embsim/stm32-tim.c
+  tests/firmware/bluepill-golden/
+                               tests/golden/embsim-bluepill/ (bluepill.c,
+                               bluepill.txt, bluepill-err.txt)
 
 Third-party material vendored under third_party/ and catalog/**/LICENSES/
 carries its own licence beside it. None is vendored yet.

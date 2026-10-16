@@ -24,6 +24,8 @@ FLAGS = ["--target=thumbv7m-none-eabi", "-mcpu=cortex-m3", "-mthumb", "-O2", "-g
 # image: (directory, sources relative to tests/firmware, linker script)
 IMAGES = {
     "hello/hello.elf": (["common/startup.c", "hello/main.c"], "common/stm32f103c8.ld"),
+    "bluepill-golden/bluepill.elf": (["common/startup.c", "bluepill-golden/bluepill.c"],
+                                     "common/stm32f103c8.ld"),
 }
 
 

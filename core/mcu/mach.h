@@ -106,6 +106,7 @@ struct esk_bus {
     u32 watch_addr;
     int debug;     /* the access is a debugger's */
     int dev_fault; /* the device refused it: esk_bus_fault */
+    int unmapped;  /* nothing answered the failed access */
     /* a device was accessed since esk_mach_event_coming last looked */
     int touched;
 };
@@ -224,6 +225,8 @@ typedef struct esk_mach_host {
     /* a UART's transmitter starts a byte; `bit_cycles` is the bit time in
      * core cycles, for the serial line's waveform */
     void (*uart_tx)(void *ctx, const char *unit, int c, u32 bit_cycles);
+    /* a diagnostic (es_severity_t, a code from docs/user/diagnostics.md) */
+    void (*diag)(void *ctx, int severity, const char *code, const char *msg);
 } esk_mach_host;
 
 /* ---- the machine ---------------------------------------------------------- */
@@ -284,6 +287,7 @@ struct esk_mach {
     esk_mach_host host;
     struct esk_rx_port rx[ESK_MACH_RX_PORTS];
     int nrx;
+    int bus_errors; /* reported by esk_mach_bus_error */
     /* breakpoints, by program counter; a run resumed from one steps off
      * it first (bp_skip) */
     u32 bp[ESK_MACH_BREAKPOINTS];
@@ -322,6 +326,10 @@ int esk_mach_event_coming(struct esk_mach *m);
 /* a UART offers its receiver to the host's input */
 void esk_mach_rx_port(struct esk_mach *m, const char *unit, int (*room)(void *ctx),
                       void (*put)(void *ctx, int c), void *ctx);
+/* a core's access that nothing answers: a diagnostic (the first ten) */
+void esk_mach_bus_error(struct esk_mach *m, u32 addr, int n, int write);
+/* the receiver of the UART named `unit` ("USART1"), or NULL */
+struct esk_rx_port *esk_mach_rx_find(struct esk_mach *m, const char *unit);
 /* reset: the devices and the core; memory as it is */
 void esk_mach_reset(struct esk_mach *m);
 u32 esk_mach_core_hz(struct esk_mach *m);

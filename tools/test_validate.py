@@ -96,6 +96,11 @@ class Base(unittest.TestCase):
         validate.validate_file(Path(path), self.schemas, index or self.index, report)
         return report
 
+    def check_doc(self, doc, name="registers.json"):
+        path = self.tmp / name
+        path.write_text(json.dumps(doc))
+        return self.check(path)
+
     def codes(self, report):
         return [f.code for f in report.findings if f.severity == "error"]
 
@@ -418,7 +423,7 @@ class McuTests(Base):
         src = validate.CATALOG_DIR / "mcus" / "st" / "stm32f103c8"
         d = self.tmp / "mcus" / "st" / "stm32f103c8"
         d.mkdir(parents=True)
-        for f in ("mcu.json", "lqfp48.json", "lqfp48.svg"):
+        for f in ("mcu.json", "registers.json", "lqfp48.json", "lqfp48.svg"):
             shutil.copy(src / f, d / f)
         self.assertClean(self.check(d / "mcu.json"))
         pkg = json.loads((d / "lqfp48.json").read_text())
@@ -436,11 +441,37 @@ class McuTests(Base):
         for f in ("lqfp48.json", "lqfp48.svg"):
             shutil.copy(src / f, d / f)
         mcu = json.loads((src / "mcu.json").read_text())
-        mcu["register_file"]["vendored"] = True
+        mcu["register_file"] = {"format": "svd", "file": "STM32F103xx.svd", "vendored": True}
         (d / "mcu.json").write_text(json.dumps(mcu))
         r = self.check(d / "mcu.json")
         self.assertCode(r, "catalog.file_missing")
         self.assertCode(r, "provenance.license")
+
+    def test_embsim_register_description(self):
+        src = validate.CATALOG_DIR / "mcus" / "st" / "stm32f103c8"
+        d = self.tmp / "mcus" / "st" / "stm32f103c8"
+        d.mkdir(parents=True)
+        for f in ("mcu.json", "lqfp48.json", "lqfp48.svg"):
+            shutil.copy(src / f, d / f)
+        self.assertCode(self.check(d / "mcu.json"), "catalog.file_missing")
+        regs = json.loads((src / "registers.json").read_text())
+        regs["peripherals"] = [p for p in regs["peripherals"] if not p["name"].startswith("TIM")]
+        (d / "registers.json").write_text(json.dumps(regs))
+        r = self.check(d / "mcu.json")
+        self.assertIn("catalog.register_file_absent", [f.code for f in r.findings])
+
+    def test_register_description_checks(self):
+        regs = json.loads((validate.CATALOG_DIR / "mcus" / "st" / "stm32f103c8" / "registers.json").read_text())
+        self.assertClean(self.check_doc(regs))
+        bad = json.loads(json.dumps(regs))
+        bad["peripherals"][0]["registers"][1]["offset"] = bad["peripherals"][0]["registers"][0]["offset"]
+        self.assertCode(self.check_doc(bad), "catalog.duplicate")
+        bad = json.loads(json.dumps(regs))
+        bad["peripherals"][0]["interrupts"] = ["NOPE"]
+        self.assertCode(self.check_doc(bad), "catalog.ref_unknown")
+        bad = json.loads(json.dumps(regs))
+        bad["peripherals"][0]["registers"][0]["fields"] = [["A", 0, 4], ["B", 2, 4]]
+        self.assertCode(self.check_doc(bad), "catalog.duplicate")
 
 
 class OtherKindsTests(Base):

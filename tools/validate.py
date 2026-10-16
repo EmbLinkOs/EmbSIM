@@ -48,6 +48,7 @@ KIND_SCHEMAS = {
     "recording": "recording.schema.json",
     "toolchain": "toolchain.schema.json",
     "library": "library.schema.json",
+    "registers": "registers.schema.json",
 }
 
 SI_SUFFIX = {
@@ -1024,7 +1025,20 @@ def check_mcu(report: Report, file: Path, doc: dict, index: Index) -> None:
         report.error(file, "/clocks/reset_core_hz", "schema.type", "reset_core_hz exceeds max_core_hz")
     # register file
     rf = doc.get("register_file") or {}
-    if rf.get("vendored"):
+    if rf.get("format") == "embsim":
+        rpath = base / rf.get("file", "")
+        if not rf.get("vendored"):
+            report.error(file, "/register_file/vendored", "schema.type", "an EmbSIM register description is part of the catalog: vendored is true")
+        if not rpath.exists():
+            report.error(file, "/register_file/file", "catalog.file_missing", f"{rf.get('file')} does not exist")
+        else:
+            rdoc = load_json(rpath, report)
+            names = {p.get("name", "") for p in (rdoc.get("peripherals") or [])} if isinstance(rdoc, dict) else set()
+            for i, pb in enumerate(doc.get("peripherals") or []):
+                pat = pb.get("match", "")
+                if not any(fnmatch.fnmatchcase(n, pat) for n in names):
+                    report.warning(file, ptr("peripherals", i, "match"), "catalog.register_file_absent", f"{pat} matches no peripheral of {rf.get('file')}")
+    elif rf.get("vendored"):
         if not (base / rf.get("file", "")).exists():
             report.error(file, "/register_file/file", "catalog.file_missing", f"register file {rf.get('file')} is declared vendored but absent")
         if not rf.get("license"):
@@ -1516,6 +1530,57 @@ def check_recording(report: Report, file: Path, doc: dict, index: Index) -> None
         report.error(file, "/end/at_ps", "recording.order", "an observation is after the end")
 
 
+REG_ACCESS = {"rw", "r", "w", "w1", "rw1", "rc_w0", "rc_w1", "rc_r", "rs", "t"}
+
+
+def check_registers(report: Report, file: Path, doc: dict, index: Index) -> None:
+    periphs = doc.get("peripherals") or []
+    by_name = {p.get("name"): p for p in periphs}
+    irqs = doc.get("interrupts") or {}
+    if len(by_name) != len(periphs):
+        report.error(file, "/peripherals", "catalog.duplicate", "peripheral names are not unique")
+    spans = []
+    for i, p in enumerate(periphs):
+        node = ptr("peripherals", i)
+        src = p
+        if "derived_from" in p:
+            src = by_name.get(p["derived_from"])
+            if not src or "derived_from" in src:
+                report.error(file, node + "/derived_from", "catalog.ref_unknown", f"{p['derived_from']} is not a peripheral with registers")
+                continue
+        for k, irq in enumerate(p.get("interrupts") or []):
+            if irq not in irqs:
+                report.error(file, ptr("peripherals", i, "interrupts", k), "catalog.ref_unknown", f"interrupt {irq} is not in the interrupt table")
+        base = int(p.get("base", "0x0"), 16)
+        rnames = set()
+        for j, r in enumerate(src.get("registers") or []):
+            rnode = ptr("peripherals", periphs.index(src), "registers", j)
+            if r.get("name") in rnames:
+                report.error(file, rnode + "/name", "catalog.duplicate", f"{src.get('name')}.{r.get('name')} declared twice")
+            rnames.add(r.get("name"))
+            size = r.get("size", 32)
+            off = int(r.get("offset", "0x0"), 16)
+            spans.append((base + off, base + off + size // 8, f"{p.get('name')}.{r.get('name')}"))
+            if int(r.get("reset", "0x0"), 16) >> size:
+                report.error(file, rnode + "/reset", "schema.type", f"reset value wider than {size} bits")
+            used = 0
+            for k, f in enumerate(r.get("fields") or []):
+                if len(f) < 3 or not isinstance(f[1], int) or not isinstance(f[2], int):
+                    continue
+                if f[1] + f[2] > size:
+                    report.error(file, rnode + f"/fields/{k}", "schema.type", f"field {f[0]} runs past bit {size - 1}")
+                mask = ((1 << f[2]) - 1) << f[1]
+                if used & mask:
+                    report.error(file, rnode + f"/fields/{k}", "catalog.duplicate", f"field {f[0]} overlaps another field")
+                used |= mask
+                if len(f) > 3 and f[3] not in REG_ACCESS:
+                    report.error(file, rnode + f"/fields/{k}", "schema.type", f"unknown access {f[3]!r}")
+    spans.sort()
+    for a, b in zip(spans, spans[1:]):
+        if b[0] < a[1]:
+            report.error(file, "/peripherals", "catalog.duplicate", f"{b[2]} overlaps {a[2]}")
+
+
 def check_toolchain(report: Report, file: Path, doc: dict, index: Index) -> None:
     if file.parent.name == "toolchains" and file.stem != doc.get("id"):
         report.error(file, "/id", "catalog.id_mismatch", f"id {doc.get('id')} does not match file name {file.stem}")
@@ -1556,6 +1621,7 @@ CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
     "scenario": check_scenario,
     "recording": check_recording,
     "toolchain": check_toolchain,
+    "registers": check_registers,
     "library": check_library,
 }
 

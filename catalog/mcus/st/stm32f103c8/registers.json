@@ -1,0 +1,889 @@
+{
+  "schema_version": 1,
+  "kind": "registers",
+  "id": "st/stm32f103c8/registers",
+  "version": "1.0.0",
+  "device": "STM32F103xx",
+  "description": "STM32F103 medium-density peripheral registers: addresses, reset values and field access as RM0008 Rev 21 (STMicroelectronics reference manual) documents them. Written for EmbSIM from the manual; not derived from ST's SVD files.",
+  "source": "RM0008 Rev 21, sections 7.3 (RCC), 9.2 and 9.4 (GPIO, AFIO), 10.3 (EXTI), 13.4 (DMA), 14.4 and 15.4 (TIM1, TIM2-4), 19.4 (IWDG), 20.6 (WWDG), 25.5 (SPI), 26.6 (I2C), 27.6 (USART), 11.12 (ADC), 4.4 (CRC), 5.4 (PWR); PM0075 3.4 (FLASH)",
+  "interrupts": {
+    "WWDG": 0,
+    "PVD": 1,
+    "TAMPER": 2,
+    "RTC": 3,
+    "FLASH": 4,
+    "RCC": 5,
+    "EXTI0": 6,
+    "EXTI1": 7,
+    "EXTI2": 8,
+    "EXTI3": 9,
+    "EXTI4": 10,
+    "DMA1_Channel1": 11,
+    "DMA1_Channel2": 12,
+    "DMA1_Channel3": 13,
+    "DMA1_Channel4": 14,
+    "DMA1_Channel5": 15,
+    "DMA1_Channel6": 16,
+    "DMA1_Channel7": 17,
+    "ADC1_2": 18,
+    "USB_HP_CAN_TX": 19,
+    "USB_LP_CAN_RX0": 20,
+    "CAN_RX1": 21,
+    "CAN_SCE": 22,
+    "EXTI9_5": 23,
+    "TIM1_BRK": 24,
+    "TIM1_UP": 25,
+    "TIM1_TRG_COM": 26,
+    "TIM1_CC": 27,
+    "TIM2": 28,
+    "TIM3": 29,
+    "TIM4": 30,
+    "I2C1_EV": 31,
+    "I2C1_ER": 32,
+    "I2C2_EV": 33,
+    "I2C2_ER": 34,
+    "SPI1": 35,
+    "SPI2": 36,
+    "USART1": 37,
+    "USART2": 38,
+    "USART3": 39,
+    "EXTI15_10": 40,
+    "RTCAlarm": 41,
+    "USBWakeup": 42
+  },
+  "peripherals": [
+    {
+      "name": "TIM2",
+      "base": "0x40000000",
+      "interrupts": ["TIM2"],
+      "registers": [
+        {
+          "name": "CR1",
+          "offset": "0x00",
+          "fields": [["CEN", 0, 1], ["UDIS", 1, 1], ["URS", 2, 1], ["OPM", 3, 1], ["DIR", 4, 1], ["CMS", 5, 2], ["ARPE", 7, 1], ["CKD", 8, 2]]
+        },
+        {
+          "name": "CR2",
+          "offset": "0x04",
+          "fields": [["CCDS", 3, 1], ["MMS", 4, 3], ["TI1S", 7, 1]]
+        },
+        {
+          "name": "SMCR",
+          "offset": "0x08",
+          "fields": [["SMS", 0, 3], ["TS", 4, 3], ["MSM", 7, 1], ["ETF", 8, 4], ["ETPS", 12, 2], ["ECE", 14, 1], ["ETP", 15, 1]]
+        },
+        {
+          "name": "DIER",
+          "offset": "0x0C",
+          "fields": [["UIE", 0, 1], ["CC1IE", 1, 1], ["CC2IE", 2, 1], ["CC3IE", 3, 1], ["CC4IE", 4, 1], ["TIE", 6, 1], ["UDE", 8, 1], ["CC1DE", 9, 1], ["CC2DE", 10, 1], ["CC3DE", 11, 1], ["CC4DE", 12, 1], ["TDE", 14, 1]]
+        },
+        {
+          "name": "SR",
+          "offset": "0x10",
+          "fields": [["UIF", 0, 1, "rc_w0"], ["CC1IF", 1, 1, "rc_w0"], ["CC2IF", 2, 1, "rc_w0"], ["CC3IF", 3, 1, "rc_w0"], ["CC4IF", 4, 1, "rc_w0"], ["TIF", 6, 1, "rc_w0"], ["CC1OF", 9, 1, "rc_w0"], ["CC2OF", 10, 1, "rc_w0"], ["CC3OF", 11, 1, "rc_w0"], ["CC4OF", 12, 1, "rc_w0"]]
+        },
+        {
+          "name": "EGR",
+          "offset": "0x14",
+          "fields": [["UG", 0, 1, "w"], ["CC1G", 1, 1, "w"], ["CC2G", 2, 1, "w"], ["CC3G", 3, 1, "w"], ["CC4G", 4, 1, "w"], ["TG", 6, 1, "w"]]
+        },
+        {
+          "name": "CCMR1",
+          "offset": "0x18",
+          "fields": [["CCMR1", 0, 16]]
+        },
+        {
+          "name": "CCMR2",
+          "offset": "0x1C",
+          "fields": [["CCMR2", 0, 16]]
+        },
+        {
+          "name": "CCER",
+          "offset": "0x20",
+          "fields": [["CC1E", 0, 1], ["CC1P", 1, 1], ["CC2E", 4, 1], ["CC2P", 5, 1], ["CC3E", 8, 1], ["CC3P", 9, 1], ["CC4E", 12, 1], ["CC4P", 13, 1]]
+        },
+        {
+          "name": "CNT",
+          "offset": "0x24",
+          "fields": [["CNT", 0, 16]]
+        },
+        {
+          "name": "PSC",
+          "offset": "0x28",
+          "fields": [["PSC", 0, 16]]
+        },
+        {
+          "name": "ARR",
+          "offset": "0x2C",
+          "reset": "0x0000FFFF",
+          "fields": [["ARR", 0, 16]]
+        },
+        {
+          "name": "CCR1",
+          "offset": "0x34",
+          "fields": [["CCR1", 0, 16]]
+        },
+        {
+          "name": "CCR2",
+          "offset": "0x38",
+          "fields": [["CCR2", 0, 16]]
+        },
+        {
+          "name": "CCR3",
+          "offset": "0x3C",
+          "fields": [["CCR3", 0, 16]]
+        },
+        {
+          "name": "CCR4",
+          "offset": "0x40",
+          "fields": [["CCR4", 0, 16]]
+        },
+        {
+          "name": "DCR",
+          "offset": "0x48",
+          "fields": [["DBA", 0, 5], ["DBL", 8, 5]]
+        },
+        {
+          "name": "DMAR",
+          "offset": "0x4C",
+          "fields": [["DMAB", 0, 16]]
+        }
+      ]
+    },
+    {"name": "TIM3", "derived_from": "TIM2", "base": "0x40000400", "interrupts": ["TIM3"]},
+    {"name": "TIM4", "derived_from": "TIM2", "base": "0x40000800", "interrupts": ["TIM4"]},
+    {
+      "name": "WWDG",
+      "base": "0x40002C00",
+      "interrupts": ["WWDG"],
+      "registers": [
+        {
+          "name": "CR",
+          "offset": "0x00",
+          "reset": "0x0000007F",
+          "fields": [["T", 0, 7], ["WDGA", 7, 1, "rs"]]
+        },
+        {
+          "name": "CFR",
+          "offset": "0x04",
+          "reset": "0x0000007F",
+          "fields": [["W", 0, 7], ["WDGTB", 7, 2], ["EWI", 9, 1, "rs"]]
+        },
+        {
+          "name": "SR",
+          "offset": "0x08",
+          "fields": [["EWIF", 0, 1, "rc_w0"]]
+        }
+      ]
+    },
+    {
+      "name": "IWDG",
+      "base": "0x40003000",
+      "registers": [
+        {
+          "name": "KR",
+          "offset": "0x00",
+          "fields": [["KEY", 0, 16, "w"]]
+        },
+        {
+          "name": "PR",
+          "offset": "0x04",
+          "fields": [["PR", 0, 3]]
+        },
+        {
+          "name": "RLR",
+          "offset": "0x08",
+          "reset": "0x00000FFF",
+          "fields": [["RL", 0, 12]]
+        },
+        {
+          "name": "SR",
+          "offset": "0x0C",
+          "fields": [["PVU", 0, 1, "r"], ["RVU", 1, 1, "r"]]
+        }
+      ]
+    },
+    {"name": "SPI2", "derived_from": "SPI1", "base": "0x40003800", "interrupts": ["SPI2"]},
+    {"name": "USART2", "derived_from": "USART1", "base": "0x40004400", "interrupts": ["USART2"]},
+    {"name": "USART3", "derived_from": "USART1", "base": "0x40004800", "interrupts": ["USART3"]},
+    {
+      "name": "I2C1",
+      "base": "0x40005400",
+      "interrupts": ["I2C1_EV", "I2C1_ER"],
+      "registers": [
+        {
+          "name": "CR1",
+          "offset": "0x00",
+          "fields": [["CR1", 0, 16]]
+        },
+        {
+          "name": "CR2",
+          "offset": "0x04",
+          "fields": [["CR2", 0, 13]]
+        },
+        {
+          "name": "OAR1",
+          "offset": "0x08",
+          "fields": [["OAR1", 0, 16]]
+        },
+        {
+          "name": "OAR2",
+          "offset": "0x0C",
+          "fields": [["OAR2", 0, 8]]
+        },
+        {
+          "name": "DR",
+          "offset": "0x10",
+          "fields": [["DR", 0, 8]]
+        },
+        {
+          "name": "SR1",
+          "offset": "0x14",
+          "fields": [["SR1", 0, 16, "r"]]
+        },
+        {
+          "name": "SR2",
+          "offset": "0x18",
+          "fields": [["SR2", 0, 16, "r"]]
+        },
+        {
+          "name": "CCR",
+          "offset": "0x1C",
+          "fields": [["CCR", 0, 16]]
+        },
+        {
+          "name": "TRISE",
+          "offset": "0x20",
+          "reset": "0x00000002",
+          "fields": [["TRISE", 0, 6]]
+        }
+      ]
+    },
+    {
+      "name": "I2C2",
+      "derived_from": "I2C1",
+      "base": "0x40005800",
+      "interrupts": ["I2C2_EV", "I2C2_ER"]
+    },
+    {
+      "name": "PWR",
+      "base": "0x40007000",
+      "interrupts": ["PVD"],
+      "registers": [
+        {
+          "name": "CR",
+          "offset": "0x00",
+          "fields": [["LPDS", 0, 1], ["PDDS", 1, 1], ["CWUF", 2, 1], ["CSBF", 3, 1], ["PVDE", 4, 1], ["PLS", 5, 3], ["DBP", 8, 1]]
+        },
+        {
+          "name": "CSR",
+          "offset": "0x04",
+          "fields": [["WUF", 0, 1, "r"], ["SBF", 1, 1, "r"], ["PVDO", 2, 1, "r"], ["EWUP", 8, 1]]
+        }
+      ]
+    },
+    {
+      "name": "AFIO",
+      "base": "0x40010000",
+      "registers": [
+        {
+          "name": "EVCR",
+          "offset": "0x00",
+          "fields": [["PIN", 0, 4], ["PORT", 4, 3], ["EVOE", 7, 1]]
+        },
+        {
+          "name": "MAPR",
+          "offset": "0x04",
+          "fields": [["SPI1_REMAP", 0, 1], ["I2C1_REMAP", 1, 1], ["USART1_REMAP", 2, 1], ["USART2_REMAP", 3, 1], ["USART3_REMAP", 4, 2], ["TIM1_REMAP", 6, 2], ["TIM2_REMAP", 8, 2], ["TIM3_REMAP", 10, 2], ["TIM4_REMAP", 12, 1], ["CAN_REMAP", 13, 2], ["PD01_REMAP", 15, 1], ["TIM5CH4_IREMAP", 16, 1], ["ADC1_ETRGINJ_REMAP", 17, 1], ["ADC1_ETRGREG_REMAP", 18, 1], ["ADC2_ETRGINJ_REMAP", 19, 1], ["ADC2_ETRGREG_REMAP", 20, 1], ["SWJ_CFG", 24, 3, "w"]]
+        },
+        {
+          "name": "EXTICR1",
+          "offset": "0x08",
+          "fields": [["EXTI0", 0, 4], ["EXTI1", 4, 4], ["EXTI2", 8, 4], ["EXTI3", 12, 4]]
+        },
+        {
+          "name": "EXTICR2",
+          "offset": "0x0C",
+          "fields": [["EXTI4", 0, 4], ["EXTI5", 4, 4], ["EXTI6", 8, 4], ["EXTI7", 12, 4]]
+        },
+        {
+          "name": "EXTICR3",
+          "offset": "0x10",
+          "fields": [["EXTI8", 0, 4], ["EXTI9", 4, 4], ["EXTI10", 8, 4], ["EXTI11", 12, 4]]
+        },
+        {
+          "name": "EXTICR4",
+          "offset": "0x14",
+          "fields": [["EXTI12", 0, 4], ["EXTI13", 4, 4], ["EXTI14", 8, 4], ["EXTI15", 12, 4]]
+        },
+        {
+          "name": "MAPR2",
+          "offset": "0x1C",
+          "fields": [["TIM9_REMAP", 5, 1], ["TIM10_REMAP", 6, 1], ["TIM11_REMAP", 7, 1], ["TIM13_REMAP", 8, 1], ["TIM14_REMAP", 9, 1], ["FSMC_NADV", 10, 1]]
+        }
+      ]
+    },
+    {
+      "name": "EXTI",
+      "base": "0x40010400",
+      "interrupts": ["EXTI0", "EXTI1", "EXTI2", "EXTI3", "EXTI4", "EXTI9_5", "EXTI15_10", "PVD", "RTCAlarm", "USBWakeup"],
+      "registers": [
+        {
+          "name": "IMR",
+          "offset": "0x00",
+          "fields": [["MR", 0, 19]]
+        },
+        {
+          "name": "EMR",
+          "offset": "0x04",
+          "fields": [["MR", 0, 19]]
+        },
+        {
+          "name": "RTSR",
+          "offset": "0x08",
+          "fields": [["TR", 0, 19]]
+        },
+        {
+          "name": "FTSR",
+          "offset": "0x0C",
+          "fields": [["TR", 0, 19]]
+        },
+        {
+          "name": "SWIER",
+          "offset": "0x10",
+          "fields": [["SWIER", 0, 19]]
+        },
+        {
+          "name": "PR",
+          "offset": "0x14",
+          "fields": [["PR", 0, 19, "rc_w1"]]
+        }
+      ]
+    },
+    {
+      "name": "GPIOA",
+      "base": "0x40010800",
+      "registers": [
+        {"name": "CRL", "offset": "0x00", "reset": "0x44444444"},
+        {"name": "CRH", "offset": "0x04", "reset": "0x44444444"},
+        {
+          "name": "IDR",
+          "offset": "0x08",
+          "fields": [["IDR", 0, 16, "r"]]
+        },
+        {
+          "name": "ODR",
+          "offset": "0x0C",
+          "fields": [["ODR", 0, 16]]
+        },
+        {
+          "name": "BSRR",
+          "offset": "0x10",
+          "fields": [["BS", 0, 16, "w"], ["BR", 16, 16, "w"]]
+        },
+        {
+          "name": "BRR",
+          "offset": "0x14",
+          "fields": [["BR", 0, 16, "w"]]
+        },
+        {
+          "name": "LCKR",
+          "offset": "0x18",
+          "fields": [["LCK", 0, 16], ["LCKK", 16, 1]]
+        }
+      ]
+    },
+    {"name": "GPIOB", "derived_from": "GPIOA", "base": "0x40010C00"},
+    {"name": "GPIOC", "derived_from": "GPIOA", "base": "0x40011000"},
+    {"name": "GPIOD", "derived_from": "GPIOA", "base": "0x40011400"},
+    {"name": "GPIOE", "derived_from": "GPIOA", "base": "0x40011800"},
+    {
+      "name": "ADC1",
+      "base": "0x40012400",
+      "interrupts": ["ADC1_2"],
+      "registers": [
+        {
+          "name": "SR",
+          "offset": "0x00",
+          "fields": [["AWD", 0, 1, "rc_w0"], ["EOC", 1, 1, "rc_w0"], ["JEOC", 2, 1, "rc_w0"], ["JSTRT", 3, 1, "rc_w0"], ["STRT", 4, 1, "rc_w0"]]
+        },
+        {"name": "CR1", "offset": "0x04"},
+        {"name": "CR2", "offset": "0x08"},
+        {"name": "SMPR1", "offset": "0x0C"},
+        {"name": "SMPR2", "offset": "0x10"},
+        {"name": "JOFR1", "offset": "0x14"},
+        {"name": "JOFR2", "offset": "0x18"},
+        {"name": "JOFR3", "offset": "0x1C"},
+        {"name": "JOFR4", "offset": "0x20"},
+        {
+          "name": "HTR",
+          "offset": "0x24",
+          "reset": "0x00000FFF",
+          "fields": [["HT", 0, 12]]
+        },
+        {
+          "name": "LTR",
+          "offset": "0x28",
+          "fields": [["LT", 0, 12]]
+        },
+        {"name": "SQR1", "offset": "0x2C"},
+        {"name": "SQR2", "offset": "0x30"},
+        {"name": "SQR3", "offset": "0x34"},
+        {"name": "JSQR", "offset": "0x38"},
+        {
+          "name": "JDR1",
+          "offset": "0x3C",
+          "fields": [["JDATA", 0, 16, "r"]]
+        },
+        {
+          "name": "JDR2",
+          "offset": "0x40",
+          "fields": [["JDATA", 0, 16, "r"]]
+        },
+        {
+          "name": "JDR3",
+          "offset": "0x44",
+          "fields": [["JDATA", 0, 16, "r"]]
+        },
+        {
+          "name": "JDR4",
+          "offset": "0x48",
+          "fields": [["JDATA", 0, 16, "r"]]
+        },
+        {
+          "name": "DR",
+          "offset": "0x4C",
+          "fields": [["DATA", 0, 16, "r"], ["ADC2DATA", 16, 16, "r"]]
+        }
+      ]
+    },
+    {"name": "ADC2", "derived_from": "ADC1", "base": "0x40012800", "interrupts": ["ADC1_2"]},
+    {
+      "name": "TIM1",
+      "base": "0x40012C00",
+      "interrupts": ["TIM1_BRK", "TIM1_UP", "TIM1_TRG_COM", "TIM1_CC"],
+      "registers": [
+        {
+          "name": "CR1",
+          "offset": "0x00",
+          "fields": [["CEN", 0, 1], ["UDIS", 1, 1], ["URS", 2, 1], ["OPM", 3, 1], ["DIR", 4, 1], ["CMS", 5, 2], ["ARPE", 7, 1], ["CKD", 8, 2]]
+        },
+        {
+          "name": "CR2",
+          "offset": "0x04",
+          "fields": [["CCPC", 0, 1], ["CCUS", 2, 1], ["CCDS", 3, 1], ["MMS", 4, 3], ["TI1S", 7, 1], ["OIS1", 8, 1], ["OIS1N", 9, 1], ["OIS2", 10, 1], ["OIS2N", 11, 1], ["OIS3", 12, 1], ["OIS3N", 13, 1], ["OIS4", 14, 1]]
+        },
+        {
+          "name": "SMCR",
+          "offset": "0x08",
+          "fields": [["SMS", 0, 3], ["TS", 4, 3], ["MSM", 7, 1], ["ETF", 8, 4], ["ETPS", 12, 2], ["ECE", 14, 1], ["ETP", 15, 1]]
+        },
+        {
+          "name": "DIER",
+          "offset": "0x0C",
+          "fields": [["UIE", 0, 1], ["CC1IE", 1, 1], ["CC2IE", 2, 1], ["CC3IE", 3, 1], ["CC4IE", 4, 1], ["COMIE", 5, 1], ["TIE", 6, 1], ["BIE", 7, 1], ["UDE", 8, 1], ["CC1DE", 9, 1], ["CC2DE", 10, 1], ["CC3DE", 11, 1], ["CC4DE", 12, 1], ["COMDE", 13, 1], ["TDE", 14, 1]]
+        },
+        {
+          "name": "SR",
+          "offset": "0x10",
+          "fields": [["UIF", 0, 1, "rc_w0"], ["CC1IF", 1, 1, "rc_w0"], ["CC2IF", 2, 1, "rc_w0"], ["CC3IF", 3, 1, "rc_w0"], ["CC4IF", 4, 1, "rc_w0"], ["COMIF", 5, 1, "rc_w0"], ["TIF", 6, 1, "rc_w0"], ["BIF", 7, 1, "rc_w0"], ["CC1OF", 9, 1, "rc_w0"], ["CC2OF", 10, 1, "rc_w0"], ["CC3OF", 11, 1, "rc_w0"], ["CC4OF", 12, 1, "rc_w0"]]
+        },
+        {
+          "name": "EGR",
+          "offset": "0x14",
+          "fields": [["UG", 0, 1, "w"], ["CC1G", 1, 1, "w"], ["CC2G", 2, 1, "w"], ["CC3G", 3, 1, "w"], ["CC4G", 4, 1, "w"], ["COMG", 5, 1, "w"], ["TG", 6, 1, "w"], ["BG", 7, 1, "w"]]
+        },
+        {
+          "name": "CCMR1",
+          "offset": "0x18",
+          "fields": [["CCMR1", 0, 16]]
+        },
+        {
+          "name": "CCMR2",
+          "offset": "0x1C",
+          "fields": [["CCMR2", 0, 16]]
+        },
+        {
+          "name": "CCER",
+          "offset": "0x20",
+          "fields": [["CC1E", 0, 1], ["CC1P", 1, 1], ["CC1NE", 2, 1], ["CC1NP", 3, 1], ["CC2E", 4, 1], ["CC2P", 5, 1], ["CC2NE", 6, 1], ["CC2NP", 7, 1], ["CC3E", 8, 1], ["CC3P", 9, 1], ["CC3NE", 10, 1], ["CC3NP", 11, 1], ["CC4E", 12, 1], ["CC4P", 13, 1]]
+        },
+        {
+          "name": "CNT",
+          "offset": "0x24",
+          "fields": [["CNT", 0, 16]]
+        },
+        {
+          "name": "PSC",
+          "offset": "0x28",
+          "fields": [["PSC", 0, 16]]
+        },
+        {
+          "name": "ARR",
+          "offset": "0x2C",
+          "reset": "0x0000FFFF",
+          "fields": [["ARR", 0, 16]]
+        },
+        {
+          "name": "RCR",
+          "offset": "0x30",
+          "fields": [["REP", 0, 8]]
+        },
+        {
+          "name": "CCR1",
+          "offset": "0x34",
+          "fields": [["CCR1", 0, 16]]
+        },
+        {
+          "name": "CCR2",
+          "offset": "0x38",
+          "fields": [["CCR2", 0, 16]]
+        },
+        {
+          "name": "CCR3",
+          "offset": "0x3C",
+          "fields": [["CCR3", 0, 16]]
+        },
+        {
+          "name": "CCR4",
+          "offset": "0x40",
+          "fields": [["CCR4", 0, 16]]
+        },
+        {
+          "name": "BDTR",
+          "offset": "0x44",
+          "fields": [["DTG", 0, 8], ["LOCK", 8, 2], ["OSSI", 10, 1], ["OSSR", 11, 1], ["BKE", 12, 1], ["BKP", 13, 1], ["AOE", 14, 1], ["MOE", 15, 1]]
+        },
+        {
+          "name": "DCR",
+          "offset": "0x48",
+          "fields": [["DBA", 0, 5], ["DBL", 8, 5]]
+        },
+        {
+          "name": "DMAR",
+          "offset": "0x4C",
+          "fields": [["DMAB", 0, 16]]
+        }
+      ]
+    },
+    {
+      "name": "SPI1",
+      "base": "0x40013000",
+      "interrupts": ["SPI1"],
+      "registers": [
+        {"name": "CR1", "offset": "0x00"},
+        {"name": "CR2", "offset": "0x04"},
+        {
+          "name": "SR",
+          "offset": "0x08",
+          "reset": "0x00000002",
+          "fields": [["RXNE", 0, 1, "r"], ["TXE", 1, 1, "r"], ["CHSIDE", 2, 1, "r"], ["UDR", 3, 1, "r"], ["CRCERR", 4, 1, "rc_w0"], ["MODF", 5, 1, "r"], ["OVR", 6, 1, "r"], ["BSY", 7, 1, "r"]]
+        },
+        {
+          "name": "DR",
+          "offset": "0x0C",
+          "fields": [["DR", 0, 16]]
+        },
+        {
+          "name": "CRCPR",
+          "offset": "0x10",
+          "reset": "0x00000007",
+          "fields": [["CRCPOLY", 0, 16]]
+        },
+        {
+          "name": "RXCRCR",
+          "offset": "0x14",
+          "fields": [["RXCRC", 0, 16, "r"]]
+        },
+        {
+          "name": "TXCRCR",
+          "offset": "0x18",
+          "fields": [["TXCRC", 0, 16, "r"]]
+        },
+        {
+          "name": "I2SCFGR",
+          "offset": "0x1C",
+          "fields": [["I2SCFGR", 0, 12]]
+        },
+        {
+          "name": "I2SPR",
+          "offset": "0x20",
+          "reset": "0x00000002",
+          "fields": [["I2SPR", 0, 10]]
+        }
+      ]
+    },
+    {
+      "name": "USART1",
+      "base": "0x40013800",
+      "interrupts": ["USART1"],
+      "registers": [
+        {
+          "name": "SR",
+          "offset": "0x00",
+          "reset": "0x000000C0",
+          "fields": [["PE", 0, 1, "r"], ["FE", 1, 1, "r"], ["NE", 2, 1, "r"], ["ORE", 3, 1, "r"], ["IDLE", 4, 1, "r"], ["RXNE", 5, 1, "rc_w0"], ["TC", 6, 1, "rc_w0"], ["TXE", 7, 1, "r"], ["LBD", 8, 1, "rc_w0"], ["CTS", 9, 1, "rc_w0"]]
+        },
+        {
+          "name": "DR",
+          "offset": "0x04",
+          "fields": [["DR", 0, 9]]
+        },
+        {
+          "name": "BRR",
+          "offset": "0x08",
+          "fields": [["DIV_Fraction", 0, 4], ["DIV_Mantissa", 4, 12]]
+        },
+        {
+          "name": "CR1",
+          "offset": "0x0C",
+          "fields": [["SBK", 0, 1], ["RWU", 1, 1], ["RE", 2, 1], ["TE", 3, 1], ["IDLEIE", 4, 1], ["RXNEIE", 5, 1], ["TCIE", 6, 1], ["TXEIE", 7, 1], ["PEIE", 8, 1], ["PS", 9, 1], ["PCE", 10, 1], ["WAKE", 11, 1], ["M", 12, 1], ["UE", 13, 1]]
+        },
+        {
+          "name": "CR2",
+          "offset": "0x10",
+          "fields": [["ADD", 0, 4], ["LBDL", 5, 1], ["LBDIE", 6, 1], ["LBCL", 8, 1], ["CPHA", 9, 1], ["CPOL", 10, 1], ["CLKEN", 11, 1], ["STOP", 12, 2], ["LINEN", 14, 1]]
+        },
+        {
+          "name": "CR3",
+          "offset": "0x14",
+          "fields": [["EIE", 0, 1], ["IREN", 1, 1], ["IRLP", 2, 1], ["HDSEL", 3, 1], ["NACK", 4, 1], ["SCEN", 5, 1], ["DMAR", 6, 1], ["DMAT", 7, 1], ["RTSE", 8, 1], ["CTSE", 9, 1], ["CTSIE", 10, 1]]
+        },
+        {
+          "name": "GTPR",
+          "offset": "0x18",
+          "fields": [["PSC", 0, 8], ["GT", 8, 8]]
+        }
+      ]
+    },
+    {
+      "name": "DMA1",
+      "base": "0x40020000",
+      "interrupts": ["DMA1_Channel1", "DMA1_Channel2", "DMA1_Channel3", "DMA1_Channel4", "DMA1_Channel5", "DMA1_Channel6", "DMA1_Channel7"],
+      "registers": [
+        {
+          "name": "ISR",
+          "offset": "0x00",
+          "fields": [["ISR", 0, 28, "r"]]
+        },
+        {
+          "name": "IFCR",
+          "offset": "0x04",
+          "fields": [["IFCR", 0, 28, "w"]]
+        },
+        {
+          "name": "CCR1",
+          "offset": "0x08",
+          "fields": [["CCR", 0, 15]]
+        },
+        {
+          "name": "CNDTR1",
+          "offset": "0x0C",
+          "fields": [["NDT", 0, 16]]
+        },
+        {"name": "CPAR1", "offset": "0x10"},
+        {"name": "CMAR1", "offset": "0x14"},
+        {
+          "name": "CCR2",
+          "offset": "0x1C",
+          "fields": [["CCR", 0, 15]]
+        },
+        {
+          "name": "CNDTR2",
+          "offset": "0x20",
+          "fields": [["NDT", 0, 16]]
+        },
+        {"name": "CPAR2", "offset": "0x24"},
+        {"name": "CMAR2", "offset": "0x28"},
+        {
+          "name": "CCR3",
+          "offset": "0x30",
+          "fields": [["CCR", 0, 15]]
+        },
+        {
+          "name": "CNDTR3",
+          "offset": "0x34",
+          "fields": [["NDT", 0, 16]]
+        },
+        {"name": "CPAR3", "offset": "0x38"},
+        {"name": "CMAR3", "offset": "0x3C"},
+        {
+          "name": "CCR4",
+          "offset": "0x44",
+          "fields": [["CCR", 0, 15]]
+        },
+        {
+          "name": "CNDTR4",
+          "offset": "0x48",
+          "fields": [["NDT", 0, 16]]
+        },
+        {"name": "CPAR4", "offset": "0x4C"},
+        {"name": "CMAR4", "offset": "0x50"},
+        {
+          "name": "CCR5",
+          "offset": "0x58",
+          "fields": [["CCR", 0, 15]]
+        },
+        {
+          "name": "CNDTR5",
+          "offset": "0x5C",
+          "fields": [["NDT", 0, 16]]
+        },
+        {"name": "CPAR5", "offset": "0x60"},
+        {"name": "CMAR5", "offset": "0x64"},
+        {
+          "name": "CCR6",
+          "offset": "0x6C",
+          "fields": [["CCR", 0, 15]]
+        },
+        {
+          "name": "CNDTR6",
+          "offset": "0x70",
+          "fields": [["NDT", 0, 16]]
+        },
+        {"name": "CPAR6", "offset": "0x74"},
+        {"name": "CMAR6", "offset": "0x78"},
+        {
+          "name": "CCR7",
+          "offset": "0x80",
+          "fields": [["CCR", 0, 15]]
+        },
+        {
+          "name": "CNDTR7",
+          "offset": "0x84",
+          "fields": [["NDT", 0, 16]]
+        },
+        {"name": "CPAR7", "offset": "0x88"},
+        {"name": "CMAR7", "offset": "0x8C"}
+      ]
+    },
+    {
+      "name": "RCC",
+      "base": "0x40021000",
+      "interrupts": ["RCC"],
+      "registers": [
+        {
+          "name": "CR",
+          "offset": "0x00",
+          "reset": "0x00000083",
+          "fields": [["HSION", 0, 1], ["HSIRDY", 1, 1, "r"], ["HSITRIM", 3, 5], ["HSICAL", 8, 8, "r"], ["HSEON", 16, 1], ["HSERDY", 17, 1, "r"], ["HSEBYP", 18, 1], ["CSSON", 19, 1], ["PLLON", 24, 1], ["PLLRDY", 25, 1, "r"]]
+        },
+        {
+          "name": "CFGR",
+          "offset": "0x04",
+          "fields": [["SW", 0, 2], ["SWS", 2, 2, "r"], ["HPRE", 4, 4], ["PPRE1", 8, 3], ["PPRE2", 11, 3], ["ADCPRE", 14, 2], ["PLLSRC", 16, 1], ["PLLXTPRE", 17, 1], ["PLLMUL", 18, 4], ["USBPRE", 22, 1], ["MCO", 24, 3]]
+        },
+        {
+          "name": "CIR",
+          "offset": "0x08",
+          "fields": [["LSIRDYF", 0, 1, "r"], ["LSERDYF", 1, 1, "r"], ["HSIRDYF", 2, 1, "r"], ["HSERDYF", 3, 1, "r"], ["PLLRDYF", 4, 1, "r"], ["CSSF", 7, 1, "r"], ["LSIRDYIE", 8, 1], ["LSERDYIE", 9, 1], ["HSIRDYIE", 10, 1], ["HSERDYIE", 11, 1], ["PLLRDYIE", 12, 1], ["LSIRDYC", 16, 1, "w"], ["LSERDYC", 17, 1, "w"], ["HSIRDYC", 18, 1, "w"], ["HSERDYC", 19, 1, "w"], ["PLLRDYC", 20, 1, "w"], ["CSSC", 23, 1, "w"]]
+        },
+        {
+          "name": "APB2RSTR",
+          "offset": "0x0C",
+          "fields": [["AFIORST", 0, 1], ["IOPARST", 2, 1], ["IOPBRST", 3, 1], ["IOPCRST", 4, 1], ["IOPDRST", 5, 1], ["IOPERST", 6, 1], ["ADC1RST", 9, 1], ["ADC2RST", 10, 1], ["TIM1RST", 11, 1], ["SPI1RST", 12, 1], ["USART1RST", 14, 1]]
+        },
+        {
+          "name": "APB1RSTR",
+          "offset": "0x10",
+          "fields": [["TIM2RST", 0, 1], ["TIM3RST", 1, 1], ["TIM4RST", 2, 1], ["WWDGRST", 11, 1], ["SPI2RST", 14, 1], ["USART2RST", 17, 1], ["USART3RST", 18, 1], ["I2C1RST", 21, 1], ["I2C2RST", 22, 1], ["USBRST", 23, 1], ["CANRST", 25, 1], ["BKPRST", 27, 1], ["PWRRST", 28, 1]]
+        },
+        {
+          "name": "AHBENR",
+          "offset": "0x14",
+          "reset": "0x00000014",
+          "fields": [["DMA1EN", 0, 1], ["SRAMEN", 2, 1], ["FLITFEN", 4, 1], ["CRCEN", 6, 1]]
+        },
+        {
+          "name": "APB2ENR",
+          "offset": "0x18",
+          "fields": [["AFIOEN", 0, 1], ["IOPAEN", 2, 1], ["IOPBEN", 3, 1], ["IOPCEN", 4, 1], ["IOPDEN", 5, 1], ["IOPEEN", 6, 1], ["ADC1EN", 9, 1], ["ADC2EN", 10, 1], ["TIM1EN", 11, 1], ["SPI1EN", 12, 1], ["USART1EN", 14, 1]]
+        },
+        {
+          "name": "APB1ENR",
+          "offset": "0x1C",
+          "fields": [["TIM2EN", 0, 1], ["TIM3EN", 1, 1], ["TIM4EN", 2, 1], ["WWDGEN", 11, 1], ["SPI2EN", 14, 1], ["USART2EN", 17, 1], ["USART3EN", 18, 1], ["I2C1EN", 21, 1], ["I2C2EN", 22, 1], ["USBEN", 23, 1], ["CANEN", 25, 1], ["BKPEN", 27, 1], ["PWREN", 28, 1]]
+        },
+        {
+          "name": "BDCR",
+          "offset": "0x20",
+          "fields": [["LSEON", 0, 1], ["LSERDY", 1, 1, "r"], ["LSEBYP", 2, 1], ["RTCSEL", 8, 2], ["RTCEN", 15, 1], ["BDRST", 16, 1]]
+        },
+        {
+          "name": "CSR",
+          "offset": "0x24",
+          "reset": "0x0C000000",
+          "fields": [["LSION", 0, 1], ["LSIRDY", 1, 1, "r"], ["RMVF", 24, 1], ["PINRSTF", 26, 1, "r"], ["PORRSTF", 27, 1, "r"], ["SFTRSTF", 28, 1, "r"], ["IWDGRSTF", 29, 1, "r"], ["WWDGRSTF", 30, 1, "r"], ["LPWRRSTF", 31, 1, "r"]]
+        }
+      ]
+    },
+    {
+      "name": "FLASH",
+      "base": "0x40022000",
+      "interrupts": ["FLASH"],
+      "registers": [
+        {
+          "name": "ACR",
+          "offset": "0x00",
+          "reset": "0x00000030",
+          "fields": [["LATENCY", 0, 3], ["HLFCYA", 3, 1], ["PRFTBE", 4, 1], ["PRFTBS", 5, 1, "r"]]
+        },
+        {
+          "name": "KEYR",
+          "offset": "0x04",
+          "fields": [["KEY", 0, 32, "w"]]
+        },
+        {
+          "name": "OPTKEYR",
+          "offset": "0x08",
+          "fields": [["OPTKEY", 0, 32, "w"]]
+        },
+        {
+          "name": "SR",
+          "offset": "0x0C",
+          "fields": [["BSY", 0, 1, "r"], ["PGERR", 2, 1, "rc_w1"], ["WRPRTERR", 4, 1, "rc_w1"], ["EOP", 5, 1, "rc_w1"]]
+        },
+        {
+          "name": "CR",
+          "offset": "0x10",
+          "reset": "0x00000080",
+          "fields": [["PG", 0, 1], ["PER", 1, 1], ["MER", 2, 1], ["OPTPG", 4, 1], ["OPTER", 5, 1], ["STRT", 6, 1], ["LOCK", 7, 1], ["OPTWRE", 9, 1], ["ERRIE", 10, 1], ["EOPIE", 12, 1]]
+        },
+        {
+          "name": "AR",
+          "offset": "0x14",
+          "fields": [["FAR", 0, 32, "w"]]
+        },
+        {
+          "name": "OBR",
+          "offset": "0x1C",
+          "reset": "0x03FFFFFC",
+          "fields": [["OBR", 0, 32, "r"]]
+        },
+        {
+          "name": "WRPR",
+          "offset": "0x20",
+          "reset": "0xFFFFFFFF",
+          "fields": [["WRP", 0, 32, "r"]]
+        }
+      ]
+    },
+    {
+      "name": "CRC",
+      "base": "0x40023000",
+      "registers": [
+        {"name": "DR", "offset": "0x00", "reset": "0xFFFFFFFF"},
+        {
+          "name": "IDR",
+          "offset": "0x04",
+          "fields": [["IDR", 0, 8]]
+        },
+        {
+          "name": "CR",
+          "offset": "0x08",
+          "fields": [["RESET", 0, 1, "w"]]
+        }
+      ]
+    }
+  ]
+}

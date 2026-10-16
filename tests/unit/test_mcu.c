@@ -4,7 +4,8 @@
  * running the committed test firmware (tests/firmware), its breakpoints and
  * its sleep. */
 #include "harness.h"
-#include "mcu/mach.h"
+#include "mcu/build.h"
+#include "util/json.h"
 
 static unsigned char *slurp(const char *rel, size_t *len)
 {
@@ -135,7 +136,237 @@ static void test_quanta_and_breakpoints(void)
     esk_mach_free(&m2);
 }
 
+/* ---- the Blue Pill, from the catalog's descriptions --------------------- */
+
+typedef struct board {
+    struct esk_mach m;
+    esk_alloc a;
+    esk_json *mcu, *regs;
+    char out[8192];      /* USART1's bytes */
+    size_t nout;
+    char log[8192];      /* the diagnostics and the LED, as EmbCC's stderr */
+    size_t nlog;
+    double led_ms[64];
+    int nled, led_on, led_known;
+    u64 chunk_cycles;    /* the machine's cycles when the chunk began */
+    double chunk_ps, hz; /* the time then, and the core clock in the chunk */
+    const char *input;
+} board;
+
+static double now_ms(const board *b)
+{
+    return (b->chunk_ps + (double)(b->m.cycles - b->chunk_cycles) * 1e12 / b->hz) / 1e9;
+}
+
+static void logf_(board *b, const char *s)
+{
+    size_t n = strlen(s);
+    if (b->nlog + n + 1 < sizeof b->log) {
+        memcpy(b->log + b->nlog, s, n + 1);
+        b->nlog += n;
+    }
+}
+
+static void b_uart(void *ctx, const char *unit, int c, u32 bit_cycles)
+{
+    board *b = (board *)ctx;
+    (void)bit_cycles;
+    if (!strcmp(unit, "USART1") && b->nout + 1 < sizeof b->out) {
+        b->out[b->nout++] = (char)c;
+        b->out[b->nout] = 0;
+    }
+}
+
+static void b_diag(void *ctx, int sev, const char *code, const char *msg)
+{
+    char line[400];
+    (void)sev;
+    snprintf(line, sizeof line, "%s: %s\n", code, msg);
+    logf_((board *)ctx, line);
+}
+
+static void b_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
+{
+    board *b = (board *)ctx;
+    int on;
+    char line[80];
+    if (port != 2 || bit != 13)
+        return;
+    on = cfg->drive == 0; /* the Blue Pill's LED is lit by a low PC13 */
+    if (b->led_known && on == b->led_on)
+        return;
+    if (!b->led_known && !on) {
+        b->led_known = 1;
+        b->led_on = 0;
+        return;
+    }
+    b->led_known = 1;
+    b->led_on = on;
+    if (b->nled < 64)
+        b->led_ms[b->nled++] = now_ms(b);
+    snprintf(line, sizeof line, "bluepill: LED %s (PC13)\n", on ? "on" : "off");
+    logf_(b, line);
+}
+
+static esk_json *load_json(esk_alloc *a, const char *rel)
+{
+    size_t len = 0;
+    unsigned char *text = slurp(rel, &len);
+    esk_json *j;
+    int line = 0;
+    const char *err = NULL;
+    if (!text)
+        return NULL;
+    j = esk_json_parse(a, (const char *)text, len, &line, &err);
+    free(text);
+    return j;
+}
+
+static int bluepill(board *b, const char *image)
+{
+    size_t len = 0;
+    unsigned char *img;
+    char why[200];
+    u32 entry = 0;
+    es_status st;
+    memset(b, 0, sizeof *b);
+    esk_alloc_init(&b->a, NULL);
+    b->mcu = load_json(&b->a, "catalog/mcus/st/stm32f103c8/mcu.json");
+    b->regs = load_json(&b->a, "catalog/mcus/st/stm32f103c8/registers.json");
+    CHECK(b->mcu != NULL && b->regs != NULL);
+    esk_mach_init(&b->m, &b->a);
+    b->m.host.ctx = b;
+    b->m.host.uart_tx = b_uart;
+    b->m.host.diag = b_diag;
+    b->m.host.pin_cfg = b_pin_cfg;
+    st = esk_mach_build(&b->m, b->mcu, b->regs, 8000000u, why, sizeof why);
+    if (st != ES_OK) {
+        FAIL(why);
+        return 0;
+    }
+    img = slurp(image, &len);
+    if (!img) {
+        FAIL(image);
+        return 0;
+    }
+    st = esk_mach_load_image(&b->m, img, len, &entry, why, sizeof why);
+    free(img);
+    if (st != ES_OK) {
+        FAIL(why);
+        return 0;
+    }
+    esk_mach_reset(&b->m);
+    return 1;
+}
+
+/* the runtime's loop, without the session: quanta at the core clock, the
+ * serial input fed while the receiver has room */
+static void run_board(board *b, u64 max_cycles)
+{
+    const char *in = b->input;
+    struct esk_rx_port *rx = esk_mach_rx_find(&b->m, "USART1");
+    while (b->m.state == ESK_MACH_RUN && b->m.cycles < max_cycles) {
+        u64 used;
+        b->hz = (double)esk_mach_core_hz(&b->m);
+        b->chunk_cycles = b->m.cycles;
+        if (in && *in && rx && rx->room(rx->ctx))
+            rx->put(rx->ctx, *in++);
+        used = esk_mach_run(&b->m, 2000, 0);
+        b->chunk_ps += (double)used * 1e12 / b->hz;
+        if (!used && b->m.asleep)
+            break; /* nothing left that can wake it */
+    }
+}
+
+static void board_free(board *b)
+{
+    esk_mach_free(&b->m);
+    esk_json_free(&b->a, b->mcu);
+    esk_json_free(&b->a, b->regs);
+    CHECK_EQ(b->a.live_bytes, 0);
+}
+
+/* EmbCC's expected output with EmbSIM's documented deltas applied */
+static char *expected(const char *rel)
+{
+    size_t len = 0;
+    unsigned char *t = slurp(rel, &len);
+    char *s;
+    if (!t)
+        return NULL;
+    s = (char *)malloc(len + 1);
+    memcpy(s, t, len);
+    s[len] = 0;
+    free(t);
+    return s;
+}
+
+static void apply_deltas(char *text, const char *deltas_rel)
+{
+    esk_alloc a;
+    esk_json *d;
+    size_t i;
+    esk_alloc_init(&a, NULL);
+    d = load_json(&a, deltas_rel);
+    CHECK(d != NULL);
+    for (i = 0; d && i < esk_json_len(esk_json_get(d, "deltas")); i++) {
+        const esk_json *x = esk_json_at(esk_json_get(d, "deltas"), i);
+        const char *from = esk_json_get_str(x, "embcc", ""), *to = esk_json_get_str(x, "embsim", "");
+        char *at = strstr(text, from);
+        CHECK(at != NULL && strlen(from) == strlen(to));
+        if (at)
+            memcpy(at, to, strlen(to));
+    }
+    esk_json_free(&a, d);
+}
+
+static void test_bluepill_golden(void)
+{
+    board *b = (board *)calloc(1, sizeof *b);
+    char *want;
+    int i;
+    if (!bluepill(b, "tests/firmware/bluepill-golden/bluepill.elf"))
+        return;
+    run_board(b, 200000000u);
+    want = expected("tests/firmware/bluepill-golden/bluepill.txt");
+    if (want) {
+        apply_deltas(want, "tests/firmware/bluepill-golden/deltas.json");
+        CHECK_STR(b->out, want);
+        free(want);
+    }
+    printf("%s", b->log);
+    /* the LED toggled by TIM2's update interrupt every 1 ms at 72 MHz, then
+     * every 2 ms at 36 MHz */
+    /* (the first two are the pin's set-up: on as an output, off by BSRR) */
+    CHECK_EQ(b->nled, 10);
+    for (i = 3; i < 8 && i < b->nled; i++)
+        CHECK_NEAR(b->led_ms[i] - b->led_ms[i - 1], 1.0, 0.0005);
+    for (i = 9; i < 10 && i < b->nled; i++)
+        CHECK_NEAR(b->led_ms[i] - b->led_ms[i - 1], 2.0, 0.0005);
+    CHECK(strstr(b->log, "mcu.clock_gated: a read at pc") != NULL);
+    CHECK(strstr(b->log, "GPIOA.IDR reads as 0 while its clock is off (RCC.APB2ENR.IOPAEN is 0)") != NULL);
+    CHECK(strstr(b->log, "USART2.BRR is ignored while its clock is off (RCC.APB1ENR.USART2EN is 0)") != NULL);
+    CHECK(strstr(b->log, "mcu.bus_fault: a word write at 0x40024000") != NULL);
+    board_free(b);
+    free(b);
+}
+
+/* USART1's receiver reads the serial input */
+static void test_bluepill_input(void)
+{
+    board *b = (board *)calloc(1, sizeof *b);
+    if (!bluepill(b, "tests/firmware/bluepill-golden/bluepill.elf"))
+        return;
+    b->input = "hi there\nnot this\n";
+    run_board(b, 200000000u);
+    CHECK(strstr(b->out, "rx 'hi there'\n") != NULL);
+    board_free(b);
+    free(b);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_hello);
 RUN(test_quanta_and_breakpoints);
+RUN(test_bluepill_golden);
+RUN(test_bluepill_input);
 TEST_MAIN_END

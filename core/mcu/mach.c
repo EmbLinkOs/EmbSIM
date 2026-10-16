@@ -161,6 +161,30 @@ void esk_mach_rx_port(struct esk_mach *m, const char *unit, int (*room)(void *ct
     m->nrx++;
 }
 
+void esk_mach_bus_error(struct esk_mach *m, u32 addr, int n, int write)
+{
+    static const char *const kinds[2][5] = {
+        { "an access", "a byte read", "a halfword read", "an access", "a word read" },
+        { "an access", "a byte write", "a halfword write", "an access", "a word write" },
+    };
+    char msg[160];
+    if (m->bus.debug || ++m->bus_errors > 10 || !m->host.diag)
+        return;
+    snprintf(msg, sizeof msg, "%s at 0x%08lx (pc 0x%08lx): nothing is mapped there",
+             n >= 1 && n <= 4 ? kinds[write != 0][n] : "an access", (unsigned long)addr,
+             (unsigned long)(m->cpu ? m->cpu->ops->pc(m->cpu) : 0));
+    m->host.diag(m->host.ctx, ES_SEV_WARNING, "mcu.bus_fault", msg);
+}
+
+struct esk_rx_port *esk_mach_rx_find(struct esk_mach *m, const char *unit)
+{
+    int i;
+    for (i = 0; i < m->nrx; i++)
+        if (m->rx[i].unit && !strcmp(m->rx[i].unit, unit))
+            return &m->rx[i];
+    return NULL;
+}
+
 void esk_mach_reset(struct esk_mach *m)
 {
     int i;
@@ -177,6 +201,7 @@ void esk_mach_reset(struct esk_mach *m)
     m->asleep = 0;
     m->reset_req = 0;
     m->yield = 0;
+    m->bus_errors = 0;
     if (m->cpu)
         m->cpu->ops->reset(m->cpu);
 }
