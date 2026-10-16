@@ -394,6 +394,47 @@ int esk_rf_rules(const esk_json *names)
     return rules;
 }
 
+/* a peripheral's reserved ranges: [offset, size] pairs */
+static es_status read_reserved(struct esk_mach *m, struct esk_rf_periph *p, const esk_json *list, char *why,
+                               size_t cap)
+{
+    size_t i, n = list ? esk_json_len(list) : 0;
+    if (!n)
+        return ES_OK;
+    p->rsv = (u32 *)esk_mach_alloc(m, 2 * n * sizeof *p->rsv);
+    if (!p->rsv)
+        return ES_ENOMEM;
+    for (i = 0; i < n; i++) {
+        const esk_json *e = esk_json_at(list, i);
+        u64 off = 0, size = 0;
+        if (esk_json_len(e) != 2 || num(esk_json_at(e, 0), &off) || num(esk_json_at(e, 1), &size) || !size ||
+            off + size > 0x10000000u) {
+            snprintf(why, cap, "%s: reserved range %zu is not [offset, size]", p->name, i);
+            return ES_ESCHEMA;
+        }
+        p->rsv[2 * i] = (u32)off;
+        p->rsv[2 * i + 1] = (u32)size;
+        if (p->base + (u32)(off + size) > p->end)
+            p->end = p->base + (u32)(off + size);
+    }
+    p->nrsv = (int)n;
+    return ES_OK;
+}
+
+/* the access is inside a peripheral's reserved range */
+static int reserved(const struct esk_rf *rf, u32 a, int n)
+{
+    int i, k;
+    for (i = 0; i < rf->np; i++) {
+        const struct esk_rf_periph *p = &rf->p[i];
+        for (k = 0; k < p->nrsv; k++)
+            if (a - (p->base + p->rsv[2 * k]) < p->rsv[2 * k + 1] &&
+                a + (u32)n - (p->base + p->rsv[2 * k]) <= p->rsv[2 * k + 1])
+                return 1;
+    }
+    return 0;
+}
+
 es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, char *why, size_t cap)
 {
     const esk_json *list = esk_json_get(desc, "peripherals");
@@ -443,6 +484,8 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, cha
         p->ctx = p;
         st = read_regs(m, p, esk_json_get(src, "registers"), p->base, why, cap);
         if (st == ES_OK)
+            st = read_reserved(m, p, esk_json_get(src, "reserved"), why, cap);
+        if (st == ES_OK)
             st = read_irqs(m, p, esk_json_get(pj, "interrupts") ? esk_json_get(pj, "interrupts")
                                                                  : esk_json_get(src, "interrupts"),
                            table, why, cap);
@@ -466,6 +509,9 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, cha
         }
     rf->lo = rf->reg[0]->addr & ~0x3ffu;
     rf->hi = rf->reg[rf->nreg - 1]->addr + (rf->reg[rf->nreg - 1]->sci ? 16u : 4u);
+    for (i = 0; i < np; i++)
+        if (rf->p[i].nrsv && rf->p[i].end > rf->hi)
+            rf->hi = rf->p[i].end;
     for (i = 0; (rules & ESK_RF_ATOMIC_ALIASES) && i < np; i++)
         if (rf->p[i].base < 0xd0000000u && rf->p[i].end + 0x3000u > rf->hi)
             rf->hi = rf->p[i].end + 0x3000u; /* its clear alias */
@@ -830,7 +876,8 @@ static u32 map_read(void *ctx, u32 off, int n)
         return 0;
     r = reg_at(rf, a, n);
     if (!r) {
-        hole(rf, a, n, 0);
+        if (!reserved(rf, a, n))
+            hole(rf, a, n, 0);
         return 0;
     }
     p = r->p;
@@ -871,7 +918,8 @@ static void map_write(void *ctx, u32 off, int n, u32 v)
         n = 4;
     }
     if (!r) {
-        hole(rf, a, n, 1);
+        if (!reserved(rf, a, n))
+            hole(rf, a, n, 1);
         return;
     }
     p = r->p;

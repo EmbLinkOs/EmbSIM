@@ -40,6 +40,7 @@ typedef struct fe {
     char tx[64];
     size_t ntx;
     u32 tx_bits;
+    int bus_errors; /* mcu.bus_error diagnostics */
 } fe;
 
 static unsigned char *slurp(const char *rel, size_t *len)
@@ -90,10 +91,11 @@ static void f_uart(void *ctx, const char *unit, int c, u32 bit_cycles)
 
 static void f_diag(void *ctx, int sev, const char *code, const char *msg)
 {
-    (void)ctx;
+    fe *f = (fe *)ctx;
     (void)sev;
-    (void)code;
     (void)msg;
+    if (!strcmp(code, "mcu.bus_error"))
+        f->bus_errors++;
 }
 
 /* an FE310 out of reset (HFROSC: 14.4 MHz) with `prog` at the reset pc and
@@ -212,6 +214,33 @@ static void test_uart_frame(void)
     fe_close(&f);
 }
 
+static void test_plic_reserved(void)
+{
+    /* the PLIC's registers past the FE310's 52 sources, which the PLIC
+     * specification has: they read 0 and ignore writes, without a bus
+     * error; source 0's priority reads 0; past them, a bus error */
+    static const u32 prog[] = { JAL_SELF };
+    fe f;
+    u32 v = 1;
+    if (!fe_open(&f, prog, 1, 0, 0))
+        return;
+    CHECK_EQ(esk_bus_write(&f.m.bus, 0x0c000000u, 4, 7), 0); /* source 0's priority */
+    CHECK_EQ(esk_bus_read(&f.m.bus, 0x0c000000u, 4, &v), 0);
+    CHECK_EQ(v, 0u);
+    CHECK_EQ(esk_bus_write(&f.m.bus, 0x0c002008u, 4, 0xffffffffu), 0); /* enables of 64 to 95 */
+    v = 1;
+    CHECK_EQ(esk_bus_read(&f.m.bus, 0x0c002008u, 4, &v), 0);
+    CHECK_EQ(v, 0u);
+    v = 1;
+    CHECK_EQ(esk_bus_read(&f.m.bus, 0x0c000ffcu, 4, &v), 0); /* source 1023's priority */
+    CHECK_EQ(v, 0u);
+    CHECK_EQ(esk_bus_read(&f.m.bus, 0x0c001004u, 4, &v), 0); /* PENDING1: a register */
+    CHECK_EQ(f.bus_errors, 0);
+    (void)esk_bus_read(&f.m.bus, 0x0c002080u, 4, &v); /* context 1's enables: not the FE310's */
+    CHECK_EQ(f.bus_errors, 1);
+    fe_close(&f);
+}
+
 static void test_disassembler(void)
 {
     char t[96];
@@ -228,5 +257,6 @@ RUN(test_alu_and_cycles);
 RUN(test_ecall_trap);
 RUN(test_clint_timer);
 RUN(test_uart_frame);
+RUN(test_plic_reserved);
 RUN(test_disassembler);
 TEST_MAIN_END

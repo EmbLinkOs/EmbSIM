@@ -1,0 +1,101 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "freedom-metal-vendor",
+ "description": "A HiFive1 Rev B running one of SiFive's freedom-e-sdk examples built with the unmodified freedom-metal library and the board's BSP (tests/vendor/freedom-metal/run.py puts the image beside this file as sketch.elf): a terminal on UART0 (D0/D1) at 115200 baud, the RGB LED's pins probed.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/hifive1_revb",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "VT1.GND"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "red",
+   "target": "net:B1.GPIO22",
+   "kind": "digital"
+  },
+  {
+   "id": "green",
+   "target": "net:B1.GPIO19",
+   "kind": "digital"
+  },
+  {
+   "id": "blue",
+   "target": "net:B1.GPIO21",
+   "kind": "digital"
+  }
+ ]
+}

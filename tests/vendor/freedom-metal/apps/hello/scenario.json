@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "hello",
+  "until": "100ms",
+  "description": "software/hello: printf through picolibc and freedom-metal's tty on UART0.",
+  "assertions": [
+    {
+      "id": "hello",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Hello, World!"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

@@ -248,6 +248,13 @@ versions follow semantic versioning. There is no release yet.
   `bkpt` stubs in the ROM, so unmodified Pico SDK images run;
   `tests/vendor/pico-sdk` builds one with the SDK's own CMake and runs it on
   the Pico in CI's linux-gcc job.
+- SiFive's freedom-e-sdk examples on the HiFive1: `tests/vendor/freedom-metal`
+  builds six of them (hello, sifive-welcome, csr, uart-interrupt,
+  example-user-mode, minimal-boot) with the unmodified freedom-metal and the
+  board's BSP, as the SDK's build does, and runs them under scenarios in CI's
+  linux-gcc job.
+- A register description's peripheral may name `reserved` ranges, offsets
+  with no register that read 0 and ignore writes as the part documents them.
 
 ### Changed
 - The analog fixtures are checked against ngspice too: `ngspice.json` beside
@@ -270,6 +277,11 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The FE310's PLIC had no register for source 0's priority, nor for the
+  priority, pending and enable words of the sources past its last, which
+  the PLIC specification has: freedom-metal's PLIC set-up writes and reads
+  them, and each was a bus error. Source 0's priority reads 0, and the
+  rest are reserved ranges.
 - The RP2040's RESETS reported RESET_DONE only for the blocks with a
   register description, so the Pico SDK's start-up waited for JTAG, TBMAN
   and the rest without end; every block reports its reset done.
