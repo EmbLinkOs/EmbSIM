@@ -59,6 +59,9 @@ struct es_session {
     char *name;
     int loaded;
     int policy_forced;      /* the session config fixed the policy; the project cannot change it */
+    /* origins besides its own the WebSocket server accepts (the desktop shell) */
+    char *allow_origin[8];
+    int n_allow_origin;
     /* project.transaction: the project as edited between begin and commit */
     esk_json *tx_project;
     int tx_id, tx_last, tx_structural;

@@ -8,7 +8,7 @@ import { expect, test } from '@playwright/test';
 
 test('open, run, press, observe, export', async ({ page }) => {
   await page.goto('/?mock=1');
-  await expect(page.getByText('Demo session')).toBeVisible();
+  await expect(page.getByText('Demo session').first()).toBeVisible();
   await expect(page.getByRole('application', { name: 'Schematic canvas' })).toBeVisible();
 
   await page.getByRole('radio', { name: 'Run', exact: true }).click();
@@ -42,6 +42,9 @@ test('keyboard: place and wire from the library, light theme contrast', async ({
   await page.keyboard.press('Enter');
   await expect(page.getByRole('button', { name: /Pin C1.1, net COLL/ })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Switch to light theme' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  // the theme follows the system first; the toggle switches to the other
+  const before = await page.locator('html').getAttribute('data-theme');
+  const other = before === 'dark' ? 'light' : 'dark';
+  await page.getByRole('button', { name: `Switch to ${other} theme` }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', other);
 });

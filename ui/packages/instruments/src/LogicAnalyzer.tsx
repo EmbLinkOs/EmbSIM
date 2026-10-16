@@ -107,7 +107,7 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
       ctx.moveTo(x, PLOT_TOP);
       ctx.lineTo(x, PLOT_TOP + ph);
       ctx.stroke();
-      ctx.fillText(t.label, x, PLOT_TOP + ph + 5);
+      if (x < PLOT_LEFT + pw - 30) ctx.fillText(t.label, x, PLOT_TOP + ph + 5); // the unit sits at the right end
     }
     ctx.textAlign = 'left';
     ctx.fillText(unitLabel(tk.unit), PLOT_LEFT + pw - 18, PLOT_TOP + ph + 5);

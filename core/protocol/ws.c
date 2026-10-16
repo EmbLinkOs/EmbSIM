@@ -11,6 +11,7 @@
 #include "host/host.h"
 #include "protocol/protocol.h"
 #include "protocol/wsutil.h"
+#include "session/session_priv.h"
 #include "util/str.h"
 
 #define WS_HTTP_HEAD_MAX 16384      /* bytes of request head accepted */
@@ -263,10 +264,15 @@ static int authority_is_us(const ws_server *srv, const char *authority)
 
 static int origin_is_us(const ws_server *srv, const char *origin)
 {
+    int i;
     if (!origin)
         return 1; /* non-browser clients send none */
-    if (strncmp(origin, "http://", 7) == 0)
-        return authority_is_us(srv, origin + 7);
+    if (strncmp(origin, "http://", 7) == 0 && authority_is_us(srv, origin + 7))
+        return 1;
+    /* the origins the host allowed (the desktop shell's webview) */
+    for (i = 0; i < srv->s->n_allow_origin; i++)
+        if (!strcmp(origin, srv->s->allow_origin[i]))
+            return 1;
     return 0;
 }
 

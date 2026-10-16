@@ -75,8 +75,21 @@ export interface ConnectOptions {
   isDemo?: boolean;
 }
 
-/** Connects, opens the session and primes every store. Safe to call once per page. */
-export async function connectSession(options: ConnectOptions = {}): Promise<Client> {
+let connecting: Promise<Client> | null = null;
+
+/**
+ * Connects, opens the session and primes every store. A second call while
+ * one is under way (React's development double effects) shares it: the
+ * engine serves one client at a time, so a second socket would wait forever.
+ */
+export function connectSession(options: ConnectOptions = {}): Promise<Client> {
+  connecting ??= openSession(options).finally(() => {
+    connecting = null;
+  });
+  return connecting;
+}
+
+async function openSession(options: ConnectOptions): Promise<Client> {
   const session = useSession.getState();
   session.setConnection({ status: 'connecting' });
   let isDemo = options.isDemo ?? false;

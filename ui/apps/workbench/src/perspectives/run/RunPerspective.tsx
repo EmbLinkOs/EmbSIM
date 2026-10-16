@@ -85,7 +85,7 @@ export function RunPerspective() {
   useRegisterCommands('run', commands);
 
   const probesList = (
-    <div className="es-row" style={{ flexWrap: 'wrap', gap: 'var(--space-1)' }}>
+    <div className="es-row" style={{ flexWrap: 'nowrap', gap: 'var(--space-1)' }}>
       {inst.probes.map((p) => (
         <span key={p.probe} className="es-badge" title={p.target}>
           {p.probe}

@@ -208,6 +208,8 @@ void es_session_destroy(es_session *s)
     esk_strfree(s->a, s->record_path);
     esk_json_free(s->a, s->inputs_log);
     esk_json_free(s->a, s->tx_project);
+    while (s->n_allow_origin > 0)
+        esk_strfree(s->a, s->allow_origin[--s->n_allow_origin]);
     esk_diag_free(&s->diag);
     tmp = s->alloc;
     esk_free(&tmp, s, sizeof *s);
@@ -1154,4 +1156,18 @@ es_status es_catalog_validate(es_catalog *c, const char *path, char **report_jso
     if (report_json)
         *report_json = NULL;
     return ES_EUNSUPPORTED; /* schema validation is the Python tool's in M0 */
+}
+
+ES_API es_status es_serve_allow_origin(es_session *s, const char *origin)
+{
+    char *copy;
+    if (!s || !origin || !*origin)
+        return ES_EINVAL;
+    if (s->n_allow_origin >= (int)ES_COUNTOF(s->allow_origin))
+        return ES_ELIMIT;
+    copy = esk_strdup(s->a, origin);
+    if (!copy)
+        return ES_ENOMEM;
+    s->allow_origin[s->n_allow_origin++] = copy;
+    return ES_OK;
 }

@@ -135,7 +135,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
       ctx.moveTo(Math.round(x) + 0.5, PLOT_TOP);
       ctx.lineTo(Math.round(x) + 0.5, PLOT_TOP + ph);
       ctx.stroke();
-      ctx.fillText(t.label, x, PLOT_TOP + ph + 5);
+      if (x < PLOT_LEFT + pw - 30) ctx.fillText(t.label, x, PLOT_TOP + ph + 5); // the unit sits at the right end
     }
     ctx.textAlign = 'left';
     ctx.fillText(unitLabel(tk.unit), PLOT_LEFT + pw - 18, PLOT_TOP + ph + 5);

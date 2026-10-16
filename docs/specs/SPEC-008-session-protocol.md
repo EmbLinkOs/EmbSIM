@@ -18,6 +18,14 @@ JSON-RPC 2.0. Requests, responses and notifications are UTF-8 JSON objects.
 Batch requests are not supported. Every request has an `id`; the server
 replies in order per transport but may interleave notifications.
 
+The WebSocket endpoint listens on loopback and serves one client at a
+time. A browser connection is accepted when its `Origin` is the server's
+own (`http://127.0.0.1:PORT`, `http://localhost:PORT`) or one the host
+allowed (`embsim serve --allow-origin ORIGIN`, `es_serve_allow_origin`):
+the desktop shell allows its webview's origin (`tauri://localhost`,
+`http://tauri.localhost`), so a page on another site cannot drive the
+engine. Clients that send no `Origin` (scripts, tools) are accepted.
+
 ## 2. Versioning and capabilities
 
 `session.open` (or the implicit first call on the in-process transport)
