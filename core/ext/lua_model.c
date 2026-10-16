@@ -16,7 +16,11 @@
  *   ctx.wake_at(time_ps, token?), ctx.cancel(token?), ctx.input(name),
  *   ctx.diag(severity, code, message).
  * ctx.pins[name].voltage is the node voltage on an analog net (the level
- * times the supply on a digital one). Levels are 0 and 1, "z" (nothing
+ * times the supply on a digital one). ctx.analog reads the analog side
+ * alone: voltage(pin) and between(a, b) are nil off an analog net, and
+ * watch(pin, rising, falling?) sets an input's comparator thresholds, so
+ * on_input comes at the model's own levels (a reset restores the pin
+ * model's). Levels are 0 and 1, "z" (nothing
  * drives the net) and "x" (unknown); a
  * drive accepts those, booleans and "0"/"1". Tokens are 0 to 7.
  *
@@ -57,12 +61,25 @@ typedef struct lua_host {
 typedef struct i2c_slave i2c_slave;
 typedef struct spi_slave spi_slave;
 
+#define MAX_WATCH 16
+/* the wake-up token of ctx.analog.watch's comparison (a script's are 0-7) */
+#define ANALOG_TOKEN 8u
+
+/* an input whose comparator ctx.analog.watch moved: the pin model's
+ * thresholds, which a reset restores */
+typedef struct analog_watch {
+    esk_pin *p;
+    double vih, vil, hyst;
+} analog_watch;
+
 typedef struct lua_inst {
     lua_host *h;
     int mod, ctx, env; /* registry references */
     int dead;
     i2c_slave *i2c;    /* ctx.bus helpers, when the model asked for them */
     spi_slave *spi;
+    analog_watch watch[MAX_WATCH];
+    int nwatch;
 } lua_inst;
 
 static int run(esk_comp *c, int nargs, int nres);
@@ -380,6 +397,104 @@ static int pin_field(lua_State *L)
     return 1;
 }
 
+/* ---- ctx.analog: the analog side of the pins (SPEC-013 §2) ---------------- */
+
+/* the pin's node voltage, when its net is analog */
+static int analog_volts(const esk_pin *p, double *v)
+{
+    if (!p->net || !p->net->island)
+        return 0;
+    *v = p->net->voltage;
+    return 1;
+}
+
+static int api_analog_voltage(lua_State *L)
+{
+    double v;
+    if (analog_volts(check_pin(L, ctx_comp(L), 1), &v))
+        lua_pushnumber(L, (lua_Number)v);
+    else
+        lua_pushnil(L);
+    return 1;
+}
+
+static int api_analog_between(lua_State *L)
+{
+    esk_comp *c = ctx_comp(L);
+    double va, vb;
+    if (analog_volts(check_pin(L, c, 1), &va) && analog_volts(check_pin(L, c, 2), &vb))
+        lua_pushnumber(L, (lua_Number)(va - vb));
+    else
+        lua_pushnil(L);
+    return 1;
+}
+
+/* each watched input whose node is past a threshold it has not yet been
+ * reported past (thresholds moved, nothing solved since): its crossing now */
+static void analog_recheck(esk_comp *c, lua_inst *s)
+{
+    int i;
+    for (i = 0; i < s->nwatch && !s->dead; i++) {
+        esk_pin *p = s->watch[i].p;
+        double v;
+        if (!p->bridge || !analog_volts(p, &v))
+            continue;
+        if (p->sampled != ESK_L1 && v >= p->model.vih)
+            esk_engine_bridge_crossed(c->e, p, ESK_L1, esk_comp_now(c));
+        else if (p->sampled != ESK_L0 && v <= p->model.vil)
+            esk_engine_bridge_crossed(c->e, p, ESK_L0, esk_comp_now(c));
+    }
+}
+
+/* watch(pin, rising, falling?): true when the input's comparator now
+ * switches at those voltages, false off an analog net */
+static int api_analog_watch(lua_State *L)
+{
+    esk_comp *c = ctx_comp(L);
+    lua_inst *s = (lua_inst *)c->state;
+    esk_pin *p = check_pin(L, c, 1);
+    double rising = (double)luaL_checknumber(L, 2), falling = (double)luaL_optnumber(L, 3, (lua_Number)rising);
+    int i;
+    if (p->model.kind != ESK_PIN_DIGITAL_IN && p->model.kind != ESK_PIN_DIGITAL_IO)
+        return luaL_error(L, "analog.watch: %s is not an input", p->name);
+    luaL_argcheck(L, falling <= rising, 3, "the falling threshold is above the rising one");
+    if (!p->bridge || !p->net || !p->net->island) {
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+    for (i = 0; i < s->nwatch && s->watch[i].p != p; i++)
+        ;
+    if (i == s->nwatch) {
+        if (s->nwatch == MAX_WATCH)
+            return luaL_error(L, "analog.watch: at most %d pins", MAX_WATCH);
+        s->watch[i].p = p;
+        s->watch[i].vih = p->model.vih;
+        s->watch[i].vil = p->model.vil;
+        s->watch[i].hyst = p->model.hyst;
+        s->nwatch++;
+    }
+    p->model.vih = rising;
+    p->model.vil = falling;
+    p->model.hyst = 0.0;
+    /* a node already past the new threshold crosses at once, after this
+     * callback (a quiet island would not be solved again to say so) */
+    if (esk_comp_wake_at(c, esk_comp_now(c), ANALOG_TOKEN) != ES_OK)
+        return luaL_error(L, "analog.watch: the scheduler refused the event");
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static void analog_restore(lua_inst *s)
+{
+    int i;
+    for (i = 0; i < s->nwatch; i++) {
+        s->watch[i].p->model.vih = s->watch[i].vih;
+        s->watch[i].p->model.vil = s->watch[i].vil;
+        s->watch[i].p->model.hyst = s->watch[i].hyst;
+    }
+    s->nwatch = 0;
+}
+
 static int pins_index(lua_State *L)
 {
     esk_comp *c = ctx_comp(L);
@@ -442,6 +557,11 @@ static void push_ctx(lua_State *L, esk_comp *c)
     set_api(L, c, "i2c_slave", api_i2c_slave);
     set_api(L, c, "spi_slave", api_spi_slave);
     lua_setfield(L, -2, "bus");
+    lua_createtable(L, 0, 3);
+    set_api(L, c, "voltage", api_analog_voltage);
+    set_api(L, c, "between", api_analog_between);
+    set_api(L, c, "watch", api_analog_watch);
+    lua_setfield(L, -2, "analog");
 }
 
 
@@ -1065,6 +1185,7 @@ static void lua_reset(esk_comp *c)
     L = s->h->L;
     s->dead = 0;
     free_buses(s, s->h->a);                /* create registers them again */
+    analog_restore(s);                     /* and watches the pins again */
     lua_rawgeti(L, LUA_REGISTRYINDEX, s->ctx);
     lua_newtable(L);
     lua_setfield(L, -2, "state");
@@ -1091,6 +1212,10 @@ static void lua_on_input(esk_comp *c, esk_pin *p)
 static void lua_on_time(esk_comp *c, uint32_t token)
 {
     lua_inst *s = (lua_inst *)c->state;
+    if (token == ANALOG_TOKEN) {
+        analog_recheck(c, s);
+        return;
+    }
     if (!begin(s, "on_time"))
         return;
     lua_pushinteger(s->h->L, (lua_Integer)token);

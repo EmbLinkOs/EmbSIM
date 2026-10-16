@@ -9,7 +9,7 @@
 // (scenario.save, listed in the project's scenarios).
 
 import { Badge, Button, EmptyState, Input, Select, useToast } from '@embsim/design';
-import { formatTime, parseDuration, type Report, type Scenario, type ScenarioAssertion, type ScenarioInput } from '@embsim/protocol';
+import { formatTime, parseDuration, type ProjectProbe, type Report, type Scenario, type ScenarioAssertion, type ScenarioInput } from '@embsim/protocol';
 import { FilePlus, FolderOpen, Play, Plus, Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '../../actions';
@@ -17,6 +17,11 @@ import { getClient } from '../../connection';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { emptyScenario, formatValue, parseValue, useVerify, whenOf, withWhen, type AssertionWhen } from '../../stores/verify';
+
+// a project without scenarios or probes: the same empty list each render (a
+// new one from a store selector renders again, without end)
+const NO_SCENARIOS: string[] = [];
+const NO_PROBES: ProjectProbe[] = [];
 
 function timeError(t: string | undefined): string | undefined {
   if (t === undefined || t === '') return 'a time with a unit: 10ms';
@@ -29,7 +34,7 @@ function timeError(t: string | undefined): string | undefined {
 }
 
 export function ScenarioEditor() {
-  const scenarios = useProject((s) => s.project?.scenarios ?? []);
+  const scenarios = useProject((s) => s.project?.scenarios ?? NO_SCENARIOS);
   const capabilities = useSession((s) => s.capabilities);
   const running = useSession((s) => s.running);
   const draft = useVerify((s) => s.draft);
@@ -290,7 +295,7 @@ function expectText(a: ScenarioAssertion): string {
 }
 
 function AssertionsTable({ assertions, duplicate, onChange }: { assertions: ScenarioAssertion[]; duplicate?: string; onChange: (a: ScenarioAssertion[]) => void }) {
-  const probes = useProject((s) => s.project?.probes ?? []);
+  const probes = useProject((s) => s.project?.probes ?? NO_PROBES);
   const results = useVerify((s) => s.results);
   const [expectDraft, setExpectDraft] = useState<Record<number, string>>({});
   const set = (k: number, a: ScenarioAssertion) => onChange(assertions.map((x, j) => (j === k ? a : x)));

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "fault",
+  "description": "A Blue Pill running tests/firmware/fault: main calls read_sensor, which loads from 0x30000000, where nothing answers. The bus error escalates to a HardFault; the fault report decodes it (the gallery's verify-faults shot).",
+  "policy": "electrical",
+  "boards": [
+    {
+      "id": "B1",
+      "board": "emblink/bluepill",
+      "layout": { "x": 480, "y": 200 },
+      "firmware": { "image": "fault.elf", "format": "elf" }
+    }
+  ],
+  "components": [],
+  "nets": {}
+}

@@ -2,9 +2,11 @@
 /* Copyright 2026 Junior Deogracias */
 /* Lua model tests (SPEC-013): a scripted oscillator clocking two scripted
  * counters (wake-ups, inputs, outputs, interactive inputs, one environment
- * per instance), the sandbox, determinism across sessions, and the failures:
- * a syntax error refuses the load, a runtime error and a runaway loop are
- * diagnostics that stop only the instance. */
+ * per instance), the sandbox, determinism across sessions, the analog side
+ * (ctx.analog: a node's voltage, a comparator at the model's thresholds, a
+ * threshold moved past the node crossing at once, a reset restoring the pin
+ * model's), and the failures: a syntax error refuses the load, a runtime
+ * error and a runaway loop are diagnostics that stop only the instance. */
 #include "harness.h"
 #include "ext/lua_model.h"
 #include "host/host.h"
@@ -174,6 +176,42 @@ static const char *ECHO_LUA =
     "function M.observe(ctx) return { seen = table.concat(seen, ',') } end\n"
     "return M\n";
 
+/* a voltage detector: OUT follows SENSE through a comparator at `rise` and
+ * `fall` volts, watched from M.create, or from `late_ps` on */
+static const char *DETECTOR = "{\"schema_version\":1,\"kind\":\"component\",\"id\":\"l/detector\",\"version\":\"1.0.0\",\"name\":\"Detector\",\"category\":\"sensors\","
+    "\"family\":\"cmos_3v3\",\"pins\":[" IN("SENSE") "," OUT("OUT") "],\"params\":{\"rise\":{\"type\":\"number\",\"default\":2.0},"
+    "\"fall\":{\"type\":\"number\",\"default\":1.0},\"late_ps\":{\"type\":\"integer\",\"default\":0}},"
+    "\"model\":{\"script\":\"model.lua\",\"api\":1}," SYMBOL(40) TAIL;
+static const char *DETECTOR_LUA =
+    "local M = {}\n"
+    "local function watch(ctx) ctx.state.watching = ctx.analog.watch('SENSE', ctx.params.rise, ctx.params.fall) end\n"
+    "function M.create(ctx)\n"
+    "  ctx.state.ups, ctx.state.downs = 0, 0\n"
+    "  if ctx.params.late_ps > 0 then ctx.wake_at(ctx.params.late_ps) else watch(ctx) end\n"
+    "  ctx.drive('OUT', 0)\n"
+    "end\n"
+    "function M.on_time(ctx) watch(ctx) end\n"
+    "function M.on_input(ctx, pin)\n"
+    "  local v = ctx.pins.SENSE.value\n"
+    "  if v == 1 then ctx.state.ups = ctx.state.ups + 1; ctx.state.up_ps = ctx.now(); ctx.state.up_v = ctx.analog.voltage('SENSE')\n"
+    "  elseif v == 0 then ctx.state.downs = ctx.state.downs + 1; ctx.state.down_ps = ctx.now(); ctx.state.down_v = ctx.analog.voltage('SENSE') end\n"
+    "  ctx.drive('OUT', v == 1 and 1 or 0)\n"
+    "end\n"
+    "function M.observe(ctx)\n"
+    "  return { watching = ctx.state.watching == true, ups = ctx.state.ups, downs = ctx.state.downs,\n"
+    "           up_ps = ctx.state.up_ps or -1, down_ps = ctx.state.down_ps or -1, up_mv = math.floor((ctx.state.up_v or -1) * 1000 + 0.5),\n"
+    "           down_mv = math.floor((ctx.state.down_v or -1) * 1000 + 0.5), mv = math.floor((ctx.analog.voltage('SENSE') or -1) * 1000 + 0.5),\n"
+    "           off_analog = ctx.analog.voltage('OUT') == nil and ctx.analog.between('SENSE', 'OUT') == nil }\n"
+    "end\n"
+    "return M\n";
+
+/* SENSE ramps 0 to 3.3 V in 10 ms and back in the next 10 */
+static const char *ANALOG = "{\"schema_version\":1,\"kind\":\"project\",\"name\":\"analog\",\"policy\":\"electrical\",\"libraries\":[\".\"],"
+    "\"components\":[{\"id\":\"V1\",\"component\":\"emblink/vsource\",\"params\":{\"kind\":\"pwl\",\"points\":[[0,0],[0.01,3.3],[0.02,0]]}},"
+    "{\"id\":\"G1\",\"component\":\"emblink/gnd\"},{\"id\":\"D1\",\"component\":\"l/detector\"},"
+    "{\"id\":\"D2\",\"component\":\"l/detector\",\"params\":{\"rise\":1.0,\"fall\":0.5,\"late_ps\":4000000000}}],"
+    "\"nets\":{\"SENSE\":[\"V1.+\",\"D1.SENSE\",\"D2.SENSE\"],\"GND\":[\"V1.-\",\"G1.GND\"],\"O1\":[\"D1.OUT\"],\"O2\":[\"D2.OUT\"]}}";
+
 static const char *BUSES = "{\"schema_version\":1,\"kind\":\"project\",\"name\":\"buses\",\"policy\":\"functional\",\"libraries\":[\".\"],"
     "\"components\":[{\"id\":\"M1\",\"component\":\"l/i2c_master\"},{\"id\":\"E1\",\"component\":\"l/eeprom\"},"
     "{\"id\":\"P1\",\"component\":\"l/pullup\"},{\"id\":\"P2\",\"component\":\"l/pullup\"},"
@@ -214,6 +252,8 @@ static void setup_library(void)
     write_file("components/spi_master/model.lua", SPI_MASTER_LUA);
     write_file("components/echo/component.json", ECHO);
     write_file("components/echo/model.lua", ECHO_LUA);
+    write_file("components/detector/component.json", DETECTOR);
+    write_file("components/detector/model.lua", DETECTOR_LUA);
 }
 
 static es_session *open(const char *project)
@@ -377,6 +417,51 @@ static void test_buses(void)
     es_session_destroy(s);
 }
 
+/* microseconds as a signed time, for the outputs' integers */
+#define US(n) ((int64_t)(n) * 1000000)
+
+static void test_analog(void)
+{
+    es_session *s = open(ANALOG);
+    int pass;
+    CHECK(s != NULL);
+    if (!s)
+        return;
+    for (pass = 0; pass < 2; pass++) { /* the second after a reset: the same */
+        esk_json *snap;
+        CHECK(es_session_advance(s, 20 * ES_PS_PER_MS) == ES_OK);
+        snap = esk_session_snapshot(s, NULL);
+        CHECK(snap != NULL);
+        if (snap) {
+            const esk_json *d1 = outputs_of(snap, "D1"), *d2 = outputs_of(snap, "D2");
+            int64_t up = esk_json_get_int(d1, "up_ps", -1), down = esk_json_get_int(d1, "down_ps", -1);
+            CHECK(esk_json_get_bool(d1, "watching", 0) == 1);
+            CHECK(esk_json_get_bool(d1, "off_analog", 0) == 1);
+            /* the operating point's first sample (low, at 0), then up at
+             * 2.0 V (6.06 ms on the ramp) and down at 1.0 V (16.97 ms): the
+             * model's thresholds, not the family's, each at its time */
+            CHECK_EQ(esk_json_get_int(d1, "ups", -1), 1);
+            CHECK_EQ(esk_json_get_int(d1, "downs", -1), 2);
+            CHECK(up > US(6000) && up < US(6120));
+            CHECK(down > US(16910) && down < US(17030));
+            CHECK(esk_json_get_int(d1, "up_mv", -1) >= 1990 && esk_json_get_int(d1, "up_mv", -1) <= 2030);
+            CHECK(esk_json_get_int(d1, "down_mv", -1) >= 970 && esk_json_get_int(d1, "down_mv", -1) <= 1010);
+            CHECK(esk_json_get_int(d1, "mv", 99) <= 5);
+            /* D2 watches from 4 ms at 1.0 V, the node already at 1.32 V: it
+             * crosses then, at once; down at 0.5 V (18.48 ms) */
+            CHECK_EQ(esk_json_get_int(d2, "ups", -1), 1);
+            CHECK_EQ(esk_json_get_int(d2, "up_ps", -1), US(4000));
+            CHECK(esk_json_get_int(d2, "up_mv", -1) >= 1300 && esk_json_get_int(d2, "up_mv", -1) <= 1340);
+            CHECK_EQ(esk_json_get_int(d2, "downs", -1), 2);
+            CHECK(esk_json_get_int(d2, "down_ps", -1) > US(18420) && esk_json_get_int(d2, "down_ps", -1) < US(18540));
+            esk_json_free(s->a, snap);
+        }
+        CHECK(esk_diag_count(&s->diag, ES_SEV_ERROR) == 0);
+        CHECK(es_session_reset(s) == ES_OK);
+    }
+    es_session_destroy(s);
+}
+
 static void test_syntax_error(void)
 {
     es_session *s = NULL;
@@ -407,5 +492,6 @@ RUN(test_counter);
 RUN(test_determinism);
 RUN(test_faults);
 RUN(test_buses);
+RUN(test_analog);
 RUN(test_syntax_error);
 TEST_MAIN_END

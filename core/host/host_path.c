@@ -174,3 +174,28 @@ char *esk_host_path_join(esk_alloc *a, const char *base, const char *rel)
     }
     return result;
 }
+
+es_status esk_host_remove_tree(esk_alloc *a, const char *path)
+{
+    esk_json *names = NULL;
+    size_t i;
+    es_status st = ES_OK;
+    if (!esk_host_file_exists(path))
+        return ES_OK;
+    /* a file, a link (never followed) or an empty directory goes at once */
+    if (esk_host_remove(path) == ES_OK)
+        return ES_OK;
+    if (esk_host_is_dir(path)) {
+        if (esk_host_list_dir(a, path, &names) != ES_OK)
+            return ES_EIO;
+        for (i = 0; i < esk_json_len(names) && st == ES_OK; i++) {
+            char *p = esk_host_path_join(a, path, esk_json_str(esk_json_at(names, i)));
+            st = p ? esk_host_remove_tree(a, p) : ES_ENOMEM;
+            esk_strfree(a, p);
+        }
+        esk_json_free(a, names);
+        if (st != ES_OK)
+            return st;
+    }
+    return esk_host_remove(path);
+}

@@ -236,4 +236,37 @@ RETFIE, MRET, ERET, RETI and a Cortex-M's EXC_RETURN. Each core has its own
 shadow stack and root path. Functions are the ELF's function symbols and
 its global labels in code; one without a size runs to the next, at most
 4 KiB. A machine without analyses steps as before. Reports: SPEC-008 §5
-`analysis.*`, `embsim run --coverage`, `--profile`.
+`analysis.*`, `embsim run --coverage`, `--profile`, `--stack`.
+
+The stack analysis (`stack.c`) reads each core's stack pointers after every
+step: the main stack's (a Cortex-M's MSP, as banked) and a Cortex-M's
+process stack's. A stack's top is the highest it was while the pc was in
+the image's functions (a boot ROM's own stack is not the program's); its
+deepest, the lowest. Its limit is the link's `__stack_limit`
+(`__StackLimit`, `_sstack`, a PIC24's `__SPLIM_init`), or the end of
+`.data` and `.bss` (`_end`, `__bss_end`, `_ebss`, `end`) when that is
+higher and below the top. The main stack going past its limit raises
+`mcu.stack_overflow` (error) once a reset, naming the instruction and its
+function; the run goes on, as on a part without a stack guard. By function,
+from the shadow stack's frames: the deepest sp while the pc was in it; its
+own frame (the most it moved sp below its entry, what `-fstack-usage`
+reports; an AVR's and a PIC24's return address counted as the callee's, as
+their compilers do); its depth with its callees, not its interrupt
+handlers. A PIC24's stack grows up: compared mirrored, reported as W15.
+
+The fault report (`fault.c`) decodes each fault at the end of the step
+that took it (the cores report an entry before stacking it): a Cortex-M's
+HardFault, MemManage, BusFault and UsageFault (HFSR and CFSR in words,
+MMFAR and BFAR when valid, the stacked frame), a RISC-V exception other
+than an interrupt, ECALL or EBREAK (mcause, mtval), a MIPS exception other
+than an interrupt, SYSCALL or BREAK (Cause's code, BadVAddr, the delay
+slot), a PIC24 trap (the core's account of it, W0-W15 and SR as the trap
+found them). Each gets the instruction disassembled with its function and
+line, the registers, a backtrace by the image's `.debug_frame` (CIE
+versions 1, 3 and 4, without DWARF expressions; through a Cortex-M's
+exception frame when the unwinding reaches EXC_RETURN), else by the shadow
+stack's calls, and the handler the core goes to (a vector without the
+Thumb bit, or one that is no function's start, named as none). A function
+is named by its strong symbol over the weak aliases at its address. Each
+fault raises `mcu.fault` (error) with its summary; a lockup is recorded
+too and stays `mcu.lockup`. The first 16 are kept, all counted.

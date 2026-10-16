@@ -50,6 +50,8 @@ struct esk_pin {
     uint32_t index;
     char *name;
     esk_pin_model model;
+    esk_pin_model model0;  /* as described: a reset restores it (an MCU's pull
+                              configuration, a script's thresholds change model) */
     esk_net *net;
     int is_output;         /* digital_io direction; fixed for other kinds */
     int watched;           /* the model wants on_input when the net changes */

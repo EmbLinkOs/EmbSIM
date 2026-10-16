@@ -6,7 +6,7 @@ machine-readable report of SPEC-008 §8.
 
 | Command | What it does |
 |---|---|
-| `embsim run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--coverage FILE] [--profile FILE] [--board ID] [--json]` | loads the project, runs it headless to `--until` (default 50 ms) or through the scenario's inputs and assertions, prints nets, outputs, assertions and statistics; with `--coverage` and `--profile`, writes the firmware's coverage and profile (below); exit 0 ok, 1 an assertion failed, 2 usage or load error, 3 a fatal diagnostic |
+| `embsim run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--coverage FILE] [--profile FILE] [--stack FILE] [--faults FILE] [--board ID] [--json]` | loads the project, runs it headless to `--until` (default 50 ms) or through the scenario's inputs and assertions, prints nets, outputs, assertions and statistics; with `--coverage`, `--profile`, `--stack` and `--faults`, writes the firmware's coverage, profile, stack depths and faults (below); exit 0 ok, 1 an assertion failed, 2 usage or load error, 3 a fatal diagnostic |
 | `embsim run --target BOARD --image FILE [--until T] [--until-text TEXT] [--console] [--json]` | one board of the catalog (`emblink/arduino_uno`) running an image, with no project: the way an RTOS's or a library's test runner uses the simulator as an emulated target ([CI](ci.md)). `--console` prints the board's console as the run goes (to stderr with `--json`); `--until-text` ends the run at the millisecond the text appears on a console (ended reason `until_text`), exit 1 when it never does. With a project, `--image [ID=]FILE` replaces a board's image |
 | `embsim replay RECORDING [--allow-drift] [--json]` | runs a recording again: its project from reset, its inputs at their times, to its end, comparing what the run observes with what was recorded, in order; exit 0 when all match, 4 at the first divergence (both observations printed, or in `divergence` with `--json`), 2 when the project or an image changed since the recording unless `--allow-drift` |
 | `embsim record to-scenario RECORDING [-o FILE] [--assert probes,serial\|none] [--name N]` | a scenario from a recording: its inputs at their times, and assertions on each digital probe's last level and edges and each serial probe's text |
@@ -19,7 +19,7 @@ machine-readable report of SPEC-008 §8.
 | `embsim catalog list [KIND] \| search QUERY \| info ID \| libraries [--library DIR]` | browses the bundled catalog and extra libraries |
 | `embsim catalog validate [DIR] [--library DEP] [--json]` | instantiates every part of a library and runs its fixtures (bundled catalog by default); exit 1 unless all are ok |
 | `embsim catalog new component\|board NAME [--library DIR] [--lua]` | writes a part that validates as written (SDK, `sdk/README.md`) |
-| `embsim catalog install DIR [--to LIBRARIES_DIR] [--force]` | validates a library and copies it into the user library directory |
+| `embsim catalog install DIR\|ARCHIVE.zip\|URL [--to LIBRARIES_DIR] [--force]` | validates a library and copies it into the user library directory: a directory, a zip archive of one (the library at its top or in its top directory), or an `http(s)://` URL to such an archive, fetched with `curl` (SPEC-014 §6) |
 | `embsim board list \| info ID` | boards and their descriptions |
 | `embsim models` | the model primitives the core implements, digital and electrical |
 | `embsim version` | engine, protocol and ABI versions |
@@ -50,9 +50,9 @@ sees the same thing from the same start. In the workbench, the protocol's
 `record.start` and `record.stop` record from the moment recording starts;
 replay compares from there.
 
-## Coverage and profile
+## Coverage, profile, stacks and faults
 
-`--coverage FILE` and `--profile FILE` watch every board's firmware (one
+`--coverage FILE`, `--profile FILE`, `--stack FILE` and `--faults FILE` watch every board's firmware (one
 board's with `--board ID`) instruction by instruction and write, at the end
 of the run, which source lines and functions ran and where the time went
 (`-` writes to stderr). Functions come from the image's ELF symbol table,
@@ -75,9 +75,26 @@ stripped ELF is refused.
   path, `Reset_Handler;main;putc 1234`, by cycles (or instructions), for
   `flamegraph.pl`, speedscope and inferno; a part's second core's paths
   start with `core1`, and several boards' with the board's ID.
-- `json` for either: what the protocol's `analysis.coverage` and
-  `analysis.profile` return (SPEC-008 §5). With `--json`, the run's report
-  also carries `coverage` and `profile` summaries.
+- `--stack-format text` (the default): each core's stacks, their top, how
+  deep they went and of how much (down to the link's `__stack_limit`, else
+  the end of `.data` and `.bss`, else the RAM's end), an overflow, and the
+  functions by depth: the deepest sp in each, its own frame (as
+  `-fstack-usage` counts it) and its depth with its callees. A Cortex-M's
+  process stack (PSP, an RTOS's threads) is reported beside its main stack.
+  The main stack going past its limit is the error diagnostic
+  `mcu.stack_overflow`, naming where; the run goes on.
+- `--faults-format text` (the default): each fault the firmware took, as
+  its core took it: a Cortex-M's HardFault, MemManage, BusFault or
+  UsageFault with HFSR and CFSR in words (`FORCED`, `PRECISERR at
+  0x30000000`), a RISC-V exception with mcause and mtval, a MIPS exception
+  with BadVAddr, a PIC24 trap; the instruction, the registers (a Cortex-M's
+  stacked frame), a backtrace from the image's `.debug_frame` (build with
+  `-g`), else from the calls the core was seen to make, and the handler it
+  goes to. Each is also the error diagnostic `mcu.fault`; the run goes on.
+- `json` for any: what the protocol's `analysis.coverage`,
+  `analysis.profile`, `analysis.stack` and `analysis.faults` return
+  (SPEC-008 §5). With `--json`, the run's report also carries `coverage`,
+  `profile`, `stack` and `faults` summaries.
 
 Calls and returns are recognized from each core's instructions (BL and BX
 on a Cortex-M, JAL and JALR on RISC-V, CALL and RET on an AVR, MIPS's JAL

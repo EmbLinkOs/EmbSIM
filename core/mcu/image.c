@@ -274,6 +274,23 @@ int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value)
     return 0;
 }
 
+int esk_elf_label(const u8 *f, size_t len, const char *name, u32 *value)
+{
+    const u8 *syms, *strs;
+    u32 n, sl, i;
+    if (!symtab(f, len, &syms, &n, &strs, &sl))
+        return 0;
+    for (i = 0; i < n; i++) {
+        const u8 *s = syms + (size_t)i * 16u;
+        u32 type = s[12] & 15u, shndx = le16(s + 14);
+        if (type <= 2 && shndx != 0 && shndx != 0xfff2u && !strcmp(sym_name(strs, sl, le32(s)), name)) {
+            *value = type == 2 ? le32(s + 4) & ~1u : le32(s + 4);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap, u32 *offset)
 {
     const u8 *syms, *strs, *best = NULL;
@@ -308,8 +325,8 @@ static int exec_section(const u8 *f, size_t len, u32 k)
     return (le32(f + shoff + (size_t)k * shentsize + 8) & 4u) != 0;
 }
 
-void esk_elf_functions(const u8 *f, size_t len, void (*fn)(void *ctx, const char *name, u32 addr, u32 size),
-                       void *ctx)
+void esk_elf_functions(const u8 *f, size_t len,
+                       void (*fn)(void *ctx, const char *name, u32 addr, u32 size, int weak), void *ctx)
 {
     const u8 *syms, *strs;
     u32 n, sl, i;
@@ -323,6 +340,6 @@ void esk_elf_functions(const u8 *f, size_t len, void (*fn)(void *ctx, const char
         /* a function; or an assembler's global label in code (libgcc's
          * division helpers, a C runtime's entry), which has no size */
         if (type == 2 || (type == 0 && bind != 0 && exec_section(f, len, shndx)))
-            fn(ctx, sym_name(strs, sl, le32(s)), le32(s + 4) & ~1u, type == 2 ? le32(s + 8) : 0);
+            fn(ctx, sym_name(strs, sl, le32(s)), le32(s + 4) & ~1u, type == 2 ? le32(s + 8) : 0, bind == 2);
     }
 }

@@ -4,11 +4,13 @@
 // Coverage and profile (SPEC-008 §5 analysis): the firmware watched
 // instruction by instruction from analysis.start; each source file's lines
 // and functions hit, the source with each line's count, and where the cycles
-// went by function. lcov and collapsed stacks download for genhtml and a
-// flame graph.
+// went by function, and how deep each stack went (its own frame and its
+// depth with its callees, by function; an overflow past the link's limit),
+// and each fault the firmware took, decoded, with its backtrace.
+// lcov and collapsed stacks download for genhtml and a flame graph.
 
 import { Badge, Button, EmptyState, Select, Table, useToast, type Column } from '@embsim/design';
-import type { CoverageReport, HitTotal, ProfileReport } from '@embsim/protocol';
+import type { CoverageReport, FaultReport, HitTotal, ProfileReport, StackReport } from '@embsim/protocol';
 import { Activity, Download, Flame, RefreshCw, Square } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage } from '../../actions';
@@ -43,6 +45,8 @@ export function CoveragePanel() {
   const setOn = useVerify((s) => s.setAnalysisOn);
   const [cov, setCov] = useState<CoverageReport | null>(null);
   const [prof, setProf] = useState<ProfileReport | null>(null);
+  const [stack, setStack] = useState<StackReport | null>(null);
+  const [faults, setFaults] = useState<FaultReport | null>(null);
   const [file, setFile] = useState<string | null>(null);
   const can = capabilities.includes('analysis');
   const id = board || mcus[0]?.id || '';
@@ -55,10 +59,15 @@ export function CoveragePanel() {
       setCov(cr.boards?.[id] ?? null);
       setProf(pr.boards?.[id] ?? null);
       setOn(true);
+      // the stacks when they are measured (an older engine has no analysis.stack)
+      setStack(await c.analysis.stack({ board: id, detail: false }).then((r) => r.boards?.[id] ?? null, () => null));
+      setFaults(await c.analysis.faults({ board: id }).then((r) => r.boards?.[id] ?? null, () => null));
     } catch (e) {
       setOn(false);
       setCov(null);
       setProf(null);
+      setStack(null);
+      setFaults(null);
       if (!errorMessage(e).includes('not on')) toast({ kind: 'error', title: 'Coverage', description: errorMessage(e) });
     }
   };
@@ -70,7 +79,7 @@ export function CoveragePanel() {
 
   const start = async () => {
     try {
-      await getClient().analysis.start({});
+      await getClient().analysis.start({ stack: true, faults: true });
       setOn(true);
       await refresh();
     } catch (e) {
@@ -82,6 +91,8 @@ export function CoveragePanel() {
     setOn(false);
     setCov(null);
     setProf(null);
+    setStack(null);
+    setFaults(null);
   };
   const download = async (what: 'lcov' | 'collapsed') => {
     try {
@@ -168,9 +179,70 @@ export function CoveragePanel() {
               <Table label="Functions by self cycles" columns={fnColumns} rows={prof.functions} rowKey={(f) => f.name} />
             </>
           )}
+          {faults && faults.count > 0 && <Faults faults={faults} />}
+          {stack && <Stacks stack={stack} />}
         </>
       )}
     </div>
+  );
+}
+
+/** Each fault the cores took: its summary, and the whole report on demand. */
+function Faults({ faults }: { faults: FaultReport }) {
+  return (
+    <>
+      <div className="es-row">
+        <span className="es-caps">Faults</span>
+        <Badge tone="danger">{faults.count}</Badge>
+      </div>
+      {faults.faults.map((f, i) => (
+        <details key={`${i}-${f.pc}`} className="wb-verify__divergence" role="alert">
+          <summary>
+            <code>{f.summary}</code>
+          </summary>
+          <pre className="wb-cov__fault">{f.text}</pre>
+        </details>
+      ))}
+    </>
+  );
+}
+
+function hex(v: number): string {
+  return `0x${v.toString(16).padStart(8, '0')}`;
+}
+
+/** How deep each stack went, and by function. */
+function Stacks({ stack }: { stack: StackReport }) {
+  type Row = StackReport['functions'][number];
+  const columns: Column<Row>[] = [
+    { id: 'name', header: 'Function', mono: true, cell: (f) => f.name },
+    { id: 'deepest', header: 'Deepest', width: '110px', mono: true, cell: (f) => hex(f.deepest) },
+    { id: 'frame', header: 'Frame', width: '70px', mono: true, cell: (f) => `${f.frame} B` },
+    { id: 'incl', header: 'Incl.', width: '80px', mono: true, cell: (f) => `${f.incl} B` },
+  ];
+  const ovf = stack.overflow;
+  return (
+    <>
+      <div className="es-row">
+        <span className="es-caps">How deep the stacks went</span>
+        {stack.stacks.map((s) => (
+          <Badge key={`${s.core}-${s.name}`} tone={ovf && ovf.core === s.core && s.name !== 'psp' ? 'danger' : undefined}>
+            {stack.stacks.length > 1 && s.name !== 'psp' ? `core${s.core} ` : ''}
+            {s.name === 'stack' ? 'stack' : s.name.toUpperCase()}{' '}
+            {s.used === undefined ? 'not used' : `${s.used.toLocaleString()}${s.size ? ` / ${s.size.toLocaleString()}` : ''} bytes`}
+          </Badge>
+        ))}
+      </div>
+      {ovf && (
+        <div className="wb-verify__divergence" role="alert">
+          <span className="es-caps">overflow</span>{' '}
+          <code>
+            sp {hex(ovf.sp)} past {hex(ovf.limit)} ({ovf.limit_from}) in {ovf.function || hex(ovf.pc)}
+          </code>
+        </div>
+      )}
+      {stack.functions.length > 0 && <Table label="Functions by stack depth" columns={columns} rows={stack.functions} rowKey={(f) => f.name} />}
+    </>
   );
 }
 

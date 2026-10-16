@@ -926,6 +926,15 @@
   max-height: 320px;
 }
 
+.wb-cov__fault {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre;
+  overflow-x: auto;
+  max-height: 320px;
+}
+
 .wb-cov__count {
   text-align: right;
   font-family: var(--font-mono);

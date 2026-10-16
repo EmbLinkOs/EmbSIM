@@ -38,6 +38,11 @@ char *esk_host_path_join(esk_alloc *a, const char *base, const char *rel);
 /* The names in a directory (no "." and ".."), sorted, as a JSON array of
  * strings. esk_json_free to release. */
 es_status esk_host_list_dir(esk_alloc *a, const char *path, esk_json **out);
+/* Remove a file, or an empty directory. */
+es_status esk_host_remove(const char *path);
+/* Remove a directory and everything under it (or a file). A link is removed,
+ * never followed. A missing path is ES_OK. */
+es_status esk_host_remove_tree(esk_alloc *a, const char *path);
 /* The per-user data directory of SPEC-014 §1 (not created). esk_strfree to release. */
 char *esk_host_user_data_dir(esk_alloc *a);
 /* The host's temporary directory. esk_strfree to release. */

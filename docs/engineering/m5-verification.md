@@ -15,8 +15,8 @@ rows of [STATUS.md](../STATUS.md); update both together.
 | Recordings | `core/session/record.c`, `core/util/sha256.c`, `schemas/recording.schema.json` | SPEC-012 §1: the project's and images' SHA-256, the inputs (`immediate` when given at the paused instant), observations in time order (each core's interrupt entries from the exception hook every core calls, digital probe transitions, serial text, diagnostics, the end); `from_ps` and `from_seq` for a recording started in a running session, which begins with the digital probes' levels |
 | Replay | `record.c`, `cli/commands.c` (`embsim replay`), `rpc.c` (`record.replay`) | SPEC-012 §2: from reset, the inputs at their times (an immediate one after running to it), to the recording's start and its end, the observations compared in order; the first divergence with both observations (exit 4); a changed project or image refused (exit 2) unless `--allow-drift` |
 | To a scenario | `record.c` (`esk_record_to_scenario`), `embsim record to-scenario`, `record.to_scenario` | SPEC-012 §3: the inputs, each digital probe's level at the end and its edges from the recording's start, each serial probe's text; times in units |
-| Analyses | `core/mcu/analysis.c`, `coverage.c`, `profile.c`; the cores' `esk_mach_exc` and `esk_mach_exc_return`; `smp.c` | SPEC-009 §12: extracted from EmbCC's analyses; every core stepped through `esk_an_step` when a machine has analyses; coverage by address mapped to lines; the profile on a shadow stack per core |
-| Analyses in the session | `core/session/measure.c`, `rpc.c` (`analysis.*`), `cli/commands.c` (`--coverage`, `--profile`) | SPEC-008 §5: kept across reloads and new images; the run report's summaries |
+| Analyses | `core/mcu/analysis.c`, `coverage.c`, `profile.c`, `stack.c`, `fault.c`, `dwarf.c` (`.debug_frame`); the cores' `esk_mach_exc` and `esk_mach_exc_return`; `smp.c` | SPEC-009 §12: extracted from EmbCC's analyses; every core stepped through `esk_an_step` when a machine has analyses; coverage by address mapped to lines; the profile on a shadow stack per core; the stacks' depths from the cores' stack pointers, by function from the same frames, an overflow past the link's limit a diagnostic; each fault decoded with a backtrace by the CFI |
+| Analyses in the session | `core/session/measure.c`, `rpc.c` (`analysis.*`), `cli/commands.c` (`--coverage`, `--profile`, `--stack`, `--faults`) | SPEC-008 §5: kept across reloads and new images; the run report's summaries |
 | Emulated target | `cli/commands.c` (`--target`, `--image`, `--until-text`, `--console`), `core/mcu/mcu.c` (`esk_mcu_console`) | docs/user/ci.md: a catalog board running an image with no project; the run follows the consoles a millisecond at a time |
 | Python client | `python/embsim` (`session.py`, `runner.py`, `transport.py`, `pytest_plugin.py`) | SPEC-008 over stdio; the CLI's exit codes; `tools/embsim_client` re-exports the transport |
 | Scenario files | `rpc.c` (`scenario.get`, `scenario.save`) | SPEC-008 §5: paths inside the project's folder only; `add` lists a new one in the project |
@@ -29,10 +29,10 @@ rows of [STATUS.md](../STATUS.md); update both together.
 |---|---|---|
 | Determinism and replay | `record_replay` (`tests/protocol/test_replay.py`) | every example's first scenario recorded twice in two processes with equal inputs and observations; each replays with every observation matching; an observation moved by 1 ps diverges there with both values; a changed image is refused and replays with `--allow-drift`; a recording as a scenario passes; `record.replay` over the protocol |
 | Interactive recordings | `python_client` | recordings made from the start, from 7 ms into a running session, and after an input given before recording each replay identically, and each passes as a scenario run from reset |
-| Coverage and profile | `analysis` (`tests/protocol/test_analysis.py`) | the nine firmware examples (Cortex-M3, M0+ on both cores, M4F, AVR, RISC-V, MIPS32, PIC24, two boards at once) measured twice alike; the profile's functions add up to the instructions and cycles; lcov agrees with the JSON line for line; the collapsed stacks add up to the cycles; gcov-style text with the source; a project without firmware refused; `analysis.*` over the protocol |
+| Coverage, profile and stacks | `analysis` (`tests/protocol/test_analysis.py`) | the nine firmware examples (Cortex-M3, M0+ on both cores, M4F, AVR, RISC-V, MIPS32, PIC24, two boards at once) measured twice alike; the profile's functions add up to the instructions and cycles; lcov agrees with the JSON line for line; the collapsed stacks add up to the cycles; each board's stack within its limit; gcov-style text with the source; a recursion 40 calls deep on a 2 KiB stack (`tests/firmware/stack-overflow`) raises `mcu.stack_overflow` once in `deep`, main's depth its frame plus the recursion's; a load from an address nothing answers (`tests/firmware/fault`) is one `mcu.fault`, a HardFault FORCED from PRECISERR with BFAR, backtraced peek, read_sensor, main, Reset_Handler, handled by `Default_Handler`; a project without firmware refused; `analysis.*` over the protocol |
 | Emulated target | `run_target` (`tests/protocol/test_target.py`) | `--console` streams the Uno's console; `--until-text` ends at the same millisecond on two runs and exits 1 when the text never comes; `--image ID=FILE` and an image for another core refused |
 | Python client | `python_client` (`python/tests/test_session.py`) | a session's time, inputs, serial text, a probe's samples, a scenario, a recording replayed and made a scenario, coverage, the profile, the debugger; `run()` with a recording and lcov, `replay()` matching and diverging (exit 4) |
-| EmbLinkRTOS | `ctest --preset avr-uno-embsim` in EmbLinkRTOS | its nine Arduino Uno conformance tests (smoke, first execution, thread, sched, time, irq, sem, mutex, notify) pass on EmbSIM's Uno in 4.4 s, avr-gcc 7.3 images unchanged |
+| EmbLinkRTOS | `ctest --preset avr-uno-embsim` in EmbLinkRTOS | its nine Arduino Uno conformance tests (smoke, first execution, thread, sched, time, irq, sem, mutex, notify) pass on EmbSIM's Uno in 4.4 s, avr-gcc 7.3 images unchanged; in its CI, EmbLinkOs/EmbLinkRTOS#12's `avr-embsim` job builds EmbSIM's `main` and passes them |
 | Cost | by hand, release build | the Pico's two-core scenario in 0.89 s, 0.95 s with coverage, 0.88 s with the profile, 0.85 s with both: within the run-to-run noise |
 | Builds | GCC, Clang, TinyCC, ASan/UBSan, a GCC release build with `_FORTIFY_SOURCE`; MSVC in CI | the new code builds warning-free under each |
 | Gallery | `scripts/screenshots.mjs` | the [M5 shots](../gallery/README.md): a scenario run in the editor, coverage of the Blue Pill's firmware (light and dark), a recording replayed and made a scenario |
@@ -63,6 +63,16 @@ rows of [STATUS.md](../STATUS.md); update both together.
   reset one; a core not yet started since its reset now starts when the
   reset said. `record.start` before anything has run also resets first, so
   the recording and its replay both start from reset.
+- **A stack's top is the program's.** The Pico's boot ROM runs on a stack
+  of its own above the image's; the top is the highest the stack pointer
+  was while the pc was in the image's functions, read before and after each
+  step so a reset's value counts. An overflow is a diagnostic and the run
+  goes on: the part has no guard, and a scenario forbidding
+  `mcu.stack_overflow` makes it a failure.
+- **A fault is decoded after the step that took it.** EmbSIM's cores
+  report an exception's entry before stacking it (EmbCC's after), so the
+  report waits for the step's end, when the frame, EXC_RETURN, mepc and EPC
+  are in place and the shadow stack is still the faulting code's.
 - **The emulated target is the command line.** `--target --image
   --until-text --console` makes `embsim run` a drop-in for a QEMU machine
   in a test runner: EmbLinkRTOS's runner for EmbSIM is its QEMU runner with
@@ -70,8 +80,6 @@ rows of [STATUS.md](../STATUS.md); update both together.
 
 ## Known gaps
 
-EmbCC's stack-depth (`stack.c`) and fault (`fault.c`) reports are not
-extracted; analog observations and full event traces are not recorded
-(SPEC-012 §5); EmbLinkRTOS's `avr-embsim` CI job checks out EmbSIM's `main`,
-so it passes once this branch is merged; the scenario editor's assertion
+The PIC24's fault decoding is not exercised by a test (CI has no XC16); analog observations and full event traces are not recorded
+(SPEC-012 §5); the scenario editor's assertion
 expectations are edited as JSON.

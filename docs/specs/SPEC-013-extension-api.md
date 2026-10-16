@@ -105,8 +105,19 @@ sensors whose electrical side is a composite.
   and `CS`/`SS`/`CE`/`NSS`; `options` may name them (`sck`, `mosi`, `miso`, `cs`).
   A model registers its devices in `M.create`; each reset registers them
   again.
-- **Not yet implemented:** `ctx.analog` (pins carry `.voltage` instead);
-  the `lua_budget` setting (the default applies).
+- **Analog.** `ctx.analog` reads the analog side alone:
+  `voltage(pin)` is the pin's node voltage, and `between(a, b)` the
+  difference of two pins' (each `nil` when a pin is not on an analog net,
+  where `.voltage` falls back to the level times the supply);
+  `watch(pin, rising, falling?)` makes an input's comparator switch at the
+  model's voltages instead of its family's (`falling` defaults to `rising`,
+  and may not be above it), so `M.on_input` comes when the node crosses
+  them, at the crossing's time; it returns `false` when the pin is not on
+  an analog net (under the functional policy, nothing is). A node already
+  past a new threshold crosses at once, after the callback that moved it. A
+  reset restores the pin model's thresholds; at most 16 pins are watched.
+  The operating point delivers each input's first sample at time 0.
+- **Not yet implemented:** the `lua_budget` setting (the default applies).
 
 ## 3. Electrical scripted models
 

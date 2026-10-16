@@ -667,12 +667,14 @@ static es_status m_analysis_start(rpc_ctx *r)
     es_session *s = r->s;
     char why[160];
     unsigned what = (esk_json_get_bool(r->params, "coverage", 1) ? ESK_AN_COVERAGE : 0u) |
-                    (esk_json_get_bool(r->params, "profile", 1) ? ESK_AN_PROFILE : 0u);
+                    (esk_json_get_bool(r->params, "profile", 1) ? ESK_AN_PROFILE : 0u) |
+                    (esk_json_get_bool(r->params, "stack", 0) ? ESK_AN_STACK : 0u) |
+                    (esk_json_get_bool(r->params, "faults", 0) ? ESK_AN_FAULT : 0u);
     es_status st;
     if (!s->loaded)
         return fail(r, -32001, "no project is loaded");
     if (!what)
-        return fail(r, -32602, "analysis.start needs coverage or profile");
+        return fail(r, -32602, "analysis.start needs coverage, profile, stack or faults");
     st = esk_session_analyze(s, pstr(r, "board", NULL), what, why, sizeof why);
     if (st == ES_ENOMEM)
         return st;
@@ -682,6 +684,8 @@ static es_status m_analysis_start(rpc_ctx *r)
     if (r->result) {
         esk_json_set_bool(s->a, r->result, "coverage", (what & ESK_AN_COVERAGE) != 0);
         esk_json_set_bool(s->a, r->result, "profile", (what & ESK_AN_PROFILE) != 0);
+        esk_json_set_bool(s->a, r->result, "stack", (what & ESK_AN_STACK) != 0);
+        esk_json_set_bool(s->a, r->result, "faults", (what & ESK_AN_FAULT) != 0);
     }
     return r->result ? ES_OK : ES_ENOMEM;
 }
@@ -694,26 +698,30 @@ static es_status m_analysis_stop(rpc_ctx *r)
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
-/* analysis.coverage and analysis.profile: JSON, or a report as text */
-static es_status analysis_report(rpc_ctx *r, int coverage)
+/* analysis.coverage, analysis.profile, analysis.stack and analysis.faults:
+ * JSON, or a report as text */
+static es_status analysis_report(rpc_ctx *r, unsigned bit)
 {
     es_session *s = r->s;
     const char *fmt = pstr(r, "format", "json"), *board = pstr(r, "board", NULL);
-    unsigned bit = coverage ? ESK_AN_COVERAGE : ESK_AN_PROFILE;
+    int coverage = bit == ESK_AN_COVERAGE, profile = bit == ESK_AN_PROFILE;
     int f;
-    if (!(s->an_what & bit))
-        return fail(r, -32001, coverage ? "coverage is not on (analysis.start)" : "the profile is not on (analysis.start)");
+    if (!(s->an_what & bit)) {
+        char why[64];
+        esk_snprintf(why, sizeof why, "%s is not on (analysis.start)", esk_session_analysis_name(bit));
+        return fail(r, -32001, why);
+    }
     if (esk_str_eq(fmt, "json")) {
         r->result = obj(r);
         if (r->result)
             esk_json_object_set(s->a, r->result, "boards",
-                                esk_session_analysis_json(s, board, coverage, esk_json_get_bool(r->params, "detail", 1)));
+                                esk_session_analysis_json(s, board, bit, esk_json_get_bool(r->params, "detail", 1)));
         return r->result ? ES_OK : ES_ENOMEM;
     }
     f = esk_str_eq(fmt, "text") ? ESK_AN_TEXT
       : coverage && esk_str_eq(fmt, "lcov") ? ESK_AN_LCOV
-      : !coverage && esk_str_eq(fmt, "collapsed") ? ESK_AN_COLLAPSED
-      : !coverage && esk_str_eq(fmt, "collapsed-insns") ? ESK_AN_COLLAPSED_INSNS : -1;
+      : profile && esk_str_eq(fmt, "collapsed") ? ESK_AN_COLLAPSED
+      : profile && esk_str_eq(fmt, "collapsed-insns") ? ESK_AN_COLLAPSED_INSNS : -1;
     if (f < 0)
         return fail(r, -32602, "no such format");
     {
@@ -721,7 +729,7 @@ static es_status analysis_report(rpc_ctx *r, int coverage)
         char why[160];
         es_status st;
         esk_strbuf_init(&b, s->a);
-        st = esk_session_analysis_text(s, board, coverage, f, &b, why, sizeof why);
+        st = esk_session_analysis_text(s, board, bit, f, &b, why, sizeof why);
         if (st == ES_OK && !b.oom) {
             r->result = obj(r);
             if (r->result)
@@ -734,8 +742,10 @@ static es_status analysis_report(rpc_ctx *r, int coverage)
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
-static es_status m_analysis_coverage(rpc_ctx *r) { return analysis_report(r, 1); }
-static es_status m_analysis_profile(rpc_ctx *r) { return analysis_report(r, 0); }
+static es_status m_analysis_coverage(rpc_ctx *r) { return analysis_report(r, ESK_AN_COVERAGE); }
+static es_status m_analysis_profile(rpc_ctx *r) { return analysis_report(r, ESK_AN_PROFILE); }
+static es_status m_analysis_stack(rpc_ctx *r) { return analysis_report(r, ESK_AN_STACK); }
+static es_status m_analysis_faults(rpc_ctx *r) { return analysis_report(r, ESK_AN_FAULT); }
 
 /* ---- record, scenario, diagnostics -------------------------------------------------------- */
 
@@ -1229,6 +1239,7 @@ static const method methods[] = {
     { "catalog.models", m_catalog_models }, { "catalog.validate", m_unavailable },
     { "analysis.start", m_analysis_start }, { "analysis.stop", m_analysis_stop },
     { "analysis.coverage", m_analysis_coverage }, { "analysis.profile", m_analysis_profile },
+    { "analysis.stack", m_analysis_stack }, { "analysis.faults", m_analysis_faults },
     { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_record_replay },
     { "record.to_scenario", m_record_to_scenario },
     { "scenario.run", m_scenario_run }, { "scenario.get", m_scenario_get }, { "scenario.save", m_scenario_save },

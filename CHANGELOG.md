@@ -144,6 +144,32 @@ versions follow semantic versioning. There is no release yet.
   `.coverage`, `.profile` over the protocol; the run report's `coverage`
   and `profile` summaries; the `analysis` test over every firmware example.
   Extracted from EmbCC's analyses, with per-core call stacks.
+- Stack depths (M5, SPEC-009 §12): `embsim run --stack` (text, JSON) and
+  `analysis.stack`; each core's main stack (and a Cortex-M's process
+  stack): its top, its deepest point and its limit from the link
+  (`__stack_limit`, the end of `.data` and `.bss`); each function's own
+  frame and its depth with its callees; the error diagnostic
+  `mcu.stack_overflow` when the main stack goes past its limit, naming the
+  function. Extracted from EmbCC's `stack.c`; `tests/firmware/stack-overflow`.
+- The fault report (M5, SPEC-009 §12): `embsim run --faults` (text, JSON)
+  and `analysis.faults`; each fault as the core takes it, decoded (a
+  Cortex-M's HFSR and CFSR, MMFAR and BFAR; RISC-V's mcause and mtval;
+  MIPS's Cause and BadVAddr; a PIC24 trap), with the instruction, the
+  registers, a backtrace from the image's `.debug_frame` (read by the new
+  CFI reader in `dwarf.c`) or the shadow stack, and the handler; the error
+  diagnostic `mcu.fault`. Extracted from EmbCC's `fault.c`;
+  `tests/firmware/fault`.
+- The analyses name a function by its strong symbol, not a weak alias at
+  the same address (startup code's `Default_Handler`).
+- `ctx.analog` for Lua models (SPEC-013 §2.1): `voltage(pin)` and
+  `between(a, b)` read node voltages; `watch(pin, rising, falling)` makes an
+  input's comparator switch at the model's own voltages, for behavioural
+  sensors and detectors.
+- `embsim catalog install` takes a zip archive of a library (at its top or
+  in its one top directory) or an `http(s)://` URL to one (fetched with
+  `curl`), as SPEC-014 §4 has it: unpacked into a staging directory,
+  validated, copied, the staging removed; an entry outside the library is
+  refused. EmbSIM's own DEFLATE decoder and zip reader (`core/util/`).
 - The Verify perspective (M5): the scenario editor (a scenario's inputs
   and assertions edited in place, run with each result in its row, saved
   into the project: `scenario.get`, `scenario.save`), recordings replayed
@@ -186,6 +212,20 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- A digital input on an analog net heard of a threshold crossing when the
+  analog step that found it began, up to a step early (0.9 ms on a slow
+  ramp); it now hears of it at the crossing's own time, to the bisection's
+  resolution, as a `SIGNAL` event, as SPEC-004 §8 has it. MCU inputs, gates and scripted models on analog nets all see
+  the corrected times.
+- A reset kept the pin configuration of the run before it (an MCU's
+  pull-ups), so the analog side of a reset session started from it and ran
+  apart from a freshly loaded one; a reset restores every pin's model.
+- A digital probe on an analog net recorded the net's digital value (`Z`)
+  at each change besides its thresholded samples; it records the
+  thresholded level, when it changes.
+- The Verify perspective went blank for a project without scenarios or
+  probes: the scenario editor's store selectors made a new empty list on
+  every render, which rendered again without end.
 - Restore runtime input lists and waveform subscriptions when component placement
   or another structural edit restarts the engine; retain layout-only measurements.
 - Catalog clock frequency binding, timed `tpd` application, functional pulse
