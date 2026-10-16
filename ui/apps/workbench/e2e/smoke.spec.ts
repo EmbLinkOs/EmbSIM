@@ -99,3 +99,53 @@ test('canvas appearance persists and covers the panned workspace', async ({ page
     return background.width === viewport.width && background.height === viewport.height && background.left === viewport.left && background.top === viewport.top;
   })).toBe(true);
 });
+
+for (const autoArrange of [false, true]) {
+  test(`manual wire: bends, elbow flip, backtrack, commit and undo (auto-arrange ${autoArrange})`, async ({ page }) => {
+    await page.goto('/?mock=1');
+    await page.getByRole('button', { name: 'View', exact: true }).click();
+    await page.getByRole('checkbox', { name: 'Auto arrange after connecting', exact: true }).setChecked(autoArrange);
+    await page.getByRole('button', { name: 'View', exact: true }).click();
+    await page.getByRole('button', { name: 'Place Capacitor' }).click();
+    const canvas = page.getByRole('application', { name: 'Schematic canvas' });
+    const pin = page.getByRole('button', { name: 'Pin C1.1, unconnected' });
+    await pin.focus();
+    await page.keyboard.press('Enter');
+    const box = (await canvas.boundingBox())!;
+    // Empty sheet below the demo circuit. Each click commits a leg.
+    await page.mouse.click(box.x + 100, box.y + box.height - 70);
+    const preview = page.locator('.es-scene__wire-preview');
+    await expect(page.locator('.es-scene__wire-waypoint')).toHaveCount(1);
+    const first = await preview.getAttribute('points');
+    await page.mouse.move(box.x + 200, box.y + box.height - 130);
+    const beforeFlip = await preview.getAttribute('points');
+    await page.keyboard.press('Space');
+    await expect(preview).not.toHaveAttribute('points', beforeFlip!);
+    await page.mouse.click(box.x + 200, box.y + box.height - 130);
+    await expect(page.locator('.es-scene__wire-waypoint')).toHaveCount(2);
+    await page.keyboard.press('Backspace');
+    await expect(page.locator('.es-scene__wire-waypoint')).toHaveCount(1);
+    // The committed first leg is retained after removing the second.
+    await expect(preview).toHaveAttribute('points', new RegExp(`^${first!.split(' ').slice(0, -1).join(' ')}`));
+    const count = await page.locator('[data-wire]').count();
+    await page.getByRole('button', { name: /^Pin Q1.C/ }).focus();
+    await page.keyboard.press('Enter');
+    await expect(preview).toHaveCount(0);
+    await expect(page.locator('[data-wire]')).toHaveCount(count + 1);
+    const authored = page.locator('[data-wire]').last().locator('.es-wire__line');
+    expect((await authored.getAttribute('points'))!.split(' ').length).toBeGreaterThan(3);
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Pin C1.1, unconnected' })).toBeVisible();
+    await expect(page.locator('[data-wire]')).toHaveCount(count);
+    await pin.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Shift+ArrowDown');
+    await page.keyboard.press('Shift+ArrowLeft');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.es-scene__wire-waypoint')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(preview).toHaveCount(0);
+    await expect(page.locator('[data-wire]')).toHaveCount(count);
+  });
+
+}

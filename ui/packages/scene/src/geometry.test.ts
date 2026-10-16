@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { describe, expect, it } from 'vitest';
-import { findJunctions, findAirwires, magneticDrag, pinPosition, routeOrthogonal, snap, symbolBounds, symbolTransform } from './geometry';
+import { extendWirePath, findJunctions, findAirwires, magneticDrag, pinPosition, routeOrthogonal, snap, symbolBounds, symbolTransform } from './geometry';
 
 const resistor = { svg: '', width: 60, height: 20, pins: { '1': { x: 0, y: 10, side: 'left' as const }, '2': { x: 60, y: 10, side: 'right' as const } } };
 
@@ -87,5 +87,14 @@ describe('unrouted visual connectivity', () => {
     const pins = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }];
     expect(findAirwires(pins, [])).toHaveLength(2);
     expect(findAirwires(pins, [{ net: 'N', points: [[0, 0], [100, 0]] }, { net: 'N', points: [[100, 0], [100, 100]] }])).toEqual([]);
+  });
+});
+
+describe('manual wire paths', () => {
+  it('retains deliberate detours and flips only the live elbow', () => {
+    const legs: [number, number][][] = [[[0, 0], [0, 60]], [[0, 60], [80, 60]]];
+    expect(extendWirePath({ x: 0, y: 0 }, legs, { x: 100, y: 20 })).toEqual([[0, 0], [0, 60], [80, 60], [100, 60], [100, 20]]);
+    expect(extendWirePath({ x: 0, y: 0 }, legs, { x: 100, y: 20 }, false)).toEqual([[0, 0], [0, 60], [80, 60], [80, 20], [100, 20]]);
+    expect(extendWirePath({ x: 0, y: 0 }, legs.slice(0, -1), { x: 100, y: 20 })).toEqual([[0, 0], [0, 60], [100, 60], [100, 20]]);
   });
 });
