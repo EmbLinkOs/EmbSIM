@@ -334,6 +334,13 @@ versions follow semantic versioning. There is no release yet.
   `tests/vendor/nrfx`'s `nrfx_periph` runs nrfx_spim, nrfx_twim, nrfx_pwm
   and nrfx_saadc against the catalog's 25LC040 and 24C02, an RC low-pass
   and a 1.0 V source.
+- Toolchain profiles may name the program prefixes a GNU cross toolchain
+  is installed under (`detect.prefix`, `detect.alternatives`, each with its
+  own link flags when its C library differs): gcc-riscv now finds the
+  distributions' riscv64-unknown-elf-gcc (with picolibc) as well as xPack's
+  riscv-none-elf-gcc, and `tests/protocol/test_build.py` builds and runs
+  the HiFive1 example with it. `toolchain.detect` reports the program it
+  found.
 - A pin that turns from an input into an output takes its new level at
   once (`esk_pin_output`): an input pulled low that starts driving 0 no
   longer shows a zero-width Z on its net.
@@ -399,6 +406,11 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The RISC-V core decoded a store's offset by shifting a negative value
+  left, which C leaves undefined: a store at a negative offset (as GCC's
+  stack frames make) ran as intended with the compilers here, but UBSan
+  stopped on it once gcc-riscv built the HiFive1 example. The offset is
+  built unsigned and sign-extended; `test_riscv` stores at -64 and -2048.
 - A `digital_io` pin that drove `Z` on an analog net kept its direction as
   an output, and the solver ran no comparator for it: a Lua I2C device's
   SDA, let go after its ACK, never saw the master's edges. A pin driving

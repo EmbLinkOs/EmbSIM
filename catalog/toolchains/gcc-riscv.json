@@ -3,14 +3,33 @@
   "kind": "toolchain",
   "id": "gcc-riscv",
   "name": "GNU RISC-V Embedded (riscv-none-elf-gcc / riscv64-unknown-elf-gcc)",
-  "description": "GCC for bare-metal RISC-V; the xPack riscv-none-elf prefix is tried first, then the SiFive riscv64-unknown-elf prefix through the PATH hint.",
+  "description": "GCC for bare-metal RISC-V; the xPack riscv-none-elf- prefix is tried first, then SiFive's and the distributions' riscv64-unknown-elf- (Debian's and Ubuntu's gcc-riscv64-unknown-elf) and riscv32-unknown-elf-: the first whose gcc runs is used for every command. xPack's carries newlib (nano.specs, nosys.specs); the distributions' are paired with picolibc (Debian's and Ubuntu's picolibc-riscv64-unknown-elf: picolibc.specs).",
   "detect": {
     "command": [
       "riscv-none-elf-gcc",
       "--version"
     ],
     "version_regex": "\\) ([0-9.]+)",
-    "min_version": "10.2"
+    "min_version": "10.2",
+    "prefix": "riscv-none-elf-",
+    "alternatives": [
+      {
+        "prefix": "riscv64-unknown-elf-",
+        "link_flags": [
+          "-nostartfiles",
+          "-Wl,--gc-sections",
+          "--specs=picolibc.specs"
+        ]
+      },
+      {
+        "prefix": "riscv32-unknown-elf-",
+        "link_flags": [
+          "-nostartfiles",
+          "-Wl,--gc-sections",
+          "--specs=picolibc.specs"
+        ]
+      }
+    ]
   },
   "targets": {
     "rv32imac": {

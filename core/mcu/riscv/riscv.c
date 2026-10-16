@@ -830,7 +830,9 @@ static void exec32(struct rv_state *rs, u32 i)
         return;
     }
     case 0x23: {                                /* stores */
-        s64 imm = (s64)(((s32)i >> 25) << 5) | ((i >> 7) & 31);
+        /* imm[11:5] from 31:25, imm[4:0] from 11:7, signed: built unsigned
+         * at the top of the word, then shifted down arithmetically */
+        s64 imm = (s32)((i & 0xfe000000u) | ((i >> 7) & 31u) << 20) >> 20;
         if (f3 > 3 || (f3 == 3 && rs->xlen == 32)) {
             rv_illegal(rs);
             return;
