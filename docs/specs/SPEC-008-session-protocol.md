@@ -129,8 +129,8 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `catalog.libraries({}) -> {libraries: [{path, name, version, items}]}`
 
 ### record
-- `record.start({path?}) -> {}`; `record.stop({}) -> {path, inputs, hash}`
-- `record.replay({path}) -> {ok, divergence?: {at_ps, expected, observed}}`
+- `record.start({path?}) -> {from_ps}`; `record.stop({}) -> {path, hash, inputs, count, observations}` (with no path, `recording` is the document itself)
+- `record.replay({path, allow_drift?}) -> {ok, compared, divergence?: {index, expected, observed}, drift: [{what, recorded, now}]}`: the recording's project loaded into the session and replayed (SPEC-012 §2)
 
 ### toolchain
 - `toolchain.detect({}) -> {profiles: [{name, found, version, path}]}`

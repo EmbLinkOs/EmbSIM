@@ -74,6 +74,10 @@ struct es_session {
     uint64_t input_seq;
     int recording;
     char *record_path;
+    /* what the run observed while recording (record.c) */
+    esk_json *observations;
+    int obs_truncated;
+    es_time_t record_from; /* record.start's time: its observations begin there */
     /* run state */
     int running;
     double speed;
@@ -133,5 +137,24 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
 esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *assertions);
 /* probes sampled from net changes */
 void esk_session_on_net_change(void *ctx, esk_net *net);
+/* record.c: recordings (SPEC-012): observations from now on; a core's
+ * interrupt entry (the engine's on_irq); a probe's sample; the document
+ * (its end observations added); replay's comparison of two observation
+ * lists (ok, or the first divergence); a recording as a scenario */
+void esk_record_start(es_session *s);
+void esk_record_irq(void *ctx, esk_comp *mcu, int core, int cores, int n, es_time_t at);
+void esk_record_probe(es_session *s, const esk_probe *p, es_time_t at, double v);
+esk_json *esk_record_document(es_session *s, const char *project_path, const char *scenario,
+                              const esk_json *report, const esk_json *extra_probes);
+esk_json *esk_record_compare(es_session *s, const esk_json *want, const esk_json *got);
+/* the identities that changed since the recording: [{what, recorded, now}] */
+esk_json *esk_record_drift(es_session *s, const esk_json *rec);
+/* replay a recording on the session, its project loaded: from reset, its
+ * inputs at their times, to its end; the observations compared from its
+ * start (from_ps). *result: {ok, compared, divergence?, drift}; ES_ESTATE
+ * (and drift) when the project or an image changed and allow_drift is 0 */
+es_status esk_record_replay(es_session *s, const esk_json *rec, int allow_drift, esk_json **result);
+esk_json *esk_record_to_scenario(esk_alloc *a, const esk_json *rec, const char *name, int with_probes,
+                                 int with_serial);
 
 #endif

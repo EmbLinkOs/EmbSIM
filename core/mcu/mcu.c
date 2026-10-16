@@ -606,6 +606,15 @@ static void h_out(void *ctx, int stream, int c)
         text_append(u, c);
 }
 
+/* a core enters an exception or interrupt: the session's, at the core's time */
+static void h_exc(void *ctx, int core, int n)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_engine *e = st->c->e;
+    if (e->on_irq)
+        e->on_irq(e->on_irq_ctx, st->c, core, esk_cortexm_cores(&st->m), n, local_now(st));
+}
+
 static void h_diag(void *ctx, int severity, const char *code, const char *msg)
 {
     mcu_state *st = (mcu_state *)ctx;
@@ -918,6 +927,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.pin_in = h_pin_in;
     st->m.host.uart_tx = h_uart_tx;
     st->m.host.diag = h_diag;
+    st->m.host.exc = h_exc;
     st->m.host.pin_volts = h_pin_volts;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     snprintf(st->console, sizeof st->console, "%s", su->console ? su->console : "USART1");

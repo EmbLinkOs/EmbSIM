@@ -234,6 +234,12 @@ typedef struct esk_mach_host {
     /* the voltage on a pin's net, for an ADC: 1 and *v, or 0 when the pin
      * is not connected */
     int (*pin_volts)(void *ctx, int port, int bit, double *v);
+    /* a core enters exception or interrupt n (its own numbering: a
+     * Cortex-M's exception number, an AVR's vector, 16 + a RISC-V
+     * interrupt's cause or the cause of an exception, 16 + a MIPS
+     * interrupt's vector or an exception's ExcCode, a PIC24's vector
+     * number), for a recording's observations */
+    void (*exc)(void *ctx, int core, int n);
 } esk_mach_host;
 
 /* ---- the machine ---------------------------------------------------------- */
@@ -336,6 +342,12 @@ ES_INLINE u32 esk_mach_after(const struct esk_mach *m, u32 cycles, u64 since)
     if (m->cycles - cycles >= since)
         return cycles;
     return m->cycles > since ? (u32)(m->cycles - since) : 0;
+}
+/* a core enters exception or interrupt n (esk_mach_host.exc) */
+ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n)
+{
+    if (m->host.exc)
+        m->host.exc(m->host.ctx, core, n);
 }
 /* end the run: state, and the reason */
 void esk_mach_end(struct esk_mach *m, int state, const char *fmt, ...);

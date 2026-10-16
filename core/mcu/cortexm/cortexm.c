@@ -293,6 +293,7 @@ static void lockup(struct esk_cm_state *cs, const char *why)
 static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
 {
     int fp_frame = cs->model->fpu && (cs->control & 4);
+    esk_mach_exc(cs->sim, esk_cortexm_core(cs->sim), n);
     u32 frame = fp_frame ? 0x68 : 0x20;
     /* PushStack: with CCR.STKALIGN (always on ARMv6-M) the frame is
      * 8-aligned, and xPSR bit 9 records that 4 bytes were skipped */

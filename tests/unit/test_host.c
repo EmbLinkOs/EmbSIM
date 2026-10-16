@@ -6,6 +6,7 @@
 #include "harness.h"
 #include "host/host.h"
 #include "protocol/wsutil.h"
+#include "util/sha256.h"
 
 static esk_alloc A;
 
@@ -298,12 +299,44 @@ static void test_user_dirs(void)
     CHECK_EQ(esk_host_open_browser(NULL), ES_EINVAL);
 }
 
+/* SHA-256: FIPS 180-4's examples (and the NIST vectors for the empty
+ * message and a million a's), in one call and fed in pieces */
+static void test_sha256(void)
+{
+    char t[72];
+    static const char m56[] = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+    esk_sha256 c;
+    unsigned char d[ESK_SHA256_LEN], d2[ESK_SHA256_LEN];
+    static char a[1000];
+    int i;
+    esk_sha256_text("", 0, t);
+    CHECK_STR(t, "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    esk_sha256_text("abc", 3, t);
+    CHECK_STR(t, "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    esk_sha256_text(m56, sizeof m56 - 1, t);
+    CHECK_STR(t, "sha256:248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
+    memset(a, 'a', sizeof a);
+    esk_sha256_init(&c);
+    for (i = 0; i < 1000; i++)
+        esk_sha256_update(&c, a, sizeof a);
+    esk_sha256_final(&c, d);
+    CHECK_EQ(d[0], 0xcd);
+    CHECK_EQ(d[31], 0xd0);
+    esk_sha256_init(&c);
+    for (i = 0; i < (int)sizeof m56 - 1; i++)
+        esk_sha256_update(&c, m56 + i, 1);
+    esk_sha256_final(&c, d2);
+    CHECK_EQ(d2[0], 0x24);
+    CHECK_EQ(d2[31], 0xc1);
+}
+
 TEST_MAIN_BEGIN
 esk_alloc_init(&A, NULL);
 RUN(test_path_join);
 RUN(test_file_roundtrip);
 RUN(test_clock);
 RUN(test_sha1);
+RUN(test_sha256);
 RUN(test_base64);
 RUN(test_ws_accept_and_frames);
 RUN(test_socket_echo);

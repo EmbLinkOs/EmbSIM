@@ -1084,6 +1084,8 @@ void esk_project_unload(es_session *s)
     esk_engine_init(&s->eng, s->a, &s->diag, s->eng.policy);
     s->eng.on_net_change = esk_session_on_net_change;
     s->eng.on_net_change_ctx = s;
+    s->eng.on_irq = esk_record_irq;
+    s->eng.on_irq_ctx = s;
     esk_json_free(s->a, s->project);
     s->project = NULL;
     esk_strfree(s->a, s->base_dir);

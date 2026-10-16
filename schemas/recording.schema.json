@@ -57,6 +57,8 @@
       }
     },
     "scenario": {"type": "string"},
+    "probes": {"type": "array", "description": "Probes the run added beside the project's (embsim run --probe), by target; replay adds them again", "items": {"type": "string"}},
+    "truncated": {"type": "boolean", "description": "The run observed more than a recording keeps (200000 observations); those after are not in it"},
     "policy": {"$ref": "common.schema.json#/$defs/policy"},
     "settings": {"$ref": "common.schema.json#/$defs/settings"},
     "inputs": {
@@ -85,6 +87,7 @@
           "at_ps": {"$ref": "common.schema.json#/$defs/ps_string"},
           "kind": {"type": "string", "enum": ["irq", "probe", "serial", "diagnostic", "end"]},
           "board": {"$ref": "common.schema.json#/$defs/instance_id"},
+          "core": {"type": "integer", "minimum": 0, "description": "The core that took the interrupt, on a part with several"},
           "n": {"type": "integer", "minimum": 0},
           "probe": {"type": "string"},
           "value": {},

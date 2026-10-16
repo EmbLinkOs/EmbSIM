@@ -1693,6 +1693,7 @@ static void enter(struct pic24_state *ps, u32 vector, int ipl, int irq)
                    (ret >> 16 & 0x7f));
     u16 sfa = ps->e && (ps->corcon & CORCON_SFA) ? 1 : 0;
     ps->trap = 0;
+    esk_mach_exc(s, 0, irq < 0 ? (int)(vector - 4) / 2 : irq + 8);
     if (push(ps, (u16)(ret | sfa)) || push(ps, hi)) {
         ps->trap = 0;                           /* a stack that cannot take it */
     }
@@ -1705,7 +1706,6 @@ static void enter(struct pic24_state *ps, u32 vector, int ipl, int irq)
         ps->corcon |= CORCON_IPL3;
     ps->pc = esk_pic24_prog(s, vector) & 0x7ffffe;
     ps->sleeping = 0;
-    ES_UNUSED(irq);
     s->cycles += 5;
     if (s->counting)
         esk_mach_advance(s, 5);

@@ -1,9 +1,10 @@
 # SPEC-012 - Record, Replay and Verification
 
 **Status:** Accepted in outline 2026-10-15; completed before M1 (recording
-of inputs is implemented in M0). **Builds on:** 04 §8; ADR-012.
-**Schema:** `schemas/recording.schema.json`. **Requirements:**
-`docs/requirements/VER.md`.
+of inputs is implemented in M0); revised 2026-10-16 to what M5 implements:
+observations, replay with its divergence report, recordings to scenarios.
+**Builds on:** 04 §8; ADR-012. **Schema:** `schemas/recording.schema.json`.
+**Requirements:** `docs/requirements/VER.md`.
 
 ---
 
@@ -28,22 +29,34 @@ of inputs is implemented in M0). **Builds on:** 04 §8; ADR-012.
 
 Every `EXTERNAL` event is an input: user actions, scenario inputs, serial
 bytes, debugger writes, topology transactions (recorded as their edit list).
-Observations are the discrete checkpoints replay compares: interrupt
-entries per core, digital probe transitions, run end; analog probes are
-compared with tolerances when present.
+Observations are the discrete checkpoints replay compares, in time order:
+interrupt entries per core (`irq`: the board, the core on a part with
+several, the core's own number for the exception: `esk_mach_host.exc`),
+digital probe transitions (`probe`, from the level at reset), each serial
+probe's text at the end (`serial`), each warning, error and fatal
+diagnostic (`diagnostic`) and the run's end (`end`). Analog probes are not
+observed. A recording keeps at most 200000 observations (`truncated` past
+them). A run with `--record` starts from reset, as a scenario does; a
+recording made with `record.start` in a running session carries `from_ps`,
+and replay compares from there. `probes` lists the probes the run added
+beside the project's (`--probe`), which replay adds again.
 
 ## 2. Replay
 
-`record.replay` loads the recorded project (refusing on hash mismatch unless
-`--allow-drift`, which reports differences), applies inputs at their times
-and sequences through the command path, and compares observations in
-order; the first mismatch is reported with both values and times, exit code
-4. A replay never accepts live input.
+`embsim replay` and `record.replay` load the recorded project (refusing on
+a project or image hash mismatch, exit 2, unless `--allow-drift`, which
+reports the differences as `drift`), reset it, apply the inputs at their
+times through the command path, run to the recorded end, and compare the
+observations in order; the first mismatch is reported with both
+observations (`divergence: {index, expected, observed}`), exit code 4. A
+replay never accepts live input.
 
 ## 3. From recording to scenario
 
 `embsim record to-scenario` emits a SPEC-007 scenario from the inputs and
-turns selected observations into assertions (`--assert probes`).
+turns selected observations into assertions: each digital probe's level at
+the end and its edges over the run (`--assert probes`), each serial probe's
+text (`--assert serial`), both by default.
 
 ## 4. Verification in CI
 
@@ -54,6 +67,10 @@ reports (for a firmware change) ignoring wall time.
 
 ## 5. Determinism tests
 
-`tests/determinism/` runs each example twice in one process and in two
-processes and compares full event traces (`--trace-events`) byte for byte;
-the analog subset compares with tolerances.
+`tests/protocol/test_replay.py` (`record_replay` in CTest) records each
+example's first scenario twice, in two processes, and requires the two
+recordings' inputs and observations to be equal; it replays each, and checks
+a changed observation's divergence report, a changed image's refusal, a
+recording turned into a scenario, and `record.replay` over the protocol.
+Full event traces (`--trace-events`) and analog comparisons with tolerances
+are not implemented.

@@ -129,6 +129,13 @@ versions follow semantic versioning. There is no release yet.
   pins the PPS gives them; the Explorer 16/32 with the PIC24FJ1024GB610 PIM
   and `examples/explorer16-pic24`, built by XC16. The `mcu.trap`
   diagnostic.
+- Record and replay (M5, SPEC-012): recordings with the project's and
+  images' SHA-256 and observations (interrupt entries per core, digital
+  probe transitions, serial text, diagnostics); `embsim replay` with a
+  first-divergence report (exit 4) and drift refusal (`--allow-drift`);
+  `embsim record to-scenario`; `record.replay` over the protocol;
+  `tools/verify/compare_reports.py`; a determinism and replay test over
+  every example (`record_replay`).
 - The RP2040's second core: two Cortex-M0+ cores on one clock
   (`core.cores`; each core's NVIC, SysTick, CPUID, divider and FIFO; WFE and
   SEV between them; core 1 launched through its bootrom's FIFO handshake and

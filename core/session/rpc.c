@@ -8,6 +8,7 @@
 #include <string.h>
 #include "host/host.h"
 #include "util/num.h"
+#include "util/sha256.h"
 #include "util/str.h"
 
 #define PROTOCOL_VERSION "1.0"
@@ -661,48 +662,89 @@ static es_status m_catalog_models(rpc_ctx *r)
 
 static es_status m_record_start(rpc_ctx *r)
 {
-    r->s->recording = 1;
-    esk_strfree(r->s->a, r->s->record_path);
-    r->s->record_path = pstr(r, "path", NULL) ? esk_strdup(r->s->a, pstr(r, "path", NULL)) : NULL;
+    es_session *s = r->s;
+    esk_record_start(s);
+    s->record_from = s->eng.sched.now; /* replay compares from here */
+    esk_strfree(s->a, s->record_path);
+    s->record_path = pstr(r, "path", NULL) ? esk_strdup(s->a, pstr(r, "path", NULL)) : NULL;
     r->result = obj(r);
+    if (r->result)
+        esk_json_set_u64_string(s->a, r->result, "from_ps", s->record_from);
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
 static es_status m_record_stop(rpc_ctx *r)
 {
     es_session *s = r->s;
-    r->s->recording = 0;
+    esk_json *report, *rec;
     r->result = obj(r);
     if (!r->result) return ES_ENOMEM;
+    report = esk_session_report(s, "stopped", NULL);
+    rec = report ? esk_record_document(s, s->project_path, NULL, report, NULL) : NULL;
+    esk_json_free(s->a, report);
+    s->recording = 0;
+    if (!rec) return ES_ENOMEM;
     esk_json_object_set(s->a, r->result, "inputs", esk_json_clone(s->a, s->inputs_log));
     esk_json_set_integer(s->a, r->result, "count", (int64_t)esk_json_len(s->inputs_log));
+    esk_json_set_integer(s->a, r->result, "observations", (int64_t)esk_json_len(esk_json_get(rec, "observations")));
     if (s->record_path) {
-        esk_json *rec = obj(r);
-        if (rec) {
-            esk_json *eng = obj(r);
-            char *text;
-            size_t len;
-            esk_json_set_integer(s->a, rec, "schema_version", 1);
-            esk_json_set_string(s->a, rec, "kind", "recording");
-            if (eng) {
-                esk_json_set_string(s->a, eng, "version", es_version().string);
-                esk_json_set_integer(s->a, eng, "abi", es_abi_version());
-                esk_json_object_set(s->a, rec, "engine", eng);
+        size_t len;
+        char *text = esk_json_format(s->a, rec, 1, &len), h[72];
+        if (text) {
+            esk_sha256_text(text, len, h);
+            if (esk_host_write_file(s->record_path, text, len) == ES_OK) {
+                esk_json_set_string(s->a, r->result, "path", s->record_path);
+                esk_json_set_string(s->a, r->result, "hash", h);
             }
-            esk_json_set_string(s->a, rec, "project", s->project_path ? s->project_path : "");
-            esk_json_set_string(s->a, rec, "policy", policy_name(s->eng.policy));
-            esk_json_object_set(s->a, rec, "inputs", esk_json_clone(s->a, s->inputs_log));
-            esk_json_set_u64_string(s->a, rec, "end_ps", s->eng.sched.now);
-            text = esk_json_format(s->a, rec, 2, &len);
-            if (text) {
-                esk_host_write_file(s->record_path, text, len);
-                esk_free(s->a, text, len + 1);
-            }
-            esk_json_free(s->a, rec);
-            esk_json_set_string(s->a, r->result, "path", s->record_path);
+            esk_free(s->a, text, len + 1);
         }
+    } else {
+        esk_json_object_set(s->a, r->result, "recording", rec);
+        rec = NULL;
     }
+    esk_json_free(s->a, rec);
     return ES_OK;
+}
+
+/* the recording at `path`: its project loaded into this session, replayed */
+static es_status m_record_replay(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *path = pstr(r, "path", NULL);
+    char *text = NULL, *dir, *proj;
+    size_t len = 0;
+    int line;
+    const char *err;
+    esk_json *rec;
+    es_status st;
+    if (!path)
+        return fail(r, -32602, "record.replay needs a path");
+    if (esk_host_read_file(s->a, path, &text, &len) != ES_OK)
+        return fail(r, -32602, "the recording cannot be read");
+    rec = esk_json_parse(s->a, text, len, &line, &err);
+    esk_free(s->a, text, len + 1);
+    if (!rec || !esk_str_eq(esk_json_get_str(rec, "kind", ""), "recording")) {
+        esk_json_free(s->a, rec);
+        return fail(r, -32602, "the file is not a recording");
+    }
+    proj = esk_strdup(s->a, esk_json_get_str(esk_json_get(rec, "project"), "path", ""));
+    if (proj && !esk_host_file_exists(proj)) {
+        dir = esk_host_dirname(s->a, path);
+        esk_strfree(s->a, proj);
+        proj = esk_host_path_join(s->a, dir ? dir : ".", esk_json_get_str(esk_json_get(rec, "project"), "path", ""));
+        esk_strfree(s->a, dir);
+    }
+    st = proj ? es_session_load_file(s, proj) : ES_ENOMEM;
+    esk_strfree(s->a, proj);
+    if (st != ES_OK) {
+        esk_json_free(s->a, rec);
+        return fail(r, -32000, "the recording's project does not load");
+    }
+    st = esk_record_replay(s, rec, esk_json_get_bool(r->params, "allow_drift", 0), &r->result);
+    esk_json_free(s->a, rec);
+    if (st == ES_ESTATE)
+        return ES_OK; /* the result says the project or an image changed */
+    return st;
 }
 
 static es_status m_scenario_run(rpc_ctx *r)
@@ -957,7 +999,7 @@ static const method methods[] = {
     { "observe.snapshot", m_observe_snapshot }, { "observe.subscribe", m_observe_subscribe }, { "observe.unsubscribe", m_observe_unsubscribe },
     { "catalog.list", m_catalog_list }, { "catalog.get", m_catalog_get }, { "catalog.libraries", m_catalog_libraries },
     { "catalog.models", m_catalog_models }, { "catalog.validate", m_unavailable },
-    { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_unavailable },
+    { "record.start", m_record_start }, { "record.stop", m_record_stop }, { "record.replay", m_record_replay },
     { "scenario.run", m_scenario_run }, { "diagnostics.list", m_diagnostics_list },
     { "toolchain.detect", m_toolchain_detect }, { "toolchain.build", m_toolchain_build },
 };

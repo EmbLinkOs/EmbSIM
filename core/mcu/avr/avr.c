@@ -227,6 +227,7 @@ static void take_interrupt(esk_avr *as)
     int v = as->pend, i;
     u32 c = as->sleeping ? 8 : 4;
     as->sleeping = 0;
+    esk_mach_exc(s, 0, v);
     push_pc(as, as->pc);
     as->sreg &= (u8)~SREG_I;
     as->pc = (u32)v * 2;

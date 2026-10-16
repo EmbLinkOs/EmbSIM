@@ -118,6 +118,8 @@ static void enter(struct mips_state *ms, u32 code, u32 intoff, int newset)
 {
     u32 st = ms->status, off, base;
     u32 ret = ms->slot ? ms->bpc : ms->pc | (u32)ms->isa;
+    if (code != EXC_INT)
+        esk_mach_exc(ms->sim, 0, (int)code);
     if (!(st & ST_EXL)) {
         ms->epc = ret;
         ms->cause = ms->slot ? ms->cause | CA_BD : ms->cause & ~CA_BD;
@@ -247,6 +249,7 @@ static void take_interrupt(struct mips_state *ms)
         ms->eic->taken(ms->eic->ctx);
     ms->exc_bad_set = 0;
     ms->exc_refill = 0;
+    esk_mach_exc(ms->sim, 0, 16 + (ms->eic ? ms->eic->vector : off >= 0x200 && vs ? (int)((off - 0x200) / (vs << 5)) : 0));
     enter(ms, EXC_INT, off, set);
 }
 

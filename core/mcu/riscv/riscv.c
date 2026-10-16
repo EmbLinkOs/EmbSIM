@@ -53,6 +53,7 @@ void rv_illegal(struct rv_state *rs)
 static void trap_enter(struct rv_state *rs, u64 cause, u64 tval, int intr)
 {
     u64 st = rs->mstatus;
+    esk_mach_exc(rs->sim, 0, (int)(intr ? 16 + (cause & 0xffff) : cause & 0xffff));
     rs->mepc = rs->pc;
     rs->mcause = intr ? (1ull << (rs->xlen - 1)) | cause : cause;
     rs->mtval = rv_xl(rs, tval);

@@ -24,7 +24,9 @@ reset (state `no_image`); `esk_mcu_set_image` loads one later.
 
 The machine owns: the bus, one core, its devices (the register file and the
 core's system devices), breakpoints, the host hooks through which the runtime
-sees its outputs (`out`, `readc`, `pin_cfg`, `pin_in`, `uart_tx`, `diag`),
+sees its outputs (`out`, `readc`, `pin_cfg`, `pin_in`, `uart_tx`, `diag`, and
+`exc`, which each core calls as it enters an exception or interrupt, for a
+recording's observations: SPEC-012 §1),
 the receive ports of its UARTs, and the flags the core and devices raise
 (`asleep`, `yield`, `reset_req`, the stop reasons). It is EmbCC's
 `struct sim` made per instance: no file-scope state (CS-1); every allocation
