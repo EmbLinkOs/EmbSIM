@@ -622,6 +622,7 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         su.image_len = len;
         su.image_name = rel;
         su.console = esk_json_get_str(esk_json_get(mi->desc, "console"), "default", "USART1");
+        su.quantum_ps = s->core_quantum_ps;
         st = esk_mcu_attach(mc, &su, why, sizeof why);
         if (st != ES_OK)
             esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.image", 0, "board", bi->id, NULL, 0, "%s: %s", bi->id, why);
@@ -864,6 +865,8 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
     memset(&g, 0, sizeof g);
     g.s = s;
     esk_map_init(&g.rec_by_name, s->a);
+    /* settings first: the MCU runtime reads its quantum when a board is loaded */
+    apply_settings(s, esk_json_get(project, "settings"));
     /* boards */
     boards = esk_json_get(project, "boards");
     comps = esk_json_get(project, "components");
@@ -982,7 +985,6 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             }
         }
     }
-    apply_settings(s, esk_json_get(project, "settings"));
     st = esk_engine_partition(&s->eng);
     if (st != ES_OK)
         return st;

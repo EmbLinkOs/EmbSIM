@@ -4,6 +4,7 @@
  * running the committed test firmware (tests/firmware), its breakpoints and
  * its sleep. */
 #include "harness.h"
+#include "embsim/session.h"
 #include "mcu/build.h"
 #include "util/json.h"
 
@@ -364,9 +365,107 @@ static void test_bluepill_input(void)
     free(b);
 }
 
+/* ---- the runtime in a session ------------------------------------------------ */
+
+static esk_json *rpc(es_session *s, esk_alloc *a, const char *method, const char *params)
+{
+    char req[1024], *res = NULL;
+    size_t len = 0;
+    esk_json *j = NULL, *r = NULL;
+    int line = 0;
+    const char *err = NULL;
+    snprintf(req, sizeof req, "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"%s\",\"params\":%s}", method, params);
+    if (es_session_rpc(s, req, strlen(req), &res, &len) != ES_OK)
+        return NULL;
+    j = esk_json_parse(a, res, len, &line, &err);
+    es_free(res);
+    if (j && esk_json_get(j, "result"))
+        r = esk_json_clone(a, esk_json_get(j, "result"));
+    if (j && esk_json_get(j, "error"))
+        fprintf(stderr, "%s: %s\n", method, esk_json_get_str(esk_json_get(j, "error"), "message", "?"));
+    esk_json_free(a, j);
+    return r;
+}
+
+/* the text a serial probe has seen */
+static void serial_text(es_session *s, esk_alloc *a, const char *probe, char *out, size_t cap)
+{
+    char params[128];
+    esk_json *r;
+    snprintf(params, sizeof params, "{\"probe\":\"%s\"}", probe);
+    r = rpc(s, a, "probe.read", params);
+    snprintf(out, cap, "%s", r ? esk_json_get_str(r, "text", "") : "");
+    esk_json_free(a, r);
+}
+
+static void mcu_output(es_session *s, esk_alloc *a, const char *key, char *out, size_t cap)
+{
+    esk_json *r = rpc(s, a, "observe.snapshot", "{\"include\":[\"components\"]}");
+    const esk_json *u1 = esk_json_get(esk_json_get(r, "components"), "B1.U1");
+    const esk_json *o = esk_json_get(u1, "outputs") ? esk_json_get(u1, "outputs") : u1;
+    const esk_json *v = esk_json_get(o, key);
+    if (esk_json_str(v))
+        snprintf(out, cap, "%s", esk_json_str(v));
+    else
+        snprintf(out, cap, "%lld", (long long)esk_json_get_int(o, key, -1));
+    esk_json_free(a, r);
+}
+
+static void test_session_runtime(void)
+{
+    es_session *s = NULL;
+    esk_alloc a;
+    char path[1024], text[4096], first[4096], insns[64], insns2[64], state[32];
+    esk_json *r;
+    esk_alloc_init(&a, NULL);
+    snprintf(path, sizeof path, "%s/examples/bluepill-button-led/project.json", EMBSIM_SOURCE_DIR);
+    CHECK_EQ(es_session_create(NULL, &s), ES_OK);
+    if (!s)
+        return;
+    CHECK_EQ(es_session_load_file(s, path), ES_OK);
+    esk_json_free(&a, rpc(s, &a, "control.reset", "{}"));
+    r = rpc(s, &a, "probe.add", "{\"target\":\"serial:B1.USART1\",\"kind\":\"serial\"}");
+    CHECK(r != NULL);
+    esk_json_free(&a, r);
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"2ms\"}"));
+    /* the board's console input: USART1's receiver, at its baud rate */
+    esk_json_free(&a, rpc(s, &a, "input.serial", "{\"target\":\"B1\",\"text\":\"abc\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3ms\"}"));
+    serial_text(s, &a, "console", text, sizeof text);
+    CHECK(strstr(text, "EmbSIM Blue Pill demo\r\nABC") != NULL);
+    mcu_output(s, &a, "state", state, sizeof state);
+    CHECK_STR(state, "sleeping");
+    /* the reset button holds NRST low: the core is held, then boots again */
+    esk_json_free(&a, rpc(s, &a, "input.press", "{\"target\":\"B1.SW_RESET\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3.5ms\"}"));
+    mcu_output(s, &a, "state", state, sizeof state);
+    CHECK_STR(state, "reset");
+    esk_json_free(&a, rpc(s, &a, "input.release", "{\"target\":\"B1.SW_RESET\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"6ms\"}"));
+    serial_text(s, &a, "console", text, sizeof text);
+    CHECK(strstr(text, "ABCEmbSIM Blue Pill demo\r\n") != NULL);
+    mcu_output(s, &a, "instructions", insns, sizeof insns);
+    snprintf(first, sizeof first, "%s", text);
+    /* a session reset runs the same again, to the instruction */
+    esk_json_free(&a, rpc(s, &a, "control.reset", "{}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"2ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "input.serial", "{\"target\":\"B1.USART1\",\"text\":\"abc\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "input.press", "{\"target\":\"B1.SW_RESET\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3.5ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "input.release", "{\"target\":\"B1.SW_RESET\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"6ms\"}"));
+    serial_text(s, &a, "console", text, sizeof text);
+    CHECK_STR(text, first);
+    mcu_output(s, &a, "instructions", insns2, sizeof insns2);
+    CHECK_STR(insns2, insns);
+    es_session_destroy(s);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_hello);
 RUN(test_quanta_and_breakpoints);
 RUN(test_bluepill_golden);
 RUN(test_bluepill_input);
+RUN(test_session_runtime);
 TEST_MAIN_END
