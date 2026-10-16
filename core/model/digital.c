@@ -197,9 +197,11 @@ static void dff_reset(esk_comp *c)
 }
 static const esk_model_ops dff_ops = { "dff", sizeof(dff_state), dff_create, NULL, dff_reset, dff_in, NULL, NULL, NULL, NULL, 0 };
 
-/* ---- clock source: OUT; params hz (or period_ps), duty (0..1), start_high --- */
+/* ---- clock source: OUT; params hz or freq (or period_ps), duty (0..1),
+ * start_high, td (seconds: the first rising edge; 0 rises after the first low
+ * half-period) ---------------------------------------------------------------- */
 
-typedef struct clk_state { esk_pin *out; es_time_t high_ps, low_ps; int level; int enabled; } clk_state;
+typedef struct clk_state { esk_pin *out; es_time_t high_ps, low_ps, td_ps; int level; int enabled; } clk_state;
 
 static void clk_time(esk_comp *c, uint32_t token)
 {
@@ -220,9 +222,14 @@ static es_status clk_create(esk_comp *c)
     s->out = pin_or_null(c, "OUT");
     if (!s->out) return ES_ESCHEMA;
     if (esk_comp_param_double(c, "period_ps", &period) != 0 || period <= 0) {
-        if (esk_comp_param_double(c, "hz", &hz) != 0 || hz <= 0)
+        if ((esk_comp_param_double(c, "hz", &hz) != 0 || hz <= 0) && (esk_comp_param_double(c, "freq", &hz) != 0 || hz <= 0))
             hz = 1000.0;
         period = 1e12 / hz;
+    }
+    {
+        double td = 0;
+        if (esk_comp_param_double(c, "td", &td) == 0 && td > 0)
+            s->td_ps = (es_time_t)(td * 1e12 + 0.5);
     }
     esk_comp_param_double(c, "duty", &duty);
     if (duty <= 0 || duty >= 1) duty = 0.5;
@@ -238,9 +245,9 @@ static void clk_reset(esk_comp *c)
     int start_high = 0;
     esk_comp_param_bool(c, "start_high", &start_high);
     s->enabled = esk_comp_input_bool(c, "enabled", 1);
-    s->level = start_high;
+    s->level = start_high && !s->td_ps;
     esk_pin_drive(s->out, s->level ? ESK_L1 : ESK_L0, ESK_STR_STRONG, 0);
-    esk_comp_wake_at(c, s->level ? s->high_ps : s->low_ps, 0);
+    esk_comp_wake_at(c, s->td_ps ? s->td_ps : s->level ? s->high_ps : s->low_ps, 0);
 }
 static es_status clk_set(esk_comp *c, const char *input, const esk_json *value)
 {
@@ -256,24 +263,44 @@ static es_status clk_set(esk_comp *c, const char *input, const esk_json *value)
 }
 static const esk_model_ops clock_ops = { "clock_source", sizeof(clk_state), clk_create, NULL, clk_reset, NULL, clk_time, clk_set, NULL, NULL, 0 };
 
-/* ---- pulse source (digital): OUT; params delay_ps, width_ps, level ------------ */
+/* ---- pulse source (digital): OUT (or the "+" terminal of a SPICE-style
+ * source); delay_ps or td (s), width_ps or pw (s), per (s: repeats when longer
+ * than the width; 0 is a single pulse), level (or v2 above v1: active high) */
 
-typedef struct pulse_state { esk_pin *out; es_time_t delay, width; int level; } pulse_state;
+typedef struct pulse_state { esk_pin *out; es_time_t delay, width, period, next; int level; } pulse_state;
+
+static es_time_t seconds_param(const esk_comp *c, const char *ps_name, const char *s_name, es_time_t def)
+{
+    double v;
+    if (esk_comp_param_double(c, ps_name, &v) == 0 && v >= 0)
+        return (es_time_t)v;
+    if (esk_comp_param_double(c, s_name, &v) == 0 && v >= 0)
+        return (es_time_t)(v * 1e12 + 0.5);
+    return def;
+}
+
 static es_status pulse_create(esk_comp *c)
 {
     pulse_state *s = (pulse_state *)c->state;
-    double d = 0, w = 1e6;
+    double v1 = 0, v2 = 1;
     s->out = pin_or_null(c, "OUT");
+    if (!s->out)
+        s->out = pin_or_null(c, "+");
     if (!s->out) return ES_ESCHEMA;
-    esk_comp_param_double(c, "delay_ps", &d);
-    esk_comp_param_double(c, "width_ps", &w);
-    s->delay = d > 0 ? (es_time_t)d : 0;
-    s->width = w > 0 ? (es_time_t)w : 1;
+    s->delay = seconds_param(c, "delay_ps", "td", 0);
+    s->width = seconds_param(c, "width_ps", "pw", 1000000);
+    if (!s->width)
+        s->width = 1;
+    s->period = seconds_param(c, "period_ps", "per", 0);
+    if (s->period <= s->width)
+        s->period = 0;
     s->level = 1;
     {
         int64_t lv;
         if (esk_comp_param_int(c, "level", &lv) == 0)
             s->level = lv != 0;
+        else if (esk_comp_param_double(c, "v1", &v1) == 0 && esk_comp_param_double(c, "v2", &v2) == 0)
+            s->level = v2 >= v1;
     }
     return ES_OK;
 }
@@ -281,6 +308,7 @@ static void pulse_reset(esk_comp *c)
 {
     pulse_state *s = (pulse_state *)c->state;
     esk_pin_drive(s->out, s->level ? ESK_L0 : ESK_L1, ESK_STR_STRONG, 0);
+    s->next = s->delay;
     esk_comp_wake_at(c, s->delay, 0);
 }
 static void pulse_time(esk_comp *c, uint32_t token)
@@ -291,6 +319,8 @@ static void pulse_time(esk_comp *c, uint32_t token)
         esk_comp_wake_at(c, esk_comp_now(c) + s->width, 1);
     } else {
         esk_pin_drive(s->out, s->level ? ESK_L0 : ESK_L1, ESK_STR_STRONG, 0);
+        if (s->period && esk_time_add(s->next, s->period, &s->next) == 0)
+            esk_comp_wake_at(c, s->next, 0);
     }
 }
 static const esk_model_ops pulse_ops = { "pulse_source", sizeof(pulse_state), pulse_create, NULL, pulse_reset, NULL, pulse_time, NULL, NULL, NULL, 0 };
@@ -460,7 +490,9 @@ static void probe_reset(esk_comp *c) { esk_pin_read(((probe_state *)c->state)->p
 static void probe_observe(esk_comp *c, esk_json *out)
 {
     probe_state *s = (probe_state *)c->state;
-    esk_json_set_string(c->e->a, out, "logic", esk_logic_name(s->p->net ? esk_net_value(s->p->net) : ESK_LZ));
+    const char *v = esk_logic_name(s->p->net ? esk_net_value(s->p->net) : ESK_LZ);
+    esk_json_set_string(c->e->a, out, "value", v); /* the catalog's output */
+    esk_json_set_string(c->e->a, out, "logic", v);
 }
 static const esk_model_ops probe_ops = { "logic_probe", sizeof(probe_state), probe_create, NULL, probe_reset, probe_in, NULL, NULL, probe_observe, NULL, 0 };
 

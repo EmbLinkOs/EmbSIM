@@ -416,7 +416,7 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
         ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s binds unknown primitive %s", item->id, primitive);
         return ES_EUNSUPPORTED;
     }
-    if (s->eng.policy != ESK_POLICY_ELECTRICAL && esk_model_is_electrical_only(ops)) {
+    if (s->eng.policy == ESK_POLICY_FUNCTIONAL && esk_model_is_electrical_only(ops)) {
         ld_diag(s, ES_SEV_ERROR, "island.requires_electrical", id, "%s has no functional model (primitive %s is electrical)", item->id, primitive);
         return ES_EUNSUPPORTED;
     }

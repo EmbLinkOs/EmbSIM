@@ -34,6 +34,7 @@ static void usage(void)
           "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
           "  toolchains                  the toolchain profiles found on this host\n"
           "  catalog list|search QUERY|info ID|libraries [--library DIR]\n"
+          "  catalog validate [LIBRARY_DIR] [--library DEPENDENCY] [--json]\n"
           "  board list|info ID\n"
           "  models                      list the model primitives\n"
           "  version\n"
@@ -462,6 +463,36 @@ static int cmd_toolchains(const char *argv0)
     return 0;
 }
 
+/* the human form of an es_catalog_validate report */
+static void print_validation(const char *report, esk_alloc *a)
+{
+    int line;
+    const char *err;
+    esk_json *r = esk_json_parse(a, report, strlen(report), &line, &err);
+    const esk_json *items = esk_json_get(r, "items"), *sum = esk_json_get(r, "summary");
+    size_t i, k, f;
+    for (i = 0; i < esk_json_len(items); i++) {
+        const esk_json *it = esk_json_at(items, i);
+        const char *status = esk_json_get_str(it, "status", "?");
+        const esk_json *fx = esk_json_get(it, "fixtures"), *probs = esk_json_get(it, "problems");
+        printf("%-8s %-36s %u fixture(s)\n", esk_str_eq(status, "ok") ? "ok" : esk_str_eq(status, "broken") ? "BROKEN" : "INVALID",
+               esk_json_get_str(it, "id", ""), (unsigned)esk_json_len(fx));
+        for (k = 0; k < esk_json_len(probs); k++)
+            printf("         %s\n", esk_json_str(esk_json_at(probs, k)));
+        for (k = 0; k < esk_json_len(fx); k++) {
+            const esk_json *x = esk_json_at(fx, k), *fl = esk_json_get(x, "failures");
+            if (esk_json_get_bool(x, "ok", 0))
+                continue;
+            for (f = 0; f < esk_json_len(fl); f++)
+                printf("         tests/%s: %s\n", esk_json_get_str(x, "file", ""), esk_json_str(esk_json_at(fl, f)));
+        }
+    }
+    printf("%lld ok, %lld broken, %lld invalid; %lld fixture(s) run\n", (long long)esk_json_get_int(sum, "ok", 0),
+           (long long)esk_json_get_int(sum, "broken", 0), (long long)esk_json_get_int(sum, "invalid", 0),
+           (long long)esk_json_get_int(sum, "fixtures", 0));
+    esk_json_free(a, r);
+}
+
 static int cmd_catalog(int argc, char **argv, const char *argv0)
 {
     const char *sub = argc ? argv[0] : "list", *library = NULL, *arg = NULL;
@@ -503,6 +534,24 @@ static int cmd_catalog(int argc, char **argv, const char *argv0)
         print_json(it->desc, s->catalog->a);
     } else if (!strcmp(sub, "libraries")) {
         print_json(s->catalog->libraries, s->catalog->a);
+    } else if (!strcmp(sub, "validate")) {
+        char *report = NULL;
+        char *dir = arg ? NULL : esk_catalog_bundled_dir(s->a, argv0);
+        es_status st = es_catalog_validate(s->catalog, arg ? arg : dir, &report);
+        int rc = st == ES_OK ? 0 : 1;
+        if (!report) {
+            fprintf(stderr, "embsim: cannot validate %s: %s\n", arg ? arg : dir ? dir : "(no catalog)", es_strerror(st));
+            rc = 2;
+        } else if (opt_json) {
+            fputs(report, stdout);
+            fputc('\n', stdout);
+        } else {
+            print_validation(report, s->a);
+        }
+        es_free(report);
+        esk_strfree(s->a, dir);
+        es_session_destroy(s);
+        return rc;
     } else {
         usage();
         es_session_destroy(s);

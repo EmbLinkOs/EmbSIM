@@ -11,6 +11,10 @@ foreach(src ${EMBSIM_UNIT_TESTS})
   add_test(NAME ${name} COMMAND ${name})
 endforeach()
 
+# every catalog item instantiates under its declared policies and passes its
+# fixtures (SPEC-014 §3)
+add_test(NAME catalog_fixtures COMMAND embsim_cli catalog validate ${CMAKE_SOURCE_DIR}/catalog)
+
 # Python-based checks run under CTest when an interpreter is available: the
 # tools' unit tests, documentation integrity, repository policy checks, and the
 # protocol conformance suite over the stdio and WebSocket transports.

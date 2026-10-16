@@ -44,6 +44,11 @@ ES_API es_status es_session_probe_read(es_session *s, uint32_t probe, es_sample_
 ES_API es_status es_catalog_create(es_catalog **out);
 ES_API void es_catalog_destroy(es_catalog *c);
 ES_API es_status es_catalog_add_library(es_catalog *c, const char *path);
+/* Validates the library at `path` (SPEC-014 §3): each component and board is
+ * instantiated under the policies its fidelity declares and its fixtures are
+ * run; the libraries of `c` (may be NULL) resolve its dependencies. The JSON
+ * report is for es_free. ES_OK when every item is ok, ES_ESCHEMA when one is
+ * broken or invalid. */
 ES_API es_status es_catalog_validate(es_catalog *c, const char *path, char **report_json);
 
 ES_API es_version_t es_version(void);

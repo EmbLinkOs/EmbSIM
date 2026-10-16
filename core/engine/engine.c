@@ -867,8 +867,10 @@ es_status esk_engine_partition(esk_engine *e)
     size_t nn = e->nets.len;
     es_status st = ES_OK;
     islands_free(e);
-    if (e->policy != ESK_POLICY_ELECTRICAL) {
-        /* everything digital; components without a functional model are refused */
+    if (e->policy == ESK_POLICY_FUNCTIONAL) {
+        /* everything digital; components without a functional model are
+         * refused. Under `timed` the electrical devices still form analog
+         * islands (SPEC-003 §4); the loader binds functional models first. */
         for (i = 0; i < e->comps.len; i++) {
             esk_comp *c = e->comps.data[i];
             if (esk_model_is_electrical_only(c->ops)) {

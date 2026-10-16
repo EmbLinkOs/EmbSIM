@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "Current source",
   "category": "sources",
-  "description": "Independent current source: dc, pulse, sine or piecewise-linear; current flows from + out through the circuit and back into -.",
+  "description": "Independent current source: dc, pulse, sine or piecewise-linear. SPICE convention: a positive value flows through the source from + to -, so it leaves the source at - and returns at + (the arrow points from + to -).",
   "keywords": [
     "source",
     "current",
