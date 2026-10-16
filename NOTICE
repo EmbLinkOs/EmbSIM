@@ -33,4 +33,7 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
                                bluepill.txt, bluepill-err.txt)
 
 Third-party material vendored under third_party/ and catalog/**/LICENSES/
-carries its own licence beside it. None is vendored yet.
+carries its own licence beside it:
+
+  third_party/lua/             Lua 5.4.7, Copyright (C) 1994-2024 Lua.org,
+                               PUC-Rio; MIT licence (third_party/lua/LICENSE)

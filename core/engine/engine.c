@@ -231,6 +231,9 @@ void esk_engine_free(esk_engine *e)
     esk_map_free(&e->comp_by_id);
     esk_map_free(&e->net_by_name);
     esk_sched_free(&e->sched);
+    if (e->ext && e->ext_free)
+        e->ext_free(e->ext);
+    e->ext = NULL;
 }
 
 es_status esk_engine_add_net(esk_engine *e, const char *name, esk_net **out)

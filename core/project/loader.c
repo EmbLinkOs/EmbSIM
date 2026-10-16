@@ -5,6 +5,7 @@
  * models, boards as composites with a placeholder MCU (no runtime in M0),
  * nets merged through board ports and functional wires, probes, settings. */
 #include "project/loader.h"
+#include "ext/lua_model.h"
 #include <string.h>
 #include "host/host.h"
 #include "mcu/mcu.h"
@@ -388,12 +389,29 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
             st = expand_composite(s, g, id, item, comp, params, depth, out);
             esk_json_free(s->a, params);
             return st;
+        } else if (esk_json_get_str(binding, "script", NULL)) {
+            const char *script = esk_json_get_str(binding, "script", NULL);
+            char why[512], name[256];
+            size_t len = 0;
+            char *src = esk_catalog_read_item_file(s->catalog, item, script, &len);
+            if (!src) {
+                ld_diag(s, ES_SEV_ERROR, "catalog.file_missing", id, "%s names the script %s, which is not in its directory", item->id, script);
+                return ES_ENOTFOUND;
+            }
+            esk_snprintf(name, sizeof name, "@%s/%s", item->id, script);
+            st = esk_lua_register(&s->eng, item->id, src, len, name, why, sizeof why);
+            esk_free(s->catalog->a, src, len + 1);
+            if (st != ES_OK) {
+                ld_diag(s, ES_SEV_ERROR, st == ES_EUNSUPPORTED ? "catalog.model_unsupported" : "ext.error", id, "%s: %s", item->id, why);
+                return st;
+            }
+            primitive = "lua";
         } else {
-            ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s uses a scripted or native model, which this version does not load%s", item->id, "");
+            ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s uses a native model, which this version does not load%s", item->id, "");
             return ES_EUNSUPPORTED;
         }
     }
-    ops = esk_registry_find(&s->reg, primitive);
+    ops = esk_str_eq(primitive, "lua") && esk_json_get_str(binding, "script", NULL) ? esk_lua_ops() : esk_registry_find(&s->reg, primitive);
     if (!ops) {
         ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s binds unknown primitive %s", item->id, primitive);
         return ES_EUNSUPPORTED;
