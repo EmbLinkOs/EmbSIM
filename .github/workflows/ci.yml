@@ -68,6 +68,11 @@ jobs:
       - run: python3 -m pip install --quiet jsonschema pyyaml
       - run: python3 -m unittest discover -s tools -p 'test_*.py' -v
       - run: python3 tools/validate.py --all
+      - name: The analog fixtures' ngspice references regenerate unchanged
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ngspice
+          python3 tools/analog/ngspice_fixture.py --check
 
   workbench:
     name: workbench

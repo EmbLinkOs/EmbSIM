@@ -207,6 +207,9 @@ versions follow semantic versioning. There is no release yet.
   schema); the XC16 profile's `pic24fj1024gb610` target.
 
 ### Changed
+- The analog fixtures are checked against ngspice too: `ngspice.json` beside
+  each (`tools/analog/ngspice_fixture.py`, `--check` in CI), compared by
+  `test_analog` within 2 mV + 0.2 %.
 - A toolchain profile's `link_flags` may name the build's variables: the XC
   profiles' `-Wl,-Map=${map}` was passed through as written.
 - The DWARF line reader takes XC16 images (their debug sections hold a byte

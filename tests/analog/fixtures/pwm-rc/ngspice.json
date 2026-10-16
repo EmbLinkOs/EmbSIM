@@ -1,0 +1,42 @@
+{
+ "generator": "ngspice-42 (tools/analog/ngspice_fixture.py)",
+ "netlist": [
+  "* pwm-rc (EmbSIM analog fixture)",
+  "VV1 pwm 0 PULSE(0.0 3.3 0.0 1e-09 1e-09 0.0005 0.001)",
+  "RR1 pwm out 1000.0",
+  "CC1 out 0 1.0000000000000001e-07",
+  ".options reltol=1e-6 abstol=1e-15 vntol=1e-9 chgtol=1e-18 temp=26.85 tnom=26.85",
+  ".control",
+  "tran 1.15e-05 0.01150115 0 1.15e-05",
+  "meas tran OP_out find v(out) at=0",
+  "meas tran S0_out find v(out) at=0.0105",
+  "meas tran S1_out find v(out) at=0.011",
+  "meas tran S2_out find v(out) at=0.0115",
+  "quit",
+  ".endc",
+  ".end"
+ ],
+ "op": {
+  "out": 0.0
+ },
+ "samples": [
+  {
+   "t": "10500us",
+   "nets": {
+    "out": 3.278015
+   }
+  },
+  {
+   "t": "11000us",
+   "nets": {
+    "out": 0.02203137
+   }
+  },
+  {
+   "t": "11500us",
+   "nets": {
+    "out": 3.278015
+   }
+  }
+ ]
+}

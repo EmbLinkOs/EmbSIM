@@ -1,0 +1,44 @@
+{
+ "generator": "ngspice-42 (tools/analog/ngspice_fixture.py)",
+ "netlist": [
+  "* npn-switch (EmbSIM analog fixture)",
+  "VSUP_vcc vcc 0 DC 3.3",
+  "VV1 ctl 0 PULSE(0.0 3.3 0.0 1e-08 1e-08 0.001 0.002)",
+  "RRB ctl b 1000.0",
+  "RRC vcc c 220.0",
+  "QQ1 c b 0 QM_Q1",
+  ".model QM_Q1 NPN(IS=1e-14 BF=100.0 BR=1.0 NF=1.0 NR=1.0 VAF=100.0)",
+  ".options reltol=1e-6 abstol=1e-15 vntol=1e-9 chgtol=1e-18 temp=26.85 tnom=26.85",
+  ".control",
+  "tran 1.5e-06 0.00150015 0 1.5e-06",
+  "meas tran OP_b find v(b) at=0",
+  "meas tran OP_c find v(c) at=0",
+  "meas tran S0_b find v(b) at=0.0005",
+  "meas tran S0_c find v(c) at=0.0005",
+  "meas tran S1_b find v(b) at=0.0015",
+  "meas tran S1_c find v(c) at=0.0015",
+  "quit",
+  ".endc",
+  ".end"
+ ],
+ "op": {
+  "b": 3.31e-09,
+  "c": 3.3
+ },
+ "samples": [
+  {
+   "t": "500us",
+   "nets": {
+    "b": 0.7317307,
+    "c": 0.05460947
+   }
+  },
+  {
+   "t": "1500us",
+   "nets": {
+    "b": 3.31e-09,
+    "c": 3.3
+   }
+  }
+ ]
+}

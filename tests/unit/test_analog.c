@@ -1163,9 +1163,30 @@ static void fixture_check_devices(esk_engine *e, const esk_json *checks, const c
     }
 }
 
+/* EmbSIM against ngspice (ngspice.json, tools/analog/ngspice_fixture.py):
+ * every node, within the integration and model differences of two
+ * simulators that share the models' equations */
+#define NGSPICE_ABS 2e-3
+#define NGSPICE_REL 2e-3
+
+/* the ngspice sample at time t, or NULL */
+static const esk_json *ngspice_at(const esk_json *ref, es_time_t t)
+{
+    const esk_json *samples = esk_json_get(ref, "samples");
+    size_t i;
+    for (i = 0; i < esk_json_len(samples); i++) {
+        es_time_t st = 0;
+        if (esk_json_to_time(esk_json_get(esk_json_at(samples, i), "t"), &st) == 0 && st == t)
+            return esk_json_at(samples, i);
+    }
+    return NULL;
+}
+
 static void run_fixture(const char *dir)
 {
     esk_json *circuit = load_json(dir, "circuit.json"), *expected = load_json(dir, "expected.json");
+    esk_json *ngspice = NULL;
+    char ngpath[512];
     esk_engine e;
     const esk_json *samples, *tol;
     double abs_tol, rel_tol;
@@ -1177,9 +1198,23 @@ static void run_fixture(const char *dir)
         return;
     }
     fprintf(stderr, "  fixture %s\n", dir);
+    esk_snprintf(ngpath, sizeof ngpath, "%s/tests/analog/fixtures/%s/ngspice.json", EMBSIM_SOURCE_DIR, dir);
+    {
+        FILE *f = fopen(ngpath, "rb");
+        if (f) {
+            fclose(f);
+            ngspice = load_json(dir, "ngspice.json");
+            CHECK(ngspice != NULL);
+        }
+    }
     engine_open(&e);
     CHECK(fixture_build(&e, circuit) == 0);
     engine_run(&e);
+    if (ngspice) {
+        char when[64];
+        esk_snprintf(when, sizeof when, "%s op (ngspice)", dir);
+        fixture_check_nets(&e, esk_json_get(ngspice, "op"), NGSPICE_ABS, NGSPICE_REL, when);
+    }
     tol = esk_json_get(expected, "tolerance");
     abs_tol = esk_json_get_num(tol, "abs", 1e-3);
     rel_tol = esk_json_get_num(tol, "rel", 1e-2);
@@ -1199,11 +1234,19 @@ static void run_fixture(const char *dir)
         fixture_check_nets(&e, esk_json_get(s, "nets"), esk_json_get_num(s, "abs", abs_tol),
                            esk_json_get_num(s, "rel", rel_tol), when);
         fixture_check_devices(&e, esk_json_get(s, "devices"), when);
+        if (ngspice) {
+            const esk_json *ref = ngspice_at(ngspice, t);
+            CHECK(ref != NULL); /* the generator samples at every expected time */
+            esk_snprintf(when, sizeof when, "%s@%s (ngspice)", dir, esk_json_get_str(s, "t", "?"));
+            if (ref)
+                fixture_check_nets(&e, esk_json_get(ref, "nets"), NGSPICE_ABS, NGSPICE_REL, when);
+        }
     }
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
     esk_json_free(&A, circuit);
     esk_json_free(&A, expected);
+    esk_json_free(&A, ngspice);
 }
 
 static void test_fixtures(void)
