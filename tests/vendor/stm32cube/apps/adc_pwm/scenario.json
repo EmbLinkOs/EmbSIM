@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "adc_pwm",
+  "until": "2.1s",
+  "description": "The HAL's ADC at 12 MHz (PCLK2 / 6), calibrated; TIM3's PWM at 1 kHz on PA6 (25 %, then 75 % from the tenth reading) and PA7 (75 %); channel 4 polled on PA4's 1.0 V source (floor(1.0 * 4096 / 3.3) = 1241), channel 1 by its end-of-conversion interrupt on PA6's PWM through a 10 kOhm, 4.7 uF low-pass (25 % and 75 % of 3.3 V: 0.8 and 2.5 V to 0.1 V).",
+  "assertions": [
+    {
+      "id": "adc-clock",
+      "at": "20ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "ADC clock 12000000 Hz"
+      }
+    },
+    {
+      "id": "quarter",
+      "at": "950ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "t=931 pa4=1241 rc=0.8V"
+      }
+    },
+    {
+      "id": "three-quarters",
+      "at": "2.1s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "t=2064 pa4=1241 rc=2.5V"
+      }
+    },
+    {
+      "id": "pwm-frequency",
+      "between": [
+        "100ms",
+        "2s"
+      ],
+      "probe": "pwm2",
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.001
+      }
+    },
+    {
+      "id": "pwm-edges",
+      "between": [
+        "100ms",
+        "1.1s"
+      ],
+      "probe": "pwm2",
+      "expect": {
+        "edges": 2000
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error"
+        ]
+      }
+    }
+  ]
+}

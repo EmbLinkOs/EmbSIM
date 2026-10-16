@@ -293,16 +293,16 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Cortex-M3 instruction execution (Thumb-2, NVIC, SCB, SysTick, DWT, semihosting) extracted from EmbCC; every register of the RM0008 description with its reset value and access type; behavioural models of RCC (HSI, HSE, PLL, bus prescalers and clock gates), GPIO (modes, ODR/BSRR/BRR, IDR from the pin's net), AFIO (EXTI routing, USART1 remap), EXTI (edges, pending, interrupts), USART (8N1 frames at the baud rate on TX and from RX, interrupts), TIM1 to TIM4 time base (prescaler, auto-reload, update interrupt), FLASH and PWR registers. Other peripherals keep their register values and raise mcu.unsupported_access on first access.",
+      "claims": "Cortex-M3 instruction execution (Thumb-2, NVIC, SCB, SysTick, DWT, semihosting) extracted from EmbCC; every register of the RM0008 description with its reset value and access type; behavioural models of RCC (HSI, HSE, PLL, bus prescalers and clock gates), GPIO (modes, ODR/BSRR/BRR, IDR from the pin's net), AFIO (EXTI routing, USART1 remap), EXTI (edges, pending, interrupts), USART (8N1 frames at the baud rate on TX and from RX, interrupts), TIM1 to TIM4 time base (prescaler, auto-reload, update interrupt) and output compare (CCRx matches, their flags and interrupts, the OCxM modes with PWM 1 and 2, preload, CCxE and CCxP, TIM1's MOE) on their AFIO pins, ADC1 and ADC2's regular group (software start, scan, continuous, sampling times, the ADC clock from ADCPRE, the pins' voltages, alignment, EOC and its interrupt, calibration's timing), FLASH and PWR registers. Other peripherals keep their register values and raise mcu.unsupported_access on first access.",
       "omissions": [
-        "ADC",
+        "the ADC's injected group, analog watchdog, external triggers, dual mode and DMA",
         "SPI",
         "I2C",
         "DMA",
         "CAN",
         "USB",
         "RTC and backup domain",
-        "timer capture, compare and PWM output",
+        "timer input capture, counting down and center-aligned, the complementary outputs and dead time",
         "IWDG and WWDG",
         "flash programming",
         "low-power modes beyond WFI"

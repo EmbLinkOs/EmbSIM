@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "stm32cube-vendor",
- "description": "A Blue Pill running an application built with ST's unmodified STM32F1 HAL and CMSIS device files (tests/vendor/stm32cube/run.py puts the image beside this file as sketch.elf): a button on PA0, a terminal on PA9/PA10 at 115200 baud.",
+ "description": "A Blue Pill running an application built with ST's unmodified STM32F1 HAL and CMSIS device files (tests/vendor/stm32cube/run.py puts the image beside this file as sketch.elf): a button on PA0, a terminal on PA9/PA10 at 115200 baud, a 1.0 V source on PA4, and PA6 through a 10 kOhm, 4.7 uF low-pass into PA1.",
  "policy": "electrical",
  "boards": [
   {
@@ -45,6 +45,40 @@
     "x": 900,
     "y": 200
    }
+  },
+  {
+   "id": "V1",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 1.0
+   },
+   "layout": {
+    "x": 720,
+    "y": 700
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 10000
+   },
+   "layout": {
+    "x": 520,
+    "y": 700
+   }
+  },
+  {
+   "id": "C1",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": 4.7e-06
+   },
+   "layout": {
+    "x": 420,
+    "y": 760
+   }
   }
  ],
  "nets": {
@@ -52,7 +86,9 @@
    "B1.GND",
    "GND1.GND",
    "SW1.2",
-   "VT1.GND"
+   "VT1.GND",
+   "V1.-",
+   "C1.2"
   ],
   "BTN": [
    "B1.A0",
@@ -65,6 +101,19 @@
   "UART_RX": [
    "B1.A10",
    "VT1.TX"
+  ],
+  "VIN": [
+   "B1.A4",
+   "V1.+"
+  ],
+  "PWM1": [
+   "B1.A6",
+   "R1.1"
+  ],
+  "RC": [
+   "R1.2",
+   "C1.1",
+   "B1.A1"
   ]
  },
  "probes": [
@@ -81,6 +130,16 @@
   {
    "id": "pc13",
    "target": "net:B1.PC13",
+   "kind": "digital"
+  },
+  {
+   "id": "pwm1",
+   "target": "net:PWM1",
+   "kind": "digital"
+  },
+  {
+   "id": "pwm2",
+   "target": "net:B1.PA7",
    "kind": "digital"
   }
  ]

@@ -600,6 +600,116 @@ static void test_source_lines(void)
     es_session_destroy(s);
 }
 
+/* ---- TIM3's PWM and ADC1, register by register --------------------------- */
+
+typedef struct pwmlog {
+    struct esk_mach *m;
+    u64 at[16];
+    int lvl[16], n;
+} pwmlog;
+
+static void p_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
+{
+    pwmlog *l = (pwmlog *)ctx;
+    if (port != 0 || bit != 6 || l->n >= 16 || (l->n && l->lvl[l->n - 1] == cfg->drive))
+        return;
+    l->at[l->n] = l->m->cycles;
+    l->lvl[l->n++] = cfg->drive;
+}
+
+static int p_volts(void *ctx, int port, int bit, double *v)
+{
+    (void)ctx;
+    if (port != 0 || bit != 4)
+        return 0;
+    *v = 1.65;
+    return 1;
+}
+
+static void w32(struct esk_mach *m, u32 a, u32 v) { CHECK_EQ(esk_bus_write(&m->bus, a, 4, v), 0); }
+static u32 r32(struct esk_mach *m, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_read(&m->bus, a, 4, &v), 0);
+    return v;
+}
+
+static void test_tim_pwm_and_adc(void)
+{
+    /* the HSI's 8 MHz, APB1 and APB2 undivided; a core that branches to
+     * itself, so the devices' events set the time */
+    esk_alloc a;
+    esk_json *mcu, *regs;
+    struct esk_mach m;
+    pwmlog l;
+    char why[200];
+    u64 c0;
+    esk_alloc_init(&a, NULL);
+    mcu = load_json(&a, "catalog/mcus/st/stm32f103c8/mcu.json");
+    regs = load_json(&a, "catalog/mcus/st/stm32f103c8/registers.json");
+    esk_mach_init(&m, &a);
+    memset(&l, 0, sizeof l);
+    l.m = &m;
+    m.host.ctx = &l;
+    m.host.pin_cfg = p_pin_cfg;
+    m.host.pin_volts = p_volts;
+    if (esk_mach_build(&m, mcu, regs, 8000000u, why, sizeof why) != ES_OK) {
+        FAIL(why);
+        return;
+    }
+    CHECK_EQ(esk_bus_debug_write(&m.bus, 0x08000000u, 4, 0x20005000u), 0);
+    CHECK_EQ(esk_bus_debug_write(&m.bus, 0x08000004u, 4, 0x08000009u), 0);
+    CHECK_EQ(esk_bus_debug_write(&m.bus, 0x08000008u, 4, 0xe7fee7feu), 0); /* b . */
+    esk_mach_reset(&m);
+    w32(&m, 0x40021018u, (1u << 0) | (1u << 2) | (1u << 9)); /* APB2ENR: AFIO, GPIOA, ADC1 */
+    w32(&m, 0x4002101cu, 1u << 1);                           /* APB1ENR: TIM3 */
+    w32(&m, 0x40010800u, 0x4b404444u); /* CRL: PA6 AF push-pull 2 MHz, PA4 analog */
+    /* TIM3: 8 MHz / 8 = 1 MHz, 1000 counts, CH1 PWM mode 1 at 250 */
+    w32(&m, 0x40000428u, 7);    /* PSC */
+    w32(&m, 0x4000042cu, 999);  /* ARR */
+    w32(&m, 0x40000434u, 250);  /* CCR1 */
+    w32(&m, 0x40000418u, 0x60); /* CCMR1: OC1M 110 */
+    w32(&m, 0x40000414u, 1);    /* EGR.UG: the prescaler takes 7 */
+    w32(&m, 0x40000420u, 1);    /* CCER.CC1E */
+    /* OC1REF is already active at count 0: CC1E drove the pin high */
+    CHECK(l.n >= 1 && l.lvl[l.n - 1] == 1);
+    l.n = 0;
+    c0 = m.cycles;
+    w32(&m, 0x40000400u, 1);    /* CR1.CEN */
+    esk_mach_run(&m, 20000, 0);
+    CHECK(l.n >= 3);
+    if (l.n >= 3) {
+        /* low at 250 counts (2000 cycles), high again at the update (8000),
+         * low at 10000 */
+        CHECK_EQ(l.lvl[0], 0);
+        CHECK_EQ(l.lvl[1], 1);
+        CHECK_EQ(l.lvl[2], 0);
+        CHECK(l.at[0] - c0 >= 2000 && l.at[0] - c0 <= 2003);
+        CHECK(l.at[1] - c0 >= 8000 && l.at[1] - c0 <= 8003);
+        CHECK(l.at[2] - c0 >= 10000 && l.at[2] - c0 <= 10003);
+    }
+    /* ADC1: ADCPRE /2 is a 4 MHz ADC clock, 2 cycles each; channel 4 at
+     * 239.5 + 12.5 clocks is 504 cycles; 1.65 V of 3.3 is 2048 */
+    w32(&m, 0x40012408u, 1);                /* CR2.ADON */
+    w32(&m, 0x40012410u, 7u << 12);         /* SMPR2: SMP4 239.5 */
+    w32(&m, 0x40012434u, 4);                /* SQR3: SQ1 4 */
+    c0 = m.cycles;
+    w32(&m, 0x40012408u, 1u | 7u << 17 | 1u << 20 | 1u << 22); /* SWSTART */
+    CHECK_EQ(r32(&m, 0x40012400u) & 0x10u, 0x10u); /* STRT */
+    CHECK_EQ(r32(&m, 0x40012408u) & (1u << 22), 0u); /* SWSTART cleared */
+    esk_mach_run(&m, 490, 0);
+    CHECK_EQ(r32(&m, 0x40012400u) & 2u, 0u);
+    esk_mach_run(&m, 30, 0);
+    CHECK(m.cycles - c0 >= 504);
+    CHECK_EQ(r32(&m, 0x40012400u) & 2u, 2u);        /* EOC */
+    CHECK_EQ(r32(&m, 0x4001244cu), 2048u);          /* DR */
+    CHECK_EQ(r32(&m, 0x40012400u) & 2u, 0u);        /* read: EOC cleared */
+    esk_mach_free(&m);
+    esk_json_free(&a, mcu);
+    esk_json_free(&a, regs);
+    CHECK_EQ(a.live_bytes, 0);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_hello);
 RUN(test_quanta_and_breakpoints);
@@ -608,4 +718,5 @@ RUN(test_bluepill_input);
 RUN(test_session_runtime);
 RUN(test_breakpoint_continue_equivalence);
 RUN(test_source_lines);
+RUN(test_tim_pwm_and_adc);
 TEST_MAIN_END

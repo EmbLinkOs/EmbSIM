@@ -17,7 +17,8 @@
  *         (01): 0 when ODR's bit is 0, else let go (as floating);
  *       alternate-function output (10, 11): a USART's TX pin, the line
  *         idle, reads 1 (USART1 PA9, or PB6 remapped; USART2 PA2; USART3
- *         PB10, or PC10 partly remapped); any other is let go (its
+ *         PB10, or PC10 partly remapped); a timer's enabled compare
+ *         channel's pin is its output (tim.c); any other is let go (its
  *         peripheral has no model to drive it) and reads what the circuit
  *         drives, else 0;
  *   - the debug port's pins, while AFIO's MAPR.SWJ_CFG keeps them (out of
@@ -122,7 +123,7 @@ static void update(struct f1gpio *g)
                     /* a USART's TX idles high; an alternate function with
                      * no model lets the pin go rather than fight the
                      * circuit (an I2C bus's pull-ups) */
-                    o.drive = usart_tx(g, i) ? 1 : -1;
+                    o.drive = usart_tx(g, i) ? 1 : esk_stm32f1_tim_pin(s, g->port, i);
                     o.af = 1;
                 }
                 else if (!(cnf & 1) || !(odr >> i & 1))
