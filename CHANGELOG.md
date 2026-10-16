@@ -265,6 +265,18 @@ versions follow semantic versioning. There is no release yet.
   nrfx_timer, nrfx_rtc, nrfx_gpiote) with the unmodified nrfx 4.6.0 and
   its MDK's system file, startup and linker script, and runs it under a
   scenario in CI's linux-gcc job.
+- The STM32F1's SPI and I2C masters on their pins: SPI1 and SPI2 in modes
+  0 to 3 at their baud prescaler, 8 or 16 bits, TXE, RXNE and BSY; I2C1
+  and I2C2 on open-drain SCL and SDA with START, repeated START, STOP,
+  ACK and POS, SR1 and SR2's flags with their clearing sequences and BTF
+  holding the clock, timed by CCR. `tests/vendor/stm32cube`'s `spi_i2c`
+  runs ST's HAL SPI and I2C against the catalog's 25LC040 and 24C02.
+- The STM32F1's timers' output compare: CCRx matches with their flags and
+  interrupts, the OCxM modes with PWM 1 and 2, CCRx preload, and the
+  channels' pins through AFIO's remaps; ADC1 and ADC2's regular group
+  (software start, scan and continuous, the sampling times at the ADC
+  clock, the pins' voltages, EOC and its interrupt, calibration).
+  `tests/vendor/stm32cube`'s `adc_pwm` runs ST's HAL ADC and PWM on them.
 - The FE310's always-on domain: its watchdog (the key before each write,
   the scale, the comparator, wdogzerocmp, the sticky interrupt, and a chip
   reset the domain survives, pmucause saying so) and its RTC (the 48-bit
@@ -286,6 +298,11 @@ versions follow semantic versioning. There is no release yet.
   with no register that read 0 and ignore writes as the part documents them.
 
 ### Changed
+- A CMOS output on an analog net drives its rails through `rout` (ADR-023):
+  `voh` and `vol` are a datasheet's levels at the rated load, and as the
+  Thevenin sources they left a light load 0.4 V from either rail. A pin
+  model may give `voc_high` and `voc_low`; TTL outputs keep `voh` and
+  `vol`.
 - A steady analog island stops solving until something touches it
   (SPEC-004 §4): a busy MCU's 1 µs quanta made every LED and pull-up
   island solve a step each; SiFive's sifive-welcome runs 4 s of a HiFive1
@@ -310,6 +327,12 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- A `digital_io` pin that drove `Z` on an analog net kept its direction as
+  an output, and the solver ran no comparator for it: a Lua I2C device's
+  SDA, let go after its ACK, never saw the master's edges. A pin driving
+  `Z` is an input (SPEC-003 §4). An MCU's open-drain output let go is an
+  input too, and the runtime reads a pin on an analog net from its node's
+  voltage, so an I2C master reads back its line as the slave holds it.
 - The FE310 had nothing at the Debug Module's addresses (0 to 0xFFF),
   where freedom-metal's lfrosc driver reads, given the HiFive1 Rev B
   BSP's offsets as addresses: a load access fault in every example that

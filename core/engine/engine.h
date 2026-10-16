@@ -38,6 +38,11 @@ typedef struct esk_pin_model {
     esk_drive drive;
     esk_strength strength;
     double voh, vol, rout, slew_v_per_us; /* output side */
+    /* the driver's open-circuit levels behind rout (SPEC-003 §4, ADR-023): a
+     * CMOS family's rails (`rails`: nominal_v and 0 V), else voh and vol;
+     * voc_high and voc_low override them (`voc_set`: bit 0 high, bit 1 low) */
+    int rails, voc_set;
+    double voc_high, voc_low;
     double vih, vil, hyst, rpull, leak_a; /* input side */
     esk_pull pull;
     int power_ground;      /* power: 1 for ground, 0 for supply */

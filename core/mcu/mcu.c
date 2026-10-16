@@ -333,7 +333,9 @@ static void apply_cfg(mcu_state *st, int port, int bit)
         return;
     p->model.pull = cfg->pull == 1 ? ESK_PULL_UP : cfg->pull == 2 ? ESK_PULL_DOWN : ESK_PULL_NONE;
     p->model.drive = cfg->open_drain ? ESK_DRIVE_OPEN_DRAIN : ESK_DRIVE_PUSH_PULL;
-    if (cfg->drive >= 0) {
+    /* an open-drain output's 1 lets the pin go: it is an input then, whose
+     * level (what an I2C slave's ACK makes of it) the program reads */
+    if (cfg->drive >= 0 && !(cfg->open_drain && cfg->drive)) {
         esk_pin_set_direction(p, 1);
         esk_pin_drive(p, cfg->drive ? ESK_L1 : ESK_L0, ESK_STR_STRONG, 0);
     } else {
@@ -392,6 +394,21 @@ static int h_pin_in(void *ctx, int port, int bit, int *level)
     esk_logic v;
     if (port < 0 || port >= MCU_PORTS || bit < 0 || bit > 15 || !(p = st->gpio[port][bit]))
         return 0;
+    if (p->net && p->net->island) {
+        /* the node's voltage against the pin's thresholds: an output's
+         * comparator is not kept (an open-drain line a slave pulls low,
+         * an I2C master reading back its own SDA); between them, the
+         * comparator's state */
+        double vn = p->net->voltage;
+        if (vn >= p->model.vih) {
+            *level = 1;
+            return 1;
+        }
+        if (vn <= p->model.vil) {
+            *level = 0;
+            return 1;
+        }
+    }
     v = esk_pin_level(p);
     if (v == ESK_LZ)
         return 0;

@@ -37,10 +37,11 @@ MCU = ["-mcpu=cortex-m3", "-mthumb"]
 DEFS = ["-DUSE_HAL_DRIVER", "-DSTM32F103xB"]
 CFLAGS = ["-Og", "-Wall", "-fdata-sections", "-ffunction-sections", "-g", "-gdwarf-2"]
 LDFLAGS = ["-specs=nano.specs", "-Wl,--gc-sections", "-lc", "-lm", "-lnosys"]
-HAL = ["stm32f1xx_hal.c", "stm32f1xx_hal_cortex.c", "stm32f1xx_hal_dma.c", "stm32f1xx_hal_exti.c",
-       "stm32f1xx_hal_flash.c", "stm32f1xx_hal_flash_ex.c", "stm32f1xx_hal_gpio.c",
-       "stm32f1xx_hal_gpio_ex.c", "stm32f1xx_hal_pwr.c", "stm32f1xx_hal_rcc.c", "stm32f1xx_hal_rcc_ex.c",
-       "stm32f1xx_hal_tim.c", "stm32f1xx_hal_tim_ex.c", "stm32f1xx_hal_uart.c"]
+HAL = ["stm32f1xx_hal.c", "stm32f1xx_hal_adc.c", "stm32f1xx_hal_adc_ex.c", "stm32f1xx_hal_cortex.c",
+       "stm32f1xx_hal_dma.c", "stm32f1xx_hal_exti.c", "stm32f1xx_hal_flash.c", "stm32f1xx_hal_flash_ex.c",
+       "stm32f1xx_hal_gpio.c", "stm32f1xx_hal_gpio_ex.c", "stm32f1xx_hal_i2c.c", "stm32f1xx_hal_pwr.c",
+       "stm32f1xx_hal_rcc.c", "stm32f1xx_hal_rcc_ex.c", "stm32f1xx_hal_spi.c", "stm32f1xx_hal_tim.c",
+       "stm32f1xx_hal_tim_ex.c", "stm32f1xx_hal_uart.c"]
 
 
 def build_app(st: Path, app: Path, out: Path) -> Path:
