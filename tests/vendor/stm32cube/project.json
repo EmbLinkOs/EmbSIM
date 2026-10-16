@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "stm32cube-vendor",
- "description": "A Blue Pill running an application built with ST's unmodified STM32F1 HAL and CMSIS device files (tests/vendor/stm32cube/run.py puts the image beside this file as sketch.elf): a button on PA0, a terminal on PA9/PA10 at 115200 baud, a 1.0 V source on PA4, and PA6 through a 10 kOhm, 4.7 uF low-pass into PA1.",
+ "description": "A Blue Pill running an application built with ST's unmodified STM32F1 HAL and CMSIS device files (tests/vendor/stm32cube/run.py puts the image beside this file as sketch.elf), on USB power: a button on PA0, a terminal on PA9/PA10 at 115200 baud, a 1.0 V source on PA4, PA6 through a 10 kOhm, 4.7 uF low-pass into PA1, a 25LC040 SPI EEPROM on SPI2 (PB12 its CS, PB13 SCK, PB14 MISO, PB15 MOSI) and a 24C02 I2C EEPROM at 0x50 on I2C1 (PB6 SCL, PB7 SDA, 4.7 kOhm pull-ups).",
  "policy": "electrical",
  "boards": [
   {
@@ -79,6 +79,56 @@
     "x": 420,
     "y": 760
    }
+  },
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 900,
+    "y": 60
+   }
+  },
+  {
+   "id": "U2",
+   "component": "emblink/eeprom_25lc040",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  },
+  {
+   "id": "U3",
+   "component": "emblink/eeprom_24c02",
+   "layout": {
+    "x": 120,
+    "y": 880
+   }
+  },
+  {
+   "id": "R2",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 4700
+   },
+   "layout": {
+    "x": 300,
+    "y": 860
+   }
+  },
+  {
+   "id": "R3",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 4700
+   },
+   "layout": {
+    "x": 340,
+    "y": 860
+   }
   }
  ],
  "nets": {
@@ -88,7 +138,14 @@
    "SW1.2",
    "VT1.GND",
    "V1.-",
-   "C1.2"
+   "C1.2",
+   "USB.-",
+   "U2.GND",
+   "U3.GND",
+   "U3.A0",
+   "U3.A1",
+   "U3.A2",
+   "U3.WP"
   ],
   "BTN": [
    "B1.A0",
@@ -114,6 +171,45 @@
    "R1.2",
    "C1.1",
    "B1.A1"
+  ],
+  "USB5V": [
+   "USB.+",
+   "B1.5V"
+  ],
+  "3V3": [
+   "B1.3V3",
+   "U2.VCC",
+   "U2.WP_N",
+   "U2.HOLD_N",
+   "U3.VCC",
+   "R2.1",
+   "R3.1"
+  ],
+  "EE_CS": [
+   "B1.B12",
+   "U2.CS_N"
+  ],
+  "SPI_SCK": [
+   "B1.B13",
+   "U2.SCK"
+  ],
+  "SPI_MISO": [
+   "B1.B14",
+   "U2.SO"
+  ],
+  "SPI_MOSI": [
+   "B1.B15",
+   "U2.SI"
+  ],
+  "I2C_SCL": [
+   "B1.B6",
+   "U3.SCL",
+   "R2.2"
+  ],
+  "I2C_SDA": [
+   "B1.B7",
+   "U3.SDA",
+   "R3.2"
   ]
  },
  "probes": [
@@ -140,6 +236,16 @@
   {
    "id": "pwm2",
    "target": "net:B1.PA7",
+   "kind": "digital"
+  },
+  {
+   "id": "sck",
+   "target": "net:SPI_SCK",
+   "kind": "digital"
+  },
+  {
+   "id": "scl",
+   "target": "net:I2C_SCL",
    "kind": "digital"
   }
  ]

@@ -18,7 +18,9 @@
  *       alternate-function output (10, 11): a USART's TX pin, the line
  *         idle, reads 1 (USART1 PA9, or PB6 remapped; USART2 PA2; USART3
  *         PB10, or PC10 partly remapped); a timer's enabled compare
- *         channel's pin is its output (tim.c); any other is let go (its
+ *         channel's pin is its output (tim.c), an SPI master's SCK, MOSI
+ *         and NSS and an I2C master's SCL and SDA are theirs (spi_f1.c,
+ *         i2c_f1.c; open-drain for I2C, CNF 11); any other is let go (its
  *         peripheral has no model to drive it) and reads what the circuit
  *         drives, else 0;
  *   - the debug port's pins, while AFIO's MAPR.SWJ_CFG keeps them (out of
@@ -124,6 +126,10 @@ static void update(struct f1gpio *g)
                      * no model lets the pin go rather than fight the
                      * circuit (an I2C bus's pull-ups) */
                     o.drive = usart_tx(g, i) ? 1 : esk_stm32f1_tim_pin(s, g->port, i);
+                    if (o.drive < 0)
+                        o.drive = esk_stm32f1_spi_pin(s, g->port, i);
+                    if (o.drive < 0)
+                        o.drive = esk_stm32f1_i2c_pin(s, g->port, i);
                     o.af = 1;
                 }
                 else if (!(cnf & 1) || !(odr >> i & 1))
@@ -204,6 +210,16 @@ void esk_stm32f1_pins_changed(struct esk_mach *s)
         if (p->ops == &esk_stm32f1_gpio_ops && !esk_rf_gated(p))
             update((struct f1gpio *)p->ctx);
     }
+}
+
+void esk_stm32f1_port_changed(struct esk_mach *s, int port)
+{
+    char name[8] = "GPIOx";
+    struct esk_rf_periph *p;
+    name[4] = (char)('A' + port);
+    p = s->rf ? esk_rf_periph(s->rf, name) : 0;
+    if (p && p->ops == &esk_stm32f1_gpio_ops && !esk_rf_gated(p))
+        update((struct f1gpio *)p->ctx);
 }
 
 void *esk_stm32f1_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)

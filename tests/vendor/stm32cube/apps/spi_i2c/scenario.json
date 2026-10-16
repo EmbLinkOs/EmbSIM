@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "spi_i2c",
+  "until": "100ms",
+  "description": "ST's HAL SPI and I2C masters against the catalog's EEPROMs. SPI2 (mode 0, 36 MHz / 16 = 2.25 MHz) to a 25LC040: WREN sets its latch (status 02), WRITE of six bytes, RDSR polled through its 5 ms write cycle, READ returns them; 687 bytes in all, 16 SCK edges each, after SCK's one from Z to its idle 0 as SPE sets. I2C1 (100 kHz, 4.7 kOhm pull-ups) to a 24C02 at 0x50: HAL_I2C_Mem_Write, HAL_I2C_IsDeviceReady NACKed through its 5 ms write cycle, then HAL_I2C_Mem_Read of one, two (POS) and five bytes, and 0x51 unanswered.",
+  "assertions": [
+    {
+      "id": "spi",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "spi: status 02 after WREN, write cycle over after 334 polls, read EmbSIM"
+      }
+    },
+    {
+      "id": "i2c-write",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "i2c: write ok\r\ni2c: ready again after 5 ms (27 NACKs)"
+      }
+    },
+    {
+      "id": "i2c-read",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "i2c: read H, AL, HAL24"
+      }
+    },
+    {
+      "id": "i2c-absent",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "i2c: 0x51 does not answer\r\ndone"
+      }
+    },
+    {
+      "id": "sck",
+      "between": [
+        "0ms",
+        "100ms"
+      ],
+      "probe": "sck",
+      "expect": {
+        "edges": 10993
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error"
+        ]
+      }
+    }
+  ]
+}
