@@ -127,3 +127,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16
 **Verification.** Aggregation/order/quoting/formula fixtures and browser download workflow.
 **Trace.** SPEC-011 Circuit organization
+
+### UI-018  Readable graphics and direct-manipulation cues
+**Statement.** Wires shall use a configurable color distinct from component bodies and a selection highlight visible during live simulation. Symbol terminals shall appear as hollow sockets supporting pointer and keyboard wiring, with pencil/grab/grabbing cursors appropriate to the action and placement locks. References, names and effective primary values with units shall use deterministic nearby label placement and a compact option. Pins and annotations shall remain visible during navigation. Appearance choices shall persist without modifying electrical project data.
+**Rationale.** Make connection targets, selection and component identity understandable on a working schematic.
+**Status.** Accepted 2026-10-16
+**Verification.** SI/annotation collision fixtures, browser color/selection/socket/cursor/default-value/preference regression and native-engine light/dark/compact schematic workflow.
+**Trace.** SPEC-011 Schematic visual language

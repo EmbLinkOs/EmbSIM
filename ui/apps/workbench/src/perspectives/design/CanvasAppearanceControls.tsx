@@ -16,7 +16,14 @@ export function CanvasAppearanceControls() {
   const id = useId();
   return (
     <section className="wb-canvas-appearance" aria-label="Canvas appearance">
-      <div className="wb-canvas-appearance__heading"><span>BACKGROUND</span><Button size="sm" variant="ghost" onClick={reset}>Reset appearance</Button></div>
+      <div className="wb-canvas-appearance__heading"><span>DRAWING & BACKGROUND</span><Button size="sm" variant="ghost" onClick={reset}>Reset appearance</Button></div>
+      <div className="wb-canvas-appearance__field"><label htmlFor={`${id}-wires`}>Wire color</label><select id={`${id}-wires`} value={appearance.wireColor} onChange={(e) => update({ wireColor: e.target.value as typeof appearance.wireColor })}>
+        <option value="green">Engineering green</option><option value="blue">Blueprint blue</option><option value="teal">Teal</option><option value="violet">Violet</option>
+      </select></div>
+      <div className="wb-canvas-appearance__field"><label htmlFor={`${id}-labels`}>Component labels</label><select id={`${id}-labels`} value={appearance.labels} onChange={(e) => update({ labels: e.target.value as typeof appearance.labels })}>
+        <option value="detailed">Reference, name and value</option><option value="compact">Reference and value</option>
+      </select></div>
+      <p>Wire color applies while designing. Live signal colors show electrical state.</p>
       <fieldset><legend>Grid pattern</legend><div className="wb-canvas-appearance__patterns">
         {styles.map((style) => <label key={style.id} className={appearance.style === style.id ? 'is-active' : ''}>
           <input className="es-sr-only" type="radio" name={`${id}-pattern`} value={style.id} checked={appearance.style === style.id} onChange={() => update({ style: style.id })} />
