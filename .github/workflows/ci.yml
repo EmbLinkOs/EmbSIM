@@ -175,6 +175,12 @@ jobs:
         working-directory: ui/apps/workbench
       - run: pnpm e2e
         working-directory: ui/apps/workbench
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: workbench-smoke-${{ matrix.os }}
+          path: ui/apps/workbench/test-results/
+          if-no-files-found: ignore
 
   desktop:
     # the installers (ADR-008): the Tauri shell with the engine as its sidecar

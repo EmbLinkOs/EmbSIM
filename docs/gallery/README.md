@@ -5,6 +5,20 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Schematic authoring and repair (2026-10-16)
+
+Captured from the native engine by `tests/browser/test_schematic.py` after track
+repair, shared-parameter editing and exact undo checks. The selected net remains
+electrically connected while its drawing is cleared; the Checks report locates
+the missing geometry. Bounds and connectivity checks are not electrical-rule or
+physical-clearance validation.
+
+| | |
+|---|---|
+| ![Native schematic checks in light theme](schematic-authoring/checks-light.png) | ![Native schematic checks in dark theme](schematic-authoring/checks-dark.png) |
+
+[Compact 1024-pixel workspace](schematic-authoring/compact.png).
+
 ## Canvas appearance (2026-10-16)
 
 Captured against the native engine with `tests/browser/test_canvas_appearance.py`.

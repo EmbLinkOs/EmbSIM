@@ -92,3 +92,24 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16
 **Verification.** Geometry unit tests and Playwright manual-wire workflow.
 **Trace.** SPEC-011 Manual wire authoring
+
+### UI-013  Existing-track repair and contextual actions
+**Statement.** Selected orthogonal wire segments shall support pointer and keyboard reshaping with preview, cancellation, fixed endpoints and preserved same-net contacts. Contextual actions shall be keyboard navigable and distinguish clearing geometry from electrical disconnection. Completed edits shall use transactional undo, reject stale revisions, and retain failed undo/redo entries.
+**Rationale.** Repair real drawings without rebuilding connectivity or losing history.
+**Status.** Accepted 2026-10-16
+**Verification.** Wire-contact unit fixtures, history failure tests, Chromium authoring workflow and native-server schematic regression.
+**Trace.** SPEC-011 Schematic authoring and repair; ADR-024
+
+### UI-014  Precise placement and batch properties
+**Statement.** The inspector shall edit snapped part/board placement and relative group offsets, and apply deliberately selected compatible shared parameters in one transaction. Mixed values shall remain explicit; invalid numeric, integer, boolean or enum values shall not commit. Layout edits shall preserve electrical data and firmware.
+**Rationale.** Efficient precise editing of circuits with repeated parts.
+**Status.** Accepted 2026-10-16
+**Verification.** Shared-parameter contract tests, stale/read-only edit guards, Chromium and native-server batch editing with exact undo.
+**Trace.** SPEC-011 Schematic authoring and repair
+
+### UI-015  Navigable structural and drawing checks
+**Statement.** A bounded cancellable worker shall report current-revision schematic structure/drawing issues with severity filtering, target navigation and applicable net-routing repair. Stale results and worker errors shall be handled explicitly. The report shall identify its limits and shall not claim electrical-rule or physical-clearance validation.
+**Rationale.** Make drawing problems actionable without blocking the canvas or overstating validation.
+**Status.** Accepted 2026-10-16
+**Verification.** Deterministic structural/contact fixtures, Chromium check-to-repair workflow and native-server geometry-clear/check regression.
+**Trace.** SPEC-011 Schematic authoring and repair; ADR-024

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { Badge, Button, EmptyState, Input, Select, SignalChip, Toggle, useToast } from '@embsim/design';
-import { parseSi, type ParamDescription } from '@embsim/protocol';
+import { type ParamDescription } from '@embsim/protocol';
 import { describeNetState } from '@embsim/scene';
 import { Layers, MousePointer2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -11,6 +11,9 @@ import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
 import { FidelityBadges } from './LibraryPanel';
+import { WireProperties } from './WireProperties';
+import { parameterValue } from './parameterEditing';
+import { SelectionProperties } from './SelectionProperties';
 
 const UNIT_LABEL: Record<string, string> = { ohm: 'Ω', F: 'F', V: 'V', A: 'A', ms: 'ms', W: 'W', '%': '%' };
 
@@ -22,9 +25,10 @@ export function InspectorPanel() {
   const id = selection.components[0] ?? null;
   const wireNet = selection.wires.length ? wires[selection.wires[0]!]?.net ?? null : null;
   const netName = net ?? wireNet;
+  if (selection.components.length > 1) return <div className="wb-inspector"><div className="wb-inspector__head"><strong>{selection.components.length} items selected</strong></div><SelectionProperties /><p className="es-muted es-mono">{selection.components.join(', ')}</p></div>;
   if (id && project?.boards?.some((b) => b.id === id)) return <BoardInspector id={id} />;
   if (id) return <ComponentInspector id={id} />;
-  if (netName) return <NetInspector net={netName} />;
+  if (netName) return <>{selection.wires.length === 1 && <WireProperties index={selection.wires[0]!} />}<NetInspector net={netName} /></>;
   return (
     <EmptyState icon={<MousePointer2 />} title="Nothing selected">
       Select a component or a wire on the schematic, or a net in the nets list.
@@ -59,6 +63,7 @@ function BoardInspector({ id }: { id: string }) {
         {desc?.version && ` v${desc.version}`}
         {desc?.description && ` — ${desc.description}`}
       </div>
+      <SelectionProperties />
       <section className="wb-inspector__section" aria-label="Board">
         <dl className="wb-inspector__facts">
           <dt>MCU</dt>
@@ -105,6 +110,7 @@ function ComponentInspector({ id }: { id: string }) {
         {desc?.description && ` — ${desc.description}`}
       </div>
       <OpenInsideButton id={id} />
+      <SelectionProperties />
       {desc?.part && (
         <section className="wb-inspector__section" aria-label="Manufacturer part">
           <h3>Manufacturer part</h3>
@@ -221,44 +227,33 @@ function ComponentInspector({ id }: { id: string }) {
 }
 
 function ParamField({ name, param, value, onCommit }: { name: string; param: ParamDescription; value: unknown; onCommit: (v: unknown) => void }) {
+  const disabled = useProject((s) => !s.editable || s.busy);
   const current = value ?? param.default;
   const [text, setText] = useState(String(current ?? ''));
   useEffect(() => setText(String(current ?? '')), [current]);
   const label = `${name}${param.advanced ? ' (advanced)' : ''}`;
+  if (param.type === 'table') return <div className="es-field"><span className="es-field__label">{label}</span><pre className="wb-param-table">{JSON.stringify(current, null, 2)}</pre><span className="es-muted">Table parameter · read only</span></div>;
   if (param.type === 'boolean') {
-    return <Toggle label={label} checked={Boolean(current)} onCheckedChange={(v) => onCommit(v)} />;
+    return <Toggle disabled={disabled} label={label} checked={Boolean(current)} onCheckedChange={(v) => onCommit(v)} />;
   }
   if (param.type === 'enum' && param.enum) {
     return (
       <div className="es-field">
         <span className="es-field__label">{label}</span>
-        <Select label={label} value={String(current)} options={param.enum.map((e) => ({ value: e, label: e }))} onValueChange={(v) => onCommit(v)} />
+        <Select disabled={disabled} label={label} value={String(current)} options={param.enum.map((e) => ({ value: e, label: e }))} onValueChange={(v) => onCommit(v)} />
       </div>
     );
   }
   const unit = param.unit ? UNIT_LABEL[param.unit] ?? param.unit : undefined;
-  const min = parseSi(param.min);
-  const max = parseSi(param.max);
-  const outOfRange = (n: number) => (min !== undefined && n < min) || (max !== undefined && n > max);
+  const validation = parameterValue(param, text);
   const commit = () => {
-    if (text === String(current ?? '')) return;
-    if (param.type === 'number' || param.type === 'integer') {
-      const parsed = parseSi(text);
-      if (parsed === undefined || outOfRange(parsed)) return;
-      // SI suffixes ("4.7k") are accepted by the loader (SPEC-005 §4); send them as written.
-      const n = Number(text);
-      onCommit(Number.isFinite(n) && text.trim() !== '' ? n : text.trim());
-    } else onCommit(text);
+    if (disabled || text === String(current ?? '') || validation.error) return;
+    onCommit(validation.value);
   };
-  const invalid = (() => {
-    if (param.type !== 'number' && param.type !== 'integer') return false;
-    if (text.trim() === '') return true;
-    const parsed = parseSi(text);
-    return parsed === undefined || outOfRange(parsed);
-  })();
   return (
     <Input
       label={label}
+      disabled={disabled}
       unit={unit}
       mono
       value={text}
@@ -268,13 +263,15 @@ function ParamField({ name, param, value, onCommit }: { name: string; param: Par
       onKeyDown={(e) => {
         if (e.key === 'Enter') commit();
       }}
-      error={invalid ? `Enter a number${min !== undefined || max !== undefined ? ` between ${param.min ?? '−∞'} and ${param.max ?? '∞'}` : ''}` : undefined}
+      error={validation.error}
       hint={param.doc}
     />
   );
 }
 
 function NetInspector({ net }: { net: string }) {
+  const store = useProject();
+  const setSelection = useSelection((s) => s.setSelection);
   const pins = useProject((s) => s.project?.nets[net]);
   const topology = useProject((s) => s.topology);
   const state = useSession((s) => s.nets[net]);
@@ -283,6 +280,7 @@ function NetInspector({ net }: { net: string }) {
   const { toast } = useToast();
   const [name, setName] = useState(net);
   useEffect(() => setName(net), [net]);
+  if (!pins) return <EmptyState title="Net no longer exists"><Button size="sm" onClick={() => useSelection.getState().clear()}>Clear selection</Button></EmptyState>;
   const island = topology?.nets.find((n) => n.name === net)?.island;
   const kind = topology?.islands.find((i) => i.id === island)?.kind;
   const vis = describeNetState(state, [0, 3.3]);
@@ -301,6 +299,7 @@ function NetInspector({ net }: { net: string }) {
       <section className="wb-inspector__section" aria-label="Net">
         <Input
           label="Name"
+          disabled={!store.editable || store.busy}
           mono
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -319,6 +318,14 @@ function NetInspector({ net }: { net: string }) {
           <dt>Pins</dt>
           <dd>{pins?.length ? pins.join(', ') : 'none'}</dd>
         </dl>
+        <div className="wb-net-actions">
+          <Button size="sm" disabled={!store.editable || store.busy} onClick={() => void store.rerouteNets([net]).then((warnings) => { setSelection({ components: [], wires: [] }); selectNet(net); return toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? 'Routing needs attention' : 'Net routed', description: warnings.join(' ') || undefined }); }).catch((e: unknown) => toast({ kind: 'error', title: 'Route failed', description: errorMessage(e) }))}>Route net</Button>
+          <Button size="sm" variant="ghost" disabled={!store.editable || store.busy || !store.project?.layout?.wires?.some((w) => w.net === net)} onClick={() => void store.eraseWireGeometry((store.project?.layout?.wires ?? []).flatMap((w, i) => w.net === net ? [i] : [])).then(() => { setSelection({ components: [], wires: [] }); selectNet(net); }).catch((e: unknown) => toast({ kind: 'error', title: 'Remove failed', description: errorMessage(e) }))}>Clear drawing</Button>
+        </div>
+        <p className="es-muted wb-net-hint">Clear drawing keeps electrical connections. Disconnect removes a terminal from this net.</p>
+        <ul className="wb-net-terminals" aria-label="Net terminals">
+          {(pins ?? []).map((pin) => <li key={pin}><button type="button" title={`Select ${pin.split('.')[0]}`} onClick={() => setSelection({ components: [pin.split('.')[0]!], wires: [] })}>{pin}</button><Button size="sm" variant="ghost" disabled={!store.editable || store.busy} aria-label={`Disconnect ${pin}`} onClick={() => void store.disconnectPin(pin).catch((e: unknown) => toast({ kind: 'error', title: 'Disconnect failed', description: errorMessage(e) }))}>Disconnect</Button></li>)}
+        </ul>
         <Button size="sm" variant="ghost" onClick={() => selectNet(null)}>
           Close
         </Button>

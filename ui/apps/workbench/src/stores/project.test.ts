@@ -41,3 +41,45 @@ describe('copy and paste', () => {
     expect(q.layout!.wires!.at(-1)).toEqual({ net: 'N1', points: [[100, 50], [140, 50]] });
   });
 });
+
+describe('editing guards', () => {
+  it('rejects stale geometry and property drafts before any transaction', async () => {
+    const { useProject } = await import('./project');
+    const current = project();
+    useProject.setState({ project: current, editable: true, busy: false });
+    await expect(useProject.getState().reshapeWire(0, 0, 20, structuredClone(current))).rejects.toThrow('project changed');
+    await expect(useProject.getState().setPartLayout('R1', { x: 10, y: 0 }, structuredClone(current))).rejects.toThrow('project changed');
+    await expect(useProject.getState().setBatchParams(['R1'], { resistance: '2k' }, structuredClone(current))).rejects.toThrow('project changed');
+    expect(useProject.getState().project).toBe(current);
+    useProject.setState({ project: null });
+  });
+  it('blocks read-only and overlapping edits instead of diffing stale snapshots', async () => {
+    const { useProject } = await import('./project');
+    let invoked = false;
+    const edit = (p: Project) => { invoked = true; return p; };
+    useProject.setState({ project: project(), editable: false, busy: false });
+    await expect(useProject.getState().mutate('test', edit)).rejects.toThrow('read-only');
+    useProject.setState({ editable: true, busy: true });
+    await expect(useProject.getState().mutate('test', edit)).rejects.toThrow('finishing');
+    expect(invoked).toBe(false);
+    useProject.setState({ project: null, busy: false });
+  });
+});
+
+describe('authoritative net membership during geometry edits', () => {
+  it('does not drag or remove a foreign wire merely touching a part pin', async () => {
+    const { useProject } = await import('./project');
+    const original = useProject.getState();
+    const p: Project = { schema_version: 1, kind: 'project', name: 'coincident', components: [{ id: 'R1', component: 'resistor', layout: { x: 0, y: 0 } }, { id: 'R2', component: 'resistor', layout: { x: 200, y: 0 } }], nets: { REAL: ['R1.2'], FOREIGN: ['R2.1'] }, layout: { wires: [{ net: 'REAL', points: [[60, 10], [60, 50]] }, { net: 'FOREIGN', points: [[60, 10], [100, 10]] }] } };
+    let after: Project | null = null;
+    const symbol = { svg: '', width: 60, height: 20, pins: { '1': { x: 0, y: 10, side: 'left' as const }, '2': { x: 60, y: 10, side: 'right' as const } } };
+    try {
+      useProject.setState({ project: p, catalog: { resistor: { description: { symbol } as never, files: {} } }, mutate: async (_, fn) => { after = fn(structuredClone(p)); } });
+      await useProject.getState().moveComponents(['R1'], 20, 0);
+      expect((after! as Project).layout!.wires![0]!.points[0]).toEqual([80, 10]);
+      expect((after! as Project).layout!.wires![1]).toEqual(p.layout!.wires![1]);
+      await useProject.getState().deleteSelection({ components: ['R1'], wires: [] });
+      expect((after! as Project).layout!.wires).toEqual([p.layout!.wires![1]]);
+    } finally { useProject.setState(original); }
+  });
+});

@@ -1026,3 +1026,60 @@
 .wb-canvas-appearance output { color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .wb-canvas-appearance input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 .wb-canvas-appearance p { margin: 0; color: var(--text-muted); font-size: 10px; line-height: 1.5; }
+
+/* Schematic authoring controls: precise properties and contextual actions. */
+.wb-properties-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.wb-selection-properties form { display: grid; gap: 12px; }
+.wb-selection-properties p { font-size: var(--text-xs); line-height: 1.5; }
+.wb-property-toggle { display: flex; align-items: center; gap: 7px; font-size: var(--text-xs); }
+.wb-property-toggle input { accent-color: var(--accent); }
+.wb-batch-property { display: grid; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.wb-properties-error { color: var(--danger); }
+.wb-schematic-context { position: fixed; z-index: 100; min-width: 248px; max-height: calc(100dvh - 16px); overflow-y: auto; padding: 6px; border: 1px solid var(--line-strong, var(--line)); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 16px 48px #00000030, 0 2px 6px #00000012; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.wb-schematic-context__heading { padding: 7px 10px 9px; font-size: 10px; font-weight: 650; color: var(--text-muted); border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.wb-schematic-context button { display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%; min-height: 32px; padding: 7px 10px; border: 0; border-radius: 7px; background: none; color: var(--text); text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
+.wb-schematic-context button:focus-visible, .wb-schematic-context button:hover:not(:disabled) { background: var(--accent); color: var(--on-accent, white); outline: none; }
+.wb-schematic-context button:disabled { opacity: .4; cursor: default; }
+.wb-schematic-context button.is-danger { color: var(--danger); }
+.wb-schematic-context kbd { font: inherit; font-size: 10px; opacity: .7; }
+.wb-schematic-checks { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--surface); }
+.wb-schematic-checks__toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.wb-schematic-checks__toolbar > .es-field { min-width: 160px; max-width: 220px; flex: 1; }
+.wb-schematic-checks__toolbar > .es-field > .es-field__label { display: none; }
+.wb-check-filters { display: flex; gap: 3px; padding: 3px; background: var(--surface-sunken, var(--surface)); border: 1px solid var(--line); border-radius: 9px; }
+.wb-check-filters button { display: flex; align-items: center; gap: 5px; border: 0; padding: 5px 7px; border-radius: 6px; background: none; color: var(--text-muted); font: inherit; font-size: 11px; cursor: pointer; }
+.wb-check-filters button[aria-pressed='true'] { background: var(--surface-raised); color: var(--text); box-shadow: 0 1px 3px #00000018; }
+.wb-check-filters button:focus-visible { outline: 2px solid var(--accent); }
+.wb-check-filters button span { font-variant-numeric: tabular-nums; opacity: .65; }
+.wb-checks-scope { margin: 0; padding: 7px 12px; font-size: 10px; line-height: 1.5; color: var(--text-muted); }
+.wb-checks-empty { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 16px; color: var(--text-muted); font-size: 12px; }
+.wb-checks-body { display: grid; grid-template-columns: minmax(200px, 1.3fr) minmax(200px, 1fr); flex: 1; min-height: 100px; overflow: hidden; border-top: 1px solid var(--line); }
+.wb-checks-list { overflow-y: auto; min-height: 0; border-right: 1px solid var(--line); }
+.wb-check-row { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 12px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; color: var(--text); cursor: pointer; font: inherit; }
+.wb-check-row:hover, .wb-check-row[aria-pressed='true'] { background: var(--accent-muted); }
+.wb-check-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.wb-check-row > span:first-of-type { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.wb-check-row strong { font-size: 11px; font-weight: 550; overflow-wrap: anywhere; }
+.wb-check-row small { font-size: 9px; color: var(--text-muted); }
+.wb-check-row > svg { flex: none; color: var(--text-muted); }
+.wb-check-row--warning > svg { color: var(--warning); }
+.wb-check-row--error > svg { color: var(--danger); }
+.wb-check-detail { padding: 12px 16px; overflow-y: auto; font-size: 12px; line-height: 1.6; }
+.wb-check-detail h3 { font-size: 13px; margin: 8px 0; }
+.wb-check-detail__actions { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 1100px) { .wb-schematic-ribbon__identity { display: none; } .wb-schematic-ribbon__tools { flex-wrap: wrap; } }
+.wb-net-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.wb-net-terminals { list-style: none; margin: 0; padding: 0; }
+.wb-net-terminals li { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--line); padding: 6px 0; }
+.wb-net-terminals li > button:first-child { color: var(--text); font: var(--text-xs) var(--font-mono); background: none; border: 0; padding: 4px; cursor: pointer; }
+.wb-net-terminals li > button:first-child:focus-visible { outline: 2px solid var(--accent); }
+.wb-net-hint { font-size: var(--text-xs); line-height: 1.5; }
+.wb-wire-properties { border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 18px; }
+.wb-wire-properties form { display: grid; gap: 12px; }
+.wb-wire-properties p { font-size: var(--text-xs); line-height: 1.5; }
+.wb-param-table { max-height: 180px; overflow: auto; font: 10px var(--font-mono); margin: 0; }
+.wb-selection-properties { display: grid; gap: 22px; margin: 12px 0 18px; }
+.wb-design-details--checks > .es-tabs__content[data-state='active'] { overflow: hidden; }
+.wb-schematic-checks__toolbar, .wb-schematic-checks > .wb-checks-scope { flex-shrink: 0; }
+.wb-checks-body { min-height: 0; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+.wb-checks-empty.wb-properties-error { color: var(--danger); }

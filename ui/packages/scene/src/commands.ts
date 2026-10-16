@@ -17,18 +17,21 @@ export class CommandStack {
   private undone: Command[] = [];
   private listeners = new Set<() => void>();
   private queue: Promise<void> = Promise.resolve();
+  private pending = 0;
   readonly limit: number;
+
+  get isBusy(): boolean { return this.pending > 0; }
 
   constructor(limit = 200) {
     this.limit = limit;
   }
 
   get canUndo(): boolean {
-    return this.done.length > 0;
+    return !this.isBusy && this.done.length > 0;
   }
 
   get canRedo(): boolean {
-    return this.undone.length > 0;
+    return !this.isBusy && this.undone.length > 0;
   }
 
   get undoLabel(): string | null {
@@ -51,18 +54,20 @@ export class CommandStack {
 
   undo(): Promise<void> {
     return this.enqueue(async () => {
-      const c = this.done.pop();
+      const c = this.done.at(-1);
       if (!c) return;
       await c.undo();
+      this.done.pop();
       this.undone.push(c);
     });
   }
 
   redo(): Promise<void> {
     return this.enqueue(async () => {
-      const c = this.undone.pop();
+      const c = this.undone.at(-1);
       if (!c) return;
       await c.redo();
+      this.undone.pop();
       this.done.push(c);
     });
   }
@@ -79,7 +84,9 @@ export class CommandStack {
   }
 
   private enqueue(task: () => Promise<void>): Promise<void> {
-    const run = this.queue.then(task).finally(() => this.emit());
+    this.pending++;
+    this.emit();
+    const run = this.queue.then(task).finally(() => { this.pending--; this.emit(); });
     this.queue = run.catch(() => undefined);
     return run;
   }

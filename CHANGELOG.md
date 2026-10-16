@@ -5,6 +5,31 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Cross-platform schematic fixes
+
+- Remove an ambiguous case-insensitive source import that broke macOS/Windows
+  workbench and desktop builds; add a portable module-path policy check.
+- Keep unchanged server refreshes from cancelling active drawing drafts. Correct
+  selection verification for offscreen symbols and retain failed browser traces.
+
+### Schematic authoring workbench
+
+- Reshape existing orthogonal tracks with draggable/keyboard segment handles,
+  numeric offsets, live previews and cancellation. Preserve pin endpoints and
+  same-net junction contacts; commit one layout-only undoable edit.
+- Add snapped position, rotation and mirror controls, relative group movement,
+  and explicit mixed-value batch editing of compatible shared parameters.
+- Add keyboard-accessible contextual actions, paste at the clicked sheet position,
+  net routing/drawing controls and explicit terminal disconnection.
+- Add worker-backed structural/drawing checks with severity filters, search,
+  target navigation, markers and applicable net-routing repair. Scope and limits
+  are explicit; this is not an electrical-rule or physical-clearance checker.
+- Preserve panel order and viewport through focus-mode transitions; keep foreign
+  tracks fixed when a part moves or is removed at a coincident pin coordinate.
+- Reject stale/concurrent edit snapshots, preserve failed undo/redo history entries,
+  avoid rerouting unchanged placement, and make drawn tracks keyboard selectable.
+
+
 ### Manual schematic routing
 
 - Place orthogonal wire bends with live previews and visible waypoint markers;

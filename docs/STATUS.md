@@ -5,6 +5,64 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Schematic cross-platform CI corrections
+
+The authoring PR's first hosted run exposed an extensionless-import collision:
+`SelectionProperties.tsx` and `selectionProperties.ts` resolved to the helper on
+case-insensitive filesystems. The helper is now `parameterEditing.ts`, and the
+repository policy checks ambiguous source-module paths with regression fixtures.
+An unchanged delayed server refresh also invalidated active wire drafts; refresh
+now retains revision identity when canonical project content is unchanged, while
+real changes still invalidate stale drafts. The selection browser assertion now
+checks the logical selection rather than counting only viewport-mounted symbols.
+Failed browser jobs retain screenshots and traces for diagnosis.
+
+Local verification: 138 UI tests across 32 files, typecheck, lint and build pass;
+source-path policy and its fixtures pass. The hosted cross-platform rerun is
+pending; the original failures are not treated as passes.
+
+## Schematic authoring and repair milestone
+
+Based on merged main `2183be8` (including PR #29's native peripheral changes),
+`schematic/authoring-workbench` integrates existing-track segment repair, exact
+part/board placement, group offsets, shared-parameter batch editing, contextual
+actions, net drawing/terminal controls and navigable structural/drawing checks.
+Track reshaping previews before committing, preserves original endpoints and
+same-net contacts, cancels without history and commits geometry in one undo step.
+Clearing a drawing keeps the net; terminal disconnection is a separate action.
+
+The check report runs in a cancellable revision-bound worker with timeout/error
+recovery. It identifies structure and drawing problems, provides filters and
+location/repair actions, and treats unused pins as information. Declared hidden
+terminals are distinguished from invalid references. This does not implement
+full electrical rules, physical clearances, persistent routing constraints or
+large-sheet qualification. ADR-024 is proposed for review.
+
+Editing rejects stale/concurrent snapshots and preserves history entries when
+undo/redo fails. Placement no-ops preserve manual tracks. Foreign-net tracks no
+longer follow a coincident pin when a part moves or is removed. Focus-mode layout
+namespaces restore panel order/weights without remounting the canvas.
+
+Evidence on the integrated tree:
+
+- 136 UI tests across 31 files pass, including worker stale-result/failure/retry/
+  timeout cases, junction-preserving track reshaping, hidden terminals, batch
+  parameter validation, edit guards, failed history recovery and dock restoration.
+- Typecheck, lint and production build pass. Ten Chromium workflows pass: pointer
+  and numeric track edits, Escape/pointer cancellation, contextual keyboard
+  actions, exact placement, mixed batch properties, check-to-route repair,
+  terminal disconnection, manual bends, previous layout/background and run flows.
+- The native engine rebuilds on current main. All 35 CTest entries report success
+  in 101.55 seconds; `firmware_build` explicitly skips compilation because no
+  supported firmware cross-toolchain is installed (34 entries perform checks).
+- The expanded real-server browser regression passes preview/apply/undo/redo,
+  connection/auto-arrangement, explicit bends, layout-only segment repair,
+  native batch properties and geometry-clear/check navigation with exact project
+  restoration. Light, dark and compact views are captured in the gallery.
+- Documentation integrity checks 110 documents and 103 requirements without
+  problems; banned-construct checks pass. Hosted platform/desktop checks are
+  pending, and no new macOS/Windows execution is claimed.
+
 ## Manual schematic wire authoring
 
 The schematic accepts multiple orthogonal wire legs, with visible committed
@@ -139,7 +197,7 @@ of 1.0 readiness.
 
 | Area | Current implementation | Evidence and limits |
 |---|---|---|
-| Design | Architecture 01 to 09 (ADR-001 to ADR-021 accepted, ADR-022 proposed), SPEC-001 to SPEC-014, 100 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
+| Design | Architecture 01 to 09 (ADR-001 to ADR-021 and ADR-023 accepted; ADR-022/024 proposed), SPEC-001 to SPEC-014, 103 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
 | Repository | CMake presets, Makefile wrapper, CI matrix, documentation and policy workflows, templates, ruleset JSON, policy and banned-construct checkers | Local runs of the checkers; remote workflow results are recorded here when observed |
 | Core: scheduler and time | Rational clocks, class-ordered event heap, delta-cycle bound, cancellation by generation (SPEC-002) | `test_sched`: ordering, cancellation, overflow, limits, 72 MHz and 32.768 kHz clocks exact over 10^9 edges |
 | Core: nets and digital engine | Pin models and logic families, four-value resolution with strengths, contention and floating diagnostics, inertial delays, islands and bridges, the model API; gates, flip-flop, sources, pulls, transmission-gate switches, indicator, probe, UART virtual terminal (SPEC-003) | `test_engine`: resolution, floating inputs, gate timing, inertial pulses, clock, switch, UART loopback |

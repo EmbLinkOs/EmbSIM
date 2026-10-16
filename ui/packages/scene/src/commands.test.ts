@@ -34,3 +34,23 @@ describe('command stack', () => {
     expect(order).toEqual([1, 2]);
   });
 });
+
+describe('history failure recovery', () => {
+  it('retains the command after a failed undo and redo', async () => {
+    const stack = new CommandStack();
+    let failUndo = true, failRedo = false;
+    await stack.execute({ label: 'edit', redo: () => { if (failRedo) throw new Error('offline'); }, undo: () => { if (failUndo) throw new Error('offline'); } });
+    await expect(stack.undo()).rejects.toThrow('offline');
+    expect(stack.undoLabel).toBe('edit');
+    expect(stack.canUndo).toBe(true);
+    failUndo = false;
+    await stack.undo();
+    failRedo = true;
+    await expect(stack.redo()).rejects.toThrow('offline');
+    expect(stack.redoLabel).toBe('edit');
+    expect(stack.canRedo).toBe(true);
+    failRedo = false;
+    await stack.redo();
+    expect(stack.canUndo).toBe(true);
+  });
+});

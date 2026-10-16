@@ -67,6 +67,12 @@ entries, searchable categories, model limits and executable fixtures. The
 controls and four wired GUI/CLI examples. The models declare their approximation
 boundaries; catalog presence does not imply manufacturer-qualified accuracy.
 
+The [schematic authoring guide](docs/user/schematic-studio.md) covers connected
+layout previews, configurable drafting surfaces, manual wire bends and segment
+repair, exact placement, shared-property editing, and navigable drawing checks.
+All editing uses the native transaction and undo history. Drawing checks are
+explicitly scoped; they do not certify electrical rules or physical clearances.
+
 ## Repository layout
 
 | Path | Content |
