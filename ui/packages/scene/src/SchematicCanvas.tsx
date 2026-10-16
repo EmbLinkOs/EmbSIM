@@ -165,6 +165,106 @@ interface PlacedComponent {
   value: string;
 }
 
+type HoverFn = (text: string, sub: string, clientX: number, clientY: number) => void;
+const IDLE: NetVisual = { kind: 'idle', text: '' };
+
+interface PartViewProps {
+  c: PlacedComponent;
+  selected: boolean;
+  offset: Point | null;
+  showPins: boolean;
+  live: boolean;
+  /** Each pin's net state, and a key of them all for the memo. */
+  pinVisuals: NetVisual[];
+  pinKey: string;
+  activePin: string | null;
+  onHover: HoverFn;
+  onLeave: () => void;
+}
+
+/** One placed part: re-rendered only when it, its selection or its pins' nets change. */
+const PartView = memo(
+  function PartView({ c, selected, offset, showPins, live, pinVisuals, activePin, onHover, onLeave }: PartViewProps) {
+    const sym = c.symbol;
+    const desc = `${c.id}, ${sym?.name ?? c.componentId}${c.value ? `, ${c.value}` : ''}${selected ? ', selected' : ''}`;
+    return (
+      <g
+        data-component={c.id}
+        className={`es-component${selected ? ' es-component--selected' : ''}`}
+        role="group"
+        aria-label={c.id}
+        transform={offset ? `translate(${offset.x} ${offset.y})` : undefined}
+      >
+        <rect className="es-component__hit" role="button" tabIndex={0} aria-label={desc} aria-pressed={selected} x={c.bounds.x} y={c.bounds.y} width={c.bounds.width} height={c.bounds.height} rx={2} />
+        {sym ? (
+          <ComponentSymbol svg={sym.svg} symbol={sym.symbol} layout={c.layout} selected={selected} fallbackLabel={c.id} />
+        ) : (
+          <g className="es-symbol__fallback">
+            <rect x={c.layout.x} y={c.layout.y} width={60} height={20} rx={2} />
+            <text x={c.layout.x + 30} y={c.layout.y + 13} textAnchor="middle">
+              {c.componentId}
+            </text>
+          </g>
+        )}
+        <text className="es-component__ref" x={c.bounds.x} y={c.bounds.y - 3}>
+          {c.id}
+        </text>
+        {c.value && (
+          <text className="es-component__value" x={c.bounds.x + c.bounds.width + 3} y={c.bounds.y + c.bounds.height / 2 + 3}>
+            {c.value}
+          </text>
+        )}
+        {showPins &&
+          c.pins.map((pin, i) => {
+            const vis = pinVisuals[i] ?? IDLE;
+            return (
+              <g
+                key={pin.name}
+                data-pin={`${c.id}.${pin.name}`}
+                className={`es-pin es-wire--${vis.kind}${activePin === pin.name ? ' es-pin--active' : ''}`}
+                tabIndex={0}
+                role="button"
+                aria-label={`Pin ${c.id}.${pin.name}${pin.net ? `, net ${pin.net}` : ', unconnected'}${live && pin.net ? `, ${vis.text}` : ''}`}
+                transform={`translate(${pin.point.x} ${pin.point.y})`}
+                onPointerEnter={(e) => onHover(`${c.id}.${pin.name}`, pin.net ? (live ? `${pin.net} · ${vis.text}` : `net ${pin.net}`) : 'unconnected', e.clientX, e.clientY)}
+                onPointerLeave={onLeave}
+              >
+                <circle className="es-pin__hit" r={6} />
+                <circle className="es-pin__dot" r={pin.net ? 1.8 : 2.4} style={vis.color ? { fill: vis.color } : undefined} />
+              </g>
+            );
+          })}
+      </g>
+    );
+  },
+  (a, b) =>
+    a.c === b.c && a.selected === b.selected && a.offset === b.offset && a.showPins === b.showPins && a.live === b.live && a.pinKey === b.pinKey && a.activePin === b.activePin && a.onHover === b.onHover,
+);
+
+interface WireViewProps {
+  index: number;
+  wire: Wire;
+  vis: NetVisual;
+  selected: boolean;
+  sub: string;
+  onHover: HoverFn;
+  onLeave: () => void;
+}
+
+/** One drawn wire: re-rendered only when its points, selection or net state change. */
+const WireView = memo(
+  function WireView({ index, wire, vis, selected, sub, onHover, onLeave }: WireViewProps) {
+    const pts = wire.points.map(([x, y]) => `${x},${y}`).join(' ');
+    return (
+      <g data-wire={index} className={`es-wire es-wire--${vis.kind}${selected ? ' es-wire--selected' : ''}`}>
+        <polyline className="es-wire__hit" points={pts} />
+        <polyline className="es-wire__line" points={pts} style={vis.color ? { stroke: vis.color } : undefined} onPointerEnter={(e) => onHover(wire.net, sub, e.clientX, e.clientY)} onPointerLeave={onLeave} />
+      </g>
+    );
+  },
+  (a, b) => a.wire === b.wire && a.index === b.index && a.selected === b.selected && a.sub === b.sub && a.vis.kind === b.vis.kind && a.vis.color === b.vis.color && a.onHover === b.onHover,
+);
+
 export function SchematicCanvas(props: SchematicCanvasProps) {
   const {
     project,
@@ -263,11 +363,16 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     vpRef.current = next;
     sceneRef.current?.setAttribute('transform', `translate(${next.x} ${next.y}) scale(${next.k})`);
     if (commit) {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
+      // the transform above moves the scene at once; React (culling, the
+      // grid) catches up when the wheel or the drag pauses, not every frame,
+      // and the small text and pin dots are left out while it moves
+      svgRef.current?.classList.add('es-scene__svg--moving');
+      if (rafRef.current !== null) clearTimeout(rafRef.current);
+      rafRef.current = window.setTimeout(() => {
         rafRef.current = null;
+        svgRef.current?.classList.remove('es-scene__svg--moving');
         setViewportState(vpRef.current);
-      });
+      }, 90);
     }
   }, []);
 
@@ -747,6 +852,12 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     return map;
   }, [probes]);
 
+  const showHover = useCallback<HoverFn>((text, sub, clientX, clientY) => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    setHover({ text, sub, x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) });
+  }, []);
+  const hideHover = useCallback(() => setHover(null), []);
+
   const netVisual = (net: string): NetVisual => (live ? describeNetState(netStates?.[net], analogRange) : { kind: 'idle', text: '' });
 
   const wiringPreview = wiring ? routeOrthogonal(wiring.from.point, wiring.cursor, wiring.horizontalFirst) : null;
@@ -794,28 +905,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             ))}
             {wires.map((w, i) => {
               const vis = netVisual(w.net);
-              const pts = w.points.map(([x, y]) => `${x},${y}`).join(' ');
-              const selected = selection.wires.includes(i);
-              return (
-                <g key={`w-${i}`} data-wire={i} className={`es-wire es-wire--${vis.kind}${selected ? ' es-wire--selected' : ''}`}>
-                  <polyline className="es-wire__hit" points={pts} />
-                  <polyline
-                    className="es-wire__line"
-                    points={pts}
-                    style={vis.color ? { stroke: vis.color } : undefined}
-                    onPointerEnter={(e) => {
-                      const rect = svgRef.current?.getBoundingClientRect();
-                      setHover({
-                        text: w.net,
-                        sub: live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`,
-                        x: e.clientX - (rect?.left ?? 0),
-                        y: e.clientY - (rect?.top ?? 0),
-                      });
-                    }}
-                    onPointerLeave={() => setHover(null)}
-                  />
-                </g>
-              );
+              return <WireView key={`w-${i}`} index={i} wire={w} vis={vis} selected={selection.wires.includes(i)} sub={live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`} onHover={showHover} onLeave={hideHover} />;
             })}
             {junctions.map((j, i) => {
               const vis = netVisual(j.net);
@@ -826,77 +916,21 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
           <g className="es-scene__layer es-scene__layer--components">
             {visible.map((c) => {
               const selected = selectedSet.has(c.id);
-              const offset = selected && dragOffset ? dragOffset : null;
-              const sym = c.symbol;
-              const desc = `${c.id}, ${sym?.name ?? c.componentId}${c.value ? `, ${c.value}` : ''}${selected ? ', selected' : ''}`;
+              const pinVisuals = showPins ? c.pins.map((pin) => (pin.net ? netVisual(pin.net) : IDLE)) : [];
               return (
-                <g
+                <PartView
                   key={c.id}
-                  data-component={c.id}
-                  className={`es-component${selected ? ' es-component--selected' : ''}`}
-                  role="group"
-                  aria-label={c.id}
-                  transform={offset ? `translate(${offset.x} ${offset.y})` : undefined}
-                >
-                  <rect
-                    className="es-component__hit"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={desc}
-                    aria-pressed={selected}
-                    x={c.bounds.x}
-                    y={c.bounds.y}
-                    width={c.bounds.width}
-                    height={c.bounds.height}
-                    rx={2}
-                  />
-                  {sym ? (
-                    <ComponentSymbol svg={sym.svg} symbol={sym.symbol} layout={c.layout} selected={selected} fallbackLabel={c.id} />
-                  ) : (
-                    <g className="es-symbol__fallback">
-                      <rect x={c.layout.x} y={c.layout.y} width={60} height={20} rx={2} />
-                      <text x={c.layout.x + 30} y={c.layout.y + 13} textAnchor="middle">
-                        {c.componentId}
-                      </text>
-                    </g>
-                  )}
-                  <text className="es-component__ref" x={c.bounds.x} y={c.bounds.y - 3}>
-                    {c.id}
-                  </text>
-                  {c.value && (
-                    <text className="es-component__value" x={c.bounds.x + c.bounds.width + 3} y={c.bounds.y + c.bounds.height / 2 + 3}>
-                      {c.value}
-                    </text>
-                  )}
-                  {showPins &&
-                    c.pins.map((pin) => {
-                      const vis = pin.net ? netVisual(pin.net) : { kind: 'idle' as const, text: '' };
-                      return (
-                        <g
-                          key={pin.name}
-                          data-pin={`${c.id}.${pin.name}`}
-                          className={`es-pin es-wire--${vis.kind}${wiring && wiring.from.component === c.id && wiring.from.pin === pin.name ? ' es-pin--active' : ''}`}
-                          tabIndex={0}
-                          role="button"
-                          aria-label={`Pin ${c.id}.${pin.name}${pin.net ? `, net ${pin.net}` : ', unconnected'}${live && pin.net ? `, ${vis.text}` : ''}`}
-                          transform={`translate(${pin.point.x} ${pin.point.y})`}
-                          onPointerEnter={(e) => {
-                            const rect = svgRef.current?.getBoundingClientRect();
-                            setHover({
-                              text: `${c.id}.${pin.name}`,
-                              sub: pin.net ? (live ? `${pin.net} · ${vis.text}` : `net ${pin.net}`) : 'unconnected',
-                              x: e.clientX - (rect?.left ?? 0),
-                              y: e.clientY - (rect?.top ?? 0),
-                            });
-                          }}
-                          onPointerLeave={() => setHover(null)}
-                        >
-                          <circle className="es-pin__hit" r={6} />
-                          <circle className="es-pin__dot" r={pin.net ? 1.8 : 2.4} style={vis.color ? { fill: vis.color } : undefined} />
-                        </g>
-                      );
-                    })}
-                </g>
+                  c={c}
+                  selected={selected}
+                  offset={selected && dragOffset ? dragOffset : null}
+                  showPins={showPins}
+                  live={Boolean(live)}
+                  pinVisuals={pinVisuals}
+                  pinKey={pinVisuals.map((v) => `${v.kind}|${v.color ?? ''}|${v.text}`).join(';')}
+                  activePin={wiring && wiring.from.component === c.id ? wiring.from.pin : null}
+                  onHover={showHover}
+                  onLeave={hideHover}
+                />
               );
             })}
           </g>
