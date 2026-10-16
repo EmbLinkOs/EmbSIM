@@ -25,9 +25,12 @@ import type {
   ProbeKind,
   ProfileReport,
   Project,
+  Recording,
+  ReplayResult,
   PsString,
   Register,
   Report,
+  Scenario,
   SessionInfo,
   SessionOpenParams,
   SessionOpenResult,
@@ -170,11 +173,15 @@ export interface Methods {
   };
 
   // record
-  'record.start': { params: { path?: string }; result: Record<string, never> };
-  'record.stop': { params: Record<string, never>; result: { path?: string; inputs?: number | unknown[]; hash?: string } };
-  'record.replay': {
-    params: { path: string; allow_drift?: boolean };
-    result: { ok: boolean; compared?: number; divergence?: { index: number; expected: unknown; observed: unknown } };
+  'record.start': { params: { path?: string }; result: { from_ps?: PsString } };
+  'record.stop': {
+    params: Record<string, never>;
+    result: { path?: string; inputs?: number | unknown[]; hash?: string; count?: number; observations?: number; recording?: Recording };
+  };
+  'record.replay': { params: ({ path: string } | { recording: Recording }) & { allow_drift?: boolean }; result: ReplayResult };
+  'record.to_scenario': {
+    params: ({ path: string } | { recording: Recording }) & { assert?: ('probes' | 'serial')[]; name?: string };
+    result: { scenario: Scenario };
   };
 
   // toolchain
@@ -186,7 +193,9 @@ export interface Methods {
 
   // scenario
   /** SPEC-008 wraps the report in `{report}`; the 0.1 server returns the report itself. */
-  'scenario.run': { params: { path: string } | { scenario: Record<string, unknown> }; result: { report: Report } | Report };
+  'scenario.run': { params: ({ path: string } | { scenario: Scenario | Record<string, unknown> }) & { until?: string }; result: { report: Report } | Report };
+  'scenario.get': { params: { path: string }; result: { path: string; scenario: Scenario } };
+  'scenario.save': { params: { path: string; scenario: Scenario; add?: boolean }; result: { path: string } };
 }
 
 export type MethodName = keyof Methods;
@@ -252,9 +261,12 @@ export const METHOD_NAMES = [
   'record.start',
   'record.stop',
   'record.replay',
+  'record.to_scenario',
   'toolchain.detect',
   'toolchain.build',
   'scenario.run',
+  'scenario.get',
+  'scenario.save',
 ] as const satisfies readonly MethodName[];
 
 // Compile-time check: the runtime list covers every key of `Methods`.

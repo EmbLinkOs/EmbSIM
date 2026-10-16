@@ -179,9 +179,12 @@ export class MockTransport extends TransportBase implements Transport {
       'record.start': () => notSupported('record'),
       'record.stop': () => notSupported('record'),
       'record.replay': () => notSupported('record'),
+      'record.to_scenario': () => notSupported('record'),
       'toolchain.detect': () => ({ profiles: [] }),
       'toolchain.build': () => notSupported('toolchain'),
       'scenario.run': () => notSupported('scenario'),
+      'scenario.get': () => notSupported('scenario'),
+      'scenario.save': () => notSupported('scenario'),
     };
   }
 

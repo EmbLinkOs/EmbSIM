@@ -36,10 +36,16 @@ digital probe transitions (`probe`, from the level at reset), each serial
 probe's text at the end (`serial`), each warning, error and fatal
 diagnostic (`diagnostic`) and the run's end (`end`). Analog probes are not
 observed. A recording keeps at most 200000 observations (`truncated` past
-them). A run with `--record` starts from reset, as a scenario does; a
-recording made with `record.start` in a running session carries `from_ps`,
-and replay compares from there. `probes` lists the probes the run added
-beside the project's (`--probe`), which replay adds again.
+them). A run with `--record` starts from reset, as a scenario does. A
+recording made with `record.start` in a running session carries `from_ps`
+and `from_seq` (the inputs given before it) and begins with each digital
+probe's level at that time; its replay runs to `from_ps` from reset, then
+observes and compares from there. `record.start`
+before anything has run resets the session first, so its recording starts
+from reset as a replay does. An input given at the instant the session was
+paused at is `immediate`: replay runs to its time, then applies it, as it
+was. `probes` lists the probes the run added beside the project's
+(`--probe`), which replay adds again.
 
 ## 2. Replay
 

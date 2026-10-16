@@ -30,6 +30,7 @@
 void esk_record_start(es_session *s)
 {
     s->record_from = 0;
+    s->record_from_seq = 0;
     esk_json_free(s->a, s->observations);
     s->observations = esk_json_new_array(s->a);
     s->obs_truncated = 0;
@@ -90,6 +91,25 @@ void esk_record_probe(es_session *s, const esk_probe *p, es_time_t at, double v)
         return;
     esk_json_set_string(s->a, o, "probe", p->name);
     esk_json_set_string(s->a, o, "value", lv[k >= 0 && k < 4 ? k : 3]);
+}
+
+void esk_record_levels(es_session *s, es_time_t at)
+{
+    static const char *const lv[4] = { "0", "1", "Z", "X" };
+    size_t i;
+    for (i = 0; i < s->probes.len; i++) {
+        const esk_probe *p = s->probes.data[i];
+        esk_json *o;
+        int k;
+        if (p->kind != ESK_PROBE_DIGITAL || !p->has_last)
+            continue;
+        o = obs(s, "probe", at);
+        if (!o)
+            return;
+        k = (int)p->last;
+        esk_json_set_string(s->a, o, "probe", p->name);
+        esk_json_set_string(s->a, o, "value", lv[k >= 0 && k < 4 ? k : 3]);
+    }
 }
 
 /* ---- the document --------------------------------------------------------- */
@@ -259,8 +279,10 @@ esk_json *esk_record_document(es_session *s, const char *project_path, const cha
         esk_json_object_set(s->a, rec, "images", imgs);
     if (scenario)
         esk_json_set_string(s->a, rec, "scenario", scenario);
-    if (s->record_from)
+    if (s->record_from || s->record_from_seq) {
         esk_json_set_u64_string(s->a, rec, "from_ps", s->record_from);
+        esk_json_set_integer(s->a, rec, "from_seq", (int64_t)s->record_from_seq);
+    }
     esk_json_set_string(s->a, rec, "policy", esk_json_get_str(report, "policy", "electrical"));
     if (extra_probes && esk_json_len(extra_probes))
         esk_json_object_set(s->a, rec, "probes", esk_json_clone(s->a, extra_probes));
@@ -345,10 +367,32 @@ esk_json *esk_record_compare(es_session *s, const esk_json *want, const esk_json
 
 /* ---- a recording as a scenario ------------------------------------------------- */
 
+/* picoseconds as a scenario writes a time: in the largest unit it reaches,
+ * exactly ("3ms", "8.583332us"); SPEC-007 §2 */
 static esk_json *time_value(esk_alloc *a, const char *ps)
 {
-    char t[48];
-    esk_snprintf(t, sizeof t, "%sps", ps ? ps : "0");
+    static const struct { uint64_t scale; int digits; const char *unit; } units[] = {
+        { UINT64_C(1000000000000), 12, "s" }, { UINT64_C(1000000000), 9, "ms" },
+        { UINT64_C(1000000), 6, "us" },       { UINT64_C(1000), 3, "ns" },
+    };
+    char t[48], frac[16];
+    uint64_t v = 0;
+    size_t i;
+    int n;
+    const char *p;
+    for (p = ps ? ps : "0"; *p >= '0' && *p <= '9'; p++)
+        v = v * 10u + (uint64_t)(unsigned char)(*p - '0');
+    for (i = 0; i < ES_COUNTOF(units); i++) {
+        if (v < units[i].scale)
+            continue;
+        esk_snprintf(frac, sizeof frac, "%0*llu", units[i].digits, (unsigned long long)(v % units[i].scale));
+        for (n = units[i].digits; n > 0 && frac[n - 1] == '0'; n--)
+            frac[n - 1] = 0;
+        esk_snprintf(t, sizeof t, "%llu%s%s%s", (unsigned long long)(v / units[i].scale), n ? "." : "", frac,
+                     units[i].unit);
+        return esk_json_new_string(a, t);
+    }
+    esk_snprintf(t, sizeof t, "%llups", (unsigned long long)v);
     return esk_json_new_string(a, t);
 }
 
@@ -430,7 +474,9 @@ esk_json *esk_record_to_scenario(esk_alloc *a, const esk_json *rec, const char *
                 esk_snprintf(id, sizeof id, "%s-edges", probe);
                 esk_json_set_string(a, x, "id", id);
                 if (between) {
-                    esk_json_array_push(a, between, esk_json_new_string(a, "0ps"));
+                    /* from the recording's start: a recording made in a
+                     * running session observed only from there */
+                    esk_json_array_push(a, between, time_value(a, esk_json_get_str(rec, "from_ps", "0")));
                     esk_json_array_push(a, between, time_value(a, end));
                     esk_json_object_set(a, x, "between", between);
                 }
@@ -527,13 +573,26 @@ static esk_json *from_on(es_session *s, const esk_json *obsv, es_time_t from)
     return out;
 }
 
+/* a recording started in a running session: the replay runs to its start,
+ * then its observations begin there, the probes' levels first, as recorded */
+static void replay_mark(es_session *s, es_time_t from)
+{
+    if (from > s->eng.sched.now)
+        (void)esk_session_do_advance(s, from);
+    esk_json_free(s->a, s->observations);
+    s->observations = esk_json_new_array(s->a);
+    s->obs_truncated = 0;
+    esk_record_levels(s, from);
+}
+
 es_status esk_record_replay(es_session *s, const esk_json *rec, int allow_drift, esk_json **result)
 {
     const esk_json *inputs = esk_json_get(rec, "inputs"), *extra = esk_json_get(rec, "probes");
     esk_json *drift, *report, *doc, *cmp, *got;
     es_time_t end = 0, from = 0;
     size_t i;
-    uint64_t t0;
+    uint64_t t0, from_seq;
+    int marked;
     *result = NULL;
     if (!s->loaded || esk_json_to_time(esk_json_get(esk_json_get(rec, "end"), "at_ps"), &end))
         return ES_EINVAL;
@@ -555,14 +614,26 @@ es_status esk_record_replay(es_session *s, const esk_json *rec, int allow_drift,
         (void)esk_session_probe_add(s, NULL, esk_json_str(esk_json_at(extra, i)), NULL, 0, NULL);
     esk_record_start(s);
     (void)esk_session_do_reset(s); /* from reset, as the recorded run */
+    t0 = esk_host_monotonic_ms();
+    from_seq = (uint64_t)esk_json_get_int(rec, "from_seq", 0);
+    marked = !from && !from_seq;
     for (i = 0; i < esk_json_len(inputs); i++) {
         const esk_json *in = esk_json_at(inputs, i);
         es_time_t at = 0;
         (void)esk_json_to_time(esk_json_get(in, "at_ps"), &at);
+        if (!marked && (uint64_t)esk_json_get_int(in, "seq", 0) > from_seq) {
+            replay_mark(s, from);
+            marked = 1;
+        }
+        /* an input given at the instant the session was paused at: there, then
+         * applied, as it was; the others scheduled at their times */
+        if (esk_json_get_bool(in, "immediate", 0) && at > s->eng.sched.now)
+            (void)esk_session_do_advance(s, at);
         (void)esk_session_apply_input(s, esk_json_get_str(in, "target", ""), esk_json_get_str(in, "input", ""),
                                       esk_json_get(in, "value"), at, NULL, NULL);
     }
-    t0 = esk_host_monotonic_ms();
+    if (!marked)
+        replay_mark(s, from);
     (void)esk_session_do_advance(s, end);
     s->wall_time_s = (double)(esk_host_monotonic_ms() - t0) / 1000.0;
     report = esk_session_report(s, esk_json_get_str(esk_json_get(rec, "end"), "reason", "until"), NULL);

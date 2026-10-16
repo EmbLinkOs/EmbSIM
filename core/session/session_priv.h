@@ -78,6 +78,7 @@ struct es_session {
     esk_json *observations;
     int obs_truncated;
     es_time_t record_from; /* record.start's time: its observations begin there */
+    uint64_t record_from_seq; /* and the inputs given before it */
     /* run state */
     int running;
     double speed;
@@ -163,6 +164,9 @@ void esk_session_on_net_change(void *ctx, esk_net *net);
 void esk_record_start(es_session *s);
 void esk_record_irq(void *ctx, esk_comp *mcu, int core, int cores, int n, es_time_t at);
 void esk_record_probe(es_session *s, const esk_probe *p, es_time_t at, double v);
+/* each digital probe's level now, as observations at `at` (a recording
+ * that starts in a running session begins with them) */
+void esk_record_levels(es_session *s, es_time_t at);
 esk_json *esk_record_document(es_session *s, const char *project_path, const char *scenario,
                               const esk_json *report, const esk_json *extra_probes);
 esk_json *esk_record_compare(es_session *s, const esk_json *want, const esk_json *got);

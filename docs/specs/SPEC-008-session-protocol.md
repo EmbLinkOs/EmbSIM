@@ -130,7 +130,8 @@ Notation: `method(params) -> result`. Params and results are objects.
 
 ### record
 - `record.start({path?}) -> {from_ps}`; `record.stop({}) -> {path, hash, inputs, count, observations}` (with no path, `recording` is the document itself)
-- `record.replay({path, allow_drift?}) -> {ok, compared, divergence?: {index, expected, observed}, drift: [{what, recorded, now}]}`: the recording's project loaded into the session and replayed (SPEC-012 §2)
+- `record.replay({path} | {recording}, allow_drift?) -> {ok, compared, divergence?: {index, expected, observed}, drift: [{what, recorded, now}]}`: the recording's project loaded into the session and replayed (SPEC-012 §2); `recording` is the document itself, as `record.stop` returns it without a path
+- `record.to_scenario({path} | {recording}, assert?: ["probes", "serial"], name?) -> {scenario}`: the recording as a SPEC-007 scenario (SPEC-012 §3)
 
 ### analysis (the firmware's coverage and profile)
 - `analysis.start({board?, coverage?, profile?}) -> {coverage, profile}`:
@@ -159,7 +160,11 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `toolchain.build({board, profile?}) -> {ok, log, image}`
 
 ### scenario
-- `scenario.run({path} | {scenario}) -> {report}` (SPEC-007 §2; the session is reset first)
+- `scenario.run({path} | {scenario}, until?) -> {report}` (SPEC-007 §2; the session is reset first)
+- `scenario.get({path}) -> {path, scenario}` and `scenario.save({path, scenario, add?}) -> {path}`:
+  a scenario file of the project, `path` relative to its folder (no `..`, not
+  absolute), written with two-space indents; `add` lists it in the project's
+  `scenarios` (`project.save` keeps the list). The scenario editor's.
 
 ## 6. Notifications (server to client)
 

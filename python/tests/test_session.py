@@ -82,6 +82,31 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(sc["name"], "from-python")
         self.assertTrue(sc["assertions"])
 
+    def test_interactive_recording_replays(self):
+        # recorded from the start, from a running session, and after an input
+        # given before recording: each replays identically
+        for before in ("", "7ms", "7ms+press"):
+            with Session(PROJECT, cwd=ROOT) as s:
+                if before:
+                    s.advance(until="7ms")
+                if before.endswith("press"):
+                    s.press("SW1")
+                    s.advance(by="1ms")
+                s.record()
+                s.advance(by="2ms")
+                s.press("SW1")
+                s.advance(by="3ms")
+                s.release("SW1")
+                s.advance(by="3ms")
+                rec = s.stop_recording()["recording"]
+                r = s.replay(rec)
+                self.assertTrue(r["ok"], (before, r.get("divergence")))
+                self.assertEqual(r["compared"], len(rec["observations"]))
+                # and as a scenario, run from reset, it passes
+                report = s.run_scenario(s.to_scenario(rec))
+                self.assertTrue(report["assertions"])
+                self.assertFalse([a for a in report["assertions"] if not a["ok"]], before)
+
     def test_analysis_and_debugger(self):
         s = self.s
         with self.assertRaises(EmbsimError):

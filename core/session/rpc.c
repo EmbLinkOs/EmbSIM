@@ -743,7 +743,15 @@ static es_status m_record_start(rpc_ctx *r)
 {
     es_session *s = r->s;
     esk_record_start(s);
-    s->record_from = s->eng.sched.now; /* replay compares from here */
+    if (s->eng.sched.now == 0 && !s->input_seq) {
+        /* nothing has run: from reset, as a replay starts (the reset logs the
+         * probes' levels) */
+        (void)esk_session_do_reset(s);
+    } else {
+        s->record_from = s->eng.sched.now; /* replay compares from here */
+        s->record_from_seq = s->input_seq;
+        esk_record_levels(s, s->record_from); /* the digital probes' levels as it starts */
+    }
     esk_strfree(s->a, s->record_path);
     s->record_path = pstr(r, "path", NULL) ? esk_strdup(s->a, pstr(r, "path", NULL)) : NULL;
     r->result = obj(r);

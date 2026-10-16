@@ -551,4 +551,58 @@ export interface Report {
     analog_steps?: number;
     wall_time_s?: number;
   };
+  /** With the analyses on: each board's coverage and first functions. */
+  coverage?: Record<string, CoverageReport>;
+  profile?: Record<string, ProfileReport>;
+}
+
+/** An input of a scenario (SPEC-007 §2): at a time, a target's input set. */
+export interface ScenarioInput {
+  at: string;
+  target: string;
+  input: string;
+  value: unknown;
+}
+
+/** An assertion of a scenario: when (`at`, `between`, `by`, `always`), on
+ * what (`probe`, or `diagnostics.forbid`), and what is expected. */
+export interface ScenarioAssertion {
+  id: string;
+  at?: string;
+  between?: [string, string];
+  by?: string;
+  always?: boolean;
+  probe?: string;
+  expect?: Record<string, unknown>;
+  diagnostics?: { forbid: string[] };
+}
+
+export interface Scenario {
+  schema_version: number;
+  kind: 'scenario';
+  name: string;
+  description?: string;
+  until?: string;
+  policy?: Policy;
+  inputs: ScenarioInput[];
+  assertions: ScenarioAssertion[];
+}
+
+/** A recording (SPEC-012 §1), as record.stop returns it without a path. */
+export interface Recording {
+  schema_version: number;
+  kind: 'recording';
+  project: { path: string; hash: string };
+  inputs: unknown[];
+  observations: { at_ps: PsString; kind: string; [k: string]: unknown }[];
+  end: { at_ps: PsString; reason: string };
+  [k: string]: unknown;
+}
+
+/** record.replay's result (SPEC-012 §2). */
+export interface ReplayResult {
+  ok: boolean;
+  compared?: number;
+  divergence?: { index: number; expected: unknown; observed: unknown };
+  drift?: { what: string; recorded: string; now: string }[];
 }

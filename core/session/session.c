@@ -659,6 +659,8 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
         esk_json_set_string(s->a, rec, "target", target);
         esk_json_set_string(s->a, rec, "input", input);
         esk_json_object_set(s->a, rec, "value", esk_json_clone(s->a, value));
+        if (at == s->eng.sched.now)
+            esk_json_set_bool(s->a, rec, "immediate", 1);
         if (s->inputs_log)
             esk_json_array_push(s->a, s->inputs_log, rec);
         if (s->notify) {

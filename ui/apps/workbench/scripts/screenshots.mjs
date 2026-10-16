@@ -201,6 +201,66 @@ try {
     await run(page, 2700);
   });
   await shot(browser, 'debug-pico-core1', picoDual, (page) => debugAt(page, 'sio_irq_proc1', 1500));
+  // M5: verification. A scenario opened, edited in place and run; coverage of
+  // the Blue Pill's firmware with its source; a recording replayed
+  const verifyRegion = (page, name) => page.getByRole('region', { name });
+  await shot(browser, 'verify-scenario', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Scenario editor').getByRole('button', { name: 'Open' }).first().click();
+    await wait(600);
+    await verifyRegion(page, 'Scenario editor').getByRole('button', { name: 'Run', exact: true }).click();
+    await wait(2500);
+  });
+  await shot(browser, 'verify-coverage', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Measure' }).click();
+    await wait(400);
+    await perspective(page, 2);
+    await run(page, 1200);
+    await holdButton(page, 'SW1', 500);
+    await wait(500);
+    await page.getByTestId('run-toggle').click();
+    await perspective(page, 4);
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Refresh' }).click();
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByText('./main.c', { exact: true }).click();
+    await wait(1200);
+  });
+  await shot(browser, 'verify-coverage-dark', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Measure' }).click();
+    await perspective(page, 2);
+    await run(page, 1200);
+    await page.getByTestId('run-toggle').click();
+    await perspective(page, 4);
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByRole('button', { name: 'Refresh' }).click();
+    await wait(600);
+    await verifyRegion(page, 'Coverage').getByText('./main.c', { exact: true }).click();
+    await wait(1200);
+  }, { dark: true });
+  await shot(browser, 'verify-recording', bluepill, async (page) => {
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Recordings').getByRole('button', { name: 'Record', exact: true }).click();
+    await perspective(page, 2);
+    await run(page, 800);
+    await holdButton(page, 'SW1', 400);
+    await wait(400);
+    await page.getByTestId('run-toggle').click();
+    await perspective(page, 4);
+    await wait(500);
+    await verifyRegion(page, 'Recordings').getByRole('button', { name: 'Stop', exact: true }).click();
+    await wait(500);
+    await verifyRegion(page, 'Recordings').getByRole('button', { name: 'Replay', exact: true }).click();
+    await wait(3000);
+    await verifyRegion(page, 'Recordings').getByRole('button', { name: 'To scenario' }).click();
+    await wait(1200);
+  });
   await shot(browser, 'design-two-boards', twoBoards, async (page) => run(page, 2000));
   await shot(browser, 'run-two-boards', twoBoards, async (page) => {
     await perspective(page, 2);
