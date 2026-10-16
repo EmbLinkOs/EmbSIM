@@ -1,0 +1,104 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "nrfx-vendor",
+ "description": "An nRF52840 DK running an application built with Nordic's unmodified nrfx drivers and MDK (tests/vendor/nrfx/run.py puts the image beside this file as sketch.elf): USB power, a button on D2 (P1.03), a terminal on the virtual COM port's pins (P0.06 TX, P0.08 RX) at 115200 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/nrf52840dk",
+   "layout": {
+    "x": 320,
+    "y": 120
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 760,
+    "y": 100
+   }
+  },
+  {
+   "id": "SW1",
+   "component": "emblink/push_button",
+   "layout": {
+    "x": 60,
+    "y": 200
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 40,
+    "y": 380
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 760,
+    "y": 300
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "SW1.2",
+   "VT1.GND"
+  ],
+  "BTN": [
+   "B1.D2",
+   "SW1.1"
+  ],
+  "UART_TX": [
+   "B1.P0_06",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.P0_08",
+   "VT1.TX"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "led1",
+   "target": "net:B1.GPIO13",
+   "kind": "digital"
+  }
+ ]
+}

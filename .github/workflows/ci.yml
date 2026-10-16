@@ -83,6 +83,15 @@ jobs:
           git -C "$RUNNER_TEMP/pico-sdk" fetch -q --depth 1 https://github.com/raspberrypi/pico-sdk.git 079c6f39023649b154152db30f1d781e884879bc
           git -C "$RUNNER_TEMP/pico-sdk" checkout -q FETCH_HEAD
           python3 tests/vendor/pico-sdk/run.py --sdk "$RUNNER_TEMP/pico-sdk" --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: nrfx applications on Nordic's unmodified nrfx and MDK
+        if: matrix.name == 'linux-gcc'
+        # CMSIS_5's core headers are the STM32 step's checkout
+        run: |
+          git init -q "$RUNNER_TEMP/nrfx"
+          git -C "$RUNNER_TEMP/nrfx" fetch -q --depth 1 --filter=blob:none https://github.com/NordicSemiconductor/nrfx.git d1f2c35a4820961f4f7b7b2ece007f8e037842db
+          git -C "$RUNNER_TEMP/nrfx" sparse-checkout set --no-cone '/*.h' /drivers/ /hal/ /haly/ /helpers/ /lib/ /templates/ '/bsp/stable/*.h' /bsp/stable/soc/ /bsp/stable/templates/ '/bsp/stable/mdk/*.h' /bsp/stable/mdk/common/ /bsp/stable/mdk/nrf52/
+          git -C "$RUNNER_TEMP/nrfx" checkout -q FETCH_HEAD
+          python3 tests/vendor/nrfx/run.py --nrfx "$RUNNER_TEMP/nrfx" --cmsis "$RUNNER_TEMP/st/CMSIS_5" --embsim build/${{ matrix.preset }}/bin/embsim
       - name: SiFive's examples on the unmodified freedom-metal
         if: matrix.name == 'linux-gcc'
         run: |
@@ -111,6 +120,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ngspice
           python3 tools/analog/ngspice_fixture.py --check
+      - name: The DSP test's expected hashes are QEMU's Cortex-M4's
+        run: |
+          sudo apt-get install -y qemu-system-arm
+          python3 tests/protocol/test_dsp.py --qemu
 
   workbench:
     name: workbench

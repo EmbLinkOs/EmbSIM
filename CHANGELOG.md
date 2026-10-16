@@ -260,6 +260,28 @@ versions follow semantic versioning. There is no release yet.
   example-user-mode, minimal-boot) with the unmodified freedom-metal and the
   board's BSP, as the SDK's build does, and runs them under scenarios in CI's
   linux-gcc job.
+- Nordic's nrfx drivers on the nRF52840 DK: `tests/vendor/nrfx` builds an
+  application (nrfx_clock, nrfx_uarte both ways through its RX buffers,
+  nrfx_timer, nrfx_rtc, nrfx_gpiote) with the unmodified nrfx 4.6.0 and
+  its MDK's system file, startup and linker script, and runs it under a
+  scenario in CI's linux-gcc job.
+- The FE310's always-on domain: its watchdog (the key before each write,
+  the scale, the comparator, wdogzerocmp, the sticky interrupt, and a chip
+  reset the domain survives, pmucause saying so) and its RTC (the 48-bit
+  count, the scale, the compare and its interrupt) on the 32.768 kHz clock.
+- RISC-V physical memory protection: the part's entries (`pmp_entries` in
+  an MCU's core, 8 on the FE310), OFF, TOR, NA4 and NAPOT, locks that bind
+  machine mode and ignore writes, user mode allowed only what an entry
+  gives it, MPRV for loads and stores.
+- Six more of SiFive's examples on the HiFive1: example-rtc,
+  example-watchdog, example-pmp, timer-interrupt, software-interrupt and
+  return-pass; `tests/vendor/freedom-metal` prints an example's exit
+  status through a wrapper around freedom-metal's `metal_shutdown`, which
+  on this board spins.
+- A differential test of the Cortex-M4's DSP instructions against QEMU
+  (`tests/firmware/dsp`, `tests/protocol/test_dsp.py`): 101 instructions
+  over 4096 operand pairs each, their results and GE and Q flags hashed;
+  CI's tools job checks the expected hashes against QEMU's mps2-an386.
 - A register description's peripheral may name `reserved` ranges, offsets
   with no register that read 0 and ignore writes as the part documents them.
 
@@ -288,6 +310,18 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The FE310 had nothing at the Debug Module's addresses (0 to 0xFFF),
+  where freedom-metal's lfrosc driver reads, given the HiFive1 Rev B
+  BSP's offsets as addresses: a load access fault in every example that
+  asked the low-frequency clock's rate. The space reads as zeros.
+- The Cortex-M4 cores lacked most of ARMv7E-M's DSP instructions (the
+  parallel adds and subtracts with GE, SXTB16 and UXTB16 and their
+  accumulating forms, SSAT16 and USAT16, the dual multiplies SMLAD to
+  SMLSLD, USAD8 and USADA8): newlib's `strlen` for the M4 uses UADD8, and
+  any image that called it took a UsageFault.
+- The nRF52840's FICR had no words at 0x130 and 0x134 (the part code and
+  revision, which the SVD does not list), which nrfx's MDK reads to choose
+  its errata workarounds: a bus error.
 - The FE310's PLIC had no register for source 0's priority, nor for the
   priority, pending and enable words of the sources past its last, which
   the PLIC specification has: freedom-metal's PLIC set-up writes and reads

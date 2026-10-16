@@ -499,5 +499,7 @@ es_status esk_avr_create(struct esk_mach *m, const char *model, struct esk_cpu *
 /* an RV32 core of `model` ("rv32imac") whose reset starts at reset_pc
  * (mcu/riscv/riscv.h) */
 es_status esk_riscv_create(struct esk_mach *m, const char *model, u32 reset_pc, struct esk_cpu **out);
+/* the PMP entries a RISC-V core implements, 0 to 64 (16 unless set) */
+void esk_riscv_pmp_entries(struct esk_cpu *c, int n);
 
 #endif

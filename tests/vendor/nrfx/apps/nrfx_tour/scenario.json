@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "nrfx_tour",
+  "until": "2.1s",
+  "description": "nrfx_clock starting the HFXO and the LFXO (two events, one per domain); TIMER1's 100 ms compares from 100.4 ms (the HFXO's start before it) against RTC1's counter on the LFCLK, enabled just after it (16383 counts at the fifth), and RTC1's compare at one second; LED1 toggled by each compare; a button press through GPIOTE's falling edge; a character typed on the terminal through UARTE0's EasyDMA and the driver's RX buffers.",
+  "inputs": [
+    {
+      "at": "700ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "750ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1.25s",
+      "target": "VT1",
+      "input": "tx_text",
+      "value": "n"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "clocks",
+      "at": "20ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "EmbSIM nrfx tour, HFXO and LFXO running (2 clock events)"
+      }
+    },
+    {
+      "id": "half-second",
+      "at": "600ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "ticks=5 rtc=16383 seconds=0 presses=0"
+      }
+    },
+    {
+      "id": "button",
+      "at": "1.1s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "ticks=10 rtc=32767 seconds=0 presses=1"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "1.45s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "echo n"
+      }
+    },
+    {
+      "id": "rtc-compare",
+      "at": "1.6s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "ticks=15 rtc=49151 seconds=1 presses=1"
+      }
+    },
+    {
+      "id": "seconds",
+      "at": "2.1s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "ticks=20 rtc=65535 seconds=1 presses=1"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "50ms",
+        "2.05s"
+      ],
+      "probe": "led1",
+      "expect": {
+        "edges": 20
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault"
+        ]
+      }
+    }
+  ]
+}

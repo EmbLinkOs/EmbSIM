@@ -9,6 +9,7 @@
  *   disasm.c  the instruction at an address, for the Debug perspective
  *   clint.c   the CLINT: msip, mtimecmp and mtime from the RTC clock
  *   plic.c    the PLIC: priorities, pending, enables, threshold, claim
+ *   aon.c     the always-on domain: the watchdog, the RTC
  *   gpio.c    the FE310's GPIO: 32 pins with their interrupts and IOFs
  *   uart.c    the FE310's UART: FIFOs, watermarks, the baud divisor
  *   prci.c    the clocks: HFROSC, HFXOSC and the PLL
@@ -66,6 +67,8 @@ struct rv_state {
     u64 mstatus, mie, mtvec, mepc, mcause, mtval, mscratch;
     u64 medeleg, mideleg, mcounteren, mcountinhibit, menvcfg;
     u64 pmpcfg[16], pmpaddr[64];
+    int npmp;    /* the PMP entries the part implements (the rest read 0) */
+    int pmp_any; /* some entry is on: accesses are checked */
     u64 mcycle_off, minstret_off; /* what a write added to the counts */
     u64 cyc_now, insn_now;        /* the counts before this instruction */
 
@@ -133,12 +136,13 @@ int esk_riscv_disasm(u32 pc, u32 insn, char *text, size_t cap);
 /* ---- the FE310's peripherals ------------------------------------------- */
 
 extern const struct esk_dev_ops esk_fe310_clint_ops, esk_fe310_plic_ops, esk_fe310_gpio_ops,
-    esk_fe310_uart_ops, esk_fe310_prci_ops;
+    esk_fe310_uart_ops, esk_fe310_prci_ops, esk_fe310_aon_ops;
 void *esk_fe310_clint_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_plic_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_uart_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_fe310_prci_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_fe310_aon_create(struct esk_mach *m, struct esk_rf_periph *p);
 
 /* plic.c: a source's level changed (GPIO n is source 8 + n, UART0 3) */
 void esk_fe310_plic_source(struct esk_mach *m, int source, int level);

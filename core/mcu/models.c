@@ -36,6 +36,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "fe310-gpio", &esk_fe310_gpio_ops, esk_fe310_gpio_create },
     { "fe310-uart", &esk_fe310_uart_ops, esk_fe310_uart_create },
     { "fe310-prci", &esk_fe310_prci_ops, esk_fe310_prci_create },
+    { "fe310-aon", &esk_fe310_aon_ops, esk_fe310_aon_create },
     { "nrf-clock", &esk_nrf_clock_ops, esk_nrf_clock_create },
     { "nrf-gpio", &esk_nrf_gpio_ops, esk_nrf_gpio_create },
     { "nrf-gpiote", &esk_nrf_gpiote_ops, esk_nrf_gpiote_create },

@@ -18,6 +18,7 @@
   "core": {
     "backend": "riscv",
     "model": "rv32imac",
+    "pmp_entries": 8,
     "timing_tier": "estimated",
     "fpu": false,
     "mpu": false,
@@ -25,6 +26,13 @@
     "reset_pc": "0x20010000"
   },
   "memory": [
+    {
+      "name": "debug",
+      "base": "0x00000000",
+      "size": "4K",
+      "kind": "rom",
+      "doc": "The Debug Module's space (debug specification 0.11): its RAM and ROM are a debugger's, read as zeros here. Freedom-metal's lfrosc driver reads LFROSCCFG and LFCLKMUX at the offsets the HiFive1 Rev B's BSP gives it (0x70, 0x7C) as addresses, which are here"
+    },
     {
       "name": "mask_rom",
       "base": "0x00001000",
@@ -193,20 +201,20 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "RV32IMAC instruction execution with Zicsr, machine-mode traps and interrupts extracted from EmbCC (refereed there against QEMU); every register of the manual's peripherals with its reset value; behavioural models of the CLINT (msip, mtimecmp, mtime at the 32.768 kHz RTC), the PLIC (priorities, threshold, claim and complete), the GPIO (directions, pull-ups, out_xor, the four interrupt kinds, IOF hand-off), UART0 and UART1 (FIFOs, watermarks, frames at the divisor's baud rate on their pins) and the PRCI's clocks (HFROSC, HFXOSC, the PLL). The always-on domain, QSPI and SPI, PWM and I2C keep their register values and raise mcu.unsupported_access on first access.",
+      "claims": "RV32IMAC instruction execution with Zicsr, machine-mode traps and interrupts extracted from EmbCC (refereed there against QEMU); every register of the manual's peripherals with its reset value; behavioural models of the CLINT (msip, mtimecmp, mtime at the 32.768 kHz RTC), the PLIC (priorities, threshold, claim and complete), the GPIO (directions, pull-ups, out_xor, the four interrupt kinds, IOF hand-off), UART0 and UART1 (FIFOs, watermarks, frames at the divisor's baud rate on their pins), the PRCI's clocks (HFROSC, HFXOSC, the PLL), and the always-on domain's watchdog (its key, scale, comparator, zerocmp, sticky interrupt and chip reset, which the domain survives with pmucause's resetcause) and RTC (48-bit count, scale, compare, interrupt) on the 32.768 kHz clock; the core's 8 PMP entries (OFF, TOR, NA4, NAPOT, locks, user mode and MPRV). QSPI and SPI, PWM and I2C keep their register values and raise mcu.unsupported_access on first access.",
       "omissions": [
         "the mask ROM and the bootloader",
-        "the always-on domain's watchdog, RTC counter and PMU",
+        "the always-on domain's PMU (sleep, wake-up) and the low-frequency oscillator's trim: the low-frequency clock is 32.768 kHz",
         "QSPI, SPI1 and SPI2",
         "PWM",
         "I2C",
         "the instruction cache",
-        "the debug module",
-        "user-mode PMP checks"
+        "the debug module: its space reads as zeros"
       ],
       "validation": [
         "repo:tests/unit/test_riscv.c",
-        "repo:examples/hifive1-blink"
+        "repo:examples/hifive1-blink",
+        "repo:tests/vendor/freedom-metal"
       ]
     },
     "timed": {

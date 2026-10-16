@@ -542,6 +542,11 @@ static void dp_op(struct esk_cm_state *cs, u32 op, int s, int rn, int rd, u32 b,
     }
 }
 
+static s32 half(u32 v, int top)
+{
+    return top ? (s32)(int16_t)(v >> 16) : (s32)(int16_t)v;
+}
+
 static u32 sat_signed(s64 x, u32 bits, int *sat)
 {
     s64 hi = ((s64)1 << (bits - 1)) - 1, lo = -((s64)1 << (bits - 1));
@@ -581,8 +586,20 @@ static void plain_imm(struct esk_cm_state *cs, u32 h1, u32 h2)
     case 0x10: case 0x12: {             /* SSAT */
         int t = (h1 >> 5 & 1) ? SH_ASR : SH_LSL;
         u32 n = lsb;
-        if (t == SH_ASR && n == 0) {
-            esk_cm_undef(cs);                    /* SSAT16 */
+        if (t == SH_ASR && n == 0) {         /* SSAT16 */
+            u32 r = 0;
+            int i, any = 0;
+            if (!cs->model->dsp || w > 15) {
+                esk_cm_undef(cs);
+                return;
+            }
+            for (i = 0; i < 2; i++) {
+                r |= (sat_signed(half(cs->R[rn], i), (w & 15) + 1, &sat) & 0xffffu) << (16 * i);
+                any |= sat;
+            }
+            cs->R[rd] = r;
+            if (any)
+                cs->Q = 1;
             return;
         }
         s32 x = (s32)shift(cs->R[rn], t, n, cs->C);
@@ -593,8 +610,20 @@ static void plain_imm(struct esk_cm_state *cs, u32 h1, u32 h2)
     }
     case 0x18: case 0x1a: {             /* USAT */
         int t = (h1 >> 5 & 1) ? SH_ASR : SH_LSL;
-        if (t == SH_ASR && lsb == 0) {
-            esk_cm_undef(cs);
+        if (t == SH_ASR && lsb == 0) {       /* USAT16 */
+            u32 r = 0;
+            int i, any = 0;
+            if (!cs->model->dsp || w > 15) {
+                esk_cm_undef(cs);
+                return;
+            }
+            for (i = 0; i < 2; i++) {
+                r |= (sat_unsigned(half(cs->R[rn], i), w & 15, &sat) & 0xffffu) << (16 * i);
+                any |= sat;
+            }
+            cs->R[rd] = r;
+            if (any)
+                cs->Q = 1;
             return;
         }
         s32 x = (s32)shift(cs->R[rn], t, lsb, cs->C);
@@ -928,6 +957,68 @@ static void ldst_dual_excl(struct esk_cm_state *cs, u32 h1, u32 h2)
     esk_cm_undef(cs);
 }
 
+/* one lane of a parallel add or subtract: x op y as `bits`-bit lanes,
+ * signed or not; *ge is the lane's GE condition (the result's sign for a
+ * signed lane, the carry out or no borrow for an unsigned one) */
+static s32 lane(s32 r, int bits, int sgn, int *ge, int add)
+{
+    if (sgn)
+        *ge = r >= 0;
+    else
+        *ge = add ? r >= (1 << bits) : r >= 0;
+    return r;
+}
+
+static u32 lane_sat(s32 r, int bits, int sgn)
+{
+    s32 lo = sgn ? -(1 << (bits - 1)) : 0, hi = sgn ? (1 << (bits - 1)) - 1 : (1 << bits) - 1;
+    return (u32)(r < lo ? lo : r > hi ? hi : r);
+}
+
+/* ARMv7E-M's parallel add and subtract (A5.3.12-13): `op` ADD8 0, ADD16 1,
+ * ASX 2, SUB8 4, SUB16 5, SAX 6; `pfx` signed (S 0, Q 1, SH 2) or, with
+ * bit 2, unsigned (U, UQ, UH). The plain forms set GE per lane. */
+static void parallel(struct esk_cm_state *cs, u32 op, u32 pfx, u32 a, u32 b, int rd)
+{
+    int sgn = !(pfx & 4), kind = (int)(pfx & 3), bits = (op == 0 || op == 4) ? 8 : 16;
+    int lanes = 32 / bits, i, ge[4] = { 0, 0, 0, 0 };
+    u32 r = 0, mask = bits == 8 ? 0xffu : 0xffffu;
+    if (!cs->model->dsp || kind == 3 || op == 3 || op == 7) {
+        esk_cm_undef(cs);
+        return;
+    }
+    for (i = 0; i < lanes; i++) {
+        u32 xa = a >> (bits * i) & mask, xb;
+        s32 x, y, v;
+        int add, g = 0;
+        if (op == 2 || op == 6) /* ASX, SAX: the halves crossed */
+            xb = b >> (bits * (1 - i)) & mask;
+        else
+            xb = b >> (bits * i) & mask;
+        x = sgn ? (bits == 8 ? (s32)(int8_t)xa : (s32)(int16_t)xa) : (s32)xa;
+        y = sgn ? (bits == 8 ? (s32)(int8_t)xb : (s32)(int16_t)xb) : (s32)xb;
+        if (op == 0 || op == 1)
+            add = 1;
+        else if (op == 4 || op == 5)
+            add = 0;
+        else /* ASX: low lane subtracts, high adds; SAX the other way */
+            add = op == 2 ? i == 1 : i == 0;
+        v = lane(add ? x + y : x - y, bits, sgn, &g, add);
+        if (kind == 1)
+            v = (s32)lane_sat(v, bits, sgn);
+        else if (kind == 2) /* halving: the full result, shifted arithmetically */
+            v = (s32)((u32)v >> 1 | ((u32)v & 0x80000000u));
+        r |= ((u32)v & mask) << (bits * i);
+        if (bits == 8)
+            ge[i] = g;
+        else
+            ge[2 * i] = ge[2 * i + 1] = g;
+    }
+    if (kind == 0)
+        cs->GE = (u32)(ge[0] | ge[1] << 1 | ge[2] << 2 | ge[3] << 3);
+    esk_cm_set_reg(cs, rd, r);
+}
+
 static void dp_register(struct esk_cm_state *cs, u32 h1, u32 h2)
 {
     u32 op1 = h1 >> 4 & 15, op2 = h2 >> 4 & 15;
@@ -953,8 +1044,22 @@ static void dp_register(struct esk_cm_state *cs, u32 h1, u32 h2)
         case 1: r = x & 0xffff; break;
         case 4: r = (u32)(s32)(int8_t)x; break;
         case 5: r = x & 0xff; break;
+        case 2: case 3: {                /* SXTB16, UXTB16, SXTAB16, UXTAB16 */
+            u32 lo = op1 == 2 ? (u32)(s32)(int8_t)x : x & 0xff;
+            u32 hi = op1 == 2 ? (u32)(s32)(int8_t)(x >> 16) : x >> 16 & 0xff;
+            if (!cs->model->dsp) {
+                esk_cm_undef(cs);
+                return;
+            }
+            if (rn != 15) {
+                lo += cs->R[rn];
+                hi += cs->R[rn] >> 16;
+            }
+            esk_cm_set_reg(cs, rd, (lo & 0xffff) | hi << 16);
+            return;
+        }
         default:
-            esk_cm_undef(cs);                    /* SXTB16, UXTB16 */
+            esk_cm_undef(cs);
             return;
         }
         if (rn != 15)
@@ -1019,12 +1124,11 @@ static void dp_register(struct esk_cm_state *cs, u32 h1, u32 h2)
         esk_cm_set_reg(cs, rd, r);
         return;
     }
-    esk_cm_undef(cs);                            /* parallel add and subtract */
-}
-
-static s32 half(u32 v, int top)
-{
-    return top ? (s32)(int16_t)(v >> 16) : (s32)(int16_t)v;
+    if (op1 >= 8 && op2 < 8) {          /* parallel add and subtract */
+        parallel(cs, op1 & 7, op2, cs->R[rn], cs->R[rm], rd);
+        return;
+    }
+    esk_cm_undef(cs);
 }
 
 static void multiply(struct esk_cm_state *cs, u32 h1, u32 h2)
@@ -1075,13 +1179,42 @@ static void multiply(struct esk_cm_state *cs, u32 h1, u32 h2)
         }
         return;
     }
+    case 2: case 4: {                   /* SMLAD, SMUAD, SMLSD, SMUSD (X) */
+        u32 bb = (op2 & 1) ? (b >> 16 | b << 16) : b;
+        s64 p1 = (s64)half(a, 0) * half(bb, 0), p2 = (s64)half(a, 1) * half(bb, 1);
+        s64 r = op1 == 2 ? p1 + p2 : p1 - p2;
+        if (op2 & 2) {
+            esk_cm_undef(cs);
+            return;
+        }
+        if (ra != 15)
+            r += (s32)cs->R[ra];
+        if (r != (s32)r)
+            cs->Q = 1;
+        esk_cm_set_reg(cs, rd, (u32)r);
+        return;
+    }
+    case 7: {                           /* USAD8, USADA8 */
+        u32 s = 0;
+        int i;
+        if (op2 != 0) {
+            esk_cm_undef(cs);
+            return;
+        }
+        for (i = 0; i < 4; i++) {
+            s32 d = (s32)(a >> (8 * i) & 0xff) - (s32)(b >> (8 * i) & 0xff);
+            s += (u32)(d < 0 ? -d : d);
+        }
+        esk_cm_set_reg(cs, rd, ra == 15 ? s : s + cs->R[ra]);
+        return;
+    }
     case 5: case 6: {                   /* SMMUL, SMMLA, SMMLS */
-        s64 p = (s64)(s32)a * (s32)b;
-        s64 acc = ra == 15 ? 0 : (s64)((u64)cs->R[ra] << 32);
-        s64 r = op1 == 6 ? acc - p : acc + p;
+        u64 p = (u64)((s64)(s32)a * (s32)b);  /* wrapping, as the 64-bit sum is truncated */
+        u64 acc = ra == 15 ? 0 : (u64)cs->R[ra] << 32;
+        u64 r = op1 == 6 ? acc - p : acc + p;
         if (op2 & 1)
-            r += 0x80000000ll;
-        esk_cm_set_reg(cs, rd, (u32)((u64)r >> 32));
+            r += 0x80000000u;
+        esk_cm_set_reg(cs, rd, (u32)(r >> 32));
         return;
     }
     }
@@ -1131,6 +1264,13 @@ static void long_mul_div(struct esk_cm_state *cs, u32 h1, u32 h2)
         if (cs->model->dsp && op1 == 4 && (op2 & 0xc) == 8) {  /* SMLALxy */
             r = acc + (u64)(s64)(half(a, (int)(op2 >> 1 & 1)) *
                                  half(b, (int)(op2 & 1)));
+            break;
+        }
+        if (cs->model->dsp && (op1 == 4 || op1 == 5) && (op2 & 0xe) == 0xc) {
+            /* SMLALD, SMLSLD (X) */
+            u32 bb = (op2 & 1) ? (b >> 16 | b << 16) : b;
+            s64 p1 = (s64)half(a, 0) * half(bb, 0), p2 = (s64)half(a, 1) * half(bb, 1);
+            r = acc + (u64)(op1 == 4 ? p1 + p2 : p1 - p2);
             break;
         }
         esk_cm_undef(cs);

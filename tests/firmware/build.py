@@ -18,10 +18,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-FLAGS = ["--target=thumbv7m-none-eabi", "-mcpu=cortex-m3", "-mthumb", "-O2", "-g",
-         "-ffreestanding", "-fno-builtin", "-nostdlib", "-fuse-ld=lld", "-Wl,--build-id=none",
-         f"-ffile-prefix-map={ROOT}=.", "-I", str(HERE / "common")]
-# image: (directory, sources relative to tests/firmware, linker script)
+FLAGS = ["-mthumb", "-O2", "-g", "-ffreestanding", "-fno-builtin", "-nostdlib", "-fuse-ld=lld",
+         "-Wl,--build-id=none", f"-ffile-prefix-map={ROOT}=.", "-I", str(HERE / "common")]
+CM3 = ["--target=thumbv7m-none-eabi", "-mcpu=cortex-m3"]
+CM4 = ["--target=thumbv7em-none-eabi", "-mcpu=cortex-m4"]
+# image: (sources relative to tests/firmware, linker script[, the target and CPU; a
+# Cortex-M3 by default])
 IMAGES = {
     "hello/hello.elf": (["common/startup.c", "hello/main.c"], "common/stm32f103c8.ld"),
     "bluepill-golden/bluepill.elf": (["common/startup.c", "bluepill-golden/bluepill.c"],
@@ -29,15 +31,16 @@ IMAGES = {
     "stack-overflow/stack-overflow.elf": (["common/startup.c", "stack-overflow/main.c"],
                                           "stack-overflow/stack.ld"),
     "fault/fault.elf": (["common/startup.c", "fault/main.c"], "common/stm32f103c8.ld"),
+    "dsp/dsp.elf": (["common/startup.c", "dsp/main.c"], "dsp/dsp.ld", CM4),
 }
 
 
 def build(out_dir: Path) -> None:
-    for image, (sources, script) in IMAGES.items():
+    for image, (sources, script, *cpu) in IMAGES.items():
         out = out_dir / image
         out.parent.mkdir(parents=True, exist_ok=True)
-        cmd = ["clang", *FLAGS, "-T", str(HERE / script), *[str(HERE / s) for s in sources],
-               "-o", str(out)]
+        cmd = ["clang", *(cpu[0] if cpu else CM3), *FLAGS, "-T", str(HERE / script),
+               *[str(HERE / s) for s in sources], "-o", str(out)]
         subprocess.run(cmd, check=True, cwd=ROOT)
 
 
