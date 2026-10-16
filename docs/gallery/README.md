@@ -16,6 +16,19 @@ schematic symbols are rendered by the shared workbench.
 | ![Library explorer, light](component-library/library-light.png) | **Discover and inspect.** Manufacturer/package filters, multiword search, source reference status and a preview before placement, alongside the wired optocoupler circuit. |
 | ![Library explorer, dark](component-library/library-dark.png) | **Place a real package.** B3F-1000's numbered pads and model limits in dark mode. The explorer is also checked at 1024 × 700. |
 
+## M4 core families and boards, part 4 (2026-10-16)
+
+The same Explorer 16/32 with its PIC24 plug-in module: an XC16 image on the
+PIC24FJ1024GB610, the 8 MHz crystal through the 96 MHz PLL to a 16 MHz FCY,
+UART2 on the USB-UART bridge by the Peripheral Pin Select.
+
+| | |
+|---|---|
+| ![The Explorer 16/32 with the PIC24 running](m4-4/run-explorer16-pic24.png) | **The PIC24 running.** `examples/explorer16-pic24`: D3 blinking from Timer1's interrupt, the banner with FOSC, FCY and the FOSCSEL word read back by a table read on the terminal. |
+| ![The PIC24 PIM up close](m4-4/board-explorer16-pic24.png) | **The PIC24 PIM.** The Explorer's artwork with the PIC24FJ1024GB610 plug-in module (MA240023), live. |
+| ![Debugging the PIC24](m4-4/debug-explorer16-pic24.png) | **Debugging the PIC24.** Stopped at `_T1Interrupt`'s first instruction: XC16's line table on the source, the PIC24 disassembly at program addresses, W0 to W15, RAM at data address 0x0800, and the device pack's peripherals with their models. |
+| ![The PIC24 Explorer's schematic](m4-4/design-explorer16-pic24.png) | **Design, Explorer 16/32 with the PIC24.** 5 V on VIN and the terminal on RF5 and RF4. |
+
 ## M4 core families and boards, part 3 (2026-10-16)
 
 An Explorer 16/32 runs its PIC32MX795F512L's MIPS32 M4K: the 8 MHz crystal

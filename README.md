@@ -19,7 +19,8 @@ of different families talk to each other in one circuit (M4, part 1); a
 Raspberry Pi Pico boots its RP2040 through boot2 and an nRF52840 DK runs
 its Cortex-M4F with EasyDMA and the FPU (M4, part 2); an Explorer 16/32
 runs its PIC32MX795F512L's MIPS32 core, its clock from the configuration
-words through the PLL (M4, part 3).
+words through the PLL (M4, part 3), and with its PIC24 plug-in module an
+XC16 image on the PIC24FJ1024GB610 (M4, part 4).
 Nothing is released
 yet: [`docs/STATUS.md`](docs/STATUS.md) is the only inventory of what exists
 and with what evidence.

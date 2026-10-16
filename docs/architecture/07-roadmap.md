@@ -39,8 +39,8 @@ M4 is under way: the AVR (the Arduino Uno) and RISC-V (the HiFive1 Rev B)
 backends run their boards' firmware, built by clang and EmbCC, and a
 two-board project exchanges bytes deterministically; the Raspberry Pi Pico
 (the RP2040's core 0) and the nRF52840 DK run theirs, and so does the
-Explorer 16/32 with its PIC32MX795F512L (the MIPS32 M4K); the PIC24 and
-the Pico's second core are open. M5 and M6 are
+Explorer 16/32 with its PIC32MX795F512L (the MIPS32 M4K) and with its
+PIC24FJ1024GB610 (an XC16 image); the Pico's second core is open. M5 and M6 are
 planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
 
 ## 3. Specification work order

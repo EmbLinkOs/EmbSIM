@@ -121,8 +121,23 @@ versions follow semantic versioning. There is no release yet.
   (`clr_set_inv`, `vectors` and `pins` in the register schema).
 - The clang and EmbCC profiles build `mipsel-none-elf`; a scenario may press
   a board's own button (`B1.S3`).
+- M4 part 4: the PIC24 core (the PIC24F, with EmbCC's dsPIC33E mode) and the
+  PIC24FJ1024GB610 with its register file converted from Microchip's
+  PIC24F-GA-GB device pack: the interrupt controller, the oscillator from
+  the configuration words with OSCCON's unlock sequences and the PPS lock,
+  Timer1-5, ports A-G with the interrupt-on-change, and UART1-6 timed on the
+  pins the PPS gives them; the Explorer 16/32 with the PIC24FJ1024GB610 PIM
+  and `examples/explorer16-pic24`, built by XC16. The `mcu.trap`
+  diagnostic.
+- `edc2regs.py` converts a PIC24's EDC (`config_words` and `pps_outputs` in
+  the register schema; `core.prog_end` and `core.ram_base` in the MCU
+  schema); the XC16 profile's `pic24fj1024gb610` target.
 
 ### Changed
+- A toolchain profile's `link_flags` may name the build's variables: the XC
+  profiles' `-Wl,-Map=${map}` was passed through as written.
+- The DWARF line reader takes XC16 images (their debug sections hold a byte
+  in each 16-bit unit), so the Debug perspective shows a PIC24's source.
 - Two weak pulls that disagree on a net are a divider, no longer reported
   as `net.contention`.
 - A component's own parameters win over its part preset's.

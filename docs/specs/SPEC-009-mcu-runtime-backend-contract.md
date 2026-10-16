@@ -106,7 +106,19 @@ The description's `interrupts` table is kept for the models that find an
 interrupt by name (`esk_rf_irq_named`). Where requests share vectors (a
 PIC32MX's), `vectors` gives each request's vector (`esk_rf_vector`).
 `pins` names the port pin each of the part's pin functions is on (CN15:
-RD6), for the models that find one (`esk_rf_pin`).
+RD6), for the models that find one (`esk_rf_pin`); a PIC24's remappable
+pins are there too (RP17: RF5). `pps_outputs` gives a Peripheral Pin
+Select's output functions their numbers (U2TX: 5, `esk_rf_pps_out`), and
+`config_words` the configuration words' program addresses (FOSCSEL:
+0x0ABF18, `esk_rf_config`), for the models that read them at reset.
+
+A PIC24's two address spaces share the bus: program memory at 0, each
+24-bit word at twice its program address in four bytes (an XC16 image's
+layout, through the core's `phys` hook), and the data space at 0x2000000,
+its SFRs and RAM by their data addresses. The MCU description's
+`core.prog_end` and `core.ram_base` give the program memory's end and the
+RAM's start (W15 out of reset). The machine's cycles are instruction
+cycles: the core's clock is FCY.
 
 ## 6. Peripheral models
 

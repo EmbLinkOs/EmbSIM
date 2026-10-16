@@ -4,8 +4,9 @@ This page records M4 as it is built: more core families, each with an MCU
 and a board that run real firmware, and projects with several boards. It
 is the source for the M4 rows of [STATUS.md](../STATUS.md); update both
 together. Part 1 is the AVR, the RISC-V core and two boards on one line;
-part 2 (below) the Raspberry Pi Pico and the nRF52840 DK. PIC24, PIC32 and
-the Explorer 16/32 are the rest of M4 and are not here.
+part 2 (below) the Raspberry Pi Pico and the nRF52840 DK; part 3 the
+PIC32MX795F512L and the Explorer 16/32; part 4 the PIC24FJ1024GB610 on the
+same board.
 
 ## What exists
 
@@ -36,7 +37,7 @@ the Explorer 16/32 are the rest of M4 and are not here.
 ## Known gaps
 
 PIC24, PIC32, the nRF52840 DK, the Pico and the Explorer 16/32 (since
-added: parts 2 and 3 below; the PIC24 is still open); EmbCC's
+added: parts 2 to 4 below); EmbCC's
 QEMU-refereed golden fixtures for the AVR and RISC-V are not run here (QEMU
 is not installed), the cores' own tests above stand for them. The
 ATmega328P's SPI, TWI, watchdog and analog comparator, and the FE310's
@@ -94,4 +95,32 @@ PMP, RTCC, DMA, USB, Ethernet, CAN and the watchdog (plain registers); the
 prefetch cache and the bus matrix's partitions; the FPU, DSP ASE and
 microMIPS of the PIC32MZ's core; the Explorer's LCD, EEPROM, potentiometer
 and temperature sensor. XC32 and Harmony images are not run here (the
-example uses the registers directly). The PIC24 is still open.
+example uses the registers directly).
+
+## Part 4: the PIC24FJ1024GB610 on the Explorer 16/32
+
+| Area | Files | Contract |
+|---|---|---|
+| PIC24 core | `core/mcu/pic24/pic24.c`, `dsp.c`, `disasm.c` | SPEC-009 §2: EmbCC's PIC24F core (and its dsPIC33E mode with the DSP engine) with its state a parameter: the instruction set and addressing modes, REPEAT and the iterative divide, the Extended Data Space and program space visibility, table reads, traps (`mcu.trap`) and interrupts through the vector table, DISI; PWRSAV and a branch to itself sleep for the runtime; program memory at twice its address (the `phys` hook), the data space at 0x2000000; the disassembler |
+| Register file | `core/mcu/rf.c`, `rf.h` | SPEC-009 §5: the description's `config_words` and `pps_outputs` |
+| Importer | `tools/importers/edc2regs.py` | a PIC24's EDC (its data space; the core's registers left out; the UARTs one a peripheral; the PPS functions; the configuration words) from Microchip's Apache-2.0 device pack |
+| PIC24FJ1024GB610 | `core/mcu/pic24/intc.c`, `osc.c`, `tmr.c`, `gpio.c`, `uart.c`; `catalog/mcus/microchip/pic24fj1024gb610` | SPEC-009 §6: the interrupt controller (priorities, the natural order, INTTREG, the trap flags), the oscillator (FNOSC from FOSCSEL, OSCCON's unlock sequences and the switch, the PLL's 32 MHz and CPDIV: FCY is the core's clock) with the PPS lock, Timer1-5, ports A-G with ANS, the pulls and the interrupt-on-change, from EmbCC; UART1-6 written for EmbSIM, timed at their baud rate on the pins the PPS gives them; registers and the TQFP100 converted from Microchip.PIC24F-GA-GB_DFP 1.11.479 (`LICENSES/`) |
+| Board | `catalog/boards/explorer16-32-pic24` | SPEC-006 §3: the Explorer 16/32 with the PIC24FJ1024GB610 PIM (MA240023): the same LEDs, buttons and USB-UART bridge, the XC16 target |
+| Toolchains | `catalog/toolchains/xc16.json`, `core/project/toolchain.c` | the XC16 target `pic24fj1024gb610` with the part's linker script; a profile's `link_flags` may name the build's variables (`-Wl,-Map=${map}`) |
+| Debug | `core/mcu/dwarf.c`, `scripts/screenshots.mjs` | XC16's DWARF (its debug sections hold a byte in each 16-bit unit) read packed, so the source view follows the PIC24; the [M4 part 4 shots](../gallery/README.md) |
+
+| Check | Where | What it shows |
+|---|---|---|
+| PIC24 | `test_pic24` (1465 checks) | instructions as xc16-as assembles them and their cycles (GOTO, REPEAT and DIV.U's 18 passes: 30 cycles to the branch to itself, then asleep); program memory's layout; an address error trap through its vector with INTCON1.ADDRERR; Timer1's interrupt taken from PWRSAV ten times in 1000 cycles, INTTREG; FCY from erased and set configuration words (4 and 16 MHz), CPDIV, OSCCON locked and unlocked; Timer1's flag at 100 cycles and at 1:256; the interrupt-on-change from the board, IOCFx cleared only; UART2 on RF5 and RF4 through the PPS, its 140-cycle bit at 115200 baud, IOLOCK; the disassembler; the example's image and its line table |
+| The Explorer | `examples/explorer16-pic24` 8/8 | firmware built by XC16 v2.10: FOSC 32000 kHz and FCY 16000 kHz from OSCCON and CLKDIV, FOSCSEL read back by a table read, D3's 1 Hz from Timer1's interrupt, S3 through the interrupt-on-change counted on D4, a terminal's text echoed in upper case through UART2's receive interrupt, the core idle between them |
+| Builds | by hand | `embsim build` with XC16 v2.10 (free mode) here; CI has no XC16, so the committed image is what `firmware_build` does not rebuild |
+
+Known gaps: the PIC24FJ1024GB610's ADC, SPI, I2C, input capture, output
+compare, the MCCPs and SCCPs, the EPMP, the RTCC, DMA, USB, the
+comparators, the CRC, the CLCs, the CTMU, HLVD and the reference clock
+(plain registers); the watchdog and deep sleep; flash programming and the
+dual partitions; the PLL's 4x, 6x and 8x modes and the DCO; the external
+interrupt pins. A data-space segment with contents in an image is loaded as
+program memory (XC16 puts initial data in `.dinit`, so its images have
+none). No dsPIC33 part is in the catalog, and the core's dsPIC33E mode
+(the DSP engine, the DO loops) is not tested here.
