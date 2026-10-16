@@ -259,6 +259,38 @@ char *esk_catalog_bundled_dir(esk_alloc *a, const char *exe_hint)
     return NULL;
 }
 
+char *esk_catalog_user_dir(esk_alloc *a)
+{
+    const char *env = getenv("EMBSIM_LIBRARIES");
+    char *data;
+    char *dir;
+    if (env && *env)
+        return esk_strdup(a, env);
+    data = esk_host_user_data_dir(a);
+    if (!data)
+        return NULL;
+    dir = esk_host_path_join(a, data, "libraries");
+    esk_strfree(a, data);
+    return dir;
+}
+
+void esk_catalog_load_user_libraries(es_catalog *c, const char *dir, esk_diag *diag)
+{
+    esk_json *names = NULL;
+    size_t i;
+    if (!dir || !esk_host_is_dir(dir) || esk_host_list_dir(c->a, dir, &names) != ES_OK)
+        return;
+    for (i = 0; i < esk_json_len(names); i++) {
+        char *lib = esk_host_path_join(c->a, dir, esk_json_str(esk_json_at(names, i)));
+        char *json = lib ? esk_host_path_join(c->a, lib, "library.json") : NULL;
+        if (json && esk_host_file_exists(json))
+            esk_catalog_load_library(c, lib, diag);
+        esk_strfree(c->a, json);
+        esk_strfree(c->a, lib);
+    }
+    esk_json_free(c->a, names);
+}
+
 char *esk_catalog_read_item_file(const es_catalog *c, const esk_catalog_item *it, const char *rel, size_t *len)
 {
     char *path = esk_host_path_join(c->a, it->dir, rel);

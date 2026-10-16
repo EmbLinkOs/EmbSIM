@@ -14,6 +14,7 @@
 #include "host/host.h"
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
+#include "sdk.h"
 #include "util/num.h"
 #include "util/str.h"
 
@@ -35,6 +36,8 @@ static void usage(void)
           "  toolchains                  the toolchain profiles found on this host\n"
           "  catalog list|search QUERY|info ID|libraries [--library DIR]\n"
           "  catalog validate [LIBRARY_DIR] [--library DEPENDENCY] [--json]\n"
+          "  catalog new component|board NAME [--library DIR] [--lua]\n"
+          "  catalog install LIBRARY_DIR [--to LIBRARIES_DIR] [--force]\n"
           "  board list|info ID\n"
           "  models                      list the model primitives\n"
           "  version\n"
@@ -498,6 +501,16 @@ static int cmd_catalog(int argc, char **argv, const char *argv0)
     const char *sub = argc ? argv[0] : "list", *library = NULL, *arg = NULL;
     es_session *s;
     int i;
+    if (!strcmp(sub, "new"))
+        return embsim_catalog_sdk(sub, argc - 1, argv + 1, NULL);
+    if (!strcmp(sub, "install")) {
+        int rc;
+        s = open_session(NULL, argv0, NULL);
+        if (!s) return 2;
+        rc = embsim_catalog_sdk(sub, argc - 1, argv + 1, s->catalog);
+        es_session_destroy(s);
+        return rc;
+    }
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--json")) opt_json = 1;
         else if (!strcmp(argv[i], "--library") && i + 1 < argc) library = argv[++i];

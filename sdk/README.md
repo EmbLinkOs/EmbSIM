@@ -7,6 +7,30 @@ SPEC-004 §7 (electrical primitives) and SPEC-014 (library layout); this guide
 is the practical reading of them. A skeleton lives in
 [`templates/component/`](templates/component/).
 
+## 0. The short way
+
+```sh
+embsim catalog new component my_part --library acme-parts         # a two-terminal part
+embsim catalog new component my_chip --library acme-parts --lua   # a part with a Lua model
+embsim catalog new board my_board --library acme-parts            # an STM32F103 board
+embsim catalog validate acme-parts        # instantiate each part, run every fixture
+python3 tools/validate.py acme-parts      # schemas, references, symbols, artwork
+embsim catalog install acme-parts         # copy it into your user libraries
+```
+
+`new` writes `library.json` when the directory has none (the library takes
+the directory's name) and a part that validates as written, fixture
+included, so you start from something that works and change it. `install`
+validates first and refuses a library with a broken or invalid item
+(`--force` overrides); installed libraries are loaded by every session
+(`~/.local/share/embsim/libraries`, `~/Library/Application Support/EmbSIM/libraries`,
+`%APPDATA%\EmbSIM\libraries`, or `$EMBSIM_LIBRARIES`).
+
+A Lua model (`"model": {"script": "model.lua", "api": 1}`) is the way to
+write behaviour no primitive covers: counters, shift registers, sensors,
+memories, display drivers. SPEC-013 §2.1 is its reference; `ctx.bus`
+decodes I²C and SPI for you, so a device model handles whole bytes.
+
 ## 1. Where files go
 
 ```
@@ -261,9 +285,24 @@ right; a component whose fixtures fail is listed as *broken*, not hidden.
 - Board fixtures may add `"boards": [{"id": "B1", "board": "emblink/bluepill"}]`
   to the circuit and reference `B1.<port>` in nets.
 
-## 6. What `embsim validate` reports
+## 6. What the validators report
 
-`python3 tools/validate.py PATH...` (and `embsim validate`) print one line per
+`embsim catalog validate DIR` is the engine's check: every component and
+board is instantiated alone under each policy its fidelity declares, then its
+fixtures run. Each item is `ok`, `broken` (a fixture failed: the failing
+expectation and what was observed are printed) or `invalid` (it does not
+load: the diagnostics are printed with the policy that failed). `--json`
+prints the report; the exit status is 1 unless everything is ok.
+
+```
+ok       acme-parts/my_part                   1 fixture(s)
+BROKEN   acme-parts/my_chip                   1 fixture(s)
+         tests/halves.json: output:DUT.count: 10, expected 11
+2 ok, 1 broken, 0 invalid; 3 fixture(s) run
+```
+
+`python3 tools/validate.py PATH...` (and `embsim validate`) check the files
+themselves and print one line per
 finding, `file:node: severity code: message`, then a summary; exit status 1
 on any error.
 
@@ -286,7 +325,7 @@ artwork (`artwork.selector`, `svg.malformed`), provenance
 
 ## 7. Checklist before you publish
 
-1. `python3 tools/validate.py <library>/components/<name>` passes.
+1. `embsim catalog validate <library>` and `python3 tools/validate.py <library>` pass.
 2. The symbol renders in both themes (only CSS-variable colours).
 3. Every input and output named in `artwork` exists, every selector resolves.
 4. Fidelity names the primitive and the omissions; provenance cites the

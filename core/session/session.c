@@ -160,6 +160,12 @@ es_status es_session_create(const es_session_config_t *cfg, es_session **out)
                 s->catalog_dir = esk_catalog_bundled_dir(s->a, NULL);
                 if (s->catalog_dir)
                     esk_catalog_load_library(s->catalog, s->catalog_dir, &s->diag);
+                /* then the user's installed libraries (SPEC-014 §1) */
+                {
+                    char *user = esk_catalog_user_dir(s->a);
+                    esk_catalog_load_user_libraries(s->catalog, user, &s->diag);
+                    esk_strfree(s->a, user);
+                }
             }
         }
     }

@@ -1,6 +1,6 @@
 # SPEC-014 - Catalog Packaging and Libraries
 
-**Status:** Accepted in outline 2026-10-15; completed before M3. **Builds
+**Status:** Accepted 2026-10-15; §6 records the M3 implementation. **Builds
 on:** 02 §6, §7; ADR-006, ADR-017. **Schema:** `schemas/library.schema.json`.
 **Requirements:** `docs/requirements/CAT.md`.
 
@@ -51,3 +51,28 @@ libraries.
 `embsim catalog new component|board|mcu NAME` writes a template with the
 required fields and a fixture skeleton; `tools/import/` holds the importers
 (RTOS board YAML, DeviceTree, KiCad netlist, SVD/ATDF/EDC to MCU drafts).
+
+## 6. As implemented (M3)
+
+- **Resolution.** A session loads the bundled catalog, then every library
+  directory (one holding `library.json`) under the user library directory
+  (`$EMBSIM_LIBRARIES` overrides it), then the project's `libraries`. An id
+  is defined by the first library that provides it; ids are namespaced by
+  library (`acme/part`), so a library cannot replace a bundled part. Version
+  constraints and `depends` are not checked yet.
+- **Validation.** `embsim catalog validate [DIR] [--library DEP] [--json]`
+  (`es_catalog_validate`) loads DIR ahead of the session's libraries,
+  instantiates each component and board alone under each policy whose
+  fidelity tier is declared (a board once), and runs every
+  `tests/*.json` fixture as a project and a scenario: one probe and one
+  assertion per expectation. Items are `ok`, `broken` or `invalid`; schema and
+  reference checks remain `tools/validate.py`'s, which indexes the library
+  holding the paths it is given.
+- **Distribution.** `embsim catalog install DIR [--to LIBRARIES_DIR]
+  [--force]` validates and copies a directory (files beginning with `.` are
+  left out). Zip archives and URLs are not supported yet.
+- **Authoring.** `embsim catalog new component|board NAME [--library DIR]
+  [--lua]` writes `library.json` when missing and a part whose fixture
+  passes: a two-terminal resistance, a Lua toggle flip-flop, or an
+  STM32F103C8 board with a regulator, crystals, a header and a user LED.
+
