@@ -148,14 +148,15 @@
 }
 
 .es-component--selected .es-component__hit,
-.es-component:focus-visible .es-component__hit {
+.es-component__hit:focus-visible {
   fill: var(--accent-muted);
   stroke: var(--symbol-selected);
   stroke-dasharray: 3 2;
 }
 
-.es-component:focus-visible {
+.es-component__hit:focus-visible {
   box-shadow: none;
+  outline: none;
 }
 
 .es-component__ref {

@@ -174,6 +174,7 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
     });
   };
 
+  const totalWeight = ordered.reduce((acc, it) => acc + (state.weights[it.id] ?? 1), 0) || 1;
   return (
     <div ref={containerRef} className={cx('es-dock', `es-dock--${direction}`, className)}>
       {ordered.map((item, index) => {
@@ -246,6 +247,9 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
                 role="separator"
                 aria-orientation={direction === 'row' ? 'vertical' : 'horizontal'}
                 aria-label={`Resize ${item.title}`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round((weight / totalWeight) * 100)}
                 tabIndex={0}
                 data-dragging={dragging === index ? 'true' : undefined}
                 onPointerDown={onGutterPointerDown(index)}

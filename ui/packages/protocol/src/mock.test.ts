@@ -60,12 +60,12 @@ describe('mock transport', () => {
     const btn = frames.filter((f) => f.stream === stream && f.probe === 'btn');
     const coll = frames.filter((f) => f.stream === stream && f.probe === 'coll');
     expect(btn.length).toBeGreaterThan(0);
-    const bytes = base64ToBytes(btn[0]!.data);
+    const bytes = base64ToBytes(btn[0]!.data!);
     expect(bytes.length).toBe(20); // 100 µs at 200 kHz
     expect(Array.from(bytes).every((b) => b === 1)).toBe(true);
-    const second = base64ToBytes(btn[1]!.data);
+    const second = base64ToBytes(btn[1]!.data!);
     expect(Array.from(second.slice(1)).every((b) => b === 0)).toBe(true); // the sample at the edge instant still reads the old level
-    const f32 = new Float32Array(base64ToBytes(coll[1]!.data).buffer);
+    const f32 = new Float32Array(base64ToBytes(coll[1]!.data!).buffer);
     expect(f32[0]).toBeLessThan(1);
     expect(f32[f32.length - 1]).toBeGreaterThan(3);
   });

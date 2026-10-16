@@ -86,16 +86,17 @@ export interface Methods {
   // probe and waveform
   'probe.add': {
     params: { target: string; kind: ProbeKind; rate_hz?: number; decode?: { protocol: string; params?: Record<string, unknown> } };
-    result: { probe: string; stream?: string };
+    result: { probe: string | number; id?: string; stream?: string };
   };
   'probe.remove': { params: { probe: string }; result: Record<string, never> };
   'probe.list': { params: Record<string, never>; result: { probes: ProbeInfo[] } };
   'probe.read': {
     params: { probe: string; from_ps?: PsString; to_ps?: PsString; max?: number };
-    result: { samples: [PsString, number][]; gap?: boolean };
+    result: { samples: [PsString, number][]; gap?: boolean; dropped?: number; kind?: ProbeKind };
   };
-  'waveform.subscribe': { params: { probes: string[]; max_rate_hz?: number }; result: { stream: string } };
-  'waveform.unsubscribe': { params: { stream: string }; result: Record<string, never> };
+  /** SPEC-008 gives `{stream}`; the 0.1 server answers `{streams: [...], encoding}`. */
+  'waveform.subscribe': { params: { probes: string[]; max_rate_hz?: number }; result: { stream?: string | number; streams?: (string | number)[]; encoding?: string } };
+  'waveform.unsubscribe': { params: { stream: string | number }; result: Record<string, never> };
 
   // observe
   'observe.snapshot': {
@@ -143,7 +144,7 @@ export interface Methods {
 
   // record
   'record.start': { params: { path?: string }; result: Record<string, never> };
-  'record.stop': { params: Record<string, never>; result: { path: string; inputs: number; hash: string } };
+  'record.stop': { params: Record<string, never>; result: { path?: string; inputs?: number | unknown[]; hash?: string } };
   'record.replay': { params: { path: string }; result: { ok: boolean; divergence?: { at_ps: PsString; expected: unknown; observed: unknown } } };
 
   // toolchain
@@ -151,7 +152,8 @@ export interface Methods {
   'toolchain.build': { params: { board: string; profile?: string }; result: { ok: boolean; log: string; image?: string } };
 
   // scenario
-  'scenario.run': { params: { path: string } | { scenario: Record<string, unknown> }; result: { report: Report } };
+  /** SPEC-008 wraps the report in `{report}`; the 0.1 server returns the report itself. */
+  'scenario.run': { params: { path: string } | { scenario: Record<string, unknown> }; result: { report: Report } | Report };
 }
 
 export type MethodName = keyof Methods;

@@ -126,7 +126,7 @@ export class MockTransport extends TransportBase implements Transport {
       'probe.read': (p) => s.readProbe(p.probe, p.from_ps, p.to_ps, p.max),
       'waveform.subscribe': (p) => ({ stream: s.subscribe(p.probes, p.max_rate_hz) }),
       'waveform.unsubscribe': (p) => {
-        s.unsubscribe(p.stream);
+        s.unsubscribe(String(p.stream));
         return {};
       },
 

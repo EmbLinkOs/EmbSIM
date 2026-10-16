@@ -9,3 +9,4 @@ export * from './client';
 export { WebSocketTransport, resolveServerUrl, type WebSocketTransportOptions } from './transports/websocket';
 export { MockTransport, demoProject, MOCK_CATALOG, type MockDevHooks } from './transports/mock';
 export { EngineError } from './transports/mock/session';
+export * from './units';

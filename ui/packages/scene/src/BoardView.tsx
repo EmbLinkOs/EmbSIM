@@ -52,6 +52,12 @@ interface StateOverlay {
   rect: { left: number; top: number; width: number; height: number };
 }
 
+/** CSS.escape with a fallback for environments without it (jsdom). */
+function cssEscape(s: string): string {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(s);
+  return s.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
+}
+
 function applyState(root: Element, state: ArtworkState, value: OutputValue | undefined): void {
   const el = root.querySelector(state.selector);
   if (!el) return;
@@ -103,7 +109,7 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
     const svg = svgRef.current;
     if (!svg) return;
     for (const item of items) {
-      const root = svg.querySelector(`[data-board-item="${CSS.escape(item.id)}"]`);
+      const root = svg.querySelector(`[data-board-item="${cssEscape(item.id)}"]`);
       if (!root) continue;
       for (const s of item.states ?? []) applyState(root, s, item.outputs?.[s.output]);
     }
@@ -118,7 +124,7 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
     const next: Overlay[] = [];
     const nextStates: StateOverlay[] = [];
     for (const item of items) {
-      const root = svg.querySelector(`[data-board-item="${CSS.escape(item.id)}"]`);
+      const root = svg.querySelector(`[data-board-item="${cssEscape(item.id)}"]`);
       if (!root) continue;
       for (const h of item.hotspots ?? []) {
         const el = root.querySelector(h.selector);

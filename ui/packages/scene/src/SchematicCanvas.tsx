@@ -815,7 +815,6 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {visible.map((c) => {
               const selected = selectedSet.has(c.id);
               const offset = selected && dragOffset ? dragOffset : null;
-              const layout = offset ? { ...c.layout, x: c.layout.x + offset.x, y: c.layout.y + offset.y } : c.layout;
               const sym = c.symbol;
               const desc = `${c.id}, ${sym?.name ?? c.componentId}${c.value ? `, ${c.value}` : ''}${selected ? ', selected' : ''}`;
               return (
@@ -823,13 +822,22 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
                   key={c.id}
                   data-component={c.id}
                   className={`es-component${selected ? ' es-component--selected' : ''}`}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={desc}
-                  aria-pressed={selected}
+                  role="group"
+                  aria-label={c.id}
                   transform={offset ? `translate(${offset.x} ${offset.y})` : undefined}
                 >
-                  <rect className="es-component__hit" x={c.bounds.x} y={c.bounds.y} width={c.bounds.width} height={c.bounds.height} rx={2} />
+                  <rect
+                    className="es-component__hit"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={desc}
+                    aria-pressed={selected}
+                    x={c.bounds.x}
+                    y={c.bounds.y}
+                    width={c.bounds.width}
+                    height={c.bounds.height}
+                    rx={2}
+                  />
                   {sym ? (
                     <ComponentSymbol svg={sym.svg} symbol={sym.symbol} layout={c.layout} selected={selected} fallbackLabel={c.id} />
                   ) : (

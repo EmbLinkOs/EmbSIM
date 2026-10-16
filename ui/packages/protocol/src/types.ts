@@ -118,8 +118,9 @@ export interface ParamDescription {
   type: 'number' | 'integer' | 'boolean' | 'string' | 'enum' | 'table';
   unit?: string;
   default?: number | string | boolean | [number, number][];
-  min?: number;
-  max?: number;
+  /** Numbers may carry SI suffixes ("1k") as in SPEC-005 §4. */
+  min?: number | string;
+  max?: number | string;
   enum?: string[];
   doc?: string;
   advanced?: boolean;
@@ -160,6 +161,8 @@ export interface Hotspot {
   max?: number;
   step?: number;
   label?: string;
+  /** Keyboard equivalent named by the catalog (informational; the client maps gestures itself). */
+  key?: string;
 }
 
 export interface ArtworkState {
@@ -176,6 +179,8 @@ export interface ArtworkDescription {
   svg: string;
   width?: number;
   height?: number;
+  width_mm?: number;
+  height_mm?: number;
   hotspots?: Hotspot[];
   states?: ArtworkState[];
 }
@@ -222,6 +227,9 @@ export interface CatalogItem {
   category: string;
   fidelity_tiers: FidelityTier[];
   broken?: boolean;
+  kind?: string;
+  description?: string;
+  library?: string;
 }
 
 // --- session ---------------------------------------------------------------
@@ -262,12 +270,15 @@ export interface SessionInfo {
 // --- topology / observation ----------------------------------------------
 
 export interface NetState {
+  kind?: 'digital' | 'analog' | 'mixed';
   /** Logic level of a digital or mixed net. */
   logic?: LogicLevel;
   /** Voltage of an analog node, volts. */
   voltage?: number;
   /** Driver conflict present. */
   contention?: boolean;
+  strength?: string;
+  changed_at_ps?: PsString;
 }
 
 export interface TopologyNet {
@@ -293,18 +304,39 @@ export type OutputValue = boolean | number | string;
 export interface Snapshot {
   now_ps: PsString;
   nets?: Record<string, NetState>;
-  components?: Record<string, { params?: Record<string, unknown>; inputs?: Record<string, unknown> }>;
+  components?: Record<string, ComponentObservation>;
+  running?: boolean;
+  policy?: Policy;
+  speed?: number;
   boards?: Record<string, { running?: boolean; pc?: string; halted?: boolean }>;
   /** Outputs keyed by "INSTANCE.output". */
   outputs?: Record<string, OutputValue>;
   probes?: ProbeInfo[];
 }
 
+export interface ComponentObservation {
+  kind?: string;
+  model?: string;
+  params?: Record<string, unknown>;
+  inputs?: Record<string, unknown>;
+  outputs?: Record<string, OutputValue>;
+  pins?: Record<string, { net?: string; kind?: string; logic?: LogicLevel }>;
+}
+
+/**
+ * observe.update: SPEC-008 §6 lists `now_ps, nets?, outputs?, boards?`; the
+ * 0.1 server sends snapshot-shaped updates with `components` (outputs
+ * nested per instance) and the run state. Both are accepted.
+ */
 export interface ObserveUpdate {
   now_ps: PsString;
   nets?: Record<string, NetState>;
   outputs?: Record<string, OutputValue>;
   boards?: Record<string, { running?: boolean; pc?: string; halted?: boolean }>;
+  components?: Record<string, ComponentObservation>;
+  running?: boolean;
+  speed?: number;
+  policy?: Policy;
 }
 
 export interface ControlState {
@@ -328,7 +360,9 @@ export interface InputEntry {
 }
 
 export interface ProbeInfo {
-  probe: string;
+  /** The probe id; the 0.1 server reports a numeric handle here and the id under `id`. */
+  probe: string | number;
+  id?: string;
   target: string;
   kind: ProbeKind;
   rate_hz?: number;
@@ -337,12 +371,15 @@ export interface ProbeInfo {
 }
 
 export interface WaveformSamples {
-  stream: string;
+  stream: string | number;
   seq: number;
-  first_time_ps: PsString;
-  encoding: SampleEncoding;
-  /** base64 payload. */
-  data: string;
+  encoding: SampleEncoding | 'json';
+  /** Uniformly sampled frames: start time and base64 payload. */
+  first_time_ps?: PsString;
+  data?: string;
+  /** `json` encoding: explicit [time_ps, value] pairs (event-driven probes). */
+  samples?: [PsString, number][];
+  kind?: ProbeKind;
   /** For resampled analog streams: the sample period. */
   period_ps?: PsString;
   /** Probe id this stream belongs to (mirrors probe.add's stream mapping). */
@@ -380,17 +417,17 @@ export interface Peripheral {
 export interface Report {
   engine: string;
   protocol: string;
-  project: { name: string; hash: string };
-  images: { board: string; path: string; hash: string }[];
+  project: { name: string; hash?: string; path?: string };
+  images?: { board: string; path: string; hash: string }[];
   policy: Policy;
-  until_ps: PsString;
+  until_ps?: PsString;
   ended: { reason: string; now_ps: PsString };
   assertions: { id: string; ok: boolean; observed: unknown; expected: unknown; at_ps: PsString }[];
-  diagnostics: DiagnosticRecord[];
-  statistics: {
-    events: number;
-    instructions: Record<string, number>;
-    analog_steps: number;
-    wall_time_s: number;
+  diagnostics?: DiagnosticRecord[];
+  statistics?: {
+    events?: number;
+    instructions?: Record<string, number>;
+    analog_steps?: number;
+    wall_time_s?: number;
   };
 }

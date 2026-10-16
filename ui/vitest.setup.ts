@@ -28,9 +28,8 @@ if (typeof window !== 'undefined') {
     }
     window.ResizeObserver = RO as unknown as typeof ResizeObserver;
   }
-  if (!HTMLCanvasElement.prototype.getContext || true) {
-    HTMLCanvasElement.prototype.getContext = (() => null) as unknown as typeof HTMLCanvasElement.prototype.getContext;
-  }
+  // jsdom has no canvas: instruments draw nothing but must mount.
+  HTMLCanvasElement.prototype.getContext = (() => null) as unknown as typeof HTMLCanvasElement.prototype.getContext;
   if (!window.requestAnimationFrame) {
     window.requestAnimationFrame = (cb: FrameRequestCallback) => window.setTimeout(() => cb(performance.now()), 16);
     window.cancelAnimationFrame = (id: number) => window.clearTimeout(id);

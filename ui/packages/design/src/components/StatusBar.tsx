@@ -15,7 +15,7 @@ export interface StatusItem {
 
 export function StatusBar({ items, className }: { items: StatusItem[]; className?: string }) {
   return (
-    <footer className={cx('es-statusbar', className)} role="status" aria-live="off" aria-label="Status">
+    <footer className={cx('es-statusbar', className)} aria-label="Status">
       {items.map((item) =>
         item.spacer ? (
           <span key={item.id} className="es-statusbar__spacer" />
