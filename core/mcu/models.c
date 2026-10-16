@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "mcu/avr/avr.h"
+#include "mcu/nrf52/nrf52.h"
 #include "mcu/rf.h"
 #include "mcu/riscv/riscv.h"
 #include "mcu/rp2040/rp2040.h"
@@ -33,6 +34,12 @@ static const struct esk_rf_model_type model_types[] = {
     { "fe310-gpio", &esk_fe310_gpio_ops, esk_fe310_gpio_create },
     { "fe310-uart", &esk_fe310_uart_ops, esk_fe310_uart_create },
     { "fe310-prci", &esk_fe310_prci_ops, esk_fe310_prci_create },
+    { "nrf-clock", &esk_nrf_clock_ops, esk_nrf_clock_create },
+    { "nrf-gpio", &esk_nrf_gpio_ops, esk_nrf_gpio_create },
+    { "nrf-gpiote", &esk_nrf_gpiote_ops, esk_nrf_gpiote_create },
+    { "nrf-uart", &esk_nrf_uart_ops, esk_nrf_uart_create },
+    { "nrf-timer", &esk_nrf_timer_ops, esk_nrf_timer_create },
+    { "nrf-rtc", &esk_nrf_rtc_ops, esk_nrf_rtc_create },
     { "rp2040-resets", &esk_rp2040_resets_ops, esk_rp2040_resets_create },
     { "rp2040-clocks", &esk_rp2040_clocks_ops, esk_rp2040_clocks_create },
     { "rp2040-xosc", &esk_rp2040_xosc_ops, esk_rp2040_xosc_create },

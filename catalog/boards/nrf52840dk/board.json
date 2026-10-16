@@ -1,0 +1,999 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "emblink/nrf52840dk",
+  "version": "1.0.0",
+  "name": "nRF52840 DK (PCA10056)",
+  "description": "Nordic's nRF52840 DK: the nRF52840 with its 32 MHz and 32.768 kHz crystals, four LEDs (P0.13-P0.16, active low), four buttons (P0.11, P0.12, P0.24, P0.25, to ground), the reset button on P0.18, Arduino Uno-style headers and the interface MCU's virtual COM port on P0.06 (TXD) and P0.08 (RXD). USB comes in as the 5V pin; the session's console is UARTE0.",
+  "keywords": [
+    "nrf52840",
+    "nrf52840dk",
+    "pca10056",
+    "nordic",
+    "bluetooth",
+    "cortex-m4f"
+  ],
+  "revision": "PCA10056 3.0.0",
+  "mcu": {
+    "ref": "nordic/nrf52840",
+    "package": "aqfn73",
+    "instance": "U1"
+  },
+  "oscillators": {
+    "hse": {
+      "hz": 32000000,
+      "source": "external_crystal",
+      "component": "Y1"
+    }
+  },
+  "components": [
+    {
+      "id": "U2",
+      "component": "emblink/regulator",
+      "params": {
+        "part": "generic",
+        "vout": 3.0,
+        "dropout": 0.2,
+        "imax": 0.5,
+        "quiescent": 0
+      },
+      "doc": "VDD at 3.0 V from USB's 5 V"
+    },
+    {
+      "id": "Y1",
+      "component": "emblink/crystal",
+      "params": {
+        "hz": "32meg"
+      },
+      "doc": "The 32 MHz crystal on XC1 and XC2"
+    },
+    {
+      "id": "Y2",
+      "component": "emblink/crystal",
+      "params": {
+        "hz": "32.768k"
+      },
+      "doc": "The 32.768 kHz crystal on P0.00 and P0.01 (XL1, XL2)"
+    },
+    {
+      "id": "LED1",
+      "component": "emblink/led",
+      "params": {
+        "color": "green"
+      },
+      "doc": "LED1 on P0.13, active low"
+    },
+    {
+      "id": "LED2",
+      "component": "emblink/led",
+      "params": {
+        "color": "green"
+      },
+      "doc": "LED2 on P0.14, active low"
+    },
+    {
+      "id": "LED3",
+      "component": "emblink/led",
+      "params": {
+        "color": "green"
+      },
+      "doc": "LED3 on P0.15, active low"
+    },
+    {
+      "id": "LED4",
+      "component": "emblink/led",
+      "params": {
+        "color": "green"
+      },
+      "doc": "LED4 on P0.16, active low"
+    },
+    {
+      "id": "R_LED1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "330"
+      }
+    },
+    {
+      "id": "R_LED2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "330"
+      }
+    },
+    {
+      "id": "R_LED3",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "330"
+      }
+    },
+    {
+      "id": "R_LED4",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "330"
+      }
+    },
+    {
+      "id": "BUTTON1",
+      "component": "emblink/push_button",
+      "doc": "BUTTON1 on P0.11 to ground (the pin's pull-up holds it high)"
+    },
+    {
+      "id": "BUTTON2",
+      "component": "emblink/push_button",
+      "doc": "BUTTON2 on P0.12 to ground (the pin's pull-up holds it high)"
+    },
+    {
+      "id": "BUTTON3",
+      "component": "emblink/push_button",
+      "doc": "BUTTON3 on P0.24 to ground (the pin's pull-up holds it high)"
+    },
+    {
+      "id": "BUTTON4",
+      "component": "emblink/push_button",
+      "doc": "BUTTON4 on P0.25 to ground (the pin's pull-up holds it high)"
+    },
+    {
+      "id": "SW_RESET",
+      "component": "emblink/push_button",
+      "doc": "RESET on P0.18 to ground (nRESET once UICR.PSELRESET selects it)"
+    },
+    {
+      "id": "J_DLO",
+      "component": "emblink/header",
+      "params": {
+        "pins": 8
+      },
+      "doc": "Arduino digital: D0..D7 (P1.01..P1.08)"
+    },
+    {
+      "id": "J_DHI",
+      "component": "emblink/header",
+      "params": {
+        "pins": 10
+      },
+      "doc": "Arduino digital: D8..D13 (P1.10..P1.15), GND, AREF (P0.02), SDA (P0.26), SCL (P0.27)"
+    },
+    {
+      "id": "J_ANA",
+      "component": "emblink/header",
+      "params": {
+        "pins": 6
+      },
+      "doc": "Arduino analog: A0..A5 (P0.03, P0.04, P0.28..P0.31)"
+    },
+    {
+      "id": "J_PWR",
+      "component": "emblink/header",
+      "params": {
+        "pins": 6
+      },
+      "doc": "Power: VDD, 5V, GND, GND, the reset line (P0.18), VBUS"
+    },
+    {
+      "id": "J_VCOM",
+      "component": "emblink/header",
+      "params": {
+        "pins": 4
+      },
+      "doc": "The interface MCU's virtual COM port: TXD P0.06, RXD P0.08, RTS P0.05, CTS P0.07"
+    },
+    {
+      "id": "J_SWD",
+      "component": "emblink/header",
+      "params": {
+        "pins": 2
+      },
+      "doc": "Serial wire debug to the interface MCU: SWDIO, SWDCLK"
+    },
+    {
+      "id": "J_USB",
+      "component": "emblink/header",
+      "params": {
+        "pins": 2
+      },
+      "doc": "The nRF USB connector's data lines (USB is not modelled)"
+    },
+    {
+      "id": "J_ANT",
+      "component": "emblink/header",
+      "params": {
+        "pins": 1
+      },
+      "doc": "The 2.4 GHz antenna (the radio is not modelled)"
+    }
+  ],
+  "nets": {
+    "5V": [
+      "U2.IN",
+      "U1.VBUS",
+      "J_PWR.2",
+      "J_PWR.6"
+    ],
+    "VDD": [
+      "U2.OUT",
+      "U1.VDD",
+      "U1.VDDH",
+      "J_PWR.1",
+      "R_LED1.1",
+      "R_LED2.1",
+      "R_LED3.1",
+      "R_LED4.1"
+    ],
+    "GND": [
+      "U2.GND",
+      "U1.GND",
+      "J_PWR.3",
+      "J_PWR.4",
+      "J_DHI.7",
+      "SW_RESET.2",
+      "BUTTON1.2",
+      "BUTTON2.2",
+      "BUTTON3.2",
+      "BUTTON4.2"
+    ],
+    "OSC_IN": [
+      "U1.OSC_IN",
+      "Y1.1"
+    ],
+    "OSC_OUT": [
+      "U1.OSC_OUT",
+      "Y1.2"
+    ],
+    "SWDIO": [
+      "U1.SWDIO",
+      "J_SWD.1"
+    ],
+    "SWDCLK": [
+      "U1.SWDCLK",
+      "J_SWD.2"
+    ],
+    "USB_DP": [
+      "U1.USB_DP",
+      "J_USB.1"
+    ],
+    "USB_DM": [
+      "U1.USB_DM",
+      "J_USB.2"
+    ],
+    "ANT": [
+      "U1.ANT",
+      "J_ANT.1"
+    ],
+    "GPIO0": [
+      "U1.GPIO0",
+      "Y2.1"
+    ],
+    "GPIO1": [
+      "U1.GPIO1",
+      "Y2.2"
+    ],
+    "GPIO2": [
+      "U1.GPIO2",
+      "J_DHI.8"
+    ],
+    "GPIO3": [
+      "U1.GPIO3",
+      "J_ANA.1"
+    ],
+    "GPIO4": [
+      "U1.GPIO4",
+      "J_ANA.2"
+    ],
+    "GPIO5": [
+      "U1.GPIO5",
+      "J_VCOM.3"
+    ],
+    "GPIO6": [
+      "U1.GPIO6",
+      "J_VCOM.1"
+    ],
+    "GPIO7": [
+      "U1.GPIO7",
+      "J_VCOM.4"
+    ],
+    "GPIO8": [
+      "U1.GPIO8",
+      "J_VCOM.2"
+    ],
+    "GPIO9": [
+      "U1.GPIO9"
+    ],
+    "GPIO10": [
+      "U1.GPIO10"
+    ],
+    "GPIO11": [
+      "U1.GPIO11",
+      "BUTTON1.1"
+    ],
+    "GPIO12": [
+      "U1.GPIO12",
+      "BUTTON2.1"
+    ],
+    "GPIO13": [
+      "U1.GPIO13",
+      "LED1.K"
+    ],
+    "GPIO14": [
+      "U1.GPIO14",
+      "LED2.K"
+    ],
+    "GPIO15": [
+      "U1.GPIO15",
+      "LED3.K"
+    ],
+    "GPIO16": [
+      "U1.GPIO16",
+      "LED4.K"
+    ],
+    "GPIO17": [
+      "U1.GPIO17"
+    ],
+    "GPIO18": [
+      "U1.GPIO18",
+      "SW_RESET.1",
+      "J_PWR.5"
+    ],
+    "GPIO19": [
+      "U1.GPIO19"
+    ],
+    "GPIO20": [
+      "U1.GPIO20"
+    ],
+    "GPIO21": [
+      "U1.GPIO21"
+    ],
+    "GPIO22": [
+      "U1.GPIO22"
+    ],
+    "GPIO23": [
+      "U1.GPIO23"
+    ],
+    "GPIO24": [
+      "U1.GPIO24",
+      "BUTTON3.1"
+    ],
+    "GPIO25": [
+      "U1.GPIO25",
+      "BUTTON4.1"
+    ],
+    "GPIO26": [
+      "U1.GPIO26",
+      "J_DHI.9"
+    ],
+    "GPIO27": [
+      "U1.GPIO27",
+      "J_DHI.10"
+    ],
+    "GPIO28": [
+      "U1.GPIO28",
+      "J_ANA.3"
+    ],
+    "GPIO29": [
+      "U1.GPIO29",
+      "J_ANA.4"
+    ],
+    "GPIO30": [
+      "U1.GPIO30",
+      "J_ANA.5"
+    ],
+    "GPIO31": [
+      "U1.GPIO31",
+      "J_ANA.6"
+    ],
+    "GPIO32": [
+      "U1.GPIO32"
+    ],
+    "GPIO33": [
+      "U1.GPIO33",
+      "J_DLO.1"
+    ],
+    "GPIO34": [
+      "U1.GPIO34",
+      "J_DLO.2"
+    ],
+    "GPIO35": [
+      "U1.GPIO35",
+      "J_DLO.3"
+    ],
+    "GPIO36": [
+      "U1.GPIO36",
+      "J_DLO.4"
+    ],
+    "GPIO37": [
+      "U1.GPIO37",
+      "J_DLO.5"
+    ],
+    "GPIO38": [
+      "U1.GPIO38",
+      "J_DLO.6"
+    ],
+    "GPIO39": [
+      "U1.GPIO39",
+      "J_DLO.7"
+    ],
+    "GPIO40": [
+      "U1.GPIO40",
+      "J_DLO.8"
+    ],
+    "GPIO41": [
+      "U1.GPIO41"
+    ],
+    "GPIO42": [
+      "U1.GPIO42",
+      "J_DHI.1"
+    ],
+    "GPIO43": [
+      "U1.GPIO43",
+      "J_DHI.2"
+    ],
+    "GPIO44": [
+      "U1.GPIO44",
+      "J_DHI.3"
+    ],
+    "GPIO45": [
+      "U1.GPIO45",
+      "J_DHI.4"
+    ],
+    "GPIO46": [
+      "U1.GPIO46",
+      "J_DHI.5"
+    ],
+    "GPIO47": [
+      "U1.GPIO47",
+      "J_DHI.6"
+    ],
+    "LED1_A": [
+      "R_LED1.2",
+      "LED1.A"
+    ],
+    "LED2_A": [
+      "R_LED2.2",
+      "LED2.A"
+    ],
+    "LED3_A": [
+      "R_LED3.2",
+      "LED3.A"
+    ],
+    "LED4_A": [
+      "R_LED4.2",
+      "LED4.A"
+    ]
+  },
+  "ports": {
+    "D0": {
+      "net": "GPIO33",
+      "connector": "J_DLO",
+      "pin": 1,
+      "doc": "P1.01"
+    },
+    "D1": {
+      "net": "GPIO34",
+      "connector": "J_DLO",
+      "pin": 2,
+      "doc": "P1.02"
+    },
+    "D2": {
+      "net": "GPIO35",
+      "connector": "J_DLO",
+      "pin": 3,
+      "doc": "P1.03"
+    },
+    "D3": {
+      "net": "GPIO36",
+      "connector": "J_DLO",
+      "pin": 4,
+      "doc": "P1.04"
+    },
+    "D4": {
+      "net": "GPIO37",
+      "connector": "J_DLO",
+      "pin": 5,
+      "doc": "P1.05"
+    },
+    "D5": {
+      "net": "GPIO38",
+      "connector": "J_DLO",
+      "pin": 6,
+      "doc": "P1.06"
+    },
+    "D6": {
+      "net": "GPIO39",
+      "connector": "J_DLO",
+      "pin": 7,
+      "doc": "P1.07"
+    },
+    "D7": {
+      "net": "GPIO40",
+      "connector": "J_DLO",
+      "pin": 8,
+      "doc": "P1.08"
+    },
+    "D8": {
+      "net": "GPIO42",
+      "connector": "J_DHI",
+      "pin": 1,
+      "doc": "P1.10"
+    },
+    "D9": {
+      "net": "GPIO43",
+      "connector": "J_DHI",
+      "pin": 2,
+      "doc": "P1.11"
+    },
+    "D10": {
+      "net": "GPIO44",
+      "connector": "J_DHI",
+      "pin": 3,
+      "doc": "P1.12"
+    },
+    "D11": {
+      "net": "GPIO45",
+      "connector": "J_DHI",
+      "pin": 4,
+      "doc": "P1.13"
+    },
+    "D12": {
+      "net": "GPIO46",
+      "connector": "J_DHI",
+      "pin": 5,
+      "doc": "P1.14"
+    },
+    "D13": {
+      "net": "GPIO47",
+      "connector": "J_DHI",
+      "pin": 6,
+      "doc": "P1.15"
+    },
+    "GND_D": {
+      "net": "GND",
+      "connector": "J_DHI",
+      "pin": 7
+    },
+    "AREF": {
+      "net": "GPIO2",
+      "connector": "J_DHI",
+      "pin": 8,
+      "doc": "P0.02 (AIN0)"
+    },
+    "SDA": {
+      "net": "GPIO26",
+      "connector": "J_DHI",
+      "pin": 9,
+      "doc": "P0.26"
+    },
+    "SCL": {
+      "net": "GPIO27",
+      "connector": "J_DHI",
+      "pin": 10,
+      "doc": "P0.27"
+    },
+    "A0": {
+      "net": "GPIO3",
+      "connector": "J_ANA",
+      "pin": 1,
+      "doc": "P0.03 (AIN1)"
+    },
+    "A1": {
+      "net": "GPIO4",
+      "connector": "J_ANA",
+      "pin": 2,
+      "doc": "P0.04 (AIN2)"
+    },
+    "A2": {
+      "net": "GPIO28",
+      "connector": "J_ANA",
+      "pin": 3,
+      "doc": "P0.28 (AIN4)"
+    },
+    "A3": {
+      "net": "GPIO29",
+      "connector": "J_ANA",
+      "pin": 4,
+      "doc": "P0.29 (AIN5)"
+    },
+    "A4": {
+      "net": "GPIO30",
+      "connector": "J_ANA",
+      "pin": 5,
+      "doc": "P0.30 (AIN6)"
+    },
+    "A5": {
+      "net": "GPIO31",
+      "connector": "J_ANA",
+      "pin": 6,
+      "doc": "P0.31 (AIN7)"
+    },
+    "VDD": {
+      "net": "VDD",
+      "connector": "J_PWR",
+      "pin": 1,
+      "doc": "3.0 V"
+    },
+    "5V": {
+      "net": "5V",
+      "connector": "J_PWR",
+      "pin": 2,
+      "doc": "5 V in (USB's on a real board)"
+    },
+    "GND": {
+      "net": "GND",
+      "connector": "J_PWR",
+      "pin": 3
+    },
+    "GND_2": {
+      "net": "GND",
+      "connector": "J_PWR",
+      "pin": 4
+    },
+    "RESET": {
+      "net": "GPIO18",
+      "connector": "J_PWR",
+      "pin": 5,
+      "doc": "P0.18, the reset button's line"
+    },
+    "VBUS": {
+      "net": "5V",
+      "connector": "J_PWR",
+      "pin": 6
+    },
+    "P0_06": {
+      "net": "GPIO6",
+      "connector": "J_VCOM",
+      "pin": 1,
+      "doc": "P0.06: TXD to the interface MCU"
+    },
+    "P0_08": {
+      "net": "GPIO8",
+      "connector": "J_VCOM",
+      "pin": 2,
+      "doc": "P0.08: RXD from the interface MCU"
+    },
+    "P0_05": {
+      "net": "GPIO5",
+      "connector": "J_VCOM",
+      "pin": 3,
+      "doc": "P0.05: RTS"
+    },
+    "P0_07": {
+      "net": "GPIO7",
+      "connector": "J_VCOM",
+      "pin": 4,
+      "doc": "P0.07: CTS"
+    }
+  },
+  "leds": [
+    {
+      "name": "led1",
+      "component": "LED1",
+      "gpio": "GPIO13",
+      "active": "low",
+      "color": "green"
+    },
+    {
+      "name": "led2",
+      "component": "LED2",
+      "gpio": "GPIO14",
+      "active": "low",
+      "color": "green"
+    },
+    {
+      "name": "led3",
+      "component": "LED3",
+      "gpio": "GPIO15",
+      "active": "low",
+      "color": "green"
+    },
+    {
+      "name": "led4",
+      "component": "LED4",
+      "gpio": "GPIO16",
+      "active": "low",
+      "color": "green"
+    }
+  ],
+  "buttons": [
+    {
+      "name": "button1",
+      "component": "BUTTON1",
+      "gpio": "GPIO11",
+      "active": "low"
+    },
+    {
+      "name": "button2",
+      "component": "BUTTON2",
+      "gpio": "GPIO12",
+      "active": "low"
+    },
+    {
+      "name": "button3",
+      "component": "BUTTON3",
+      "gpio": "GPIO24",
+      "active": "low"
+    },
+    {
+      "name": "button4",
+      "component": "BUTTON4",
+      "gpio": "GPIO25",
+      "active": "low"
+    },
+    {
+      "name": "reset",
+      "component": "SW_RESET",
+      "gpio": "GPIO18",
+      "active": "low"
+    }
+  ],
+  "console": {
+    "peripheral": "UARTE0",
+    "tx": "GPIO6",
+    "rx": "GPIO8",
+    "baud": 115200
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 136,
+    "height_mm": 64,
+    "hotspots": [
+      {
+        "component": "LED1",
+        "selector": "#led-1",
+        "output": "luminance"
+      },
+      {
+        "component": "LED2",
+        "selector": "#led-2",
+        "output": "luminance"
+      },
+      {
+        "component": "LED3",
+        "selector": "#led-3",
+        "output": "luminance"
+      },
+      {
+        "component": "LED4",
+        "selector": "#led-4",
+        "output": "luminance"
+      },
+      {
+        "component": "BUTTON1",
+        "selector": "#btn-1",
+        "input": "pressed"
+      },
+      {
+        "component": "BUTTON2",
+        "selector": "#btn-2",
+        "input": "pressed"
+      },
+      {
+        "component": "BUTTON3",
+        "selector": "#btn-3",
+        "input": "pressed"
+      },
+      {
+        "component": "BUTTON4",
+        "selector": "#btn-4",
+        "input": "pressed"
+      },
+      {
+        "component": "SW_RESET",
+        "selector": "#btn-reset",
+        "input": "pressed"
+      },
+      {
+        "port": "D0",
+        "selector": "#pin-d0"
+      },
+      {
+        "port": "D1",
+        "selector": "#pin-d1"
+      },
+      {
+        "port": "D2",
+        "selector": "#pin-d2"
+      },
+      {
+        "port": "D3",
+        "selector": "#pin-d3"
+      },
+      {
+        "port": "D4",
+        "selector": "#pin-d4"
+      },
+      {
+        "port": "D5",
+        "selector": "#pin-d5"
+      },
+      {
+        "port": "D6",
+        "selector": "#pin-d6"
+      },
+      {
+        "port": "D7",
+        "selector": "#pin-d7"
+      },
+      {
+        "port": "D8",
+        "selector": "#pin-d8"
+      },
+      {
+        "port": "D9",
+        "selector": "#pin-d9"
+      },
+      {
+        "port": "D10",
+        "selector": "#pin-d10"
+      },
+      {
+        "port": "D11",
+        "selector": "#pin-d11"
+      },
+      {
+        "port": "D12",
+        "selector": "#pin-d12"
+      },
+      {
+        "port": "D13",
+        "selector": "#pin-d13"
+      },
+      {
+        "port": "GND_D",
+        "selector": "#pin-gnd_d"
+      },
+      {
+        "port": "AREF",
+        "selector": "#pin-aref"
+      },
+      {
+        "port": "SDA",
+        "selector": "#pin-sda"
+      },
+      {
+        "port": "SCL",
+        "selector": "#pin-scl"
+      },
+      {
+        "port": "A0",
+        "selector": "#pin-a0"
+      },
+      {
+        "port": "A1",
+        "selector": "#pin-a1"
+      },
+      {
+        "port": "A2",
+        "selector": "#pin-a2"
+      },
+      {
+        "port": "A3",
+        "selector": "#pin-a3"
+      },
+      {
+        "port": "A4",
+        "selector": "#pin-a4"
+      },
+      {
+        "port": "A5",
+        "selector": "#pin-a5"
+      },
+      {
+        "port": "VDD",
+        "selector": "#pin-vdd"
+      },
+      {
+        "port": "5V",
+        "selector": "#pin-5v"
+      },
+      {
+        "port": "GND",
+        "selector": "#pin-gnd"
+      },
+      {
+        "port": "GND_2",
+        "selector": "#pin-gnd_2"
+      },
+      {
+        "port": "RESET",
+        "selector": "#pin-reset"
+      },
+      {
+        "port": "VBUS",
+        "selector": "#pin-vbus"
+      },
+      {
+        "port": "P0_06",
+        "selector": "#pin-p0_06"
+      },
+      {
+        "port": "P0_08",
+        "selector": "#pin-p0_08"
+      },
+      {
+        "port": "P0_05",
+        "selector": "#pin-p0_05"
+      },
+      {
+        "port": "P0_07",
+        "selector": "#pin-p0_07"
+      }
+    ]
+  },
+  "toolchains": {
+    "clang": {
+      "target": "thumbv7em-none-eabihf",
+      "flags": [
+        "-mcpu=cortex-m4"
+      ],
+      "linker_script": "nrf52840.ld"
+    },
+    "gcc-arm": {
+      "cpu": "cortex-m4",
+      "flags": [
+        "-mthumb",
+        "-mcpu=cortex-m4",
+        "-mfpu=fpv4-sp-d16",
+        "-mfloat-abi=hard"
+      ],
+      "linker_script": "nrf52840.ld"
+    },
+    "embcc": {
+      "target": "thumbv7em-none-eabihf",
+      "linker_script": "nrf52840.ld"
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Nets, ports, the LEDs and the buttons as logic-level parts; the nRF52840 runs its firmware from flash (see its description).",
+      "omissions": [
+        "the interface MCU (its virtual COM port is the session's console on UARTE0)",
+        "the radio's antenna and matching",
+        "the external QSPI flash",
+        "the nRF USB port",
+        "the current measurement"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "as functional"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "A 3.0 V regulator from USB's 5 V, the LEDs with series resistors from VDD, the buttons to ground, the crystals as BVD equivalents; GPIO bridges use the MCU's pin-model defaults.",
+      "omissions": [
+        "the DC/DC converters and the REG0 stage (VDDH sits on VDD here)",
+        "decoupling",
+        "the power switches and the current measurement shunts"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "nRF52840 DK User Guide",
+        "rev": "v1.3"
+      },
+      {
+        "title": "nRF52840 Product Specification",
+        "rev": "v1.1"
+      }
+    ],
+    "notes": "Artwork is an original SVG drawn for EmbSIM to the board's outline and layout; no Nordic artwork or logo is used."
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

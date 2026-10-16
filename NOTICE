@@ -40,6 +40,8 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
   core/mcu/rp2040/             tools/embsim/rp2040.h, rp2040.c,
                                rp2040-io.c, rp2040-sio.c, rp2040-timer.c,
                                rp2040-uart.c, rp2040-ssi.c
+  core/mcu/nrf52/              tools/embsim/nrf52.c (CLOCK, the GPIO ports,
+                               the UARTs, TIMER, RTC; gpiote.c is EmbSIM's)
   tests/firmware/bluepill-golden/
                                tests/golden/embsim-bluepill/ (bluepill.c,
                                bluepill.txt, bluepill-err.txt)
@@ -54,3 +56,9 @@ carries its own licence beside it:
                                (pico-sdk 2.0.0), Copyright (c) 2024
                                Raspberry Pi Ltd.; BSD-3-Clause
                                (catalog/mcus/raspberrypi/rp2040/LICENSES/)
+  catalog/mcus/nordic/nrf52840/registers.json
+                               converted from Nordic Semiconductor's
+                               nrf52840.svd (nrfx 3.4.0), Copyright (c)
+                               2010 - 2024 Nordic Semiconductor ASA;
+                               BSD-3-Clause
+                               (catalog/mcus/nordic/nrf52840/LICENSES/)

@@ -172,7 +172,8 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
             st = ES_ESCHEMA;
         }
     }
-    /* enum-driven presets: a param definition may carry "presets": {value: {param: value}} */
+    /* enum-driven presets: a param definition may carry "presets": {value: {param: value}};
+     * a parameter the instance gives itself is kept (a "generic" part with its own vout) */
     for (i = 0; i < esk_json_len(pdefs); i++) {
         const esk_json *pd = esk_json_at(pdefs, i);
         const esk_json *presets = esk_json_get(pd, "presets");
@@ -181,7 +182,10 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
         size_t k;
         for (k = 0; k < esk_json_len(preset); k++) {
             const esk_json *pv = esk_json_at(preset, k);
-            esk_json *v = esk_json_clone(s->a, pv);
+            esk_json *v;
+            if (inst_params && esk_json_get(inst_params, pv->key))
+                continue;
+            v = esk_json_clone(s->a, pv);
             if (!v || esk_json_object_set(s->a, params, pv->key, v)) {
                 esk_json_free(s->a, v);
                 st = ES_ENOMEM;
