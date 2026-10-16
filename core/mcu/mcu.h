@@ -48,6 +48,8 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
 int esk_mcu_is(const esk_comp *c);
 /* the machine, for the debugger; NULL for another component */
 struct esk_mach *esk_mcu_machine(esk_comp *c);
+/* the firmware image as loaded, for symbols */
+const unsigned char *esk_mcu_image(const esk_comp *c, size_t *len);
 /* the engine time of the machine's current cycle */
 es_time_t esk_mcu_time(const esk_comp *c);
 /* stopped by a breakpoint, a watchpoint or a step: 1 and why */

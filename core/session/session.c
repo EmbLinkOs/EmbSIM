@@ -955,6 +955,13 @@ es_status esk_session_do_advance(es_session *s, es_time_t until)
     if (!s->loaded)
         return ES_ESTATE;
     st = esk_engine_advance(&s->eng, until);
+    if (s->eng.sched.stop_requested) {
+        /* a core stopped (a breakpoint): the session stops with it */
+        esk_json *info = NULL;
+        s->eng.sched.stop_requested = 0;
+        if (esk_debug_stopped_board(s, &info) && info)
+            esk_session_notify(s, "debug.stopped", info);
+    }
     probes_sample_now(s);
     return st;
 }
@@ -1000,6 +1007,9 @@ es_status esk_session_run_slice(es_session *s)
     if (st != ES_OK || s->diag.fatal) {
         s->running = 0;
         control_state(s, s->diag.fatal ? s->diag.fatal_code : es_strerror(st));
+    } else if (esk_debug_stopped_board(s, NULL)) {
+        s->running = 0;
+        control_state(s, "stopped");
     } else if (until >= s->run_until) {
         s->running = 0;
         control_state(s, "until");

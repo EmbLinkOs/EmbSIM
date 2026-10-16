@@ -230,6 +230,10 @@ ES_INLINE int esk_cm_in_it(struct esk_cm_state *cs)
     return (cs->itstate & 0xf) != 0;
 }
 
+/* disasm.c: the Thumb instruction at pc (h2 is read only for a 32-bit
+ * one): its size in bytes, and the text in b */
+int esk_dis_thumb(u32 pc, u32 h1, u32 h2, char *b, size_t n);
+
 /* the core's own devices (systick.c, scs.c, dwt.c) */
 extern const struct esk_dev_ops esk_systick_ops, esk_scs_ops, esk_dwt_ops;
 void *esk_systick_create(struct esk_mach *m);

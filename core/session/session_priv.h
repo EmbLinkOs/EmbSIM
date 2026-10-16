@@ -90,6 +90,13 @@ struct es_session {
 
 /* loader.c */
 es_status esk_project_load(es_session *s, const esk_json *project, const char *base_dir);
+/* debug.c: the debug.* methods; the board whose MCU is stopped (1, and a
+ * description of where); every stopped core resumed */
+int esk_debug_has(const char *method);
+es_status esk_debug_call(es_session *s, const char *method, const esk_json *params, esk_json **result,
+                         int *code, char *msg, size_t cap);
+int esk_debug_stopped_board(es_session *s, esk_json **info);
+void esk_debug_resume_all(es_session *s);
 void esk_project_unload(es_session *s);
 /* session.c helpers used by rpc.c and scenario.c */
 es_status esk_session_apply_input(es_session *s, const char *target, const char *input, const esk_json *value,

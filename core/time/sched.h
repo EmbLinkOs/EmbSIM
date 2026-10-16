@@ -48,6 +48,9 @@ typedef struct esk_sched {
     uint32_t *free_ids;
     size_t nfree, free_cap;
     uint64_t processed;
+    /* set by an event's handler (a debugger's breakpoint): esk_sched_advance
+     * returns after that event, with `now` its time; the caller clears it */
+    int stop_requested;
 } esk_sched;
 
 es_status esk_sched_init(esk_sched *s, esk_alloc *a, size_t max_events, uint32_t max_delta_cycles);

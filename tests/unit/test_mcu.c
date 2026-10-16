@@ -462,10 +462,110 @@ static void test_session_runtime(void)
     es_session_destroy(s);
 }
 
+/* one run of the example with its inputs scheduled ahead; with `bp`, a
+ * breakpoint on the EXTI handler stops it and it is continued each time */
+typedef struct run_result {
+    char console[2048], terminal[2048], pc13[4096], insns[32], cycles[32];
+    int stops;
+} run_result;
+
+static void example_run(run_result *out, int bp)
+{
+    es_session *s = NULL;
+    esk_alloc a;
+    char path[1024];
+    esk_json *r;
+    int guard;
+    memset(out, 0, sizeof *out);
+    esk_alloc_init(&a, NULL);
+    snprintf(path, sizeof path, "%s/examples/bluepill-button-led/project.json", EMBSIM_SOURCE_DIR);
+    if (es_session_create(NULL, &s) != ES_OK || es_session_load_file(s, path) != ES_OK) {
+        FAIL("the example does not load");
+        es_session_destroy(s);
+        return;
+    }
+    esk_json_free(&a, rpc(s, &a, "control.reset", "{}"));
+    esk_json_free(&a, rpc(s, &a, "input.set", "{\"target\":\"SW1\",\"input\":\"pressed\",\"value\":true,\"at\":\"3ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "input.set", "{\"target\":\"SW1\",\"input\":\"pressed\",\"value\":false,\"at\":\"5ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "input.set", "{\"target\":\"VT1\",\"input\":\"tx_text\",\"value\":\"ok\",\"at\":\"6ms\"}"));
+    if (bp) {
+        r = rpc(s, &a, "debug.breakpoint", "{\"board\":\"B1\",\"op\":\"add\",\"symbol\":\"EXTI0_IRQHandler\"}");
+        CHECK(r != NULL);
+        esk_json_free(&a, r);
+    }
+    for (guard = 0; guard < 10; guard++) {
+        const esk_json *stopped;
+        r = rpc(s, &a, "control.advance", "{\"until\":\"8ms\"}");
+        stopped = esk_json_get(r, "stopped");
+        if (!stopped) {
+            CHECK_STR(r ? esk_json_get_str(r, "now_ps", "") : "", "8000000000");
+            esk_json_free(&a, r);
+            break;
+        }
+        out->stops++;
+        CHECK_STR(esk_json_get_str(stopped, "function", ""), "EXTI0_IRQHandler");
+        CHECK_STR(esk_json_get_str(stopped, "reason", ""), "breakpoint");
+        esk_json_free(&a, r);
+        /* the registers and memory are there to look at */
+        r = rpc(s, &a, "debug.registers", "{\"board\":\"B1\"}");
+        CHECK(r != NULL && esk_json_len(esk_json_get(r, "regs")) >= 17);
+        esk_json_free(&a, r);
+        r = rpc(s, &a, "debug.disassemble", "{\"board\":\"B1\",\"count\":4}");
+        CHECK(r != NULL && esk_json_len(esk_json_get(r, "insns")) == 4);
+        CHECK_STR(esk_json_get_str(esk_json_at(esk_json_get(r, "insns"), 0), "label", ""), "EXTI0_IRQHandler");
+        esk_json_free(&a, r);
+    }
+    serial_text(s, &a, "console", out->console, sizeof out->console);
+    serial_text(s, &a, "terminal", out->terminal, sizeof out->terminal);
+    mcu_output(s, &a, "instructions", out->insns, sizeof out->insns);
+    mcu_output(s, &a, "cycles", out->cycles, sizeof out->cycles);
+    /* PC13's waveform as its changes (a stop adds samples, not changes) */
+    r = rpc(s, &a, "probe.read", "{\"probe\":\"pc13\"}");
+    if (r) {
+        const esk_json *sm = esk_json_get(r, "samples");
+        size_t i, n = 0;
+        int64_t last = -1;
+        for (i = 0; i < esk_json_len(sm); i++) {
+            const esk_json *e = esk_json_at(sm, i);
+            const esk_json *val = esk_json_at(e, 1);
+            int64_t v = val && val->type == ESK_JSON_NUMBER ? (int64_t)val->u.number.value : -1;
+            if (v == last)
+                continue;
+            last = v;
+            n += (size_t)snprintf(out->pc13 + n, sizeof out->pc13 - n, "%s=%lld ",
+                                  esk_json_str(esk_json_at(e, 0)) ? esk_json_str(esk_json_at(e, 0)) : "?", (long long)v);
+            if (n >= sizeof out->pc13)
+                break;
+        }
+        esk_json_free(&a, r);
+    }
+    es_session_destroy(s);
+}
+
+/* M1's exit criterion: a breakpoint-and-continue run equals an uninterrupted one */
+static void test_breakpoint_continue_equivalence(void)
+{
+    run_result *plain = (run_result *)calloc(1, sizeof *plain), *stopped = (run_result *)calloc(1, sizeof *stopped);
+    example_run(plain, 0);
+    example_run(stopped, 1);
+    CHECK_EQ(plain->stops, 0);
+    CHECK_EQ(stopped->stops, 2); /* the press and the release */
+    CHECK(strstr(plain->console, "pressed\r\nreleased\r\n") != NULL);
+    CHECK_STR(stopped->console, plain->console);
+    CHECK_STR(stopped->terminal, plain->terminal);
+    CHECK_STR(stopped->insns, plain->insns);
+    CHECK_STR(stopped->cycles, plain->cycles);
+    CHECK(strlen(plain->pc13) > 10);
+    CHECK_STR(stopped->pc13, plain->pc13);
+    free(plain);
+    free(stopped);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_hello);
 RUN(test_quanta_and_breakpoints);
 RUN(test_bluepill_golden);
 RUN(test_bluepill_input);
 RUN(test_session_runtime);
+RUN(test_breakpoint_continue_equivalence);
 TEST_MAIN_END

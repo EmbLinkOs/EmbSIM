@@ -263,6 +263,7 @@ static es_status m_control_run(rpc_ctx *r)
     if (sp && sp->type == ESK_JSON_NUMBER && sp->u.number.value >= 0)
         s->speed = sp->u.number.value;
     s->run_until = ptime(r, "until", &until) == 0 ? until : ES_TIME_MAX;
+    esk_debug_resume_all(s);
     s->running = 1;
     s->last_host_ms = esk_host_monotonic_ms();
     r->result = obj(r);
@@ -287,8 +288,13 @@ static es_status m_control_step(rpc_ctx *r)
     const char *mode = pstr(r, "mode", "event");
     es_status st;
     if (!r->s->loaded) return fail_status(r, ES_ESTATE);
-    if (!strcmp(mode, "instruction"))
-        return fail(r, -32601, "instruction stepping needs the MCU runtime, which this version does not include");
+    if (!strcmp(mode, "instruction")) {
+        int code = 0;
+        st = esk_debug_call(r->s, "debug.step", r->params, &r->result, &code, r->err_msg, sizeof r->err_msg);
+        if (code)
+            r->err_code = code;
+        return st;
+    }
     st = es_session_step(r->s);
     if (st != ES_OK) return fail_status(r, st);
     r->result = obj(r);
@@ -310,11 +316,17 @@ static es_status m_control_advance(rpc_ctx *r)
         if (esk_time_add(s->eng.sched.now, by, &until))
             return fail_status(r, ES_ETIME);
     }
+    esk_debug_resume_all(s);
     st = esk_session_do_advance(s, until);
     if (st != ES_OK) return fail_status(r, st);
     r->result = obj(r);
     if (!r->result) return ES_ENOMEM;
     esk_json_set_u64_string(s->a, r->result, "now_ps", s->eng.sched.now);
+    {
+        esk_json *info = NULL;
+        if (esk_debug_stopped_board(s, &info) && info)
+            esk_json_object_set(s->a, r->result, "stopped", info);
+    }
     esk_session_emit_observations(s, 1);
     return ES_OK;
 }
@@ -770,12 +782,13 @@ es_status esk_rpc_dispatch(es_session *s, const esk_json *req, esk_json **respon
         for (i = 0; i < ES_COUNTOF(methods); i++) {
             if (!strcmp(methods[i].name, name)) {
                 found = 1;
-                if (strncmp(name, "debug.", 6) == 0)
-                    st = m_unavailable(&r);
-                else
-                    st = methods[i].fn(&r);
+                st = methods[i].fn(&r);
                 break;
             }
+        }
+        if (!found && esk_debug_has(name)) {
+            found = 1;
+            st = esk_debug_call(s, name, r.params, &r.result, &r.err_code, r.err_msg, sizeof r.err_msg);
         }
         if (!found) {
             if (esk_str_has_prefix(name, "debug.") || esk_str_has_prefix(name, "toolchain."))

@@ -209,3 +209,92 @@ static es_status load_hex(struct esk_mach *m, const u8 *f, size_t len, u32 *entr
     }
     return ES_OK;
 }
+
+/* ---- symbols ---------------------------------------------------------------- */
+
+/* the ELF's symbol table and its string table, or 0 */
+static int symtab(const u8 *f, size_t len, const u8 **syms, u32 *nsyms, const u8 **strs, u32 *strs_len)
+{
+    u32 shoff, shentsize, shnum, i;
+    if (len < 52 || memcmp(f, "\177ELF", 4) != 0 || f[4] != 1)
+        return 0;
+    shoff = le32(f + 32);
+    shentsize = le16(f + 46);
+    shnum = le16(f + 48);
+    if (shentsize < 40 || (u64)shoff + (u64)shnum * shentsize > len)
+        return 0;
+    for (i = 0; i < shnum; i++) {
+        const u8 *sh = f + shoff + (size_t)i * shentsize;
+        u32 link, off, size;
+        const u8 *lk;
+        if (le32(sh + 4) != 2) /* SHT_SYMTAB */
+            continue;
+        off = le32(sh + 16);
+        size = le32(sh + 20);
+        link = le32(sh + 24);
+        if ((u64)off + size > len || link >= shnum)
+            return 0;
+        lk = f + shoff + (size_t)link * shentsize;
+        if ((u64)le32(lk + 16) + le32(lk + 20) > len)
+            return 0;
+        *syms = f + off;
+        *nsyms = size / 16u;
+        *strs = f + le32(lk + 16);
+        *strs_len = le32(lk + 20);
+        return 1;
+    }
+    return 0;
+}
+
+static const char *sym_name(const u8 *strs, u32 strs_len, u32 at)
+{
+    u32 k;
+    if (at >= strs_len)
+        return "";
+    for (k = at; k < strs_len; k++)
+        if (!strs[k])
+            return (const char *)strs + at;
+    return "";
+}
+
+int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value)
+{
+    const u8 *syms, *strs;
+    u32 n, sl, i;
+    if (!symtab(f, len, &syms, &n, &strs, &sl))
+        return 0;
+    for (i = 0; i < n; i++) {
+        const u8 *s = syms + (size_t)i * 16u;
+        u32 type = s[12] & 15u;
+        if ((type == 1 || type == 2) && !strcmp(sym_name(strs, sl, le32(s)), name)) {
+            *value = type == 2 ? le32(s + 4) & ~1u : le32(s + 4);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap, u32 *offset)
+{
+    const u8 *syms, *strs, *best = NULL;
+    u32 n, sl, i, best_v = 0;
+    if (!symtab(f, len, &syms, &n, &strs, &sl))
+        return 0;
+    for (i = 0; i < n; i++) {
+        const u8 *s = syms + (size_t)i * 16u;
+        u32 type = s[12] & 15u, v, size;
+        if (type != 1 && type != 2)
+            continue;
+        v = type == 2 ? le32(s + 4) & ~1u : le32(s + 4);
+        size = le32(s + 8);
+        if (addr >= v && (addr - v < size || (!size && addr == v)) && (!best || v > best_v)) {
+            best = s;
+            best_v = v;
+        }
+    }
+    if (!best)
+        return 0;
+    snprintf(name, cap, "%s", sym_name(strs, sl, le32(best)));
+    *offset = addr - best_v;
+    return 1;
+}

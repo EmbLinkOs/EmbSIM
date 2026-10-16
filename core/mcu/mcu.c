@@ -283,6 +283,7 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
             if (!st->steps && st->m.state == ESK_MACH_RUN && !st->m.reset_req) {
                 st->stopped = 1;
                 st->stop_why = "step";
+                e->sched.stop_requested = 1;
                 return;
             }
         }
@@ -298,6 +299,7 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
     if (st->m.stop_bp || st->m.stop_watch) {
         st->stopped = 1;
         st->stop_why = st->m.stop_bp ? "breakpoint" : "watchpoint";
+        e->sched.stop_requested = 1;
         return;
     }
     if (st->m.asleep) {
@@ -774,6 +776,15 @@ const esk_model_ops esk_mcu_ops = { "mcu", sizeof(mcu_state), mcu_create, mcu_de
 
 int esk_mcu_is(const esk_comp *c) { return c && c->ops == &esk_mcu_ops; }
 
+const unsigned char *esk_mcu_image(const esk_comp *c, size_t *len)
+{
+    const mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    if (!st || !st->attached)
+        return NULL;
+    *len = st->image_len;
+    return st->image;
+}
+
 struct esk_mach *esk_mcu_machine(esk_comp *c)
 {
     return esk_mcu_is(c) && state_of(c)->attached ? &state_of(c)->m : NULL;
@@ -812,6 +823,7 @@ void esk_mcu_halt(esk_comp *c)
         return;
     st->stopped = 1;
     st->stop_why = "halt";
+    c->e->sched.stop_requested = 1;
     if (st->ev) {
         esk_sched_cancel(&c->e->sched, st->ev);
         st->ev = 0;
