@@ -113,3 +113,17 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16
 **Verification.** Deterministic structural/contact fixtures, Chromium check-to-repair workflow and native-server geometry-clear/check regression.
 **Trace.** SPEC-011 Schematic authoring and repair; ADR-024
+
+### UI-016  Persistent circuit organization and placement locks
+**Statement.** The schematic shall support persistent flat named groups, searchable object/group navigation and placement locks for components and boards. Exclusive membership, deletion pruning and locked placement shall be enforced by native transactions. Direct edits shall reject an entire selection containing a locked member; automatic placement shall retain locked parts as fixed obstacles. Group and lock edits shall support undo, save/reload and preserve electrical data and simulation time.
+**Rationale.** Organize growing circuits without disturbing completed placement.
+**Status.** Accepted 2026-10-16
+**Verification.** Native organization transaction/load/save regression, session unit checks, planner/store fixtures and cross-platform browser organization workflow.
+**Trace.** SPEC-007; SPEC-008 Schematic organization edits; SPEC-011 Circuit organization; ADR-025
+
+### UI-017  Exportable top-level parts inventory
+**Statement.** The workbench shall export a deterministic CSV aggregation of top-level component/board models, explicit versions and explicit parameter maps with quantities and references through the platform file adapter. Export shall quote fields, escape leading spreadsheet formulas and identify the inventory's limits without implying flattened or procurement-qualified data.
+**Rationale.** Review assembly composition without exposing firmware contents.
+**Status.** Accepted 2026-10-16
+**Verification.** Aggregation/order/quoting/formula fixtures and browser download workflow.
+**Trace.** SPEC-011 Circuit organization

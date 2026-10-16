@@ -91,18 +91,20 @@ export function LibraryPanel({ onPlace }: LibraryPanelProps) {
 }
 
 function LibraryItem({ item, entry, policy, selected, onPreview, onPlace }: { item: CatalogItem; entry?: CatalogEntry; policy: FidelityTier; selected: boolean; onPreview: () => void; onPlace: (id: string) => void }) {
+  const unavailable = useProject((state) => !state.editable || state.busy || state.commands.isBusy);
   return (
     <li className={cx('wb-library__item', selected && 'wb-library__item--selected')} draggable={!item.broken && item.fidelity_tiers.includes(policy)} onDragStart={(e) => { e.dataTransfer.setData('text/x-embsim-component', item.id); e.dataTransfer.effectAllowed = 'copy'; }}>
       <button type="button" className="wb-library__part" aria-label={`Preview ${item.name}`} aria-pressed={selected} onClick={onPreview} title={entry?.description.description ?? item.name}>
         <span className="wb-library__thumb">{entry && <SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={entry.description.symbol} size={40} />}</span>
         <span className="wb-library__identity"><strong className="wb-library__name">{item.name}</strong><span className="wb-library__subtitle">{entry?.description.part ? `${entry.description.part.manufacturer} · ${entry.description.part.package}` : categoryName(item.category)}</span><span className="wb-library__meta"><FidelityBadges tiers={item.fidelity_tiers} />{item.broken ? <span className="es-badge es-badge--danger">broken</span> : entry?.description.inputs?.length ? <span className="wb-library__interactive">Interactive</span> : null}</span></span>
       </button>
-      <Button size="sm" variant="ghost" icon={<Plus />} aria-label={`Place ${item.name}`} disabled={item.broken || !item.fidelity_tiers.includes(policy)} title={item.fidelity_tiers.includes(policy) ? `Place in ${policy} circuit` : `No ${policy} model; preview for supported policies`} onClick={() => onPlace(item.id)}>Place</Button>
+      <Button size="sm" variant="ghost" icon={<Plus />} aria-label={`Place ${item.name}`} disabled={unavailable || item.broken || !item.fidelity_tiers.includes(policy)} title={item.fidelity_tiers.includes(policy) ? `Place in ${policy} circuit` : `No ${policy} model; preview for supported policies`} onClick={() => onPlace(item.id)}>Place</Button>
     </li>
   );
 }
 
 function LibraryPreview({ item, entry, policy, onClose, onPlace }: { item: CatalogItem; entry: CatalogEntry; policy: FidelityTier; onClose: () => void; onPlace: () => void }) {
+  const unavailable = useProject((state) => !state.editable || state.busy || state.commands.isBusy);
   const d = entry.description;
   const [tab, setTab] = useState<'overview' | 'pins' | 'models'>('overview');
   const reviewed = d.provenance.sources?.some((s) => s.hash && s.url === d.part?.datasheet);
@@ -116,6 +118,6 @@ function LibraryPreview({ item, entry, policy, onClose, onPlace }: { item: Catal
       {tab === 'models' && TIERS.map(({ tier }) => <div className="wb-library__model" key={tier}><strong>{tier}<span>{d.fidelity[tier] ? 'Provided' : 'Not provided'}</span></strong>{d.fidelity[tier] && <><p>{d.fidelity[tier]?.claims}</p>{Boolean(d.fidelity[tier]?.omissions?.length) && <p className="wb-library__hint">Limits: {d.fidelity[tier]?.omissions?.join('; ')}</p>}</>}</div>)}
     </div>
     {!item.fidelity_tiers.includes(policy) && <p className="wb-library__hint">No {policy} model. Choose a supported project policy before placing this part.</p>}
-    <Button size="sm" icon={<Plus />} disabled={item.broken || !item.fidelity_tiers.includes(policy)} onClick={onPlace}>Place {d.name}</Button>
+    <Button size="sm" icon={<Plus />} disabled={unavailable || item.broken || !item.fidelity_tiers.includes(policy)} onClick={onPlace}>Place {d.name}</Button>
   </section>;
 }

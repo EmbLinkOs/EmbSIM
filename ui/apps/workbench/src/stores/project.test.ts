@@ -83,3 +83,27 @@ describe('authoritative net membership during geometry edits', () => {
     } finally { useProject.setState(original); }
   });
 });
+
+describe('placement lock store boundaries', () => {
+  it('blocks movement, rotation, mirror and exact placement for the entire locked selection', async () => {
+    const { useProject } = await import('./project');
+    const original = useProject.getState(); const p = project(); p.components[0]!.layout!.locked = true;
+    try {
+      useProject.setState({ project: p, mutate: async (_, fn) => { fn(structuredClone(p)); } });
+      await expect(useProject.getState().moveComponents(['R1', 'D1'], 10, 0)).rejects.toThrow('Unlock');
+      await expect(useProject.getState().rotateComponents(['R1', 'D1'])).rejects.toThrow('Unlock');
+      await expect(useProject.getState().mirrorComponents(['R1', 'D1'])).rejects.toThrow('Unlock');
+      await expect(useProject.getState().setPartLayout('R1', { x: 30, y: 0 }, p)).rejects.toThrow('Unlock');
+      expect(useProject.getState().project).toBe(p);
+    } finally { useProject.setState(original); }
+  });
+  it('duplicates complete groups with remapped members and unlocked copies', () => {
+    const p = project(); p.components[0]!.layout!.locked = true;
+    p.layout!.groups = [{ id: 'group-1', name: 'Input', members: ['R1', 'D1'] }];
+    const clip = clipOf(p, { components: ['R1', 'D1'], wires: [] })!;
+    const result = withClip(p, clip, 40, 40, (model, used) => { let n = 1; while (used.has(`C${n}`)) n++; return `C${n}`; });
+    expect(result.project.layout!.groups![1]).toEqual({ id: 'group-2', name: 'Input copy', members: result.ids });
+    expect(result.project.components.filter((c) => result.ids.includes(c.id)).every((c) => !c.layout?.locked)).toBe(true);
+    expect(clipOf(p, { components: ['R1'], wires: [] })!.groups).toEqual([]);
+  });
+});

@@ -5,6 +5,33 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Circuit organization milestone
+
+Branch `schematic/circuit-organization`, based on merged PR #31 (`322817a`), adds
+persistent flat groups, selectable canvas outlines, an object browser, native
+placement locks and top-level inventory export. Group assignment, rename, removal
+and lock changes use transactional history; instance deletion prunes groups.
+Locked parts remain fixed obstacles in automatic placement. Direct transforms
+refuse mixed locked selections. Complete copied component groups remap identities
+and unlock copies. Export aggregates exact explicit model/version/parameter data,
+without flattening boards or qualifying a purchasing BOM. ADR-025 is proposed.
+
+Local verification: 146 UI tests across 33 files; typecheck, lint and production
+build; 33 Chromium browser workflows (11 repeated three times); the real-engine
+browser regression including groups, lock-safe dragging, undo and themes; native
+session organization checks and protocol save/reload regression; 552 schema/catalog
+files and documentation integrity all pass. All 36 native CTest entries pass
+(90.71 seconds); the local firmware-build wrapper explicitly skips because no
+supported cross compiler is installed. The hosted matrix exercises compiler and
+platform coverage. Native screenshots are in the [gallery](gallery/README.md).
+The first hosted macOS browser run caught a focus/drag race: Objects navigation
+scheduled viewport focus after the test had read its pointer coordinates. Direct
+navigation now focuses synchronously unless a preview must first be discarded;
+the drag regression verifies a stable unobscured header before reading coordinates.
+The corrected organization workflow passes 10 consecutive local browser runs;
+typecheck, lint and production build pass. Hosted cross-platform validation is
+pending for this correction.
+
 ## Schematic cross-platform CI corrections
 
 The authoring PR's first hosted run exposed an extensionless-import collision:
@@ -18,8 +45,8 @@ checks the logical selection rather than counting only viewport-mounted symbols.
 Failed browser jobs retain screenshots and traces for diagnosis.
 
 Local verification: 138 UI tests across 32 files, typecheck, lint and build pass;
-source-path policy and its fixtures pass. The hosted cross-platform rerun is
-pending; the original failures are not treated as passes.
+source-path policy and its fixtures pass. The hosted cross-platform rerun passed all 17 checks, including the merge
+gate: [run 38965461112](https://github.com/EmbLinkOs/EmbSIM/actions/runs/38965461112).
 
 ## Schematic authoring and repair milestone
 

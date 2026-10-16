@@ -1358,6 +1358,20 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
     nets = doc.get("nets") or {}
     ctx.nets = set(nets)
     check_nets(report, file, nets, resolve)
+    # Presentation groups refer only to top-level instances, once each.
+    group_ids, grouped = set(), set()
+    instance_ids = {part.get("id") for part in (doc.get("components") or []) + (doc.get("boards") or [])}
+    for i, group in enumerate((doc.get("layout") or {}).get("groups") or []):
+        node = ptr("layout", "groups", i)
+        if group.get("id") in group_ids:
+            report.error(file, node + "/id", "catalog.duplicate", "duplicate schematic group id")
+        group_ids.add(group.get("id"))
+        for member in group.get("members") or []:
+            if member not in instance_ids:
+                report.error(file, node + "/members", "catalog.not_found", f"group member {member} is not declared")
+            if member in grouped:
+                report.error(file, node + "/members", "catalog.duplicate", f"group member {member} appears more than once")
+            grouped.add(member)
     # layout references
     for i, w in enumerate((doc.get("layout") or {}).get("wires") or []):
         if w.get("net") not in nets:

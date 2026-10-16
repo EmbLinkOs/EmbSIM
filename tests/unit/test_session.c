@@ -471,6 +471,57 @@ static void test_edit_transactions(void)
     free(proj);
 }
 
+
+static int organization_edit(esk_alloc *a, esk_json *project, const char *text, int *structural)
+{
+    const char *parse_error;
+    int line, result;
+    char why[256];
+    esk_json *edit = esk_json_parse(a, text, strlen(text), &line, &parse_error);
+    CHECK(edit != NULL);
+    result = esk_project_apply_edit(a, project, edit, structural, why, sizeof why);
+    esk_json_free(a, edit);
+    return result;
+}
+
+static void test_layout_organization(void)
+{
+    esk_alloc a;
+    const char *parse_error;
+    int line, structural = 0;
+    char why[256];
+    const char *text = "{\"components\":[{\"id\":\"A\",\"component\":\"t/led\"},{\"id\":\"B\",\"component\":\"t/led\"}],\"boards\":[{\"id\":\"MCU\",\"board\":\"t/board\"}],\"nets\":{\"N\":[\"A.A\",\"B.A\"]}}";
+    esk_json *project, *layout;
+    esk_alloc_init(&a, NULL);
+    project = esk_json_parse(&a, text, strlen(text), &line, &parse_error);
+    CHECK(project != NULL);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"groups\":[{\"id\":\"input\",\"name\":\"Input\",\"members\":[\"A\",\"MCU\"]}]}}", &structural) == 0);
+    CHECK(structural == 0);
+    CHECK(esk_project_validate_organization(project, why, sizeof why) == 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":\"oops\",\"y\":0}}}", &structural) != 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":0,\"y\":0,\"locked\":\"true\"}}}", &structural) != 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":0,\"y\":0,\"rotation\":45}}}", &structural) != 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":0,\"y\":0,\"mirror\":1}}}", &structural) != 0);
+
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"groups\":[{\"id\":\"bad\",\"name\":\"Bad\",\"members\":[\"missing\"]}]}}", &structural) != 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"groups\":[{\"id\":\"one\",\"name\":\"One\",\"members\":[\"A\",\"A\"]}]}}", &structural) != 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"groups\":[{\"id\":\"one\",\"name\":\"One\",\"members\":[\"A\"]},{\"id\":\"two\",\"name\":\"Two\",\"members\":[\"A\"]}]}}", &structural) != 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":40,\"y\":50,\"locked\":true}}}", &structural) == 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":80,\"y\":50}}}", &structural) != 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":40,\"y\":50,\"rotation\":90}}}", &structural) != 0);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":40,\"y\":50}}}", &structural) == 0);
+    layout = esk_json_get_mut(esk_json_at_mut(esk_json_get_mut(project, "components"), 0), "layout");
+    CHECK(esk_json_get_bool(layout, "locked", 0) == 1);
+    CHECK(organization_edit(&a, project, "{\"set_layout\":{\"id\":\"A\",\"layout\":{\"x\":80,\"y\":50,\"locked\":false}}}", &structural) == 0);
+    CHECK(structural == 0);
+    CHECK(organization_edit(&a, project, "{\"remove_component\":{\"id\":\"A\"}}", &structural) == 0);
+    CHECK(esk_json_len(esk_json_get(esk_json_at(esk_json_get(esk_json_get(project, "layout"), "groups"), 0), "members")) == 1);
+    CHECK(organization_edit(&a, project, "{\"remove_board\":{\"id\":\"MCU\"}}", &structural) == 0);
+    CHECK(esk_json_len(esk_json_get(esk_json_get(project, "layout"), "groups")) == 0);
+    CHECK(esk_json_len(esk_json_get(esk_json_get(project, "nets"), "N")) == 1);
+    esk_json_free(&a, project);
+}
+
 static void test_bad_project(void)
 {
     es_session *s = NULL;
@@ -500,4 +551,5 @@ RUN(test_determinism);
 RUN(test_composite);
 RUN(test_bad_project);
 RUN(test_edit_transactions);
+RUN(test_layout_organization);
 TEST_MAIN_END

@@ -689,7 +689,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         ids = [id];
         onSelectionChange({ components: ids, wires: [] });
       }
-      if (!readOnly && mode === 'select' && ids.includes(id)) {
+      if (!readOnly && mode === 'select' && ids.includes(id) && !ids.some((partId) => placedById.get(partId)?.layout.locked)) {
         svg.setPointerCapture(e.pointerId);
         gesture.current = { kind: 'move', ids, start: world, moved: false };
       }
@@ -1104,7 +1104,32 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             })}
           </g>
 
+          <g className="es-scene__layer es-scene__layer--groups">
+            {(project.layout?.groups ?? []).map((group) => {
+              const members = group.members.flatMap((id) => { const part = placedById.get(id); if (!part) return []; const offset = selection.components.includes(id) ? dragOffset : null; return [{ ...part.bounds, x: part.bounds.x + (offset?.x ?? 0), y: part.bounds.y + (offset?.y ?? 0) }]; });
+              if (!members.length) return null;
+              const x = Math.min(...members.map((r) => r.x)) - 22, y = Math.min(...members.map((r) => r.y)) - 42;
+              const width = Math.max(...members.map((r) => r.x + r.width)) - x + 22;
+              const height = Math.max(...members.map((r) => r.y + r.height)) - y + 22;
+              return <g key={group.id} data-group={group.id} className="es-schematic-group">
+                <rect x={x} y={y} width={width} height={height} rx={12} pointerEvents="none" />
+                <g role="button" tabIndex={0} aria-label={`Select group ${group.name}`} onPointerDown={(e) => {
+                  if (e.button !== 0) return;
+                  e.stopPropagation(); e.currentTarget.focus();
+                  onSelectionChange({ components: group.members, wires: [] });
+                  if (!readOnly && mode === 'select' && !group.members.some((id) => placedById.get(id)?.layout.locked)) {
+                    svgRef.current?.setPointerCapture(e.pointerId);
+                    gesture.current = { kind: 'move', ids: group.members, start: toWorld(e.clientX, e.clientY), moved: false };
+                  }
+                }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onSelectionChange({ components: group.members, wires: [] }); } }}>
+                  <rect x={x + 8} y={y + 3} width={Math.max(100, group.name.length * 8 + 24)} height={24} rx={6} />
+                  <text x={x + 18} y={y + 20}>{group.name}</text>
+                </g>
+              </g>;
+            })}
+          </g>
           <g className="es-scene__layer es-scene__layer--components">
+            {visible.filter((c) => c.layout.locked).map((c) => <text key={`lock-${c.id}`} className="es-placement-lock" x={c.bounds.x + c.bounds.width - 8} y={c.bounds.y - 3} pointerEvents="none" aria-label={`${c.id} placement locked`}>▣</text>)}
             {visible.map((c) => {
               const selected = selectedSet.has(c.id);
               const pinVisuals = showPins ? c.pins.map((pin) => (pin.net ? netVisual(pin.net) : IDLE)) : [];

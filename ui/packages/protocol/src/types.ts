@@ -47,6 +47,13 @@ export interface Layout {
   y: number;
   rotation?: number;
   mirror?: boolean;
+  locked?: boolean;
+}
+
+export interface SchematicGroup {
+  id: string;
+  name: string;
+  members: string[];
 }
 
 export interface ProjectBoard {
@@ -100,7 +107,7 @@ export interface Project {
   boards?: ProjectBoard[];
   components: ProjectComponent[];
   nets: Record<string, string[]>;
-  layout?: { wires?: Wire[]; labels?: NetLabel[]; buses?: Bus[]; sheet?: { width: number; height: number } };
+  layout?: { groups?: SchematicGroup[]; wires?: Wire[]; labels?: NetLabel[]; buses?: Bus[]; sheet?: { width: number; height: number } };
   probes?: ProjectProbe[];
   scenarios?: string[];
   settings?: Record<string, unknown>;

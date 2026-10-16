@@ -118,3 +118,21 @@ describe('foreign-net track reservation', () => {
     }
   });
 });
+
+describe('placement locks', () => {
+  it('keeps locked parts fixed as routing obstacles during full and selected layout', () => {
+    const p = project(); p.components[1]!.layout!.locked = true;
+    for (const selected of [undefined, ['A', 'B', 'C']]) {
+      const result = createLayout(p, catalog, { direction: 'horizontal', spacing: 'comfortable', route: true, selected });
+      expect(result.project.components[1]!.layout).toEqual(p.components[1]!.layout);
+      const fixed = layoutParts(result.project, catalog).find((part) => part.id === 'B')!;
+      for (const part of layoutParts(result.project, catalog).filter((part) => part.id !== 'B')) expect(rectsIntersect(symbolBounds(fixed.layout, fixed.symbol), symbolBounds(part.layout, part.symbol))).toBe(false);
+      expect(result.project.nets).toEqual(p.nets);
+    }
+  });
+  it('refuses an entire arrangement containing a locked member', () => {
+    const p = project(); p.components[0]!.layout!.locked = true;
+    const result = arrange(p, catalog, ['A', 'B', 'C'], 'left');
+    expect(result.project).toEqual(p); expect(result.moved).toBe(0); expect(result.warnings).toHaveLength(1);
+  });
+});

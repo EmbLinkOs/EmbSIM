@@ -562,6 +562,7 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
   } else if ('remove_component' in edit) {
     const id = edit.remove_component.id;
     p.components = p.components.filter((c) => c.id !== id);
+    if (p.layout?.groups) p.layout.groups = p.layout.groups.map((g) => ({ ...g, members: g.members.filter((m) => m !== id) })).filter((g) => g.members.length);
     for (const [net, pins] of Object.entries(p.nets)) {
       p.nets[net] = pins.filter((pin) => !pin.startsWith(`${id}.`));
       if (p.nets[net]!.length === 0) delete p.nets[net];
@@ -598,6 +599,7 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
   } else if ('remove_board' in edit) {
     const id = edit.remove_board.id;
     p.boards = (p.boards ?? []).filter((b) => b.id !== id);
+    if (p.layout?.groups) p.layout.groups = p.layout.groups.map((g) => ({ ...g, members: g.members.filter((m) => m !== id) })).filter((g) => g.members.length);
     for (const net of Object.keys(p.nets)) {
       p.nets[net] = p.nets[net]!.filter((pin) => pin.split('.')[0] !== id);
       if (p.nets[net]!.length === 0) delete p.nets[net];
@@ -606,12 +608,16 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
     const e = edit.set_layout;
     if (e.id) {
       const c = p.components.find((x) => x.id === e.id) ?? p.boards?.find((x) => x.id === e.id);
-      if (c && e.layout) c.layout = e.layout;
+      if (c && e.layout) {
+        if (c.layout?.locked && e.layout.locked !== false && (c.layout.x !== e.layout.x || c.layout.y !== e.layout.y || (c.layout.rotation ?? 0) !== (e.layout.rotation ?? 0) || !!c.layout.mirror !== !!e.layout.mirror)) throw new EngineError(-32602, `placement is locked for ${c.id}`);
+        c.layout = { ...e.layout, locked: e.layout.locked ?? c.layout?.locked };
+      }
     }
     p.layout ??= {};
     if (e.wires) p.layout.wires = e.wires;
     if (e.labels) p.layout.labels = e.labels;
     if (e.buses) p.layout.buses = e.buses;
+    if (e.groups) p.layout.groups = structuredClone(e.groups);
   }
 }
 

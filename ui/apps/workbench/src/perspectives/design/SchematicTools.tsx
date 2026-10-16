@@ -21,7 +21,7 @@ export function applyLayoutFields(current: Project, planned: Project): Project {
   const layouts = new Map([...planned.components, ...(planned.boards ?? [])].map((c) => [c.id, c.layout]));
   for (const c of [...current.components, ...(current.boards ?? [])]) {
     const layout = layouts.get(c.id);
-    if (layout) c.layout = structuredClone(layout);
+    if (layout && !c.layout?.locked) c.layout = { ...structuredClone(layout), locked: c.layout?.locked };
   }
   current.layout = { ...(current.layout ?? {}), wires: structuredClone(planned.layout?.wires ?? []) };
   return current;

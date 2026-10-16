@@ -207,3 +207,21 @@ shall identify its target, severity and scope, support navigation/filtering and
 provide net-routing repair where relevant. Reports shall apply only to their
 source revision, use a bounded cancellable worker, and surface failures. These
 checks shall not be represented as electrical-rule or physical-clearance validation.
+
+## Circuit organization
+
+Design details provides a searchable Objects table for top-level boards and
+components, group selection/navigation, flat named-group creation/rename/removal
+and per-instance/group placement locks. Canvas outlines derive bounds from member
+symbols; keyboard-accessible headers select all members. Locked placement cannot
+be directly dragged, rotated, mirrored or numerically repositioned. Arrangement
+rejects a selected locked member; automatic placement treats locks as fixed
+obstacles. Group/lock changes use normal transactional history, save and reload.
+Complete copied component groups remap IDs; new copies are unlocked.
+
+Export parts list uses the platform file adapter for CSV of top-level models,
+explicit versions and exact explicit parameter maps, grouped with quantity and
+references. It excludes firmware contents and board internals. This inventory is
+not a default-resolved or procurement-qualified BOM. CSV quoting and leading
+formula escaping apply to all cells. Organization controls respect read-only,
+busy, inside-view and layout-preview boundaries.

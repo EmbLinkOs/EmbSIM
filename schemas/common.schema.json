@@ -359,6 +359,9 @@
         },
         "mirror": {
           "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
         }
       }
     },

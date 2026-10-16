@@ -887,6 +887,13 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
         return ES_ESCHEMA;
     }
     {
+        char why[256];
+        if (esk_project_validate_organization(project, why, sizeof why)) {
+            ld_diag(s, ES_SEV_ERROR, "schema.layout", "project", "%s%s", why, "");
+            return ES_ESCHEMA;
+        }
+    }
+    {
         /* copied before the unload: `project` or `base_dir` may be the
          * session's own (a reload of the project as it stands) */
         esk_json *copy = esk_json_clone(s->a, project);

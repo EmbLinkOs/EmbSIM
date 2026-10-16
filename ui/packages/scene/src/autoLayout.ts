@@ -61,11 +61,11 @@ export function autoPlace(project: Project, catalog: SceneCatalog, options: Layo
   const p = structuredClone(project);
   const parts = layoutParts(p, catalog);
   const selected = new Set(options.selected?.length ? options.selected : parts.map((c) => c.id));
-  const active = parts.filter((c) => selected.has(c.id));
+  const active = parts.filter((c) => selected.has(c.id) && !c.layout.locked);
   const byId = new Map(active.map((c) => [c.id, c]));
   const links = graph(p, new Set(byId.keys()));
   const gap = options.spacing === 'compact' ? 70 : 120;
-  const fixed = parts.filter((c) => !selected.has(c.id)).map((c) => symbolBounds(c.layout, c.symbol, 30));
+  const fixed = parts.filter((c) => !selected.has(c.id) || c.layout.locked).map((c) => symbolBounds(c.layout, c.symbol, 30));
   const layouts = new Map<string, Layout>();
   const unseen = new Set([...byId.keys()].sort());
   let groupY = active.length ? Math.max(60, snap(Math.min(...active.map((c) => c.layout.y)))) : 60;
@@ -282,6 +282,7 @@ export function createLayout(project: Project, catalog: SceneCatalog, options: L
 export function arrange(project: Project, catalog: SceneCatalog, ids: string[], action: Arrangement): LayoutResult {
   const p = structuredClone(project);
   const parts = layoutParts(p, catalog).filter((c) => ids.includes(c.id));
+  if (parts.some((c) => c.layout.locked)) return { project: p, moved: 0, routed: 0, unresolved: 0, warnings: ['Unlock the selected parts before arranging them.'] };
   if (parts.length < 2) return { project: p, moved: 0, routed: 0, unresolved: 0, warnings: [] };
   const boxes = parts.map((c) => ({ c, b: symbolBounds(c.layout, c.symbol) }));
   const minX = Math.min(...boxes.map(({ b }) => b.x)); const maxX = Math.max(...boxes.map(({ b }) => b.x + b.width));

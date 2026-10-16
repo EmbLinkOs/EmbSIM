@@ -4,6 +4,37 @@ The Design perspective combines the component library, schematic canvas,
 inspector and Layout Studio. The schematic ribbon keeps layout, arrangement,
 focus, search and display controls together. Tools work in light and dark themes.
 
+## Organize a larger circuit
+
+Open **Objects** in Design details, or use the command palette's **Open schematic
+objects and groups**. Search references, model identifiers and group names. Click
+an object's reference to select and focus it, or Shift-click references to build a
+selection. Enter a **Group name** and choose **Group selection**. Assigning a part
+to a new group removes it from its old group; empty groups disappear. Click a
+group's canvas header or its Objects button to select all members. Move that
+selection by dragging its header or a member, or entering relative offsets in the inspector.
+Use the Group name field with **Rename** to rename an existing group; **Ungroup**
+removes organization while preserving parts and connections. Groups are flat
+presentation metadata, not electrical subcircuits or hierarchical sheets.
+
+**Lock placement** in the inspector protects the selected parts' position,
+rotation and mirror. Objects provides per-part and per-group lock controls. If
+any selected part is locked, direct movement, rotation, mirror and arrangement
+refuse the whole selection. Auto layout instead keeps locked instances fixed
+and places unlocked parts around them. Routing may still replace their connected
+tracks. Parameters and explicit deletion remain available. Unlock before moving
+parts. Locks and groups save with the project; edits share normal Undo/Redo and
+do not restart simulation. Complete component groups copied together receive new
+member/group identifiers and unlocked copies. Boards remain outside component
+clipboard support; incomplete groups are not copied.
+
+**Export parts list** saves CSV through the browser download or desktop file
+dialog. It aggregates top-level components and boards by model identifier,
+explicit version and exact explicit parameter map. It does not resolve default
+parameters, normalize equivalent SI values, flatten boards, infer manufacturer
+part numbers or qualify a purchasing BOM. CSV cells are quoted and leading
+spreadsheet formulas escaped. Export does not modify the project.
+
 ## Connect first, then arrange
 
 1. Place parts from the library. Placement chooses nearby free space rather than

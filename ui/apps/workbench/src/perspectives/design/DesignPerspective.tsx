@@ -16,6 +16,7 @@ import { useSession } from '../../stores/session';
 import { BoardPanel } from '../BoardPanel';
 import { InspectorPanel } from './InspectorPanel';
 import { LibraryPanel } from './LibraryPanel';
+import { ObjectsPanel } from './ObjectsPanel';
 import { NetsPanel } from './NetsPanel';
 import { SchematicChecksPanel } from './SchematicChecksPanel';
 import { useSchematicChecks } from './useSchematicChecks';
@@ -39,7 +40,7 @@ export function DesignPerspective() {
   const [context, setContext] = useState<{ source: typeof project; value: CanvasContext } | null>(null);
   const closeContext = useCallback(() => setContext(null), []);
   const [rename, setRename] = useState<{ net: string; value: string } | null>(null);
-  const [bottomTab, setBottomTab] = useState<'nets' | 'board' | 'studio' | 'checks'>('nets');
+  const [bottomTab, setBottomTab] = useState<'nets' | 'board' | 'studio' | 'checks' | 'objects'>('nets');
   const [preview, setPreview] = useState<LayoutPreview | null>(null);
   const [display, setDisplay] = useState<CanvasDisplay>({ airwires: true, minimap: true, smartWires: true, autoArrange: false, guides: true, focusMode: false });
   const appearance = useCanvasAppearance((s) => s.appearance);
@@ -81,6 +82,7 @@ export function DesignPerspective() {
     () => [
       { id: 'canvas.fit', label: 'Zoom to fit', group: 'Schematic', icon: <Maximize2 />, shortcut: '0', run: () => canvasRef.current?.zoomToFit() },
       { id: 'canvas.focus-mode', label: display.focusMode ? 'Show schematic side panels' : 'Focus canvas: hide side panels', group: 'Schematic', run: () => setDisplay((d) => ({ ...d, focusMode: !d.focusMode })) },
+      { id: 'canvas.objects', label: 'Open schematic objects and groups', group: 'Schematic', keywords: ['organize', 'lock', 'parts list'], run: () => setBottomTab('objects') },
       { id: 'canvas.checks', label: 'Open schematic checks', group: 'Schematic', keywords: ['diagnostics', 'issues', 'validate'], run: () => setBottomTab('checks') },
       { id: 'canvas.auto-layout', label: 'Open Layout Studio', group: 'Schematic', keywords: ['auto', 'arrange', 'route'], run: () => setBottomTab('studio') },
       { id: 'canvas.focus-selection', label: 'Focus selection', group: 'Schematic', shortcut: 'F', disabled: !selection.components.length, run: () => canvasRef.current?.focusComponents(selection.components) },
@@ -303,17 +305,18 @@ export function DesignPerspective() {
     { id: 'canvas', title: 'Schematic', content: <div className="wb-schematic-workspace">{canvas}{previewProject && <div className="wb-schematic-preview-banner"><Badge tone="accent">Layout preview</Badge><span>Review in Layout Studio · not applied</span><Button size="sm" variant="ghost" onClick={() => setPreview(null)}>Discard</Button></div>}</div>, actions: canvasActions, flush: true, weight: 3, minSize: 200 },
     {
       id: 'bottom',
-      title: bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : bottomTab === 'checks' ? 'Checks' : 'Board',
+      title: bottomTab === 'objects' ? 'Objects' : bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : bottomTab === 'checks' ? 'Checks' : 'Board',
       flush: true,
       weight: 1,
-      minSize: bottomTab === 'checks' ? 260 : 120,
+      minSize: bottomTab === 'checks' || bottomTab === 'objects' ? 260 : 120,
       content: (
-        <Tabs<'nets' | 'board' | 'studio' | 'checks'>
+        <Tabs<'nets' | 'board' | 'studio' | 'checks' | 'objects'>
           className={bottomTab === 'checks' ? 'wb-design-details--checks' : undefined}
           label="Design details"
           value={bottomTab}
           onValueChange={setBottomTab}
           items={[
+            { value: 'objects', label: 'Objects', content: <ObjectsPanel writable={!previewProject && !insideOf} onFocus={(ids) => { setPreview(null); if (previewProject) requestAnimationFrame(() => canvasRef.current?.focusComponents(ids)); else canvasRef.current?.focusComponents(ids); }} /> },
             { value: 'checks', label: `Checks${checks.pending ? ' …' : ` ${checks.issues.length}`}`, content: <SchematicChecksPanel {...checks} selected={selectedIssue} onFocus={focusIssue} onRoute={routeNet} onRefresh={checks.refresh} writable={editable && !store.busy && !previewProject && !insideOf} /> },
             { value: 'nets', label: 'Nets', content: <NetsPanel live={running} /> },
             { value: 'board', label: 'Board', content: <BoardPanel interactive={false} /> },

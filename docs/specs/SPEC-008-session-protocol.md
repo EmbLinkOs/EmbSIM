@@ -78,7 +78,7 @@ Notation: `method(params) -> result`. Params and results are objects.
   collect on a copy of the project; an edit that cannot apply (an unknown
   instance, a used id) fails with `-32602` and leaves the copy as it was
   before that edit. A commit of `set_layout` edits only (placement, wires,
-  labels) replaces the project's JSON and the run goes on. A commit that
+  labels, buses, groups and placement locks) replaces the project's JSON and the run goes on. A commit that
   changes the circuit loads the edited project in a scratch session first:
   if it does not load, the commit fails with `ES_ESCHEMA`, the errors are
   raised as diagnostics and the project stays as it was; otherwise the
@@ -225,3 +225,14 @@ load error; `3` a fatal diagnostic stopped the run; `4` replay divergence;
 client (`tools/embsim_client`) that exercises every method against the
 in-process and WebSocket transports; a method not covered there is not part
 of the protocol.
+
+### Schematic organization edits
+
+`set_layout {groups: [{id, name, members}]}` replaces presentation groups.
+Nonempty IDs/names, existing top-level members, unique group IDs and exclusive
+membership are validated before replacement. `remove_component` and `remove_board`
+prune memberships and empty groups. These rules also apply when loading projects.
+`set_layout {id, layout: {x, y, rotation?, mirror?, locked?}}` supports placement
+locks. Existing locked placement rejects position/orientation changes unless the
+edit explicitly supplies `locked: false`; omission preserves a lock. Undo of a
+lock must therefore explicitly unlock. Layout-only edits retain simulation time.

@@ -6,7 +6,7 @@
 // function on the project; the diff is sent forward on execute and the
 // reverse diff on undo, so the server stays the single source of truth.
 
-import type { Project, ProjectEdit } from '@embsim/protocol';
+import type { Layout, Project, ProjectEdit } from '@embsim/protocol';
 
 function pinMap(p: Project): Map<string, string> {
   const m = new Map<string, string>();
@@ -21,7 +21,12 @@ function sameSet(a: string[], b: string[]): boolean {
 }
 
 function layoutEqual(a: Project['components'][number]['layout'], b: Project['components'][number]['layout']): boolean {
-  return (a?.x ?? 0) === (b?.x ?? 0) && (a?.y ?? 0) === (b?.y ?? 0) && (a?.rotation ?? 0) === (b?.rotation ?? 0) && Boolean(a?.mirror) === Boolean(b?.mirror);
+  return (a?.x ?? 0) === (b?.x ?? 0) && (a?.y ?? 0) === (b?.y ?? 0) && (a?.rotation ?? 0) === (b?.rotation ?? 0) && Boolean(a?.mirror) === Boolean(b?.mirror) && Boolean(a?.locked) === Boolean(b?.locked);
+}
+
+function transactionLayout(before: Layout | undefined, after: Layout | undefined): Layout {
+  const layout = after ?? { x: 0, y: 0 };
+  return before?.locked && !after?.locked ? { ...layout, locked: false } : layout;
 }
 
 export function diffProject(before: Project, after: Project): ProjectEdit[] {
@@ -40,7 +45,7 @@ export function diffProject(before: Project, after: Project): ProjectEdit[] {
     for (const k of keys) {
       if (old.params?.[k] !== c.params?.[k]) edits.push({ set_param: { id: c.id, param: k, value: c.params?.[k] } });
     }
-    if (!layoutEqual(old.layout, c.layout)) edits.push({ set_layout: { id: c.id, layout: c.layout ?? { x: 0, y: 0 } } });
+    if (!layoutEqual(old.layout, c.layout)) edits.push({ set_layout: { id: c.id, layout: transactionLayout(old.layout, c.layout) } });
   }
 
   // Boards added, moved, removed.
@@ -49,7 +54,7 @@ export function diffProject(before: Project, after: Project): ProjectEdit[] {
   for (const b of after.boards ?? []) {
     const old = boardsBefore.get(b.id);
     if (!old) edits.push({ add_board: { id: b.id, board: b.board, layout: b.layout, firmware: b.firmware } });
-    else if (!layoutEqual(old.layout, b.layout)) edits.push({ set_layout: { id: b.id, layout: b.layout ?? { x: 0, y: 0 } } });
+    else if (!layoutEqual(old.layout, b.layout)) edits.push({ set_layout: { id: b.id, layout: transactionLayout(old.layout, b.layout) } });
   }
 
   // Net renames: a vanished net whose pin set reappears under a new name.
@@ -82,6 +87,8 @@ export function diffProject(before: Project, after: Project): ProjectEdit[] {
   // Components removed (the server drops their pins).
   for (const c of before.components) if (!afterById.has(c.id)) edits.push({ remove_component: { id: c.id } });
   for (const b of before.boards ?? []) if (!boardsAfter.has(b.id)) edits.push({ remove_board: { id: b.id } });
+
+  if (JSON.stringify(before.layout?.groups ?? []) !== JSON.stringify(after.layout?.groups ?? [])) edits.push({ set_layout: { groups: after.layout?.groups ?? [] } });
 
   // Presentation layout.
   const wiresChanged = JSON.stringify(before.layout?.wires ?? []) !== JSON.stringify(after.layout?.wires ?? []);
