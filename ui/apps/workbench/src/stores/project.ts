@@ -6,7 +6,7 @@
 // pure function on the project; its effect reaches the server as a
 // transaction (see projectDiff.ts) and comes back through refresh().
 
-import { CommandStack, GRID, boardSymbol, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
+import { CommandStack, GRID, boardSymbol, freePlacement, autoRoute, createLayout, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
 import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
 import { create } from 'zustand';
 import { getClient, primeStores } from '../connection';
@@ -58,11 +58,11 @@ export interface ProjectState {
   /** Runs an edit as an undoable command; `fn` returns the next project or null for no-op. */
   mutate(label: string, fn: (p: Project) => Project | null): Promise<void>;
   placeComponent(componentId: string, at: { x: number; y: number }): Promise<string | null>;
-  moveComponents(ids: string[], dx: number, dy: number): Promise<void>;
+  moveComponents(ids: string[], dx: number, dy: number, reroute?: boolean): Promise<void>;
   rotateComponents(ids: string[]): Promise<void>;
   mirrorComponents(ids: string[]): Promise<void>;
   deleteSelection(selection: Selection): Promise<void>;
-  wire(from: PinRef, to: PinRef | NetRef, points: [number, number][]): Promise<void>;
+  wire(from: PinRef, to: PinRef | NetRef, points: [number, number][], autoArrange?: boolean): Promise<void>;
   setParam(id: string, param: string, value: unknown): Promise<void>;
   renameNet(from: string, to: string): Promise<void>;
   /** A label naming the net of wire `index`, at the middle of its first segment. */
@@ -179,6 +179,12 @@ async function applyEdits(edits: ProjectEdit[]): Promise<void> {
     await c.project.transaction({ op: 'abort', tx }).catch(() => undefined);
     throw e;
   }
+}
+
+/** Only nets incident to transformed parts need new presentation geometry. */
+function rerouteParts(p: Project, catalog: SceneCatalog, ids: string[]): Project {
+  const affected = new Set(Object.entries(p.nets).filter(([, pins]) => pins.some((pin) => ids.includes(pin.split('.')[0]!))).map(([net]) => net));
+  return autoRoute(p, catalog, affected).project;
 }
 
 export const useProject = create<ProjectState>((set, get) => ({
@@ -309,17 +315,15 @@ export const useProject = create<ProjectState>((set, get) => ({
     const entry = get().catalog[componentId];
     if (!entry) return null;
     const id = get().nextId(componentId);
-    const w = entry.description.symbol.width;
-    const h = entry.description.symbol.height;
     const params: Record<string, string | number | boolean> = {};
     await get().mutate(`Place ${id}`, (p) => {
-      p.components.push({ id, component: componentId, params, layout: { x: snap(at.x - w / 2), y: snap(at.y - h / 2), rotation: 0 } });
+      p.components.push({ id, component: componentId, params, layout: freePlacement(p, get().sceneCatalog, entry.description.symbol, at) });
       return p;
     });
     return id;
   },
 
-  async moveComponents(ids, dx, dy) {
+  async moveComponents(ids, dx, dy, reroute = false) {
     const catalog = get().catalog;
     await get().mutate(`Move ${ids.length > 1 ? `${ids.length} components` : ids[0]}`, (p) => {
       const moved = new Map<string, { x: number; y: number }>(); // old pin position → new
@@ -355,7 +359,7 @@ export const useProject = create<ProjectState>((set, get) => ({
           if (prev[0] !== n.x && prev[1] !== n.y) pts.splice(pts.length - 1, 0, prev[1] === last[1] ? [n.x, prev[1]] : [prev[0], n.y]);
         }
       }
-      return p;
+      return reroute ? rerouteParts(p, get().sceneCatalog, ids) : p;
     });
   },
 
@@ -365,14 +369,14 @@ export const useProject = create<ProjectState>((set, get) => ({
       const targets = placeables(p).filter((c) => ids.includes(c.id));
       const layouts = rotateLayouts(targets.map((c) => ({ layout: c.layout ?? { x: 0, y: 0 }, symbol: catalog[catalogId(c)]?.description.symbol ?? { width: 60, height: 20 } })));
       targets.forEach((c, i) => (c.layout = layouts[i] as Layout));
-      return p;
+      return rerouteParts(p, get().sceneCatalog, ids);
     });
   },
 
   async mirrorComponents(ids) {
     await get().mutate(`Mirror ${ids.join(', ')}`, (p) => {
       for (const c of placeables(p)) if (ids.includes(c.id)) c.layout = { ...(c.layout ?? { x: 0, y: 0 }), mirror: !c.layout?.mirror };
-      return p;
+      return rerouteParts(p, get().sceneCatalog, ids);
     });
   },
 
@@ -429,7 +433,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     });
   },
 
-  async wire(from, to, points) {
+  async wire(from, to, points, autoArrange = false) {
     await get().mutate('Wire', (p) => {
       const fromPin = from.component ? `${from.component}.${from.pin}` : null;
       const toPin = 'component' in to && to.component ? `${to.component}.${to.pin}` : null;
@@ -453,7 +457,11 @@ export const useProject = create<ProjectState>((set, get) => ({
         p.nets[net] = [];
       }
       for (const pin of [fromPin, toPin]) if (pin && !p.nets[net]!.includes(pin)) p.nets[net]!.push(pin);
-      p.layout = { ...(p.layout ?? {}), wires: [...(p.layout?.wires ?? []), { net, points }] };
+      if (points.length >= 2) p.layout = { ...(p.layout ?? {}), wires: [...(p.layout?.wires ?? []), { net, points }] };
+      if (autoArrange) {
+        const selected = [...new Set(p.nets[net]!.map((pin) => pin.split('.')[0]!))];
+        return createLayout(p, get().sceneCatalog, { direction: 'horizontal', spacing: 'comfortable', selected, route: true }).project;
+      }
       return p;
     });
   },

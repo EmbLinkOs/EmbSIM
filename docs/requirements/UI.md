@@ -71,3 +71,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16; editor validation implemented.
 **Verification.** Scenario validation unit tests and ScenarioEditor interaction regressions for malformed JSON, correction and invalid times.
 **Trace.** SPEC-011 §2; SPEC-007 §2
+
+### UI-010  Connected layout and schematic navigation
+**Statement.** The schematic shall offer reviewable connectivity-driven placement, obstacle-aware routing, alignment/distribution and opt-in arrangement after connecting, preserving electrical data and whole-operation undo. Search, selection focus, net spotlight and a navigator shall support large sheets; stale previews shall not apply.
+**Rationale.** Circuit authors need legible diagrams and fast navigation without losing manual work or changing circuit behavior.
+**Status.** Accepted 2026-10-16; Schematic Studio implemented with documented heuristic limits.
+**Verification.** Scene geometry/layout tests, layout transaction-boundary test and `tests/browser/test_schematic.py` against the native engine.
+**Trace.** SPEC-011 §2; SPEC-007 §1; SPEC-008 §5

@@ -48,3 +48,27 @@ test('keyboard: place and wire from the library, light theme contrast', async ({
   await page.getByRole('button', { name: `Switch to ${other} theme` }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', other);
 });
+
+test('schematic studio: worker preview, apply, undo and focus mode', async ({ page }) => {
+  await page.goto('/?mock=1');
+  await expect(page.getByRole('application', { name: 'Schematic canvas' })).toBeVisible();
+  await page.getByRole('button', { name: 'Auto layout', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview layout', exact: true }).click();
+  await expect(page.getByText('Preview · not applied', { exact: true })).toBeVisible();
+  await expect(page.getByText('Layout preview', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Apply layout', exact: true }).click();
+  await expect(page.getByText('Layout applied', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Redo', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Focus canvas (hide side panels)', exact: true }).check();
+  await expect(page.getByRole('region', { name: 'Library', exact: true })).toHaveCount(0);
+  await page.getByRole('checkbox', { name: 'Focus canvas (hide side panels)', exact: true }).uncheck();
+  await expect(page.getByRole('region', { name: 'Library', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close tools', exact: true }).click();
+  await page.getByRole('button', { name: 'Find', exact: true }).click();
+  await page.getByLabel('Component or net', { exact: true }).fill('R1');
+  await page.getByLabel('Component or net', { exact: true }).press('Enter');
+  await expect(page.getByRole('button', { name: 'Focus', exact: true })).toBeEnabled();
+});

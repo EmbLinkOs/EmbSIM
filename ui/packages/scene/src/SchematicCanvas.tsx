@@ -12,9 +12,10 @@ import { memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, use
 import { ComponentSymbol } from './ComponentSymbol';
 import {
   GRID,
+  magneticDrag,
   distanceToSegment,
   findJunctions,
-  nearestWirePoint,
+  findAirwires,
   pinPosition,
   rectContainsRect,
   rectsIntersect,
@@ -27,6 +28,7 @@ import {
   type Rect,
 } from './geometry';
 import { busText, busValue } from './bus';
+import { routeConnection } from './autoLayout';
 
 export interface SceneSymbol {
   name: string;
@@ -67,6 +69,8 @@ export interface Viewport {
 
 export interface SchematicCanvasHandle {
   zoomToFit(): void;
+  focusComponents(ids: string[]): void;
+  focusNet(net: string): void;
   zoomBy(factor: number): void;
   resetZoom(): void;
   focus(): void;
@@ -86,6 +90,12 @@ export interface SchematicCanvasProps {
   analogRange?: [number, number];
   probes?: ProbeInfo[];
   readOnly?: boolean;
+  showGrid?: boolean;
+  showAirwires?: boolean;
+  showMinimap?: boolean;
+  smartWires?: boolean;
+  alignmentGuides?: boolean;
+  highlightNet?: string | null;
   onMove?: (ids: string[], dx: number, dy: number) => void;
   onRotate?: (ids: string[]) => void;
   onMirror?: (ids: string[]) => void;
@@ -278,6 +288,12 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     analogRange = [0, 3.3],
     probes,
     readOnly,
+    showGrid = true,
+    showAirwires = true,
+    showMinimap = false,
+    smartWires = false,
+    alignmentGuides = true,
+    highlightNet,
     onMove,
     onRotate,
     onMirror,
@@ -300,6 +316,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const [size, setSize] = useState({ width: 800, height: 600 });
   const [hover, setHover] = useState<{ text: string; sub?: string; x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = useState<Point | null>(null);
+  const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
   const [marquee, setMarquee] = useState<Rect | null>(null);
   const [wiring, setWiring] = useState<{ from: PinRef; cursor: Point; horizontalFirst: boolean } | null>(null);
   const [dropHint, setDropHint] = useState<Point | null>(null);
@@ -349,12 +366,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     const lines: { net: string; a: Point; b: Point }[] = [];
     for (const [net, points] of Object.entries(pinsByNet)) {
       const netWires = wires.filter((w) => w.net === net);
-      for (const p of points) {
-        const touched = netWires.some((w) => wireSegments(w).some(([a, b]) => distanceToSegment(p, a, b) < 0.01));
-        if (touched) continue;
-        const target = netWires.length ? nearestWirePoint(p, netWires) : points.find((q) => q !== p) ?? null;
-        if (target && (target.x !== p.x || target.y !== p.y)) lines.push({ net, a: p, b: target });
-      }
+      for (const line of findAirwires(points, netWires)) lines.push({ net, ...line });
     }
     return lines;
   }, [pinsByNet, wires]);
@@ -396,32 +408,35 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     [setViewport, size],
   );
 
+  const focusBounds = useCallback((rects: Rect[]) => {
+    if (!rects.length) return;
+    const minX = Math.min(...rects.map((r) => r.x)) - 50;
+    const minY = Math.min(...rects.map((r) => r.y)) - 50;
+    const maxX = Math.max(...rects.map((r) => r.x + r.width)) + 50;
+    const maxY = Math.max(...rects.map((r) => r.y + r.height)) + 50;
+    const k = Math.max(MIN_ZOOM, Math.min(2, Math.min(size.width / (maxX - minX), size.height / (maxY - minY))));
+    setViewport({ x: (size.width - (maxX - minX) * k) / 2 - minX * k, y: (size.height - (maxY - minY) * k) / 2 - minY * k, k });
+  }, [size, setViewport]);
+
   const zoomToFit = useCallback(() => {
     const rects = placed.map((p) => p.bounds);
     for (const w of wires) for (const [x, y] of w.points) rects.push({ x, y, width: 0, height: 0 });
-    if (rects.length === 0) {
-      setViewport({ x: 40, y: 40, k: 1 });
-      return;
-    }
-    const minX = Math.min(...rects.map((r) => r.x)) - 40;
-    const minY = Math.min(...rects.map((r) => r.y)) - 40;
-    const maxX = Math.max(...rects.map((r) => r.x + r.width)) + 40;
-    const maxY = Math.max(...rects.map((r) => r.y + r.height)) + 40;
-    const k = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.min(size.width / (maxX - minX), size.height / (maxY - minY))));
-    setViewport({ x: (size.width - (maxX - minX) * k) / 2 - minX * k, y: (size.height - (maxY - minY) * k) / 2 - minY * k, k });
-  }, [placed, wires, size, setViewport]);
+    if (!rects.length) setViewport({ x: 40, y: 40, k: 1 });
+    else focusBounds(rects);
+  }, [placed, wires, focusBounds, setViewport]);
 
-  useImperativeHandle(
-    handle,
-    () => ({
-      zoomToFit,
-      zoomBy: (f) => zoomAt(f),
-      resetZoom: () => setViewport({ x: 40, y: 40, k: 1 }),
-      focus: () => svgRef.current?.focus(),
-      getViewport: () => vpRef.current,
-    }),
-    [zoomToFit, zoomAt, setViewport],
-  );
+  useImperativeHandle(handle, () => ({
+    zoomToFit,
+    zoomBy: (f) => zoomAt(f),
+    resetZoom: () => setViewport({ x: 40, y: 40, k: 1 }),
+    focus: () => svgRef.current?.focus(),
+    getViewport: () => vpRef.current,
+    focusComponents: (ids) => focusBounds(placed.filter((p) => ids.includes(p.id)).map((p) => p.bounds)),
+    focusNet: (net) => focusBounds([
+      ...(pinsByNet[net] ?? []).map((p) => ({ ...p, width: 0, height: 0 })),
+      ...wires.filter((w) => w.net === net).flatMap((w) => w.points.map(([x, y]) => ({ x, y, width: 0, height: 0 }))),
+    ]),
+  }), [zoomToFit, zoomAt, setViewport, focusBounds, placed, pinsByNet, wires]);
 
   useEffect(() => {
     const el = svgRef.current;
@@ -630,6 +645,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     gesture.current = { kind: 'pan', startX: e.clientX, startY: e.clientY, vp: vpRef.current, moved: false };
   };
 
+  const moveDelta = (ids: string[], start: Point, world: Point): { delta: Point; x?: number; y?: number } => {
+    const delta = { x: snap(world.x - start.x), y: snap(world.y - start.y) };
+    return alignmentGuides ? magneticDrag(placed.filter((p) => ids.includes(p.id)).map((p) => p.bounds), placed.filter((p) => !ids.includes(p.id)).map((p) => p.bounds), delta, 12 / vpRef.current.k) : { delta };
+  };
+
   const onPointerMove = (e: ReactPointerEvent<SVGSVGElement>) => {
     const g = gesture.current;
     const world = toWorld(e.clientX, e.clientY);
@@ -645,8 +665,9 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       g.moved = true;
       setViewport({ x: g.vp.x + dx, y: g.vp.y + dy, k: g.vp.k }, false);
     } else if (g.kind === 'move') {
-      const dx = snap(world.x - g.start.x);
-      const dy = snap(world.y - g.start.y);
+      const aligned = moveDelta(g.ids, g.start, world);
+      const { x: dx, y: dy } = aligned.delta;
+      setGuides({ x: aligned.x, y: aligned.y });
       if (dx !== 0 || dy !== 0) g.moved = true;
       setDragOffset(g.moved ? { x: dx, y: dy } : null);
     } else if (g.kind === 'marquee') {
@@ -674,8 +695,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       return;
     }
     if (g.kind === 'move') {
-      const dx = snap(world.x - g.start.x);
-      const dy = snap(world.y - g.start.y);
+      const { x: dx, y: dy } = moveDelta(g.ids, g.start, world).delta;
+      setGuides({});
       setDragOffset(null);
       if (g.moved && (dx !== 0 || dy !== 0)) onMove?.(g.ids, dx, dy);
       return;
@@ -805,6 +826,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         e.preventDefault();
         zoomAt(0.8);
         break;
+      case 'f':
+      case 'F':
+        e.preventDefault();
+        focusBounds(placed.filter((p) => selection.components.includes(p.id)).map((p) => p.bounds));
+        break;
       case '0':
         e.preventDefault();
         zoomToFit();
@@ -865,9 +891,18 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
 
   const netVisual = (net: string): NetVisual => (live ? describeNetState(netStates?.[net], analogRange) : { kind: 'idle', text: '' });
 
-  const wiringPreview = wiring ? routeOrthogonal(wiring.from.point, wiring.cursor, wiring.horizontalFirst) : null;
+  const wireTarget = wiring ? findPinAt(wiring.cursor, .1) : null;
+  const smartPreview = wiring && smartWires ? routeConnection(project, catalog, wiring.from, wireTarget ?? { point: wiring.cursor, net: findWireAt(wiring.cursor, .1)?.wire.net }) : null;
+  const routeBlocked = !!wiring && smartWires && !smartPreview;
+  const wiringPreview = wiring ? smartPreview ?? routeOrthogonal(wiring.from.point, wiring.cursor, wiring.horizontalFirst) : null;
   const showPins = !readOnly || mode === 'probe';
   const cursorClass = mode === 'wire' ? 'es-scene--wire' : mode === 'probe' ? 'es-scene--probe' : '';
+
+  const mapRects = [...placed.map((p) => p.bounds), visibleWorld];
+  const mapX = Math.min(0, ...mapRects.map((r) => r.x)) - 40;
+  const mapY = Math.min(0, ...mapRects.map((r) => r.y)) - 40;
+  const mapW = Math.max(100, ...mapRects.map((r) => r.x + r.width)) - mapX + 40;
+  const mapH = Math.max(100, ...mapRects.map((r) => r.y + r.height)) - mapY + 40;
 
   return (
     <div className={`es-scene ${cursorClass} ${className ?? ''}`.trim()}>
@@ -901,16 +936,16 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         <g ref={sceneRef} transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.k})`}>
           <g className="es-scene__layer es-scene__layer--sheet">
             <rect className="es-scene__sheet" x={0} y={0} width={sheet.width} height={sheet.height} />
-            {viewport.k > 0.35 && <rect x={0} y={0} width={sheet.width} height={sheet.height} fill="url(#es-grid-major)" pointerEvents="none" />}
+            {showGrid && viewport.k > 0.35 && <rect x={0} y={0} width={sheet.width} height={sheet.height} fill="url(#es-grid-major)" pointerEvents="none" />}
           </g>
 
           <g className="es-scene__layer es-scene__layer--wires">
-            {ratsnest.map((r, i) => (
+            {showAirwires && ratsnest.map((r, i) => (
               <line key={`rat-${i}`} className="es-scene__ratsnest" x1={r.a.x} y1={r.a.y} x2={r.b.x} y2={r.b.y} />
             ))}
             {wires.map((w, i) => {
               const vis = netVisual(w.net);
-              return <WireView key={`w-${i}`} index={i} wire={w} vis={vis} selected={selection.wires.includes(i)} sub={live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`} onHover={showHover} onLeave={hideHover} />;
+              return <g key={`w-${i}`} opacity={highlightNet && highlightNet !== w.net ? 0.18 : 1}><WireView index={i} wire={w} vis={vis} selected={selection.wires.includes(i)} sub={live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`} onHover={showHover} onLeave={hideHover} /></g>;
             })}
             {buses.map((b, i) => {
               const pts = b.points.map(([x, y]) => `${x},${y}`).join(' ');
@@ -987,12 +1022,30 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
           </g>
 
           <g className="es-scene__layer es-scene__layer--selection">
+            {guides.x !== undefined && <line className="es-scene__alignment-guide" x1={guides.x} x2={guides.x} y1={visibleWorld.y} y2={visibleWorld.y + visibleWorld.height} />}
+            {guides.y !== undefined && <line className="es-scene__alignment-guide" y1={guides.y} y2={guides.y} x1={visibleWorld.x} x2={visibleWorld.x + visibleWorld.width} />}
             {marquee && <rect className="es-scene__marquee" x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height} />}
-            {wiringPreview && <polyline className="es-scene__wire-preview" points={wiringPreview.map(([x, y]) => `${x},${y}`).join(' ')} />}
+            {wiringPreview && <polyline className={`es-scene__wire-preview${routeBlocked ? ' is-blocked' : ''}`} points={wiringPreview.map(([x, y]) => `${x},${y}`).join(' ')} />}
             {dropHint && <rect className="es-scene__drop-hint" x={dropHint.x - 5} y={dropHint.y - 5} width={10} height={10} />}
           </g>
         </g>
       </svg>
+      {showMinimap && (
+        <div className="es-scene__navigator" aria-label="Sheet navigator">
+          <span>Navigator</span>
+          <svg viewBox={`${mapX} ${mapY} ${mapW} ${mapH}`} preserveAspectRatio="none" role="img" aria-label="Schematic overview. Click to navigate." onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            const x = mapX + (e.clientX - r.left) / r.width * mapW;
+            const y = mapY + (e.clientY - r.top) / r.height * mapH;
+            setViewport({ ...vpRef.current, x: size.width / 2 - x * vpRef.current.k, y: size.height / 2 - y * vpRef.current.k });
+          }}>
+            {wires.map((w, i) => <polyline key={i} points={w.points.map((p) => p.join(',')).join(' ')} className="es-scene__map-wire" />)}
+            {placed.map((p) => <rect key={p.id} {...p.bounds} className={selectedSet.has(p.id) ? 'es-scene__map-part is-selected' : 'es-scene__map-part'} />)}
+            <rect {...visibleWorld} className="es-scene__map-viewport" />
+          </svg>
+          <button type="button" onClick={zoomToFit}>Fit sheet <kbd>0</kbd></button>
+        </div>
+      )}
       {hover && (
         <div className="es-scene__tooltip" style={{ left: hover.x + 12, top: hover.y + 12 }} role="presentation">
           <span className="es-mono">{hover.text}</span>
@@ -1004,6 +1057,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       </div>
       <div className="es-scene__hud" aria-hidden="true">
         <span className="es-mono">{Math.round(viewport.k * 100)}%</span>
+        {ratsnest.length > 0 && <span>{ratsnest.length} undrawn connection{ratsnest.length === 1 ? '' : 's'}</span>}
+        {routeBlocked && <span>No clear route · move the cursor or rearrange overlapping parts</span>}
         {wiring && <span>wiring from {wiring.from.component ? `${wiring.from.component}.${wiring.from.pin}` : wiring.from.net} · Esc cancels</span>}
         {mode === 'wire' && !wiring && <span>click a pin to start a wire</span>}
         {mode === 'probe' && <span>click a wire or pin to add a probe</span>}

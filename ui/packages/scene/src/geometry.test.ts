@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { describe, expect, it } from 'vitest';
-import { findJunctions, pinPosition, routeOrthogonal, snap, symbolBounds, symbolTransform } from './geometry';
+import { findJunctions, findAirwires, magneticDrag, pinPosition, routeOrthogonal, snap, symbolBounds, symbolTransform } from './geometry';
 
 const resistor = { svg: '', width: 60, height: 20, pins: { '1': { x: 0, y: 10, side: 'left' as const }, '2': { x: 60, y: 10, side: 'right' as const } } };
 
@@ -61,5 +61,31 @@ describe('geometry', () => {
     expect(findJunctions([wires[0]!], { A: [{ x: 20, y: 0 }] })).toEqual([{ net: 'A', point: { x: 20, y: 0 } }]);
     // A plain corner is not.
     expect(findJunctions([{ net: 'C', points: [[0, 0], [10, 0], [10, 10]] }])).toEqual([]);
+  });
+});
+
+
+describe('magnetic drag alignment', () => {
+  it('snaps edges and centers and reports visible guides', () => {
+    const result = magneticDrag([{ x: 0, y: 0, width: 60, height: 40 }], [{ x: 100, y: 100, width: 60, height: 40 }], { x: 90, y: 90 }, 12);
+    expect(result.delta).toEqual({ x: 100, y: 100 });
+    expect(result.x).toBe(100); expect(result.y).toBe(100);
+  });
+  it('does not pull distant parts or break grid snapping', () => {
+    const result = magneticDrag([{ x: 0, y: 0, width: 60, height: 40 }], [{ x: 1000, y: 1000, width: 60, height: 40 }], { x: 13, y: 24 });
+    expect(result).toEqual({ delta: { x: 10, y: 20 } });
+  });
+});
+
+
+describe('unrouted visual connectivity', () => {
+  it('finds a missing connection even when every pin touches a wire', () => {
+    const pins = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 300, y: 0 }, { x: 400, y: 0 }];
+    expect(findAirwires(pins, [{ net: 'N', points: [[0, 0], [100, 0]] }, { net: 'N', points: [[300, 0], [400, 0]] }])).toEqual([{ a: pins[1], b: pins[2] }]);
+  });
+  it('shows a minimal tree for undrawn pins and no line for connected branches', () => {
+    const pins = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }];
+    expect(findAirwires(pins, [])).toHaveLength(2);
+    expect(findAirwires(pins, [{ net: 'N', points: [[0, 0], [100, 0]] }, { net: 'N', points: [[100, 0], [100, 100]] }])).toEqual([]);
   });
 });

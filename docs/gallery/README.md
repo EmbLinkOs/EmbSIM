@@ -5,6 +5,16 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Schematic Studio (2026-10-16)
+
+Captured against the native engine with `tests/browser/test_schematic.py`.
+The [user guide](../user/schematic-studio.md) explains the controls and routing limits.
+
+| | |
+|---|---|
+| ![Connectivity-driven layout preview](schematic-studio/preview-light.png) | **Preview before applying.** Connected groups placed and routed, with moved/route counts, navigation and one-step Apply/Undo. |
+| ![Schematic Studio in dark theme](schematic-studio/dark.png) | **Net spotlight.** Find and focus a net while retaining circuit context; the same tools in the dark theme. |
+
 ## M5 stacks and faults (2026-10-16)
 
 The firmware's stacks and faults measured from its core: how deep each
