@@ -43,6 +43,22 @@ project's image. Nothing is executed without the user's request; profiles
 never run at load. Detection runs on request (`toolchain.detect`) and caches
 results per session.
 
+As implemented: the board's settings for the profile name its target by
+`target` (a triple: clang, EmbCC) or by `cpu` (the GNU and XC profiles key
+their targets by CPU). The variables:
+- lists, spliced where an argument is exactly the variable: `${cc}`,
+  `${objcopy}` (the target's), `${cflags}` (the board's `flags` then the
+  project's), `${link_flags}` (the target's then the project's firmware
+  `link_flags`, applied to the link alone: a freestanding program's
+  `-nostartfiles`), `${link}` (the board's), `${defines}` (the target's,
+  written as flags, then the project's as `-D`), `${include}`,
+  `${objects}`;
+- single values, replaced inside an argument: `${source}`, `${object}`,
+  `${image}`, `${map}` (the image's path with `.map` after it), `${hex}`
+  (with `.hex` for its extension), `${linker_script}` (the project's, else
+  the board's; an argument naming it is dropped when there is none),
+  `${target}`, `${cpu}`.
+
 ## 3. XC specifics
 
 `xc8-cc` produces HEX and, for recent versions, ELF with partial DWARF; the

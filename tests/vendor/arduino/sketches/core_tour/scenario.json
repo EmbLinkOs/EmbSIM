@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "core_tour",
+  "until": "1.5s",
+  "description": "The banner over the terminal; analogRead of the potentiometer at half and then a quarter; a button press counted by attachInterrupt; a character typed on the terminal echoed; the L LED at 5 Hz from delay(100); analogWrite's PWM: 490.2 Hz on D9 (Timer1, phase correct), 976.6 Hz on D6 (Timer0, fast PWM).",
+  "inputs": [
+    {
+      "at": "500ms",
+      "target": "POT",
+      "input": "position",
+      "value": 0.25
+    },
+    {
+      "at": "700ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "750ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "900ms",
+      "target": "VT1",
+      "input": "tx_text",
+      "value": "x"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "20ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "EmbSIM Arduino core tour"
+      }
+    },
+    {
+      "id": "half",
+      "at": "450ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "A0=51"
+      }
+    },
+    {
+      "id": "quarter",
+      "at": "700ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "A0=25"
+      }
+    },
+    {
+      "id": "button",
+      "at": "1s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "presses=1"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "1.2s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "echo x"
+      }
+    },
+    {
+      "id": "millis",
+      "at": "1.5s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "ms=140"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "1.5s"
+      ],
+      "probe": "d13",
+      "expect": {
+        "frequency_hz": 5,
+        "tolerance": 0.02
+      }
+    },
+    {
+      "id": "pwm-d9",
+      "between": [
+        "100ms",
+        "400ms"
+      ],
+      "probe": "d9",
+      "expect": {
+        "frequency_hz": 490.196,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "pwm-d6",
+      "between": [
+        "100ms",
+        "400ms"
+      ],
+      "probe": "d6",
+      "expect": {
+        "frequency_hz": 976.5625,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault"
+        ]
+      }
+    }
+  ]
+}
