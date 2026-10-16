@@ -108,7 +108,7 @@ static void port_write(void *ctx, u32 off, int n, u32 v)
     struct avr_port *g = (struct avr_port *)ctx;
     if (off == esk_rf_off(g->pin)) {
         /* a one toggles PORTxn; PINx itself is the pins */
-        esk_rf_hw(g->port, (g->port->value ^ (v & 0xffu)) & ((1u << g->npins) - 1u));
+        esk_rf_hw(g->port, (g->port->value ^ (v & 0xffu)) & (((u64)1 << g->npins) - 1u));
     } else {
         esk_rf_write(g->p, off, n, v);
     }

@@ -46,15 +46,15 @@ void esk_avr_exint_pin(struct esk_mach *m, int port, int bit, int level)
     if (port == 3 && (bit == 2 || bit == 3)) {
         n = bit - 2;
         switch ((x->eicra->value >> (2 * n)) & 3) {
-        case 1: esk_rf_hw(x->eifr, x->eifr->value | (1u << n)); break;
-        case 2: if (!level) esk_rf_hw(x->eifr, x->eifr->value | (1u << n)); break;
-        case 3: if (level) esk_rf_hw(x->eifr, x->eifr->value | (1u << n)); break;
+        case 1: esk_rf_hw(x->eifr, x->eifr->value | ((u64)1 << n)); break;
+        case 2: if (!level) esk_rf_hw(x->eifr, x->eifr->value | ((u64)1 << n)); break;
+        case 3: if (level) esk_rf_hw(x->eifr, x->eifr->value | ((u64)1 << n)); break;
         default: break; /* the low level: no flag */
         }
     }
     group = port == 1 ? 0 : port == 2 ? 1 : port == 3 ? 2 : -1;
     if (group >= 0 && (x->pcmsk[group]->value >> bit & 1))
-        esk_rf_hw(x->pcifr, x->pcifr->value | (1u << group));
+        esk_rf_hw(x->pcifr, x->pcifr->value | ((u64)1 << group));
     esk_avr_irq_changed(m);
 }
 
@@ -82,10 +82,10 @@ static void ex_ack(void *ctx, int vec)
     int n;
     for (n = 0; n < 2; n++)
         if (vec == x->vec_int[n])
-            esk_rf_hw(x->eifr, x->eifr->value & ~(u64)(1u << n));
+            esk_rf_hw(x->eifr, x->eifr->value & ~((u64)1 << n));
     for (n = 0; n < 3; n++)
         if (vec == x->vec_pc[n])
-            esk_rf_hw(x->pcifr, x->pcifr->value & ~(u64)(1u << n));
+            esk_rf_hw(x->pcifr, x->pcifr->value & ~((u64)1 << n));
 }
 
 static u32 ex_read(void *ctx, u32 off, int n)

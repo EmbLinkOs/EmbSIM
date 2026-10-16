@@ -45,7 +45,7 @@ static u32 core_hz(struct esk_mach *m)
     if (pll >> 18 & 1) {
         hz = ref;
     } else {
-        u64 r = (pll & 7u) + 1u, f = 2u * (((pll >> 4) & 63u) + 1u), q = 1u << ((pll >> 10) & 3u);
+        u64 r = (pll & 7u) + 1u, f = 2u * (((pll >> 4) & 63u) + 1u), q = (u64)1 << ((pll >> 10) & 3u);
         hz = (u32)((u64)ref / r * f / q);
     }
     if (!((u32)k->outdiv->value >> 8 & 1))

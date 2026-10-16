@@ -169,7 +169,7 @@ static u64 mstatus_rd(struct rv_state *rs)
 static u64 misa(struct rv_state *rs)
 {
     /* A C I M U, and the base's width */
-    u64 ext = 1u << 0 | 1u << 2 | 1u << 8 | 1u << 12 | 1u << 20;
+    u64 ext = 0x00101105u; /* A C I M U */
     return rs->xlen == 64 ? 2ull << 62 | ext : 1ull << 30 | ext;
 }
 
@@ -301,7 +301,7 @@ static void csr_insn(struct rv_state *rs, u32 i)
     u32 f3 = (i >> 12) & 7;
     u64 src = (f3 & 4) ? rs1 : rs->x[rs1];
     int write = (f3 & 3) == 1 || rs1 != 0;
-    u64 old;
+    u64 old = 0;
     if (((csr >> 8) & 3) > (u32)rs->priv ||
         (write && (csr >> 10) == 3) || !csr_rd(rs, csr, &old, 0)) {
         rv_illegal(rs);
@@ -360,6 +360,7 @@ static u64 mulh(struct rv_state *rs, u32 f3, u64 a, u64 b)
  * architecture's results for a zero divisor and for overflow */
 static u64 divrem(struct rv_state *rs, u32 f3, u64 a, u64 b, int w)
 {
+    ES_UNUSED(rs);
     u64 m = w == 32 ? 0xffffffffull : ~0ull;
     s64 sa = w == 32 ? (s32)(u32)a : (s64)a;
     s64 sb = w == 32 ? (s32)(u32)b : (s64)b;
@@ -667,8 +668,8 @@ static void exec32(struct rv_state *rs, u32 i)
         return;
     }
     case 0x63: {                                /* branches */
-        s64 off = (s64)((s32)(i & 0x80000000u) >> 19) | ((i << 4) & 0x800u) |
-                  ((i >> 20) & 0x7e0u) | ((i >> 7) & 0x1eu);
+        s64 off = (s64)((s32)(i & 0x80000000u) >> 19) |
+                  (s64)(((i << 4) & 0x800u) | ((i >> 20) & 0x7e0u) | ((i >> 7) & 0x1eu));
         int t;
         switch (f3) {
         case 0: t = a == b; break;
@@ -925,7 +926,7 @@ static int take_interrupt(struct rv_state *rs)
     if (!p)
         return 0;
     /* the order of the privileged architecture: MEI, MSI, MTI */
-    int n = (p & (1u << 11)) ? 11 : (p & MIP_MSIP) ? IRQ_MSI : IRQ_MTI;
+    int n = (p & MIP_MEIP) ? 11 : (p & MIP_MSIP) ? IRQ_MSI : IRQ_MTI;
     trap_enter(rs, (u64)n, 0, 1);
     return 1;
 }
@@ -1083,7 +1084,7 @@ static int cpu_reg_read(struct esk_cpu *c, int n, u8 *buf)
 {
     struct rv_state *rs = (struct rv_state *)c;
     int w = rs->xlen / 8;
-    u64 v;
+    u64 v = 0;
     if (n >= 0 && n < 32)
         return put(buf, rs->x[n], w);
     if (n == GR_PC)
@@ -1207,7 +1208,7 @@ static const char *cpu_gdb_xml(struct esk_cpu *c, const char *annex)
         cat(k, "<?xml version=\"1.0\"?><!DOCTYPE feature SYSTEM "
             "\"gdb-target.dtd\"><feature name=\"org.gnu.gdb.riscv.csr\">");
         for (i = 0; i < sizeof csr_names / sizeof csr_names[0]; i++) {
-            u64 v;
+            u64 v = 0;
             if (csr_rd(k, csr_names[i].n, &v, 1))
                 cat(k, "<reg name=\"%s\" bitsize=\"%d\" regnum=\"%u\" "
                     "type=\"int\"/>", csr_names[i].name, w,

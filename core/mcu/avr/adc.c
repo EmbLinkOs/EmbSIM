@@ -77,7 +77,7 @@ static void finish(struct avr_adc *a)
     u16 r = a->result;
     if (a->mux->value & 0x20u) { /* ADLAR */
         esk_rf_hw(a->adch, r >> 2);
-        esk_rf_hw(a->adcl, (r & 3u) << 6);
+        esk_rf_hw(a->adcl, (u64)(r & 3u) << 6);
     } else {
         esk_rf_hw(a->adch, r >> 8);
         esk_rf_hw(a->adcl, r & 0xffu);

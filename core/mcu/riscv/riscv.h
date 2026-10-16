@@ -39,16 +39,16 @@ enum {
 #define IRQ_MSI 3
 #define IRQ_MTI 7
 #define IRQ_MEI 11
-#define MIP_MSIP (1u << IRQ_MSI)
-#define MIP_MTIP (1u << IRQ_MTI)
-#define MIP_MEIP (1u << IRQ_MEI)
+#define MIP_MSIP 0x8u   /* 1 << IRQ_MSI: literals, as a shift widened to 64 bits warns on MSVC */
+#define MIP_MTIP 0x80u  /* 1 << IRQ_MTI */
+#define MIP_MEIP 0x800u /* 1 << IRQ_MEI */
 
-#define MSTATUS_MIE (1u << 3)
-#define MSTATUS_MPIE (1u << 7)
-#define MSTATUS_MPP (3u << 11)
-#define MSTATUS_FS (3u << 13)
-#define MSTATUS_MPRV (1u << 17)
-#define MSTATUS_TW (1u << 21)
+#define MSTATUS_MIE 0x8u
+#define MSTATUS_MPIE 0x80u
+#define MSTATUS_MPP 0x1800u
+#define MSTATUS_FS 0x6000u
+#define MSTATUS_MPRV 0x20000u
+#define MSTATUS_TW 0x200000u
 
 enum { PRV_U = 0, PRV_M = 3 };
 

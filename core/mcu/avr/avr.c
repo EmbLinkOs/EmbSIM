@@ -78,10 +78,6 @@ typedef struct esk_avr {
     u64 skipped; /* instructions a skip passed over */
 } esk_avr;
 
-static const struct esk_cpu_ops avr_ops;
-
-int esk_avr_is(const struct esk_cpu *c) { return c && c->ops == &avr_ops; }
-
 /* ---- the data space -------------------------------------------------------- */
 
 static struct esk_bus *bus(esk_avr *as) { return &as->sim->bus; }
@@ -915,6 +911,8 @@ static const struct esk_cpu_ops avr_ops = {
     cpu_gdb_g_regs, cpu_gdb_xml, 2, cpu_interrupt, 34, 1, 0, cpu_reg_name, cpu_wake_pending,
     cpu_disasm,
 };
+
+int esk_avr_is(const struct esk_cpu *c) { return c && c->ops == &avr_ops; }
 
 /* the core, with its own devices -- the registers, SP and SREG as the data
  * space has them, ahead of the register file */
