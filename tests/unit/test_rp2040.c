@@ -579,6 +579,149 @@ static void test_pwm_adc(void)
     rp_close(&f);
 }
 
+/* an I2C slave's SDA, as the circuit has it: released (1), or pulled low by
+ * a slave that ACKs everything and reads as 0 */
+static int sda_low;
+
+static int i2c_pin(void *ctx, int port, int bit, int *level)
+{
+    (void)ctx;
+    if (port * 16 + bit == 20 && sda_low) {
+        *level = 0;
+        return 1;
+    }
+    return 0; /* the pad's pull */
+}
+
+static void test_spi_i2c(void)
+{
+    rp f;
+    int i, o = -1;
+    if (!rp_open(&f, 1))
+        return;
+    f.m.host.pin_in = i2c_pin;
+    sda_low = 0;
+    clocks_125(&f);
+    wr(&f, 0x4000c000u + 0x3000u, (1u << 3) | (1u << 5) | (1u << 8) | (1u << 16)); /* I2C0, IO, PADS, SPI0 */
+    for (i = 4; i <= 7; i++)
+        wr(&f, 0x40014004u + 8u * (u32)i, 1); /* FUNCSEL SPI */
+
+    /* SPI0 in loopback: 125 MHz / (10 * 5) = 2.5 MHz, 25 cycles a half bit */
+    wr(&f, 0x4003c010u, 10);              /* SSPCPSR */
+    wr(&f, 0x4003c000u, 7u | 4u << 8);    /* SSPCR0: 8 bits, SCR 4, mode 0 */
+    wr(&f, 0x4003c004u, (1u << 1) | 1u);  /* SSPCR1: SSE, LBM */
+    CHECK_EQ(rd(&f, 0x4003c00cu), 3u);    /* TFE, TNF */
+    CHECK_EQ(rd(&f, 0x4003c018u), 8u);    /* TXRIS */
+    CHECK(esk_rp2040_spi_out(&f.m, 0, RP_SPI_CSN, &o) && o == 1);
+    wr(&f, 0x4003c008u, 0xa5u);
+    wr(&f, 0x4003c008u, 0x3cu);
+    CHECK(rd(&f, 0x4003c00cu) & (1u << 4)); /* BSY */
+    CHECK(esk_rp2040_spi_out(&f.m, 0, RP_SPI_CSN, &o) && o == 0);
+    esk_mach_run(&f.m, 390, 0);             /* half a bit and 7.3 bits of the first frame */
+    CHECK_EQ(rd(&f, 0x4003c00cu) & (1u << 2), 0u);
+    esk_mach_run(&f.m, 500, 0);             /* the gap, and the second */
+    CHECK_EQ(rd(&f, 0x4003c00cu), (1u << 0) | (1u << 1) | (1u << 2)); /* TFE, TNF, RNE */
+    CHECK_EQ(rd(&f, 0x4003c008u), 0xa5u);
+    CHECK_EQ(rd(&f, 0x4003c008u), 0x3cu);
+    CHECK_EQ(rd(&f, 0x4003c00cu), 3u);
+    CHECK(esk_rp2040_spi_out(&f.m, 0, RP_SPI_CSN, &o) && o == 1);
+    CHECK(esk_rp2040_spi_out(&f.m, 0, RP_SPI_SCK, &o) && o == 0);
+    CHECK(rd(&f, 0x40014000u + 8u * 6u) & (1u << 13)); /* GPIO6 OETOPAD: SCK driven */
+    /* nine frames into an eight-entry receive FIFO: an overrun */
+    wr(&f, 0x4003c014u, 1u << 0); /* RORIM */
+    for (i = 0; i < 9; i++)
+        wr(&f, 0x4003c008u, (u32)i);
+    CHECK_EQ(rd(&f, 0x4003c00cu) & (1u << 1), 0u); /* TNF: full */
+    esk_mach_run(&f.m, 9 * 460, 0);
+    CHECK_EQ(rd(&f, 0x4003c018u), (1u << 0) | (1u << 2) | (1u << 3)); /* RORRIS, RXRIS, TXRIS */
+    CHECK_EQ(rd(&f, 0x4003c01cu), 1u);                                /* RORMIS */
+    CHECK(rd(&f, 0x4003c00cu) & (1u << 3));                           /* RFF */
+    for (i = 0; i < 8; i++)
+        CHECK_EQ(rd(&f, 0x4003c008u), (u32)i);
+    wr(&f, 0x4003c020u, 1); /* RORIC */
+    CHECK_EQ(rd(&f, 0x4003c018u), 8u);
+    /* 16 bits, SPO 1, SPH 1: SCK idles high */
+    wr(&f, 0x4003c000u, 15u | 4u << 8 | 3u << 6);
+    CHECK(esk_rp2040_spi_out(&f.m, 0, RP_SPI_SCK, &o) && o == 1);
+    wr(&f, 0x4003c008u, 0xbeefu);
+    esk_mach_run(&f.m, 1000, 0);
+    CHECK_EQ(rd(&f, 0x4003c008u), 0xbeefu);
+
+    /* I2C0 on GPIO20 (SDA) and 21 (SCL), the pads' pull-ups */
+    for (i = 20; i <= 21; i++) {
+        wr(&f, 0x4001c004u + 4u * (u32)i, (1u << 6) | (1u << 3)); /* IE, PUE */
+        wr(&f, 0x40014004u + 8u * (u32)i, 3);                     /* FUNCSEL I2C */
+    }
+    wr(&f, 0x40044000u, 0x65u | 1u << 8); /* IC_CON: master, fast, TX_EMPTY_CTRL */
+    wr(&f, 0x4004401cu, 20);              /* FS_SCL_HCNT */
+    wr(&f, 0x40044020u, 30);              /* FS_SCL_LCNT */
+    wr(&f, 0x4004407cu, 3);               /* SDA_HOLD */
+    wr(&f, 0x40044004u, 0x50);            /* IC_TAR */
+    wr(&f, 0x4004406cu, 1);               /* IC_ENABLE */
+    wr(&f, 0x40044004u, 0x51);            /* ignored: enabled */
+    CHECK_EQ(rd(&f, 0x40044004u), 0x50u);
+    CHECK_EQ(rd(&f, 0x4004409cu), 1u);
+    CHECK(rd(&f, 0x40044034u) & (1u << 4)); /* TX_EMPTY */
+    /* nobody answers: the address is NACKed */
+    wr(&f, 0x40044010u, 0x12u | 1u << 9);
+    CHECK(rd(&f, 0x40044070u) & (1u << 5)); /* MST_ACTIVITY */
+    CHECK_EQ(rd(&f, 0x40044034u) & (1u << 4), 0u);
+    esk_mach_run(&f.m, 3000, 0);
+    CHECK_EQ(rd(&f, 0x40044034u) & ((1u << 4) | (1u << 6) | (1u << 9) | (1u << 10)),
+             (1u << 4) | (1u << 6) | (1u << 9) | (1u << 10)); /* TX_EMPTY, TX_ABRT, STOP_DET, START_DET */
+    CHECK_EQ(rd(&f, 0x40044080u), 1u);                        /* ABRT_7B_ADDR_NOACK */
+    CHECK_EQ(rd(&f, 0x40044070u) & (1u << 5), 0u);
+    CHECK(esk_rp2040_i2c_out(&f.m, 0, RP_I2C_SCL, &o) && o == 1);
+    CHECK(esk_rp2040_i2c_out(&f.m, 0, RP_I2C_SDA, &o) && o == 1);
+    CHECK_EQ(rd(&f, 0x40044054u), 1u); /* IC_CLR_TX_ABRT */
+    CHECK_EQ(rd(&f, 0x40044080u), 0u);
+    CHECK_EQ(rd(&f, 0x40044054u), 0u);
+    CHECK_EQ(rd(&f, 0x40044060u), 1u); /* IC_CLR_STOP_DET */
+    CHECK_EQ(rd(&f, 0x40044034u) & (1u << 9), 0u);
+
+    /* a slave that ACKs: a write without STOP holds the bus, SCL low */
+    sda_low = 1;
+    wr(&f, 0x40044010u, 0x00u);
+    esk_mach_run(&f.m, 3000, 0);
+    CHECK_EQ(rd(&f, 0x40044080u), 0u);
+    CHECK(rd(&f, 0x40044034u) & (1u << 4));  /* TX_EMPTY: the command is done */
+    CHECK(rd(&f, 0x40044070u) & (1u << 5));  /* MST_ACTIVITY: the bus is held */
+    CHECK(esk_rp2040_i2c_out(&f.m, 0, RP_I2C_SCL, &o) && o == 0);
+    /* the SDK changes IC_TAR between them: disabled and enabled again at
+     * once, the bus stays held */
+    wr(&f, 0x4004406cu, 0);
+    wr(&f, 0x40044004u, 0x51);
+    wr(&f, 0x4004406cu, 1);
+    esk_mach_run(&f.m, 1000, 0);
+    CHECK(esk_rp2040_i2c_out(&f.m, 0, RP_I2C_SCL, &o) && o == 0);
+    CHECK_EQ(rd(&f, 0x40044034u) & (1u << 9), 0u); /* no STOP */
+    /* a read with RESTART and STOP: a repeated START, one byte, a STOP */
+    rd(&f, 0x40044064u); /* IC_CLR_START_DET */
+    wr(&f, 0x40044010u, 1u << 8 | 1u << 9 | 1u << 10);
+    esk_mach_run(&f.m, 3000, 0);
+    CHECK_EQ(rd(&f, 0x40044078u), 1u); /* IC_RXFLR */
+    CHECK_EQ(rd(&f, 0x40044010u), 0u); /* the byte, all 0 */
+    CHECK_EQ(rd(&f, 0x40044034u) & ((1u << 9) | (1u << 10)), (1u << 9) | (1u << 10));
+    CHECK_EQ(rd(&f, 0x40044070u) & (1u << 5), 0u);
+    /* the receive FIFO empty: RX_UNDER */
+    CHECK_EQ(rd(&f, 0x40044010u), 0u);
+    CHECK(rd(&f, 0x40044034u) & 1u);
+    CHECK_EQ(rd(&f, 0x40044040u), 1u); /* IC_CLR_INTR */
+    CHECK_EQ(rd(&f, 0x40044034u) & 0x7ebu, 0u);
+    /* disabled while it holds the bus, and left so: a STOP */
+    wr(&f, 0x40044010u, 0x00u);
+    esk_mach_run(&f.m, 3000, 0);
+    CHECK(esk_rp2040_i2c_out(&f.m, 0, RP_I2C_SCL, &o) && o == 0);
+    wr(&f, 0x4004406cu, 0);
+    esk_mach_run(&f.m, 3000, 0);
+    CHECK(esk_rp2040_i2c_out(&f.m, 0, RP_I2C_SCL, &o) && o == 1);
+    CHECK(rd(&f, 0x40044034u) & (1u << 9));
+    CHECK_EQ(rd(&f, 0x4004409cu), 0u);
+    sda_low = 0;
+    rp_close(&f);
+}
+
+
 TEST_MAIN_BEGIN
 RUN(test_boot);
 RUN(test_no_boot2);
@@ -591,4 +734,5 @@ RUN(test_uart_bit_time);
 RUN(test_core1);
 RUN(test_rom);
 RUN(test_pwm_adc);
+RUN(test_spi_i2c);
 TEST_MAIN_END

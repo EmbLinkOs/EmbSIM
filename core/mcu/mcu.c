@@ -336,8 +336,7 @@ static void apply_cfg(mcu_state *st, int port, int bit)
     /* an open-drain output's 1 lets the pin go: it is an input then, whose
      * level (what an I2C slave's ACK makes of it) the program reads */
     if (cfg->drive >= 0 && !(cfg->open_drain && cfg->drive)) {
-        esk_pin_set_direction(p, 1);
-        esk_pin_drive(p, cfg->drive ? ESK_L1 : ESK_L0, ESK_STR_STRONG, 0);
+        esk_pin_output(p, cfg->drive ? ESK_L1 : ESK_L0, ESK_STR_STRONG);
     } else {
         esk_pin_drive(p, ESK_LZ, ESK_STR_HIZ, 0);
         esk_pin_set_direction(p, 0);

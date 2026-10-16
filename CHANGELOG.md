@@ -272,6 +272,18 @@ versions follow semantic versioning. There is no release yet.
   START_MANY with DIV, round robin, the FIFO and its interrupt).
   `tests/vendor/pico-sdk`'s `pwm_adc` runs the SDK's `hardware_pwm` and
   `hardware_adc` on them.
+- The RP2040's SPI and I2C masters on their pins: the PL022s (eight-entry
+  FIFOs, 4 to 16 bits in modes 0 to 3 at clk_peri / (CPSDVSR * (1 + SCR)),
+  CSn framing each frame, loopback, overrun and the interrupts) and the
+  DW_apb_i2c blocks (the command FIFO with RESTART and STOP, the receive
+  FIFO, open-drain SCL and SDA at their HCNT and LCNT with the SDA hold
+  time, the bus held between commands, repeated STARTs, aborts with
+  IC_TX_ABRT_SOURCE, the raw interrupts and their clear registers).
+  `tests/vendor/pico-sdk`'s `spi_i2c` runs the SDK's `hardware_spi` and
+  `hardware_i2c` against the catalog's 25LC040 and 24C02.
+- A pin that turns from an input into an output takes its new level at
+  once (`esk_pin_output`): an input pulled low that starts driving 0 no
+  longer shows a zero-width Z on its net.
 - The STM32F1's SPI and I2C masters on their pins: SPI1 and SPI2 in modes
   0 to 3 at their baud prescaler, 8 or 16 bits, TXE, RXNE and BSY; I2C1
   and I2C2 on open-drain SCL and SDA with START, repeated START, STOP,
