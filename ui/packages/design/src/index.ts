@@ -16,5 +16,6 @@ export { Dialog, type DialogProps } from './components/Dialog';
 export { ToastProvider, useToast, type ToastMessage, type ToastKind } from './components/Toast';
 export { CommandPalette, matchCommand, type Command, type CommandPaletteProps } from './components/CommandPalette';
 export { DockLayout, type DockItem, type DockLayoutProps } from './components/DockLayout';
+export { Menu, type MenuItem, type MenuProps } from './components/Menu';
 export { StatusBar, type StatusItem } from './components/StatusBar';
 export { Badge, Kbd, EmptyState, SignalChip, Table, type BadgeTone, type SignalKind, type Column, type TableProps } from './components/Misc';

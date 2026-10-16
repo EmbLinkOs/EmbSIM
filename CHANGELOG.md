@@ -104,6 +104,11 @@ versions follow semantic versioning. There is no release yet.
 - Added an evidence-based 1.0 release readiness checklist.
 
 ### Added
+- A project menu on the workbench's mark, with the project's name: New
+  project (a blank sheet or a catalog board as B1, named as the schema
+  allows), Open, Save and Save a copy, run as the palette's commands; the
+  status bar follows the project the session holds. The design package
+  gains a Menu (WAI-ARIA menu button) and useMediaQuery.
 - Workbench layout: dock panels fold to a titled rail (`collapsible`,
   `defaultCollapsed`), the user's choice kept with the order and sizes. The
   Run perspective folds the oscilloscope or the logic analyzer when it has

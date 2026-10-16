@@ -21,6 +21,16 @@ on a narrow canvas. The Debug perspective demangles C++ names.
 
 [Debug with demangled C++ names](workbench-layout/wide-debug.png).
 
+The EmbSIM mark is now the project menu, with the project's name beside it:
+New project (a blank sheet, or a board from the catalog to start from), Open,
+Save and Save a copy, the same commands as the palette.
+
+| | |
+|---|---|
+| ![New project: start from a catalog board](workbench-layout/new-project.png) | ![A new project on the Raspberry Pi Pico](workbench-layout/new-project-created.png) |
+
+[The project menu](workbench-layout/project-menu.png).
+
 ## Arduino SPI and Wire on the Uno (2026-10-16)
 
 A sketch built with the unmodified ArduinoCore-avr (`tests/vendor/arduino/sketches/spi_wire`)

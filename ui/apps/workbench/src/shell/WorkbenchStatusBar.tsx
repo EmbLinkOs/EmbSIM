@@ -3,6 +3,7 @@
 import { StatusBar, type StatusItem } from '@embsim/design';
 import { Cpu, Gauge, Plug, Radio } from 'lucide-react';
 import { useInstruments } from '../stores/instruments';
+import { useProject } from '../stores/project';
 import { useSession } from '../stores/session';
 
 export function WorkbenchStatusBar() {
@@ -14,7 +15,8 @@ export function WorkbenchStatusBar() {
   const boards = useSession((s) => s.boards);
   const timingTiers = useSession((s) => s.timingTiers);
   const latency = useSession((s) => s.latencyMs);
-  const projectName = useSession((s) => s.projectName);
+  // the project as it stands (a New or Open replaces the one the session opened with)
+  const projectName = useProject((s) => s.project?.name) ?? useSession.getState().projectName;
   const frames = useInstruments((s) => s.frames);
   const gaps = useInstruments((s) => s.gaps);
 
