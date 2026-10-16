@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pressed",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/d2f_01l"
+      },
+      {
+        "id": "RN",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "RO",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.COM"
+      ],
+      "NC": [
+        "DUT.NC",
+        "RN.1"
+      ],
+      "NO": [
+        "DUT.NO",
+        "RO.1"
+      ],
+      "GND": [
+        "V.-",
+        "RN.2",
+        "RO.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:NO": {
+      "at": "500us",
+      "min_v": 4.99,
+      "max_v": 5.01
+    },
+    "net:NC": {
+      "at": "500us",
+      "min_v": -0.001,
+      "max_v": 0.01
+    }
+  },
+  "inputs": [
+    {
+      "at": "100us",
+      "target": "DUT",
+      "input": "pressed",
+      "value": true
+    }
+  ]
+}

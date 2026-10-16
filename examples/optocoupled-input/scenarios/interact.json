@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "optocoupled-input interaction",
+  "until": "5ms",
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "3ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "released-high",
+      "probe": "out",
+      "at": "500us",
+      "expect": {
+        "min_v": 3.29,
+        "max_v": 3.31
+      }
+    },
+    {
+      "id": "pressed-low",
+      "probe": "out",
+      "at": "2ms",
+      "expect": {
+        "min_v": 0,
+        "max_v": 0.05
+      }
+    },
+    {
+      "id": "released-again",
+      "probe": "out",
+      "at": "4ms",
+      "expect": {
+        "min_v": 3.29,
+        "max_v": 3.31
+      }
+    },
+    {
+      "id": "separate-reference",
+      "probe": "input-ground",
+      "at": "2ms",
+      "expect": {
+        "min_v": 1.99,
+        "max_v": 2.01
+      }
+    },
+    {
+      "id": "solver-health",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}

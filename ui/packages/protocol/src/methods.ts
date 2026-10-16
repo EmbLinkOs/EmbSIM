@@ -69,7 +69,7 @@ export interface Methods {
       | { op: 'edit'; tx: string; edits: ProjectEdit[] }
       | { op: 'commit'; tx: string }
       | { op: 'abort'; tx: string };
-    result: { tx?: string; applied?: number; diagnostics?: DiagnosticRecord[]; islands?: number };
+    result: { tx?: string; applied?: number | boolean; restarted?: boolean; diagnostics?: DiagnosticRecord[]; islands?: number };
   };
   'project.topology': { params: Record<string, never>; result: Topology };
 

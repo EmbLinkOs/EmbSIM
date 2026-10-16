@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/vo617a_2",
+  "version": "1.0.0",
+  "name": "VO617A-2",
+  "category": "optoelectronics",
+  "description": "DIP-4 phototransistor optocoupler: input LED knee, nominal selected-bin CTR, finite saturation resistance, no galvanic path between input and output.",
+  "keywords": [
+    "optoelectronics",
+    "VO617A-2",
+    "Vishay",
+    "DIP-4"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "A"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "K"
+    },
+    {
+      "name": "C",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "C"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "E"
+    }
+  ],
+  "params": {
+    "ctr": {
+      "type": "number",
+      "default": 0.94,
+      "doc": "Selected illustrative current-transfer ratio in the unsaturated collector region; not a bin tolerance simulation.",
+      "unit": "A/A",
+      "min": 0,
+      "max": 10
+    },
+    "vf": {
+      "type": "number",
+      "default": 1.1,
+      "doc": "Forward knee voltage of the piecewise-linear input diode approximation.",
+      "unit": "V",
+      "min": 0,
+      "max": 5
+    },
+    "r_led": {
+      "type": "number",
+      "default": 20,
+      "doc": "LED forward slope resistance above vf.",
+      "unit": "ohm",
+      "min": 0.01,
+      "max": 10000
+    },
+    "r_off": {
+      "type": "number",
+      "default": 10000000000.0,
+      "doc": "Collector-emitter leakage resistance with no LED drive.",
+      "unit": "ohm",
+      "min": 1,
+      "max": 1000000000000000.0
+    },
+    "r_sat": {
+      "type": "number",
+      "default": 30,
+      "min": 0.01,
+      "max": 10000,
+      "unit": "ohm",
+      "doc": "Illustrative collector saturation resistance; collector current is limited by VCE / r_sat."
+    }
+  },
+  "model": {
+    "primitive": "optocoupler"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "name": "led_current",
+      "type": "number",
+      "unit": "A"
+    },
+    {
+      "name": "vce",
+      "type": "number",
+      "unit": "V"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 160,
+    "height": 60,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "K": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "C": {
+        "x": 160,
+        "y": 20,
+        "side": "right"
+      },
+      "E": {
+        "x": 160,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 16,
+    "height_mm": 9,
+    "states": [
+      {
+        "output": "led_current",
+        "selector": "#reading",
+        "attr": "text",
+        "format": "{} mA",
+        "scale": {
+          "from": [
+            0,
+            0.05
+          ],
+          "to": [
+            0,
+            50
+          ]
+        },
+        "precision": 2
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "DIP-4 phototransistor optocoupler: input LED knee, nominal selected-bin CTR, finite saturation resistance, no galvanic path between input and output.",
+      "omissions": [
+        "CTR versus LED current/temperature",
+        "CTR bin tolerance",
+        "propagation delay",
+        "capacitance",
+        "certified isolation behavior",
+        "precision LED curve",
+        "reverse collector operation",
+        "manufacturer parameter corners",
+        "thermal damage and destructive limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "url": "https://www.vishay.com/docs/83430/vo617a.pdf",
+        "hash": "sha256:145893b5422f68cc3f2016e2dddfc33f6ee26f0d2444fe8889d0dc0388f805a1",
+        "title": "Vishay 83430 VO617A",
+        "rev": "2.8, 22 January 2025",
+        "date": "2026-10-16",
+        "notes": "Manufacturer source reviewed, PDF pages 1\u20133. Package/nominal reference only; model not manufacturer-qualified."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "VO617A-2",
+    "manufacturer": "Vishay",
+    "package": "DIP-4",
+    "datasheet": "https://www.vishay.com/docs/83430/vo617a.pdf"
+  }
+}

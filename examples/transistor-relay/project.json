@@ -1,0 +1,906 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "transistor-relay",
+  "description": "A 2N3904 drives a G5LE-1 5 V relay coil; a 1N4007 freewheel diode clamps inductive turn-off. Contacts switch a separate 12 V load.",
+  "libraries": [
+    "../../catalog"
+  ],
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V1",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 5
+      },
+      "layout": {
+        "x": 50,
+        "y": 100
+      }
+    },
+    {
+      "id": "VC",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 12
+      },
+      "layout": {
+        "x": 900,
+        "y": 80
+      }
+    },
+    {
+      "id": "SW1",
+      "component": "emblink/d2f_01l",
+      "layout": {
+        "x": 170,
+        "y": 140
+      }
+    },
+    {
+      "id": "RB",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 470
+      },
+      "layout": {
+        "x": 380,
+        "y": 170
+      }
+    },
+    {
+      "id": "RPD",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 480,
+        "y": 330
+      }
+    },
+    {
+      "id": "Q1",
+      "component": "emblink/bjt_2n3904",
+      "layout": {
+        "x": 570,
+        "y": 170
+      }
+    },
+    {
+      "id": "K1",
+      "component": "emblink/g5le_1_dc5",
+      "layout": {
+        "x": 730,
+        "y": 150
+      }
+    },
+    {
+      "id": "D1",
+      "component": "emblink/diode_1n4007",
+      "layout": {
+        "x": 570,
+        "y": 70
+      }
+    },
+    {
+      "id": "LOAD",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 1000
+      },
+      "layout": {
+        "x": 1000,
+        "y": 210
+      }
+    },
+    {
+      "id": "RNC",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 1000
+      },
+      "layout": {
+        "x": 1000,
+        "y": 140
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 570,
+        "y": 460
+      }
+    }
+  ],
+  "nets": {
+    "VCC": [
+      "V1.+",
+      "SW1.COM",
+      "K1.COIL+",
+      "D1.K"
+    ],
+    "DRIVE": [
+      "SW1.NO",
+      "RB.1"
+    ],
+    "REST": [
+      "SW1.NC"
+    ],
+    "BASE": [
+      "RB.2",
+      "RPD.1",
+      "Q1.B"
+    ],
+    "COIL_LOW": [
+      "Q1.C",
+      "K1.COIL-",
+      "D1.A"
+    ],
+    "CONTACT_SUPPLY": [
+      "VC.+",
+      "K1.COM"
+    ],
+    "LOAD": [
+      "K1.NO",
+      "LOAD.1"
+    ],
+    "REST_LOAD": [
+      "K1.NC",
+      "RNC.1"
+    ],
+    "GND": [
+      "V1.-",
+      "VC.-",
+      "Q1.E",
+      "RPD.2",
+      "LOAD.2",
+      "RNC.2",
+      "G.GND"
+    ]
+  },
+  "probes": [
+    {
+      "id": "load",
+      "target": "net:LOAD",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "rest",
+      "target": "net:REST_LOAD",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "coil",
+      "target": "net:COIL_LOW",
+      "kind": "analog",
+      "rate_hz": 100000
+    }
+  ],
+  "scenarios": [
+    "scenarios/interact.json"
+  ],
+  "layout": {
+    "sheet": {
+      "width": 1200,
+      "height": 1000
+    },
+    "labels": [
+      {
+        "net": "VCC",
+        "x": 80,
+        "y": -30
+      },
+      {
+        "net": "DRIVE",
+        "x": 350,
+        "y": 170
+      },
+      {
+        "net": "REST",
+        "x": 340,
+        "y": 150
+      },
+      {
+        "net": "BASE",
+        "x": 460,
+        "y": 170
+      },
+      {
+        "net": "COIL_LOW",
+        "x": 610,
+        "y": 140
+      },
+      {
+        "net": "CONTACT_SUPPLY",
+        "x": 710,
+        "y": -130
+      },
+      {
+        "net": "LOAD",
+        "x": 910,
+        "y": 180
+      },
+      {
+        "net": "REST_LOAD",
+        "x": 910,
+        "y": 160
+      },
+      {
+        "net": "GND",
+        "x": 80,
+        "y": 730
+      }
+    ],
+    "wires": [
+      {
+        "net": "VCC",
+        "points": [
+          [
+            80,
+            100
+          ],
+          [
+            80,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            170,
+            170
+          ],
+          [
+            150,
+            170
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            730,
+            170
+          ],
+          [
+            710,
+            170
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            630,
+            80
+          ],
+          [
+            650,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            80,
+            -20
+          ],
+          [
+            710,
+            -20
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            80,
+            80
+          ],
+          [
+            80,
+            -20
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            150,
+            170
+          ],
+          [
+            150,
+            -20
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            710,
+            170
+          ],
+          [
+            710,
+            -20
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            650,
+            80
+          ],
+          [
+            650,
+            -20
+          ]
+        ]
+      },
+      {
+        "net": "DRIVE",
+        "points": [
+          [
+            330,
+            180
+          ],
+          [
+            350,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "DRIVE",
+        "points": [
+          [
+            380,
+            180
+          ],
+          [
+            360,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "DRIVE",
+        "points": [
+          [
+            350,
+            180
+          ],
+          [
+            360,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            440,
+            180
+          ],
+          [
+            460,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            480,
+            340
+          ],
+          [
+            460,
+            340
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            570,
+            190
+          ],
+          [
+            550,
+            190
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            460,
+            180
+          ],
+          [
+            550,
+            180
+          ],
+          [
+            550,
+            190
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            460,
+            180
+          ],
+          [
+            460,
+            340
+          ]
+        ]
+      },
+      {
+        "net": "COIL_LOW",
+        "points": [
+          [
+            610,
+            170
+          ],
+          [
+            610,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "COIL_LOW",
+        "points": [
+          [
+            730,
+            190
+          ],
+          [
+            710,
+            190
+          ]
+        ]
+      },
+      {
+        "net": "COIL_LOW",
+        "points": [
+          [
+            570,
+            80
+          ],
+          [
+            550,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "COIL_LOW",
+        "points": [
+          [
+            610,
+            150
+          ],
+          [
+            550,
+            150
+          ],
+          [
+            550,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "COIL_LOW",
+        "points": [
+          [
+            610,
+            150
+          ],
+          [
+            700,
+            150
+          ],
+          [
+            700,
+            190
+          ],
+          [
+            710,
+            190
+          ]
+        ]
+      },
+      {
+        "net": "CONTACT_SUPPLY",
+        "points": [
+          [
+            930,
+            80
+          ],
+          [
+            930,
+            60
+          ]
+        ]
+      },
+      {
+        "net": "CONTACT_SUPPLY",
+        "points": [
+          [
+            730,
+            210
+          ],
+          [
+            710,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "CONTACT_SUPPLY",
+        "points": [
+          [
+            710,
+            -120
+          ],
+          [
+            930,
+            -120
+          ]
+        ]
+      },
+      {
+        "net": "CONTACT_SUPPLY",
+        "points": [
+          [
+            930,
+            60
+          ],
+          [
+            930,
+            -120
+          ]
+        ]
+      },
+      {
+        "net": "CONTACT_SUPPLY",
+        "points": [
+          [
+            710,
+            210
+          ],
+          [
+            720,
+            210
+          ],
+          [
+            720,
+            -120
+          ],
+          [
+            710,
+            -120
+          ]
+        ]
+      },
+      {
+        "net": "LOAD",
+        "points": [
+          [
+            890,
+            190
+          ],
+          [
+            910,
+            190
+          ]
+        ]
+      },
+      {
+        "net": "LOAD",
+        "points": [
+          [
+            1000,
+            220
+          ],
+          [
+            980,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "LOAD",
+        "points": [
+          [
+            910,
+            190
+          ],
+          [
+            980,
+            190
+          ],
+          [
+            980,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "REST_LOAD",
+        "points": [
+          [
+            890,
+            170
+          ],
+          [
+            910,
+            170
+          ]
+        ]
+      },
+      {
+        "net": "REST_LOAD",
+        "points": [
+          [
+            1000,
+            150
+          ],
+          [
+            980,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "REST_LOAD",
+        "points": [
+          [
+            910,
+            170
+          ],
+          [
+            980,
+            170
+          ],
+          [
+            980,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            80,
+            140
+          ],
+          [
+            80,
+            160
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            930,
+            120
+          ],
+          [
+            930,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            610,
+            210
+          ],
+          [
+            610,
+            230
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            540,
+            340
+          ],
+          [
+            560,
+            340
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            1060,
+            220
+          ],
+          [
+            1080,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            1060,
+            150
+          ],
+          [
+            1080,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            580,
+            460
+          ],
+          [
+            580,
+            440
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            80,
+            740
+          ],
+          [
+            1080,
+            740
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            80,
+            160
+          ],
+          [
+            80,
+            740
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            930,
+            140
+          ],
+          [
+            930,
+            740
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            610,
+            230
+          ],
+          [
+            610,
+            740
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            560,
+            340
+          ],
+          [
+            560,
+            740
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            1080,
+            220
+          ],
+          [
+            1080,
+            740
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            1080,
+            150
+          ],
+          [
+            1080,
+            740
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            580,
+            440
+          ],
+          [
+            600,
+            440
+          ],
+          [
+            600,
+            740
+          ],
+          [
+            580,
+            740
+          ]
+        ]
+      }
+    ]
+  }
+}

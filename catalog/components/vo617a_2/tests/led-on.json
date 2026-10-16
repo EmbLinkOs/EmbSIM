@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "led-on",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VIN",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "VOUT",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "RI",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 390
+        }
+      },
+      {
+        "id": "RP",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10000
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/vo617a_2"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "OFFSET",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2
+        }
+      }
+    ],
+    "nets": {
+      "INPUT": [
+        "VIN.+",
+        "RI.1"
+      ],
+      "ANODE": [
+        "RI.2",
+        "DUT.A"
+      ],
+      "IG": [
+        "VIN.-",
+        "DUT.K",
+        "OFFSET.+"
+      ],
+      "GND": [
+        "OFFSET.-",
+        "VOUT.-",
+        "DUT.E",
+        "G.GND"
+      ],
+      "VCC": [
+        "VOUT.+",
+        "RP.1"
+      ],
+      "OUT": [
+        "RP.2",
+        "DUT.C"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "500us",
+      "min_v": -0.001,
+      "max_v": 0.05
+    }
+  }
+}

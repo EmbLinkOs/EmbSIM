@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "transistor-relay interaction",
+  "until": "40ms",
+  "inputs": [
+    {
+      "at": "2ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "22ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "rest-contact",
+      "probe": "rest",
+      "at": "1ms",
+      "expect": {
+        "min_v": 11.99,
+        "max_v": 12.01
+      }
+    },
+    {
+      "id": "pickup-delayed",
+      "probe": "load",
+      "at": "5ms",
+      "expect": {
+        "min_v": 0,
+        "max_v": 0.01
+      }
+    },
+    {
+      "id": "load-on",
+      "probe": "load",
+      "at": "18ms",
+      "expect": {
+        "min_v": 11.99,
+        "max_v": 12.01
+      }
+    },
+    {
+      "id": "load-released",
+      "probe": "load",
+      "at": "35ms",
+      "expect": {
+        "min_v": 0,
+        "max_v": 0.01
+      }
+    },
+    {
+      "id": "solver-health",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}

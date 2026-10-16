@@ -74,7 +74,7 @@ Required: `schema_version`, `kind`, `id`, `version`, `name`, `category`,
 are closed. `category` is one of `passives`, `sources`, `diodes`,
 `transistors`, `switches`, `inputs`, `indicators`, `logic`, `analog`, `power`,
 `connectors`, `instruments`, `displays`, `sensors`, `mechanical`, `misc`,
-`amplifiers`, `comparators`, `timers`. Named physical parts also declare
+`amplifiers`, `comparators`, `timers`, `optoelectronics`. Named physical parts also declare
 `part: {manufacturer, mpn, package, datasheet}` and number every pin. The HTTPS
 datasheet URL is a reference, not proof of qualification; record source review
 and model omissions separately. See [the catalog guide](../catalog/README.md).
@@ -336,3 +336,13 @@ artwork (`artwork.selector`, `svg.malformed`), provenance
 4. Fidelity names the primitive and the omissions; provenance cites the
    datasheet; licence is SPDX.
 5. At least one fixture, with a physically correct expectation.
+
+## Interactive electrical examples
+
+See [the interactive library record](../docs/engineering/interactive-library.md)
+for NTC/LDR, photodiode, optocoupler, relay and switch models with fixtures. Input
+hotspots act on the shared engine; they must never animate a substitute circuit
+state locally. Numeric artwork templates may specify `precision` (0..6 decimal
+places after scaling). Include real source revisions when reviewed, and label
+unverified references explicitly. A pin-count/pairing test and an operating-point
+fixture establish different facts; both matter for a reusable package.

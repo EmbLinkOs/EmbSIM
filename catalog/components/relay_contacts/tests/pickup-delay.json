@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pickup-delay",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/relay_contacts"
+      },
+      {
+        "id": "RN",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "RO",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.S+",
+        "DUT.COM"
+      ],
+      "NC": [
+        "DUT.NC",
+        "RN.1"
+      ],
+      "NO": [
+        "DUT.NO",
+        "RO.1"
+      ],
+      "GND": [
+        "V.-",
+        "DUT.S-",
+        "RN.2",
+        "RO.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:NC": {
+      "at": "1ms",
+      "min_v": 4.99,
+      "max_v": 5.01
+    },
+    "net:NO": {
+      "at": "15ms",
+      "min_v": 4.99,
+      "max_v": 5.01
+    }
+  }
+}

@@ -11,6 +11,15 @@ its omissions. Electrical fixtures check stated nominal behavior; they do not
 certify datasheet limits, temperature corners, destructive limits, RF behavior,
 or suitability for safety-critical designs.
 
+## Interactive library batch
+
+The library now includes 147 components, 44 named entries and 308 component
+fixtures. The [interactive library record](../docs/engineering/interactive-library.md)
+lists the 18 newly named controls, environmental/optical parts, optocouplers,
+relays and connectors, with four live GUI/CLI circuit examples and exact model
+limits. The explorer adds grouped categories, manufacturer/package/model filters
+and Overview/Pins/Models previews before placement.
+
 ## First named-part batch
 
 | Category | Parts | Implemented scope |
@@ -38,7 +47,7 @@ TO-220 tabs duplicate pin 2. The LM1117 SOT-223 tab duplicates OUT (pin 2).
 
 ## Evidence and source status
 
-The manufacturer source review now covers 25 of the 26 named entries, with
+For the first batch, manufacturer source review covers 25 of its 26 entries, with
 exact PDF revisions, SHA-256 hashes, dates and page references in each entry's
 `provenance.sources`. See [the review record](../docs/engineering/named-part-sources.md)
 for the checked package maps, selected operating facts and unresolved sources.
@@ -102,13 +111,10 @@ schema checks and the engine’s `embsim catalog validate catalog` command.
 See [the temperature alarm example](../examples/temperature-alarm/README.md)
 and [the SDK](../sdk/README.md) for circuit and contribution workflows.
 
-## Next batches
+## Next qualification and expansion work
 
-Continue in separate validated batches: optoelectronics and thermistors; relays,
-motor drivers and displays; then I2C/SPI temperature, pressure, motion and light
-sensors, EEPROMs and interface ICs. Protocol devices must implement real register
-maps, addressing, timing and error behavior before joining the supported catalog.
-The merged M3 work already includes Lua devices, bus sensors, displays and SDK
-commands. These named-package entries add package identity and electrical models
-alongside those generic/family entries. Native plugins, independent datasheet
-qualification and broader operating-corner coverage remain future work.
+Recover manufacturer references for the six unreviewed named entries, establish
+independent electrical reference curves and operating corners, and extend thermal,
+spectral and switching behavior where required. Further families can add analog
+switches, power converters and interface transceivers. Add each as a validated
+behavioral batch with source evidence, not metadata alone.

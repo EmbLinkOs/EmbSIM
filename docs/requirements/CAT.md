@@ -71,3 +71,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16; first named-part batch implemented; 25 of 26 entries have manufacturer package/source review with revision and hash. BAT54 source and electrical model qualification remain open.
 **Verification.** Schema/semantic validation, reviewed package maps in `tools/test_catalog_parts.py`, `catalog_fixtures` and `catalog_fixture_assertions` under CTest; source record in `docs/engineering/named-part-sources.md`.
 **Trace.** SPEC-005 §2; SPEC-004 §7; catalog/README.md
+
+### CAT-010  Interactive electrical components
+**Statement.** Environmental inputs, switches, optical devices and relays shall change actual electrical circuit behavior through the shared engine. Package pad pairs, isolated paths and delayed contacts shall have executable regression evidence and explicit approximation limits.
+**Rationale.** Interactive hardware development requires circuit behavior beyond symbols and metadata.
+**Status.** Accepted 2026-10-16; initial interactive batch implemented.
+**Verification.** Catalog fixtures, the four interactive examples, and the real-engine library browser regression.
+**Trace.** SPEC-004 §7; SPEC-005 §8; docs/engineering/interactive-library.md

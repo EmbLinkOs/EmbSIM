@@ -1,9 +1,20 @@
 # Gallery
 
 Screenshots of the workbench at each milestone, to show how EmbSIM
-evolves. Newer milestones come first. Every set from M1 on is captured by
+evolves. Newer milestones come first. The milestone sets from M1 on are captured by
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
+
+## Interactive component library (2026-10-16)
+
+Captured by `tests/browser/test_library.py` against the native engine, including
+real placement and live control/waveform checks. Original component artwork and
+schematic symbols are rendered by the shared workbench.
+
+| | |
+|---|---|
+| ![Library explorer, light](component-library/library-light.png) | **Discover and inspect.** Manufacturer/package filters, multiword search, source reference status and a preview before placement, alongside the wired optocoupler circuit. |
+| ![Library explorer, dark](component-library/library-dark.png) | **Place a real package.** B3F-1000's numbered pads and model limits in dark mode. The explorer is also checked at 1024 × 700. |
 
 ## M4 core families and boards, part 2 (2026-10-16)
 

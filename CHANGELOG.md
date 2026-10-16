@@ -6,6 +6,12 @@ versions follow semantic versioning. There is no release yet.
 ## Unreleased
 
 ### Added
+- Component explorer with grouped categories, manufacturer/package/model filters,
+  multiword search and pre-placement Overview/Pins/Models sheets.
+- 18 named interactive parts plus reusable relay contacts: NTCs, GL5528, BPW34/S,
+  four VO617A bins, Bourns trimmers, Omron switches/relays and Phoenix plugs;
+  original symbols/artwork, six electrical primitives, 52 component fixtures and
+  four GUI/CLI circuit examples. Numeric artwork text supports decimal precision.
 - Manufacturer source review for 25 named parts: exact PDF revisions, hashes,
   dates and pin-map references; TMP36 TO-92 map confirmed directly. Sensor
   supply endpoint and shifted-ground fixtures; full package pin-map regressions.
@@ -118,6 +124,8 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- Restore runtime input lists and waveform subscriptions when component placement
+  or another structural edit restarts the engine; retain layout-only measurements.
 - Catalog clock frequency binding, timed `tpd` application, functional pulse
   source terminal/period binding, and logic-probe output/value observation.
 - Legacy current-source fixture polarity and an underdriven PMOS fixture load.

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "light-controlled-switch interaction",
+  "until": "5ms",
+  "inputs": [
+    {
+      "at": "0us",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 1000
+    },
+    {
+      "at": "1ms",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 0
+    },
+    {
+      "at": "3ms",
+      "target": "LDR1",
+      "input": "illuminance",
+      "value": 1000
+    }
+  ],
+  "assertions": [
+    {
+      "id": "bright-off",
+      "probe": "collector",
+      "at": "500us",
+      "expect": {
+        "min_v": 4.0,
+        "max_v": 5.01
+      }
+    },
+    {
+      "id": "dark-on",
+      "probe": "collector",
+      "at": "2ms",
+      "expect": {
+        "min_v": 0,
+        "max_v": 0.2
+      }
+    },
+    {
+      "id": "bright-again",
+      "probe": "collector",
+      "at": "4ms",
+      "expect": {
+        "min_v": 4.0,
+        "max_v": 5.01
+      }
+    },
+    {
+      "id": "solver-health",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}

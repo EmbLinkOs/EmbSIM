@@ -138,7 +138,9 @@ bind to. Both are exposed by name in snapshots and probes.
   map to `opacity` or `fill` through a `scale`; `map` looks an enum or
   integer value up; `format` puts the value, scaled first when a `scale` is
   given, into a template such as `rotate({} 30 30)`, and the pseudo-attribute
-  `text` sets an element's text, so displays show strings and paths).
+  `text` sets an element's text, so displays show strings and paths). Optional
+  `precision` (integer 0..6) formats numeric template values to fixed decimal
+  places after scaling; it does not alter simulation values.
 - Both are rendered by any client; a client may substitute a generic symbol
   when a file is missing, with a warning.
 

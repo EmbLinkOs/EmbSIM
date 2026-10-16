@@ -1,0 +1,771 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "temperature-divider",
+  "description": "A 10 kohm Vishay NTC divider feeds LM393P; a 3296W trimmer sets the alarm threshold and the comparator sinks an LED.",
+  "libraries": [
+    "../../catalog"
+  ],
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V1",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 5
+      },
+      "layout": {
+        "x": 60,
+        "y": 120
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 230,
+        "y": 150
+      }
+    },
+    {
+      "id": "NTC1",
+      "component": "emblink/ntcle100e3103jb0",
+      "layout": {
+        "x": 360,
+        "y": 160
+      }
+    },
+    {
+      "id": "P1",
+      "component": "emblink/bourns_3296w_103",
+      "layout": {
+        "x": 230,
+        "y": 320
+      }
+    },
+    {
+      "id": "U1",
+      "component": "emblink/lm393p",
+      "layout": {
+        "x": 610,
+        "y": 190
+      }
+    },
+    {
+      "id": "RL",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 1000
+      },
+      "layout": {
+        "x": 870,
+        "y": 150
+      }
+    },
+    {
+      "id": "LED1",
+      "component": "emblink/led",
+      "layout": {
+        "x": 870,
+        "y": 250
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 610,
+        "y": 450
+      }
+    }
+  ],
+  "nets": {
+    "VCC": [
+      "V1.+",
+      "R1.1",
+      "P1.2",
+      "U1.VCC",
+      "RL.1"
+    ],
+    "TEMP": [
+      "R1.2",
+      "NTC1.1",
+      "U1.IN1+"
+    ],
+    "REFERENCE": [
+      "P1.W",
+      "U1.IN1-"
+    ],
+    "LED_A": [
+      "RL.2",
+      "LED1.A"
+    ],
+    "ALARM": [
+      "LED1.K",
+      "U1.OUT1"
+    ],
+    "UNUSED": [
+      "U1.OUT2"
+    ],
+    "GND": [
+      "V1.-",
+      "NTC1.2",
+      "P1.1",
+      "U1.GND",
+      "U1.IN2+",
+      "U1.IN2-",
+      "G.GND"
+    ]
+  },
+  "probes": [
+    {
+      "id": "temp",
+      "target": "net:TEMP",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "reference",
+      "target": "net:REFERENCE",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "alarm",
+      "target": "net:ALARM",
+      "kind": "analog",
+      "rate_hz": 100000
+    }
+  ],
+  "scenarios": [
+    "scenarios/interact.json"
+  ],
+  "layout": {
+    "sheet": {
+      "width": 1200,
+      "height": 1000
+    },
+    "labels": [
+      {
+        "net": "VCC",
+        "x": 90,
+        "y": 30
+      },
+      {
+        "net": "TEMP",
+        "x": 310,
+        "y": 150
+      },
+      {
+        "net": "REFERENCE",
+        "x": 310,
+        "y": 410
+      },
+      {
+        "net": "LED_A",
+        "x": 950,
+        "y": 150
+      },
+      {
+        "net": "ALARM",
+        "x": 950,
+        "y": 250
+      },
+      {
+        "net": "UNUSED",
+        "x": 800,
+        "y": 220
+      },
+      {
+        "net": "GND",
+        "x": 90,
+        "y": 690
+      }
+    ],
+    "wires": [
+      {
+        "net": "VCC",
+        "points": [
+          [
+            90,
+            120
+          ],
+          [
+            90,
+            100
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            230,
+            160
+          ],
+          [
+            210,
+            160
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            390,
+            350
+          ],
+          [
+            410,
+            350
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            790,
+            210
+          ],
+          [
+            810,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            870,
+            160
+          ],
+          [
+            850,
+            160
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            90,
+            40
+          ],
+          [
+            850,
+            40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            90,
+            100
+          ],
+          [
+            90,
+            40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            210,
+            160
+          ],
+          [
+            210,
+            40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            410,
+            350
+          ],
+          [
+            410,
+            230
+          ],
+          [
+            350,
+            230
+          ],
+          [
+            350,
+            40
+          ],
+          [
+            410,
+            40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            810,
+            210
+          ],
+          [
+            810,
+            40
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            850,
+            160
+          ],
+          [
+            850,
+            40
+          ]
+        ]
+      },
+      {
+        "net": "TEMP",
+        "points": [
+          [
+            290,
+            160
+          ],
+          [
+            310,
+            160
+          ]
+        ]
+      },
+      {
+        "net": "TEMP",
+        "points": [
+          [
+            360,
+            180
+          ],
+          [
+            340,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "TEMP",
+        "points": [
+          [
+            610,
+            250
+          ],
+          [
+            590,
+            250
+          ]
+        ]
+      },
+      {
+        "net": "TEMP",
+        "points": [
+          [
+            310,
+            160
+          ],
+          [
+            340,
+            160
+          ],
+          [
+            340,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "TEMP",
+        "points": [
+          [
+            340,
+            180
+          ],
+          [
+            340,
+            250
+          ],
+          [
+            590,
+            250
+          ]
+        ]
+      },
+      {
+        "net": "REFERENCE",
+        "points": [
+          [
+            310,
+            400
+          ],
+          [
+            310,
+            420
+          ]
+        ]
+      },
+      {
+        "net": "REFERENCE",
+        "points": [
+          [
+            610,
+            230
+          ],
+          [
+            590,
+            230
+          ]
+        ]
+      },
+      {
+        "net": "REFERENCE",
+        "points": [
+          [
+            310,
+            420
+          ],
+          [
+            590,
+            420
+          ],
+          [
+            590,
+            230
+          ]
+        ]
+      },
+      {
+        "net": "LED_A",
+        "points": [
+          [
+            930,
+            160
+          ],
+          [
+            950,
+            160
+          ]
+        ]
+      },
+      {
+        "net": "LED_A",
+        "points": [
+          [
+            870,
+            260
+          ],
+          [
+            850,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "LED_A",
+        "points": [
+          [
+            950,
+            160
+          ],
+          [
+            950,
+            240
+          ],
+          [
+            850,
+            240
+          ],
+          [
+            850,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "ALARM",
+        "points": [
+          [
+            930,
+            260
+          ],
+          [
+            950,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "ALARM",
+        "points": [
+          [
+            610,
+            210
+          ],
+          [
+            590,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "ALARM",
+        "points": [
+          [
+            950,
+            260
+          ],
+          [
+            940,
+            260
+          ],
+          [
+            940,
+            180
+          ],
+          [
+            590,
+            180
+          ],
+          [
+            590,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            90,
+            160
+          ],
+          [
+            90,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            520,
+            180
+          ],
+          [
+            540,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            230,
+            350
+          ],
+          [
+            210,
+            350
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            610,
+            270
+          ],
+          [
+            590,
+            270
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            790,
+            270
+          ],
+          [
+            810,
+            270
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            790,
+            250
+          ],
+          [
+            810,
+            250
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            620,
+            450
+          ],
+          [
+            620,
+            430
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            90,
+            700
+          ],
+          [
+            810,
+            700
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            90,
+            180
+          ],
+          [
+            90,
+            700
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            540,
+            180
+          ],
+          [
+            540,
+            700
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            210,
+            350
+          ],
+          [
+            210,
+            700
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            590,
+            270
+          ],
+          [
+            600,
+            270
+          ],
+          [
+            600,
+            700
+          ],
+          [
+            590,
+            700
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            810,
+            270
+          ],
+          [
+            810,
+            700
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            810,
+            250
+          ],
+          [
+            810,
+            700
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            620,
+            430
+          ],
+          [
+            640,
+            430
+          ],
+          [
+            640,
+            700
+          ],
+          [
+            620,
+            700
+          ]
+        ]
+      }
+    ]
+  }
+}

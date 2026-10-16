@@ -1,0 +1,673 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "optocoupled-input",
+  "description": "A D2F-01L lever switches the LED side of a VO617A-3; the output is pulled up to 3.3 V on a separate reference.",
+  "libraries": [
+    "../../catalog"
+  ],
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V1",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 5
+      },
+      "layout": {
+        "x": 70,
+        "y": 120
+      }
+    },
+    {
+      "id": "V2",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 3.3
+      },
+      "layout": {
+        "x": 900,
+        "y": 80
+      }
+    },
+    {
+      "id": "OFFSET",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 2
+      },
+      "layout": {
+        "x": 70,
+        "y": 300
+      }
+    },
+    {
+      "id": "SW1",
+      "component": "emblink/d2f_01l",
+      "layout": {
+        "x": 200,
+        "y": 100
+      }
+    },
+    {
+      "id": "RI",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 390
+      },
+      "layout": {
+        "x": 410,
+        "y": 130
+      }
+    },
+    {
+      "id": "U1",
+      "component": "emblink/vo617a_3",
+      "layout": {
+        "x": 570,
+        "y": 120
+      }
+    },
+    {
+      "id": "RP",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 800,
+        "y": 130
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 900,
+        "y": 340
+      }
+    }
+  ],
+  "nets": {
+    "INPUT_VCC": [
+      "V1.+",
+      "SW1.COM"
+    ],
+    "INPUT_ON": [
+      "SW1.NO",
+      "RI.1"
+    ],
+    "INPUT_NC": [
+      "SW1.NC"
+    ],
+    "ANODE": [
+      "RI.2",
+      "U1.A"
+    ],
+    "INPUT_GND": [
+      "V1.-",
+      "U1.K",
+      "OFFSET.+"
+    ],
+    "OUTPUT_VCC": [
+      "V2.+",
+      "RP.2"
+    ],
+    "OUTPUT": [
+      "RP.1",
+      "U1.C"
+    ],
+    "GND": [
+      "V2.-",
+      "OFFSET.-",
+      "U1.E",
+      "G.GND"
+    ]
+  },
+  "probes": [
+    {
+      "id": "out",
+      "target": "net:OUTPUT",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "input-ground",
+      "target": "net:INPUT_GND",
+      "kind": "analog",
+      "rate_hz": 100000
+    }
+  ],
+  "scenarios": [
+    "scenarios/interact.json"
+  ],
+  "layout": {
+    "sheet": {
+      "width": 1200,
+      "height": 1000
+    },
+    "labels": [
+      {
+        "net": "INPUT_VCC",
+        "x": 100,
+        "y": -10
+      },
+      {
+        "net": "INPUT_ON",
+        "x": 380,
+        "y": 130
+      },
+      {
+        "net": "INPUT_NC",
+        "x": 370,
+        "y": 110
+      },
+      {
+        "net": "ANODE",
+        "x": 490,
+        "y": 130
+      },
+      {
+        "net": "INPUT_GND",
+        "x": 100,
+        "y": 530
+      },
+      {
+        "net": "OUTPUT_VCC",
+        "x": 880,
+        "y": -110
+      },
+      {
+        "net": "OUTPUT",
+        "x": 780,
+        "y": 130
+      },
+      {
+        "net": "GND",
+        "x": 100,
+        "y": 590
+      }
+    ],
+    "wires": [
+      {
+        "net": "INPUT_VCC",
+        "points": [
+          [
+            100,
+            120
+          ],
+          [
+            100,
+            100
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_VCC",
+        "points": [
+          [
+            200,
+            130
+          ],
+          [
+            180,
+            130
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_VCC",
+        "points": [
+          [
+            100,
+            0
+          ],
+          [
+            180,
+            0
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_VCC",
+        "points": [
+          [
+            100,
+            100
+          ],
+          [
+            100,
+            0
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_VCC",
+        "points": [
+          [
+            180,
+            130
+          ],
+          [
+            180,
+            0
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_ON",
+        "points": [
+          [
+            360,
+            140
+          ],
+          [
+            380,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_ON",
+        "points": [
+          [
+            410,
+            140
+          ],
+          [
+            390,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_ON",
+        "points": [
+          [
+            380,
+            140
+          ],
+          [
+            390,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "ANODE",
+        "points": [
+          [
+            470,
+            140
+          ],
+          [
+            490,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "ANODE",
+        "points": [
+          [
+            570,
+            140
+          ],
+          [
+            550,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "ANODE",
+        "points": [
+          [
+            490,
+            140
+          ],
+          [
+            550,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_GND",
+        "points": [
+          [
+            100,
+            160
+          ],
+          [
+            100,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_GND",
+        "points": [
+          [
+            570,
+            160
+          ],
+          [
+            550,
+            160
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_GND",
+        "points": [
+          [
+            100,
+            300
+          ],
+          [
+            100,
+            280
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_GND",
+        "points": [
+          [
+            100,
+            540
+          ],
+          [
+            550,
+            540
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_GND",
+        "points": [
+          [
+            100,
+            180
+          ],
+          [
+            140,
+            180
+          ],
+          [
+            140,
+            540
+          ],
+          [
+            100,
+            540
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_GND",
+        "points": [
+          [
+            550,
+            160
+          ],
+          [
+            550,
+            540
+          ]
+        ]
+      },
+      {
+        "net": "INPUT_GND",
+        "points": [
+          [
+            100,
+            280
+          ],
+          [
+            140,
+            280
+          ],
+          [
+            140,
+            540
+          ],
+          [
+            100,
+            540
+          ]
+        ]
+      },
+      {
+        "net": "OUTPUT_VCC",
+        "points": [
+          [
+            930,
+            80
+          ],
+          [
+            930,
+            60
+          ]
+        ]
+      },
+      {
+        "net": "OUTPUT_VCC",
+        "points": [
+          [
+            860,
+            140
+          ],
+          [
+            880,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "OUTPUT_VCC",
+        "points": [
+          [
+            880,
+            -100
+          ],
+          [
+            930,
+            -100
+          ]
+        ]
+      },
+      {
+        "net": "OUTPUT_VCC",
+        "points": [
+          [
+            930,
+            60
+          ],
+          [
+            930,
+            -100
+          ]
+        ]
+      },
+      {
+        "net": "OUTPUT_VCC",
+        "points": [
+          [
+            880,
+            140
+          ],
+          [
+            880,
+            -100
+          ]
+        ]
+      },
+      {
+        "net": "OUTPUT",
+        "points": [
+          [
+            800,
+            140
+          ],
+          [
+            780,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "OUTPUT",
+        "points": [
+          [
+            730,
+            140
+          ],
+          [
+            750,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "OUTPUT",
+        "points": [
+          [
+            780,
+            140
+          ],
+          [
+            750,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            930,
+            120
+          ],
+          [
+            930,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            100,
+            340
+          ],
+          [
+            100,
+            360
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            730,
+            160
+          ],
+          [
+            750,
+            160
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            910,
+            340
+          ],
+          [
+            910,
+            320
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            100,
+            600
+          ],
+          [
+            930,
+            600
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            930,
+            140
+          ],
+          [
+            930,
+            600
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            100,
+            360
+          ],
+          [
+            100,
+            600
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            750,
+            160
+          ],
+          [
+            750,
+            600
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            910,
+            320
+          ],
+          [
+            930,
+            320
+          ],
+          [
+            930,
+            600
+          ],
+          [
+            910,
+            600
+          ]
+        ]
+      }
+    ]
+  }
+}

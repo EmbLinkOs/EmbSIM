@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "temperature-divider interaction",
+  "until": "5ms",
+  "inputs": [
+    {
+      "at": "0us",
+      "target": "P1",
+      "input": "position",
+      "value": 0.4
+    },
+    {
+      "at": "1ms",
+      "target": "NTC1",
+      "input": "temperature",
+      "value": 85
+    },
+    {
+      "at": "3ms",
+      "target": "NTC1",
+      "input": "temperature",
+      "value": 25
+    }
+  ],
+  "assertions": [
+    {
+      "id": "ambient",
+      "probe": "temp",
+      "at": "500us",
+      "expect": {
+        "min_v": 2.49,
+        "max_v": 2.51
+      }
+    },
+    {
+      "id": "threshold",
+      "probe": "reference",
+      "at": "500us",
+      "expect": {
+        "min_v": 1.99,
+        "max_v": 2.01
+      }
+    },
+    {
+      "id": "hot",
+      "probe": "temp",
+      "at": "2ms",
+      "expect": {
+        "min_v": 0.47,
+        "max_v": 0.49
+      }
+    },
+    {
+      "id": "hot-led",
+      "probe": "alarm",
+      "at": "2ms",
+      "expect": {
+        "min_v": 0,
+        "max_v": 0.3
+      }
+    },
+    {
+      "id": "cool-again",
+      "probe": "alarm",
+      "at": "4ms",
+      "expect": {
+        "min_v": 4.0,
+        "max_v": 5.01
+      }
+    },
+    {
+      "id": "solver-health",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}
