@@ -1,6 +1,6 @@
 # Project status and evidence
 
-**Reviewed:** 2026-10-15 at the architecture baseline. This inventory is
+**Reviewed:** 2026-10-16 at the M0 implementation on branch `claude/affectionate-allen-40uv0o`. This inventory is
 maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
@@ -11,27 +11,26 @@ does not mean the described behaviour exists.
 |---|---|---|
 | Design | Architecture 01 to 09, SPEC-001 to SPEC-014, 91 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
 | Repository | CMake presets, Makefile wrapper, CI matrix, documentation and policy workflows, templates, ruleset JSON, policy and banned-construct checkers | Local runs of the checkers; remote workflow results are recorded here when observed |
-| Core: scheduler and time | see the M0 section below | |
-| Core: nets and digital engine | see below | |
-| Core: analog engine | see below | |
-| Core: models and catalog loading | see below | |
-| Core: session and protocol | see below | |
-| CLI | see below | |
-| Workbench | see below | |
-| MCU runtime | Not implemented. No core family is extracted. | M1 |
-| Toolchain profiles | Not implemented. | M1 |
-| Record and replay | Not implemented beyond input recording in the session. | M1/M5 |
-| Lua models | Not implemented. | M3 |
+| Core: scheduler and time | Rational clocks, class-ordered event heap, delta-cycle bound, cancellation by generation (SPEC-002) | `test_sched`: ordering, cancellation, overflow, limits, 72 MHz and 32.768 kHz clocks exact over 10^9 edges |
+| Core: nets and digital engine | Pin models and logic families, four-value resolution with strengths, contention and floating diagnostics, inertial delays, islands and bridges, the model API; gates, flip-flop, sources, pulls, transmission-gate switches, indicator, probe, UART virtual terminal (SPEC-003) | `test_engine`: resolution, floating inputs, gate timing, inertial pulses, clock, switch, UART loopback |
+| Core: analog engine | MNA per island, Newton-Raphson, deterministic dense LU, gmin and source stepping, trapezoidal with LTE control and backward-Euler restarts, breakpoints, bridge crossings bisected to the configured resolution; resistor, capacitor, inductor, V and I sources (dc, pulse, sine, pwl, exp), switch with bounce, potentiometer, diode, LED, Zener, NPN/PNP, NMOS/PMOS, op-amp, regulator, pull (SPEC-004) | `test_analog`: 981 checks and seven analytic fixtures under GCC and Clang; ngspice goldens pending (not installed); BDF2, junction capacitances, sparse solver not implemented |
+| Core: models and catalog loading | Registry of primitives with merged digital and electrical tiers; libraries by path; component instantiation with parameter validation, presets, `$param` pin models and composite expansion through ports; boards as composites with a placeholder MCU (SPEC-005, 006, 007 subset) | `test_session`: temporary library, loader, inputs, snapshots, scenario assertions, determinism across sessions, composite expansion, bad project |
+| Core: session and protocol | Command path with virtual timestamps and the input log, probes (digital on change, analog and value at a rate, thresholded digital on analog nets), snapshots and topology, pacing slices, notifications, scenarios with assertions and the run report, the JSON-RPC method table over in-process, stdio and WebSocket (SPEC-008) | `test_session` (in-process), `tests/protocol/run_conformance.py` (nine cases on stdio and WebSocket, transports compared), `test_host` (files, sockets, SHA-1, base64, frames) |
+| CLI | `run`, `validate`, `serve`, `sidecar`, `catalog`, `board`, `models`, `version` | `tools/ci/run_examples.py`: three examples validate and pass their scenarios (button-led 8/8, button-transistor-led 11/11, rc-filter 7/7) |
+| Catalog | 37 components with symbols, artwork and 54 fixtures; STM32F103C8 MCU and LQFP48 package; Blue Pill board with artwork; eight toolchain profiles; JSON Schemas for every kind; the Python validator with semantic checks | `tools/validate.py --all`: 121 files, 0 errors; `tools/test_validate.py`: 98 tests; the Blue Pill loads through the composite crystal but its electrical run is under repair (regulator and step sizing, see below) |
+| Workbench | In progress on this branch (workspace, protocol client, design tokens, stores) | Not yet built or tested |
 
-The M0 implementation sections are updated as the code lands in this branch;
-each entry must name the tests that ran and the platforms they ran on.
+Observed on 2026-10-16 in this workspace: Ubuntu 24.04, GCC 13.3 and Clang 18.1, CMake 3.28, Python 3.13, Node 22. `ctest` on the GCC Debug build: 11 of 11 targets pass (test_analog, test_engine, test_host, test_json, test_sched, test_session, tools_unittests, docs_integrity, banned_constructs, protocol_conformance, examples_headless). The same C tests pass on the Clang build. No macOS, Windows, TinyCC or MSVC run has been observed; the CI definitions exist, their results have not.
 
 ## Specified but unimplemented
 
-Everything in SPEC-009, SPEC-010, SPEC-012 (beyond input recording),
-SPEC-013, SPEC-014 (beyond library loading by path); boards with firmware;
-instruments beyond the oscilloscope and logic analyzer; the Debug and Verify
-perspectives; installers; importers.
+The MCU runtime (SPEC-009; a board's MCU is a passive placeholder and
+loading one raises `mcu.no_runtime`), toolchain profiles beyond their
+descriptions (SPEC-010), replay (SPEC-012 beyond input recording), Lua and
+native models (SPEC-013), library installation (SPEC-014 beyond loading by
+path), topology transactions, binary waveform frames (samples are JSON
+arrays with `encoding: "json"`), `catalog.validate` in the core (the Python
+tool does it), the Debug and Verify perspectives, installers, importers.
 
 ## Validation recorded in this workspace
 
@@ -39,6 +38,14 @@ Recorded as it happens; none yet beyond the documentation and policy checks.
 
 ## Known limits and unresolved evidence
 
+- Blue Pill electrical runs: with the composite crystals expanded the board
+  loads, but the analog engine produced a diverged supply rail and
+  sub-picosecond steps on it at the time of writing; a fix is in progress
+  and this row is updated when a Blue Pill example passes.
+- Comparator-bridge crossings are delivered with the island step's start
+  time as `now` for the reacting model (the crossing time is bracketed but
+  not yet used as the event time); SPEC-004 §8 is therefore met only to
+  within one island step.
 - No remote CI run has been observed for this baseline; workflow files are
   definitions, not results.
 - The GitHub ruleset in `.github/rulesets/main.json` is prepared, not
