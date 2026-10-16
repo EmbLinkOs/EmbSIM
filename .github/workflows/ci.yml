@@ -156,7 +156,18 @@ jobs:
           cmake --build build/release
       - run: python3 desktop/prepare-sidecar.py
       - name: Build the installers
+        if: runner.os != 'Windows'
         run: npx --yes @tauri-apps/cli@2 build --bundles ${{ matrix.bundles }}
+        working-directory: desktop
+      - name: Build the installers (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # Git's coreutils `link` comes before MSVC's linker on the runner's
+        # PATH; without it (and with VCINSTALLDIR unset) rustc finds Visual Studio
+        run: |
+          Remove-Item Env:VCINSTALLDIR -ErrorAction SilentlyContinue
+          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -notmatch '\\Git\\usr\\bin' }) -join ';'
+          npx --yes @tauri-apps/cli@2 build --bundles ${{ matrix.bundles }}
         working-directory: desktop
       - uses: actions/upload-artifact@v4
         with:
