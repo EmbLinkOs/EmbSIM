@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Junior Deogracias
 """`embsim build` with each toolchain profile found on this host (clang with
-ld.lld, embcc): the Blue Pill and Uno examples copied to a temporary
-directory, their images removed, built from their sources, then their
-scenarios run. Profiles not installed are skipped, and the Uno for a clang
-built without the AVR backend; with none, the test passes with SKIP."""
+ld.lld, embcc): the Blue Pill, Uno and HiFive1 examples copied to a
+temporary directory, their images removed, built from their sources, then
+their scenarios run. Profiles not installed are skipped, and an example for
+a clang built without its backend; with none, the test passes with SKIP."""
 import argparse
 import shutil
 import subprocess
@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES = [  # directory, image, scenario, the clang target it needs
     ("bluepill-button-led", "button-led.elf", "press.json", "thumb"),
     ("uno-blink-serial", "blink-serial.elf", "blink.json", "avr"),
+    ("hifive1-blink", "blink.elf", "blink.json", "riscv32"),
 ]
 
 

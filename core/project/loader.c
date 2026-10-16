@@ -58,7 +58,8 @@ static void mcu_signal_model(const char *sig, const char *family, esk_pin_model 
     } else if (!strncmp(sig, "VDD", 3) || !strcmp(sig, "VBAT") || !strcmp(sig, "VCC") || !strcmp(sig, "VREF+") ||
                !strcmp(sig, "AVCC")) {
         m->kind = ESK_PIN_POWER; m->power_ground = 0;
-    } else if (sig[0] == 'P' && sig[1] >= 'A' && sig[1] <= 'Z' && sig[2] >= '0' && sig[2] <= '9') {
+    } else if ((sig[0] == 'P' && sig[1] >= 'A' && sig[1] <= 'Z' && sig[2] >= '0' && sig[2] <= '9') ||
+               (!strncmp(sig, "GPIO", 4) && sig[4] >= '0' && sig[4] <= '9')) {
         m->kind = ESK_PIN_DIGITAL_IO; m->pull = ESK_PULL_NONE;
     } else if (!strncmp(sig, "OSC", 3) || !strncmp(sig, "XTAL", 4) || !strcmp(sig, "AREF")) {
         m->kind = ESK_PIN_ANALOG;

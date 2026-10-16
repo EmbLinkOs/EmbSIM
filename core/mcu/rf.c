@@ -131,7 +131,7 @@ static es_status read_regs(struct esk_mach *m, struct esk_rf_periph *p, const es
         if (!r)
             return ES_ENOMEM;
         r->name = esk_mach_strdup(m, esk_json_get_str(rj, "name", ""));
-        if (!r->name || !r->name[0] || num(esk_json_get(rj, "offset"), &off) || off > 0xffffu) {
+        if (!r->name || !r->name[0] || num(esk_json_get(rj, "offset"), &off) || off > 0xffffffu) {
             snprintf(why, cap, "%s: register %zu has no name or offset", p->name, i);
             return ES_ESCHEMA;
         }

@@ -20,3 +20,4 @@ playwright-report/
 .DS_Store
 *.rec
 *.vcd
+*.elf.map

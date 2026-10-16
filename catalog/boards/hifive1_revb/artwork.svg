@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 686 508" width="686" height="508">
+<defs>
+  <radialGradient id="glow-red" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff5a5a" stop-opacity="1"/><stop offset="100%" stop-color="#ff5a5a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="glow-green" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#5dff8a" stop-opacity="1"/><stop offset="100%" stop-color="#5dff8a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="glow-blue" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#5aa8ff" stop-opacity="1"/><stop offset="100%" stop-color="#5aa8ff" stop-opacity="0"/></radialGradient>
+</defs>
+<style>.pcb{fill:#2b2d33;stroke:#15161a;stroke-width:3}.silk{fill:#f2f4f8;font-family:sans-serif;font-size:13px}.silks{fill:#f2f4f8;font-family:sans-serif;font-size:10px;text-anchor:middle}.pad{fill:#d9b94a;stroke:#8a6f1c;stroke-width:1}.hole{fill:#15171b}.hdr{fill:#0c0d10}.chip{fill:#17181c;stroke:#000;stroke-width:1}.metal{fill:#b8bcc6;stroke:#6b7079;stroke-width:1.5}.logo{fill:#f2f4f8;font-family:sans-serif;font-weight:bold}</style>
+<path id="pcb" class="pcb" d="M8 8 H640 L660 28 V200 L686 226 V450 L660 476 V500 H8 Z"/>
+<g id="usb"><rect class="metal" x="-6" y="60" width="90" height="70" rx="4"/><rect x="6" y="78" width="66" height="34" rx="3" fill="#8f949e"/><text class="silk" x="14" y="150">USB</text></g>
+<rect class="hdr" x="163.3" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d19" class="pad" cx="176.0" cy="22" r="8"><title>J_DHI pin 1: D19</title></circle>
+<circle class="hole" cx="176.0" cy="22" r="3.5"/>
+<text class="silks" x="176.0" y="52">D19</text>
+<rect class="hdr" x="188.7" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d18" class="pad" cx="201.4" cy="22" r="8"><title>J_DHI pin 2: D18</title></circle>
+<circle class="hole" cx="201.4" cy="22" r="3.5"/>
+<text class="silks" x="201.4" y="52">D18</text>
+<rect class="hdr" x="214.1" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d15" class="pad" cx="226.8" cy="22" r="8"><title>J_DHI pin 3: D15</title></circle>
+<circle class="hole" cx="226.8" cy="22" r="3.5"/>
+<text class="silks" x="226.8" y="52">D15</text>
+<rect class="hdr" x="239.5" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-gnd_d" class="pad" cx="252.2" cy="22" r="8"><title>J_DHI pin 4: GND_D</title></circle>
+<circle class="hole" cx="252.2" cy="22" r="3.5"/>
+<text class="silks" x="252.2" y="52">GND</text>
+<rect class="hdr" x="264.9" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d13" class="pad" cx="277.6" cy="22" r="8"><title>J_DHI pin 5: D13</title></circle>
+<circle class="hole" cx="277.6" cy="22" r="3.5"/>
+<text class="silks" x="277.6" y="52">D13</text>
+<rect class="hdr" x="290.3" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d12" class="pad" cx="303.0" cy="22" r="8"><title>J_DHI pin 6: D12</title></circle>
+<circle class="hole" cx="303.0" cy="22" r="3.5"/>
+<text class="silks" x="303.0" y="52">D12</text>
+<rect class="hdr" x="315.7" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d11" class="pad" cx="328.4" cy="22" r="8"><title>J_DHI pin 7: D11</title></circle>
+<circle class="hole" cx="328.4" cy="22" r="3.5"/>
+<text class="silks" x="328.4" y="52">D11</text>
+<rect class="hdr" x="341.1" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d10" class="pad" cx="353.8" cy="22" r="8"><title>J_DHI pin 8: D10</title></circle>
+<circle class="hole" cx="353.8" cy="22" r="3.5"/>
+<text class="silks" x="353.8" y="52">D10</text>
+<rect class="hdr" x="366.5" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d9" class="pad" cx="379.2" cy="22" r="8"><title>J_DHI pin 9: D9</title></circle>
+<circle class="hole" cx="379.2" cy="22" r="3.5"/>
+<text class="silks" x="379.2" y="52">D9</text>
+<rect class="hdr" x="391.9" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d8" class="pad" cx="404.6" cy="22" r="8"><title>J_DHI pin 10: D8</title></circle>
+<circle class="hole" cx="404.6" cy="22" r="3.5"/>
+<text class="silks" x="404.6" y="52">D8</text>
+<rect class="hdr" x="439.3" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d7" class="pad" cx="452.0" cy="22" r="8"><title>J_DLO pin 1: D7</title></circle>
+<circle class="hole" cx="452.0" cy="22" r="3.5"/>
+<text class="silks" x="452.0" y="52">D7</text>
+<rect class="hdr" x="464.7" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d6" class="pad" cx="477.4" cy="22" r="8"><title>J_DLO pin 2: D6</title></circle>
+<circle class="hole" cx="477.4" cy="22" r="3.5"/>
+<text class="silks" x="477.4" y="52">D6</text>
+<rect class="hdr" x="490.1" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d5" class="pad" cx="502.8" cy="22" r="8"><title>J_DLO pin 3: D5</title></circle>
+<circle class="hole" cx="502.8" cy="22" r="3.5"/>
+<text class="silks" x="502.8" y="52">D5</text>
+<rect class="hdr" x="515.5" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d4" class="pad" cx="528.2" cy="22" r="8"><title>J_DLO pin 4: D4</title></circle>
+<circle class="hole" cx="528.2" cy="22" r="3.5"/>
+<text class="silks" x="528.2" y="52">D4</text>
+<rect class="hdr" x="540.9" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d3" class="pad" cx="553.6" cy="22" r="8"><title>J_DLO pin 5: D3</title></circle>
+<circle class="hole" cx="553.6" cy="22" r="3.5"/>
+<text class="silks" x="553.6" y="52">D3</text>
+<rect class="hdr" x="566.3" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d2" class="pad" cx="579.0" cy="22" r="8"><title>J_DLO pin 6: D2</title></circle>
+<circle class="hole" cx="579.0" cy="22" r="3.5"/>
+<text class="silks" x="579.0" y="52">D2</text>
+<rect class="hdr" x="591.7" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d1" class="pad" cx="604.4" cy="22" r="8"><title>J_DLO pin 7: D1</title></circle>
+<circle class="hole" cx="604.4" cy="22" r="3.5"/>
+<text class="silks" x="604.4" y="52">D1</text>
+<rect class="hdr" x="617.1" y="9.3" width="25.4" height="25.4"/>
+<circle id="pin-d0" class="pad" cx="629.8" cy="22" r="8"><title>J_DLO pin 8: D0</title></circle>
+<circle class="hole" cx="629.8" cy="22" r="3.5"/>
+<text class="silks" x="629.8" y="52">D0</text>
+<rect class="hdr" x="227.3" y="473.3" width="25.4" height="25.4"/>
+<circle class="hole" cx="240.0" cy="486" r="3.5"/>
+<rect class="hdr" x="252.7" y="473.3" width="25.4" height="25.4"/>
+<circle id="pin-ioref" class="pad" cx="265.4" cy="486" r="8"><title>J_PWR pin 2: IOREF</title></circle>
+<circle class="hole" cx="265.4" cy="486" r="3.5"/>
+<text class="silks" x="265.4" y="466">IOREF</text>
+<rect class="hdr" x="278.1" y="473.3" width="25.4" height="25.4"/>
+<circle id="pin-reset" class="pad" cx="290.8" cy="486" r="8"><title>J_PWR pin 3: RESET</title></circle>
+<circle class="hole" cx="290.8" cy="486" r="3.5"/>
+<text class="silks" x="290.8" y="466">RESET</text>
+<rect class="hdr" x="303.5" y="473.3" width="25.4" height="25.4"/>
+<circle id="pin-3v3" class="pad" cx="316.2" cy="486" r="8"><title>J_PWR pin 4: 3V3</title></circle>
+<circle class="hole" cx="316.2" cy="486" r="3.5"/>
+<text class="silks" x="316.2" y="466">3V3</text>
+<rect class="hdr" x="328.9" y="473.3" width="25.4" height="25.4"/>
+<circle id="pin-5v" class="pad" cx="341.6" cy="486" r="8"><title>J_PWR pin 5: 5V</title></circle>
+<circle class="hole" cx="341.6" cy="486" r="3.5"/>
+<text class="silks" x="341.6" y="466">5V</text>
+<rect class="hdr" x="354.3" y="473.3" width="25.4" height="25.4"/>
+<circle id="pin-gnd" class="pad" cx="367.0" cy="486" r="8"><title>J_PWR pin 6: GND</title></circle>
+<circle class="hole" cx="367.0" cy="486" r="3.5"/>
+<text class="silks" x="367.0" y="466">GND</text>
+<rect class="hdr" x="379.7" y="473.3" width="25.4" height="25.4"/>
+<circle id="pin-gnd_2" class="pad" cx="392.4" cy="486" r="8"><title>J_PWR pin 7: GND_2</title></circle>
+<circle class="hole" cx="392.4" cy="486" r="3.5"/>
+<text class="silks" x="392.4" y="466">GND</text>
+<rect class="hdr" x="405.1" y="473.3" width="25.4" height="25.4"/>
+<circle class="hole" cx="417.8" cy="486" r="3.5"/>
+<rect class="hdr" x="455.3" y="473.3" width="25.4" height="25.4"/>
+<circle class="hole" cx="468.0" cy="486" r="3.5"/>
+<rect class="hdr" x="480.7" y="473.3" width="25.4" height="25.4"/>
+<circle class="hole" cx="493.4" cy="486" r="3.5"/>
+<rect class="hdr" x="506.1" y="473.3" width="25.4" height="25.4"/>
+<circle id="pin-d16" class="pad" cx="518.8" cy="486" r="8"><title>J_ANA pin 3: D16</title></circle>
+<circle class="hole" cx="518.8" cy="486" r="3.5"/>
+<text class="silks" x="518.8" y="466">D16</text>
+<rect class="hdr" x="531.5" y="473.3" width="25.4" height="25.4"/>
+<circle id="pin-d17" class="pad" cx="544.2" cy="486" r="8"><title>J_ANA pin 4: D17</title></circle>
+<circle class="hole" cx="544.2" cy="486" r="3.5"/>
+<text class="silks" x="544.2" y="466">D17</text>
+<rect class="hdr" x="556.9" y="473.3" width="25.4" height="25.4"/>
+<circle class="hole" cx="569.6" cy="486" r="3.5"/>
+<rect class="hdr" x="582.3" y="473.3" width="25.4" height="25.4"/>
+<circle class="hole" cx="595.0" cy="486" r="3.5"/>
+<g id="mcu"><rect class="chip" x="330" y="200" width="120" height="120" rx="6"/><text class="logo" x="352" y="255" font-size="16">FE310</text><text class="silks" x="390" y="280">G002</text></g>
+<g id="flash"><rect class="chip" x="480" y="230" width="60" height="50" rx="3"/><text class="silks" x="510" y="300">4MB QSPI</text></g>
+<g id="crystal"><rect class="metal" x="250" y="230" width="50" height="22" rx="8"/><text class="silks" x="275" y="270">16MHz</text></g>
+<g id="btn-reset"><rect x="20" y="230" width="60" height="60" rx="4" fill="#cfd3da" stroke="#6b7079"/><circle cx="50" cy="260" r="18" fill="#2b2f36" stroke="#000"/><text class="silks" x="50" y="310">RESET</text></g>
+<g id="led-rgb"><rect x="590" y="150" width="30" height="30" rx="4" fill="#f4f4f4" stroke="#9aa0aa"/><circle id="led-red" class="glow" cx="605" cy="165" r="26" fill="url(#glow-red)" opacity="0"/><circle id="led-green" class="glow" cx="605" cy="165" r="26" fill="url(#glow-green)" opacity="0"/><circle id="led-blue" class="glow" cx="605" cy="165" r="26" fill="url(#glow-blue)" opacity="0"/><text class="silks" x="605" y="200">RGB</text></g>
+<text class="logo" x="130" y="400" font-size="34">HiFive1</text><text class="logo" x="300" y="400" font-size="16">Rev B · EmbSIM</text>
+</svg>

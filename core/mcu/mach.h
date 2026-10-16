@@ -396,5 +396,8 @@ es_status esk_cortexm_create(struct esk_mach *m, const char *model, int prio_bit
 /* an AVR core of `model` ("atmega328p"), with its own devices on the bus
  * (mcu/avr/avr.h) */
 es_status esk_avr_create(struct esk_mach *m, const char *model, struct esk_cpu **out);
+/* an RV32 core of `model` ("rv32imac") whose reset starts at reset_pc
+ * (mcu/riscv/riscv.h) */
+es_status esk_riscv_create(struct esk_mach *m, const char *model, u32 reset_pc, struct esk_cpu **out);
 
 #endif

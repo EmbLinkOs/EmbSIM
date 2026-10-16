@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright 2026 Junior Deogracias */
+/* fe310.h -- the FE310-G002 registers this example uses (SiFive's manual). */
+#ifndef FE310_H
+#define FE310_H
+
+#include <stdint.h>
+
+#define REG32(a) (*(volatile uint32_t *)(a))
+
+#define CLINT_MTIMECMP_LO REG32(0x02004000u)
+#define CLINT_MTIMECMP_HI REG32(0x02004004u)
+#define CLINT_MTIME_LO REG32(0x0200BFF8u)
+#define CLINT_MTIME_HI REG32(0x0200BFFCu)
+
+#define PLIC_PRIORITY(n) REG32(0x0C000000u + 4u * (n))
+#define PLIC_ENABLE0 REG32(0x0C002000u)
+#define PLIC_ENABLE1 REG32(0x0C002004u)
+#define PLIC_THRESHOLD REG32(0x0C200000u)
+#define PLIC_CLAIM REG32(0x0C200004u)
+
+#define PRCI_PLLCFG REG32(0x10008008u)
+#define PRCI_PLLOUTDIV REG32(0x1000800Cu)
+
+#define GPIO_INPUT_EN REG32(0x10012004u)
+#define GPIO_OUTPUT_EN REG32(0x10012008u)
+#define GPIO_OUTPUT_VAL REG32(0x1001200Cu)
+#define GPIO_PUE REG32(0x10012010u)
+#define GPIO_FALL_IE REG32(0x10012020u)
+#define GPIO_FALL_IP REG32(0x10012024u)
+#define GPIO_IOF_EN REG32(0x10012038u)
+#define GPIO_IOF_SEL REG32(0x1001203Cu)
+
+#define UART0_TXDATA REG32(0x10013000u)
+#define UART0_RXDATA REG32(0x10013004u)
+#define UART0_TXCTRL REG32(0x10013008u)
+#define UART0_RXCTRL REG32(0x1001300Cu)
+#define UART0_IE REG32(0x10013010u)
+#define UART0_DIV REG32(0x10013018u)
+
+#define PLIC_SRC_UART0 3u
+#define PLIC_SRC_GPIO(n) (8u + (n))
+
+#endif

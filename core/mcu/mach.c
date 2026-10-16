@@ -189,11 +189,13 @@ struct esk_rx_port *esk_mach_rx_find(struct esk_mach *m, const char *unit)
 void esk_mach_reset(struct esk_mach *m)
 {
     int i;
+    /* the devices' clocks stop first: a device whose clock runs from reset
+     * (a CLINT's mtime) starts it again in its reset hook */
+    m->counting = 0;
     for (i = 0; i < m->bus.ndev; i++)
         if (m->bus.dev[i].ops->reset)
             m->bus.dev[i].ops->reset(m->bus.dev[i].ctx);
     m->insns = m->cycles = 0;
-    m->counting = 0;
     m->ev_known = 0;
     m->state = ESK_MACH_RUN;
     m->exit_status = 0;

@@ -1,0 +1,283 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "hifive1-blink",
+ "description": "A HiFive1 Rev B running firmware/main.c on its FE310 (RISC-V): the RGB LED's green blinks at 1 Hz from the CLINT's timer interrupt, a button on D2 interrupts through the PLIC and is counted, and what a virtual terminal on D1/D0 sends at 115200 baud comes back in upper case.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/hifive1_revb",
+   "layout": {
+    "x": 300,
+    "y": 240
+   },
+   "firmware": {
+    "image": "firmware/blink.elf",
+    "format": "elf",
+    "toolchain": "clang",
+    "sources": [
+     "firmware/start.S",
+     "firmware/main.c"
+    ],
+    "flags": [
+     "-ffreestanding",
+     "-fno-builtin"
+    ],
+    "linker_script": "firmware/fe310.ld"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 80
+   }
+  },
+  {
+   "id": "SW1",
+   "component": "emblink/push_button",
+   "layout": {
+    "x": 700,
+    "y": 260
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 720,
+    "y": 420
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 880,
+    "y": 200
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "SW1.2",
+   "VT1.GND"
+  ],
+  "BTN": [
+   "B1.D2",
+   "SW1.1"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ]
+ },
+ "layout": {
+  "wires": [
+   {
+    "net": "USB5V",
+    "points": [
+     [
+      750,
+      80
+     ],
+     [
+      750,
+      60
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      890,
+      200
+     ],
+     [
+      890,
+      180
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      750,
+      120
+     ],
+     [
+      750,
+      140
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      760,
+      270
+     ],
+     [
+      780,
+      270
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      750,
+      460
+     ],
+     [
+      750,
+      480
+     ]
+    ]
+   },
+   {
+    "net": "BTN",
+    "points": [
+     [
+      700,
+      270
+     ],
+     [
+      680,
+      270
+     ]
+    ]
+   },
+   {
+    "net": "UART_TX",
+    "points": [
+     [
+      720,
+      430
+     ],
+     [
+      700,
+      430
+     ]
+    ]
+   },
+   {
+    "net": "UART_RX",
+    "points": [
+     [
+      720,
+      450
+     ],
+     [
+      700,
+      450
+     ]
+    ]
+   }
+  ],
+  "labels": [
+   {
+    "net": "USB5V",
+    "x": 750,
+    "y": 60
+   },
+   {
+    "net": "GND",
+    "x": 890,
+    "y": 180
+   },
+   {
+    "net": "GND",
+    "x": 750,
+    "y": 140
+   },
+   {
+    "net": "GND",
+    "x": 780,
+    "y": 270
+   },
+   {
+    "net": "GND",
+    "x": 750,
+    "y": 480
+   },
+   {
+    "net": "BTN",
+    "x": 680,
+    "y": 270
+   },
+   {
+    "net": "UART_TX",
+    "x": 700,
+    "y": 430
+   },
+   {
+    "net": "UART_RX",
+    "x": 700,
+    "y": 450
+   }
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "green",
+   "target": "net:B1.GPIO19",
+   "kind": "digital"
+  },
+  {
+   "id": "btn",
+   "target": "net:BTN",
+   "kind": "digital"
+  },
+  {
+   "id": "tx",
+   "target": "net:UART_TX",
+   "kind": "digital",
+   "decode": {
+    "protocol": "uart",
+    "params": {
+     "baud": 115200
+    }
+   }
+  },
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  }
+ ],
+ "scenarios": [
+  "scenarios/blink.json"
+ ]
+}

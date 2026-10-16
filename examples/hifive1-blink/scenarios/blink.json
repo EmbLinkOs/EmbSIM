@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "blink",
+  "until": "2.2s",
+  "description": "The banner; the green LED's 1 Hz blink from the CLINT; a button press through the PLIC; the terminal's text echoed in upper case.",
+  "inputs": [
+    {
+      "at": "1.2s",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.25s",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1.5s",
+      "target": "VT1",
+      "input": "tx_text",
+      "value": "risc-v"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "10ms",
+      "probe": "console",
+      "expect": {
+        "contains": "EmbSIM HiFive1"
+      }
+    },
+    {
+      "id": "terminal-banner",
+      "at": "10ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "EmbSIM HiFive1"
+      }
+    },
+    {
+      "id": "green-off",
+      "at": "0.4s",
+      "probe": "green",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "green-on",
+      "at": "0.6s",
+      "probe": "green",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "2.2s"
+      ],
+      "probe": "green",
+      "expect": {
+        "edges": 4
+      }
+    },
+    {
+      "id": "button",
+      "at": "1.3s",
+      "probe": "console",
+      "expect": {
+        "contains": "button 1"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "1.6s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "RISC-V"
+      }
+    }
+  ]
+}

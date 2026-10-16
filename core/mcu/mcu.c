@@ -901,7 +901,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     esk_engine *e = c->e;
     es_status st2;
     int port, bit;
-    char name[8];
+    char name[12];
     if (!esk_mcu_is(c))
         return ES_EINVAL;
     esk_mach_init(&st->m, e->a);
@@ -919,6 +919,12 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
         for (bit = 0; bit < 16; bit++) {
             snprintf(name, sizeof name, "P%c%d", 'A' + port, bit);
             st->gpio[port][bit] = esk_comp_pin(c, name);
+            if (!st->gpio[port][bit]) {
+                /* a part that numbers its pins GPIO0..n (an FE310's): port
+                 * k holds GPIO 16k to 16k + 15 */
+                snprintf(name, sizeof name, "GPIO%d", port * 16 + bit);
+                st->gpio[port][bit] = esk_comp_pin(c, name);
+            }
             if (st->gpio[port][bit] && st->gpio[port][bit]->model.kind == ESK_PIN_DIGITAL_IO)
                 esk_pin_watch(st->gpio[port][bit], 1);
             else
