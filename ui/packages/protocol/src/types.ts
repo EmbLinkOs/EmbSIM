@@ -172,7 +172,8 @@ export interface ArtworkState {
   class?: string;
   true?: string;
   false?: string;
-  scale?: [number, number];
+  /** Numeric output mapping: `[lo, hi]` to 0..1, or `{from: [lo, hi], to: [a, b]}` (SPEC-005 §8). */
+  scale?: [number, number] | { from: [number, number]; to?: [number, number] };
 }
 
 export interface ArtworkDescription {

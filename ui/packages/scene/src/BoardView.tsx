@@ -67,9 +67,11 @@ function applyState(root: Element, state: ArtworkState, value: OutputValue | und
   }
   const attr = state.attr ?? 'opacity';
   if (typeof value === 'number' && state.scale) {
-    const [lo, hi] = state.scale;
+    const [lo, hi] = Array.isArray(state.scale) ? state.scale : state.scale.from;
+    const [a, b] = Array.isArray(state.scale) ? [0, 1] : (state.scale.to ?? [0, 1]);
     const t = hi === lo ? 0 : Math.max(0, Math.min(1, (value - lo) / (hi - lo)));
-    el.setAttribute(attr, attr === 'opacity' ? t.toFixed(3) : String(t));
+    const v = a + t * (b - a);
+    el.setAttribute(attr, attr === 'opacity' ? v.toFixed(3) : String(v));
     return;
   }
   if (typeof value === 'number' && attr === 'opacity') {
