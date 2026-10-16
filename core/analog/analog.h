@@ -127,5 +127,9 @@ int esk_integ_negligible(const esk_integ *in);
  * iteration calls this so Newton does not declare convergence on the
  * linearised residual (SPICE's "noncon") */
 void esk_am_noncon(esk_amatrix *m);
+/* esk_island_step may integrate past `until` when every pending event before
+ * its own step proposal is another island's ANALOG step (those cannot change
+ * its sources); it never passes a SIGNAL, PROBE or other event. A catch-up from
+ * esk_island_touch stops exactly at `now`. */
 
 #endif

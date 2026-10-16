@@ -56,10 +56,18 @@ static void raise_pin(esk_adev *d, es_severity_t sev, const char *code, const ch
     esk_diag_raise(e->diag, sev, code, e->sched.now, "pin", subject, NULL, 0, "%s", msg);
 }
 
-static int drives_supply(const esk_adev_ops *ops)
+/* does device `o` hold node `node` with a source of its own? Only the output
+ * pins count: a regulator's IN or an op-amp's inputs on a net do not drive it. */
+static int device_drives_node(const esk_adev *o, int node)
 {
-    return !strcmp(ops->name, "vsource") || !strcmp(ops->name, "regulator") ||
-           !strcmp(ops->name, "opamp");
+    const char *name = o->ops->name;
+    if (!strcmp(name, "vsource"))
+        return (o->nnodes > 0 && o->node[0] == node) || (o->nnodes > 1 && o->node[1] == node);
+    if (!strcmp(name, "regulator"))
+        return o->nnodes > 1 && o->node[1] == node;
+    if (!strcmp(name, "opamp"))
+        return o->nnodes > 2 && o->node[2] == node;
+    return 0;
 }
 
 /* a power pin's ideal source is dropped when the node is already held */
@@ -91,18 +99,13 @@ static void check_duplicate_supply(esk_adev *d, bridge_state *s)
     }
     for (i = 0; i < isl->devs.len; i++) {
         esk_adev *o = isl->devs.data[i];
-        int k;
-        if (o->pin || !drives_supply(o->ops))
+        if (o->pin || !device_drives_node(o, node))
             continue;
-        for (k = 0; k < o->nnodes; k++) {
-            if (o->node[k] == node) {
-                s->disabled = 1;
-                raise_pin(d, ES_SEV_INFO, "analog.supply_driven",
-                          "the net is driven by a component model; the power pin's ideal source is "
-                          "not added");
-                return;
-            }
-        }
+        s->disabled = 1;
+        raise_pin(
+            d, ES_SEV_INFO, "analog.supply_driven",
+            "the net is driven by a component model; the power pin's ideal source is not added");
+        return;
     }
 }
 

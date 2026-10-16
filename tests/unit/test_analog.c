@@ -876,6 +876,114 @@ static void test_bounce(void)
     esk_engine_free(&e);
 }
 
+/* two islands in one engine: their step events must not clip each other to
+ * 1 ps steps (the engine clips a step to the next event of any class) */
+static void test_two_islands_step_independently(void)
+{
+    esk_engine e;
+    esk_island *ia, *ib;
+    engine_open(&e);
+    add_power(&e, "GA", "gnda", 0.0);
+    add_dev2(&e, "vsource", "VA", "{\"dc\": 5}", "ina", "gnda");
+    add_dev2(&e, "resistor", "RA", "{\"r\": \"1k\"}", "ina", "outa");
+    add_dev2(&e, "capacitor", "CA", "{\"c\": \"1u\", \"ic\": 0}", "outa", "gnda");
+    add_power(&e, "GB", "gndb", 0.0);
+    add_dev2(&e, "vsource", "VB", "{\"dc\": 3.3}", "inb", "gndb");
+    add_dev2(&e, "resistor", "RB", "{\"r\": \"10k\"}", "inb", "outb");
+    add_dev2(&e, "resistor", "RB2", "{\"r\": \"10k\"}", "outb", "gndb");
+    engine_run(&e);
+    ia = esk_engine_net(&e, "outa")->island;
+    ib = esk_engine_net(&e, "outb")->island;
+    CHECK(ia != NULL && ib != NULL && ia != ib);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "outa"), 5.0 * (1.0 - exp(-2.0)), 0.01 * 5.0);
+    CHECK_NEAR(v_of(&e, "outb"), 1.65, 1e-6);
+    CHECK(ia->steps < 200);
+    CHECK(ib->steps < 60); /* a resistive island: the step grows to h_max */
+    CHECK(ib->h_next_ps >= ES_PS_PER_MS / 2);
+    CHECK(ia->t_accepted >= 2 * ES_PS_PER_MS && ib->t_accepted >= 2 * ES_PS_PER_MS);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+/* a board's rails: an ideal supply pin on the regulator's input net, MCU power
+ * pins on its output net, pull-ups, an LED and an input */
+static void test_regulator_board_rails(void)
+{
+    esk_engine e;
+    esk_comp *w;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_power(&e, "USB", "5v", 5.0);
+    add_dev3(&e, "regulator", "U2",
+             "{\"vout\": 3.3, \"dropout\": 1.2, \"imax\": 0.8, \"quiescent\": \"5m\"}", "5v", "3v3",
+             "gnd");
+    add_power(&e, "VDD", "3v3", 3.3);
+    add_power(&e, "VDDA", "3v3", 3.3);
+    add_power(&e, "VBAT", "3v3", 3.3);
+    add_dev(&e, "pull", "PU1", "{\"level\": 1, \"voltage\": 3.3, \"r\": \"10k\"}",
+            (const char *const[]){"pc13"}, 1);
+    add_dev(&e, "pull", "PU2", "{\"level\": 1, \"voltage\": 3.3, \"r\": \"10k\"}",
+            (const char *const[]){"btn"}, 1);
+    add_dev2(&e, "resistor", "R1", "{\"r\": 510}", "3v3", "leda");
+    add_dev2(&e, "led", "D1", "{\"color\": \"red\"}", "leda", "gnd");
+    add_dev2(&e, "resistor", "R2", "{\"r\": \"1k\"}", "pc13", "ledb");
+    add_dev2(&e, "led", "D2", "{\"color\": \"green\"}", "ledb", "gnd");
+    add_dev2(&e, "switch", "S1", "{\"ron\": 1}", "btn", "gnd");
+    w = add_watcher(&e, "MCU", "btn", ESK_PULL_NONE);
+    engine_run(&e);
+    CHECK_NEAR(v_of(&e, "5v"), 5.0, 1e-9); /* held by the ideal source whatever the load */
+    CHECK_NEAR(v_of(&e, "3v3"), 3.3, 1e-6);
+    CHECK(v_of(&e, "leda") > 1.6 && v_of(&e, "leda") < 1.9);
+    CHECK(v_of(&e, "btn") > 3.29);
+    CHECK_EQ(w->pins[0].sampled, ESK_L1);
+    /* the supply pin delivers the regulator's input current: load + quiescent */
+    CHECK_NEAR(obs_num(&e, "U2", "iout"), (3.3 - v_of(&e, "leda")) / 510.0, 1e-6);
+    CHECK_NEAR(esk_engine_comp(&e, "USB")->pins[0].bridge->i_last[0],
+               -(obs_num(&e, "U2", "iout") + 5e-3), 1e-6);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "5v"), 5.0, 1e-9);
+    CHECK_NEAR(v_of(&e, "3v3"), 3.3, 1e-6);
+    CHECK(esk_engine_net(&e, "3v3")->island->steps < 100);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+/* the same rails with no source on the input: the input floats near 0 V, the
+ * regulator is in dropout and nothing blows up */
+static void test_regulator_unpowered(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev3(&e, "regulator", "U2",
+             "{\"vout\": 3.3, \"dropout\": 1.2, \"imax\": 0.8, \"quiescent\": \"5m\"}", "5v", "3v3",
+             "gnd");
+    add_power(&e, "VDD", "3v3", 3.3);
+    add_dev2(&e, "resistor", "R1", "{\"r\": 510}", "3v3", "leda");
+    add_dev2(&e, "led", "D1", "{\"color\": \"red\"}", "leda", "gnd");
+    engine_run(&e);
+    CHECK(fabs(v_of(&e, "5v")) < 1e-3);
+    CHECK(fabs(v_of(&e, "3v3")) < 1e-3);
+    CHECK(fabs(v_of(&e, "leda")) < 1e-3);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_MS) == ES_OK);
+    CHECK(fabs(v_of(&e, "5v")) < 1e-3 && fabs(v_of(&e, "3v3")) < 1e-3);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+    /* an unpowered regulator whose output is pulled up externally: the output
+     * cannot sink, so it follows the pull-up, and the input still floats */
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev3(&e, "regulator", "U2", "{\"vout\": 3.3, \"dropout\": 1.2}", "5v", "3v3", "gnd");
+    add_dev(&e, "pull", "PU1", "{\"level\": 1, \"voltage\": 3.3, \"r\": \"10k\"}",
+            (const char *const[]){"3v3"}, 1);
+    engine_run(&e);
+    CHECK(fabs(v_of(&e, "5v")) < 1e-3);
+    CHECK(v_of(&e, "3v3") > 3.2 && v_of(&e, "3v3") < 3.31);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
 static void test_registry(void)
 {
     size_t n;
@@ -1142,6 +1250,9 @@ RUN(test_opamp_inverting);
 RUN(test_regulator);
 RUN(test_pull_device);
 RUN(test_bounce);
+RUN(test_two_islands_step_independently);
+RUN(test_regulator_board_rails);
+RUN(test_regulator_unpowered);
 RUN(test_fixtures);
 esk_diag_free(&D);
 TEST_MAIN_END

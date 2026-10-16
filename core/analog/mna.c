@@ -50,8 +50,9 @@ typedef struct mna {
     int *piv;
     int allocated;
     int started, running, in_step;
-    int restart; /* next step is backward Euler and small */
-    int touched; /* a touch arrived during a step */
+    int exact_until; /* a catch-up: never step past `until` */
+    int restart;     /* next step is backward Euler and small */
+    int touched;     /* a touch arrived during a step */
     double gmin_eff;
     double h_prev_s;
     es_time_t bracket_hi; /* a crossing lies before this time (0: none) */
@@ -1046,6 +1047,49 @@ static es_status fail_step(esk_island *isl, es_time_t t, const char *code, es_se
     return ES_ECONVERGE;
 }
 
+/* The earliest pending event that is not another island's step, after `after`.
+ * The engine clips an island's step to the next event of any class, so islands
+ * scheduled at the same time would otherwise clip each other to 1 ps steps for
+ * ever; their ANALOG events cannot change this island's sources (a crossing
+ * reaches it through a SIGNAL event and esk_island_touch), so they are ignored. */
+static es_time_t next_foreign_event(const esk_island *isl)
+{
+    const esk_sched *s = &isl->e->sched;
+    es_time_t best = ES_TIME_MAX;
+    size_t i;
+    for (i = 0; i < s->len; i++) {
+        const esk_event *ev = &s->heap[i];
+        if (ev->cancelled || ev->cls == ESK_EV_ANALOG)
+            continue;
+        if (ev->time < best)
+            best = ev->time;
+    }
+    return best;
+}
+
+/* how far this call may integrate: `until` as the caller clipped it, extended
+ * past other islands' step events up to the island's own proposal */
+static es_time_t step_horizon(const esk_island *isl, es_time_t until)
+{
+    const mna *p = (const mna *)isl->priv;
+    es_time_t t = isl->t_accepted, want, foreign;
+    es_time_t h = isl->h_next_ps ? isl->h_next_ps : isl->p.h_max_ps;
+    if (p->exact_until || p->restart || p->touched)
+        return until;
+    if (esk_time_add(t, h, &want))
+        want = ES_TIME_MAX - 1;
+    if (want <= until)
+        return until;
+    /* a pending foreign event at or before the accepted time (one at `now` of a
+     * later class, such as the advance() marker) means the caller's clip stands */
+    foreign = next_foreign_event(isl);
+    if (foreign <= t)
+        return until;
+    if (foreign < want)
+        want = foreign;
+    return want > until ? want : until;
+}
+
 es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
 {
     mna *p = (mna *)isl->priv;
@@ -1058,6 +1102,7 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
         return ES_ECONVERGE;
     if (until <= t)
         return ES_OK;
+    until = step_horizon(isl, until);
     if (p->in_step)
         return ES_ESTATE;
     p->in_step = 1;
@@ -1247,12 +1292,15 @@ void esk_island_touch(esk_island *isl, es_time_t now)
         return;
     }
     /* integrate up to `now` with the old sources before they change */
+    p->exact_until = 1;
     while (isl->t_accepted < now && guard++ < MNA_MAX_CATCHUP) {
         if (esk_island_step(isl, now, &reached) != ES_OK) {
             isl->failed = 1;
+            p->exact_until = 0;
             return;
         }
     }
+    p->exact_until = 0;
     p->restart = 1;
     if (isl->h_next_ps > MNA_TOUCH_STEP_PS)
         isl->h_next_ps = MNA_TOUCH_STEP_PS;

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "press",
+  "until": "3ms",
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "regulated",
+      "between": [
+        "0.5ms",
+        "3ms"
+      ],
+      "probe": "rail3v3",
+      "expect": {
+        "min_v": 3.2,
+        "max_v": 3.4
+      }
+    },
+    {
+      "id": "button-released",
+      "at": "0.5ms",
+      "probe": "btn",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "button-pressed",
+      "at": "1.5ms",
+      "probe": "btn",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "led-dark",
+      "between": [
+        "0ms",
+        "3ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "max": 0.0001
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "net.contention",
+          "analog.no_convergence"
+        ]
+      }
+    }
+  ]
+}

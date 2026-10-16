@@ -1467,8 +1467,10 @@ static const esk_adev_ops opamp_ops = {"opamp", sizeof(opamp_state), opamp_setup
 
 typedef struct reg_state {
     double vout, dropout, imax, iq, rlim;
-    double vo_trial;
+    double vo_trial, iin_trial;
 } reg_state;
+
+#define REG_RREV 1e6 /* reverse (sinking) leakage resistance of the output, ohms */
 
 static es_status reg_setup(esk_adev *d)
 {
@@ -1509,8 +1511,13 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     if (excess > 0.0) {
         vo -= excess * s->rlim; /* a soft current limit */
         rl = s->rlim;
+    } else if (iout < 0.0) {
+        /* the pass element cannot sink: a reverse current only flows through a
+         * large leakage resistance, so a pulled-up output rises above vo */
+        vo -= iout * REG_RREV;
+        rl = REG_RREV;
     }
-    /* output branch: v_out - v_gnd - vo(vin) + rl * (-ib - imax) = 0 */
+    /* output branch: v_out - v_gnd - vo(vin) + rl * (iout - i_knee) = 0 */
     esk_am_stamp_j(m, nout, b, 1.0);
     esk_am_stamp_j(m, ng, b, -1.0);
     esk_am_stamp_f(m, nout, ib);
@@ -1520,13 +1527,21 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     esk_am_stamp_j(m, b, nin, -dvo_dvin);
     esk_am_stamp_j(m, b, b, -rl);
     esk_am_stamp_f(m, b, esk_am_v(m, nout, ng) - vo);
-    /* the load current is drawn from IN; the quiescent current flows IN -> GND */
-    esk_am_stamp_j(m, nin, b, -1.0);
-    esk_am_stamp_f(m, nin, -ib);
-    esk_am_stamp_j(m, ng, b, 1.0);
-    esk_am_stamp_f(m, ng, ib);
-    stamp_src_i(m, nin, ng, s->iq);
+    /* the sourced load current is drawn from IN (never pushed into it) */
+    if (iout > 0.0) {
+        esk_am_stamp_j(m, nin, b, -1.0);
+        esk_am_stamp_f(m, nin, -ib);
+        esk_am_stamp_j(m, ng, b, 1.0);
+        esk_am_stamp_f(m, ng, ib);
+    }
+    /* the quiescent current IN -> GND ramps in over the first volt of vin so an
+     * unpowered input (held by gmin only) draws nothing */
+    if (vin >= 1.0)
+        stamp_src_i(m, nin, ng, s->iq);
+    else if (vin > 0.0)
+        esk_am_stamp_g(m, nin, ng, s->iq * esk_am_source_scale(m));
     s->vo_trial = vo;
+    s->iin_trial = (iout > 0.0 ? iout : 0.0) + (vin >= 1.0 ? s->iq : vin > 0.0 ? s->iq * vin : 0.0);
 }
 
 static void reg_accept(esk_adev *d, es_time_t t)
@@ -1534,9 +1549,9 @@ static void reg_accept(esk_adev *d, es_time_t t)
     const reg_state *s = (const reg_state *)d->state;
     double ib = acc_x(d, d->branch[0]);
     ES_UNUSED(t);
-    d->i_last[0] = -ib + s->iq;
+    d->i_last[0] = s->iin_trial;
     d->i_last[1] = ib;
-    d->i_last[2] = -s->iq;
+    d->i_last[2] = -(s->iin_trial + ib);
 }
 
 static void reg_observe(esk_adev *d, esk_json *o)

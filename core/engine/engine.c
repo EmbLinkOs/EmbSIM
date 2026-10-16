@@ -802,7 +802,9 @@ static void island_step_cb(void *ctx, void *arg, es_time_t now)
 {
     esk_engine *e = (esk_engine *)ctx;
     esk_island *isl = (esk_island *)arg;
-    es_time_t next = esk_sched_next_time(&e->sched), until, reached = now;
+    /* clip to the next event that can change this island's sources: other islands' step
+     * events cannot (crossings arrive as SIGNAL events), so they are ignored */
+    es_time_t next = esk_sched_next_time_excluding(&e->sched, ESK_EV_ANALOG), until, reached = now;
     es_status st;
     isl->step_event = 0;
     if (isl->failed)

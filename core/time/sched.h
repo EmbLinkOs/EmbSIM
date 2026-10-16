@@ -61,6 +61,8 @@ es_status esk_sched_at(esk_sched *s, es_time_t t, esk_event_class cls,
 void esk_sched_cancel(esk_sched *s, esk_event_handle h);
 /* time of the next pending event, or ES_TIME_MAX */
 es_time_t esk_sched_next_time(const esk_sched *s);
+/* time of the next pending event of any class but `cls` (an island clips its step to this; other islands' steps cannot change its sources) */
+es_time_t esk_sched_next_time_excluding(const esk_sched *s, esk_event_class cls);
 /* pop and run the next event if its time <= until; returns 1 if one ran, 0 if none,
  * -1 if the delta-cycle bound was exceeded (delta_overflow is set and the event dropped) */
 int esk_sched_run_one(esk_sched *s, es_time_t until);

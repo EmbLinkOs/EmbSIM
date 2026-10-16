@@ -1355,8 +1355,10 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
         ctx.probes[pid] = probe
         kind, _, rest = probe.get("target", "").partition(":")
         if kind == "net":
-            if rest not in nets:
-                report.error(file, node + "/target", "catalog.not_found", f"net {rest} is not declared")
+            b2, _, bnet = rest.partition(".")
+            board_net = b2 in ctx.boards and bnet in (ctx.boards[b2].get("nets") or {})
+            if rest not in nets and not board_net:
+                report.error(file, node + "/target", "catalog.not_found", f"net {rest} is not declared (a board's own net is BOARD.NET)")
         elif kind in ("pin", "device", "output"):
             i2, _, sub = rest.partition(".")
             if i2 in ctx.boards:
