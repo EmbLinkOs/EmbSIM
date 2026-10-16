@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M5 verification (2026-10-16)
+
+A run becomes a repeatable, measured check: scenarios edited and run in
+place, recordings replayed identically or turned into scenarios, and the
+firmware's coverage and profile from its core.
+
+| | |
+|---|---|
+| ![The scenario editor after a run](m5/verify-scenario.png) | **Edit and run a scenario.** `scenarios/press.json` of the Blue Pill example opened in the editor: its inputs timeline and its sixteen assertions, each row with its result after the run, the report below. |
+| ![Coverage of the Blue Pill's firmware](m5/verify-coverage.png) | **Coverage and profile.** After a run with the button pressed: each source file's lines and functions hit, `main.c` with each line's count, and where the cycles went by function. |
+| ![Coverage, dark](m5/verify-coverage-dark.png) | **The same, dark.** The source view starts at the first line with code; lines that never ran are marked. |
+| ![A recording replayed and made a scenario](m5/verify-recording.png) | **Record, replay, convert.** A session recorded while the button was held, replayed identically (291 observations), and turned into a scenario now open in the editor with its inputs and assertions. |
+
 ## Interactive component library (2026-10-16)
 
 Captured by `tests/browser/test_library.py` against the native engine, including

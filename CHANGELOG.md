@@ -144,6 +144,21 @@ versions follow semantic versioning. There is no release yet.
   `.coverage`, `.profile` over the protocol; the run report's `coverage`
   and `profile` summaries; the `analysis` test over every firmware example.
   Extracted from EmbCC's analyses, with per-core call stacks.
+- The Verify perspective (M5): the scenario editor (a scenario's inputs
+  and assertions edited in place, run with each result in its row, saved
+  into the project: `scenario.get`, `scenario.save`), recordings replayed
+  with the divergence shown or turned into a scenario
+  (`record.to_scenario`), coverage with each file's source and counts and
+  the functions by cycles.
+- Recordings made in a running session replay identically: they begin
+  with the digital probes' levels and carry `from_ps` and `from_seq`;
+  inputs given at the paused instant are `immediate`.
+- The Python client (`python/embsim`, `pip install ./python`): `Session`,
+  `run()`, `replay()`, a pytest fixture.
+- `embsim run --target BOARD --image FILE` with `--console` and
+  `--until-text`: a catalog board as an emulated target for test runners,
+  with no project; `--image ID=FILE` over a project. `docs/user/ci.md`.
+  EmbLinkRTOS's Arduino Uno conformance suite runs this way.
 - The RP2040's second core: two Cortex-M0+ cores on one clock
   (`core.cores`; each core's NVIC, SysTick, CPUID, divider and FIFO; WFE and
   SEV between them; core 1 launched through its bootrom's FIFO handshake and

@@ -7,7 +7,7 @@ hardware would have, and lets you press its buttons, turn its pots, probe its
 wires and debug its code while it runs. The same experiment runs headless from
 the command line in continuous integration and replays deterministically.
 
-**Current phase: M4 core families and boards.** The core library, command line, protocol,
+**Current phase: M5 verification.** The core library, command line, protocol,
 catalog and workbench run circuits (M0); a Blue Pill's STM32F103C8 runs
 real firmware in them with source-level debugging (M1); the workbench
 edits circuits against the engine, decodes serial buses and ships as a
@@ -21,12 +21,15 @@ cores, and an nRF52840 DK runs
 its Cortex-M4F with EasyDMA and the FPU (M4, part 2); an Explorer 16/32
 runs its PIC32MX795F512L's MIPS32 core, its clock from the configuration
 words through the PLL (M4, part 3), and with its PIC24 plug-in module an
-XC16 image on the PIC24FJ1024GB610 (M4, part 4).
+XC16 image on the PIC24FJ1024GB610 (M4, part 4). A run is recorded and
+replays identically, becomes a scenario edited in the workbench, measures
+the firmware's coverage and profile on every core, and runs in CI from the
+command line or Python; EmbLinkRTOS's test suite runs on EmbSIM's Uno (M5).
 Nothing is released
 yet: [`docs/STATUS.md`](docs/STATUS.md) is the only inventory of what exists
 and with what evidence.
 
-![An Arduino Uno and a Blue Pill on one serial line, both running their firmware](docs/gallery/m4/run-two-boards.png)
+![The Verify perspective: coverage of the Blue Pill's firmware](docs/gallery/m5/verify-coverage.png)
 
 The [gallery](docs/gallery/README.md) shows the workbench at each milestone.
 
