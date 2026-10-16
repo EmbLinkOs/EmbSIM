@@ -1001,3 +1001,28 @@
 }
 .wb-design-studio { display: flex; flex-direction: column; }
 .wb-design-studio > .es-dock { flex: 1; height: auto; min-height: 0; }
+
+/* Restrained system-style chrome, with functional appearance previews. */
+.wb-design-studio { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.wb-schematic-ribbon { border-radius: 14px; background: color-mix(in srgb, var(--surface-raised) 94%, transparent); box-shadow: 0 1px 3px #00000005, inset 0 1px 0 #ffffff18; backdrop-filter: blur(20px); }
+.wb-design-studio .es-panel { border-radius: 12px; }
+.wb-schematic-popover { width: 360px; border-radius: 16px; padding: 14px; box-shadow: 0 16px 48px #00000024, 0 2px 8px #0000000a; background: color-mix(in srgb, var(--surface-raised) 97%, transparent); backdrop-filter: blur(24px); }
+.wb-canvas-appearance { display: grid; gap: 14px; padding-bottom: 16px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.wb-canvas-appearance__heading { display: flex; align-items: center; justify-content: space-between; color: var(--text-muted); font-size: 9px; font-weight: 650; letter-spacing: 0.1em; }
+.wb-canvas-appearance fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.wb-canvas-appearance legend { font-size: 11px; font-weight: 550; margin-bottom: 8px; color: var(--text); }
+.wb-canvas-appearance__patterns { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.wb-canvas-appearance__patterns label { display: grid; gap: 6px; text-align: center; padding: 4px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; font-size: 9px; color: var(--text-muted); }
+.wb-canvas-appearance__sample { display: block; height: 35px; border-radius: 5px; }
+.wb-canvas-appearance label.is-active { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-muted); }
+.wb-canvas-appearance label:focus-within { outline: 2px solid var(--line-focus); outline-offset: 3px; }
+.wb-canvas-appearance__palettes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.wb-canvas-appearance__palettes label { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 7px; border: 1px solid var(--line); border-radius: 9px; font-size: 10px; color: var(--text-muted); cursor: pointer; }
+.wb-canvas-appearance__swatch { width: 100%; height: 20px; border-radius: 5px; border: 1px solid var(--line); background: var(--canvas-paper); }
+.wb-canvas-appearance__field { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; }
+.wb-canvas-appearance select { border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; background: var(--surface-sunken); color: var(--text); font: inherit; }
+.wb-canvas-appearance__range { display: grid; gap: 8px; font-size: 11px; color: var(--text); }
+.wb-canvas-appearance__range > span { display: flex; align-items: center; justify-content: space-between; }
+.wb-canvas-appearance output { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.wb-canvas-appearance input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+.wb-canvas-appearance p { margin: 0; color: var(--text-muted); font-size: 10px; line-height: 1.5; }

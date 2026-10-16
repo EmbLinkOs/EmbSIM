@@ -63,6 +63,24 @@ and its missing drawn path is shown as an airwire when airwires are enabled.
 - Existing pan, zoom, Shift-drag selection, copy/paste, duplicate, rotate, mirror,
   net labels, buses and hierarchy remain available.
 
+## Backgrounds and grids
+
+Open **View** to customize the drafting surface. Choose Engineering for major/minor
+grid lines, Lines for a uniform grid, Dots, Crosses, or Plain. Paper, Warm, Graphite
+and Blueprint palettes each adapt to light and dark themes. Change grid spacing,
+line/dot size and contrast to suit your display; **Reset appearance** restores the
+defaults. Native radio, select and range controls support keyboard navigation.
+
+The background is continuous across the workspace, including past the old sheet
+edge. Patterns follow pan and zoom; coarser subdivisions keep zoomed-out grids
+legible. These are visual preferences: editing snap remains at 10 units. Settings
+are saved on this device, survive reloads, and also apply to inside views and the
+Run schematic. They do not change the project or its electrical connections.
+
+The native server supports document/asset requests while its WebSocket is active,
+so a browser reload can restore preferences without waiting for the old page to
+release its session. It still accepts only one session client at a time.
+
 ## What layout guarantees
 
 Preview planning runs in a separate worker. It preserves IDs, component values,
@@ -104,3 +122,13 @@ python3 tests/browser/test_schematic.py --embsim build/dev/bin/embsim \
 
 Python Playwright and a browser are required for this optional native-engine check.
 Platform CI separately covers the workbench unit and standard smoke tests.
+
+
+The appearance-specific browser regression additionally requires Pillow and checks
+all patterns/palettes, keyboard controls, reload persistence, reset, compact layout,
+and pixel uniformity across a viewport panned beyond the old sheet edge:
+
+```sh
+python3 tests/browser/test_canvas_appearance.py --embsim build/dev/bin/embsim \
+  --chromium /usr/bin/chromium --screenshots /tmp/embsim-canvas
+```

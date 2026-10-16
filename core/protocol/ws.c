@@ -4,7 +4,8 @@
  * dependency-free HTTP/1.1 server on the loopback interface that serves the
  * workbench assets from a directory (or a built-in console page) and
  * upgrades /ws to a WebSocket (RFC 6455) carrying one JSON-RPC object per
- * text frame. Single-threaded: one client at a time, successive clients
+ * text frame. Single-threaded: one session client at a time, with static
+ * HTTP requests served between session polls; successive session clients
  * accepted until Ctrl-C or session.close; the transport is polled with a
  * short timeout and the idle hook of protocol.h runs between requests. */
 #include <string.h>
@@ -16,6 +17,7 @@
 
 #define WS_HTTP_HEAD_MAX 16384      /* bytes of request head accepted */
 #define WS_HTTP_HEAD_TIMEOUT_MS 10000
+#define WS_AUX_HTTP_HEAD_TIMEOUT_MS 250
 #define WS_MESSAGE_MAX (16u << 20)  /* bytes per message (CS-17) */
 #define WS_SEND_TIMEOUT_MS 5000
 #define WS_RECV_CHUNK 4096
@@ -27,6 +29,8 @@ typedef struct ws_server {
     int port;
     const char *ui_dir;     /* NULL: built-in page */
     int ui_has_index;
+    esk_host_sock listener; /* static requests can arrive during the active session */
+    int http_only;         /* auxiliary connections cannot attach another session */
     esk_host_sock client;   /* ESK_HOST_SOCK_INVALID when none */
     int client_is_ws;       /* the client finished the upgrade */
     int send_failed;        /* the client stopped taking frames */
@@ -149,7 +153,8 @@ static void send_http_text(ws_server *srv, int status, const char *reason, const
  * oversize or disconnect. The idle hook runs while waiting. */
 static int read_head(ws_server *srv, esk_strbuf *head, size_t *head_len)
 {
-    uint64_t deadline = esk_host_monotonic_ms() + WS_HTTP_HEAD_TIMEOUT_MS;
+    uint64_t deadline = esk_host_monotonic_ms() +
+        (srv->http_only ? WS_AUX_HTTP_HEAD_TIMEOUT_MS : WS_HTTP_HEAD_TIMEOUT_MS);
     for (;;) {
         char chunk[WS_RECV_CHUNK];
         long n;
@@ -158,7 +163,7 @@ static int read_head(ws_server *srv, esk_strbuf *head, size_t *head_len)
             *head_len = (size_t)(end - head->data) + 4;
             return 0;
         }
-        if (head->len >= WS_HTTP_HEAD_MAX)
+        if (head->len >= WS_HTTP_HEAD_MAX || esk_host_monotonic_ms() > deadline)
             return -1;
         n = esk_host_sock_recv(srv->client, chunk, sizeof chunk, ESK_PROTOCOL_POLL_MS);
         if (n == 0) {
@@ -409,6 +414,8 @@ static int handle_text(ws_server *srv, const char *text, size_t len)
     return close;
 }
 
+static void serve_pending_http(ws_server *srv);
+
 static void ws_loop(ws_server *srv, esk_strbuf *in)
 {
     esk_strbuf msg; /* fragments of the message in progress */
@@ -503,6 +510,7 @@ static void ws_loop(ws_server *srv, esk_strbuf *in)
             send_close(srv, 1001);
             break;
         }
+        serve_pending_http(srv);
         n = esk_host_sock_recv(srv->client, chunk, sizeof chunk, ESK_PROTOCOL_POLL_MS);
         if (n == 0) {
             esk_protocol_idle();
@@ -567,6 +575,8 @@ static void serve_client(ws_server *srv)
             send_http_text(srv, 403, "Forbidden", "origin not allowed\n");
         } else if (strcmp(req.method, "GET") != 0) {
             send_http_text(srv, 405, "Method Not Allowed", "method not allowed\n");
+        } else if (srv->http_only) {
+            send_http_text(srv, 409, "Conflict", "a session client is already attached\n");
         } else {
             /* bytes after the head belong to the WebSocket stream */
             consume(&in, head_len);
@@ -581,6 +591,26 @@ static void serve_client(ws_server *srv)
         send_http_text(srv, 405, "Method Not Allowed", "method not allowed\n");
     }
     esk_strbuf_free(&in);
+}
+
+/* A reload requests its document before releasing the old WebSocket. Serve
+ * one pending static request per poll, without replacing the session client or
+ * notification handler. Auxiliary request heads have a short bounded wait. */
+static void serve_pending_http(ws_server *srv)
+{
+    ws_server http = {0};
+    esk_host_sock client = ESK_HOST_SOCK_INVALID;
+    if (esk_host_sock_wait(srv->listener, 0) != 1)
+        return;
+    if (esk_host_sock_accept(srv->listener, &client) != ES_OK)
+        return;
+    http = *srv;
+    http.client = client;
+    http.client_is_ws = 0;
+    http.http_only = 1;
+    http.send_failed = 0;
+    serve_client(&http);
+    esk_host_sock_close(client);
 }
 
 /* ---- entry --------------------------------------------------------------- */
@@ -619,6 +649,7 @@ es_status es_serve_websocket(es_session *s, const char *host, int port, const ch
         esk_host_sock_shutdown();
         return st;
     }
+    srv.listener = listener;
     st = esk_host_sock_local_port(listener, &srv.port);
     if (st != ES_OK) {
         esk_host_sock_close(listener);

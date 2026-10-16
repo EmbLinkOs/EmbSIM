@@ -541,3 +541,32 @@ whose ROMs are not shipped (an nRF52's MBR, a SAM's ROM) can take the same
 route.
 
 **Status.** Accepted (M6).
+
+---
+
+## ADR-022 Continuous canvas preferences and reload-safe static serving
+
+**Context.** The finite SVG sheet left an inconsistent gray region after pan/fit.
+Canvas appearance needs local customization across views without changing project
+connectivity. Reload testing also exposed the single-client server waiting on the
+old WebSocket while the browser waited for its next document.
+
+**Decision.** Render a viewport-covering background with world-anchored CSS
+patterns, updating its transform with the scene. Keep validated, versioned
+appearance preferences in local storage with an in-memory fallback; editing snap
+and electrical project data are independent. Use theme-aware palettes and native
+keyboard controls. The single-threaded native server services one auxiliary HTTP
+request between session polls, with a short request-head deadline. Auxiliary
+connections retain authority checks and cannot upgrade to another session.
+
+**Alternatives.** Enlarge the finite sheet (still exposes an edge); store appearance
+in project JSON (unnecessary project churn); close the session on reload or add a
+server thread (couples navigation to runtime ownership or adds concurrency).
+
+**Consequences.** Pan/zoom never reveals a different workspace surface. Reloads
+and asset fetches work with an active session, preserving its notification target.
+The server remains cooperative rather than a general concurrent HTTP server;
+static transfer and request timeouts still bound its work. Tests cover pixel
+uniformity, preferences, active-session asset delivery and request restrictions.
+
+**Status.** Proposed; implemented for review in this pull request (2026-10-16).

@@ -5,6 +5,46 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Continuous canvas appearance and reloads
+
+A viewport-covering, world-anchored background replaces the finite SVG sheet
+surface that exposed a gray strip after panning. Engineering, line, dot, cross
+and plain patterns have paper, warm, graphite and blueprint palettes in both
+themes. Spacing, line/dot weight and contrast are adjustable. Validated local
+preferences persist through reloads and apply to Design, inside and Run views;
+editing snap and electrical data remain independent. System typography, rounded
+chrome and restrained shadows refine the schematic workspace.
+
+Reload testing exposed a native-server stall while the old WebSocket remained
+attached. Auxiliary HTTP requests are now serviced between session polls without
+replacing its notification target. Host/origin restrictions remain enforced; a
+second session upgrade returns HTTP 409 and incomplete auxiliary headers have a
+250 ms deadline. The regression covers asset delivery while the circuit is
+running, time advancement, authority rejection, busy upgrades and partial requests.
+ADR-022 records the proposed decision for review.
+
+Integrated main `067852b` (including the Pico SDK work) on Linux, GCC 14.2,
+Python 3.12 and Node 24. Observed locally:
+
+- All 34 development CTest outcomes pass. The firmware-build wrapper explicitly
+  skips compilation without a supported toolchain; other targets execute.
+- The affected host, HTTP asset and protocol tests pass under Address/undefined-
+  behavior sanitizers (3/3). This is targeted sanitizer evidence, not a claim
+  that the entire sanitizer suite was rerun.
+- All 114 UI tests pass; typecheck, lint and production build pass. All four
+  Playwright smoke tests pass, including preference persistence and pan coverage.
+- The new native-engine browser check passes for five patterns, four palettes,
+  size/contrast/spacing changes, three consecutive reloads, reset, both themes
+  and 1024×700. Pixels sampled across a panned plain canvas match the selected
+  surface color; the background fills the viewport without a finite-sheet seam.
+- The existing native-engine schematic/undo and library/live-input/waveform
+  browser regressions also pass without page errors.
+- All 552 JSON files validate; documentation checks 108 documents and 99
+  requirements with no problems. Repository policy checks pass.
+
+The [gallery](gallery/README.md) contains original screenshots. Remote platform
+and installer checks for this branch remain to be observed.
+
 ## Schematic Studio
 
 The Design perspective now includes connected auto-placement, route-only planning,

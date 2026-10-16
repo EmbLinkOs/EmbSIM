@@ -40,6 +40,8 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME catalog_fixture_assertions COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/catalog/run_fixtures.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   if(EXISTS ${CMAKE_SOURCE_DIR}/examples/button-led/project.json)
+    add_test(NAME http_assets COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_http_assets.py
+             --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     add_test(NAME protocol_conformance COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/run_conformance.py
              --embsim $<TARGET_FILE:embsim_cli> --project ${CMAKE_SOURCE_DIR}/examples/button-led/project.json --port 18765
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

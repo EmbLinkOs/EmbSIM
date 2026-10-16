@@ -83,6 +83,22 @@ and supports recentering plus a keyboard-accessible fit action. Grid, airwires,
 navigator, side-panel focus mode, magnetic guides and smart-wiring preferences are controllable in View.
 The [user guide](../user/schematic-studio.md) records the heuristic boundaries.
 
+### Canvas appearance
+
+The background covers the entire viewport, including negative world coordinates,
+without exposing the finite sheet bounds. Patterns remain anchored to world zero
+while panning and zooming. Engineering major/minor lines, simple lines, dots,
+crosses and a plain background are selectable. Paper, warm, graphite and blueprint
+surfaces adapt to light/dark themes. Visual spacing (10/20/40 units), line/dot
+size and grid contrast are adjustable; zoom-out uses coarser subdivisions to
+avoid subpixel noise. These appearance settings do not alter editing snap.
+
+Appearance preferences are validated and persisted locally, shared by Design,
+inside views and the Run schematic, with a reset action. Storage failure must
+not prevent changes in the current session. Controls have native keyboard
+semantics and visible focus indicators. The style uses restrained system fonts,
+neutral canvas surfaces, rounded chrome and subtle shadows.
+
 ## 3. Scene rendering
 
 - SVG scene graph: a viewport group with pan and zoom (wheel, pinch, keys);

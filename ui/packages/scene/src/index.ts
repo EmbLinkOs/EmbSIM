@@ -26,3 +26,4 @@ export { boardSymbol, portGroups, type BoardPort } from './boardSymbol';
 export { busText, busValue } from './bus';
 export { BoardView, type BoardViewProps, type BoardItem } from './BoardView';
 export { autoPlace, autoRoute, createLayout, arrange, layoutParts, routeConnection, freePlacement, type LayoutOptions, type LayoutResult, type Arrangement } from './autoLayout';
+export { canvasBackground, normalizeAppearance, DEFAULT_CANVAS_APPEARANCE, type CanvasAppearance, type CanvasPalette, type GridStyle } from './canvasAppearance';

@@ -18,8 +18,12 @@ JSON-RPC 2.0. Requests, responses and notifications are UTF-8 JSON objects.
 Batch requests are not supported. Every request has an `id`; the server
 replies in order per transport but may interleave notifications.
 
-The WebSocket endpoint listens on loopback and serves one client at a
-time. A browser connection is accepted when its `Origin` is the server's
+The WebSocket endpoint listens on loopback and serves one session client at a
+time. Static HTTP requests are serviced between that client's protocol polls,
+so browser reloads and asset requests do not wait for its WebSocket to close.
+Auxiliary connections cannot attach a second session (HTTP 409 for an otherwise
+allowed upgrade). They retain Host and Origin checks and have a 250 ms request-head
+deadline; ordinary initial request heads retain their 10-second deadline. A browser connection is accepted when its `Origin` is the server's
 own (`http://127.0.0.1:PORT`, `http://localhost:PORT`) or one the host
 allowed (`embsim serve --allow-origin ORIGIN`, `es_serve_allow_origin`):
 the desktop shell allows its webview's origin (`tauri://localhost`,

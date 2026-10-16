@@ -33,21 +33,6 @@
   cursor: cell;
 }
 
-.es-scene__sheet {
-  fill: var(--sheet);
-  stroke: var(--line);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.es-scene__grid-dot {
-  fill: var(--grid-major);
-}
-
-.es-scene__grid-dot--major {
-  fill: var(--line-strong);
-}
-
 /* wires and net state colours */
 .es-wire__line {
   fill: none;
@@ -491,3 +476,23 @@
 .es-scene__navigator button:hover { color: var(--text); background: var(--surface-sunken); }
 .es-scene__alignment-guide { stroke: var(--symbol-selected); stroke-width: 1; stroke-dasharray: 5 4; opacity: 0.65; pointer-events: none; vector-effect: non-scaling-stroke; }
 .es-scene__wire-preview.is-blocked { stroke: var(--danger); }
+
+/* Theme-aware continuous workspace palettes. */
+:root { --canvas-paper-base: #17191e; --canvas-warm-base: #211f1b; --canvas-graphite-base: #101216; --canvas-blueprint-base: #10243a; --canvas-ink-base: #bcc3ce; --canvas-blueprint-ink: #a6c8eb; }
+:root[data-theme="light"] { --canvas-paper-base: #fcfcfd; --canvas-warm-base: #faf7ef; --canvas-graphite-base: #edf0f3; --canvas-blueprint-base: #edf4fc; --canvas-ink-base: #566377; --canvas-blueprint-ink: #476f9e; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) { --canvas-paper-base: #fcfcfd; --canvas-warm-base: #faf7ef; --canvas-graphite-base: #edf0f3; --canvas-blueprint-base: #edf4fc; --canvas-ink-base: #566377; --canvas-blueprint-ink: #476f9e; }
+}
+.es-scene--paper { --canvas-paper: var(--canvas-paper-base); --canvas-ink: var(--canvas-ink-base); }
+.es-scene--warm { --canvas-paper: var(--canvas-warm-base); --canvas-ink: var(--canvas-ink-base); }
+.es-scene--graphite { --canvas-paper: var(--canvas-graphite-base); --canvas-ink: var(--canvas-ink-base); }
+.es-scene--blueprint { --canvas-paper: var(--canvas-blueprint-base); --canvas-ink: var(--canvas-blueprint-ink); }
+.es-scene { background: var(--canvas-paper, var(--sheet)); }
+.es-scene__background { position: absolute; inset: 0; pointer-events: none; background-repeat: repeat; }
+.es-scene__svg { position: relative; }
+.es-scene__navigator { border-radius: 14px; background: color-mix(in srgb, var(--surface-raised) 92%, transparent); backdrop-filter: blur(16px); box-shadow: 0 6px 24px #00000012, inset 0 1px 0 #ffffff12; }
+.es-scene__navigator svg { background: var(--canvas-paper, var(--sheet)); }
+/* Drafting labels stay distinct from the grid and crossing geometry. */
+.es-component__ref { font-size: 11px; fill: var(--text); paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }
+.es-component__value { font-size: 9px; fill: var(--text-muted); paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }
+.es-net-label text { font-size: 10px; paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 2.5px; stroke-linejoin: round; }

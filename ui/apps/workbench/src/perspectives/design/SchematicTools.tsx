@@ -9,9 +9,11 @@ import { errorMessage } from '../../actions';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { planLayout } from './layoutPlanner';
+import { CanvasAppearanceControls } from './CanvasAppearanceControls';
+import { useCanvasAppearance } from '../../stores/canvasAppearance';
 
 export interface LayoutPreview { source: Project; result: LayoutResult; label: string }
-export interface CanvasDisplay { grid: boolean; airwires: boolean; minimap: boolean; smartWires: boolean; autoArrange: boolean; guides: boolean; focusMode: boolean }
+export interface CanvasDisplay { airwires: boolean; minimap: boolean; smartWires: boolean; autoArrange: boolean; guides: boolean; focusMode: boolean }
 
 /** Only presentation fields can enter a layout transaction, even if a future
  * planner accidentally returns changed parameters or connectivity. */
@@ -42,6 +44,8 @@ export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDispl
   const [menu, setMenu] = useState<'arrange' | 'view' | null>(null);
   const [planning, setPlanning] = useState(false);
   const { toast } = useToast();
+  const appearance = useCanvasAppearance((s) => s.appearance);
+  const updateAppearance = useCanvasAppearance((s) => s.update);
   const selectedNet = useSelection((s) => s.net);
   const entries = useMemo(() => {
     if (!project) return [];
@@ -88,9 +92,9 @@ export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDispl
                 .catch((e: unknown) => toast({ kind: 'error', title: 'Cannot arrange selection', description: errorMessage(e) }))
                 .finally(() => setPlanning(false));
             }}>{a.value.startsWith('distribute') ? <ArrowLeftRight size={15} /> : <AlignStartVertical size={15} />}{a.label}</button>
-          )) : (Object.keys(display) as (keyof CanvasDisplay)[]).map((key) => (
-            <label key={key}><input type="checkbox" checked={display[key]} onChange={(e) => onDisplay({ ...display, [key]: e.target.checked })} />{key === 'grid' ? 'Dot grid' : key === 'airwires' ? 'Unrouted airwires' : key === 'smartWires' ? 'Obstacle-aware wiring' : key === 'autoArrange' ? 'Auto arrange after connecting' : key === 'guides' ? 'Magnetic alignment guides' : key === 'focusMode' ? 'Focus canvas (hide side panels)' : 'Sheet navigator'}</label>
-          ))}
+          )) : <><CanvasAppearanceControls /><div className="wb-canvas-appearance__heading"><span>EDITING & NAVIGATION</span></div><label><input type="checkbox" checked={appearance.style !== 'blank'} onChange={(e) => updateAppearance({ style: e.target.checked ? 'engineering' : 'blank' })} />Show grid</label>{(Object.keys(display) as (keyof CanvasDisplay)[]).map((key) => (
+            <label key={key}><input type="checkbox" checked={display[key]} onChange={(e) => onDisplay({ ...display, [key]: e.target.checked })} />{key === 'airwires' ? 'Unrouted airwires' : key === 'smartWires' ? 'Obstacle-aware wiring' : key === 'autoArrange' ? 'Auto arrange after connecting' : key === 'guides' ? 'Magnetic alignment guides' : key === 'focusMode' ? 'Focus canvas (hide side panels)' : 'Sheet navigator'}</label>
+          ))}</>}
         </div>
       )}
       {finder && (
