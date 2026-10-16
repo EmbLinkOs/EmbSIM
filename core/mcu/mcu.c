@@ -205,7 +205,10 @@ static int runnable(const mcu_state *st)
 static void wake(mcu_state *st)
 {
     esk_engine *e = st->c->e;
-    if (!runnable(st) || st->m.asleep)
+    /* a core not yet started since its reset starts when the reset said,
+     * whatever the pins do meanwhile (its first quantum reads them): so a
+     * session as loaded runs as one reset does */
+    if (!runnable(st) || st->m.asleep || (st->fresh && st->ev))
         return;
     schedule_at(st, st->t > e->sched.now ? st->t : e->sched.now);
 }

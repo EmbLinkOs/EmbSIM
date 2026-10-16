@@ -57,9 +57,12 @@ rows of [STATUS.md](../STATUS.md); update both together.
   instant is marked `immediate`, and replay runs to that instant before
   applying it, as the session did: applied as a scheduled event instead it
   lands a picosecond earlier.
-- **`record.start` before anything has run resets first.** The state of a
-  freshly loaded session is not quite a reset's (a 125 ns difference on the
-  Blue Pill), and a replay starts from reset.
+- **A loaded session runs as a reset one does.** A pin settling at time 0
+  woke a just-loaded core a picosecond before its reset's first quantum,
+  so a freshly loaded Blue Pill ran one 8 MHz cycle (125 ns) apart from a
+  reset one; a core not yet started since its reset now starts when the
+  reset said. `record.start` before anything has run also resets first, so
+  the recording and its replay both start from reset.
 - **The emulated target is the command line.** `--target --image
   --until-text --console` makes `embsim run` a drop-in for a QEMU machine
   in a test runner: EmbLinkRTOS's runner for EmbSIM is its QEMU runner with
@@ -69,7 +72,6 @@ rows of [STATUS.md](../STATUS.md); update both together.
 
 EmbCC's stack-depth (`stack.c`) and fault (`fault.c`) reports are not
 extracted; analog observations and full event traces are not recorded
-(SPEC-012 §5); the fresh-load versus reset difference is worked around,
-not removed; EmbLinkRTOS's `avr-embsim` CI job checks out EmbSIM's `main`,
+(SPEC-012 §5); EmbLinkRTOS's `avr-embsim` CI job checks out EmbSIM's `main`,
 so it passes once this branch is merged; the scenario editor's assertion
 expectations are edited as JSON.
