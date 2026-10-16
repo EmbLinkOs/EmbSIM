@@ -10,6 +10,7 @@
 #include "analog/analog.h"
 #include "host/host.h"
 #include "project/loader.h"
+#include "protocol/wsutil.h"
 #include "util/num.h"
 #include "util/str.h"
 
@@ -900,6 +901,38 @@ esk_json *esk_session_topology(es_session *s)
 
 /* ---- observations and pacing ---------------------------------------------------- */
 
+/* a serial probe's text since the last serial.data, as one more
+ * (SPEC-008 §6): {target, probe, base64} */
+static void emit_serial(es_session *s, esk_probe *p)
+{
+    esk_json *out, *params;
+    const char *text;
+    size_t len, n, cap;
+    char *b64;
+    if (!p->comp || !p->comp->ops->observe || !(out = esk_json_new_object(s->a)))
+        return;
+    p->comp->ops->observe(p->comp, out);
+    text = esk_json_get_str(out, p->quantity ? p->quantity : "rx_text", "");
+    len = strlen(text);
+    if (len < p->serial_sent)
+        p->serial_sent = 0; /* the text began again */
+    n = len - p->serial_sent;
+    cap = 4 * ((n + 2) / 3) + 1;
+    if (n && (b64 = (char *)esk_malloc(s->a, cap)) != NULL) {
+        esk_base64_encode((const unsigned char *)text + p->serial_sent, n, b64, cap);
+        params = esk_json_new_object(s->a);
+        if (params) {
+            esk_json_set_string(s->a, params, "target", p->target + (strncmp(p->target, "serial:", 7) ? 0 : 7));
+            esk_json_set_string(s->a, params, "probe", p->name);
+            esk_json_set_string(s->a, params, "base64", b64);
+            esk_session_notify(s, "serial.data", params);
+            p->serial_sent = len;
+        }
+        esk_free(s->a, b64, cap);
+    }
+    esk_json_free(s->a, out);
+}
+
 void esk_session_emit_observations(es_session *s, int force)
 {
     uint64_t now_ms;
@@ -941,6 +974,9 @@ void esk_session_emit_observations(es_session *s, int force)
         p->next_sample = p->ring[(p->head + p->len - 1) % p->cap].time_ps + 1;
         esk_session_notify(s, "waveform.samples", params);
     }
+    for (i = 0; i < s->probes.len; i++)
+        if (s->probes.data[i]->kind == ESK_PROBE_SERIAL)
+            emit_serial(s, s->probes.data[i]);
 }
 
 es_status esk_session_do_reset(es_session *s)
@@ -957,6 +993,7 @@ es_status esk_session_do_reset(es_session *s)
     for (i = 0; i < s->probes.len; i++) {
         s->probes.data[i]->next_sample = 0;
         s->probes.data[i]->stream_seq = 0;
+        s->probes.data[i]->serial_sent = 0;
         if (s->probes.data[i]->cap)
             probe_start(s, s->probes.data[i]);
     }

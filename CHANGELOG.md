@@ -406,6 +406,13 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The engine never sent `serial.data` (SPEC-008 §6), so the workbench's
+  Serial terminal stayed empty while the firmware printed: the text was
+  there only for a client that asked with `probe.read`. After each
+  observation frame the session now streams every serial probe's new
+  bytes, base64-encoded, and starts again from the beginning after a
+  reset; `tests/protocol/test_serial_stream.py` checks the stream against
+  `probe.read`.
 - The RISC-V core decoded a store's offset by shifting a negative value
   left, which C leaves undefined: a store at a negative offset (as GCC's
   stack frames make) ran as intended with the compilers here, but UBSan

@@ -5,6 +5,30 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Serial and analog peripherals on the Pico and the nRF52840 DK (2026-10-16)
+
+Vendor firmware, unmodified drivers, against parts from the catalog: the Pico
+SDK's `hardware_spi` and `hardware_i2c` on the RP2040's PL022 and DW_apb_i2c,
+and nrfx's SPIM, TWIM, PWM and SAADC drivers on the nRF52840, each talking to
+a 25LC040 SPI EEPROM and a 24C02 I2C EEPROM (`tests/vendor/pico-sdk/apps/spi_i2c`,
+`tests/vendor/nrfx/apps/nrfx_periph`). The logic analyzer decodes the traffic
+the cores drive on the pins: the SPI WREN and RDSR commands (the nRF52840's
+MISO shown undriven, orange, while the EEPROM's SO is high-impedance), and an
+I2C START with the 24C02's address acknowledged.
+
+| | |
+|---|---|
+| ![Pico SPI decode: WREN and RDSR to a 25LC040](serial-analog-peripherals/decode-pico-spi.png) | ![Pico I2C decode: START, 0x50 W ACK](serial-analog-peripherals/decode-pico-i2c.png) |
+| ![nRF52840 DK SPIM decode with MISO high-impedance](serial-analog-peripherals/decode-nrf52840dk-spi.png) | ![nRF52840 DK TWIM decode: START, 0x50 W ACK](serial-analog-peripherals/decode-nrf52840dk-i2c.png) |
+
+The Serial terminal shows what the firmware prints: these shots are the first
+since the engine streams `serial.data`, which it had never sent, leaving the
+terminal empty.
+
+| | |
+|---|---|
+| ![Pico SDK SPI and I2C results in the Serial terminal](serial-analog-peripherals/serial-pico-spi-i2c.png) | ![nrfx TWIM, PWM and SAADC results in the Serial terminal](serial-analog-peripherals/serial-nrf52840dk-periph.png) |
+
 ## Circuit organization (2026-10-16)
 
 Captured against the native engine by `tests/browser/test_schematic.py`. The
