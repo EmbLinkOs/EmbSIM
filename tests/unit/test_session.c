@@ -345,18 +345,18 @@ static void test_edit_transactions(void)
 
     /* moving a part keeps the run */
     j = call(s, "project.transaction", "{\"op\":\"begin\"}");
-    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    tx = atoi(esk_json_get_str(esk_json_get(j, "result"), "tx", "0"));
     CHECK(tx > 0);
     esk_json_free(s->a, j);
     j = call(s, "project.transaction", "{\"op\":\"begin\"}");
     CHECK(err_code(j) == -32000 + ES_ESTATE); /* one at a time */
     esk_json_free(s->a, j);
-    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"set_layout\":{\"id\":\"D1\",\"layout\":{\"x\":120,\"y\":40}}},"
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":\"%d\",\"edits\":[{\"set_layout\":{\"id\":\"D1\",\"layout\":{\"x\":120,\"y\":40}}},"
              "{\"set_layout\":{\"wires\":[{\"net\":\"SIG\",\"points\":[[0,0],[10,0]]}]}}]}", (int)tx);
     j = call(s, "project.transaction", params);
     CHECK(j && esk_json_get(j, "error") == NULL);
     esk_json_free(s->a, j);
-    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":%d}", (int)tx);
+    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":\"%d\"}", (int)tx);
     j = call(s, "project.transaction", params);
     CHECK(esk_json_get_bool(esk_json_get(j, "result"), "applied", 0) == 1);
     CHECK(esk_json_get_bool(esk_json_get(j, "result"), "restarted", 1) == 0);
@@ -373,15 +373,15 @@ static void test_edit_transactions(void)
 
     /* adding and wiring a part rebuilds the circuit */
     j = call(s, "project.transaction", "{\"op\":\"begin\"}");
-    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    tx = atoi(esk_json_get_str(esk_json_get(j, "result"), "tx", "0"));
     esk_json_free(s->a, j);
-    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"add_component\":{\"id\":\"D2\",\"component\":\"t/led\"}},"
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":\"%d\",\"edits\":[{\"add_component\":{\"id\":\"D2\",\"component\":\"t/led\"}},"
              "{\"connect\":{\"net\":\"SIG\",\"pin\":\"D2.A\"}},{\"rename_net\":{\"from\":\"SIG\",\"to\":\"BUTTON\"}},"
              "{\"set_param\":{\"id\":\"D1\",\"param\":\"color\",\"value\":\"red\"}}]}", (int)tx);
     j = call(s, "project.transaction", params);
     CHECK(j && esk_json_get(j, "error") == NULL);
     esk_json_free(s->a, j);
-    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":%d}", (int)tx);
+    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":\"%d\"}", (int)tx);
     j = call(s, "project.transaction", params);
     CHECK(esk_json_get_bool(esk_json_get(j, "result"), "restarted", 0) == 1);
     esk_json_free(s->a, j);
@@ -400,11 +400,11 @@ static void test_edit_transactions(void)
 
     /* a part the catalog does not have: the commit fails, nothing changes */
     j = call(s, "project.transaction", "{\"op\":\"begin\"}");
-    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    tx = atoi(esk_json_get_str(esk_json_get(j, "result"), "tx", "0"));
     esk_json_free(s->a, j);
-    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"add_component\":{\"id\":\"X9\",\"component\":\"t/nothing\"}}]}", (int)tx);
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":\"%d\",\"edits\":[{\"add_component\":{\"id\":\"X9\",\"component\":\"t/nothing\"}}]}", (int)tx);
     esk_json_free(s->a, call(s, "project.transaction", params));
-    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":%d}", (int)tx);
+    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":\"%d\"}", (int)tx);
     j = call(s, "project.transaction", params);
     CHECK(err_code(j) == -32000 + ES_ESCHEMA);
     esk_json_free(s->a, j);
@@ -412,19 +412,19 @@ static void test_edit_transactions(void)
 
     /* removing a part drops its pins; an aborted edit changes nothing */
     j = call(s, "project.transaction", "{\"op\":\"begin\"}");
-    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    tx = atoi(esk_json_get_str(esk_json_get(j, "result"), "tx", "0"));
     esk_json_free(s->a, j);
-    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"remove_component\":{\"id\":\"D2\"}},{\"disconnect\":{\"pin\":\"G1.-\"}}]}", (int)tx);
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":\"%d\",\"edits\":[{\"remove_component\":{\"id\":\"D2\"}},{\"disconnect\":{\"pin\":\"G1.-\"}}]}", (int)tx);
     esk_json_free(s->a, call(s, "project.transaction", params));
-    snprintf(params, sizeof params, "{\"op\":\"abort\",\"tx\":%d}", (int)tx);
+    snprintf(params, sizeof params, "{\"op\":\"abort\",\"tx\":\"%d\"}", (int)tx);
     esk_json_free(s->a, call(s, "project.transaction", params));
     CHECK(net_pins(s, "BUTTON") == 4);
     j = call(s, "project.transaction", "{\"op\":\"begin\"}");
-    tx = esk_json_get_int(esk_json_get(j, "result"), "tx", 0);
+    tx = atoi(esk_json_get_str(esk_json_get(j, "result"), "tx", "0"));
     esk_json_free(s->a, j);
-    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":%d,\"edits\":[{\"remove_component\":{\"id\":\"D2\"}},{\"disconnect\":{\"pin\":\"G1.-\"}}]}", (int)tx);
+    snprintf(params, sizeof params, "{\"op\":\"edit\",\"tx\":\"%d\",\"edits\":[{\"remove_component\":{\"id\":\"D2\"}},{\"disconnect\":{\"pin\":\"G1.-\"}}]}", (int)tx);
     esk_json_free(s->a, call(s, "project.transaction", params));
-    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":%d}", (int)tx);
+    snprintf(params, sizeof params, "{\"op\":\"commit\",\"tx\":\"%d\"}", (int)tx);
     esk_json_free(s->a, call(s, "project.transaction", params));
     CHECK(net_pins(s, "BUTTON") == 3);
     CHECK(net_pins(s, "GND") == 1);
