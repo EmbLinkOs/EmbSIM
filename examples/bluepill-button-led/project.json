@@ -9,8 +9,8 @@
       "id": "B1",
       "board": "emblink/bluepill",
       "layout": {
-        "x": 300,
-        "y": 120
+        "x": 480,
+        "y": 200
       },
       "firmware": {
         "image": "firmware/button-led.elf",
@@ -36,17 +36,17 @@
         "voltage": 5
       },
       "layout": {
-        "x": 100,
-        "y": 40
+        "x": 690,
+        "y": 540
       }
     },
     {
       "id": "SW1",
       "component": "emblink/push_button",
       "layout": {
-        "x": 700,
-        "y": 180,
-        "rotation": 90
+        "x": 380,
+        "y": 310,
+        "rotation": 180
       }
     },
     {
@@ -56,8 +56,9 @@
         "resistance": "1k"
       },
       "layout": {
-        "x": 700,
-        "y": 300
+        "x": 360,
+        "y": 250,
+        "rotation": 180
       }
     },
     {
@@ -67,8 +68,8 @@
         "color": "red"
       },
       "layout": {
-        "x": 820,
-        "y": 160,
+        "x": 270,
+        "y": 70,
         "rotation": 90
       }
     },
@@ -79,8 +80,8 @@
         "resistance": 220
       },
       "layout": {
-        "x": 820,
-        "y": 240,
+        "x": 270,
+        "y": 170,
         "rotation": 90
       }
     },
@@ -91,24 +92,25 @@
         "part": "2N3904"
       },
       "layout": {
-        "x": 820,
-        "y": 320
+        "x": 300,
+        "y": 240,
+        "mirror": true
       }
     },
     {
       "id": "GND1",
       "component": "emblink/gnd",
       "layout": {
-        "x": 700,
-        "y": 420
+        "x": 290,
+        "y": 300
       }
     },
     {
       "id": "VT1",
       "component": "emblink/virtual_terminal",
       "layout": {
-        "x": 900,
-        "y": 60
+        "x": 720,
+        "y": 330
       }
     }
   ],
@@ -200,7 +202,24 @@
     {
       "id": "tx",
       "target": "net:UART_TX",
-      "kind": "digital"
+      "kind": "digital",
+      "decode": {
+        "protocol": "uart",
+        "params": {
+          "baud": 115200
+        }
+      }
+    },
+    {
+      "id": "rx",
+      "target": "net:UART_RX",
+      "kind": "digital",
+      "decode": {
+        "protocol": "uart",
+        "params": {
+          "baud": 115200
+        }
+      }
     },
     {
       "id": "terminal",
@@ -210,5 +229,236 @@
   ],
   "scenarios": [
     "scenarios/press.json"
-  ]
+  ],
+  "layout": {
+    "wires": [
+      {
+        "net": "LED_IN",
+        "points": [
+          [
+            480,
+            260
+          ],
+          [
+            420,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "BASE",
+        "points": [
+          [
+            360,
+            260
+          ],
+          [
+            340,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "COLL",
+        "points": [
+          [
+            300,
+            210
+          ],
+          [
+            300,
+            240
+          ]
+        ]
+      },
+      {
+        "net": "LED_K",
+        "points": [
+          [
+            300,
+            110
+          ],
+          [
+            300,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "3V3",
+        "points": [
+          [
+            300,
+            50
+          ],
+          [
+            300,
+            30
+          ]
+        ]
+      },
+      {
+        "net": "3V3",
+        "points": [
+          [
+            480,
+            580
+          ],
+          [
+            460,
+            580
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            300,
+            280
+          ],
+          [
+            300,
+            300
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            480,
+            600
+          ],
+          [
+            460,
+            600
+          ]
+        ]
+      },
+      {
+        "net": "BTN",
+        "points": [
+          [
+            480,
+            320
+          ],
+          [
+            440,
+            320
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            380,
+            320
+          ],
+          [
+            360,
+            320
+          ]
+        ]
+      },
+      {
+        "net": "USB5V",
+        "points": [
+          [
+            640,
+            580
+          ],
+          [
+            700,
+            580
+          ],
+          [
+            700,
+            560
+          ]
+        ]
+      },
+      {
+        "net": "UART_TX",
+        "points": [
+          [
+            640,
+            340
+          ],
+          [
+            720,
+            340
+          ]
+        ]
+      },
+      {
+        "net": "UART_RX",
+        "points": [
+          [
+            640,
+            360
+          ],
+          [
+            720,
+            360
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            750,
+            370
+          ],
+          [
+            750,
+            390
+          ]
+        ]
+      }
+    ],
+    "labels": [
+      {
+        "net": "3V3",
+        "x": 300,
+        "y": 30
+      },
+      {
+        "net": "3V3",
+        "x": 460,
+        "y": 580
+      },
+      {
+        "net": "GND",
+        "x": 460,
+        "y": 600
+      },
+      {
+        "net": "GND",
+        "x": 360,
+        "y": 320
+      },
+      {
+        "net": "GND",
+        "x": 750,
+        "y": 390
+      },
+      {
+        "net": "UART_TX",
+        "x": 680,
+        "y": 340
+      },
+      {
+        "net": "UART_RX",
+        "x": 680,
+        "y": 360
+      }
+    ],
+    "sheet": {
+      "width": 1000,
+      "height": 800
+    }
+  }
 }

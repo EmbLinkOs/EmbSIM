@@ -60,6 +60,7 @@
 .wb-clock {
   display: inline-flex;
   align-items: baseline;
+  white-space: nowrap;
   gap: var(--space-2);
   height: var(--control-height);
   padding: 0 var(--space-3);
@@ -728,4 +729,19 @@
   font-size: var(--text-xs);
   color: var(--text-muted);
   border-bottom: 1px solid var(--line);
+}
+
+.wb-inspector__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+}
+.wb-inspector__facts dt {
+  color: var(--text-muted);
+}
+.wb-inspector__facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }

@@ -6,8 +6,8 @@
 // pure function on the project; its effect reaches the server as a
 // transaction (see projectDiff.ts) and comes back through refresh().
 
-import { CommandStack, GRID, pinPosition, rotateLayouts, snap, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
-import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
+import { CommandStack, GRID, boardSymbol, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
+import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
 import { create } from 'zustand';
 import { getClient } from '../connection';
 import { diffProject } from './projectDiff';
@@ -64,8 +64,71 @@ export interface ProjectState {
   wire(from: PinRef, to: PinRef | NetRef, points: [number, number][]): Promise<void>;
   setParam(id: string, param: string, value: unknown): Promise<void>;
   renameNet(from: string, to: string): Promise<void>;
+  /** A label naming the net of wire `index`, at the middle of its first segment. */
+  labelWire(index: number): Promise<void>;
+  /** A bus of the selected wires' nets, drawn beside them; its name. */
+  groupIntoBus(wires: number[]): Promise<string | null>;
+  removeBus(name: string): Promise<void>;
   loadProjectJson(json: Project): Promise<void>;
   nextId(componentId: string): string;
+  /** Parts copied with the nets and wires wholly between them. */
+  clipboard: Clip | null;
+  copySelection(selection: Selection): void;
+  /** Pastes the clipboard, offset from where it was copied; the new parts' ids. */
+  paste(): Promise<string[]>;
+  duplicate(selection: Selection): Promise<string[]>;
+}
+
+export interface Clip {
+  components: ProjectComponent[];
+  nets: Record<string, string[]>;
+  wires: Wire[];
+  /** How many times it was pasted: each paste lands further off. */
+  pastes: number;
+}
+
+/** The selected parts, and the nets and wires that lie wholly between them. */
+export function clipOf(p: Project, selection: Selection): Clip | null {
+  const ids = new Set(selection.components);
+  const components = p.components.filter((c) => ids.has(c.id));
+  if (components.length === 0) return null;
+  const inside = (pin: string) => ids.has(pin.split('.')[0] ?? '');
+  const nets: Record<string, string[]> = {};
+  for (const [net, pins] of Object.entries(p.nets)) {
+    const own = pins.filter(inside);
+    // a net that reaches outside the selection keeps only the copied pins
+    // when two or more of them share it
+    if (own.length >= 2) nets[net] = own;
+  }
+  const wires = (p.layout?.wires ?? []).filter((w) => w.net in nets && Object.values(p.nets[w.net] ?? []).every(inside));
+  return structuredClone({ components, nets, wires, pastes: 0 });
+}
+
+/** The project with `clip` added at (dx, dy), its parts and nets renamed. */
+export function withClip(p: Project, clip: Clip, dx: number, dy: number, nextId: (componentId: string, used: Set<string>) => string): { project: Project; ids: string[] } {
+  const used = new Set(placeables(p).map((c) => c.id));
+  const rename = new Map<string, string>();
+  for (const c of clip.components) {
+    const id = nextId(c.component, used);
+    used.add(id);
+    rename.set(c.id, id);
+    const l = c.layout ?? { x: 0, y: 0 };
+    p.components.push({ ...structuredClone(c), id, layout: { ...l, x: l.x + dx, y: l.y + dy } });
+  }
+  const pin = (x: string) => {
+    const [id, ...rest] = x.split('.');
+    return `${rename.get(id ?? '') ?? id}.${rest.join('.')}`;
+  };
+  const netName = new Map<string, string>();
+  let n = 1;
+  for (const [net, pins] of Object.entries(clip.nets)) {
+    while (`N${n}` in p.nets) n++;
+    netName.set(net, `N${n}`);
+    p.nets[`N${n}`] = pins.map(pin);
+  }
+  const wires = clip.wires.map((w) => ({ net: netName.get(w.net) ?? w.net, points: w.points.map(([x, y]) => [x + dx, y + dy] as [number, number]) }));
+  if (wires.length) p.layout = { ...(p.layout ?? {}), wires: [...(p.layout?.wires ?? []), ...wires] };
+  return { project: p, ids: [...rename.values()] };
 }
 
 function clone<T>(v: T): T {
@@ -73,8 +136,30 @@ function clone<T>(v: T): T {
 }
 
 function sceneEntry(entry: CatalogEntry): SceneCatalog[string] {
-  return { name: entry.description.name, symbol: entry.description.symbol, svg: entry.files.symbol ?? '', valueParam: VALUE_PARAM[entry.description.id] };
+  const d = entry.description as ComponentDescription & { kind?: string; ports?: Record<string, BoardPort> };
+  if (d.kind === 'board') {
+    // a board has no drawn symbol: a block of its ports stands for it
+    const { symbol, svg } = boardSymbol(d.name, d.ports ?? {});
+    // its description gains the symbol so pin geometry works as for parts
+    entry.description = { ...d, symbol };
+    return { name: d.name, symbol, svg };
+  }
+  return { name: d.name, symbol: d.symbol, svg: entry.files.symbol ?? '', valueParam: VALUE_PARAM[d.id] };
 }
+
+/** The parts and boards of a project, which place, move and delete alike. */
+function placeables(p: Project): (ProjectComponent | ProjectBoard)[] {
+  return [...p.components, ...(p.boards ?? [])];
+}
+/** The first id with the part's prefix ("R3") that `used` does not hold. */
+function freeId(componentId: string, used: Set<string>): string {
+  const short = componentId.split('/').pop() ?? 'U';
+  const prefix = PREFIX[short] ?? 'U';
+  for (let n = 1; n < 10_000; n++) if (!used.has(`${prefix}${n}`)) return `${prefix}${n}`;
+  return `${prefix}${Date.now()}`;
+}
+const catalogId = (x: ProjectComponent | ProjectBoard) => ('board' in x ? x.board : x.component);
+const projectIds = (p: Project) => [...p.components.map((x) => x.component), ...(p.boards ?? []).map((b) => b.board)];
 
 /** Applies a diff through one transaction. */
 async function applyEdits(edits: ProjectEdit[]): Promise<void> {
@@ -106,7 +191,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     const c = getClient();
     const [{ project }, { items }] = await Promise.all([c.project.get({}), c.catalog.list({})]);
     set({ project, items });
-    await get().ensureCatalog([...new Set([...items.map((i) => i.id), ...project.components.map((x) => x.component)])]);
+    await get().ensureCatalog([...new Set([...items.map((i) => i.id), ...projectIds(project)])]);
     const topology = await c.project.topology({}).catch(() => null);
     set({ topology });
   },
@@ -115,7 +200,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     const c = getClient();
     const { project } = await c.project.get({});
     set({ project });
-    await get().ensureCatalog(project.components.map((x) => x.component));
+    await get().ensureCatalog(projectIds(project));
     const topology = await c.project.topology({}).catch(() => null);
     set({ topology });
   },
@@ -175,11 +260,43 @@ export const useProject = create<ProjectState>((set, get) => ({
   },
 
   nextId(componentId) {
-    const short = componentId.split('/').pop() ?? 'U';
-    const prefix = PREFIX[short] ?? 'U';
-    const used = new Set(get().project?.components.map((c) => c.id) ?? []);
-    for (let n = 1; n < 10_000; n++) if (!used.has(`${prefix}${n}`)) return `${prefix}${n}`;
-    return `${prefix}${Date.now()}`;
+    const project = get().project;
+    return freeId(componentId, new Set(project ? placeables(project).map((c) => c.id) : []));
+  },
+
+  clipboard: null,
+
+  copySelection(selection) {
+    const project = get().project;
+    const clip = project ? clipOf(project, selection) : null;
+    if (clip) set({ clipboard: clip });
+  },
+
+  async paste() {
+    const clip = get().clipboard;
+    if (!clip) return [];
+    const step = (clip.pastes + 1) * 4 * GRID;
+    let ids: string[] = [];
+    await get().mutate(`Paste ${clip.components.length > 1 ? `${clip.components.length} parts` : clip.components[0]!.id}`, (p) => {
+      const r = withClip(p, clip, step, step, freeId);
+      ids = r.ids;
+      return r.project;
+    });
+    set({ clipboard: { ...clip, pastes: clip.pastes + 1 } });
+    return ids;
+  },
+
+  async duplicate(selection) {
+    const project = get().project;
+    const clip = project ? clipOf(project, selection) : null;
+    if (!clip) return [];
+    let ids: string[] = [];
+    await get().mutate(`Duplicate ${clip.components.length > 1 ? `${clip.components.length} parts` : clip.components[0]!.id}`, (p) => {
+      const r = withClip(p, clip, 4 * GRID, 4 * GRID, freeId);
+      ids = r.ids;
+      return r.project;
+    });
+    return ids;
   },
 
   async placeComponent(componentId, at) {
@@ -201,9 +318,9 @@ export const useProject = create<ProjectState>((set, get) => ({
     const catalog = get().catalog;
     await get().mutate(`Move ${ids.length > 1 ? `${ids.length} components` : ids[0]}`, (p) => {
       const moved = new Map<string, { x: number; y: number }>(); // old pin position → new
-      for (const c of p.components) {
+      for (const c of placeables(p)) {
         if (!ids.includes(c.id)) continue;
-        const sym = catalog[c.component]?.description.symbol;
+        const sym = catalog[catalogId(c)]?.description.symbol;
         const before = c.layout ?? { x: 0, y: 0 };
         const after = { ...before, x: before.x + dx, y: before.y + dy };
         if (sym) {
@@ -240,8 +357,8 @@ export const useProject = create<ProjectState>((set, get) => ({
   async rotateComponents(ids) {
     const catalog = get().catalog;
     await get().mutate(`Rotate ${ids.join(', ')}`, (p) => {
-      const targets = p.components.filter((c) => ids.includes(c.id));
-      const layouts = rotateLayouts(targets.map((c) => ({ layout: c.layout ?? { x: 0, y: 0 }, symbol: catalog[c.component]?.description.symbol ?? { width: 60, height: 20 } })));
+      const targets = placeables(p).filter((c) => ids.includes(c.id));
+      const layouts = rotateLayouts(targets.map((c) => ({ layout: c.layout ?? { x: 0, y: 0 }, symbol: catalog[catalogId(c)]?.description.symbol ?? { width: 60, height: 20 } })));
       targets.forEach((c, i) => (c.layout = layouts[i] as Layout));
       return p;
     });
@@ -249,7 +366,7 @@ export const useProject = create<ProjectState>((set, get) => ({
 
   async mirrorComponents(ids) {
     await get().mutate(`Mirror ${ids.join(', ')}`, (p) => {
-      for (const c of p.components) if (ids.includes(c.id)) c.layout = { ...(c.layout ?? { x: 0, y: 0 }), mirror: !c.layout?.mirror };
+      for (const c of placeables(p)) if (ids.includes(c.id)) c.layout = { ...(c.layout ?? { x: 0, y: 0 }), mirror: !c.layout?.mirror };
       return p;
     });
   },
@@ -259,23 +376,24 @@ export const useProject = create<ProjectState>((set, get) => ({
     if (selection.components.length === 0 && selection.wires.length === 0) return;
     await get().mutate('Delete', (p) => {
       const removedPins = new Set<string>();
-      for (const c of p.components) {
+      for (const c of placeables(p)) {
         if (!selection.components.includes(c.id)) continue;
-        const sym = catalog[c.component]?.description.symbol;
+        const sym = catalog[catalogId(c)]?.description.symbol;
         for (const pin of Object.keys(sym?.pins ?? {})) {
           const pos = sym ? pinPosition(c.layout ?? { x: 0, y: 0 }, sym, pin) : null;
           if (pos) removedPins.add(`${pos.x},${pos.y}`);
         }
       }
       p.components = p.components.filter((c) => !selection.components.includes(c.id));
+      if (p.boards) p.boards = p.boards.filter((b) => !selection.components.includes(b.id));
       for (const net of Object.keys(p.nets)) {
         p.nets[net] = p.nets[net]!.filter((pin) => !selection.components.includes(pin.split('.')[0] ?? ''));
         if (p.nets[net]!.length === 0) delete p.nets[net];
       }
       const wires = p.layout?.wires ?? [];
       const pinAt = new Map<string, string>();
-      for (const c of p.components) {
-        const sym = catalog[c.component]?.description.symbol;
+      for (const c of placeables(p)) {
+        const sym = catalog[catalogId(c)]?.description.symbol;
         if (!sym) continue;
         for (const pin of Object.keys(sym.pins)) {
           const pos = pinPosition(c.layout ?? { x: 0, y: 0 }, sym, pin);
@@ -300,7 +418,8 @@ export const useProject = create<ProjectState>((set, get) => ({
         }
         if (!touchesRemoved) keep.push(w);
       });
-      p.layout = { ...(p.layout ?? {}), wires: keep, labels: (p.layout?.labels ?? []).filter((l) => l.net in p.nets) };
+      const buses = (p.layout?.buses ?? []).map((b) => ({ ...b, nets: b.nets.filter((n) => n in p.nets) })).filter((b) => b.nets.length > 0);
+      p.layout = { ...(p.layout ?? {}), wires: keep, labels: (p.layout?.labels ?? []).filter((l) => l.net in p.nets), buses };
       return p;
     });
   },
@@ -352,7 +471,53 @@ export const useProject = create<ProjectState>((set, get) => ({
       delete p.nets[from];
       for (const w of p.layout?.wires ?? []) if (w.net === from) w.net = name;
       for (const l of p.layout?.labels ?? []) if (l.net === from) l.net = name;
+      for (const b of p.layout?.buses ?? []) b.nets = b.nets.map((n) => (n === from ? name : n));
       for (const pr of p.probes ?? []) if (pr.target === `net:${from}`) pr.target = `net:${name}`;
+      return p;
+    });
+  },
+
+  async labelWire(index) {
+    await get().mutate('Label net', (p) => {
+      const w = p.layout?.wires?.[index];
+      const [a, b] = [w?.points[0], w?.points[1] ?? w?.points[0]];
+      if (!w || !a || !b) return null;
+      const at = { x: snap((a[0] + b[0]) / 2), y: snap((a[1] + b[1]) / 2) };
+      p.layout = { ...(p.layout ?? {}), labels: [...(p.layout?.labels ?? []), { net: w.net, ...at }] };
+      return p;
+    });
+  },
+
+  async groupIntoBus(wires) {
+    let name: string | null = null;
+    await get().mutate('Group into a bus', (p) => {
+      const all = p.layout?.wires ?? [];
+      const chosen = wires.map((i) => all[i]).filter((w): w is Wire => Boolean(w));
+      const nets = [...new Set(chosen.map((w) => w.net))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      if (nets.length < 2) return null;
+      // the name the nets share ("D0".."D7" give "D"), else BUSn
+      let prefix = nets[0]!;
+      for (const n of nets) while (!n.startsWith(prefix)) prefix = prefix.slice(0, -1);
+      prefix = prefix.replace(/[_\d]+$/, '');
+      const used = new Set((p.layout?.buses ?? []).map((b) => b.name));
+      let candidate = prefix.length >= 1 ? prefix : 'BUS1';
+      for (let k = 1; used.has(candidate); k++) candidate = `${prefix || 'BUS'}${k}`;
+      name = candidate;
+      // a vertical line left of the wires, over their height
+      const xs = chosen.flatMap((w) => w.points.map(([x]) => x));
+      const ys = chosen.flatMap((w) => w.points.map(([, y]) => y));
+      const x = snap(Math.min(...xs) - 2 * GRID);
+      const points: [number, number][] = [[x, snap(Math.min(...ys))], [x, snap(Math.max(...ys))]];
+      p.layout = { ...(p.layout ?? {}), buses: [...(p.layout?.buses ?? []), { name: candidate, nets, points }] };
+      return p;
+    });
+    return name;
+  },
+
+  async removeBus(name) {
+    await get().mutate(`Remove bus ${name}`, (p) => {
+      if (!p.layout?.buses?.some((b) => b.name === name)) return null;
+      p.layout = { ...p.layout, buses: p.layout.buses.filter((b) => b.name !== name) };
       return p;
     });
   },

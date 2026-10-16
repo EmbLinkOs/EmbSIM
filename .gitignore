@@ -12,6 +12,11 @@ node_modules/
 ui/**/dist/
 desktop/target/
 desktop/gen/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+desktop/src-tauri/binaries/embsim-*
+test-results/
+playwright-report/
 .DS_Store
 *.rec
 *.vcd

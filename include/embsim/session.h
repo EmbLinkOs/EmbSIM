@@ -56,6 +56,10 @@ ES_API void es_free(void *p);
  * Both return when the client disconnects or the host interrupts them. */
 ES_API es_status es_serve_stdio(es_session *s);
 ES_API es_status es_serve_websocket(es_session *s, const char *host, int port, const char *ui_dir, int open_browser);
+/* Let pages from `origin` (exactly, e.g. "tauri://localhost") use the
+ * WebSocket endpoint besides the server's own pages: the desktop shell's
+ * webview. At most 8; call before es_serve_websocket. */
+ES_API es_status es_serve_allow_origin(es_session *s, const char *origin);
 /* Serve the GDB remote protocol for a board's MCU (NULL: the first with
  * firmware) on host:port (port 0: any); `listening` is told the port before
  * the server waits for its one connection. Returns when the debugger

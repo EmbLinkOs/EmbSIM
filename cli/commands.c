@@ -28,7 +28,7 @@ static void usage(void)
     fputs("usage: embsim <command> [options]\n"
           "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json]\n"
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
-          "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open]\n"
+          "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
           "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
@@ -301,13 +301,18 @@ static void serve_idle(void *ctx)
 static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
 {
     const char *project = NULL, *host = "127.0.0.1", *ui = NULL, *policy = NULL, *library = NULL;
-    int port = 8765, open = 0, i;
+    const char *origins[8];
+    int port = 8765, open = 0, i, n_origins = 0;
     es_session *s;
     es_status st;
     for (i = 0; i < argc; i++) {
         const char *a = argv[i];
         int more = i + 1 < argc;
         if (!strcmp(a, "--port") && more) port = atoi(argv[++i]);
+        else if (!strcmp(a, "--allow-origin") && more) {
+            if (n_origins == (int)ES_COUNTOF(origins)) { fprintf(stderr, "embsim: at most 8 --allow-origin\n"); return 2; }
+            origins[n_origins++] = argv[++i];
+        }
         else if (!strcmp(a, "--host") && more) host = argv[++i];
         else if (!strcmp(a, "--ui") && more) ui = argv[++i];
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
@@ -323,6 +328,8 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         es_session_destroy(s);
         return 2;
     }
+    for (i = 0; i < n_origins; i++)
+        es_serve_allow_origin(s, origins[i]);
     esk_protocol_set_idle(serve_idle, s);
     if (sidecar) {
         opt_json = 1; /* keep stderr quiet of human diagnostics; they go over the protocol */

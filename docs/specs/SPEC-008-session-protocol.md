@@ -18,6 +18,14 @@ JSON-RPC 2.0. Requests, responses and notifications are UTF-8 JSON objects.
 Batch requests are not supported. Every request has an `id`; the server
 replies in order per transport but may interleave notifications.
 
+The WebSocket endpoint listens on loopback and serves one client at a
+time. A browser connection is accepted when its `Origin` is the server's
+own (`http://127.0.0.1:PORT`, `http://localhost:PORT`) or one the host
+allowed (`embsim serve --allow-origin ORIGIN`, `es_serve_allow_origin`):
+the desktop shell allows its webview's origin (`tauri://localhost`,
+`http://tauri.localhost`), so a page on another site cannot drive the
+engine. Clients that send no `Origin` (scripts, tools) are accepted.
+
 ## 2. Versioning and capabilities
 
 `session.open` (or the implicit first call on the in-process transport)
@@ -54,12 +62,25 @@ Notation: `method(params) -> result`. Params and results are objects.
 ### project
 - `project.load({path} | {json, base_dir}) -> {name, diagnostics: [...]}`
 - `project.get({}) -> {project}` (the canonical JSON, with resolved library versions)
-- `project.save({path?}) -> {path}`
+- `project.save({path?}) -> {path}`: the project's JSON (two-space indent) to
+  `path`, relative to the project's folder, or to the file it was loaded
+  from; `ES_EIO` when it cannot be written
 - `project.validate({path} | {json}) -> {ok, diagnostics}`
 - `project.transaction({op: "begin"}) -> {tx}`;
   `project.transaction({op: "edit", tx, edits: [{add_component}, {remove_component}, {set_param}, {connect, net, pin}, {disconnect, pin}, {rename_net}, {add_board}, {set_layout}]}) -> {}`;
-  `project.transaction({op: "commit", tx}) -> {applied, diagnostics, islands}`;
-  `project.transaction({op: "abort", tx}) -> {}`
+  `project.transaction({op: "commit", tx}) -> {applied, restarted, diagnostics}`;
+  `project.transaction({op: "abort", tx}) -> {}`.
+  One transaction is open at a time (a second `begin` is `ES_ESTATE`). Edits
+  collect on a copy of the project; an edit that cannot apply (an unknown
+  instance, a used id) fails with `-32602` and leaves the copy as it was
+  before that edit. A commit of `set_layout` edits only (placement, wires,
+  labels) replaces the project's JSON and the run goes on. A commit that
+  changes the circuit loads the edited project in a scratch session first:
+  if it does not load, the commit fails with `ES_ESCHEMA`, the errors are
+  raised as diagnostics and the project stays as it was; otherwise the
+  session is rebuilt from it and restarts at time 0 (`restarted: true`).
+  `remove_board {id}` is accepted beside the edits above. Edits made while
+  running pause the run when they restart it.
 - `project.topology({}) -> {nets: [{name, island, pins: [...], state}], islands: [{id, kind, nets}]}`
 
 ### control

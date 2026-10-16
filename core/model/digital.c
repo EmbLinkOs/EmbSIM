@@ -136,9 +136,10 @@ static void tri_in(esk_comp *c, esk_pin *p) { ES_UNUSED(p); tri_update(c); }
 static void tri_reset(esk_comp *c) { tri_update(c); }
 static const esk_model_ops tristate_ops = { "tristate_buffer", sizeof(tri_state), tri_create, NULL, tri_reset, tri_in, NULL, NULL, NULL, NULL, 0 };
 
-/* ---- D flip-flop: D, CLK, RST (active high, async), Q, QN ------------------- */
+/* ---- D flip-flop: D, CLK, R and S (asynchronous, active high; RST is
+ * accepted for R), Q, QN. Reset wins when both are high. ------------------ */
 
-typedef struct dff_state { esk_pin *d, *clk, *rst, *q, *qn; esk_logic last_clk, value; } dff_state;
+typedef struct dff_state { esk_pin *d, *clk, *rst, *set, *q, *qn; esk_logic last_clk, value; } dff_state;
 
 static void dff_out(esk_comp *c)
 {
@@ -151,9 +152,11 @@ static void dff_in(esk_comp *c, esk_pin *p)
 {
     dff_state *s = (dff_state *)c->state;
     esk_logic clk;
-    if (s->rst && p == s->rst) {
-        if (esk_pin_read(s->rst) == ESK_L1) {
-            s->value = ESK_L0;
+    int resetting = s->rst && esk_pin_read(s->rst) == ESK_L1;
+    int setting = s->set && esk_pin_read(s->set) == ESK_L1;
+    if ((s->rst && p == s->rst) || (s->set && p == s->set)) {
+        if (resetting || setting) {
+            s->value = resetting ? ESK_L0 : ESK_L1;
             dff_out(c);
         }
         return;
@@ -161,7 +164,7 @@ static void dff_in(esk_comp *c, esk_pin *p)
     if (p != s->clk)
         return;
     clk = esk_pin_read(s->clk);
-    if (s->last_clk == ESK_L0 && clk == ESK_L1 && !(s->rst && esk_pin_read(s->rst) == ESK_L1)) {
+    if (s->last_clk == ESK_L0 && clk == ESK_L1 && !resetting && !setting) {
         s->value = esk_pin_read(s->d);
         if (s->value == ESK_LZ)
             s->value = ESK_LX;
@@ -172,7 +175,11 @@ static void dff_in(esk_comp *c, esk_pin *p)
 static es_status dff_create(esk_comp *c)
 {
     dff_state *s = (dff_state *)c->state;
-    s->d = pin_or_null(c, "D"); s->clk = pin_or_null(c, "CLK"); s->rst = pin_or_null(c, "RST");
+    s->d = pin_or_null(c, "D"); s->clk = pin_or_null(c, "CLK");
+    s->rst = pin_or_null(c, "R");
+    if (!s->rst)
+        s->rst = pin_or_null(c, "RST");
+    s->set = pin_or_null(c, "S");
     s->q = pin_or_null(c, "Q"); s->qn = pin_or_null(c, "QN");
     if (!s->d || !s->clk || !s->q) return ES_ESCHEMA;
     watch_all_inputs(c);
@@ -182,7 +189,10 @@ static void dff_reset(esk_comp *c)
 {
     dff_state *s = (dff_state *)c->state;
     s->value = ESK_L0;
-    s->last_clk = ESK_L0;
+    /* unknown until the clock is seen: its first level after power-up is
+     * not an edge (a stage clocked by another's output would otherwise
+     * sample its input before that input is driven) */
+    s->last_clk = ESK_LX;
     dff_out(c);
 }
 static const esk_model_ops dff_ops = { "dff", sizeof(dff_state), dff_create, NULL, dff_reset, dff_in, NULL, NULL, NULL, NULL, 0 };

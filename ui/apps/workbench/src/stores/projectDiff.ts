@@ -43,6 +43,15 @@ export function diffProject(before: Project, after: Project): ProjectEdit[] {
     if (!layoutEqual(old.layout, c.layout)) edits.push({ set_layout: { id: c.id, layout: c.layout ?? { x: 0, y: 0 } } });
   }
 
+  // Boards added, moved, removed.
+  const boardsBefore = new Map((before.boards ?? []).map((b) => [b.id, b]));
+  const boardsAfter = new Map((after.boards ?? []).map((b) => [b.id, b]));
+  for (const b of after.boards ?? []) {
+    const old = boardsBefore.get(b.id);
+    if (!old) edits.push({ add_board: { id: b.id, board: b.board, layout: b.layout, firmware: b.firmware } });
+    else if (!layoutEqual(old.layout, b.layout)) edits.push({ set_layout: { id: b.id, layout: b.layout ?? { x: 0, y: 0 } } });
+  }
+
   // Net renames: a vanished net whose pin set reappears under a new name.
   const renamed = new Map<string, string>();
   for (const [name, pins] of Object.entries(before.nets)) {
@@ -55,25 +64,31 @@ export function diffProject(before: Project, after: Project): ProjectEdit[] {
   }
 
   // Pin connections.
+  const present = (pin: string) => {
+    const id = pin.split('.')[0] ?? '';
+    return afterById.has(id) || boardsAfter.has(id);
+  };
   const pb = pinMap(before);
   const pa = pinMap(after);
   for (const [pin, net] of pa) {
     const oldNet = pb.get(pin);
     const effectiveOld = oldNet !== undefined ? renamed.get(oldNet) ?? oldNet : undefined;
-    if (effectiveOld !== net && afterById.has(pin.split('.')[0] ?? '')) edits.push({ connect: { net, pin } });
+    if (effectiveOld !== net && present(pin)) edits.push({ connect: { net, pin } });
   }
   for (const [pin] of pb) {
-    if (!pa.has(pin) && afterById.has(pin.split('.')[0] ?? '')) edits.push({ disconnect: { pin } });
+    if (!pa.has(pin) && present(pin)) edits.push({ disconnect: { pin } });
   }
 
   // Components removed (the server drops their pins).
   for (const c of before.components) if (!afterById.has(c.id)) edits.push({ remove_component: { id: c.id } });
+  for (const b of before.boards ?? []) if (!boardsAfter.has(b.id)) edits.push({ remove_board: { id: b.id } });
 
   // Presentation layout.
   const wiresChanged = JSON.stringify(before.layout?.wires ?? []) !== JSON.stringify(after.layout?.wires ?? []);
   const labelsChanged = JSON.stringify(before.layout?.labels ?? []) !== JSON.stringify(after.layout?.labels ?? []);
-  if (wiresChanged || labelsChanged) {
-    edits.push({ set_layout: { wires: after.layout?.wires ?? [], labels: after.layout?.labels ?? [] } });
+  const busesChanged = JSON.stringify(before.layout?.buses ?? []) !== JSON.stringify(after.layout?.buses ?? []);
+  if (wiresChanged || labelsChanged || busesChanged) {
+    edits.push({ set_layout: { wires: after.layout?.wires ?? [], labels: after.layout?.labels ?? [], buses: after.layout?.buses ?? [] } });
   }
   return edits;
 }

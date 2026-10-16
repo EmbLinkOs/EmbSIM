@@ -6,7 +6,7 @@
 // through `useRegisterCommands`.
 
 import { useToast, type Command, type ThemePreference } from '@embsim/design';
-import { formatTime } from '@embsim/protocol';
+import { JsonRpcError, formatTime } from '@embsim/protocol';
 import { useCommandStack } from '@embsim/scene';
 import {
   Activity,
@@ -30,7 +30,7 @@ import {
 import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { controls, errorMessage } from '../actions';
-import { mockDev } from '../connection';
+import { getClient, mockDev } from '../connection';
 import { platform } from '../platform/platform';
 import { useLayout, type Perspective } from '../stores/layout';
 import { useProject } from '../stores/project';
@@ -88,6 +88,14 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
   return useMemo(() => {
     const guard = (fn: () => Promise<void>) => () => {
       fn().catch((e: unknown) => toast({ kind: 'error', title: 'Command failed', description: errorMessage(e) }));
+    };
+    /** Downloads the project's JSON as it now stands. */
+    const saveCopy = async () => {
+      const project = useProject.getState().project;
+      if (!project) return;
+      const p = await platform();
+      const where = await p.saveTextFile(`${project.name}.json`, `${JSON.stringify(project, null, 2)}\n`, 'application/json');
+      if (where) toast({ kind: 'success', title: `Saved ${where}` });
     };
     const list: Command[] = [
       { id: 'control.run', label: running ? 'Pause' : 'Run', group: 'Control', icon: running ? <Pause /> : <Play />, shortcut: 'F5', keywords: ['start', 'stop'], run: guard(controls.toggle) },
@@ -157,17 +165,28 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
       },
       {
         id: 'project.save',
-        label: 'Save project as…',
+        label: 'Save project',
         group: 'Project',
         icon: <Save />,
         shortcut: 'Ctrl+S',
         run: guard(async () => {
-          const project = useProject.getState().project;
-          if (!project) return;
-          const p = await platform();
-          const where = await p.saveTextFile(`${project.name}.json`, JSON.stringify(project, null, 2), 'application/json');
-          if (where) toast({ kind: 'success', title: `Saved ${where}` });
+          // the engine writes the file it loaded; a session without a file
+          // (the demo, a project opened from the browser) downloads a copy
+          try {
+            const { path } = await getClient().project.save({});
+            toast({ kind: 'success', title: `Saved ${path}` });
+          } catch (e) {
+            if (!(e instanceof JsonRpcError)) throw e;
+            await saveCopy();
+          }
         }),
+      },
+      {
+        id: 'project.save-as',
+        label: 'Save a copy of the project…',
+        group: 'Project',
+        icon: <Save />,
+        run: guard(saveCopy),
       },
       {
         id: 'project.copy-time',
@@ -224,6 +243,10 @@ export function useGlobalShortcuts(commands: Command[]): void {
       if (e.key === 'F7') return run('control.advance');
       if (mod && !e.shiftKey && e.key === 'z' && !isEditable(document.activeElement)) return run('edit.undo');
       if (mod && (e.key === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z')) && !isEditable(document.activeElement)) return run('edit.redo');
+      // copying text the user selected stays the browser's
+      if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'c' && !e.shiftKey && !window.getSelection()?.toString()) return run('canvas.copy');
+      if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'v' && !e.shiftKey) return run('canvas.paste');
+      if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'd') return run('canvas.duplicate');
       if (mod && e.key === 'o') return run('project.open');
       if (mod && e.key === 's') return run('project.save');
       if (mod && ['1', '2', '3', '4'].includes(e.key)) return run(`perspective.${(['design', 'run', 'debug', 'verify'] as const)[Number(e.key) - 1]}`);

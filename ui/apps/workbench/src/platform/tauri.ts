@@ -10,7 +10,26 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import type { OpenedFile, Platform } from './platform';
 
+/** Sends the workbench's errors to the shell, which prints them: the webview's console is not visible. */
+function forwardErrors(): void {
+  const send = (message: string) => void invoke('log_message', { level: 'error', message }).catch(() => undefined);
+  const text = (args: unknown[]) => args.map((a) => (a instanceof Error ? `${a.message}\n${a.stack ?? ''}` : String(a))).join(' ');
+  const error = console.error.bind(console);
+  const warn = console.warn.bind(console);
+  console.error = (...args: unknown[]) => {
+    error(...args);
+    send(text(args));
+  };
+  console.warn = (...args: unknown[]) => {
+    warn(...args);
+    send(`(warning) ${text(args)}`);
+  };
+  window.addEventListener('error', (e) => send(`${e.message} at ${e.filename}:${e.lineno}:${e.colno}`));
+  window.addEventListener('unhandledrejection', (e) => send(`unhandled rejection: ${e.reason instanceof Error ? `${e.reason.message}\n${e.reason.stack ?? ''}` : String(e.reason)}`));
+}
+
 export function createTauriPlatform(): Platform {
+  forwardErrors();
   return {
     kind: 'tauri',
     async openProjectFile(): Promise<OpenedFile | null> {

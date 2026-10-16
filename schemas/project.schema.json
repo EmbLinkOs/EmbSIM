@@ -82,6 +82,20 @@
             }
           }
         },
+        "buses": {
+          "type": "array",
+          "description": "Presentation only: a named group of nets drawn as one line; the nets stay in `nets`. The first net is bit 0 of the bus's value.",
+          "items": {
+            "type": "object",
+            "required": ["name", "nets", "points"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string"},
+              "nets": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+              "points": {"type": "array", "minItems": 2, "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}}}
+            }
+          }
+        },
         "labels": {
           "type": "array",
           "items": {

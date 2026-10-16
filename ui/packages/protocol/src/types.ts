@@ -69,6 +69,13 @@ export interface Wire {
   points: [number, number][];
 }
 
+/** Presentation only (SPEC-007): nets drawn as one line; the first net is bit 0. */
+export interface Bus {
+  name: string;
+  nets: string[];
+  points: [number, number][];
+}
+
 export interface NetLabel {
   net: string;
   x: number;
@@ -93,7 +100,7 @@ export interface Project {
   boards?: ProjectBoard[];
   components: ProjectComponent[];
   nets: Record<string, string[]>;
-  layout?: { wires?: Wire[]; labels?: NetLabel[]; sheet?: { width: number; height: number } };
+  layout?: { wires?: Wire[]; labels?: NetLabel[]; buses?: Bus[]; sheet?: { width: number; height: number } };
   probes?: ProjectProbe[];
   scenarios?: string[];
   settings?: Record<string, unknown>;
@@ -156,6 +163,8 @@ export type HotspotGesture = 'hold' | 'toggle' | 'drag';
 
 export interface Hotspot {
   input: string;
+  /** A board's hotspot acts on one of its components ("SW_RESET"), not on the board. */
+  target?: string;
   selector: string;
   gesture: HotspotGesture;
   axis?: 'x' | 'y' | 'angle';

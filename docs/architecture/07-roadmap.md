@@ -30,7 +30,9 @@ M0 is delivered. M1 is implemented on the Blue Pill (STM32F103C8) with the
 `embcc` and `clang` profiles exercised; its evidence and the parts of its
 exit criteria still open (the three-platform run of the acceptance
 scenario from the workbench, the `gcc-arm` profile) are in STATUS.md. M2
-to M6 are planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
+is implemented (the inside of a board or composite opens read-only); its
+installers and three-platform smoke run in CI (Chromium, not the platform
+webviews). M3 to M6 are planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
 
 ## 3. Specification work order
 

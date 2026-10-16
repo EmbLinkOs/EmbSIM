@@ -8,3 +8,4 @@ export { Oscilloscope, Measure, type OscilloscopeProps, type ScopeTrace } from '
 export { LogicAnalyzer, type LogicAnalyzerProps, type LogicChannel } from './LogicAnalyzer';
 export { SerialTerminal, type SerialTerminalProps, type SerialLine } from './SerialTerminal';
 export { Meter, formatMeterValue, type MeterProps } from './Meter';
+export { decode, decodeUart, decodeSpi, decodeI2c, byteText, transitions, type Annotation, type AnnotationKind, type DecoderSpec, type RecordLookup } from './decoders';

@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "count",
+  "until": "26ms",
+  "inputs": [
+    {
+      "at": "5.2ms",
+      "target": "RESET",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "5.4ms",
+      "target": "RESET",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "counts-from-zero",
+      "at": "0.4ms",
+      "probe": "q0",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "five-after-five-edges",
+      "at": "5.1ms",
+      "probe": "q2",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "reset-clears",
+      "at": "5.3ms",
+      "probe": "q2",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "q0-toggles-every-clock",
+      "between": [
+        "5.5ms",
+        "25.5ms"
+      ],
+      "probe": "q0",
+      "expect": {
+        "edges": 20
+      }
+    },
+    {
+      "id": "q3-rises-at-8-falls-at-16",
+      "between": [
+        "5.5ms",
+        "25.5ms"
+      ],
+      "probe": "q3",
+      "expect": {
+        "edges": 2
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "net.contention",
+          "net.unknown_input"
+        ]
+      }
+    }
+  ]
+}

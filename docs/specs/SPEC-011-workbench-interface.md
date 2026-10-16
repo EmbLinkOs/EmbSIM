@@ -46,6 +46,14 @@ of each board, protocol latency.
 - Board view: the board artwork with hotspots; header pins are wirable from
   the schematic through the board's symbol (a generated rectangle with
   ports on its sides).
+- Buses: a project's `layout.buses` drawn as thick lines with their names
+  and, while running, their values (SPEC-007).
+- Hierarchy: double-clicking a board or a composite part (or "Open inside"
+  in the inspector) shows its inside on a read-only sheet: its parts on a
+  grid, a board's MCU as a block of the pins its nets use, each connected
+  pin with a stub and its net's label, live while running (a net joined to
+  the project through a port shows the project net's state). "Back to the
+  project" returns.
 - Waveforms on canvas (2D with WebGL acceleration where available): time
   axis shared across instruments, cursors, zoom with the wheel, auto-range,
   min/max decimation for long records, decoded protocol annotations.

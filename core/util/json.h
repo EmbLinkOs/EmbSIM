@@ -64,6 +64,10 @@ esk_json *esk_json_new_object(esk_alloc *a);
 int esk_json_array_push(esk_alloc *a, esk_json *arr, esk_json *v);
 int esk_json_object_set(esk_alloc *a, esk_json *obj, const char *key, esk_json *v); /* replaces an existing key */
 /* convenience setters: return 0 or -1 */
+/* remove item `i` of an array or object, or the member `key` of an
+ * object, freeing it: 0, or -1 when there is none */
+int esk_json_remove_at(esk_alloc *a, esk_json *j, size_t i);
+int esk_json_remove(esk_alloc *a, esk_json *obj, const char *key);
 int esk_json_set_string(esk_alloc *a, esk_json *obj, const char *key, const char *v);
 int esk_json_set_number(esk_alloc *a, esk_json *obj, const char *key, double v);
 int esk_json_set_integer(esk_alloc *a, esk_json *obj, const char *key, int64_t v);
@@ -73,6 +77,9 @@ int esk_json_set_u64_string(esk_alloc *a, esk_json *obj, const char *key, uint64
 /* accessors; all tolerate NULL and wrong types by returning NULL / defaults */
 const esk_json *esk_json_get(const esk_json *obj, const char *key);
 size_t esk_json_len(const esk_json *j); /* arrays and objects */
+/* the same, for changing in place */
+esk_json *esk_json_get_mut(esk_json *obj, const char *key);
+esk_json *esk_json_at_mut(esk_json *j, size_t i);
 const esk_json *esk_json_at(const esk_json *j, size_t i);
 const char *esk_json_str(const esk_json *j);               /* NULL unless a string */
 const char *esk_json_get_str(const esk_json *obj, const char *key, const char *def);

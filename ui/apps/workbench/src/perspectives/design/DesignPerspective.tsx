@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { Badge, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
-import { SchematicCanvas, type CanvasMode, type SchematicCanvasHandle } from '@embsim/scene';
-import { Cable, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Badge, Button, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
+import { EMPTY_SELECTION, SchematicCanvas, type CanvasMode, type SchematicCanvasHandle } from '@embsim/scene';
+import { ArrowLeft, Cable, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { errorMessage, probes as probeActions } from '../../actions';
 import { useRegisterCommands } from '../../shell/commands';
+import { insideSource, insideView } from '../../stores/inside';
+import { openInside } from '../../stores/openInside';
 import { useLayout } from '../../stores/layout';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
@@ -31,6 +33,9 @@ export function DesignPerspective() {
   const canvasRef = useRef<SchematicCanvasHandle>(null);
   const [rename, setRename] = useState<{ net: string; value: string } | null>(null);
   const [bottomTab, setBottomTab] = useState<'nets' | 'board'>('nets');
+  const inside = useLayout((s) => s.inside);
+  const setInside = useLayout((s) => s.setInside);
+  const catalog = useProject((s) => s.catalog);
 
   const fail = useCallback((title: string) => (e: unknown) => toast({ kind: 'error', title, description: errorMessage(e) }), [toast]);
 
@@ -77,6 +82,56 @@ export function DesignPerspective() {
         disabled: selection.components.length === 0,
         run: () => void store.rotateComponents(selection.components).catch(fail('Rotate failed')),
       },
+      {
+        id: 'canvas.copy',
+        label: 'Copy selection',
+        group: 'Schematic',
+        shortcut: 'Ctrl+C',
+        disabled: selection.components.length === 0,
+        run: () => store.copySelection(selection),
+      },
+      {
+        id: 'canvas.paste',
+        label: 'Paste',
+        group: 'Schematic',
+        shortcut: 'Ctrl+V',
+        disabled: !store.clipboard,
+        run: () => void store.paste().then((ids) => ids.length && setSelection({ components: ids, wires: [] })).catch(fail('Paste failed')),
+      },
+      {
+        id: 'canvas.duplicate',
+        label: 'Duplicate selection',
+        group: 'Schematic',
+        shortcut: 'Ctrl+D',
+        disabled: selection.components.length === 0,
+        run: () => void store.duplicate(selection).then((ids) => ids.length && setSelection({ components: ids, wires: [] })).catch(fail('Duplicate failed')),
+      },
+      {
+        id: 'canvas.label',
+        label: 'Label the selected wire’s net',
+        group: 'Schematic',
+        shortcut: 'L',
+        disabled: selection.wires.length !== 1,
+        run: () => void store.labelWire(selection.wires[0]!).catch(fail('Label failed')),
+      },
+      {
+        id: 'canvas.bus',
+        label: 'Group the selected wires into a bus',
+        group: 'Schematic',
+        disabled: selection.wires.length < 2,
+        run: () =>
+          void store
+            .groupIntoBus(selection.wires)
+            .then((name) => name && toast({ kind: 'success', title: `Bus ${name}`, duration: 2000 }))
+            .catch(fail('Bus failed')),
+      },
+      ...(project?.layout?.buses ?? []).map((b) => ({
+        id: `bus.remove.${b.name}`,
+        label: `Remove bus ${b.name}`,
+        group: 'Schematic',
+        keywords: ['bus', ...b.nets],
+        run: () => void store.removeBus(b.name).catch(fail('Remove failed')),
+      })),
       ...Object.entries(sceneCatalog).map(([id, s]) => ({
         id: `place.${id}`,
         label: `Place ${s.name}`,
@@ -85,11 +140,40 @@ export function DesignPerspective() {
         run: () => placeAtCentre(id),
       })),
     ],
-    [selection, store, sceneCatalog, placeAtCentre, setMode, fail],
+    [selection, store, sceneCatalog, placeAtCentre, setMode, setSelection, fail, toast, project?.layout?.buses],
   );
   useRegisterCommands('design', commands);
 
-  const canvasActions = (
+  /** Double-click: a board or a composite part opens on its own sheet. */
+  const openInsideOf = useCallback(
+    (id: string) => {
+      setSelection({ components: [id], wires: [] });
+      openInside(id).catch(fail('Open failed'));
+    },
+    [setSelection, fail],
+  );
+
+  const insideOf = useMemo(() => {
+    if (!inside || !project) return null;
+    const ref = project.components.find((c) => c.id === inside)?.component ?? project.boards?.find((b) => b.id === inside)?.board;
+    const src = ref ? insideSource(catalog[ref]?.description) : null;
+    if (!src) return null;
+    const view = insideView(inside, src, sceneCatalog, project);
+    const states: typeof nets = {};
+    for (const [net, outer] of Object.entries(view.alias)) if (nets[outer]) states[net] = nets[outer]!;
+    return { ...view, states, catalog: { ...sceneCatalog, ...view.scene } };
+  }, [inside, project, catalog, sceneCatalog, nets]);
+
+  const canvasActions = insideOf ? (
+    <div className="wb-canvas-actions">
+      <Badge tone="accent" title="The inside of a board or part: read-only, its nets live while it runs">
+        inside {insideOf.project.name}
+      </Badge>
+      <Button size="sm" variant="ghost" icon={<ArrowLeft />} onClick={() => setInside(null)}>
+        Back to the project
+      </Button>
+    </div>
+  ) : (
     <div className="wb-canvas-actions">
       {!editable && (
         <Badge tone="warning" title="This server does not implement project.transaction; the schematic is read-only">
@@ -114,7 +198,21 @@ export function DesignPerspective() {
     </div>
   );
 
-  const canvas = project ? (
+  const canvas = insideOf ? (
+    <SchematicCanvas
+      key={`inside-${inside}`}
+      project={insideOf.project}
+      catalog={insideOf.catalog}
+      mode="select"
+      selection={EMPTY_SELECTION}
+      onSelectionChange={() => undefined}
+      live={running}
+      netStates={insideOf.states}
+      readOnly
+      onOpenComponent={() => setInside(null)}
+      label={`Inside ${insideOf.project.name}`}
+    />
+  ) : project ? (
     <SchematicCanvas
       handle={canvasRef}
       project={project}
@@ -128,6 +226,7 @@ export function DesignPerspective() {
       onMove={(ids, dx, dy) => void store.moveComponents(ids, dx, dy).catch(fail('Move failed'))}
       onRotate={(ids) => void store.rotateComponents(ids).catch(fail('Rotate failed'))}
       onMirror={(ids) => void store.mirrorComponents(ids).catch(fail('Mirror failed'))}
+      onLabelWire={(w) => void store.labelWire(w).catch(fail('Label failed'))}
       onDelete={(sel) => {
         void store.deleteSelection(sel).catch(fail('Delete failed'));
         setSelection({ components: [], wires: [] });
@@ -141,7 +240,7 @@ export function DesignPerspective() {
           .then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` }))
           .catch(fail('Probe failed'));
       }}
-      onOpenComponent={(id) => setSelection({ components: [id], wires: [] })}
+      onOpenComponent={openInsideOf}
       label="Schematic canvas"
     />
   ) : null;

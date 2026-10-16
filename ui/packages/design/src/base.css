@@ -587,7 +587,8 @@ a {
 }
 
 .es-panel__title {
-  flex: 1;
+  /* the title keeps its width; the actions beside it give way first */
+  flex: 1 0 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -611,6 +612,11 @@ a {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  /* many actions (probe chips) scroll rather than push the title out */
+  min-width: 0;
+  flex-shrink: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .es-panel__content {

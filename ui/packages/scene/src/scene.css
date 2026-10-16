@@ -447,3 +447,34 @@
   position: absolute;
   pointer-events: none;
 }
+
+/* While the view zooms or pans, the details that cost the most to paint
+   are left out; they return when it settles (SchematicCanvas). */
+.es-scene__svg--moving .es-component__ref,
+.es-scene__svg--moving .es-component__value,
+.es-scene__svg--moving .es-pin,
+.es-scene__svg--moving .es-net-label text,
+.es-scene__svg--moving .es-symbol text {
+  display: none;
+}
+
+/* A bus: a group of nets drawn as one thick line, its name and, while the
+   circuit runs, its value (SPEC-007 layout.buses). */
+.es-bus__line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+.es-bus__name {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--accent-strong, var(--accent));
+}
+.es-bus__value {
+  font-weight: 400;
+  fill: var(--text-muted);
+}

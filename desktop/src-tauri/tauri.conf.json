@@ -11,7 +11,13 @@
   },
   "app": {
     "windows": [
-      { "title": "EmbSIM", "width": 1440, "height": 900, "minWidth": 1024, "minHeight": 700 }
+      {
+        "title": "EmbSIM",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 700
+      }
     ],
     "security": {
       "csp": "default-src 'self'; connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:*; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
@@ -19,11 +25,27 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["appimage", "deb", "dmg", "msi"],
-    "externalBin": ["binaries/embsim"],
-    "resources": { "../../catalog": "catalog" },
+    "targets": [
+      "appimage",
+      "deb",
+      "dmg",
+      "msi"
+    ],
+    "externalBin": [
+      "binaries/embsim"
+    ],
+    "resources": {
+      "../../catalog": "catalog"
+    },
     "category": "DeveloperTool",
     "shortDescription": "Virtual electronics workbench",
-    "license": "Apache-2.0"
+    "license": "Apache-2.0",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
   }
 }
