@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "swapped",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 1
+        }
+      },
+      {
+        "id": "V2",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm393p"
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "R2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VS.+",
+        "DUT.VCC",
+        "R1.1",
+        "R2.1"
+      ],
+      "GND": [
+        "VS.-",
+        "V1.-",
+        "V2.-",
+        "DUT.GND",
+        "G.GND"
+      ],
+      "LO": [
+        "V1.+",
+        "DUT.IN1-",
+        "DUT.IN2+"
+      ],
+      "HI": [
+        "V2.+",
+        "DUT.IN1+",
+        "DUT.IN2-"
+      ],
+      "OUT1": [
+        "R1.2",
+        "DUT.OUT1"
+      ],
+      "OUT2": [
+        "R2.2",
+        "DUT.OUT2"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT1": {
+      "at": "50us",
+      "min_v": 4.9,
+      "max_v": 5.01
+    },
+    "net:OUT2": {
+      "at": "50us",
+      "min_v": 0,
+      "max_v": 0.1
+    }
+  }
+}

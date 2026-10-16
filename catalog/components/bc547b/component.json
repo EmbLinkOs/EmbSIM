@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bc547b",
+  "version": "1.0.0",
+  "name": "BC547B",
+  "category": "transistors",
+  "description": "BC547B (TO-92). Parameterized bjt_npn approximation for low-frequency circuit development; not a vendor SPICE model.",
+  "keywords": [
+    "onsemi",
+    "BC547B",
+    "TO-92",
+    "transistor",
+    "bjt",
+    "npn",
+    "2N3904",
+    "BC547",
+    "2N2222"
+  ],
+  "pins": [
+    {
+      "name": "C",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Collector"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Base"
+    },
+    {
+      "name": "E",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Emitter"
+    }
+  ],
+  "params": {
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "1.8e-14",
+      "doc": "Transport saturation current",
+      "min": "1e-20",
+      "max": "1m",
+      "advanced": true
+    },
+    "bf": {
+      "type": "number",
+      "unit": "",
+      "default": 290,
+      "doc": "Forward current gain",
+      "min": 1,
+      "max": 2000
+    },
+    "br": {
+      "type": "number",
+      "unit": "",
+      "default": 4,
+      "doc": "Reverse current gain",
+      "min": 0.01,
+      "max": 100,
+      "advanced": true
+    },
+    "vaf": {
+      "type": "number",
+      "unit": "V",
+      "default": 63,
+      "doc": "Forward Early voltage",
+      "min": 1,
+      "max": 1000,
+      "advanced": true
+    },
+    "rb": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Base resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "rc": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Collector resistance",
+      "min": 0,
+      "advanced": true
+    },
+    "re": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0,
+      "doc": "Emitter resistance",
+      "min": 0,
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "bjt_npn"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Parameterized bjt_npn approximation; DC/low-frequency fixture coverage only.",
+      "omissions": [
+        "junction capacitances",
+        "transit time",
+        "temperature",
+        "breakdown",
+        "quasi-saturation",
+        "manufacturer min/max tolerances",
+        "thermal or destructive behavior",
+        "device-to-device spread",
+        "unverified high-frequency behavior",
+        "no manufacturer model qualification",
+        "charge storage and reverse recovery"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "BC547B manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.onsemi.com/pdf/datasheet/bc546-d.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Transistor_BJT.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "onsemi",
+    "mpn": "BC547B",
+    "package": "TO-92",
+    "datasheet": "https://www.onsemi.com/pdf/datasheet/bc546-d.pdf"
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

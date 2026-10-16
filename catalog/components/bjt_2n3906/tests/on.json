@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "saturated-switch",
+  "description": "Base pulled low through 10 k\u03a9: the PNP saturates and the collector sits near 3.3 V.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RC",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bjt_2n3906"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V1.+",
+        "DUT.E"
+      ],
+      "BASE": [
+        "RB.1",
+        "DUT.B"
+      ],
+      "COLL": [
+        "RC.1",
+        "DUT.C"
+      ],
+      "GND": [
+        "V1.-",
+        "RB.2",
+        "RC.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:COLL": {
+      "at": "0.5ms",
+      "min_v": 2.9,
+      "max_v": 3.3
+    }
+  }
+}

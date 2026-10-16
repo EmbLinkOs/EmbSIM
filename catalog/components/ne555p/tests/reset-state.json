@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reset-state",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "VT",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ne555p"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VS.+",
+        "DUT.VCC",
+        "DUT.RESET",
+        "RD.1"
+      ],
+      "TRIGGER": [
+        "VT.+",
+        "DUT.TRIG"
+      ],
+      "GROUND": [
+        "VS.-",
+        "VT.-",
+        "DUT.THRESH",
+        "R.2",
+        "DUT.GND",
+        "G.GND"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "R.1"
+      ],
+      "DIS": [
+        "DUT.DISCH",
+        "RD.2"
+      ],
+      "CONTROL": [
+        "DUT.CTRL"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "50us",
+      "max_v": 0.2
+    },
+    "net:DIS": {
+      "at": "50us",
+      "max_v": 0.1
+    }
+  }
+}

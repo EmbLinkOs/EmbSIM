@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "unpowered",
+  "policy": "functional",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "LO",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "HI",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/sn74hc04n"
+      }
+    ],
+    "nets": {
+      "LOW": [
+        "LO.Y",
+        "DUT.GND",
+        "DUT.1A",
+        "DUT.4A",
+        "DUT.5A",
+        "DUT.VCC"
+      ],
+      "HIGH": [
+        "HI.Y",
+        "DUT.2A",
+        "DUT.3A",
+        "DUT.6A"
+      ],
+      "Y1": [
+        "DUT.1Y"
+      ],
+      "Y2": [
+        "DUT.2Y"
+      ],
+      "Y3": [
+        "DUT.3Y"
+      ],
+      "Y4": [
+        "DUT.4Y"
+      ],
+      "Y5": [
+        "DUT.5Y"
+      ],
+      "Y6": [
+        "DUT.6Y"
+      ]
+    }
+  },
+  "expect": {
+    "net:Y1": {
+      "at": "50us",
+      "logic": "Z"
+    },
+    "net:Y2": {
+      "at": "50us",
+      "logic": "Z"
+    },
+    "net:Y3": {
+      "at": "50us",
+      "logic": "Z"
+    },
+    "net:Y4": {
+      "at": "50us",
+      "logic": "Z"
+    },
+    "net:Y5": {
+      "at": "50us",
+      "logic": "Z"
+    },
+    "net:Y6": {
+      "at": "50us",
+      "logic": "Z"
+    }
+  }
+}

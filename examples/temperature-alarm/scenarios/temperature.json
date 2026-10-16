@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "heat-cool",
+  "until": "500us",
+  "inputs": [
+    {
+      "at": "100us",
+      "target": "S1",
+      "input": "temperature",
+      "value": 80
+    },
+    {
+      "at": "300us",
+      "target": "S1",
+      "input": "temperature",
+      "value": 25
+    }
+  ],
+  "assertions": [
+    {
+      "id": "cold-voltage",
+      "at": "50us",
+      "probe": "temp",
+      "expect": {
+        "min_v": 0.249,
+        "max_v": 0.251
+      }
+    },
+    {
+      "id": "cold-dark",
+      "at": "50us",
+      "probe": "led",
+      "expect": {
+        "max": 1e-05
+      }
+    },
+    {
+      "id": "hot-voltage",
+      "at": "200us",
+      "probe": "temp",
+      "expect": {
+        "min_v": 0.799,
+        "max_v": 0.801
+      }
+    },
+    {
+      "id": "hot-lit",
+      "at": "200us",
+      "probe": "led",
+      "expect": {
+        "min": 0.002,
+        "max": 0.012
+      }
+    },
+    {
+      "id": "cooled-dark",
+      "at": "400us",
+      "probe": "led",
+      "expect": {
+        "max": 1e-05
+      }
+    },
+    {
+      "id": "healthy",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small"
+        ]
+      }
+    }
+  ]
+}

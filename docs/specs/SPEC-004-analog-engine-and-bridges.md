@@ -110,6 +110,29 @@ A model's `electrical` fidelity declaration lists which effects are
 implemented; a parameter outside the declared range raises
 `analog.param_out_of_range` at load.
 
+### Implemented catalog primitives added with the named-part batch
+
+- `comparator_oc`: pins `+`, `-`, `OUT`, `V+`, `V-`; a smooth open-collector
+  conductance with `ron`, `roff`, `transition` and `min_supply`. External pull-up
+  required; no delay, common-mode enforcement or offset model.
+- `temperature_sensor`: pins `OUT`, `VS`, `GND`; externally set `temperature`
+  in °C, `offset + slope * temperature`, finite `rout`, supply clipping using
+  `headroom`. No thermal integration or accuracy/noise model.
+- `timer555`: pins `TRIG`, `THRESH`, `RESET`, `CTRL`, `OUT`, `DISCH`, `VCC`,
+  `GND`; 5 kΩ + 10 kΩ divider, trigger at half CTRL, threshold at CTRL,
+  reset priority, accepted-step latch and discharge. `sample_interval` bounds
+  the threshold sampling interval (1 us default). Switching affects the next
+  solve, giving up to twice that interval of timing error. No vendor timing or
+  transistor-level accuracy is claimed.
+- `opamp` additionally accepts nonnegative `headroom_high` and `headroom_low`
+  (0 by default), moving its DC output limits inwards from the supply rails.
+  The named LM358P uses them; its GBW/slew behavior is explicitly unsupported.
+
+These implemented behavioral primitives do not imply that every target model
+in the table above exists. Pin order is binding for native analog devices.
+Fixtures exercise DC, temperature changes, comparator loading, 555 latch/reset,
+and an RC astable against the nominal `1.44 / ((RA + 2 RB) C)` frequency.
+
 ## 8. Bridges (SPEC-003 §4 restated numerically)
 
 - **Thevenin driver**: for value `1`, a source `voh` in series with `rout`;

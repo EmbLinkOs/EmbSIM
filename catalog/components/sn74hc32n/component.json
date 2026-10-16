@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "category": "logic",
+  "description": "SN74HC32N: 4 independent 2-input OR gates in a complete 14-pin DIP package. Nominal 5 V model.",
+  "pins": [
+    {
+      "name": "1A",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "1A"
+    },
+    {
+      "name": "1B",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "1B"
+    },
+    {
+      "name": "1Y",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "1Y"
+    },
+    {
+      "name": "2A",
+      "number": 4,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "2A"
+    },
+    {
+      "name": "2B",
+      "number": 5,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "2B"
+    },
+    {
+      "name": "2Y",
+      "number": 6,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "2Y"
+    },
+    {
+      "name": "3A",
+      "number": 9,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "3A"
+    },
+    {
+      "name": "3B",
+      "number": 10,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "3B"
+    },
+    {
+      "name": "3Y",
+      "number": 8,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "3Y"
+    },
+    {
+      "name": "4A",
+      "number": 12,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "4A"
+    },
+    {
+      "name": "4B",
+      "number": 13,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "4B"
+    },
+    {
+      "name": "4Y",
+      "number": 11,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_5v",
+        "voh": 5,
+        "vol": 0,
+        "rout": 25
+      },
+      "doc": "4Y"
+    },
+    {
+      "name": "VCC",
+      "number": 14,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "Supply sense; not an ideal power source."
+    },
+    {
+      "name": "GND",
+      "number": 7,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_5v",
+        "hysteresis": 0
+      },
+      "doc": "Ground reference sense."
+    }
+  ],
+  "params": {},
+  "model": {
+    "primitive": "hc_package",
+    "params": {
+      "gate": "or"
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "All channels implement their four-valued truth table; VCC low releases outputs; invalid/floating rails produce X.",
+      "omissions": [
+        "analog supply ramp behavior",
+        "input clamp diodes",
+        "supply current"
+      ]
+    },
+    "timed": {
+      "claims": "Nominal fixed 12 ns inertial delay; not a datasheet worst-case guarantee.",
+      "omissions": [
+        "analog supply ramp behavior",
+        "input clamp diodes",
+        "supply current"
+      ]
+    },
+    "electrical": {
+      "claims": "Nominal 5 V CMOS input thresholds and output Thevenin drivers (5/0 V, 25 ohm) with the digital channel behavior. Supply-voltage tracking is not modeled.",
+      "omissions": [
+        "analog supply ramp behavior",
+        "input clamp diodes",
+        "supply current",
+        "voltage-dependent delays",
+        "output current limits",
+        "supply tracking below nominal"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          5
+        ]
+      }
+    }
+  },
+  "functional": {
+    "primitive": "hc_package",
+    "params": {
+      "gate": "or"
+    }
+  },
+  "timed": {
+    "tpd": "12ns"
+  },
+  "family": "cmos_5v",
+  "id": "emblink/sn74hc32n",
+  "name": "SN74HC32N",
+  "version": "1.0.0",
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "SN74HC32N",
+    "package": "PDIP-14",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/sn74hc32.pdf"
+  },
+  "keywords": [
+    "Texas Instruments",
+    "SN74HC32N",
+    "PDIP-14"
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "SN74HC32N manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.ti.com/lit/ds/symlink/sn74hc32.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/74xx.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 180,
+    "height": 160,
+    "pins": {
+      "1A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1B": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "1Y": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "2A": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "2B": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "2Y": {
+        "x": 0,
+        "y": 120,
+        "side": "left"
+      },
+      "GND": {
+        "x": 0,
+        "y": 140,
+        "side": "left"
+      },
+      "3Y": {
+        "x": 180,
+        "y": 140,
+        "side": "right"
+      },
+      "3A": {
+        "x": 180,
+        "y": 120,
+        "side": "right"
+      },
+      "3B": {
+        "x": 180,
+        "y": 100,
+        "side": "right"
+      },
+      "4Y": {
+        "x": 180,
+        "y": 80,
+        "side": "right"
+      },
+      "4A": {
+        "x": 180,
+        "y": 60,
+        "side": "right"
+      },
+      "4B": {
+        "x": 180,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 180,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

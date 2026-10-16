@@ -688,6 +688,8 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
     all_names: set[str] = set()
     for i, pin in enumerate(doc.get("pins", [])):
         n = pin.get("name")
+        if doc.get("part") and "number" not in pin:
+            report.error(file, ptr("pins", i), "catalog.pin_number_missing", "a manufacturer part needs a physical pin number for every pin")
         if n in all_names:
             report.error(file, ptr("pins", i, "name"), "catalog.pin_duplicate", f"pin name {n} is not unique")
         all_names.add(n)

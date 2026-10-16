@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "category": "amplifiers",
+  "description": "LM358P dual-channel PDIP-8 behavioral approximation; both channels share explicit supply pins.",
+  "pins": [
+    {
+      "name": "IN1+",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "IN1+"
+    },
+    {
+      "name": "IN1-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "IN1-"
+    },
+    {
+      "name": "OUT1",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "OUT1"
+    },
+    {
+      "name": "IN2+",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "IN2+"
+    },
+    {
+      "name": "IN2-",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "IN2-"
+    },
+    {
+      "name": "OUT2",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "OUT2"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "GND"
+    }
+  ],
+  "params": {
+    "gain": {
+      "type": "number",
+      "default": "100k",
+      "unit": "",
+      "min": 1
+    },
+    "rout": {
+      "type": "number",
+      "default": 50,
+      "unit": "ohm",
+      "min": 0
+    },
+    "headroom_high": {
+      "type": "number",
+      "default": 1.5,
+      "unit": "V",
+      "min": 0
+    },
+    "headroom_low": {
+      "type": "number",
+      "default": 0.02,
+      "unit": "V",
+      "min": 0
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "A",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "$gain",
+            "rout": "$rout",
+            "headroom_high": "$headroom_high",
+            "headroom_low": "$headroom_low"
+          }
+        },
+        {
+          "id": "B",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "$gain",
+            "rout": "$rout",
+            "headroom_high": "$headroom_high",
+            "headroom_low": "$headroom_low"
+          }
+        }
+      ],
+      "nets": {
+        "VCC": [
+          "A.V+",
+          "B.V+"
+        ],
+        "GND": [
+          "A.V-",
+          "B.V-"
+        ]
+      },
+      "ports": {
+        "IN1+": "A.+",
+        "IN1-": "A.-",
+        "OUT1": "A.OUT",
+        "IN2+": "B.+",
+        "IN2-": "B.-",
+        "OUT2": "B.OUT",
+        "VCC": "A.V+",
+        "GND": "A.V-"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Two independent DC op-amp channels with finite gain, output resistance and headroom.",
+      "omissions": [
+        "manufacturer tolerances",
+        "supply current",
+        "input protection",
+        "temperature effects",
+        "input common-mode violations",
+        "gain-bandwidth",
+        "slew rate",
+        "output current limit",
+        "phase reversal",
+        "no manufacturer model qualification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          5
+        ]
+      }
+    }
+  },
+  "id": "emblink/lm358p",
+  "name": "LM358P",
+  "version": "1.0.0",
+  "part": {
+    "manufacturer": "Texas Instruments",
+    "mpn": "LM358P",
+    "package": "PDIP-8",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/lm358.pdf"
+  },
+  "keywords": [
+    "Texas Instruments",
+    "LM358P",
+    "PDIP-8"
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "LM358P manufacturer datasheet (reference; retrieval pending network access)",
+        "url": "https://www.ti.com/lit/ds/symlink/lm358.pdf"
+      },
+      {
+        "title": "KiCad family/package reference, revision 4e17d759",
+        "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Amplifier_Operational.lib"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 180,
+    "height": 100,
+    "pins": {
+      "OUT1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "IN1-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "IN1+": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "GND": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "IN2+": {
+        "x": 180,
+        "y": 80,
+        "side": "right"
+      },
+      "IN2-": {
+        "x": 180,
+        "y": 60,
+        "side": "right"
+      },
+      "OUT2": {
+        "x": 180,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 180,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg"
+  }
+}

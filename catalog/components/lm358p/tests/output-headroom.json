@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "output-headroom",
+  "policy": "electrical",
+  "until": "100us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 1
+        }
+      },
+      {
+        "id": "V2",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm358p"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VS.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "VS.-",
+        "V1.-",
+        "V2.-",
+        "DUT.GND",
+        "G.GND",
+        "DUT.IN1-"
+      ],
+      "IN1": [
+        "V1.+",
+        "DUT.IN1+"
+      ],
+      "IN2": [
+        "V2.+",
+        "DUT.IN2+"
+      ],
+      "OUT1": [
+        "DUT.OUT1"
+      ],
+      "OUT2": [
+        "DUT.OUT2",
+        "DUT.IN2-"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT1": {
+      "at": "50us",
+      "min_v": 3.45,
+      "max_v": 3.51
+    },
+    "net:OUT2": {
+      "at": "50us",
+      "min_v": 1.99,
+      "max_v": 2.01
+    }
+  }
+}
