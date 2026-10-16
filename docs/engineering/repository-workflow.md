@@ -4,6 +4,16 @@ Work branches start from reviewed `main`. Use the issue forms and the pull
 request template. Architecture changes need an ADR; contract changes update
 the specification, the requirements and the tests together.
 
+## One pull request per milestone
+
+Each roadmap milestone (docs/architecture/07-roadmap.md) is delivered as one
+pull request from its working branch to `main`, opened when the milestone's
+work is complete and its local checks pass. The description follows the
+pull request template, names the milestone's exit criteria from the roadmap
+and states which were met, with the evidence, and which remain open.
+STATUS.md is updated in the same pull request. Work after a merged milestone
+starts a fresh branch from `main`; a merged pull request is never reused.
+
 ## Three stable merge checks
 
 | Required check name | Workflow / job | What it checks |
