@@ -21,7 +21,31 @@ navigator and grid-compatible magnetic drag guides. The
 [user guide](user/schematic-studio.md) documents heuristics and limits, including
 unchanged label/bus positions, allowed crossings and bounded planning searches.
 The desktop worker policy permits the bundled worker; installers still require
-platform CI evidence. Final integration evidence is recorded with this branch.
+platform CI evidence.
+
+Integrated with main `baf3f49` (including the vendor-firmware/analog-reference
+work) on Linux, GCC 14.2, Python 3.12 and Node 24. Observed on this branch:
+
+- All 33 development CTest outcomes pass on the integrated revision. The
+  firmware-build wrapper explicitly skips compilation because no supported
+  firmware toolchain is installed; the other targets execute, including replay,
+  analysis, catalog assertions, multiboard and headless examples.
+- All 108 workbench tests pass, including layout determinism, obstacle/track
+  routing, transformed anchors, free placement, disconnected airwire clusters,
+  magnetic guides, presentation-only application and stale-preview rejection.
+- TypeScript, lint and the production build pass. The three Playwright smoke
+  tests pass, including the new worker-preview/apply/undo/focus-mode workflow;
+  this test is included in the existing three-platform smoke job.
+- The native-engine schematic browser regression passes: Preview sends no
+  transactions; Apply changes only layout and does not restart the engine;
+  Undo/Redo restore geometry; connect-then-arrange undoes as one edit. Finder,
+  display controls, light/dark themes and 1024×700 are exercised without page
+  errors. The existing real-engine library/live-control regression also passes.
+- All 552 JSON files validate with no errors/warnings; documentation integrity
+  checks 107 documents and 97 requirements with no problems. Policy checks pass.
+
+This branch's remote platform/installer checks remain to be observed. Local
+Chromium evidence does not establish native webview behavior on every platform.
 
 ## Scenario editor hardening
 
