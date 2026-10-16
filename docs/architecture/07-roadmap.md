@@ -35,7 +35,11 @@ installers and three-platform smoke run in CI (Chromium, not the platform
 webviews). M3 is implemented: 101 components each validated by the engine
 with its fixtures, the Lua tier, the SDK commands and the three importers;
 archive and URL installation and Lua's analog access are open (STATUS.md).
-M4 to M6 are planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
+M4 is under way: the AVR (the Arduino Uno) and RISC-V (the HiFive1 Rev B)
+backends run their boards' firmware, built by clang and EmbCC, and a
+two-board project exchanges bytes deterministically; PIC24, PIC32, the
+nRF52840 DK, the Pico and the Explorer 16/32 are open. M5 and M6 are
+planned, not delivered. Do not bulk-copy all EmbCC boards and call them supported.
 
 ## 3. Specification work order
 

@@ -47,3 +47,46 @@ export function parseSvg(source: string): ParsedSvg {
   cache.set(source, parsed);
   return parsed;
 }
+
+const scoped = new Map<string, string>();
+
+/** Prefixes a stylesheet's selectors with `scope` (`.pcb{...}` becomes `[data-board-item="B1"] .pcb{...}`);
+ * at-rules are kept as they are. */
+export function scopeCss(css: string, scope: string): string {
+  return css.replace(/([^{}]+)\{([^{}]*)\}/g, (all, sel: string, body: string) => {
+    const s = sel.trim();
+    if (!s || s.startsWith('@')) return all;
+    const prefixed = s
+      .split(',')
+      .map((x) => `${scope} ${x.trim()}`)
+      .join(', ');
+    return `${prefixed}{${body}}`;
+  });
+}
+
+/**
+ * Inline SVG shares one document: two artworks with the same class names or
+ * gradient ids would restyle each other. This scopes `inner` to the element
+ * carrying `data-board-item="id"`: its <style> rules apply only inside it, and
+ * ids that url(#..) or href="#.." references point at (gradients, clip paths)
+ * are renamed. Other ids stay, since hotspots select them.
+ */
+export function scopeArtwork(inner: string, id: string): string {
+  const key = `${id}\u0000${inner}`;
+  const hit = scoped.get(key);
+  if (hit !== undefined) return hit;
+  const scope = `[data-board-item="${id.replace(/["\\]/g, '\\$&')}"]`;
+  const prefix = `${id.replace(/[^A-Za-z0-9_-]/g, '_')}--`;
+  const refs = new Set<string>();
+  for (const m of inner.matchAll(/url\(\s*#([A-Za-z_][\w.-]*)\s*\)|href="#([A-Za-z_][\w.-]*)"/g)) refs.add((m[1] ?? m[2])!);
+  let out = inner.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/g, (_all, a: string, css: string, b: string) => a + scopeCss(css, scope) + b);
+  for (const r of refs) {
+    const esc = r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out
+      .replace(new RegExp(`id="${esc}"`, 'g'), `id="${prefix}${r}"`)
+      .replace(new RegExp(`url\\(\\s*#${esc}\\s*\\)`, 'g'), `url(#${prefix}${r})`)
+      .replace(new RegExp(`href="#${esc}"`, 'g'), `href="#${prefix}${r}"`);
+  }
+  scoped.set(key, out);
+  return out;
+}

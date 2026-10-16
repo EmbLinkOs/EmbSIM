@@ -20,9 +20,18 @@ file the board loads with its core held in reset and a `mcu.no_image`
 warning; without a `firmware` block its MCU's pins stay high-impedance
 inputs, as a blank part's do.
 
-M1 runs the STM32F103C8 (the Blue Pill board): see the MCU description's
-fidelity for what is modelled. `examples/bluepill-button-led` is a complete
-project with its firmware.
+Three MCUs run firmware; each description's fidelity says what is
+modelled:
+
+| Board | MCU | Core | Example |
+|---|---|---|---|
+| `emblink/bluepill` | STM32F103C8 | Arm Cortex-M3 (estimated timing) | `examples/bluepill-button-led` |
+| `emblink/arduino_uno` | ATmega328P | AVR (cycle-exact) | `examples/uno-blink-serial` |
+| `emblink/hifive1_revb` | FE310-G002 | RISC-V RV32IMAC (estimated timing) | `examples/hifive1-blink` |
+
+A project may hold several boards, each with its own firmware, running
+together on the session's time: `examples/two-boards-uart` connects an
+Uno's serial line to a Blue Pill's.
 
 ## Running
 
@@ -40,8 +49,10 @@ a USART's TX pin carries its frames. Inputs and observations:
 
 The firmware's time is the session's virtual time: a 72 MHz core runs 72
 million instructions' worth of cycles per simulated second, whatever the
-host's speed. Instruction timing is estimated (ADR-015); peripheral timing
-(baud rates, timer periods) follows the clock tree exactly.
+host's speed. The AVR's instruction timing is the datasheet's, cycle for
+cycle; the Cortex-M's and RISC-V's are estimated (ADR-015). Peripheral
+timing (baud rates, timer periods, a RISC-V CLINT's 32.768 kHz) follows the
+clock tree exactly.
 
 ## Building
 
@@ -50,6 +61,9 @@ embsim toolchains                      # which profiles are installed
 embsim build examples/bluepill-button-led/project.json
 embsim build PROJECT --toolchain embcc  # another profile
 ```
+
+The Uno and HiFive1 examples build with Clang (its `avr` and
+`riscv32-unknown-elf` targets, with lld) and with EmbCC.
 
 Profiles live in `catalog/toolchains/` (EmbCC, Clang, GNU Arm and others):
 each names its compiler, how to detect its version and the compile and link

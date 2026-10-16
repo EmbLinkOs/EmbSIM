@@ -154,8 +154,8 @@
 <circle cx="312" cy="346" r="6" fill="#2b2f36"/><text class="logo" x="400" y="352" font-size="18">ATMEGA328P-PU</text></g>
 <g id="resonator"><rect class="metal" x="210" y="300" width="50" height="22" rx="8"/><text class="silks" x="235" y="340">16.000</text></g>
 <g id="btn-reset"><rect x="20" y="230" width="60" height="60" rx="4" fill="#cfd3da" stroke="#6b7079"/><circle cx="50" cy="260" r="18" fill="#c0392b" stroke="#7d1f15"/><text class="silks" x="50" y="310">RESET</text></g>
-<g id="led-l"><rect x="230" y="120" width="20" height="12" fill="#f5e7a1" stroke="#a08a2a"/><circle class="glow" cx="240" cy="126" r="22" fill="url(#glow-yellow)" opacity="0"/><text class="silks" x="240" y="150">L</text></g>
-<g id="led-on"><rect x="580" y="210" width="20" height="12" fill="#bff0c8" stroke="#3a8a4a"/><circle class="glow" cx="590" cy="216" r="22" fill="url(#glow-green)" opacity="0"/><text class="silks" x="590" y="240">ON</text></g>
+<rect id="led-l" x="230" y="120" width="20" height="12" fill="#f5e7a1" stroke="#a08a2a"/><circle id="led-l-glow" cx="240" cy="126" r="22" fill="url(#glow-yellow)" opacity="0"/><text class="silks" x="240" y="150">L</text>
+<rect id="led-on" x="580" y="210" width="20" height="12" fill="#bff0c8" stroke="#3a8a4a"/><circle id="led-on-glow" cx="590" cy="216" r="22" fill="url(#glow-green)" opacity="0"/><text class="silks" x="590" y="240">ON</text>
 <text class="silk" x="235" y="175">TX ▫</text><text class="silk" x="235" y="195">RX ▫</text>
 <text class="logo" x="360" y="230" font-size="38">UNO</text><text class="logo" x="370" y="265" font-size="16">EmbSIM</text>
 </svg>
