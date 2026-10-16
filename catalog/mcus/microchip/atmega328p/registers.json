@@ -1,0 +1,2129 @@
+{
+  "schema_version": 1,
+  "kind": "registers",
+  "id": "microchip/atmega328p/registers",
+  "version": "1.0.0",
+  "device": "ATmega328P",
+  "description": "ATmega328P I/O registers at their data-space addresses (every peripheral's base is the data space, 0x800000 on the bus, so a register's offset is its data address), reset values and field access as the datasheet documents them, and the interrupt vectors (the table's numbering: 1 is INT0). Written for EmbSIM from the datasheet; not derived from Microchip's ATDF files.",
+  "source": "ATmega48A/PA/88A/PA/168A/PA/328/P datasheet DS40002061B, section 36 (register summary) and the register descriptions of sections 7 to 28",
+  "interrupts": {
+    "INT0": 1,
+    "INT1": 2,
+    "PCINT0": 3,
+    "PCINT1": 4,
+    "PCINT2": 5,
+    "WDT": 6,
+    "TIMER2_COMPA": 7,
+    "TIMER2_COMPB": 8,
+    "TIMER2_OVF": 9,
+    "TIMER1_CAPT": 10,
+    "TIMER1_COMPA": 11,
+    "TIMER1_COMPB": 12,
+    "TIMER1_OVF": 13,
+    "TIMER0_COMPA": 14,
+    "TIMER0_COMPB": 15,
+    "TIMER0_OVF": 16,
+    "SPI_STC": 17,
+    "USART_RX": 18,
+    "USART_UDRE": 19,
+    "USART_TX": 20,
+    "ADC": 21,
+    "EE_READY": 22,
+    "ANALOG_COMP": 23,
+    "TWI": 24,
+    "SPM_READY": 25
+  },
+  "peripherals": [
+    {
+      "name": "PORTB",
+      "base": "0x800000",
+      "description": "I/O port B (datasheet 18.4)",
+      "registers": [
+        {
+          "name": "PINB",
+          "offset": "0x23",
+          "size": 8,
+          "fields": [
+            [
+              "PINB0",
+              0,
+              1
+            ],
+            [
+              "PINB1",
+              1,
+              1
+            ],
+            [
+              "PINB2",
+              2,
+              1
+            ],
+            [
+              "PINB3",
+              3,
+              1
+            ],
+            [
+              "PINB4",
+              4,
+              1
+            ],
+            [
+              "PINB5",
+              5,
+              1
+            ],
+            [
+              "PINB6",
+              6,
+              1
+            ],
+            [
+              "PINB7",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "DDRB",
+          "offset": "0x24",
+          "size": 8,
+          "fields": [
+            [
+              "DDB0",
+              0,
+              1
+            ],
+            [
+              "DDB1",
+              1,
+              1
+            ],
+            [
+              "DDB2",
+              2,
+              1
+            ],
+            [
+              "DDB3",
+              3,
+              1
+            ],
+            [
+              "DDB4",
+              4,
+              1
+            ],
+            [
+              "DDB5",
+              5,
+              1
+            ],
+            [
+              "DDB6",
+              6,
+              1
+            ],
+            [
+              "DDB7",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "PORTB",
+          "offset": "0x25",
+          "size": 8,
+          "fields": [
+            [
+              "PORTB0",
+              0,
+              1
+            ],
+            [
+              "PORTB1",
+              1,
+              1
+            ],
+            [
+              "PORTB2",
+              2,
+              1
+            ],
+            [
+              "PORTB3",
+              3,
+              1
+            ],
+            [
+              "PORTB4",
+              4,
+              1
+            ],
+            [
+              "PORTB5",
+              5,
+              1
+            ],
+            [
+              "PORTB6",
+              6,
+              1
+            ],
+            [
+              "PORTB7",
+              7,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PORTC",
+      "base": "0x800000",
+      "description": "I/O port C (datasheet 18.4)",
+      "registers": [
+        {
+          "name": "PINC",
+          "offset": "0x26",
+          "size": 8,
+          "fields": [
+            [
+              "PINC0",
+              0,
+              1
+            ],
+            [
+              "PINC1",
+              1,
+              1
+            ],
+            [
+              "PINC2",
+              2,
+              1
+            ],
+            [
+              "PINC3",
+              3,
+              1
+            ],
+            [
+              "PINC4",
+              4,
+              1
+            ],
+            [
+              "PINC5",
+              5,
+              1
+            ],
+            [
+              "PINC6",
+              6,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "DDRC",
+          "offset": "0x27",
+          "size": 8,
+          "fields": [
+            [
+              "DDC0",
+              0,
+              1
+            ],
+            [
+              "DDC1",
+              1,
+              1
+            ],
+            [
+              "DDC2",
+              2,
+              1
+            ],
+            [
+              "DDC3",
+              3,
+              1
+            ],
+            [
+              "DDC4",
+              4,
+              1
+            ],
+            [
+              "DDC5",
+              5,
+              1
+            ],
+            [
+              "DDC6",
+              6,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "PORTC",
+          "offset": "0x28",
+          "size": 8,
+          "fields": [
+            [
+              "PORTC0",
+              0,
+              1
+            ],
+            [
+              "PORTC1",
+              1,
+              1
+            ],
+            [
+              "PORTC2",
+              2,
+              1
+            ],
+            [
+              "PORTC3",
+              3,
+              1
+            ],
+            [
+              "PORTC4",
+              4,
+              1
+            ],
+            [
+              "PORTC5",
+              5,
+              1
+            ],
+            [
+              "PORTC6",
+              6,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PORTD",
+      "base": "0x800000",
+      "description": "I/O port D (datasheet 18.4)",
+      "registers": [
+        {
+          "name": "PIND",
+          "offset": "0x29",
+          "size": 8,
+          "fields": [
+            [
+              "PIND0",
+              0,
+              1
+            ],
+            [
+              "PIND1",
+              1,
+              1
+            ],
+            [
+              "PIND2",
+              2,
+              1
+            ],
+            [
+              "PIND3",
+              3,
+              1
+            ],
+            [
+              "PIND4",
+              4,
+              1
+            ],
+            [
+              "PIND5",
+              5,
+              1
+            ],
+            [
+              "PIND6",
+              6,
+              1
+            ],
+            [
+              "PIND7",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "DDRD",
+          "offset": "0x2A",
+          "size": 8,
+          "fields": [
+            [
+              "DDD0",
+              0,
+              1
+            ],
+            [
+              "DDD1",
+              1,
+              1
+            ],
+            [
+              "DDD2",
+              2,
+              1
+            ],
+            [
+              "DDD3",
+              3,
+              1
+            ],
+            [
+              "DDD4",
+              4,
+              1
+            ],
+            [
+              "DDD5",
+              5,
+              1
+            ],
+            [
+              "DDD6",
+              6,
+              1
+            ],
+            [
+              "DDD7",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "PORTD",
+          "offset": "0x2B",
+          "size": 8,
+          "fields": [
+            [
+              "PORTD0",
+              0,
+              1
+            ],
+            [
+              "PORTD1",
+              1,
+              1
+            ],
+            [
+              "PORTD2",
+              2,
+              1
+            ],
+            [
+              "PORTD3",
+              3,
+              1
+            ],
+            [
+              "PORTD4",
+              4,
+              1
+            ],
+            [
+              "PORTD5",
+              5,
+              1
+            ],
+            [
+              "PORTD6",
+              6,
+              1
+            ],
+            [
+              "PORTD7",
+              7,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "EXINT",
+      "base": "0x800000",
+      "description": "External interrupts (datasheet 13)",
+      "interrupts": [
+        "INT0",
+        "INT1",
+        "PCINT0",
+        "PCINT1",
+        "PCINT2"
+      ],
+      "registers": [
+        {
+          "name": "PCIFR",
+          "offset": "0x3B",
+          "size": 8,
+          "fields": [
+            [
+              "PCIF0",
+              0,
+              1,
+              "rc_w1"
+            ],
+            [
+              "PCIF1",
+              1,
+              1,
+              "rc_w1"
+            ],
+            [
+              "PCIF2",
+              2,
+              1,
+              "rc_w1"
+            ]
+          ]
+        },
+        {
+          "name": "EIFR",
+          "offset": "0x3C",
+          "size": 8,
+          "fields": [
+            [
+              "INTF0",
+              0,
+              1,
+              "rc_w1"
+            ],
+            [
+              "INTF1",
+              1,
+              1,
+              "rc_w1"
+            ]
+          ]
+        },
+        {
+          "name": "EIMSK",
+          "offset": "0x3D",
+          "size": 8,
+          "fields": [
+            [
+              "INT0",
+              0,
+              1
+            ],
+            [
+              "INT1",
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "PCICR",
+          "offset": "0x68",
+          "size": 8,
+          "fields": [
+            [
+              "PCIE0",
+              0,
+              1
+            ],
+            [
+              "PCIE1",
+              1,
+              1
+            ],
+            [
+              "PCIE2",
+              2,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "EICRA",
+          "offset": "0x69",
+          "size": 8,
+          "fields": [
+            [
+              "ISC0",
+              0,
+              2
+            ],
+            [
+              "ISC1",
+              2,
+              2
+            ]
+          ]
+        },
+        {
+          "name": "PCMSK0",
+          "offset": "0x6B",
+          "size": 8,
+          "fields": [
+            [
+              "PCINT0",
+              0,
+              1
+            ],
+            [
+              "PCINT1",
+              1,
+              1
+            ],
+            [
+              "PCINT2",
+              2,
+              1
+            ],
+            [
+              "PCINT3",
+              3,
+              1
+            ],
+            [
+              "PCINT4",
+              4,
+              1
+            ],
+            [
+              "PCINT5",
+              5,
+              1
+            ],
+            [
+              "PCINT6",
+              6,
+              1
+            ],
+            [
+              "PCINT7",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "PCMSK1",
+          "offset": "0x6C",
+          "size": 8,
+          "fields": [
+            [
+              "PCINT8",
+              0,
+              1
+            ],
+            [
+              "PCINT9",
+              1,
+              1
+            ],
+            [
+              "PCINT10",
+              2,
+              1
+            ],
+            [
+              "PCINT11",
+              3,
+              1
+            ],
+            [
+              "PCINT12",
+              4,
+              1
+            ],
+            [
+              "PCINT13",
+              5,
+              1
+            ],
+            [
+              "PCINT14",
+              6,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "PCMSK2",
+          "offset": "0x6D",
+          "size": 8,
+          "fields": [
+            [
+              "PCINT16",
+              0,
+              1
+            ],
+            [
+              "PCINT17",
+              1,
+              1
+            ],
+            [
+              "PCINT18",
+              2,
+              1
+            ],
+            [
+              "PCINT19",
+              3,
+              1
+            ],
+            [
+              "PCINT20",
+              4,
+              1
+            ],
+            [
+              "PCINT21",
+              5,
+              1
+            ],
+            [
+              "PCINT22",
+              6,
+              1
+            ],
+            [
+              "PCINT23",
+              7,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TC0",
+      "base": "0x800000",
+      "description": "8-bit Timer/Counter0 with PWM (datasheet 19)",
+      "interrupts": [
+        "TIMER0_COMPA",
+        "TIMER0_COMPB",
+        "TIMER0_OVF"
+      ],
+      "registers": [
+        {
+          "name": "TIFR0",
+          "offset": "0x35",
+          "size": 8,
+          "fields": [
+            [
+              "TOV0",
+              0,
+              1,
+              "rc_w1"
+            ],
+            [
+              "OCF0A",
+              1,
+              1,
+              "rc_w1"
+            ],
+            [
+              "OCF0B",
+              2,
+              1,
+              "rc_w1"
+            ]
+          ]
+        },
+        {
+          "name": "TCCR0A",
+          "offset": "0x44",
+          "size": 8,
+          "fields": [
+            [
+              "WGM0",
+              0,
+              2
+            ],
+            [
+              "COM0B",
+              4,
+              2
+            ],
+            [
+              "COM0A",
+              6,
+              2
+            ]
+          ]
+        },
+        {
+          "name": "TCCR0B",
+          "offset": "0x45",
+          "size": 8,
+          "fields": [
+            [
+              "CS0",
+              0,
+              3
+            ],
+            [
+              "WGM02",
+              3,
+              1
+            ],
+            [
+              "FOC0B",
+              6,
+              1,
+              "w"
+            ],
+            [
+              "FOC0A",
+              7,
+              1,
+              "w"
+            ]
+          ]
+        },
+        {
+          "name": "TCNT0",
+          "offset": "0x46",
+          "size": 8
+        },
+        {
+          "name": "OCR0A",
+          "offset": "0x47",
+          "size": 8
+        },
+        {
+          "name": "OCR0B",
+          "offset": "0x48",
+          "size": 8
+        },
+        {
+          "name": "TIMSK0",
+          "offset": "0x6E",
+          "size": 8,
+          "fields": [
+            [
+              "TOIE0",
+              0,
+              1
+            ],
+            [
+              "OCIE0A",
+              1,
+              1
+            ],
+            [
+              "OCIE0B",
+              2,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TC1",
+      "base": "0x800000",
+      "description": "16-bit Timer/Counter1 with PWM (datasheet 20)",
+      "interrupts": [
+        "TIMER1_CAPT",
+        "TIMER1_COMPA",
+        "TIMER1_COMPB",
+        "TIMER1_OVF"
+      ],
+      "registers": [
+        {
+          "name": "TIFR1",
+          "offset": "0x36",
+          "size": 8,
+          "fields": [
+            [
+              "TOV1",
+              0,
+              1,
+              "rc_w1"
+            ],
+            [
+              "OCF1A",
+              1,
+              1,
+              "rc_w1"
+            ],
+            [
+              "OCF1B",
+              2,
+              1,
+              "rc_w1"
+            ],
+            [
+              "ICF1",
+              5,
+              1,
+              "rc_w1"
+            ]
+          ]
+        },
+        {
+          "name": "TIMSK1",
+          "offset": "0x6F",
+          "size": 8,
+          "fields": [
+            [
+              "TOIE1",
+              0,
+              1
+            ],
+            [
+              "OCIE1A",
+              1,
+              1
+            ],
+            [
+              "OCIE1B",
+              2,
+              1
+            ],
+            [
+              "ICIE1",
+              5,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "TCCR1A",
+          "offset": "0x80",
+          "size": 8,
+          "fields": [
+            [
+              "WGM1L",
+              0,
+              2
+            ],
+            [
+              "COM1B",
+              4,
+              2
+            ],
+            [
+              "COM1A",
+              6,
+              2
+            ]
+          ]
+        },
+        {
+          "name": "TCCR1B",
+          "offset": "0x81",
+          "size": 8,
+          "fields": [
+            [
+              "CS1",
+              0,
+              3
+            ],
+            [
+              "WGM1H",
+              3,
+              2
+            ],
+            [
+              "ICES1",
+              6,
+              1
+            ],
+            [
+              "ICNC1",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "TCCR1C",
+          "offset": "0x82",
+          "size": 8,
+          "fields": [
+            [
+              "FOC1B",
+              6,
+              1,
+              "w"
+            ],
+            [
+              "FOC1A",
+              7,
+              1,
+              "w"
+            ]
+          ]
+        },
+        {
+          "name": "TCNT1L",
+          "offset": "0x84",
+          "size": 8
+        },
+        {
+          "name": "TCNT1H",
+          "offset": "0x85",
+          "size": 8
+        },
+        {
+          "name": "ICR1L",
+          "offset": "0x86",
+          "size": 8
+        },
+        {
+          "name": "ICR1H",
+          "offset": "0x87",
+          "size": 8
+        },
+        {
+          "name": "OCR1AL",
+          "offset": "0x88",
+          "size": 8
+        },
+        {
+          "name": "OCR1AH",
+          "offset": "0x89",
+          "size": 8
+        },
+        {
+          "name": "OCR1BL",
+          "offset": "0x8A",
+          "size": 8
+        },
+        {
+          "name": "OCR1BH",
+          "offset": "0x8B",
+          "size": 8
+        }
+      ]
+    },
+    {
+      "name": "TC2",
+      "base": "0x800000",
+      "description": "8-bit Timer/Counter2 with PWM and asynchronous operation (datasheet 22)",
+      "interrupts": [
+        "TIMER2_COMPA",
+        "TIMER2_COMPB",
+        "TIMER2_OVF"
+      ],
+      "registers": [
+        {
+          "name": "TIFR2",
+          "offset": "0x37",
+          "size": 8,
+          "fields": [
+            [
+              "TOV2",
+              0,
+              1,
+              "rc_w1"
+            ],
+            [
+              "OCF2A",
+              1,
+              1,
+              "rc_w1"
+            ],
+            [
+              "OCF2B",
+              2,
+              1,
+              "rc_w1"
+            ]
+          ]
+        },
+        {
+          "name": "TIMSK2",
+          "offset": "0x70",
+          "size": 8,
+          "fields": [
+            [
+              "TOIE2",
+              0,
+              1
+            ],
+            [
+              "OCIE2A",
+              1,
+              1
+            ],
+            [
+              "OCIE2B",
+              2,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "TCCR2A",
+          "offset": "0xB0",
+          "size": 8,
+          "fields": [
+            [
+              "WGM2",
+              0,
+              2
+            ],
+            [
+              "COM2B",
+              4,
+              2
+            ],
+            [
+              "COM2A",
+              6,
+              2
+            ]
+          ]
+        },
+        {
+          "name": "TCCR2B",
+          "offset": "0xB1",
+          "size": 8,
+          "fields": [
+            [
+              "CS2",
+              0,
+              3
+            ],
+            [
+              "WGM22",
+              3,
+              1
+            ],
+            [
+              "FOC2B",
+              6,
+              1,
+              "w"
+            ],
+            [
+              "FOC2A",
+              7,
+              1,
+              "w"
+            ]
+          ]
+        },
+        {
+          "name": "TCNT2",
+          "offset": "0xB2",
+          "size": 8
+        },
+        {
+          "name": "OCR2A",
+          "offset": "0xB3",
+          "size": 8
+        },
+        {
+          "name": "OCR2B",
+          "offset": "0xB4",
+          "size": 8
+        },
+        {
+          "name": "ASSR",
+          "offset": "0xB6",
+          "size": 8,
+          "fields": [
+            [
+              "TCR2BUB",
+              0,
+              1,
+              "r"
+            ],
+            [
+              "TCR2AUB",
+              1,
+              1,
+              "r"
+            ],
+            [
+              "OCR2BUB",
+              2,
+              1,
+              "r"
+            ],
+            [
+              "OCR2AUB",
+              3,
+              1,
+              "r"
+            ],
+            [
+              "TCN2UB",
+              4,
+              1,
+              "r"
+            ],
+            [
+              "AS2",
+              5,
+              1
+            ],
+            [
+              "EXCLK",
+              6,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CPU",
+      "base": "0x800000",
+      "description": "CPU, clock and power control (datasheet 7, 9, 10, 11)",
+      "registers": [
+        {
+          "name": "GPIOR0",
+          "offset": "0x3E",
+          "size": 8
+        },
+        {
+          "name": "GTCCR",
+          "offset": "0x43",
+          "size": 8,
+          "fields": [
+            [
+              "PSRSYNC",
+              0,
+              1
+            ],
+            [
+              "PSRASY",
+              1,
+              1
+            ],
+            [
+              "TSM",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "GPIOR1",
+          "offset": "0x4A",
+          "size": 8
+        },
+        {
+          "name": "GPIOR2",
+          "offset": "0x4B",
+          "size": 8
+        },
+        {
+          "name": "SMCR",
+          "offset": "0x53",
+          "size": 8,
+          "fields": [
+            [
+              "SE",
+              0,
+              1
+            ],
+            [
+              "SM",
+              1,
+              3
+            ]
+          ]
+        },
+        {
+          "name": "MCUSR",
+          "offset": "0x54",
+          "size": 8,
+          "reset": "0x01",
+          "fields": [
+            [
+              "PORF",
+              0,
+              1
+            ],
+            [
+              "EXTRF",
+              1,
+              1
+            ],
+            [
+              "BORF",
+              2,
+              1
+            ],
+            [
+              "WDRF",
+              3,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "MCUCR",
+          "offset": "0x55",
+          "size": 8,
+          "fields": [
+            [
+              "IVCE",
+              0,
+              1
+            ],
+            [
+              "IVSEL",
+              1,
+              1
+            ],
+            [
+              "PUD",
+              4,
+              1
+            ],
+            [
+              "BODSE",
+              5,
+              1
+            ],
+            [
+              "BODS",
+              6,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "SPMCSR",
+          "offset": "0x57",
+          "size": 8,
+          "fields": [
+            [
+              "SPMEN",
+              0,
+              1
+            ],
+            [
+              "PGERS",
+              1,
+              1
+            ],
+            [
+              "PGWRT",
+              2,
+              1
+            ],
+            [
+              "BLBSET",
+              3,
+              1
+            ],
+            [
+              "RWWSRE",
+              4,
+              1
+            ],
+            [
+              "SIGRD",
+              5,
+              1
+            ],
+            [
+              "RWWSB",
+              6,
+              1,
+              "r"
+            ],
+            [
+              "SPMIE",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "CLKPR",
+          "offset": "0x61",
+          "size": 8,
+          "fields": [
+            [
+              "CLKPS",
+              0,
+              4
+            ],
+            [
+              "CLKPCE",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "PRR",
+          "offset": "0x64",
+          "size": 8,
+          "fields": [
+            [
+              "PRADC",
+              0,
+              1
+            ],
+            [
+              "PRUSART0",
+              1,
+              1
+            ],
+            [
+              "PRSPI",
+              2,
+              1
+            ],
+            [
+              "PRTIM1",
+              3,
+              1
+            ],
+            [
+              "PRTIM0",
+              5,
+              1
+            ],
+            [
+              "PRTIM2",
+              6,
+              1
+            ],
+            [
+              "PRTWI",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "OSCCAL",
+          "offset": "0x66",
+          "size": 8,
+          "reset": "0x80"
+        }
+      ]
+    },
+    {
+      "name": "EEPROM",
+      "base": "0x800000",
+      "description": "EEPROM (datasheet 8.6)",
+      "interrupts": [
+        "EE_READY"
+      ],
+      "registers": [
+        {
+          "name": "EECR",
+          "offset": "0x3F",
+          "size": 8,
+          "fields": [
+            [
+              "EERE",
+              0,
+              1
+            ],
+            [
+              "EEPE",
+              1,
+              1
+            ],
+            [
+              "EEMPE",
+              2,
+              1
+            ],
+            [
+              "EERIE",
+              3,
+              1
+            ],
+            [
+              "EEPM",
+              4,
+              2
+            ]
+          ]
+        },
+        {
+          "name": "EEDR",
+          "offset": "0x40",
+          "size": 8
+        },
+        {
+          "name": "EEARL",
+          "offset": "0x41",
+          "size": 8
+        },
+        {
+          "name": "EEARH",
+          "offset": "0x42",
+          "size": 8,
+          "fields": [
+            [
+              "EEAR8",
+              0,
+              1
+            ],
+            [
+              "EEAR9",
+              1,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SPI",
+      "base": "0x800000",
+      "description": "Serial peripheral interface (datasheet 23)",
+      "interrupts": [
+        "SPI_STC"
+      ],
+      "registers": [
+        {
+          "name": "SPCR",
+          "offset": "0x4C",
+          "size": 8,
+          "fields": [
+            [
+              "SPR",
+              0,
+              2
+            ],
+            [
+              "CPHA",
+              2,
+              1
+            ],
+            [
+              "CPOL",
+              3,
+              1
+            ],
+            [
+              "MSTR",
+              4,
+              1
+            ],
+            [
+              "DORD",
+              5,
+              1
+            ],
+            [
+              "SPE",
+              6,
+              1
+            ],
+            [
+              "SPIE",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "SPSR",
+          "offset": "0x4D",
+          "size": 8,
+          "fields": [
+            [
+              "SPI2X",
+              0,
+              1
+            ],
+            [
+              "WCOL",
+              6,
+              1,
+              "r"
+            ],
+            [
+              "SPIF",
+              7,
+              1,
+              "r"
+            ]
+          ]
+        },
+        {
+          "name": "SPDR",
+          "offset": "0x4E",
+          "size": 8
+        }
+      ]
+    },
+    {
+      "name": "AC",
+      "base": "0x800000",
+      "description": "Analog comparator (datasheet 27)",
+      "interrupts": [
+        "ANALOG_COMP"
+      ],
+      "registers": [
+        {
+          "name": "ACSR",
+          "offset": "0x50",
+          "size": 8,
+          "fields": [
+            [
+              "ACIS",
+              0,
+              2
+            ],
+            [
+              "ACIC",
+              2,
+              1
+            ],
+            [
+              "ACIE",
+              3,
+              1
+            ],
+            [
+              "ACI",
+              4,
+              1,
+              "rc_w1"
+            ],
+            [
+              "ACO",
+              5,
+              1,
+              "r"
+            ],
+            [
+              "ACBG",
+              6,
+              1
+            ],
+            [
+              "ACD",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "DIDR1",
+          "offset": "0x7F",
+          "size": 8,
+          "fields": [
+            [
+              "AIN0D",
+              0,
+              1
+            ],
+            [
+              "AIN1D",
+              1,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "WDT",
+      "base": "0x800000",
+      "description": "Watchdog timer (datasheet 15.9)",
+      "interrupts": [
+        "WDT"
+      ],
+      "registers": [
+        {
+          "name": "WDTCSR",
+          "offset": "0x60",
+          "size": 8,
+          "fields": [
+            [
+              "WDP",
+              0,
+              3
+            ],
+            [
+              "WDE",
+              3,
+              1
+            ],
+            [
+              "WDCE",
+              4,
+              1
+            ],
+            [
+              "WDP3",
+              5,
+              1
+            ],
+            [
+              "WDIE",
+              6,
+              1
+            ],
+            [
+              "WDIF",
+              7,
+              1,
+              "rc_w1"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ADC",
+      "base": "0x800000",
+      "description": "Analog-to-digital converter (datasheet 28)",
+      "interrupts": [
+        "ADC"
+      ],
+      "registers": [
+        {
+          "name": "ADCL",
+          "offset": "0x78",
+          "size": 8,
+          "fields": [
+            [
+              "ADCL",
+              0,
+              8,
+              "r"
+            ]
+          ]
+        },
+        {
+          "name": "ADCH",
+          "offset": "0x79",
+          "size": 8,
+          "fields": [
+            [
+              "ADCH",
+              0,
+              8,
+              "r"
+            ]
+          ]
+        },
+        {
+          "name": "ADCSRA",
+          "offset": "0x7A",
+          "size": 8,
+          "fields": [
+            [
+              "ADPS",
+              0,
+              3
+            ],
+            [
+              "ADIE",
+              3,
+              1
+            ],
+            [
+              "ADIF",
+              4,
+              1,
+              "rc_w1"
+            ],
+            [
+              "ADATE",
+              5,
+              1
+            ],
+            [
+              "ADSC",
+              6,
+              1
+            ],
+            [
+              "ADEN",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "ADCSRB",
+          "offset": "0x7B",
+          "size": 8,
+          "fields": [
+            [
+              "ADTS",
+              0,
+              3
+            ],
+            [
+              "ACME",
+              6,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "ADMUX",
+          "offset": "0x7C",
+          "size": 8,
+          "fields": [
+            [
+              "MUX",
+              0,
+              4
+            ],
+            [
+              "ADLAR",
+              5,
+              1
+            ],
+            [
+              "REFS",
+              6,
+              2
+            ]
+          ]
+        },
+        {
+          "name": "DIDR0",
+          "offset": "0x7E",
+          "size": 8,
+          "fields": [
+            [
+              "ADC0D",
+              0,
+              1
+            ],
+            [
+              "ADC1D",
+              1,
+              1
+            ],
+            [
+              "ADC2D",
+              2,
+              1
+            ],
+            [
+              "ADC3D",
+              3,
+              1
+            ],
+            [
+              "ADC4D",
+              4,
+              1
+            ],
+            [
+              "ADC5D",
+              5,
+              1
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TWI",
+      "base": "0x800000",
+      "description": "2-wire serial interface, I2C (datasheet 26)",
+      "interrupts": [
+        "TWI"
+      ],
+      "registers": [
+        {
+          "name": "TWBR",
+          "offset": "0xB8",
+          "size": 8
+        },
+        {
+          "name": "TWSR",
+          "offset": "0xB9",
+          "size": 8,
+          "reset": "0xF8",
+          "fields": [
+            [
+              "TWPS",
+              0,
+              2
+            ],
+            [
+              "TWS",
+              3,
+              5,
+              "r"
+            ]
+          ]
+        },
+        {
+          "name": "TWAR",
+          "offset": "0xBA",
+          "size": 8,
+          "reset": "0xFE",
+          "fields": [
+            [
+              "TWGCE",
+              0,
+              1
+            ],
+            [
+              "TWA",
+              1,
+              7
+            ]
+          ]
+        },
+        {
+          "name": "TWDR",
+          "offset": "0xBB",
+          "size": 8,
+          "reset": "0xFF"
+        },
+        {
+          "name": "TWCR",
+          "offset": "0xBC",
+          "size": 8,
+          "fields": [
+            [
+              "TWIE",
+              0,
+              1
+            ],
+            [
+              "TWEN",
+              2,
+              1
+            ],
+            [
+              "TWWC",
+              3,
+              1,
+              "r"
+            ],
+            [
+              "TWSTO",
+              4,
+              1
+            ],
+            [
+              "TWSTA",
+              5,
+              1
+            ],
+            [
+              "TWEA",
+              6,
+              1
+            ],
+            [
+              "TWINT",
+              7,
+              1,
+              "rc_w1"
+            ]
+          ]
+        },
+        {
+          "name": "TWAMR",
+          "offset": "0xBD",
+          "size": 8,
+          "fields": [
+            [
+              "TWAM",
+              1,
+              7
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "USART0",
+      "base": "0x800000",
+      "description": "USART0 (datasheet 24)",
+      "interrupts": [
+        "USART_RX",
+        "USART_UDRE",
+        "USART_TX"
+      ],
+      "registers": [
+        {
+          "name": "UCSR0A",
+          "offset": "0xC0",
+          "size": 8,
+          "reset": "0x20",
+          "fields": [
+            [
+              "MPCM0",
+              0,
+              1
+            ],
+            [
+              "U2X0",
+              1,
+              1
+            ],
+            [
+              "UPE0",
+              2,
+              1,
+              "r"
+            ],
+            [
+              "DOR0",
+              3,
+              1,
+              "r"
+            ],
+            [
+              "FE0",
+              4,
+              1,
+              "r"
+            ],
+            [
+              "UDRE0",
+              5,
+              1,
+              "r"
+            ],
+            [
+              "TXC0",
+              6,
+              1,
+              "rc_w1"
+            ],
+            [
+              "RXC0",
+              7,
+              1,
+              "r"
+            ]
+          ]
+        },
+        {
+          "name": "UCSR0B",
+          "offset": "0xC1",
+          "size": 8,
+          "fields": [
+            [
+              "TXB80",
+              0,
+              1
+            ],
+            [
+              "RXB80",
+              1,
+              1,
+              "r"
+            ],
+            [
+              "UCSZ02",
+              2,
+              1
+            ],
+            [
+              "TXEN0",
+              3,
+              1
+            ],
+            [
+              "RXEN0",
+              4,
+              1
+            ],
+            [
+              "UDRIE0",
+              5,
+              1
+            ],
+            [
+              "TXCIE0",
+              6,
+              1
+            ],
+            [
+              "RXCIE0",
+              7,
+              1
+            ]
+          ]
+        },
+        {
+          "name": "UCSR0C",
+          "offset": "0xC2",
+          "size": 8,
+          "reset": "0x06",
+          "fields": [
+            [
+              "UCPOL0",
+              0,
+              1
+            ],
+            [
+              "UCSZ0",
+              1,
+              2
+            ],
+            [
+              "USBS0",
+              3,
+              1
+            ],
+            [
+              "UPM0",
+              4,
+              2
+            ],
+            [
+              "UMSEL0",
+              6,
+              2
+            ]
+          ]
+        },
+        {
+          "name": "UBRR0L",
+          "offset": "0xC4",
+          "size": 8
+        },
+        {
+          "name": "UBRR0H",
+          "offset": "0xC5",
+          "size": 8,
+          "fields": [
+            [
+              "UBRR0H",
+              0,
+              4
+            ]
+          ]
+        },
+        {
+          "name": "UDR0",
+          "offset": "0xC6",
+          "size": 8
+        }
+      ]
+    }
+  ]
+}

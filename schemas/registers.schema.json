@@ -51,7 +51,7 @@
         "name": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
         "offset": {"$ref": "#/$defs/hex"},
         "reset": {"$ref": "#/$defs/hex"},
-        "size": {"enum": [16, 32]},
+        "size": {"enum": [8, 16, 32]},
         "description": {"type": "string"},
         "fields": {
           "type": "array",

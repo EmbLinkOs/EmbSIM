@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "blink",
+  "until": "2.2s",
+  "description": "The banner, the potentiometer at half (511: the pin's leakage holds the wiper a little under 2.5 V) and then a quarter, a button press; the L LED's 1 Hz blink and D9's 976.6 Hz PWM.",
+  "inputs": [
+    {
+      "at": "1s",
+      "target": "POT",
+      "input": "position",
+      "value": 0.25
+    },
+    {
+      "at": "1.6s",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.65s",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "50ms",
+      "probe": "console",
+      "expect": {
+        "contains": "EmbSIM Uno"
+      }
+    },
+    {
+      "id": "terminal-banner",
+      "at": "50ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "EmbSIM Uno"
+      }
+    },
+    {
+      "id": "half",
+      "at": "300ms",
+      "probe": "console",
+      "expect": {
+        "contains": "A0=51"
+      }
+    },
+    {
+      "id": "quarter",
+      "at": "1.4s",
+      "probe": "console",
+      "expect": {
+        "contains": "A0=25"
+      }
+    },
+    {
+      "id": "button",
+      "at": "1.8s",
+      "probe": "console",
+      "expect": {
+        "contains": "button 1"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "2.2s"
+      ],
+      "probe": "d13",
+      "expect": {
+        "edges": 4
+      }
+    },
+    {
+      "id": "pwm",
+      "between": [
+        "300ms",
+        "900ms"
+      ],
+      "probe": "d9",
+      "expect": {
+        "frequency_hz": 976.5625,
+        "tolerance": 0.01
+      }
+    }
+  ]
+}

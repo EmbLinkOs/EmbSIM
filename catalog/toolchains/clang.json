@@ -70,6 +70,17 @@
         "-nostartfiles",
         "-Wl,--gc-sections"
       ]
+    },
+    "avr": {
+      "cc": [
+        "clang",
+        "--target=avr"
+      ],
+      "link_flags": [
+        "-fuse-ld=lld",
+        "-nostdlib",
+        "-Wl,--gc-sections"
+      ]
     }
   },
   "steps": {
@@ -92,7 +103,7 @@
       "${cc}",
       "${cflags}",
       "${link_flags}",
-      "-T${linker_script}",
+      "-Wl,-T,${linker_script}",
       "-Wl,-Map=${map}",
       "${objects}",
       "-o",

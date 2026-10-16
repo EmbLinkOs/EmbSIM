@@ -4,6 +4,7 @@
  * (SPEC-009 §6): a const table, so no registry state exists (CS-18). */
 #include <string.h>
 
+#include "mcu/avr/avr.h"
 #include "mcu/rf.h"
 #include "mcu/stm32/stm32.h"
 
@@ -16,6 +17,14 @@ static const struct esk_rf_model_type model_types[] = {
     { "stm32-tim", &esk_stm32_tim_ops, esk_stm32_tim_create },
     { "stm32f1-flash", &esk_stm32_storage_ops, esk_stm32_storage_create },
     { "stm32-pwr", &esk_stm32_storage_ops, esk_stm32_storage_create },
+    { "avr-port", &esk_avr_port_ops, esk_avr_port_create },
+    { "avr-exint", &esk_avr_exint_ops, esk_avr_exint_create },
+    { "avr-tc8", &esk_avr_tc8_ops, esk_avr_tc8_create },
+    { "avr-tc16", &esk_avr_tc16_ops, esk_avr_tc16_create },
+    { "avr-usart", &esk_avr_usart_ops, esk_avr_usart_create },
+    { "avr-adc", &esk_avr_adc_ops, esk_avr_adc_create },
+    { "avr-cpu", &esk_avr_cpu_ops, esk_avr_cpu_create },
+    { "avr-eeprom", &esk_avr_eeprom_ops, esk_avr_eeprom_create },
 };
 
 const struct esk_rf_model_type *esk_rf_model_find(const char *name)

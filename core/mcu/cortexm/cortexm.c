@@ -914,10 +914,21 @@ static const char *cpu_reg_name(struct esk_cpu *c, int n)
     return 0;
 }
 
+static int cpu_disasm(struct esk_cpu *c, u32 addr, char *text, size_t cap)
+{
+    struct esk_cm_state *k = (struct esk_cm_state *)c;
+    u32 h1 = 0, h2 = 0;
+    if (esk_bus_debug_read(&k->sim->bus, addr & ~1u, 2, &h1) != 0)
+        return 0;
+    (void)esk_bus_debug_read(&k->sim->bus, (addr & ~1u) + 2, 2, &h2);
+    return esk_dis_thumb(addr & ~1u, h1, h2, text, cap);
+}
+
 static const struct esk_cpu_ops cortexm_ops = {
     "cortex-m", 40, "an ARM image",
     cpu_reset, step, cpu_pc, cpu_reg_read, cpu_reg_write,
     cpu_gdb_g_regs, cpu_gdb_xml, 2, cpu_interrupt, 15, 1, 0, cpu_reg_name, cpu_wake_pending,
+    cpu_disasm,
 };
 
 /* the core of an MCU: the model, its NVIC's priority bits, and its own

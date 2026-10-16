@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "kind": "mcu",
+  "id": "microchip/atmega328p",
+  "version": "1.0.0",
+  "name": "ATmega328P",
+  "description": "Microchip (Atmel) ATmega328P: 8-bit AVR at up to 20 MHz, 32 KiB flash, 2 KiB SRAM, 1 KiB EEPROM; the Arduino Uno's MCU.",
+  "keywords": [
+    "avr",
+    "atmega",
+    "atmega328p",
+    "arduino",
+    "uno"
+  ],
+  "vendor": "microchip",
+  "family": "megaavr",
+  "core": {
+    "backend": "avr",
+    "model": "atmega328p",
+    "timing_tier": "exact",
+    "fpu": false,
+    "mpu": false,
+    "endian": "little"
+  },
+  "memory": [
+    {
+      "name": "flash",
+      "base": "0x00000000",
+      "size": "32K",
+      "kind": "flash",
+      "erased": "0xFFFFFFFF",
+      "doc": "Program memory by byte address"
+    },
+    {
+      "name": "sram",
+      "base": "0x00800100",
+      "size": "2K",
+      "kind": "ram",
+      "main": true,
+      "doc": "Data space 0x100 to 0x8FF (the bus puts the data space at 0x800000, as GDB's AVR target does)"
+    }
+  ],
+  "clocks": {
+    "sources": [
+      {
+        "name": "rc",
+        "hz": 8000000,
+        "doc": "Calibrated internal RC oscillator"
+      },
+      {
+        "name": "hse",
+        "hz": "board",
+        "doc": "External crystal or resonator on XTAL1/XTAL2, as the fuses select (the Uno's 16 MHz)"
+      },
+      {
+        "name": "rc128",
+        "hz": 128000,
+        "doc": "128 kHz internal oscillator"
+      }
+    ],
+    "reset_core_hz": 8000000,
+    "max_core_hz": 20000000
+  },
+  "register_file": {
+    "format": "embsim",
+    "file": "registers.json",
+    "vendored": true,
+    "license": "Apache-2.0 (written for EmbSIM from the datasheet; no vendor file is shipped)"
+  },
+  "peripherals": [
+    {
+      "match": "CPU",
+      "model": "avr-cpu",
+      "order": 0
+    },
+    {
+      "match": "PORT*",
+      "model": "avr-port"
+    },
+    {
+      "match": "EXINT",
+      "model": "avr-exint"
+    },
+    {
+      "match": "TC0",
+      "model": "avr-tc8"
+    },
+    {
+      "match": "TC2",
+      "model": "avr-tc8"
+    },
+    {
+      "match": "TC1",
+      "model": "avr-tc16"
+    },
+    {
+      "match": "USART0",
+      "model": "avr-usart"
+    },
+    {
+      "match": "ADC",
+      "model": "avr-adc"
+    },
+    {
+      "match": "EEPROM",
+      "model": "avr-eeprom"
+    },
+    {
+      "match": "SPI",
+      "model": "avr-spi"
+    },
+    {
+      "match": "TWI",
+      "model": "avr-twi"
+    },
+    {
+      "match": "WDT",
+      "model": "avr-wdt"
+    },
+    {
+      "match": "AC",
+      "model": "avr-ac"
+    }
+  ],
+  "io": {
+    "family": "cmos_5v",
+    "ports": [
+      {
+        "name": "B",
+        "pins": 8
+      },
+      {
+        "name": "C",
+        "pins": 7
+      },
+      {
+        "name": "D",
+        "pins": 8
+      }
+    ],
+    "electrical": {
+      "vdd": 5.0,
+      "voh": 4.2,
+      "vol": 0.9,
+      "rout": 25,
+      "vih": 3.0,
+      "vil": 1.5,
+      "hysteresis": 0.3,
+      "rpull": 35000,
+      "leak_a": 1e-06,
+      "ioh_max": 0.04,
+      "iol_max": 0.04
+    },
+    "analog": {
+      "PC0": "ADC0",
+      "PC1": "ADC1",
+      "PC2": "ADC2",
+      "PC3": "ADC3",
+      "PC4": "ADC4",
+      "PC5": "ADC5"
+    }
+  },
+  "signals": [
+    "NRST",
+    "PD0",
+    "PD1",
+    "PD2",
+    "PD3",
+    "PD4",
+    "VCC",
+    "GND",
+    "XTAL1",
+    "XTAL2",
+    "PD5",
+    "PD6",
+    "PD7",
+    "PB0",
+    "PB1",
+    "PB2",
+    "PB3",
+    "PB4",
+    "PB5",
+    "AVCC",
+    "AREF",
+    "PC0",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4",
+    "PC5"
+  ],
+  "packages": {
+    "dip28": "dip28.json"
+  },
+  "console": {
+    "default": "USART0"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "AVR5 instruction execution extracted from EmbCC (every instruction of the ATmega328P with SREG's flags, refereed there against QEMU), interrupts through the vector table with their priorities, SLEEP; every register of the datasheet's I/O space with its reset value and access; behavioural models of PORTB/C/D (DDR, PORT, PIN with the pull-ups and PUD), INT0/INT1 and the pin-change interrupts, Timer/Counter0, 1 and 2 (every waveform mode, double-buffered compare registers, the six OC pins), USART0 (frames at the baud rate on PD1, from PD0 and the session's serial input), the 10-bit ADC from the pins' voltages, the 1 KiB EEPROM and the clock prescaler. SPI, TWI, the watchdog and the analog comparator keep their register values and raise mcu.unsupported_access on first access.",
+      "omissions": [
+        "SPI",
+        "TWI (I2C)",
+        "watchdog",
+        "analog comparator",
+        "input capture",
+        "timer 2's asynchronous clock",
+        "self-programming (SPM)",
+        "fuses and lock bits",
+        "brown-out detection"
+      ],
+      "validation": [
+        "repo:tests/unit/test_avr.c",
+        "repo:examples/uno-blink-serial"
+      ]
+    },
+    "timed": {
+      "claims": "Cycle-exact instruction timing from the datasheet's instruction set summary (ADR-015): a taken branch and skips cost their extra cycles, an interrupt's entry 4 (8 from SLEEP); the timers, the USART and the ADC count those cycles through their prescalers.",
+      "omissions": [
+        "the input synchroniser's latency",
+        "EEPROM read stall",
+        "the ADC's sample-and-hold timing"
+      ],
+      "validation": [
+        "repo:tests/unit/test_avr.c"
+      ]
+    },
+    "electrical": {
+      "claims": "GPIO pin-model defaults at 5 V from the datasheet: voh/vol at 20 mA, input thresholds 0.3/0.6 Vcc with hysteresis, 35 k pull-ups.",
+      "omissions": [
+        "ESD structures",
+        "supply current",
+        "ADC input impedance"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.5,
+          6.0
+        ],
+        "current_a": [
+          -0.04,
+          0.04
+        ]
+      },
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ATmega48A/PA/88A/PA/168A/PA/328/P megaAVR data sheet",
+        "rev": "DS40002061B"
+      },
+      {
+        "title": "AVR Instruction Set Manual",
+        "rev": "DS40002198B"
+      },
+      {
+        "title": "EmbLinkOs/EmbCC tools/embsim (AVR core and Timer/Counter1, extracted at commit aa4f10a)",
+        "rev": "aa4f10a"
+      }
+    ],
+    "notes": "The register description is written for EmbSIM from the datasheet; no vendor file is shipped (ADR-020)."
+  }
+}

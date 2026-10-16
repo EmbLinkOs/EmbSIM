@@ -137,7 +137,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "voh": {"type": "number"},
+            "vdd": {"type": "number", "description": "The I/O supply in volts the MCU runtime assumes (an ADC's analog supply)"}, "voh": {"type": "number"},
             "vol": {"type": "number"},
             "rout": {
               "oneOf": [

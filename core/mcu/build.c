@@ -85,18 +85,26 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
             return ES_ESCHEMA;
         }
     }
-    if (!esk_str_eq(esk_json_get_str(core, "backend", ""), "cortex-m")) {
+    if (esk_str_eq(esk_json_get_str(core, "backend", ""), "cortex-m")) {
+        st = esk_cortexm_create(m, esk_json_get_str(core, "model", ""),
+                                (int)esk_json_get_int(core, "priority_bits", 4), &cpu);
+    } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "avr")) {
+        st = esk_avr_create(m, esk_json_get_str(core, "model", ""), &cpu);
+    } else {
         snprintf(why, cap, "the %s core backend is not available", esk_json_get_str(core, "backend", "?"));
         return ES_EUNSUPPORTED;
     }
-    st = esk_cortexm_create(m, esk_json_get_str(core, "model", ""),
-                            (int)esk_json_get_int(core, "priority_bits", 4), &cpu);
     if (st != ES_OK) {
         snprintf(why, cap, "core %s cannot be created", esk_json_get_str(core, "model", "?"));
         return st;
     }
     m->reset_hz = (u32)esk_json_get_int(clocks, "reset_core_hz", 8000000);
     m->hse_hz = hse_hz;
+    {
+        const esk_json *io = esk_json_get(mcu, "io");
+        double dflt = esk_str_eq(esk_json_get_str(io, "family", ""), "cmos_5v") ? 5.0 : 3.3;
+        m->vdd = esk_json_get_num(esk_json_get(io, "electrical"), "vdd", dflt);
+    }
     if (regs) {
         st = esk_rf_create(m, regs, why, cap);
         if (st != ES_OK)

@@ -139,8 +139,8 @@ static es_status read_regs(struct esk_mach *m, struct esk_rf_periph *p, const es
             snprintf(why, cap, "%s.%s: bad reset value", p->name, r->name);
             return ES_ESCHEMA;
         }
-        if (esk_json_get(rj, "size") && (num(esk_json_get(rj, "size"), &size) || (size != 16 && size != 32))) {
-            snprintf(why, cap, "%s.%s: size is 16 or 32", p->name, r->name);
+        if (esk_json_get(rj, "size") && (num(esk_json_get(rj, "size"), &size) || (size != 8 && size != 16 && size != 32))) {
+            snprintf(why, cap, "%s.%s: size is 8, 16 or 32", p->name, r->name);
             return ES_ESCHEMA;
         }
         if (nf > RF_MAX_FIELDS) {

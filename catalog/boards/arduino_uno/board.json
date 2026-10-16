@@ -1,0 +1,685 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "emblink/arduino_uno",
+  "version": "1.0.0",
+  "name": "Arduino Uno R3 (ATmega328P)",
+  "description": "The Arduino Uno R3: an ATmega328P at 16 MHz, 5 V and 3.3 V regulators, the 'L' LED on D13, the power LED, the reset button, and the digital, analog and power headers. USB comes in as the 5 V pin; the ATmega16U2 USB-to-serial bridge is the session's serial console on USART0.",
+  "keywords": [
+    "arduino",
+    "uno",
+    "atmega328p",
+    "avr"
+  ],
+  "revision": "R3",
+  "mcu": {
+    "ref": "microchip/atmega328p",
+    "package": "dip28",
+    "instance": "U1"
+  },
+  "oscillators": {
+    "hse": {
+      "hz": 16000000,
+      "source": "external_crystal",
+      "component": "Y1"
+    }
+  },
+  "components": [
+    {
+      "id": "U2",
+      "component": "emblink/regulator",
+      "params": {
+        "part": "LM1117-5.0"
+      },
+      "doc": "5 V regulator from VIN (an NCP1117ST50 on the R3)"
+    },
+    {
+      "id": "U3",
+      "component": "emblink/regulator",
+      "params": {
+        "part": "LM1117-3.3"
+      },
+      "doc": "3.3 V regulator for the 3V3 pin (an LP2985-33 on the R3)"
+    },
+    {
+      "id": "Y1",
+      "component": "emblink/crystal",
+      "params": {
+        "hz": "16meg"
+      },
+      "doc": "16 MHz resonator (CSTCE16M0V53)"
+    },
+    {
+      "id": "LED_L",
+      "component": "emblink/led",
+      "params": {
+        "color": "yellow"
+      },
+      "doc": "The 'L' LED on D13 (the R3 drives it through an LMV358 follower; here directly through R_L)"
+    },
+    {
+      "id": "R_L",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1k"
+      }
+    },
+    {
+      "id": "LED_ON",
+      "component": "emblink/led",
+      "params": {
+        "color": "green"
+      },
+      "doc": "The 'ON' power LED"
+    },
+    {
+      "id": "R_ON",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1k"
+      }
+    },
+    {
+      "id": "SW_RESET",
+      "component": "emblink/push_button",
+      "doc": "Reset, pulls RESET low"
+    },
+    {
+      "id": "R_RESET",
+      "component": "emblink/pull_up",
+      "params": {
+        "resistance": "10k",
+        "voltage": 5.0
+      },
+      "doc": "RESET pull-up (the auto-reset capacitor from the USB chip is omitted)"
+    },
+    {
+      "id": "J_PWR",
+      "component": "emblink/header",
+      "params": {
+        "pins": 8
+      },
+      "doc": "Power: NC IOREF RESET 3V3 5V GND GND VIN"
+    },
+    {
+      "id": "J_ANA",
+      "component": "emblink/header",
+      "params": {
+        "pins": 6
+      },
+      "doc": "Analog in: A0..A5"
+    },
+    {
+      "id": "J_DLO",
+      "component": "emblink/header",
+      "params": {
+        "pins": 8
+      },
+      "doc": "Digital: D0..D7"
+    },
+    {
+      "id": "J_DHI",
+      "component": "emblink/header",
+      "params": {
+        "pins": 10
+      },
+      "doc": "Digital: D8..D13 GND AREF SDA SCL"
+    }
+  ],
+  "nets": {
+    "VIN": [
+      "U2.IN",
+      "J_PWR.8"
+    ],
+    "5V": [
+      "U2.OUT",
+      "U3.IN",
+      "U1.VCC",
+      "U1.AVCC",
+      "R_ON.1",
+      "J_PWR.2",
+      "J_PWR.5"
+    ],
+    "3V3": [
+      "U3.OUT",
+      "J_PWR.4"
+    ],
+    "GND": [
+      "U2.GND",
+      "U3.GND",
+      "U1.GND",
+      "LED_L.K",
+      "LED_ON.K",
+      "SW_RESET.2",
+      "J_PWR.6",
+      "J_PWR.7",
+      "J_DHI.7"
+    ],
+    "ON_A": [
+      "R_ON.2",
+      "LED_ON.A"
+    ],
+    "L_A": [
+      "R_L.2",
+      "LED_L.A"
+    ],
+    "RESET": [
+      "U1.NRST",
+      "SW_RESET.1",
+      "R_RESET.1",
+      "J_PWR.3"
+    ],
+    "XTAL1": [
+      "U1.XTAL1",
+      "Y1.1"
+    ],
+    "XTAL2": [
+      "U1.XTAL2",
+      "Y1.2"
+    ],
+    "AREF": [
+      "U1.AREF",
+      "J_DHI.8"
+    ],
+    "PD0": [
+      "U1.PD0",
+      "J_DLO.1"
+    ],
+    "PD1": [
+      "U1.PD1",
+      "J_DLO.2"
+    ],
+    "PD2": [
+      "U1.PD2",
+      "J_DLO.3"
+    ],
+    "PD3": [
+      "U1.PD3",
+      "J_DLO.4"
+    ],
+    "PD4": [
+      "U1.PD4",
+      "J_DLO.5"
+    ],
+    "PD5": [
+      "U1.PD5",
+      "J_DLO.6"
+    ],
+    "PD6": [
+      "U1.PD6",
+      "J_DLO.7"
+    ],
+    "PD7": [
+      "U1.PD7",
+      "J_DLO.8"
+    ],
+    "PB0": [
+      "U1.PB0",
+      "J_DHI.1"
+    ],
+    "PB1": [
+      "U1.PB1",
+      "J_DHI.2"
+    ],
+    "PB2": [
+      "U1.PB2",
+      "J_DHI.3"
+    ],
+    "PB3": [
+      "U1.PB3",
+      "J_DHI.4"
+    ],
+    "PB4": [
+      "U1.PB4",
+      "J_DHI.5"
+    ],
+    "PB5": [
+      "U1.PB5",
+      "J_DHI.6",
+      "R_L.1"
+    ],
+    "PC0": [
+      "U1.PC0",
+      "J_ANA.1"
+    ],
+    "PC1": [
+      "U1.PC1",
+      "J_ANA.2"
+    ],
+    "PC2": [
+      "U1.PC2",
+      "J_ANA.3"
+    ],
+    "PC3": [
+      "U1.PC3",
+      "J_ANA.4"
+    ],
+    "PC4": [
+      "U1.PC4",
+      "J_ANA.5",
+      "J_DHI.9"
+    ],
+    "PC5": [
+      "U1.PC5",
+      "J_ANA.6",
+      "J_DHI.10"
+    ]
+  },
+  "ports": {
+    "D0": {
+      "net": "PD0",
+      "connector": "J_DLO",
+      "pin": 1,
+      "doc": "RX (USART0's receive line)"
+    },
+    "D1": {
+      "net": "PD1",
+      "connector": "J_DLO",
+      "pin": 2,
+      "doc": "TX (USART0's transmit line)"
+    },
+    "D2": {
+      "net": "PD2",
+      "connector": "J_DLO",
+      "pin": 3
+    },
+    "D3": {
+      "net": "PD3",
+      "connector": "J_DLO",
+      "pin": 4,
+      "doc": "PWM OC2B"
+    },
+    "D4": {
+      "net": "PD4",
+      "connector": "J_DLO",
+      "pin": 5
+    },
+    "D5": {
+      "net": "PD5",
+      "connector": "J_DLO",
+      "pin": 6,
+      "doc": "PWM OC0B"
+    },
+    "D6": {
+      "net": "PD6",
+      "connector": "J_DLO",
+      "pin": 7,
+      "doc": "PWM OC0A"
+    },
+    "D7": {
+      "net": "PD7",
+      "connector": "J_DLO",
+      "pin": 8
+    },
+    "D8": {
+      "net": "PB0",
+      "connector": "J_DHI",
+      "pin": 1
+    },
+    "D9": {
+      "net": "PB1",
+      "connector": "J_DHI",
+      "pin": 2,
+      "doc": "PWM OC1A"
+    },
+    "D10": {
+      "net": "PB2",
+      "connector": "J_DHI",
+      "pin": 3,
+      "doc": "PWM OC1B"
+    },
+    "D11": {
+      "net": "PB3",
+      "connector": "J_DHI",
+      "pin": 4,
+      "doc": "PWM OC2A"
+    },
+    "D12": {
+      "net": "PB4",
+      "connector": "J_DHI",
+      "pin": 5
+    },
+    "D13": {
+      "net": "PB5",
+      "connector": "J_DHI",
+      "pin": 6,
+      "doc": "Also the 'L' LED"
+    },
+    "GND_D": {
+      "net": "GND",
+      "connector": "J_DHI",
+      "pin": 7
+    },
+    "AREF": {
+      "net": "AREF",
+      "connector": "J_DHI",
+      "pin": 8
+    },
+    "SDA": {
+      "net": "PC4",
+      "connector": "J_DHI",
+      "pin": 9,
+      "doc": "Also A4"
+    },
+    "SCL": {
+      "net": "PC5",
+      "connector": "J_DHI",
+      "pin": 10,
+      "doc": "Also A5"
+    },
+    "A0": {
+      "net": "PC0",
+      "connector": "J_ANA",
+      "pin": 1
+    },
+    "A1": {
+      "net": "PC1",
+      "connector": "J_ANA",
+      "pin": 2
+    },
+    "A2": {
+      "net": "PC2",
+      "connector": "J_ANA",
+      "pin": 3
+    },
+    "A3": {
+      "net": "PC3",
+      "connector": "J_ANA",
+      "pin": 4
+    },
+    "A4": {
+      "net": "PC4",
+      "connector": "J_ANA",
+      "pin": 5
+    },
+    "A5": {
+      "net": "PC5",
+      "connector": "J_ANA",
+      "pin": 6
+    },
+    "IOREF": {
+      "net": "5V",
+      "connector": "J_PWR",
+      "pin": 2,
+      "doc": "The I/O voltage, 5 V"
+    },
+    "RESET": {
+      "net": "RESET",
+      "connector": "J_PWR",
+      "pin": 3
+    },
+    "3V3": {
+      "net": "3V3",
+      "connector": "J_PWR",
+      "pin": 4
+    },
+    "5V": {
+      "net": "5V",
+      "connector": "J_PWR",
+      "pin": 5,
+      "doc": "5 V in or out (USB's 5 V on a real board)"
+    },
+    "GND": {
+      "net": "GND",
+      "connector": "J_PWR",
+      "pin": 6
+    },
+    "GND_2": {
+      "net": "GND",
+      "connector": "J_PWR",
+      "pin": 7
+    },
+    "VIN": {
+      "net": "VIN",
+      "connector": "J_PWR",
+      "pin": 8,
+      "doc": "7 to 12 V into the 5 V regulator"
+    }
+  },
+  "leds": [
+    {
+      "name": "l",
+      "component": "LED_L",
+      "gpio": "PB5",
+      "active": "high",
+      "color": "yellow"
+    },
+    {
+      "name": "on",
+      "component": "LED_ON",
+      "color": "green"
+    }
+  ],
+  "buttons": [
+    {
+      "name": "reset",
+      "component": "SW_RESET",
+      "signal": "NRST",
+      "active": "low"
+    }
+  ],
+  "console": {
+    "peripheral": "USART0",
+    "tx": "PD1",
+    "rx": "PD0",
+    "baud": 9600
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 68.6,
+    "height_mm": 53.3,
+    "hotspots": [
+      {
+        "component": "LED_L",
+        "selector": "#led-l",
+        "output": "luminance"
+      },
+      {
+        "component": "LED_ON",
+        "selector": "#led-on",
+        "output": "luminance"
+      },
+      {
+        "component": "SW_RESET",
+        "selector": "#btn-reset",
+        "input": "pressed"
+      },
+      {
+        "port": "D0",
+        "selector": "#pin-d0"
+      },
+      {
+        "port": "D1",
+        "selector": "#pin-d1"
+      },
+      {
+        "port": "D2",
+        "selector": "#pin-d2"
+      },
+      {
+        "port": "D3",
+        "selector": "#pin-d3"
+      },
+      {
+        "port": "D4",
+        "selector": "#pin-d4"
+      },
+      {
+        "port": "D5",
+        "selector": "#pin-d5"
+      },
+      {
+        "port": "D6",
+        "selector": "#pin-d6"
+      },
+      {
+        "port": "D7",
+        "selector": "#pin-d7"
+      },
+      {
+        "port": "D8",
+        "selector": "#pin-d8"
+      },
+      {
+        "port": "D9",
+        "selector": "#pin-d9"
+      },
+      {
+        "port": "D10",
+        "selector": "#pin-d10"
+      },
+      {
+        "port": "D11",
+        "selector": "#pin-d11"
+      },
+      {
+        "port": "D12",
+        "selector": "#pin-d12"
+      },
+      {
+        "port": "D13",
+        "selector": "#pin-d13"
+      },
+      {
+        "port": "GND_D",
+        "selector": "#pin-gnd_d"
+      },
+      {
+        "port": "AREF",
+        "selector": "#pin-aref"
+      },
+      {
+        "port": "SDA",
+        "selector": "#pin-sda"
+      },
+      {
+        "port": "SCL",
+        "selector": "#pin-scl"
+      },
+      {
+        "port": "A0",
+        "selector": "#pin-a0"
+      },
+      {
+        "port": "A1",
+        "selector": "#pin-a1"
+      },
+      {
+        "port": "A2",
+        "selector": "#pin-a2"
+      },
+      {
+        "port": "A3",
+        "selector": "#pin-a3"
+      },
+      {
+        "port": "A4",
+        "selector": "#pin-a4"
+      },
+      {
+        "port": "A5",
+        "selector": "#pin-a5"
+      },
+      {
+        "port": "IOREF",
+        "selector": "#pin-ioref"
+      },
+      {
+        "port": "RESET",
+        "selector": "#pin-reset"
+      },
+      {
+        "port": "3V3",
+        "selector": "#pin-3v3"
+      },
+      {
+        "port": "5V",
+        "selector": "#pin-5v"
+      },
+      {
+        "port": "GND",
+        "selector": "#pin-gnd"
+      },
+      {
+        "port": "GND_2",
+        "selector": "#pin-gnd_2"
+      },
+      {
+        "port": "VIN",
+        "selector": "#pin-vin"
+      }
+    ]
+  },
+  "toolchains": {
+    "clang": {
+      "target": "avr",
+      "flags": [
+        "-mmcu=atmega328p"
+      ],
+      "linker_script": "atmega328p.ld"
+    },
+    "gcc-avr": {
+      "cpu": "atmega328p",
+      "flags": [
+        "-mmcu=atmega328p"
+      ]
+    },
+    "embcc": {
+      "target": "avr"
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Nets, ports, LEDs and the reset button as logic-level parts; the ATmega328P runs its firmware (see its description).",
+      "omissions": [
+        "the ATmega16U2 USB bridge (the console is USART0 itself)",
+        "the TX and RX LEDs",
+        "the LMV358 buffer on the L LED",
+        "the auto-reset capacitor",
+        "ICSP headers"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "as functional"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "Regulators, LEDs with series resistors, the reset pull-up and the resonator as BVD equivalents; GPIO bridges use the MCU's pin-model defaults.",
+      "omissions": [
+        "decoupling",
+        "USB power switching",
+        "the reset capacitor",
+        "ESD diodes"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Arduino Uno Rev3 schematic (arduino.cc, CC BY-SA)",
+        "url": "https://docs.arduino.cc/hardware/uno-rev3"
+      },
+      {
+        "title": "ATmega328P datasheet",
+        "rev": "DS40002061B"
+      }
+    ],
+    "notes": "Artwork is an original SVG drawn for EmbSIM to the board's 68.6 x 53.3 mm outline; no Arduino artwork or logo is used."
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}
