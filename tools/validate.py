@@ -1387,7 +1387,8 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
         elif kind in ("reg", "serial", "mem", "var"):
             sep = "." if kind in ("reg", "serial") else ":"
             b = rest.split(sep, 1)[0]
-            if b not in ctx.boards:
+            # a serial probe also reads a component with a serial output (a virtual terminal)
+            if b not in ctx.boards and not (kind == "serial" and rest in ctx.components):
                 report.error(file, node + "/target", "catalog.not_found", f"board {b} is not declared")
         if kind == "serial" and probe.get("kind") != "serial":
             report.warning(file, node + "/kind", "schema.type", "a serial target is normally probed with kind serial")

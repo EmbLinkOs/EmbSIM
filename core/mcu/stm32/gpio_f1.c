@@ -17,8 +17,9 @@
  *         (01): 0 when ODR's bit is 0, else let go (as floating);
  *       alternate-function output (10, 11): a USART's TX pin, the line
  *         idle, reads 1 (USART1 PA9, or PB6 remapped; USART2 PA2; USART3
- *         PB10, or PC10 partly remapped); any other, whose peripheral
- *         drives it, 0;
+ *         PB10, or PC10 partly remapped); any other is let go (its
+ *         peripheral has no model to drive it) and reads what the circuit
+ *         drives, else 0;
  *   - the debug port's pins, while AFIO's MAPR.SWJ_CFG keeps them (out of
  *     reset all five), are its, whatever CRL and CRH say: PA13 (JTMS)
  *     and PA15 (JTDI) pulled up, PA14 (JTCK) pulled down, PB4 (JNTRST)
@@ -117,8 +118,13 @@ static void update(struct f1gpio *g)
             o.pull = g->port == 1 && i == 3 ? 0 : dbg ? 1 : 2;
         } else {
             if (mode) {
-                if (cnf & 2)
-                    o.drive = usart_tx(g, i); /* the line idles high */
+                if (cnf & 2) {
+                    /* a USART's TX idles high; an alternate function with
+                     * no model lets the pin go rather than fight the
+                     * circuit (an I2C bus's pull-ups) */
+                    o.drive = usart_tx(g, i) ? 1 : -1;
+                    o.af = 1;
+                }
                 else if (!(cnf & 1) || !(odr >> i & 1))
                     o.drive = (int)(odr >> i & 1);
                 o.open_drain = (cnf & 1) != 0;
@@ -215,6 +221,8 @@ void *esk_stm32f1_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)
         p->name[4] < 'A' || p->name[4] > 'K' || p->name[5])
         return 0; /* not this layout: the registers alone */
     g.port = p->name[4] - 'A';
+    s->pins_changed = esk_stm32f1_pins_changed;
+    s->uart_pin = esk_stm32f1_usart_pin;
     c = (struct f1gpio *)esk_mach_alloc(s, sizeof *c);
     if (c)
         *c = g;

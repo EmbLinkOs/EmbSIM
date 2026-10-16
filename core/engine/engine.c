@@ -784,6 +784,37 @@ void esk_pin_bridge_target(const esk_pin *p, double *v, double *r, int *open)
     } else {
         *open = 1;
         *v = 0.0;
+        return;
+    }
+    /* a weak drive (an MCU's pull, a bus keeper) is the pull resistance */
+    if (p->drive_strength == ESK_STR_WEAK)
+        *r = m->rpull > 0 ? m->rpull : 40000.0;
+}
+
+esk_logic esk_pin_level(const esk_pin *p)
+{
+    if (!p->net)
+        return ESK_LZ;
+    if (p->net->island && p->bridge)
+        return p->sampled == ESK_LZ ? ESK_L0 : p->sampled;
+    return p->net->value;
+}
+
+void esk_pin_refresh(esk_pin *p)
+{
+    esk_engine *e = p->comp->e;
+    if (!p->net)
+        return;
+    if (p->bridge && p->net->island) {
+        if (!p->is_output && p->model.kind == ESK_PIN_DIGITAL_IO) {
+            /* back to an input: the comparator starts from where the node sits */
+            double vn = p->net->voltage, mid = (p->model.vih + p->model.vil) / 2.0;
+            p->sampled = vn > mid ? ESK_L1 : ESK_L0;
+        }
+        if (p->bridge->ops->set_logic)
+            p->bridge->ops->set_logic(p->bridge, p->is_output ? p->drive_value : ESK_LZ, e->sched.now);
+    } else {
+        update_net(e, p->net);
     }
 }
 

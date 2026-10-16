@@ -197,7 +197,9 @@ static es_status read_irqs(struct esk_mach *m, struct esk_rf_periph *p, const es
             snprintf(why, cap, "%s: interrupt %s is not in the device's table", p->name, s ? s : "?");
             return ES_ESCHEMA;
         }
-        nm[i] = s;
+        nm[i] = esk_mach_strdup(m, s);
+        if (!nm[i])
+            return ES_ENOMEM;
         nums[i] = (int)x;
     }
     p->irq_names = nm;

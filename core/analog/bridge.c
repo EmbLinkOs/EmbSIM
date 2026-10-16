@@ -22,6 +22,7 @@ typedef struct bridge_state {
     es_time_t t0, t1;
     double v_from, v_to;
     double pull_g, pull_v; /* the input pull (0 when none) */
+    int supply_noted;      /* the implicit-supply note was raised */
     double v_src_trial, i_trial;
 } bridge_state;
 
@@ -122,8 +123,10 @@ static void setup_pull(esk_adev *d, bridge_state *s)
             s->pull_v = m->nominal_v;
         } else {
             s->pull_v = d->isl->e->default_supply_v;
-            raise_pin(d, ES_SEV_INFO, "analog.implicit_supply",
-                      "pull-up to the session's default supply voltage");
+            if (!s->supply_noted)
+                raise_pin(d, ES_SEV_INFO, "analog.implicit_supply",
+                          "pull-up to the session's default supply voltage");
+            s->supply_noted = 1;
         }
     }
 }
@@ -275,8 +278,10 @@ static void bridge_set_logic(esk_adev *d, esk_logic v, es_time_t at)
     ES_UNUSED(v);
     if (s->is_power)
         return;
-    /* integrate up to `at` with the old source, then retarget from there */
+    /* integrate up to `at` with the old source, then retarget from there; the
+     * pin's pull may have changed with its mode (an MCU's GPIO) */
     esk_island_touch(isl, at);
+    setup_pull(d, s);
     retarget(d, s, isl->t_accepted > at ? isl->t_accepted : at);
 }
 

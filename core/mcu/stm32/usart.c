@@ -86,6 +86,11 @@ static void start_frame(struct usart *u, u8 c)
         s->host.uart_tx(s->host.ctx, u->p->name, c, bit_cycles(u));
 }
 
+static u32 usart_bit_cycles(void *ctx)
+{
+    return bit_cycles((const struct usart *)ctx);
+}
+
 static u32 usart_read(void *ctx, u32 off, int n)
 {
     struct usart *u = (struct usart *)ctx;
@@ -212,6 +217,6 @@ void *esk_stm32_usart_create(struct esk_mach *s, struct esk_rf_periph *p)
         return 0;
     *c = u;
     if (u.rxne && u.re)
-        esk_mach_rx_port(s, p->name, usart_room, usart_put, c);
+        esk_mach_rx_port(s, p->name, usart_room, usart_put, usart_bit_cycles, c);
     return c;
 }

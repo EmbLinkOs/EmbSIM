@@ -495,7 +495,7 @@ static es_status m_probe_read(rpc_ctx *r)
         esk_json *out = obj(r);
         if (out && p->comp->ops->observe) {
             p->comp->ops->observe(p->comp, out);
-            esk_json_set_string(r->s->a, r->result, "text", esk_json_get_str(out, "rx_text", ""));
+            esk_json_set_string(r->s->a, r->result, "text", esk_json_get_str(out, p->quantity ? p->quantity : "rx_text", ""));
         }
         esk_json_free(r->s->a, out);
         return ES_OK;

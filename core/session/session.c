@@ -4,6 +4,7 @@
  * the command path that stamps inputs with virtual time, probes, snapshots,
  * pacing, notifications, and the public C API. */
 #include "session/session_priv.h"
+#include "mcu/mcu.h"
 #include <stdlib.h>
 #include <string.h>
 #include "analog/analog.h"
@@ -403,9 +404,25 @@ es_status esk_session_probe_add(es_session *s, const char *name, const char *tar
         p->quantity = esk_strdup(s->a, q);
         p->kind = ESK_PROBE_VALUE;
     } else if (!strcmp(head, "serial")) {
+        size_t i;
         p->comp = esk_engine_comp(&s->eng, rest);
+        p->quantity = NULL;
+        /* a board's MCU: "B1" its console, "B1.USART2" one of its UARTs */
+        for (i = 0; !p->comp && i < s->boards.len; i++) {
+            esk_board_inst *bi = s->boards.data[i];
+            size_t n = strlen(bi->id);
+            if (!bi->mcu || !esk_str_has_prefix(rest, bi->id) || (rest[n] && rest[n] != '.'))
+                continue;
+            p->comp = bi->mcu;
+            if (rest[n] == '.') {
+                char q[64];
+                esk_snprintf(q, sizeof q, "serial.%s", rest + n + 1);
+                p->quantity = esk_strdup(s->a, q);
+            }
+        }
         if (!p->comp) goto notfound;
-        p->quantity = esk_strdup(s->a, "rx_text");
+        if (!p->quantity)
+            p->quantity = esk_strdup(s->a, "rx_text");
         p->kind = ESK_PROBE_SERIAL;
     } else {
         goto notfound;
@@ -562,6 +579,7 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
                                   es_time_t at, es_time_t *applied_at, uint64_t *seq)
 {
     esk_comp *c;
+    char unit_input[64];
     esk_json *rec;
     size_t i;
     if (!s->loaded || !target || !input || !value)
@@ -570,15 +588,26 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
         return ES_ETIME;
     c = esk_engine_comp(&s->eng, target);
     if (!c) {
-        /* a board: "reset" and serial inputs need the MCU runtime (M1) */
+        /* a board ("B1": its MCU's reset and console) or one of its MCU's UARTs ("B1.USART2") */
         for (i = 0; i < s->boards.len; i++) {
-            if (esk_str_eq(s->boards.data[i]->id, target) || esk_str_has_prefix(target, s->boards.data[i]->id)) {
-                esk_diag_raise(&s->diag, ES_SEV_WARNING, "mcu.no_runtime", at, "board", target, NULL, 0,
-                               "input %s to %s needs the MCU runtime, which this version does not include", input, target);
+            esk_board_inst *bi = s->boards.data[i];
+            size_t n = strlen(bi->id);
+            if (!esk_str_has_prefix(target, bi->id) || (target[n] && target[n] != '.'))
+                continue;
+            if (!bi->mcu || !esk_mcu_machine(bi->mcu)) {
+                esk_diag_raise(&s->diag, ES_SEV_WARNING, "mcu.no_firmware", at, "board", target, NULL, 0,
+                               "input %s to %s needs firmware on the board's MCU", input, target);
                 return ES_EUNSUPPORTED;
             }
+            c = bi->mcu;
+            if (target[n] == '.' && esk_str_eq(input, "tx_text")) {
+                esk_snprintf(unit_input, sizeof unit_input, "serial:%s", target + n + 1);
+                input = unit_input;
+            }
+            break;
         }
-        return ES_ENOTFOUND;
+        if (!c)
+            return ES_ENOTFOUND;
     }
     if (at == s->eng.sched.now) {
         apply_input_now(s, c, input, value);

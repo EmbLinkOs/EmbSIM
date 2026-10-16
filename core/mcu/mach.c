@@ -150,12 +150,13 @@ int esk_mach_event_coming(struct esk_mach *m)
 }
 
 void esk_mach_rx_port(struct esk_mach *m, const char *unit, int (*room)(void *ctx),
-                      void (*put)(void *ctx, int c), void *ctx)
+                      void (*put)(void *ctx, int c), u32 (*bit_cycles)(void *ctx), void *ctx)
 {
     if (m->nrx == ESK_MACH_RX_PORTS)
         return;
     m->rx[m->nrx].room = room;
     m->rx[m->nrx].put = put;
+    m->rx[m->nrx].bit_cycles = bit_cycles;
     m->rx[m->nrx].ctx = ctx;
     m->rx[m->nrx].unit = unit;
     m->nrx++;
@@ -245,8 +246,8 @@ u64 esk_mach_run(struct esk_mach *m, u64 budget, u64 max_insns)
                 m->asleep = 0;
                 continue;
             }
-            if (!esk_mach_next_event(m, &left))
-                break; /* until something outside wakes it */
+            if (m->return_on_sleep || !esk_mach_next_event(m, &left))
+                break; /* the runtime schedules the wake-up, or something outside wakes it */
             if (left == 0)
                 left = 1;
             esk_mach_idle(m, left < room ? left : room);

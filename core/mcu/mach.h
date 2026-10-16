@@ -208,6 +208,7 @@ typedef struct esk_mach_pin {
     int open_drain; /* drives 0 only; a 1 releases */
     int pull;       /* 0 none, 1 up, 2 down (weak) */
     int analog;     /* analog mode: the digital input is off */
+    int af;         /* an alternate function (a peripheral) drives it */
 } esk_mach_pin;
 
 typedef struct esk_mach_host {
@@ -245,6 +246,8 @@ typedef struct esk_mach_alloc_rec {
 struct esk_rx_port {
     int (*room)(void *ctx);
     void (*put)(void *ctx, int c);
+    /* the bit time in core cycles, as the UART is set up now */
+    u32 (*bit_cycles)(void *ctx);
     void *ctx;
     const char *unit;
 };
@@ -285,6 +288,13 @@ struct esk_mach {
     u32 reset_hz;
     u32 hse_hz;   /* the board's external oscillator, 0 for none */
     esk_mach_host host;
+    /* the GPIO model's: the pins' outside levels changed; where a UART's
+     * TX or RX pin is (0, or -1 when the part has no such UART) */
+    void (*pins_changed)(struct esk_mach *m);
+    int (*uart_pin)(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
+    /* esk_mach_run returns as soon as the core sleeps, for the runtime to
+     * schedule the wake-up itself */
+    int return_on_sleep;
     struct esk_rx_port rx[ESK_MACH_RX_PORTS];
     int nrx;
     int bus_errors; /* reported by esk_mach_bus_error */
@@ -325,7 +335,7 @@ int esk_mach_next_event(struct esk_mach *m, u32 *cycles);
 int esk_mach_event_coming(struct esk_mach *m);
 /* a UART offers its receiver to the host's input */
 void esk_mach_rx_port(struct esk_mach *m, const char *unit, int (*room)(void *ctx),
-                      void (*put)(void *ctx, int c), void *ctx);
+                      void (*put)(void *ctx, int c), u32 (*bit_cycles)(void *ctx), void *ctx);
 /* a core's access that nothing answers: a diagnostic (the first ten) */
 void esk_mach_bus_error(struct esk_mach *m, u32 addr, int n, int write);
 /* the receiver of the UART named `unit` ("USART1"), or NULL */
