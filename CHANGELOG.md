@@ -5,6 +5,12 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Debugger reliability
+
+- Board switches clear inspected state and discard late responses from the previous
+  selection. Overlapping requests keep the busy indicator active until completion.
+- Added an evidence-based 1.0 release readiness checklist.
+
 ### Added
 - Component explorer with grouped categories, manufacturer/package/model filters,
   multiword search and pre-placement Overview/Pins/Models sheets.

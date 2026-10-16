@@ -65,20 +65,31 @@ function errorText(e: unknown): string {
 }
 
 export const useDebug = create<DebugState & DebugActions>((set, get) => {
+  let selection = 0;
+  let pending = 0;
+  type Update = (state: Partial<DebugState>) => void;
+
   /** Runs a request against the selected board, keeping the error for the panels. */
   /** `action`: a user's request, whose failure stays shown until the next one. */
-  async function withBoard<T>(fn: (board: string) => Promise<T>, action = true): Promise<T | undefined> {
+  async function withBoard<T>(fn: (board: string, update: Update) => Promise<T>, action = true): Promise<T | undefined> {
     const board = get().board ?? useSession.getState().boards.find((b) => b.runtime && b.runtime !== 'none')?.id ?? null;
     if (!board || !tryClient()) return undefined;
-    if (board !== get().board) set({ board });
+    if (board !== get().board) get().setBoard(board);
+    const epoch = selection;
+    const current = () => selection === epoch && get().board === board;
+    const update: Update = (state) => { if (current()) set(state); };
+    pending++;
     try {
       set(action ? { busy: true, error: null } : { busy: true });
-      return await fn(board);
+      return await fn(board, update);
     } catch (e) {
-      set({ error: errorText(e) });
+      update({ error: errorText(e) });
       return undefined;
     } finally {
-      set({ busy: false });
+      if (current()) {
+        pending--;
+        set({ busy: pending > 0 });
+      }
     }
   }
 
@@ -98,10 +109,17 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
     busy: false,
     error: null,
 
-    setBoard: (board) => set({ board, where: null, regs: [], insns: [], breakpoints: [], memChosen: false }),
+    setBoard: (board) => {
+      if (board === get().board) return;
+      selection++;
+      pending = 0;
+      set({ board, where: null, regs: [], previous: {}, insns: [], breakpoints: [],
+        memChosen: false, memory: null, peripherals: [], source: null,
+        lineBreakpoints: [], busy: false, error: null });
+    },
 
     refresh: async () => {
-      await withBoard(async (board) => {
+      await withBoard(async (board, update) => {
         const c = tryClient()!;
         const where = await c.debug.where({ board });
         // disassemble from the function's start when it is near, so the
@@ -112,6 +130,7 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
           c.debug.disassemble({ board, address: start, count: 40 }),
           c.debug.breakpoints({ board }),
         ]);
+        if (get().board !== board) return;
         // what changed since the core last moved (a refresh at the same
         // instruction keeps the comparison)
         let previous = get().previous;
@@ -119,13 +138,14 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
           previous = {};
           for (const r of get().regs) previous[r.name] = r.value;
         }
-        set({ where, regs: regs.regs, previous, insns: dis.insns, breakpoints: bps.breakpoints });
-        if (!get().memChosen && where.ram !== undefined && where.ram !== get().memAddress) set({ memAddress: where.ram });
+        update({ where, regs: regs.regs, previous, insns: dis.insns, breakpoints: bps.breakpoints });
+        if (!get().memChosen && where.ram !== undefined && where.ram !== get().memAddress) update({ memAddress: where.ram });
+        if (!where.file) update({ source: null });
         if (where.file && where.file !== get().source?.file) {
           try {
-            set({ source: await c.debug.source({ board, file: where.file }) });
+            update({ source: await c.debug.source({ board, file: where.file }) });
           } catch {
-            set({ source: null }); // the file is not on this machine
+            update({ source: null }); // the file is not on this machine
           }
         }
       }, false);
@@ -134,11 +154,11 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
     toggleLineBreakpoint: async (file, line) => {
       const key = `${file}:${line}`;
       const has = get().lineBreakpoints.includes(key);
-      await withBoard(async (board) => {
+      await withBoard(async (board, update) => {
         const c = tryClient()!;
         await c.debug.breakpoint({ board, op: has ? 'remove' : 'add', file, line });
         const bps = await c.debug.breakpoints({ board });
-        set({
+        update({
           breakpoints: bps.breakpoints,
           lineBreakpoints: has ? get().lineBreakpoints.filter((k) => k !== key) : [...get().lineBreakpoints, key],
         });
@@ -169,53 +189,53 @@ export const useDebug = create<DebugState & DebugActions>((set, get) => {
 
     toggleBreakpoint: async (address) => {
       const has = get().breakpoints.some((b) => b.kind === 'code' && b.pc === address);
-      await withBoard(async (board) => {
+      await withBoard(async (board, update) => {
         await tryClient()!.debug.breakpoint({ board, op: has ? 'remove' : 'add', kind: 'code', address });
         const bps = await tryClient()!.debug.breakpoints({ board });
-        set({ breakpoints: bps.breakpoints });
+        update({ breakpoints: bps.breakpoints });
       });
     },
 
     addBreakpoint: async (spec) => {
       const { address, symbol } = parseAddress(spec);
       if (address === undefined && !symbol) return;
-      await withBoard(async (board) => {
+      await withBoard(async (board, update) => {
         await tryClient()!.debug.breakpoint({ board, op: 'add', kind: 'code', ...(symbol ? { symbol } : { address }) });
         const bps = await tryClient()!.debug.breakpoints({ board });
-        set({ breakpoints: bps.breakpoints });
+        update({ breakpoints: bps.breakpoints });
       });
     },
 
     removeBreakpoint: async (bp) => {
-      await withBoard(async (board) => {
+      await withBoard(async (board, update) => {
         const address = bp.kind === 'code' ? bp.pc : bp.address;
         await tryClient()!.debug.breakpoint({ board, op: 'remove', kind: bp.kind, address, length: bp.length });
         const bps = await tryClient()!.debug.breakpoints({ board });
-        set({ breakpoints: bps.breakpoints });
+        update({ breakpoints: bps.breakpoints });
       });
     },
 
     setRegister: async (name, value) => {
-      await withBoard(async (board) => {
+      await withBoard(async (board, update) => {
         const r = await tryClient()!.debug.set_register({ board, name, value: value.trim() });
-        set({ regs: r.regs });
+        update({ regs: r.regs });
       });
     },
 
     loadMemory: async (address) => {
       const a = address === undefined ? get().memAddress : typeof address === 'number' ? address : parseAddress(address);
-      await withBoard(async (board) => {
+      await withBoard(async (board, update) => {
         const params = typeof a === 'number' ? { address: a } : a;
         const r = await tryClient()!.debug.memory({ board, ...params, length: 256 });
         const bytes = Uint8Array.from(atob(r.base64), (ch) => ch.charCodeAt(0));
-        set({ memAddress: r.address, memory: bytes, memChosen: get().memChosen || address !== undefined });
+        update({ memAddress: r.address, memory: bytes, memChosen: get().memChosen || address !== undefined });
       }, typeof address === 'string');
     },
 
     loadPeripherals: async () => {
-      await withBoard(async (board) => {
+      await withBoard(async (board, update) => {
         const r = await tryClient()!.debug.peripherals({ board });
-        set({ peripherals: r.peripherals });
+        update({ peripherals: r.peripherals });
       }, false);
     },
   };
