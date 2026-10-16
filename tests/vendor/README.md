@@ -10,5 +10,6 @@ frameworks are fetched, not vendored; CI's linux-gcc job pins them.
 | `stm32cube/` | ST's STM32F1 HAL and CMSIS device files | `emblink/bluepill` |
 | `pico-sdk/` | The Raspberry Pi Pico SDK | `emblink/pico` |
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
+| `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |
 
 `vendor_run.py` is what their runners share.

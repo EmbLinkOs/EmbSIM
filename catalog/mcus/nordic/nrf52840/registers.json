@@ -4,7 +4,7 @@
  "id": "nordic/nrf52840/registers",
  "version": "1.0.0",
  "device": "nRF52840",
- "description": "nRF52840 peripheral registers at their addresses, reset values and field access, and its interrupt numbers, converted by tools/importers/svd2regs.py from Nordic Semiconductor's nrf52840.svd (nrfx 3.4.0, mdk/), Copyright (c) 2010 - 2024, Nordic Semiconductor ASA, SPDX-License-Identifier: BSD-3-Clause (LICENSES/BSD-3-Clause.txt). Peripherals that share an address space (UART0 and UARTE0, the SPI and TWI instances, CLOCK and POWER, ...) are one peripheral here, its registers the union of theirs. FICR carries a part's factory words (CODEPAGESIZE, CODESIZE, INFO, an EmbSIM DEVICEID).",
+ "description": "nRF52840 peripheral registers at their addresses, reset values and field access, and its interrupt numbers, converted by tools/importers/svd2regs.py from Nordic Semiconductor's nrf52840.svd (nrfx 3.4.0, mdk/), Copyright (c) 2010 - 2024, Nordic Semiconductor ASA, SPDX-License-Identifier: BSD-3-Clause (LICENSES/BSD-3-Clause.txt). Peripherals that share an address space (UART0 and UARTE0, the SPI and TWI instances, CLOCK and POWER, ...) are one peripheral here, its registers the union of theirs. FICR carries a part's factory words (CODEPAGESIZE, CODESIZE, INFO, an EmbSIM DEVICEID). FICR's words at 0x130 and 0x134, which the MDK's errata checks read and the SVD does not list, are added by hand.",
  "source": "nrf52840.svd from NordicSemiconductor/nrfx 3.4.0, converted by tools/importers/svd2regs.py, shared spaces merged",
  "interrupts": {
   "POWER_CLOCK": 0,
@@ -310,6 +310,34 @@
      "fields": [
       [
        "FLASH",
+       0,
+       32,
+       "r"
+      ]
+     ]
+    },
+    {
+     "name": "PART_CODE",
+     "offset": "0x130",
+     "reset": "0x00000008",
+     "description": "Not in the SVD: the identification word Nordic's MDK reads to choose its errata workarounds (nrf52_erratas.h); 8 is the nRF52840",
+     "fields": [
+      [
+       "CODE",
+       0,
+       32,
+       "r"
+      ]
+     ]
+    },
+    {
+     "name": "PART_REVISION",
+     "offset": "0x134",
+     "reset": "0x00000002",
+     "description": "Not in the SVD: the revision index the MDK's errata checks switch on; 2, the AACA build INFO.VARIANT names",
+     "fields": [
+      [
+       "REVISION",
        0,
        32,
        "r"
