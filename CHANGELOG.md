@@ -75,6 +75,22 @@ versions follow semantic versioning. There is no release yet.
 - Board view artwork states with value maps, formats and text; scenario
   text expectations on value probes.
 
+- M4 core families and boards, part 1: the AVR core extracted from EmbCC
+  (cycle-exact) with the ATmega328P's ports, external and pin-change
+  interrupts, three timers with PWM pins, USART0, ADC, EEPROM and clock
+  prescaler, and the Arduino Uno R3; the RISC-V core (RV32IMAC) extracted
+  from EmbCC with the FE310-G002's CLINT, PLIC, GPIO, UARTs and clocks, and
+  the HiFive1 Rev B. Disassemblers for both; their DWARF, registers and
+  peripherals in the Debug perspective.
+- Projects with several boards: `examples/two-boards-uart`, an Uno and a
+  Blue Pill on one serial line, and the `multiboard` determinism test;
+  `examples/uno-blink-serial` and `examples/hifive1-blink`, built by clang
+  and EmbCC.
+- The register file takes 8-bit registers and 24-bit offsets; the runtime
+  takes pins named GPIOn and gives an ADC its pin's voltage; the regulator
+  model converges with a supply on its output; the board view scopes each
+  artwork's styles and gradient ids and colours an LED by its parameter.
+
 ### Removed
 - The draft 0.1 foundation (Python runtime, HTTP server, single-page UI);
   its kernel semantics and visual direction are retained in the baseline.

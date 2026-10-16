@@ -50,7 +50,7 @@ struct esk_rf_field {
 
 struct esk_rf_reg {
     u32 addr;  /* absolute */
-    int bytes; /* 4, or 2 for a halfword register */
+    int bytes; /* 4, 2 for a halfword register, 1 for a byte (an AVR's) */
     u64 value, reset;
     u64 once;  /* the write-once bits written since reset */
     const char *name;

@@ -12,7 +12,7 @@ import { Badge, Button, DockLayout, EmptyState, Input, type DockItem } from '@em
 import { Bug, CirclePause, Play, RotateCcw, StepForward } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { tryClient } from '../../connection';
-import { hex32, useDebug } from '../../stores/debug';
+import { hex32, hexReg, useDebug } from '../../stores/debug';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { Placeholder } from '../Placeholder';
@@ -258,10 +258,10 @@ function RegistersPanel() {
                       title="Edit"
                       onClick={() => {
                         setEditing(r.name);
-                        setText(hex32(r.value));
+                        setText(hexReg(r.value, r.size));
                       }}
                     >
-                      {hex32(r.value)}
+                      {hexReg(r.value, r.size)}
                     </button>
                   )}
                 </td>

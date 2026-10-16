@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "kind": "package",
+  "id": "microchip/atmega328p/dip28",
+  "name": "PDIP-28",
+  "description": "28-pin plastic dual in-line package, 0.3 in wide (ATmega328P-PU, the Arduino Uno's socketed part).",
+  "pins": [
+    {
+      "number": 1,
+      "signal": "NRST",
+      "doc": "PC6/RESET: the reset input while the RSTDISBL fuse is unprogrammed"
+    },
+    {
+      "number": 2,
+      "signal": "PD0",
+      "doc": "PD0 (RXD, PCINT16)"
+    },
+    {
+      "number": 3,
+      "signal": "PD1",
+      "doc": "PD1 (TXD, PCINT17)"
+    },
+    {
+      "number": 4,
+      "signal": "PD2",
+      "doc": "PD2 (INT0, PCINT18)"
+    },
+    {
+      "number": 5,
+      "signal": "PD3",
+      "doc": "PD3 (INT1, OC2B, PCINT19)"
+    },
+    {
+      "number": 6,
+      "signal": "PD4",
+      "doc": "PD4 (T0, XCK, PCINT20)"
+    },
+    {
+      "number": 7,
+      "signal": "VCC"
+    },
+    {
+      "number": 8,
+      "signal": "GND"
+    },
+    {
+      "number": 9,
+      "signal": "XTAL1",
+      "doc": "PB6 (XTAL1, TOSC1): the crystal while the fuses select it"
+    },
+    {
+      "number": 10,
+      "signal": "XTAL2",
+      "doc": "PB7 (XTAL2, TOSC2): the crystal while the fuses select it"
+    },
+    {
+      "number": 11,
+      "signal": "PD5",
+      "doc": "PD5 (OC0B, T1, PCINT21)"
+    },
+    {
+      "number": 12,
+      "signal": "PD6",
+      "doc": "PD6 (OC0A, AIN0, PCINT22)"
+    },
+    {
+      "number": 13,
+      "signal": "PD7",
+      "doc": "PD7 (AIN1, PCINT23)"
+    },
+    {
+      "number": 14,
+      "signal": "PB0",
+      "doc": "PB0 (ICP1, CLKO, PCINT0)"
+    },
+    {
+      "number": 15,
+      "signal": "PB1",
+      "doc": "PB1 (OC1A, PCINT1)"
+    },
+    {
+      "number": 16,
+      "signal": "PB2",
+      "doc": "PB2 (OC1B, SS, PCINT2)"
+    },
+    {
+      "number": 17,
+      "signal": "PB3",
+      "doc": "PB3 (OC2A, MOSI, PCINT3)"
+    },
+    {
+      "number": 18,
+      "signal": "PB4",
+      "doc": "PB4 (MISO, PCINT4)"
+    },
+    {
+      "number": 19,
+      "signal": "PB5",
+      "doc": "PB5 (SCK, PCINT5)"
+    },
+    {
+      "number": 20,
+      "signal": "AVCC",
+      "doc": "The ADC's supply"
+    },
+    {
+      "number": 21,
+      "signal": "AREF",
+      "doc": "The ADC's external reference"
+    },
+    {
+      "number": 22,
+      "signal": "GND"
+    },
+    {
+      "number": 23,
+      "signal": "PC0",
+      "doc": "PC0 (ADC0, PCINT8)"
+    },
+    {
+      "number": 24,
+      "signal": "PC1",
+      "doc": "PC1 (ADC1, PCINT9)"
+    },
+    {
+      "number": 25,
+      "signal": "PC2",
+      "doc": "PC2 (ADC2, PCINT10)"
+    },
+    {
+      "number": 26,
+      "signal": "PC3",
+      "doc": "PC3 (ADC3, PCINT11)"
+    },
+    {
+      "number": 27,
+      "signal": "PC4",
+      "doc": "PC4 (ADC4, SDA, PCINT12)"
+    },
+    {
+      "number": 28,
+      "signal": "PC5",
+      "doc": "PC5 (ADC5, SCL, PCINT13)"
+    }
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ATmega328P datasheet, section 5.1 Pin configurations (28-pin PDIP)",
+        "rev": "DS40002061B"
+      }
+    ]
+  }
+}

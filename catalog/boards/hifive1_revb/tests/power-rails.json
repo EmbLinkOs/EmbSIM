@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-rails",
+  "description": "5 V on the 5V pin: the regulator makes the 3.3 V rail and the pulled-up RESET reads high.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/hifive1_revb"
+      }
+    ],
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "5V": [
+        "VS.+",
+        "B1.5V"
+      ],
+      "GND": [
+        "VS.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "RST": [
+        "B1.RESET"
+      ],
+      "R33": [
+        "B1.3V3"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R33": {
+      "at": "5ms",
+      "min_v": 3.2,
+      "max_v": 3.4
+    },
+    "net:RST": {
+      "at": "5ms",
+      "min_v": 3.1,
+      "max_v": 3.4
+    }
+  }
+}

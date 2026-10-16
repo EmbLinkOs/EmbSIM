@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "host/host.h"
+#include "mcu/avr/avr.h"
 #include "mcu/cortexm/cortexm.h"
 #include "mcu/dwarf.h"
 #include "mcu/mcu.h"
@@ -299,15 +300,21 @@ static es_status m_registers(dbg *d)
         if (!name)
             continue;
         len = c->ops->reg_read(c, n, buf);
-        if (len != 4)
+        if (len != 1 && len != 2 && len != 4)
             continue;
         r = obj(d);
         if (!r)
             break;
-        esk_json_set_string(d->s->a, r, "name", name);
-        esk_json_set_integer(d->s->a, r, "regnum", n);
-        esk_json_set_integer(d->s->a, r, "value",
-                             (int64_t)((u32)buf[0] | (u32)buf[1] << 8 | (u32)buf[2] << 16 | (u32)buf[3] << 24));
+        {
+            u32 v = 0;
+            int k;
+            for (k = len - 1; k >= 0; k--)
+                v = v << 8 | buf[k];
+            esk_json_set_string(d->s->a, r, "name", name);
+            esk_json_set_integer(d->s->a, r, "regnum", n);
+            esk_json_set_integer(d->s->a, r, "value", (int64_t)v);
+            esk_json_set_integer(d->s->a, r, "size", len);
+        }
         esk_json_array_push(d->s->a, arr, r);
     }
     esk_json_object_set(d->s->a, d->result, "regs", arr);
@@ -330,7 +337,7 @@ static es_status m_set_register(dbg *d)
             buf[1] = (u8)(v >> 8);
             buf[2] = (u8)(v >> 16);
             buf[3] = (u8)(v >> 24);
-            if (c->ops->reg_write(c, n, buf) != 4)
+            if (c->ops->reg_write(c, n, buf) <= 0)
                 break;
             return m_registers(d);
         }
@@ -405,7 +412,8 @@ static es_status m_disassemble(dbg *d)
     (void)pu32(d, "count", &count);
     if (!count || count > MAX_DISASSEMBLY)
         count = 16;
-    addr &= ~1u;
+    if (!esk_avr_is(d->m->cpu))
+        addr &= ~1u;
     arr = esk_json_new_array(d->s->a);
     d->result = obj(d);
     if (!arr || !d->result) {
@@ -419,12 +427,13 @@ static es_status m_disassemble(dbg *d)
         esk_json *o = obj(d);
         if (!o)
             break;
-        if (esk_bus_debug_read(&d->m->bus, addr, 2, &h1) != 0) {
+        size = d->m->cpu->ops->disasm ? d->m->cpu->ops->disasm(d->m->cpu, addr, text, sizeof text) : 0;
+        if (size <= 0) {
             esk_json_free(d->s->a, o);
             break;
         }
+        (void)esk_bus_debug_read(&d->m->bus, addr, 2, &h1);
         (void)esk_bus_debug_read(&d->m->bus, addr + 2, 2, &h2);
-        size = esk_dis_thumb(addr, h1, h2, text, sizeof text);
         esk_json_set_integer(d->s->a, o, "address", (int64_t)addr);
         esk_json_set_integer(d->s->a, o, "size", size);
         esk_json_set_integer(d->s->a, o, "encoding", (int64_t)(size == 4 ? h1 << 16 | h2 : h1));

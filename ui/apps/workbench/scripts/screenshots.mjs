@@ -88,6 +88,20 @@ const bluepill = 'examples/bluepill-button-led/project.json';
 const counter = 'examples/counter-bus/project.json';
 const showcase = 'examples/display-showcase/project.json';
 const flasher = 'examples/kicad-flasher/project.json';
+const uno = 'examples/uno-blink-serial/project.json';
+const hifive = 'examples/hifive1-blink/project.json';
+const twoBoards = 'examples/two-boards-uart/project.json';
+
+/** the Debug perspective stopped at a breakpoint on `symbol` */
+async function debugAt(page, symbol, ms) {
+  await perspective(page, 3);
+  await wait(800);
+  await page.getByLabel('Breakpoint: a function or an address').fill(symbol);
+  await page.getByRole('button', { name: 'Add' }).click();
+  await wait(500);
+  await run(page, ms);
+  await wait(1200);
+}
 
 try {
   await shot(browser, 'design-transistor', transistor, async () => {});
@@ -113,6 +127,31 @@ try {
   }, { scale: 3, element: '.es-board svg' });
   await shot(browser, 'design-showcase', showcase, async (page) => run(page, 1500));
   await shot(browser, 'design-flasher', flasher, async (page) => run(page, 1500));
+  // M4: the Arduino Uno (AVR), the HiFive1 (RISC-V), and two boards on one line
+  await shot(browser, 'design-uno', uno, async (page) => run(page, 1500));
+  await shot(browser, 'run-uno', uno, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2500);
+  });
+  await shot(browser, 'board-uno', uno, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2600);
+  }, { scale: 2, element: '.es-board svg' });
+  await shot(browser, 'debug-uno', uno, (page) => debugAt(page, '__vector_14', 1500));
+  await shot(browser, 'run-hifive1', hifive, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'board-hifive1', hifive, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  }, { scale: 2, element: '.es-board svg' });
+  await shot(browser, 'debug-hifive1', hifive, (page) => debugAt(page, 'trap_entry', 1500));
+  await shot(browser, 'design-two-boards', twoBoards, async (page) => run(page, 2000));
+  await shot(browser, 'run-two-boards', twoBoards, async (page) => {
+    await perspective(page, 2);
+    await run(page, 3000);
+  });
   await shot(browser, 'design-bluepill', bluepill, async () => {});
   await shot(browser, 'design-bluepill-dark', bluepill, async () => {}, { dark: true });
   await shot(browser, 'inside-bluepill', bluepill, async (page) => {

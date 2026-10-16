@@ -1,0 +1,728 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "emblink/hifive1_revb",
+  "version": "1.0.0",
+  "name": "HiFive1 Rev B (FE310-G002)",
+  "description": "SiFive's HiFive1 Rev B: the FE310-G002 RISC-V MCU with 4 MiB of QSPI flash, a 16 MHz crystal, an RGB LED (red GPIO22, green GPIO19, blue GPIO21, active low), the reset button and Arduino Uno-style headers. USB comes in as the 5V pin; the J-Link OB bridge's serial port is the session's console on UART0.",
+  "keywords": [
+    "hifive1",
+    "sifive",
+    "fe310",
+    "risc-v",
+    "riscv"
+  ],
+  "revision": "Rev B",
+  "mcu": {
+    "ref": "sifive/fe310_g002",
+    "package": "qfn48",
+    "instance": "U1"
+  },
+  "oscillators": {
+    "hse": {
+      "hz": 16000000,
+      "source": "external_crystal",
+      "component": "Y1"
+    }
+  },
+  "components": [
+    {
+      "id": "U2",
+      "component": "emblink/regulator",
+      "params": {
+        "part": "AMS1117-3.3"
+      },
+      "doc": "3.3 V regulator from the 5 V rail (the Rev B's SPX3819)"
+    },
+    {
+      "id": "Y1",
+      "component": "emblink/crystal",
+      "params": {
+        "hz": "16meg"
+      },
+      "doc": "16 MHz crystal on HFXOSC"
+    },
+    {
+      "id": "LED_R",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "RGB LED, red: cathode on GPIO22 (active low)"
+    },
+    {
+      "id": "LED_G",
+      "component": "emblink/led",
+      "params": {
+        "color": "green"
+      },
+      "doc": "RGB LED, green: cathode on GPIO19 (active low)"
+    },
+    {
+      "id": "LED_B",
+      "component": "emblink/led",
+      "params": {
+        "color": "blue"
+      },
+      "doc": "RGB LED, blue: cathode on GPIO21 (active low)"
+    },
+    {
+      "id": "R_R",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "R_G",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "R_B",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "SW_RESET",
+      "component": "emblink/push_button",
+      "doc": "Reset, pulls ERST_N low"
+    },
+    {
+      "id": "R_RESET",
+      "component": "emblink/pull_up",
+      "params": {
+        "resistance": "10k",
+        "voltage": 3.3
+      },
+      "doc": "ERST_N pull-up"
+    },
+    {
+      "id": "J_PWR",
+      "component": "emblink/header",
+      "params": {
+        "pins": 8
+      },
+      "doc": "Power: NC IOREF RESET 3V3 5V GND GND VIN"
+    },
+    {
+      "id": "J_DLO",
+      "component": "emblink/header",
+      "params": {
+        "pins": 8
+      },
+      "doc": "Digital: D0..D7"
+    },
+    {
+      "id": "J_DHI",
+      "component": "emblink/header",
+      "params": {
+        "pins": 10
+      },
+      "doc": "Digital: D8..D13, GND, D15 (as AREF on an Uno), D18 (SDA), D19 (SCL)"
+    },
+    {
+      "id": "J_ANA",
+      "component": "emblink/header",
+      "params": {
+        "pins": 6
+      },
+      "doc": "Analog-header positions: D14..D19 (no ADC on the FE310)"
+    },
+    {
+      "id": "U3",
+      "component": "emblink/header",
+      "params": {
+        "pins": 6
+      },
+      "doc": "The IS25LP032 QSPI flash's pins: SCK, CS, DQ0..DQ3 (the flash's contents are the MCU's flash region; no flash device is modelled)"
+    },
+    {
+      "id": "J_JTAG",
+      "component": "emblink/header",
+      "params": {
+        "pins": 4
+      },
+      "doc": "JTAG to the J-Link OB debugger: TCK, TMS, TDI, TDO"
+    },
+    {
+      "id": "R_WAKE",
+      "component": "emblink/pull_up",
+      "params": {
+        "resistance": "100k",
+        "voltage": 3.3
+      },
+      "doc": "DWAKEUP_N held high"
+    },
+    {
+      "id": "R_LFALT",
+      "component": "emblink/pull_down",
+      "params": {
+        "resistance": "100k"
+      },
+      "doc": "LFALTCLK: the 32.768 kHz clock source is not drawn (the CLINT counts the MCU description's 32.768 kHz)"
+    }
+  ],
+  "nets": {
+    "5V": [
+      "U2.IN",
+      "J_PWR.5"
+    ],
+    "3V3": [
+      "U2.OUT",
+      "U1.VDD",
+      "U1.VDD_CORE",
+      "U1.AON_VDD",
+      "R_R.1",
+      "R_G.1",
+      "R_B.1",
+      "J_PWR.2",
+      "J_PWR.4"
+    ],
+    "GND": [
+      "U2.GND",
+      "U1.GND",
+      "SW_RESET.2",
+      "J_PWR.6",
+      "J_PWR.7",
+      "J_DHI.7"
+    ],
+    "RESET": [
+      "U1.NRST",
+      "SW_RESET.1",
+      "R_RESET.1",
+      "J_PWR.3"
+    ],
+    "OSC_IN": [
+      "U1.OSC_IN",
+      "Y1.1"
+    ],
+    "OSC_OUT": [
+      "U1.OSC_OUT",
+      "Y1.2"
+    ],
+    "LED_R_A": [
+      "R_R.2",
+      "LED_R.A"
+    ],
+    "LED_G_A": [
+      "R_G.2",
+      "LED_G.A"
+    ],
+    "LED_B_A": [
+      "R_B.2",
+      "LED_B.A"
+    ],
+    "QSPI_SCK": [
+      "U1.QSPI_SCK",
+      "U3.1"
+    ],
+    "QSPI_CS": [
+      "U1.QSPI_CS",
+      "U3.2"
+    ],
+    "QSPI_DQ0": [
+      "U1.QSPI_DQ0",
+      "U3.3"
+    ],
+    "QSPI_DQ1": [
+      "U1.QSPI_DQ1",
+      "U3.4"
+    ],
+    "QSPI_DQ2": [
+      "U1.QSPI_DQ2",
+      "U3.5"
+    ],
+    "QSPI_DQ3": [
+      "U1.QSPI_DQ3",
+      "U3.6"
+    ],
+    "JTAG_TCK": [
+      "U1.JTAG_TCK",
+      "J_JTAG.1"
+    ],
+    "JTAG_TMS": [
+      "U1.JTAG_TMS",
+      "J_JTAG.2"
+    ],
+    "JTAG_TDI": [
+      "U1.JTAG_TDI",
+      "J_JTAG.3"
+    ],
+    "JTAG_TDO": [
+      "U1.JTAG_TDO",
+      "J_JTAG.4"
+    ],
+    "DWAKEUP_N": [
+      "U1.DWAKEUP_N",
+      "R_WAKE.1"
+    ],
+    "LFALTCLK": [
+      "U1.OSC32_IN",
+      "R_LFALT.1"
+    ],
+    "GPIO0": [
+      "U1.GPIO0",
+      "J_DHI.1"
+    ],
+    "GPIO1": [
+      "U1.GPIO1",
+      "J_DHI.2"
+    ],
+    "GPIO2": [
+      "U1.GPIO2",
+      "J_DHI.3"
+    ],
+    "GPIO3": [
+      "U1.GPIO3",
+      "J_DHI.4"
+    ],
+    "GPIO4": [
+      "U1.GPIO4",
+      "J_DHI.5"
+    ],
+    "GPIO5": [
+      "U1.GPIO5",
+      "J_DHI.6"
+    ],
+    "GPIO9": [
+      "U1.GPIO9",
+      "J_DHI.8"
+    ],
+    "GPIO10": [
+      "U1.GPIO10",
+      "J_ANA.3"
+    ],
+    "GPIO11": [
+      "U1.GPIO11",
+      "J_ANA.4"
+    ],
+    "GPIO12": [
+      "U1.GPIO12",
+      "J_DHI.9"
+    ],
+    "GPIO13": [
+      "U1.GPIO13",
+      "J_DHI.10"
+    ],
+    "GPIO16": [
+      "U1.GPIO16",
+      "J_DLO.1"
+    ],
+    "GPIO17": [
+      "U1.GPIO17",
+      "J_DLO.2"
+    ],
+    "GPIO18": [
+      "U1.GPIO18",
+      "J_DLO.3"
+    ],
+    "GPIO19": [
+      "U1.GPIO19",
+      "LED_G.K",
+      "J_DLO.4"
+    ],
+    "GPIO20": [
+      "U1.GPIO20",
+      "J_DLO.5"
+    ],
+    "GPIO21": [
+      "U1.GPIO21",
+      "LED_B.K",
+      "J_DLO.6"
+    ],
+    "GPIO22": [
+      "U1.GPIO22",
+      "LED_R.K",
+      "J_DLO.7"
+    ],
+    "GPIO23": [
+      "U1.GPIO23",
+      "J_DLO.8"
+    ]
+  },
+  "ports": {
+    "D0": {
+      "net": "GPIO16",
+      "connector": "J_DLO",
+      "pin": 1,
+      "doc": "UART0 RX (the USB bridge's TX)"
+    },
+    "D1": {
+      "net": "GPIO17",
+      "connector": "J_DLO",
+      "pin": 2,
+      "doc": "UART0 TX"
+    },
+    "D2": {
+      "net": "GPIO18",
+      "connector": "J_DLO",
+      "pin": 3
+    },
+    "D3": {
+      "net": "GPIO19",
+      "connector": "J_DLO",
+      "pin": 4,
+      "doc": "Also the RGB LED's green"
+    },
+    "D4": {
+      "net": "GPIO20",
+      "connector": "J_DLO",
+      "pin": 5
+    },
+    "D5": {
+      "net": "GPIO21",
+      "connector": "J_DLO",
+      "pin": 6,
+      "doc": "Also the RGB LED's blue"
+    },
+    "D6": {
+      "net": "GPIO22",
+      "connector": "J_DLO",
+      "pin": 7,
+      "doc": "Also the RGB LED's red"
+    },
+    "D7": {
+      "net": "GPIO23",
+      "connector": "J_DLO",
+      "pin": 8
+    },
+    "D8": {
+      "net": "GPIO0",
+      "connector": "J_DHI",
+      "pin": 1
+    },
+    "D9": {
+      "net": "GPIO1",
+      "connector": "J_DHI",
+      "pin": 2
+    },
+    "D10": {
+      "net": "GPIO2",
+      "connector": "J_DHI",
+      "pin": 3
+    },
+    "D11": {
+      "net": "GPIO3",
+      "connector": "J_DHI",
+      "pin": 4
+    },
+    "D12": {
+      "net": "GPIO4",
+      "connector": "J_DHI",
+      "pin": 5
+    },
+    "D13": {
+      "net": "GPIO5",
+      "connector": "J_DHI",
+      "pin": 6
+    },
+    "GND_D": {
+      "net": "GND",
+      "connector": "J_DHI",
+      "pin": 7
+    },
+    "D15": {
+      "net": "GPIO9",
+      "connector": "J_DHI",
+      "pin": 8
+    },
+    "D18": {
+      "net": "GPIO12",
+      "connector": "J_DHI",
+      "pin": 9,
+      "doc": "SDA"
+    },
+    "D19": {
+      "net": "GPIO13",
+      "connector": "J_DHI",
+      "pin": 10,
+      "doc": "SCL"
+    },
+    "D16": {
+      "net": "GPIO10",
+      "connector": "J_ANA",
+      "pin": 3
+    },
+    "D17": {
+      "net": "GPIO11",
+      "connector": "J_ANA",
+      "pin": 4
+    },
+    "IOREF": {
+      "net": "3V3",
+      "connector": "J_PWR",
+      "pin": 2,
+      "doc": "The I/O voltage, 3.3 V"
+    },
+    "RESET": {
+      "net": "RESET",
+      "connector": "J_PWR",
+      "pin": 3
+    },
+    "3V3": {
+      "net": "3V3",
+      "connector": "J_PWR",
+      "pin": 4
+    },
+    "5V": {
+      "net": "5V",
+      "connector": "J_PWR",
+      "pin": 5,
+      "doc": "5 V in (USB's on a real board)"
+    },
+    "GND": {
+      "net": "GND",
+      "connector": "J_PWR",
+      "pin": 6
+    },
+    "GND_2": {
+      "net": "GND",
+      "connector": "J_PWR",
+      "pin": 7
+    }
+  },
+  "leds": [
+    {
+      "name": "red",
+      "component": "LED_R",
+      "gpio": "GPIO22",
+      "active": "low",
+      "color": "red"
+    },
+    {
+      "name": "green",
+      "component": "LED_G",
+      "gpio": "GPIO19",
+      "active": "low",
+      "color": "green"
+    },
+    {
+      "name": "blue",
+      "component": "LED_B",
+      "gpio": "GPIO21",
+      "active": "low",
+      "color": "blue"
+    }
+  ],
+  "buttons": [
+    {
+      "name": "reset",
+      "component": "SW_RESET",
+      "signal": "NRST",
+      "active": "low"
+    }
+  ],
+  "console": {
+    "peripheral": "UART0",
+    "tx": "GPIO17",
+    "rx": "GPIO16",
+    "baud": 115200
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 68.6,
+    "height_mm": 50.8,
+    "hotspots": [
+      {
+        "component": "LED_R",
+        "selector": "#led-red",
+        "output": "luminance"
+      },
+      {
+        "component": "LED_G",
+        "selector": "#led-green",
+        "output": "luminance"
+      },
+      {
+        "component": "LED_B",
+        "selector": "#led-blue",
+        "output": "luminance"
+      },
+      {
+        "component": "SW_RESET",
+        "selector": "#btn-reset",
+        "input": "pressed"
+      },
+      {
+        "port": "D0",
+        "selector": "#pin-d0"
+      },
+      {
+        "port": "D1",
+        "selector": "#pin-d1"
+      },
+      {
+        "port": "D2",
+        "selector": "#pin-d2"
+      },
+      {
+        "port": "D3",
+        "selector": "#pin-d3"
+      },
+      {
+        "port": "D4",
+        "selector": "#pin-d4"
+      },
+      {
+        "port": "D5",
+        "selector": "#pin-d5"
+      },
+      {
+        "port": "D6",
+        "selector": "#pin-d6"
+      },
+      {
+        "port": "D7",
+        "selector": "#pin-d7"
+      },
+      {
+        "port": "D8",
+        "selector": "#pin-d8"
+      },
+      {
+        "port": "D9",
+        "selector": "#pin-d9"
+      },
+      {
+        "port": "D10",
+        "selector": "#pin-d10"
+      },
+      {
+        "port": "D11",
+        "selector": "#pin-d11"
+      },
+      {
+        "port": "D12",
+        "selector": "#pin-d12"
+      },
+      {
+        "port": "D13",
+        "selector": "#pin-d13"
+      },
+      {
+        "port": "GND_D",
+        "selector": "#pin-gnd_d"
+      },
+      {
+        "port": "D15",
+        "selector": "#pin-d15"
+      },
+      {
+        "port": "D18",
+        "selector": "#pin-d18"
+      },
+      {
+        "port": "D19",
+        "selector": "#pin-d19"
+      },
+      {
+        "port": "D16",
+        "selector": "#pin-d16"
+      },
+      {
+        "port": "D17",
+        "selector": "#pin-d17"
+      },
+      {
+        "port": "IOREF",
+        "selector": "#pin-ioref"
+      },
+      {
+        "port": "RESET",
+        "selector": "#pin-reset"
+      },
+      {
+        "port": "3V3",
+        "selector": "#pin-3v3"
+      },
+      {
+        "port": "5V",
+        "selector": "#pin-5v"
+      },
+      {
+        "port": "GND",
+        "selector": "#pin-gnd"
+      },
+      {
+        "port": "GND_2",
+        "selector": "#pin-gnd_2"
+      }
+    ]
+  },
+  "toolchains": {
+    "clang": {
+      "target": "riscv32-unknown-elf",
+      "linker_script": "fe310.ld"
+    },
+    "gcc-riscv": {
+      "cpu": "rv32imac",
+      "flags": [
+        "-march=rv32imac_zicsr",
+        "-mabi=ilp32"
+      ],
+      "linker_script": "fe310.ld"
+    },
+    "embcc": {
+      "target": "riscv32-unknown-elf",
+      "linker_script": "fe310.ld"
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Nets, ports, the RGB LED and the reset button as logic-level parts; the FE310 runs its firmware from 0x20010000 (see its description).",
+      "omissions": [
+        "the J-Link OB debugger and USB bridge (the console is UART0 itself)",
+        "the ESP32-SOLO-1 Wi-Fi module",
+        "the bootloader in the first 64 KiB of flash",
+        "the 1.8 V core regulator"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "as functional"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "The 3.3 V regulator, the RGB LED with series resistors, the reset pull-up and the crystal as a BVD equivalent; GPIO bridges use the MCU's pin-model defaults.",
+      "omissions": [
+        "decoupling",
+        "the 1.8 V rail (the core supply pin sits on 3.3 V here)",
+        "ESD diodes"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "HiFive1 Rev B Getting Started Guide and schematics",
+        "rev": "v1.2",
+        "url": "https://www.sifive.com/boards/hifive1-rev-b"
+      },
+      {
+        "title": "SiFive FE310-G002 Manual",
+        "rev": "v1p5"
+      }
+    ],
+    "notes": "Artwork is an original SVG drawn for EmbSIM to the board's outline; no SiFive artwork or logo is used."
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

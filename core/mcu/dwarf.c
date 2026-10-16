@@ -250,7 +250,7 @@ static int unit(esk_dwarf *d, rd *r, const u8 *line_str, u32 line_str_len, const
     if (ver >= 5) {
         u32 asz = u8_(r);
         (void)u8_(r);
-        if (asz != 4)
+        if (asz != 4 && asz != 2) /* 2: an AVR's */
             return -1;
     }
     hlen = u32_(r);
@@ -371,6 +371,8 @@ static int unit(esk_dwarf *d, rd *r, const u8 *line_str, u32 line_str_len, const
                 stmt = default_stmt;
             } else if (sub == 2 && n == 5) {
                 addr = u32_(r);
+            } else if (sub == 2 && n == 3) {
+                addr = u16_(r); /* DW_LNE_set_address with 2-byte addresses */
             }
             r->p = next;
             break;

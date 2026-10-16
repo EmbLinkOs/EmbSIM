@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-rails",
+  "description": "7.5 V on VIN: the regulators make the 5 V and 3.3 V rails and the pulled-up RESET reads high.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/arduino_uno"
+      }
+    ],
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 7.5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "VS.+",
+        "B1.VIN"
+      ],
+      "GND": [
+        "VS.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "RST": [
+        "B1.RESET"
+      ],
+      "R5": [
+        "B1.5V"
+      ],
+      "R33": [
+        "B1.3V3"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R5": {
+      "at": "5ms",
+      "min_v": 4.9,
+      "max_v": 5.1
+    },
+    "net:R33": {
+      "at": "5ms",
+      "min_v": 3.2,
+      "max_v": 3.4
+    },
+    "net:RST": {
+      "at": "5ms",
+      "min_v": 4.5,
+      "max_v": 5.1
+    }
+  }
+}

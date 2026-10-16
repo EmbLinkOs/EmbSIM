@@ -13,10 +13,24 @@ import { errorMessage, inputs as inputActions } from '../actions';
 import { useProject } from '../stores/project';
 import { useSession } from '../stores/session';
 
+/** the colours an LED's `color` parameter names, for its artwork's --led-color */
+const LED_COLORS: Record<string, string> = {
+  red: '#ff3b3b',
+  green: '#2fd35a',
+  blue: '#3b7bff',
+  yellow: '#ffd23b',
+  white: '#f4f6ff',
+};
+
 interface BoardArtwork {
   width_mm?: number;
   height_mm?: number;
   hotspots?: { selector: string; component?: string; input?: string; output?: string; port?: string }[];
+}
+
+function ledColor(params: Record<string, unknown> | undefined): Record<string, string> | undefined {
+  const c = params?.color;
+  return typeof c === 'string' && LED_COLORS[c] ? { '--led-color': LED_COLORS[c] } : undefined;
 }
 
 export function BoardPanel({ interactive }: { interactive: boolean }) {
@@ -95,6 +109,7 @@ export function BoardPanel({ interactive }: { interactive: boolean }) {
         states: art.states,
         inputs: own,
         outputs: outs,
+        vars: ledColor(c.params),
       });
       x += w + 36;
     }

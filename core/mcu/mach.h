@@ -194,6 +194,9 @@ struct esk_cpu_ops {
     const char *(*reg_name)(struct esk_cpu *c, int n);
     /* an exception is pending that would end a wait (WFI) */
     int (*wake_pending)(struct esk_cpu *c);
+    /* the instruction at `addr`: its text and its size in bytes (0 when
+     * memory there cannot be read) */
+    int (*disasm)(struct esk_cpu *c, u32 addr, char *text, size_t cap);
 };
 
 struct esk_cpu {
@@ -228,6 +231,9 @@ typedef struct esk_mach_host {
     void (*uart_tx)(void *ctx, const char *unit, int c, u32 bit_cycles);
     /* a diagnostic (es_severity_t, a code from docs/user/diagnostics.md) */
     void (*diag)(void *ctx, int severity, const char *code, const char *msg);
+    /* the voltage on a pin's net, for an ADC: 1 and *v, or 0 when the pin
+     * is not connected */
+    int (*pin_volts)(void *ctx, int port, int bit, double *v);
 } esk_mach_host;
 
 /* ---- the machine ---------------------------------------------------------- */
@@ -287,6 +293,7 @@ struct esk_mach {
     void *clock_ctx;
     u32 reset_hz;
     u32 hse_hz;   /* the board's external oscillator, 0 for none */
+    double vdd;   /* the I/O supply in volts (the ADC's AVCC) */
     esk_mach_host host;
     /* the GPIO model's: the pins' outside levels changed; where a UART's
      * TX or RX pin is (0, or -1 when the part has no such UART) */
@@ -386,5 +393,11 @@ int esk_elf_symbol_at(const u8 *f, size_t len, u32 addr, char *name, size_t cap,
  * its own devices on the bus; ES_ENOTFOUND for an unknown model */
 es_status esk_cortexm_create(struct esk_mach *m, const char *model, int prio_bits,
                              struct esk_cpu **out);
+/* an AVR core of `model` ("atmega328p"), with its own devices on the bus
+ * (mcu/avr/avr.h) */
+es_status esk_avr_create(struct esk_mach *m, const char *model, struct esk_cpu **out);
+/* an RV32 core of `model` ("rv32imac") whose reset starts at reset_pc
+ * (mcu/riscv/riscv.h) */
+es_status esk_riscv_create(struct esk_mach *m, const char *model, u32 reset_pc, struct esk_cpu **out);
 
 #endif

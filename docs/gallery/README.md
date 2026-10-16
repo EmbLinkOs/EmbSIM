@@ -5,6 +5,28 @@ evolves. Newer milestones come first. Every set from M1 on is captured by
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M4 core families and boards, part 1 (2026-10-16)
+
+An Arduino Uno's AVR and a HiFive1's RISC-V core run their firmware, and
+boards of different families share one circuit.
+
+| | |
+|---|---|
+| ![Two boards on one line](m4/run-two-boards.png) | **Two boards.** `examples/two-boards-uart`: an Uno (AVR, 5 V) and a Blue Pill (Cortex-M3, 3.3 V) exchanging `ping` and `PING` over one serial line, each at its own baud rate; the Uno's L LED lit after the third round trip. |
+| ![Two boards on the schematic](m4/design-two-boards.png) | **Design, two boards.** Each board a block of its ports, the link and the power by net labels. |
+| ![The Uno running](m4/run-uno.png) | **The Uno running.** `examples/uno-blink-serial`: Timer1's PWM on D9 on the logic analyzer, the potentiometer's 2.5 V on A0, the board's artwork live. |
+| ![The Uno up close](m4/board-uno.png) | **The Uno's artwork.** Its L and ON LEDs lit, the blue LED on D9 dimmed by the PWM. |
+| ![The Uno's schematic](m4/design-uno.png) | **Design, Uno.** The potentiometer, button, LED and terminal wired to the Uno's pins by labels. |
+| ![Debugging the AVR](m4/debug-uno.png) | **Debugging the AVR.** Stopped at the Timer0 interrupt (`__vector_14`): the source line, the AVR disassembly, r0-r31 and the ATmega328P's peripherals. |
+| ![The HiFive1 running](m4/run-hifive1.png) | **The HiFive1 running.** `examples/hifive1-blink` on the FE310's RISC-V core. |
+| ![The HiFive1 up close](m4/board-hifive1.png) | **The HiFive1's artwork.** The RGB LED's green, toggled by the CLINT's timer interrupt. |
+| ![Debugging the RISC-V core](m4/debug-hifive1.png) | **Debugging RISC-V.** Stopped in the machine trap handler: the source, the compressed instructions, the registers by their ABI names. |
+| ![Display showcase](m4/board-showcase.png) | **Displays.** As in M3, the LED colours now from their parameters. |
+| ![Design, Blue Pill](m4/design-bluepill.png) | **Design, Blue Pill.** |
+| ![Decoded serial](m4/decode-bluepill.png) | **Decoding.** |
+| ![Debug, Blue Pill](m4/debug-bluepill.png) | **Debug, Blue Pill.** |
+| ![Dark theme](m4/design-bluepill-dark.png) | **Dark theme.** |
+
 ## M3 catalog and SDK (2026-10-16)
 
 The catalog grows to 101 components, each validated by the engine against

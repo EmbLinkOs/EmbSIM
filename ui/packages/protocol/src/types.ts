@@ -424,6 +424,8 @@ export interface Register {
   /** The register's number in GDB's target description. */
   regnum: number;
   value: number;
+  /** Its width in bytes (4 for a Cortex-M's, 1 for an AVR's r0-r31). */
+  size?: number;
 }
 
 export interface Frame {

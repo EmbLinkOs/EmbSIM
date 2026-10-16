@@ -1542,9 +1542,12 @@ static void reg_load(esk_adev *d, esk_amatrix *m)
     if (excess > 0.0) {
         vo -= excess * s->rlim; /* a soft current limit */
         rl = s->rlim;
-    } else if (iout < 0.0) {
+    } else if (iout < 0.0 || (iout <= 0.0 && esk_am_v(m, nout, ng) >= vo)) {
         /* the pass element cannot sink: a reverse current only flows through a
-         * large leakage resistance, so a pulled-up output rises above vo */
+         * large leakage resistance, so a pulled-up output rises above vo. The
+         * output above vo with no current yet (the first iteration against a
+         * supply that holds it) is this case too: regulating there would set
+         * two voltage sources against each other */
         vo -= iout * REG_RREV;
         rl = REG_RREV;
     }

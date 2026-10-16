@@ -25,6 +25,7 @@
         "model": {"type": "string", "minLength": 1},
         "priority_bits": {"type": "integer", "minimum": 0, "maximum": 8},
         "timing_tier": {"type": "string", "enum": ["exact", "estimated", "unmodelled"]},
+        "reset_pc": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "Where the core starts after reset (a RISC-V core's reset vector, or the entry its boot ROM jumps to)"},
         "fpu": {"type": "boolean"},
         "mpu": {"type": "boolean"},
         "endian": {"type": "string", "enum": ["little", "big"]},
@@ -137,7 +138,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "voh": {"type": "number"},
+            "vdd": {"type": "number", "description": "The I/O supply in volts the MCU runtime assumes (an ADC's analog supply)"}, "voh": {"type": "number"},
             "vol": {"type": "number"},
             "rout": {
               "oneOf": [

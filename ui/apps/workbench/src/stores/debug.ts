@@ -46,6 +46,8 @@ export interface DebugActions {
 }
 
 export const hex32 = (v: number) => '0x' + (v >>> 0).toString(16).padStart(8, '0');
+/** a register's value at its own width: 0x2a for an AVR's r16, 0x0800002a for a word */
+export const hexReg = (v: number, size = 4) => '0x' + (v >>> 0).toString(16).padStart(2 * size, '0');
 
 /** "0x0800_02f4", "134218484" or a symbol name. */
 export function parseAddress(text: string): { address?: number; symbol?: string } {

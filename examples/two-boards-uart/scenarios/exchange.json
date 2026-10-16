@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "exchange",
+  "until": "600ms",
+  "description": "Three round trips and more: the Blue Pill's banner, its upper-case echoes, the Uno's answers, the L LED from the third; the line levels of each side.",
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "20ms",
+      "probe": "bluepill",
+      "expect": {
+        "contains": "EmbSIM Blue Pill demo"
+      }
+    },
+    {
+      "id": "first-echo",
+      "at": "100ms",
+      "probe": "bluepill",
+      "expect": {
+        "contains": "PING 1"
+      }
+    },
+    {
+      "id": "first-ok",
+      "at": "100ms",
+      "probe": "uno",
+      "expect": {
+        "contains": "ok 1"
+      }
+    },
+    {
+      "id": "third-ok",
+      "at": "400ms",
+      "probe": "uno",
+      "expect": {
+        "contains": "ok 3"
+      }
+    },
+    {
+      "id": "led-off",
+      "at": "150ms",
+      "probe": "led_l",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "led-on",
+      "at": "400ms",
+      "probe": "led_l",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "five-volt-line",
+      "between": [
+        "1ms",
+        "600ms"
+      ],
+      "probe": "uno_tx_v",
+      "expect": {
+        "max_v": 5.1
+      }
+    },
+    {
+      "id": "three-volt-line",
+      "between": [
+        "1ms",
+        "600ms"
+      ],
+      "probe": "bp_tx_v",
+      "expect": {
+        "max_v": 3.4
+      }
+    }
+  ]
+}

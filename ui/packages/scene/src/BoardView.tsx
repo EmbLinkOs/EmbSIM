@@ -9,7 +9,7 @@
 
 import type { ArtworkState, Hotspot, OutputValue } from '@embsim/protocol';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { parseSvg } from './svg';
+import { parseSvg, scopeArtwork } from './svg';
 
 export interface BoardItem {
   id: string;
@@ -26,6 +26,9 @@ export interface BoardItem {
   inputs?: Record<string, unknown>;
   /** Current outputs of this item, keyed by output name. */
   outputs?: Record<string, OutputValue>;
+  /** CSS custom properties set on the item, which its artwork may read
+   * (`--led-color` for an LED's colour). */
+  vars?: Record<string, string>;
 }
 
 export interface BoardViewProps {
@@ -210,8 +213,13 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
           const sx = item.width / (vb.width || 1);
           const sy = item.height / (vb.height || 1);
           return (
-            <g key={item.id} data-board-item={item.id} transform={`translate(${item.x} ${item.y}) scale(${sx} ${sy}) translate(${-vb.x} ${-vb.y})`}>
-              <g dangerouslySetInnerHTML={{ __html: p.inner }} />
+            <g
+              key={item.id}
+              data-board-item={item.id}
+              style={item.vars as CSSProperties | undefined}
+              transform={`translate(${item.x} ${item.y}) scale(${sx} ${sy}) translate(${-vb.x} ${-vb.y})`}
+            >
+              <g dangerouslySetInnerHTML={{ __html: scopeArtwork(p.inner, item.id) }} />
             </g>
           );
         })}

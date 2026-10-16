@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "kind": "package",
+  "id": "sifive/fe310_g002/qfn48",
+  "name": "QFN48",
+  "description": "48-lead QFN, 6 x 6 mm (FE310-G002). The pins are listed by signal; the numbers are this description's order, not the package's physical pin numbers (boards connect by signal).",
+  "pins": [
+    {
+      "number": 1,
+      "signal": "VDD",
+      "doc": "3.3 V I/O supply"
+    },
+    {
+      "number": 2,
+      "signal": "VDD_CORE",
+      "doc": "1.8 V core supply"
+    },
+    {
+      "number": 3,
+      "signal": "GND"
+    },
+    {
+      "number": 4,
+      "signal": "AON_VDD",
+      "doc": "Always-on domain supply"
+    },
+    {
+      "number": 5,
+      "signal": "NRST",
+      "doc": "ERST_N: the external reset, active low"
+    },
+    {
+      "number": 6,
+      "signal": "OSC_IN",
+      "doc": "HFXOSCIN: the 16 MHz crystal"
+    },
+    {
+      "number": 7,
+      "signal": "OSC_OUT",
+      "doc": "HFXOSCOUT"
+    },
+    {
+      "number": 8,
+      "signal": "OSC32_IN",
+      "doc": "LFALTCLK: the 32.768 kHz clock"
+    },
+    {
+      "number": 9,
+      "signal": "DWAKEUP_N",
+      "doc": "Digital wake-up, active low"
+    },
+    {
+      "number": 10,
+      "signal": "QSPI_SCK",
+      "doc": "Flash clock"
+    },
+    {
+      "number": 11,
+      "signal": "QSPI_CS",
+      "doc": "Flash chip select"
+    },
+    {
+      "number": 12,
+      "signal": "QSPI_DQ0"
+    },
+    {
+      "number": 13,
+      "signal": "QSPI_DQ1"
+    },
+    {
+      "number": 14,
+      "signal": "QSPI_DQ2"
+    },
+    {
+      "number": 15,
+      "signal": "QSPI_DQ3"
+    },
+    {
+      "number": 16,
+      "signal": "JTAG_TCK"
+    },
+    {
+      "number": 17,
+      "signal": "JTAG_TMS"
+    },
+    {
+      "number": 18,
+      "signal": "JTAG_TDI"
+    },
+    {
+      "number": 19,
+      "signal": "JTAG_TDO"
+    },
+    {
+      "number": 20,
+      "signal": "GPIO0"
+    },
+    {
+      "number": 21,
+      "signal": "GPIO1"
+    },
+    {
+      "number": 22,
+      "signal": "GPIO2"
+    },
+    {
+      "number": 23,
+      "signal": "GPIO3"
+    },
+    {
+      "number": 24,
+      "signal": "GPIO4"
+    },
+    {
+      "number": 25,
+      "signal": "GPIO5"
+    },
+    {
+      "number": 26,
+      "signal": "GPIO9"
+    },
+    {
+      "number": 27,
+      "signal": "GPIO10"
+    },
+    {
+      "number": 28,
+      "signal": "GPIO11"
+    },
+    {
+      "number": 29,
+      "signal": "GPIO12"
+    },
+    {
+      "number": 30,
+      "signal": "GPIO13"
+    },
+    {
+      "number": 31,
+      "signal": "GPIO16"
+    },
+    {
+      "number": 32,
+      "signal": "GPIO17"
+    },
+    {
+      "number": 33,
+      "signal": "GPIO18"
+    },
+    {
+      "number": 34,
+      "signal": "GPIO19"
+    },
+    {
+      "number": 35,
+      "signal": "GPIO20"
+    },
+    {
+      "number": 36,
+      "signal": "GPIO21"
+    },
+    {
+      "number": 37,
+      "signal": "GPIO22"
+    },
+    {
+      "number": 38,
+      "signal": "GPIO23"
+    }
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "SiFive FE310-G002 Datasheet, signal descriptions",
+        "rev": "v1p2"
+      }
+    ]
+  }
+}

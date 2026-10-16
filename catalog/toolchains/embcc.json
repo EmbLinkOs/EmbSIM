@@ -57,7 +57,9 @@
         "embcc",
         "--target=avr"
       ],
-      "link_flags": []
+      "link_flags": [
+        "-nostdlib"
+      ]
     }
   },
   "steps": {

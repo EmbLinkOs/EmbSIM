@@ -386,6 +386,21 @@ static int h_pin_in(void *ctx, int port, int bit, int *level)
     return 1;
 }
 
+static int h_pin_volts(void *ctx, int port, int bit, double *v)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_pin *p;
+    const esk_net *n;
+    if (port < 0 || port >= MCU_PORTS || bit < 0 || bit > 15 || !(p = st->gpio[port][bit]) || !p->net)
+        return 0;
+    n = p->net;
+    if (n->island)
+        *v = n->voltage;
+    else
+        *v = esk_net_value(n) == ESK_L1 ? st->m.vdd : 0.0;
+    return 1;
+}
+
 /* ---- serial ------------------------------------------------------------------ */
 
 static mcu_uart *uart_named(mcu_state *st, const char *unit, int add)
@@ -886,7 +901,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     esk_engine *e = c->e;
     es_status st2;
     int port, bit;
-    char name[8];
+    char name[12];
     if (!esk_mcu_is(c))
         return ES_EINVAL;
     esk_mach_init(&st->m, e->a);
@@ -897,12 +912,19 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.pin_in = h_pin_in;
     st->m.host.uart_tx = h_uart_tx;
     st->m.host.diag = h_diag;
+    st->m.host.pin_volts = h_pin_volts;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     snprintf(st->console, sizeof st->console, "%s", su->console ? su->console : "USART1");
     for (port = 0; port < MCU_PORTS; port++)
         for (bit = 0; bit < 16; bit++) {
             snprintf(name, sizeof name, "P%c%d", 'A' + port, bit);
             st->gpio[port][bit] = esk_comp_pin(c, name);
+            if (!st->gpio[port][bit]) {
+                /* a part that numbers its pins GPIO0..n (an FE310's): port
+                 * k holds GPIO 16k to 16k + 15 */
+                snprintf(name, sizeof name, "GPIO%d", port * 16 + bit);
+                st->gpio[port][bit] = esk_comp_pin(c, name);
+            }
             if (st->gpio[port][bit] && st->gpio[port][bit]->model.kind == ESK_PIN_DIGITAL_IO)
                 esk_pin_watch(st->gpio[port][bit], 1);
             else
