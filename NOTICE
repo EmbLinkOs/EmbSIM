@@ -50,8 +50,16 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
   core/mcu/pic32/              tools/embsim/pic32.h, pic32-evic.c,
                                pic32-cru.c, pic32-tmr.c, pic32-gpio.c,
                                pic32-uart.c
+  core/mcu/pic24/pic24.h, pic24.c
+                               tools/embsim/pic24.h, pic24.c
+  core/mcu/pic24/dsp.c         tools/embsim/pic24-dsp.c
+  core/mcu/pic24/disasm.c      tools/embsim/disasm.c (dis_pic24)
+  core/mcu/pic24/intc.c, osc.c, tmr.c, gpio.c
+                               tools/embsim/pic24-intc.c, pic24-osc.c,
+                               pic24-tmr.c, pic32-gpio.c (its PIC24 part);
+                               uart.c is EmbSIM's
   tools/importers/edc2regs.py  tools/embsim/edc.c (its reading of a PIC32's
-                               EDC, written again in Python)
+                               and a PIC24's EDC, written again in Python)
   tests/firmware/bluepill-golden/
                                tests/golden/embsim-bluepill/ (bluepill.c,
                                bluepill.txt, bluepill-err.txt)
@@ -78,3 +86,9 @@ carries its own licence beside it:
                                Copyright (c) 2026 Microchip Technology Inc.;
                                Apache-2.0
                                (catalog/mcus/microchip/pic32mx795f512l/LICENSES/)
+  catalog/mcus/microchip/pic24fj1024gb610/registers.json, tqfp100.json
+                               converted from Microchip's PIC24F-GA-GB
+                               device pack (Microchip.PIC24F-GA-GB_DFP
+                               1.11.479), Copyright (c) 2026 Microchip
+                               Technology Inc.; Apache-2.0
+                               (catalog/mcus/microchip/pic24fj1024gb610/LICENSES/)

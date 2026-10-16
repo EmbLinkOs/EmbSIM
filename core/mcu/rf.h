@@ -134,6 +134,14 @@ struct esk_rf {
     const char **pin_name;
     int *pin_at; /* port * 32 + bit, port 0 being A */
     int npin;
+    /* the configuration words' addresses (program addresses), by name */
+    const char **cfg_name;
+    u32 *cfg_at;
+    int ncfg;
+    /* the PPS output functions' numbers, by name */
+    const char **pps_name;
+    int *pps_fn;
+    int npps;
 };
 
 /* Build the register file from a register description and put it on the
@@ -176,6 +184,10 @@ int esk_rf_irq_named(const struct esk_rf *rf, const char *name);
 int esk_rf_vector(const struct esk_rf *rf, int irq);
 /* the port pin function `name` is on, as port * 32 + bit (port A 0), or -1 */
 int esk_rf_pin(const struct esk_rf *rf, const char *name);
+/* the address of the configuration word of that name, or dflt */
+u32 esk_rf_config(const struct esk_rf *rf, const char *name, u32 dflt);
+/* the number of the PPS output function of that name (U2TX), or -1 */
+int esk_rf_pps_out(const struct esk_rf *rf, const char *name);
 /* pend that interrupt in the core */
 void esk_rf_interrupt(struct esk_rf_periph *p, int irq);
 /* the model's clock starts (1) or stops: while it runs, its tick hook is

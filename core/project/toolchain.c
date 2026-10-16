@@ -188,13 +188,50 @@ static const char *scalar(build *b, const char *name)
     return NULL;
 }
 
+/* one argument: a "${name}" inside it replaced by the variable's single
+ * value; an absent linker script drops the argument */
+static es_status push_one(build *b, const char *t, const char **argv, size_t *n)
+{
+    const char *open, *close;
+    if ((open = strstr(t, "${")) != NULL && (close = strchr(open, '}')) != NULL) {
+        char name[48], *p, *q;
+        const char *v;
+        size_t nl = (size_t)(close - open - 2), l;
+        if (nl >= sizeof name)
+            return ES_EINVAL;
+        memcpy(name, open + 2, nl);
+        name[nl] = 0;
+        v = scalar(b, name);
+        if (!v) {
+            if (!strcmp(name, "linker_script"))
+                return ES_OK; /* none given: the toolchain's default */
+            esk_strbuf_printf(&b->log, "no value for ${%s} in this build\n", name);
+            return ES_EINVAL;
+        }
+        l = (size_t)(open - t) + strlen(v) + strlen(close + 1) + 1;
+        p = (char *)esk_malloc(b->s->a, l);
+        if (!p)
+            return ES_ENOMEM;
+        esk_snprintf(p, l, "%.*s%s%s", (int)(open - t), t, v, close + 1);
+        q = esk_strdup(b->s->a, p);
+        esk_free(b->s->a, p, l);
+        if (!own(b, q))
+            return ES_ENOMEM;
+        argv[(*n)++] = q;
+        return ES_OK;
+    }
+    argv[(*n)++] = t;
+    return ES_OK;
+}
+
 /* one template into an argument vector */
 static es_status expand(build *b, const esk_json *tmpl, const char **argv, size_t *n)
 {
     size_t i;
     *n = 0;
     for (i = 0; i < esk_json_len(tmpl) && *n + 1 < MAX_ARGS; i++) {
-        const char *t = esk_json_str(esk_json_at(tmpl, i)), *open, *close;
+        const char *t = esk_json_str(esk_json_at(tmpl, i));
+        es_status st;
         if (!t)
             continue;
         if (!strcmp(t, "${cc}")) {
@@ -203,7 +240,14 @@ static es_status expand(build *b, const esk_json *tmpl, const char **argv, size_
             push_list(argv, n, esk_json_get(b->board_tc, "flags"));
             push_list(argv, n, esk_json_get(b->fw, "flags"));
         } else if (!strcmp(t, "${link_flags}")) {
-            push_list(argv, n, esk_json_get(b->ptarget, "link_flags"));
+            /* the profile's: they may name the build's variables (${map}) */
+            const esk_json *lf = esk_json_get(b->ptarget, "link_flags");
+            size_t k;
+            for (k = 0; k < esk_json_len(lf) && *n + 1 < MAX_ARGS; k++) {
+                const char *f = esk_json_str(esk_json_at(lf, k));
+                if (f && (st = push_one(b, f, argv, n)) != ES_OK)
+                    return st;
+            }
         } else if (!strcmp(t, "${link}")) {
             push_list(argv, n, esk_json_get(b->board_tc, "link"));
         } else if (!strcmp(t, "${defines}")) {
@@ -216,35 +260,8 @@ static es_status expand(build *b, const esk_json *tmpl, const char **argv, size_
             size_t k;
             for (k = 0; k < b->objects.len && *n + 1 < MAX_ARGS; k++)
                 argv[(*n)++] = b->objects.data[k];
-        } else if ((open = strstr(t, "${")) != NULL && (close = strchr(open, '}')) != NULL) {
-            char name[48], *p;
-            const char *v;
-            size_t nl = (size_t)(close - open - 2), l;
-            if (nl >= sizeof name)
-                return ES_EINVAL;
-            memcpy(name, open + 2, nl);
-            name[nl] = 0;
-            v = scalar(b, name);
-            if (!v) {
-                if (!strcmp(name, "linker_script"))
-                    continue; /* none given: the toolchain's default */
-                esk_strbuf_printf(&b->log, "no value for ${%s} in this build\n", name);
-                return ES_EINVAL;
-            }
-            l = (size_t)(open - t) + strlen(v) + strlen(close + 1) + 1;
-            p = (char *)esk_malloc(b->s->a, l);
-            if (!p)
-                return ES_ENOMEM;
-            esk_snprintf(p, l, "%.*s%s%s", (int)(open - t), t, v, close + 1);
-            {
-                char *q = esk_strdup(b->s->a, p);
-                esk_free(b->s->a, p, l);
-                if (!own(b, q))
-                    return ES_ENOMEM;
-                argv[(*n)++] = q;
-            }
-        } else {
-            argv[(*n)++] = t;
+        } else if ((st = push_one(b, t, argv, n)) != ES_OK) {
+            return st;
         }
     }
     argv[*n] = NULL;

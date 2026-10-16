@@ -152,6 +152,121 @@ def read_sfr(x: ET.Element):
     }
 
 
+# a 16-bit part's peripheral, named by its first register: the family's own
+# where the register's letters say little (EmbCC's edc.c table)
+NAMES16 = [("INTCON1", "INT"), ("IFS0", "INT"), ("OSCCON", "OSC"), ("PMCON", "PMP"), ("CRCCON1", "CRC"),
+           ("REFOCON", "REFO"), ("CTMUCON1", "CTMU"), ("RTCCON1", "RTCC"), ("CMSTAT", "CMP"), ("U1MODE", "UART"),
+           ("I2C1", "I2C"), ("DMACON", "DMA"), ("U1OTG", "USB"), ("TRISA", "GPIO"), ("TRISB", "GPIO"),
+           ("PADCON", "PAD"), ("NVMCON", "NVM"), ("RPINR", "PPS"), ("RPOR", "PPS"), ("HLVDCON", "HLVD"),
+           ("ADC1BUF", "ADC1"), ("AD1CON1", "ADC1"), ("TMR1", "TMR"), ("IC1CON", "IC"), ("OC1CON", "OC"),
+           ("CCP1CON", "CCP"), ("SPI1CON", "SPI"), ("CLC1CON", "CLC"), ("PMD1", "PMD"), ("RCON", "RCON"),
+           ("ANCFG", "ANCFG"), ("ALRMVAL", "RTCC"), ("DCICON1", "DCI"), ("C1CTRL1", "ECAN"), ("C2CTRL1", "ECAN"),
+           ("PTCON", "PWM"), ("PADCFG1", "PAD"), ("U3MODE", "UART"), ("U4MODE", "UART"), ("U1PWMRRS", "USB"),
+           ("PTGCST", "PTG"), ("ADC2BUF", "ADC2"), ("FEXL", "ICD")]
+
+
+def periph_name16(first: str) -> str:
+    for pre, nm in NAMES16:
+        if first.startswith(pre):
+            return nm
+    m = re.match(r"[A-Z]+", first)
+    return m.group(0) if m else first
+
+
+def convert16(root: ET.Element, bus: int):
+    """a PIC24's or dsPIC's EDC: the peripherals as runs of one module's
+    registers in the data space (the core's own, W0 to TBLPAG, are the
+    core's), at `bus` + their data address; the interrupts by number; the
+    configuration words by their program addresses"""
+    ds = next((e for e in root.iter() if tag(e) == "DataSpace"), None)
+    if ds is None:
+        sys.exit("edc2regs: no <edc:DataSpace>: not a 16-bit EDC file")
+    sfrs = []
+    for sec in ds.iter():
+        if tag(sec) != "SFRDataSector":
+            continue
+        for x in sec:
+            if tag(x) == "SFRDef":
+                r = read_sfr(x)
+                r["mod"] = attr(x, "_modsrc")
+                sfrs.append(r)
+            elif tag(x) == "JoinedSFRDef":
+                for y in x:
+                    if tag(y) == "SFRDef":
+                        r = read_sfr(y)
+                        r["mod"] = attr(y, "_modsrc")
+                        sfrs.append(r)
+    seen, uniq = set(), []
+    for s in sorted(sfrs, key=lambda s: s["addr"]):
+        if s["addr"] not in seen:
+            seen.add(s["addr"])
+            uniq.append(s)
+    periphs, order, last = {}, [], None
+    i = 0
+    while i < len(uniq):
+        j = i + 1
+        while j < len(uniq) and uniq[j]["mod"] == uniq[i]["mod"]:
+            j += 1
+        run = uniq[i:j]
+        mod = run[0]["mod"] or ""
+        if "CPU" in mod or run[0]["name"] == "WREG0":
+            i = j
+            continue
+        nm = clean(periph_name16(run[0]["name"]))
+        key = None
+        for k, (pn, pm) in periphs.items():
+            if pn == nm and pm == mod:
+                key = k
+        if key is None and last is not None and periphs[last][0] == nm:
+            key = last
+        if key is None:
+            dup = sum(1 for pn, _ in periphs.values() if pn == nm)
+            key = nm if not dup else f"{nm}_{dup + 1}"
+            periphs[key] = (nm, mod)
+            order.append((key, []))
+        last = key
+        dict(order)[key].extend(run)
+        i = j
+    # the UARTs' registers are one module's in the EDC: one peripheral a
+    # UART (UART1 to UART6), by the number in each register's name
+    split = []
+    for key, regs in order:
+        if key != "UART":
+            split.append((key, regs))
+            continue
+        units = {}
+        for s in regs:
+            m = re.match(r"U(\d)", s["name"])
+            units.setdefault(f"UART{m.group(1)}" if m else key, []).append(s)
+        split.extend(sorted(units.items(), key=lambda u: u[1][0]["addr"]))
+    order = split
+    out_p = []
+    for key, regs in order:
+        base = regs[0]["addr"]
+        rl = []
+        for s in regs:
+            r = {"name": s["name"], "offset": f"0x{s['addr'] - base:X}"}
+            if s["reset"]:
+                r["reset"] = f"0x{s['reset']:04X}"
+            r["size"] = 16
+            r["fields"] = s["fields"]
+            rl.append(r)
+        out_p.append({"name": key, "base": f"0x{bus + base:08X}", "registers": rl})
+    irqs = {}
+    il = next((e for e in root.iter() if tag(e) == "InterruptList"), None)
+    for q in il if il is not None else []:
+        cn = attr(q, "cname")
+        if tag(q) == "Interrupt" and cn:
+            irqs[clean(cn[:-9] if cn.endswith("Interrupt") and len(cn) > 9 else cn)] = num(attr(q, "irq"))
+    cfg = {}
+    ps = next((e for e in root.iter() if tag(e) == "ProgramSpace"), None)
+    sub = next((e for e in ps.iter() if tag(e) == "ProgramSubspace"), None) if ps is not None else None
+    for d in (sub.iter() if sub is not None else []):
+        if tag(d) == "DCRDef" and attr(d, "cname") and attr(d, "cname") not in cfg:
+            cfg[attr(d, "cname")] = f"0x{num(attr(d, '_addr')):06X}"
+    return out_p, irqs, cfg
+
+
 def read_vectors(atdf: Path) -> dict:
     """request number -> vector, from the ATDF's interrupts"""
     out = {}
@@ -176,11 +291,35 @@ def main() -> int:
     ap.add_argument("--package", help="also write the package's pin map here")
     ap.add_argument("--package-id")
     ap.add_argument("--package-name", default="TQFP100")
+    ap.add_argument("--bus", help="a 16-bit part's data space on EmbSIM's bus (default 0x2000000)")
     ap.add_argument("--package-pins", type=int, help="the package's pin count: the PinList's first pins (it lists the largest package's)")
     a = ap.parse_args()
 
     root = ET.parse(a.edc).getroot()
     device = attr(root, "name", "?")
+    if not (attr(root, "arch", "") or "").startswith("32"):
+        out_p, irqs, cfg = convert16(root, num(a.bus) if a.bus else 0x2000000)
+        doc = {"schema_version": 1, "kind": "registers", "id": a.id or f"microchip/{device.lower()}/registers",
+               "version": "1.0.0", "device": device,
+               "description": f"{device}'s special function registers in its data space (on EmbSIM's bus at 0x2000000), converted from Microchip's device pack by tools/importers/edc2regs.py",
+               "source": a.source or Path(a.edc).name,
+               "interrupts": dict(sorted(irqs.items(), key=lambda kv: (kv[1], kv[0])))}
+        if cfg:
+            doc["config_words"] = cfg
+        pins, pkg = read_pins(root)
+        if pins:
+            doc["pins"] = dict(sorted(pins.items()))
+        pps = {attr(v, "name"): num(attr(v, "ppsval")) for v in root.iter()
+               if tag(v) == "VirtualPin" and attr(v, "ppsval") and attr(v, "name")}
+        if pps:
+            doc["pps_outputs"] = dict(sorted(pps.items(), key=lambda kv: (kv[1], kv[0])))
+        doc["peripherals"] = out_p
+        Path(a.output).write_text(json.dumps(doc, indent=1) + "\n")
+        print(f"edc2regs: {device}: {len(out_p)} peripherals, {sum(len(p['registers']) for p in out_p)} registers, "
+              f"{len(irqs)} interrupts, {len(pins)} pin functions, {len(pps)} PPS outputs, "
+              f"{len(cfg)} configuration words")
+        write_package(a, device, pkg)
+        return 0
     ps = next((e for e in root.iter() if tag(e) == "PhysicalSpace"), None)
     if ps is None:
         sys.exit("edc2regs: no <edc:PhysicalSpace>: not a PIC32 EDC file")
@@ -256,7 +395,19 @@ def main() -> int:
         vec = read_vectors(Path(a.atdf))
         doc["vectors"] = {n: vec.get(i, i) for n, i in doc["interrupts"].items()}
 
-    # the pins: each function on its port pin; the package's pins in order
+    pins, pkg = read_pins(root)
+    if pins:
+        doc["pins"] = dict(sorted(pins.items()))
+    doc["peripherals"] = out_p
+    Path(a.output).write_text(json.dumps(doc, indent=1) + "\n")
+    print(f"edc2regs: {device}: {len(out_p)} peripherals, {sum(len(p['registers']) for p in out_p)} registers, "
+          f"{len(irqs)} interrupts, {len(pins)} pin functions")
+    write_package(a, device, pkg)
+    return 0
+
+
+def read_pins(root: ET.Element):
+    """each function on its port pin; the package's pins in order"""
     pins, pkg = {}, []
     pl = next((e for e in root.iter() if tag(e) == "PinList"), None)
     for p in pl if pl is not None else []:
@@ -273,12 +424,10 @@ def main() -> int:
             sig = clean(names[0].upper()) if names else "NC"
         pkg.append({"number": len(pkg) + 1, "signal": sig,
                     "doc": " / ".join(names)} if len(names) > 1 else {"number": len(pkg) + 1, "signal": sig})
-    if pins:
-        doc["pins"] = dict(sorted(pins.items()))
-    doc["peripherals"] = out_p
-    Path(a.output).write_text(json.dumps(doc, indent=1) + "\n")
-    print(f"edc2regs: {device}: {len(out_p)} peripherals, {sum(len(p['registers']) for p in out_p)} registers, "
-          f"{len(irqs)} interrupts, {len(pins)} pin functions")
+    return pins, pkg
+
+
+def write_package(a, device: str, pkg: list) -> None:
     if a.package_pins:
         pkg = pkg[:a.package_pins]
     if a.package:
@@ -290,7 +439,6 @@ def main() -> int:
             "pins": pkg,
         }, indent=1) + "\n")
         print(f"edc2regs: {len(pkg)} package pins")
-    return 0
 
 
 if __name__ == "__main__":

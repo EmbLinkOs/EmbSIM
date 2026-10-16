@@ -142,3 +142,33 @@ class EdcTest(unittest.TestCase):
             self.assertEqual(v.returncode, 0, v.stdout + v.stderr)
             pk = json.loads(pkg.read_text())
             self.assertEqual([x["signal"] for x in pk["pins"]], ["RF2", "VDD", "RD6"])
+
+    def test_converts_16bit(self):
+        """a PIC24's EDC (testdata/mini16.PIC): the data space on EmbSIM's bus
+        at 0x2000000, the core's registers left out, the UARTs one a
+        peripheral, the configuration words and the PPS outputs"""
+        with tempfile.TemporaryDirectory() as tmp:
+            out, pkg = Path(tmp) / "registers.json", Path(tmp) / "pkg.json"
+            r = subprocess.run([sys.executable, str(HERE / "importers" / "edc2regs.py"), str(DATA / "mini16.PIC"),
+                                "-o", str(out), "--package", str(pkg), "--package-id", "test/pic24fjtest/pkg3"],
+                               capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            d = json.loads(out.read_text())
+            self.assertEqual(d["device"], "PIC24FJTEST")
+            p = {x["name"]: x for x in d["peripherals"]}
+            self.assertEqual(set(p), {"INT", "UART1", "UART2", "GPIO"})
+            self.assertEqual(p["INT"]["base"], "0x02000080")
+            self.assertEqual(p["UART1"]["base"], "0x02000398")
+            self.assertEqual([x["name"] for x in p["UART1"]["registers"]], ["U1MODE", "U1STA"])
+            self.assertEqual(p["UART1"]["registers"][1]["reset"], "0x0100")
+            self.assertEqual(p["UART2"]["base"], "0x020003AE")
+            self.assertTrue(all(x["size"] == 16 for x in p["UART1"]["registers"]))
+            self.assertIn(["NSTDIS", 15, 1], p["INT"]["registers"][0]["fields"])
+            self.assertEqual(d["interrupts"], {"T1": 3, "U2RX": 30})
+            self.assertEqual(d["config_words"], {"FOSCSEL": "0x0ABF18"})
+            self.assertEqual(d["pps_outputs"], {"U2TX": 5})
+            self.assertEqual(d["pins"], {"RP5": "RA0"})
+            v = validate(out)
+            self.assertEqual(v.returncode, 0, v.stdout + v.stderr)
+            pk = json.loads(pkg.read_text())
+            self.assertEqual([x["signal"] for x in pk["pins"]], ["RA0", "VDD", "MCLR"])

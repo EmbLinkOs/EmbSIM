@@ -214,13 +214,15 @@ static es_status read_irqs(struct esk_mach *m, struct esk_rf_periph *p, const es
     return ES_OK;
 }
 
-/* the description's interrupt table, with the vectors, and its pins */
+/* the description's interrupt table, with the vectors, its pins, its
+ * configuration words and its PPS output functions */
 static es_status read_tables(struct esk_mach *m, struct esk_rf *rf, const esk_json *desc, char *why,
                              size_t cap)
 {
     const esk_json *t = esk_json_get(desc, "interrupts"), *v = esk_json_get(desc, "vectors");
-    const esk_json *pins = esk_json_get(desc, "pins");
-    size_t i, n = t ? esk_json_len(t) : 0, np = pins ? esk_json_len(pins) : 0;
+    const esk_json *pins = esk_json_get(desc, "pins"), *cw = esk_json_get(desc, "config_words");
+    const esk_json *pps = esk_json_get(desc, "pps_outputs");
+    size_t i, n = t ? esk_json_len(t) : 0, np = pins ? esk_json_len(pins) : 0, nc;
     if (n) {
         rf->irq_name = (const char **)esk_mach_alloc(m, n * sizeof *rf->irq_name);
         rf->irq_num = (int *)esk_mach_alloc(m, n * sizeof *rf->irq_num);
@@ -266,7 +268,67 @@ static es_status read_tables(struct esk_mach *m, struct esk_rf *rf, const esk_js
         rf->pin_at[i] = (at[1] - 'A') * 32 + (int)bit;
     }
     rf->npin = (int)np;
+    nc = cw ? esk_json_len(cw) : 0;
+    if (nc) {
+        rf->cfg_name = (const char **)esk_mach_alloc(m, nc * sizeof *rf->cfg_name);
+        rf->cfg_at = (u32 *)esk_mach_alloc(m, nc * sizeof *rf->cfg_at);
+        if (!rf->cfg_name || !rf->cfg_at)
+            return ES_ENOMEM;
+    }
+    for (i = 0; i < nc; i++) {
+        const esk_json *e = esk_json_at(cw, i);
+        const char *k = e ? e->key : NULL;
+        u64 x = 0;
+        if (!k || num(e, &x) || x > 0xffffffffu) {
+            snprintf(why, cap, "configuration word %s: a bad address", k ? k : "?");
+            return ES_ESCHEMA;
+        }
+        rf->cfg_name[i] = esk_mach_strdup(m, k);
+        if (!rf->cfg_name[i])
+            return ES_ENOMEM;
+        rf->cfg_at[i] = (u32)x;
+    }
+    rf->ncfg = (int)nc;
+    nc = pps ? esk_json_len(pps) : 0;
+    if (nc) {
+        rf->pps_name = (const char **)esk_mach_alloc(m, nc * sizeof *rf->pps_name);
+        rf->pps_fn = (int *)esk_mach_alloc(m, nc * sizeof *rf->pps_fn);
+        if (!rf->pps_name || !rf->pps_fn)
+            return ES_ENOMEM;
+    }
+    for (i = 0; i < nc; i++) {
+        const esk_json *e = esk_json_at(pps, i);
+        const char *k = e ? e->key : NULL;
+        u64 x = 0;
+        if (!k || num(e, &x) || x < 1 || x > 127) {
+            snprintf(why, cap, "PPS output %s: a bad function number", k ? k : "?");
+            return ES_ESCHEMA;
+        }
+        rf->pps_name[i] = esk_mach_strdup(m, k);
+        if (!rf->pps_name[i])
+            return ES_ENOMEM;
+        rf->pps_fn[i] = (int)x;
+    }
+    rf->npps = (int)nc;
     return ES_OK;
+}
+
+int esk_rf_pps_out(const struct esk_rf *rf, const char *name)
+{
+    int i;
+    for (i = 0; rf && name && i < rf->npps; i++)
+        if (!strcmp(rf->pps_name[i], name))
+            return rf->pps_fn[i];
+    return -1;
+}
+
+u32 esk_rf_config(const struct esk_rf *rf, const char *name, u32 dflt)
+{
+    int i;
+    for (i = 0; rf && name && i < rf->ncfg; i++)
+        if (!strcmp(rf->cfg_name[i], name))
+            return rf->cfg_at[i];
+    return dflt;
 }
 
 int esk_rf_irq_named(const struct esk_rf *rf, const char *name)

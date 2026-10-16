@@ -10,6 +10,7 @@
 
 #include "mcu/build.h"
 #include "mcu/mips/mips.h"
+#include "mcu/pic24/pic24.h"
 #include "mcu/rf.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -97,6 +98,11 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         st = esk_riscv_create(m, esk_json_get_str(core, "model", ""), reset_pc, &cpu);
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "mips")) {
         st = esk_mips_create(m, esk_json_get_str(core, "model", ""), &cpu);
+    } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "pic24")) {
+        u32 prog_end = 0, ram_base = 0;
+        (void)u32_of(esk_json_get(core, "prog_end"), &prog_end);
+        (void)u32_of(esk_json_get(core, "ram_base"), &ram_base);
+        st = esk_pic24_create(m, esk_json_get_str(core, "model", ""), prog_end, (u16)ram_base, &cpu);
     } else {
         snprintf(why, cap, "the %s core backend is not available", esk_json_get_str(core, "backend", "?"));
         return ES_EUNSUPPORTED;
