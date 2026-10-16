@@ -11,6 +11,9 @@ export interface LayoutState {
   canvasMode: CanvasMode;
   paletteOpen: boolean;
   diagnosticsOpen: boolean;
+  /** The board or composite part whose inside the schematic shows, or null. */
+  inside: string | null;
+  setInside(id: string | null): void;
   setPerspective(p: Perspective): void;
   setCanvasMode(m: CanvasMode): void;
   setPaletteOpen(open: boolean): void;
@@ -31,6 +34,8 @@ export const useLayout = create<LayoutState>((set) => ({
   canvasMode: 'select',
   paletteOpen: false,
   diagnosticsOpen: false,
+  inside: null,
+  setInside: (inside) => set({ inside }),
   setPerspective: (perspective) => {
     try {
       localStorage.setItem('embsim.perspective', perspective);

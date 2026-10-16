@@ -100,6 +100,13 @@ try {
   });
   await shot(browser, 'design-bluepill', bluepill, async () => {});
   await shot(browser, 'design-bluepill-dark', bluepill, async () => {}, { dark: true });
+  await shot(browser, 'inside-bluepill', bluepill, async (page) => {
+    // the board's inside, live: double-click it while the firmware runs
+    await run(page, 800);
+    const box = await page.getByRole('button', { name: /^B1, / }).boundingBox();
+    await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+    await wait(1200);
+  });
   await shot(browser, 'run-bluepill', bluepill, async (page) => {
     await perspective(page, 2);
     await run(page, 1500);

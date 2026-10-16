@@ -707,8 +707,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
 
   const onDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     const target = e.target as Element;
-    const compEl = target.closest('[data-component]');
-    if (compEl) onOpenComponent?.(compEl.getAttribute('data-component')!);
+    // the press captured the pointer, so the event may target the svg itself:
+    // find the part under the pointer by its bounds
+    const world = toWorld(e.clientX, e.clientY);
+    const hit = target.closest('[data-component]')?.getAttribute('data-component') ?? [...placed].reverse().find((p) => rectContainsRect(p.bounds, { x: world.x, y: world.y, width: 0, height: 0 }))?.id;
+    if (hit) onOpenComponent?.(hit);
     const labelEl = target.closest('[data-net-label]');
     if (labelEl && !readOnly) onRenameNet?.(labelEl.getAttribute('data-net-label')!);
   };

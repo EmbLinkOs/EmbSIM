@@ -40,7 +40,9 @@ versions follow semantic versioning. There is no release yet.
   the schematic as blocks of their ports and in the board view with their
   artwork; UART, SPI and I2C decoders on the logic analyzer; meters with
   units; a 500-part schematic near 60 Hz with its generator and frame-time
-  script; the Blue Pill example drawn with wires and labels.
+  script; the Blue Pill example drawn with wires and labels; buses drawn
+  with their live value (`layout.buses`) and `examples/counter-bus`; the
+  inside of a board or composite part opened on a read-only, live sheet.
 - Desktop: the Tauri shell builds and runs (Linux, WebKitGTK), opens a
   project given on its command line, waits for the engine before
   connecting, forwards the workbench's errors, has its icon; CI builds

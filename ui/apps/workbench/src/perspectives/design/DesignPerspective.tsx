@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { Badge, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
-import { SchematicCanvas, type CanvasMode, type SchematicCanvasHandle } from '@embsim/scene';
-import { Cable, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Badge, Button, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
+import { EMPTY_SELECTION, SchematicCanvas, type CanvasMode, type SchematicCanvasHandle } from '@embsim/scene';
+import { ArrowLeft, Cable, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { errorMessage, probes as probeActions } from '../../actions';
 import { useRegisterCommands } from '../../shell/commands';
+import { insideSource, insideView } from '../../stores/inside';
+import { openInside } from '../../stores/openInside';
 import { useLayout } from '../../stores/layout';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
@@ -31,6 +33,9 @@ export function DesignPerspective() {
   const canvasRef = useRef<SchematicCanvasHandle>(null);
   const [rename, setRename] = useState<{ net: string; value: string } | null>(null);
   const [bottomTab, setBottomTab] = useState<'nets' | 'board'>('nets');
+  const inside = useLayout((s) => s.inside);
+  const setInside = useLayout((s) => s.setInside);
+  const catalog = useProject((s) => s.catalog);
 
   const fail = useCallback((title: string) => (e: unknown) => toast({ kind: 'error', title, description: errorMessage(e) }), [toast]);
 
@@ -139,7 +144,36 @@ export function DesignPerspective() {
   );
   useRegisterCommands('design', commands);
 
-  const canvasActions = (
+  /** Double-click: a board or a composite part opens on its own sheet. */
+  const openInsideOf = useCallback(
+    (id: string) => {
+      setSelection({ components: [id], wires: [] });
+      openInside(id).catch(fail('Open failed'));
+    },
+    [setSelection, fail],
+  );
+
+  const insideOf = useMemo(() => {
+    if (!inside || !project) return null;
+    const ref = project.components.find((c) => c.id === inside)?.component ?? project.boards?.find((b) => b.id === inside)?.board;
+    const src = ref ? insideSource(catalog[ref]?.description) : null;
+    if (!src) return null;
+    const view = insideView(inside, src, sceneCatalog, project);
+    const states: typeof nets = {};
+    for (const [net, outer] of Object.entries(view.alias)) if (nets[outer]) states[net] = nets[outer]!;
+    return { ...view, states, catalog: { ...sceneCatalog, ...view.scene } };
+  }, [inside, project, catalog, sceneCatalog, nets]);
+
+  const canvasActions = insideOf ? (
+    <div className="wb-canvas-actions">
+      <Badge tone="accent" title="The inside of a board or part: read-only, its nets live while it runs">
+        inside {insideOf.project.name}
+      </Badge>
+      <Button size="sm" variant="ghost" icon={<ArrowLeft />} onClick={() => setInside(null)}>
+        Back to the project
+      </Button>
+    </div>
+  ) : (
     <div className="wb-canvas-actions">
       {!editable && (
         <Badge tone="warning" title="This server does not implement project.transaction; the schematic is read-only">
@@ -164,7 +198,21 @@ export function DesignPerspective() {
     </div>
   );
 
-  const canvas = project ? (
+  const canvas = insideOf ? (
+    <SchematicCanvas
+      key={`inside-${inside}`}
+      project={insideOf.project}
+      catalog={insideOf.catalog}
+      mode="select"
+      selection={EMPTY_SELECTION}
+      onSelectionChange={() => undefined}
+      live={running}
+      netStates={insideOf.states}
+      readOnly
+      onOpenComponent={() => setInside(null)}
+      label={`Inside ${insideOf.project.name}`}
+    />
+  ) : project ? (
     <SchematicCanvas
       handle={canvasRef}
       project={project}
@@ -192,7 +240,7 @@ export function DesignPerspective() {
           .then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` }))
           .catch(fail('Probe failed'));
       }}
-      onOpenComponent={(id) => setSelection({ components: [id], wires: [] })}
+      onOpenComponent={openInsideOf}
       label="Schematic canvas"
     />
   ) : null;

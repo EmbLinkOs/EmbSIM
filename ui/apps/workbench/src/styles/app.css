@@ -730,3 +730,18 @@
   color: var(--text-muted);
   border-bottom: 1px solid var(--line);
 }
+
+.wb-inspector__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+}
+.wb-inspector__facts dt {
+  color: var(--text-muted);
+}
+.wb-inspector__facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

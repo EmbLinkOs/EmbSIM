@@ -3,9 +3,10 @@
 import { Badge, Button, EmptyState, Input, Select, SignalChip, Toggle, useToast } from '@embsim/design';
 import { parseSi, type ParamDescription } from '@embsim/protocol';
 import { describeNetState } from '@embsim/scene';
-import { MousePointer2 } from 'lucide-react';
+import { Layers, MousePointer2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { errorMessage } from '../../actions';
+import { insideOf, openInside } from '../../stores/openInside';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
@@ -21,12 +22,59 @@ export function InspectorPanel() {
   const id = selection.components[0] ?? null;
   const wireNet = selection.wires.length ? wires[selection.wires[0]!]?.net ?? null : null;
   const netName = net ?? wireNet;
+  if (id && project?.boards?.some((b) => b.id === id)) return <BoardInspector id={id} />;
   if (id) return <ComponentInspector id={id} />;
   if (netName) return <NetInspector net={netName} />;
   return (
     <EmptyState icon={<MousePointer2 />} title="Nothing selected">
       Select a component or a wire on the schematic, or a net in the nets list.
     </EmptyState>
+  );
+}
+
+/** Opens a board's or a composite part's inside on the schematic. */
+function OpenInsideButton({ id }: { id: string }) {
+  const { toast } = useToast();
+  if (!insideOf(id)) return null;
+  return (
+    <Button size="sm" variant="ghost" icon={<Layers />} onClick={() => void openInside(id).catch((e: unknown) => toast({ kind: 'error', title: 'Open failed', description: errorMessage(e) }))}>
+      Open inside
+    </Button>
+  );
+}
+
+function BoardInspector({ id }: { id: string }) {
+  const board = useProject((s) => s.project?.boards?.find((b) => b.id === id));
+  const entry = useProject((s) => (board ? s.catalog[board.board] : undefined));
+  if (!board) return <EmptyState title={`${id} no longer exists`} />;
+  const desc = entry?.description as { name?: string; description?: string; version?: string; mcu?: { ref?: string } } | undefined;
+  return (
+    <div className="wb-inspector">
+      <div className="wb-inspector__head">
+        <span className="wb-inspector__id">{id}</span>
+        <span>{desc?.name ?? board.board}</span>
+      </div>
+      <div className="es-muted" style={{ fontSize: 'var(--text-xs)' }}>
+        <span className="es-mono">{board.board}</span>
+        {desc?.version && ` v${desc.version}`}
+        {desc?.description && ` — ${desc.description}`}
+      </div>
+      <section className="wb-inspector__section" aria-label="Board">
+        <dl className="wb-inspector__facts">
+          <dt>MCU</dt>
+          <dd className="es-mono">{desc?.mcu?.ref ?? '—'}</dd>
+          <dt>Firmware</dt>
+          <dd className="es-mono">{board.firmware?.image ?? 'none'}</dd>
+          {board.firmware?.toolchain && (
+            <>
+              <dt>Toolchain</dt>
+              <dd className="es-mono">{board.firmware.toolchain}</dd>
+            </>
+          )}
+        </dl>
+        <OpenInsideButton id={id} />
+      </section>
+    </div>
   );
 }
 
@@ -56,6 +104,7 @@ function ComponentInspector({ id }: { id: string }) {
         {desc && ` v${desc.version}`}
         {desc?.description && ` — ${desc.description}`}
       </div>
+      <OpenInsideButton id={id} />
 
       <section className="wb-inspector__section" aria-label="Parameters">
         <h3>Parameters</h3>
