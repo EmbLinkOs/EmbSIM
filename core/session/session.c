@@ -368,8 +368,17 @@ void esk_session_on_net_change(void *ctx, esk_net *net)
     size_t i;
     for (i = 0; i < s->probes.len; i++) {
         esk_probe *p = s->probes.data[i];
-        if (p->kind == ESK_PROBE_DIGITAL && p->net == net)
+        if (p->kind != ESK_PROBE_DIGITAL || p->net != net)
+            continue;
+        if (p->threshold) {
+            /* an analog net: its thresholded voltage, as the samples are,
+             * when it changed (the net's own digital value is Z) */
+            double v = probe_value(s, p);
+            if (!p->has_last || v != p->last)
+                probe_push(s, p, s->eng.sched.now, v);
+        } else {
             probe_push(s, p, s->eng.sched.now, (double)esk_net_value(net));
+        }
     }
 }
 

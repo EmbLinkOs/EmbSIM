@@ -169,7 +169,7 @@ analog comparator, on the FE310 the always-on domain, SPI, PWM and I2C (their
 registers hold values and raise `mcu.unsupported_access`); DWARF variables (`debug.variables`); the GDB
 server over the session protocol (`debug.gdb`); a debugger's choice of core
 on a part with two (it sees the core that runs next); full event traces and analog observations in recordings (SPEC-012 §1, §5),
-native models and `ctx.analog` for Lua models (SPEC-013 beyond §2), the
+native models (SPEC-013 beyond §2), the
 per-project `lua_budget` setting (the budget is fixed), ZIP64 and
 compressed formats other than deflate for library archives, the
 `catalog.validate` protocol method (the CLI has it), binary waveform frames

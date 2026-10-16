@@ -317,6 +317,7 @@ es_status esk_engine_add_comp(esk_engine *e, const char *id, const char *kind, c
         p->index = i;
         p->name = esk_strdup(e->a, pin_names[i]);
         p->model = pin_models[i];
+        p->model0 = pin_models[i];
         p->drive_value = ESK_LZ;
         p->drive_strength = ESK_STR_HIZ;
         p->pending_value = ESK_LZ;
@@ -759,16 +760,35 @@ static esk_logic bridge_in_value(const esk_pin *p)
     return p->sampled == ESK_LZ ? ESK_L0 : p->sampled;
 }
 
-void esk_engine_bridge_crossed(esk_engine *e, esk_pin *p, esk_logic value, es_time_t at)
+static void bridge_notify(esk_engine *e, esk_pin *p)
 {
-    ES_UNUSED(at);
-    if (p->sampled == value)
-        return;
-    p->sampled = value;
     if (p->watched && p->comp->ops->on_input)
         p->comp->ops->on_input(p->comp, p);
     if (e->on_net_change && p->net)
         e->on_net_change(e->on_net_change_ctx, p->net);
+}
+
+static void bridge_crossed_cb(void *ctx, void *arg, es_time_t now)
+{
+    esk_pin *p = (esk_pin *)ctx;
+    ES_UNUSED(arg);
+    ES_UNUSED(now);
+    bridge_notify(p->comp->e, p);
+}
+
+void esk_engine_bridge_crossed(esk_engine *e, esk_pin *p, esk_logic value, es_time_t at)
+{
+    esk_event_handle h = 0;
+    if (p->sampled == value)
+        return;
+    /* the comparator's state now, so the island does not find the crossing
+     * again; its model hears of it at the crossing's time, which a step
+     * bisecting ahead of the scheduler reaches later (a SIGNAL event runs
+     * before the island's next step at the same time) */
+    p->sampled = value;
+    if (at > e->sched.now && esk_sched_at(&e->sched, at, ESK_EV_SIGNAL, bridge_crossed_cb, p, NULL, &h) == ES_OK)
+        return;
+    bridge_notify(e, p);
 }
 
 void esk_pin_bridge_target(const esk_pin *p, double *v, double *r, int *open)
@@ -1037,6 +1057,7 @@ es_status esk_engine_reset(esk_engine *e)
         esk_comp *c = e->comps.data[i];
         for (k = 0; k < c->npins; k++) {
             esk_pin *p = &c->pins[k];
+            p->model = p->model0; /* a run's configuration ends with it */
             p->drive_value = ESK_LZ;
             p->drive_strength = ESK_STR_HIZ;
             p->pending = 0;

@@ -161,6 +161,10 @@ versions follow semantic versioning. There is no release yet.
   `tests/firmware/fault`.
 - The analyses name a function by its strong symbol, not a weak alias at
   the same address (startup code's `Default_Handler`).
+- `ctx.analog` for Lua models (SPEC-013 §2.1): `voltage(pin)` and
+  `between(a, b)` read node voltages; `watch(pin, rising, falling)` makes an
+  input's comparator switch at the model's own voltages, for behavioural
+  sensors and detectors.
 - `embsim catalog install` takes a zip archive of a library (at its top or
   in its one top directory) or an `http(s)://` URL to one (fetched with
   `curl`), as SPEC-014 §4 has it: unpacked into a staging directory,
@@ -208,6 +212,17 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- A digital input on an analog net heard of a threshold crossing when the
+  analog step that found it began, up to a step early (0.9 ms on a slow
+  ramp); it now hears of it at the crossing's own time, to the bisection's
+  resolution, as a `SIGNAL` event, as SPEC-004 §8 has it. MCU inputs, gates and scripted models on analog nets all see
+  the corrected times.
+- A reset kept the pin configuration of the run before it (an MCU's
+  pull-ups), so the analog side of a reset session started from it and ran
+  apart from a freshly loaded one; a reset restores every pin's model.
+- A digital probe on an analog net recorded the net's digital value (`Z`)
+  at each change besides its thresholded samples; it records the
+  thresholded level, when it changes.
 - The Verify perspective went blank for a project without scenarios or
   probes: the scenario editor's store selectors made a new empty list on
   every render, which rendered again without end.
