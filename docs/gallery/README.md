@@ -5,6 +5,22 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Arduino SPI and Wire on the Uno (2026-10-16)
+
+A sketch built with the unmodified ArduinoCore-avr (`tests/vendor/arduino/sketches/spi_wire`)
+drives the ATmega328P's new SPI and TWI models through the core's own SPI and
+Wire libraries. The 25LC040's RDSR after WREN reads back status 0x02, clocked at
+4 MHz through D13, whose L LED puts SCK on an analog net (the edge that once
+answered a bit late). Wire's first START addresses the 24C02 at 99.9 kHz, and
+the Serial terminal now joins the text the engine streams into whole lines,
+one port at a time.
+
+| | |
+|---|---|
+| ![Uno SPI decode: RDSR 0x05, then status 0x02](arduino-spi-wire/decode-uno-spi.png) | ![Uno TWI decode: START, 0x50 W ACK at 100 kHz](arduino-spi-wire/decode-uno-i2c.png) |
+
+[The sketch's Wire results in the Serial terminal](arduino-spi-wire/serial-uno-spi-wire.png).
+
 ## Serial and analog peripherals on the Pico and the nRF52840 DK (2026-10-16)
 
 Vendor firmware, unmodified drivers, against parts from the catalog: the Pico

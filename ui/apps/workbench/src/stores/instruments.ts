@@ -5,7 +5,7 @@
 // time window and cursors, probe list, serial lines. Records are mutable
 // buffers; `revision` tells renderers that samples arrived.
 
-import { defaultWindow, WaveformRecord, type Cursors, type SerialLine, type TimeWindow } from '@embsim/instruments';
+import { appendSerialText, defaultWindow, WaveformRecord, type Cursors, type SerialLine, type TimeWindow } from '@embsim/instruments';
 import type { ProbeInfo, WaveformSamples } from '@embsim/protocol';
 import { create } from 'zustand';
 
@@ -32,6 +32,8 @@ export interface InstrumentsState {
   setSelectedLogic(id: string | null): void;
   setStreams(streams: (string | number)[], probes: string[]): void;
   addSerialLine(line: SerialLine): void;
+  /** text a serial port received: joined into lines (appendSerialText) */
+  addSerialText(target: string, at: SerialLine['at'], text: string): void;
   setSerialTarget(target: string | null): void;
   clearRecords(): void;
 }
@@ -103,6 +105,7 @@ export const useInstruments = create<InstrumentsState>((set, get) => ({
   setSelectedLogic: (selectedLogic) => set({ selectedLogic }),
   setStreams: (streams, streamProbes) => set({ streams, streamProbes }),
   addSerialLine: (line) => set((s) => ({ serialLines: [...s.serialLines, line].slice(-2000) })),
+  addSerialText: (target, at, text) => set((s) => ({ serialLines: appendSerialText(s.serialLines, target, at, text) })),
   setSerialTarget: (serialTarget) => set({ serialTarget }),
   clearRecords: () => {
     for (const r of get().records.values()) r.clear();

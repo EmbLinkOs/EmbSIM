@@ -123,7 +123,7 @@ async function openSession(options: ConnectOptions): Promise<Client> {
         return d.base64;
       }
     })();
-    useInstruments.getState().addSerialLine({ at: useSession.getState().now, direction: 'rx', text });
+    useInstruments.getState().addSerialText(d.target, useSession.getState().now, text);
   });
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
   c.on('project.changed', () => {

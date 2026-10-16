@@ -428,6 +428,11 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The workbench's Serial terminal showed each piece of streamed text as a
+  line of its own and mixed every port's text together: received text now
+  goes on its port's open line until a newline, stamped with its first
+  piece's time, the terminal shows the port chosen, and that port (the
+  first one until another is picked) takes what is sent.
 - An MCU's pin edge on an analog net reached the circuit after the core
   had gone on to its next edges: the next quantum started 1 ps later,
   before the edge's ramp had crossed a device's threshold, so a 25LC040
