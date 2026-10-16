@@ -28,6 +28,18 @@ naming the EmbCC commit and path. Extracted at EmbCC commit aa4f10a:
   core/mcu/stm32/gpio_f1.c     tools/embsim/stm32f1-gpio.c
   core/mcu/stm32/usart.c       tools/embsim/stm32-usart.c
   core/mcu/stm32/tim.c         tools/embsim/stm32-tim.c
+  core/mcu/avr/avr.h, avr.c    tools/embsim/avr.h, avr.c
+  core/mcu/avr/cost.h          tools/bench/cost.h (avr_cost)
+  core/mcu/avr/timer.c         tools/embsim/avr-timer16.c (TC1's counting)
+  core/mcu/avr/usart.c         tools/embsim/avr-usart.c
+  core/mcu/riscv/riscv.h, riscv.c
+                               tools/embsim/riscv.h, riscv.c
+  core/mcu/riscv/cost.h        tools/bench/cost.h (rv_cost)
+  core/mcu/riscv/disasm.c      tools/embsim/disasm.c (dis_riscv)
+  core/mcu/riscv/clint.c       tools/embsim/clint.c
+  core/mcu/rp2040/             tools/embsim/rp2040.h, rp2040.c,
+                               rp2040-io.c, rp2040-sio.c, rp2040-timer.c,
+                               rp2040-uart.c, rp2040-ssi.c
   tests/firmware/bluepill-golden/
                                tests/golden/embsim-bluepill/ (bluepill.c,
                                bluepill.txt, bluepill-err.txt)
@@ -37,3 +49,8 @@ carries its own licence beside it:
 
   third_party/lua/             Lua 5.4.7, Copyright (C) 1994-2024 Lua.org,
                                PUC-Rio; MIT licence (third_party/lua/LICENSE)
+  catalog/mcus/raspberrypi/rp2040/registers.json
+                               converted from Raspberry Pi's RP2040.svd
+                               (pico-sdk 2.0.0), Copyright (c) 2024
+                               Raspberry Pi Ltd.; BSD-3-Clause
+                               (catalog/mcus/raspberrypi/rp2040/LICENSES/)

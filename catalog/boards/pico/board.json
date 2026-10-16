@@ -1,0 +1,936 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "emblink/pico",
+  "version": "1.0.0",
+  "name": "Raspberry Pi Pico (RP2040)",
+  "description": "The Raspberry Pi Pico: the RP2040 with 2 MiB of W25Q16JV QSPI flash, a 12 MHz crystal, the user LED on GPIO25 (active high), the BOOTSEL button, a 3.3 V buck-boost regulator from VSYS and the 40-pin edge. USB comes in as VBUS; the session's console is UART0 on GP0 (TX) and GP1 (RX).",
+  "keywords": [
+    "pico",
+    "raspberry pi",
+    "rp2040",
+    "cortex-m0+"
+  ],
+  "revision": "Rev 3",
+  "mcu": {
+    "ref": "raspberrypi/rp2040",
+    "package": "qfn56",
+    "instance": "U1"
+  },
+  "oscillators": {
+    "hse": {
+      "hz": 12000000,
+      "source": "external_crystal",
+      "component": "Y1"
+    }
+  },
+  "components": [
+    {
+      "id": "U2",
+      "component": "emblink/regulator",
+      "params": {
+        "part": "generic",
+        "vout": 3.3,
+        "dropout": 0.05,
+        "imax": 0.8,
+        "quiescent": 0
+      },
+      "doc": "3.3 V from VSYS (the Pico's RT6150 buck-boost: it regulates with VSYS above or below 3.3 V)"
+    },
+    {
+      "id": "D1",
+      "component": "emblink/diode_schottky",
+      "doc": "VBUS to VSYS (MBR120)"
+    },
+    {
+      "id": "Y1",
+      "component": "emblink/crystal",
+      "params": {
+        "hz": "12meg"
+      },
+      "doc": "12 MHz crystal on XOSC"
+    },
+    {
+      "id": "LED1",
+      "component": "emblink/led",
+      "params": {
+        "color": "green"
+      },
+      "doc": "The user LED on GPIO25, active high"
+    },
+    {
+      "id": "R_LED",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "470"
+      }
+    },
+    {
+      "id": "SW_BOOTSEL",
+      "component": "emblink/push_button",
+      "doc": "BOOTSEL: pulls the flash's chip select low through R_BOOT (read by the bootrom at reset; the stand-in boots from flash whatever it reads)"
+    },
+    {
+      "id": "R_BOOT",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1k"
+      }
+    },
+    {
+      "id": "R_SS",
+      "component": "emblink/pull_up",
+      "params": {
+        "resistance": "10k",
+        "voltage": 3.3
+      },
+      "doc": "The flash's chip select pulled up"
+    },
+    {
+      "id": "R_ADC",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "200"
+      },
+      "doc": "ADC_AVDD filtered from 3.3 V (ADC_VREF on pin 35)"
+    },
+    {
+      "id": "R_VB1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "5.6k"
+      },
+      "doc": "VBUS sense divider to GPIO24"
+    },
+    {
+      "id": "R_VB2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      }
+    },
+    {
+      "id": "R_VS1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "200k"
+      },
+      "doc": "VSYS / 3 to GPIO29 (ADC3)"
+    },
+    {
+      "id": "R_VS2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "100k"
+      }
+    },
+    {
+      "id": "R_PS",
+      "component": "emblink/pull_down",
+      "params": {
+        "resistance": "100k"
+      },
+      "doc": "GPIO23: the SMPS's power-save select (low: PFM)"
+    },
+    {
+      "id": "R_EN",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "100k"
+      },
+      "doc": "3V3_EN pulled up to VSYS"
+    },
+    {
+      "id": "J1",
+      "component": "emblink/header",
+      "params": {
+        "pins": 20
+      },
+      "doc": "Pins 1-20 (GP0..GP15)"
+    },
+    {
+      "id": "J2",
+      "component": "emblink/header",
+      "params": {
+        "pins": 20
+      },
+      "doc": "Pins 21-40 (GP16..VBUS)"
+    },
+    {
+      "id": "U3",
+      "component": "emblink/header",
+      "params": {
+        "pins": 6
+      },
+      "doc": "The W25Q16JV QSPI flash's pins: SCLK, SS, SD0..SD3 (its contents are the MCU's flash region; the SSI answers for it)"
+    },
+    {
+      "id": "J_USB",
+      "component": "emblink/header",
+      "params": {
+        "pins": 2
+      },
+      "doc": "The micro-USB connector's data lines (USB is not modelled)"
+    },
+    {
+      "id": "J_SWD",
+      "component": "emblink/header",
+      "params": {
+        "pins": 3
+      },
+      "doc": "The debug pads: SWCLK, GND, SWDIO"
+    }
+  ],
+  "nets": {
+    "VBUS": [
+      "D1.A",
+      "R_VB1.1",
+      "J2.20"
+    ],
+    "VSYS": [
+      "D1.K",
+      "U2.IN",
+      "R_VS1.1",
+      "R_EN.1",
+      "J2.19"
+    ],
+    "3V3": [
+      "U2.OUT",
+      "U1.VDD",
+      "U1.VDD_CORE",
+      "U1.VDD_VREG",
+      "U1.VREG_VOUT",
+      "U1.VDD_USB",
+      "R_ADC.1",
+      "J2.16"
+    ],
+    "GND": [
+      "U2.GND",
+      "U1.GND",
+      "U1.TESTEN",
+      "LED1.K",
+      "SW_BOOTSEL.2",
+      "R_VB2.2",
+      "R_VS2.2",
+      "J_SWD.2",
+      "J1.3",
+      "J1.8",
+      "J1.13",
+      "J1.18",
+      "J2.3",
+      "J2.8",
+      "J2.13",
+      "J2.18"
+    ],
+    "RUN": [
+      "U1.NRST",
+      "J2.10"
+    ],
+    "ADC_VREF": [
+      "U1.VDD_ADC",
+      "R_ADC.2",
+      "J2.15"
+    ],
+    "3V3_EN": [
+      "R_EN.2",
+      "J2.17"
+    ],
+    "OSC_IN": [
+      "U1.OSC_IN",
+      "Y1.1"
+    ],
+    "OSC_OUT": [
+      "U1.OSC_OUT",
+      "Y1.2"
+    ],
+    "LED_A": [
+      "R_LED.2",
+      "LED1.A"
+    ],
+    "QSPI_SCLK": [
+      "U1.QSPI_SCLK",
+      "U3.1"
+    ],
+    "QSPI_SS": [
+      "U1.QSPI_SS",
+      "U3.2",
+      "R_BOOT.1",
+      "R_SS.1"
+    ],
+    "BOOTSEL": [
+      "R_BOOT.2",
+      "SW_BOOTSEL.1"
+    ],
+    "QSPI_SD0": [
+      "U1.QSPI_SD0",
+      "U3.3"
+    ],
+    "QSPI_SD1": [
+      "U1.QSPI_SD1",
+      "U3.4"
+    ],
+    "QSPI_SD2": [
+      "U1.QSPI_SD2",
+      "U3.5"
+    ],
+    "QSPI_SD3": [
+      "U1.QSPI_SD3",
+      "U3.6"
+    ],
+    "USB_DP": [
+      "U1.USB_DP",
+      "J_USB.1"
+    ],
+    "USB_DM": [
+      "U1.USB_DM",
+      "J_USB.2"
+    ],
+    "SWCLK": [
+      "U1.SWCLK",
+      "J_SWD.1"
+    ],
+    "SWDIO": [
+      "U1.SWDIO",
+      "J_SWD.3"
+    ],
+    "GPIO0": [
+      "U1.GPIO0",
+      "J1.1"
+    ],
+    "GPIO1": [
+      "U1.GPIO1",
+      "J1.2"
+    ],
+    "GPIO2": [
+      "U1.GPIO2",
+      "J1.4"
+    ],
+    "GPIO3": [
+      "U1.GPIO3",
+      "J1.5"
+    ],
+    "GPIO4": [
+      "U1.GPIO4",
+      "J1.6"
+    ],
+    "GPIO5": [
+      "U1.GPIO5",
+      "J1.7"
+    ],
+    "GPIO6": [
+      "U1.GPIO6",
+      "J1.9"
+    ],
+    "GPIO7": [
+      "U1.GPIO7",
+      "J1.10"
+    ],
+    "GPIO8": [
+      "U1.GPIO8",
+      "J1.11"
+    ],
+    "GPIO9": [
+      "U1.GPIO9",
+      "J1.12"
+    ],
+    "GPIO10": [
+      "U1.GPIO10",
+      "J1.14"
+    ],
+    "GPIO11": [
+      "U1.GPIO11",
+      "J1.15"
+    ],
+    "GPIO12": [
+      "U1.GPIO12",
+      "J1.16"
+    ],
+    "GPIO13": [
+      "U1.GPIO13",
+      "J1.17"
+    ],
+    "GPIO14": [
+      "U1.GPIO14",
+      "J1.19"
+    ],
+    "GPIO15": [
+      "U1.GPIO15",
+      "J1.20"
+    ],
+    "GPIO16": [
+      "U1.GPIO16",
+      "J2.1"
+    ],
+    "GPIO17": [
+      "U1.GPIO17",
+      "J2.2"
+    ],
+    "GPIO18": [
+      "U1.GPIO18",
+      "J2.4"
+    ],
+    "GPIO19": [
+      "U1.GPIO19",
+      "J2.5"
+    ],
+    "GPIO20": [
+      "U1.GPIO20",
+      "J2.6"
+    ],
+    "GPIO21": [
+      "U1.GPIO21",
+      "J2.7"
+    ],
+    "GPIO22": [
+      "U1.GPIO22",
+      "J2.9"
+    ],
+    "GPIO23": [
+      "U1.GPIO23",
+      "R_PS.1"
+    ],
+    "GPIO24": [
+      "U1.GPIO24",
+      "R_VB1.2",
+      "R_VB2.1"
+    ],
+    "GPIO25": [
+      "U1.GPIO25",
+      "R_LED.1"
+    ],
+    "GPIO26": [
+      "U1.GPIO26",
+      "J2.11"
+    ],
+    "GPIO27": [
+      "U1.GPIO27",
+      "J2.12"
+    ],
+    "GPIO28": [
+      "U1.GPIO28",
+      "J2.14"
+    ],
+    "GPIO29": [
+      "U1.GPIO29",
+      "R_VS1.2",
+      "R_VS2.1"
+    ]
+  },
+  "ports": {
+    "GP0": {
+      "net": "GPIO0",
+      "connector": "J1",
+      "pin": 1,
+      "doc": "Pin 1: UART0 TX"
+    },
+    "GP1": {
+      "net": "GPIO1",
+      "connector": "J1",
+      "pin": 2,
+      "doc": "Pin 2: UART0 RX"
+    },
+    "GND": {
+      "net": "GND",
+      "connector": "J1",
+      "pin": 3,
+      "doc": "Pin 3"
+    },
+    "GP2": {
+      "net": "GPIO2",
+      "connector": "J1",
+      "pin": 4,
+      "doc": "Pin 4"
+    },
+    "GP3": {
+      "net": "GPIO3",
+      "connector": "J1",
+      "pin": 5,
+      "doc": "Pin 5"
+    },
+    "GP4": {
+      "net": "GPIO4",
+      "connector": "J1",
+      "pin": 6,
+      "doc": "Pin 6: UART1 TX"
+    },
+    "GP5": {
+      "net": "GPIO5",
+      "connector": "J1",
+      "pin": 7,
+      "doc": "Pin 7: UART1 RX"
+    },
+    "GND_2": {
+      "net": "GND",
+      "connector": "J1",
+      "pin": 8,
+      "doc": "Pin 8"
+    },
+    "GP6": {
+      "net": "GPIO6",
+      "connector": "J1",
+      "pin": 9,
+      "doc": "Pin 9"
+    },
+    "GP7": {
+      "net": "GPIO7",
+      "connector": "J1",
+      "pin": 10,
+      "doc": "Pin 10"
+    },
+    "GP8": {
+      "net": "GPIO8",
+      "connector": "J1",
+      "pin": 11,
+      "doc": "Pin 11"
+    },
+    "GP9": {
+      "net": "GPIO9",
+      "connector": "J1",
+      "pin": 12,
+      "doc": "Pin 12"
+    },
+    "GND_3": {
+      "net": "GND",
+      "connector": "J1",
+      "pin": 13,
+      "doc": "Pin 13"
+    },
+    "GP10": {
+      "net": "GPIO10",
+      "connector": "J1",
+      "pin": 14,
+      "doc": "Pin 14"
+    },
+    "GP11": {
+      "net": "GPIO11",
+      "connector": "J1",
+      "pin": 15,
+      "doc": "Pin 15"
+    },
+    "GP12": {
+      "net": "GPIO12",
+      "connector": "J1",
+      "pin": 16,
+      "doc": "Pin 16"
+    },
+    "GP13": {
+      "net": "GPIO13",
+      "connector": "J1",
+      "pin": 17,
+      "doc": "Pin 17"
+    },
+    "GND_4": {
+      "net": "GND",
+      "connector": "J1",
+      "pin": 18,
+      "doc": "Pin 18"
+    },
+    "GP14": {
+      "net": "GPIO14",
+      "connector": "J1",
+      "pin": 19,
+      "doc": "Pin 19"
+    },
+    "GP15": {
+      "net": "GPIO15",
+      "connector": "J1",
+      "pin": 20,
+      "doc": "Pin 20"
+    },
+    "GP16": {
+      "net": "GPIO16",
+      "connector": "J2",
+      "pin": 1,
+      "doc": "Pin 21"
+    },
+    "GP17": {
+      "net": "GPIO17",
+      "connector": "J2",
+      "pin": 2,
+      "doc": "Pin 22"
+    },
+    "GND_5": {
+      "net": "GND",
+      "connector": "J2",
+      "pin": 3,
+      "doc": "Pin 23"
+    },
+    "GP18": {
+      "net": "GPIO18",
+      "connector": "J2",
+      "pin": 4,
+      "doc": "Pin 24"
+    },
+    "GP19": {
+      "net": "GPIO19",
+      "connector": "J2",
+      "pin": 5,
+      "doc": "Pin 25"
+    },
+    "GP20": {
+      "net": "GPIO20",
+      "connector": "J2",
+      "pin": 6,
+      "doc": "Pin 26"
+    },
+    "GP21": {
+      "net": "GPIO21",
+      "connector": "J2",
+      "pin": 7,
+      "doc": "Pin 27"
+    },
+    "GND_6": {
+      "net": "GND",
+      "connector": "J2",
+      "pin": 8,
+      "doc": "Pin 28"
+    },
+    "GP22": {
+      "net": "GPIO22",
+      "connector": "J2",
+      "pin": 9,
+      "doc": "Pin 29"
+    },
+    "RUN": {
+      "net": "RUN",
+      "connector": "J2",
+      "pin": 10,
+      "doc": "Pin 30: The RP2040's enable: low resets it"
+    },
+    "GP26": {
+      "net": "GPIO26",
+      "connector": "J2",
+      "pin": 11,
+      "doc": "Pin 31: ADC0"
+    },
+    "GP27": {
+      "net": "GPIO27",
+      "connector": "J2",
+      "pin": 12,
+      "doc": "Pin 32: ADC1"
+    },
+    "GND_7": {
+      "net": "GND",
+      "connector": "J2",
+      "pin": 13,
+      "doc": "Pin 33"
+    },
+    "GP28": {
+      "net": "GPIO28",
+      "connector": "J2",
+      "pin": 14,
+      "doc": "Pin 34: ADC2"
+    },
+    "ADC_VREF": {
+      "net": "ADC_VREF",
+      "connector": "J2",
+      "pin": 15,
+      "doc": "Pin 35: The ADC's supply and reference, filtered 3.3 V"
+    },
+    "3V3": {
+      "net": "3V3",
+      "connector": "J2",
+      "pin": 16,
+      "doc": "Pin 36: 3.3 V out of the regulator"
+    },
+    "3V3_EN": {
+      "net": "3V3_EN",
+      "connector": "J2",
+      "pin": 17,
+      "doc": "Pin 37: The regulator's enable, pulled up to VSYS (the enable is not modelled)"
+    },
+    "GND_8": {
+      "net": "GND",
+      "connector": "J2",
+      "pin": 18,
+      "doc": "Pin 38"
+    },
+    "VSYS": {
+      "net": "VSYS",
+      "connector": "J2",
+      "pin": 19,
+      "doc": "Pin 39: The system input, 1.8 to 5.5 V"
+    },
+    "VBUS": {
+      "net": "VBUS",
+      "connector": "J2",
+      "pin": 20,
+      "doc": "Pin 40: 5 V in (USB's on a real board)"
+    }
+  },
+  "leds": [
+    {
+      "name": "led",
+      "component": "LED1",
+      "gpio": "GPIO25",
+      "active": "high",
+      "color": "green"
+    }
+  ],
+  "buttons": [
+    {
+      "name": "bootsel",
+      "component": "SW_BOOTSEL",
+      "signal": "QSPI_SS",
+      "active": "low",
+      "doc": "Read by the bootrom at reset; EmbSIM's stand-in boots from flash whatever it reads"
+    }
+  ],
+  "console": {
+    "peripheral": "UART0",
+    "tx": "GPIO0",
+    "rx": "GPIO1",
+    "baud": 115200
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 51,
+    "height_mm": 21,
+    "hotspots": [
+      {
+        "component": "LED1",
+        "selector": "#led-green",
+        "output": "luminance"
+      },
+      {
+        "component": "SW_BOOTSEL",
+        "selector": "#btn-bootsel",
+        "input": "pressed"
+      },
+      {
+        "port": "GP0",
+        "selector": "#pin-gp0"
+      },
+      {
+        "port": "GP1",
+        "selector": "#pin-gp1"
+      },
+      {
+        "port": "GND",
+        "selector": "#pin-gnd"
+      },
+      {
+        "port": "GP2",
+        "selector": "#pin-gp2"
+      },
+      {
+        "port": "GP3",
+        "selector": "#pin-gp3"
+      },
+      {
+        "port": "GP4",
+        "selector": "#pin-gp4"
+      },
+      {
+        "port": "GP5",
+        "selector": "#pin-gp5"
+      },
+      {
+        "port": "GND_2",
+        "selector": "#pin-gnd_2"
+      },
+      {
+        "port": "GP6",
+        "selector": "#pin-gp6"
+      },
+      {
+        "port": "GP7",
+        "selector": "#pin-gp7"
+      },
+      {
+        "port": "GP8",
+        "selector": "#pin-gp8"
+      },
+      {
+        "port": "GP9",
+        "selector": "#pin-gp9"
+      },
+      {
+        "port": "GND_3",
+        "selector": "#pin-gnd_3"
+      },
+      {
+        "port": "GP10",
+        "selector": "#pin-gp10"
+      },
+      {
+        "port": "GP11",
+        "selector": "#pin-gp11"
+      },
+      {
+        "port": "GP12",
+        "selector": "#pin-gp12"
+      },
+      {
+        "port": "GP13",
+        "selector": "#pin-gp13"
+      },
+      {
+        "port": "GND_4",
+        "selector": "#pin-gnd_4"
+      },
+      {
+        "port": "GP14",
+        "selector": "#pin-gp14"
+      },
+      {
+        "port": "GP15",
+        "selector": "#pin-gp15"
+      },
+      {
+        "port": "GP16",
+        "selector": "#pin-gp16"
+      },
+      {
+        "port": "GP17",
+        "selector": "#pin-gp17"
+      },
+      {
+        "port": "GND_5",
+        "selector": "#pin-gnd_5"
+      },
+      {
+        "port": "GP18",
+        "selector": "#pin-gp18"
+      },
+      {
+        "port": "GP19",
+        "selector": "#pin-gp19"
+      },
+      {
+        "port": "GP20",
+        "selector": "#pin-gp20"
+      },
+      {
+        "port": "GP21",
+        "selector": "#pin-gp21"
+      },
+      {
+        "port": "GND_6",
+        "selector": "#pin-gnd_6"
+      },
+      {
+        "port": "GP22",
+        "selector": "#pin-gp22"
+      },
+      {
+        "port": "RUN",
+        "selector": "#pin-run"
+      },
+      {
+        "port": "GP26",
+        "selector": "#pin-gp26"
+      },
+      {
+        "port": "GP27",
+        "selector": "#pin-gp27"
+      },
+      {
+        "port": "GND_7",
+        "selector": "#pin-gnd_7"
+      },
+      {
+        "port": "GP28",
+        "selector": "#pin-gp28"
+      },
+      {
+        "port": "ADC_VREF",
+        "selector": "#pin-adc_vref"
+      },
+      {
+        "port": "3V3",
+        "selector": "#pin-3v3"
+      },
+      {
+        "port": "3V3_EN",
+        "selector": "#pin-3v3_en"
+      },
+      {
+        "port": "GND_8",
+        "selector": "#pin-gnd_8"
+      },
+      {
+        "port": "VSYS",
+        "selector": "#pin-vsys"
+      },
+      {
+        "port": "VBUS",
+        "selector": "#pin-vbus"
+      }
+    ]
+  },
+  "toolchains": {
+    "clang": {
+      "target": "thumbv6m-none-eabi",
+      "flags": [
+        "-mcpu=cortex-m0plus"
+      ],
+      "linker_script": "rp2040.ld"
+    },
+    "gcc-arm": {
+      "cpu": "cortex-m0plus",
+      "flags": [
+        "-mthumb",
+        "-mcpu=cortex-m0plus"
+      ],
+      "linker_script": "rp2040.ld"
+    },
+    "embcc": {
+      "target": "thumbv6m-none-eabi",
+      "linker_script": "rp2040.ld"
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Nets, ports, the user LED and the BOOTSEL button as logic-level parts; the RP2040 boots boot2 from the first 256 bytes of flash (see its description).",
+      "omissions": [
+        "USB (the connector's data lines go nowhere)",
+        "the BOOTSEL button's effect (the USB boot)",
+        "the SMPS's power-save mode and enable"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "as functional"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "VBUS through the Schottky diode to VSYS, the 3.3 V regulator, the LED with its series resistor, the VBUS and VSYS sense dividers on GPIO24 and GPIO29, the ADC_AVDD filter and the crystal as a BVD equivalent; GPIO bridges use the MCU's pin-model defaults.",
+      "omissions": [
+        "decoupling",
+        "the buck-boost's switching (an ideal regulator stands for it)",
+        "the 1.1 V core rail (the core supply pins sit on 3.3 V here)",
+        "ESD diodes"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Raspberry Pi Pico Datasheet",
+        "rev": "build-date 2024-10-15",
+        "url": "https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf"
+      },
+      {
+        "title": "RP2040 Datasheet",
+        "rev": "build-date 2024-10-15"
+      }
+    ],
+    "notes": "Artwork is an original SVG drawn for EmbSIM to the board's outline and pinout; no Raspberry Pi artwork or logo is used."
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

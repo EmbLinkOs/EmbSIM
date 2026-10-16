@@ -98,7 +98,8 @@
         "lookup": {"type": "array", "items": {"type": "string"}},
         "hash": {"$ref": "common.schema.json#/$defs/sha256"},
         "url": {"type": "string"},
-        "version": {"type": "string"}
+        "version": {"type": "string"},
+        "bus_rules": {"type": "array", "uniqueItems": true, "items": {"type": "string", "enum": ["atomic_aliases", "wide_writes"]}, "description": "The part's own bus rules: atomic_aliases, each peripheral's registers again at +0x1000 (XOR), +0x2000 (set) and +0x3000 (clear) below 0xD0000000 (the RP2040's); wide_writes, a byte or halfword write to a 32-bit register writes the whole register, the value repeated across the byte lanes"}
       }
     },
     "peripherals": {

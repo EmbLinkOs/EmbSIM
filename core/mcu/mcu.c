@@ -345,17 +345,23 @@ static void pin_apply_cb(void *ctx, void *arg, es_time_t now)
     apply_cfg(st, port, bit);
 }
 
+static void map_rx_pins(mcu_state *st);
+
 static void h_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
 {
     mcu_state *st = (mcu_state *)ctx;
     esk_engine *e = st->c->e;
     mcu_pinq *q;
     es_time_t at;
+    int was_af;
     if (port < 0 || port >= MCU_PORTS || bit < 0 || bit > 15 || !st->gpio[port][bit])
         return;
     q = &st->pq[port][bit];
+    was_af = q->known && q->cfg.af;
     q->cfg = *cfg;
     q->known = 1;
+    if (was_af != (cfg->af != 0))
+        map_rx_pins(st); /* a UART's RX may have come to this pin or left it */
     at = local_now(st);
     if (at < e->sched.now)
         at = e->sched.now;

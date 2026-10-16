@@ -19,7 +19,7 @@ default and a subject.
 | `catalog.instantiate` | error | id | a component could not be instantiated |
 | `fidelity.tier_missing` | error | id | the session policy needs a fidelity tier the model does not declare |
 | `analog.param_out_of_range` | error | instance, param | a parameter is outside its declared range |
-| `net.contention` | warning | net | two drivers of equal strength disagree |
+| `net.contention` | warning | net | two drivers of equal strength disagree (two opposing weak pulls are a divider and are not reported) |
 | `net.floating_input` | warning | pin | an input sampled a net with no driver and no pull |
 | `net.unknown_input` | warning | pin | an input sampled X |
 | `net.power_short` | error | net | two supplies with different nominal voltage on one net |

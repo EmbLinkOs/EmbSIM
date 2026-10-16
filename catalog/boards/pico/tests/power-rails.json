@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-rails",
+  "description": "5 V on VBUS: the Schottky diode feeds VSYS, the regulator makes the 3.3 V rail, and the VBUS sense divider holds GPIO24 high.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/pico"
+      }
+    ],
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "5V": [
+        "VS.+",
+        "B1.VBUS"
+      ],
+      "GND": [
+        "VS.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "R33": [
+        "B1.3V3"
+      ],
+      "SYS": [
+        "B1.VSYS"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R33": {
+      "at": "5ms",
+      "min_v": 3.2,
+      "max_v": 3.4
+    },
+    "net:SYS": {
+      "at": "5ms",
+      "min_v": 4.5,
+      "max_v": 5.0
+    }
+  }
+}

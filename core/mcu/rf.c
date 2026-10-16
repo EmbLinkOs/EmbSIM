@@ -31,7 +31,7 @@
 #include "util/str.h"
 
 #define RF_MAX_PERIPHS 256
-#define RF_MAX_REGS 64
+#define RF_MAX_REGS 512
 #define RF_MAX_FIELDS 32
 
 static u32 plain_read(void *ctx, u32 off, int n);
@@ -232,7 +232,23 @@ static const struct esk_dev_ops rf_map_ops = {
     "registers", map_read, map_write, map_reset, map_tick, map_next_event,
 };
 
-es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, char *why, size_t cap)
+int esk_rf_rules(const esk_json *names)
+{
+    size_t i;
+    int rules = 0;
+    for (i = 0; names && i < esk_json_len(names); i++) {
+        const char *s = esk_json_str(esk_json_at(names, i));
+        if (esk_str_eq(s, "atomic_aliases"))
+            rules |= ESK_RF_ATOMIC_ALIASES;
+        else if (esk_str_eq(s, "wide_writes"))
+            rules |= ESK_RF_WIDE_WRITES;
+        else
+            return -1;
+    }
+    return rules;
+}
+
+es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, char *why, size_t cap)
 {
     const esk_json *list = esk_json_get(desc, "peripherals");
     const esk_json *table = esk_json_get(desc, "interrupts");
@@ -249,6 +265,7 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, char *why, siz
     if (!rf)
         return ES_ENOMEM;
     rf->m = m;
+    rf->rules = rules;
     rf->device = esk_mach_strdup(m, esk_json_get_str(desc, "device", "?"));
     rf->p = (struct esk_rf_periph *)esk_mach_alloc(m, np * sizeof *rf->p);
     if (!rf->p || !rf->device)
@@ -300,6 +317,9 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, char *why, siz
         }
     rf->lo = rf->reg[0]->addr & ~0x3ffu;
     rf->hi = rf->reg[rf->nreg - 1]->addr + 4u;
+    for (i = 0; (rules & ESK_RF_ATOMIC_ALIASES) && i < np; i++)
+        if (rf->p[i].base < 0xd0000000u && rf->p[i].end + 0x3000u > rf->hi)
+            rf->hi = rf->p[i].end + 0x3000u; /* its clear alias */
     m->rf = rf;
     return esk_mach_add_dev(m, rf->lo, rf->hi - rf->lo, &rf_map_ops, rf);
 }
@@ -559,10 +579,22 @@ static void hole(struct esk_rf *rf, u32 a, int n, int write)
 
 int esk_rf_gated(const struct esk_rf_periph *p)
 {
-    return p->gate && !(p->gate->value & p->gate_mask);
+    return p->gate && (!(p->gate->value & p->gate_mask)) != (p->gate_held != 0);
 }
 
-/* an access while the peripheral's clock is off: the first is a warning */
+void esk_rf_periph_reset(struct esk_rf_periph *p)
+{
+    int i;
+    for (i = 0; i < p->nreg; i++) {
+        p->reg[i]->value = p->reg[i]->reset;
+        p->reg[i]->once = 0;
+    }
+    if (p->ops->reset)
+        p->ops->reset(p->ctx);
+}
+
+/* an access while the peripheral's clock is off, or while it is held in
+ * reset: the first is a warning */
 static void gated_access(struct esk_rf *rf, struct esk_rf_periph *p, u32 a, int n, int write)
 {
     struct esk_mach *m = rf->m;
@@ -570,25 +602,77 @@ static void gated_access(struct esk_rf *rf, struct esk_rf_periph *p, u32 a, int 
     if (m->bus.debug || p->gate_warned)
         return;
     p->gate_warned = 1;
-    esk_rf_diag(m, ES_SEV_WARNING, "mcu.clock_gated", "%s at pc 0x%08lx: %s.%s %s while its clock is off (%s is 0)",
-                write ? "a write" : "a read", (unsigned long)m->cpu->ops->pc(m->cpu), p->name,
-                r ? r->name : "?", write ? "is ignored" : "reads as 0", p->gate_name);
+    if (p->gate_held)
+        esk_rf_diag(m, ES_SEV_WARNING, "mcu.held_in_reset",
+                    "%s at pc 0x%08lx: %s.%s %s while it is held in reset (%s is 1)",
+                    write ? "a write" : "a read", (unsigned long)m->cpu->ops->pc(m->cpu), p->name,
+                    r ? r->name : "?", write ? "is ignored" : "reads its reset value", p->gate_name);
+    else
+        esk_rf_diag(m, ES_SEV_WARNING, "mcu.clock_gated",
+                    "%s at pc 0x%08lx: %s.%s %s while its clock is off (%s is 0)",
+                    write ? "a write" : "a read", (unsigned long)m->cpu->ops->pc(m->cpu), p->name,
+                    r ? r->name : "?", write ? "is ignored" : "reads as 0", p->gate_name);
+}
+
+/* ESK_RF_ATOMIC_ALIASES: the register an address +0x1000, +0x2000 or
+ * +0x3000 from it names, and which alias it is (1 XOR, 2 set, 3 clear);
+ * 0 for an address that is not an alias */
+static struct esk_rf_reg *atomic_alias(struct esk_rf *rf, u32 a, int n, int *kind)
+{
+    struct esk_rf_reg *r;
+    if (!(rf->rules & ESK_RF_ATOMIC_ALIASES) || !(a & 0x3000u) || a >= 0xd0000000u || reg_at(rf, a, n))
+        return 0;
+    r = reg_at(rf, a & ~0x3000u, n);
+    if (!r || (r->p->base & ~0x3fffu) != (a & ~0x3fffu))
+        return 0;
+    *kind = (int)(a >> 12 & 3);
+    return r;
+}
+
+/* A write of `v` through an atomic alias of r: the bits set in v are
+ * XORed, set or cleared and the others not written at all -- the model is
+ * given a whole word in which each of them is what a write leaves alone:
+ * a plain field's value as it is, 0 for a write-1-to-clear field and its
+ * like, 1 for a write-0-to-clear field and its. */
+static void alias_write(struct esk_rf_reg *r, int kind, u32 v)
+{
+    struct esk_rf_periph *p = r->p;
+    u64 old = r->value, hit = v, w = 0;
+    int i;
+    for (i = 0; i < r->nf; i++) {
+        const struct esk_rf_field *f = &r->f[i];
+        u64 fm = field_mask(f), keep, to;
+        if (f->mwv == ESK_MWV_MODIFY)
+            keep = f->acc == ESK_ACC_WO || f->acc == ESK_ACC_W1 ? 0 : old & fm;
+        else
+            keep = f->mwv >= ESK_MWV_0CLR && f->mwv <= ESK_MWV_0TOG ? fm : 0;
+        to = kind == 1 ? ~old : kind == 2 ? ~UINT64_C(0) : 0;
+        w |= (keep & ~hit) | (to & hit & fm);
+    }
+    if (p->ops->write)
+        p->ops->write(p->ctx, r->addr - p->base, 4, (u32)w);
 }
 
 static u32 map_read(void *ctx, u32 off, int n)
 {
     struct esk_rf *rf = (struct esk_rf *)ctx;
     u32 a = rf->lo + off, v = 0;
-    struct esk_rf_reg *r = reg_at(rf, a, n);
+    struct esk_rf_reg *r;
     struct esk_rf_periph *p;
+    int kind = 0;
+    if (atomic_alias(rf, a, n, &kind))
+        a &= ~0x3000u; /* a read there is the register's */
+    r = reg_at(rf, a, n);
     if (!r) {
         hole(rf, a, n, 0);
         return 0;
     }
     p = r->p;
     if (esk_rf_gated(p)) {
+        if (p->gate_held)
+            access(rf, a, n, &v, 0, 0);
         gated_access(rf, p, a, n, 0);
-        return 0;
+        return v;
     }
     if (rf->m->bus.debug) {
         access(rf, a, n, &v, 0, 0);
@@ -601,8 +685,21 @@ static void map_write(void *ctx, u32 off, int n, u32 v)
 {
     struct esk_rf *rf = (struct esk_rf *)ctx;
     u32 a = rf->lo + off;
-    struct esk_rf_reg *r = reg_at(rf, a, n);
+    int kind = 0;
+    struct esk_rf_reg *r = atomic_alias(rf, a, n, &kind);
     struct esk_rf_periph *p;
+    if (r)
+        a &= ~0x3000u; /* the register the alias names */
+    else
+        r = reg_at(rf, a, n);
+    if (r && n < 4 && r->bytes == 4 && (rf->rules & ESK_RF_WIDE_WRITES)) {
+        /* the byte or halfword across the bus's four lanes, to the whole
+         * register */
+        v &= n == 1 ? 0xffu : 0xffffu;
+        v = n == 1 ? v * 0x01010101u : v * 0x00010001u;
+        a &= ~3u;
+        n = 4;
+    }
     if (!r) {
         hole(rf, a, n, 1);
         return;
@@ -610,6 +707,10 @@ static void map_write(void *ctx, u32 off, int n, u32 v)
     p = r->p;
     if (esk_rf_gated(p)) {
         gated_access(rf, p, a, n, 1);
+        return;
+    }
+    if (kind) {
+        alias_write(r, kind, v);
         return;
     }
     if (p->ops->write)

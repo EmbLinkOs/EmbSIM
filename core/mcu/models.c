@@ -7,6 +7,7 @@
 #include "mcu/avr/avr.h"
 #include "mcu/rf.h"
 #include "mcu/riscv/riscv.h"
+#include "mcu/rp2040/rp2040.h"
 #include "mcu/stm32/stm32.h"
 
 static const struct esk_rf_model_type model_types[] = {
@@ -18,6 +19,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "stm32-tim", &esk_stm32_tim_ops, esk_stm32_tim_create },
     { "stm32f1-flash", &esk_stm32_storage_ops, esk_stm32_storage_create },
     { "stm32-pwr", &esk_stm32_storage_ops, esk_stm32_storage_create },
+    { "storage", &esk_stm32_storage_ops, esk_stm32_storage_create },
     { "avr-port", &esk_avr_port_ops, esk_avr_port_create },
     { "avr-exint", &esk_avr_exint_ops, esk_avr_exint_create },
     { "avr-tc8", &esk_avr_tc8_ops, esk_avr_tc8_create },
@@ -31,6 +33,19 @@ static const struct esk_rf_model_type model_types[] = {
     { "fe310-gpio", &esk_fe310_gpio_ops, esk_fe310_gpio_create },
     { "fe310-uart", &esk_fe310_uart_ops, esk_fe310_uart_create },
     { "fe310-prci", &esk_fe310_prci_ops, esk_fe310_prci_create },
+    { "rp2040-resets", &esk_rp2040_resets_ops, esk_rp2040_resets_create },
+    { "rp2040-clocks", &esk_rp2040_clocks_ops, esk_rp2040_clocks_create },
+    { "rp2040-xosc", &esk_rp2040_xosc_ops, esk_rp2040_xosc_create },
+    { "rp2040-rosc", &esk_rp2040_rosc_ops, esk_rp2040_rosc_create },
+    { "rp2040-pll", &esk_rp2040_pll_ops, esk_rp2040_pll_create },
+    { "rp2040-psm", &esk_rp2040_psm_ops, esk_rp2040_psm_create },
+    { "rp2040-watchdog", &esk_rp2040_watchdog_ops, esk_rp2040_watchdog_create },
+    { "rp2040-timer", &esk_rp2040_timer_ops, esk_rp2040_timer_create },
+    { "rp2040-pads", &esk_rp2040_pads_ops, esk_rp2040_pads_create },
+    { "rp2040-io", &esk_rp2040_io_ops, esk_rp2040_io_create },
+    { "rp2040-sio", &esk_rp2040_sio_ops, esk_rp2040_sio_create },
+    { "rp2040-uart", &esk_rp2040_uart_ops, esk_rp2040_uart_create },
+    { "rp2040-ssi", &esk_rp2040_ssi_ops, esk_rp2040_ssi_create },
 };
 
 const struct esk_rf_model_type *esk_rf_model_find(const char *name)

@@ -110,7 +110,12 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         m->vdd = esk_json_get_num(esk_json_get(io, "electrical"), "vdd", dflt);
     }
     if (regs) {
-        st = esk_rf_create(m, regs, why, cap);
+        int rules = esk_rf_rules(esk_json_get(esk_json_get(mcu, "register_file"), "bus_rules"));
+        if (rules < 0) {
+            snprintf(why, cap, "register_file.bus_rules names a rule there is not");
+            return ES_ESCHEMA;
+        }
+        st = esk_rf_create(m, regs, rules, why, cap);
         if (st != ES_OK)
             return st;
         st = esk_rf_bind(m, esk_json_get(mcu, "peripherals"), missing, sizeof missing);
