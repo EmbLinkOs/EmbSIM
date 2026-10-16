@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "steps",
+  "description": "Words 1, 2, 4, 8 at 1 us: OUT2 is the only high output during the third word.",
+  "policy": "functional",
+  "until": "5us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,2,4,8",
+          "period": "1u"
+        }
+      }
+    ],
+    "nets": {
+      "B0": [
+        "DUT.OUT0"
+      ],
+      "B2": [
+        "DUT.OUT2"
+      ],
+      "B3": [
+        "DUT.OUT3"
+      ]
+    }
+  },
+  "expect": {
+    "net:B0": {
+      "at": "2500ns",
+      "logic": "0"
+    },
+    "net:B2": {
+      "at": "2500ns",
+      "logic": "1"
+    },
+    "net:B3": {
+      "at": "3500ns",
+      "logic": "1"
+    }
+  }
+}

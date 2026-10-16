@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "banks",
+  "description": "Bank 1 enabled passes 1A0; bank 2 disabled releases 2Y0.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L3",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc244"
+      }
+    ],
+    "nets": {
+      "N_1OE_N": [
+        "L0.OUT",
+        "DUT.1OE_N"
+      ],
+      "N_1A0": [
+        "L1.OUT",
+        "DUT.1A0"
+      ],
+      "N_2OE_N": [
+        "L2.OUT",
+        "DUT.2OE_N"
+      ],
+      "N_2A0": [
+        "L3.OUT",
+        "DUT.2A0"
+      ],
+      "N_1Y0": [
+        "DUT.1Y0"
+      ],
+      "N_2Y0": [
+        "DUT.2Y0"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_1Y0": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_2Y0": {
+      "at": "500ns",
+      "logic": "Z"
+    }
+  }
+}

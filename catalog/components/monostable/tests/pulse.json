@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pulse",
+  "description": "B rises at 1 ms with Rext = 10 k, Cext = 100 nF: Q high for 0.45 ms.",
+  "policy": "functional",
+  "until": "3ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "TG",
+        "component": "emblink/pulse_source",
+        "params": {
+          "td": "1m",
+          "pw": "2m",
+          "per": "1"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/monostable",
+        "params": {
+          "rext": "10k",
+          "cext": "100n"
+        }
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.CLR_N"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.A_N"
+      ],
+      "B": [
+        "TG.+",
+        "DUT.B"
+      ],
+      "Q": [
+        "DUT.Q"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q": {
+      "at": "1.3ms",
+      "logic": "1"
+    },
+    "output:DUT.pulse": {
+      "at": "2ms",
+      "equals": false
+    }
+  }
+}

@@ -102,6 +102,38 @@ static void evaluate(es_session *s, assertion *a)
         esk_snprintf(a->reason, sizeof a->reason, "unknown probe %s", pname ? pname : "(none)");
         return;
     }
+    /* a text expectation on a value probe: the output as a string, now (the
+     * assertion's time: `at`, or the end of `between`/`by`) */
+    if (p->kind == ESK_PROBE_VALUE && p->comp && p->comp->ops->observe &&
+        (esk_json_get(expect, "contains") || esk_json_is(esk_json_get(expect, "equals"), ESK_JSON_STRING))) {
+        const char *contains = esk_json_get_str(expect, "contains", NULL);
+        const char *equals = esk_json_get_str(expect, "equals", NULL);
+        esk_json *out = esk_json_new_object(s->a);
+        const esk_json *q;
+        char num[48];
+        const char *text = "";
+        if (out) {
+            p->comp->ops->observe(p->comp, out);
+            q = esk_json_get(out, p->quantity ? p->quantity : "i");
+            if (q && q->type == ESK_JSON_STRING)
+                text = q->u.string.data;
+            else if (q && q->type == ESK_JSON_NUMBER) {
+                esk_snprintf(num, sizeof num, "%g", q->u.number.value);
+                text = num;
+            } else if (q && q->type == ESK_JSON_BOOL)
+                text = q->u.boolean ? "true" : "false";
+        }
+        a->observed = esk_json_new_string(s->a, text);
+        if (contains && !strstr(text, contains)) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "\"%.60s\" does not contain \"%s\"", text, contains);
+        } else if (equals && strcmp(text, equals) != 0) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "\"%.60s\", expected \"%s\"", text, equals);
+        }
+        esk_json_free(s->a, out);
+        return;
+    }
     if (p->kind == ESK_PROBE_SERIAL) {
         const char *contains = esk_json_get_str(expect, "contains", NULL);
         esk_json *out = esk_json_new_object(s->a);

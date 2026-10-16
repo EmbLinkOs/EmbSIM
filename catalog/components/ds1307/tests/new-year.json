@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "new-year",
+  "description": "23:59:59 on 31 December 2027 rolls over to 1 January 2028 a second later.",
+  "policy": "functional",
+  "until": "1.6s",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ds1307",
+        "params": {
+          "start": "2027-12-31 23:59:59"
+        }
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.time": {
+      "at": "1.5s",
+      "equals": "2028-01-01 00:00:00"
+    }
+  }
+}

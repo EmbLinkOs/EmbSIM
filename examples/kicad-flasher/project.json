@@ -1,0 +1,659 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "kicad-flasher",
+  "policy": "electrical",
+  "description": "Imported from flasher.net by tools/importers/kicad2project.py.",
+  "components": [
+    {
+      "id": "BT1",
+      "component": "emblink/battery",
+      "params": {
+        "part": "9V"
+      },
+      "layout": {
+        "x": 60,
+        "y": 60
+      }
+    },
+    {
+      "id": "U1",
+      "component": "emblink/regulator_78xx",
+      "params": {
+        "part": "7805"
+      },
+      "layout": {
+        "x": 240,
+        "y": 60
+      }
+    },
+    {
+      "id": "U2",
+      "component": "emblink/timer_555",
+      "params": {
+        "mode": "astable",
+        "r1": "1k",
+        "r2": "10k",
+        "c": "10u"
+      },
+      "layout": {
+        "x": 420,
+        "y": 60
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1k"
+      },
+      "layout": {
+        "x": 610,
+        "y": 60
+      }
+    },
+    {
+      "id": "R2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "layout": {
+        "x": 60,
+        "y": 210
+      }
+    },
+    {
+      "id": "R3",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "330"
+      },
+      "layout": {
+        "x": 240,
+        "y": 210
+      }
+    },
+    {
+      "id": "C1",
+      "component": "emblink/electrolytic_capacitor",
+      "params": {
+        "capacitance": "10u"
+      },
+      "layout": {
+        "x": 420,
+        "y": 210
+      }
+    },
+    {
+      "id": "C2",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "10n"
+      },
+      "layout": {
+        "x": 600,
+        "y": 210
+      }
+    },
+    {
+      "id": "D1",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "layout": {
+        "x": 60,
+        "y": 330
+      }
+    },
+    {
+      "id": "PWR1",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 240,
+        "y": 330
+      }
+    }
+  ],
+  "nets": {
+    "N_BT1_+": [
+      "BT1.+",
+      "U1.IN"
+    ],
+    "GND": [
+      "BT1.-",
+      "U1.GND",
+      "U2.GND",
+      "C1.-",
+      "C2.2",
+      "D1.K",
+      "PWR1.GND"
+    ],
+    "+5V": [
+      "U1.OUT",
+      "U2.VCC",
+      "U2.RESET",
+      "R1.1"
+    ],
+    "DIS": [
+      "R1.2",
+      "R2.1",
+      "U2.DIS"
+    ],
+    "THR": [
+      "R2.2",
+      "U2.THR",
+      "U2.TRIG",
+      "C1.+"
+    ],
+    "CV": [
+      "U2.CTRL",
+      "C2.1"
+    ],
+    "OUT": [
+      "U2.OUT",
+      "R3.1"
+    ],
+    "N_D1_A": [
+      "R3.2",
+      "D1.A"
+    ]
+  },
+  "layout": {
+    "wires": [
+      {
+        "net": "N_BT1_+",
+        "points": [
+          [
+            60,
+            80
+          ],
+          [
+            40,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "N_BT1_+",
+        "points": [
+          [
+            240,
+            80
+          ],
+          [
+            220,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            120,
+            80
+          ],
+          [
+            140,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            270,
+            100
+          ],
+          [
+            270,
+            120
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            450,
+            130
+          ],
+          [
+            450,
+            150
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            480,
+            230
+          ],
+          [
+            500,
+            230
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            660,
+            220
+          ],
+          [
+            680,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            120,
+            340
+          ],
+          [
+            140,
+            340
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            250,
+            330
+          ],
+          [
+            250,
+            310
+          ]
+        ]
+      },
+      {
+        "net": "+5V",
+        "points": [
+          [
+            300,
+            80
+          ],
+          [
+            320,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "+5V",
+        "points": [
+          [
+            450,
+            60
+          ],
+          [
+            450,
+            40
+          ]
+        ]
+      },
+      {
+        "net": "+5V",
+        "points": [
+          [
+            420,
+            110
+          ],
+          [
+            400,
+            110
+          ]
+        ]
+      },
+      {
+        "net": "+5V",
+        "points": [
+          [
+            610,
+            70
+          ],
+          [
+            590,
+            70
+          ]
+        ]
+      },
+      {
+        "net": "DIS",
+        "points": [
+          [
+            670,
+            70
+          ],
+          [
+            690,
+            70
+          ]
+        ]
+      },
+      {
+        "net": "DIS",
+        "points": [
+          [
+            60,
+            220
+          ],
+          [
+            40,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "DIS",
+        "points": [
+          [
+            490,
+            90
+          ],
+          [
+            510,
+            90
+          ]
+        ]
+      },
+      {
+        "net": "THR",
+        "points": [
+          [
+            120,
+            220
+          ],
+          [
+            140,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "THR",
+        "points": [
+          [
+            420,
+            90
+          ],
+          [
+            400,
+            90
+          ]
+        ]
+      },
+      {
+        "net": "THR",
+        "points": [
+          [
+            420,
+            80
+          ],
+          [
+            400,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "THR",
+        "points": [
+          [
+            420,
+            230
+          ],
+          [
+            400,
+            230
+          ]
+        ]
+      },
+      {
+        "net": "CV",
+        "points": [
+          [
+            420,
+            100
+          ],
+          [
+            400,
+            100
+          ]
+        ]
+      },
+      {
+        "net": "CV",
+        "points": [
+          [
+            600,
+            220
+          ],
+          [
+            580,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "OUT",
+        "points": [
+          [
+            490,
+            80
+          ],
+          [
+            510,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "OUT",
+        "points": [
+          [
+            240,
+            220
+          ],
+          [
+            220,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "N_D1_A",
+        "points": [
+          [
+            300,
+            220
+          ],
+          [
+            320,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "N_D1_A",
+        "points": [
+          [
+            60,
+            340
+          ],
+          [
+            40,
+            340
+          ]
+        ]
+      }
+    ],
+    "labels": [
+      {
+        "net": "N_BT1_+",
+        "x": 40,
+        "y": 80
+      },
+      {
+        "net": "N_BT1_+",
+        "x": 220,
+        "y": 80
+      },
+      {
+        "net": "GND",
+        "x": 140,
+        "y": 80
+      },
+      {
+        "net": "GND",
+        "x": 270,
+        "y": 120
+      },
+      {
+        "net": "GND",
+        "x": 450,
+        "y": 150
+      },
+      {
+        "net": "GND",
+        "x": 500,
+        "y": 230
+      },
+      {
+        "net": "GND",
+        "x": 680,
+        "y": 220
+      },
+      {
+        "net": "GND",
+        "x": 140,
+        "y": 340
+      },
+      {
+        "net": "GND",
+        "x": 250,
+        "y": 310
+      },
+      {
+        "net": "+5V",
+        "x": 320,
+        "y": 80
+      },
+      {
+        "net": "+5V",
+        "x": 450,
+        "y": 40
+      },
+      {
+        "net": "+5V",
+        "x": 400,
+        "y": 110
+      },
+      {
+        "net": "+5V",
+        "x": 590,
+        "y": 70
+      },
+      {
+        "net": "DIS",
+        "x": 690,
+        "y": 70
+      },
+      {
+        "net": "DIS",
+        "x": 40,
+        "y": 220
+      },
+      {
+        "net": "DIS",
+        "x": 510,
+        "y": 90
+      },
+      {
+        "net": "THR",
+        "x": 140,
+        "y": 220
+      },
+      {
+        "net": "THR",
+        "x": 400,
+        "y": 90
+      },
+      {
+        "net": "THR",
+        "x": 400,
+        "y": 80
+      },
+      {
+        "net": "THR",
+        "x": 400,
+        "y": 230
+      },
+      {
+        "net": "CV",
+        "x": 400,
+        "y": 100
+      },
+      {
+        "net": "CV",
+        "x": 580,
+        "y": 220
+      },
+      {
+        "net": "OUT",
+        "x": 510,
+        "y": 80
+      },
+      {
+        "net": "OUT",
+        "x": 220,
+        "y": 220
+      },
+      {
+        "net": "N_D1_A",
+        "x": 320,
+        "y": 220
+      },
+      {
+        "net": "N_D1_A",
+        "x": 40,
+        "y": 340
+      }
+    ]
+  },
+  "probes": [
+    {
+      "id": "out",
+      "target": "net:OUT",
+      "kind": "digital"
+    },
+    {
+      "id": "led",
+      "target": "output:D1.luminance",
+      "kind": "value",
+      "rate_hz": 1000
+    },
+    {
+      "id": "vcc",
+      "target": "net:+5V",
+      "kind": "analog",
+      "rate_hz": 1000
+    }
+  ],
+  "scenarios": [
+    "scenarios/blink.json"
+  ]
+}

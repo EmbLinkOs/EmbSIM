@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 72" width="48" height="72">
+  <rect x="0" y="0" width="48" height="72" rx="3" fill="#1d1f24"/>
+  <g transform="translate(2 4)">
+    <polygon id="seg-a" points="8,4 32,4 28,9 12,9" fill="#3a1414"/>
+    <polygon id="seg-b" points="33,5 33,29 29,26 29,10" fill="#3a1414"/>
+    <polygon id="seg-c" points="33,35 33,59 29,54 29,38" fill="#3a1414"/>
+    <polygon id="seg-d" points="8,60 32,60 28,55 12,55" fill="#3a1414"/>
+    <polygon id="seg-e" points="7,35 7,59 11,54 11,38" fill="#3a1414"/>
+    <polygon id="seg-f" points="7,5 7,29 11,26 11,10" fill="#3a1414"/>
+    <polygon id="seg-g" points="9,32 13,29 27,29 31,32 27,35 13,35" fill="#3a1414"/>
+    <circle id="seg-dp" cx="39" cy="60" r="3" fill="#3a1414"/>
+  </g>
+</svg>

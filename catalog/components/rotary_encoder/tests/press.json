@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "press",
+  "description": "Pressed: SW low.",
+  "policy": "functional",
+  "until": "3ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rotary_encoder"
+      }
+    ],
+    "nets": {
+      "SW": [
+        "DUT.SW"
+      ]
+    }
+  },
+  "expect": {
+    "net:SW": {
+      "at": "2ms",
+      "logic": "0"
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "pressed",
+      "value": true
+    }
+  ]
+}

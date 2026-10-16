@@ -160,6 +160,12 @@ es_status es_session_create(const es_session_config_t *cfg, es_session **out)
                 s->catalog_dir = esk_catalog_bundled_dir(s->a, NULL);
                 if (s->catalog_dir)
                     esk_catalog_load_library(s->catalog, s->catalog_dir, &s->diag);
+                /* then the user's installed libraries (SPEC-014 §1) */
+                {
+                    char *user = esk_catalog_user_dir(s->a);
+                    esk_catalog_load_user_libraries(s->catalog, user, &s->diag);
+                    esk_strfree(s->a, user);
+                }
             }
         }
     }
@@ -310,6 +316,8 @@ static double probe_value(es_session *s, esk_probe *p)
                     v = q->u.number.value;
                 else if (q && q->type == ESK_JSON_BOOL)
                     v = q->u.boolean ? 1.0 : 0.0;
+                else if (q && q->type == ESK_JSON_STRING && q->u.string.len == 1 && strchr("01ZXzx", q->u.string.data[0]))
+                    v = (double)esk_logic_from_name(q->u.string.data); /* a logic level: 0, 1, 2 (Z), 3 (X) */
                 esk_json_free(s->a, out);
             }
         }
@@ -1147,15 +1155,6 @@ es_status es_catalog_add_library(es_catalog *c, const char *path)
     if (!c || !path)
         return ES_EINVAL;
     return esk_catalog_load_library(c, path, NULL);
-}
-
-es_status es_catalog_validate(es_catalog *c, const char *path, char **report_json)
-{
-    ES_UNUSED(c);
-    ES_UNUSED(path);
-    if (report_json)
-        *report_json = NULL;
-    return ES_EUNSUPPORTED; /* schema validation is the Python tool's in M0 */
 }
 
 ES_API es_status es_serve_allow_origin(es_session *s, const char *origin)

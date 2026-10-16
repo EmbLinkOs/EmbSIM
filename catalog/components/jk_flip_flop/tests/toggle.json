@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "toggle",
+  "description": "J=K=1 clocked at 1 kHz: Q toggles at 500 Hz.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/jk_flip_flop"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.J",
+        "DUT.K",
+        "DUT.PRE_N",
+        "DUT.CLR_N"
+      ],
+      "CLK": [
+        "CK.OUT",
+        "DUT.CLK"
+      ],
+      "Q": [
+        "DUT.Q"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q": {
+      "between": [
+        "0",
+        "20ms"
+      ],
+      "frequency_hz": 500,
+      "tolerance": 0.05
+    }
+  }
+}

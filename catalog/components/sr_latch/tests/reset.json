@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reset",
+  "description": "S_N=1, R_N=0: Q=0.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/sr_latch"
+      }
+    ],
+    "nets": {
+      "N_S_N": [
+        "L0.OUT",
+        "DUT.S_N"
+      ],
+      "N_R_N": [
+        "L1.OUT",
+        "DUT.R_N"
+      ],
+      "N_Q": [
+        "DUT.Q"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_Q": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

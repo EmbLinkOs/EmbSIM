@@ -14,6 +14,9 @@ machine-readable report of SPEC-008 §8.
 | `embsim build PROJECT [--board B] [--toolchain T]` | builds a board's firmware from its `firmware` block (sources, flags, linker script) with the named or the block's toolchain profile, writing the block's `image` |
 | `embsim toolchains` | the toolchain profiles and whether each is found on this host, with its version |
 | `embsim catalog list [KIND] \| search QUERY \| info ID \| libraries [--library DIR]` | browses the bundled catalog and extra libraries |
+| `embsim catalog validate [DIR] [--library DEP] [--json]` | instantiates every part of a library and runs its fixtures (bundled catalog by default); exit 1 unless all are ok |
+| `embsim catalog new component\|board NAME [--library DIR] [--lua]` | writes a part that validates as written (SDK, `sdk/README.md`) |
+| `embsim catalog install DIR [--to LIBRARIES_DIR] [--force]` | validates a library and copies it into the user library directory |
 | `embsim board list \| info ID` | boards and their descriptions |
 | `embsim models` | the model primitives the core implements, digital and electrical |
 | `embsim version` | engine, protocol and ABI versions |

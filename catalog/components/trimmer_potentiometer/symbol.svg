@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <line class="s" id="pin-1" x1="0" y1="20" x2="12" y2="20"/>
+  <line class="s" id="pin-2" x1="60" y1="20" x2="48" y2="20"/>
+  <line class="s" id="pin-w" x1="30" y1="40" x2="30" y2="26"/>
+  <rect class="f" x="12" y="14" width="36" height="12" rx="1"/>
+  <path class="s" d="M24 34 H36 M30 26 L27 31 M30 26 L33 31"/><rect class="s" x="26" y="3" width="8" height="6" rx="1"/>
+</svg>

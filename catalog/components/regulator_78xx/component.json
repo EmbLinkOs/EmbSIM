@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/regulator_78xx",
+  "version": "1.0.0",
+  "name": "78xx linear regulator",
+  "category": "power",
+  "description": "Fixed positive linear regulator of the 78xx family (TO-220, pins IN-GND-OUT): 7805, 7809, 7812, 78L05.",
+  "keywords": [
+    "regulator",
+    "7805",
+    "78xx",
+    "linear",
+    "LM7805",
+    "power supply"
+  ],
+  "pins": [
+    {
+      "name": "IN",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Unregulated input"
+    },
+    {
+      "name": "GND",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "doc": "Ground"
+    },
+    {
+      "name": "OUT",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": "$vout"
+      },
+      "doc": "Regulated output"
+    }
+  ],
+  "params": {
+    "part": {
+      "type": "enum",
+      "enum": [
+        "7805",
+        "7809",
+        "7812",
+        "78L05"
+      ],
+      "default": "7805",
+      "doc": "Named part setting the parameters",
+      "presets": {
+        "7805": {
+          "vout": 5.0,
+          "dropout": 2.0,
+          "imax": 1.5,
+          "quiescent": "5m"
+        },
+        "7809": {
+          "vout": 9.0,
+          "dropout": 2.0,
+          "imax": 1.5,
+          "quiescent": "5m"
+        },
+        "7812": {
+          "vout": 12.0,
+          "dropout": 2.0,
+          "imax": 1.5,
+          "quiescent": "5m"
+        },
+        "78L05": {
+          "vout": 5.0,
+          "dropout": 1.7,
+          "imax": 0.1,
+          "quiescent": "5m"
+        }
+      }
+    },
+    "vout": {
+      "type": "number",
+      "unit": "V",
+      "default": 5.0,
+      "min": 1.2,
+      "max": 24,
+      "doc": "Output voltage"
+    },
+    "dropout": {
+      "type": "number",
+      "unit": "V",
+      "default": 2.0,
+      "min": 0,
+      "max": 5,
+      "doc": "Dropout voltage"
+    },
+    "imax": {
+      "type": "number",
+      "unit": "A",
+      "default": 1.5,
+      "min": "1m",
+      "max": 5,
+      "doc": "Current limit"
+    },
+    "quiescent": {
+      "type": "number",
+      "unit": "A",
+      "default": "5m",
+      "min": 0,
+      "max": "100m",
+      "doc": "Quiescent current",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "regulator"
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "OUT drives (1, supply); IN and GND are ignored.",
+      "omissions": [
+        "dropout",
+        "current"
+      ]
+    },
+    "timed": {
+      "claims": "As functional on digital nets, as electrical on analog nets.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "vout while vin > vout + dropout, otherwise vin - dropout; current limited to imax; quiescent current into GND (SPEC-004 §7 regulator).",
+      "omissions": [
+        "line and load regulation",
+        "thermal shutdown",
+        "ripple rejection"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          35
+        ],
+        "current_a": [
+          0,
+          1.5
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments LM340/LM78xx datasheet"
+      },
+      {
+        "title": "STMicroelectronics L78 datasheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

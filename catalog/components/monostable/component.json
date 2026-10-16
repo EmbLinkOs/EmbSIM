@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/monostable",
+  "version": "1.0.0",
+  "name": "Monostable multivibrator",
+  "category": "logic",
+  "description": "Retriggerable monostable (one half of a 74HC123): a falling edge on A_N with B high, or a rising edge on B with A_N low, starts a pulse of K x Rext x Cext on Q; a new trigger restarts it; CLR_N low ends it.",
+  "keywords": [
+    "logic",
+    "monostable",
+    "one-shot",
+    "pulse",
+    "74HC123",
+    "retriggerable"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A_N",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Trigger on falling edge (B high)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "B",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Trigger on rising edge (A_N low)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CLR_N",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Clear, active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "QN",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "Q",
+      "number": 13,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "rext": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10k",
+      "min": "1k",
+      "max": "10meg",
+      "doc": "Timing resistor"
+    },
+    "cext": {
+      "type": "number",
+      "unit": "F",
+      "default": "100n",
+      "min": "100p",
+      "max": "1m",
+      "doc": "Timing capacitor"
+    },
+    "k": {
+      "type": "number",
+      "unit": "",
+      "default": 0.45,
+      "min": 0.1,
+      "max": 2,
+      "doc": "Pulse-width constant (0.45 for the 74HC123 above 10 nF)",
+      "advanced": true
+    },
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "pulse",
+      "type": "boolean",
+      "doc": "Q"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pulse width K Rext Cext, retriggerable, cleared by CLR_N.",
+      "omissions": [
+        "the width's dependence on supply and small Cext"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "the width's dependence on supply and small Cext"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "the width's dependence on supply and small Cext",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC123 datasheet (trigger table, pulse-width formula)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "A_N": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "B": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "CLR_N": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "Q": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "QN": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

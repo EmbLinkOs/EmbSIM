@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/rgb_led",
+  "version": "1.0.0",
+  "name": "RGB LED",
+  "category": "indicators",
+  "description": "Four-lead RGB LED, common cathode or common anode: each colour lights when its pin and COM are at opposite levels; the board view shows the mixed colour.",
+  "keywords": [
+    "led",
+    "rgb",
+    "colour",
+    "color",
+    "common cathode",
+    "common anode"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "R",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Red"
+    },
+    {
+      "name": "COM",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Common cathode or anode"
+    },
+    {
+      "name": "G",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Green"
+    },
+    {
+      "name": "B",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Blue"
+    }
+  ],
+  "params": {
+    "common": {
+      "type": "enum",
+      "enum": [
+        "cathode",
+        "anode"
+      ],
+      "default": "cathode",
+      "doc": "Common cathode or common anode"
+    }
+  },
+  "outputs": [
+    {
+      "name": "red",
+      "type": "boolean"
+    },
+    {
+      "name": "green",
+      "type": "boolean"
+    },
+    {
+      "name": "blue",
+      "type": "boolean"
+    },
+    {
+      "name": "lit",
+      "type": "boolean"
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "doc": "#rrggbb of the lit colours"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 5,
+    "height_mm": 8.6,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "color",
+        "selector": "#glow",
+        "attr": "fill",
+        "format": "{}"
+      },
+      {
+        "output": "lit",
+        "selector": "#glow",
+        "attr": "opacity",
+        "true": "0.9",
+        "false": "0"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Each colour on or off from the logic levels (no PWM averaging).",
+      "omissions": [
+        "forward voltages per colour",
+        "PWM dimming",
+        "colour mixing by intensity"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "forward voltages per colour",
+        "PWM dimming",
+        "colour mixing by intensity"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "forward voltages per colour",
+        "PWM dimming",
+        "colour mixing by intensity",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Generic 5 mm RGB LED (common cathode, pinout R-COM-G-B)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 50,
+    "height": 40,
+    "pins": {
+      "R": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "G": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "B": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "COM": {
+        "x": 50,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

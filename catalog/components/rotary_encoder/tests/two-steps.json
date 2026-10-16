@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "two-steps",
+  "description": "Turned to position 2: two cycles on CLK (four edges), position 2.",
+  "policy": "functional",
+  "until": "21ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rotary_encoder"
+      }
+    ],
+    "nets": {
+      "A": [
+        "DUT.CLK"
+      ],
+      "B": [
+        "DUT.DT"
+      ]
+    }
+  },
+  "expect": {
+    "net:A": {
+      "between": [
+        "0.5ms",
+        "20ms"
+      ],
+      "edges": 4
+    },
+    "output:DUT.count": {
+      "at": "20ms",
+      "equals": 2
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "position",
+      "value": 2
+    }
+  ]
+}

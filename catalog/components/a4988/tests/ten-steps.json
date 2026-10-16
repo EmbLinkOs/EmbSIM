@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ten-steps",
+  "description": "Ten full steps clockwise at 1 kHz: position 10, 18°.",
+  "policy": "functional",
+  "until": "11ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/a4988"
+      }
+    ],
+    "nets": {
+      "STEP": [
+        "CK.OUT",
+        "DUT.STEP"
+      ],
+      "HI": [
+        "H.OUT",
+        "DUT.DIR",
+        "DUT.RESET_N",
+        "DUT.SLEEP_N"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.ENABLE_N",
+        "DUT.MS1",
+        "DUT.MS2",
+        "DUT.MS3"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.position": {
+      "at": "10.2ms",
+      "equals": 10
+    },
+    "output:DUT.angle_deg": {
+      "at": "10.2ms",
+      "min": 17.99,
+      "max": 18.01
+    }
+  }
+}

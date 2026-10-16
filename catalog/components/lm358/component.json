@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/lm358",
+  "version": "1.0.0",
+  "name": "LM358 dual op-amp",
+  "category": "analog",
+  "description": "Dual single-supply operational amplifier (LM358) in its 8-pin package; the output swings from ground to about VCC - 1.5 V.",
+  "keywords": [
+    "op-amp",
+    "opamp",
+    "LM358",
+    "dual",
+    "amplifier",
+    "comparator"
+  ],
+  "pins": [
+    {
+      "name": "1OUT",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN+",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative supply"
+    },
+    {
+      "name": "2IN+",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2IN-",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2OUT",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive supply"
+    }
+  ],
+  "params": {
+    "vout_high": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.5,
+      "min": 0,
+      "max": 32,
+      "doc": "Highest output: set to the supply minus 1.5 V"
+    },
+    "vout_low": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "min": -16,
+      "max": 16,
+      "doc": "Lowest output: the negative supply"
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "A1",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "700k",
+            "vpos": "$vout_high",
+            "vneg": "$vout_low"
+          }
+        },
+        {
+          "id": "A2",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "700k",
+            "vpos": "$vout_high",
+            "vneg": "$vout_low"
+          }
+        }
+      ],
+      "nets": {
+        "VCC": [
+          "A1.V+",
+          "A2.V+"
+        ],
+        "GND": [
+          "A1.V-",
+          "A2.V-"
+        ]
+      },
+      "ports": {
+        "1OUT": "A1.OUT",
+        "1IN-": "A1.-",
+        "1IN+": "A1.+",
+        "2OUT": "A2.OUT",
+        "2IN-": "A2.-",
+        "2IN+": "A2.+",
+        "VCC": "A1.V+",
+        "GND": "A1.V-"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Two emblink/opamp: open-loop gain 100k, 0.7 MHz gain-bandwidth, output limited to vout_low..vout_high.",
+      "omissions": [
+        "input offset and bias current",
+        "slew rate (0.3 V/us)",
+        "crossover distortion",
+        "output current limit"
+      ],
+      "range": {
+        "voltage_v": [
+          0,
+          32
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments LM358 datasheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 80,
+    "pins": {
+      "1IN+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1IN-": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "2IN+": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "2IN-": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "1OUT": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "2OUT": {
+        "x": 80,
+        "y": 50,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 40,
+        "y": 80,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

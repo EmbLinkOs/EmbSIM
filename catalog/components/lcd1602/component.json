@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/lcd1602",
+  "version": "1.0.0",
+  "name": "16x2 character LCD",
+  "category": "displays",
+  "description": "HD44780-compatible 16x2 character LCD: commands and characters latched on E falling, 8-bit or 4-bit bus, busy flag reads as ready; the two lines show on the board view.",
+  "keywords": [
+    "display",
+    "lcd",
+    "1602",
+    "16x2",
+    "HD44780",
+    "character",
+    "alphanumeric"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "VSS",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "VDD",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false
+    },
+    {
+      "name": "V0",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Contrast (not modelled)"
+    },
+    {
+      "name": "RS",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Register select: 0 command, 1 data",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "RW",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "0 write, 1 read",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "E",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Enable: data latched on the falling edge",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D0",
+      "number": 7,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D1",
+      "number": 8,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D2",
+      "number": 9,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D3",
+      "number": 10,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D4",
+      "number": 11,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D5",
+      "number": 12,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D6",
+      "number": 13,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D7",
+      "number": 14,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "A",
+      "number": 15,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Backlight anode"
+    },
+    {
+      "name": "K",
+      "number": 16,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Backlight cathode"
+    }
+  ],
+  "params": {},
+  "outputs": [
+    {
+      "name": "line1",
+      "type": "string"
+    },
+    {
+      "name": "line2",
+      "type": "string"
+    },
+    {
+      "name": "on",
+      "type": "boolean"
+    },
+    {
+      "name": "cursor",
+      "type": "integer",
+      "doc": "DDRAM address counter"
+    },
+    {
+      "name": "four_bit",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 80,
+    "height_mm": 36,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "line1",
+        "selector": "#line1",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "line2",
+        "selector": "#line2",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "on",
+        "selector": "#glass",
+        "attr": "opacity",
+        "true": "0.9",
+        "false": "0.35"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The HD44780 instruction set (clear, home, entry mode, display control, shift, function set, DDRAM/CGRAM address) and data writes in 8-bit and 4-bit modes; reads return 'not busy' and the address counter; no execution delays.",
+      "omissions": [
+        "custom CGRAM characters are stored but drawn as #",
+        "execution times (the busy flag is never set)",
+        "contrast and backlight",
+        "the Japanese ROM characters above 0x7E"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "custom CGRAM characters are stored but drawn as #",
+        "execution times (the busy flag is never set)",
+        "contrast and backlight",
+        "the Japanese ROM characters above 0x7E"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "custom CGRAM characters are stored but drawn as #",
+        "execution times (the busy flag is never set)",
+        "contrast and backlight",
+        "the Japanese ROM characters above 0x7E",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Hitachi HD44780U datasheet (instruction set, 4-bit initialisation)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 150,
+    "pins": {
+      "RS": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "RW": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "E": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D0": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "D1": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "D2": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "D3": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "D4": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "D5": {
+        "x": 0,
+        "y": 110,
+        "side": "left"
+      },
+      "D6": {
+        "x": 0,
+        "y": 120,
+        "side": "left"
+      },
+      "D7": {
+        "x": 0,
+        "y": 130,
+        "side": "left"
+      },
+      "V0": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "A": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "K": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "VSS": {
+        "x": 40,
+        "y": 150,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/test_point",
+  "version": "1.0.0",
+  "name": "Test point",
+  "category": "connectors",
+  "description": "A labelled probe point on a net: no behaviour, a place to clip a probe or a scope ground.",
+  "keywords": [
+    "test point",
+    "probe",
+    "TP",
+    "pad"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "No behaviour; a net attachment point.",
+      "omissions": []
+    },
+    "timed": {
+      "claims": "No behaviour.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "No behaviour.",
+      "omissions": [
+        "pad capacitance"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Keystone 5000-series test point (form factor)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 40,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

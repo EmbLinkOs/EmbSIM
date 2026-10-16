@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "closed",
+  "description": "LE=0 from power-up: Q holds 0 whatever D is.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/d_latch"
+      }
+    ],
+    "nets": {
+      "N_LE": [
+        "L0.OUT",
+        "DUT.LE"
+      ],
+      "N_D": [
+        "L1.OUT",
+        "DUT.D"
+      ],
+      "N_Q": [
+        "DUT.Q"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_Q": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

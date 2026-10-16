@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "capture",
+  "description": "1D=1 clocked at 1 MHz: 1Q=1, 1QN=0; 2PRE_N low sets 2Q without a clock.",
+  "policy": "functional",
+  "until": "4us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1meg"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc74"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.1D",
+        "DUT.1CLR_N",
+        "DUT.1PRE_N",
+        "DUT.2CLR_N"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.2PRE_N"
+      ],
+      "CLK": [
+        "CK.OUT",
+        "DUT.1CLK",
+        "DUT.2CLK"
+      ],
+      "Q1": [
+        "DUT.1Q"
+      ],
+      "QN1": [
+        "DUT.1QN"
+      ],
+      "Q2": [
+        "DUT.2Q"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q1": {
+      "at": "3us",
+      "logic": "1"
+    },
+    "net:QN1": {
+      "at": "3us",
+      "logic": "0"
+    },
+    "net:Q2": {
+      "at": "3us",
+      "logic": "1"
+    }
+  }
+}

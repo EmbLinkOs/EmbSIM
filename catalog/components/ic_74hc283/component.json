@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ic_74hc283",
+  "version": "1.0.0",
+  "name": "74HC283 4-bit adder",
+  "category": "logic",
+  "description": "4-bit binary full adder with fast carry (74HC283): S3-S0 and COUT are A + B + CIN.",
+  "keywords": [
+    "logic",
+    "adder",
+    "arithmetic",
+    "74HC283",
+    "alu"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "S1",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "B1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A1",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "S0",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A0",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "B0",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "CIN",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "COUT",
+      "number": 9,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "S3",
+      "number": 10,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "B3",
+      "number": 11,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A3",
+      "number": 12,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "S2",
+      "number": 13,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A2",
+      "number": 14,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "B2",
+      "number": 15,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "sum",
+      "type": "integer",
+      "min": 0,
+      "max": 31,
+      "doc": "A + B + CIN"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "S = A + B + CIN in binary.",
+      "omissions": [
+        "carry ripple timing (one delay for every output)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "carry ripple timing (one delay for every output)"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "carry ripple timing (one delay for every output)",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC283 datasheet (pinout)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 120,
+    "pins": {
+      "A0": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "A1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "A2": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "A3": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "B0": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "B1": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "B2": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "B3": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "CIN": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "S0": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "S1": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "S2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "S3": {
+        "x": 60,
+        "y": 50,
+        "side": "right"
+      },
+      "COUT": {
+        "x": 60,
+        "y": 70,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 120,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

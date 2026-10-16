@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/diode_schottky",
+  "version": "1.0.0",
+  "name": "Schottky diode",
+  "category": "diodes",
+  "description": "Schottky rectifier: low forward voltage and fast recovery (1N5817, 1N5819).",
+  "keywords": [
+    "diode",
+    "schottky",
+    "rectifier",
+    "1N5819",
+    "1N5817",
+    "reverse polarity"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode (band)"
+    }
+  ],
+  "params": {
+    "part": {
+      "type": "enum",
+      "enum": [
+        "1N5819",
+        "1N5817",
+        "generic"
+      ],
+      "default": "1N5819",
+      "doc": "Named part setting the model parameters",
+      "presets": {
+        "1N5819": {
+          "is": "31.7u",
+          "n": 1.373,
+          "rs": 0.051,
+          "bv": 40,
+          "cj0": "110p"
+        },
+        "1N5817": {
+          "is": "31.7u",
+          "n": 1.373,
+          "rs": 0.051,
+          "bv": 20,
+          "cj0": "190p"
+        },
+        "generic": {
+          "is": "10u",
+          "n": 1.3,
+          "rs": 0.05,
+          "bv": 30,
+          "cj0": "100p"
+        }
+      }
+    },
+    "is": {
+      "type": "number",
+      "unit": "A",
+      "default": "31.7u",
+      "min": "1f",
+      "max": "1m",
+      "doc": "Saturation current",
+      "advanced": true
+    },
+    "n": {
+      "type": "number",
+      "unit": "",
+      "default": 1.373,
+      "min": 0.5,
+      "max": 3,
+      "doc": "Emission coefficient",
+      "advanced": true
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.051,
+      "min": 0,
+      "max": 100,
+      "doc": "Series resistance",
+      "advanced": true
+    },
+    "bv": {
+      "type": "number",
+      "unit": "V",
+      "default": 40,
+      "min": 1,
+      "max": 1000,
+      "doc": "Reverse breakdown voltage",
+      "advanced": true
+    },
+    "cj0": {
+      "type": "number",
+      "unit": "F",
+      "default": "110p",
+      "min": 0,
+      "max": "1u",
+      "doc": "Zero-bias junction capacitance",
+      "advanced": true
+    }
+  },
+  "model": {
+    "primitive": "diode"
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A wire; direction is not enforced.",
+      "omissions": [
+        "forward voltage",
+        "blocking"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Shockley diode with series rs, breakdown bv and junction capacitance (SPEC-004 §7 diode) fitted to the forward curve.",
+      "omissions": [
+        "reverse leakage temperature dependence",
+        "self-heating"
+      ],
+      "range": {
+        "current_a": [
+          -0.01,
+          3
+        ],
+        "voltage_v": [
+          -40,
+          1
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ON Semiconductor 1N5817-1N5819 datasheet"
+      },
+      {
+        "title": "Widely distributed 1N5819 SPICE model (Is=31.7u N=1.373 Rs=.051 Cjo=110p)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

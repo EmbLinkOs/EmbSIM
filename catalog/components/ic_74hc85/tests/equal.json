@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "equal",
+  "description": "A = B = 9 with IEQ high: AEQB.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L3",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L4",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L6",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L7",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L8",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L9",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L10",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc85"
+      }
+    ],
+    "nets": {
+      "N_A0": [
+        "L0.OUT",
+        "DUT.A0"
+      ],
+      "N_A1": [
+        "L1.OUT",
+        "DUT.A1"
+      ],
+      "N_A2": [
+        "L2.OUT",
+        "DUT.A2"
+      ],
+      "N_A3": [
+        "L3.OUT",
+        "DUT.A3"
+      ],
+      "N_B0": [
+        "L4.OUT",
+        "DUT.B0"
+      ],
+      "N_B1": [
+        "L5.OUT",
+        "DUT.B1"
+      ],
+      "N_B2": [
+        "L6.OUT",
+        "DUT.B2"
+      ],
+      "N_B3": [
+        "L7.OUT",
+        "DUT.B3"
+      ],
+      "N_IEQ": [
+        "L8.OUT",
+        "DUT.IEQ"
+      ],
+      "N_IGT": [
+        "L9.OUT",
+        "DUT.IGT"
+      ],
+      "N_ILT": [
+        "L10.OUT",
+        "DUT.ILT"
+      ],
+      "N_AGTB": [
+        "DUT.AGTB"
+      ],
+      "N_AEQB": [
+        "DUT.AEQB"
+      ],
+      "N_ALTB": [
+        "DUT.ALTB"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_AGTB": {
+      "at": "500ns",
+      "logic": "0"
+    },
+    "net:N_AEQB": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_ALTB": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

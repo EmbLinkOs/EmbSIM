@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "monostable",
+  "description": "TRIG pulled low at 1 ms: a 1.1 x 10 k x 100 nF = 1.1 ms pulse.",
+  "policy": "functional",
+  "until": "3ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "TG",
+        "component": "emblink/pulse_source",
+        "params": {
+          "td": "1m",
+          "pw": "0.05m",
+          "per": "1",
+          "v1": 5,
+          "v2": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/timer_555",
+        "params": {
+          "mode": "monostable",
+          "r1": "10k",
+          "c": "100n"
+        }
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.RESET"
+      ],
+      "TRIG": [
+        "TG.+",
+        "DUT.TRIG"
+      ],
+      "OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "1.5ms",
+      "logic": "1"
+    }
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/d_latch",
+  "version": "1.0.0",
+  "name": "D latch",
+  "category": "logic",
+  "description": "Transparent D latch (one bit of a 74HC75/373): Q follows D while LE is high and holds when LE falls.",
+  "keywords": [
+    "logic",
+    "latch",
+    "transparent",
+    "74HC75",
+    "74HC373"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "D",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "LE",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Latch enable: transparent while high",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "Q",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "QN",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "VCC",
+      "number": 16,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "tpd": {
+      "type": "number",
+      "unit": "s",
+      "default": "15n",
+      "min": 0,
+      "max": "1u",
+      "doc": "Propagation delay (timed and electrical policies)",
+      "advanced": true
+    }
+  },
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Transparent while LE is high, holds while low.",
+      "omissions": [
+        "setup and hold around LE falling"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "setup and hold around LE falling"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "setup and hold around LE falling",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nexperia 74HC75 datasheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 50,
+    "pins": {
+      "D": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "LE": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "Q": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "QN": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 50,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

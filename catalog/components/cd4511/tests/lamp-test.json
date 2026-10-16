@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "lamp-test",
+  "description": "LT_N low lights every segment.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L3",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L4",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L6",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/cd4511"
+      }
+    ],
+    "nets": {
+      "N_A": [
+        "L0.OUT",
+        "DUT.A"
+      ],
+      "N_B": [
+        "L1.OUT",
+        "DUT.B"
+      ],
+      "N_C": [
+        "L2.OUT",
+        "DUT.C"
+      ],
+      "N_D": [
+        "L3.OUT",
+        "DUT.D"
+      ],
+      "N_LT_N": [
+        "L4.OUT",
+        "DUT.LT_N"
+      ],
+      "N_BL_N": [
+        "L5.OUT",
+        "DUT.BL_N"
+      ],
+      "N_LE": [
+        "L6.OUT",
+        "DUT.LE"
+      ],
+      "N_SG": [
+        "DUT.SG"
+      ],
+      "N_SD": [
+        "DUT.SD"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_SG": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_SD": {
+      "at": "500ns",
+      "logic": "1"
+    }
+  }
+}

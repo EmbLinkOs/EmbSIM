@@ -38,6 +38,11 @@ const esk_catalog_item *esk_catalog_find(const es_catalog *c, const char *kind, 
 /* resolve the bundled catalog directory: $EMBSIM_CATALOG, else the compile-time
  * source directory's catalog/, else NULL */
 char *esk_catalog_bundled_dir(esk_alloc *a, const char *exe_hint);
+/* the user library directory (SPEC-014 §1): $EMBSIM_LIBRARIES, else
+ * <user data>/libraries; NULL when neither is known. esk_strfree to release. */
+char *esk_catalog_user_dir(esk_alloc *a);
+/* load every library directory under `dir` (the user libraries) */
+void esk_catalog_load_user_libraries(es_catalog *c, const char *dir, esk_diag *diag);
 /* a file of an item, read into memory (symbol.svg etc.), NULL if missing */
 char *esk_catalog_read_item_file(const es_catalog *c, const esk_catalog_item *it, const char *rel, size_t *len);
 /* JSON listing for catalog.list */

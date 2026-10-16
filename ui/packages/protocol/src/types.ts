@@ -185,6 +185,10 @@ export interface ArtworkState {
   false?: string;
   /** Numeric output mapping: `[lo, hi]` to 0..1, or `{from: [lo, hi], to: [a, b]}` (SPEC-005 §8). */
   scale?: [number, number] | { from: [number, number]; to?: [number, number] };
+  /** Enum or integer value -> attribute value. */
+  map?: Record<string, string>;
+  /** A template whose "{}" takes the (scaled) value; attr "text" sets the element's text. */
+  format?: string;
 }
 
 export interface ArtworkDescription {

@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "select3",
+  "description": "S = 3 and I3 high: Y=1, Y_N=0.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L3",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L4",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "L5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc151"
+      }
+    ],
+    "nets": {
+      "N_S0": [
+        "L0.OUT",
+        "DUT.S0"
+      ],
+      "N_S1": [
+        "L1.OUT",
+        "DUT.S1"
+      ],
+      "N_S2": [
+        "L2.OUT",
+        "DUT.S2"
+      ],
+      "N_I3": [
+        "L3.OUT",
+        "DUT.I3"
+      ],
+      "N_I2": [
+        "L4.OUT",
+        "DUT.I2"
+      ],
+      "N_E_N": [
+        "L5.OUT",
+        "DUT.E_N"
+      ],
+      "N_Y": [
+        "DUT.Y"
+      ],
+      "N_Y_N": [
+        "DUT.Y_N"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_Y": {
+      "at": "500ns",
+      "logic": "1"
+    },
+    "net:N_Y_N": {
+      "at": "500ns",
+      "logic": "0"
+    }
+  }
+}

@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/led_bargraph",
+  "version": "1.0.0",
+  "name": "8-segment LED bar graph",
+  "category": "indicators",
+  "description": "Eight LEDs in a row with a common cathode: a bar lights when its anode is high and K low. A level meter on the board view.",
+  "keywords": [
+    "led",
+    "bar graph",
+    "bargraph",
+    "level",
+    "vu meter",
+    "indicator"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A1",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "A2",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "A3",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "A4",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "A5",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "A6",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "A7",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "A8",
+      "number": 8,
+      "model": {
+        "kind": "digital_in"
+      }
+    },
+    {
+      "name": "K",
+      "number": 9,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Common cathode"
+    }
+  ],
+  "params": {},
+  "outputs": [
+    {
+      "name": "level",
+      "type": "integer",
+      "min": 0,
+      "max": 8,
+      "doc": "Bars lit"
+    },
+    {
+      "name": "lit1",
+      "type": "boolean"
+    },
+    {
+      "name": "lit2",
+      "type": "boolean"
+    },
+    {
+      "name": "lit3",
+      "type": "boolean"
+    },
+    {
+      "name": "lit4",
+      "type": "boolean"
+    },
+    {
+      "name": "lit5",
+      "type": "boolean"
+    },
+    {
+      "name": "lit6",
+      "type": "boolean"
+    },
+    {
+      "name": "lit7",
+      "type": "boolean"
+    },
+    {
+      "name": "lit8",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 20,
+    "height_mm": 6,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "lit1",
+        "selector": "#bar1",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit2",
+        "selector": "#bar2",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit3",
+        "selector": "#bar3",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit4",
+        "selector": "#bar4",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit5",
+        "selector": "#bar5",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit6",
+        "selector": "#bar6",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit7",
+        "selector": "#bar7",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit8",
+        "selector": "#bar8",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Each bar is lit when its anode is 1 and the common cathode is not 1.",
+      "omissions": [
+        "forward voltage and current",
+        "brightness"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "forward voltage and current",
+        "brightness"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "forward voltage and current",
+        "brightness",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Kingbright DC-10 bar graph array (form factor)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 90,
+    "pins": {
+      "A1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "A2": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "A3": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "A4": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "A5": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "A6": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "A7": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "A8": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

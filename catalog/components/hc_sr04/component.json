@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/hc_sr04",
+  "version": "1.0.0",
+  "name": "HC-SR04 ultrasonic sensor",
+  "category": "sensors",
+  "description": "Ultrasonic distance sensor module (HC-SR04): a TRIG pulse of at least 10 us starts a measurement; after the burst ECHO stays high 58.3 us per centimetre (2-400 cm, else a 38 ms timeout). The distance is an interactive input.",
+  "keywords": [
+    "sensor",
+    "ultrasonic",
+    "distance",
+    "HC-SR04",
+    "ranging",
+    "sonar"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "VCC",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    },
+    {
+      "name": "TRIG",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Trigger: a pulse of 10 us or more",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "ECHO",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "High for the echo time",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {},
+  "inputs": [
+    {
+      "name": "distance_cm",
+      "type": "number",
+      "min": 0,
+      "max": 500,
+      "unit": "cm",
+      "default": 100,
+      "doc": "Distance to the target"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "echo_us",
+      "type": "integer",
+      "unit": "us",
+      "doc": "Last echo pulse width"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Trigger qualification (10 us), a fixed 250 us burst delay, echo width 58.3 us/cm in range, 38 ms timeout outside.",
+      "omissions": [
+        "beam angle and multiple targets",
+        "temperature dependence of the speed of sound",
+        "minimum re-trigger interval"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "beam angle and multiple targets",
+        "temperature dependence of the speed of sound",
+        "minimum re-trigger interval"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "beam angle and multiple targets",
+        "temperature dependence of the speed of sound",
+        "minimum re-trigger interval",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Elec Freaks HC-SR04 user guide (timing diagram)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 40,
+    "pins": {
+      "TRIG": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "ECHO": {
+        "x": 70,
+        "y": 20,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

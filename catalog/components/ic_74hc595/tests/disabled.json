@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "disabled",
+  "description": "OE_N high releases the outputs.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ic_74hc595"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.OE_N",
+        "DUT.MR_N"
+      ],
+      "Q0": [
+        "DUT.Q0"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q0": {
+      "at": "500ns",
+      "logic": "Z"
+    }
+  }
+}

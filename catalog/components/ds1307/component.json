@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ds1307",
+  "version": "1.0.0",
+  "name": "DS1307 real-time clock",
+  "category": "misc",
+  "description": "Real-time clock on I2C (DS1307, address 0x68): BCD seconds to year with leap years, 56 bytes of RAM, the clock-halt bit and the SQW/OUT pin (1 Hz to 32.768 kHz square wave or a static level). Time runs with simulated time from the start parameter.",
+  "keywords": [
+    "rtc",
+    "real-time clock",
+    "DS1307",
+    "i2c",
+    "calendar",
+    "time"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "X1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Crystal (32.768 kHz; not modelled)"
+    },
+    {
+      "name": "X2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "VBAT",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Backup battery (not modelled)"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "SDA",
+      "number": 5,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCL",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SQW",
+      "number": 7,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Square wave or level, open drain",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "start": {
+      "type": "string",
+      "default": "2026-01-01 00:00:00",
+      "doc": "Date and time at power-up, YYYY-MM-DD HH:MM:SS"
+    }
+  },
+  "outputs": [
+    {
+      "name": "time",
+      "type": "string",
+      "doc": "YYYY-MM-DD HH:MM:SS"
+    },
+    {
+      "name": "running",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Registers 0x00-0x07 (BCD, 24-hour, day of week from the date), RAM 0x08-0x3F, register pointer wrap, time set at STOP, CH halts, SQW/OUT per the control register.",
+      "omissions": [
+        "12-hour mode",
+        "the crystal and backup battery",
+        "the burst-read snapshot (registers are read live)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "12-hour mode",
+        "the crystal and backup battery",
+        "the burst-read snapshot (registers are read live)"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "12-hour mode",
+        "the crystal and backup battery",
+        "the burst-read snapshot (registers are read live)",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Analog Devices (Maxim) DS1307 datasheet (register map)"
+      },
+      {
+        "title": "H. Hinnant, chrono-compatible low-level date algorithms"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 80,
+    "pins": {
+      "SDA": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCL": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "SQW": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "X1": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "X2": {
+        "x": 60,
+        "y": 50,
+        "side": "right"
+      },
+      "VBAT": {
+        "x": 60,
+        "y": 60,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 80,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -231,6 +231,9 @@ void esk_engine_free(esk_engine *e)
     esk_map_free(&e->comp_by_id);
     esk_map_free(&e->net_by_name);
     esk_sched_free(&e->sched);
+    if (e->ext && e->ext_free)
+        e->ext_free(e->ext);
+    e->ext = NULL;
 }
 
 es_status esk_engine_add_net(esk_engine *e, const char *name, esk_net **out)
@@ -864,8 +867,10 @@ es_status esk_engine_partition(esk_engine *e)
     size_t nn = e->nets.len;
     es_status st = ES_OK;
     islands_free(e);
-    if (e->policy != ESK_POLICY_ELECTRICAL) {
-        /* everything digital; components without a functional model are refused */
+    if (e->policy == ESK_POLICY_FUNCTIONAL) {
+        /* everything digital; components without a functional model are
+         * refused. Under `timed` the electrical devices still form analog
+         * islands (SPEC-003 §4); the loader binds functional models first. */
         for (i = 0; i < e->comps.len; i++) {
             esk_comp *c = e->comps.data[i];
             if (esk_model_is_electrical_only(c->ops)) {
@@ -988,8 +993,22 @@ es_status esk_engine_partition(esk_engine *e)
                 }
             }
         }
-        if (st == ES_OK && isl && comp_is_electrical(c))
-            st = esk_island_add_device(isl, c, c->ops->adev, pins, np, &c->adev);
+        if (st == ES_OK && isl && comp_is_electrical(c)) {
+            /* by name when every pin the primitive names is here and connected:
+             * a description may list them in any order */
+            int nnames, all = 1;
+            const char *const *names = esk_adev_pin_names(c->ops->adev, &nnames);
+            esk_pin *byname[8];
+            for (k = 0; names && k < (size_t)nnames && all; k++) {
+                esk_pin *p = esk_comp_pin(c, names[k]);
+                all = p && p->net && p->net->island == isl;
+                byname[k] = p;
+            }
+            if (names && all && nnames >= np)
+                st = esk_island_add_device(isl, c, c->ops->adev, byname, nnames, &c->adev);
+            else
+                st = esk_island_add_device(isl, c, c->ops->adev, pins, np, &c->adev);
+        }
     }
     e->partitioned = 1;
     return st;

@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "follower",
+  "description": "Amplifier 1 as a voltage follower: 1 V in, 1 V out.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm358"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "V1.+",
+        "DUT.1IN+"
+      ],
+      "OUT": [
+        "DUT.1OUT",
+        "DUT.1IN-",
+        "RL.1"
+      ],
+      "VCC": [
+        "VS.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "V1.-",
+        "VS.-",
+        "RL.2",
+        "DUT.GND",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": 0.99,
+      "max_v": 1.01
+    }
+  }
+}

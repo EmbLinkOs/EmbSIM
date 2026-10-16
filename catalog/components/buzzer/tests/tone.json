@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "tone",
+  "description": "A passive buzzer fed 2 kHz reports a 2 kHz tone.",
+  "policy": "functional",
+  "until": "11ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "2k"
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/buzzer"
+      }
+    ],
+    "nets": {
+      "SIG": [
+        "CK.OUT",
+        "DUT.+"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.-"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.tone_hz": {
+      "at": "10ms",
+      "min": 1990,
+      "max": 2010
+    },
+    "output:DUT.sounding": {
+      "at": "10ms",
+      "equals": true
+    }
+  }
+}

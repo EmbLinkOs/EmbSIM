@@ -1487,7 +1487,7 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
                 report.error(file, node + "/expect/logic", "schema.type", f"logic expectation on a {pkind} probe")
             if pkind == "digital" and any(k in exp for k in ("min_v", "max_v", "contains")):
                 report.error(file, node + "/expect", "schema.type", "voltage or text expectation on a digital probe")
-            if "contains" in exp and pkind != "serial":
+            if "contains" in exp and pkind not in ("serial", "value"):
                 report.error(file, node + "/expect/contains", "schema.type", f"contains expectation on a {pkind} probe")
 
 
@@ -1711,6 +1711,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--strict", action="store_true", help="treat warnings as errors")
     ap.add_argument("--no-semantic", action="store_true", help="schema checks only")
     ap.add_argument("--quiet", action="store_true", help="print only the summary")
+    ap.add_argument("--library", action="append", default=[], help="another library to resolve ids in (repeatable)")
     args = ap.parse_args(argv)
     paths: list[Path] = []
     if args.all:
@@ -1729,7 +1730,17 @@ def main(argv: Optional[list[str]] = None) -> int:
         print("validate.py: nothing to validate (give PATH... or --all)", file=sys.stderr)
         return 2
     schemas = Schemas()
-    index = Index([CATALOG_DIR])
+    # the libraries holding the given paths are indexed ahead of the bundled
+    # catalog, so a library under development resolves its own ids
+    roots: list[Path] = [Path(l) for l in args.library]
+    for p in args.paths:
+        q = Path(p).resolve()
+        for cand in [q, *q.parents]:
+            if (cand / "library.json").is_file():
+                if cand.resolve() != CATALOG_DIR.resolve() and cand not in roots:
+                    roots.append(cand)
+                break
+    index = Index([*roots, CATALOG_DIR])
     report = Report()
     for p in paths:
         validate_file(p, schemas, index, report, semantic=not args.no_semantic)

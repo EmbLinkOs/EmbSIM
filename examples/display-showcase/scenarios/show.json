@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "show",
+  "until": "3s",
+  "description": "Every display shows its text or picture, the counter counts and the servo sits at 45 degrees.",
+  "assertions": [
+    {
+      "id": "lcd",
+      "at": "100ms",
+      "probe": "p_lcd",
+      "expect": {
+        "contains": "EmbSIM catalog"
+      }
+    },
+    {
+      "id": "oled",
+      "at": "100ms",
+      "probe": "p_oled",
+      "expect": {
+        "min": 300
+      }
+    },
+    {
+      "id": "digits",
+      "at": "100ms",
+      "probe": "p_max",
+      "expect": {
+        "equals": "20261016"
+      }
+    },
+    {
+      "id": "count",
+      "at": "2.9s",
+      "probe": "count",
+      "expect": {
+        "min": 5,
+        "max": 6
+      }
+    },
+    {
+      "id": "servo",
+      "at": "100ms",
+      "probe": "angle",
+      "expect": {
+        "min": 44.9,
+        "max": 45.1
+      }
+    },
+    {
+      "id": "tone",
+      "at": "1s",
+      "probe": "p_tone",
+      "expect": {
+        "min": 1800,
+        "max": 2000
+      }
+    }
+  ]
+}

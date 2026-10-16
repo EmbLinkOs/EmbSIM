@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "three",
+  "description": "Three clock edges: Q3 high, Q0 low.",
+  "policy": "functional",
+  "until": "13ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "CK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/cd4017"
+      }
+    ],
+    "nets": {
+      "LO": [
+        "L.OUT",
+        "DUT.MR",
+        "DUT.CP1_N"
+      ],
+      "CP": [
+        "CK.OUT",
+        "DUT.CP0"
+      ],
+      "Q3": [
+        "DUT.Q3"
+      ],
+      "Q0": [
+        "DUT.Q0"
+      ],
+      "CO": [
+        "DUT.CO"
+      ]
+    }
+  },
+  "expect": {
+    "net:Q3": {
+      "at": "3.2ms",
+      "logic": "1"
+    },
+    "net:Q0": {
+      "at": "3.2ms",
+      "logic": "0"
+    },
+    "net:CO": {
+      "at": "3.2ms",
+      "logic": "1"
+    },
+    "output:DUT.count": {
+      "at": "12.2ms",
+      "equals": 2
+    }
+  }
+}
