@@ -53,6 +53,12 @@ typedef struct mna {
     int exact_until; /* a catch-up: never step past `until` */
     int restart;     /* next step is backward Euler and small */
     int touched;     /* a touch arrived during a step */
+    /* two steps in a row changed no unknown, neither ended at a breakpoint
+     * and none is pending: the island sits at its steady state (a device's
+     * accept that changed its state was solved by the second step), and
+     * until a touch or a breakpoint its steps move its time without a solve */
+    int quiet;
+    int still; /* the steps in a row that changed no unknown */
     double gmin_eff;
     double h_prev_s;
     es_time_t bracket_hi; /* a crossing lies before this time (0: none) */
@@ -932,13 +938,15 @@ static es_status start_or_reset(esk_island *isl)
                   "no ground net; an implicit ground node was added");
     }
     isl->failed = 0;
-    isl->steps = isl->rejections = isl->newton_iters = 0;
+    isl->steps = isl->rejections = isl->newton_iters = isl->quiet_steps = 0;
     isl->t_accepted = 0;
     isl->h_next_ps = MNA_START_STEP_PS;
     p->running = 0;
     p->in_step = 0;
     p->restart = 1;
     p->touched = 0;
+    p->quiet = 0;
+    p->still = 0;
     p->bracket_hi = 0;
     p->h_before_bracket = 0;
     p->h_prop_ps = MNA_START_STEP_PS;
@@ -1090,6 +1098,40 @@ static es_time_t step_horizon(const esk_island *isl, es_time_t until)
     return want > until ? want : until;
 }
 
+/* the step to x_iter changed no unknown beyond rounding */
+static int unchanged(const esk_island *isl)
+{
+    const mna *p = (const mna *)isl->priv;
+    int i;
+    for (i = 0; i < p->n; i++) {
+        double a = isl->x[i], b = p->x_iter[i];
+        if (fabs(a - b) > 1e-14 * (1.0 + fabs(a)))
+            return 0;
+    }
+    return 1;
+}
+
+/* a trial step of the longest length from the accepted solution, discarded:
+ * 1 when it changes nothing, so the island sits at its steady state (a step
+ * as short as an event's clip can leave a slow transient looking still) */
+static int steady(esk_island *isl)
+{
+    mna *p = (mna *)isl->priv;
+    es_time_t tn;
+    int bad = -1, ok;
+    if (esk_time_add(isl->t_accepted, isl->p.h_max_ps, &tn))
+        return 0;
+    p->in.h = (double)isl->p.h_max_ps * MNA_PS_TO_S;
+    p->in.h_prev = p->h_prev_s;
+    p->in.t_ps = tn;
+    p->in.method = INTEG_TRAP;
+    p->in.negligible = 0;
+    memcpy(p->x_iter, isl->x, (size_t)p->n * sizeof *p->x_iter);
+    ok = newton(isl, 0, &bad) == 0 && unchanged(isl);
+    reject_all(isl);
+    return ok;
+}
+
 es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
 {
     mna *p = (mna *)isl->priv;
@@ -1110,12 +1152,26 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
         es_time_t h = isl->h_next_ps ? isl->h_next_ps : isl->p.h_max_ps;
         es_time_t tn, bp;
         int method = INTEG_TRAP;
-        int bad = -1, r, i;
+        int bad = -1, r, i, at_bp;
         double lte, tol;
         if (p->touched) {
             p->touched = 0;
             p->restart = 1;
+            p->quiet = 0;
+            p->still = 0;
         }
+        if (p->quiet && !p->restart && !p->bracket_hi && next_breakpoint(isl, t) > until) {
+            /* steady: the solution at `until` is the one it has, and the next
+             * step may be the longest */
+            isl->t_accepted = until;
+            isl->h_next_ps = p->h_prop_ps = isl->p.h_max_ps;
+            isl->quiet_steps++;
+            t = until;
+            if (reached)
+                *reached = t;
+            break;
+        }
+        p->quiet = 0;
         if (p->restart) {
             method = INTEG_BE;
             if (h > MNA_TOUCH_STEP_PS)
@@ -1130,6 +1186,7 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
         bp = next_breakpoint(isl, t);
         if (bp <= tn)
             tn = bp;
+        at_bp = tn == bp;
         if (p->bracket_hi > t && p->bracket_hi < tn)
             tn = p->bracket_hi;
         h = tn - t;
@@ -1217,6 +1274,7 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
                 continue;
             }
             /* accept this step and deliver the crossing at its end */
+            p->still = 0;
             publish(isl, tn);
             isl->steps++;
             p->consecutive_rej = 0;
@@ -1233,8 +1291,17 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
             p->in_step = 0;
             return ES_OK;
         }
-        /* accept */
+        /* accept: unchanged trapezoidal steps away from breakpoints leave
+         * the island quiet, once a second one has solved what the first's
+         * accept changed, no breakpoint is pending after it, and a trial step
+         * of the longest length changes nothing either */
+        p->still = method == INTEG_TRAP && !p->bracket_hi && !at_bp && unchanged(isl) ? p->still + 1 : 0;
         publish(isl, tn);
+        if (p->still >= 2 && next_breakpoint(isl, tn) == ES_TIME_MAX) {
+            p->quiet = steady(isl);
+            if (!p->quiet)
+                p->still = 0;
+        }
         isl->steps++;
         p->consecutive_rej = 0;
         p->h_prev_s = p->in.negligible ? p->h_prev_s + p->in.h : p->in.h;
@@ -1302,6 +1369,8 @@ void esk_island_touch(esk_island *isl, es_time_t now)
     }
     p->exact_until = 0;
     p->restart = 1;
+    p->quiet = 0;
+    p->still = 0;
     if (isl->h_next_ps > MNA_TOUCH_STEP_PS)
         isl->h_next_ps = MNA_TOUCH_STEP_PS;
     p->h_prop_ps = isl->h_next_ps;

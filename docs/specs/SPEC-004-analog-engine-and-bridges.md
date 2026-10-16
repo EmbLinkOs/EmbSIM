@@ -52,6 +52,16 @@ Defaults (per session, overridable per island in the project): `reltol
   rejections raise `analog.step_failure`.
 - Timestep too small (`h < h_min`) raises `analog.timestep_too_small` naming
   the device with the largest LTE contribution.
+- A steady island stops solving. After two accepted trapezoidal steps in a
+  row that change no unknown (by more than 1e-14 relative), neither ending
+  at a breakpoint, with no breakpoint pending, and when a discarded trial
+  step of `h_max` from that solution changes nothing either, the island is
+  quiet: its steps move its time without a solve until a touch (a bridge's
+  new drive, an input) or a breakpoint. A busy MCU's quanta clip every step
+  to a microsecond, and a board's LED and pull-up islands then cost nothing
+  between edges; an island still moving, however slowly, is solved to the
+  solver's own floor (the second step solves what the first's `accept`
+  changed: a switch settling, a ramp ending).
 
 ## 5. Linear solver
 

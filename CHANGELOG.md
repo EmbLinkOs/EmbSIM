@@ -257,6 +257,10 @@ versions follow semantic versioning. There is no release yet.
   with no register that read 0 and ignore writes as the part documents them.
 
 ### Changed
+- A steady analog island stops solving until something touches it
+  (SPEC-004 §4): a busy MCU's 1 µs quanta made every LED and pull-up
+  island solve a step each; SiFive's sifive-welcome runs 4 s of a HiFive1
+  in 7 s instead of 42, with the same pin voltages.
 - The analog fixtures are checked against ngspice too: `ngspice.json` beside
   each (`tools/analog/ngspice_fixture.py`, `--check` in CI), compared by
   `test_analog` within 2 mV + 0.2 %.
