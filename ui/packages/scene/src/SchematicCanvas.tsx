@@ -20,6 +20,7 @@ import {
   rectContainsRect,
   rectsIntersect,
   routeOrthogonal,
+  extendWirePath,
   snap,
   snapPoint,
   symbolBounds,
@@ -104,7 +105,8 @@ export interface SchematicCanvasProps {
   /** L on one selected wire: label its net there. */
   onLabelWire?: (wire: number) => void;
   onDelete?: (selection: Selection) => void;
-  onWire?: (from: PinRef, to: PinRef | NetRef, points: [number, number][]) => void;
+  /** Manual paths must bypass automatic rerouting on completion. */
+  onWire?: (from: PinRef, to: PinRef | NetRef, points: [number, number][], manual?: boolean) => void;
   onPlace?: (componentId: string, at: Point) => void;
   /** A net was clicked in probe mode (or with Alt): add a probe there. */
   onNetClick?: (net: string, at: Point) => void;
@@ -323,7 +325,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const [dragOffset, setDragOffset] = useState<Point | null>(null);
   const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
   const [marquee, setMarquee] = useState<Rect | null>(null);
-  const [wiring, setWiring] = useState<{ from: PinRef; cursor: Point; horizontalFirst: boolean } | null>(null);
+  const [wiring, setWiring] = useState<{ from: PinRef; cursor: Point; horizontalFirst: boolean; legs: [number, number][][]; manual: boolean } | null>(null);
   const [dropHint, setDropHint] = useState<Point | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const rafRef = useRef<number | null>(null);
@@ -519,17 +521,28 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   // --- wiring -------------------------------------------------------------------
 
   const startWire = useCallback((from: PinRef) => {
-    setWiring({ from, cursor: from.point, horizontalFirst: true });
+    setWiring({ from, cursor: from.point, horizontalFirst: true, legs: [], manual: false });
     setAnnouncement(`Wiring from ${from.component}.${from.pin}. Choose a destination pin, or press Escape.`);
   }, []);
+
+  const addWireBend = useCallback((point: Point) => {
+    if (!wiring) return;
+    const end = snapPoint(point);
+    const last = wiring.legs.at(-1)?.at(-1);
+    const start = last ? { x: last[0], y: last[1] } : wiring.from.point;
+    if (end.x === start.x && end.y === start.y) return;
+    const leg = !wiring.manual && smartWires ? routeConnection(project, catalog, wiring.from, { point: end }) : null;
+    setWiring({ ...wiring, cursor: end, manual: true, legs: [...wiring.legs, leg ?? routeOrthogonal(start, end, wiring.horizontalFirst)] });
+    setAnnouncement('Bend placed. Click another bend or a destination. Backspace removes the last bend.');
+  }, [wiring, smartWires, project, catalog]);
 
   const finishWire = useCallback(
     (to: PinRef | NetRef) => {
       if (!wiring) return;
-      const points = routeOrthogonal(wiring.from.point, to.point, wiring.horizontalFirst);
+      const points = extendWirePath(wiring.from.point, wiring.legs, to.point, wiring.horizontalFirst);
       setWiring(null);
       if ('component' in to && to.component === wiring.from.component && to.pin === wiring.from.pin) return;
-      onWire?.(wiring.from, to, points);
+      onWire?.(wiring.from, to, points, wiring.manual);
       setAnnouncement('component' in to ? `Wired ${wiring.from.component}.${wiring.from.pin} to ${to.component}.${to.pin}.` : `Wired ${wiring.from.component}.${wiring.from.pin} to net ${to.net}.`);
     },
     [wiring, onWire],
@@ -588,8 +601,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       if (pin) finishWire(pin);
       else if (w) finishWire({ net: w.wire.net, point: w.point });
       else {
-        // Flip the elbow when clicking empty space.
-        setWiring({ ...wiring, horizontalFirst: !wiring.horizontalFirst });
+        addWireBend(world);
       }
       return;
     }
@@ -606,7 +618,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         // Start a branch from the wire: a net reference acts as the source pin.
         const hit = findWireAt(world, 8);
         const from: PinRef = { component: '', pin: '', net: wire.net, point: hit?.point ?? snapPoint(world) };
-        setWiring({ from, cursor: from.point, horizontalFirst: true });
+        setWiring({ from, cursor: from.point, horizontalFirst: true, legs: [], manual: false });
         return;
       }
       const additive = e.shiftKey || e.ctrlKey || e.metaKey;
@@ -748,7 +760,26 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     const target = e.target as Element;
     const onPin = target.closest('[data-pin]');
     const onComponent = target.closest('[data-component]');
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (wiring && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+      e.preventDefault();
+      const step = e.shiftKey ? GRID * 5 : GRID;
+      setWiring({ ...wiring, cursor: {
+        x: wiring.cursor.x + (e.key === 'ArrowRight' ? step : e.key === 'ArrowLeft' ? -step : 0),
+        y: wiring.cursor.y + (e.key === 'ArrowDown' ? step : e.key === 'ArrowUp' ? -step : 0),
+      } });
+      svgRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (wiring && e.key === 'Enter' && target === svgRef.current) {
+      e.preventDefault();
+      const pin = findPinAt(wiring.cursor, .1);
+      const wire = pin ? null : findWireAt(wiring.cursor, .1);
+      if (pin) finishWire(pin);
+      else if (wire) finishWire({ net: wire.wire.net, point: wire.point });
+      else addWireBend(wiring.cursor);
+      return;
+    }
+    if (e.key === 'Enter' || (e.key === ' ' && !wiring)) {
       if (onPin) {
         e.preventDefault();
         const [component, pin] = (onPin.getAttribute('data-pin') ?? '').split('.');
@@ -767,6 +798,17 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         else onSelectionChange(selection.components.includes(id) ? { ...selection, components: selection.components.filter((c) => c !== id) } : { ...selection, components: [...selection.components, id] });
         return;
       }
+    }
+    if (wiring && (e.key === 'Backspace' || e.key === 'Delete' || e.key === ' ')) {
+      e.preventDefault();
+      if (e.key === ' ') {
+        setWiring({ ...wiring, horizontalFirst: !wiring.horizontalFirst, manual: true });
+        setAnnouncement('Wire elbow flipped.');
+      } else {
+        setWiring({ ...wiring, legs: wiring.legs.slice(0, -1) });
+        setAnnouncement('Last bend removed.');
+      }
+      return;
     }
     if (e.key === 'Escape') {
       if (wiring) {
@@ -897,9 +939,9 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const netVisual = (net: string): NetVisual => (live ? describeNetState(netStates?.[net], analogRange) : { kind: 'idle', text: '' });
 
   const wireTarget = wiring ? findPinAt(wiring.cursor, .1) : null;
-  const smartPreview = wiring && smartWires ? routeConnection(project, catalog, wiring.from, wireTarget ?? { point: wiring.cursor, net: findWireAt(wiring.cursor, .1)?.wire.net }) : null;
-  const routeBlocked = !!wiring && smartWires && !smartPreview;
-  const wiringPreview = wiring ? smartPreview ?? routeOrthogonal(wiring.from.point, wiring.cursor, wiring.horizontalFirst) : null;
+  const smartPreview = wiring && !wiring.manual && smartWires ? routeConnection(project, catalog, wiring.from, wireTarget ?? { point: wiring.cursor, net: findWireAt(wiring.cursor, .1)?.wire.net }) : null;
+  const routeBlocked = !!wiring && !wiring.manual && smartWires && !smartPreview;
+  const wiringPreview = wiring ? smartPreview ?? extendWirePath(wiring.from.point, wiring.legs, wiring.cursor, wiring.horizontalFirst) : null;
   const showPins = !readOnly || mode === 'probe';
   const cursorClass = mode === 'wire' ? 'es-scene--wire' : mode === 'probe' ? 'es-scene--probe' : '';
 
@@ -1017,6 +1059,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {guides.x !== undefined && <line className="es-scene__alignment-guide" x1={guides.x} x2={guides.x} y1={visibleWorld.y} y2={visibleWorld.y + visibleWorld.height} />}
             {guides.y !== undefined && <line className="es-scene__alignment-guide" y1={guides.y} y2={guides.y} x1={visibleWorld.x} x2={visibleWorld.x + visibleWorld.width} />}
             {marquee && <rect className="es-scene__marquee" x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height} />}
+            {wiring?.legs.map((leg, i) => { const p = leg.at(-1)!; return <circle className="es-scene__wire-waypoint" key={i} cx={p[0]} cy={p[1]} r={3 / viewport.k} fill="var(--accent)" pointerEvents="none" />; })}
             {wiringPreview && <polyline className={`es-scene__wire-preview${routeBlocked ? ' is-blocked' : ''}`} points={wiringPreview.map(([x, y]) => `${x},${y}`).join(' ')} />}
             {dropHint && <rect className="es-scene__drop-hint" x={dropHint.x - 5} y={dropHint.y - 5} width={10} height={10} />}
           </g>
@@ -1051,7 +1094,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         <span className="es-mono">{Math.round(viewport.k * 100)}%</span>
         {ratsnest.length > 0 && <span>{ratsnest.length} undrawn connection{ratsnest.length === 1 ? '' : 's'}</span>}
         {routeBlocked && <span>No clear route · move the cursor or rearrange overlapping parts</span>}
-        {wiring && <span>wiring from {wiring.from.component ? `${wiring.from.component}.${wiring.from.pin}` : wiring.from.net} · Esc cancels</span>}
+        {wiring && <span>wiring from {wiring.from.component ? `${wiring.from.component}.${wiring.from.pin}` : wiring.from.net} · click to place bends · Space flips elbow · Backspace removes bend · Esc cancels</span>}
         {mode === 'wire' && !wiring && <span>click a pin to start a wire</span>}
         {mode === 'probe' && <span>click a wire or pin to add a probe</span>}
       </div>

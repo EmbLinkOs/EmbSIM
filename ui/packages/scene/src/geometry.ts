@@ -301,3 +301,11 @@ export function findAirwires(pins: Point[], wires: Wire[]): { a: Point; b: Point
   }
   return lines;
 }
+
+/** Append a live orthogonal leg to committed bends without duplicate vertices. */
+export function extendWirePath(from: Point, legs: [number, number][][], to: Point, horizontalFirst = true): [number, number][] {
+  const end = legs.at(-1)?.at(-1);
+  const start = end ? { x: end[0], y: end[1] } : from;
+  const points = [...legs.flat(), ...routeOrthogonal(start, to, horizontalFirst)];
+  return points.filter((p, i) => i === 0 || p[0] !== points[i - 1]![0] || p[1] !== points[i - 1]![1]);
+}

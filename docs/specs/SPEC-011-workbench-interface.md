@@ -165,3 +165,14 @@ with keyboard and ARIA behaviour.
    run, press, observe, export.
 8. No simulation code in `ui/` (lint rule forbids importing anything but
    the protocol client for state).
+
+### Manual wire authoring
+
+During an unfinished connection, empty-sheet clicks commit orthogonal legs.
+Space changes only the live elbow, Backspace/Delete removes the last leg, and
+Escape cancels without a project mutation. Arrow keys move the cursor by 10
+units (Shift: 50); Enter on the canvas commits a bend or connects at a pin/wire.
+Finishing on a pin or wire commits the complete polyline in one transaction.
+Explicit bends take precedence over smart routing and auto-arrange at completion;
+subsequent layout operations may replace the geometry. Crossings alone do not
+create net membership. This workflow does not promise clearance validation.

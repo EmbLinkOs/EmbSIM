@@ -252,9 +252,9 @@ export function DesignPerspective() {
         void store.deleteSelection(sel).catch(fail('Delete failed'));
         setSelection({ components: [], wires: [] });
       }}
-      onWire={(from, to, points) => {
-        const path = display.smartWires && !display.autoArrange ? routeConnection(project, sceneCatalog, from, 'component' in to ? to : { point: to.point, net: to.net }) : points;
-        void store.wire(from, to, path ?? [], display.autoArrange).then(() => {
+      onWire={(from, to, points, manual) => {
+        const path = !manual && display.smartWires && !display.autoArrange ? routeConnection(project, sceneCatalog, from, 'component' in to ? to : { point: to.point, net: to.net }) : points;
+        void store.wire(from, to, path ?? [], !manual && display.autoArrange).then(() => {
           if (!path) toast({ kind: 'warning', title: 'Connected with an airwire', description: 'No clear drawn route. Rearrange the parts or use Layout Studio to route the connection.' });
         }).catch(fail('Wire failed'));
       }}

@@ -5,6 +5,26 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Manual schematic wire authoring
+
+The schematic accepts multiple orthogonal wire legs, with visible committed
+waypoints and a live final leg. Space flips the live elbow, Backspace/Delete
+removes a leg, and Escape cancels without a project mutation. Arrows and Enter
+support keyboard routing. Explicit routing takes precedence over smart wiring
+and auto-arrange when the connection is completed; the entire connection is one
+undoable edit. These waypoints are geometry, not persistent routing constraints;
+a later automatic layout may replace them, and no clearance validation is claimed.
+
+Evidence on `schematic/manual-wire-routing`, based on merged main `977957e`:
+115 UI tests, typecheck, lint and production build pass. Six Chromium smoke
+workflows pass, including pointer bends, elbow flipping, backtracking, keyboard
+bends, cancellation and undo with auto-arrange both enabled and disabled. The real native-server
+schematic regression also passes: unfinished bends do not mutate the project,
+the completed bend survives serialization, components remain in place and one
+Undo restores the complete previous project. Documentation integrity checks 109
+documents and 100 requirements with no problems. Native code is unchanged; no
+new native build or full native test run is claimed for this UI change.
+
 ## Continuous canvas appearance and reloads
 
 A viewport-covering, world-anchored background replaces the finite SVG sheet
@@ -119,7 +139,7 @@ of 1.0 readiness.
 
 | Area | Current implementation | Evidence and limits |
 |---|---|---|
-| Design | Architecture 01 to 09 (ADR-001 to ADR-021), SPEC-001 to SPEC-014, 94 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
+| Design | Architecture 01 to 09 (ADR-001 to ADR-021 accepted, ADR-022 proposed), SPEC-001 to SPEC-014, 100 requirements | Reviewed documents; `tools/docs/check_docs.py` passes |
 | Repository | CMake presets, Makefile wrapper, CI matrix, documentation and policy workflows, templates, ruleset JSON, policy and banned-construct checkers | Local runs of the checkers; remote workflow results are recorded here when observed |
 | Core: scheduler and time | Rational clocks, class-ordered event heap, delta-cycle bound, cancellation by generation (SPEC-002) | `test_sched`: ordering, cancellation, overflow, limits, 72 MHz and 32.768 kHz clocks exact over 10^9 edges |
 | Core: nets and digital engine | Pin models and logic families, four-value resolution with strengths, contention and floating diagnostics, inertial delays, islands and bridges, the model API; gates, flip-flop, sources, pulls, transmission-gate switches, indicator, probe, UART virtual terminal (SPEC-003) | `test_engine`: resolution, floating inputs, gate timing, inertial pulses, clock, switch, UART loopback |

@@ -251,10 +251,42 @@ def main():
                 assert (
                     projects()[-1] == added
                 ), "One Undo must restore both connectivity and placement"
+                # Explicit manual routing wins over the enabled auto-arrange preference.
+                page.locator(f'[data-pin="{new_ids[0]}.2"]').press("Enter")
+                for _ in range(6):
+                    page.keyboard.press("Shift+ArrowDown")
+                page.keyboard.press("Space")
+                page.keyboard.press("Enter")
+                marker = page.locator(".es-scene__wire-waypoint")
+                expect(marker).to_have_count(1)
+                waypoint = marker.evaluate(
+                    "e => [Number(e.getAttribute('cx')), Number(e.getAttribute('cy'))]"
+                )
+                assert (
+                    projects()[-1] == added
+                ), "Unfinished bends must not mutate the project"
+                page.locator(f'[data-pin="{new_ids[1]}.1"]').press("Enter")
+                page.wait_for_timeout(300)
+                manual = projects()[-1]
+                assert any(
+                    {f"{new_ids[0]}.2", f"{new_ids[1]}.1"} <= set(pins)
+                    for pins in manual["nets"].values()
+                ), "Manual route must connect the requested pins"
+                assert [c.get("layout") for c in manual["components"]] == [
+                    c.get("layout") for c in added["components"]
+                ], "Manual bends must bypass automatic arrangement"
+                assert any(
+                    waypoint in w["points"] for w in manual["layout"]["wires"]
+                ), "Native project lost the explicit bend"
+                page.get_by_role("button", name="Undo", exact=True).click()
+                page.wait_for_timeout(250)
+                assert (
+                    projects()[-1] == added
+                ), "One Undo must remove the entire manual connection"
                 assert not errors, errors
                 browser.close()
                 print(
-                    "PASS: real-engine preview, layout-only apply, exact undo/redo, finder, connect-then-arrange, view controls, themes and compact viewport"
+                    "PASS: real-engine preview, layout-only apply, exact undo/redo, finder, connect-then-arrange, manual routing, view controls, themes and compact viewport"
                 )
         finally:
             server.terminate()

@@ -5,6 +5,13 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Manual schematic routing
+
+- Place orthogonal wire bends with live previews and visible waypoint markers;
+  flip elbows with Space, remove bends with Backspace/Delete, or cancel with Escape.
+- Route with arrow keys and Enter as well as the pointer. Explicit paths bypass
+  automatic arrangement and smart routing on completion, with one undoable edit.
+
 ### Canvas appearance and reload reliability
 
 - Continuous, world-anchored canvas backgrounds eliminate the gray finite-sheet
