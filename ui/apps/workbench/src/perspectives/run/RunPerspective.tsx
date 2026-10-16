@@ -12,6 +12,7 @@ import { DiagnosticsPanel } from '../../shell/DiagnosticsPanel';
 import { useInstruments } from '../../stores/instruments';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
+import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useSession } from '../../stores/session';
 import { BoardPanel } from '../BoardPanel';
 import { ControlsPanel } from './ControlsPanel';
@@ -20,6 +21,7 @@ import { MetersPanel } from './MetersPanel';
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
 export function RunPerspective() {
+  const appearance = useCanvasAppearance((s) => s.appearance);
   const now = useSession((s) => s.now);
   const nets = useSession((s) => s.nets);
   const project = useProject((s) => s.project);
@@ -140,6 +142,7 @@ export function RunPerspective() {
             { value: 'meters', label: 'Meters', content: <MetersPanel /> },
             { value: 'schematic', label: 'Schematic', content: project ? (
               <SchematicCanvas
+                appearance={appearance}
                 project={project}
                 catalog={sceneCatalog}
                 mode="probe"

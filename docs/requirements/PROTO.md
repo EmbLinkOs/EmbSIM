@@ -36,3 +36,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Verification.** Tests.
 **Trace.** SPEC-008 §2
 
+
+### PROTO-005  Static assets during a session
+**Statement.** Static HTTP requests shall be serviced while a WebSocket session is active, preserving that session's notification channel and host/origin restrictions. A second session upgrade shall receive a busy response; incomplete auxiliary request heads shall have a bounded deadline.
+**Rationale.** Reloads must not deadlock while the previous document's session is still attached.
+**Status.** Accepted 2026-10-16; cooperative auxiliary HTTP handling implemented.
+**Verification.** `http_assets` tests static loading during a running session, time advancement, host/origin rejection, second-session refusal and incomplete request handling.
+**Trace.** SPEC-008 §1; ADR-022

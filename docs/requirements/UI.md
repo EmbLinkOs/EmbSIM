@@ -78,3 +78,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16; Schematic Studio implemented with documented heuristic limits.
 **Verification.** Scene geometry/layout tests, layout transaction-boundary test and `tests/browser/test_schematic.py` against the native engine.
 **Trace.** SPEC-011 §2; SPEC-007 §1; SPEC-008 §5
+
+### UI-011  Continuous configurable canvas appearance
+**Statement.** The canvas shall cover every visible coordinate with the selected theme-aware background; grid patterns shall track pan/zoom and offer adjustable spacing, weight and contrast. Appearance shall persist locally, remain usable without storage, and be configurable by keyboard without altering electrical data or editing snap.
+**Rationale.** A professional drafting workspace must be consistent, legible and customizable.
+**Status.** Accepted 2026-10-16; continuous backgrounds and preference controls implemented.
+**Verification.** Canvas appearance/storage unit tests; Playwright persistence/pan smoke; `tests/browser/test_canvas_appearance.py` for patterns, palettes, reload and pixel checks across a panned viewport.
+**Trace.** SPEC-011 §2; ADR-022

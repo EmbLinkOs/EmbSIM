@@ -8,6 +8,7 @@ import { errorMessage, probes as probeActions } from '../../actions';
 import { useRegisterCommands } from '../../shell/commands';
 import { insideSource, insideView } from '../../stores/inside';
 import { openInside } from '../../stores/openInside';
+import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useLayout } from '../../stores/layout';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
@@ -35,7 +36,8 @@ export function DesignPerspective() {
   const [rename, setRename] = useState<{ net: string; value: string } | null>(null);
   const [bottomTab, setBottomTab] = useState<'nets' | 'board' | 'studio'>('nets');
   const [preview, setPreview] = useState<LayoutPreview | null>(null);
-  const [display, setDisplay] = useState<CanvasDisplay>({ grid: true, airwires: true, minimap: true, smartWires: true, autoArrange: false, guides: true, focusMode: false });
+  const [display, setDisplay] = useState<CanvasDisplay>({ airwires: true, minimap: true, smartWires: true, autoArrange: false, guides: true, focusMode: false });
+  const appearance = useCanvasAppearance((s) => s.appearance);
   const spotlight = useSelection((s) => s.net);
   const previewProject = preview?.source === project ? preview.result.project : null;
   useEffect(() => {
@@ -212,6 +214,7 @@ export function DesignPerspective() {
   const canvas = insideOf ? (
     <SchematicCanvas
       key={`inside-${inside}`}
+      appearance={appearance}
       project={insideOf.project}
       catalog={insideOf.catalog}
       mode="select"
@@ -234,7 +237,8 @@ export function DesignPerspective() {
       live={running}
       netStates={nets}
       readOnly={!editable || !!previewProject}
-      showGrid={display.grid}
+      appearance={appearance}
+      showGrid={appearance.style !== 'blank'}
       showAirwires={display.airwires}
       showMinimap={display.minimap}
       smartWires={display.smartWires && !display.autoArrange}
