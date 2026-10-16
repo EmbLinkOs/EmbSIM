@@ -45,6 +45,7 @@ default and a subject.
 | `mcu.clock_gated` | warning | board, register, pc | an access to a peripheral whose clock is off: reads 0, writes ignored |
 | `mcu.bus_error` | warning | board, address, pc | nothing answered an access: the core takes a bus fault |
 | `mcu.held_in_reset` | warning | board, register, pc | an access to a peripheral its reset controller holds in reset (the RP2040's RESETS): reads its reset values, writes ignored |
+| `mcu.usb_boot` | warning | board | the program called the RP2040's `reset_to_usb_boot`: the part waits in its USB boot, which is not modelled |
 | `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot |
 | `mcu.watchdog_reset` | info | board | the watchdog reset the chip (its counter reached 0, or CTRL.TRIGGER) |
 | `mcu.easydma_range` | warning | board, peripheral | an nRF52840 EasyDMA buffer outside Data RAM: nothing is moved |

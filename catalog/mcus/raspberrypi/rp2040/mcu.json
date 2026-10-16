@@ -30,7 +30,7 @@
       "base": "0x00000000",
       "size": "16K",
       "kind": "rom",
-      "doc": "Boot ROM; the bootrom's code is not shipped: EmbSIM's stand-in boots boot2 from flash as it does (core/mcu/rp2040/boot.c)"
+      "doc": "Boot ROM; the bootrom's code is not shipped: EmbSIM's stand-in boots boot2 from flash as it does (core/mcu/rp2040/boot.c), and its documented functions and tables are done by the host (core/mcu/rp2040/rom.c, ADR-021)"
     },
     {
       "name": "flash",

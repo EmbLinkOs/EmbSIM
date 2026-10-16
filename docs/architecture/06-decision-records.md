@@ -504,3 +504,40 @@ the validator checks overlaps, field widths, access codes and interrupt
 names. Q1 is closed.
 
 **Status.** Accepted (M1).
+
+## ADR-021 A ROM whose code cannot be shipped has its documented functions done by the host
+
+**Context.** A program built with the Pico SDK calls the RP2040's bootrom
+through its tables: memcpy and memset, the bit operations, the flash
+programming functions, and the float and double libraries behind every
+`float` and `double` operation. Raspberry Pi's bootrom source (pico-bootrom,
+BSD-3-Clause) holds a float library whose licence allows its use only on an
+RP2040, or under GPLv2 from its author: neither may ship in EmbSIM, and a
+simulator is not an RP2040. Without the functions the SDK's runtime calls a
+null pointer before `main`.
+
+**Decision.** The ROM holds what the part's documentation says a program
+finds there (the header, the tables, their codes and layouts) and each
+function is `bkpt #n` followed by a return. A core that executes such a
+`bkpt` calls the machine's `rom_call` (`core/mcu/mach.h`), which does the
+function in C with the core's registers, flags and memory, and charges its
+cycles; any other `bkpt` is a breakpoint instruction as before. The
+RP2040's functions are `core/mcu/rp2040/rom.c`, written from the RP2040
+datasheet's description of the bootrom (2.8.3) and the behaviour the SDK
+relies on, with the bootrom's float conventions (denormals as zero, no NaN
+out, conversions towards minus infinity).
+
+**Alternatives.** Running the bootrom's code (not distributable). A
+clean-room bootrom compiled to Thumb from C with a permissively licensed
+soft-float library (compiler-rt): the functions' code paths would be the
+core's own, but a committed binary blob, a cross toolchain to rebuild it and
+a soft-float port to keep, for no behaviour a program can see beyond timing.
+
+**Consequences.** Unmodified Pico SDK images run (`tests/vendor/pico-sdk`).
+The functions' timing is estimated per call (ADR-015), not cycle by cycle;
+the transcendental functions are the host's libm rounded once, so they may
+differ from the bootrom's, and between hosts, in the last place. Other parts
+whose ROMs are not shipped (an nRF52's MBR, a SAM's ROM) can take the same
+route.
+
+**Status.** Accepted (M6).

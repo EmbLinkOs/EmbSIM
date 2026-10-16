@@ -102,5 +102,9 @@ void esk_rp2040_boot(struct esk_mach *m);
  * its bootrom */
 void esk_rp2040_core1_power(struct esk_mach *m, int on);
 void esk_rp2040_bootrom_resets(struct esk_mach *m);
+/* the bootrom's functions and tables written into its ROM, and done by the
+ * host (rom.c) */
+void esk_rp2040_rom(u8 *rom, u32 size);
+void esk_rp2040_rom_install(struct esk_mach *m);
 
 #endif
