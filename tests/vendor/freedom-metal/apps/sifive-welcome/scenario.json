@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "sifive-welcome",
+  "until": "2.6s",
+  "description": "software/sifive-welcome: the banner, then metal_led_on for red, green and blue in turn, a second each, timed by the CLINT's mtimecmp interrupt. freedom-metal's led_on drives its pin high and the board's LEDs light with their pin low, so on the HiFive1 Rev B the colour named is the one that goes dark while the other two light; EmbSIM's pins do as the board's.",
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Welcome to SiFive!"
+      }
+    },
+    {
+      "id": "red-high",
+      "at": "500ms",
+      "probe": "red",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "green-low",
+      "at": "500ms",
+      "probe": "green",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "green-high",
+      "at": "1.5s",
+      "probe": "green",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "red-low",
+      "at": "1.5s",
+      "probe": "red",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "blue-high",
+      "at": "2.5s",
+      "probe": "blue",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

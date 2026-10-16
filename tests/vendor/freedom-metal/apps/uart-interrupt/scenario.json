@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "uart-interrupt",
+  "until": "2.5s",
+  "description": "software/uart-interrupt: UART0's transmit watermark interrupt through the PLIC, debounced by a CLINT timer, toggling the red LED.",
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "100ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Coreplex IP Eval Kit 'uart-interrupt' Example."
+      }
+    },
+    {
+      "id": "interrupt",
+      "at": "2.5s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Got Uart 0 interrupt. Toggle Red LED."
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}

@@ -101,6 +101,11 @@ struct esk_rf_periph {
     int gate_held;
     const char *gate_name; /* RCC.APB1ENR.USART2EN */
     int gate_warned, plain_warned;
+    /* offsets with no register that read 0 and ignore writes, as the
+     * part documents them (a PLIC's sources past the last): pairs of
+     * offset and size */
+    u32 *rsv;
+    int nrsv;
 };
 
 /* a model type */

@@ -100,8 +100,21 @@
     {
       "name": "PLIC",
       "base": "0x0C000000",
-      "description": "Platform-level interrupt controller: 52 sources, 7 priorities, hart 0's machine context (manual chapter 10)",
+      "description": "Platform-level interrupt controller: 52 sources, 7 priorities, hart 0's machine context (manual chapter 10); the priority, pending and enable registers of sources 53 to 1023, which the PLIC specification has and the FE310 does not implement, read 0 and ignore writes",
       "registers": [
+        {
+          "name": "PRIORITY0",
+          "offset": "0x00",
+          "description": "Source 0's priority: there is no source 0, so it reads 0 and ignores writes (the PLIC specification); freedom-metal's init writes it",
+          "fields": [
+            [
+              "PRIORITY",
+              0,
+              3,
+              "r"
+            ]
+          ]
+        },
         {
           "name": "PRIORITY1",
           "offset": "0x04",
@@ -721,6 +734,20 @@
           "name": "CLAIM",
           "offset": "0x200004"
         }
+      ],
+      "reserved": [
+        [
+          "0xD4",
+          "0xF2C"
+        ],
+        [
+          "0x1008",
+          "0x78"
+        ],
+        [
+          "0x2008",
+          "0x78"
+        ]
       ]
     },
     {

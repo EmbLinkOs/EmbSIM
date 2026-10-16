@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "example-user-mode",
+  "until": "200ms",
+  "description": "software/example-user-mode: a drop to user mode with the PMP opened to it, an illegal instruction there trapped back to machine mode.",
+  "assertions": [
+    {
+      "id": "trap",
+      "at": "200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Caught illegal instruction in User mode"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.lockup"
+        ]
+      }
+    }
+  ]
+}
