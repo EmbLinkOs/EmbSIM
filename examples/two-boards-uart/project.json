@@ -1,0 +1,150 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "two-boards-uart",
+ "description": "Two boards, two cores, one serial line: an Arduino Uno (AVR, 5 V) sends \"ping N\" every 100 ms to a Blue Pill (Cortex-M3, 3.3 V, its 5 V-tolerant PA10), whose firmware echoes it in upper case; the Uno answers \"ok N\" and lights its L LED from the third round trip. The Uno's 117647 baud against the Blue Pill's 115200 is the real boards' 2.1 % mismatch.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 200,
+    "y": 280
+   },
+   "firmware": {
+    "image": "firmware/ping.elf",
+    "format": "elf",
+    "toolchain": "clang",
+    "sources": [
+     "firmware/startup.S",
+     "firmware/main.c"
+    ],
+    "flags": [
+     "-ffreestanding",
+     "-fno-builtin"
+    ],
+    "linker_script": "firmware/atmega328p.ld"
+   }
+  },
+  {
+   "id": "B2",
+   "board": "emblink/bluepill",
+   "layout": {
+    "x": 820,
+    "y": 280
+   },
+   "firmware": {
+    "image": "../bluepill-button-led/firmware/button-led.elf",
+    "format": "elf",
+    "toolchain": "clang",
+    "sources": [
+     "../bluepill-button-led/firmware/startup.c",
+     "../bluepill-button-led/firmware/main.c"
+    ],
+    "flags": [
+     "-ffreestanding",
+     "-fno-builtin"
+    ],
+    "linker_script": "../bluepill-button-led/firmware/stm32f103c8.ld"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 560,
+    "y": 80
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 560,
+    "y": 520
+   }
+  }
+ ],
+ "nets": {
+  "5V": [
+   "USB.+",
+   "B1.5V",
+   "B2.5V"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND",
+   "B2.GND"
+  ],
+  "UNO_TX": [
+   "B1.D1",
+   "B2.A10"
+  ],
+  "BP_TX": [
+   "B2.A9",
+   "B1.D0"
+  ]
+ },
+ "probes": [
+  {
+   "id": "uno",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "bluepill",
+   "target": "serial:B2",
+   "kind": "serial"
+  },
+  {
+   "id": "uno_tx",
+   "target": "net:UNO_TX",
+   "kind": "digital",
+   "decode": {
+    "protocol": "uart",
+    "params": {
+     "baud": 117647
+    }
+   }
+  },
+  {
+   "id": "bp_tx",
+   "target": "net:BP_TX",
+   "kind": "digital",
+   "decode": {
+    "protocol": "uart",
+    "params": {
+     "baud": 115200
+    }
+   }
+  },
+  {
+   "id": "led_l",
+   "target": "net:B1.PB5",
+   "kind": "digital"
+  },
+  {
+   "id": "uno_tx_v",
+   "target": "net:UNO_TX",
+   "kind": "analog",
+   "rate_hz": 100000
+  },
+  {
+   "id": "bp_tx_v",
+   "target": "net:BP_TX",
+   "kind": "analog",
+   "rate_hz": 100000
+  }
+ ],
+ "scenarios": [
+  "scenarios/exchange.json"
+ ]
+}
