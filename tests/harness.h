@@ -23,6 +23,8 @@ static int t_str_eq(const char *a, const char *b) { return a && b && strcmp(a, b
 #define CHECK_NEAR(a, b, tol) do { t_checks++; if (fabs((double)(a) - (double)(b)) > (tol)) { t_failures++; \
     fprintf(stderr, "%s:%d: CHECK_NEAR failed: %s = %g, expected %g +/- %g\n", __FILE__, __LINE__, #a, \
     (double)(a), (double)(b), (double)(tol)); } } while (0)
+/* record an unconditional failure with a message (no constant condition: MSVC C4127) */
+#define FAIL(msg) do { t_checks++; t_failures++; fprintf(stderr, "%s:%d: FAIL: %s\n", __FILE__, __LINE__, (msg)); } while (0)
 #define TEST_MAIN_BEGIN int main(void) {
 #define TEST_MAIN_END printf("%d checks, %d failures\n", t_checks, t_failures); return t_failures ? 1 : 0; }
 #define RUN(fn) do { printf("- %s\n", #fn); fn(); } while (0)

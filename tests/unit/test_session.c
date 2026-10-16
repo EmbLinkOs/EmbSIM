@@ -95,10 +95,16 @@ static char *subst(const char *tmpl)
     esk_alloc a;
     esk_strbuf b;
     const char *p = strstr(tmpl, "LIBDIR");
+    const char *c;
     esk_alloc_init(&a, NULL);
     esk_strbuf_init(&b, &a);
     esk_strbuf_append(&b, tmpl, (size_t)(p - tmpl));
-    esk_strbuf_puts(&b, lib_dir);
+    /* the path goes inside a JSON string: escape Windows backslashes and quotes */
+    for (c = lib_dir; *c; c++) {
+        if (*c == '\\' || *c == '"')
+            esk_strbuf_putc(&b, '\\');
+        esk_strbuf_putc(&b, *c);
+    }
     esk_strbuf_puts(&b, p + 6);
     return esk_strbuf_detach(&b, NULL);
 }

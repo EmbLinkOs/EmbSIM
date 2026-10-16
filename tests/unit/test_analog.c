@@ -1191,7 +1191,7 @@ static void run_fixture(const char *dir)
         es_time_t t = 0;
         char when[64];
         if (esk_json_to_time(esk_json_get(s, "t"), &t) != 0) {
-            CHECK(0 && "sample time");
+            FAIL("sample time does not parse");
             continue;
         }
         esk_snprintf(when, sizeof when, "%s@%s", dir, esk_json_get_str(s, "t", "?"));
