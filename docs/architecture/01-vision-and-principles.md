@@ -19,6 +19,17 @@ One engine serves every interface: a graphical workbench, a command line, test
 harnesses and scripts all drive the same session through the same protocol and
 observe the same results.
 
+Where it is going (the owner's direction, 2026-10-17): a real-world simulator
+for embedded electronics. Every supported board complete, with the devices
+on it; as many real components and sensors as possible, each behaving as its
+datasheet says; a schematic among the best there are; a 3D breadboard where
+the parts sit and are wired as on a bench; and a world around the circuit
+(ambient temperature, humidity, pressure, light, wind, objects that move)
+that its sensors measure as they would in a room. It serves students and
+professionals alike, and the interface runs at the display's rate. The order
+of the work is the flagship first (§9, 07 §2): one board family and its most
+used parts done completely, then the world and the breadboard, then breadth.
+
 ## 2. Who it is for
 
 | User | What they do with EmbSIM | What they need from it |
@@ -100,11 +111,13 @@ That requires:
 ## 6. Non-goals
 
 - Replacing SPICE for RF, EMC, PCB parasitics, thermal or process variation
-  analysis. EmbSIM's analog engine targets the circuits around an MCU.
+  analysis. EmbSIM's analog engine targets the circuits around an MCU. The
+  world's temperature, humidity and motion (ADR-026) are what sensors
+  measure, not a thermal or mechanical analysis of the board.
 - Cycle-exact pipeline and cache modelling of every core. Instruction cycle
   estimates are documented as estimates per core (ADR-015).
-- A PCB layout tool. Board artwork and breadboard views are for interaction and
-  understanding, not manufacturing.
+- A PCB layout tool. Board artwork and the breadboard view (ADR-027) are for
+  building, interaction and understanding, not manufacturing.
 - Running untrusted native plugins safely. Native plugins are trusted code
   loaded explicitly; sandboxed models use the scripting tier (ADR-009).
 - Real-time guarantees. Pacing is a client convenience; speed claims come from
@@ -122,6 +135,7 @@ That requires:
 | Open source, offline, cross-platform | yes | hosted | yes | yes | mixed | proprietary |
 | Declarative components and boards | yes | yes | yes (C#/Python) | no | netlists | proprietary |
 | Source-level debugging | yes (GDB RSP, DWARF) | yes | yes | yes | no | yes |
+| Breadboard view, sensors in a simulated world | planned (ADR-026, ADR-027) | breadboard 2D, sensor sliders | no | no | no | 2D, sliders |
 
 EmbSIM's distinct claim is the combination: real firmware, real electronics
 and real interaction in one deterministic, open, cross-platform tool with a
@@ -148,3 +162,32 @@ first-class command line.
    high DPI, 60 Hz interaction on a 500-component schematic.
 5. CI runs the conformance, golden, differential (against ngspice fixtures and
    EmbCC/QEMU fixtures) and platform suites on every change.
+
+## 9. The flagship and what follows it
+
+**Status:** ACCEPTED direction (owner, 2026-10-17); 07 §2 schedules it.
+
+Breadth without depth is the risk of this vision: a thousand shallow models
+convince nobody. So the first goal after the boards and engines of M0 to M5
+is one complete experience, judged as a user would judge it:
+
+1. **The flagship.** The Arduino Uno and an ESP32-class board, complete
+   down to every peripheral their usual libraries touch, and the thirty or
+   so parts people wire to them most (temperature and humidity sensors,
+   barometers, IMUs, distance sensors, displays, LED strips, servos,
+   steppers, keypads, RTCs, RFID, GPS), each verified against its datasheet
+   and, where possible, a capture from the real part; their libraries'
+   example sketches run unmodified.
+2. **The world.** An environment the circuit lives in (ADR-026): ambient
+   values and moving objects that sensors read, set from a panel first and
+   from the 3D view later, recorded and replayed like every input.
+3. **The breadboard.** A 3D bench (ADR-027) where the same circuit is built
+   on breadboards with jumper wires, every wire an edit of the same nets the
+   schematic shows.
+4. **Then breadth.** Every supported board completed peripheral by
+   peripheral against a coverage table, more boards, and libraries of parts
+   from the community through the SDK.
+
+Throughout, the interface keeps to its frame budgets (ADR-028), and outside
+projects are reused only under licences that fit Apache-2.0 (ADR-029).
+

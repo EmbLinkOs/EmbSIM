@@ -73,3 +73,24 @@ numbered requirements, STATUS.md, three stable checks, DCO-style policy
 check adapted to the owner's identity rule); and the expectation (its SIM
 requirements) that an emulated target exists per architecture in CI, which
 EmbSIM will satisfy from M4.
+
+## 4. Outside projects (2026-10-17)
+
+Assessed for the direction of 01 §9 under ADR-029. "Use" means as a
+dependency or vendored with its notice; "referee" means run separately to
+check our models; "study" means read, not copied.
+
+| Project | Licence | What it offers | Verdict |
+|---|---|---|---|
+| avr8js (Wokwi) | MIT | an AVR core and ATmega peripherals in TypeScript | referee for the AVR peripherals; study its peripheral edge cases |
+| wokwi-elements | MIT | 2D artwork of common parts (LCDs, NeoPixels, servos, keypads, sensors) | use for part artwork where ours is missing, with attribution |
+| Three.js | MIT | WebGL scene graph, glTF loading, controls | use for the 3D bench (ADR-027, Q12) |
+| Rapier | Apache-2.0 | rigid-body physics (Rust, with C and WebAssembly builds) | candidate for the world's physics step when kinematics is not enough (ADR-026) |
+| KiCad 3D library | CC-BY-SA 4.0 with a design exception | glTF and STEP models of standard packages | use as catalog assets, licence recorded per file |
+| Fritzing parts | CC-BY-SA 3.0 | breadboard images and part geometry | use as assets with attribution; geometry checked against datasheets |
+| ngspice | BSD (modified) | SPICE engine | referee (already, `tests/protocol/analog` fixtures) |
+| QEMU | GPL-2.0 | CPU references (Cortex-M4 DSP, RISC-V) | referee only, as today |
+| simavr | GPL-3.0 | AVR simulator with peripherals | referee only |
+| SimulIDE | GPL-3.0 | real-time circuit and MCU simulator with breadboard-style views | study behaviour and interface only |
+| Espressif QEMU fork, ESP-IDF | GPL-2.0 (QEMU), Apache-2.0 (ESP-IDF) | ESP32 references, the vendor's own examples | QEMU fork as referee; ESP-IDF examples as vendor firmware for M6 |
+
