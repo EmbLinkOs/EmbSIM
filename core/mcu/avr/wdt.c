@@ -101,7 +101,7 @@ static void wdt_write(void *ctx, u32 off, int n, u32 v)
     /* WDIE writes through, WDIF clears by a 1 */
     next = (u8)((now & ~(WDIE | WDCE)) | (v & WDIE));
     if (v & WDIF)
-        next &= (u8)~WDIF;
+        next = (u8)(next & ~WDIF);
     if ((v & WDCE) && (v & WDE)) {
         /* the timed sequence opens; WDE written 1 sets it as always */
         w->window = m->cycles + 4;
@@ -197,7 +197,7 @@ static void wdt_ack(void *ctx, int vec)
     u8 c = (u8)(csr(w) & ~WDIF);
     ES_UNUSED(vec);
     if ((c & WDE) || wdrf(w))
-        c &= (u8)~WDIE;
+        c = (u8)(c & ~WDIE);
     esk_rf_hw(w->csr, c);
 }
 
