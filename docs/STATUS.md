@@ -46,7 +46,9 @@ session organization checks and protocol save/reload regression; 552 schema/cata
 files and documentation integrity all pass. All 36 native CTest entries pass
 (90.71 seconds); the local firmware-build wrapper explicitly skips because no
 supported cross compiler is installed. The hosted matrix exercises compiler and
-platform coverage. Native screenshots are in the [gallery](gallery/README.md).
+platform coverage. Native screenshots are in the [gallery](gallery/README.md). Each
+MCU's peripherals, modelled or not, are tabled in [coverage.md](coverage.md)
+(generated; the `coverage_tables` test fails when it is stale).
 The first hosted macOS browser run caught a focus/drag race: Objects navigation
 scheduled viewport focus after the test had read its pointer coordinates. Direct
 navigation now focuses synchronously unless a preview must first be discarded;
