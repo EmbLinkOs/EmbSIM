@@ -522,6 +522,103 @@ static void test_twi(void)
     uno_close(&u);
 }
 
+#define WDTCSR 0x60
+#define MCUSR 0x54
+#define WDR 0x95A8
+
+/* run until the watchdog asks for a reset: the cycles it took */
+static u64 run_to_reset(uno *u, u64 limit)
+{
+    u64 start = u->m.cycles;
+    while (!u->m.reset_req && u->m.cycles - start < limit)
+        esk_mach_run(&u->m, (u32)(limit - (u->m.cycles - start)), 0);
+    return u->m.cycles - start;
+}
+
+static void test_wdt(void)
+{
+    /* vector 6 (WDT, word 12) increments r24 and returns */
+    u16 prog[64];
+    uno u;
+    u64 t;
+    memset(prog, 0, sizeof prog);
+    prog[0] = rjmp(39);
+    prog[12] = 0x9583; /* inc r24 */
+    prog[13] = RETI;
+    prog[40] = NOP;
+    prog[41] = rjmp(-2);
+    if (!uno_open(&u, prog, 42))
+        return;
+    CHECK_EQ(data(&u, WDTCSR), 0);
+    CHECK_EQ(data(&u, MCUSR), 0x01); /* PORF */
+    /* interrupt mode, 16 ms: 2048 cycles of 128 kHz, 256,000 at 16 MHz */
+    poke(&u, WDTCSR, 0x40);
+    t = run_until(&u, WDTCSR, 0x80, 0, 300000);
+    CHECK(t >= 256000 && t <= 256002);
+    CHECK_EQ(reg(&u, 24), 0); /* I clear: not taken */
+    poke(&u, WDTCSR, 0xC0);   /* WDIF cleared by a 1 */
+    CHECK_EQ(data(&u, WDTCSR), 0x40);
+    /* WDP changes only through the timed sequence; WDE can be set at any time */
+    poke(&u, WDTCSR, 0x46);
+    CHECK_EQ(data(&u, WDTCSR), 0x40);
+    poke(&u, WDTCSR, 0x18);
+    CHECK_EQ(data(&u, WDTCSR), 0x18); /* WDIE written 0 with it */
+    poke(&u, WDTCSR, 0x00); /* within the window: off */
+    CHECK_EQ(data(&u, WDTCSR), 0x00);
+    poke(&u, WDTCSR, 0x08);
+    CHECK_EQ(data(&u, WDTCSR), 0x08);
+    poke(&u, WDTCSR, 0x00); /* without the sequence: WDE stays */
+    CHECK_EQ(data(&u, WDTCSR), 0x08);
+    poke(&u, WDTCSR, 0x18);
+    esk_mach_run(&u.m, 8, 0); /* the window closes after four cycles */
+    poke(&u, WDTCSR, 0x00);
+    CHECK_EQ(data(&u, WDTCSR), 0x08);
+    /* system reset mode: the count started when WDE was set */
+    t = run_to_reset(&u, 600000);
+    CHECK(u.m.reset_req);
+    CHECK(t <= 256010);
+    esk_mach_reset(&u.m);
+    CHECK_EQ(data(&u, MCUSR), 0x09);  /* WDRF with PORF kept */
+    CHECK_EQ(data(&u, WDTCSR), 0x08); /* still on, 16 ms */
+    /* WDRF holds WDE even through the sequence */
+    poke(&u, WDTCSR, 0x18);
+    poke(&u, WDTCSR, 0x00);
+    CHECK_EQ(data(&u, WDTCSR), 0x08);
+    t = run_to_reset(&u, 600000);
+    CHECK(t >= 255990 && t <= 256010);
+    esk_mach_reset(&u.m);
+    /* cleared WDRF, then the sequence: off for good */
+    poke(&u, MCUSR, 0x00);
+    poke(&u, WDTCSR, 0x18);
+    poke(&u, WDTCSR, 0x00);
+    CHECK_EQ(data(&u, WDTCSR), 0x00);
+    t = run_to_reset(&u, 600000);
+    CHECK(!u.m.reset_req);
+    /* interrupt and system reset mode, I set: the first time-out runs the
+     * vector, which clears WDIE; the second resets */
+    poke(&u, WDTCSR, 0x18);
+    poke(&u, WDTCSR, 0x48);
+    CHECK_EQ(data(&u, WDTCSR), 0x48);
+    u.m.cpu->ops->reg_write(u.m.cpu, 32, (const u8[]){ 0x80, 0, 0, 0 });
+    t = run_to_reset(&u, 1000000);
+    CHECK(u.m.reset_req);
+    CHECK(t >= 511900 && t <= 512100);
+    CHECK_EQ(reg(&u, 24), 1);
+    CHECK_EQ(data(&u, WDTCSR) & 0xC0, 0);
+    uno_close(&u);
+    /* WDR keeps it from timing out: a loop of 3 * 255 + 4 cycles */
+    {
+        const u16 kick[] = { 0x2722 /* clr r18 */, dec(18), brne(-2), WDR, rjmp(-5) };
+        if (!uno_open(&u, kick, sizeof kick / sizeof kick[0]))
+            return;
+        poke(&u, WDTCSR, 0x08);
+        t = run_to_reset(&u, 2000000);
+        CHECK(!u.m.reset_req);
+        CHECK(t >= 2000000);
+        uno_close(&u);
+    }
+}
+
 static void test_disassembler(void)
 {
     char t[64];
@@ -544,7 +641,8 @@ RUN(test_timer0_fast_pwm_overflow);
 RUN(test_usart_frame);
 RUN(test_ports);
 RUN(test_adc);
-    RUN(test_spi);
-    RUN(test_twi);
+RUN(test_spi);
+RUN(test_twi);
+RUN(test_wdt);
 RUN(test_disassembler);
 TEST_MAIN_END

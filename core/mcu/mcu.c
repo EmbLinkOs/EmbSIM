@@ -231,7 +231,7 @@ static void report_end(mcu_state *st)
     }
 }
 
-static void mcu_reset_now(mcu_state *st);
+static void mcu_reset_now(mcu_state *st, int power_on);
 static int level_of(const esk_pin *p, int dflt);
 
 static void quantum_cb(void *ctx, void *arg, es_time_t now)
@@ -312,7 +312,7 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         }
     }
     if (st->m.reset_req) {
-        mcu_reset_now(st);
+        mcu_reset_now(st, 0);
         return;
     }
     if (st->m.state != ESK_MACH_RUN) {
@@ -704,7 +704,12 @@ static int level_of(const esk_pin *p, int dflt)
 }
 
 /* power-on or a pin reset: memory as the image left it, the machine's reset */
-static void mcu_reset_now(mcu_state *st)
+/* the part comes out of reset with the image loaded again. RAM keeps its
+ * contents through a reset from the part itself (a watchdog's, a system
+ * reset request) or from its reset pin, as an SRAM does while it is
+ * powered; at power-on (the session's start or reset, a new image) it is
+ * erased */
+static void mcu_reset_now(mcu_state *st, int power_on)
 {
     esk_engine *e = st->c->e;
     u32 entry = 0;
@@ -715,7 +720,7 @@ static void mcu_reset_now(mcu_state *st)
         st->ev = 0;
     }
     for (r = 0; r < st->m.bus.nrg; r++)
-        if (!st->m.bus.rg[r].mirror)
+        if (!st->m.bus.rg[r].mirror && (power_on || st->m.bus.rg[r].kind != ESK_MEM_RAM))
             esk_bus_erase(&st->m.bus.rg[r]);
     if (!st->image) {
         /* no image yet: the part sits blank, its pins inputs */
@@ -793,7 +798,7 @@ static void mcu_reset(esk_comp *c)
     }
     st->held = 0;
     st->steps = 0;
-    mcu_reset_now(st);
+    mcu_reset_now(st, 1);
 }
 
 static void mcu_on_input(esk_comp *c, esk_pin *p)
@@ -815,7 +820,7 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
             esk_mach_reset(&st->m);
         } else if (!low && st->held) {
             st->held = 0;
-            mcu_reset_now(st);
+            mcu_reset_now(st, 0);
         }
         return;
     }
@@ -834,7 +839,7 @@ static es_status mcu_on_set(esk_comp *c, const char *input, const esk_json *valu
         return ES_ESTATE;
     if (!strcmp(input, "reset")) {
         catch_up(st, c->e->sched.now);
-        mcu_reset_now(st);
+        mcu_reset_now(st, 0);
         return ES_OK;
     }
     if (!strcmp(input, "serial") || !strcmp(input, "tx_text"))
@@ -978,7 +983,7 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
     if (st->an_what)
         (void)esk_mcu_analyze(c, st->an_what, why, cap); /* the new image's functions */
     catch_up(st, e->sched.now);
-    mcu_reset_now(st);
+    mcu_reset_now(st, 1);
     return ES_OK;
 }
 

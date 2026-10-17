@@ -36,6 +36,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "avr-eeprom", &esk_avr_eeprom_ops, esk_avr_eeprom_create },
     { "avr-spi", &esk_avr_spi_ops, esk_avr_spi_create },
     { "avr-twi", &esk_avr_twi_ops, esk_avr_twi_create },
+    { "avr-wdt", &esk_avr_wdt_ops, esk_avr_wdt_create },
     { "fe310-clint", &esk_fe310_clint_ops, esk_fe310_clint_create },
     { "fe310-plic", &esk_fe310_plic_ops, esk_fe310_plic_create },
     { "fe310-gpio", &esk_fe310_gpio_ops, esk_fe310_gpio_create },

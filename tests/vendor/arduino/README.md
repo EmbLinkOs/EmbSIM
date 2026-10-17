@@ -10,6 +10,7 @@ builds them, run on `emblink/arduino_uno` and pass their scenarios.
 | `blink` | The IDE's Blink: the L LED at 0.5 Hz from `delay(1000)` |
 | `core_tour` | `delay` and `millis` (the L LED at 5 Hz, the printed times), `analogRead` (a potentiometer at half and a quarter), `analogWrite` (490.2 Hz on D9 from Timer1, 976.6 Hz on D6 from Timer0), `attachInterrupt` (a button on D2), `Serial` at 115200 baud both ways (a terminal's character echoed) |
 | `spi_wire` | The core's SPI library (4 MHz, mode 0) against a 25LC040 on D10 to D13: WREN, WRITE, RDSR polled through the write cycle, READ; its Wire library (100 and 400 kHz) against a 24C02 on A4/A5: a page write, NACKed polls, `endTransmission(false)` and `requestFrom` across a repeated START, an absent address |
+| `watchdog` | avr-libc's watchdog: the WDT interrupt waking the part from power-down, then `wdt_enable` kicked by `wdt_reset` and left to time out twice; a boot count in `.noinit` survives each reset, MCUSR reads PORF then WDRF |
 
 The core is LGPL-2.1 and is not vendored here; `run.py` takes a checkout of
 it:

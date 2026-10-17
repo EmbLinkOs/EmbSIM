@@ -76,6 +76,8 @@ typedef struct esk_avr {
     u32 sw_pend; /* vectors pended through the CPU interface */
     int pend;    /* the lowest vector requested, or 0 */
     u64 skipped; /* instructions a skip passed over */
+    void (*wdr)(void *ctx); /* the watchdog's WDR */
+    void *wdr_ctx;
 } esk_avr;
 
 /* ---- the data space -------------------------------------------------------- */
@@ -198,6 +200,15 @@ void esk_avr_irq_source(struct esk_mach *m, int vec, int (*pending)(void *ctx, i
     k->src[k->nsrc].ack = ack;
     k->src[k->nsrc].ctx = ctx;
     k->nsrc++;
+}
+
+void esk_avr_wdr_hook(struct esk_mach *m, void (*wdr)(void *ctx), void *ctx)
+{
+    esk_avr *k = core_of(m);
+    if (k) {
+        k->wdr = wdr;
+        k->wdr_ctx = ctx;
+    }
 }
 
 void esk_avr_irq_changed(struct esk_mach *m)
@@ -605,7 +616,10 @@ static int exec(esk_avr *as, u16 w, u16 w2)
                 do_sleep(as);
                 return 1;
             case 0x9598: /* BREAK: a NOP without on-chip debug */
+                return 1;
             case 0x95a8: /* WDR */
+                if (as->wdr)
+                    as->wdr(as->wdr_ctx);
                 return 1;
             case 0x95c8: /* LPM */
                 as->r[0] = flash_byte(as, rp(as, 30));
