@@ -61,10 +61,10 @@ export function ScenarioEditor() {
       <div className="wb-verify__pane" role="region" aria-label="Scenario editor">
         <div className="es-row">
           <span className="wb-placeholder__title">Scenarios</span>
-          <Badge tone={canEdit ? 'accent' : 'warning'}>{canEdit ? 'editable' : canRun ? 'run only' : 'not available'}</Badge>
+          {!canEdit && <Badge tone="warning">{canRun ? 'run only' : 'not available'}</Badge>}
         </div>
         <div className="es-muted">
-          A scenario is a timeline of inputs and the assertions a run must meet (SPEC-007). Open one of the project's, start a new one, or make one from a recording.
+          A scenario is a timeline of inputs and the checks a run must pass. Open one of the project's, start a new one, or make one from a recording.
         </div>
         {scenarios.length === 0 ? (
           <div className="es-muted">The project lists no scenarios.</div>

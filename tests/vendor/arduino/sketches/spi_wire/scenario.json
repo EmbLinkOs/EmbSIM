@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "spi_wire",
+  "until": "200ms",
+  "description": "The core's SPI library at 4 MHz, mode 0, to a 25LC040 (CS on D10): WREN sets its latch, WRITE of six bytes, RDSR polled through its 5 ms write cycle, READ returns them; 589 bytes of 16 SCK edges each, through D13's L LED. The Wire library to a 24C02 at 0x50 (4.7 kOhm pull-ups on A4 and A5): a page write, address-only writes NACKed through its write cycle, a write without STOP then requestFrom after a repeated START (twi.c's TWWC loop), the same at 400 kHz, and 0x51 answered by nobody (endTransmission's 2); 1146 SCL edges.",
+  "assertions": [
+    {
+      "id": "spi",
+      "at": "200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "spi: status 02 after WREN, write cycle over after 284 polls, read Uno328\r\n"
+      }
+    },
+    {
+      "id": "wire",
+      "at": "200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "wire: page write 0\r\nwire: ready again after 35 NACKs\r\nwire: random read at 100 kHz 0 4 ire!\r\nwire: random read at 400 kHz 0 5 Wire!\r\nwire: 0x51 2\r\ndone\r\n"
+      }
+    },
+    {
+      "id": "sck",
+      "between": [
+        "0ms",
+        "200ms"
+      ],
+      "probe": "d13",
+      "expect": {
+        "edges": 9424
+      }
+    },
+    {
+      "id": "scl",
+      "between": [
+        "0ms",
+        "200ms"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 1146
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ]
+}

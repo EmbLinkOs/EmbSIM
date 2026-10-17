@@ -9,6 +9,7 @@ import { DesignPerspective } from './perspectives/design/DesignPerspective';
 import { RunPerspective } from './perspectives/run/RunPerspective';
 import { VerifyPerspective } from './perspectives/verify/VerifyPerspective';
 import { useCommands, useGlobalShortcuts } from './shell/commands';
+import { NewProjectDialog } from './shell/NewProjectDialog';
 import { DiagnosticsPanel } from './shell/DiagnosticsPanel';
 import { Toolbar } from './shell/Toolbar';
 import { WorkbenchStatusBar } from './shell/WorkbenchStatusBar';
@@ -103,7 +104,8 @@ function Workbench({ connect }: AppProps) {
 
   return (
     <div className="wb" data-perspective={perspective}>
-      <Toolbar theme={theme} />
+      <Toolbar theme={theme} commands={commands} />
+      <NewProjectDialog />
       <main className="wb__main" aria-label={`${perspective} perspective`}>
         {main}
       </main>

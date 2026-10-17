@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "example-spi",
+  "until": "200ms",
+  "description": "software/example-spi: SPI1 at 100 kHz in mode 0, CS0 (GPIO 2) held by csmode HOLD across three frames (0x55, 0xAA, 0xA5) and let go when freedom-metal sets AUTO again; each frame waits on rxdata. 48 SCK edges on GPIO 5 after SCK settles at its idle level, CS asserted once, then exit 0.",
+  "assertions": [
+    {
+      "id": "output",
+      "at": "200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "METAL SPI Driver Demo\nexit 0"
+      }
+    },
+    {
+      "id": "sck",
+      "between": [
+        "0ms",
+        "200ms"
+      ],
+      "probe": "sck",
+      "expect": {
+        "edges": 49
+      }
+    },
+    {
+      "id": "cs",
+      "between": [
+        "0ms",
+        "200ms"
+      ],
+      "probe": "cs",
+      "expect": {
+        "edges": 3
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ]
+}

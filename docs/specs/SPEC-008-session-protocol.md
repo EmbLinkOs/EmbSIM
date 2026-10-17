@@ -190,7 +190,8 @@ Notation: `method(params) -> result`. Params and results are objects.
 boards?})`, `waveform.samples({stream, seq, first_time_ps, encoding,
 data})`, `control.state({running, now_ps, reason?})` (on run, pause, stop,
 end), `debug.stopped({board, reason, pc, breakpoint?})`, `serial.data({target,
-base64})`, `project.changed({tx, summary})`, `record.input({at_ps, seq,
+probe, base64})` (a serial probe's bytes since the last, after each observation
+frame), `project.changed({tx, summary})`, `record.input({at_ps, seq,
 target, input})`.
 
 ## 7. Threading and ordering guarantees

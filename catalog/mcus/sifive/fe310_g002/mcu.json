@@ -201,20 +201,22 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "RV32IMAC instruction execution with Zicsr, machine-mode traps and interrupts extracted from EmbCC (refereed there against QEMU); every register of the manual's peripherals with its reset value; behavioural models of the CLINT (msip, mtimecmp, mtime at the 32.768 kHz RTC), the PLIC (priorities, threshold, claim and complete), the GPIO (directions, pull-ups, out_xor, the four interrupt kinds, IOF hand-off), UART0 and UART1 (FIFOs, watermarks, frames at the divisor's baud rate on their pins), the PRCI's clocks (HFROSC, HFXOSC, the PLL), and the always-on domain's watchdog (its key, scale, comparator, zerocmp, sticky interrupt and chip reset, which the domain survives with pmucause's resetcause) and RTC (48-bit count, scale, compare, interrupt) on the 32.768 kHz clock; the core's 8 PMP entries (OFF, TOR, NA4, NAPOT, locks, user mode and MPRV). QSPI and SPI, PWM and I2C keep their register values and raise mcu.unsupported_access on first access.",
+      "claims": "RV32IMAC instruction execution with Zicsr, machine-mode traps and interrupts extracted from EmbCC (refereed there against QEMU); every register of the manual's peripherals with its reset value; behavioural models of the CLINT (msip, mtimecmp, mtime at the 32.768 kHz RTC), the PLIC (priorities, threshold, claim and complete), the GPIO (directions, pull-ups, out_xor, the four interrupt kinds, IOF hand-off), UART0 and UART1 (FIFOs, watermarks, frames at the divisor's baud rate on their pins), the PRCI's clocks (HFROSC, HFXOSC, the PLL), and the always-on domain's watchdog (its key, scale, comparator, zerocmp, sticky interrupt and chip reset, which the domain survives with pmucause's resetcause) and RTC (48-bit count, scale, compare, interrupt) on the 32.768 kHz clock; the core's 8 PMP entries (OFF, TOR, NA4, NAPOT, locks, user mode and MPRV). PWM0-2 (the count and pwms, the comparators with center, gang, deglitch and sticky, zerocmp, enalways and enoneshot, their PLIC sources, the channels on their IOF1 pins), SPI1 and SPI2 in single-wire mode (the 8-entry FIFOs, frames of up to 8 bits in modes 0 to 3, MSB or LSB first, csmode AUTO, HOLD and OFF, the four delays, the watermark interrupts, SPI1 on its IOF0 pins). QSPI0 and I2C0 keep their register values and raise mcu.unsupported_access on first access.",
       "omissions": [
         "the mask ROM and the bootloader",
         "the always-on domain's PMU (sleep, wake-up) and the low-frequency oscillator's trim: the low-frequency clock is 32.768 kHz",
-        "QSPI, SPI1 and SPI2",
-        "PWM",
         "I2C",
         "the instruction cache",
-        "the debug module: its space reads as zeros"
+        "the debug module: its space reads as zeros",
+        "QSPI0's programmed mode and the dual and quad protocols",
+        "the PWM comparators' shadow registers"
       ],
       "validation": [
-        "repo:tests/unit/test_riscv.c",
         "repo:examples/hifive1-blink",
-        "repo:tests/vendor/freedom-metal"
+        "repo:tests/unit/test_riscv.c",
+        "repo:tests/vendor/freedom-metal",
+        "repo:tests/vendor/freedom-metal/apps/example-pwm",
+        "repo:tests/vendor/freedom-metal/apps/example-spi"
       ]
     },
     "timed": {

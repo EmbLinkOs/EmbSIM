@@ -11,7 +11,8 @@ file of cores/arduino is compiled into core.a, and each sketch here
 (sketches/<name>/<name>.ino) is turned into C++ as the IDE's builder turns
 it (Arduino.h included, a #line back to the .ino) and linked against it,
 all with the flags of the core's platform.txt and the Uno's boards.txt
-entry. The image then runs this directory's project.json under the
+entry, with the core's libraries the sketch includes (SPI, Wire) compiled
+beside it. The image then runs this directory's project.json under the
 sketch's scenario.json, whose assertions must all pass.
 
     run.py --core DIR [--embsim PATH] [--keep DIR] [SKETCH...]
@@ -19,6 +20,7 @@ sketch's scenario.json, whose assertions must all pass.
 Without avr-gcc, or without --core (or ARDUINO_CORE_AVR), it skips."""
 import argparse
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -62,14 +64,40 @@ def build_core(core: Path, out: Path) -> Path:
     return lib
 
 
+def libraries(core: Path, sketch: Path) -> list:
+    """The core's libraries (libraries/<name>/src) whose header the sketch
+    includes, as the IDE's builder finds them."""
+    names = re.findall(r'^\s*#\s*include\s*<(\w+)\.h>', sketch.read_text(), re.M)
+    return [core / "libraries" / n / "src" for n in dict.fromkeys(names)
+            if (core / "libraries" / n / "src" / f"{n}.h").is_file()]
+
+
+def build_library(src: Path, inc: list, out: Path) -> list:
+    objs = []
+    for f in sorted(src.rglob("*")):
+        o = out / ("lib_" + src.parent.name + "_" + f.name + ".o")
+        if f.suffix == ".c":
+            sh(["avr-gcc", *C_FLAGS, *BOARD, *inc, f, "-o", o])
+        elif f.suffix == ".cpp":
+            sh(["avr-g++", *CPP_FLAGS, *BOARD, *inc, f, "-o", o])
+        else:
+            continue
+        objs.append(o)
+    return objs
+
+
 def build_sketch(core: Path, lib: Path, sketch: Path, out: Path) -> Path:
+    libs = libraries(core, sketch)
     inc = ["-I", core / "cores" / "arduino", "-I", core / "variants" / "standard"]
+    for src in libs:
+        inc += ["-I", src]
+    objs = [o for src in libs for o in build_library(src, inc, out)]
     cpp = out / (sketch.name + ".cpp")
     cpp.write_text(f'#include <Arduino.h>\n#line 1 "{sketch.name}"\n' + sketch.read_text())
     obj = out / (sketch.name + ".o")
     elf = out / (sketch.stem + ".elf")
     sh(["avr-g++", *CPP_FLAGS, *BOARD, *inc, cpp, "-o", obj])
-    sh(["avr-gcc", *ELF_FLAGS, "-o", elf, obj, lib, "-L", out, "-lm"])
+    sh(["avr-gcc", *ELF_FLAGS, "-o", elf, obj, *objs, lib, "-L", out, "-lm"])
     return elf
 
 

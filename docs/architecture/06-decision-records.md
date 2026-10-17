@@ -466,7 +466,12 @@ cheaper, but inputs would be seen up to a quantum late.
 
 **Consequences.** Inputs from digital events are exact; inputs that come
 from an analog comparator crossing are seen at the start of the quantum
-after the crossing, at most `core_quantum_ps` late. A breakpoint splits a
+after the crossing, at most `core_quantum_ps` late. The exception is the
+core's own edge on an analog net: the next quantum waits out the edge's
+ramp (its swing at the pin's slew rate, less than a cycle), so a device the
+edge clocks answers before the core's next instruction (an SPI slave on a
+clock line with an LED); the core goes on from where it stopped, its
+timing unchanged. A breakpoint splits a
 quantum without changing the run: the M1 test compares a stopped and
 continued run with an uninterrupted one instruction for instruction.
 
@@ -669,3 +674,151 @@ explicit parameters; defaults, unit equivalence and board internals are not
 resolved. Existing schema version remains 1 with optional additive fields.
 
 **Status.** Proposed; implemented for review in this pull request (2026-10-16).
+
+---
+
+## ADR-026 The world: an environment and physical objects that sensors read
+
+**Context.** Sensors are the parts people wire to boards most, and today each
+takes its quantity from a parameter or a slider on the part itself. Real
+sensors share one room: a DHT22 and a BME280 on the same bench read the same
+air, an HC-SR04 sees the object in front of it, an IMU moves with the board.
+The owner's direction (01 §9) asks for temperature, humidity, wind, movement
+and more, set by the user and felt by every sensor as in the real world.
+
+**Decision.** The engine holds a world beside the circuit:
+- **Fields**: ambient quantities (temperature, relative humidity, pressure,
+  illuminance, sound level, wind velocity, magnetic field, gravity),
+  uniform by default and optionally given as a function of position.
+- **Bodies**: objects with a pose and a shape (a box, a sphere, a mesh's
+  bounds), static or moving along a path or under a simple physics step;
+  boards and parts placed in the 3D view are bodies too.
+- **Queries**: a component model asks the world for a field's value at its
+  position, for the nearest body along a ray (distance sensors, IR), for its
+  own acceleration and rotation (IMUs), through the model API (C and Lua).
+
+The world is engine state, stepped on the scheduler in virtual time, never
+from the wall clock. Changing it is an input event like a button press,
+timestamped, recorded and replayed (SPEC-012). A part's own parameter, when
+set, overrides the world, so existing projects and fixtures keep their
+behaviour. The workbench edits the world from a panel first (M6) and from
+the 3D scene later (M7).
+
+**Alternatives.** Per-part sliders only (today; no shared environment, no
+motion). The 3D engine's physics as the source of truth (would put
+simulation in the client, against P1, and break determinism). A full
+physics engine in the core from the start (cost before need; a simple
+kinematic step covers the flagship's sensors, ADR-029 governs any library
+brought in later).
+
+**Consequences.** Sensor models gain a uniform way to read the environment,
+and fixtures can set the world as scenarios set inputs. The world's
+fidelity is declared like a model's: it supplies what a sensor would
+measure, not a thermal, fluid or structural analysis (01 §6). The protocol
+gains world methods and a world description in the project (schema
+additions, SPEC-005 and SPEC-008).
+
+**Status.** Accepted direction (owner, 2026-10-17); design details proposed
+until the specifications are written.
+
+---
+
+## ADR-027 The breadboard is a second editor of the same nets, drawn in 3D
+
+**Context.** Q7 deferred a breadboard view past 1.0. The owner wants a 3D
+bench where parts sit on breadboards and are wired with jumpers, as
+learners and makers build circuits, and where the world of ADR-026 is
+visible and touchable.
+
+**Decision.** The project keeps one connectivity graph. The breadboard view
+is another layout of it, as the schematic is:
+- a breadboard is a component whose internal strips are its nets (its model
+  connects the holes of a strip);
+- a part placed on holes connects its pins to those strips;
+- a jumper wire between holes is a wire, an edit of the project's nets
+  through the same transactions and undo as the schematic's.
+
+Either view shows what the other drew: a net made on the breadboard appears
+in the schematic, unrouted until laid out, and the reverse. The view is
+drawn with a WebGL scene (Three.js, Q12) from glTF models, with a 2D
+top-down fallback; layout positions live in the project beside the
+schematic's (`layout.breadboard`). Parts without a 3D model show a labelled
+box with their pins at the right pitch.
+
+**Alternatives.** A picture of the circuit derived from the schematic (no
+building on the breadboard). A separate breadboard document (two sources of
+truth that drift). A game engine shell around the workbench (heavy, harder
+to keep accessible and themable, P1 still applies).
+
+**Consequences.** Q7 is closed in favour of the view, scheduled for M7. Part
+descriptions gain optional 3D model references and pin offsets. Accessibility
+needs care: every breadboard action has a keyboard and list equivalent, as
+the schematic's do.
+
+**Status.** Accepted direction (owner, 2026-10-17); M7.
+
+---
+
+## ADR-028 Frame budgets: the display's rate, the simulation never waits
+
+**Context.** The owner asks for an interface that runs smoothly, at 120 Hz on
+displays and machines that offer it and 60 Hz elsewhere. 01 §8 already asks
+for 60 Hz interaction on a 500-component schematic.
+
+**Decision.** The workbench draws at the display's rate from the latest
+state it has; the simulation runs in the native engine and streams to it
+(SPEC-008), never waiting on a frame. Budgets, measured in CI on a
+reference configuration: a frame's work under 8 ms on a 120 Hz display and
+under 16 ms at 60 Hz for interaction (pan, zoom, drag, typing) in the
+schematic with 500 components, the instruments at their widest, and the 3D
+bench with 50 parts; streams are decimated to what a frame can show.
+Rendering moves to WebGL where SVG or 2D canvas misses the budget. A
+measurement that misses its budget fails CI like a test.
+
+**Alternatives.** Best effort without budgets (regressions go unnoticed).
+Moving simulation into the client for responsiveness (breaks P1 and
+determinism).
+
+**Consequences.** A frame-time harness joins the browser tests; the
+schematic's renderer and the instruments may need WebGL paths; the 3D view
+carries level-of-detail and a 2D fallback for machines that cannot meet the
+budget.
+
+**Status.** Accepted (owner, 2026-10-17); the harness is planned with M7.
+
+---
+
+## ADR-029 Reusing outside projects: permissive code, recorded assets, GPL as referees
+
+**Context.** The owner welcomes reusing open projects to go faster. EmbSIM is
+Apache-2.0 (01 §4); a careless copy can make the whole project
+undistributable under it.
+
+**Decision.** Three classes:
+- **Code under permissive licences** (MIT, BSD, Apache-2.0, zlib, ISC) may
+  be brought in or depended on, with its notice in `NOTICE` and its origin
+  recorded as for EmbCC's code (P6). Candidates: avr8js and wokwi-elements
+  (MIT), Three.js (MIT), Rapier (Apache-2.0), ngspice (BSD, already used as a
+  referee).
+- **Assets under attribution or share-alike licences** (KiCad's 3D models,
+  CC-BY-SA 4.0 with an exception for designs that use them; Fritzing's
+  parts, CC-BY-SA) may be shipped as separate files in the catalog with
+  their licence and attribution recorded per asset, never merged into code.
+- **GPL and other copyleft code** (QEMU, simavr, SimulIDE, ngspice's GPL
+  parts if any) is never copied in. Such projects may be run as separate
+  programs to referee our models (as QEMU referees the DSP instructions),
+  and their documentation and behaviour studied; our models are written
+  from datasheets and vendor references.
+
+Proprietary simulators (Proteus, Tinkercad's) are studied only through their
+public documentation and behaviour.
+
+**Alternatives.** No reuse (slower, and loses well-made permissive work).
+Relicensing under GPL to reuse more (forecloses users and integrators who
+need Apache-2.0).
+
+**Consequences.** A new dependency or asset set comes with a licence review
+in its pull request; `tools/repository` checks that each vendored asset
+directory carries a licence file. 09 §4 lists the projects assessed.
+
+**Status.** Accepted (owner's reuse direction, 2026-10-17).

@@ -36,6 +36,12 @@ typedef struct uno {
     u32 tx_bit_cycles;
     int pin_drive[8][8];
     double volts;
+    int loopback;       /* MISO (PB4) reads MOSI (PB3) */
+    int ss_low;         /* something holds SS (PB2) low */
+    int sda_low;        /* a slave holds SDA (PC4) low */
+    int edges[8][8];    /* changes of a pin's drive */
+    u64 scl_at[64];     /* when SCL (PC5) changed */
+    int nscl;
 } uno;
 
 static unsigned char *slurp(const char *rel, size_t *len)
@@ -87,8 +93,33 @@ static void u_uart(void *ctx, const char *unit, int c, u32 bit_cycles)
 static void u_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
 {
     uno *u = (uno *)ctx;
-    if (port >= 0 && port < 8 && bit >= 0 && bit < 8)
-        u->pin_drive[port][bit] = cfg->drive >= 0 ? cfg->drive : cfg->pull == 1 ? 2 : -1;
+    int d = cfg->drive >= 0 ? cfg->drive : cfg->pull == 1 ? 2 : -1;
+    if (port < 0 || port >= 8 || bit < 0 || bit >= 8)
+        return;
+    if (d != u->pin_drive[port][bit]) {
+        u->edges[port][bit]++;
+        if (port == 2 && bit == 5 && u->nscl < 64)
+            u->scl_at[u->nscl++] = u->m.cycles;
+    }
+    u->pin_drive[port][bit] = d;
+}
+
+static int u_pin_in(void *ctx, int port, int bit, int *level)
+{
+    uno *u = (uno *)ctx;
+    if (port == 1 && bit == 4 && u->loopback) {
+        *level = u->pin_drive[1][3] == 1;
+        return 1;
+    }
+    if (port == 1 && bit == 2 && u->ss_low) {
+        *level = 0;
+        return 1;
+    }
+    if (port == 2 && bit == 4 && u->sda_low) {
+        *level = 0;
+        return 1;
+    }
+    return 0;
 }
 
 static int u_pin_volts(void *ctx, int port, int bit, double *v)
@@ -123,6 +154,7 @@ static int uno_open(uno *u, const u16 *prog, size_t n)
     u->m.host.ctx = u;
     u->m.host.uart_tx = u_uart;
     u->m.host.pin_cfg = u_pin_cfg;
+    u->m.host.pin_in = u_pin_in;
     u->m.host.pin_volts = u_pin_volts;
     u->m.host.diag = u_diag;
     st = esk_mach_build(&u->m, u->mcu, u->regs, 16000000u, why, sizeof why);
@@ -327,6 +359,266 @@ static void test_timer0_fast_pwm_overflow(void)
     uno_close(&u);
 }
 
+/* an I/O register by data address, as the core's ST and LD reach it */
+static void poke(uno *u, u32 a, u8 v) { CHECK_EQ(esk_bus_write(&u->m.bus, ESK_AVR_DATA + a, 1, v), 0); }
+
+static u8 peek(uno *u, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_read(&u->m.bus, ESK_AVR_DATA + a, 1, &v), 0);
+    return (u8)v;
+}
+
+/* run the core (a loop of nops) until the register at `a` has `mask` set
+ * (or clear, with `clear`): the cycles it took */
+static u64 run_until(uno *u, u32 a, u8 mask, int clear, u64 limit)
+{
+    u64 start = u->m.cycles;
+    while (u->m.cycles - start < limit && ((data(u, a) & mask) != 0) == (clear != 0))
+        esk_mach_run(&u->m, 1, 0);
+    return u->m.cycles - start;
+}
+
+#define SPCR 0x4C
+#define SPSR 0x4D
+#define SPDR 0x4E
+
+static void test_spi(void)
+{
+    const u16 prog[] = { NOP, rjmp(-2) };
+    uno u;
+    u64 t;
+    if (!uno_open(&u, prog, sizeof prog / sizeof prog[0]))
+        return;
+    u.loopback = 1;
+    esk_mach_run(&u.m, 4, 0);
+    poke(&u, 0x24, 0x2C); /* DDRB: SS, MOSI, SCK out */
+    poke(&u, 0x25, 0x04); /* SS high */
+    poke(&u, SPCR, 0x50); /* SPE | MSTR, mode 0, /4 */
+    CHECK_EQ(u.pin_drive[1][5], 0); /* SCK idles low */
+    CHECK_EQ(u.pin_drive[1][4], -1); /* MISO an input, no pull-up */
+    u.edges[1][5] = 0;
+    poke(&u, SPDR, 0xA5);
+    t = run_until(&u, SPSR, 0x80, 0, 1000);
+    /* eight bits of two half bits of two cycles; instructions of one and
+     * two cycles may stretch an edge by one */
+    CHECK(t >= 32 && t <= 40);
+    CHECK_EQ(u.edges[1][5], 16);
+    CHECK_EQ(peek(&u, SPSR) & 0x80, 0x80);
+    CHECK_EQ(peek(&u, SPDR), 0xA5); /* looped back; the SPSR-then-SPDR read clears SPIF */
+    CHECK_EQ(data(&u, SPSR) & 0x80, 0);
+    CHECK_EQ(u.pin_drive[1][3], 1); /* MOSI holds the last bit */
+    /* a write while a byte is under way is lost: WCOL */
+    poke(&u, SPDR, 0x3C);
+    esk_mach_run(&u.m, 4, 0);
+    poke(&u, SPDR, 0xFF);
+    CHECK_EQ(data(&u, SPSR) & 0x40, 0x40);
+    run_until(&u, SPSR, 0x80, 0, 1000);
+    CHECK_EQ(data(&u, SPDR), 0x3C);
+    CHECK_EQ(peek(&u, SPSR) & 0xC0, 0xC0);
+    (void)peek(&u, SPDR);
+    CHECK_EQ(data(&u, SPSR) & 0xC0, 0);
+    /* LSB first, mode 3, /128 halved by SPI2X: 32 cycles a half bit */
+    poke(&u, SPCR, 0x7F);
+    CHECK_EQ(u.pin_drive[1][5], 1); /* SCK idles high */
+    poke(&u, SPSR, 0x01);
+    poke(&u, SPDR, 0x81);
+    t = run_until(&u, SPSR, 0x80, 0, 4000);
+    CHECK(t >= 512 && t <= 516);
+    CHECK_EQ(data(&u, SPDR), 0x81);
+    /* SS an input held low: the master steps down, SPIF set */
+    (void)peek(&u, SPSR);
+    (void)peek(&u, SPDR);
+    poke(&u, 0x24, 0x28);
+    u.ss_low = 1;
+    poke(&u, SPDR, 0x55);
+    CHECK_EQ(data(&u, SPCR) & 0x10, 0);
+    CHECK_EQ(data(&u, SPSR) & 0x80, 0x80);
+    CHECK_EQ(u.pin_drive[1][5], 0); /* SCK back to PORTB5 */
+    uno_close(&u);
+}
+
+#define TWBR 0xB8
+#define TWSR 0xB9
+#define TWDR 0xBB
+#define TWCR 0xBC
+
+static void test_twi(void)
+{
+    const u16 prog[] = { NOP, rjmp(-2) };
+    uno u;
+    u64 t;
+    int i;
+    if (!uno_open(&u, prog, sizeof prog / sizeof prog[0]))
+        return;
+    esk_mach_run(&u.m, 4, 0);
+    CHECK_EQ(data(&u, TWSR), 0xF8);
+    poke(&u, 0x28, 0x30); /* PORTC4, PORTC5: the pull-ups */
+    poke(&u, TWBR, 72);   /* 100 kHz at 16 MHz */
+    poke(&u, TWCR, 0x44); /* TWEN | TWEA */
+    CHECK_EQ(u.pin_drive[2][4], 2);
+    CHECK_EQ(u.pin_drive[2][5], 2);
+    /* a START from a free bus */
+    poke(&u, TWCR, 0xA4);
+    poke(&u, TWDR, 0x12); /* TWINT clear: lost, TWWC */
+    CHECK_EQ(data(&u, TWCR) & 0x08, 0x08);
+    t = run_until(&u, TWCR, 0x80, 0, 1000);
+    CHECK(t >= 160 && t <= 162);
+    CHECK_EQ(data(&u, TWSR), 0x08);
+    CHECK_EQ(u.pin_drive[2][5], 0); /* SCL held low */
+    CHECK_EQ(u.pin_drive[2][4], 0);
+    poke(&u, TWDR, 0xA0); /* TWINT set: TWWC clears */
+    CHECK_EQ(data(&u, TWCR) & 0x08, 0);
+    /* SLA+W to nobody: NACKed after nine SCL periods */
+    u.nscl = 0;
+    poke(&u, TWCR, 0x84);
+    CHECK_EQ(data(&u, TWCR) & 0x80, 0);
+    t = run_until(&u, TWCR, 0x80, 0, 4000);
+    CHECK(t >= 1440 && t <= 1442);
+    CHECK_EQ(data(&u, TWSR), 0x20);
+    CHECK_EQ(data(&u, TWDR), 0xA0);
+    CHECK_EQ(u.nscl, 18);
+    for (i = 2; i + 2 < u.nscl; i += 2) /* a period of 160 cycles, rise to rise */
+        CHECK(u.scl_at[i + 1] - u.scl_at[i - 1] >= 159 && u.scl_at[i + 1] - u.scl_at[i - 1] <= 161);
+    /* the high half, give or take the cycle an instruction ran past an edge */
+    CHECK(u.scl_at[1] - u.scl_at[0] >= 78 && u.scl_at[1] - u.scl_at[0] <= 82);
+    /* a slave that pulls SDA low: a repeated START, SLA+R ACKed, a byte
+     * ACKed, one NACKed */
+    u.sda_low = 1;
+    poke(&u, TWCR, 0xA4);
+    run_until(&u, TWCR, 0x80, 0, 4000);
+    CHECK_EQ(data(&u, TWSR), 0x10);
+    poke(&u, TWDR, 0xA1);
+    poke(&u, TWCR, 0x84);
+    run_until(&u, TWCR, 0x80, 0, 4000);
+    CHECK_EQ(data(&u, TWSR), 0x40);
+    poke(&u, TWCR, 0xC4);
+    run_until(&u, TWCR, 0x80, 0, 4000);
+    CHECK_EQ(data(&u, TWSR), 0x50);
+    CHECK_EQ(data(&u, TWDR), 0x00);
+    poke(&u, TWCR, 0x84);
+    run_until(&u, TWCR, 0x80, 0, 4000);
+    CHECK_EQ(data(&u, TWSR), 0x58);
+    /* the STOP: TWSTO holds until it is made, TWINT stays clear */
+    u.sda_low = 0;
+    poke(&u, TWCR, 0x94);
+    CHECK_EQ(data(&u, TWCR) & 0x10, 0x10);
+    t = run_until(&u, TWCR, 0x10, 1, 4000);
+    CHECK(t >= 160 && t <= 162);
+    CHECK_EQ(data(&u, TWCR) & 0x80, 0);
+    CHECK_EQ(data(&u, TWSR), 0xF8);
+    CHECK_EQ(u.pin_drive[2][4], 2);
+    CHECK_EQ(u.pin_drive[2][5], 2);
+    /* the prescaler: 16 + 2 * 72 * 4 cycles a period */
+    poke(&u, TWSR, 0x01);
+    CHECK_EQ(data(&u, TWSR), 0xF9);
+    poke(&u, TWCR, 0xA4);
+    t = run_until(&u, TWCR, 0x80, 0, 4000);
+    CHECK(t >= 592 && t <= 594); /* the bus free, then the START: two high halves */
+    /* TWEN off: the lines go */
+    poke(&u, TWCR, 0x00);
+    CHECK_EQ(u.pin_drive[2][4], 2); /* PORTC's pull-up, as GPIO */
+    CHECK_EQ(data(&u, TWSR), 0xF9);
+    uno_close(&u);
+}
+
+#define WDTCSR 0x60
+#define MCUSR 0x54
+#define WDR 0x95A8
+
+/* run until the watchdog asks for a reset: the cycles it took */
+static u64 run_to_reset(uno *u, u64 limit)
+{
+    u64 start = u->m.cycles;
+    while (!u->m.reset_req && u->m.cycles - start < limit)
+        esk_mach_run(&u->m, (u32)(limit - (u->m.cycles - start)), 0);
+    return u->m.cycles - start;
+}
+
+static void test_wdt(void)
+{
+    /* vector 6 (WDT, word 12) increments r24 and returns */
+    u16 prog[64];
+    uno u;
+    u64 t;
+    memset(prog, 0, sizeof prog);
+    prog[0] = rjmp(39);
+    prog[12] = 0x9583; /* inc r24 */
+    prog[13] = RETI;
+    prog[40] = NOP;
+    prog[41] = rjmp(-2);
+    if (!uno_open(&u, prog, 42))
+        return;
+    CHECK_EQ(data(&u, WDTCSR), 0);
+    CHECK_EQ(data(&u, MCUSR), 0x01); /* PORF */
+    /* interrupt mode, 16 ms: 2048 cycles of 128 kHz, 256,000 at 16 MHz */
+    poke(&u, WDTCSR, 0x40);
+    t = run_until(&u, WDTCSR, 0x80, 0, 300000);
+    CHECK(t >= 256000 && t <= 256002);
+    CHECK_EQ(reg(&u, 24), 0); /* I clear: not taken */
+    poke(&u, WDTCSR, 0xC0);   /* WDIF cleared by a 1 */
+    CHECK_EQ(data(&u, WDTCSR), 0x40);
+    /* WDP changes only through the timed sequence; WDE can be set at any time */
+    poke(&u, WDTCSR, 0x46);
+    CHECK_EQ(data(&u, WDTCSR), 0x40);
+    poke(&u, WDTCSR, 0x18);
+    CHECK_EQ(data(&u, WDTCSR), 0x18); /* WDIE written 0 with it */
+    poke(&u, WDTCSR, 0x00); /* within the window: off */
+    CHECK_EQ(data(&u, WDTCSR), 0x00);
+    poke(&u, WDTCSR, 0x08);
+    CHECK_EQ(data(&u, WDTCSR), 0x08);
+    poke(&u, WDTCSR, 0x00); /* without the sequence: WDE stays */
+    CHECK_EQ(data(&u, WDTCSR), 0x08);
+    poke(&u, WDTCSR, 0x18);
+    esk_mach_run(&u.m, 8, 0); /* the window closes after four cycles */
+    poke(&u, WDTCSR, 0x00);
+    CHECK_EQ(data(&u, WDTCSR), 0x08);
+    /* system reset mode: the count started when WDE was set */
+    t = run_to_reset(&u, 600000);
+    CHECK(u.m.reset_req);
+    CHECK(t <= 256010);
+    esk_mach_reset(&u.m);
+    CHECK_EQ(data(&u, MCUSR), 0x09);  /* WDRF with PORF kept */
+    CHECK_EQ(data(&u, WDTCSR), 0x08); /* still on, 16 ms */
+    /* WDRF holds WDE even through the sequence */
+    poke(&u, WDTCSR, 0x18);
+    poke(&u, WDTCSR, 0x00);
+    CHECK_EQ(data(&u, WDTCSR), 0x08);
+    t = run_to_reset(&u, 600000);
+    CHECK(t >= 255990 && t <= 256010);
+    esk_mach_reset(&u.m);
+    /* cleared WDRF, then the sequence: off for good */
+    poke(&u, MCUSR, 0x00);
+    poke(&u, WDTCSR, 0x18);
+    poke(&u, WDTCSR, 0x00);
+    CHECK_EQ(data(&u, WDTCSR), 0x00);
+    t = run_to_reset(&u, 600000);
+    CHECK(!u.m.reset_req);
+    /* interrupt and system reset mode, I set: the first time-out runs the
+     * vector, which clears WDIE; the second resets */
+    poke(&u, WDTCSR, 0x18);
+    poke(&u, WDTCSR, 0x48);
+    CHECK_EQ(data(&u, WDTCSR), 0x48);
+    u.m.cpu->ops->reg_write(u.m.cpu, 32, (const u8[]){ 0x80, 0, 0, 0 });
+    t = run_to_reset(&u, 1000000);
+    CHECK(u.m.reset_req);
+    CHECK(t >= 511900 && t <= 512100);
+    CHECK_EQ(reg(&u, 24), 1);
+    CHECK_EQ(data(&u, WDTCSR) & 0xC0, 0);
+    uno_close(&u);
+    /* WDR keeps it from timing out: a loop of 3 * 255 + 4 cycles */
+    {
+        const u16 kick[] = { 0x2722 /* clr r18 */, dec(18), brne(-2), WDR, rjmp(-5) };
+        if (!uno_open(&u, kick, sizeof kick / sizeof kick[0]))
+            return;
+        poke(&u, WDTCSR, 0x08);
+        t = run_to_reset(&u, 2000000);
+        CHECK(!u.m.reset_req);
+        CHECK(t >= 2000000);
+        uno_close(&u);
+    }
+}
+
 static void test_disassembler(void)
 {
     char t[64];
@@ -349,5 +641,8 @@ RUN(test_timer0_fast_pwm_overflow);
 RUN(test_usart_frame);
 RUN(test_ports);
 RUN(test_adc);
+RUN(test_spi);
+RUN(test_twi);
+RUN(test_wdt);
 RUN(test_disassembler);
 TEST_MAIN_END

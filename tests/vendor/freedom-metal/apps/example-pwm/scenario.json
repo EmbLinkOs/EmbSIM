@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "example-pwm",
+  "until": "4s",
+  "description": "software/example-pwm: PWM1 at 1 Hz (freedom-metal's prescaler and count from the bus clock, zerocmp, deglitch, enalways) with its channels on the HiFive1's RGB LED through IOF1: green (GPIO 19, channel 1) and blue (GPIO 21, channel 2) at 90 %, red (GPIO 22, channel 3) at 20 %. Blue and red are set after the counter starts, so their first period holds high (deglitch) and they show one cycle fewer.",
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "4s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "PWM demo test..\n"
+      }
+    },
+    {
+      "id": "green-edges",
+      "between": [
+        "0ms",
+        "4s"
+      ],
+      "probe": "green",
+      "expect": {
+        "edges": 8
+      }
+    },
+    {
+      "id": "green-1hz",
+      "between": [
+        "1s",
+        "4s"
+      ],
+      "probe": "green",
+      "expect": {
+        "frequency_hz": 1,
+        "tolerance": 0.001
+      }
+    },
+    {
+      "id": "blue-edges",
+      "between": [
+        "0ms",
+        "4s"
+      ],
+      "probe": "blue",
+      "expect": {
+        "edges": 6
+      }
+    },
+    {
+      "id": "blue-1hz",
+      "between": [
+        "1s",
+        "4s"
+      ],
+      "probe": "blue",
+      "expect": {
+        "frequency_hz": 1,
+        "tolerance": 0.001
+      }
+    },
+    {
+      "id": "red-edges",
+      "between": [
+        "0ms",
+        "4s"
+      ],
+      "probe": "red",
+      "expect": {
+        "edges": 6
+      }
+    },
+    {
+      "id": "red-1hz",
+      "between": [
+        "1s",
+        "4s"
+      ],
+      "probe": "red",
+      "expect": {
+        "frequency_hz": 1,
+        "tolerance": 0.001
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ]
+}

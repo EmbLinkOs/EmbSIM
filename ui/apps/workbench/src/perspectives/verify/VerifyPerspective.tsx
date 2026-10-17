@@ -43,7 +43,7 @@ function ReportsPanel() {
     return (
       <Placeholder
         title="Report"
-        description="The JSON report of SPEC-008 §8 for the last scenario run: assertions with observed and expected values, diagnostics and statistics."
+        description="The last scenario run: each check with what was observed and what was expected, the diagnostics and the statistics."
         requires={['scenario']}
         actions={['run a scenario from the scenario editor to see its report here']}
       />

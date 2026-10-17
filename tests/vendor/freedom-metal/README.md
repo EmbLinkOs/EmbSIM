@@ -17,6 +17,8 @@ only their scenarios.
 | `minimal-boot` | freedom-metal's boot without the C library's start-up |
 | `example-rtc` | the always-on domain's RTC on the 32.768 kHz clock (`metal_rtc_set_compare` a second away, `metal_rtc_run`), its interrupt through the PLIC a second later and not before; exit 0 |
 | `example-watchdog` | the always-on watchdog, each write unlocked by its key: `metal_watchdog_set_rate` (32.768 kHz, the nearest to the 1 MHz asked for), a one-second timeout with `wdogzerocmp`, its interrupt through the PLIC a second after it starts, cleared in the handler; exit 0 |
+| `example-pwm` | `metal_pwm` on PWM1: 1 Hz from the bus clock (the driver's prescaler and pwmcmp0, zerocmp, deglitch, enalways), channels 1 to 3 at 90, 90 and 20 % on the RGB LED's GPIO 19, 21 and 22 through IOF1 |
+| `example-spi` | `metal_spi_transfer` on SPI1 at 100 kHz, mode 0: three frames with CS0 held by csmode HOLD, each waited for on rxdata; exit 0 |
 | `example-pmp` | PMP entry 0, locked, NAPOT over a 128-byte array, read-only: machine mode's store to it is a store access fault that the handler steps over, and `main` returns the word it could not change (exit 0, where the store would have made it 6) |
 | `timer-interrupt` | `mtimecmp` at 0: the CLINT's timer interrupt taken once on enabling it, its handler moving `mtimecmp` on; exit 0 only when it ran exactly once |
 | `software-interrupt` | `msip` through the CLINT: the machine software interrupt taken and cleared; exit 0 only when its handler ran |

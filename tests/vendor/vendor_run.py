@@ -26,7 +26,7 @@ def run_scenario(embsim: Path, project: Path, name: str, elf: Path, scenario: Pa
     shutil.copy(project, d / "project.json")
     shutil.copy(elf, d / "sketch.elf")
     p = subprocess.run([str(embsim), "run", str(d / "project.json"), "--scenario", str(scenario), "--json"],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, errors="replace")
     try:
         report = json.loads(p.stdout)
     except json.JSONDecodeError:

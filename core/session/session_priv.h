@@ -33,6 +33,7 @@ typedef struct esk_probe {
     uint32_t stream_seq;
     es_time_t next_sample;
     esk_event_handle sample_event;
+    size_t serial_sent; /* a serial probe: the bytes of its text already sent as serial.data */
 } esk_probe;
 
 typedef struct esk_board_inst {

@@ -4,10 +4,13 @@
 // DockLayout (M0): a resizable split of panels in one direction, with the
 // panel order draggable by the handle in each header and persisted in
 // localStorage under `storageKey`. Nested splits are plain composition (an
-// item's content may be another DockLayout). Full docking (float, tab
-// groups) is later milestone work.
+// item's content may be another DockLayout). A collapsible panel folds to a
+// rail with its title, which unfolds it again; what the user chose is kept
+// with the order and sizes, and otherwise the item's defaultCollapsed holds
+// (a perspective folds an instrument with nothing to show). Full docking
+// (float, tab groups) is later milestone work.
 
-import { GripVertical } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { cx } from '../cx';
 import { Panel } from './Panel';
@@ -26,6 +29,10 @@ export interface DockItem {
   bare?: boolean;
   flush?: boolean;
   padded?: boolean;
+  /** The header offers to fold the panel to a rail (not for bare items). */
+  collapsible?: boolean;
+  /** Folded until the user unfolds it (their choice is remembered). */
+  defaultCollapsed?: boolean;
 }
 
 export interface DockLayoutProps {
@@ -39,6 +46,8 @@ export interface DockLayoutProps {
 interface Persisted {
   order: string[];
   weights: Record<string, number>;
+  /** the user's choices: folded (true) or unfolded (false) */
+  collapsed?: Record<string, boolean>;
 }
 
 function load(key: string | undefined): Persisted | null {
@@ -48,7 +57,10 @@ function load(key: string | undefined): Persisted | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Persisted;
     if (!Array.isArray(parsed.order) || !parsed.order.every((id) => typeof id === 'string') || !parsed.weights || typeof parsed.weights !== 'object' || Array.isArray(parsed.weights)) return null;
-    return parsed;
+    const collapsed: Record<string, boolean> = {};
+    if (parsed.collapsed && typeof parsed.collapsed === 'object' && !Array.isArray(parsed.collapsed))
+      for (const [id, v] of Object.entries(parsed.collapsed)) if (typeof v === 'boolean') collapsed[id] = v;
+    return { ...parsed, collapsed };
   } catch {
     return null;
   }
@@ -57,7 +69,7 @@ function load(key: string | undefined): Persisted | null {
 function save(key: string | undefined, state: Persisted): void {
   if (!key) return;
   try {
-    localStorage.setItem(key, JSON.stringify({ order: state.order, weights: state.weights }));
+    localStorage.setItem(key, JSON.stringify({ order: state.order, weights: state.weights, collapsed: state.collapsed ?? {} }));
   } catch {
     // Storage may be unavailable (private mode); layout then lives for the session only.
   }
@@ -72,8 +84,11 @@ function initialState(items: DockItem[], key: string | undefined): Persisted & {
     const weight = stored?.weights?.[item.id];
     weights[item.id] = typeof weight === 'number' && Number.isFinite(weight) && weight > 0 ? weight : item.weight ?? 1;
   }
-  return { key, order: [...new Set(order)], weights };
+  return { key, order: [...new Set(order)], weights, collapsed: stored?.collapsed ?? {} };
 }
+
+/** a folded pane's thickness along the split, px */
+const RAIL = 34;
 
 export function DockLayout({ direction, items, storageKey, className }: DockLayoutProps) {
   const ids = useMemo(() => items.map((i) => i.id), [items]);
@@ -100,18 +115,21 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const ordered = state.order.map((id) => byId.get(id)).filter((x): x is DockItem => Boolean(x));
+  const isCollapsed = (item: DockItem) => Boolean(item.collapsible && !item.bare && (state.collapsed?.[item.id] ?? item.defaultCollapsed ?? false));
+  const setCollapsed = (id: string, folded: boolean) => setState((s) => ({ ...s, collapsed: { ...(s.collapsed ?? {}), [id]: folded } }));
+  const folded = ordered.filter(isCollapsed).length;
 
   const resize = useCallback(
     (index: number, deltaPx: number) => {
       const el = containerRef.current;
       if (!el) return;
-      const total = direction === 'row' ? el.clientWidth : el.clientHeight;
+      const total = (direction === 'row' ? el.clientWidth : el.clientHeight) - folded * RAIL;
       if (total <= 0) return;
       setState((s) => {
         const a = ordered[index];
         const b = ordered[index + 1];
         if (!a || !b) return s;
-        const sum = ordered.reduce((acc, it) => acc + (s.weights[it.id] ?? 1), 0);
+        const sum = ordered.filter((it) => !isCollapsed(it)).reduce((acc, it) => acc + (s.weights[it.id] ?? 1), 0);
         const pxPerWeight = total / sum;
         const wa = (s.weights[a.id] ?? 1) * pxPerWeight;
         const wb = (s.weights[b.id] ?? 1) * pxPerWeight;
@@ -123,7 +141,9 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
         return { ...s, weights: { ...s.weights, [a.id]: (wa + d) / pxPerWeight, [b.id]: (wb - d) / pxPerWeight } };
       });
     },
-    [direction, ordered],
+    // isCollapsed reads state.collapsed and the items, which `ordered` and `folded` follow
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [direction, ordered, folded],
   );
 
   const onGutterPointerDown = (index: number) => (e: React.PointerEvent<HTMLDivElement>) => {
@@ -183,11 +203,46 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
     });
   };
 
-  const totalWeight = ordered.reduce((acc, it) => acc + (state.weights[it.id] ?? 1), 0) || 1;
+  const totalWeight = ordered.filter((it) => !isCollapsed(it)).reduce((acc, it) => acc + (state.weights[it.id] ?? 1), 0) || 1;
   return (
     <div ref={containerRef} className={cx('es-dock', `es-dock--${direction}`, className)}>
       {ordered.map((item, index) => {
         const weight = state.weights[item.id] ?? 1;
+        const collapsed = isCollapsed(item);
+        const next = ordered[index + 1];
+        const gutter = index < ordered.length - 1 && !collapsed && next && !isCollapsed(next);
+        if (collapsed) {
+          const Unfold = direction === 'row' ? (index === 0 ? ChevronRight : ChevronLeft) : ChevronDown;
+          return (
+            <div key={item.id} className={cx('es-dock__pane', 'es-dock__pane--collapsed')} style={{ flex: `0 0 ${RAIL}px` }}>
+              <button
+                type="button"
+                className="es-dock__rail"
+                aria-expanded={false}
+                aria-label={`Expand ${item.title} panel`}
+                title={`Expand ${item.title}`}
+                onClick={() => setCollapsed(item.id, false)}
+              >
+                <Unfold aria-hidden="true" />
+                {item.icon}
+                <span className="es-dock__rail-title">{item.title}</span>
+              </button>
+            </div>
+          );
+        }
+        const Fold = direction === 'row' ? (index === 0 ? ChevronLeft : ChevronRight) : ChevronUp;
+        const foldButton = item.collapsible ? (
+          <button
+            type="button"
+            className="es-button es-button--ghost es-button--sm es-icon-button es-dock__fold"
+            aria-expanded={true}
+            aria-label={`Collapse ${item.title} panel`}
+            title={`Collapse ${item.title}`}
+            onClick={() => setCollapsed(item.id, true)}
+          >
+            <Fold />
+          </button>
+        ) : null;
         const handle = (
           <button
             type="button"
@@ -244,13 +299,20 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
                 {item.bare ? (
                   item.content
                 ) : (
-                  <Panel title={item.title} icon={item.icon} leading={handle} actions={item.actions} flush={item.flush} padded={item.padded}>
+                  <Panel
+                    title={item.title}
+                    icon={item.icon}
+                    leading={handle}
+                    actions={foldButton ? <>{item.actions}{foldButton}</> : item.actions}
+                    flush={item.flush}
+                    padded={item.padded}
+                  >
                     {item.content}
                   </Panel>
                 )}
               </div>
             </div>
-            {index < ordered.length - 1 && (
+            {gutter && (
               <div
                 className="es-dock__gutter"
                 role="separator"

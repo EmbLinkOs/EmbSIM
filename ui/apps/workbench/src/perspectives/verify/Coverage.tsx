@@ -83,7 +83,7 @@ export function CoveragePanel() {
       setOn(true);
       await refresh();
     } catch (e) {
-      toast({ kind: 'error', title: 'analysis.start failed', description: errorMessage(e) });
+      toast({ kind: 'error', title: 'Measuring could not start', description: errorMessage(e) });
     }
   };
   const stop = async () => {

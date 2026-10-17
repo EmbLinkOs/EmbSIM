@@ -7,6 +7,36 @@ export interface SerialLine {
   at: Time;
   direction: 'rx' | 'tx';
   text: string;
+  /** the port (a serial probe's target without `serial:`) */
+  target?: string;
+  /** received text that has not ended with a newline yet */
+  open?: boolean;
+}
+
+/** `lines` with `text` received on `target` at `at`: the text goes on the
+ * port's open line until a newline ends it (CR is dropped), so a line
+ * delivered in pieces shows as one, stamped with its first piece's time. */
+export function appendSerialText(lines: SerialLine[], target: string, at: Time, text: string, limit = 2000): SerialLine[] {
+  const out = lines.slice();
+  let open = -1;
+  for (let i = out.length - 1; i >= 0; i--) {
+    const l = out[i]!;
+    if (l.target === target && l.direction === 'rx') {
+      if (l.open) open = i;
+      break;
+    }
+  }
+  const parts = text.replace(/\r/g, '').split('\n');
+  parts.forEach((part, k) => {
+    const last = k === parts.length - 1;
+    if (k === 0 && open >= 0) {
+      const l = out[open]!;
+      out[open] = { ...l, text: l.text + part, open: last };
+    } else if (!last || part.length) {
+      out.push({ at, direction: 'rx', target, text: part, open: last });
+    }
+  });
+  return out.length > limit ? out.slice(-limit) : out;
 }
 
 export interface SerialTerminalProps {

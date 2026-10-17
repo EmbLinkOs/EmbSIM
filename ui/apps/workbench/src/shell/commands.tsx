@@ -12,6 +12,7 @@ import {
   Activity,
   Bug,
   CheckSquare,
+  FilePlus,
   FlaskConical,
   FolderOpen,
   Moon,
@@ -148,6 +149,14 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
       },
       { id: 'view.theme.system', label: 'Follow system theme', group: 'View', icon: <Sun />, run: () => theme.setPreference('system') },
       { id: 'view.gallery', label: 'Open component gallery', group: 'View', icon: <FlaskConical />, run: () => window.open('#/gallery', '_blank') },
+      {
+        id: 'project.new',
+        label: 'New project…',
+        group: 'Project',
+        icon: <FilePlus />,
+        keywords: ['blank', 'board', 'start'],
+        run: () => useLayout.getState().setNewProjectOpen(true),
+      },
       {
         id: 'project.open',
         label: 'Open project…',
