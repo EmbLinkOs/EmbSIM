@@ -32,14 +32,14 @@ OUT = ROOT / "docs" / "coverage.md"
 
 
 def engine_models() -> set:
-    text = (ROOT / "core" / "mcu" / "models.c").read_text()
+    text = (ROOT / "core" / "mcu" / "models.c").read_text(encoding="utf-8")
     return set(re.findall(r'\{\s*"([a-z0-9_-]+)",\s*&', text))
 
 
 def boards_by_mcu() -> dict:
     out: dict = {}
     for f in sorted((ROOT / "catalog" / "boards").glob("*/board.json")):
-        d = json.loads(f.read_text())
+        d = json.loads(f.read_text(encoding="utf-8"))
         mcu = d.get("mcu")
         mid = mcu.get("ref") if isinstance(mcu, dict) else mcu
         if mid:
@@ -55,8 +55,8 @@ def binding(peripheral: str, rules: list):
 
 
 def table(mcu_file: Path, models: set, boards: dict) -> tuple:
-    mcu = json.loads(mcu_file.read_text())
-    regs = json.loads((mcu_file.parent / mcu["register_file"]["file"]).read_text())
+    mcu = json.loads(mcu_file.read_text(encoding="utf-8"))
+    regs = json.loads((mcu_file.parent / mcu["register_file"]["file"]).read_text(encoding="utf-8"))
     rules = mcu.get("peripherals", [])
     rows, counts = [], {"modelled": 0, "registers": 0, "missing": 0}
     for p in regs["peripherals"]:
@@ -116,12 +116,12 @@ def main() -> int:
     args = ap.parse_args()
     text = render()
     if args.check:
-        if not OUT.is_file() or OUT.read_text() != text:
+        if not OUT.is_file() or OUT.read_text(encoding="utf-8") != text:
             print("docs/coverage.md is not current: run tools/catalog/coverage.py")
             return 1
         print("docs/coverage.md is current")
         return 0
-    OUT.write_text(text)
+    OUT.write_text(text, encoding="utf-8", newline="\n")
     print(f"wrote {OUT.relative_to(ROOT)}")
     return 0
 
