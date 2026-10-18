@@ -544,6 +544,15 @@ versions follow semantic versioning. There is no release yet.
   `DeviceExample` runs unmodified over SoftwareSerial, 4/4; six fixtures.
   Component fixtures may expect what a terminal received (`serial:`,
   SPEC-005).
+- The SSD1306 model rewritten from Solomon Systech's datasheet: write-only
+  I2C (reads not acknowledged); segment remap, COM scan direction,
+  multiplex ratio, offset, start line and the COM pins configuration
+  against the panel's wiring (wrong ones interleave the rows); the panel
+  lit only with the charge pump (or external VCC) and 100 ms after
+  display on; horizontal and vertical scrolling at the panel's frame
+  rate; a checksum output of the visible image. Adafruit's
+  `ssd1306_128x64_i2c` runs unmodified, 5/5; display-showcase's OLED
+  pattern now sends A1/C8 so its text shows upright.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

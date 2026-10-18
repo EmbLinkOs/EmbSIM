@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-charge-pump",
+  "description": "Display on without the charge pump enabled (8Dh 14h): a module without external VCC stays dark, whatever the RAM holds.",
+  "policy": "functional",
+  "until": "151ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,3,3,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ssd1306"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.on": {
+      "at": "150ms",
+      "equals": false
+    },
+    "output:DUT.lit_pixels": {
+      "at": "150ms",
+      "equals": 0
+    }
+  }
+}

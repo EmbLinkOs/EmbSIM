@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "SSD1306 OLED 128x64",
   "category": "displays",
-  "description": "0.96 inch 128x64 monochrome OLED module with an SSD1306 controller on I2C (address 0x3C): the command set for display on/off, addressing modes, column and page windows, contrast and inversion, and the display RAM, drawn pixel for pixel on the board view.",
+  "description": "SSD1306 OLED module (128x64 or 128x32) on I2C at 0x3C or 0x3D: write-only control bytes and commands, the three addressing modes, segment and COM remap, multiplex, offset and start line, the charge pump the panel needs to light, scrolling at the panel's frame rate. The image shows on the board view.",
   "keywords": [
     "display",
     "oled",
@@ -60,7 +60,19 @@
       "default": 60,
       "min": 60,
       "max": 61,
-      "doc": "I2C address: 60 (0x3C) or 61 (0x3D)"
+      "doc": "I2C address: 60 (0x3C) or 61 (0x3D), as the module's SA0 jumper sets it"
+    },
+    "rows": {
+      "type": "integer",
+      "default": 64,
+      "min": 32,
+      "max": 64,
+      "doc": "The panel's rows: 64 (a 0.96-inch 128x64 module, wired for the alternative COM configuration) or 32 (a 0.91-inch 128x32, sequential)"
+    },
+    "external_vcc": {
+      "type": "boolean",
+      "default": false,
+      "doc": "The module supplies the panel's high voltage itself (most do not: they rely on the internal charge pump)"
     }
   },
   "outputs": [
@@ -84,6 +96,15 @@
     {
       "name": "inverted",
       "type": "boolean"
+    },
+    {
+      "name": "checksum",
+      "type": "string",
+      "doc": "FNV-1a of the visible image (row by row, 8 pixels a byte, leftmost the high bit)"
+    },
+    {
+      "name": "scrolling",
+      "type": "boolean"
     }
   ],
   "model": {
@@ -106,35 +127,40 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "SSD1306 I2C control bytes (Co, D/C), the fundamental, addressing and hardware commands with their argument counts, page/horizontal/vertical addressing into 1 KiB of display RAM, inversion and entire-display-on.",
+      "claims": "Write-only I2C with control bytes (Co, D/C#); every command with its arguments; the three addressing modes; the panel image through segment remap, COM scan direction, multiplex ratio, offset, start line and the COM pins configuration against the panel's wiring (interleaved rows when wrong); the module's panel mounted so A1/C8 show the RAM upright; lit only with the charge pump (or external VCC) and 100 ms after display on; horizontal and vertical scrolling at the frame rate from the divide ratio, pre-charge phases and multiplex ratio, the RAM left scrolled by 2Eh; no answer below 1.65 V.",
       "omissions": [
-        "scrolling (commands accepted, not animated)",
-        "contrast as brightness",
+        "the oscillator frequency setting's effect on the frame rate (370 kHz whatever D5h's upper nibble)",
+        "contrast as brightness (an output only)",
         "the SPI and parallel interfaces",
-        "charge-pump timing"
+        "the RES# pin",
+        "fade and zoom (SSD1306B commands)",
+        "RAM written during an active scroll (written as when idle; the datasheet calls it undefined)"
       ],
       "validation": [
         "tests/*.json"
       ]
     },
     "timed": {
-      "claims": "As functional; delays as stated.",
+      "claims": "Write-only I2C with control bytes (Co, D/C#); every command with its arguments; the three addressing modes; the panel image through segment remap, COM scan direction, multiplex ratio, offset, start line and the COM pins configuration against the panel's wiring (interleaved rows when wrong); the module's panel mounted so A1/C8 show the RAM upright; lit only with the charge pump (or external VCC) and 100 ms after display on; horizontal and vertical scrolling at the frame rate from the divide ratio, pre-charge phases and multiplex ratio, the RAM left scrolled by 2Eh; no answer below 1.65 V.",
       "omissions": [
-        "scrolling (commands accepted, not animated)",
-        "contrast as brightness",
+        "the oscillator frequency setting's effect on the frame rate (370 kHz whatever D5h's upper nibble)",
+        "contrast as brightness (an output only)",
         "the SPI and parallel interfaces",
-        "charge-pump timing"
+        "the RES# pin",
+        "fade and zoom (SSD1306B commands)",
+        "RAM written during an active scroll (written as when idle; the datasheet calls it undefined)"
       ]
     },
     "electrical": {
-      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; VCC's voltage gates the interface; the behaviour is the Lua model's.",
       "omissions": [
-        "scrolling (commands accepted, not animated)",
-        "contrast as brightness",
+        "the oscillator frequency setting's effect on the frame rate (370 kHz whatever D5h's upper nibble)",
+        "contrast as brightness (an output only)",
         "the SPI and parallel interfaces",
-        "charge-pump timing",
-        "supply current",
-        "output current limits"
+        "the RES# pin",
+        "fade and zoom (SSD1306B commands)",
+        "RAM written during an active scroll (written as when idle; the datasheet calls it undefined)",
+        "supply current"
       ],
       "validation": [
         "tests/*.json"
@@ -146,7 +172,7 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "Solomon Systech SSD1306 datasheet rev 1.1 (command table, I2C interface)"
+        "title": "Solomon Systech SSD1306 128x64 Dot Matrix OLED/PLED Segment/Common Driver with Controller, datasheet Rev 1.1"
       }
     ]
   },

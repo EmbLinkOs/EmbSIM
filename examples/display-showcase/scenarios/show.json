@@ -15,7 +15,7 @@
     },
     {
       "id": "oled",
-      "at": "100ms",
+      "at": "150ms",
       "probe": "p_oled",
       "expect": {
         "min": 300

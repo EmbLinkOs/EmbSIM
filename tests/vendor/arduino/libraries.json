@@ -104,6 +104,20 @@
       "commit": "0a205759da22a1c54c5f5285480fe6132592a4e2",
       "version": "1.1.0",
       "license": "LGPL-2.1"
+    },
+    {
+      "name": "Adafruit_SSD1306",
+      "repo": "https://github.com/adafruit/Adafruit_SSD1306",
+      "commit": "d94f699451d72286357cba7259055ffff2c2940b",
+      "version": "2.5.17",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "Adafruit-GFX-Library",
+      "repo": "https://github.com/adafruit/Adafruit-GFX-Library",
+      "commit": "bc85af5aa4802cb85626c188cbc632343e3dae14",
+      "version": "1.12.6",
+      "license": "BSD-2-Clause"
     }
   ]
 }
