@@ -107,6 +107,14 @@ That requires:
   Toolchain profiles make build-and-run convenient; the ELF/HEX is the contract.
 - **P10 Small core, big catalog.** The C core is dependency-free and stable;
   breadth lives in descriptions, models and libraries.
+- **P11 Real from the outside (ADR-030).** Everything a person, a firmware
+  image, a tool or another part can observe behaves as it does in the real
+  world: voltages, currents, timing, the steps a person takes, the tools
+  they use and what those tools show. How the engine computes it may differ
+  (USB as packets, not edges on D+ and D-), provided the outside matches and
+  the difference is written down. Every piece of work starts by asking how
+  the thing works in real life and how to implement it fully; nothing is
+  added that has no counterpart in reality.
 
 ## 6. Non-goals
 
@@ -120,8 +128,10 @@ That requires:
   building, interaction and understanding, not manufacturing.
 - Running untrusted native plugins safely. Native plugins are trusted code
   loaded explicitly; sandboxed models use the scripting tier (ADR-009).
-- Real-time guarantees. Pacing is a client convenience; speed claims come from
-  benchmarks.
+- Hard real-time guarantees. A paced mode keeps the simulation in step with
+  the wall clock so real tools can talk to a virtual board (ADR-032), and
+  says plainly when a circuit is too large to keep up; speed claims come
+  from benchmarks.
 
 ## 7. Positioning
 
@@ -191,3 +201,64 @@ is one complete experience, judged as a user would judge it:
 Throughout, the interface keeps to its frame budgets (ADR-028), and outside
 projects are reused only under licences that fit Apache-2.0 (ADR-029).
 
+
+## 10. A real bench, not a game
+
+**Status:** ACCEPTED direction (owner, 2026-10-18); 07 §2 schedules it.
+
+The owner's discussion of 2026-10-18 set the bar for everything after the
+flagship: the app should feel and work like an engineer's bench, help
+people understand how things really work, and take the years that needs
+rather than imitate reality. In practice (P11):
+
+1. **USB as it is (ADR-031).** A cable plugged into a virtual computer
+   powers the board within the port's limits (the board's fuse and
+   regulators, the 5V and 3V3 pins feeding the circuit), carries the
+   USB-serial bridge's port to the host as a real serial port, and
+   programs the board the way the real one is programmed: the real
+   bootloader with avrdude on the Uno, UF2 onto the Pico in BOOTSEL mode,
+   the on-board ST-Link or PICkit. Later, MCUs with their own USB appear on
+   the host as real USB devices.
+2. **Real time and real tools (ADR-032).** A paced mode in step with the
+   wall clock; a terminal where the host's own tools (avrdude, make,
+   picotool, a Python script) work against the virtual board; IDE
+   integration (VS Code, PlatformIO, the Arduino IDE).
+3. **Instruments used as the real ones (ADR-033).** A multimeter whose
+   current range goes in series and whose fuse blows, oscilloscope probes
+   with 1x/10x, ground lead and bandwidth, a bench supply with its current
+   limit, a function generator, a logic analyzer with clips, a USB power
+   meter.
+4. **Imperfections and damage (ADR-034).** Contact bounce, tolerances and
+   drift, noise, internal resistance, missing decoupling, bad breadboard
+   contacts; absolute maximum ratings that, exceeded, damage a part as they
+   would; a fault mode that cuts, shorts or kills on purpose.
+5. **Understanding.** An explain mode (a wire's current and why, a
+   register changing as a line runs), guided lessons, teachers'
+   assignments checked by scenarios, diagnostics that say the real-world
+   consequence.
+6. **Reality checks.** Recordings from real boards (logic-analyzer
+   captures, scope traces, serial logs) compared with the simulation
+   automatically.
+7. **More of the real world.**
+   - Boards people own: Arduino Nano, Mega and Leonardo, STM32 Nucleo,
+     ESP32 and ESP32-S3, Pico W, BBC micro:bit.
+   - Languages and systems: MicroPython and CircuitPython with their REPL,
+     Rust (Embassy), TinyGo; RTOS awareness (FreeRTOS, Zephyr,
+     EmbLinkRTOS).
+   - Parts you see, hear and feel: buzzers and speakers through the host's
+     audio, a microphone from the host's; displays pixel for pixel; motors
+     with load and back-EMF; converters, chargers and solar panels; the
+     host's keyboard, gamepad or phone as inputs.
+   - Buses and radios: CAN, RS-485 and Modbus, 1-Wire, LIN, Ethernet, IR,
+     GPS; LoRa and nRF24 between boards, weakened by distance and walls in
+     the world; WiFi and Bluetooth on the ESP32 to the real internet.
+   - Power and battery life from each MCU mode's datasheet current; a robot
+     on the floor of the 3D world; firmware CI as a GitHub Action; a
+     classroom mode.
+8. **AI and automation (ADR-035).** The session protocol exposed to AI
+   assistants and scripts (an MCP server): build a circuit, flash firmware,
+   run, read probes, with the same evidence as a person.
+
+Further out: mixing real and virtual hardware, export to KiCad for PCB
+work, FPGAs through Yosys and Verilator, Linux boards through QEMU, shared
+projects and a community library held to the same evidence, translations.

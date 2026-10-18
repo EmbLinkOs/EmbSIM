@@ -1,17 +1,34 @@
 # Contributing to EmbSIM
 
-## Current phase: M0 foundation
+## Current phase
 
-The architecture (`docs/architecture/`), specifications (`docs/specs/`) and
-requirements (`docs/requirements/`) are accepted. [Project status](docs/STATUS.md)
-distinguishes working code from target designs; the
-[roadmap](docs/architecture/07-roadmap.md) defines the gates.
+M0 to M5 are delivered; M6, the flagship, is under way (the
+[roadmap](docs/architecture/07-roadmap.md) defines the gates).
+[Project status](docs/STATUS.md) distinguishes working code from target
+designs, and [the coverage tables](docs/coverage.md) show each MCU's
+peripherals and whether the engine models them.
 
-Valuable contributions now: review of the specifications; component and board
-descriptions with fixtures (see `sdk/`); analog fixtures generated from ngspice
-or analytic derivations; the extraction of EmbCC core families against
-SPEC-009 with their golden fixtures; workbench panels against SPEC-011; and
-documentation.
+Valuable contributions now: component and board descriptions with fixtures
+(see `sdk/`), the peripherals the coverage tables list as missing, captures
+from real hardware to compare the simulation with, analog fixtures from
+ngspice, workbench panels against SPEC-011, and documentation.
+
+## How every feature is designed
+
+EmbSIM is held to how things work in the real world (P11, ADR-030). A pull
+request that adds or changes behaviour answers, in its description:
+
+1. **How does it work in real life?** The datasheet, reference manual and
+   schematics; how engineers use it, with what tools and steps.
+2. **What can anyone observe from outside?** Pins, voltages, currents,
+   timing, what tools report, what a person sees and does: all of it must
+   match reality.
+3. **What is the full implementation?** Every mode and edge case; what is
+   left out is declared in the model's fidelity, not silently missing.
+4. **Where does the inside differ?** An abstraction is fine when the
+   outside is unchanged; name it and say why.
+5. **How is it proven?** Vendor code run unmodified, the datasheet's values
+   and timing in fixtures, a real-hardware capture where possible.
 
 ## Licence
 

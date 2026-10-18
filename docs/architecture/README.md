@@ -15,7 +15,7 @@ implementation grows around them.
 | 03 | [Simulation engine](03-simulation-engine.md) | Time, the scheduler, nets and pins, the digital engine, the analog engine, mixed-signal islands, diagnostics, determinism |
 | 04 | [MCU runtime and toolchains](04-mcu-runtime-and-toolchains.md) | Cores, memory, peripherals from register files, pin multiplexing, packages, boards, debugging, record and replay, toolchain profiles |
 | 05 | [Workbench, protocol and command line](05-workbench-protocol-and-cli.md) | The session protocol, the CLI, the graphical workbench's perspectives and design system, desktop and browser delivery |
-| 06 | [Decision records](06-decision-records.md) | ADR-001 to ADR-029 with alternatives, consequences and per-record status |
+| 06 | [Decision records](06-decision-records.md) | ADR-001 to ADR-035 with alternatives, consequences and per-record status |
 | 07 | [Roadmap](07-roadmap.md) | The 1.0 boundary, milestones M0 to M9, the flagship first, specification work order, risks |
 | 08 | [Open questions](08-open-questions.md) | Decisions awaiting the project owner, each with a recommendation |
 | 09 | [Reuse assessment](09-reuse-assessment.md) | What the EmbCC simulator and the earlier EmbSIM foundation give us, what is kept, wrapped, or redesigned |
