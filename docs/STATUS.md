@@ -26,8 +26,9 @@ checking occlusion; it is not a mechanical accessibility/collision validator.
 GLB/STEP import, all-catalog qualification, complete label occlusion and measured
 ADR-028 rendering budgets remain outstanding.
 
-Validation and hosted CI results are recorded on this milestone's pull request.
-Local GCC Debug validation passes all 39 CTest targets, including native bench and
+Local UI validation passes typecheck, lint, production build, 212 tests across
+46 files and all 17 Playwright workflows. Hosted CI results are recorded on this
+milestone's pull request. Local GCC Debug validation passes all 39 CTest targets, including native bench and
 protocol regressions; native-server Uno captures are in the
 [gallery](gallery/README.md). The new browser regressions cover endpoint
 cancel/commit/exact undo, interrupted live-button holds, appearance persistence,
