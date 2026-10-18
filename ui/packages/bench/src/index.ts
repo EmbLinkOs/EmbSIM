@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-export { PITCH, benchShape, artworkAnchors, dipPins, type BenchShape, type ShapePackage } from './shape';
+export { PITCH, benchShape, artworkAnchors, dipPins, isSurfaceMount, type BenchShape, type ShapePackage } from './shape';
 export {
   PLUG_TOLERANCE,
   addJumper,
@@ -10,6 +10,7 @@ export {
   legsOf,
   moveParts,
   nearestHole,
+  previewInsertion,
   placeAll,
   removeJumper,
   setNote,
@@ -19,6 +20,8 @@ export {
   type BenchModel,
   type Connection,
   type Hole,
+  type InsertionContact,
+  type InsertionPreview,
   type PlacedPart,
 } from './layout';
 export { benchContext, elevationOf, jumperViews, linkViews, netColor, snapPart, terminalNear, terminalPoint, terminalTargets, WIRE_COLORS, type BenchCatalogEntry } from './view';

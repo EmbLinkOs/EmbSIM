@@ -164,6 +164,18 @@ neutral canvas surfaces, rounded chrome and subtle shadows.
   the bench takes about 73 % of a 1440-pixel-wide window; the visual
   benchmark's target is 60 % (`docs/research/visual-workbench-benchmark.md`).
 
+- Physical assembly authoring: a pure per-leg preview identifies available,
+  occupied and unseated positions. Pointer and keyboard construction use the same
+  occupancy model: a component leg or direct-hole jumper reserves a hole, while
+  another hole on the same strip remains available. Invalid insertion is rejected
+  before project mutation; imported old conflicts are not certified or silently
+  repaired. Preview rings and text show the owner of occupied contacts. Numeric
+  bench placement edits millimetres and quarter turns, independently of schematic
+  coordinates; empty/non-finite coordinates cannot apply. Breadboard translation
+  and rotation carry inserted parts by one rigid transform, preserving hole IDs
+  and nets in one transaction. Raised board headers are not inferred to be
+  inserted into a breadboard. These workbench guards are not native-loader rules
+  or a complete mechanical/connector solver; partial insertion remains explicit.
 - The World panel (Design, under the canvas; Run, beside the controls)
   edits the project's world (ADR-026): each field with whether the room
   declares it, a slider in its unit (light on a logarithmic scale) and the

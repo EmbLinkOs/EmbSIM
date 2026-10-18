@@ -569,6 +569,11 @@
   white-space: nowrap;
 }
 .wb-bench-geometry { color: var(--text-muted); line-height: 1.5; margin: var(--space-2) 0; }
+.wb-bench-insertion { font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.wb-bench-insertion [data-blocked='true'] { color: var(--danger, #b82c32); }
+.wb-bench-position { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1); }
+.wb-bench-position > * { min-width: 0; }
+.wb-bench-position input { min-width: 0; width: 100%; }
 
 .wb-bench-list__form {
   display: flex;
@@ -625,6 +630,7 @@
   border: 2px solid #087eaa; border-radius: 50%;
   box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgb(8 126 170 / 0.3);
 }
+.eb-bench3d[data-terminal-blocked='true'] .eb-terminal-target { border-color: #c53535; }
 .eb-connection-feedback {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
   z-index: 4; pointer-events: none; max-width: calc(100% - 24px);
