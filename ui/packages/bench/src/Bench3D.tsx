@@ -105,6 +105,7 @@ export interface Bench3DProps {
   surface?: 'mat' | 'paper' | 'graphite';
   labels?: 'adaptive' | 'all' | 'selected';
   showNotes?: boolean;
+  insertionPreview?: InsertionPreview;
   onRendererError?(): void;
   onMove(id: string, place: Required<BenchPlace>): void;
   onWire(from: string, to: string): void;
@@ -209,6 +210,7 @@ export function Bench3D(props: Bench3DProps) {
     links: THREE.Group;
     notes: THREE.Group;
     world: THREE.Group;
+    hints: THREE.Group;
     preview: THREE.Group;
     raf: number;
     framed: boolean;
@@ -335,9 +337,10 @@ export function Bench3D(props: Bench3DProps) {
     const links = new THREE.Group();
     const notes = new THREE.Group();
     const world = new THREE.Group();
+    const hints = new THREE.Group();
     const preview = new THREE.Group();
-    scene.add(jumpers, links, notes, world, preview);
-    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, world, preview, raf: 0, framed: false };
+    scene.add(jumpers, links, notes, world, hints, preview);
+    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, world, hints, preview, raf: 0, framed: false };
 
     controls.addEventListener('change', invalidate);
 
@@ -582,6 +585,30 @@ export function Bench3D(props: Bench3DProps) {
     invalidate();
   }, [props.bodies, props.beams, invalidate]);
 
+  // Keyboard insertion uses the same per-leg proposal as pointer placement.
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const meshes: THREE.Mesh[] = [];
+    for (const contact of props.insertionPreview?.contacts ?? []) {
+      if (!contact.hole) continue;
+      const marker = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.18, 6, 16), new THREE.MeshBasicMaterial({ color: contact.occupiedBy.length ? 0xe74c3c : 0x159a67, depthTest: false }));
+      marker.rotation.x = -Math.PI / 2;
+      marker.position.set(contact.at[0], (props.insertionPreview?.elevation ?? 0) + 0.5, contact.at[1]);
+      marker.renderOrder = 10;
+      s.hints.add(marker);
+      meshes.push(marker);
+    }
+    invalidate();
+    return () => {
+      for (const marker of meshes) {
+        s.hints.remove(marker);
+        marker.geometry.dispose();
+        (marker.material as THREE.Material).dispose();
+      }
+    };
+  }, [props.insertionPreview, invalidate]);
+
   // pointer gestures
   useEffect(() => {
     const s = state.current;
@@ -597,7 +624,7 @@ export function Bench3D(props: Bench3DProps) {
       ray.setFromCamera(ndc, s.camera);
     };
     const onDesk = (): THREE.Vector3 | null => ray.ray.intersectPlane(desk, new THREE.Vector3());
-    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, s.world], true);
+    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, ...s.world.children.filter((object) => object.userData.body)], true);
     let dragBody: { id: string; mesh: THREE.Object3D; dx: number; dz: number; moved: boolean; start: THREE.Vector3 } | null = null;
     let activePointer: number | null = null;
 
@@ -638,7 +665,7 @@ export function Bench3D(props: Bench3DProps) {
         // anchors can sit inside their own lead geometry, so the owning body
         // is excluded; this is not a mechanical accessibility check.
         occlusionRay.setFromCamera(new THREE.Vector2(screen.x, screen.y), s.camera);
-        const blocker = occlusionRay.intersectObjects([...s.parts.values()].map((e) => e.built.group), true)
+        const blocker = occlusionRay.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), ...s.world.children.filter((object) => object.userData.body)], true)
           .find((hit) => (hit.object.userData as PickData).part !== terminal.ref.split('.')[0] && hit.distance + 0.5 < s.camera.position.distanceTo(world));
         if (!blocker) projected.push({ terminal, x, y, depth: screen.z });
       }

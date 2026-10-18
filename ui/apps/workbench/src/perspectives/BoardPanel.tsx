@@ -92,6 +92,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const connected = useSession((s) => s.status === 'open');
   const { toast } = useToast();
   const [tool, setTool] = useState<BenchTool>('select');
+  const [plugHole, setPlugHole] = useState('');
   const [wireColor, setWireColor] = useState(WIRE_COLORS[0]!);
   // the selected part is the workbench's selection (the inspector shows it, the schematic too); a jumper is the bench's own
   const globalPart = useSelection((s) => (s.selection.components.length === 1 ? s.selection.components[0] : undefined));
@@ -291,6 +292,8 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
     const [lx, ly] = part.legs[first]!;
     return { x: Math.round((part.place.x + h.x - lx) * 100) / 100, y: Math.round((part.place.y + h.y - ly) * 100) / 100, rotation: part.place.rotation };
   };
+  const proposedPlace = selectedPart && plugHole.trim() ? plugAt(selectedPart.id, plugHole.trim()) : null;
+  const insertionPreview = selectedPart && proposedPlace ? previewInsertion(model, selectedPart.id, proposedPlace) : undefined;
 
   const list = (
     <BenchList
@@ -298,6 +301,8 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       plugs={model.plugs}
       selected={selected}
       editable={editable}
+      hole={plugHole}
+      onHoleChange={setPlugHole}
       previewPlug={(id, hole) => {
         const place = plugAt(id, hole);
         return place ? previewInsertion(model, id, place) : null;
@@ -361,6 +366,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           selected={selected}
           snap={(id, x, y, rotation) => snapPart(model, ctx, id, x, y, rotation)}
           terminals={terminals}
+          insertionPreview={insertionPreview}
           surface={preferences.surface}
           labels={preferences.labels}
           showNotes={preferences.notes}
@@ -455,6 +461,8 @@ function BenchList({
   plugs,
   selected,
   editable,
+  hole,
+  onHoleChange,
   previewPlug,
   onSelect,
   onPlace,
@@ -467,6 +475,8 @@ function BenchList({
   plugs: Map<string, string>;
   selected: { part?: string; jumper?: number };
   editable: boolean;
+  hole: string;
+  onHoleChange(value: string): void;
   previewPlug(id: string, hole: string): InsertionPreview | null;
   onSelect(sel: { part?: string }): void;
   onPlace(id: string, place: Required<BenchPlace>): void;
@@ -475,7 +485,6 @@ function BenchList({
   onLift(id: string): void;
   onJumper(from: string, to: string): void;
 }) {
-  const [hole, setHole] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const holesOf = (id: string) => [...plugs].filter(([pin]) => pin.startsWith(`${id}.`)).map(([, h]) => h.split('.')[1]);
@@ -508,7 +517,7 @@ function BenchList({
             if (proposal?.valid) onPlug(part.id, hole.trim());
           }}
         >
-          <Input label={`Plug ${part.id}'s first leg into`} placeholder="a20" value={hole} onChange={(e) => setHole(e.target.value)} />
+          <Input label={`Plug ${part.id}'s first leg into`} placeholder="a20" value={hole} onChange={(e) => onHoleChange(e.target.value)} />
           {hole.trim() && <div className="wb-bench-insertion" role="status" aria-label="Insertion preview">
             {!proposal ? 'No matching breadboard hole. Use a name such as BB1.a20.' : proposal.contacts.map((contact) => <div key={contact.pin} data-blocked={contact.occupiedBy.length > 0}>
               <strong>{contact.pin}</strong> → {contact.hole ?? 'unseated'}{contact.occupiedBy.length ? ` · occupied by ${contact.occupiedBy.join(', ')}` : ''}

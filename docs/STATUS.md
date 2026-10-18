@@ -5,6 +5,26 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Physical assembly authoring milestone
+
+Branch `feat/bench-assembly` builds on the inspection milestone. Every proposed
+leg lists its hole, occupancy owner or unseated state; keyboard proposals draw
+viewing-aid rings on the native bench. Workbench insertion and direct-hole jumper
+authoring reserve occupied holes while allowing another hole on the same strip.
+Rejected placement leaves the project untouched. Numeric bench placement is
+independent from schematic coordinates. Breadboard moves and quarter turns carry
+inserted parts by a shared rigid transform, preserving hole IDs, nets and undo.
+Raised board headers no longer become inferred breadboard insertions from 2D overlap.
+
+These are client authoring guards, not a native loader/mechanical qualification.
+Partial insertions and abstract component-pin lead connections remain supported;
+imported conflicts are not automatically certified or repaired. Jumper curves
+update on commit rather than continuously following a dragged assembly. Per-leg,
+occupied-hole, batch-swap, all-quarter-turn and mutation-atomicity fixtures cover
+these boundaries. Native GCC Debug passes all 40 CTest targets after integrating
+the world/sensor merge. UI/browser results are recorded on the milestone PR;
+[native Uno previews](gallery/README.md) show rejected and free-strip insertion.
+
 ## Physical bench inspection and wiring milestone
 
 Branch `feat/bench-inspection` develops the merged 3D bench rather than replacing

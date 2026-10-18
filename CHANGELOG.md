@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Physical assembly feedback
+
+- Preview each leg's destination and occupancy owner before insertion, with
+  target rings on the bench and rejection that leaves layout/nets untouched.
+- Reserve breadboard holes for inserted legs and direct-hole jumpers; allow a
+  free hole on the same strip. Keep partial insertions explicit.
+- Edit physical bench coordinates/rotation independently of schematic placement.
+  Carry inserted parts through breadboard moves and quarter turns in one undoable edit.
+- Preserve the merged world/sensor workflow and distinguish physical bodies from
+  non-interactive sensor-beam overlays when picking.
+
 ### Physical bench inspection and reliable wiring
 
 - Target projected pins/holes with named endpoint feedback, reject ambiguous or

@@ -5,6 +5,18 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Physical assembly previews (2026-10-18)
+
+The native Uno/breadboard session, paused, in top inspection. The selected R1's
+first leg is proposed at c24, already occupied by D1.A: the preview names the
+conflict and disables insertion. Changing it to b20 uses free holes on the same
+strips. Coloured rings are viewing aids, not physical parts. The coordinate
+controls edit the bench in millimetres independently of schematic placement.
+
+| Occupied hole, rejected | Free holes on the same strips |
+|---|---|
+| ![Native insertion preview identifies D1.A and blocks the conflicting placement](bench-assembly/occupied.png) | ![Native insertion preview accepts free breadboard holes](bench-assembly/free-strip.png) |
+
 ## Bench inspection and wiring (2026-10-18)
 
 The native `embsim serve` workbench with `examples/uno-breadboard`: paper and

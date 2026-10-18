@@ -141,3 +141,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-18
 **Verification.** Projected-contact/geometry/endpoint/preference fixtures; browser named-wire cancel/commit/undo, compact-list, preference and context-loss workflows; native bench regression.
 **Trace.** SPEC-011 Scene rendering; ADR-027; ADR-030
+
+### UI-020  Physical assembly feedback and occupied contacts
+**Statement.** Workbench part and jumper authoring shall distinguish occupied breadboard holes from other holes on the same conductive strip. Per-leg insertion previews shall show destination, occupancy owner and unseated legs in text and on the bench. Rejected placement shall not mutate any part of the project. Exact bench coordinates shall be independently editable from schematic coordinates. Moving or quarter-turning a breadboard shall carry inserted parts while preserving contact identity, nets and transactional undo. These guards shall declare their limits concerning imported layouts, partial insertion, generic geometry and mechanical validation.
+**Rationale.** A readable assembly must correspond to identifiable physical contacts without hidden shorts or disconnected riders.
+**Status.** Accepted 2026-10-18
+**Verification.** Per-leg/occupancy/atomic-swap/rotation fixtures; browser insertion rejection, free-strip construction, exact numeric carriage and undo, and occupied jumper rejection; native protocol regression.
+**Trace.** SPEC-011 Physical assembly authoring; ADR-027; ADR-030
