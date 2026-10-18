@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "input_capture",
+  "until": "400ms",
+  "description": "Timer/Counter1's input capture measures analogWrite(3, 64): Timer2's phase-correct PWM on D3, 16 MHz / 64 / 510 = 490.196 Hz, wired to ICP1 (D8). Rising edges 32640 cycles apart every time; with ICES1 alternated in TIMER1_CAPT and the noise canceler on, high for 2 * 64 * 64 = 8192 cycles and low for 24448.",
+  "assertions": [
+    {
+      "id": "period",
+      "at": "400ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "period 32640 cycles, 490.196 Hz, steady\r\n"
+      }
+    },
+    {
+      "id": "duty",
+      "at": "400ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "high 8192 low 24448\r\ndone\r\n"
+      }
+    },
+    {
+      "id": "edges",
+      "between": [
+        "100ms",
+        "400ms"
+      ],
+      "probe": "icp1",
+      "expect": {
+        "frequency_hz": 490.196,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ]
+}

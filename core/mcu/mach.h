@@ -298,6 +298,14 @@ struct esk_mach {
     int asleep;
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
+    /* while pins_changed reports an outside change: how many whole cycles
+     * the core has run past the change's time (it runs whole instructions),
+     * for a model that timestamps the change (an input capture) */
+    u32 input_lead;
+    /* while a model changes a pin through host.pin_cfg: how many cycles
+     * before now the change happened (a timer's output at the clock that
+     * switched it, inside the instruction just run) */
+    u32 output_lag;
     /* the register file and its models, or 0 */
     struct esk_rf *rf;
     /* the core clock in Hz as the clock model has it, or 0 for the

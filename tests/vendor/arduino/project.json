@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "arduino-vendor",
- "description": "An Arduino Uno running a sketch built with the unmodified ArduinoCore-avr (tests/vendor/arduino/run.py puts the image beside this file as sketch.elf): a potentiometer on A0, a button on D2, a terminal on D0/D1 at 115200 baud; a 25LC040 on the SPI pins (CS on D10, pulled up) and a 24C02 on A4/A5 with 4.7 kOhm pull-ups.",
+ "description": "An Arduino Uno running a sketch built with the unmodified ArduinoCore-avr (tests/vendor/arduino/run.py puts the image beside this file as sketch.elf): a potentiometer on A0, a button on D2, a terminal on D0/D1 at 115200 baud; a 25LC040 on the SPI pins (CS on D10, pulled up) and a 24C02 on A4/A5 with 4.7 kOhm pull-ups; D3 wired to D8 (ICP1).",
  "policy": "electrical",
  "boards": [
   {
@@ -188,6 +188,10 @@
    "B1.SCL",
    "U3.SCL",
    "R2.2"
+  ],
+  "PWM_ICP": [
+   "B1.D3",
+   "B1.D8"
   ]
  },
  "probes": [
@@ -219,6 +223,11 @@
   {
    "id": "scl",
    "target": "net:I2C_SCL",
+   "kind": "digital"
+  },
+  {
+   "id": "icp1",
+   "target": "net:PWM_ICP",
    "kind": "digital"
   }
  ]

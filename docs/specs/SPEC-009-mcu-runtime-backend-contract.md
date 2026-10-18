@@ -168,7 +168,11 @@ The GPIO model reports each pin's configuration through `pin_cfg`
 function) and reads input levels through `pin_in`. The runtime applies a
 changed configuration as a `SIGNAL` event at the instruction's time
 (`esk_pin_refresh`): direction, drive, the weak pull through the analog
-bridge. `IDR` reads the resolved net level (`esk_pin_level`). An edge on an
+bridge. A model that switched the pin at a clock inside the instruction
+just run (a timer's output) says how many cycles earlier in
+`output_lag`, and the change is applied at that time. While `pins_changed`
+reports an outside change, `input_lead` holds how many whole cycles the
+core had run past it, for a model that timestamps it (an input capture). `IDR` reads the resolved net level (`esk_pin_level`). An edge on an
 input pin ends the quantum so the EXTI sees it at its time. The AFIO
 remap decides which pins a USART uses (`uart_pin`); a USART in alternate
 function drives its TX pin's waveform frame by frame at the baud rate, and

@@ -39,7 +39,7 @@ Boards: Arduino Uno R3 (ATmega328P).
 | TWI | `avr-twi` | modelled |
 | USART0 | `avr-usart` | modelled |
 
-Declared omissions: SPI slave mode; TWI slave mode, arbitration and bus errors; the watchdog oscillator's spread (exactly 128 kHz) and safety level 2 (WDTON); the analog comparator's synchronisation delay, offset and hysteresis, and ACIC (Timer/Counter1's capture from it); input capture; timer 2's asynchronous clock; self-programming (SPM); fuses and lock bits; brown-out detection.
+Declared omissions: SPI slave mode; TWI slave mode, arbitration and bus errors; the watchdog oscillator's spread (exactly 128 kHz) and safety level 2 (WDTON); the analog comparator's synchronisation delay, offset and hysteresis; the input capture synchroniser's constant delay; the external clock inputs T0 and T1; timer 2's asynchronous clock; self-programming (SPM); fuses and lock bits; brown-out detection.
 
 ## PIC24FJ1024GB610 (`microchip/pic24fj1024gb610`)
 

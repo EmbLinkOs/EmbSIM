@@ -12,6 +12,7 @@ builds them, run on `emblink/arduino_uno` and pass their scenarios.
 | `spi_wire` | The core's SPI library (4 MHz, mode 0) against a 25LC040 on D10 to D13: WREN, WRITE, RDSR polled through the write cycle, READ; its Wire library (100 and 400 kHz) against a 24C02 on A4/A5: a page write, NACKed polls, `endTransmission(false)` and `requestFrom` across a repeated START, an absent address |
 | `watchdog` | avr-libc's watchdog: the WDT interrupt waking the part from power-down, then `wdt_enable` kicked by `wdt_reset` and left to time out twice; a boot count in `.noinit` survives each reset, MCUSR reads PORF then WDRF |
 | `comparator` | The analog comparator's interrupt timing an RC network (10 kOhm, 1 uF) against 2.5 V on AIN1, rising then falling: 6960 and 6956 us against R * C * ln 2 = 6949 us; this sketch has its own `project.json` |
+| `input_capture` | Timer1's input capture (noise canceler on, ICES1 alternated in TIMER1_CAPT) measuring `analogWrite(3, 64)` wired from D3 to ICP1 (D8): a period of exactly 32640 cycles (490.196 Hz) and 8192 high |
 
 The core is LGPL-2.1 and is not vendored here; `run.py` takes a checkout of
 it:
@@ -28,7 +29,7 @@ C++ as the IDE's builder does (`Arduino.h` included, a `#line` back to the
 sketch); compiles the core's libraries the sketch includes (`libraries/<name>/src`,
 SPI and Wire here) as the builder finds them; links it; and runs `project.json` (the Uno, a potentiometer on A0,
 a button on D2, a terminal on D0/D1, a 25LC040 on the SPI pins with its CS
-pulled up, a 24C02 on A4/A5 with 4.7 kOhm pull-ups) under the sketch's `scenario.json`.
+pulled up, a 24C02 on A4/A5 with 4.7 kOhm pull-ups, D3 wired to D8) under the sketch's `scenario.json`.
 Without avr-gcc or a core it skips.
 
 CI's linux-gcc job runs it against commit 11b9130 of the core with Ubuntu

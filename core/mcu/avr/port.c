@@ -92,8 +92,11 @@ static void update(struct avr_port *g)
     if (pin != old) {
         esk_rf_hw(g->pin, pin);
         for (i = 0; i < g->npins; i++)
-            if ((old ^ pin) >> i & 1)
+            if ((old ^ pin) >> i & 1) {
                 esk_avr_exint_pin(s, g->index, i, (int)(pin >> i & 1));
+                if (g->index == 1 && i == 0) /* PB0 is ICP1 */
+                    esk_avr_icp(s, 0, (int)(pin & 1));
+            }
     }
 }
 

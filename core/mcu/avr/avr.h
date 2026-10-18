@@ -77,6 +77,9 @@ void *esk_avr_wdt_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_ac_create(struct esk_mach *m, struct esk_rf_periph *p);
 /* ac.c: the comparator's inputs may have changed: it looks again */
 void esk_avr_ac_pins(struct esk_mach *m);
+/* timer.c: a change of TC1's input capture sources, ICP1 (src 0) or the
+ * analog comparator's output (src 1), to `level` */
+void esk_avr_icp(struct esk_mach *m, int src, int level);
 
 /* MCUCR.PUD: the pull-ups are disabled */
 int esk_avr_pud(struct esk_mach *m);

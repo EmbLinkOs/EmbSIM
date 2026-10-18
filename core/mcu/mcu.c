@@ -398,6 +398,10 @@ static void h_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
     if (was_af != (cfg->af != 0))
         map_rx_pins(st); /* a UART's RX may have come to this pin or left it */
     at = local_now(st);
+    if (st->m.output_lag) {
+        es_time_t lag = cycles_to_ps(st->m.output_lag, esk_mach_core_hz(&st->m), NULL);
+        at = at > lag ? at - lag : 0;
+    }
     if (at < e->sched.now)
         at = e->sched.now;
     if (q->ev) {
@@ -839,8 +843,12 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
     }
     if (st->held)
         return;
-    if (st->m.pins_changed)
+    if (st->m.pins_changed) {
+        es_time_t now = e->sched.now;
+        st->m.input_lead = st->t > now ? (u32)ps_to_cycles(st->t - now, esk_mach_core_hz(&st->m)) : 0;
         st->m.pins_changed(&st->m);
+        st->m.input_lead = 0;
+    }
     rx_edge(st, p);
     wake(st);
 }

@@ -44,6 +44,7 @@ typedef struct uno {
     int nscl;
     int use_pv;         /* pv gives each pin its own voltage */
     double pv[8][8];
+    int ext[8][8];      /* a level something outside drives: 1 + level, 0 none */
     int watch_on[8][8]; /* the comparator's thresholds on the pins */
     double watch_v[8][8];
 } uno;
@@ -121,6 +122,10 @@ static int u_pin_in(void *ctx, int port, int bit, int *level)
     }
     if (port == 2 && bit == 4 && u->sda_low) {
         *level = 0;
+        return 1;
+    }
+    if (port >= 0 && port < 8 && bit >= 0 && bit < 8 && u->ext[port][bit]) {
+        *level = u->ext[port][bit] - 1;
         return 1;
     }
     return 0;
@@ -696,6 +701,109 @@ static void test_ac(void)
     uno_close(&u);
 }
 
+#define TCCR1B 0x81
+#define TCNT1L 0x84
+#define ICR1L 0x86
+#define TIFR1 0x36
+#define TIMSK1 0x6F
+
+/* PB0 (ICP1) driven to `level` from outside, as the runtime reports it */
+static void icp1(uno *u, int level)
+{
+    u->ext[1][0] = 1 + level;
+    esk_avr_pins_changed(&u->m);
+}
+
+static u16 tc1(uno *u, u32 low)
+{
+    u8 lo = peek(u, low); /* the low byte first: TEMP latches the high one */
+    return (u16)(peek(u, low + 1) << 8 | lo);
+}
+
+static void test_input_capture(void)
+{
+    /* vector 10 (TIMER1_CAPT, word 20) increments r24 and returns */
+    u16 prog[64];
+    uno u;
+    u16 cnt;
+    memset(prog, 0, sizeof prog);
+    prog[0] = rjmp(39);
+    prog[20] = 0x9583; /* inc r24 */
+    prog[21] = RETI;
+    prog[40] = NOP;
+    prog[41] = rjmp(-2);
+    if (!uno_open(&u, prog, 42))
+        return;
+    icp1(&u, 0);
+    poke(&u, TCCR1B, 0x41); /* ICES1 (rising), clk/1 */
+    esk_mach_run(&u.m, 100, 0);
+    cnt = tc1(&u, TCNT1L);
+    icp1(&u, 1);
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0x20); /* ICF1 */
+    CHECK_EQ(tc1(&u, ICR1L), cnt);          /* TCNT1 at the edge */
+    poke(&u, TIFR1, 0x20);
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0);
+    esk_mach_run(&u.m, 50, 0);
+    icp1(&u, 0); /* a falling edge: not the one ICES1 asks for */
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0);
+    CHECK_EQ(tc1(&u, ICR1L), cnt);
+    poke(&u, TCCR1B, 0x01); /* falling edges */
+    icp1(&u, 1);
+    esk_mach_run(&u.m, 30, 0);
+    cnt = tc1(&u, TCNT1L);
+    icp1(&u, 0);
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0x20);
+    CHECK_EQ(tc1(&u, ICR1L), cnt);
+    poke(&u, TIFR1, 0x20);
+    /* the noise canceler: a pulse under four cycles is ignored; one that
+     * holds is captured four cycles after its edge */
+    poke(&u, TCCR1B, 0xC1);
+    icp1(&u, 1);
+    esk_mach_run(&u.m, 2, 0);
+    icp1(&u, 0);
+    esk_mach_run(&u.m, 20, 0);
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0);
+    cnt = tc1(&u, TCNT1L);
+    icp1(&u, 1);
+    esk_mach_run(&u.m, 20, 0);
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0x20);
+    CHECK_EQ(tc1(&u, ICR1L), (u16)(cnt + 4));
+    poke(&u, TIFR1, 0x20);
+    icp1(&u, 0);
+    /* ICR1 as TOP (CTC, WGM 12): no capture, and ICR1 takes writes */
+    poke(&u, TCCR1B, 0x59);
+    poke(&u, ICR1L + 1, 0x12);
+    poke(&u, ICR1L, 0x34);
+    CHECK_EQ(tc1(&u, ICR1L), 0x1234);
+    icp1(&u, 1);
+    CHECK_EQ(tc1(&u, ICR1L), 0x1234);
+    poke(&u, TCCR1B, 0x41); /* back to normal mode: ICR1 no longer takes writes */
+    poke(&u, ICR1L + 1, 0x00);
+    poke(&u, ICR1L, 0x00);
+    CHECK_EQ(tc1(&u, ICR1L), 0x1234);
+    poke(&u, TIFR1, 0x20);
+    icp1(&u, 0);
+    /* the comparator as the source (ACIC): its rising output captures, ICP1 does not */
+    u.use_pv = 1;
+    u.pv[3][7] = 2.0;
+    poke(&u, ACSR, 0x04);
+    esk_mach_run(&u.m, 10, 0);
+    icp1(&u, 1);
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0);
+    cnt = tc1(&u, TCNT1L);
+    u.pv[3][6] = 3.0;
+    esk_avr_pins_changed(&u.m);
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0x20);
+    CHECK_EQ(tc1(&u, ICR1L), cnt);
+    /* its vector with ICIE1 and I set; entering it clears ICF1 */
+    poke(&u, TIMSK1, 0x20);
+    u.m.cpu->ops->reg_write(u.m.cpu, 32, (const u8[]){ 0x80, 0, 0, 0 });
+    esk_mach_run(&u.m, 40, 0);
+    CHECK_EQ(reg(&u, 24), 1);
+    CHECK_EQ(data(&u, TIFR1) & 0x20, 0);
+    uno_close(&u);
+}
+
 static void test_disassembler(void)
 {
     char t[64];
@@ -722,5 +830,6 @@ RUN(test_spi);
 RUN(test_twi);
 RUN(test_wdt);
 RUN(test_ac);
+RUN(test_input_capture);
 RUN(test_disassembler);
 TEST_MAIN_END

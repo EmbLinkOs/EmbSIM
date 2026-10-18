@@ -17,10 +17,12 @@
  *     writing ACI 1, clears it;
  *   - ACD switches it off: ACO reads 0 and nothing sets ACI.
  *
+ *   - with ACIC its output is Timer/Counter1's input capture source
+ *     (timer.c).
+ *
  * Not modelled: ACO's synchronisation delay (one to two cycles), the input
- * offset and hysteresis, ACIC (Timer/Counter1's input capture from the
- * comparator; the capture unit is not modelled), the ADC's auto-trigger
- * from it, DIDR1's digital input buffers. */
+ * offset and hysteresis, the ADC's auto-trigger from it, DIDR1's digital
+ * input buffers. */
 #include <string.h>
 
 #include "mcu/avr/avr.h"
@@ -95,8 +97,10 @@ static void evaluate(struct avr_ac *a)
     if (c & ACD) {
         set_watch(a, 0, -1, 0, 0.0);
         set_watch(a, 1, -1, 0, 0.0);
-        if (c & ACO)
+        if (c & ACO) {
             esk_rf_hw(a->acsr, c & ~ACO);
+            esk_avr_icp(a->s, 1, 0);
+        }
         return;
     }
     negative_pin(a, &np, &nb);
@@ -109,6 +113,7 @@ static void evaluate(struct avr_ac *a)
         if (edge)
             c |= ACI;
         esk_rf_hw(a->acsr, c);
+        esk_avr_icp(a->s, 1, out != 0); /* with ACIC, Timer/Counter1 captures on it */
         if (edge)
             esk_avr_irq_changed(a->s);
     }
