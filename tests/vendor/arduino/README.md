@@ -24,6 +24,7 @@ it when `examples/<library>/<example>/` holds its `scenario.json` (and a
 
 | Library example | Part | What it checks |
 | --- | --- | --- |
+| DallasTemperature `Simple` | DS18B20 on D2 with a 4.7 kOhm pull-up, OneWire's bit-banged slots | The sensor found by the search algorithm, a 12-bit conversion polled to its end, the scratchpad read by MATCH ROM with its CRC: 21.37 C as 21.375 (printed 21.37), then -10.06 C |
 | LiquidCrystal `HelloWorld` | 16x2 HD44780 LCD in 4-bit mode, contrast pot on V0 | Nothing shown while the contrast pot sits at half (2.5 V of contrast), then 'hello, world!' and the seconds once it is turned, at the controller's real execution times |
 | LiquidCrystal_I2C `HelloWorld` | 20x4 HD44780 LCD behind a PCF8574 backpack (A0..A2 pulled up, P3 switching the backlight transistor) on A4/A5 | The sketch's four rows, rows 3 and 4 at the controller's 0x14 and 0x54, written nibble by nibble through the expander at 0x27; the backlight off until `backlight()` |
 | NewPing `NewPingExample` | HC-SR04, TRIG on D12, ECHO on D11 | The echo the sound's round trip at the air's temperature (100 cm: 5824 us at 20 C, 6037 us at 0 C) as NewPing prints it (102 and 105 cm), out-of-range targets as 0 |

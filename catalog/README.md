@@ -13,7 +13,7 @@ or suitability for safety-critical designs.
 
 ## Interactive library batch
 
-The library now includes 148 components, 44 named entries and 318 component
+The library now includes 149 components, 44 named entries and 324 component
 fixtures. The [interactive library record](../docs/engineering/interactive-library.md)
 lists the 18 newly named controls, environmental/optical parts, optocouplers,
 relays and connectors, with four live GUI/CLI circuit examples and exact model

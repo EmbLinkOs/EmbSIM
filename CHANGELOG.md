@@ -490,6 +490,15 @@ versions follow semantic versioning. There is no release yet.
   off until the sketch turns it on (and on at power-up before the
   library writes, as the expander's ports start high). The Arduino runner
   builds `.pde` sketches and names library examples `<library>/<example>`.
+- The DS18B20 1-Wire thermometer (`emblink/ds18b20`), from Maxim's
+  datasheet: reset and presence, write and read slots at its timing, the
+  64-bit ROM code with READ, MATCH, SKIP, SEARCH ROM and ALARM SEARCH,
+  CONVERT T at the resolution's time (93.75 to 750 ms, read slots 0 until
+  done), the scratchpad (85 C at power-up) with its CRC, TH/TL alarms,
+  the EEPROM commands, READ POWER SUPPLY and parasite power with VDD
+  grounded. DallasTemperature's `Simple` example runs unmodified over
+  OneWire, 3/3. The HC-SR04 and DS18B20 accept their inputs through
+  `on_set`, as SPEC-013 asks (the HC-SR04's were warned as refused).
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

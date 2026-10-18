@@ -65,6 +65,9 @@ function M.on_time(ctx, token)
   end
 end
 
+-- the target and the air, read when a measurement is made
+function M.on_set(ctx, name) return name == "distance_cm" or name == "temperature" end
+
 function M.observe(ctx) return { echo_us = ctx.state.echo_us } end
 
 return M

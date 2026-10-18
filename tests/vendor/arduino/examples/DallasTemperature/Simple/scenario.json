@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Simple",
+  "until": "6s",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "temperature",
+      "value": 21.37
+    },
+    {
+      "at": "3s",
+      "target": "U1",
+      "input": "temperature",
+      "value": -10.06
+    }
+  ],
+  "assertions": [
+    {
+      "id": "readings",
+      "at": "6s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Dallas Temperature IC Control Library Demo\r\nRequesting temperatures...DONE\r\nTemperature for the device 1 (index 0) is: 21.37\r\n"
+      }
+    },
+    {
+      "id": "cold",
+      "at": "6s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Temperature for the device 1 (index 0) is: -10.06\r\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "DallasTemperature's Simple example, unmodified, over OneWire's bit-banged slots on D2: the library finds the sensor with the search algorithm, reads its scratchpad for the resolution and its power supply, then each loop sends CONVERT T, polls the read slots until the 750 ms conversion ends, and reads the scratchpad (MATCH ROM, CRC checked). 21.37 C is stored in 1/16 C steps as 21.375 and printed as 21.37 (Print adds a float 0.005, a hair under, so the 5 rounds down as on the board); after the room drops to -10.06 C at 3 s, -10.0625 prints as -10.06."
+}

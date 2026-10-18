@@ -41,6 +41,20 @@
       "commit": "738765e388816fb2a687d40436cd2604febce1b1",
       "version": "1.1.4",
       "license": "none stated (the Library Manager's LiquidCrystal I2C; fetched unmodified, never vendored)"
+    },
+    {
+      "name": "OneWire",
+      "repo": "https://github.com/PaulStoffregen/OneWire",
+      "commit": "800f26f3ee6eb446a72e013785cac3700e54cc13",
+      "version": "2.3.8",
+      "license": "MIT"
+    },
+    {
+      "name": "DallasTemperature",
+      "repo": "https://github.com/milesburton/Arduino-Temperature-Control-Library",
+      "commit": "dadbbf7d33f500a5785ac4ae9973b8c9083d0d39",
+      "version": "4.0.6",
+      "license": "MIT"
     }
   ]
 }
