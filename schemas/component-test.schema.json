@@ -127,10 +127,10 @@
     },
     "expect": {
       "type": "object",
-      "description": "Probe target (net:, pin:, device:, output:) -> expectation with a time selector.",
+      "description": "Probe target (net:, pin:, device:, output:, serial:) -> expectation with a time selector.",
       "minProperties": 1,
       "propertyNames": {
-        "pattern": "^(net|pin|device|output):.+$"
+        "pattern": "^(net|pin|device|output|serial):.+$"
       },
       "additionalProperties": {
         "$ref": "#/$defs/expectation"

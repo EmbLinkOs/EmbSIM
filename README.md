@@ -11,7 +11,7 @@ the command line in continuous integration and replays deterministically.
 catalog and workbench run circuits (M0); a Blue Pill's STM32F103C8 runs
 real firmware in them with source-level debugging (M1); the workbench
 edits circuits against the engine, decodes serial buses and ships as a
-desktop application (M2); a catalog of 155 components, each checked by
+desktop application (M2); a catalog of 156 components, each checked by
 the engine against its fixtures, with Lua models, a component SDK and
 importers for board files, DeviceTree and KiCad netlists (M3); an Arduino
 Uno's AVR and a HiFive1's RISC-V core run their firmware too, and boards

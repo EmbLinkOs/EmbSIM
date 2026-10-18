@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "low-supply",
+  "description": "VCC at 2.0 V: the module sends nothing.",
+  "policy": "electrical",
+  "until": "2600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/neo6m"
+      },
+      {
+        "id": "VT1",
+        "component": "emblink/virtual_terminal",
+        "params": {
+          "baud": 9600
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "TX": [
+        "DUT.TXD",
+        "VT1.RX"
+      ],
+      "VLOW": [
+        "V.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.GND",
+        "VT1.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.bursts": {
+      "at": "2500ms",
+      "equals": 0
+    }
+  }
+}

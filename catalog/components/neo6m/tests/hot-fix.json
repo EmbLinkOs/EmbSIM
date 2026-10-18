@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "hot-fix",
+  "description": "A hot start (1 s): the first burst, at 12:00:01 UTC, carries the fix: Munich (48.1173 N, 11.516667 E) in ddmm.mmmmm, 545.4 m, eight satellites at HDOP 0.92.",
+  "policy": "functional",
+  "until": "1700ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/neo6m",
+        "params": {
+          "start": "hot"
+        }
+      },
+      {
+        "id": "VT1",
+        "component": "emblink/virtual_terminal",
+        "params": {
+          "baud": 9600
+        }
+      }
+    ],
+    "nets": {
+      "TX": [
+        "DUT.TXD",
+        "VT1.RX"
+      ]
+    }
+  },
+  "expect": {
+    "serial:VT1": {
+      "at": "1600ms",
+      "contains": "$GPRMC,120001.00,A,4807.03800,N,01131.00002,E,0.000,,181026,,,A*7E\r\n"
+    },
+    "output:DUT.fix": {
+      "at": "1600ms",
+      "equals": true
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "latitude",
+      "value": 48.1173
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "longitude",
+      "value": 11.516667
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "altitude",
+      "value": 545.4
+    }
+  ]
+}

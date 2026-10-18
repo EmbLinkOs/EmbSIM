@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "indoors",
+  "description": "No sky in view: each second the module sends the NEO-6's sentences with empty fields, RMC status V and GGA quality 0.",
+  "policy": "functional",
+  "until": "1700ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/neo6m",
+        "params": {
+          "start": "hot"
+        }
+      },
+      {
+        "id": "VT1",
+        "component": "emblink/virtual_terminal",
+        "params": {
+          "baud": 9600
+        }
+      }
+    ],
+    "nets": {
+      "TX": [
+        "DUT.TXD",
+        "VT1.RX"
+      ]
+    }
+  },
+  "expect": {
+    "serial:VT1": {
+      "at": "1600ms",
+      "contains": "$GPRMC,,V,,,,,,,,,,N*53\r\n$GPVTG,,,,,,,,,N*30\r\n$GPGGA,,,,,,0,00,99.99,,,,,,*48\r\n$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30\r\n$GPGSV,1,1,00*79\r\n$GPGLL,,,,,,V,N*64\r\n"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "sky",
+      "value": false
+    }
+  ]
+}

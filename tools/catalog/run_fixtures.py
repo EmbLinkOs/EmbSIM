@@ -22,7 +22,7 @@ def convert(fixture: dict) -> tuple[dict, dict]:
     for i, (target, expectation) in enumerate(fixture['expect'].items()):
         selector = {k: v for k, v in expectation.items() if k in ('at', 'between', 'by')}
         expected = {k: v for k, v in expectation.items() if k not in selector}
-        kind = 'digital' if 'logic' in expected or (fixture.get('policy') != 'electrical' and any(k in expected for k in ('edges', 'frequency_hz'))) else 'analog' if any(k in expected for k in ('min_v', 'max_v', 'edges', 'frequency_hz')) else 'value'
+        kind = 'serial' if target.startswith('serial:') else 'digital' if 'logic' in expected or (fixture.get('policy') != 'electrical' and any(k in expected for k in ('edges', 'frequency_hz'))) else 'analog' if any(k in expected for k in ('min_v', 'max_v', 'edges', 'frequency_hz')) else 'value'
         probes.append({'id': f'p{i}', 'target': target, 'kind': kind, **({'rate_hz': 1_000_000} if kind == 'analog' else {})})
         assertions.append({'id': f'assert-{i}', 'probe': f'p{i}', **(selector or {'at': fixture.get('until', '1ms')}), 'expect': expected})
     assertions.append({'id': 'solver-health', 'always': True, 'diagnostics': {'forbid': ['analog.no_convergence', 'analog.timestep_too_small', 'sched.delta_overflow']}})

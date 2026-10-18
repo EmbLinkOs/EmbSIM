@@ -97,6 +97,13 @@
       "commit": "801285059681542c43d35fb56c3847c11ce0023f",
       "version": "3.1.1",
       "license": "GPL-3.0 (its LICENSE file; the sources' headers say LGPL-2.1); fetched unmodified, never vendored"
+    },
+    {
+      "name": "TinyGPSPlus",
+      "repo": "https://github.com/mikalhart/TinyGPSPlus",
+      "commit": "0a205759da22a1c54c5f5285480fe6132592a4e2",
+      "version": "1.1.0",
+      "license": "LGPL-2.1"
     }
   ]
 }

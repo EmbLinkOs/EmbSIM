@@ -536,6 +536,14 @@ versions follow semantic versioning. There is no release yet.
   does. The Keypad library's `HelloKeypad` runs unmodified, 2/2.
   Fixture and scenario inputs may target a composite's member
   (`KP.k5`, SPEC-007).
+- The NEO-6M GPS module (`emblink/neo6m`), from u-blox's data sheet and
+  protocol specification: NMEA once a second at the configured rate (RMC,
+  VTG, GGA, GSA, GSV, GLL with checksums), empty fields without a fix, the
+  time to first fix (cold/warm 27 s, hot 1 s) with the sky in view,
+  reacquisition, the time pulse while fixed. TinyGPSPlus's
+  `DeviceExample` runs unmodified over SoftwareSerial, 4/4; six fixtures.
+  Component fixtures may expect what a terminal received (`serial:`,
+  SPEC-005).
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the
