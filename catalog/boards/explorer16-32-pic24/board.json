@@ -973,7 +973,10 @@
     "peripheral": "UART2",
     "tx": "RF5",
     "rx": "RF4",
-    "baud": 115200
+    "baud": 115200,
+    "bridge": {
+      "part": "MCP2221A"
+    }
   },
   "artwork": {
     "svg": "artwork.svg",

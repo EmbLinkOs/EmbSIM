@@ -730,7 +730,10 @@
     "peripheral": "UARTE0",
     "tx": "GPIO6",
     "rx": "GPIO8",
-    "baud": 115200
+    "baud": 115200,
+    "bridge": {
+      "part": "J-Link OB"
+    }
   },
   "artwork": {
     "svg": "artwork.svg",

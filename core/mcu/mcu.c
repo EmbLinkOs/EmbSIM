@@ -8,6 +8,7 @@
 #include "mcu/build.h"
 #include "mcu/dwarf.h"
 #include "mcu/mcu.h"
+#include "protocol/wsutil.h"
 #include "util/str.h"
 
 #define MCU_PORTS 8
@@ -658,14 +659,24 @@ static void in_cb(void *ctx, void *arg, es_time_t now)
 static es_status serial_input(mcu_state *st, const char *unit, const esk_json *value)
 {
     esk_engine *e = st->c->e;
-    const char *text = esk_json_str(value);
+    const char *text = esk_json_str(value), *b64 = esk_json_get_str(value, "base64", NULL);
     mcu_uart *u = uart_named(st, unit, 1);
+    unsigned char bytes[1024];
+    const unsigned char *data = (const unsigned char *)text;
     size_t i, n;
-    if (!text || !u || !u->rx)
+    /* text, or {"base64": ...} for any byte (a host port's binary data) */
+    if ((!text && !b64) || !u || !u->rx)
         return ES_EINVAL;
-    n = strlen(text);
+    if (text) {
+        n = strlen(text);
+    } else {
+        n = esk_base64_decode(b64, strlen(b64), bytes, sizeof bytes);
+        if (n == (size_t)-1)
+            return ES_EINVAL;
+        data = bytes;
+    }
     for (i = 0; i < n && u->inq_len < MCU_INQ_CAP; i++) {
-        u->inq[(u->inq_head + u->inq_len) % MCU_INQ_CAP] = (unsigned char)text[i];
+        u->inq[(u->inq_head + u->inq_len) % MCU_INQ_CAP] = data[i];
         u->inq_len++;
     }
     if (!u->in_ev)
@@ -900,10 +911,14 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
                 st->ev = 0;
             }
             /* the pins go to their reset state while NRST is held */
+            if (st->m.pin_reset)
+                st->m.pin_reset(&st->m, 0);
             esk_mach_reset(&st->m);
         } else if (!low && st->held) {
             st->held = 0;
             mcu_reset_now(st, 0);
+            if (st->m.pin_reset)
+                st->m.pin_reset(&st->m, 1);
         }
         return;
     }
@@ -1115,6 +1130,19 @@ const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total)
     *len = u ? u->text_len : 0;
     *total = u ? u->text_total : 0;
     return u ? u->text : "";
+}
+
+uint32_t esk_mcu_console_baud(esk_comp *c)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    mcu_uart *u = st && st->attached ? uart_named(st, st->console, 0) : NULL;
+    u64 hz;
+    u32 bc;
+    if (!u || !u->rx || !u->rx->bit_cycles)
+        return 0;
+    bc = u->rx->bit_cycles(u->rx->ctx);
+    hz = esk_mach_core_hz(&st->m);
+    return bc ? (uint32_t)((hz + bc / 2) / bc) : 0;
 }
 
 const char *esk_mcu_image_name(const esk_comp *c)

@@ -534,6 +534,19 @@ static void test_bad_project(void)
     es_session_destroy(s);
 }
 
+/* the host port's bridge at another baud rate than the sketch's: what a
+ * UART reads from frames sent at the other rate (hostport.c) */
+static void test_uart_rebaud(void)
+{
+    unsigned char out[16];
+    const unsigned char hello[] = "Hello", u = 0x55, a = 'A';
+    CHECK(esk_uart_rebaud(hello, 5, 9600, 9600, out, sizeof out) == 5 && !memcmp(out, hello, 5));
+    /* 'U' at 19200 read at 9600: each sample lands on bit 2, 4, 6, then the stop bit and idle */
+    CHECK(esk_uart_rebaud(&u, 1, 19200, 9600, out, sizeof out) == 1 && out[0] == 0xff);
+    /* 'A' at 9600 read at 19200: two bytes, the second from the falling edge of bit 7 */
+    CHECK(esk_uart_rebaud(&a, 1, 9600, 19200, out, sizeof out) == 2 && out[0] == 0x06 && out[1] == 0xfe);
+}
+
 TEST_MAIN_BEGIN
 {
     esk_alloc a;
@@ -552,4 +565,5 @@ RUN(test_composite);
 RUN(test_bad_project);
 RUN(test_edit_transactions);
 RUN(test_layout_organization);
+RUN(test_uart_rebaud);
 TEST_MAIN_END

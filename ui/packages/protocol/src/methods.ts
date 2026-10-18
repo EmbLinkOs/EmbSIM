@@ -43,6 +43,7 @@ import type {
   Where,
   ControlState,
   WorldState,
+  HostPort,
 } from './types';
 
 export type ProjectEdit =
@@ -99,6 +100,11 @@ export interface Methods {
 
   // the world (ADR-026)
   'world.get': { params: Record<string, never>; result: WorldState };
+
+  // a board's serial port on the host (ADR-031)
+  'port.open': { params: { target: string }; result: HostPort };
+  'port.close': { params: { target: string }; result: Record<string, never> };
+  'port.list': { params: Record<string, never>; result: { ports: HostPort[] } };
 
   // probe and waveform
   'probe.add': {
@@ -241,6 +247,9 @@ export const METHOD_NAMES = [
   'input.serial',
   'input.list',
   'world.get',
+  'port.open',
+  'port.close',
+  'port.list',
   'probe.add',
   'probe.remove',
   'probe.list',
@@ -303,6 +312,7 @@ export interface Notifications {
   'serial.data': { target: string; probe?: string; base64: string };
   'project.changed': { tx: string; summary: string };
   'record.input': { at_ps: PsString; seq: number; target: string; input: string };
+  'port.state': HostPort;
 }
 
 export type NotificationName = keyof Notifications;

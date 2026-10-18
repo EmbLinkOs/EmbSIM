@@ -101,11 +101,22 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `input.set({target, input, value, at?}) -> {at_ps, seq}`: `at` defaults to `now`; a past time is an error.
 - `input.press({target})`, `input.release({target})`: sugar for boolean inputs named `pressed`.
 - `input.serial({target, bytes: base64 | text}) -> {at_ps, seq}`
+- A board's serial input (`input.set` on `B1`, input `serial` or `tx_text`) takes text or `{"base64": ...}` for any byte, NUL among them; a host port's bytes are recorded in that form when they are not plain ASCII.
 - `input.list({}) -> {inputs: [{target, input, type, value, min, max, world?, source?}]}`: an input bound to the world names its field (`world`) and, while it reads it, `source: "world"`.
 - Targets `world` (the input a field's name, the value a number or null to undeclare it) and `world.BODY` (the input `body`, the value `{shape?, at, size}` or null to remove it) change the world (SPEC-003 §8).
 
 ### world
 - `world.get({}) -> {fields: {NAME: {value, unit, set}}, bodies: [{id, shape, at, size}]}`: the world as it is now.
+
+### port (a board's serial port on the host, ADR-031 and ADR-032)
+- `port.open({target}) -> {target, path, connected, baud, sketch_baud, to_host, from_host}`: a board's console (`B1`) or a terminal part (`VT1`) becomes a pseudo-terminal on the host at `path`, which any serial program opens; opening it again gives the same port. `connected` is whether a program has it open, `baud` the rate that program set on the line, `sketch_baud` the console's rate as the firmware set it. Error `-32008` where the host has no pseudo-terminals (Windows, Q16) and `-32005` for a target that is neither.
+- `port.close({target}) -> {}`, `port.list({}) -> {ports: [...]}`.
+- While the session runs, the port is read and written at each run slice:
+  - The program's bytes become inputs at the session's time (`serial` on a board, `tx_text` on a part), recorded so that a replay needs no host.
+  - The console's bytes go to the program. They are dropped while no program has the port open, as a bridge drops what the host does not read.
+  - When `baud` and `sketch_baud` differ by more than 3 %, both directions are what a UART at one rate reads from frames sent at the other.
+  - A board whose `console.bridge.dtr_reset` names a component (SPEC-006) has that component's `pressed` held for `ms` when a program opens the port. This is DTR's reset through the Uno's 100 nF capacitor, also a recorded input.
+- `embsim serve PROJECT --serial B1` opens the port when the session starts and prints its path.
 
 ### probe and waveform
 - `probe.add({target, kind, rate_hz?, decode?: {protocol, params}}) -> {probe, stream?}`
@@ -196,7 +207,9 @@ data})`, `control.state({running, now_ps, reason?})` (on run, pause, stop,
 end), `debug.stopped({board, reason, pc, breakpoint?})`, `serial.data({target,
 probe, base64})` (a serial probe's bytes since the last, after each observation
 frame), `project.changed({tx, summary})`, `record.input({at_ps, seq,
-target, input})`.
+target, input})`, `port.state({target, path, connected, baud, sketch_baud,
+to_host, from_host})` (a host port's program opened or closed it, or set
+another rate).
 
 ## 7. Threading and ordering guarantees
 
