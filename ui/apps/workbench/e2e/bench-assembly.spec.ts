@@ -7,6 +7,7 @@ test('preview every leg, reject occupied holes, move the assembly and undo', asy
   await page.getByRole('radio', { name: 'Bench', exact: true }).click();
   await page.getByRole('button', { name: 'Breadboard', exact: true }).click();
   const list = page.getByRole('complementary', { name: 'On the bench' });
+  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible();
   const nets = page.getByRole('table', { name: 'Nets' });
   await list.getByRole('button', { name: /^R2/ }).click();
   await list.getByLabel("Plug R2's first leg into").fill('a10');
@@ -59,6 +60,7 @@ test('a typed jumper cannot reuse a hole occupied by a leg', async ({ page }) =>
   await page.getByRole('radio', { name: 'Bench', exact: true }).click();
   await page.getByRole('button', { name: 'Breadboard', exact: true }).click();
   const list = page.getByRole('complementary', { name: 'On the bench' });
+  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible();
   await list.getByRole('button', { name: /^R2/ }).click();
   await list.getByLabel("Plug R2's first leg into").fill('a10');
   await list.getByRole('button', { name: 'Plug in', exact: true }).click();
@@ -69,4 +71,25 @@ test('a typed jumper cannot reuse a hole occupied by a leg', async ({ page }) =>
   await list.getByRole('button', { name: 'Add jumper', exact: true }).click();
   await expect(page.getByText('BB1.a10 is occupied by R2.1; use another hole on the strip', { exact: true })).toBeVisible();
   await expect(nets).toHaveText(before);
+});
+
+
+test('a pending breadboard placement preserves a later part selection', async ({ page }) => {
+  await page.goto('/?mock=1');
+  await page.getByRole('radio', { name: 'Bench', exact: true }).click();
+  const list = page.getByRole('complementary', { name: 'On the bench' });
+  await expect(list.getByRole('button', { name: /^R2/ })).toBeVisible();
+  // Dispatch both intents in one task, before the placement promise can settle.
+  await page.evaluate(() => {
+    const add = [...document.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.trim() === 'Breadboard');
+    const select = [...document.querySelectorAll<HTMLButtonElement>('[aria-label="On the bench"] button')]
+      .find((button) => button.querySelector('.wb-bench-list__id')?.textContent === 'R2');
+    if (!add || !select) throw new Error('Bench controls missing');
+    add.click();
+    select.click();
+  });
+  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible();
+  await expect(list.getByRole('button', { name: /^R2/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(list.getByLabel("Plug R2's first leg into")).toBeVisible();
 });

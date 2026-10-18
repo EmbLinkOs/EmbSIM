@@ -16,6 +16,8 @@ versions follow semantic versioning. There is no release yet.
 
 ### Physical assembly feedback
 
+- Preserve later part selections when an asynchronous breadboard placement finishes.
+
 - Preview each leg's destination and occupancy owner before insertion, with
   target rings on the bench and rejection that leaves layout/nets untouched.
 - Reserve breadboard holes for inserted legs and direct-hole jumpers; allow a

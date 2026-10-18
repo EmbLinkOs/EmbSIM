@@ -32,6 +32,8 @@ Rejected placement leaves the project untouched. Numeric bench placement is
 independent from schematic coordinates. Breadboard moves and quarter turns carry
 inserted parts by a shared rigid transform, preserving hole IDs, nets and undo.
 Raised board headers no longer become inferred breadboard insertions from 2D overlap.
+A completed asynchronous breadboard placement preserves a later user selection;
+a browser regression dispatches both intents before the placement promise settles.
 
 These are client authoring guards, not a native loader/mechanical qualification.
 Partial insertions and abstract component-pin lead connections remain supported;
