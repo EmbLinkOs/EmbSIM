@@ -454,6 +454,12 @@ versions follow semantic versioning. There is no release yet.
   element follows the air with the datasheet's response times (5 s for
   humidity, 10 s for temperature) and readings are clamped to the range.
   Its fixtures check the start-up second, the previous data and the lag.
+- The servo turns as an SG90 does: toward each pulse's target at its
+  rated speed (0.1 s per 60 deg at 4.8 V, in proportion to the supply),
+  only while pulses keep coming (it stays put when they stop), not for a
+  change within its 10 us dead band, and not at all below 3.5 V. The
+  Arduino Servo library's `Sweep` and `Knob` examples run unmodified,
+  8/8 and 7/7.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

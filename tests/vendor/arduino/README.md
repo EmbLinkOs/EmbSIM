@@ -24,6 +24,8 @@ it when `examples/<library>/<example>/` holds its `scenario.json` (and a
 
 | Library example | Part | What it checks |
 | --- | --- | --- |
+| Servo `Sweep` | SG90-class servo on D9 | The horn holding 90 deg until the library's first pulse (32.8 ms: a full Timer1 wrap), turning at the rated 625 deg/s at 5 V, then following the sweep 1 deg (10.3 us, past the 10 us dead band) every 15 ms |
+| Servo `Knob` | Potentiometer on A0, servo on D9 | The knob read and mapped to the horn (half: 2.500 V on the 511/512 boundary, 89 deg), the horn turning at its rated speed when the knob moves |
 | DHT-sensor-library `DHTtester` | DHT22 on D2 with a 10 kOhm pull-up | Every read decoded, temperature and humidity as set; the sensor sending its previous measurement and its element lagging a step from 23.4 to -5.3 C with its 10 s response time (23.4, 23.4, 20.6, 15.9 C) |
 
 The core is LGPL-2.1 and is not vendored here; `run.py` takes a checkout of

@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "Hobby servo",
   "category": "mechanical",
-  "description": "RC hobby servo (SG90 class): the width of each pulse on SIG sets the horn angle, from min_pulse (0°) to max_pulse (the full range), refreshed every 20 ms; the horn turns on the board view.",
+  "description": "RC hobby servo (SG90 class): the width of each pulse on SIG sets the horn's target, from min_pulse (0°) to max_pulse (the full range), refreshed every 20 ms; the horn turns toward it at its rated speed while pulses keep coming, ignores changes within its dead band, and turns on the board view.",
   "keywords": [
     "servo",
     "SG90",
@@ -80,11 +80,32 @@
       "min": 0,
       "max": 360,
       "doc": "Angle at power-up"
+    },
+    "speed": {
+      "type": "number",
+      "unit": "deg/s",
+      "default": 600,
+      "min": 10,
+      "max": 10000,
+      "doc": "Turning speed at 4.8 V (the SG90's 0.1 s per 60 deg); in proportion to the supply"
+    },
+    "dead_band": {
+      "type": "number",
+      "unit": "s",
+      "default": "10u",
+      "min": "0",
+      "max": "100u",
+      "doc": "A pulse this close to the held one does not move the horn"
     }
   },
   "outputs": [
     {
       "name": "angle",
+      "type": "number",
+      "unit": "deg"
+    },
+    {
+      "name": "target",
       "type": "number",
       "unit": "deg"
     },
@@ -124,11 +145,12 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Angle linear in pulse width between min_pulse and max_pulse, clamped; pulses outside 0.4-3 ms are ignored.",
+      "claims": "Target angle linear in pulse width between min_pulse and max_pulse, clamped; pulses outside 0.4-3 ms ignored; a 10 us dead band; the horn turning at the rated speed (0.1 s per 60 deg at 4.8 V, in proportion to the supply) while driven, a frame after each pulse, so it stays put when the pulses stop; no motion below 3.5 V on V+.",
       "omissions": [
-        "speed and inertia (the horn moves at once)",
-        "torque and stall current",
-        "dead band"
+        "a load on the horn (torque, 1.8 kgf cm at 4.8 V, and stall)",
+        "inertia and overshoot",
+        "supply current",
+        "the spread of the pulse-to-angle mapping between parts"
       ],
       "validation": [
         "tests/*.json"
@@ -137,18 +159,19 @@
     "timed": {
       "claims": "As functional; delays as stated.",
       "omissions": [
-        "speed and inertia (the horn moves at once)",
-        "torque and stall current",
-        "dead band"
+        "a load on the horn (torque, 1.8 kgf cm at 4.8 V, and stall)",
+        "inertia and overshoot",
+        "supply current",
+        "the spread of the pulse-to-angle mapping between parts"
       ]
     },
     "electrical": {
       "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
       "omissions": [
-        "speed and inertia (the horn moves at once)",
-        "torque and stall current",
-        "dead band",
+        "a load on the horn (torque, 1.8 kgf cm at 4.8 V, and stall)",
+        "inertia and overshoot",
         "supply current",
+        "the spread of the pulse-to-angle mapping between parts",
         "output current limits"
       ],
       "validation": [

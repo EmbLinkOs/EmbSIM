@@ -132,7 +132,8 @@ def build_library(root: Path, inc: list, out: Path) -> list:
     objs = []
     tag = re.sub(r"\W", "_", root.name)
     for f in lib_sources(root):
-        o = out / ("lib_" + tag + "_" + f.name + ".o")
+        # src/avr/Servo.cpp and src/sam/Servo.cpp are different objects
+        o = out / ("lib_" + tag + "_" + re.sub(r"\W", "_", str(f.relative_to(root))) + ".o")
         if f.suffix == ".c":
             sh(["avr-gcc", *C_FLAGS, *BOARD, *inc, f, "-o", o])
         elif f.suffix == ".cpp":

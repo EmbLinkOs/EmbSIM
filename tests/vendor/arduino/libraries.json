@@ -13,6 +13,13 @@
       "commit": "0a9127a1e886ff1adb4c1b6f5958b24108d55aa6",
       "version": "1.1.15",
       "license": "Apache-2.0"
+    },
+    {
+      "name": "Servo",
+      "repo": "https://github.com/arduino-libraries/Servo",
+      "commit": "440b319ec11ea2664df8ce201c271c935de28a2d",
+      "version": "1.2.2+",
+      "license": "LGPL-2.1"
     }
   ]
 }

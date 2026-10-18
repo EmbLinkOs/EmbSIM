@@ -1,0 +1,112 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-servo-knob",
+ "description": "The Servo library's Knob example as wired in its tutorial: a 10 kOhm potentiometer on A0 between 5V and GND, and an SG90-class servo on D9, powered from the board's 5V; the library's mapping (544 to 2400 us for 0 to 180 deg).",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "M1",
+   "component": "emblink/servo",
+   "params": {
+    "min_pulse": "544u",
+    "max_pulse": "2400u",
+    "initial": 90
+   },
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  },
+  {
+   "id": "POT",
+   "component": "emblink/potentiometer",
+   "params": {
+    "resistance": "10k"
+   },
+   "layout": {
+    "x": 700,
+    "y": 180
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "M1.V+",
+   "POT.2"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "M1.GND",
+   "POT.1"
+  ],
+  "SERVO_SIG": [
+   "B1.D9",
+   "M1.SIG"
+  ],
+  "A0": [
+   "B1.A0",
+   "POT.W"
+  ]
+ },
+ "probes": [
+  {
+   "id": "angle",
+   "target": "output:M1.angle",
+   "kind": "value"
+  },
+  {
+   "id": "target",
+   "target": "output:M1.target",
+   "kind": "value"
+  },
+  {
+   "id": "pulse",
+   "target": "output:M1.pulse_us",
+   "kind": "value"
+  },
+  {
+   "id": "sig",
+   "target": "net:SERVO_SIG",
+   "kind": "digital"
+  }
+ ]
+}
