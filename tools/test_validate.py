@@ -131,6 +131,18 @@ class ComponentTests(Base):
         (twin.parent / "model.lua").write_text(script + "-- changed\n", encoding="utf-8")
         self.assertCode(self.check(path), "catalog.shared_model_differs")
 
+    def test_fixture_input_on_a_composite_member(self):
+        fixture = {"schema_version": 1, "kind": "component_test", "name": "member", "policy": "electrical", "until": "1ms",
+                   "circuit": {"components": [{"id": "KP", "component": "emblink/keypad_4x4"}], "nets": {"R": ["KP.R1"]}},
+                   "inputs": [{"at": "0", "target": "KP.k5", "input": "pressed", "value": True}],
+                   "expect": {"net:R": {"at": "1ms", "min_v": 0}}}
+        path = self.tmp / "member.json"
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        self.assertNotIn("catalog.not_found", self.codes(self.check(path)))
+        fixture["inputs"][0]["target"] = "KP.nope"
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        self.assertCode(self.check(path), "catalog.not_found")
+
     def test_unknown_field_rejected(self):
         desc = copy.deepcopy(COMPONENT)
         desc["colour"] = "red"

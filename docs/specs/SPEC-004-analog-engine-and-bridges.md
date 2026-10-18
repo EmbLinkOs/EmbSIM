@@ -103,7 +103,7 @@ ranges, from the description (SPEC-005 §4).
 | `vsource` | `kind`: `dc`, `pulse`, `sine`, `pwl`, `exp`; standard SPICE parameters | reports breakpoints; `dc` default |
 | `isource` | same kinds | |
 | `vcvs`, `vccs`, `cccs`, `ccvs` | `gain` | linear dependent sources |
-| `switch` | `ron` (1 mΩ), `roff` (1 GΩ), `state` (bool, an interactive input), `bounce` (optional: count, interval) | resistance switched by the input; bounce generates breakpoints |
+| `switch` | `ron` (1 mΩ), `roff` (1 GΩ), `state` (bool, an interactive input), `bounce` (optional: `{count, interval}`, or `true` with `bounce_ms`: six transitions spread evenly over that time) | resistance switched by the input; bounce generates breakpoints |
 | `potentiometer` | `r` (Ω), `position` (0..1, interactive), `taper` (`linear`, `log`) | two resistors |
 | `diode` | `is` (1e-14 A), `n` (1), `rs` (0), `bv` (none), `ibv`, `cj0` (0), `vj`, `m`, `tt` (0) | Shockley with series `rs`, optional breakdown, junction and diffusion capacitance; limiting on the exponential (pnjlim) |
 | `led` | diode parameters with defaults per `color` (`red`, `green`, `blue`, `yellow`, `white`): `vf` typical and `is`/`n` fitted; `if_nom` (20 mA); `efficiency` curve | `observe` reports current and a normalised luminance (0..1 at `if_nom`, saturating) for the workbench |

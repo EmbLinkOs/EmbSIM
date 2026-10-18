@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "HelloKeypad",
+  "until": "1500ms",
+  "inputs": [
+    {
+      "at": "200ms",
+      "target": "KP.k5",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "400ms",
+      "target": "KP.k5",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "600ms",
+      "target": "KP.khash",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "800ms",
+      "target": "KP.khash",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "900ms",
+      "target": "KP.ka",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1000ms",
+      "target": "KP.ka",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1100ms",
+      "target": "KP.k9",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1300ms",
+      "target": "KP.k9",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "keys",
+      "at": "1500ms",
+      "probe": "terminal",
+      "expect": {
+        "equals": "5\r\n#\r\n9\r\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "The Keypad library's HelloKeypad, unmodified, scanning the matrix (columns driven low in turn, rows read through their pull-ups) every 10 ms through the membrane's 5 ms bounce: pressing 5, # and 9 prints each once; A, on the unconnected fourth column, prints nothing."
+}

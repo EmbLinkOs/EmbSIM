@@ -967,8 +967,20 @@ def check_component_test(report: Report, file: Path, doc: dict, index: Index) ->
     for f_ in report.findings[saved:]:
         f_.node = "/circuit" + f_.node
     until = parse_time_ps(doc.get("until")) if doc.get("until") else None
+    def member(target: str) -> Optional[dict]:
+        """COMPONENT.MEMBER: a member of a composite instance (a keypad's key)"""
+        top, _, sub = (target or "").partition(".")
+        parent = inst.get(top)
+        if not sub or parent is None:
+            return None
+        comp = ((parent.get("model") or {}).get("composite") or {})
+        for m in comp.get("components", []):
+            if m.get("id") == sub:
+                return index.component(m.get("component", ""))
+        return None
+
     for i, inp in enumerate(doc.get("inputs") or []):
-        d = inst.get(inp.get("target"))
+        d = inst.get(inp.get("target")) or member(inp.get("target"))
         node = ptr("inputs", i)
         if d is None:
             report.error(file, node + "/target", "catalog.not_found", f"input target {inp.get('target')} is not an instance of the circuit")

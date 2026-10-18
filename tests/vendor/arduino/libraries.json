@@ -90,6 +90,13 @@
       "commit": "5298434167b770c4602661d682e3b340d565073f",
       "version": "2.1.4",
       "license": "MIT"
+    },
+    {
+      "name": "Keypad",
+      "repo": "https://github.com/Chris--A/Keypad",
+      "commit": "801285059681542c43d35fb56c3847c11ce0023f",
+      "version": "3.1.1",
+      "license": "GPL-3.0 (its LICENSE file; the sources' headers say LGPL-2.1); fetched unmodified, never vendored"
     }
   ]
 }

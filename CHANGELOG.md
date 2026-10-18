@@ -530,6 +530,12 @@ versions follow semantic versioning. There is no release yet.
   power-up. RTClib's `ds3231` runs unmodified, 2/2; nine fixtures. The
   Arduino runner fixes SOURCE_DATE_EPOCH, so __DATE__ and __TIME__ are
   the same each run.
+- A 4x4 membrane keypad (`emblink/keypad_4x4`): sixteen switches in a
+  row/column matrix with the membrane's contact resistance (200 Ohm) and
+  5 ms bounce, so held keys join rows and columns as the real matrix
+  does. The Keypad library's `HelloKeypad` runs unmodified, 2/2.
+  Fixture and scenario inputs may target a composite's member
+  (`KP.k5`, SPEC-007).
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the
@@ -578,6 +584,10 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- A push button's or toggle switch's `bounce: true` now bounces: the
+  switch primitive took only `{count, interval}`, so the components'
+  boolean with `bounce_ms` did nothing. It now gives six transitions over
+  `bounce_ms` (SPEC-004); a `push_button` fixture checks it.
 - The Python client's stdio transport waited for the sidecar with
   select(), which Windows pipes do not support, so a wait with a timeout
   blocked instead: `test_serial_stream`'s last poll hung the windows-msvc

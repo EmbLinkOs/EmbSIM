@@ -1,0 +1,390 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/keypad_4x4",
+  "version": "1.0.0",
+  "name": "4x4 membrane keypad",
+  "category": "switches",
+  "description": "The common 16-key membrane keypad (1 2 3 A / 4 5 6 B / 7 8 9 C / * 0 # D): a 4x4 matrix of switches, rows on pins 1-4 and columns on 5-8, with the membrane's contact resistance and bounce. Each key is a member switch (k1 ... k9, k0, ka ... kd, kstar, khash) with a `pressed` input.",
+  "keywords": [
+    "keypad",
+    "keyboard",
+    "matrix",
+    "membrane",
+    "4x4",
+    "buttons",
+    "switches"
+  ],
+  "pins": [
+    {
+      "name": "R1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Row 1 (1 2 3 A)"
+    },
+    {
+      "name": "R2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Row 2 (4 5 6 B)"
+    },
+    {
+      "name": "R3",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Row 3 (7 8 9 C)"
+    },
+    {
+      "name": "R4",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Row 4 (* 0 # D)"
+    },
+    {
+      "name": "C1",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Column 1 (1 4 7 *)"
+    },
+    {
+      "name": "C2",
+      "number": 6,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Column 2 (2 5 8 0)"
+    },
+    {
+      "name": "C3",
+      "number": 7,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Column 3 (3 6 9 #)"
+    },
+    {
+      "name": "C4",
+      "number": 8,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Column 4 (A B C D)"
+    }
+  ],
+  "params": {
+    "contact_r": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 200,
+      "min": 0,
+      "max": 1000,
+      "doc": "Contact resistance of a pressed key (membrane keypads: 10 to 500 Ohm)"
+    },
+    "bounce": {
+      "type": "boolean",
+      "default": true,
+      "doc": "Bounce on press and release, as membrane contacts do"
+    },
+    "bounce_ms": {
+      "type": "number",
+      "unit": "ms",
+      "default": 5,
+      "min": 0,
+      "max": 50,
+      "doc": "Bounce duration (5 ms or less on typical parts)"
+    }
+  },
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "k1",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k2",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k3",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "ka",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k4",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k5",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k6",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "kb",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k7",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k8",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k9",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "kc",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "kstar",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "k0",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "khash",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        },
+        {
+          "id": "kd",
+          "component": "emblink/push_button",
+          "params": {
+            "ron": "$contact_r",
+            "bounce": "$bounce",
+            "bounce_ms": "$bounce_ms"
+          }
+        }
+      ],
+      "nets": {
+        "ROW1": [
+          "k1.1",
+          "k2.1",
+          "k3.1",
+          "ka.1"
+        ],
+        "COL1": [
+          "k1.2",
+          "k4.2",
+          "k7.2",
+          "kstar.2"
+        ],
+        "COL2": [
+          "k2.2",
+          "k5.2",
+          "k8.2",
+          "k0.2"
+        ],
+        "COL3": [
+          "k3.2",
+          "k6.2",
+          "k9.2",
+          "khash.2"
+        ],
+        "COL4": [
+          "ka.2",
+          "kb.2",
+          "kc.2",
+          "kd.2"
+        ],
+        "ROW2": [
+          "k4.1",
+          "k5.1",
+          "k6.1",
+          "kb.1"
+        ],
+        "ROW3": [
+          "k7.1",
+          "k8.1",
+          "k9.1",
+          "kc.1"
+        ],
+        "ROW4": [
+          "kstar.1",
+          "k0.1",
+          "khash.1",
+          "kd.1"
+        ]
+      },
+      "ports": {
+        "R1": "k1.1",
+        "R2": "k4.1",
+        "R3": "k7.1",
+        "R4": "kstar.1",
+        "C1": "k1.2",
+        "C2": "k2.2",
+        "C3": "k3.2",
+        "C4": "ka.2"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Sixteen membrane switches in a 4x4 matrix, each joining its row to its column with the contact resistance when pressed (1 GOhm open), bouncing on press and release when `bounce` is on, so several keys held together join rows and columns as the real matrix does (ghosting included).",
+      "omissions": [
+        "the contact resistance's spread with force and wear (one value for all keys)",
+        "the keys as interactive inputs on the board view (scenarios press them as KEYPAD.k5 and so on)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Typical 4x4 membrane keypad specification (contact resistance 10-500 Ohm, bounce 5 ms max, rating 35 V DC 100 mA)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 90,
+    "height": 100,
+    "pins": {
+      "R1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "R2": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "R3": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "R4": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "C1": {
+        "x": 20,
+        "y": 100,
+        "side": "bottom"
+      },
+      "C2": {
+        "x": 40,
+        "y": 100,
+        "side": "bottom"
+      },
+      "C3": {
+        "x": 60,
+        "y": 100,
+        "side": "bottom"
+      },
+      "C4": {
+        "x": 80,
+        "y": 100,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

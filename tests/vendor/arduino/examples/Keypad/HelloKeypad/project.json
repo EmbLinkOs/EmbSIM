@@ -1,0 +1,122 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-keypad",
+ "description": "The Keypad library's HelloKeypad as its comments wire it, with the common 4x4 membrane keypad: rows R1-R4 on D5, D4, D3, D2 and columns C1-C3 on D8, D7, D6 (the sketch's 4x3 map: the A-D column is left unconnected), and a terminal on D0/D1 at 9600 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 9600
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "KP",
+   "component": "emblink/keypad_4x4",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "VT1.GND"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ],
+  "ROW1": [
+   "B1.D5",
+   "KP.R1"
+  ],
+  "ROW2": [
+   "B1.D4",
+   "KP.R2"
+  ],
+  "ROW3": [
+   "B1.D3",
+   "KP.R3"
+  ],
+  "ROW4": [
+   "B1.D2",
+   "KP.R4"
+  ],
+  "COL1": [
+   "B1.D8",
+   "KP.C1"
+  ],
+  "COL2": [
+   "B1.D7",
+   "KP.C2"
+  ],
+  "COL3": [
+   "B1.D6",
+   "KP.C3"
+  ]
+ },
+ "probes": [
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "row2",
+   "target": "net:ROW2",
+   "kind": "digital"
+  }
+ ]
+}

@@ -113,10 +113,12 @@ Rules:
   decimal; the loader converts exactly to picoseconds and refuses sub-
   picosecond fractions. Inputs may appear in any order; equal times keep file
   order (they become `EXTERNAL` events in sequence).
-- `target` is a component, a board (inputs: `reset`, `power`), or a board
+- `target` is a component, a board (inputs: `reset`, `power`), a board
   peripheral (`rx` bytes for a serial peripheral, `voltage` for an ADC
-  terminal through a component). `input` names an entry in the target's
-  description.
+  terminal through a component), or `COMPONENT.MEMBER`, a member of a
+  composite component (a keypad's key, `KP.k5`). `input` names an entry in
+  the target's description. Component fixtures (SPEC-005 §9) take the same
+  targets.
 - Assertions: `at` samples the probe at a time; `between` checks every
   sample in a window; `by` checks that the expectation holds at some time up
   to the bound; `always` with `diagnostics.forbid` fails on any listed

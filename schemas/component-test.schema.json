@@ -101,7 +101,9 @@
             "$ref": "common.schema.json#/$defs/time"
           },
           "target": {
-            "$ref": "common.schema.json#/$defs/instance_id"
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)?$",
+            "description": "A component of the circuit, or COMPONENT.MEMBER for a member of a composite (a keypad's key)."
           },
           "input": {
             "type": "string",
