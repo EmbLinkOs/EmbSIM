@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rail",
+  "description": "A power rail runs the whole length: 5 V into TP1 reaches TP25, and BN1 grounds the load from BN25.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/breadboard_400"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "V1.+",
+        "DUT.TP1"
+      ],
+      "OUT": [
+        "DUT.TP25",
+        "RL.1"
+      ],
+      "RET": [
+        "RL.2",
+        "DUT.BN25"
+      ],
+      "GND": [
+        "V1.-",
+        "DUT.BN1",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": 4.99,
+      "max_v": 5.01
+    }
+  }
+}

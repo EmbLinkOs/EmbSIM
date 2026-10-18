@@ -131,6 +131,54 @@
             "width": {"type": "number", "exclusiveMinimum": 0},
             "height": {"type": "number", "exclusiveMinimum": 0}
           }
+        },
+        "bench": {
+          "type": "object",
+          "description": "The bench (ADR-027, SPEC-007 §2): where the boards and parts sit, in millimetres, the jumper wires between their pins and the breadboards' holes, and notes. The connections are in `nets`; a jumper's ends are in the same net.",
+          "additionalProperties": false,
+          "properties": {
+            "parts": {
+              "type": "object",
+              "description": "Instance id -> the centre of the part on the bench and its turn, clockwise.",
+              "additionalProperties": {
+                "type": "object",
+                "required": ["x", "y"],
+                "additionalProperties": false,
+                "properties": {
+                  "x": {"type": "number"},
+                  "y": {"type": "number"},
+                  "rotation": {"type": "number", "enum": [0, 90, 180, 270]}
+                }
+              }
+            },
+            "wires": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["from", "to"],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {"$ref": "common.schema.json#/$defs/pin_ref"},
+                  "to": {"$ref": "common.schema.json#/$defs/pin_ref"},
+                  "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
+                }
+              }
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["x", "y", "text"],
+                "additionalProperties": false,
+                "properties": {
+                  "x": {"type": "number"},
+                  "y": {"type": "number"},
+                  "text": {"type": "string", "minLength": 1},
+                  "to": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}, "description": "Where the note points, on the bench."}
+                }
+              }
+            }
+          }
         }
       }
     },

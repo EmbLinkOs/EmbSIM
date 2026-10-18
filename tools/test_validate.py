@@ -234,6 +234,31 @@ class ComponentTests(Base):
     def test_malformed_svg(self):
         self.assertCode(self.check(self.write_component(symbol="<svg><line></svg>")), "svg.malformed")
 
+    def test_ties_name_own_pins_once(self):
+        desc = copy.deepcopy(COMPONENT)
+        desc["ties"] = [["1", "2"]]
+        self.assertClean(self.check(self.write_component(desc)))
+        desc["ties"] = [["1", "C"]]
+        self.assertCode(self.check(self.write_component(desc)), "catalog.pin_unknown")
+        desc["ties"] = [["1", "2"], ["2", "1"]]
+        self.assertCode(self.check(self.write_component(desc)), "catalog.pin_twice")
+
+    def test_bench_pins_inside_the_part(self):
+        desc = copy.deepcopy(COMPONENT)
+        desc["bench"] = {"package": "axial", "size_mm": [10, 3, 3], "pins": {"1": [0, 1.5], "2": [10, 1.5]}}
+        self.assertClean(self.check(self.write_component(desc)))
+        desc["bench"]["pins"]["2"] = [12, 1.5]
+        self.assertCode(self.check(self.write_component(desc)), "bench.pin_outside")
+        desc["bench"]["pins"] = {"Z": [1, 1]}
+        self.assertCode(self.check(self.write_component(desc)), "catalog.pin_unknown")
+
+    def test_wiring_aid_needs_no_symbol_pins(self):
+        desc = copy.deepcopy(COMPONENT)
+        desc["symbol"]["pins"] = {}
+        self.assertCode(self.check(self.write_component(desc)), "symbol.pin_missing")
+        desc["bench"] = {"package": "breadboard", "wiring_aid": True}
+        self.assertNotIn("symbol.pin_missing", self.codes(self.check(self.write_component(desc))))
+
     def test_artwork_selector_must_exist(self):
         desc = copy.deepcopy(COMPONENT)
         desc["artwork"]["hotspots"][0]["selector"] = "#nope"

@@ -149,6 +149,26 @@ bind to. Both are exposed by name in snapshots and probes.
 - Both are rendered by any client; a client may substitute a generic symbol
   when a file is missing, with a warning.
 
+### 8.1 Ties and the bench
+
+- `ties` (optional): groups of the part's own pins joined inside it by an
+  ideal conductor, each pin in one group at most: a breadboard's strips and
+  rails, a connector's shorted contacts. The loader joins the nets of each
+  group's connected pins into one (a pin left unconnected costs nothing),
+  under every policy; contact resistance is the part's declared omission
+  until a fidelity models it.
+- `bench` (optional): the part as it sits on the bench (ADR-027, SPEC-011
+  §3): its `package` (the body the 3D bench builds: `breadboard`, `axial`,
+  `radial`, `led`, `to92`, `to220`, `dip`, `tactile`, `switch`, `pot`,
+  `module`, `board`, `box`), `size_mm` (width, depth, height), `pins`
+  (each pin's leg as `[x, y]` millimetres from the part's top-left corner
+  seen from above, inside its size), a body `color` and a `label`. A part
+  without `bench` gets one from its pins and category (the workbench's
+  package defaults). `wiring_aid: true` marks a part that only connects (a
+  breadboard): the schematic does not draw it, and its pins need no
+  symbol positions; the connections it makes appear between the parts on
+  it.
+
 ## 9. Tests
 
 `tests/*.json` are conformance fixtures: `{"kind": "component_test",

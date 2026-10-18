@@ -104,6 +104,18 @@ versions follow semantic versioning. There is no release yet.
 - Added an evidence-based 1.0 release readiness checklist.
 
 ### Added
+- Breadboards (ADR-027): the 830-point (BB830, the MB-102's layout), the
+  400-point and the 170-point boards, generated from their geometry by
+  `tools/catalog/gen_breadboard.py` (0.1 in pitch, strips of five across a
+  0.3 in channel, rails of 50 and 25 in groups of five), with artwork and
+  fixtures for a strip, the channel, neighbouring strips, the far strip, a
+  rail's length and a rail pair. Components gain `ties` (pins joined inside
+  the part, which the loader merges into one net) and `bench` (the package,
+  the size and each leg's place in millimetres; `wiring_aid` keeps a
+  breadboard out of the schematic). Projects gain `layout.bench`: the
+  parts' places on the bench, jumper wires between terminals and notes,
+  edited by `set_layout` without restarting and pruned when a part is
+  removed (`tests/protocol/test_bench.py`).
 - Simulation speed: an AVR's peripherals keep time lazily (their owed
   cycles paid before the core touches them, at their next event and before
   any outside input, so nothing the firmware or the pins see changes);

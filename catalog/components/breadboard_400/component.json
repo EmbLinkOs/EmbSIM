@@ -1,0 +1,5021 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/breadboard_400",
+ "version": "1.0.0",
+ "name": "Breadboard, 400 points",
+ "category": "connectors",
+ "description": "Half-size solderless breadboard (BusBoard BB400): 0.1 in pitch, strips of five holes either side of a 0.3 in channel, power rails along both edges.",
+ "keywords": [
+  "breadboard",
+  "solderless",
+  "protoboard",
+  "bench",
+  "bb400"
+ ],
+ "pins": [
+  {
+   "name": "a1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j26",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j27",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j28",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j29",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "a30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "b30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "c30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "d30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "e30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "f30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "g30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "h30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "i30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "j30",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TP25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "TN25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BP25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN1",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN2",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN3",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN4",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN5",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN6",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN7",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN8",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN9",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN10",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN11",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN12",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN13",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN14",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN15",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN16",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN17",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN18",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN19",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN20",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN21",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN22",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN23",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN24",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  },
+  {
+   "name": "BN25",
+   "model": {
+    "kind": "passive"
+   },
+   "required": false
+  }
+ ],
+ "model": {
+  "composite": {
+   "components": [],
+   "nets": {},
+   "ports": {}
+  }
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 60,
+  "height": 30,
+  "pins": {}
+ },
+ "artwork": {
+  "svg": "artwork.svg",
+  "width_mm": 82.6,
+  "height_mm": 54.6
+ },
+ "ties": [
+  [
+   "a1",
+   "b1",
+   "c1",
+   "d1",
+   "e1"
+  ],
+  [
+   "f1",
+   "g1",
+   "h1",
+   "i1",
+   "j1"
+  ],
+  [
+   "a2",
+   "b2",
+   "c2",
+   "d2",
+   "e2"
+  ],
+  [
+   "f2",
+   "g2",
+   "h2",
+   "i2",
+   "j2"
+  ],
+  [
+   "a3",
+   "b3",
+   "c3",
+   "d3",
+   "e3"
+  ],
+  [
+   "f3",
+   "g3",
+   "h3",
+   "i3",
+   "j3"
+  ],
+  [
+   "a4",
+   "b4",
+   "c4",
+   "d4",
+   "e4"
+  ],
+  [
+   "f4",
+   "g4",
+   "h4",
+   "i4",
+   "j4"
+  ],
+  [
+   "a5",
+   "b5",
+   "c5",
+   "d5",
+   "e5"
+  ],
+  [
+   "f5",
+   "g5",
+   "h5",
+   "i5",
+   "j5"
+  ],
+  [
+   "a6",
+   "b6",
+   "c6",
+   "d6",
+   "e6"
+  ],
+  [
+   "f6",
+   "g6",
+   "h6",
+   "i6",
+   "j6"
+  ],
+  [
+   "a7",
+   "b7",
+   "c7",
+   "d7",
+   "e7"
+  ],
+  [
+   "f7",
+   "g7",
+   "h7",
+   "i7",
+   "j7"
+  ],
+  [
+   "a8",
+   "b8",
+   "c8",
+   "d8",
+   "e8"
+  ],
+  [
+   "f8",
+   "g8",
+   "h8",
+   "i8",
+   "j8"
+  ],
+  [
+   "a9",
+   "b9",
+   "c9",
+   "d9",
+   "e9"
+  ],
+  [
+   "f9",
+   "g9",
+   "h9",
+   "i9",
+   "j9"
+  ],
+  [
+   "a10",
+   "b10",
+   "c10",
+   "d10",
+   "e10"
+  ],
+  [
+   "f10",
+   "g10",
+   "h10",
+   "i10",
+   "j10"
+  ],
+  [
+   "a11",
+   "b11",
+   "c11",
+   "d11",
+   "e11"
+  ],
+  [
+   "f11",
+   "g11",
+   "h11",
+   "i11",
+   "j11"
+  ],
+  [
+   "a12",
+   "b12",
+   "c12",
+   "d12",
+   "e12"
+  ],
+  [
+   "f12",
+   "g12",
+   "h12",
+   "i12",
+   "j12"
+  ],
+  [
+   "a13",
+   "b13",
+   "c13",
+   "d13",
+   "e13"
+  ],
+  [
+   "f13",
+   "g13",
+   "h13",
+   "i13",
+   "j13"
+  ],
+  [
+   "a14",
+   "b14",
+   "c14",
+   "d14",
+   "e14"
+  ],
+  [
+   "f14",
+   "g14",
+   "h14",
+   "i14",
+   "j14"
+  ],
+  [
+   "a15",
+   "b15",
+   "c15",
+   "d15",
+   "e15"
+  ],
+  [
+   "f15",
+   "g15",
+   "h15",
+   "i15",
+   "j15"
+  ],
+  [
+   "a16",
+   "b16",
+   "c16",
+   "d16",
+   "e16"
+  ],
+  [
+   "f16",
+   "g16",
+   "h16",
+   "i16",
+   "j16"
+  ],
+  [
+   "a17",
+   "b17",
+   "c17",
+   "d17",
+   "e17"
+  ],
+  [
+   "f17",
+   "g17",
+   "h17",
+   "i17",
+   "j17"
+  ],
+  [
+   "a18",
+   "b18",
+   "c18",
+   "d18",
+   "e18"
+  ],
+  [
+   "f18",
+   "g18",
+   "h18",
+   "i18",
+   "j18"
+  ],
+  [
+   "a19",
+   "b19",
+   "c19",
+   "d19",
+   "e19"
+  ],
+  [
+   "f19",
+   "g19",
+   "h19",
+   "i19",
+   "j19"
+  ],
+  [
+   "a20",
+   "b20",
+   "c20",
+   "d20",
+   "e20"
+  ],
+  [
+   "f20",
+   "g20",
+   "h20",
+   "i20",
+   "j20"
+  ],
+  [
+   "a21",
+   "b21",
+   "c21",
+   "d21",
+   "e21"
+  ],
+  [
+   "f21",
+   "g21",
+   "h21",
+   "i21",
+   "j21"
+  ],
+  [
+   "a22",
+   "b22",
+   "c22",
+   "d22",
+   "e22"
+  ],
+  [
+   "f22",
+   "g22",
+   "h22",
+   "i22",
+   "j22"
+  ],
+  [
+   "a23",
+   "b23",
+   "c23",
+   "d23",
+   "e23"
+  ],
+  [
+   "f23",
+   "g23",
+   "h23",
+   "i23",
+   "j23"
+  ],
+  [
+   "a24",
+   "b24",
+   "c24",
+   "d24",
+   "e24"
+  ],
+  [
+   "f24",
+   "g24",
+   "h24",
+   "i24",
+   "j24"
+  ],
+  [
+   "a25",
+   "b25",
+   "c25",
+   "d25",
+   "e25"
+  ],
+  [
+   "f25",
+   "g25",
+   "h25",
+   "i25",
+   "j25"
+  ],
+  [
+   "a26",
+   "b26",
+   "c26",
+   "d26",
+   "e26"
+  ],
+  [
+   "f26",
+   "g26",
+   "h26",
+   "i26",
+   "j26"
+  ],
+  [
+   "a27",
+   "b27",
+   "c27",
+   "d27",
+   "e27"
+  ],
+  [
+   "f27",
+   "g27",
+   "h27",
+   "i27",
+   "j27"
+  ],
+  [
+   "a28",
+   "b28",
+   "c28",
+   "d28",
+   "e28"
+  ],
+  [
+   "f28",
+   "g28",
+   "h28",
+   "i28",
+   "j28"
+  ],
+  [
+   "a29",
+   "b29",
+   "c29",
+   "d29",
+   "e29"
+  ],
+  [
+   "f29",
+   "g29",
+   "h29",
+   "i29",
+   "j29"
+  ],
+  [
+   "a30",
+   "b30",
+   "c30",
+   "d30",
+   "e30"
+  ],
+  [
+   "f30",
+   "g30",
+   "h30",
+   "i30",
+   "j30"
+  ],
+  [
+   "TP1",
+   "TP2",
+   "TP3",
+   "TP4",
+   "TP5",
+   "TP6",
+   "TP7",
+   "TP8",
+   "TP9",
+   "TP10",
+   "TP11",
+   "TP12",
+   "TP13",
+   "TP14",
+   "TP15",
+   "TP16",
+   "TP17",
+   "TP18",
+   "TP19",
+   "TP20",
+   "TP21",
+   "TP22",
+   "TP23",
+   "TP24",
+   "TP25"
+  ],
+  [
+   "TN1",
+   "TN2",
+   "TN3",
+   "TN4",
+   "TN5",
+   "TN6",
+   "TN7",
+   "TN8",
+   "TN9",
+   "TN10",
+   "TN11",
+   "TN12",
+   "TN13",
+   "TN14",
+   "TN15",
+   "TN16",
+   "TN17",
+   "TN18",
+   "TN19",
+   "TN20",
+   "TN21",
+   "TN22",
+   "TN23",
+   "TN24",
+   "TN25"
+  ],
+  [
+   "BP1",
+   "BP2",
+   "BP3",
+   "BP4",
+   "BP5",
+   "BP6",
+   "BP7",
+   "BP8",
+   "BP9",
+   "BP10",
+   "BP11",
+   "BP12",
+   "BP13",
+   "BP14",
+   "BP15",
+   "BP16",
+   "BP17",
+   "BP18",
+   "BP19",
+   "BP20",
+   "BP21",
+   "BP22",
+   "BP23",
+   "BP24",
+   "BP25"
+  ],
+  [
+   "BN1",
+   "BN2",
+   "BN3",
+   "BN4",
+   "BN5",
+   "BN6",
+   "BN7",
+   "BN8",
+   "BN9",
+   "BN10",
+   "BN11",
+   "BN12",
+   "BN13",
+   "BN14",
+   "BN15",
+   "BN16",
+   "BN17",
+   "BN18",
+   "BN19",
+   "BN20",
+   "BN21",
+   "BN22",
+   "BN23",
+   "BN24",
+   "BN25"
+  ]
+ ],
+ "bench": {
+  "package": "breadboard",
+  "size_mm": [
+   82.6,
+   54.6,
+   8.5
+  ],
+  "wiring_aid": true,
+  "pins": {
+   "a1": [
+    4.47,
+    13.33
+   ],
+   "b1": [
+    4.47,
+    15.87
+   ],
+   "c1": [
+    4.47,
+    18.41
+   ],
+   "d1": [
+    4.47,
+    20.95
+   ],
+   "e1": [
+    4.47,
+    23.49
+   ],
+   "f1": [
+    4.47,
+    31.11
+   ],
+   "g1": [
+    4.47,
+    33.65
+   ],
+   "h1": [
+    4.47,
+    36.19
+   ],
+   "i1": [
+    4.47,
+    38.73
+   ],
+   "j1": [
+    4.47,
+    41.27
+   ],
+   "a2": [
+    7.01,
+    13.33
+   ],
+   "b2": [
+    7.01,
+    15.87
+   ],
+   "c2": [
+    7.01,
+    18.41
+   ],
+   "d2": [
+    7.01,
+    20.95
+   ],
+   "e2": [
+    7.01,
+    23.49
+   ],
+   "f2": [
+    7.01,
+    31.11
+   ],
+   "g2": [
+    7.01,
+    33.65
+   ],
+   "h2": [
+    7.01,
+    36.19
+   ],
+   "i2": [
+    7.01,
+    38.73
+   ],
+   "j2": [
+    7.01,
+    41.27
+   ],
+   "a3": [
+    9.55,
+    13.33
+   ],
+   "b3": [
+    9.55,
+    15.87
+   ],
+   "c3": [
+    9.55,
+    18.41
+   ],
+   "d3": [
+    9.55,
+    20.95
+   ],
+   "e3": [
+    9.55,
+    23.49
+   ],
+   "f3": [
+    9.55,
+    31.11
+   ],
+   "g3": [
+    9.55,
+    33.65
+   ],
+   "h3": [
+    9.55,
+    36.19
+   ],
+   "i3": [
+    9.55,
+    38.73
+   ],
+   "j3": [
+    9.55,
+    41.27
+   ],
+   "a4": [
+    12.09,
+    13.33
+   ],
+   "b4": [
+    12.09,
+    15.87
+   ],
+   "c4": [
+    12.09,
+    18.41
+   ],
+   "d4": [
+    12.09,
+    20.95
+   ],
+   "e4": [
+    12.09,
+    23.49
+   ],
+   "f4": [
+    12.09,
+    31.11
+   ],
+   "g4": [
+    12.09,
+    33.65
+   ],
+   "h4": [
+    12.09,
+    36.19
+   ],
+   "i4": [
+    12.09,
+    38.73
+   ],
+   "j4": [
+    12.09,
+    41.27
+   ],
+   "a5": [
+    14.63,
+    13.33
+   ],
+   "b5": [
+    14.63,
+    15.87
+   ],
+   "c5": [
+    14.63,
+    18.41
+   ],
+   "d5": [
+    14.63,
+    20.95
+   ],
+   "e5": [
+    14.63,
+    23.49
+   ],
+   "f5": [
+    14.63,
+    31.11
+   ],
+   "g5": [
+    14.63,
+    33.65
+   ],
+   "h5": [
+    14.63,
+    36.19
+   ],
+   "i5": [
+    14.63,
+    38.73
+   ],
+   "j5": [
+    14.63,
+    41.27
+   ],
+   "a6": [
+    17.17,
+    13.33
+   ],
+   "b6": [
+    17.17,
+    15.87
+   ],
+   "c6": [
+    17.17,
+    18.41
+   ],
+   "d6": [
+    17.17,
+    20.95
+   ],
+   "e6": [
+    17.17,
+    23.49
+   ],
+   "f6": [
+    17.17,
+    31.11
+   ],
+   "g6": [
+    17.17,
+    33.65
+   ],
+   "h6": [
+    17.17,
+    36.19
+   ],
+   "i6": [
+    17.17,
+    38.73
+   ],
+   "j6": [
+    17.17,
+    41.27
+   ],
+   "a7": [
+    19.71,
+    13.33
+   ],
+   "b7": [
+    19.71,
+    15.87
+   ],
+   "c7": [
+    19.71,
+    18.41
+   ],
+   "d7": [
+    19.71,
+    20.95
+   ],
+   "e7": [
+    19.71,
+    23.49
+   ],
+   "f7": [
+    19.71,
+    31.11
+   ],
+   "g7": [
+    19.71,
+    33.65
+   ],
+   "h7": [
+    19.71,
+    36.19
+   ],
+   "i7": [
+    19.71,
+    38.73
+   ],
+   "j7": [
+    19.71,
+    41.27
+   ],
+   "a8": [
+    22.25,
+    13.33
+   ],
+   "b8": [
+    22.25,
+    15.87
+   ],
+   "c8": [
+    22.25,
+    18.41
+   ],
+   "d8": [
+    22.25,
+    20.95
+   ],
+   "e8": [
+    22.25,
+    23.49
+   ],
+   "f8": [
+    22.25,
+    31.11
+   ],
+   "g8": [
+    22.25,
+    33.65
+   ],
+   "h8": [
+    22.25,
+    36.19
+   ],
+   "i8": [
+    22.25,
+    38.73
+   ],
+   "j8": [
+    22.25,
+    41.27
+   ],
+   "a9": [
+    24.79,
+    13.33
+   ],
+   "b9": [
+    24.79,
+    15.87
+   ],
+   "c9": [
+    24.79,
+    18.41
+   ],
+   "d9": [
+    24.79,
+    20.95
+   ],
+   "e9": [
+    24.79,
+    23.49
+   ],
+   "f9": [
+    24.79,
+    31.11
+   ],
+   "g9": [
+    24.79,
+    33.65
+   ],
+   "h9": [
+    24.79,
+    36.19
+   ],
+   "i9": [
+    24.79,
+    38.73
+   ],
+   "j9": [
+    24.79,
+    41.27
+   ],
+   "a10": [
+    27.33,
+    13.33
+   ],
+   "b10": [
+    27.33,
+    15.87
+   ],
+   "c10": [
+    27.33,
+    18.41
+   ],
+   "d10": [
+    27.33,
+    20.95
+   ],
+   "e10": [
+    27.33,
+    23.49
+   ],
+   "f10": [
+    27.33,
+    31.11
+   ],
+   "g10": [
+    27.33,
+    33.65
+   ],
+   "h10": [
+    27.33,
+    36.19
+   ],
+   "i10": [
+    27.33,
+    38.73
+   ],
+   "j10": [
+    27.33,
+    41.27
+   ],
+   "a11": [
+    29.87,
+    13.33
+   ],
+   "b11": [
+    29.87,
+    15.87
+   ],
+   "c11": [
+    29.87,
+    18.41
+   ],
+   "d11": [
+    29.87,
+    20.95
+   ],
+   "e11": [
+    29.87,
+    23.49
+   ],
+   "f11": [
+    29.87,
+    31.11
+   ],
+   "g11": [
+    29.87,
+    33.65
+   ],
+   "h11": [
+    29.87,
+    36.19
+   ],
+   "i11": [
+    29.87,
+    38.73
+   ],
+   "j11": [
+    29.87,
+    41.27
+   ],
+   "a12": [
+    32.41,
+    13.33
+   ],
+   "b12": [
+    32.41,
+    15.87
+   ],
+   "c12": [
+    32.41,
+    18.41
+   ],
+   "d12": [
+    32.41,
+    20.95
+   ],
+   "e12": [
+    32.41,
+    23.49
+   ],
+   "f12": [
+    32.41,
+    31.11
+   ],
+   "g12": [
+    32.41,
+    33.65
+   ],
+   "h12": [
+    32.41,
+    36.19
+   ],
+   "i12": [
+    32.41,
+    38.73
+   ],
+   "j12": [
+    32.41,
+    41.27
+   ],
+   "a13": [
+    34.95,
+    13.33
+   ],
+   "b13": [
+    34.95,
+    15.87
+   ],
+   "c13": [
+    34.95,
+    18.41
+   ],
+   "d13": [
+    34.95,
+    20.95
+   ],
+   "e13": [
+    34.95,
+    23.49
+   ],
+   "f13": [
+    34.95,
+    31.11
+   ],
+   "g13": [
+    34.95,
+    33.65
+   ],
+   "h13": [
+    34.95,
+    36.19
+   ],
+   "i13": [
+    34.95,
+    38.73
+   ],
+   "j13": [
+    34.95,
+    41.27
+   ],
+   "a14": [
+    37.49,
+    13.33
+   ],
+   "b14": [
+    37.49,
+    15.87
+   ],
+   "c14": [
+    37.49,
+    18.41
+   ],
+   "d14": [
+    37.49,
+    20.95
+   ],
+   "e14": [
+    37.49,
+    23.49
+   ],
+   "f14": [
+    37.49,
+    31.11
+   ],
+   "g14": [
+    37.49,
+    33.65
+   ],
+   "h14": [
+    37.49,
+    36.19
+   ],
+   "i14": [
+    37.49,
+    38.73
+   ],
+   "j14": [
+    37.49,
+    41.27
+   ],
+   "a15": [
+    40.03,
+    13.33
+   ],
+   "b15": [
+    40.03,
+    15.87
+   ],
+   "c15": [
+    40.03,
+    18.41
+   ],
+   "d15": [
+    40.03,
+    20.95
+   ],
+   "e15": [
+    40.03,
+    23.49
+   ],
+   "f15": [
+    40.03,
+    31.11
+   ],
+   "g15": [
+    40.03,
+    33.65
+   ],
+   "h15": [
+    40.03,
+    36.19
+   ],
+   "i15": [
+    40.03,
+    38.73
+   ],
+   "j15": [
+    40.03,
+    41.27
+   ],
+   "a16": [
+    42.57,
+    13.33
+   ],
+   "b16": [
+    42.57,
+    15.87
+   ],
+   "c16": [
+    42.57,
+    18.41
+   ],
+   "d16": [
+    42.57,
+    20.95
+   ],
+   "e16": [
+    42.57,
+    23.49
+   ],
+   "f16": [
+    42.57,
+    31.11
+   ],
+   "g16": [
+    42.57,
+    33.65
+   ],
+   "h16": [
+    42.57,
+    36.19
+   ],
+   "i16": [
+    42.57,
+    38.73
+   ],
+   "j16": [
+    42.57,
+    41.27
+   ],
+   "a17": [
+    45.11,
+    13.33
+   ],
+   "b17": [
+    45.11,
+    15.87
+   ],
+   "c17": [
+    45.11,
+    18.41
+   ],
+   "d17": [
+    45.11,
+    20.95
+   ],
+   "e17": [
+    45.11,
+    23.49
+   ],
+   "f17": [
+    45.11,
+    31.11
+   ],
+   "g17": [
+    45.11,
+    33.65
+   ],
+   "h17": [
+    45.11,
+    36.19
+   ],
+   "i17": [
+    45.11,
+    38.73
+   ],
+   "j17": [
+    45.11,
+    41.27
+   ],
+   "a18": [
+    47.65,
+    13.33
+   ],
+   "b18": [
+    47.65,
+    15.87
+   ],
+   "c18": [
+    47.65,
+    18.41
+   ],
+   "d18": [
+    47.65,
+    20.95
+   ],
+   "e18": [
+    47.65,
+    23.49
+   ],
+   "f18": [
+    47.65,
+    31.11
+   ],
+   "g18": [
+    47.65,
+    33.65
+   ],
+   "h18": [
+    47.65,
+    36.19
+   ],
+   "i18": [
+    47.65,
+    38.73
+   ],
+   "j18": [
+    47.65,
+    41.27
+   ],
+   "a19": [
+    50.19,
+    13.33
+   ],
+   "b19": [
+    50.19,
+    15.87
+   ],
+   "c19": [
+    50.19,
+    18.41
+   ],
+   "d19": [
+    50.19,
+    20.95
+   ],
+   "e19": [
+    50.19,
+    23.49
+   ],
+   "f19": [
+    50.19,
+    31.11
+   ],
+   "g19": [
+    50.19,
+    33.65
+   ],
+   "h19": [
+    50.19,
+    36.19
+   ],
+   "i19": [
+    50.19,
+    38.73
+   ],
+   "j19": [
+    50.19,
+    41.27
+   ],
+   "a20": [
+    52.73,
+    13.33
+   ],
+   "b20": [
+    52.73,
+    15.87
+   ],
+   "c20": [
+    52.73,
+    18.41
+   ],
+   "d20": [
+    52.73,
+    20.95
+   ],
+   "e20": [
+    52.73,
+    23.49
+   ],
+   "f20": [
+    52.73,
+    31.11
+   ],
+   "g20": [
+    52.73,
+    33.65
+   ],
+   "h20": [
+    52.73,
+    36.19
+   ],
+   "i20": [
+    52.73,
+    38.73
+   ],
+   "j20": [
+    52.73,
+    41.27
+   ],
+   "a21": [
+    55.27,
+    13.33
+   ],
+   "b21": [
+    55.27,
+    15.87
+   ],
+   "c21": [
+    55.27,
+    18.41
+   ],
+   "d21": [
+    55.27,
+    20.95
+   ],
+   "e21": [
+    55.27,
+    23.49
+   ],
+   "f21": [
+    55.27,
+    31.11
+   ],
+   "g21": [
+    55.27,
+    33.65
+   ],
+   "h21": [
+    55.27,
+    36.19
+   ],
+   "i21": [
+    55.27,
+    38.73
+   ],
+   "j21": [
+    55.27,
+    41.27
+   ],
+   "a22": [
+    57.81,
+    13.33
+   ],
+   "b22": [
+    57.81,
+    15.87
+   ],
+   "c22": [
+    57.81,
+    18.41
+   ],
+   "d22": [
+    57.81,
+    20.95
+   ],
+   "e22": [
+    57.81,
+    23.49
+   ],
+   "f22": [
+    57.81,
+    31.11
+   ],
+   "g22": [
+    57.81,
+    33.65
+   ],
+   "h22": [
+    57.81,
+    36.19
+   ],
+   "i22": [
+    57.81,
+    38.73
+   ],
+   "j22": [
+    57.81,
+    41.27
+   ],
+   "a23": [
+    60.35,
+    13.33
+   ],
+   "b23": [
+    60.35,
+    15.87
+   ],
+   "c23": [
+    60.35,
+    18.41
+   ],
+   "d23": [
+    60.35,
+    20.95
+   ],
+   "e23": [
+    60.35,
+    23.49
+   ],
+   "f23": [
+    60.35,
+    31.11
+   ],
+   "g23": [
+    60.35,
+    33.65
+   ],
+   "h23": [
+    60.35,
+    36.19
+   ],
+   "i23": [
+    60.35,
+    38.73
+   ],
+   "j23": [
+    60.35,
+    41.27
+   ],
+   "a24": [
+    62.89,
+    13.33
+   ],
+   "b24": [
+    62.89,
+    15.87
+   ],
+   "c24": [
+    62.89,
+    18.41
+   ],
+   "d24": [
+    62.89,
+    20.95
+   ],
+   "e24": [
+    62.89,
+    23.49
+   ],
+   "f24": [
+    62.89,
+    31.11
+   ],
+   "g24": [
+    62.89,
+    33.65
+   ],
+   "h24": [
+    62.89,
+    36.19
+   ],
+   "i24": [
+    62.89,
+    38.73
+   ],
+   "j24": [
+    62.89,
+    41.27
+   ],
+   "a25": [
+    65.43,
+    13.33
+   ],
+   "b25": [
+    65.43,
+    15.87
+   ],
+   "c25": [
+    65.43,
+    18.41
+   ],
+   "d25": [
+    65.43,
+    20.95
+   ],
+   "e25": [
+    65.43,
+    23.49
+   ],
+   "f25": [
+    65.43,
+    31.11
+   ],
+   "g25": [
+    65.43,
+    33.65
+   ],
+   "h25": [
+    65.43,
+    36.19
+   ],
+   "i25": [
+    65.43,
+    38.73
+   ],
+   "j25": [
+    65.43,
+    41.27
+   ],
+   "a26": [
+    67.97,
+    13.33
+   ],
+   "b26": [
+    67.97,
+    15.87
+   ],
+   "c26": [
+    67.97,
+    18.41
+   ],
+   "d26": [
+    67.97,
+    20.95
+   ],
+   "e26": [
+    67.97,
+    23.49
+   ],
+   "f26": [
+    67.97,
+    31.11
+   ],
+   "g26": [
+    67.97,
+    33.65
+   ],
+   "h26": [
+    67.97,
+    36.19
+   ],
+   "i26": [
+    67.97,
+    38.73
+   ],
+   "j26": [
+    67.97,
+    41.27
+   ],
+   "a27": [
+    70.51,
+    13.33
+   ],
+   "b27": [
+    70.51,
+    15.87
+   ],
+   "c27": [
+    70.51,
+    18.41
+   ],
+   "d27": [
+    70.51,
+    20.95
+   ],
+   "e27": [
+    70.51,
+    23.49
+   ],
+   "f27": [
+    70.51,
+    31.11
+   ],
+   "g27": [
+    70.51,
+    33.65
+   ],
+   "h27": [
+    70.51,
+    36.19
+   ],
+   "i27": [
+    70.51,
+    38.73
+   ],
+   "j27": [
+    70.51,
+    41.27
+   ],
+   "a28": [
+    73.05,
+    13.33
+   ],
+   "b28": [
+    73.05,
+    15.87
+   ],
+   "c28": [
+    73.05,
+    18.41
+   ],
+   "d28": [
+    73.05,
+    20.95
+   ],
+   "e28": [
+    73.05,
+    23.49
+   ],
+   "f28": [
+    73.05,
+    31.11
+   ],
+   "g28": [
+    73.05,
+    33.65
+   ],
+   "h28": [
+    73.05,
+    36.19
+   ],
+   "i28": [
+    73.05,
+    38.73
+   ],
+   "j28": [
+    73.05,
+    41.27
+   ],
+   "a29": [
+    75.59,
+    13.33
+   ],
+   "b29": [
+    75.59,
+    15.87
+   ],
+   "c29": [
+    75.59,
+    18.41
+   ],
+   "d29": [
+    75.59,
+    20.95
+   ],
+   "e29": [
+    75.59,
+    23.49
+   ],
+   "f29": [
+    75.59,
+    31.11
+   ],
+   "g29": [
+    75.59,
+    33.65
+   ],
+   "h29": [
+    75.59,
+    36.19
+   ],
+   "i29": [
+    75.59,
+    38.73
+   ],
+   "j29": [
+    75.59,
+    41.27
+   ],
+   "a30": [
+    78.13,
+    13.33
+   ],
+   "b30": [
+    78.13,
+    15.87
+   ],
+   "c30": [
+    78.13,
+    18.41
+   ],
+   "d30": [
+    78.13,
+    20.95
+   ],
+   "e30": [
+    78.13,
+    23.49
+   ],
+   "f30": [
+    78.13,
+    31.11
+   ],
+   "g30": [
+    78.13,
+    33.65
+   ],
+   "h30": [
+    78.13,
+    36.19
+   ],
+   "i30": [
+    78.13,
+    38.73
+   ],
+   "j30": [
+    78.13,
+    41.27
+   ],
+   "TP1": [
+    5.74,
+    5.71
+   ],
+   "TP2": [
+    8.28,
+    5.71
+   ],
+   "TP3": [
+    10.82,
+    5.71
+   ],
+   "TP4": [
+    13.36,
+    5.71
+   ],
+   "TP5": [
+    15.9,
+    5.71
+   ],
+   "TP6": [
+    20.98,
+    5.71
+   ],
+   "TP7": [
+    23.52,
+    5.71
+   ],
+   "TP8": [
+    26.06,
+    5.71
+   ],
+   "TP9": [
+    28.6,
+    5.71
+   ],
+   "TP10": [
+    31.14,
+    5.71
+   ],
+   "TP11": [
+    36.22,
+    5.71
+   ],
+   "TP12": [
+    38.76,
+    5.71
+   ],
+   "TP13": [
+    41.3,
+    5.71
+   ],
+   "TP14": [
+    43.84,
+    5.71
+   ],
+   "TP15": [
+    46.38,
+    5.71
+   ],
+   "TP16": [
+    51.46,
+    5.71
+   ],
+   "TP17": [
+    54.0,
+    5.71
+   ],
+   "TP18": [
+    56.54,
+    5.71
+   ],
+   "TP19": [
+    59.08,
+    5.71
+   ],
+   "TP20": [
+    61.62,
+    5.71
+   ],
+   "TP21": [
+    66.7,
+    5.71
+   ],
+   "TP22": [
+    69.24,
+    5.71
+   ],
+   "TP23": [
+    71.78,
+    5.71
+   ],
+   "TP24": [
+    74.32,
+    5.71
+   ],
+   "TP25": [
+    76.86,
+    5.71
+   ],
+   "TN1": [
+    5.74,
+    8.25
+   ],
+   "TN2": [
+    8.28,
+    8.25
+   ],
+   "TN3": [
+    10.82,
+    8.25
+   ],
+   "TN4": [
+    13.36,
+    8.25
+   ],
+   "TN5": [
+    15.9,
+    8.25
+   ],
+   "TN6": [
+    20.98,
+    8.25
+   ],
+   "TN7": [
+    23.52,
+    8.25
+   ],
+   "TN8": [
+    26.06,
+    8.25
+   ],
+   "TN9": [
+    28.6,
+    8.25
+   ],
+   "TN10": [
+    31.14,
+    8.25
+   ],
+   "TN11": [
+    36.22,
+    8.25
+   ],
+   "TN12": [
+    38.76,
+    8.25
+   ],
+   "TN13": [
+    41.3,
+    8.25
+   ],
+   "TN14": [
+    43.84,
+    8.25
+   ],
+   "TN15": [
+    46.38,
+    8.25
+   ],
+   "TN16": [
+    51.46,
+    8.25
+   ],
+   "TN17": [
+    54.0,
+    8.25
+   ],
+   "TN18": [
+    56.54,
+    8.25
+   ],
+   "TN19": [
+    59.08,
+    8.25
+   ],
+   "TN20": [
+    61.62,
+    8.25
+   ],
+   "TN21": [
+    66.7,
+    8.25
+   ],
+   "TN22": [
+    69.24,
+    8.25
+   ],
+   "TN23": [
+    71.78,
+    8.25
+   ],
+   "TN24": [
+    74.32,
+    8.25
+   ],
+   "TN25": [
+    76.86,
+    8.25
+   ],
+   "BP1": [
+    5.74,
+    46.35
+   ],
+   "BP2": [
+    8.28,
+    46.35
+   ],
+   "BP3": [
+    10.82,
+    46.35
+   ],
+   "BP4": [
+    13.36,
+    46.35
+   ],
+   "BP5": [
+    15.9,
+    46.35
+   ],
+   "BP6": [
+    20.98,
+    46.35
+   ],
+   "BP7": [
+    23.52,
+    46.35
+   ],
+   "BP8": [
+    26.06,
+    46.35
+   ],
+   "BP9": [
+    28.6,
+    46.35
+   ],
+   "BP10": [
+    31.14,
+    46.35
+   ],
+   "BP11": [
+    36.22,
+    46.35
+   ],
+   "BP12": [
+    38.76,
+    46.35
+   ],
+   "BP13": [
+    41.3,
+    46.35
+   ],
+   "BP14": [
+    43.84,
+    46.35
+   ],
+   "BP15": [
+    46.38,
+    46.35
+   ],
+   "BP16": [
+    51.46,
+    46.35
+   ],
+   "BP17": [
+    54.0,
+    46.35
+   ],
+   "BP18": [
+    56.54,
+    46.35
+   ],
+   "BP19": [
+    59.08,
+    46.35
+   ],
+   "BP20": [
+    61.62,
+    46.35
+   ],
+   "BP21": [
+    66.7,
+    46.35
+   ],
+   "BP22": [
+    69.24,
+    46.35
+   ],
+   "BP23": [
+    71.78,
+    46.35
+   ],
+   "BP24": [
+    74.32,
+    46.35
+   ],
+   "BP25": [
+    76.86,
+    46.35
+   ],
+   "BN1": [
+    5.74,
+    48.89
+   ],
+   "BN2": [
+    8.28,
+    48.89
+   ],
+   "BN3": [
+    10.82,
+    48.89
+   ],
+   "BN4": [
+    13.36,
+    48.89
+   ],
+   "BN5": [
+    15.9,
+    48.89
+   ],
+   "BN6": [
+    20.98,
+    48.89
+   ],
+   "BN7": [
+    23.52,
+    48.89
+   ],
+   "BN8": [
+    26.06,
+    48.89
+   ],
+   "BN9": [
+    28.6,
+    48.89
+   ],
+   "BN10": [
+    31.14,
+    48.89
+   ],
+   "BN11": [
+    36.22,
+    48.89
+   ],
+   "BN12": [
+    38.76,
+    48.89
+   ],
+   "BN13": [
+    41.3,
+    48.89
+   ],
+   "BN14": [
+    43.84,
+    48.89
+   ],
+   "BN15": [
+    46.38,
+    48.89
+   ],
+   "BN16": [
+    51.46,
+    48.89
+   ],
+   "BN17": [
+    54.0,
+    48.89
+   ],
+   "BN18": [
+    56.54,
+    48.89
+   ],
+   "BN19": [
+    59.08,
+    48.89
+   ],
+   "BN20": [
+    61.62,
+    48.89
+   ],
+   "BN21": [
+    66.7,
+    48.89
+   ],
+   "BN22": [
+    69.24,
+    48.89
+   ],
+   "BN23": [
+    71.78,
+    48.89
+   ],
+   "BN24": [
+    74.32,
+    48.89
+   ],
+   "BN25": [
+    76.86,
+    48.89
+   ]
+  }
+ },
+ "fidelity": {
+  "functional": {
+   "claims": "400 holes; each strip of five (30 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated.",
+   "omissions": []
+  },
+  "timed": {
+   "claims": "400 holes; each strip of five (30 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "400 holes; each strip of five (30 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated. The contacts are ideal.",
+   "range": {
+    "voltage_v": [
+     -36,
+     36
+    ],
+    "current_a": [
+     0,
+     2
+    ]
+   },
+   "omissions": [
+    "contact resistance (tens of milliohms a contact)",
+    "capacitance between adjacent strips (a few pF)",
+    "the rating of 36 V and 2 A a contact is not enforced",
+    "worn contacts and loose wires"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "BusBoard Prototype Systems, BB830 / BB400 / BB170 solderless breadboard data sheets"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ]
+}

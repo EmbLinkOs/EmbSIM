@@ -131,6 +131,22 @@
     "artwork": {
       "$ref": "#/$defs/artwork"
     },
+    "ties": {
+      "type": "array",
+      "description": "Groups of this component's pins joined inside it by an ideal conductor: a breadboard's strips, a connector's shorted contacts (SPEC-005 §2).",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "bench": {
+      "$ref": "#/$defs/bench"
+    },
     "fidelity": {
       "$ref": "common.schema.json#/$defs/fidelity"
     },
@@ -609,7 +625,6 @@
         },
         "pins": {
           "type": "object",
-          "minProperties": 1,
           "additionalProperties": {
             "type": "object",
             "required": [
@@ -643,7 +658,8 @@
                 "description": "Draw the pin name beside the pin (default false)."
               }
             }
-          }
+          },
+          "description": "Pin name -> its position; every pin has one, except a wiring aid's (SPEC-005 §2.1)."
         }
       }
     },
@@ -786,13 +802,78 @@
                 },
                 "description": "enum or integer output value -> attribute value."
               },
-              "precision": {"type": "integer", "minimum": 0, "maximum": 6},
+              "precision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6
+              },
               "format": {
                 "type": "string",
                 "description": "A template whose \"{}\" takes the output's value (after scale for numbers): rotate({} 30 30), a colour, a path. attr \"text\" sets the element's text."
               }
             }
           }
+        }
+      }
+    },
+    "bench": {
+      "type": "object",
+      "description": "The part as it sits on the bench (SPEC-005 §2.1): its package, its size and where its legs or pins are, in millimetres from its top-left corner seen from above.",
+      "additionalProperties": false,
+      "properties": {
+        "package": {
+          "type": "string",
+          "enum": [
+            "breadboard",
+            "axial",
+            "radial",
+            "led",
+            "to92",
+            "to220",
+            "dip",
+            "tactile",
+            "switch",
+            "pot",
+            "module",
+            "board",
+            "box"
+          ],
+          "description": "The body the 3D bench builds."
+        },
+        "size_mm": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "description": "Width (x), depth (y) and height above the bench (z)."
+        },
+        "pins": {
+          "type": "object",
+          "description": "Pin name -> [x, y] of its leg in mm.",
+          "additionalProperties": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "wiring_aid": {
+          "type": "boolean",
+          "description": "A part that only connects (a breadboard): the schematic shows the connections it makes, not the part."
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "The body's colour."
+        },
+        "label": {
+          "type": "string",
+          "description": "The marking printed on the body."
         }
       }
     }

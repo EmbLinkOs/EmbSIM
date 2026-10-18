@@ -875,9 +875,30 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
         edge = {"left": x == 0, "right": x == w, "top": y == 0, "bottom": y == h}.get(side, True)
         if not edge:
             report.warning(file, ptr("symbol", "pins", pname), "symbol.pin_edge", f"pin on side {side} is not on that edge")
-    for n in pin_names:
-        if n not in (sym.get("pins") or {}):
-            report.error(file, "/symbol/pins", "symbol.pin_missing", f"pin {n} has no symbol position")
+    bench = doc.get("bench") or {}
+    # a wiring aid (a breadboard) is not drawn in the schematic: its pins need no symbol position
+    if not bench.get("wiring_aid"):
+        for n in pin_names:
+            if n not in (sym.get("pins") or {}):
+                report.error(file, "/symbol/pins", "symbol.pin_missing", f"pin {n} has no symbol position")
+    # ties: the part's own pins, each in one tie at most
+    tied: dict[str, int] = {}
+    for i, tie in enumerate(doc.get("ties") or []):
+        for name in tie:
+            if name not in pin_names:
+                report.error(file, ptr("ties", i), "catalog.pin_unknown", f"tie pin {name} is not a pin of this component")
+            elif name in tied:
+                report.error(file, ptr("ties", i), "catalog.pin_twice", f"pin {name} is in ties {tied[name]} and {i}")
+            else:
+                tied[name] = i
+    for name in bench.get("pins") or {}:
+        if name not in pin_names:
+            report.error(file, ptr("bench", "pins", name), "catalog.pin_unknown", f"bench pin {name} is not a pin of this component")
+    size = bench.get("size_mm")
+    if size:
+        for name, (x, y) in (bench.get("pins") or {}).items():
+            if not (0 <= x <= size[0] and 0 <= y <= size[1]):
+                report.error(file, ptr("bench", "pins", name), "bench.pin_outside", f"pin at ({x}, {y}) mm is outside the {size[0]} x {size[1]} mm part")
     # artwork
     art = doc.get("artwork")
     if art:
