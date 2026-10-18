@@ -23,7 +23,9 @@ import { ArtworkSurface } from './artwork';
 import { buildPart, type Built, type PickData } from './parts3d';
 import type { BenchShape } from './shape';
 import { pickTerminal, type ProjectedTerminal } from './picking';
+import type { InsertionPreview } from './layout';
 import type { Beam } from './world';
+
 
 
 export interface BenchPartView {
@@ -63,11 +65,14 @@ export interface SnapResult {
   /** the holes the legs would be plugged into */
   holes: Point3[];
   elevation: number;
+  insertion?: InsertionPreview;
+  carried?: { id: string; x: number; y: number; rotation: number }[];
 }
 
 export interface TerminalHit {
   ref: string;
   at: Point3;
+  occupiedBy?: string[];
 }
 
 export type BenchTool = 'select' | 'wire';
@@ -100,6 +105,7 @@ export interface Bench3DProps {
   surface?: 'mat' | 'paper' | 'graphite';
   labels?: 'adaptive' | 'all' | 'selected';
   showNotes?: boolean;
+  insertionPreview?: InsertionPreview;
   onRendererError?(): void;
   onMove(id: string, place: Required<BenchPlace>): void;
   onWire(from: string, to: string): void;
@@ -188,7 +194,7 @@ function labelElement(text: string): HTMLDivElement {
 export function Bench3D(props: Bench3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const cancelGesture = useRef<(() => void) | null>(null);
-  const [feedback, setFeedback] = useState<{ text: string; x?: number; y?: number; ref?: string }>({ text: '' });
+  const [feedback, setFeedback] = useState<{ text: string; x?: number; y?: number; ref?: string; blocked?: boolean }>({ text: '' });
   const propsRef = useRef(props);
   propsRef.current = props;
   useEffect(() => { cancelGesture.current?.(); }, [props.tool, props.editable, props.live]);
@@ -204,6 +210,7 @@ export function Bench3D(props: Bench3DProps) {
     links: THREE.Group;
     notes: THREE.Group;
     world: THREE.Group;
+    hints: THREE.Group;
     preview: THREE.Group;
     raf: number;
     framed: boolean;
@@ -330,9 +337,10 @@ export function Bench3D(props: Bench3DProps) {
     const links = new THREE.Group();
     const notes = new THREE.Group();
     const world = new THREE.Group();
+    const hints = new THREE.Group();
     const preview = new THREE.Group();
-    scene.add(jumpers, links, notes, world, preview);
-    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, world, preview, raf: 0, framed: false };
+    scene.add(jumpers, links, notes, world, hints, preview);
+    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, world, hints, preview, raf: 0, framed: false };
 
     controls.addEventListener('change', invalidate);
 
@@ -397,7 +405,9 @@ export function Bench3D(props: Bench3DProps) {
         if (surface) surface.onDraw = invalidate;
         const built = buildPart(v.id, v.shape, { component: v.component, params: v.params, texture: surface?.texture });
         const label = new CSS2DObject(labelElement(v.label));
-        label.position.set(0, v.shape.size[2] + 14, -v.shape.size[1] / 2);
+        const top = new THREE.Box3().setFromObject(built.group).max.y;
+        const labelGap = Math.min(14, Math.max(1.5, Math.max(v.shape.size[0], v.shape.size[1]) * 0.15));
+        label.position.set(0, top + labelGap, -v.shape.size[1] / 2);
         built.group.add(label);
         s.scene.add(built.group);
         e = { key, built, surface, label, view: v };
@@ -577,6 +587,30 @@ export function Bench3D(props: Bench3DProps) {
     invalidate();
   }, [props.bodies, props.beams, invalidate]);
 
+  // Keyboard insertion uses the same per-leg proposal as pointer placement.
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const meshes: THREE.Mesh[] = [];
+    for (const contact of props.insertionPreview?.contacts ?? []) {
+      if (!contact.hole) continue;
+      const marker = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.18, 6, 16), new THREE.MeshBasicMaterial({ color: contact.occupiedBy.length ? 0xe74c3c : 0x159a67, depthTest: false }));
+      marker.rotation.x = -Math.PI / 2;
+      marker.position.set(contact.at[0], (props.insertionPreview?.elevation ?? 0) + 0.5, contact.at[1]);
+      marker.renderOrder = 10;
+      s.hints.add(marker);
+      meshes.push(marker);
+    }
+    invalidate();
+    return () => {
+      for (const marker of meshes) {
+        s.hints.remove(marker);
+        marker.geometry.dispose();
+        (marker.material as THREE.Material).dispose();
+      }
+    };
+  }, [props.insertionPreview, invalidate]);
+
   // pointer gestures
   useEffect(() => {
     const s = state.current;
@@ -592,7 +626,7 @@ export function Bench3D(props: Bench3DProps) {
       ray.setFromCamera(ndc, s.camera);
     };
     const onDesk = (): THREE.Vector3 | null => ray.ray.intersectPlane(desk, new THREE.Vector3());
-    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, s.world], true);
+    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, ...s.world.children.filter((object) => object.userData.body)], true);
     let dragBody: { id: string; mesh: THREE.Object3D; dx: number; dz: number; moved: boolean; start: THREE.Vector3 } | null = null;
     let activePointer: number | null = null;
 
@@ -602,6 +636,7 @@ export function Bench3D(props: Bench3DProps) {
     let turning: { target: string; input: string; x: number; v: number } | null = null;
     const holeMarks: THREE.Mesh[] = [];
     const markMat = new THREE.MeshBasicMaterial({ color: 0x2ecc71 });
+    const blockedMat = new THREE.MeshBasicMaterial({ color: 0xe74c3c });
     const clearMarks = () => {
       for (const m of holeMarks) {
         s.preview.remove(m);
@@ -609,10 +644,10 @@ export function Bench3D(props: Bench3DProps) {
       }
       holeMarks.length = 0;
     };
-    const showMarks = (pts: Point3[]) => {
+    const showMarks = (pts: Point3[], blocked: Point3[] = []) => {
       clearMarks();
-      for (const p of pts) {
-        const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.3, 12), markMat);
+      for (const [p, material] of [...pts.map((p) => [p, markMat] as const), ...blocked.map((p) => [p, blockedMat] as const)]) {
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.3, 12), material);
         m.position.set(p[0], p[1] + 0.2, p[2]);
         s.preview.add(m);
         holeMarks.push(m);
@@ -632,7 +667,7 @@ export function Bench3D(props: Bench3DProps) {
         // anchors can sit inside their own lead geometry, so the owning body
         // is excluded; this is not a mechanical accessibility check.
         occlusionRay.setFromCamera(new THREE.Vector2(screen.x, screen.y), s.camera);
-        const blocker = occlusionRay.intersectObjects([...s.parts.values()].map((e) => e.built.group), true)
+        const blocker = occlusionRay.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), ...s.world.children.filter((object) => object.userData.body)], true)
           .find((hit) => (hit.object.userData as PickData).part !== terminal.ref.split('.')[0] && hit.distance + 0.5 < s.camera.position.distanceTo(world));
         if (!blocker) projected.push({ terminal, x, y, depth: screen.z });
       }
@@ -641,14 +676,16 @@ export function Bench3D(props: Bench3DProps) {
     const feedbackAt = (ev: PointerEvent, from?: TerminalHit) => {
       const pick = terminalAtPointer(ev);
       const terminal = pick.kind === 'terminal' ? pick.terminal : undefined;
+      const blocked = Boolean(terminal?.occupiedBy?.length);
       const point = terminal ? v3(terminal.at).project(s.camera) : undefined;
       const r = el.getBoundingClientRect();
-      const text = pick.kind === 'ambiguous' ? 'Contacts overlap — zoom in to choose a pin'
+      const text = blocked ? `${terminal!.ref} · occupied by ${terminal!.occupiedBy!.join(', ')} · choose another hole on the strip`
+        : pick.kind === 'ambiguous' ? 'Contacts overlap — zoom in to choose a pin'
         : terminal ? from ? terminal.ref === from.ref ? `${from.ref} · choose another terminal` : `${from.ref} → ${terminal.ref} · release to connect` : `${terminal.ref} · drag to connect`
         : from ? `${from.ref} → choose a terminal · Esc cancels` : 'Point at a hole or pin to start a jumper';
-      setFeedback({ text, ref: terminal?.ref, x: point ? (point.x + 1) * r.width / 2 : undefined, y: point ? (1 - point.y) * r.height / 2 : undefined });
-      el.style.cursor = terminal ? 'var(--draw-cursor, crosshair)' : 'default';
-      return terminal;
+      setFeedback({ text, ref: terminal?.ref, blocked, x: point ? (point.x + 1) * r.width / 2 : undefined, y: point ? (1 - point.y) * r.height / 2 : undefined });
+      el.style.cursor = blocked ? 'not-allowed' : terminal ? 'var(--draw-cursor, crosshair)' : 'default';
+      return blocked ? undefined : terminal;
     };
     const down = (ev: PointerEvent) => {
       if (ev.button !== 0 || activePointer !== null) return;
@@ -757,7 +794,19 @@ export function Bench3D(props: Bench3DProps) {
         const snapped = p.snap(drag.id, at.x + drag.dx, at.z + drag.dz, drag.rotation);
         drag.moved = drag.moved || Math.hypot(snapped.x - drag.start.x, snapped.y - drag.start.y) > 0.3;
         e.built.group.position.set(snapped.x, snapped.elevation, snapped.y);
-        showMarks(snapped.holes);
+        for (const rider of snapped.carried ?? []) {
+          const entry = s.parts.get(rider.id);
+          if (!entry) continue;
+          entry.built.group.position.set(rider.x, entry.view.elevation, rider.y);
+          entry.built.group.rotation.y = -(rider.rotation * Math.PI) / 180;
+        }
+        const contacts = snapped.insertion?.contacts ?? [];
+        const free = contacts.filter((contact) => contact.hole && !contact.occupiedBy.length);
+        const blocked = contacts.filter((contact) => contact.hole && contact.occupiedBy.length);
+        const contactPoint = (contact: typeof contacts[number]): Point3 => [contact.at[0], snapped.elevation, contact.at[1]];
+        showMarks(free.map(contactPoint), blocked.map(contactPoint));
+        setFeedback({ text: contacts.map((contact) => `${contact.pin} → ${contact.hole ?? 'unseated'}${contact.occupiedBy.length ? ` (occupied: ${contact.occupiedBy.join(', ')})` : ''}`).join(' · ') || `Move ${drag.id}` });
+        el.style.cursor = blocked.length ? 'not-allowed' : 'grabbing';
         invalidate();
         return;
       }
@@ -787,6 +836,7 @@ export function Bench3D(props: Bench3DProps) {
       if (ev.pointerId !== activePointer) return;
       cast(ev);
       const p = propsRef.current;
+      let rejection: string | undefined;
       if (held) {
         p.onInput(held.target, held.input, false);
         held = null;
@@ -801,7 +851,13 @@ export function Bench3D(props: Bench3DProps) {
         const at = onDesk();
         if (drag.moved && at) {
           const snapped = p.snap(drag.id, at.x + drag.dx, at.z + drag.dz, drag.rotation);
-          p.onMove(drag.id, { x: snapped.x, y: snapped.y, rotation: drag.rotation as 0 | 90 | 180 | 270 });
+          if (snapped.insertion?.valid !== false)
+            p.onMove(drag.id, { x: snapped.x, y: snapped.y, rotation: drag.rotation as 0 | 90 | 180 | 270 });
+          else {
+            rejection = snapped.insertion.contacts.filter((contact) => contact.occupiedBy.length).map((contact) => `${contact.hole} is occupied by ${contact.occupiedBy.join(', ')}`).join(' · ');
+            const e = s.parts.get(drag.id);
+            if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
+          }
         } else {
           const e = s.parts.get(drag.id);
           if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
@@ -814,18 +870,19 @@ export function Bench3D(props: Bench3DProps) {
         cast(ev);
         const pick = terminalAtPointer(ev);
         const t = pick.kind === 'terminal' ? pick.terminal : undefined;
+        if (t?.occupiedBy?.length) rejection = `${t.ref} is occupied by ${t.occupiedBy.join(', ')}; choose another hole on the strip`;
         if (wire.line) {
           s.preview.remove(wire.line);
           wire.line.geometry.dispose();
           (wire.line.material as THREE.Material).dispose();
         }
-        if (t && t.ref !== wire.from.ref) p.onWire(wire.from.ref, t.ref);
+        if (t && !t.occupiedBy?.length && t.ref !== wire.from.ref) p.onWire(wire.from.ref, t.ref);
         wire = null;
         clearMarks();
         invalidate();
       }
       activePointer = null;
-      setFeedback({ text: '' });
+      setFeedback({ text: rejection ?? '' });
       if (el.hasPointerCapture(ev.pointerId)) el.releasePointerCapture(ev.pointerId);
     };
     const cancel = () => {
@@ -834,9 +891,10 @@ export function Bench3D(props: Bench3DProps) {
       turning = null;
       if (dragBody) dragBody.mesh.position.copy(dragBody.start);
       dragBody = null;
-      if (drag) {
-        const e = s.parts.get(drag.id);
-        if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
+      if (drag) for (const e of s.parts.values()) {
+        e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
+        e.built.group.rotation.y = -(e.view.place.rotation * Math.PI) / 180;
+
       }
       drag = null;
       if (wire?.line) {
@@ -859,10 +917,11 @@ export function Bench3D(props: Bench3DProps) {
     cancelGesture.current = cancel;
     const leave = () => { if (activePointer === null) setFeedback({ text: '' }); };
     const visibility = () => { if (document.hidden) cancel(); };
+    const lostCapture = (event: PointerEvent) => { if (event.pointerId === activePointer) cancel(); };
     host.addEventListener('keydown', escape);
     window.addEventListener('blur', cancel);
     document.addEventListener('visibilitychange', visibility);
-    el.addEventListener('lostpointercapture', cancel);
+    el.addEventListener('lostpointercapture', lostCapture);
     el.addEventListener('pointerleave', leave);
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointermove', move);
@@ -873,7 +932,7 @@ export function Bench3D(props: Bench3DProps) {
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerup', up);
       el.removeEventListener('pointercancel', cancel);
-      el.removeEventListener('lostpointercapture', cancel);
+      el.removeEventListener('lostpointercapture', lostCapture);
       el.removeEventListener('pointerleave', leave);
       host.removeEventListener('keydown', escape);
       window.removeEventListener('blur', cancel);
@@ -881,6 +940,7 @@ export function Bench3D(props: Bench3DProps) {
       cancel();
       cancelGesture.current = null;
       markMat.dispose();
+      blockedMat.dispose();
     };
   }, [invalidate]);
 
@@ -925,6 +985,7 @@ export function Bench3D(props: Bench3DProps) {
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
       data-terminal={feedback.ref}
+      data-terminal-blocked={feedback.blocked || undefined}
     >
       {feedback.x !== undefined && feedback.y !== undefined && <span className="eb-terminal-target" style={{ left: feedback.x, top: feedback.y }} aria-hidden="true" />}
       <div className="eb-connection-feedback" role="status">{feedback.text}</div>

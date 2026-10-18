@@ -166,7 +166,7 @@ field.
   until a fidelity models it.
 - `bench` (optional): the part as it sits on the bench (ADR-027, SPEC-011
   §3): its `package` (the body the 3D bench builds: `breadboard`, `axial`,
-  `radial`, `led`, `to92`, `to220`, `dip`, `tactile`, `switch`, `pot`,
+  `radial`, `led`, `to92`, `to220`, `sot23`, `sot223`, `dip`, `tactile`, `switch`, `pot`,
   `module`, `board`, `box`), `size_mm` (width, depth, height), `sense` (a
   distance sensor's beam: from `at` along `dir`, millimetres in the part's
   own frame, its height from the desk, turned with the part), `pins`
@@ -177,6 +177,10 @@ field.
   breadboard): the schematic does not draw it, and its pins need no
   symbol positions; the connections it makes appear between the parts on
   it.
+  Surface-mount `sot23`/`sot223` bodies do not imply insertable breadboard
+  leads. Their coordinates are representative contact centers, not manufacturing
+  PCB lands. A rendered shared tab does not add an electrical terminal; source
+  notes declare any shared conductor, unverified variant and geometric omissions.
 
 ## 9. Tests
 

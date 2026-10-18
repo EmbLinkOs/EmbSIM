@@ -843,6 +843,8 @@
             "led",
             "to92",
             "to220",
+            "sot23",
+            "sot223",
             "dip",
             "tactile",
             "switch",

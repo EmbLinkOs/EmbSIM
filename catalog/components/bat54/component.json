@@ -138,6 +138,22 @@
       {
         "title": "KiCad family/package reference, revision 4e17d759",
         "url": "https://github.com/KiCad/kicad-symbols/blob/4e17d7595f9691d45d97aea8ad64572652fb5bed/Diode.lib"
+      },
+      {
+        "title": "Representative SOT-23 family outline: onsemi CASE 318 in BSS138/D",
+        "url": "https://www.onsemi.com/pdf/datasheet/bss138-d.pdf",
+        "rev": "CASE 318 issue AU, 14 AUG 2024",
+        "date": "2026-10-18",
+        "hash": "sha256:ba7a267f5eebb2cb32333517a387df863bb2137fa8799787d2204fc12c68c291",
+        "notes": "Family geometry only: nominal 2.90 x 1.30 mm body, 2.40 mm overall lead span, 1.90 mm pin-1/2 pitch. BAT54 A1/NC2/K3 remains the KiCad reference map above; the Nexperia manufacturer source is still unverified. Not BAT54 manufacturer or manufacturing qualification."
+      },
+      {
+        "title": "Independent BAT54 family pinout: onsemi BAT54/D",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/bat54-d.pdf",
+        "rev": "September 2017, rev. 3",
+        "date": "2026-10-18",
+        "hash": "sha256:b6d0713160c66fd193c6ea553e2cf9364cb8df58f48d033a7d36a0811867884c",
+        "notes": "PDF page 2 (device page 1; added corporate cover): single BAT54 SOT-23 connection diagram confirms A1, NC2, K3, distinct from BAT54A/C/S dual variants. Independent onsemi family reference only: selected Nexperia source is still unverified. This PDF supplies no dimensioned mechanical outline; representative body geometry continues to use CASE 318 above. No cross-manufacturer electrical or mechanical qualification."
       }
     ]
   },
@@ -152,5 +168,28 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "bench": {
+    "package": "sot23",
+    "size_mm": [
+      2.9,
+      2.4,
+      1.0
+    ],
+    "pins": {
+      "A": [
+        0.5,
+        2.185
+      ],
+      "NC": [
+        2.4,
+        2.185
+      ],
+      "K": [
+        1.45,
+        0.215
+      ]
+    },
+    "label": "BAT54"
   }
 }

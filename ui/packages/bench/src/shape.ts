@@ -52,6 +52,15 @@ export interface BenchShape {
   sense?: { at?: [number, number, number]; dir?: [number, number, number] };
 }
 
+export function isSurfaceMount(shape: BenchShape): boolean {
+  return shape.package === 'sot23' || shape.package === 'sot223';
+}
+
+/** Representative lead thickness, not the PCB land pattern. */
+export function surfaceLeadThickness(shape: BenchShape): number {
+  return shape.package === 'sot223' ? 0.29 : 0.14;
+}
+
 /** Shared contact/body heights so visible sockets and wiring endpoints
  * cannot drift when catalog board thickness or mounting height changes. */
 export function boardStack(shape: BenchShape): { standoff: number; thickness: number; surface: number; contact: number; headers: 'female' | 'male' | 'none' } {
@@ -103,8 +112,8 @@ const RADIAL: Record<string, { span: number; dia: number; h: number; color: stri
   ntcle100e3472jb0: { span: 2.54, dia: 3.3, h: 5, color: '#1b1b1b' },
 };
 
-const TO92 = new Set(['bc547b', 'bc557b', 'bjt_2n3904', 'bjt_2n3906', 'bjt_npn', 'bjt_pnp', 'bss138', 'mosfet_2n7000', 'nmos', 'pmos', 'ds18b20', 'lm35dz', 'tmp36gt9z', 'bat54']);
-const TO220 = new Set(['l7805cv', 'l7809cv', 'l7812cv', 'lm1117_3v3', 'regulator', 'regulator_78xx', 'irlz44n']);
+const TO92 = new Set(['bc547b', 'bc557b', 'bjt_2n3904', 'bjt_2n3906', 'bjt_npn', 'bjt_pnp', 'mosfet_2n7000', 'nmos', 'pmos', 'ds18b20', 'lm35dz', 'tmp36gt9z']);
+const TO220 = new Set(['l7805cv', 'l7809cv', 'l7812cv', 'regulator', 'regulator_78xx', 'irlz44n']);
 const POTS: Record<string, { span: number; size: [number, number, number]; color: string }> = {
   potentiometer: { span: 5.08, size: [12.7, 12, 20], color: '#2b6cb0' },
   trimmer_potentiometer: { span: 2.54, size: [9.5, 4.8, 10], color: '#2457a6' },
