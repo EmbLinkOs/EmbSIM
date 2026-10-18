@@ -235,9 +235,12 @@ export function useGlobalShortcuts(commands: Command[]): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
-      const run = (id: string) => {
+      // an undo or redo goes to the stack whatever the last render said: one
+      // pressed while an edit is still finishing waits for it in the stack's
+      // queue instead of being lost, and one with nothing to undo does nothing
+      const run = (id: string, queued = false) => {
         const c = commands.find((x) => x.id === id);
-        if (c && !c.disabled) {
+        if (c && (!c.disabled || queued)) {
           e.preventDefault();
           c.run();
         }
@@ -250,8 +253,8 @@ export function useGlobalShortcuts(commands: Command[]): void {
       if (e.key === 'F5') return run('control.run');
       if (e.key === 'F6') return run('control.step');
       if (e.key === 'F7') return run('control.advance');
-      if (mod && !e.shiftKey && e.key === 'z' && !isEditable(document.activeElement)) return run('edit.undo');
-      if (mod && (e.key === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z')) && !isEditable(document.activeElement)) return run('edit.redo');
+      if (mod && !e.shiftKey && e.key === 'z' && !isEditable(document.activeElement)) return run('edit.undo', true);
+      if (mod && (e.key === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z')) && !isEditable(document.activeElement)) return run('edit.redo', true);
       // copying text the user selected stays the browser's
       if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'c' && !e.shiftKey && !window.getSelection()?.toString()) return run('canvas.copy');
       if (mod && !isEditable(document.activeElement) && e.key.toLowerCase() === 'v' && !e.shiftKey) return run('canvas.paste');
