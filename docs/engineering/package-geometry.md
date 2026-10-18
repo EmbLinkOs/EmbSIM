@@ -9,12 +9,14 @@ illustration is redistributed; the procedural geometry is authored in EmbSIM.
 |---|---|---|
 | BSS138 | SOT-23: G1, S2, D3; pin 1 bottom-left in the top view | [onsemi BSS138/D](https://www.onsemi.com/pdf/datasheet/bss138-d.pdf), April 2024 rev. 7, PDF page 6: CASE 318 issue AU, 14 Aug 2024. Nominal body 2.90 × 1.30 mm, overall lead span 2.40 mm, height 1.00 mm; pin-1/2 pitch 1.90 mm. Nominal lead width 0.44 mm, thickness 0.14 mm. |
 | LM1117IMP-3.3 | SOT-223: GND1, OUT2, IN3; tab/pin 4 is also OUT | [TI SNOS412Q](https://www.ti.com/lit/ds/symlink/lm1117.pdf), Jan 2023, PDF page 44: DCY0004A outline 4214843/C, May 2026. Body midpoint 6.50 × 3.50 mm, overall lead-span midpoint 7.00 mm, maximum height 1.80 mm, lead pitch 2.30 mm. Lead width/thickness use range midpoints 0.75/0.29 mm. The drawing is rotated so pin 1 is front-left. |
-| BAT54 | Representative SOT-23 family body; A1, NC2, K3 | The existing KiCad reference pin map is retained. The outline uses the reviewed onsemi CASE 318 family geometry above, explicitly recorded as a family reference. Nexperia's BAT54 PDF remains unverified; the onsemi BAT54 URL retrieved HTML rather than a PDF during this review. No BAT54 manufacturer qualification is implied. |
+| BAT54 | Representative SOT-23 family body; A1, NC2, K3 | The existing KiCad reference pin map is retained. The outline uses the reviewed onsemi CASE 318 family geometry above, explicitly recorded as a family reference. [onsemi BAT54/D](https://www.onsemi.com/download/data-sheet/pdf/bat54-d.pdf), Sept 2017 rev. 3, PDF page 2, independently confirms the single BAT54 A1/NC2/K3 map. This document has no dimensioned outline. Nexperia's selected BAT54 PDF remains unverified; neither cross-manufacturer nor Nexperia qualification is implied. |
 
 The retrieved BSS138 and LM1117 PDFs have the same SHA-256 values recorded by the
 2026-10-16 review. Their mechanical appendix revision dates are recorded separately
 from the device datasheet revisions. Source records in each component contain the
-reviewed pages, hashes and boundaries.
+reviewed pages, hashes and boundaries. The independent onsemi BAT54 document
+was retrieved from its download endpoint; the older `/pdf/datasheet/` endpoint
+served HTML. Its SHA-256 is `b6d0713160c66fd193c6ea553e2cf9364cb8df58f48d033a7d36a0811867884c`.
 
 ## Representation and connectivity
 
