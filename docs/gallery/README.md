@@ -22,6 +22,14 @@ validator now holds the artwork to the reference within 0.05 mm, and the
 
 ![The qualified Uno on the 3D bench](qualified-uno/bench.png)
 
+The Design workspace at 1440 × 900, before and after: the Inspector is a
+rail while nothing is selected, so the bench grows from 44 % to 59 % of the
+width, and to about 73 % with its parts list folded from the toolbar.
+
+| Before | After |
+|---|---|
+| ![The workspace before: an empty Inspector beside the bench](qualified-uno/workspace-before.png) | ![The workspace after: the Inspector folded while nothing is selected](qualified-uno/workspace-after.png) |
+
 ## The Uno's serial port on the host (2026-10-18)
 
 The Serial panel's "Open on this computer" puts the board's ATmega16U2

@@ -139,8 +139,15 @@ neutral canvas surfaces, rounded chrome and subtle shadows.
   callouts placed on the bench, pointing at a part. Every bench action has
   a list equivalent beside the scene (each part with the holes its legs
   are in; plugging the selected part's first leg into a named hole,
-  turning it, lifting it off; a jumper between two named terminals), and
-  without WebGL the bench is the flat view below.
+  turning it, lifting it off; a jumper between two named terminals). The
+  list folds from the bench's toolbar, and the user's choice is kept.
+  Without WebGL the bench is the flat view below.
+- The Design perspective's Inspector is contextual. It is a rail while
+  nothing is selected, so the canvas takes its width, and it opens on a
+  selection. Folding or unfolding it by hand overrides this, and the choice
+  is kept. With the library open and the Inspector and parts list folded,
+  the bench takes about 73 % of a 1440-pixel-wide window; the visual
+  benchmark's target is 60 % (`docs/research/visual-workbench-benchmark.md`).
 - The World panel (Design, under the canvas; Run, beside the controls)
   edits the project's world (ADR-026): each field with whether the room
   declares it, a slider in its unit (light on a logarithmic scale) and the

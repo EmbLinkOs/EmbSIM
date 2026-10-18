@@ -31,12 +31,15 @@ import {
 } from '@embsim/bench';
 import type { ArtworkState, Hotspot, OutputValue, Project } from '@embsim/protocol';
 import { BoardView, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
-import { Box, Cable, CircuitBoard, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
+import { Box, Cable, CircuitBoard, Maximize2, MousePointer2, PanelRightClose, PanelRightOpen, StickyNote, Wand2 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
 import { useProject, type CatalogEntry } from '../stores/project';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
+
+/** the bench's parts list folded or open, as the user left it */
+const LIST_KEY = 'embsim.bench.list';
 
 /** the colours an LED's `color` parameter names, for its artwork's --led-color */
 const LED_COLORS: Record<string, string> = {
@@ -101,6 +104,13 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
   }, []);
   const [note, setNote] = useState<string | null>(null);
   const [flat, setFlat] = useState(() => typeof document === 'undefined' || !webglAvailable());
+  const [listOpen, setListOpen] = useState(() => {
+    try {
+      return localStorage.getItem(LIST_KEY) !== 'folded';
+    } catch {
+      return true;
+    }
+  });
   const handle = useRef<Bench3DHandle>(null);
   const editable = canEdit && editableProject;
 
@@ -169,6 +179,16 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
   const selectedHoles = selectedPart ? [...model.plugs].filter(([pin]) => pin.startsWith(`${selectedPart.id}.`)).map(([pin, hole]) => `${pin.split('.').slice(1).join('.')}→${hole.split('.')[1]}`) : [];
   const selectedJumper = selected.jumper !== undefined ? project.layout?.bench?.wires?.[selected.jumper] : undefined;
 
+  const toggleList = () =>
+    setListOpen((open) => {
+      try {
+        localStorage.setItem(LIST_KEY, open ? 'folded' : 'open');
+      } catch {
+        // storage unavailable: the choice lasts the session
+      }
+      return !open;
+    });
+
   const toolbar = (
     <div className="wb-bench-toolbar" role="toolbar" aria-label="Bench tools">
       {!editable && <Badge tone="warning">read-only</Badge>}
@@ -229,6 +249,11 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
       <Tooltip content="Frame everything" shortcut="F">
         <IconButton label="Frame the bench" size="sm" variant="ghost" onClick={() => handle.current?.frame()}>
           <Maximize2 />
+        </IconButton>
+      </Tooltip>
+      <Tooltip content={listOpen ? 'Fold the list of parts: the scene takes its width' : 'The list of parts: where each leg is, plugging and jumpers from the keyboard'}>
+        <IconButton label={listOpen ? 'Fold the parts list' : 'Show the parts list'} size="sm" variant="ghost" aria-pressed={listOpen} onClick={toggleList}>
+          {listOpen ? <PanelRightClose /> : <PanelRightOpen />}
         </IconButton>
       </Tooltip>
       <SegmentedControl<'3d' | '2d'>
@@ -341,7 +366,7 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
           label={`Bench of ${project.name}`}
         />
       )}
-      {list}
+      {listOpen && list}
       </div>
       {note !== null && (
         <Dialog

@@ -32,6 +32,13 @@ versions follow semantic versioning. There is no release yet.
 
   What is drawn without reference data (the DIP socket, the resonator,
   the reset button, the LEDs) is listed as unqualified.
+- The Design workspace gives the canvas more room:
+  - the Inspector folds to a rail while nothing is selected and opens on a
+    selection;
+  - the bench's parts list folds from its toolbar.
+
+  Both keep the user's choice. At 1440 × 900 the bench grew from 44 % of
+  the window's width to 59 %, and to about 73 % with the list folded.
 - The BB830 breadboard cites BusBoard's datasheet (BPS-DOC-(BB830) Rev 7)
   for its body, its 630-point area and its four continuous 50-point
   rails. The holes' offsets from its edges are not dimensioned there, and

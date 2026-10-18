@@ -42,3 +42,22 @@ test('build on the bench: plug a part in, add a jumper, undo', async ({ page }) 
   await page.getByRole('radio', { name: 'Schematic', exact: true }).click();
   await expect(page.getByRole('application', { name: 'Schematic canvas' })).toBeVisible();
 });
+
+test('the bench workspace: the parts list folds, the inspector opens on a selection', async ({ page }) => {
+  await page.goto('/?mock=1');
+  await expect(page.getByRole('application', { name: 'Schematic canvas' })).toBeVisible();
+  // nothing selected: the Inspector is a rail, the canvas has its width
+  await expect(page.getByText('Nothing selected')).toHaveCount(0);
+
+  await page.getByRole('radio', { name: 'Bench', exact: true }).click();
+  const list = page.getByRole('complementary', { name: 'On the bench' });
+  await expect(list).toBeVisible();
+  await page.getByRole('button', { name: 'Fold the parts list' }).click();
+  await expect(list).toHaveCount(0);
+  await page.getByRole('button', { name: 'Show the parts list' }).click();
+  await expect(list).toBeVisible();
+
+  // a part selected opens the Inspector on it
+  await list.getByRole('button', { name: /^R2/ }).click();
+  await expect(page.getByRole('region', { name: 'Inspector' })).toContainText('R2');
+});
