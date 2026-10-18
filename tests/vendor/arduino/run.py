@@ -12,8 +12,9 @@ file of cores/arduino is compiled into core.a, and each sketch here
 it (Arduino.h included, a #line back to the .ino) and linked against it,
 all with the flags of the core's platform.txt and the Uno's boards.txt
 entry, with the core's libraries the sketch includes (SPI, Wire) compiled
-beside it. The image then runs this directory's project.json under the
-sketch's scenario.json, whose assertions must all pass.
+beside it. The image then runs this directory's project.json (or the
+sketch's own, when it has one) under the sketch's scenario.json, whose
+assertions must all pass.
 
     run.py --core DIR [--embsim PATH] [--keep DIR] [SKETCH...]
 
@@ -126,7 +127,8 @@ def main() -> int:
         bad = 0
         for name in names:
             elf = build_sketch(core, lib, HERE / "sketches" / name / f"{name}.ino", work)
-            bad += not run_scenario(Path(args.embsim), HERE / "project.json", name, elf,
+            own = HERE / "sketches" / name / "project.json"
+            bad += not run_scenario(Path(args.embsim), own if own.is_file() else HERE / "project.json", name, elf,
                                     HERE / "sketches" / name / "scenario.json", work)
     return 1 if bad else 0
 

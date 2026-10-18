@@ -143,6 +143,7 @@ void esk_avr_pins_changed(struct esk_mach *m)
         if (p->ops == &esk_avr_port_ops)
             update((struct avr_port *)p->ctx);
     }
+    esk_avr_ac_pins(m);
 }
 
 int esk_avr_pin_level(struct esk_mach *m, int port, int bit)

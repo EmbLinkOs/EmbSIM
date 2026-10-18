@@ -8,7 +8,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
-| ATmega328P | 14 | 0 | 1 | 15 |
+| ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
 | nRF52840 | 23 | 4 | 22 | 49 |
@@ -19,7 +19,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 ## ATmega328P (`microchip/atmega328p`)
 
 Boards: Arduino Uno R3 (ATmega328P).  
-14 of 15 peripherals modelled, 0 registers only, 1 missing.
+15 of 15 peripherals modelled, 0 registers only, 0 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -33,13 +33,13 @@ Boards: Arduino Uno R3 (ATmega328P).
 | CPU | `avr-cpu` | modelled |
 | EEPROM | `avr-eeprom` | modelled |
 | SPI | `avr-spi` | modelled |
-| AC | `avr-ac` | **missing** |
+| AC | `avr-ac` | modelled |
 | WDT | `avr-wdt` | modelled |
 | ADC | `avr-adc` | modelled |
 | TWI | `avr-twi` | modelled |
 | USART0 | `avr-usart` | modelled |
 
-Declared omissions: SPI slave mode; TWI slave mode, arbitration and bus errors; the watchdog oscillator's spread (exactly 128 kHz) and safety level 2 (WDTON); analog comparator; input capture; timer 2's asynchronous clock; self-programming (SPM); fuses and lock bits; brown-out detection.
+Declared omissions: SPI slave mode; TWI slave mode, arbitration and bus errors; the watchdog oscillator's spread (exactly 128 kHz) and safety level 2 (WDTON); the analog comparator's synchronisation delay, offset and hysteresis, and ACIC (Timer/Counter1's capture from it); input capture; timer 2's asynchronous clock; self-programming (SPM); fuses and lock bits; brown-out detection.
 
 ## PIC24FJ1024GB610 (`microchip/pic24fj1024gb610`)
 

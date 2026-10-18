@@ -234,6 +234,11 @@ typedef struct esk_mach_host {
     /* the voltage on a pin's net, for an ADC: 1 and *v, or 0 when the pin
      * is not connected */
     int (*pin_volts)(void *ctx, int port, int bit, double *v);
+    /* an analog comparator's threshold on a pin: the pins' outside levels
+     * change (pins_changed) when its net's voltage crosses `v`, at the
+     * crossing's time; `on` 0 takes it off. 1 when the pin's net is analog
+     * and so watched, 0 when it is not */
+    int (*pin_watch)(void *ctx, int port, int bit, int on, double v);
     /* a core enters exception or interrupt n (its own numbering: a
      * Cortex-M's exception number, an AVR's vector, 16 + a RISC-V
      * interrupt's cause or the cause of an exception, 16 + a MIPS

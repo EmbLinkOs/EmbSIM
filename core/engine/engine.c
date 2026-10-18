@@ -814,6 +814,31 @@ void esk_engine_bridge_crossed(esk_engine *e, esk_pin *p, esk_logic value, es_ti
     bridge_notify(e, p);
 }
 
+void esk_engine_watch_crossed(esk_engine *e, esk_pin *p, esk_logic value, es_time_t at)
+{
+    esk_event_handle h = 0;
+    if (!p->watch_on || p->watch_state == value)
+        return;
+    p->watch_state = value;
+    if (at > e->sched.now && esk_sched_at(&e->sched, at, ESK_EV_SIGNAL, bridge_crossed_cb, p, NULL, &h) == ES_OK)
+        return;
+    bridge_notify(e, p);
+}
+
+int esk_pin_compare(esk_pin *p, double v)
+{
+    if (!p->net || !p->net->island || !p->bridge) {
+        p->watch_on = 0;
+        return 0;
+    }
+    p->watch_on = 1;
+    p->watch_v = v;
+    p->watch_state = p->net->voltage > v ? ESK_L1 : ESK_L0;
+    return 1;
+}
+
+void esk_pin_compare_off(esk_pin *p) { p->watch_on = 0; }
+
 void esk_pin_bridge_target(const esk_pin *p, double *v, double *r, int *open)
 {
     const esk_pin_model *m = &p->model;

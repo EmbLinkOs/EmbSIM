@@ -42,6 +42,10 @@ typedef struct uno {
     int edges[8][8];    /* changes of a pin's drive */
     u64 scl_at[64];     /* when SCL (PC5) changed */
     int nscl;
+    int use_pv;         /* pv gives each pin its own voltage */
+    double pv[8][8];
+    int watch_on[8][8]; /* the comparator's thresholds on the pins */
+    double watch_v[8][8];
 } uno;
 
 static unsigned char *slurp(const char *rel, size_t *len)
@@ -125,10 +129,18 @@ static int u_pin_in(void *ctx, int port, int bit, int *level)
 static int u_pin_volts(void *ctx, int port, int bit, double *v)
 {
     uno *u = (uno *)ctx;
-    (void)port;
-    (void)bit;
-    *v = u->volts;
+    *v = u->use_pv && port >= 0 && port < 8 && bit >= 0 && bit < 8 ? u->pv[port][bit] : u->volts;
     return 1;
+}
+
+static int u_pin_watch(void *ctx, int port, int bit, int on, double v)
+{
+    uno *u = (uno *)ctx;
+    if (port < 0 || port >= 8 || bit < 0 || bit >= 8)
+        return 0;
+    u->watch_on[port][bit] = on;
+    u->watch_v[port][bit] = v;
+    return on;
 }
 
 static void u_diag(void *ctx, int sev, const char *code, const char *msg)
@@ -156,6 +168,7 @@ static int uno_open(uno *u, const u16 *prog, size_t n)
     u->m.host.pin_cfg = u_pin_cfg;
     u->m.host.pin_in = u_pin_in;
     u->m.host.pin_volts = u_pin_volts;
+    u->m.host.pin_watch = u_pin_watch;
     u->m.host.diag = u_diag;
     st = esk_mach_build(&u->m, u->mcu, u->regs, 16000000u, why, sizeof why);
     if (st != ES_OK) {
@@ -619,6 +632,70 @@ static void test_wdt(void)
     }
 }
 
+#define ACSR 0x50
+#define ADCSRA 0x7A
+#define ADCSRB 0x7B
+#define ADMUX 0x7C
+
+static void test_ac(void)
+{
+    /* vector 23 (ANALOG_COMP, word 46) increments r24 and returns */
+    u16 prog[64];
+    uno u;
+    memset(prog, 0, sizeof prog);
+    prog[0] = rjmp(59);
+    prog[46] = 0x9583; /* inc r24 */
+    prog[47] = RETI;
+    prog[60] = NOP;
+    prog[61] = rjmp(-2);
+    if (!uno_open(&u, prog, 62))
+        return;
+    u.use_pv = 1;
+    /* out of reset it is on, AIN0 (PD6) against AIN1 (PD7), both 0 V */
+    CHECK_EQ(data(&u, ACSR), 0);
+    u.pv[3][6] = 2.0;
+    u.pv[3][7] = 1.0;
+    esk_avr_pins_changed(&u.m);
+    CHECK_EQ(data(&u, ACSR), 0x30); /* ACO, and ACI on the toggle */
+    /* each input's threshold sits at the other's voltage */
+    CHECK(u.watch_on[3][6] && u.watch_v[3][6] == 1.0);
+    CHECK(u.watch_on[3][7] && u.watch_v[3][7] == 2.0);
+    poke(&u, ACSR, 0x10); /* ACI cleared by a 1 */
+    CHECK_EQ(data(&u, ACSR), 0x20);
+    /* rising edges only, with the interrupt */
+    poke(&u, ACSR, 0x0B);
+    u.pv[3][6] = 0.5;
+    esk_avr_pins_changed(&u.m);
+    CHECK_EQ(data(&u, ACSR), 0x0B); /* ACO falls, no ACI */
+    CHECK(u.watch_v[3][7] == 0.5);
+    u.m.cpu->ops->reg_write(u.m.cpu, 32, (const u8[]){ 0x80, 0, 0, 0 });
+    u.pv[3][6] = 1.5;
+    esk_avr_pins_changed(&u.m);
+    esk_mach_run(&u.m, 40, 0);
+    CHECK_EQ(reg(&u, 24), 1);              /* the vector ran */
+    CHECK_EQ(data(&u, ACSR) & 0x30, 0x20); /* entering it cleared ACI */
+    /* the bandgap in place of AIN0: no threshold on PD6, PD7's at 1.1 V */
+    poke(&u, ACSR, 0x40);
+    CHECK_EQ(data(&u, ACSR) & 0x20, 0x20); /* 1.1 V > 1.0 V */
+    CHECK(!u.watch_on[3][6]);
+    CHECK(u.watch_on[3][7] && u.watch_v[3][7] == 1.1);
+    /* ACME with the ADC off: the multiplexer's ADC3 (PC3) is the negative input */
+    u.pv[2][3] = 1.5;
+    poke(&u, ADMUX, 0x03);
+    poke(&u, ADCSRB, 0x40);
+    CHECK_EQ(data(&u, ACSR) & 0x20, 0); /* 1.1 V < 1.5 V */
+    CHECK(!u.watch_on[3][7]);
+    CHECK(u.watch_on[2][3] && u.watch_v[2][3] == 1.1);
+    poke(&u, ADCSRA, 0x80); /* the ADC on: back to AIN1 */
+    CHECK_EQ(data(&u, ACSR) & 0x20, 0x20);
+    CHECK(!u.watch_on[2][3] && u.watch_on[3][7]);
+    /* ACD switches it off */
+    poke(&u, ACSR, 0x80);
+    CHECK_EQ(data(&u, ACSR) & 0x20, 0);
+    CHECK(!u.watch_on[3][6] && !u.watch_on[3][7]);
+    uno_close(&u);
+}
+
 static void test_disassembler(void)
 {
     char t[64];
@@ -644,5 +721,6 @@ RUN(test_adc);
 RUN(test_spi);
 RUN(test_twi);
 RUN(test_wdt);
+RUN(test_ac);
 RUN(test_disassembler);
 TEST_MAIN_END

@@ -17,6 +17,7 @@
  *   cpu.c     CLKPR (the clock prescaler), SMCR, MCUCR's PUD
  *   eeprom.c  the 1 KiB EEPROM
  *   wdt.c     the watchdog timer, its interrupt and its reset
+ *   ac.c      the analog comparator on AIN0, AIN1 or the ADC multiplexer
  *
  * Program memory (flash) is on the bus at 0 by byte address; the data
  * space at ESK_AVR_DATA + its address, as GDB's AVR target numbers them.
@@ -61,7 +62,7 @@ int esk_avr_disasm(u32 pc, unsigned w, unsigned w2, char *text, size_t cap);
 
 extern const struct esk_dev_ops esk_avr_port_ops, esk_avr_exint_ops, esk_avr_tc8_ops,
     esk_avr_tc16_ops, esk_avr_usart_ops, esk_avr_adc_ops, esk_avr_cpu_ops, esk_avr_eeprom_ops, esk_avr_spi_ops,
-    esk_avr_twi_ops, esk_avr_wdt_ops;
+    esk_avr_twi_ops, esk_avr_wdt_ops, esk_avr_ac_ops;
 void *esk_avr_port_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_exint_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_tc8_create(struct esk_mach *m, struct esk_rf_periph *p);
@@ -73,6 +74,9 @@ void *esk_avr_eeprom_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_spi_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_twi_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_avr_wdt_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_avr_ac_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* ac.c: the comparator's inputs may have changed: it looks again */
+void esk_avr_ac_pins(struct esk_mach *m);
 
 /* MCUCR.PUD: the pull-ups are disabled */
 int esk_avr_pud(struct esk_mach *m);

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "comparator",
+  "until": "400ms",
+  "description": "The analog comparator times an RC network: D8 charges 1 uF on AIN0 through 10 kOhm against 2.5 V on AIN1. R * C * ln 2 with the pin's 25 Ohm is 6949 us; the sketch measures 6960 us rising and 6956 us falling with micros() (4 us steps, plus digitalWrite and the interrupt's entry). ACO reads 0 discharged and 1 charged; the interrupt fires once per crossing, on the edge ACIS chooses.",
+  "assertions": [
+    {
+      "id": "aco",
+      "at": "400ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "aco at rest 0\r\naco charged 1\r\n"
+      }
+    },
+    {
+      "id": "timing",
+      "at": "400ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "rise 6960 us, fall 6956 us, interrupts 1\r\ndone\r\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ]
+}

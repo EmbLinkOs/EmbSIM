@@ -469,6 +469,19 @@ static int h_pin_volts(void *ctx, int port, int bit, double *v)
     return 1;
 }
 
+static int h_pin_watch(void *ctx, int port, int bit, int on, double v)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_pin *p;
+    if (port < 0 || port >= MCU_PORTS || bit < 0 || bit > 15 || !(p = st->gpio[port][bit]))
+        return 0;
+    if (!on) {
+        esk_pin_compare_off(p);
+        return 0;
+    }
+    return esk_pin_compare(p, v);
+}
+
 /* ---- serial ------------------------------------------------------------------ */
 
 static mcu_uart *uart_named(mcu_state *st, const char *unit, int add)
@@ -1054,6 +1067,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.diag = h_diag;
     st->m.host.exc = h_exc;
     st->m.host.pin_volts = h_pin_volts;
+    st->m.host.pin_watch = h_pin_watch;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     snprintf(st->console, sizeof st->console, "%s", su->console ? su->console : "USART1");
     for (port = 0; port < MCU_PORTS; port++)
