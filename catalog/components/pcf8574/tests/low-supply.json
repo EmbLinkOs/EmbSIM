@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "low-supply",
+  "description": "At 2.0 V on VCC (the datasheet's minimum is 2.5 V) the write to 0x20 is not acknowledged and the port keeps its power-on 1s.",
+  "policy": "electrical",
+  "until": "70us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/pcf8574"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "VCC": [
+        "V.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "V.-",
+        "G.1",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.latch": {
+      "at": "65us",
+      "equals": 255
+    }
+  }
+}

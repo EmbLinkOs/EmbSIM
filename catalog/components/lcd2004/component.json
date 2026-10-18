@@ -1,0 +1,401 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/lcd2004",
+  "version": "1.0.0",
+  "name": "20x4 character LCD",
+  "category": "displays",
+  "description": "HD44780-compatible 20x4 character LCD: commands and characters latched on E falling, 8-bit or 4-bit bus, each taking the controller's execution time (writes while busy are lost); the busy flag, address counter and RAM read back; the part's pull-ups on RS, R/W and DB0-DB7; the contrast voltage and backlight; the four rows show on the board view, rows 3 and 4 continuing lines 1 and 2 as on the module.",
+  "keywords": [
+    "display",
+    "lcd",
+    "2004",
+    "20x4",
+    "HD44780",
+    "character",
+    "alphanumeric"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "VSS",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false
+    },
+    {
+      "name": "VDD",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false
+    },
+    {
+      "name": "V0",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "required": false,
+      "doc": "Contrast: the characters show while VDD - V0 is at least 3.0 V"
+    },
+    {
+      "name": "RS",
+      "number": 4,
+      "model": {
+        "kind": "digital_io"
+      },
+      "doc": "Register select (pulled up inside)",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "RW",
+      "number": 5,
+      "model": {
+        "kind": "digital_io"
+      },
+      "doc": "Read/write: high reads (pulled up inside, so it must be tied low to write)",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "E",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Enable: data latched on the falling edge",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D0",
+      "number": 7,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D1",
+      "number": 8,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D2",
+      "number": 9,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D3",
+      "number": 10,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D4",
+      "number": 11,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D5",
+      "number": 12,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D6",
+      "number": 13,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "D7",
+      "number": 14,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VDD"
+    },
+    {
+      "name": "A",
+      "number": 15,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Backlight anode (the model draws no current: wire the backlight LED across A and K to load it)"
+    },
+    {
+      "name": "K",
+      "number": 16,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Backlight cathode"
+    }
+  ],
+  "params": {
+    "columns": {
+      "type": "integer",
+      "default": 20,
+      "min": 20,
+      "max": 20,
+      "doc": "Characters per row on the glass (fixed for this module)"
+    },
+    "rows": {
+      "type": "integer",
+      "default": 4,
+      "min": 4,
+      "max": 4,
+      "doc": "Rows on the glass (fixed for this module)"
+    }
+  },
+  "outputs": [
+    {
+      "name": "line1",
+      "type": "string"
+    },
+    {
+      "name": "line2",
+      "type": "string"
+    },
+    {
+      "name": "line3",
+      "type": "string"
+    },
+    {
+      "name": "line4",
+      "type": "string"
+    },
+    {
+      "name": "on",
+      "type": "boolean"
+    },
+    {
+      "name": "cursor",
+      "type": "integer",
+      "doc": "DDRAM address counter"
+    },
+    {
+      "name": "four_bit",
+      "type": "boolean"
+    },
+    {
+      "name": "contrast_ok",
+      "type": "boolean",
+      "doc": "VDD - V0 is at least 3.0 V, so the characters show"
+    },
+    {
+      "name": "backlight",
+      "type": "boolean",
+      "doc": "A is at least 2.5 V above K"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 98,
+    "height_mm": 60,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "line1",
+        "selector": "#line1",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "line2",
+        "selector": "#line2",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "line3",
+        "selector": "#line3",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "line4",
+        "selector": "#line4",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "on",
+        "selector": "#glass",
+        "attr": "opacity",
+        "true": "0.9",
+        "false": "0.35"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The HD44780 instruction set and power-on reset (8-bit, one line, display off, 10 ms busy); 8-bit and 4-bit transfers; the execution times (37 us; clear and home 1.52 ms) with writes ignored while busy; reads of the busy flag, the address counter and DDRAM/CGRAM; pull-ups on RS, R/W and DB0-DB7; DDRAM in one or two lines with shift, rows 3 and 4 continuing lines 1 and 2 (0x14 and 0x54); CGRAM stored and read back; the A00 character ROM (yen, arrows, katakana, Greek); characters shown only with VDD - V0 of 3.0 V or more; the backlight on with A 2.5 V above K.",
+      "omissions": [
+        "the 5x10 font",
+        "execution times' change with supply and temperature",
+        "CGRAM characters' pixels in the line outputs (shown as #)",
+        "cursor and blink drawing",
+        "the backlight LED draws no current (wire an LED across A and K)",
+        "the dark boxes an uninitialised module shows on row 1 with the contrast high"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; delays as stated.",
+      "omissions": [
+        "the 5x10 font",
+        "execution times' change with supply and temperature",
+        "CGRAM characters' pixels in the line outputs (shown as #)",
+        "cursor and blink drawing",
+        "the backlight LED draws no current (wire an LED across A and K)",
+        "the dark boxes an uninitialised module shows on row 1 with the contrast high"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "the 5x10 font",
+        "execution times' change with supply and temperature",
+        "CGRAM characters' pixels in the line outputs (shown as #)",
+        "cursor and blink drawing",
+        "supply current",
+        "output current limits",
+        "the backlight LED draws no current (wire an LED across A and K)",
+        "the dark boxes an uninitialised module shows on row 1 with the contrast high"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Hitachi HD44780U datasheet (instruction set, 4-bit initialisation)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 150,
+    "pins": {
+      "RS": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "RW": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "E": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D0": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "D1": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "D2": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "D3": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "D4": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "D5": {
+        "x": 0,
+        "y": 110,
+        "side": "left"
+      },
+      "D6": {
+        "x": 0,
+        "y": 120,
+        "side": "left"
+      },
+      "D7": {
+        "x": 0,
+        "y": 130,
+        "side": "left"
+      },
+      "V0": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "A": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "K": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "VSS": {
+        "x": 40,
+        "y": 150,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

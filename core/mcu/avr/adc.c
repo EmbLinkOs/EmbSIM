@@ -116,6 +116,9 @@ static void adc_write(void *ctx, u32 off, int n, u32 v)
                 esk_rf_hw(a->sra, a->sra->value & ~(u64)ADSC);
         }
     }
+    /* ADEN, ACME and MUX choose the analog comparator's negative input */
+    if (off == esk_rf_off(a->sra) || off == esk_rf_off(a->srb) || off == esk_rf_off(a->mux))
+        esk_avr_ac_pins(a->s);
     esk_avr_irq_changed(a->s);
 }
 

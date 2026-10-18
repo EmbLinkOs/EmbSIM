@@ -1,0 +1,150 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-lcd1602",
+ "description": "The LiquidCrystal library's HelloWorld as its tutorial wires it: a 16x2 HD44780 LCD with RS on D12, E on D11, D4..D7 on D5, D4, D3, D2, R/W tied to GND, a 10 kOhm contrast potentiometer between 5V and GND with its wiper on V0, and the backlight through 220 Ohm.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "LCD",
+   "component": "emblink/lcd1602",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  },
+  {
+   "id": "POT",
+   "component": "emblink/potentiometer",
+   "params": {
+    "resistance": "10k"
+   },
+   "layout": {
+    "x": 500,
+    "y": 700
+   }
+  },
+  {
+   "id": "RBL",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 600,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "LCD.VDD",
+   "POT.2",
+   "RBL.1"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "LCD.VSS",
+   "LCD.RW",
+   "POT.1",
+   "LCD.K"
+  ],
+  "CONTRAST": [
+   "POT.W",
+   "LCD.V0"
+  ],
+  "BL": [
+   "RBL.2",
+   "LCD.A"
+  ],
+  "LCD_RS": [
+   "B1.D12",
+   "LCD.RS"
+  ],
+  "LCD_E": [
+   "B1.D11",
+   "LCD.E"
+  ],
+  "LCD_D4": [
+   "B1.D5",
+   "LCD.D4"
+  ],
+  "LCD_D5": [
+   "B1.D4",
+   "LCD.D5"
+  ],
+  "LCD_D6": [
+   "B1.D3",
+   "LCD.D6"
+  ],
+  "LCD_D7": [
+   "B1.D2",
+   "LCD.D7"
+  ]
+ },
+ "probes": [
+  {
+   "id": "line1",
+   "target": "output:LCD.line1",
+   "kind": "value"
+  },
+  {
+   "id": "line2",
+   "target": "output:LCD.line2",
+   "kind": "value"
+  },
+  {
+   "id": "contrast",
+   "target": "output:LCD.contrast_ok",
+   "kind": "value"
+  },
+  {
+   "id": "backlight",
+   "target": "output:LCD.backlight",
+   "kind": "value"
+  },
+  {
+   "id": "v0",
+   "target": "net:CONTRAST",
+   "kind": "analog"
+  }
+ ]
+}

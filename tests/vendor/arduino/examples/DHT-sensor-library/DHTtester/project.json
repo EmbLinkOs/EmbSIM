@@ -1,0 +1,114 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-dht22",
+ "description": "Adafruit's DHTtester example as its comments wire it: an Arduino Uno with a DHT22 (AM2302) on D2, powered from the board's 5V, a 10 kOhm pull-up from DATA to 5V, and a terminal on D0/D1 at 9600 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 9600
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "U1",
+   "component": "emblink/dht22",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 10000
+   },
+   "layout": {
+    "x": 220,
+    "y": 640,
+    "rotation": 90
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "U1.VCC",
+   "R1.1"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "VT1.GND",
+   "U1.GND"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ],
+  "DHT_DATA": [
+   "B1.D2",
+   "U1.DATA",
+   "R1.2"
+  ]
+ },
+ "probes": [
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "data",
+   "target": "net:DHT_DATA",
+   "kind": "digital"
+  }
+ ]
+}

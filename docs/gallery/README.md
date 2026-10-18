@@ -5,6 +5,71 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Workbench layout pass (2026-10-17)
+
+Panels fold to a titled rail and unfold from it, the choice kept with the
+layout. The Run perspective folds the instrument with nothing to show (the
+oscilloscope of a project with only digital probes) and gives its actions to
+the other. Meters read in SI prefixes down to femto (residue below that
+shows as about zero) and leave growing texts to the Serial tab. A compact
+window starts with the Inspector folded, and the sheet navigator steps aside
+on a narrow canvas. The Debug perspective demangles C++ names.
+
+| | |
+|---|---|
+| ![Run: oscilloscope folded, logic analyzer and SI meters](workbench-layout/wide-run.png) | ![Design at 1024 pixels: the Inspector folded to a rail](workbench-layout/compact-design.png) |
+
+[Debug with demangled C++ names](workbench-layout/wide-debug.png).
+
+The EmbSIM mark is now the project menu, with the project's name beside it:
+New project (a blank sheet, or a board from the catalog to start from), Open,
+Save and Save a copy, the same commands as the palette.
+
+| | |
+|---|---|
+| ![New project: start from a catalog board](workbench-layout/new-project.png) | ![A new project on the Raspberry Pi Pico](workbench-layout/new-project-created.png) |
+
+[The project menu](workbench-layout/project-menu.png).
+
+## Arduino SPI and Wire on the Uno (2026-10-16)
+
+A sketch built with the unmodified ArduinoCore-avr (`tests/vendor/arduino/sketches/spi_wire`)
+drives the ATmega328P's new SPI and TWI models through the core's own SPI and
+Wire libraries. The 25LC040's RDSR after WREN reads back status 0x02, clocked at
+4 MHz through D13, whose L LED puts SCK on an analog net (the edge that once
+answered a bit late). Wire's first START addresses the 24C02 at 99.9 kHz, and
+the Serial terminal now joins the text the engine streams into whole lines,
+one port at a time.
+
+| | |
+|---|---|
+| ![Uno SPI decode: RDSR 0x05, then status 0x02](arduino-spi-wire/decode-uno-spi.png) | ![Uno TWI decode: START, 0x50 W ACK at 100 kHz](arduino-spi-wire/decode-uno-i2c.png) |
+
+[The sketch's Wire results in the Serial terminal](arduino-spi-wire/serial-uno-spi-wire.png).
+
+## Serial and analog peripherals on the Pico and the nRF52840 DK (2026-10-16)
+
+Vendor firmware, unmodified drivers, against parts from the catalog: the Pico
+SDK's `hardware_spi` and `hardware_i2c` on the RP2040's PL022 and DW_apb_i2c,
+and nrfx's SPIM, TWIM, PWM and SAADC drivers on the nRF52840, each talking to
+a 25LC040 SPI EEPROM and a 24C02 I2C EEPROM (`tests/vendor/pico-sdk/apps/spi_i2c`,
+`tests/vendor/nrfx/apps/nrfx_periph`). The logic analyzer decodes the traffic
+the cores drive on the pins: the SPI WREN and RDSR commands (the nRF52840's
+MISO shown undriven, orange, while the EEPROM's SO is high-impedance), and an
+I2C START with the 24C02's address acknowledged.
+
+| | |
+|---|---|
+| ![Pico SPI decode: WREN and RDSR to a 25LC040](serial-analog-peripherals/decode-pico-spi.png) | ![Pico I2C decode: START, 0x50 W ACK](serial-analog-peripherals/decode-pico-i2c.png) |
+| ![nRF52840 DK SPIM decode with MISO high-impedance](serial-analog-peripherals/decode-nrf52840dk-spi.png) | ![nRF52840 DK TWIM decode: START, 0x50 W ACK](serial-analog-peripherals/decode-nrf52840dk-i2c.png) |
+
+The Serial terminal shows what the firmware prints: these shots are the first
+since the engine streams `serial.data`, which it had never sent, leaving the
+terminal empty.
+
+| | |
+|---|---|
+| ![Pico SDK SPI and I2C results in the Serial terminal](serial-analog-peripherals/serial-pico-spi-i2c.png) | ![nrfx TWIM, PWM and SAADC results in the Serial terminal](serial-analog-peripherals/serial-nrf52840dk-periph.png) |
 ## Schematic graphics and interaction (2026-10-16)
 
 Captured from the native engine with `tests/browser/test_schematic.py`: separate

@@ -62,7 +62,7 @@ jobs:
           git init -q "$RUNNER_TEMP/ArduinoCore-avr"
           git -C "$RUNNER_TEMP/ArduinoCore-avr" fetch -q --depth 1 https://github.com/arduino/ArduinoCore-avr.git 11b9130371e8447920edb65a75706a6c951e51fc
           git -C "$RUNNER_TEMP/ArduinoCore-avr" checkout -q FETCH_HEAD
-          python3 tests/vendor/arduino/run.py --core "$RUNNER_TEMP/ArduinoCore-avr" --embsim build/${{ matrix.preset }}/bin/embsim
+          python3 tests/vendor/arduino/run.py --core "$RUNNER_TEMP/ArduinoCore-avr" --libs "$RUNNER_TEMP/arduino-libs" --fetch --embsim build/${{ matrix.preset }}/bin/embsim
       - name: STM32 HAL applications on the unmodified STM32F1 HAL
         if: matrix.name == 'linux-gcc'
         run: |

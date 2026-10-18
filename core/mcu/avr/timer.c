@@ -29,13 +29,24 @@
  *     or TOP in the dual-slope modes, give a constant level); FOCnx forces
  *     a match's action in the non-PWM modes. The time to the next pin edge
  *     is a device event, so a PWM output keeps its timing while the core
- *     sleeps;
+ *     sleeps, and a pin switches at the clock that switched it, not at the
+ *     end of the instruction it falls in (output_lag);
  *   - TC1's 16-bit registers are reached through TEMP, the high byte's
- *     latch, as on the part.
+ *     latch, as on the part;
+ *   - TC1's input capture: an edge of ICP1 (PB0), or of the analog
+ *     comparator's output with ACSR's ACIC, chosen by ICES1 (rising with
+ *     it set), copies TCNT1 into ICR1 and sets ICF1 (TIMER1_CAPT). With
+ *     ICNC1 the noise canceler wants four equal samples: the capture comes
+ *     four cycles after the edge, and a level that does not hold that long
+ *     is ignored. ICR1 holds the count at the edge's own clock, though the
+ *     core may have run past it inside an instruction (input_lead). A mode
+ *     with ICR1 as TOP disconnects the capture, and ICR1 takes writes only
+ *     in those modes. A program can capture by driving PB0 itself, as on
+ *     the part.
  *
- * Not modelled: the external clock inputs T0 and T1, input capture from
- * the ICP1 pin, TC2's asynchronous clock (ASSR.AS2) and the prescaler
- * resets (GTCCR).
+ * Not modelled: the external clock inputs T0 and T1, the input capture
+ * synchroniser's own delay (a constant offset of the captured count), TC2's
+ * asynchronous clock (ASSR.AS2) and the prescaler resets (GTCCR).
  *
  * Provenance: TC1's counting and flags follow EmbLinkOs/EmbCC aa4f10a
  * tools/embsim/avr-timer16.c; the 8-bit timers, the output compare pins,
@@ -49,6 +60,9 @@
 #define OCFA 2u
 #define OCFB 4u
 #define ICF 32u
+#define ICES 0x40u /* TCCR1B */
+#define ICNC 0x80u
+#define ACIC 0x04u /* ACSR */
 
 enum { K_NORMAL, K_CTC, K_FAST, K_PC, K_PFC };
 
@@ -72,6 +86,10 @@ struct avr_tc {
     int oc_on[2];   /* the unit drives its pin */
     int oc_port[2], oc_bit[2];
     int vec[4];     /* overflow, compare A, compare B, capture */
+    struct esk_rf_reg *acsr; /* the comparator's ACIC chooses the capture's source */
+    u64 tick0;               /* the cycle of advance()'s first clock */
+    int nc_pending;          /* the noise canceler holds an edge */
+    u64 nc_at;               /* the cycle it captures */
 };
 
 static const u32 div01[8] = { 0, 1, 8, 64, 256, 1024, 0, 0 };
@@ -264,6 +282,8 @@ static void mirror(struct avr_tc *t)
     if (t->wide) {
         esk_rf_hw(t->tcntl, t->cnt & 0xffu);
         esk_rf_hw(t->tcnth, t->cnt >> 8);
+        esk_rf_hw(t->icrl, t->icr & 0xffu); /* ICR1 is written only when it is TOP */
+        esk_rf_hw(t->icrh, t->icr >> 8);
     } else {
         esk_rf_hw(t->tcnt, t->cnt);
     }
@@ -278,6 +298,7 @@ static int any_connected(const struct avr_tc *t)
 /* the counter moves on by `k` timer clocks */
 static void advance(struct avr_tc *t, u64 k)
 {
+    u64 i, last = (u64)-1;
     u8 f = 0;
     int ch, oc0 = t->oc[0], oc1 = t->oc[1], buffered = 0;
     if (!any_connected(t)) {
@@ -285,7 +306,6 @@ static void advance(struct avr_tc *t, u64 k)
         u64 p = period(t);
         if (k > 2 * p) {
             u64 skip = ((k - p) / p) * p;
-            u64 i;
             for (i = 0; i < p; i++) {
                 int ev;
                 f |= clock1(t, &t->cnt, &t->down, &ev);
@@ -297,12 +317,14 @@ static void advance(struct avr_tc *t, u64 k)
             k -= p + skip;
         }
     }
-    while (k--) {
-        int ev, k2 = kind(t);
+    for (i = 0; i < k; i++) {
+        int ev, k2 = kind(t), l0 = t->oc[0], l1 = t->oc[1];
         u8 g = clock1(t, &t->cnt, &t->down, &ev);
         f |= g;
         for (ch = 0; ch < 2; ch++)
             oc_action(t, ch, (g & (ch ? OCFB : OCFA)) != 0, ev, t->down);
+        if (t->oc[0] != l0 || t->oc[1] != l1)
+            last = i;
         if ((((ev & EV_BOTTOM) && (k2 == K_FAST || k2 == K_PFC)) || ((ev & EV_TOP) && k2 == K_PC)) &&
             memcmp(t->ocr_now, t->ocr_buf, sizeof t->ocr_now)) {
             memcpy(t->ocr_now, t->ocr_buf, sizeof t->ocr_now);
@@ -310,12 +332,91 @@ static void advance(struct avr_tc *t, u64 k)
         }
     }
     mirror(t);
-    if (t->oc[0] != oc0 || t->oc[1] != oc1 || buffered)
+    if (t->oc[0] != oc0 || t->oc[1] != oc1 || buffered) {
+        /* the pins switch at the clock that switched them, not at the
+         * instruction's end */
+        u64 at = t->tick0 + (last == (u64)-1 ? 0 : last) * prescale(t);
+        t->s->output_lag = at < t->s->cycles ? (u32)(t->s->cycles - at) : 0;
         for (ch = 0; ch < 2; ch++)
             drive(t, ch);
+        t->s->output_lag = 0;
+    }
     if (f & ~(u8)t->tifr->value) {
         esk_rf_hw(t->tifr, t->tifr->value | f);
         esk_avr_irq_changed(t->s);
+    }
+}
+
+/* ---- input capture (TC1) ----------------------------------------------------- */
+
+/* the count `k` timer clocks before (cnt, down) */
+static u16 count_before(const struct avr_tc *t, u16 cnt, int down, u64 k)
+{
+    int kd = kind(t);
+    u16 tp = top(t);
+    if (!dual(kd)) {
+        u32 span = (u32)(kd == K_NORMAL ? max_of(t) : tp) + 1;
+        return (u16)((cnt + span - (u32)(k % span)) % span);
+    }
+    /* the dual-slope modes, undoing clock1 a clock at a time */
+    while (k--) {
+        if (!down && cnt > 1)
+            cnt = (u16)(cnt - 1); /* counting up */
+        else if (!down)
+            cnt = 0, down = 1; /* 1 on the way up came from BOTTOM */
+        else if (cnt + 1u == tp)
+            cnt = tp, down = 0; /* TOP - 1 on the way down came from TOP */
+        else
+            cnt = (u16)(cnt + 1); /* counting down */
+    }
+    return cnt;
+}
+
+/* ICR1 takes the count at the edge: the core may have run past it by
+ * input_lead cycles, partway through an instruction */
+static void capture(struct avr_tc *t)
+{
+    u32 n = prescale(t);
+    u64 now = t->s->cycles, lead = t->s->input_lead;
+    t->icr = n && lead ? count_before(t, t->cnt, t->down, now / n - (now - lead) / n) : t->cnt;
+    esk_rf_hw(t->icrl, t->icr & 0xffu);
+    esk_rf_hw(t->icrh, t->icr >> 8);
+    if (!(t->tifr->value & ICF)) {
+        esk_rf_hw(t->tifr, t->tifr->value | ICF);
+        esk_avr_irq_changed(t->s);
+    }
+}
+
+/* `level` is the source's new level: its callers report changes only */
+static void icp_edge(struct avr_tc *t, int src, int level)
+{
+    if (src != (t->acsr && (t->acsr->value & ACIC) ? 1 : 0) || icr_is_top(t)) {
+        t->nc_pending = 0;
+        return;
+    }
+    if (t->nc_pending) {
+        t->nc_pending = 0; /* back before four samples: filtered out */
+        return;
+    }
+    if ((t->tccrb->value & ICES) ? !level : level)
+        return;
+    if ((t->tccrb->value & ICNC) && prescale(t)) {
+        t->nc_pending = 1;
+        t->nc_at = t->s->cycles + 4 - t->s->input_lead;
+        return;
+    }
+    capture(t);
+}
+
+void esk_avr_icp(struct esk_mach *m, int src, int level)
+{
+    int i;
+    for (i = 0; m->rf; i++) {
+        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
+        if (!p)
+            break;
+        if (p->ops == &esk_avr_tc16_ops && p->ctx)
+            icp_edge((struct avr_tc *)p->ctx, src, level != 0);
     }
 }
 
@@ -330,13 +431,21 @@ static void tc_tick(void *ctx, u32 cycles)
      * this instruction and after it */
     now = t->s->cycles;
     before = now - cycles;
+    if (t->nc_pending && now >= t->nc_at) {
+        u64 at = t->nc_at > before ? t->nc_at : before;
+        t->tick0 = (before / n + 1) * n;
+        advance(t, at / n - before / n);
+        t->nc_pending = 0;
+        capture(t);
+        before = at;
+    }
+    t->tick0 = (before / n + 1) * n;
     advance(t, now / n - before / n);
 }
 
 /* the cycles until a flag whose interrupt is enabled sets, or a pin edge */
-static int tc_next(void *ctx, u32 *cycles)
+static int next_event(struct avr_tc *t, u32 *cycles)
 {
-    struct avr_tc *t = (struct avr_tc *)ctx;
     u32 n = prescale(t), k, limit;
     u8 en = (u8)(t->timsk->value & (TOV | OCFA | OCFB | ICF));
     int pins = any_connected(t), down = t->down, ch;
@@ -362,6 +471,19 @@ static int tc_next(void *ctx, u32 *cycles)
         }
     }
     return 0;
+}
+
+static int tc_next(void *ctx, u32 *cycles)
+{
+    struct avr_tc *t = (struct avr_tc *)ctx;
+    int any = next_event(t, cycles);
+    if (t->nc_pending && prescale(t)) {
+        u64 left = t->nc_at > t->s->cycles ? t->nc_at - t->s->cycles : 1;
+        if (!any || left < *cycles)
+            *cycles = (u32)left;
+        any = 1;
+    }
+    return any;
 }
 
 /* ---- the registers ----------------------------------------------------------- */
@@ -411,7 +533,7 @@ static void tc_write(void *ctx, u32 off, int n, u32 v)
             t->temp = b;
         else if (is(t->tcntl, off))
             t->cnt = (u16)(t->temp << 8 | b);
-        else if (is(t->icrl, off))
+        else if (is(t->icrl, off) && icr_is_top(t))
             t->icr = (u16)(t->temp << 8 | b);
         else if (is(t->ocrl[0], off))
             set_ocr(t, 0, (u16)(t->temp << 8 | b));
@@ -457,6 +579,7 @@ static void tc_reset(void *ctx)
     int ch;
     t->cnt = t->icr = 0;
     t->temp = 0;
+    t->nc_pending = 0;
     t->down = 0;
     t->running = 0;
     for (ch = 0; ch < 2; ch++) {
@@ -530,6 +653,8 @@ static void *create(struct esk_mach *s, struct esk_rf_periph *p, int wide)
         t.ocrh[1] = named(p, "OCR%d%s", t.unit, "BH");
         if (!t.tcntl || !t.tcnth || !t.icrl || !t.icrh || !t.ocrl[0] || !t.ocrh[0] || !t.ocrl[1] || !t.ocrh[1])
             return 0;
+        if (p->rf && esk_rf_periph(p->rf, "AC"))
+            t.acsr = esk_rf_reg(esk_rf_periph(p->rf, "AC"), "ACSR");
     } else {
         t.tcnt = named(p, "TCNT%d%s", t.unit, "");
         t.ocr[0] = named(p, "OCR%d%s", t.unit, "A");

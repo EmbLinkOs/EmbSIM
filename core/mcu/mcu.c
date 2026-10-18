@@ -73,6 +73,10 @@ typedef struct mcu_state {
     esk_event_handle ev;
     es_time_t ev_at;
     int pin_changed;
+    /* a pin on an analog island changed in the quantum: how long its edge
+     * ramps, and the time the next quantum waits for it to (the core goes
+     * on from where it stopped then, less than a cycle behind) */
+    es_time_t settle_ps, settle_to;
     int held, boot_fail, stopped, ended_reported;
     int fresh; /* the first quantum after a reset looks at NRST and BOOT0 */
     const char *stop_why;
@@ -227,7 +231,7 @@ static void report_end(mcu_state *st)
     }
 }
 
-static void mcu_reset_now(mcu_state *st);
+static void mcu_reset_now(mcu_state *st, int power_on);
 static int level_of(const esk_pin *p, int dflt);
 
 static void quantum_cb(void *ctx, void *arg, es_time_t now)
@@ -241,7 +245,16 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
     st->ev = 0;
     if (!runnable(st))
         return;
-    catch_up(st, now);
+    if (now < st->settle_to) {
+        /* an earlier quantum (a wake-up) comes before the circuit has its
+         * pins' last changes: it waits for them, as one more change to a
+         * pin would take the place of one not yet applied */
+        schedule_at(st, st->settle_to);
+        return;
+    }
+    if (now > st->settle_to)
+        catch_up(st, now);
+    st->settle_to = 0;
     if (st->fresh) {
         /* the pins the reset looks at, now that the circuit has settled */
         st->fresh = 0;
@@ -280,6 +293,7 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
     st->q_cyc = st->m.cycles;
     st->q_hz = hz;
     st->pin_changed = 0;
+    st->settle_ps = 0;
     st->m.return_on_sleep = 1;
     {
         u64 insns0 = st->m.insns, stepping = st->steps;
@@ -298,7 +312,7 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         }
     }
     if (st->m.reset_req) {
-        mcu_reset_now(st);
+        mcu_reset_now(st, 0);
         return;
     }
     if (st->m.state != ESK_MACH_RUN) {
@@ -315,7 +329,20 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         schedule_sleep(st);
         return;
     }
-    schedule_at(st, st->pin_changed ? st->t + 1 : st->t);
+    if (st->pin_changed) {
+        /* the circuit sees the change before the core goes on; an edge on an
+         * analog island first ramps to its level, so a device it clocks
+         * answers (a comparator crosses) before the core's next instruction
+         * can look at the answer: up to a cycle, as no instruction is
+         * shorter */
+        es_time_t gap = st->settle_ps ? st->settle_ps : 1, cycle = cycles_to_ps(1, hz, NULL);
+        if (gap >= cycle)
+            gap = cycle > 1 ? cycle - 1 : 1;
+        st->settle_to = st->t + gap;
+        schedule_at(st, st->settle_to);
+        return;
+    }
+    schedule_at(st, st->t);
 }
 
 /* ---- pins ------------------------------------------------------------------ */
@@ -371,6 +398,10 @@ static void h_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
     if (was_af != (cfg->af != 0))
         map_rx_pins(st); /* a UART's RX may have come to this pin or left it */
     at = local_now(st);
+    if (st->m.output_lag) {
+        es_time_t lag = cycles_to_ps(st->m.output_lag, esk_mach_core_hz(&st->m), NULL);
+        at = at > lag ? at - lag : 0;
+    }
     if (at < e->sched.now)
         at = e->sched.now;
     if (q->ev) {
@@ -381,8 +412,20 @@ static void h_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
                      (void *)(uintptr_t)((unsigned)port << 8 | (unsigned)bit), &q->ev) != ES_OK)
         esk_comp_diag(st->c, ES_SEV_FATAL, "sched.queue_full", "a pin change cannot be scheduled");
     if (st->in_quantum) {
+        esk_pin *p = st->gpio[port][bit];
         st->m.yield = 1;
         st->pin_changed = 1;
+        if (p->net && p->net->island && p->model.slew_v_per_us > 0.0) {
+            /* the whole swing between the driver's open-circuit levels
+             * (esk_pin_bridge_target's) bounds the ramp to any threshold */
+            const esk_pin_model *pm = &p->model;
+            double hi = (pm->voc_set & 1) ? pm->voc_high : pm->rails && pm->nominal_v > 0.0 ? pm->nominal_v : pm->voh;
+            double lo = (pm->voc_set & 2) ? pm->voc_low : pm->rails ? 0.0 : pm->vol;
+            double us = (hi > lo ? hi - lo : lo - hi) / pm->slew_v_per_us;
+            es_time_t ramp = us > 0.0 ? (es_time_t)(us * 1e6) + 1 : 1;
+            if (ramp > st->settle_ps)
+                st->settle_ps = ramp;
+        }
     }
 }
 
@@ -428,6 +471,19 @@ static int h_pin_volts(void *ctx, int port, int bit, double *v)
     else
         *v = esk_net_value(n) == ESK_L1 ? st->m.vdd : 0.0;
     return 1;
+}
+
+static int h_pin_watch(void *ctx, int port, int bit, int on, double v)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_pin *p;
+    if (port < 0 || port >= MCU_PORTS || bit < 0 || bit > 15 || !(p = st->gpio[port][bit]))
+        return 0;
+    if (!on) {
+        esk_pin_compare_off(p);
+        return 0;
+    }
+    return esk_pin_compare(p, v);
 }
 
 /* ---- serial ------------------------------------------------------------------ */
@@ -665,7 +721,12 @@ static int level_of(const esk_pin *p, int dflt)
 }
 
 /* power-on or a pin reset: memory as the image left it, the machine's reset */
-static void mcu_reset_now(mcu_state *st)
+/* the part comes out of reset with the image loaded again. RAM keeps its
+ * contents through a reset from the part itself (a watchdog's, a system
+ * reset request) or from its reset pin, as an SRAM does while it is
+ * powered; at power-on (the session's start or reset, a new image) it is
+ * erased */
+static void mcu_reset_now(mcu_state *st, int power_on)
 {
     esk_engine *e = st->c->e;
     u32 entry = 0;
@@ -676,7 +737,7 @@ static void mcu_reset_now(mcu_state *st)
         st->ev = 0;
     }
     for (r = 0; r < st->m.bus.nrg; r++)
-        if (!st->m.bus.rg[r].mirror)
+        if (!st->m.bus.rg[r].mirror && (power_on || st->m.bus.rg[r].kind != ESK_MEM_RAM))
             esk_bus_erase(&st->m.bus.rg[r]);
     if (!st->image) {
         /* no image yet: the part sits blank, its pins inputs */
@@ -754,7 +815,7 @@ static void mcu_reset(esk_comp *c)
     }
     st->held = 0;
     st->steps = 0;
-    mcu_reset_now(st);
+    mcu_reset_now(st, 1);
 }
 
 static void mcu_on_input(esk_comp *c, esk_pin *p)
@@ -776,14 +837,18 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
             esk_mach_reset(&st->m);
         } else if (!low && st->held) {
             st->held = 0;
-            mcu_reset_now(st);
+            mcu_reset_now(st, 0);
         }
         return;
     }
     if (st->held)
         return;
-    if (st->m.pins_changed)
+    if (st->m.pins_changed) {
+        es_time_t now = e->sched.now;
+        st->m.input_lead = st->t > now ? (u32)ps_to_cycles(st->t - now, esk_mach_core_hz(&st->m)) : 0;
         st->m.pins_changed(&st->m);
+        st->m.input_lead = 0;
+    }
     rx_edge(st, p);
     wake(st);
 }
@@ -795,7 +860,7 @@ static es_status mcu_on_set(esk_comp *c, const char *input, const esk_json *valu
         return ES_ESTATE;
     if (!strcmp(input, "reset")) {
         catch_up(st, c->e->sched.now);
-        mcu_reset_now(st);
+        mcu_reset_now(st, 0);
         return ES_OK;
     }
     if (!strcmp(input, "serial") || !strcmp(input, "tx_text"))
@@ -939,7 +1004,7 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
     if (st->an_what)
         (void)esk_mcu_analyze(c, st->an_what, why, cap); /* the new image's functions */
     catch_up(st, e->sched.now);
-    mcu_reset_now(st);
+    mcu_reset_now(st, 1);
     return ES_OK;
 }
 
@@ -1010,6 +1075,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.diag = h_diag;
     st->m.host.exc = h_exc;
     st->m.host.pin_volts = h_pin_volts;
+    st->m.host.pin_watch = h_pin_watch;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     snprintf(st->console, sizeof st->console, "%s", su->console ? su->console : "USART1");
     for (port = 0; port < MCU_PORTS; port++)

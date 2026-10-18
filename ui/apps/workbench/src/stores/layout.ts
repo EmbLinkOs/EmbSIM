@@ -11,6 +11,8 @@ export interface LayoutState {
   canvasMode: CanvasMode;
   paletteOpen: boolean;
   diagnosticsOpen: boolean;
+  /** the New project dialog */
+  newProjectOpen: boolean;
   /** The board or composite part whose inside the schematic shows, or null. */
   inside: string | null;
   setInside(id: string | null): void;
@@ -18,6 +20,7 @@ export interface LayoutState {
   setCanvasMode(m: CanvasMode): void;
   setPaletteOpen(open: boolean): void;
   setDiagnosticsOpen(open: boolean): void;
+  setNewProjectOpen(open: boolean): void;
 }
 
 function readPerspective(): Perspective {
@@ -34,6 +37,7 @@ export const useLayout = create<LayoutState>((set) => ({
   canvasMode: 'select',
   paletteOpen: false,
   diagnosticsOpen: false,
+  newProjectOpen: false,
   inside: null,
   setInside: (inside) => set({ inside }),
   setPerspective: (perspective) => {
@@ -47,4 +51,5 @@ export const useLayout = create<LayoutState>((set) => ({
   setCanvasMode: (canvasMode) => set({ canvasMode }),
   setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
   setDiagnosticsOpen: (diagnosticsOpen) => set({ diagnosticsOpen }),
+  setNewProjectOpen: (newProjectOpen) => set({ newProjectOpen }),
 }));

@@ -1,0 +1,60 @@
+{
+  "libraries": [
+    {
+      "name": "DHT-sensor-library",
+      "repo": "https://github.com/adafruit/DHT-sensor-library",
+      "commit": "f7d625462e6033f373e51f8c67f88fc429535b47",
+      "version": "1.4.7",
+      "license": "MIT"
+    },
+    {
+      "name": "Adafruit_Sensor",
+      "repo": "https://github.com/adafruit/Adafruit_Sensor",
+      "commit": "0a9127a1e886ff1adb4c1b6f5958b24108d55aa6",
+      "version": "1.1.15",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "Servo",
+      "repo": "https://github.com/arduino-libraries/Servo",
+      "commit": "440b319ec11ea2664df8ce201c271c935de28a2d",
+      "version": "1.2.2+",
+      "license": "LGPL-2.1"
+    },
+    {
+      "name": "NewPing",
+      "repo": "https://bitbucket.org/teckel12/arduino-new-ping.git",
+      "commit": "8619f2b1fcfe4c28b239c7b65b744a8f49cd2d3e",
+      "version": "1.9.7",
+      "license": "NewPing's own: use as-is, no forks or derivatives (fetched unmodified, never vendored)"
+    },
+    {
+      "name": "LiquidCrystal",
+      "repo": "https://github.com/arduino-libraries/LiquidCrystal",
+      "commit": "42022e0bb7e11829317467bab28ed42af23e0ee5",
+      "version": "1.0.7",
+      "license": "LGPL-2.1"
+    },
+    {
+      "name": "LiquidCrystal_I2C",
+      "repo": "https://github.com/johnrickman/LiquidCrystal_I2C",
+      "commit": "738765e388816fb2a687d40436cd2604febce1b1",
+      "version": "1.1.4",
+      "license": "none stated (the Library Manager's LiquidCrystal I2C; fetched unmodified, never vendored)"
+    },
+    {
+      "name": "OneWire",
+      "repo": "https://github.com/PaulStoffregen/OneWire",
+      "commit": "800f26f3ee6eb446a72e013785cac3700e54cc13",
+      "version": "2.3.8",
+      "license": "MIT"
+    },
+    {
+      "name": "DallasTemperature",
+      "repo": "https://github.com/milesburton/Arduino-Temperature-Control-Library",
+      "commit": "dadbbf7d33f500a5785ac4ae9973b8c9083d0d39",
+      "version": "4.0.6",
+      "license": "MIT"
+    }
+  ]
+}

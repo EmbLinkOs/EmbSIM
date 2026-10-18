@@ -22,7 +22,9 @@ export function MetersPanel() {
   const outputs = useSession((s) => s.outputs);
   const nets = useSession((s) => s.nets);
   const entries = Object.entries(outputs)
-    .filter(([, v]) => typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string')
+    // a text that grows (a terminal's, an EEPROM's dump) is no reading: the Serial tab and
+    // the inspector show those; a short state word still is
+    .filter(([k, v]) => typeof v === 'number' || typeof v === 'boolean' || (typeof v === 'string' && v.length <= 24 && !/(text|dump)$/i.test(k)))
     .sort(([a], [b]) => depth(a) - depth(b) || a.localeCompare(b));
   const analog = Object.entries(nets)
     .filter(([, s]) => s.voltage !== undefined)

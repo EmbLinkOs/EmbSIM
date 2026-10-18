@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:6.5px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="40" height="40" rx="2"/>
+  <line class="s" id="pin-dq" x1="60" y1="30" x2="50" y2="30"/><text class="p" x="47" y="32" text-anchor="end">DQ</text>
+  <line class="s" id="pin-vdd" x1="30" y1="0" x2="30" y2="10"/><text class="p" x="30" y="17" text-anchor="middle">VDD</text>
+  <line class="s" id="pin-gnd" x1="30" y1="60" x2="30" y2="50"/><text class="p" x="30" y="47" text-anchor="middle">GND</text>
+  <text class="t" x="27" y="32" text-anchor="middle">DS18B20</text>
+</svg>

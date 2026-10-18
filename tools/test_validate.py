@@ -118,6 +118,19 @@ class ComponentTests(Base):
         self.assertClean(self.check(path, idx))
         self.assertClean(self.check(path.parent / "tests" / "basic.json", idx))
 
+    def test_shared_model_must_stay_identical(self):
+        desc = copy.deepcopy(COMPONENT)
+        desc["model"] = {"script": "model.lua", "api": 1}
+        del desc["functional"]
+        script = "-- Shared by: widget, twin\nlocal M = {}\nreturn M\n"
+        path = self.write_component(desc)
+        (path.parent / "model.lua").write_text(script, encoding="utf-8")
+        twin = self.write_component(dict(desc, id="testlib/twin"), name="twin")
+        (twin.parent / "model.lua").write_text(script, encoding="utf-8")
+        self.assertNotIn("catalog.shared_model_differs", self.codes(self.check(path)))
+        (twin.parent / "model.lua").write_text(script + "-- changed\n", encoding="utf-8")
+        self.assertCode(self.check(path), "catalog.shared_model_differs")
+
     def test_unknown_field_rejected(self):
         desc = copy.deepcopy(COMPONENT)
         desc["colour"] = "red"

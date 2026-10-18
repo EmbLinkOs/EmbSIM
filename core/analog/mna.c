@@ -495,13 +495,32 @@ static int crossing(const esk_adev *d, const double *x, esk_logic *newv)
     return 0;
 }
 
+/* does it cross its pin's watch_v (a model's comparator, input or output)? */
+static int watch_crossing(const esk_adev *d, const double *x, esk_logic *newv)
+{
+    double v;
+    int node = d->node[0];
+    if (!d->pin || !d->pin->watch_on || (d->ops != &esk_bridge_in_ops && d->ops != &esk_bridge_out_ops))
+        return 0;
+    v = node > 0 ? x[node - 1] : 0.0;
+    if (d->pin->watch_state == ESK_L0 && v > d->pin->watch_v) {
+        *newv = ESK_L1;
+        return 1;
+    }
+    if (d->pin->watch_state == ESK_L1 && v < d->pin->watch_v) {
+        *newv = ESK_L0;
+        return 1;
+    }
+    return 0;
+}
+
 static int any_crossing(const esk_island *isl, const double *x)
 {
     size_t i;
     esk_logic nv;
     for (i = 0; i < isl->devs.len; i++) {
         const esk_adev *d = isl->devs.data[i];
-        if (bridge_input_role(d) && crossing(d, x, &nv))
+        if ((bridge_input_role(d) && crossing(d, x, &nv)) || watch_crossing(d, x, &nv))
             return 1;
     }
     return 0;
@@ -515,6 +534,8 @@ static void deliver_crossings(esk_island *isl, es_time_t t)
         esk_logic nv;
         if (bridge_input_role(d) && crossing(d, isl->x, &nv))
             esk_engine_bridge_crossed(isl->e, d->pin, nv, t);
+        if (watch_crossing(d, isl->x, &nv))
+            esk_engine_watch_crossed(isl->e, d->pin, nv, t);
     }
 }
 

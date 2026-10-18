@@ -234,6 +234,11 @@ typedef struct esk_mach_host {
     /* the voltage on a pin's net, for an ADC: 1 and *v, or 0 when the pin
      * is not connected */
     int (*pin_volts)(void *ctx, int port, int bit, double *v);
+    /* an analog comparator's threshold on a pin: the pins' outside levels
+     * change (pins_changed) when its net's voltage crosses `v`, at the
+     * crossing's time; `on` 0 takes it off. 1 when the pin's net is analog
+     * and so watched, 0 when it is not */
+    int (*pin_watch)(void *ctx, int port, int bit, int on, double v);
     /* a core enters exception or interrupt n (its own numbering: a
      * Cortex-M's exception number, an AVR's vector, 16 + a RISC-V
      * interrupt's cause or the cause of an exception, 16 + a MIPS
@@ -293,6 +298,14 @@ struct esk_mach {
     int asleep;
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
+    /* while pins_changed reports an outside change: how many whole cycles
+     * the core has run past the change's time (it runs whole instructions),
+     * for a model that timestamps the change (an input capture) */
+    u32 input_lead;
+    /* while a model changes a pin through host.pin_cfg: how many cycles
+     * before now the change happened (a timer's output at the clock that
+     * switched it, inside the instruction just run) */
+    u32 output_lag;
     /* the register file and its models, or 0 */
     struct esk_rf *rf;
     /* the core clock in Hz as the clock model has it, or 0 for the

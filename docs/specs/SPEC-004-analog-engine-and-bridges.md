@@ -177,6 +177,12 @@ for equations, sources, default assumptions and executable examples.
   crossings are detected by sign change of `v - threshold` between accepted
   steps and bisected to `crossing_resolution_ps`; the digital value changes
   at the bracketed time as a `SIGNAL` event with the pin's `tpd`.
+- **Model comparator**: a model may set a second threshold on any of its
+  pins on an analog net (`esk_pin_compare`, `esk_pin_compare_off`), as an
+  MCU's analog comparator does at the other input's voltage. Its crossings
+  are found and bisected like the comparator's and call the model's
+  `on_input` at the bracketed time; the pin's own thresholds and digital
+  value are untouched.
 - **Pull**: `rpull` to the supply or ground node of the island; the supply
   node is the net of the pin's `power` reference in the component description
   (`vdd_pin`), else an implicit ideal source at the family's nominal voltage,

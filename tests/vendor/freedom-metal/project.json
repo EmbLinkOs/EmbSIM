@@ -96,6 +96,16 @@
    "id": "blue",
    "target": "net:B1.GPIO21",
    "kind": "digital"
+  },
+  {
+   "id": "sck",
+   "target": "net:B1.GPIO5",
+   "kind": "digital"
+  },
+  {
+   "id": "cs",
+   "target": "net:B1.GPIO2",
+   "kind": "digital"
   }
  ]
 }

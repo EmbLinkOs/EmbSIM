@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "arduino-comparator",
+  "description": "An Arduino Uno timing an RC network with its analog comparator (tests/vendor/arduino/run.py puts the image beside this file as sketch.elf): D8 drives a 1 uF capacitor on AIN0 (D6) through 10 kOhm; AIN1 (D7) is held at 2.5 V by two 10 kOhm resistors; a terminal on D0/D1 at 115200 baud.",
+  "policy": "electrical",
+  "boards": [
+    {
+      "id": "B1",
+      "board": "emblink/arduino_uno",
+      "layout": {
+        "x": 300,
+        "y": 260
+      },
+      "firmware": {
+        "image": "sketch.elf",
+        "format": "elf"
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "USB",
+      "component": "emblink/vsource",
+      "params": {
+        "kind": "dc",
+        "dc": 5
+      },
+      "layout": {
+        "x": 720,
+        "y": 60
+      }
+    },
+    {
+      "id": "VT1",
+      "component": "emblink/virtual_terminal",
+      "params": {
+        "baud": 115200
+      },
+      "layout": {
+        "x": 720,
+        "y": 520
+      }
+    },
+    {
+      "id": "GND1",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 900,
+        "y": 200
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 120,
+        "y": 700
+      }
+    },
+    {
+      "id": "C1",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "1u"
+      },
+      "layout": {
+        "x": 200,
+        "y": 760,
+        "rotation": 90
+      }
+    },
+    {
+      "id": "R2",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 320,
+        "y": 700,
+        "rotation": 90
+      }
+    },
+    {
+      "id": "R3",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 320,
+        "y": 800,
+        "rotation": 90
+      }
+    }
+  ],
+  "nets": {
+    "USB5V": [
+      "USB.+",
+      "B1.5V",
+      "R2.1"
+    ],
+    "GND": [
+      "B1.GND",
+      "GND1.GND",
+      "USB.-",
+      "VT1.GND",
+      "C1.2",
+      "R3.2"
+    ],
+    "UART_TX": [
+      "B1.D1",
+      "VT1.RX"
+    ],
+    "UART_RX": [
+      "B1.D0",
+      "VT1.TX"
+    ],
+    "DRIVE": [
+      "B1.D8",
+      "R1.1"
+    ],
+    "AIN0": [
+      "B1.D6",
+      "R1.2",
+      "C1.1"
+    ],
+    "AIN1": [
+      "B1.D7",
+      "R2.2",
+      "R3.1"
+    ]
+  },
+  "probes": [
+    {
+      "id": "terminal",
+      "target": "serial:VT1",
+      "kind": "serial"
+    },
+    {
+      "id": "ain0",
+      "target": "net:AIN0",
+      "kind": "analog"
+    },
+    {
+      "id": "ain1",
+      "target": "net:AIN1",
+      "kind": "analog"
+    }
+  ]
+}

@@ -30,7 +30,7 @@ export function Placeholder({ title, description, requires = [], needsBoard, act
     <div className="wb-placeholder" role="status">
       <div className="es-row">
         <span className="wb-placeholder__title">{title}</span>
-        <Badge tone={available ? 'accent' : 'warning'}>{available ? 'available' : 'not available in M0'}</Badge>
+        {!available && <Badge tone="warning">not available</Badge>}
       </div>
       <div>{description}</div>
       {!available && (

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "cold",
+  "description": "50 cm in air at 0 C: sound travels at 331.3 m/s, so the echo is 2 x 0.5 / 331.3 = 3018 us, 106 us longer than at 20 C.",
+  "policy": "functional",
+  "until": "6ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "TG",
+        "component": "emblink/pulse_source",
+        "params": {
+          "td": "1m",
+          "pw": "10u",
+          "per": "1"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hc_sr04"
+      }
+    ],
+    "nets": {
+      "TRIG": [
+        "TG.+",
+        "DUT.TRIG"
+      ],
+      "ECHO": [
+        "DUT.ECHO"
+      ]
+    }
+  },
+  "expect": {
+    "net:ECHO": {
+      "at": "3ms",
+      "logic": "1"
+    },
+    "output:DUT.echo_us": {
+      "at": "5ms",
+      "equals": 3018
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "distance_cm",
+      "value": 50
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "temperature",
+      "value": 0
+    }
+  ]
+}

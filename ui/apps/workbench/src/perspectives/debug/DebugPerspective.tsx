@@ -16,6 +16,7 @@ import { hex32, hexReg, useDebug } from '../../stores/debug';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { Placeholder } from '../Placeholder';
+import { demangle } from './demangle';
 
 function useDebugBoard() {
   const boards = useSession((s) => s.boards);
@@ -97,7 +98,7 @@ function DebugToolbar() {
     await useDebug.getState().refresh();
   };
   const place = where
-    ? `${where.core !== undefined ? `core ${where.core} · ` : ''}${where.function ? `${where.function}+${where.offset ?? 0}` : ''} ${hex32(where.pc)}${where.file ? ` · ${where.file.split(/[\\/]/).pop()}:${where.line}` : ''}`
+    ? `${where.core !== undefined ? `core ${where.core} · ` : ''}${where.function ? `${demangle(where.function)}+${where.offset ?? 0}` : ''} ${hex32(where.pc)}${where.file ? ` · ${where.file.split(/[\\/]/).pop()}:${where.line}` : ''}`
     : '';
   return (
     <div className="wb-debug__toolbar" role="toolbar" aria-label="Debugger">
@@ -212,7 +213,11 @@ function DisassemblyPanel() {
                 </td>
                 <td className="wb-debug__addr">{hex32(i.address)}</td>
                 <td className="wb-debug__text">
-                  {i.label && <span className="wb-debug__label">{i.label}:</span>}
+                  {i.label && (
+                    <span className="wb-debug__label" title={i.label}>
+                      {demangle(i.label)}:
+                    </span>
+                  )}
                   {i.text}
                 </td>
               </tr>
@@ -301,7 +306,7 @@ function BreakpointsPanel() {
         <ul className="wb-debug__list">
           {breakpoints.map((b, k) => (
             <li key={k}>
-              <code>{b.kind === 'code' ? `${b.function ? `${b.function}+${b.offset ?? 0} ` : ''}${hex32(b.pc ?? 0)}` : `${b.kind} ${hex32(b.address ?? 0)} (${b.length})`}</code>
+              <code title={b.function}>{b.kind === 'code' ? `${b.function ? `${demangle(b.function)}+${b.offset ?? 0} ` : ''}${hex32(b.pc ?? 0)}` : `${b.kind} ${hex32(b.address ?? 0)} (${b.length})`}</code>
               <Button size="sm" variant="ghost" onClick={() => void remove(b)} aria-label="Remove breakpoint">
                 Remove
               </Button>

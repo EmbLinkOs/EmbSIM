@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "watchdog",
+  "until": "600ms",
+  "description": "avr-libc's watchdog: the WDT interrupt at 32 ms waking the part from power-down four times (about 130 ms), then wdt_enable(WDTO_60MS) kicked by wdt_reset() for 100 ms and left to time out 64 ms after the last kick, twice. A boot count in .noinit survives each watchdog reset; MCUSR reads PORF at power-on and WDRF after a watchdog reset.",
+  "assertions": [
+    {
+      "id": "first-boot",
+      "at": "280ms",
+      "probe": "terminal",
+      "expect": {
+        "equals": "boot 1 mcusr 1\r\nwoken by the watchdog 4 times\r\nkicked for 100 ms, now hanging\r\n"
+      }
+    },
+    {
+      "id": "watchdog-reset",
+      "by": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "boot 1 mcusr 1\r\nwoken by the watchdog 4 times\r\nkicked for 100 ms, now hanging\r\nboot 2 mcusr 8\r\n"
+      }
+    },
+    {
+      "id": "second-boot",
+      "at": "440ms",
+      "probe": "terminal",
+      "expect": {
+        "equals": "boot 1 mcusr 1\r\nwoken by the watchdog 4 times\r\nkicked for 100 ms, now hanging\r\nboot 2 mcusr 8\r\nkicked for 100 ms, now hanging\r\n"
+      }
+    },
+    {
+      "id": "third-boot",
+      "by": "470ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "boot 1 mcusr 1\r\nwoken by the watchdog 4 times\r\nkicked for 100 ms, now hanging\r\nboot 2 mcusr 8\r\nkicked for 100 ms, now hanging\r\nboot 3 mcusr 8\r\ndone\r\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ]
+}

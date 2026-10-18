@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { Badge, Button, IconButton, Input, SegmentedControl, Select, Tooltip, useToast, type ThemePreference } from '@embsim/design';
+import { Badge, Button, IconButton, Input, Menu, SegmentedControl, Select, Tooltip, useToast, type Command, type MenuItem, type ThemePreference } from '@embsim/design';
 import { formatPsRaw, formatTime, parseDuration, type Policy } from '@embsim/protocol';
 import { useCommandStack } from '@embsim/scene';
-import { AlertTriangle, Command as CommandIcon, CircuitBoard, Moon, Pause, Play, Redo2, RotateCcw, SkipForward, StepForward, Sun, Undo2 } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Command as CommandIcon, CircuitBoard, Moon, Pause, Play, Redo2, RotateCcw, SkipForward, StepForward, Sun, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { controls, errorMessage } from '../actions';
 import { PERSPECTIVES, useLayout, type Perspective } from '../stores/layout';
@@ -18,7 +18,7 @@ const SPEEDS: { value: string; label: string; speed: number }[] = [
   { value: '0', label: 'Max', speed: 0 },
 ];
 
-export function Toolbar({ theme }: { theme: { resolved: 'dark' | 'light'; setPreference: (p: ThemePreference) => void; toggle: () => void } }) {
+export function Toolbar({ theme, commands = [] }: { theme: { resolved: 'dark' | 'light'; setPreference: (p: ThemePreference) => void; toggle: () => void }; commands?: Command[] }) {
   const now = useSession((s) => s.now);
   const running = useSession((s) => s.running);
   const speed = useSession((s) => s.speed);
@@ -43,6 +43,12 @@ export function Toolbar({ theme }: { theme: { resolved: 'dark' | 'light'; setPre
     }
   })();
   const summary = diagnosticSummary(diagnostics);
+  const projectName = useProject((s) => s.project?.name);
+  // the project menu runs the palette's own commands
+  const projectItems: MenuItem[] = ['project.new', 'project.open', 'project.save', 'project.save-as', 'view.gallery']
+    .map((id) => commands.find((c) => c.id === id))
+    .filter((c): c is Command => Boolean(c))
+    .map((c) => ({ id: c.id, label: c.label, icon: c.icon, shortcut: c.shortcut, disabled: c.disabled, separator: c.id === 'view.gallery', onSelect: () => c.run() }));
   const connected = status === 'open';
 
   const guard = (fn: () => Promise<void>) => () => {
@@ -52,8 +58,25 @@ export function Toolbar({ theme }: { theme: { resolved: 'dark' | 'light'; setPre
   return (
     <div className="wb-toolbar" role="toolbar" aria-label="Workbench toolbar">
       <div className="wb-toolbar__brand">
-        <CircuitBoard aria-hidden="true" />
-        <span>EmbSIM</span>
+        {projectItems.length ? (
+          <Menu
+            label={`Project menu${projectName ? `: ${projectName}` : ''}`}
+            items={projectItems}
+            trigger={
+              <>
+                <CircuitBoard aria-hidden="true" />
+                <span>EmbSIM</span>
+                {projectName && <span className="wb-toolbar__project">{projectName}</span>}
+                <ChevronDown aria-hidden="true" style={{ width: 14, height: 14, color: 'var(--text-muted)' }} />
+              </>
+            }
+          />
+        ) : (
+          <>
+            <CircuitBoard aria-hidden="true" />
+            <span>EmbSIM</span>
+          </>
+        )}
         {isDemo && (
           <Badge tone="accent" title="No engine is connected: an in-memory demo session answers the protocol">
             Demo session

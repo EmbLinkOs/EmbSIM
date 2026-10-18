@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Sweep",
+  "until": "6s",
+  "description": "The Servo library's Sweep, unmodified: 1 deg every 15 ms from 0 to 180 and back, on D9. The horn holds its power-up 90 deg until the first pulse (attach() zeroes TCNT1 with OCR1A at 0, so the first compare match waits for a full wrap, 32.8 ms), turns down at the SG90's rated 625 deg/s at 5 V to catch the sweep, then follows it: 31.9 deg at 0.5 s, 177.96 deg near the top at 2.7 s, back to 1 deg at 5.5 s. Each 1-deg step, 10.3 us of pulse, is past the servo's 10 us dead band.",
+  "assertions": [
+    {
+      "id": "holds",
+      "at": "40ms",
+      "probe": "angle",
+      "expect": {
+        "min": 89.99,
+        "max": 90.01
+      }
+    },
+    {
+      "id": "catches-up",
+      "at": "100ms",
+      "probe": "angle",
+      "expect": {
+        "min": 60.58,
+        "max": 61.18
+      }
+    },
+    {
+      "id": "0.5s",
+      "at": "500ms",
+      "probe": "angle",
+      "expect": {
+        "min": 31.7,
+        "max": 32.1
+      }
+    },
+    {
+      "id": "1.5s",
+      "at": "1500ms",
+      "probe": "angle",
+      "expect": {
+        "min": 98.71,
+        "max": 99.11
+      }
+    },
+    {
+      "id": "top",
+      "at": "2700ms",
+      "probe": "angle",
+      "expect": {
+        "min": 177.76,
+        "max": 178.16
+      }
+    },
+    {
+      "id": "back",
+      "at": "3000ms",
+      "probe": "angle",
+      "expect": {
+        "min": 162.71,
+        "max": 163.11
+      }
+    },
+    {
+      "id": "bottom",
+      "at": "5500ms",
+      "probe": "angle",
+      "expect": {
+        "min": 0.76,
+        "max": 1.16
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ]
+}

@@ -97,7 +97,10 @@ sensors whose electrical side is a composite.
   Handlers: `start(ctx, "read"|"write")` (returning `false` leaves the
   address unacknowledged, as a device busy with a write cycle does),
   `write(ctx, byte)` (returning `false` sends a NACK), `read(ctx) -> byte`, `stop(ctx)`. Pins default to
-  `SDA` and `SCL`. `ctx.bus.spi_slave(handlers, options?)` decodes 8-bit
+  `SDA` and `SCL`; `pins` may name them (`sda`, `scl`) and list
+  `address_pins`, up to three pins that set the address's low bits as a
+  part's A0..A2 do: each one high when an address byte arrives adds its bit
+  to `address` (an unconnected one reads low). `ctx.bus.spi_slave(handlers, options?)` decodes 8-bit
   frames, MSB first, in modes 0 to 3 (`options.mode`), CS active low,
   releasing MISO while not selected. Handlers: `select(ctx) -> first byte`,
   `transfer(ctx, byte) -> next byte`, `deselect(ctx)`. Pins default to

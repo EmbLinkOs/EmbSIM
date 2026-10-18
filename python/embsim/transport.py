@@ -17,10 +17,12 @@ import base64
 import hashlib
 import json
 import os
+import queue
 import secrets
 import socket
 import struct
 import subprocess
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -224,6 +226,23 @@ class StdioClient(_BaseClient):
         self.proc = subprocess.Popen(cmd_argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd,
                                      env=env, bufsize=0)
         self._buf = b""
+        # A thread reads the sidecar's stdout, so a wait for it can time
+        # out everywhere: Windows pipes cannot be select()ed.
+        self._chunks: queue.Queue[bytes] = queue.Queue()
+        self._reader = threading.Thread(target=self._read_stdout, daemon=True)
+        self._reader.start()
+
+    def _read_stdout(self) -> None:
+        assert self.proc.stdout is not None
+        fd = self.proc.stdout.fileno()
+        while True:
+            try:
+                chunk = os.read(fd, 65536)
+            except OSError:
+                chunk = b""
+            self._chunks.put(chunk)
+            if not chunk:
+                return
 
     def _send_text(self, text: str) -> None:
         assert self.proc.stdin is not None
@@ -234,22 +253,22 @@ class StdioClient(_BaseClient):
             raise TransportError("sidecar stdin closed") from e
 
     def _recv_text(self, timeout: Optional[float]) -> Optional[str]:
-        assert self.proc.stdout is not None
-        fd = self.proc.stdout.fileno()
         deadline = None if timeout is None else time.monotonic() + timeout
         while True:
             nl = self._buf.find(b"\n")
             if nl >= 0:
                 line, self._buf = self._buf[:nl], self._buf[nl + 1:]
                 return line.decode("utf-8", errors="replace")
-            if deadline is not None:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    return None
-                if not _fd_readable(fd, remaining):
-                    continue
-            chunk = os.read(fd, 65536)
+            try:
+                if deadline is None:
+                    chunk = self._chunks.get()
+                else:
+                    remaining = deadline - time.monotonic()
+                    chunk = self._chunks.get(timeout=remaining) if remaining > 0 else self._chunks.get_nowait()
+            except queue.Empty:
+                return None
             if not chunk:
+                self._chunks.put(chunk)  # every later read sees the end too
                 if self._buf:
                     line, self._buf = self._buf, b""
                     return line.decode("utf-8", errors="replace")
@@ -274,16 +293,6 @@ class StdioClient(_BaseClient):
                 self.proc.wait()
             if self.proc.stdout:
                 self.proc.stdout.close()
-
-
-def _fd_readable(fd: int, timeout: float) -> bool:
-    """select() on a pipe; on Windows pipes are not selectable so we block."""
-    try:
-        import select
-        r, _, _ = select.select([fd], [], [], timeout)
-        return bool(r)
-    except (OSError, ValueError):
-        return True
 
 
 class WebSocketClient(_BaseClient):

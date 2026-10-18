@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "HelloWorld",
+  "until": "1800ms",
+  "inputs": [
+    {
+      "at": "500ms",
+      "target": "POT",
+      "input": "position",
+      "value": 0.1
+    }
+  ],
+  "assertions": [
+    {
+      "id": "backlight-off-at-start",
+      "at": "500ms",
+      "probe": "backlight",
+      "expect": {
+        "equals": "false"
+      }
+    },
+    {
+      "id": "row1",
+      "at": "1700ms",
+      "probe": "line1",
+      "expect": {
+        "equals": "   Hello, world!    "
+      }
+    },
+    {
+      "id": "row2",
+      "at": "1700ms",
+      "probe": "line2",
+      "expect": {
+        "equals": "  Ywrobot Arduino!  "
+      }
+    },
+    {
+      "id": "row3",
+      "at": "1700ms",
+      "probe": "line3",
+      "expect": {
+        "equals": "Arduino LCM IIC 2004"
+      }
+    },
+    {
+      "id": "row4",
+      "at": "1700ms",
+      "probe": "line4",
+      "expect": {
+        "equals": "  Power By Ec-yuan! "
+      }
+    },
+    {
+      "id": "backlight-on",
+      "at": "1700ms",
+      "probe": "backlight",
+      "expect": {
+        "equals": "true"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "LiquidCrystal_I2C's HelloWorld, unmodified, at address 0x27 as the backpack's pulled-up A0..A2 set it. The library writes every nibble through the PCF8574 with E toggled in separate I2C writes; the backlight stays off until the sketch calls backlight(). With the contrast trimmer turned at 0.5 s, the four rows show the sketch's text, rows 3 and 4 at the HD44780 addresses 0x14 and 0x54."
+}

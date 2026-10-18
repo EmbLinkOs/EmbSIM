@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "startup",
+  "description": "A start pulse 1 ms after power-up: inside the datasheet's first second the sensor does not answer.",
+  "policy": "functional",
+  "until": "13ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,0,0,1,1,1,1,1,1,1,1,1,1",
+          "period": "1m",
+          "drive": "open_drain",
+          "idle": 1
+        }
+      },
+      {
+        "id": "PU",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/dht22"
+      }
+    ],
+    "nets": {
+      "DATA": [
+        "PG.OUT0",
+        "DUT.DATA",
+        "PU.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:DATA": {
+      "between": [
+        "3.01ms",
+        "12ms"
+      ],
+      "edges": 0
+    },
+    "output:DUT.readings": {
+      "at": "12ms",
+      "equals": 0
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "temperature",
+      "value": 23.4
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "humidity",
+      "value": 56.7
+    }
+  ]
+}

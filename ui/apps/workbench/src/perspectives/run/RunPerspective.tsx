@@ -29,6 +29,9 @@ export function RunPerspective() {
   const selection = useSelection((s) => s.selection);
   const setSelection = useSelection((s) => s.setSelection);
   const inst = useInstruments();
+  const serialTargets = inst.probes.filter((p) => p.kind === 'serial').map((p) => p.target.replace(/^serial:/, ''));
+  // the port chosen, else the first: a terminal can send before one is picked
+  const serialTarget = inst.serialTarget && serialTargets.includes(inst.serialTarget) ? inst.serialTarget : (serialTargets[0] ?? null);
   const { toast } = useToast();
   const [bottomTab, setBottomTab] = useState<'serial' | 'diagnostics' | 'meters' | 'schematic'>('meters');
 
@@ -55,6 +58,8 @@ export function RunPerspective() {
         .filter((c) => c.record),
     [inst.probes, inst.records, project?.probes],
   );
+
+  const noScope = scopeTraces.length === 0;
 
   const exportAs = async (kind: 'csv' | 'vcd') => {
     const ids = inst.probes.map((p) => p.probe as string);
@@ -120,10 +125,12 @@ export function RunPerspective() {
     { id: 'controls', title: 'Controls', content: <ControlsPanel />, weight: 1, minSize: 120 },
   ];
   const centre: DockItem[] = [
-    { id: 'scope', title: 'Oscilloscope', flush: true, weight: 1.3, minSize: 140, actions: instrumentActions, content: (
+    // an instrument with no probe of its kind folds to its rail until the user opens it; the
+    // shared window's actions go with the one that shows something
+    { id: 'scope', title: 'Oscilloscope', flush: true, weight: 1.3, minSize: 140, collapsible: true, defaultCollapsed: noScope && logicChannels.length > 0, actions: noScope && logicChannels.length > 0 ? undefined : instrumentActions, content: (
       <Oscilloscope traces={scopeTraces} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedScope} onSelect={inst.setSelectedScope} revision={inst.revision} />
     ) },
-    { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, content: (
+    { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0 && !noScope, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
       <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
     {
@@ -158,10 +165,10 @@ export function RunPerspective() {
             ) : null },
             { value: 'serial', label: 'Serial', content: (
               <SerialTerminal
-                target={inst.serialTarget}
-                targets={inst.probes.filter((p) => p.kind === 'serial').map((p) => p.target.replace(/^serial:/, ''))}
+                target={serialTarget}
+                targets={serialTargets}
                 onTargetChange={inst.setSerialTarget}
-                lines={inst.serialLines}
+                lines={inst.serialLines.filter((l) => !l.target || l.target === serialTarget)}
                 onSend={(target, text) => guard(() => inputActions.serial(target, text))()}
                 disabled={!inst.probes.some((p) => p.kind === 'serial')}
                 disabledReason="No serial probe in this project (add a board with a UART)"

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "DHTtester",
+  "until": "9s",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "temperature",
+      "value": 23.4
+    },
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "humidity",
+      "value": 61.2
+    },
+    {
+      "at": "3s",
+      "target": "U1",
+      "input": "temperature",
+      "value": -5.3
+    }
+  ],
+  "assertions": [
+    {
+      "id": "readings",
+      "at": "9s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "DHTxx test!\r\nHumidity: 61.20%  Temperature: 23.40°C 74.12°F  Heat index: 23.39°C 74.11°F\r\nHumidity: 61.20%  Temperature: 23.40°C 74.12°F  Heat index: 23.39°C 74.11°F\r\nHumidity: 61.20%  Temperature: 20.60°C 69.08°F  Heat index: 20.31°C 68.56°F\r\nHumidity: 61.20%  Temperature: 15.90°C 60.62°F  Heat index: 15.14°C 59.26°F\r\n"
+      }
+    },
+    {
+      "id": "no-failure",
+      "at": "9s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "DHTxx test!\r\nHumidity"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "Adafruit's DHTtester, unmodified, reading a DHT22 on D2 every two seconds. The room is 23.4 C and 61.2 %RH from the start, and the temperature drops to -5.3 C at 3 s. Each read sends the sensor's previous measurement: the first two the room before the change; the third the one made as the second ended, about 1.03 s after the change, which the element's 10 s response time has brought to 23.4 - 28.7 (1 - e^(-1.03/10)) = 20.6 C; the fourth, two seconds on, 15.9 C."
+}

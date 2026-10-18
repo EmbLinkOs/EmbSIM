@@ -70,7 +70,7 @@ export const inputs = {
   },
   async serial(target: string, text: string): Promise<void> {
     await getClient().input.serial({ target, text });
-    useInstruments.getState().addSerialLine({ at: useSession.getState().now, direction: 'tx', text: text.replace(/\n$/, '') });
+    useInstruments.getState().addSerialLine({ at: useSession.getState().now, direction: 'tx', target, text: text.replace(/\n$/, '') });
   },
 };
 

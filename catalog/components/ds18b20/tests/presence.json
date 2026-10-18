@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "presence",
+  "description": "A 480 us reset: the part answers 30 us after the bus rises with a 120 us presence pulse.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+          "period": "5u",
+          "drive": "open_drain",
+          "idle": 1
+        }
+      },
+      {
+        "id": "PU",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "4.7k"
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ds18b20"
+      }
+    ],
+    "nets": {
+      "DQ": [
+        "PG.OUT0",
+        "DUT.DQ",
+        "PU.2"
+      ],
+      "VCC": [
+        "V.+",
+        "PU.1",
+        "DUT.VDD"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:DQ": {
+      "at": "560us",
+      "logic": "0"
+    },
+    "pin:DUT.DQ": {
+      "at": "700us",
+      "logic": "1"
+    }
+  }
+}

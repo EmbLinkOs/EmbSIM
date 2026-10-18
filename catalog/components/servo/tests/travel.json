@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "travel",
+  "description": "1.0 ms pulses every 20 ms from 1 ms: the target is 0 deg from 90. The horn turns at 600 deg/s (5 V: 625 deg/s) from the first pulse's end at 2 ms: 90 - 625 x 0.05 = 58.75 deg at 52 ms, and at 0 deg from 146 ms on.",
+  "policy": "functional",
+  "until": "200ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PW",
+        "component": "emblink/pulse_source",
+        "params": {
+          "td": "1m",
+          "pw": "1m",
+          "per": "20m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/servo"
+      }
+    ],
+    "nets": {
+      "SIG": [
+        "PW.+",
+        "DUT.SIG"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.target": {
+      "at": "30ms",
+      "min": -0.01,
+      "max": 0.01
+    },
+    "output:DUT.angle": {
+      "at": "52ms",
+      "min": 58.7,
+      "max": 58.8
+    }
+  }
+}

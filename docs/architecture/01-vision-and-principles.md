@@ -19,6 +19,17 @@ One engine serves every interface: a graphical workbench, a command line, test
 harnesses and scripts all drive the same session through the same protocol and
 observe the same results.
 
+Where it is going (the owner's direction, 2026-10-17): a real-world simulator
+for embedded electronics. Every supported board complete, with the devices
+on it; as many real components and sensors as possible, each behaving as its
+datasheet says; a schematic among the best there are; a 3D breadboard where
+the parts sit and are wired as on a bench; and a world around the circuit
+(ambient temperature, humidity, pressure, light, wind, objects that move)
+that its sensors measure as they would in a room. It serves students and
+professionals alike, and the interface runs at the display's rate. The order
+of the work is the flagship first (§9, 07 §2): one board family and its most
+used parts done completely, then the world and the breadboard, then breadth.
+
 ## 2. Who it is for
 
 | User | What they do with EmbSIM | What they need from it |
@@ -96,19 +107,31 @@ That requires:
   Toolchain profiles make build-and-run convenient; the ELF/HEX is the contract.
 - **P10 Small core, big catalog.** The C core is dependency-free and stable;
   breadth lives in descriptions, models and libraries.
+- **P11 Real from the outside (ADR-030).** Everything a person, a firmware
+  image, a tool or another part can observe behaves as it does in the real
+  world: voltages, currents, timing, the steps a person takes, the tools
+  they use and what those tools show. How the engine computes it may differ
+  (USB as packets, not edges on D+ and D-), provided the outside matches and
+  the difference is written down. Every piece of work starts by asking how
+  the thing works in real life and how to implement it fully; nothing is
+  added that has no counterpart in reality.
 
 ## 6. Non-goals
 
 - Replacing SPICE for RF, EMC, PCB parasitics, thermal or process variation
-  analysis. EmbSIM's analog engine targets the circuits around an MCU.
+  analysis. EmbSIM's analog engine targets the circuits around an MCU. The
+  world's temperature, humidity and motion (ADR-026) are what sensors
+  measure, not a thermal or mechanical analysis of the board.
 - Cycle-exact pipeline and cache modelling of every core. Instruction cycle
   estimates are documented as estimates per core (ADR-015).
-- A PCB layout tool. Board artwork and breadboard views are for interaction and
-  understanding, not manufacturing.
+- A PCB layout tool. Board artwork and the breadboard view (ADR-027) are for
+  building, interaction and understanding, not manufacturing.
 - Running untrusted native plugins safely. Native plugins are trusted code
   loaded explicitly; sandboxed models use the scripting tier (ADR-009).
-- Real-time guarantees. Pacing is a client convenience; speed claims come from
-  benchmarks.
+- Hard real-time guarantees. A paced mode keeps the simulation in step with
+  the wall clock so real tools can talk to a virtual board (ADR-032), and
+  says plainly when a circuit is too large to keep up; speed claims come
+  from benchmarks.
 
 ## 7. Positioning
 
@@ -122,6 +145,7 @@ That requires:
 | Open source, offline, cross-platform | yes | hosted | yes | yes | mixed | proprietary |
 | Declarative components and boards | yes | yes | yes (C#/Python) | no | netlists | proprietary |
 | Source-level debugging | yes (GDB RSP, DWARF) | yes | yes | yes | no | yes |
+| Breadboard view, sensors in a simulated world | planned (ADR-026, ADR-027) | breadboard 2D, sensor sliders | no | no | no | 2D, sliders |
 
 EmbSIM's distinct claim is the combination: real firmware, real electronics
 and real interaction in one deterministic, open, cross-platform tool with a
@@ -148,3 +172,93 @@ first-class command line.
    high DPI, 60 Hz interaction on a 500-component schematic.
 5. CI runs the conformance, golden, differential (against ngspice fixtures and
    EmbCC/QEMU fixtures) and platform suites on every change.
+
+## 9. The flagship and what follows it
+
+**Status:** ACCEPTED direction (owner, 2026-10-17); 07 §2 schedules it.
+
+Breadth without depth is the risk of this vision: a thousand shallow models
+convince nobody. So the first goal after the boards and engines of M0 to M5
+is one complete experience, judged as a user would judge it:
+
+1. **The flagship.** The Arduino Uno and an ESP32-class board, complete
+   down to every peripheral their usual libraries touch, and the thirty or
+   so parts people wire to them most (temperature and humidity sensors,
+   barometers, IMUs, distance sensors, displays, LED strips, servos,
+   steppers, keypads, RTCs, RFID, GPS), each verified against its datasheet
+   and, where possible, a capture from the real part; their libraries'
+   example sketches run unmodified.
+2. **The world.** An environment the circuit lives in (ADR-026): ambient
+   values and moving objects that sensors read, set from a panel first and
+   from the 3D view later, recorded and replayed like every input.
+3. **The breadboard.** A 3D bench (ADR-027) where the same circuit is built
+   on breadboards with jumper wires, every wire an edit of the same nets the
+   schematic shows.
+4. **Then breadth.** Every supported board completed peripheral by
+   peripheral against a coverage table, more boards, and libraries of parts
+   from the community through the SDK.
+
+Throughout, the interface keeps to its frame budgets (ADR-028), and outside
+projects are reused only under licences that fit Apache-2.0 (ADR-029).
+
+
+## 10. A real bench, not a game
+
+**Status:** ACCEPTED direction (owner, 2026-10-18); 07 §2 schedules it.
+
+The owner's discussion of 2026-10-18 set the bar for everything after the
+flagship: the app should feel and work like an engineer's bench, help
+people understand how things really work, and take the years that needs
+rather than imitate reality. In practice (P11):
+
+1. **USB as it is (ADR-031).** A cable plugged into a virtual computer
+   powers the board within the port's limits (the board's fuse and
+   regulators, the 5V and 3V3 pins feeding the circuit), carries the
+   USB-serial bridge's port to the host as a real serial port, and
+   programs the board the way the real one is programmed: the real
+   bootloader with avrdude on the Uno, UF2 onto the Pico in BOOTSEL mode,
+   the on-board ST-Link or PICkit. Later, MCUs with their own USB appear on
+   the host as real USB devices.
+2. **Real time and real tools (ADR-032).** A paced mode in step with the
+   wall clock; a terminal where the host's own tools (avrdude, make,
+   picotool, a Python script) work against the virtual board; IDE
+   integration (VS Code, PlatformIO, the Arduino IDE).
+3. **Instruments used as the real ones (ADR-033).** A multimeter whose
+   current range goes in series and whose fuse blows, oscilloscope probes
+   with 1x/10x, ground lead and bandwidth, a bench supply with its current
+   limit, a function generator, a logic analyzer with clips, a USB power
+   meter.
+4. **Imperfections and damage (ADR-034).** Contact bounce, tolerances and
+   drift, noise, internal resistance, missing decoupling, bad breadboard
+   contacts; absolute maximum ratings that, exceeded, damage a part as they
+   would; a fault mode that cuts, shorts or kills on purpose.
+5. **Understanding.** An explain mode (a wire's current and why, a
+   register changing as a line runs), guided lessons, teachers'
+   assignments checked by scenarios, diagnostics that say the real-world
+   consequence.
+6. **Reality checks.** Recordings from real boards (logic-analyzer
+   captures, scope traces, serial logs) compared with the simulation
+   automatically.
+7. **More of the real world.**
+   - Boards people own: Arduino Nano, Mega and Leonardo, STM32 Nucleo,
+     ESP32 and ESP32-S3, Pico W, BBC micro:bit.
+   - Languages and systems: MicroPython and CircuitPython with their REPL,
+     Rust (Embassy), TinyGo; RTOS awareness (FreeRTOS, Zephyr,
+     EmbLinkRTOS).
+   - Parts you see, hear and feel: buzzers and speakers through the host's
+     audio, a microphone from the host's; displays pixel for pixel; motors
+     with load and back-EMF; converters, chargers and solar panels; the
+     host's keyboard, gamepad or phone as inputs.
+   - Buses and radios: CAN, RS-485 and Modbus, 1-Wire, LIN, Ethernet, IR,
+     GPS; LoRa and nRF24 between boards, weakened by distance and walls in
+     the world; WiFi and Bluetooth on the ESP32 to the real internet.
+   - Power and battery life from each MCU mode's datasheet current; a robot
+     on the floor of the 3D world; firmware CI as a GitHub Action; a
+     classroom mode.
+8. **AI and automation (ADR-035).** The session protocol exposed to AI
+   assistants and scripts (an MCP server): build a circuit, flash firmware,
+   run, read probes, with the same evidence as a person.
+
+Further out: mixing real and virtual hardware, export to KiCad for PCB
+work, FPGAs through Yosys and Verilator, Linux boards through QEMU, shared
+projects and a community library held to the same evidence, translations.

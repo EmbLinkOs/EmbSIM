@@ -104,6 +104,27 @@ versions follow semantic versioning. There is no release yet.
 - Added an evidence-based 1.0 release readiness checklist.
 
 ### Added
+- A project menu on the workbench's mark, with the project's name: New
+  project (a blank sheet or a catalog board as B1, named as the schema
+  allows), Open, Save and Save a copy, run as the palette's commands; the
+  status bar follows the project the session holds. The design package
+  gains a Menu (WAI-ARIA menu button) and useMediaQuery.
+- Workbench layout: dock panels fold to a titled rail (`collapsible`,
+  `defaultCollapsed`), the user's choice kept with the order and sizes. The
+  Run perspective folds the oscilloscope or the logic analyzer when it has
+  no probe of its kind and moves the window's actions to the other; Design's
+  Library, Inspector and lower panel fold, and a window under 1200 pixels
+  starts with the Inspector folded. The sheet navigator stays off a canvas
+  narrower than 640 pixels.
+- Meters and the oscilloscope share one SI formatter: prefixes down to
+  femto, residue below that as about zero, axis labels with one prefix and
+  the decimals the step needs (no more clipped "00.00 m"). Growing texts
+  (a terminal's, an EEPROM's dump) stay off the meters.
+- The Debug perspective demangles C++ names (Itanium ABI: nested names,
+  internal linkage, constructors and destructors, const members, the
+  builtin and qualified types, substitutions, simple templates), keeping the
+  mangled name as the tooltip. Verify's texts lose their spec references
+  and its badges show only what is unavailable.
 - Component explorer with grouped categories, manufacturer/package/model filters,
   multiword search and pre-placement Overview/Pins/Models sheets.
 - 18 named interactive parts plus reusable relay contacts: NTCs, GL5528, BPW34/S,
@@ -325,6 +346,23 @@ versions follow semantic versioning. There is no release yet.
   START_MANY with DIV, round robin, the FIFO and its interrupt).
   `tests/vendor/pico-sdk`'s `pwm_adc` runs the SDK's `hardware_pwm` and
   `hardware_adc` on them.
+- The FE310's PWM and SPI on their pins: PWM0-2 (the count scaled to
+  pwms, comparators with center, gang, deglitch and sticky, zerocmp,
+  enalways and enoneshot, their PLIC sources, the channels on IOF1) and
+  SPI1 and SPI2 in single-wire mode (8-entry FIFOs, modes 0 to 3, csmode
+  AUTO, HOLD and OFF, the four delays, the watermark interrupts). The GPIO
+  keeps IOF0's and IOF1's drive apart and applies out_xor to them.
+  `tests/vendor/freedom-metal` runs SiFive's example-pwm and example-spi.
+- The ATmega328P's SPI and TWI masters on their pins: the SPI (MOSI and
+  SCK while DDRB makes them outputs, MISO an input, modes 0 to 3, DORD, the
+  clock from SPR and SPI2X, WCOL, SPIF cleared by SPSR then SPDR or by its
+  vector, SS's mode fault) and the TWI (open-drain SDA and SCL, the
+  datasheet's master transmitter and receiver statuses, START, repeated
+  START, STOP and STOP with START, TWEA's ACK, TWWC, SCL from TWBR and the
+  prescaler, the vector while TWINT and TWIE). `tests/vendor/arduino`'s
+  `spi_wire` runs the core's SPI and Wire libraries against the catalog's
+  25LC040 and 24C02; `run.py` builds the core's libraries a sketch
+  includes, as the IDE's builder does.
 - The RP2040's SPI and I2C masters on their pins: the PL022s (eight-entry
   FIFOs, 4 to 16 bits in modes 0 to 3 at clk_peri / (CPSDVSR * (1 + SCR)),
   CSn framing each frame, loopback, overrun and the interrupts) and the
@@ -387,6 +425,89 @@ versions follow semantic versioning. There is no release yet.
   CI's tools job checks the expected hashes against QEMU's mps2-an386.
 - A register description's peripheral may name `reserved` ranges, offsets
   with no register that read 0 and ignore writes as the part documents them.
+- The ATmega328P's watchdog (core/mcu/avr/wdt.c): time-outs of 2048 << WDP
+  cycles of its 128 kHz oscillator, WDR, interrupt mode, system reset mode
+  and both, safety level 1's timed sequence, WDRF holding WDE, and a reset
+  that keeps MCUSR's flags and sets WDRF, with the watchdog still running
+  at 16 ms after it. `tests/vendor/arduino`'s `watchdog` sketch, 5/5:
+  avr-libc's WDT interrupt waking the part from power-down, then
+  `wdt_enable` left to time out twice, a boot count kept in `.noinit`.
+- The ATmega328P's analog comparator (core/mcu/avr/ac.c): AIN0 or the
+  1.1 V bandgap against AIN1 or, with ACME and the ADC off, the ADC
+  multiplexer's pin; ACO, ACI on the toggle, falling or rising edge, the
+  ANALOG_COMP vector, ACD. On an analog net each input pin carries a
+  threshold at the other's voltage, which the analog solver finds and
+  bisects like a digital input's (`esk_pin_compare`, SPEC-004 §8).
+  `tests/vendor/arduino`'s `comparator` sketch, 3/3, times an RC network
+  with it: 6960 and 6956 us against R * C * ln 2 = 6949 us. A sketch may
+  bring its own `project.json`.
+- The ATmega328P's Timer/Counter1 input capture: ICP1 (PB0) or, with
+  ACIC, the analog comparator; ICES1's edge; the noise canceler's four
+  samples (a capture four cycles after the edge, shorter pulses ignored);
+  ICR1, ICF1 and TIMER1_CAPT; no capture while ICR1 is TOP, and ICR1
+  writable only then. `tests/vendor/arduino`'s `input_capture` sketch,
+  4/4, measures `analogWrite(3, 64)` through a D3-to-D8 wire: 32640 cycles
+  a period every time and 8192 high.
+- The DHT22 behaves as its datasheet says beyond the wire protocol: it
+  answers only with VCC at 3.0 V or more and after its first second, each
+  read sends the previous measurement (a new one at most every 2 s), the
+  element follows the air with the datasheet's response times (5 s for
+  humidity, 10 s for temperature) and readings are clamped to the range.
+  Its fixtures check the start-up second, the previous data and the lag.
+- The HD44780 LCD keeps the controller's timing: its power-on reset
+  (8-bit, one line, display off, 10 ms busy), 37 us a write and 1.52 ms
+  a clear or home, with writes while busy ignored as the part does; the
+  busy flag, address counter and RAM read back; the part's pull-ups on
+  RS, R/W and DB0-DB7 (a floating R/W reads, so nothing is written); the
+  A00 character ROM; the characters showing only with 3.0 V or more of
+  contrast (VDD - V0), and a backlight output. The LiquidCrystal
+  library's `HelloWorld` runs unmodified, 6/6; display-showcase writes
+  its LCD at the controller's timing.
+- The HC-SR04's echo is the sound's round trip at the speed of sound in
+  the air's temperature (a new input, 20 C by default: 58.24 us per cm),
+  measured from the trigger's falling edge after a `burst_delay`; a
+  trigger during a measurement is ignored, and it does not answer below
+  4.0 V. NewPing's `NewPingExample` runs unmodified, 6/6.
+- The servo turns as an SG90 does: toward each pulse's target at its
+  rated speed (0.1 s per 60 deg at 4.8 V, in proportion to the supply),
+  only while pulses keep coming (it stays put when they stop), not for a
+  change within its 10 us dead band, and not at all below 3.5 V. The
+  Arduino Servo library's `Sweep` and `Knob` examples run unmodified,
+  8/8 and 7/7.
+- The PCF8574 reads its I2C address from A0..A2 as the part does (0x20 +
+  A2A1A0; a `variant` for the PCF8574A at 0x38), so an LCD backpack with
+  the three pulled up answers at 0x27; a written byte reaches the port at
+  the acknowledge clock with a strong pull-up during its high time; INT_N
+  is open drain, set 4 us after a pin departs from what the last read or
+  write left and cleared by a read or write; below 2.5 V it does not
+  acknowledge. `ctx.bus.i2c_slave` takes `address_pins` (SPEC-013).
+- A 20x4 character LCD (`emblink/lcd2004`) on the same HD44780 model,
+  generalised to the glass's columns and rows: rows 3 and 4 continue
+  lines 1 and 2 (0x14 and 0x54), as on the module. `tools/validate.py`
+  checks that scripts marked `-- Shared by:` stay identical.
+  LiquidCrystal_I2C's `HelloWorld` runs unmodified on a 20x4 behind a
+  PCF8574 backpack wired as the common board is, 7/7: the backlight is
+  off until the sketch turns it on (and on at power-up before the
+  library writes, as the expander's ports start high). The Arduino runner
+  builds `.pde` sketches and names library examples `<library>/<example>`.
+- The DS18B20 1-Wire thermometer (`emblink/ds18b20`), from Maxim's
+  datasheet: reset and presence, write and read slots at its timing, the
+  64-bit ROM code with READ, MATCH, SKIP, SEARCH ROM and ALARM SEARCH,
+  CONVERT T at the resolution's time (93.75 to 750 ms, read slots 0 until
+  done), the scratchpad (85 C at power-up) with its CRC, TH/TL alarms,
+  the EEPROM commands, READ POWER SUPPLY and parasite power with VDD
+  grounded. DallasTemperature's `Simple` example runs unmodified over
+  OneWire, 3/3. The HC-SR04 and DS18B20 accept their inputs through
+  `on_set`, as SPEC-013 asks (the HC-SR04's were warned as refused).
+- `tests/vendor/arduino` runs libraries' own examples unmodified:
+  `libraries.json` pins each library to a commit (`--libs DIR --fetch`
+  clones them; none is vendored), includes are followed through the
+  libraries' sources as the IDE's builder does, and
+  `examples/<library>/<example>/` holds the scenario. Adafruit's
+  `DHTtester` reads the DHT22 on D2, 3/3.
+- `docs/coverage.md`, generated by `tools/catalog/coverage.py`: each MCU's
+  peripherals and whether the engine models them; the `coverage_tables`
+  test fails when it is stale.
 
 ### Changed
 - A CMOS output on an analog net drives its rails through `rout` (ADR-023):
@@ -412,12 +533,49 @@ versions follow semantic versioning. There is no release yet.
 - An MCU's GPIO pins take their high level and pulls from its description's
   supply (`io.electrical.vdd`): the nRF52840 DK's 3.0 V.
 - The runtime and the loader take PIC pin names (RA0, RD6) as GPIO pins.
+- An AVR timer's output pin switches at the clock that switched it, not at
+  the end of the instruction it falls in, and an input capture takes the
+  count at its edge's clock: the runtime gives the models `output_lag` and
+  `input_lead` (SPEC-009 §7). A PWM's period no longer jitters by a cycle.
+- RAM keeps its contents through a reset from the part itself (a watchdog,
+  a system reset request) or from its reset pin, as an SRAM does while it
+  is powered; it is erased at power-on: the session's start or reset, or a
+  new image.
 
 ### Removed
 - The draft 0.1 foundation (Python runtime, HTTP server, single-page UI);
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The Python client's stdio transport waited for the sidecar with
+  select(), which Windows pipes do not support, so a wait with a timeout
+  blocked instead: `test_serial_stream`'s last poll hung the windows-msvc
+  job. A thread now reads the sidecar's output on every platform.
+- The workbench's Serial terminal showed each piece of streamed text as a
+  line of its own and mixed every port's text together: received text now
+  goes on its port's open line until a newline, stamped with its first
+  piece's time, the terminal shows the port chosen, and that port (the
+  first one until another is picked) takes what is sent.
+- An MCU's pin edge on an analog net reached the circuit after the core
+  had gone on to its next edges: the next quantum started 1 ps later,
+  before the edge's ramp had crossed a device's threshold, so a 25LC040
+  clocked at 4 MHz through the Uno's D13 (whose L LED makes the net
+  analog) answered a bit late. The next quantum now waits out the ramp
+  (less than a cycle, the core going on from where it stopped), and a
+  quantum that a wake-up brings earlier waits too: a second change to a
+  pin had taken the place of one not yet applied, losing a clock pulse.
+- Every pin change cost the core an idle cycle: the quantum after it began
+  1 ps later and the core caught up to that time in whole cycles. The
+  core now goes on from the cycle it stopped at, so firmware that toggles
+  pins runs at its own speed (nrfx_periph's polling loops show it: 616
+  RDSR polls, 94 NACKed address polls).
+- The engine never sent `serial.data` (SPEC-008 §6), so the workbench's
+  Serial terminal stayed empty while the firmware printed: the text was
+  there only for a client that asked with `probe.read`. After each
+  observation frame the session now streams every serial probe's new
+  bytes, base64-encoded, and starts again from the beginning after a
+  reset; `tests/protocol/test_serial_stream.py` checks the stream against
+  `probe.read`.
 - The RISC-V core decoded a store's offset by shifting a negative value
   left, which C leaves undefined: a store at a negative offset (as GCC's
   stack frames make) ran as intended with the compilers here, but UBSan

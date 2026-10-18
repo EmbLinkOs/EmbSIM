@@ -68,6 +68,12 @@ struct esk_pin {
     int floating_reported, unknown_reported;
     int analog_node;       /* node in the island, -1 when digital */
     esk_adev *bridge;      /* the bridge device when a digital pin is on an analog net */
+    /* a second comparator a model sets on an input on an analog net (an
+     * MCU's analog comparator): its crossings of watch_v call on_input at
+     * their time, the pin's own thresholds and value untouched */
+    int watch_on;
+    double watch_v;
+    esk_logic watch_state; /* above (L1) or below (L0) watch_v */
 };
 
 struct esk_net {
@@ -204,6 +210,13 @@ es_time_t esk_comp_now(const esk_comp *c);
 
 /* used by the analog island to deliver a comparator-bridge crossing (SPEC-004 §8) */
 void esk_engine_bridge_crossed(esk_engine *e, esk_pin *p, esk_logic value, es_time_t at);
+/* used by the analog island to deliver a crossing of a pin's watch_v */
+void esk_engine_watch_crossed(esk_engine *e, esk_pin *p, esk_logic value, es_time_t at);
+/* a model's comparator on an input on an analog net: on_input comes when
+ * the node crosses `v` (from its side now); 0 when the net is not analog.
+ * esk_pin_compare_off takes it off. */
+int esk_pin_compare(esk_pin *p, double v);
+void esk_pin_compare_off(esk_pin *p);
 /* the Thevenin bridge's current target for an output pin on an analog net */
 void esk_pin_bridge_target(const esk_pin *p, double *v, double *r, int *open);
 

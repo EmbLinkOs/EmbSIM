@@ -466,7 +466,12 @@ cheaper, but inputs would be seen up to a quantum late.
 
 **Consequences.** Inputs from digital events are exact; inputs that come
 from an analog comparator crossing are seen at the start of the quantum
-after the crossing, at most `core_quantum_ps` late. A breakpoint splits a
+after the crossing, at most `core_quantum_ps` late. The exception is the
+core's own edge on an analog net: the next quantum waits out the edge's
+ramp (its swing at the pin's slew rate, less than a cycle), so a device the
+edge clocks answers before the core's next instruction (an SPI slave on a
+clock line with an LED); the core goes on from where it stopped, its
+timing unchanged. A breakpoint splits a
 quantum without changing the run: the M1 test compares a stopped and
 continued run with an uninterrupted one instruction for instruction.
 
@@ -669,3 +674,333 @@ explicit parameters; defaults, unit equivalence and board internals are not
 resolved. Existing schema version remains 1 with optional additive fields.
 
 **Status.** Proposed; implemented for review in this pull request (2026-10-16).
+
+---
+
+## ADR-026 The world: an environment and physical objects that sensors read
+
+**Context.** Sensors are the parts people wire to boards most, and today each
+takes its quantity from a parameter or a slider on the part itself. Real
+sensors share one room: a DHT22 and a BME280 on the same bench read the same
+air, an HC-SR04 sees the object in front of it, an IMU moves with the board.
+The owner's direction (01 §9) asks for temperature, humidity, wind, movement
+and more, set by the user and felt by every sensor as in the real world.
+
+**Decision.** The engine holds a world beside the circuit:
+- **Fields**: ambient quantities (temperature, relative humidity, pressure,
+  illuminance, sound level, wind velocity, magnetic field, gravity),
+  uniform by default and optionally given as a function of position.
+- **Bodies**: objects with a pose and a shape (a box, a sphere, a mesh's
+  bounds), static or moving along a path or under a simple physics step;
+  boards and parts placed in the 3D view are bodies too.
+- **Queries**: a component model asks the world for a field's value at its
+  position, for the nearest body along a ray (distance sensors, IR), for its
+  own acceleration and rotation (IMUs), through the model API (C and Lua).
+
+The world is engine state, stepped on the scheduler in virtual time, never
+from the wall clock. Changing it is an input event like a button press,
+timestamped, recorded and replayed (SPEC-012). A part's own parameter, when
+set, overrides the world, so existing projects and fixtures keep their
+behaviour. The workbench edits the world from a panel first (M6) and from
+the 3D scene later (M7).
+
+**Alternatives.** Per-part sliders only (today; no shared environment, no
+motion). The 3D engine's physics as the source of truth (would put
+simulation in the client, against P1, and break determinism). A full
+physics engine in the core from the start (cost before need; a simple
+kinematic step covers the flagship's sensors, ADR-029 governs any library
+brought in later).
+
+**Consequences.** Sensor models gain a uniform way to read the environment,
+and fixtures can set the world as scenarios set inputs. The world's
+fidelity is declared like a model's: it supplies what a sensor would
+measure, not a thermal, fluid or structural analysis (01 §6). The protocol
+gains world methods and a world description in the project (schema
+additions, SPEC-005 and SPEC-008).
+
+**Status.** Accepted direction (owner, 2026-10-17); design details proposed
+until the specifications are written.
+
+---
+
+## ADR-027 The breadboard is a second editor of the same nets, drawn in 3D
+
+**Context.** Q7 deferred a breadboard view past 1.0. The owner wants a 3D
+bench where parts sit on breadboards and are wired with jumpers, as
+learners and makers build circuits, and where the world of ADR-026 is
+visible and touchable.
+
+**Decision.** The project keeps one connectivity graph. The breadboard view
+is another layout of it, as the schematic is:
+- a breadboard is a component whose internal strips are its nets (its model
+  connects the holes of a strip);
+- a part placed on holes connects its pins to those strips;
+- a jumper wire between holes is a wire, an edit of the project's nets
+  through the same transactions and undo as the schematic's.
+
+Either view shows what the other drew: a net made on the breadboard appears
+in the schematic, unrouted until laid out, and the reverse. The view is
+drawn with a WebGL scene (Three.js, Q12) from glTF models, with a 2D
+top-down fallback; layout positions live in the project beside the
+schematic's (`layout.breadboard`). Parts without a 3D model show a labelled
+box with their pins at the right pitch.
+
+**Alternatives.** A picture of the circuit derived from the schematic (no
+building on the breadboard). A separate breadboard document (two sources of
+truth that drift). A game engine shell around the workbench (heavy, harder
+to keep accessible and themable, P1 still applies).
+
+**Consequences.** Q7 is closed in favour of the view, scheduled for M7. Part
+descriptions gain optional 3D model references and pin offsets. Accessibility
+needs care: every breadboard action has a keyboard and list equivalent, as
+the schematic's do.
+
+**Status.** Accepted direction (owner, 2026-10-17); M7.
+
+---
+
+## ADR-028 Frame budgets: the display's rate, the simulation never waits
+
+**Context.** The owner asks for an interface that runs smoothly, at 120 Hz on
+displays and machines that offer it and 60 Hz elsewhere. 01 §8 already asks
+for 60 Hz interaction on a 500-component schematic.
+
+**Decision.** The workbench draws at the display's rate from the latest
+state it has; the simulation runs in the native engine and streams to it
+(SPEC-008), never waiting on a frame. Budgets, measured in CI on a
+reference configuration: a frame's work under 8 ms on a 120 Hz display and
+under 16 ms at 60 Hz for interaction (pan, zoom, drag, typing) in the
+schematic with 500 components, the instruments at their widest, and the 3D
+bench with 50 parts; streams are decimated to what a frame can show.
+Rendering moves to WebGL where SVG or 2D canvas misses the budget. A
+measurement that misses its budget fails CI like a test.
+
+**Alternatives.** Best effort without budgets (regressions go unnoticed).
+Moving simulation into the client for responsiveness (breaks P1 and
+determinism).
+
+**Consequences.** A frame-time harness joins the browser tests; the
+schematic's renderer and the instruments may need WebGL paths; the 3D view
+carries level-of-detail and a 2D fallback for machines that cannot meet the
+budget.
+
+**Status.** Accepted (owner, 2026-10-17); the harness is planned with M7.
+
+---
+
+## ADR-029 Reusing outside projects: permissive code, recorded assets, GPL as referees
+
+**Context.** The owner welcomes reusing open projects to go faster. EmbSIM is
+Apache-2.0 (01 §4); a careless copy can make the whole project
+undistributable under it.
+
+**Decision.** Three classes:
+- **Code under permissive licences** (MIT, BSD, Apache-2.0, zlib, ISC) may
+  be brought in or depended on, with its notice in `NOTICE` and its origin
+  recorded as for EmbCC's code (P6). Candidates: avr8js and wokwi-elements
+  (MIT), Three.js (MIT), Rapier (Apache-2.0), ngspice (BSD, already used as a
+  referee).
+- **Assets under attribution or share-alike licences** (KiCad's 3D models,
+  CC-BY-SA 4.0 with an exception for designs that use them; Fritzing's
+  parts, CC-BY-SA) may be shipped as separate files in the catalog with
+  their licence and attribution recorded per asset, never merged into code.
+- **GPL and other copyleft code** (QEMU, simavr, SimulIDE, ngspice's GPL
+  parts if any) is never copied in. Such projects may be run as separate
+  programs to referee our models (as QEMU referees the DSP instructions),
+  and their documentation and behaviour studied; our models are written
+  from datasheets and vendor references.
+
+Proprietary simulators (Proteus, Tinkercad's) are studied only through their
+public documentation and behaviour.
+
+**Alternatives.** No reuse (slower, and loses well-made permissive work).
+Relicensing under GPL to reuse more (forecloses users and integrators who
+need Apache-2.0).
+
+**Consequences.** A new dependency or asset set comes with a licence review
+in its pull request; `tools/repository` checks that each vendored asset
+directory carries a licence file. 09 §4 lists the projects assessed.
+
+**Status.** Accepted (owner's reuse direction, 2026-10-17).
+
+## ADR-030 Real from the outside: every feature starts from how it works in reality
+
+**Context.** The owner's direction (2026-10-18, 01 §10): the app must work
+and feel like the real thing, so that it teaches how things are, not just
+simulate something plausible. P2 and P8 already demand declared fidelity
+and evidence; neither says what to build in the first place.
+
+**Decision.** Every piece of work, of any size (a peripheral, a part, an
+instrument, a panel, a workflow), begins with five questions, answered in
+its pull request:
+1. **How does it work in real life?** The datasheet, reference manual and
+   schematics, and how engineers use it: the tools, the steps, the usual
+   mistakes.
+2. **What can anyone observe from outside?** Pins, voltages, currents,
+   timing, what tools report, what a person sees, hears and does. All of it
+   must match reality.
+3. **What is the full implementation?** Every mode and edge the real thing
+   has, not only the common path. What cannot be done yet is declared as an
+   omission, never silently left out.
+4. **Where may the inside differ?** An abstraction inside the engine is
+   allowed when the outside is unchanged; it is named, justified and
+   written in the model's header and fidelity.
+5. **How is it proven?** Vendor code run unmodified, the datasheet's values
+   and timing in fixtures, a capture from real hardware where one can be
+   made.
+
+Nothing is added that has no counterpart in reality: no magic shortcuts,
+no knobs a real bench does not have. A convenience that real benches lack
+(a slow-motion clock, an ideal source for teaching) is labelled as such
+where it is used.
+
+**Alternatives.** Feature-driven development judged by what demos well
+(fast, and exactly the toy the owner rejects). Fidelity only where users
+ask (leaves the defaults unreal).
+
+**Consequences.** Existing shortcuts are revisited as the work reaches
+them: the session's serial console becomes the board's real path (its
+USB-serial bridge, a cable, a host port, ADR-031); instruments become
+instruments (ADR-033); parts gain their limits (ADR-034). Reviews reject
+a change that cannot answer the five questions. `CLAUDE.md` and
+CONTRIBUTING.md carry the checklist.
+
+**Status.** Accepted (owner, 2026-10-18).
+
+## ADR-031 USB: the cable, its power, the host's port and the real way to program
+
+**Context.** On a real bench a USB cable powers the board, carries its
+serial port to the computer, and is how it is programmed. EmbSIM has none
+of this: a board's 5 V is an ideal net, the console is a link into the
+session, and firmware is loaded by the engine.
+
+**Decision.** USB is modelled as what it is, in layers:
+- **Power.** A host port is a 5 V source with its limit (500 mA for a
+  USB 2.0 port, more for a charger), the cable has resistance, and the
+  board's own parts follow: the Uno's polyfuse and its 3.3 V regulator, the
+  Explorer 16/32's regulator, the Pico's VBUS diode. A circuit fed from the
+  board's 5V or 3V3 pin draws through them; overload sags or trips as it
+  would.
+- **Communication.** A board's USB-serial bridge (the Uno's ATmega16U2,
+  the Explorer's MCP2221A, a CH340 or CP2102 on clones) is a part with its
+  baud rate and DTR/RTS lines. It is exposed on the host as a real serial
+  port: a pseudo-terminal on Linux and macOS, a virtual COM port on
+  Windows (Q16), so any terminal or tool opens it.
+- **Programming.** The board is flashed the way the real one is: the Uno's
+  Optiboot (a separate firmware image, not part of the codebase, ADR-029)
+  running in the simulated MCU and reached by the real avrdude through
+  the bridge, DTR's capacitor resetting the part; the RP2040's BOOTSEL mode
+  taking a UF2; an ST-Link's or PICkit's SWD or ICSP from the tools that
+  drive them.
+- **Native USB devices** (RP2040, nRF52840, PIC32, STM32, ATmega32U4): the
+  USB device controller modelled at the transaction level (setup, IN, OUT,
+  SOF; the 12 Mbit/s signalling is not simulated edge by edge), bridged to
+  the host through USB/IP so the board enumerates on the host as a real
+  device. This comes last.
+
+**Alternatives.** A "flash" button that loads an ELF (kept for scripts and
+CI, as today, but not the user's path on a board that has a bootloader).
+Edge-level USB on D+ and D- (the outside would be no more real, at a cost
+no host could pay).
+
+**Consequences.** Real-time pacing (ADR-032) is a prerequisite for tools
+that time out. Each board description gains its USB parts and power path.
+Optiboot and the vendors' bootloaders are fetched like the vendor SDKs
+are, never vendored when their licence forbids it.
+
+**Status.** Accepted direction (owner, 2026-10-18); staged in 07 §2.
+
+## ADR-032 Real time with the host: a paced clock and the host's own tools
+
+**Context.** A virtual board that real tools talk to (avrdude, a serial
+terminal, an IDE's upload) must answer within their timeouts. The engine
+runs as fast as it can, or slower; it has no notion of the wall clock.
+
+**Decision.** A session may run **paced**: virtual time follows the host's
+monotonic clock (or a fixed multiple of it). The host layer is the only
+place the clock is read, so determinism of unpaced runs is unchanged; a
+paced run that also takes host input is recorded like any other input
+(ADR-012) and replays deterministically. When a circuit is too large to
+keep up, the session reports the ratio it achieves and the workbench shows
+it; nothing is dropped silently. The workbench gains a terminal where the
+host's tools run against the session's host-visible ports, and project
+integration with VS Code, PlatformIO and the Arduino IDE.
+
+**Alternatives.** Unpaced only, with tools patched for long timeouts (not
+the real workflow). Hard real time (not achievable on desktop systems; not
+needed).
+
+**Consequences.** 01 §6's non-goal reads "hard real-time guarantees". The
+scheduler gains a pacing hook in the host layer; benchmarks report the
+largest circuits that pace at 1x on the reference machine.
+
+**Status.** Accepted direction (owner, 2026-10-18).
+
+## ADR-033 Instruments are used as the real ones are
+
+**Context.** Today's instruments are views of a net: any node's voltage or
+current, at no cost to the circuit. Real measurement is a skill: a meter's
+current range goes in series and has a fuse, a scope probe loads the node
+and has a ground lead, a supply limits its current.
+
+**Decision.** Bench instruments become components connected to the circuit
+by their leads, with their real characteristics: a multimeter (ranges,
+input resistance, burden voltage, the current range's fuse), an
+oscilloscope with probes (1x and 10x, input capacitance, bandwidth, ground
+lead, trigger modes), a bench supply (voltage and current limit,
+constant-voltage and constant-current), a function generator (output
+impedance), a logic analyzer with clips and thresholds, a USB power meter.
+The ideal net views stay for debugging, labelled as views.
+
+**Alternatives.** Keep ideal views only (teaches nothing about measuring).
+
+**Consequences.** The catalog gains instrument parts; the workbench draws
+their front panels; probing in the breadboard view uses leads (ADR-027).
+
+**Status.** Accepted direction (owner, 2026-10-18).
+
+## ADR-034 Imperfections, limits and damage are on by default
+
+**Context.** Real circuits bounce, drift, sag and break. A circuit that
+works only because the simulator is ideal teaches the wrong lesson.
+
+**Decision.** Parts carry their real imperfections and limits, on by
+default: contact bounce on switches and buttons, tolerances and
+temperature coefficients (drawn per instance from a seed, so runs stay
+deterministic), noise on converters and sensors, internal resistance of
+sources and batteries, the effect of missing decoupling, contact
+resistance on breadboards. Exceeding an absolute maximum rating raises a
+diagnostic with the real consequence, and in the electrical tier damages
+the part as it would (an LED open, a pin stuck, a regulator in thermal
+shutdown) until the user replaces it. A fault mode injects cuts, shorts and
+failed parts on purpose. A project may choose ideal parts for a lesson,
+labelled as such (Q17).
+
+**Alternatives.** Ideal by default, imperfections opt-in (the common
+simulator choice; it hides the lessons the owner wants taught).
+
+**Consequences.** Fidelity declarations list each part's imperfections;
+fixtures check them (a button's bounce duration, a resistor's spread); the
+seed is part of a recording.
+
+**Status.** Accepted direction (owner, 2026-10-18).
+
+## ADR-035 AI assistants and scripts use the same session as people
+
+**Context.** The owner wants AIs to be able to use the app. Everything the
+workbench does already goes through the session protocol (P1), with a
+Python client and scenarios.
+
+**Decision.** An MCP server over the session protocol exposes the same
+operations a person has (load and edit a project, place and wire parts,
+build and flash firmware, run, press, read probes and the serial port,
+record) to AI assistants, with the session's policy and diagnostics. It
+gives no access a person lacks and no shortcut past the models.
+
+**Alternatives.** A separate automation API (two contracts to keep true).
+
+**Consequences.** The server is a thin client of the protocol, tested by
+the protocol's conformance suite; examples show an assistant building and
+verifying a circuit.
+
+**Status.** Accepted direction (owner, 2026-10-18).

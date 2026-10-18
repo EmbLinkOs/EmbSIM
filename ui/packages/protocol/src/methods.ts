@@ -294,7 +294,7 @@ export interface Notifications {
   'waveform.samples': WaveformSamples;
   'control.state': ControlState;
   'debug.stopped': Where;
-  'serial.data': { target: string; base64: string };
+  'serial.data': { target: string; probe?: string; base64: string };
   'project.changed': { tx: string; summary: string };
   'record.input': { at_ps: PsString; seq: number; target: string; input: string };
 }
