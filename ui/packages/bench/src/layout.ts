@@ -18,7 +18,7 @@
 //   not yet built).
 
 import type { BenchLayout, BenchPlace, BenchWire, Project } from '@embsim/protocol';
-import { PITCH, type BenchShape } from './shape';
+import { isSurfaceMount, PITCH, type BenchShape } from './shape';
 
 export const PLUG_TOLERANCE = 0.4;
 
@@ -51,6 +51,8 @@ export interface BenchModel {
   plugs: Map<string, string>;
   /** hole ref -> the key of its strip */
   strip: Map<string, string>;
+  /** Physical insertions, independent of the electrical strip's membership. */
+  occupied: Map<string, string[]>;
 }
 
 function instances(p: Project): string[] {
@@ -166,13 +168,19 @@ export function benchModel(p: Project, shapes: Shapes, ties: Ties): BenchModel {
   }
   const plugs = new Map<string, string>();
   for (const part of parts) {
-    if (part.shape.package === 'breadboard') continue;
+    if (part.shape.package === 'breadboard' || part.shape.package === 'board' || isSurfaceMount(part.shape)) continue;
     for (const [pin, [x, y]] of Object.entries(part.legs)) {
       const h = holeAt(grid, x, y);
       if (h) plugs.set(`${part.id}.${pin}`, h.ref);
     }
   }
-  return { parts, byId, holes, plugs, strip };
+  const occupied = new Map<string, string[]>();
+  const occupy = (hole: string, owner: string) => occupied.set(hole, [...(occupied.get(hole) ?? []), owner]);
+  for (const [pin, hole] of plugs) occupy(hole, pin);
+  (p.layout?.bench?.wires ?? []).forEach((wire, i) => {
+    for (const end of [wire.from, wire.to]) if (holes.has(end)) occupy(end, `jumper ${i + 1}`);
+  });
+  return { parts, byId, holes, plugs, strip, occupied };
 }
 
 function holeAt(grid: Map<string, Hole[]>, x: number, y: number): Hole | undefined {
@@ -204,6 +212,41 @@ export function nearestHole(model: BenchModel, x: number, y: number, radius = PI
     }
   }
   return best;
+}
+
+export interface InsertionContact {
+  pin: string;
+  at: [number, number];
+  hole?: string;
+  occupiedBy: string[];
+}
+
+export interface InsertionPreview {
+  contacts: InsertionContact[];
+  valid: boolean;
+  elevation: number;
+}
+
+/** Per-leg authoring feedback. No nets or layout are changed by a preview.
+ * Partial insertions remain possible; body/lead collisions are not modeled. */
+export function previewInsertion(model: BenchModel, id: string, place: Required<BenchPlace>): InsertionPreview {
+  const part = model.byId.get(id);
+  if (part && isSurfaceMount(part.shape)) return { contacts: [], valid: false, elevation: 0 };
+  if (!part || part.shape.package === 'board' || part.shape.package === 'breadboard') return { contacts: [], valid: true, elevation: 0 };
+  const contacts: InsertionContact[] = [];
+  const own = new Map<string, string>();
+  let elevation = 0;
+  for (const [pin, at] of Object.entries(legsOf(part.shape, place))) {
+    const hole = nearestHole(model, at[0], at[1], PLUG_TOLERANCE + 0.000001);
+    const occupiedBy = hole ? (model.occupied.get(hole.ref) ?? []).filter((ref) => !ref.startsWith(`${id}.`)) : [];
+    if (hole && own.has(hole.ref)) occupiedBy.push(own.get(hole.ref)!);
+    contacts.push({ pin: `${id}.${pin}`, at, hole: hole?.ref, occupiedBy });
+    if (hole) {
+      own.set(hole.ref, `${id}.${pin}`);
+      elevation = Math.max(elevation, model.byId.get(hole.ref.split('.')[0]!)!.shape.size[2]);
+    }
+  }
+  return { contacts, elevation, valid: contacts.every((contact) => contact.occupiedBy.length === 0) };
 }
 
 // ---- nets -------------------------------------------------------------------
@@ -348,6 +391,27 @@ export interface BenchContext {
   ties: Ties;
 }
 
+/** Moving a breadboard carries inserted parts through the same rigid transform.
+ * Explicit moves take precedence over inherited moves in a batch. */
+export function carriedMoves(model: BenchModel, moves: Record<string, BenchPlace>): Record<string, BenchPlace> {
+  const all = { ...moves };
+  // what rides on a moved breadboard
+  for (const [id, to] of Object.entries(moves)) {
+    const from = model.byId.get(id);
+    if (!from || from.shape.package !== 'breadboard') continue;
+    const rotation = ((to.rotation ?? from.place.rotation) - from.place.rotation + 360) % 360;
+    const riders = new Set<string>();
+    for (const [pin, hole] of model.plugs) if (hole.startsWith(`${id}.`)) riders.add(pin.split('.')[0]!);
+    for (const r of riders) {
+      if (all[r]) continue;
+      const at = model.byId.get(r)!.place;
+      const [dx, dy] = turn(at.x - from.place.x, at.y - from.place.y, rotation);
+      all[r] = { x: to.x + dx, y: to.y + dy, rotation: ((at.rotation + rotation) % 360) as 0 | 90 | 180 | 270 };
+    }
+  }
+  return all;
+}
+
 /**
  * Moves (and turns) parts to new places. Legs that leave their holes come
  * out of the strips' nets; legs that land on holes are plugged in. Moving a
@@ -355,28 +419,21 @@ export interface BenchContext {
  */
 export function moveParts(p: Project, ctx: BenchContext, moves: Record<string, BenchPlace>): Project {
   const before = benchModel(p, ctx.shapes, ctx.ties);
-  const parts = { ...(bench(p).parts ?? {}) };
-  const all = { ...moves };
-  // what rides on a moved breadboard
-  for (const [id, to] of Object.entries(moves)) {
-    const from = before.byId.get(id);
-    if (!from || from.shape.package !== 'breadboard') continue;
-    const dx = to.x - from.place.x;
-    const dy = to.y - from.place.y;
-    if ((to.rotation ?? from.place.rotation) !== from.place.rotation) continue;
-    const riders = new Set<string>();
-    for (const [pin, hole] of before.plugs) if (hole.startsWith(`${id}.`)) riders.add(pin.split('.')[0]!);
-    for (const r of riders) {
-      if (all[r]) continue;
-      const at = before.byId.get(r)!.place;
-      all[r] = { x: at.x + dx, y: at.y + dy, rotation: at.rotation };
-    }
-  }
+  const parts = { ...(p.layout?.bench?.parts ?? {}) };
+  const all = carriedMoves(before, moves);
   // every part on the bench keeps a place once one moves
   for (const part of before.parts) if (!parts[part.id]) parts[part.id] = { ...part.place };
   for (const [id, to] of Object.entries(all)) parts[id] = { x: round(to.x), y: round(to.y), rotation: to.rotation ?? parts[id]?.rotation ?? 0 };
+  const candidate: Project = { ...p, layout: { ...p.layout, bench: { ...p.layout?.bench, parts } } };
+  const after = benchModel(candidate, ctx.shapes, ctx.ties);
+  // Validate before mutating the caller's project, including every leg moved
+  // indirectly by a breadboard. An imported old conflict is not a new edit.
+  for (const [pin, hole] of after.plugs) {
+    if (before.plugs.get(pin) === hole) continue;
+    const others = (after.occupied.get(hole) ?? []).filter((owner) => owner !== pin);
+    if (others.length) throw new Error(`${hole} is occupied by ${others.join(', ')}; ${pin} cannot be inserted`);
+  }
   bench(p).parts = parts;
-  const after = benchModel(p, ctx.shapes, ctx.ties);
   // unplug what left its hole
   for (const [pin, hole] of before.plugs) {
     if (after.plugs.get(pin) === hole) continue;
@@ -406,6 +463,10 @@ export function addJumper(p: Project, ctx: BenchContext, wire: BenchWire): Proje
   }
   if (wire.from === wire.to) return p;
   if (p.layout?.bench?.wires?.some((w) => (w.from === wire.from && w.to === wire.to) || (w.from === wire.to && w.to === wire.from))) return p;
+  for (const ref of [wire.from, wire.to]) {
+    const occupied = model.holes.has(ref) ? model.occupied.get(ref) : undefined;
+    if (occupied?.length) throw new Error(`${ref} is occupied by ${occupied.join(', ')}; use another hole on the strip`);
+  }
   const b = bench(p);
   b.wires = [...(b.wires ?? []), wire];
   join(p, model, [wire.from, wire.to]);

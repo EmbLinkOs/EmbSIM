@@ -2,7 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import type { Project } from '@embsim/protocol';
 import { describe, expect, it } from 'vitest';
-import { addJumper, benchModel, legsOf, moveParts, removeJumper, turn, unbuilt, type BenchContext } from './layout';
+import { addJumper, benchModel, legsOf, moveParts, previewInsertion, removeJumper, turn, unbuilt, type BenchContext } from './layout';
 import { PITCH, type BenchShape } from './shape';
 
 // a breadboard of six strips (a-e over f-j would be more; one half is enough):
@@ -63,6 +63,57 @@ describe('bench geometry', () => {
 });
 
 describe('building on the bench', () => {
+  it('previews each leg, distinguishes shared strips from occupied holes and rejects without mutation', () => {
+    const p = moveParts(project(), ctx, { R1: along(1, 0) });
+    const before = structuredClone(p);
+    const model = benchModel(p, ctx.shapes, ctx.ties);
+    const blocked = previewInsertion(model, 'R2', { ...along(1, 0), rotation: 0 });
+    expect(blocked.valid).toBe(false);
+    expect(blocked.contacts[0]).toMatchObject({ pin: 'R2.1', hole: 'BB1.a1', occupiedBy: ['R1.1'] });
+    expect(() => moveParts(p, ctx, { R2: along(1, 0) })).toThrow('BB1.a1 is occupied');
+    expect(p).toEqual(before);
+    const sharedStrip = previewInsertion(model, 'R2', { ...along(1, 1), rotation: 0 });
+    expect(sharedStrip.valid).toBe(true);
+    expect(sharedStrip.contacts.map((contact) => contact.hole)).toEqual(['BB1.b1', 'BB1.b5']);
+    expect(p).toEqual(before);
+  });
+
+  it('reserves jumper holes, permits another hole of the same strip and rejects occupied endpoints', () => {
+    const p = addJumper(project(), ctx, { from: 'BB1.a1', to: 'U1.D13' });
+    const before = structuredClone(p);
+    expect(() => moveParts(p, ctx, { R1: along(1, 0) })).toThrow('jumper 1');
+    expect(() => addJumper(p, ctx, { from: 'BB1.a1', to: 'R2.1' })).toThrow('occupied');
+    expect(p).toEqual(before);
+    moveParts(p, ctx, { R1: along(1, 1) });
+    expect(Object.values(p.nets).find((pins) => pins.includes('U1.D13'))).toContain('R1.1');
+  });
+
+  it('allows an atomic swap of two inserted parts without treating their old positions as occupied', () => {
+    const p = moveParts(project(), ctx, { R1: along(1, 0), R2: along(1, 2) });
+    moveParts(p, ctx, { R1: along(1, 2), R2: along(1, 0) });
+    const model = benchModel(p, ctx.shapes, ctx.ties);
+    expect(model.plugs.get('R1.1')).toBe('BB1.c1');
+    expect(model.plugs.get('R2.1')).toBe('BB1.a1');
+  });
+
+  it('carries inserted parts through all four breadboard rotations without changing contacts or nets', () => {
+    const p = moveParts(project(), ctx, { R1: along(1, 0), R2: along(1, 2) });
+    const nets = structuredClone(p.nets);
+    const plugs = [...benchModel(p, ctx.shapes, ctx.ties).plugs];
+    for (const rotation of [90, 180, 270, 0] as const) {
+      moveParts(p, ctx, { BB1: { x: 50, y: 50, rotation } });
+      expect([...benchModel(p, ctx.shapes, ctx.ties).plugs]).toEqual(plugs);
+      expect(p.nets).toEqual(nets);
+      expect(p.layout!.bench!.parts!.R1!.rotation).toBe(rotation);
+    }
+  });
+
+  it('does not plug a board\'s raised header sockets into a breadboard below it', () => {
+    const p = project();
+    p.layout!.bench!.parts!.U1 = { x: hole(1, 0)[0], y: hole(1, 0)[1] };
+    expect(benchModel(p, ctx.shapes, ctx.ties).plugs.has('U1.D13')).toBe(false);
+  });
+
   it('plugs a part in: each leg joins its strip', () => {
     const p = moveParts(project(), ctx, { R1: along(1, 0) });
     expect(Object.values(p.nets).map((n) => [...n].sort())).toEqual([

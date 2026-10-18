@@ -52,6 +52,49 @@ arrows nudge by one pitch and Delete removes the selection. The list also offers
 plug/turn/lift actions. Controls remain usable while firmware runs: hold buttons,
 flip switches and drag knobs. The engine determines the resulting circuit state.
 
+## Physical insertion previews
+
+Select a part in **Parts & wiring** and type a hole for its first leg. The
+preview lists every pin and its proposed hole, or marks it unseated. Green and
+red rings on the 3D bench show available and occupied target holes. The rings
+are viewing aids drawn over the circuit, not physical contacts. **Plug in** stays
+disabled when another leg or jumper already occupies a target. A different hole
+on the same conductive strip remains usable. Pointer dragging uses the same
+per-leg proposal, shows the occupied owner and returns a rejected drop to its
+original position. Invalid placement cannot partially change the project or nets.
+
+Typed and pointer jumper creation also reject an occupied breadboard hole; use
+another hole of its strip. Component-pin endpoints remain abstract lead
+connections, not a simulation of a particular clip or connector housing. Existing
+imported conflicts are not certified or automatically repaired by these guards.
+
+**Bench placement** edits the selected part's physical X/Y coordinates in
+millimetres and its quarter-turn rotation. These are separate from the schematic
+placement in the main inspector. An empty/invalid coordinate cannot apply. Moving
+or rotating a breadboard carries its inserted parts, retaining their pin-to-hole
+assignments; the whole edit has one undo. Breadboard translation previews carry
+the inserted bodies too; connected jumper curves update when the edit commits.
+Raised development-board header sockets are not automatically plugged into holes
+merely because their top-down positions overlap a breadboard.
+
+These are workbench authoring guards derived from the catalog's geometry. They
+are not native loader rules, a body/lead collision solver, connector mating
+validation or a manufacturer qualification. Partial insertion remains possible and
+is shown explicitly. The simulator's net graph remains the source of electrical
+truth. For a physical breadboard introduction see
+[Adafruit's guide](https://learn.adafruit.com/breadboards-for-beginners).
+
+## Surface-mount packages
+
+BSS138 and BAT54 use SOT-23 bodies; LM1117IMP-3.3 uses SOT-223, including its
+output tab. Their canonical circuit terminals retain the existing names and
+numbers. The list explains that these parts need a carrier for breadboard use;
+placing one above a breadboard does not silently connect it. The SOT-223 tab is
+visible but not separately wireable: OUT2 represents its shared conductor.
+BAT54 uses a reference pin map and representative family outline; its manufacturer
+review remains open. See [package geometry evidence](../engineering/package-geometry.md)
+for sources, dimensions and remaining limits.
+
 ## Rendering recovery and remaining boundaries
 
 If 3D initialization fails or its WebGL context is lost, the panel switches to 2D

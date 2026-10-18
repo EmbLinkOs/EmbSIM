@@ -11,7 +11,7 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { boardStack, type BenchShape, type BoardFeature } from './shape';
+import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature } from './shape';
 
 export interface PartLook {
   /** the component's id ("emblink/resistor") */
@@ -326,6 +326,45 @@ function to92(shape: BenchShape, look: PartLook): THREE.Group {
   }
   for (const [px, pz] of Object.values(local(shape))) g.add(leg(px, pz, 3.1, -2.5, 0.22));
   void look;
+  return g;
+}
+
+function surfaceMount(shape: BenchShape): THREE.Group {
+  const g = new THREE.Group();
+  const [w, d, h] = shape.size;
+  const small = shape.package === 'sot23';
+  const bodyDepth = d * (small ? 1.3 / 2.4 : 0.5);
+  const bodyHeight = small ? h - 0.06 : Math.min(1.6, h - 0.06);
+  const body = mesh(new RoundedBoxGeometry(w, bodyHeight, bodyDepth, 2, small ? 0.06 : 0.12), BLACK_PLASTIC);
+  body.position.y = bodyHeight / 2 + 0.06;
+  g.add(body);
+  const thickness = surfaceLeadThickness(shape);
+  const leadWidth = small ? 0.44 : 0.75;
+  const footLength = small ? 0.43 : 0.75;
+  for (const [x, z] of Object.values(local(shape))) {
+    const side = z < 0 ? -1 : 1;
+    const foot = mesh(new THREE.BoxGeometry(leadWidth, thickness, footLength), METAL);
+    foot.position.set(x, thickness / 2, z);
+    g.add(foot);
+    const a = new THREE.Vector3(x, small ? 0.38 : 0.65, side * bodyDepth / 2);
+    const b = new THREE.Vector3(x, thickness / 2, z - side * footLength / 3);
+    const delta = b.clone().sub(a);
+    const bend = mesh(new THREE.BoxGeometry(leadWidth, thickness, delta.length()), METAL);
+    bend.position.copy(a).add(b).multiplyScalar(0.5);
+    bend.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), delta.normalize());
+    g.add(bend);
+  }
+  if (!small) {
+    // DCY pin 4 is the exposed metal tab. The catalog's OUT2 represents
+    // this same conductor; it is not invented as a fourth electrical net.
+    const length = (d - bodyDepth) / 2 + 0.3;
+    const tab = mesh(new THREE.BoxGeometry(3, thickness, length), METAL);
+    tab.position.set(0, thickness / 2, -bodyDepth / 2 - length / 2 + 0.3);
+    g.add(tab);
+  }
+  const marker = mesh(new THREE.CylinderGeometry(small ? 0.1 : 0.2, small ? 0.1 : 0.2, 0.015, 12), standard('#bfc4c8', 0.65), false);
+  marker.position.set(-w / 2 + (small ? 0.35 : 0.55), bodyHeight + 0.075, bodyDepth / 2 - (small ? 0.25 : 0.45));
+  g.add(marker);
   return g;
 }
 
@@ -846,6 +885,10 @@ export function buildPart(id: string, shape: BenchShape, look: PartLook): Built 
       break;
     case 'to220':
       built = { group: to220(shape), pinTop: 0 };
+      break;
+    case 'sot23':
+    case 'sot223':
+      built = { group: surfaceMount(shape), pinTop: surfaceLeadThickness(shape) };
       break;
     case 'dip':
       built = { group: dip(shape), pinTop: 0 };

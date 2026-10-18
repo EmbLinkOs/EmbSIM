@@ -29,6 +29,30 @@ width, and to about 73 % with its parts list folded from the toolbar.
 | Before | After |
 |---|---|
 | ![The workspace before: an empty Inspector beside the bench](qualified-uno/workspace-before.png) | ![The workspace after: the Inspector folded while nothing is selected](qualified-uno/workspace-after.png) |
+## Named surface-mount bodies (2026-10-18)
+
+Native `embsim serve` captures of isolated BSS138 and LM1117IMP-3.3 parts at
+1440×900 in Chromium: SOT-23 with two front leads and one rear lead, and
+SOT-223 with three front leads and its rear output tab. The package inspector
+explains carrier-board use. These are geometry inspections without a powered
+circuit. See the [source and geometry review](../engineering/package-geometry.md)
+for dimensions, terminal identities and representation limits.
+
+| BSS138, SOT-23 | LM1117IMP-3.3, SOT-223 |
+|---|---|
+| ![BSS138 with its SOT-23 body and lead arrangement](surface-packages/bss138.png) | ![LM1117 with its SOT-223 leads and output tab](surface-packages/lm1117.png) |
+
+## Physical assembly previews (2026-10-18)
+
+The native Uno/breadboard session, paused, in top inspection. The selected R1's
+first leg is proposed at c24, already occupied by D1.A: the preview names the
+conflict and disables insertion. Changing it to b20 uses free holes on the same
+strips. Coloured rings are viewing aids, not physical parts. The coordinate
+controls edit the bench in millimetres independently of schematic placement.
+
+| Occupied hole, rejected | Free holes on the same strips |
+|---|---|
+| ![Native insertion preview identifies D1.A and blocks the conflicting placement](bench-assembly/occupied.png) | ![Native insertion preview accepts free breadboard holes](bench-assembly/free-strip.png) |
 
 ## The Uno's serial port on the host (2026-10-18)
 
@@ -42,6 +66,7 @@ port open.
 | | |
 |---|---|
 | ![The port on the host, no program on it yet](host-serial/serial-port.png) | ![A program on the host has it open at 9600 baud](host-serial/serial-port-open.png) |
+
 ## Bench inspection and wiring (2026-10-18)
 
 The native `embsim serve` workbench with `examples/uno-breadboard`: paper and

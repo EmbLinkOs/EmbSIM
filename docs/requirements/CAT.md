@@ -78,3 +78,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16; initial interactive batch implemented.
 **Verification.** Catalog fixtures, the four interactive examples, and the real-engine library browser regression.
 **Trace.** SPEC-004 §7; SPEC-005 §8; docs/engineering/interactive-library.md
+
+### CAT-011  Named package body evidence
+**Statement.** Named bench package bodies shall retain electrical terminal identity, declare geometry sources and representative-coordinate limits, and distinguish surface-mount packages from direct breadboard insertions. Shared metal tabs shall not invent electrical nodes. Reference-only package or pin maps shall remain explicitly unqualified.
+**Rationale.** A familiar-looking package must not teach an incorrect pin arrangement, mounting method or qualification level.
+**Status.** Accepted 2026-10-18; SOT-23/SOT-223 bodies for BSS138, LM1117IMP-3.3 and reference-only BAT54.
+**Verification.** Datasheet pitch/pin-side and actual mesh-envelope fixtures, all-catalog shape checks, direct-over-hole non-insertion fixture, schema/native catalog validation and native gallery inspection.
+**Trace.** SPEC-005 bench representation; SPEC-011 Scene rendering; docs/engineering/package-geometry.md

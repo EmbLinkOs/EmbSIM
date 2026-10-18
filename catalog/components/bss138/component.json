@@ -144,7 +144,7 @@
         "rev": "7, April 2024",
         "date": "2026-10-16",
         "hash": "sha256:ba7a267f5eebb2cb32333517a387df863bb2137fa8799787d2204fc12c68c291",
-        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1. SOT-23-3: G1, S2, D3. Package/source review only; electrical model is not manufacturer-qualified."
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 1. SOT-23-3: G1, S2, D3. Package/source review only; electrical model is not manufacturer-qualified. Bench geometry reviewed 2026-10-18: PDF page 6, CASE 318 issue AU, 14 AUG 2024. Nominal body 2.90 x 1.30 mm, overall lead span 2.40 mm, height 1.00 mm, pin-1/2 pitch 1.90 mm. Contact centers are representative lead-center locations, not PCB land-pattern dimensions or manufacturing qualification."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
@@ -163,5 +163,28 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "bench": {
+    "package": "sot23",
+    "size_mm": [
+      2.9,
+      2.4,
+      1.0
+    ],
+    "pins": {
+      "G": [
+        0.5,
+        2.185
+      ],
+      "S": [
+        2.4,
+        2.185
+      ],
+      "D": [
+        1.45,
+        0.215
+      ]
+    },
+    "label": "BSS138"
   }
 }

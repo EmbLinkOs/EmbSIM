@@ -40,6 +40,27 @@ versions follow semantic versioning. There is no release yet.
   for its body, its 630-point area and its four continuous 50-point
   rails. The holes' offsets from its edges are not dimensioned there, and
   are declared as such.
+### Named surface-mount package bodies
+
+- Render BSS138 in SOT-23 and LM1117IMP-3.3 in SOT-223 from reviewed package
+  drawings, with proper pin-side arrangement and the regulator's shared metal tab.
+- Replace BAT54's misleading TO-92 body with an explicitly reference-only SOT-23
+  family representation; retain its unverified manufacturer-source status.
+- Add reusable SOT-23/SOT-223 descriptions and prevent direct breadboard insertion
+  of surface-mount leads. Preserve circuit terminal IDs and electrical fidelity.
+
+### Physical assembly feedback
+
+- Preserve later part selections when an asynchronous breadboard placement finishes.
+
+- Preview each leg's destination and occupancy owner before insertion, with
+  target rings on the bench and rejection that leaves layout/nets untouched.
+- Reserve breadboard holes for inserted legs and direct-hole jumpers; allow a
+  free hole on the same strip. Keep partial insertions explicit.
+- Edit physical bench coordinates/rotation independently of schematic placement.
+  Carry inserted parts through breadboard moves and quarter turns in one undoable edit.
+- Preserve the merged world/sensor workflow and distinguish physical bodies from
+  non-interactive sensor-beam overlays when picking.
 
 ### The Uno's serial port on the host (ADR-031, ADR-032)
 
@@ -65,6 +86,7 @@ versions follow semantic versioning. There is no release yet.
   - the bridge's frames on PD0 through its 1 kOhm resistors;
   - DTR pulsed by ioctl, RTS and breaks;
   - programming through Optiboot.
+
 ### Physical bench inspection and reliable wiring
 
 - Target projected pins/holes with named endpoint feedback, reject ambiguous or

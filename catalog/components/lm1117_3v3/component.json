@@ -138,7 +138,7 @@
         "rev": "January 2023",
         "date": "2026-10-16",
         "hash": "sha256:c117f5dd97fd15e62c0dee3adbf1af60480a128a10a0f9a9c28aafb8220ec3aa",
-        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. SOT-223: GND1, OUT2, IN3; tab/pin 4 also OUT. The simulator represents that shared conductor by OUT2. Package/source review only; electrical model is not manufacturer-qualified."
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. SOT-223: GND1, OUT2, IN3; tab/pin 4 also OUT. The simulator represents that shared conductor by OUT2. Package/source review only; electrical model is not manufacturer-qualified. Bench geometry reviewed 2026-10-18: PDF page 44, DCY0004A drawing 4214843/C, 05/2026. Body midpoint 6.50 x 3.50 mm, overall lead span midpoint 7.00 mm, 1.80 mm maximum height, lead pitch 2.30 mm. Representative contact centers, not PCB lands. Tab/pin 4 shares OUT2 and is rendered but not a separate electrical terminal. Not manufacturing qualification."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
@@ -157,5 +157,28 @@
   },
   "artwork": {
     "svg": "artwork.svg"
+  },
+  "bench": {
+    "package": "sot223",
+    "size_mm": [
+      6.5,
+      7.0,
+      1.8
+    ],
+    "pins": {
+      "GND": [
+        0.95,
+        6.6
+      ],
+      "OUT": [
+        3.25,
+        6.6
+      ],
+      "IN": [
+        5.55,
+        6.6
+      ]
+    },
+    "label": "LM1117"
   }
 }
