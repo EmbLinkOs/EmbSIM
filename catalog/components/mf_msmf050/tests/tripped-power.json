@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "tripped-power",
+  "description": "A short across 5 V: tripped, it passes about 0.8 W (the datasheet's typical tripped power)",
+  "policy": "electrical",
+  "until": "20s",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.05
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mf_msmf050"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.1"
+      ],
+      "F": [
+        "DUT.2",
+        "R.1"
+      ],
+      "GND": [
+        "R.2",
+        "V.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.power": {
+      "at": "20s",
+      "min": 0.6,
+      "max": 1.0
+    }
+  }
+}

@@ -41,7 +41,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
                              *const relay[] = { "S+", "S-", "COM", "NC", "NO" },
                              *const spdt[] = { "COM", "NC", "NO" }, *const one[] = { "1" };
     static const struct { const char *name; const char *const *pins; int n; } table[] = {
-        { "environment_resistor", env, 2 }, { "photodiode", dio, 2 }, { "optocoupler", opto, 4 },
+        { "environment_resistor", env, 2 }, { "ptc_fuse", two, 2 }, { "photodiode", dio, 2 }, { "optocoupler", opto, 4 },
         { "relay_contacts", relay, 5 }, { "spdt_contact", spdt, 3 },
         { "resistor", two, 2 }, { "capacitor", two, 2 }, { "inductor", two, 2 }, { "switch", two, 2 },
         { "vsource", src, 2 }, { "isource", src, 2 }, { "potentiometer", pot, 3 }, { "diode", dio, 2 },
@@ -1659,7 +1659,14 @@ static const esk_adev_ops *const device_table[] = {
     &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
     &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,
+    &esk_ptc_fuse_ops,
 };
+
+void esk_adev_on_time(esk_adev *d, es_time_t now)
+{
+    if (d && d->ops == &esk_ptc_fuse_ops)
+        esk_ptc_on_time(d, now);
+}
 
 const esk_adev_ops *esk_adev_find(const char *name)
 {

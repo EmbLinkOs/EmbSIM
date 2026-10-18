@@ -185,7 +185,7 @@ field.
 `expect` maps probe targets (`net:`, `pin:`, `device:`, `output:`, and
 `serial:` for what a terminal in the circuit received) to an expectation
 with a time selector; `inputs` may target the component or a member of a
-composite, and `output:` a member's output (SPEC-007). `embsim catalog validate` runs them. A component whose
+composite, and `output:` a member's output (SPEC-007). `embsim catalog validate` runs them. In a fixture longer than 2 s, an `output:` or `device:` target is sampled at most 20000 times over the run (a fuse heating for half an hour), not at the value probe's default 10 kHz. A component whose
 tests fail is listed as broken in the catalog, not hidden.
 
 ## 10. The primitive model contract (C)

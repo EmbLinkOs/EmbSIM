@@ -17,13 +17,28 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 
 
+UNITS = {'ps': 1e-12, 'ns': 1e-9, 'us': 1e-6, 'ms': 1e-3, 's': 1.0}
+
+
+def seconds(t: str) -> float:
+    """A duration ("1800s", "200ms") in seconds."""
+    for unit in sorted(UNITS, key=len, reverse=True):
+        if t.endswith(unit):
+            return float(t[:-len(unit)]) * UNITS[unit]
+    return float(t)
+
+
 def convert(fixture: dict) -> tuple[dict, dict]:
     probes, assertions = [], []
+    until = seconds(fixture.get('until', '1ms'))
     for i, (target, expectation) in enumerate(fixture['expect'].items()):
         selector = {k: v for k, v in expectation.items() if k in ('at', 'between', 'by')}
         expected = {k: v for k, v in expectation.items() if k not in selector}
         kind = 'serial' if target.startswith('serial:') else 'digital' if 'logic' in expected or (fixture.get('policy') != 'electrical' and any(k in expected for k in ('edges', 'frequency_hz'))) else 'analog' if any(k in expected for k in ('min_v', 'max_v', 'edges', 'frequency_hz')) else 'value'
-        probes.append({'id': f'p{i}', 'target': target, 'kind': kind, **({'rate_hz': 1_000_000} if kind == 'analog' else {})})
+        # a part's value over a long fixture (a fuse heating for half an hour)
+        # is sampled at most 20000 times, as `embsim catalog validate` does
+        rate = {'rate_hz': 1_000_000} if kind == 'analog' else {'rate_hz': 20000 / until} if kind == 'value' and until > 2 else {}
+        probes.append({'id': f'p{i}', 'target': target, 'kind': kind, **rate})
         assertions.append({'id': f'assert-{i}', 'probe': f'p{i}', **(selector or {'at': fixture.get('until', '1ms')}), 'expect': expected})
     assertions.append({'id': 'solver-health', 'always': True, 'diagnostics': {'forbid': ['analog.no_convergence', 'analog.timestep_too_small', 'sched.delta_overflow']}})
     project = {'schema_version': 1, 'kind': 'project', 'name': 'catalog-fixture',

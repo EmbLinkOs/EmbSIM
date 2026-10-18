@@ -156,6 +156,22 @@ has `A`, `K`, `C`, `E`, an LED knee and nominal CTR capped by collector saturati
 resistance; no galvanic input-output stamp is introduced. These are low-frequency
 approximations with per-entry limits, not full device or optical models.
 
+`ptc_fuse` (pins `1`, `2`) is a polymeric PTC resettable fuse, a resistance that
+heats itself:
+- **Thermal model.** Two thermal nodes: the polymer core (`c_core`, `r_core`
+  to the package) and the package (`c_case`, `r_case` to the room). The room
+  is the input `temperature`, bound to the world's.
+- **Resistance.** `r0` at 23 C, rising by `slope` per kelvin below
+  `t_switch`, then a factor e every `trip_k` kelvin above it, so the heat runs
+  away above a current and the fuse trips.
+- **Its own clock.** The temperatures are integrated apart from the island's
+  steps. Each accepted solution sets the voltage held until the next. Looks
+  come about half a kelvin of change apart, a second at most once settled,
+  each a component wake (`on_time`) dispatched to the device.
+- **Re-solving.** The matrix holds the resistance last stamped; a 1 % change
+  touches the island, which then solves again. A quiet circuit therefore
+  sleeps between looks while the fuse warms over minutes.
+
 `relay_contacts` senses `S+`/`S-` across the separate coil resistance and switches
 `COM` between `NC` and `NO` after persistent pickup/dropout thresholds and delays.
 Only accepted solver times commit state; rejected trials cannot advance a switch.

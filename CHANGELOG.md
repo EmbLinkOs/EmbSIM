@@ -5,6 +5,28 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The Uno's USB fuse: a resettable PTC that heats and trips (ADR-031, ADR-034)
+
+- `emblink/mf_msmf050`: Bourns' MF-MSMF050-2, the Uno's F1 on USB VBUS. A
+  new `ptc_fuse` primitive (SPEC-004): a two-node thermal model, the polymer
+  core and its package, heated by the power it passes. Its resistance rises
+  gently below the polymer's switch and steeply above it, so above a
+  current the heat runs away and it trips; once the fault is removed it cools
+  and resets.
+- Fitted to the datasheet's typical time-to-trip curve at 23 C (1.08 A to
+  9 A), with 0.8 W tripped. It holds 0.5 A for 30 minutes, trips at 1.0 A,
+  and at 8 A trips within the 0.15 s maximum (typically 13 ms).
+- The room's temperature (its input, or the world's) moves the threshold as
+  the datasheet's derating table does, from 0.77 A at -40 C to 0.29 A at
+  85 C, without being fitted to it.
+- Eleven fixtures run it the way Bourns tests it: a current-limited supply
+  clamped at 15 V.
+- Fixtures longer than 2 s sample their outputs at most 20000 times instead
+  of at 10 kHz, in both `embsim catalog validate` and
+  `tools/catalog/run_fixtures.py`. A half-hour fixture now runs in well under
+  a second, and `run_fixtures.py` takes 60 s for the whole catalog, down from
+  78 s before this part.
+
 ### The Uno R3 qualified against reference data (visual benchmark V1)
 
 - The Uno's artwork had its headers up to 4 mm out:
