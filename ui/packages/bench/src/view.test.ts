@@ -78,6 +78,7 @@ describe('the bench view', () => {
     const before = structuredClone(p);
     const ctx = benchContext(p, entry);
     expect(() => addJumper(p, ctx, { from: 'BB1.no-such-hole', to: 'R1.1' })).toThrow('Unknown bench terminal');
+    expect(() => addJumper(p, ctx, { from: 'missing.pin', to: 'missing.pin' })).toThrow('Unknown bench terminal');
     expect(p).toEqual(before);
     addJumper(p, ctx, { from: 'R1.1', to: 'D1.A' });
     const wired = structuredClone(p);
