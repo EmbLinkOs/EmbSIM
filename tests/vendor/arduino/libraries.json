@@ -83,6 +83,13 @@
       "commit": "d514fc3beae85dd4c2b19781b93faa47bd6e996f",
       "version": "1.15.5",
       "license": "LGPL-3.0"
+    },
+    {
+      "name": "RTClib",
+      "repo": "https://github.com/adafruit/RTClib",
+      "commit": "5298434167b770c4602661d682e3b340d565073f",
+      "version": "2.1.4",
+      "license": "MIT"
     }
   ]
 }

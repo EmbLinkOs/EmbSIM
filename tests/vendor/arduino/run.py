@@ -250,6 +250,10 @@ def main() -> int:
     ap.add_argument("--fetch", action="store_true", help="fetch libraries.json's libraries into --libs")
     ap.add_argument("sketches", nargs="*")
     args = ap.parse_args()
+    # a fixed build time (the reproducible-builds convention GCC honours), so
+    # a sketch that sets a clock from __DATE__ and __TIME__ prints the same
+    # each run: 2026-10-18 12:00:00 UTC
+    os.environ.setdefault("SOURCE_DATE_EPOCH", "1792324800")
     missing = [t for t in ("avr-gcc", "avr-g++", "avr-gcc-ar") if not shutil.which(t)]
     if missing or not args.core:
         print(f"SKIP: {'needs ' + ', '.join(missing) if missing else 'no --core (ArduinoCore-avr checkout)'}")

@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ds3231",
+  "version": "1.0.0",
+  "name": "DS3231 precision real-time clock",
+  "category": "misc",
+  "description": "Maxim DS3231 I2C real-time clock with its temperature-compensated crystal: time and date in BCD with 12/24-hour modes and the century, two alarms driving INT#, a square-wave and a 32 kHz output, the die temperature, the aging offset, and the oscillator-stop flag set at power-up.",
+  "keywords": [
+    "rtc",
+    "real-time clock",
+    "clock",
+    "ds3231",
+    "i2c",
+    "alarm",
+    "time"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "32KHZ",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain"
+      },
+      "doc": "32.768 kHz output, open drain (needs a pull-up)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 2.3 to 5.5 V"
+    },
+    {
+      "name": "INT_SQW",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain"
+      },
+      "doc": "Alarm interrupt (active low) or square wave, open drain",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "RST",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain"
+      },
+      "doc": "Reset output, active low, open drain: low for 250 ms after power-up",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 13,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "VBAT",
+      "number": 14,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Backup battery (not modelled)"
+    },
+    {
+      "name": "SDA",
+      "number": 15,
+      "model": {
+        "kind": "digital_io"
+      },
+      "doc": "I2C data, open drain",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCL",
+      "number": 16,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "I2C clock",
+      "power_ref": "VCC"
+    }
+  ],
+  "params": {
+    "drift_ppm": {
+      "type": "number",
+      "default": 0,
+      "min": -10,
+      "max": 10,
+      "doc": "The crystal's rate off true, ppm (the datasheet holds +-2 ppm from 0 to 40 C)"
+    }
+  },
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "min": -40,
+      "max": 85,
+      "unit": "degC",
+      "default": 25
+    }
+  ],
+  "outputs": [
+    {
+      "name": "time",
+      "type": "string",
+      "doc": "The clock's time, YYYY-MM-DD hh:mm:ss"
+    },
+    {
+      "name": "weekday",
+      "type": "integer"
+    },
+    {
+      "name": "temperature",
+      "type": "number",
+      "unit": "degC",
+      "doc": "The temperature register"
+    },
+    {
+      "name": "lost_power",
+      "type": "boolean",
+      "doc": "OSF"
+    },
+    {
+      "name": "alarm1",
+      "type": "boolean",
+      "doc": "A1F"
+    },
+    {
+      "name": "alarm2",
+      "type": "boolean",
+      "doc": "A2F"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "I2C at 0x68 with user buffers synchronised at each START; BCD time and date with 12/24-hour modes, the century bit and a user day of the week; the countdown chain reset by a seconds write; the rate off by drift_ppm and the aging offset; both alarms with every mask combination setting A1F/A2F and pulling INT# with INTCN; the square wave and 32 kHz outputs (open drain) while wired; temperature at power-up, every 64 s or on CONV (BSY, 125 ms), 0.25 C steps; power-on to 2000-01-01 with OSF and EN32kHz set and RST low 250 ms; no answer below 2.3 V.",
+      "omissions": [
+        "the battery (VBAT) switchover and timekeeping on battery (EOSC, BBSQW and OSF on power loss have no effect on VCC)",
+        "the RST pushbutton input and its debounce",
+        "the TCXO's frequency against temperature (the drift is a parameter)",
+        "the 1 Hz square wave's phase against the seconds",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the battery (VBAT) switchover and timekeeping on battery (EOSC, BBSQW and OSF on power loss have no effect on VCC)",
+        "the RST pushbutton input and its debounce",
+        "the TCXO's frequency against temperature (the drift is a parameter)",
+        "the 1 Hz square wave's phase against the seconds",
+        "supply current"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; VCC's voltage gates the interface; the behaviour is the Lua model's.",
+      "omissions": [
+        "the battery (VBAT) switchover and timekeeping on battery (EOSC, BBSQW and OSF on power loss have no effect on VCC)",
+        "the RST pushbutton input and its debounce",
+        "the TCXO's frequency against temperature (the drift is a parameter)",
+        "the 1 Hz square wave's phase against the seconds",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Maxim Integrated DS3231 Extremely Accurate I2C-Integrated RTC/TCXO/Crystal, data sheet 19-5170 Rev 10"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 60,
+    "pins": {
+      "SCL": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SDA": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "INT_SQW": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "32KHZ": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "RST": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "VBAT": {
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 40,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

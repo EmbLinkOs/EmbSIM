@@ -521,6 +521,15 @@ versions follow semantic versioning. There is no release yet.
   passed on at DOUT reshaped, a low of t_reset (50 us; 280 us for the V5)
   latching the frame, dark below 3.5 V. Adafruit NeoPixel's `simple` runs
   unmodified on a 16-LED ring, 4/4; five fixtures.
+- The DS3231 (`emblink/ds3231`), from Maxim's datasheet: BCD time and
+  date with 12/24-hour modes, the century and a user day of the week,
+  user buffers synchronised at START, the countdown chain reset by a
+  seconds write, the rate off by a drift parameter and the aging offset,
+  both alarms with every mask combination on INT#, the square-wave and
+  32 kHz outputs, the temperature every 64 s or on CONV, OSF and RST at
+  power-up. RTClib's `ds3231` runs unmodified, 2/2; nine fixtures. The
+  Arduino runner fixes SOURCE_DATE_EPOCH, so __DATE__ and __TIME__ are
+  the same each run.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

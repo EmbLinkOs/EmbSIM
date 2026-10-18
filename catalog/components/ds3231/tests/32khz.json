@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "32khz",
+  "description": "EN32kHz is set at power-up: the 32kHz pin gives 32.768 kHz.",
+  "policy": "functional",
+  "until": "6ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ds3231"
+      },
+      {
+        "id": "PU3",
+        "component": "emblink/pull_up"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "K32": [
+        "DUT.32KHZ",
+        "PU3.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:K32": {
+      "between": [
+        "1ms",
+        "5ms"
+      ],
+      "frequency_hz": 32768,
+      "tolerance": 0.02
+    }
+  }
+}
