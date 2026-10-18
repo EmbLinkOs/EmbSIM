@@ -68,6 +68,8 @@ struct es_session {
     int tx_id, tx_last, tx_structural;
     ESK_VEC(esk_board_inst *) boards;
     ESK_VEC(esk_probe *) probes;
+    /* serial ports on the host (hostport.c) */
+    ESK_VEC(struct esk_host_port *) host_ports;
     uint32_t next_probe_id;
     size_t probe_memory_bytes;
     /* inputs record (SPEC-012 §1 inputs) */
@@ -122,6 +124,18 @@ const char *esk_session_analysis_name(unsigned which);
 /* a run's report gains "coverage", "profile", "stack" and "faults"
  * summaries when they are on */
 void esk_session_analysis_report(es_session *s, esk_json *report);
+
+/* hostport.c: a board's console or a terminal part as a serial port on the
+ * host (ADR-031); its state as JSON; polled while the session runs */
+struct esk_host_port;
+es_status esk_session_port_open(es_session *s, const char *target, const struct esk_host_port **out, char *why,
+                                size_t cap);
+es_status esk_session_port_close(es_session *s, const char *target);
+esk_json *esk_session_port_json(es_session *s, const struct esk_host_port *hp);
+void esk_session_ports_poll(es_session *s);
+void esk_session_ports_free(es_session *s);
+/* bytes sent back to back at `from` baud (8N1) as a UART at `to` baud reads them */
+size_t esk_uart_rebaud(const unsigned char *in, size_t n, double from, double to, unsigned char *out, size_t cap);
 
 /* loader.c */
 es_status esk_project_load(es_session *s, const esk_json *project, const char *base_dir);

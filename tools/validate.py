@@ -1286,6 +1286,16 @@ def check_board(report: Report, file: Path, doc: dict, index: Index) -> None:
         for key in ("tx", "rx"):
             if console.get(key) and console[key] not in signals:
                 report.error(file, ptr("console", key), "catalog.signal_unknown", f"{console[key]} is not a signal of the MCU")
+    # the bridge's DTR reset holds a board component's contacts (a reset switch's) for its pulse
+    dtr = ((console or {}).get("bridge") or {}).get("dtr_reset")
+    if dtr:
+        d = inst.get(dtr.get("component"))
+        if d is None:
+            report.error(file, "/console/bridge/dtr_reset/component", "catalog.not_found",
+                         f"dtr_reset component {dtr.get('component')} is not a component of the board")
+        elif "pressed" not in {x.get("name") for x in d.get("inputs") or []}:
+            report.error(file, "/console/bridge/dtr_reset/component", "catalog.input_unknown",
+                         f"{dtr.get('component')} has no input pressed to hold RESET low")
     # artwork
     art = doc.get("artwork")
     if art:

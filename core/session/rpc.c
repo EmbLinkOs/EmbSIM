@@ -428,6 +428,53 @@ static es_status m_world_get(rpc_ctx *r)
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
+/* a board's console or a terminal part as a serial port on the host (ADR-031) */
+static es_status m_port_open(rpc_ctx *r)
+{
+    const char *target = pstr(r, "target", NULL);
+    const struct esk_host_port *hp;
+    char why[160];
+    es_status st;
+    if (!target)
+        return fail(r, -32602, "target is required");
+    why[0] = 0;
+    st = esk_session_port_open(r->s, target, &hp, why, sizeof why);
+    if (st != ES_OK) {
+        fail_status(r, st);
+        if (why[0])
+            esk_snprintf(r->err_msg, sizeof r->err_msg, "%s", why);
+        return st;
+    }
+    r->result = esk_session_port_json(r->s, hp);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+static es_status m_port_close(rpc_ctx *r)
+{
+    const char *target = pstr(r, "target", NULL);
+    if (!target)
+        return fail(r, -32602, "target is required");
+    if (esk_session_port_close(r->s, target) != ES_OK)
+        return fail_status(r, ES_ENOTFOUND);
+    r->result = obj(r);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
+static es_status m_port_list(rpc_ctx *r)
+{
+    esk_json *arr = esk_json_new_array(r->s->a);
+    size_t i;
+    r->result = obj(r);
+    if (!r->result || !arr) {
+        esk_json_free(r->s->a, arr);
+        return ES_ENOMEM;
+    }
+    for (i = 0; i < r->s->host_ports.len; i++)
+        esk_json_array_push(r->s->a, arr, esk_session_port_json(r->s, r->s->host_ports.data[i]));
+    esk_json_object_set(r->s->a, r->result, "ports", arr);
+    return ES_OK;
+}
+
 static es_status m_input_list(rpc_ctx *r)
 {
     es_session *s = r->s;
@@ -1247,6 +1294,7 @@ static const method methods[] = {
     { "control.run", m_control_run }, { "control.pause", m_control_pause }, { "control.step", m_control_step },
     { "control.advance", m_control_advance }, { "control.reset", m_control_reset }, { "control.speed", m_control_speed },
     { "world.get", m_world_get },
+    { "port.open", m_port_open }, { "port.close", m_port_close }, { "port.list", m_port_list },
     { "input.set", m_input_set }, { "input.press", m_input_press }, { "input.release", m_input_release },
     { "input.serial", m_input_serial }, { "input.list", m_input_list },
     { "probe.add", m_probe_add }, { "probe.remove", m_probe_remove }, { "probe.list", m_probe_list }, { "probe.read", m_probe_read },

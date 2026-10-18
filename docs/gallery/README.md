@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The Uno's serial port on the host (2026-10-18)
+
+The Serial panel's "Open on this computer" puts the board's ATmega16U2
+bridge on the host as a pseudo-terminal (ADR-031). Here `uno-blink-serial`
+runs at real time and a Python program on the host opens `/dev/pts/0` at
+9600 baud: the Uno resets as its DTR capacitor makes it, and the program
+reads the sketch's banner, then its A0 readings, while the panel shows the
+port open.
+
+| | |
+|---|---|
+| ![The port on the host, no program on it yet](host-serial/serial-port.png) | ![A program on the host has it open at 9600 baud](host-serial/serial-port-open.png) |
+
 ## The world (2026-10-18)
 
 The room the circuit sits in (ADR-026). `NewPing/NewPingExample` declares a

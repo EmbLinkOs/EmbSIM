@@ -112,7 +112,25 @@
         "peripheral": {"type": "string"},
         "tx": {"type": "string", "pattern": "^(P[A-Z][0-9]+|R[A-K][0-9]+|GPIO[0-9]+)$"},
         "rx": {"type": "string", "pattern": "^(P[A-Z][0-9]+|R[A-K][0-9]+|GPIO[0-9]+)$"},
-        "baud": {"type": "integer", "minimum": 1}
+        "baud": {"type": "integer", "minimum": 1},
+        "bridge": {
+          "type": "object",
+          "description": "The board's USB-serial bridge (ADR-031): the part, and, when raising DTR (a program opening the port) resets the MCU, as the Uno's 16U2 does through a 100 nF capacitor on RESET, the board component whose contacts join RESET to ground for the pulse and the pulse's length",
+          "required": ["part"],
+          "additionalProperties": false,
+          "properties": {
+            "part": {"type": "string"},
+            "dtr_reset": {
+              "type": "object",
+              "required": ["component", "ms"],
+              "additionalProperties": false,
+              "properties": {
+                "component": {"type": "string"},
+                "ms": {"type": "number", "exclusiveMinimum": 0}
+              }
+            }
+          }
+        }
       }
     },
     "bench": {
