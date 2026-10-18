@@ -76,6 +76,13 @@
       "commit": "502a7caccda630a151dfb03ecbdd4b8452809ef7",
       "version": "2.2.9",
       "license": "BSD-3-Clause"
+    },
+    {
+      "name": "Adafruit_NeoPixel",
+      "repo": "https://github.com/adafruit/Adafruit_NeoPixel",
+      "commit": "d514fc3beae85dd4c2b19781b93faa47bd6e996f",
+      "version": "1.15.5",
+      "license": "LGPL-3.0"
     }
   ]
 }

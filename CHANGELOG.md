@@ -515,6 +515,12 @@ versions follow semantic versioning. There is no release yet.
   at 16 bits, the die temperature, burst reads from one sampling instant,
   standby axes and the DATA_RDY interrupt on INT. Adafruit's
   `basic_readings` runs unmodified, 3/3; nine fixtures.
+- The WS2812B (`emblink/ws2812b`) and strips or rings of them
+  (`emblink/ws2812b_strip`), one model from Worldsemi's datasheet: 800
+  kbit/s NRZ told apart at 0.6 us, 24 bits (GRB) kept per LED and the rest
+  passed on at DOUT reshaped, a low of t_reset (50 us; 280 us for the V5)
+  latching the frame, dark below 3.5 V. Adafruit NeoPixel's `simple` runs
+  unmodified on a 16-LED ring, 4/4; five fixtures.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

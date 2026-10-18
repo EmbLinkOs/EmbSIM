@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "simple",
+  "until": "1700ms",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "first",
+      "at": "250ms",
+      "probe": "colors",
+      "expect": {
+        "equals": "009600 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000"
+      }
+    },
+    {
+      "id": "second",
+      "at": "750ms",
+      "probe": "colors",
+      "expect": {
+        "equals": "009600 009600 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000"
+      }
+    },
+    {
+      "id": "fourth",
+      "at": "1650ms",
+      "probe": "colors",
+      "expect": {
+        "equals": "009600 009600 009600 009600 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000 000000"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "Adafruit NeoPixel's simple example, unmodified: the library's AVR show() bit-bangs the 800 kHz frames with interrupts off; every 500 ms one more of the ring's 16 LEDs turns green (0, 150, 0), each frame latched by the line resting low."
+}
