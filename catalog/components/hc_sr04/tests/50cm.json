@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "50cm",
-  "description": "50 cm: ECHO rises 250 us after the trigger and stays high 2.9 ms.",
+  "description": "50 cm at 20 C: ECHO rises 250 us after the trigger and stays high for the round trip, 2 x 0.5 m / 343.42 m/s = 2912 us.",
   "policy": "functional",
   "until": "6ms",
   "circuit": {
@@ -38,7 +38,7 @@
     },
     "output:DUT.echo_us": {
       "at": "5ms",
-      "equals": 2915
+      "equals": 2912
     }
   },
   "inputs": [

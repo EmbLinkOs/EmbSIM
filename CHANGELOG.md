@@ -454,6 +454,11 @@ versions follow semantic versioning. There is no release yet.
   element follows the air with the datasheet's response times (5 s for
   humidity, 10 s for temperature) and readings are clamped to the range.
   Its fixtures check the start-up second, the previous data and the lag.
+- The HC-SR04's echo is the sound's round trip at the speed of sound in
+  the air's temperature (a new input, 20 C by default: 58.24 us per cm),
+  measured from the trigger's falling edge after a `burst_delay`; a
+  trigger during a measurement is ignored, and it does not answer below
+  4.0 V. NewPing's `NewPingExample` runs unmodified, 6/6.
 - The servo turns as an SG90 does: toward each pulse's target at its
   rated speed (0.1 s per 60 deg at 4.8 V, in proportion to the supply),
   only while pulses keep coming (it stays put when they stop), not for a

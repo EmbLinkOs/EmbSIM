@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "HC-SR04 ultrasonic sensor",
   "category": "sensors",
-  "description": "Ultrasonic distance sensor module (HC-SR04): a TRIG pulse of at least 10 us starts a measurement; after the burst ECHO stays high 58.3 us per centimetre (2-400 cm, else a 38 ms timeout). The distance is an interactive input.",
+  "description": "Ultrasonic distance sensor module (HC-SR04): a TRIG pulse of at least 10 us starts a measurement; after the burst ECHO stays high for the sound's round trip, 58.24 us per centimetre at 20 C (the speed of sound follows the air's temperature), from 2 to 400 cm, else a 38 ms timeout. Distance and temperature are interactive inputs.",
   "keywords": [
     "sensor",
     "ultrasonic",
@@ -58,7 +58,16 @@
       "doc": "Ground"
     }
   ],
-  "params": {},
+  "params": {
+    "burst_delay": {
+      "type": "number",
+      "unit": "s",
+      "default": "250u",
+      "min": "100u",
+      "max": "5m",
+      "doc": "From TRIG's falling edge to ECHO rising: the eight 40 kHz cycles (200 us) and the module's start; modules vary"
+    }
+  },
   "inputs": [
     {
       "name": "distance_cm",
@@ -67,7 +76,16 @@
       "max": 500,
       "unit": "cm",
       "default": 100,
-      "doc": "Distance to the target"
+      "doc": "Distance to the target in front"
+    },
+    {
+      "name": "temperature",
+      "type": "number",
+      "min": -40,
+      "max": 85,
+      "unit": "degC",
+      "default": 20,
+      "doc": "Air temperature, which sets the speed of sound"
     }
   ],
   "outputs": [
@@ -84,11 +102,12 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Trigger qualification (10 us), a fixed 250 us burst delay, echo width 58.3 us/cm in range, 38 ms timeout outside.",
+      "claims": "A trigger of 10 us or more, measured from its falling edge; ECHO after burst_delay; the echo the sound's round trip 2 d / c with c = 331.3 + 0.606 T m/s; 2-400 cm, else the 38 ms timeout; triggers during a measurement ignored; no answer below 4.0 V.",
       "omissions": [
-        "beam angle and multiple targets",
-        "temperature dependence of the speed of sound",
-        "minimum re-trigger interval"
+        "the 15 degree beam, targets beside it and several targets",
+        "the target's material and angle",
+        "humidity's small effect on the speed of sound",
+        "supply current"
       ],
       "validation": [
         "tests/*.json"
@@ -97,17 +116,18 @@
     "timed": {
       "claims": "As functional; delays as stated.",
       "omissions": [
-        "beam angle and multiple targets",
-        "temperature dependence of the speed of sound",
-        "minimum re-trigger interval"
+        "the 15 degree beam, targets beside it and several targets",
+        "the target's material and angle",
+        "humidity's small effect on the speed of sound",
+        "supply current"
       ]
     },
     "electrical": {
       "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
       "omissions": [
-        "beam angle and multiple targets",
-        "temperature dependence of the speed of sound",
-        "minimum re-trigger interval",
+        "the 15 degree beam, targets beside it and several targets",
+        "the target's material and angle",
+        "humidity's small effect on the speed of sound",
         "supply current",
         "output current limits"
       ],

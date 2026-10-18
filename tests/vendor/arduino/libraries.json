@@ -20,6 +20,13 @@
       "commit": "440b319ec11ea2664df8ce201c271c935de28a2d",
       "version": "1.2.2+",
       "license": "LGPL-2.1"
+    },
+    {
+      "name": "NewPing",
+      "repo": "https://bitbucket.org/teckel12/arduino-new-ping.git",
+      "commit": "8619f2b1fcfe4c28b239c7b65b744a8f49cd2d3e",
+      "version": "1.9.7",
+      "license": "NewPing's own: use as-is, no forks or derivatives (fetched unmodified, never vendored)"
     }
   ]
 }
