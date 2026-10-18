@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Physical bench inspection and reliable wiring
+
+- Target projected pins/holes with named endpoint feedback, reject ambiguous or
+  covered contacts, validate typed terminals and avoid duplicate jumpers.
+- Cancel interrupted wiring/placement safely and release held controls.
+- Add top/selection camera framing, paper/graphite/mat surfaces, label and note
+  preferences, a foldable keyboard list available at compact widths, and an
+  explained 2D fallback/retry for renderer failure.
+- Respect board thickness, mounting height and header style consistently between
+  bodies and wiring contacts; expose geometry provenance without implying qualification.
+
 ### Schematic visual language and direct manipulation
 
 - Separate idle wire color from graphite component symbols, with persistent green,

@@ -389,6 +389,12 @@ function round(v: number): number {
 export function addJumper(p: Project, ctx: BenchContext, wire: BenchWire): Project {
   if (wire.from === wire.to) return p;
   const model = benchModel(p, ctx.shapes, ctx.ties);
+  for (const ref of [wire.from, wire.to]) {
+    const [id, ...pin] = ref.split('.');
+    if (!model.holes.has(ref) && !model.byId.get(id ?? '')?.legs[pin.join('.')])
+      throw new Error(`Unknown bench terminal ${ref}`);
+  }
+  if (p.layout?.bench?.wires?.some((w) => (w.from === wire.from && w.to === wire.to) || (w.from === wire.to && w.to === wire.from))) return p;
   const b = bench(p);
   b.wires = [...(b.wires ?? []), wire];
   join(p, model, [wire.from, wire.to]);

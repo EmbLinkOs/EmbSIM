@@ -11,7 +11,7 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import type { BenchShape, BoardFeature } from './shape';
+import { boardStack, type BenchShape, type BoardFeature } from './shape';
 
 export interface PartLook {
   /** the component's id ("emblink/resistor") */
@@ -716,18 +716,17 @@ function feature(f: BoardFeature, id: string, indicators: Indicator[]): THREE.Ob
 function board(shape: BenchShape, look: PartLook, id: string, indicators: Indicator[]): THREE.Group {
   const g = new THREE.Group();
   const [w, d] = shape.size;
-  const standoff = shape.board?.standoff_mm ?? 3;
+  const { standoff, thickness, surface, headers, contact } = boardStack(shape);
   const top = look.texture ? new THREE.MeshStandardMaterial({ map: look.texture, roughness: 0.5 }) : standard('#00878f', 0.5);
   const edge = standard('#006a70', 0.6);
-  const pcb = mesh(new THREE.BoxGeometry(w, 1.6, d), [edge, edge, top, edge, edge, edge]);
-  pcb.position.y = standoff + 0.8;
+  const pcb = mesh(new THREE.BoxGeometry(w, thickness, d), [edge, edge, top, edge, edge, edge]);
+  pcb.position.y = standoff + thickness / 2;
   g.add(pcb);
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
     const foot = mesh(new THREE.CylinderGeometry(1.5, 1.5, standoff, 12), standard('#efefef', 0.7));
     foot.position.set(sx * (w / 2 - 4), standoff / 2, sz * (d / 2 - 4));
     g.add(foot);
   }
-  const surface = standoff + 1.6;
   for (const f of shape.board?.features ?? []) {
     const o = feature(f, id, indicators);
     o.position.set(f.at[0] - w / 2, surface, f.at[1] - d / 2);
@@ -735,6 +734,20 @@ function board(shape: BenchShape, look: PartLook, id: string, indicators: Indica
   }
   // female header sockets on its pins
   for (const [px, pz] of Object.values(local(shape))) {
+    if (headers !== 'female') {
+      const pad = mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.05, 12), GOLD);
+      pad.position.set(px, surface + 0.025, pz);
+      g.add(pad);
+      if (headers === 'male') {
+        const spacer = mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), BLACK_PLASTIC);
+        spacer.position.set(px, surface + 1.25, pz);
+        g.add(spacer);
+        const pin = mesh(new THREE.BoxGeometry(0.64, contact - surface, 0.64), GOLD);
+        pin.position.set(px, (contact + surface) / 2, pz);
+        g.add(pin);
+      }
+      continue;
+    }
     const socket = mesh(new THREE.BoxGeometry(2.54, 8.5, 2.54), BLACK_PLASTIC);
     socket.position.set(px, surface + 4.25, pz);
     g.add(socket);
@@ -828,7 +841,7 @@ export function buildPart(id: string, shape: BenchShape, look: PartLook): Built 
       break;
     case 'board': {
       const indicators: Indicator[] = [];
-      built = { group: board(shape, look, id, indicators), indicators, pinTop: (shape.board?.standoff_mm ?? 3) + 1.6 + 8.5 };
+      built = { group: board(shape, look, id, indicators), indicators, pinTop: boardStack(shape).contact };
       break;
     }
     default:

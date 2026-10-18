@@ -141,6 +141,22 @@ neutral canvas surfaces, rounded chrome and subtle shadows.
   are in; plugging the selected part's first leg into a named hole,
   turning it, lifting it off; a jumper between two named terminals), and
   without WebGL the bench is the flat view below.
+- Bench inspection and wiring: projected terminal positions define an 11 CSS-pixel
+  hit radius, with clipped/covered contacts excluded and near-equal neighboring
+  targets rejected with a zoom-in hint. A screen-space contact ring and named
+  source/destination feedback identify the proposed connection. Plugged legs share
+  their breadboard hole's picking target. Unknown typed endpoints are rejected
+  before mutation; duplicate/reversed jumpers do not create another wire.
+  Escape, pointer cancellation/capture loss, focus loss, hidden documents and
+  tool/edit/live-mode changes cancel pending wiring and roll back uncommitted
+  dragging; interrupted holds send a release. A top camera, selection focus,
+  paper/graphite/mat surfaces, label visibility and notes are viewing aids;
+  appearance/list preferences persist locally without changing electrical data.
+  The keyboard part/wiring list can fold explicitly and stacks below narrow
+  scenes. Geometry source labels distinguish catalog/artwork/approximate bodies
+  without implying qualification. Board geometry and contact heights share declared
+  thickness, standoff and header style. Renderer initialization/context failure
+  selects the 2D fallback with an explanation and an explicit 3D retry.
 - The flat bench (the 2D view). The parts with artwork sit in rows above the
   boards, each labelled with its id and name; the project's nets are wires
   between their pins (each artwork's `pin-<name>` elements, SPEC-005 §8):

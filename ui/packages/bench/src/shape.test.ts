@@ -52,6 +52,7 @@ describe('bench shapes', () => {
     const s = benchShape(component('breadboard_830'));
     expect(s.package).toBe('breadboard');
     expect(s.wiringAid).toBe(true);
+    expect(s.geometrySource).toBe('catalog');
     expect(s.size).toEqual([165.1, 54.6, 8.5]);
     expect(Object.keys(s.pins)).toHaveLength(830);
     expect(s.pins.a2![0] - s.pins.a1![0]).toBeCloseTo(PITCH);

@@ -134,3 +134,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-16
 **Verification.** SI/annotation collision fixtures, browser color/selection/socket/cursor/default-value/preference regression and native-engine light/dark/compact schematic workflow.
 **Trace.** SPEC-011 Schematic visual language
+
+### UI-019  Inspectable and cancellable physical bench editing
+**Statement.** The bench shall identify projected connection targets by terminal name, refuse ambiguous targets, reject unknown typed endpoints and avoid duplicate jumpers. Interrupted gestures shall not commit wiring or placement, and held inputs shall be released. Inspection controls shall provide top/focused views, persistent surface/label/note preferences and an explicitly available keyboard list at compact widths. Renderer initialization/context failure shall provide a usable 2D fallback and retry. Geometry provenance shall not imply mechanical qualification.
+**Rationale.** Make physical circuit construction predictable and keep inspection and recovery available across devices.
+**Status.** Accepted 2026-10-18
+**Verification.** Projected-contact/geometry/endpoint/preference fixtures; browser named-wire cancel/commit/undo, compact-list, preference and context-loss workflows; native bench regression.
+**Trace.** SPEC-011 Scene rendering; ADR-027; ADR-030

@@ -8,7 +8,7 @@
 // one click builds. Every edit is a transaction on the project, undone as
 // the schematic's are. Without WebGL, the 2D bench below stands in.
 
-import { Badge, Button, Dialog, EmptyState, IconButton, Input, SegmentedControl, Tooltip, useToast } from '@embsim/design';
+import { Badge, Button, Dialog, EmptyState, IconButton, Input, Select, SegmentedControl, Tooltip, useToast } from '@embsim/design';
 import {
   addJumper,
   addNote,
@@ -21,7 +21,7 @@ import {
   moveParts,
   removeJumper,
   snapPart,
-  terminalNear,
+  terminalTargets,
   unbuilt,
   WIRE_COLORS,
   type Bench3DHandle,
@@ -30,12 +30,13 @@ import {
 } from '@embsim/bench';
 import type { ArtworkState, Hotspot, OutputValue, Project } from '@embsim/protocol';
 import { BoardView, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
-import { Box, Cable, CircuitBoard, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
+import { Box, Cable, CircuitBoard, List, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
 import { useProject, type CatalogEntry } from '../stores/project';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
+import { loadBenchPreferences, saveBenchPreferences, type BenchPreferences } from './bench-preferences';
 
 /** the colours an LED's `color` parameter names, for its artwork's --led-color */
 const LED_COLORS: Record<string, string> = {
@@ -79,7 +80,7 @@ function boardBindings(art: BoardArtwork | undefined): { states: ArtworkState[];
   };
 }
 
-export function BoardPanel({ interactive, editable: canEdit = true }: { interactive: boolean; editable?: boolean }) {
+export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanvas, canvasFocused }: { interactive: boolean; editable?: boolean; onFocusCanvas?(): void; canvasFocused?: boolean }) {
   const project = useProject((s) => s.project);
   const catalog = useProject((s) => s.catalog);
   const editableProject = useProject((s) => s.editable);
@@ -100,6 +101,15 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
   }, []);
   const [note, setNote] = useState<string | null>(null);
   const [flat, setFlat] = useState(() => typeof document === 'undefined' || !webglAvailable());
+  const [preferences, setPreferences] = useState(loadBenchPreferences);
+  const [rendererFailed, setRendererFailed] = useState(false);
+  const preference = <K extends keyof BenchPreferences>(key: K, value: BenchPreferences[K]) => {
+    setPreferences((previous) => {
+      const next = { ...previous, [key]: value };
+      saveBenchPreferences(next);
+      return next;
+    });
+  };
   const handle = useRef<Bench3DHandle>(null);
   const editable = canEdit && editableProject;
 
@@ -145,6 +155,7 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
   const jumpers = useMemo(() => (project && model ? jumperViews(project, model) : []), [project, model]);
   const links = useMemo(() => (project && model ? linkViews(project, model) : []), [project, model]);
   const pending = useMemo(() => (project && model ? unbuilt(project, model) : []), [project, model]);
+  const terminals = useMemo(() => (model ? terminalTargets(model) : []), [model]);
 
   const mutate = useCallback(
     (label: string, fn: (p: Project) => Project | null) => {
@@ -227,11 +238,28 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
           <Maximize2 />
         </IconButton>
       </Tooltip>
+      <Button size="sm" variant="ghost" disabled={flat || !selectedPart} onClick={() => handle.current?.frame(undefined, true)}>Focus part</Button>
+      <details className="wb-bench-view-menu">
+        <summary>View</summary>
+        <div className="wb-bench-view-menu__body">
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => handle.current?.frame('top')}>Top</Button>
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => handle.current?.frame('perspective')}>Perspective</Button>
+          <Select label="Bench surface" size="sm" value={preferences.surface} onValueChange={(v) => preference('surface', v)} options={[
+            { value: 'paper', label: 'Paper' }, { value: 'graphite', label: 'Graphite' }, { value: 'mat', label: 'Bench mat' },
+          ]} />
+          <Select label="Bench labels" size="sm" value={preferences.labels} onValueChange={(v) => preference('labels', v)} options={[
+            { value: 'adaptive', label: 'Adaptive labels' }, { value: 'all', label: 'All labels' }, { value: 'selected', label: 'Selected only' },
+          ]} />
+          <Button size="sm" variant="ghost" aria-pressed={preferences.notes} onClick={() => preference('notes', !preferences.notes)}>Notes</Button>
+        </div>
+      </details>
+      <Button size="sm" variant="ghost" aria-pressed={preferences.list} onClick={() => preference('list', !preferences.list)}><List /> Parts & wiring</Button>
+      {onFocusCanvas && <Button size="sm" variant="ghost" aria-pressed={canvasFocused} onClick={onFocusCanvas}>Focus canvas</Button>}
       <SegmentedControl<'3d' | '2d'>
         label="Bench view"
         size="sm"
         value={flat ? '2d' : '3d'}
-        onValueChange={(v) => setFlat(v === '2d')}
+        onValueChange={(v) => { setRendererFailed(false); setFlat(v === '2d'); }}
         options={[
           { value: '3d', label: '3D', title: 'The bench in 3D' },
           { value: '2d', label: '2D', title: 'The parts\' artwork, flat' },
@@ -310,7 +338,11 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
           wireColor={wireColor}
           selected={selected}
           snap={(id, x, y, rotation) => snapPart(model, ctx, id, x, y, rotation)}
-          terminalAt={(x, y, part) => terminalNear(model, x, y, part)}
+          terminals={terminals}
+          surface={preferences.surface}
+          labels={preferences.labels}
+          showNotes={preferences.notes}
+          onRendererError={() => { setRendererFailed(true); setFlat(true); }}
           onMove={(id, place) => mutate(`Move ${id}`, (p) => moveParts(p, ctx, { [id]: place }))}
           onWire={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
           onSelect={setSelected}
@@ -325,8 +357,9 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
           label={`Bench of ${project.name}`}
         />
       )}
-      {list}
+      {preferences.list && list}
       </div>
+      {rendererFailed && <div className="wb-bench-recovery" role="status">3D rendering is unavailable. The 2D view and Parts & wiring remain available. Select 3D to retry.</div>}
       {note !== null && (
         <Dialog
           open
@@ -407,6 +440,7 @@ function BenchList({
           );
         })}
       </ul>
+      {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? 'Check the actual package and pinout before building hardware.' : 'Source metadata does not establish mechanical qualification.'}</p>}
       {part && editable && part.shape.package !== 'breadboard' && part.shape.package !== 'board' && (
         <form
           className="wb-bench-list__form"

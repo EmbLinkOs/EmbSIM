@@ -568,6 +568,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.wb-bench-geometry { color: var(--text-muted); line-height: 1.5; margin: var(--space-2) 0; }
 
 .wb-bench-list__form {
   display: flex;
@@ -583,10 +584,20 @@
 }
 
 @container (max-width: 640px) {
-  .wb-bench-list {
-    display: none;
-  }
+  .wb-bench-body { flex-direction: column; }
+  .wb-bench-list { width: auto; max-height: 42%; border-left: 0; border-top: 1px solid var(--line); }
 }
+
+.wb-bench-view-menu { position: relative; font-size: var(--text-xs); }
+.wb-bench-view-menu summary { padding: 5px 9px; cursor: pointer; border-radius: var(--radius-sm); }
+.wb-bench-view-menu summary:hover { background: var(--surface-hover); }
+.wb-bench-view-menu__body {
+  position: absolute; top: 100%; right: 0; z-index: 30;
+  display: grid; gap: var(--space-2); width: 200px; padding: var(--space-3);
+  background: var(--surface-raised); border: 1px solid var(--line);
+  border-radius: var(--radius-md); box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+}
+.wb-bench-recovery { padding: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
 
 .eb-bench3d {
   position: relative;
@@ -605,7 +616,24 @@
 
 .eb-bench3d > canvas {
   display: block;
+  touch-action: none;
 }
+
+.eb-terminal-target {
+  position: absolute; z-index: 3; pointer-events: none;
+  width: 18px; height: 18px; transform: translate(-50%, -50%);
+  border: 2px solid #087eaa; border-radius: 50%;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgb(8 126 170 / 0.3);
+}
+.eb-connection-feedback {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 4; pointer-events: none; max-width: calc(100% - 24px);
+  padding: 6px 12px; border-radius: var(--radius-md);
+  background: var(--surface-raised); color: var(--text);
+  border: 1px solid var(--line); box-shadow: 0 3px 12px rgb(0 0 0 / 0.12);
+  font: 12px var(--font-mono); text-align: center;
+}
+.eb-connection-feedback:empty { display: none; }
 
 .eb-labels {
   position: absolute;

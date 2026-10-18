@@ -36,6 +36,8 @@ export interface BoardBench {
 
 export interface BenchShape {
   package: ShapePackage;
+  /** Geometry provenance, not electrical or mechanical qualification. */
+  geometrySource?: 'catalog' | 'artwork' | 'approximate';
   /** a board's own components and build */
   board?: BoardBench;
   /** width (x), depth (y), height above the bench (z), mm */
@@ -46,6 +48,16 @@ export interface BenchShape {
   wiringAid?: boolean;
   /** the artwork is the body's top face (modules, boards) */
   textured?: boolean;
+}
+
+/** Shared contact/body heights so visible sockets and wiring endpoints
+ * cannot drift when catalog board thickness or mounting height changes. */
+export function boardStack(shape: BenchShape): { standoff: number; thickness: number; surface: number; contact: number; headers: 'female' | 'male' | 'none' } {
+  const standoff = shape.board?.standoff_mm ?? 3;
+  const thickness = shape.board?.thickness_mm ?? 1.6;
+  const headers = shape.board?.headers ?? 'female';
+  const surface = standoff + thickness;
+  return { standoff, thickness, surface, headers, contact: surface + (headers === 'female' ? 8.5 : headers === 'male' ? 8 : 0) };
 }
 
 type Desc = Pick<ComponentDescription, 'id' | 'name' | 'category' | 'pins' | 'bench' | 'artwork'> & { kind?: string; ports?: Record<string, unknown> };
@@ -235,6 +247,16 @@ function header(names: string[], w: number, d: number): Record<string, [number, 
  * board's pins.
  */
 export function benchShape(desc: Desc, params?: Record<string, unknown>, artwork?: string): BenchShape {
+  const shape = deriveShape(desc, params, artwork);
+  const names = desc.kind === 'board' ? Object.keys(desc.ports ?? {}) : ordered(desc);
+  const art = desc.artwork;
+  const anchors = artwork && art?.width_mm && art.height_mm ? artworkAnchors(artwork, art.width_mm, art.height_mm) : {};
+  shape.geometrySource = desc.bench?.pins && desc.bench.size_mm ? 'catalog'
+    : shape.textured && names.length > 0 && names.every((name) => anchors[name.toLowerCase()]) ? 'artwork' : 'approximate';
+  return shape;
+}
+
+function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: string): BenchShape {
   const short = desc.id.split('/').pop() ?? desc.id;
   const own = desc.bench;
   const names = ordered(desc);

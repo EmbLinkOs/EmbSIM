@@ -13,7 +13,7 @@
 // in a loop while nothing moves.
 
 import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue } from '@embsim/protocol';
-import { useCallback, useEffect, useImperativeHandle, useRef, type KeyboardEvent, type Ref } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -21,6 +21,7 @@ import { CSS2DObject, CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRe
 import { ArtworkSurface } from './artwork';
 import { buildPart, type Built, type PickData } from './parts3d';
 import type { BenchShape } from './shape';
+import { pickTerminal, type ProjectedTerminal } from './picking';
 
 export interface BenchPartView {
   id: string;
@@ -70,7 +71,7 @@ export type BenchTool = 'select' | 'wire';
 
 export interface Bench3DHandle {
   /** frames the camera on everything on the bench */
-  frame(): void;
+  frame(view?: 'perspective' | 'top', selectedOnly?: boolean): void;
   /** the canvas, for screenshots */
   canvas(): HTMLCanvasElement | null;
 }
@@ -88,8 +89,11 @@ export interface Bench3DProps {
   wireColor: string;
   selected?: { part?: string; jumper?: number };
   snap(id: string, x: number, y: number, rotation: number): SnapResult;
-  /** the terminal (a hole, a pin) at a point of the bench */
-  terminalAt(x: number, y: number, part?: string): TerminalHit | undefined;
+  terminals: TerminalHit[];
+  surface?: 'mat' | 'paper' | 'graphite';
+  labels?: 'adaptive' | 'all' | 'selected';
+  showNotes?: boolean;
+  onRendererError?(): void;
   onMove(id: string, place: Required<BenchPlace>): void;
   onWire(from: string, to: string): void;
   onSelect(sel: { part?: string; jumper?: number }): void;
@@ -137,16 +141,16 @@ export function jumperCurve(a: Point3, b: Point3): THREE.Curve<THREE.Vector3> {
   return new THREE.CatmullRomCurve3([A, A.clone().setY(A.y + UP), A.clone().lerp(B, 0.2).setY(top - lift * 0.25), mid, B.clone().lerp(A, 0.2).setY(top - lift * 0.25), B.clone().setY(B.y + UP), B], false, 'centripetal');
 }
 
-function deskTexture(): THREE.CanvasTexture | undefined {
+function deskTexture(surface: 'mat' | 'paper' | 'graphite' = 'mat'): THREE.CanvasTexture | undefined {
   if (typeof document === 'undefined') return undefined;
   const c = document.createElement('canvas');
   c.width = c.height = 512;
   const g = c.getContext('2d');
   if (!g) return undefined;
   // an anti-static mat: matte blue-grey with a 10 mm grid
-  g.fillStyle = '#2f4f5f';
+  g.fillStyle = { mat: '#2f4f5f', paper: '#e8e7e3', graphite: '#30343b' }[surface];
   g.fillRect(0, 0, 512, 512);
-  g.strokeStyle = 'rgba(255,255,255,0.07)';
+  g.strokeStyle = surface === 'paper' ? 'rgba(30,40,50,0.07)' : 'rgba(255,255,255,0.07)';
   g.lineWidth = 2;
   for (let i = 0; i <= 512; i += 51.2) {
     g.beginPath();
@@ -164,7 +168,7 @@ function deskTexture(): THREE.CanvasTexture | undefined {
 }
 
 function partKey(v: BenchPartView): string {
-  return JSON.stringify([v.component, v.params ?? {}, v.shape.package, v.shape.size, v.artwork?.svg.length ?? 0]);
+  return JSON.stringify([v.component, v.params ?? {}, v.shape, v.artwork?.svg ?? '']);
 }
 
 function labelElement(text: string): HTMLDivElement {
@@ -176,10 +180,14 @@ function labelElement(text: string): HTMLDivElement {
 
 export function Bench3D(props: Bench3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const cancelGesture = useRef<(() => void) | null>(null);
+  const [feedback, setFeedback] = useState<{ text: string; x?: number; y?: number; ref?: string }>({ text: '' });
   const propsRef = useRef(props);
   propsRef.current = props;
+  useEffect(() => { cancelGesture.current?.(); }, [props.tool, props.editable, props.live]);
   const state = useRef<{
     renderer: THREE.WebGLRenderer;
+    desk: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
     labels: CSS2DRenderer;
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
@@ -204,12 +212,15 @@ export function Bench3D(props: Bench3DProps) {
     });
   }, []);
 
-  const frame = useCallback(() => {
+  const frame = useCallback((view?: 'perspective' | 'top', selectedOnly = false) => {
     const s = state.current;
     if (!s) return;
+    const mode = view ?? (s.camera.position.clone().sub(s.controls.target).normalize().y > 0.99 ? 'top' : 'perspective');
     const box = new THREE.Box3();
-    for (const e of s.parts.values()) box.expandByObject(e.built.group);
-    for (const n of propsRef.current.notes) box.expandByPoint(new THREE.Vector3(n.x, 30, n.y));
+    const chosen = selectedOnly && propsRef.current.selected?.part;
+    for (const e of s.parts.values()) if (!chosen || e.view.id === chosen) box.expandByObject(e.built.group);
+    if (!selectedOnly && propsRef.current.showNotes !== false)
+      for (const n of propsRef.current.notes) box.expandByPoint(new THREE.Vector3(n.x, 30, n.y));
     if (box.isEmpty()) box.set(new THREE.Vector3(-100, 0, -60), new THREE.Vector3(100, 20, 60));
     const centre = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -217,8 +228,10 @@ export function Bench3D(props: Bench3DProps) {
     const fov = (s.camera.fov * Math.PI) / 180;
     const fit = Math.max(size.z, size.x / Math.max(0.5, s.camera.aspect)) / 2 / Math.tan(fov / 2);
     const r = fit * 1.05 + 20;
-    s.controls.target.copy(centre).setY(0);
-    s.camera.position.set(centre.x, centre.y + r * 0.78, centre.z + r * 0.68);
+    s.controls.target.copy(centre);
+    if (mode === 'top') s.camera.position.set(centre.x, centre.y + r, centre.z + 0.001);
+    else s.camera.position.set(centre.x, centre.y + r * 0.78, centre.z + r * 0.68);
+    s.controls.update();
     s.camera.near = 1;
     s.camera.far = r * 20;
     s.camera.updateProjectionMatrix();
@@ -236,6 +249,7 @@ export function Bench3D(props: Bench3DProps) {
       renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     } catch {
       host.dataset.webgl = 'unavailable';
+      propsRef.current.onRendererError?.();
       return;
     }
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -245,6 +259,12 @@ export function Bench3D(props: Bench3DProps) {
     renderer.toneMappingExposure = 1.05;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     host.appendChild(renderer.domElement);
+    const contextLost = (event: Event) => {
+      event.preventDefault();
+      host.dataset.webgl = 'lost';
+      propsRef.current.onRendererError?.();
+    };
+    renderer.domElement.addEventListener('webglcontextlost', contextLost);
     renderer.domElement.setAttribute('aria-hidden', 'true');
     const labels = new CSS2DRenderer();
     labels.domElement.className = 'eb-labels';
@@ -293,7 +313,7 @@ export function Bench3D(props: Bench3DProps) {
     const notes = new THREE.Group();
     const preview = new THREE.Group();
     scene.add(jumpers, links, notes, preview);
-    state.current = { renderer, labels, scene, camera, controls, parts: new Map(), jumpers, links, notes, preview, raf: 0, framed: false };
+    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, preview, raf: 0, framed: false };
     controls.addEventListener('change', invalidate);
 
     const resize = () => {
@@ -315,6 +335,10 @@ export function Bench3D(props: Bench3DProps) {
       controls.dispose();
       for (const e of state.current?.parts.values() ?? []) e.surface?.dispose();
       if (state.current?.raf) cancelAnimationFrame(state.current.raf);
+      renderer.domElement.removeEventListener('webglcontextlost', contextLost);
+      desk.material.map?.dispose();
+      desk.material.dispose();
+      desk.geometry.dispose();
       renderer.dispose();
       pmrem.dispose();
       renderer.domElement.remove();
@@ -322,6 +346,18 @@ export function Bench3D(props: Bench3DProps) {
       state.current = null;
     };
   }, [invalidate]);
+
+  // Presentation preferences affect rendering only, never the project or nets.
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    s.desk.material.map?.dispose();
+    s.desk.material.map = deskTexture(props.surface) ?? null;
+    s.desk.material.needsUpdate = true;
+    s.scene.background = new THREE.Color(props.surface === 'paper' ? '#dedfdf' : props.surface === 'graphite' ? '#24272c' : '#1c2a33');
+    s.notes.visible = props.showNotes !== false;
+    invalidate();
+  }, [props.surface, props.showNotes, invalidate]);
 
   // the parts: built when new or changed, moved when they move
   useEffect(() => {
@@ -357,7 +393,7 @@ export function Bench3D(props: Bench3DProps) {
       e.label.element.classList.toggle('is-selected', chosen);
       // a small part on a breadboard is named when selected: the labels would cover the board
       const small = v.elevation > 0 && !['module', 'board', 'box'].includes(v.shape.package);
-      e.label.visible = !small || props.selected?.part === v.id;
+      e.label.visible = chosen || (props.labels !== 'selected' && (props.labels === 'all' || !small));
       // live state: the artwork, an LED's light, a control's position
       e.surface?.update(v.outputs ?? {});
       const lum = typeof v.outputs?.luminance === 'number' ? v.outputs.luminance : 0;
@@ -408,7 +444,7 @@ export function Bench3D(props: Bench3DProps) {
       frame();
     }
     invalidate();
-  }, [props.parts, props.selected, invalidate, frame]);
+  }, [props.parts, props.selected, props.labels, invalidate, frame]);
 
   // the jumpers, the connections still to build, the notes
   useEffect(() => {
@@ -495,6 +531,7 @@ export function Bench3D(props: Bench3DProps) {
     };
     const onDesk = (): THREE.Vector3 | null => ray.ray.intersectPlane(desk, new THREE.Vector3());
     const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers], true);
+    let activePointer: number | null = null;
     let drag: { id: string; dx: number; dz: number; moved: boolean; start: Required<BenchPlace>; rotation: number } | null = null;
     let wire: { from: TerminalHit; line: THREE.Mesh | null } | null = null;
     let held: { target: string; input: string } | null = null;
@@ -517,20 +554,48 @@ export function Bench3D(props: Bench3DProps) {
         holeMarks.push(m);
       }
     };
-    const surfacePoint = (hit: THREE.Intersection | undefined): { x: number; z: number; part?: string } | null => {
-      if (hit) return { x: hit.point.x, z: hit.point.z, part: (hit.object.userData as PickData).part };
-      const p = onDesk();
-      return p ? { x: p.x, z: p.z } : null;
+    const terminalAtPointer = (ev: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const projected: ProjectedTerminal[] = [];
+      const occlusionRay = new THREE.Raycaster();
+      for (const terminal of propsRef.current.terminals) {
+        const world = v3(terminal.at);
+        const screen = world.clone().project(s.camera);
+        const x = (screen.x + 1) * r.width / 2;
+        const y = (1 - screen.y) * r.height / 2;
+        if (Math.hypot(x - (ev.clientX - r.left), y - (ev.clientY - r.top)) > 11 || screen.z < -1 || screen.z > 1) continue;
+        // A hit area cannot see through another component. Generic lead
+        // anchors can sit inside their own lead geometry, so the owning body
+        // is excluded; this is not a mechanical accessibility check.
+        occlusionRay.setFromCamera(new THREE.Vector2(screen.x, screen.y), s.camera);
+        const blocker = occlusionRay.intersectObjects([...s.parts.values()].map((e) => e.built.group), true)
+          .find((hit) => (hit.object.userData as PickData).part !== terminal.ref.split('.')[0] && hit.distance + 0.5 < s.camera.position.distanceTo(world));
+        if (!blocker) projected.push({ terminal, x, y, depth: screen.z });
+      }
+      return pickTerminal(projected, ev.clientX - r.left, ev.clientY - r.top);
+    };
+    const feedbackAt = (ev: PointerEvent, from?: TerminalHit) => {
+      const pick = terminalAtPointer(ev);
+      const terminal = pick.kind === 'terminal' ? pick.terminal : undefined;
+      const point = terminal ? v3(terminal.at).project(s.camera) : undefined;
+      const r = el.getBoundingClientRect();
+      const text = pick.kind === 'ambiguous' ? 'Contacts overlap — zoom in to choose a pin'
+        : terminal ? from ? terminal.ref === from.ref ? `${from.ref} · choose another terminal` : `${from.ref} → ${terminal.ref} · release to connect` : `${terminal.ref} · drag to connect`
+        : from ? `${from.ref} → choose a terminal · Esc cancels` : 'Point at a hole or pin to start a jumper';
+      setFeedback({ text, ref: terminal?.ref, x: point ? (point.x + 1) * r.width / 2 : undefined, y: point ? (1 - point.y) * r.height / 2 : undefined });
+      el.style.cursor = terminal ? 'var(--draw-cursor, crosshair)' : 'default';
+      return terminal;
     };
     const down = (ev: PointerEvent) => {
-      if (ev.button !== 0) return;
+      if (ev.button !== 0 || activePointer !== null) return;
+      host.focus({ preventScroll: true });
       const p = propsRef.current;
       cast(ev);
       const hits = hitParts();
       const hit = hits[0];
       const data = (hit?.object.userData ?? {}) as PickData & { jumper?: number };
       // a control of a part, while the circuit runs
-      if (p.live && data.part && data.input) {
+      if (p.live && p.tool !== 'wire' && data.part && data.input) {
         const view = s.parts.get(data.part)?.view;
         const target = data.target ? `${data.part}.${data.target}` : data.part;
         if (data.gesture === 'hold') {
@@ -541,11 +606,12 @@ export function Bench3D(props: Bench3DProps) {
         } else if (data.gesture === 'turn') {
           turning = { target: data.part, input: data.input, x: ev.clientX, v: Number(view?.inputs?.[data.input] ?? 0.5) };
         }
+        activePointer = ev.pointerId;
         el.setPointerCapture(ev.pointerId);
         return;
       }
       // a hotspot on a textured face (a keypad's key, a board's button)
-      if (p.live && data.part && hit?.uv && hit.face && hit.face.normal.y > 0.9) {
+      if (p.live && p.tool !== 'wire' && data.part && hit?.uv && hit.face && hit.face.normal.y > 0.9) {
         const surface = s.parts.get(data.part)?.surface;
         const h = surface?.hotspotAt(hit.uv.x, 1 - hit.uv.y);
         if (h) {
@@ -555,11 +621,12 @@ export function Bench3D(props: Bench3DProps) {
             held = { target, input: h.input };
             p.onInput(target, h.input, true);
           }
+          activePointer = ev.pointerId;
           el.setPointerCapture(ev.pointerId);
           return;
         }
       }
-      if (data.jumper !== undefined) {
+      if (data.jumper !== undefined && p.tool !== 'wire') {
         p.onSelect({ jumper: data.jumper });
         return;
       }
@@ -568,11 +635,13 @@ export function Bench3D(props: Bench3DProps) {
         return;
       }
       if (p.tool === 'wire') {
-        const at = surfacePoint(hit);
-        const t = at ? p.terminalAt(at.x, at.z, at.part) : undefined;
+        const t = feedbackAt(ev);
         if (t) {
           wire = { from: t, line: null };
+          showMarks([t.at]);
+          activePointer = ev.pointerId;
           el.setPointerCapture(ev.pointerId);
+          invalidate();
         }
         return;
       }
@@ -582,11 +651,14 @@ export function Bench3D(props: Bench3DProps) {
         p.onSelect({ part: data.part });
         if (at) {
           drag = { id: data.part, dx: e.view.place.x - at.x, dz: e.view.place.y - at.z, moved: false, start: e.view.place, rotation: e.view.place.rotation };
+          activePointer = ev.pointerId;
           el.setPointerCapture(ev.pointerId);
+          el.style.cursor = 'grabbing';
         }
       } else p.onSelect({});
     };
     const move = (ev: PointerEvent) => {
+      if (activePointer !== null && ev.pointerId !== activePointer) return;
       const p = propsRef.current;
       if (turning) {
         const v = Math.max(0, Math.min(1, turning.v + (ev.clientX - turning.x) / 200));
@@ -607,21 +679,29 @@ export function Bench3D(props: Bench3DProps) {
       }
       if (wire) {
         const hit = hitParts().find((h) => (h.object.userData as { jumper?: number }).jumper === undefined);
-        const at = surfacePoint(hit);
+        const t = feedbackAt(ev, wire.from);
+        const at = hit?.point ?? onDesk();
         if (!at) return;
-        const t = p.terminalAt(at.x, at.z, at.part);
-        const end: Point3 = t ? t.at : [at.x, (hit?.point.y ?? 0) + 1, at.z];
+        const end: Point3 = t ? t.at : [at.x, at.y + 1, at.z];
         if (wire.line) {
           s.preview.remove(wire.line);
           wire.line.geometry.dispose();
+          (wire.line.material as THREE.Material).dispose();
         }
         wire.line = new THREE.Mesh(new THREE.TubeGeometry(jumperCurve(wire.from.at, end), 48, 0.8, 8, false), new THREE.MeshStandardMaterial({ color: new THREE.Color(p.wireColor), roughness: 0.45, transparent: true, opacity: 0.85 }));
         s.preview.add(wire.line);
-        showMarks(t ? [t.at] : []);
+        showMarks(t ? [wire.from.at, t.at] : [wire.from.at]);
         invalidate();
+      } else if (p.tool === 'wire' && p.editable) feedbackAt(ev);
+      else {
+        const hit = hitParts()[0];
+        const data = hit?.object.userData as PickData | undefined;
+        el.style.cursor = data?.input && p.live ? 'pointer' : data?.part && p.editable ? 'grab' : 'default';
       }
     };
     const up = (ev: PointerEvent) => {
+      if (ev.pointerId !== activePointer) return;
+      cast(ev);
       const p = propsRef.current;
       if (held) {
         p.onInput(held.target, held.input, false);
@@ -643,30 +723,73 @@ export function Bench3D(props: Bench3DProps) {
       }
       if (wire) {
         cast(ev);
-        const hit = hitParts().find((h) => (h.object.userData as { jumper?: number }).jumper === undefined);
-        const at = surfacePoint(hit);
-        const t = at ? p.terminalAt(at.x, at.z, at.part) : undefined;
+        const pick = terminalAtPointer(ev);
+        const t = pick.kind === 'terminal' ? pick.terminal : undefined;
         if (wire.line) {
           s.preview.remove(wire.line);
           wire.line.geometry.dispose();
+          (wire.line.material as THREE.Material).dispose();
         }
         if (t && t.ref !== wire.from.ref) p.onWire(wire.from.ref, t.ref);
         wire = null;
         clearMarks();
         invalidate();
       }
+      activePointer = null;
+      setFeedback({ text: '' });
       if (el.hasPointerCapture(ev.pointerId)) el.releasePointerCapture(ev.pointerId);
     };
+    const cancel = () => {
+      if (held) propsRef.current.onInput(held.target, held.input, false);
+      held = null;
+      turning = null;
+      if (drag) {
+        const e = s.parts.get(drag.id);
+        if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
+      }
+      drag = null;
+      if (wire?.line) {
+        s.preview.remove(wire.line);
+        wire.line.geometry.dispose();
+        (wire.line.material as THREE.Material).dispose();
+      }
+      wire = null;
+      const pointer = activePointer;
+      activePointer = null;
+      if (pointer !== null && el.hasPointerCapture(pointer)) el.releasePointerCapture(pointer);
+      clearMarks();
+      setFeedback({ text: '' });
+      el.style.cursor = '';
+      invalidate();
+    };
+    const escape = (ev: globalThis.KeyboardEvent) => {
+      if (ev.key === 'Escape') { ev.preventDefault(); cancel(); }
+    };
+    cancelGesture.current = cancel;
+    const leave = () => { if (activePointer === null) setFeedback({ text: '' }); };
+    const visibility = () => { if (document.hidden) cancel(); };
+    host.addEventListener('keydown', escape);
+    window.addEventListener('blur', cancel);
+    document.addEventListener('visibilitychange', visibility);
+    el.addEventListener('lostpointercapture', cancel);
+    el.addEventListener('pointerleave', leave);
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
+    el.addEventListener('pointercancel', cancel);
     return () => {
       el.removeEventListener('pointerdown', down);
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerup', up);
-      el.removeEventListener('pointercancel', up);
-      clearMarks();
+      el.removeEventListener('pointercancel', cancel);
+      el.removeEventListener('lostpointercapture', cancel);
+      el.removeEventListener('pointerleave', leave);
+      host.removeEventListener('keydown', escape);
+      window.removeEventListener('blur', cancel);
+      document.removeEventListener('visibilitychange', visibility);
+      cancel();
+      cancelGesture.current = null;
+      markMat.dispose();
     };
   }, [invalidate]);
 
@@ -710,6 +833,10 @@ export function Bench3D(props: Bench3DProps) {
       tabIndex={0}
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
-    />
+      data-terminal={feedback.ref}
+    >
+      {feedback.x !== undefined && feedback.y !== undefined && <span className="eb-terminal-target" style={{ left: feedback.x, top: feedback.y }} aria-hidden="true" />}
+      <div className="eb-connection-feedback" role="status">{feedback.text}</div>
+    </div>
   );
 }

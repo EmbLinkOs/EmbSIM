@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { ComponentDescription, Project } from '@embsim/protocol';
 import { describe, expect, it } from 'vitest';
-import { benchModel, moveParts } from './layout';
+import { addJumper, benchModel, moveParts } from './layout';
 import { parseValue, resistorBands } from './parts3d';
-import { benchContext, elevationOf, jumperViews, linkViews, snapPart, terminalNear, terminalPoint, type BenchCatalogEntry } from './view';
+import { benchContext, elevationOf, jumperViews, linkViews, snapPart, terminalNear, terminalPoint, terminalTargets, type BenchCatalogEntry } from './view';
 
 const CATALOG = resolve(__dirname, '../../../../catalog');
 const entry = (ref: string): BenchCatalogEntry | undefined => {
@@ -67,6 +67,34 @@ describe('the bench view', () => {
     expect(elevationOf(model, 'R1')).toBeCloseTo(8.5);
     expect(terminalPoint(model, 'R1.1')).toEqual([a1.x, 8.5, a1.y]);
     expect(terminalNear(model, a1.x + 0.6, a1.y + 0.4)?.ref).toBe('BB1.a1');
+    const contacts = terminalTargets(model).map((t) => t.ref);
+    expect(contacts).toContain('BB1.a1');
+    expect(contacts).not.toContain('R1.1');
+    expect(contacts).toContain('D1.A');
+  });
+
+  it('rejects nonexistent endpoints before mutation and does not duplicate reversed jumpers', () => {
+    const p = project();
+    const before = structuredClone(p);
+    const ctx = benchContext(p, entry);
+    expect(() => addJumper(p, ctx, { from: 'BB1.no-such-hole', to: 'R1.1' })).toThrow('Unknown bench terminal');
+    expect(p).toEqual(before);
+    addJumper(p, ctx, { from: 'R1.1', to: 'D1.A' });
+    const wired = structuredClone(p);
+    addJumper(p, ctx, { from: 'D1.A', to: 'R1.1' });
+    expect(p).toEqual(wired);
+  });
+
+  it('places board contacts at the declared mounting height, PCB thickness and header style', () => {
+    const p = project();
+    const ctx = benchContext(p, entry);
+    ctx.shapes.B1 = { package: 'board', size: [30, 20, 2.4], pins: { D0: [5, 5] }, board: { standoff_mm: 7, thickness_mm: 2.4, headers: 'none' } };
+    p.boards = [{ id: 'B1', board: 'test/board' }];
+    expect(terminalPoint(benchModel(p, ctx.shapes, ctx.ties), 'B1.D0')?.[1]).toBeCloseTo(9.4);
+    ctx.shapes.B1.board!.headers = 'female';
+    expect(terminalPoint(benchModel(p, ctx.shapes, ctx.ties), 'B1.D0')?.[1]).toBeCloseTo(17.9);
+    ctx.shapes.B1.board!.headers = 'male';
+    expect(terminalPoint(benchModel(p, ctx.shapes, ctx.ties), 'B1.D0')?.[1]).toBeCloseTo(17.4);
   });
 
   it('draws the jumpers and what the nets still ask for', () => {
