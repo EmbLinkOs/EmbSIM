@@ -27,6 +27,31 @@ versions follow semantic versioning. There is no release yet.
 - Preserve the merged world/sensor workflow and distinguish physical bodies from
   non-interactive sensor-beam overlays when picking.
 
+### The Uno's serial port on the host (ADR-031, ADR-032)
+
+- The board's USB-serial bridge (`console.bridge`) becomes a pseudo-terminal
+  on Linux and macOS, opened with `port.open`, `embsim serve --serial B1`, or
+  the Serial panel's "Open on this computer". Any serial program (screen,
+  minicom, the Arduino IDE's monitor, pyserial) then talks to the running
+  sketch, paced at real time.
+- The program's line rate is the bridge's: at the sketch's rate the bytes
+  pass; at another rate both directions decode as a UART reads frames sent
+  at the wrong rate.
+- Opening the port raises DTR and resets the Uno, as the 16U2 does through
+  its 100 nF capacitor. The reset switch is held for 0.7 ms, and the
+  ATmega328P comes out of it with MCUSR's EXTRF set and its other flags
+  kept. Closing the port does not reset.
+- Bytes sent while no program has the port open are dropped, as the bridge
+  drops them.
+- The host's bytes are recorded inputs (text, or `{"base64"}` for binary),
+  so a run replays without the host.
+- `port.state` notifies when a program opens or closes the port.
+- Windows reports that it has no pseudo-terminals (Q16).
+- Omitted, declared in the Uno's fidelity:
+  - the bridge's frames on PD0 through its 1 kOhm resistors;
+  - DTR pulsed by ioctl, RTS and breaks;
+  - programming through Optiboot.
+
 ### Physical bench inspection and reliable wiring
 
 - Target projected pins/holes with named endpoint feedback, reject ambiguous or

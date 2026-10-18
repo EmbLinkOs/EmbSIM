@@ -18,6 +18,7 @@ import { BoardPanel } from '../BoardPanel';
 import { WorldPanel } from '../WorldPanel';
 import { ControlsPanel } from './ControlsPanel';
 import { MetersPanel } from './MetersPanel';
+import { useHostPort } from './useHostPort';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
@@ -33,6 +34,7 @@ export function RunPerspective() {
   const serialTargets = inst.probes.filter((p) => p.kind === 'serial').map((p) => p.target.replace(/^serial:/, ''));
   // the port chosen, else the first: a terminal can send before one is picked
   const serialTarget = inst.serialTarget && serialTargets.includes(inst.serialTarget) ? inst.serialTarget : (serialTargets[0] ?? null);
+  const hostPort = useHostPort(serialTarget);
   const { toast } = useToast();
   const [bottomTab, setBottomTab] = useState<'serial' | 'diagnostics' | 'meters' | 'schematic'>('meters');
 
@@ -174,6 +176,9 @@ export function RunPerspective() {
                 onSend={(target, text) => guard(() => inputActions.serial(target, text))()}
                 disabled={!inst.probes.some((p) => p.kind === 'serial')}
                 disabledReason="No serial probe in this project (add a board with a UART)"
+                hostPort={hostPort.port}
+                hostPortError={hostPort.error}
+                onHostPort={hostPort.toggle}
               />
             ) },
             { value: 'diagnostics', label: 'Diagnostics', content: <DiagnosticsPanel /> },

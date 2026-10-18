@@ -919,6 +919,19 @@ Optiboot and the vendors' bootloaders are fetched like the vendor SDKs
 are, never vendored when their licence forbids it.
 
 **Status.** Accepted direction (owner, 2026-10-18); staged in 07 §2.
+Communication's first step is in (2026-10-18):
+- A board's console bridge (`console.bridge`, SPEC-006) is a
+  pseudo-terminal on Linux and macOS (`port.open`, `embsim serve
+  --serial`, the Serial panel's "Open on this computer").
+- The host program's baud rate is the line's: a mismatch decodes as
+  garbage both ways.
+- Opening the port resets the Uno through its DTR capacitor, an external
+  reset with MCUSR's EXTRF.
+- The bridge's bytes reach the console's USART directly, not as frames on
+  PD0.
+- A pseudo-terminal has no modem lines, so only opening and closing stand
+  for DTR.
+- Power, programming and native USB are to come.
 
 ## ADR-032 Real time with the host: a paced clock and the host's own tools
 
@@ -945,6 +958,13 @@ scheduler gains a pacing hook in the host layer; benchmarks report the
 largest circuits that pace at 1x on the reference machine.
 
 **Status.** Accepted direction (owner, 2026-10-18).
+- The session paces at `control.speed` (1 by default) against the host's
+  monotonic clock, and the workbench shows the ratio it achieves.
+- A host port's bytes are inputs at the session's time, recorded, so a
+  paced run with a terminal on the host replays deterministically
+  (`tests/protocol/test_host_serial.py`).
+- The workbench's own terminal for host tools, and the IDE integrations,
+  are to come.
 
 ## ADR-033 Instruments are used as the real ones are
 

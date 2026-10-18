@@ -30,6 +30,19 @@ controls edit the bench in millimetres independently of schematic placement.
 |---|---|
 | ![Native insertion preview identifies D1.A and blocks the conflicting placement](bench-assembly/occupied.png) | ![Native insertion preview accepts free breadboard holes](bench-assembly/free-strip.png) |
 
+## The Uno's serial port on the host (2026-10-18)
+
+The Serial panel's "Open on this computer" puts the board's ATmega16U2
+bridge on the host as a pseudo-terminal (ADR-031). Here `uno-blink-serial`
+runs at real time and a Python program on the host opens `/dev/pts/0` at
+9600 baud: the Uno resets as its DTR capacitor makes it, and the program
+reads the sketch's banner, then its A0 readings, while the panel shows the
+port open.
+
+| | |
+|---|---|
+| ![The port on the host, no program on it yet](host-serial/serial-port.png) | ![A program on the host has it open at 9600 baud](host-serial/serial-port-open.png) |
+
 ## Bench inspection and wiring (2026-10-18)
 
 The native `embsim serve` workbench with `examples/uno-breadboard`: paper and

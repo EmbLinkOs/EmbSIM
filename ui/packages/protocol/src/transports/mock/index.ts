@@ -114,6 +114,14 @@ export class MockTransport extends TransportBase implements Transport {
       },
       'input.list': () => ({ inputs: s.listInputs() }),
       'world.get': () => s.getWorld(),
+      // the demo runs in the page: there is no host to put a port on
+      'port.open': () => {
+        throw new EngineError(-32008, 'the demo session runs in the browser: it has no serial port on the host');
+      },
+      'port.close': () => {
+        throw new EngineError(-32005, 'no host port is open for that target');
+      },
+      'port.list': () => ({ ports: [] }),
 
       'probe.add': (p) => {
         const info = s.addProbe(p.target, p.kind, p.rate_hz);

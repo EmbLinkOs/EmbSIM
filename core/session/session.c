@@ -204,6 +204,7 @@ void es_session_destroy(es_session *s)
     esk_alloc tmp;
     if (!s)
         return;
+    esk_session_ports_free(s);
     esk_project_unload(s);
     esk_engine_free(&s->eng);
     esk_vec_free(s->a, &s->boards);
@@ -1245,6 +1246,7 @@ es_status esk_session_run_slice(es_session *s)
         delta = s->run_slice_ps;
     }
     s->last_host_ms = now_ms;
+    esk_session_ports_poll(s);
     if (esk_time_add(s->eng.sched.now, delta, &until))
         until = ES_TIME_MAX - 1;
     if (until >= s->run_until)

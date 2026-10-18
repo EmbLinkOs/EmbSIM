@@ -4,7 +4,7 @@
   "id": "emblink/arduino_uno",
   "version": "1.0.0",
   "name": "Arduino Uno R3 (ATmega328P)",
-  "description": "The Arduino Uno R3: an ATmega328P at 16 MHz, 5 V and 3.3 V regulators, the 'L' LED on D13, the power LED, the reset button, and the digital, analog and power headers. USB comes in as the 5 V pin; the ATmega16U2 USB-to-serial bridge is the session's serial console on USART0.",
+  "description": "The Arduino Uno R3: an ATmega328P at 16 MHz, 5 V and 3.3 V regulators, the 'L' LED on D13, the power LED, the reset button, and the digital, analog and power headers. USB comes in as the 5 V pin; the ATmega16U2 USB-to-serial bridge is the session's serial console on USART0, and a serial port on the host (embsim serve --serial), whose DTR resets the ATmega328P as the board's 100 nF auto-reset capacitor does.",
   "keywords": [
     "arduino",
     "uno",
@@ -91,7 +91,7 @@
         "resistance": "10k",
         "voltage": 5.0
       },
-      "doc": "RESET pull-up (the auto-reset capacitor from the USB chip is omitted)"
+      "doc": "RESET pull-up (the 16U2's auto-reset through 100 nF is the console bridge's dtr_reset)"
     },
     {
       "id": "J_PWR",
@@ -462,7 +462,14 @@
     "peripheral": "USART0",
     "tx": "PD1",
     "rx": "PD0",
-    "baud": 9600
+    "baud": 9600,
+    "bridge": {
+      "part": "ATmega16U2",
+      "dtr_reset": {
+        "component": "SW_RESET",
+        "ms": 0.7
+      }
+    }
   },
   "artwork": {
     "svg": "artwork.svg",
@@ -725,12 +732,13 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Nets, ports, LEDs and the reset button as logic-level parts; the ATmega328P runs its firmware (see its description).",
+      "claims": "Nets, ports, LEDs and the reset button as logic-level parts; the ATmega328P runs its firmware (see its description). The ATmega16U2 bridge is a serial port on the host (a pseudo-terminal): the host program's baud rate is the line's, a mismatch with the sketch's decodes as garbage both ways, and opening the port (DTR raised) resets the ATmega328P as the 100 nF auto-reset capacitor does.",
       "omissions": [
-        "the ATmega16U2 USB bridge (the console is USART0 itself)",
+        "the 16U2's bytes reach USART0 directly, not as frames on PD0 through its 1 kOhm resistors (a shield driving D0 does not contend with it)",
+        "DTR toggled by ioctl (avrdude's arduino programmer), RTS and breaks: a pseudo-terminal has no modem lines",
+        "Optiboot: the board is programmed by the session, not through the bridge (ADR-031)",
         "the TX and RX LEDs",
         "the LMV358 buffer on the L LED",
-        "the auto-reset capacitor",
         "ICSP headers"
       ],
       "validation": [
@@ -751,7 +759,7 @@
       "omissions": [
         "decoupling",
         "USB power switching",
-        "the reset capacitor",
+        "the reset capacitor's waveform (its reset is a pulse, the DTR reset above)",
         "ESD diodes"
       ],
       "validation": [

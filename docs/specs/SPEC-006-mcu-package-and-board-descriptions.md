@@ -149,6 +149,14 @@ Rules:
 - `leds`, `buttons`, `console` summarise what the workbench shows as quick
   controls and what importers map; they must agree with `components` and
   `nets` (validated).
+- `console.bridge` is the board's USB-serial bridge (ADR-031): `part` (the
+  Uno's `ATmega16U2`, the Explorer 16/32's `MCP2221A`, a `J-Link OB`), and
+  `dtr_reset {component, ms}` when raising DTR resets the MCU. On the Uno,
+  the 16U2's DTR pin falls and its 100 nF capacitor pulls RESET low for
+  about 0.7 ms, until the 10 kOhm pull-up recharges it past the threshold.
+  The named component's contacts (the reset switch's) join RESET to ground
+  for as long. A board with a bridge is the one whose console `port.open`
+  puts on the host (SPEC-008).
 - `oscillators` fill the MCU's `"board"` clock sources.
 - `toolchains` give per-profile target settings for `embsim build`.
 - The board's artwork hotspots bind to on-board component inputs or outputs
