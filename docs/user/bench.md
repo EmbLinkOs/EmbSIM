@@ -1,0 +1,68 @@
+# Building and inspecting the bench
+
+In Design, select **Bench** above the canvas. The bench and schematic edit the
+same project connections; changing views does not create a second circuit.
+The Run perspective shows the bench with live controls.
+
+## Inspect the circuit
+
+Right-drag to orbit, middle-drag to pan and use the wheel to zoom. **F** or
+**Frame the bench** fits the assembly. Select a part and choose **Focus part**
+to fit that part while retaining a top view if one is active. **Focus canvas**
+in Design folds the library and inspector out of the way. In **View**, choose
+**Top** or **Perspective**, a paper/graphite/anti-static-mat surface, adaptive/all/
+selected-only labels, and whether notes are shown. These are viewing aids, not
+changes to the physical circuit. Paper is the default surface.
+
+**Parts & wiring** folds or reveals the part list and keyboard forms. On a narrow
+bench the list moves below the scene; it is not silently removed. Surface, labels,
+notes and list visibility persist on this device. Blocked or full browser storage
+leaves current-session changes usable. Camera positions are not persisted.
+
+Selecting a part shows the geometry's source in the list: catalog dimensions,
+artwork anchors or an approximate package. None is a mechanical qualification
+badge. Approximate bodies can differ from the actual manufacturer package; verify
+the package, pinout and dimensions before building hardware. Board bodies use the
+declared PCB thickness, standoff and header style; absent values use generic
+renderer dimensions. Header styles do not validate connector mating or clearance.
+
+## Wire contacts
+
+Choose **Jumper** and a colour. Point at a pin or breadboard hole: the contact ring
+and feedback show its exact terminal name. Press and drag to another terminal;
+the feedback names both endpoints before release commits the jumper. Picking uses
+the projected contacts in the current camera, rather than distances on the desk.
+Contacts covered by another component are excluded. If contacts overlap too
+closely on screen, zoom in to disambiguate them. The larger pointer hit area does
+not make a contact electrically bigger.
+
+Escape, pointer cancellation, losing pointer capture, window focus loss or hiding
+the document cancels a pending jumper and rolls a pending part drag back. Releasing
+a cancelled gesture cannot create a wire or move. Held buttons are released when
+the gesture is interrupted. Changing the tool, edit permission or live mode also
+cancels the current gesture.
+
+Alternatively type endpoints such as `BB1.e20` and `B1.D9` in **Parts & wiring**.
+Unknown endpoints are rejected without editing the project. Repeating the same
+jumper, including its reverse, does not add a second copy. Connections still use
+the project's transactions and undo. Physical wire overlap is not a junction.
+
+**Move** drags parts; R turns the selected part, Shift+R turns the other way,
+arrows nudge by one pitch and Delete removes the selection. The list also offers
+plug/turn/lift actions. Controls remain usable while firmware runs: hold buttons,
+flip switches and drag knobs. The engine determines the resulting circuit state.
+
+## Rendering recovery and remaining boundaries
+
+If 3D initialization fails or its WebGL context is lost, the panel switches to 2D
+and explains the fallback. The list remains available for editing. Choose **3D**
+to retry. 2D is a flat artwork view, not a reproduction of physical bench placement.
+
+This milestone does not qualify every catalog package, import GLB/STEP assets,
+validate mechanical collisions or establish 60/120 Hz performance budgets. Labels
+have visibility modes, not a complete 3D occlusion/collision solver. Pin targeting
+uses the catalog's existing contact positions; a wrong catalog position still
+needs correction against manufacturer evidence. Generic lead anchors may sit inside
+the owning body; occlusion rejection excludes other components and is not a
+mechanical contact-accessibility check. Instrument loading and connector
+compatibility follow their separate model fidelity, not the quality of the render.

@@ -7,7 +7,7 @@
 
 import type { ComponentDescription, Project } from '@embsim/protocol';
 import { legsOf, PLUG_TOLERANCE, unbuilt, type BenchContext, type BenchModel } from './layout';
-import { PITCH, benchShape, type BenchShape } from './shape';
+import { PITCH, benchShape, boardStack, type BenchShape } from './shape';
 import type { JumperView, LinkView, Point3, SnapResult, TerminalHit } from './Bench3D';
 
 export interface BenchCatalogEntry {
@@ -57,8 +57,25 @@ export function terminalPoint(model: BenchModel, ref: string): Point3 | undefine
   const part = model.byId.get(id ?? '');
   const leg = part?.legs[rest.join('.')];
   if (!part || !leg) return undefined;
-  const top = part.shape.package === 'board' ? 3 + 1.6 + 8.5 : part.shape.package === 'module' ? 6 : part.shape.package === 'box' ? part.shape.size[2] + 4 : 1;
+  const top = part.shape.package === 'board' ? boardStack(part.shape).contact : part.shape.package === 'module' ? 6 : part.shape.package === 'box' ? part.shape.size[2] + 4 : 1;
   return [leg[0], elevationOf(model, part.id) + top, leg[1]];
+}
+
+/** Physical contacts for camera-space picking. A plugged leg shares its
+ * breadboard hole; exposing both would make the same contact ambiguous. */
+export function terminalTargets(model: BenchModel): TerminalHit[] {
+  const refs = new Set(model.holes.keys());
+  for (const part of model.parts) {
+    if (part.shape.package === 'breadboard') continue;
+    for (const pin of Object.keys(part.legs)) {
+      const ref = `${part.id}.${pin}`;
+      if (!model.plugs.has(ref)) refs.add(ref);
+    }
+  }
+  return [...refs].flatMap((ref) => {
+    const at = terminalPoint(model, ref);
+    return at ? [{ ref, at }] : [];
+  });
 }
 
 /** the terminal nearest (x, y): a hole within half a pitch, else a pin of `part` (or any) within 3 mm */
