@@ -372,6 +372,22 @@ class ProjectTests(Base):
         p["layout"]["groups"].append({"id": "other", "name": "Other", "members": [ids[0]]})
         self.assertCode(self.check(self.write_project(p)), "catalog.duplicate")
 
+    def test_bench_layout(self):
+        p = copy.deepcopy(PROJECT)
+        net, pins = next((n, v) for n, v in p["nets"].items() if len(v) >= 2)
+        ids = [part["id"] for part in p["components"][:1]]
+        p["layout"] = {"bench": {"parts": {ids[0]: {"x": 10, "y": 5, "rotation": 90}}, "wires": [{"from": pins[0], "to": pins[1]}], "notes": [{"x": 0, "y": 0, "text": "a note"}]}}
+        self.assertClean(self.check(self.write_project(p)))
+        p["layout"]["bench"]["parts"]["missing"] = {"x": 0, "y": 0}
+        self.assertCode(self.check(self.write_project(p)), "catalog.not_found")
+        del p["layout"]["bench"]["parts"]["missing"]
+        p["layout"]["bench"]["wires"][0]["to"] = f"{pins[1].split('.')[0]}.nope"
+        self.assertCode(self.check(self.write_project(p)), "catalog.pin_unknown")
+        other = next(v[0] for n, v in p["nets"].items() if n != net)
+        p["layout"]["bench"]["wires"][0]["to"] = other
+        r = self.check(self.write_project(p))
+        self.assertIn("bench.jumper_net", [f.code for f in r.findings])
+
     def test_unknown_component(self):
         p = copy.deepcopy(PROJECT)
         p["components"][1]["component"] = "emblink/no_such_part"
@@ -479,6 +495,7 @@ class BoardTests(Base):
 
     def write_board(self, doc):
         d = self.tmp / "boards" / "bluepill"
+        shutil.rmtree(d, ignore_errors=True)
         d.mkdir(parents=True)
         (d / "board.json").write_text(json.dumps(doc))
         shutil.copy(validate.CATALOG_DIR / "boards" / "bluepill" / "artwork.svg", d / "artwork.svg")
@@ -505,6 +522,16 @@ class BoardTests(Base):
         doc = self.board()
         del doc["oscillators"]["hse"]
         self.assertCode(self.check(self.write_board(doc)), "board.oscillator_missing")
+
+    def test_bench_features_name_board_components(self):
+        doc = self.board()
+        led = next(c["id"] for c in doc["components"] if c["component"].endswith("/led"))
+        doc["bench"] = {"features": [{"kind": "led", "at": [10, 10], "output": f"{led}.luminance"}]}
+        self.assertClean(self.check(self.write_board(doc)))
+        doc["bench"]["features"][0]["output"] = f"{led}.glow"
+        self.assertCode(self.check(self.write_board(doc)), "catalog.output_unknown")
+        doc["bench"]["features"][0]["output"] = "NOPE.luminance"
+        self.assertCode(self.check(self.write_board(doc)), "catalog.not_found")
 
     def test_todo_refused(self):
         doc = self.board()

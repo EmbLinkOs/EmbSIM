@@ -107,10 +107,38 @@ export interface Project {
   boards?: ProjectBoard[];
   components: ProjectComponent[];
   nets: Record<string, string[]>;
-  layout?: { groups?: SchematicGroup[]; wires?: Wire[]; labels?: NetLabel[]; buses?: Bus[]; sheet?: { width: number; height: number } };
+  layout?: { groups?: SchematicGroup[]; wires?: Wire[]; labels?: NetLabel[]; buses?: Bus[]; sheet?: { width: number; height: number }; bench?: BenchLayout };
   probes?: ProjectProbe[];
   scenarios?: string[];
   settings?: Record<string, unknown>;
+}
+
+/** Where a part sits on the bench (SPEC-007 §2): its centre in mm and its turn, clockwise. */
+export interface BenchPlace {
+  x: number;
+  y: number;
+  rotation?: 0 | 90 | 180 | 270;
+}
+
+/** A jumper wire between two terminals (INSTANCE.PIN, a breadboard's hole, a board's port). */
+export interface BenchWire {
+  from: string;
+  to: string;
+  color?: string;
+}
+
+export interface BenchNote {
+  x: number;
+  y: number;
+  text: string;
+  to?: [number, number];
+}
+
+/** The bench: another drawing of the project's nets (ADR-027, SPEC-007 §2). */
+export interface BenchLayout {
+  parts?: Record<string, BenchPlace>;
+  wires?: BenchWire[];
+  notes?: BenchNote[];
 }
 
 // --- catalog (SPEC-005) ---------------------------------------------------
@@ -210,6 +238,18 @@ export interface ArtworkDescription {
   states?: ArtworkState[];
 }
 
+export type BenchPackage = 'breadboard' | 'axial' | 'radial' | 'led' | 'to92' | 'to220' | 'dip' | 'tactile' | 'switch' | 'pot' | 'module' | 'board' | 'box';
+
+/** The part as it sits on the bench (SPEC-005 §8.1): millimetres from its top-left corner seen from above. */
+export interface BenchDescription {
+  package?: BenchPackage;
+  size_mm?: [number, number, number];
+  pins?: Record<string, [number, number]>;
+  wiring_aid?: boolean;
+  color?: string;
+  label?: string;
+}
+
 export interface FidelityDeclaration {
   claims: string;
   omissions?: string[];
@@ -248,6 +288,9 @@ export interface ComponentDescription {
   functional?: Record<string, unknown>;
   symbol: SymbolDescription;
   artwork?: ArtworkDescription;
+  /** Pins joined inside the part (a breadboard's strips, SPEC-005 §8.1). */
+  ties?: string[][];
+  bench?: BenchDescription;
   fidelity: Partial<Record<FidelityTier, FidelityDeclaration | null>>;
   provenance: Provenance;
   tests?: string[];

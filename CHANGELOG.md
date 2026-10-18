@@ -104,6 +104,29 @@ versions follow semantic versioning. There is no release yet.
 - Added an evidence-based 1.0 release readiness checklist.
 
 ### Added
+- The 3D bench (ADR-027; `ui/packages/bench`, Three.js 0.186): the Design
+  perspective's canvas switches between the schematic and the bench, and
+  the Run perspective's Board panel is the bench, live. Boards, breadboards
+  and parts stand on a desk in millimetres with their bodies built from
+  their packages (resistor colour bands from the resistance, LEDs, TO-92,
+  TO-220, DIPs, tactile buttons, pots, modules on their headers with their
+  artwork as their face, sources as boxes with binding posts) and boards
+  with their description's `bench.features` (the Uno's USB-B socket,
+  barrel jack, ATmega328P in its socket, reset button, L and ON LEDs).
+  Dragging a part snaps its legs into a breadboard's holes and plugs it in
+  (the pins join the strips' nets); lifting it unplugs it; a moved
+  breadboard carries its parts; the Jumper tool wires hole or pin to hole
+  or pin (flat pre-cut jumpers on the board, Dupont wires elsewhere);
+  connections the schematic has that the bench does not show as dashed
+  links that Build turns into jumpers; notes are callouts on the bench.
+  Every edit is a transaction on the project, undone like the schematic's;
+  the schematic hides breadboards and its checks skip their holes; LEDs
+  light from their luminance; buttons, switches and knobs act while
+  running. A list beside the scene gives every action from the keyboard;
+  without WebGL the flat 2D bench stands in. `examples/uno-breadboard`
+  builds uno-blink-serial on a breadboard and passes its scenario. The
+  validator checks a project's bench (places, jumpers' terminals and nets)
+  and a board's features against its components.
 - Breadboards (ADR-027): the 830-point (BB830, the MB-102's layout), the
   400-point and the 170-point boards, generated from their geometry by
   `tools/catalog/gen_breadboard.py` (0.1 in pitch, strips of five across a

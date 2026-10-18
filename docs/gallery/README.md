@@ -5,6 +5,29 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The 3D bench and the breadboard (2026-10-18)
+
+The bench becomes a second editor of the project's nets (ADR-027), in 3D.
+`examples/uno-breadboard` is the uno-blink-serial circuit built on an
+830-point breadboard: the resistor, the blue LED, the button and the
+potentiometer plugged into its strips, the rails fed from the Uno's 5V and
+GND, jumpers to D2, D9 and A0, a USB-serial adapter on D0 and D1. The same
+firmware and scenario pass on it. Each part is built from its package (the
+resistor's orange, orange, brown bands read from its 330 ohms, the LED's
+dome, the pot's knob), the Uno from its description's features (USB-B
+socket, barrel jack, the ATmega328P in its socket, the reset button, the L
+and ON LEDs) with its artwork as the PCB's face. Running, the LEDs light
+from their luminance. The list beside the scene shows where each leg is and
+plugs parts and adds jumpers from the keyboard; the schematic hides the
+breadboard and shows the connections it makes.
+
+| | |
+|---|---|
+| ![The breadboard build in the Design perspective's Bench view](bench-3d/design-bench.png) | ![The Uno up close: its USB socket, jack, reset button and DIP-28, the L and ON LEDs lit, Dupont jumpers in its headers](bench-3d/uno-closeup.png) |
+| ![The breadboard up close: the lit blue LED, the resistor, the button and the pot in their strips, flat jumpers to the rails](bench-3d/breadboard-closeup.png) | ![The same project's schematic: the breadboard is not drawn, its connections are](bench-3d/design-schematic.png) |
+
+[The Run perspective, the bench live at 100 % of real time](bench-3d/run-bench.png).
+
 ## The bench, first step (2026-10-18)
 
 The Board view becomes a bench: the parts labelled above the board, the

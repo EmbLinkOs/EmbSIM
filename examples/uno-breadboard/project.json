@@ -1,0 +1,775 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "uno-breadboard",
+ "description": "The uno-blink-serial circuit built on an 830-point breadboard as on a desk: the potentiometer, the button, the resistor and the blue LED plugged into its strips, the rails fed from the Uno's 5V and GND, jumpers to D2, D9 and A0, a USB-serial adapter on D0 and D1. The same firmware and the same scenario as uno-blink-serial pass on it.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "../uno-blink-serial/firmware/blink-serial.elf",
+    "format": "elf",
+    "toolchain": "clang",
+    "sources": [
+     "../uno-blink-serial/firmware/startup.S",
+     "../uno-blink-serial/firmware/main.c"
+    ],
+    "flags": [
+     "-ffreestanding",
+     "-fno-builtin"
+    ],
+    "link_flags": [
+     "-nostartfiles"
+    ],
+    "linker_script": "../uno-blink-serial/firmware/atmega328p.ld"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "BB1",
+   "component": "emblink/breadboard_830",
+   "layout": {
+    "x": 60,
+    "y": 60
+   }
+  },
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "POT",
+   "component": "emblink/potentiometer",
+   "params": {
+    "resistance": "10k"
+   },
+   "layout": {
+    "x": 700,
+    "y": 180
+   }
+  },
+  {
+   "id": "SW1",
+   "component": "emblink/push_button",
+   "layout": {
+    "x": 700,
+    "y": 300
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 330
+   },
+   "layout": {
+    "x": 700,
+    "y": 400
+   }
+  },
+  {
+   "id": "D1",
+   "component": "emblink/led",
+   "params": {
+    "color": "blue"
+   },
+   "layout": {
+    "x": 840,
+    "y": 400
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 9600
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "POT.2",
+   "BB1.TP2",
+   "BB1.BP2",
+   "BB1.TP50",
+   "BB1.BP50",
+   "BB1.f44",
+   "BB1.j44",
+   "BB1.BP37"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "POT.1",
+   "SW1.2",
+   "D1.K",
+   "VT1.GND",
+   "BB1.TN2",
+   "BB1.BN2",
+   "BB1.TN49",
+   "BB1.BN49",
+   "BB1.c25",
+   "BB1.e25",
+   "BB1.TN21",
+   "BB1.e33",
+   "BB1.a33",
+   "BB1.TN27",
+   "BB1.f40",
+   "BB1.j40",
+   "BB1.BN33",
+   "BB1.BN46"
+  ],
+  "A0": [
+   "B1.A0",
+   "POT.W",
+   "BB1.f42",
+   "BB1.h42"
+  ],
+  "BTN": [
+   "B1.D2",
+   "SW1.1",
+   "BB1.e30",
+   "BB1.a30"
+  ],
+  "PWM": [
+   "B1.D9",
+   "R1.1",
+   "BB1.a20",
+   "BB1.e20"
+  ],
+  "LED_A": [
+   "R1.2",
+   "D1.A",
+   "BB1.a24",
+   "BB1.c24"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ]
+ },
+ "layout": {
+  "wires": [
+   {
+    "net": "USB5V",
+    "points": [
+     [
+      750,
+      60
+     ],
+     [
+      750,
+      40
+     ]
+    ]
+   },
+   {
+    "net": "USB5V",
+    "points": [
+     [
+      500,
+      520
+     ],
+     [
+      500,
+      540
+     ]
+    ]
+   },
+   {
+    "net": "USB5V",
+    "points": [
+     [
+      760,
+      190
+     ],
+     [
+      780,
+      190
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      520,
+      520
+     ],
+     [
+      520,
+      540
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      910,
+      200
+     ],
+     [
+      910,
+      180
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      750,
+      100
+     ],
+     [
+      750,
+      120
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      700,
+      190
+     ],
+     [
+      680,
+      190
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      760,
+      310
+     ],
+     [
+      780,
+      310
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      900,
+      410
+     ],
+     [
+      920,
+      410
+     ]
+    ]
+   },
+   {
+    "net": "GND",
+    "points": [
+     [
+      750,
+      560
+     ],
+     [
+      750,
+      580
+     ]
+    ]
+   },
+   {
+    "net": "A0",
+    "points": [
+     [
+      320,
+      520
+     ],
+     [
+      320,
+      540
+     ]
+    ]
+   },
+   {
+    "net": "A0",
+    "points": [
+     [
+      730,
+      210
+     ],
+     [
+      730,
+      230
+     ]
+    ]
+   },
+   {
+    "net": "BTN",
+    "points": [
+     [
+      300,
+      340
+     ],
+     [
+      280,
+      340
+     ]
+    ]
+   },
+   {
+    "net": "BTN",
+    "points": [
+     [
+      700,
+      310
+     ],
+     [
+      680,
+      310
+     ]
+    ]
+   },
+   {
+    "net": "PWM",
+    "points": [
+     [
+      580,
+      320
+     ],
+     [
+      600,
+      320
+     ]
+    ]
+   },
+   {
+    "net": "PWM",
+    "points": [
+     [
+      700,
+      410
+     ],
+     [
+      680,
+      410
+     ]
+    ]
+   },
+   {
+    "net": "LED_A",
+    "points": [
+     [
+      760,
+      410
+     ],
+     [
+      780,
+      410
+     ]
+    ]
+   },
+   {
+    "net": "LED_A",
+    "points": [
+     [
+      840,
+      410
+     ],
+     [
+      820,
+      410
+     ]
+    ]
+   },
+   {
+    "net": "UART_TX",
+    "points": [
+     [
+      300,
+      320
+     ],
+     [
+      280,
+      320
+     ]
+    ]
+   },
+   {
+    "net": "UART_TX",
+    "points": [
+     [
+      720,
+      530
+     ],
+     [
+      700,
+      530
+     ]
+    ]
+   },
+   {
+    "net": "UART_RX",
+    "points": [
+     [
+      300,
+      300
+     ],
+     [
+      280,
+      300
+     ]
+    ]
+   },
+   {
+    "net": "UART_RX",
+    "points": [
+     [
+      720,
+      550
+     ],
+     [
+      700,
+      550
+     ]
+    ]
+   }
+  ],
+  "labels": [
+   {
+    "net": "USB5V",
+    "x": 750,
+    "y": 40
+   },
+   {
+    "net": "USB5V",
+    "x": 500,
+    "y": 540
+   },
+   {
+    "net": "USB5V",
+    "x": 780,
+    "y": 190
+   },
+   {
+    "net": "GND",
+    "x": 520,
+    "y": 540
+   },
+   {
+    "net": "GND",
+    "x": 910,
+    "y": 180
+   },
+   {
+    "net": "GND",
+    "x": 750,
+    "y": 120
+   },
+   {
+    "net": "GND",
+    "x": 680,
+    "y": 190
+   },
+   {
+    "net": "GND",
+    "x": 780,
+    "y": 310
+   },
+   {
+    "net": "GND",
+    "x": 920,
+    "y": 410
+   },
+   {
+    "net": "GND",
+    "x": 750,
+    "y": 580
+   },
+   {
+    "net": "A0",
+    "x": 320,
+    "y": 540
+   },
+   {
+    "net": "A0",
+    "x": 730,
+    "y": 230
+   },
+   {
+    "net": "BTN",
+    "x": 280,
+    "y": 340
+   },
+   {
+    "net": "BTN",
+    "x": 680,
+    "y": 310
+   },
+   {
+    "net": "PWM",
+    "x": 600,
+    "y": 320
+   },
+   {
+    "net": "PWM",
+    "x": 680,
+    "y": 410
+   },
+   {
+    "net": "LED_A",
+    "x": 780,
+    "y": 410
+   },
+   {
+    "net": "LED_A",
+    "x": 820,
+    "y": 410
+   },
+   {
+    "net": "UART_TX",
+    "x": 280,
+    "y": 320
+   },
+   {
+    "net": "UART_TX",
+    "x": 700,
+    "y": 530
+   },
+   {
+    "net": "UART_RX",
+    "x": 280,
+    "y": 300
+   },
+   {
+    "net": "UART_RX",
+    "x": 700,
+    "y": 550
+   }
+  ],
+  "bench": {
+   "parts": {
+    "BB1": {
+     "x": 0.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "B1": {
+     "x": -20.0,
+     "y": 75.0,
+     "rotation": 0
+    },
+    "USB": {
+     "x": -130.0,
+     "y": 70.0,
+     "rotation": 0
+    },
+    "VT1": {
+     "x": 75.0,
+     "y": 80.0,
+     "rotation": 0
+    },
+    "R1": {
+     "x": -25.4,
+     "y": -13.97,
+     "rotation": 0
+    },
+    "D1": {
+     "x": -19.05,
+     "y": -8.89,
+     "rotation": 0
+    },
+    "SW1": {
+     "x": -1.27,
+     "y": -3.81,
+     "rotation": 0
+    },
+    "POT": {
+     "x": 25.4,
+     "y": -0.69,
+     "rotation": 0
+    }
+   },
+   "wires": [
+    {
+     "from": "B1.5V",
+     "to": "BB1.TP2",
+     "color": "#d63031"
+    },
+    {
+     "from": "B1.GND",
+     "to": "BB1.TN2",
+     "color": "#2d3436"
+    },
+    {
+     "from": "USB.+",
+     "to": "BB1.BP2",
+     "color": "#d63031"
+    },
+    {
+     "from": "USB.-",
+     "to": "BB1.BN2",
+     "color": "#2d3436"
+    },
+    {
+     "from": "BB1.TP50",
+     "to": "BB1.BP50",
+     "color": "#d63031"
+    },
+    {
+     "from": "BB1.TN49",
+     "to": "BB1.BN49",
+     "color": "#2d3436"
+    },
+    {
+     "from": "BB1.e20",
+     "to": "B1.D9",
+     "color": "#f39c12"
+    },
+    {
+     "from": "BB1.e25",
+     "to": "BB1.TN21",
+     "color": "#2d3436"
+    },
+    {
+     "from": "BB1.a30",
+     "to": "B1.D2",
+     "color": "#27ae60"
+    },
+    {
+     "from": "BB1.a33",
+     "to": "BB1.TN27",
+     "color": "#2d3436"
+    },
+    {
+     "from": "BB1.j40",
+     "to": "BB1.BN33",
+     "color": "#2d3436"
+    },
+    {
+     "from": "BB1.j44",
+     "to": "BB1.BP37",
+     "color": "#d63031"
+    },
+    {
+     "from": "BB1.h42",
+     "to": "B1.A0",
+     "color": "#2e86de"
+    },
+    {
+     "from": "VT1.RX",
+     "to": "B1.D1",
+     "color": "#8e44ad"
+    },
+    {
+     "from": "VT1.TX",
+     "to": "B1.D0",
+     "color": "#f1c40f"
+    },
+    {
+     "from": "VT1.GND",
+     "to": "BB1.BN46",
+     "color": "#2d3436"
+    }
+   ],
+   "notes": [
+    {
+     "x": -120.0,
+     "y": -70.0,
+     "text": "Turn the potentiometer: the blue LED follows, and the terminal prints A0",
+     "to": [
+      25.4,
+      3.81
+     ]
+    },
+    {
+     "x": 95.0,
+     "y": -70.0,
+     "text": "Press the button: D2 interrupts and the press is counted",
+     "to": [
+      -1.2800000000000002,
+      -3.81
+     ]
+    }
+   ]
+  }
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "d13",
+   "target": "net:B1.PB5",
+   "kind": "digital"
+  },
+  {
+   "id": "d9",
+   "target": "net:PWM",
+   "kind": "digital"
+  },
+  {
+   "id": "a0",
+   "target": "net:A0",
+   "kind": "analog",
+   "rate_hz": 1000
+  },
+  {
+   "id": "tx",
+   "target": "net:UART_TX",
+   "kind": "digital",
+   "decode": {
+    "protocol": "uart",
+    "params": {
+     "baud": 9600
+    }
+   }
+  },
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  }
+ ],
+ "scenarios": [
+  "scenarios/blink.json"
+ ]
+}

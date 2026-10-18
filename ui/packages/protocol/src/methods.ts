@@ -53,7 +53,7 @@ export type ProjectEdit =
   | { rename_net: { from: string; to: string } }
   | { add_board: { id: string; board: string; layout?: Layout; firmware?: ProjectBoard['firmware'] } }
   | { remove_board: { id: string } }
-  | { set_layout: { id?: string; layout?: Layout; wires?: Project['layout'] extends infer L ? (L extends { wires?: infer W } ? W : never) : never; labels?: NonNullable<Project['layout']>['labels']; buses?: NonNullable<Project['layout']>['buses']; groups?: NonNullable<Project['layout']>['groups'] } };
+  | { set_layout: { id?: string; layout?: Layout; wires?: Project['layout'] extends infer L ? (L extends { wires?: infer W } ? W : never) : never; labels?: NonNullable<Project['layout']>['labels']; buses?: NonNullable<Project['layout']>['buses']; groups?: NonNullable<Project['layout']>['groups']; bench?: NonNullable<Project['layout']>['bench'] } };
 
 export interface Methods {
   // session

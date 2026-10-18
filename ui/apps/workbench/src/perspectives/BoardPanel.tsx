@@ -1,17 +1,39 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 //
-// The board view of the current project: the bench. The parts with artwork
-// sit in rows above the boards, as on a desk, each labelled, with the
-// project's nets drawn as wires between their pins (ground black, supplies
-// red, signals in a palette); hotspots stay live.
+// The bench (ADR-027): the project's boards, breadboards and parts in 3D,
+// a second editor of the same nets as the schematic. Parts dragged onto a
+// breadboard plug into its holes, jumpers join holes and pins, and what the
+// schematic drew but the bench has not built yet shows as dashed links that
+// one click builds. Every edit is a transaction on the project, undone as
+// the schematic's are. Without WebGL, the 2D bench below stands in.
 
-import { EmptyState, useToast } from '@embsim/design';
-import { BoardView, parseSvg, type BenchWire, type BoardItem } from '@embsim/scene';
-import { CircuitBoard } from 'lucide-react';
-import { useMemo } from 'react';
+import { Badge, Button, Dialog, EmptyState, IconButton, Input, SegmentedControl, Tooltip, useToast } from '@embsim/design';
+import {
+  addJumper,
+  addNote,
+  Bench3D,
+  benchContext,
+  benchModel,
+  elevationOf,
+  jumperViews,
+  linkViews,
+  moveParts,
+  removeJumper,
+  snapPart,
+  terminalNear,
+  unbuilt,
+  WIRE_COLORS,
+  type Bench3DHandle,
+  type BenchPartView,
+  type BenchTool,
+} from '@embsim/bench';
+import type { ArtworkState, Hotspot, OutputValue, Project } from '@embsim/protocol';
+import { BoardView, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
+import { Box, Cable, CircuitBoard, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
-import { useProject } from '../stores/project';
+import { useProject, type CatalogEntry } from '../stores/project';
 import { useSession } from '../stores/session';
 
 /** the colours an LED's `color` parameter names, for its artwork's --led-color */
@@ -29,10 +51,401 @@ interface BoardArtwork {
   hotspots?: { selector: string; component?: string; input?: string; output?: string; port?: string }[];
 }
 
-/** the colours signal wires take, in turn */
-const WIRE_COLORS = ['#f39c12', '#27ae60', '#2e86de', '#8e44ad', '#16a085', '#e84393', '#f1c40f', '#00b8d4', '#a0522d', '#7f8c8d'];
-const GROUND = '#2b2b2b';
-const SUPPLY = '#d63031';
+function ledColor(params: Record<string, unknown> | undefined): Record<string, string> | undefined {
+  const c = params?.color;
+  return typeof c === 'string' && LED_COLORS[c] ? { '--led-color': LED_COLORS[c] } : undefined;
+}
+
+function webglAvailable(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return Boolean(c.getContext('webgl2') ?? c.getContext('webgl'));
+  } catch {
+    return false;
+  }
+}
+
+/** a board's artwork bindings: its LEDs' glow from their luminance, its buttons */
+function boardBindings(art: BoardArtwork | undefined): { states: ArtworkState[]; hotspots: Hotspot[] } {
+  const spots = art?.hotspots ?? [];
+  return {
+    states: spots
+      .filter((hs) => hs.component && hs.output)
+      .map((hs) => ({ output: `${hs.component}.${hs.output}`, selector: `${hs.selector}-glow`, attr: 'opacity', scale: { from: [0, 0.1] as [number, number] } })),
+    hotspots: spots
+      .filter((hs) => hs.component && hs.input)
+      .map((hs) => ({ input: hs.input!, target: hs.component, selector: hs.selector, gesture: hs.input === 'pressed' ? 'hold' : 'toggle' }) as Hotspot),
+  };
+}
+
+export function BoardPanel({ interactive, editable: canEdit = true }: { interactive: boolean; editable?: boolean }) {
+  const project = useProject((s) => s.project);
+  const catalog = useProject((s) => s.catalog);
+  const editableProject = useProject((s) => s.editable);
+  const outputs = useSession((s) => s.outputs);
+  const inputs = useSession((s) => s.inputs);
+  const connected = useSession((s) => s.status === 'open');
+  const { toast } = useToast();
+  const [tool, setTool] = useState<BenchTool>('select');
+  const [wireColor, setWireColor] = useState(WIRE_COLORS[0]!);
+  const [selected, setSelected] = useState<{ part?: string; jumper?: number }>({});
+  const [note, setNote] = useState<string | null>(null);
+  const [flat, setFlat] = useState(() => typeof document === 'undefined' || !webglAvailable());
+  const handle = useRef<Bench3DHandle>(null);
+  const editable = canEdit && editableProject;
+
+  const fail = useCallback((title: string) => (e: unknown) => toast({ kind: 'error', title, description: errorMessage(e) }), [toast]);
+
+  const ctx = useMemo(() => (project ? benchContext(project, (ref) => entryOf(catalog[ref])) : null), [project, catalog]);
+  const model = useMemo(() => (project && ctx ? benchModel(project, ctx.shapes, ctx.ties) : null), [project, ctx]);
+
+  const parts = useMemo<BenchPartView[]>(() => {
+    if (!project || !model) return [];
+    const byId = new Map<string, { component: string; params?: Record<string, unknown>; board: boolean }>();
+    for (const b of project.boards ?? []) byId.set(b.id, { component: b.board, board: true });
+    for (const c of project.components) byId.set(c.id, { component: c.component, params: c.params, board: false });
+    return model.parts.map((part) => {
+      const inst = byId.get(part.id)!;
+      const entry = catalog[inst.component];
+      const own: Record<string, unknown> = {};
+      const outs: Record<string, OutputValue> = {};
+      const prefix = `${part.id}.`;
+      for (const i of inputs) {
+        if (i.target === part.id) own[i.input] = i.value;
+        else if (inst.board && i.target.startsWith(prefix)) own[`${i.target.slice(prefix.length)}.${i.input}`] = i.value;
+      }
+      for (const [k, v] of Object.entries(outputs)) if (k.startsWith(prefix)) outs[k.slice(prefix.length)] = v;
+      const svg = entry?.files.artwork;
+      const art = entry?.description.artwork as (BoardArtwork & { states?: ArtworkState[]; hotspots?: Hotspot[] }) | undefined;
+      const bindings = inst.board ? boardBindings(art) : { states: art?.states ?? [], hotspots: (art?.hotspots ?? []) as Hotspot[] };
+      return {
+        id: part.id,
+        label: `${part.id} ${entry?.description.name ?? ''}`.trim(),
+        component: inst.component,
+        params: inst.params,
+        shape: part.shape,
+        place: part.place,
+        elevation: elevationOf(model, part.id),
+        artwork: svg ? { svg, states: bindings.states, hotspots: bindings.hotspots, vars: ledColor(inst.params) } : undefined,
+        inputs: own,
+        outputs: outs,
+      };
+    });
+  }, [project, model, catalog, inputs, outputs]);
+
+  const jumpers = useMemo(() => (project && model ? jumperViews(project, model) : []), [project, model]);
+  const links = useMemo(() => (project && model ? linkViews(project, model) : []), [project, model]);
+  const pending = useMemo(() => (project && model ? unbuilt(project, model) : []), [project, model]);
+
+  const mutate = useCallback(
+    (label: string, fn: (p: Project) => Project | null) => {
+      void useProject.getState().mutate(label, fn).catch(fail(`${label} failed`));
+    },
+    [fail],
+  );
+
+  if (!project || !ctx || !model) {
+    return (
+      <EmptyState icon={<CircuitBoard />} title="No project">
+        Open a project to build it on the bench.
+      </EmptyState>
+    );
+  }
+
+  const selectedPart = selected.part ? parts.find((p) => p.id === selected.part) : undefined;
+  const selectedHoles = selectedPart ? [...model.plugs].filter(([pin]) => pin.startsWith(`${selectedPart.id}.`)).map(([pin, hole]) => `${pin.split('.').slice(1).join('.')}→${hole.split('.')[1]}`) : [];
+  const selectedJumper = selected.jumper !== undefined ? project.layout?.bench?.wires?.[selected.jumper] : undefined;
+
+  const toolbar = (
+    <div className="wb-bench-toolbar" role="toolbar" aria-label="Bench tools">
+      {!editable && <Badge tone="warning">read-only</Badge>}
+      <SegmentedControl<BenchTool>
+        label="Bench tool"
+        size="sm"
+        value={tool}
+        onValueChange={setTool}
+        options={[
+          { value: 'select', label: 'Move', icon: <MousePointer2 />, title: 'Move and plug parts (drag; R turns, arrows nudge, Delete removes)' },
+          { value: 'wire', label: 'Jumper', icon: <Cable />, title: 'Wire a jumper from a hole or pin to another' },
+        ]}
+      />
+      <div className="wb-bench-colors" role="radiogroup" aria-label="Jumper colour">
+        {WIRE_COLORS.map((c) => (
+          <button key={c} type="button" role="radio" aria-checked={c === wireColor} aria-label={`Jumper colour ${c}`} className="wb-bench-color" style={{ background: c }} onClick={() => setWireColor(c)} />
+        ))}
+      </div>
+      <Tooltip content={pending.length ? `Wire the ${pending.length} connection${pending.length > 1 ? 's' : ''} the schematic has that the bench does not` : 'Everything the schematic connects is built'}>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!editable || pending.length === 0}
+          onClick={() =>
+            mutate('Build connections', (p) => {
+              let next = p;
+              pending.forEach((c, i) => {
+                next = addJumper(next, ctx, { from: c.from, to: c.to, color: WIRE_COLORS[(i + 2) % WIRE_COLORS.length] });
+              });
+              return next;
+            })
+          }
+        >
+          <Wand2 /> Build {pending.length || ''}
+        </Button>
+      </Tooltip>
+      <Tooltip content="Put an 830-point breadboard on the bench">
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!editable}
+          onClick={() =>
+            void useProject
+              .getState()
+              .placeComponent('emblink/breadboard_830', { x: 0, y: 0 })
+              .then((id) => id && setSelected({ part: id }))
+              .catch(fail('Add breadboard failed'))
+          }
+        >
+          <Box /> Breadboard
+        </Button>
+      </Tooltip>
+      <Tooltip content="A note on the bench">
+        <IconButton label="Add a note" size="sm" variant="ghost" disabled={!editable} onClick={() => setNote('')}>
+          <StickyNote />
+        </IconButton>
+      </Tooltip>
+      <Tooltip content="Frame everything" shortcut="F">
+        <IconButton label="Frame the bench" size="sm" variant="ghost" onClick={() => handle.current?.frame()}>
+          <Maximize2 />
+        </IconButton>
+      </Tooltip>
+      <SegmentedControl<'3d' | '2d'>
+        label="Bench view"
+        size="sm"
+        value={flat ? '2d' : '3d'}
+        onValueChange={(v) => setFlat(v === '2d')}
+        options={[
+          { value: '3d', label: '3D', title: 'The bench in 3D' },
+          { value: '2d', label: '2D', title: 'The parts\' artwork, flat' },
+        ]}
+      />
+      <span className="wb-bench-status" aria-live="polite">
+        {selectedPart
+          ? `${selectedPart.label}${selectedHoles.length ? ` · in ${selectedHoles.join(', ')}` : ' · not plugged in'}`
+          : selectedJumper
+            ? `Jumper ${selectedJumper.from} → ${selectedJumper.to}`
+            : tool === 'wire'
+              ? 'Press on a hole or a pin and release on another'
+              : 'Right drag orbits · wheel zooms · drag a part onto the breadboard'}
+      </span>
+    </div>
+  );
+
+  /** the place that puts the part's first leg in `hole`, keeping its turn */
+  const plugAt = (id: string, hole: string): { x: number; y: number; rotation: 0 | 90 | 180 | 270 } | null => {
+    const part = model.byId.get(id);
+    const h = model.holes.get(hole.includes('.') ? hole : `${[...model.parts].find((x) => x.shape.package === 'breadboard')?.id}.${hole}`);
+    const first = part ? Object.keys(part.shape.pins)[0] : undefined;
+    if (!part || !h || !first) return null;
+    const [lx, ly] = part.legs[first]!;
+    return { x: Math.round((part.place.x + h.x - lx) * 100) / 100, y: Math.round((part.place.y + h.y - ly) * 100) / 100, rotation: part.place.rotation };
+  };
+
+  const list = (
+    <BenchList
+      parts={parts}
+      plugs={model.plugs}
+      selected={selected}
+      editable={editable}
+      onSelect={setSelected}
+      onPlug={(id, hole) => {
+        const at = plugAt(id, hole);
+        if (!at) {
+          toast({ kind: 'warning', title: `No hole ${hole}`, description: 'Name a hole of a breadboard on the bench: a1 to j63, or a rail hole as TP1, TN1, BP1, BN1.' });
+          return;
+        }
+        mutate(`Plug ${id} into ${hole}`, (p) => moveParts(p, ctx, { [id]: at }));
+      }}
+      onTurn={(id) => {
+        const part = model.byId.get(id);
+        if (!part) return;
+        const rotation = ((part.place.rotation + 90) % 360) as 0 | 90 | 180 | 270;
+        mutate(`Turn ${id}`, (p) => moveParts(p, ctx, { [id]: { ...part.place, rotation } }));
+      }}
+      onLift={(id) => {
+        const part = model.byId.get(id);
+        if (!part) return;
+        // lifted off and set down on the desk behind everything
+        const back = Math.min(...model.parts.map((x) => x.place.y - x.shape.size[1] / 2)) - part.shape.size[1] / 2 - 10;
+        mutate(`Lift ${id}`, (p) => moveParts(p, ctx, { [id]: { ...part.place, y: Math.round(back * 100) / 100 } }));
+      }}
+      onJumper={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
+    />
+  );
+
+  return (
+    <div className="wb-bench">
+      {toolbar}
+      <div className="wb-bench-body">
+      {flat ? (
+        <Bench2D interactive={interactive} />
+      ) : (
+        <Bench3D
+          handle={handle}
+          parts={parts}
+          jumpers={jumpers}
+          links={links}
+          notes={project.layout?.bench?.notes ?? []}
+          tool={tool}
+          live={interactive && connected}
+          editable={editable}
+          wireColor={wireColor}
+          selected={selected}
+          snap={(id, x, y, rotation) => snapPart(model, ctx, id, x, y, rotation)}
+          terminalAt={(x, y, part) => terminalNear(model, x, y, part)}
+          onMove={(id, place) => mutate(`Move ${id}`, (p) => moveParts(p, ctx, { [id]: place }))}
+          onWire={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
+          onSelect={setSelected}
+          onDelete={(sel) => {
+            if (sel.jumper !== undefined) mutate('Remove jumper', (p) => removeJumper(p, ctx, sel.jumper!));
+            else if (sel.part) void useProject.getState().deleteSelection({ components: [sel.part], wires: [] }).catch(fail('Delete failed'));
+            setSelected({});
+          }}
+          onInput={(target, input, value) => {
+            inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: 'Input rejected', description: errorMessage(e) }));
+          }}
+          label={`Bench of ${project.name}`}
+        />
+      )}
+      {list}
+      </div>
+      {note !== null && (
+        <Dialog
+          open
+          onOpenChange={(open) => !open && setNote(null)}
+          title="A note on the bench"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setNote(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                disabled={!note.trim()}
+                onClick={() => {
+                  const target = selectedPart?.place;
+                  const at = target ? { x: target.x, y: target.y - 40 } : { x: 0, y: -30 };
+                  mutate('Note', (p) => addNote(p, at.x, at.y, note.trim(), target ? [target.x, target.y] : undefined));
+                  setNote(null);
+                }}
+              >
+                Add
+              </Button>
+            </>
+          }
+        >
+          <Input label="Text" value={note} autoFocus onChange={(e) => setNote(e.target.value)} />
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The bench as a list (ADR-027: every bench action has a keyboard
+ * equivalent): each part with the holes its legs are in; for the one
+ * selected, plugging its first leg into a named hole, turning it, lifting
+ * it off; a jumper between two named terminals.
+ */
+function BenchList({
+  parts,
+  plugs,
+  selected,
+  editable,
+  onSelect,
+  onPlug,
+  onTurn,
+  onLift,
+  onJumper,
+}: {
+  parts: BenchPartView[];
+  plugs: Map<string, string>;
+  selected: { part?: string; jumper?: number };
+  editable: boolean;
+  onSelect(sel: { part?: string }): void;
+  onPlug(id: string, hole: string): void;
+  onTurn(id: string): void;
+  onLift(id: string): void;
+  onJumper(from: string, to: string): void;
+}) {
+  const [hole, setHole] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const holesOf = (id: string) => [...plugs].filter(([pin]) => pin.startsWith(`${id}.`)).map(([, h]) => h.split('.')[1]);
+  const part = selected.part ? parts.find((p) => p.id === selected.part) : undefined;
+  return (
+    <aside className="wb-bench-list" aria-label="On the bench">
+      <h3>On the bench</h3>
+      <ul>
+        {parts.map((p) => {
+          const holes = holesOf(p.id);
+          return (
+            <li key={p.id}>
+              <button type="button" aria-pressed={selected.part === p.id} onClick={() => onSelect({ part: p.id })}>
+                <span className="wb-bench-list__id">{p.id}</span>
+                <span className="wb-bench-list__where">{p.shape.package === 'breadboard' || p.shape.package === 'board' ? p.label.slice(p.id.length + 1) : holes.length ? `in ${holes.join(' ')}` : 'on the desk'}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {part && editable && part.shape.package !== 'breadboard' && part.shape.package !== 'board' && (
+        <form
+          className="wb-bench-list__form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (hole.trim()) onPlug(part.id, hole.trim());
+          }}
+        >
+          <Input label={`Plug ${part.id}'s first leg into`} placeholder="a20" value={hole} onChange={(e) => setHole(e.target.value)} />
+          <div className="wb-bench-list__row">
+            <Button size="sm" type="submit" disabled={!hole.trim()}>
+              Plug in
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>
+              Turn
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => onLift(part.id)}>
+              Lift off
+            </Button>
+          </div>
+        </form>
+      )}
+      {editable && (
+        <form
+          className="wb-bench-list__form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (from.trim() && to.trim()) {
+              onJumper(from.trim(), to.trim());
+              setFrom('');
+              setTo('');
+            }
+          }}
+        >
+          <Input label="Jumper from" placeholder="BB1.e20" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <Input label="to" placeholder="B1.D9" value={to} onChange={(e) => setTo(e.target.value)} />
+          <Button size="sm" type="submit" disabled={!from.trim() || !to.trim()}>
+            Add jumper
+          </Button>
+        </form>
+      )}
+    </aside>
+  );
+}
+
+function entryOf(entry: CatalogEntry | undefined) {
+  return entry ? { description: entry.description, artwork: entry.files.artwork } : undefined;
+}
 
 /** a board port's role: ground, supply or signal */
 function portRole(port: string): 'ground' | 'supply' | 'signal' {
@@ -42,12 +455,10 @@ function portRole(port: string): 'ground' | 'supply' | 'signal' {
   return 'signal';
 }
 
-function ledColor(params: Record<string, unknown> | undefined): Record<string, string> | undefined {
-  const c = params?.color;
-  return typeof c === 'string' && LED_COLORS[c] ? { '--led-color': LED_COLORS[c] } : undefined;
-}
+const WIRES_2D = ['#f39c12', '#27ae60', '#2e86de', '#8e44ad', '#16a085', '#e84393', '#f1c40f', '#00b8d4', '#a0522d', '#7f8c8d'];
 
-export function BoardPanel({ interactive }: { interactive: boolean }) {
+/** the flat bench: the parts' artwork in rows above the boards, the nets as wires */
+function Bench2D({ interactive }: { interactive: boolean }) {
   const project = useProject((s) => s.project);
   const catalog = useProject((s) => s.catalog);
   const outputs = useSession((s) => s.outputs);
@@ -55,12 +466,11 @@ export function BoardPanel({ interactive }: { interactive: boolean }) {
   const connected = useSession((s) => s.status === 'open');
   const { toast } = useToast();
 
-  const { items, wires } = useMemo<{ items: BoardItem[]; wires: BenchWire[] }>(() => {
+  const { items, wires } = useMemo<{ items: BoardItem[]; wires: Wire2D[] }>(() => {
     if (!project) return { items: [], wires: [] };
     const scale = 1.4;
     const parts: BoardItem[] = [];
     const boards: BoardItem[] = [];
-    // the parts in rows across the top of the bench
     const rowWidth = 900;
     let x = 20;
     let y = 26;
@@ -82,24 +492,10 @@ export function BoardPanel({ interactive }: { interactive: boolean }) {
       for (const i of inputs) if (i.target === c.id) own[i.input] = i.value;
       const outs: Record<string, boolean | number | string> = {};
       for (const [k, v] of Object.entries(outputs)) if (k.startsWith(`${c.id}.`)) outs[k.slice(c.id.length + 1)] = v;
-      parts.push({
-        id: c.id,
-        label: `${c.id} ${entry?.description.name ?? ''}`.trim(),
-        svg,
-        x,
-        y,
-        width: w,
-        height: h,
-        hotspots: art.hotspots,
-        states: art.states,
-        inputs: own,
-        outputs: outs,
-        vars: ledColor(c.params),
-      });
+      parts.push({ id: c.id, label: `${c.id} ${entry?.description.name ?? ''}`.trim(), svg, x, y, width: w, height: h, hotspots: art.hotspots, states: art.states, inputs: own, outputs: outs, vars: ledColor(c.params) });
       x += w + 40;
       rowHeight = Math.max(rowHeight, h);
     }
-    // the boards under them, with their LEDs, buttons and jumpers live
     x = 20;
     const boardY = parts.length ? y + rowHeight + 80 : 22;
     for (const b of project.boards ?? []) {
@@ -115,38 +511,20 @@ export function BoardPanel({ interactive }: { interactive: boolean }) {
       for (const i of inputs) if (i.target.startsWith(prefix)) own[`${i.target.slice(prefix.length)}.${i.input}`] = i.value;
       const outs: Record<string, boolean | number | string> = {};
       for (const [k, v] of Object.entries(outputs)) if (k.startsWith(prefix)) outs[k.slice(prefix.length)] = v;
-      const spots = art.hotspots ?? [];
-      boards.push({
-        id: b.id,
-        label: `${b.id} ${entry?.description.name ?? ''}`.trim(),
-        svg,
-        x,
-        y: boardY,
-        width: w,
-        height: h,
-        hotspots: spots
-          .filter((hs) => hs.component && hs.input)
-          .map((hs) => ({ input: hs.input!, target: hs.component, selector: hs.selector, gesture: hs.input === 'pressed' ? 'hold' : 'toggle', label: `${hs.component} ${hs.input}` })),
-        // an LED's glow follows its luminance
-        states: spots
-          .filter((hs) => hs.component && hs.output)
-          .map((hs) => ({ output: `${hs.component}.${hs.output}`, selector: `${hs.selector}-glow`, attr: 'opacity', scale: { from: [0, 0.1] as [number, number] } })),
-        inputs: own,
-        outputs: outs,
-      });
+      const { states, hotspots } = boardBindings(art);
+      boards.push({ id: b.id, label: `${b.id} ${entry?.description.name ?? ''}`.trim(), svg, x, y: boardY, width: w, height: h, hotspots: hotspots.map((hs) => ({ ...hs, label: `${hs.target} ${hs.input}` })), states, inputs: own, outputs: outs });
       x += w + 40;
     }
     const list = [...parts, ...boards];
-    // the nets between what is on the bench, as wires
     const onBench = new Set(list.map((i) => i.id));
     const boardIds = new Set(boards.map((b) => b.id));
     const kindOf = new Map<string, string>();
     for (const c of project.components) kindOf.set(c.id, c.component);
     let signal = 0;
-    const benchWires: BenchWire[] = [];
+    const out: Wire2D[] = [];
     for (const [net, terminals] of Object.entries(project.nets)) {
       let role: 'ground' | 'supply' | 'signal' = /^(GND|VSS)/i.test(net) ? 'ground' : 'signal';
-      const ends: BenchWire['ends'] = [];
+      const ends: Wire2D['ends'] = [];
       for (const t of terminals) {
         const dot = t.indexOf('.');
         if (dot < 0) continue;
@@ -157,9 +535,9 @@ export function BoardPanel({ interactive }: { interactive: boolean }) {
           if (r === 'ground' || (r === 'supply' && role === 'signal')) role = r;
         } else {
           const pins = catalog[kindOf.get(id) ?? '']?.description.pins ?? [];
-          const model = pins.find((p) => p.name === pin)?.model as { kind?: string; role?: string } | undefined;
-          if (model?.kind === 'power') {
-            if (model.role === 'ground') role = 'ground';
+          const m = pins.find((p) => p.name === pin)?.model as { kind?: string; role?: string } | undefined;
+          if (m?.kind === 'power') {
+            if (m.role === 'ground') role = 'ground';
             else if (role === 'signal') role = 'supply';
           }
         }
@@ -168,13 +546,12 @@ export function BoardPanel({ interactive }: { interactive: boolean }) {
         const order = pins.findIndex((p) => p.name === pin);
         ends.push({ item: id, pin, order: order < 0 ? 0 : order, count: pins.length || 1 });
       }
-      // the board's pins first: each part's wire runs to the nearest end already wired
       ends.sort((a, b) => Number(boardIds.has(b.item)) - Number(boardIds.has(a.item)));
       if (ends.length < 2) continue;
-      const color = role === 'ground' ? GROUND : role === 'supply' ? SUPPLY : WIRE_COLORS[signal++ % WIRE_COLORS.length]!;
-      benchWires.push({ net, color, ends });
+      const color = role === 'ground' ? '#2b2b2b' : role === 'supply' ? '#d63031' : WIRES_2D[signal++ % WIRES_2D.length]!;
+      out.push({ net, color, ends });
     }
-    return { items: list, wires: benchWires };
+    return { items: list, wires: out };
   }, [project, catalog, inputs, outputs]);
 
   if (items.length === 0) {

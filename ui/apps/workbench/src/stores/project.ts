@@ -41,6 +41,9 @@ const PREFIX: Record<string, string> = {
   switch: 'SW',
   vcc: 'VCC',
   gnd: 'GND',
+  breadboard_830: 'BB',
+  breadboard_400: 'BB',
+  breadboard_170: 'BB',
 };
 
 export interface ProjectState {
@@ -162,7 +165,7 @@ function sceneEntry(entry: CatalogEntry): SceneCatalog[string] {
   }
   const valueParam = VALUE_PARAM[d.id] ?? ['resistance', 'capacitance', 'inductance', 'voltage', 'frequency', 'part', 'color'].find((key) => d.params?.[key]);
   const parameter = valueParam ? d.params?.[valueParam] : undefined;
-  return { name: d.name, symbol: d.symbol, svg: entry.files.symbol ?? '', terminals: d.pins.map((p) => p.name), valueParam, valueDefault: parameter?.default, valueUnit: parameter?.unit };
+  return { name: d.name, symbol: d.symbol, svg: entry.files.symbol ?? '', terminals: d.pins.map((p) => p.name), valueParam, valueDefault: parameter?.default, valueUnit: parameter?.unit, wiringAid: d.bench?.wiring_aid };
 }
 
 /** The parts and boards of a project, which place, move and delete alike. */
@@ -498,6 +501,12 @@ export const useProject = create<ProjectState>((set, get) => ({
       }
       p.components = p.components.filter((c) => !selection.components.includes(c.id));
       if (p.boards) p.boards = p.boards.filter((b) => !selection.components.includes(b.id));
+      // off the bench too, so that undo puts them back where they were
+      const bench = p.layout?.bench;
+      if (bench) {
+        for (const id of selection.components) delete bench.parts?.[id];
+        if (bench.wires) bench.wires = bench.wires.filter((w) => !selection.components.includes(w.from.split('.')[0]!) && !selection.components.includes(w.to.split('.')[0]!));
+      }
       for (const net of Object.keys(p.nets)) {
         p.nets[net] = p.nets[net]!.filter((pin) => !selection.components.includes(pin.split('.')[0] ?? ''));
         if (p.nets[net]!.length === 0) delete p.nets[net];

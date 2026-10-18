@@ -17,6 +17,8 @@ test('open, run, press, observe, export', async ({ page }) => {
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   await expect(page.getByTestId('clock')).toContainText('run');
 
+  // the bench's flat view: the parts' artwork with its hotspots
+  await page.getByRole('radio', { name: '2D', exact: true }).click();
   const hold = page.getByRole('button', { name: /SW1 Push button Button cap/ });
   await hold.dispatchEvent('pointerdown', { button: 0 });
   await page.waitForTimeout(300);

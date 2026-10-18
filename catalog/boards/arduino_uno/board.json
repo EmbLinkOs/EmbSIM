@@ -610,6 +610,101 @@
       }
     ]
   },
+  "bench": {
+    "thickness_mm": 1.6,
+    "standoff_mm": 3,
+    "headers": "female",
+    "features": [
+      {
+        "kind": "usb_b",
+        "at": [
+          7.4,
+          12.0
+        ],
+        "size": [
+          16.3,
+          12.0,
+          10.9
+        ]
+      },
+      {
+        "kind": "barrel_jack",
+        "at": [
+          6.4,
+          40.5
+        ],
+        "size": [
+          14.0,
+          9.0,
+          11.0
+        ]
+      },
+      {
+        "kind": "dip",
+        "at": [
+          47.8,
+          34.6
+        ],
+        "pins": 28,
+        "label": "ATMEGA328P-PU"
+      },
+      {
+        "kind": "crystal",
+        "at": [
+          23.5,
+          31.1
+        ],
+        "size": [
+          5.0,
+          2.2,
+          2.5
+        ],
+        "label": "16.000"
+      },
+      {
+        "kind": "button",
+        "at": [
+          5.0,
+          26.0
+        ],
+        "size": [
+          6.0,
+          6.0,
+          3.4
+        ],
+        "color": "#c0392b",
+        "input": "SW_RESET.pressed"
+      },
+      {
+        "kind": "led",
+        "at": [
+          24.0,
+          12.6
+        ],
+        "size": [
+          2.0,
+          1.25,
+          0.8
+        ],
+        "color": "#ffd84a",
+        "output": "LED_L.luminance"
+      },
+      {
+        "kind": "led",
+        "at": [
+          59.0,
+          21.6
+        ],
+        "size": [
+          2.0,
+          1.25,
+          0.8
+        ],
+        "color": "#4dff7a",
+        "output": "LED_ON.luminance"
+      }
+    ]
+  },
   "toolchains": {
     "clang": {
       "target": "avr",

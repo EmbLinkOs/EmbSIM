@@ -1309,6 +1309,19 @@ def check_board(report: Report, file: Path, doc: dict, index: Index) -> None:
             if "port" in hs and hs["port"] not in (doc.get("ports") or {}):
                 report.error(file, node + "/port", "catalog.not_found", f"hotspot port {hs['port']} is not declared")
             _check_selector(report, file, node + "/selector", hs.get("selector"), ids)
+    # the bench's features show and drive the board's own components (SPEC-006 §4)
+    for i, feat in enumerate((doc.get("bench") or {}).get("features") or []):
+        node = ptr("bench", "features", i)
+        for key, kind in (("input", "inputs"), ("output", "outputs")):
+            ref = feat.get(key)
+            if not ref:
+                continue
+            comp, _, name = ref.partition(".")
+            d = inst.get(comp)
+            if d is None:
+                report.error(file, node + "/" + key, "catalog.not_found", f"bench feature {key} {comp} is not a component of the board")
+            elif name not in {x.get("name") for x in d.get(kind) or []}:
+                report.error(file, node + "/" + key, f"catalog.{key}_unknown", f"{comp} has no {key} {name}")
     for prof in (doc.get("toolchains") or {}):
         if index.toolchains and prof not in index.toolchains:
             report.warning(file, ptr("toolchains", prof), "catalog.not_found", f"no toolchain profile {prof} in the catalog")
@@ -1436,6 +1449,22 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
     for i, w in enumerate((doc.get("layout") or {}).get("wires") or []):
         if w.get("net") not in nets:
             report.error(file, ptr("layout", "wires", i, "net"), "catalog.not_found", f"wire for undeclared net {w.get('net')}")
+    # the bench (SPEC-007 §2): places of declared instances, jumpers between real terminals in one net
+    bench = (doc.get("layout") or {}).get("bench") or {}
+    net_of = {pin: name for name, pins in nets.items() for pin in pins}
+    for iid in bench.get("parts") or {}:
+        if iid not in ctx.components and iid not in ctx.boards:
+            report.error(file, ptr("layout", "bench", "parts", iid), "catalog.not_found", f"bench place for undeclared instance {iid}")
+    for i, w in enumerate(bench.get("wires") or []):
+        node = ptr("layout", "bench", "wires", i)
+        for end in ("from", "to"):
+            inst_id, _, pin = (w.get(end) or "").partition(".")
+            ok, why = resolve(inst_id, pin)
+            if not ok:
+                report.error(file, f"{node}/{end}", "catalog.pin_unknown", why)
+        a, b = net_of.get(w.get("from")), net_of.get(w.get("to"))
+        if a is None or a != b:
+            report.warning(file, node, "bench.jumper_net", f"jumper {w.get('from')} to {w.get('to')}: its ends are not in one net")
     # probes
     for i, probe in enumerate(doc.get("probes") or []):
         node = ptr("probes", i)

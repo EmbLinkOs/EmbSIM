@@ -2,14 +2,14 @@
 // Copyright 2026 Junior Deogracias
 import { Badge, Button, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useMediaQuery, useToast, type Command, type DockItem } from '@embsim/design';
 import { EMPTY_SELECTION, SchematicCanvas, routeConnection, type CanvasContext, type CanvasMode, type SchematicIssue, type SchematicCanvasHandle } from '@embsim/scene';
-import { ArrowLeft, Cable, Maximize2, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Box, Cable, Maximize2, MousePointer2, Workflow, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage, probes as probeActions } from '../../actions';
 import { useRegisterCommands } from '../../shell/commands';
 import { insideSource, insideView } from '../../stores/inside';
 import { openInside } from '../../stores/openInside';
 import { useCanvasAppearance } from '../../stores/canvasAppearance';
-import { useLayout } from '../../stores/layout';
+import { useLayout, type DesignView } from '../../stores/layout';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
@@ -41,7 +41,7 @@ export function DesignPerspective() {
   const [context, setContext] = useState<{ source: typeof project; value: CanvasContext } | null>(null);
   const closeContext = useCallback(() => setContext(null), []);
   const [rename, setRename] = useState<{ net: string; value: string } | null>(null);
-  const [bottomTab, setBottomTab] = useState<'nets' | 'board' | 'studio' | 'checks' | 'objects'>('nets');
+  const [bottomTab, setBottomTab] = useState<'nets' | 'studio' | 'checks' | 'objects'>('nets');
   const [preview, setPreview] = useState<LayoutPreview | null>(null);
   const [display, setDisplay] = useState<CanvasDisplay>({ airwires: true, minimap: true, smartWires: true, autoArrange: false, guides: true, focusMode: false });
   const appearance = useCanvasAppearance((s) => s.appearance);
@@ -53,6 +53,8 @@ export function DesignPerspective() {
   useEffect(() => {
     if (previewProject) canvasRef.current?.zoomToFit();
   }, [previewProject]);
+  const designView = useLayout((s) => s.designView);
+  const setDesignView = useLayout((s) => s.setDesignView);
   const inside = useLayout((s) => s.inside);
   const setInside = useLayout((s) => s.setInside);
   const catalog = useProject((s) => s.catalog);
@@ -189,6 +191,19 @@ export function DesignPerspective() {
     return { ...view, states, catalog: { ...sceneCatalog, ...view.scene } };
   }, [inside, project, catalog, sceneCatalog, nets]);
 
+  const viewSwitch = (
+    <SegmentedControl<DesignView>
+      label="Design view"
+      size="sm"
+      value={designView}
+      onValueChange={setDesignView}
+      options={[
+        { value: 'schematic', label: 'Schematic', icon: <Workflow />, title: 'The schematic' },
+        { value: 'bench', label: 'Bench', icon: <Box />, title: 'The bench in 3D: breadboards, parts and jumpers, the same nets' },
+      ]}
+    />
+  );
+
   const canvasActions = insideOf ? (
     <div className="wb-canvas-actions">
       <Badge tone="accent" title="The inside of a board or part: read-only, its nets live while it runs">
@@ -198,8 +213,11 @@ export function DesignPerspective() {
         Back to the project
       </Button>
     </div>
+  ) : designView === 'bench' ? (
+    <div className="wb-canvas-actions">{viewSwitch}</div>
   ) : (
     <div className="wb-canvas-actions">
+      {viewSwitch}
       {!editable && (
         <Badge tone="warning" title="This server does not implement project.transaction; the schematic is read-only">
           read-only
@@ -223,7 +241,9 @@ export function DesignPerspective() {
     </div>
   );
 
-  const canvas = insideOf ? (
+  const canvas = !insideOf && designView === 'bench' ? (
+    <BoardPanel interactive={running} />
+  ) : insideOf ? (
     <SchematicCanvas
       key={`inside-${inside}`}
       appearance={appearance}
@@ -303,16 +323,16 @@ export function DesignPerspective() {
   }
 
   const centre: DockItem[] = [
-    { id: 'canvas', title: 'Schematic', content: <div className="wb-schematic-workspace">{canvas}{previewProject && <div className="wb-schematic-preview-banner"><Badge tone="accent">Layout preview</Badge><span>Review in Layout Studio · not applied</span><Button size="sm" variant="ghost" onClick={() => setPreview(null)}>Discard</Button></div>}</div>, actions: canvasActions, flush: true, weight: 3, minSize: 200 },
+    { id: 'canvas', title: designView === 'bench' && !insideOf ? 'Bench' : 'Schematic', content: <div className="wb-schematic-workspace">{canvas}{previewProject && <div className="wb-schematic-preview-banner"><Badge tone="accent">Layout preview</Badge><span>Review in Layout Studio · not applied</span><Button size="sm" variant="ghost" onClick={() => setPreview(null)}>Discard</Button></div>}</div>, actions: canvasActions, flush: true, weight: 3, minSize: 200 },
     {
       id: 'bottom',
-      title: bottomTab === 'objects' ? 'Objects' : bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : bottomTab === 'checks' ? 'Checks' : 'Board',
+      title: bottomTab === 'objects' ? 'Objects' : bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : 'Checks',
       flush: true,
       weight: 1,
       collapsible: true,
       minSize: bottomTab === 'checks' || bottomTab === 'objects' ? 260 : 120,
       content: (
-        <Tabs<'nets' | 'board' | 'studio' | 'checks' | 'objects'>
+        <Tabs<'nets' | 'studio' | 'checks' | 'objects'>
           className={bottomTab === 'checks' ? 'wb-design-details--checks' : undefined}
           label="Design details"
           value={bottomTab}
@@ -321,7 +341,6 @@ export function DesignPerspective() {
             { value: 'objects', label: 'Objects', content: <ObjectsPanel writable={!previewProject && !insideOf} onFocus={(ids) => { setPreview(null); if (previewProject) requestAnimationFrame(() => canvasRef.current?.focusComponents(ids)); else canvasRef.current?.focusComponents(ids); }} /> },
             { value: 'checks', label: `Checks${checks.pending ? ' …' : ` ${checks.issues.length}`}`, content: <SchematicChecksPanel {...checks} selected={selectedIssue} onFocus={focusIssue} onRoute={routeNet} onRefresh={checks.refresh} writable={editable && !store.busy && !previewProject && !insideOf} /> },
             { value: 'nets', label: 'Nets', content: <NetsPanel live={running} /> },
-            { value: 'board', label: 'Board', content: <BoardPanel interactive={false} /> },
             { value: 'studio', label: 'Layout Studio', content: <LayoutStudio preview={preview} onPreview={setPreview} onApplied={() => canvasRef.current?.zoomToFit()} /> },
           ]}
         />

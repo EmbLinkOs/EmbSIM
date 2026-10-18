@@ -64,7 +64,7 @@ recordings made in a running session), and EmbLinkRTOS's Arduino Uno
 conformance suite runs on EmbSIM as an emulated target, in its CI
 (EmbLinkOs/EmbLinkRTOS#12's `avr-embsim` job); the coverage, profile, Python client, CI
 documentation and the Verify perspective are in STATUS.md. M6 to M9 are
-planned, not delivered; M6's Uno SPI, TWI, watchdog and analog comparator are in (the ATmega328P's coverage table is complete), and so is Timer/Counter1's input capture. Do not bulk-copy all EmbCC boards and call them supported.
+planned, not delivered; M6's Uno SPI, TWI, watchdog and analog comparator are in (the ATmega328P's coverage table is complete), and so is Timer/Counter1's input capture. M7's breadboard was begun inside M6 at the owner's request (2026-10-18): breadboards, `layout.bench` and the 3D bench editing the same nets as the schematic (ADR-027's status); the world, glTF models and the rest of M7 remain. Do not bulk-copy all EmbCC boards and call them supported.
 
 ## 3. Specification work order
 

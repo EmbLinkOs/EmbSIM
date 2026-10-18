@@ -44,6 +44,8 @@ export interface SceneSymbol {
   valueParam?: string;
   valueDefault?: unknown;
   valueUnit?: string;
+  /** a part that only connects (a breadboard): not drawn, its connections shown between the parts on it */
+  wiringAid?: boolean;
 }
 
 export type SceneCatalog = Record<string, SceneSymbol>;
@@ -350,7 +352,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const placed = useMemo<PlacedComponent[]>(() => {
     // boards are drawn as blocks of their ports, beside the components
     const boards = (project.boards ?? []).map((b) => ({ id: b.id, component: b.board, params: undefined, layout: b.layout }));
-    return [...project.components, ...boards].map((c) => {
+    return [...project.components.filter((c) => !catalog[c.component]?.wiringAid), ...boards].map((c) => {
       const symbol = catalog[c.component];
       const layout = c.layout ?? { x: 0, y: 0 };
       const sym = symbol?.symbol ?? { svg: '', width: 60, height: 20, pins: {} };

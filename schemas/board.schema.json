@@ -115,6 +115,35 @@
         "baud": {"type": "integer", "minimum": 1}
       }
     },
+    "bench": {
+      "type": "object",
+      "description": "The board as the 3D bench builds it (SPEC-006 §4, ADR-027): its physical components on the PCB, in millimetres from the board's top-left corner seen from above; the artwork is the PCB's face.",
+      "additionalProperties": false,
+      "properties": {
+        "thickness_mm": {"type": "number", "exclusiveMinimum": 0},
+        "standoff_mm": {"type": "number", "minimum": 0, "description": "Height of the PCB's underside above the desk (its feet or bumpers)."},
+        "headers": {"type": "string", "enum": ["female", "male", "none"], "description": "What the ports are: socket headers (an Uno), pins (a Nano) or pads."},
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "at"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {"type": "string", "enum": ["usb_b", "usb_micro", "usb_c", "barrel_jack", "dip", "qfp", "qfn", "button", "crystal", "led", "box"]},
+              "at": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}, "description": "The centre, mm."},
+              "size": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "exclusiveMinimum": 0}},
+              "rotation": {"type": "number", "enum": [0, 90, 180, 270]},
+              "pins": {"type": "integer", "minimum": 4, "description": "A package's pin count."},
+              "label": {"type": "string"},
+              "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+              "input": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*\\.[a-z][a-z0-9_]*$", "description": "COMPONENT.INPUT the feature drives (a button's press)."},
+              "output": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*\\.[a-z][a-z0-9_]*$", "description": "COMPONENT.OUTPUT the feature shows (an LED's luminance)."}
+            }
+          }
+        }
+      }
+    },
     "artwork": {
       "type": "object",
       "required": ["svg"],

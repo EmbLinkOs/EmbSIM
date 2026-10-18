@@ -12,6 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@embsim/bench": "workspace:*",
     "@embsim/design": "workspace:*",
     "@embsim/instruments": "workspace:*",
     "@embsim/protocol": "workspace:*",

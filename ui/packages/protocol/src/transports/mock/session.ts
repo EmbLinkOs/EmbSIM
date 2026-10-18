@@ -568,6 +568,7 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
       if (p.nets[net]!.length === 0) delete p.nets[net];
     }
     if (p.layout?.wires) p.layout.wires = p.layout.wires.filter((w) => w.net in p.nets);
+    pruneBench(p, id);
   } else if ('set_param' in edit) {
     const c = p.components.find((x) => x.id === edit.set_param.id);
     if (!c) throw new EngineError(-32002, `no component ${edit.set_param.id}`);
@@ -599,6 +600,7 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
   } else if ('remove_board' in edit) {
     const id = edit.remove_board.id;
     p.boards = (p.boards ?? []).filter((b) => b.id !== id);
+    pruneBench(p, id);
     if (p.layout?.groups) p.layout.groups = p.layout.groups.map((g) => ({ ...g, members: g.members.filter((m) => m !== id) })).filter((g) => g.members.length);
     for (const net of Object.keys(p.nets)) {
       p.nets[net] = p.nets[net]!.filter((pin) => pin.split('.')[0] !== id);
@@ -618,7 +620,16 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
     if (e.labels) p.layout.labels = e.labels;
     if (e.buses) p.layout.buses = e.buses;
     if (e.groups) p.layout.groups = structuredClone(e.groups);
+    if (e.bench) p.layout.bench = structuredClone(e.bench);
   }
+}
+
+/** A removed instance leaves the bench: its place and the jumpers to it (SPEC-007 §2). */
+function pruneBench(p: Project, id: string): void {
+  const bench = p.layout?.bench;
+  if (!bench) return;
+  if (bench.parts) delete bench.parts[id];
+  if (bench.wires) bench.wires = bench.wires.filter((w) => !w.from.startsWith(`${id}.`) && !w.to.startsWith(`${id}.`));
 }
 
 function validateProject(p: Project): DiagnosticRecord[] {
