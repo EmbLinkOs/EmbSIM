@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
+
+// Island IDs and live voltages refresh asynchronously; these checks assert edits
+// preserve the project net graph, regardless of simulation-report timing.
+const connectivity = (table: Locator) => table.locator('tbody tr').evaluateAll((rows) => rows.map((row) => {
+  const cells = row.querySelectorAll('td');
+  return [cells[0]?.textContent, cells[2]?.textContent];
+}));
 
 test('preview every leg, reject occupied holes, move the assembly and undo', async ({ page }) => {
   await page.goto('/?mock=1');
@@ -18,19 +25,19 @@ test('preview every leg, reject occupied holes, move the assembly and undo', asy
   await expect(list.getByRole('button', { name: /^R2/ })).toContainText('in a10 a14');
   const rx = Number(await list.getByLabel('Bench X (mm)').inputValue());
   const ry = Number(await list.getByLabel('Bench Y (mm)').inputValue());
-  const beforeConflict = (await nets.textContent())!;
+  const beforeConflict = await connectivity(nets);
 
   await list.getByRole('button', { name: /^R1/ }).click();
   await list.getByLabel("Plug R1's first leg into").fill('a10');
   await expect(preview).toContainText('occupied by R2.1');
   await expect(list.getByRole('button', { name: 'Plug in', exact: true })).toBeDisabled();
-  await expect(nets).toHaveText(beforeConflict);
+  await expect.poll(() => connectivity(nets)).toEqual(beforeConflict);
   await list.getByLabel("Plug R1's first leg into").fill('b10');
   await expect(list.getByRole('button', { name: 'Plug in', exact: true })).toBeEnabled();
   await list.getByRole('button', { name: 'Plug in', exact: true }).click();
   await expect(list.getByRole('button', { name: /^R1/ })).toContainText('in b10 b14');
 
-  const beforeMove = (await nets.textContent())!;
+  const beforeMove = await connectivity(nets);
   await list.getByRole('button', { name: /^BB1/ }).click();
   const bx = Number(await list.getByLabel('Bench X (mm)').inputValue());
   const by = Number(await list.getByLabel('Bench Y (mm)').inputValue());
@@ -41,7 +48,7 @@ test('preview every leg, reject occupied holes, move the assembly and undo', asy
   await list.getByRole('button', { name: 'Apply bench position', exact: true }).click();
   await expect(list.getByRole('button', { name: /^R2/ })).toContainText('in a10 a14');
   await expect(list.getByRole('button', { name: /^R1/ })).toContainText('in b10 b14');
-  await expect(nets).toHaveText(beforeMove);
+  await expect.poll(() => connectivity(nets)).toEqual(beforeMove);
   await list.getByRole('button', { name: /^R2/ }).click();
   expect(Number(await list.getByLabel('Bench X (mm)').inputValue())).toBeCloseTo(80 - (ry - by), 2);
   expect(Number(await list.getByLabel('Bench Y (mm)').inputValue())).toBeCloseTo(90 + (rx - bx), 2);
@@ -50,7 +57,7 @@ test('preview every leg, reject occupied holes, move the assembly and undo', asy
   await expect(list.getByLabel('Bench X (mm)')).toHaveValue(String(rx));
   await expect(list.getByLabel('Bench Y (mm)')).toHaveValue(String(ry));
   await expect(list.getByRole('combobox', { name: 'Bench rotation' })).toHaveText('0°');
-  await expect(nets).toHaveText(beforeMove);
+  await expect.poll(() => connectivity(nets)).toEqual(beforeMove);
   await list.getByLabel('Bench X (mm)').fill('');
   await expect(list.getByRole('button', { name: 'Apply bench position', exact: true })).toBeDisabled();
 });
@@ -64,13 +71,14 @@ test('a typed jumper cannot reuse a hole occupied by a leg', async ({ page }) =>
   await list.getByRole('button', { name: /^R2/ }).click();
   await list.getByLabel("Plug R2's first leg into").fill('a10');
   await list.getByRole('button', { name: 'Plug in', exact: true }).click();
+  await expect(list.getByRole('button', { name: /^R2/ })).toContainText('in a10 a14');
   const nets = page.getByRole('table', { name: 'Nets' });
-  const before = (await nets.textContent())!;
+  const before = await connectivity(nets);
   await list.getByLabel('Jumper from', { exact: true }).fill('BB1.a10');
   await list.getByLabel('to', { exact: true }).fill('Q1.B');
   await list.getByRole('button', { name: 'Add jumper', exact: true }).click();
   await expect(page.getByText('BB1.a10 is occupied by R2.1; use another hole on the strip', { exact: true })).toBeVisible();
-  await expect(nets).toHaveText(before);
+  await expect.poll(() => connectivity(nets)).toEqual(before);
 });
 
 
