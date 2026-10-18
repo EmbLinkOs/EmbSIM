@@ -1,0 +1,150 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-mpu6050",
+ "description": "Adafruit's MPU6050 basic_readings as a GY-521 module wires it: an MPU-6050 on the Uno's I2C pins (A4/A5) powered from the board's 3.3 V (VDD and VLOGIC), AD0 pulled down (address 0x68, the library's default), 4.7 kOhm pull-ups on SDA and SCL to 3.3 V, and a terminal on D0/D1 at 115200 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "RSDA",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 4700
+   },
+   "layout": {
+    "x": 220,
+    "y": 640
+   }
+  },
+  {
+   "id": "RSCL",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 4700
+   },
+   "layout": {
+    "x": 250,
+    "y": 640
+   }
+  },
+  {
+   "id": "U1",
+   "component": "emblink/mpu6050",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  },
+  {
+   "id": "RAD0",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 4700
+   },
+   "layout": {
+    "x": 280,
+    "y": 640
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "VT1.GND",
+   "U1.GND",
+   "RAD0.2"
+  ],
+  "V3V3": [
+   "B1.3V3",
+   "U1.VDD",
+   "U1.VLOGIC",
+   "RSDA.1",
+   "RSCL.1"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ],
+  "I2C_SDA": [
+   "B1.SDA",
+   "U1.SDA",
+   "RSDA.2"
+  ],
+  "I2C_SCL": [
+   "B1.SCL",
+   "U1.SCL",
+   "RSCL.2"
+  ],
+  "AD0": [
+   "U1.AD0",
+   "RAD0.1"
+  ]
+ },
+ "probes": [
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "asleep",
+   "target": "output:U1.asleep",
+   "kind": "value"
+  }
+ ]
+}

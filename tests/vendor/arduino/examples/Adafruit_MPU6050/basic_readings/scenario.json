@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "basic_readings",
+  "until": "2200ms",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "accel_x",
+      "value": 0
+    },
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "accel_y",
+      "value": 0.5
+    },
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "accel_z",
+      "value": 0.866
+    },
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "gyro_z",
+      "value": 45
+    },
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "temperature",
+      "value": 24
+    },
+    {
+      "at": "1200ms",
+      "target": "U1",
+      "input": "accel_x",
+      "value": -1
+    },
+    {
+      "at": "1200ms",
+      "target": "U1",
+      "input": "accel_y",
+      "value": 0
+    },
+    {
+      "at": "1200ms",
+      "target": "U1",
+      "input": "accel_z",
+      "value": 0
+    },
+    {
+      "at": "1200ms",
+      "target": "U1",
+      "input": "gyro_z",
+      "value": 0
+    }
+  ],
+  "assertions": [
+    {
+      "id": "readings",
+      "at": "2200ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Adafruit MPU6050 test!\r\nMPU6050 Found!\r\nAccelerometer range set to: +-8G\r\nGyro range set to: +- 500 deg/s\r\nFilter bandwidth set to: 21 Hz\r\n\r\nAcceleration X: 0.00, Y: 4.90, Z: 8.49 m/s^2\r\nRotation X: 0.00, Y: 0.00, Z: 0.79 rad/s\r\nTemperature: 24.00 degC\r\n\r\nAcceleration X: 0.00, Y: 4.90, Z: 8.49 m/s^2\r\nRotation X: 0.00, Y: 0.00, Z: 0.79 rad/s\r\nTemperature: 24.00 degC\r\n\r\nAcceleration X: -9.81, Y: 0.00, Z: 0.00 m/s^2\r\nRotation X: 0.00, Y: 0.00, Z: 0.00 rad/s\r\nTemperature: 24.00 degC\r\n\r\n"
+      }
+    },
+    {
+      "id": "awake",
+      "at": "2200ms",
+      "probe": "asleep",
+      "expect": {
+        "equals": "false"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "Adafruit's MPU6050 basic_readings, unmodified: the library finds WHO_AM_I 0x68 at 0x68, resets the part (polling DEVICE_RESET), wakes it on the gyro PLL, sets +-8 g, +-500 deg/s and the 21 Hz filter, then prints every half second. Tilted 30 degrees (0.5 g on Y, 0.866 g on Z) and turning at 45 deg/s about Z, it reads 4.90 and 8.49 m/s^2 and 0.79 rad/s (2948 LSB at 65.5 LSB per deg/s); laid on its side at 1.2 s, -9.81 m/s^2 on X."
+}

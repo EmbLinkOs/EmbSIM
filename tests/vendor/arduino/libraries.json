@@ -69,6 +69,13 @@
       "commit": "3b8364267c3ee6e16bad91bc2101aefbd5b5915f",
       "version": "1.17.4",
       "license": "MIT"
+    },
+    {
+      "name": "Adafruit_MPU6050",
+      "repo": "https://github.com/adafruit/Adafruit_MPU6050",
+      "commit": "502a7caccda630a151dfb03ecbdd4b8452809ef7",
+      "version": "2.2.9",
+      "license": "BSD-3-Clause"
     }
   ]
 }

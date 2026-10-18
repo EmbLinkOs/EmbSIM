@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/mpu6050",
+  "version": "1.0.0",
+  "name": "MPU-6050 six-axis motion sensor",
+  "category": "sensors",
+  "description": "InvenSense MPU-6050 accelerometer and gyroscope on I2C (0x68/0x69 from AD0): asleep after power-on, the sample rate from SMPLRT_DIV and the digital low-pass filter, four full-scale ranges for each sensor, the die temperature and the data-ready interrupt. Acceleration (g), rotation rate (deg/s) and temperature are interactive inputs.",
+  "keywords": [
+    "sensor",
+    "accelerometer",
+    "gyroscope",
+    "imu",
+    "motion",
+    "MPU6050",
+    "MPU-6050",
+    "GY-521",
+    "i2c"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "CLKIN",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "External clock input (not modelled; tie to GND)"
+    },
+    {
+      "name": "XDA",
+      "number": 6,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Auxiliary I2C data (not modelled)"
+    },
+    {
+      "name": "XCL",
+      "number": 7,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Auxiliary I2C clock (not modelled)"
+    },
+    {
+      "name": "VLOGIC",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Digital I/O supply, 1.71 V to VDD"
+    },
+    {
+      "name": "AD0",
+      "number": 9,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "I2C address bit 0: 0x68 low, 0x69 high (unconnected reads low)",
+      "power_ref": "VLOGIC"
+    },
+    {
+      "name": "REGOUT",
+      "number": 10,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Regulator filter capacitor (0.1 uF)"
+    },
+    {
+      "name": "FSYNC",
+      "number": 11,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Frame sync input (not modelled; tie to GND)"
+    },
+    {
+      "name": "INT",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Interrupt output (push-pull, active high by default)",
+      "power_ref": "VLOGIC"
+    },
+    {
+      "name": "VDD",
+      "number": 13,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 2.375 to 3.46 V"
+    },
+    {
+      "name": "GND",
+      "number": 18,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "CPOUT",
+      "number": 20,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Charge pump capacitor (2.2 nF)"
+    },
+    {
+      "name": "SCL",
+      "number": 23,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "I2C clock",
+      "power_ref": "VLOGIC"
+    },
+    {
+      "name": "SDA",
+      "number": 24,
+      "model": {
+        "kind": "digital_io"
+      },
+      "doc": "I2C data, open drain",
+      "power_ref": "VLOGIC"
+    }
+  ],
+  "params": {},
+  "inputs": [
+    {
+      "name": "accel_x",
+      "type": "number",
+      "min": -20,
+      "max": 20,
+      "unit": "g",
+      "default": 0,
+      "doc": "Acceleration along X (lying flat: Z is 1 g)"
+    },
+    {
+      "name": "accel_y",
+      "type": "number",
+      "min": -20,
+      "max": 20,
+      "unit": "g",
+      "default": 0,
+      "doc": "Acceleration along Y (lying flat: Z is 1 g)"
+    },
+    {
+      "name": "accel_z",
+      "type": "number",
+      "min": -20,
+      "max": 20,
+      "unit": "g",
+      "default": 1,
+      "doc": "Acceleration along Z (lying flat: Z is 1 g)"
+    },
+    {
+      "name": "gyro_x",
+      "type": "number",
+      "min": -2500,
+      "max": 2500,
+      "unit": "deg/s",
+      "default": 0,
+      "doc": "Rotation rate about X"
+    },
+    {
+      "name": "gyro_y",
+      "type": "number",
+      "min": -2500,
+      "max": 2500,
+      "unit": "deg/s",
+      "default": 0,
+      "doc": "Rotation rate about Y"
+    },
+    {
+      "name": "gyro_z",
+      "type": "number",
+      "min": -2500,
+      "max": 2500,
+      "unit": "deg/s",
+      "default": 0,
+      "doc": "Rotation rate about Z"
+    },
+    {
+      "name": "temperature",
+      "type": "number",
+      "min": -40,
+      "max": 85,
+      "unit": "degC",
+      "default": 25
+    }
+  ],
+  "outputs": [
+    {
+      "name": "accel_x",
+      "type": "number",
+      "unit": "g",
+      "doc": "What the accelerometer register holds now"
+    },
+    {
+      "name": "accel_y",
+      "type": "number",
+      "unit": "g",
+      "doc": "What the accelerometer register holds now"
+    },
+    {
+      "name": "accel_z",
+      "type": "number",
+      "unit": "g",
+      "doc": "What the accelerometer register holds now"
+    },
+    {
+      "name": "gyro_x",
+      "type": "number",
+      "unit": "deg/s",
+      "doc": "What the gyroscope register holds now"
+    },
+    {
+      "name": "gyro_y",
+      "type": "number",
+      "unit": "deg/s",
+      "doc": "What the gyroscope register holds now"
+    },
+    {
+      "name": "gyro_z",
+      "type": "number",
+      "unit": "deg/s",
+      "doc": "What the gyroscope register holds now"
+    },
+    {
+      "name": "temperature",
+      "type": "number",
+      "unit": "degC"
+    },
+    {
+      "name": "asleep",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "I2C at 0x68 + AD0 with auto-incrementing reads and writes; WHO_AM_I 0x68; power-on and DEVICE_RESET to sleep with registers cleared; the sample rate from SMPLRT_DIV and the DLPF, each sample the inputs as they were the DLPF's delay earlier; the four accelerometer and gyroscope full-scale ranges with saturation at the 16-bit limits; the temperature at 340 LSB/C from 36.53 C; burst reads from one sampling instant; standby axes and TEMP_DIS frozen; DATA_RDY in INT_STATUS and on INT (50 us pulse or latched, level and open-drain options); no answer below 2.375 V.",
+      "omissions": [
+        "the FIFO (FIFO_COUNT reads 0)",
+        "the auxiliary I2C master and pass-through (XDA, XCL)",
+        "motion detection",
+        "self-test",
+        "CYCLE mode (low-power accelerometer wake-ups)",
+        "FSYNC and CLKIN",
+        "sensor noise, offsets and their drift with temperature (readings exact to the LSB)",
+        "cross-axis sensitivity",
+        "the start-up settling (30 ms for the gyroscope)",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the FIFO (FIFO_COUNT reads 0)",
+        "the auxiliary I2C master and pass-through (XDA, XCL)",
+        "motion detection",
+        "self-test",
+        "CYCLE mode (low-power accelerometer wake-ups)",
+        "FSYNC and CLKIN",
+        "sensor noise, offsets and their drift with temperature (readings exact to the LSB)",
+        "cross-axis sensitivity",
+        "the start-up settling (30 ms for the gyroscope)",
+        "supply current"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; VDD's voltage gates the part; the behaviour is the Lua model's.",
+      "omissions": [
+        "the FIFO (FIFO_COUNT reads 0)",
+        "the auxiliary I2C master and pass-through (XDA, XCL)",
+        "motion detection",
+        "self-test",
+        "CYCLE mode (low-power accelerometer wake-ups)",
+        "FSYNC and CLKIN",
+        "sensor noise, offsets and their drift with temperature (readings exact to the LSB)",
+        "cross-axis sensitivity",
+        "the start-up settling (30 ms for the gyroscope)",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "InvenSense MPU-6000 and MPU-6050 Product Specification, PS-MPU-6000A-00 Rev 3.4"
+      },
+      {
+        "title": "InvenSense MPU-6000 and MPU-6050 Register Map and Descriptions, RM-MPU-6000A-00 Rev 4.2"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 90,
+    "pins": {
+      "SCL": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SDA": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "AD0": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "INT": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "FSYNC": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "CLKIN": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "XDA": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "XCL": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "REGOUT": {
+        "x": 80,
+        "y": 50,
+        "side": "right"
+      },
+      "CPOUT": {
+        "x": 80,
+        "y": 60,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "VLOGIC": {
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 40,
+        "y": 90,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

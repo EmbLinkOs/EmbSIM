@@ -25,6 +25,7 @@ it when `examples/<library>/<example>/` holds its `scenario.json` (and a
 | Library example | Part | What it checks |
 | --- | --- | --- |
 | Adafruit_BME280_Library `bme280test` | BME280 on A4/A5 from the Uno's 3.3 V, SDO pulled up (0x77) | The chip found, reset and set to normal mode at x16; 21.37 C, 1009.82 hPa (28.60 m) and 43.60 %RH as the library compensates them, then 30.05 C, 955.40 hPa (493.17 m), 71.20 %RH after the weather turns |
+| Adafruit_MPU6050 `basic_readings` | MPU-6050 on A4/A5 from the Uno's 3.3 V, AD0 pulled down (0x68), as on a GY-521 | Found, reset and set to +-8 g, +-500 deg/s and 21 Hz; a 30 degree tilt turning at 45 deg/s as 4.90 and 8.49 m/s^2 and 0.79 rad/s, then -9.81 m/s^2 on its side |
 | DallasTemperature `Simple` | DS18B20 on D2 with a 4.7 kOhm pull-up, OneWire's bit-banged slots | The sensor found by the search algorithm, a 12-bit conversion polled to its end, the scratchpad read by MATCH ROM with its CRC: 21.37 C as 21.375 (printed 21.37), then -10.06 C |
 | LiquidCrystal `HelloWorld` | 16x2 HD44780 LCD in 4-bit mode, contrast pot on V0 | Nothing shown while the contrast pot sits at half (2.5 V of contrast), then 'hello, world!' and the seconds once it is turned, at the controller's real execution times |
 | LiquidCrystal_I2C `HelloWorld` | 20x4 HD44780 LCD behind a PCF8574 backpack (A0..A2 pulled up, P3 switching the backlight transistor) on A4/A5 | The sketch's four rows, rows 3 and 4 at the controller's 0x14 and 0x54, written nibble by nibble through the expander at 0x27; the backlight off until `backlight()` |

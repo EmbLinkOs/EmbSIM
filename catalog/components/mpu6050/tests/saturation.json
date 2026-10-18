@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "saturation",
+  "description": "At +-2 g a 3 g acceleration saturates the register at 32767 (1.99994 g); at +-4 g (ACCEL_CONFIG 0x08) the same is read in range.",
+  "policy": "functional",
+  "until": "3ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,3,3,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mpu6050"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.accel_x": {
+      "at": "2ms",
+      "min": 1.9999,
+      "max": 1.99995
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "accel_x",
+      "value": 3.0
+    }
+  ]
+}

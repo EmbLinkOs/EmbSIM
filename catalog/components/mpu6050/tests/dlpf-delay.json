@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dlpf-delay",
+  "description": "DLPF_CFG 6 (5 Hz): the accelerometer's 19 ms delay. A step at 10 ms is not yet seen at 25 ms and is there by 35 ms.",
+  "policy": "functional",
+  "until": "36ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,3,3,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mpu6050"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.accel_x": {
+      "at": "25ms",
+      "equals": 0
+    },
+    "output:DUT.accel_y": {
+      "at": "35ms",
+      "equals": 0.5
+    }
+  },
+  "inputs": [
+    {
+      "at": "10ms",
+      "target": "DUT",
+      "input": "accel_x",
+      "value": 0.5
+    },
+    {
+      "at": "10ms",
+      "target": "DUT",
+      "input": "accel_y",
+      "value": 0.5
+    }
+  ]
+}

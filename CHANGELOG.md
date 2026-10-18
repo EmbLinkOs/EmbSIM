@@ -508,6 +508,13 @@ versions follow semantic versioning. There is no release yet.
   measurements and shadowed data registers. Adafruit's `bme280test` runs
   unmodified, 3/3; six fixtures. The Arduino runner adds prototypes for a
   sketch's functions, as the IDE's builder does.
+- The MPU-6050 (`emblink/mpu6050`), from InvenSense's datasheet and
+  register map: I2C at 0x68 + AD0, WHO_AM_I, asleep after power-on and
+  DEVICE_RESET, the sample rate from SMPLRT_DIV and the DLPF with the
+  filter's delay, the four accelerometer and gyroscope ranges saturating
+  at 16 bits, the die temperature, burst reads from one sampling instant,
+  standby axes and the DATA_RDY interrupt on INT. Adafruit's
+  `basic_readings` runs unmodified, 3/3; nine fixtures.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the
