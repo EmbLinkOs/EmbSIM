@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "gga",
+  "description": "The GGA sentence of the same fix, with its checksum.",
+  "policy": "functional",
+  "until": "1700ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/neo6m",
+        "params": {
+          "start": "hot"
+        }
+      },
+      {
+        "id": "VT1",
+        "component": "emblink/virtual_terminal",
+        "params": {
+          "baud": 9600
+        }
+      }
+    ],
+    "nets": {
+      "TX": [
+        "DUT.TXD",
+        "VT1.RX"
+      ]
+    }
+  },
+  "expect": {
+    "serial:VT1": {
+      "at": "1600ms",
+      "contains": "$GPGGA,120001.00,4807.03800,N,01131.00002,E,1,08,0.92,545.4,M,48.0,M,,*51\r\n"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "latitude",
+      "value": 48.1173
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "longitude",
+      "value": 11.516667
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "altitude",
+      "value": 545.4
+    }
+  ]
+}

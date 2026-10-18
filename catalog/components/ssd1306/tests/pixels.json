@@ -2,9 +2,9 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "pixels",
-  "description": "Charge pump and display on, horizontal addressing over the whole panel, then two data bytes: 0xFF and 0x81 light 10 pixels.",
+  "description": "Charge pump and display on, horizontal addressing over the whole panel, then two data bytes: 0xFF and 0x81 light 10 pixels. The panel lights 100 ms after display on.",
   "policy": "functional",
-  "until": "572us",
+  "until": "110ms",
   "circuit": {
     "components": [
       {
@@ -45,11 +45,11 @@
   },
   "expect": {
     "output:DUT.on": {
-      "at": "552us",
+      "at": "105ms",
       "equals": true
     },
     "output:DUT.lit_pixels": {
-      "at": "552us",
+      "at": "105ms",
       "equals": 10
     }
   }

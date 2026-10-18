@@ -1369,6 +1369,15 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
     return ES_OK;
 }
 
+int esk_island_quiet(esk_island *isl, es_time_t *next)
+{
+    mna *p = (mna *)isl->priv;
+    if (!p->running || isl->failed || !p->quiet || p->restart || p->bracket_hi || p->touched)
+        return 0;
+    *next = next_breakpoint(isl, isl->t_accepted);
+    return 1;
+}
+
 void esk_island_touch(esk_island *isl, es_time_t now)
 {
     mna *p = (mna *)isl->priv;
@@ -1399,6 +1408,8 @@ void esk_island_touch(esk_island *isl, es_time_t now)
     p->bracket_hi = 0;
     p->h_before_bracket = 0;
     schedule_local(isl, isl->t_accepted > now ? isl->t_accepted : now);
+    if (isl->wake)
+        isl->wake(isl, now);
 }
 
 double esk_island_node_v(const esk_island *isl, int node)

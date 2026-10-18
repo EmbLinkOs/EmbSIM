@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "hold",
+  "description": "Orange and yellow held on: 0.2 A in the windings and the rotor at the pair's half step; a 30 mN m load on the output, below the data sheet's self-positioning torque (34.3 mN m), turns it back about half a step (an electrical angle of some 40 degrees, the friction helping) and is held there.",
+  "policy": "functional",
+  "until": "400ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "C",
+          "period": "1m"
+        }
+      },
+      {
+        "id": "U1",
+        "component": "emblink/uln2003"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/stepper_28byj48"
+      },
+      {
+        "id": "V5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      }
+    ],
+    "nets": {
+      "N_IN1": [
+        "PG.OUT0",
+        "U1.IN1"
+      ],
+      "N_BLUE": [
+        "U1.OUT1",
+        "DUT.BLUE"
+      ],
+      "N_IN2": [
+        "PG.OUT1",
+        "U1.IN2"
+      ],
+      "N_PINK": [
+        "U1.OUT2",
+        "DUT.PINK"
+      ],
+      "N_IN3": [
+        "PG.OUT2",
+        "U1.IN3"
+      ],
+      "N_YELLOW": [
+        "U1.OUT3",
+        "DUT.YELLOW"
+      ],
+      "N_IN4": [
+        "PG.OUT3",
+        "U1.IN4"
+      ],
+      "N_ORANGE": [
+        "U1.OUT4",
+        "DUT.ORANGE"
+      ],
+      "N_RED": [
+        "V5.OUT",
+        "DUT.RED"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.steps": {
+      "at": "300ms",
+      "equals": 0.03,
+      "tolerance": 0.1
+    },
+    "output:DUT.current": {
+      "at": "300ms",
+      "equals": 0.2,
+      "tolerance": 0.005
+    }
+  },
+  "inputs": [
+    {
+      "at": "100ms",
+      "target": "DUT",
+      "input": "load",
+      "value": 0.03
+    }
+  ]
+}

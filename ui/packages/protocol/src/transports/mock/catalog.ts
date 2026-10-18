@@ -311,6 +311,63 @@ export const MOCK_CATALOG: Record<string, Entry> = {
   },
 };
 
+/**
+ * The 830-point breadboard (BB830), built from its geometry as
+ * tools/catalog/gen_breadboard.py builds the catalog's: 0.1 in pitch,
+ * strips of five across a 0.3 in channel, four rails of 50 in groups of five.
+ */
+function breadboard830(): Entry {
+  const P = 2.54;
+  const [w, d, h] = [165.1, 54.6, 8.5];
+  const x0 = (w - 62 * P) / 2;
+  const y0 = (d - 17 * P) / 2;
+  const pins: Record<string, [number, number]> = {};
+  const ties: string[][] = [];
+  const r = (v: number) => Math.round(v * 1000) / 1000;
+  for (let c = 1; c <= 63; c++) {
+    const x = x0 + (c - 1) * P;
+    [...'abcde'].forEach((row, k) => (pins[`${row}${c}`] = [r(x), r(y0 + (3 + k) * P)]));
+    [...'fghij'].forEach((row, k) => (pins[`${row}${c}`] = [r(x), r(y0 + (10 + k) * P)]));
+    ties.push([...'abcde'].map((row) => `${row}${c}`), [...'fghij'].map((row) => `${row}${c}`));
+  }
+  const rx0 = x0 + (62 * P - 58 * P) / 2;
+  for (const [name, row] of [['TP', 0], ['TN', 1], ['BP', 16], ['BN', 17]] as const) {
+    const names: string[] = [];
+    for (let i = 0; i < 50; i++) {
+      pins[`${name}${i + 1}`] = [r(rx0 + (Math.floor(i / 5) * 6 + (i % 5)) * P), r(y0 + row * P)];
+      names.push(`${name}${i + 1}`);
+    }
+    ties.push(names);
+  }
+  const holes = Object.entries(pins).map(([n, [x, y]]) => `<rect id="pin-${n.toLowerCase()}" x="${r(x - 0.5)}" y="${r(y - 0.5)}" width="1" height="1" fill="#3a3a3a"/>`).join('');
+  return {
+    description: {
+      schema_version: 1,
+      kind: 'component',
+      id: 'emblink/breadboard_830',
+      version: '1.0.0',
+      name: 'Breadboard, 830 points',
+      category: 'connectors',
+      description: 'Full-size solderless breadboard: 0.1 in pitch, strips of five holes either side of a 0.3 in channel, power rails along both edges.',
+      keywords: ['breadboard', 'solderless'],
+      pins: Object.keys(pins).map((name) => ({ name, model: { kind: 'passive' }, required: false })),
+      model: { composite: { components: [], nets: {}, ports: {} } },
+      symbol: { svg: 'symbol.svg', width: 60, height: 30, pins: {} },
+      artwork: { svg: 'artwork.svg', width_mm: w, height_mm: d },
+      ties,
+      bench: { package: 'breadboard', size_mm: [w, d, h], wiring_aid: true, pins },
+      fidelity: fid('Each strip and rail is one conductor.', 'Each strip and rail is one conductor.', 'Ideal contacts.', ['contact resistance']),
+      provenance,
+    },
+    files: {
+      symbol: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" width="60" height="30"><rect x="1" y="1" width="58" height="28" rx="2" fill="var(--symbol-fill)" stroke="var(--symbol-stroke)"/></svg>`,
+      artwork: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${d}" width="${w}" height="${d}"><rect width="${w}" height="${d}" rx="1.6" fill="#f4f1ea"/>${holes}</svg>`,
+    },
+  };
+}
+
+MOCK_CATALOG['emblink/breadboard_830'] = breadboard830();
+
 export function catalogItems(): CatalogItem[] {
   return Object.values(MOCK_CATALOG).map(({ description }) => ({
     id: description.id,

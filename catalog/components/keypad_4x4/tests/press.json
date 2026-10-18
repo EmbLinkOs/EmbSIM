@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "press",
+  "description": "Row 2 held low, columns pulled up by 10 kOhm: pressing 5 joins row 2 to column 2 through the 200 Ohm contact (0.1 V); column 1 stays at 5 V.",
+  "policy": "electrical",
+  "until": "21ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RC1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RC2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/keypad_4x4"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "RC1.1",
+        "RC2.1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.R2"
+      ],
+      "C1": [
+        "RC1.2",
+        "DUT.C1"
+      ],
+      "C2": [
+        "RC2.2",
+        "DUT.C2"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT.k5",
+      "input": "pressed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:C2": {
+      "at": "20ms",
+      "max_v": 0.2
+    },
+    "net:C1": {
+      "at": "20ms",
+      "min_v": 4.9
+    }
+  }
+}

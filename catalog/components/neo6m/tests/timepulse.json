@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "timepulse",
+  "description": "With a fix, TIMEPULSE gives 100 ms pulses at 1 Hz from the top of each second.",
+  "policy": "functional",
+  "until": "5600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/neo6m",
+        "params": {
+          "start": "hot"
+        }
+      },
+      {
+        "id": "VT1",
+        "component": "emblink/virtual_terminal",
+        "params": {
+          "baud": 9600
+        }
+      }
+    ],
+    "nets": {
+      "TX": [
+        "DUT.TXD",
+        "VT1.RX"
+      ],
+      "PPS": [
+        "DUT.TIMEPULSE"
+      ]
+    }
+  },
+  "expect": {
+    "net:PPS": {
+      "between": [
+        "1500ms",
+        "5500ms"
+      ],
+      "frequency_hz": 1,
+      "tolerance": 0.05
+    },
+    "pin:DUT.TIMEPULSE": {
+      "at": "3050ms",
+      "logic": "1"
+    }
+  }
+}

@@ -106,11 +106,66 @@ int esk_mach_readc(struct esk_mach *m)
     return m->host.readc ? m->host.readc(m->host.ctx) : -1;
 }
 
-void esk_mach_advance(struct esk_mach *m, u32 cycles)
+static void tick_all(struct esk_mach *m, u32 cycles)
 {
     int i;
     for (i = 0; i < m->ntick_fn; i++)
         m->tick_fn[i](m->tick_ctx[i], cycles);
+}
+
+/* at most this many cycles owed before the devices are given them anyway */
+#define LAZY_MAX 0x10000u
+
+void esk_mach_sync(struct esk_mach *m)
+{
+    u64 now;
+    if (!m->lag)
+        return;
+    /* the devices count from the cycles they see: while they catch up the
+     * machine's time is where the cycles owed end */
+    now = m->cycles;
+    m->cycles = m->lag_mark - m->lag;
+    while (m->lag) {
+        u32 c = m->lag > 0x40000000u ? 0x40000000u : (u32)m->lag;
+        m->lag -= c;
+        m->cycles += c;
+        tick_all(m, c);
+    }
+    m->cycles = now;
+}
+
+void esk_mach_outside(struct esk_mach *m)
+{
+    esk_mach_sync(m);
+    m->lazy_known = 0;
+}
+
+static void bus_sync(void *ctx) { esk_mach_sync((struct esk_mach *)ctx); }
+
+void esk_mach_lazy(struct esk_mach *m)
+{
+    m->lazy = 1;
+    m->bus.sync = bus_sync;
+    m->bus.sync_ctx = m;
+}
+
+void esk_mach_advance(struct esk_mach *m, u32 cycles)
+{
+    if (!m->lazy) {
+        tick_all(m, cycles);
+        return;
+    }
+    m->lag += cycles;
+    m->lag_mark = m->cycles;
+    /* the devices see their cycles when their next event comes, or when a
+     * write may have brought it nearer */
+    if (!m->lazy_known || m->bus.written || m->cycles >= m->lazy_at || m->lag >= LAZY_MAX) {
+        u32 left = 0;
+        int any = esk_mach_next_event(m, &left); /* syncs first */
+        m->lazy_at = any ? m->cycles + left : m->cycles + LAZY_MAX;
+        m->lazy_known = 1;
+        m->bus.written = 0;
+    }
 }
 
 void esk_mach_clock(struct esk_mach *m, int *running, int on)
@@ -126,6 +181,7 @@ void esk_mach_clock(struct esk_mach *m, int *running, int on)
 int esk_mach_next_event(struct esk_mach *m, u32 *cycles)
 {
     int any = 0, i;
+    esk_mach_sync(m); /* the devices report from their own present */
     for (i = 0; i < m->ntick; i++) {
         u32 c = 0;
         struct esk_device *d = m->tick[i];
@@ -196,6 +252,8 @@ void esk_mach_reset(struct esk_mach *m)
         if (m->bus.dev[i].ops->reset)
             m->bus.dev[i].ops->reset(m->bus.dev[i].ctx);
     m->insns = m->cycles = 0;
+    m->lag = 0;
+    m->lazy_known = 0;
     m->ev_known = 0;
     m->state = ESK_MACH_RUN;
     m->exit_status = 0;
@@ -271,6 +329,7 @@ u64 esk_mach_run(struct esk_mach *m, u64 budget, u64 max_insns)
             break;
         }
     }
+    esk_mach_sync(m); /* what the run did, for everything outside it */
     return m->cycles - start;
 }
 

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "asleep",
+  "description": "After power-on the part sleeps (PWR_MGMT_1 0x40): the sensor registers hold 0 whatever the motion.",
+  "policy": "functional",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mpu6050"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.asleep": {
+      "at": "1ms",
+      "equals": true
+    },
+    "output:DUT.accel_z": {
+      "at": "1ms",
+      "equals": 0
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "accel_x",
+      "value": 0.25
+    }
+  ]
+}

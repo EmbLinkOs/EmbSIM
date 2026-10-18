@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "electrical",
+  "policy": "electrical",
+  "until": "300ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V5",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9",
+          "period": "5m"
+        }
+      },
+      {
+        "id": "DRV",
+        "component": "emblink/uln2003_module"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/stepper_28byj48"
+      }
+    ],
+    "nets": {
+      "VM": [
+        "V5.+",
+        "DRV.VCC"
+      ],
+      "GND": [
+        "V5.-",
+        "G.GND",
+        "DRV.GND"
+      ],
+      "I1": [
+        "PG.OUT0",
+        "DRV.IN1"
+      ],
+      "I2": [
+        "PG.OUT1",
+        "DRV.IN2"
+      ],
+      "I3": [
+        "PG.OUT2",
+        "DRV.IN3"
+      ],
+      "I4": [
+        "PG.OUT3",
+        "DRV.IN4"
+      ],
+      "N_BLUE": [
+        "DRV.OUT1",
+        "DUT.BLUE"
+      ],
+      "N_PINK": [
+        "DRV.OUT2",
+        "DUT.PINK"
+      ],
+      "N_YELLOW": [
+        "DRV.OUT3",
+        "DUT.YELLOW"
+      ],
+      "N_ORANGE": [
+        "DRV.OUT4",
+        "DUT.ORANGE"
+      ],
+      "CM": [
+        "DRV.M5",
+        "DUT.RED"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_ORANGE": {
+      "at": "2ms",
+      "max_v": 0.95
+    },
+    "net:N_BLUE": {
+      "at": "2ms",
+      "min_v": 4.9
+    },
+    "output:DUT.current": {
+      "at": "250ms",
+      "equals": 0.165,
+      "tolerance": 0.003
+    },
+    "output:DUT.steps": {
+      "at": "250ms",
+      "equals": 39.5,
+      "tolerance": 0.2
+    }
+  },
+  "description": "On the ULN2003 board from 5 V under the electrical policy: a sunk lead sits at the ULN2003's saturation voltage with 100 mA through its 50 Ohm half (0.87 V, the data sheet's 0.9 V), so each energised half sees 4.13 V and the pair draws 0.165 A; at 200 steps a second the rotor follows as under the functional policy."
+}

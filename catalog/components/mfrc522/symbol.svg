@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 90" width="80" height="90" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="60" height="70" rx="2"/>
+  <line class="s" id="pin-sda" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">SDA</text>
+  <line class="s" id="pin-sck" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">SCK</text>
+  <line class="s" id="pin-mosi" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">MOSI</text>
+  <line class="s" id="pin-miso" x1="0" y1="50" x2="10" y2="50"/><text class="p" x="13" y="52">MISO</text>
+  <line class="s" id="pin-irq" x1="0" y1="60" x2="10" y2="60"/><text class="p" x="13" y="62">IRQ</text>
+  <line class="s" id="pin-rst" x1="0" y1="70" x2="10" y2="70"/><text class="p" x="13" y="72">RST</text>
+  <line class="s" id="pin-vcc" x1="40" y1="0" x2="40" y2="10"/>
+  <line class="s" id="pin-gnd" x1="40" y1="90" x2="40" y2="80"/>
+  <path class="s" d="M48 30 a10 10 0 0 1 0 20 M53 25 a16 16 0 0 1 0 30"/>
+  <text class="t" x="40" y="72" text-anchor="middle">MFRC522</text>
+</svg>

@@ -36,12 +36,15 @@ export function checkSchematic(project: Project, catalog: SceneCatalog): Schemat
   const pinsByNet = projectPinPoints(project, catalog);
   const pinNets = new Map<string, string[]>();
   const wires = project.layout?.wires ?? [];
+  // a wiring aid's terminals (a breadboard's holes) are not drawn: the bench checks them
+  const aids = new Set(project.components.filter((c) => catalog[c.component]?.wiringAid).map((c) => c.id));
   for (const [net, pins] of Object.entries(project.nets)) {
     if (pins.length < 2) add('small-net', net, 'warning', `Net ${net} has ${pins.length} pins`, 'A net with fewer than two pins cannot connect different terminals.', { net, components: pins.map((p) => p.split('.')[0]!) });
     for (const pin of pins) {
       const list = pinNets.get(pin) ?? [];
       list.push(net); pinNets.set(pin, list);
       const dot = pin.indexOf('.');
+      if (aids.has(pin.slice(0, dot))) continue;
       const part = byId.get(pin.slice(0, dot));
       if (dot < 1 || !part || (catalog[part.ref] && !(catalog[part.ref]!.terminals ?? Object.keys(part.symbol.pins)).includes(pin.slice(dot + 1)))) {
         add('invalid-pin', `${net}:${pin}`, 'error', `Unknown terminal ${pin}`, `Net ${net} references a terminal absent from the loaded board/component description.`, { net, components: part ? [part.id] : [] });

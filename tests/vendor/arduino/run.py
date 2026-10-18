@@ -9,7 +9,8 @@ The core is not vendored (it is LGPL-2.1): --core names a checkout of
 https://github.com/arduino/ArduinoCore-avr, CI's at a pinned commit. Every
 file of cores/arduino is compiled into core.a, and each sketch here
 (sketches/<name>/<name>.ino) is turned into C++ as the IDE's builder turns
-it (Arduino.h included, a #line back to the .ino) and linked against it,
+it (Arduino.h included, prototypes for its functions, a #line back to
+the .ino) and linked against it,
 all with the flags of the core's platform.txt and the Uno's boards.txt
 entry, with the core's libraries the sketch includes (SPI, Wire) compiled
 beside it. The image then runs this directory's project.json (or the
@@ -72,6 +73,10 @@ def build_core(core: Path, out: Path) -> Path:
     return lib
 
 
+# the header extensions the IDE's builder resolves includes against
+HEADERS = (".h", ".hpp", ".hh")
+
+
 def lib_src(root: Path) -> Path:
     """A library's source directory: src/ in the 1.5 layout, else its root."""
     return root / "src" if (root / "src").is_dir() else root
@@ -88,7 +93,7 @@ def lib_sources(root: Path) -> list:
     return sorted(files)
 
 
-INCLUDE = re.compile(r'^\s*#\s*include\s*[<"]([\w./-]+\.h)[>"]', re.M)
+INCLUDE = re.compile(r'^\s*#\s*include\s*[<"]([\w./-]+\.(?:h|hpp|hh))[>"]', re.M)
 
 
 def libraries(roots: list, sketch: Path) -> list:
@@ -97,16 +102,20 @@ def libraries(roots: list, sketch: Path) -> list:
     builder finds them."""
     index = {}
     for root in roots:
-        for h in lib_src(root).glob("*.h"):
-            index.setdefault(h.name, root)
+        for ext in HEADERS:
+            for h in lib_src(root).glob("*" + ext):
+                index.setdefault(h.name, root)
     found, todo = [], INCLUDE.findall(sketch.read_text(encoding="utf-8", errors="replace"))
+    for f in sorted(sketch.parent.iterdir()):
+        if f != sketch and f.suffix in HEADERS + (".c", ".cpp"):
+            todo += INCLUDE.findall(f.read_text(encoding="utf-8", errors="replace"))
     while todo:
         root = index.get(Path(todo.pop()).name)
         if root is None or root in found:
             continue
         found.append(root)
         for f in lib_sources(root):
-            if f.suffix in (".h", ".c", ".cpp"):
+            if f.suffix in HEADERS + (".c", ".cpp"):
                 todo += INCLUDE.findall(f.read_text(encoding="utf-8", errors="replace"))
     return found
 
@@ -144,20 +153,82 @@ def build_library(root: Path, inc: list, out: Path) -> list:
     return objs
 
 
+FUNC_DEF = re.compile(r"^([A-Za-z_][\w:<>,\*&\s]*?[\s\*&])([A-Za-z_]\w*)\s*\(([^;{}()]*)\)\s*\{", re.M)
+NOT_FUNC = {"if", "for", "while", "switch", "return", "else", "do", "sizeof"}
+
+
+def blank_comments(text: str) -> str:
+    """text with comments, strings and character literals turned to spaces
+    (newlines kept), so positions still match"""
+    out, i, n = list(text), 0, len(text)
+    while i < n:
+        two = text[i:i + 2]
+        if two == "//":
+            j = text.find("\n", i)
+            j = n if j < 0 else j
+        elif two == "/*":
+            j = text.find("*/", i + 2)
+            j = n if j < 0 else j + 2
+        elif text[i] in "\"'":
+            q, j = text[i], i + 1
+            while j < n and text[j] != q and text[j] != "\n":
+                j += 2 if text[j] == "\\" else 1
+            j += 1
+        else:
+            i += 1
+            continue
+        for k in range(i, min(j, n)):
+            if out[k] != "\n":
+                out[k] = " "
+        i = j
+    return "".join(out)
+
+
+def sketch_cpp(text: str, name: str) -> str:
+    """the .ino as the IDE's builder hands it to the compiler: Arduino.h
+    first, then prototypes for the sketch's functions inserted before the
+    first function definition (so a function may be called above where it
+    is defined), with #line keeping the sketch's own line numbers"""
+    clean = blank_comments(text)
+    depth, starts = 0, [0] * (len(clean) + 1)
+    for i, c in enumerate(clean):          # brace depth at each position
+        starts[i] = depth
+        depth += (c == "{") - (c == "}")
+    protos, first = [], None
+    for m in FUNC_DEF.finditer(clean):
+        ret, fname = " ".join(m.group(1).split()), m.group(2)
+        if starts[m.start()] or fname in NOT_FUNC or ret.split()[-1] in NOT_FUNC or ret.startswith("#"):
+            continue
+        args = " ".join(m.group(3).split())
+        protos.append(f"{ret} {fname}({args});")
+        first = m.start(1) if first is None else first
+    head = f'#include <Arduino.h>\n#line 1 "{name}"\n'
+    if first is None:
+        return head + text
+    line = text.count("\n", 0, first) + 1
+    bol = text.rfind("\n", 0, first) + 1
+    return (head + text[:bol] + "\n".join(protos) + f'\n#line {line} "{name}"\n' + text[bol:])
+
+
 def build_sketch(core: Path, lib: Path, roots: list, sketch: Path, out: Path) -> Path:
     libs = libraries(roots, sketch)
-    inc = ["-I", core / "cores" / "arduino", "-I", core / "variants" / "standard"]
+    # the sketch's folder first: its own headers (an example's pin definitions)
+    inc = ["-I", sketch.parent, "-I", core / "cores" / "arduino", "-I", core / "variants" / "standard"]
     for root in libs:
         inc += ["-I", lib_src(root)]
         if not (root / "src").is_dir() and (root / "utility").is_dir():
             inc += ["-I", root / "utility"]
     objs = [o for root in libs for o in build_library(root, inc, out)]
     cpp = out / (sketch.name + ".cpp")
-    cpp.write_text(f'#include <Arduino.h>\n#line 1 "{sketch.name}"\n' + sketch.read_text(encoding="utf-8"),
-                   encoding="utf-8")
+    cpp.write_text(sketch_cpp(sketch.read_text(encoding="utf-8"), sketch.name), encoding="utf-8")
     obj = out / (sketch.name + ".o")
     elf = out / (sketch.stem + ".elf")
     sh(["avr-g++", *CPP_FLAGS, *BOARD, *inc, cpp, "-o", obj])
+    # and the folder's other sources, compiled beside it as the IDE does
+    for src in sorted(sketch.parent.glob("*.c")) + sorted(sketch.parent.glob("*.cpp")):
+        o = out / (sketch.stem + "." + src.name + ".o")
+        sh(["avr-gcc" if src.suffix == ".c" else "avr-g++", *(C_FLAGS if src.suffix == ".c" else CPP_FLAGS), *BOARD, *inc, src, "-o", o])
+        objs.append(o)
     sh(["avr-gcc", *ELF_FLAGS, "-o", elf, obj, *objs, lib, "-L", out, "-lm"])
     return elf
 
@@ -193,6 +264,10 @@ def main() -> int:
     ap.add_argument("--fetch", action="store_true", help="fetch libraries.json's libraries into --libs")
     ap.add_argument("sketches", nargs="*")
     args = ap.parse_args()
+    # a fixed build time (the reproducible-builds convention GCC honours), so
+    # a sketch that sets a clock from __DATE__ and __TIME__ prints the same
+    # each run: 2026-10-18 12:00:00 UTC
+    os.environ.setdefault("SOURCE_DATE_EPOCH", "1792324800")
     missing = [t for t in ("avr-gcc", "avr-g++", "avr-gcc-ar") if not shutil.which(t)]
     if missing or not args.core:
         print(f"SKIP: {'needs ' + ', '.join(missing) if missing else 'no --core (ArduinoCore-avr checkout)'}")

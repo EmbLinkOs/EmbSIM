@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-down",
+  "description": "PD_SCK held high 100 us at 500 ms: the chip powers down (DOUT high) and, taken low again, resets: the next data comes after the settling time, 400 ms later.",
+  "policy": "functional",
+  "until": "1000ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0",
+          "period": "1u",
+          "start": "500m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hx711_load_cell",
+        "params": {
+          "noise": 0
+        }
+      }
+    ],
+    "nets": {
+      "N_DT": [
+        "DUT.DT"
+      ],
+      "N_SCK": [
+        "PG.OUT0",
+        "DUT.SCK"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.powered_down": {
+      "at": "500080us",
+      "equals": true
+    },
+    "net:N_DT": {
+      "at": "899ms",
+      "logic": "1"
+    },
+    "pin:DUT.DT": {
+      "at": "901ms",
+      "logic": "0"
+    }
+  }
+}

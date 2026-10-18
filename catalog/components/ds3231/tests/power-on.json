@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-on",
+  "description": "At power-up the clock starts from 2000-01-01 00:00:00 with OSF set (the time is not to be trusted), and RST is held low 250 ms.",
+  "policy": "functional",
+  "until": "1500ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ds3231"
+      },
+      {
+        "id": "PU3",
+        "component": "emblink/pull_up"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "RST": [
+        "DUT.RST",
+        "PU3.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.time": {
+      "at": "500ms",
+      "equals": "2000-01-01 00:00:00"
+    },
+    "output:DUT.lost_power": {
+      "at": "500ms",
+      "equals": true
+    },
+    "net:RST": {
+      "at": "100ms",
+      "logic": "0"
+    },
+    "pin:DUT.RST": {
+      "at": "300ms",
+      "logic": "1"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "channel",
+  "description": "The centre channel isolates a strip from the one across it: e3 does not reach f3.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/breadboard_170"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "V1.+",
+        "DUT.e3"
+      ],
+      "OUT": [
+        "DUT.f3",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": -0.01,
+      "max_v": 0.01
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "address-limit",
+  "description": "Auto-increment from C5H: the first byte goes to GRID6 (not on the module), the next ones, past C5H, are dropped until a valid address comes; the digits keep their bytes.",
+  "policy": "functional",
+  "until": "400us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,0,0,2,3,3,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,0,0,2,3,3,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,0,0,2,3,3,2,0,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,0,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tm1637_display"
+      }
+    ],
+    "nets": {
+      "N_DIO": [
+        "PG.OUT0",
+        "DUT.DIO"
+      ],
+      "N_CLK": [
+        "PG.OUT1",
+        "DUT.CLK"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.text": {
+      "at": "390us",
+      "equals": "1111"
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "low-supply",
+  "description": "VCC at 2.4 V, below the data sheet's 2.6 V: no conversion, DOUT stays high.",
+  "policy": "electrical",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hx711_load_cell",
+        "params": {
+          "noise": 0
+        }
+      },
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 2.4
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "N_DT": [
+        "DUT.DT"
+      ],
+      "N_SCK": [
+        "L0.OUT",
+        "DUT.SCK"
+      ],
+      "VCC": [
+        "V1.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "V1.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_DT": {
+      "at": "590ms",
+      "logic": "1"
+    },
+    "output:DUT.conversions": {
+      "at": "590ms",
+      "equals": 0
+    }
+  }
+}

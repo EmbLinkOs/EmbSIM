@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/uln2003",
+  "version": "1.0.0",
+  "name": "ULN2003A Darlington array",
+  "category": "power",
+  "description": "ULN2003A seven-channel Darlington transistor array: each output sinks to GND while its input is high (2.4 V or more through the part's 2.7 kOhm base resistor), with the data sheet's saturation voltage (0.9 V at 100 mA) and 0.25 us propagation delay; outputs only sink. Drives relays, lamps and the 28BYJ-48 stepper.",
+  "keywords": [
+    "ULN2003",
+    "darlington",
+    "driver",
+    "stepper",
+    "relay",
+    "sink",
+    "open collector"
+  ],
+  "family": "ttl_5v",
+  "pins": [
+    {
+      "name": "IN1",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "vih": 2.4,
+        "vil": 1.0
+      },
+      "doc": "Input 1 (2.7 kOhm to the Darlington's base)"
+    },
+    {
+      "name": "IN2",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "vih": 2.4,
+        "vil": 1.0
+      },
+      "doc": "Input 2 (2.7 kOhm to the Darlington's base)"
+    },
+    {
+      "name": "IN3",
+      "number": 3,
+      "model": {
+        "kind": "digital_in",
+        "vih": 2.4,
+        "vil": 1.0
+      },
+      "doc": "Input 3 (2.7 kOhm to the Darlington's base)"
+    },
+    {
+      "name": "IN4",
+      "number": 4,
+      "model": {
+        "kind": "digital_in",
+        "vih": 2.4,
+        "vil": 1.0
+      },
+      "doc": "Input 4 (2.7 kOhm to the Darlington's base)"
+    },
+    {
+      "name": "IN5",
+      "number": 5,
+      "model": {
+        "kind": "digital_in",
+        "vih": 2.4,
+        "vil": 1.0
+      },
+      "doc": "Input 5 (2.7 kOhm to the Darlington's base)"
+    },
+    {
+      "name": "IN6",
+      "number": 6,
+      "model": {
+        "kind": "digital_in",
+        "vih": 2.4,
+        "vil": 1.0
+      },
+      "doc": "Input 6 (2.7 kOhm to the Darlington's base)"
+    },
+    {
+      "name": "IN7",
+      "number": 7,
+      "model": {
+        "kind": "digital_in",
+        "vih": 2.4,
+        "vil": 1.0
+      },
+      "doc": "Input 7 (2.7 kOhm to the Darlington's base)"
+    },
+    {
+      "name": "GND",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "doc": "Common emitter"
+    },
+    {
+      "name": "COM",
+      "number": 9,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "The clamp diodes' common cathode: tie to the load supply for inductive loads"
+    },
+    {
+      "name": "OUT7",
+      "number": 10,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "voc_low": 0.7,
+        "rout": 2
+      },
+      "doc": "Output 7: sinks while IN7 is high"
+    },
+    {
+      "name": "OUT6",
+      "number": 11,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "voc_low": 0.7,
+        "rout": 2
+      },
+      "doc": "Output 6: sinks while IN6 is high"
+    },
+    {
+      "name": "OUT5",
+      "number": 12,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "voc_low": 0.7,
+        "rout": 2
+      },
+      "doc": "Output 5: sinks while IN5 is high"
+    },
+    {
+      "name": "OUT4",
+      "number": 13,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "voc_low": 0.7,
+        "rout": 2
+      },
+      "doc": "Output 4: sinks while IN4 is high"
+    },
+    {
+      "name": "OUT3",
+      "number": 14,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "voc_low": 0.7,
+        "rout": 2
+      },
+      "doc": "Output 3: sinks while IN3 is high"
+    },
+    {
+      "name": "OUT2",
+      "number": 15,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "voc_low": 0.7,
+        "rout": 2
+      },
+      "doc": "Output 2: sinks while IN2 is high"
+    },
+    {
+      "name": "OUT1",
+      "number": 16,
+      "model": {
+        "kind": "digital_out",
+        "drive": "open_drain",
+        "voc_low": 0.7,
+        "rout": 2
+      },
+      "doc": "Output 1: sinks while IN1 is high"
+    }
+  ],
+  "params": {},
+  "outputs": [
+    {
+      "name": "on1",
+      "type": "boolean",
+      "doc": "Output 1 sinks"
+    },
+    {
+      "name": "on2",
+      "type": "boolean",
+      "doc": "Output 2 sinks"
+    },
+    {
+      "name": "on3",
+      "type": "boolean",
+      "doc": "Output 3 sinks"
+    },
+    {
+      "name": "on4",
+      "type": "boolean",
+      "doc": "Output 4 sinks"
+    },
+    {
+      "name": "on5",
+      "type": "boolean",
+      "doc": "Output 5 sinks"
+    },
+    {
+      "name": "on6",
+      "type": "boolean",
+      "doc": "Output 6 sinks"
+    },
+    {
+      "name": "on7",
+      "type": "boolean",
+      "doc": "Output 7 sinks"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Seven inverting open-collector channels: an output sinks while its input is high (2.4 V or more) and is released otherwise, with no supply pin.",
+      "omissions": [
+        "the clamp diodes from each output to COM (an inductive load's kick is not simulated)",
+        "the current limits (500 mA an output) and the package's dissipation",
+        "the input current (0.93 mA at 3.85 V)",
+        "outputs paralleled for more current sharing it"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "Seven inverting open-collector channels: an output sinks while its input is high (2.4 V or more) and is released otherwise, with no supply pin. Outputs switch 0.25 us after their inputs.",
+      "omissions": [
+        "the clamp diodes from each output to COM (an inductive load's kick is not simulated)",
+        "the current limits (500 mA an output) and the package's dissipation",
+        "the input current (0.93 mA at 3.85 V)",
+        "outputs paralleled for more current sharing it"
+      ]
+    },
+    "electrical": {
+      "claims": "Inputs switch at 2.4 V; an output on holds 0.7 V behind 2 Ohm (the data sheet's 0.9 V at 100 mA, 1.1 V at 200 mA); off it is open. The behaviour is the Lua model's.",
+      "omissions": [
+        "the clamp diodes from each output to COM (an inductive load's kick is not simulated)",
+        "the current limits (500 mA an output) and the package's dissipation",
+        "the input current (0.93 mA at 3.85 V)",
+        "outputs paralleled for more current sharing it",
+        "the saturation voltage's rise with temperature"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments ULN2003A, ULN2004A high-voltage, high-current Darlington transistor arrays, data sheet SLRS027 (electrical characteristics, switching characteristics, pinout)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 100,
+    "pins": {
+      "IN1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "OUT1": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "IN2": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "OUT2": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "IN3": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "OUT3": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "IN4": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "OUT4": {
+        "x": 80,
+        "y": 50,
+        "side": "right"
+      },
+      "IN5": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "OUT5": {
+        "x": 80,
+        "y": 60,
+        "side": "right"
+      },
+      "IN6": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "OUT6": {
+        "x": 80,
+        "y": 70,
+        "side": "right"
+      },
+      "IN7": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "OUT7": {
+        "x": 80,
+        "y": 80,
+        "side": "right"
+      },
+      "GND": {
+        "x": 40,
+        "y": 100,
+        "side": "bottom"
+      },
+      "COM": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

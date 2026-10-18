@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "ssd1306_128x64_i2c",
+  "until": "3500ms",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "dark-before-begin",
+      "at": "400ms",
+      "probe": "on",
+      "expect": {
+        "equals": "false"
+      }
+    },
+    {
+      "id": "splash",
+      "at": "1500ms",
+      "probe": "checksum",
+      "expect": {
+        "equals": "3929c614"
+      }
+    },
+    {
+      "id": "splash-pixels",
+      "at": "1500ms",
+      "probe": "lit",
+      "expect": {
+        "equals": 1863
+      }
+    },
+    {
+      "id": "one-pixel",
+      "at": "3500ms",
+      "probe": "checksum",
+      "expect": {
+        "equals": "e7661125"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "Adafruit SSD1306's ssd1306_128x64_i2c, unmodified: after its 500 ms wait the library initialises the module (multiplex, charge pump, segment remap and COM scan, COM pins 0x12, display on) and sends the splash it keeps in its 1 KiB buffer; the panel lights 100 ms after display on and shows Adafruit's logo upright (1863 pixels, the frame rendered independently from the library's splash.h); two seconds later the single pixel at (10, 10)."
+}

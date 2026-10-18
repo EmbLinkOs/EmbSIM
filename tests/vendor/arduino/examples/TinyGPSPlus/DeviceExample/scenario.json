@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "DeviceExample",
+  "until": "3000ms",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "GPS",
+      "input": "latitude",
+      "value": 48.1173
+    },
+    {
+      "at": "0ms",
+      "target": "GPS",
+      "input": "longitude",
+      "value": 11.516667
+    },
+    {
+      "at": "0ms",
+      "target": "GPS",
+      "input": "altitude",
+      "value": 545.4
+    },
+    {
+      "at": "1500ms",
+      "target": "GPS",
+      "input": "latitude",
+      "value": 48.137154
+    },
+    {
+      "at": "1500ms",
+      "target": "GPS",
+      "input": "longitude",
+      "value": 11.576124
+    }
+  ],
+  "assertions": [
+    {
+      "id": "first-fix",
+      "at": "3000ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "DeviceExample.ino\r\nA simple demonstration of TinyGPSPlus with an attached GPS module\r\nTesting TinyGPSPlus library v. 1.1.0\r\nby Mikal Hart\r\n\r\nLocation: 48.117298,11.516668  Date/Time: 10/18/2026 12:00:01.00\r\n"
+      }
+    },
+    {
+      "id": "moved",
+      "at": "3000ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Location: 48.137153,11.576125  Date/Time: 10/18/2026 12:00:02.00\r\n"
+      }
+    },
+    {
+      "id": "fix",
+      "at": "3000ms",
+      "probe": "fix",
+      "expect": {
+        "equals": "true"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "TinyGPSPlus's DeviceExample, unmodified, reading the NEO-6M through SoftwareSerial at 4800 baud: each valid sentence (seven a second) prints the location, date and time. The module, hot-started, has its fix at the first burst (12:00:01 UTC); after it moves across Munich at 1.5 s the 12:00:02 burst carries the new place. The coordinates print as the Uno's 32-bit floats make them (48.117298 for the 48.1173 sent as 4807.03800), checked against TinyGPS's parsing and Print's rounding computed independently."
+}

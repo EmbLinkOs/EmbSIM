@@ -301,6 +301,8 @@ static void advance(struct avr_tc *t, u64 k)
     u64 i, last = (u64)-1;
     u8 f = 0;
     int ch, oc0 = t->oc[0], oc1 = t->oc[1], buffered = 0;
+    if (!k)
+        return; /* no timer clock in this instruction: nothing moves */
     if (!any_connected(t)) {
         /* no pins: whole periods only set the flags a period sets */
         u64 p = period(t);

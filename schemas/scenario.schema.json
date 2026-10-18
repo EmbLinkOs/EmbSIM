@@ -21,7 +21,7 @@
         "additionalProperties": false,
         "properties": {
           "at": {"$ref": "common.schema.json#/$defs/time"},
-          "target": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)?$", "description": "A component, a board, or BOARD.PERIPHERAL."},
+          "target": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)?$", "description": "A component, a board, BOARD.PERIPHERAL, or COMPONENT.MEMBER for a member of a composite (a keypad's key)."},
           "input": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
           "value": {"oneOf": [{"type": "boolean"}, {"type": "number"}, {"type": "string"}]}
         }

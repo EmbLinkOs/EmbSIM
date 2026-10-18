@@ -131,6 +131,29 @@ class ComponentTests(Base):
         (twin.parent / "model.lua").write_text(script + "-- changed\n", encoding="utf-8")
         self.assertCode(self.check(path), "catalog.shared_model_differs")
 
+    def test_fixture_input_on_a_composite_member(self):
+        fixture = {"schema_version": 1, "kind": "component_test", "name": "member", "policy": "electrical", "until": "1ms",
+                   "circuit": {"components": [{"id": "KP", "component": "emblink/keypad_4x4"}], "nets": {"R": ["KP.R1"]}},
+                   "inputs": [{"at": "0", "target": "KP.k5", "input": "pressed", "value": True}],
+                   "expect": {"net:R": {"at": "1ms", "min_v": 0}}}
+        path = self.tmp / "member.json"
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        self.assertNotIn("catalog.not_found", self.codes(self.check(path)))
+        fixture["inputs"][0]["target"] = "KP.nope"
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        self.assertCode(self.check(path), "catalog.not_found")
+
+    def test_fixture_expects_a_composite_members_output(self):
+        fixture = {"schema_version": 1, "kind": "component_test", "name": "member-output", "policy": "electrical", "until": "1ms",
+                   "circuit": {"components": [{"id": "KP", "component": "emblink/keypad_4x4"}], "nets": {"R": ["KP.R1"]}},
+                   "expect": {"output:KP.k5.closed": {"at": "1ms", "equals": False}}}
+        path = self.tmp / "member-output.json"
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        self.assertNotIn("catalog.output_unknown", self.codes(self.check(path)))
+        fixture["expect"] = {"output:KP.k5.nope": {"at": "1ms", "equals": False}}
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        self.assertCode(self.check(path), "catalog.output_unknown")
+
     def test_unknown_field_rejected(self):
         desc = copy.deepcopy(COMPONENT)
         desc["colour"] = "red"
@@ -211,6 +234,31 @@ class ComponentTests(Base):
     def test_malformed_svg(self):
         self.assertCode(self.check(self.write_component(symbol="<svg><line></svg>")), "svg.malformed")
 
+    def test_ties_name_own_pins_once(self):
+        desc = copy.deepcopy(COMPONENT)
+        desc["ties"] = [["1", "2"]]
+        self.assertClean(self.check(self.write_component(desc)))
+        desc["ties"] = [["1", "C"]]
+        self.assertCode(self.check(self.write_component(desc)), "catalog.pin_unknown")
+        desc["ties"] = [["1", "2"], ["2", "1"]]
+        self.assertCode(self.check(self.write_component(desc)), "catalog.pin_twice")
+
+    def test_bench_pins_inside_the_part(self):
+        desc = copy.deepcopy(COMPONENT)
+        desc["bench"] = {"package": "axial", "size_mm": [10, 3, 3], "pins": {"1": [0, 1.5], "2": [10, 1.5]}}
+        self.assertClean(self.check(self.write_component(desc)))
+        desc["bench"]["pins"]["2"] = [12, 1.5]
+        self.assertCode(self.check(self.write_component(desc)), "bench.pin_outside")
+        desc["bench"]["pins"] = {"Z": [1, 1]}
+        self.assertCode(self.check(self.write_component(desc)), "catalog.pin_unknown")
+
+    def test_wiring_aid_needs_no_symbol_pins(self):
+        desc = copy.deepcopy(COMPONENT)
+        desc["symbol"]["pins"] = {}
+        self.assertCode(self.check(self.write_component(desc)), "symbol.pin_missing")
+        desc["bench"] = {"package": "breadboard", "wiring_aid": True}
+        self.assertNotIn("symbol.pin_missing", self.codes(self.check(self.write_component(desc))))
+
     def test_artwork_selector_must_exist(self):
         desc = copy.deepcopy(COMPONENT)
         desc["artwork"]["hotspots"][0]["selector"] = "#nope"
@@ -220,6 +268,16 @@ class ComponentTests(Base):
         desc = copy.deepcopy(COMPONENT)
         desc["artwork"]["hotspots"][0]["input"] = "held"
         self.assertCode(self.check(self.write_component(desc)), "catalog.input_unknown")
+
+    def test_artwork_state_on_a_composite_member(self):
+        src = Path(__file__).resolve().parents[1] / "catalog/components/uln2003_module"
+        dst = self.tmp / "uln2003_module"
+        shutil.copytree(src, dst)
+        self.assertNotIn("catalog.output_unknown", self.codes(self.check(dst / "component.json")))
+        doc = json.loads((dst / "component.json").read_text(encoding="utf-8"))
+        doc["artwork"]["states"][0]["output"] = "LEDA.nope"
+        (dst / "component.json").write_text(json.dumps(doc), encoding="utf-8")
+        self.assertCode(self.check(dst / "component.json"), "catalog.output_unknown")
 
     def test_fidelity_all_null(self):
         desc = copy.deepcopy(COMPONENT)
@@ -313,6 +371,22 @@ class ProjectTests(Base):
         p["layout"]["groups"][0]["members"] = ids
         p["layout"]["groups"].append({"id": "other", "name": "Other", "members": [ids[0]]})
         self.assertCode(self.check(self.write_project(p)), "catalog.duplicate")
+
+    def test_bench_layout(self):
+        p = copy.deepcopy(PROJECT)
+        net, pins = next((n, v) for n, v in p["nets"].items() if len(v) >= 2)
+        ids = [part["id"] for part in p["components"][:1]]
+        p["layout"] = {"bench": {"parts": {ids[0]: {"x": 10, "y": 5, "rotation": 90}}, "wires": [{"from": pins[0], "to": pins[1]}], "notes": [{"x": 0, "y": 0, "text": "a note"}]}}
+        self.assertClean(self.check(self.write_project(p)))
+        p["layout"]["bench"]["parts"]["missing"] = {"x": 0, "y": 0}
+        self.assertCode(self.check(self.write_project(p)), "catalog.not_found")
+        del p["layout"]["bench"]["parts"]["missing"]
+        p["layout"]["bench"]["wires"][0]["to"] = f"{pins[1].split('.')[0]}.nope"
+        self.assertCode(self.check(self.write_project(p)), "catalog.pin_unknown")
+        other = next(v[0] for n, v in p["nets"].items() if n != net)
+        p["layout"]["bench"]["wires"][0]["to"] = other
+        r = self.check(self.write_project(p))
+        self.assertIn("bench.jumper_net", [f.code for f in r.findings])
 
     def test_unknown_component(self):
         p = copy.deepcopy(PROJECT)
@@ -421,6 +495,7 @@ class BoardTests(Base):
 
     def write_board(self, doc):
         d = self.tmp / "boards" / "bluepill"
+        shutil.rmtree(d, ignore_errors=True)
         d.mkdir(parents=True)
         (d / "board.json").write_text(json.dumps(doc))
         shutil.copy(validate.CATALOG_DIR / "boards" / "bluepill" / "artwork.svg", d / "artwork.svg")
@@ -447,6 +522,16 @@ class BoardTests(Base):
         doc = self.board()
         del doc["oscillators"]["hse"]
         self.assertCode(self.check(self.write_board(doc)), "board.oscillator_missing")
+
+    def test_bench_features_name_board_components(self):
+        doc = self.board()
+        led = next(c["id"] for c in doc["components"] if c["component"].endswith("/led"))
+        doc["bench"] = {"features": [{"kind": "led", "at": [10, 10], "output": f"{led}.luminance"}]}
+        self.assertClean(self.check(self.write_board(doc)))
+        doc["bench"]["features"][0]["output"] = f"{led}.glow"
+        self.assertCode(self.check(self.write_board(doc)), "catalog.output_unknown")
+        doc["bench"]["features"][0]["output"] = "NOPE.luminance"
+        self.assertCode(self.check(self.write_board(doc)), "catalog.not_found")
 
     def test_todo_refused(self):
         doc = self.board()

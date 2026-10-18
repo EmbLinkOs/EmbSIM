@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "stepper_oneRevolution",
+  "until": "3300ms",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "messages",
+      "at": "3300ms",
+      "probe": "terminal",
+      "expect": {
+        "equals": "clockwise\r\ncounterclockwise\r\nclockwise\r\n"
+      }
+    },
+    {
+      "id": "forward",
+      "at": "1400ms",
+      "probe": "steps",
+      "expect": {
+        "equals": -197.5,
+        "tolerance": 0.2
+      }
+    },
+    {
+      "id": "forward_angle",
+      "at": "1400ms",
+      "probe": "angle",
+      "expect": {
+        "equals": -34.888,
+        "tolerance": 0.03
+      }
+    },
+    {
+      "id": "back",
+      "at": "2900ms",
+      "probe": "steps",
+      "expect": {
+        "equals": 2.5,
+        "tolerance": 0.2
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "The Arduino Stepper library's stepper_oneRevolution, unmodified, on a 28BYJ-48 through its ULN2003 board. The sketch's 200 steps at 60 rpm (5 ms a step, within the motor's pull-in rate) turn the rotor 200 full steps, but this motor has 2037.9 full steps an output turn, so the shaft turns only 34.9 degrees each way, not a revolution, as on the bench. The first word pulls the rotor from its rest at orange to yellow+pink (1.5 steps on), then the library's sequence on this wiring runs against the data sheet's order, so the count goes to -197.5 and back to 2.5."
+}

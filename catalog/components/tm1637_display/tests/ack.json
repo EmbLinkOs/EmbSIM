@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ack",
+  "description": "DIO pulled low by the chip from the 8th clock's falling edge to the end of the 9th, while the generator has released it; free again after.",
+  "policy": "functional",
+  "until": "60us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,0,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tm1637_display"
+      }
+    ],
+    "nets": {
+      "N_DIO": [
+        "PG.OUT0",
+        "DUT.DIO"
+      ],
+      "N_CLK": [
+        "PG.OUT1",
+        "DUT.CLK"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_DIO": {
+      "at": "29500ns",
+      "logic": "0"
+    },
+    "pin:DUT.DIO": {
+      "at": "39us",
+      "logic": "1"
+    }
+  }
+}

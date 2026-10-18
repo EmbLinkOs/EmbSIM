@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/hx711_load_cell",
+  "version": "1.0.0",
+  "name": "HX711 load cell amplifier with load cell",
+  "category": "sensors",
+  "description": "The common HX711 24-bit ADC module with a bar strain-gauge load cell on channel A (5 kg, 1 mV/V): DOUT low when a conversion is ready (10 Hz with the module's RATE low), 24 bits clocked out MSB first by PD_SCK, 25 to 27 pulses selecting the next channel and gain, power-down by holding PD_SCK high, the settling time, the data sheet's noise. The load on the cell is an interactive input.",
+  "keywords": [
+    "HX711",
+    "load cell",
+    "scale",
+    "weight",
+    "strain gauge",
+    "ADC",
+    "24-bit"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "GND",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "DT",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "DOUT: low when data is ready, then the data MSB first on SCK",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCK",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "PD_SCK: clocks the data out; high for more than 60 us powers down",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 2.6 to 5.5 V (the module's AVDD regulator makes 4.3 V from it)"
+    }
+  ],
+  "params": {
+    "rate": {
+      "type": "enum",
+      "enum": [
+        "10",
+        "80"
+      ],
+      "default": "10",
+      "doc": "Data rate, Hz: the RATE pin low (10, as the module ties it) or high (80)"
+    },
+    "capacity": {
+      "type": "number",
+      "unit": "kg",
+      "default": 5,
+      "min": 0.1,
+      "max": 1000,
+      "doc": "The load cell's rated capacity"
+    },
+    "sensitivity": {
+      "type": "number",
+      "unit": "mV/V",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5,
+      "doc": "The load cell's rated output at capacity"
+    },
+    "zero_balance": {
+      "type": "number",
+      "unit": "mV/V",
+      "default": 0.05,
+      "min": -1,
+      "max": 1,
+      "doc": "The cell's output with no load (its datasheet: within +-0.1 mV/V)"
+    },
+    "noise": {
+      "type": "number",
+      "default": 1,
+      "min": 0,
+      "max": 10,
+      "doc": "The input noise as a multiple of the data sheet's (50 nV rms at 10 Hz); 0 for an ideal part"
+    }
+  },
+  "inputs": [
+    {
+      "name": "load",
+      "type": "number",
+      "unit": "kg",
+      "min": -1000,
+      "max": 1000,
+      "default": 0,
+      "doc": "The load on the cell (negative pulls it the other way)"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "raw",
+      "type": "integer",
+      "doc": "The last conversion, signed 24-bit"
+    },
+    {
+      "name": "conversions",
+      "type": "integer"
+    },
+    {
+      "name": "gain",
+      "type": "integer"
+    },
+    {
+      "name": "channel",
+      "type": "string"
+    },
+    {
+      "name": "powered_down",
+      "type": "boolean"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "DOUT low at each conversion at 10 or 80 Hz; 24 bits of two's complement out MSB first on PD_SCK, saturating, the 25th pulse pulling DOUT high, 25/26/27 pulses selecting A/128, B/32, A/64 next; PD_SCK high over 60 us powers down, low again resets; 4 conversion periods of settling after power-up, reset or a gain change; a ratiometric bridge (load / capacity x sensitivity + zero balance) at +-0.5 AVDD / gain full scale with the data sheet's input noise; nothing below 2.6 V.",
+      "omissions": [
+        "the load cell's creep, hysteresis, nonlinearity and temperature drift",
+        "the ADC's offset and gain drift",
+        "the internal oscillator's spread (the data rate is exact)",
+        "an external crystal",
+        "the module's E+, E-, A+, A-, B+ and B- terminals (the cell is part of the kit; channel B reads open)",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "DOUT low at each conversion at 10 or 80 Hz; 24 bits of two's complement out MSB first on PD_SCK, saturating, the 25th pulse pulling DOUT high, 25/26/27 pulses selecting A/128, B/32, A/64 next; PD_SCK high over 60 us powers down, low again resets; 4 conversion periods of settling after power-up, reset or a gain change; a ratiometric bridge (load / capacity x sensitivity + zero balance) at +-0.5 AVDD / gain full scale with the data sheet's input noise; nothing below 2.6 V. DOUT changes 0.1 us after PD_SCK rises.",
+      "omissions": [
+        "the load cell's creep, hysteresis, nonlinearity and temperature drift",
+        "the ADC's offset and gain drift",
+        "the internal oscillator's spread (the data rate is exact)",
+        "an external crystal",
+        "the module's E+, E-, A+, A-, B+ and B- terminals (the cell is part of the kit; channel B reads open)",
+        "supply current"
+      ]
+    },
+    "electrical": {
+      "claims": "DT and SCK bridge to their nets; VCC's voltage sets AVDD (4.3 V, less without headroom) and gates the part; the behaviour is the Lua model's.",
+      "omissions": [
+        "the load cell's creep, hysteresis, nonlinearity and temperature drift",
+        "the ADC's offset and gain drift",
+        "the internal oscillator's spread (the data rate is exact)",
+        "an external crystal",
+        "the module's E+, E-, A+, A-, B+ and B- terminals (the cell is part of the kit; channel B reads open)",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Avia Semiconductor HX711 24-bit analog-to-digital converter for weigh scales, data sheet (serial interface, gain and channel selection, power-down, data rate, settling time, input noise, full scale)"
+      },
+      {
+        "title": "Common HX711 module schematic (AVDD regulator with 20 kOhm / 8.2 kOhm, RATE tied low)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 50,
+    "pins": {
+      "GND": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "DT": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCK": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "VCC": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

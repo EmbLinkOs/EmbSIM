@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "leds",
+  "description": "IN1 high and IN2 low on a board powered from 5 V: output 1 sinks LED A's 3 mA at about 0.7 V, so A lights; output 2 is off and LED B is dark, its output pulled toward + through the LED.",
+  "policy": "electrical",
+  "until": "200us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V5",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "L1",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L2",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/uln2003_module"
+      }
+    ],
+    "nets": {
+      "VM": [
+        "V5.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "V5.-",
+        "G.GND",
+        "DUT.GND"
+      ],
+      "N_IN1": [
+        "L1.OUT",
+        "DUT.IN1"
+      ],
+      "N_IN2": [
+        "L2.OUT",
+        "DUT.IN2"
+      ],
+      "N_OUT1": [
+        "DUT.OUT1"
+      ],
+      "N_OUT2": [
+        "DUT.OUT2"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_OUT1": {
+      "at": "100us",
+      "max_v": 0.8
+    },
+    "net:N_OUT2": {
+      "at": "100us",
+      "min_v": 2.5
+    },
+    "output:DUT.LEDA.current": {
+      "at": "100us",
+      "min": 0.002
+    },
+    "output:DUT.LEDB.current": {
+      "at": "100us",
+      "max": 1e-05
+    }
+  }
+}

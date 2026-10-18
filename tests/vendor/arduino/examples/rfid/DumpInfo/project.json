@@ -1,0 +1,102 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-mfrc522",
+ "description": "The MFRC522 library's DumpInfo as its comments wire it: an RC522 module on the Uno's SPI pins (SCK D13, MISO D12, MOSI D11), SDA (chip select) on D10 and RST on D9, powered from the Uno's 3.3 V, with a MIFARE Classic 1K card (UID DE AD BE EF) to hold to it, and a terminal on D0/D1 at 9600 baud. It runs under the functional policy: nothing here needs the analog engine, and under the electrical one the Uno's L LED on D13 (SCK) makes every 4 MHz clock edge an analog step.",
+ "policy": "functional",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 9600
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "RFID",
+   "component": "emblink/mfrc522",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "VT1.GND",
+   "RFID.GND"
+  ],
+  "V3V3": [
+   "B1.3V3",
+   "RFID.VCC"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ],
+  "SPI_SCK": [
+   "B1.D13",
+   "RFID.SCK"
+  ],
+  "SPI_MISO": [
+   "B1.D12",
+   "RFID.MISO"
+  ],
+  "SPI_MOSI": [
+   "B1.D11",
+   "RFID.MOSI"
+  ],
+  "RFID_SS": [
+   "B1.D10",
+   "RFID.SDA"
+  ],
+  "RFID_RST": [
+   "B1.D9",
+   "RFID.RST"
+  ]
+ },
+ "probes": [
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "card",
+   "target": "output:RFID.card_state",
+   "kind": "value"
+  }
+ ]
+}

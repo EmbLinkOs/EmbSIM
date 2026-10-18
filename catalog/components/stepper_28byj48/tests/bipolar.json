@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "bipolar",
+  "description": "Red left open, the windings driven bipolar from push-pull outputs: yellow high and blue low makes the field at blue (a step back), then orange high and pink low the field at pink (two steps back); current through both halves of a winding, 5 V over 100 Ohm.",
+  "policy": "functional",
+  "until": "400ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "0,4,1",
+          "period": "100m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/stepper_28byj48"
+      }
+    ],
+    "nets": {
+      "N_ORANGE": [
+        "PG.OUT0",
+        "DUT.ORANGE"
+      ],
+      "N_PINK": [
+        "PG.OUT1",
+        "DUT.PINK"
+      ],
+      "N_YELLOW": [
+        "PG.OUT2",
+        "DUT.YELLOW"
+      ],
+      "N_BLUE": [
+        "PG.OUT3",
+        "DUT.BLUE"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.steps": {
+      "at": "190ms",
+      "equals": -1,
+      "tolerance": 0.2
+    },
+    "output:DUT.angle": {
+      "at": "290ms",
+      "equals": -0.353,
+      "tolerance": 0.01
+    },
+    "output:DUT.current": {
+      "at": "290ms",
+      "equals": 0.05,
+      "tolerance": 0.002
+    }
+  }
+}

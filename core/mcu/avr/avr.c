@@ -63,6 +63,7 @@ typedef struct esk_avr {
     struct esk_mach *sim;
     const struct avr_model *model;
     u32 flash_words;
+    struct esk_region *flash; /* the region holding all of flash, once found */
     u8 r[32];
     u8 sreg;
     u16 sp;
@@ -154,7 +155,17 @@ static u8 flash_byte(esk_avr *as, u32 a)
 static u16 flash_word(esk_avr *as, u32 w)
 {
     u32 a = (w % as->flash_words) * 2;
-    return (u16)(flash_byte(as, a) | flash_byte(as, a + 1) << 8);
+    struct esk_region *r = as->flash;
+    /* the fetch's fast path: flash is one region (its memory is written in
+     * place by SPM and a load) */
+    if (!r || a - r->base >= r->size - 1) {
+        r = esk_bus_region(bus(as), 0, as->flash_words * 2);
+        as->flash = r && r->base == 0 ? r : 0;
+        if (!as->flash)
+            return (u16)(flash_byte(as, a) | flash_byte(as, a + 1) << 8);
+        r = as->flash;
+    }
+    return (u16)(r->mem[a] | r->mem[a + 1] << 8);
 }
 
 static void push(esk_avr *as, u8 v)
@@ -951,6 +962,9 @@ es_status esk_avr_create(struct esk_mach *m, const char *model, struct esk_cpu *
     k->flash_words = md->flash_words;
     k->sp = md->ramend;
     m->cpu = &k->cpu;
+    /* the AVR's peripherals report their interrupts' flags and their pins'
+     * edges in next_event: their clocks can run lazily */
+    esk_mach_lazy(m);
     if (esk_bus_add_device(&m->bus, ESK_AVR_DATA, 0x20, &regs_ops, k) != ES_OK ||
         esk_bus_add_device(&m->bus, ESK_AVR_DATA + 0x5d, 3, &spsreg_ops, k) != ES_OK)
         return ES_ELIMIT;

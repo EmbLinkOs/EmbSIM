@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/neo6m",
+  "version": "1.0.0",
+  "name": "NEO-6M GPS module",
+  "category": "sensors",
+  "description": "u-blox NEO-6M GPS receiver on its common breakout (GY-NEO6MV2): NMEA sentences at 9600 baud once a second, a fix after the time to first fix while the antenna sees the sky, and the 1 Hz time pulse that blinks the board's LED. Position, altitude, speed, course, satellites in view and sky view are interactive inputs.",
+  "keywords": [
+    "gps",
+    "gnss",
+    "neo-6m",
+    "neo6m",
+    "u-blox",
+    "nmea",
+    "location",
+    "uart"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "VCC",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Board supply, 3 to 5 V (an on-board 3.3 V regulator)"
+    },
+    {
+      "name": "RXD",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "UART in (UBX and NMEA commands: not modelled)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "TXD",
+      "number": 3,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "UART out, NMEA at 3.3 V levels"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "TIMEPULSE",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "1 Hz time pulse, 100 ms, while fixed (the board's LED)"
+    }
+  ],
+  "params": {
+    "baud": {
+      "type": "integer",
+      "default": 9600,
+      "min": 4800,
+      "max": 115200,
+      "doc": "The UART rate the module was configured to (9600 out of the box)"
+    },
+    "start": {
+      "type": "enum",
+      "enum": [
+        "cold",
+        "warm",
+        "hot"
+      ],
+      "default": "cold",
+      "doc": "The start at power-up: cold (no almanac, 27 s), warm (27 s) or hot (recent fix kept by the backup battery, 1 s)"
+    },
+    "utc_start": {
+      "type": "string",
+      "default": "2026-10-18T12:00:00Z",
+      "doc": "UTC at the simulation's start"
+    },
+    "geoid_separation": {
+      "type": "number",
+      "default": 48.0,
+      "min": -110,
+      "max": 90,
+      "doc": "Geoid above the WGS84 ellipsoid at the place, m (GGA)"
+    }
+  },
+  "inputs": [
+    {
+      "name": "latitude",
+      "type": "number",
+      "min": -90,
+      "max": 90,
+      "unit": "deg",
+      "default": 0
+    },
+    {
+      "name": "longitude",
+      "type": "number",
+      "min": -180,
+      "max": 180,
+      "unit": "deg",
+      "default": 0
+    },
+    {
+      "name": "altitude",
+      "type": "number",
+      "min": -500,
+      "max": 50000,
+      "unit": "m",
+      "default": 0,
+      "doc": "Above mean sea level"
+    },
+    {
+      "name": "speed",
+      "type": "number",
+      "min": 0,
+      "max": 1800,
+      "unit": "km/h",
+      "default": 0
+    },
+    {
+      "name": "course",
+      "type": "number",
+      "min": 0,
+      "max": 360,
+      "unit": "deg",
+      "default": 0
+    },
+    {
+      "name": "satellites",
+      "type": "integer",
+      "min": 0,
+      "max": 12,
+      "default": 8,
+      "doc": "Satellites in view"
+    },
+    {
+      "name": "sky",
+      "type": "boolean",
+      "default": true,
+      "doc": "The antenna sees the sky"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "fix",
+      "type": "boolean"
+    },
+    {
+      "name": "bursts",
+      "type": "integer",
+      "doc": "One-second NMEA bursts sent"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "NMEA 0183 at `baud` 8N1 once a second from the top of the second: RMC, VTG, GGA, GSA, GSV and GLL with checksums, empty fields without a fix; the first fix after the data sheet's time to first fix (cold/warm 27 s, hot 1 s) with the sky in view and four satellites or more, lost without them and regained in 1 s; UTC from utc_start, ddmm.mmmmm coordinates, speed in knots and km/h, course, quality, satellites, HDOP, altitude and geoid separation; TIMEPULSE 100 ms at 1 Hz while fixed; silent below 2.7 V.",
+      "omissions": [
+        "UBX binary messages and configuration commands on RXD (rate and messages stay as set)",
+        "the start-up $GPTXT banner",
+        "the position's noise and accuracy (2.5 m CEP)",
+        "UTC time known before the first fix",
+        "the satellites' real orbits (a fixed, plausible sky)",
+        "the backup battery's effect on the start (the start parameter sets it)",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "UBX binary messages and configuration commands on RXD (rate and messages stay as set)",
+        "the start-up $GPTXT banner",
+        "the position's noise and accuracy (2.5 m CEP)",
+        "UTC time known before the first fix",
+        "the satellites' real orbits (a fixed, plausible sky)",
+        "the backup battery's effect on the start (the start parameter sets it)",
+        "supply current"
+      ]
+    },
+    "electrical": {
+      "claims": "TXD and TIMEPULSE bridge to analog nets with the family's pin-model defaults; VCC's voltage gates the module; the behaviour is the Lua model's.",
+      "omissions": [
+        "UBX binary messages and configuration commands on RXD (rate and messages stay as set)",
+        "the start-up $GPTXT banner",
+        "the position's noise and accuracy (2.5 m CEP)",
+        "UTC time known before the first fix",
+        "the satellites' real orbits (a fixed, plausible sky)",
+        "the backup battery's effect on the start (the start parameter sets it)",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "u-blox NEO-6 u-blox 6 GPS Modules Data Sheet, GPS.G6-HW-09005"
+      },
+      {
+        "title": "u-blox 6 Receiver Description including Protocol Specification, GPS.G6-SW-10018"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 60,
+    "pins": {
+      "TXD": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "RXD": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "TIMEPULSE": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

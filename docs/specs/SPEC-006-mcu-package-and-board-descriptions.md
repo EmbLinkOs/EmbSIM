@@ -153,6 +153,16 @@ Rules:
 - `toolchains` give per-profile target settings for `embsim build`.
 - The board's artwork hotspots bind to on-board component inputs or outputs
   and to ports (for wiring by clicking a header pin in the board view).
+- `bench` (optional) is the board as the 3D bench builds it (ADR-027): the
+  PCB's `thickness_mm`, the `standoff_mm` of its underside above the desk,
+  whether its ports are `female` sockets, `male` pins or pads (`headers`),
+  and its physical `features`, each a `kind` (`usb_b`, `usb_micro`,
+  `usb_c`, `barrel_jack`, `dip`, `qfp`, `qfn`, `button`, `crystal`, `led`,
+  `box`) centred `at` [x, y] millimetres from the board's top-left corner,
+  with a `size` [w, d, h], a `rotation`, a `pins` count, a `label` and a
+  `color`; a feature may drive one of the board's components' inputs
+  (`input`: a button's `SW_RESET.pressed`) or show an output (`output`:
+  an LED's `LED_L.luminance`), validated against the board's components.
 
 ## 4. Import from EmbLinkRTOS board YAML
 

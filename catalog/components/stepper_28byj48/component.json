@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/stepper_28byj48",
+  "version": "1.0.0",
+  "name": "28BYJ-48 stepper motor (5 V)",
+  "category": "mechanical",
+  "description": "28BYJ-48 5 V unipolar geared stepper motor: four 50 Ohm half windings on a red common, a permanent-magnet rotor with 32 full steps a turn geared 63.684:1 (2037.9 full steps an output turn, 64 half steps of 5.625 degrees a rotor turn), the rotor integrated as a mass with detent torque and gearbox friction so it follows up to the data sheet's pull-in rate and misses steps or stalls beyond it. Usually driven by a ULN2003 board; red open, it works bipolar from an H-bridge.",
+  "keywords": [
+    "stepper",
+    "motor",
+    "28BYJ-48",
+    "unipolar",
+    "geared",
+    "ULN2003",
+    "actuator"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "BLUE",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "pull": "up",
+        "rpull": 50
+      },
+      "doc": "Half winding at 270 degrees (with yellow one winding); connector pin 1, the ULN2003 board's IN1"
+    },
+    {
+      "name": "PINK",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "pull": "up",
+        "rpull": 50
+      },
+      "doc": "Half winding at 180 degrees (with orange one winding); connector pin 2, IN2"
+    },
+    {
+      "name": "YELLOW",
+      "number": 3,
+      "model": {
+        "kind": "digital_in",
+        "pull": "up",
+        "rpull": 50
+      },
+      "doc": "Half winding at 90 degrees; connector pin 3, IN3"
+    },
+    {
+      "name": "ORANGE",
+      "number": 4,
+      "model": {
+        "kind": "digital_in",
+        "pull": "up",
+        "rpull": 50
+      },
+      "doc": "Half winding at 0 degrees; connector pin 4, IN4"
+    },
+    {
+      "name": "RED",
+      "number": 5,
+      "model": {
+        "kind": "digital_in"
+      },
+      "required": false,
+      "doc": "The windings' common: +5 V for unipolar drive (a ULN2003 sinking the leads); left open the windings work bipolar"
+    }
+  ],
+  "params": {
+    "supply": {
+      "type": "number",
+      "unit": "V",
+      "default": 5,
+      "min": 0,
+      "max": 12,
+      "doc": "The voltage a logic 1 stands for on red and the leads under the functional and timed policies (the analog nets' own voltages under the electrical policy)"
+    },
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 50,
+      "min": 1,
+      "max": 1000,
+      "doc": "A half winding's resistance (the data sheet's 50 Ohm, +-7%)"
+    },
+    "inductance": {
+      "type": "number",
+      "unit": "H",
+      "default": "3m",
+      "min": "10u",
+      "max": 1,
+      "doc": "A half winding's inductance"
+    },
+    "ratio": {
+      "type": "number",
+      "default": 63.68395,
+      "min": 1,
+      "max": 1000,
+      "doc": "The gearbox's reduction (32/9 x 22/11 x 26/9 x 31/10; the data sheet rounds it to 64)"
+    }
+  },
+  "inputs": [
+    {
+      "name": "load",
+      "type": "number",
+      "unit": "N m",
+      "min": -1,
+      "max": 1,
+      "default": 0,
+      "doc": "Torque on the output shaft against the positive direction (an arm's weight, a brake)"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "angle",
+      "type": "number",
+      "unit": "deg",
+      "doc": "The output shaft's angle from the start, positive in the direction the data sheet's sequence (orange, yellow, pink, blue) turns it"
+    },
+    {
+      "name": "steps",
+      "type": "number",
+      "doc": "The rotor's position in full steps from the start"
+    },
+    {
+      "name": "rpm",
+      "type": "number",
+      "doc": "The output shaft's speed, revolutions a minute"
+    },
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A",
+      "doc": "The current in the windings"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 35,
+    "height_mm": 32,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "angle",
+        "selector": "#shaft",
+        "attr": "transform",
+        "format": "rotate({} 50 34)"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Four 50 Ohm, 3 mH half windings on red, energised while a lead is below red (bipolar with red open); a permanent-magnet rotor of 8 pole pairs, 32 full steps a turn, with detent torque, inertia, gearbox friction and damping integrated in 20 us steps, so it follows up to about 650 full steps a second from standstill (the data sheet's in-traction above 600 Hz) and about 1200 with a ramp (out-traction above 1000 Hz), and misses steps or stalls faster; geared 63.684:1, 2037.9 full steps an output turn; opposite halves together cancel; the lead voltages are logic levels at `supply`.",
+      "omissions": [
+        "the gears' backlash",
+        "the gears' self-locking against a load that back-drives the shaft (the data sheet's 600 to 1200 gf.cm friction torque)",
+        "the windings' pull on the leads goes to the 5 V rail, not to red's own voltage",
+        "the coupling between the two halves of a winding (each decays alone)",
+        "the supply current drawn on the nets",
+        "heating (the data sheet's rise below 40 K)",
+        "the sound it makes"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "Four 50 Ohm, 3 mH half windings on red, energised while a lead is below red (bipolar with red open); a permanent-magnet rotor of 8 pole pairs, 32 full steps a turn, with detent torque, inertia, gearbox friction and damping integrated in 20 us steps, so it follows up to about 650 full steps a second from standstill (the data sheet's in-traction above 600 Hz) and about 1200 with a ramp (out-traction above 1000 Hz), and misses steps or stalls faster; geared 63.684:1, 2037.9 full steps an output turn; opposite halves together cancel; the lead voltages are logic levels at `supply`.",
+      "omissions": [
+        "the gears' backlash",
+        "the gears' self-locking against a load that back-drives the shaft (the data sheet's 600 to 1200 gf.cm friction torque)",
+        "the windings' pull on the leads goes to the 5 V rail, not to red's own voltage",
+        "the coupling between the two halves of a winding (each decays alone)",
+        "the supply current drawn on the nets",
+        "heating (the data sheet's rise below 40 K)",
+        "the sound it makes"
+      ]
+    },
+    "electrical": {
+      "claims": "Each lead is pulled up through its 50 Ohm half winding (to the 5 V rail), so a driver's saturation voltage shows; the voltages across the halves are the analog nets', sampled 5 us after a lead changes and every millisecond while the rotor moves; the behaviour is the Lua model's.",
+      "omissions": [
+        "the gears' backlash",
+        "the gears' self-locking against a load that back-drives the shaft (the data sheet's 600 to 1200 gf.cm friction torque)",
+        "the windings' pull on the leads goes to the 5 V rail, not to red's own voltage",
+        "the coupling between the two halves of a winding (each decays alone)",
+        "the supply current drawn on the nets",
+        "heating (the data sheet's rise below 40 K)",
+        "the sound it makes",
+        "the windings' inductance on the nets (no inductive kick)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Kiatronics 28BYJ-48 5 V stepper motor data sheet (rated voltage, 4 phases, 1/64, stride angle 5.625/64, 50 Ohm, idle in-traction > 600 Hz, out-traction > 1000 Hz, self-positioning torque > 34.3 mN m, lead colours and winding diagram)"
+      },
+      {
+        "title": "Published 28BYJ-48 gearbox teardowns (gear teeth 32/9, 22/11, 26/9, 31/10: 63.684:1)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 80,
+    "pins": {
+      "BLUE": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "PINK": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "YELLOW": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "ORANGE": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "RED": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

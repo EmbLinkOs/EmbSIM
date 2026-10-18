@@ -81,31 +81,12 @@ static int get_d(const esk_json *o, const char *k, double *v)
     return j && esk_json_to_double(j, v) == 0;
 }
 
-int esk_pin_model_parse(const esk_json *obj, const char *family, esk_pin_model *out)
+/* the electrical fields of a pin model (or of a digital_io's nested out or
+ * in object, which has no kind of its own) */
+static int parse_fields(const esk_json *obj, esk_pin_model *out)
 {
-    const char *kind, *s;
+    const char *s;
     double v;
-    esk_pin_model_family(family, out);
-    if (!obj || obj->type != ESK_JSON_OBJECT)
-        return -1;
-    kind = esk_json_get_str(obj, "kind", NULL);
-    if (!kind) return -1;
-    if (!strcmp(kind, "digital_out")) out->kind = ESK_PIN_DIGITAL_OUT;
-    else if (!strcmp(kind, "digital_in")) out->kind = ESK_PIN_DIGITAL_IN;
-    else if (!strcmp(kind, "digital_io")) out->kind = ESK_PIN_DIGITAL_IO;
-    else if (!strcmp(kind, "analog")) out->kind = ESK_PIN_ANALOG;
-    else if (!strcmp(kind, "power")) out->kind = ESK_PIN_POWER;
-    else if (!strcmp(kind, "passive")) out->kind = ESK_PIN_PASSIVE;
-    else if (!strcmp(kind, "nc")) out->kind = ESK_PIN_NC;
-    else return -1;
-    if (out->kind == ESK_PIN_DIGITAL_IO) {
-        /* nested out/in objects or flat fields */
-        const esk_json *o2 = esk_json_get(obj, "out"), *i2 = esk_json_get(obj, "in");
-        if (o2) { esk_pin_model tmp; esk_json *dummy = NULL; ES_UNUSED(dummy);
-            if (esk_pin_model_parse(o2, family, &tmp) == 0) { out->drive = tmp.drive; out->strength = tmp.strength; out->voh = tmp.voh; out->vol = tmp.vol; out->rout = tmp.rout; out->voc_set = tmp.voc_set; out->voc_high = tmp.voc_high; out->voc_low = tmp.voc_low; out->slew_v_per_us = tmp.slew_v_per_us; out->has_electrical |= tmp.has_electrical; } }
-        if (i2) { esk_pin_model tmp;
-            if (esk_pin_model_parse(i2, family, &tmp) == 0) { out->vih = tmp.vih; out->vil = tmp.vil; out->hyst = tmp.hyst; out->pull = tmp.pull; out->rpull = tmp.rpull; out->leak_a = tmp.leak_a; out->has_electrical |= tmp.has_electrical; } }
-    }
     s = esk_json_get_str(obj, "drive", NULL);
     if (s) {
         if (!strcmp(s, "push_pull")) out->drive = ESK_DRIVE_PUSH_PULL;
@@ -150,6 +131,33 @@ int esk_pin_model_parse(const esk_json *obj, const char *family, esk_pin_model *
     if (out->kind == ESK_PIN_POWER && out->power_ground)
         out->nominal_v = 0.0;
     return 0;
+}
+
+int esk_pin_model_parse(const esk_json *obj, const char *family, esk_pin_model *out)
+{
+    const char *kind;
+    esk_pin_model_family(family, out);
+    if (!obj || obj->type != ESK_JSON_OBJECT)
+        return -1;
+    kind = esk_json_get_str(obj, "kind", NULL);
+    if (!kind) return -1;
+    if (!strcmp(kind, "digital_out")) out->kind = ESK_PIN_DIGITAL_OUT;
+    else if (!strcmp(kind, "digital_in")) out->kind = ESK_PIN_DIGITAL_IN;
+    else if (!strcmp(kind, "digital_io")) out->kind = ESK_PIN_DIGITAL_IO;
+    else if (!strcmp(kind, "analog")) out->kind = ESK_PIN_ANALOG;
+    else if (!strcmp(kind, "power")) out->kind = ESK_PIN_POWER;
+    else if (!strcmp(kind, "passive")) out->kind = ESK_PIN_PASSIVE;
+    else if (!strcmp(kind, "nc")) out->kind = ESK_PIN_NC;
+    else return -1;
+    if (out->kind == ESK_PIN_DIGITAL_IO) {
+        /* nested out/in objects or flat fields */
+        const esk_json *o2 = esk_json_get(obj, "out"), *i2 = esk_json_get(obj, "in");
+        if (o2 && o2->type == ESK_JSON_OBJECT) { esk_pin_model tmp = *out;
+            if (parse_fields(o2, &tmp) == 0) { out->drive = tmp.drive; out->strength = tmp.strength; out->voh = tmp.voh; out->vol = tmp.vol; out->rout = tmp.rout; out->voc_set = tmp.voc_set; out->voc_high = tmp.voc_high; out->voc_low = tmp.voc_low; out->slew_v_per_us = tmp.slew_v_per_us; out->has_electrical |= tmp.has_electrical; } }
+        if (i2 && i2->type == ESK_JSON_OBJECT) { esk_pin_model tmp = *out;
+            if (parse_fields(i2, &tmp) == 0) { out->vih = tmp.vih; out->vil = tmp.vil; out->hyst = tmp.hyst; out->pull = tmp.pull; out->rpull = tmp.rpull; out->leak_a = tmp.leak_a; out->has_electrical |= tmp.has_electrical; } }
+    }
+    return parse_fields(obj, out);
 }
 
 /* ---- lifecycle ----------------------------------------------------------- */
@@ -927,7 +935,36 @@ static void island_step_cb(void *ctx, void *arg, es_time_t now)
     }
     if (reached < now)
         reached = now;
+    {
+        /* a steady island steps again only when something touches it, or
+         * at its sources' next breakpoint */
+        es_time_t bp;
+        if (esk_island_quiet(isl, &bp)) {
+            if (bp != ES_TIME_MAX)
+                schedule_island(e, isl, bp > reached ? bp : reached);
+            return;
+        }
+    }
     schedule_island(e, isl, reached);
+}
+
+int esk_engine_analog_quiet(esk_engine *e)
+{
+    size_t i;
+    for (i = 0; i < e->islands.len; i++) {
+        es_time_t bp;
+        if (!esk_island_quiet(e->islands.data[i], &bp) || bp <= e->sched.now)
+            return 0;
+    }
+    return 1;
+}
+
+static void island_wake(esk_island *isl, es_time_t at)
+{
+    esk_engine *e = isl->e;
+    if (at < e->sched.now)
+        at = e->sched.now;
+    schedule_island(e, isl, at);
 }
 
 es_status esk_engine_partition(esk_engine *e)
@@ -1002,6 +1039,7 @@ es_status esk_engine_partition(esk_engine *e)
                     st = ES_ENOMEM;
                     break;
                 }
+                isl->wake = island_wake;
                 e->nets.data[root]->island = isl;
                 /* add the root net first so a ground root becomes node 0 */
             }

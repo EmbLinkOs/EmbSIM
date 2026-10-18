@@ -1,0 +1,103 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-neopixel-ring",
+ "description": "Adafruit NeoPixel's simple example as its comments wire it: a 16-LED WS2812B ring with DIN on D6 through 470 Ohm (Adafruit's advice), powered from the 5 V supply with the Uno.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "RING",
+   "component": "emblink/ws2812b_strip",
+   "params": {
+    "count": 16
+   },
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 470
+   },
+   "layout": {
+    "x": 220,
+    "y": 640
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "RING.VDD"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "RING.GND"
+  ],
+  "D6": [
+   "B1.D6",
+   "R1.1"
+  ],
+  "DIN": [
+   "R1.2",
+   "RING.DIN"
+  ]
+ },
+ "probes": [
+  {
+   "id": "colors",
+   "target": "output:RING.colors",
+   "kind": "value"
+  },
+  {
+   "id": "lit",
+   "target": "output:RING.lit",
+   "kind": "value"
+  },
+  {
+   "id": "din",
+   "target": "net:DIN",
+   "kind": "digital"
+  }
+ ]
+}

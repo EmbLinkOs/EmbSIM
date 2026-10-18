@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "leader",
+  "description": "CH- pressed at 1 ms: OUT falls 10 carrier cycles (263 us) later for the 9 ms leader burst, then rises for the 4.5 ms space.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/tsop38238"
+      }
+    ],
+    "nets": {
+      "N_OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "key",
+      "value": "ch-"
+    }
+  ],
+  "expect": {
+    "net:N_OUT": {
+      "at": "1200us",
+      "logic": "1"
+    },
+    "pin:DUT.OUT": {
+      "at": "5ms",
+      "logic": "0"
+    },
+    "output:DUT.frames": {
+      "at": "19ms",
+      "equals": 1
+    }
+  }
+}

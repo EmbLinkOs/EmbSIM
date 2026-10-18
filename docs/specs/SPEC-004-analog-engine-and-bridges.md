@@ -56,8 +56,9 @@ Defaults (per session, overridable per island in the project): `reltol
   row that change no unknown (by more than 1e-14 relative), neither ending
   at a breakpoint, with no breakpoint pending, and when a discarded trial
   step of `h_max` from that solution changes nothing either, the island is
-  quiet: its steps move its time without a solve until a touch (a bridge's
-  new drive, an input) or a breakpoint. A busy MCU's quanta clip every step
+  quiet: it is not stepped at all until a touch (a bridge's new drive, an
+  input) wakes it at the touch's time, or until its next breakpoint; its
+  time catches up when it wakes. A busy MCU's quanta clip every step
   to a microsecond, and a board's LED and pull-up islands then cost nothing
   between edges; an island still moving, however slowly, is solved to the
   solver's own floor (the second step solves what the first's `accept`
@@ -103,7 +104,7 @@ ranges, from the description (SPEC-005 §4).
 | `vsource` | `kind`: `dc`, `pulse`, `sine`, `pwl`, `exp`; standard SPICE parameters | reports breakpoints; `dc` default |
 | `isource` | same kinds | |
 | `vcvs`, `vccs`, `cccs`, `ccvs` | `gain` | linear dependent sources |
-| `switch` | `ron` (1 mΩ), `roff` (1 GΩ), `state` (bool, an interactive input), `bounce` (optional: count, interval) | resistance switched by the input; bounce generates breakpoints |
+| `switch` | `ron` (1 mΩ), `roff` (1 GΩ), `state` (bool, an interactive input), `bounce` (optional: `{count, interval}`, or `true` with `bounce_ms`: six transitions spread evenly over that time) | resistance switched by the input; bounce generates breakpoints |
 | `potentiometer` | `r` (Ω), `position` (0..1, interactive), `taper` (`linear`, `log`) | two resistors |
 | `diode` | `is` (1e-14 A), `n` (1), `rs` (0), `bv` (none), `ibv`, `cj0` (0), `vj`, `m`, `tt` (0) | Shockley with series `rs`, optional breakdown, junction and diffusion capacitance; limiting on the exponential (pnjlim) |
 | `led` | diode parameters with defaults per `color` (`red`, `green`, `blue`, `yellow`, `white`): `vf` typical and `is`/`n` fitted; `if_nom` (20 mA); `efficiency` curve | `observe` reports current and a normalised luminance (0..1 at `if_nom`, saturating) for the workbench |

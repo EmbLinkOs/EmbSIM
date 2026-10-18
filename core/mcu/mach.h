@@ -109,6 +109,13 @@ struct esk_bus {
     int unmapped;  /* nothing answered the failed access */
     /* a device was accessed since esk_mach_event_coming last looked */
     int touched;
+    /* called before a device is read or written: a machine whose devices'
+     * clocks run lazily gives them the cycles they are owed first */
+    void (*sync)(void *ctx);
+    void *sync_ctx;
+    /* a device was written since the lazy clocks' next event was found (a
+     * read never brings a device's event nearer) */
+    int written;
 };
 
 es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind);
@@ -290,6 +297,18 @@ struct esk_mach {
     int counting; /* devices whose clock is running */
     int ev_known, ev_any;
     u64 ev_at;
+    /* the devices' clocks run lazily (esk_mach_lazy): the cycles are given
+     * to them in one call when something can see the difference (their
+     * next event's time, an access to one of them, the run's end); `lag`
+     * holds the cycles owed */
+    int lazy;
+    u64 lag;
+    /* the machine's time when the cycles owed were last added (the end of
+     * the instruction before): the devices are given them up to there, as
+     * an access in the middle of an instruction found them ticked */
+    u64 lag_mark;
+    int lazy_known;
+    u64 lazy_at; /* when the devices are next owed their cycles */
     /* set by a model when something outside the machine must see a change
      * now (a pin, the core clock): the runtime ends its quantum */
     int yield;
@@ -349,6 +368,17 @@ struct esk_mach {
 };
 
 es_status esk_mach_init(struct esk_mach *m, esk_alloc *a);
+/* the devices' clocks run lazily from now on: for a machine whose devices
+ * report in next_event every change the core or the pins could see before
+ * it (an enabled interrupt's flag, a pin edge) */
+void esk_mach_lazy(struct esk_mach *m);
+/* gives the devices the cycles they are owed (lazy clocks) */
+void esk_mach_sync(struct esk_mach *m);
+/* something outside the core reaches a device (a pin's change, a byte
+ * received): the devices catch up first, and their next event is found
+ * again after it, as the change may bring one (an input capture's noise
+ * canceler) */
+void esk_mach_outside(struct esk_mach *m);
 void esk_mach_free(struct esk_mach *m);
 /* zeroed memory owned by the machine, freed by esk_mach_free; 0 when out
  * of memory (and m->oom set) */

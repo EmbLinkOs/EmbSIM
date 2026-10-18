@@ -130,6 +130,9 @@ static int rd(struct esk_bus *b, u32 a, int n, u32 *v)
     }
     struct esk_device *d = device_of(b, a);
     if (d) {
+        /* a device that keeps no time (the core's own registers) owes nothing */
+        if (b->sync && (d->ops->tick || d->ops->next_event))
+            b->sync(b->sync_ctx);
         b->touched = 1;
         x = d->ops->read ? d->ops->read(d->ctx, a - d->base, n) : 0;
         if (b->dev_fault) {
@@ -165,6 +168,10 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
     }
     struct esk_device *d = device_of(b, a);
     if (d) {
+        if (b->sync && (d->ops->tick || d->ops->next_event)) {
+            b->sync(b->sync_ctx);
+            b->written = 1;
+        }
         b->touched = 1;
         if (d->ops->write)
             d->ops->write(d->ctx, a - d->base, n, v);

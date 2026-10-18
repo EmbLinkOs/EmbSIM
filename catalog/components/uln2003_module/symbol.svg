@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}.l{fill:#d84a4a;stroke:none;opacity:.8}</style>
+  <rect class="f" x="10" y="10" width="80" height="80" rx="3"/>
+  <line class="s" id="pin-in1" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">IN1</text>
+  <line class="s" id="pin-out1" x1="100" y1="20" x2="90" y2="20"/><text class="p" x="87" y="22" text-anchor="end">1</text>
+  <line class="s" id="pin-in2" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">IN2</text>
+  <line class="s" id="pin-out2" x1="100" y1="30" x2="90" y2="30"/><text class="p" x="87" y="32" text-anchor="end">2</text>
+  <line class="s" id="pin-in3" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">IN3</text>
+  <line class="s" id="pin-out3" x1="100" y1="40" x2="90" y2="40"/><text class="p" x="87" y="42" text-anchor="end">3</text>
+  <line class="s" id="pin-in4" x1="0" y1="50" x2="10" y2="50"/><text class="p" x="13" y="52">IN4</text>
+  <line class="s" id="pin-out4" x1="100" y1="50" x2="90" y2="50"/><text class="p" x="87" y="52" text-anchor="end">4</text>
+  <line class="s" id="pin-vcc" x1="0" y1="70" x2="10" y2="70"/><text class="p" x="13" y="72">+</text>
+  <line class="s" id="pin-gnd" x1="0" y1="80" x2="10" y2="80"/><text class="p" x="13" y="82">-</text>
+  <line class="s" id="pin-m5" x1="100" y1="60" x2="90" y2="60"/><text class="p" x="87" y="62" text-anchor="end">5</text>
+  <circle class="l" cx="38" cy="74" r="2.5"/><text class="p" x="38" y="84" text-anchor="middle">A</text>
+  <circle class="l" cx="48" cy="74" r="2.5"/><text class="p" x="48" y="84" text-anchor="middle">B</text>
+  <circle class="l" cx="58" cy="74" r="2.5"/><text class="p" x="58" y="84" text-anchor="middle">C</text>
+  <circle class="l" cx="68" cy="74" r="2.5"/><text class="p" x="68" y="84" text-anchor="middle">D</text>
+  <text class="t" x="50" y="45" text-anchor="middle">ULN2003</text>
+</svg>

@@ -104,6 +104,49 @@ versions follow semantic versioning. There is no release yet.
 - Added an evidence-based 1.0 release readiness checklist.
 
 ### Added
+- The 3D bench (ADR-027; `ui/packages/bench`, Three.js 0.186): the Design
+  perspective's canvas switches between the schematic and the bench, and
+  the Run perspective's Board panel is the bench, live. Boards, breadboards
+  and parts stand on a desk in millimetres with their bodies built from
+  their packages (resistor colour bands from the resistance, LEDs, TO-92,
+  TO-220, DIPs, tactile buttons, pots, modules on their headers with their
+  artwork as their face, sources as boxes with binding posts) and boards
+  with their description's `bench.features` (the Uno's USB-B socket,
+  barrel jack, ATmega328P in its socket, reset button, L and ON LEDs).
+  Dragging a part snaps its legs into a breadboard's holes and plugs it in
+  (the pins join the strips' nets); lifting it unplugs it; a moved
+  breadboard carries its parts; the Jumper tool wires hole or pin to hole
+  or pin (flat pre-cut jumpers on the board, Dupont wires elsewhere);
+  connections the schematic has that the bench does not show as dashed
+  links that Build turns into jumpers; notes are callouts on the bench.
+  Every edit is a transaction on the project, undone like the schematic's;
+  the schematic hides breadboards and its checks skip their holes; LEDs
+  light from their luminance; buttons, switches and knobs act while
+  running. A list beside the scene gives every action from the keyboard;
+  without WebGL the flat 2D bench stands in. `examples/uno-breadboard`
+  builds uno-blink-serial on a breadboard and passes its scenario. The
+  validator checks a project's bench (places, jumpers' terminals and nets)
+  and a board's features against its components.
+- Breadboards (ADR-027): the 830-point (BB830, the MB-102's layout), the
+  400-point and the 170-point boards, generated from their geometry by
+  `tools/catalog/gen_breadboard.py` (0.1 in pitch, strips of five across a
+  0.3 in channel, rails of 50 and 25 in groups of five), with artwork and
+  fixtures for a strip, the channel, neighbouring strips, the far strip, a
+  rail's length and a rail pair. Components gain `ties` (pins joined inside
+  the part, which the loader merges into one net) and `bench` (the package,
+  the size and each leg's place in millimetres; `wiring_aid` keeps a
+  breadboard out of the schematic). Projects gain `layout.bench`: the
+  parts' places on the bench, jumper wires between terminals and notes,
+  edited by `set_layout` without restarting and pruned when a part is
+  removed (`tests/protocol/test_bench.py`).
+- Simulation speed: an AVR's peripherals keep time lazily (their owed
+  cycles paid before the core touches them, at their next event and before
+  any outside input, so nothing the firmware or the pins see changes);
+  quiet analog islands sleep until a touch or a breakpoint instead of being
+  stepped every quantum; a lone AVR with quiet islands runs 100 µs quanta,
+  its UART's frames queued on the TX pin each at its own time; the core
+  fetches from flash directly. Three seconds of the TM1637 example went
+  from 7.4 s to about 3.4 s on the reference machine.
 - A project menu on the workbench's mark, with the project's name: New
   project (a blank sheet or a catalog board as B1, named as the schema
   allows), Open, Save and Save a copy, run as the palette's commands; the
@@ -499,6 +542,135 @@ versions follow semantic versioning. There is no release yet.
   grounded. DallasTemperature's `Simple` example runs unmodified over
   OneWire, 3/3. The HC-SR04 and DS18B20 accept their inputs through
   `on_set`, as SPEC-013 asks (the HC-SR04's were warned as refused).
+- The BME280 (`emblink/bme280`), from Bosch's datasheet: I2C at 0x76 +
+  SDO and 4-wire SPI once CSB goes low; chip ID, soft reset, ctrl_hum
+  applied by ctrl_meas, status, sleep, forced and normal modes with the
+  typical measurement time and the standby times; raw values that Bosch's
+  compensation formulas turn into the room's temperature, pressure and
+  humidity at the oversampling's resolution, the IIR filter, skipped
+  measurements and shadowed data registers. Adafruit's `bme280test` runs
+  unmodified, 3/3; six fixtures. The Arduino runner adds prototypes for a
+  sketch's functions, as the IDE's builder does.
+- The MPU-6050 (`emblink/mpu6050`), from InvenSense's datasheet and
+  register map: I2C at 0x68 + AD0, WHO_AM_I, asleep after power-on and
+  DEVICE_RESET, the sample rate from SMPLRT_DIV and the DLPF with the
+  filter's delay, the four accelerometer and gyroscope ranges saturating
+  at 16 bits, the die temperature, burst reads from one sampling instant,
+  standby axes and the DATA_RDY interrupt on INT. Adafruit's
+  `basic_readings` runs unmodified, 3/3; nine fixtures.
+- The WS2812B (`emblink/ws2812b`) and strips or rings of them
+  (`emblink/ws2812b_strip`), one model from Worldsemi's datasheet: 800
+  kbit/s NRZ told apart at 0.6 us, 24 bits (GRB) kept per LED and the rest
+  passed on at DOUT reshaped, a low of t_reset (50 us; 280 us for the V5)
+  latching the frame, dark below 3.5 V. Adafruit NeoPixel's `simple` runs
+  unmodified on a 16-LED ring, 4/4; five fixtures.
+- The DS3231 (`emblink/ds3231`), from Maxim's datasheet: BCD time and
+  date with 12/24-hour modes, the century and a user day of the week,
+  user buffers synchronised at START, the countdown chain reset by a
+  seconds write, the rate off by a drift parameter and the aging offset,
+  both alarms with every mask combination on INT#, the square-wave and
+  32 kHz outputs, the temperature every 64 s or on CONV, OSF and RST at
+  power-up. RTClib's `ds3231` runs unmodified, 2/2; nine fixtures. The
+  Arduino runner fixes SOURCE_DATE_EPOCH, so __DATE__ and __TIME__ are
+  the same each run.
+- A 4x4 membrane keypad (`emblink/keypad_4x4`): sixteen switches in a
+  row/column matrix with the membrane's contact resistance (200 Ohm) and
+  5 ms bounce, so held keys join rows and columns as the real matrix
+  does. The Keypad library's `HelloKeypad` runs unmodified, 2/2.
+  Fixture and scenario inputs may target a composite's member
+  (`KP.k5`, SPEC-007).
+- The NEO-6M GPS module (`emblink/neo6m`), from u-blox's data sheet and
+  protocol specification: NMEA once a second at the configured rate (RMC,
+  VTG, GGA, GSA, GSV, GLL with checksums), empty fields without a fix, the
+  time to first fix (cold/warm 27 s, hot 1 s) with the sky in view,
+  reacquisition, the time pulse while fixed. TinyGPSPlus's
+  `DeviceExample` runs unmodified over SoftwareSerial, 4/4; six fixtures.
+  Component fixtures may expect what a terminal received (`serial:`,
+  SPEC-005).
+- The SSD1306 model rewritten from Solomon Systech's datasheet: write-only
+  I2C (reads not acknowledged); segment remap, COM scan direction,
+  multiplex ratio, offset, start line and the COM pins configuration
+  against the panel's wiring (wrong ones interleave the rows); the panel
+  lit only with the charge pump (or external VCC) and 100 ms after
+  display on; horizontal and vertical scrolling at the panel's frame
+  rate; a checksum output of the visible image. Adafruit's
+  `ssd1306_128x64_i2c` runs unmodified, 5/5; display-showcase's OLED
+  pattern now sends A1/C8 so its text shows upright.
+- The MFRC522 RFID reader with a MIFARE Classic 1K card
+  (`emblink/mfrc522`), from NXP's data sheets and ISO 14443-3: SPI
+  register access with FIFO bursts, NRSTPD, the command set (Transceive,
+  CalcCRC, MFAuthent, SoftReset...), the interrupt, error and timer
+  registers, the CRC coprocessor; frames at 106 kbit/s answered after the
+  frame delay time; the card's REQA/WUPA, anticollision, SELECT, HLTA,
+  authentication against its sector trailers and READ/WRITE. The
+  library's `DumpInfo` runs unmodified; four fixtures. `ctx.bus` helpers
+  take `edges = false` to keep a bus's clock edges from `on_input`
+  (SPEC-013).
+- The KY-040 rotary encoder model rewritten from the EC11 data sheet and
+  the module's schematic: contacts to GND with the module's 10 kOhm
+  pull-ups to + (floating without it) and none on SW, 20 detents a
+  revolution with both contacts open at rest, A leading clockwise,
+  turning at a hand's pace, and contact bounce on every change. PJRC
+  Encoder's `Basic` runs unmodified, 3/3 (Encoder pinned to its 1.4.4
+  release: later commits drop AVR's IO_REG_TYPE).
+- The 28BYJ-48 stepper motor, the ULN2003A and the ULN2003 driver board.
+  The motor: four 50 Ohm, 3 mH half windings on red (bipolar with red
+  open), a permanent-magnet rotor of 32 full steps a turn geared 63.684:1,
+  its inertia, detent torque, gearbox friction and the windings' back EMF
+  integrated in 20 us steps, calibrated to the data sheet's in-traction
+  (above 600 Hz) and out-traction (above 1000 Hz) rates, so it misses
+  steps and stalls when stepped too fast and shudders in place with its
+  leads in the wrong order; nine fixtures. The ULN2003A: seven sinking
+  channels at 2.4 V with the data sheet's saturation voltage and 0.25 us
+  delay. The board: the chip, the motor connector and the four LEDs. The
+  Arduino Stepper library's `stepper_oneRevolution` runs unmodified, 5/5:
+  its 200 steps turn this motor's shaft 34.9 degrees, as on the bench.
+- Fixtures and projects may probe a composite member's output
+  (`output:DRV.LEDA.current`), and `tolerance` with a numeric `equals` is
+  no longer reported as unused (SPEC-007).
+- The TM1637 4-digit display module, from Titan Micro's data sheet: the
+  two-wire interface (START and STOP with CLK high, LSB first, ACK from the
+  8th clock's falling edge to the end of the 9th), the data, address and
+  display-control commands with the eight pulse widths, fixed and
+  auto-increment addressing, data past C5H dropped, a STOP keeping what was
+  acknowledged, the key read (0xFF: no keys on the module), off at
+  power-on, the colon or decimal points on SEG8, the module's 10 kOhm
+  pull-ups; nine fixtures. TM1637Display's `TM1637Test` runs unmodified
+  through all of its tests, 50/50. `tools/catalog/stimulus.py tm1637`
+  writes its frames for fixtures.
+- Fixed: a `digital_io` pin's nested `out` and `in` objects were ignored
+  (the parser asked them for a `kind`), so their drive, pull and levels
+  never applied.
+- Fixed: `ctx.release` left a bidirectional pin an output driving Z, so its
+  own pull never applied and, on an analog net, its comparator stopped
+  sampling; a released pin is an input again (SPEC-013).
+- The TSOP38238 IR receiver with the kit's 21-key NEC remote, from
+  Vishay's data sheet: OUT active low with its 30 kOhm pull-up, low 10
+  carrier cycles after a burst starts for the burst's length, nothing
+  below 2.0 V; the remote's NEC frames and 108 ms repeat codes while a key
+  is held; five fixtures. IRremote's `SimpleReceiver` runs unmodified,
+  7/7. The Arduino runner puts an example's folder on the include path,
+  compiles its other sources and resolves `.hpp` headers, as the IDE does.
+- The BMP280, sharing the BME280's model (`part`): chip ID 0x58, no
+  humidity registers, standby codes of 2 and 4 s; three fixtures. Adafruit's
+  `bmp280test` runs unmodified at the library's default 0x77, 3/3.
+- The HX711 load cell amplifier with a 5 kg load cell, from Avia's data
+  sheet: DOUT low when a conversion is ready (10 or 80 Hz), 24 bits out
+  MSB first on PD_SCK, 25 to 27 pulses choosing the next channel and gain,
+  power-down by PD_SCK held high, the settling time, saturation, the
+  ratiometric bridge with its zero balance, the input noise; eight
+  fixtures. The HX711 library's `HX711_full_example` runs unmodified, 4/4.
+- The Board view is a bench: parts in rows above the board, labelled, the
+  project's nets drawn as wires between the artworks' pins (`pin-<name>`
+  elements; ground black, supplies red, signals in colours), routed square
+  and around the parts they would cross (SPEC-011 §3, SPEC-005 §8). The
+  toolbar's clock shows the real-time rate. The TM1637, the 28BYJ-48 and
+  the ULN2003 board name their pins.
+- Board artwork for the 28BYJ-48 (the shaft turning with the output
+  angle) and the ULN2003 board (its LEDs A to D); a composite's artwork
+  may bind its members' outputs (`LEDA.luminance`).
+- The ATmega328P's timers skip an instruction that brings no timer clock,
+  which doubles the Uno's simulation speed.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the
@@ -547,6 +719,13 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The virtual terminal kept only the first 4 KiB it received and
+  silently dropped the rest; it now keeps a 32 KiB scrollback, the oldest
+  half going when it fills, as a terminal scrolls.
+- A push button's or toggle switch's `bounce: true` now bounces: the
+  switch primitive took only `{count, interval}`, so the components'
+  boolean with `bounce_ms` did nothing. It now gives six transitions over
+  `bounce_ms` (SPEC-004); a `push_button` fixture checks it.
 - The Python client's stdio transport waited for the sidecar with
   select(), which Windows pipes do not support, so a wait with a timeout
   blocked instead: `test_serial_stream`'s last poll hung the windows-msvc

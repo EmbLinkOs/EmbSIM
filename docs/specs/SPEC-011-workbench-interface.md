@@ -109,9 +109,48 @@ neutral canvas surfaces, rounded chrome and subtle shadows.
   at T-connections; net colour by state in Run (low, high, floating,
   contention, analog gradient by voltage with a legend); labels for named
   nets; hovering a wire shows net name, island kind, state and voltage.
-- Board view: the board artwork with hotspots; header pins are wirable from
-  the schematic through the board's symbol (a generated rectangle with
-  ports on its sides).
+- The bench (ADR-027): the Design perspective's canvas shows the schematic
+  or the bench (a switch over the canvas, kept per user), and the Run
+  perspective's Board panel the bench, live. The bench is a 3D scene
+  (Three.js, `packages/bench`) in millimetres: a desk (an anti-static mat
+  with a 10 mm grid), lit from above with soft shadows; each board, part
+  and breadboard as its body: the board's PCB with its artwork as its face,
+  its `bench.features` (SPEC-006 §3) and its headers; a part built from its
+  package (SPEC-005 §8.1): a resistor's colour bands read from its
+  resistance, an LED's dome with its flat, a TO-92, a TO-220, a DIP with
+  its notch, a tactile button, a potentiometer's knob, modules as their
+  PCB on their header with their artwork as their face (live: an LCD's
+  characters), sources and instruments as boxes with binding posts. The
+  camera orbits (right drag), pans (middle drag) and zooms (wheel); F
+  frames the bench. The Move tool drags a part on the desk; a leg within
+  half a pitch of a hole snaps the part so that leg is in it, the holes
+  the legs would plug into are marked, and the release plugs it in
+  (SPEC-007 §2); R turns the selected part, the arrows nudge it a pitch,
+  Delete removes it; a breadboard carries what is plugged into it. The
+  Jumper tool presses on a hole or a pin and releases on another: a
+  jumper in the chosen colour, flat between two holes of one breadboard
+  (a pre-cut jumper) and an arcing Dupont wire elsewhere. Connections the
+  nets ask for that nothing on the bench makes yet are dashed links, and
+  Build turns them into jumpers. While running, a part's controls act
+  under the pointer (a button's cap held, a switch flipped, a knob turned
+  by dragging, an artwork's hotspots), LEDs light from their luminance
+  (brightness as the eye sees it, the cube root of the duty, with a glow),
+  and frames are drawn only when something changes. Notes are yellow
+  callouts placed on the bench, pointing at a part. Every bench action has
+  a list equivalent beside the scene (each part with the holes its legs
+  are in; plugging the selected part's first leg into a named hole,
+  turning it, lifting it off; a jumper between two named terminals), and
+  without WebGL the bench is the flat view below.
+- The flat bench (the 2D view). The parts with artwork sit in rows above the
+  boards, each labelled with its id and name; the project's nets are wires
+  between their pins (each artwork's `pin-<name>` elements, SPEC-005 §8):
+  ground black, supplies red, signals in a palette, each new end joined to
+  the nearest end already wired, square runs that go round a part they
+  would cross; hotspots stay live. Header pins are wirable from the
+  schematic through the board's symbol (a generated rectangle with ports
+  on its sides). The toolbar's clock shows, while running, virtual time
+  against wall time over the last two seconds (a percentage of real time,
+  or a multiple above 10x).
 - Buses: a project's `layout.buses` drawn as thick lines with their names
   and, while running, their values (SPEC-007).
 - Hierarchy: double-clicking a board or a composite part (or "Open inside"

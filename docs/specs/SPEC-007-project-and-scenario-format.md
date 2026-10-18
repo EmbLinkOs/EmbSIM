@@ -76,10 +76,26 @@ Rules:
   runs the bus shows its value, the first net being bit 0.
   The electrical truth is `nets`. A client that edits wires updates both in
   one `project.transaction`.
+- `layout.bench` is the bench (ADR-027, SPEC-011 §3), another drawing of
+  the same nets: `parts` maps an instance to the centre of its body on the
+  bench, in millimetres (x to the right, y towards the viewer seen from
+  above), and its `rotation`, clockwise; `wires` are jumpers, each from one
+  terminal to another (`INSTANCE.PIN`, a breadboard's hole such as
+  `BB1.a12`, a board's port) with an optional `color`; `notes` are text
+  placed on the bench, optionally pointing `to` a place. A part whose legs
+  sit on a breadboard's holes is plugged into them: its pins are in the
+  nets of those holes, and the holes of one strip share one net. A jumper's
+  ends are in one net. Removing an instance removes its place and the
+  jumpers to it. A client building on the bench edits `nets` and
+  `layout.bench` in one transaction, so the schematic shows what the bench
+  built and the bench shows, as unbuilt connections, what the schematic
+  drew.
 - `probes[].target` kinds: `net:NAME`, `pin:INSTANCE.PIN`,
   `device:INSTANCE.QUANTITY` (currents, powers, model outputs),
   `reg:BOARD.PERIPHERAL.REGISTER`, `mem:BOARD:ADDR:LEN`, `var:BOARD:SYMBOL`
-  (DWARF), `serial:BOARD.PERIPHERAL`, `output:INSTANCE.NAME`. `kind` selects
+  (DWARF), `serial:BOARD.PERIPHERAL`, `output:INSTANCE.NAME` (or
+  `output:INSTANCE.MEMBER.NAME`, an output of a composite's member: a
+  board's LED). `kind` selects
   the sample type (`digital`, `analog`, `serial`, `value`); `rate_hz` resamples
   analog probes for instruments; absent, samples are at accepted steps.
 - `settings` override SPEC-002 defaults for this project.
@@ -113,16 +129,19 @@ Rules:
   decimal; the loader converts exactly to picoseconds and refuses sub-
   picosecond fractions. Inputs may appear in any order; equal times keep file
   order (they become `EXTERNAL` events in sequence).
-- `target` is a component, a board (inputs: `reset`, `power`), or a board
+- `target` is a component, a board (inputs: `reset`, `power`), a board
   peripheral (`rx` bytes for a serial peripheral, `voltage` for an ADC
-  terminal through a component). `input` names an entry in the target's
-  description.
+  terminal through a component), or `COMPONENT.MEMBER`, a member of a
+  composite component (a keypad's key, `KP.k5`). `input` names an entry in
+  the target's description. Component fixtures (SPEC-005 §9) take the same
+  targets.
 - Assertions: `at` samples the probe at a time; `between` checks every
   sample in a window; `by` checks that the expectation holds at some time up
   to the bound; `always` with `diagnostics.forbid` fails on any listed
   diagnostic. `expect` keys: `logic` (`0|1|Z|X`), `min`, `max`, `min_v`,
-  `max_v`, `equals`, `contains`, `edges` (a count), `frequency_hz` with
-  `tolerance`.
+  `max_v`, `equals`, `contains`, `edges` (a count), `frequency_hz`.
+  `tolerance` is the absolute difference a numeric `equals` allows (exact
+  otherwise) and the fraction a `frequency_hz` allows (5 % otherwise).
 - A run with a scenario ends at `until`; the report (SPEC-008 §8) lists each
   assertion with pass, fail and the observed value.
 

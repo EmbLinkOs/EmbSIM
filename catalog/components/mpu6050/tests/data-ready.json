@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "data-ready",
+  "description": "DATA_RDY_EN: INT pulses at each sample, 8 kHz with the DLPF off and SMPLRT_DIV 0.",
+  "policy": "functional",
+  "until": "23ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,3,3,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mpu6050"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "INT": [
+        "DUT.INT"
+      ]
+    }
+  },
+  "expect": {
+    "net:INT": {
+      "between": [
+        "2ms",
+        "22ms"
+      ],
+      "frequency_hz": 8000,
+      "tolerance": 0.02
+    }
+  }
+}

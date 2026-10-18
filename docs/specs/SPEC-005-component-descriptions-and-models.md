@@ -140,16 +140,44 @@ bind to. Both are exposed by name in snapshots and probes.
   given, into a template such as `rotate({} 30 30)`, and the pseudo-attribute
   `text` sets an element's text, so displays show strings and paths). Optional
   `precision` (integer 0..6) formats numeric template values to fixed decimal
-  places after scaling; it does not alter simulation values.
+  places after scaling; it does not alter simulation values. A composite's
+  states may bind its members' outputs as `MEMBER.OUTPUT` (a board's LED).
+  An element whose id is `pin-<name>` (the pin's name in lower case) is
+  that pin's place on the artwork: the bench draws its wires there
+  (SPEC-011 §3); a pin with no such element is placed along the artwork's
+  bottom edge in pin order.
 - Both are rendered by any client; a client may substitute a generic symbol
   when a file is missing, with a warning.
+
+### 8.1 Ties and the bench
+
+- `ties` (optional): groups of the part's own pins joined inside it by an
+  ideal conductor, each pin in one group at most: a breadboard's strips and
+  rails, a connector's shorted contacts. The loader joins the nets of each
+  group's connected pins into one (a pin left unconnected costs nothing),
+  under every policy; contact resistance is the part's declared omission
+  until a fidelity models it.
+- `bench` (optional): the part as it sits on the bench (ADR-027, SPEC-011
+  §3): its `package` (the body the 3D bench builds: `breadboard`, `axial`,
+  `radial`, `led`, `to92`, `to220`, `dip`, `tactile`, `switch`, `pot`,
+  `module`, `board`, `box`), `size_mm` (width, depth, height), `pins`
+  (each pin's leg as `[x, y]` millimetres from the part's top-left corner
+  seen from above, inside its size), a body `color` and a `label`. A part
+  without `bench` gets one from its pins and category (the workbench's
+  package defaults). `wiring_aid: true` marks a part that only connects (a
+  breadboard): the schematic does not draw it, and its pins need no
+  symbol positions; the connections it makes appear between the parts on
+  it.
 
 ## 9. Tests
 
 `tests/*.json` are conformance fixtures: `{"kind": "component_test",
 "circuit": {...}, "inputs": [...], "expect": {...}, "policy": "electrical"}`.
-`embsim catalog validate` runs them. A component whose tests fail is listed
-as broken in the catalog, not hidden.
+`expect` maps probe targets (`net:`, `pin:`, `device:`, `output:`, and
+`serial:` for what a terminal in the circuit received) to an expectation
+with a time selector; `inputs` may target the component or a member of a
+composite, and `output:` a member's output (SPEC-007). `embsim catalog validate` runs them. A component whose
+tests fail is listed as broken in the catalog, not hidden.
 
 ## 10. The primitive model contract (C)
 

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 90" width="80" height="90" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="60" height="70" rx="2"/>
+  <line class="s" id="pin-scl" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">SCL</text>
+  <line class="s" id="pin-sda" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">SDA</text>
+  <line class="s" id="pin-ad0" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">AD0</text>
+  <line class="s" id="pin-int" x1="0" y1="50" x2="10" y2="50"/><text class="p" x="13" y="52">INT</text>
+  <line class="s" id="pin-fsync" x1="0" y1="60" x2="10" y2="60"/><text class="p" x="13" y="62">FSYNC</text>
+  <line class="s" id="pin-clkin" x1="0" y1="70" x2="10" y2="70"/><text class="p" x="13" y="72">CLKIN</text>
+  <line class="s" id="pin-xda" x1="80" y1="20" x2="70" y2="20"/><text class="p" x="67" y="22" text-anchor="end">XDA</text>
+  <line class="s" id="pin-xcl" x1="80" y1="30" x2="70" y2="30"/><text class="p" x="67" y="32" text-anchor="end">XCL</text>
+  <line class="s" id="pin-regout" x1="80" y1="50" x2="70" y2="50"/><text class="p" x="67" y="52" text-anchor="end">REGOUT</text>
+  <line class="s" id="pin-cpout" x1="80" y1="60" x2="70" y2="60"/><text class="p" x="67" y="62" text-anchor="end">CPOUT</text>
+  <line class="s" id="pin-vdd" x1="30" y1="0" x2="30" y2="10"/><text class="p" x="30" y="17" text-anchor="middle">VDD</text>
+  <line class="s" id="pin-vlogic" x1="50" y1="0" x2="50" y2="10"/><text class="p" x="50" y="17" text-anchor="middle">VLOGIC</text>
+  <line class="s" id="pin-gnd" x1="40" y1="90" x2="40" y2="80"/><text class="p" x="40" y="77" text-anchor="middle">GND</text>
+  <text class="t" x="40" y="70" text-anchor="middle">MPU-6050</text>
+</svg>

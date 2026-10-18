@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "bounce",
+  "description": "The membrane bounces for 5 ms after a press: column 2 chatters through six transitions spread over that time (five edges after the first) before it settles low (the press fixture checks it settled).",
+  "policy": "electrical",
+  "until": "11ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RC1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RC2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/keypad_4x4"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "RC1.1",
+        "RC2.1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.R2"
+      ],
+      "C1": [
+        "RC1.2",
+        "DUT.C1"
+      ],
+      "C2": [
+        "RC2.2",
+        "DUT.C2"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT.k5",
+      "input": "pressed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:C2": {
+      "between": [
+        "1.001ms",
+        "5.9ms"
+      ],
+      "edges": 5
+    }
+  }
+}

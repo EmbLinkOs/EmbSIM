@@ -4,7 +4,7 @@ import { Badge, Button, IconButton, Input, Menu, SegmentedControl, Select, Toolt
 import { formatPsRaw, formatTime, parseDuration, type Policy } from '@embsim/protocol';
 import { useCommandStack } from '@embsim/scene';
 import { AlertTriangle, ChevronDown, Command as CommandIcon, CircuitBoard, Moon, Pause, Play, Redo2, RotateCcw, SkipForward, StepForward, Sun, Undo2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { controls, errorMessage } from '../actions';
 import { PERSPECTIVES, useLayout, type Perspective } from '../stores/layout';
 import { useProject } from '../stores/project';
@@ -18,9 +18,32 @@ const SPEEDS: { value: string; label: string; speed: number }[] = [
   { value: '0', label: 'Max', speed: 0 },
 ];
 
+/** Virtual time against wall time over the last two seconds while running:
+ * 1 is real time (the rate a bench's own clock shows). */
+export function useRealTimeRate(now: bigint, running: boolean): number | null {
+  const samples = useRef<{ wall: number; ps: bigint }[]>([]);
+  const [rate, setRate] = useState<number | null>(null);
+  useEffect(() => {
+    if (!running) {
+      samples.current = [];
+      setRate(null);
+      return;
+    }
+    const wall = performance.now();
+    const list = samples.current;
+    list.push({ wall, ps: now });
+    while (list.length > 2 && wall - list[0]!.wall > 2000) list.shift();
+    const first = list[0]!;
+    const dt = wall - first.wall;
+    if (dt >= 250) setRate(Number(now - first.ps) / 1e9 / dt);
+  }, [now, running]);
+  return rate;
+}
+
 export function Toolbar({ theme, commands = [] }: { theme: { resolved: 'dark' | 'light'; setPreference: (p: ThemePreference) => void; toggle: () => void }; commands?: Command[] }) {
   const now = useSession((s) => s.now);
   const running = useSession((s) => s.running);
+  const rate = useRealTimeRate(now, running);
   const speed = useSession((s) => s.speed);
   const policy = useSession((s) => s.policy);
   const isDemo = useSession((s) => s.isDemo);
@@ -133,6 +156,11 @@ export function Toolbar({ theme, commands = [] }: { theme: { resolved: 'dark' | 
         <div className={`wb-clock${running ? ' wb-clock--running' : ''}`} tabIndex={0} role="timer" aria-label={`Virtual time ${formatTime(now)}, ${running ? 'running' : 'paused'}`} data-testid="clock">
           <span className="wb-clock__state">{running ? 'run' : 'paused'}</span>
           <span>{formatTime(now)}</span>
+          {rate !== null && (
+            <span className="wb-clock__rate" title="Virtual time against wall time" data-testid="clock-rate">
+              {rate >= 10 ? `${rate.toFixed(0)}×` : `${Math.round(rate * 100)}%`}
+            </span>
+          )}
         </div>
       </Tooltip>
 

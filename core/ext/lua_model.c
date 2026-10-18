@@ -283,6 +283,14 @@ static int api_now(lua_State *L)
     return 1;
 }
 
+/* a released bidirectional pin is an input again: its pull applies and its
+ * comparator samples the net (SPEC-013) */
+static void release_pin(esk_pin *p)
+{
+    esk_pin_release(p);
+    esk_pin_set_direction(p, 0);
+}
+
 static int api_drive(lua_State *L)
 {
     esk_comp *c = ctx_comp(L);
@@ -299,18 +307,19 @@ static int api_drive(lua_State *L)
         s = ESK_STR_SUPPLY;
     else
         return luaL_argerror(L, 3, "a strength is \"strong\", \"weak\" or \"supply\"");
+    if (v == ESK_LZ) {
+        release_pin(p);
+        return 0;
+    }
     esk_pin_set_direction(p, 1);
-    if (v == ESK_LZ)
-        esk_pin_release(p);
-    else
-        esk_pin_drive(p, v, s, delay);
+    esk_pin_drive(p, v, s, delay);
     return 0;
 }
 
 static int api_release(lua_State *L)
 {
     esk_comp *c = ctx_comp(L);
-    esk_pin_release(check_pin(L, c, 1));
+    release_pin(check_pin(L, c, 1));
     return 0;
 }
 
@@ -595,6 +604,7 @@ struct i2c_slave {
     int sent;              /* READ: bits the master has clocked in; 9 after its ACK clock */
     int master_ack;
     int addressed;         /* since the address matched, until a STOP */
+    int quiet;             /* the bus pins' edges are not passed to on_input */
     unsigned out;
     esk_logic scl_last, sda_last;
 };
@@ -603,6 +613,7 @@ struct spi_slave {
     esk_pin *sck, *mosi, *miso, *cs;
     int handlers;
     int cpol, cpha;
+    int quiet;             /* the bus pins' edges are not passed to on_input */
     int selected;
     int bits, obit;
     unsigned in, out, next;
@@ -835,6 +846,18 @@ static esk_pin *opt_pin(lua_State *L, esk_comp *c, int opts, const char *key, co
     return p;
 }
 
+/* opts.edges = false: the bus pins' edges stay with the decoder, not on_input */
+static int opt_quiet(lua_State *L, int opts)
+{
+    int quiet = 0;
+    if (opts) {
+        if (lua_getfield(L, opts, "edges") == LUA_TBOOLEAN)
+            quiet = !lua_toboolean(L, -1);
+        lua_pop(L, 1);
+    }
+    return quiet;
+}
+
 static void free_buses(lua_inst *s, esk_alloc *a)
 {
     if (s->i2c) {
@@ -875,6 +898,7 @@ static int api_i2c_slave(lua_State *L)
     b->sda = sda;
     b->scl = scl;
     b->addr = (unsigned)addr;
+    b->quiet = opt_quiet(L, opts);
     if (opts && lua_getfield(L, opts, "address_pins") == LUA_TTABLE) {
         int i;
         for (i = 0; i < 3; i++) {
@@ -939,6 +963,7 @@ static int api_spi_slave(lua_State *L)
     b->cs = cs;
     b->cpol = (int)(mode >> 1);
     b->cpha = (int)(mode & 1);
+    b->quiet = opt_quiet(L, opts);
     b->cs_last = esk_pin_level(cs);
     b->sck_last = esk_pin_level(sck);
     b->obit = -1;
@@ -1229,10 +1254,16 @@ static void lua_reset(esk_comp *c)
 static void lua_on_input(esk_comp *c, esk_pin *p)
 {
     lua_inst *s = (lua_inst *)c->state;
-    if (s->i2c && !s->dead && (p == s->i2c->sda || p == s->i2c->scl))
+    if (s->i2c && !s->dead && (p == s->i2c->sda || p == s->i2c->scl)) {
         i2c_edge(c, s->i2c, p);
-    if (s->spi && !s->dead && (p == s->spi->sck || p == s->spi->cs || p == s->spi->mosi))
+        if (s->i2c->quiet)
+            return;
+    }
+    if (s->spi && !s->dead && (p == s->spi->sck || p == s->spi->cs || p == s->spi->mosi)) {
         spi_edge(c, s->spi, p);
+        if (s->spi->quiet)
+            return;
+    }
     if (!begin(s, "on_input"))
         return;
     lua_pushstring(s->h->L, p->name);

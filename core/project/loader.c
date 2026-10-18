@@ -614,6 +614,43 @@ static es_status connect_or_union(graph *g, esk_pin *pin, int rec, int via_port)
 }
 
 
+/* the nets of each tie's connected pins become one; a tie names the part's
+ * own pins, so a pin left unconnected costs nothing */
+static es_status join_ties(graph *g, esk_comp *c)
+{
+    const esk_json *ties = esk_json_get(c->desc, "ties");
+    int *first;
+    size_t k, t, nt = esk_json_len(ties);
+    if (!nt || c->ops == &composite_shell_ops)
+        return ES_OK;
+    first = (int *)esk_calloc(g->s->a, nt, sizeof *first);
+    if (!first)
+        return ES_ENOMEM;
+    for (t = 0; t < nt; t++)
+        first[t] = -1;
+    for (k = 0; k < g->conns.len; k++) {
+        const esk_pin *p = g->conns.data[k].pin;
+        if (p->comp != c)
+            continue;
+        for (t = 0; t < nt; t++) {
+            const esk_json *tie = esk_json_at(ties, t);
+            size_t m;
+            for (m = 0; m < esk_json_len(tie); m++)
+                if (esk_str_eq(esk_json_str(esk_json_at(tie, m)), p->name))
+                    break;
+            if (m == esk_json_len(tie))
+                continue;
+            if (first[t] < 0)
+                first[t] = g->conns.data[k].rec;
+            else
+                rec_union(g, first[t], g->conns.data[k].rec);
+            break;
+        }
+    }
+    esk_free(g->s->a, first, nt * sizeof *first);
+    return ES_OK;
+}
+
 /* ---- boards (SPEC-006 §3) --------------------------------------------------- */
 
 /* the board's firmware on its MCU's runtime (SPEC-009): the image, the register
@@ -1003,6 +1040,10 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
                 rec_union(&g, first, g.conns.data[k].rec);
         }
     }
+    /* a part's ties (a breadboard's strips, a connector's shorted contacts)
+     * join the nets of their pins (SPEC-005 §2) */
+    for (i = 0; i < s->eng.comps.len && st == ES_OK; i++)
+        st = join_ties(&g, s->eng.comps.data[i]);
     /* create engine nets per root */
     for (i = 0; i < g.recs.len && st == ES_OK; i++) {
         int root = rec_find(&g, (int)i);

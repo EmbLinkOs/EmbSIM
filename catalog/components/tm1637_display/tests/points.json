@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "points",
+  "description": "The same bytes on the decimal-point variant: SEG8 lights digit 2's point, no colon.",
+  "policy": "functional",
+  "until": "300us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,0,0,2,3,3,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,0,0,2,3,3,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,0,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tm1637_display",
+        "params": {
+          "dots": "points"
+        }
+      }
+    ],
+    "nets": {
+      "N_DIO": [
+        "PG.OUT0",
+        "DUT.DIO"
+      ],
+      "N_CLK": [
+        "PG.OUT1",
+        "DUT.CLK"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.text": {
+      "at": "290us",
+      "equals": "00.00"
+    },
+    "output:DUT.colon": {
+      "at": "290us",
+      "equals": false
+    },
+    "output:DUT.d2_dp": {
+      "at": "290us",
+      "equals": true
+    }
+  }
+}

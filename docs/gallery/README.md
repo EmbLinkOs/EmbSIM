@@ -5,6 +5,61 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The 3D bench and the breadboard (2026-10-18)
+
+The bench becomes a second editor of the project's nets (ADR-027), in 3D.
+`examples/uno-breadboard` is the uno-blink-serial circuit built on an
+830-point breadboard: the resistor, the blue LED, the button and the
+potentiometer plugged into its strips, the rails fed from the Uno's 5V and
+GND, jumpers to D2, D9 and A0, a USB-serial adapter on D0 and D1. The same
+firmware and scenario pass on it. Each part is built from its package (the
+resistor's orange, orange, brown bands read from its 330 ohms, the LED's
+dome, the pot's knob), the Uno from its description's features (USB-B
+socket, barrel jack, the ATmega328P in its socket, the reset button, the L
+and ON LEDs) with its artwork as the PCB's face. Running, the LEDs light
+from their luminance. The list beside the scene shows where each leg is and
+plugs parts and adds jumpers from the keyboard; the schematic hides the
+breadboard and shows the connections it makes.
+
+| | |
+|---|---|
+| ![The breadboard build in the Design perspective's Bench view](bench-3d/design-bench.png) | ![The Uno up close: its USB socket, jack, reset button and DIP-28, the L and ON LEDs lit, Dupont jumpers in its headers](bench-3d/uno-closeup.png) |
+| ![The breadboard up close: the lit blue LED, the resistor, the button and the pot in their strips, flat jumpers to the rails](bench-3d/breadboard-closeup.png) | ![The same project's schematic: the breadboard is not drawn, its connections are](bench-3d/design-schematic.png) |
+
+[The Run perspective, the bench live at 100 % of real time](bench-3d/run-bench.png).
+[The parts as the bench builds them](bench-3d/parts.png): the HC-SR04's
+transducers, the DHT22's grille, breakouts printed with their pin names,
+the LCD's live face, a TO-220, a TO-92, resistors banded by their value,
+an LED, diodes, capacitors, a buzzer, a tactile switch and a pot.
+
+## The bench, first step (2026-10-18)
+
+The Board view becomes a bench: the parts labelled above the board, the
+project's nets drawn as wires from each artwork's own pins (ground black,
+supplies red, signals in colours), routed square and round the board
+rather than across it. The clock shows how fast the run goes against real
+time (here 24 %: the stepper's project runs under the electrical policy).
+
+| | |
+|---|---|
+| ![TM1637Test on the bench: CLK and DIO to D2 and D3, VCC and GND round the Uno to its power header](bench/bench-tm1637.png) | ![The stepper's bench: the ULN2003 board's IN pins to D8 to D11, its connector to the motor's five leads](bench/bench-stepper.png) |
+
+[The stepper in the Run perspective, the clock at 24 % of real time](bench/run-stepper.png).
+
+## M6 parts on the bench (2026-10-18)
+
+Parts run by their libraries' own examples, unmodified, on the Uno. The
+TM1637 module shows TM1637Test's first step (every segment and the colon);
+the 28BYJ-48 has turned its shaft through the Stepper library's 200 steps
+while the ULN2003 board's LEDs A and B show the two coils the sketch left
+on.
+
+| | |
+|---|---|
+| ![The TM1637 display at 88:88](m6-parts/board-tm1637.png) | ![The 28BYJ-48 through its ULN2003 board: LEDs A and B lit, the shaft turned](m6-parts/board-stepper.png) |
+
+[TM1637Test in the Design perspective](m6-parts/design-tm1637.png), [stepper_oneRevolution in the Run perspective](m6-parts/run-stepper.png).
+
 ## Workbench layout pass (2026-10-17)
 
 Panels fold to a titled rail and unfold from it, the choice kept with the

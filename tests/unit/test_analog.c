@@ -833,6 +833,21 @@ static void test_driver_levels(void)
         esk_pin_bridge_target(&p, &v, &r, &open);
         CHECK_NEAR(v, 0.1, 1e-12);
     }
+    {
+        /* a digital_io's nested out and in objects carry their own fields */
+        static const char text[] = "{\"kind\": \"digital_io\", \"out\": {\"drive\": \"open_drain\", \"rout\": 7},"
+                                   " \"in\": {\"pull\": \"up\", \"rpull\": 10000, \"vih\": 3.5}}";
+        o = esk_json_parse(&A, text, sizeof text - 1, NULL, NULL);
+        CHECK(o != NULL);
+        CHECK(esk_pin_model_parse(o, "cmos_5v", &m) == 0);
+        CHECK(m.drive == ESK_DRIVE_OPEN_DRAIN);
+        CHECK_NEAR(m.rout, 7.0, 1e-12);
+        CHECK(m.pull == ESK_PULL_UP);
+        CHECK_NEAR(m.rpull, 10000.0, 1e-9);
+        CHECK_NEAR(m.vih, 3.5, 1e-12);
+        CHECK_NEAR(m.vil, 1.5, 1e-12); /* the family's, kept */
+        esk_json_free(&A, o);
+    }
 }
 
 /* an open-drain line: two digital_io pins on a pulled-up node, each
@@ -951,8 +966,8 @@ static void test_quiet_island(void)
 {
     /* a divider under a core's quanta, which clip every step to 1 us: once
      * two steps and a trial step of the longest length change nothing, the
-     * island stops solving (quiet) until the switch's press touches it; the
-     * voltages are the circuit's throughout */
+     * island stops solving (quiet) and sleeps, no step pending, until the
+     * switch's press touches it; the voltages are the circuit's throughout */
     esk_engine e;
     esk_comp *sw;
     esk_island *isl;
@@ -969,8 +984,12 @@ static void test_quiet_island(void)
     isl = esk_engine_net(&e, "out")->island;
     CHECK(esk_engine_advance(&e, 10 * ES_PS_PER_MS) == ES_OK);
     CHECK_NEAR(v_of(&e, "out"), vopen, 1e-8); /* gmin's 1 pS at each node: 5 nV here */
-    CHECK(isl->steps < 50);           /* not one a quantum: 10000 */
-    CHECK(isl->quiet_steps > 9900);
+    CHECK(isl->steps < 50);                       /* not one a quantum: 10000 */
+    CHECK(isl->steps + isl->quiet_steps < 100);   /* asleep, not stepping quietly */
+    {
+        es_time_t bp;
+        CHECK(esk_island_quiet(isl, &bp) && bp == ES_TIME_MAX);
+    }
     steps = isl->steps;
     quiet = isl->quiet_steps;
     v = esk_json_new_bool(&A, 1);
@@ -982,7 +1001,7 @@ static void test_quiet_island(void)
     CHECK(isl->steps > steps);
     CHECK(esk_engine_advance(&e, 20 * ES_PS_PER_MS) == ES_OK);
     CHECK_NEAR(v_of(&e, "out"), 2.5, 1e-8);
-    CHECK(isl->quiet_steps > quiet + 9900);
+    CHECK(isl->steps + isl->quiet_steps < steps + quiet + 100); /* asleep again */
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
     /* an RC under the same quanta is never left short of its charge: it is
@@ -1056,7 +1075,11 @@ static void test_two_islands_step_independently(void)
     CHECK(ia->steps < 200);
     CHECK(ib->steps < 60); /* a resistive island: the step grows to h_max */
     CHECK(ib->h_next_ps >= ES_PS_PER_MS / 2);
-    CHECK(ia->t_accepted >= 2 * ES_PS_PER_MS && ib->t_accepted >= 2 * ES_PS_PER_MS);
+    CHECK(ia->t_accepted >= 2 * ES_PS_PER_MS);
+    {
+        es_time_t bp;
+        CHECK(ib->t_accepted >= 2 * ES_PS_PER_MS || esk_island_quiet(ib, &bp)); /* or asleep at its steady state */
+    }
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
 }

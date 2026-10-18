@@ -1,0 +1,611 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/tm1637_display",
+  "version": "1.0.0",
+  "name": "TM1637 4-digit display module",
+  "category": "displays",
+  "description": "The common 4-digit 7-segment LED display module on a Titan Micro TM1637: its two-wire interface (not I2C: no address, LSB first, ACK on the 9th clock), the data, address and display-control commands with the eight pulse widths, the colon (clock variant) or decimal points on SEG8, and 10 kOhm pull-ups on CLK and DIO.",
+  "keywords": [
+    "TM1637",
+    "7-segment",
+    "display",
+    "4-digit",
+    "clock display",
+    "LED"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "CLK",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "pull": "up",
+        "rpull": 10000
+      },
+      "doc": "Clock in, the module's 10 kOhm pull-up to VCC",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "DIO",
+      "number": 2,
+      "model": {
+        "kind": "digital_io",
+        "out": {
+          "drive": "open_drain"
+        },
+        "in": {
+          "pull": "up",
+          "rpull": 10000
+        }
+      },
+      "doc": "Data in and out (open drain: ACK and key data), the module's 10 kOhm pull-up to VCC",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 5 V (the data sheet's 4.5 to 5.5 V)"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "dots": {
+      "type": "enum",
+      "enum": [
+        "colon",
+        "points"
+      ],
+      "default": "colon",
+      "doc": "What SEG8 lights: the clock variant's colon between digits 2 and 3, or each digit's decimal point"
+    }
+  },
+  "outputs": [
+    {
+      "name": "text",
+      "type": "string",
+      "doc": "What the display shows: four characters (the colon as ':' between digits 2 and 3, decimal points as '.'), blank while off"
+    },
+    {
+      "name": "segments",
+      "type": "string",
+      "doc": "The four digits' display registers in hex (C0H to C3H), bit 0 = a .. bit 6 = g, bit 7 = colon or point"
+    },
+    {
+      "name": "on",
+      "type": "boolean",
+      "doc": "Display on (display control B3)"
+    },
+    {
+      "name": "brightness",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "doc": "The segments' pulse width (1/16 to 14/16), 0 while off"
+    },
+    {
+      "name": "colon",
+      "type": "boolean",
+      "doc": "The colon lit (the clock variant)"
+    },
+    {
+      "name": "d1_a",
+      "type": "boolean",
+      "doc": "Digit 1, segment a"
+    },
+    {
+      "name": "d1_b",
+      "type": "boolean",
+      "doc": "Digit 1, segment b"
+    },
+    {
+      "name": "d1_c",
+      "type": "boolean",
+      "doc": "Digit 1, segment c"
+    },
+    {
+      "name": "d1_d",
+      "type": "boolean",
+      "doc": "Digit 1, segment d"
+    },
+    {
+      "name": "d1_e",
+      "type": "boolean",
+      "doc": "Digit 1, segment e"
+    },
+    {
+      "name": "d1_f",
+      "type": "boolean",
+      "doc": "Digit 1, segment f"
+    },
+    {
+      "name": "d1_g",
+      "type": "boolean",
+      "doc": "Digit 1, segment g"
+    },
+    {
+      "name": "d1_dp",
+      "type": "boolean",
+      "doc": "Digit 1, segment dp"
+    },
+    {
+      "name": "d2_a",
+      "type": "boolean",
+      "doc": "Digit 2, segment a"
+    },
+    {
+      "name": "d2_b",
+      "type": "boolean",
+      "doc": "Digit 2, segment b"
+    },
+    {
+      "name": "d2_c",
+      "type": "boolean",
+      "doc": "Digit 2, segment c"
+    },
+    {
+      "name": "d2_d",
+      "type": "boolean",
+      "doc": "Digit 2, segment d"
+    },
+    {
+      "name": "d2_e",
+      "type": "boolean",
+      "doc": "Digit 2, segment e"
+    },
+    {
+      "name": "d2_f",
+      "type": "boolean",
+      "doc": "Digit 2, segment f"
+    },
+    {
+      "name": "d2_g",
+      "type": "boolean",
+      "doc": "Digit 2, segment g"
+    },
+    {
+      "name": "d2_dp",
+      "type": "boolean",
+      "doc": "Digit 2, segment dp"
+    },
+    {
+      "name": "d3_a",
+      "type": "boolean",
+      "doc": "Digit 3, segment a"
+    },
+    {
+      "name": "d3_b",
+      "type": "boolean",
+      "doc": "Digit 3, segment b"
+    },
+    {
+      "name": "d3_c",
+      "type": "boolean",
+      "doc": "Digit 3, segment c"
+    },
+    {
+      "name": "d3_d",
+      "type": "boolean",
+      "doc": "Digit 3, segment d"
+    },
+    {
+      "name": "d3_e",
+      "type": "boolean",
+      "doc": "Digit 3, segment e"
+    },
+    {
+      "name": "d3_f",
+      "type": "boolean",
+      "doc": "Digit 3, segment f"
+    },
+    {
+      "name": "d3_g",
+      "type": "boolean",
+      "doc": "Digit 3, segment g"
+    },
+    {
+      "name": "d3_dp",
+      "type": "boolean",
+      "doc": "Digit 3, segment dp"
+    },
+    {
+      "name": "d4_a",
+      "type": "boolean",
+      "doc": "Digit 4, segment a"
+    },
+    {
+      "name": "d4_b",
+      "type": "boolean",
+      "doc": "Digit 4, segment b"
+    },
+    {
+      "name": "d4_c",
+      "type": "boolean",
+      "doc": "Digit 4, segment c"
+    },
+    {
+      "name": "d4_d",
+      "type": "boolean",
+      "doc": "Digit 4, segment d"
+    },
+    {
+      "name": "d4_e",
+      "type": "boolean",
+      "doc": "Digit 4, segment e"
+    },
+    {
+      "name": "d4_f",
+      "type": "boolean",
+      "doc": "Digit 4, segment f"
+    },
+    {
+      "name": "d4_g",
+      "type": "boolean",
+      "doc": "Digit 4, segment g"
+    },
+    {
+      "name": "d4_dp",
+      "type": "boolean",
+      "doc": "Digit 4, segment dp"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 42,
+    "height_mm": 24,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "brightness",
+        "selector": "#digits",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            0.875
+          ],
+          "to": [
+            0.35,
+            1
+          ]
+        }
+      },
+      {
+        "output": "d1_a",
+        "selector": "#d1-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_b",
+        "selector": "#d1-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_c",
+        "selector": "#d1-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_d",
+        "selector": "#d1-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_e",
+        "selector": "#d1-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_f",
+        "selector": "#d1-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_g",
+        "selector": "#d1-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_dp",
+        "selector": "#d1-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_a",
+        "selector": "#d2-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_b",
+        "selector": "#d2-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_c",
+        "selector": "#d2-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_d",
+        "selector": "#d2-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_e",
+        "selector": "#d2-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_f",
+        "selector": "#d2-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_g",
+        "selector": "#d2-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_dp",
+        "selector": "#d2-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_a",
+        "selector": "#d3-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_b",
+        "selector": "#d3-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_c",
+        "selector": "#d3-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_d",
+        "selector": "#d3-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_e",
+        "selector": "#d3-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_f",
+        "selector": "#d3-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_g",
+        "selector": "#d3-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_dp",
+        "selector": "#d3-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_a",
+        "selector": "#d4-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_b",
+        "selector": "#d4-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_c",
+        "selector": "#d4-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_d",
+        "selector": "#d4-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_e",
+        "selector": "#d4-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_f",
+        "selector": "#d4-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_g",
+        "selector": "#d4-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_dp",
+        "selector": "#d4-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "colon",
+        "selector": "#colon",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The TM1637's two-wire interface (START and STOP with CLK high, LSB first on CLK's rising edges, ACK from the 8th clock's falling edge to the end of the 9th); the data command (write, auto-increment or fixed address, key read returning 0xFF), the address command (C0H..C5H, data dropped from C6H) and display control (on/off, pulse width 1/16 to 14/16); a STOP keeping acknowledged bytes; digits 1 to 4 on GRID1..4, SEG8 the colon or the decimal points; off at power-on with the address at C0H.",
+      "omissions": [
+        "the grid multiplexing on the module's LEDs (each digit lights at the set pulse width)",
+        "the 100 pF capacitors on CLK and DIO",
+        "the display RAM's content at power-up (taken as zero)",
+        "test mode (data command B3)",
+        "key scanning (the module wires no keys: reads 0xFF)",
+        "the LEDs' current and brightness spread"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "The TM1637's two-wire interface (START and STOP with CLK high, LSB first on CLK's rising edges, ACK from the 8th clock's falling edge to the end of the 9th); the data command (write, auto-increment or fixed address, key read returning 0xFF), the address command (C0H..C5H, data dropped from C6H) and display control (on/off, pulse width 1/16 to 14/16); a STOP keeping acknowledged bytes; digits 1 to 4 on GRID1..4, SEG8 the colon or the decimal points; off at power-on with the address at C0H. ACK within 100 ns, release within 300 ns; clock pulses shorter than 400 ns reported.",
+      "omissions": [
+        "the grid multiplexing on the module's LEDs (each digit lights at the set pulse width)",
+        "the 100 pF capacitors on CLK and DIO",
+        "the display RAM's content at power-up (taken as zero)",
+        "test mode (data command B3)",
+        "key scanning (the module wires no keys: reads 0xFF)",
+        "the LEDs' current and brightness spread"
+      ]
+    },
+    "electrical": {
+      "claims": "CLK and DIO switch at the family's thresholds with the module's 10 kOhm pull-ups; DIO sinks for ACK; the behaviour is the Lua model's.",
+      "omissions": [
+        "the grid multiplexing on the module's LEDs (each digit lights at the set pulse width)",
+        "the 100 pF capacitors on CLK and DIO",
+        "the display RAM's content at power-up (taken as zero)",
+        "test mode (data command B3)",
+        "key scanning (the module wires no keys: reads 0xFF)",
+        "the LEDs' current and brightness spread",
+        "the supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Titan Micro Electronics TM1637 LED drive control special circuit, data sheet V2.4 (interface, commands, timing, hardware connection)"
+      },
+      {
+        "title": "Common TM1637 4-digit display module schematic (10 kOhm pull-ups and 100 pF on CLK and DIO, colon on SEG8 of GRID2)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 50,
+    "pins": {
+      "CLK": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "DIO": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "VCC": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "GND": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

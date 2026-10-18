@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "read-end",
+  "description": "Read right after the first conversion (at 401 ms): after the 25th pulse DOUT is high until the next conversion, 100 ms after the first, at 500 ms.",
+  "policy": "functional",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0",
+          "period": "1u",
+          "start": "401m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hx711_load_cell",
+        "params": {
+          "noise": 0
+        }
+      }
+    ],
+    "nets": {
+      "N_DT": [
+        "DUT.DT"
+      ],
+      "N_SCK": [
+        "PG.OUT0",
+        "DUT.SCK"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_DT": {
+      "at": "450ms",
+      "logic": "1"
+    },
+    "pin:DUT.DT": {
+      "at": "501ms",
+      "logic": "0"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "load",
+      "value": 1
+    }
+  ]
+}

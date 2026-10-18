@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "ds3231",
+  "until": "3500ms",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "temperature",
+      "value": 24.3
+    }
+  ],
+  "assertions": [
+    {
+      "id": "clock",
+      "at": "3500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "RTC lost power, let's set the time!\r\n2026/10/18 (Sunday) 12:0:0\r\n since midnight 1/1/1970 = 1792324800s = 20744d\r\n now + 7d + 12h + 30m + 6s: 2026/10/26 0:30:6\r\nTemperature: 0.00 C\r\n\r\n2026/10/18 (Sunday) 12:0:3\r\n since midnight 1/1/1970 = 1792324803s = 20744d\r\n now + 7d + 12h + 30m + 6s: 2026/10/26 0:30:9\r\nTemperature: 24.25 C\r\n\r\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "RTClib's ds3231 example, unmodified: the part powers up with OSF set, so lostPower() is true and the sketch sets the clock to its build time (2026-10-18 12:00:00: run.py fixes SOURCE_DATE_EPOCH, the reproducible-builds convention GCC honours for __DATE__ and __TIME__) and clears OSF. The clock then counts: 12:0:0, and 12:0:3 three seconds later, with the date arithmetic the library does on it. The first temperature reads 0.00 C: the sketch asks 30 ms after power-up, before the power-up conversion (125 ms) has filled the register, whose power-on value is 00h; the next reads the air's 24.3 C in 0.25 C steps, 24.25."
+}

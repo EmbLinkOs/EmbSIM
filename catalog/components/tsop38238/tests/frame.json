@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "frame",
+  "description": "One press and release of CH- (command 45H): the leader, 32 bits and the closing burst, 34 bursts, 68 output edges, and no repeat once released.",
+  "policy": "functional",
+  "until": "200ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/tsop38238"
+      }
+    ],
+    "nets": {
+      "N_OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "key",
+      "value": "ch-"
+    },
+    {
+      "at": "50ms",
+      "target": "DUT",
+      "input": "key",
+      "value": "none"
+    }
+  ],
+  "expect": {
+    "net:N_OUT": {
+      "between": [
+        "0ms",
+        "200ms"
+      ],
+      "edges": 68
+    },
+    "output:DUT.frames": {
+      "at": "199ms",
+      "equals": 1
+    }
+  }
+}

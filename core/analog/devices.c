@@ -744,6 +744,8 @@ static const esk_adev_ops isource_ops = {
 
 /* ---- switch ------------------------------------------------------------------------ */
 
+#define SW_BOUNCE_TRANSITIONS 6
+
 typedef struct sw_state {
     double gon, goff;
     int seen;          /* the settled input */
@@ -800,6 +802,12 @@ static es_status sw_setup(esk_adev *d)
         s->bounce_interval = s_to_ps(iv);
         if (s->bounce_count < 0 || s->bounce_count > 1000)
             s->bounce_count = 0;
+    } else if (bounce && bounce->type == ESK_JSON_BOOL && bounce->u.boolean) {
+        /* a component's `bounce: true` with `bounce_ms`: the contacts chatter
+         * through six transitions spread evenly over that time */
+        double ms = pd(d, "bounce_ms", 2.0);
+        s->bounce_count = SW_BOUNCE_TRANSITIONS;
+        s->bounce_interval = ms > 0.0 ? s_to_ps(ms * 1e-3 / SW_BOUNCE_TRANSITIONS) : 0;
     }
     return ES_OK;
 }

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80" width="70" height="80" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="50" height="60" rx="2"/>
+  <line class="s" id="pin-sck" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">SCK</text>
+  <line class="s" id="pin-sdi" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">SDI</text>
+  <line class="s" id="pin-sdo" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">SDO</text>
+  <line class="s" id="pin-csb" x1="0" y1="50" x2="10" y2="50"/><text class="p" x="13" y="52">CSB</text>
+  <line class="s" id="pin-vdd" x1="30" y1="0" x2="30" y2="10"/><line class="s" id="pin-vddio" x1="40" y1="0" x2="40" y2="10"/>
+  <line class="s" id="pin-gnd" x1="30" y1="80" x2="30" y2="70"/><line class="s" id="pin-gnd2" x1="40" y1="80" x2="40" y2="70"/>
+  <text class="t" x="44" y="64" text-anchor="middle">BME280</text>
+</svg>

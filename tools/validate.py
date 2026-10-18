@@ -539,6 +539,21 @@ class Index:
         return Index(list(extra) + self.roots)
 
 
+def has_output(index: "Index", desc: dict, name: str) -> bool:
+    """NAME is one of the description's outputs, or MEMBER.NAME one of a
+    composite member's (a board's LED)"""
+    if name in {o.get("name") for o in desc.get("outputs") or []}:
+        return True
+    sub, _, out = name.partition(".")
+    if not out:
+        return False
+    for m in ((desc.get("model") or {}).get("composite") or {}).get("components", []):
+        if m.get("id") == sub:
+            md = index.component(m.get("component", ""))
+            return md is not None and out in {o.get("name") for o in md.get("outputs") or []}
+    return False
+
+
 def component_pin_names(desc: dict) -> set[str]:
     names: set[str] = set()
     for pin in desc.get("pins", []):
@@ -860,9 +875,30 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
         edge = {"left": x == 0, "right": x == w, "top": y == 0, "bottom": y == h}.get(side, True)
         if not edge:
             report.warning(file, ptr("symbol", "pins", pname), "symbol.pin_edge", f"pin on side {side} is not on that edge")
-    for n in pin_names:
-        if n not in (sym.get("pins") or {}):
-            report.error(file, "/symbol/pins", "symbol.pin_missing", f"pin {n} has no symbol position")
+    bench = doc.get("bench") or {}
+    # a wiring aid (a breadboard) is not drawn in the schematic: its pins need no symbol position
+    if not bench.get("wiring_aid"):
+        for n in pin_names:
+            if n not in (sym.get("pins") or {}):
+                report.error(file, "/symbol/pins", "symbol.pin_missing", f"pin {n} has no symbol position")
+    # ties: the part's own pins, each in one tie at most
+    tied: dict[str, int] = {}
+    for i, tie in enumerate(doc.get("ties") or []):
+        for name in tie:
+            if name not in pin_names:
+                report.error(file, ptr("ties", i), "catalog.pin_unknown", f"tie pin {name} is not a pin of this component")
+            elif name in tied:
+                report.error(file, ptr("ties", i), "catalog.pin_twice", f"pin {name} is in ties {tied[name]} and {i}")
+            else:
+                tied[name] = i
+    for name in bench.get("pins") or {}:
+        if name not in pin_names:
+            report.error(file, ptr("bench", "pins", name), "catalog.pin_unknown", f"bench pin {name} is not a pin of this component")
+    size = bench.get("size_mm")
+    if size:
+        for name, (x, y) in (bench.get("pins") or {}).items():
+            if not (0 <= x <= size[0] and 0 <= y <= size[1]):
+                report.error(file, ptr("bench", "pins", name), "bench.pin_outside", f"pin at ({x}, {y}) mm is outside the {size[0]} x {size[1]} mm part")
     # artwork
     art = doc.get("artwork")
     if art:
@@ -879,7 +915,7 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
                 report.error(file, ptr("artwork", "hotspots", i), "schema.missing_field", "drag hotspot needs an axis")
             _check_selector(report, file, ptr("artwork", "hotspots", i, "selector"), hs.get("selector"), ids)
         for i, st in enumerate(art.get("states") or []):
-            if st.get("output") not in outputs:
+            if st.get("output") not in outputs and not ("." in (st.get("output") or "") and has_output(index, doc, st["output"])):
                 report.error(file, ptr("artwork", "states", i, "output"), "catalog.output_unknown", f"state output {st.get('output')} is not declared")
             if not (st.get("attr") or st.get("class")):
                 report.error(file, ptr("artwork", "states", i), "schema.missing_field", "state binds neither an attr nor a class")
@@ -967,8 +1003,20 @@ def check_component_test(report: Report, file: Path, doc: dict, index: Index) ->
     for f_ in report.findings[saved:]:
         f_.node = "/circuit" + f_.node
     until = parse_time_ps(doc.get("until")) if doc.get("until") else None
+    def member(target: str) -> Optional[dict]:
+        """COMPONENT.MEMBER: a member of a composite instance (a keypad's key)"""
+        top, _, sub = (target or "").partition(".")
+        parent = inst.get(top)
+        if not sub or parent is None:
+            return None
+        comp = ((parent.get("model") or {}).get("composite") or {})
+        for m in comp.get("components", []):
+            if m.get("id") == sub:
+                return index.component(m.get("component", ""))
+        return None
+
     for i, inp in enumerate(doc.get("inputs") or []):
-        d = inst.get(inp.get("target"))
+        d = inst.get(inp.get("target")) or member(inp.get("target"))
         node = ptr("inputs", i)
         if d is None:
             report.error(file, node + "/target", "catalog.not_found", f"input target {inp.get('target')} is not an instance of the circuit")
@@ -994,7 +1042,7 @@ def check_component_test(report: Report, file: Path, doc: dict, index: Index) ->
                 report.error(file, node, "catalog.not_found", f"instance {i} is not declared")
             elif kind == "pin" and sub not in component_pin_names(inst[i]):
                 report.error(file, node, "catalog.pin_unknown", f"{i} has no pin {sub}")
-            elif kind == "output" and sub not in {o.get("name") for o in inst[i].get("outputs") or []}:
+            elif kind == "output" and not has_output(index, inst[i], sub):
                 report.error(file, node, "catalog.output_unknown", f"{i} has no output {sub}")
         if not any(k in exp for k in ("at", "between", "by")):
             report.error(file, node, "schema.missing_field", "expectation needs at, between or by")
@@ -1261,6 +1309,19 @@ def check_board(report: Report, file: Path, doc: dict, index: Index) -> None:
             if "port" in hs and hs["port"] not in (doc.get("ports") or {}):
                 report.error(file, node + "/port", "catalog.not_found", f"hotspot port {hs['port']} is not declared")
             _check_selector(report, file, node + "/selector", hs.get("selector"), ids)
+    # the bench's features show and drive the board's own components (SPEC-006 §4)
+    for i, feat in enumerate((doc.get("bench") or {}).get("features") or []):
+        node = ptr("bench", "features", i)
+        for key, kind in (("input", "inputs"), ("output", "outputs")):
+            ref = feat.get(key)
+            if not ref:
+                continue
+            comp, _, name = ref.partition(".")
+            d = inst.get(comp)
+            if d is None:
+                report.error(file, node + "/" + key, "catalog.not_found", f"bench feature {key} {comp} is not a component of the board")
+            elif name not in {x.get("name") for x in d.get(kind) or []}:
+                report.error(file, node + "/" + key, f"catalog.{key}_unknown", f"{comp} has no {key} {name}")
     for prof in (doc.get("toolchains") or {}):
         if index.toolchains and prof not in index.toolchains:
             report.warning(file, ptr("toolchains", prof), "catalog.not_found", f"no toolchain profile {prof} in the catalog")
@@ -1388,6 +1449,22 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
     for i, w in enumerate((doc.get("layout") or {}).get("wires") or []):
         if w.get("net") not in nets:
             report.error(file, ptr("layout", "wires", i, "net"), "catalog.not_found", f"wire for undeclared net {w.get('net')}")
+    # the bench (SPEC-007 §2): places of declared instances, jumpers between real terminals in one net
+    bench = (doc.get("layout") or {}).get("bench") or {}
+    net_of = {pin: name for name, pins in nets.items() for pin in pins}
+    for iid in bench.get("parts") or {}:
+        if iid not in ctx.components and iid not in ctx.boards:
+            report.error(file, ptr("layout", "bench", "parts", iid), "catalog.not_found", f"bench place for undeclared instance {iid}")
+    for i, w in enumerate(bench.get("wires") or []):
+        node = ptr("layout", "bench", "wires", i)
+        for end in ("from", "to"):
+            inst_id, _, pin = (w.get(end) or "").partition(".")
+            ok, why = resolve(inst_id, pin)
+            if not ok:
+                report.error(file, f"{node}/{end}", "catalog.pin_unknown", why)
+        a, b = net_of.get(w.get("from")), net_of.get(w.get("to"))
+        if a is None or a != b:
+            report.warning(file, node, "bench.jumper_net", f"jumper {w.get('from')} to {w.get('to')}: its ends are not in one net")
     # probes
     for i, probe in enumerate(doc.get("probes") or []):
         node = ptr("probes", i)
@@ -1410,7 +1487,7 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
                 report.error(file, node + "/target", "catalog.not_found", f"instance {i2} is not declared")
             elif kind == "pin" and sub not in component_pin_names(ctx.components[i2]):
                 report.error(file, node + "/target", "catalog.pin_unknown", f"{i2} has no pin {sub}")
-            elif kind == "output" and sub not in {o.get("name") for o in ctx.components[i2].get("outputs") or []}:
+            elif kind == "output" and not has_output(index, ctx.components[i2], sub):
                 report.error(file, node + "/target", "catalog.output_unknown", f"{i2} has no output {sub}")
         elif kind in ("reg", "serial", "mem", "var"):
             sep = "." if kind in ("reg", "serial") else ":"
@@ -1513,8 +1590,8 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
         if "probe" in a and ctx is not None and a["probe"] not in ctx.probes:
             report.error(file, node + "/probe", "catalog.not_found", f"probe {a['probe']} is not declared by the project")
         exp = a.get("expect") or {}
-        if "tolerance" in exp and "frequency_hz" not in exp:
-            report.warning(file, node + "/expect", "schema.type", "tolerance without frequency_hz")
+        if "tolerance" in exp and "frequency_hz" not in exp and not isinstance(exp.get("equals"), (int, float)):
+            report.warning(file, node + "/expect", "schema.type", "tolerance without frequency_hz or a number to equal")
         if "min" in exp and "max" in exp and exp["min"] > exp["max"]:
             report.error(file, node + "/expect", "schema.type", "min exceeds max")
         if "min_v" in exp and "max_v" in exp and exp["min_v"] > exp["max_v"]:

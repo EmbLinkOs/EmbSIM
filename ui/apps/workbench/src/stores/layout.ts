@@ -6,8 +6,13 @@ import { create } from 'zustand';
 export type Perspective = 'design' | 'run' | 'debug' | 'verify';
 export const PERSPECTIVES: Perspective[] = ['design', 'run', 'debug', 'verify'];
 
+export type DesignView = 'schematic' | 'bench';
+
 export interface LayoutState {
   perspective: Perspective;
+  /** what the Design perspective's canvas shows: the schematic or the bench (ADR-027) */
+  designView: DesignView;
+  setDesignView(v: DesignView): void;
   canvasMode: CanvasMode;
   paletteOpen: boolean;
   diagnosticsOpen: boolean;
@@ -32,8 +37,25 @@ function readPerspective(): Perspective {
   }
 }
 
+function readDesignView(): DesignView {
+  try {
+    return localStorage.getItem('embsim.designView') === 'bench' ? 'bench' : 'schematic';
+  } catch {
+    return 'schematic';
+  }
+}
+
 export const useLayout = create<LayoutState>((set) => ({
   perspective: readPerspective(),
+  designView: readDesignView(),
+  setDesignView: (designView) => {
+    try {
+      localStorage.setItem('embsim.designView', designView);
+    } catch {
+      // ignore
+    }
+    set({ designView });
+  },
   canvasMode: 'select',
   paletteOpen: false,
   diagnosticsOpen: false,

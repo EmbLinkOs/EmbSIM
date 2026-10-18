@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "bits",
+  "description": "The first address bit (0) after the leader: its 562.5 us burst starts 13.5 ms after the frame and OUT is low 300 us into it, high again 300 us into its 562.5 us space.",
+  "policy": "functional",
+  "until": "40ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/tsop38238"
+      }
+    ],
+    "nets": {
+      "N_OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "key",
+      "value": "ch-"
+    }
+  ],
+  "expect": {
+    "net:N_OUT": {
+      "at": "15063us",
+      "logic": "0"
+    },
+    "pin:DUT.OUT": {
+      "at": "15625us",
+      "logic": "1"
+    }
+  }
+}

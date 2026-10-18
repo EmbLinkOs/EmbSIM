@@ -97,7 +97,7 @@
     {
       "name": "rx_text",
       "type": "string",
-      "doc": "Decoded received text"
+      "doc": "Text received on RX: a 32 KiB scrollback, the oldest half dropped when it fills"
     },
     {
       "name": "rx_errors",

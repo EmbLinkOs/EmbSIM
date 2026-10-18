@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bmp280",
+  "version": "1.0.0",
+  "name": "BMP280 pressure and temperature sensor",
+  "category": "sensors",
+  "description": "Bosch BMP280 barometric pressure and temperature sensor on I2C (0x76/0x77 from SDO) or SPI: chip ID 0x58, sleep, forced and normal modes, oversampling x1 to x16, the IIR filter and standby times up to 4 s, trimming parameters that Bosch's compensation formulas turn into degrees and pascals; no humidity. Temperature and pressure are interactive inputs.",
+  "keywords": [
+    "BMP280",
+    "barometer",
+    "pressure",
+    "temperature",
+    "altitude",
+    "Bosch",
+    "I2C",
+    "SPI"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "GND",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "CSB",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "SPI chip select, active low; tie high for I2C (low once selects SPI until power-down)",
+      "power_ref": "VDDIO"
+    },
+    {
+      "name": "SDI",
+      "number": 3,
+      "model": {
+        "kind": "digital_io"
+      },
+      "doc": "I2C SDA (open drain) or SPI data in",
+      "power_ref": "VDDIO"
+    },
+    {
+      "name": "SCK",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "I2C SCL or SPI clock",
+      "power_ref": "VDDIO"
+    },
+    {
+      "name": "SDO",
+      "number": 5,
+      "model": {
+        "kind": "digital_io"
+      },
+      "doc": "I2C address bit 0 (0x76 low, 0x77 high) or SPI data out",
+      "power_ref": "VDDIO"
+    },
+    {
+      "name": "VDDIO",
+      "number": 6,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Interface supply, 1.2 to 3.6 V"
+    },
+    {
+      "name": "GND2",
+      "number": 7,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "VDD",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 1.71 to 3.6 V"
+    }
+  ],
+  "params": {
+    "part": {
+      "type": "enum",
+      "enum": [
+        "bmp280"
+      ],
+      "default": "bmp280",
+      "doc": "The part (the model is shared with the BME280)"
+    }
+  },
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "min": -40,
+      "max": 85,
+      "unit": "degC",
+      "default": 25
+    },
+    {
+      "name": "pressure",
+      "type": "number",
+      "min": 300,
+      "max": 1100,
+      "unit": "hPa",
+      "default": 1013.25
+    }
+  ],
+  "outputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "unit": "degC",
+      "doc": "The last measurement, compensated"
+    },
+    {
+      "name": "pressure",
+      "type": "number",
+      "unit": "hPa",
+      "doc": "The last measurement, compensated"
+    },
+    {
+      "name": "measurements",
+      "type": "integer",
+      "doc": "Measurements since reset"
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "doc": "sleep, forced or normal"
+    },
+    {
+      "name": "interface",
+      "type": "string",
+      "doc": "i2c, or spi once CSB has gone low"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "I2C at 0x76 + SDO with address/data pairs and auto-incrementing reads; 4-wire SPI (mode 0) once CSB goes low, I2C then off until power-down; the register map with chip ID 0x58, soft reset, status (measuring, im_update), config ignored in normal mode, no humidity registers (ignored written, 0 read); sleep, forced and normal modes with the typical measurement time and the standby times (0.5 ms to 4 s); raw values that Bosch's compensation turns into the inputs at the oversampling's resolution, the IIR filter, skipped measurements as 0x80000, shadowed data registers; no answer below 1.71 V.",
+      "omissions": [
+        "the noise the oversampling averages (readings exact to the resolution)",
+        "the accuracy spread between parts (+-1 C, +-1 hPa)",
+        "self-heating",
+        "SPI mode 3 and 3-wire SPI (spi3w_en)",
+        "supply current",
+        "damage above the 4.25 V absolute maximum",
+        "the chip ID 0x56 or 0x57 of engineering samples"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the noise the oversampling averages (readings exact to the resolution)",
+        "the accuracy spread between parts (+-1 C, +-1 hPa)",
+        "self-heating",
+        "SPI mode 3 and 3-wire SPI (spi3w_en)",
+        "supply current",
+        "damage above the 4.25 V absolute maximum",
+        "the chip ID 0x56 or 0x57 of engineering samples"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; VDD's voltage gates the part; the behaviour is the Lua model's.",
+      "omissions": [
+        "the noise the oversampling averages (readings exact to the resolution)",
+        "the accuracy spread between parts (+-1 C, +-1 hPa)",
+        "self-heating",
+        "SPI mode 3 and 3-wire SPI (spi3w_en)",
+        "supply current",
+        "damage above the 4.25 V absolute maximum",
+        "the chip ID 0x56 or 0x57 of engineering samples"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Bosch Sensortec BMP280 Digital pressure sensor, data sheet (BST-BMP280-DS001: chip ID 0x58, register map, standby times, measurement time, compensation)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 70,
+    "height": 80,
+    "pins": {
+      "SCK": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SDI": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "SDO": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "CSB": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "VDD": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "VDDIO": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 80,
+        "side": "bottom"
+      },
+      "GND2": {
+        "x": 40,
+        "y": 80,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

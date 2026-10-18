@@ -30,6 +30,13 @@ class StimulusTest(unittest.TestCase):
         self.assertEqual(w[-3:], [0, 2, 3])            # STOP
         self.assertEqual(len(w), 1 + 3 + 2 * (8 * 3 + 3) + 3)
 
+    def test_tm1637_shape(self):
+        w = stimulus.tm1637_words([[0x40]])
+        self.assertEqual(w[:4], [3, 3, 2, 0])          # idle, START
+        self.assertEqual(w[4:7], [0, 2, 0])            # bit 0 of 0x40 first
+        self.assertEqual(w[-6:], [1, 3, 0, 0, 2, 3])   # the ACK clock, STOP
+        self.assertEqual(len(w), 1 + 3 + 8 * 3 + 3 + 3)
+
 
 if __name__ == "__main__":
     unittest.main()

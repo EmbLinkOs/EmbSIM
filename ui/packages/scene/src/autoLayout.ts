@@ -24,7 +24,7 @@ export type Arrangement = 'left' | 'right' | 'top' | 'bottom' | 'center-x' | 'ce
 const compareIds = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 const FALLBACK: SymbolDescription = { svg: '', width: 60, height: 40, pins: {} };
 export function layoutParts(project: Project, catalog: SceneCatalog) {
-  return [...project.components.map((c) => ({ id: c.id, ref: c.component, layout: c.layout ?? { x: 0, y: 0 } })),
+  return [...project.components.filter((c) => !catalog[c.component]?.wiringAid).map((c) => ({ id: c.id, ref: c.component, layout: c.layout ?? { x: 0, y: 0 } })),
     ...(project.boards ?? []).map((b) => ({ id: b.id, ref: b.board, layout: b.layout ?? { x: 0, y: 0 } }))]
     .map((p) => ({ ...p, symbol: catalog[p.ref]?.symbol ?? FALLBACK }));
 }

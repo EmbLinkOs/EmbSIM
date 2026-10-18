@@ -55,6 +55,118 @@
       "commit": "dadbbf7d33f500a5785ac4ae9973b8c9083d0d39",
       "version": "4.0.6",
       "license": "MIT"
+    },
+    {
+      "name": "Adafruit_BME280_Library",
+      "repo": "https://github.com/adafruit/Adafruit_BME280_Library",
+      "commit": "ef712e95147de926b4545e379f6296ad271529b5",
+      "version": "2.3.0",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "Adafruit_BusIO",
+      "repo": "https://github.com/adafruit/Adafruit_BusIO",
+      "commit": "3b8364267c3ee6e16bad91bc2101aefbd5b5915f",
+      "version": "1.17.4",
+      "license": "MIT"
+    },
+    {
+      "name": "Adafruit_MPU6050",
+      "repo": "https://github.com/adafruit/Adafruit_MPU6050",
+      "commit": "502a7caccda630a151dfb03ecbdd4b8452809ef7",
+      "version": "2.2.9",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "Adafruit_NeoPixel",
+      "repo": "https://github.com/adafruit/Adafruit_NeoPixel",
+      "commit": "d514fc3beae85dd4c2b19781b93faa47bd6e996f",
+      "version": "1.15.5",
+      "license": "LGPL-3.0"
+    },
+    {
+      "name": "RTClib",
+      "repo": "https://github.com/adafruit/RTClib",
+      "commit": "5298434167b770c4602661d682e3b340d565073f",
+      "version": "2.1.4",
+      "license": "MIT"
+    },
+    {
+      "name": "Keypad",
+      "repo": "https://github.com/Chris--A/Keypad",
+      "commit": "801285059681542c43d35fb56c3847c11ce0023f",
+      "version": "3.1.1",
+      "license": "GPL-3.0 (its LICENSE file; the sources' headers say LGPL-2.1); fetched unmodified, never vendored"
+    },
+    {
+      "name": "TinyGPSPlus",
+      "repo": "https://github.com/mikalhart/TinyGPSPlus",
+      "commit": "0a205759da22a1c54c5f5285480fe6132592a4e2",
+      "version": "1.1.0",
+      "license": "LGPL-2.1"
+    },
+    {
+      "name": "Adafruit_SSD1306",
+      "repo": "https://github.com/adafruit/Adafruit_SSD1306",
+      "commit": "d94f699451d72286357cba7259055ffff2c2940b",
+      "version": "2.5.17",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "Adafruit-GFX-Library",
+      "repo": "https://github.com/adafruit/Adafruit-GFX-Library",
+      "commit": "bc85af5aa4802cb85626c188cbc632343e3dae14",
+      "version": "1.12.6",
+      "license": "BSD-2-Clause"
+    },
+    {
+      "name": "rfid",
+      "repo": "https://github.com/miguelbalboa/rfid",
+      "commit": "8894b3aed318314345b075b4d436fee18b2b185b",
+      "version": "1.4.12",
+      "license": "Unlicense"
+    },
+    {
+      "name": "Encoder",
+      "repo": "https://github.com/PaulStoffregen/Encoder",
+      "commit": "c083e9cbd6400f7e72a794c0d371a00a09d2a25d",
+      "version": "1.4.4",
+      "license": "MIT (the 1.4.4 release, as the Library Manager installs it; later commits drop AVR's IO_REG_TYPE)"
+    },
+    {
+      "name": "Stepper",
+      "repo": "https://github.com/arduino-libraries/Stepper",
+      "commit": "262f7b37acb7a1bc9f759eff7a3369358e534d65",
+      "version": "1.1.3",
+      "license": "LGPL-2.1"
+    },
+    {
+      "name": "TM1637",
+      "repo": "https://github.com/avishorp/TM1637",
+      "commit": "3cca19607013c49f6708b7f492765fea835431ca",
+      "version": "1.2.0",
+      "license": "LGPL-3.0"
+    },
+    {
+      "name": "IRremote",
+      "repo": "https://github.com/Arduino-IRremote/Arduino-IRremote",
+      "commit": "c4ec014400ccf5a8b3678d5f33e4cc17eca29d23",
+      "version": "4.7.1",
+      "license": "MIT"
+    },
+    {
+      "name": "Adafruit_BMP280_Library",
+      "repo": "https://github.com/adafruit/Adafruit_BMP280_Library",
+      "commit": "4af9a4e49a7e2134def094aa0b7dc5a94387155c",
+      "version": "3.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "HX711",
+      "repo": "https://github.com/bogde/HX711",
+      "commit": "be5e3d251b0aa6c1279edf76ab985825de4ebfd9",
+      "version": "0.7.5",
+      "license": "MIT"
     }
   ]
 }

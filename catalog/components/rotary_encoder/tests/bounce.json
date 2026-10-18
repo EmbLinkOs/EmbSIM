@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "bounce",
+  "description": "Each contact change chatters before it settles: one detent closes and opens CLK, six edges with the 1 ms bounce instead of two.",
+  "policy": "functional",
+  "until": "160ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rotary_encoder"
+      },
+      {
+        "id": "V",
+        "component": "emblink/vcc"
+      }
+    ],
+    "nets": {
+      "A": [
+        "DUT.CLK"
+      ],
+      "B": [
+        "DUT.DT"
+      ],
+      "SW": [
+        "DUT.SW"
+      ],
+      "VCC": [
+        "V.VCC",
+        "DUT.VCC"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "position",
+      "value": 1
+    }
+  ],
+  "expect": {
+    "net:A": {
+      "between": [
+        "0.5ms",
+        "150ms"
+      ],
+      "edges": 6
+    },
+    "output:DUT.count": {
+      "at": "150ms",
+      "equals": 1
+    }
+  }
+}

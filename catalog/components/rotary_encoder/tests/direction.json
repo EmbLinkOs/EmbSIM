@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "direction",
+  "description": "Clockwise A (CLK) closes first; counter-clockwise B (DT) does: 10 ms into a turn back to -1 from a rest at 0, DT is low while CLK is still high.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rotary_encoder",
+        "params": {
+          "bounce": 0
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vcc"
+      }
+    ],
+    "nets": {
+      "A": [
+        "DUT.CLK"
+      ],
+      "B": [
+        "DUT.DT"
+      ],
+      "SW": [
+        "DUT.SW"
+      ],
+      "VCC": [
+        "V.VCC",
+        "DUT.VCC"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "position",
+      "value": -1
+    }
+  ],
+  "expect": {
+    "net:B": {
+      "at": "11ms",
+      "logic": "0"
+    },
+    "net:A": {
+      "at": "11ms",
+      "logic": "1"
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ctrl-hum",
+  "description": "ctrl_hum written after ctrl_meas does not apply: the forced measurement skips humidity (0x8000), and the later ctrl_hum write alone starts nothing.",
+  "policy": "functional",
+  "until": "31ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,3,3,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU3",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bme280"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDI",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCK",
+        "PU2.1"
+      ],
+      "CSB": [
+        "DUT.CSB",
+        "PU3.1"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "temperature",
+      "value": 21.37
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "pressure",
+      "value": 1009.82
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "humidity",
+      "value": 43.6
+    }
+  ],
+  "expect": {
+    "output:DUT.humidity": {
+      "at": "30ms",
+      "equals": 0
+    },
+    "output:DUT.measurements": {
+      "at": "30ms",
+      "equals": 1
+    }
+  }
+}

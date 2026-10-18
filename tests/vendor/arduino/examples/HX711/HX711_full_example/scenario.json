@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "HX711_full_example",
+  "until": "16s",
+  "inputs": [
+    {
+      "at": "10s",
+      "target": "SCALE",
+      "input": "load",
+      "value": 1
+    }
+  ],
+  "assertions": [
+    {
+      "id": "setup",
+      "at": "16s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "HX711 Demo\r\nInitializing the scale\r\nBefore setting up the scale:\r\nread: \t\t107374\r\nread average: \t\t107374\r\nget value: \t\t107374.00\r\nget units: \t\t107374.0\r\nAfter setting up the scale:\r\nread: \t\t107374\r\nread average: \t\t107374\r\nget value: \t\t0.00\r\nget units: \t\t0.0\r\nReadings:\r\none reading:\t0.0\t| average:\t0.0\r\n"
+      }
+    },
+    {
+      "id": "loaded",
+      "at": "16s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "one reading:\t0.0\t| average:\t0.0\r\none reading:\t188.4\t| average:\t188.4\r\n"
+      }
+    },
+    {
+      "id": "raw",
+      "at": "16s",
+      "probe": "raw",
+      "expect": {
+        "equals": 536871
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "The HX711 library's HX711_full_example, unmodified, on an ideal HX711 with a 5 kg, 1 mV/V load cell. Unloaded, the cell's 0.05 mV/V zero balance reads 107374 (0.05e-3 x 128 x 2^24), worked out beforehand, so the readings before tare() are that, and 0 after it. The sketch's scale factor 2280 belongs to its author's cell: 1 kg put on at 10 s, while the chip is powered down, reads 536871 after power_up() and its settling time, and the library prints (536871 - 107374) / 2280 = 188.4 units, as an uncalibrated scale does."
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "bounce",
+  "description": "With bounce on (2 ms), pressing the button chatters through six transitions before it closes for good.",
+  "policy": "electrical",
+  "until": "6ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/push_button",
+        "params": {
+          "bounce": true,
+          "bounce_ms": 2
+        }
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "R.1"
+      ],
+      "OUT": [
+        "R.2",
+        "DUT.1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.2"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "pressed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:OUT": {
+      "between": [
+        "1.001ms",
+        "2.9ms"
+      ],
+      "edges": 5
+    }
+  }
+}

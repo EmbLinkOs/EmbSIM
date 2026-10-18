@@ -3,9 +3,9 @@
   "kind": "component",
   "id": "emblink/rotary_encoder",
   "version": "1.0.0",
-  "name": "Rotary encoder",
+  "name": "Rotary encoder module (KY-040)",
   "category": "inputs",
-  "description": "Incremental rotary encoder module with push switch (KY-040): each detent is one full quadrature cycle on CLK (A) and DT (B), A leading for clockwise; SW pulls low while pressed. Position and press are interactive inputs.",
+  "description": "KY-040 rotary encoder module (an EC11-type mechanical encoder with a push switch): 20 detents a revolution, each one full quadrature cycle on CLK (A) and DT (B) with A leading clockwise, contacts to GND with the module's 10 kOhm pull-ups to +, contact bounce on every change, SW to GND with no pull-up. The shaft's position and the press are interactive inputs.",
   "keywords": [
     "encoder",
     "rotary",
@@ -23,7 +23,7 @@
         "kind": "digital_out",
         "drive": "push_pull"
       },
-      "doc": "Channel A",
+      "doc": "A contact to GND, pulled up to + by the module's 10 kOhm",
       "power_ref": "VCC"
     },
     {
@@ -33,7 +33,7 @@
         "kind": "digital_out",
         "drive": "push_pull"
       },
-      "doc": "Channel B",
+      "doc": "B contact to GND, pulled up to + by the module's 10 kOhm",
       "power_ref": "VCC"
     },
     {
@@ -43,7 +43,7 @@
         "kind": "digital_out",
         "drive": "push_pull"
       },
-      "doc": "Push switch: low while pressed, weak high otherwise",
+      "doc": "Push switch to GND; no pull-up on the module (use INPUT_PULLUP)",
       "power_ref": "VCC"
     },
     {
@@ -56,7 +56,7 @@
         "tolerance": 0.1
       },
       "required": false,
-      "doc": "Supply (defaults to the family rail)"
+      "doc": "+: the pull-ups' supply (left open, CLK and DT float)"
     },
     {
       "name": "GND",
@@ -70,13 +70,25 @@
     }
   ],
   "params": {
-    "step_time": {
+    "rate": {
+      "type": "number",
+      "default": 10,
+      "min": 0.1,
+      "max": 200,
+      "doc": "Detents a second while the shaft turns to a new position (a hand's pace)"
+    },
+    "bounce": {
       "type": "number",
       "unit": "s",
-      "default": "2m",
-      "min": "10u",
-      "max": 1,
-      "doc": "Duration of one detent's quadrature cycle"
+      "default": "1m",
+      "min": 0,
+      "max": "10m",
+      "doc": "Chatter after each contact change (0 for ideal contacts)"
+    },
+    "sw_pullup": {
+      "type": "boolean",
+      "default": false,
+      "doc": "The board fits the optional 10 kOhm pull-up on SW"
     }
   },
   "inputs": [
@@ -99,7 +111,17 @@
     {
       "name": "count",
       "type": "integer",
-      "doc": "Detents turned so far"
+      "doc": "Detents from the start"
+    },
+    {
+      "name": "angle",
+      "type": "number",
+      "unit": "deg",
+      "doc": "The shaft's angle (18 degrees a detent)"
+    },
+    {
+      "name": "pressed",
+      "type": "boolean"
     }
   ],
   "model": {
@@ -108,29 +130,33 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Clean quadrature, one full cycle per detent at step_time; the switch as a strong low or weak high.",
+      "claims": "Contacts to GND with the module's pull-ups to + (floating without it) and none on SW; 20 detents a revolution, one quadrature cycle each, open at rest, A leading clockwise; turning at `rate` detents a second; three chatter changes within `bounce` after every contact change.",
       "omissions": [
-        "contact bounce",
-        "the module's pull-up resistors (outputs are driven)"
+        "the detent torque and the hand's speed varying within a turn",
+        "contact resistance (a closed contact is a strong low)",
+        "the switch's travel",
+        "the shaft's angle between detents"
       ],
       "validation": [
         "tests/*.json"
       ]
     },
     "timed": {
-      "claims": "As functional; delays as stated.",
+      "claims": "Contacts to GND with the module's pull-ups to + (floating without it) and none on SW; 20 detents a revolution, one quadrature cycle each, open at rest, A leading clockwise; turning at `rate` detents a second; three chatter changes within `bounce` after every contact change.",
       "omissions": [
-        "contact bounce",
-        "the module's pull-up resistors (outputs are driven)"
+        "the detent torque and the hand's speed varying within a turn",
+        "contact resistance (a closed contact is a strong low)",
+        "the switch's travel",
+        "the shaft's angle between detents"
       ]
     },
     "electrical": {
-      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults (the pull-ups as weak drives); the behaviour is the Lua model's.",
       "omissions": [
-        "contact bounce",
-        "the module's pull-up resistors (outputs are driven)",
-        "supply current",
-        "output current limits"
+        "the detent torque and the hand's speed varying within a turn",
+        "contact resistance (a closed contact is a strong low)",
+        "the switch's travel",
+        "the shaft's angle between detents"
       ],
       "validation": [
         "tests/*.json"
@@ -142,7 +168,10 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "KY-040 rotary encoder module (pinout, quadrature direction)"
+        "title": "Alps Alpine EC11 series incremental encoder, data sheet"
+      },
+      {
+        "title": "KY-040 rotary encoder module schematic (10 kOhm pull-ups on CLK and DT)"
       }
     ]
   },

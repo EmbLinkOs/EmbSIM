@@ -14,7 +14,7 @@
  *   add_board {id, board, layout?, firmware?}
  *   remove_board {id}
  *   set_layout {id, layout}         a component's or a board's placement
- *   set_layout {wires?, labels?, buses?, groups?}  the drawing
+ *   set_layout {wires?, labels?, buses?, groups?, bench?}  the drawing
  *
  * Everything but set_layout changes the circuit: `*structural` is set so
  * the commit rebuilds the session. A net left with no pins is removed. */
@@ -205,6 +205,27 @@ static int add_item(esk_alloc *a, esk_json *project, const char *list, const esk
     return 0;
 }
 
+/* a removed instance leaves the bench: its place and the jumpers to it */
+static void prune_bench(esk_alloc *a, esk_json *project, const char *id)
+{
+    esk_json *bench = esk_json_get_mut(esk_json_get_mut(project, "layout"), "bench");
+    esk_json *wires = esk_json_get_mut(bench, "wires");
+    size_t n = strlen(id), i = esk_json_len(wires);
+    esk_json_remove(a, esk_json_get_mut(bench, "parts"), id);
+    while (i--) {
+        const esk_json *w = esk_json_at(wires, i);
+        const char *ends[2];
+        int k, hit = 0;
+        ends[0] = esk_json_get_str(w, "from", "");
+        ends[1] = esk_json_get_str(w, "to", "");
+        for (k = 0; k < 2; k++)
+            if (!strncmp(ends[k], id, n) && ends[k][n] == '.')
+                hit = 1;
+        if (hit)
+            esk_json_remove_at(a, wires, i);
+    }
+}
+
 int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit, int *structural,
                            char *why, size_t cap)
 {
@@ -247,6 +268,7 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
                     esk_json_remove_at(a, groups, gi);
             }
         }
+        prune_bench(a, project, id);
         drop_pins(a, nets, id, 1);
         return 0;
     }
@@ -391,9 +413,21 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
         } else {
             static const char *const keys[] = {"wires", "labels", "buses", "groups"};
             esk_json *layout = object_member(a, project, "layout");
+            const esk_json *bench = esk_json_get(e, "bench");
             size_t k;
             if (!layout)
                 return -1;
+            /* the bench (SPEC-007 §2): the parts' places, the jumpers, the notes */
+            if (bench) {
+                esk_json *copy;
+                if (bench->type != ESK_JSON_OBJECT)
+                    return err(why, cap, "set_layout: bench is an object%s", NULL);
+                copy = esk_json_clone(a, bench);
+                if (!copy || esk_json_object_set(a, layout, "bench", copy)) {
+                    esk_json_free(a, copy);
+                    return -1;
+                }
+            }
             for (k = 0; k < 4; k++) {
                 const esk_json *v = esk_json_get(e, keys[k]);
                 esk_json *copy;

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 100" width="90" height="100" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="80" height="80" rx="3"/>
+  <line class="s" id="pin-r1" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="28">R1</text>
+  <line class="s" id="pin-c1" x1="20" y1="100" x2="20" y2="90"/><text class="p" x="22" y="88">C1</text>
+  <line class="s" id="pin-r2" x1="0" y1="50" x2="10" y2="50"/><text class="p" x="13" y="48">R2</text>
+  <line class="s" id="pin-c2" x1="40" y1="100" x2="40" y2="90"/><text class="p" x="42" y="88">C2</text>
+  <line class="s" id="pin-r3" x1="0" y1="70" x2="10" y2="70"/><text class="p" x="13" y="68">R3</text>
+  <line class="s" id="pin-c3" x1="60" y1="100" x2="60" y2="90"/><text class="p" x="62" y="88">C3</text>
+  <line class="s" id="pin-r4" x1="0" y1="90" x2="10" y2="90"/><text class="p" x="13" y="88">R4</text>
+  <line class="s" id="pin-c4" x1="80" y1="100" x2="80" y2="90"/><text class="p" x="82" y="88">C4</text>
+  <rect class="s" x="14" y="24" width="12" height="12" rx="2"/><text class="t" x="20" y="33" text-anchor="middle">1</text>
+  <rect class="s" x="34" y="24" width="12" height="12" rx="2"/><text class="t" x="40" y="33" text-anchor="middle">2</text>
+  <rect class="s" x="54" y="24" width="12" height="12" rx="2"/><text class="t" x="60" y="33" text-anchor="middle">3</text>
+  <rect class="s" x="74" y="24" width="12" height="12" rx="2"/><text class="t" x="80" y="33" text-anchor="middle">A</text>
+  <rect class="s" x="14" y="44" width="12" height="12" rx="2"/><text class="t" x="20" y="53" text-anchor="middle">4</text>
+  <rect class="s" x="34" y="44" width="12" height="12" rx="2"/><text class="t" x="40" y="53" text-anchor="middle">5</text>
+  <rect class="s" x="54" y="44" width="12" height="12" rx="2"/><text class="t" x="60" y="53" text-anchor="middle">6</text>
+  <rect class="s" x="74" y="44" width="12" height="12" rx="2"/><text class="t" x="80" y="53" text-anchor="middle">B</text>
+  <rect class="s" x="14" y="64" width="12" height="12" rx="2"/><text class="t" x="20" y="73" text-anchor="middle">7</text>
+  <rect class="s" x="34" y="64" width="12" height="12" rx="2"/><text class="t" x="40" y="73" text-anchor="middle">8</text>
+  <rect class="s" x="54" y="64" width="12" height="12" rx="2"/><text class="t" x="60" y="73" text-anchor="middle">9</text>
+  <rect class="s" x="74" y="64" width="12" height="12" rx="2"/><text class="t" x="80" y="73" text-anchor="middle">C</text>
+  <rect class="s" x="14" y="84" width="12" height="12" rx="2"/><text class="t" x="20" y="93" text-anchor="middle">*</text>
+  <rect class="s" x="34" y="84" width="12" height="12" rx="2"/><text class="t" x="40" y="93" text-anchor="middle">0</text>
+  <rect class="s" x="54" y="84" width="12" height="12" rx="2"/><text class="t" x="60" y="93" text-anchor="middle">#</text>
+  <rect class="s" x="74" y="84" width="12" height="12" rx="2"/><text class="t" x="80" y="93" text-anchor="middle">D</text>
+</svg>

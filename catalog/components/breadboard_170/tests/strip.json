@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "strip",
+  "description": "The five holes of a strip are one conductor: 5 V into a3 reaches the load in e3.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/breadboard_170"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "V1.+",
+        "DUT.a3"
+      ],
+      "OUT": [
+        "DUT.e3",
+        "RL.1"
+      ],
+      "GND": [
+        "V1.-",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "0.5ms",
+      "min_v": 4.99,
+      "max_v": 5.01
+    }
+  }
+}

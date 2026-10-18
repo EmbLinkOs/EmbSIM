@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "cold-start",
+  "description": "A cold start: no fix for the data sheet's 27 s time to first fix, then a fix.",
+  "policy": "functional",
+  "until": "27200ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/neo6m"
+      },
+      {
+        "id": "VT1",
+        "component": "emblink/virtual_terminal",
+        "params": {
+          "baud": 9600
+        }
+      }
+    ],
+    "nets": {
+      "TX": [
+        "DUT.TXD",
+        "VT1.RX"
+      ],
+      "PPS": [
+        "DUT.TIMEPULSE"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.fix": {
+      "at": "26500ms",
+      "equals": false
+    },
+    "pin:DUT.TIMEPULSE": {
+      "at": "27050ms",
+      "logic": "1"
+    }
+  }
+}

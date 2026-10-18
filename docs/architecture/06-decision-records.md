@@ -755,7 +755,12 @@ descriptions gain optional 3D model references and pin offsets. Accessibility
 needs care: every breadboard action has a keyboard and list equivalent, as
 the schematic's do.
 
-**Status.** Accepted direction (owner, 2026-10-17); M7.
+**Status.** Accepted direction (owner, 2026-10-17); M7. Its first stage was
+brought forward into M6 at the owner's request (2026-10-18): breadboards
+whose strips are `ties` (SPEC-005 §8.1), `layout.bench` (SPEC-007 §2), and
+the 3D bench in the Design and Run perspectives with plugging, jumpers and
+unbuilt links (SPEC-011 §3); the parts' bodies are built from their
+packages, not yet from glTF models.
 
 ---
 

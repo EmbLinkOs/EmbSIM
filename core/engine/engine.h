@@ -153,6 +153,10 @@ struct esk_engine {
     void (*ext_free)(void *ext);
 };
 
+/* 1 when no analog island is integrating: every one sits at its steady
+ * state, asleep until a touch or its sources' next breakpoint */
+int esk_engine_analog_quiet(esk_engine *e);
+
 /* lifecycle */
 es_status esk_engine_init(esk_engine *e, esk_alloc *a, esk_diag *diag, esk_policy policy);
 void esk_engine_free(esk_engine *e);

@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ws2812b_strip",
+  "version": "1.0.0",
+  "name": "WS2812B LED strip or ring",
+  "category": "displays",
+  "description": "A strip or ring of WS2812B LEDs (NeoPixels) chained DOUT to DIN: `count` LEDs take 24 bits each, in order from DIN, and pass the rest on at the end's DOUT; a 50 us low latches the frame.",
+  "keywords": [
+    "led strip",
+    "ring",
+    "neopixel",
+    "ws2812",
+    "ws2812b",
+    "addressable",
+    "rgb"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "VDD",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 3.5 to 5.3 V"
+    },
+    {
+      "name": "DOUT",
+      "number": 2,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Data out to the next LED's DIN",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "DIN",
+      "number": 4,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Data in, 800 kbit/s",
+      "power_ref": "VDD"
+    }
+  ],
+  "params": {
+    "count": {
+      "type": "integer",
+      "default": 16,
+      "min": 1,
+      "max": 300,
+      "doc": "LEDs on the strip or ring (16: a common ring)"
+    },
+    "t_reset": {
+      "type": "number",
+      "unit": "s",
+      "default": "50u",
+      "min": "50u",
+      "max": "300u",
+      "doc": "Low time that latches a frame: 50 us for the WS2812B, 280 us for the WS2812B-V5"
+    }
+  },
+  "outputs": [
+    {
+      "name": "colors",
+      "type": "string",
+      "doc": "RRGGBB"
+    },
+    {
+      "name": "lit",
+      "type": "integer"
+    },
+    {
+      "name": "frames",
+      "type": "integer",
+      "doc": "Frames latched since reset"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "800 kbit/s NRZ on DIN told apart at 0.6 us (between the datasheet's longest 0 and shortest 1); each of the count LEDs keeps the first 24 bits after a reset (GRB, MSB first) and passes the rest on at DOUT reshaped to 0.4 / 0.8 us highs; a low of t_reset latches the colours; off at power-up; dark and deaf below 3.5 V.",
+      "omissions": [
+        "the light itself (colours reported as the 8-bit PWM levels, no intensity per channel)",
+        "the 400 Hz PWM flicker",
+        "supply current (up to 60 mA per LED at full white) and the voltage drop along a strip",
+        "the input threshold's dependence on VDD beyond the pin model's levels",
+        "the reshaping's 0.2 us delay"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the light itself (colours reported as the 8-bit PWM levels, no intensity per channel)",
+        "the 400 Hz PWM flicker",
+        "supply current (up to 60 mA per LED at full white) and the voltage drop along a strip",
+        "the input threshold's dependence on VDD beyond the pin model's levels",
+        "the reshaping's 0.2 us delay"
+      ]
+    },
+    "electrical": {
+      "claims": "DIN and DOUT bridge to analog nets with the family's pin-model defaults; VDD's voltage gates the LEDs; the behaviour is the Lua model's.",
+      "omissions": [
+        "the light itself (colours reported as the 8-bit PWM levels, no intensity per channel)",
+        "the 400 Hz PWM flicker",
+        "supply current (up to 60 mA per LED at full white) and the voltage drop along a strip",
+        "the input threshold's dependence on VDD beyond the pin model's levels",
+        "the reshaping's 0.2 us delay"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Worldsemi WS2812B Intelligent control LED integrated light source, data sheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "DIN": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "DOUT": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -14,7 +14,12 @@
 #define MCU_UARTS 8
 #define MCU_TEXT_CAP 65536u
 #define MCU_INQ_CAP 4096u
+#define MCU_TXQ_CAP 64u /* frames sent ahead of the scheduler, a quantum's worth */
 #define MCU_DEFAULT_QUANTUM_PS 10000000u /* 10 us */
+/* the quantum of the circuit's only core, on a machine whose devices keep
+ * lazy time, while no analog island integrates: nothing outside can change
+ * before the next event, which still ends the quantum */
+#define MCU_QUIET_QUANTUM_PS 100000000u /* 100 us */
 #define PS_PER_S UINT64_C(1000000000000)
 #define MEGA UINT64_C(1000000)
 
@@ -25,12 +30,19 @@ typedef struct mcu_uart {
     size_t text_len;
     u64 text_total; /* the bytes of text it ever sent */
     u64 tx_bytes, rx_bytes;
-    /* the TX pin's waveform */
+    /* the TX pin's waveform: the frame on the line, then those the core
+     * sent while running ahead of the scheduler, each at its own time */
     esk_pin *tx_pin;
     unsigned frame;
     int nbits, bit;
     es_time_t bit_ps;
     esk_event_handle tx_ev;
+    struct {
+        es_time_t at, bit_ps;
+        unsigned frame;
+    } txq[MCU_TXQ_CAP];
+    unsigned txq_head, txq_len;
+    es_time_t tx_free; /* when the last frame's stop bit ends */
     /* bytes from the session's serial input */
     unsigned char inq[MCU_INQ_CAP];
     size_t inq_head, inq_len;
@@ -234,6 +246,17 @@ static void report_end(mcu_state *st)
 static void mcu_reset_now(mcu_state *st, int power_on);
 static int level_of(const esk_pin *p, int dflt);
 
+/* this is the circuit's only core: no other core's pin changes to wait for */
+static int solo_core(const mcu_state *st)
+{
+    const esk_engine *e = st->c->e;
+    size_t i;
+    for (i = 0; i < e->comps.len; i++)
+        if (e->comps.data[i] != st->c && esk_mcu_is(e->comps.data[i]))
+            return 0;
+    return 1;
+}
+
 static void quantum_cb(void *ctx, void *arg, es_time_t now)
 {
     mcu_state *st = (mcu_state *)ctx;
@@ -282,8 +305,13 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
      * this quantum's end instead), and the quantum's bound */
     next = esk_sched_next_time_excluding(&e->sched, ESK_EV_ANALOG);
     limit = next;
-    if (limit == ES_TIME_MAX || limit - now > st->quantum_ps)
-        limit = now + st->quantum_ps;
+    {
+        es_time_t q = st->quantum_ps;
+        if (q < MCU_QUIET_QUANTUM_PS && st->m.lazy && !st->steps && solo_core(st) && esk_engine_analog_quiet(e))
+            q = MCU_QUIET_QUANTUM_PS;
+        if (limit == ES_TIME_MAX || limit - now > q)
+            limit = now + q;
+    }
     hz = esk_mach_core_hz(&st->m);
     budget = ps_to_cycles(limit > st->t ? limit - st->t : 0, hz);
     if (!budget)
@@ -518,6 +546,28 @@ static void text_append(mcu_uart *u, int c)
     u->text_total++;
 }
 
+static void tx_bit_cb(void *ctx, void *arg, es_time_t now);
+
+/* the next queued frame onto the line, no earlier than its time and the end
+ * of the frame before it */
+static void tx_next(mcu_state *st, mcu_uart *u)
+{
+    esk_engine *e = st->c->e;
+    es_time_t at = u->txq[u->txq_head].at;
+    u->frame = u->txq[u->txq_head].frame;
+    u->bit_ps = u->txq[u->txq_head].bit_ps;
+    u->txq_head = (u->txq_head + 1) % MCU_TXQ_CAP;
+    u->txq_len--;
+    u->nbits = 10;
+    u->bit = 0;
+    if (at < u->tx_free)
+        at = u->tx_free;
+    if (at < e->sched.now)
+        at = e->sched.now;
+    u->tx_free = at + 10 * u->bit_ps;
+    (void)esk_sched_at(&e->sched, at, ESK_EV_SIGNAL, tx_bit_cb, st, (void *)(uintptr_t)(u - st->uart), &u->tx_ev);
+}
+
 static void tx_bit_cb(void *ctx, void *arg, es_time_t now)
 {
     mcu_state *st = (mcu_state *)ctx;
@@ -530,6 +580,8 @@ static void tx_bit_cb(void *ctx, void *arg, es_time_t now)
     u->bit++;
     if (u->bit < u->nbits)
         (void)esk_sched_at(&e->sched, now + u->bit_ps, ESK_EV_SIGNAL, tx_bit_cb, st, arg, &u->tx_ev);
+    else if (u->txq_len)
+        tx_next(st, u);
 }
 
 static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
@@ -538,31 +590,40 @@ static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
     esk_engine *e = st->c->e;
     mcu_uart *u = uart_named(st, unit, 1);
     int port = 0, bit = 0;
-    es_time_t at = local_now(st);
+    unsigned slot;
+    es_time_t bit_ps;
     if (!u)
         return;
     u->tx_bytes++;
     text_append(u, c);
     /* the waveform, when the TX pin is the UART's */
-    u->tx_pin = NULL;
-    if (st->m.uart_pin && st->m.uart_pin(&st->m, unit, 1, &port, &bit) == 0 && port < MCU_PORTS &&
-        st->gpio[port][bit] && st->pq[port][bit].cfg.af && st->pq[port][bit].cfg.drive >= 0) {
+    if (!(st->m.uart_pin && st->m.uart_pin(&st->m, unit, 1, &port, &bit) == 0 && port < MCU_PORTS &&
+          st->gpio[port][bit] && st->pq[port][bit].cfg.af && st->pq[port][bit].cfg.drive >= 0)) {
+        u->tx_pin = NULL;
+        u->txq_len = 0;
+        return;
+    }
+    if (u->tx_pin != st->gpio[port][bit]) {
         if (u->tx_ev) {
             esk_sched_cancel(&e->sched, u->tx_ev);
             u->tx_ev = 0;
         }
         u->tx_pin = st->gpio[port][bit];
-        u->frame = ((unsigned)c & 0xffu) << 1 | 0x200u; /* start 0, 8 data, stop 1 */
-        u->nbits = 10;
-        u->bit = 0;
-        u->bit_ps = cycles_to_ps(bit_cycles, st->in_quantum ? st->q_hz : esk_mach_core_hz(&st->m), NULL);
-        if (!u->bit_ps)
-            u->bit_ps = 1;
-        if (at < e->sched.now)
-            at = e->sched.now;
-        (void)esk_sched_at(&e->sched, at, ESK_EV_SIGNAL, tx_bit_cb, st, (void *)(uintptr_t)(u - st->uart),
-                           &u->tx_ev);
+        u->txq_len = 0;
+        u->tx_free = 0;
     }
+    bit_ps = cycles_to_ps(bit_cycles, st->in_quantum ? st->q_hz : esk_mach_core_hz(&st->m), NULL);
+    if (u->txq_len == MCU_TXQ_CAP) { /* not drained: the oldest goes */
+        u->txq_head = (u->txq_head + 1) % MCU_TXQ_CAP;
+        u->txq_len--;
+    }
+    slot = (u->txq_head + u->txq_len) % MCU_TXQ_CAP;
+    u->txq[slot].at = local_now(st);
+    u->txq[slot].bit_ps = bit_ps ? bit_ps : 1;
+    u->txq[slot].frame = ((unsigned)c & 0xffu) << 1 | 0x200u; /* start 0, 8 data, stop 1 */
+    u->txq_len++;
+    if (!u->tx_ev)
+        tx_next(st, u);
 }
 
 static es_time_t frame_ps(mcu_state *st, mcu_uart *u)
@@ -582,6 +643,7 @@ static void in_cb(void *ctx, void *arg, es_time_t now)
     if (!u->inq_len || !u->rx)
         return;
     catch_up(st, now);
+    esk_mach_outside(&st->m);
     if (runnable(st) && u->rx->room(u->rx->ctx)) {
         u->rx->put(u->rx->ctx, u->inq[u->inq_head]);
         u->inq_head = (u->inq_head + 1) % MCU_INQ_CAP;
@@ -632,6 +694,7 @@ static void rx_bit_cb(void *ctx, void *arg, es_time_t now)
     }
     u->rx_busy = 0;
     catch_up(st, now);
+    esk_mach_outside(&st->m);
     if (v == ESK_L1 && runnable(st) && u->rx && u->rx->room(u->rx->ctx)) {
         u->rx->put(u->rx->ctx, (int)(u->rx_shift & 0xffu));
         u->rx_bytes++;
@@ -806,6 +869,9 @@ static void mcu_reset(esk_comp *c)
     for (i = 0; i < st->nuart; i++) {
         mcu_uart *u = &st->uart[i];
         u->tx_ev = u->in_ev = u->rx_ev = 0;
+        u->txq_len = u->txq_head = 0;
+        u->tx_free = 0;
+        u->tx_pin = NULL;
         u->text_len = 0;
         u->text[0] = 0;
         u->text_total = 0;
@@ -846,6 +912,7 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
     if (st->m.pins_changed) {
         es_time_t now = e->sched.now;
         st->m.input_lead = st->t > now ? (u32)ps_to_cycles(st->t - now, esk_mach_core_hz(&st->m)) : 0;
+        esk_mach_outside(&st->m);
         st->m.pins_changed(&st->m);
         st->m.input_lead = 0;
     }

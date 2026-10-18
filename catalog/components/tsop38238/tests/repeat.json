@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "repeat",
+  "description": "CH- held for 300 ms: the frame, then a repeat code 108 ms and 216 ms after its start (9 ms burst, 2.25 ms space, burst): two bursts each, 68 + 2 x 4 edges.",
+  "policy": "functional",
+  "until": "400ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/tsop38238"
+      }
+    ],
+    "nets": {
+      "N_OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "key",
+      "value": "ch-"
+    },
+    {
+      "at": "300ms",
+      "target": "DUT",
+      "input": "key",
+      "value": "none"
+    }
+  ],
+  "expect": {
+    "net:N_OUT": {
+      "between": [
+        "0ms",
+        "400ms"
+      ],
+      "edges": 76
+    },
+    "output:DUT.frames": {
+      "at": "399ms",
+      "equals": 3
+    },
+    "pin:DUT.OUT": {
+      "at": "113ms",
+      "logic": "0"
+    }
+  }
+}
