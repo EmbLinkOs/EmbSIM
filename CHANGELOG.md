@@ -5,6 +5,12 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Undo keeps up with the keyboard
+
+- A Ctrl+Z or Ctrl+Shift+Z pressed while an edit is still finishing now waits
+  for it in the command stack's queue. Before, it was dropped, so pressing
+  undo twice quickly undid only one edit.
+
 ### The Uno's USB fuse: a resettable PTC that heats and trips (ADR-031, ADR-034)
 
 - `emblink/mf_msmf050`: Bourns' MF-MSMF050-2, the Uno's F1 on USB VBUS. A
