@@ -454,6 +454,15 @@ versions follow semantic versioning. There is no release yet.
   element follows the air with the datasheet's response times (5 s for
   humidity, 10 s for temperature) and readings are clamped to the range.
   Its fixtures check the start-up second, the previous data and the lag.
+- The HD44780 LCD keeps the controller's timing: its power-on reset
+  (8-bit, one line, display off, 10 ms busy), 37 us a write and 1.52 ms
+  a clear or home, with writes while busy ignored as the part does; the
+  busy flag, address counter and RAM read back; the part's pull-ups on
+  RS, R/W and DB0-DB7 (a floating R/W reads, so nothing is written); the
+  A00 character ROM; the characters showing only with 3.0 V or more of
+  contrast (VDD - V0), and a backlight output. The LiquidCrystal
+  library's `HelloWorld` runs unmodified, 6/6; display-showcase writes
+  its LCD at the controller's timing.
 - The HC-SR04's echo is the sound's round trip at the speed of sound in
   the air's temperature (a new input, 20 C by default: 58.24 us per cm),
   measured from the trigger's falling edge after a `burst_delay`; a

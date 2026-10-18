@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "HelloWorld",
+  "until": "3500ms",
+  "inputs": [
+    {
+      "at": "1s",
+      "target": "POT",
+      "input": "position",
+      "value": 0.1
+    }
+  ],
+  "assertions": [
+    {
+      "id": "blank-before-contrast",
+      "at": "500ms",
+      "probe": "line1",
+      "expect": {
+        "equals": "                "
+      }
+    },
+    {
+      "id": "backlight",
+      "at": "500ms",
+      "probe": "backlight",
+      "expect": {
+        "equals": "true"
+      }
+    },
+    {
+      "id": "hello",
+      "at": "1500ms",
+      "probe": "line1",
+      "expect": {
+        "equals": "hello, world!   "
+      }
+    },
+    {
+      "id": "seconds-1",
+      "at": "1500ms",
+      "probe": "line2",
+      "expect": {
+        "equals": "1               "
+      }
+    },
+    {
+      "id": "seconds-3",
+      "at": "3400ms",
+      "probe": "line2",
+      "expect": {
+        "equals": "3               "
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "The LiquidCrystal library's HelloWorld, unmodified, driving the LCD in 4-bit mode at the controller's own timing. With the contrast potentiometer at half, V0 is 2.5 V and the contrast voltage only 2.5 V: the backlight is on but no character shows, as on a real module before the pot is turned. Turned to a tenth at 1 s (V0 0.5 V, 4.5 V of contrast), the display shows 'hello, world!' and the seconds since reset on line 2."
+}

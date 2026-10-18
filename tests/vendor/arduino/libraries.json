@@ -27,6 +27,13 @@
       "commit": "8619f2b1fcfe4c28b239c7b65b744a8f49cd2d3e",
       "version": "1.9.7",
       "license": "NewPing's own: use as-is, no forks or derivatives (fetched unmodified, never vendored)"
+    },
+    {
+      "name": "LiquidCrystal",
+      "repo": "https://github.com/arduino-libraries/LiquidCrystal",
+      "commit": "42022e0bb7e11829317467bab28ed42af23e0ee5",
+      "version": "1.0.7",
+      "license": "LGPL-2.1"
     }
   ]
 }

@@ -24,6 +24,7 @@ it when `examples/<library>/<example>/` holds its `scenario.json` (and a
 
 | Library example | Part | What it checks |
 | --- | --- | --- |
+| LiquidCrystal `HelloWorld` | 16x2 HD44780 LCD in 4-bit mode, contrast pot on V0 | Nothing shown while the contrast pot sits at half (2.5 V of contrast), then 'hello, world!' and the seconds once it is turned, at the controller's real execution times |
 | NewPing `NewPingExample` | HC-SR04, TRIG on D12, ECHO on D11 | The echo the sound's round trip at the air's temperature (100 cm: 5824 us at 20 C, 6037 us at 0 C) as NewPing prints it (102 and 105 cm), out-of-range targets as 0 |
 | Servo `Sweep` | SG90-class servo on D9 | The horn holding 90 deg until the library's first pulse (32.8 ms: a full Timer1 wrap), turning at the rated 625 deg/s at 5 V, then following the sweep 1 deg (10.3 us, past the 10 us dead band) every 15 ms |
 | Servo `Knob` | Potentiometer on A0, servo on D9 | The knob read and mapped to the horn (half: 2.500 V on the 511/512 boundary, 89 deg), the horn turning at its rated speed when the knob moves |
