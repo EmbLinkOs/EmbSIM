@@ -807,7 +807,7 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
                 # glass): "-- Shared by: a, b" names the component directories
                 # whose scripts must be the same file
                 text = script.read_bytes()
-                shared = re.search(rb"^-- Shared by: ([\w, -]+)$", text, re.M)
+                shared = re.search(rb"^-- Shared by: ([\w, -]+?)\r?$", text, re.M)  # CRLF in a Windows checkout
                 for other in (shared.group(1).decode().split(",") if shared else []):
                     twin = base.parent / other.strip() / m["script"]
                     if not twin.is_file() or twin.read_bytes() != text:
