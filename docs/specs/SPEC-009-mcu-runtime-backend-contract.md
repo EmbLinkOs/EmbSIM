@@ -190,6 +190,18 @@ clock the RCC reports, the remainder carried; catching up after a sleep
 rounds cycles up. The board's NRST pin held low keeps the core in reset;
 BOOT0 high (boot from system memory) is `mcu.boot_mode`.
 
+An AVR's peripherals keep time lazily: the cycles a quantum ran are owed to
+them and paid (each device ticked over the cycles it missed, ending where
+they ended) before the core reads or writes a device that keeps time, at
+the earliest next event they report (an interrupt's flag, a pin's edge,
+recomputed after any write), every 65536 cycles, at the end of the run and
+before any outside input (a pin change, a serial byte). What the firmware
+and the pins see is the same as ticking at every instruction. A lone AVR
+whose islands are all quiet, not single-stepping, runs quanta of up to
+100 µs (still ending at the next event and at its own pin changes); the
+frames its UART sends meanwhile go out on the TX pin each at its own time,
+queued, so the line's waveform is unchanged.
+
 ## 9. Streams and semihosting
 
 Semihosting output and each UART's transmitted bytes go to the board's

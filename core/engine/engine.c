@@ -935,7 +935,36 @@ static void island_step_cb(void *ctx, void *arg, es_time_t now)
     }
     if (reached < now)
         reached = now;
+    {
+        /* a steady island steps again only when something touches it, or
+         * at its sources' next breakpoint */
+        es_time_t bp;
+        if (esk_island_quiet(isl, &bp)) {
+            if (bp != ES_TIME_MAX)
+                schedule_island(e, isl, bp > reached ? bp : reached);
+            return;
+        }
+    }
     schedule_island(e, isl, reached);
+}
+
+int esk_engine_analog_quiet(esk_engine *e)
+{
+    size_t i;
+    for (i = 0; i < e->islands.len; i++) {
+        es_time_t bp;
+        if (!esk_island_quiet(e->islands.data[i], &bp) || bp <= e->sched.now)
+            return 0;
+    }
+    return 1;
+}
+
+static void island_wake(esk_island *isl, es_time_t at)
+{
+    esk_engine *e = isl->e;
+    if (at < e->sched.now)
+        at = e->sched.now;
+    schedule_island(e, isl, at);
 }
 
 es_status esk_engine_partition(esk_engine *e)
@@ -1010,6 +1039,7 @@ es_status esk_engine_partition(esk_engine *e)
                     st = ES_ENOMEM;
                     break;
                 }
+                isl->wake = island_wake;
                 e->nets.data[root]->island = isl;
                 /* add the root net first so a ground root becomes node 0 */
             }

@@ -56,8 +56,9 @@ Defaults (per session, overridable per island in the project): `reltol
   row that change no unknown (by more than 1e-14 relative), neither ending
   at a breakpoint, with no breakpoint pending, and when a discarded trial
   step of `h_max` from that solution changes nothing either, the island is
-  quiet: its steps move its time without a solve until a touch (a bridge's
-  new drive, an input) or a breakpoint. A busy MCU's quanta clip every step
+  quiet: it is not stepped at all until a touch (a bridge's new drive, an
+  input) wakes it at the touch's time, or until its next breakpoint; its
+  time catches up when it wakes. A busy MCU's quanta clip every step
   to a microsecond, and a board's LED and pull-up islands then cost nothing
   between edges; an island still moving, however slowly, is solved to the
   solver's own floor (the second step solves what the first's `accept`

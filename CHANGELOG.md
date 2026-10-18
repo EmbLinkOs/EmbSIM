@@ -104,6 +104,14 @@ versions follow semantic versioning. There is no release yet.
 - Added an evidence-based 1.0 release readiness checklist.
 
 ### Added
+- Simulation speed: an AVR's peripherals keep time lazily (their owed
+  cycles paid before the core touches them, at their next event and before
+  any outside input, so nothing the firmware or the pins see changes);
+  quiet analog islands sleep until a touch or a breakpoint instead of being
+  stepped every quantum; a lone AVR with quiet islands runs 100 µs quanta,
+  its UART's frames queued on the TX pin each at its own time; the core
+  fetches from flash directly. Three seconds of the TM1637 example went
+  from 7.4 s to about 3.4 s on the reference machine.
 - A project menu on the workbench's mark, with the project's name: New
   project (a blank sheet or a catalog board as B1, named as the schema
   allows), Open, Save and Save a copy, run as the palette's commands; the

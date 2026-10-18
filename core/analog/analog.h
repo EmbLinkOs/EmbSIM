@@ -75,6 +75,9 @@ struct esk_island {
     uint64_t quiet_steps;         /* steps a steady island took without a solve */
     int failed;                   /* frozen after a fatal diagnostic */
     void *priv;                   /* solver-private */
+    /* the engine's: a touch woke the island at `at` (a quiet island has no
+     * step pending, SPEC-004 §5) */
+    void (*wake)(esk_island *isl, es_time_t at);
 };
 
 /* engine -> analog */
@@ -97,6 +100,9 @@ es_status esk_island_reset(esk_island *isl);
 es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached);
 /* a source changed (a bridge pin toggled): the island must re-evaluate from now */
 void esk_island_touch(esk_island *isl, es_time_t now);
+/* 1 when the island sits at its steady state: nothing changes until a touch
+ * or *next, the next breakpoint of a source (ES_TIME_MAX for none) */
+int esk_island_quiet(esk_island *isl, es_time_t *next);
 double esk_island_node_v(const esk_island *isl, int node);
 /* JSON of node voltages and device observations */
 esk_json *esk_island_observe(esk_island *isl);
