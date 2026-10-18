@@ -1,0 +1,284 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-lcd2004-i2c",
+ "description": "LiquidCrystal_I2C's HelloWorld on an Uno with a 20x4 HD44780 LCD behind the common PCF8574 I2C backpack, wired as that board is: P0 to RS, P1 to R/W, P2 to E, P4..P7 to D4..D7, P3 switching the backlight through 4.7 kOhm and an NPN transistor in the cathode, A0..A2 pulled up by 10 kOhm (address 0x27), 4.7 kOhm pull-ups on SDA and SCL, a 10 kOhm contrast trimmer on V0. The LCD model draws no backlight current, so the module's white backlight LED is wired across A and K as its own part.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "U1",
+   "component": "emblink/pcf8574",
+   "layout": {
+    "x": 120,
+    "y": 620
+   }
+  },
+  {
+   "id": "LCD",
+   "component": "emblink/lcd2004",
+   "layout": {
+    "x": 420,
+    "y": 700
+   }
+  },
+  {
+   "id": "RSDA",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "4.7k"
+   },
+   "layout": {
+    "x": 40,
+    "y": 520
+   }
+  },
+  {
+   "id": "RSCL",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "4.7k"
+   },
+   "layout": {
+    "x": 70,
+    "y": 520
+   }
+  },
+  {
+   "id": "RA0",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "layout": {
+    "x": 20,
+    "y": 740
+   }
+  },
+  {
+   "id": "RA1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "layout": {
+    "x": 40,
+    "y": 740
+   }
+  },
+  {
+   "id": "RA2",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "layout": {
+    "x": 60,
+    "y": 740
+   }
+  },
+  {
+   "id": "POT",
+   "component": "emblink/potentiometer",
+   "params": {
+    "resistance": "10k"
+   },
+   "layout": {
+    "x": 300,
+    "y": 560
+   }
+  },
+  {
+   "id": "RB",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "4.7k"
+   },
+   "layout": {
+    "x": 260,
+    "y": 620
+   }
+  },
+  {
+   "id": "Q1",
+   "component": "emblink/bjt_npn",
+   "layout": {
+    "x": 300,
+    "y": 640
+   }
+  },
+  {
+   "id": "BL",
+   "component": "emblink/led",
+   "params": {
+    "color": "white"
+   },
+   "layout": {
+    "x": 360,
+    "y": 620
+   }
+  }
+ ],
+ "nets": {
+  "VCC": [
+   "USB.+",
+   "B1.5V",
+   "U1.VCC",
+   "LCD.VDD",
+   "RSDA.1",
+   "RSCL.1",
+   "RA0.1",
+   "RA1.1",
+   "RA2.1",
+   "POT.2",
+   "LCD.A",
+   "BL.A"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "U1.GND",
+   "LCD.VSS",
+   "POT.1",
+   "Q1.E"
+  ],
+  "SDA": [
+   "B1.SDA",
+   "U1.SDA",
+   "RSDA.2"
+  ],
+  "SCL": [
+   "B1.SCL",
+   "U1.SCL",
+   "RSCL.2"
+  ],
+  "ADDR0": [
+   "U1.A0",
+   "RA0.2"
+  ],
+  "ADDR1": [
+   "U1.A1",
+   "RA1.2"
+  ],
+  "ADDR2": [
+   "U1.A2",
+   "RA2.2"
+  ],
+  "CONTRAST": [
+   "POT.W",
+   "LCD.V0"
+  ],
+  "LCD_RS": [
+   "U1.P0",
+   "LCD.RS"
+  ],
+  "LCD_RW": [
+   "U1.P1",
+   "LCD.RW"
+  ],
+  "LCD_E": [
+   "U1.P2",
+   "LCD.E"
+  ],
+  "BL_BASE_R": [
+   "U1.P3",
+   "RB.1"
+  ],
+  "BL_BASE": [
+   "RB.2",
+   "Q1.B"
+  ],
+  "BL_K": [
+   "Q1.C",
+   "LCD.K",
+   "BL.K"
+  ],
+  "LCD_D4": [
+   "U1.P4",
+   "LCD.D4"
+  ],
+  "LCD_D5": [
+   "U1.P5",
+   "LCD.D5"
+  ],
+  "LCD_D6": [
+   "U1.P6",
+   "LCD.D6"
+  ],
+  "LCD_D7": [
+   "U1.P7",
+   "LCD.D7"
+  ]
+ },
+ "probes": [
+  {
+   "id": "line1",
+   "target": "output:LCD.line1",
+   "kind": "value"
+  },
+  {
+   "id": "line2",
+   "target": "output:LCD.line2",
+   "kind": "value"
+  },
+  {
+   "id": "line3",
+   "target": "output:LCD.line3",
+   "kind": "value"
+  },
+  {
+   "id": "line4",
+   "target": "output:LCD.line4",
+   "kind": "value"
+  },
+  {
+   "id": "backlight",
+   "target": "output:LCD.backlight",
+   "kind": "value"
+  },
+  {
+   "id": "latch",
+   "target": "output:U1.latch",
+   "kind": "value"
+  },
+  {
+   "id": "scl",
+   "target": "net:SCL",
+   "kind": "digital"
+  }
+ ]
+}

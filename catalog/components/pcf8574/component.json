@@ -3,9 +3,9 @@
   "kind": "component",
   "id": "emblink/pcf8574",
   "version": "1.0.0",
-  "name": "PCF8574 I2C IO expander",
+  "name": "PCF8574 / PCF8574A I2C I/O expander",
   "category": "misc",
-  "description": "8-bit quasi-bidirectional I/O expander on I2C (PCF8574, address 0x20): a written 1 is a weak pull-up the pin can read through, a 0 a strong low; reads return the pin levels; INT_N goes low when an input changes. Drives the common I2C LCD backpacks.",
+  "description": "8-bit quasi-bidirectional I/O expander on I2C (NXP PCF8574, address 0x20 + A2..A0; PCF8574A 0x38): a written 1 is a weak pull-up the pin can read through, with a strong pull-up during the acknowledge; a 0 a strong low; reads return the pin levels; INT_N goes low when a pin changes. The chip on the common I2C LCD backpacks (0x27).",
   "keywords": [
     "io expander",
     "PCF8574",
@@ -22,7 +22,7 @@
       "model": {
         "kind": "digital_in"
       },
-      "doc": "Address bit 0 (see the address parameter)",
+      "doc": "Address bit 0: high adds it to the address (tie it; unconnected reads low)",
       "power_ref": "VCC"
     },
     {
@@ -31,7 +31,8 @@
       "model": {
         "kind": "digital_in"
       },
-      "power_ref": "VCC"
+      "power_ref": "VCC",
+      "doc": "Address bit 1: high adds it to the address (tie it; unconnected reads low)"
     },
     {
       "name": "A2",
@@ -39,7 +40,8 @@
       "model": {
         "kind": "digital_in"
       },
-      "power_ref": "VCC"
+      "power_ref": "VCC",
+      "doc": "Address bit 2: high adds it to the address (tie it; unconnected reads low)"
     },
     {
       "name": "P0",
@@ -120,9 +122,9 @@
       "number": 13,
       "model": {
         "kind": "digital_out",
-        "drive": "push_pull"
+        "drive": "open_drain"
       },
-      "doc": "Interrupt, open drain: an input changed since the last read",
+      "doc": "Interrupt, open drain, active low: a pin changed since the last read or write",
       "power_ref": "VCC"
     },
     {
@@ -151,16 +153,18 @@
         "tolerance": 0.1
       },
       "required": false,
-      "doc": "Supply (defaults to the family rail)"
+      "doc": "Supply, 2.5 to 6 V (defaults to the family rail)"
     }
   ],
   "params": {
-    "address": {
-      "type": "integer",
-      "default": 32,
-      "min": 32,
-      "max": 39,
-      "doc": "I2C address, 32 (0x20) + A2..A0 as wired (PCF8574A: use 56-63)"
+    "variant": {
+      "type": "enum",
+      "enum": [
+        "PCF8574",
+        "PCF8574A"
+      ],
+      "default": "PCF8574",
+      "doc": "The part: PCF8574 answers at 0x20 + A2..A0, PCF8574A at 0x38 + A2..A0"
     }
   },
   "outputs": [
@@ -176,6 +180,11 @@
       "min": 0,
       "max": 255,
       "doc": "Pin levels"
+    },
+    {
+      "name": "interrupt",
+      "type": "boolean",
+      "doc": "INT_N asserted"
     }
   ],
   "model": {
@@ -184,29 +193,33 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Quasi-bidirectional ports (weak 1, strong 0), reads of the pin levels, INT_N set on input change and cleared by a read or write.",
+      "claims": "Address from A0..A2 (and the variant), quasi-bidirectional ports (weak 1, strong 0) updated at the acknowledge, reads of the pin levels, INT_N on a change and cleared by a read or write; no answer below 2.5 V.",
       "omissions": [
-        "the strong pull-up pulse on a 0-to-1 write",
-        "A0-A2 are not read: set the address parameter"
+        "the supply current and output current limits (the 100 uA source and 25 mA sink are drive strengths)",
+        "an unconnected A0..A2 reads low (the datasheet wants them tied)",
+        "the 400 kHz bus limit (faster clocks are decoded too)",
+        "the power-on reset threshold"
       ],
       "validation": [
         "tests/*.json"
       ]
     },
     "timed": {
-      "claims": "As functional; delays as stated.",
+      "claims": "As functional, with the strong pull-up during the acknowledge clock's high time and INT_N's 4 us delays.",
       "omissions": [
-        "the strong pull-up pulse on a 0-to-1 write",
-        "A0-A2 are not read: set the address parameter"
+        "the supply current and output current limits (the 100 uA source and 25 mA sink are drive strengths)",
+        "an unconnected A0..A2 reads low (the datasheet wants them tied)",
+        "the 400 kHz bus limit (faster clocks are decoded too)",
+        "the power-on reset threshold"
       ]
     },
     "electrical": {
       "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
       "omissions": [
-        "the strong pull-up pulse on a 0-to-1 write",
-        "A0-A2 are not read: set the address parameter",
-        "supply current",
-        "output current limits"
+        "the supply current and output current limits (the 100 uA source and 25 mA sink are drive strengths)",
+        "an unconnected A0..A2 reads low (the datasheet wants them tied)",
+        "the 400 kHz bus limit (faster clocks are decoded too)",
+        "the power-on reset threshold"
       ],
       "validation": [
         "tests/*.json"
@@ -218,7 +231,7 @@
     "license": "Apache-2.0",
     "sources": [
       {
-        "title": "NXP PCF8574 datasheet (quasi-bidirectional I/O, interrupt)"
+        "title": "NXP PCF8574/PCF8574A, Remote 8-bit I/O expander for I2C-bus with interrupt, product data sheet"
       }
     ]
   },

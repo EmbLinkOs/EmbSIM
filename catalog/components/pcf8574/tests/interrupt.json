@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "interrupt",
+  "description": "An outside driver pulls P5 low at 50 us: INT_N falls 4 us later, the port reads 0xDF, and the read at 70 us lets INT_N go.",
+  "policy": "functional",
+  "until": "140us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "70u"
+        }
+      },
+      {
+        "id": "DRV",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,0",
+          "period": "50u"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PUI",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/pcf8574"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "P5": [
+        "DUT.P5",
+        "DRV.OUT0"
+      ],
+      "INT": [
+        "DUT.INT_N",
+        "PUI.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.interrupt": {
+      "at": "52us",
+      "equals": false
+    },
+    "net:INT": {
+      "at": "60us",
+      "logic": "0"
+    },
+    "output:DUT.port": {
+      "at": "60us",
+      "equals": 223
+    },
+    "pin:DUT.INT_N": {
+      "at": "135us",
+      "logic": "1"
+    }
+  }
+}

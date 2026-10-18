@@ -34,6 +34,13 @@
       "commit": "42022e0bb7e11829317467bab28ed42af23e0ee5",
       "version": "1.0.7",
       "license": "LGPL-2.1"
+    },
+    {
+      "name": "LiquidCrystal_I2C",
+      "repo": "https://github.com/johnrickman/LiquidCrystal_I2C",
+      "commit": "738765e388816fb2a687d40436cd2604febce1b1",
+      "version": "1.1.4",
+      "license": "none stated (the Library Manager's LiquidCrystal I2C; fetched unmodified, never vendored)"
     }
   ]
 }

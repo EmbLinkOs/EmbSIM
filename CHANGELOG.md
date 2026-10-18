@@ -474,6 +474,22 @@ versions follow semantic versioning. There is no release yet.
   change within its 10 us dead band, and not at all below 3.5 V. The
   Arduino Servo library's `Sweep` and `Knob` examples run unmodified,
   8/8 and 7/7.
+- The PCF8574 reads its I2C address from A0..A2 as the part does (0x20 +
+  A2A1A0; a `variant` for the PCF8574A at 0x38), so an LCD backpack with
+  the three pulled up answers at 0x27; a written byte reaches the port at
+  the acknowledge clock with a strong pull-up during its high time; INT_N
+  is open drain, set 4 us after a pin departs from what the last read or
+  write left and cleared by a read or write; below 2.5 V it does not
+  acknowledge. `ctx.bus.i2c_slave` takes `address_pins` (SPEC-013).
+- A 20x4 character LCD (`emblink/lcd2004`) on the same HD44780 model,
+  generalised to the glass's columns and rows: rows 3 and 4 continue
+  lines 1 and 2 (0x14 and 0x54), as on the module. `tools/validate.py`
+  checks that scripts marked `-- Shared by:` stay identical.
+  LiquidCrystal_I2C's `HelloWorld` runs unmodified on a 20x4 behind a
+  PCF8574 backpack wired as the common board is, 7/7: the backlight is
+  off until the sketch turns it on (and on at power-up before the
+  library writes, as the expander's ports start high). The Arduino runner
+  builds `.pde` sketches and names library examples `<library>/<example>`.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

@@ -44,7 +44,7 @@
         "kind": "analog"
       },
       "required": false,
-      "doc": "Contrast (not modelled)"
+      "doc": "Contrast: the characters show while VDD - V0 is at least 3.0 V"
     },
     {
       "name": "RS",
@@ -144,7 +144,7 @@
         "kind": "passive"
       },
       "required": false,
-      "doc": "Backlight anode"
+      "doc": "Backlight anode (the model draws no current: wire the backlight LED across A and K to load it)"
     },
     {
       "name": "K",
@@ -156,7 +156,22 @@
       "doc": "Backlight cathode"
     }
   ],
-  "params": {},
+  "params": {
+    "columns": {
+      "type": "integer",
+      "default": 16,
+      "min": 16,
+      "max": 16,
+      "doc": "Characters per row on the glass (fixed for this module)"
+    },
+    "rows": {
+      "type": "integer",
+      "default": 2,
+      "min": 2,
+      "max": 2,
+      "doc": "Rows on the glass (fixed for this module)"
+    }
+  },
   "outputs": [
     {
       "name": "line1",
@@ -228,7 +243,9 @@
         "the 5x10 font",
         "execution times' change with supply and temperature",
         "CGRAM characters' pixels in the line outputs (shown as #)",
-        "cursor and blink drawing"
+        "cursor and blink drawing",
+        "the backlight LED draws no current (wire an LED across A and K)",
+        "the dark boxes an uninitialised module shows on row 1 with the contrast high"
       ],
       "validation": [
         "tests/*.json"
@@ -240,7 +257,9 @@
         "the 5x10 font",
         "execution times' change with supply and temperature",
         "CGRAM characters' pixels in the line outputs (shown as #)",
-        "cursor and blink drawing"
+        "cursor and blink drawing",
+        "the backlight LED draws no current (wire an LED across A and K)",
+        "the dark boxes an uninitialised module shows on row 1 with the contrast high"
       ]
     },
     "electrical": {
@@ -251,7 +270,9 @@
         "CGRAM characters' pixels in the line outputs (shown as #)",
         "cursor and blink drawing",
         "supply current",
-        "output current limits"
+        "output current limits",
+        "the backlight LED draws no current (wire an LED across A and K)",
+        "the dark boxes an uninitialised module shows on row 1 with the contrast high"
       ],
       "validation": [
         "tests/*.json"

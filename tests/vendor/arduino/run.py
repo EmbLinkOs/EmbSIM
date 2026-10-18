@@ -174,9 +174,12 @@ def runs(libs: Path) -> list:
     for d in sorted((HERE / "examples").glob("*/*")):
         if not d.is_dir() or libs is None:
             continue
-        ino = libs / d.parent.name / "examples" / d.name / f"{d.name}.ino"
+        ex = libs / d.parent.name / "examples" / d.name
+        # .pde is the sketch extension from before Arduino 1.0; the IDE still builds it
+        ino = next((f for f in (ex / f"{d.name}.ino", ex / f"{d.name}.pde") if f.is_file()), ex / f"{d.name}.ino")
         own = d / "project.json"
-        out.append((d.name, ino, own if own.is_file() else HERE / "project.json", d / "scenario.json"))
+        out.append((f"{d.parent.name}/{d.name}", ino, own if own.is_file() else HERE / "project.json",
+                    d / "scenario.json"))
     return out
 
 

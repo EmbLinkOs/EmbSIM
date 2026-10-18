@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "address",
+  "description": "A0-A2 pulled high: a write to 0x20 is ignored, the one to 0x27 sets the port, as on an LCD backpack.",
+  "policy": "functional",
+  "until": "130us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,3,3,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PA0",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PA1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PA2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/pcf8574"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "A0": [
+        "DUT.A0",
+        "PA0.1"
+      ],
+      "A1": [
+        "DUT.A1",
+        "PA1.1"
+      ],
+      "A2": [
+        "DUT.A2",
+        "PA2.1"
+      ],
+      "P4": [
+        "DUT.P4"
+      ],
+      "P0": [
+        "DUT.P0"
+      ]
+    }
+  },
+  "expect": {
+    "net:P4": {
+      "at": "60us",
+      "logic": "1"
+    },
+    "pin:DUT.P4": {
+      "at": "125us",
+      "logic": "0"
+    },
+    "output:DUT.latch": {
+      "at": "125us",
+      "equals": 15
+    },
+    "net:P0": {
+      "at": "125us",
+      "logic": "1"
+    }
+  }
+}

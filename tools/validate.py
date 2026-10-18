@@ -799,8 +799,20 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
                     report.warning(file, ptr(key, "primitive"), "catalog.primitive_inputs",
                                    f"primitive {prim} reads one of inputs {sorted(needed_inputs)}; none is declared or bound")
         elif "script" in m:
-            if not (base / m["script"]).exists():
+            script = base / m["script"]
+            if not script.exists():
                 report.error(file, ptr(key, "script"), "catalog.file_missing", f"{m['script']} does not exist")
+            else:
+                # one model for several parts (a controller behind different
+                # glass): "-- Shared by: a, b" names the component directories
+                # whose scripts must be the same file
+                text = script.read_bytes()
+                shared = re.search(rb"^-- Shared by: ([\w, -]+)$", text, re.M)
+                for other in (shared.group(1).decode().split(",") if shared else []):
+                    twin = base.parent / other.strip() / m["script"]
+                    if not twin.is_file() or twin.read_bytes() != text:
+                        report.error(file, ptr(key, "script"), "catalog.shared_model_differs",
+                                     f"{m['script']} is shared with {other.strip()}, whose copy differs or is missing")
         elif "composite" in m:
             comp = m["composite"]
             inner = check_instances_params(report, file, ptr(key, "composite", "components"), comp.get("components", []), index)

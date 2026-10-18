@@ -1,8 +1,9 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- Copyright 2026 Junior Deogracias
 --
--- HD44780-compatible 16x2 character LCD, as Hitachi's datasheet describes
--- the controller.
+-- HD44780-compatible character LCD module, as Hitachi's datasheet
+-- describes the controller; the glass is `columns` by `rows` (16x2, 20x4).
+-- Shared by: lcd1602, lcd2004
 --
 --   - power-on reset: 8-bit interface, one line, display, cursor and blink
 --     off, increment, no shift, the display cleared; busy for 10 ms;
@@ -20,6 +21,11 @@
 --   - DDRAM: one line of 80 or two of 40 (0x00 and 0x40), the display and
 --     cursor shift, the address counter wrapping as the part's does; CGRAM:
 --     eight characters stored and read back;
+--   - the glass: row 1 shows line 1 from its start and row 2 line 2; on a
+--     four-row module rows 3 and 4 continue lines 1 and 2 (a 20x4's rows
+--     start at 0x00, 0x40, 0x14 and 0x54), so text running off row 1 goes
+--     on in row 3, as on the real module; in one-line mode rows 2 and 4 stay
+--     blank;
 --   - the character ROM A00: ASCII with the yen sign at 0x5C and arrows at
 --     0x7E and 0x7F, katakana at 0xA1..0xDF, Greek and symbols above;
 --   - the characters show only while the contrast voltage VDD - V0 is at
@@ -209,12 +215,20 @@ local function visible(ctx)
   return v0 == nil or vdd == nil or vdd - v0 >= 3.0
 end
 
-local function line(ctx, base)
+-- row r (0 first) of the glass
+local function row(ctx, r)
   local s = ctx.state
-  if not s.on or not visible(ctx) then return string.rep(" ", 16) end
+  local cols = ctx.params.columns
+  if not s.on or not visible(ctx) or (not s.lines2 and r % 2 == 1) then return string.rep(" ", cols) end
+  local off = (r // 2) * cols -- rows 3 and 4 continue lines 1 and 2
   local t = {}
-  for i = 0, 15 do
-    local a = s.lines2 and ((i + s.shift) % 40 + base) or ((i + s.shift) % 80)
+  for i = 0, cols - 1 do
+    local a
+    if s.lines2 then
+      a = (i + off + s.shift) % 40 + (r % 2 == 1 and 0x40 or 0)
+    else
+      a = (i + off + s.shift) % 80
+    end
     t[#t + 1] = glyph(s.dd[a] or 32)
   end
   return table.concat(t)
@@ -223,15 +237,15 @@ end
 function M.observe(ctx)
   local s = ctx.state
   local a, k = ctx.analog.voltage("A"), ctx.analog.voltage("K")
-  return {
-    line1 = line(ctx, 0x00),
-    line2 = s.lines2 and line(ctx, 0x40) or string.rep(" ", 16),
+  local o = {
     on = s.on,
     cursor = s.ac,
     four_bit = not s.eight,
     contrast_ok = visible(ctx),
     backlight = a ~= nil and k ~= nil and a - k >= 2.5,
   }
+  for r = 0, ctx.params.rows - 1 do o["line" .. (r + 1)] = row(ctx, r) end
+  return o
 end
 
 return M

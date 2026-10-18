@@ -570,17 +570,21 @@ static void push_ctx(lua_State *L, esk_comp *c)
  * The protocol is decoded here, in C, from the pins' edges; the model sees
  * whole bytes through its handlers:
  *   ctx.bus.i2c_slave(address, {start(ctx, "read"|"write"), write(ctx, byte)
- *     -> false to NACK, read(ctx) -> byte, stop(ctx)}, {sda=, scl=}?)
+ *     -> false to NACK, read(ctx) -> byte, stop(ctx)}, {sda=, scl=,
+ *     address_pins=}?)
  *   ctx.bus.spi_slave({select(ctx) -> first byte, transfer(ctx, byte) -> the
  *     next byte to send, deselect(ctx)}, {sck=, mosi=, miso=, cs=, mode=}?)
  * I2C: 7-bit addresses, open drain (the pins are released for 1), clock
- * stretching not used. SPI: 8-bit frames MSB first, modes 0 to 3, CS active
+ * stretching not used. address_pins lists the pins that set the address's
+ * low bits, as a part's A0..A2 do: each one high adds its bit to `address`
+ * when an address byte arrives (an unconnected one reads low). SPI: 8-bit frames MSB first, modes 0 to 3, CS active
  * low, MISO released while not selected. Handlers may be absent. */
 
 enum { I2C_IDLE, I2C_ADDR, I2C_WRITE, I2C_READ, I2C_IGNORE };
 
 struct i2c_slave {
     esk_pin *sda, *scl;
+    esk_pin *apin[3];      /* address pins, bit 0 first */
     int handlers;          /* registry reference */
     unsigned addr;
     int phase;
@@ -649,6 +653,17 @@ static void od_drive(esk_pin *p, int bit)
         esk_pin_drive(p, ESK_L0, ESK_STR_STRONG, 0);
 }
 
+/* the address now: the fixed part and the address pins' levels */
+static unsigned i2c_address(const i2c_slave *b)
+{
+    unsigned a = b->addr;
+    int i;
+    for (i = 0; i < 3; i++)
+        if (b->apin[i] && esk_pin_level(b->apin[i]) == ESK_L1)
+            a |= 1u << i;
+    return a;
+}
+
 static void i2c_send_bit(i2c_slave *b) { od_drive(b->sda, (int)(b->out >> (7 - b->sent)) & 1); }
 
 static void i2c_edge(esk_comp *c, i2c_slave *b, esk_pin *p)
@@ -695,7 +710,7 @@ static void i2c_edge(esk_comp *c, i2c_slave *b, esk_pin *p)
         if (++b->bits < 8)
             return;
         if (b->phase == I2C_ADDR) {
-            if ((b->shift >> 1) != b->addr) {
+            if ((b->shift >> 1) != i2c_address(b)) {
                 b->phase = I2C_IGNORE;
                 return;
             }
@@ -860,6 +875,21 @@ static int api_i2c_slave(lua_State *L)
     b->sda = sda;
     b->scl = scl;
     b->addr = (unsigned)addr;
+    if (opts && lua_getfield(L, opts, "address_pins") == LUA_TTABLE) {
+        int i;
+        for (i = 0; i < 3; i++) {
+            if (lua_rawgeti(L, -1, i + 1) == LUA_TSTRING) {
+                b->apin[i] = esk_comp_pin(c, lua_tostring(L, -1));
+                if (!b->apin[i]) {
+                    esk_free(c->e->a, b, sizeof *b);
+                    return luaL_error(L, "%s has no pin %s", c->kind, lua_tostring(L, -1));
+                }
+            }
+            lua_pop(L, 1);
+        }
+    }
+    if (opts)
+        lua_pop(L, 1);
     b->sda_last = esk_pin_level(sda);
     b->scl_last = esk_pin_level(scl);
     lua_pushvalue(L, 2);
