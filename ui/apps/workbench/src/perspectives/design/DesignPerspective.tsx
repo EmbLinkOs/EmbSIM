@@ -243,7 +243,7 @@ export function DesignPerspective() {
   );
 
   const canvas = !insideOf && designView === 'bench' ? (
-    <BoardPanel interactive={running} />
+    <BoardPanel interactive={running} canvasFocused={display.focusMode} onFocusCanvas={() => setDisplay((d) => ({ ...d, focusMode: !d.focusMode }))} />
   ) : insideOf ? (
     <SchematicCanvas
       key={`inside-${inside}`}

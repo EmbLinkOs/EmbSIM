@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 
 // The CI image has Chromium pre-installed under /opt/pw-browsers; a matching
 // Playwright build is not required because we point at the executable.
-const preinstalled = ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => existsSync(p));
+const preinstalled = [process.env.EMBSIM_CHROMIUM, '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p): p is string => Boolean(p && existsSync(p)));
 
 export default defineConfig({
   testDir: './e2e',

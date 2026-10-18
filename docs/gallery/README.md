@@ -17,6 +17,20 @@ port open.
 | | |
 |---|---|
 | ![The port on the host, no program on it yet](host-serial/serial-port.png) | ![A program on the host has it open at 9600 baud](host-serial/serial-port-open.png) |
+## Bench inspection and wiring (2026-10-18)
+
+The native `embsim serve` workbench with `examples/uno-breadboard`: paper and
+graphite surfaces, a top camera, optional notes, and the expanded canvas after
+folding the keyboard list and side panels. These are captures of the paused native
+session in Chromium at 1440×900, not mock-ups or proof of mechanical qualification.
+Named contact feedback, cancellation and live button release have separate browser
+regressions. See the [bench guide](../user/bench.md) for controls and limits.
+
+| Paper with notes and a focused canvas | Top inspection with notes hidden |
+|---|---|
+| ![Native Uno and breadboard on the paper bench](bench-inspection/paper.png) | ![Top-down inspection of the same native circuit](bench-inspection/top.png) |
+
+[Graphite surface, perspective inspection](bench-inspection/graphite.png).
 
 ## The world (2026-10-18)
 
@@ -30,6 +44,7 @@ and the sketch's `Ping:` line follows it.
 | | |
 |---|---|
 | ![The World tab under the bench: the room's temperature, the wall's place](world/world-design.png) | ![Running: U1's distance and temperature from the world's](world/world-run.png) |
+
 
 ## The 3D bench and the breadboard (2026-10-18)
 
