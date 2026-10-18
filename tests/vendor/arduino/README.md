@@ -14,12 +14,24 @@ builds them, run on `emblink/arduino_uno` and pass their scenarios.
 | `comparator` | The analog comparator's interrupt timing an RC network (10 kOhm, 1 uF) against 2.5 V on AIN1, rising then falling: 6960 and 6956 us against R * C * ln 2 = 6949 us; this sketch has its own `project.json` |
 | `input_capture` | Timer1's input capture (noise canceler on, ICES1 alternated in TIMER1_CAPT) measuring `analogWrite(3, 64)` wired from D3 to ICP1 (D8): a period of exactly 32640 cycles (490.196 Hz) and 8192 high |
 
+## Libraries and their own examples
+
+The libraries parts are used through are listed in `libraries.json`, each
+at a pinned commit with its licence; none is vendored. `--libs DIR --fetch`
+clones them into `DIR`. A library's own example runs as its authors wrote
+it when `examples/<library>/<example>/` holds its `scenario.json` (and a
+`project.json` wiring the part as the example's comments say):
+
+| Library example | Part | What it checks |
+| --- | --- | --- |
+| DHT-sensor-library `DHTtester` | DHT22 on D2 with a 10 kOhm pull-up | Every read decoded, temperature and humidity as set; the sensor sending its previous measurement and its element lagging a step from 23.4 to -5.3 C with its 10 s response time (23.4, 23.4, 20.6, 15.9 C) |
+
 The core is LGPL-2.1 and is not vendored here; `run.py` takes a checkout of
 it:
 
 ```sh
 git clone https://github.com/arduino/ArduinoCore-avr /tmp/ArduinoCore-avr
-python3 tests/vendor/arduino/run.py --core /tmp/ArduinoCore-avr [--embsim build/dev/bin/embsim]
+python3 tests/vendor/arduino/run.py --core /tmp/ArduinoCore-avr [--libs /tmp/arduino-libs --fetch] [--embsim build/dev/bin/embsim]
 ```
 
 It compiles every file of `cores/arduino` into `core.a` with avr-gcc and

@@ -81,6 +81,18 @@
       "name": "readings",
       "type": "integer",
       "doc": "Answers sent since reset"
+    },
+    {
+      "type": "number",
+      "name": "humidity",
+      "unit": "%",
+      "doc": "The relative humidity the last read sent"
+    },
+    {
+      "type": "number",
+      "name": "temperature",
+      "unit": "degC",
+      "doc": "The temperature the last read sent"
     }
   ],
   "model": {
@@ -89,10 +101,12 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "The AM2302 single-bus timing and data format (16-bit humidity and temperature x10, sign bit, checksum).",
+      "claims": "The AM2302 single-wire protocol at the datasheet's timing (a start of 1 ms or more, the 80 us response, 40 bits of 50 us low and 26 or 70 us high, humidity and signed temperature x10 and a checksum); an answer only with VCC at 3.0 V or more and after the first second from power-up; each read sends the previous measurement, a new one made at most every 2 s; the element follows the air with the datasheet's response times (5 s humidity, 10 s temperature, first order); readings clamped to -40..80 C and 0..99.9 %RH in steps of 0.1.",
       "omissions": [
-        "the 2 s minimum between readings",
-        "sensor response time",
+        "the accuracy spread between parts (+-0.5 C, +-2 %RH)",
+        "long-term drift",
+        "supply current",
+        "power cycling between two reads (power is looked at when a start signal comes)",
         "timing tolerances (nominal values only)"
       ],
       "validation": [
@@ -102,18 +116,21 @@
     "timed": {
       "claims": "As functional; delays as stated.",
       "omissions": [
-        "the 2 s minimum between readings",
-        "sensor response time",
+        "the accuracy spread between parts (+-0.5 C, +-2 %RH)",
+        "long-term drift",
+        "supply current",
+        "power cycling between two reads (power is looked at when a start signal comes)",
         "timing tolerances (nominal values only)"
       ]
     },
     "electrical": {
       "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
       "omissions": [
-        "the 2 s minimum between readings",
-        "sensor response time",
-        "timing tolerances (nominal values only)",
+        "the accuracy spread between parts (+-0.5 C, +-2 %RH)",
+        "long-term drift",
         "supply current",
+        "power cycling between two reads (power is looked at when a start signal comes)",
+        "timing tolerances (nominal values only)",
         "output current limits"
       ],
       "validation": [

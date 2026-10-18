@@ -1,0 +1,18 @@
+{
+  "libraries": [
+    {
+      "name": "DHT-sensor-library",
+      "repo": "https://github.com/adafruit/DHT-sensor-library",
+      "commit": "f7d625462e6033f373e51f8c67f88fc429535b47",
+      "version": "1.4.7",
+      "license": "MIT"
+    },
+    {
+      "name": "Adafruit_Sensor",
+      "repo": "https://github.com/adafruit/Adafruit_Sensor",
+      "commit": "0a9127a1e886ff1adb4c1b6f5958b24108d55aa6",
+      "version": "1.1.15",
+      "license": "Apache-2.0"
+    }
+  ]
+}
