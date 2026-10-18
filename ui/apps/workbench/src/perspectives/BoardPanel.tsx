@@ -226,13 +226,17 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           size="sm"
           variant="ghost"
           disabled={!editable}
-          onClick={() =>
+          onClick={() => {
+            const selectionIntent = useSelection.getState();
             void useProject
               .getState()
               .placeComponent('emblink/breadboard_830', { x: 0, y: 0 })
-              .then((id) => id && setSelected({ part: id }))
-              .catch(fail('Add breadboard failed'))
-          }
+              .then((id) => {
+                // A later selection wins over this asynchronous placement response.
+                if (id && useSelection.getState() === selectionIntent) setSelected({ part: id });
+              })
+              .catch(fail('Add breadboard failed'));
+          }}
         >
           <Box /> Breadboard
         </Button>
