@@ -160,6 +160,13 @@
       "commit": "4af9a4e49a7e2134def094aa0b7dc5a94387155c",
       "version": "3.0.0",
       "license": "MIT"
+    },
+    {
+      "name": "HX711",
+      "repo": "https://github.com/bogde/HX711",
+      "commit": "be5e3d251b0aa6c1279edf76ab985825de4ebfd9",
+      "version": "0.7.5",
+      "license": "MIT"
     }
   ]
 }

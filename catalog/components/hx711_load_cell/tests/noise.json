@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "noise",
+  "description": "With the data sheet's 50 nV rms input noise (25 codes rms at gain 128 and 4.3 V) a 1 kg reading stays within 150 codes (6 sigma) of 536871.",
+  "policy": "functional",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0",
+          "period": "1u",
+          "start": "500m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hx711_load_cell",
+        "params": {
+          "noise": 1
+        }
+      }
+    ],
+    "nets": {
+      "N_DT": [
+        "DUT.DT"
+      ],
+      "N_SCK": [
+        "PG.OUT0",
+        "DUT.SCK"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.raw": {
+      "at": "590ms",
+      "min": 536721,
+      "max": 537021
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "load",
+      "value": 1
+    }
+  ]
+}

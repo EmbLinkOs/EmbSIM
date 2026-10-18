@@ -611,6 +611,12 @@ versions follow semantic versioning. There is no release yet.
 - The BMP280, sharing the BME280's model (`part`): chip ID 0x58, no
   humidity registers, standby codes of 2 and 4 s; three fixtures. Adafruit's
   `bmp280test` runs unmodified at the library's default 0x77, 3/3.
+- The HX711 load cell amplifier with a 5 kg load cell, from Avia's data
+  sheet: DOUT low when a conversion is ready (10 or 80 Hz), 24 bits out
+  MSB first on PD_SCK, 25 to 27 pulses choosing the next channel and gain,
+  power-down by PD_SCK held high, the settling time, saturation, the
+  ratiometric bridge with its zero balance, the input noise; eight
+  fixtures. The HX711 library's `HX711_full_example` runs unmodified, 4/4.
 - Board artwork for the 28BYJ-48 (the shaft turning with the output
   angle) and the ULN2003 board (its LEDs A to D); a composite's artwork
   may bind its members' outputs (`LEDA.luminance`).

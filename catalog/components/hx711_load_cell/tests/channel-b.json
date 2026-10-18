@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "channel-b",
+  "description": "26 pulses select channel B at gain 32 for the next conversion: after the settling time the open channel reads 0.",
+  "policy": "functional",
+  "until": "1200ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0",
+          "period": "1u",
+          "start": "401m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hx711_load_cell",
+        "params": {
+          "noise": 0
+        }
+      }
+    ],
+    "nets": {
+      "N_DT": [
+        "DUT.DT"
+      ],
+      "N_SCK": [
+        "PG.OUT0",
+        "DUT.SCK"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.channel": {
+      "at": "1100ms",
+      "equals": "B"
+    },
+    "output:DUT.gain": {
+      "at": "1100ms",
+      "equals": 32
+    },
+    "output:DUT.raw": {
+      "at": "1100ms",
+      "equals": 0
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "load",
+      "value": 1
+    }
+  ]
+}

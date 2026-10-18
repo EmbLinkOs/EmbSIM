@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "saturation",
+  "description": "30 kg on the 5 kg cell at gain 128: 6.05 mV/V is beyond the +-0.5 AVDD / 128 full scale, so the code saturates at 7FFFFFh.",
+  "policy": "functional",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0",
+          "period": "1u",
+          "start": "500m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hx711_load_cell",
+        "params": {
+          "noise": 0
+        }
+      }
+    ],
+    "nets": {
+      "N_DT": [
+        "DUT.DT"
+      ],
+      "N_SCK": [
+        "PG.OUT0",
+        "DUT.SCK"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.raw": {
+      "at": "590ms",
+      "equals": 8388607
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "load",
+      "value": 30
+    }
+  ]
+}

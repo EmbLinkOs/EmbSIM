@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "settling",
+  "description": "After power-up DOUT stays high through the data sheet's settling time (4 periods at 10 Hz) and goes low at 400 ms with the first conversion.",
+  "policy": "functional",
+  "until": "450ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "L0",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hx711_load_cell",
+        "params": {
+          "noise": 0
+        }
+      }
+    ],
+    "nets": {
+      "N_DT": [
+        "DUT.DT"
+      ],
+      "N_SCK": [
+        "L0.OUT",
+        "DUT.SCK"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_DT": {
+      "at": "399ms",
+      "logic": "1"
+    },
+    "pin:DUT.DT": {
+      "at": "401ms",
+      "logic": "0"
+    }
+  }
+}

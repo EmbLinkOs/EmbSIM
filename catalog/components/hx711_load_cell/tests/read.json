@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "read",
+  "description": "1 kg on the 5 kg, 1 mV/V cell (0.25 mV/V with the 0.05 mV/V zero balance): 25 PD_SCK pulses at 500 ms shift out 083127h (536871, ratiometric: 0.25e-3 x 128 x 2^24) MSB first, the first bit 0 and the fifth 1, and the 25th pulls DOUT high.",
+  "policy": "functional",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0",
+          "period": "1u",
+          "start": "500m"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/hx711_load_cell",
+        "params": {
+          "noise": 0
+        }
+      }
+    ],
+    "nets": {
+      "N_DT": [
+        "DUT.DT"
+      ],
+      "N_SCK": [
+        "PG.OUT0",
+        "DUT.SCK"
+      ]
+    }
+  },
+  "expect": {
+    "net:N_DT": {
+      "at": "500001500ns",
+      "logic": "0"
+    },
+    "pin:DUT.DT": {
+      "at": "500009500ns",
+      "logic": "1"
+    },
+    "output:DUT.raw": {
+      "at": "590ms",
+      "equals": 536871
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "load",
+      "value": 1
+    }
+  ]
+}

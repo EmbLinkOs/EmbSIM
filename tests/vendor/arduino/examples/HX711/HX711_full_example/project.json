@@ -1,0 +1,107 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-hx711",
+ "description": "The HX711 library's HX711_full_example as its constants wire it: the HX711 module with a 5 kg load cell, DT on D2 and SCK on D3, VCC and GND from the Uno's 5 V, and a terminal on D0/D1 at the sketch's 38400 baud. The part is ideal (noise 0) so the printed values can be checked exactly.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 38400
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "SCALE",
+   "component": "emblink/hx711_load_cell",
+   "params": {
+    "noise": 0
+   },
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "SCALE.VCC"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "VT1.GND",
+   "SCALE.GND"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ],
+  "HX_DT": [
+   "B1.D2",
+   "SCALE.DT"
+  ],
+  "HX_SCK": [
+   "B1.D3",
+   "SCALE.SCK"
+  ]
+ },
+ "probes": [
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "raw",
+   "target": "output:SCALE.raw",
+   "kind": "value"
+  }
+ ]
+}
