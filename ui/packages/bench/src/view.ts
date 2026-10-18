@@ -136,7 +136,7 @@ export function jumperViews(p: Project, model: BenchModel): JumperView[] {
     const a = terminalPoint(model, w.from);
     const b = terminalPoint(model, w.to);
     if (!a || !b) return;
-    const onHeader = (ref: string) => !model.holes.has(ref) && !model.plugs.has(ref);
+    const onHeader = (ref: string) => !model.holes.has(ref) && !model.plugs.has(ref) && !isSurfaceMount(model.byId.get(ref.split('.')[0]!)!.shape);
     out.push({ index, a, b, color: w.color ?? WIRE_COLORS[index % WIRE_COLORS.length]!, housings: [onHeader(w.from), onHeader(w.to)] });
   });
   return out;

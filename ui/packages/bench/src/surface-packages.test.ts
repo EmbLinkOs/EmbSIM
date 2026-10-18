@@ -5,10 +5,10 @@ import { resolve } from 'node:path';
 import { Box3 } from 'three';
 import type { ComponentDescription, Project } from '@embsim/protocol';
 import { describe, expect, it } from 'vitest';
-import { benchModel, moveParts, previewInsertion } from './layout';
+import { addJumper, benchModel, moveParts, previewInsertion } from './layout';
 import { buildPart } from './parts3d';
 import { benchShape, isSurfaceMount } from './shape';
-import { snapPart, terminalPoint } from './view';
+import { jumperViews, snapPart, terminalPoint } from './view';
 
 const description = (name: string) => JSON.parse(readFileSync(resolve(__dirname, `../../../../catalog/components/${name}/component.json`), 'utf-8')) as ComponentDescription;
 describe('named surface-mount packages', () => {
@@ -61,5 +61,8 @@ describe('named surface-mount packages', () => {
     expect([...after.plugs.keys()].filter((pin) => pin.startsWith('Q1.'))).toEqual([]);
     expect(p.nets).toEqual({});
     expect(terminalPoint(after, 'Q1.G')?.[1]).toBeCloseTo(0.14);
+    addJumper(p, ctx, { from: 'Q1.G', to: 'BB1.a1' });
+    expect(p.layout?.bench?.wires).toEqual([expect.objectContaining({ from: 'Q1.G', to: 'BB1.a1' })]);
+    expect(jumperViews(p, benchModel(p, shapes, ctx.ties))[0]?.housings).toEqual([false, false]);
   });
 });

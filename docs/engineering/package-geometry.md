@@ -34,7 +34,7 @@ contact; OUT2 represents its shared conductor. BAT54's NC terminal stays NC.
 The existing electrical approximation/fidelity declarations and fixtures remain.
 
 Surface-mount packages can be placed and wired as abstract lead connections, but
-they do not snap into, reserve or become electrically inserted into breadboard
+bare SMD wire ends do not acquire a Dupont housing. They do not snap into, reserve or become electrically inserted into breadboard
 holes through top-down overlap. The workbench explains that breadboard use needs
 a carrier. A soldering workflow, PCB pad placement and carrier-board assembly are
 not implemented by this milestone. BAT54 no longer receives a misleading TO-92
