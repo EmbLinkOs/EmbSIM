@@ -55,6 +55,16 @@ def read_for(fd: int, seconds: float, until: bytes = b"") -> bytes:
     return got
 
 
+def wait_for(cond, seconds: float = 15.0) -> bool:
+    """`cond()` true within `seconds` (a loaded machine runs the session slowly)."""
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        if cond():
+            return True
+        time.sleep(0.05)
+    return cond()
+
+
 def open_port(path: str, baud: int) -> int:
     import termios
     import tty
@@ -91,16 +101,18 @@ def main() -> int:
             check(os.path.exists(path) and not port["connected"], f"B1's port is {path}, no program on it")
             check(c.call("port.open", {"target": "B1"})["path"] == path, "opening it again gives the same port")
             c.call("control.run", {"speed": 1})
-            time.sleep(0.3)  # the power-on banner goes out to no one
+            # the power-on banner goes out to no one
+            wait_for(lambda: int(c.call("session.info")["now_ps"]) > 50_000_000_000)
 
             fd = open_port(path, 9600)
-            banner = read_for(fd, 3.0, b"\r\n")
+            banner = read_for(fd, 15.0, b"\r\n")
             check(banner == b"boot 02\r\n", f"opening the port resets the sketch: {banner!r} (EXTRF, not power-on)")
 
             os.write(fd, b"hello, uno\n")
-            echo = read_for(fd, 3.0, b"\n")
+            echo = read_for(fd, 15.0, b"\n")
             check(echo == b"HELLO, UNO\n", f"the sketch's echo comes back: {echo!r}")
 
+            wait_for(lambda: c.call("port.list")["ports"][0]["connected"])
             c.poll(0.3)
             ports = c.call("port.list")["ports"]
             check(len(ports) == 1 and ports[0]["connected"] and ports[0]["baud"] == 9600
@@ -118,18 +130,16 @@ def main() -> int:
             attrs = termios.tcgetattr(fd)
             attrs[4] = attrs[5] = termios.B115200
             termios.tcsetattr(fd, termios.TCSANOW, attrs)
-            time.sleep(0.6)  # the bridge reads the line's settings within 250 ms
+            wait_for(lambda: c.call("port.list")["ports"][0]["baud"] == 115200)
             os.write(fd, b"hello, uno\n")
             garbage = read_for(fd, 1.5)
             check(b"HELLO" not in garbage, f"at 115200 against the sketch's 9600, no echo makes sense: {garbage!r}")
 
             os.close(fd)
-            time.sleep(0.3)
-            c.poll(0.2)
-            check(not c.call("port.list")["ports"][0]["connected"], "closing the port: no program on it")
+            check(wait_for(lambda: not c.call("port.list")["ports"][0]["connected"]), "closing the port: no program on it")
 
             fd = open_port(path, 9600)
-            banner = read_for(fd, 3.0, b"\r\n")
+            banner = read_for(fd, 15.0, b"\r\n")
             check(banner == b"boot 02\r\n", f"opening it again resets again: {banner!r}")
             os.close(fd)
 
