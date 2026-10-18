@@ -19,6 +19,7 @@ import {
   jumperViews,
   linkViews,
   moveParts,
+  previewInsertion,
   removeJumper,
   snapPart,
   terminalTargets,
@@ -27,8 +28,9 @@ import {
   type Bench3DHandle,
   type BenchPartView,
   type BenchTool,
+  type InsertionPreview,
 } from '@embsim/bench';
-import type { ArtworkState, Hotspot, OutputValue, Project } from '@embsim/protocol';
+import type { ArtworkState, BenchPlace, Hotspot, OutputValue, Project } from '@embsim/protocol';
 import { BoardView, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
 import { Box, Cable, CircuitBoard, List, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -290,7 +292,12 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       plugs={model.plugs}
       selected={selected}
       editable={editable}
+      previewPlug={(id, hole) => {
+        const place = plugAt(id, hole);
+        return place ? previewInsertion(model, id, place) : null;
+      }}
       onSelect={setSelected}
+      onPlace={(id, place) => mutate(`Position ${id} on bench`, (p) => moveParts(p, ctx, { [id]: place }))}
       onPlug={(id, hole) => {
         const at = plugAt(id, hole);
         if (!at) {
@@ -430,7 +437,9 @@ function BenchList({
   plugs,
   selected,
   editable,
+  previewPlug,
   onSelect,
+  onPlace,
   onPlug,
   onTurn,
   onLift,
@@ -440,7 +449,9 @@ function BenchList({
   plugs: Map<string, string>;
   selected: { part?: string; jumper?: number };
   editable: boolean;
+  previewPlug(id: string, hole: string): InsertionPreview | null;
   onSelect(sel: { part?: string }): void;
+  onPlace(id: string, place: Required<BenchPlace>): void;
   onPlug(id: string, hole: string): void;
   onTurn(id: string): void;
   onLift(id: string): void;
@@ -451,6 +462,7 @@ function BenchList({
   const [to, setTo] = useState('');
   const holesOf = (id: string) => [...plugs].filter(([pin]) => pin.startsWith(`${id}.`)).map(([, h]) => h.split('.')[1]);
   const part = selected.part ? parts.find((p) => p.id === selected.part) : undefined;
+  const proposal = part && hole.trim() ? previewPlug(part.id, hole.trim()) : null;
   return (
     <aside className="wb-bench-list" aria-label="On the bench">
       <h3>On the bench</h3>
@@ -468,17 +480,24 @@ function BenchList({
         })}
       </ul>
       {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? 'Check the actual package and pinout before building hardware.' : 'Source metadata does not establish mechanical qualification.'}</p>}
+      {part && editable && <BenchPlacement key={`${part.id}:${part.place.x}:${part.place.y}:${part.place.rotation}`} part={part} onPlace={onPlace} />}
+      {part?.shape.package === 'breadboard' && editable && <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>Turn breadboard</Button>}
       {part && editable && part.shape.package !== 'breadboard' && part.shape.package !== 'board' && (
         <form
           className="wb-bench-list__form"
           onSubmit={(e) => {
             e.preventDefault();
-            if (hole.trim()) onPlug(part.id, hole.trim());
+            if (proposal?.valid) onPlug(part.id, hole.trim());
           }}
         >
           <Input label={`Plug ${part.id}'s first leg into`} placeholder="a20" value={hole} onChange={(e) => setHole(e.target.value)} />
+          {hole.trim() && <div className="wb-bench-insertion" role="status" aria-label="Insertion preview">
+            {!proposal ? 'No matching breadboard hole. Use a name such as BB1.a20.' : proposal.contacts.map((contact) => <div key={contact.pin} data-blocked={contact.occupiedBy.length > 0}>
+              <strong>{contact.pin}</strong> → {contact.hole ?? 'unseated'}{contact.occupiedBy.length ? ` · occupied by ${contact.occupiedBy.join(', ')}` : ''}
+            </div>)}
+          </div>}
           <div className="wb-bench-list__row">
-            <Button size="sm" type="submit" disabled={!hole.trim()}>
+            <Button size="sm" type="submit" disabled={!proposal?.valid}>
               Plug in
             </Button>
             <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>
@@ -511,6 +530,24 @@ function BenchList({
       )}
     </aside>
   );
+}
+
+function BenchPlacement({ part, onPlace }: { part: BenchPartView; onPlace(id: string, place: Required<BenchPlace>): void }) {
+  const [x, setX] = useState(String(part.place.x));
+  const [y, setY] = useState(String(part.place.y));
+  const [rotation, setRotation] = useState(String(part.place.rotation));
+  const valid = x.trim() !== '' && y.trim() !== '' && [Number(x), Number(y)].every((value) => Number.isFinite(value) && Math.abs(value) <= 1_000_000);
+  return <form className="wb-bench-list__form" aria-label="Bench placement" onSubmit={(event) => {
+    event.preventDefault();
+    if (valid) onPlace(part.id, { x: Number(x), y: Number(y), rotation: Number(rotation) as 0 | 90 | 180 | 270 });
+  }}>
+    <div className="wb-bench-position">
+      <Input label="Bench X (mm)" type="number" step="0.01" value={x} onChange={(event) => setX(event.target.value)} />
+      <Input label="Bench Y (mm)" type="number" step="0.01" value={y} onChange={(event) => setY(event.target.value)} />
+    </div>
+    <Select label="Bench rotation" size="sm" value={rotation} onValueChange={setRotation} options={[0, 90, 180, 270].map((value) => ({ value: String(value), label: `${value}°` }))} />
+    <Button size="sm" type="submit" disabled={!valid}>Apply bench position</Button>
+  </form>;
 }
 
 function entryOf(entry: CatalogEntry | undefined) {

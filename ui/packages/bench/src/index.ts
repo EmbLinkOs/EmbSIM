@@ -10,6 +10,7 @@ export {
   legsOf,
   moveParts,
   nearestHole,
+  previewInsertion,
   placeAll,
   removeJumper,
   setNote,
@@ -19,6 +20,8 @@ export {
   type BenchModel,
   type Connection,
   type Hole,
+  type InsertionContact,
+  type InsertionPreview,
   type PlacedPart,
 } from './layout';
 export { benchContext, elevationOf, jumperViews, linkViews, netColor, snapPart, terminalNear, terminalPoint, terminalTargets, WIRE_COLORS, type BenchCatalogEntry } from './view';

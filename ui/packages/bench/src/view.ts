@@ -6,7 +6,7 @@
 // dragged part's legs snap, the jumpers and the connections still to build.
 
 import type { ComponentDescription, Project } from '@embsim/protocol';
-import { legsOf, PLUG_TOLERANCE, unbuilt, type BenchContext, type BenchModel } from './layout';
+import { carriedMoves, legsOf, previewInsertion, unbuilt, type BenchContext, type BenchModel } from './layout';
 import { PITCH, benchShape, boardStack, type BenchShape } from './shape';
 import type { JumperView, LinkView, Point3, SnapResult, TerminalHit } from './Bench3D';
 
@@ -74,7 +74,7 @@ export function terminalTargets(model: BenchModel): TerminalHit[] {
   }
   return [...refs].flatMap((ref) => {
     const at = terminalPoint(model, ref);
-    return at ? [{ ref, at }] : [];
+    return at ? [{ ref, at, occupiedBy: model.occupied.get(ref) }] : [];
   });
 }
 
@@ -104,7 +104,11 @@ export function terminalNear(model: BenchModel, x: number, y: number, part?: str
 export function snapPart(model: BenchModel, ctx: BenchContext, id: string, x: number, y: number, rotation: number): SnapResult {
   const shape = ctx.shapes[id];
   const free = { x, y, holes: [] as Point3[], elevation: 0 };
-  if (!shape || shape.package === 'breadboard' || shape.package === 'board') return free;
+  if (!shape || shape.package === 'board') return free;
+  if (shape.package === 'breadboard') {
+    const moves = carriedMoves(model, { [id]: { x, y, rotation: rotation as 0 | 90 | 180 | 270 } });
+    return { ...free, carried: Object.entries(moves).filter(([key]) => key !== id).map(([key, place]) => ({ id: key, x: place.x, y: place.y, rotation: place.rotation ?? model.byId.get(key)!.place.rotation })) };
+  }
   const holes = [...model.holes.values()].filter((h) => !h.ref.startsWith(`${id}.`));
   if (!holes.length) return free;
   const legs = Object.values(legsOf(shape, { x, y, rotation: rotation as 0 | 90 | 180 | 270 }));
@@ -117,16 +121,11 @@ export function snapPart(model: BenchModel, ctx: BenchContext, id: string, x: nu
   if (!best) return free;
   const sx = x + best.dx;
   const sy = y + best.dy;
-  const landed: Point3[] = [];
-  let top = 0;
-  for (const [lx, ly] of Object.values(legsOf(shape, { x: sx, y: sy, rotation: rotation as 0 | 90 | 180 | 270 }))) {
-    const h = holes.find((k) => Math.hypot(k.x - lx, k.y - ly) <= PLUG_TOLERANCE);
-    if (!h) continue;
-    const host = model.byId.get(h.ref.split('.')[0]!)!;
-    top = Math.max(top, host.shape.size[2]);
-    landed.push([h.x, host.shape.size[2], h.y]);
-  }
-  return { x: Math.round(sx * 100) / 100, y: Math.round(sy * 100) / 100, holes: landed, elevation: landed.length ? top : 0 };
+  // Preview the same rounded placement the transaction will receive.
+  const place = { x: Math.round(sx * 100) / 100, y: Math.round(sy * 100) / 100, rotation: rotation as 0 | 90 | 180 | 270 };
+  const insertion = previewInsertion(model, id, place);
+  const landed: Point3[] = insertion.contacts.filter((contact) => contact.hole).map((contact) => [contact.at[0], model.byId.get(contact.hole!.split('.')[0]!)!.shape.size[2], contact.at[1]]);
+  return { ...place, holes: landed, elevation: insertion.elevation, insertion };
 }
 
 export const WIRE_COLORS = ['#e74c3c', '#2c3e50', '#f39c12', '#27ae60', '#2e86de', '#8e44ad', '#f1c40f', '#ecf0f1', '#e67e22', '#16a085'];

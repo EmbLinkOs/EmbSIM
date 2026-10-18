@@ -22,6 +22,7 @@ import { ArtworkSurface } from './artwork';
 import { buildPart, type Built, type PickData } from './parts3d';
 import type { BenchShape } from './shape';
 import { pickTerminal, type ProjectedTerminal } from './picking';
+import type { InsertionPreview } from './layout';
 
 export interface BenchPartView {
   id: string;
@@ -60,11 +61,14 @@ export interface SnapResult {
   /** the holes the legs would be plugged into */
   holes: Point3[];
   elevation: number;
+  insertion?: InsertionPreview;
+  carried?: { id: string; x: number; y: number; rotation: number }[];
 }
 
 export interface TerminalHit {
   ref: string;
   at: Point3;
+  occupiedBy?: string[];
 }
 
 export type BenchTool = 'select' | 'wire';
@@ -181,7 +185,7 @@ function labelElement(text: string): HTMLDivElement {
 export function Bench3D(props: Bench3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const cancelGesture = useRef<(() => void) | null>(null);
-  const [feedback, setFeedback] = useState<{ text: string; x?: number; y?: number; ref?: string }>({ text: '' });
+  const [feedback, setFeedback] = useState<{ text: string; x?: number; y?: number; ref?: string; blocked?: boolean }>({ text: '' });
   const propsRef = useRef(props);
   propsRef.current = props;
   useEffect(() => { cancelGesture.current?.(); }, [props.tool, props.editable, props.live]);
@@ -538,6 +542,7 @@ export function Bench3D(props: Bench3DProps) {
     let turning: { target: string; input: string; x: number; v: number } | null = null;
     const holeMarks: THREE.Mesh[] = [];
     const markMat = new THREE.MeshBasicMaterial({ color: 0x2ecc71 });
+    const blockedMat = new THREE.MeshBasicMaterial({ color: 0xe74c3c });
     const clearMarks = () => {
       for (const m of holeMarks) {
         s.preview.remove(m);
@@ -545,10 +550,10 @@ export function Bench3D(props: Bench3DProps) {
       }
       holeMarks.length = 0;
     };
-    const showMarks = (pts: Point3[]) => {
+    const showMarks = (pts: Point3[], blocked: Point3[] = []) => {
       clearMarks();
-      for (const p of pts) {
-        const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.3, 12), markMat);
+      for (const [p, material] of [...pts.map((p) => [p, markMat] as const), ...blocked.map((p) => [p, blockedMat] as const)]) {
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.3, 12), material);
         m.position.set(p[0], p[1] + 0.2, p[2]);
         s.preview.add(m);
         holeMarks.push(m);
@@ -577,14 +582,16 @@ export function Bench3D(props: Bench3DProps) {
     const feedbackAt = (ev: PointerEvent, from?: TerminalHit) => {
       const pick = terminalAtPointer(ev);
       const terminal = pick.kind === 'terminal' ? pick.terminal : undefined;
+      const blocked = Boolean(terminal?.occupiedBy?.length);
       const point = terminal ? v3(terminal.at).project(s.camera) : undefined;
       const r = el.getBoundingClientRect();
-      const text = pick.kind === 'ambiguous' ? 'Contacts overlap — zoom in to choose a pin'
+      const text = blocked ? `${terminal!.ref} · occupied by ${terminal!.occupiedBy!.join(', ')} · choose another hole on the strip`
+        : pick.kind === 'ambiguous' ? 'Contacts overlap — zoom in to choose a pin'
         : terminal ? from ? terminal.ref === from.ref ? `${from.ref} · choose another terminal` : `${from.ref} → ${terminal.ref} · release to connect` : `${terminal.ref} · drag to connect`
         : from ? `${from.ref} → choose a terminal · Esc cancels` : 'Point at a hole or pin to start a jumper';
-      setFeedback({ text, ref: terminal?.ref, x: point ? (point.x + 1) * r.width / 2 : undefined, y: point ? (1 - point.y) * r.height / 2 : undefined });
-      el.style.cursor = terminal ? 'var(--draw-cursor, crosshair)' : 'default';
-      return terminal;
+      setFeedback({ text, ref: terminal?.ref, blocked, x: point ? (point.x + 1) * r.width / 2 : undefined, y: point ? (1 - point.y) * r.height / 2 : undefined });
+      el.style.cursor = blocked ? 'not-allowed' : terminal ? 'var(--draw-cursor, crosshair)' : 'default';
+      return blocked ? undefined : terminal;
     };
     const down = (ev: PointerEvent) => {
       if (ev.button !== 0 || activePointer !== null) return;
@@ -673,7 +680,19 @@ export function Bench3D(props: Bench3DProps) {
         const snapped = p.snap(drag.id, at.x + drag.dx, at.z + drag.dz, drag.rotation);
         drag.moved = drag.moved || Math.hypot(snapped.x - drag.start.x, snapped.y - drag.start.y) > 0.3;
         e.built.group.position.set(snapped.x, snapped.elevation, snapped.y);
-        showMarks(snapped.holes);
+        for (const rider of snapped.carried ?? []) {
+          const entry = s.parts.get(rider.id);
+          if (!entry) continue;
+          entry.built.group.position.set(rider.x, entry.view.elevation, rider.y);
+          entry.built.group.rotation.y = -(rider.rotation * Math.PI) / 180;
+        }
+        const contacts = snapped.insertion?.contacts ?? [];
+        const free = contacts.filter((contact) => contact.hole && !contact.occupiedBy.length);
+        const blocked = contacts.filter((contact) => contact.hole && contact.occupiedBy.length);
+        const contactPoint = (contact: typeof contacts[number]): Point3 => [contact.at[0], snapped.elevation, contact.at[1]];
+        showMarks(free.map(contactPoint), blocked.map(contactPoint));
+        setFeedback({ text: contacts.map((contact) => `${contact.pin} → ${contact.hole ?? 'unseated'}${contact.occupiedBy.length ? ` (occupied: ${contact.occupiedBy.join(', ')})` : ''}`).join(' · ') || `Move ${drag.id}` });
+        el.style.cursor = blocked.length ? 'not-allowed' : 'grabbing';
         invalidate();
         return;
       }
@@ -703,6 +722,7 @@ export function Bench3D(props: Bench3DProps) {
       if (ev.pointerId !== activePointer) return;
       cast(ev);
       const p = propsRef.current;
+      let rejection: string | undefined;
       if (held) {
         p.onInput(held.target, held.input, false);
         held = null;
@@ -712,7 +732,13 @@ export function Bench3D(props: Bench3DProps) {
         const at = onDesk();
         if (drag.moved && at) {
           const snapped = p.snap(drag.id, at.x + drag.dx, at.z + drag.dz, drag.rotation);
-          p.onMove(drag.id, { x: snapped.x, y: snapped.y, rotation: drag.rotation as 0 | 90 | 180 | 270 });
+          if (snapped.insertion?.valid !== false)
+            p.onMove(drag.id, { x: snapped.x, y: snapped.y, rotation: drag.rotation as 0 | 90 | 180 | 270 });
+          else {
+            rejection = snapped.insertion.contacts.filter((contact) => contact.occupiedBy.length).map((contact) => `${contact.hole} is occupied by ${contact.occupiedBy.join(', ')}`).join(' · ');
+            const e = s.parts.get(drag.id);
+            if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
+          }
         } else {
           const e = s.parts.get(drag.id);
           if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
@@ -725,27 +751,28 @@ export function Bench3D(props: Bench3DProps) {
         cast(ev);
         const pick = terminalAtPointer(ev);
         const t = pick.kind === 'terminal' ? pick.terminal : undefined;
+        if (t?.occupiedBy?.length) rejection = `${t.ref} is occupied by ${t.occupiedBy.join(', ')}; choose another hole on the strip`;
         if (wire.line) {
           s.preview.remove(wire.line);
           wire.line.geometry.dispose();
           (wire.line.material as THREE.Material).dispose();
         }
-        if (t && t.ref !== wire.from.ref) p.onWire(wire.from.ref, t.ref);
+        if (t && !t.occupiedBy?.length && t.ref !== wire.from.ref) p.onWire(wire.from.ref, t.ref);
         wire = null;
         clearMarks();
         invalidate();
       }
       activePointer = null;
-      setFeedback({ text: '' });
+      setFeedback({ text: rejection ?? '' });
       if (el.hasPointerCapture(ev.pointerId)) el.releasePointerCapture(ev.pointerId);
     };
     const cancel = () => {
       if (held) propsRef.current.onInput(held.target, held.input, false);
       held = null;
       turning = null;
-      if (drag) {
-        const e = s.parts.get(drag.id);
-        if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
+      if (drag) for (const e of s.parts.values()) {
+        e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);
+        e.built.group.rotation.y = -(e.view.place.rotation * Math.PI) / 180;
       }
       drag = null;
       if (wire?.line) {
@@ -768,10 +795,11 @@ export function Bench3D(props: Bench3DProps) {
     cancelGesture.current = cancel;
     const leave = () => { if (activePointer === null) setFeedback({ text: '' }); };
     const visibility = () => { if (document.hidden) cancel(); };
+    const lostCapture = (event: PointerEvent) => { if (event.pointerId === activePointer) cancel(); };
     host.addEventListener('keydown', escape);
     window.addEventListener('blur', cancel);
     document.addEventListener('visibilitychange', visibility);
-    el.addEventListener('lostpointercapture', cancel);
+    el.addEventListener('lostpointercapture', lostCapture);
     el.addEventListener('pointerleave', leave);
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointermove', move);
@@ -782,7 +810,7 @@ export function Bench3D(props: Bench3DProps) {
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerup', up);
       el.removeEventListener('pointercancel', cancel);
-      el.removeEventListener('lostpointercapture', cancel);
+      el.removeEventListener('lostpointercapture', lostCapture);
       el.removeEventListener('pointerleave', leave);
       host.removeEventListener('keydown', escape);
       window.removeEventListener('blur', cancel);
@@ -790,6 +818,7 @@ export function Bench3D(props: Bench3DProps) {
       cancel();
       cancelGesture.current = null;
       markMat.dispose();
+      blockedMat.dispose();
     };
   }, [invalidate]);
 
@@ -834,6 +863,7 @@ export function Bench3D(props: Bench3DProps) {
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
       data-terminal={feedback.ref}
+      data-terminal-blocked={feedback.blocked || undefined}
     >
       {feedback.x !== undefined && feedback.y !== undefined && <span className="eb-terminal-target" style={{ left: feedback.x, top: feedback.y }} aria-hidden="true" />}
       <div className="eb-connection-feedback" role="status">{feedback.text}</div>
