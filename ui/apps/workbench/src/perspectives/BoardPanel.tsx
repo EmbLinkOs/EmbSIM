@@ -34,6 +34,7 @@ import { Box, Cable, CircuitBoard, Maximize2, MousePointer2, StickyNote, Wand2 }
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
 import { useProject, type CatalogEntry } from '../stores/project';
+import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
 
 /** the colours an LED's `color` parameter names, for its artwork's --led-color */
@@ -88,7 +89,15 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
   const { toast } = useToast();
   const [tool, setTool] = useState<BenchTool>('select');
   const [wireColor, setWireColor] = useState(WIRE_COLORS[0]!);
-  const [selected, setSelected] = useState<{ part?: string; jumper?: number }>({});
+  // the selected part is the workbench's selection (the inspector shows it, the schematic too); a jumper is the bench's own
+  const globalPart = useSelection((s) => (s.selection.components.length === 1 ? s.selection.components[0] : undefined));
+  const [jumper, setJumper] = useState<number | undefined>(undefined);
+  const selected = useMemo(() => (jumper !== undefined ? { jumper } : globalPart ? { part: globalPart } : {}), [jumper, globalPart]);
+  const setSelected = useCallback((sel: { part?: string; jumper?: number }) => {
+    setJumper(sel.jumper);
+    if (sel.part) useSelection.getState().selectComponent(sel.part);
+    else useSelection.getState().clear();
+  }, []);
   const [note, setNote] = useState<string | null>(null);
   const [flat, setFlat] = useState(() => typeof document === 'undefined' || !webglAvailable());
   const handle = useRef<Bench3DHandle>(null);
