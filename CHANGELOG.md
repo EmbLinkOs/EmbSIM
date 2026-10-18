@@ -104,6 +104,24 @@ versions follow semantic versioning. There is no release yet.
 - Added an evidence-based 1.0 release readiness checklist.
 
 ### Added
+- The world (ADR-026, SPEC-003 §8): the room the circuit sits in. Fields
+  (temperature, humidity, pressure, light, sound, wind) that every sensor
+  bound to them reads while it is not set by hand, and bodies on the bench
+  (boxes and spheres) that distance sensors' beams meet, from where they
+  stand on the bench. A project declares its `world`; a field it leaves out
+  keeps each sensor at its own default, so existing projects behave as
+  before. The world changes through inputs (`input.set` with target `world`
+  or `world.BODY`), recorded and replayed; `set_world` edits it without a
+  restart; `world.get` reports it. Sensors bound: DHT22, BME280, BMP280,
+  DS18B20, LM35, TMP36, TMP102, the NTCs, the MPU-6050's die, the GL5528's
+  light, the HC-SR04's distance and air temperature. NewPing's
+  `NewPingExample` now measures a wall moved in front of the sensor, and
+  Adafruit's `DHTtester` reads the room, both unmodified and passing as
+  before. The workbench gains the World panel (Design and Run), bodies drawn
+  and dragged on the 3D bench, each sensor's beam drawn to what it meets
+  with the distance, and an upright HC-SR04; the Controls panel marks an
+  input read from the world (`tests/protocol/test_world.py`,
+  `e2e/world.spec.ts`).
 - The 3D bench (ADR-027; `ui/packages/bench`, Three.js 0.186): the Design
   perspective's canvas switches between the schematic and the bench, and
   the Run perspective's Board panel is the bench, live. Boards, breadboards

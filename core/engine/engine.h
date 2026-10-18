@@ -7,6 +7,7 @@
 #define ESK_ENGINE_H
 
 #include "embsim/types.h"
+#include "engine/world.h"
 #include "time/clock.h"
 #include "time/sched.h"
 #include "util/alloc.h"
@@ -121,6 +122,10 @@ struct esk_comp {
     esk_adev *adev;          /* the analog device instance, or NULL */
     esk_event_handle wake[8];
     int functional_only;     /* no electrical model: under electrical policy stays digital */
+    /* where it sits on the bench (layout.bench, SPEC-007 §2): x, y mm and its
+     * turn in degrees, clockwise seen from above; for the world's rays */
+    double pose[3];
+    int posed;
 };
 
 typedef void (*esk_net_change_fn)(void *ctx, esk_net *net);
@@ -151,7 +156,18 @@ struct esk_engine {
      * scripted component and freed after the components */
     void *ext;
     void (*ext_free)(void *ext);
+    /* the room the circuit sits in (ADR-026) */
+    esk_world world;
 };
+
+/* the world's value for a component's input bound to it (its description's
+ * `inputs[].world`), when the input was not set and the world has it: 1 and
+ * *out in the input's unit, else 0 */
+int esk_comp_world_input(const esk_comp *c, const char *input, double *out);
+/* the world changed: `field` (an esk_world_field, or ESK_WF_DISTANCE for the
+ * bodies and the parts' places); every component reading it through an
+ * input it did not set hears it as that input's change */
+void esk_engine_world_changed(esk_engine *e, int field);
 
 /* 1 when no analog island is integrating: every one sits at its steady
  * state, asleep until a touch or its sources' next breakpoint */

@@ -46,6 +46,8 @@ export interface BenchShape {
   wiringAid?: boolean;
   /** the artwork is the body's top face (modules, boards) */
   textured?: boolean;
+  /** a distance sensor's beam: from `at` along `dir`, mm, x right, y towards the viewer, z up */
+  sense?: { at?: [number, number, number]; dir?: [number, number, number] };
 }
 
 type Desc = Pick<ComponentDescription, 'id' | 'name' | 'category' | 'pins' | 'bench' | 'artwork'> & { kind?: string; ports?: Record<string, unknown> };
@@ -235,6 +237,13 @@ function header(names: string[], w: number, d: number): Record<string, [number, 
  * board's pins.
  */
 export function benchShape(desc: Desc, params?: Record<string, unknown>, artwork?: string): BenchShape {
+  const shape = bodyOf(desc, params, artwork);
+  // a distance sensor's beam (bench.sense), in its own coordinates
+  const sense = (desc.bench as { sense?: BenchShape['sense'] } | undefined)?.sense;
+  return sense ? { ...shape, sense } : shape;
+}
+
+function bodyOf(desc: Desc, params?: Record<string, unknown>, artwork?: string): BenchShape {
   const short = desc.id.split('/').pop() ?? desc.id;
   const own = desc.bench;
   const names = ordered(desc);
@@ -325,6 +334,12 @@ export function benchShape(desc: Desc, params?: Record<string, unknown>, artwork
   if (short === 'seven_segment' || short === 'led_bargraph') {
     const { size, pins } = dipPins(names, 15.24);
     return { package: 'module', size: [Math.max(size[0], 12.7), size[1], 8], pins, color: '#1b1b1b', label: desc.name };
+  }
+  if (short === 'hc_sr04') {
+    // stood upright in a breadboard, as it is used: the 45 x 20 mm board edge-on,
+    // its header along the bottom, the transducers facing the back of the bench
+    const size: [number, number, number] = [45, 5, 21];
+    return { package: 'module', size, pins: inRow(names, size, PITCH, 2.5), color: '#1b4f9c', label: desc.name };
   }
   const mod = MODULES[short];
   if (!mod && (desc.category === 'logic' || desc.category === 'analog' || desc.category === 'comparators')) {

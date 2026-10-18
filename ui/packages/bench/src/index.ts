@@ -24,3 +24,4 @@ export {
 export { benchContext, elevationOf, jumperViews, linkViews, netColor, snapPart, terminalNear, terminalPoint, WIRE_COLORS, type BenchCatalogEntry } from './view';
 export { Bench3D, jumperCurve, type Bench3DHandle, type Bench3DProps, type BenchPartView, type BenchTool, type JumperView, type LinkView, type Point3, type SnapResult, type TerminalHit } from './Bench3D';
 export { parseValue, resistorBands, ledColor } from './parts3d';
+export { beams, rayDistance, type Beam } from './world';

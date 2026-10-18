@@ -581,7 +581,48 @@ typedef struct pending_input {
     esk_comp *comp;
     char *input;
     esk_json *value;
+    char *target; /* a world input ("world", "world.BOX"): comp is NULL */
 } pending_input;
+
+/* "world" or "world.BODY": the room's fields and bodies (ADR-026) */
+static int world_target(const char *target)
+{
+    return esk_str_eq(target, "world") || (esk_str_has_prefix(target, "world.") && target[6]);
+}
+
+/* checks a world input: a field and a number (or null, to undeclare it), or a body and its spec (or null) */
+static es_status world_check(const char *target, const char *input, const esk_json *value)
+{
+    if (esk_str_eq(target, "world")) {
+        int f = esk_world_field_index(input);
+        double v;
+        if (f < 0 || f >= ESK_WF_COUNT)
+            return ES_ENOTFOUND;
+        return value->type == ESK_JSON_NULL || esk_json_to_double(value, &v) == 0 ? ES_OK : ES_EINVAL;
+    }
+    if (!esk_str_eq(input, "body"))
+        return ES_ENOTFOUND;
+    return value->type == ESK_JSON_NULL || value->type == ESK_JSON_OBJECT ? ES_OK : ES_EINVAL;
+}
+
+static void world_apply(es_session *s, const char *target, const char *input, const esk_json *value)
+{
+    esk_world *w = &s->eng.world;
+    if (esk_str_eq(target, "world")) {
+        int f = esk_world_field_index(input);
+        double v;
+        if (value->type == ESK_JSON_NULL)
+            w->set &= ~(1u << f);
+        else if (esk_json_to_double(value, &v) == 0) {
+            w->value[f] = v;
+            w->set |= 1u << f;
+        }
+        esk_engine_world_changed(&s->eng, f);
+        return;
+    }
+    if (esk_world_set_body(s->a, w, target + 6, value) == ES_OK)
+        esk_engine_world_changed(&s->eng, ESK_WF_DISTANCE);
+}
 
 static void apply_input_now(es_session *s, esk_comp *c, const char *input, const esk_json *value)
 {
@@ -596,7 +637,11 @@ static void pending_input_cb(void *ctx, void *arg, es_time_t now)
     pending_input *pi = (pending_input *)arg;
     ES_UNUSED(ctx);
     ES_UNUSED(now);
-    apply_input_now(pi->s, pi->comp, pi->input, pi->value);
+    if (pi->comp)
+        apply_input_now(pi->s, pi->comp, pi->input, pi->value);
+    else
+        world_apply(pi->s, pi->target, pi->input, pi->value);
+    esk_strfree(pi->s->a, pi->target);
     esk_strfree(pi->s->a, pi->input);
     esk_json_free(pi->s->a, pi->value);
     esk_free(pi->s->a, pi, sizeof *pi);
@@ -613,8 +658,12 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
         return ES_ESTATE;
     if (at < s->eng.sched.now)
         return ES_ETIME;
-    c = esk_engine_comp(&s->eng, target);
-    if (!c) {
+    c = world_target(target) ? NULL : esk_engine_comp(&s->eng, target);
+    if (world_target(target)) {
+        es_status wst = world_check(target, input, value);
+        if (wst != ES_OK)
+            return wst;
+    } else if (!c) {
         /* a board ("B1": its MCU's reset and console) or one of its MCU's UARTs ("B1.USART2") */
         for (i = 0; i < s->boards.len; i++) {
             esk_board_inst *bi = s->boards.data[i];
@@ -637,7 +686,10 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
             return ES_ENOTFOUND;
     }
     if (at == s->eng.sched.now) {
-        apply_input_now(s, c, input, value);
+        if (c)
+            apply_input_now(s, c, input, value);
+        else
+            world_apply(s, target, input, value);
     } else {
         pending_input *pi = (pending_input *)esk_calloc(s->a, 1, sizeof *pi);
         es_status st;
@@ -647,7 +699,9 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
         pi->comp = c;
         pi->input = esk_strdup(s->a, input);
         pi->value = esk_json_clone(s->a, value);
-        if (!pi->input || !pi->value) {
+        pi->target = c ? NULL : esk_strdup(s->a, target);
+        if (!pi->input || !pi->value || (!c && !pi->target)) {
+            esk_strfree(s->a, pi->target);
             esk_strfree(s->a, pi->input);
             esk_json_free(s->a, pi->value);
             esk_free(s->a, pi, sizeof *pi);
@@ -655,6 +709,7 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
         }
         st = esk_sched_at(&s->eng.sched, at, ESK_EV_EXTERNAL, pending_input_cb, s, pi, NULL);
         if (st != ES_OK) {
+            esk_strfree(s->a, pi->target);
             esk_strfree(s->a, pi->input);
             esk_json_free(s->a, pi->value);
             esk_free(s->a, pi, sizeof *pi);
@@ -777,7 +832,16 @@ esk_json *esk_session_snapshot(es_session *s, const esk_json *include)
             esk_json_object_set(s->a, o, "outputs", outputs);
             if (want(include, "components")) {
                 esk_json *pins = esk_json_new_object(s->a);
-                esk_json_object_set(s->a, o, "inputs", esk_json_clone(s->a, c->inputs));
+                esk_json *ins = esk_json_clone(s->a, c->inputs);
+                const esk_json *decl = esk_json_get(c->desc, "inputs");
+                /* the inputs a component reads from the world, at their world value (ADR-026) */
+                for (k = 0; ins && k < esk_json_len(decl); k++) {
+                    const char *nm = esk_json_get_str(esk_json_at(decl, k), "name", NULL);
+                    double w;
+                    if (nm && !esk_json_get(ins, nm) && esk_comp_world_input(c, nm, &w))
+                        esk_json_set_number(s->a, ins, nm, w);
+                }
+                esk_json_object_set(s->a, o, "inputs", ins);
                 esk_json_object_set(s->a, o, "params", esk_json_clone(s->a, c->params));
                 for (k = 0; pins && k < c->npins; k++) {
                     esk_pin *p = &c->pins[k];
@@ -979,6 +1043,119 @@ void esk_session_emit_observations(es_session *s, int force)
             emit_serial(s, s->probes.data[i]);
 }
 
+/* ---- the world (ADR-026) --------------------------------------------------------- */
+
+static int json_same(esk_alloc *a, const esk_json *x, const esk_json *y)
+{
+    size_t lx = 0, ly = 0;
+    char *tx = esk_json_format(a, x, 0, &lx), *ty = esk_json_format(a, y, 0, &ly);
+    int eq = tx && ty && lx == ly && !memcmp(tx, ty, lx);
+    if (tx)
+        esk_free(a, tx, lx + 1);
+    if (ty)
+        esk_free(a, ty, ly + 1);
+    return eq;
+}
+
+/* the parts' places on the bench (layout.bench.parts), for the world's rays; 1 when one moved */
+static int world_poses(es_session *s)
+{
+    const esk_json *parts = esk_json_get(esk_json_get(esk_json_get(s->project, "layout"), "bench"), "parts");
+    int moved = 0;
+    size_t i;
+    for (i = 0; i < s->eng.comps.len; i++) {
+        esk_comp *c = s->eng.comps.data[i];
+        const esk_json *pl = esk_json_get(parts, c->id);
+        double p[3] = { 0, 0, 0 };
+        if (pl) {
+            p[0] = esk_json_get_num(pl, "x", 0);
+            p[1] = esk_json_get_num(pl, "y", 0);
+            p[2] = esk_json_get_num(pl, "rotation", 0);
+        }
+        if (c->posed != (pl != NULL) || p[0] != c->pose[0] || p[1] != c->pose[1] || p[2] != c->pose[2])
+            moved = 1;
+        c->posed = pl != NULL;
+        memcpy(c->pose, p, sizeof p);
+    }
+    return moved;
+}
+
+/* the world as the project declares it: its fields and bodies, before any input */
+static void world_from_project(es_session *s)
+{
+    const esk_json *world = esk_json_get(s->project, "world");
+    const esk_json *fields = esk_json_get(world, "fields"), *bodies = esk_json_get(world, "bodies");
+    size_t i;
+    esk_world_free(s->a, &s->eng.world);
+    for (i = 0; i < esk_json_len(fields); i++) {
+        const esk_json *f = esk_json_at(fields, i);
+        int k = esk_world_field_index(f->key);
+        double v;
+        if (k >= 0 && k < ESK_WF_COUNT && esk_json_to_double(f, &v) == 0) {
+            s->eng.world.value[k] = v;
+            s->eng.world.set |= 1u << k;
+        }
+    }
+    for (i = 0; i < esk_json_len(bodies); i++) {
+        const esk_json *b = esk_json_at(bodies, i);
+        (void)esk_world_set_body(s->a, &s->eng.world, esk_json_get_str(b, "id", NULL), b);
+    }
+    (void)world_poses(s);
+}
+
+void esk_session_world_load(es_session *s) { world_from_project(s); }
+
+void esk_session_world_sync(es_session *s, const esk_json *before)
+{
+    const esk_json *ow = esk_json_get(before, "world"), *nw = esk_json_get(s->project, "world");
+    const esk_json *of = esk_json_get(ow, "fields"), *nf = esk_json_get(nw, "fields");
+    const esk_json *ob = esk_json_get(ow, "bodies"), *nb = esk_json_get(nw, "bodies");
+    es_time_t now = s->eng.sched.now;
+    esk_json null;
+    size_t i, k;
+    int f;
+    memset(&null, 0, sizeof null);
+    null.type = ESK_JSON_NULL;
+    if (world_poses(s))
+        esk_engine_world_changed(&s->eng, ESK_WF_DISTANCE);
+    /* a field the project now declares otherwise, or no longer: an input now, recorded */
+    for (f = 0; f < ESK_WF_COUNT; f++) {
+        const char *name = esk_world_field_name(f);
+        const esk_json *a = esk_json_get(of, name), *b = esk_json_get(nf, name);
+        double x = 0, y = 0;
+        int ha = a && esk_json_to_double(a, &x) == 0, hb = b && esk_json_to_double(b, &y) == 0;
+        if (ha == hb && (!hb || x == y))
+            continue;
+        (void)esk_session_apply_input(s, "world", name, hb ? b : &null, now, NULL, NULL);
+    }
+    /* bodies added, moved or taken away */
+    for (i = 0; i < esk_json_len(nb); i++) {
+        const esk_json *b = esk_json_at(nb, i);
+        const char *id = esk_json_get_str(b, "id", NULL);
+        const esk_json *old = NULL;
+        char target[160];
+        for (k = 0; k < esk_json_len(ob); k++)
+            if (esk_str_eq(esk_json_get_str(esk_json_at(ob, k), "id", NULL), id))
+                old = esk_json_at(ob, k);
+        if (!id || (old && json_same(s->a, old, b)))
+            continue;
+        esk_snprintf(target, sizeof target, "world.%s", id);
+        (void)esk_session_apply_input(s, target, "body", b, now, NULL, NULL);
+    }
+    for (k = 0; k < esk_json_len(ob); k++) {
+        const char *id = esk_json_get_str(esk_json_at(ob, k), "id", NULL);
+        int kept = 0;
+        char target[160];
+        for (i = 0; i < esk_json_len(nb); i++)
+            if (esk_str_eq(esk_json_get_str(esk_json_at(nb, i), "id", NULL), id))
+                kept = 1;
+        if (!id || kept)
+            continue;
+        esk_snprintf(target, sizeof target, "world.%s", id);
+        (void)esk_session_apply_input(s, target, "body", &null, now, NULL, NULL);
+    }
+}
+
 es_status esk_session_do_reset(es_session *s)
 {
     es_status st;
@@ -987,6 +1164,8 @@ es_status esk_session_do_reset(es_session *s)
         return ES_ESTATE;
     s->running = 0;
     esk_diag_reset(&s->diag);
+    /* the room starts as the project declares it, as the circuit does */
+    world_from_project(s);
     st = esk_engine_reset(&s->eng);
     if (s->recording)
         esk_record_start(s); /* a reset starts the recording's observations again */

@@ -344,7 +344,14 @@ static int api_cancel(lua_State *L)
 static int api_input(lua_State *L)
 {
     esk_comp *c = ctx_comp(L);
-    push_json(L, esk_json_get(c->inputs, luaL_checkstring(L, 1)), 0);
+    const char *name = luaL_checkstring(L, 1);
+    const esk_json *j = esk_json_get(c->inputs, name);
+    double w;
+    /* an input left unset reads the world it is bound to (ADR-026) */
+    if (!j && esk_comp_world_input(c, name, &w))
+        lua_pushnumber(L, w);
+    else
+        push_json(L, j, 0);
     return 1;
 }
 

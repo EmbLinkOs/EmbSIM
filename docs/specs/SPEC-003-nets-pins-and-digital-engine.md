@@ -157,3 +157,22 @@ come from each description. `VCC` and `GND` are sensed inputs rather than ideal
 sources. VCC=0 releases outputs; unknown rails produce X. Timed/electrical runs
 use the declared inertial `tpd`, functional runs use zero delay. Electrical
 amplitude is the nominal 5 V CMOS family, not a full supply-dependent IC model.
+
+## 8. The world
+
+The engine holds a world beside the circuit (ADR-026): fields
+(`temperature` degC, `humidity` %RH, `pressure` hPa, `illuminance` lx,
+`sound` dB SPL, `wind` m/s), uniform, each declared or not; and bodies,
+boxes and spheres with a centre and a size in bench millimetres (x right, y
+towards the viewer, z up from the desk). A component input whose
+description names a field (`inputs[].world`, SPEC-005 §7) reads it while
+the input has not been set: the world's value when the field is declared,
+the input's own default otherwise, so a project without a world behaves as
+before; the field `distance` is the nearest body along the part's beam
+(`bench.sense`, from where the part stands in `layout.bench`, turned with
+it), in the input's unit, 10 m when the beam meets nothing. A change of a
+field, a body or a part's place reaches each component reading it as a
+change of that input (its `on_set`). The world changes only through inputs
+(SPEC-008 `input.set` with target `world` and the field's name, or
+`world.BODY` and `body`), scheduled in virtual time, recorded and replayed
+as any input; a reset restores the project's world.

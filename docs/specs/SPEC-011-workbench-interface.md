@@ -141,6 +141,14 @@ neutral canvas surfaces, rounded chrome and subtle shadows.
   are in; plugging the selected part's first leg into a named hole,
   turning it, lifting it off; a jumper between two named terminals), and
   without WebGL the bench is the flat view below.
+- The World panel (Design, under the canvas; Run, beside the controls)
+  edits the project's world (ADR-026): each field with whether the room
+  declares it, a slider in its unit (light on a logarithmic scale) and the
+  sensors that read it, the value now when a scenario has changed it; and
+  the bodies with their place in millimetres, added as a box, a wall or a
+  ball, removed, or dragged on the bench in the Move tool. A sensor's beam
+  is drawn on the bench to what it meets, with the distance. The Controls
+  panel marks an input that reads the world and one set on the part.
 - The flat bench (the 2D view). The parts with artwork sit in rows above the
   boards, each labelled with its id and name; the project's nets are wires
   between their pins (each artwork's `pin-<name>` elements, SPEC-005 §8):
