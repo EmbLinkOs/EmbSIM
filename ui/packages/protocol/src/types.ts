@@ -142,6 +142,21 @@ export interface WorldSpec {
 }
 
 /** world.get: the room as it is now */
+/** A board's console (or a terminal part) as a serial port on the host (ADR-031). */
+export interface HostPort {
+  target: string;
+  /** what a program on the host opens: /dev/pts/3 */
+  path: string;
+  /** a program has the port open (DTR raised) */
+  connected: boolean;
+  /** the program's line rate, 0 while none has it open */
+  baud: number;
+  /** the console's rate as the firmware set it, 0 when unknown */
+  sketch_baud: number;
+  to_host: number;
+  from_host: number;
+}
+
 export interface WorldState {
   fields: Record<WorldField, { value: number; unit: string; set: boolean }>;
   bodies: WorldBody[];

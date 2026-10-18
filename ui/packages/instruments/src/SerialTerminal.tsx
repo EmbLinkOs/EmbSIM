@@ -39,6 +39,17 @@ export function appendSerialText(lines: SerialLine[], target: string, at: Time, 
   return out.length > limit ? out.slice(-limit) : out;
 }
 
+/** The port as the host's programs see it (ADR-031): a pseudo-terminal a
+ * serial monitor, screen or a script opens. */
+export interface HostPortView {
+  path: string;
+  /** a program has it open (on the Uno, opening it resets the sketch) */
+  connected: boolean;
+  /** the program's line rate, and the sketch's */
+  baud: number;
+  sketchBaud: number;
+}
+
 export interface SerialTerminalProps {
   target: string | null;
   targets: string[];
@@ -47,10 +58,21 @@ export interface SerialTerminalProps {
   onSend?: (target: string, text: string) => void;
   disabled?: boolean;
   disabledReason?: string;
+  /** the target's port on the host, when it has one */
+  hostPort?: HostPortView | null;
+  /** why it cannot have one (the demo, Windows) */
+  hostPortError?: string;
+  /** put the port on the host, or take it away */
+  onHostPort?: (open: boolean) => void;
+}
+
+/** a mismatch a UART does not tolerate (3 %) */
+function baudsDiffer(a: number, b: number): boolean {
+  return a > 0 && b > 0 && Math.abs(a - b) > 0.03 * b;
 }
 
 /** A simple serial console: received text with timestamps, a send line with history. */
-export function SerialTerminal({ target, targets, onTargetChange, lines, onSend, disabled, disabledReason }: SerialTerminalProps) {
+export function SerialTerminal({ target, targets, onTargetChange, lines, onSend, disabled, disabledReason, hostPort, hostPortError, onHostPort }: SerialTerminalProps) {
   const [text, setText] = useState('');
   const [history, setHistory] = useState<string[]>([]);
   const [histIdx, setHistIdx] = useState(-1);
@@ -86,6 +108,35 @@ export function SerialTerminal({ target, targets, onTargetChange, lines, onSend,
         </label>
         <span className="es-terminal__hint">{disabled ? disabledReason ?? 'unavailable' : `${lines.length} lines`}</span>
       </div>
+      {onHostPort && target && !disabled && (
+        <div className="es-terminal__host" aria-label="Port on the host">
+          {hostPort ? (
+            <>
+              <span className="es-terminal__host-path" title="Open it with any serial program: screen, minicom, the Arduino IDE's monitor, pyserial">
+                <code>{hostPort.path}</code>
+              </span>
+              <span className={`es-terminal__host-state${hostPort.connected ? ' es-terminal__host-state--on' : ''}`}>
+                {hostPort.connected ? `open at ${hostPort.baud || '?'} baud` : 'no program has it open'}
+              </span>
+              {hostPort.connected && baudsDiffer(hostPort.baud, hostPort.sketchBaud) && (
+                <span className="es-terminal__host-warn" role="status">
+                  the sketch runs at {hostPort.sketchBaud}: both sides read garbage
+                </span>
+              )}
+              <button type="button" className="es-button es-button--sm es-button--ghost" onClick={() => onHostPort(false)}>
+                Remove
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="es-button es-button--sm" onClick={() => onHostPort(true)}>
+                Open on this computer
+              </button>
+              <span className="es-terminal__hint">{hostPortError ?? "a serial port the host's own tools open"}</span>
+            </>
+          )}
+        </div>
+      )}
       <div
         ref={logRef}
         className="es-terminal__log"

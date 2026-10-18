@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Junior Deogracias
-"""Build the committed test firmware (tests/firmware/*/) with Clang and LLD.
+"""Build the committed test firmware (tests/firmware/*/) with Clang and LLD:
+Cortex-M images, and the Uno's (AVR) for the host serial port's test.
 
 The ELF images are committed so every platform's tests run them without a
 cross toolchain. This script rebuilds them byte for byte: absolute paths are
@@ -18,10 +19,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-FLAGS = ["-mthumb", "-O2", "-g", "-ffreestanding", "-fno-builtin", "-nostdlib", "-fuse-ld=lld",
+FLAGS = ["-O2", "-g", "-ffreestanding", "-fno-builtin", "-nostdlib", "-fuse-ld=lld",
          "-Wl,--build-id=none", f"-ffile-prefix-map={ROOT}=.", "-I", str(HERE / "common")]
-CM3 = ["--target=thumbv7m-none-eabi", "-mcpu=cortex-m3"]
-CM4 = ["--target=thumbv7em-none-eabi", "-mcpu=cortex-m4"]
+CM3 = ["--target=thumbv7m-none-eabi", "-mcpu=cortex-m3", "-mthumb"]
+CM4 = ["--target=thumbv7em-none-eabi", "-mcpu=cortex-m4", "-mthumb"]
+# the Uno's ATmega328P, with the uno-blink-serial example's header and startup
+UNO = "../../examples/uno-blink-serial/firmware"
+AVR = ["--target=avr", "-mmcu=atmega328p", "-Wl,--gc-sections", "-I", str(HERE / UNO)]
 # image: (sources relative to tests/firmware, linker script[, the target and CPU; a
 # Cortex-M3 by default])
 IMAGES = {
@@ -32,6 +36,7 @@ IMAGES = {
                                           "stack-overflow/stack.ld"),
     "fault/fault.elf": (["common/startup.c", "fault/main.c"], "common/stm32f103c8.ld"),
     "dsp/dsp.elf": (["common/startup.c", "dsp/main.c"], "dsp/dsp.ld", CM4),
+    "uno-echo/uno-echo.elf": ([f"{UNO}/startup.S", "uno-echo/main.c"], f"{UNO}/atmega328p.ld", AVR),
 }
 
 
@@ -39,7 +44,9 @@ def build(out_dir: Path) -> None:
     for image, (sources, script, *cpu) in IMAGES.items():
         out = out_dir / image
         out.parent.mkdir(parents=True, exist_ok=True)
-        cmd = ["clang", *(cpu[0] if cpu else CM3), *FLAGS, "-T", str(HERE / script),
+        # clang's AVR driver takes the linker script only through -Wl
+        link = [f"-Wl,-T,{HERE / script}"] if cpu and cpu[0] is AVR else ["-T", str(HERE / script)]
+        cmd = ["clang", *(cpu[0] if cpu else CM3), *FLAGS, *link,
                *[str(HERE / s) for s in sources], "-o", str(out)]
         subprocess.run(cmd, check=True, cwd=ROOT)
 

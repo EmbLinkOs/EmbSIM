@@ -331,6 +331,12 @@ struct esk_mach {
      * description's reset value */
     u32 (*core_hz)(struct esk_mach *m);
     void *clock_ctx;
+    /* the reset pin's reset: told before the part is held (after = 0) and
+     * once it runs again (after = 1), so that a part that records its
+     * reset's cause (the AVR's MCUSR: EXTRF, the others kept) can; 0 for
+     * none */
+    void (*pin_reset)(struct esk_mach *m, int after);
+    void *pin_reset_ctx;
     u32 reset_hz;
     u32 hse_hz;   /* the board's external oscillator, 0 for none */
     double vdd;   /* the I/O supply in volts (the ADC's AVCC) */
