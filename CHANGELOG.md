@@ -32,13 +32,10 @@ versions follow semantic versioning. There is no release yet.
 
   What is drawn without reference data (the DIP socket, the resonator,
   the reset button, the LEDs) is listed as unqualified.
-- The Design workspace gives the canvas more room:
-  - the Inspector folds to a rail while nothing is selected and opens on a
-    selection;
-  - the bench's parts list folds from its toolbar.
-
-  Both keep the user's choice. At 1440 × 900 the bench grew from 44 % of
-  the window's width to 59 %, and to about 73 % with the list folded.
+- The Design workspace's Inspector folds to a rail while nothing is
+  selected and opens on a selection; folding or unfolding it by hand wins.
+  At 1440 x 900 the bench grew from 44 % of the window's width to 59 %, and
+  to about 73 % with its Parts & wiring list folded.
 - The BB830 breadboard cites BusBoard's datasheet (BPS-DOC-(BB830) Rev 7)
   for its body, its 630-point area and its four continuous 50-point
   rails. The holes' offsets from its edges are not dimensioned there, and
@@ -68,6 +65,16 @@ versions follow semantic versioning. There is no release yet.
   - the bridge's frames on PD0 through its 1 kOhm resistors;
   - DTR pulsed by ioctl, RTS and breaks;
   - programming through Optiboot.
+### Physical bench inspection and reliable wiring
+
+- Target projected pins/holes with named endpoint feedback, reject ambiguous or
+  covered contacts, validate typed terminals and avoid duplicate jumpers.
+- Cancel interrupted wiring/placement safely and release held controls.
+- Add top/selection camera framing, paper/graphite/mat surfaces, label and note
+  preferences, a foldable keyboard list available at compact widths, and an
+  explained 2D fallback/retry for renderer failure.
+- Respect board thickness, mounting height and header style consistently between
+  bodies and wiring contacts; expose geometry provenance without implying qualification.
 
 ### Schematic visual language and direct manipulation
 

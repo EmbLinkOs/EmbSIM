@@ -5,6 +5,36 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Physical bench inspection and wiring milestone
+
+Branch `feat/bench-inspection` develops the merged 3D bench rather than replacing
+it. The bench targets projected contacts, names source/destination endpoints,
+rejects ambiguous neighboring contacts, validates typed terminals, and avoids
+duplicate/reversed jumpers. Pending wire/placement gestures cancel on Escape,
+pointer cancellation/capture loss, focus/visibility loss and tool/edit/live-mode
+changes; interrupted button holds send a release. Selection focus/top cameras,
+paper/graphite/mat surfaces, label modes, notes and a foldable keyboard list make
+inspection configurable. The list stacks below narrow scenes. Focus canvas exposes
+the existing side-panel focus mode directly from the bench. Renderer failure or
+context loss selects an explained 2D fallback with retry.
+
+Board bodies, contact positions and renderer pin heights share thickness, standoff
+and header-style data. Selected-part geometry labels identify catalog dimensions,
+artwork anchors or approximate package geometry, without a qualification claim.
+Generic lead anchors remain approximate, and picking ignores the owning body when
+checking occlusion; it is not a mechanical accessibility/collision validator.
+GLB/STEP import, all-catalog qualification, complete label occlusion and measured
+ADR-028 rendering budgets remain outstanding.
+
+Local UI validation passes typecheck, lint, production build, 212 tests across
+46 files and all 17 Playwright workflows. Hosted CI results are recorded on this
+milestone's pull request. Local GCC Debug validation passes all 39 CTest targets, including native bench and
+protocol regressions; native-server Uno captures are in the
+[gallery](gallery/README.md). The new browser regressions cover endpoint
+cancel/commit/exact undo, interrupted live-button holds, appearance persistence,
+compact keyboard-list access and renderer context-loss recovery. The button checks
+use the demo engine; the screenshots use `embsim serve` and the Uno project.
+
 ## Schematic graphics and interaction milestone
 
 Branch `schematic/visual-interaction`, based on merged PR #34 (`333f091`), separates

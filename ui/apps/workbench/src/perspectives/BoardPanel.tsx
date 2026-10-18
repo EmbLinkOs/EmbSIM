@@ -8,7 +8,7 @@
 // one click builds. Every edit is a transaction on the project, undone as
 // the schematic's are. Without WebGL, the 2D bench below stands in.
 
-import { Badge, Button, Dialog, EmptyState, IconButton, Input, SegmentedControl, Tooltip, useToast } from '@embsim/design';
+import { Badge, Button, Dialog, EmptyState, IconButton, Input, Select, SegmentedControl, Tooltip, useToast } from '@embsim/design';
 import {
   addJumper,
   addNote,
@@ -22,7 +22,7 @@ import {
   moveParts,
   removeJumper,
   snapPart,
-  terminalNear,
+  terminalTargets,
   unbuilt,
   WIRE_COLORS,
   type Bench3DHandle,
@@ -31,15 +31,13 @@ import {
 } from '@embsim/bench';
 import type { ArtworkState, Hotspot, OutputValue, Project } from '@embsim/protocol';
 import { BoardView, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
-import { Box, Cable, CircuitBoard, Maximize2, MousePointer2, PanelRightClose, PanelRightOpen, StickyNote, Wand2 } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Box, Cable, CircuitBoard, List, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
 import { useProject, type CatalogEntry } from '../stores/project';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
-
-/** the bench's parts list folded or open, as the user left it */
-const LIST_KEY = 'embsim.bench.list';
+import { loadBenchPreferences, saveBenchPreferences, type BenchPreferences } from './bench-preferences';
 
 /** the colours an LED's `color` parameter names, for its artwork's --led-color */
 const LED_COLORS: Record<string, string> = {
@@ -83,7 +81,7 @@ function boardBindings(art: BoardArtwork | undefined): { states: ArtworkState[];
   };
 }
 
-export function BoardPanel({ interactive, editable: canEdit = true }: { interactive: boolean; editable?: boolean }) {
+export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanvas, canvasFocused }: { interactive: boolean; editable?: boolean; onFocusCanvas?(): void; canvasFocused?: boolean }) {
   const project = useProject((s) => s.project);
   const catalog = useProject((s) => s.catalog);
   const editableProject = useProject((s) => s.editable);
@@ -104,13 +102,15 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
   }, []);
   const [note, setNote] = useState<string | null>(null);
   const [flat, setFlat] = useState(() => typeof document === 'undefined' || !webglAvailable());
-  const [listOpen, setListOpen] = useState(() => {
-    try {
-      return localStorage.getItem(LIST_KEY) !== 'folded';
-    } catch {
-      return true;
-    }
-  });
+  const [preferences, setPreferences] = useState(loadBenchPreferences);
+  const [rendererFailed, setRendererFailed] = useState(false);
+  const preference = <K extends keyof BenchPreferences>(key: K, value: BenchPreferences[K]) => {
+    setPreferences((previous) => {
+      const next = { ...previous, [key]: value };
+      saveBenchPreferences(next);
+      return next;
+    });
+  };
   const handle = useRef<Bench3DHandle>(null);
   const editable = canEdit && editableProject;
 
@@ -156,9 +156,12 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
   const jumpers = useMemo(() => (project && model ? jumperViews(project, model) : []), [project, model]);
   const links = useMemo(() => (project && model ? linkViews(project, model) : []), [project, model]);
   const pending = useMemo(() => (project && model ? unbuilt(project, model) : []), [project, model]);
+  const terminals = useMemo(() => (model ? terminalTargets(model) : []), [model]);
+
   // the world's bodies and what the distance sensors see of them (ADR-026)
   const bodies = useMemo(() => project?.world?.bodies ?? [], [project]);
   const sensed = useMemo(() => (model ? beams(model.parts, bodies) : []), [model, bodies]);
+
 
   const mutate = useCallback(
     (label: string, fn: (p: Project) => Project | null) => {
@@ -178,16 +181,6 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
   const selectedPart = selected.part ? parts.find((p) => p.id === selected.part) : undefined;
   const selectedHoles = selectedPart ? [...model.plugs].filter(([pin]) => pin.startsWith(`${selectedPart.id}.`)).map(([pin, hole]) => `${pin.split('.').slice(1).join('.')}→${hole.split('.')[1]}`) : [];
   const selectedJumper = selected.jumper !== undefined ? project.layout?.bench?.wires?.[selected.jumper] : undefined;
-
-  const toggleList = () =>
-    setListOpen((open) => {
-      try {
-        localStorage.setItem(LIST_KEY, open ? 'folded' : 'open');
-      } catch {
-        // storage unavailable: the choice lasts the session
-      }
-      return !open;
-    });
 
   const toolbar = (
     <div className="wb-bench-toolbar" role="toolbar" aria-label="Bench tools">
@@ -251,16 +244,25 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
           <Maximize2 />
         </IconButton>
       </Tooltip>
-      <Tooltip content={listOpen ? 'Fold the list of parts: the scene takes its width' : 'The list of parts: where each leg is, plugging and jumpers from the keyboard'}>
-        <IconButton label={listOpen ? 'Fold the parts list' : 'Show the parts list'} size="sm" variant="ghost" aria-pressed={listOpen} onClick={toggleList}>
-          {listOpen ? <PanelRightClose /> : <PanelRightOpen />}
-        </IconButton>
-      </Tooltip>
+      <Button size="sm" variant="ghost" disabled={flat || !selectedPart} onClick={() => handle.current?.frame(undefined, true)}>Focus part</Button>
+      <BenchViewMenu>
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => handle.current?.frame('top')}>Top</Button>
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => handle.current?.frame('perspective')}>Perspective</Button>
+          <Select label="Bench surface" size="sm" value={preferences.surface} onValueChange={(v) => preference('surface', v)} options={[
+            { value: 'paper', label: 'Paper' }, { value: 'graphite', label: 'Graphite' }, { value: 'mat', label: 'Bench mat' },
+          ]} />
+          <Select label="Bench labels" size="sm" value={preferences.labels} onValueChange={(v) => preference('labels', v)} options={[
+            { value: 'adaptive', label: 'Adaptive labels' }, { value: 'all', label: 'All labels' }, { value: 'selected', label: 'Selected only' },
+          ]} />
+          <Button size="sm" variant="ghost" aria-pressed={preferences.notes} onClick={() => preference('notes', !preferences.notes)}>Notes</Button>
+      </BenchViewMenu>
+      <Button size="sm" variant="ghost" aria-pressed={preferences.list} onClick={() => preference('list', !preferences.list)}><List /> Parts & wiring</Button>
+      {onFocusCanvas && <Button size="sm" variant="ghost" aria-pressed={canvasFocused} onClick={onFocusCanvas}>Focus canvas</Button>}
       <SegmentedControl<'3d' | '2d'>
         label="Bench view"
         size="sm"
         value={flat ? '2d' : '3d'}
-        onValueChange={(v) => setFlat(v === '2d')}
+        onValueChange={(v) => { setRendererFailed(false); setFlat(v === '2d'); }}
         options={[
           { value: '3d', label: '3D', title: 'The bench in 3D' },
           { value: '2d', label: '2D', title: 'The parts\' artwork, flat' },
@@ -351,7 +353,11 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
           wireColor={wireColor}
           selected={selected}
           snap={(id, x, y, rotation) => snapPart(model, ctx, id, x, y, rotation)}
-          terminalAt={(x, y, part) => terminalNear(model, x, y, part)}
+          terminals={terminals}
+          surface={preferences.surface}
+          labels={preferences.labels}
+          showNotes={preferences.notes}
+          onRendererError={() => { setRendererFailed(true); setFlat(true); }}
           onMove={(id, place) => mutate(`Move ${id}`, (p) => moveParts(p, ctx, { [id]: place }))}
           onWire={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
           onSelect={setSelected}
@@ -366,8 +372,9 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
           label={`Bench of ${project.name}`}
         />
       )}
-      {listOpen && list}
+      {preferences.list && list}
       </div>
+      {rendererFailed && <div className="wb-bench-recovery" role="status">3D rendering is unavailable. The 2D view and Parts & wiring remain available. Select 3D to retry.</div>}
       {note !== null && (
         <Dialog
           open
@@ -398,6 +405,36 @@ export function BoardPanel({ interactive, editable: canEdit = true }: { interact
       )}
     </div>
   );
+}
+
+/** Keep the popup inside its panel even when platform fonts wrap the toolbar. */
+function BenchViewMenu({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  const place = useCallback(() => {
+    const details = ref.current;
+    if (!details?.open) return;
+    const panel = details.closest('.wb-bench');
+    const body = details.querySelector<HTMLElement>('.wb-bench-view-menu__body');
+    if (!panel || !body) return;
+    const anchor = details.getBoundingClientRect();
+    const bounds = panel.getBoundingClientRect();
+    const left = Math.max(bounds.left + 8, Math.min(anchor.left, bounds.right - body.getBoundingClientRect().width - 8));
+    body.style.left = `${left - anchor.left}px`;
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(place);
+    observer.observe(el);
+    if (el.parentElement) observer.observe(el.parentElement);
+    const panel = el.closest('.wb-bench');
+    if (panel) observer.observe(panel);
+    return () => observer.disconnect();
+  }, [place]);
+  return <details ref={ref} className="wb-bench-view-menu" onToggle={place}>
+    <summary>View</summary>
+    <div className="wb-bench-view-menu__body">{children}</div>
+  </details>;
 }
 
 /**
@@ -448,6 +485,7 @@ function BenchList({
           );
         })}
       </ul>
+      {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? 'Check the actual package and pinout before building hardware.' : 'Source metadata does not establish mechanical qualification.'}</p>}
       {part && editable && part.shape.package !== 'breadboard' && part.shape.package !== 'board' && (
         <form
           className="wb-bench-list__form"
