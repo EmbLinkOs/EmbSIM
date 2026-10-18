@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Basic",
+  "until": "1500ms",
+  "inputs": [
+    {
+      "at": "100ms",
+      "target": "ENC",
+      "input": "position",
+      "value": 3
+    },
+    {
+      "at": "700ms",
+      "target": "ENC",
+      "input": "position",
+      "value": 1
+    }
+  ],
+  "assertions": [
+    {
+      "id": "counts",
+      "at": "1500ms",
+      "probe": "terminal",
+      "expect": {
+        "equals": "Basic Encoder Test:\r\n0\r\n-1\r\n0\r\n-1\r\n-2\r\n-1\r\n-2\r\n-3\r\n-2\r\n-3\r\n-4\r\n-3\r\n-4\r\n-5\r\n-4\r\n-5\r\n-6\r\n-5\r\n-6\r\n-7\r\n-6\r\n-7\r\n-8\r\n-7\r\n-8\r\n-9\r\n-8\r\n-9\r\n-10\r\n-9\r\n-10\r\n-11\r\n-10\r\n-11\r\n-12\r\n-11\r\n-12\r\n-11\r\n-12\r\n-11\r\n-10\r\n-11\r\n-10\r\n-9\r\n-10\r\n-9\r\n-8\r\n-9\r\n-8\r\n-7\r\n-8\r\n-7\r\n-6\r\n-7\r\n-6\r\n-5\r\n-6\r\n-5\r\n-4\r\n-5\r\n-4\r\n"
+      }
+    },
+    {
+      "id": "detent",
+      "at": "1500ms",
+      "probe": "count",
+      "expect": {
+        "equals": 1
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "PJRC Encoder's Basic example, unmodified, polling a KY-040 on D5/D6 (not interrupt pins): turned three detents clockwise the count runs to -12, four counts a detent and negative because A (CLK, the sketch's first pin) leads clockwise, which the library's state table counts down; turned back to the first detent it settles at -4. Every contact change chatters for its 1 ms, so the printed count steps back and forth (0, -1, 0, -1, -2...) before each transition settles, as a polled mechanical encoder does; the state machine keeps the net count right."
+}

@@ -125,6 +125,13 @@
       "commit": "8894b3aed318314345b075b4d436fee18b2b185b",
       "version": "1.4.12",
       "license": "Unlicense"
+    },
+    {
+      "name": "Encoder",
+      "repo": "https://github.com/PaulStoffregen/Encoder",
+      "commit": "c083e9cbd6400f7e72a794c0d371a00a09d2a25d",
+      "version": "1.4.4",
+      "license": "MIT (the 1.4.4 release, as the Library Manager installs it; later commits drop AVR's IO_REG_TYPE)"
     }
   ]
 }

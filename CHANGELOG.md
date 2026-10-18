@@ -563,6 +563,13 @@ versions follow semantic versioning. There is no release yet.
   library's `DumpInfo` runs unmodified; four fixtures. `ctx.bus` helpers
   take `edges = false` to keep a bus's clock edges from `on_input`
   (SPEC-013).
+- The KY-040 rotary encoder model rewritten from the EC11 data sheet and
+  the module's schematic: contacts to GND with the module's 10 kOhm
+  pull-ups to + (floating without it) and none on SW, 20 detents a
+  revolution with both contacts open at rest, A leading clockwise,
+  turning at a hand's pace, and contact bounce on every change. PJRC
+  Encoder's `Basic` runs unmodified, 3/3 (Encoder pinned to its 1.4.4
+  release: later commits drop AVR's IO_REG_TYPE).
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

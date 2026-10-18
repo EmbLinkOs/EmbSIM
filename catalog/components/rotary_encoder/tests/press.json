@@ -2,26 +2,34 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "press",
-  "description": "Pressed: SW low.",
+  "description": "Pressed: SW low (after its bounce); the module has no pull-up on SW, so released it floats unless the sketch pulls it up.",
   "policy": "functional",
-  "until": "3ms",
+  "until": "10ms",
   "circuit": {
     "components": [
       {
         "id": "DUT",
         "component": "emblink/rotary_encoder"
+      },
+      {
+        "id": "V",
+        "component": "emblink/vcc"
       }
     ],
     "nets": {
+      "A": [
+        "DUT.CLK"
+      ],
+      "B": [
+        "DUT.DT"
+      ],
       "SW": [
         "DUT.SW"
+      ],
+      "VCC": [
+        "V.VCC",
+        "DUT.VCC"
       ]
-    }
-  },
-  "expect": {
-    "net:SW": {
-      "at": "2ms",
-      "logic": "0"
     }
   },
   "inputs": [
@@ -31,5 +39,11 @@
       "input": "pressed",
       "value": true
     }
-  ]
+  ],
+  "expect": {
+    "net:SW": {
+      "at": "5ms",
+      "logic": "0"
+    }
+  }
 }

@@ -2,14 +2,21 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "two-steps",
-  "description": "Turned to position 2: two cycles on CLK (four edges), position 2.",
+  "description": "Turned two detents clockwise (bounce off): two quadrature cycles, CLK closing and opening twice (four edges), at 10 detents a second; count 2.",
   "policy": "functional",
-  "until": "21ms",
+  "until": "310ms",
   "circuit": {
     "components": [
       {
         "id": "DUT",
-        "component": "emblink/rotary_encoder"
+        "component": "emblink/rotary_encoder",
+        "params": {
+          "bounce": 0
+        }
+      },
+      {
+        "id": "V",
+        "component": "emblink/vcc"
       }
     ],
     "nets": {
@@ -18,20 +25,14 @@
       ],
       "B": [
         "DUT.DT"
-      ]
-    }
-  },
-  "expect": {
-    "net:A": {
-      "between": [
-        "0.5ms",
-        "20ms"
       ],
-      "edges": 4
-    },
-    "output:DUT.count": {
-      "at": "20ms",
-      "equals": 2
+      "SW": [
+        "DUT.SW"
+      ],
+      "VCC": [
+        "V.VCC",
+        "DUT.VCC"
+      ]
     }
   },
   "inputs": [
@@ -41,5 +42,18 @@
       "input": "position",
       "value": 2
     }
-  ]
+  ],
+  "expect": {
+    "net:A": {
+      "between": [
+        "0.5ms",
+        "300ms"
+      ],
+      "edges": 4
+    },
+    "output:DUT.count": {
+      "at": "300ms",
+      "equals": 2
+    }
+  }
 }

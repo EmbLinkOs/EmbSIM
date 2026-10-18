@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "floating",
+  "description": "With the module's + pin left unconnected its pull-ups have no supply: at rest CLK and DT float.",
+  "policy": "functional",
+  "until": "10ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rotary_encoder"
+      }
+    ],
+    "nets": {
+      "A": [
+        "DUT.CLK"
+      ],
+      "B": [
+        "DUT.DT"
+      ],
+      "SW": [
+        "DUT.SW"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:A": {
+      "at": "5ms",
+      "logic": "Z"
+    },
+    "net:B": {
+      "at": "5ms",
+      "logic": "Z"
+    }
+  }
+}
