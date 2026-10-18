@@ -16,6 +16,12 @@ test('inspection preferences persist and the keyboard list remains usable on com
   const list = page.getByRole('complementary', { name: 'On the bench' });
   await list.getByRole('button', { name: /^R2/ }).click();
   await viewMenu(page);
+  // Font metrics can put View at the left of a wrapped row (macOS).
+  // Its popup must remain inside the bench, above its own pointer targets.
+  const popup = (await page.locator('.wb-bench-view-menu__body').boundingBox())!;
+  const bounds = (await page.locator('.wb-bench').boundingBox())!;
+  expect(popup.x).toBeGreaterThanOrEqual(bounds.x);
+  expect(popup.x + popup.width).toBeLessThanOrEqual(bounds.x + bounds.width);
   await page.getByRole('button', { name: 'Top', exact: true }).click();
   await page.getByRole('combobox', { name: 'Bench surface' }).click();
   await page.getByRole('option', { name: 'Graphite', exact: true }).click();

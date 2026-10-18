@@ -31,7 +31,7 @@ import {
 import type { ArtworkState, Hotspot, OutputValue, Project } from '@embsim/protocol';
 import { BoardView, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
 import { Box, Cable, CircuitBoard, List, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
 import { useProject, type CatalogEntry } from '../stores/project';
 import { useSelection } from '../stores/selection';
@@ -239,9 +239,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         </IconButton>
       </Tooltip>
       <Button size="sm" variant="ghost" disabled={flat || !selectedPart} onClick={() => handle.current?.frame(undefined, true)}>Focus part</Button>
-      <details className="wb-bench-view-menu">
-        <summary>View</summary>
-        <div className="wb-bench-view-menu__body">
+      <BenchViewMenu>
           <Button size="sm" variant="ghost" disabled={flat} onClick={() => handle.current?.frame('top')}>Top</Button>
           <Button size="sm" variant="ghost" disabled={flat} onClick={() => handle.current?.frame('perspective')}>Perspective</Button>
           <Select label="Bench surface" size="sm" value={preferences.surface} onValueChange={(v) => preference('surface', v)} options={[
@@ -251,8 +249,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
             { value: 'adaptive', label: 'Adaptive labels' }, { value: 'all', label: 'All labels' }, { value: 'selected', label: 'Selected only' },
           ]} />
           <Button size="sm" variant="ghost" aria-pressed={preferences.notes} onClick={() => preference('notes', !preferences.notes)}>Notes</Button>
-        </div>
-      </details>
+      </BenchViewMenu>
       <Button size="sm" variant="ghost" aria-pressed={preferences.list} onClick={() => preference('list', !preferences.list)}><List /> Parts & wiring</Button>
       {onFocusCanvas && <Button size="sm" variant="ghost" aria-pressed={canvasFocused} onClick={onFocusCanvas}>Focus canvas</Button>}
       <SegmentedControl<'3d' | '2d'>
@@ -390,6 +387,36 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       )}
     </div>
   );
+}
+
+/** Keep the popup inside its panel even when platform fonts wrap the toolbar. */
+function BenchViewMenu({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  const place = useCallback(() => {
+    const details = ref.current;
+    if (!details?.open) return;
+    const panel = details.closest('.wb-bench');
+    const body = details.querySelector<HTMLElement>('.wb-bench-view-menu__body');
+    if (!panel || !body) return;
+    const anchor = details.getBoundingClientRect();
+    const bounds = panel.getBoundingClientRect();
+    const left = Math.max(bounds.left + 8, Math.min(anchor.left, bounds.right - body.getBoundingClientRect().width - 8));
+    body.style.left = `${left - anchor.left}px`;
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(place);
+    observer.observe(el);
+    if (el.parentElement) observer.observe(el.parentElement);
+    const panel = el.closest('.wb-bench');
+    if (panel) observer.observe(panel);
+    return () => observer.disconnect();
+  }, [place]);
+  return <details ref={ref} className="wb-bench-view-menu" onToggle={place}>
+    <summary>View</summary>
+    <div className="wb-bench-view-menu__body">{children}</div>
+  </details>;
 }
 
 /**
