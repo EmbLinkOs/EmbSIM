@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "kind": "board_reference",
+  "board": "emblink/arduino_uno",
+  "revision": "Arduino UNO R3 (A000066)",
+  "frame": "Millimetres from the board's top-left corner, x right, y down, seen from the top with the USB-B socket on the left and the digital header along the top edge: the artwork's frame (SPEC-006).",
+  "sources": [
+    {
+      "what": "outline and mounting holes",
+      "title": "Arduino UNO R3 datasheet (A000066), 5.4 Board Outline & Mounting Holes",
+      "url": "https://docs.arduino.cc/resources/datasheets/A000066-datasheet.pdf",
+      "read": "2026-10-18"
+    },
+    {
+      "what": "header pad positions and the connector bodies",
+      "title": "KiCad footprint library, Module.pretty/Arduino_UNO_R3.kicad_mod (fab layer for the outline, USB-B and jack)",
+      "url": "https://gitlab.com/kicad/libraries/kicad-footprints/-/raw/master/Module.pretty/Arduino_UNO_R3.kicad_mod",
+      "read": "2026-10-18",
+      "licence": "CC-BY-SA-4.0 with the KiCad libraries exception; only dimensions are taken"
+    },
+    {
+      "what": "which pad is which pin",
+      "title": "KiCad symbol library, MCU_Module.kicad_symdir/Arduino_UNO_R3.kicad_sym",
+      "url": "https://gitlab.com/kicad/libraries/kicad-symbols/-/raw/master/MCU_Module.kicad_symdir/Arduino_UNO_R3.kicad_sym",
+      "read": "2026-10-18"
+    }
+  ],
+  "transform": "KiCad footprint (origin at pad 1, NC, y down with the power header at y 0) to this frame: x + 27.94, 50.8 - y.",
+  "outline_mm": [
+    68.58,
+    53.34
+  ],
+  "outline": [
+    [
+      0,
+      0
+    ],
+    [
+      64.52,
+      0
+    ],
+    [
+      66.04,
+      1.52
+    ],
+    [
+      66.04,
+      12.95
+    ],
+    [
+      68.58,
+      15.49
+    ],
+    [
+      68.58,
+      48.26
+    ],
+    [
+      66.04,
+      50.8
+    ],
+    [
+      66.04,
+      53.34
+    ],
+    [
+      0,
+      53.34
+    ]
+  ],
+  "mounting_holes": {
+    "diameter": 3.2,
+    "at": [
+      [
+        15.24,
+        2.54
+      ],
+      [
+        13.97,
+        50.8
+      ],
+      [
+        66.04,
+        17.78
+      ],
+      [
+        66.04,
+        45.72
+      ]
+    ]
+  },
+  "terminals": {
+    "NC": [
+      27.94,
+      50.8
+    ],
+    "IOREF": [
+      30.48,
+      50.8
+    ],
+    "RESET": [
+      33.02,
+      50.8
+    ],
+    "3V3": [
+      35.56,
+      50.8
+    ],
+    "5V": [
+      38.1,
+      50.8
+    ],
+    "GND": [
+      40.64,
+      50.8
+    ],
+    "GND_2": [
+      43.18,
+      50.8
+    ],
+    "VIN": [
+      45.72,
+      50.8
+    ],
+    "A0": [
+      50.8,
+      50.8
+    ],
+    "A1": [
+      53.34,
+      50.8
+    ],
+    "A2": [
+      55.88,
+      50.8
+    ],
+    "A3": [
+      58.42,
+      50.8
+    ],
+    "A4": [
+      60.96,
+      50.8
+    ],
+    "A5": [
+      63.5,
+      50.8
+    ],
+    "D0": [
+      63.5,
+      2.54
+    ],
+    "D1": [
+      60.96,
+      2.54
+    ],
+    "D2": [
+      58.42,
+      2.54
+    ],
+    "D3": [
+      55.88,
+      2.54
+    ],
+    "D4": [
+      53.34,
+      2.54
+    ],
+    "D5": [
+      50.8,
+      2.54
+    ],
+    "D6": [
+      48.26,
+      2.54
+    ],
+    "D7": [
+      45.72,
+      2.54
+    ],
+    "D8": [
+      41.66,
+      2.54
+    ],
+    "D9": [
+      39.12,
+      2.54
+    ],
+    "D10": [
+      36.58,
+      2.54
+    ],
+    "D11": [
+      34.04,
+      2.54
+    ],
+    "D12": [
+      31.5,
+      2.54
+    ],
+    "D13": [
+      28.96,
+      2.54
+    ],
+    "GND_D": [
+      26.42,
+      2.54
+    ],
+    "AREF": [
+      23.88,
+      2.54
+    ],
+    "SDA": [
+      21.34,
+      2.54
+    ],
+    "SCL": [
+      18.8,
+      2.54
+    ]
+  },
+  "connectors": {
+    "usb_b": {
+      "from": [
+        -6.35,
+        9.53
+      ],
+      "to": [
+        9.53,
+        20.96
+      ],
+      "note": "overhangs the left edge by 6.35 mm"
+    },
+    "barrel_jack": {
+      "from": [
+        -1.9,
+        41.27
+      ],
+      "to": [
+        11.43,
+        50.16
+      ]
+    }
+  },
+  "tolerance_mm": 0.05,
+  "unqualified": [
+    "the ATmega328P's DIP socket, the 16 MHz resonator, the reset button and the L, TX, RX and ON LEDs: drawn where they are roughly, with no reference data yet",
+    "the ICSP headers and the ATmega16U2 (not drawn)"
+  ]
+}

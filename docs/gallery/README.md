@@ -5,6 +5,23 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The Uno R3 qualified (2026-10-18)
+
+The first step of the visual benchmark's V1. The Uno's artwork, before and
+after being redrawn from reference data: Arduino's A000066 datasheet for
+the outline and mounting holes, KiCad's `Arduino_UNO_R3` footprint for
+every header pad. The power and analog headers had been about 4 mm to the
+left, and D8 to SCL had lacked the 160 mil offset from D7; the right-hand
+holes, the outline's steps and the USB-B socket had been placed by eye. The
+validator now holds the artwork to the reference within 0.05 mm, and the
+3D bench's header follows it.
+
+| Before | After |
+|---|---|
+| ![The earlier Uno artwork: headers out of place](qualified-uno/artwork-before.png) | ![The Uno artwork from reference data](qualified-uno/artwork.png) |
+
+![The qualified Uno on the 3D bench](qualified-uno/bench.png)
+
 ## The Uno's serial port on the host (2026-10-18)
 
 The Serial panel's "Open on this computer" puts the board's ATmega16U2

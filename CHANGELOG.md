@@ -5,6 +5,38 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The Uno R3 qualified against reference data (visual benchmark V1)
+
+- The Uno's artwork had its headers up to 4 mm out:
+  - the power and analog headers about 3.9 mm to the left;
+  - D8 to SCL 1.2 mm out, with no 160 mil offset from D7;
+  - both rows 0.34 mm off the edges.
+
+  The outline's steps, the right mounting holes, the USB-B socket and the
+  jack were placed by eye.
+- The artwork is now drawn from `reference.json`, which takes:
+  - the outline and the four Ø3.2 mm holes from Arduino's A000066
+    datasheet;
+  - every header pad, the NC position among them, from KiCad's
+    `Arduino_UNO_R3` footprint, its symbol naming each pad;
+  - the USB-B socket (overhanging the edge by 6.35 mm) and the jack from
+    the footprint's fab layer.
+
+  The 3D bench takes its header positions from the artwork, so the board
+  on the bench moves with it.
+- `tools/validate.py` checks a board with a `reference.json` (kind
+  `board_reference`, SPEC-006 §3.1) within its 0.05 mm tolerance:
+  - the artwork's size, each pad, the mounting holes and the bench
+    features' connector bodies;
+  - that every port has a reference position.
+
+  What is drawn without reference data (the DIP socket, the resonator,
+  the reset button, the LEDs) is listed as unqualified.
+- The BB830 breadboard cites BusBoard's datasheet (BPS-DOC-(BB830) Rev 7)
+  for its body, its 630-point area and its four continuous 50-point
+  rails. The holes' offsets from its edges are not dimensioned there, and
+  are declared as such.
+
 ### The Uno's serial port on the host (ADR-031, ADR-032)
 
 - The board's USB-serial bridge (`console.bridge`) becomes a pseudo-terminal

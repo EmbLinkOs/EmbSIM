@@ -26,7 +26,12 @@ BOTTOM = "fghij"
 
 BOARDS = {
     "breadboard_830": dict(name="Breadboard, 830 points", cols=63, rails=50, size=(165.1, 54.6, 8.5),
-                           mpn="BB830", doc="Full-size solderless breadboard (BusBoard BB830; the MB-102 has the same layout)"),
+                           mpn="BB830", doc="Full-size solderless breadboard (BusBoard BB830; the MB-102 has the same layout)",
+                           source={"title": "BusBoard Prototype Systems, BB830 product datasheet, BPS-DOC-(BB830) Rev 7",
+                                   "url": "https://www.busboard.com/documents/datasheets/BPS-DAT-(BB830)-Datasheet.pdf",
+                                   "date": "2026-10-18"},
+                           qualified="The body (6.50 x 2.20 x 0.30 in, 165.1 x 54.6 x 8.5 mm), the 630-point IC area and the "
+                                     "four continuous 50-point rails are the datasheet's (BPS-DOC-(BB830) Rev 7)."),
     "breadboard_400": dict(name="Breadboard, 400 points", cols=30, rails=25, size=(82.6, 54.6, 8.5),
                            mpn="BB400", doc="Half-size solderless breadboard (BusBoard BB400)"),
     "breadboard_170": dict(name="Breadboard, 170 points", cols=17, rails=0, size=(45.7, 34.5, 8.5),
@@ -106,6 +111,8 @@ def description(key: str, b: dict, pins: dict, ties: list) -> dict:
     w, d, h = b["size"]
     claims = (f"{len(pins)} holes; each strip of five ({b['cols']} a side) and each power rail is one conductor; "
               "strips across the centre channel and adjacent strips are isolated.")
+    if b.get("qualified"):
+        claims += " " + b["qualified"]
     return {
         "schema_version": 1,
         "kind": "component",
@@ -124,7 +131,9 @@ def description(key: str, b: dict, pins: dict, ties: list) -> dict:
         "bench": {"package": "breadboard", "size_mm": [w, d, h], "wiring_aid": True,
                   "pins": {n: [x, y] for n, (x, y) in pins.items()}},
         "fidelity": {
-            "functional": {"claims": claims, "omissions": []},
+            "functional": {"claims": claims, "omissions": [] if not b.get("qualified") else [
+                "the holes' place on the body (the rails' and strips' offsets from its edges) is not dimensioned in the "
+                "datasheet: 0.1 in pitch, the 0.3 in DIP channel and rail pairs 0.1 in apart, placed as the common layout"]},
             "timed": {"claims": claims, "omissions": []},
             "electrical": {
                 "claims": claims + " The contacts are ideal.",
@@ -137,7 +146,8 @@ def description(key: str, b: dict, pins: dict, ties: list) -> dict:
             },
         },
         "provenance": {"author": "EmbSIM", "license": "Apache-2.0",
-                       "sources": [{"title": "BusBoard Prototype Systems, BB830 / BB400 / BB170 solderless breadboard data sheets"}]},
+                       "sources": [b["source"]] if b.get("source") else
+                                  [{"title": "BusBoard Prototype Systems, BB830 / BB400 / BB170 solderless breadboard data sheets"}]},
         "tests": ["tests/*.json"],
     }
 

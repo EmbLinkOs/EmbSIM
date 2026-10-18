@@ -49,6 +49,7 @@ KIND_SCHEMAS = {
     "toolchain": "toolchain.schema.json",
     "library": "library.schema.json",
     "registers": "registers.schema.json",
+    "board_reference": "board-reference.schema.json",
 }
 
 SI_SUFFIX = {
@@ -1175,6 +1176,81 @@ def check_package(report: Report, file: Path, doc: dict, index: Index, mcu: Opti
         svg_ids(base / outline["svg"], report)
 
 
+
+
+def _check_reference_home(report: Report, path: Path, doc: dict) -> None:
+    """A board reference sits beside the board it qualifies (board.json checks
+    the artwork against it)."""
+    board = path.parent / "board.json"
+    if not board.exists():
+        report.error(path, "/board", "board.reference_orphan", "no board.json beside this reference")
+        return
+    with open(board, "r", encoding="utf-8") as fh:
+        bid = json.load(fh).get("id")
+    if bid != doc.get("board"):
+        report.error(path, "/board", "board.reference_orphan", f"this reference is for {doc.get('board')}, the board beside it is {bid}")
+
+def check_board_reference(report: Report, file: Path, doc: dict) -> None:
+    """A board qualified against reference data (reference.json beside its
+    description): its artwork's outline, every terminal's pad, the mounting
+    holes and its bench features' connector bodies where the independent
+    reference puts them, within its tolerance; every port has a reference
+    terminal (no geometry left to a fallback)."""
+    ref_path = file.parent / "reference.json"
+    art = doc.get("artwork")
+    if not ref_path.exists() or not art:
+        return
+    with open(ref_path, "r", encoding="utf-8") as fh:
+        ref = json.load(fh)
+    tol = float(ref.get("tolerance_mm", 0.05))
+    node = "/artwork"
+    w, h = ref["outline_mm"]
+    if abs(art.get("width_mm", 0) - w) > tol or abs(art.get("height_mm", 0) - h) > tol:
+        report.error(file, node, "board.reference_outline",
+                     f"artwork is {art.get('width_mm')} x {art.get('height_mm')} mm, the reference {w} x {h} mm")
+    try:
+        root = ET.parse(file.parent / art["svg"]).getroot()
+    except (ET.ParseError, OSError):
+        return  # reported by the artwork check
+    vb = [float(v) for v in (root.get("viewBox") or "0 0 1 1").split()]
+    sx, sy = art.get("width_mm", w) / vb[2], art.get("height_mm", h) / vb[3]
+    circles = {el.get("id"): el for el in root.iter() if el.tag.endswith("circle") and el.get("id")}
+    selector = {hs["port"]: hs.get("selector", "") for hs in art.get("hotspots") or [] if "port" in hs}
+
+    def at(el: Any) -> tuple[float, float]:
+        return (float(el.get("cx")) - vb[0]) * sx, (float(el.get("cy")) - vb[1]) * sy
+
+    for name, (x, y) in ref.get("terminals", {}).items():
+        sel = selector.get(name, "#pin-" + name.lower())
+        el = circles.get(sel.lstrip("#"))
+        if el is None:
+            report.error(file, node, "board.reference_terminal", f"the artwork has no pad {sel} for {name}")
+            continue
+        ax, ay = at(el)
+        if abs(ax - x) > tol or abs(ay - y) > tol:
+            report.error(file, node, "board.reference_terminal",
+                         f"{name}'s pad is at ({ax:.2f}, {ay:.2f}) mm, the reference puts it at ({x}, {y})")
+    for port in doc.get("ports") or {}:
+        if port not in ref.get("terminals", {}):
+            report.error(file, "/ports/" + port, "board.reference_terminal", f"port {port} has no reference position")
+    mounts = [at(el) for el in root.iter() if el.tag.endswith("circle") and "mount" in (el.get("class") or "").split()]
+    for x, y in (ref.get("mounting_holes") or {}).get("at", []):
+        if not any(abs(mx - x) <= tol and abs(my - y) <= tol for mx, my in mounts):
+            report.error(file, node, "board.reference_hole", f"no mounting hole (class mount) at ({x}, {y}) mm")
+    feats = {f.get("kind"): f for f in (doc.get("bench") or {}).get("features") or []}
+    for kind, box in (ref.get("connectors") or {}).items():
+        f = feats.get(kind)
+        if f is None:
+            report.error(file, "/bench/features", "board.reference_connector", f"no bench feature {kind}")
+            continue
+        cx, cy = (box["from"][0] + box["to"][0]) / 2, (box["from"][1] + box["to"][1]) / 2
+        bw, bh = box["to"][0] - box["from"][0], box["to"][1] - box["from"][1]
+        fx, fy = f.get("at", [0, 0])
+        size = f.get("size", [0, 0])
+        if abs(fx - cx) > tol or abs(fy - cy) > tol or abs(size[0] - bw) > tol or abs(size[1] - bh) > tol:
+            report.error(file, "/bench/features", "board.reference_connector",
+                         f"{kind} is {size[0]} x {size[1]} mm at ({fx}, {fy}); the reference {bw:.2f} x {bh:.2f} at ({cx:.2f}, {cy:.2f})")
+
 def check_board(report: Report, file: Path, doc: dict, index: Index) -> None:
     base = file.parent
     mref = doc.get("mcu") or {}
@@ -1286,6 +1362,7 @@ def check_board(report: Report, file: Path, doc: dict, index: Index) -> None:
         for key in ("tx", "rx"):
             if console.get(key) and console[key] not in signals:
                 report.error(file, ptr("console", key), "catalog.signal_unknown", f"{console[key]} is not a signal of the MCU")
+    check_board_reference(report, file, doc)
     # the bridge's DTR reset holds a board component's contacts (a reset switch's) for its pulse
     dtr = ((console or {}).get("bridge") or {}).get("dtr_reset")
     if dtr:
@@ -1764,6 +1841,7 @@ CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
     "toolchain": check_toolchain,
     "registers": check_registers,
     "library": check_library,
+    "board_reference": lambda report, path, doc, index: _check_reference_home(report, path, doc),
 }
 
 
