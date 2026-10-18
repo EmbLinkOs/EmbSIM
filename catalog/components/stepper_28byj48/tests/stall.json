@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "stall",
+  "description": "800 full steps a second from standstill, beyond the pull-in rate: the rotor cannot follow, it slips back and hums within a few steps of the start.",
+  "policy": "functional",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "C,6,3,9",
+          "period": "1.25m",
+          "repeat": true
+        }
+      },
+      {
+        "id": "U1",
+        "component": "emblink/uln2003"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/stepper_28byj48"
+      },
+      {
+        "id": "V5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      }
+    ],
+    "nets": {
+      "N_IN1": [
+        "PG.OUT0",
+        "U1.IN1"
+      ],
+      "N_BLUE": [
+        "U1.OUT1",
+        "DUT.BLUE"
+      ],
+      "N_IN2": [
+        "PG.OUT1",
+        "U1.IN2"
+      ],
+      "N_PINK": [
+        "U1.OUT2",
+        "DUT.PINK"
+      ],
+      "N_IN3": [
+        "PG.OUT2",
+        "U1.IN3"
+      ],
+      "N_YELLOW": [
+        "U1.OUT3",
+        "DUT.YELLOW"
+      ],
+      "N_IN4": [
+        "PG.OUT3",
+        "U1.IN4"
+      ],
+      "N_ORANGE": [
+        "U1.OUT4",
+        "DUT.ORANGE"
+      ],
+      "N_RED": [
+        "V5.OUT",
+        "DUT.RED"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.steps": {
+      "at": "500ms",
+      "equals": 0,
+      "tolerance": 5
+    }
+  }
+}

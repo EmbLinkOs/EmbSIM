@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/uln2003_module",
+  "version": "1.0.0",
+  "name": "ULN2003 stepper driver board",
+  "category": "power",
+  "description": "The common ULN2003 stepper motor driver board sold with the 28BYJ-48: IN1 to IN4 to a ULN2003A, its outputs on the 5-pin motor connector (pin 5 to + through the ON/OFF jumper), and an LED (A to D) on each output that lights while the channel sinks, showing the stepping sequence.",
+  "keywords": [
+    "ULN2003",
+    "stepper driver",
+    "28BYJ-48",
+    "module",
+    "board",
+    "driver"
+  ],
+  "pins": [
+    {
+      "name": "IN1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Input 1 (header IN1) to the ULN2003's input 1"
+    },
+    {
+      "name": "IN2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Input 2 (header IN2) to the ULN2003's input 2"
+    },
+    {
+      "name": "IN3",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Input 3 (header IN3) to the ULN2003's input 3"
+    },
+    {
+      "name": "IN4",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Input 4 (header IN4) to the ULN2003's input 4"
+    },
+    {
+      "name": "GND",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "- : ground"
+    },
+    {
+      "name": "VCC",
+      "number": 6,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "+ : the motor supply, 5 to 12 V, to the ULN2003's COM, the LEDs and the motor's red through the fitted ON/OFF jumper"
+    },
+    {
+      "name": "OUT1",
+      "number": 7,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Motor connector pin 1 (a 28BYJ-48's blue)"
+    },
+    {
+      "name": "OUT2",
+      "number": 8,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Motor connector pin 2 (a 28BYJ-48's pink)"
+    },
+    {
+      "name": "OUT3",
+      "number": 9,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Motor connector pin 3 (a 28BYJ-48's yellow)"
+    },
+    {
+      "name": "OUT4",
+      "number": 10,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Motor connector pin 4 (a 28BYJ-48's orange)"
+    },
+    {
+      "name": "M5",
+      "number": 11,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Motor connector pin 5 (the 28BYJ-48's red): + through the jumper"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "U1",
+          "component": "emblink/uln2003"
+        },
+        {
+          "id": "R1",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "1k"
+          }
+        },
+        {
+          "id": "LEDA",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "R2",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "1k"
+          }
+        },
+        {
+          "id": "LEDB",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "R3",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "1k"
+          }
+        },
+        {
+          "id": "LEDC",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "R4",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "1k"
+          }
+        },
+        {
+          "id": "LEDD",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        }
+      ],
+      "nets": {
+        "VM": [
+          "U1.COM",
+          "R1.1",
+          "R2.1",
+          "R3.1",
+          "R4.1"
+        ],
+        "GND": [
+          "U1.GND"
+        ],
+        "LA1": [
+          "R1.2",
+          "LEDA.A"
+        ],
+        "OUT1": [
+          "LEDA.K",
+          "U1.OUT1"
+        ],
+        "LA2": [
+          "R2.2",
+          "LEDB.A"
+        ],
+        "OUT2": [
+          "LEDB.K",
+          "U1.OUT2"
+        ],
+        "LA3": [
+          "R3.2",
+          "LEDC.A"
+        ],
+        "OUT3": [
+          "LEDC.K",
+          "U1.OUT3"
+        ],
+        "LA4": [
+          "R4.2",
+          "LEDD.A"
+        ],
+        "OUT4": [
+          "LEDD.K",
+          "U1.OUT4"
+        ]
+      },
+      "ports": {
+        "IN1": "U1.IN1",
+        "OUT1": "U1.OUT1",
+        "IN2": "U1.IN2",
+        "OUT2": "U1.OUT2",
+        "IN3": "U1.IN3",
+        "OUT3": "U1.OUT3",
+        "IN4": "U1.IN4",
+        "OUT4": "U1.OUT4",
+        "VCC": "U1.COM",
+        "M5": "U1.COM",
+        "GND": "U1.GND"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "The common ULN2003 stepper driver board: a ULN2003A with inputs IN1 to IN4 on the header, its outputs 1 to 4 on the motor connector's pins 1 to 4, + to COM and to connector pin 5 through the fitted ON/OFF jumper, and four LEDs (A to D) with 1 kOhm from + to the outputs, lit while an output sinks.",
+      "omissions": [
+        "the ON/OFF jumper (always fitted)",
+        "the ULN2003's inputs 5 to 7 (unused on the board)",
+        "the LEDs' colour and brightness spread between boards"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ULN2003 stepper motor driver board schematic (ULN2003A, LEDs A-D with 1 kOhm to +, ON/OFF jumper, 5-pin XH connector)"
+      },
+      {
+        "title": "Texas Instruments ULN2003A data sheet SLRS027"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 100,
+    "height": 100,
+    "pins": {
+      "IN1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "IN2": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "IN3": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "IN4": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "VCC": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "GND": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "OUT1": {
+        "x": 100,
+        "y": 20,
+        "side": "right"
+      },
+      "OUT2": {
+        "x": 100,
+        "y": 30,
+        "side": "right"
+      },
+      "OUT3": {
+        "x": 100,
+        "y": 40,
+        "side": "right"
+      },
+      "OUT4": {
+        "x": 100,
+        "y": 50,
+        "side": "right"
+      },
+      "M5": {
+        "x": 100,
+        "y": 60,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

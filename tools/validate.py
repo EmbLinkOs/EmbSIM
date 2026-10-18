@@ -539,6 +539,21 @@ class Index:
         return Index(list(extra) + self.roots)
 
 
+def has_output(index: "Index", desc: dict, name: str) -> bool:
+    """NAME is one of the description's outputs, or MEMBER.NAME one of a
+    composite member's (a board's LED)"""
+    if name in {o.get("name") for o in desc.get("outputs") or []}:
+        return True
+    sub, _, out = name.partition(".")
+    if not out:
+        return False
+    for m in ((desc.get("model") or {}).get("composite") or {}).get("components", []):
+        if m.get("id") == sub:
+            md = index.component(m.get("component", ""))
+            return md is not None and out in {o.get("name") for o in md.get("outputs") or []}
+    return False
+
+
 def component_pin_names(desc: dict) -> set[str]:
     names: set[str] = set()
     for pin in desc.get("pins", []):
@@ -1006,7 +1021,7 @@ def check_component_test(report: Report, file: Path, doc: dict, index: Index) ->
                 report.error(file, node, "catalog.not_found", f"instance {i} is not declared")
             elif kind == "pin" and sub not in component_pin_names(inst[i]):
                 report.error(file, node, "catalog.pin_unknown", f"{i} has no pin {sub}")
-            elif kind == "output" and sub not in {o.get("name") for o in inst[i].get("outputs") or []}:
+            elif kind == "output" and not has_output(index, inst[i], sub):
                 report.error(file, node, "catalog.output_unknown", f"{i} has no output {sub}")
         if not any(k in exp for k in ("at", "between", "by")):
             report.error(file, node, "schema.missing_field", "expectation needs at, between or by")
@@ -1422,7 +1437,7 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
                 report.error(file, node + "/target", "catalog.not_found", f"instance {i2} is not declared")
             elif kind == "pin" and sub not in component_pin_names(ctx.components[i2]):
                 report.error(file, node + "/target", "catalog.pin_unknown", f"{i2} has no pin {sub}")
-            elif kind == "output" and sub not in {o.get("name") for o in ctx.components[i2].get("outputs") or []}:
+            elif kind == "output" and not has_output(index, ctx.components[i2], sub):
                 report.error(file, node + "/target", "catalog.output_unknown", f"{i2} has no output {sub}")
         elif kind in ("reg", "serial", "mem", "var"):
             sep = "." if kind in ("reg", "serial") else ":"
@@ -1525,8 +1540,8 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
         if "probe" in a and ctx is not None and a["probe"] not in ctx.probes:
             report.error(file, node + "/probe", "catalog.not_found", f"probe {a['probe']} is not declared by the project")
         exp = a.get("expect") or {}
-        if "tolerance" in exp and "frequency_hz" not in exp:
-            report.warning(file, node + "/expect", "schema.type", "tolerance without frequency_hz")
+        if "tolerance" in exp and "frequency_hz" not in exp and not isinstance(exp.get("equals"), (int, float)):
+            report.warning(file, node + "/expect", "schema.type", "tolerance without frequency_hz or a number to equal")
         if "min" in exp and "max" in exp and exp["min"] > exp["max"]:
             report.error(file, node + "/expect", "schema.type", "min exceeds max")
         if "min_v" in exp and "max_v" in exp and exp["min_v"] > exp["max_v"]:

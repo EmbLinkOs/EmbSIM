@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "sink",
+  "description": "An input high sinks its output; an input low releases it, so the load's pull-up shows; an open input is off.",
+  "policy": "functional",
+  "until": "2us",
+  "circuit": {
+    "components": [
+      { "id": "L1", "component": "emblink/logic_level", "params": { "level": 1 } },
+      { "id": "L2", "component": "emblink/logic_level", "params": { "level": 0 } },
+      { "id": "P1", "component": "emblink/pull_up" },
+      { "id": "P2", "component": "emblink/pull_up" },
+      { "id": "P3", "component": "emblink/pull_up" },
+      { "id": "DUT", "component": "emblink/uln2003" }
+    ],
+    "nets": {
+      "N_IN1": ["L1.OUT", "DUT.IN1"],
+      "N_IN2": ["L2.OUT", "DUT.IN2"],
+      "N_OUT1": ["DUT.OUT1", "P1.1"],
+      "N_OUT2": ["DUT.OUT2", "P2.1"],
+      "N_OUT3": ["DUT.OUT3", "P3.1"]
+    }
+  },
+  "expect": {
+    "net:N_OUT1": { "at": "1us", "logic": "0" },
+    "net:N_OUT2": { "at": "1us", "logic": "1" },
+    "net:N_OUT3": { "at": "1us", "logic": "1" },
+    "output:DUT.on1": { "at": "1us", "equals": true }
+  }
+}

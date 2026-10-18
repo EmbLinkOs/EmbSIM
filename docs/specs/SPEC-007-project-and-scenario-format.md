@@ -79,7 +79,9 @@ Rules:
 - `probes[].target` kinds: `net:NAME`, `pin:INSTANCE.PIN`,
   `device:INSTANCE.QUANTITY` (currents, powers, model outputs),
   `reg:BOARD.PERIPHERAL.REGISTER`, `mem:BOARD:ADDR:LEN`, `var:BOARD:SYMBOL`
-  (DWARF), `serial:BOARD.PERIPHERAL`, `output:INSTANCE.NAME`. `kind` selects
+  (DWARF), `serial:BOARD.PERIPHERAL`, `output:INSTANCE.NAME` (or
+  `output:INSTANCE.MEMBER.NAME`, an output of a composite's member: a
+  board's LED). `kind` selects
   the sample type (`digital`, `analog`, `serial`, `value`); `rate_hz` resamples
   analog probes for instruments; absent, samples are at accepted steps.
 - `settings` override SPEC-002 defaults for this project.
@@ -123,8 +125,9 @@ Rules:
   sample in a window; `by` checks that the expectation holds at some time up
   to the bound; `always` with `diagnostics.forbid` fails on any listed
   diagnostic. `expect` keys: `logic` (`0|1|Z|X`), `min`, `max`, `min_v`,
-  `max_v`, `equals`, `contains`, `edges` (a count), `frequency_hz` with
-  `tolerance`.
+  `max_v`, `equals`, `contains`, `edges` (a count), `frequency_hz`.
+  `tolerance` is the absolute difference a numeric `equals` allows (exact
+  otherwise) and the fraction a `frequency_hz` allows (5 % otherwise).
 - A run with a scenario ends at `until`; the report (SPEC-008 §8) lists each
   assertion with pass, fail and the observed value.
 

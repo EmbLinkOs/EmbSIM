@@ -570,6 +570,21 @@ versions follow semantic versioning. There is no release yet.
   turning at a hand's pace, and contact bounce on every change. PJRC
   Encoder's `Basic` runs unmodified, 3/3 (Encoder pinned to its 1.4.4
   release: later commits drop AVR's IO_REG_TYPE).
+- The 28BYJ-48 stepper motor, the ULN2003A and the ULN2003 driver board.
+  The motor: four 50 Ohm, 3 mH half windings on red (bipolar with red
+  open), a permanent-magnet rotor of 32 full steps a turn geared 63.684:1,
+  its inertia, detent torque, gearbox friction and the windings' back EMF
+  integrated in 20 us steps, calibrated to the data sheet's in-traction
+  (above 600 Hz) and out-traction (above 1000 Hz) rates, so it misses
+  steps and stalls when stepped too fast and shudders in place with its
+  leads in the wrong order; nine fixtures. The ULN2003A: seven sinking
+  channels at 2.4 V with the data sheet's saturation voltage and 0.25 us
+  delay. The board: the chip, the motor connector and the four LEDs. The
+  Arduino Stepper library's `stepper_oneRevolution` runs unmodified, 5/5:
+  its 200 steps turn this motor's shaft 34.9 degrees, as on the bench.
+- Fixtures and projects may probe a composite member's output
+  (`output:DRV.LEDA.current`), and `tolerance` with a numeric `equals` is
+  no longer reported as unused (SPEC-007).
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

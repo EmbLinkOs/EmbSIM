@@ -143,6 +143,17 @@ class ComponentTests(Base):
         path.write_text(json.dumps(fixture), encoding="utf-8")
         self.assertCode(self.check(path), "catalog.not_found")
 
+    def test_fixture_expects_a_composite_members_output(self):
+        fixture = {"schema_version": 1, "kind": "component_test", "name": "member-output", "policy": "electrical", "until": "1ms",
+                   "circuit": {"components": [{"id": "KP", "component": "emblink/keypad_4x4"}], "nets": {"R": ["KP.R1"]}},
+                   "expect": {"output:KP.k5.closed": {"at": "1ms", "equals": False}}}
+        path = self.tmp / "member-output.json"
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        self.assertNotIn("catalog.output_unknown", self.codes(self.check(path)))
+        fixture["expect"] = {"output:KP.k5.nope": {"at": "1ms", "equals": False}}
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        self.assertCode(self.check(path), "catalog.output_unknown")
+
     def test_unknown_field_rejected(self):
         desc = copy.deepcopy(COMPONENT)
         desc["colour"] = "red"

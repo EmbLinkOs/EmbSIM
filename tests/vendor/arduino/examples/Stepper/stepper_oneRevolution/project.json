@@ -1,0 +1,150 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-stepper-28byj48",
+ "description": "The Arduino Stepper library's stepper_oneRevolution as a 28BYJ-48 and its ULN2003 board are usually wired for it: the board's IN1 to D8, IN3 to D9, IN2 to D10 and IN4 to D11 (the order the library's two-phase sequence needs on this motor's leads), + and - to the Uno's 5 V and GND, the motor on the board's connector, and a terminal on D0/D1 at 9600 baud.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 9600
+   },
+   "layout": {
+    "x": 720,
+    "y": 520
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "DRV",
+   "component": "emblink/uln2003_module",
+   "layout": {
+    "x": 120,
+    "y": 660
+   }
+  },
+  {
+   "id": "MOT",
+   "component": "emblink/stepper_28byj48",
+   "layout": {
+    "x": 120,
+    "y": 860
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "DRV.VCC"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "VT1.GND",
+   "DRV.GND"
+  ],
+  "UART_TX": [
+   "B1.D1",
+   "VT1.RX"
+  ],
+  "UART_RX": [
+   "B1.D0",
+   "VT1.TX"
+  ],
+  "IN1": [
+   "B1.D8",
+   "DRV.IN1"
+  ],
+  "IN3": [
+   "B1.D9",
+   "DRV.IN3"
+  ],
+  "IN2": [
+   "B1.D10",
+   "DRV.IN2"
+  ],
+  "IN4": [
+   "B1.D11",
+   "DRV.IN4"
+  ],
+  "COIL1": [
+   "DRV.OUT1",
+   "MOT.BLUE"
+  ],
+  "COIL2": [
+   "DRV.OUT2",
+   "MOT.PINK"
+  ],
+  "COIL3": [
+   "DRV.OUT3",
+   "MOT.YELLOW"
+  ],
+  "COIL4": [
+   "DRV.OUT4",
+   "MOT.ORANGE"
+  ],
+  "MOTOR_COM": [
+   "DRV.M5",
+   "MOT.RED"
+  ]
+ },
+ "probes": [
+  {
+   "id": "terminal",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "steps",
+   "target": "output:MOT.steps",
+   "kind": "value"
+  },
+  {
+   "id": "angle",
+   "target": "output:MOT.angle",
+   "kind": "value"
+  },
+  {
+   "id": "led_a",
+   "target": "output:DRV.LEDA.current",
+   "kind": "value"
+  }
+ ]
+}

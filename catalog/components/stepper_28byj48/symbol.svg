@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="10" width="20" height="60" rx="2"/>
+  <line class="s" id="pin-blue" x1="0" y1="20" x2="10" y2="20" style="stroke:#4a7bd8"/><text class="p" x="13" y="22">Blu</text>
+  <line class="s" id="pin-pink" x1="0" y1="30" x2="10" y2="30" style="stroke:#e48bb4"/><text class="p" x="13" y="32">Pin</text>
+  <line class="s" id="pin-yellow" x1="0" y1="40" x2="10" y2="40" style="stroke:#e3c341"/><text class="p" x="13" y="42">Yel</text>
+  <line class="s" id="pin-orange" x1="0" y1="50" x2="10" y2="50" style="stroke:#e58a3a"/><text class="p" x="13" y="52">Ora</text>
+  <line class="s" id="pin-red" x1="0" y1="60" x2="10" y2="60" style="stroke:#d84a4a"/><text class="p" x="13" y="62">Red</text>
+  <circle class="f" cx="55" cy="40" r="20"/><text class="t" x="55" y="43" text-anchor="middle">M</text>
+  <circle class="s" cx="55" cy="22" r="3"/>
+  <line class="s" x1="30" y1="40" x2="35" y2="40"/>
+</svg>

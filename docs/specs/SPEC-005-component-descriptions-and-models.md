@@ -151,7 +151,7 @@ bind to. Both are exposed by name in snapshots and probes.
 `expect` maps probe targets (`net:`, `pin:`, `device:`, `output:`, and
 `serial:` for what a terminal in the circuit received) to an expectation
 with a time selector; `inputs` may target the component or a member of a
-composite (SPEC-007). `embsim catalog validate` runs them. A component whose
+composite, and `output:` a member's output (SPEC-007). `embsim catalog validate` runs them. A component whose
 tests fail is listed as broken in the catalog, not hidden.
 
 ## 10. The primitive model contract (C)

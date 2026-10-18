@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "overload",
+  "description": "Orange and yellow held on with 80 mN m on the output, beyond the holding torque: the shaft is turned back, slipping a winding cycle at a time.",
+  "policy": "functional",
+  "until": "400ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "C",
+          "period": "1m"
+        }
+      },
+      {
+        "id": "U1",
+        "component": "emblink/uln2003"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/stepper_28byj48"
+      },
+      {
+        "id": "V5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      }
+    ],
+    "nets": {
+      "N_IN1": [
+        "PG.OUT0",
+        "U1.IN1"
+      ],
+      "N_BLUE": [
+        "U1.OUT1",
+        "DUT.BLUE"
+      ],
+      "N_IN2": [
+        "PG.OUT1",
+        "U1.IN2"
+      ],
+      "N_PINK": [
+        "U1.OUT2",
+        "DUT.PINK"
+      ],
+      "N_IN3": [
+        "PG.OUT2",
+        "U1.IN3"
+      ],
+      "N_YELLOW": [
+        "U1.OUT3",
+        "DUT.YELLOW"
+      ],
+      "N_IN4": [
+        "PG.OUT3",
+        "U1.IN4"
+      ],
+      "N_ORANGE": [
+        "U1.OUT4",
+        "DUT.ORANGE"
+      ],
+      "N_RED": [
+        "V5.OUT",
+        "DUT.RED"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.steps": {
+      "at": "300ms",
+      "max": -4
+    }
+  },
+  "inputs": [
+    {
+      "at": "100ms",
+      "target": "DUT",
+      "input": "load",
+      "value": 0.08
+    }
+  ]
+}

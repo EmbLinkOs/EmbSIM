@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pull-in",
+  "description": "625 full steps a second from standstill, within the data sheet's idle in-traction (above 600 Hz): 250 words, every one followed, the rotor ending a half step plus 249 steps on.",
+  "policy": "functional",
+  "until": "700ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6,3,9,C,6",
+          "period": "1.6m"
+        }
+      },
+      {
+        "id": "U1",
+        "component": "emblink/uln2003"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/stepper_28byj48"
+      },
+      {
+        "id": "V5",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      }
+    ],
+    "nets": {
+      "N_IN1": [
+        "PG.OUT0",
+        "U1.IN1"
+      ],
+      "N_BLUE": [
+        "U1.OUT1",
+        "DUT.BLUE"
+      ],
+      "N_IN2": [
+        "PG.OUT1",
+        "U1.IN2"
+      ],
+      "N_PINK": [
+        "U1.OUT2",
+        "DUT.PINK"
+      ],
+      "N_IN3": [
+        "PG.OUT2",
+        "U1.IN3"
+      ],
+      "N_YELLOW": [
+        "U1.OUT3",
+        "DUT.YELLOW"
+      ],
+      "N_IN4": [
+        "PG.OUT3",
+        "U1.IN4"
+      ],
+      "N_ORANGE": [
+        "U1.OUT4",
+        "DUT.ORANGE"
+      ],
+      "N_RED": [
+        "V5.OUT",
+        "DUT.RED"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.steps": {
+      "at": "650ms",
+      "equals": 249.5,
+      "tolerance": 0.2
+    }
+  }
+}
