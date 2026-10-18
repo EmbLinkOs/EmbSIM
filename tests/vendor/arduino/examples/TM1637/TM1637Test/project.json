@@ -1,0 +1,84 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-tm1637",
+ "description": "TM1637Display's TM1637Test as its defines wire it: a 4-digit TM1637 display module (the clock variant, with the colon) with CLK on D2 and DIO on D3, VCC and GND from the Uno's 5 V; the library drives both lines open drain against the module's pull-ups.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "DISP",
+   "component": "emblink/tm1637_display",
+   "layout": {
+    "x": 120,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "DISP.VCC"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "DISP.GND"
+  ],
+  "CLK": [
+   "B1.D2",
+   "DISP.CLK"
+  ],
+  "DIO": [
+   "B1.D3",
+   "DISP.DIO"
+  ]
+ },
+ "probes": [
+  {
+   "id": "text",
+   "target": "output:DISP.text",
+   "kind": "value"
+  },
+  {
+   "id": "brightness",
+   "target": "output:DISP.brightness",
+   "kind": "value"
+  }
+ ]
+}

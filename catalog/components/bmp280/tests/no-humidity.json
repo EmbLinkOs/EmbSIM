@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-humidity",
+  "description": "A BME280's ctrl_hum write (x16 humidity) before a forced x1/x1 measurement: the BMP280 has no ctrl_hum, so the measurement still takes 5.5 ms, not the 38 ms humidity would add.",
+  "policy": "functional",
+  "until": "10ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,3,3,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU3",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bmp280"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDI",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCK",
+        "PU2.1"
+      ],
+      "CSB": [
+        "DUT.CSB",
+        "PU3.1"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "temperature",
+      "value": 21.37
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "pressure",
+      "value": 1009.82
+    }
+  ],
+  "expect": {
+    "output:DUT.mode": {
+      "at": "8ms",
+      "equals": "sleep"
+    },
+    "output:DUT.measurements": {
+      "at": "8ms",
+      "equals": 1
+    }
+  }
+}

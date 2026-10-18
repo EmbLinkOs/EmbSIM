@@ -585,6 +585,37 @@ versions follow semantic versioning. There is no release yet.
 - Fixtures and projects may probe a composite member's output
   (`output:DRV.LEDA.current`), and `tolerance` with a numeric `equals` is
   no longer reported as unused (SPEC-007).
+- The TM1637 4-digit display module, from Titan Micro's data sheet: the
+  two-wire interface (START and STOP with CLK high, LSB first, ACK from the
+  8th clock's falling edge to the end of the 9th), the data, address and
+  display-control commands with the eight pulse widths, fixed and
+  auto-increment addressing, data past C5H dropped, a STOP keeping what was
+  acknowledged, the key read (0xFF: no keys on the module), off at
+  power-on, the colon or decimal points on SEG8, the module's 10 kOhm
+  pull-ups; nine fixtures. TM1637Display's `TM1637Test` runs unmodified
+  through all of its tests, 50/50. `tools/catalog/stimulus.py tm1637`
+  writes its frames for fixtures.
+- Fixed: a `digital_io` pin's nested `out` and `in` objects were ignored
+  (the parser asked them for a `kind`), so their drive, pull and levels
+  never applied.
+- Fixed: `ctx.release` left a bidirectional pin an output driving Z, so its
+  own pull never applied and, on an analog net, its comparator stopped
+  sampling; a released pin is an input again (SPEC-013).
+- The TSOP38238 IR receiver with the kit's 21-key NEC remote, from
+  Vishay's data sheet: OUT active low with its 30 kOhm pull-up, low 10
+  carrier cycles after a burst starts for the burst's length, nothing
+  below 2.0 V; the remote's NEC frames and 108 ms repeat codes while a key
+  is held; five fixtures. IRremote's `SimpleReceiver` runs unmodified,
+  7/7. The Arduino runner puts an example's folder on the include path,
+  compiles its other sources and resolves `.hpp` headers, as the IDE does.
+- The BMP280, sharing the BME280's model (`part`): chip ID 0x58, no
+  humidity registers, standby codes of 2 and 4 s; three fixtures. Adafruit's
+  `bmp280test` runs unmodified at the library's default 0x77, 3/3.
+- Board artwork for the 28BYJ-48 (the shaft turning with the output
+  angle) and the ULN2003 board (its LEDs A to D); a composite's artwork
+  may bind its members' outputs (`LEDA.luminance`).
+- The ATmega328P's timers skip an instruction that brings no timer clock,
+  which doubles the Uno's simulation speed.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

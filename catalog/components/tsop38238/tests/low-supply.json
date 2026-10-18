@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "low-supply",
+  "description": "VS at 1.8 V, below the data sheet's 2.0 V: OUT stays high through a key press.",
+  "policy": "electrical",
+  "until": "30ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/tsop38238"
+      },
+      {
+        "id": "V1",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 1.8
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "N_OUT": [
+        "DUT.OUT"
+      ],
+      "VS": [
+        "V1.+",
+        "DUT.VS"
+      ],
+      "GND": [
+        "V1.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "key",
+      "value": "ch-"
+    }
+  ],
+  "expect": {
+    "net:N_OUT": {
+      "between": [
+        "0ms",
+        "30ms"
+      ],
+      "edges": 0
+    }
+  }
+}

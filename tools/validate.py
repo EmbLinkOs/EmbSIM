@@ -894,7 +894,7 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
                 report.error(file, ptr("artwork", "hotspots", i), "schema.missing_field", "drag hotspot needs an axis")
             _check_selector(report, file, ptr("artwork", "hotspots", i, "selector"), hs.get("selector"), ids)
         for i, st in enumerate(art.get("states") or []):
-            if st.get("output") not in outputs:
+            if st.get("output") not in outputs and not ("." in (st.get("output") or "") and has_output(index, doc, st["output"])):
                 report.error(file, ptr("artwork", "states", i, "output"), "catalog.output_unknown", f"state output {st.get('output')} is not declared")
             if not (st.get("attr") or st.get("class")):
                 report.error(file, ptr("artwork", "states", i), "schema.missing_field", "state binds neither an attr nor a class")

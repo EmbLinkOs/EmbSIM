@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/tsop38238",
+  "version": "1.0.0",
+  "name": "TSOP38238 IR receiver with NEC remote",
+  "category": "sensors",
+  "description": "Vishay TSOP38238 38 kHz IR receiver module (OUT active low with its own 30 kOhm pull-up, the data sheet's output delay and pulse width) with the 21-key NEC remote sold with Arduino kits pointed at it: pressing a key sends its NEC frame, holding it sends repeat codes every 108 ms.",
+  "keywords": [
+    "IR",
+    "infrared",
+    "receiver",
+    "TSOP38238",
+    "VS1838B",
+    "remote",
+    "NEC",
+    "38 kHz"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "OUT",
+      "number": 1,
+      "model": {
+        "kind": "digital_io",
+        "out": {
+          "vol": 0.1
+        },
+        "in": {
+          "rpull": 30000
+        }
+      },
+      "doc": "Output, active low; the part's 30 kOhm pull-up to VS",
+      "power_ref": "VS"
+    },
+    {
+      "name": "GND",
+      "number": 2,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "VS",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 2.0 to 5.5 V"
+    }
+  ],
+  "params": {
+    "address": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 65535,
+      "doc": "The remote's NEC address: 0 to 255 (sent with its complement), or a 16-bit extended address (the kit remote: 0)"
+    }
+  },
+  "inputs": [
+    {
+      "name": "key",
+      "type": "enum",
+      "enum": [
+        "none",
+        "ch-",
+        "ch",
+        "ch+",
+        "prev",
+        "next",
+        "play",
+        "vol-",
+        "vol+",
+        "eq",
+        "0",
+        "100+",
+        "200+",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ],
+      "default": "none",
+      "doc": "The remote key held ('none' when released)"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "key",
+      "type": "string",
+      "doc": "The key held"
+    },
+    {
+      "name": "frames",
+      "type": "integer",
+      "doc": "Frames and repeat codes sent"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "OUT active low with the part's 30 kOhm pull-up: low 10 carrier cycles (263 us) after each 38 kHz burst starts, for the burst's length; the kit remote's NEC frames (9 ms + 4.5 ms leader, address and complement, command and complement LSB first, 562.5 us bursts with 562.5 or 1687.5 us spaces, a closing burst) and repeat codes every 108 ms while a key is held; no output below 2.0 V.",
+      "omissions": [
+        "distance, angle and the remote's battery (every frame arrives)",
+        "ambient light, the AGC and noise pulses",
+        "the spread of the output delay (7 to 13 carrier cycles) and of the pulse width (+-5 cycles) between parts",
+        "protocols other than NEC and other carrier frequencies",
+        "the remote's own key bounce",
+        "the supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "OUT active low with the part's 30 kOhm pull-up: low 10 carrier cycles (263 us) after each 38 kHz burst starts, for the burst's length; the kit remote's NEC frames (9 ms + 4.5 ms leader, address and complement, command and complement LSB first, 562.5 us bursts with 562.5 or 1687.5 us spaces, a closing burst) and repeat codes every 108 ms while a key is held; no output below 2.0 V.",
+      "omissions": [
+        "distance, angle and the remote's battery (every frame arrives)",
+        "ambient light, the AGC and noise pulses",
+        "the spread of the output delay (7 to 13 carrier cycles) and of the pulse width (+-5 cycles) between parts",
+        "protocols other than NEC and other carrier frequencies",
+        "the remote's own key bounce",
+        "the supply current"
+      ]
+    },
+    "electrical": {
+      "claims": "OUT bridges to its net: low at the data sheet's 0.1 V, high through the 30 kOhm pull-up; VS below 2.0 V keeps it high; the behaviour is the Lua model's.",
+      "omissions": [
+        "distance, angle and the remote's battery (every frame arrives)",
+        "ambient light, the AGC and noise pulses",
+        "the spread of the output delay (7 to 13 carrier cycles) and of the pulse width (+-5 cycles) between parts",
+        "protocols other than NEC and other carrier frequencies",
+        "the remote's own key bounce",
+        "the supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Vishay TSOP382.., TSOP384.. IR receiver modules for remote control systems, data sheet 82491 (output delay 7/f0 to 13/f0, pulse width tpi +- 5/f0, 30 kOhm pull-up, 2.0 to 5.5 V, pinning)"
+      },
+      {
+        "title": "NEC infrared transmission protocol (leader 9 ms + 4.5 ms, 562.5 us bit timing, repeat code every 108 ms)"
+      },
+      {
+        "title": "The 21-key 'Car MP3' kit remote's NEC address 0x00 and key codes"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "OUT": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "GND": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "VS": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

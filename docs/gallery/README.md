@@ -5,6 +5,20 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## M6 parts on the bench (2026-10-18)
+
+Parts run by their libraries' own examples, unmodified, on the Uno. The
+TM1637 module shows TM1637Test's first step (every segment and the colon);
+the 28BYJ-48 has turned its shaft through the Stepper library's 200 steps
+while the ULN2003 board's LEDs A and B show the two coils the sketch left
+on.
+
+| | |
+|---|---|
+| ![The TM1637 display at 88:88](m6-parts/board-tm1637.png) | ![The 28BYJ-48 through its ULN2003 board: LEDs A and B lit, the shaft turned](m6-parts/board-stepper.png) |
+
+[TM1637Test in the Design perspective](m6-parts/design-tm1637.png), [stepper_oneRevolution in the Run perspective](m6-parts/run-stepper.png).
+
 ## Workbench layout pass (2026-10-17)
 
 Panels fold to a titled rail and unfold from it, the choice kept with the

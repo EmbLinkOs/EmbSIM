@@ -228,6 +228,74 @@
       }
     }
   },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 35,
+    "height_mm": 32,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "LEDA.luminance",
+        "selector": "#led-a",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            0.15
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "LEDB.luminance",
+        "selector": "#led-b",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            0.15
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "LEDC.luminance",
+        "selector": "#led-c",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            0.15
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "LEDD.luminance",
+        "selector": "#led-d",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            0.15
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      }
+    ]
+  },
   "fidelity": {
     "functional": null,
     "timed": null,

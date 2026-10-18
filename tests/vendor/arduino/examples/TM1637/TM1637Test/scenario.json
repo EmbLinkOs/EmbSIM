@@ -1,0 +1,414 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "TM1637Test",
+  "until": "84s",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "step00",
+      "at": "1600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "step01",
+      "at": "3600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "0123"
+      }
+    },
+    {
+      "id": "step02",
+      "at": "5600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "  23"
+      }
+    },
+    {
+      "id": "step03",
+      "at": "7600ms",
+      "probe": "text",
+      "expect": {
+        "equals": " 23 "
+      }
+    },
+    {
+      "id": "step04",
+      "at": "9600ms",
+      "probe": "text",
+      "expect": {
+        "equals": " 123"
+      }
+    },
+    {
+      "id": "step05",
+      "at": "11600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "   0"
+      }
+    },
+    {
+      "id": "step06",
+      "at": "13600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "0000"
+      }
+    },
+    {
+      "id": "step07",
+      "at": "15600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "   1"
+      }
+    },
+    {
+      "id": "step08",
+      "at": "17600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "0001"
+      }
+    },
+    {
+      "id": "step09",
+      "at": "19600ms",
+      "probe": "text",
+      "expect": {
+        "equals": " 301"
+      }
+    },
+    {
+      "id": "step10",
+      "at": "21600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "0301"
+      }
+    },
+    {
+      "id": "step11",
+      "at": "23600ms",
+      "probe": "text",
+      "expect": {
+        "equals": " 14 "
+      }
+    },
+    {
+      "id": "step12",
+      "at": "25600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "  04"
+      }
+    },
+    {
+      "id": "step13",
+      "at": "27600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "  -1"
+      }
+    },
+    {
+      "id": "step14",
+      "at": "29600ms",
+      "probe": "text",
+      "expect": {
+        "equals": " -12"
+      }
+    },
+    {
+      "id": "step15",
+      "at": "31600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "-999"
+      }
+    },
+    {
+      "id": "step16",
+      "at": "33600ms",
+      "probe": "text",
+      "expect": {
+        "equals": " -5 "
+      }
+    },
+    {
+      "id": "step17",
+      "at": "35600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "F1AF"
+      }
+    },
+    {
+      "id": "step18",
+      "at": "37600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "  2C"
+      }
+    },
+    {
+      "id": "step19",
+      "at": "39600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "00d1"
+      }
+    },
+    {
+      "id": "step20",
+      "at": "41600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "d1  "
+      }
+    },
+    {
+      "id": "step21",
+      "at": "43600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "0000"
+      }
+    },
+    {
+      "id": "step22",
+      "at": "45600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "00:00"
+      }
+    },
+    {
+      "id": "step23",
+      "at": "47600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "0000"
+      }
+    },
+    {
+      "id": "step24",
+      "at": "49600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "0000"
+      }
+    },
+    {
+      "id": "step25",
+      "at": "51600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "0000"
+      }
+    },
+    {
+      "id": "step26",
+      "at": "53600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "brightness0",
+      "at": "53600ms",
+      "probe": "brightness",
+      "expect": {
+        "equals": 0.0625
+      }
+    },
+    {
+      "id": "step27",
+      "at": "55600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "brightness1",
+      "at": "55600ms",
+      "probe": "brightness",
+      "expect": {
+        "equals": 0.125
+      }
+    },
+    {
+      "id": "step28",
+      "at": "57600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "brightness2",
+      "at": "57600ms",
+      "probe": "brightness",
+      "expect": {
+        "equals": 0.25
+      }
+    },
+    {
+      "id": "step29",
+      "at": "59600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "brightness3",
+      "at": "59600ms",
+      "probe": "brightness",
+      "expect": {
+        "equals": 0.625
+      }
+    },
+    {
+      "id": "step30",
+      "at": "61600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "brightness4",
+      "at": "61600ms",
+      "probe": "brightness",
+      "expect": {
+        "equals": 0.6875
+      }
+    },
+    {
+      "id": "step31",
+      "at": "63600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "brightness5",
+      "at": "63600ms",
+      "probe": "brightness",
+      "expect": {
+        "equals": 0.75
+      }
+    },
+    {
+      "id": "step32",
+      "at": "65600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "brightness6",
+      "at": "65600ms",
+      "probe": "brightness",
+      "expect": {
+        "equals": 0.8125
+      }
+    },
+    {
+      "id": "step33",
+      "at": "67600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    "
+      }
+    },
+    {
+      "id": "step34",
+      "at": "69600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "step35",
+      "at": "71600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    "
+      }
+    },
+    {
+      "id": "step36",
+      "at": "73600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "step37",
+      "at": "75600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    "
+      }
+    },
+    {
+      "id": "step38",
+      "at": "77600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "step39",
+      "at": "79600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "    "
+      }
+    },
+    {
+      "id": "step40",
+      "at": "81600ms",
+      "probe": "text",
+      "expect": {
+        "equals": "88:88"
+      }
+    },
+    {
+      "id": "done",
+      "at": "84s",
+      "probe": "text",
+      "expect": {
+        "equals": "d0nE"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access",
+          "tm1637.timing"
+        ]
+      }
+    }
+  ],
+  "description": "TM1637Display's TM1637Test, unmodified, through all of its tests, each sampled 1.6 s into its 2 s (the library's writes, some 25 ms a step, put the last step a second behind the sketch's delays): all segments (with the colon), digits placed at each position, decimal and hexadecimal numbers with and without leading zeros, the dots (on this clock variant only the second, digit 2's SEG8, shows: the colon), the seven pulse widths from 1/16 to 13/16, display off and on, and DONE (its O is the 0 glyph). The library's 100 us bit delay keeps every clock pulse above the data sheet's 400 ns."
+}

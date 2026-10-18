@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "SimpleReceiver",
+  "until": "1500ms",
+  "inputs": [
+    {
+      "at": "300ms",
+      "target": "IR",
+      "input": "key",
+      "value": "ch-"
+    },
+    {
+      "at": "420ms",
+      "target": "IR",
+      "input": "key",
+      "value": "none"
+    },
+    {
+      "at": "700ms",
+      "target": "IR",
+      "input": "key",
+      "value": "vol+"
+    },
+    {
+      "at": "1000ms",
+      "target": "IR",
+      "input": "key",
+      "value": "none"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "ready",
+      "at": "1500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Ready to receive IR signals of protocols: NEC/NEC2/Onkyo/Apple"
+      }
+    },
+    {
+      "id": "ch_minus",
+      "at": "1500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Protocol=NEC Address=0x0, Command=0x45, Raw-Data=0xBA45FF00, 32 bits, LSB first"
+      }
+    },
+    {
+      "id": "ch_minus_send",
+      "at": "1500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Send with: IrSender.sendNEC(0x0, 0x45, <numberOfRepeats>);"
+      }
+    },
+    {
+      "id": "ch_minus_repeat",
+      "at": "1500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Protocol=NEC Address=0x0, Command=0x45, Repeat"
+      }
+    },
+    {
+      "id": "vol_plus",
+      "at": "1500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Protocol=NEC Address=0x0, Command=0x15, Raw-Data=0xEA15FF00, 32 bits, LSB first"
+      }
+    },
+    {
+      "id": "repeats",
+      "at": "1500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Repeat received. Here you can repeat the same action as before.\r\nProtocol=NEC Address=0x0, Command=0x15, Repeat"
+      },
+      "doc": "VOL+'s second repeat follows its first one's message"
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "IRremote's SimpleReceiver, unmodified, on D2 with the kit remote: CH- held 120 ms (its frame and one repeat code 108 ms after it) and VOL+ held 300 ms (two repeats). The library's Timer2 sampling at 50 us decodes each NEC frame (address 0x00, command and complement: raw 0xBA45FF00 and 0xEA15FF00, as worked out from the protocol beforehand) and flags the repeats; its printed gaps and durations are its own 50 us tick counts of the receiver's output."
+}

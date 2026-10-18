@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "digits",
+  "description": "Data command 40H (write, auto-increment), address C0H with 0, 1, 2, 3, then display control 8FH (on, 14/16): the digits show 0123.",
+  "policy": "functional",
+  "until": "300us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,0,0,2,3,3,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,0,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,1,3,0,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,1,3,0,0,2,3,3,2,0,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,0,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tm1637_display"
+      }
+    ],
+    "nets": {
+      "N_DIO": [
+        "PG.OUT0",
+        "DUT.DIO"
+      ],
+      "N_CLK": [
+        "PG.OUT1",
+        "DUT.CLK"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.text": {
+      "at": "290us",
+      "equals": "0123"
+    },
+    "output:DUT.segments": {
+      "at": "290us",
+      "equals": "3F 06 5B 4F"
+    },
+    "output:DUT.brightness": {
+      "at": "290us",
+      "equals": 0.875
+    }
+  }
+}

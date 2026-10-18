@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 50" width="80" height="50" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
+  <rect class="f" x="10" y="2" width="68" height="46" rx="2"/>
+  <line class="s" id="pin-clk" x1="0" y1="10" x2="10" y2="10"/><text class="p" x="13" y="12">CLK</text>
+  <line class="s" id="pin-dio" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">DIO</text>
+  <line class="s" id="pin-vcc" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">VCC</text>
+  <line class="s" id="pin-gnd" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">GND</text>
+  <text class="t" x="52" y="22" text-anchor="middle">88:88</text><text class="p" x="52" y="34" text-anchor="middle">TM1637</text>
+</svg>

@@ -283,6 +283,14 @@ static int api_now(lua_State *L)
     return 1;
 }
 
+/* a released bidirectional pin is an input again: its pull applies and its
+ * comparator samples the net (SPEC-013) */
+static void release_pin(esk_pin *p)
+{
+    esk_pin_release(p);
+    esk_pin_set_direction(p, 0);
+}
+
 static int api_drive(lua_State *L)
 {
     esk_comp *c = ctx_comp(L);
@@ -299,18 +307,19 @@ static int api_drive(lua_State *L)
         s = ESK_STR_SUPPLY;
     else
         return luaL_argerror(L, 3, "a strength is \"strong\", \"weak\" or \"supply\"");
+    if (v == ESK_LZ) {
+        release_pin(p);
+        return 0;
+    }
     esk_pin_set_direction(p, 1);
-    if (v == ESK_LZ)
-        esk_pin_release(p);
-    else
-        esk_pin_drive(p, v, s, delay);
+    esk_pin_drive(p, v, s, delay);
     return 0;
 }
 
 static int api_release(lua_State *L)
 {
     esk_comp *c = ctx_comp(L);
-    esk_pin_release(check_pin(L, c, 1));
+    release_pin(check_pin(L, c, 1));
     return 0;
 }
 

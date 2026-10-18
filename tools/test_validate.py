@@ -244,6 +244,16 @@ class ComponentTests(Base):
         desc["artwork"]["hotspots"][0]["input"] = "held"
         self.assertCode(self.check(self.write_component(desc)), "catalog.input_unknown")
 
+    def test_artwork_state_on_a_composite_member(self):
+        src = Path(__file__).resolve().parents[1] / "catalog/components/uln2003_module"
+        dst = self.tmp / "uln2003_module"
+        shutil.copytree(src, dst)
+        self.assertNotIn("catalog.output_unknown", self.codes(self.check(dst / "component.json")))
+        doc = json.loads((dst / "component.json").read_text(encoding="utf-8"))
+        doc["artwork"]["states"][0]["output"] = "LEDA.nope"
+        (dst / "component.json").write_text(json.dumps(doc), encoding="utf-8")
+        self.assertCode(self.check(dst / "component.json"), "catalog.output_unknown")
+
     def test_fidelity_all_null(self):
         desc = copy.deepcopy(COMPONENT)
         desc["fidelity"] = {"functional": None, "timed": None, "electrical": None}

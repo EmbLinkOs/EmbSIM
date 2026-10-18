@@ -833,6 +833,21 @@ static void test_driver_levels(void)
         esk_pin_bridge_target(&p, &v, &r, &open);
         CHECK_NEAR(v, 0.1, 1e-12);
     }
+    {
+        /* a digital_io's nested out and in objects carry their own fields */
+        static const char text[] = "{\"kind\": \"digital_io\", \"out\": {\"drive\": \"open_drain\", \"rout\": 7},"
+                                   " \"in\": {\"pull\": \"up\", \"rpull\": 10000, \"vih\": 3.5}}";
+        o = esk_json_parse(&A, text, sizeof text - 1, NULL, NULL);
+        CHECK(o != NULL);
+        CHECK(esk_pin_model_parse(o, "cmos_5v", &m) == 0);
+        CHECK(m.drive == ESK_DRIVE_OPEN_DRAIN);
+        CHECK_NEAR(m.rout, 7.0, 1e-12);
+        CHECK(m.pull == ESK_PULL_UP);
+        CHECK_NEAR(m.rpull, 10000.0, 1e-9);
+        CHECK_NEAR(m.vih, 3.5, 1e-12);
+        CHECK_NEAR(m.vil, 1.5, 1e-12); /* the family's, kept */
+        esk_json_free(&A, o);
+    }
 }
 
 /* an open-drain line: two digital_io pins on a pulled-up node, each

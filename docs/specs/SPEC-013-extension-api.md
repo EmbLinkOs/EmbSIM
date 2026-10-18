@@ -61,7 +61,9 @@ sensors whose electrical side is a composite.
   for a 1 (read-only: a script cannot drive an analog node, §3). `ctx.drive` accepts `0`, `1`,
   `true`, `false`, `"0"`, `"1"`, `"z"` (the same as `ctx.release`) and
   `"x"`; strengths are `"strong"` (default), `"weak"` and `"supply"`; the
-  delay defaults to 0.
+  delay defaults to 0. Driving makes a bidirectional pin an output;
+  releasing it makes it an input again, so its own pull applies and, on an
+  analog net, its comparator samples the node.
 - **Policy.** `ctx.policy` is `"functional"`, `"timed"` or `"electrical"`;
   a model applies its datasheet delays only when it is not `"functional"`
   (SPEC-003 §5: functional sessions have no delays).

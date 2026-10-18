@@ -1,14 +1,20 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- Copyright 2026 Junior Deogracias
 --
--- Bosch BME280 humidity, pressure and temperature sensor, as its datasheet
--- describes it.
+-- Bosch BME280 humidity, pressure and temperature sensor, and the BMP280,
+-- its pressure and temperature sibling (`part`), as their datasheets
+-- describe them.
+--
+-- Shared by: bme280, bmp280
 --
 --   - I2C at 0x76 + SDO (0x77 with SDO high), register address then data
 --     pairs on a write, reads auto-incrementing; SPI (modes 0 and 3 are the
 --     part's; mode 0 is decoded) once CSB has gone low, the I2C interface
 --     then off until power is removed, bit 7 of the control byte the R/W
 --     flag;
+--   - the BMP280: chip ID 0x58, no humidity (ctrl_hum, the humidity data and
+--     trimming registers absent: written they are ignored, read they are
+--     0), standby codes 6 and 7 of 2 s and 4 s (the BME280's 10 and 20 ms);
 --   - the register map: chip ID 0x60, soft reset (0xB6 to 0xE0), ctrl_hum
 --     (applied by the next ctrl_meas write), status (measuring, im_update
 --     for the 2 ms start-up), ctrl_meas, config (ignored in normal mode),
@@ -37,6 +43,7 @@ local US = 1000000
 local MS = 1000 * US
 local T_STARTUP = 2 * MS
 local T_SB = { [0] = 500 * US, 62500 * US, 125 * MS, 250 * MS, 500 * MS, 1000 * MS, 10 * MS, 20 * MS }
+local T_SB_BMP = { [6] = 2000 * MS, [7] = 4000 * MS }
 local OSRS = { [0] = 0, 1, 2, 4, 8, 16, 16, 16 }
 local FILTER = { [0] = 1, 2, 4, 8, 16, 16, 16, 16 }
 
@@ -101,14 +108,17 @@ local function invert(f, want, bits, step)
   return best * step
 end
 
+local function bmp(ctx) return ctx.params.part == "bmp280" end
+
 local function clamp(x, lo, hi) return x < lo and lo or (x > hi and hi or x) end
 
-local function calibration_bytes(r)
+local function calibration_bytes(r, humidity)
   local function u16(a, v) v = v & 0xFFFF; r[a], r[a + 1] = v & 0xFF, v >> 8 end
   u16(0x88, CAL.T1); u16(0x8A, CAL.T2); u16(0x8C, CAL.T3)
   u16(0x8E, CAL.P1)
   local p = { CAL.P2, CAL.P3, CAL.P4, CAL.P5, CAL.P6, CAL.P7, CAL.P8, CAL.P9 }
   for i, v in ipairs(p) do u16(0x8E + 2 * i, v) end
+  if not humidity then return end
   r[0xA1] = CAL.H1
   u16(0xE1, CAL.H2)
   r[0xE3] = CAL.H3
@@ -127,9 +137,10 @@ local function soft_reset(ctx)
   local s = ctx.state
   s.reg = {}
   for a = 0, 255 do s.reg[a] = 0 end
-  calibration_bytes(s.reg)
-  s.reg[0xD0] = 0x60
-  s.reg[0xF7], s.reg[0xFA], s.reg[0xFD] = 0x80, 0x80, 0x80
+  calibration_bytes(s.reg, not bmp(ctx))
+  s.reg[0xD0] = bmp(ctx) and 0x58 or 0x60
+  s.reg[0xF7], s.reg[0xFA] = 0x80, 0x80
+  if not bmp(ctx) then s.reg[0xFD] = 0x80 end
   s.hum_pending = 0
   s.measuring, s.done_at, s.next_at = false, nil, nil
   s.ready_at = ctx.now() + T_STARTUP
@@ -199,14 +210,15 @@ local function finish(ctx)
   end
   out[0xF7], out[0xF8], out[0xF9] = adc_p >> 12, (adc_p >> 4) & 0xFF, (adc_p & 0xF) << 4
   out[0xFA], out[0xFB], out[0xFC] = adc_t >> 12, (adc_t >> 4) & 0xFF, (adc_t & 0xF) << 4
-  out[0xFD], out[0xFE] = adc_h >> 8, adc_h & 0xFF
+  if not bmp(ctx) then out[0xFD], out[0xFE] = adc_h >> 8, adc_h & 0xFF end
   s.shadow = out
   commit(ctx)
   local m = mode(s)
   if m == 1 or m == 2 then
     s.reg[0xF4] = s.reg[0xF4] & 0xFC -- forced: back to sleep
   elseif m == 3 then
-    s.next_at = ctx.now() + T_SB[s.reg[0xF5] >> 5]
+    local sb = s.reg[0xF5] >> 5
+    s.next_at = ctx.now() + (bmp(ctx) and T_SB_BMP[sb] or T_SB[sb])
     ctx.wake_at(s.next_at, TOK_START)
   end
 end
@@ -225,7 +237,7 @@ local function write_reg(ctx, a, v)
   if a == 0xE0 then
     if v == 0xB6 then soft_reset(ctx) end
   elseif a == 0xF2 then
-    s.hum_pending = v & 7
+    if not bmp(ctx) then s.hum_pending = v & 7 end
   elseif a == 0xF4 then
     local was = mode(s)
     s.reg[0xF2] = s.hum_pending
@@ -302,7 +314,7 @@ function M.reset(ctx)
 end
 
 function M.on_set(ctx, name)
-  return name == "temperature" or name == "pressure" or name == "humidity"
+  return name == "temperature" or name == "pressure" or (name == "humidity" and not bmp(ctx))
 end
 
 function M.on_time(ctx, token)
@@ -319,7 +331,7 @@ end
 function M.observe(ctx)
   local s = ctx.state
   local names = { [0] = "sleep", "forced", "forced", "normal" }
-  return { temperature = s.t, pressure = s.p, humidity = s.h, measurements = s.measured, mode = names[mode(s)],
+  return { temperature = s.t, pressure = s.p, humidity = not bmp(ctx) and s.h or nil, measurements = s.measured, mode = names[mode(s)],
     interface = s.spi and "spi" or "i2c" }
 end
 

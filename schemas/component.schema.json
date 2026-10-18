@@ -734,7 +734,8 @@
             "properties": {
               "output": {
                 "type": "string",
-                "pattern": "^[a-z][a-z0-9_]*$"
+                "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*\\.)?[a-z][a-z0-9_]*$",
+                "description": "An output of the component, or MEMBER.OUTPUT for a composite's member (a board's LED)"
               },
               "selector": {
                 "type": "string",

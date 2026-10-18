@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "fixed-address",
+  "description": "Data command 44H (fixed address): two bytes after C2H both land in digit 3, the last one staying; then C3H with 7DH.",
+  "policy": "functional",
+  "until": "300us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,0,0,2,3,3,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,1,3,0,0,2,3,3,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,0,1,3,1,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,1,3,0,0,2,3,3,2,0,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,0,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/tm1637_display"
+      }
+    ],
+    "nets": {
+      "N_DIO": [
+        "PG.OUT0",
+        "DUT.DIO"
+      ],
+      "N_CLK": [
+        "PG.OUT1",
+        "DUT.CLK"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.text": {
+      "at": "290us",
+      "equals": "  56"
+    }
+  }
+}

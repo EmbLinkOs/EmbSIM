@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "bmp280test",
+  "until": "4700ms",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "temperature",
+      "value": 21.37
+    },
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "pressure",
+      "value": 1009.82
+    }
+  ],
+  "assertions": [
+    {
+      "id": "readings",
+      "at": "4700ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "BMP280 test\r\nTemperature = 21.37 *C\r\nPressure = 100981.95 Pa\r\nApprox altitude = 28.60 m\r\n\r\nTemperature = 21.37 *C\r\nPressure = 100981.95 Pa\r\nApprox altitude = 28.60 m\r\n\r\n"
+      }
+    },
+    {
+      "id": "normal-mode",
+      "at": "4700ms",
+      "probe": "measurements",
+      "expect": {
+        "min": 8
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "Adafruit's bmp280test, unmodified: the library finds chip ID 0x58 at 0x77 (SDO pulled up, as on Adafruit's breakout; the common purple modules pull it down and need the sketch's other begin()), reads the trimming parameters and sets normal mode at x2/x16 with the x16 filter and 500 ms standby (a measurement every 537.5 ms), then prints every 2 s. The room's 21.37 C and 1009.82 hPa come back as 21.37 *C and 100981.95 Pa (within the 0.16 Pa resolution at x16) and 28.60 m by the library's altitude formula, worked out by hand beforehand."
+}

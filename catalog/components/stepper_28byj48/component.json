@@ -139,6 +139,20 @@
     "script": "model.lua",
     "api": 1
   },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 35,
+    "height_mm": 32,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "angle",
+        "selector": "#shaft",
+        "attr": "transform",
+        "format": "rotate({} 50 34)"
+      }
+    ]
+  },
   "fidelity": {
     "functional": {
       "claims": "Four 50 Ohm, 3 mH half windings on red, energised while a lead is below red (bipolar with red open); a permanent-magnet rotor of 8 pole pairs, 32 full steps a turn, with detent torque, inertia, gearbox friction and damping integrated in 20 us steps, so it follows up to about 650 full steps a second from standstill (the data sheet's in-traction above 600 Hz) and about 1200 with a ramp (out-traction above 1000 Hz), and misses steps or stalls faster; geared 63.684:1, 2037.9 full steps an output turn; opposite halves together cancel; the lead voltages are logic levels at `supply`.",

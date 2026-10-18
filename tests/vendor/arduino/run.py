@@ -73,6 +73,10 @@ def build_core(core: Path, out: Path) -> Path:
     return lib
 
 
+# the header extensions the IDE's builder resolves includes against
+HEADERS = (".h", ".hpp", ".hh")
+
+
 def lib_src(root: Path) -> Path:
     """A library's source directory: src/ in the 1.5 layout, else its root."""
     return root / "src" if (root / "src").is_dir() else root
@@ -89,7 +93,7 @@ def lib_sources(root: Path) -> list:
     return sorted(files)
 
 
-INCLUDE = re.compile(r'^\s*#\s*include\s*[<"]([\w./-]+\.h)[>"]', re.M)
+INCLUDE = re.compile(r'^\s*#\s*include\s*[<"]([\w./-]+\.(?:h|hpp|hh))[>"]', re.M)
 
 
 def libraries(roots: list, sketch: Path) -> list:
@@ -98,16 +102,20 @@ def libraries(roots: list, sketch: Path) -> list:
     builder finds them."""
     index = {}
     for root in roots:
-        for h in lib_src(root).glob("*.h"):
-            index.setdefault(h.name, root)
+        for ext in HEADERS:
+            for h in lib_src(root).glob("*" + ext):
+                index.setdefault(h.name, root)
     found, todo = [], INCLUDE.findall(sketch.read_text(encoding="utf-8", errors="replace"))
+    for f in sorted(sketch.parent.iterdir()):
+        if f != sketch and f.suffix in HEADERS + (".c", ".cpp"):
+            todo += INCLUDE.findall(f.read_text(encoding="utf-8", errors="replace"))
     while todo:
         root = index.get(Path(todo.pop()).name)
         if root is None or root in found:
             continue
         found.append(root)
         for f in lib_sources(root):
-            if f.suffix in (".h", ".c", ".cpp"):
+            if f.suffix in HEADERS + (".c", ".cpp"):
                 todo += INCLUDE.findall(f.read_text(encoding="utf-8", errors="replace"))
     return found
 
@@ -204,7 +212,8 @@ def sketch_cpp(text: str, name: str) -> str:
 
 def build_sketch(core: Path, lib: Path, roots: list, sketch: Path, out: Path) -> Path:
     libs = libraries(roots, sketch)
-    inc = ["-I", core / "cores" / "arduino", "-I", core / "variants" / "standard"]
+    # the sketch's folder first: its own headers (an example's pin definitions)
+    inc = ["-I", sketch.parent, "-I", core / "cores" / "arduino", "-I", core / "variants" / "standard"]
     for root in libs:
         inc += ["-I", lib_src(root)]
         if not (root / "src").is_dir() and (root / "utility").is_dir():
@@ -215,6 +224,11 @@ def build_sketch(core: Path, lib: Path, roots: list, sketch: Path, out: Path) ->
     obj = out / (sketch.name + ".o")
     elf = out / (sketch.stem + ".elf")
     sh(["avr-g++", *CPP_FLAGS, *BOARD, *inc, cpp, "-o", obj])
+    # and the folder's other sources, compiled beside it as the IDE does
+    for src in sorted(sketch.parent.glob("*.c")) + sorted(sketch.parent.glob("*.cpp")):
+        o = out / (sketch.stem + "." + src.name + ".o")
+        sh(["avr-gcc" if src.suffix == ".c" else "avr-g++", *(C_FLAGS if src.suffix == ".c" else CPP_FLAGS), *BOARD, *inc, src, "-o", o])
+        objs.append(o)
     sh(["avr-gcc", *ELF_FLAGS, "-o", elf, obj, *objs, lib, "-L", out, "-lm"])
     return elf
 
