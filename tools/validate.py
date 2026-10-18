@@ -1525,6 +1525,9 @@ def find_project_for_scenario(file: Path, report: Report, index: Index) -> Optio
     return None
 
 
+WORLD_FIELDS = ("temperature", "humidity", "pressure", "illuminance", "sound", "wind")
+
+
 def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Optional[ProjectContext] = None) -> None:
     if ctx is None:
         ctx = find_project_for_scenario(file, report, index)
@@ -1542,7 +1545,19 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
             continue
         target = inp.get("target", "")
         inst, _, periph = target.partition(".")
-        if inst in ctx.components:
+        if inst == "world":
+            # the room (ADR-026): a field and a number (or null), or a body and its spec (or null)
+            value = inp.get("value")
+            if not periph:
+                if inp.get("input") not in WORLD_FIELDS:
+                    report.error(file, node + "/input", "catalog.input_unknown", f"the world has no field {inp.get('input')} (it has {', '.join(WORLD_FIELDS)})")
+                elif value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+                    report.error(file, node + "/value", "schema.type", f"a world field takes a number, not {value!r}")
+            elif inp.get("input") != "body":
+                report.error(file, node + "/input", "catalog.input_unknown", f"a world body's input is body, not {inp.get('input')}")
+            elif value is not None and not (isinstance(value, dict) and isinstance(value.get("at"), list) and isinstance(value.get("size"), list)):
+                report.error(file, node + "/value", "schema.type", "a world body is {shape?, at: [x, y, z], size: [w, d, h]} or null")
+        elif inst in ctx.components:
             if periph:
                 report.error(file, node + "/target", "catalog.not_found", f"{inst} is a component; only boards have peripherals")
             elif inp.get("input") not in {x.get("name") for x in ctx.components[inst].get("inputs") or []}:

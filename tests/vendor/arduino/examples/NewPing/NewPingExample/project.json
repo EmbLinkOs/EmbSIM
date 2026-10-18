@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "arduino-hc-sr04",
- "description": "NewPing's NewPingExample as its comments wire it: an Arduino Uno with an HC-SR04 powered from the board's 5V, TRIG on D12 and ECHO on D11, and a terminal on D0/D1 at 115200 baud.",
+ "description": "NewPing's NewPingExample as its comments wire it: an Arduino Uno with an HC-SR04 powered from the board's 5V, TRIG on D12 and ECHO on D11, and a terminal on D0/D1 at 115200 baud. The sensor stands at the bench's origin facing the back of the bench, a wall 100 cm in front of it in the room at 20 C (ADR-026).",
  "policy": "electrical",
  "boards": [
   {
@@ -105,5 +105,38 @@
    "target": "output:U1.echo_us",
    "kind": "value"
   }
- ]
+ ],
+ "layout": {
+  "bench": {
+   "parts": {
+    "U1": {
+     "x": 0,
+     "y": 0,
+     "rotation": 0
+    }
+   }
+  }
+ },
+ "world": {
+  "fields": {
+   "temperature": 20
+  },
+  "bodies": [
+   {
+    "id": "wall",
+    "name": "A wall",
+    "shape": "box",
+    "at": [
+     0,
+     -1005,
+     100
+    ],
+    "size": [
+     2000,
+     10,
+     1000
+    ]
+   }
+  ]
+ }
 }

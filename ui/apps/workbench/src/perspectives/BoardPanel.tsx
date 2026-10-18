@@ -12,6 +12,7 @@ import { Badge, Button, Dialog, EmptyState, IconButton, Input, Select, Segmented
 import {
   addJumper,
   addNote,
+  beams,
   Bench3D,
   benchContext,
   benchModel,
@@ -156,6 +157,11 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const links = useMemo(() => (project && model ? linkViews(project, model) : []), [project, model]);
   const pending = useMemo(() => (project && model ? unbuilt(project, model) : []), [project, model]);
   const terminals = useMemo(() => (model ? terminalTargets(model) : []), [model]);
+
+  // the world's bodies and what the distance sensors see of them (ADR-026)
+  const bodies = useMemo(() => project?.world?.bodies ?? [], [project]);
+  const sensed = useMemo(() => (model ? beams(model.parts, bodies) : []), [model, bodies]);
+
 
   const mutate = useCallback(
     (label: string, fn: (p: Project) => Project | null) => {
@@ -329,6 +335,18 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           jumpers={jumpers}
           links={links}
           notes={project.layout?.bench?.notes ?? []}
+          bodies={bodies}
+          beams={sensed}
+          onMoveBody={(id, at) =>
+            mutate(`Move ${id}`, (p) => {
+              const list = structuredClone(p.world?.bodies ?? []);
+              const b = list.find((x) => x.id === id);
+              if (!b) return null;
+              b.at = [Math.round(at[0]), Math.round(at[1]), b.at[2]];
+              p.world = { ...(p.world ?? {}), bodies: list };
+              return p;
+            })
+          }
           tool={tool}
           live={interactive && connected}
           editable={editable}

@@ -15,6 +15,7 @@ import { useSelection } from '../../stores/selection';
 import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useSession } from '../../stores/session';
 import { BoardPanel } from '../BoardPanel';
+import { WorldPanel } from '../WorldPanel';
 import { ControlsPanel } from './ControlsPanel';
 import { MetersPanel } from './MetersPanel';
 
@@ -123,6 +124,7 @@ export function RunPerspective() {
   const left: DockItem[] = [
     { id: 'board', title: 'Board', content: <BoardPanel interactive />, flush: true, weight: 1.4, minSize: 160 },
     { id: 'controls', title: 'Controls', content: <ControlsPanel />, weight: 1, minSize: 120 },
+    { id: 'world', title: 'World', content: <WorldPanel />, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: true },
   ];
   const centre: DockItem[] = [
     // an instrument with no probe of its kind folds to its rail until the user opens it; the

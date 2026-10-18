@@ -421,6 +421,13 @@ static es_status m_input_serial(rpc_ctx *r)
     return input_common(r, pstr(r, "target", NULL), "tx_text", text);
 }
 
+/* the world as it is now (ADR-026): its fields (value, unit, declared) and bodies */
+static es_status m_world_get(rpc_ctx *r)
+{
+    r->result = esk_world_json(r->s->a, &r->s->eng.world);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
 static es_status m_input_list(rpc_ctx *r)
 {
     es_session *s = r->s;
@@ -446,7 +453,14 @@ static es_status m_input_list(rpc_ctx *r)
             if (esk_json_get(in, "max")) esk_json_object_set(s->a, o, "max", esk_json_clone(s->a, esk_json_get(in, "max")));
             {
                 const esk_json *cur = esk_json_get(c->inputs, esk_json_get_str(in, "name", ""));
+                double w;
                 if (cur) esk_json_object_set(s->a, o, "value", esk_json_clone(s->a, cur));
+                else if (esk_comp_world_input(c, esk_json_get_str(in, "name", ""), &w)) {
+                    /* read from the world (ADR-026) */
+                    esk_json_set_number(s->a, o, "value", w);
+                    esk_json_set_string(s->a, o, "source", "world");
+                }
+                if (esk_json_get(in, "world")) esk_json_set_string(s->a, o, "world", esk_json_get_str(in, "world", ""));
             }
             esk_json_array_push(s->a, arr, o);
         }
@@ -1122,9 +1136,11 @@ static es_status m_project_transaction(rpc_ctx *r)
         int applied = 1, restarted = 0;
         s->tx_project = NULL;
         if (!s->tx_structural) {
-            esk_json_free(s->a, s->project);
+            esk_json *was = s->project;
             s->project = edited;
             edited = NULL;
+            esk_session_world_sync(s, was);
+            esk_json_free(s->a, was);
         } else {
             es_session *tmp = NULL;
             es_session_config_t cfg;
@@ -1230,6 +1246,7 @@ static const method methods[] = {
     { "project.topology", m_project_topology }, { "project.transaction", m_project_transaction }, { "project.save", m_project_save },
     { "control.run", m_control_run }, { "control.pause", m_control_pause }, { "control.step", m_control_step },
     { "control.advance", m_control_advance }, { "control.reset", m_control_reset }, { "control.speed", m_control_speed },
+    { "world.get", m_world_get },
     { "input.set", m_input_set }, { "input.press", m_input_press }, { "input.release", m_input_release },
     { "input.serial", m_input_serial }, { "input.list", m_input_list },
     { "probe.add", m_probe_add }, { "probe.remove", m_probe_remove }, { "probe.list", m_probe_list }, { "probe.read", m_probe_read },

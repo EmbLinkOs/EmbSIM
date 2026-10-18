@@ -360,6 +360,19 @@
         },
         "doc": {
           "type": "string"
+        },
+        "world": {
+          "type": "string",
+          "enum": [
+            "temperature",
+            "humidity",
+            "pressure",
+            "illuminance",
+            "sound",
+            "wind",
+            "distance"
+          ],
+          "description": "The world's field the input reads while it is not set (ADR-026): its value in the input's unit (degC, %, hPa, lx, dB, m/s; distance, the nearest body along bench.sense, in mm, cm or m); the input's default while the world does not declare the field."
         }
       }
     },
@@ -874,6 +887,29 @@
         "label": {
           "type": "string",
           "description": "The marking printed on the body."
+        },
+        "sense": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "A distance sensor's beam: from `at` along `dir`, in the part's own coordinates (mm from its centre: x right, y towards the viewer, z up), turned with the part.",
+          "properties": {
+            "at": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            },
+            "dir": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            }
+          }
         }
       }
     }

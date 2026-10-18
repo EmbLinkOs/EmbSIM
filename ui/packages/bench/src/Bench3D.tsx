@@ -12,8 +12,9 @@
 // luminance. Frames are drawn on demand (a change, a camera move), never
 // in a loop while nothing moves.
 
-import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue } from '@embsim/protocol';
+import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue, WorldBody } from '@embsim/protocol';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent, type Ref } from 'react';
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -22,6 +23,8 @@ import { ArtworkSurface } from './artwork';
 import { buildPart, type Built, type PickData } from './parts3d';
 import type { BenchShape } from './shape';
 import { pickTerminal, type ProjectedTerminal } from './picking';
+import type { Beam } from './world';
+
 
 export interface BenchPartView {
   id: string;
@@ -81,6 +84,10 @@ export interface Bench3DProps {
   jumpers: JumperView[];
   links: LinkView[];
   notes: BenchNote[];
+  /** the world's bodies (ADR-026) and the beams of the sensors that see them */
+  bodies?: WorldBody[];
+  beams?: Beam[];
+  onMoveBody?(id: string, at: [number, number, number]): void;
   tool: BenchTool;
   /** inputs act (the circuit is running) */
   live: boolean;
@@ -196,6 +203,7 @@ export function Bench3D(props: Bench3DProps) {
     jumpers: THREE.Group;
     links: THREE.Group;
     notes: THREE.Group;
+    world: THREE.Group;
     preview: THREE.Group;
     raf: number;
     framed: boolean;
@@ -221,6 +229,16 @@ export function Bench3D(props: Bench3DProps) {
     for (const e of s.parts.values()) if (!chosen || e.view.id === chosen) box.expandByObject(e.built.group);
     if (!selectedOnly && propsRef.current.showNotes !== false)
       for (const n of propsRef.current.notes) box.expandByPoint(new THREE.Vector3(n.x, 30, n.y));
+    // the world's bodies near the bench, and where the beams meet them; what is far
+    // (a wall across the room) stays in the distance, as it does from a chair at the desk
+    if (!selectedOnly && !box.isEmpty()) {
+      const near = box.clone().expandByScalar(400);
+      const extra: THREE.Vector3[] = [];
+      for (const b of propsRef.current.bodies ?? []) extra.push(new THREE.Vector3(b.at[0], b.at[2], b.at[1]));
+      for (const beam of propsRef.current.beams ?? []) if (beam.distance >= 0) extra.push(new THREE.Vector3(beam.to[0], beam.to[2], beam.to[1]));
+      for (const v of extra) if (near.containsPoint(v)) box.expandByPoint(v);
+    }
+
     if (box.isEmpty()) box.set(new THREE.Vector3(-100, 0, -60), new THREE.Vector3(100, 20, 60));
     const centre = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -311,9 +329,11 @@ export function Bench3D(props: Bench3DProps) {
     const jumpers = new THREE.Group();
     const links = new THREE.Group();
     const notes = new THREE.Group();
+    const world = new THREE.Group();
     const preview = new THREE.Group();
-    scene.add(jumpers, links, notes, preview);
-    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, preview, raf: 0, framed: false };
+    scene.add(jumpers, links, notes, world, preview);
+    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, world, preview, raf: 0, framed: false };
+
     controls.addEventListener('change', invalidate);
 
     const resize = () => {
@@ -515,6 +535,48 @@ export function Bench3D(props: Bench3DProps) {
     invalidate();
   }, [props.jumpers, props.links, props.notes, props.selected, invalidate]);
 
+  // the world: its bodies, and the beams that meet them
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    for (const c of [...s.world.children]) {
+      c.traverse((o) => {
+        if (o instanceof CSS2DObject) o.element.remove();
+        if (o instanceof THREE.Mesh || o instanceof THREE.Line) o.geometry.dispose();
+      });
+      s.world.remove(c);
+    }
+    for (const b of props.bodies ?? []) {
+      // bench (x, y, z up) to the scene (x, z up, y towards the viewer)
+      const geom = b.shape === 'sphere' ? new THREE.SphereGeometry(b.size[0] / 2, 32, 16) : new THREE.BoxGeometry(b.size[0], b.size[2], b.size[1]);
+      const m = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#b08d5b'), roughness: 0.85 }));
+      m.position.set(b.at[0], b.at[2], b.at[1]);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      m.userData = { body: b.id };
+      const label = new CSS2DObject(labelElement(b.name ?? b.id));
+      label.position.set(0, (b.shape === 'sphere' ? b.size[0] : b.size[2]) / 2 + 8, 0);
+      m.add(label);
+      s.world.add(m);
+    }
+    for (const beam of props.beams ?? []) {
+      const pts = [new THREE.Vector3(beam.from[0], beam.from[2], beam.from[1]), new THREE.Vector3(beam.to[0], beam.to[2], beam.to[1])];
+      const hit = beam.distance >= 0;
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: hit ? 0x2ecc71 : 0x95a5a6, dashSize: 4, gapSize: 3, transparent: true, opacity: hit ? 0.9 : 0.45 }));
+      line.computeLineDistances();
+      s.world.add(line);
+      if (hit) {
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(1.8, 12, 8), new THREE.MeshBasicMaterial({ color: 0x2ecc71 }));
+        dot.position.copy(pts[1]!);
+        const tag = new CSS2DObject(labelElement(`${(beam.distance / 10).toFixed(1)} cm`));
+        tag.position.set(0, 6, 0);
+        dot.add(tag);
+        s.world.add(dot);
+      }
+    }
+    invalidate();
+  }, [props.bodies, props.beams, invalidate]);
+
   // pointer gestures
   useEffect(() => {
     const s = state.current;
@@ -530,8 +592,10 @@ export function Bench3D(props: Bench3DProps) {
       ray.setFromCamera(ndc, s.camera);
     };
     const onDesk = (): THREE.Vector3 | null => ray.ray.intersectPlane(desk, new THREE.Vector3());
-    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers], true);
+    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, s.world], true);
+    let dragBody: { id: string; mesh: THREE.Object3D; dx: number; dz: number; moved: boolean; start: THREE.Vector3 } | null = null;
     let activePointer: number | null = null;
+
     let drag: { id: string; dx: number; dz: number; moved: boolean; start: Required<BenchPlace>; rotation: number } | null = null;
     let wire: { from: TerminalHit; line: THREE.Mesh | null } | null = null;
     let held: { target: string; input: string } | null = null;
@@ -630,6 +694,17 @@ export function Bench3D(props: Bench3DProps) {
         p.onSelect({ jumper: data.jumper });
         return;
       }
+      // a body of the world: dragged across the desk at its height
+      const body = (hit?.object.userData as { body?: string } | undefined)?.body;
+      if (body && p.tool === 'select' && p.editable && p.onMoveBody) {
+        const at = onDesk();
+        if (at && hit) {
+          dragBody = { id: body, mesh: hit.object, dx: hit.object.position.x - at.x, dz: hit.object.position.z - at.z, moved: false, start: hit.object.position.clone() };
+          activePointer = ev.pointerId;
+          el.setPointerCapture(ev.pointerId);
+        }
+        return;
+      }
       if (!p.editable) {
         if (data.part) p.onSelect({ part: data.part });
         return;
@@ -666,6 +741,15 @@ export function Bench3D(props: Bench3DProps) {
         return;
       }
       cast(ev);
+      if (dragBody) {
+        const at = onDesk();
+        if (!at) return;
+        dragBody.mesh.position.x = Math.round((at.x + dragBody.dx) * 10) / 10;
+        dragBody.mesh.position.z = Math.round((at.z + dragBody.dz) * 10) / 10;
+        dragBody.moved = true;
+        invalidate();
+        return;
+      }
       if (drag) {
         const at = onDesk();
         if (!at) return;
@@ -708,6 +792,11 @@ export function Bench3D(props: Bench3DProps) {
         held = null;
       }
       turning = null;
+      if (dragBody) {
+        const m = dragBody.mesh.position;
+        if (dragBody.moved) p.onMoveBody?.(dragBody.id, [m.x, m.z, m.y]);
+        dragBody = null;
+      }
       if (drag) {
         const at = onDesk();
         if (drag.moved && at) {
@@ -743,6 +832,8 @@ export function Bench3D(props: Bench3DProps) {
       if (held) propsRef.current.onInput(held.target, held.input, false);
       held = null;
       turning = null;
+      if (dragBody) dragBody.mesh.position.copy(dragBody.start);
+      dragBody = null;
       if (drag) {
         const e = s.parts.get(drag.id);
         if (e) e.built.group.position.set(e.view.place.x, e.view.elevation, e.view.place.y);

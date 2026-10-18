@@ -521,7 +521,8 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
             const esk_json *in = esk_json_at(inputs, i);
             const esk_json *def = esk_json_get(in, "default");
             const char *name = esk_json_get_str(in, "name", NULL);
-            if (name && def) {
+            /* an input bound to the world stays unset: it reads the world, or its default */
+            if (name && def && !esk_json_get(in, "world")) {
                 esk_json *v = esk_json_clone(s->a, def);
                 if (v)
                     esk_json_object_set(s->a, (*out)->inputs, name, v);
@@ -1105,6 +1106,7 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
                     esk_json_get_str(pe, "target", "?"), es_strerror(ps));
     }
     s->loaded = 1;
+    esk_session_world_load(s);
     esk_session_analyses_apply(s);
     return ES_OK;
 }

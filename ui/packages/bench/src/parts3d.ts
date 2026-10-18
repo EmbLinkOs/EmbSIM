@@ -531,10 +531,48 @@ export function silkscreen(shape: BenchShape, color: string): THREE.CanvasTextur
   return t;
 }
 
+/** the HC-SR04 standing in its header: the board upright, the transducers facing the back */
+function ultrasonic(shape: BenchShape, look: PartLook): THREE.Group {
+  const g = new THREE.Group();
+  const [w, , h] = shape.size;
+  const pins = Object.values(local(shape));
+  const lift = 2.5;
+  const face = look.texture ?? silkscreen({ ...shape, size: [w, h, 1.6], pins: {}, label: 'HC-SR04' }, shape.color ?? '#1b4f9c');
+  const front = face ? new THREE.MeshStandardMaterial({ map: face, roughness: 0.55 }) : standard('#1b4f9c', 0.55);
+  const edge = standard(shape.color ?? '#1b4f9c', 0.6);
+  // BoxGeometry faces: +x, -x, +y, -y, +z (towards the viewer), -z
+  const pcb = mesh(new THREE.BoxGeometry(w, h - lift, 1.6), [edge, edge, edge, edge, front, edge]);
+  pcb.position.set(0, lift + (h - lift) / 2, 0);
+  g.add(pcb);
+  for (const x of [-13, 13]) {
+    const can = mesh(new THREE.CylinderGeometry(8, 8, 12, 40), METAL);
+    can.rotation.x = Math.PI / 2;
+    can.position.set(x, lift + (h - lift) / 2, -0.8 - 6);
+    g.add(can);
+    const grille = mesh(new THREE.CylinderGeometry(7.2, 7.2, 0.3, 40), standard('#3a3a3a', 0.9));
+    grille.rotation.x = Math.PI / 2;
+    grille.position.set(x, lift + (h - lift) / 2, -0.8 - 12.1);
+    g.add(grille);
+  }
+  const crystal = mesh(new RoundedBoxGeometry(10, 4, 3, 2, 1.4), METAL);
+  crystal.position.set(0, lift + h * 0.72, 1.6);
+  g.add(crystal);
+  for (const [px, pz] of pins) {
+    const spacer = mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), BLACK_PLASTIC);
+    spacer.position.set(px, lift - 0.2, pz);
+    g.add(spacer);
+    const pin = mesh(new THREE.BoxGeometry(0.64, lift + 4, 0.64), GOLD);
+    pin.position.set(px, (lift - 4) / 2 + 0.6, pz);
+    g.add(pin);
+  }
+  return g;
+}
+
 function module(shape: BenchShape, look: PartLook): THREE.Group {
   const g = new THREE.Group();
   const [w, d] = shape.size;
   const short = look.component.split('/').pop() ?? '';
+  if (short === 'hc_sr04') return ultrasonic(shape, look);
   const pins = Object.values(local(shape));
   const lift = 8.5; // the module stands on its header: 2.5 mm of spacer over 6 mm of pin
   const pcbColor = shape.color ?? '#1f6f43';
@@ -546,16 +584,7 @@ function module(shape: BenchShape, look: PartLook): THREE.Group {
   g.add(pcb);
   maleHeader(g, pins, lift);
   const surface = lift + 1.6;
-  if (short === 'hc_sr04') {
-    for (const x of [-13, 13]) {
-      const can = mesh(new THREE.CylinderGeometry(8, 8, 12, 40), METAL);
-      can.position.set(x, surface + 6, -1);
-      g.add(can);
-      const mesh_ = mesh(new THREE.CylinderGeometry(7.2, 7.2, 0.3, 40), standard('#3a3a3a', 0.9));
-      mesh_.position.set(x, surface + 12.1, -1);
-      g.add(mesh_);
-    }
-  } else if (short === 'dht22') {
+  if (short === 'dht22') {
     const shell = mesh(new RoundedBoxGeometry(w, 7.7, d - 4, 2, 1), standard('#f2f2f2', 0.7));
     shell.position.set(0, surface + 3.85, -2);
     g.add(shell);

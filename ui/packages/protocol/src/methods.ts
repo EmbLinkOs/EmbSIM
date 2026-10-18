@@ -42,6 +42,7 @@ import type {
   WaveformSamples,
   Where,
   ControlState,
+  WorldState,
 } from './types';
 
 export type ProjectEdit =
@@ -53,6 +54,7 @@ export type ProjectEdit =
   | { rename_net: { from: string; to: string } }
   | { add_board: { id: string; board: string; layout?: Layout; firmware?: ProjectBoard['firmware'] } }
   | { remove_board: { id: string } }
+  | { set_world: { fields?: NonNullable<Project['world']>['fields']; bodies?: NonNullable<Project['world']>['bodies'] } }
   | { set_layout: { id?: string; layout?: Layout; wires?: Project['layout'] extends infer L ? (L extends { wires?: infer W } ? W : never) : never; labels?: NonNullable<Project['layout']>['labels']; buses?: NonNullable<Project['layout']>['buses']; groups?: NonNullable<Project['layout']>['groups']; bench?: NonNullable<Project['layout']>['bench'] } };
 
 export interface Methods {
@@ -94,6 +96,9 @@ export interface Methods {
   'input.release': { params: { target: string }; result: { at_ps: PsString; seq: number } };
   'input.serial': { params: { target: string; bytes?: string; text?: string }; result: { at_ps: PsString; seq: number } };
   'input.list': { params: Record<string, never>; result: { inputs: InputEntry[] } };
+
+  // the world (ADR-026)
+  'world.get': { params: Record<string, never>; result: WorldState };
 
   // probe and waveform
   'probe.add': {
@@ -235,6 +240,7 @@ export const METHOD_NAMES = [
   'input.release',
   'input.serial',
   'input.list',
+  'world.get',
   'probe.add',
   'probe.remove',
   'probe.list',

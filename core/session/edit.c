@@ -15,8 +15,9 @@
  *   remove_board {id}
  *   set_layout {id, layout}         a component's or a board's placement
  *   set_layout {wires?, labels?, buses?, groups?, bench?}  the drawing
+ *   set_world {fields?, bodies?}    the room the circuit sits in (ADR-026)
  *
- * Everything but set_layout changes the circuit: `*structural` is set so
+ * Everything but set_layout and set_world changes the circuit: `*structural` is set so
  * the commit rebuilds the session. A net left with no pins is removed. */
 #include "session/session_priv.h"
 
@@ -445,6 +446,29 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
             }
             return 0;
         }
+    }
+    if (esk_str_eq(e->key, "set_world")) {
+        /* the project's world (ADR-026): its fields and bodies, as given; not
+         * structural: the session applies the difference as inputs */
+        esk_json *world = object_member(a, project, "world");
+        static const char *const keys[] = {"fields", "bodies"};
+        size_t k;
+        if (!world)
+            return -1;
+        for (k = 0; k < 2; k++) {
+            const esk_json *v = esk_json_get(e, keys[k]);
+            esk_json *copy;
+            if (!v)
+                continue;
+            if (v->type != (k ? ESK_JSON_ARRAY : ESK_JSON_OBJECT))
+                return err(why, cap, k ? "set_world: %s is a list" : "set_world: %s is an object", keys[k]);
+            copy = esk_json_clone(a, v);
+            if (!copy || esk_json_object_set(a, world, keys[k], copy)) {
+                esk_json_free(a, copy);
+                return -1;
+            }
+        }
+        return 0;
     }
     return err(why, cap, "unknown edit %s", e->key);
 }

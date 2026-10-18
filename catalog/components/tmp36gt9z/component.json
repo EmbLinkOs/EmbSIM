@@ -89,7 +89,8 @@
       "min": -40,
       "max": 125,
       "unit": "degC",
-      "doc": "Ambient temperature, degrees Celsius; user/scenario controlled."
+      "doc": "Ambient temperature, degrees Celsius; user/scenario controlled; read from the world's temperature while not set",
+      "world": "temperature"
     }
   ],
   "outputs": [

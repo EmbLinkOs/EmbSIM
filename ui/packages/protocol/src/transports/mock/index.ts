@@ -113,6 +113,7 @@ export class MockTransport extends TransportBase implements Transport {
         throw new EngineError(-32038, 'no serial peripheral in this session');
       },
       'input.list': () => ({ inputs: s.listInputs() }),
+      'world.get': () => s.getWorld(),
 
       'probe.add': (p) => {
         const info = s.addProbe(p.target, p.kind, p.rate_hz);

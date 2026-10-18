@@ -20,6 +20,20 @@ regressions. See the [bench guide](../user/bench.md) for controls and limits.
 
 [Graphite surface, perspective inspection](bench-inspection/graphite.png).
 
+## The world (2026-10-18)
+
+The room the circuit sits in (ADR-026). `NewPing/NewPingExample` declares a
+20 °C room and a wall a metre behind the HC-SR04; the World tab sets each
+field the room declares and places the bodies distance sensors see, and the
+bench draws the sensor's beam to what it hits. Running, the controls show
+U1's distance and temperature read from the world; a scenario moves the wall
+and the sketch's `Ping:` line follows it.
+
+| | |
+|---|---|
+| ![The World tab under the bench: the room's temperature, the wall's place](world/world-design.png) | ![Running: U1's distance and temperature from the world's](world/world-run.png) |
+
+
 ## The 3D bench and the breadboard (2026-10-18)
 
 The bench becomes a second editor of the project's nets (ADR-027), in 3D.

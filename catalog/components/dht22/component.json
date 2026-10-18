@@ -65,7 +65,9 @@
       "min": -40,
       "max": 80,
       "unit": "degC",
-      "default": 25
+      "default": 25,
+      "world": "temperature",
+      "doc": "read from the world's temperature while not set"
     },
     {
       "name": "humidity",
@@ -73,7 +75,9 @@
       "min": 0,
       "max": 100,
       "unit": "%",
-      "default": 50
+      "default": 50,
+      "world": "humidity",
+      "doc": "read from the world's humidity while not set"
     }
   ],
   "outputs": [

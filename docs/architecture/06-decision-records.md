@@ -718,8 +718,13 @@ measure, not a thermal, fluid or structural analysis (01 §6). The protocol
 gains world methods and a world description in the project (schema
 additions, SPEC-005 and SPEC-008).
 
-**Status.** Accepted direction (owner, 2026-10-17); design details proposed
-until the specifications are written.
+**Status.** Accepted direction (owner, 2026-10-17). First stage implemented
+(2026-10-18, SPEC-003 §8): the fields temperature, humidity, pressure,
+illuminance, sound and wind, uniform; static bodies (boxes and spheres) that
+distance sensors' beams meet; inputs bound to the world in their
+descriptions; the project's `world`; world inputs in scenarios; `world.get`;
+the World panel and the bodies on the 3D bench. Fields as a function of
+position, moving bodies on paths, physics and the IMUs' motion remain.
 
 ---
 

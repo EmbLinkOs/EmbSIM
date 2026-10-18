@@ -59,7 +59,8 @@
       "max": 125,
       "default": 25,
       "unit": "degC",
-      "doc": "External environment; change live while running."
+      "doc": "External environment; change live while running; read from the world's temperature while not set",
+      "world": "temperature"
     }
   ],
   "outputs": [
@@ -156,7 +157,7 @@
         "title": "Vishay 29049 NTCLE100E3",
         "rev": "7 May 2025",
         "date": "2026-10-16",
-        "notes": "Manufacturer source reviewed, PDF pages 1\u20132. Package/nominal reference only; model not manufacturer-qualified."
+        "notes": "Manufacturer source reviewed, PDF pages 1–2. Package/nominal reference only; model not manufacturer-qualified."
       }
     ]
   },
