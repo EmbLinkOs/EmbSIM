@@ -124,6 +124,13 @@ scenario or a script can set (`input.set` in SPEC-008). Types: `boolean`,
 `outputs` are the displayable states (LED luminance, a display framebuffer
 as `bitmap`, a seven-segment pattern, a meter value) that artwork `states`
 bind to. Both are exposed by name in snapshots and probes.
+An input may name the world's field it measures (`world`: `temperature`,
+`humidity`, `pressure`, `illuminance`, `sound`, `wind`, or `distance` for
+the nearest body along the part's `bench.sense` beam, §8.1): left unset, it
+reads the world (SPEC-003 §8), in its own unit; set by a user or a
+scenario, the part's own value wins, as a sensor held by hand does. The
+input's `default` is what it reads while the world does not declare the
+field.
 
 ## 8. Symbols and artwork
 
@@ -160,7 +167,9 @@ bind to. Both are exposed by name in snapshots and probes.
 - `bench` (optional): the part as it sits on the bench (ADR-027, SPEC-011
   §3): its `package` (the body the 3D bench builds: `breadboard`, `axial`,
   `radial`, `led`, `to92`, `to220`, `dip`, `tactile`, `switch`, `pot`,
-  `module`, `board`, `box`), `size_mm` (width, depth, height), `pins`
+  `module`, `board`, `box`), `size_mm` (width, depth, height), `sense` (a
+  distance sensor's beam: from `at` along `dir`, millimetres in the part's
+  own frame, its height from the desk, turned with the part), `pins`
   (each pin's leg as `[x, y]` millimetres from the part's top-left corner
   seen from above, inside its size), a body `color` and a `label`. A part
   without `bench` gets one from its pins and category (the workbench's

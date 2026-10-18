@@ -21,9 +21,9 @@
         "additionalProperties": false,
         "properties": {
           "at": {"$ref": "common.schema.json#/$defs/time"},
-          "target": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)?$", "description": "A component, a board, BOARD.PERIPHERAL, or COMPONENT.MEMBER for a member of a composite (a keypad's key)."},
+          "target": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_-]+)?$", "description": "A component, a board, BOARD.PERIPHERAL, COMPONENT.MEMBER for a member of a composite (a keypad's key), `world` for one of the room's fields or `world.BODY` for one of its bodies (ADR-026)."},
           "input": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-          "value": {"oneOf": [{"type": "boolean"}, {"type": "number"}, {"type": "string"}]}
+          "value": {"oneOf": [{"type": "boolean"}, {"type": "number"}, {"type": "string"}, {"type": "null"}, {"type": "object"}], "description": "A world body's spec is an object ({shape?, at, size}); null undeclares a world field or removes a body."}
         }
       }
     },

@@ -5,38 +5,88 @@
   "until": "2600ms",
   "inputs": [
     {
-      "at": "0ms",
-      "target": "U1",
-      "input": "distance_cm",
-      "value": 100
-    },
-    {
       "at": "500ms",
-      "target": "U1",
-      "input": "distance_cm",
-      "value": 30
+      "target": "world.wall",
+      "input": "body",
+      "value": {
+        "id": "wall",
+        "name": "A wall",
+        "shape": "box",
+        "at": [
+          0,
+          -305,
+          100
+        ],
+        "size": [
+          2000,
+          10,
+          1000
+        ]
+      }
     },
     {
       "at": "1000ms",
-      "target": "U1",
-      "input": "distance_cm",
-      "value": 250
+      "target": "world.wall",
+      "input": "body",
+      "value": {
+        "id": "wall",
+        "name": "A wall",
+        "shape": "box",
+        "at": [
+          0,
+          -2505,
+          100
+        ],
+        "size": [
+          2000,
+          10,
+          1000
+        ]
+      }
     },
     {
       "at": "1500ms",
-      "target": "U1",
-      "input": "distance_cm",
-      "value": 1
+      "target": "world.wall",
+      "input": "body",
+      "value": {
+        "id": "wall",
+        "name": "A wall",
+        "shape": "box",
+        "at": [
+          0,
+          -15,
+          100
+        ],
+        "size": [
+          2000,
+          10,
+          1000
+        ]
+      }
     },
     {
       "at": "2000ms",
-      "target": "U1",
-      "input": "distance_cm",
-      "value": 100
+      "target": "world.wall",
+      "input": "body",
+      "value": {
+        "id": "wall",
+        "name": "A wall",
+        "shape": "box",
+        "at": [
+          0,
+          -1005,
+          100
+        ],
+        "size": [
+          2000,
+          10,
+          1000
+        ]
+      }
     },
     {
       "at": "2000ms",
-      "target": "U1",
+      "target": "world",
       "input": "temperature",
       "value": 0
     }
@@ -94,5 +144,5 @@
       }
     }
   ],
-  "description": "NewPing's NewPingExample, unmodified, pinging every 50 ms. At 100 cm in air at 20 C the echo is 5824 us, which NewPing (57 us per cm, truncated) prints as 102 cm; at 30 cm, 1747 us, 30 cm; at 250 cm, past the sketch's 200 cm maximum, and at 1 cm, under the module's 2 cm (its 38 ms timeout), 0; at 100 cm in air at 0 C, where sound is slower (331.3 m/s), 6037 us, 105 cm."
+  "description": "NewPing's NewPingExample, unmodified, pinging every 50 ms at a wall moved in front of the sensor (ADR-026): the HC-SR04 measures the world, its beam meeting the wall's face. At 100 cm in air at 20 C the echo is 5824 us, which NewPing (57 us per cm, truncated) prints as 102 cm; at 30 cm, 1747 us, 30 cm; at 250 cm, past the sketch's 200 cm maximum, and at 1 cm, under the module's 2 cm (its 38 ms timeout), 0; at 100 cm with the room at 0 C, where sound is slower (331.3 m/s), 6037 us, 105 cm."
 }

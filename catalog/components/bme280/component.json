@@ -118,7 +118,9 @@
       "min": -40,
       "max": 85,
       "unit": "degC",
-      "default": 25
+      "default": 25,
+      "world": "temperature",
+      "doc": "read from the world's temperature while not set"
     },
     {
       "name": "pressure",
@@ -126,7 +128,9 @@
       "min": 300,
       "max": 1100,
       "unit": "hPa",
-      "default": 1013.25
+      "default": 1013.25,
+      "world": "pressure",
+      "doc": "read from the world's pressure while not set"
     },
     {
       "name": "humidity",
@@ -134,7 +138,9 @@
       "min": 0,
       "max": 100,
       "unit": "%",
-      "default": 50
+      "default": 50,
+      "world": "humidity",
+      "doc": "read from the world's humidity while not set"
     }
   ],
   "outputs": [

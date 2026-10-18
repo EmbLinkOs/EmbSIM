@@ -3,6 +3,7 @@
 /* engine.c -- components, pins, nets, digital resolution (SPEC-003 §3),
  * islands and bridges (SPEC-003 §4), and the model API (SPEC-003 §5). */
 #include "engine/engine.h"
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -174,6 +175,7 @@ es_status esk_engine_init(esk_engine *e, esk_alloc *a, esk_diag *diag, esk_polic
     e->default_supply_v = 3.3;
     esk_map_init(&e->comp_by_id, a);
     esk_map_init(&e->net_by_name, a);
+    esk_world_init(&e->world);
     return esk_sched_init(&e->sched, a, 0, 0);
 }
 
@@ -244,6 +246,7 @@ void esk_engine_free(esk_engine *e)
     esk_vec_free(e->a, &e->nets);
     esk_map_free(&e->comp_by_id);
     esk_map_free(&e->net_by_name);
+    esk_world_free(e->a, &e->world);
     esk_sched_free(&e->sched);
     if (e->ext && e->ext_free)
         e->ext_free(e->ext);
@@ -744,7 +747,106 @@ double esk_comp_input_double(const esk_comp *c, const char *name, double def)
     double v;
     if (j && esk_json_to_double(j, &v) == 0)
         return v;
+    if (!j && esk_comp_world_input(c, name, &v))
+        return v;
     return def;
+}
+
+/* the field an input of the description is bound to, -1 if none */
+static int input_world(const esk_comp *c, const char *name, const esk_json **desc)
+{
+    const esk_json *inputs = esk_json_get(c->desc, "inputs");
+    size_t i;
+    for (i = 0; i < esk_json_len(inputs); i++) {
+        const esk_json *in = esk_json_at(inputs, i);
+        if (!esk_str_eq(esk_json_get_str(in, "name", NULL), name))
+            continue;
+        if (desc)
+            *desc = in;
+        return esk_world_field_index(esk_json_get_str(in, "world", NULL));
+    }
+    return -1;
+}
+
+/* the beam of a distance sensor on the bench: from its bench.sense.at along
+ * bench.sense.dir (part coordinates, mm: x right, y towards the viewer, z up),
+ * turned with the part */
+static void beam(const esk_comp *c, double o[3], double d[3])
+{
+    const esk_json *sense = esk_json_get(esk_json_get(c->desc, "bench"), "sense");
+    const esk_json *at = esk_json_get(sense, "at"), *dir = esk_json_get(sense, "dir");
+    double la[3] = { 0, 0, 10 }, ld[3] = { 0, -1, 0 }, rot = c->pose[2] * 3.14159265358979323846 / 180.0, n;
+    int k;
+    for (k = 0; k < 3; k++) {
+        if (esk_json_at(at, (size_t)k))
+            (void)esk_json_to_double(esk_json_at(at, (size_t)k), &la[k]);
+        if (esk_json_at(dir, (size_t)k))
+            (void)esk_json_to_double(esk_json_at(dir, (size_t)k), &ld[k]);
+    }
+    /* clockwise seen from above with y towards the viewer: (x, y) -> (x cos - y sin, x sin + y cos) */
+    o[0] = c->pose[0] + la[0] * cos(rot) - la[1] * sin(rot);
+    o[1] = c->pose[1] + la[0] * sin(rot) + la[1] * cos(rot);
+    o[2] = la[2];
+    d[0] = ld[0] * cos(rot) - ld[1] * sin(rot);
+    d[1] = ld[0] * sin(rot) + ld[1] * cos(rot);
+    d[2] = ld[2];
+    n = sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    if (n > 0)
+        for (k = 0; k < 3; k++)
+            d[k] /= n;
+}
+
+int esk_comp_world_input(const esk_comp *c, const char *input, double *out)
+{
+    const esk_json *in = NULL;
+    const esk_world *w = &c->e->world;
+    int f = input_world(c, input, &in);
+    if (f < 0)
+        return 0;
+    if (f == ESK_WF_DISTANCE) {
+        double o[3], d[3], mm;
+        const char *unit = esk_json_get_str(in, "unit", "mm");
+        if (!w->bodies.len)
+            goto fallback;
+        beam(c, o, d);
+        mm = esk_world_ray(w, o, d);
+        if (mm < 0)
+            mm = 10000.0; /* nothing in the beam: far beyond any sensor's range */
+        *out = esk_str_eq(unit, "cm") ? mm / 10.0 : esk_str_eq(unit, "m") ? mm / 1000.0 : mm;
+        return 1;
+    }
+    if (!((w->set >> f) & 1u))
+        goto fallback;
+    *out = w->value[f];
+    return 1;
+fallback:
+    /* a world that does not have it: the input's own default, as before the world */
+    return esk_json_get(in, "default") && esk_json_to_double(esk_json_get(in, "default"), out) == 0;
+}
+
+void esk_engine_world_changed(esk_engine *e, int field)
+{
+    size_t i, k;
+    for (i = 0; i < e->comps.len; i++) {
+        esk_comp *c = e->comps.data[i];
+        const esk_json *inputs = esk_json_get(c->desc, "inputs");
+        if (!c->ops->on_set)
+            continue;
+        for (k = 0; k < esk_json_len(inputs); k++) {
+            const esk_json *in = esk_json_at(inputs, k);
+            const char *name = esk_json_get_str(in, "name", NULL);
+            esk_json v;
+            double x;
+            if (!name || esk_world_field_index(esk_json_get_str(in, "world", NULL)) != field)
+                continue;
+            if (esk_json_get(c->inputs, name) || !esk_comp_world_input(c, name, &x))
+                continue; /* set by the user, or not given by the world */
+            memset(&v, 0, sizeof v);
+            v.type = ESK_JSON_NUMBER;
+            v.u.number.value = x;
+            (void)c->ops->on_set(c, name, &v);
+        }
+    }
 }
 
 es_status esk_engine_set_input(esk_engine *e, esk_comp *c, const char *input, const esk_json *value)

@@ -182,6 +182,41 @@
         }
       }
     },
+    "world": {
+      "type": "object",
+      "description": "The room the circuit sits in (ADR-026, SPEC-007 §2): the fields it declares, which every sensor bound to them reads, and bodies on the bench that distance sensors see. A field not declared leaves each sensor at its own default.",
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "temperature": {"type": "number", "minimum": -273.15, "description": "degC"},
+            "humidity": {"type": "number", "minimum": 0, "maximum": 100, "description": "% relative humidity"},
+            "pressure": {"type": "number", "exclusiveMinimum": 0, "description": "hPa"},
+            "illuminance": {"type": "number", "minimum": 0, "description": "lx"},
+            "sound": {"type": "number", "description": "dB SPL"},
+            "wind": {"type": "number", "minimum": 0, "description": "m/s"}
+          }
+        },
+        "bodies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "at", "size"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"},
+              "name": {"type": "string"},
+              "shape": {"type": "string", "enum": ["box", "sphere"]},
+              "at": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}, "description": "Centre on the bench, mm: x right, y towards the viewer, z up."},
+              "size": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "exclusiveMinimum": 0}, "description": "Width, depth, height, mm (a sphere's diameter first)."},
+              "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
+            }
+          }
+        }
+      }
+    },
     "probes": {
       "type": "array",
       "items": {

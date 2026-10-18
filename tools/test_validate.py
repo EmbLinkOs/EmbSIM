@@ -372,6 +372,22 @@ class ProjectTests(Base):
         p["layout"]["groups"].append({"id": "other", "name": "Other", "members": [ids[0]]})
         self.assertCode(self.check(self.write_project(p)), "catalog.duplicate")
 
+    def test_world_inputs_in_a_scenario(self):
+        sc = copy.deepcopy(SCENARIO)
+        sc["inputs"] = [
+            {"at": "1ms", "target": "world", "input": "temperature", "value": 30},
+            {"at": "2ms", "target": "world.wall", "input": "body", "value": {"at": [0, -100, 50], "size": [100, 10, 100]}},
+            {"at": "3ms", "target": "world.wall", "input": "body", "value": None},
+        ]
+        path = self.write_project(scenario=sc)
+        self.assertClean(self.check(path.parent / "scenarios" / "press.json"))
+        sc["inputs"] = [{"at": "1ms", "target": "world", "input": "colour", "value": 3}]
+        path = self.write_project(scenario=sc)
+        self.assertCode(self.check(path.parent / "scenarios" / "press.json"), "catalog.input_unknown")
+        sc["inputs"] = [{"at": "1ms", "target": "world", "input": "humidity", "value": "damp"}]
+        path = self.write_project(scenario=sc)
+        self.assertCode(self.check(path.parent / "scenarios" / "press.json"), "schema.type")
+
     def test_bench_layout(self):
         p = copy.deepcopy(PROJECT)
         net, pins = next((n, v) for n, v in p["nets"].items() if len(v) >= 2)
