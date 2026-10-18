@@ -76,6 +76,13 @@ Rules:
   runs the bus shows its value, the first net being bit 0.
   The electrical truth is `nets`. A client that edits wires updates both in
   one `project.transaction`.
+- `world` is the room the circuit sits in (ADR-026, SPEC-003 §8):
+  `fields` it declares (`temperature`, `humidity`, `pressure`,
+  `illuminance`, `sound`, `wind`; a field left out leaves each sensor at its
+  own default) and `bodies` (`{id, name?, shape?: box | sphere, at, size,
+  color?}` in bench millimetres) that distance sensors see. The edit
+  `set_world {fields?, bodies?}` changes it without a restart; the session
+  applies the difference as world inputs at the present time.
 - `layout.bench` is the bench (ADR-027, SPEC-011 §3), another drawing of
   the same nets: `parts` maps an instance to the centre of its body on the
   bench, in millimetres (x to the right, y towards the viewer seen from
@@ -134,7 +141,10 @@ Rules:
   terminal through a component), or `COMPONENT.MEMBER`, a member of a
   composite component (a keypad's key, `KP.k5`). `input` names an entry in
   the target's description. Component fixtures (SPEC-005 §9) take the same
-  targets.
+  targets. `world` sets one of the room's fields (the input its name, the
+  value a number, or null to undeclare it) and `world.BODY` places a body
+  (the input `body`, the value `{shape?, at, size}`, or null to take it
+  away), SPEC-003 §8.
 - Assertions: `at` samples the probe at a time; `between` checks every
   sample in a window; `by` checks that the expectation holds at some time up
   to the bound; `always` with `diagnostics.forbid` fails on any listed

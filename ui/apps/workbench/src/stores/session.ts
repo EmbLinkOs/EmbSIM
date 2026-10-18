@@ -109,7 +109,8 @@ export const useSession = create<SessionState & SessionActions>((set, get) => ({
   setLatency: (ms) => set((s) => ({ latencyMs: s.latencyMs === 0 ? ms : s.latencyMs * 0.7 + ms * 0.3 })),
   setInputs: (inputs) => set({ inputs }),
   setInputValue: (target, input, value) =>
-    set((s) => ({ inputs: s.inputs.map((i) => (i.target === target && i.input === input ? { ...i, value } : i)) })),
+    // a value set on the part itself: it no longer follows the world
+    set((s) => ({ inputs: s.inputs.map((i) => (i.target === target && i.input === input ? { ...i, value, source: undefined } : i)) })),
   hasCapability: (c) => get().capabilities.includes(c),
 }));
 

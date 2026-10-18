@@ -114,6 +114,12 @@ function ControlRow({ entry, disabled }: { entry: InputEntry; disabled: boolean 
         <div className="wb-control__name">{name}</div>
         <div className="wb-control__type">
           {entry.type}
+          {entry.world && (
+            <span title={entry.source === 'world' ? 'Read from the room (the World panel); moving it sets this part alone' : 'Set on this part: it no longer follows the room'}>
+              {' · '}
+              {entry.source === 'world' ? `from the world's ${entry.world}` : 'set here'}
+            </span>
+          )}
           {entry.type === 'boolean' && (
             <>
               {' · '}

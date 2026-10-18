@@ -82,7 +82,8 @@
       "max": 1000,
       "default": 10,
       "unit": "lx",
-      "doc": "External environment; change live while running."
+      "doc": "External environment; change live while running; read from the world's illuminance while not set",
+      "world": "illuminance"
     }
   ],
   "outputs": [

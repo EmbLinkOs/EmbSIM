@@ -111,6 +111,40 @@ export interface Project {
   probes?: ProjectProbe[];
   scenarios?: string[];
   settings?: Record<string, unknown>;
+  world?: WorldSpec;
+}
+
+/** The room the circuit sits in (ADR-026): fields every bound sensor reads, bodies distance sensors see. */
+export type WorldField = 'temperature' | 'humidity' | 'pressure' | 'illuminance' | 'sound' | 'wind';
+
+export const WORLD_FIELDS: { name: WorldField; label: string; unit: string; min: number; max: number; step: number; value: number }[] = [
+  { name: 'temperature', label: 'Temperature', unit: 'degC', min: -40, max: 85, step: 0.1, value: 22 },
+  { name: 'humidity', label: 'Humidity', unit: '%', min: 0, max: 100, step: 0.5, value: 50 },
+  { name: 'pressure', label: 'Pressure', unit: 'hPa', min: 300, max: 1100, step: 0.25, value: 1013.25 },
+  { name: 'illuminance', label: 'Light', unit: 'lx', min: 0, max: 100000, step: 1, value: 300 },
+  { name: 'sound', label: 'Sound', unit: 'dB', min: 0, max: 130, step: 1, value: 40 },
+  { name: 'wind', label: 'Wind', unit: 'm/s', min: 0, max: 40, step: 0.1, value: 0 },
+];
+
+export interface WorldBody {
+  id: string;
+  name?: string;
+  shape?: 'box' | 'sphere';
+  /** centre on the bench, mm: x right, y towards the viewer, z up */
+  at: [number, number, number];
+  size: [number, number, number];
+  color?: string;
+}
+
+export interface WorldSpec {
+  fields?: Partial<Record<WorldField, number>>;
+  bodies?: WorldBody[];
+}
+
+/** world.get: the room as it is now */
+export interface WorldState {
+  fields: Record<WorldField, { value: number; unit: string; set: boolean }>;
+  bodies: WorldBody[];
 }
 
 /** Where a part sits on the bench (SPEC-007 §2): its centre in mm and its turn, clockwise. */
@@ -179,6 +213,8 @@ export interface InputDescription {
   unit?: string;
   enum?: string[];
   doc?: string;
+  /** the world's field the input reads while it is not set (ADR-026) */
+  world?: WorldField | 'distance';
 }
 
 export interface OutputDescription {
@@ -438,6 +474,9 @@ export interface InputEntry {
   unit?: string;
   enum?: string[];
   label?: string;
+  /** read from the world (ADR-026) */
+  world?: string;
+  source?: 'world';
 }
 
 export interface ProbeInfo {

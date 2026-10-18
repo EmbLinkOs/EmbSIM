@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "arduino-dht22",
- "description": "Adafruit's DHTtester example as its comments wire it: an Arduino Uno with a DHT22 (AM2302) on D2, powered from the board's 5V, a 10 kOhm pull-up from DATA to 5V, and a terminal on D0/D1 at 9600 baud.",
+ "description": "Adafruit's DHTtester example as its comments wire it: an Arduino Uno with a DHT22 (AM2302) on D2, powered from the board's 5V, a 10 kOhm pull-up from DATA to 5V, and a terminal on D0/D1 at 9600 baud. The room is 23.4 C and 61.2 %RH (its world, ADR-026), which the sensor reads.",
  "policy": "electrical",
  "boards": [
   {
@@ -110,5 +110,11 @@
    "target": "net:DHT_DATA",
    "kind": "digital"
   }
- ]
+ ],
+ "world": {
+  "fields": {
+   "temperature": 23.4,
+   "humidity": 61.2
+  }
+ }
 }

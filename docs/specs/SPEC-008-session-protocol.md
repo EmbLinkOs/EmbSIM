@@ -101,7 +101,11 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `input.set({target, input, value, at?}) -> {at_ps, seq}`: `at` defaults to `now`; a past time is an error.
 - `input.press({target})`, `input.release({target})`: sugar for boolean inputs named `pressed`.
 - `input.serial({target, bytes: base64 | text}) -> {at_ps, seq}`
-- `input.list({}) -> {inputs: [{target, input, type, value, min, max}]}`
+- `input.list({}) -> {inputs: [{target, input, type, value, min, max, world?, source?}]}`: an input bound to the world names its field (`world`) and, while it reads it, `source: "world"`.
+- Targets `world` (the input a field's name, the value a number or null to undeclare it) and `world.BODY` (the input `body`, the value `{shape?, at, size}` or null to remove it) change the world (SPEC-003 §8).
+
+### world
+- `world.get({}) -> {fields: {NAME: {value, unit, set}}, bodies: [{id, shape, at, size}]}`: the world as it is now.
 
 ### probe and waveform
 - `probe.add({target, kind, rate_hz?, decode?: {protocol, params}}) -> {probe, stream?}`

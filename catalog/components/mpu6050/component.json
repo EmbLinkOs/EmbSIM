@@ -201,7 +201,9 @@
       "min": -40,
       "max": 85,
       "unit": "degC",
-      "default": 25
+      "default": 25,
+      "world": "temperature",
+      "doc": "read from the world's temperature while not set"
     }
   ],
   "outputs": [

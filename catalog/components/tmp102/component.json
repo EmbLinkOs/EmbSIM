@@ -90,7 +90,8 @@
       "max": 150,
       "unit": "degC",
       "default": 25,
-      "doc": "Die temperature"
+      "doc": "Die temperature; read from the world's temperature while not set",
+      "world": "temperature"
     }
   ],
   "outputs": [

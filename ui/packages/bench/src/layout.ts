@@ -104,16 +104,27 @@ export function placeAll(p: Project, shapes: Shapes): PlacedPart[] {
   const boards = ids.filter((id) => shapes[id]!.package === 'board');
   const boardsOf = ids.filter((id) => shapes[id]!.package === 'breadboard');
   const rest = ids.filter((id) => !boards.includes(id) && !boardsOf.includes(id));
-  // rows from the back (small y) to the front: parts, breadboards, boards
+  // rows from the back (small y) to the front: parts, breadboards, boards; in
+  // front of what already has a place, so nothing lands on it
+  let left = 10;
   let y = 10;
+  for (const id of ids) {
+    const at = own[id];
+    if (!at) continue;
+    const [w, d] = shapes[id]!.size;
+    const r = Math.max(w, d) / 2;
+    if (y === 10 && left === 10) left = at.x - r;
+    left = Math.min(left, at.x - r);
+    y = Math.max(y, at.y + r + 20);
+  }
   const row = (list: string[], gap: number) => {
-    let x = 10;
+    let x = left;
     let depth = 0;
     for (const id of list) {
       const shape = shapes[id]!;
       const [w, d] = shape.size;
-      if (x > 10 && x + w > 330) {
-        x = 10;
+      if (x > left && x + w > left + 320) {
+        x = left;
         y += depth + gap;
         depth = 0;
       }
