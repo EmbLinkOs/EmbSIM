@@ -7,7 +7,7 @@
 
 import type { ComponentDescription, Project } from '@embsim/protocol';
 import { carriedMoves, legsOf, previewInsertion, unbuilt, type BenchContext, type BenchModel } from './layout';
-import { PITCH, benchShape, boardStack, type BenchShape } from './shape';
+import { isSurfaceMount, PITCH, benchShape, boardStack, surfaceLeadThickness, type BenchShape } from './shape';
 import type { JumperView, LinkView, Point3, SnapResult, TerminalHit } from './Bench3D';
 
 export interface BenchCatalogEntry {
@@ -57,7 +57,7 @@ export function terminalPoint(model: BenchModel, ref: string): Point3 | undefine
   const part = model.byId.get(id ?? '');
   const leg = part?.legs[rest.join('.')];
   if (!part || !leg) return undefined;
-  const top = part.shape.package === 'board' ? boardStack(part.shape).contact : part.shape.package === 'module' ? 6 : part.shape.package === 'box' ? part.shape.size[2] + 4 : 1;
+  const top = part.shape.package === 'board' ? boardStack(part.shape).contact : part.shape.package === 'module' ? 6 : part.shape.package === 'box' ? part.shape.size[2] + 4 : isSurfaceMount(part.shape) ? surfaceLeadThickness(part.shape) : 1;
   return [leg[0], elevationOf(model, part.id) + top, leg[1]];
 }
 
@@ -104,7 +104,7 @@ export function terminalNear(model: BenchModel, x: number, y: number, part?: str
 export function snapPart(model: BenchModel, ctx: BenchContext, id: string, x: number, y: number, rotation: number): SnapResult {
   const shape = ctx.shapes[id];
   const free = { x, y, holes: [] as Point3[], elevation: 0 };
-  if (!shape || shape.package === 'board') return free;
+  if (!shape || shape.package === 'board' || isSurfaceMount(shape)) return free;
   if (shape.package === 'breadboard') {
     const moves = carriedMoves(model, { [id]: { x, y, rotation: rotation as 0 | 90 | 180 | 270 } });
     return { ...free, carried: Object.entries(moves).filter(([key]) => key !== id).map(([key, place]) => ({ id: key, x: place.x, y: place.y, rotation: place.rotation ?? model.byId.get(key)!.place.rotation })) };

@@ -405,7 +405,9 @@ export function Bench3D(props: Bench3DProps) {
         if (surface) surface.onDraw = invalidate;
         const built = buildPart(v.id, v.shape, { component: v.component, params: v.params, texture: surface?.texture });
         const label = new CSS2DObject(labelElement(v.label));
-        label.position.set(0, v.shape.size[2] + 14, -v.shape.size[1] / 2);
+        const top = new THREE.Box3().setFromObject(built.group).max.y;
+        const labelGap = Math.min(14, Math.max(1.5, Math.max(v.shape.size[0], v.shape.size[1]) * 0.15));
+        label.position.set(0, top + labelGap, -v.shape.size[1] / 2);
         built.group.add(label);
         s.scene.add(built.group);
         e = { key, built, surface, label, view: v };

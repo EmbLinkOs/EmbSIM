@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Named surface-mount bodies (2026-10-18)
+
+Native `embsim serve` captures of isolated BSS138 and LM1117IMP-3.3 parts at
+1440×900 in Chromium: SOT-23 with two front leads and one rear lead, and
+SOT-223 with three front leads and its rear output tab. The package inspector
+explains carrier-board use. These are geometry inspections without a powered
+circuit. See the [source and geometry review](../engineering/package-geometry.md)
+for dimensions, terminal identities and representation limits.
+
+| BSS138, SOT-23 | LM1117IMP-3.3, SOT-223 |
+|---|---|
+| ![BSS138 with its SOT-23 body and lead arrangement](surface-packages/bss138.png) | ![LM1117 with its SOT-223 leads and output tab](surface-packages/lm1117.png) |
+
 ## Physical assembly previews (2026-10-18)
 
 The native Uno/breadboard session, paused, in top inspection. The selected R1's

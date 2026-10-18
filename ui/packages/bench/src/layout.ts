@@ -18,7 +18,7 @@
 //   not yet built).
 
 import type { BenchLayout, BenchPlace, BenchWire, Project } from '@embsim/protocol';
-import { PITCH, type BenchShape } from './shape';
+import { isSurfaceMount, PITCH, type BenchShape } from './shape';
 
 export const PLUG_TOLERANCE = 0.4;
 
@@ -168,7 +168,7 @@ export function benchModel(p: Project, shapes: Shapes, ties: Ties): BenchModel {
   }
   const plugs = new Map<string, string>();
   for (const part of parts) {
-    if (part.shape.package === 'breadboard' || part.shape.package === 'board') continue;
+    if (part.shape.package === 'breadboard' || part.shape.package === 'board' || isSurfaceMount(part.shape)) continue;
     for (const [pin, [x, y]] of Object.entries(part.legs)) {
       const h = holeAt(grid, x, y);
       if (h) plugs.set(`${part.id}.${pin}`, h.ref);
@@ -231,6 +231,7 @@ export interface InsertionPreview {
  * Partial insertions remain possible; body/lead collisions are not modeled. */
 export function previewInsertion(model: BenchModel, id: string, place: Required<BenchPlace>): InsertionPreview {
   const part = model.byId.get(id);
+  if (part && isSurfaceMount(part.shape)) return { contacts: [], valid: false, elevation: 0 };
   if (!part || part.shape.package === 'board' || part.shape.package === 'breadboard') return { contacts: [], valid: true, elevation: 0 };
   const contacts: InsertionContact[] = [];
   const own = new Map<string, string>();

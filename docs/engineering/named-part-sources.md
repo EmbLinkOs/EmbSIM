@@ -75,3 +75,10 @@ Do not substitute BAT54A/C/S dual-diode package maps for the single BAT54.
 The retained PDFs are a local reference cache outside the checkout, not a
 dependency of the test suite. CI pin-map regressions use the reviewed package
 facts; electrical fixtures run offline against the actual shared engine.
+
+## Bench bodies reviewed 2026-10-18
+
+[Package geometry evidence](package-geometry.md) records the mechanical appendix
+review for BSS138/SOT-23 and LM1117IMP-3.3/SOT-223 and the representative-family
+BAT54 body. The same retrieved PDF hashes were verified. This does not close
+BAT54's missing Nexperia source review or any electrical model omission.

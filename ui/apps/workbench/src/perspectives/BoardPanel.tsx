@@ -18,6 +18,7 @@ import {
   benchModel,
   elevationOf,
   jumperViews,
+  isSurfaceMount,
   linkViews,
   moveParts,
   previewInsertion,
@@ -509,7 +510,8 @@ function BenchList({
       {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? 'Check the actual package and pinout before building hardware.' : 'Source metadata does not establish mechanical qualification.'}</p>}
       {part && editable && <BenchPlacement key={`${part.id}:${part.place.x}:${part.place.y}:${part.place.rotation}`} part={part} onPlace={onPlace} />}
       {part?.shape.package === 'breadboard' && editable && <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>Turn breadboard</Button>}
-      {part && editable && part.shape.package !== 'breadboard' && part.shape.package !== 'board' && (
+      {part && isSurfaceMount(part.shape) && <p className="wb-bench-geometry">Surface-mount package. Use a carrier board for breadboard construction.</p>}
+      {part && editable && part.shape.package !== 'breadboard' && part.shape.package !== 'board' && !isSurfaceMount(part.shape) && (
         <form
           className="wb-bench-list__form"
           onSubmit={(e) => {

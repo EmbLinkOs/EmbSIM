@@ -5,6 +5,15 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Named surface-mount package bodies
+
+- Render BSS138 in SOT-23 and LM1117IMP-3.3 in SOT-223 from reviewed package
+  drawings, with proper pin-side arrangement and the regulator's shared metal tab.
+- Replace BAT54's misleading TO-92 body with an explicitly reference-only SOT-23
+  family representation; retain its unverified manufacturer-source status.
+- Add reusable SOT-23/SOT-223 descriptions and prevent direct breadboard insertion
+  of surface-mount leads. Preserve circuit terminal IDs and electrical fidelity.
+
 ### Physical assembly feedback
 
 - Preview each leg's destination and occupancy owner before insertion, with

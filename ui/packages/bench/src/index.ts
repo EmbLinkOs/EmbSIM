@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-export { PITCH, benchShape, artworkAnchors, dipPins, type BenchShape, type ShapePackage } from './shape';
+export { PITCH, benchShape, artworkAnchors, dipPins, isSurfaceMount, type BenchShape, type ShapePackage } from './shape';
 export {
   PLUG_TOLERANCE,
   addJumper,

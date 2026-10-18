@@ -274,7 +274,7 @@ export interface ArtworkDescription {
   states?: ArtworkState[];
 }
 
-export type BenchPackage = 'breadboard' | 'axial' | 'radial' | 'led' | 'to92' | 'to220' | 'dip' | 'tactile' | 'switch' | 'pot' | 'module' | 'board' | 'box';
+export type BenchPackage = 'breadboard' | 'axial' | 'radial' | 'led' | 'to92' | 'to220' | 'sot23' | 'sot223' | 'dip' | 'tactile' | 'switch' | 'pot' | 'module' | 'board' | 'box';
 
 /** The part as it sits on the bench (SPEC-005 §8.1): millimetres from its top-left corner seen from above. */
 export interface BenchDescription {

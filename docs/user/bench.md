@@ -84,6 +84,17 @@ is shown explicitly. The simulator's net graph remains the source of electrical
 truth. For a physical breadboard introduction see
 [Adafruit's guide](https://learn.adafruit.com/breadboards-for-beginners).
 
+## Surface-mount packages
+
+BSS138 and BAT54 use SOT-23 bodies; LM1117IMP-3.3 uses SOT-223, including its
+output tab. Their canonical circuit terminals retain the existing names and
+numbers. The list explains that these parts need a carrier for breadboard use;
+placing one above a breadboard does not silently connect it. The SOT-223 tab is
+visible but not separately wireable: OUT2 represents its shared conductor.
+BAT54 uses a reference pin map and representative family outline; its manufacturer
+review remains open. See [package geometry evidence](../engineering/package-geometry.md)
+for sources, dimensions and remaining limits.
+
 ## Rendering recovery and remaining boundaries
 
 If 3D initialization fails or its WebGL context is lost, the panel switches to 2D

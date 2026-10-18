@@ -5,6 +5,23 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Named surface-mount package milestone
+
+Branch `feat/named-package-bodies` adds reusable SOT-23 and SOT-223 procedural
+bodies. BSS138 and LM1117IMP-3.3 use reviewed manufacturer outlines and their
+canonical terminal identities. BAT54 uses a clearly marked reference family
+outline; its manufacturer-source gap remains open. Surface-mount leads cannot
+become breadboard insertions through top-down overlap. Close-up labels follow
+body bounds. These are representative visual bodies, not PCB land patterns,
+soldering support or electrical-model qualification. LM1117's rendered output
+tab shares OUT2 and is not independently wireable.
+
+The [package evidence](engineering/package-geometry.md) records sources,
+dimensions and omissions; [native captures](gallery/README.md) inspect isolated
+parts. Local typecheck, lint, production build, 221 UI tests across 47 files and
+all 40 native CTest targets pass. Hosted checks and browser results are recorded
+on the milestone PR.
+
 ## Physical assembly authoring milestone
 
 Branch `feat/bench-assembly` builds on the inspection milestone. Every proposed
