@@ -118,6 +118,13 @@
       "commit": "bc85af5aa4802cb85626c188cbc632343e3dae14",
       "version": "1.12.6",
       "license": "BSD-2-Clause"
+    },
+    {
+      "name": "rfid",
+      "repo": "https://github.com/miguelbalboa/rfid",
+      "commit": "8894b3aed318314345b075b4d436fee18b2b185b",
+      "version": "1.4.12",
+      "license": "Unlicense"
     }
   ]
 }

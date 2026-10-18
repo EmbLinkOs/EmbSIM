@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "antenna",
+  "description": "TxControlReg 83h turns the antenna drivers TX1 and TX2 on (the reset leaves them off).",
+  "policy": "functional",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,0,2,1,3,0,2,1,3,0,2,0,2,0,2,0,1,3,0,2,0,2,0,2,0,2,0,2,1,3,1,3,0,0,4,4",
+          "period": "1u",
+          "idle": 4
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mfrc522"
+      }
+    ],
+    "nets": {
+      "MOSI": [
+        "PG.OUT0",
+        "DUT.MOSI"
+      ],
+      "SCK": [
+        "PG.OUT1",
+        "DUT.SCK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.SDA"
+      ],
+      "MISO": [
+        "DUT.MISO"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.antenna": {
+      "at": "1ms",
+      "equals": true
+    }
+  }
+}

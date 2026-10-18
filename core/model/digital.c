@@ -574,12 +574,13 @@ static const esk_model_ops probe_ops = { "logic_probe", sizeof(probe_state), pro
 /* ---- virtual terminal: RX (in), TX (out); 8N1 at `baud` ------------------------ */
 
 #define VT_BUF 4096
+#define VT_RX_BUF 32768 /* the scrollback: the oldest half goes when it fills */
 typedef struct vt_state {
     esk_pin *rx, *tx;
     es_time_t bit_ps;
     int rx_busy, rx_bits;
     unsigned rx_shift;
-    char rx_text[VT_BUF];
+    char rx_text[VT_RX_BUF];
     size_t rx_len;
     unsigned char tx_queue[VT_BUF];
     size_t tx_head, tx_len;
@@ -616,8 +617,13 @@ static void vt_time(esk_comp *c, uint32_t token)
             esk_comp_wake_at(c, esk_comp_now(c) + s->bit_ps, 0);
         } else {
             /* stop bit */
-            if (s->rx_len + 1 < VT_BUF)
-                s->rx_text[s->rx_len++] = (char)s->rx_shift;
+            if (s->rx_len + 1 >= VT_RX_BUF) {
+                /* a terminal scrolls on: keep the newer half */
+                size_t keep = VT_RX_BUF / 2;
+                memmove(s->rx_text, s->rx_text + (s->rx_len - keep), keep);
+                s->rx_len = keep;
+            }
+            s->rx_text[s->rx_len++] = (char)s->rx_shift;
             s->rx_text[s->rx_len] = 0;
             s->rx_bytes++;
             s->rx_busy = 0;

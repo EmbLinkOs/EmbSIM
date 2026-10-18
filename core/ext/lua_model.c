@@ -595,6 +595,7 @@ struct i2c_slave {
     int sent;              /* READ: bits the master has clocked in; 9 after its ACK clock */
     int master_ack;
     int addressed;         /* since the address matched, until a STOP */
+    int quiet;             /* the bus pins' edges are not passed to on_input */
     unsigned out;
     esk_logic scl_last, sda_last;
 };
@@ -603,6 +604,7 @@ struct spi_slave {
     esk_pin *sck, *mosi, *miso, *cs;
     int handlers;
     int cpol, cpha;
+    int quiet;             /* the bus pins' edges are not passed to on_input */
     int selected;
     int bits, obit;
     unsigned in, out, next;
@@ -835,6 +837,18 @@ static esk_pin *opt_pin(lua_State *L, esk_comp *c, int opts, const char *key, co
     return p;
 }
 
+/* opts.edges = false: the bus pins' edges stay with the decoder, not on_input */
+static int opt_quiet(lua_State *L, int opts)
+{
+    int quiet = 0;
+    if (opts) {
+        if (lua_getfield(L, opts, "edges") == LUA_TBOOLEAN)
+            quiet = !lua_toboolean(L, -1);
+        lua_pop(L, 1);
+    }
+    return quiet;
+}
+
 static void free_buses(lua_inst *s, esk_alloc *a)
 {
     if (s->i2c) {
@@ -875,6 +889,7 @@ static int api_i2c_slave(lua_State *L)
     b->sda = sda;
     b->scl = scl;
     b->addr = (unsigned)addr;
+    b->quiet = opt_quiet(L, opts);
     if (opts && lua_getfield(L, opts, "address_pins") == LUA_TTABLE) {
         int i;
         for (i = 0; i < 3; i++) {
@@ -939,6 +954,7 @@ static int api_spi_slave(lua_State *L)
     b->cs = cs;
     b->cpol = (int)(mode >> 1);
     b->cpha = (int)(mode & 1);
+    b->quiet = opt_quiet(L, opts);
     b->cs_last = esk_pin_level(cs);
     b->sck_last = esk_pin_level(sck);
     b->obit = -1;
@@ -1229,10 +1245,16 @@ static void lua_reset(esk_comp *c)
 static void lua_on_input(esk_comp *c, esk_pin *p)
 {
     lua_inst *s = (lua_inst *)c->state;
-    if (s->i2c && !s->dead && (p == s->i2c->sda || p == s->i2c->scl))
+    if (s->i2c && !s->dead && (p == s->i2c->sda || p == s->i2c->scl)) {
         i2c_edge(c, s->i2c, p);
-    if (s->spi && !s->dead && (p == s->spi->sck || p == s->spi->cs || p == s->spi->mosi))
+        if (s->i2c->quiet)
+            return;
+    }
+    if (s->spi && !s->dead && (p == s->spi->sck || p == s->spi->cs || p == s->spi->mosi)) {
         spi_edge(c, s->spi, p);
+        if (s->spi->quiet)
+            return;
+    }
     if (!begin(s, "on_input"))
         return;
     lua_pushstring(s->h->L, p->name);

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-antenna",
+  "description": "The antenna drivers off (the reset state): the REQA goes nowhere and the card stays idle.",
+  "policy": "functional",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,0,2,0,2,0,2,0,2,0,2,1,3,0,2,0,0,2,0,2,0,2,0,2,1,3,1,3,0,2,0,2,0,0,4,0,0,2,0,2,0,2,1,3,0,2,0,2,1,3,0,2,0,0,2,0,2,1,3,0,2,0,2,1,3,1,3,0,2,0,0,4,0,0,2,0,2,0,2,1,3,1,3,0,2,1,3,0,2,0,1,3,0,2,0,2,0,2,0,2,1,3,1,3,1,3,0,0,4,4",
+          "period": "1u",
+          "idle": 4
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mfrc522"
+      }
+    ],
+    "nets": {
+      "MOSI": [
+        "PG.OUT0",
+        "DUT.MOSI"
+      ],
+      "SCK": [
+        "PG.OUT1",
+        "DUT.SCK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.SDA"
+      ],
+      "MISO": [
+        "DUT.MISO"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.card_state": {
+      "at": "1500us",
+      "equals": "idle"
+    },
+    "output:DUT.antenna": {
+      "at": "1500us",
+      "equals": false
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "card_present",
+      "value": true
+    }
+  ]
+}

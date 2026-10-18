@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "DumpInfo",
+  "until": "9s",
+  "inputs": [
+    {
+      "at": "200ms",
+      "target": "RFID",
+      "input": "card_present",
+      "value": true
+    }
+  ],
+  "assertions": [
+    {
+      "id": "reader",
+      "at": "9s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Firmware Version: 0x92 = v2.0\r\nScan PICC to see UID, SAK, type, and data blocks...\r\nCard UID: DE AD BE EF\r\nCard SAK: 08\r\nPICC type: MIFARE 1KB\r\n"
+      }
+    },
+    {
+      "id": "trailer-15",
+      "at": "9s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "  15     63   00 00 00 00  00 00 FF 07  80 69 FF FF  FF FF FF FF  [ 0 0 1 ] "
+      }
+    },
+    {
+      "id": "manufacturer-block",
+      "at": "9s",
+      "probe": "terminal",
+      "expect": {
+        "contains": "          0   DE AD BE EF  22 08 04 00  62 63 64 65  66 67 68 69  [ 0 0 0 ] "
+      }
+    },
+    {
+      "id": "halted",
+      "at": "9s",
+      "probe": "card",
+      "expect": {
+        "equals": "halt"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ],
+  "description": "The MFRC522 library's DumpInfo, unmodified: the library soft-resets the reader, sets its timer and turns the antenna on; held to it at 200 ms, the card answers REQA, anticollision and SELECT (UID DE AD BE EF, SAK 08: MIFARE 1KB), and the library authenticates every sector with the default key A and reads its four blocks: trailers show key A as zeros, the transport access bits FF 07 80 69 and key B; block 0 the UID, its BCC 22h, the SAK and ATQA. The card is halted after the dump, so it is dumped once."
+}

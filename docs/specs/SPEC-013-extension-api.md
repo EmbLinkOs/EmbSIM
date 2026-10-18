@@ -105,7 +105,7 @@ sensors whose electrical side is a composite.
   releasing MISO while not selected. Handlers: `select(ctx) -> first byte`,
   `transfer(ctx, byte) -> next byte`, `deselect(ctx)`. Pins default to
   `SCK`/`SCLK`/`CLK`, `MOSI`/`SDI`/`DIN`/`SI`, `MISO`/`SDO`/`DOUT`/`SO` (optional)
-  and `CS`/`SS`/`CE`/`NSS`; `options` may name them (`sck`, `mosi`, `miso`, `cs`).
+  and `CS`/`SS`/`CE`/`NSS`; `options` may name them (`sck`, `mosi`, `miso`, `cs`). For both buses `edges = false` keeps the bus pins' edges with the decoder instead of also calling `M.on_input` for them (a model that watches only its other pins avoids a call per clock edge).
   A model registers its devices in `M.create`; each reset registers them
   again.
 - **Analog.** `ctx.analog` reads the analog side alone:

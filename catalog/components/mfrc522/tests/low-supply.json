@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "low-supply",
+  "description": "VCC at 2.0 V (below 2.5 V): the chip does not take the antenna command.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,0,2,1,3,0,2,1,3,0,2,0,2,0,2,0,1,3,0,2,0,2,0,2,0,2,0,2,1,3,1,3,0,0,4,4",
+          "period": "1u",
+          "idle": 4
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mfrc522"
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "MOSI": [
+        "PG.OUT0",
+        "DUT.MOSI"
+      ],
+      "SCK": [
+        "PG.OUT1",
+        "DUT.SCK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.SDA"
+      ],
+      "MISO": [
+        "DUT.MISO"
+      ],
+      "VLOW": [
+        "V.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.antenna": {
+      "at": "1ms",
+      "equals": false
+    }
+  }
+}

@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/mfrc522",
+  "version": "1.0.0",
+  "name": "MFRC522 RFID reader with a MIFARE Classic card",
+  "category": "sensors",
+  "description": "NXP MFRC522 13.56 MHz reader on the common RC522 module, on SPI, with a MIFARE Classic 1K card that can be held to its antenna: REQA, anticollision and SELECT of the card's UID, authentication with its keys and reading and writing its 64 blocks. The card's presence is an interactive input.",
+  "keywords": [
+    "rfid",
+    "nfc",
+    "mfrc522",
+    "rc522",
+    "mifare",
+    "card",
+    "reader",
+    "spi",
+    "13.56 MHz"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "SDA",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "SPI chip select (NSS), active low",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCK",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "SPI clock",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "MOSI",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "SPI data in",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "MISO",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "tristate"
+      },
+      "doc": "SPI data out (released while not selected)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "IRQ",
+      "number": 5,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Interrupt request (ComIEnReg, IRqInv)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 6,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "RST",
+      "number": 7,
+      "model": {
+        "kind": "digital_io"
+      },
+      "doc": "NRSTPD: low powers down, the rising edge resets (pulled up on the module)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "3.3 V supply (2.5 to 3.6 V)"
+    }
+  ],
+  "params": {
+    "card_uid": {
+      "type": "string",
+      "default": "DE AD BE EF",
+      "doc": "The card's 4-byte UID, hexadecimal"
+    }
+  },
+  "inputs": [
+    {
+      "name": "card_present",
+      "type": "boolean",
+      "default": false,
+      "doc": "The card is held to the antenna"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "antenna",
+      "type": "boolean"
+    },
+    {
+      "name": "card_state",
+      "type": "string",
+      "doc": "idle, ready, active, auth or halt"
+    },
+    {
+      "name": "crypto",
+      "type": "boolean",
+      "doc": "MFCrypto1On"
+    },
+    {
+      "name": "block1",
+      "type": "string",
+      "doc": "The card's block 1, hexadecimal"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "SPI mode 0 register access with FIFO bursts; NRSTPD power-down and hard reset; CommandReg's commands with SoftReset's PowerDown, the interrupt and error registers, the 64-byte FIFO, bit framing, the CRC coprocessor (CRC_A from ModeReg's preset), the timer with TAuto, the antenna drivers, VersionReg 0x92 and the IRQ pin; frames at 106 kbit/s answered after the frame delay time; a MIFARE Classic 1K card: REQA/WUPA, anticollision and SELECT of a 4-byte UID (ATQA 0004h, SAK 08h), HLTA, MFAuthent against the sector trailer (key B unusable while readable), READ and WRITE with ACK/NAK, trailers' key A read as zeros; silent below 2.5 V.",
+      "omissions": [
+        "the Crypto1 cipher on the air (the host sees plaintext after MFAuthent, as through a real MFRC522)",
+        "value blocks' increment, decrement, restore and transfer",
+        "other cards (Ultralight, 7-byte UIDs) and several cards with their collisions",
+        "the antenna's range and the field powering the card",
+        "the I2C and UART host interfaces",
+        "GenerateRandomID's bytes",
+        "damage from 5 V on VCC (the module wants 3.3 V)",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the Crypto1 cipher on the air (the host sees plaintext after MFAuthent, as through a real MFRC522)",
+        "value blocks' increment, decrement, restore and transfer",
+        "other cards (Ultralight, 7-byte UIDs) and several cards with their collisions",
+        "the antenna's range and the field powering the card",
+        "the I2C and UART host interfaces",
+        "GenerateRandomID's bytes",
+        "damage from 5 V on VCC (the module wants 3.3 V)",
+        "supply current"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; VCC's voltage gates the chip; the behaviour is the Lua model's.",
+      "omissions": [
+        "the Crypto1 cipher on the air (the host sees plaintext after MFAuthent, as through a real MFRC522)",
+        "value blocks' increment, decrement, restore and transfer",
+        "other cards (Ultralight, 7-byte UIDs) and several cards with their collisions",
+        "the antenna's range and the field powering the card",
+        "the I2C and UART host interfaces",
+        "GenerateRandomID's bytes",
+        "damage from 5 V on VCC (the module wants 3.3 V)",
+        "supply current"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "NXP MFRC522 Standard performance MIFARE and NTAG frontend, product data sheet Rev 3.9"
+      },
+      {
+        "title": "ISO/IEC 14443-3, Identification cards: proximity cards, initialization and anticollision"
+      },
+      {
+        "title": "NXP MF1S50yyX/V1 MIFARE Classic EV1 1K, product data sheet"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 90,
+    "pins": {
+      "SDA": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCK": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "MOSI": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "MISO": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "IRQ": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "RST": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "VCC": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 40,
+        "y": 90,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -553,6 +553,16 @@ versions follow semantic versioning. There is no release yet.
   rate; a checksum output of the visible image. Adafruit's
   `ssd1306_128x64_i2c` runs unmodified, 5/5; display-showcase's OLED
   pattern now sends A1/C8 so its text shows upright.
+- The MFRC522 RFID reader with a MIFARE Classic 1K card
+  (`emblink/mfrc522`), from NXP's data sheets and ISO 14443-3: SPI
+  register access with FIFO bursts, NRSTPD, the command set (Transceive,
+  CalcCRC, MFAuthent, SoftReset...), the interrupt, error and timer
+  registers, the CRC coprocessor; frames at 106 kbit/s answered after the
+  frame delay time; the card's REQA/WUPA, anticollision, SELECT, HLTA,
+  authentication against its sector trailers and READ/WRITE. The
+  library's `DumpInfo` runs unmodified; four fixtures. `ctx.bus` helpers
+  take `edges = false` to keep a bus's clock edges from `on_input`
+  (SPEC-013).
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the
@@ -601,6 +611,9 @@ versions follow semantic versioning. There is no release yet.
   its kernel semantics and visual direction are retained in the baseline.
 
 ### Fixed
+- The virtual terminal kept only the first 4 KiB it received and
+  silently dropped the rest; it now keeps a 32 KiB scrollback, the oldest
+  half going when it fills, as a terminal scrolls.
 - A push button's or toggle switch's `bounce: true` now bounces: the
   switch primitive took only `{count, interval}`, so the components'
   boolean with `bounce_ms` did nothing. It now gives six transitions over
