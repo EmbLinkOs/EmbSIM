@@ -76,7 +76,8 @@
       "max": 500,
       "unit": "cm",
       "default": 100,
-      "doc": "Distance to the target in front"
+      "doc": "Distance to the target in front; read from the world's distance while not set",
+      "world": "distance"
     },
     {
       "name": "temperature",
@@ -85,7 +86,8 @@
       "max": 85,
       "unit": "degC",
       "default": 20,
-      "doc": "Air temperature, which sets the speed of sound"
+      "doc": "Air temperature, which sets the speed of sound; read from the world's temperature while not set",
+      "world": "temperature"
     }
   ],
   "outputs": [
@@ -174,5 +176,19 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "bench": {
+    "sense": {
+      "at": [
+        0,
+        0,
+        12
+      ],
+      "dir": [
+        0,
+        -1,
+        0
+      ]
+    }
+  }
 }

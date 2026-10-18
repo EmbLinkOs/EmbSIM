@@ -23,7 +23,11 @@ import type {
   Snapshot,
   Topology,
   WaveformSamples,
+  WorldBody,
+  WorldField,
+  WorldState,
 } from '../../types';
+import { WORLD_FIELDS } from '../../types';
 import type { ProjectEdit } from '../../methods';
 import { demoProject } from './project';
 
@@ -263,6 +267,8 @@ export class MockSession {
     if (t < this.now) throw new EngineError(-32022, `input at ${t} ps is in the past`);
     if (target === 'SW1' && input === 'pressed') {
       this.setPressed(t, Boolean(value));
+    } else if (target === 'world' || target.startsWith('world.')) {
+      this.setWorld(target, input, value);
     } else if (!this.project.components.some((c) => c.id === target)) {
       throw new EngineError(-32002, `no component ${target}`);
     }
@@ -270,6 +276,33 @@ export class MockSession {
     this.notify('record.input', { at_ps: t.toString(), seq, target, input });
     this.emitObserve(true);
     return { at_ps: t.toString(), seq };
+  }
+
+  // --- the world (ADR-026) ------------------------------------------------------
+
+  private world: WorldState = initialWorld();
+
+  resetWorld(): void {
+    this.world = initialWorld(this.project.world);
+  }
+
+  private setWorld(target: string, input: string, value: unknown): void {
+    if (target === 'world') {
+      const f = this.world.fields[input as WorldField];
+      if (!f) throw new EngineError(-32002, `the world has no field ${input}`);
+      if (value === null) f.set = false;
+      else if (typeof value === 'number') Object.assign(f, { value, set: true });
+      else throw new EngineError(-32602, 'a world field takes a number');
+      return;
+    }
+    if (input !== 'body') throw new EngineError(-32002, `a world body's input is body`);
+    const id = target.slice('world.'.length);
+    this.world.bodies = this.world.bodies.filter((b) => b.id !== id);
+    if (value && typeof value === 'object') this.world.bodies.push({ ...(value as WorldBody), id });
+  }
+
+  getWorld(): WorldState {
+    return structuredClone(this.world);
   }
 
   // --- observation -----------------------------------------------------------
@@ -499,7 +532,10 @@ export class MockSession {
     if (!staged) throw new EngineError(-32002, `no transaction ${tx}`);
     this.txs.delete(tx);
     const diagnostics = validateProject(staged);
+    const worldChanged = JSON.stringify(this.project.world ?? {}) !== JSON.stringify(staged.world ?? {});
     this.project = staged;
+    // the project's room as it now reads, applied live (the engine records it as inputs)
+    if (worldChanged) this.resetWorld();
     this.notify('project.changed', { tx, summary: `${staged.components.length} components, ${Object.keys(staged.nets).length} nets` });
     this.emitObserve(true);
     return { applied: 1, diagnostics, islands: 1 };
@@ -512,6 +548,7 @@ export class MockSession {
   loadProject(json?: Project): { name: string; diagnostics: DiagnosticRecord[] } {
     this.pause('stop');
     this.project = json ? structuredClone(json) : demoProject();
+    this.resetWorld();
     this.probes.clear();
     for (const p of this.project.probes ?? []) this.probes.set(p.id, { probe: p.id, target: p.target, kind: p.kind, rate_hz: p.rate_hz });
     this.streams.clear();
@@ -606,6 +643,8 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
       p.nets[net] = p.nets[net]!.filter((pin) => pin.split('.')[0] !== id);
       if (p.nets[net]!.length === 0) delete p.nets[net];
     }
+  } else if ('set_world' in edit) {
+    p.world = { ...(p.world ?? {}), ...structuredClone(edit.set_world) };
   } else if ('set_layout' in edit) {
     const e = edit.set_layout;
     if (e.id) {
@@ -622,6 +661,11 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
     if (e.groups) p.layout.groups = structuredClone(e.groups);
     if (e.bench) p.layout.bench = structuredClone(e.bench);
   }
+}
+
+function initialWorld(spec?: Project['world']): WorldState {
+  const fields = Object.fromEntries(WORLD_FIELDS.map((f) => [f.name, { value: spec?.fields?.[f.name] ?? f.value, unit: f.unit, set: spec?.fields?.[f.name] !== undefined }])) as WorldState['fields'];
+  return { fields, bodies: structuredClone(spec?.bodies ?? []) };
 }
 
 /** A removed instance leaves the bench: its place and the jumpers to it (SPEC-007 §2). */

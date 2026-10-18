@@ -155,6 +155,11 @@ void esk_session_notify(es_session *s, const char *method, esk_json *params); /*
 es_status esk_session_run_slice(es_session *s);  /* one pacing slice while running */
 void esk_session_emit_observations(es_session *s, int force);
 es_status esk_session_do_reset(es_session *s);
+/* the world from the project's `world` and the parts' places (ADR-026) */
+void esk_session_world_load(es_session *s);
+/* after an edit that did not restart: the parts' places, and the project's
+ * world as it now reads, applied as inputs at the present time */
+void esk_session_world_sync(es_session *s, const esk_json *before);
 es_status esk_session_do_advance(es_session *s, es_time_t until);
 /* rpc.c */
 es_status esk_rpc_dispatch(es_session *s, const esk_json *req, esk_json **response);

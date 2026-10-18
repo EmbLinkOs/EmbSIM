@@ -1,0 +1,84 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Junior Deogracias
+//
+// The world's bodies on the bench and the beams distance sensors cast at
+// them (ADR-026), computed as the engine computes them (core/engine/world.c):
+// a beam leaves the part's bench.sense.at, turned with the part, its height
+// measured from the desk, and stops at the nearest body's face.
+
+import type { WorldBody } from '@embsim/protocol';
+import type { PlacedPart } from './layout';
+import type { Point3 } from './Bench3D';
+
+/** the distance (mm) along the unit vector d from o to the nearest body, or -1 */
+export function rayDistance(bodies: WorldBody[], o: Point3, d: Point3): number {
+  let best = -1;
+  for (const b of bodies) {
+    const t = b.shape === 'sphere' ? raySphere(b, o, d) : rayBox(b, o, d);
+    if (t >= 0 && (best < 0 || t < best)) best = t;
+  }
+  return best;
+}
+
+function rayBox(b: WorldBody, o: Point3, d: Point3): number {
+  let t0 = 0;
+  let t1 = Infinity;
+  for (let k = 0; k < 3; k++) {
+    const lo = b.at[k]! - b.size[k]! / 2;
+    const hi = b.at[k]! + b.size[k]! / 2;
+    if (Math.abs(d[k]!) < 1e-12) {
+      if (o[k]! < lo || o[k]! > hi) return -1;
+    } else {
+      let a = (lo - o[k]!) / d[k]!;
+      let c = (hi - o[k]!) / d[k]!;
+      if (a > c) [a, c] = [c, a];
+      t0 = Math.max(t0, a);
+      t1 = Math.min(t1, c);
+      if (t0 > t1) return -1;
+    }
+  }
+  return t0;
+}
+
+function raySphere(b: WorldBody, o: Point3, d: Point3): number {
+  const r = b.size[0] / 2;
+  const oc = [o[0] - b.at[0], o[1] - b.at[1], o[2] - b.at[2]];
+  const bq = oc[0]! * d[0] + oc[1]! * d[1] + oc[2]! * d[2];
+  const c = oc[0]! ** 2 + oc[1]! ** 2 + oc[2]! ** 2 - r * r;
+  const disc = bq * bq - c;
+  if (disc < 0) return -1;
+  let t = -bq - Math.sqrt(disc);
+  if (t < 0) t = -bq + Math.sqrt(disc);
+  return t < 0 ? -1 : c <= 0 ? 0 : t;
+}
+
+export interface Beam {
+  part: string;
+  /** bench coordinates, mm (x, y, z up) */
+  from: Point3;
+  to: Point3;
+  /** the distance to what it meets, mm; -1 when it meets nothing within `range` */
+  distance: number;
+}
+
+/** the beam of each sensor on the bench that has one */
+export function beams(parts: PlacedPart[], bodies: WorldBody[], range = 4000): Beam[] {
+  const out: Beam[] = [];
+  for (const p of parts) {
+    const sense = p.shape.sense;
+    if (!sense) continue;
+    const at = sense.at ?? [0, 0, 10];
+    const dir = sense.dir ?? [0, -1, 0];
+    const r = (p.place.rotation * Math.PI) / 180;
+    const c = Math.cos(r);
+    const s = Math.sin(r);
+    const o: Point3 = [p.place.x + at[0] * c - at[1] * s, p.place.y + at[0] * s + at[1] * c, at[2]];
+    let d: Point3 = [dir[0] * c - dir[1] * s, dir[0] * s + dir[1] * c, dir[2]];
+    const n = Math.hypot(...d) || 1;
+    d = [d[0] / n, d[1] / n, d[2] / n];
+    const t = rayDistance(bodies, o, d);
+    const len = t >= 0 && t <= range ? t : range;
+    out.push({ part: p.id, from: o, to: [o[0] + d[0] * len, o[1] + d[1] * len, o[2] + d[2] * len], distance: t >= 0 && t <= range ? t : -1 });
+  }
+  return out;
+}

@@ -14,6 +14,7 @@ import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
 import { BoardPanel } from '../BoardPanel';
+import { WorldPanel } from '../WorldPanel';
 import { InspectorPanel } from './InspectorPanel';
 import { LibraryPanel } from './LibraryPanel';
 import { ObjectsPanel } from './ObjectsPanel';
@@ -41,7 +42,7 @@ export function DesignPerspective() {
   const [context, setContext] = useState<{ source: typeof project; value: CanvasContext } | null>(null);
   const closeContext = useCallback(() => setContext(null), []);
   const [rename, setRename] = useState<{ net: string; value: string } | null>(null);
-  const [bottomTab, setBottomTab] = useState<'nets' | 'studio' | 'checks' | 'objects'>('nets');
+  const [bottomTab, setBottomTab] = useState<'nets' | 'studio' | 'checks' | 'objects' | 'world'>('nets');
   const [preview, setPreview] = useState<LayoutPreview | null>(null);
   const [display, setDisplay] = useState<CanvasDisplay>({ airwires: true, minimap: true, smartWires: true, autoArrange: false, guides: true, focusMode: false });
   const appearance = useCanvasAppearance((s) => s.appearance);
@@ -326,13 +327,13 @@ export function DesignPerspective() {
     { id: 'canvas', title: designView === 'bench' && !insideOf ? 'Bench' : 'Schematic', content: <div className="wb-schematic-workspace">{canvas}{previewProject && <div className="wb-schematic-preview-banner"><Badge tone="accent">Layout preview</Badge><span>Review in Layout Studio · not applied</span><Button size="sm" variant="ghost" onClick={() => setPreview(null)}>Discard</Button></div>}</div>, actions: canvasActions, flush: true, weight: 3, minSize: 200 },
     {
       id: 'bottom',
-      title: bottomTab === 'objects' ? 'Objects' : bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : 'Checks',
+      title: bottomTab === 'objects' ? 'Objects' : bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : bottomTab === 'world' ? 'World' : 'Checks',
       flush: true,
       weight: 1,
       collapsible: true,
       minSize: bottomTab === 'checks' || bottomTab === 'objects' ? 260 : 120,
       content: (
-        <Tabs<'nets' | 'studio' | 'checks' | 'objects'>
+        <Tabs<'nets' | 'studio' | 'checks' | 'objects' | 'world'>
           className={bottomTab === 'checks' ? 'wb-design-details--checks' : undefined}
           label="Design details"
           value={bottomTab}
@@ -341,6 +342,7 @@ export function DesignPerspective() {
             { value: 'objects', label: 'Objects', content: <ObjectsPanel writable={!previewProject && !insideOf} onFocus={(ids) => { setPreview(null); if (previewProject) requestAnimationFrame(() => canvasRef.current?.focusComponents(ids)); else canvasRef.current?.focusComponents(ids); }} /> },
             { value: 'checks', label: `Checks${checks.pending ? ' …' : ` ${checks.issues.length}`}`, content: <SchematicChecksPanel {...checks} selected={selectedIssue} onFocus={focusIssue} onRoute={routeNet} onRefresh={checks.refresh} writable={editable && !store.busy && !previewProject && !insideOf} /> },
             { value: 'nets', label: 'Nets', content: <NetsPanel live={running} /> },
+            { value: 'world', label: 'World', content: <WorldPanel /> },
             { value: 'studio', label: 'Layout Studio', content: <LayoutStudio preview={preview} onPreview={setPreview} onApplied={() => canvasRef.current?.zoomToFit()} /> },
           ]}
         />

@@ -97,6 +97,8 @@ export function diffProject(before: Project, after: Project): ProjectEdit[] {
   if (wiresChanged || labelsChanged || busesChanged) {
     edits.push({ set_layout: { wires: after.layout?.wires ?? [], labels: after.layout?.labels ?? [], buses: after.layout?.buses ?? [] } });
   }
+  // The world (ADR-026): its fields and bodies, applied live.
+  if (JSON.stringify(before.world ?? {}) !== JSON.stringify(after.world ?? {})) edits.push({ set_world: { fields: after.world?.fields ?? {}, bodies: after.world?.bodies ?? [] } });
   // The bench (SPEC-007 §2): the places, jumpers and notes, as one object.
   if (JSON.stringify(before.layout?.bench ?? {}) !== JSON.stringify(after.layout?.bench ?? {})) edits.push({ set_layout: { bench: after.layout?.bench ?? {} } });
   return edits;
