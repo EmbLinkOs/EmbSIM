@@ -83,6 +83,29 @@ void esk_host_sock_close(esk_host_sock s);
 /* The port a listening (or connected) socket is bound to. */
 es_status esk_host_sock_local_port(esk_host_sock s, int *port);
 
+/* ---- pseudo-terminals (a board's serial port on the host, ADR-031) ------ */
+
+typedef struct esk_host_pty esk_host_pty;
+/* Open a pseudo-terminal: the port a program on the host opens, at
+ * esk_host_pty_path (/dev/pts/3, /dev/ttys004). Its line starts as a USB CDC
+ * port's does on Linux: 9600 baud, 8N1, canonical with echo, until a program
+ * sets its own. ES_EUNSUPPORTED where the host has none (Windows, Q16). */
+es_status esk_host_pty_open(esk_alloc *a, esk_host_pty **out);
+const char *esk_host_pty_path(const esk_host_pty *p);
+/* 1 while a program has the port open, 0 when none has */
+int esk_host_pty_peer(esk_host_pty *p);
+/* The baud rate the program set on the line (0 when none has it open). */
+uint32_t esk_host_pty_baud(esk_host_pty *p);
+/* What the program wrote, without waiting: the byte count, 0 for none, -1
+ * when the port failed. */
+long esk_host_pty_read(esk_host_pty *p, void *buf, size_t cap);
+/* Write to the program without waiting: the bytes taken (fewer when its
+ * buffer is full), -1 when the port failed. */
+long esk_host_pty_write(esk_host_pty *p, const void *buf, size_t len);
+/* Drop what waits in the port in both directions, as a closed port does. */
+void esk_host_pty_flush(esk_host_pty *p);
+void esk_host_pty_close(esk_host_pty *p);
+
 /* ---- processes ----------------------------------------------------------- */
 
 /* Open `url` in the user's browser (xdg-open / open / ShellExecute). Best

@@ -40,6 +40,7 @@ static void usage(void)
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
+          "        [--serial B1]...      a board's serial port on the host (a pseudo-terminal)\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
           "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
@@ -719,14 +720,18 @@ static void serve_idle(void *ctx)
 static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
 {
     const char *project = NULL, *host = "127.0.0.1", *ui = NULL, *policy = NULL, *library = NULL;
-    const char *origins[8];
-    int port = 8765, open = 0, i, n_origins = 0;
+    const char *origins[8], *serials[4];
+    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0;
     es_session *s;
     es_status st;
     for (i = 0; i < argc; i++) {
         const char *a = argv[i];
         int more = i + 1 < argc;
         if (!strcmp(a, "--port") && more) port = atoi(argv[++i]);
+        else if (!strcmp(a, "--serial") && more) {
+            if (n_serials == (int)ES_COUNTOF(serials)) { fprintf(stderr, "embsim: at most 4 --serial\n"); return 2; }
+            serials[n_serials++] = argv[++i];
+        }
         else if (!strcmp(a, "--allow-origin") && more) {
             if (n_origins == (int)ES_COUNTOF(origins)) { fprintf(stderr, "embsim: at most 8 --allow-origin\n"); return 2; }
             origins[n_origins++] = argv[++i];
@@ -748,6 +753,21 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
     }
     for (i = 0; i < n_origins; i++)
         es_serve_allow_origin(s, origins[i]);
+    /* a board's console (or a terminal part) as a serial port on the host (ADR-031) */
+    for (i = 0; i < n_serials; i++) {
+        const struct esk_host_port *hp;
+        char why[160];
+        esk_json *o;
+        why[0] = 0;
+        if (esk_session_port_open(s, serials[i], &hp, why, sizeof why) != ES_OK) {
+            fprintf(stderr, "embsim: --serial %s: %s\n", serials[i], why[0] ? why : "cannot open");
+            es_session_destroy(s);
+            return 2;
+        }
+        o = esk_session_port_json(s, hp);
+        fprintf(stderr, "embsim: %s's serial port is %s\n", serials[i], esk_json_get_str(o, "path", "?"));
+        esk_json_free(s->a, o);
+    }
     esk_protocol_set_idle(serve_idle, s);
     if (sidecar) {
         opt_json = 1; /* keep stderr quiet of human diagnostics; they go over the protocol */

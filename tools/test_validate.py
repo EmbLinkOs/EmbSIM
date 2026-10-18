@@ -549,6 +549,15 @@ class BoardTests(Base):
         doc["bench"]["features"][0]["output"] = "NOPE.luminance"
         self.assertCode(self.check(self.write_board(doc)), "catalog.not_found")
 
+    def test_bridge_dtr_reset_holds_a_board_switch(self):
+        doc = self.board()
+        btn = next((c["id"] for c in doc["components"] if "button" in c["component"] or "switch" in c["component"]), None)
+        self.assertIsNotNone(btn)
+        doc["console"]["bridge"] = {"part": "CH340G", "dtr_reset": {"component": btn, "ms": 0.7}}
+        self.assertClean(self.check(self.write_board(doc)))
+        doc["console"]["bridge"]["dtr_reset"]["component"] = "NOPE"
+        self.assertCode(self.check(self.write_board(doc)), "catalog.not_found")
+
     def test_todo_refused(self):
         doc = self.board()
         doc["components"][0]["todo"] = True

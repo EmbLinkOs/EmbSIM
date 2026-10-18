@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
-/* wdt.c -- the ATmega328P's watchdog timer (datasheet 10.9), over the
- * register file.
+/* wdt.c -- the ATmega328P's watchdog timer (datasheet 10.9) and its reset
+ * flags (MCUSR, 11.9.1), over the register file.
  *
  *   - it counts the 128 kHz watchdog oscillator: a time-out after
  *     2048 << WDP of its cycles (WDP3:0 from 0, 16 ms, to 9, 8 s; 10 to 15
@@ -17,6 +17,8 @@
  *     at any time; clearing it or changing WDP takes the timed sequence,
  *     WDCE and WDE written 1 together and then, within four cycles, the
  *     new WDE and WDP with WDCE 0. WDE stays set while WDRF is;
+ *   - MCUSR records the reset's cause: a power-on reset leaves PORF alone,
+ *     a reset from the RESET pin sets EXTRF and keeps the other flags;
  *   - a watchdog reset keeps MCUSR's flags and sets WDRF in it, and the
  *     watchdog comes out of it running with WDE set and WDP 0 (16 ms): a
  *     program that does not clear WDRF and WDE early resets again.
@@ -34,6 +36,7 @@
 #define WDIE 0x40u
 #define WDIF 0x80u
 #define WDRF 0x08u /* MCUSR */
+#define EXTRF 0x02u
 #define WD_HZ 128000u
 
 struct avr_wdt {
@@ -44,6 +47,7 @@ struct avr_wdt {
     int running;
     int wd_reset; /* the coming reset is this watchdog's */
     u8 kept;      /* MCUSR as the watchdog reset the part */
+    u8 pin_kept;  /* MCUSR as the reset pin went low */
     u64 window;   /* the cycle the timed sequence's window closes, 0 when shut */
     u64 count;    /* core cycles since the count started */
     u64 since;    /* the cycle it started */
@@ -201,6 +205,19 @@ static void wdt_ack(void *ctx, int vec)
     esk_rf_hw(w->csr, c);
 }
 
+/* an external reset sets EXTRF and keeps MCUSR's other flags; only a
+ * power-on reset clears them */
+static void wdt_pin_reset(struct esk_mach *s, int after)
+{
+    struct avr_wdt *w = (struct avr_wdt *)s->pin_reset_ctx;
+    if (!w->mcusr)
+        return;
+    if (!after)
+        w->pin_kept = (u8)w->mcusr->value;
+    else
+        esk_rf_hw(w->mcusr, w->pin_kept | EXTRF);
+}
+
 const struct esk_dev_ops esk_avr_wdt_ops = {
     "avr-wdt", wdt_read, wdt_write, wdt_reset, wdt_tick, wdt_next,
 };
@@ -225,5 +242,7 @@ void *esk_avr_wdt_create(struct esk_mach *s, struct esk_rf_periph *p)
     if (c->vec > 0)
         esk_avr_irq_source(s, c->vec, wdt_pending, wdt_ack, c);
     esk_avr_wdr_hook(s, wdt_wdr, c);
+    s->pin_reset = wdt_pin_reset;
+    s->pin_reset_ctx = c;
     return c;
 }
