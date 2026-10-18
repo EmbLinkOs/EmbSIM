@@ -617,6 +617,12 @@ versions follow semantic versioning. There is no release yet.
   power-down by PD_SCK held high, the settling time, saturation, the
   ratiometric bridge with its zero balance, the input noise; eight
   fixtures. The HX711 library's `HX711_full_example` runs unmodified, 4/4.
+- The Board view is a bench: parts in rows above the board, labelled, the
+  project's nets drawn as wires between the artworks' pins (`pin-<name>`
+  elements; ground black, supplies red, signals in colours), routed square
+  and around the parts they would cross (SPEC-011 §3, SPEC-005 §8). The
+  toolbar's clock shows the real-time rate. The TM1637, the 28BYJ-48 and
+  the ULN2003 board name their pins.
 - Board artwork for the 28BYJ-48 (the shaft turning with the output
   angle) and the ULN2003 board (its LEDs A to D); a composite's artwork
   may bind its members' outputs (`LEDA.luminance`).

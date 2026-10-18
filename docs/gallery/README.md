@@ -5,6 +5,20 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The bench, first step (2026-10-18)
+
+The Board view becomes a bench: the parts labelled above the board, the
+project's nets drawn as wires from each artwork's own pins (ground black,
+supplies red, signals in colours), routed square and round the board
+rather than across it. The clock shows how fast the run goes against real
+time (here 24 %: the stepper's project runs under the electrical policy).
+
+| | |
+|---|---|
+| ![TM1637Test on the bench: CLK and DIO to D2 and D3, VCC and GND round the Uno to its power header](bench/bench-tm1637.png) | ![The stepper's bench: the ULN2003 board's IN pins to D8 to D11, its connector to the motor's five leads](bench/bench-stepper.png) |
+
+[The stepper in the Run perspective, the clock at 24 % of real time](bench/run-stepper.png).
+
 ## M6 parts on the bench (2026-10-18)
 
 Parts run by their libraries' own examples, unmodified, on the Uno. The

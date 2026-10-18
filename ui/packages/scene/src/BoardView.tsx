@@ -31,8 +31,79 @@ export interface BoardItem {
   vars?: Record<string, string>;
 }
 
+/** One end of a bench wire: a pin of an item, found as `#pin-<name>` in its
+ * artwork, or else spread along the artwork's bottom edge by `order` of `count`. */
+export interface WireEnd {
+  item: string;
+  pin: string;
+  order?: number;
+  count?: number;
+}
+
+/** A net drawn on the bench: wires joining its ends, in one colour. */
+export interface BenchWire {
+  net: string;
+  color: string;
+  ends: WireEnd[];
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+/** Where a pin leaves its part: up, down, left or right of it. */
+type Side = 'up' | 'down' | 'left' | 'right';
+
+interface Anchor extends Point {
+  side: Side;
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** A vertical run at `x` from `y0` to `y1` passes through `r`. */
+function crosses(r: Rect, x: number, y0: number, y1: number): boolean {
+  const lo = Math.min(y0, y1);
+  const hi = Math.max(y0, y1);
+  return x > r.x + 1 && x < r.x + r.width - 1 && hi > r.y + 1 && lo < r.y + r.height - 1;
+}
+
+/**
+ * The wire from `a` to `b`: out of each part by a stub, then square across.
+ * A vertical run that would cross a part on the bench (`obstacles`) goes
+ * round it instead, down the nearer side, as a wire laid on a desk does.
+ */
+export function routeWire(a: Anchor, b: Anchor, lane: number, obstacles: Rect[] = []): string {
+  const stub = 10 + lane * 3;
+  const out = (p: Anchor): Point => ({
+    x: p.side === 'left' ? p.x - stub : p.side === 'right' ? p.x + stub : p.x,
+    y: p.side === 'up' ? p.y - stub : p.side === 'down' ? p.y + stub : p.y,
+  });
+  const a2 = out(a);
+  const b2 = out(b);
+  const vertical = a.side === 'up' || a.side === 'down';
+  let mid: Point[] = [vertical ? { x: b2.x, y: a2.y } : { x: a2.x, y: b2.y }];
+  const runX = vertical ? b2.x : a2.x;
+  const hit = obstacles.find((r) => crosses(r, runX, a2.y, b2.y));
+  if (hit) {
+    const left = hit.x - 8 - lane * 4;
+    const right = hit.x + hit.width + 8 + lane * 4;
+    const x = Math.abs(runX - left) <= Math.abs(runX - right) ? left : right;
+    mid = [{ x, y: a2.y }, { x, y: b2.y }];
+  }
+  const pts = [a, a2, ...mid, b2, b].map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`);
+  return `M ${pts.join(' L ')}`;
+}
+
 export interface BoardViewProps {
   items: BoardItem[];
+  /** Nets drawn as wires between the items' pins (the bench). */
+  wires?: BenchWire[];
   /** Overall drawing size in artwork units; default fits the items. */
   width?: number;
   height?: number;
@@ -122,13 +193,14 @@ function describeOutput(name: string, value: OutputValue | undefined): string {
   return `${name} ${String(value ?? '')}`;
 }
 
-export function BoardView({ items, width, height, onInput, disabled, label = 'Board', className }: BoardViewProps) {
+export function BoardView({ items, wires, width, height, onInput, disabled, label = 'Board', className }: BoardViewProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [overlays, setOverlays] = useState<Overlay[]>([]);
   const [stateOverlays, setStateOverlays] = useState<StateOverlay[]>([]);
   const [dragValue, setDragValue] = useState<Record<string, number>>({});
   const [announcement, setAnnouncement] = useState('');
+  const [wirePaths, setWirePaths] = useState<{ key: string; d: string; color: string; ends: Point[] }[]>([]);
 
   const bounds = useMemo(() => {
     if (width && height) return { width, height };
@@ -185,6 +257,56 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
     setStateOverlays(nextStates);
   }, [items]);
 
+  // The wires: each end's anchor in the drawing's own units, then each end
+  // joined to the nearest end already wired.
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    if (!svg || !wires?.length) {
+      setWirePaths([]);
+      return;
+    }
+    const byId = new Map(items.map((i) => [i.id, i]));
+    const rootCtm = typeof svg.getCTM === 'function' ? svg.getCTM() : null;
+    const anchor = (end: WireEnd): Anchor | null => {
+      const item = byId.get(end.item);
+      if (!item) return null;
+      const root = svg.querySelector(`[data-board-item="${cssEscape(item.id)}"]`);
+      const el = root?.querySelector(`#pin-${cssEscape(end.pin.toLowerCase())}`) as SVGGraphicsElement | null;
+      let p: Point | null = null;
+      if (el && rootCtm && typeof el.getBBox === 'function' && typeof el.getCTM === 'function') {
+        const b = el.getBBox();
+        const m = el.getCTM();
+        if (m) {
+          const pt = new DOMPoint(b.x + b.width / 2, b.y + b.height / 2).matrixTransform(m).matrixTransform(rootCtm.inverse());
+          p = { x: pt.x, y: pt.y };
+        }
+      }
+      if (!p) {
+        const n = Math.max(1, end.count ?? 1);
+        p = { x: item.x + (item.width * ((end.order ?? 0) + 1)) / (n + 1), y: item.y + item.height };
+      }
+      const fx = (p.x - item.x) / (item.width || 1);
+      const fy = (p.y - item.y) / (item.height || 1);
+      const side: Side = fy <= 0.3 ? 'up' : fy >= 0.7 ? 'down' : fx < 0.5 ? 'left' : 'right';
+      return { ...p, side };
+    };
+    const paths: { key: string; d: string; color: string; ends: Point[] }[] = [];
+    wires.forEach((w, lane) => {
+      const pts = w.ends.map(anchor).filter((a): a is Anchor => a !== null);
+      if (pts.length < 2) return;
+      const done: Anchor[] = [pts[0]!];
+      const segs: string[] = [];
+      for (const p of pts.slice(1)) {
+        let best = done[0]!;
+        for (const q of done) if (Math.abs(q.x - p.x) + Math.abs(q.y - p.y) < Math.abs(best.x - p.x) + Math.abs(best.y - p.y)) best = q;
+        segs.push(routeWire(best, p, lane % 6, items));
+        done.push(p);
+      }
+      paths.push({ key: w.net, d: segs.join(' '), color: w.color, ends: pts });
+    });
+    setWirePaths(paths);
+  }, [items, wires]);
+
   useLayoutEffect(() => {
     measure();
     const wrap = wrapRef.current;
@@ -224,9 +346,20 @@ export function BoardView({ items, width, height, onInput, disabled, label = 'Bo
             </g>
           );
         })}
+        <g className="es-board__wires" aria-hidden="true">
+          {wirePaths.map((w) => (
+            <g key={w.key} data-net={w.key}>
+              <path d={w.d} fill="none" stroke="rgba(0,0,0,0.45)" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />
+              <path d={w.d} fill="none" stroke={w.color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+              {w.ends.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r={2.2} fill={w.color} stroke="rgba(0,0,0,0.5)" strokeWidth={0.8} />
+              ))}
+            </g>
+          ))}
+        </g>
         {items.map((item) => (
-          <text key={`${item.id}-label`} className="es-board__label" x={item.x} y={item.y + item.height + 12}>
-            {item.id}
+          <text key={`${item.id}-label`} className="es-board__label" x={item.x} y={item.y - 6}>
+            {item.label}
           </text>
         ))}
       </svg>

@@ -44,8 +44,8 @@
     </g>
     <g id="colon" fill="#3a1414"><circle cx="41" cy="14" r="1.4"/><circle cx="41" cy="23" r="1.4"/></g>
   </g>
-  <rect x="30" y="59" width="6" height="6" fill="#c9a227"/><text x="33" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">CLK</text>
-  <rect x="48" y="59" width="6" height="6" fill="#c9a227"/><text x="51" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">DIO</text>
-  <rect x="66" y="59" width="6" height="6" fill="#c9a227"/><text x="69" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">VCC</text>
-  <rect x="84" y="59" width="6" height="6" fill="#c9a227"/><text x="87" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">GND</text>
+  <rect id="pin-clk" x="30" y="59" width="6" height="6" fill="#c9a227"/><text x="33" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">CLK</text>
+  <rect id="pin-dio" x="48" y="59" width="6" height="6" fill="#c9a227"/><text x="51" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">DIO</text>
+  <rect id="pin-vcc" x="66" y="59" width="6" height="6" fill="#c9a227"/><text x="69" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">VCC</text>
+  <rect id="pin-gnd" x="84" y="59" width="6" height="6" fill="#c9a227"/><text x="87" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">GND</text>
 </svg>

@@ -109,9 +109,16 @@ neutral canvas surfaces, rounded chrome and subtle shadows.
   at T-connections; net colour by state in Run (low, high, floating,
   contention, analog gradient by voltage with a legend); labels for named
   nets; hovering a wire shows net name, island kind, state and voltage.
-- Board view: the board artwork with hotspots; header pins are wirable from
-  the schematic through the board's symbol (a generated rectangle with
-  ports on its sides).
+- Board view: the bench. The parts with artwork sit in rows above the
+  boards, each labelled with its id and name; the project's nets are wires
+  between their pins (each artwork's `pin-<name>` elements, SPEC-005 §8):
+  ground black, supplies red, signals in a palette, each new end joined to
+  the nearest end already wired, square runs that go round a part they
+  would cross; hotspots stay live. Header pins are wirable from the
+  schematic through the board's symbol (a generated rectangle with ports
+  on its sides). The toolbar's clock shows, while running, virtual time
+  against wall time over the last two seconds (a percentage of real time,
+  or a multiple above 10x).
 - Buses: a project's `layout.buses` drawn as thick lines with their names
   and, while running, their values (SPEC-007).
 - Hierarchy: double-clicking a board or a composite part (or "Open inside"

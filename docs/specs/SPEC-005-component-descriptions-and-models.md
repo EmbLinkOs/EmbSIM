@@ -140,7 +140,12 @@ bind to. Both are exposed by name in snapshots and probes.
   given, into a template such as `rotate({} 30 30)`, and the pseudo-attribute
   `text` sets an element's text, so displays show strings and paths). Optional
   `precision` (integer 0..6) formats numeric template values to fixed decimal
-  places after scaling; it does not alter simulation values.
+  places after scaling; it does not alter simulation values. A composite's
+  states may bind its members' outputs as `MEMBER.OUTPUT` (a board's LED).
+  An element whose id is `pin-<name>` (the pin's name in lower case) is
+  that pin's place on the artwork: the bench draws its wires there
+  (SPEC-011 §3); a pin with no such element is placed along the artwork's
+  bottom edge in pin order.
 - Both are rendered by any client; a client may substitute a generic symbol
   when a file is missing, with a warning.
 
