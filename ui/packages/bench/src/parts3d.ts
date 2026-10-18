@@ -469,6 +469,68 @@ function maleHeader(g: THREE.Group, pins: [number, number][], top: number): void
   }
 }
 
+/**
+ * A breakout's face when the part has no artwork: its soldermask, its name
+ * and each header pin's label in silkscreen beside a plated pad, and four
+ * mounting holes, as such boards are printed.
+ */
+export function silkscreen(shape: BenchShape, color: string): THREE.CanvasTexture | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const [w, d] = shape.size;
+  const k = Math.min(16, 2048 / Math.max(w, d));
+  const c = document.createElement('canvas');
+  c.width = Math.max(16, Math.round(w * k));
+  c.height = Math.max(16, Math.round(d * k));
+  const g = c.getContext('2d');
+  if (!g) return undefined;
+  g.fillStyle = color;
+  g.fillRect(0, 0, c.width, c.height);
+  // a faint copper pour under the mask
+  g.fillStyle = 'rgba(255,255,255,0.04)';
+  g.fillRect(k * 1.2, k * 1.2, c.width - k * 2.4, c.height - k * 2.4);
+  const hole = (x: number, y: number) => {
+    g.fillStyle = '#d4af37';
+    g.beginPath();
+    g.arc(x * k, y * k, 1.5 * k, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#111';
+    g.beginPath();
+    g.arc(x * k, y * k, 0.9 * k, 0, Math.PI * 2);
+    g.fill();
+  };
+  if (w > 14 && d > 12) for (const [x, y] of [[2.5, 2.5], [w - 2.5, 2.5]]) hole(x!, y!);
+  g.fillStyle = '#f2f2f2';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  const pins = Object.entries(shape.pins);
+  const label = Math.min(1.4, 2.54 * 0.55) * k;
+  g.font = `600 ${label}px "Helvetica", sans-serif`;
+  for (const [name, [x, y]] of pins) {
+    g.fillStyle = '#d4af37';
+    g.fillRect((x - 0.9) * k, (y - 0.9) * k, 1.8 * k, 1.8 * k);
+    g.fillStyle = '#f2f2f2';
+    g.save();
+    g.translate(x * k, (y - 2.6) * k);
+    g.rotate(-Math.PI / 2);
+    g.textAlign = 'left';
+    g.fillText(name, 0, 0);
+    g.restore();
+  }
+  if (shape.label) {
+    let size = Math.min(3.2, d / 5) * k;
+    g.font = `700 ${size}px "Helvetica", sans-serif`;
+    while (g.measureText(shape.label).width > c.width * 0.85 && size > 6) {
+      size -= 1;
+      g.font = `700 ${size}px "Helvetica", sans-serif`;
+    }
+    g.fillText(shape.label, c.width / 2, c.height * 0.35);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+
 function module(shape: BenchShape, look: PartLook): THREE.Group {
   const g = new THREE.Group();
   const [w, d] = shape.size;
@@ -476,7 +538,8 @@ function module(shape: BenchShape, look: PartLook): THREE.Group {
   const pins = Object.values(local(shape));
   const lift = 8.5; // the module stands on its header: 2.5 mm of spacer over 6 mm of pin
   const pcbColor = shape.color ?? '#1f6f43';
-  const top = look.texture ? new THREE.MeshStandardMaterial({ map: look.texture, roughness: 0.55 }) : standard(pcbColor, 0.55);
+  const face = look.texture ?? silkscreen(shape, pcbColor);
+  const top = face ? new THREE.MeshStandardMaterial({ map: face, roughness: 0.55 }) : standard(pcbColor, 0.55);
   const edge = standard(pcbColor, 0.6);
   const pcb = mesh(new THREE.BoxGeometry(w, 1.6, d), [edge, edge, top, edge, edge, edge]);
   pcb.position.y = lift + 0.8;

@@ -350,8 +350,11 @@ export function Bench3D(props: Bench3DProps) {
       e.view = v;
       e.built.group.position.set(v.place.x, v.elevation, v.place.y);
       e.built.group.rotation.y = -(v.place.rotation * Math.PI) / 180;
-      e.label.element.textContent = v.label;
-      e.label.element.classList.toggle('is-selected', props.selected?.part === v.id);
+      // the id on the bench, the whole name when selected
+      const chosen = props.selected?.part === v.id;
+      e.label.element.textContent = chosen || v.shape.package === 'board' ? v.label : v.id;
+      e.label.element.title = v.label;
+      e.label.element.classList.toggle('is-selected', chosen);
       // a small part on a breadboard is named when selected: the labels would cover the board
       const small = v.elevation > 0 && !['module', 'board', 'box'].includes(v.shape.package);
       e.label.visible = !small || props.selected?.part === v.id;

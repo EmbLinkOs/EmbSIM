@@ -128,6 +128,27 @@ const MODULES: Record<string, [number, number]> = {
   a4988: [20.3, 15.2],
   tsop38238: [6, 5],
 };
+/** the soldermask the common breakout is sold in */
+const MODULE_COLORS: Record<string, string> = {
+  hc_sr04: '#1b4f9c',
+  bme280: '#5b2a86',
+  bmp280: '#5b2a86',
+  mpu6050: '#1b4f9c',
+  mfrc522: '#1b4f9c',
+  neo6m: '#1b4f9c',
+  hx711_load_cell: '#1e7a3a',
+  ds3231: '#1b4f9c',
+  ds1307: '#1b4f9c',
+  ssd1306: '#1b4f9c',
+  tm1637_display: '#1b4f9c',
+  max7219_display: '#1e7a3a',
+  pir_sensor: '#1e7a3a',
+  rotary_encoder: '#1e7a3a',
+  dht22: '#f2f2f2',
+  keypad_4x4: '#1b1b1b',
+  a4988: '#1e7a3a',
+};
+
 /** chips sold in DIP that the catalog describes as the chip itself */
 const DIP_CHIPS = /^(ic_74hc|sn74hc|cd40|lm358|lm393|ne555|timer_555|mcp3008|mcp4921|eeprom_|pcf8574|l293d|uln2003$|vo617a|ds1307$)/;
 
@@ -316,7 +337,7 @@ export function benchShape(desc: Desc, params?: Record<string, unknown>, artwork
     // a header longer than the board: the board is as long as its header
     const w = Math.max(w0, names.length * PITCH + 1);
     const pins = fromAnchors(names, anchors) ?? header(names, w, d);
-    return { package: 'module', size: [w, d, 1.6], pins, textured: Boolean(artwork), color: '#1f6f43', label: desc.name };
+    return { package: 'module', size: [w, d, 1.6], pins, textured: Boolean(artwork), color: MODULE_COLORS[short] ?? '#1f6f43', label: desc.name };
   }
   // anything else: a small box with its legs in a row
   const size: [number, number, number] = [Math.max(5, names.length * PITCH + 1), 5, 5];

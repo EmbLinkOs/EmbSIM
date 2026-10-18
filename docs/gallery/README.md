@@ -27,6 +27,10 @@ breadboard and shows the connections it makes.
 | ![The breadboard up close: the lit blue LED, the resistor, the button and the pot in their strips, flat jumpers to the rails](bench-3d/breadboard-closeup.png) | ![The same project's schematic: the breadboard is not drawn, its connections are](bench-3d/design-schematic.png) |
 
 [The Run perspective, the bench live at 100 % of real time](bench-3d/run-bench.png).
+[The parts as the bench builds them](bench-3d/parts.png): the HC-SR04's
+transducers, the DHT22's grille, breakouts printed with their pin names,
+the LCD's live face, a TO-220, a TO-92, resistors banded by their value,
+an LED, diodes, capacitors, a buzzer, a tactile switch and a pot.
 
 ## The bench, first step (2026-10-18)
 
