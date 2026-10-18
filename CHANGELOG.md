@@ -499,6 +499,15 @@ versions follow semantic versioning. There is no release yet.
   grounded. DallasTemperature's `Simple` example runs unmodified over
   OneWire, 3/3. The HC-SR04 and DS18B20 accept their inputs through
   `on_set`, as SPEC-013 asks (the HC-SR04's were warned as refused).
+- The BME280 (`emblink/bme280`), from Bosch's datasheet: I2C at 0x76 +
+  SDO and 4-wire SPI once CSB goes low; chip ID, soft reset, ctrl_hum
+  applied by ctrl_meas, status, sleep, forced and normal modes with the
+  typical measurement time and the standby times; raw values that Bosch's
+  compensation formulas turn into the room's temperature, pressure and
+  humidity at the oversampling's resolution, the IIR filter, skipped
+  measurements and shadowed data registers. Adafruit's `bme280test` runs
+  unmodified, 3/3; six fixtures. The Arduino runner adds prototypes for a
+  sketch's functions, as the IDE's builder does.
 - `tests/vendor/arduino` runs libraries' own examples unmodified:
   `libraries.json` pins each library to a commit (`--libs DIR --fetch`
   clones them; none is vendored), includes are followed through the

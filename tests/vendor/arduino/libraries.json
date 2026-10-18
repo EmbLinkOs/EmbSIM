@@ -55,6 +55,20 @@
       "commit": "dadbbf7d33f500a5785ac4ae9973b8c9083d0d39",
       "version": "4.0.6",
       "license": "MIT"
+    },
+    {
+      "name": "Adafruit_BME280_Library",
+      "repo": "https://github.com/adafruit/Adafruit_BME280_Library",
+      "commit": "ef712e95147de926b4545e379f6296ad271529b5",
+      "version": "2.3.0",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "Adafruit_BusIO",
+      "repo": "https://github.com/adafruit/Adafruit_BusIO",
+      "commit": "3b8364267c3ee6e16bad91bc2101aefbd5b5915f",
+      "version": "1.17.4",
+      "license": "MIT"
     }
   ]
 }

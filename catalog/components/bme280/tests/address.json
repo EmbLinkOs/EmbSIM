@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "address",
+  "description": "SDO pulled high: a forced measurement written to 0x76 is not acknowledged; the one to 0x77 runs.",
+  "policy": "functional",
+  "until": "31ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PG2",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "10m"
+        }
+      },
+      {
+        "id": "PU4",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU3",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bme280"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "PG2.OUT0",
+        "DUT.SDI",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "PG2.OUT1",
+        "DUT.SCK",
+        "PU2.1"
+      ],
+      "CSB": [
+        "DUT.CSB",
+        "PU3.1"
+      ],
+      "SDO": [
+        "DUT.SDO",
+        "PU4.1"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "temperature",
+      "value": 21.37
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "pressure",
+      "value": 1009.82
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "humidity",
+      "value": 43.6
+    }
+  ],
+  "expect": {
+    "output:DUT.measurements": {
+      "at": "9ms",
+      "equals": 0
+    },
+    "output:DUT.interface": {
+      "at": "9ms",
+      "equals": "i2c"
+    },
+    "pin:DUT.SDO": {
+      "at": "9ms",
+      "logic": "1"
+    },
+    "output:DUT.temperature": {
+      "at": "30ms",
+      "min": 21.36,
+      "max": 21.38
+    }
+  }
+}

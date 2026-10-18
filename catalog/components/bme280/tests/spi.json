@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "spi",
+  "description": "CSB taken low: the part switches to SPI (mode 0) for good; the control byte 0x74 (bit 7 clear: a write to 0xF4) and 0x25 start a forced measurement.",
+  "policy": "functional",
+  "until": "21ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,1,3,1,3,1,3,0,2,1,3,0,2,0,2,0,0,2,0,2,1,3,0,2,0,2,1,3,0,2,1,3,0,0,4,4",
+          "period": "1u",
+          "idle": 4
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bme280"
+      }
+    ],
+    "nets": {
+      "MOSI": [
+        "PG.OUT0",
+        "DUT.SDI"
+      ],
+      "SCK": [
+        "PG.OUT1",
+        "DUT.SCK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.CSB"
+      ],
+      "MISO": [
+        "DUT.SDO"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "temperature",
+      "value": 21.37
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "pressure",
+      "value": 1009.82
+    },
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "humidity",
+      "value": 43.6
+    }
+  ],
+  "expect": {
+    "output:DUT.interface": {
+      "at": "20ms",
+      "equals": "spi"
+    },
+    "output:DUT.measurements": {
+      "at": "20ms",
+      "equals": 1
+    }
+  }
+}
