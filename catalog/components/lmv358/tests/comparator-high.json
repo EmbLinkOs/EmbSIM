@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "comparator-high",
+  "description": "As on the Uno: VIN/2 = 4 V above 3.3 V, output high, within 100 mV of VCC into 10 kOhm to 2.5 V (typically 10 mV).",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VCC",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "VP",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 4.0
+        }
+      },
+      {
+        "id": "VN",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "VM",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2.5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lmv358"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10000
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VCC.+",
+        "DUT.VCC"
+      ],
+      "P": [
+        "VP.+",
+        "DUT.1IN+"
+      ],
+      "N": [
+        "VN.+",
+        "DUT.1IN-"
+      ],
+      "O": [
+        "DUT.1OUT",
+        "RL.1"
+      ],
+      "M": [
+        "VM.+",
+        "RL.2"
+      ],
+      "GND": [
+        "VCC.-",
+        "VP.-",
+        "VN.-",
+        "VM.-",
+        "DUT.GND",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:O": {
+      "at": "1ms",
+      "min_v": 4.9,
+      "max_v": 5.0
+    }
+  }
+}

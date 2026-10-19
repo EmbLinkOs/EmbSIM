@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "body-diode",
+  "description": "Off (VGS = 0) with 0.42 A forced from drain to source: the body diode drops about 0.7 V (1.2 V maximum).",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 1.0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/fdn340p"
+      },
+      {
+        "id": "I",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.42
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "S": [
+        "VS.+",
+        "DUT.S",
+        "DUT.G"
+      ],
+      "D": [
+        "DUT.D",
+        "I.-"
+      ],
+      "GND": [
+        "VS.-",
+        "I.+",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:D": {
+      "at": "1ms",
+      "min_v": 1.55,
+      "max_v": 2.2
+    }
+  }
+}

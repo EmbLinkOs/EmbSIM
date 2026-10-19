@@ -10,6 +10,7 @@
 <circle class="mount" cx="139.7" cy="508" r="20" fill="#e8eaee" stroke="#9aa0aa"/><circle cx="139.7" cy="508" r="16" fill="#15171b"/>
 <circle class="mount" cx="660.4" cy="177.8" r="20" fill="#e8eaee" stroke="#9aa0aa"/><circle cx="660.4" cy="177.8" r="16" fill="#15171b"/>
 <circle class="mount" cx="660.4" cy="457.2" r="20" fill="#e8eaee" stroke="#9aa0aa"/><circle cx="660.4" cy="457.2" r="16" fill="#15171b"/>
+<circle id="pin-usb_vbus" class="usbpin" cx="15.9" cy="152.5" r="8" fill="none"/>
 <g id="usb"><rect class="metal" x="-63.5" y="95.3" width="158.8" height="114.3" rx="4"/><rect x="-48.5" y="110.3" width="128.8" height="84.3" rx="3" fill="#8f949e"/><text class="silk" x="12" y="229.6">USB</text></g>
 <g id="jack"><rect x="-19" y="412.7" width="133.3" height="88.9" rx="6" fill="#15171b"/><circle cx="47.65" cy="457.15" r="22" fill="#2b2f36"/><circle cx="47.65" cy="457.15" r="6" fill="#b8bcc6"/></g>
 <rect class="hdr" x="266.7" y="495.3" width="25.4" height="25.4"/>

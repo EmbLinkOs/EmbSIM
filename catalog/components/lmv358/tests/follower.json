@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "follower",
+  "description": "The second half as a voltage follower: 1.2 V in, 1.2 V out.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VCC",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 1.2
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lmv358"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "VCC.+",
+        "DUT.VCC"
+      ],
+      "I": [
+        "VI.+",
+        "DUT.2IN+"
+      ],
+      "O": [
+        "DUT.2OUT",
+        "DUT.2IN-"
+      ],
+      "GND": [
+        "VCC.-",
+        "VI.-",
+        "DUT.GND",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:O": {
+      "at": "1ms",
+      "min_v": 1.19,
+      "max_v": 1.21
+    }
+  }
+}

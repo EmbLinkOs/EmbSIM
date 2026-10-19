@@ -124,12 +124,44 @@
         "pins": 10
       },
       "doc": "Digital: D8..D13 GND AREF SDA SCL"
+    },
+    {
+      "id": "F1",
+      "component": "emblink/mf_msmf050",
+      "doc": "USB's 500 mA resettable fuse (MF-MSMF050-2) on VBUS"
+    },
+    {
+      "id": "T1",
+      "component": "emblink/fdn340p",
+      "doc": "Connects USB's 5 V (USBVCC) to +5V unless VIN supplies the board"
+    },
+    {
+      "id": "U5",
+      "component": "emblink/lmv358",
+      "doc": "LMV358: half A compares VIN/2 with 3.3 V to switch T1; half B buffers D13 (its output's LED is driven from D13 here)"
+    },
+    {
+      "id": "RN1A",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "doc": "VIN/2 divider, upper"
+    },
+    {
+      "id": "RN1B",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "doc": "VIN/2 divider, lower"
     }
   ],
   "nets": {
     "VIN": [
       "U2.IN",
-      "J_PWR.8"
+      "J_PWR.8",
+      "RN1A.1"
     ],
     "5V": [
       "U2.OUT",
@@ -138,11 +170,14 @@
       "U1.AVCC",
       "R_ON.1",
       "J_PWR.2",
-      "J_PWR.5"
+      "J_PWR.5",
+      "T1.S",
+      "U5.VCC"
     ],
     "3V3": [
       "U3.OUT",
-      "J_PWR.4"
+      "J_PWR.4",
+      "U5.1IN-"
     ],
     "GND": [
       "U2.GND",
@@ -153,7 +188,9 @@
       "SW_RESET.2",
       "J_PWR.6",
       "J_PWR.7",
-      "J_DHI.7"
+      "J_DHI.7",
+      "RN1B.2",
+      "U5.GND"
     ],
     "ON_A": [
       "R_ON.2",
@@ -236,7 +273,8 @@
     "PB5": [
       "U1.PB5",
       "J_DHI.6",
-      "R_L.1"
+      "R_L.1",
+      "U5.2IN+"
     ],
     "PC0": [
       "U1.PC0",
@@ -263,6 +301,26 @@
       "U1.PC5",
       "J_ANA.6",
       "J_DHI.10"
+    ],
+    "USBVBUS": [
+      "F1.1"
+    ],
+    "USBVCC": [
+      "F1.2",
+      "T1.D"
+    ],
+    "CMP": [
+      "RN1A.2",
+      "RN1B.1",
+      "U5.1IN+"
+    ],
+    "GATE_CMD": [
+      "U5.1OUT",
+      "T1.G"
+    ],
+    "L_BUF": [
+      "U5.2OUT",
+      "U5.2IN-"
     ]
   },
   "ports": {
@@ -417,7 +475,7 @@
       "net": "5V",
       "connector": "J_PWR",
       "pin": 5,
-      "doc": "5 V in or out (USB's 5 V on a real board)"
+      "doc": "5 V in or out: fed from USB through F1 and T1, or from VIN's regulator; a supply here bypasses both"
     },
     "GND": {
       "net": "GND",
@@ -434,6 +492,10 @@
       "connector": "J_PWR",
       "pin": 8,
       "doc": "7 to 12 V into the 5 V regulator"
+    },
+    "USB_VBUS": {
+      "net": "USBVBUS",
+      "doc": "USB's 5 V from the host, through the cable to the USB-B socket: into F1, then T1 to +5V"
     }
   },
   "leds": [
@@ -614,6 +676,10 @@
       {
         "port": "VIN",
         "selector": "#pin-vin"
+      },
+      {
+        "port": "USB_VBUS",
+        "selector": "#pin-usb_vbus"
       }
     ]
   },
@@ -755,12 +821,14 @@
       ]
     },
     "electrical": {
-      "claims": "Regulators, LEDs with series resistors, the reset pull-up and the resonator as BVD equivalents; GPIO bridges use the MCU's pin-model defaults.",
+      "claims": "Regulators, LEDs with series resistors, the reset pull-up and the resonator as BVD equivalents; GPIO bridges use the MCU's pin-model defaults. USB's 5 V arrives on USB_VBUS through F1 (the MF-MSMF050-2 resettable fuse, which heats and trips above about 1 A) and T1 (the FDN340P switch) to +5V; U5A (LMV358) compares VIN/2 with 3.3 V and turns T1 off when VIN is above about 6.6 V, so the regulator supplies the board and USB carries nothing.",
       "omissions": [
         "decoupling",
-        "USB power switching",
         "the reset capacitor's waveform (its reset is a pulse, the DTR reset above)",
-        "ESD diodes"
+        "ESD diodes",
+        "the L LED is driven from D13 itself: U5B follows D13 without the LED as its load",
+        "the LMV358 below its 2.7 V minimum supply (after F1 trips) behaves as the model extrapolates, not as a real part does",
+        "the 3V3 regulator is modelled as an LM1117-3.3 (1.2 V dropout), not the R3's LP2985-33"
       ],
       "validation": [
         "tests/*.json"

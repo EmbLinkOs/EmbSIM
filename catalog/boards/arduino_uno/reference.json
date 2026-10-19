@@ -217,6 +217,10 @@
     "SCL": [
       18.8,
       2.54
+    ],
+    "USB_VBUS": [
+      1.59,
+      15.25
     ]
   },
   "connectors": {
@@ -245,6 +249,7 @@
   "tolerance_mm": 0.05,
   "unqualified": [
     "the ATmega328P's DIP socket, the 16 MHz resonator, the reset button and the L, TX, RX and ON LEDs: drawn where they are roughly, with no reference data yet",
-    "the ICSP headers and the ATmega16U2 (not drawn)"
+    "the ICSP headers and the ATmega16U2 (not drawn)",
+    "USB_VBUS sits at the USB-B socket's centre, where the cable plugs in: a socket, not a header pad"
   ]
 }

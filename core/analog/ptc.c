@@ -30,6 +30,7 @@ typedef struct ptc_state {
     double v;              /* volts across it in the accepted solution */
     double r_stamped;      /* the resistance the matrix holds */
     es_time_t t_last;      /* the temperatures are up to here */
+    es_time_t wake;        /* the next look, 0 when none is pending */
 } ptc_state;
 
 #define PTC_WAKE 0         /* its component's wake token */
@@ -87,11 +88,14 @@ static void advance(esk_adev *d, es_time_t now)
 }
 
 /* the next look at its temperatures: about half a kelvin of change away,
- * between 10 us and a second */
+ * between 10 us and a second. A look already due by then is kept: moving it
+ * on every accepted step would leave a cancelled event in the scheduler for
+ * each step until its time came, and every step scans them */
 static void schedule(esk_adev *d, es_time_t now)
 {
     ptc_state *s = (ptc_state *)d->state;
     double d1, d2, fast, h;
+    es_time_t t;
     if (!d->comp)
         return;
     rates(d, s, s->v, &d1, &d2);
@@ -99,7 +103,11 @@ static void schedule(esk_adev *d, es_time_t now)
     h = fast > 0.5 ? 0.5 / fast : 1.0;
     if (h < 1e-5)
         h = 1e-5;
-    (void)esk_comp_wake_at(d->comp, now + (es_time_t)(h * 1e12), PTC_WAKE);
+    t = now + (es_time_t)(h * 1e12);
+    if (s->wake > now && s->wake <= t)
+        return;
+    if (esk_comp_wake_at(d->comp, t, PTC_WAKE) == ES_OK)
+        s->wake = t;
 }
 
 static es_status ptc_setup(esk_adev *d)
@@ -113,6 +121,7 @@ static es_status ptc_setup(esk_adev *d)
     s->v = 0.0;
     s->r_stamped = resistance(d, s->t_core);
     s->t_last = d->comp ? d->comp->e->sched.now : 0;
+    s->wake = 0;
     return ES_OK;
 }
 
@@ -150,6 +159,7 @@ void esk_ptc_on_time(esk_adev *d, es_time_t now)
 {
     ptc_state *s = (ptc_state *)d->state;
     double r;
+    s->wake = 0;
     advance(d, now);
     r = resistance(d, s->t_core);
     if (fabs(r - s->r_stamped) > PTC_RESTAMP * s->r_stamped) {

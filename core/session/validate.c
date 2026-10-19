@@ -167,9 +167,10 @@ static int fixture_to_run(esk_alloc *a, const esk_json *fx, esk_json **proj_out,
         esk_json_set_string(a, probe, "target", e->key);
         if ((esk_str_has_prefix(e->key, "net:") || esk_str_has_prefix(e->key, "pin:")) && (analog || digital))
             esk_json_set_string(a, probe, "kind", analog ? "analog" : "digital");
-        /* a part's output over a long fixture (a fuse heating for half an
-         * hour) is sampled at most 20000 times, not at the default 10 kHz */
-        if ((esk_str_has_prefix(e->key, "output:") || esk_str_has_prefix(e->key, "device:")) && until_ps > 2 * ES_PS_PER_S)
+        /* a sampled value over a long fixture (a fuse heating for half an
+         * hour, a rail collapsing after it trips) is sampled at most 20000
+         * times, not at the default 10 kHz: each sample is a solve */
+        if (!digital && !esk_str_has_prefix(e->key, "serial:") && until_ps > 2 * ES_PS_PER_S)
             esk_json_set_number(a, probe, "rate_hz", 20000.0 / ((double)until_ps / (double)ES_PS_PER_S));
         esk_json_array_push(a, probes, probe);
         esk_json_set_string(a, as, "id", e->key);

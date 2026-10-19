@@ -111,7 +111,7 @@ ranges, from the description (SPEC-005 §4).
 | `zener` | diode plus `vz`, `rz` | breakdown model |
 | `bjt_npn`, `bjt_pnp` | `is`, `bf` (100), `br` (1), `nf`, `nr`, `vaf` (none), `rb`, `rc`, `re` (0), `cje`, `cjc`, `tf`, `tr` (0) | Ebers-Moll with Early effect and optional charges; Gummel-Poon parameters (`ikf`, `ise`, `ne`) accepted and used when present |
 | `nmos`, `pmos` | level-1: `vto`, `kp`, `lambda`, `gamma`, `phi`, `w`, `l`, `cgs`, `cgd`, `cgb`; `rds` (none) | Shichman-Hodges with cutoff, linear, saturation; body tied to source unless a `B` pin is connected |
-| `opamp` | `gain` (1e5), `vsat` from supply pins or `vpos`/`vneg`, `gbw` (none), `rout` (0), `rin` (1e12) | behavioural with saturation; single-pole when `gbw` is given |
+| `opamp` | `gain` (1e5), `vsat` from supply pins or `vpos`/`vneg`, `gbw` (none), `slew` (V/µs, none), `rout` (0), `rin` (1e12) | behavioural with saturation; single-pole when `gbw` is given, slew-limited when `slew` is |
 | `comparator` | `vhyst` (0), `tpd` (0), output pin model from description | outputs through a digital_out pin model (a bridge) |
 | `regulator` | `vout`, `dropout`, `imax`, `quiescent` | behavioural LDO: `vout` while `vin > vout + dropout`, else tracks; current limit |
 | `adc_terminal` | `rin`, `cin`, `sample_time` | an MCU's analog input; `observe` samples the node for the peripheral model |
@@ -140,7 +140,30 @@ implemented; a parameter outside the declared range raises
   transistor-level accuracy is claimed.
 - `opamp` additionally accepts nonnegative `headroom_high` and `headroom_low`
   (0 by default), moving its DC output limits inwards from the supply rails.
-  The named LM358P uses them; its GBW/slew behavior is explicitly unsupported.
+  The named LM358P and LMV358 use them.
+- `opamp` with `gbw` has its dominant pole. An internal node y (a second
+  branch unknown) integrates the input stage's drive, as the compensation
+  capacitor does: `dy/dt = SR tanh(wu vd / SR) g - (y - vmid) / tau`, with
+  `wu = 2 pi gbw`, `tau = gain / wu` and `SR = slew` (without `slew`, the
+  drive is `wu vd`). So:
+  - **Small signals.** DC gain `gain`, unity-gain frequency `gbw`.
+  - **Large steps.** The output slews at `slew`.
+  - **Saturation.** `g`, a sigmoid 10 mV wide, stops the drive pushing y
+    past the output limit it is already at, so there is no windup: the
+    amplifier comes out of saturation within tens of nanoseconds.
+  - **Output.** y clamped at the limits with 10 mV corners, through `rout`.
+    The output and y depend on the supply pins, so a loop through the
+    amplifier's own supply converges.
+  - **Operating point.** The static characteristic (`vmid + vamp tanh(gain
+    vd / vamp)`) gives the output and y; it equals the pole's equilibrium in
+    the linear range.
+  - **Newton limiting.** In both forms, Newton moves tanh's argument at most
+    4 per iteration, linearised from the limited point, as `pnjlim` does for
+    a junction. Deep in saturation tanh's slope underflows, and a follower
+    whose input hangs on its own output would otherwise bounce between the
+    rails.
+  - **Not modelled.** Further poles, phase margin, input offset and bias,
+    the input common-mode range and output current limits.
 
 These implemented behavioral primitives do not imply that every target model
 in the table above exists. Pin order is binding for native analog devices.
@@ -167,7 +190,9 @@ heats itself:
 - **Its own clock.** The temperatures are integrated apart from the island's
   steps. Each accepted solution sets the voltage held until the next. Looks
   come about half a kelvin of change apart, a second at most once settled,
-  each a component wake (`on_time`) dispatched to the device.
+  each a component wake (`on_time`) dispatched to the device. A look already
+  due by then is kept. Moving it on every accepted step would leave one
+  cancelled event per step in the scheduler, which every step scans.
 - **Re-solving.** The matrix holds the resistance last stamped; a 1 % change
   touches the island, which then solves again. A quiet circuit therefore
   sleeps between looks while the fuse warms over minutes.

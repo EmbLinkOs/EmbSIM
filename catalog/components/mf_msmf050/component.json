@@ -96,6 +96,9 @@
   "model": {
     "primitive": "ptc_fuse"
   },
+  "functional": {
+    "primitive": "wire"
+  },
   "inputs": [
     {
       "name": "temperature",
@@ -164,8 +167,19 @@
     "height_mm": 3.2
   },
   "fidelity": {
-    "functional": null,
-    "timed": null,
+    "functional": {
+      "claims": "A conductor between its pins: the functional policy has no currents to trip it.",
+      "omissions": [
+        "heating and tripping"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
     "electrical": {
       "claims": "A resistance from a two-node thermal model (polymer core and package) heated by the power it passes: rising gently below the switch and steeply above it, so the heat runs away above a current. Fitted to the datasheet's typical time-to-trip curve at 23 C (1.08 A in about 70 s, 1.6 A in 15 s, 2.4 A in 1 s, 3.5 A in 0.1 s, 9 A in 10 ms) with 0.8 W tripped; it holds 0.5 A, trips at 1.0 A and at 8 A within the 0.15 s maximum, and its threshold follows the datasheet's derating table with the room's temperature (the input, or the world's) without being fitted to it. Resets as it cools once the fault is removed.",
       "range": {

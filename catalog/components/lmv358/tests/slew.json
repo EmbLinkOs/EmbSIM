@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "slew",
+  "description": "A follower into 10 kOhm given a 2 V step: the output slews at the datasheet's 1 V/us (typical), 2.0 V a microsecond after the step, and settles at 3 V 2 us later.",
+  "policy": "electrical",
+  "until": "40us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 1.0,
+          "v2": 3.0,
+          "td": "10u",
+          "tr": "10n",
+          "tf": "10n",
+          "pw": "1m",
+          "per": "2m"
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lmv358"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.2IN+"
+      ],
+      "VCC": [
+        "VS.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "VI.-",
+        "VS.-",
+        "DUT.GND",
+        "G.GND",
+        "RL.2"
+      ],
+      "OUT": [
+        "DUT.2OUT",
+        "DUT.2IN-",
+        "RL.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "11us",
+      "min_v": 1.85,
+      "max_v": 2.15
+    },
+    "pin:RL.1": {
+      "at": "15us",
+      "min_v": 2.98,
+      "max_v": 3.02
+    }
+  }
+}
