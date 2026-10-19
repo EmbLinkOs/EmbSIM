@@ -15,6 +15,7 @@
  *   pwr_f4.c   the F4's power control: voltage scaling and over-drive ready
  *   gpio_f4.c  an F4 GPIO port (MODER, AFR, LCKR): pins to the runtime
  *   syscfg_f4.c the F4's system configuration: EXTI line ports, boot remap
+ *   dma_f4.c   the F4's DMA controllers: streams, channels, FIFO, double buffer
  *   storage.c  registers that only keep what is written (FLASH's ACR) */
 #ifndef ESK_MCU_STM32_H
 #define ESK_MCU_STM32_H
@@ -72,6 +73,13 @@ int esk_stm32f1_usart_pin(struct esk_mach *m, const char *unit, int tx, int *por
  * drives, or -1; a level a pin gives TIMx_CHy, TIMx_ETR or TIMx_BKIN */
 int esk_stm32_tim_signal(struct esk_mach *m, const char *sig);
 void esk_stm32_tim_signal_input(struct esk_mach *m, const char *sig, int level);
+/* the F4's DMA controllers (dma_f4.c) */
+extern const struct esk_dev_ops esk_stm32f4_dma_ops;
+void *esk_stm32f4_dma_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* a peripheral's DMA request (USART2_TX, TIM1_UP, ADC1) rises (level 1)
+ * or falls: a stream that takes it moves the data now, else it waits for
+ * one; nothing without a DMA model. `sig` must outlive the request. */
+void esk_stm32_dma_request(struct esk_mach *m, const char *sig, int level);
 /* a USART's alternate-function signal (USART2_TX, _RTS, _CK): the level it
  * drives, or -1; nCTS's level from its pin; the pin (port, bit) of its TX
  * (tx 1) or RX, as the family maps it (the runtime's uart_pin) */

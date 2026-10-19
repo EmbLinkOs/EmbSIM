@@ -165,8 +165,342 @@
   {
    "match": "UART*",
    "model": "stm32-usart"
+  },
+  {
+   "match": "DMA*",
+   "model": "stm32f4-dma"
   }
  ],
+ "dma_requests": {
+  "DMA1": {
+   "0": {
+    "0": [
+     "SPI3_RX"
+    ],
+    "1": [
+     "I2C1_RX"
+    ],
+    "2": [
+     "TIM4_CH1"
+    ],
+    "4": [
+     "UART5_RX"
+    ],
+    "6": [
+     "TIM5_CH3",
+     "TIM5_UP"
+    ]
+   },
+   "1": {
+    "0": [
+     "SPDIF_RX"
+    ],
+    "1": [
+     "I2C3_RX"
+    ],
+    "3": [
+     "TIM2_CH3",
+     "TIM2_UP"
+    ],
+    "4": [
+     "USART3_RX"
+    ],
+    "6": [
+     "TIM5_CH4",
+     "TIM5_TRIG"
+    ],
+    "7": [
+     "TIM6_UP"
+    ]
+   },
+   "2": {
+    "0": [
+     "SPI3_RX"
+    ],
+    "1": [
+     "TIM7_UP"
+    ],
+    "2": [
+     "FMPI2C1_RX"
+    ],
+    "3": [
+     "I2C3_RX"
+    ],
+    "4": [
+     "UART4_RX"
+    ],
+    "5": [
+     "TIM3_CH4",
+     "TIM3_UP"
+    ],
+    "6": [
+     "TIM5_CH1"
+    ],
+    "7": [
+     "I2C2_RX"
+    ]
+   },
+   "3": {
+    "0": [
+     "SPI2_RX"
+    ],
+    "2": [
+     "TIM4_CH2"
+    ],
+    "4": [
+     "USART3_TX"
+    ],
+    "6": [
+     "TIM5_CH4",
+     "TIM5_TRIG"
+    ],
+    "7": [
+     "I2C2_RX"
+    ]
+   },
+   "4": {
+    "0": [
+     "SPI2_TX"
+    ],
+    "1": [
+     "TIM7_UP"
+    ],
+    "3": [
+     "I2C3_TX"
+    ],
+    "4": [
+     "UART4_TX"
+    ],
+    "5": [
+     "TIM3_CH1",
+     "TIM3_TRIG"
+    ],
+    "6": [
+     "TIM5_CH2"
+    ],
+    "7": [
+     "USART3_TX"
+    ]
+   },
+   "5": {
+    "0": [
+     "SPI3_TX"
+    ],
+    "1": [
+     "I2C1_RX"
+    ],
+    "2": [
+     "FMPI2C1_TX"
+    ],
+    "3": [
+     "TIM2_CH1"
+    ],
+    "4": [
+     "USART2_RX"
+    ],
+    "5": [
+     "TIM3_CH2"
+    ],
+    "7": [
+     "DAC_CH1"
+    ]
+   },
+   "6": {
+    "0": [
+     "SPDIF_RX"
+    ],
+    "1": [
+     "I2C1_TX"
+    ],
+    "2": [
+     "TIM4_UP"
+    ],
+    "3": [
+     "TIM2_CH2",
+     "TIM2_CH4"
+    ],
+    "4": [
+     "USART2_TX"
+    ],
+    "6": [
+     "TIM5_UP"
+    ],
+    "7": [
+     "DAC_CH2"
+    ]
+   },
+   "7": {
+    "0": [
+     "SPI3_TX"
+    ],
+    "1": [
+     "I2C1_TX"
+    ],
+    "2": [
+     "TIM4_CH3"
+    ],
+    "3": [
+     "TIM2_CH4",
+     "TIM2_UP"
+    ],
+    "4": [
+     "UART5_TX"
+    ],
+    "5": [
+     "TIM3_CH3"
+    ],
+    "7": [
+     "I2C2_TX"
+    ]
+   }
+  },
+  "DMA2": {
+   "0": {
+    "0": [
+     "ADC1"
+    ],
+    "2": [
+     "ADC3"
+    ],
+    "3": [
+     "SPI1_RX"
+    ],
+    "6": [
+     "TIM1_TRIG"
+    ]
+   },
+   "1": {
+    "0": [
+     "SAI1_A"
+    ],
+    "1": [
+     "DCMI"
+    ],
+    "2": [
+     "ADC3"
+    ],
+    "5": [
+     "USART6_RX"
+    ],
+    "6": [
+     "TIM1_CH1"
+    ],
+    "7": [
+     "TIM8_UP"
+    ]
+   },
+   "2": {
+    "0": [
+     "TIM8_CH1",
+     "TIM8_CH2",
+     "TIM8_CH3"
+    ],
+    "1": [
+     "ADC2"
+    ],
+    "3": [
+     "SPI1_RX"
+    ],
+    "4": [
+     "USART1_RX"
+    ],
+    "5": [
+     "USART6_RX"
+    ],
+    "6": [
+     "TIM1_CH2"
+    ],
+    "7": [
+     "TIM8_CH1"
+    ]
+   },
+   "3": {
+    "0": [
+     "SAI1_A"
+    ],
+    "1": [
+     "ADC2"
+    ],
+    "3": [
+     "SPI1_TX"
+    ],
+    "4": [
+     "SDIO"
+    ],
+    "6": [
+     "TIM1_CH1"
+    ],
+    "7": [
+     "TIM8_CH2"
+    ]
+   },
+   "4": {
+    "0": [
+     "ADC1"
+    ],
+    "1": [
+     "SAI1_B"
+    ],
+    "6": [
+     "TIM1_CH4",
+     "TIM1_COM",
+     "TIM1_TRIG"
+    ],
+    "7": [
+     "TIM8_CH3"
+    ]
+   },
+   "5": {
+    "0": [
+     "SAI1_B"
+    ],
+    "3": [
+     "SPI1_TX"
+    ],
+    "4": [
+     "USART1_RX"
+    ],
+    "6": [
+     "TIM1_UP"
+    ]
+   },
+   "6": {
+    "0": [
+     "TIM1_CH1",
+     "TIM1_CH2",
+     "TIM1_CH3"
+    ],
+    "4": [
+     "SDIO"
+    ],
+    "5": [
+     "USART6_TX"
+    ],
+    "6": [
+     "TIM1_CH3"
+    ]
+   },
+   "7": {
+    "1": [
+     "DCMI"
+    ],
+    "3": [
+     "QUADSPI"
+    ],
+    "4": [
+     "USART1_TX"
+    ],
+    "5": [
+     "USART6_TX"
+    ],
+    "7": [
+     "TIM8_CH4",
+     "TIM8_COM",
+     "TIM8_TRIG"
+    ]
+   }
+  }
+ },
  "io": {
   "family": "cmos_3v3",
   "ports": [
@@ -1323,11 +1657,12 @@
  },
  "fidelity": {
   "functional": {
-   "claims": "Cortex-M4F instruction execution (Thumb-2 with ARMv7E-M's DSP instructions, FPv4-SP, NVIC with 4 priority bits, SCB, SysTick, DWT, the MPU with eight regions, lazy floating-point context stacking, semihosting); every register of ST's STM32F446 SVD at its address with its reset value and access type, corrected where RM0390 differs (the corrections are listed in registers.json). RCC: HSI 16 MHz, HSE ready only as the board drives OSC_IN (a crystal without HSEBYP, a clock with it), LSE and LSI, the main PLL (PLLM, PLLN, PLLP, PLLR from HSI or HSE), SYSCLK from HSI, HSE, PLL_P or PLL_R switched once ready (SWS), HPRE, PPRE1, PPRE2 and the timers' clock with TIMPRE, the PLLI2S and PLLSAI ready bits; what the system clock uses cannot be turned off, HSEBYP is kept while HSE is on, BDCR is written only while PWR's DBP is set; a VCO, SYSCLK, PCLK1 or PCLK2 outside the datasheet's limits and too few flash wait states for HCLK are reported (mcu.clock_out_of_spec, mcu.flash_wait_states). PWR: VOSRDY with the PLL, ODRDY and ODSWRDY as RM0390's over-drive sequence sets them. FLASH's ACR keeps LATENCY, the ART accelerator's and the prefetch bits. GPIO: MODER's input, output, alternate-function and analog modes, OTYPER's push-pull and open-drain, OSPEEDR's speed setting the pin's output resistance and edge rate, PUPDR's pulls in every mode but analog, BSRR (a set winning, halfword lanes), IDR from the pins, LCKR's key sequence freezing the locked pins until reset, AFRL and AFRH selecting among the alternate functions io.alternate lists (from ST's open pin data); an alternate function whose peripheral has no model lets its pin go. SYSCFG: EXTICR's port for each EXTI line, MEMRMP's memory at 0 (flash, system memory, SRAM1), CMPCR's READY. EXTI: lines 0 to 22, edges, SWIER, PR, the shared interrupts and the internal lines' (PVD, RTC alarm, tamper and wake-up, USB wake-ups), EMR's events ending a WFE. RCC's *RSTR bits reset their peripherals. Timers (TIM1-TIM14): up, down and center-aligned counting, the repetition counter, preloads, update events, output compare and PWM modes on the pins, input capture with its edge, prescaler and filter, TI1S, complementary outputs with dead time, MOE, OSSR/OSSI and idle levels, break, LOCK, COM events, the slave modes (reset, gated, trigger, external clock 1, encoder 1-3) on ITR0-3, TI1F_ED, TI1FP1, TI2FP2 or ETRF, external clock mode 2, TRGO for the timers that listen, at the clock RCC gives the timers. SysTick's external reference is HCLK/8 (CLKSOURCE 0). USART1-3, UART4-5 and USART6: 8 or 9 data bits with parity, 0.5 to 2 stop bits, OVER8, TXE/TC with the held frame, TE's idle frame, breaks (LIN's 13 bits), the receiver from the RX pin's waveform or the session with RXNE, ORE (frames lost), PE, FE, IDLE and LBD and their read-SR-then-DR clearing, mute mode by idle line or address mark, nCTS and nRTS flow control, half-duplex, the synchronous master clock on CK with RX sampled at its edges, every interrupt source.",
+   "claims": "Cortex-M4F instruction execution (Thumb-2 with ARMv7E-M's DSP instructions, FPv4-SP, NVIC with 4 priority bits, SCB, SysTick, DWT, the MPU with eight regions, lazy floating-point context stacking, semihosting); every register of ST's STM32F446 SVD at its address with its reset value and access type, corrected where RM0390 differs (the corrections are listed in registers.json). RCC: HSI 16 MHz, HSE ready only as the board drives OSC_IN (a crystal without HSEBYP, a clock with it), LSE and LSI, the main PLL (PLLM, PLLN, PLLP, PLLR from HSI or HSE), SYSCLK from HSI, HSE, PLL_P or PLL_R switched once ready (SWS), HPRE, PPRE1, PPRE2 and the timers' clock with TIMPRE, the PLLI2S and PLLSAI ready bits; what the system clock uses cannot be turned off, HSEBYP is kept while HSE is on, BDCR is written only while PWR's DBP is set; a VCO, SYSCLK, PCLK1 or PCLK2 outside the datasheet's limits and too few flash wait states for HCLK are reported (mcu.clock_out_of_spec, mcu.flash_wait_states). PWR: VOSRDY with the PLL, ODRDY and ODSWRDY as RM0390's over-drive sequence sets them. FLASH's ACR keeps LATENCY, the ART accelerator's and the prefetch bits. GPIO: MODER's input, output, alternate-function and analog modes, OTYPER's push-pull and open-drain, OSPEEDR's speed setting the pin's output resistance and edge rate, PUPDR's pulls in every mode but analog, BSRR (a set winning, halfword lanes), IDR from the pins, LCKR's key sequence freezing the locked pins until reset, AFRL and AFRH selecting among the alternate functions io.alternate lists (from ST's open pin data); an alternate function whose peripheral has no model lets its pin go. SYSCFG: EXTICR's port for each EXTI line, MEMRMP's memory at 0 (flash, system memory, SRAM1), CMPCR's READY. EXTI: lines 0 to 22, edges, SWIER, PR, the shared interrupts and the internal lines' (PVD, RTC alarm, tamper and wake-up, USB wake-ups), EMR's events ending a WFE. RCC's *RSTR bits reset their peripherals. Timers (TIM1-TIM14): up, down and center-aligned counting, the repetition counter, preloads, update events, output compare and PWM modes on the pins, input capture with its edge, prescaler and filter, TI1S, complementary outputs with dead time, MOE, OSSR/OSSI and idle levels, break, LOCK, COM events, the slave modes (reset, gated, trigger, external clock 1, encoder 1-3) on ITR0-3, TI1F_ED, TI1FP1, TI2FP2 or ETRF, external clock mode 2, TRGO for the timers that listen, at the clock RCC gives the timers. SysTick's external reference is HCLK/8 (CLKSOURCE 0). USART1-3, UART4-5 and USART6: 8 or 9 data bits with parity, 0.5 to 2 stop bits, OVER8, TXE/TC with the held frame, TE's idle frame, breaks (LIN's 13 bits), the receiver from the RX pin's waveform or the session with RXNE, ORE (frames lost), PE, FE, IDLE and LBD and their read-SR-then-DR clearing, mute mode by idle line or address mark, nCTS and nRTS flow control, half-duplex, the synchronous master clock on CK with RX sampled at its edges, every interrupt source. DMA1 and DMA2: eight streams each, CHSEL's channel taking the requests dma_requests maps (RM0390 tables 28 and 29), a request waiting for its stream; peripheral-to-memory, memory-to-peripheral and DMA2's memory-to-memory through the bus as the core's accesses go; direct mode and the FIFO's packing, threshold, peripheral bursts and FS; NDTR with HTIF and TCIF, circular mode, double buffer with CT, transfer errors, the FIFO configuration error; LIFCR/HIFCR and the streams' interrupts. The USARTs' DMAT/DMAR and the timers' UDE, CCxDE (CCDS), TDE, COMDE and DCR/DMAR burst make their requests.",
    "omissions": [
-    "the peripheral models of DMA, ADC, DAC, SPI, I2C, the watchdogs and the RTC: they keep their register values and raise mcu.unsupported_access until their models land (docs/engineering/rtos-boards.md, steps 7 and 8); until then only the timers' and USARTs' alternate functions drive their pins",
-    "USART: noise detection (one sample a bit: NF never sets, ONEBIT changes nothing), smartcard mode (SCEN, NACK, GTPR) and IrDA (IREN, IRLP), which no catalog part speaks, the DMA requests (step 7)",
-    "timers: the DMA requests (step 7), TIMx_OR's internal remaps (TIM2's ITR1, TIM5's TI4 to the LSI, LSE or RTC, TIM11's TI1 to HSE_RTC), MSM's delay, the idle levels' dead time after a break, OCxFE; TRGO's use by the ADC and DAC until their models land",
+    "the peripheral models of ADC, DAC, SPI, I2C, the watchdogs and the RTC: they keep their register values and raise mcu.unsupported_access until their models land (docs/engineering/rtos-boards.md, step 8); until then only the timers' and USARTs' alternate functions drive their pins",
+    "DMA: the arbitration's delays between streams (a request is served at once), the direct mode and FIFO overrun/underrun errors (DMEIF never sets, FEIF only for the configuration error), the peripheral flow controller (PFCTRL), the bus matrix's timing (memory-to-memory moves an item every two cycles); dma_requests omits SAI2's and SPI4's requests",
+    "USART: noise detection (one sample a bit: NF never sets, ONEBIT changes nothing), smartcard mode (SCEN, NACK, GTPR) and IrDA (IREN, IRLP), which no catalog part speaks",
+    "timers: TIMx_OR's internal remaps (TIM2's ITR1, TIM5's TI4 to the LSI, LSE or RTC, TIM11's TI1 to HSE_RTC), MSM's delay, the idle levels' dead time after a break, OCxFE; TRGO's use by the ADC and DAC until their models land",
     "SysTick: STK_CALIB's TENMS (RM0390's value not taken: it reads 0 with SKEW set)",
     "GPIO: EVENTOUT (AF15, SEV's pulse), the I/O compensation cell's effect on the edges",
     "SYSCFG: the FMC memories MEMRMP can map at 0 (none is on the bus), PMC's ADC DC2 bits' effect",
@@ -1385,6 +1720,9 @@
    },
    {
     "title": "STMicroelectronics STM32_open_pin_data, STM32F446R(C-E)Tx.xml, BSD-3-Clause"
+   },
+   {
+    "title": "STMicroelectronics RM0390, tables 28 and 29 (DMA1 and DMA2 request mapping), transcribed into dma_requests"
    }
   ]
  }

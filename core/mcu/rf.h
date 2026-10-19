@@ -156,6 +156,11 @@ struct esk_rf {
     int *af_at, *af_num;
     const char **af_sig;
     int naf;
+    /* the MCU description's DMA request mapping (dma_requests): the
+     * controller, stream, channel and request of each entry */
+    const char **dma_ctl, **dma_sig;
+    int *dma_stream, *dma_chan;
+    int ndma;
 };
 
 /* Build the register file from a register description and put it on the
@@ -206,6 +211,11 @@ const char *esk_rf_af_signal(const struct esk_rf *rf, int port, int bit, int af,
 /* the k-th pin (from 0, as port * 32 + bit) that carries `sig` on an
  * alternate function, whose number goes to *af; -1 after the last */
 int esk_rf_af_pin(const struct esk_rf *rf, const char *sig, int k, int *af);
+/* the MCU description's DMA request mapping (dma_requests) */
+es_status esk_rf_dma_requests(struct esk_mach *m, const esk_json *map, char *why, size_t cap);
+/* whether request `sig` is on controller `ctl`'s stream `stream`, channel
+ * `chan` */
+int esk_rf_dma_maps(const struct esk_rf *rf, const char *ctl, int stream, int chan, const char *sig);
 /* the address of the configuration word of that name, or dflt */
 u32 esk_rf_config(const struct esk_rf *rf, const char *name, u32 dflt);
 /* the number of the PPS output function of that name (U2TX), or -1 */

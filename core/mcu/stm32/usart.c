@@ -43,14 +43,16 @@
  *   (the last with LBCL), idling at CPOL, the data valid at the edge CPHA
  *   picks; RX is sampled at that edge, so the receiver takes a byte with
  *   each one sent, as a synchronous slave answers.
+ * DMA (CR3): DMAT requests the transmitter's DMA while TXE is set, DMAR the
+ *   receiver's while RXNE is set (USARTn_TX, USARTn_RX); the DMA's access
+ *   to DR is the program's.
  * The interrupt is pending while TXE with TXEIE, TC with TCIE, RXNE or ORE
  *   with RXNEIE, IDLE with IDLEIE, PE with PEIE, LBD with LBDIE, CTS with
  *   CTSIE, or FE, NF or ORE with CR3.EIE and DMAR.
  *
  * Not modelled: noise detection (the decoder takes one sample a bit, so NF
  * never sets, and ONEBIT changes nothing), smartcard mode (SCEN, NACK,
- * GTPR) and IrDA (IREN, IRLP), which no catalog part speaks; the DMA
- * requests (DMAT, DMAR: step 7); the synchronous mode's clock as a slave
+ * GTPR) and IrDA (IREN, IRLP), which no catalog part speaks; the synchronous mode's clock as a slave
  * (the STM32's USART is master only, so nothing is missing there).
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/stm32-usart.c, which
@@ -101,6 +103,7 @@
 #define EIE (1u << 0)
 #define HDSEL (1u << 3)
 #define DMAR (1u << 6)
+#define DMAT (1u << 7)
 #define RTSE (1u << 8)
 #define CTSE (1u << 9)
 #define CTSIE (1u << 10)
@@ -134,9 +137,19 @@ struct usart {
     int ck_sample[CK_MAX];
     u16 sync_rx;
     int sync_bits;
+    char sig_tx[16], sig_rx[16]; /* its DMA requests */
 };
 
+
 static u32 v32(const struct esk_rf_reg *r) { return r ? (u32)r->value : 0; }
+
+/* the DMA requests: TX while TXE with DMAT, RX while RXNE with DMAR */
+static void dma_check(struct usart *u)
+{
+    u32 sr = v32(u->sr), c3 = v32(u->cr3), c1 = v32(u->cr1);
+    esk_stm32_dma_request(u->s, u->sig_tx, (c3 & DMAT) && (sr & TXE) && (c1 & UE) && (c1 & TE));
+    esk_stm32_dma_request(u->s, u->sig_rx, (c3 & DMAR) && (sr & RXNE) && (c1 & UE));
+}
 
 static void update_irq(struct usart *u)
 {
@@ -265,6 +278,7 @@ static void receive(struct usart *u, u32 bits, int framing_error)
     }
     rts_update(u);
     update_irq(u);
+    dma_check(u);
 }
 
 static u32 usart_format(void *ctx)
@@ -456,6 +470,7 @@ static void usart_tick(void *ctx, u32 cycles)
             }
             frame_end(u);
             update_irq(u);
+            dma_check(u);
         }
     }
     run_clock(u);
@@ -495,6 +510,7 @@ static u32 usart_read(void *ctx, u32 off, int n)
         u->seen = 0;
         rts_update(u);
         update_irq(u);
+        dma_check(u);
         return v;
     }
     v = esk_rf_read(u->p, off, n);
@@ -540,6 +556,7 @@ static void usart_write(void *ctx, u32 off, int n, u32 v)
     rts_update(u);
     run_clock(u);
     update_irq(u);
+    dma_check(u);
 }
 
 static void usart_reset(void *ctx)
@@ -656,6 +673,8 @@ void *esk_stm32_usart_create(struct esk_mach *s, struct esk_rf_periph *p)
     *c = u;
     usart_reset(c);
     c->cts = 1;
+    snprintf(c->sig_tx, sizeof c->sig_tx, "%s_TX", p->name);
+    snprintf(c->sig_rx, sizeof c->sig_rx, "%s_RX", p->name);
     s->uart_pin = esk_stm32_usart_pin;
     esk_mach_rx_port(s, p->name, usart_room, usart_put, usart_bit_cycles, c);
     esk_mach_rx_frames(s, usart_format, usart_put_frame, usart_started);

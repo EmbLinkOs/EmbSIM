@@ -220,7 +220,11 @@ A UART model that knows its frame format sends it with
 offers its receiver whole frames with `esk_mach_rx_frames` (its format,
 a frame with its framing error, a start bit's edge); the runtime's RX
 decoder then reads that many bits and checks the stop bit. `stm32-usart`
-is the SR/DR-layout USART of both families.
+is the SR/DR-layout USART of both families. An MCU description's
+`dma_requests` (controller, stream, channel, requests) is the register
+file's DMA mapping (`esk_rf_dma_maps`); a peripheral model raises or drops
+a request with `esk_stm32_dma_request`, and `stm32f4-dma` serves it from
+the stream that takes it, or keeps it waiting.
 
 ## 7. Pins, multiplexing and nets
 

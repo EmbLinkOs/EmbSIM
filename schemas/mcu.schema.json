@@ -45,6 +45,20 @@
         "isa": {"type": "string"}
       }
     },
+    "dma_requests": {
+      "type": "object",
+      "description": "A DMA controller's request mapping (an STM32's DMA1 and DMA2, RM0390 tables 28 and 29): controller -> stream -> the channel CHSEL selects -> the peripheral requests on it (USART2_RX, TIM1_UP, ADC1)",
+      "propertyNames": {"pattern": "^[A-Z][A-Z0-9_]*$"},
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {"pattern": "^[0-9]{1,2}$"},
+        "additionalProperties": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[0-9]{1,2}$"},
+          "additionalProperties": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"}}
+        }
+      }
+    },
     "memory": {
       "type": "array",
       "minItems": 1,

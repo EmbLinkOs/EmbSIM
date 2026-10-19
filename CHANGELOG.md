@@ -5,6 +5,31 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32F446's DMA (the NUCLEO-F446RE plan, step 7)
+
+- **`stm32f4-dma`** for DMA1 and DMA2 (RM0390 9):
+  - eight streams each, CHSEL's channel taking the requests of a new
+    `dma_requests` table, transcribed from RM0390's tables 28 and 29;
+  - a request waits while no stream takes it, and a stream enabled on its
+    channel serves it at once;
+  - transfers through the bus as the core's accesses go, so a peripheral
+    sees the DMA read or write its data register;
+  - direct mode, and the FIFO's packing, threshold, peripheral bursts and
+    FS;
+  - NDTR with half and full transfer flags, circular mode, double buffer
+    with CT, memory-to-memory on DMA2;
+  - transfer errors and the FIFO configuration error, LIFCR/HIFCR, and
+    each stream's interrupt.
+- **Requests:** the USARTs' DMAT and DMAR, and the timers' UDE, CCxDE (at
+  the update with CCDS), TDE and COMDE; the timers' DMA burst through
+  DCR/DMAR.
+- **Proof:** `tests/unit/test_stm32f4.c`:
+  - USART2 sent by DMA, the request waiting for its stream;
+  - received into a circular buffer, then double buffered;
+  - memory-to-memory packing bytes into words;
+  - the FIFO configuration and transfer errors;
+  - a timer's DMA burst sweeping ARR.
+
 ### The STM32 USARTs (the NUCLEO-F446RE plan, step 6)
 
 - **`stm32-usart` rewritten** for every USART and UART of the SR/DR layout,

@@ -69,6 +69,18 @@
 #define U_CR1 0x0Cu
 #define U_CR2 0x10u
 #define U_CR3 0x14u
+#define DMA1 0x40026000u
+#define DMA2 0x40026400u
+#define D_LISR 0x00u
+#define D_HISR 0x04u
+#define D_HIFCR 0x0Cu
+#define D_S(s) (0x10u + 0x18u * (s))
+#define S_CR 0x00u
+#define S_NDTR 0x04u
+#define S_PAR 0x08u
+#define S_M0AR 0x0Cu
+#define S_M1AR 0x10u
+#define S_FCR 0x14u
 
 /* PLLM 8, PLLN 360, PLLP /2, PLLQ 2, PLLR 2 from HSE: 1 MHz into the VCO,
  * 360 MHz out of it, 180 MHz SYSCLK (CubeF4's NUCLEO-F446RE templates) */
@@ -1100,6 +1112,175 @@ static void test_usart_flow_sync(void)
     f4_close(&f);
 }
 
+/* ---- DMA -------------------------------------------------------------------- */
+
+static void ram_write(f4 *f, u32 a, const char *bytes, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        CHECK_EQ(esk_bus_debug_write(&f->m.bus, a + (u32)i, 1, (u8)bytes[i]), 0);
+}
+
+static u32 ram32(f4 *f, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_debug_read(&f->m.bus, a, 4, &v), 0);
+    return v;
+}
+
+/* USART2's transmitter fed by DMA1 stream 6, channel 4 (HAL_UART_Transmit_DMA),
+ * the request raised before the stream was enabled */
+static void test_dma_usart_tx(void)
+{
+    f4 f;
+    u32 s6 = DMA1 + D_S(6);
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    ram_write(&f, 0x20000400u, "Hello", 5);
+    usart2_on(&f, 1u << 3);
+    esk_mach_run(&f.m, 1500, 0);               /* the idle frame */
+    wr(&f, USART2 + U_CR3, 1u << 7);           /* DMAT: TXE requests already */
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 1u << 21); /* DMA1EN */
+    wr(&f, s6 + S_PAR, USART2 + U_DR);
+    wr(&f, s6 + S_M0AR, 0x20000400u);
+    wr(&f, s6 + S_NDTR, 5);
+    wr(&f, s6 + S_CR, 4u << 25 | 1u << 10 | 1u << 6 | 1u << 4 | 1u); /* CH4, MINC, M2P, TCIE, EN */
+    CHECK_EQ(f.nframe, 1);                      /* the first at once */
+    CHECK_EQ(f.frame[0].c, 'H');
+    CHECK_EQ(rd(&f, s6 + S_NDTR), 3u);           /* and the second waits in DR */
+    CHECK_EQ(rd(&f, s6 + S_CR) & 1u << 0, 1u);   /* EN */
+    wr(&f, s6 + S_NDTR, 9);                      /* ignored while enabled */
+    CHECK_EQ(rd(&f, s6 + S_NDTR), 3u);
+    esk_mach_run(&f.m, 7000, 0);
+    CHECK_EQ(f.nframe, 5);
+    CHECK_EQ(f.frame[4].c, 'o');
+    CHECK_EQ(rd(&f, s6 + S_NDTR), 0u);
+    CHECK_EQ(rd(&f, s6 + S_CR) & 1u, 0u);          /* EN cleared at the end */
+    CHECK(rd(&f, DMA1 + D_HISR) & 1u << 21);       /* TCIF6 */
+    CHECK(rd(&f, DMA1 + D_HISR) & 1u << 20);       /* HTIF6 */
+    CHECK(rd(&f, NVIC_ISPR0) & 1u << 17);          /* DMA1_Stream6, IRQ 17 */
+    wr(&f, DMA1 + D_HIFCR, 1u << 21 | 1u << 20);
+    CHECK_EQ(rd(&f, DMA1 + D_HISR) & (3u << 20), 0u);
+    f4_close(&f);
+}
+
+/* USART2's receiver into a circular buffer (DMA1 stream 5), then double
+ * buffered */
+static void test_dma_usart_rx(void)
+{
+    f4 f;
+    struct esk_rx_port *rx;
+    u32 s5 = DMA1 + D_S(5);
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    usart2_on(&f, 1u << 2);
+    wr(&f, USART2 + U_CR3, 1u << 6); /* DMAR */
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 1u << 21);
+    wr(&f, s5 + S_PAR, USART2 + U_DR);
+    wr(&f, s5 + S_M0AR, 0x20000500u);
+    wr(&f, s5 + S_NDTR, 4);
+    wr(&f, s5 + S_CR, 4u << 25 | 1u << 10 | 1u << 8 | 1u); /* CH4, MINC, CIRC, P2M */
+    rx = esk_mach_rx_find(&f.m, "USART2");
+    if (!rx)
+        return;
+    rx->put_frame(rx->ctx, 'a', 0);
+    rx->put_frame(rx->ctx, 'b', 0);
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 1u << 5, 0u); /* the DMA read DR */
+    CHECK(rd(&f, DMA1 + D_HISR) & 1u << 10);        /* HTIF5 */
+    rx->put_frame(rx->ctx, 'c', 0);
+    rx->put_frame(rx->ctx, 'd', 0);
+    rx->put_frame(rx->ctx, 'e', 0);                 /* wraps */
+    CHECK(rd(&f, DMA1 + D_HISR) & 1u << 11);        /* TCIF5 */
+    CHECK_EQ(ram32(&f, 0x20000500u), 0x64636265u);  /* "ebcd": 'e' over 'a' */
+    CHECK_EQ(rd(&f, s5 + S_NDTR), 3u);
+    CHECK_EQ(rd(&f, s5 + S_CR) & 1u, 1u);
+    /* double buffer: CT switches to M1AR after a round */
+    wr(&f, s5 + S_CR, 0);
+    wr(&f, DMA1 + D_HIFCR, 0xFC0u);
+    wr(&f, s5 + S_M1AR, 0x20000600u);
+    wr(&f, s5 + S_NDTR, 2);
+    wr(&f, s5 + S_CR, 4u << 25 | 1u << 10 | 1u << 18 | 1u); /* DBM */
+    rx->put_frame(rx->ctx, 'x', 0);
+    rx->put_frame(rx->ctx, 'y', 0);
+    CHECK(rd(&f, s5 + S_CR) & 1u << 19);           /* CT: now M1AR */
+    rx->put_frame(rx->ctx, 'z', 0);
+    CHECK_EQ(ram32(&f, 0x20000600u) & 0xFFu, (u32)'z');
+    CHECK_EQ(ram32(&f, 0x20000500u) & 0xFFFFu, 0x7978u); /* "xy" */
+    f4_close(&f);
+}
+
+/* memory to memory on DMA2 stream 0 through the FIFO (bytes in, words out),
+ * a FIFO configuration error, a bus error */
+static void test_dma_m2m(void)
+{
+    f4 f;
+    u32 s0 = DMA2 + D_S(0);
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    ram_write(&f, 0x20000700u, "ABCDEFGH", 8);
+    wr(&f, RCC_AHB1ENR, 1u << 22); /* DMA2EN */
+    wr(&f, s0 + S_PAR, 0x20000700u);
+    wr(&f, s0 + S_M0AR, 0x20000800u);
+    wr(&f, s0 + S_NDTR, 8);
+    wr(&f, s0 + S_FCR, 3u);  /* FTH full, direct mode: forced off by M2M */
+    wr(&f, s0 + S_CR, 2u << 13 | 1u << 9 | 1u << 10 | 2u << 6 | 1u); /* MSIZE word, PINC, MINC, M2M */
+    CHECK(rd(&f, s0 + S_FCR) & 1u << 2); /* DMDIS */
+    esk_mach_run(&f.m, 100, 0);
+    CHECK_EQ(rd(&f, s0 + S_NDTR), 0u);
+    CHECK_EQ(ram32(&f, 0x20000800u), 0x44434241u);
+    CHECK_EQ(ram32(&f, 0x20000804u), 0x48474645u);
+    CHECK(rd(&f, DMA2 + D_LISR) & 1u << 5); /* TCIF0 */
+    /* MBURST INCR16 of words cannot fit a half FIFO: FEIF, not enabled */
+    wr(&f, DMA2 + 0x08u, 0x3Du);             /* LIFCR */
+    wr(&f, s0 + S_NDTR, 8);
+    wr(&f, s0 + S_FCR, 1u << 2 | 1u);        /* FIFO, FTH half */
+    wr(&f, s0 + S_CR, 3u << 23 | 2u << 13 | 2u << 11 | 1u << 9 | 1u << 10 | 2u << 6 | 1u);
+    CHECK_EQ(rd(&f, s0 + S_CR) & 1u, 0u);
+    CHECK(rd(&f, DMA2 + D_LISR) & 1u);       /* FEIF0 */
+    /* reading where nothing is: TEIF, EN cleared */
+    wr(&f, DMA2 + 0x08u, 0x3Du);
+    wr(&f, s0 + S_PAR, 0x30000000u);
+    wr(&f, s0 + S_NDTR, 4);
+    wr(&f, s0 + S_CR, 1u << 10 | 2u << 6 | 1u);
+    esk_mach_run(&f.m, 50, 0);
+    CHECK(rd(&f, DMA2 + D_LISR) & 1u << 3);  /* TEIF0 */
+    CHECK_EQ(rd(&f, s0 + S_CR) & 1u, 0u);
+    f4_close(&f);
+}
+
+/* TIM2's update request (DMA1 stream 1, channel 3) writing ARR through the
+ * DMA burst register: a frequency sweep, as TIM_DMABurst does */
+static void test_dma_tim_burst(void)
+{
+    f4 f;
+    u32 s1 = DMA1 + D_S(1);
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000900u, 4, 49), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000904u, 4, 199), 0);
+    wr(&f, RCC_APB1ENR, 1u);
+    wr(&f, RCC_AHB1ENR, 1u << 21);
+    wr(&f, s1 + S_PAR, TIM2 + 0x4Cu); /* DMAR */
+    wr(&f, s1 + S_M0AR, 0x20000900u);
+    wr(&f, s1 + S_NDTR, 2);
+    wr(&f, s1 + S_CR, 3u << 25 | 2u << 13 | 2u << 11 | 1u << 10 | 1u << 6 | 1u); /* CH3, words, MINC, M2P */
+    wr(&f, TIM2 + 0x48u, 11u);         /* DCR: DBA 11 (ARR), DBL 0 */
+    wr(&f, TIM2 + T_ARR, 99);
+    wr(&f, TIM2 + T_DIER, 1u << 8);    /* UDE */
+    wr(&f, TIM2 + T_CR1, 1u);
+    esk_mach_run(&f.m, 110, 0);         /* the first update */
+    CHECK_EQ(rd(&f, TIM2 + T_ARR), 49u);
+    esk_mach_run(&f.m, 60, 0);
+    CHECK_EQ(rd(&f, TIM2 + T_ARR), 199u);
+    CHECK_EQ(rd(&f, s1 + S_NDTR), 0u);
+    CHECK(rd(&f, DMA1 + D_LISR) & 1u << 11); /* TCIF1 */
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -1120,4 +1301,8 @@ RUN(test_systick);
 RUN(test_usart_tx);
 RUN(test_usart_rx);
 RUN(test_usart_flow_sync);
+RUN(test_dma_usart_tx);
+RUN(test_dma_usart_rx);
+RUN(test_dma_m2m);
+RUN(test_dma_tim_burst);
 TEST_MAIN_END

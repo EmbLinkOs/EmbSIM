@@ -86,8 +86,12 @@
  * changes at the instruction that brings the counter to its edge, and a
  * sleeping core's devices wake at it.
  *
- * Not modelled: the DMA requests (UDE, CCxDE, TDE, COMDE, DCR/DMAR: step
- * 7), the internal remaps of TIMx_OR (TIM2's ITR1, TIM5's TI4 to the LSI,
+ * DMA: DIER's UDE, CCxDE (at the update with CR2.CCDS), TDE and COMDE make
+ *   the requests TIMn_UP, TIMn_CHx, TIMn_TRIG and TIMn_COM, which wait for
+ *   the DMA; DMAR reaches the DBL + 1 registers from DCR's DBA in turn (the
+ *   burst).
+ *
+ * Not modelled: the internal remaps of TIMx_OR (TIM2's ITR1, TIM5's TI4 to the LSI,
  * LSE or RTC, TIM11's TI1 to HSE_RTC), MSM's delay (TRGI acts at once
  * anyway), the forced idle levels' dead time after a break, the fast
  * output enable (OCxFE: the compare already acts at the match), the
@@ -113,6 +117,7 @@
 /* CR2 */
 #define CCPC (1u << 0)
 #define CCUS (1u << 2)
+#define CCDS (1u << 3)
 #define TI1S (1u << 7)
 /* SMCR */
 #define ECE (1u << 14)
@@ -172,7 +177,18 @@ struct tim {
     int etrp;                       /* ETR after polarity and prescaler */
     int trgi;                       /* TRGI's level */
     int trgo;                       /* TRGO's level */
+    /* DMA: the requests' names, the burst's register */
+    char sig_up[12], sig_ch[4][12], sig_trig[12], sig_com[12];
+    struct esk_rf_reg *dcr, *dmar;
+    u32 burst_idx;
 };
+
+/* a DMA request (DIER's UDE, CCxDE, TDE, COMDE): it waits for the DMA */
+static void dma_req(struct tim *t, u32 de, const char *sig)
+{
+    if (t->dier->value & de)
+        esk_stm32_dma_request(t->s, sig, 1);
+}
 
 static u32 bits(const struct esk_rf_reg *r, int lsb, int width)
 {
@@ -262,8 +278,11 @@ static void trgo_pulse(struct tim *t);
 static void match(struct tim *t, int ch, int down)
 {
     u32 m = ocm(t, ch), c = cms(t);
-    if (!c || c == 3 || (c == 1 && down) || (c == 2 && !down))
+    if (!c || c == 3 || (c == 1 && down) || (c == 2 && !down)) {
         set_flag(t, 1u << (ch + 1));
+        if (!(t->cr2 && (t->cr2->value & CCDS)))
+            dma_req(t, 1u << (ch + 9), t->sig_ch[ch]);
+    }
     if (ch == 0 && t->cr2 && bits(t->cr2, 4, 3) == 3)
         trgo_pulse(t); /* MMS: compare pulse */
     if (m == 1)
@@ -463,6 +482,10 @@ static void update(struct tim *t, int ug)
         esk_rf_hw(t->bdtr, t->bdtr->value | MOE);
     if (!(ug && (t->cr1->value & URS)))
         set_flag(t, UIF);
+    dma_req(t, 1u << 8, t->sig_up);
+    if (t->cr2 && (t->cr2->value & CCDS))
+        for (ch = 0; ch < t->nch; ch++)
+            dma_req(t, 1u << (ch + 9), t->sig_ch[ch]); /* CCDS: the CCx requests at the update */
     if (t->cr2 && bits(t->cr2, 4, 3) == 2)
         trgo_pulse(t); /* MMS: update */
     if (!ug && (t->cr1->value & OPM)) {
@@ -632,9 +655,11 @@ static void trgi_edge(struct tim *t, int rising)
     if (m == SMS_OFF || encoder(t) || (!rising && m != SMS_GATED))
         return;
     set_flag(t, TIF);
+    dma_req(t, 1u << 14, t->sig_trig);
     if (rising && t->cr2 && (t->cr2->value & CCUS) && ccpc(t)) {
         commutation(t);
         set_flag(t, COMIF);
+        dma_req(t, 1u << 13, t->sig_com);
     }
     switch (m) {
     case SMS_RESET:
@@ -736,6 +761,8 @@ static void capture(struct tim *t, int ch)
         esk_rf_hw(t->sr, t->sr->value | (1u << (ch + 9))); /* CCxOF */
     esk_rf_hw(t->ccr[ch], (t->ccr[ch]->value & ~t->cntmask) | v);
     set_flag(t, 1u << (ch + 1));
+    if (!(t->cr2 && (t->cr2->value & CCDS)))
+        dma_req(t, 1u << (ch + 9), t->sig_ch[ch]);
 }
 
 /* the edge a channel's polarity selects on its input (CCxNP:CCxP 00
@@ -994,11 +1021,26 @@ static int tim_next_event(void *ctx, u32 *cycles)
 
 /* ---- the registers ----------------------------------------------------------- */
 
+static void tim_write(void *ctx, u32 off, int n, u32 v);
+
+/* DMAR: the register DCR's DBA points to, then the next, DBL + 1 of them
+ * (the DMA burst) */
+static u32 burst_target(struct tim *t)
+{
+    u32 dba = bits(t->dcr, 0, 5), dbl = bits(t->dcr, 8, 5), at = 4 * (dba + t->burst_idx);
+    if (++t->burst_idx > dbl)
+        t->burst_idx = 0;
+    return at;
+}
+
 static u32 tim_read(void *ctx, u32 off, int n)
 {
     struct tim *t = (struct tim *)ctx;
-    u32 v = esk_rf_read(t->p, off, n);
+    u32 v;
     int ch;
+    if (t->dmar && off == esk_rf_off(t->dmar) && !t->s->bus.debug)
+        return tim_read(ctx, burst_target(t), 4);
+    v = esk_rf_read(t->p, off, n);
     if (t->s->bus.debug)
         return v;
     for (ch = 0; ch < t->nch; ch++)
@@ -1039,6 +1081,12 @@ static void tim_write(void *ctx, u32 off, int n, u32 v)
 {
     struct tim *t = (struct tim *)ctx;
     struct esk_rf_reg *r[6];
+    if (t->dmar && off == esk_rf_off(t->dmar)) {
+        tim_write(ctx, burst_target(t), 4, v);
+        return;
+    }
+    if (t->dcr && off == esk_rf_off(t->dcr))
+        t->burst_idx = 0;
     u64 was[6], cr1 = t->cr1->value, bdtr = t->bdtr ? t->bdtr->value : 0;
     int ccpc0 = ccpc(t);
     u32 cen0 = (u32)(cr1 & CEN);
@@ -1092,6 +1140,7 @@ static void tim_write(void *ctx, u32 off, int n, u32 v)
             if (ccpc(t))
                 commutation(t);
             set_flag(t, COMIF);
+            dma_req(t, 1u << 13, t->sig_com);
         }
         if ((v & TG) && t->smcr) {
             set_flag(t, TIF);
@@ -1122,6 +1171,18 @@ static void tim_write(void *ctx, u32 off, int n, u32 v)
         trgo_pulse(t); /* MMS: reset */
     if (cen0 != (u32)(t->cr1->value & CEN) && !(t->cr1->value & CEN))
         t->frac = 0;
+    if (off == esk_rf_off(t->dier)) {
+        /* a request whose enable went off is withdrawn */
+        if (!(t->dier->value & (1u << 8)))
+            esk_stm32_dma_request(t->s, t->sig_up, 0);
+        for (ch = 0; ch < t->nch; ch++)
+            if (!(t->dier->value & (1u << (ch + 9))))
+                esk_stm32_dma_request(t->s, t->sig_ch[ch], 0);
+        if (!(t->dier->value & (1u << 14)))
+            esk_stm32_dma_request(t->s, t->sig_trig, 0);
+        if (!(t->dier->value & (1u << 13)))
+            esk_stm32_dma_request(t->s, t->sig_com, 0);
+    }
     run_clock(t);
     irq_check(t);
     outputs(t);
@@ -1354,6 +1415,13 @@ void *esk_stm32_tim_create(struct esk_mach *s, struct esk_rf_periph *p)
     t.apb = p->gate_name && strstr(p->gate_name, "APB2") ? 2 : 1;
     for (x = 0; x < 6; x++)
         t.raw[x] = -1;
+    t.dcr = esk_rf_reg(p, "DCR");
+    t.dmar = esk_rf_reg(p, "DMAR");
+    snprintf(t.sig_up, sizeof t.sig_up, "%s_UP", p->name);
+    snprintf(t.sig_trig, sizeof t.sig_trig, "%s_TRIG", p->name);
+    snprintf(t.sig_com, sizeof t.sig_com, "%s_COM", p->name);
+    for (ch = 0; ch < 4; ch++)
+        snprintf(t.sig_ch[ch], sizeof t.sig_ch[ch], "%s_CH%d", p->name, ch + 1);
     c = (struct tim *)esk_mach_alloc(s, sizeof *c);
     if (!c)
         return 0;

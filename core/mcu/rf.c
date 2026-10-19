@@ -412,6 +412,71 @@ es_status esk_rf_alternates(struct esk_mach *m, const esk_json *alt, char *why, 
     return ES_OK;
 }
 
+es_status esk_rf_dma_requests(struct esk_mach *m, const esk_json *map, char *why, size_t cap)
+{
+    struct esk_rf *rf = m->rf;
+    size_t i, j, k, l, n = 0;
+    int at = 0;
+    if (!rf || !map)
+        return ES_OK;
+    for (i = 0; i < esk_json_len(map); i++)
+        for (j = 0; j < esk_json_len(esk_json_at(map, i)); j++)
+            for (k = 0; k < esk_json_len(esk_json_at(esk_json_at(map, i), j)); k++)
+                n += esk_json_len(esk_json_at(esk_json_at(esk_json_at(map, i), j), k));
+    if (!n)
+        return ES_OK;
+    rf->dma_ctl = (const char **)esk_mach_alloc(m, n * sizeof *rf->dma_ctl);
+    rf->dma_sig = (const char **)esk_mach_alloc(m, n * sizeof *rf->dma_sig);
+    rf->dma_stream = (int *)esk_mach_alloc(m, n * sizeof *rf->dma_stream);
+    rf->dma_chan = (int *)esk_mach_alloc(m, n * sizeof *rf->dma_chan);
+    if (!rf->dma_ctl || !rf->dma_sig || !rf->dma_stream || !rf->dma_chan)
+        return ES_ENOMEM;
+    for (i = 0; i < esk_json_len(map); i++) {
+        const esk_json *ctl = esk_json_at(map, i);
+        const char *cn = ctl ? esk_mach_strdup(m, ctl->key) : NULL;
+        if (!cn)
+            return ES_ENOMEM;
+        for (j = 0; j < esk_json_len(ctl); j++) {
+            const esk_json *st = esk_json_at(ctl, j);
+            long sn = st && st->key ? strtol(st->key, NULL, 10) : -1;
+            for (k = 0; k < esk_json_len(st); k++) {
+                const esk_json *ch = esk_json_at(st, k);
+                long chn = ch && ch->key ? strtol(ch->key, NULL, 10) : -1;
+                if (sn < 0 || sn > 15 || chn < 0 || chn > 15) {
+                    snprintf(why, cap, "dma_requests: %s has a bad stream or channel", cn);
+                    return ES_ESCHEMA;
+                }
+                for (l = 0; l < esk_json_len(ch); l++) {
+                    const char *sig = esk_json_str(esk_json_at(ch, l));
+                    if (!sig) {
+                        snprintf(why, cap, "dma_requests: %s stream %ld names no request", cn, sn);
+                        return ES_ESCHEMA;
+                    }
+                    rf->dma_ctl[at] = cn;
+                    rf->dma_stream[at] = (int)sn;
+                    rf->dma_chan[at] = (int)chn;
+                    rf->dma_sig[at] = esk_mach_strdup(m, sig);
+                    if (!rf->dma_sig[at])
+                        return ES_ENOMEM;
+                    at++;
+                }
+            }
+        }
+    }
+    rf->ndma = at;
+    return ES_OK;
+}
+
+int esk_rf_dma_maps(const struct esk_rf *rf, const char *ctl, int stream, int chan, const char *sig)
+{
+    int i;
+    for (i = 0; rf && i < rf->ndma; i++)
+        if (rf->dma_stream[i] == stream && rf->dma_chan[i] == chan && !strcmp(rf->dma_sig[i], sig) &&
+            !strcmp(rf->dma_ctl[i], ctl))
+            return 1;
+    return 0;
+}
+
 const char *esk_rf_af_signal(const struct esk_rf *rf, int port, int bit, int af, int k)
 {
     int i, at = port * 32 + bit;

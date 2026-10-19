@@ -99,6 +99,10 @@ after each one.
 7. **DMA.**
    - DMA1/DMA2 streams and channels, FIFO, circular and double-buffer modes.
    - Used by the UART, SPI, ADC and I2C HAL examples.
+   - *Done:* `stm32f4-dma` with RM0390's request mapping (direct and FIFO
+     modes, circular, double buffer, memory-to-memory, the flags and
+     interrupts) and the USARTs' and timers' requests; the ADC's, SPI's,
+     I2C's and DAC's come with their models in step 8.
 8. **ADC, DAC, SPI, I2C and the watchdogs.**
    - ADC1-3: regular and injected groups, scan, continuous.
    - The DAC.
