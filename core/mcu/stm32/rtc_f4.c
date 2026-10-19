@@ -446,7 +446,7 @@ static void sync_at(struct rtc *k, u32 hz)
     }
     if (k->tamp_armed) {
         u32 tafcr = reg(k->tafcr), freq = tafcr >> 8 & 7u, nflt = tafcr >> 11 & 3u;
-        u64 need = (u64)(32768u >> freq) * (1u << nflt); /* samples at RTCCLK / 32768 ... / 256 */
+        u64 need = (u64)(32768u >> freq) << nflt; /* samples at RTCCLK / 32768 ... / 256 */
         k->tamp_ticks += ticks;
         if (k->tamp_ticks >= need) {
             k->tamp_armed = 0;
@@ -886,9 +886,11 @@ void *esk_stm32f4_rtc_create(struct esk_mach *s, struct esk_rf_periph *p)
     k.tafcr = esk_rf_reg(p, "TAFCR");
     k.alrmss[0] = esk_rf_reg(p, "ALRMASSR");
     k.alrmss[1] = esk_rf_reg(p, "ALRMBSSR");
-    for (i = 0; i < 20; i++)
-        if (!(k.bkp[i] = esk_rf_reg(p, bk[i])))
+    for (i = 0; i < 20; i++) {
+        k.bkp[i] = esk_rf_reg(p, bk[i]);
+        if (!k.bkp[i])
             return 0;
+    }
     if (!k.tr || !k.dr || !k.cr || !k.isr || !k.prer || !k.wutr || !k.calibr || !k.alrm[0] || !k.alrm[1] ||
         !k.wpr || !k.ssr || !k.shiftr || !k.tstr || !k.tsdr || !k.tsssr || !k.calr || !k.tafcr || !k.alrmss[0] ||
         !k.alrmss[1])

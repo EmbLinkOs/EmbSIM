@@ -267,7 +267,7 @@ static u64 ww_unit(const struct wwdg *w)
 {
     u32 core = esk_mach_core_hz(w->s), pclk = esk_stm32_pclk(w->s, 1);
     u64 ratio = core && pclk && core >= pclk ? core / pclk : 1;
-    return ratio * (4096u << (reg(w->cfr) >> 7 & 3u));
+    return ratio * ((u64)4096u << (reg(w->cfr) >> 7 & 3u));
 }
 
 /* the counter now (T[6:0]); its clock off: as it was */
