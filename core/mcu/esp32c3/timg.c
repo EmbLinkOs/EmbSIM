@@ -23,11 +23,14 @@
  *     the WDT registers ignore writes.
  *   - RTCCALICFG's RTC_CALI_START counts RTC_CALI_MAX cycles of the clock
  *     RTC_CALI_CLK_SEL names (RC_SLOW_CLK 136 kHz, RC_FAST_DIV_CLK 17.5 MHz
- *     / 256, the board's XTAL32K_CLK) against XTAL_CLK; when done
- *     RTC_CALI_RDY is set and RTC_CALI_VALUE holds the XTAL_CLK count (with
- *     RTC_CALI_START_CYCLING again and again, RTC_CALI_CYCLING_DATA_VLD).
- *     A clock that does not run (no 32 kHz crystal) sets RTC_CALI_TIMEOUT
- *     after RTC_CALI_TIMEOUT_THRES XTAL_CLK cycles.
+ *     / 256, the board's XTAL32K_CLK) against XTAL_CLK once; when done
+ *     RTC_CALI_RDY is set and RTC_CALI_VALUE holds the XTAL_CLK count.
+ *     RTC_CALI_START_CYCLING alone counts again and again, each count
+ *     setting RTC_CALI_CYCLING_DATA_VLD; it is set out of reset (RC_FAST_DIV
+ *     _CLK, one cycle), so a chip calibrates from its start (11.3.4). A
+ *     count not done within RTC_CALI_TIMEOUT_THRES XTAL_CLK cycles (a clock
+ *     that does not run, a threshold below the count, as ESP-IDF sets to
+ *     stop the periodic one) sets RTC_CALI_TIMEOUT and stops.
  *   - INT_ST_TIMERS is INT_RAW and INT_ENA; T0's and the WDT's bits raise
  *     the matrix sources (TIMG0 32 and 33, TIMG1 34 and 35).
  * Inside, the RC oscillators run at their nominal frequencies.
@@ -77,7 +80,8 @@ struct c3_timg {
     u32 w0, prescale, hold[4];
     int stage;
     u64 wcount, w_frac;
-    /* the calibration: XTAL_CLK cycles since its start, of `need` */
+    /* the calibration (1 one-shot, 2 periodic): XTAL_CLK cycles since its
+     * start, of `need` */
     int cali_on;
     u64 cali_x, cali_need, x_frac;
 };
@@ -232,23 +236,29 @@ static u32 cali_hz(const struct c3_timg *k)
     return sel == 0 ? RC_SLOW_HZ : sel == 1 ? RC_FAST_DIV_HZ : sel == 2 ? k->s->lse_hz : 0;
 }
 
-static void cali_start(struct c3_timg *k)
+/* a frequency calculation from now: one-shot (RTC_CALI_START) or periodic
+ * (RTC_CALI_START_CYCLING) */
+static void cali_start(struct c3_timg *k, int periodic)
 {
     u32 hz = cali_hz(k), max = (reg(k->cali) >> 16) & 0x7fffu;
-    k->cali_on = 1;
+    k->cali_on = periodic ? 2 : 1;
     k->cali_x = 0;
     k->cali_need = hz ? ((u64)max * XTAL_HZ + hz / 2) / hz : 0;
-    esk_rf_hw(k->cali, reg(k->cali) & ~CALI_RDY);
+    if (!periodic)
+        esk_rf_hw(k->cali, reg(k->cali) & ~CALI_RDY);
     esk_rf_hw(k->cali2, reg(k->cali2) & ~1u);
 }
 
 static void cali_run(struct c3_timg *k, u32 cycles)
 {
+    u64 thres = reg(k->cali2) >> 7; /* RTC_CALI_TIMEOUT_THRES */
     if (!k->cali_on)
         return;
     k->cali_x += ticks(k, cycles, XTAL_HZ, 1, &k->x_frac);
-    if (!k->cali_need) {
-        if (k->cali_x >= (reg(k->cali2) >> 7)) { /* TIMEOUT_THRES */
+    /* a count not done within the threshold (a clock that does not run, or
+     * a threshold below the count) times out */
+    if (!k->cali_need || thres < k->cali_need) {
+        if (k->cali_x >= thres) {
             k->cali_on = 0;
             esk_rf_hw(k->cali2, reg(k->cali2) | 1u);
         }
@@ -256,12 +266,14 @@ static void cali_run(struct c3_timg *k, u32 cycles)
     }
     if (k->cali_x < k->cali_need)
         return;
-    esk_rf_hw(k->cali1, (u32)(k->cali_need & 0x1ffffffu) << 7 | 1u);
-    esk_rf_hw(k->cali, reg(k->cali) | CALI_RDY);
-    if (reg(k->cali) & CALI_CYCLING)
-        k->cali_x -= k->cali_need;
-    else
+    if (k->cali_on == 2) { /* periodic: CYCLING_DATA_VLD, and again */
+        esk_rf_hw(k->cali1, (u32)(k->cali_need & 0x1ffffffu) << 7 | 1u);
+        k->cali_x %= k->cali_need;
+    } else {
+        esk_rf_hw(k->cali1, (u32)(k->cali_need & 0x1ffffffu) << 7);
+        esk_rf_hw(k->cali, reg(k->cali) | CALI_RDY);
         k->cali_on = 0;
+    }
 }
 
 /* ---- the device ------------------------------------------------------------------ */
@@ -346,9 +358,12 @@ static void tg_write(void *ctx, u32 off, int n, u32 v)
     } else if (off == esk_rf_off(k->wconf[0]) && (v & W0_UPDATE)) {
         wdt_config(k);
     } else if (off == esk_rf_off(k->cali)) {
-        if ((reg(k->cali) & CALI_START) && !(cali0 & CALI_START))
-            cali_start(k);
-        else if (!(reg(k->cali) & CALI_START))
+        u32 now = reg(k->cali);
+        if ((now & CALI_START) && !(cali0 & CALI_START))
+            cali_start(k, 0);
+        else if ((now & CALI_CYCLING) && !(cali0 & CALI_CYCLING) && !(now & CALI_START))
+            cali_start(k, 1);
+        else if (!(now & (CALI_START | CALI_CYCLING)) || (k->cali_on == 2 && !(now & CALI_CYCLING)))
             k->cali_on = 0;
     } else if (off == OFF_INT_CLR) {
         esk_rf_hw(k->raw, reg(k->raw) & ~(v & 3u));
@@ -366,6 +381,8 @@ static void tg_reset(void *ctx)
     k->cali_on = 0;
     k->cali_x = k->x_frac = 0;
     k->clocked = 0; /* the machine's reset stopped every clock */
+    if (reg(k->cali) & CALI_CYCLING) /* out of reset, periodic */
+        cali_start(k, 1);
     wdt_config(k);
     update(k);
     clocking(k);

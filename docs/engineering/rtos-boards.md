@@ -230,6 +230,25 @@ Started only once the NUCLEO-F446RE is done.
    - GPIO with the GPIO matrix and IO MUX on the pins.
    - UART0/1.
    - USB Serial/JTAG as a host serial port.
+
+   *Done:* the GPIO matrix and IO MUX on the pins (`esp32c3-gpio`,
+   `esp32c3-iomux`: each pad's reset configuration from the TRM's table
+   5.12-1, output and input routing, the interrupts, the UARTs' TX and RX
+   wherever the matrix puts them); UART0 and UART1 came with step 1. The
+   USB Serial/JTAG controller (`esp32c3-usbjtag`) is the DevKitM-1's: no
+   host on GPIO18 and GPIO19, so its buffer fills and the ROM's and
+   ESP-IDF's consoles time out on it as on the board; the host serial port
+   it would be moved to ADR-031's native USB devices. With it, what
+   ESP-IDF's start needs: the analog blocks' I2C master (`regi2c.c`), the
+   random number generator (`esp32c3-apbctrl`), the radio's register
+   blocks (`radio.c`), the ROM's layout pointer, the performance counter as
+   the ROM starts it, the timer group's periodic calibration and a CPU
+   reset clearing the permission control. ESP-IDF v5.4's hello_world,
+   built by its own tools and flashed as `idf.py` merges it, runs
+   unmodified: the ROM, the second-stage bootloader (partition table,
+   six segments checked and loaded), the app's start at 160 MHz,
+   FreeRTOS, `Hello world!`, and `esp_restart` back to the ROM with
+   `rst:0xc (RTC_SW_CPU_RST)`, again and again.
 5. **The rest.**
    - LEDC (PWM), RMT (the board's WS2812 on GPIO8), I2C, GP-SPI2, the SAR ADC
      and the temperature sensor.

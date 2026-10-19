@@ -5,6 +5,35 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's pins and ESP-IDF's hello_world (the RTOS boards plan, part 2, step 4)
+
+- **The GPIO matrix and IO MUX** (`esp32c3-gpio`, `esp32c3-iomux`): each
+  pad's reset configuration from the TRM's table 5.12-1 (U0TXD and U0RXD
+  on GPIO21 and GPIO20, the pull-ups on GPIO9, MTCK and USB D+), outputs
+  through the matrix's 128 signals or the pad's IO MUX function, open
+  drain, inputs through FUNCn_IN_SEL, the five interrupt types on the CPU
+  and NMI sources (16, 17), and the UARTs' TX and RX on whichever pins the
+  matrix gives them.
+- **USB Serial/JTAG** (`esp32c3-usbjtag`), as on a DevKitM-1 with no host
+  on its D- and D+: 64 bytes of send buffer, flushed by the 64th byte or
+  WR_DONE and then never read, the interrupts on source 26. The ROM and
+  ESP-IDF time out on it as the TRM asks (30.4).
+- **What ESP-IDF's start needs**: the internal I2C master to the analog
+  blocks (`regi2c.c`, as the ROM's regi2c routines drive it, with the
+  o-code calibration's done flags); RND_DATA's random numbers
+  (`esp32c3-apbctrl`, a seeded generator, the same every run); the radio's
+  register blocks FE, FE2 and NRX (`radio.c`); the ROM's last word, the
+  `ets_rom_layout_p` pointer (`esprom.py --word`); the performance counter
+  reached through 0x800-0x802, where the ROM starts it; the timer group's
+  periodic RTC_SLOW_CLK calibration from reset and its timeout; a CPU
+  reset clearing the permission control's locks (TRM 14.8).
+- **ESP-IDF v5.4's hello_world runs unmodified**: built by `idf.py`, its
+  bootloader, partition table and app merged into the flash as `idf.py
+  flash` writes them, it boots through the ROM and the second-stage
+  bootloader, prints its banner, chip revision v0.3 and `Hello world!`,
+  counts down on FreeRTOS's tick and restarts with `rst:0xc
+  (RTC_SW_CPU_RST)`.
+
 ### The ESP32-C3's clocks and timers (the RTOS boards plan, part 2, step 3)
 
 - **SYSTEM** (`esp32c3-system`): CPU_CLK as the TRM's tables 6.2-1 and

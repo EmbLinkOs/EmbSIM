@@ -32,9 +32,9 @@
       "base": "0x40000000",
       "size": "384K",
       "kind": "rom",
-      "doc": "Internal ROM0 and ROM1 on the instruction bus (TRM table 3.3-1): the boot ROM, chip revision v0.3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x60000 --data-table 0x40059200:0x40059400, the ROM's copy table of its RAM variables) from Espressif's esp32c3_rev3_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). Bytes no segment of the ELF covers read as zeros",
+      "doc": "Internal ROM0 and ROM1 on the instruction bus (TRM table 3.3-1): the boot ROM, chip revision v0.3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x60000 --data-table 0x40059200:0x40059400, the ROM's copy table of its RAM variables; --word 0x4005FFFC=ets_rom_layout, ROM1's last word, the pointer ESP-IDF's ROM linker script names ets_rom_layout_p at 0x3FF1FFFC, to the ROM's ets_rom_layout, which no section of the ELF holds) from Espressif's esp32c3_rev3_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). Bytes no segment of the ELF covers read as zeros",
       "file": "rom.bin",
-      "sha256": "b5c495fdf2de87379ba023ffe7869d3f70cf94394020d22a9faaf3633146f5d3"
+      "sha256": "536475fbec909fab6657e8633717c737d1b2c034029373fc0452cdba9b2a92e9"
     },
     {
       "name": "rom1_data",
@@ -185,6 +185,18 @@
     {
       "match": "EFUSE",
       "model": "esp32c3-efuse"
+    },
+    {
+      "match": "IO_MUX",
+      "model": "esp32c3-iomux"
+    },
+    {
+      "match": "APB_CTRL",
+      "model": "esp32c3-apbctrl"
+    },
+    {
+      "match": "USB_DEVICE",
+      "model": "esp32c3-usbjtag"
     }
   ],
   "io": {
@@ -251,9 +263,13 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Work in progress (the RTOS boards plan, part 2, steps 1 to 3). The ESP-RV core: RV32IMC with user mode and the ESP32-C3's own CSRs (TRM chapter 1): mstatus's MIE, MPIE, MPP and TW, a vectored mtvec, five-bit mcause codes, the performance counter (mpcer, mpcmr, mpccr) and the user-mode one the ROM uses, the trigger module's eight triggers (exact and NAPOT match on execute, load and store, tcontrol), 16 PMP entries without static priority, and the cpu_gpio CSRs. The interrupt matrix and controller: 62 sources mapped onto CPU interrupts 1-31, level and edge types, priorities 1-15, the threshold, the 4-cycle latency, the clear toggle. The boot: Espressif's own boot ROM (esp32c3_rev3_rom.elf, chip revision v0.3) runs from the reset vector, reads the strapping pins (GPIO_STRAP), reports the reset cause (RTC_CNTL), loads an ESP image's segments from the flash through SPI1, checks its checksum and SHA-256 on the SHA accelerator and jumps to it. The in-package 4 MB flash, an XMC XM25QH32C as its datasheet has it (its instructions, status registers, busy times, security registers and power-down), behind SPI0 and SPI1; the cache and MMU mapping its 64 KB pages on the instruction and data buses. UART0 and UART1 (FIFOs, frames at the baud rate, interrupts); RTC_CNTL's reset causes, RTC timer, RTC watchdog with its flash-boot protection and the software resets; the Debug Assistant's PC logging (the ROM's Saved PC). The clocks and timers: SYSTEM's CPU clock (XTAL_CLK / 2 out of reset, the PLL's 80 or 160 MHz, RC_FAST_CLK), APB_CLK, the peripherals' clock enables and resets and the software interrupts; the system timer (two 52-bit counters at 16 MHz, three comparators in target or period mode); the timer groups' T0 (prescaler, up or down, alarm, auto-reload), MWDT (four stages, write key, flash-boot protection: a blank chip resets with TG0WDT_SYS_RST) and RTC_SLOW_CLK calibration; the eFuse controller with the chip's factory bits (revision v0.3, QFN32, 4 MB XMC flash in the package, a MAC). Every register of Espressif's SVD with its reset value.",
+      "claims": "Work in progress (the RTOS boards plan, part 2, steps 1 to 4). The ESP-RV core: RV32IMC with user mode and the ESP32-C3's own CSRs (TRM chapter 1): mstatus's MIE, MPIE, MPP and TW, a vectored mtvec, five-bit mcause codes, the performance counter (mpcer, mpcmr, mpccr, also reached at 0x800-0x802 where the ROM starts it), the trigger module's eight triggers (exact and NAPOT match on execute, load and store, tcontrol), 16 PMP entries without static priority, and the cpu_gpio CSRs. The interrupt matrix and controller: 62 sources mapped onto CPU interrupts 1-31, level and edge types, priorities 1-15, the threshold, the 4-cycle latency, the clear toggle. The boot: Espressif's own boot ROM (esp32c3_rev3_rom.elf, chip revision v0.3) runs from the reset vector, reads the strapping pins (GPIO_STRAP), reports the reset cause (RTC_CNTL), loads an ESP image's segments from the flash through SPI1, checks its checksum and SHA-256 on the SHA accelerator and jumps to it. The in-package 4 MB flash, an XMC XM25QH32C as its datasheet has it (its instructions, status registers, busy times, security registers and power-down), behind SPI0 and SPI1; the cache and MMU mapping its 64 KB pages on the instruction and data buses. UART0 and UART1 (FIFOs, frames at the baud rate, interrupts); RTC_CNTL's reset causes, RTC timer, RTC watchdog with its flash-boot protection and the software resets; the Debug Assistant's PC logging (the ROM's Saved PC). The clocks and timers: SYSTEM's CPU clock (XTAL_CLK / 2 out of reset, the PLL's 80 or 160 MHz, RC_FAST_CLK), APB_CLK, the peripherals' clock enables and resets and the software interrupts; the system timer (two 52-bit counters at 16 MHz, three comparators in target or period mode); the timer groups' T0 (prescaler, up or down, alarm, auto-reload), MWDT (four stages, write key, flash-boot protection: a blank chip resets with TG0WDT_SYS_RST) and RTC_SLOW_CLK calibration; the eFuse controller with the chip's factory bits (revision v0.3, QFN32, 4 MB XMC flash in the package, a MAC). The pins: the GPIO matrix and IO MUX (each pad's reset configuration from TRM table 5.12-1, the matrix's output signals and the IO MUX functions, open drain, input selection, the five interrupt types on the CPU and NMI sources, the strapping latch, the UARTs on whichever pins the matrix gives them); USB Serial/JTAG's CDC-ACM registers with no host on its pins (the 64-byte buffer flushed and never read, its interrupts). What ESP-IDF's start reaches beyond the TRM: the internal I2C master to the analog blocks as the ROM's regi2c routines drive it, RND_DATA's random numbers, the radio's FE, FE2 and NRX register blocks, the ROM's ets_rom_layout_p, the RTC_SLOW_CLK periodic calibration running from reset, a CPU reset clearing the permission control (TRM 14.8). ESP-IDF v5.4's hello_world runs unmodified, from the ROM through the second-stage bootloader to app_main and esp_restart. Every register of Espressif's SVD with its reset value.",
       "omissions": [
-        "the GPIO matrix and IO MUX, USB Serial/JTAG and every peripheral not named in the claims (in progress); the PLL's power and lock, and the RC oscillators' spread (they run at their nominal frequencies)",
+        "every peripheral not named in the claims (LEDC, RMT, I2C, GP-SPI2, the SAR ADC and temperature sensor, TWAI, I2S, the GDMA, AES, RSA, HMAC, the digital signature, the permission control's checks: in progress); the PLL's power and lock, and the RC oscillators' spread (they run at their nominal frequencies)",
+        "a USB host on GPIO18 and GPIO19 (the CDC-ACM port on the computer, its DTR and RTS resets, the JTAG side: ADR-031's native USB); the USB pads' own pull-ups and pin swap beyond the IO MUX's reset",
+        "the analog blocks' registers' reset values (they read 0 until written) and what their values do (the PLL's frequency comes from SYSTEM, the regulators' voltages are not modelled); the o-code calibration's time",
+        "the random number generator's entropy: RND_DATA is a seeded generator, the same sequence every run so that a run replays, whatever noise sources are on",
+        "the GPIO's input filter and synchronisation, sleep mode (the pads' sleep configuration), the sigma-delta modulation and the drive strengths' effect",
         "the eFuses' write and read protection, their check values and times; the chip's calibration data (BLOCK2 is blank)",
         "the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c)",
         "the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none)",
@@ -261,7 +277,7 @@
         "the debug module and the debug CSRs",
         "the performance counter's load and jump hazard events",
         "the interrupt controller's transient state after a register write",
-        "Wi-Fi and Bluetooth LE"
+        "Wi-Fi and Bluetooth LE (the radio's register blocks keep what is written and do nothing)"
       ],
       "validation": [
         "repo:tests/unit/test_esp32c3.c",

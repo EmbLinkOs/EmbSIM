@@ -454,7 +454,8 @@ static void c3_run(c3 *f, u64 cycles)
 {
     /* a reset starts the machine's cycle count again */
     while (cycles && f->m.state == ESK_MACH_RUN) {
-        cycles -= esk_mach_run(&f->m, cycles, 0);
+        u64 ran = esk_mach_run(&f->m, cycles, 0);
+        cycles = ran >= cycles ? 0 : cycles - ran; /* the last instruction may overshoot */
         if (f->m.reset_req) {
             f->m.reset_req = 0;
             f->m.yield = 0;
@@ -538,7 +539,9 @@ static void test_rom_blank_flash(void)
     CHECK(strstr(uart_out, "rst:0x7") == NULL);
     c3_run(&f, 26000000u - 4000000u + 2000000u);
     CHECK(strstr(uart_out, "rst:0x7 (TG0WDT_SYS_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)") != NULL);
-    CHECK(strstr(uart_out, "Saved PC:0x4004c0") != NULL);
+    /* the PC in the ROM's character output (uart_tx_one_char and the UART
+     * and USB routines it calls), where it prints the headers */
+    CHECK(strstr(uart_out, "Saved PC:0x4004c") != NULL);
     c3_close(&f);
 }
 
@@ -560,6 +563,8 @@ static void test_rom_boots_image(void)
     CHECK(strstr(uart_out, "entry 0x403ce000") != NULL);
     CHECK(strstr(uart_out, "MOK\n") != NULL);
     CHECK_EQ(f.m.cpu->ops->pc(f.m.cpu), 0x403CE05Cu);
+    /* ROM1's last word: ets_rom_layout_p, to the ROM's ets_rom_layout */
+    CHECK_EQ(rd(&f, 0x3FF1FFFCu), 0x3FF1BE3Cu);
     c3_close(&f);
 }
 
@@ -1026,10 +1031,307 @@ static void test_efuse(void)
     c3_close(&f);
 }
 
+/* ---- GPIO --------------------------------------------------------------------- */
+
+#define GPIO          0x60004000u
+#define G_OUT_W1TS    (GPIO + 0x08u)
+#define G_OUT_W1TC    (GPIO + 0x0Cu)
+#define G_EN_W1TS     (GPIO + 0x24u)
+#define G_IN          (GPIO + 0x3Cu)
+#define G_STATUS      (GPIO + 0x44u)
+#define G_STATUS_W1TC (GPIO + 0x4Cu)
+#define G_PCPU_INT    (GPIO + 0x5Cu)
+#define G_PIN(n)      (GPIO + 0x74u + 4u * (n))
+#define G_FIN(y)      (GPIO + 0x154u + 4u * (y))
+#define G_FOUT(n)     (GPIO + 0x554u + 4u * (n))
+#define IOMUX(n)      (0x60009000u + 0x04u + 4u * (n))
+
+static esk_mach_pin pins_out[32];
+static int pins_seen[32], pins_ext[32];
+
+static void h_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
+{
+    (void)ctx;
+    pins_out[16 * port + bit] = *cfg;
+    pins_seen[16 * port + bit] = 1;
+}
+
+static int h_pin_in(void *ctx, int port, int bit, int *level)
+{
+    int n = 16 * port + bit;
+    (void)ctx;
+    if (pins_ext[n] < 0)
+        return 0;
+    *level = pins_ext[n];
+    return 1;
+}
+
+static int gpio_open(c3 *f)
+{
+    int i;
+    for (i = 0; i < 32; i++)
+        pins_ext[i] = -1;
+    memset(pins_seen, 0, sizeof pins_seen);
+    if (!c3_open(f, NULL, 0, NULL, 0))
+        return 0;
+    f->m.host.pin_cfg = h_pin_cfg;
+    f->m.host.pin_in = h_pin_in;
+    esk_mach_reset(&f->m);
+    return 1;
+}
+
+static void test_gpio_reset_and_output(void)
+{
+    /* out of reset: GPIO21 is U0TXD, driven high; GPIO9 and GPIO20 pulled
+     * up; GPIO0 and GPIO18 with their inputs off. Then GPIO5 as a simple
+     * output, and open-drain */
+    c3 f;
+    int port = -1, bit = -1;
+    if (!gpio_open(&f))
+        return;
+    CHECK(pins_seen[21]);
+    CHECK_EQ(pins_out[21].drive, 1);
+    CHECK(pins_out[21].af);
+    CHECK_EQ(pins_out[9].pull, 1);
+    CHECK_EQ(pins_out[9].drive, -1);
+    CHECK_EQ(pins_out[20].pull, 1);
+    CHECK(pins_out[0].analog);
+    CHECK(rd(&f, G_IN) & (1u << 9));
+    CHECK(rd(&f, G_IN) & (1u << 20));
+    CHECK(!(rd(&f, G_IN) & (1u << 0))); /* IE off */
+    CHECK_EQ(rd(&f, GPIO + 0x38u), 8u); /* STRAP: GPIO9 high, SPI boot */
+    CHECK_EQ(esk_esp32c3_uart_pin(&f.m, "UART0", 1, &port, &bit), 0);
+    CHECK_EQ(16 * port + bit, 21);
+    CHECK_EQ(esk_esp32c3_uart_pin(&f.m, "UART0", 0, &port, &bit), 0);
+    CHECK_EQ(16 * port + bit, 20);
+    wr(&f, IOMUX(5), 1u << 12 | 1u << 9); /* MCU_SEL 1 (GPIO), IE */
+    wr(&f, G_EN_W1TS, 1u << 5);
+    CHECK_EQ(pins_out[5].drive, 0);
+    wr(&f, G_OUT_W1TS, 1u << 5);
+    CHECK_EQ(pins_out[5].drive, 1);
+    CHECK(rd(&f, G_IN) & (1u << 5));
+    wr(&f, G_PIN(5), 1u << 2); /* PAD_DRIVER: open drain */
+    CHECK(pins_out[5].open_drain);
+    wr(&f, G_OUT_W1TC, 1u << 5);
+    CHECK_EQ(pins_out[5].drive, 0);
+    c3_close(&f);
+}
+
+static void test_gpio_input_interrupt(void)
+{
+    /* GPIO4 an input driven from outside; a rising-edge interrupt, its
+     * status and the matrix source 16; W1TC clears it */
+    c3 f;
+    if (!gpio_open(&f))
+        return;
+    wr(&f, IOMUX(4), 1u << 12 | 1u << 9);
+    pins_ext[4] = 0;
+    esk_esp32c3_pins_changed(&f.m);
+    CHECK(!(rd(&f, G_IN) & (1u << 4)));
+    wr(&f, G_PIN(4), 1u << 7 | 1u << 13); /* rising edge, the CPU's */
+    pins_ext[4] = 1;
+    esk_esp32c3_pins_changed(&f.m);
+    CHECK(rd(&f, G_IN) & (1u << 4));
+    CHECK_EQ(rd(&f, G_STATUS), 1u << 4);
+    CHECK_EQ(rd(&f, G_PCPU_INT), 1u << 4);
+    CHECK(rd(&f, INTR_STATUS_0) & (1u << 16));
+    wr(&f, G_STATUS_W1TC, 1u << 4);
+    CHECK_EQ(rd(&f, G_PCPU_INT), 0u);
+    CHECK(!(rd(&f, INTR_STATUS_0) & (1u << 16)));
+    pins_ext[4] = 0; /* a fall: not this interrupt */
+    esk_esp32c3_pins_changed(&f.m);
+    CHECK_EQ(rd(&f, G_STATUS), 0u);
+    wr(&f, G_PIN(4), 4u << 7 | 1u << 13); /* low level: while it lasts */
+    CHECK_EQ(rd(&f, G_STATUS), 1u << 4);
+    wr(&f, G_STATUS_W1TC, 1u << 4);
+    CHECK_EQ(rd(&f, G_STATUS), 1u << 4);
+    c3_close(&f);
+}
+
+static void test_gpio_matrix_uart(void)
+{
+    /* UART1's TXD out on GPIO7 and its RXD in from GPIO8, through the
+     * matrix (signals 9); UART0's RXD moved off GPIO20 by IO MUX */
+    c3 f;
+    int port = -1, bit = -1;
+    if (!gpio_open(&f))
+        return;
+    CHECK_EQ(esk_esp32c3_uart_pin(&f.m, "UART1", 1, &port, &bit), -1);
+    wr(&f, IOMUX(7), 1u << 12);
+    wr(&f, G_FOUT(7), 9u);
+    CHECK_EQ(esk_esp32c3_uart_pin(&f.m, "UART1", 1, &port, &bit), 0);
+    CHECK_EQ(16 * port + bit, 7);
+    CHECK_EQ(pins_out[7].drive, 1);
+    CHECK(pins_out[7].af);
+    wr(&f, G_FIN(9), 1u << 6 | 8u);
+    CHECK_EQ(esk_esp32c3_uart_pin(&f.m, "UART1", 0, &port, &bit), 0);
+    CHECK_EQ(16 * port + bit, 8);
+    wr(&f, IOMUX(20), 1u << 12 | 1u << 9);
+    CHECK_EQ(esk_esp32c3_uart_pin(&f.m, "UART0", 0, &port, &bit), -1);
+    c3_close(&f);
+}
+
+static void test_counter_user_csrs(void)
+{
+    /* the ROM starts the counter through 0x800 and 0x801 (cycles,
+     * wrapping); ESP-IDF reads it as mpccr */
+    const u32 prog[] = { addi(5, 0, 1), csrrw(0, 0x800, 5), csrrw(0, 0x801, 5), csrrw(0, 0x802, 0),
+                         csrrs(10, 0x7e0, 0), csrrs(11, 0x7e1, 0), addi(6, 0, 1), csrrs(12, 0x7e2, 0),
+                         JAL_SELF };
+    c3 f;
+    if (!c3_open(&f, prog, sizeof prog / sizeof prog[0], NULL, 0))
+        return;
+    esk_mach_run(&f.m, 0xffffff, 8);
+    CHECK_EQ(x(&f, 10), 1u);
+    CHECK_EQ(x(&f, 11), 1u);
+    CHECK_EQ(x(&f, 12), 4u); /* the write, two reads and the addi */
+    c3_close(&f);
+}
+
+static void test_rtc_calibration_periodic(void)
+{
+    /* out of reset the timer group counts one RC_FAST_DIV_CLK cycle (17.5
+     * MHz / 256) again and again: 585 XTAL_CLK cycles, CYCLING_DATA_VLD and
+     * not RDY; a threshold of 1 stops it with a timeout, as ESP-IDF does */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    CHECK_EQ(rd(&f, TG_CALI), 0x00013000u);
+    esk_mach_idle(&f.m, 20000u); /* 1 ms */
+    CHECK_EQ(rd(&f, TG_CALI1), 585u << 7 | 1u);
+    CHECK_EQ(rd(&f, TG_CALI) & (1u << 15), 0u);
+    CHECK_EQ(rd(&f, TG_CALI2) & 1u, 0u);
+    wr(&f, TG_CALI2, 1u << 7);
+    esk_mach_idle(&f.m, 20000u);
+    CHECK_EQ(rd(&f, TG_CALI2) & 1u, 1u);
+    /* a one-shot after it: RDY, the data not marked periodic */
+    wr(&f, TG_CALI2, 0x1ffffffu << 7);
+    wr(&f, TG_CALI, 1u << 13 | 1u << 16);
+    wr(&f, TG_CALI, 1u << 13 | 1u << 16 | 1u << 31);
+    CHECK_EQ(rd(&f, TG_CALI2) & 1u, 0u);
+    esk_mach_idle(&f.m, 20000u);
+    CHECK(rd(&f, TG_CALI) & (1u << 15));
+    CHECK_EQ(rd(&f, TG_CALI1), 585u << 7);
+    c3_close(&f);
+}
+
+#define REGI2C 0x6000E000u
+
+static void test_regi2c(void)
+{
+    /* the ROM's rom_i2c_writeReg and readReg: block, register, data, write
+     * flag; the byte read back in bits 23:16, busy (bit 25) clear */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, REGI2C, 0x66u | 4u << 8 | 0x5Au << 16 | 0x05000000u);
+    CHECK_EQ(rd(&f, REGI2C) & (1u << 25), 0u);
+    wr(&f, REGI2C, 0x66u | 4u << 8 | 0x04000000u);
+    CHECK_EQ((rd(&f, REGI2C) >> 16) & 0xffu, 0x5Au);
+    wr(&f, REGI2C, 0x6Du | 4u << 8 | 0x04000000u);
+    CHECK_EQ((rd(&f, REGI2C) >> 16) & 0xffu, 0u); /* another block's */
+    /* the low-power bias block's o-code calibration: IR_RESETB 0 then 1 */
+    wr(&f, REGI2C, 0x61u | 0u << 8 | 0x00u << 16 | 0x05000000u);
+    wr(&f, REGI2C, 0x61u | 3u << 8 | 0x04000000u);
+    CHECK_EQ((rd(&f, REGI2C) >> 16) & 0x09u, 0u);
+    wr(&f, REGI2C, 0x61u | 0u << 8 | 0x01u << 16 | 0x05000000u);
+    wr(&f, REGI2C, 0x61u | 3u << 8 | 0x04000000u);
+    CHECK_EQ((rd(&f, REGI2C) >> 16) & 0x09u, 0x09u);
+    wr(&f, REGI2C + 0x44u, 0x12345678u); /* ANA_CONFIG */
+    CHECK_EQ(rd(&f, REGI2C + 0x44u), 0x12345678u);
+    /* a system reset keeps the analog registers; a power-on clears them */
+    f.m.reset_cause = ESK_RESET_WATCHDOG;
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, REGI2C + 0x44u), 0x12345678u);
+    f.m.reset_cause = ESK_RESET_POWER;
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, REGI2C + 0x44u), 0u);
+    c3_close(&f);
+}
+
+static void test_rng_and_radio(void)
+{
+    /* RND_DATA: a new number at every read, the same sequence every run;
+     * the radio's blocks keep what is written */
+    c3 f, g;
+    u32 a, b;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    a = rd(&f, 0x600260B0u);
+    b = rd(&f, 0x600260B0u);
+    CHECK(a != b);
+    CHECK(a != 0u && b != 0u);
+    if (c3_open(&g, NULL, 0, NULL, 0)) {
+        CHECK_EQ(rd(&g, 0x600260B0u), a);
+        c3_close(&g);
+    }
+    wr(&f, 0x6001CCD4u, 0xA5A50000u); /* NRXPD_CTRL */
+    wr(&f, 0x60006090u, 0x80u);       /* FE_GEN_CTRL */
+    wr(&f, 0x600050F0u, 0x100u);      /* FE2_TX_INTERP_CTRL */
+    CHECK_EQ(rd(&f, 0x6001CCD4u), 0xA5A50000u);
+    CHECK_EQ(rd(&f, 0x60006090u), 0x80u);
+    CHECK_EQ(rd(&f, 0x600050F0u), 0x100u);
+    c3_close(&f);
+}
+
+static void test_cpu_reset_clears_pms(void)
+{
+    /* a software CPU reset (RTC_SW_CPU_RST) keeps the devices but clears the
+     * permission control's locks, as ESP-IDF's esp_restart relies on */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, 0x600C1000u, 1u); /* SENSITIVE ROM_TABLE_LOCK */
+    wr(&f, REGI2C + 0x44u, 5u);
+    wr(&f, 0x6001CCD4u, 7u);
+    CHECK_EQ(rd(&f, 0x600C1000u), 1u);
+    esk_esp32c3_reset(&f.m, 0x0C);
+    CHECK(f.m.reset_cpu_only);
+    CHECK_EQ(rd(&f, 0x600C1000u), 0u);
+    CHECK_EQ(rd(&f, REGI2C + 0x44u), 5u);
+    CHECK_EQ(rd(&f, 0x6001CCD4u), 7u);
+    c3_close(&f);
+}
+
+#define USJ 0x60043000u
+
+static void test_usb_serial_jtag(void)
+{
+    /* no host: the send buffer takes 64 bytes, then waits for good; a
+     * flush does the same at once; SERIAL_IN_EMPTY is set from reset and
+     * raises source 26 once enabled */
+    c3 f;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    CHECK_EQ(rd(&f, USJ + 4u), 2u);
+    CHECK_EQ(rd(&f, USJ + 8u), 8u);
+    for (i = 0; i < 63; i++)
+        wr(&f, USJ, (u32)'A');
+    CHECK_EQ(rd(&f, USJ + 4u), 2u);
+    wr(&f, USJ, (u32)'B');
+    CHECK_EQ(rd(&f, USJ + 4u), 0u);
+    CHECK_EQ(rd(&f, USJ), 0u); /* nothing from a host */
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, USJ + 4u), 2u);
+    wr(&f, USJ, (u32)'C');
+    wr(&f, USJ + 4u, 1u); /* WR_DONE */
+    CHECK_EQ(rd(&f, USJ + 4u), 0u);
+    CHECK_EQ(rd(&f, INTR_STATUS_0) & (1u << 26), 0u);
+    wr(&f, USJ + 0x10u, 8u);
+    CHECK_EQ(rd(&f, USJ + 0x0Cu), 8u);
+    CHECK(rd(&f, INTR_STATUS_0) & (1u << 26));
+    wr(&f, USJ + 0x14u, 8u);
+    CHECK_EQ(rd(&f, USJ + 8u), 0u);
+    CHECK_EQ(rd(&f, INTR_STATUS_0) & (1u << 26), 0u);
+    c3_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_csrs);
 RUN(test_no_atomics);
 RUN(test_counter);
+RUN(test_counter_user_csrs);
 RUN(test_trigger);
 RUN(test_pmp_no_priority);
 RUN(test_level_interrupt);
@@ -1050,4 +1352,12 @@ RUN(test_timg_timer);
 RUN(test_timg_wdt);
 RUN(test_rtc_calibration);
 RUN(test_efuse);
+RUN(test_gpio_reset_and_output);
+RUN(test_gpio_input_interrupt);
+RUN(test_gpio_matrix_uart);
+RUN(test_rtc_calibration_periodic);
+RUN(test_regi2c);
+RUN(test_rng_and_radio);
+RUN(test_usb_serial_jtag);
+RUN(test_cpu_reset_clears_pms);
 TEST_MAIN_END

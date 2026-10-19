@@ -52,8 +52,10 @@
  *   - cpu_gpio_oen, cpu_gpio_in and cpu_gpio_out reach the GPIO matrix.
  * The part also answers CSRs its manual leaves out, which its boot ROM
  * writes: the user trap CSRs (ustatus, uie, utvec, uscratch, uepc, ucause,
- * utval, uip) keep what is written, and 0x800-0x802 are a second counter
- * (user mode's, as Espressif's QEMU names them) that counts as the first.
+ * utval, uip) keep what is written, and 0x800-0x802 reach the counter
+ * mpcer, mpcmr and mpccr name: the ROM starts it there (cycles, wrapping)
+ * and ESP-IDF's bootloader reads it as mpccr, which is what a chip's
+ * timestamped bootloader log shows counting with mpcer reset to 0.
  * Not modelled: the debug module and its CSRs (dcsr, dpc, dscratch0-1 are
  * illegal outside debug mode, which is never entered), user-level traps
  * (the user trap CSRs have no effect), the load and jump hazard events
@@ -435,12 +437,9 @@ static int esp_csr_rd(struct rv_state *rs, u32 csr, u64 *v)
     case 0x7a1: *v = rs->mcontrol[rs->tselect]; return 1;
     case 0x7a2: *v = rs->maddress[rs->tselect]; return 1;
     case 0x7a5: *v = rs->tcontrol; return 1;
-    case 0x7e0: *v = rs->mpcer; return 1;
-    case 0x7e1: *v = rs->mpcmr; return 1;
-    case 0x7e2: *v = rs->mpccr; return 1;
-    case 0x800: *v = rs->upcer; return 1;
-    case 0x801: *v = rs->upcmr; return 1;
-    case 0x802: *v = rs->upccr; return 1;
+    case 0x7e0: case 0x800: *v = rs->mpcer; return 1;
+    case 0x7e1: case 0x801: *v = rs->mpcmr; return 1;
+    case 0x7e2: case 0x802: *v = rs->mpccr; return 1;
     case 0x803: case 0x804: case 0x805:
         *v = rs->gpio_csr ? rs->gpio_csr(rs->gpio_ctx, csr, 0, 0) : 0;
         return 1;
@@ -490,12 +489,9 @@ static void esp_csr_wr(struct rv_state *rs, u32 csr, u32 v)
             rs->maddress[rs->tselect] = v;
         return;
     case 0x7a5: rs->tcontrol = v & (TCONTROL_MTE | TCONTROL_MPTE); return;
-    case 0x7e0: rs->mpcer = v & 0x7ffu; return;
-    case 0x7e1: rs->mpcmr = v & 3u; return;
-    case 0x7e2: rs->mpccr = v; return;
-    case 0x800: rs->upcer = v & 0x7ffu; return;
-    case 0x801: rs->upcmr = v & 3u; return;
-    case 0x802: rs->upccr = v; return;
+    case 0x7e0: case 0x800: rs->mpcer = v & 0x7ffu; return;
+    case 0x7e1: case 0x801: rs->mpcmr = v & 3u; return;
+    case 0x7e2: case 0x802: rs->mpccr = v; return;
     case 0x803: case 0x805:
         if (rs->gpio_csr)
             rs->gpio_csr(rs->gpio_ctx, csr, 1, v & 0xffu);
@@ -559,13 +555,11 @@ static u32 count_events(u32 e, u32 x, int size, int taken, u32 cost)
            ((e & 0x200u) && op == 0x63 && taken) || ((e & 0x400u) && size == 2);
 }
 
-/* both counters, for an instruction */
+/* the counter, for an instruction */
 static void esp_count(struct rv_state *rs, u32 x, int size, int taken, u32 cost)
 {
     if (rs->mpcer)
         count_add(rs->mpcmr, &rs->mpccr, count_events(rs->mpcer, x, size, taken, cost));
-    if (rs->upcer)
-        count_add(rs->upcmr, &rs->upccr, count_events(rs->upcer, x, size, taken, cost));
 }
 
 /* the events of selection e while the core slept n cycles: WFI's idle
@@ -585,7 +579,6 @@ static void esp_count_sleep(struct rv_state *rs, u64 now)
 {
     u64 n = now - rs->idle_from;
     count_add(rs->mpcmr, &rs->mpccr, sleep_events(rs, rs->mpcer, n));
-    count_add(rs->upcmr, &rs->upccr, sleep_events(rs, rs->upcer, n));
     rs->idle = 0;
 }
 

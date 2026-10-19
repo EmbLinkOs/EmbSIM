@@ -11,7 +11,7 @@
  *             interrupts
  *   rtc.c     RTC_CNTL: the reset causes, the RTC timer, the RTC watchdog,
  *             the software resets
- *   gpio.c    the GPIO block: the strapping latch
+ *   gpio.c    the GPIO matrix and IO MUX on the pins, the strapping latch
  *   cache.c   the cache and MMU: the flash read in place on both buses
  *   spimem.c  SPI0 and SPI1, the controllers in front of the flash
  *   nor.c     the in-package flash, an XMC XM25QH32C
@@ -21,7 +21,13 @@
  *   timg.c    TIMG0 and TIMG1: T0, the MWDT, the RTC_SLOW_CLK calibration
  *   systimer.c the system timer: two 52-bit counters, three comparators
  *   system.c  SYSTEM: the CPU and APB clocks, the peripherals' clock
- *             enables and resets, the software interrupts */
+ *             enables and resets, the software interrupts
+ *   regi2c.c  the internal I2C master to the analog blocks (BBPLL, bias,
+ *             regulators), as the ROM's regi2c routines use it
+ *   apbctrl.c APB_CTRL: the random number generator's RND_DATA
+ *   usbjtag.c the USB Serial/JTAG controller's CDC-ACM side, with no host
+ *   radio.c   the radio's register blocks the TRM leaves out (FE2, FE,
+ *             NRX), which keep what is written */
 #ifndef ESK_MCU_ESP32C3_H
 #define ESK_MCU_ESP32C3_H
 
@@ -42,6 +48,12 @@ extern const struct esk_dev_ops esk_esp32c3_rtc_ops;
 void *esk_esp32c3_rtc_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_gpio_ops;
 void *esk_esp32c3_gpio_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_iomux_ops;
+void *esk_esp32c3_iomux_create(struct esk_mach *s, struct esk_rf_periph *p);
+/* the board drove a pin or let it go: the levels again */
+void esk_esp32c3_pins_changed(struct esk_mach *m);
+/* where a UART's TXD (tx) or RXD is: 0 and the runtime's port and bit */
+int esk_esp32c3_uart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
 
 extern const struct esk_dev_ops esk_esp32c3_cache_ops;
 void *esk_esp32c3_cache_create(struct esk_mach *s, struct esk_rf_periph *p);
@@ -55,6 +67,12 @@ extern const struct esk_dev_ops esk_esp32c3_systimer_ops;
 void *esk_esp32c3_systimer_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_system_ops;
 void *esk_esp32c3_system_create(struct esk_mach *s, struct esk_rf_periph *p);
+/* the internal I2C master to the analog blocks at 0x6000E000 (regi2c.c),
+ * mapped by the SYSTEM model: 0, or -1 */
+int esk_esp32c3_regi2c_create(struct esk_mach *s);
+/* the radio's register blocks FE2, FE and NRX (radio.c), mapped by the
+ * SYSTEM model: 0, or -1 */
+int esk_esp32c3_radio_create(struct esk_mach *s);
 extern const struct esk_dev_ops esk_esp32c3_sha_ops;
 void *esk_esp32c3_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_assist_ops;
@@ -85,5 +103,9 @@ u32 esk_esp32c3_apb_hz(struct esk_mach *m);
 void esk_esp32c3_reset(struct esk_mach *m, int code);
 /* eFuse WDT_DELAY_SEL */
 int esk_esp32c3_efuse_wdt_delay_sel(struct esk_mach *m);
+extern const struct esk_dev_ops esk_esp32c3_usbjtag_ops;
+void *esk_esp32c3_usbjtag_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_apbctrl_ops;
+void *esk_esp32c3_apbctrl_create(struct esk_mach *s, struct esk_rf_periph *p);
 
 #endif

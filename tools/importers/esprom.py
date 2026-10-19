@@ -13,8 +13,12 @@ initial values are in sections no segment loads (the ESP32-C3's
 .data.interface pointers): --data-table START:END names the ROM's own copy
 table, entries of {destination, destination end, source, 0}, and each
 section with bytes that falls in a destination range is placed at its
-source. Bytes nothing covers read as zeros (the ELF does not say what the
-mask holds there). The SHA-256 of the result is printed for the
+source. Words the mask holds outside every section are given with --word
+ADDRESS=VALUE, the value a number or the address of a symbol of the ELF
+(the ESP32-C3's ets_rom_layout_p, ROM1's last word, which ESP-IDF's ROM
+linker script places at 0x3FF1FFFC and reads as a pointer to the ROM's
+ets_rom_layout). Bytes nothing covers read as zeros (the ELF does not say
+what the mask holds there). The SHA-256 of the result is printed for the
 description."""
 import argparse
 import hashlib
@@ -51,7 +55,27 @@ def sections(elf: bytes):
             yield addr, elf[off:off + size]
 
 
-def build(elf: bytes, base: int, size: int, table=None) -> bytes:
+SHT_SYMTAB = 2
+
+
+def symbol(elf: bytes, name: str) -> int:
+    """the value of the ELF's symbol `name`"""
+    shoff, = struct.unpack_from("<I", elf, 0x20)
+    shentsize, shnum = struct.unpack_from("<HH", elf, 0x2E)
+    heads = [struct.unpack_from("<10I", elf, shoff + i * shentsize) for i in range(shnum)]
+    for h in heads:
+        if h[1] != SHT_SYMTAB:
+            continue
+        strtab = heads[h[6]]
+        for o in range(h[4], h[4] + h[5], 16):
+            st_name, st_value = struct.unpack_from("<2I", elf, o)
+            at = strtab[4] + st_name
+            if elf[at:elf.index(b"\0", at)].decode("utf-8", "replace") == name:
+                return st_value
+    raise SystemExit(f"esprom: no symbol {name}")
+
+
+def build(elf: bytes, base: int, size: int, table=None, words=()) -> bytes:
     img = bytearray(size)
     for paddr, data in segments(elf):
         if paddr < base or paddr + len(data) > base + size:
@@ -66,6 +90,11 @@ def build(elf: bytes, base: int, size: int, table=None) -> bytes:
                     o = src + (addr - dst) - base
                     if 0 <= o and o + len(data) <= size:
                         img[o:o + len(data)] = data
+    for addr, value in words:
+        if not base <= addr <= base + size - 4:
+            raise SystemExit(f"esprom: word 0x{addr:08x} outside the image")
+        v = int(value, 0) if value[:1].isdigit() else symbol(elf, value)
+        struct.pack_into("<I", img, addr - base, v)
     return bytes(img)
 
 
@@ -76,10 +105,18 @@ def main(argv=None) -> int:
     ap.add_argument("--size", type=lambda s: int(s, 0), required=True)
     ap.add_argument("--data-table", default=None, metavar="START:END",
                     help="the ROM's copy table of its RAM variables' initial values")
+    ap.add_argument("--word", action="append", default=[], metavar="ADDRESS=VALUE",
+                    help="a word outside every section: a number or a symbol's address")
     ap.add_argument("-o", "--output", type=Path, required=True)
     args = ap.parse_args(argv)
     table = tuple(int(x, 0) for x in args.data_table.split(":")) if args.data_table else None
-    img = build(args.elf.read_bytes(), args.base, args.size, table)
+    words = []
+    for w in args.word:
+        addr, _, value = w.partition("=")
+        if not value:
+            raise SystemExit(f"esprom: --word {w}: ADDRESS=VALUE")
+        words.append((int(addr, 0), value))
+    img = build(args.elf.read_bytes(), args.base, args.size, table, words)
     args.output.write_bytes(img)
     print(f"{args.output}: {len(img)} bytes, sha256 {hashlib.sha256(img).hexdigest()}")
     return 0

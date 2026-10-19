@@ -12,7 +12,8 @@
  *     until ALL_RESET_FLAG_CLR_PROCPU;
  *   - the RTC domain keeps its registers through a CPU reset and a core
  *     reset, and loses them in a system or chip reset (TRM 6.1.2); a CPU
- *     reset restarts the core alone;
+ *     reset restarts the core and clears the permission control's registers
+ *     and locks (SENSITIVE, TRM 14.8), which ESP-IDF's start checks;
  *   - the RTC timer counts RTC_SLOW_CLK (ANA_CLK_RTC_SEL: RC_SLOW_CLK at
  *     136 kHz, XTAL32K_CLK at the board's 32.768 kHz, RC_FAST_DIV_CLK at
  *     17.5 MHz / 256) from the chip's reset; a write of TIME_UPDATE latches
@@ -340,6 +341,13 @@ void esk_esp32c3_reset(struct esk_mach *m, int code)
             esk_rf_hw(k->reset_state, (reg(k->reset_state) & ~0x3fu) | (u32)code | RST_ALL_FLAG);
             k->code = 0x01;
         }
+    }
+    if (cpu_reset(code)) {
+        /* but the permission control's registers and their locks, which a
+         * CPU reset clears (TRM 14.8) */
+        struct esk_rf_periph *pms = m->rf ? esk_rf_periph(m->rf, "SENSITIVE") : 0;
+        if (pms)
+            esk_rf_periph_reset(pms);
     }
     esk_esp32c3_assist_cpu_reset(m);
     m->reset_cpu_only = cpu_reset(code);

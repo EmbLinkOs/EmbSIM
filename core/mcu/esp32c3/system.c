@@ -183,6 +183,10 @@ void *esk_esp32c3_system_create(struct esk_mach *s, struct esk_rf_periph *p)
         q->gate_mask = 1ull << gates[i].bit;
         q->gate_name = g;
     }
+    /* the analog blocks' bus and the radio's registers, which the register
+     * file does not have */
+    if (esk_esp32c3_regi2c_create(s) != 0 || esk_esp32c3_radio_create(s) != 0)
+        return 0;
     k->hz = cpu_hz(k);
     s->clock_ctx = k;
     s->core_hz = core_hz;

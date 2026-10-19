@@ -282,7 +282,7 @@ void esk_esp32c3_nor_xfer(struct esk_c3_nor *f, const u8 *tx, int ntx, u8 *rx, i
     case 0x44:
     case 0x42:
         sr = sec_reg(a);
-        if (!(f->sr[0] & SR1_WEL) || ntx < 4 || sr < 0 || (f->sr[1] >> (SR2_LB_SHIFT + sr) & 1u)) {
+        if (!(f->sr[0] & SR1_WEL) || ntx < 4 || sr < 0 || ((f->sr[1] >> (SR2_LB_SHIFT + sr)) & 1)) {
             sr_clear(f, 0, SR1_WEL);
             break;
         }

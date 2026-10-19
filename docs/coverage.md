@@ -8,7 +8,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
-| ESP32-C3 | 15 | 0 | 21 | 36 |
+| ESP32-C3 | 18 | 0 | 18 | 36 |
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
@@ -21,7 +21,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 ## ESP32-C3 (`espressif/esp32c3`)
 
 Boards: none in the catalog.  
-15 of 36 peripherals modelled, 0 registers only, 21 missing.
+18 of 36 peripherals modelled, 0 registers only, 18 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -32,7 +32,7 @@ Boards: none in the catalog.
 | GPIO_SD | — | **missing** |
 | RTC_CNTL | `esp32c3-rtc` | modelled |
 | EFUSE | `esp32c3-efuse` | modelled |
-| IO_MUX | — | **missing** |
+| IO_MUX | `esp32c3-iomux` | modelled |
 | UHCI1 | — | **missing** |
 | UART1 | `esp32c3-uart` | modelled |
 | I2C0 | — | **missing** |
@@ -44,7 +44,7 @@ Boards: none in the catalog.
 | TIMG1 | `esp32c3-timg` | modelled |
 | SYSTIMER | `esp32c3-systimer` | modelled |
 | SPI2 | — | **missing** |
-| APB_CTRL | — | **missing** |
+| APB_CTRL | `esp32c3-apbctrl` | modelled |
 | TWAI0 | — | **missing** |
 | I2S0 | — | **missing** |
 | AES | — | **missing** |
@@ -54,7 +54,7 @@ Boards: none in the catalog.
 | HMAC | — | **missing** |
 | DMA | — | **missing** |
 | APB_SARADC | — | **missing** |
-| USB_DEVICE | — | **missing** |
+| USB_DEVICE | `esp32c3-usbjtag` | modelled |
 | SYSTEM | `esp32c3-system` | modelled |
 | SENSITIVE | — | **missing** |
 | INTERRUPT_CORE0 | `esp32c3-intmtx` | modelled |
@@ -62,7 +62,7 @@ Boards: none in the catalog.
 | XTS_AES | — | **missing** |
 | ASSIST_DEBUG | `esp32c3-assist` | modelled |
 
-Declared omissions: the GPIO matrix and IO MUX, USB Serial/JTAG and every peripheral not named in the claims (in progress); the PLL's power and lock, and the RC oscillators' spread (they run at their nominal frequencies); the eFuses' write and read protection, their check values and times; the chip's calibration data (BLOCK2 is blank); the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c); the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none); the SHA accelerator's DMA mode and its block time; the debug module and the debug CSRs; the performance counter's load and jump hazard events; the interrupt controller's transient state after a register write; Wi-Fi and Bluetooth LE.
+Declared omissions: every peripheral not named in the claims (LEDC, RMT, I2C, GP-SPI2, the SAR ADC and temperature sensor, TWAI, I2S, the GDMA, AES, RSA, HMAC, the digital signature, the permission control's checks: in progress); the PLL's power and lock, and the RC oscillators' spread (they run at their nominal frequencies); a USB host on GPIO18 and GPIO19 (the CDC-ACM port on the computer, its DTR and RTS resets, the JTAG side: ADR-031's native USB); the USB pads' own pull-ups and pin swap beyond the IO MUX's reset; the analog blocks' registers' reset values (they read 0 until written) and what their values do (the PLL's frequency comes from SYSTEM, the regulators' voltages are not modelled); the o-code calibration's time; the random number generator's entropy: RND_DATA is a seeded generator, the same sequence every run so that a run replays, whatever noise sources are on; the GPIO's input filter and synchronisation, sleep mode (the pads' sleep configuration), the sigma-delta modulation and the drive strengths' effect; the eFuses' write and read protection, their check values and times; the chip's calibration data (BLOCK2 is blank); the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c); the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none); the SHA accelerator's DMA mode and its block time; the debug module and the debug CSRs; the performance counter's load and jump hazard events; the interrupt controller's transient state after a register write; Wi-Fi and Bluetooth LE (the radio's register blocks keep what is written and do nothing).
 
 ## ATmega328P (`microchip/atmega328p`)
 
