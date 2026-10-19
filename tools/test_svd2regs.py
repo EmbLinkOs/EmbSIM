@@ -30,6 +30,12 @@ SVD = """<?xml version="1.0"?>
           </fields>
         </register>
         <register><name>DR</name><addressOffset>0x4</addressOffset><size>16</size></register>
+        <register><name>INT</name><addressOffset>0x8</addressOffset>
+          <fields>
+            <field><dim>2</dim><dimIncrement>0x1</dimIncrement><dimIndex>2-3</dimIndex>
+              <name>CH%s_END</name><bitOffset>2</bitOffset><bitWidth>1</bitWidth></field>
+          </fields>
+        </register>
         <register><name>DR_ALT</name><addressOffset>0x4</addressOffset><alternateRegister>DR</alternateRegister></register>
         <register><name>BUF%s</name><addressOffset>0x10</addressOffset><dim>2</dim><dimIncrement>4</dimIncrement></register>
         <cluster><name>CH[%s]</name><addressOffset>0x20</addressOffset><dim>2</dim><dimIncrement>8</dimIncrement>
@@ -57,7 +63,9 @@ class Svd2Regs(unittest.TestCase):
         u0, u1 = doc["peripherals"]
         self.assertEqual(u1, {"name": "UART1", "base": "0x40002000", "interrupts": ["UART1"], "derived_from": "UART0"})
         regs = {r["name"]: r for r in u0["registers"]}
-        self.assertEqual(sorted(regs), ["BUF0", "BUF1", "CH0_CTRL", "CH1_CTRL", "DR", "SR"])
+        self.assertEqual(sorted(regs), ["BUF0", "BUF1", "CH0_CTRL", "CH1_CTRL", "DR", "INT", "SR"])
+        # a field array steps by dimIncrement bits
+        self.assertEqual(regs["INT"]["fields"], [["CH2_END", 2, 1], ["CH3_END", 3, 1]])
         self.assertEqual(regs["SR"]["reset"], "0x000000C0")
         self.assertEqual(regs["SR"]["fields"], [["RXNE", 5, 1, "rc_w0"], ["TXE", 7, 1, "r"], ["ERR", 8, 2, "rc_w1"]])
         self.assertEqual(regs["DR"]["size"], 16)

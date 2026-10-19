@@ -89,6 +89,30 @@ struct rv_state {
     u32 lines;
     u64 (*mtime)(void *ctx);
     void *mtime_ctx;
+
+    /* the variant: the A extension (LR, SC, the AMOs), and Espressif's
+     * ESP-RV (the ESP32-C3's core: its CSRs, its interrupt controller in
+     * place of mie and mip, its trigger module, PMP and counter) */
+    int ext_a;
+    int esp;
+    /* ESP-RV's interrupt controller: the id (1-31) the core takes now
+     * (take), or one pending at all (!take, for WFI), else 0 */
+    int (*ext_claim)(void *ctx, int take);
+    void *ext_ctx;
+    /* the cpu_gpio CSRs (0x803-0x805): read (write 0) or write */
+    u32 (*gpio_csr)(void *ctx, u32 csr, int write, u32 v);
+    void *gpio_ctx;
+    /* ESP-RV's performance counter: mpcer, mpcmr, mpccr, and the cycle at
+     * which the core last went to sleep (its idle cycles) */
+    u32 mpcer, mpcmr, mpccr;
+    u64 idle_from;
+    int idle;            /* 1 in WFI, 2 in a jump to itself */
+    u32 spin_cost;       /* that jump's cycles and size */
+    int spin_size;
+    /* the trigger module: tselect, tcontrol, and each trigger's mcontrol
+     * and maddress */
+    u32 tselect, tcontrol;
+    u32 mcontrol[8], maddress[8];
     char xml[4096]; /* the GDB target description being answered */
 };
 
@@ -123,7 +147,8 @@ u32 esk_rvc_expand(u32 h, int xlen);
 
 /* ---- the interface for the MCU and its devices ------------------------- */
 
-/* an RV32 core of `model` ("rv32imac") starting at reset_pc */
+/* an RV32 core of `model` starting at reset_pc: "rv32imac", "rv32imc"
+ * (no A), "rv32i", or "esp-rv32imc" (Espressif's ESP-RV) */
 es_status esk_riscv_create(struct esk_mach *m, const char *model, u32 reset_pc, struct esk_cpu **out);
 int esk_riscv_is(const struct esk_cpu *c);
 /* a device raises (1) or lowers an interrupt line: MIP_MSIP, MIP_MTIP or
@@ -131,6 +156,12 @@ int esk_riscv_is(const struct esk_cpu *c);
 void esk_riscv_line(struct esk_mach *m, u32 bit, int level);
 /* the CLINT gives the core its `time` CSR */
 void esk_riscv_mtime_source(struct esk_mach *m, u64 (*mtime)(void *ctx), void *ctx);
+/* ESP-RV: the interrupt controller the core takes its interrupts from, and
+ * its news that what is pending changed (a sleeping core wakes) */
+void esk_riscv_ext_source(struct esk_mach *m, int (*claim)(void *ctx, int take), void *ctx);
+void esk_riscv_ext_changed(struct esk_mach *m);
+/* ESP-RV: the GPIO matrix behind the cpu_gpio CSRs */
+void esk_riscv_gpio_csr(struct esk_mach *m, u32 (*fn)(void *ctx, u32 csr, int write, u32 v), void *ctx);
 /* the instruction `insn` at `pc` (16 bits for a compressed one): its text
  * and its size in bytes */
 int esk_riscv_disasm(u32 pc, u32 insn, char *text, size_t cap);

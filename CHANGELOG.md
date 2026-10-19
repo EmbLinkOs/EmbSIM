@@ -5,6 +5,34 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's core and interrupt controller (the RTOS boards plan, part 2, step 1)
+
+- **The ESP-RV core** (`esp-rv32imc`), as the ESP32-C3 TRM's chapter 1 has it:
+  - RV32IMC with user mode; the AMOs are illegal, as are mie, mip and the
+    standard counters, which the part does not have;
+  - mstatus's MIE, MPIE, MPP and TW; mtvec vectored only, on a 256-byte
+    base; five-bit mcause codes; MRET clears MPIE;
+  - the performance counter (mpcer, mpcmr, mpccr), counting cycles outside
+    WFI, instructions, idle cycles, loads, stores, jumps, branches, taken
+    branches or compressed instructions, saturating or wrapping;
+  - the trigger module: eight triggers matching an address exactly or a
+    NAPOT region, on execute, load or store, raising a breakpoint
+    exception; tcontrol's MTE and MPTE;
+  - PMP without static priority (any matching entry may grant), NAPOT up to
+    1 GB; the cpu_gpio CSRs.
+- **The interrupt matrix and controller** (`esp32c3-intmtx`): 62 sources
+  routed onto CPU interrupts 1-31, level and edge types, priorities 1-15
+  and the threshold, the 4-cycle latency, the clear toggle for claimed edge
+  interrupts.
+- **`espressif/esp32c3`**: the register file converted from Espressif's
+  Apache-2.0 esp32c3.svd, the QFN32 pinout, the memory map with SRAM1 and
+  ROM1 on both buses.
+- `svd2regs.py`: field arrays step by `dimIncrement` (Espressif's RMT had
+  its channels' bits on top of each other), and `--drop` leaves out a
+  peripheral that is another's registers (the C3's RNG). The register file
+  takes up to 1024 registers per peripheral (the DS block's memories).
+- The RISC-V core's model `rv32imc` no longer executes the A extension.
+
 ### EmbLinkRTOS on the NUCLEO-F446RE (the NUCLEO-F446RE plan, step 11)
 
 - **EmbLinkRTOS's `nucleo_f446re` board** runs its conformance suite on

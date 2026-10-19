@@ -28,7 +28,10 @@ for the user's own use unless that licence allows distributing it.
     --merge PERIPH.REG.NAME      (repeatable) the one-bit fields NAME0,
                                  NAME1, ... into one field NAME, as the
                                  manual names a number ST's SVDs split
-                                 (RCC PLLCFGR's PLLM0..PLLM5)"""
+                                 (RCC PLLCFGR's PLLM0..PLLM5)
+    --drop PERIPH=WHY            (repeatable) a peripheral the SVD lists that
+                                 is another's registers at the same address
+                                 (Espressif's RNG, APB_CTRL's RND_DATA)"""
 import argparse
 import json
 import re
@@ -99,11 +102,15 @@ def fields_of(reg: ET.Element, size: int, inherit_acc: Optional[str]) -> list:
             width = msb - lsb + 1
         else:
             lsb, width = num(f.findtext("bitOffset")), num(f.findtext("bitWidth"), 1)
-        if lsb + width > size or width < 1:
+        if width < 1:
             continue
         code = access_code(f.findtext("access") or inherit_acc, f.findtext("modifiedWriteValues"), f.findtext("readAction"))
-        for nm, _ in dim_names(f, name):
-            entry = [nm, lsb, width]
+        for nm, step in dim_names(f, name):
+            # a field array steps by dimIncrement bits (Espressif's RMT
+            # CH%s_TX_END, two channels' bits side by side)
+            if lsb + step + width > size:
+                continue
+            entry = [nm, lsb + step, width]
             if code:
                 entry.append(code)
             out.append(entry)
@@ -298,6 +305,19 @@ def apply_merges(doc: dict, specs: list[str]) -> None:
         doc["source"] += "; split fields joined: " + ", ".join(done)
 
 
+def apply_drops(doc: dict, specs: list[str]) -> None:
+    """leave out each PERIPH of `specs` (PERIPH=WHY), recorded in source"""
+    done = []
+    for spec in specs:
+        name, _, why = spec.partition("=")
+        if not any(p["name"] == name for p in doc["peripherals"]):
+            sys.exit(f"svd2regs: --drop {spec}: no peripheral {name}")
+        doc["peripherals"] = [p for p in doc["peripherals"] if p["name"] != name]
+        done.append(f"{name} ({why})" if why else name)
+    if done:
+        doc["source"] += "; peripherals left out: " + "; ".join(done)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("svd", type=Path)
@@ -311,10 +331,13 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="a field the SVD leaves out or sizes wrongly")
     ap.add_argument("--register", action="append", default=[], metavar="PERIPH.REG=0xOFFSET",
                     help="a register the SVD leaves out (its fields with --field)")
+    ap.add_argument("--drop", action="append", default=[], metavar="PERIPH=WHY",
+                    help="a peripheral left out, with the reason recorded in source")
     ap.add_argument("--merge", action="append", default=[], metavar="PERIPH.REG.NAME",
                     help="one-bit fields NAME0..NAMEn joined into NAME")
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
+    apply_drops(doc, args.drop)
     apply_merges(doc, args.merge)
     apply_registers(doc, args.register)
     apply_fields(doc, args.field)

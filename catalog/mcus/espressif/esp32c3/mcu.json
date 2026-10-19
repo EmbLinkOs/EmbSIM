@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "kind": "mcu",
+  "id": "espressif/esp32c3",
+  "version": "0.1.0",
+  "name": "ESP32-C3",
+  "description": "Espressif ESP32-C3: a 32-bit RISC-V core (RV32IMC, ESP-RV) at up to 160 MHz, 400 KiB of SRAM, 384 KiB of ROM, external SPI flash behind an instruction and data cache, Wi-Fi and Bluetooth LE; the ESP32-C3-DevKitM-1's MCU. In progress (the RTOS boards plan, part 2): the core and its interrupt controller first.",
+  "keywords": [
+    "risc-v",
+    "riscv",
+    "rv32imc",
+    "espressif",
+    "esp32",
+    "esp32-c3",
+    "esp32c3"
+  ],
+  "vendor": "espressif",
+  "family": "esp32-c3",
+  "core": {
+    "backend": "riscv",
+    "model": "esp-rv32imc",
+    "pmp_entries": 16,
+    "timing_tier": "estimated",
+    "fpu": false,
+    "mpu": false,
+    "endian": "little",
+    "reset_pc": "0x40000000"
+  },
+  "memory": [
+    {
+      "name": "rom",
+      "base": "0x40000000",
+      "size": "384K",
+      "kind": "rom",
+      "doc": "Internal ROM0 and ROM1 on the instruction bus (TRM table 3.3-1): the boot ROM; its contents are Espressif's, not yet loaded here"
+    },
+    {
+      "name": "rom1_data",
+      "base": "0x3FF00000",
+      "size": "128K",
+      "kind": "alias",
+      "target": "0x40040000",
+      "doc": "Internal ROM1 on the data bus"
+    },
+    {
+      "name": "sram0",
+      "base": "0x4037C000",
+      "size": "16K",
+      "kind": "ram",
+      "doc": "Internal SRAM0 on the instruction bus, the instruction cache's memory once the cache is enabled"
+    },
+    {
+      "name": "sram1",
+      "base": "0x3FC80000",
+      "size": "384K",
+      "kind": "ram",
+      "main": true,
+      "doc": "Internal SRAM1 on the data bus"
+    },
+    {
+      "name": "sram1_ibus",
+      "base": "0x40380000",
+      "size": "384K",
+      "kind": "alias",
+      "target": "0x3FC80000",
+      "doc": "Internal SRAM1 on the instruction bus"
+    },
+    {
+      "name": "rtc_fast",
+      "base": "0x50000000",
+      "size": "8K",
+      "kind": "ram",
+      "doc": "RTC FAST memory, kept in deep sleep"
+    }
+  ],
+  "clocks": {
+    "sources": [
+      {
+        "name": "xtal",
+        "hz": 40000000,
+        "doc": "The 40 MHz crystal, the clock out of reset (XTAL_CLK); the board's"
+      },
+      {
+        "name": "rc_fast",
+        "hz": 17500000,
+        "doc": "The internal fast RC oscillator, about 17.5 MHz"
+      },
+      {
+        "name": "rc_slow",
+        "hz": 136000,
+        "doc": "The internal slow RC oscillator, about 136 kHz"
+      },
+      {
+        "name": "pll",
+        "hz": 480000000,
+        "doc": "PLL_CLK, 480 MHz (or 320 MHz) from the crystal"
+      }
+    ],
+    "reset_core_hz": 40000000,
+    "max_core_hz": 160000000
+  },
+  "register_file": {
+    "format": "embsim",
+    "file": "registers.json",
+    "vendored": true,
+    "license": "Apache-2.0 (converted from Espressif's esp32c3.svd, Copyright 2024 Espressif Systems (Shanghai) PTE LTD; LICENSES/Apache-2.0.txt)"
+  },
+  "peripherals": [
+    {
+      "match": "INTERRUPT_CORE0",
+      "model": "esp32c3-intmtx",
+      "order": 0
+    }
+  ],
+  "io": {
+    "family": "cmos_3v3",
+    "ports": [
+      {
+        "name": "GPIO",
+        "pins": 22,
+        "mask": "0x003FFFFF"
+      }
+    ],
+    "electrical": {
+      "vdd": 3.3,
+      "voh": 2.64,
+      "vol": 0.33,
+      "rout": 20,
+      "vih": 2.475,
+      "vil": 0.825,
+      "hysteresis": 0.1,
+      "rpull": 45000,
+      "leak_a": 5e-08,
+      "ioh_max": 0.04,
+      "iol_max": 0.028
+    }
+  },
+  "signals": [
+    "GPIO0",
+    "GPIO1",
+    "GPIO2",
+    "GPIO3",
+    "GPIO4",
+    "GPIO5",
+    "GPIO6",
+    "GPIO7",
+    "GPIO8",
+    "GPIO9",
+    "GPIO10",
+    "GPIO11",
+    "GPIO12",
+    "GPIO13",
+    "GPIO14",
+    "GPIO15",
+    "GPIO16",
+    "GPIO17",
+    "GPIO18",
+    "GPIO19",
+    "GPIO20",
+    "GPIO21",
+    "CHIP_EN",
+    "GND",
+    "LNA_IN",
+    "VDD3P3",
+    "VDD3P3_CPU",
+    "VDD3P3_RTC",
+    "VDDA",
+    "XTAL_N",
+    "XTAL_P"
+  ],
+  "packages": {
+    "qfn32": "qfn32.json"
+  },
+  "console": {
+    "default": "UART0"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Work in progress (the RTOS boards plan, part 2, step 1). The ESP-RV core: RV32IMC with user mode and the ESP32-C3's own CSRs (TRM chapter 1): mstatus's MIE, MPIE, MPP and TW, a vectored mtvec, five-bit mcause codes, the performance counter (mpcer, mpcmr, mpccr), the trigger module's eight triggers (exact and NAPOT match on execute, load and store, tcontrol), 16 PMP entries without static priority, and the cpu_gpio CSRs. The interrupt matrix and controller: 62 sources mapped onto CPU interrupts 1-31, level and edge types, priorities 1-15, the threshold, the 4-cycle latency, the clear toggle. Every register of Espressif's SVD with its reset value.",
+      "omissions": [
+        "the boot ROM's contents and every peripheral but the interrupt matrix (in progress)",
+        "the debug module and the debug CSRs",
+        "the performance counter's load and jump hazard events",
+        "the interrupt controller's transient state after a register write",
+        "the cache, the MMU and the external flash",
+        "Wi-Fi and Bluetooth LE"
+      ],
+      "validation": [
+        "repo:tests/unit/test_esp32c3.c"
+      ]
+    },
+    "timed": {
+      "claims": "Instruction timing estimated from the RISC-V core's per-class cost table, not the ESP-RV pipeline's.",
+      "omissions": [
+        "the ESP-RV pipeline's hazards",
+        "cache misses and flash latency"
+      ],
+      "validation": []
+    },
+    "electrical": {
+      "claims": "GPIO pin-model defaults at 3.3 V from the datasheet's DC characteristics (table 5-4): VIH 0.75 VDD, VIL 0.25 VDD, VOH 0.8 VDD, VOL 0.1 VDD, 45 kOhm pulls, 40 mA source and 28 mA sink at the strongest drive.",
+      "omissions": [
+        "the four drive strengths (FUN_DRV)",
+        "the RTC and SPI pads' own supplies"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ],
+        "current_a": [
+          -0.04,
+          0.028
+        ]
+      },
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ESP32-C3 Technical Reference Manual",
+        "rev": "v1.4"
+      },
+      {
+        "title": "ESP32-C3 Series Datasheet",
+        "rev": "v2.4"
+      },
+      {
+        "title": "Espressif esp32c3.svd (espressif/svd)",
+        "rev": "be20aa1"
+      }
+    ],
+    "notes": "The register description is converted from Espressif's Apache-2.0 SVD."
+  }
+}

@@ -32,7 +32,7 @@
 #include "util/str.h"
 
 #define RF_MAX_PERIPHS 256
-#define RF_MAX_REGS 512
+#define RF_MAX_REGS 1024 /* the ESP32-C3's DS: its memories as 659 words */
 #define RF_MAX_FIELDS 32
 
 static u32 plain_read(void *ctx, u32 off, int n);

@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "mcu/avr/avr.h"
+#include "mcu/esp32c3/esp32c3.h"
 #include "mcu/nrf52/nrf52.h"
 #include "mcu/pic24/pic24.h"
 #include "mcu/pic32/pic32.h"
@@ -57,6 +58,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "fe310-aon", &esk_fe310_aon_ops, esk_fe310_aon_create },
     { "fe310-pwm", &esk_fe310_pwm_ops, esk_fe310_pwm_create },
     { "fe310-spi", &esk_fe310_spi_ops, esk_fe310_spi_create },
+    { "esp32c3-intmtx", &esk_esp32c3_intmtx_ops, esk_esp32c3_intmtx_create },
     { "nrf-clock", &esk_nrf_clock_ops, esk_nrf_clock_create },
     { "nrf-gpio", &esk_nrf_gpio_ops, esk_nrf_gpio_create },
     { "nrf-gpiote", &esk_nrf_gpiote_ops, esk_nrf_gpiote_create },

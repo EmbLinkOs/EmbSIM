@@ -190,6 +190,11 @@ Started only once the NUCLEO-F446RE is done.
      threshold).
    - The interrupt matrix routing peripheral sources to CPU interrupts.
    - The debug trigger and PMP regions the part has.
+
+   *Done:* the ESP-RV core (`esp-rv32imc`) with the part's CSRs, counter,
+   triggers and PMP, and the interrupt matrix and controller
+   (`esp32c3-intmtx`), on `espressif/esp32c3`'s register file converted
+   from Espressif's SVD (`test_esp32c3`).
 2. **Boot and memory.**
    - The boot ROM's behaviour as observed from outside: strapping pins, the
      reset reasons, loading the ESP image's segments.
