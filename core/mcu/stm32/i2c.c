@@ -1154,7 +1154,6 @@ static u32 i2c_read(void *ctx, u32 off, int n)
         k->sr1_read = 0;
         dr_read(k);
     }
-    update(k); /* the interrupt lines are levels: still set, still pending */
     return v;
 }
 
