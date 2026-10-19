@@ -65,6 +65,12 @@ after each one.
    - FLASH wait states and the ART accelerator.
    - PWR voltage scaling and over-drive.
    - **Proof:** the HAL's `SystemClock_Config` at 180 MHz runs unmodified.
+   - *Done:* `tests/unit/test_stm32f4.c` drives the registers in the HAL's
+     order; STM32CubeF4's RCC_ClockConfig clock functions (HSI and HSE
+     bypass to 180 MHz with over-drive, and back) run unmodified on a bench
+     board, and become a scenario with the board in step 10. The wait
+     states and the ART accelerator are checked (a warning), not timed:
+     timing stays estimated (ADR-015).
 4. **GPIO, SYSCFG and EXTI.**
    - GPIO with the F4's MODER, OTYPER, OSPEEDR, PUPDR and AFR registers on
      the pins.
@@ -107,6 +113,13 @@ after each one.
     - IWDG_Reset.
 11. **EmbLinkRTOS on the board.** Its `nucleo_f446re` board and the
     conformance suite in its CI on EmbSIM.
+
+Before step 10, **the core's speed.** The interpreter runs about 3.6
+million instructions a second, a fiftieth of the part at 180 MHz. The
+devices' clocks become lazy on Cortex-M as on the AVR (SysTick and the
+timers told their cycles when their next event comes), and decoded
+instructions are kept, so that an RTOS at full speed is usable on the
+bench.
 
 ## 2. ESP32-C3-DevKitM-1 (ESP32-C3, RISC-V)
 

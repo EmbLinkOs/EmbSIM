@@ -35,6 +35,8 @@ typedef struct esk_mcu_setup {
     const esk_json *mcu;  /* the MCU description */
     const esk_json *regs; /* its register description, or NULL */
     u32 hse_hz;           /* the board's external oscillator, 0 for none */
+    int hse_clock;        /* it is a clock (oscillator, MCO), not a crystal */
+    u32 lse_hz;           /* the board's low-speed crystal, 0 for none */
     const unsigned char *image; /* the firmware, copied */
     size_t image_len;
     const char *image_name;

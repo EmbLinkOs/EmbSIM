@@ -81,6 +81,18 @@ class Svd2Regs(unittest.TestCase):
         with self.assertRaises(SystemExit):
             svd2regs.apply_resets(doc, ["UART0.NOPE=1"])
 
+    def test_fields_and_merges(self):
+        doc = {"source": "s", "interrupts": {}, "peripherals": [{"name": "RCC", "base": "0x0", "registers": [
+            {"name": "PLLCFGR", "offset": "0x04", "fields": [["PLLM2", 2, 1], ["PLLM1", 1, 1], ["PLLM0", 0, 1],
+                                                           ["PLLQ0", 24, 1], ["LAT", 8, 3]]}]}]}
+        svd2regs.apply_merges(doc, ["RCC.PLLCFGR.PLLM"])
+        svd2regs.apply_fields(doc, ["RCC.PLLCFGR=PLLR:28:3", "RCC.PLLCFGR=LATENCY:8:4"])
+        f = doc["peripherals"][0]["registers"][0]["fields"]
+        self.assertEqual(f, [["PLLR", 28, 3], ["PLLQ0", 24, 1], ["LATENCY", 8, 4], ["PLLM", 0, 3]])
+        self.assertIn("RCC.PLLCFGR.PLLM", doc["source"])
+        with self.assertRaises(SystemExit):
+            svd2regs.apply_merges(doc, ["RCC.PLLCFGR.PLLN"])
+
     def test_interrupt_reassignment(self):
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / "toy.svd"

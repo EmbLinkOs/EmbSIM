@@ -198,6 +198,11 @@ instruction and `next_event` says how many cycles until its next interrupt
 or output, so a sleeping core skips to it. M1's models (`core/mcu/models.c`):
 `stm32-rcc`, `stm32f1-gpio`, `stm32f1-afio`, `stm32-exti`, `stm32-usart`,
 `stm32-tim` (time base and interrupts), `stm32f1-flash`, `stm32-pwr`.
+The F4's clock tree is the same `stm32-rcc` (an RCC with `PLLCFGR`):
+HSI, HSE as crystal or bypass clock, LSE, LSI, the main PLL's P and R
+outputs, the bus prescalers and the timers' clock (`esk_stm32_hclk`,
+`esk_stm32_pclk`, `esk_stm32_timclk`); `stm32f4-pwr` gives PWR's voltage
+scaling and over-drive ready bits.
 
 ## 7. Pins, multiplexing and nets
 

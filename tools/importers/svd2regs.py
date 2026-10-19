@@ -21,7 +21,14 @@ for the user's own use unless that licence allows distributing it.
     --interrupts PERIPH=A,B      (repeatable) the interrupts a peripheral
                                  requests, where the SVD lists them on
                                  another (an STM32's TIM9 on TIM1_BRK_TIM9);
-                                 recorded likewise"""
+                                 recorded likewise
+    --field PERIPH.REG=NAME:LSB:WIDTH[:ACCESS]
+                                 (repeatable) a field the SVD leaves out or
+                                 sizes wrongly, added or replaced
+    --merge PERIPH.REG.NAME      (repeatable) the one-bit fields NAME0,
+                                 NAME1, ... into one field NAME, as the
+                                 manual names a number ST's SVDs split
+                                 (RCC PLLCFGR's PLLM0..PLLM5)"""
 import argparse
 import json
 import re
@@ -215,6 +222,62 @@ def apply_interrupts(doc: dict, specs: list[str]) -> None:
         doc["source"] += "; interrupts reassigned from the reference manual: " + "; ".join(done)
 
 
+def find_reg(doc: dict, target: str, opt: str) -> dict:
+    pname, _, rname = target.partition(".")
+    p = next((q for q in doc["peripherals"] if q["name"] == pname), None)
+    if p is None or "registers" not in p:
+        raise SystemExit(f"{opt} {target}: no peripheral {pname} with its own registers")
+    reg = next((r for r in p["registers"] if r["name"] == rname), None)
+    if reg is None:
+        raise SystemExit(f"{opt} {target}: {pname} has no register {rname}")
+    return reg
+
+
+def apply_fields(doc: dict, specs: list[str]) -> None:
+    """Fields PERIPH.REG=NAME:LSB:WIDTH[:ACCESS] added, or replacing those
+    they overlap (the SVD's narrower or missing field)."""
+    done = []
+    for spec in specs:
+        target, _, f = spec.partition("=")
+        parts = f.split(":")
+        if len(parts) not in (3, 4):
+            raise SystemExit(f"--field {spec}: NAME:LSB:WIDTH[:ACCESS]")
+        reg = find_reg(doc, target, "--field")
+        name, lsb, width = parts[0], int(parts[1]), int(parts[2])
+        mask = ((1 << width) - 1) << lsb
+        fields = [x for x in reg.get("fields", [])
+                  if x[0] != name and not ((((1 << x[2]) - 1) << x[1]) & mask)]
+        fields.append([name, lsb, width] + parts[3:])
+        reg["fields"] = sorted(fields, key=lambda x: -x[1])
+        done.append(f"{target}.{f}")
+    if done:
+        doc["source"] += "; fields corrected from the reference manual: " + ", ".join(done)
+
+
+def apply_merges(doc: dict, specs: list[str]) -> None:
+    """The one-bit fields NAME0..NAMEn, contiguous, joined into NAME."""
+    done = []
+    for spec in specs:
+        target, _, name = spec.rpartition(".")
+        reg = find_reg(doc, target, "--merge")
+        bits = {}
+        for x in reg.get("fields", []):
+            m = re.fullmatch(re.escape(name) + r"(\d+)", x[0])
+            if m and x[2] == 1:
+                bits[int(m.group(1))] = x
+        if not bits or sorted(bits) != list(range(len(bits))):
+            raise SystemExit(f"--merge {spec}: no fields {name}0..{name}n")
+        lsb = bits[0][1]
+        if any(bits[k][1] != lsb + k for k in bits):
+            raise SystemExit(f"--merge {spec}: {name}0..{name}{len(bits) - 1} are not contiguous")
+        acc = bits[0][3:]
+        rest = [x for x in reg["fields"] if x not in bits.values()]
+        reg["fields"] = sorted(rest + [[name, lsb, len(bits)] + acc], key=lambda x: -x[1])
+        done.append(spec)
+    if done:
+        doc["source"] += "; split fields joined: " + ", ".join(done)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("svd", type=Path)
@@ -224,8 +287,14 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="a reset value from the reference manual where the SVD differs")
     ap.add_argument("--interrupts", action="append", default=[], metavar="PERIPH=A,B",
                     help="a peripheral's interrupts where the SVD lists them elsewhere")
+    ap.add_argument("--field", action="append", default=[], metavar="PERIPH.REG=NAME:LSB:WIDTH[:ACCESS]",
+                    help="a field the SVD leaves out or sizes wrongly")
+    ap.add_argument("--merge", action="append", default=[], metavar="PERIPH.REG.NAME",
+                    help="one-bit fields NAME0..NAMEn joined into NAME")
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
+    apply_merges(doc, args.merge)
+    apply_fields(doc, args.field)
     apply_resets(doc, args.reset)
     apply_interrupts(doc, args.interrupts)
     args.output.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")

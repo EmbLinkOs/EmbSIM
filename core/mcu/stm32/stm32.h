@@ -12,6 +12,7 @@
  *   adc_f1.c   the F1's ADC: its regular group from the pins' voltages
  *   spi_f1.c   the F1's SPI as a master, on its pins
  *   i2c_f1.c   the F1's I2C as a master, on its pins
+ *   pwr_f4.c   the F4's power control: voltage scaling and over-drive ready
  *   storage.c  registers that only keep what is written (FLASH's ACR) */
 #ifndef ESK_MCU_STM32_H
 #define ESK_MCU_STM32_H
@@ -36,6 +37,16 @@ void *esk_stm32_storage_create(struct esk_mach *m, struct esk_rf_periph *p);
 /* the F1's clocks in Hz: HCLK (0 without the F1's RCC) and PCLK1 or PCLK2 */
 u32 esk_stm32f1_hclk(struct esk_mach *m);
 u32 esk_stm32f1_pclk(struct esk_mach *m, int apb);
+/* any family's: HCLK (0 without a modelled RCC), PCLK1 or PCLK2, and the
+ * clock of the timers on that APB */
+u32 esk_stm32_hclk(struct esk_mach *m);
+u32 esk_stm32_pclk(struct esk_mach *m, int apb);
+u32 esk_stm32_timclk(struct esk_mach *m, int apb);
+/* the F4's PWR: VOSRDY, ODRDY and ODSWRDY as the RCC's PLL and PWR's
+ * enables have them (pwr_f4.c); nothing without the F4's PWR */
+void esk_stm32f4_pwr_settle(struct esk_mach *m);
+extern const struct esk_dev_ops esk_stm32f4_pwr_ops;
+void *esk_stm32f4_pwr_create(struct esk_mach *m, struct esk_rf_periph *p);
 /* AFIO's MAPR (0 without AFIO) and the port an EXTI line listens to */
 u32 esk_stm32f1_mapr(struct esk_mach *m);
 int esk_stm32f1_exti_port(struct esk_mach *m, int line);

@@ -1197,6 +1197,8 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->boot0 = esk_comp_pin(c, "BOOT0");
     if (st->nrst)
         esk_pin_watch(st->nrst, 1);
+    st->m.hse_clock = su->hse_clock;
+    st->m.lse_hz = su->lse_hz;
     st2 = esk_mach_build(&st->m, su->mcu, su->regs, su->hse_hz, why, cap);
     if (st2 != ES_OK)
         return st2;

@@ -5,7 +5,7 @@
  "version": "1.0.0",
  "device": "STM32F446",
  "description": "STM32F446 peripheral registers at their addresses, reset values and field access, and its interrupt numbers, converted by tools/importers/svd2regs.py from STMicroelectronics' STM32F446.svd (version 1.9, from ST's STM32F4 SVD pack v2.0 as archived by modm-io/cmsis-svd-stm32), Copyright (c) 2024 STMicroelectronics, SPDX-License-Identifier: Apache-2.0 (LICENSES/Apache-2.0.txt). Where the SVD and RM0390 (the STM32F446 reference manual) disagree, the manual's value is used; the corrections are listed in source. DBG is the DBGMCU block on the external private peripheral bus.",
- "source": "converted from STMicroelectronics STM32F446.svd v1.9 by tools/importers/svd2regs.py; reset values corrected from the reference manual: GPIOA.OSPEEDR=0x0C000000, USART6.SR=0x000000C0, UART4.SR=0x000000C0, DBG.DBGMCU_IDCODE=0x10006421; interrupts reassigned from the reference manual: TIM9=TIM1_BRK_TIM9; TIM10=TIM1_UP_TIM10; TIM11=TIM1_TRG_COM_TIM11; TIM12=TIM8_BRK_TIM12; TIM13=TIM8_UP_TIM13; TIM14=TIM8_TRG_COM_TIM14; I2C1=I2C1_EV,I2C1_ER; FMPI2C=FMPI2C1,FMPI2C1_error; ADC1=ADC; ADC2=ADC; ADC3=ADC; DAC=TIM6_DAC; PWR=PVD",
+ "source": "converted from STMicroelectronics STM32F446.svd v1.9 by tools/importers/svd2regs.py; split fields joined: RCC.PLLCFGR.PLLM, RCC.PLLCFGR.PLLN, RCC.PLLCFGR.PLLP, RCC.PLLCFGR.PLLQ, RCC.CFGR.SW, RCC.CFGR.SWS; fields corrected from the reference manual: RCC.PLLCFGR.PLLR:28:3, RCC.CR.PLLSAION:28:1, RCC.CR.PLLSAIRDY:29:1:r, FLASH.ACR.LATENCY:0:4; reset values corrected from the reference manual: GPIOA.OSPEEDR=0x0C000000, USART6.SR=0x000000C0, UART4.SR=0x000000C0, DBG.DBGMCU_IDCODE=0x10006421; interrupts reassigned from the reference manual: TIM9=TIM1_BRK_TIM9; TIM10=TIM1_UP_TIM10; TIM11=TIM1_TRG_COM_TIM11; TIM12=TIM8_BRK_TIM12; TIM13=TIM8_UP_TIM13; TIM14=TIM8_TRG_COM_TIM14; I2C1=I2C1_EV,I2C1_ER; FMPI2C=FMPI2C1,FMPI2C1_error; ADC1=ADC; ADC2=ADC; ADC3=ADC; DAC=TIM6_DAC; PWR=PVD",
  "interrupts": {
   "WWDG": 0,
   "PVD": 1,
@@ -23988,6 +23988,17 @@
      "reset": "0x00000083",
      "fields": [
       [
+       "PLLSAIRDY",
+       29,
+       1,
+       "r"
+      ],
+      [
+       "PLLSAION",
+       28,
+       1
+      ],
+      [
        "PLLI2SRDY",
        27,
        1,
@@ -24060,24 +24071,14 @@
      "reset": "0x24003010",
      "fields": [
       [
-       "PLLQ3",
-       27,
-       1
+       "PLLR",
+       28,
+       3
       ],
       [
-       "PLLQ2",
-       26,
-       1
-      ],
-      [
-       "PLLQ1",
-       25,
-       1
-      ],
-      [
-       "PLLQ0",
+       "PLLQ",
        24,
-       1
+       4
       ],
       [
        "PLLSRC",
@@ -24085,89 +24086,19 @@
        1
       ],
       [
-       "PLLP1",
-       17,
-       1
-      ],
-      [
-       "PLLP0",
+       "PLLP",
        16,
-       1
+       2
       ],
       [
-       "PLLN8",
-       14,
-       1
-      ],
-      [
-       "PLLN7",
-       13,
-       1
-      ],
-      [
-       "PLLN6",
-       12,
-       1
-      ],
-      [
-       "PLLN5",
-       11,
-       1
-      ],
-      [
-       "PLLN4",
-       10,
-       1
-      ],
-      [
-       "PLLN3",
-       9,
-       1
-      ],
-      [
-       "PLLN2",
-       8,
-       1
-      ],
-      [
-       "PLLN1",
-       7,
-       1
-      ],
-      [
-       "PLLN0",
+       "PLLN",
        6,
-       1
+       9
       ],
       [
-       "PLLM5",
-       5,
-       1
-      ],
-      [
-       "PLLM4",
-       4,
-       1
-      ],
-      [
-       "PLLM3",
-       3,
-       1
-      ],
-      [
-       "PLLM2",
-       2,
-       1
-      ],
-      [
-       "PLLM1",
-       1,
-       1
-      ],
-      [
-       "PLLM0",
+       "PLLM",
        0,
-       1
+       6
       ]
      ]
     },
@@ -24221,26 +24152,15 @@
        4
       ],
       [
-       "SWS1",
-       3,
-       1,
-       "r"
-      ],
-      [
-       "SWS0",
+       "SWS",
        2,
-       1,
+       2,
        "r"
       ],
       [
-       "SW1",
-       1,
-       1
-      ],
-      [
-       "SW0",
+       "SW",
        0,
-       1
+       2
       ]
      ]
     },
@@ -25679,23 +25599,8 @@
      "offset": "0x00",
      "fields": [
       [
-       "LATENCY",
-       0,
-       3
-      ],
-      [
-       "PRFTEN",
-       8,
-       1
-      ],
-      [
-       "ICEN",
-       9,
-       1
-      ],
-      [
-       "DCEN",
-       10,
+       "DCRST",
+       12,
        1
       ],
       [
@@ -25705,9 +25610,24 @@
        "w"
       ],
       [
-       "DCRST",
-       12,
+       "DCEN",
+       10,
        1
+      ],
+      [
+       "ICEN",
+       9,
+       1
+      ],
+      [
+       "PRFTEN",
+       8,
+       1
+      ],
+      [
+       "LATENCY",
+       0,
+       4
       ]
      ]
     },

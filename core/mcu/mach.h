@@ -339,6 +339,8 @@ struct esk_mach {
     void *pin_reset_ctx;
     u32 reset_hz;
     u32 hse_hz;   /* the board's external oscillator, 0 for none */
+    int hse_clock; /* it is a clock (an STM32's HSE then needs HSEBYP), not a crystal */
+    u32 lse_hz;   /* the board's 32.768 kHz crystal, 0 for none */
     double vdd;   /* the I/O supply in volts (the ADC's AVCC) */
     esk_mach_host host;
     /* the GPIO model's: the pins' outside levels changed; where a UART's

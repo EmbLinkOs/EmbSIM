@@ -5,6 +5,42 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32F446's clocks and power (the NUCLEO-F446RE plan, step 3)
+
+- **RCC to 180 MHz** (`stm32-rcc` on an RCC with `PLLCFGR`, RM0390 6):
+  - HSI 16 MHz; HSE ready only as the board drives OSC_IN, a crystal with
+    HSEBYP clear or a clock (the NUCLEO's ST-Link MCO) with it set, and
+    HSEBYP kept while HSE is on; LSE from the board's crystal; LSI;
+  - the main PLL from HSI or HSE: PLLM, PLLN, PLL_P and the F446's PLL_R;
+    PLLRDY, PLLI2SRDY and PLLSAIRDY once the source is ready;
+  - SYSCLK from HSI, HSE, PLL_P or PLL_R, switched once its source is ready
+    (SWS); HCLK, PCLK1, PCLK2 and the timers' clock with DCKCFGR's TIMPRE
+    (`esk_stm32_hclk`, `esk_stm32_pclk`, `esk_stm32_timclk`); the core
+    runs at HCLK;
+  - what SYSCLK uses cannot be turned off; BDCR is written only while
+    PWR's DBP is set;
+  - said once, as warnings: a VCO input outside 1 to 2 MHz or output
+    outside 100 to 432 MHz, SYSCLK above the voltage scale's and
+    over-drive's limit, PCLK1 above 45 MHz, PCLK2 above 90 MHz
+    (`mcu.clock_out_of_spec`), and too few flash wait states for HCLK
+    (`mcu.flash_wait_states`).
+- **PWR** (`stm32f4-pwr`): VOSRDY with the PLL, ODRDY and ODSWRDY as the
+  over-drive sequence sets them.
+- **The board's clocks:** a board's HSE `source` of `external_clock` or
+  `oscillator_module` makes HSE a clock that needs HSEBYP; its LSE's
+  frequency reaches the part.
+- **Register file:** split RCC fields joined (PLLM, PLLN, PLLP, PLLQ, SW,
+  SWS) and missing ones added from RM0390 (PLLR, PLLSAION, PLLSAIRDY,
+  FLASH's 4-bit LATENCY); `tools/importers/svd2regs.py` gains `--merge` and
+  `--field`, recorded in the file's source.
+- **Faster STM32 clock lookups:** the RCC model is the machine's clock
+  model, no longer found by name on every core clock query.
+- **Proof:** `tests/unit/test_stm32f4.c`; STM32CubeF4's RCC_ClockConfig
+  clock functions (HSI and HSE bypass to 180 MHz with over-drive, and back)
+  run unmodified on a bench board, the HAL reporting 180, 45 and 90 MHz and
+  `HAL_Delay` taking its cycles. The ST examples run APB2 at 180 MHz,
+  which the model reports as out of spec.
+
 ### The STM32F446RE described (the NUCLEO-F446RE plan, step 2)
 
 - `st/stm32f446re`: the Cortex-M4F with FPU and MPU, the memory map

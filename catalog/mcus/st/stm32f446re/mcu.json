@@ -123,6 +123,22 @@
   "vendored": true,
   "license": "Apache-2.0 (converted from STMicroelectronics' STM32F446.svd v1.9, Copyright (c) 2024 STMicroelectronics; LICENSES/Apache-2.0.txt)"
  },
+ "peripherals": [
+  {
+   "match": "RCC",
+   "model": "stm32-rcc",
+   "order": 0
+  },
+  {
+   "match": "FLASH",
+   "model": "storage",
+   "order": 1
+  },
+  {
+   "match": "PWR",
+   "model": "stm32f4-pwr"
+  }
+ ],
  "io": {
   "family": "cmos_3v3",
   "ports": [
@@ -260,19 +276,22 @@
  },
  "fidelity": {
   "functional": {
-   "claims": "Cortex-M4F instruction execution (Thumb-2 with ARMv7E-M's DSP instructions, FPv4-SP, NVIC with 4 priority bits, SCB, SysTick, DWT, the MPU with eight regions, lazy floating-point context stacking, semihosting); every register of ST's STM32F446 SVD at its address with its reset value and access type, corrected where RM0390 differs (the corrections are listed in registers.json).",
+   "claims": "Cortex-M4F instruction execution (Thumb-2 with ARMv7E-M's DSP instructions, FPv4-SP, NVIC with 4 priority bits, SCB, SysTick, DWT, the MPU with eight regions, lazy floating-point context stacking, semihosting); every register of ST's STM32F446 SVD at its address with its reset value and access type, corrected where RM0390 differs (the corrections are listed in registers.json). RCC: HSI 16 MHz, HSE ready only as the board drives OSC_IN (a crystal without HSEBYP, a clock with it), LSE and LSI, the main PLL (PLLM, PLLN, PLLP, PLLR from HSI or HSE), SYSCLK from HSI, HSE, PLL_P or PLL_R switched once ready (SWS), HPRE, PPRE1, PPRE2 and the timers' clock with TIMPRE, the PLLI2S and PLLSAI ready bits; what the system clock uses cannot be turned off, HSEBYP is kept while HSE is on, BDCR is written only while PWR's DBP is set; a VCO, SYSCLK, PCLK1 or PCLK2 outside the datasheet's limits and too few flash wait states for HCLK are reported (mcu.clock_out_of_spec, mcu.flash_wait_states). PWR: VOSRDY with the PLL, ODRDY and ODSWRDY as RM0390's over-drive sequence sets them. FLASH's ACR keeps LATENCY, the ART accelerator's and the prefetch bits.",
    "omissions": [
-    "every peripheral model: RCC, FLASH, PWR, GPIO, SYSCFG, EXTI, the timers, USART and UART, DMA, ADC, DAC, SPI, I2C, the watchdogs and the RTC keep their register values and raise mcu.unsupported_access until their models land (docs/engineering/rtos-boards.md, steps 3 to 8)",
+    "the peripheral models of GPIO, SYSCFG, EXTI, the timers, USART and UART, DMA, ADC, DAC, SPI, I2C, the watchdogs and the RTC: they keep their register values and raise mcu.unsupported_access until their models land (docs/engineering/rtos-boards.md, steps 4 to 8)",
+    "RCC: the clock security system, CIR's interrupts, the peripheral reset registers, RMVF and the reset flags, the oscillators' and PLLs' start-up times (ready at once), MCO1 and MCO2 on their pins, and the I2S, SAI, SPDIF-RX, CEC, FMPI2C and 48 MHz clocks from PLLI2S and PLLSAI (DCKCFGR, DCKCFGR2) beyond TIMPRE",
+    "PWR: the regulator's settling times, the programmable voltage detector, the low-power modes' regulator and under-drive settings, standby, wake-up flags and the backup regulator",
     "CAN, SDIO, QUADSPI, SAI, SPDIF-RX, HDMI-CEC, DCMI, FMC, FMPI2C and the USB OTG controllers",
-    "flash programming and the option bytes' effects",
+    "flash programming (KEYR, SR, CR) and the option bytes' effects: FLASH keeps its registers",
     "low-power modes beyond WFI"
    ],
    "validation": [
-    "repo:tests/firmware/cm4-core"
+    "repo:tests/firmware/cm4-core",
+    "repo:tests/unit/test_stm32f4.c"
    ]
   },
   "timed": {
-   "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact.",
+   "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact, at the core clock RCC gives (HCLK).",
    "omissions": [
     "flash wait states and the ART accelerator",
     "bus arbitration",

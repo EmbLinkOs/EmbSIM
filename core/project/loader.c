@@ -662,6 +662,7 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
     const char *rel = esk_json_get_str(bi->firmware, "image", NULL);
     const esk_json *rfd = esk_json_get(mi->desc, "register_file");
     const esk_json *hse = esk_json_get(esk_json_get(board->desc, "oscillators"), "hse");
+    const esk_json *lse = esk_json_get(esk_json_get(board->desc, "oscillators"), "lse");
     char *path = NULL, *rpath = NULL, *img = NULL, *rtext = NULL, why[256];
     size_t len = 0, rlen = 0;
     esk_json *regs = NULL;
@@ -703,6 +704,10 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         su.mcu = mi->desc;
         su.regs = regs;
         su.hse_hz = (u32)esk_json_get_int(hse, "hz", 0);
+        /* a clock or an oscillator module drives OSC_IN: no crystal to start */
+        su.hse_clock = esk_str_eq(esk_json_get_str(hse, "source", ""), "external_clock") ||
+                       esk_str_eq(esk_json_get_str(hse, "source", ""), "oscillator_module");
+        su.lse_hz = (u32)esk_json_get_int(lse, "hz", 0);
         su.image = (const unsigned char *)img;
         su.image_len = len;
         su.image_name = rel;
