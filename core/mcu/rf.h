@@ -110,6 +110,9 @@ struct esk_rf_periph {
      * offset and size */
     u32 *rsv;
     int nrsv;
+    /* in a backup domain (an STM32's RTC): its registers keep their values
+     * through every reset but a power-on one (the model sets it) */
+    int backup;
 };
 
 /* a model type */

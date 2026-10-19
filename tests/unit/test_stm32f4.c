@@ -133,6 +133,25 @@
 #define DAC_DOR2 0x30u
 #define DAC_SR 0x34u
 #define TIM6 0x40001000u
+#define IWDG 0x40003000u
+#define WWDG 0x40002C00u
+#define AIRCR 0xE000ED0Cu
+#define FLASH_OPTCR 0x40023C14u
+#define RTC 0x40002800u
+#define R_TR 0x00u
+#define R_DR 0x04u
+#define R_CR 0x08u
+#define R_ISR 0x0Cu
+#define R_PRER 0x10u
+#define R_WUTR 0x14u
+#define R_ALRMAR 0x1Cu
+#define R_WPR 0x24u
+#define R_SSR 0x28u
+#define R_TSTR 0x30u
+#define R_TAFCR 0x40u
+#define R_BKP0R 0x50u
+#define EXTI_IMR (EXTI + 0x00u)
+#define EXTI_RTSR (EXTI + 0x08u)
 
 /* PLLM 8, PLLN 360, PLLP /2, PLLQ 2, PLLR 2 from HSE: 1 MHz into the VCO,
  * 360 MHz out of it, 180 MHz SYSCLK (CubeF4's NUCLEO-F446RE templates) */
@@ -2315,7 +2334,7 @@ static void run_for(f4 *f, u64 n)
 {
     u64 end = f->m.cycles + n;
     while (f->m.cycles < end)
-        esk_mach_run(&f->m, 1, 0);
+        esk_mach_run(&f->m, end - f->m.cycles, 0);
 }
 
 /* one conversion (HAL_ADC_Start, PollForConversion): its code, its time
@@ -2551,6 +2570,309 @@ static void test_dac(void)
     f4_close(&f);
 }
 
+/* ---- resets and watchdogs ----------------------------------------------------------- */
+
+/* the runtime's side of a requested reset: the machine starts again, its
+ * RAM kept, with the cause the model gave */
+static int reset_if_asked(f4 *f)
+{
+    if (!f->m.reset_req)
+        return 0;
+    esk_mach_reset(&f->m);
+    f->m.reset_cause = ESK_RESET_POWER;
+    return 1;
+}
+
+/* the core runs until a reset is asked for, at most `limit` cycles: the
+ * cycles it took, or -1 */
+static long long run_to_reset(f4 *f, u64 limit)
+{
+    u64 t0 = f->m.cycles;
+    while (!f->m.reset_req && f->m.cycles - t0 < limit)
+        esk_mach_run(&f->m, 256, 0);
+    return f->m.reset_req ? (long long)(f->m.cycles - t0) : -1;
+}
+
+/* RCC_CSR's flags through a power-on, RMVF, a software reset (RAM kept)
+ * and the reset pin */
+static void test_reset_flags(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    CHECK_EQ(rd(&f, RCC_CSR) & 0xff000000u, 0x0e000000u); /* PORRSTF, PINRSTF, BORRSTF */
+    wr(&f, RCC_CSR, 1u << 24);                            /* RMVF */
+    CHECK_EQ(rd(&f, RCC_CSR) & 0xff000000u, 0u);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000800u, 4, 0xfeedc0deu), 0);
+    wr(&f, AIRCR, 0x05fa0004u);                           /* SYSRESETREQ */
+    CHECK(reset_if_asked(&f));
+    CHECK_EQ(rd(&f, RCC_CSR) & 0xff000000u, 0x14000000u); /* SFTRSTF, PINRSTF */
+    CHECK_EQ(ram32(&f, 0x20000800u), 0xfeedc0deu);        /* RAM kept */
+    f.m.reset_cause = ESK_RESET_PIN;
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, RCC_CSR) & 0xff000000u, 0x14000000u); /* the flags kept, PINRSTF again */
+    f4_close(&f);
+}
+
+/* the IWDG: its keys, PVU/RVU, LSI forced on, the reset at 0 and its
+ * flag; then the option bytes' hardware watchdog */
+static void test_iwdg(void)
+{
+    f4 f;
+    long long t;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    wr(&f, IWDG + 0x08, 99);                     /* RLR, locked: ignored */
+    CHECK_EQ(rd(&f, IWDG + 0x08), 0xfffu);
+    wr(&f, IWDG, 0x5555);
+    wr(&f, IWDG + 0x08, 99);
+    CHECK_EQ(rd(&f, IWDG + 0x0C), 2u);           /* RVU */
+    run_for(&f, 2600);                           /* five LSI clocks */
+    CHECK_EQ(rd(&f, IWDG + 0x0C), 0u);
+    CHECK_EQ(rd(&f, RCC_CSR) & 2u, 0u);          /* LSI off */
+    wr(&f, IWDG, 0xcccc);
+    CHECK(rd(&f, RCC_CSR) & 2u);                 /* forced on: LSIRDY */
+    wr(&f, IWDG, 0xaaaa);                        /* 100 counts of 4 LSI clocks */
+    t = run_to_reset(&f, 400000);
+    CHECK(t >= 199000 && t <= 201000);           /* 12.5 ms at 16 MHz */
+    CHECK(reset_if_asked(&f));
+    CHECK(rd(&f, RCC_CSR) & 1u << 29);           /* IWDGRSTF */
+    CHECK_EQ(run_to_reset(&f, 300000), -1);      /* a software watchdog: stopped */
+    /* WDG_SW 0: it starts by itself, from 0xFFF at LSI / 4 (512 ms) */
+    CHECK_EQ(rd(&f, FLASH_OPTCR) & 0xffffu, 0xaaedu);           /* the factory's */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x1FFFC000u, 1, 0xcdu), 0); /* WDG_SW 0 */
+    f.m.reset_cause = ESK_RESET_PIN;
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, FLASH_OPTCR) & 0xffffu, 0xaacdu);           /* loaded at reset */
+    CHECK(rd(&f, RCC_CSR) & 2u);
+    wr(&f, IWDG, 0x5555);
+    wr(&f, IWDG + 0x04, 0);
+    wr(&f, IWDG + 0x08, 9);
+    run_for(&f, 2600);
+    wr(&f, IWDG, 0xaaaa);
+    t = run_to_reset(&f, 100000);
+    CHECK(t >= 19000 && t <= 21000);             /* 10 counts: 1.25 ms */
+    f4_close(&f);
+}
+
+/* the WWDG: a refresh above the window resets, one inside does not, EWI at
+ * 0x40, then the reset as T6 clears */
+static void test_wwdg(void)
+{
+    f4 f;
+    long long t;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 11); /* WWDGEN */
+    wr(&f, WWDG + 0x04, 0x50u | 1u << 9);        /* W 0x50, WDGTB 0, EWI */
+    wr(&f, WWDG, 0x80u | 0x7fu);                 /* WDGA, T 0x7F */
+    run_for(&f, 4096 * 10);
+    CHECK_EQ(rd(&f, WWDG) & 0x7fu, 0x75u);       /* a count every 4096 PCLK1 clocks */
+    wr(&f, WWDG, 0x80u | 0x7fu);                 /* 0x75 > W: too early */
+    CHECK(reset_if_asked(&f));
+    CHECK(rd(&f, RCC_CSR) & 1u << 30);           /* WWDGRSTF */
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 11);
+    wr(&f, WWDG + 0x04, 0x50u | 1u << 9);
+    wr(&f, WWDG, 0x80u | 0x7fu);
+    run_for(&f, 4096 * 0x30 + 100);              /* 0x4F: inside the window */
+    wr(&f, WWDG, 0x80u | 0x7fu);
+    CHECK(!f.m.reset_req);
+    t = run_to_reset(&f, 4096 * 0x50);
+    CHECK(rd(&f, WWDG + 0x08) & 1u);             /* EWIF at 0x40 */
+    CHECK(rd(&f, NVIC_ISPR0) & 1u);              /* WWDG, IRQ 0 */
+    CHECK(t >= 4096 * 0x40 - 300 && t <= 4096 * 0x40 + 300); /* 0x7F to 0x3F */
+    f4_close(&f);
+}
+
+/* ---- the RTC ------------------------------------------------------------------------- */
+
+/* HAL_RTC_Init's way: PWR's DBP, LSE, RTCSEL LSE, RTCEN; the keys, INIT,
+ * and fast prescalers (a "second" of 1/1024 s: 15625 core cycles) */
+static void rtc_on(f4 *f)
+{
+    busy(f);
+    wr(f, RCC_APB1ENR, rd(f, RCC_APB1ENR) | 1u << 28);  /* PWREN */
+    wr(f, PWR_CR, rd(f, PWR_CR) | 1u << 8);             /* DBP */
+    wr(f, RCC_BDCR, 1u);                                /* LSEON */
+    CHECK(rd(f, RCC_BDCR) & 2u);                        /* LSERDY */
+    wr(f, RCC_BDCR, 1u | 1u << 8 | 1u << 15);           /* RTCSEL LSE, RTCEN */
+    wr(f, RTC + R_WPR, 0xca);
+    wr(f, RTC + R_WPR, 0x53);
+    wr(f, RTC + R_ISR, 1u << 7);                        /* INIT */
+    CHECK_EQ(rd(f, RTC + R_ISR) & 1u << 6, 0u);         /* INITF two RTCCLK clocks later */
+    run_for(f, 1000);
+    CHECK(rd(f, RTC + R_ISR) & 1u << 6);
+    wr(f, RTC + R_PRER, 3u << 16 | 7u);                 /* /4, /8 */
+}
+
+static void rtc_go(f4 *f)
+{
+    wr(f, RTC + R_ISR, 0);                              /* INIT off */
+    run_for(f, 1000);
+    CHECK(rd(f, RTC + R_ISR) & 1u << 5);                /* RSF */
+}
+
+#define RTC_SEC 15625u
+
+/* the calendar across a leap day's midnight, its write protection, the
+ * shadow registers' locking, 12-hour mode */
+static void test_rtc_calendar(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    CHECK_EQ(rd(&f, RTC + R_DR), 0x2101u);               /* 2000-01-01, Monday */
+    rtc_on(&f);
+    wr(&f, RTC + R_TR, 0x235958u);                      /* 23:59:58 */
+    wr(&f, RTC + R_DR, 0x24u << 16 | 3u << 13 | 0x02u << 8 | 0x28u); /* 2024-02-28, Wednesday */
+    rtc_go(&f);
+    CHECK(rd(&f, RTC + R_ISR) & 1u << 4);                /* INITS: the year is set */
+    run_for(&f, 3 * RTC_SEC + 2500);                     /* (it counts again four RTCCLK clocks after INIT) */
+    CHECK_EQ(rd(&f, RTC + R_TR), 0x000001u);             /* 00:00:01 */
+    CHECK_EQ(rd(&f, RTC + R_DR), 0x24u << 16 | 4u << 13 | 0x02u << 8 | 0x29u); /* the 29th, Thursday */
+    wr(&f, RTC + R_WPR, 0xff);                           /* locked again */
+    wr(&f, RTC + R_ISR, 1u << 7);
+    run_for(&f, 1000);
+    CHECK_EQ(rd(&f, RTC + R_ISR) & 1u << 6, 0u);         /* INIT ignored */
+    /* SSR read: TR and DR held until DR is read */
+    (void)rd(&f, RTC + R_SSR);
+    run_for(&f, 2 * RTC_SEC);
+    CHECK_EQ(rd(&f, RTC + R_TR), 0x000001u);
+    (void)rd(&f, RTC + R_DR);
+    run_for(&f, 100);
+    CHECK_EQ(rd(&f, RTC + R_TR), 0x000003u);
+    (void)rd(&f, RTC + R_DR);
+    /* 12-hour mode, in INIT only: 13:00 reads 01 PM */
+    wr(&f, RTC + R_WPR, 0xca);
+    wr(&f, RTC + R_WPR, 0x53);
+    wr(&f, RTC + R_ISR, 1u << 7);
+    run_for(&f, 1000);
+    wr(&f, RTC + R_CR, 1u << 6);                         /* FMT */
+    wr(&f, RTC + R_TR, 1u << 22 | 0x01u << 16);          /* 1 PM */
+    rtc_go(&f);
+    CHECK_EQ(rd(&f, RTC + R_TR), 1u << 22 | 0x010000u);
+    (void)rd(&f, RTC + R_DR);
+    wr(&f, RTC + R_CR, 1u << 6 | 1u << 16);              /* ADD1H */
+    CHECK_EQ(rd(&f, RTC + R_TR) & 0x7f0000u, 1u << 22 | 0x020000u);
+    (void)rd(&f, RTC + R_DR);
+    f4_close(&f);
+}
+
+/* alarm A on the seconds through EXTI17 and RTC_OUT on PC13; the wakeup
+ * timer through EXTI22 */
+static void test_rtc_alarm_wakeup(void)
+{
+    f4 f;
+    u64 t0;
+    if (!f4_open(&f, 1))
+        return;
+    rtc_on(&f);
+    wr(&f, RTC + R_ISR, 0);                              /* the calendar starts */
+    t0 = f.m.cycles;
+    run_for(&f, 1000);
+    wr(&f, EXTI_IMR, 1u << 17 | 1u << 22);
+    wr(&f, EXTI_RTSR, 1u << 17 | 1u << 22);
+    CHECK(rd(&f, RTC + R_ISR) & 1u);                     /* ALRAWF: alarm A writable */
+    wr(&f, RTC + R_ALRMAR, 1u << 31 | 1u << 23 | 1u << 15 | 0x05u); /* any day, hour, minute; second 05 */
+    wr(&f, RTC + R_TAFCR, 1u << 18);                     /* RTC_OUT push-pull */
+    wr(&f, RTC + R_CR, 1u << 8 | 1u << 12 | 1u << 21);   /* ALRAE, ALRAIE, OSEL alarm A */
+    CHECK_EQ(rd(&f, RTC + R_ISR) & 1u, 0u);
+    CHECK_EQ(f.pin[2][13].drive, 0);
+    while (!(rd(&f, RTC + R_ISR) & 1u << 8) && f.m.cycles - t0 < 10 * RTC_SEC)
+        run_for(&f, 50);
+    CHECK(rd(&f, RTC + R_ISR) & 1u << 8);                /* ALRAF */
+    CHECK(f.m.cycles - t0 >= 5 * RTC_SEC + 1950 && f.m.cycles - t0 <= 5 * RTC_SEC + 2200); /* and 4 RTCCLK */
+    CHECK_EQ(rd(&f, RTC + R_TR), 0x05u);
+    (void)rd(&f, RTC + R_DR);
+    CHECK(rd(&f, NVIC_ISPR1) & 1u << 9);                 /* RTC_Alarm, IRQ 41 */
+    CHECK_EQ(f.pin[2][13].drive, 1);                     /* RTC_OUT */
+    wr(&f, RTC + R_ISR, ~(1u << 8 | 1u << 7));          /* ALRAF, INIT left alone */
+    CHECK_EQ(f.pin[2][13].drive, 0);
+    /* the wakeup timer: 16 counts of RTCCLK / 16 */
+    wr(&f, RTC + R_CR, 0);
+    run_for(&f, 1000);
+    CHECK(rd(&f, RTC + R_ISR) & 1u << 2);                /* WUTWF */
+    wr(&f, RTC + R_WUTR, 15);
+    wr(&f, RTC + R_CR, 1u << 10 | 1u << 14);             /* WUTE, WUTIE, RTC/16 */
+    t0 = f.m.cycles;
+    while (!(rd(&f, RTC + R_ISR) & 1u << 10) && f.m.cycles - t0 < 400000)
+        run_for(&f, 50);
+    CHECK(rd(&f, RTC + R_ISR) & 1u << 10);               /* WUTF */
+    CHECK(f.m.cycles - t0 >= 124000 && f.m.cycles - t0 <= 126100); /* 256 RTCCLK clocks */
+    CHECK(rd(&f, NVIC_ISPR0) & 1u << 3);                 /* RTC_WKUP, IRQ 3 */
+    f4_close(&f);
+}
+
+/* the backup domain through a reset; the timestamp and the tamper on PC13 */
+static void test_rtc_backup_tamper(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    rtc_on(&f);
+    rtc_go(&f);
+    wr(&f, RTC + R_BKP0R, 0x32f2u);                      /* the HAL's "configured" mark */
+    run_for(&f, 2 * RTC_SEC + 2500);
+    wr(&f, AIRCR, 0x05fa0004u);
+    CHECK(reset_if_asked(&f));
+    busy(&f);
+    CHECK_EQ(rd(&f, RTC + R_BKP0R), 0x32f2u);            /* kept */
+    CHECK_EQ(rd(&f, RCC_BDCR) & 0x8301u, 0x8101u);       /* RTCEN, LSE */
+    run_for(&f, 2 * RTC_SEC);
+    CHECK_EQ(rd(&f, RTC + R_TR), 0x04u);                 /* its time went on */
+    (void)rd(&f, RTC + R_DR);
+    wr(&f, RTC + R_BKP0R, 0);                            /* DBP cleared by the reset */
+    CHECK_EQ(rd(&f, RTC + R_BKP0R), 0x32f2u);
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 28);
+    wr(&f, PWR_CR, rd(&f, PWR_CR) | 1u << 8);
+    /* a timestamp on PC13's rising edge, then a tamper erasing the backup registers */
+    f.ext[2][13] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 4u);
+    wr(&f, RTC + R_WPR, 0xca);
+    wr(&f, RTC + R_WPR, 0x53);
+    wr(&f, RTC + R_CR, 1u << 11);                        /* TSE, rising */
+    f.ext[2][13] = 1;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(rd(&f, RTC + R_ISR) & 1u << 11);               /* TSF */
+    CHECK_EQ(rd(&f, RTC + R_TSTR), 0x04u);
+    wr(&f, RTC + R_CR, 0);
+    wr(&f, RTC + R_TAFCR, 1u);                           /* TAMP1E, rising */
+    f.ext[2][13] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK_EQ(rd(&f, RTC + R_ISR) & 1u << 13, 0u);
+    f.ext[2][13] = 1;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(rd(&f, RTC + R_ISR) & 1u << 13);               /* TAMP1F */
+    CHECK_EQ(rd(&f, RTC + R_BKP0R), 0u);                 /* erased */
+    f4_close(&f);
+}
+
+/* the core clock goes from HSI's 16 MHz to the PLL's 180 MHz between two
+ * seconds: the calendar keeps the room's time */
+static void test_rtc_clock_change(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    rtc_on(&f);
+    rtc_go(&f);
+    run_for(&f, RTC_SEC + 2500);                         /* one second at 16 MHz */
+    CHECK_EQ(rd(&f, RTC + R_TR), 0x01u);
+    (void)rd(&f, RTC + R_DR);
+    pll_from_hse(&f, PLLCFGR_180);
+    overdrive(&f);
+    to_pll(&f, 5, 5, 4);
+    CHECK_EQ(esk_mach_core_hz(&f.m), 180000000u);
+    run_for(&f, (u64)2 * 180000000u / 1024u);            /* two at 180 MHz */
+    CHECK_EQ(rd(&f, RTC + R_TR), 0x03u);
+    (void)rd(&f, RTC + R_DR);
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -2591,4 +2913,11 @@ RUN(test_adc_scan_dma);
 RUN(test_adc_injected_trigger);
 RUN(test_adc_dual);
 RUN(test_dac);
+RUN(test_reset_flags);
+RUN(test_iwdg);
+RUN(test_wwdg);
+RUN(test_rtc_calendar);
+RUN(test_rtc_alarm_wakeup);
+RUN(test_rtc_backup_tamper);
+RUN(test_rtc_clock_change);
 TEST_MAIN_END

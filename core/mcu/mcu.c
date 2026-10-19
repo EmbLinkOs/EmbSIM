@@ -910,12 +910,15 @@ static void mcu_reset_now(mcu_state *st, int power_on)
         esk_sched_cancel(&e->sched, st->ev);
         st->ev = 0;
     }
+    if (power_on)
+        st->m.reset_cause = ESK_RESET_POWER;
     for (r = 0; r < st->m.bus.nrg; r++)
         if (!st->m.bus.rg[r].mirror && (power_on || st->m.bus.rg[r].kind != ESK_MEM_RAM))
             esk_bus_erase(&st->m.bus.rg[r]);
     if (!st->image) {
         /* no image yet: the part sits blank, its pins inputs */
         esk_mach_reset(&st->m);
+        st->m.reset_cause = ESK_RESET_POWER;
         st->boot_fail = 1;
         st->t = e->sched.now;
         return;
@@ -924,6 +927,7 @@ static void mcu_reset_now(mcu_state *st, int power_on)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
     esk_mach_reset(&st->m);
+    st->m.reset_cause = ESK_RESET_POWER; /* what a model does not say next */
     if (st->an)
         esk_an_restart(st->an);
     st->stopped = 0;
@@ -1013,9 +1017,11 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
             /* the pins go to their reset state while NRST is held */
             if (st->m.pin_reset)
                 st->m.pin_reset(&st->m, 0);
+            st->m.reset_cause = ESK_RESET_PIN;
             esk_mach_reset(&st->m);
         } else if (!low && st->held) {
             st->held = 0;
+            st->m.reset_cause = ESK_RESET_PIN;
             mcu_reset_now(st, 0);
             if (st->m.pin_reset)
                 st->m.pin_reset(&st->m, 1);
@@ -1042,6 +1048,7 @@ static es_status mcu_on_set(esk_comp *c, const char *input, const esk_json *valu
         return ES_ESTATE;
     if (!strcmp(input, "reset")) {
         catch_up(st, c->e->sched.now);
+        st->m.reset_cause = ESK_RESET_PIN; /* the board's reset button */
         mcu_reset_now(st, 0);
         return ES_OK;
     }

@@ -157,6 +157,8 @@ static void scs_write(struct esk_cm_state *cs, u32 o, u32 v)
         if (cs->model->arch == ARCH_V7M)
             cs->aircr_prigroup = (v >> 8) & 7;
         if (v & 4) {                        /* SYSRESETREQ: the runtime resets */
+            if (!cs->sim->reset_req)
+                cs->sim->reset_cause = ESK_RESET_SOFTWARE;
             cs->sim->reset_req = 1;
             cs->sim->yield = 1;
         }

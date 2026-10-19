@@ -37,8 +37,9 @@
  *     (pin_in), and IDR's changes go to EXTI's line on the port SYSCFG's
  *     EXTICR picks.
  *
- *   - an enabled DAC channel drives PA4 or PA5 (dac_f4.c), whatever the
- *     pin's mode;
+ *   - an enabled DAC channel drives PA4 or PA5 (dac_f4.c), the RTC's
+ *     RTC_OUT drives PC13 (rtc_f4.c), whatever the pin's mode; PC13's level
+ *     goes to the RTC's RTC_AF1 input;
  *
  * Not modelled: EVENTOUT (AF15, the pulse SEV sends out), the I/O
  * compensation cell's effect on the edges (SYSCFG's CMPCR only reports it
@@ -124,6 +125,14 @@ static void update_once(struct f4gpio *g)
                     o.drive = d;
             }
         }
+        if (g->port == 2 && i == 13) {
+            int rod, v = esk_stm32_rtc_out(s, &rod); /* RTC_OUT, whatever the mode */
+            if (v >= 0) {
+                o.analog = 0;
+                o.open_drain = rod;
+                o.drive = v == 0 || !rod ? v : -1;
+            }
+        }
         if (esk_stm32f4_dac_out(s, g->port, i, &o.volts, &o.aout_r)) {
             o.aout = 1; /* an enabled DAC channel takes its pin, whatever its mode */
             o.drive = -1;
@@ -155,6 +164,8 @@ static void update_once(struct f4gpio *g)
         for (i = 0; i < 16; i++)
             if (((old ^ idr) >> i & 1) && esk_stm32f4_exti_port(s, i) == g->port)
                 esk_stm32_exti_input(s, i, (int)(idr >> i & 1));
+        if ((old ^ idr) >> 13 & 1 && g->port == 2)
+            esk_stm32_rtc_af1(s, (int)(idr >> 13 & 1)); /* RTC_AF1: timestamp, tamper */
     }
 }
 
@@ -318,8 +329,8 @@ void esk_stm32f4_pins_changed(struct esk_mach *s)
         struct esk_rf_periph *p = esk_rf_periph_at(s->rf, i);
         if (!p)
             break;
-        if (p->ops == &esk_stm32f4_gpio_ops && !esk_rf_gated(p))
-            update((struct f4gpio *)p->ctx);
+        if (p->ops == &esk_stm32f4_gpio_ops)
+            update((struct f4gpio *)p->ctx); /* its clock off, the pins keep their setting */
     }
 }
 
@@ -329,7 +340,7 @@ void esk_stm32f4_port_changed(struct esk_mach *s, int port)
     struct esk_rf_periph *p;
     name[4] = (char)('A' + port);
     p = s->rf ? esk_rf_periph(s->rf, name) : 0;
-    if (p && p->ops == &esk_stm32f4_gpio_ops && !esk_rf_gated(p))
+    if (p && p->ops == &esk_stm32f4_gpio_ops)
         update((struct f4gpio *)p->ctx);
 }
 

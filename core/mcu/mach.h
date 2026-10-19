@@ -312,6 +312,17 @@ struct esk_rx_port {
 
 struct esk_rom_call;
 
+/* a reset's cause; the runtime sets the pin's and the power's, a model
+ * that resets the part its own */
+enum esk_reset_cause {
+    ESK_RESET_POWER,    /* power-on (the session's start, a new image) */
+    ESK_RESET_PIN,      /* the reset pin (NRST, a board's button) */
+    ESK_RESET_SOFTWARE, /* the core's request (AIRCR.SYSRESETREQ) */
+    ESK_RESET_WATCHDOG, /* an independent watchdog's time-out */
+    ESK_RESET_WINDOW,   /* a window watchdog's */
+    ESK_RESET_LOW_POWER /* entering a low-power mode the option bytes forbid */
+};
+
 struct esk_mach {
     esk_alloc *a;
     struct esk_bus bus;
@@ -349,6 +360,10 @@ struct esk_mach {
     int asleep;
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
+    /* what the coming (or current) reset is, for the models that record it
+     * (an STM32's RCC_CSR flags) or that keep their state through all but a
+     * power-on reset (the backup domain): an esk_reset_cause */
+    int reset_cause;
     /* while pins_changed reports an outside change: how many whole cycles
      * the core has run past the change's time (it runs whole instructions),
      * for a model that timestamps the change (an input capture) */

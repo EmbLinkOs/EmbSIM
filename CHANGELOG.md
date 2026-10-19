@@ -5,6 +5,52 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32 watchdogs, the F446's RTC and the reset causes (the NUCLEO-F446RE plan, step 8)
+
+- **A reset's cause** (`esk_mach.reset_cause`):
+  - the runtime sets power-on and the reset pin;
+  - SYSRESETREQ sets software, and the watchdogs set their own.
+  - RCC_CSR records it as on the part: PORRSTF, PINRSTF and BORRSTF at
+    power-on; PINRSTF with every other reset, plus SFTRSTF, IWDGRSTF or
+    WWDGRSTF; the flags are kept until RMVF.
+- **The backup domain:** a peripheral marked `backup` keeps its registers
+  through every reset but a power-on one. RCC keeps BDCR the same way,
+  and BDRST resets both.
+- **`stm32-iwdg`** (both families): the keys, PR/RLR with PVU/RVU five LSI
+  clocks later, LSI forced on, RLR+1 counts to the reset. The option
+  bytes' hardware watchdog is loaded at every reset; the F446's option
+  bytes now hold their factory values.
+- **`stm32-wwdg`** (both families): the counter at PCLK1/4096/2^WDGTB;
+  WDGA, the window, and T6's reset; EWI and EWIF.
+- **`stm32f4-rtc`:**
+  - **Calendar:** BCD, with its leap years and 12/24-hour modes, from LSE,
+    LSI or HSE through the two prescalers.
+  - **Setting it:** INIT (counting again four RTCCLK clocks after it), the
+    write protections, the shadow registers with RSF, their locking and
+    BYPSHAD.
+  - **Events:** alarms A and B with their masks and subseconds, and the
+    wakeup timer, through EXTI lines 17 and 22. On PC13, the timestamp and
+    the tamper (which erases the backup registers) through EXTI21, and
+    RTC_OUT.
+  - **Adjustments:** the smooth and coarse calibrations, SHIFTR,
+    ADD1H/SUB1H.
+  - **Storage:** the backup registers.
+  - **Time:** counted lazily in the RTC's own clock, at the core clock it
+    last saw, and caught up at every RCC write, so a PLL switch keeps the
+    room's time.
+- **GPIO:** an F4 port without its clock keeps driving its pins as set (the
+  part does): only its registers' accesses need the clock.
+- **Proof (`tests/unit/test_stm32f4.c`):**
+  - the reset flags through power-on, RMVF, SYSRESETREQ (RAM kept) and the
+    pin;
+  - the IWDG's timing, keys, LSI and hardware option;
+  - the WWDG's window, EWI and reset;
+  - the RTC across a leap day's midnight, its protections, the shadow
+    lock, 12-hour mode and ADD1H;
+  - alarm A on PC13's RTC_OUT, the wakeup timer;
+  - the backup domain through a reset, the timestamp and the tamper;
+  - the calendar across a switch to 180 MHz.
+
 ### The STM32F446's ADCs and DAC (the NUCLEO-F446RE plan, step 8)
 
 - **`stm32f4-adc`** for ADC1-3 (RM0390 13):

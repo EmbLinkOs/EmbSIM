@@ -61,13 +61,19 @@
  *
  * Any family's: a peripheral's bit in an *RSTR register (GPIOARST, an F1's
  * IOPARST) set by a write resets it: its registers return to their reset
- * values and its model starts again.
+ * values and its model starts again. CSR's reset flags record each reset:
+ * PORRSTF, PINRSTF and BORRSTF at power-on; PINRSTF with every other (the
+ * part drives NRST low) and SFTRSTF, IWDGRSTF, WWDGRSTF or LPWRRSTF with
+ * its cause, the flags before kept, until RMVF clears them. BDCR keeps its
+ * value through every reset but a power-on one, until BDRST resets the
+ * backup domain (the RTC's registers with it); LSIRDY is set while the
+ * IWDG runs, which forces LSI on.
  *
  * Not modelled: the clock security system, the interrupts of CIR, the
  * peripheral held in reset while its reset bit stays set (accesses then
- * land), RMVF and the reset flags, the oscillators' and the PLL's start-up
- * times (ready at once), MCO1 and MCO2 on their pins, the I2S, SAI and
- * SPDIF clocks from PLLI2S and PLLSAI.
+ * land), the brownout reset (BORRSTF only at power-on), the oscillators'
+ * and the PLL's start-up times (ready at once), MCO1 and MCO2 on their
+ * pins, the I2S, SAI and SPDIF clocks from PLLI2S and PLLSAI.
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/stm32-rcc.c. Changes:
  * the HSE frequency is the board's and the core clock is reported to the
@@ -101,6 +107,9 @@ struct rcc {
     int f4;
     struct esk_rf_reg *pllcfgr, *csr, *bdcr, *dckcfgr;
     unsigned warned;                /* the warnings already given */
+    /* both families: CSR's reset flags and BDCR, kept through resets */
+    u32 csr_flags;
+    u64 bdcr_kept;
     /* the peripherals' reset bits in the *RSTR registers */
     struct rst { struct esk_rf_periph *q; struct esk_rf_reg *r; u64 m; } *rst;
     int nrst;
@@ -258,6 +267,9 @@ u32 esk_stm32f1_pclk(struct esk_mach *s, int apb)
 #define F4_PLLSAIRDY (1u << 29)
 /* PLLCFGR */
 #define F4_PLLSRC (1u << 22)
+/* CSR's reset flags and RMVF (both families) */
+#define CSR_RMVF (1u << 24)
+#define CSR_FLAGS 0xfe000000u
 /* BDCR, CSR */
 #define F4_LSEON (1u << 0)
 #define F4_LSERDY (1u << 1)
@@ -467,15 +479,33 @@ static u32 rcc_read(void *ctx, u32 off, int n)
     return esk_rf_read(c->p, off, n);
 }
 
+static void lsi_forced(struct rcc *c);
+
 static void rcc_write(void *ctx, u32 off, int n, u32 v)
 {
     struct rcc *c = (struct rcc *)ctx;
     int i;
+    esk_stm32_rtc_sync(c->s); /* the RTC's time at the clocks as they were */
     if (c->f4 && c->bdcr && off - esk_rf_off(c->bdcr) < 4) {
         /* the backup domain is written only while PWR's DBP allows it */
         struct esk_rf_reg *pcr = other_reg(c->s, "PWR", "CR");
         if (pcr && !(pcr->value & (1u << 8)))
             return;
+    }
+    if (c->csr && off - esk_rf_off(c->csr) < 4 && (v & CSR_RMVF)) {
+        c->csr_flags = 0; /* RMVF: the reset flags clear */
+        v &= ~CSR_FLAGS;
+        esk_rf_hw(c->csr, c->csr->value & ~(u64)CSR_FLAGS);
+    }
+    if (c->bdcr && off - esk_rf_off(c->bdcr) < 4 && (v & (1u << 16))) {
+        /* BDRST: the backup domain's reset, the RTC's registers too */
+        struct esk_rf_periph *rtc = esk_rf_periph(c->s->rf, "RTC");
+        if (rtc) {
+            int keep = rtc->backup;
+            rtc->backup = 0;
+            esk_rf_periph_reset(rtc);
+            rtc->backup = keep;
+        }
     }
     if (c->f4 && off - esk_rf_off(c->cr) < 4) {
         /* HSEBYP is written only while HSE is off (RM0390 6.3.1) */
@@ -486,6 +516,8 @@ static void rcc_write(void *ctx, u32 off, int n, u32 v)
     } else {
         esk_rf_write(c->p, off, n, v);
     }
+    if (c->csr && (c->csr->value & CSR_RMVF))
+        esk_rf_hw(c->csr, c->csr->value & ~(u64)CSR_RMVF);
     for (i = 0; i < c->nrst; i++)
         if (off - esk_rf_off(c->rst[i].r) < 4 && (c->rst[i].r->value & c->rst[i].m))
             esk_rf_periph_reset(c->rst[i].q); /* its registers to their reset values */
@@ -494,11 +526,50 @@ static void rcc_write(void *ctx, u32 off, int n, u32 v)
         f1_settle(c);
     if (c->f4)
         f4_settle(c);
+    lsi_forced(c);
+    if (c->bdcr)
+        c->bdcr_kept = c->bdcr->value;
+    esk_stm32_rtc_sync(c->s); /* and the new core clock from now on */
+}
+
+void esk_stm32_rcc_lsi(struct esk_mach *s)
+{
+    struct esk_rf_periph *p = s->rf ? esk_rf_periph(s->rf, "RCC") : 0;
+    if (p && p->ops == &esk_stm32_rcc_ops)
+        lsi_forced((struct rcc *)p->ctx);
+}
+
+/* CSR's reset flags: PINRSTF with every reset but a power-on one (the
+ * part drives NRST low), and its cause's; kept until RMVF or power-on */
+static void reset_flags(struct rcc *c)
+{
+    static const u32 cause_flag[6] = { 0, 0, 1u << 28, 1u << 29, 1u << 30, 1u << 31 };
+    int cause = c->s->reset_cause;
+    if (c->csr) {
+        u32 f = cause == ESK_RESET_POWER || cause < 0 || cause > 5
+                    ? (u32)c->csr->reset & CSR_FLAGS
+                    : c->csr_flags | 1u << 26 | cause_flag[cause];
+        esk_rf_hw(c->csr, (c->csr->value & ~(u64)CSR_FLAGS) | f);
+        c->csr_flags = f;
+    }
+    if (c->bdcr) {
+        if (cause != ESK_RESET_POWER)
+            esk_rf_hw(c->bdcr, c->bdcr_kept); /* the backup domain's */
+        c->bdcr_kept = c->bdcr->value;
+    }
+}
+
+/* the IWDG forces LSI on while it runs */
+static void lsi_forced(struct rcc *c)
+{
+    if (c->csr && esk_stm32_iwdg_running(c->s))
+        esk_rf_hw(c->csr, c->csr->value | 2u);
 }
 
 static void rcc_reset(void *ctx)
 {
     struct rcc *c = (struct rcc *)ctx;
+    reset_flags(c);
     settle(c);
     if (c->f1) {
         c->hclk = 0;
@@ -509,6 +580,7 @@ static void rcc_reset(void *ctx)
         c->warned = 0;
         f4_settle(c);
     }
+    lsi_forced(c);
 }
 
 const struct esk_dev_ops esk_stm32_rcc_ops = {
@@ -619,9 +691,9 @@ void *esk_stm32_rcc_create(struct esk_mach *s, struct esk_rf_periph *p)
     }
     c->pllcfgr = esk_rf_reg(p, "PLLCFGR");
     c->f4 = !c->f1 && c->cr && c->cfgr && c->pllcfgr;
+    c->csr = esk_rf_reg(p, "CSR");
+    c->bdcr = esk_rf_reg(p, "BDCR");
     if (c->f4) {
-        c->csr = esk_rf_reg(p, "CSR");
-        c->bdcr = esk_rf_reg(p, "BDCR");
         c->dckcfgr = esk_rf_reg(p, "DCKCFGR");
         s->core_hz = f4_core_hz;
         s->clock_ctx = c;

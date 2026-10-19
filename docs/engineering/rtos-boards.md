@@ -120,6 +120,10 @@ after each one.
      BERR from the bus, PEC, SMBus, DMA with LAST.
    - IWDG and WWDG.
    - The RTC with the LSE.
+     *Done:* `stm32-iwdg` and `stm32-wwdg` (both families), `stm32f4-rtc`
+     (calendar, alarms, wakeup, timestamp and tamper, RTC_OUT,
+     calibration, backup registers), RCC_CSR's reset flags, and the
+     backup domain kept through resets.
    - CAN, SDIO, QSPI, SAI, SPDIF, HDMI-CEC and USB OTG are declared as
      omissions until a later step takes them up.
 9. **The board (MB1136).**

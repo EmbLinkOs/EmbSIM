@@ -118,6 +118,22 @@ void esk_stm32_dac_dma_end(struct esk_mach *m, const char *sig);
 /* the DAC's output on a pin (PA4, PA5): 1 with its voltage and output
  * resistance, 0 when the pin is not a DAC channel's or it is off */
 int esk_stm32f4_dac_out(struct esk_mach *m, int port, int bit, double *volts, double *rout);
+/* the independent and window watchdogs (wdg.c): whether the IWDG runs
+ * (LSI is then forced on); RCC's LSIRDY as the IWDG forces it */
+extern const struct esk_dev_ops esk_stm32_iwdg_ops, esk_stm32_wwdg_ops;
+void *esk_stm32_iwdg_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_stm32_wwdg_create(struct esk_mach *m, struct esk_rf_periph *p);
+int esk_stm32_iwdg_running(struct esk_mach *m);
+void esk_stm32_rcc_lsi(struct esk_mach *m);
+/* the F4's RTC (rtc_f4.c): PC13's level for its RTC_AF1 input (timestamp,
+ * tamper); RTC_OUT's level on PC13, or -1, and whether it is open-drain;
+ * its time counted up to now, at the core clock it last saw (RCC calls it
+ * before and after a clock change) */
+extern const struct esk_dev_ops esk_stm32f4_rtc_ops;
+void *esk_stm32f4_rtc_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_stm32_rtc_af1(struct esk_mach *m, int level);
+int esk_stm32_rtc_out(struct esk_mach *m, int *open_drain);
+void esk_stm32_rtc_sync(struct esk_mach *m);
 /* the F4: the pin (port * 32 + bit) whose GPIO selects `sig` now, or -1 */
 int esk_stm32f4_af_pin(struct esk_mach *m, const char *sig);
 /* the F1: a USART's CK, CTS or RTS pin ("CK", "CTS", "RTS") as AFIO's MAPR

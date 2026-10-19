@@ -226,7 +226,12 @@ file's DMA mapping (`esk_rf_dma_maps`); a peripheral model raises or drops
 a request with `esk_stm32_dma_request`, and `stm32f4-dma` serves it from
 the stream that takes it, or keeps it waiting, telling the peripheral of a
 round's last two items (an SPI's CRC, an I2C's NACK, an ADC's or DAC's
-DDS). `stm32-spi` and `stm32-i2c` are the SPI and I2C of both families,
+DDS). A reset's cause is the machine's `reset_cause` (power, pin,
+software, a watchdog's): the runtime sets the first two, a model that
+resets the part its own, and a model may record it (an STM32's RCC_CSR
+flags); a peripheral marked `backup` (an RTC) keeps its registers through
+every reset but a power-on one. `stm32-spi` and `stm32-i2c` are the SPI
+and I2C of both families,
 master and slave, their inputs reaching them from the pins. A timer's
 trigger outputs (TIMx_TRGO, TIMx_CCy) and EXTI's lines 9, 11 and 15 reach
 the ADCs and the DAC through `esk_stm32_trigger`. An MCU description's

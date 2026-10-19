@@ -962,7 +962,7 @@ int esk_rf_gated(const struct esk_rf_periph *p)
 void esk_rf_periph_reset(struct esk_rf_periph *p)
 {
     int i;
-    for (i = 0; i < p->nreg; i++) {
+    for (i = 0; i < p->nreg && !(p->backup && p->sim->reset_cause != ESK_RESET_POWER); i++) {
         p->reg[i]->value = p->reg[i]->reset;
         p->reg[i]->once = 0;
     }
@@ -1143,6 +1143,8 @@ static void map_reset(void *ctx)
     int i;
     rf->ntk = 0; /* the models' resets stop their clocks */
     for (i = 0; i < rf->nreg; i++) {
+        if (rf->reg[i]->p->backup && rf->m->reset_cause != ESK_RESET_POWER)
+            continue; /* the backup domain keeps its registers */
         rf->reg[i]->value = rf->reg[i]->reset;
         rf->reg[i]->once = 0;
     }
