@@ -140,6 +140,14 @@ void esk_mach_outside(struct esk_mach *m)
     m->lazy_known = 0;
 }
 
+void esk_mach_clocks(struct esk_mach *m, int stopped)
+{
+    esk_mach_sync(m);
+    m->clocks_stopped = stopped != 0;
+    m->lazy_known = 0;
+    m->ev_known = 0;
+}
+
 static void bus_sync(void *ctx) { esk_mach_sync((struct esk_mach *)ctx); }
 
 void esk_mach_lazy(struct esk_mach *m)
@@ -273,6 +281,8 @@ void esk_mach_reset(struct esk_mach *m)
     m->end_why[0] = 0;
     m->bus.watch_hit = 0;
     m->asleep = 0;
+    m->clocks_stopped = 0;
+    m->powered_down = 0;
     m->reset_req = 0;
     m->yield = 0;
     m->bus_errors = 0;
@@ -312,6 +322,14 @@ u64 esk_mach_run(struct esk_mach *m, u64 budget, u64 max_insns)
     m->yield = 0;
     m->stop_bp = m->stop_watch = 0;
     while (m->state == ESK_MACH_RUN && m->cycles < end && !m->yield) {
+        if (m->clocks_stopped && !m->asleep) {
+            /* woken from a deep sleep: the clocks run before the core does */
+            if (m->deep_wake)
+                m->deep_wake(m);
+            else
+                esk_mach_clocks(m, 0);
+            continue;
+        }
         if (m->asleep) {
             u32 left = 0;
             u64 room = end - m->cycles;

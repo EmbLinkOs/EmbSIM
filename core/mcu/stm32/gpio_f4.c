@@ -40,6 +40,9 @@
  *   - an enabled DAC channel drives PA4 or PA5 (dac_f4.c), the RTC's
  *     RTC_OUT drives PC13 (rtc_f4.c), whatever the pin's mode; PC13's level
  *     goes to the RTC's RTC_AF1 input;
+ *   - PWR's (pwr_f4.c): an enabled WKUP pin (PA0, PC13) is an input with a
+ *     pull-down whatever its mode, and its level goes to PWR; in Standby
+ *     every pin lets go (an input without its pull) but those and RTC_OUT;
  *
  * Not modelled: EVENTOUT (AF15, the pulse SEV sends out), the I/O
  * compensation cell's effect on the edges (SYSCFG's CMPCR only reports it
@@ -105,14 +108,18 @@ static void update_once(struct f4gpio *g)
 {
     struct esk_mach *s = g->s;
     u32 idr = 0, odr = (u32)g->odr->value, old = (u32)g->idr->value & 0xffffu;
-    int i;
+    int i, standby = esk_stm32f4_pwr_standby(s);
     for (i = 0; i < 16; i++) {
         u32 mode = field(g->moder, i, 2), pupd = field(g->pupdr, i, 2);
         int od = (int)field(g->otyper, i, 1), lvl, ext = 0;
         esk_mach_pin o;
         memset(&o, 0, sizeof o);
         o.drive = -1;
-        if (mode == 3) {
+        if (standby || esk_stm32f4_pwr_wkup_pin(s, g->port, i)) {
+            /* Standby lets the pins go; an enabled WKUP pin is an input
+             * with a pull-down (pwr_f4.c) */
+            o.pull = esk_stm32f4_pwr_wkup_pin(s, g->port, i) ? 2 : 0;
+        } else if (mode == 3) {
             o.analog = 1;
         } else {
             o.pull = pupd == 1 ? 1 : pupd == 2 ? 2 : 0;
@@ -133,7 +140,7 @@ static void update_once(struct f4gpio *g)
                 o.drive = v == 0 || !rod ? v : -1;
             }
         }
-        if (esk_stm32f4_dac_out(s, g->port, i, &o.volts, &o.aout_r)) {
+        if (!standby && esk_stm32f4_dac_out(s, g->port, i, &o.volts, &o.aout_r)) {
             o.aout = 1; /* an enabled DAC channel takes its pin, whatever its mode */
             o.drive = -1;
         }
@@ -166,6 +173,8 @@ static void update_once(struct f4gpio *g)
                 esk_stm32_exti_input(s, i, (int)(idr >> i & 1));
         if ((old ^ idr) >> 13 & 1 && g->port == 2)
             esk_stm32_rtc_af1(s, (int)(idr >> 13 & 1)); /* RTC_AF1: timestamp, tamper */
+        if ((g->port == 0 && ((old ^ idr) & 1u)) || (g->port == 2 && ((old ^ idr) >> 13 & 1)))
+            esk_stm32f4_pwr_pin_edge(s, g->port, g->port ? 13 : 0, (int)(idr >> (g->port ? 13 : 0) & 1));
     }
 }
 
@@ -332,6 +341,7 @@ void esk_stm32f4_pins_changed(struct esk_mach *s)
         if (p->ops == &esk_stm32f4_gpio_ops)
             update((struct f4gpio *)p->ctx); /* its clock off, the pins keep their setting */
     }
+    esk_stm32f4_pwr_pins_settled(s);
 }
 
 void esk_stm32f4_port_changed(struct esk_mach *s, int port)

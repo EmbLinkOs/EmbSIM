@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "pwr_currentconsumption_standby_rtc_bkpsram",
+  "until": "23s",
+  "description": "PWR_CurrentConsumption in Standby mode with the RTC and the backup SRAM (STANDBY_RTC_BKPSRAM_MODE, the readme's sixth line): as with the RTC alone, and HAL_PWREx_EnableBkUpReg turns the backup regulator on (BRE, then BRR: PWR_CSR 0x208 in Standby) to keep the backup SRAM through Standby. The RTC's wake-up event 20.48 s after entry (0xA000 periods of LSI/16) sets WUF and ends Standby; after the reset PWR_CSR keeps WUF, BRE and BRR (0x34209 with the regulator's ready bits) and LD2 toggles every 100 ms.",
+  "inputs": [
+    {
+      "at": "0.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.2s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "slow-blink",
+      "between": [
+        "100ms",
+        "0.95s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "dark-standby",
+      "between": [
+        "1.3s",
+        "21.6s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "in-standby",
+      "at": "10s",
+      "probe": "pwr_csr",
+      "expect": {
+        "equals": 520
+      }
+    },
+    {
+      "id": "fast-blink",
+      "between": [
+        "21.9s",
+        "22.9s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 10
+      }
+    },
+    {
+      "id": "woken-by-rtc",
+      "at": "22s",
+      "probe": "pwr_csr",
+      "expect": {
+        "equals": 213513
+      }
+    },
+    {
+      "id": "power-reset-flags",
+      "at": "22s",
+      "probe": "rcc_csr",
+      "expect": {
+        "equals": 234881024
+      }
+    }
+  ]
+}

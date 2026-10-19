@@ -338,7 +338,10 @@ enum esk_reset_cause {
     ESK_RESET_SOFTWARE, /* the core's request (AIRCR.SYSRESETREQ) */
     ESK_RESET_WATCHDOG, /* an independent watchdog's time-out */
     ESK_RESET_WINDOW,   /* a window watchdog's */
-    ESK_RESET_LOW_POWER /* entering a low-power mode the option bytes forbid */
+    ESK_RESET_LOW_POWER, /* entering a low-power mode the option bytes forbid */
+    /* leaving a mode that powered the core's domain off (an STM32's
+     * Standby): a power reset of all but the backup domain, RAM lost */
+    ESK_RESET_STANDBY
 };
 
 struct esk_mach {
@@ -376,6 +379,17 @@ struct esk_mach {
     /* the core waits for an exception (WFI, WFE, a branch to itself): it
      * runs no instructions; its devices' time still passes */
     int asleep;
+    /* the core slept deeply (SCR.SLEEPDEEP) into a mode that stops its
+     * domain's clocks (an STM32's Stop and Standby): only the devices
+     * clocked from outside it (esk_rf_periph.always_on: the RTC, the IWDG)
+     * see time pass. The low-power model sets it from deep_sleep; the
+     * machine calls deep_wake once the core wakes, before it runs */
+    int clocks_stopped;
+    /* the core's domain is off (Standby): no interrupt wakes the core, only
+     * a reset (the low-power model's reset_req) */
+    int powered_down;
+    void (*deep_sleep)(struct esk_mach *m);
+    void (*deep_wake)(struct esk_mach *m);
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
     /* what the coming (or current) reset is, for the models that record it
@@ -452,6 +466,9 @@ void esk_mach_sync(struct esk_mach *m);
  * again after it, as the change may bring one (an input capture's noise
  * canceler) */
 void esk_mach_outside(struct esk_mach *m);
+/* the core's domain's clocks stop (1: esk_mach.clocks_stopped) or run
+ * again: the devices are first given the cycles they are owed */
+void esk_mach_clocks(struct esk_mach *m, int stopped);
 void esk_mach_free(struct esk_mach *m);
 /* zeroed memory owned by the machine, freed by esk_mach_free; 0 when out
  * of memory (and m->oom set) */
@@ -589,6 +606,8 @@ es_status esk_mach_load_image(struct esk_mach *m, const u8 *data, size_t len, u3
 /* an ELF image's symbol `name` (a function's address without the Thumb bit):
  * 1 and its value, or 0 */
 int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value);
+/* esk_elf_symbol with the symbol's size in bytes (st_size; 0 when not given) */
+int esk_elf_symbol_size(const u8 *f, size_t len, const char *name, u32 *value, u32 *size);
 /* a symbol of any kind but a section's or a file's, defined or absolute (the
  * link's __stack_limit, _end): 1 and its value, or 0 */
 int esk_elf_label(const u8 *f, size_t len, const char *name, u32 *value);

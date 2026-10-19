@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "pwr_currentconsumption_stop",
+  "until": "23s",
+  "description": "PWR_CurrentConsumption in Stop mode (STOP_MODE, the readme's second line). After B1 (held from 0.5 to 1.2 s) the RTC's wake-up timer is set on LSI and the part enters Stop with the low-power regulator and the flash powered down: HSE and the PLL stop, SYSCLK falls back to HSI (CFGR 0x1400: SW and SWS HSI, APB1 over 4), LD2 stays dark. 0xA000 periods of LSI/16 later (20.48 s at the 32 kHz LSI) the wake-up interrupt ends Stop, the callback sets uwCounter to 1, SYSCLK is the PLL again (CFGR 0x140A) and LD2 toggles every 100 ms.",
+  "inputs": [
+    {"at": "0.5s", "target": "B1.B1", "input": "pressed", "value": true},
+    {"at": "1.2s", "target": "B1.B1", "input": "pressed", "value": false}
+  ],
+  "assertions": [
+    {"id": "slow-blink", "between": ["100ms", "0.95s"], "probe": "led", "expect": {"logic": "1"}},
+    {"id": "dark-stopped", "between": ["1.3s", "21.6s"], "probe": "led", "expect": {"logic": "0"}},
+    {"id": "on-hsi", "at": "10s", "probe": "rcc_cfgr", "expect": {"equals": 5120}},
+    {"id": "still-stopped", "at": "21.6s", "probe": "counter", "expect": {"equals": 0}},
+    {"id": "woken-by-rtc", "at": "21.75s", "probe": "counter", "expect": {"equals": 1}},
+    {"id": "back-on-pll", "at": "21.8s", "probe": "rcc_cfgr", "expect": {"equals": 5130}},
+    {"id": "fast-blink", "between": ["21.9s", "22.9s"], "probe": "led", "expect": {"edges": 10}}
+  ]
+}

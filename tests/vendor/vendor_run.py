@@ -17,14 +17,18 @@ def sh(cmd, **kw):
         raise SystemExit(f"build failed: {cmd[0]}")
 
 
-def run_scenario(embsim: Path, project: Path, name: str, elf: Path, scenario: Path, work: Path) -> bool:
-    """`elf` as the project's sketch.elf, under `scenario`: True when every
+def run_scenario(embsim: Path, project: Path, name: str, elf: Path, scenario: Path, work: Path,
+                 extra: dict = None) -> bool:
+    """`elf` as the project's sketch.elf (and `extra`'s images under their
+    names, for a project's other boards), under `scenario`: True when every
     assertion holds."""
     d = work / name
     shutil.rmtree(d, ignore_errors=True)
     d.mkdir(parents=True)
     shutil.copy(project, d / "project.json")
     shutil.copy(elf, d / "sketch.elf")
+    for file, path in (extra or {}).items():
+        shutil.copy(path, d / file)
     p = subprocess.run([str(embsim), "run", str(d / "project.json"), "--scenario", str(scenario), "--json"],
                        capture_output=True, text=True, errors="replace")
     try:

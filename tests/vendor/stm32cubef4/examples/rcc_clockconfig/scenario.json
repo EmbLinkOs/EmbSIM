@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "rcc_clockconfig",
+  "until": "1.5s",
+  "description": "RCC_ClockConfig: SYSCLK at 180 MHz from the PLL on HSI, LD2 toggling every HAL_Delay(100); B1 (EXTI13) moves the PLL to HSE in bypass, the ST-LINK's 8 MHz MCO, and LD2 keeps its rate through the switch.",
+  "inputs": [
+    {
+      "at": "700ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "750ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "blink-hsi",
+      "between": [
+        "100ms",
+        "606ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 5
+      }
+    },
+    {
+      "id": "blink-hse",
+      "between": [
+        "800ms",
+        "1.306s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 5
+      }
+    },
+    {
+      "id": "pll-on-hse",
+      "at": "1.4s",
+      "probe": "pllcfgr",
+      "expect": {
+        "min": 4194304,
+        "max": 4294967295
+      }
+    }
+  ]
+}

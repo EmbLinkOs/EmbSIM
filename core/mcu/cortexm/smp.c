@@ -438,7 +438,7 @@ void esk_cortexm_event(struct esk_mach *m)
     if (!m->cpu)
         return;
     cs = (struct esk_cm_state *)m->cpu;
-    if (m->asleep && cs->in_wfe) {
+    if (m->asleep && cs->in_wfe && !m->powered_down) {
         cs->event = 0; /* the event that ends a WFE is consumed */
         m->asleep = 0;
     } else {

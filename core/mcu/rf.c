@@ -1159,9 +1159,9 @@ static void map_reset(void *ctx)
 static void map_tick(void *ctx, u32 cycles)
 {
     struct esk_rf *rf = (struct esk_rf *)ctx;
-    int i;
+    int i, stopped = rf->m->clocks_stopped;
     for (i = 0; i < rf->ntk; i++)
-        if (rf->tk[i]->ops->tick)
+        if (rf->tk[i]->ops->tick && (!stopped || rf->tk[i]->always_on))
             rf->tk[i]->ops->tick(rf->tk[i]->ctx, cycles);
 }
 
@@ -1171,6 +1171,8 @@ static int map_next_event(void *ctx, u32 *cycles)
     int any = 0, i;
     for (i = 0; i < rf->ntk; i++) {
         u32 c = 0;
+        if (rf->m->clocks_stopped && !rf->tk[i]->always_on)
+            continue;
         if (rf->tk[i]->ops->next_event && rf->tk[i]->ops->next_event(rf->tk[i]->ctx, &c) &&
             (!any || c < *cycles)) {
             *cycles = c;

@@ -82,6 +82,21 @@
    "target": "net:B1.VDD",
    "kind": "analog",
    "rate_hz": 1000
+  },
+  {
+   "id": "presses",
+   "target": "var:B1:presses",
+   "kind": "value"
+  },
+  {
+   "id": "cfgr",
+   "target": "reg:B1.RCC.CFGR",
+   "kind": "value"
+  },
+  {
+   "id": "flash_size",
+   "target": "mem:B1:0x1FFF7A22:2",
+   "kind": "value"
   }
  ],
  "scenarios": [

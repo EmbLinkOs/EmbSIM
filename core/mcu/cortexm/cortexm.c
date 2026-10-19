@@ -24,7 +24,12 @@
  * of a taken branch reach the devices as well as the core's count; an
  * unreadable vector table locks the core up instead of exiting; WFE and
  * SEV keep the event register (a WFE after a SEV goes on at once), and a
- * second core shares the machine through smp.c. */
+ * second core shares the machine through smp.c. SCR: a wait with
+ * SLEEPDEEP set is the part's deep sleep (esk_mach.deep_sleep: an STM32's
+ * Stop or Standby); SLEEPONEXIT sleeps on the return to Thread mode (the
+ * frame unstacked, and stacked again by the interrupt that wakes it,
+ * where the part keeps it: the same registers, more cycles); SEVONPEND
+ * makes an interrupt's becoming pending, enabled or not, an event. */
 #include <stdio.h>
 #include <string.h>
 
@@ -92,6 +97,8 @@ void esk_cm_set_pend(struct esk_cm_state *cs, int n)
     if (n > 0 && n < NEXC && !cs->pend[n]) {
         cs->pend[n] = 1;
         cs->npend++;
+        if (n >= 16 && (cs->scr & SCR_SEVONPEND))
+            cs->event = 1;
     }
 }
 
@@ -510,6 +517,8 @@ static int pending_to_take(struct esk_cm_state *cs)
     return 0;
 }
 
+static void sleep_now(struct esk_cm_state *cs, int wfe);
+
 static void exc_return(struct esk_cm_state *cs, u32 ret)
 {
     int n = (int)cs->ipsr;
@@ -592,6 +601,8 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
     cs->ipsr = to_thread ? 0 : (x & 0x1ff);
     cs->excl_valid = 0;
     cs->pc = ra & ~1u;
+    if (to_thread && (cs->scr & SCR_SLEEPONEXIT))
+        sleep_now(cs, 0);
 }
 
 /* ---- semihosting ------------------------------------------------------ */
@@ -674,14 +685,21 @@ int esk_cm_wfx_idle(struct esk_cm_state *cs)
     return 1;
 }
 
+/* the core sleeps, deeply with SLEEPDEEP */
+static void sleep_now(struct esk_cm_state *cs, int wfe)
+{
+    cs->in_wfe = wfe;
+    if (esk_cm_wfx_idle(cs) && (cs->scr & SCR_SLEEPDEEP) && cs->sim->deep_sleep)
+        cs->sim->deep_sleep(cs->sim);
+}
+
 void esk_cm_wait(struct esk_cm_state *cs, int wfe)
 {
     if (wfe && cs->event) {
         cs->event = 0;
         return;
     }
-    cs->in_wfe = wfe;
-    (void)esk_cm_wfx_idle(cs);
+    sleep_now(cs, wfe);
 }
 
 void esk_cm_sev(struct esk_cm_state *cs)
@@ -867,8 +885,10 @@ static void step(struct esk_cpu *c)
          * not one -- a recursive function's last frame returns to the
          * same pop in its caller, with sp moved on -- and nor is any
          * jump to itself that wrote a register. */
-        if (!wake_pending(cs))
+        if (!wake_pending(cs)) {
             s->asleep = 1;
+            cs->in_wfe = 0;
+        }
     }
     cs->pc = cs->npc;
 }
@@ -929,13 +949,23 @@ static void cpu_interrupt(struct esk_cpu *c, int n)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
     esk_cm_set_pend(cs, n);
-    if (cs->sim->asleep && wake_pending(cs))
+    if (cs->sim->asleep && !cs->sim->powered_down && wake_pending(cs)) {
         cs->sim->asleep = 0;
+        if (cs->in_wfe)
+            cs->event = 0; /* SEVONPEND's event ended the WFE with it */
+    }
 }
 
 static int cpu_wake_pending(struct esk_cpu *c)
 {
-    return wake_pending((const struct esk_cm_state *)c);
+    struct esk_cm_state *cs = (struct esk_cm_state *)c;
+    if (cs->sim->powered_down)
+        return 0;
+    if (cs->in_wfe && cs->event) {
+        cs->event = 0; /* the event that ends a WFE is consumed (SEVONPEND's) */
+        return 1;
+    }
+    return wake_pending(cs);
 }
 
 /* ---- the registers, as GDB numbers them --------------------------------

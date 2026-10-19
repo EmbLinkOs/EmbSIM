@@ -218,18 +218,15 @@ static void set_tr(struct rtc *k, u32 v)
     k->c.sec = unbcd(v & 0x7fu) % 60;
 }
 
+/* the fields as written: the counters hold even the forbidden values (a
+ * date or month of 0, weekday 000) until they next count, as ST's HAL time
+ * base on the alarm relies on (DR = 0, an alarm on date 0) */
 static void set_dr(struct rtc *k, u32 v)
 {
     k->c.year = unbcd(v >> 16 & 0xffu) % 100;
     k->c.wday = (int)(v >> 13 & 7u);
-    if (!k->c.wday)
-        k->c.wday = 1; /* 000 is forbidden */
     k->c.month = unbcd(v >> 8 & 0x1fu);
-    if (k->c.month < 1 || k->c.month > 12)
-        k->c.month = 1;
     k->c.date = unbcd(v & 0x3fu);
-    if (k->c.date < 1)
-        k->c.date = 1;
 }
 
 /* ---- clocks ------------------------------------------------------------------------- */
@@ -271,10 +268,13 @@ static u32 prediv_s(const struct rtc *k) { return reg(k->prer) & 0x7fffu; }
 
 /* ---- flags and events -------------------------------------------------------------- */
 
+/* an event with its interrupt enabled: its EXTI line, and PWR's wake-up
+ * flag (it ends Standby) */
 static void exti_pulse(struct rtc *k, int line)
 {
     esk_stm32_exti_input(k->s, line, 1);
     esk_stm32_exti_input(k->s, line, 0);
+    esk_stm32f4_pwr_wakeup(k->s);
 }
 
 static void isr_set(struct rtc *k, u32 bits) { esk_rf_hw(k->isr, k->isr->value | bits); }
@@ -896,6 +896,7 @@ void *esk_stm32f4_rtc_create(struct esk_mach *s, struct esk_rf_periph *p)
         !k.alrmss[1])
         return 0; /* not this layout: the registers alone */
     p->backup = 1;
+    p->always_on = 1; /* on LSE, LSI or HSE: it counts through Stop and Standby */
     k.af1 = -1;
     k.out = -1;
     c = (struct rtc *)esk_mach_alloc(s, sizeof *c);

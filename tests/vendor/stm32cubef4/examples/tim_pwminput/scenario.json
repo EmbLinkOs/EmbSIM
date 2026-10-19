@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_pwminput",
+  "until": "200ms",
+  "description": "TIM_PWMInput: TIM1 in PWM input mode on PA9 (TIM1_CH2, Arduino D8) measures a 20 kHz signal of 25 % duty from a pulse generator: CCR2 the period (9000 counts of 180 MHz), CCR1 the high time, uwFrequency and uwDutyCycle computed in TIM1's CC interrupt.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "frequency",
+      "at": "150ms",
+      "probe": "frequency",
+      "expect": {
+        "min": 19990,
+        "max": 20010
+      }
+    },
+    {
+      "id": "duty",
+      "at": "150ms",
+      "probe": "duty",
+      "expect": {
+        "min": 25,
+        "max": 25
+      }
+    }
+  ]
+}

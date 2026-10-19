@@ -5,6 +5,57 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### STM32CubeF4's examples on the NUCLEO-F446RE (the NUCLEO-F446RE plan, step 10, part 1)
+
+- **`tests/vendor/stm32cubef4/`** builds STM32CubeF4's own examples for the
+  NUCLEO-F446RE unmodified, as their STM32CubeIDE projects build them:
+  - the sources each `.project` links;
+  - the defines and include paths of its `.cproject`'s Debug configuration;
+  - its startup file, linker script and newlib-nano.
+  Each runs on `emblink/nucleo_f446re` under a scenario. CI fetches CubeF4
+  at the submodule commits it pins.
+- **Passing so far (15 scenarios):**
+  - GPIO_IOToggle; HAL_TimeBase_TIM, _RTC_ALARM and _RTC_WKUP.
+  - RCC_ClockConfig; RTC_Calendar; TIM_PWMInput (a 20 kHz, 25 % input).
+  - UART_Printf; UART_ReceptionToIdle_CircularDMA (typed text echoed, also
+    across the buffer's wrap).
+  - PWR_CurrentConsumption in all six of its modes, each chosen by the
+    define its readme uncomments: Sleep, Stop, under-drive Stop, Standby,
+    Standby with the RTC, Standby with the RTC and the backup SRAM.
+- **The low-power modes of the STM32F4** (RM0390 5.3):
+  - **Stop.** The 1.2 V domain's clocks stop: the core, SysTick and every
+    peripheral but the RTC and the IWDG, which count on LSE or LSI. HSE
+    and the PLLs turn off. Any EXTI line's interrupt or event wakes the
+    core on HSI. Under-drive's UDRDY sets with UDEN and LPUDS or MRUDS.
+  - **Standby.** RAM is lost; the backup SRAM is kept while BRE holds its
+    regulator on. The pins let go, but for the enabled WKUP pins (PA0,
+    PC13, inputs with a pull-down) and RTC_OUT. No interrupt wakes it.
+  - **Leaving Standby.** A WKUP pin's rising edge, an RTC alarm, wake-up,
+    tamper or timestamp event, NRST or the IWDG resets the part. That
+    reset is a power reset but for the backup domain: RCC_CSR's flags read
+    as at power-on, and PWR_CSR keeps WUF, EWUP and BRE with SBF set.
+  - **The flags and option bytes.** WUF already set ends Standby at once,
+    and a WKUP pin enabled while high is a wake-up event. CWUF and CSBF
+    clear their flags. With nRST_STOP or nRST_STDBY 0 in the option
+    bytes, entering the mode resets the part (LPWRRSTF,
+    `mcu.low_power_reset`).
+  - **The core.** SCR's SLEEPDEEP selects the part's deep sleep,
+    SLEEPONEXIT sleeps on the return to Thread mode, and SEVONPEND makes
+    an interrupt's pending an event that ends a WFE.
+  - **Not modelled:** the wake-up times (the core runs at the wake-up
+    event), the regulator's settings (the supply current is not
+    modelled), the debug unit's DBG_STOP and DBG_STANDBY.
+- **Value probes of memory** (SPEC-007): `reg:B.PERIPH.REG`, `mem:B:ADDR:LEN`
+  and `var:B:SYMBOL` read the board's memory as a debugger does. A number
+  is the bytes little-endian, up to 8; text is the bytes up to the first
+  NUL.
+- **Fixes:**
+  - The F4's RTC keeps a date register as written, even the forbidden
+    values (a date or month of 0), until it next counts. ST's HAL time
+    base on the RTC alarm writes DR as 0.
+  - A reset asked for from outside the core's run (a pin's edge ending
+    Standby) is no longer lost while the core sleeps.
+
 ### The Cortex-M core's speed (the NUCLEO-F446RE plan, before step 10)
 
 - **Lazy device clocks on the STM32s.** Devices are no longer ticked after

@@ -84,6 +84,30 @@
       "expect": {
         "contains": "NUCLEO"
       }
+    },
+    {
+      "id": "presses",
+      "at": "1.3s",
+      "probe": "presses",
+      "expect": {
+        "equals": 1
+      }
+    },
+    {
+      "id": "on-pll",
+      "at": "20ms",
+      "probe": "cfgr",
+      "expect": {
+        "equals": 37898
+      }
+    },
+    {
+      "id": "flash-size",
+      "at": "20ms",
+      "probe": "flash_size",
+      "expect": {
+        "equals": 512
+      }
     }
   ]
 }

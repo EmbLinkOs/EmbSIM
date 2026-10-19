@@ -113,6 +113,10 @@ struct esk_rf_periph {
     /* in a backup domain (an STM32's RTC): its registers keep their values
      * through every reset but a power-on one (the model sets it) */
     int backup;
+    /* clocked from outside the core's domain (an STM32's RTC and IWDG, on
+     * LSE or LSI): its time still passes while that domain's clocks are
+     * stopped (esk_mach.clocks_stopped); the others' does not */
+    int always_on;
 };
 
 /* a model type */

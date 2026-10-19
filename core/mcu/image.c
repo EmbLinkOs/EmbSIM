@@ -258,7 +258,7 @@ static const char *sym_name(const u8 *strs, u32 strs_len, u32 at)
     return "";
 }
 
-int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value)
+int esk_elf_symbol_size(const u8 *f, size_t len, const char *name, u32 *value, u32 *size)
 {
     const u8 *syms, *strs;
     u32 n, sl, i;
@@ -269,10 +269,17 @@ int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value)
         u32 type = s[12] & 15u;
         if ((type == 1 || type == 2) && !strcmp(sym_name(strs, sl, le32(s)), name)) {
             *value = type == 2 ? le32(s + 4) & ~1u : le32(s + 4);
+            *size = le32(s + 8);
             return 1;
         }
     }
     return 0;
+}
+
+int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value)
+{
+    u32 size;
+    return esk_elf_symbol_size(f, len, name, value, &size);
 }
 
 int esk_elf_label(const u8 *f, size_t len, const char *name, u32 *value)

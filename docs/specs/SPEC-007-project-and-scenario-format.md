@@ -105,6 +105,11 @@ Rules:
   board's LED). `kind` selects
   the sample type (`digital`, `analog`, `serial`, `value`); `rate_hz` resamples
   analog probes for instruments; absent, samples are at accepted steps.
+  A `reg`, `mem` or `var` probe is a `value` probe of the board's memory as
+  a debugger reads it at that time (no side effect): its bytes
+  little-endian, up to 8 of them as a number (`var` takes the ELF symbol's
+  size, at most 256 bytes); `equals` and `contains` with text compare the
+  bytes up to the first NUL (a C string).
 - `settings` override SPEC-002 defaults for this project.
 
 ## 2. Scenario

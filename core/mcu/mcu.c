@@ -231,7 +231,7 @@ static void wake(mcu_state *st)
     /* a core not yet started since its reset starts when the reset said,
      * whatever the pins do meanwhile (its first quantum reads them): so a
      * session as loaded runs as one reset does */
-    if (!runnable(st) || st->m.asleep || (st->fresh && st->ev))
+    if (!runnable(st) || (st->m.asleep && !st->m.reset_req) || (st->fresh && st->ev))
         return;
     schedule_at(st, st->t > e->sched.now ? st->t : e->sched.now);
 }
@@ -299,6 +299,12 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
                   "not simulated; the core stays idle%s%s", NULL, NULL);
             return;
         }
+    }
+    if (st->m.reset_req) {
+        /* a reset from outside the core's run (a pin's edge ending an
+         * STM32's Standby) */
+        mcu_reset_now(st, 0);
+        return;
     }
     if (st->m.asleep) {
         if (st->m.cpu->ops->wake_pending(st->m.cpu)) {

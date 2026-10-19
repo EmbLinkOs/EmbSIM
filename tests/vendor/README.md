@@ -8,6 +8,7 @@ frameworks are fetched, not vendored; CI's linux-gcc job pins them.
 | --- | --- | --- |
 | `arduino/` | ArduinoCore-avr (Blink, a tour of the core) | `emblink/arduino_uno` |
 | `stm32cube/` | ST's STM32F1 HAL and CMSIS device files | `emblink/bluepill` |
+| `stm32cubef4/` | STM32CubeF4's own examples for the NUCLEO-F446RE (GPIO, HAL time bases, RCC, RTC, timers, UART, PWR's low-power modes) | `emblink/nucleo_f446re` |
 | `pico-sdk/` | The Raspberry Pi Pico SDK | `emblink/pico` |
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
 | `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |

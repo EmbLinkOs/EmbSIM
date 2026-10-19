@@ -162,6 +162,10 @@ u32 esk_cm_prio_mask(struct esk_cm_state *cs);
 int esk_cm_exec_prio(struct esk_cm_state *cs);
 int esk_cm_cond_passed(struct esk_cm_state *cs, u32 cond);
 void esk_cm_it_advance(struct esk_cm_state *cs);
+/* SCR's bits */
+#define SCR_SLEEPONEXIT 0x02u
+#define SCR_SLEEPDEEP 0x04u
+#define SCR_SEVONPEND 0x10u
 int esk_cm_wfx_idle(struct esk_cm_state *cs);
 /* WFI (wfe 0) and WFE (wfe 1): the core waits, unless an exception is
  * pending or, for WFE, the event register is set (it is cleared); SEV */

@@ -48,6 +48,19 @@ u32 esk_stm32_timclk(struct esk_mach *m, int apb);
 /* the F4's PWR: VOSRDY, ODRDY and ODSWRDY as the RCC's PLL and PWR's
  * enables have them (pwr_f4.c); nothing without the F4's PWR */
 void esk_stm32f4_pwr_settle(struct esk_mach *m);
+/* the F4's RCC as Stop or Standby begins: HSE and the PLLs off, SYSCLK
+ * from HSI (rcc.c) */
+void esk_stm32f4_rcc_stop(struct esk_mach *m);
+/* the F4's PWR: a wake-up event (an RTC alarm, wake-up, tamper or
+ * timestamp event with its interrupt enabled) sets WUF and ends Standby;
+ * the pins Standby leaves as they are (the enabled WKUP pins, as inputs
+ * with a pull-down) and their rising edges; whether the part is in
+ * Standby (its pins let go) */
+void esk_stm32f4_pwr_wakeup(struct esk_mach *m);
+int esk_stm32f4_pwr_wkup_pin(struct esk_mach *m, int port, int pin);
+void esk_stm32f4_pwr_pin_edge(struct esk_mach *m, int port, int pin, int level);
+void esk_stm32f4_pwr_pins_settled(struct esk_mach *m);
+int esk_stm32f4_pwr_standby(struct esk_mach *m);
 /* the F4's GPIO ports and SYSCFG (gpio_f4.c, syscfg_f4.c) */
 extern const struct esk_dev_ops esk_stm32f4_gpio_ops, esk_stm32f4_syscfg_ops;
 void *esk_stm32f4_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);

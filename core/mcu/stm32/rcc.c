@@ -58,6 +58,9 @@
  *     for HCLK (mcu.flash_wait_states, RM0390 table 5 at 2.7 to 3.6 V): the
  *     part would fetch wrong instructions, the model only warns.
  *   - PWR's ready bits follow (pwr_f4.c).
+ *   - entering Stop or Standby (pwr_f4.c) clears HSEON, PLLON, PLLI2SON and
+ *     PLLSAION, and the part wakes on HSI (RM0390 6.3.1, 6.3.3: HSION and
+ *     SW set by hardware on leaving Stop), the prescalers as they were.
  *
  * Any family's: a peripheral's bit in an *RSTR register (GPIOARST, an F1's
  * IOPARST) set by a write resets it: its registers return to their reset
@@ -477,6 +480,20 @@ static u32 rcc_read(void *ctx, u32 off, int n)
 {
     struct rcc *c = (struct rcc *)ctx;
     return esk_rf_read(c->p, off, n);
+}
+
+void esk_stm32f4_rcc_stop(struct esk_mach *s)
+{
+    struct rcc *c = any_rcc(s);
+    u64 cr;
+    if (!c || !c->f4)
+        return;
+    esk_stm32_rtc_sync(s); /* the RTC's time at the clocks as they were */
+    cr = c->cr->value & ~(u64)(F4_HSEON | F4_PLLON | F4_PLLI2SON | F4_PLLSAION);
+    esk_rf_hw(c->cr, cr | F4_HSION);
+    esk_rf_hw(c->cfgr, c->cfgr->value & ~(u64)0xF); /* SW and SWS: HSI */
+    f4_settle(c);
+    esk_stm32_rtc_sync(s); /* and the new core clock from now on */
 }
 
 static void lsi_forced(struct rcc *c);

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "uart_receptiontoidle_circulardma",
+  "until": "200ms",
+  "description": "UART_ReceptionToIdle_CircularDMA: USART2 receives into a 20-byte buffer by circular DMA, the HAL calling back on the half-transfer, the transfer-complete and the line going idle; each chunk is echoed. Text typed on the ST-LINK's virtual COM port comes back whole, also when it wraps the buffer.",
+  "inputs": [
+    {
+      "at": "50ms",
+      "target": "B1",
+      "input": "serial",
+      "value": "hello"
+    },
+    {
+      "at": "100ms",
+      "target": "B1",
+      "input": "serial",
+      "value": "The quick brown fox jumps over the lazy dog"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "40ms",
+      "probe": "console",
+      "expect": {
+        "contains": "USART Example : Enter characters to fill reception buffers."
+      }
+    },
+    {
+      "id": "idle-echo",
+      "at": "90ms",
+      "probe": "console",
+      "expect": {
+        "contains": "reception buffers.\r\n\u0000hello"
+      }
+    },
+    {
+      "id": "wrapping-echo",
+      "at": "190ms",
+      "probe": "console",
+      "expect": {
+        "contains": "helloThe quick brown fox jumps over the lazy dog"
+      }
+    }
+  ]
+}

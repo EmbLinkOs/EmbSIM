@@ -2873,6 +2873,225 @@ static void test_rtc_clock_change(void)
     f4_close(&f);
 }
 
+/* ---- the low-power modes ------------------------------------------------------- */
+
+#define SCR 0xE000ED10u
+#define NVIC_ISER0 0xE000E100u
+#define BKPSRAM 0x40024000u
+
+/* the program at reset: `insn` (WFI 0xbf30, WFE 0xbf20), then b . */
+static void sleep_program(f4 *f, u32 insn)
+{
+    CHECK_EQ(esk_bus_debug_write(&f->m.bus, 0x100, 4, 0xe7fe0000u | insn), 0);
+    esk_mach_reset(&f->m);
+}
+
+/* `n` cycles, the core asleep through those no device event fills */
+static void run_idle(f4 *f, u64 n)
+{
+    u64 end = f->m.cycles + n;
+    while (f->m.cycles < end && !f->m.reset_req)
+        if (!esk_mach_run(&f->m, end - f->m.cycles, 0) && f->m.asleep)
+            esk_mach_idle(&f->m, end - f->m.cycles);
+}
+
+static u32 peek(f4 *f, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_debug_read(&f->m.bus, a, 4, &v), 0);
+    return v;
+}
+
+/* Stop: the PLL and HSE off, SYSCLK on HSI, the 1.2 V domain's clocks (a
+ * timer) stopped while the RTC counts; its wake-up event, an EXTI event
+ * on line 22, ends the WFE; the under-drive Stop's UDRDY */
+static void test_stop(void)
+{
+    f4 f;
+    u32 cnt;
+    if (!f4_open(&f, 1))
+        return;
+    rtc_on(&f);
+    rtc_go(&f);
+    pll_from_hse(&f, PLLCFGR_180);
+    overdrive(&f);
+    to_pll(&f, 5, 5, 4);
+    CHECK_EQ(esk_mach_core_hz(&f.m), 180000000u);
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u);     /* TIM2EN */
+    wr(&f, TIM2 + T_ARR, 0xffffffffu);
+    wr(&f, TIM2 + T_CR1, 1u);                          /* CEN */
+    wr(&f, EXTI + 0x04u, 1u << 22);                    /* EMR22 */
+    wr(&f, EXTI_RTSR, 1u << 22);
+    wr(&f, RTC + R_CR, 0);
+    run_idle(&f, 1000);
+    wr(&f, RTC + R_WUTR, 15);
+    wr(&f, RTC + R_CR, 1u << 10 | 1u << 14);           /* WUTE, WUTIE, RTC/16: 256 RTCCLK */
+    wr(&f, PWR_CR, rd(&f, PWR_CR) | 1u);               /* LPDS */
+    wr(&f, SCR, 4u);                                   /* SLEEPDEEP */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x100, 4, 0xe7febf20u), 0); /* wfe; b . */
+    run_idle(&f, 100);
+    CHECK(f.m.asleep && f.m.clocks_stopped && !f.m.powered_down);
+    CHECK_EQ(peek(&f, RCC_CR) & (1u << 16 | 1u << 24), 0u); /* HSEON, PLLON cleared */
+    CHECK_EQ(peek(&f, RCC_CFGR) & 0xFu, 0u);           /* SW, SWS: HSI */
+    CHECK_EQ(esk_mach_core_hz(&f.m), 16000000u);
+    cnt = rd(&f, TIM2 + T_CNT);
+    run_idle(&f, 50000);
+    CHECK(f.m.clocks_stopped);
+    CHECK_EQ(rd(&f, TIM2 + T_CNT), cnt);             /* the timer's clock stopped */
+    run_idle(&f, 200000);                              /* 256 RTCCLK at 16 MHz: 125000 */
+    CHECK(!f.m.clocks_stopped);
+    CHECK(peek(&f, RTC + R_ISR) & 1u << 10);           /* WUTF */
+    run_idle(&f, 1000);
+    CHECK(rd(&f, TIM2 + T_CNT) != cnt);              /* counting again */
+    f4_close(&f);
+    /* the under-drive Stop: UDRDY set, cleared by writing 1 */
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    run_idle(&f, 100);
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 28); /* PWREN */
+    wr(&f, PWR_CR, rd(&f, PWR_CR) | 1u | 1u << 10 | 3u << 18); /* LPDS, LPUDS, UDEN */
+    wr(&f, EXTI + 0x04u, 1u << 22);
+    wr(&f, SCR, 4u);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x100, 4, 0xe7febf20u), 0);
+    run_idle(&f, 100);
+    CHECK(f.m.clocks_stopped);
+    CHECK_EQ(peek(&f, PWR_CSR) & 3u << 18, 3u << 18);
+    wr(&f, EXTI + 0x10u, 1u << 22);                    /* SWIER: an event */
+    run_idle(&f, 100);
+    CHECK(!f.m.clocks_stopped);
+    wr(&f, PWR_CSR, 0);                                /* writing 0 keeps it */
+    CHECK_EQ(rd(&f, PWR_CSR) & 3u << 18, 3u << 18);
+    wr(&f, PWR_CSR, 3u << 18);
+    CHECK_EQ(rd(&f, PWR_CSR) & 3u << 18, 0u);
+    f4_close(&f);
+}
+
+/* Standby: RAM lost, the backup SRAM kept by BRE, the pins let go, the
+ * WKUP pin pulled down; no interrupt wakes the core, the WKUP pin's
+ * rising edge resets the part with SBF and WUF; CWUF and CSBF; a system
+ * reset keeps SBF and BRE */
+static void test_standby(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    sleep_program(&f, 0xbf30); /* WFI */
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 28); /* PWREN */
+    wr(&f, RCC_AHB1ENR, 0x5u);                         /* GPIOAEN, GPIOCEN */
+    wr(&f, GPIOA + MODER, (rd(&f, GPIOA + MODER) & ~(3u << 10)) | 1u << 10); /* PA5 output */
+    wr(&f, GPIOA + BSRR, 1u << 5);
+    CHECK_EQ(f.pin[0][5].drive, 1);
+    wr(&f, RCC_CSR, 1u << 24);                         /* RMVF */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x20000800u, 4, 0xfeedc0deu), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, BKPSRAM, 4, 0x5eed1234u), 0);
+    wr(&f, PWR_CSR, 1u << 9);                          /* BRE */
+    CHECK(rd(&f, PWR_CSR) & 1u << 3);                  /* BRR */
+    f.ext[0][0] = 0;
+    wr(&f, PWR_CSR, rd(&f, PWR_CSR) | 1u << 8);        /* EWUP: PA0 */
+    CHECK_EQ(f.pin[0][0].pull, 2);                     /* an input with a pull-down */
+    CHECK_EQ(rd(&f, PWR_CSR) & 1u, 0u);                /* low when enabled: no WUF */
+    wr(&f, PWR_CR, rd(&f, PWR_CR) | 2u);               /* PDDS */
+    wr(&f, SCR, 4u);
+    run_idle(&f, 100);
+    CHECK(f.m.asleep && f.m.powered_down);
+    CHECK_EQ(ram32(&f, 0x20000800u), 0u);              /* RAM lost */
+    CHECK_EQ(peek(&f, BKPSRAM), 0x5eed1234u);          /* the backup regulator's */
+    CHECK_EQ(f.pin[0][5].drive, -1);                   /* the pins let go */
+    CHECK_EQ(f.pin[0][0].pull, 2);
+    wr(&f, NVIC_ISER0, 1u << 3);
+    wr(&f, NVIC_ISPR0, 1u << 3);                       /* an interrupt: still asleep */
+    run_idle(&f, 1000);
+    CHECK(f.m.asleep && !f.m.reset_req);
+    f.ext[0][0] = 1;                                   /* the WKUP pin's rising edge */
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(f.m.reset_req);
+    CHECK_EQ(f.m.reset_cause, ESK_RESET_STANDBY);
+    esk_mach_reset(&f.m);
+    f.m.reset_cause = ESK_RESET_POWER;
+    CHECK(!f.m.asleep && !f.m.powered_down && !f.m.clocks_stopped);
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 28);
+    CHECK_EQ(rd(&f, PWR_CSR) & 0x30Bu, 0x30Bu);        /* WUF, SBF, BRR, EWUP, BRE kept */
+    CHECK_EQ(rd(&f, RCC_CSR) & 0xff000000u, 0x0e000000u); /* a power reset's flags */
+    CHECK_EQ(rd(&f, PWR_CR) & 2u, 0u);                 /* PDDS reset */
+    wr(&f, PWR_CR, 1u << 2);                           /* CWUF */
+    CHECK_EQ(rd(&f, PWR_CSR) & 1u, 0u);
+    CHECK_EQ(rd(&f, PWR_CR) & 1u << 2, 0u);            /* reads 0 */
+    wr(&f, AIRCR, 0x05fa0004u);                        /* a system reset */
+    CHECK(reset_if_asked(&f));
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 28);
+    CHECK_EQ(rd(&f, PWR_CSR) & 0x30Bu, 0x20Au);        /* SBF and BRE (BRR) kept, EWUP not */
+    wr(&f, PWR_CR, 1u << 3);                           /* CSBF */
+    CHECK_EQ(rd(&f, PWR_CSR) & 2u, 0u);
+    /* WUF set as Standby is entered ends it at once: a WKUP pin enabled
+     * while high is a wake-up event */
+    sleep_program(&f, 0xbf30);
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 28);
+    wr(&f, PWR_CSR, 1u << 8);
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(rd(&f, PWR_CSR) & 1u);                       /* WUF */
+    wr(&f, PWR_CR, 2u);
+    wr(&f, SCR, 4u);
+    run_idle(&f, 100);
+    CHECK(f.m.reset_req);
+    CHECK_EQ(f.m.reset_cause, ESK_RESET_STANDBY);
+    f4_close(&f);
+}
+
+/* the option bytes' nRST_STDBY 0: entering Standby resets the part
+ * (LPWRRSTF) */
+static void test_low_power_reset(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x1FFFC000u, 1, 0x6du), 0); /* nRST_STDBY 0 */
+    sleep_program(&f, 0xbf30);
+    wr(&f, RCC_CSR, 1u << 24);
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 28);
+    wr(&f, PWR_CR, 2u);
+    wr(&f, SCR, 4u);
+    run_idle(&f, 100);
+    CHECK(f.m.reset_req && !f.m.powered_down);
+    CHECK_EQ(f.m.reset_cause, ESK_RESET_LOW_POWER);
+    CHECK(reset_if_asked(&f));
+    CHECK_EQ(rd(&f, RCC_CSR) & 0xff000000u, 0x84000000u); /* LPWRRSTF, PINRSTF */
+    f4_close(&f);
+}
+
+/* SCR's SEVONPEND: a disabled interrupt's becoming pending ends a WFE;
+ * SLEEPONEXIT: the return to Thread mode sleeps */
+static void test_scr_sleep_bits(void)
+{
+    f4 f;
+    struct esk_cm_state *cs;
+    if (!f4_open(&f, 1))
+        return;
+    cs = (struct esk_cm_state *)f.m.cpu;
+    sleep_program(&f, 0xbf20);                         /* WFE */
+    wr(&f, SCR, 0x10u);                                /* SEVONPEND */
+    run_idle(&f, 100);
+    CHECK(f.m.asleep);
+    wr(&f, NVIC_ISPR0, 1u << 5);                       /* IRQ 5, not enabled */
+    run_idle(&f, 100);
+    CHECK_EQ(cs->pc, 0x102u);                          /* past the WFE, on b . */
+    /* SLEEPONEXIT: IRQ 0's handler (bx lr) returns to a loop that never
+     * idles (adds r0, #1; b), and the core sleeps instead of running it */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x100, 4, 0xe7fd3001u), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x40, 4, 0x111u), 0); /* IRQ 0's vector */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x110, 2, 0x4770u), 0); /* bx lr */
+    esk_mach_reset(&f.m);
+    run_idle(&f, 100);
+    CHECK(!f.m.asleep);
+    wr(&f, SCR, 2u);                                   /* SLEEPONEXIT */
+    wr(&f, NVIC_ISER0, 1u);
+    wr(&f, NVIC_ISPR0, 1u);
+    run_idle(&f, 200);
+    CHECK(f.m.asleep);
+    CHECK_EQ(cs->ipsr, 0u);                            /* back in Thread mode */
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -2920,4 +3139,8 @@ RUN(test_rtc_calendar);
 RUN(test_rtc_alarm_wakeup);
 RUN(test_rtc_backup_tamper);
 RUN(test_rtc_clock_change);
+RUN(test_stop);
+RUN(test_standby);
+RUN(test_low_power_reset);
+RUN(test_scr_sleep_bits);
 TEST_MAIN_END

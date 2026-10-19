@@ -102,6 +102,26 @@ static void evaluate(es_session *s, assertion *a)
         esk_snprintf(a->reason, sizeof a->reason, "unknown probe %s", pname ? pname : "(none)");
         return;
     }
+    /* a text expectation on a memory probe: its bytes up to the first NUL */
+    if (p->kind == ESK_PROBE_VALUE && p->mem_len &&
+        (esk_json_get(expect, "contains") || esk_json_is(esk_json_get(expect, "equals"), ESK_JSON_STRING))) {
+        const char *contains = esk_json_get_str(expect, "contains", NULL);
+        const char *equals = esk_json_get_str(expect, "equals", NULL);
+        char text[257];
+        size_t n = esk_session_probe_bytes(p, (unsigned char *)text, sizeof text - 1), k;
+        for (k = 0; k < n && text[k]; k++)
+            ;
+        text[k] = 0;
+        a->observed = esk_json_new_string(s->a, text);
+        if (contains && !strstr(text, contains)) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "\"%.60s\" does not contain \"%s\"", text, contains);
+        } else if (equals && strcmp(text, equals) != 0) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "\"%.60s\" is not \"%s\"", text, equals);
+        }
+        return;
+    }
     /* a text expectation on a value probe: the output as a string, now (the
      * assertion's time: `at`, or the end of `between`/`by`) */
     if (p->kind == ESK_PROBE_VALUE && p->comp && p->comp->ops->observe &&

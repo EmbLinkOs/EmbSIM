@@ -142,13 +142,21 @@ after each one.
    `examples/nucleo-f446re-blink-serial`. LD1 and the ST-LINK's own
    behaviour are declared omissions. `reference.json` waits for a
    dimensioned drawing (UM1724's is an image) to place the headers exactly.
-10. **Vendor examples.** STM32CubeF4's NUCLEO-F446RE examples, unmodified:
-    - GPIO_IOToggle and GPIO_EXTI;
-    - UART_Printf, and UART with DMA;
-    - TIM_TimeBase and TIM_PWMOutput;
-    - ADC_RegularConversion_DMA;
-    - SPI and I2C against catalog devices;
-    - IWDG_Reset.
+10. **Vendor examples.** STM32CubeF4's own examples for the NUCLEO-F446RE
+    (Projects/STM32446E-Nucleo), unmodified, each under a scenario:
+    - GPIO_IOToggle; HAL_TimeBase_TIM, _RTC_ALARM and _RTC_WKUP;
+    - RCC_ClockConfig; RTC_Calendar; TIM_PWMInput;
+    - UART_Printf and UART_ReceptionToIdle_CircularDMA;
+    - PWR_CurrentConsumption in each of its six low-power modes, which
+      needs the F4's Stop and Standby;
+    - the four I2C_TwoBoards examples on two boards wired together;
+    - EEPROM_Emulation, which needs the flash controller.
+    *So far:* `tests/vendor/stm32cubef4/run.py` builds them as their
+    STM32CubeIDE projects do. GPIO, the HAL time bases, RCC, RTC, TIM,
+    both UART examples and PWR_CurrentConsumption in all six modes pass
+    (15 scenarios). Stop and Standby are modelled (`stm32f4-pwr`), and
+    the scenarios' probes read registers, memory and variables. The I2C
+    examples and EEPROM_Emulation come next.
 11. **EmbLinkRTOS on the board.** Its `nucleo_f446re` board and the
     conformance suite in its CI on EmbSIM.
 

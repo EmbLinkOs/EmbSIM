@@ -5,6 +5,8 @@
  * pacing, notifications, and the public C API. */
 #include "session/session_priv.h"
 #include "mcu/mcu.h"
+#include "mcu/mach.h"
+#include "mcu/rf.h"
 #include <stdlib.h>
 #include <string.h>
 #include "analog/analog.h"
@@ -291,6 +293,24 @@ static void probe_push(es_session *s, esk_probe *p, es_time_t t, double v)
     p->has_last = 1;
 }
 
+/* a memory probe's bytes, as a debugger reads them (no device's read
+ * side effect): up to `cap`, the number read */
+size_t esk_session_probe_bytes(esk_probe *p, unsigned char *buf, size_t cap)
+{
+    struct esk_mach *m = p->comp ? esk_mcu_machine(p->comp) : NULL;
+    size_t i, n = p->mem_len < cap ? p->mem_len : cap;
+    u32 v;
+    if (!m)
+        return 0;
+    esk_mach_sync(m); /* the devices' registers as of now (lazy clocks) */
+    for (i = 0; i < n; i++) {
+        if (esk_bus_debug_read(&m->bus, p->mem_addr + (u32)i, 1, &v) != 0)
+            break;
+        buf[i] = (unsigned char)v;
+    }
+    return i;
+}
+
 static double probe_value(es_session *s, esk_probe *p)
 {
     esk_json *out;
@@ -314,6 +334,15 @@ static double probe_value(es_session *s, esk_probe *p)
         /* fall through */
     case ESK_PROBE_VALUE:
     default:
+        if (p->mem_len) {
+            /* little-endian, its first eight bytes */
+            unsigned char b[8];
+            size_t n = esk_session_probe_bytes(p, b, sizeof b);
+            uint64_t u = 0;
+            while (n)
+                u = u << 8 | b[--n];
+            return (double)u;
+        }
         if (p->comp && p->comp->ops->observe) {
             out = esk_json_new_object(s->a);
             if (out) {
@@ -384,6 +413,65 @@ void esk_session_on_net_change(void *ctx, esk_net *net)
     }
 }
 
+/* a probe of a board MCU's memory: "reg:B1.RTC.TR" a register of its
+ * register file, "mem:B1:0x20000028:4" bytes, "var:B1:uwTick" a variable
+ * of its image, as large as its symbol (SPEC-007) */
+static es_status mem_probe(es_session *s, esk_probe *p, const char *head, const char *rest)
+{
+    const char *sep = strchr(rest, strcmp(head, "reg") ? ':' : '.');
+    esk_board_inst *bi = NULL;
+    struct esk_mach *m;
+    char board[64];
+    size_t i, n;
+    if (!sep || (size_t)(sep - rest) >= sizeof board)
+        return ES_ENOTFOUND;
+    n = (size_t)(sep - rest);
+    memcpy(board, rest, n);
+    board[n] = 0;
+    for (i = 0; i < s->boards.len; i++)
+        if (!strcmp(((esk_board_inst *)s->boards.data[i])->id, board))
+            bi = (esk_board_inst *)s->boards.data[i];
+    m = bi && bi->mcu ? esk_mcu_machine(bi->mcu) : NULL;
+    if (!m)
+        return ES_ENOTFOUND;
+    p->comp = bi->mcu;
+    if (!strcmp(head, "reg")) {
+        const char *dot = strchr(sep + 1, '.');
+        struct esk_rf_periph *rp;
+        struct esk_rf_reg *r;
+        char per[64];
+        if (!dot || (size_t)(dot - sep - 1) >= sizeof per || !m->rf)
+            return ES_ENOTFOUND;
+        memcpy(per, sep + 1, (size_t)(dot - sep - 1));
+        per[dot - sep - 1] = 0;
+        rp = esk_rf_periph(m->rf, per);
+        r = rp ? esk_rf_reg(rp, dot + 1) : NULL;
+        if (!r)
+            return ES_ENOTFOUND;
+        p->mem_addr = r->addr;
+        p->mem_len = (uint32_t)r->bytes;
+    } else if (!strcmp(head, "mem")) {
+        char *end;
+        unsigned long a = strtoul(sep + 1, &end, 0), l;
+        if (*end != ':')
+            return ES_ENOTFOUND;
+        l = strtoul(end + 1, &end, 0);
+        if (*end || !l || l > 256)
+            return ES_ENOTFOUND;
+        p->mem_addr = (uint32_t)a;
+        p->mem_len = (uint32_t)l;
+    } else {
+        size_t len = 0;
+        u32 v = 0, size = 0;
+        const unsigned char *img = esk_mcu_image(bi->mcu, &len);
+        if (!img || !esk_elf_symbol_size(img, len, sep + 1, &v, &size) || !size || size > 256)
+            return ES_ENOTFOUND;
+        p->mem_addr = v;
+        p->mem_len = size;
+    }
+    return ES_OK;
+}
+
 es_status esk_session_probe_add(es_session *s, const char *name, const char *target, const char *kind, double rate_hz, esk_probe **out)
 {
     esk_probe *p;
@@ -452,6 +540,10 @@ es_status esk_session_probe_add(es_session *s, const char *name, const char *tar
         if (!p->quantity)
             p->quantity = esk_strdup(s->a, "rx_text");
         p->kind = ESK_PROBE_SERIAL;
+    } else if (!strcmp(head, "reg") || !strcmp(head, "mem") || !strcmp(head, "var")) {
+        if (mem_probe(s, p, head, rest) != ES_OK)
+            goto notfound;
+        p->kind = ESK_PROBE_VALUE;
     } else {
         goto notfound;
     }

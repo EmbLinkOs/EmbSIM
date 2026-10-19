@@ -240,6 +240,7 @@ void *esk_stm32_iwdg_create(struct esk_mach *s, struct esk_rf_periph *p)
         return 0;
     w.rlr_now = 0xfffu;
     w.count = 0xfffu;
+    p->always_on = 1; /* on LSI: it counts through Stop and Standby */
     c = (struct iwdg *)esk_mach_alloc(s, sizeof *c);
     if (c)
         *c = w;

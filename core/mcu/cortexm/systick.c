@@ -95,8 +95,8 @@ static void st_tick(void *ctx, u32 c)
     struct systick *t = ctx;
     u32 d;
     u64 n;
-    if (!(t->csr & 1))
-        return;
+    if (!(t->csr & 1) || t->sim->clocks_stopped)
+        return; /* off, or its clock stopped with the core's (an STM32's Stop) */
     d = per_count(t);
     n = c;
     if (d > 1) {
@@ -129,7 +129,7 @@ static int st_next_event(void *ctx, u32 *cycles)
 {
     struct systick *t = ctx;
     u64 counts, c;
-    if ((t->csr & 3) != 3 || (!t->cvr && !t->rvr))
+    if ((t->csr & 3) != 3 || (!t->cvr && !t->rvr) || t->sim->clocks_stopped)
         return 0;
     counts = t->cvr ? t->cvr : (u64)t->rvr + 1;
     c = counts * per_count(t);
