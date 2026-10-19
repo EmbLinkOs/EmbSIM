@@ -5,6 +5,24 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The NUCLEO-F446RE (2026-10-19)
+
+The board EmbLinkRTOS is developed against, step 9 of its plan: ST's
+NUCLEO-F446RE with its STM32F446RE at 180 MHz from the ST-LINK's MCO,
+running `examples/nucleo-f446re-blink-serial`. The board's jumpers are
+controls: JP5 on U5V or E5V, JP6 (IDD) fitted or removed for an ammeter.
+The artwork is drawn for EmbSIM to the 70 x 82.5 mm outline. Its header
+positions are approximate until a dimensioned drawing gives
+`reference.json`.
+
+| Design | Run |
+|---|---|
+| ![The NUCLEO-F446RE example in the Design workspace](nucleo-f446re/design-nucleo.png) | ![The example running: VDD on the oscilloscope, LD2 and B1 on the logic analyzer, the jumpers among the controls](nucleo-f446re/run-nucleo.png) |
+
+![The NUCLEO-F446RE's artwork while it runs: LD3 and LD2 lit](nucleo-f446re/board-nucleo.png)
+
+![Stopped in SysTick_Handler at 180 MHz in the Debug workspace](nucleo-f446re/debug-nucleo.png)
+
 ## The Uno R3 qualified (2026-10-18)
 
 The first step of the visual benchmark's V1. The Uno's artwork, before and
