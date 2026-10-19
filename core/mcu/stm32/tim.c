@@ -312,11 +312,12 @@ static void matches(struct tim *t, u64 lo, u64 hi, int down)
 }
 
 /* some channel or event is to be kept up with: its counts are worth
- * stepping through rather than jumping */
+ * stepping through rather than jumping. An interrupt or a DMA request
+ * enabled in DIER, one-pulse mode, a TRGO from an event, or an output */
 static int watched(const struct tim *t)
 {
     int ch;
-    if ((t->dier->value & 0x5Fu) || (t->cr1->value & OPM) || (t->cr2 && bits(t->cr2, 4, 3) >= 2))
+    if ((t->dier->value & 0x7FFFu) || (t->cr1->value & OPM) || (t->cr2 && bits(t->cr2, 4, 3) >= 2))
         return 1;
     for (ch = 0; ch < t->nch; ch++)
         if (is_output(t, ch) && (ocm(t, ch) || (ccer(t) >> (4 * ch) & 5)))

@@ -220,4 +220,14 @@ static void scs_wr(void *ctx, u32 off, int n, u32 v)
         scs_write(cs, off & ~3u, v << (8 * (off & 3)));
 }
 
-const struct esk_dev_ops esk_scs_ops = { "scs", scs_rd, scs_wr, 0, 0, 0 };
+/* the SCS keeps no time, but the NVIC's pending bits are the devices': with
+ * a next_event hook the bus brings the devices up to date (lazy clocks)
+ * before the program reads or writes them */
+static int scs_next(void *ctx, u32 *cycles)
+{
+    (void)ctx;
+    (void)cycles;
+    return 0;
+}
+
+const struct esk_dev_ops esk_scs_ops = { "scs", scs_rd, scs_wr, 0, 0, scs_next };
