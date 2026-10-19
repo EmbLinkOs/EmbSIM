@@ -5,6 +5,52 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3 boots its own ROM from its flash (the RTOS boards plan, part 2, step 2)
+
+- **Espressif's boot ROM** runs on EmbSIM's ESP32-C3, unmodified: its image
+  is made from Espressif's Apache-2.0 ROM ELF by `tools/importers/esprom.py`
+  (the loadable segments, and the RAM variables' initial values its own
+  copy table names) and checked against the description's SHA-256. It
+  prints its banner, the strapping (`boot:0x8 (SPI_FAST_FLASH_BOOT)`) and
+  the reset cause, then boots the flash:
+  - a blank flash: `invalid header: 0xffffffff`, again and again, until the
+    RTC watchdog's flash-boot protection resets the part
+    (`rst:0x10 (RTCWDT_RTC_RST)`, then `Saved PC:0x...`);
+  - an ESP image: its segments loaded through SPI1, the checksum and the
+    SHA-256 checked, `entry 0x...`; a wrong digest is reported and the
+    image booted anyway, as with secure boot off.
+- **The in-package flash**, an XMC XM25QH32C as its datasheet has it: the
+  standard, dual and quad reads, page program and the erases with their
+  typical busy times (0.5 ms to 20 s), the three status registers, the
+  security registers, suspend and resume, power-down and ultra-deep
+  power-down, the IDs (`20 40 16`), the reset pair.
+- **SPI0 and SPI1** (`esp32c3-spimem`): the user command's phases and the
+  fixed commands as the ROM and ESP-IDF drive them.
+- **The cache and MMU** (`esp32c3-cache`): 128 entries mapping the flash's
+  64 KB pages on the instruction bus (0x42000000) and the data bus
+  (0x3C000000); invalidate, preload, lock and freeze complete at once. A
+  page shows the flash as it was mapped until an invalidate covers it.
+- **The SHA accelerator** (`esp32c3-sha`): SHA-1, SHA-224 and SHA-256 in
+  Typical SHA mode, interleaving included.
+- **The Debug Assistant's PC logging** (`esp32c3-assist`): the PC and SP at
+  a CPU reset, which the ROM prints as `Saved PC`.
+- **A project's `bin` firmware** is a flash image written at offset 0, as
+  `esptool.py write_flash 0x0` writes `merge_bin`'s output; it is written at
+  power-on only, so the flash keeps the program's writes through the
+  part's other resets. An ESP32-C3 without firmware runs its ROM on an
+  erased flash. Memory descriptions gain `external` (a store no address
+  reaches) and `window` (bytes a device provides) kinds, and `file` and
+  `sha256` for a region's factory contents (SPEC-006).
+- **UART fix (ESP32-C3):** TX_IDLE_NUM is the idle time between transfers,
+  after the FIFO empties, not after every frame. With its reset value, 256
+  bit times, every character took 266 bit times instead of 10, and the ROM
+  printed about 27 times slower than its 115200 baud.
+- The bus gives an access to the smallest device whose range holds it (the
+  MMU table inside the register file's span), and the register file finds
+  a register with one search instead of five.
+- The RISC-V core's ESP-RV variant has the user CSRs and the user-mode
+  counter the ROM writes (`ustatus`, `utvec`, `uscratch`, ...).
+
 ### The ESP32-C3's core and interrupt controller (the RTOS boards plan, part 2, step 1)
 
 - **The ESP-RV core** (`esp-rv32imc`), as the ESP32-C3 TRM's chapter 1 has it:

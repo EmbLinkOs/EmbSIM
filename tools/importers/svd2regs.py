@@ -31,7 +31,11 @@ for the user's own use unless that licence allows distributing it.
                                  (RCC PLLCFGR's PLLM0..PLLM5)
     --drop PERIPH=WHY            (repeatable) a peripheral the SVD lists that
                                  is another's registers at the same address
-                                 (Espressif's RNG, APB_CTRL's RND_DATA)"""
+                                 (Espressif's RNG, APB_CTRL's RND_DATA)
+    --fill PERIPH=FROM:WHY       (repeatable) the registers of FROM at offsets
+                                 PERIPH lacks, where the two share one layout
+                                 and the SVD lists only part of PERIPH's
+                                 (the ESP32-C3's SPI0, SPI_MEM's layout)"""
 import argparse
 import json
 import re
@@ -318,6 +322,26 @@ def apply_drops(doc: dict, specs: list[str]) -> None:
         doc["source"] += "; peripherals left out: " + "; ".join(done)
 
 
+def apply_fills(doc: dict, specs: list[str]) -> None:
+    """to each PERIPH of `specs` (PERIPH=FROM:WHY), FROM's registers at the
+    offsets it lacks, recorded in source"""
+    done = []
+    for spec in specs:
+        name, _, rest = spec.partition("=")
+        frm, _, why = rest.partition(":")
+        per = {p["name"]: p for p in doc["peripherals"]}
+        if name not in per or frm not in per or "registers" not in per[frm]:
+            sys.exit(f"svd2regs: --fill {spec}: no peripheral {name} or {frm} with registers")
+        regs = per[name].setdefault("registers", [])
+        have = {int(r["offset"], 16) for r in regs}
+        added = [dict(r) for r in per[frm]["registers"] if int(r["offset"], 16) not in have]
+        regs.extend(added)
+        regs.sort(key=lambda r: int(r["offset"], 16))
+        done.append(f"{name} from {frm}, {len(added)} registers" + (f" ({why})" if why else ""))
+    if done:
+        doc["source"] += "; registers filled in: " + "; ".join(done)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("svd", type=Path)
@@ -331,6 +355,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="a field the SVD leaves out or sizes wrongly")
     ap.add_argument("--register", action="append", default=[], metavar="PERIPH.REG=0xOFFSET",
                     help="a register the SVD leaves out (its fields with --field)")
+    ap.add_argument("--fill", action="append", default=[], metavar="PERIPH=FROM:WHY",
+                    help="FROM's registers at the offsets PERIPH lacks, recorded in source")
     ap.add_argument("--drop", action="append", default=[], metavar="PERIPH=WHY",
                     help="a peripheral left out, with the reason recorded in source")
     ap.add_argument("--merge", action="append", default=[], metavar="PERIPH.REG.NAME",
@@ -338,6 +364,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
     apply_drops(doc, args.drop)
+    apply_fills(doc, args.fill)
     apply_merges(doc, args.merge)
     apply_registers(doc, args.register)
     apply_fields(doc, args.field)

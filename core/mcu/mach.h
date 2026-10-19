@@ -36,8 +36,11 @@ struct esk_rf;
 
 /* ---- the bus ------------------------------------------------------------ */
 
-/* MEM_ALIAS: another name for the region at a description's `target` */
-enum { ESK_MEM_RAM, ESK_MEM_FLASH, ESK_MEM_ALIAS, ESK_MEM_ROM };
+/* MEM_ALIAS: another name for the region at a description's `target`;
+ * MEM_EXTERNAL: a store (struct esk_store), on no address of the bus;
+ * MEM_WINDOW: read-only, its bytes a device's (an ESP32-C3's cache showing
+ * the flash), so no image is loaded there */
+enum { ESK_MEM_RAM, ESK_MEM_FLASH, ESK_MEM_ALIAS, ESK_MEM_ROM, ESK_MEM_EXTERNAL, ESK_MEM_WINDOW };
 
 struct esk_region {
     u32 base, size;
@@ -335,6 +338,17 @@ struct esk_rx_port {
 
 struct esk_rom_call;
 
+/* A memory no address of the core's reaches: a device reads and writes it
+ * for the core (an ESP32-C3's SPI flash, behind its cache and SPI_MEM). It
+ * keeps its bytes through every reset, as a flash does. */
+struct esk_store {
+    const char *name; /* the description's memory name: "flash" */
+    u8 *mem;
+    u32 size;
+    u32 erased; /* each word of it before an image */
+};
+#define ESK_MACH_STORES 2
+
 /* a reset's cause; the runtime sets the pin's and the power's, a model
  * that resets the part its own */
 enum esk_reset_cause {
@@ -397,6 +411,9 @@ struct esk_mach {
     void (*deep_wake)(struct esk_mach *m);
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
+    /* that reset is the core's alone (an ESP32-C3's CPU reset): the
+     * devices keep their state */
+    int reset_cpu_only;
     /* what the coming (or current) reset is, for the models that record it
      * (an STM32's RCC_CSR flags) or that keep their state through all but a
      * power-on reset (the backup domain): an esk_reset_cause */
@@ -457,6 +474,9 @@ struct esk_mach {
      * `pc` is one, 0 for an ordinary breakpoint instruction */
     int (*rom_call)(struct esk_mach *m, u32 pc, unsigned n, struct esk_rom_call *c);
     void *rom_ctx;
+    /* the memories the core does not address (esk_mach_store) */
+    struct esk_store store[ESK_MACH_STORES];
+    int nstore;
 };
 
 es_status esk_mach_init(struct esk_mach *m, esk_alloc *a);
@@ -479,6 +499,8 @@ void esk_mach_free(struct esk_mach *m);
  * of memory (and m->oom set) */
 void *esk_mach_alloc(struct esk_mach *m, size_t n);
 char *esk_mach_strdup(struct esk_mach *m, const char *s);
+/* the store the description calls `name`, or 0 */
+struct esk_store *esk_mach_store(struct esk_mach *m, const char *name);
 /* a device on the bus, keeping time if it has a tick or next_event hook */
 es_status esk_mach_add_dev(struct esk_mach *m, u32 base, u32 size, const struct esk_dev_ops *ops,
                            void *ctx);

@@ -10,6 +10,7 @@
 #include "host/host.h"
 #include "mcu/mcu.h"
 #include "util/num.h"
+#include "util/sha256.h"
 #include "util/str.h"
 
 /* ---- diagnostics --------------------------------------------------------- */
@@ -663,6 +664,49 @@ static es_status join_ties(graph *g, esk_comp *c)
 
 /* the board's firmware on its MCU's runtime (SPEC-009): the image, the register
  * description beside the MCU description, the board's oscillator */
+#define LD_MAX_FILES 4
+
+/* the MCU's memory regions' factory files (a boot ROM's image), checked
+ * against their SHA-256: n of them in files[], their bytes to be freed */
+static int read_memory_files(es_session *s, const esk_board_inst *bi, const esk_catalog_item *mi,
+                             esk_mcu_file *files)
+{
+    const esk_json *mem = esk_json_get(mi->desc, "memory");
+    size_t i;
+    int n = 0;
+    for (i = 0; i < esk_json_len(mem) && n < LD_MAX_FILES; i++) {
+        const esk_json *r = esk_json_at(mem, i);
+        const char *rel = esk_json_get_str(r, "file", NULL), *want = esk_json_get_str(r, "sha256", NULL);
+        char *path, *data = NULL, got[72];
+        size_t len = 0;
+        u64 base = 0;
+        if (!rel)
+            continue;
+        path = esk_host_path_join(s->a, mi->dir, rel);
+        if (!path || esk_host_read_file(s->a, path, &data, &len) != ES_OK) {
+            esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.memory_file", 0, "board", bi->id, NULL, 0,
+                           "%s: %s cannot be read", bi->id, path ? path : rel);
+            esk_strfree(s->a, path);
+            continue;
+        }
+        esk_sha256_text(data, len, got);
+        if (want && strcmp(got + 7, want)) {
+            esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.memory_file", 0, "board", bi->id, NULL, 0,
+                           "%s: %s is not the file the description names (sha256 %s)", bi->id, path, got + 7);
+            esk_free(s->a, data, len + 1);
+            esk_strfree(s->a, path);
+            continue;
+        }
+        esk_strfree(s->a, path);
+        (void)esk_json_to_u64(esk_json_get(r, "base"), &base);
+        files[n].base = (u32)base;
+        files[n].data = (const unsigned char *)data;
+        files[n].len = len;
+        n++;
+    }
+    return n;
+}
+
 static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_catalog_item *board,
                                  const esk_catalog_item *mi, esk_comp *mc)
 {
@@ -674,8 +718,9 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
     size_t len = 0, rlen = 0;
     esk_json *regs = NULL;
     esk_mcu_setup su;
+    esk_mcu_file files[LD_MAX_FILES];
     es_status st = ES_OK;
-    int line = 0;
+    int line = 0, nfiles = 0, k;
     const char *err = NULL;
     why[0] = 0;
     memset(&su, 0, sizeof su);
@@ -720,6 +765,9 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         su.image_name = rel;
         su.console = esk_json_get_str(esk_json_get(mi->desc, "console"), "default", "USART1");
         su.quantum_ps = s->core_quantum_ps;
+        nfiles = read_memory_files(s, bi, mi, files);
+        su.files = files;
+        su.nfiles = nfiles;
         st = esk_mcu_attach(mc, &su, why, sizeof why);
         if (st != ES_OK)
             esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.image", 0, "board", bi->id, NULL, 0, "%s: %s", bi->id, why);
@@ -727,6 +775,8 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         st = ES_ESCHEMA;
     }
     esk_json_free(s->a, regs);
+    for (k = 0; k < nfiles; k++)
+        esk_free(s->a, (void *)files[k].data, files[k].len + 1);
     if (img)
         esk_free(s->a, img, len + 1);
     esk_strfree(s->a, path);

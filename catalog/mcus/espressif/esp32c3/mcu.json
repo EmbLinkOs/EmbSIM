@@ -32,7 +32,9 @@
       "base": "0x40000000",
       "size": "384K",
       "kind": "rom",
-      "doc": "Internal ROM0 and ROM1 on the instruction bus (TRM table 3.3-1): the boot ROM; its contents are Espressif's, not yet loaded here"
+      "doc": "Internal ROM0 and ROM1 on the instruction bus (TRM table 3.3-1): the boot ROM, chip revision v0.3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x60000 --data-table 0x40059200:0x40059400, the ROM's copy table of its RAM variables) from Espressif's esp32c3_rev3_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). Bytes no segment of the ELF covers read as zeros",
+      "file": "rom.bin",
+      "sha256": "b5c495fdf2de87379ba023ffe7869d3f70cf94394020d22a9faaf3633146f5d3"
     },
     {
       "name": "rom1_data",
@@ -71,6 +73,29 @@
       "size": "8K",
       "kind": "ram",
       "doc": "RTC FAST memory, kept in deep sleep"
+    },
+    {
+      "name": "flash",
+      "base": "0x0",
+      "size": "4M",
+      "kind": "external",
+      "erased": "0xFFFFFFFF",
+      "doc": "The ESP32-C3FN4's in-package SPI flash, an XMC XM25QH32C (RDID 20 40 16; esptool's \"Embedded Flash 4MB (XMC)\"), reached through SPI0 and SPI1 and read in place through the cache (core/mcu/esp32c3/nor.c)"
+    },
+    {
+      "name": "flash_ibus",
+      "base": "0x42000000",
+      "size": "8M",
+      "kind": "window",
+      "doc": "The instruction bus's window on the flash (TRM table 3.3-2), 128 pages of 64 KB that the MMU maps (core/mcu/esp32c3/cache.c)"
+    },
+    {
+      "name": "flash_dbus",
+      "base": "0x3C000000",
+      "size": "8M",
+      "kind": "alias",
+      "target": "0x42000000",
+      "doc": "The data bus's window on the flash: the same pages, read-only"
     }
   ],
   "clocks": {
@@ -107,9 +132,42 @@
   },
   "peripherals": [
     {
+      "match": "RTC_CNTL",
+      "model": "esp32c3-rtc",
+      "order": 1
+    },
+    {
       "match": "INTERRUPT_CORE0",
       "model": "esp32c3-intmtx",
       "order": 0
+    },
+    {
+      "match": "UART?",
+      "model": "esp32c3-uart"
+    },
+    {
+      "match": "GPIO",
+      "model": "esp32c3-gpio"
+    },
+    {
+      "match": "EXTMEM",
+      "model": "esp32c3-cache"
+    },
+    {
+      "match": "SPI0",
+      "model": "esp32c3-spimem"
+    },
+    {
+      "match": "SPI1",
+      "model": "esp32c3-spimem"
+    },
+    {
+      "match": "ASSIST_DEBUG",
+      "model": "esp32c3-assist"
+    },
+    {
+      "match": "SHA",
+      "model": "esp32c3-sha"
     }
   ],
   "io": {
@@ -176,24 +234,28 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Work in progress (the RTOS boards plan, part 2, step 1). The ESP-RV core: RV32IMC with user mode and the ESP32-C3's own CSRs (TRM chapter 1): mstatus's MIE, MPIE, MPP and TW, a vectored mtvec, five-bit mcause codes, the performance counter (mpcer, mpcmr, mpccr), the trigger module's eight triggers (exact and NAPOT match on execute, load and store, tcontrol), 16 PMP entries without static priority, and the cpu_gpio CSRs. The interrupt matrix and controller: 62 sources mapped onto CPU interrupts 1-31, level and edge types, priorities 1-15, the threshold, the 4-cycle latency, the clear toggle. Every register of Espressif's SVD with its reset value.",
+      "claims": "Work in progress (the RTOS boards plan, part 2, steps 1 and 2). The ESP-RV core: RV32IMC with user mode and the ESP32-C3's own CSRs (TRM chapter 1): mstatus's MIE, MPIE, MPP and TW, a vectored mtvec, five-bit mcause codes, the performance counter (mpcer, mpcmr, mpccr) and the user-mode one the ROM uses, the trigger module's eight triggers (exact and NAPOT match on execute, load and store, tcontrol), 16 PMP entries without static priority, and the cpu_gpio CSRs. The interrupt matrix and controller: 62 sources mapped onto CPU interrupts 1-31, level and edge types, priorities 1-15, the threshold, the 4-cycle latency, the clear toggle. The boot: Espressif's own boot ROM (esp32c3_rev3_rom.elf, chip revision v0.3) runs from the reset vector, reads the strapping pins (GPIO_STRAP), reports the reset cause (RTC_CNTL), loads an ESP image's segments from the flash through SPI1, checks its checksum and SHA-256 on the SHA accelerator and jumps to it. The in-package 4 MB flash, an XMC XM25QH32C as its datasheet has it (its instructions, status registers, busy times, security registers and power-down), behind SPI0 and SPI1; the cache and MMU mapping its 64 KB pages on the instruction and data buses. UART0 and UART1 (FIFOs, frames at the baud rate, interrupts); RTC_CNTL's reset causes, RTC timer, RTC watchdog with its flash-boot protection and the software resets; the Debug Assistant's PC logging (the ROM's Saved PC). Every register of Espressif's SVD with its reset value.",
       "omissions": [
-        "the boot ROM's contents and every peripheral but the interrupt matrix (in progress)",
+        "the clocks (SYSTEM, the PLL), SYSTIMER, the timer groups and their watchdogs (TIMG0's flash-boot watchdog does not run), the GPIO matrix and IO MUX, USB Serial/JTAG, the eFuse controller and every other peripheral (in progress)",
+        "the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c)",
+        "the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none)",
+        "the SHA accelerator's DMA mode and its block time",
         "the debug module and the debug CSRs",
         "the performance counter's load and jump hazard events",
         "the interrupt controller's transient state after a register write",
-        "the cache, the MMU and the external flash",
         "Wi-Fi and Bluetooth LE"
       ],
       "validation": [
-        "repo:tests/unit/test_esp32c3.c"
+        "repo:tests/unit/test_esp32c3.c",
+        "repo:tools/test_esprom.py"
       ]
     },
     "timed": {
       "claims": "Instruction timing estimated from the RISC-V core's per-class cost table, not the ESP-RV pipeline's.",
       "omissions": [
         "the ESP-RV pipeline's hazards",
-        "cache misses and flash latency"
+        "cache misses and flash latency",
+        "the SPI flash transfers' time (the flash's own program and erase times are counted)"
       ],
       "validation": []
     },
@@ -231,8 +293,16 @@
       {
         "title": "Espressif esp32c3.svd (espressif/svd)",
         "rev": "be20aa1"
+      },
+      {
+        "title": "Espressif esp-rom-elfs, esp32c3_rev3_rom.elf (sha256 19ac22e08707df926fb0cf4c54795d4067b983fae8635f396ded173a6d78fc3c)",
+        "rev": "20241011"
+      },
+      {
+        "title": "XMC XM25QH32C datasheet (the in-package flash)",
+        "rev": "Rev. 2.0, 2023-04-25"
       }
     ],
-    "notes": "The register description is converted from Espressif's Apache-2.0 SVD."
+    "notes": "The register description is converted from Espressif's Apache-2.0 SVD; the boot ROM's image from Espressif's Apache-2.0 ROM ELF."
   }
 }

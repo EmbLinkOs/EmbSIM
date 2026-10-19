@@ -940,6 +940,15 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     u32 entry = 0;
     char why[160];
     int r;
+    if (!power_on && st->m.reset_cpu_only) {
+        /* the core alone starts again: memory and devices keep their state */
+        st->m.reset_req = 0;
+        st->m.reset_cpu_only = 0;
+        st->m.asleep = 0;
+        st->m.yield = 0;
+        st->m.cpu->ops->reset(st->m.cpu);
+        return;
+    }
     if (st->ev) {
         esk_sched_cancel(&e->sched, st->ev);
         st->ev = 0;
@@ -949,15 +958,17 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     for (r = 0; r < st->m.bus.nrg; r++)
         if (!st->m.bus.rg[r].mirror && (power_on || st->m.bus.rg[r].kind != ESK_MEM_RAM))
             esk_bus_erase(&st->m.bus.rg[r]);
-    if (!st->image) {
-        /* no image yet: the part sits blank, its pins inputs */
+    if (!st->image && !esk_mach_store(&st->m, "flash")) {
+        /* no image yet: the part sits blank, its pins inputs (a part that
+         * boots its ROM from a flash it reaches through a device, as the
+         * ESP32-C3, runs it on whatever the flash holds) */
         esk_mach_reset(&st->m);
         st->m.reset_cause = ESK_RESET_POWER;
         st->boot_fail = 1;
         st->t = e->sched.now;
         return;
     }
-    if (esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
+    if (st->image && esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
     esk_mach_reset(&st->m);
@@ -1102,7 +1113,7 @@ static void mcu_observe(esk_comp *c, esk_json *out)
     const char *state;
     if (!st->attached)
         return;
-    state = !st->image                            ? "no_image"
+    state = !st->image && !esk_mach_store(&st->m, "flash") ? "no_image"
             : st->boot_fail                       ? "boot_mode"
             : st->held                            ? "reset"
             : st->m.state == ESK_MACH_EXIT        ? "exited"
@@ -1297,7 +1308,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     mcu_state *st = state_of(c);
     esk_engine *e = c->e;
     es_status st2;
-    int port, bit;
+    int port, bit, i;
     char name[12];
     if (!esk_mcu_is(c))
         return ES_EINVAL;
@@ -1348,6 +1359,11 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st2 = esk_mach_build(&st->m, su->mcu, su->regs, su->hse_hz, why, cap);
     if (st2 != ES_OK)
         return st2;
+    for (i = 0; i < su->nfiles; i++)
+        if (esk_mach_factory(&st->m, su->files[i].base, su->files[i].data, su->files[i].len) != ES_OK) {
+            snprintf(why, cap, "the memory file at 0x%08x does not fit its region", (unsigned)su->files[i].base);
+            return ES_ESCHEMA;
+        }
     st->image_name = esk_strdup(e->a, su->image_name ? su->image_name : "firmware");
     if (!st->image_name)
         return ES_ENOMEM;

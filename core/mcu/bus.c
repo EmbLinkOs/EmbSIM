@@ -8,10 +8,11 @@
  *      ignores the core's stores once the image is loaded);
  *   2. a bit-band alias: one word per bit of the target, a read giving
  *      the bit and a write setting or clearing it;
- *   3. a device, in the order the board and the core added them, so a
- *      device inside a wider one (SysTick inside the system control
- *      space, a UART inside the peripheral space that reads as zero) is
- *      added first.
+ *   3. a device: of those whose range holds the address, the smallest,
+ *      so a device inside a wider one (SysTick inside the system control
+ *      space, a UART inside the peripheral space that reads as zero, the
+ *      ESP32-C3's MMU table inside its register file's span) answers for
+ *      its own range.
  * Nothing answering is a bus error, which the core turns into its fault
  * (bus->fail_addr says where); so is a device refusing the access
  * (bus_fault: the SVD's register file, where no register is).
@@ -34,7 +35,7 @@ es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind)
     r = &b->rg[b->nrg];
     r->base = base;
     r->size = size;
-    r->rom = 0;
+    r->rom = kind == ESK_MEM_ROM || kind == ESK_MEM_WINDOW; /* flash: once the image is in */
     r->kind = kind;
     r->mirror = 0;
     r->mem = (u8 *)esk_mach_alloc(m, size);
@@ -142,12 +143,16 @@ static int alias_of(struct esk_bus *b, u32 a, u32 *target, int *bit)
     return 0;
 }
 
+/* the device answering at `a`: of those whose range holds it, the smallest
+ * (a device inside another's range, as the ESP32-C3's MMU table inside its
+ * register file's span, or SysTick inside the SCS) */
 static struct esk_device *device_of(struct esk_bus *b, u32 a)
 {
+    struct esk_device *best = 0;
     for (int i = 0; i < b->ndev; i++)
-        if (a - b->dev[i].base < b->dev[i].size)
-            return &b->dev[i];
-    return 0;
+        if (a - b->dev[i].base < b->dev[i].size && (!best || b->dev[i].size < best->size))
+            best = &b->dev[i];
+    return best;
 }
 
 static int rd(struct esk_bus *b, u32 a, int n, u32 *v)

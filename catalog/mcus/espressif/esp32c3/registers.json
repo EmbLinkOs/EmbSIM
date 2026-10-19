@@ -5,7 +5,7 @@
  "version": "1.0.0",
  "device": "ESP32-C3",
  "description": "ESP32-C3 peripheral registers at their addresses, reset values and field access, and the interrupt matrix's 62 source numbers, converted by tools/importers/svd2regs.py from Espressif's esp32c3.svd (espressif/svd at be20aa1), Copyright 2024 Espressif Systems (Shanghai) PTE LTD, SPDX-License-Identifier: Apache-2.0 (LICENSES/Apache-2.0.txt). The interrupt numbers are the interrupt matrix's sources (ESP32-C3 TRM v1.4 table 8.3-1), not CPU interrupts.",
- "source": "converted from Espressif esp32c3.svd (espressif/svd be20aa12560889d6125d144cdb48cf615ac17628) by tools/importers/svd2regs.py; peripherals left out: RNG (its one register, DATA at 0x600260B0, is APB_CTRL's RND_DATA: the TRM's RNG_DATA_REG (TRM v1.4 section 24.5))",
+ "source": "converted from Espressif esp32c3.svd (espressif/svd be20aa12560889d6125d144cdb48cf615ac17628) by tools/importers/svd2regs.py; peripherals left out: RNG (its one register, DATA at 0x600260B0, is APB_CTRL's RND_DATA: the TRM's RNG_DATA_REG (TRM v1.4 section 24.5)); registers filled in: SPI0 from SPI1, 29 registers (SPI_MEM0 and SPI_MEM1 share one register layout, ESP-IDF's soc/esp32c3/register/soc/spi_mem_reg.h; the SVD lists part of SPI0's)",
  "interrupts": {
   "WIFI_MAC": 0,
   "WIFI_MAC_NMI": 1,
@@ -2262,6 +2262,110 @@
    ],
    "registers": [
     {
+     "name": "CMD",
+     "offset": "0x00",
+     "fields": [
+      [
+       "SPI1_MST_ST",
+       0,
+       4,
+       "r"
+      ],
+      [
+       "MSPI_ST",
+       4,
+       4,
+       "r"
+      ],
+      [
+       "FLASH_PE",
+       17,
+       1
+      ],
+      [
+       "USR",
+       18,
+       1
+      ],
+      [
+       "FLASH_HPM",
+       19,
+       1
+      ],
+      [
+       "FLASH_RES",
+       20,
+       1
+      ],
+      [
+       "FLASH_DP",
+       21,
+       1
+      ],
+      [
+       "FLASH_CE",
+       22,
+       1
+      ],
+      [
+       "FLASH_BE",
+       23,
+       1
+      ],
+      [
+       "FLASH_SE",
+       24,
+       1
+      ],
+      [
+       "FLASH_PP",
+       25,
+       1
+      ],
+      [
+       "FLASH_WRSR",
+       26,
+       1
+      ],
+      [
+       "FLASH_RDSR",
+       27,
+       1
+      ],
+      [
+       "FLASH_RDID",
+       28,
+       1
+      ],
+      [
+       "FLASH_WRDI",
+       29,
+       1
+      ],
+      [
+       "FLASH_WREN",
+       30,
+       1
+      ],
+      [
+       "FLASH_READ",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "ADDR",
+     "offset": "0x04",
+     "fields": [
+      [
+       "USR_ADDR_VALUE",
+       0,
+       32
+      ]
+     ]
+    },
+    {
      "name": "CTRL",
      "offset": "0x08",
      "reset": "0x002C2000",
@@ -2461,6 +2565,28 @@
      ]
     },
     {
+     "name": "MOSI_DLEN",
+     "offset": "0x24",
+     "fields": [
+      [
+       "USR_MOSI_DBITLEN",
+       0,
+       10
+      ]
+     ]
+    },
+    {
+     "name": "MISO_DLEN",
+     "offset": "0x28",
+     "fields": [
+      [
+       "USR_MISO_DBITLEN",
+       0,
+       10
+      ]
+     ]
+    },
+    {
      "name": "RD_STATUS",
      "offset": "0x2C",
      "fields": [
@@ -2504,6 +2630,19 @@
        "CS_KEEP_ACTIVE",
        10,
        1
+      ]
+     ]
+    },
+    {
+     "name": "TX_CRC",
+     "offset": "0x38",
+     "reset": "0xFFFFFFFF",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32,
+       "r"
       ]
      ]
     },
@@ -2579,6 +2718,334 @@
        "CSPI_LOCK_DELAY_TIME",
        7,
        5
+      ]
+     ]
+    },
+    {
+     "name": "W0",
+     "offset": "0x58",
+     "fields": [
+      [
+       "BUF0",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W1",
+     "offset": "0x5C",
+     "fields": [
+      [
+       "BUF1",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W2",
+     "offset": "0x60",
+     "fields": [
+      [
+       "BUF2",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W3",
+     "offset": "0x64",
+     "fields": [
+      [
+       "BUF3",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W4",
+     "offset": "0x68",
+     "fields": [
+      [
+       "BUF4",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W5",
+     "offset": "0x6C",
+     "fields": [
+      [
+       "BUF5",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W6",
+     "offset": "0x70",
+     "fields": [
+      [
+       "BUF6",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W7",
+     "offset": "0x74",
+     "fields": [
+      [
+       "BUF7",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W8",
+     "offset": "0x78",
+     "fields": [
+      [
+       "BUF8",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W9",
+     "offset": "0x7C",
+     "fields": [
+      [
+       "BUF9",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W10",
+     "offset": "0x80",
+     "fields": [
+      [
+       "BUF10",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W11",
+     "offset": "0x84",
+     "fields": [
+      [
+       "BUF11",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W12",
+     "offset": "0x88",
+     "fields": [
+      [
+       "BUF12",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W13",
+     "offset": "0x8C",
+     "fields": [
+      [
+       "BUF13",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W14",
+     "offset": "0x90",
+     "fields": [
+      [
+       "BUF14",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "W15",
+     "offset": "0x94",
+     "fields": [
+      [
+       "BUF15",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "FLASH_WAITI_CTRL",
+     "offset": "0x98",
+     "reset": "0x00000014",
+     "fields": [
+      [
+       "WAITI_DUMMY",
+       1,
+       1
+      ],
+      [
+       "WAITI_CMD",
+       2,
+       8
+      ],
+      [
+       "WAITI_DUMMY_CYCLELEN",
+       10,
+       6
+      ]
+     ]
+    },
+    {
+     "name": "FLASH_SUS_CTRL",
+     "offset": "0x9C",
+     "reset": "0x08002000",
+     "fields": [
+      [
+       "FLASH_PER",
+       0,
+       1
+      ],
+      [
+       "FLASH_PES",
+       1,
+       1
+      ],
+      [
+       "FLASH_PER_WAIT_EN",
+       2,
+       1
+      ],
+      [
+       "FLASH_PES_WAIT_EN",
+       3,
+       1
+      ],
+      [
+       "PES_PER_EN",
+       4,
+       1
+      ],
+      [
+       "FLASH_PES_EN",
+       5,
+       1
+      ],
+      [
+       "PESR_END_MSK",
+       6,
+       16
+      ],
+      [
+       "RD_SUS_2B",
+       22,
+       1
+      ],
+      [
+       "PER_END_EN",
+       23,
+       1
+      ],
+      [
+       "PES_END_EN",
+       24,
+       1
+      ],
+      [
+       "SUS_TIMEOUT_CNT",
+       25,
+       7
+      ]
+     ]
+    },
+    {
+     "name": "FLASH_SUS_CMD",
+     "offset": "0xA0",
+     "reset": "0x0005757A",
+     "fields": [
+      [
+       "FLASH_PER_COMMAND",
+       0,
+       8
+      ],
+      [
+       "FLASH_PES_COMMAND",
+       8,
+       8
+      ],
+      [
+       "WAIT_PESR_COMMAND",
+       16,
+       16
+      ]
+     ]
+    },
+    {
+     "name": "SUS_STATUS",
+     "offset": "0xA4",
+     "fields": [
+      [
+       "FLASH_SUS",
+       0,
+       1
+      ],
+      [
+       "WAIT_PESR_CMD_2B",
+       1,
+       1
+      ],
+      [
+       "FLASH_HPM_DLY_128",
+       2,
+       1
+      ],
+      [
+       "FLASH_RES_DLY_128",
+       3,
+       1
+      ],
+      [
+       "FLASH_DP_DLY_128",
+       4,
+       1
+      ],
+      [
+       "FLASH_PER_DLY_128",
+       5,
+       1
+      ],
+      [
+       "FLASH_PES_DLY_128",
+       6,
+       1
+      ],
+      [
+       "SPI0_LOCK_EN",
+       7,
+       1
       ]
      ]
     },
@@ -2679,6 +3146,140 @@
        "DOUT3_MODE",
        3,
        1
+      ]
+     ]
+    },
+    {
+     "name": "INT_ENA",
+     "offset": "0xC0",
+     "fields": [
+      [
+       "PER_END_INT_ENA",
+       0,
+       1
+      ],
+      [
+       "PES_END_INT_ENA",
+       1,
+       1
+      ],
+      [
+       "WPE_END_INT_ENA",
+       2,
+       1
+      ],
+      [
+       "SLV_ST_END_INT_ENA",
+       3,
+       1
+      ],
+      [
+       "MST_ST_END_INT_ENA",
+       4,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "INT_CLR",
+     "offset": "0xC4",
+     "fields": [
+      [
+       "PER_END_INT_CLR",
+       0,
+       1,
+       "w"
+      ],
+      [
+       "PES_END_INT_CLR",
+       1,
+       1,
+       "w"
+      ],
+      [
+       "WPE_END_INT_CLR",
+       2,
+       1,
+       "w"
+      ],
+      [
+       "SLV_ST_END_INT_CLR",
+       3,
+       1,
+       "w"
+      ],
+      [
+       "MST_ST_END_INT_CLR",
+       4,
+       1,
+       "w"
+      ]
+     ]
+    },
+    {
+     "name": "INT_RAW",
+     "offset": "0xC8",
+     "fields": [
+      [
+       "PER_END_INT_RAW",
+       0,
+       1
+      ],
+      [
+       "PES_END_INT_RAW",
+       1,
+       1
+      ],
+      [
+       "WPE_END_INT_RAW",
+       2,
+       1
+      ],
+      [
+       "SLV_ST_END_INT_RAW",
+       3,
+       1
+      ],
+      [
+       "MST_ST_END_INT_RAW",
+       4,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "INT_ST",
+     "offset": "0xCC",
+     "fields": [
+      [
+       "PER_END_INT_ST",
+       0,
+       1,
+       "r"
+      ],
+      [
+       "PES_END_INT_ST",
+       1,
+       1,
+       "r"
+      ],
+      [
+       "WPE_END_INT_ST",
+       2,
+       1,
+       "r"
+      ],
+      [
+       "SLV_ST_END_INT_ST",
+       3,
+       1,
+       "r"
+      ],
+      [
+       "MST_ST_END_INT_ST",
+       4,
+       1,
+       "r"
       ]
      ]
     },

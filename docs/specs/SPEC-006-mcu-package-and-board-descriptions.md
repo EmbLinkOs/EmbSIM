@@ -58,11 +58,19 @@ ADR-017, ADR-018. **Schemas:** `schemas/mcu.schema.json`,
 ```
 
 Numbers for addresses and sizes accept `0x` hexadecimal and `K`, `M` suffixes
-(powers of two). `kind` is `ram`, `flash`, `rom`, `alias`; `erased` is the
+(powers of two). `kind` is `ram`, `flash`, `rom`, `alias`, `external` (a
+memory no address of the core reaches, which a device reads and writes for
+it: an ESP32-C3's SPI flash behind SPI_MEM and the cache; its `base` is 0,
+it keeps its bytes through every reset, and a firmware file that is not an
+ELF or HEX image is a flash image written to it from offset 0) or `window`
+(read-only memory whose bytes a device provides: the ESP32-C3's cache
+showing the flash; no image is loaded there); `erased` is the
 word value of erased flash; `main` marks the region a project may resize;
 `contents` lists the bytes a region holds from the factory (a device
 signature, calibration values), each as an offset and hex digits in memory
-order, restored at every reset. `io.analog` names each pin's ADC channels
+order, restored at every reset; `file` and `sha256` name a file beside the
+description that a region holds from the factory (a boot ROM's image) and
+its digest. `io.analog` names each pin's ADC channels
 (`ADC123_IN0`: channel 0 of ADC1, 2 and 3).
 `register_file.vendored` says whether the catalog ships the file (ADR-017);
 `lookup` lists where to find it otherwise, in order. `peripherals` bind

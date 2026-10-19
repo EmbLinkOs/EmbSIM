@@ -55,8 +55,10 @@ Rules:
   library directory, then the bundled catalog (SPEC-014).
 - `policy` is `functional`, `timed` or `electrical` (SPEC-003 §4; ADR-011);
   the CLI and workbench may override it per run, recorded in the recording.
-- `boards[].firmware.image` is relative to the project; `format` is `elf`
-  or `hex` (inferred from the extension when absent); `toolchain` and
+- `boards[].firmware.image` is relative to the project; `format` is `elf`,
+  `hex` or `bin` (inferred from the extension when absent; `bin` is a flash
+  image from offset 0 for a part whose flash no address reaches, the
+  ESP32-C3's, as esptool's `merge_bin` writes it); `toolchain` and
   `sources` are for `embsim build` only.
 - `nets` reference `<instance>.<pin>` for components and
   `<board>.<port>` for boards; a pin appears in at most one net; the loader

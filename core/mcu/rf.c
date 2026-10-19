@@ -703,33 +703,27 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, cha
 
 /* ---- lookups ---------------------------------------------------------------- */
 
-static struct esk_rf_reg *reg_at(struct esk_rf *rf, u32 a, int n)
+/* the index of the first register [a, a + n) touches, or -1 */
+static int reg_at_index(const struct esk_rf *rf, u32 a, int n)
 {
     int lo = 0, hi = rf->nreg; /* the first whose end is past a */
     while (lo < hi) {
         int mid = (lo + hi) / 2;
-        struct esk_rf_reg *r = rf->reg[mid];
+        const struct esk_rf_reg *r = rf->reg[mid];
         if ((u64)r->addr + (u64)r->bytes <= a)
             lo = mid + 1;
         else
             hi = mid;
     }
     if (lo < rf->nreg && rf->reg[lo]->addr < (u64)a + (u64)n)
-        return rf->reg[lo];
-    return 0;
+        return lo;
+    return -1;
 }
 
-static int reg_index(struct esk_rf *rf, const struct esk_rf_reg *r)
+static struct esk_rf_reg *reg_at(struct esk_rf *rf, u32 a, int n)
 {
-    int lo = 0, hi = rf->nreg - 1;
-    while (lo < hi) {
-        int mid = (lo + hi) / 2;
-        if (rf->reg[mid]->addr < r->addr)
-            lo = mid + 1;
-        else
-            hi = mid;
-    }
-    return lo;
+    int i = reg_at_index(rf, a, n);
+    return i < 0 ? 0 : rf->reg[i];
 }
 
 struct esk_rf_periph *esk_rf_periph(struct esk_rf *rf, const char *name)
@@ -873,12 +867,12 @@ static void read_action(struct esk_rf_reg *r, u64 rm)
 /* the registers [a, a + n) touches: 0, or -1 when it touches none */
 static int access(struct esk_rf *rf, u32 a, int n, u32 *v, int write, int side)
 {
-    struct esk_rf_reg *r = reg_at(rf, a, n);
+    struct esk_rf_reg *r;
     u32 out = 0;
-    int i;
-    if (!r)
+    int i = reg_at_index(rf, a, n);
+    if (i < 0)
         return -1;
-    for (i = reg_index(rf, r); i < rf->nreg; i++) {
+    for (; i < rf->nreg; i++) {
         u32 lo;
         u64 e1, e2, rm;
         int cnt, at, sh;
@@ -1052,11 +1046,13 @@ static u32 map_read(void *ctx, u32 off, int n)
     struct esk_rf_reg *r;
     struct esk_rf_periph *p;
     int kind = 0;
-    if (atomic_alias(rf, a, n, &kind))
+    r = reg_at(rf, a, n); /* a register there: no alias is */
+    if (!r && atomic_alias(rf, a, n, &kind)) {
         a &= ~0x3000u; /* a read there is the register's */
-    else if (sci_alias(rf, a, n, &kind))
+        r = reg_at(rf, a, n);
+    } else if (!r && sci_alias(rf, a, n, &kind)) {
         return 0;
-    r = reg_at(rf, a, n);
+    }
     if (!r) {
         if (!reserved(rf, a, n))
             hole(rf, a, n, 0);

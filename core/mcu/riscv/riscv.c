@@ -50,10 +50,15 @@
  *     entries match it and none does, and in user mode when none matches;
  *     NAPOT regions are at most 1 GB;
  *   - cpu_gpio_oen, cpu_gpio_in and cpu_gpio_out reach the GPIO matrix.
+ * The part also answers CSRs its manual leaves out, which its boot ROM
+ * writes: the user trap CSRs (ustatus, uie, utvec, uscratch, uepc, ucause,
+ * utval, uip) keep what is written, and 0x800-0x802 are a second counter
+ * (user mode's, as Espressif's QEMU names them) that counts as the first.
  * Not modelled: the debug module and its CSRs (dcsr, dpc, dscratch0-1 are
- * illegal outside debug mode, which is never entered), the load and jump
- * hazard events (never counted), the interrupt controller's transient
- * state after a write.
+ * illegal outside debug mode, which is never entered), user-level traps
+ * (the user trap CSRs have no effect), the load and jump hazard events
+ * (never counted), the interrupt controller's transient state after a
+ * write.
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/riscv.c (RV32 and RV64,
  * refereed there against QEMU's virt). Changes for EmbSIM: the core state
@@ -387,8 +392,25 @@ static u64 misa(struct rv_state *rs)
 
 /* ---- ESP-RV's CSRs (ESP32-C3 TRM 1.4) ---------------------------------- */
 
+/* the user trap CSRs' slots: ustatus 0x000, uie 0x004, utvec 0x005,
+ * uscratch 0x040, uepc 0x041, ucause 0x042, utval 0x043, uip 0x044 */
+static int esp_ucsr(u32 csr)
+{
+    switch (csr) {
+    case 0x000: return 0;
+    case 0x004: return 1;
+    case 0x005: return 2;
+    case 0x040: case 0x041: case 0x042: case 0x043: case 0x044: return 3 + (int)(csr - 0x040);
+    }
+    return -1;
+}
+
 static int esp_csr_rd(struct rv_state *rs, u32 csr, u64 *v)
 {
+    if (esp_ucsr(csr) >= 0) {
+        *v = rs->ucsr[esp_ucsr(csr)];
+        return 1;
+    }
     if (csr >= 0x3a0 && csr <= 0x3a3) {
         *v = rs->pmpcfg[csr - 0x3a0];
         return 1;
@@ -416,6 +438,9 @@ static int esp_csr_rd(struct rv_state *rs, u32 csr, u64 *v)
     case 0x7e0: *v = rs->mpcer; return 1;
     case 0x7e1: *v = rs->mpcmr; return 1;
     case 0x7e2: *v = rs->mpccr; return 1;
+    case 0x800: *v = rs->upcer; return 1;
+    case 0x801: *v = rs->upcmr; return 1;
+    case 0x802: *v = rs->upccr; return 1;
     case 0x803: case 0x804: case 0x805:
         *v = rs->gpio_csr ? rs->gpio_csr(rs->gpio_ctx, csr, 0, 0) : 0;
         return 1;
@@ -425,6 +450,10 @@ static int esp_csr_rd(struct rv_state *rs, u32 csr, u64 *v)
 
 static void esp_csr_wr(struct rv_state *rs, u32 csr, u32 v)
 {
+    if (esp_ucsr(csr) >= 0) {
+        rs->ucsr[esp_ucsr(csr)] = v;
+        return;
+    }
     if (csr >= 0x3a0 && csr <= 0x3a3) {
         pmpcfg_write(rs, (int)(csr - 0x3a0), v);
         return;
@@ -464,6 +493,9 @@ static void esp_csr_wr(struct rv_state *rs, u32 csr, u32 v)
     case 0x7e0: rs->mpcer = v & 0x7ffu; return;
     case 0x7e1: rs->mpcmr = v & 3u; return;
     case 0x7e2: rs->mpccr = v; return;
+    case 0x800: rs->upcer = v & 0x7ffu; return;
+    case 0x801: rs->upcmr = v & 3u; return;
+    case 0x802: rs->upccr = v; return;
     case 0x803: case 0x805:
         if (rs->gpio_csr)
             rs->gpio_csr(rs->gpio_ctx, csr, 1, v & 0xffu);
@@ -504,48 +536,57 @@ static int esp_trigger(struct rv_state *rs, u32 a, int n, u32 kind)
     return fired;
 }
 
-/* the counter's events for an instruction (the expanded encoding x) that
- * took `cost` cycles */
-static void esp_count(struct rv_state *rs, u32 x, int size, int taken, u32 cost)
+/* a counter's increase by inc, saturating or wrapping as its mode says */
+static void count_add(u32 mode, u32 *cnt, u64 inc)
 {
-    u32 e = rs->mpcer, op = x & 0x7f, inc;
-    if (!(rs->mpcmr & PC_COUNT_EN) || !e)
+    if (!(mode & PC_COUNT_EN) || !inc)
         return;
-    if (e & 1u)
-        inc = cost; /* cycles: an instruction's other events fall in them */
+    if (mode & PC_COUNT_SAT)
+        *cnt = (u64)*cnt + inc > 0xffffffffu ? 0xffffffffu : (u32)(*cnt + inc);
     else
-        inc = (e & 2u) || ((e & 0x20u) && op == 0x03) || ((e & 0x40u) && op == 0x23) ||
-              ((e & 0x80u) && (op == 0x6f || op == 0x67)) || ((e & 0x100u) && op == 0x63) ||
-              ((e & 0x200u) && op == 0x63 && taken) || ((e & 0x400u) && size == 2);
-    if (rs->mpcmr & PC_COUNT_SAT)
-        rs->mpccr = rs->mpccr > 0xffffffffu - inc ? 0xffffffffu : rs->mpccr + inc;
-    else
-        rs->mpccr += inc;
+        *cnt += (u32)inc;
 }
 
-/* the counter's events while the core slept: WFI's idle cycles, or a jump
- * to itself (x, of `cost` cycles) run again and again */
+/* the events of selection e for an instruction (the expanded encoding x)
+ * that took `cost` cycles */
+static u32 count_events(u32 e, u32 x, int size, int taken, u32 cost)
+{
+    u32 op = x & 0x7f;
+    if (e & 1u)
+        return cost; /* cycles: an instruction's other events fall in them */
+    return (e & 2u) || ((e & 0x20u) && op == 0x03) || ((e & 0x40u) && op == 0x23) ||
+           ((e & 0x80u) && (op == 0x6f || op == 0x67)) || ((e & 0x100u) && op == 0x63) ||
+           ((e & 0x200u) && op == 0x63 && taken) || ((e & 0x400u) && size == 2);
+}
+
+/* both counters, for an instruction */
+static void esp_count(struct rv_state *rs, u32 x, int size, int taken, u32 cost)
+{
+    if (rs->mpcer)
+        count_add(rs->mpcmr, &rs->mpccr, count_events(rs->mpcer, x, size, taken, cost));
+    if (rs->upcer)
+        count_add(rs->upcmr, &rs->upccr, count_events(rs->upcer, x, size, taken, cost));
+}
+
+/* the events of selection e while the core slept n cycles: WFI's idle
+ * cycles, or a jump to itself run again and again */
+static u64 sleep_events(const struct rv_state *rs, u32 e, u64 n)
+{
+    if (rs->idle == 1)
+        return (e & 0x10u) ? n : 0;
+    if (e & 1u)
+        return n;
+    if ((e & (2u | 0x80u)) || ((e & 0x400u) && rs->spin_size == 2))
+        return rs->spin_cost ? n / rs->spin_cost : 0;
+    return 0;
+}
+
 static void esp_count_sleep(struct rv_state *rs, u64 now)
 {
-    u64 n = now - rs->idle_from, inc = 0;
-    u32 e = rs->mpcer;
-    if (rs->idle == 1) {
-        if (e & 0x10u)
-            inc = n;
-    } else if (e & 1u) {
-        inc = n;
-    } else if (e & (2u | 0x80u | 0x400u)) {
-        inc = rs->spin_cost ? n / rs->spin_cost : 0;
-        if (!(e & (2u | 0x80u)) && rs->spin_size != 2)
-            inc = 0;
-    }
+    u64 n = now - rs->idle_from;
+    count_add(rs->mpcmr, &rs->mpccr, sleep_events(rs, rs->mpcer, n));
+    count_add(rs->upcmr, &rs->upccr, sleep_events(rs, rs->upcer, n));
     rs->idle = 0;
-    if (!(rs->mpcmr & PC_COUNT_EN) || !inc)
-        return;
-    if (rs->mpcmr & PC_COUNT_SAT)
-        rs->mpccr = (u64)rs->mpccr + inc > 0xffffffffu ? 0xffffffffu : (u32)(rs->mpccr + inc);
-    else
-        rs->mpccr += (u32)inc;
 }
 
 /* A CSR's value: 0 when there is no such CSR. A debugger's read (debug)

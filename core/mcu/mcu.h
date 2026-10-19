@@ -31,6 +31,13 @@
 
 extern const esk_model_ops esk_mcu_ops;
 
+/* a memory region's factory contents read from its description's `file` */
+typedef struct esk_mcu_file {
+    u32 base;
+    const unsigned char *data;
+    size_t len;
+} esk_mcu_file;
+
 typedef struct esk_mcu_setup {
     const esk_json *mcu;  /* the MCU description */
     const esk_json *regs; /* its register description, or NULL */
@@ -42,6 +49,8 @@ typedef struct esk_mcu_setup {
     const char *image_name;
     es_time_t quantum_ps; /* 0: 10 us */
     const char *console;  /* the default serial unit ("USART1") */
+    const esk_mcu_file *files; /* the memory regions' factory files */
+    int nfiles;
 } esk_mcu_setup;
 
 /* Give a component made with esk_mcu_ops its machine and firmware. Errors

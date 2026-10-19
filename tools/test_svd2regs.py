@@ -127,6 +127,22 @@ class Svd2Regs(unittest.TestCase):
         with self.assertRaises(SystemExit):
             svd2regs.apply_interrupts(doc, ["UART0=NOPE"])
 
+    def test_fill_and_drop(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "toy.svd"
+            p.write_text(SVD)
+            doc = svd2regs.convert(p, "toy/registers")
+        doc["peripherals"].append({"name": "UART9", "base": "0x40009000",
+                                   "registers": [{"name": "SR", "offset": "0x00", "fields": [["X", 0, 1]]}]})
+        svd2regs.apply_fills(doc, ["UART9=UART0:one layout"])
+        regs = {r["name"]: r for r in doc["peripherals"][-1]["registers"]}
+        self.assertEqual(regs["SR"]["fields"], [["X", 0, 1]])  # its own kept
+        self.assertIn("DR", regs)
+        self.assertIn("UART9 from UART0", doc["source"])
+        svd2regs.apply_drops(doc, ["UART9=a copy"])
+        self.assertNotIn("UART9", [p["name"] for p in doc["peripherals"]])
+        self.assertIn("UART9 (a copy)", doc["source"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,12 +2,16 @@
 /* Copyright 2026 Junior Deogracias */
 /* test_esp32c3.c -- the ESP32-C3's ESP-RV core and its interrupt matrix
  * (ESP32-C3 TRM v1.4, chapters 1 and 8): hand-assembled RV32 programs at
- * the reset pc, run on the machine the catalog's description builds. */
+ * the reset pc, run on the machine the catalog's description builds; then
+ * its boot: Espressif's own ROM from the catalog booting the in-package
+ * flash (an ESP image through SPI1, the SHA accelerator, the cache and
+ * MMU), the flash's commands, the PC logging. */
 #include "harness.h"
 #include "mcu/build.h"
 #include "mcu/esp32c3/esp32c3.h"
 #include "mcu/riscv/riscv.h"
 #include "util/json.h"
+#include "util/sha256.h"
 
 #define BASE 0x40000000u    /* the reset pc */
 #define VEC (BASE + 0x100u) /* mtvec: 256-byte aligned */
@@ -385,6 +389,357 @@ static void test_wfi_wakes(void)
     c3_close(&f);
 }
 
+/* ---- the boot ------------------------------------------------------------------ */
+
+#define SPI1          0x60002000u
+#define SPI_CMD       (SPI1 + 0x00u)
+#define SPI_ADDR      (SPI1 + 0x04u)
+#define SPI_USER      (SPI1 + 0x18u)
+#define SPI_USER1     (SPI1 + 0x1Cu)
+#define SPI_USER2     (SPI1 + 0x20u)
+#define SPI_MISO_DLEN (SPI1 + 0x28u)
+#define SPI_RD_STATUS (SPI1 + 0x2Cu)
+#define SPI_W0        (SPI1 + 0x58u)
+#define EXTMEM        0x600C4000u
+#define MMU           0x600C5000u
+#define SHA           0x6003B000u
+#define ASSIST        0x600CE000u
+
+static char uart_out[4096];
+static size_t uart_n;
+
+static void uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
+{
+    (void)ctx;
+    (void)bit_cycles;
+    if (strcmp(unit, "UART0") == 0 && uart_n + 1 < sizeof uart_out) {
+        uart_out[uart_n++] = (char)c;
+        uart_out[uart_n] = 0;
+    }
+}
+
+/* the ESP32-C3 with its ROM from the catalog and `image` at flash 0 */
+static int c3_rom(c3 *f, const u8 *image, size_t len)
+{
+    size_t rlen = 0;
+    unsigned char *rom = slurp("catalog/mcus/espressif/esp32c3/rom.bin", &rlen);
+    struct esk_store *fl;
+    if (!c3_open(f, NULL, 0, NULL, 0))
+        return 0;
+    CHECK(rom != NULL);
+    if (!rom)
+        return 0;
+    CHECK_EQ(esk_mach_factory(&f->m, 0x40000000u, rom, rlen), ES_OK);
+    free(rom);
+    fl = esk_mach_store(&f->m, "flash");
+    CHECK(fl != NULL && fl->size == 4u * 1024u * 1024u);
+    if (!fl)
+        return 0;
+    if (image)
+        memcpy(fl->mem, image, len);
+    uart_n = 0;
+    uart_out[0] = 0;
+    f->m.host.uart_tx = uart_tx;
+    esk_mach_reset(&f->m);
+    return 1;
+}
+
+/* runs `cycles`, doing the resets the part asks for as the runtime does */
+static void c3_run(c3 *f, u64 cycles)
+{
+    u64 end = f->m.cycles + cycles;
+    while (f->m.cycles < end && f->m.state == ESK_MACH_RUN) {
+        esk_mach_run(&f->m, end - f->m.cycles, 0);
+        if (f->m.reset_req) {
+            f->m.reset_req = 0;
+            f->m.yield = 0;
+            f->m.asleep = 0;
+            if (f->m.reset_cpu_only) {
+                f->m.reset_cpu_only = 0;
+                f->m.cpu->ops->reset(f->m.cpu);
+            } else {
+                int cause = f->m.reset_cause, r;
+                for (r = 0; r < f->m.bus.nrg; r++)
+                    if (!f->m.bus.rg[r].mirror && f->m.bus.rg[r].kind != ESK_MEM_RAM)
+                        esk_bus_erase(&f->m.bus.rg[r]);
+                esk_mach_reset(&f->m);
+                f->m.reset_cause = cause;
+            }
+        }
+    }
+}
+
+/* an ESP image as esptool's elf2image writes it for this part: the header
+ * (DIO, 40 MHz, 4 MB; the extended header's chip ID 5, hash appended), one
+ * segment at `load`, the padding and checksum, the SHA-256 of all before */
+static size_t esp_image(u8 *out, u32 load, const u8 *code, size_t n)
+{
+    static const u8 ext[16] = { 0xee, 0, 0, 0, 5, 0, 0, 0, 0, 0xff, 0xff, 0, 0, 0, 0, 1 };
+    esk_sha256 h;
+    size_t k = 0, i;
+    u8 cs = 0xef;
+    out[k++] = 0xe9;
+    out[k++] = 1;
+    out[k++] = 2;
+    out[k++] = 0x20;
+    for (i = 0; i < 4; i++)
+        out[k++] = (u8)(load >> (8 * i));
+    memcpy(out + k, ext, sizeof ext);
+    k += sizeof ext;
+    for (i = 0; i < 4; i++)
+        out[k++] = (u8)(load >> (8 * i));
+    for (i = 0; i < 4; i++)
+        out[k++] = (u8)(n >> (8 * i));
+    memcpy(out + k, code, n);
+    k += n;
+    for (i = 0; i < n; i++)
+        cs ^= code[i];
+    while (k % 16 != 15)
+        out[k++] = 0;
+    out[k++] = cs;
+    esk_sha256_init(&h);
+    esk_sha256_update(&h, out, k);
+    esk_sha256_final(&h, out + k);
+    return k + 32;
+}
+
+/* the app (rv32imc, as assembled by riscv32-esp-elf-as): waits for UART0's
+ * TX FIFO to empty, turns the cache and both buses on, maps flash page 0 at
+ * the data bus's page 1 (MMU entry 1), prints 'M' if it reads the image's
+ * magic there ('X' if not), then "OK\n", then loops */
+static const u8 app[] = {
+    0x37, 0x05, 0x00, 0x60, 0x83, 0x22, 0xc5, 0x01, 0x93, 0xd2, 0x02, 0x01, 0x93, 0xf2, 0xf2, 0x3f,
+    0xe3, 0x9a, 0x02, 0xfe, 0xb7, 0x45, 0x0c, 0x60, 0x23, 0xa2, 0x05, 0x00, 0x85, 0x42, 0x23, 0xa0,
+    0x55, 0x00, 0xb7, 0x55, 0x0c, 0x60, 0x23, 0xa2, 0x05, 0x00, 0x37, 0x06, 0x01, 0x3c, 0x03, 0x43,
+    0x06, 0x00, 0x93, 0x03, 0x90, 0x0e, 0x93, 0x02, 0xd0, 0x04, 0x63, 0x04, 0x73, 0x00, 0x93, 0x02,
+    0x80, 0x05, 0x23, 0x20, 0x55, 0x00, 0x93, 0x02, 0xf0, 0x04, 0x23, 0x20, 0x55, 0x00, 0x93, 0x02,
+    0xb0, 0x04, 0x23, 0x20, 0x55, 0x00, 0xa9, 0x42, 0x23, 0x20, 0x55, 0x00, 0x01, 0xa0, 0x01, 0x00,
+};
+
+static void test_rom_blank_flash(void)
+{
+    /* the boot ROM's banner, the strapping (GPIO9's pull-up: SPI boot),
+     * then the erased flash's header */
+    c3 f;
+    if (!c3_rom(&f, NULL, 0))
+        return;
+    c3_run(&f, 4000000);
+    CHECK(strstr(uart_out, "ESP-ROM:esp32c3-api1-20210207") == uart_out);
+    CHECK(strstr(uart_out, "Build:Feb  7 2021") != NULL);
+    CHECK(strstr(uart_out, "rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)") != NULL);
+    CHECK(strstr(uart_out, "invalid header: 0xffffffff") != NULL);
+    c3_close(&f);
+}
+
+static void test_rom_boots_image(void)
+{
+    /* the ROM reads the image through SPI1, checks its checksum and SHA-256
+     * on the accelerator, copies the segment to SRAM and jumps to it; the
+     * app reads the flash through the cache */
+    static u8 img[256];
+    size_t n = esp_image(img, 0x403CE000u, app, sizeof app);
+    c3 f;
+    if (!c3_rom(&f, img, n))
+        return;
+    c3_run(&f, 4000000);
+    CHECK(strstr(uart_out, "SPIWP:0xee") != NULL);
+    CHECK(strstr(uart_out, "mode:DIO, clock div:2") != NULL);
+    CHECK(strstr(uart_out, "load:0x403ce000,len:0x60") != NULL);
+    CHECK(strstr(uart_out, "SHA-256 comparison failed") == NULL);
+    CHECK(strstr(uart_out, "entry 0x403ce000") != NULL);
+    CHECK(strstr(uart_out, "MOK\n") != NULL);
+    CHECK_EQ(f.m.cpu->ops->pc(f.m.cpu), 0x403CE05Cu);
+    c3_close(&f);
+}
+
+static void test_rom_bad_digest(void)
+{
+    /* a changed byte after the digest was taken: the ROM says so and, with
+     * secure boot off, boots it anyway */
+    static u8 img[256];
+    size_t n = esp_image(img, 0x403CE000u, app, sizeof app);
+    c3 f;
+    img[n - 1] = (u8)(img[n - 1] ^ 1u);
+    if (!c3_rom(&f, img, n))
+        return;
+    c3_run(&f, 4000000);
+    CHECK(strstr(uart_out, "SHA-256 comparison failed:") != NULL);
+    CHECK(strstr(uart_out, "Attempting to boot anyway...") != NULL);
+    CHECK(strstr(uart_out, "MOK\n") != NULL);
+    c3_close(&f);
+}
+
+/* SPI1's user command: `cmd`, a 24-bit address, `nin` bytes into W0 */
+static void spi_read(c3 *f, u8 cmd, u32 addr, int nin)
+{
+    wr(f, SPI_USER, 1u << 31 | 1u << 30 | 1u << 28);
+    wr(f, SPI_USER1, 23u << 26);
+    wr(f, SPI_USER2, 7u << 28 | cmd);
+    wr(f, SPI_MISO_DLEN, (u32)(8 * nin - 1));
+    wr(f, SPI_ADDR, addr);
+    wr(f, SPI_CMD, 1u << 18);
+    CHECK_EQ(rd(f, SPI_CMD), 0u);
+}
+
+static u32 spi_status(c3 *f)
+{
+    wr(f, SPI_CMD, 1u << 27); /* RDSR */
+    return rd(f, SPI_RD_STATUS) & 0xffu;
+}
+
+static void test_flash_commands(void)
+{
+    /* the XM25QH32C through SPI1: its JEDEC ID; Page Program needs WEL, is
+     * busy for tPP and ignores reads meanwhile; bits only clear; a sector
+     * erase sets them again after tSE */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, SPI_CMD, 1u << 28); /* RDID */
+    CHECK_EQ(rd(&f, SPI_W0) & 0xffffffu, 0x164020u);
+    spi_read(&f, 0x9f, 0, 3);
+    CHECK_EQ(rd(&f, SPI_W0) & 0xffffffu, 0x164020u);
+    spi_read(&f, 0x03, 0x1000, 4);
+    CHECK_EQ(rd(&f, SPI_W0), 0xffffffffu);
+    wr(&f, SPI_W0, 0x44332211u);
+    wr(&f, SPI_ADDR, 0x1000u | 4u << 24);
+    wr(&f, SPI_CMD, 1u << 25); /* PP without WREN: nothing */
+    spi_read(&f, 0x03, 0x1000, 4);
+    CHECK_EQ(rd(&f, SPI_W0), 0xffffffffu);
+    wr(&f, SPI_CMD, 1u << 30); /* WREN */
+    CHECK_EQ(spi_status(&f), 0x02u);
+    wr(&f, SPI_W0, 0x44332211u);
+    wr(&f, SPI_ADDR, 0x1000u | 4u << 24);
+    wr(&f, SPI_CMD, 1u << 25);
+    CHECK_EQ(spi_status(&f), 0x03u); /* BUSY and WEL */
+    spi_read(&f, 0x03, 0x1000, 4);
+    CHECK_EQ(rd(&f, SPI_W0), 0xffffffffu);         /* ignored while busy */
+    esk_mach_idle(&f.m, 40000000u / 2000u + 100u); /* tPP 0.5 ms at 40 MHz */
+    CHECK_EQ(spi_status(&f), 0x00u);
+    spi_read(&f, 0x0b, 0x1000, 4);
+    CHECK_EQ(rd(&f, SPI_W0), 0x44332211u);
+    wr(&f, SPI_CMD, 1u << 30);
+    wr(&f, SPI_W0, 0xf0f0f0f0u);
+    wr(&f, SPI_ADDR, 0x1000u | 4u << 24);
+    wr(&f, SPI_CMD, 1u << 25);
+    esk_mach_idle(&f.m, 40000000u / 2000u + 100u);
+    spi_read(&f, 0x03, 0x1000, 4);
+    CHECK_EQ(rd(&f, SPI_W0), 0x40302010u); /* only 1 to 0 */
+    wr(&f, SPI_CMD, 1u << 30);
+    wr(&f, SPI_ADDR, 0x1000u);
+    wr(&f, SPI_CMD, 1u << 24);            /* SE */
+    esk_mach_idle(&f.m, 40000000u / 25u); /* 40 ms: tSE is 50 */
+    CHECK_EQ(spi_status(&f) & 1u, 1u);
+    esk_mach_idle(&f.m, 40000000u / 100u);
+    CHECK_EQ(spi_status(&f), 0x00u);
+    spi_read(&f, 0x03, 0x1000, 4);
+    CHECK_EQ(rd(&f, SPI_W0), 0xffffffffu);
+    spi_read(&f, 0x90, 0, 2); /* manufacturer and device ID */
+    CHECK_EQ(rd(&f, SPI_W0) & 0xffffu, 0x1520u);
+    c3_close(&f);
+}
+
+static void test_cache_mmu(void)
+{
+    /* a page maps where its entry says, on both buses; an invalid entry
+     * reads zeros; a programmed page shows its new bytes after an
+     * invalidate */
+    c3 f;
+    struct esk_store *fl;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    fl = esk_mach_store(&f.m, "flash");
+    memcpy(fl->mem + 0x20000, "ABCD", 4);
+    CHECK_EQ(rd(&f, MMU + 4u * 5u), 0x100u); /* invalid out of reset */
+    CHECK_EQ(rd(&f, 0x3C050000u), 0u);
+    wr(&f, MMU + 4u * 5u, 2u);
+    CHECK_EQ(rd(&f, MMU + 4u * 5u), 2u);
+    CHECK_EQ(rd(&f, 0x3C050000u), 0x44434241u);
+    CHECK_EQ(rd(&f, 0x42050000u), 0x44434241u);
+    wr(&f, SPI_CMD, 1u << 30);
+    wr(&f, SPI_W0, 0u);
+    wr(&f, SPI_ADDR, 0x20000u | 4u << 24);
+    wr(&f, SPI_CMD, 1u << 25);
+    CHECK_EQ(rd(&f, 0x3C050000u), 0x44434241u); /* the cache's copy */
+    wr(&f, EXTMEM + 0x2Cu, 0x3C050000u);        /* ICACHE_SYNC_ADDR */
+    wr(&f, EXTMEM + 0x30u, 0x10000u);           /* ICACHE_SYNC_SIZE */
+    wr(&f, EXTMEM + 0x28u, 1u);                 /* INVALIDATE_ENA */
+    CHECK_EQ(rd(&f, EXTMEM + 0x28u), 2u);       /* SYNC_DONE */
+    CHECK_EQ(rd(&f, 0x3C050000u), 0u);
+    wr(&f, MMU + 4u * 5u, 0x100u);
+    CHECK_EQ(rd(&f, 0x42050000u), 0u);
+    c3_close(&f);
+}
+
+/* the accelerator's digest of "abc" in MODE `mode` */
+static void sha_abc(c3 *f, u32 mode, u8 *out, int nwords)
+{
+    u8 blk[64];
+    int i;
+    memset(blk, 0, sizeof blk);
+    memcpy(blk, "abc", 3);
+    blk[3] = 0x80;
+    blk[63] = 24; /* the length in bits, big-endian */
+    wr(f, SHA, mode);
+    for (i = 0; i < 16; i++)
+        wr(f, SHA + 0x80u + 4u * (u32)i,
+           (u32)blk[4 * i] | (u32)blk[4 * i + 1] << 8 | (u32)blk[4 * i + 2] << 16 |
+               (u32)blk[4 * i + 3] << 24);
+    wr(f, SHA + 0x10u, 1u);
+    CHECK_EQ(rd(f, SHA + 0x18u), 0u);
+    for (i = 0; i < nwords; i++) {
+        u32 w = rd(f, SHA + 0x40u + 4u * (u32)i);
+        out[4 * i] = (u8)w;
+        out[4 * i + 1] = (u8)(w >> 8);
+        out[4 * i + 2] = (u8)(w >> 16);
+        out[4 * i + 3] = (u8)(w >> 24);
+    }
+}
+
+static void test_sha(void)
+{
+    /* FIPS 180-4's "abc" examples, the digest bytes in the registers in
+     * memory order */
+    static const u8 d1[20] = { 0xa9, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e,
+                              0x25, 0x71, 0x78, 0x50, 0xc2, 0x6c, 0x9c, 0xd0, 0xd8, 0x9d };
+    static const u8 d224[28] = { 0x23, 0x09, 0x7d, 0x22, 0x34, 0x05, 0xd8, 0x22, 0x86, 0x42,
+                                0xa4, 0x77, 0xbd, 0xa2, 0x55, 0xb3, 0x2a, 0xad, 0xbc, 0xe4,
+                                0xbd, 0xa0, 0xb3, 0xf7, 0xe3, 0x6c, 0x9d, 0xa7 };
+    static const u8 d256[32] = { 0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40,
+                                0xde, 0x5d, 0xae, 0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17,
+                                0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad };
+    u8 out[32];
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    sha_abc(&f, 0, out, 5);
+    CHECK(memcmp(out, d1, sizeof d1) == 0);
+    sha_abc(&f, 1, out, 7);
+    CHECK(memcmp(out, d224, sizeof d224) == 0);
+    sha_abc(&f, 2, out, 8);
+    CHECK(memcmp(out, d256, sizeof d256) == 0);
+    c3_close(&f);
+}
+
+static void test_pc_logging(void)
+{
+    /* with RCD_PDEBUGEN and RCD_RECORDEN, PDEBUGPC follows the PC; a CPU
+     * reset clears RCD_EN and leaves it the PC at the reset */
+    const u32 prog[] = { addi(5, 0, 1), JAL_SELF };
+    c3 f;
+    if (!c3_open(&f, prog, 2, NULL, 0))
+        return;
+    esk_mach_run(&f.m, 0xffff, 4);
+    CHECK_EQ(rd(&f, ASSIST + 0x48u), 0u);
+    wr(&f, ASSIST + 0x44u, 3u);
+    CHECK_EQ(rd(&f, ASSIST + 0x48u), BASE + 4u);
+    esk_esp32c3_reset(&f.m, 0x0C); /* RTC_SW_CPU_RST */
+    CHECK(f.m.reset_req && f.m.reset_cpu_only);
+    CHECK_EQ(rd(&f, ASSIST + 0x44u), 0u);
+    CHECK_EQ(rd(&f, ASSIST + 0x48u), BASE + 4u);
+    c3_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_csrs);
 RUN(test_no_atomics);
@@ -395,4 +750,11 @@ RUN(test_level_interrupt);
 RUN(test_edge_interrupt);
 RUN(test_threshold);
 RUN(test_wfi_wakes);
+RUN(test_rom_blank_flash);
+RUN(test_rom_boots_image);
+RUN(test_rom_bad_digest);
+RUN(test_flash_commands);
+RUN(test_cache_mmu);
+RUN(test_sha);
+RUN(test_pc_logging);
 TEST_MAIN_END

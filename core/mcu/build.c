@@ -33,7 +33,34 @@ static int mem_kind(const char *k)
         return ESK_MEM_ROM;
     if (esk_str_eq(k, "alias"))
         return ESK_MEM_ALIAS;
+    if (esk_str_eq(k, "external"))
+        return ESK_MEM_EXTERNAL;
+    if (esk_str_eq(k, "window"))
+        return ESK_MEM_WINDOW;
     return ESK_MEM_RAM;
+}
+
+/* a memory the core does not address: the description's `erased` word in
+ * every 4 bytes, as a new part's flash */
+static es_status add_store(struct esk_mach *m, const esk_json *r, u32 size)
+{
+    struct esk_store *s;
+    u32 erased = 0, k;
+    if (m->nstore == ESK_MACH_STORES || size == 0)
+        return ES_ELIMIT;
+    s = &m->store[m->nstore];
+    if (esk_json_get(r, "erased"))
+        (void)u32_of(esk_json_get(r, "erased"), &erased);
+    s->name = esk_mach_strdup(m, esk_json_get_str(r, "name", "?"));
+    s->mem = (u8 *)esk_mach_alloc(m, size);
+    if (!s->name || !s->mem)
+        return ES_ENOMEM;
+    s->size = size;
+    s->erased = erased;
+    for (k = 0; k < size; k++)
+        s->mem[k] = (u8)(erased >> (8 * (k & 3)));
+    m->nstore++;
+    return ES_OK;
 }
 
 /* the bytes a region holds from the factory ({offset, bytes}), kept for
@@ -68,6 +95,27 @@ static es_status contents(struct esk_mach *m, struct esk_region *rg, const esk_j
     return ES_OK;
 }
 
+es_status esk_mach_factory(struct esk_mach *m, u32 base, const unsigned char *data, size_t len)
+{
+    int i;
+    for (i = 0; i < m->bus.nrg; i++) {
+        struct esk_region *rg = &m->bus.rg[i];
+        if (rg->mirror || base < rg->base || base - rg->base > rg->size ||
+            len > (size_t)(rg->size - (base - rg->base)))
+            continue;
+        memcpy(rg->mem + (base - rg->base), data, len);
+        if (!rg->factory) {
+            rg->factory = (u8 *)esk_mach_alloc(m, rg->size);
+            if (!rg->factory)
+                return ES_ENOMEM;
+        }
+        memcpy(rg->factory, rg->mem, rg->size);
+        rg->gen++;
+        return ES_OK;
+    }
+    return ES_ENOTFOUND;
+}
+
 es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json *regs, u32 hse_hz,
                          char *why, size_t cap)
 {
@@ -93,10 +141,21 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
                 return ES_ESCHEMA;
             }
             if (kind == ESK_MEM_ALIAS) {
+                /* the target's bytes from `target` on, `size` of them (the
+                 * ESP32-C3's ROM1 at 0x3FF00000 is its ROM from 0x40040000) */
                 if (u32_of(esk_json_get(r, "target"), &target) ||
-                    esk_bus_add_mirror(&m->bus, base, target) != ES_OK) {
+                    esk_bus_add_mirror(&m->bus, base, target) != ES_OK ||
+                    esk_bus_remap_mirror(&m->bus, base, target, size) != ES_OK) {
                     snprintf(why, cap, "alias %s names no memory", esk_json_get_str(r, "name", "?"));
                     return ES_ESCHEMA;
+                }
+                continue;
+            }
+            if (kind == ESK_MEM_EXTERNAL) {
+                st = add_store(m, r, size);
+                if (st != ES_OK) {
+                    snprintf(why, cap, "memory %s cannot be added", esk_json_get_str(r, "name", "?"));
+                    return st;
                 }
                 continue;
             }

@@ -202,6 +202,17 @@ Started only once the NUCLEO-F446RE is done.
      scripts.
    - The external SPI flash behind the cache and MMU (execute in place).
    - The eFuses (MAC, chip revision).
+
+   *Done:* Espressif's own boot ROM runs from the reset vector and boots
+   the in-package flash (an XMC XM25QH32C, `nor.c`) through SPI1
+   (`esp32c3-spimem`), checking the image's SHA-256 on the SHA accelerator
+   (`esp32c3-sha`); the cache and MMU (`esp32c3-cache`) map the flash on
+   both buses; the RTC watchdog's flash-boot protection and the PC logging
+   (`esp32c3-assist`) give the ROM's `RTCWDT_RTC_RST` and `Saved PC`. A
+   project's `bin` firmware is a flash image (`test_esp32c3`). The ROM's
+   functions are its own code, so nothing is written from the linker
+   scripts. Moved to step 3: the eFuse controller (its values are the
+   register file's reset values for now).
 3. **Clocks and timers.**
    - The SYSTEM and RTC_CNTL clocks: PLL at 160 MHz, XTAL 40 MHz, RTC slow
      clock.

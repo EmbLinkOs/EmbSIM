@@ -28,7 +28,7 @@
             "additionalProperties": false,
             "properties": {
               "image": {"type": "string", "minLength": 1},
-              "format": {"type": "string", "enum": ["elf", "hex"]},
+              "format": {"type": "string", "enum": ["elf", "hex", "bin"], "description": "bin: a flash image from offset 0, for a part whose flash no address reaches (an ESP32-C3's, as esptool's merge_bin writes it)"},
               "toolchain": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
               "sources": {"type": "array", "items": {"type": "string"}},
               "flags": {"type": "array", "items": {"type": "string"}},

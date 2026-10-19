@@ -105,6 +105,8 @@ struct rv_state {
     /* ESP-RV's performance counter: mpcer, mpcmr, mpccr, and the cycle at
      * which the core last went to sleep (its idle cycles) */
     u32 mpcer, mpcmr, mpccr;
+    u32 upcer, upcmr, upccr; /* the user-mode copy at 0x800-0x802 */
+    u32 ucsr[8];             /* ustatus, uie, utvec, uscratch, uepc, ucause, utval, uip */
     u64 idle_from;
     int idle;            /* 1 in WFI, 2 in a jump to itself */
     u32 spin_cost;       /* that jump's cycles and size */

@@ -70,7 +70,7 @@
           "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
           "base": {"$ref": "common.schema.json#/$defs/hex_or_size"},
           "size": {"$ref": "common.schema.json#/$defs/hex_or_size"},
-          "kind": {"type": "string", "enum": ["ram", "flash", "rom", "alias"]},
+          "kind": {"type": "string", "enum": ["ram", "flash", "rom", "alias", "external", "window"], "description": "external: a memory no address of the core reaches, read and written by a device for it (an ESP32-C3's SPI flash), its base 0; window: read-only memory whose bytes a device provides (an ESP32-C3's cache showing the flash), where no image is loaded"},
           "erased": {"$ref": "common.schema.json#/$defs/hex_or_size"},
           "contents": {
             "description": "Bytes the part holds there from the factory (a device signature, calibration values): each at an offset in the region, as hex digits in memory order.",
@@ -86,6 +86,8 @@
               }
             }
           },
+          "file": {"description": "The region's factory contents from a file beside the description, from the region's start (a boot ROM's image).", "type": "string"},
+          "sha256": {"description": "The SHA-256 of that file, in lower-case hex: the loader refuses another file.", "type": "string", "pattern": "^[0-9a-f]{64}$"},
           "target": {"$ref": "common.schema.json#/$defs/hex_or_size"},
           "main": {"type": "boolean"},
           "doc": {"type": "string"}

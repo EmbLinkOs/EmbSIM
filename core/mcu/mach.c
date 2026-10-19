@@ -67,6 +67,15 @@ char *esk_mach_strdup(struct esk_mach *m, const char *s)
     return p;
 }
 
+struct esk_store *esk_mach_store(struct esk_mach *m, const char *name)
+{
+    int i;
+    for (i = 0; i < m->nstore; i++)
+        if (strcmp(m->store[i].name, name) == 0)
+            return &m->store[i];
+    return 0;
+}
+
 es_status esk_mach_add_dev(struct esk_mach *m, u32 base, u32 size, const struct esk_dev_ops *ops,
                            void *ctx)
 {
@@ -284,6 +293,7 @@ void esk_mach_reset(struct esk_mach *m)
     m->clocks_stopped = 0;
     m->powered_down = 0;
     m->reset_req = 0;
+    m->reset_cpu_only = 0;
     m->yield = 0;
     m->bus_errors = 0;
     if (m->cpu)

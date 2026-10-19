@@ -8,7 +8,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
-| ESP32-C3 | 1 | 0 | 35 | 36 |
+| ESP32-C3 | 10 | 0 | 26 | 36 |
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
@@ -21,20 +21,20 @@ evidence for each model is in [STATUS.md](STATUS.md).
 ## ESP32-C3 (`espressif/esp32c3`)
 
 Boards: none in the catalog.  
-1 of 36 peripherals modelled, 0 registers only, 35 missing.
+10 of 36 peripherals modelled, 0 registers only, 26 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
-| UART0 | — | **missing** |
-| SPI1 | — | **missing** |
-| SPI0 | — | **missing** |
-| GPIO | — | **missing** |
+| UART0 | `esp32c3-uart` | modelled |
+| SPI1 | `esp32c3-spimem` | modelled |
+| SPI0 | `esp32c3-spimem` | modelled |
+| GPIO | `esp32c3-gpio` | modelled |
 | GPIO_SD | — | **missing** |
-| RTC_CNTL | — | **missing** |
+| RTC_CNTL | `esp32c3-rtc` | modelled |
 | EFUSE | — | **missing** |
 | IO_MUX | — | **missing** |
 | UHCI1 | — | **missing** |
-| UART1 | — | **missing** |
+| UART1 | `esp32c3-uart` | modelled |
 | I2C0 | — | **missing** |
 | UHCI0 | — | **missing** |
 | RMT | — | **missing** |
@@ -48,7 +48,7 @@ Boards: none in the catalog.
 | TWAI0 | — | **missing** |
 | I2S0 | — | **missing** |
 | AES | — | **missing** |
-| SHA | — | **missing** |
+| SHA | `esp32c3-sha` | modelled |
 | RSA | — | **missing** |
 | DS | — | **missing** |
 | HMAC | — | **missing** |
@@ -58,9 +58,9 @@ Boards: none in the catalog.
 | SYSTEM | — | **missing** |
 | SENSITIVE | — | **missing** |
 | INTERRUPT_CORE0 | `esp32c3-intmtx` | modelled |
-| EXTMEM | — | **missing** |
+| EXTMEM | `esp32c3-cache` | modelled |
 | XTS_AES | — | **missing** |
-| ASSIST_DEBUG | — | **missing** |
+| ASSIST_DEBUG | `esp32c3-assist` | modelled |
 
 Declared omissions: the boot ROM's contents and every peripheral but the interrupt matrix (in progress); the debug module and the debug CSRs; the performance counter's load and jump hazard events; the interrupt controller's transient state after a register write; the cache, the MMU and the external flash; Wi-Fi and Bluetooth LE.
 

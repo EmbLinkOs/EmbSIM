@@ -4,7 +4,8 @@
 /* image.c -- firmware images into the machine's memory (SPEC-009 §10, SPEC-010
  * §4): an ELF file's PT_LOAD segments at their physical (load) addresses, as a
  * flash programmer places them, or an Intel HEX file's data records at bus
- * addresses. A segment that falls outside the described memory is an error
+ * addresses; for a part whose flash is a store no address reaches (an
+ * ESP32-C3's), any other file is a flash image from offset 0. A segment that falls outside the described memory is an error
  * naming the address: the MCU description, not the image, says where memory
  * is. Flash is written here; the core's stores to it are ignored afterwards.
  *
@@ -38,6 +39,13 @@ static es_status put(struct esk_mach *m, u32 pa, const u8 *b, u32 n, char *why, 
                      (unsigned long)(pa + k));
             return ES_EINVAL;
         }
+        if (r->kind == ESK_MEM_WINDOW) {
+            snprintf(why, cap,
+                     "the image has bytes at 0x%08lx, in the cache's window on the flash: the flash takes "
+                     "a flash image (a .bin as esptool writes it at 0x0, such as merge_bin's)",
+                     (unsigned long)(pa + k));
+            return ES_EINVAL;
+        }
         r->mem[pa + k - r->base] = b[k];
     }
     esk_bus_code_changed(&m->bus);
@@ -46,6 +54,28 @@ static es_status put(struct esk_mach *m, u32 pa, const u8 *b, u32 n, char *why, 
 
 static es_status load_hex(struct esk_mach *m, const u8 *f, size_t len, u32 *entry, char *why,
                           size_t cap);
+
+/* A flash image for a part whose flash is a store (an ESP32-C3's): its
+ * bytes from offset 0, as esptool's write_flash 0x0 puts them -- each 4 KB
+ * sector it touches erased first, the rest of the flash as it was. Only at
+ * a power-on (a new image, the session's start): through the part's other
+ * resets the flash keeps what the program wrote there. */
+static es_status load_flash(struct esk_mach *m, struct esk_store *fl, const u8 *f, size_t len, char *why,
+                            size_t cap)
+{
+    size_t end;
+    if (len > fl->size) {
+        snprintf(why, cap, "the flash image is %lu bytes, more than the %lu of the part's flash",
+                 (unsigned long)len, (unsigned long)fl->size);
+        return ES_EINVAL;
+    }
+    if (m->reset_cause != ESK_RESET_POWER)
+        return ES_OK;
+    end = (len + 4095u) & ~(size_t)4095u;
+    memset(fl->mem, 0xff, end < fl->size ? end : fl->size);
+    memcpy(fl->mem, f, len);
+    return ES_OK;
+}
 
 es_status esk_mach_load_image(struct esk_mach *m, const u8 *f, size_t len, u32 *entry, char *why,
                               size_t cap)
@@ -66,6 +96,11 @@ es_status esk_mach_load_image(struct esk_mach *m, const u8 *f, size_t len, u32 *
     }
     st = ES_EINVAL;
     if (len < 52 || memcmp(f, "\177ELF", 4) != 0) {
+        struct esk_store *fl = esk_mach_store(m, "flash");
+        if (fl && len) {
+            st = load_flash(m, fl, f, len, why, cap);
+            goto done;
+        }
         snprintf(why, cap, "not an ELF file or an Intel HEX image");
         goto done;
     }
@@ -126,7 +161,8 @@ es_status esk_mach_load_image(struct esk_mach *m, const u8 *f, size_t len, u32 *
     st = ES_OK;
 done:
     for (r = 0; r < m->bus.nrg; r++)
-        m->bus.rg[r].rom = m->bus.rg[r].kind == ESK_MEM_FLASH || m->bus.rg[r].kind == ESK_MEM_ROM;
+        m->bus.rg[r].rom = m->bus.rg[r].kind == ESK_MEM_FLASH || m->bus.rg[r].kind == ESK_MEM_ROM ||
+                           m->bus.rg[r].kind == ESK_MEM_WINDOW;
     return st;
 }
 
