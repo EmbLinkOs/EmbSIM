@@ -134,6 +134,14 @@ after each one.
    - The Arduino Uno V3 and ST morpho headers, as ports.
    - The ST-Link's virtual COM port as a host serial port.
    - Artwork and `reference.json`.
+   *Done:* `emblink/nucleo_f446re` (MB1136 C-03) with LD2, B1 and its
+   filter, B2, LD3, the MCO and X2, the power paths through T2, JP5, U3, D4,
+   U4 and JP6 (IDD, with an ammeter's place), both header sets as ports,
+   the VCP as the console and as a host serial port (no DTR reset), the
+   artwork, the linker script and the toolchain profiles;
+   `examples/nucleo-f446re-blink-serial`. LD1 and the ST-LINK's own
+   behaviour are declared omissions. `reference.json` waits for a
+   dimensioned drawing (UM1724's is an image) to place the headers exactly.
 10. **Vendor examples.** STM32CubeF4's NUCLEO-F446RE examples, unmodified:
     - GPIO_IOToggle and GPIO_EXTI;
     - UART_Printf, and UART with DMA;

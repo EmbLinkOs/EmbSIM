@@ -514,13 +514,18 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
         ld_diag(s, ES_SEV_ERROR, "catalog.instantiate", id, "cannot instantiate %s: %s", item->id, es_strerror(st));
         goto done;
     }
-    /* interactive input defaults */
+    /* interactive input defaults; a parameter initially_NAME gives the input
+     * NAME its first value on this instance (a jumper fitted at the factory) */
     {
         const esk_json *inputs = esk_json_get(desc, "inputs");
         for (i = 0; i < esk_json_len(inputs); i++) {
             const esk_json *in = esk_json_at(inputs, i);
             const esk_json *def = esk_json_get(in, "default");
             const char *name = esk_json_get_str(in, "name", NULL);
+            char initially[96];
+            if (name && esk_snprintf(initially, sizeof initially, "initially_%s", name) < sizeof initially &&
+                esk_json_get(params, initially))
+                def = esk_json_get(params, initially);
             /* an input bound to the world stays unset: it reads the world, or its default */
             if (name && def && !esk_json_get(in, "world")) {
                 esk_json *v = esk_json_clone(s->a, def);

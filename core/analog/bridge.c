@@ -71,7 +71,32 @@ static int device_drives_node(const esk_adev *o, int node)
     return 0;
 }
 
-/* a power pin's ideal source is dropped when the node is already held */
+/* is device `o` a supply: a source or a regulator anywhere in the island? */
+static int device_is_supply(const esk_adev *o)
+{
+    const char *name = o->ops->name;
+    return !strcmp(name, "vsource") || !strcmp(name, "regulator");
+}
+
+/* is the power pin a part's supply input (an MCU's VDD), not a supply
+ * symbol (a component of power pins only, such as VCC)? */
+static int pin_is_load(const esk_pin *p)
+{
+    const esk_comp *c = p->comp;
+    uint32_t i;
+    if (!c)
+        return 0;
+    for (i = 0; i < c->npins; i++)
+        if (c->pins[i].model.kind != ESK_PIN_POWER)
+            return 1;
+    return 0;
+}
+
+/* a power pin's ideal source is dropped when the node is already held, or,
+ * for a part's supply input, when the circuit around it has a supply of its
+ * own: the part is then a load on whatever that supply reaches it through
+ * (a jumper, a switch), and its pin carries no voltage the circuit does not
+ * give it */
 static void check_duplicate_supply(esk_adev *d, bridge_state *s)
 {
     esk_island *isl = d->isl;
@@ -100,12 +125,14 @@ static void check_duplicate_supply(esk_adev *d, bridge_state *s)
     }
     for (i = 0; i < isl->devs.len; i++) {
         esk_adev *o = isl->devs.data[i];
-        if (o->pin || !device_drives_node(o, node))
+        if (o->pin || !(device_drives_node(o, node) || (device_is_supply(o) && pin_is_load(d->pin))))
             continue;
         s->disabled = 1;
         raise_pin(
             d, ES_SEV_INFO, "analog.supply_driven",
-            "the net is driven by a component model; the power pin's ideal source is not added");
+            device_drives_node(o, node)
+                ? "the net is driven by a component model; the power pin's ideal source is not added"
+                : "the circuit has a supply of its own; the power pin's ideal source is not added");
         return;
     }
 }

@@ -677,7 +677,9 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
                 return ES_EUNSUPPORTED;
             }
             c = bi->mcu;
-            if (target[n] == '.' && (esk_str_eq(input, "tx_text") || esk_str_eq(input, "serial"))) {
+            /* text into one of its UARTs: rx (SPEC-007), serial or tx_text (SPEC-008) */
+            if (target[n] == '.' &&
+                (esk_str_eq(input, "rx") || esk_str_eq(input, "tx_text") || esk_str_eq(input, "serial"))) {
                 esk_snprintf(unit_input, sizeof unit_input, "serial:%s", target + n + 1);
                 input = unit_input;
             }

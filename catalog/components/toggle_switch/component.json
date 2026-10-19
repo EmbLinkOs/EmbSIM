@@ -51,6 +51,11 @@
       "min": "1k",
       "advanced": true
     },
+    "initially_closed": {
+      "type": "boolean",
+      "default": false,
+      "doc": "The state it starts in, its closed input's first value (a jumper fitted at the factory)"
+    },
     "bounce": {
       "type": "boolean",
       "default": false,

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "idd-ammeter",
+  "description": "JP6 removed and an ammeter (1 ohm shunt) across its pins: VDD is powered through the meter.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_f446re"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "AM",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1.0
+        }
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.U5V"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "IA": [
+        "B1.IDD_3V3",
+        "AM.1"
+      ],
+      "IB": [
+        "B1.IDD_VDD",
+        "AM.2"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "B1.JP6",
+      "input": "closed",
+      "value": false
+    }
+  ],
+  "expect": {
+    "net:IB": {
+      "at": "10ms",
+      "min_v": 3.2,
+      "max_v": 3.35
+    }
+  }
+}

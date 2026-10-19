@@ -11,6 +11,8 @@
     "ldo",
     "LM1117",
     "AMS1117",
+    "LD1117",
+    "LD39050",
     "power"
   ],
   "pins": [
@@ -52,6 +54,8 @@
         "LM1117-3.3",
         "LM1117-5.0",
         "AMS1117-3.3",
+        "LD1117S50",
+        "LD39050PU33R",
         "generic"
       ],
       "default": "LM1117-3.3",
@@ -74,6 +78,18 @@
           "dropout": 1.3,
           "imax": 1.0,
           "quiescent": "5m"
+        },
+        "LD1117S50": {
+          "vout": 5.0,
+          "dropout": 1.0,
+          "imax": 0.8,
+          "quiescent": "5m"
+        },
+        "LD39050PU33R": {
+          "vout": 3.3,
+          "dropout": 0.2,
+          "imax": 0.5,
+          "quiescent": "20u"
         },
         "generic": {
           "vout": 3.3,
@@ -192,6 +208,12 @@
       },
       {
         "title": "AMS1117 1A Low Dropout Voltage Regulator datasheet (Advanced Monolithic Systems)"
+      },
+      {
+        "title": "LD1117 low drop positive voltage regulator datasheet (STMicroelectronics): 1 V dropout at 800 mA, 5 mA quiescent"
+      },
+      {
+        "title": "LD39050 500 mA low quiescent current low noise voltage regulator datasheet (STMicroelectronics): 200 mV dropout at 500 mA, 20 uA quiescent"
       }
     ]
   },

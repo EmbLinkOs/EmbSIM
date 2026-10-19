@@ -321,7 +321,7 @@ Declared omissions: the ADC's injected group, analog watchdog, external triggers
 
 ## STM32F446RE (`st/stm32f446re`)
 
-Boards: none in the catalog.  
+Boards: NUCLEO-F446RE (STM32F446RE).  
 49 of 71 peripherals modelled, 1 registers only, 21 missing.
 
 | Peripheral | Model | State |

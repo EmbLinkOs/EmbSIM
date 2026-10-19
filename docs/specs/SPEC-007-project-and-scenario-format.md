@@ -136,10 +136,12 @@ Rules:
   decimal; the loader converts exactly to picoseconds and refuses sub-
   picosecond fractions. Inputs may appear in any order; equal times keep file
   order (they become `EXTERNAL` events in sequence).
-- `target` is a component, a board (inputs: `reset`, `power`), a board
+- `target` is a component, a board (inputs: `reset`, `power`, and `serial`,
+  text into its console as its USB-serial bridge brings it), a board
   peripheral (`rx` bytes for a serial peripheral, `voltage` for an ADC
-  terminal through a component), or `COMPONENT.MEMBER`, a member of a
-  composite component (a keypad's key, `KP.k5`). `input` names an entry in
+  terminal through a component), one of a board's own parts (`B1.B1`, a
+  NUCLEO's USER button; `B1.JP5_E5V`, a jumper), or `COMPONENT.MEMBER`, a
+  member of a composite component (a keypad's key, `KP.k5`). `input` names an entry in
   the target's description. Component fixtures (SPEC-005 §9) take the same
   targets. `world` sets one of the room's fields (the input its name, the
   value a number, or null to undeclare it) and `world.BODY` places a body

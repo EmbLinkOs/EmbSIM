@@ -5,6 +5,52 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The NUCLEO-F446RE board (the NUCLEO-F446RE plan, step 9)
+
+- **`emblink/nucleo_f446re`** (MB1136 C-03, from UM1724 Rev 14 and the
+  board's schematics):
+  - **Clocks:** HSE is the ST-LINK's 8 MHz MCO (HSEBYP needed) and LSE is
+    X2.
+  - **LEDs and buttons:** LD2 on PA5 through 510 ohm; B1 on PC13 with R29,
+    R30 and C15; B2 on NRST with C14; LD3 on +5V.
+  - **Boot and VCAP:** R33 holds BOOT0 low, and C26 sits on VCAP_1.
+  - **Headers:** the Arduino headers CN5, CN6, CN8 and CN9 and the morpho
+    headers CN7 and CN10, every pin a port. D0 and D1 are not connected,
+    as SB62/SB63 leave the factory open.
+  - **Console:** the ST-LINK's virtual COM port on USART2 (PA2/PA3,
+    115200).
+  - **Power paths:**
+    - U5V through T2 (STS7PF30L, PWR_ENn) and JP5 to +5V;
+    - VIN through U3 (LD1117S50) and D4 (STPS2L30A) to E5V;
+    - U4 (LD39050PU33R) to +3.3V;
+    - JP6 (IDD) to VDD, VBAT and, through SB57, VDDA.
+    - With VIN and JP5 left on U5V, the board stays dark, as UM1724 warns.
+    - Removing JP6 and putting an ammeter across `IDD_3V3`/`IDD_VDD`
+      powers the STM32 through the meter.
+  - **Artwork and toolchains:** original artwork to the 70 x 82.5 mm
+    outline; the linker script and the Cortex-M4F toolchain profiles.
+- **New parts:** `emblink/sts7pf30l` (P-MOSFET with its body diode) and
+  `emblink/stps2l30a` (Schottky), fitted to their datasheets. The
+  regulator gains the LD1117S50 and LD39050PU33R presets.
+- **`examples/nucleo-f446re-blink-serial`:**
+  - the firmware runs at 180 MHz from the MCO;
+  - LD2 blinks from SysTick and B1 is counted through EXTI13;
+  - the VCP echoes text in upper case;
+  - the banner reads F_SIZE and RCC_CSR.
+- **Engine changes:**
+  - **Initial input values:** a parameter `initially_<input>` gives an
+    input its first value on one instance. A toggle switch's
+    `initially_closed` is a jumper fitted at the factory.
+  - **MCU supply pins:** a part's supply pin (an MCU's VDD) is no longer an
+    ideal source when the circuit has a supply of its own. It takes what
+    the circuit gives it, so VDD follows JP6. Supply symbols stay sources.
+  - **Capacitors** have a pins-only functional model: an open circuit, as
+    at DC. A board's decoupling and filter capacitors therefore run under
+    every policy.
+  - **Fixtures and scenarios:** they may move a board's own parts
+    (`B1.JP5_E5V`). A scenario may type into a board's console (input
+    `serial` on `B1`, SPEC-008). A board UART takes `rx` as SPEC-007 says.
+
 ### The STM32 watchdogs, the F446's RTC and the reset causes (the NUCLEO-F446RE plan, step 8)
 
 - **A reset's cause** (`esk_mach.reset_cause`):

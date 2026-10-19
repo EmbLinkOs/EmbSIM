@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "on-resistance",
+  "description": "VGS = -10 V, 3.5 A drawn from the drain: about 56 mV across it (16 mOhm typical, 21 maximum).",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 10.0
+        }
+      },
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 0.0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/sts7pf30l"
+      },
+      {
+        "id": "I",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 3.5
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "S": [
+        "VS.+",
+        "DUT.S"
+      ],
+      "G": [
+        "VG.+",
+        "DUT.G"
+      ],
+      "D": [
+        "DUT.D",
+        "I.+"
+      ],
+      "GND": [
+        "VS.-",
+        "VG.-",
+        "I.-",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:D": {
+      "at": "1ms",
+      "min_v": 9.9265,
+      "max_v": 9.96
+    }
+  }
+}

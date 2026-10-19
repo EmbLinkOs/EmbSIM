@@ -433,9 +433,9 @@ class ProjectTests(Base):
 
     def test_policy_requires_fidelity_tier(self):
         p = copy.deepcopy(PROJECT)
-        p["components"].append({"id": "C1", "component": "emblink/capacitor"})
-        p["nets"]["GND"].append("C1.1")
-        p["nets"]["BTN"].append("C1.2")
+        p["components"].append({"id": "M1", "component": "emblink/nmos"})
+        p["nets"]["GND"].append("M1.S")
+        p["nets"]["BTN"].append("M1.D")
         self.assertCode(self.check(self.write_project(p)), "fidelity.tier_missing")
 
     def test_probe_target_checks(self):
@@ -470,6 +470,28 @@ class ProjectTests(Base):
         s["inputs"][0]["input"] = "kicked"
         scen.write_text(json.dumps(s))
         self.assertCode(self.check(scen), "catalog.input_unknown")
+
+    def test_scenario_board_serial_input(self):
+        # text typed into a board's console (SPEC-008): input serial on the board
+        ex = self.tmp / "ex"
+        shutil.copytree(validate.ROOT / "examples" / "nucleo-f446re-blink-serial", ex)
+        scen = ex / "scenarios" / "blink.json"
+        self.assertClean(self.check(scen))
+        s = json.loads(scen.read_text())
+        s["inputs"][2]["input"] = "typed"
+        scen.write_text(json.dumps(s))
+        self.assertCode(self.check(scen), "catalog.input_unknown")
+
+    def test_fixture_board_component_input(self):
+        # a fixture moves a board's own jumper, B1.JP5_E5V
+        src = validate.ROOT / "catalog" / "boards" / "nucleo_f446re" / "tests" / "vin-e5v.json"
+        fixture = self.tmp / "vin-e5v.json"
+        shutil.copy(src, fixture)
+        self.assertClean(self.check(fixture))
+        f = json.loads(fixture.read_text())
+        f["inputs"][1]["target"] = "B1.JP9"
+        fixture.write_text(json.dumps(f))
+        self.assertCode(self.check(fixture), "catalog.not_found")
 
     def test_scenario_probe_must_exist(self):
         s = copy.deepcopy(SCENARIO)

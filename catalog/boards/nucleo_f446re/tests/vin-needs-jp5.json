@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "vin-needs-jp5",
+  "description": "9 V on VIN with JP5 still on U5V: U3 makes E5V, but nothing joins it to +5V, so the board stays dark (UM1724 6.3.2: JP5 must be moved to E5V).",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_f446re"
+      }
+    ],
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 9.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "VS.+",
+        "B1.VIN"
+      ],
+      "GND": [
+        "VS.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "E5V": [
+        "B1.E5V"
+      ],
+      "R5": [
+        "B1.5V"
+      ],
+      "VDD": [
+        "B1.CN7_5"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:E5V": {
+      "at": "10ms",
+      "min_v": 4.7,
+      "max_v": 5.0
+    },
+    "net:R5": {
+      "at": "10ms",
+      "max_v": 0.3
+    },
+    "net:VDD": {
+      "at": "10ms",
+      "max_v": 0.3
+    },
+    "output:B1.LD3.luminance": {
+      "at": "10ms",
+      "max": 0.001
+    }
+  }
+}

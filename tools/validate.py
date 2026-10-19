@@ -1005,8 +1005,14 @@ def check_component_test(report: Report, file: Path, doc: dict, index: Index) ->
         f_.node = "/circuit" + f_.node
     until = parse_time_ps(doc.get("until")) if doc.get("until") else None
     def member(target: str) -> Optional[dict]:
-        """COMPONENT.MEMBER: a member of a composite instance (a keypad's key)"""
+        """COMPONENT.MEMBER: a member of a composite instance (a keypad's key),
+        or BOARD.COMPONENT: a part on a board (a jumper, a button)"""
         top, _, sub = (target or "").partition(".")
+        if sub and top in boards:
+            for c in boards[top].get("components") or []:
+                if c.get("id") == sub:
+                    return index.component(c.get("component", ""))
+            return None
         parent = inst.get(top)
         if not sub or parent is None:
             return None
@@ -1666,8 +1672,9 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
             elif periph:
                 if inp.get("input") not in ("rx", "voltage"):
                     report.error(file, node + "/input", "catalog.input_unknown", f"peripheral input must be rx or voltage, not {inp.get('input')}")
-            elif inp.get("input") not in ("reset", "power"):
-                report.error(file, node + "/input", "catalog.input_unknown", f"board input must be reset or power, not {inp.get('input')}")
+            elif inp.get("input") not in ("reset", "power", "serial"):
+                # serial: text into the board's console (SPEC-008)
+                report.error(file, node + "/input", "catalog.input_unknown", f"board input must be reset, power or serial, not {inp.get('input')}")
         else:
             report.error(file, node + "/target", "catalog.not_found", f"target {inst} is not a component or board of the project")
     ids: set[str] = set()
