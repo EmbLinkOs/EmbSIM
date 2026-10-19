@@ -5,6 +5,27 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The Cortex-M core's speed (the NUCLEO-F446RE plan, before step 10)
+
+- **Lazy device clocks on the STM32s.** Devices are no longer ticked after
+  every instruction. They are told their cycles when their next event
+  comes, or when the program reads or writes them, as the AVR's are.
+  - A timer's DMA requests now count as events even without an interrupt.
+  - A read of the NVIC's pending bits brings the devices up to date first.
+- **Decoded instructions.** The Cortex-M core keeps each instruction it
+  fetched from read-only memory (its halfwords, size and cycle cost). A
+  region's generation moves on when its bytes change from outside the
+  core: an image, a debugger's write, an erase, the memory at 0 remapped.
+- **Bursts.** A core runs instructions to the quantum's end without the
+  run loop's per-instruction checks while no breakpoint, analysis or
+  instruction limit applies.
+- **Smaller costs:** the lazy clocks' inline path, and a bus that looks
+  first in the region it found last.
+- **Result:** a busy firmware on the NUCLEO-F446RE at 180 MHz runs about
+  31 million instructions a second on a release build, up from 21 million.
+  That is a sixth of the part's own speed. A program that waits in WFI
+  between interrupts runs faster than real time.
+
 ### The NUCLEO-F446RE board (the NUCLEO-F446RE plan, step 9)
 
 - **`emblink/nucleo_f446re`** (MB1136 C-03, from UM1724 Rev 14 and the

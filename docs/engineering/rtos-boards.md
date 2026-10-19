@@ -152,12 +152,18 @@ after each one.
 11. **EmbLinkRTOS on the board.** Its `nucleo_f446re` board and the
     conformance suite in its CI on EmbSIM.
 
-Before step 10, **the core's speed.** The interpreter runs about 3.6
-million instructions a second, a fiftieth of the part at 180 MHz. The
-devices' clocks become lazy on Cortex-M as on the AVR (SysTick and the
-timers told their cycles when their next event comes), and decoded
-instructions are kept, so that an RTOS at full speed is usable on the
-bench.
+Before step 10, **the core's speed.** The devices' clocks become lazy on
+Cortex-M as on the AVR (SysTick and the timers told their cycles when
+their next event comes), and decoded instructions are kept, so that an
+RTOS at full speed is usable on the bench.
+*Done:*
+- The STM32s' device clocks run lazily.
+- The Cortex-M core keeps its decoded instructions per region generation
+  and runs in bursts.
+- A busy firmware at 180 MHz runs about 31 million instructions a second
+  on a release build (21 million before), a sixth of the part's speed.
+- Firmware that sleeps in WFI runs faster than real time.
+- Real time for busy code needs a translating core, which is later work.
 
 ## 2. ESP32-C3-DevKitM-1 (ESP32-C3, RISC-V)
 
