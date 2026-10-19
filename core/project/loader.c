@@ -73,7 +73,9 @@ static void mcu_signal_model(const char *sig, const char *family, esk_pin_model 
                (sig[0] == 'R' && sig[1] >= 'A' && sig[1] <= 'K' && sig[2] >= '0' && sig[2] <= '9') ||
                (!strncmp(sig, "GPIO", 4) && sig[4] >= '0' && sig[4] <= '9')) {
         m->kind = ESK_PIN_DIGITAL_IO; m->pull = ESK_PULL_NONE;
-    } else if (!strncmp(sig, "OSC", 3) || !strncmp(sig, "XTAL", 4) || !strcmp(sig, "AREF")) {
+    } else if (!strncmp(sig, "OSC", 3) || !strncmp(sig, "XTAL", 4) || !strcmp(sig, "AREF") ||
+               !strncmp(sig, "VCAP_", 5)) {
+        /* VCAP_1, VCAP_2: the core regulator's capacitors, the regulator not modelled */
         m->kind = ESK_PIN_ANALOG;
     } else if (!strcmp(sig, "NC")) {
         m->kind = ESK_PIN_NC;

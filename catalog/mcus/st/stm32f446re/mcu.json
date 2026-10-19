@@ -1746,7 +1746,9 @@
    "omissions": [
     "5 V tolerance of the FT pins and the absolute maximum ratings",
     "the I/O compensation cell's effect on the edges",
-    "per-pin current injection"
+    "per-pin current injection",
+    "the supply current: VDD and VDDA draw nothing beyond what the pins drive",
+    "the core regulator: VCAP_1 is a passive pin, its 1.2 V not driven"
    ],
    "validation": [
     "repo:tests/firmware/cm4-core"
