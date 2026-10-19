@@ -15,6 +15,14 @@ static es_status adev_on_set(esk_comp *c, const char *input, const esk_json *val
     return ES_OK;
 }
 
+/* a wake the device asked for (esk_comp_wake_at) */
+static void adev_on_time(esk_comp *c, uint32_t token)
+{
+    ES_UNUSED(token);
+    if (c->adev && c->adev->isl)
+        esk_adev_on_time(c->adev, c->e->sched.now);
+}
+
 static void adev_observe(esk_comp *c, esk_json *out)
 {
     if (c->adev && c->adev->ops->observe)
@@ -49,11 +57,14 @@ es_status esk_registry_init(esk_registry *r, esk_alloc *a)
                 w->on_set = adev_on_set;
             if (!w->observe)
                 w->observe = adev_observe;
+            if (!w->on_time)
+                w->on_time = adev_on_time;
         } else {
             w->name = adevs[i]->name;
             w->state_size = 0;
             w->on_set = adev_on_set;
             w->observe = adev_observe;
+            w->on_time = adev_on_time;
         }
         w->adev = adevs[i];
         w->joins_nets = 1;

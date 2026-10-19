@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/board-reference.schema.json",
+  "title": "EmbSIM board reference",
+  "description": "A board's mechanical reference data, taken from sources independent of its artwork (the vendor's drawings, a maintained footprint library), against which the artwork's outline, terminals, mounting holes and connector bodies are checked (SPEC-006 §3.1).",
+  "type": "object",
+  "required": ["schema_version", "kind", "board", "revision", "frame", "sources", "outline_mm", "terminals", "tolerance_mm"],
+  "additionalProperties": false,
+  "$defs": {
+    "point": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "board_reference"},
+    "board": {"type": "string"},
+    "revision": {"type": "string", "description": "The board revision the data is for"},
+    "frame": {"type": "string", "description": "The coordinate frame, in words: the artwork's (mm from the top-left corner, y down)"},
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["what", "title", "url", "read"],
+        "additionalProperties": false,
+        "properties": {
+          "what": {"type": "string"},
+          "title": {"type": "string"},
+          "url": {"type": "string"},
+          "read": {"type": "string", "description": "The date the source was read"},
+          "licence": {"type": "string"}
+        }
+      }
+    },
+    "transform": {"type": "string", "description": "How a source's coordinates map to the frame"},
+    "outline_mm": {"$ref": "#/$defs/point"},
+    "outline": {"type": "array", "items": {"$ref": "#/$defs/point"}},
+    "mounting_holes": {
+      "type": "object",
+      "required": ["diameter", "at"],
+      "additionalProperties": false,
+      "properties": {
+        "diameter": {"type": "number", "exclusiveMinimum": 0},
+        "at": {"type": "array", "items": {"$ref": "#/$defs/point"}}
+      }
+    },
+    "terminals": {
+      "type": "object",
+      "description": "Each terminal's pad centre: the board's port names, and unconnected positions (NC)",
+      "additionalProperties": {"$ref": "#/$defs/point"}
+    },
+    "connectors": {
+      "type": "object",
+      "description": "Connector bodies as rectangles, checked against the bench features of the same kind",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["from", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "from": {"$ref": "#/$defs/point"},
+          "to": {"$ref": "#/$defs/point"},
+          "note": {"type": "string"}
+        }
+      }
+    },
+    "unqualified": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "What the artwork and bench draw without reference data (approximate)"
+    },
+    "tolerance_mm": {"type": "number", "exclusiveMinimum": 0}
+  }
+}

@@ -26,8 +26,9 @@ test('the world: declare the room, add a body, undo', async ({ page }) => {
   await expect(world).toContainText('Box 1');
   await expect(world.getByRole('button', { name: 'Remove Box 1' })).toBeVisible();
 
+  // two undos pressed at once: the second waits for the first, not lost
+  await page.keyboard.press('Control+z');
   await page.keyboard.press('Control+z');
   await expect(world).not.toContainText('Box 1');
-  await page.keyboard.press('Control+z');
   await expect(temperature).not.toBeChecked();
 });

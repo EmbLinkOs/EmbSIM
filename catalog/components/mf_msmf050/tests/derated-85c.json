@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "derated-85c",
+  "description": "At 85 C the hold current falls to 0.29 A (the derating table): 0.6 A, held at 23 C, trips. A current-limited supply at the datasheet's Vmax: the source's current, clamped at 15 V by a zener once the fuse trips.",
+  "policy": "electrical",
+  "until": "600s",
+  "circuit": {
+    "components": [
+      {
+        "id": "I",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.6
+        }
+      },
+      {
+        "id": "Z",
+        "component": "emblink/zener",
+        "params": {
+          "vz": 15,
+          "rz": 0.1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mf_msmf050"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "F": [
+        "I.-",
+        "Z.K",
+        "DUT.1"
+      ],
+      "GND": [
+        "I.+",
+        "Z.A",
+        "DUT.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.tripped": {
+      "by": "600s",
+      "equals": true
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "temperature",
+      "value": 85
+    }
+  ]
+}

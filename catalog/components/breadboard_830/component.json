@@ -10268,15 +10268,17 @@
  },
  "fidelity": {
   "functional": {
-   "claims": "830 holes; each strip of five (63 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated.",
-   "omissions": []
+   "claims": "830 holes; each strip of five (63 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated. The body (6.50 x 2.20 x 0.30 in, 165.1 x 54.6 x 8.5 mm), the 630-point IC area and the four continuous 50-point rails are the datasheet's (BPS-DOC-(BB830) Rev 7).",
+   "omissions": [
+    "the holes' place on the body (the rails' and strips' offsets from its edges) is not dimensioned in the datasheet: 0.1 in pitch, the 0.3 in DIP channel and rail pairs 0.1 in apart, placed as the common layout"
+   ]
   },
   "timed": {
-   "claims": "830 holes; each strip of five (63 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated.",
+   "claims": "830 holes; each strip of five (63 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated. The body (6.50 x 2.20 x 0.30 in, 165.1 x 54.6 x 8.5 mm), the 630-point IC area and the four continuous 50-point rails are the datasheet's (BPS-DOC-(BB830) Rev 7).",
    "omissions": []
   },
   "electrical": {
-   "claims": "830 holes; each strip of five (63 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated. The contacts are ideal.",
+   "claims": "830 holes; each strip of five (63 a side) and each power rail is one conductor; strips across the centre channel and adjacent strips are isolated. The body (6.50 x 2.20 x 0.30 in, 165.1 x 54.6 x 8.5 mm), the 630-point IC area and the four continuous 50-point rails are the datasheet's (BPS-DOC-(BB830) Rev 7). The contacts are ideal.",
    "range": {
     "voltage_v": [
      -36,
@@ -10303,7 +10305,9 @@
   "license": "Apache-2.0",
   "sources": [
    {
-    "title": "BusBoard Prototype Systems, BB830 / BB400 / BB170 solderless breadboard data sheets"
+    "title": "BusBoard Prototype Systems, BB830 product datasheet, BPS-DOC-(BB830) Rev 7",
+    "url": "https://www.busboard.com/documents/datasheets/BPS-DAT-(BB830)-Datasheet.pdf",
+    "date": "2026-10-18"
    }
   ]
  },

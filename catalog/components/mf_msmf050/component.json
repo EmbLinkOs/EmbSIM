@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/mf_msmf050",
+  "version": "1.0.0",
+  "name": "MF-MSMF050-2 resettable fuse",
+  "category": "power",
+  "description": "Bourns MF-MSMF050-2 polymeric PTC resettable fuse (1812): holds 0.5 A, trips at 1.0 A at 23 C; the Arduino Uno's USB fuse F1. It heats with the power it passes, trips when the heat runs away and resets when the fault is removed and it cools.",
+  "keywords": [
+    "fuse",
+    "polyfuse",
+    "ptc",
+    "resettable",
+    "pptc",
+    "bourns",
+    "mf-msmf050",
+    "usb",
+    "overcurrent"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "1"
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "2"
+    }
+  ],
+  "params": {
+    "r0": {
+      "type": "number",
+      "default": 0.3,
+      "unit": "ohm",
+      "doc": "Resistance at 23 C before any trip: within the datasheet's 0.15 to 1.0 ohm, the value the time-to-trip fit uses",
+      "min": 0
+    },
+    "slope": {
+      "type": "number",
+      "default": 0.014326,
+      "unit": "1/K",
+      "doc": "The polymer's resistance rise below its switching temperature (per kelvin)",
+      "min": 0
+    },
+    "t_switch": {
+      "type": "number",
+      "default": 125.0,
+      "unit": "degC",
+      "doc": "The polymer's switching temperature",
+      "min": -100
+    },
+    "trip_k": {
+      "type": "number",
+      "default": 2.0,
+      "unit": "K",
+      "doc": "Above the switch, the resistance grows by a factor e every this many kelvin",
+      "min": 0
+    },
+    "c_core": {
+      "type": "number",
+      "default": 0.004374,
+      "unit": "J/K",
+      "doc": "Heat capacity of the polymer core",
+      "min": 0
+    },
+    "c_case": {
+      "type": "number",
+      "default": 0.3617,
+      "unit": "J/K",
+      "doc": "Heat capacity of the package and its pads",
+      "min": 0
+    },
+    "r_core": {
+      "type": "number",
+      "default": 14.595,
+      "unit": "K/W",
+      "doc": "Thermal resistance from the core to the package",
+      "min": 0
+    },
+    "r_case": {
+      "type": "number",
+      "default": 119.155,
+      "unit": "K/W",
+      "doc": "Thermal resistance from the package to the room",
+      "min": 0
+    }
+  },
+  "model": {
+    "primitive": "ptc_fuse"
+  },
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "min": -40,
+      "max": 85,
+      "default": 23,
+      "unit": "degC",
+      "doc": "The room around it; read from the world's temperature while not set",
+      "world": "temperature"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "resistance",
+      "type": "number",
+      "unit": "ohm"
+    },
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A"
+    },
+    {
+      "name": "power",
+      "type": "number",
+      "unit": "W"
+    },
+    {
+      "name": "temperature",
+      "type": "number",
+      "unit": "degC",
+      "doc": "The polymer core's"
+    },
+    {
+      "name": "case_temperature",
+      "type": "number",
+      "unit": "degC"
+    },
+    {
+      "name": "tripped",
+      "type": "boolean",
+      "doc": "The core is past its switching temperature"
+    }
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 120,
+    "height": 40,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2": {
+        "x": 120,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 4.5,
+    "height_mm": 3.2
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "A resistance from a two-node thermal model (polymer core and package) heated by the power it passes: rising gently below the switch and steeply above it, so the heat runs away above a current. Fitted to the datasheet's typical time-to-trip curve at 23 C (1.08 A in about 70 s, 1.6 A in 15 s, 2.4 A in 1 s, 3.5 A in 0.1 s, 9 A in 10 ms) with 0.8 W tripped; it holds 0.5 A, trips at 1.0 A and at 8 A within the 0.15 s maximum, and its threshold follows the datasheet's derating table with the room's temperature (the input, or the world's) without being fitted to it. Resets as it cools once the fault is removed.",
+      "range": {
+        "voltage_v": [
+          -15,
+          15
+        ],
+        "current_a": [
+          -100,
+          100
+        ]
+      },
+      "omissions": [
+        "the resistance after a trip (up to R1max 1.0 ohm an hour later) and its slow recovery: it returns to r0",
+        "part-to-part spread (R between 0.15 and 1.0 ohm; trip times are typical, not limits)",
+        "the 15 V and 100 A ratings are not enforced: no damage",
+        "heat from neighbouring parts and the board's copper beyond the fitted package"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Bourns MF-MSMF Series PTC Resettable Fuses datasheet (ratings, typical time to trip at 23 C, thermal derating table)",
+        "url": "https://www.bourns.com/docs/Product-Datasheets/mf-msmf.pdf",
+        "date": "2026-10-18",
+        "notes": "Ihold 0.50 A, Itrip 1.00 A, Rmin 0.15 ohm, R1max 1.0 ohm, 8 A in at most 0.15 s, 0.8 W tripped; the typical curve read at five currents; the thermal parameters fitted to them."
+      },
+      {
+        "title": "Arduino UNO R3 schematic (A000066), F1 on USB VBUS",
+        "url": "https://docs.arduino.cc/resources/schematics/A000066-schematics.pdf",
+        "date": "2026-10-18"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "MF-MSMF050-2",
+    "manufacturer": "Bourns",
+    "package": "1812",
+    "datasheet": "https://www.bourns.com/docs/Product-Datasheets/mf-msmf.pdf"
+  }
+}

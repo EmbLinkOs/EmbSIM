@@ -558,6 +558,23 @@ class BoardTests(Base):
         doc["console"]["bridge"]["dtr_reset"]["component"] = "NOPE"
         self.assertCode(self.check(self.write_board(doc)), "catalog.not_found")
 
+    def test_uno_qualified_against_its_reference(self):
+        src = validate.CATALOG_DIR / "boards" / "arduino_uno"
+        d = self.tmp / "boards" / "arduino_uno"
+        shutil.rmtree(d, ignore_errors=True)
+        shutil.copytree(src, d)
+        self.assertClean(self.check(d / "board.json"))
+        # D8 moved 0.5 mm, as an artwork drawn with D8 on the 0.1 in grid would put it
+        art = (d / "artwork.svg").read_text(encoding="utf-8")
+        (d / "artwork.svg").write_text(art.replace('id="pin-d8" class="pad" cx="416.6"', 'id="pin-d8" class="pad" cx="421.6"'), encoding="utf-8")
+        self.assertCode(self.check(d / "board.json"), "board.reference_terminal")
+        (d / "artwork.svg").write_text(art, encoding="utf-8")
+        # the USB-B socket where the earlier artwork had it
+        doc = json.loads((d / "board.json").read_text(encoding="utf-8"))
+        next(f for f in doc["bench"]["features"] if f["kind"] == "usb_b")["at"] = [7.4, 12.0]
+        (d / "board.json").write_text(json.dumps(doc), encoding="utf-8")
+        self.assertCode(self.check(d / "board.json"), "board.reference_connector")
+
     def test_todo_refused(self):
         doc = self.board()
         doc["components"][0]["todo"] = True

@@ -350,11 +350,14 @@ export function DesignPerspective() {
     },
   ];
 
-  // a compact window gives the sheet the Inspector's width until the user opens it
+  // the Inspector is contextual: a rail while nothing is selected (the canvas
+  // takes its width), open when something is, and always on a compact
+  // window until the user opens it; folding or unfolding it by hand wins
+  const nothingSelected = !selection.components.length && !selection.wires.length && !spotlight;
   const items: DockItem[] = [
     ...(display.focusMode ? [] : [{ id: 'library', title: 'Library', content: <LibraryPanel onPlace={placeAtCentre} />, flush: true, weight: 1, minSize: 220, collapsible: true }]),
     { id: 'centre', title: 'Schematic', bare: true, weight: 3.2, minSize: 360, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.design.centre.${project?.name ?? 'none'}`} /> },
-    ...(display.focusMode ? [] : [{ id: 'inspector', title: 'Inspector', content: <InspectorPanel />, weight: 1.2, minSize: 260, collapsible: true, defaultCollapsed: compact }]),
+    ...(display.focusMode ? [] : [{ id: 'inspector', title: 'Inspector', content: <InspectorPanel />, weight: 1.2, minSize: 260, collapsible: true, defaultCollapsed: compact || nothingSelected }]),
   ];
 
   const contextSelection = context?.value.selection ?? selection;

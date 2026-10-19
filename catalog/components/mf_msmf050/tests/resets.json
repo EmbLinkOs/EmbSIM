@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "resets",
+  "description": "A 2 A fault through a switch trips it; once the switch opens it cools and resets",
+  "policy": "electrical",
+  "until": "300s",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 15.0
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 7.2
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mf_msmf050"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "S",
+        "component": "emblink/push_button"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.+",
+        "DUT.1"
+      ],
+      "F": [
+        "DUT.2",
+        "S.1"
+      ],
+      "L": [
+        "S.2",
+        "R.1"
+      ],
+      "GND": [
+        "R.2",
+        "V.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.tripped": {
+      "at": "300s",
+      "equals": false
+    },
+    "output:DUT.resistance": {
+      "at": "300s",
+      "max": 0.5
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "S",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "20s",
+      "target": "S",
+      "input": "pressed",
+      "value": false
+    }
+  ]
+}

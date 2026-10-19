@@ -157,6 +157,12 @@ neutral canvas surfaces, rounded chrome and subtle shadows.
   without implying qualification. Board geometry and contact heights share declared
   thickness, standoff and header style. Renderer initialization/context failure
   selects the 2D fallback with an explanation and an explicit 3D retry.
+- The Design perspective's Inspector is contextual. It is a rail while
+  nothing is selected, so the canvas takes its width, and it opens on a
+  selection. Folding or unfolding it by hand overrides this, and the choice
+  is kept. With the library open and the Inspector and parts list folded,
+  the bench takes about 73 % of a 1440-pixel-wide window; the visual
+  benchmark's target is 60 % (`docs/research/visual-workbench-benchmark.md`).
 
 - Physical assembly authoring: a pure per-leg preview identifies available,
   occupied and unseated positions. Pointer and keyboard construction use the same

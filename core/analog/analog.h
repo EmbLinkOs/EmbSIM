@@ -100,6 +100,9 @@ es_status esk_island_reset(esk_island *isl);
 es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached);
 /* a source changed (a bridge pin toggled): the island must re-evaluate from now */
 void esk_island_touch(esk_island *isl, es_time_t now);
+/* a component wake for its analog device (a device with a clock of its own,
+ * as a PTC fuse's temperatures) */
+void esk_adev_on_time(esk_adev *d, es_time_t now);
 /* 1 when the island sits at its steady state: nothing changes until a touch
  * or *next, the next breakpoint of a source (ES_TIME_MAX for none) */
 int esk_island_quiet(esk_island *isl, es_time_t *next);

@@ -5,6 +5,69 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Undo keeps up with the keyboard
+
+- A Ctrl+Z or Ctrl+Shift+Z pressed while an edit is still finishing now waits
+  for it in the command stack's queue. Before, it was dropped, so pressing
+  undo twice quickly undid only one edit.
+
+### The Uno's USB fuse: a resettable PTC that heats and trips (ADR-031, ADR-034)
+
+- `emblink/mf_msmf050`: Bourns' MF-MSMF050-2, the Uno's F1 on USB VBUS. A
+  new `ptc_fuse` primitive (SPEC-004): a two-node thermal model, the polymer
+  core and its package, heated by the power it passes. Its resistance rises
+  gently below the polymer's switch and steeply above it, so above a
+  current the heat runs away and it trips; once the fault is removed it cools
+  and resets.
+- Fitted to the datasheet's typical time-to-trip curve at 23 C (1.08 A to
+  9 A), with 0.8 W tripped. It holds 0.5 A for 30 minutes, trips at 1.0 A,
+  and at 8 A trips within the 0.15 s maximum (typically 13 ms).
+- The room's temperature (its input, or the world's) moves the threshold as
+  the datasheet's derating table does, from 0.77 A at -40 C to 0.29 A at
+  85 C, without being fitted to it.
+- Eleven fixtures run it the way Bourns tests it: a current-limited supply
+  clamped at 15 V.
+- Fixtures longer than 2 s sample their outputs at most 20000 times instead
+  of at 10 kHz, in both `embsim catalog validate` and
+  `tools/catalog/run_fixtures.py`. A half-hour fixture now runs in well under
+  a second, and `run_fixtures.py` takes 60 s for the whole catalog, down from
+  78 s before this part.
+
+### The Uno R3 qualified against reference data (visual benchmark V1)
+
+- The Uno's artwork had its headers up to 4 mm out:
+  - the power and analog headers about 3.9 mm to the left;
+  - D8 to SCL 1.2 mm out, with no 160 mil offset from D7;
+  - both rows 0.34 mm off the edges.
+
+  The outline's steps, the right mounting holes, the USB-B socket and the
+  jack were placed by eye.
+- The artwork is now drawn from `reference.json`, which takes:
+  - the outline and the four Ø3.2 mm holes from Arduino's A000066
+    datasheet;
+  - every header pad, the NC position among them, from KiCad's
+    `Arduino_UNO_R3` footprint, its symbol naming each pad;
+  - the USB-B socket (overhanging the edge by 6.35 mm) and the jack from
+    the footprint's fab layer.
+
+  The 3D bench takes its header positions from the artwork, so the board
+  on the bench moves with it.
+- `tools/validate.py` checks a board with a `reference.json` (kind
+  `board_reference`, SPEC-006 §3.1) within its 0.05 mm tolerance:
+  - the artwork's size, each pad, the mounting holes and the bench
+    features' connector bodies;
+  - that every port has a reference position.
+
+  What is drawn without reference data (the DIP socket, the resonator,
+  the reset button, the LEDs) is listed as unqualified.
+- The Design workspace's Inspector folds to a rail while nothing is
+  selected and opens on a selection; folding or unfolding it by hand wins.
+  At 1440 x 900 the bench grew from 44 % of the window's width to 59 %, and
+  to about 73 % with its Parts & wiring list folded.
+- The BB830 breadboard cites BusBoard's datasheet (BPS-DOC-(BB830) Rev 7)
+  for its body, its 630-point area and its four continuous 50-point
+  rails. The holes' offsets from its edges are not dimensioned there, and
+  are declared as such.
 ### Named surface-mount package bodies
 
 - Render BSS138 in SOT-23 and LM1117IMP-3.3 in SOT-223 from reviewed package

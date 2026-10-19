@@ -172,6 +172,34 @@ Rules:
   (`input`: a button's `SW_RESET.pressed`) or show an output (`output`:
   an LED's `LED_L.luminance`), validated against the board's components.
 
+### 3.1 Mechanical reference
+
+A board qualified for the bench has a `reference.json` beside its
+description (kind `board_reference`, `schemas/board-reference.schema.json`).
+It records mechanical data taken from sources independent of the artwork:
+the vendor's drawings, or a maintained footprint library. Each source is
+listed with its URL, the date it was read and its licence. The data are:
+- the outline;
+- the mounting holes;
+- every terminal's pad centre (each port, and positions such as NC that
+  have no port);
+- connector bodies.
+
+All of them are in the artwork's frame: millimetres from the top-left
+corner, y down. The validator checks the following within
+`tolerance_mm`, and refuses a port with no reference position
+(`board.reference_*`):
+- the artwork's size against the outline;
+- each pad against its terminal;
+- the `mount` circles against the holes;
+- the bench features of the same kind against the connector bodies.
+
+What the artwork draws without reference data is listed as `unqualified`.
+The Uno R3's reference (2026-10-18) comes from:
+- Arduino's A000066 datasheet (§5.4, outline and holes);
+- KiCad's `Arduino_UNO_R3` footprint, for the pads, and its symbol, for
+  which pad is which pin.
+
 ## 4. Import from EmbLinkRTOS board YAML
 
 `tools/import/rtos_board.py` maps `board`, `soc`, `oscillators`, `leds`,
