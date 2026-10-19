@@ -5,6 +5,45 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32 I2Cs (the NUCLEO-F446RE plan, step 8)
+
+- **`stm32-i2c`** for the F1's and F4's I2C (RM0008 26, RM0390 27). It
+  replaces `stm32f1-i2c`, which was a master only.
+- **The master:**
+  - a START waits for the bus to be free;
+  - 10-bit addresses with ADD10, and the read header after a repeated
+    START;
+  - a slave holding SCL low stretches the clock: the high time counts
+    from SCL seen high;
+  - a 1 sent while SDA reads 0 loses the arbitration (ARLO), and the
+    interface listens on as a slave.
+- **The slave:**
+  - addressed by OAR1 (7 or 10 bits), OAR2 (DUALF), the general call,
+    and the SMBus default, host and alert response addresses;
+  - holds SCL low for ADDR, an empty DR (TXE, BTF) and a full one (BTF),
+    or with NOSTRETCH sets OVR;
+  - STOPF, and AF on the master's NACK.
+- **Both:**
+  - BUSY and BERR from the bus as the pins show it;
+  - PEC with CR1.PEC and PECERR, and SMBus's TIMEOUT and SMBALERT;
+  - SWRST;
+  - DMAEN's requests, with LAST NACKing the byte after the DMA's EOT-1 (the
+    DMA now tells the peripheral about its last two items).
+- **Pins:** the F4's I2C1-3 on their alternate functions, inputs
+  included; the F1's open-drain alternate-function pins let go for a 1
+  (they used to read back 1 whatever the circuit did).
+- **Proof:**
+  - `tests/unit/test_stm32f4.c`:
+    - the master against a scripted device: a write, the POS read, an
+      absent address, stretching, ARLO, and no START without pull-ups;
+    - the slave against a master driven by hand: ADDR and its
+      stretching, BTF both ways, STOPF, the NACK's AF, the dual address,
+      the general call, BERR;
+    - DMA with the PEC sent by itself, and LAST's NACK;
+    - I2C1 wired to I2C3: a 10-bit address, the PEC checked by the slave
+      model, the slave's stretching, a read after a repeated START;
+  - STM32Cube F1's I2C application against the 24C02 still passes.
+
 ### The STM32 SPIs (the NUCLEO-F446RE plan, step 8)
 
 - **`stm32-spi`** for the F1's and F4's SPI (RM0008 25, RM0390 26). It

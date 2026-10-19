@@ -3,12 +3,12 @@
 /* test_stm32f4.c -- the STM32F446's clock tree and power controller
  * (rcc.c, pwr_f4.c), its GPIO ports, SYSCFG and EXTI (gpio_f4.c,
  * syscfg_f4.c, exti.c), timers and SysTick (tim.c, systick.c), USARTs
- * (usart.c), DMA (dma_f4.c) and SPIs (spi.c) on the machine the catalog's
- * description builds, with
- * the NUCLEO-F446RE's clocks: an 8 MHz clock on OSC_IN from the ST-Link's
- * MCO (HSE bypass) and a 32.768 kHz crystal. The program's accesses are
- * made from here in the order STM32CubeF4's SystemClock_Config makes them
- * (RM0390 5.1.4 and 6.3). */
+ * (usart.c), DMA (dma_f4.c), SPIs (spi.c) and I2Cs (i2c.c) on the machine
+ * the catalog's description builds, with the NUCLEO-F446RE's clocks: an
+ * 8 MHz clock on OSC_IN from the ST-Link's MCO (HSE bypass) and a
+ * 32.768 kHz crystal. The program's accesses are made from here in the
+ * order STM32CubeF4's SystemClock_Config makes them (RM0390 5.1.4 and
+ * 6.3). */
 #include "harness.h"
 #include "mcu/build.h"
 #include "mcu/cortexm/cortexm.h"
@@ -92,6 +92,17 @@
 #define P_RXCRCR 0x14u
 #define P_TXCRCR 0x18u
 #define NVIC_ISPR1 0xE000E204u
+#define I2C1 0x40005400u
+#define I2C3 0x40005C00u
+#define C_CR1 0x00u
+#define C_CR2 0x04u
+#define C_OAR1 0x08u
+#define C_OAR2 0x0Cu
+#define C_DR 0x10u
+#define C_SR1 0x14u
+#define C_SR2 0x18u
+#define C_CCR 0x1Cu
+#define C_TRISE 0x20u
 
 /* PLLM 8, PLLN 360, PLLP /2, PLLQ 2, PLLR 2 from HSE: 1 MHz into the VCO,
  * 360 MHz out of it, 180 MHz SYSCLK (CubeF4's NUCLEO-F446RE templates) */
@@ -115,6 +126,18 @@ typedef struct f4 {
         int nss_at[8], nnss; /* the bit counts at which NSS (PA4) rose */
         int fall;            /* MOSI sampled at SCK's falling edges (the TI mode) */
     } dev;
+    struct {                 /* an I2C device on I2C1's PB8 (SCL) and PB9 (SDA) */
+        int on, addr;        /* its 7-bit address */
+        int scl, sda;        /* the lines as last seen */
+        int busy, n, first, addressed, rd, mack;
+        u32 shift, out;
+        u8 got[16];          /* the bytes written to it, its address first */
+        int ngot, nstart, nstop;
+        u8 data[8];          /* what it answers a read with */
+        int k;
+        int stretch;         /* it holds SCL low after each ACK bit */
+    } idev;
+    int wire[4][2];          /* pins wired together, as port * 16 + bit; -1 none */
 } f4;
 
 static unsigned char *slurp(const char *rel, size_t *len)
@@ -165,6 +188,75 @@ static void r_diag(void *ctx, int sev, const char *code, const char *msg)
     snprintf(f->codes + n, sizeof f->codes - n, "%s ", code);
 }
 
+/* an I2C line on PB8 or PB9: low while either side pulls it, else the
+ * pull-up's 1 */
+static int i2c_line(f4 *f, int bit) { return f->pin[1][bit].drive == 0 ? 0 : f->ext[1][bit] != 0; }
+
+static void idev_step(f4 *f)
+{
+    int scl = i2c_line(f, 8), sda = i2c_line(f, 9);
+#define D f->idev
+    if (scl == D.scl && sda == D.sda)
+        return;
+    if (scl && D.scl && sda != D.sda) { /* a START or STOP */
+        if (!sda) {
+            D.busy = 1;
+            D.n = 0;
+            D.first = 1;
+            D.nstart++;
+        } else {
+            D.busy = D.addressed = 0;
+            D.nstop++;
+            f->ext[1][9] = 1;
+        }
+    } else if (scl && !D.scl && D.busy) {
+        if (D.n < 8)
+            D.shift = (D.shift << 1 | (u32)sda) & 0xffu;
+        else
+            D.mack = !sda;
+        D.n++;
+    } else if (!scl && D.scl && D.busy) {
+        if (D.n == 8) { /* the ACK bit */
+            if (D.first) {
+                D.addressed = (int)(D.shift >> 1) == D.addr;
+                D.rd = (int)(D.shift & 1u);
+            }
+            if (D.addressed && (D.first || !D.rd) && D.ngot < 16)
+                D.got[D.ngot++] = (u8)D.shift;
+            f->ext[1][9] = D.addressed && (D.first || !D.rd) ? 0 : 1;
+        } else if (D.n == 9) {
+            int first = D.first;
+            D.n = 0;
+            D.first = 0;
+            f->ext[1][9] = 1;
+            if (D.addressed && D.rd && (first || D.mack)) {
+                D.out = D.data[D.k++ & 7];
+                f->ext[1][9] = (int)(D.out >> 7 & 1u);
+            }
+            if (D.stretch && D.addressed)
+                f->ext[1][8] = 0;
+        } else if (D.addressed && D.rd) {
+            f->ext[1][9] = (int)(D.out >> (7 - D.n) & 1u);
+        }
+    }
+    D.scl = i2c_line(f, 8);
+    D.sda = i2c_line(f, 9);
+#undef D
+}
+
+/* the pin wired to (port, bit), as port * 16 + bit, or -1 */
+static int wired(const f4 *f, int port, int bit)
+{
+    int i, at = port * 16 + bit;
+    for (i = 0; i < 4; i++) {
+        if (f->wire[i][0] == at)
+            return f->wire[i][1];
+        if (f->wire[i][1] == at)
+            return f->wire[i][0];
+    }
+    return -1;
+}
+
 static void r_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
 {
     f4 *f = (f4 *)ctx;
@@ -173,6 +265,10 @@ static void r_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
         return;
     was = f->pin[port][bit].drive;
     f->pin[port][bit] = *cfg;
+    if (was != cfg->drive && wired(f, port, bit) >= 0)
+        esk_stm32f4_pins_changed(&f->m); /* the other end hears it */
+    if (port == 1 && (bit == 8 || bit == 9) && f->idev.on)
+        idev_step(f);
     if (port != 0 || was == cfg->drive)
         return;
     if (bit == 5 && was >= 0 && cfg->drive == !f->dev.fall) { /* MOSI sampled */
@@ -193,6 +289,11 @@ static void r_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
 static int r_pin_in(void *ctx, int port, int bit, int *level)
 {
     f4 *f = (f4 *)ctx;
+    int w = port >= 0 && bit >= 0 ? wired(f, port, bit) : -1;
+    if (w >= 0) { /* a wired open-drain line with its pull-up */
+        *level = f->pin[w / 16][w % 16].drive != 0;
+        return 1;
+    }
     if (port < 0 || port >= 8 || bit < 0 || bit > 15 || f->ext[port][bit] < 0)
         return 0;
     *level = f->ext[port][bit];
@@ -222,6 +323,8 @@ static int f4_open(f4 *f, int hse_clock)
     for (i = 0; i < 8; i++)
         for (j = 0; j < 16; j++)
             f->ext[i][j] = -1;
+    for (i = 0; i < 4; i++)
+        f->wire[i][0] = f->wire[i][1] = -1;
     esk_alloc_init(&f->a, NULL);
     f->mcu = load_json(&f->a, "catalog/mcus/st/stm32f446re/mcu.json");
     f->regs = load_json(&f->a, "catalog/mcus/st/stm32f446re/registers.json");
@@ -1677,6 +1780,448 @@ static void test_spi_modes(void)
     f4_close(&f);
 }
 
+/* ---- I2C ------------------------------------------------------------------------ */
+
+/* a pin on alternate function `af`, open-drain */
+static void pin_od(f4 *f, u32 port, int pin, u32 af)
+{
+    pin_af(f, port, pin, af);
+    wr(f, port + OTYPER, rd(f, port + OTYPER) | 1u << pin);
+}
+
+/* I2C1 on PB8 (SCL) and PB9 (SDA) with their pull-ups, at 100 kHz from
+ * PCLK1's 16 MHz (HAL_I2C_Init) */
+static void i2c1_on(f4 *f)
+{
+    busy(f);
+    f->ext[1][8] = f->ext[1][9] = 1;
+    wr(f, RCC_AHB1ENR, rd(f, RCC_AHB1ENR) | 2u);
+    wr(f, RCC_APB1ENR, rd(f, RCC_APB1ENR) | 1u << 21); /* I2C1EN */
+    pin_od(f, GPIOB, 8, 4);
+    pin_od(f, GPIOB, 9, 4);
+    wr(f, I2C1 + C_CR2, 16);
+    wr(f, I2C1 + C_CCR, 80);
+    wr(f, I2C1 + C_TRISE, 17);
+    wr(f, I2C1 + C_CR1, 1u);
+}
+
+static int i2c_wait(f4 *f, u32 base, u32 sr1)
+{
+    int i;
+    for (i = 0; i < 20000 && !(rd(f, base + C_SR1) & sr1); i++)
+        esk_mach_run(&f->m, 8, 0);
+    return (rd(f, base + C_SR1) & sr1) != 0;
+}
+
+static int i2c_free(f4 *f, u32 base)
+{
+    int i;
+    for (i = 0; i < 20000 && (rd(f, base + C_SR2) & 2u); i++) /* BUSY */
+        esk_mach_run(&f->m, 8, 0);
+    return !(rd(f, base + C_SR2) & 2u);
+}
+
+/* the master's write and its two-byte read (HAL_I2C_Master_Transmit and
+ * _Receive's POS procedure), an absent address */
+static void test_i2c_master(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    f.idev.on = 1;
+    f.idev.addr = 0x50;
+    f.idev.data[0] = 0xab;
+    f.idev.data[1] = 0xcd;
+    i2c1_on(&f);
+    idev_step(&f);
+    CHECK_EQ(f.pin[1][8].drive, -1);           /* open-drain, let go */
+    CHECK_EQ(rd(&f, I2C1 + C_SR2), 0u);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);        /* START */
+    CHECK(i2c_wait(&f, I2C1, 1u));             /* SB */
+    CHECK_EQ(rd(&f, I2C1 + C_SR2) & 3u, 3u);   /* MSL, BUSY */
+    CHECK_EQ(f.idev.nstart, 1);
+    wr(&f, I2C1 + C_DR, 0xa0);
+    CHECK(i2c_wait(&f, I2C1, 2u));             /* ADDR */
+    CHECK_EQ(rd(&f, I2C1 + C_SR2) & 7u, 7u);   /* TRA */
+    wr(&f, I2C1 + C_DR, 0x10);
+    CHECK(i2c_wait(&f, I2C1, 1u << 7));        /* TXE */
+    wr(&f, I2C1 + C_DR, 0x55);
+    CHECK(i2c_wait(&f, I2C1, 1u << 2));        /* BTF */
+    CHECK_EQ(f.pin[1][8].drive, 0);            /* SCL held */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 9);        /* STOP */
+    CHECK(i2c_free(&f, I2C1));
+    CHECK_EQ(rd(&f, I2C1 + C_SR2) & 1u, 0u);
+    CHECK_EQ(f.idev.nstop, 1);
+    CHECK_EQ(f.idev.ngot, 3);
+    CHECK_EQ(f.idev.got[1], 0x10);
+    CHECK_EQ(f.idev.got[2], 0x55);
+    /* two bytes: POS and ACK before ADDR clears, ACK off after */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xa1);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10 | 1u << 11); /* ACK, POS */
+    (void)rd(&f, I2C1 + C_SR1);
+    CHECK_EQ(rd(&f, I2C1 + C_SR2) & 4u, 0u);   /* receiving */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 11);
+    CHECK(i2c_wait(&f, I2C1, 1u << 2));        /* BTF: both bytes in */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 11 | 1u << 9);
+    CHECK_EQ(rd(&f, I2C1 + C_DR), 0xabu);
+    CHECK_EQ(rd(&f, I2C1 + C_DR), 0xcdu);
+    CHECK(i2c_free(&f, I2C1));
+    CHECK_EQ(f.idev.k, 2);                     /* the second NACKed: no third */
+    CHECK_EQ(f.idev.nstop, 2);
+    /* nobody at 0x51: AF */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xa2);
+    CHECK(i2c_wait(&f, I2C1, 1u << 10));
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & 2u, 0u);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 9);
+    CHECK(i2c_free(&f, I2C1));
+    wr(&f, I2C1 + C_SR1, ~(1u << 10));
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & 1u << 10, 0u);
+    CHECK_EQ(f.warnings, 0);
+    f4_close(&f);
+}
+
+/* a device holding SCL low stretches the clock; another master's 0 loses
+ * the arbitration; no pull-ups: no START */
+static void test_i2c_stretch_arlo(void)
+{
+    f4 f;
+    int i;
+    if (!f4_open(&f, 1))
+        return;
+    f.idev.on = 1;
+    f.idev.addr = 0x50;
+    f.idev.stretch = 1;
+    i2c1_on(&f);
+    idev_step(&f);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xa0);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    (void)rd(&f, I2C1 + C_SR1);
+    (void)rd(&f, I2C1 + C_SR2);
+    wr(&f, I2C1 + C_DR, 0x77);
+    for (i = 0; i < 400; i++)
+        esk_mach_run(&f.m, 8, 0);
+    CHECK_EQ(f.ext[1][8], 0);                  /* the device holds SCL */
+    CHECK_EQ(f.idev.ngot, 1);                  /* and the byte waits */
+    CHECK_EQ(f.pin[1][8].drive, -1);           /* the master let it go */
+    f.ext[1][8] = 1;
+    f.idev.stretch = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    idev_step(&f);
+    CHECK(i2c_wait(&f, I2C1, 1u << 2));
+    CHECK_EQ(f.idev.ngot, 2);
+    CHECK_EQ(f.idev.got[1], 0x77);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 9);
+    CHECK(i2c_free(&f, I2C1));
+    /* another master pulls SDA low while this one sends a 1 */
+    f.idev.on = 0;
+    wr(&f, I2C1 + C_CR2, 16u | 1u << 8);       /* ITERREN */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xa0);
+    f.ext[1][9] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(i2c_wait(&f, I2C1, 1u << 9));        /* ARLO */
+    CHECK_EQ(rd(&f, I2C1 + C_SR2) & 3u, 2u);   /* not the master; the bus busy */
+    CHECK_EQ(f.pin[1][8].drive, -1);
+    CHECK_EQ(f.pin[1][9].drive, -1);
+    CHECK(rd(&f, NVIC_ISPR1) & 1u);            /* I2C1_ER, IRQ 32 */
+    f4_close(&f);
+    /* no pull-ups: SCL stays low and SB never comes */
+    if (!f4_open(&f, 1))
+        return;
+    i2c1_on(&f);
+    f.ext[1][8] = f.ext[1][9] = -1;
+    esk_stm32f4_pins_changed(&f.m);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);
+    CHECK(!i2c_wait(&f, I2C1, 1u));
+    f4_close(&f);
+}
+
+/* the board as the bus's master, by hand */
+static void bus_lines(f4 *f, int scl, int sda)
+{
+    f->ext[1][8] = scl;
+    f->ext[1][9] = sda;
+    esk_stm32f4_pins_changed(&f->m);
+}
+
+static int bus_sda(f4 *f) { return i2c_line(f, 9); }
+
+static void bus_start(f4 *f)
+{
+    bus_lines(f, 1, 1);
+    bus_lines(f, 1, 0);
+    bus_lines(f, 0, 0);
+}
+
+static void bus_stop(f4 *f)
+{
+    bus_lines(f, 0, 0);
+    bus_lines(f, 1, 0);
+    bus_lines(f, 1, 1);
+}
+
+/* a byte out and the ACK bit: 1 for ACK */
+static int bus_write(f4 *f, u32 b)
+{
+    int i, ack;
+    for (i = 7; i >= 0; i--) {
+        int v = (int)(b >> i & 1u);
+        bus_lines(f, 0, v);
+        bus_lines(f, 1, v);
+        bus_lines(f, 0, v);
+    }
+    bus_lines(f, 0, 1);
+    bus_lines(f, 1, 1);
+    ack = !bus_sda(f);
+    bus_lines(f, 0, 1);
+    return ack;
+}
+
+/* a byte in, acknowledged (1) or not */
+static u32 bus_read(f4 *f, int ack)
+{
+    u32 b = 0;
+    int i;
+    for (i = 0; i < 8; i++) {
+        bus_lines(f, 0, 1);
+        bus_lines(f, 1, 1);
+        b = b << 1 | (u32)bus_sda(f);
+    }
+    bus_lines(f, 0, !ack);
+    bus_lines(f, 1, !ack);
+    bus_lines(f, 0, !ack);
+    bus_lines(f, 0, 1);
+    return b;
+}
+
+/* I2C1 as a slave (HAL_I2C_Slave_Receive and _Transmit): ADDR and its
+ * stretching, RXNE, STOPF, a read with BTF's stretching and the master's
+ * NACK, the dual address and the general call */
+static void test_i2c_slave(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    i2c1_on(&f);
+    wr(&f, I2C1 + C_OAR1, 0x42u << 1 | 1u << 14);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10);        /* PE, ACK */
+    wr(&f, I2C1 + C_CR2, 16u | 1u << 9);        /* ITEVTEN */
+    bus_start(&f);
+    CHECK_EQ(rd(&f, I2C1 + C_SR2), 2u);         /* BUSY, not addressed */
+    CHECK(!bus_write(&f, 0x60));                /* someone else */
+    bus_stop(&f);
+    CHECK_EQ(rd(&f, I2C1 + C_SR1), 0u);
+    CHECK_EQ(rd(&f, I2C1 + C_SR2), 0u);
+    bus_start(&f);
+    CHECK(bus_write(&f, 0x84));
+    CHECK(rd(&f, I2C1 + C_SR1) & 2u);           /* ADDR */
+    CHECK(rd(&f, NVIC_ISPR0) & 1u << 31);       /* I2C1_EV */
+    CHECK_EQ(f.pin[1][8].drive, 0);             /* SCL stretched */
+    CHECK_EQ(rd(&f, I2C1 + C_SR2) & 4u, 0u);    /* receiving */
+    CHECK_EQ(f.pin[1][8].drive, -1);            /* SR1 then SR2: let go */
+    CHECK(bus_write(&f, 0x5a));
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 6);      /* RXNE */
+    CHECK(bus_write(&f, 0xa5));                 /* DR still full: */
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 2);      /* BTF, SCL held */
+    CHECK_EQ(f.pin[1][8].drive, 0);
+    CHECK_EQ(rd(&f, I2C1 + C_DR), 0x5au);
+    CHECK_EQ(f.pin[1][8].drive, -1);
+    CHECK_EQ(rd(&f, I2C1 + C_DR), 0xa5u);
+    bus_stop(&f);
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 4);      /* STOPF */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10);        /* SR1 read, CR1 written */
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & 1u << 4, 0u);
+    /* read by the master: DR's bytes, BTF while empty, the NACK's AF */
+    bus_start(&f);
+    CHECK(bus_write(&f, 0x85));
+    (void)rd(&f, I2C1 + C_SR1);
+    CHECK(rd(&f, I2C1 + C_SR2) & 4u);           /* TRA */
+    CHECK_EQ(f.pin[1][8].drive, 0);             /* until DR is written */
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 7);      /* TXE */
+    wr(&f, I2C1 + C_DR, 0xc3);
+    CHECK_EQ(f.pin[1][8].drive, -1);
+    CHECK_EQ(bus_read(&f, 1), 0xc3u);
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 2);      /* BTF: nothing to send */
+    CHECK_EQ(f.pin[1][8].drive, 0);
+    wr(&f, I2C1 + C_DR, 0x3c);
+    wr(&f, I2C1 + C_DR, 0x99);                  /* the next waits in DR */
+    CHECK_EQ(bus_read(&f, 1), 0x3cu);
+    CHECK_EQ(bus_read(&f, 0), 0x99u);
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 10);     /* AF */
+    CHECK_EQ(f.pin[1][9].drive, -1);
+    bus_stop(&f);
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 4);
+    wr(&f, I2C1 + C_SR1, 0);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10 | 1u << 6); /* ENGC */
+    /* OAR2's dual address and the general call */
+    wr(&f, I2C1 + C_OAR2, 0x30u << 1 | 1u);
+    bus_start(&f);
+    CHECK(bus_write(&f, 0x60));
+    (void)rd(&f, I2C1 + C_SR1);
+    CHECK(rd(&f, I2C1 + C_SR2) & 1u << 7);      /* DUALF */
+    bus_start(&f);                              /* a repeated START */
+    CHECK(bus_write(&f, 0x00));
+    (void)rd(&f, I2C1 + C_SR1);
+    CHECK(rd(&f, I2C1 + C_SR2) & 1u << 4);      /* GENCALL */
+    CHECK(bus_write(&f, 0x06));
+    bus_stop(&f);
+    CHECK_EQ(rd(&f, I2C1 + C_DR), 0x06u);
+    /* a misplaced STOP inside a byte: BERR */
+    (void)rd(&f, I2C1 + C_SR1);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10 | 1u << 6);
+    bus_start(&f);
+    CHECK(bus_write(&f, 0x84));
+    (void)rd(&f, I2C1 + C_SR1);
+    (void)rd(&f, I2C1 + C_SR2);
+    bus_lines(&f, 0, 0);
+    bus_lines(&f, 1, 0);
+    bus_lines(&f, 0, 0);
+    bus_lines(&f, 0, 1);
+    bus_lines(&f, 1, 1);                        /* two bits in */
+    bus_lines(&f, 1, 0);
+    bus_lines(&f, 1, 1);                        /* SDA rises with SCL high */
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 8);      /* BERR */
+    f4_close(&f);
+}
+
+/* HAL_I2C_Master_Transmit_DMA with PEC (DMA1 stream 6, channel 1), then
+ * _Receive_DMA with LAST (stream 0): the last byte NACKed by itself */
+static void test_i2c_dma(void)
+{
+    f4 f;
+    u32 s6 = DMA1 + D_S(6), s0 = DMA1 + D_S(0);
+    if (!f4_open(&f, 1))
+        return;
+    f.idev.on = 1;
+    f.idev.addr = 0x50;
+    f.idev.data[0] = 1;
+    f.idev.data[1] = 2;
+    f.idev.data[2] = 3;
+    i2c1_on(&f);
+    idev_step(&f);
+    ram_write(&f, 0x20000400u, "\x10\x20\x30", 3);
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 1u << 21);
+    wr(&f, s6 + S_PAR, I2C1 + C_DR);
+    wr(&f, s6 + S_M0AR, 0x20000400u);
+    wr(&f, s6 + S_NDTR, 3);
+    wr(&f, s6 + S_CR, 1u << 25 | 1u << 10 | 1u << 6 | 1u); /* CH1, MINC, M2P, EN */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 5);                     /* ENPEC */
+    wr(&f, I2C1 + C_CR2, 16u | 1u << 11);                   /* DMAEN */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 5 | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xa0);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    (void)rd(&f, I2C1 + C_SR1);
+    (void)rd(&f, I2C1 + C_SR2);
+    CHECK(i2c_wait(&f, I2C1, 1u << 2));        /* BTF after the PEC */
+    CHECK_EQ(rd(&f, s6 + S_NDTR), 0u);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 5 | 1u << 9);
+    CHECK(i2c_free(&f, I2C1));
+    CHECK_EQ(f.idev.ngot, 5);
+    CHECK_EQ(f.idev.got[3], 0x30);
+    CHECK_EQ(f.idev.got[4], 0x63);             /* CRC-8 of A0 10 20 30 */
+    /* three bytes received by DMA, LAST: the third NACKed */
+    wr(&f, I2C1 + C_CR1, 1u);
+    wr(&f, s0 + S_PAR, I2C1 + C_DR);
+    wr(&f, s0 + S_M0AR, 0x20000500u);
+    wr(&f, s0 + S_NDTR, 3);
+    wr(&f, s0 + S_CR, 1u << 25 | 1u << 10 | 1u);           /* CH1, MINC, P2M, EN */
+    wr(&f, I2C1 + C_CR2, 16u | 1u << 11 | 1u << 12);       /* DMAEN, LAST */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10 | 1u << 8);         /* ACK, START */
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xa1);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    (void)rd(&f, I2C1 + C_SR1);
+    (void)rd(&f, I2C1 + C_SR2);
+    {
+        int i;
+        for (i = 0; i < 20000 && rd(&f, s0 + S_NDTR); i++)
+            esk_mach_run(&f.m, 8, 0);
+    }
+    CHECK_EQ(rd(&f, s0 + S_NDTR), 0u);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10 | 1u << 9);         /* the DMA's TC: STOP */
+    CHECK(i2c_free(&f, I2C1));
+    CHECK_EQ(ram32(&f, 0x20000500u) & 0xffffffu, 0x030201u);
+    CHECK_EQ(f.idev.k, 3);                                 /* no fourth asked for */
+    f4_close(&f);
+}
+
+/* I2C1 (PB8, PB9) wired to I2C3 (PA8, PC9): a 10-bit address with PEC at
+ * both ends, the slave model's stretching against the master model, then a
+ * 10-bit read after a repeated START */
+static void test_i2c_wired(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    f.wire[0][0] = 1 * 16 + 8;
+    f.wire[0][1] = 0 * 16 + 8;
+    f.wire[1][0] = 1 * 16 + 9;
+    f.wire[1][1] = 2 * 16 + 9;
+    i2c1_on(&f);
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 7u);
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 23); /* I2C3EN */
+    pin_od(&f, GPIOA, 8, 4);
+    pin_od(&f, GPIOC, 9, 4);
+    wr(&f, I2C3 + C_CR2, 16);
+    wr(&f, I2C3 + C_OAR1, 1u << 15 | 0x234u);  /* ADDMODE: 10 bits */
+    wr(&f, I2C3 + C_CR1, 1u | 1u << 10 | 1u << 5); /* PE, ACK, ENPEC */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 5 | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    CHECK(rd(&f, I2C3 + C_SR2) & 2u);          /* the slave sees the bus busy */
+    wr(&f, I2C1 + C_DR, 0xf4);                 /* the header */
+    CHECK(i2c_wait(&f, I2C1, 1u << 3));        /* ADD10 */
+    wr(&f, I2C1 + C_DR, 0x34);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    CHECK(rd(&f, I2C3 + C_SR1) & 2u);          /* the slave addressed */
+    (void)rd(&f, I2C1 + C_SR1);
+    (void)rd(&f, I2C1 + C_SR2);
+    wr(&f, I2C1 + C_DR, 0x11);
+    esk_mach_run(&f.m, 8000, 0);
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & 1u << 2, 0u); /* held by the slave's ADDR */
+    (void)rd(&f, I2C3 + C_SR1);
+    CHECK_EQ(rd(&f, I2C3 + C_SR2) & 4u, 0u);
+    CHECK(i2c_wait(&f, I2C3, 1u << 6));
+    CHECK_EQ(rd(&f, I2C3 + C_DR), 0x11u);
+    wr(&f, I2C1 + C_DR, 0x22);
+    CHECK(i2c_wait(&f, I2C3, 1u << 6));
+    wr(&f, I2C3 + C_CR1, 1u | 1u << 10 | 1u << 5 | 1u << 12); /* the PEC next */
+    CHECK_EQ(rd(&f, I2C3 + C_DR), 0x22u);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 5 | 1u << 12);            /* send the PEC */
+    CHECK(i2c_wait(&f, I2C3, 1u << 6));
+    CHECK_EQ(rd(&f, I2C3 + C_DR), 0xbdu);
+    CHECK_EQ(rd(&f, I2C3 + C_SR1) & 1u << 12, 0u);            /* no PECERR */
+    CHECK(i2c_wait(&f, I2C1, 1u << 2));
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & 1u << 10, 0u);            /* the PEC ACKed */
+    /* a repeated START and the read header */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xf5);
+    CHECK(i2c_wait(&f, I2C3, 2u));
+    (void)rd(&f, I2C3 + C_SR1);
+    CHECK(rd(&f, I2C3 + C_SR2) & 4u);          /* TRA */
+    wr(&f, I2C3 + C_DR, 0x9e);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    (void)rd(&f, I2C1 + C_SR1);
+    (void)rd(&f, I2C1 + C_SR2);                /* one byte: ACK off already */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 9);
+    CHECK(i2c_wait(&f, I2C1, 1u << 6));
+    CHECK_EQ(rd(&f, I2C1 + C_DR), 0x9eu);
+    CHECK(i2c_free(&f, I2C1));
+    CHECK(rd(&f, I2C3 + C_SR1) & 1u << 10);    /* the master's NACK */
+    CHECK(rd(&f, I2C3 + C_SR1) & 1u << 4);     /* and its STOP */
+    CHECK_EQ(rd(&f, I2C3 + C_SR2) & 2u, 0u);
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -1707,4 +2252,9 @@ RUN(test_spi_slave);
 RUN(test_spi_crc);
 RUN(test_spi_dma_crc);
 RUN(test_spi_modes);
+RUN(test_i2c_master);
+RUN(test_i2c_stretch_arlo);
+RUN(test_i2c_slave);
+RUN(test_i2c_dma);
+RUN(test_i2c_wired);
 TEST_MAIN_END

@@ -111,6 +111,9 @@ after each one.
      master and slave, receive-only and bidirectional, NSS and MODF, the
      TI mode, CRC, DMA requests with the CRC after a stream's last item.
    - I2C1-3 as master.
+     *Done:* `stm32-i2c`, shared with the F1 (it replaces `stm32f1-i2c`):
+     master and slave, 10-bit addresses, stretching, arbitration, BUSY and
+     BERR from the bus, PEC, SMBus, DMA with LAST.
    - IWDG and WWDG.
    - The RTC with the LSE.
    - CAN, SDIO, QSPI, SAI, SPDIF, HDMI-CEC and USB OTG are declared as

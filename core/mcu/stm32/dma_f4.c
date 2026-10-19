@@ -21,8 +21,8 @@
  *     reports the FIFO's level; a memory burst that FTH's threshold cannot
  *     hold is a FIFO error at enable (FEIF), the stream not enabled;
  *   - NDTR counts the items left: half of them done sets HTIF, all of them
- *     TCIF, the last one telling the peripheral (the end of transfer an
- *     SPI sends its CRC after); circular mode (CIRC) or double buffer
+ *     TCIF, the last two telling the peripheral (the end of transfer an
+ *     SPI sends its CRC after, the EOT-1 an I2C NACKs the next byte on); circular mode (CIRC) or double buffer
  *     (DBM, CT toggling between M0AR and M1AR) starts again, else EN
  *     clears; an access the bus refuses sets TEIF and clears EN;
  *   - LISR and HISR's flags clear by writing 1 to LIFCR and HIFCR; a
@@ -270,8 +270,16 @@ static int item(struct dma *d, int s)
     return fifo_to_memory(d, s, v32(x->ndtr) <= 1);
 }
 
-/* a request served by stream s: a peripheral burst of items; the last
- * item of a round tells the peripheral (an SPI's CRC follows it) */
+static void items_left(struct esk_mach *s, const char *sig, u32 left)
+{
+    if (!left)
+        esk_stm32_spi_dma_end(s, sig);
+    esk_stm32_i2c_dma_left(s, sig, left);
+}
+
+/* a request served by stream s: a peripheral burst of items; the last two
+ * of a round tell the peripheral (an SPI's CRC follows the last, an I2C
+ * NACKs the byte after the next-to-last) */
 static void serve(struct dma *d, int s, const char *sig)
 {
     struct stream *x = &d->st[s];
@@ -282,12 +290,11 @@ static void serve(struct dma *d, int s, const char *sig)
             transfer_error(d, s);
             break;
         }
-        if (v32(x->ndtr) == 1) {
-            counted(d, s);
-            esk_stm32_spi_dma_end(d->s, sig);
-        } else {
-            counted(d, s);
-        }
+        u32 before = v32(x->ndtr);
+        counted(d, s);
+        /* the peripheral hears of the last items (EOT, I2C's EOT-1) */
+        if (before <= 2)
+            items_left(d->s, sig, before - 1);
     }
     fifo_status(x);
 }

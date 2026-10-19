@@ -11,7 +11,7 @@
  *   tim.c      a timer: time base, capture/compare, PWM, dead time, slave modes
  *   adc_f1.c   the F1's ADC: its regular group from the pins' voltages
  *   spi.c      an SPI of the SR/DR layout, master or slave, on its pins
- *   i2c_f1.c   the F1's I2C as a master, on its pins
+ *   i2c.c      an I2C of the SR1/SR2 layout, master and slave, on its pins
  *   pwr_f4.c   the F4's power control: voltage scaling and over-drive ready
  *   gpio_f4.c  an F4 GPIO port (MODER, AFR, LCKR): pins to the runtime
  *   syscfg_f4.c the F4's system configuration: EXTI line ports, boot remap
@@ -25,10 +25,10 @@
 extern const struct esk_dev_ops esk_stm32_rcc_ops, esk_stm32f1_gpio_ops, esk_stm32_usart_ops;
 extern const struct esk_dev_ops esk_stm32_tim_ops, esk_stm32f1_afio_ops, esk_stm32_exti_ops;
 extern const struct esk_dev_ops esk_stm32_storage_ops, esk_stm32f1_adc_ops;
-extern const struct esk_dev_ops esk_stm32_spi_ops, esk_stm32f1_i2c_ops;
+extern const struct esk_dev_ops esk_stm32_spi_ops, esk_stm32_i2c_ops;
 void *esk_stm32f1_adc_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32_spi_create(struct esk_mach *m, struct esk_rf_periph *p);
-void *esk_stm32f1_i2c_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_stm32_i2c_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32_rcc_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32f1_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32_usart_create(struct esk_mach *m, struct esk_rf_periph *p);
@@ -93,6 +93,13 @@ int esk_stm32_usart_pin(struct esk_mach *m, const char *unit, int tx, int *port,
 int esk_stm32_spi_signal(struct esk_mach *m, const char *sig);
 void esk_stm32_spi_signal_input(struct esk_mach *m, const char *sig, int level);
 void esk_stm32_spi_dma_end(struct esk_mach *m, const char *sig);
+/* an I2C's alternate-function signal (I2C1_SCL, _SDA, _SMBA): the level it
+ * drives (1 let go), or -1; a level its pin gives it; a DMA stream's items
+ * left after one for its request (I2C1_RX's EOT-1, I2C1_TX's end) */
+int esk_stm32_i2c_signal(struct esk_mach *m, const char *sig);
+void esk_stm32_i2c_signal_input(struct esk_mach *m, const char *sig, int level);
+void esk_stm32_i2c_dma_left(struct esk_mach *m, const char *sig, u32 left);
+void esk_stm32f1_i2c_input(struct esk_mach *m, int port, int bit, int level);
 /* the F1: the level a pin (port, bit) gives the SPI functions AFIO places
  * there */
 void esk_stm32f1_spi_input(struct esk_mach *m, int port, int bit, int level);

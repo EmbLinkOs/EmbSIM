@@ -20,13 +20,14 @@
  *   - an alternate function is the one AFRL or AFRH selects among those the
  *     description's io.alternate gives the pin; it drives the pin when its
  *     peripheral's model does (a timer's channel, tim.c; a USART's TX, RTS
- *     or CK, usart.c; an SPI's SCK, MOSI, MISO or NSS, spi.c), else the
+ *     or CK, usart.c; an SPI's SCK, MOSI, MISO or NSS, spi.c; an I2C's SCL,
+ *     SDA or SMBA, i2c.c, which an open-drain pin lets go for 1), else the
  *     pin is let go and reads what the circuit drives; the pin's level
  *     goes to the function's input (a timer's channel, ETR, BKIN, a
- *     USART's nCTS, an SPI's SCK and NSS); the debug port's (AF0 on PA13,
- *     PA14, PA15, PB3 and PB4, as the reset values of MODER and PUPDR select
- *     them) among them: with no debugger attached its pins are inputs with
- *     their pulls;
+ *     USART's nCTS, an SPI's SCK and NSS, an I2C's lines); the debug
+ *     port's (AF0 on PA13, PA14, PA15, PB3 and PB4, as the reset values of
+ *     MODER and PUPDR select them) among them: with no debugger attached
+ *     its pins are inputs with their pulls;
  *   - LCKR's lock sequence (write LCKK 1, 0, 1 with the same LCK bits, then
  *     read) sets LCKK until the next reset, and the locked pins' MODER,
  *     OTYPER, OSPEEDR, PUPDR and AFR bits keep their values; a write out
@@ -76,13 +77,14 @@ static int af_level(const struct f4gpio *g, int pin, u32 af)
     int k, v;
     for (k = 0; (sig = esk_rf_af_signal(g->s->rf, g->port, pin, (int)af, k)) != 0; k++)
         if ((v = esk_stm32_tim_signal(g->s, sig)) >= 0 || (v = esk_stm32_usart_signal(g->s, sig)) >= 0 ||
-            (v = esk_stm32_spi_signal(g->s, sig)) >= 0)
+            (v = esk_stm32_spi_signal(g->s, sig)) >= 0 || (v = esk_stm32_i2c_signal(g->s, sig)) >= 0)
             return v;
     return -1;
 }
 
 /* a pin in alternate-function mode gives its level to its signals' inputs
- * (a timer's channel, ETR or BKIN, a USART's nCTS, an SPI's SCK, NSS) */
+ * (a timer's channel, ETR or BKIN, a USART's nCTS, an SPI's SCK, NSS, an
+ * I2C's SCL, SDA and SMBA) */
 static void af_input(struct f4gpio *g, int pin, u32 af, int level)
 {
     const char *sig;
@@ -91,6 +93,7 @@ static void af_input(struct f4gpio *g, int pin, u32 af, int level)
         esk_stm32_tim_signal_input(g->s, sig, level);
         esk_stm32_usart_signal_input(g->s, sig, level);
         esk_stm32_spi_signal_input(g->s, sig, level);
+        esk_stm32_i2c_signal_input(g->s, sig, level);
     }
 }
 

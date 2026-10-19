@@ -19,10 +19,10 @@
  *         idle, reads 1 (USART1 PA9, or PB6 remapped; USART2 PA2; USART3
  *         PB10, or PC10 partly remapped); a timer's enabled compare
  *         channel's pin is its output (tim.c), an SPI's SCK, MOSI, MISO
- *         and NSS and an I2C master's SCL and SDA are theirs (spi.c,
- *         i2c_f1.c; open-drain for I2C, CNF 11); any other is let go (its
- *         peripheral has no model to drive it) and reads what the circuit
- *         drives, else 0;
+ *         and NSS and an I2C's SCL, SDA and SMBA are theirs (spi.c, i2c.c;
+ *         open-drain for I2C, CNF 11, a 1 letting go); any other is let go
+ *         (its peripheral has no model to drive it) and reads what the
+ *         circuit drives, else 0;
  *   - the debug port's pins, while AFIO's MAPR.SWJ_CFG keeps them (out of
  *     reset all five), are its, whatever CRL and CRH say: PA13 (JTMS)
  *     and PA15 (JTDI) pulled up, PA14 (JTCK) pulled down, PB4 (JNTRST)
@@ -32,7 +32,7 @@
  *     (esk_mach_host.pin_cfg: driven 0 or 1, open-drain, the weak pull, or
  *     analog), which drives the pin's net; what the rest of the circuit
  *     drives comes back into IDR (pin_in), and IDR's changes go to EXTI,
- *     the timers' inputs, nCTS and the SPIs' inputs;
+ *     the timers' inputs, nCTS and the SPIs' and I2Cs' inputs;
  *   - an output's MODE (2, 10 or 50 MHz) is its speed: the description's
  *     output resistance and edge rate for it;
  *   - LCKR is a plain register: the lock sequence is not modelled.
@@ -189,6 +189,8 @@ static void update_once(struct f1gpio *g)
                         o.drive = esk_stm32f1_spi_pin(s, g->port, i);
                     if (o.drive < 0)
                         o.drive = esk_stm32f1_i2c_pin(s, g->port, i);
+                    if (o.drive == 1 && (cnf & 1))
+                        o.drive = -1; /* open-drain: a 1 lets go */
                     o.af = 1;
                 }
                 else if (!(cnf & 1) || !(odr >> i & 1))
@@ -230,6 +232,7 @@ static void update_once(struct f1gpio *g)
             esk_stm32f1_tim_input(s, g->port, i, (int)(idr >> i & 1)); /* input capture */
             usart_cts_in(g, i, (int)(idr >> i & 1));
             esk_stm32f1_spi_input(s, g->port, i, (int)(idr >> i & 1));
+            esk_stm32f1_i2c_input(s, g->port, i, (int)(idr >> i & 1));
         }
     }
 }
