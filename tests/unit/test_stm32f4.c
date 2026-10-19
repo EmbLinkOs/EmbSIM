@@ -2,7 +2,9 @@
 /* Copyright 2026 Junior Deogracias */
 /* test_stm32f4.c -- the STM32F446's clock tree and power controller
  * (rcc.c, pwr_f4.c), its GPIO ports, SYSCFG and EXTI (gpio_f4.c,
- * syscfg_f4.c, exti.c) on the machine the catalog's description builds, with
+ * syscfg_f4.c, exti.c), timers and SysTick (tim.c, systick.c), USARTs
+ * (usart.c), DMA (dma_f4.c) and SPIs (spi.c) on the machine the catalog's
+ * description builds, with
  * the NUCLEO-F446RE's clocks: an 8 MHz clock on OSC_IN from the ST-Link's
  * MCO (HSE bypass) and a 32.768 kHz crystal. The program's accesses are
  * made from here in the order STM32CubeF4's SystemClock_Config makes them
@@ -81,6 +83,15 @@
 #define S_M0AR 0x0Cu
 #define S_M1AR 0x10u
 #define S_FCR 0x14u
+#define SPI1 0x40013000u
+#define P_CR1 0x00u
+#define P_CR2 0x04u
+#define P_SR 0x08u
+#define P_DR 0x0Cu
+#define P_CRCPR 0x10u
+#define P_RXCRCR 0x14u
+#define P_TXCRCR 0x18u
+#define NVIC_ISPR1 0xE000E204u
 
 /* PLLM 8, PLLN 360, PLLP /2, PLLQ 2, PLLR 2 from HSE: 1 MHz into the VCO,
  * 360 MHz out of it, 180 MHz SYSCLK (CubeF4's NUCLEO-F446RE templates) */
@@ -96,6 +107,14 @@ typedef struct f4 {
     struct { int c, nbits, stop; u32 bits, bit_cycles; } frame[16]; /* frames sent */
     int nframe;
     int ext[8][16];          /* what the board drives: -1 nothing */
+    struct {                 /* an SPI device in mode 0 on SPI1's PA5-PA7 */
+        int loop;            /* MISO follows MOSI (1), inverted (2) */
+        u64 mosi;            /* MOSI's bits at SCK's rising edges, the last in bit 0 */
+        int n;               /* how many */
+        u64 miso;            /* MISO's next bits, the next in bit 63 */
+        int nss_at[8], nnss; /* the bit counts at which NSS (PA4) rose */
+        int fall;            /* MOSI sampled at SCK's falling edges (the TI mode) */
+    } dev;
 } f4;
 
 static unsigned char *slurp(const char *rel, size_t *len)
@@ -149,8 +168,26 @@ static void r_diag(void *ctx, int sev, const char *code, const char *msg)
 static void r_pin_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
 {
     f4 *f = (f4 *)ctx;
-    if (port >= 0 && port < 8 && bit >= 0 && bit < 16)
-        f->pin[port][bit] = *cfg;
+    int was;
+    if (port < 0 || port >= 8 || bit < 0 || bit >= 16)
+        return;
+    was = f->pin[port][bit].drive;
+    f->pin[port][bit] = *cfg;
+    if (port != 0 || was == cfg->drive)
+        return;
+    if (bit == 5 && was >= 0 && cfg->drive == !f->dev.fall) { /* MOSI sampled */
+        f->dev.mosi = f->dev.mosi << 1 | (u64)(f->pin[0][7].drive == 1);
+        f->dev.n++;
+    }
+    if (bit == 5 && was == 1 && cfg->drive == 0 && !f->dev.loop) { /* falls: MISO's next */
+        f->ext[0][6] = (int)(f->dev.miso >> 63);
+        f->dev.miso <<= 1;
+    } else if (bit == 5) {
+    } else if (bit == 7 && f->dev.loop) {
+        f->ext[0][6] = (cfg->drive == 1) ^ (f->dev.loop == 2);
+    } else if (bit == 4 && cfg->drive == 1 && f->dev.nnss < 8) {
+        f->dev.nss_at[f->dev.nnss++] = f->dev.n;
+    }
 }
 
 static int r_pin_in(void *ctx, int port, int bit, int *level)
@@ -1281,6 +1318,365 @@ static void test_dma_tim_burst(void)
     f4_close(&f);
 }
 
+/* ---- SPI ------------------------------------------------------------------------ */
+
+/* SPI1 on PA4 (NSS), PA5 (SCK), PA6 (MISO), PA7 (MOSI), AF5 */
+static void spi1_pins(f4 *f)
+{
+    int i;
+    busy(f);
+    wr(f, RCC_AHB1ENR, rd(f, RCC_AHB1ENR) | 1u);
+    wr(f, RCC_APB2ENR, rd(f, RCC_APB2ENR) | 1u << 12); /* SPI1EN */
+    for (i = 4; i <= 7; i++)
+        pin_af(f, GPIOA, i, 5);
+}
+
+/* the device's next frame on MISO: `bits` bits of `v`, MSB first */
+static void dev_answer(f4 *f, u32 v, int bits)
+{
+    u64 q = (u64)v << (64 - bits);
+    f->ext[0][6] = (int)(q >> 63);
+    f->dev.miso = q << 1;
+}
+
+static void spi_wait(f4 *f, u32 flag)
+{
+    int i;
+    for (i = 0; i < 4000 && !(rd(f, SPI1 + P_SR) & flag); i++)
+        esk_mach_run(&f->m, 4, 0);
+    CHECK(rd(f, SPI1 + P_SR) & flag);
+}
+
+static void spi_idle(f4 *f)
+{
+    int i;
+    for (i = 0; i < 4000 && (rd(f, SPI1 + P_SR) & 1u << 7); i++) /* BSY */
+        esk_mach_run(&f->m, 4, 0);
+    CHECK_EQ(rd(f, SPI1 + P_SR) & 1u << 7, 0u);
+}
+
+/* a master in mode 0 at PCLK2 / 8 (HAL_SPI_TransmitReceive, NSS soft):
+ * the frame on the pins, RXNE, OVR and its clearing sequence */
+static void test_spi_master(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    spi1_pins(&f);
+    CHECK_EQ(rd(&f, SPI1 + P_SR), 2u);       /* TXE */
+    CHECK_EQ(rd(&f, SPI1 + P_CRCPR), 7u);
+    wr(&f, SPI1 + P_CR1, 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8); /* BR /8, MSTR, SSM, SSI */
+    CHECK_EQ(f.pin[0][5].drive, -1);         /* off: let go */
+    wr(&f, SPI1 + P_CR1, rd(&f, SPI1 + P_CR1) | 1u << 6); /* SPE */
+    CHECK_EQ(f.pin[0][5].drive, 0);          /* SCK idles at CPOL */
+    CHECK_EQ(f.pin[0][4].drive, -1);         /* NSS soft: the pin is free */
+    CHECK_EQ(f.pin[0][6].drive, -1);         /* MISO in */
+    dev_answer(&f, 0x3c, 8);
+    wr(&f, SPI1 + P_DR, 0xa5);
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 0x83u, 0x82u); /* TXE back at once, BSY */
+    spi_wait(&f, 1u);
+    CHECK_EQ(f.dev.n, 8);
+    CHECK_EQ((u32)f.dev.mosi, 0xa5u);
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0x3cu);
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 1u, 0u);  /* reading DR cleared RXNE */
+    spi_idle(&f);
+    CHECK_EQ(f.pin[0][5].drive, 0);
+    /* two frames back to back, DR not read: OVR, the second lost */
+    dev_answer(&f, 0x11, 8);
+    wr(&f, SPI1 + P_DR, 0x01);
+    wr(&f, SPI1 + P_DR, 0x02);               /* waits in the buffer */
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 2u, 0u);
+    spi_wait(&f, 1u);
+    dev_answer(&f, 0x22, 8);
+    spi_idle(&f);
+    CHECK_EQ(f.dev.n, 24);
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 0x41u, 0x41u); /* RXNE, OVR */
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0x11u);    /* the older data */
+    CHECK(rd(&f, SPI1 + P_SR) & 0x40u);      /* DR then SR clears OVR... */
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 0x40u, 0u);
+    /* 16 bits, LSB first, mode 3 */
+    wr(&f, SPI1 + P_CR1, 0);
+    wr(&f, SPI1 + P_CR1, 1u << 11 | 1u << 7 | 3u | 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8 | 1u << 6);
+    CHECK_EQ(f.pin[0][5].drive, 1);          /* CPOL 1 */
+    f.dev.n = 0;
+    wr(&f, SPI1 + P_DR, 0x8001u);
+    spi_idle(&f);
+    CHECK_EQ(f.dev.n, 16);
+    /* mode 3's rising edge is the trailing one: MOSI is valid on it */
+    CHECK_EQ((u32)f.dev.mosi & 0xffffu, 0x8001u);
+    CHECK_EQ(f.warnings, 0);
+    f4_close(&f);
+}
+
+/* MODF: a master whose NSS input is low; SPE and MSTR cleared and kept so
+ * until SR is read and CR1 written; SSOE drives NSS low instead */
+static void test_spi_modf(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    spi1_pins(&f);
+    f.ext[0][4] = 0;                         /* another master pulls NSS low */
+    esk_stm32f4_pins_changed(&f.m);
+    wr(&f, SPI1 + P_CR2, 1u << 5);           /* ERRIE */
+    wr(&f, SPI1 + P_CR1, 1u << 2 | 1u << 6); /* MSTR, SPE, hardware NSS input */
+    CHECK_EQ(rd(&f, SPI1 + P_CR1) & 0x44u, 0u);
+    CHECK(rd(&f, NVIC_ISPR1) & 1u << 3);     /* SPI1, IRQ 35 */
+    CHECK_EQ(f.pin[0][5].drive, -1);
+    wr(&f, SPI1 + P_CR1, 1u << 2 | 1u << 6); /* write-protected */
+    CHECK_EQ(rd(&f, SPI1 + P_CR1) & 0x44u, 0u);
+    CHECK(rd(&f, SPI1 + P_SR) & 1u << 5);    /* MODF read... */
+    f.ext[0][4] = 1;
+    esk_stm32f4_pins_changed(&f.m);
+    wr(&f, SPI1 + P_CR1, 1u << 2 | 1u << 6); /* ...then CR1 written: cleared */
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 1u << 5, 0u);
+    CHECK_EQ(rd(&f, SPI1 + P_CR1) & 0x44u, 0x44u);
+    CHECK_EQ(f.pin[0][5].drive, 0);
+    f.ext[0][4] = 0;                         /* NSS falls while enabled */
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(rd(&f, SPI1 + P_SR) & 1u << 5);
+    CHECK_EQ(rd(&f, SPI1 + P_CR1) & 0x44u, 0u);
+    /* SSOE: NSS is the master's output, low while enabled */
+    f.ext[0][4] = -1;
+    (void)rd(&f, SPI1 + P_SR);
+    wr(&f, SPI1 + P_CR2, 1u << 2);
+    wr(&f, SPI1 + P_CR1, 1u << 2 | 1u << 6);
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 1u << 5, 0u);
+    CHECK_EQ(f.pin[0][4].drive, 0);
+    wr(&f, SPI1 + P_CR1, 1u << 2);
+    CHECK_EQ(f.pin[0][4].drive, -1);         /* let go with SPE */
+    f4_close(&f);
+}
+
+/* the board clocks the slave: a level on SCK (PA5) and MOSI (PA7) */
+static int slave_clock(f4 *f, int sck, int mosi)
+{
+    f->ext[0][7] = mosi;
+    f->ext[0][5] = sck;
+    esk_stm32f4_pins_changed(&f->m);
+    return f->pin[0][6].drive;
+}
+
+/* one frame into a slave in mode 0, MSB first: what MISO gave */
+static u32 slave_frame(f4 *f, u32 in, int from, int to)
+{
+    u32 got = 0;
+    int i;
+    for (i = from; i < to; i++) {
+        int b = (int)(in >> (7 - i) & 1u);
+        got = got << 1 | (u32)(slave_clock(f, 1, b) == 1); /* leading: sampled */
+        (void)slave_clock(f, 0, b);
+    }
+    return got;
+}
+
+/* a slave (HAL_SPI_TransmitReceive as SPI_MODE_SLAVE, hardware NSS):
+ * MISO only while selected, its data loaded at once, the frame received,
+ * the bit count across NSS, the frame received sent back */
+static void test_spi_slave(void)
+{
+    f4 f;
+    u32 got;
+    if (!f4_open(&f, 1))
+        return;
+    spi1_pins(&f);
+    f.ext[0][4] = 1;
+    f.ext[0][5] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    wr(&f, SPI1 + P_CR2, 1u << 6);           /* RXNEIE */
+    wr(&f, SPI1 + P_CR1, 1u << 6);           /* SPE, slave, mode 0 */
+    wr(&f, SPI1 + P_DR, 0x5a);
+    CHECK(rd(&f, SPI1 + P_SR) & 2u);         /* into the shift register: TXE */
+    wr(&f, SPI1 + P_DR, 0x96);               /* the next waits */
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 2u, 0u);
+    CHECK_EQ(f.pin[0][6].drive, -1);         /* not selected */
+    f.ext[0][4] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK_EQ(f.pin[0][6].drive, 0);          /* 0x5a's MSB, before the first edge */
+    got = slave_frame(&f, 0xc3, 0, 8);
+    CHECK_EQ(got, 0x5au);
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 3u, 3u);  /* RXNE, and TXE: 0x96 went in */
+    CHECK(rd(&f, NVIC_ISPR1) & 1u << 3);
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0xc3u);
+    /* NSS rises after four bits: the count carries on */
+    got = slave_frame(&f, 0x0f, 0, 4);
+    f.ext[0][4] = 1;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK_EQ(f.pin[0][6].drive, -1);
+    CHECK_EQ(slave_clock(&f, 1, 1), -1);     /* ignored, not selected */
+    (void)slave_clock(&f, 0, 1);
+    f.ext[0][4] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    got = got << 4 | slave_frame(&f, 0x0f, 4, 8);
+    CHECK_EQ(got, 0x96u);
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0x0fu);
+    CHECK(rd(&f, SPI1 + P_SR) & 1u << 7 ? 0 : 1); /* not busy between frames */
+    /* nothing written: the frame received goes back */
+    got = slave_frame(&f, 0x44, 0, 8);
+    CHECK_EQ(got, 0x0fu);
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0x44u);
+    /* SPE cleared: the pin let go */
+    wr(&f, SPI1 + P_CR1, 0);
+    CHECK_EQ(f.pin[0][6].drive, -1);
+    f4_close(&f);
+}
+
+/* CRC-8 (CRCPR 7) over "123456789" and its CRC frame after CRCNEXT, MISO
+ * looped back to MOSI; then a line that inverts: CRCERR; CRC-16 */
+static void test_spi_crc(void)
+{
+    f4 f;
+    const char *msg = "123456789";
+    int i;
+    if (!f4_open(&f, 1))
+        return;
+    spi1_pins(&f);
+    f.dev.loop = 1;
+    wr(&f, SPI1 + P_CR1, 1u << 13 | 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8 | 1u << 6); /* CRCEN */
+    for (i = 0; i < 9; i++) {
+        wr(&f, SPI1 + P_DR, (u8)msg[i]);
+        if (i == 8)
+            wr(&f, SPI1 + P_CR1, rd(&f, SPI1 + P_CR1) | 1u << 12); /* CRCNEXT */
+        spi_wait(&f, 1u);
+        CHECK_EQ(rd(&f, SPI1 + P_DR), (u32)(u8)msg[i]);
+    }
+    CHECK_EQ(rd(&f, SPI1 + P_TXCRCR), 0xf4u);
+    CHECK_EQ(rd(&f, SPI1 + P_RXCRCR), 0xf4u);
+    spi_wait(&f, 1u);                        /* the CRC frame */
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0xf4u);
+    CHECK_EQ((u32)f.dev.mosi & 0xffu, 0xf4u);
+    CHECK_EQ(f.dev.n, 80);
+    CHECK_EQ(rd(&f, SPI1 + P_CR1) & 1u << 12, 0u); /* CRCNEXT cleared */
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 1u << 4, 0u);   /* no CRCERR */
+    spi_idle(&f);
+    /* CRCEN set again clears the CRCs; an inverting line gives CRCERR */
+    wr(&f, SPI1 + P_CR1, 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8 | 1u << 6);
+    wr(&f, SPI1 + P_CR1, 1u << 13 | 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8 | 1u << 6);
+    CHECK_EQ(rd(&f, SPI1 + P_TXCRCR), 0u);
+    f.dev.loop = 2;
+    wr(&f, SPI1 + P_DR, 'a');
+    wr(&f, SPI1 + P_CR1, rd(&f, SPI1 + P_CR1) | 1u << 12);
+    spi_wait(&f, 1u);
+    (void)rd(&f, SPI1 + P_DR);
+    spi_wait(&f, 1u);
+    (void)rd(&f, SPI1 + P_DR);
+    spi_idle(&f);
+    CHECK(rd(&f, SPI1 + P_SR) & 1u << 4);    /* CRCERR */
+    wr(&f, SPI1 + P_SR, ~(1u << 4));         /* cleared by writing 0 */
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 1u << 4, 0u);
+    /* CRC-16 (CRCPR 0x1021) over 16-bit frames */
+    f.dev.loop = 1;
+    wr(&f, SPI1 + P_CR1, 0);
+    wr(&f, SPI1 + P_CRCPR, 0x1021u);
+    wr(&f, SPI1 + P_CR1, 1u << 13 | 1u << 11 | 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8 | 1u << 6);
+    for (i = 0; i < 4; i++) {
+        wr(&f, SPI1 + P_DR, (u32)(u8)msg[2 * i] << 8 | (u8)msg[2 * i + 1]);
+        spi_wait(&f, 1u);
+        (void)rd(&f, SPI1 + P_DR);
+    }
+    CHECK_EQ(rd(&f, SPI1 + P_TXCRCR), 0x9015u);
+    CHECK_EQ(f.warnings, 0);
+    f4_close(&f);
+}
+
+/* HAL_SPI_TransmitReceive_DMA with CRC: DMA2 stream 3 (SPI1_TX) and stream
+ * 0 (SPI1_RX), channel 3; the CRC frame follows the last item by itself */
+static void test_spi_dma_crc(void)
+{
+    f4 f;
+    u32 s0 = DMA2 + D_S(0), s3 = DMA2 + D_S(3);
+    if (!f4_open(&f, 1))
+        return;
+    spi1_pins(&f);
+    f.dev.loop = 1;
+    ram_write(&f, 0x20000400u, "123456789", 9);
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 1u << 22); /* DMA2EN */
+    wr(&f, SPI1 + P_CR1, 1u << 13 | 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8);
+    wr(&f, s0 + S_PAR, SPI1 + P_DR);
+    wr(&f, s0 + S_M0AR, 0x20000500u);
+    wr(&f, s0 + S_NDTR, 9);
+    wr(&f, s0 + S_CR, 3u << 25 | 1u << 10 | 1u);           /* CH3, MINC, P2M, EN */
+    wr(&f, s3 + S_PAR, SPI1 + P_DR);
+    wr(&f, s3 + S_M0AR, 0x20000400u);
+    wr(&f, s3 + S_NDTR, 9);
+    wr(&f, s3 + S_CR, 3u << 25 | 1u << 10 | 1u << 6 | 1u); /* CH3, MINC, M2P, EN */
+    wr(&f, SPI1 + P_CR2, 3u);                               /* RXDMAEN, TXDMAEN */
+    wr(&f, SPI1 + P_CR1, rd(&f, SPI1 + P_CR1) | 1u << 6);   /* SPE */
+    spi_idle(&f);
+    CHECK_EQ(f.dev.n, 80);                    /* nine bytes and the CRC */
+    CHECK_EQ((u32)f.dev.mosi & 0xffu, 0xf4u);
+    CHECK_EQ(rd(&f, s0 + S_NDTR), 0u);
+    CHECK_EQ(ram32(&f, 0x20000500u), 0x34333231u);
+    CHECK_EQ(ram32(&f, 0x20000508u) & 0xffu, 0x39u);
+    CHECK(rd(&f, SPI1 + P_SR) & 1u);          /* the CRC waits in DR */
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0xf4u);
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 1u << 4, 0u);
+    f4_close(&f);
+}
+
+/* bidirectional: out on MOSI and nothing received; in on MOSI, the master
+ * clocking frame after frame until SPE clears; RXONLY likewise on MISO;
+ * the TI mode's frame pulse on NSS */
+static void test_spi_modes(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    spi1_pins(&f);
+    wr(&f, SPI1 + P_CR1, 1u << 15 | 1u << 14 | 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8 | 1u << 6);
+    wr(&f, SPI1 + P_DR, 0x81);
+    spi_idle(&f);
+    CHECK_EQ((u32)f.dev.mosi & 0xffu, 0x81u);
+    CHECK_EQ(rd(&f, SPI1 + P_SR) & 0x41u, 0u); /* no RXNE, no OVR */
+    /* BIDIOE 0: MOSI let go and read, the clock running on its own */
+    f.ext[0][7] = 1;
+    wr(&f, SPI1 + P_CR1, rd(&f, SPI1 + P_CR1) & ~(1u << 14));
+    CHECK_EQ(f.pin[0][7].drive, -1);
+    spi_wait(&f, 1u);
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0xffu);
+    f.ext[0][7] = 0;
+    spi_wait(&f, 1u);
+    (void)rd(&f, SPI1 + P_DR);
+    spi_wait(&f, 1u);
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0u);
+    wr(&f, SPI1 + P_CR1, rd(&f, SPI1 + P_CR1) & ~(1u << 6)); /* SPE off: the frame finishes */
+    CHECK_EQ(f.pin[0][5].drive >= 0, 1);
+    spi_idle(&f);
+    CHECK_EQ(f.pin[0][5].drive, -1);
+    /* RXONLY: MISO in, MOSI let go */
+    wr(&f, SPI1 + P_CR1, 0);
+    (void)rd(&f, SPI1 + P_DR);               /* the frame SPE's clearing finished */
+    (void)rd(&f, SPI1 + P_SR);
+    dev_answer(&f, 0x6b, 8);
+    f.dev.n = 0;
+    wr(&f, SPI1 + P_CR1, 1u << 10 | 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8 | 1u << 6);
+    CHECK_EQ(f.pin[0][7].drive, -1);
+    spi_wait(&f, 1u);
+    CHECK_EQ(rd(&f, SPI1 + P_DR), 0x6bu);
+    wr(&f, SPI1 + P_CR1, 1u << 10 | 2u << 3 | 1u << 2 | 1u << 9 | 1u << 8);
+    spi_idle(&f);
+    /* TI mode: NSS pulses one clock before each frame, in the last bit of
+     * the previous one when they follow each other */
+    f.dev.n = 0;
+    f.dev.nnss = 0;
+    f.dev.fall = 1;
+    wr(&f, SPI1 + P_CR1, 0);
+    wr(&f, SPI1 + P_CR2, 1u << 4);           /* FRF */
+    wr(&f, SPI1 + P_CR1, 2u << 3 | 1u << 2 | 1u << 6 | 3u); /* CPOL and CPHA ignored */
+    CHECK_EQ(f.pin[0][5].drive, 0);
+    CHECK_EQ(f.pin[0][4].drive, 0);
+    wr(&f, SPI1 + P_DR, 0x12);
+    wr(&f, SPI1 + P_DR, 0x34);
+    spi_idle(&f);
+    CHECK_EQ(f.dev.n, 17);                   /* the sync clock and two frames */
+    CHECK_EQ(f.dev.nnss, 2);
+    CHECK_EQ(f.dev.nss_at[0], 0);            /* with the sync clock's rising edge */
+    CHECK_EQ(f.dev.nss_at[1], 8);            /* with the first frame's last bit */
+    CHECK_EQ(f.pin[0][4].drive, 0);
+    CHECK_EQ((u32)f.dev.mosi & 0xffffu, 0x1234u);
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -1305,4 +1701,10 @@ RUN(test_dma_usart_tx);
 RUN(test_dma_usart_rx);
 RUN(test_dma_m2m);
 RUN(test_dma_tim_burst);
+RUN(test_spi_master);
+RUN(test_spi_modf);
+RUN(test_spi_slave);
+RUN(test_spi_crc);
+RUN(test_spi_dma_crc);
+RUN(test_spi_modes);
 TEST_MAIN_END

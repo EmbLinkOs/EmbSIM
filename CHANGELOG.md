@@ -5,6 +5,39 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32 SPIs (the NUCLEO-F446RE plan, step 8)
+
+- **`stm32-spi`** for the F1's and F4's SPI (RM0008 25, RM0390 26). It
+  replaces `stm32f1-spi`, which was a master only:
+  - master and slave, modes 0 to 3, 8 or 16 bits, MSB or LSB first;
+  - OVR keeps the older frame, and clears by reading DR then SR;
+  - receive-only (RXONLY) and bidirectional (BIDIMODE, BIDIOE) modes; a
+    receive-only master clocks frame after frame until SPE clears, and the
+    frame under way when SPE clears finishes;
+  - NSS by SSM/SSI, SSOE's output or the pin's input; MODF clears SPE and
+    MSTR and keeps them write-protected until SR is read and CR1 written;
+  - a slave drives MISO only while selected. Like the part, it keeps its
+    bit count when NSS rises in the middle of a frame, and sends back the
+    frame it received when nothing was written;
+  - the F4's TI mode: the master's frame pulse, the slave's frame start
+    on it, and FRE;
+  - CRC: TXCRCR and RXCRCR with CRCPR's polynomial, CRCNEXT, the CRC
+    frame and CRCERR. With DMA, the CRC frame follows the stream's last
+    item by itself; the DMA now tells the peripheral about that item;
+  - the DMA requests SPIx_TX and SPIx_RX, and the TXE, RXNE and error
+    interrupts as levels.
+- **Pins:** the F4's SPI1-4 on their alternate functions (inputs too: a
+  slave's SCK and NSS, a master's NSS); the F1's on AFIO's pins, its GPIO
+  passing the pins' levels to the SPIs. A GPIO update asked for while
+  another runs (a slave's MISO changing on its SCK's edge) runs again
+  after it.
+- **Proof:**
+  - `tests/unit/test_stm32f4.c`: a master's frames with OVR and 16-bit
+    LSB-first mode 3; MODF and SSOE; a slave across NSS and its echo;
+    CRC-8 and CRC-16 with CRCERR; full-duplex DMA with the automatic CRC;
+    the bidirectional, receive-only and TI modes;
+  - STM32Cube F1's SPI application still passes.
+
 ### The STM32F446's DMA (the NUCLEO-F446RE plan, step 7)
 
 - **`stm32f4-dma`** for DMA1 and DMA2 (RM0390 9):

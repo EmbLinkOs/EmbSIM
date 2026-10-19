@@ -21,9 +21,10 @@
  *     reports the FIFO's level; a memory burst that FTH's threshold cannot
  *     hold is a FIFO error at enable (FEIF), the stream not enabled;
  *   - NDTR counts the items left: half of them done sets HTIF, all of them
- *     TCIF; circular mode (CIRC) or double buffer (DBM, CT toggling between
- *     M0AR and M1AR) starts again, else EN clears; an access the bus
- *     refuses sets TEIF and clears EN;
+ *     TCIF, the last one telling the peripheral (the end of transfer an
+ *     SPI sends its CRC after); circular mode (CIRC) or double buffer
+ *     (DBM, CT toggling between M0AR and M1AR) starts again, else EN
+ *     clears; an access the bus refuses sets TEIF and clears EN;
  *   - LISR and HISR's flags clear by writing 1 to LIFCR and HIFCR; a
  *     stream's interrupt is pending while TCIF with TCIE, HTIF with HTIE,
  *     TEIF with TEIE, DMEIF with DMEIE or FEIF with FCR.FEIE is set;
@@ -269,8 +270,9 @@ static int item(struct dma *d, int s)
     return fifo_to_memory(d, s, v32(x->ndtr) <= 1);
 }
 
-/* a request served by stream s: a peripheral burst of items */
-static void serve(struct dma *d, int s)
+/* a request served by stream s: a peripheral burst of items; the last
+ * item of a round tells the peripheral (an SPI's CRC follows it) */
+static void serve(struct dma *d, int s, const char *sig)
 {
     struct stream *x = &d->st[s];
     static const u32 beats[4] = { 1, 4, 8, 16 };
@@ -280,7 +282,12 @@ static void serve(struct dma *d, int s)
             transfer_error(d, s);
             break;
         }
-        counted(d, s);
+        if (v32(x->ndtr) == 1) {
+            counted(d, s);
+            esk_stm32_spi_dma_end(d->s, sig);
+        } else {
+            counted(d, s);
+        }
     }
     fifo_status(x);
 }
@@ -300,7 +307,7 @@ static int try_serve(struct dma *d, const char *sig)
     for (pl = 3; pl >= 0; pl--)
         for (s = 0; s < 8; s++)
             if (takes(d, s, sig) && (int)(v32(d->st[s].cr) >> 16 & 3) == pl) {
-                serve(d, s);
+                serve(d, s, sig);
                 served = 1;
             }
     return served;

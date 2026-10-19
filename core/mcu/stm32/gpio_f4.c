@@ -20,9 +20,10 @@
  *   - an alternate function is the one AFRL or AFRH selects among those the
  *     description's io.alternate gives the pin; it drives the pin when its
  *     peripheral's model does (a timer's channel, tim.c; a USART's TX, RTS
- *     or CK, usart.c), else the pin is
- *     let go and reads what the circuit drives; the pin's level goes to the
- *     function's input (a timer's channel, ETR, BKIN); the debug port's (AF0 on PA13,
+ *     or CK, usart.c; an SPI's SCK, MOSI, MISO or NSS, spi.c), else the
+ *     pin is let go and reads what the circuit drives; the pin's level
+ *     goes to the function's input (a timer's channel, ETR, BKIN, a
+ *     USART's nCTS, an SPI's SCK and NSS); the debug port's (AF0 on PA13,
  *     PA14, PA15, PB3 and PB4, as the reset values of MODER and PUPDR select
  *     them) among them: with no debugger attached its pins are inputs with
  *     their pulls;
@@ -54,6 +55,7 @@ struct f4gpio {
     int known;
     int lck_step;         /* the lock sequence's writes so far (3: a read locks) */
     u32 lck_bits;
+    int updating, again;  /* update() under way, and asked for again */
 };
 
 static u32 field(const struct esk_rf_reg *r, int pin, int width)
@@ -73,13 +75,14 @@ static int af_level(const struct f4gpio *g, int pin, u32 af)
     const char *sig;
     int k, v;
     for (k = 0; (sig = esk_rf_af_signal(g->s->rf, g->port, pin, (int)af, k)) != 0; k++)
-        if ((v = esk_stm32_tim_signal(g->s, sig)) >= 0 || (v = esk_stm32_usart_signal(g->s, sig)) >= 0)
+        if ((v = esk_stm32_tim_signal(g->s, sig)) >= 0 || (v = esk_stm32_usart_signal(g->s, sig)) >= 0 ||
+            (v = esk_stm32_spi_signal(g->s, sig)) >= 0)
             return v;
     return -1;
 }
 
 /* a pin in alternate-function mode gives its level to its signals' inputs
- * (a timer's channel, ETR or BKIN) */
+ * (a timer's channel, ETR or BKIN, a USART's nCTS, an SPI's SCK, NSS) */
 static void af_input(struct f4gpio *g, int pin, u32 af, int level)
 {
     const char *sig;
@@ -87,10 +90,11 @@ static void af_input(struct f4gpio *g, int pin, u32 af, int level)
     for (k = 0; (sig = esk_rf_af_signal(g->s->rf, g->port, pin, (int)af, k)) != 0; k++) {
         esk_stm32_tim_signal_input(g->s, sig, level);
         esk_stm32_usart_signal_input(g->s, sig, level);
+        esk_stm32_spi_signal_input(g->s, sig, level);
     }
 }
 
-static void update(struct f4gpio *g)
+static void update_once(struct f4gpio *g)
 {
     struct esk_mach *s = g->s;
     u32 idr = 0, odr = (u32)g->odr->value, old = (u32)g->idr->value & 0xffffu;
@@ -140,6 +144,25 @@ static void update(struct f4gpio *g)
             if (((old ^ idr) >> i & 1) && esk_stm32f4_exti_port(s, i) == g->port)
                 esk_stm32_exti_input(s, i, (int)(idr >> i & 1));
     }
+}
+
+/* again while a peripheral that heard a pin changed its own pins on this
+ * port (a slave SPI's MISO after its SCK's edge) */
+static void update(struct f4gpio *g)
+{
+    int round;
+    if (g->updating) {
+        g->again = 1;
+        return;
+    }
+    g->updating = 1;
+    for (round = 0; round < 8; round++) {
+        g->again = 0;
+        update_once(g);
+        if (!g->again)
+            break;
+    }
+    g->updating = 0;
 }
 
 /* the bits of `r` the locked pins own, `width` bits a pin from `first` */

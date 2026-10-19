@@ -10,7 +10,7 @@
  *   usart.c    a USART of the SR/DR layout, at its baud rate
  *   tim.c      a timer: time base, capture/compare, PWM, dead time, slave modes
  *   adc_f1.c   the F1's ADC: its regular group from the pins' voltages
- *   spi_f1.c   the F1's SPI as a master, on its pins
+ *   spi.c      an SPI of the SR/DR layout, master or slave, on its pins
  *   i2c_f1.c   the F1's I2C as a master, on its pins
  *   pwr_f4.c   the F4's power control: voltage scaling and over-drive ready
  *   gpio_f4.c  an F4 GPIO port (MODER, AFR, LCKR): pins to the runtime
@@ -25,9 +25,9 @@
 extern const struct esk_dev_ops esk_stm32_rcc_ops, esk_stm32f1_gpio_ops, esk_stm32_usart_ops;
 extern const struct esk_dev_ops esk_stm32_tim_ops, esk_stm32f1_afio_ops, esk_stm32_exti_ops;
 extern const struct esk_dev_ops esk_stm32_storage_ops, esk_stm32f1_adc_ops;
-extern const struct esk_dev_ops esk_stm32f1_spi_ops, esk_stm32f1_i2c_ops;
+extern const struct esk_dev_ops esk_stm32_spi_ops, esk_stm32f1_i2c_ops;
 void *esk_stm32f1_adc_create(struct esk_mach *m, struct esk_rf_periph *p);
-void *esk_stm32f1_spi_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_stm32_spi_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32f1_i2c_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32_rcc_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32f1_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);
@@ -86,6 +86,16 @@ void esk_stm32_dma_request(struct esk_mach *m, const char *sig, int level);
 int esk_stm32_usart_signal(struct esk_mach *m, const char *sig);
 void esk_stm32_usart_signal_input(struct esk_mach *m, const char *sig, int level);
 int esk_stm32_usart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
+/* an SPI's alternate-function signal (SPI1_SCK, _MOSI, _MISO, _NSS): the
+ * level it drives, or -1; a level its pin gives it (a slave's SCK, MOSI,
+ * NSS; a master's NSS); a DMA stream's last item for its request (SPI1_TX,
+ * SPI1_RX: the CRC follows) */
+int esk_stm32_spi_signal(struct esk_mach *m, const char *sig);
+void esk_stm32_spi_signal_input(struct esk_mach *m, const char *sig, int level);
+void esk_stm32_spi_dma_end(struct esk_mach *m, const char *sig);
+/* the F1: the level a pin (port, bit) gives the SPI functions AFIO places
+ * there */
+void esk_stm32f1_spi_input(struct esk_mach *m, int port, int bit, int level);
 /* the F4: the pin (port * 32 + bit) whose GPIO selects `sig` now, or -1 */
 int esk_stm32f4_af_pin(struct esk_mach *m, const char *sig);
 /* the F1: a USART's CK, CTS or RTS pin ("CK", "CTS", "RTS") as AFIO's MAPR
@@ -94,7 +104,7 @@ int esk_stm32f1_usart_fn_pin(struct esk_mach *m, const char *unit, const char *f
 /* the F1: the level a pin (port, bit) gives the timer channels AFIO's MAPR
  * places there */
 void esk_stm32f1_tim_input(struct esk_mach *m, int port, int bit, int level);
-/* the level a timer's compare channel, an SPI master or an I2C master
+/* the level a timer's compare channel, an SPI or an I2C master
  * drives on a pin (port, bit) that AFIO's MAPR gives it, or -1 */
 int esk_stm32f1_tim_pin(struct esk_mach *m, int port, int bit);
 int esk_stm32f1_spi_pin(struct esk_mach *m, int port, int bit);

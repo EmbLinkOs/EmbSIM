@@ -107,6 +107,9 @@ after each one.
    - ADC1-3: regular and injected groups, scan, continuous.
    - The DAC.
    - SPI1-4 as master and slave.
+     *Done:* `stm32-spi`, shared with the F1 (it replaces `stm32f1-spi`):
+     master and slave, receive-only and bidirectional, NSS and MODF, the
+     TI mode, CRC, DMA requests with the CRC after a stream's last item.
    - I2C1-3 as master.
    - IWDG and WWDG.
    - The RTC with the LSE.
