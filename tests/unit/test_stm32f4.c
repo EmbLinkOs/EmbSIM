@@ -103,6 +103,36 @@
 #define C_SR2 0x18u
 #define C_CCR 0x1Cu
 #define C_TRISE 0x20u
+#define ADC1 0x40012000u
+#define ADC2 0x40012100u
+#define ADCC 0x40012300u
+#define A_SR 0x00u
+#define A_CR1 0x04u
+#define A_CR2 0x08u
+#define A_SMPR1 0x0Cu
+#define A_SMPR2 0x10u
+#define A_JOFR1 0x14u
+#define A_HTR 0x24u
+#define A_LTR 0x28u
+#define A_SQR1 0x2Cu
+#define A_SQR3 0x34u
+#define A_JSQR 0x38u
+#define A_JDR1 0x3Cu
+#define A_DR 0x4Cu
+#define AC_CSR 0x00u
+#define AC_CCR 0x04u
+#define AC_CDR 0x08u
+#define DAC 0x40007400u
+#define DAC_CR 0x00u
+#define DAC_SWTRIGR 0x04u
+#define DAC_DHR12R1 0x08u
+#define DAC_DHR12L1 0x0Cu
+#define DAC_DHR8R1 0x10u
+#define DAC_DHR12RD 0x20u
+#define DAC_DOR1 0x2Cu
+#define DAC_DOR2 0x30u
+#define DAC_SR 0x34u
+#define TIM6 0x40001000u
 
 /* PLLM 8, PLLN 360, PLLP /2, PLLQ 2, PLLR 2 from HSE: 1 MHz into the VCO,
  * 360 MHz out of it, 180 MHz SYSCLK (CubeF4's NUCLEO-F446RE templates) */
@@ -138,6 +168,10 @@ typedef struct f4 {
         int stretch;         /* it holds SCL low after each ACK bit */
     } idev;
     int wire[4][2];          /* pins wired together, as port * 16 + bit; -1 none */
+    double volts[8][16];     /* the voltage on a pin's net, for the ADC */
+    int has_volts[8][16];
+    double world_c;          /* the world's temperature, when has_world */
+    int has_world;
 } f4;
 
 static unsigned char *slurp(const char *rel, size_t *len)
@@ -300,6 +334,22 @@ static int r_pin_in(void *ctx, int port, int bit, int *level)
     return 1;
 }
 
+static int r_pin_volts(void *ctx, int port, int bit, double *v)
+{
+    f4 *f = (f4 *)ctx;
+    if (port < 0 || port >= 8 || bit < 0 || bit > 15 || !f->has_volts[port][bit])
+        return 0;
+    *v = f->volts[port][bit];
+    return 1;
+}
+
+static int r_temperature(void *ctx, double *c)
+{
+    f4 *f = (f4 *)ctx;
+    *c = f->world_c;
+    return f->has_world;
+}
+
 static void r_uart_frame(void *ctx, const char *unit, int c, u32 bits, int nbits, int stop, u32 bit_cycles)
 {
     f4 *f = (f4 *)ctx;
@@ -335,6 +385,8 @@ static int f4_open(f4 *f, int hse_clock)
     f->m.host.pin_cfg = r_pin_cfg;
     f->m.host.pin_in = r_pin_in;
     f->m.host.uart_frame = r_uart_frame;
+    f->m.host.pin_volts = r_pin_volts;
+    f->m.host.temperature = r_temperature;
     f->m.hse_clock = hse_clock;
     f->m.lse_hz = 32768u;
     st = esk_mach_build(&f->m, f->mcu, f->regs, 8000000u, why, sizeof why);
@@ -2222,6 +2274,283 @@ static void test_i2c_wired(void)
     f4_close(&f);
 }
 
+/* ---- ADC and DAC -------------------------------------------------------------- */
+
+static void set_volts(f4 *f, int port, int bit, double v)
+{
+    f->volts[port][bit] = v;
+    f->has_volts[port][bit] = 1;
+}
+
+/* ADC1 on, ADCPRE /4: a 4 MHz ADC clock from PCLK2's 16 MHz */
+static void adc1_on(f4 *f)
+{
+    busy(f);
+    wr(f, RCC_APB2ENR, rd(f, RCC_APB2ENR) | 7u << 8); /* ADC1EN, ADC2EN, ADC3EN */
+    wr(f, ADCC + AC_CCR, 1u << 16);
+    wr(f, ADC1 + A_CR2, 1u);                         /* ADON */
+}
+
+/* the core cycles until `flag` sets */
+static u32 adc_wait(f4 *f, u32 base, u32 flag, int *cycles)
+{
+    u64 t0 = f->m.cycles;
+    int i;
+    for (i = 0; i < 20000 && !(rd(f, base + A_SR) & flag); i++)
+        esk_mach_run(&f->m, 1, 0);
+    if (cycles)
+        *cycles = (int)(f->m.cycles - t0);
+    return rd(f, base + A_SR) & flag;
+}
+
+static u32 rd16(f4 *f, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_read(&f->m.bus, a, 2, &v), 0);
+    return v & 0xffffu;
+}
+
+/* the core runs on until `n` more cycles have passed */
+static void run_for(f4 *f, u64 n)
+{
+    u64 end = f->m.cycles + n;
+    while (f->m.cycles < end)
+        esk_mach_run(&f->m, 1, 0);
+}
+
+/* one conversion (HAL_ADC_Start, PollForConversion): its code, its time
+ * (3 + 12 ADC clocks), RES and ALIGN, the internal channels against the
+ * part's calibration words */
+static void test_adc_single(void)
+{
+    f4 f;
+    int t;
+    u32 ts1, ts2, code;
+    if (!f4_open(&f, 1))
+        return;
+    set_volts(&f, 0, 0, 1.65);
+    adc1_on(&f);
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 30);              /* SWSTART */
+    CHECK(rd(&f, ADC1 + A_SR) & 1u << 4);             /* STRT */
+    CHECK(adc_wait(&f, ADC1, 2u, &t));
+    CHECK(t >= 55 && t <= 66);                        /* 15 ADC clocks of 4 cycles */
+    CHECK_EQ(rd(&f, ADC1 + A_DR), 2048u);
+    CHECK_EQ(rd(&f, ADC1 + A_SR) & 2u, 0u);           /* reading DR cleared EOC */
+    wr(&f, ADC1 + A_CR1, 2u << 24);                   /* 8 bits */
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 11 | 1u << 30);   /* left-aligned */
+    CHECK(adc_wait(&f, ADC1, 2u, &t));
+    CHECK(t >= 39 && t <= 50);                        /* 3 + 8 clocks */
+    CHECK_EQ(rd(&f, ADC1 + A_DR), 128u << 8);
+    /* the temperature sensor at 25 degC, then 85, against TS_CAL1/2 */
+    ts1 = rd16(&f, 0x1FFF7A2Cu);
+    ts2 = rd16(&f, 0x1FFF7A2Eu);
+    CHECK_EQ(ts1, 959u);
+    CHECK_EQ(ts2, 1207u);
+    CHECK_EQ(rd16(&f, 0x1FFF7A22u), 512u);            /* F_SIZE */
+    wr(&f, ADC1 + A_CR1, 0);
+    wr(&f, ADC1 + A_SMPR1, 7u << 24);                 /* channel 18: 480 cycles */
+    wr(&f, ADC1 + A_SQR3, 18);
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 30);
+    CHECK(adc_wait(&f, ADC1, 2u, NULL));
+    CHECK_EQ(rd(&f, ADC1 + A_DR), 0u);                /* TSVREFE off */
+    wr(&f, ADCC + AC_CCR, 1u << 16 | 1u << 23);       /* TSVREFE */
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 30);
+    CHECK(adc_wait(&f, ADC1, 2u, NULL));
+    code = rd(&f, ADC1 + A_DR);
+    CHECK_EQ(code, 943u);                             /* 0.76 V */
+    CHECK(80 * ((int)code - (int)ts1) / ((int)ts2 - (int)ts1) + 30 == 25); /* AN3964's formula */
+    f.has_world = 1;
+    f.world_c = 85.0;
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 30);
+    CHECK(adc_wait(&f, ADC1, 2u, NULL));
+    code = rd(&f, ADC1 + A_DR);
+    CHECK_EQ(code, 1129u);                            /* 0.91 V */
+    CHECK(80 * ((int)code - (int)ts1) / ((int)ts2 - (int)ts1) + 30 == 84);
+    wr(&f, ADCC + AC_CCR, 1u << 16 | 1u << 23 | 1u << 22); /* VBATE wins */
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 30);
+    CHECK(adc_wait(&f, ADC1, 2u, NULL));
+    CHECK_EQ(rd(&f, ADC1 + A_DR), 1024u);             /* VBAT / 4 */
+    wr(&f, ADC1 + A_SQR3, 17);                        /* VREFINT */
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 30);
+    CHECK(adc_wait(&f, ADC1, 2u, NULL));
+    CHECK_EQ(rd(&f, ADC1 + A_DR), rd16(&f, 0x1FFF7A2Au));
+    CHECK_EQ(f.warnings, 0);
+    f4_close(&f);
+}
+
+/* a scan of PA0, PA1, PA4 into memory by DMA2 stream 0, circular and
+ * continuous; then OVR with EOCS and nobody reading */
+static void test_adc_scan_dma(void)
+{
+    f4 f;
+    u32 s0 = DMA2 + D_S(0);
+    if (!f4_open(&f, 1))
+        return;
+    set_volts(&f, 0, 0, 0.825);
+    set_volts(&f, 0, 1, 1.65);
+    set_volts(&f, 0, 4, 3.3);
+    adc1_on(&f);
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 1u << 22);
+    wr(&f, s0 + S_PAR, ADC1 + A_DR);
+    wr(&f, s0 + S_M0AR, 0x20000600u);
+    wr(&f, s0 + S_NDTR, 6);
+    wr(&f, s0 + S_CR, 1u << 13 | 1u << 11 | 1u << 10 | 1u << 8 | 1u); /* 16-bit, MINC, CIRC */
+    wr(&f, ADC1 + A_SQR1, 2u << 20);                    /* three conversions */
+    wr(&f, ADC1 + A_SQR3, 0u | 1u << 5 | 4u << 10);
+    wr(&f, ADC1 + A_CR1, 1u << 8);                      /* SCAN */
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 1 | 1u << 8 | 1u << 9 | 1u << 30); /* CONT, DMA, DDS */
+    run_for(&f, 1000);
+    CHECK_EQ(ram32(&f, 0x20000600u), 2048u << 16 | 1024u);
+    CHECK_EQ(ram32(&f, 0x20000604u), 1024u << 16 | 4095u);
+    CHECK_EQ(ram32(&f, 0x20000608u), 4095u << 16 | 2048u);
+    CHECK_EQ(rd(&f, ADC1 + A_SR) & 1u << 5, 0u);        /* no OVR: the DMA keeps up */
+    /* EOCS, no DMA, nobody reading: OVR and the group stops */
+    wr(&f, ADC1 + A_CR2, 0);                            /* ADON off: the group stops */
+    wr(&f, ADC1 + A_CR2, 1u);
+    wr(&f, ADC1 + A_SR, 0);
+    wr(&f, ADC1 + A_CR1, 1u << 8 | 1u << 26);           /* OVRIE */
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 1 | 1u << 10 | 1u << 30);
+    CHECK(adc_wait(&f, ADC1, 1u << 5, NULL));
+    CHECK(rd(&f, NVIC_ISPR0) & 1u << 18);               /* ADC, IRQ 18 */
+    CHECK_EQ(rd(&f, ADC1 + A_DR), 1024u);               /* the first kept */
+    run_for(&f, 200);
+    CHECK_EQ(rd(&f, ADC1 + A_SR) & 2u, 0u);             /* stopped: no new result */
+    f4_close(&f);
+}
+
+/* the injected group interrupting a continuous regular one, with JOFR;
+ * the analog watchdog; TIM2's TRGO starting the regular group */
+static void test_adc_injected_trigger(void)
+{
+    f4 f;
+    int n = 0;
+    u64 end;
+    if (!f4_open(&f, 1))
+        return;
+    set_volts(&f, 0, 0, 1.65);
+    set_volts(&f, 0, 1, 0.33);
+    adc1_on(&f);
+    wr(&f, ADC1 + A_JOFR1, 100);                         /* rank 1's offset */
+    wr(&f, ADC1 + A_JSQR, 1u << 15);                     /* JL 0: JSQ4 = channel 1 */
+    wr(&f, ADC1 + A_HTR, 4000);
+    wr(&f, ADC1 + A_LTR, 500);
+    wr(&f, ADC1 + A_CR1, 1u << 23 | 1u << 22 | 1u << 6); /* AWDEN, JAWDEN, AWDIE */
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 1 | 1u << 30);       /* continuous regular */
+    run_for(&f, 30);                                     /* in the middle of one */
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 1 | 1u << 22);       /* JSWSTART */
+    CHECK(rd(&f, ADC1 + A_SR) & 1u << 3);                /* JSTRT */
+    CHECK(adc_wait(&f, ADC1, 1u << 2, NULL));            /* JEOC */
+    CHECK_EQ(rd(&f, ADC1 + A_JDR1 + 0), 409u - 100u);    /* 0.33 V less the offset */
+    CHECK(rd(&f, ADC1 + A_SR) & 1u);                     /* AWD: 409 < 500 */
+    CHECK(rd(&f, NVIC_ISPR0) & 1u << 18);
+    CHECK(adc_wait(&f, ADC1, 2u, NULL));
+    CHECK_EQ(rd(&f, ADC1 + A_DR), 2048u);                /* the regular group went on */
+    /* TIM2's update as TRGO, every 1000 cycles, starting single conversions */
+    wr(&f, ADC1 + A_CR2, 0);
+    wr(&f, ADC1 + A_CR1, 0);
+    wr(&f, ADC1 + A_CR2, 1u | 6u << 24 | 1u << 28);      /* EXTSEL TIM2_TRGO, rising */
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u);
+    wr(&f, TIM2 + T_ARR, 999);
+    wr(&f, TIM2 + T_CR2, 2u << 4);                       /* MMS: update */
+    wr(&f, TIM2 + T_CR1, 1u);
+    for (end = f.m.cycles + 5200; f.m.cycles < end;) {
+        run_for(&f, 1);
+        if (rd(&f, ADC1 + A_SR) & 2u) {
+            n++;
+            (void)rd(&f, ADC1 + A_DR);
+        }
+    }
+    CHECK(n == 5);
+    f4_close(&f);
+}
+
+/* dual regular simultaneous mode with DMA mode 2: CDR's words */
+static void test_adc_dual(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    set_volts(&f, 0, 0, 0.825);
+    set_volts(&f, 0, 1, 2.475);
+    adc1_on(&f);
+    wr(&f, ADC2 + A_CR2, 1u);
+    wr(&f, ADC2 + A_SQR3, 1);
+    wr(&f, ADCC + AC_CCR, 1u << 16 | 2u << 14 | 6u);    /* ADCPRE /4, DMA mode 2, regular simultaneous */
+    wr(&f, ADC2 + A_CR2, 1u | 1u << 30);                 /* a slave's own start: ignored */
+    esk_mach_run(&f.m, 200, 0);
+    CHECK_EQ(rd(&f, ADC2 + A_SR) & 2u, 0u);
+    wr(&f, ADC1 + A_CR2, 1u | 1u << 30);
+    CHECK(adc_wait(&f, ADC2, 2u, NULL));
+    CHECK(rd(&f, ADC1 + A_SR) & 2u);
+    CHECK_EQ(rd(&f, ADCC + AC_CSR) & 0x202u, 0x202u);    /* EOC1, EOC2 */
+    CHECK_EQ(rd(&f, ADCC + AC_CDR), 3072u << 16 | 1024u);
+    f4_close(&f);
+}
+
+/* the DAC: DHR to DOR and the pin's voltage, the buffer's range, TIM6's
+ * TRGO with a triangle, the software trigger, a DMA underrun */
+static void test_dac(void)
+{
+    f4 f;
+    int steps = 0;
+    u64 end;
+    u32 last = 0;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 1u);
+    wr(&f, GPIOA + MODER, rd(&f, GPIOA + MODER) | 0xfu << 8); /* PA4, PA5 analog */
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 29 | 1u << 4); /* DACEN, TIM6EN */
+    wr(&f, DAC + DAC_CR, 1u);                            /* EN1, buffered */
+    wr(&f, DAC + DAC_DHR12R1, 2048);
+    CHECK_EQ(rd(&f, DAC + DAC_DOR1), 0u);                /* one APB1 clock later */
+    esk_mach_run(&f.m, 4, 0);
+    CHECK_EQ(rd(&f, DAC + DAC_DOR1), 2048u);
+    CHECK_EQ(f.pin[0][4].aout, 1);
+    CHECK(f.pin[0][4].volts > 1.6499 && f.pin[0][4].volts < 1.6501);
+    CHECK_EQ(rd(&f, DAC + DAC_DHR12L1), 2048u << 4);     /* every view */
+    wr(&f, DAC + DAC_DHR8R1, 0);
+    esk_mach_run(&f.m, 4, 0);
+    CHECK(f.pin[0][4].volts > 0.1999 && f.pin[0][4].volts < 0.2001); /* the buffer's floor */
+    wr(&f, DAC + DAC_CR, 1u | 1u << 1);                  /* BOFF */
+    CHECK(f.pin[0][4].volts < 0.0001);
+    CHECK_EQ(f.pin[0][5].aout, 0);
+    wr(&f, DAC + DAC_DHR12RD, 4095u << 16 | 1000u);     /* both channels */
+    esk_mach_run(&f.m, 4, 0);
+    CHECK_EQ(rd(&f, DAC + DAC_DOR2), 4095u);
+    /* a triangle of amplitude 7 on TIM6's update every 100 cycles */
+    wr(&f, DAC + DAC_DHR12R1, 100);
+    wr(&f, DAC + DAC_CR, 1u | 1u << 2 | 0u << 3 | 2u << 6 | 2u << 8); /* TEN, TIM6_TRGO, triangle, MAMP 2 */
+    wr(&f, TIM6 + T_ARR, 99);
+    wr(&f, TIM6 + T_CR2, 2u << 4);
+    wr(&f, TIM6 + T_CR1, 1u);
+    for (end = f.m.cycles + 2000; f.m.cycles < end;) {
+        u32 d;
+        run_for(&f, 1);
+        d = rd(&f, DAC + DAC_DOR1);
+        CHECK(d >= 100 && d <= 107);
+        if (d != last)
+            steps++;
+        last = d;
+    }
+    CHECK(steps >= 18 && steps <= 21);                   /* one step a trigger */
+    /* the software trigger, and an underrun with nothing to serve DMA */
+    wr(&f, TIM6 + T_CR1, 0);
+    wr(&f, DAC + DAC_CR, 1u | 1u << 2 | 7u << 3 | 1u << 12 | 1u << 13); /* SWTRIG, DMAEN, DMAUDRIE */
+    wr(&f, DAC + DAC_DHR12R1, 300);
+    wr(&f, DAC + DAC_SWTRIGR, 1u);
+    CHECK_EQ(rd(&f, DAC + DAC_SWTRIGR), 0u);
+    esk_mach_run(&f.m, 20, 0);
+    CHECK_EQ(rd(&f, DAC + DAC_DOR1), 300u);
+    CHECK_EQ(rd(&f, DAC + DAC_SR), 0u);
+    wr(&f, DAC + DAC_SWTRIGR, 1u);                       /* the request still waits */
+    CHECK(rd(&f, DAC + DAC_SR) & 1u << 13);              /* DMAUDR1 */
+    CHECK(rd(&f, NVIC_ISPR1) & 1u << 22);                /* TIM6_DAC, IRQ 54 */
+    wr(&f, DAC + DAC_SR, 1u << 13);
+    CHECK_EQ(rd(&f, DAC + DAC_SR), 0u);
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -2257,4 +2586,9 @@ RUN(test_i2c_stretch_arlo);
 RUN(test_i2c_slave);
 RUN(test_i2c_dma);
 RUN(test_i2c_wired);
+RUN(test_adc_single);
+RUN(test_adc_scan_dma);
+RUN(test_adc_injected_trigger);
+RUN(test_adc_dual);
+RUN(test_dac);
 TEST_MAIN_END

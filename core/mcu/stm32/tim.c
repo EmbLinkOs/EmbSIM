@@ -181,6 +181,11 @@ struct tim {
     char sig_up[12], sig_ch[4][12], sig_trig[12], sig_com[12];
     struct esk_rf_reg *dcr, *dmar;
     u32 burst_idx;
+    /* the trigger outputs the ADCs and the DAC listen to: TIMx_CCy (an
+     * output channel's OCyREF, a pulse at a capture or a frozen channel's
+     * match) and TIMx_TRGO */
+    char sig_cc[4][12], sig_trgo[12];
+    int cc_level[4];
 };
 
 /* a DMA request (DIER's UDE, CCxDE, TDE, COMDE): it waits for the DMA */
@@ -285,6 +290,10 @@ static void match(struct tim *t, int ch, int down)
     }
     if (ch == 0 && t->cr2 && bits(t->cr2, 4, 3) == 3)
         trgo_pulse(t); /* MMS: compare pulse */
+    if (m == 0) {
+        esk_stm32_trigger(t->s, t->sig_cc[ch], 1); /* frozen: the match's event */
+        esk_stm32_trigger(t->s, t->sig_cc[ch], 0);
+    }
     if (m == 1)
         t->ref[ch] = 1;
     else if (m == 2)
@@ -433,6 +442,13 @@ static void outputs(struct tim *t)
         }
     }
     deadlines(t);
+    for (ch = 0; ch < t->nch; ch++) {
+        int lvl = is_output(t, ch) && ocm(t, ch) ? t->ref[ch] : 0;
+        if (lvl != t->cc_level[ch]) {
+            t->cc_level[ch] = lvl;
+            esk_stm32_trigger(t->s, t->sig_cc[ch], lvl);
+        }
+    }
     if (t->cr2 && bits(t->cr2, 4, 3) >= 4)
         trgo_set(t, t->ref[bits(t->cr2, 4, 3) - 4]); /* MMS: OCxREF */
     if (changed && t->s->pins_changed)
@@ -710,6 +726,7 @@ static void trgo_set(struct tim *t, int level)
     if (level == t->trgo)
         return;
     t->trgo = level;
+    esk_stm32_trigger(t->s, t->sig_trgo, level);
     for (i = 0; rf; i++) {
         struct esk_rf_periph *p = esk_rf_periph_at(rf, i);
         struct tim *u;
@@ -763,6 +780,8 @@ static void capture(struct tim *t, int ch)
     set_flag(t, 1u << (ch + 1));
     if (!(t->cr2 && (t->cr2->value & CCDS)))
         dma_req(t, 1u << (ch + 9), t->sig_ch[ch]);
+    esk_stm32_trigger(t->s, t->sig_cc[ch], 1); /* the capture's event */
+    esk_stm32_trigger(t->s, t->sig_cc[ch], 0);
 }
 
 /* the edge a channel's polarity selects on its input (CCxNP:CCxP 00
@@ -1205,6 +1224,7 @@ static void tim_reset(void *ctx)
     for (ch = 0; ch < 4; ch++) {
         t->ccr_now[ch] = t->ccr[ch] ? (u32)(t->ccr[ch]->value & t->cntmask) : 0;
         t->ref[ch] = t->cleared[ch] = 0;
+        t->cc_level[ch] = 0;
         t->dref[ch] = 0;
         t->drefn[ch] = 1;
         t->dref_at[ch] = t->drefn_at[ch] = 0;
@@ -1420,8 +1440,11 @@ void *esk_stm32_tim_create(struct esk_mach *s, struct esk_rf_periph *p)
     snprintf(t.sig_up, sizeof t.sig_up, "%s_UP", p->name);
     snprintf(t.sig_trig, sizeof t.sig_trig, "%s_TRIG", p->name);
     snprintf(t.sig_com, sizeof t.sig_com, "%s_COM", p->name);
+    snprintf(t.sig_trgo, sizeof t.sig_trgo, "%s_TRGO", p->name);
     for (ch = 0; ch < 4; ch++)
         snprintf(t.sig_ch[ch], sizeof t.sig_ch[ch], "%s_CH%d", p->name, ch + 1);
+    for (ch = 0; ch < 4; ch++)
+        snprintf(t.sig_cc[ch], sizeof t.sig_cc[ch], "%s_CC%d", p->name, ch + 1);
     c = (struct tim *)esk_mach_alloc(s, sizeof *c);
     if (!c)
         return 0;

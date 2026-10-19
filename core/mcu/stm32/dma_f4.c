@@ -272,8 +272,11 @@ static int item(struct dma *d, int s)
 
 static void items_left(struct esk_mach *s, const char *sig, u32 left)
 {
-    if (!left)
+    if (!left) {
         esk_stm32_spi_dma_end(s, sig);
+        esk_stm32_dma_ended_adc(s, sig);
+        esk_stm32_dac_dma_end(s, sig);
+    }
     esk_stm32_i2c_dma_left(s, sig, left);
 }
 

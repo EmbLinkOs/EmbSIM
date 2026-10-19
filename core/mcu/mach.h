@@ -46,6 +46,7 @@ struct esk_region {
     int kind;     /* ESK_MEM_RAM, ESK_MEM_FLASH or ESK_MEM_ROM */
     u32 erased;   /* each word of it before the image (esk_bus_erase) */
     int mirror;   /* shares another region's memory */
+    u8 *factory;  /* what it holds from the factory, size bytes, or 0 */
 };
 
 /* A memory-mapped device. `off` is the offset of the access from the
@@ -229,6 +230,10 @@ typedef struct esk_mach_pin {
      * 50 MHz: 1 to 3), which then set the pin's output resistance and
      * edge rate */
     int speed;
+    /* an analog output (a DAC's): 1 and the voltage it drives behind its
+     * output resistance (ohms) */
+    int aout;
+    double volts, aout_r;
 } esk_mach_pin;
 
 typedef struct esk_mach_host {
@@ -257,6 +262,9 @@ typedef struct esk_mach_host {
     /* the voltage on a pin's net, for an ADC: 1 and *v, or 0 when the pin
      * is not connected */
     int (*pin_volts)(void *ctx, int port, int bit, double *v);
+    /* the temperature (degC) of the room the part sits in, as the world
+     * declares it: 1, or 0 when the world has none (the part's 25 degC) */
+    int (*temperature)(void *ctx, double *celsius);
     /* an analog comparator's threshold on a pin: the pins' outside levels
      * change (pins_changed) when its net's voltage crosses `v`, at the
      * crossing's time; `on` 0 takes it off. 1 when the pin's net is analog

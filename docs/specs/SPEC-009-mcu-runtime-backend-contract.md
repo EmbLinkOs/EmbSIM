@@ -224,7 +224,18 @@ is the SR/DR-layout USART of both families. An MCU description's
 `dma_requests` (controller, stream, channel, requests) is the register
 file's DMA mapping (`esk_rf_dma_maps`); a peripheral model raises or drops
 a request with `esk_stm32_dma_request`, and `stm32f4-dma` serves it from
-the stream that takes it, or keeps it waiting.
+the stream that takes it, or keeps it waiting, telling the peripheral of a
+round's last two items (an SPI's CRC, an I2C's NACK, an ADC's or DAC's
+DDS). `stm32-spi` and `stm32-i2c` are the SPI and I2C of both families,
+master and slave, their inputs reaching them from the pins. A timer's
+trigger outputs (TIMx_TRGO, TIMx_CCy) and EXTI's lines 9, 11 and 15 reach
+the ADCs and the DAC through `esk_stm32_trigger`. An MCU description's
+`io.analog` is the register file's analog channel table
+(`esk_rf_analog_pin`); an ADC model reads a channel's pin voltage with
+`pin_volts`, and the room's temperature, for a temperature sensor, with
+`esk_mach_host.temperature` (the world's, SPEC-003 §8). A DAC drives a
+pin's net as `esk_mach_pin.aout`: its voltage behind its output
+resistance.
 
 ## 7. Pins, multiplexing and nets
 

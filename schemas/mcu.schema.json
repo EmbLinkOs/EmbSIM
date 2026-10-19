@@ -72,6 +72,20 @@
           "size": {"$ref": "common.schema.json#/$defs/hex_or_size"},
           "kind": {"type": "string", "enum": ["ram", "flash", "rom", "alias"]},
           "erased": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+          "contents": {
+            "description": "Bytes the part holds there from the factory (a device signature, calibration values): each at an offset in the region, as hex digits in memory order.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["offset", "bytes"],
+              "additionalProperties": false,
+              "properties": {
+                "offset": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+                "bytes": {"type": "string", "pattern": "^([0-9A-Fa-f]{2})+$"},
+                "doc": {"type": "string"}
+              }
+            }
+          },
           "target": {"$ref": "common.schema.json#/$defs/hex_or_size"},
           "main": {"type": "boolean"},
           "doc": {"type": "string"}

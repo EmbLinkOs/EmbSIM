@@ -46,6 +46,10 @@ es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind)
 
 void esk_bus_erase(struct esk_region *r)
 {
+    if (r->factory) {
+        memcpy(r->mem, r->factory, r->size);
+        return;
+    }
     if (!r->erased) {
         memset(r->mem, 0, r->size);
         return;

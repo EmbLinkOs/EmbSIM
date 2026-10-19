@@ -6,6 +6,7 @@
  * the description's globs, in its order (the RCC first: the others' clock
  * gates are its registers). */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "mcu/build.h"
@@ -33,6 +34,38 @@ static int mem_kind(const char *k)
     if (esk_str_eq(k, "alias"))
         return ESK_MEM_ALIAS;
     return ESK_MEM_RAM;
+}
+
+/* the bytes a region holds from the factory ({offset, bytes}), kept for
+ * every erase */
+static es_status contents(struct esk_mach *m, struct esk_region *rg, const esk_json *list, u32 size, char *why,
+                          size_t cap)
+{
+    size_t i, k;
+    if (!list || !esk_json_len(list))
+        return ES_OK;
+    for (i = 0; i < esk_json_len(list); i++) {
+        const esk_json *c = esk_json_at(list, i);
+        const char *hex = esk_json_get_str(c, "bytes", "");
+        u32 off = 0;
+        size_t n = strlen(hex) / 2;
+        if (u32_of(esk_json_get(c, "offset"), &off) || off > size || n > size - off) {
+            snprintf(why, cap, "memory contents %zu lie outside their region", i);
+            return ES_ESCHEMA;
+        }
+        for (k = 0; k < n; k++) {
+            char two[3];
+            two[0] = hex[2 * k];
+            two[1] = hex[2 * k + 1];
+            two[2] = 0;
+            rg->mem[off + k] = (u8)strtoul(two, NULL, 16);
+        }
+    }
+    rg->factory = (u8 *)esk_mach_alloc(m, size);
+    if (!rg->factory)
+        return ES_ENOMEM;
+    memcpy(rg->factory, rg->mem, size);
+    return ES_OK;
 }
 
 es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json *regs, u32 hse_hz,
@@ -76,6 +109,9 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
                 (void)u32_of(esk_json_get(r, "erased"), &erased);
             m->bus.rg[m->bus.nrg - 1].erased = erased;
             esk_bus_erase(&m->bus.rg[m->bus.nrg - 1]);
+            st = contents(m, &m->bus.rg[m->bus.nrg - 1], esk_json_get(r, "contents"), size, why, cap);
+            if (st != ES_OK)
+                return st;
         }
     for (i = 0; bb && i < esk_json_len(bb); i++) {
         const esk_json *a = esk_json_at(bb, i);
@@ -141,6 +177,8 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         st = esk_rf_alternates(m, esk_json_get(esk_json_get(mcu, "io"), "alternate"), why, cap);
         if (st == ES_OK)
             st = esk_rf_dma_requests(m, esk_json_get(mcu, "dma_requests"), why, cap);
+        if (st == ES_OK)
+            st = esk_rf_analog(m, esk_json_get(esk_json_get(mcu, "io"), "analog"), why, cap);
         if (st != ES_OK)
             return st;
         st = esk_rf_bind(m, esk_json_get(mcu, "peripherals"), missing, sizeof missing);

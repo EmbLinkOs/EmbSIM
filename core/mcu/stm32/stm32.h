@@ -103,6 +103,21 @@ void esk_stm32f1_i2c_input(struct esk_mach *m, int port, int bit, int level);
 /* the F1: the level a pin (port, bit) gives the SPI functions AFIO places
  * there */
 void esk_stm32f1_spi_input(struct esk_mach *m, int port, int bit, int level);
+/* the F4's ADCs and their common block (adc_f4.c), its DAC (dac_f4.c) */
+extern const struct esk_dev_ops esk_stm32f4_adc_ops, esk_stm32f4_adc_common_ops, esk_stm32f4_dac_ops;
+void *esk_stm32f4_adc_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_stm32f4_adc_common_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_stm32f4_dac_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* a trigger output's level (TIM2_TRGO, TIM1_CC1, EXTI11: a pulse is 1
+ * then 0) to the ADCs and the DAC that listen to it */
+void esk_stm32_trigger(struct esk_mach *m, const char *sig, int level);
+void esk_stm32_dac_trigger(struct esk_mach *m, const char *sig, int level);
+/* a DMA stream's last item for an ADC's or the DAC's request */
+void esk_stm32_dma_ended_adc(struct esk_mach *m, const char *sig);
+void esk_stm32_dac_dma_end(struct esk_mach *m, const char *sig);
+/* the DAC's output on a pin (PA4, PA5): 1 with its voltage and output
+ * resistance, 0 when the pin is not a DAC channel's or it is off */
+int esk_stm32f4_dac_out(struct esk_mach *m, int port, int bit, double *volts, double *rout);
 /* the F4: the pin (port * 32 + bit) whose GPIO selects `sig` now, or -1 */
 int esk_stm32f4_af_pin(struct esk_mach *m, const char *sig);
 /* the F1: a USART's CK, CTS or RTS pin ("CK", "CTS", "RTS") as AFIO's MAPR

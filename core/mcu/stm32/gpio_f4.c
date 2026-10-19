@@ -37,6 +37,9 @@
  *     (pin_in), and IDR's changes go to EXTI's line on the port SYSCFG's
  *     EXTICR picks.
  *
+ *   - an enabled DAC channel drives PA4 or PA5 (dac_f4.c), whatever the
+ *     pin's mode;
+ *
  * Not modelled: EVENTOUT (AF15, the pulse SEV sends out), the I/O
  * compensation cell's effect on the edges (SYSCFG's CMPCR only reports it
  * ready), the 5 V tolerant pins' clamps. */
@@ -121,8 +124,14 @@ static void update_once(struct f4gpio *g)
                     o.drive = d;
             }
         }
+        if (esk_stm32f4_dac_out(s, g->port, i, &o.volts, &o.aout_r)) {
+            o.aout = 1; /* an enabled DAC channel takes its pin, whatever its mode */
+            o.drive = -1;
+        }
         if (o.analog)
             lvl = 0;
+        else if (o.aout)
+            lvl = o.volts > (s->vdd > 0.0 ? s->vdd : 3.3) / 2.0;
         else if (o.drive >= 0)
             lvl = o.drive;
         else if (s->host.pin_in && s->host.pin_in(s->host.ctx, g->port, i, &ext))

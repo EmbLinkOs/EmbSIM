@@ -19,7 +19,9 @@
  *     RTC_Alarm, OTG_FS_WKUP, ...). The request is a level, so a handler
  *     that leaves PR set is entered again (checked at each access to EXTI);
  *   - an edge or a SWIER trigger on a line whose EMR bit is set is an event
- *     to the core: it ends a WFE (esk_cortexm_event). */
+ *     to the core: it ends a WFE (esk_cortexm_event);
+ *   - an edge on line 9 is the DAC's external trigger, on lines 11 and 15
+ *     the ADCs' (EXTI_11, EXTI_15). */
 #include <stdio.h>
 #include <string.h>
 
@@ -62,6 +64,13 @@ void esk_stm32_exti_input(struct esk_mach *s, int line, int level)
         if (x->emr && (x->emr->value & bit))
             esk_cortexm_event(s);
         pend(x);
+        if (line == 9 || line == 11 || line == 15) {
+            /* the line's edge: the DAC's (9) and the ADCs' (11, 15) trigger */
+            char sig[8];
+            snprintf(sig, sizeof sig, "EXTI%d", line);
+            esk_stm32_trigger(s, sig, 1);
+            esk_stm32_trigger(s, sig, 0);
+        }
     }
 }
 

@@ -467,6 +467,48 @@ es_status esk_rf_dma_requests(struct esk_mach *m, const esk_json *map, char *why
     return ES_OK;
 }
 
+es_status esk_rf_analog(struct esk_mach *m, const esk_json *an, char *why, size_t cap)
+{
+    struct esk_rf *rf = m->rf;
+    size_t i, n = an ? esk_json_len(an) : 0;
+    if (!rf || !n)
+        return ES_OK;
+    rf->an_at = (int *)esk_mach_alloc(m, n * sizeof *rf->an_at);
+    rf->an_sig = (const char **)esk_mach_alloc(m, n * sizeof *rf->an_sig);
+    if (!rf->an_at || !rf->an_sig)
+        return ES_ENOMEM;
+    for (i = 0; i < n; i++) {
+        const esk_json *e = esk_json_at(an, i);
+        const char *pin = e ? e->key : NULL, *sig = esk_json_str(e);
+        if (!pin || !sig || pin[0] != 'P' || pin[1] < 'A' || pin[1] > 'K' || pin[2] < '0' || pin[2] > '9') {
+            snprintf(why, cap, "io.analog: %s is not a port pin", pin ? pin : "?");
+            return ES_ESCHEMA;
+        }
+        rf->an_at[i] = (pin[1] - 'A') * 32 + (int)strtol(pin + 2, NULL, 10);
+        rf->an_sig[i] = esk_mach_strdup(m, sig);
+        if (!rf->an_sig[i])
+            return ES_ENOMEM;
+    }
+    rf->nan = (int)n;
+    return ES_OK;
+}
+
+int esk_rf_analog_pin(const struct esk_rf *rf, int unit, int ch)
+{
+    int i;
+    for (i = 0; rf && i < rf->nan; i++) {
+        const char *s = rf->an_sig[i], *in;
+        int k, has = 0;
+        if (strncmp(s, "ADC", 3) || !(in = strstr(s, "_IN")) || strtol(in + 3, NULL, 10) != ch)
+            continue;
+        for (k = 3; s + k < in; k++)
+            has |= s[k] - '0' == unit;
+        if (has)
+            return rf->an_at[i];
+    }
+    return -1;
+}
+
 int esk_rf_dma_maps(const struct esk_rf *rf, const char *ctl, int stream, int chan, const char *sig)
 {
     int i;

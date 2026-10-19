@@ -59,7 +59,11 @@ ADR-017, ADR-018. **Schemas:** `schemas/mcu.schema.json`,
 
 Numbers for addresses and sizes accept `0x` hexadecimal and `K`, `M` suffixes
 (powers of two). `kind` is `ram`, `flash`, `rom`, `alias`; `erased` is the
-word value of erased flash; `main` marks the region a project may resize.
+word value of erased flash; `main` marks the region a project may resize;
+`contents` lists the bytes a region holds from the factory (a device
+signature, calibration values), each as an offset and hex digits in memory
+order, restored at every reset. `io.analog` names each pin's ADC channels
+(`ADC123_IN0`: channel 0 of ADC1, 2 and 3).
 `register_file.vendored` says whether the catalog ships the file (ADR-017);
 `lookup` lists where to find it otherwise, in order. `peripherals` bind
 models (SPEC-009) to register-file peripherals by glob; `order` forces

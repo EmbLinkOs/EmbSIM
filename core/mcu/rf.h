@@ -161,6 +161,11 @@ struct esk_rf {
     const char **dma_ctl, **dma_sig;
     int *dma_stream, *dma_chan;
     int ndma;
+    /* the MCU description's analog inputs (io.analog): pin (port * 32 +
+     * bit) and its ADC channels' name (ADC123_IN0) */
+    int *an_at;
+    const char **an_sig;
+    int nan;
 };
 
 /* Build the register file from a register description and put it on the
@@ -213,6 +218,11 @@ const char *esk_rf_af_signal(const struct esk_rf *rf, int port, int bit, int af,
 int esk_rf_af_pin(const struct esk_rf *rf, const char *sig, int k, int *af);
 /* the MCU description's DMA request mapping (dma_requests) */
 es_status esk_rf_dma_requests(struct esk_mach *m, const esk_json *map, char *why, size_t cap);
+/* the MCU description's analog inputs (io.analog) */
+es_status esk_rf_analog(struct esk_mach *m, const esk_json *an, char *why, size_t cap);
+/* the pin (port * 32 + bit) of ADC `unit`'s channel `ch`, or -1 when no
+ * pin of the package carries it */
+int esk_rf_analog_pin(const struct esk_rf *rf, int unit, int ch);
 /* whether request `sig` is on controller `ctl`'s stream `stream`, channel
  * `chan` */
 int esk_rf_dma_maps(const struct esk_rf *rf, const char *ctl, int stream, int chan, const char *sig);

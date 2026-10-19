@@ -411,6 +411,24 @@ static void apply_cfg(mcu_state *st, int port, int bit)
         return;
     p->model.pull = cfg->pull == 1 ? ESK_PULL_UP : cfg->pull == 2 ? ESK_PULL_DOWN : ESK_PULL_NONE;
     p->model.drive = cfg->open_drain ? ESK_DRIVE_OPEN_DRAIN : ESK_DRIVE_PUSH_PULL;
+    if (cfg->aout) {
+        /* a DAC: its voltage behind its output resistance, both levels the
+         * same so the net settles there (as a 1 or 0 on a digital net) */
+        p->model.voc_set = 3;
+        p->model.voc_high = p->model.voc_low = cfg->volts;
+        p->model.rout = cfg->aout_r > 0.0 ? cfg->aout_r : 1.0;
+        p->model.slew_v_per_us = 1.0;
+        esk_pin_output(p, cfg->volts > (p->model.vih + p->model.vil) / 2.0 ? ESK_L1 : ESK_L0, ESK_STR_STRONG);
+        esk_pin_refresh(p);
+        return;
+    }
+    p->model.voc_set = p->model0.voc_set;
+    p->model.voc_high = p->model0.voc_high;
+    p->model.voc_low = p->model0.voc_low;
+    if (cfg->speed < 1) {
+        p->model.rout = p->model0.rout;
+        p->model.slew_v_per_us = p->model0.slew_v_per_us;
+    }
     if (cfg->speed >= 1 && cfg->speed <= 4) {
         if (st->rout[cfg->speed - 1] > 0.0)
             p->model.rout = st->rout[cfg->speed - 1];
@@ -527,6 +545,16 @@ static int h_pin_volts(void *ctx, int port, int bit, double *v)
         *v = n->voltage;
     else
         *v = esk_net_value(n) == ESK_L1 ? st->m.vdd : 0.0;
+    return 1;
+}
+
+static int h_temperature(void *ctx, double *celsius)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    const esk_world *w = &st->c->e->world;
+    if (!(w->set & (1u << ESK_WF_TEMPERATURE)))
+        return 0;
+    *celsius = w->value[ESK_WF_TEMPERATURE];
     return 1;
 }
 
@@ -1243,6 +1271,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.diag = h_diag;
     st->m.host.exc = h_exc;
     st->m.host.pin_volts = h_pin_volts;
+    st->m.host.temperature = h_temperature;
     st->m.host.pin_watch = h_pin_watch;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);

@@ -5,6 +5,57 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32F446's ADCs and DAC (the NUCLEO-F446RE plan, step 8)
+
+- **`stm32f4-adc`** for ADC1-3 (RM0390 13):
+  - **Groups:** the regular and injected groups, on software starts, the
+    timers' and EXTI's triggers with their edges, or JAUTO. An injected
+    group interrupts a regular conversion, which starts again after it.
+  - **Modes:** scan, continuous and discontinuous.
+  - **Timing:** SMPRx's sampling times and RES's 12, 10, 8 or 6 bits, at
+    the ADC clock.
+  - **Results and flags:** EOC with EOCS, OVR stopping the group, JOFRx's
+    offsets with the signed alignments, the analog watchdog, DMA with DDS,
+    and the interrupts.
+  - **Inputs:** the pins of the description's new `io.analog` table,
+    VREFINT, VBAT/4, and the temperature sensor at the world's
+    temperature.
+- **`stm32f4-adc-common`:** CSR, CCR, and the dual and triple modes
+  (regular and injected simultaneous, interleaved with DELAY, alternate
+  trigger) with CDR's DMA modes.
+- **`stm32f4-dac`** (RM0390 14):
+  - every holding register's view, and DOR after one APB1 clock, or three
+    after a trigger (TIM2 and TIM4-8 TRGO, EXTI9, SWTRIG);
+  - noise and triangle waves, DMA with its underrun;
+  - the output buffer's range, or 15 kOhm without it;
+  - its voltage drives PA4 and PA5 through a new analog output on
+    `esk_mach_pin` (`aout`), which the runtime puts on the pin's net
+    behind the output resistance.
+- **Triggers:**
+  - the timers announce TIMx_TRGO and TIMx_CCy (OCyREF, or a pulse at a
+    capture or a frozen channel's match);
+  - EXTI announces lines 9, 11 and 15;
+  - the DMA tells the peripheral of a round's last item.
+- **The part's factory bytes:** memory regions take `contents`, restored at
+  every reset. The F446's device signature carries its UID, its flash size
+  and the calibration values TS_CAL1, TS_CAL2 and VREFINT_CAL, which agree
+  with the sensors' model.
+- **The world's temperature** reaches MCU models through
+  `esk_mach_host.temperature`.
+- **Proof (`tests/unit/test_stm32f4.c`):**
+  - a conversion's code and time;
+  - RES and ALIGN;
+  - the temperature at 25 and 85 degC through ST's formula with TS_CAL1/2;
+  - VBAT/4, and VREFINT against VREFINT_CAL;
+  - a scan into memory by circular DMA;
+  - OVR;
+  - an injected group interrupting a regular one, with JOFR and the
+    watchdog;
+  - TIM2's TRGO pacing conversions;
+  - dual simultaneous mode's CDR;
+  - for the DAC: DOR's timing, the pin's voltage and the buffer's floor,
+    a triangle on TIM6's TRGO, the software trigger, an underrun.
+
 ### The STM32 I2Cs (the NUCLEO-F446RE plan, step 8)
 
 - **`stm32-i2c`** for the F1's and F4's I2C (RM0008 26, RM0390 27). It
