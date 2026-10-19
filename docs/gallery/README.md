@@ -5,6 +5,17 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Two NUCLEO-F446REs over I2C (2026-10-19)
+
+Step 10 of the NUCLEO-F446RE plan: STM32CubeF4's own examples, built
+unmodified. Here two boards run I2C_TwoBoards_ComIT, wired as its readme
+draws them: I2C1's SCL (D10) and SDA (D14) joined, with the grounds, from
+one USB supply. B1 runs the example as it is, the master; B2 runs it with
+`MASTER_BOARD` commented out, the slave. The project is the one
+`tests/vendor/stm32cubef4/run.py` generates.
+
+![Two NUCLEO-F446REs on the bench, SCL and SDA wired between their Arduino headers](nucleo-f446re/two-nucleos-i2c.png)
+
 ## The NUCLEO-F446RE (2026-10-19)
 
 The board EmbLinkRTOS is developed against, step 9 of its plan: ST's
