@@ -72,6 +72,9 @@ void esk_stm32f4_port_changed(struct esk_mach *m, int port);
 /* the port (0 for A) SYSCFG's EXTICR gives EXTI line 0-15, or -1 */
 int esk_stm32f4_exti_port(struct esk_mach *m, int line);
 extern const struct esk_dev_ops esk_stm32f4_pwr_ops;
+/* the F4's flash interface: programming, erasing, the option bytes (flash_f4.c) */
+extern const struct esk_dev_ops esk_stm32f4_flash_ops;
+void *esk_stm32f4_flash_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32f4_pwr_create(struct esk_mach *m, struct esk_rf_periph *p);
 /* AFIO's MAPR (0 without AFIO) and the port an EXTI line listens to */
 u32 esk_stm32f1_mapr(struct esk_mach *m);

@@ -173,12 +173,11 @@ def build(st: Path, name: str, out: Path, slave: bool = False) -> Path:
     for n, src in enumerate(project_sources(ide)):
         src = resolve(st, src)
         if slave and src.name == "main.c":
-            text = src.read_text(encoding="utf-8")
-            if "\n#define MASTER_BOARD" not in text:
+            text = src.read_bytes()  # ST's sources are not all UTF-8: the bytes as they are
+            if b"\n#define MASTER_BOARD" not in text:
                 raise SystemExit(f"{src} has no #define MASTER_BOARD to comment out")
             edited = d / "main.c"
-            edited.write_text(text.replace("\n#define MASTER_BOARD", "\n/* #define MASTER_BOARD */", 1),
-                              encoding="utf-8")
+            edited.write_bytes(text.replace(b"\n#define MASTER_BOARD", b"\n/* #define MASTER_BOARD */", 1))
             incs_here = ["-I", src.parent.parent / "Inc"]
             src = edited
         else:

@@ -193,6 +193,8 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
     if (r) {
         if (!r->rom || debug)
             esk_mem_wr_le(r->mem + (a - r->base), n, v);
+        else if (b->rom_write)
+            b->rom_write(b->rom_write_ctx, r, a, n, v);
         if (r->rom && debug)
             esk_bus_code_changed(b);
         return 0;

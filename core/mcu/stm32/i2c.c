@@ -50,8 +50,9 @@
  *     ADDR and TRA set after the ACK, and SCL is held low until ADDR clears
  *     (reading SR1 then SR2);
  *   - receiving, each byte is acknowledged as CR1.ACK says and goes to DR
- *     (RXNE) after its ACK bit; with DR still full the byte waits (BTF) and
- *     SCL is held low until DR is read;
+ *     (RXNE) after its ACK bit, over what the program may have written to
+ *     DR (the HAL writes 0 to clear TXE); with a received byte still unread
+ *     (RXNE) the byte waits (BTF) and SCL is held low until DR is read;
  *   - transmitting, DR's byte goes out after ADDR clears (SCL held low
  *     until it is written); a byte acknowledged by the master is followed
  *     by DR's next (BTF and SCL held low while DR is empty), a NACK sets AF
@@ -60,7 +61,8 @@
  *     set is lost, and a byte due while DR is empty is the last one again,
  *     both setting OVR;
  *   - a STOP after the slave was addressed sets STOPF (cleared by reading
- *     SR1 then writing CR1).
+ *     SR1 then writing CR1), but not after a transmitted byte's NACK (the
+ *     master's last), as the manual says.
  *
  * Both:
  *   - SR1's flags clear as the manuals say: SB by a write of DR after SR1
@@ -502,7 +504,7 @@ static void lost(struct i2c *k)
 /* the master's byte received: to DR, or waiting in the shift register */
 static void master_received(struct i2c *k)
 {
-    if (!k->dr_full) {
+    if (!(reg(k->sr1) & SR1_RXNE)) { /* a byte written to send is overwritten */
         k->dr_byte = k->shift;
         k->dr_full = 1;
         esk_rf_hw(k->dr, k->dr_byte);
@@ -728,7 +730,7 @@ static void slave_send(struct i2c *k)
 /* the slave's received byte after its ACK bit */
 static void slave_received(struct i2c *k)
 {
-    if (!k->dr_full) {
+    if (!(reg(k->sr1) & SR1_RXNE)) { /* a byte written to send (the HAL's flush) is overwritten */
         k->dr_byte = k->sl_shift;
         k->dr_full = 1;
         esk_rf_hw(k->dr, k->dr_byte);
@@ -965,7 +967,8 @@ static void bus_stop(struct i2c *k)
     clr_sr2(k, SR2_BUSY);
     timeout_arm(k, 0);
     if (k->sl_addressed) {
-        set_sr1(k, SR1_STOPF);
+        if (k->sl != S_DONE)
+            set_sr1(k, SR1_STOPF); /* not after the master's NACK (RM0390's SR1.STOPF) */
         k->sl_addressed = 0;
         k->sl_ten = 0;
         k->sl = S_NONE;
@@ -1151,6 +1154,7 @@ static u32 i2c_read(void *ctx, u32 off, int n)
         k->sr1_read = 0;
         dr_read(k);
     }
+    update(k); /* the interrupt lines are levels: still set, still pending */
     return v;
 }
 

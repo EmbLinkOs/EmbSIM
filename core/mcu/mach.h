@@ -118,6 +118,11 @@ struct esk_bus {
      * clocks run lazily gives them the cycles they are owed first */
     void (*sync)(void *ctx);
     void *sync_ctx;
+    /* a store of the core's to read-only memory (an STM32's flash): the
+     * flash interface's to program, or to refuse with its error flags;
+     * without one the store is ignored */
+    void (*rom_write)(void *ctx, struct esk_region *r, u32 a, int n, u32 v);
+    void *rom_write_ctx;
     /* a device was written since the lazy clocks' next event was found (a
      * read never brings a device's event nearer) */
     int written;

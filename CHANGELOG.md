@@ -5,6 +5,37 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Two boards over I2C, and the F4's flash (the NUCLEO-F446RE plan, step 10, part 2)
+
+- **CubeF4's I2C_TwoBoards examples** run on two NUCLEO-F446RE boards wired
+  as their readmes draw them: ComPolling, ComIT, ComDMA and AdvComIT. The
+  slave's image is the example with `#define MASTER_BOARD` commented out,
+  as each readme asks. Every buffer arrives whole, and SCL's edges count
+  exactly the bytes sent.
+- **EEPROM_Emulation** runs its thousands of writes of three variables
+  through the F4's flash interface (`stm32f4-flash`):
+  - KEYR's unlock;
+  - programming at PSIZE's width, bits going only from 1 to 0;
+  - PGPERR, PGAERR, PGSERR and WRPERR;
+  - sector and mass erase;
+  - EOP, OPERR and the FLASH interrupt;
+  - OPTKEYR and OPTSTRT writing the option bytes, which each reset loads.
+  - **Not modelled:** the program and erase times. BSY never reads 1.
+- **Two cores on one circuit.** A core no longer stops at another core's
+  next quantum. It runs to the next event that is not a core's, and no
+  further than one quantum past the core furthest behind (SPEC-002 §5).
+  Before, two busy cores stepped each other almost an instruction at a
+  time: 50 ms of two NUCLEOs took 194 s, and now takes 2.3 s.
+- **I2C fixes, as RM0390 has them:**
+  - A slave transmitter's STOP after the master's NACK no longer sets
+    STOPF. A stale STOPF used to end the next reception early.
+  - A byte received goes to DR over what the program wrote there. The
+    HAL writes 0 to clear TXE, and the model then held the next byte as
+    if DR were unread.
+  - The interrupt lines are re-evaluated on reads too, as levels.
+- **SPEC-002:** the core quantum's default is 1 000 000 ps (1 µs); the text
+  said 1 000 000 000.
+
 ### STM32CubeF4's examples on the NUCLEO-F446RE (the NUCLEO-F446RE plan, step 10, part 1)
 
 - **`tests/vendor/stm32cubef4/`** builds STM32CubeF4's own examples for the

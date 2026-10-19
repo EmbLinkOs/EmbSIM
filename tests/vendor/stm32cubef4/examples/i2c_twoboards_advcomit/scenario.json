@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "i2c_twoboards_advcomit",
+  "until": "2s",
+  "description": "I2C_TwoBoards_AdvComIT on two NUCLEO-F446RE wired as its readme draws them (two_boards.json): I2C1 at 400 kHz, the slave's 7-bit address 0x3E, by interrupts. After B1's USER button the master repeats, every 25 ms: the write request (0x34), the count (2 bytes), its 174-byte buffer; then the read request (0x12), the count, and the buffer read back. Each board checks what it received and toggles LD2: both blink together, 19 toggles in 0.65 s (a cycle of about 34 ms); a wrong buffer would stop them with LD2 on. It needs a slave receiver to keep a byte received over what the HAL wrote to DR to clear TXE, and no STOPF after the master's NACK, as on the part.",
+  "inputs": [
+    {
+      "at": "0.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.2s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "master-ld2-cycles",
+      "between": [
+        "1.3s",
+        "1.95s"
+      ],
+      "probe": "led1",
+      "expect": {
+        "edges": 19
+      }
+    },
+    {
+      "id": "slave-ld2-cycles",
+      "between": [
+        "1.3s",
+        "1.95s"
+      ],
+      "probe": "led2",
+      "expect": {
+        "edges": 19
+      }
+    }
+  ]
+}

@@ -2129,8 +2129,21 @@ static void test_i2c_slave(void)
     CHECK(rd(&f, I2C1 + C_SR1) & 1u << 10);     /* AF */
     CHECK_EQ(f.pin[1][9].drive, -1);
     bus_stop(&f);
-    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 4);
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & 1u << 4, 0u); /* no STOPF after the NACK */
     wr(&f, I2C1 + C_SR1, 0);
+    /* the HAL's I2C_Flush_DR writes 0 to clear TXE: a byte received next
+     * goes to DR over it */
+    wr(&f, I2C1 + C_DR, 0);
+    bus_start(&f);
+    CHECK(bus_write(&f, 0x84));
+    (void)rd(&f, I2C1 + C_SR1);
+    (void)rd(&f, I2C1 + C_SR2);
+    CHECK(bus_write(&f, 0x5a));
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & (1u << 6 | 1u << 2), 1u << 6); /* RXNE, no BTF */
+    CHECK_EQ(rd(&f, I2C1 + C_DR), 0x5au);
+    bus_stop(&f);
+    CHECK(rd(&f, I2C1 + C_SR1) & 1u << 4);      /* STOPF after an ACKed byte */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10);
     wr(&f, I2C1 + C_CR1, 1u | 1u << 10 | 1u << 6); /* ENGC */
     /* OAR2's dual address and the general call */
     wr(&f, I2C1 + C_OAR2, 0x30u << 1 | 1u);
@@ -2288,7 +2301,7 @@ static void test_i2c_wired(void)
     CHECK_EQ(rd(&f, I2C1 + C_DR), 0x9eu);
     CHECK(i2c_free(&f, I2C1));
     CHECK(rd(&f, I2C3 + C_SR1) & 1u << 10);    /* the master's NACK */
-    CHECK(rd(&f, I2C3 + C_SR1) & 1u << 4);     /* and its STOP */
+    CHECK_EQ(rd(&f, I2C3 + C_SR1) & 1u << 4, 0u); /* no STOPF after a NACK */
     CHECK_EQ(rd(&f, I2C3 + C_SR2) & 2u, 0u);
     f4_close(&f);
 }
@@ -3092,6 +3105,94 @@ static void test_scr_sleep_bits(void)
     f4_close(&f);
 }
 
+/* ---- the flash interface --------------------------------------------------------- */
+
+#define FLASH_KEYR 0x40023C04u
+#define FLASH_OPTKEYR 0x40023C08u
+#define FLASH_SR 0x40023C0Cu
+#define FLASH_CR 0x40023C10u
+#define SECTOR2 0x08008000u
+
+static u32 flash16(f4 *f, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_debug_read(&f->m.bus, a, 2, &v), 0);
+    return v & 0xffffu;
+}
+
+static void flash_unlock(f4 *f)
+{
+    wr(f, FLASH_KEYR, 0x45670123u);
+    wr(f, FLASH_KEYR, 0xCDEF89ABu);
+    CHECK_EQ(rd(f, FLASH_CR) & 1u << 31, 0u);
+}
+
+/* the keys, programming with its errors, a sector erase, EOP and its
+ * interrupt, the option bytes' write protection and OPTSTRT */
+static void test_flash(void)
+{
+    f4 f;
+    int r;
+    if (!f4_open(&f, 1))
+        return;
+    for (r = 0; r < f.m.bus.nrg; r++) /* read-only to the core, as an image's load leaves it */
+        f.m.bus.rg[r].rom = f.m.bus.rg[r].kind == ESK_MEM_FLASH || f.m.bus.rg[r].kind == ESK_MEM_ROM;
+    CHECK_EQ(rd(&f, FLASH_CR), 0x80000000u);                /* LOCK */
+    wr(&f, FLASH_CR, 1u);                                   /* locked: ignored */
+    CHECK_EQ(rd(&f, FLASH_CR), 0x80000000u);
+    CHECK(esk_bus_write(&f.m.bus, SECTOR2, 2, 0x1234u) == 0);
+    CHECK(rd(&f, FLASH_SR) & 1u << 7);                      /* PGSERR: no PG */
+    CHECK_EQ(flash16(&f, SECTOR2), 0xffffu);
+    wr(&f, FLASH_SR, 1u << 7);                              /* rc_w1 */
+    CHECK_EQ(rd(&f, FLASH_SR), 0u);
+    flash_unlock(&f);
+    wr(&f, FLASH_CR, 1u << 24 | 1u << 8 | 1u);              /* EOPIE, PSIZE x16, PG */
+    CHECK(esk_bus_write(&f.m.bus, SECTOR2, 2, 0x1234u) == 0);
+    CHECK_EQ(flash16(&f, SECTOR2), 0x1234u);
+    CHECK_EQ(rd(&f, FLASH_SR) & 0x1ffu, 1u);                /* EOP, BSY never set */
+    CHECK(rd(&f, NVIC_ISPR0) & 1u << 4);                    /* FLASH, IRQ 4 */
+    wr(&f, FLASH_SR, 1u);
+    CHECK(esk_bus_write(&f.m.bus, SECTOR2, 2, 0xff0fu) == 0); /* bits only go to 0 */
+    CHECK_EQ(flash16(&f, SECTOR2), 0x1204u);
+    CHECK(esk_bus_write(&f.m.bus, SECTOR2 + 4, 4, 0u) == 0);  /* a word with x16 */
+    CHECK(rd(&f, FLASH_SR) & 1u << 6);                      /* PGPERR */
+    CHECK_EQ(flash16(&f, SECTOR2 + 4), 0xffffu);
+    wr(&f, FLASH_SR, 0xf3u);
+    wr(&f, FLASH_CR, 1u << 9 | 1u);                         /* PSIZE x32 */
+    CHECK(esk_bus_write(&f.m.bus, SECTOR2 + 14, 4, 0u) == 0); /* across a 128-bit row */
+    CHECK(rd(&f, FLASH_SR) & 1u << 5);                      /* PGAERR */
+    wr(&f, FLASH_SR, 0xf3u);
+    /* erase sector 2 */
+    wr(&f, FLASH_CR, 1u << 9 | 2u << 3 | 1u << 1);          /* SER, SNB 2 */
+    wr(&f, FLASH_CR, rd(&f, FLASH_CR) | 1u << 16);          /* STRT */
+    CHECK_EQ(flash16(&f, SECTOR2), 0xffffu);
+    CHECK_EQ(rd(&f, FLASH_CR) & 1u << 16, 0u);
+    wr(&f, FLASH_CR, 1u << 31);                             /* LOCK again */
+    CHECK(rd(&f, FLASH_CR) & 1u << 31);
+    /* a wrong key: a bus error, locked until reset */
+    CHECK(esk_bus_write(&f.m.bus, FLASH_KEYR, 4, 0x12345678u) != 0);
+    wr(&f, FLASH_KEYR, 0x45670123u);
+    wr(&f, FLASH_KEYR, 0xCDEF89ABu);
+    CHECK(rd(&f, FLASH_CR) & 1u << 31);
+    /* the option bytes: sector 2 write-protected, nRST_STDBY 0 */
+    esk_mach_reset(&f.m);
+    flash_unlock(&f);
+    wr(&f, FLASH_OPTKEYR, 0x08192A3Bu);
+    wr(&f, FLASH_OPTKEYR, 0x4C5D6E7Fu);
+    CHECK_EQ(rd(&f, FLASH_OPTCR) & 1u, 0u);                 /* OPTLOCK cleared */
+    wr(&f, FLASH_OPTCR, (rd(&f, FLASH_OPTCR) & ~(1u << 18) & ~(1u << 7)) | 2u); /* nWRP2 0, nRST_STDBY 0, OPTSTRT */
+    CHECK_EQ(flash16(&f, 0x1FFFC000u), 0xaa6du);
+    CHECK_EQ(flash16(&f, 0x1FFFC008u) & 0xffu, 0xfbu);
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, FLASH_OPTCR) & 0x00ff00ffu, 0x00fb006du); /* loaded at reset */
+    flash_unlock(&f);
+    wr(&f, FLASH_CR, 1u << 9 | 1u);
+    CHECK(esk_bus_write(&f.m.bus, SECTOR2, 4, 0u) == 0);
+    CHECK(rd(&f, FLASH_SR) & 1u << 4);                      /* WRPERR */
+    CHECK_EQ(flash16(&f, SECTOR2), 0xffffu);
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -3143,4 +3244,5 @@ RUN(test_stop);
 RUN(test_standby);
 RUN(test_low_power_reset);
 RUN(test_scr_sleep_bits);
+RUN(test_flash);
 TEST_MAIN_END

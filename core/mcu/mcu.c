@@ -223,6 +223,25 @@ static int runnable(const mcu_state *st)
     return st->attached && !st->held && !st->boot_fail && !st->stopped && st->m.state == ESK_MACH_RUN;
 }
 
+/* the earliest time another core of the circuit waits to run from (its
+ * next quantum), or ES_TIME_MAX */
+static es_time_t peers_behind(const mcu_state *st)
+{
+    const esk_engine *e = st->c->e;
+    es_time_t t = ES_TIME_MAX;
+    size_t i;
+    for (i = 0; i < e->comps.len; i++) {
+        const esk_comp *c = e->comps.data[i];
+        const mcu_state *o;
+        if (c == st->c || !esk_mcu_is(c))
+            continue;
+        o = state_of(c);
+        if (o && o->ev && o->ev_at < t)
+            t = o->ev_at;
+    }
+    return t;
+}
+
 /* after something outside changed the machine (a pin, a byte): a sleeping
  * core an interrupt woke runs from now */
 static void wake(mcu_state *st)
@@ -315,8 +334,17 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         }
     }
     /* up to the next event that is not an analog step (islands clip to
-     * this quantum's end instead), and the quantum's bound */
-    next = esk_sched_next_time_excluding(&e->sched, ESK_EV_ANALOG);
+     * this quantum's end instead) or another core's quantum, and the
+     * quantum's bound: no further than a quantum past the core furthest
+     * behind, so each core sees the others' pin changes by its next
+     * quantum boundary (SPEC-002 §5) without the two stepping each other
+     * an instruction at a time */
+    next = esk_sched_next_time_without(&e->sched, 1u << ESK_EV_ANALOG | 1u << ESK_EV_CORE);
+    {
+        es_time_t peer = peers_behind(st);
+        if (peer != ES_TIME_MAX && peer + st->quantum_ps < next)
+            next = peer + st->quantum_ps;
+    }
     limit = next;
     {
         es_time_t q = st->quantum_ps;

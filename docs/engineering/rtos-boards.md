@@ -151,12 +151,13 @@ after each one.
       needs the F4's Stop and Standby;
     - the four I2C_TwoBoards examples on two boards wired together;
     - EEPROM_Emulation, which needs the flash controller.
-    *So far:* `tests/vendor/stm32cubef4/run.py` builds them as their
-    STM32CubeIDE projects do. GPIO, the HAL time bases, RCC, RTC, TIM,
-    both UART examples and PWR_CurrentConsumption in all six modes pass
-    (15 scenarios). Stop and Standby are modelled (`stm32f4-pwr`), and
-    the scenarios' probes read registers, memory and variables. The I2C
-    examples and EEPROM_Emulation come next.
+    *Done:* `tests/vendor/stm32cubef4/run.py` builds them as their
+    STM32CubeIDE projects do; all fourteen pass, PWR_CurrentConsumption in
+    its six modes (21 scenarios). It took Stop and Standby
+    (`stm32f4-pwr`), the flash interface (`stm32f4-flash`), probes of
+    registers, memory and variables, two cores on one circuit running a
+    quantum apart rather than an instruction, and I2C's STOPF and DR as
+    the manual has them.
 11. **EmbLinkRTOS on the board.** Its `nucleo_f446re` board and the
     conformance suite in its CI on EmbSIM.
 
