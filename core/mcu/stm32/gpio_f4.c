@@ -19,7 +19,8 @@
  *     the circuit's, else the pull, else 0; analog mode reads 0;
  *   - an alternate function is the one AFRL or AFRH selects among those the
  *     description's io.alternate gives the pin; it drives the pin when its
- *     peripheral's model does (a timer's channel, tim.c), else the pin is
+ *     peripheral's model does (a timer's channel, tim.c; a USART's TX, RTS
+ *     or CK, usart.c), else the pin is
  *     let go and reads what the circuit drives; the pin's level goes to the
  *     function's input (a timer's channel, ETR, BKIN); the debug port's (AF0 on PA13,
  *     PA14, PA15, PB3 and PB4, as the reset values of MODER and PUPDR select
@@ -72,7 +73,7 @@ static int af_level(const struct f4gpio *g, int pin, u32 af)
     const char *sig;
     int k, v;
     for (k = 0; (sig = esk_rf_af_signal(g->s->rf, g->port, pin, (int)af, k)) != 0; k++)
-        if ((v = esk_stm32_tim_signal(g->s, sig)) >= 0)
+        if ((v = esk_stm32_tim_signal(g->s, sig)) >= 0 || (v = esk_stm32_usart_signal(g->s, sig)) >= 0)
             return v;
     return -1;
 }
@@ -83,8 +84,10 @@ static void af_input(struct f4gpio *g, int pin, u32 af, int level)
 {
     const char *sig;
     int k;
-    for (k = 0; (sig = esk_rf_af_signal(g->s->rf, g->port, pin, (int)af, k)) != 0; k++)
+    for (k = 0; (sig = esk_rf_af_signal(g->s->rf, g->port, pin, (int)af, k)) != 0; k++) {
         esk_stm32_tim_signal_input(g->s, sig, level);
+        esk_stm32_usart_signal_input(g->s, sig, level);
+    }
 }
 
 static void update(struct f4gpio *g)
@@ -253,6 +256,25 @@ static void f4gpio_reset(void *ctx)
 const struct esk_dev_ops esk_stm32f4_gpio_ops = {
     "stm32f4-gpio", f4gpio_read, f4gpio_write, f4gpio_reset, 0, 0,
 };
+
+int esk_stm32f4_af_pin(struct esk_mach *s, const char *sig)
+{
+    int k, at, af;
+    for (k = 0; (at = esk_rf_af_pin(s->rf, sig, k, &af)) >= 0; k++) {
+        char name[8] = "GPIOx";
+        struct esk_rf_periph *p;
+        const struct f4gpio *g;
+        int pin = at % 32;
+        name[4] = (char)('A' + at / 32);
+        p = esk_rf_periph(s->rf, name);
+        if (!p || p->ops != &esk_stm32f4_gpio_ops || esk_rf_gated(p))
+            continue;
+        g = (const struct f4gpio *)p->ctx;
+        if (field(g->moder, pin, 2) == 2 && af_of(g, pin) == (u32)af)
+            return at;
+    }
+    return -1;
+}
 
 void esk_stm32f4_pins_changed(struct esk_mach *s)
 {

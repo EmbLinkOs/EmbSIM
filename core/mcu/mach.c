@@ -215,7 +215,20 @@ void esk_mach_rx_port(struct esk_mach *m, const char *unit, int (*room)(void *ct
     m->rx[m->nrx].bit_cycles = bit_cycles;
     m->rx[m->nrx].ctx = ctx;
     m->rx[m->nrx].unit = unit;
+    m->rx[m->nrx].format = 0;
+    m->rx[m->nrx].put_frame = 0;
+    m->rx[m->nrx].started = 0;
     m->nrx++;
+}
+
+void esk_mach_rx_frames(struct esk_mach *m, u32 (*format)(void *ctx),
+                        void (*put_frame)(void *ctx, u32 bits, int framing_error), void (*started)(void *ctx))
+{
+    if (!m->nrx)
+        return;
+    m->rx[m->nrx - 1].format = format;
+    m->rx[m->nrx - 1].put_frame = put_frame;
+    m->rx[m->nrx - 1].started = started;
 }
 
 void esk_mach_bus_error(struct esk_mach *m, u32 addr, int n, int write)

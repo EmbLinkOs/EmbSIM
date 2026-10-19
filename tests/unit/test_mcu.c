@@ -152,6 +152,7 @@ typedef struct board {
     u64 chunk_cycles;    /* the machine's cycles when the chunk began */
     double chunk_ps, hz; /* the time then, and the core clock in the chunk */
     const char *input;
+    const char *input_at; /* the prompt before which nothing is typed */
 } board;
 
 static double now_ms(const board *b)
@@ -261,17 +262,23 @@ static int bluepill(board *b, const char *image)
 }
 
 /* the runtime's loop, without the session: quanta at the core clock, the
- * serial input fed while the receiver has room */
+ * serial input fed a frame (ten bits) at a time while the receiver is on,
+ * as a terminal sends, once the program has printed its prompt (`input_at`,
+ * when given): what comes before is overrun and lost, as on the part */
 static void run_board(board *b, u64 max_cycles)
 {
     const char *in = b->input;
     struct esk_rx_port *rx = esk_mach_rx_find(&b->m, "USART1");
+    u64 next_in = 0;
     while (b->m.state == ESK_MACH_RUN && b->m.cycles < max_cycles) {
         u64 used;
         b->hz = (double)esk_mach_core_hz(&b->m);
         b->chunk_cycles = b->m.cycles;
-        if (in && *in && rx && rx->room(rx->ctx))
+        if (in && *in && rx && rx->room(rx->ctx) && b->m.cycles >= next_in &&
+            (!b->input_at || strstr(b->out, b->input_at))) {
             rx->put(rx->ctx, *in++);
+            next_in = b->m.cycles + 10u * (rx->bit_cycles ? rx->bit_cycles(rx->ctx) : 1u);
+        }
         used = esk_mach_run(&b->m, 2000, 0);
         b->chunk_ps += (double)used * 1e12 / b->hz;
         if (!used && b->m.asleep)
@@ -362,6 +369,7 @@ static void test_bluepill_input(void)
     if (!bluepill(b, "tests/firmware/bluepill-golden/bluepill.elf"))
         return;
     b->input = "hi there\nnot this\n";
+    b->input_at = "rx '";
     run_board(b, 200000000u);
     CHECK(strstr(b->out, "rx 'hi there'\n") != NULL);
     board_free(b);

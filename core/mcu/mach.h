@@ -246,6 +246,12 @@ typedef struct esk_mach_host {
     /* a UART's transmitter starts a byte; `bit_cycles` is the bit time in
      * core cycles, for the serial line's waveform */
     void (*uart_tx)(void *ctx, const char *unit, int c, u32 bit_cycles);
+    /* the same with the frame's own format: `bits` the data (and parity)
+     * bits LSB first, `nbits` of them, then `stop_halves` half bits of stop
+     * (1 to 4); `c` the character for the serial stream, or -1 for none (a
+     * break) */
+    void (*uart_frame)(void *ctx, const char *unit, int c, u32 bits, int nbits, int stop_halves,
+                       u32 bit_cycles);
     /* a diagnostic (es_severity_t, a code from docs/user/diagnostics.md) */
     void (*diag)(void *ctx, int severity, const char *code, const char *msg);
     /* the voltage on a pin's net, for an ADC: 1 and *v, or 0 when the pin
@@ -284,6 +290,14 @@ struct esk_rx_port {
     u32 (*bit_cycles)(void *ctx);
     void *ctx;
     const char *unit;
+    /* optional (esk_mach_rx_frames): the frame's data bits after the start
+     * bit (parity included) and its stop half bits, as data | stop << 8;
+     * and a frame from the RX pin with those bits and whether its stop bit
+     * was low (a framing error; all zero: a break) */
+    u32 (*format)(void *ctx);
+    void (*put_frame)(void *ctx, u32 bits, int framing_error);
+    /* a start bit's falling edge on the RX pin (an idle line no more) */
+    void (*started)(void *ctx);
 };
 
 #define ESK_MACH_RX_PORTS 8
@@ -460,6 +474,9 @@ int esk_mach_event_coming(struct esk_mach *m);
 /* a UART offers its receiver to the host's input */
 void esk_mach_rx_port(struct esk_mach *m, const char *unit, int (*room)(void *ctx),
                       void (*put)(void *ctx, int c), u32 (*bit_cycles)(void *ctx), void *ctx);
+/* the receiver just offered (esk_mach_rx_port) takes whole frames */
+void esk_mach_rx_frames(struct esk_mach *m, u32 (*format)(void *ctx),
+                        void (*put_frame)(void *ctx, u32 bits, int framing_error), void (*started)(void *ctx));
 /* a core's access that nothing answers: a diagnostic (the first ten) */
 void esk_mach_bus_error(struct esk_mach *m, u32 addr, int n, int write);
 /* the receiver of the UART named `unit` ("USART1"), or NULL */

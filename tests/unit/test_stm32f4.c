@@ -62,6 +62,13 @@
 #define T_CCR1 0x34u
 #define T_CCR2 0x38u
 #define T_BDTR 0x44u
+#define USART2 0x40004400u
+#define U_SR 0x00u
+#define U_DR 0x04u
+#define U_BRR 0x08u
+#define U_CR1 0x0Cu
+#define U_CR2 0x10u
+#define U_CR3 0x14u
 
 /* PLLM 8, PLLN 360, PLLP /2, PLLQ 2, PLLR 2 from HSE: 1 MHz into the VCO,
  * 360 MHz out of it, 180 MHz SYSCLK (CubeF4's NUCLEO-F446RE templates) */
@@ -74,6 +81,8 @@ typedef struct f4 {
     int warnings;
     char codes[256];
     esk_mach_pin pin[8][16]; /* what each pin was last told to be */
+    struct { int c, nbits, stop; u32 bits, bit_cycles; } frame[16]; /* frames sent */
+    int nframe;
     int ext[8][16];          /* what the board drives: -1 nothing */
 } f4;
 
@@ -141,6 +150,20 @@ static int r_pin_in(void *ctx, int port, int bit, int *level)
     return 1;
 }
 
+static void r_uart_frame(void *ctx, const char *unit, int c, u32 bits, int nbits, int stop, u32 bit_cycles)
+{
+    f4 *f = (f4 *)ctx;
+    (void)unit;
+    if (f->nframe < 16) {
+        f->frame[f->nframe].c = c;
+        f->frame[f->nframe].bits = bits;
+        f->frame[f->nframe].nbits = nbits;
+        f->frame[f->nframe].stop = stop;
+        f->frame[f->nframe].bit_cycles = bit_cycles;
+        f->nframe++;
+    }
+}
+
 static int f4_open(f4 *f, int hse_clock)
 {
     char why[200];
@@ -159,6 +182,7 @@ static int f4_open(f4 *f, int hse_clock)
     f->m.host.diag = r_diag;
     f->m.host.pin_cfg = r_pin_cfg;
     f->m.host.pin_in = r_pin_in;
+    f->m.host.uart_frame = r_uart_frame;
     f->m.hse_clock = hse_clock;
     f->m.lse_hz = 32768u;
     st = esk_mach_build(&f->m, f->mcu, f->regs, 8000000u, why, sizeof why);
@@ -896,6 +920,186 @@ static void test_systick(void)
     f4_close(&f);
 }
 
+/* ---- USART ---------------------------------------------------------------- */
+
+static void usart2_on(f4 *f, u32 cr1)
+{
+    wr(f, RCC_AHB1ENR, 1u);
+    wr(f, RCC_APB1ENR, 1u << 17); /* USART2EN */
+    pin_af(f, GPIOA, 2, 7);       /* USART2_TX */
+    pin_af(f, GPIOA, 3, 7);       /* USART2_RX */
+    wr(f, USART2 + U_BRR, 0x8B);  /* 16 MHz / 115200: 139 clocks a bit */
+    wr(f, USART2 + U_CR1, cr1 | 1u << 13);
+}
+
+/* the transmitter: frames, their format, TXE and TC, a break */
+static void test_usart_tx(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    usart2_on(&f, 1u << 3); /* TE: an idle frame first */
+    CHECK_EQ(f.pin[0][2].drive, 1); /* TX idles high */
+    CHECK_EQ(f.nframe, 0);
+    wr(&f, USART2 + U_DR, 'A');     /* waits for the idle frame: TXE clears */
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 0xC0u, 0u);
+    esk_mach_run(&f.m, 1400, 0);    /* the idle frame's 10 bits */
+    CHECK_EQ(f.nframe, 1);
+    CHECK_EQ(f.frame[0].c, 'A');
+    CHECK_EQ(f.frame[0].nbits, 8);
+    CHECK_EQ(f.frame[0].stop, 2);
+    CHECK_EQ(f.frame[0].bit_cycles, 139u);
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 0xC0u, 0x80u); /* TXE, not TC: 'A' is on the line */
+    wr(&f, USART2 + U_DR, 'B');
+    esk_mach_run(&f.m, 1400, 0);
+    CHECK_EQ(f.nframe, 2);
+    CHECK_EQ(f.frame[1].c, 'B');
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 0xC0u, 0x80u);
+    esk_mach_run(&f.m, 1400, 0);
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 0xC0u, 0xC0u); /* TC */
+    /* 9 bits, odd parity, 2 stop bits: 'A' (2 ones) gets parity 1 */
+    wr(&f, USART2 + U_CR1, 1u << 13 | 1u << 3 | 1u << 12 | 1u << 10 | 1u << 9);
+    wr(&f, USART2 + U_CR2, 2u << 12);
+    wr(&f, USART2 + U_DR, 'A');
+    CHECK_EQ(f.frame[2].nbits, 9);
+    CHECK_EQ(f.frame[2].stop, 4);
+    CHECK_EQ(f.frame[2].bits, 0x141u); /* 'A' with the parity bit 8 set */
+    esk_mach_run(&f.m, 2000, 0);
+    /* 8 bits with even parity: the parity is bit 7 ('C' has 3 ones) */
+    wr(&f, USART2 + U_CR1, 1u << 13 | 1u << 3 | 1u << 10);
+    wr(&f, USART2 + U_CR2, 0);
+    wr(&f, USART2 + U_DR, 'C');
+    CHECK_EQ(f.frame[3].bits, 0xC3u);
+    CHECK_EQ(f.frame[3].c, 'C');
+    esk_mach_run(&f.m, 2000, 0);
+    /* a break: 10 bits of 0 and a stop bit; SBK clears with it */
+    wr(&f, USART2 + U_CR1, 1u << 13 | 1u << 3 | 1u);
+    CHECK_EQ(f.frame[4].c, -1);
+    CHECK_EQ(f.frame[4].bits, 0u);
+    CHECK_EQ(f.frame[4].nbits, 9);
+    esk_mach_run(&f.m, 2000, 0);
+    CHECK_EQ(rd(&f, USART2 + U_CR1) & 1u, 0u);
+    /* OVER8: BRR 0x45 is 4 x 8 + 5 = 37 clocks a bit */
+    wr(&f, USART2 + U_CR1, 1u << 13 | 1u << 3 | 1u << 15);
+    wr(&f, USART2 + U_BRR, 0x45);
+    wr(&f, USART2 + U_DR, 'x');
+    CHECK_EQ(f.frame[5].bit_cycles, 37u);
+    f4_close(&f);
+}
+
+/* the receiver: RXNE, overrun, the errors and their clearing, IDLE, the
+ * interrupt */
+static void test_usart_rx(void)
+{
+    f4 f;
+    struct esk_rx_port *rx;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    usart2_on(&f, 1u << 2 | 1u << 5 | 1u << 4); /* RE, RXNEIE, IDLEIE */
+    rx = esk_mach_rx_find(&f.m, "USART2");
+    CHECK(rx != NULL && rx->put_frame != NULL);
+    if (!rx)
+        return;
+    CHECK_EQ(rx->format(rx->ctx), 8u | 2u << 8);
+    rx->put_frame(rx->ctx, 'h', 0);
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 1u << 5, 1u << 5);
+    CHECK(rd(&f, NVIC_ISPR0 + 4) & 1u << 6); /* USART2, IRQ 38 */
+    rx->put_frame(rx->ctx, 'i', 0);          /* RXNE still set: lost */
+    CHECK(rd(&f, USART2 + U_SR) & 1u << 3);  /* ORE */
+    CHECK_EQ(rd(&f, USART2 + U_DR), (u32)'h');
+    CHECK_EQ(rd(&f, USART2 + U_SR) & (1u << 3 | 1u << 5), 0u); /* SR then DR cleared ORE */
+    /* a line idle for a frame after it: IDLE */
+    esk_mach_run(&f.m, 1500, 0);
+    CHECK(rd(&f, USART2 + U_SR) & 1u << 4);
+    (void)rd(&f, USART2 + U_DR);
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 1u << 4, 0u);
+    /* a framing error; a break with LINEN sets LBD */
+    rx->put_frame(rx->ctx, 0x55, 1);
+    CHECK(rd(&f, USART2 + U_SR) & 1u << 1);
+    (void)rd(&f, USART2 + U_DR);
+    wr(&f, USART2 + U_CR2, 1u << 14);
+    rx->put_frame(rx->ctx, 0, 1);
+    CHECK(rd(&f, USART2 + U_SR) & 1u << 8);
+    (void)rd(&f, USART2 + U_DR);
+    wr(&f, USART2 + U_SR, 0);
+    wr(&f, USART2 + U_CR2, 0);
+    /* even parity: 'C' with bit 7 clear is wrong */
+    wr(&f, USART2 + U_CR1, 1u << 13 | 1u << 2 | 1u << 10);
+    rx->put_frame(rx->ctx, 'C', 0);
+    CHECK(rd(&f, USART2 + U_SR) & 1u);
+    CHECK_EQ(rd(&f, USART2 + U_DR), (u32)'C');
+    rx->put_frame(rx->ctx, 0xC3, 0);
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 1u, 0u);
+    (void)rd(&f, USART2 + U_DR);
+    /* the session's input: a byte, its parity added */
+    rx->put(rx->ctx, 'C');
+    CHECK_EQ(rd(&f, USART2 + U_DR), 0xC3u);
+    /* mute until an address mark for node 5 */
+    wr(&f, USART2 + U_CR2, 5u);
+    wr(&f, USART2 + U_CR1, 1u << 13 | 1u << 2 | 1u << 11 | 1u << 1); /* WAKE, RWU */
+    rx->put_frame(rx->ctx, 0x12, 0);
+    rx->put_frame(rx->ctx, 0x83, 0); /* node 3: still mute */
+    CHECK_EQ(rd(&f, USART2 + U_SR) & 1u << 5, 0u);
+    rx->put_frame(rx->ctx, 0x85, 0); /* node 5: awake, and received */
+    CHECK_EQ(rd(&f, USART2 + U_CR1) & 2u, 0u);
+    CHECK_EQ(rd(&f, USART2 + U_DR), 0x85u);
+    rx->put_frame(rx->ctx, 0x83, 0); /* another node's address: mute again */
+    CHECK(rd(&f, USART2 + U_CR1) & 2u);
+    f4_close(&f);
+}
+
+/* hardware flow control on PA0 (nCTS) and PA1 (nRTS), and the synchronous
+ * clock on PA4 */
+static void test_usart_flow_sync(void)
+{
+    f4 f;
+    struct esk_rx_port *rx;
+    int i, edges = 0, last;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    f.ext[0][0] = 1; /* nCTS: not ready */
+    usart2_on(&f, 1u << 3 | 1u << 2);
+    pin_af(&f, GPIOA, 0, 7); /* USART2_CTS */
+    pin_af(&f, GPIOA, 1, 7); /* USART2_RTS */
+    wr(&f, USART2 + U_CR3, 1u << 9 | 1u << 8); /* CTSE, RTSE */
+    esk_mach_run(&f.m, 1500, 0);               /* the idle frame */
+    CHECK_EQ(f.pin[0][1].drive, 0);            /* nRTS: ready */
+    wr(&f, USART2 + U_DR, 'z');
+    esk_mach_run(&f.m, 3000, 0);
+    CHECK_EQ(f.nframe, 0);                     /* held by nCTS */
+    f.ext[0][0] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK_EQ(f.nframe, 1);
+    CHECK(rd(&f, USART2 + U_SR) & 1u << 9);    /* CTS */
+    rx = esk_mach_rx_find(&f.m, "USART2");
+    if (rx)
+        rx->put_frame(rx->ctx, 'q', 0);
+    CHECK_EQ(f.pin[0][1].drive, 1);            /* nRTS: full */
+    (void)rd(&f, USART2 + U_DR);
+    CHECK_EQ(f.pin[0][1].drive, 0);
+    /* synchronous: CK on PA4, RX sampled at its edges */
+    esk_mach_run(&f.m, 3000, 0);
+    wr(&f, USART2 + U_CR3, 0);
+    pin_af(&f, GPIOA, 4, 7); /* USART2_CK */
+    wr(&f, USART2 + U_CR2, 1u << 11 | 1u << 8); /* CLKEN, LBCL */
+    CHECK_EQ(f.pin[0][4].drive, 0);             /* CPOL 0 */
+    f.ext[0][3] = 1;                            /* the slave answers 0xFF */
+    wr(&f, USART2 + U_DR, 0x5A);
+    last = f.pin[0][4].drive;
+    for (i = 0; i < 1600; i++) {
+        esk_mach_run(&f.m, 1, 0);
+        edges += f.pin[0][4].drive != last;
+        last = f.pin[0][4].drive;
+    }
+    CHECK_EQ(edges, 16); /* 8 pulses with LBCL */
+    CHECK(rd(&f, USART2 + U_SR) & 1u << 5);
+    CHECK_EQ(rd(&f, USART2 + U_DR), 0xFFu);
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -913,4 +1117,7 @@ RUN(test_tim_capture);
 RUN(test_tim_complementary);
 RUN(test_tim_slave);
 RUN(test_systick);
+RUN(test_usart_tx);
+RUN(test_usart_rx);
+RUN(test_usart_flow_sync);
 TEST_MAIN_END

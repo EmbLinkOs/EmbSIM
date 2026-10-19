@@ -215,6 +215,12 @@ edge rate from `io.electrical`'s per-speed `rout` and `slew_v_per_us`.
 the F4's pins through the AF table (`esk_stm32_tim_signal`,
 `esk_stm32_tim_signal_input`) and the F1's through AFIO. A Cortex-M part's
 `core.systick` gives SysTick's external reference divider and CALIB.
+A UART model that knows its frame format sends it with
+`esk_mach_host.uart_frame` (data and parity bits, stop half bits) and
+offers its receiver whole frames with `esk_mach_rx_frames` (its format,
+a frame with its framing error, a start bit's edge); the runtime's RX
+decoder then reads that many bits and checks the stop bit. `stm32-usart`
+is the SR/DR-layout USART of both families.
 
 ## 7. Pins, multiplexing and nets
 

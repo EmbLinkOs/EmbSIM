@@ -42,6 +42,8 @@ typedef struct mcu_uart {
     struct {
         es_time_t at, bit_ps;
         unsigned frame;
+        int nbits;      /* start, data and one stop bit on the line */
+        int halves;     /* the frame's length in half bits */
     } txq[MCU_TXQ_CAP];
     unsigned txq_head, txq_len;
     es_time_t tx_free; /* when the last frame's stop bit ends */
@@ -581,17 +583,18 @@ static void tx_next(mcu_state *st, mcu_uart *u)
 {
     esk_engine *e = st->c->e;
     es_time_t at = u->txq[u->txq_head].at;
+    int halves = u->txq[u->txq_head].halves;
     u->frame = u->txq[u->txq_head].frame;
     u->bit_ps = u->txq[u->txq_head].bit_ps;
+    u->nbits = u->txq[u->txq_head].nbits;
     u->txq_head = (u->txq_head + 1) % MCU_TXQ_CAP;
     u->txq_len--;
-    u->nbits = 10;
     u->bit = 0;
     if (at < u->tx_free)
         at = u->tx_free;
     if (at < e->sched.now)
         at = e->sched.now;
-    u->tx_free = at + 10 * u->bit_ps;
+    u->tx_free = at + (es_time_t)halves * u->bit_ps / 2;
     (void)esk_sched_at(&e->sched, at, ESK_EV_SIGNAL, tx_bit_cb, st, (void *)(uintptr_t)(u - st->uart), &u->tx_ev);
 }
 
@@ -611,7 +614,8 @@ static void tx_bit_cb(void *ctx, void *arg, es_time_t now)
         tx_next(st, u);
 }
 
-static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
+static void h_uart_frame(void *ctx, const char *unit, int c, u32 bits, int nbits, int stop_halves,
+                         u32 bit_cycles)
 {
     mcu_state *st = (mcu_state *)ctx;
     esk_engine *e = st->c->e;
@@ -621,8 +625,14 @@ static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
     es_time_t bit_ps;
     if (!u)
         return;
-    u->tx_bytes++;
-    text_append(u, c);
+    if (nbits < 1 || nbits > 16)
+        nbits = 8;
+    if (stop_halves < 1 || stop_halves > 4)
+        stop_halves = 2;
+    if (c >= 0) {
+        u->tx_bytes++;
+        text_append(u, c);
+    }
     /* the waveform, when the TX pin is the UART's */
     if (!(st->m.uart_pin && st->m.uart_pin(&st->m, unit, 1, &port, &bit) == 0 && port < MCU_PORTS &&
           st->gpio[port][bit] && st->pq[port][bit].cfg.af && st->pq[port][bit].cfg.drive >= 0)) {
@@ -647,16 +657,38 @@ static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
     slot = (u->txq_head + u->txq_len) % MCU_TXQ_CAP;
     u->txq[slot].at = local_now(st);
     u->txq[slot].bit_ps = bit_ps ? bit_ps : 1;
-    u->txq[slot].frame = ((unsigned)c & 0xffu) << 1 | 0x200u; /* start 0, 8 data, stop 1 */
+    /* start 0, the data, a stop 1 held for the stop bits' length */
+    u->txq[slot].frame = (unsigned)((bits & ((1u << nbits) - 1)) << 1 | 1u << (nbits + 1));
+    u->txq[slot].nbits = nbits + 2;
+    u->txq[slot].halves = 2 * (nbits + 1) + stop_halves;
     u->txq_len++;
     if (!u->tx_ev)
         tx_next(st, u);
 }
 
+static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
+{
+    h_uart_frame(ctx, unit, c, (u32)c & 0xffu, 8, 2, bit_cycles);
+}
+
+/* the receiver's frame: its data bits and stop half bits (8N1 without a
+ * format) */
+static void rx_format(const mcu_uart *u, int *data, int *halves)
+{
+    u32 f = u->rx && u->rx->format ? u->rx->format(u->rx->ctx) : 0;
+    *data = f & 0xff ? (int)(f & 0xff) : 8;
+    *halves = f >> 8 & 0xff ? (int)(f >> 8 & 0xff) : 2;
+    if (*data > 16)
+        *data = 16;
+}
+
 static es_time_t frame_ps(mcu_state *st, mcu_uart *u)
 {
     u32 bc = u->rx && u->rx->bit_cycles ? u->rx->bit_cycles(u->rx->ctx) : 1;
-    es_time_t ps = cycles_to_ps((u64)bc * 10u, esk_mach_core_hz(&st->m), NULL);
+    int data, halves;
+    es_time_t ps;
+    rx_format(u, &data, &halves);
+    ps = cycles_to_ps((u64)bc * (u64)(2 * (data + 1) + halves) / 2u, esk_mach_core_hz(&st->m), NULL);
     return ps ? ps : 1;
 }
 
@@ -718,21 +750,30 @@ static void rx_bit_cb(void *ctx, void *arg, es_time_t now)
     mcu_uart *u = &st->uart[(uintptr_t)arg];
     esk_engine *e = st->c->e;
     esk_logic v;
+    int data, halves;
     u->rx_ev = 0;
     if (!u->rx_busy || !u->rx_pin)
         return;
     v = esk_pin_level(u->rx_pin);
-    if (u->rx_bit < 8) {
+    rx_format(u, &data, &halves);
+    if (u->rx_bit < data) {
         if (v == ESK_L1)
             u->rx_shift |= 1u << u->rx_bit;
         u->rx_bit++;
         (void)esk_sched_at(&e->sched, now + u->rx_bit_ps, ESK_EV_PERIPHERAL, rx_bit_cb, st, arg, &u->rx_ev);
         return;
     }
+    /* the middle of the first stop bit */
     u->rx_busy = 0;
     catch_up(st, now);
     esk_mach_outside(&st->m);
-    if (v == ESK_L1 && runnable(st) && u->rx && u->rx->room(u->rx->ctx)) {
+    if (!runnable(st) || !u->rx || !u->rx->room(u->rx->ctx))
+        return;
+    if (u->rx->put_frame) {
+        u->rx->put_frame(u->rx->ctx, u->rx_shift, v != ESK_L1);
+        u->rx_bytes++;
+        wake(st);
+    } else if (v == ESK_L1) {
         u->rx->put(u->rx->ctx, (int)(u->rx_shift & 0xffu));
         u->rx_bytes++;
         wake(st);
@@ -757,6 +798,11 @@ static void rx_edge(mcu_state *st, esk_pin *p)
         u->rx_busy = 1;
         u->rx_bit = 0;
         u->rx_shift = 0;
+        if (u->rx->started) {
+            catch_up(st, e->sched.now);
+            esk_mach_outside(&st->m);
+            u->rx->started(u->rx->ctx);
+        }
         (void)esk_sched_at(&e->sched, e->sched.now + u->rx_bit_ps + u->rx_bit_ps / 2, ESK_EV_PERIPHERAL,
                            rx_bit_cb, st, (void *)(uintptr_t)i, &u->rx_ev);
     }
@@ -1193,6 +1239,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.pin_cfg = h_pin_cfg;
     st->m.host.pin_in = h_pin_in;
     st->m.host.uart_tx = h_uart_tx;
+    st->m.host.uart_frame = h_uart_frame;
     st->m.host.diag = h_diag;
     st->m.host.exc = h_exc;
     st->m.host.pin_volts = h_pin_volts;

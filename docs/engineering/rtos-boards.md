@@ -93,6 +93,9 @@ after each one.
 6. **USART and UART.** USART1-3, UART4-5 and USART6: frames on the pins,
    oversampling 8 and 16, interrupts. USART2 is the board's ST-Link virtual
    COM port.
+   *Done:* `stm32-usart` rewritten (formats, OVER8, errors, IDLE, breaks
+   and LIN, mute mode, flow control, half-duplex, synchronous clock) and
+   the runtime's frame formats both ways; smartcard and IrDA declared.
 7. **DMA.**
    - DMA1/DMA2 streams and channels, FIFO, circular and double-buffer modes.
    - Used by the UART, SPI, ADC and I2C HAL examples.

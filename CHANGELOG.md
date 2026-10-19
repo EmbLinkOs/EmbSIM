@@ -5,6 +5,32 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32 USARTs (the NUCLEO-F446RE plan, step 6)
+
+- **`stm32-usart` rewritten** for every USART and UART of the SR/DR layout,
+  the F4's six and the Blue Pill's three (RM0390 25, RM0008 27):
+  - 8 or 9 data bits with even or odd parity, 0.5 to 2 stop bits, the
+    F4's OVER8;
+  - TE's idle frame, breaks (LIN's 13 bits), SBK clearing as the break
+    ends;
+  - the receiver's RXNE, ORE (a frame arriving while RXNE is set is lost,
+    as on the part, rather than waiting), PE, FE, IDLE and LBD, cleared by
+    reading SR then DR;
+  - mute mode woken by an idle line or this node's address mark;
+  - nCTS holding frames and nRTS signalling a full receiver, half-duplex,
+    and the synchronous master clock on CK with RX sampled at its edges;
+  - every interrupt source.
+- **The runtime carries each frame's format:** the TX pin's waveform has the
+  frame's data, parity and stop bits (`esk_mach_host.uart_frame`), and the
+  RX decoder reads the receiver's format and reports framing errors and
+  breaks (`esk_mach_rx_frames`); the session's serial input is paced at the
+  frame's length. Other UART models keep 8N1.
+- **Pins:** the F4's USART signals through `io.alternate` (TX, RX, CK, CTS,
+  RTS); the F1's CK, CTS and RTS through AFIO.
+- **Proof:** `tests/unit/test_stm32f4.c`'s USART tests; the Blue Pill's
+  serial input test now types after the program's prompt, since bytes sent
+  before it are overrun as on the part.
+
 ### The STM32 timers and SysTick (the NUCLEO-F446RE plan, step 5)
 
 - **`stm32-tim` rewritten as the whole timer**, for the F4's TIM1-TIM14 and

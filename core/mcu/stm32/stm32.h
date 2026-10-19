@@ -72,6 +72,17 @@ int esk_stm32f1_usart_pin(struct esk_mach *m, const char *unit, int tx, int *por
  * drives, or -1; a level a pin gives TIMx_CHy, TIMx_ETR or TIMx_BKIN */
 int esk_stm32_tim_signal(struct esk_mach *m, const char *sig);
 void esk_stm32_tim_signal_input(struct esk_mach *m, const char *sig, int level);
+/* a USART's alternate-function signal (USART2_TX, _RTS, _CK): the level it
+ * drives, or -1; nCTS's level from its pin; the pin (port, bit) of its TX
+ * (tx 1) or RX, as the family maps it (the runtime's uart_pin) */
+int esk_stm32_usart_signal(struct esk_mach *m, const char *sig);
+void esk_stm32_usart_signal_input(struct esk_mach *m, const char *sig, int level);
+int esk_stm32_usart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
+/* the F4: the pin (port * 32 + bit) whose GPIO selects `sig` now, or -1 */
+int esk_stm32f4_af_pin(struct esk_mach *m, const char *sig);
+/* the F1: a USART's CK, CTS or RTS pin ("CK", "CTS", "RTS") as AFIO's MAPR
+ * places it: port * 16 + bit, or -1 */
+int esk_stm32f1_usart_fn_pin(struct esk_mach *m, const char *unit, const char *fn);
 /* the F1: the level a pin (port, bit) gives the timer channels AFIO's MAPR
  * places there */
 void esk_stm32f1_tim_input(struct esk_mach *m, int port, int bit, int level);
