@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "usb-600ma-holds",
+  "description": "600 mA drawn from the 5V pin for 10 minutes: above F1's 500 mA hold current but below the 1 A at which it must trip, a typical part holds it, warm.",
+  "policy": "electrical",
+  "until": "600s",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/arduino_uno"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 8.0
+        }
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.USB_VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND",
+        "RL.2"
+      ],
+      "R5": [
+        "B1.5V",
+        "RL.1"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "output:B1.F1.tripped": {
+      "at": "600s",
+      "equals": false
+    },
+    "output:B1.F1.temperature": {
+      "at": "600s",
+      "min": 32,
+      "max": 100
+    }
+  }
+}

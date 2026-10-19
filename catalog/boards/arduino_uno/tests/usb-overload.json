@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "usb-overload",
+  "description": "2 ohms on the 5V pin, about 1.9 A from USB through a 0.25 ohm cable: the rail sags to about 3.8 V, F1 heats for about a quarter of a minute (the current falls as it warms, so slower than its 2 A constant-current curve) and trips, and the rail collapses to under half a volt while F1 passes what keeps it hot (about 0.8 W).",
+  "policy": "electrical",
+  "until": "60s",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/arduino_uno"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 2.0
+        }
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.USB_VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND",
+        "RL.2"
+      ],
+      "R5": [
+        "B1.5V",
+        "RL.1"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R5": {
+      "at": "20ms",
+      "min_v": 3.6,
+      "max_v": 4.0
+    },
+    "output:B1.F1.tripped": {
+      "by": "25s",
+      "equals": true
+    },
+    "pin:RL.1": {
+      "at": "60s",
+      "max_v": 0.6
+    }
+  }
+}

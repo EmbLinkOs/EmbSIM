@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/lmv358",
+  "version": "1.0.0",
+  "name": "LMV358 dual op-amp",
+  "category": "amplifiers",
+  "description": "TI LMV358, a dual low-voltage (2.7 to 5.5 V) op-amp with rail-to-rail output: the Arduino Uno's U5, one half comparing VIN/2 with 3.3 V to switch USB power, the other buffering the L LED.",
+  "keywords": [
+    "opamp",
+    "op-amp",
+    "comparator",
+    "lmv358",
+    "texas instruments",
+    "rail-to-rail",
+    "dual"
+  ],
+  "pins": [
+    {
+      "name": "1OUT",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "1IN+",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative supply"
+    },
+    {
+      "name": "2IN+",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2IN-",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "2OUT",
+      "number": 7,
+      "model": {
+        "kind": "analog"
+      }
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive supply, 2.7 to 5.5 V"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "A1",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "1meg",
+            "rout": 30,
+            "headroom_high": 0.005,
+            "headroom_low": 0.06,
+            "slew": 1.0
+          }
+        },
+        {
+          "id": "A2",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "1meg",
+            "rout": 30,
+            "headroom_high": 0.005,
+            "headroom_low": 0.06,
+            "slew": 1.0
+          }
+        }
+      ],
+      "nets": {
+        "VCC": [
+          "A1.V+",
+          "A2.V+"
+        ],
+        "GND": [
+          "A1.V-",
+          "A2.V-"
+        ]
+      },
+      "ports": {
+        "1OUT": "A1.OUT",
+        "1IN-": "A1.-",
+        "1IN+": "A1.+",
+        "2OUT": "A2.OUT",
+        "2IN-": "A2.-",
+        "2IN+": "A2.+",
+        "VCC": "A1.V+",
+        "GND": "A1.V-"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 100,
+    "height": 120,
+    "pins": {
+      "1IN+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "1IN-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "1OUT": {
+        "x": 100,
+        "y": 30,
+        "side": "right"
+      },
+      "2IN+": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "2IN-": {
+        "x": 0,
+        "y": 100,
+        "side": "left"
+      },
+      "2OUT": {
+        "x": 100,
+        "y": 90,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 50,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 50,
+        "y": 120,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no analog voltages.",
+      "omissions": [
+        "amplification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "Two op-amps with 100 V/mV open-loop gain and a dominant pole at 1 MHz unity-gain bandwidth, slewing at 1 V/us, powered from VCC and GND: the output swings to within about 10 mV of VCC and 65 mV of ground into 10 kOhm (rail-to-rail output), with 30 ohm output resistance.",
+      "omissions": [
+        "input offset (1.7 mV typical) and bias current",
+        "the input common-mode limit (VCC - 0.8 V)",
+        "output short-circuit limit (40 mA)",
+        "supply current (210 uA)",
+        "operation below 2.7 V"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.2,
+          5.5
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Texas Instruments LMV3xx datasheet (SLOS263)",
+        "url": "https://www.ti.com/lit/ds/symlink/lmv358.pdf",
+        "date": "2026-10-18",
+        "notes": "5 V: AVD 100 V/mV, B1 1 MHz, SR 1 V/us, VO high VCC-10 mV and low 65 mV into 10 kOhm to 2.5 V, VIO 1.7 mV"
+      },
+      {
+        "title": "Arduino UNO R3 schematic (A000066), U5",
+        "url": "https://docs.arduino.cc/resources/schematics/A000066-schematics.pdf",
+        "date": "2026-10-18"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "LMV358IDGKR",
+    "manufacturer": "Texas Instruments",
+    "package": "VSSOP-8",
+    "datasheet": "https://www.ti.com/lit/ds/symlink/lmv358.pdf"
+  }
+}

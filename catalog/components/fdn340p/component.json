@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/fdn340p",
+  "version": "1.0.0",
+  "name": "FDN340P P-channel MOSFET",
+  "category": "transistors",
+  "description": "onsemi FDN340P, a -20 V P-channel logic-level trench MOSFET in SOT-23 (60 mOhm at -4.5 V): the Arduino Uno's T1, which connects USB's 5 V to the board when no supply is on VIN.",
+  "keywords": [
+    "mosfet",
+    "pmos",
+    "p-channel",
+    "fdn340p",
+    "onsemi",
+    "fairchild",
+    "sot-23",
+    "load switch"
+  ],
+  "pins": [
+    {
+      "name": "G",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Gate"
+    },
+    {
+      "name": "S",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Source"
+    },
+    {
+      "name": "D",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Drain"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "M",
+          "component": "emblink/pmos",
+          "params": {
+            "part": "generic",
+            "vto": -0.8,
+            "kp": 4.5,
+            "lambda": 0.01,
+            "cgs": "700p",
+            "cgd": "80p"
+          }
+        },
+        {
+          "id": "DB",
+          "component": "emblink/diode",
+          "params": {
+            "part": "generic",
+            "is": "7.5e-13",
+            "n": 1.0,
+            "rs": 0.1,
+            "bv": 20
+          }
+        }
+      ],
+      "nets": {
+        "D": [
+          "M.D",
+          "DB.A"
+        ],
+        "S": [
+          "M.S",
+          "DB.K"
+        ]
+      },
+      "ports": {
+        "G": "M.G",
+        "S": "M.S",
+        "D": "M.D"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 80,
+    "pins": {
+      "G": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "S": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "D": {
+        "x": 40,
+        "y": 80,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no gate voltages.",
+      "omissions": [
+        "switching"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "A level-1 P-MOSFET (threshold -0.8 V, kp 4.5 A/V^2: 61 mOhm at -4.5 V and 2 A, the datasheet's 60 typical, 70 maximum) with its body diode (0.7 V at 0.42 A) and gate capacitances near Ciss (779 pF).",
+      "omissions": [
+        "the on-resistance at -2.5 V comes out at 130 mOhm against 82 typical (level 1 has no mobility degradation)",
+        "temperature (on-resistance up 30 % at 125 C)",
+        "threshold spread (-0.4 to -1.5 V)",
+        "gate charge nonlinearity",
+        "avalanche and SOA: no damage"
+      ],
+      "range": {
+        "voltage_v": [
+          -20,
+          8
+        ],
+        "current_a": [
+          -10,
+          2
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "onsemi FDN340P datasheet (FDN340P/D)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/fdn340p-d.pdf",
+        "date": "2026-10-18",
+        "notes": "RDS(on) 60/70 mOhm at -4.5 V, 82/110 at -2.5 V; VGS(th) -0.4/-0.8/-1.5 V; VSD 0.7 V at 0.42 A; Ciss 779 pF"
+      },
+      {
+        "title": "Arduino UNO R3 schematic (A000066), T1",
+        "url": "https://docs.arduino.cc/resources/schematics/A000066-schematics.pdf",
+        "date": "2026-10-18"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "FDN340P",
+    "manufacturer": "onsemi",
+    "package": "SOT-23",
+    "datasheet": "https://www.onsemi.com/download/data-sheet/pdf/fdn340p-d.pdf"
+  }
+}

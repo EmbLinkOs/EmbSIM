@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "usb-powered",
+  "description": "Plugged into a computer's USB port through a 0.25 ohm cable, nothing on VIN: T1 joins USB's 5 V to the board through F1.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/arduino_uno"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.USB_VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "R5": [
+        "B1.5V"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R5": {
+      "at": "10ms",
+      "min_v": 4.9,
+      "max_v": 5.0
+    },
+    "output:B1.F1.tripped": {
+      "at": "10ms",
+      "equals": false
+    }
+  }
+}

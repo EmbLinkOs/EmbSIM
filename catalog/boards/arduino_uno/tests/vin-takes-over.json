@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "vin-takes-over",
+  "description": "9 V on VIN as well as USB: VIN/2 is above 3.3 V, U5 turns T1 off and the regulator supplies the board; USB carries nothing.",
+  "policy": "electrical",
+  "until": "25ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/arduino_uno"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 50.0
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 9.0
+        }
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.USB_VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND",
+        "RL.2",
+        "VS.-"
+      ],
+      "R5": [
+        "B1.5V",
+        "RL.1"
+      ],
+      "VIN": [
+        "VS.+",
+        "B1.VIN"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R5": {
+      "at": "20ms",
+      "min_v": 4.9,
+      "max_v": 5.1
+    },
+    "output:B1.F1.current": {
+      "at": "20ms",
+      "min": -0.005,
+      "max": 0.005
+    }
+  }
+}

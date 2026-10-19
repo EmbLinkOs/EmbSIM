@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "below-threshold",
+  "description": "VGS = -0.35 V, under the -0.4 V minimum threshold: still off.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 4.65
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/fdn340p"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "S": [
+        "VS.+",
+        "DUT.S"
+      ],
+      "G": [
+        "VG.+",
+        "DUT.G"
+      ],
+      "D": [
+        "DUT.D",
+        "R.1"
+      ],
+      "GND": [
+        "VS.-",
+        "VG.-",
+        "R.2",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:D": {
+      "at": "1ms",
+      "max_v": 0.05
+    }
+  }
+}

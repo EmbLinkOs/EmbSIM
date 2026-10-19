@@ -5,6 +5,46 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The Uno powered from USB: fuse, switch and the VIN comparator (ADR-031, ADR-034)
+
+- The Uno R3 board has its USB power path:
+  - **Through F1 and T1.** USB's 5 V arrives on a new port, `USB_VBUS` (the
+    USB-B socket's VBUS), then F1 (the MF-MSMF050-2 resettable fuse) and T1
+    (the FDN340P) to +5V.
+  - **The VIN comparator.** U5A (an LMV358) compares VIN/2 (RN1, 10k and
+    10k) with 3.3 V and turns T1 off once VIN is above about 6.6 V.
+  - **Five board fixtures,** from a 5 V host through a 0.25 ohm cable:
+    - 5.0 V unloaded;
+    - 4.64 V at 600 mA, held for ten minutes;
+    - a 2 ohm overload: the rail sags to 3.8 V, F1 trips in about 16 s, and
+      the rail falls under 0.6 V while F1 passes the 0.8 W that keeps it hot;
+    - 9 V on VIN: T1 turns off and USB carries nothing.
+- `emblink/fdn340p`: onsemi's FDN340P P-MOSFET as a level-1 model with its
+  body diode. Fixtures check the on-resistance, off state, threshold and body
+  diode.
+- `emblink/lmv358`: TI's LMV358 dual rail-to-rail-output op-amp. Fixtures
+  check the comparator, follower, supply rail, slew and bandwidth.
+- **The op-amp's dominant pole.** SPEC-004 promised it, and the generic
+  op-amp's fidelity already claimed it, but `gbw` had been ignored. Now an
+  internal node integrates the input stage's drive:
+  - DC gain `gain`, unity-gain frequency `gbw`.
+  - A new `slew` (V/us) limits large steps.
+  - The internal node stops at the output limits, so recovery from
+    saturation takes tens of nanoseconds.
+  - The LM358 now slews at 0.3 V/us and the LMV358 at 1 V/us, as their
+    datasheets say; each has `slew` and `bandwidth` fixtures.
+  - Without the pole, the Uno's comparator acted as an ideal step inside the
+    T1 loop. Once F1 tripped, the solver gave up.
+- **Op-amp convergence.**
+  - Newton limits how far the op-amp's tanh argument moves per iteration,
+    as `pnjlim` does for a junction. A follower whose input hangs on its own
+    output, like the Uno's L buffer on a floating D13, no longer bounces
+    between the rails while the operating point is found.
+- **Fixture sampling.** Every sampled value in a fixture longer than 2 s, not
+  just part outputs, is now sampled at most 20000 times. Each sample is a
+  solve, so a 60 s board fixture sampling a rail at 10 kHz would take
+  minutes.
+
 ### Undo keeps up with the keyboard
 
 - A Ctrl+Z or Ctrl+Shift+Z pressed while an edit is still finishing now waits
