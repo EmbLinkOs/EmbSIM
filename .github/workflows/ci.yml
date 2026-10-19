@@ -120,10 +120,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ngspice
           python3 tools/analog/ngspice_fixture.py --check
-      - name: The DSP test's expected hashes are QEMU's Cortex-M4's
+      - name: The DSP and core tests' expected outputs are QEMU's Cortex-M4's
         run: |
           sudo apt-get install -y qemu-system-arm
           python3 tests/protocol/test_dsp.py --qemu
+          python3 tests/protocol/test_cm4_core.py --qemu
 
   workbench:
     name: workbench

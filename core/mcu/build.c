@@ -91,6 +91,8 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         st = esk_cortexm_create_smp(m, esk_json_get_str(core, "model", ""),
                                     (int)esk_json_get_int(core, "priority_bits", 4),
                                     (int)esk_json_get_int(core, "cores", 1), &cpu);
+        if (st == ES_OK && esk_json_get_bool(core, "mpu", 0))
+            st = esk_cortexm_set_mpu(m, 8); /* every Cortex-M0+, M3 and M4 MPU has eight regions */
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "avr")) {
         st = esk_avr_create(m, esk_json_get_str(core, "model", ""), &cpu);
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "riscv")) {

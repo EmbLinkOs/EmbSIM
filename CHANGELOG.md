@@ -5,6 +5,34 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The Cortex-M core an RTOS port needs (the NUCLEO-F446RE plan, step 1)
+
+- **The MPU** on the parts that have one: the nRF52840 and RP2040 today, the
+  STM32F446 next.
+  - PMSAv7 and PMSAv6 with eight regions, subregion disables,
+    access permissions, XN and the background region (PRIVDEFENA).
+  - HFNMIENA; the private peripheral bus and vector table reads always on
+    the default map.
+  - MemManage faults with DACCVIOL and MMFAR, IACCVIOL, MSTKERR, MUNSTKERR
+    and MLSPERR.
+- **The default memory map's execute-never regions:** a jump into peripheral,
+  device or system space faults.
+- **Privilege.**
+  - LDRT and STRT access as unprivileged.
+  - An unprivileged access to the system control space is a BusFault.
+- **Stacking faults.**
+  - A fault while stacking or unstacking an exception frame (an RTOS's stack
+    guard, a task's stack pointer gone bad) is taken as the derived
+    MemManage or BusFault, as the architecture says. It no longer locks the
+    core up.
+- **Lazy floating-point context stacking** as the hardware does it:
+  - the frame's FP area is reserved and written by the handler's first FP
+    instruction (FPCCR.LSPACT, FPCAR, the ready bits);
+  - FPDSCR is loaded into a new context.
+- **Proof:** a 28-case test image, `tests/firmware/cm4-core`, prints the same
+  on EmbSIM's nRF52840 as on QEMU's mps2-an386. Its expected output is
+  checked against QEMU in CI.
+
 ### The Uno powered from USB: fuse, switch and the VIN comparator (ADR-031, ADR-034)
 
 - The Uno R3 board has its USB power path:

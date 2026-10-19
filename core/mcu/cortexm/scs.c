@@ -42,6 +42,8 @@ static u32 icsr_read(struct esk_cm_state *cs)
 static int scs_read(struct esk_cm_state *cs, u32 o, u32 *v)
 {
     *v = 0;
+    if (esk_cm_mpu_read(cs, o, v))
+        return 1;
     if (o >= 0x100 && o < 0x140) {          /* ISER */
         u32 w = (o - 0x100) / 4;
         for (u32 b = 0; b < 32; b++)
@@ -103,6 +105,8 @@ static int scs_read(struct esk_cm_state *cs, u32 o, u32 *v)
 
 static void scs_write(struct esk_cm_state *cs, u32 o, u32 v)
 {
+    if (esk_cm_mpu_write(cs, o & 0xfff, v))
+        return;
     if (o >= 0x100 && o < 0x140) {
         u32 w = (o - 0x100) / 4;
         for (u32 b = 0; b < 32; b++)
@@ -168,10 +172,17 @@ static void scs_write(struct esk_cm_state *cs, u32 o, u32 v)
     case 0xd24: cs->shcsr = v & 0x7ffffu; return;
     case 0xd28: cs->cfsr &= ~v; return;
     case 0xd2c: cs->hfsr &= ~v; return;
+    case 0xd34: cs->mmfar = v; return;
+    case 0xd38: cs->bfar = v; return;
     case 0xd88: cs->cpacr = v & 0x00f00000u; return;
     case 0xdfc: cs->demcr = v; return;
     case 0xf00: esk_cm_set_pend(cs, 16 + (int)(v & 0x1ff)); return;   /* STIR */
-    case 0xf34: cs->fpccr = (cs->fpccr & ~0xC0000000u) | (v & 0xC0000000u); return;
+    case 0xf34:
+        /* ASPEN, LSPEN, and the lazy-preservation state: LSPACT, USER,
+         * THREAD and the ready bits */
+        if (cs->model->fpu)
+            cs->fpccr = v & 0xC000017Bu;
+        return;
     case 0xf38: cs->fpcar = v & ~7u; return;
     case 0xf3c: cs->fpdscr = v & 0x07C00000u; return;
     }

@@ -42,6 +42,22 @@ enum { EXC_RESET = 1, EXC_NMI, EXC_HARD, EXC_MEM, EXC_BUS, EXC_USAGE,
 #define UFSR_DIVBYZERO  (1u << 25)
 #define BFSR_IBUSERR    (1u << 8)
 #define BFSR_PRECISERR  (1u << 9)
+#define BFSR_UNSTKERR   (1u << 11)
+#define BFSR_STKERR     (1u << 12)
+#define BFSR_LSPERR     (1u << 13)
+#define MMFSR_IACCVIOL  (1u << 0)
+#define MMFSR_DACCVIOL  (1u << 1)
+#define MMFSR_MUNSTKERR (1u << 3)
+#define MMFSR_MSTKERR   (1u << 4)
+#define MMFSR_MLSPERR   (1u << 5)
+#define MMFSR_MMARVALID (1u << 7)
+
+/* what the core's memory access is for: its faults are reported apart
+ * (a stacking fault is MSTKERR or STKERR, not DACCVIOL), and the vector
+ * table is always read through the default memory map */
+enum { ACC_NORMAL, ACC_STACK, ACC_UNSTACK, ACC_LAZYFP, ACC_VECTOR };
+
+#define MPU_MAX_REGIONS 16
 
 #define NEXC 256                    /* 16 system exceptions + 240 IRQs */
 
@@ -89,6 +105,18 @@ struct esk_cm_state {
     u32 vtor, aircr_prigroup, ccr, shcsr, cfsr, hfsr, mmfar, bfar, scr;
     u32 cpacr, fpccr, fpcar, fpdscr;
     u32 demcr;
+
+    /* the MPU (mpu.c): PMSAv7 on ARMv7-M, PMSAv6 on ARMv6-M; no regions
+     * when the part has none. mpu_on caches CTRL.ENABLE for the hot path;
+     * `access` is what the access in progress is for, and force_unpriv
+     * makes it unprivileged whatever the mode (LDRT, STRT, and lazy FP
+     * preservation of an unprivileged thread's context) */
+    int mpu_regions;
+    u32 mpu_ctrl, mpu_rnr;
+    u32 mpu_rbar[MPU_MAX_REGIONS], mpu_rasr[MPU_MAX_REGIONS];
+    int mpu_on;
+    int access;
+    int force_unpriv;
     char xml[4096];                 /* the target description, built on demand */
 
     /* the event register (WFE and SEV), and whether the wait in progress
@@ -132,6 +160,17 @@ void esk_cm_sev(struct esk_cm_state *cs);
 struct esk_cm_state *esk_cm_new(struct esk_mach *m, const char *model, int prio_bits);
 void esk_cm_semihost(struct esk_cm_state *cs);
 
+/* mpu.c */
+/* whether an access of n bytes at a is refused (the fault raised): data
+ * when exec is 0, an instruction fetch when it is 1 */
+int esk_cm_mpu_denied(struct esk_cm_state *cs, u32 a, int n, int write, int exec);
+/* the default memory map's execute-never regions */
+int esk_cm_default_xn(u32 a);
+int esk_cm_mpu_read(struct esk_cm_state *cs, u32 off, u32 *v);
+int esk_cm_mpu_write(struct esk_cm_state *cs, u32 off, u32 v);
+/* the privilege an access is checked with */
+int esk_cm_access_privileged(struct esk_cm_state *cs);
+
 /* cortexm-thumb.c */
 void esk_cm_exec16(struct esk_cm_state *cs, u32 h);
 void esk_cm_exec32(struct esk_cm_state *cs, u32 h1, u32 h2);
@@ -164,6 +203,8 @@ ES_INLINE u32 esk_cm_ld(struct esk_cm_state *cs, u32 a, int n)
 {
     if (cs->fault_exc)
         return 0;
+    if (cs->mpu_on && esk_cm_mpu_denied(cs, a, n, 0, 0))
+        return 0;
     struct esk_bus *b = &cs->sim->bus;
     if (!b->nwatch) {
         struct esk_region *r = esk_bus_region(b, a, (u32)n);
@@ -176,6 +217,8 @@ ES_INLINE u32 esk_cm_ld(struct esk_cm_state *cs, u32 a, int n)
 ES_INLINE void esk_cm_st(struct esk_cm_state *cs, u32 a, int n, u32 v)
 {
     if (cs->fault_exc)
+        return;
+    if (cs->mpu_on && esk_cm_mpu_denied(cs, a, n, 1, 0))
         return;
     struct esk_bus *b = &cs->sim->bus;
     if (!b->nwatch) {

@@ -395,6 +395,21 @@ es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio
     return ES_OK;
 }
 
+es_status esk_cortexm_set_mpu(struct esk_mach *m, int regions)
+{
+    struct smp *x = smp_of(m);
+    int i;
+    if (regions < 0 || regions > MPU_MAX_REGIONS || !m->cpu)
+        return ES_EINVAL;
+    if (!x) {
+        ((struct esk_cm_state *)m->cpu)->mpu_regions = regions;
+        return ES_OK;
+    }
+    for (i = 0; i < x->n; i++)
+        x->c[i]->mpu_regions = regions;
+    return ES_OK;
+}
+
 int esk_cortexm_cores(struct esk_mach *m)
 {
     struct smp *x = smp_of(m);

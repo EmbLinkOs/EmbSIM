@@ -529,6 +529,9 @@ es_status esk_cortexm_create(struct esk_mach *m, const char *model, int prio_bit
  * esk_cortexm_create */
 es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio_bits, int cores,
                                  struct esk_cpu **out);
+/* the MPU the part has: its regions (8 on the parts that have one), 0 for
+ * none, on every core */
+es_status esk_cortexm_set_mpu(struct esk_mach *m, int regions);
 /* the cores, and the one whose access is in progress (a debugger's: the one
  * that runs next) */
 int esk_cortexm_cores(struct esk_mach *m);
