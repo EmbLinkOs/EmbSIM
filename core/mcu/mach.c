@@ -114,7 +114,7 @@ static void tick_all(struct esk_mach *m, u32 cycles)
 }
 
 /* at most this many cycles owed before the devices are given them anyway */
-#define LAZY_MAX 0x10000u
+#define LAZY_MAX ESK_MACH_LAZY_MAX
 
 void esk_mach_sync(struct esk_mach *m)
 {
@@ -149,7 +149,7 @@ void esk_mach_lazy(struct esk_mach *m)
     m->bus.sync_ctx = m;
 }
 
-void esk_mach_advance(struct esk_mach *m, u32 cycles)
+void esk_mach_advance_slow(struct esk_mach *m, u32 cycles)
 {
     if (!m->lazy) {
         tick_all(m, cycles);
@@ -324,6 +324,14 @@ u64 esk_mach_run(struct esk_mach *m, u64 budget, u64 max_insns)
             if (left == 0)
                 left = 1;
             esk_mach_idle(m, left < room ? left : room);
+            continue;
+        }
+        if (!max_insns && !m->nbp && !m->an && m->cpu->ops->run) {
+            m->cpu->ops->run(m->cpu, end);
+            if (m->bus.watch_hit) {
+                m->stop_watch = 1;
+                break;
+            }
             continue;
         }
         if (max_insns && m->insns - insns0 >= max_insns)

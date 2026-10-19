@@ -1392,7 +1392,7 @@ static const struct esk_cpu_ops riscv_ops = {
     "riscv", 243, "a RISC-V image",
     cpu_reset, step, cpu_pc, cpu_reg_read, cpu_reg_write,
     cpu_gdb_g_regs, cpu_gdb_xml, 4, cpu_interrupt, GR_PC, 1, 0, cpu_reg_name, cpu_wake_pending,
-    cpu_disasm,
+    cpu_disasm, 0,
 };
 
 int esk_riscv_is(const struct esk_cpu *c)

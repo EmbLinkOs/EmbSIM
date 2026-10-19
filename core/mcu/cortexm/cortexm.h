@@ -64,6 +64,16 @@ enum { ACC_NORMAL, ACC_STACK, ACC_UNSTACK, ACC_LAZYFP, ACC_VECTOR };
 /* fault_exc's value for an access a debugger's watchpoint stops before */
 #define FAULT_WATCH (-1)
 
+/* decoded code (step): an instruction fetched from read-only memory, kept
+ * by its halfword address while its region's gen holds */
+#define ESK_CM_DC 4096
+struct esk_cm_dc {
+    const struct esk_region *r; /* the region it came from; 0: empty */
+    u32 gen, pc;
+    u16 h0, h1;
+    u8 size, cost, br;
+};
+
 struct esk_cm_state {
     struct esk_cpu cpu;                 /* the interface; first */
     struct esk_mach *sim;
@@ -117,6 +127,7 @@ struct esk_cm_state {
     int mpu_on;
     int access;
     int force_unpriv;
+    struct esk_cm_dc *dc;           /* ESK_CM_DC entries */
     char xml[4096];                 /* the target description, built on demand */
 
     /* the event register (WFE and SEV), and whether the wait in progress

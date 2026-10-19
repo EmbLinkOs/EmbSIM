@@ -936,7 +936,7 @@ static const struct esk_cpu_ops avr_ops = {
     "avr", 83, "an AVR image",
     cpu_reset, step, cpu_pc, cpu_reg_read, cpu_reg_write,
     cpu_gdb_g_regs, cpu_gdb_xml, 2, cpu_interrupt, 34, 1, 0, cpu_reg_name, cpu_wake_pending,
-    cpu_disasm,
+    cpu_disasm, 0,
 };
 
 int esk_avr_is(const struct esk_cpu *c) { return c && c->ops == &avr_ops; }

@@ -44,8 +44,16 @@ es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind)
     return ES_OK;
 }
 
+void esk_bus_code_changed(struct esk_bus *b)
+{
+    int i;
+    for (i = 0; i < b->nrg; i++)
+        b->rg[i].gen++;
+}
+
 void esk_bus_erase(struct esk_region *r)
 {
+    r->gen++;
     if (r->factory) {
         memcpy(r->mem, r->factory, r->size);
         return;
@@ -96,9 +104,11 @@ es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size
         if (!t || t == r) {
             r->size = 0;
             r->mem = 0;
+            r->gen++;
             return ES_OK;
         }
         r->mem = t->mem + (target - t->base);
+        r->gen++;
         r->size = size < t->size - (target - t->base) ? size : t->size - (target - t->base);
         r->rom = t->rom;
         r->kind = t->kind;
@@ -183,6 +193,8 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
     if (r) {
         if (!r->rom || debug)
             esk_mem_wr_le(r->mem + (a - r->base), n, v);
+        if (r->rom && debug)
+            esk_bus_code_changed(b);
         return 0;
     }
     u32 t, byte;

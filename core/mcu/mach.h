@@ -47,6 +47,9 @@ struct esk_region {
     u32 erased;   /* each word of it before the image (esk_bus_erase) */
     int mirror;   /* shares another region's memory */
     u8 *factory;  /* what it holds from the factory, size bytes, or 0 */
+    /* changes when its bytes or what it mirrors change other than by the
+     * core's stores: a core keeps its decoded code per region and gen */
+    u32 gen;
 };
 
 /* A memory-mapped device. `off` is the offset of the access from the
@@ -93,6 +96,7 @@ struct esk_watch {
 struct esk_bus {
     struct esk_region rg[ESK_BUS_REGIONS];
     int nrg;
+    int last_rg; /* the region the last lookup found: looked at first */
     struct esk_device dev[ESK_BUS_DEVICES];
     int ndev;
     struct esk_alias bb[ESK_BUS_ALIASES];
@@ -122,14 +126,23 @@ struct esk_bus {
 es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind);
 /* the region as before an image: every 4 bytes its `erased` word */
 void esk_bus_erase(struct esk_region *r);
+/* code changed from outside the core (an image, a debugger's write): every
+ * region's gen moves on */
+void esk_bus_code_changed(struct esk_bus *b);
 /* the region holding all `n` bytes at `a`, or 0: memory's fast path */
 ES_INLINE struct esk_region *esk_bus_region(struct esk_bus *b, u32 a, u32 n)
 {
+    struct esk_region *r = &b->rg[b->last_rg];
     int i;
+    /* regions do not overlap: the last one found is as good as the first */
+    if (a - r->base < r->size && r->size - (a - r->base) >= n)
+        return r;
     for (i = 0; i < b->nrg; i++) {
-        struct esk_region *r = &b->rg[i];
-        if (a - r->base < r->size && r->size - (a - r->base) >= n)
+        r = &b->rg[i];
+        if (a - r->base < r->size && r->size - (a - r->base) >= n) {
+            b->last_rg = i;
             return r;
+        }
     }
     return 0;
 }
@@ -209,6 +222,11 @@ struct esk_cpu_ops {
     /* the instruction at `addr`: its text and its size in bytes (0 when
      * memory there cannot be read) */
     int (*disasm)(struct esk_cpu *c, u32 addr, char *text, size_t cap);
+    /* instructions until the machine's cycles reach `end`, or it stops,
+     * sleeps, yields or hits a watchpoint: esk_mach_run's loop without its
+     * per-instruction checks, used while no breakpoint, analysis or
+     * instruction limit applies. 0: step by step */
+    void (*run)(struct esk_cpu *c, u64 end);
 };
 
 struct esk_cpu {
@@ -487,7 +505,20 @@ void esk_mach_end(struct esk_mach *m, int state, const char *fmt, ...);
 void esk_mach_out(struct esk_mach *m, int stream, int c);
 int esk_mach_readc(struct esk_mach *m);
 /* `cycles` of time pass for the devices */
-void esk_mach_advance(struct esk_mach *m, u32 cycles);
+void esk_mach_advance_slow(struct esk_mach *m, u32 cycles);
+/* the most cycles lazy devices are owed before they are told */
+#define ESK_MACH_LAZY_MAX 0x10000u
+ES_INLINE void esk_mach_advance(struct esk_mach *m, u32 cycles)
+{
+    /* lazy clocks, no event due and nothing written: the cycles are owed */
+    if (m->lazy && m->lazy_known && !m->bus.written && m->cycles < m->lazy_at &&
+        m->lag + cycles < ESK_MACH_LAZY_MAX) {
+        m->lag += cycles;
+        m->lag_mark = m->cycles;
+        return;
+    }
+    esk_mach_advance_slow(m, cycles);
+}
 /* a device's clock starts (1) or stops (0) */
 void esk_mach_clock(struct esk_mach *m, int *running, int on);
 /* 1 and the cycles to the next device event, or 0 when none is due */

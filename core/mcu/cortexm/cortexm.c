@@ -693,12 +693,16 @@ void esk_cm_sev(struct esk_cm_state *cs)
 }
 
 /* A halfword of code: from memory, or from a device that answers there (a
- * ROM: the RP2040's, rp2040.c). 0 when nothing does. */
-static int fetch16(struct esk_mach *s, u32 a, u8 *b)
+ * ROM: the RP2040's, rp2040.c). 0 when nothing does; *rom the read-only
+ * region it came from, whose code may be kept decoded */
+static int fetch16(struct esk_mach *s, u32 a, u8 *b, const struct esk_region **rom)
 {
     struct esk_region *r = esk_bus_region(&s->bus, a, 2);
+    *rom = 0;
     if (r) {
         memcpy(b, r->mem + (a - r->base), 2);
+        if (r->rom)
+            *rom = r;
         return 1;
     }
     u32 v;
@@ -734,28 +738,56 @@ static void step(struct esk_cpu *c)
         take_sync(cs, EXC_MEM, MMFSR_IACCVIOL, cs->pc);
         return;
     }
-    if (!fetch16(s, cs->pc, b)) {
-        take_sync(cs, EXC_BUS, BFSR_IBUSERR, cs->pc);
-        return;
-    }
     u32 h[2];
-    h[0] = (u32)b[0] | (u32)b[1] << 8;
-    h[1] = 0;
-    int size = 2;
-    if ((h[0] >> 11) >= 0x1d) {
-        if ((cs->mpu_on || cs->pc + 2 >= 0x40000000u) && esk_cm_mpu_denied(cs, cs->pc + 2, 2, 0, 1)) {
+    int size, br;
+    u32 cost;
+    struct esk_cm_dc *e = &cs->dc[(cs->pc >> 1) & (ESK_CM_DC - 1)];
+    if (e->r && e->pc == cs->pc && e->gen == e->r->gen) {
+        /* decoded before, from memory that has not changed */
+        h[0] = e->h0;
+        h[1] = e->h1;
+        size = e->size;
+        cost = e->cost;
+        br = e->br;
+        if (size == 4 && (cs->mpu_on || cs->pc + 2 >= 0x40000000u) &&
+            esk_cm_mpu_denied(cs, cs->pc + 2, 2, 0, 1)) {
             take_sync(cs, EXC_MEM, MMFSR_IACCVIOL, cs->pc);
             return;
         }
-        if (!fetch16(s, cs->pc + 2, b + 2)) {
+    } else {
+        const struct esk_region *r0, *r1 = 0;
+        if (!fetch16(s, cs->pc, b, &r0)) {
             take_sync(cs, EXC_BUS, BFSR_IBUSERR, cs->pc);
             return;
         }
-        h[1] = (u32)b[2] | (u32)b[3] << 8;
-        size = 4;
+        h[0] = (u32)b[0] | (u32)b[1] << 8;
+        h[1] = 0;
+        size = 2;
+        if ((h[0] >> 11) >= 0x1d) {
+            if ((cs->mpu_on || cs->pc + 2 >= 0x40000000u) && esk_cm_mpu_denied(cs, cs->pc + 2, 2, 0, 1)) {
+                take_sync(cs, EXC_MEM, MMFSR_IACCVIOL, cs->pc);
+                return;
+            }
+            if (!fetch16(s, cs->pc + 2, b + 2, &r1)) {
+                take_sync(cs, EXC_BUS, BFSR_IBUSERR, cs->pc);
+                return;
+            }
+            h[1] = (u32)b[2] | (u32)b[3] << 8;
+            size = 4;
+        }
+        cost = (u32)esk_cm_cost(b, (size_t)size, &br);
+        /* kept when it all came from one read-only region */
+        if (r0 && (size == 2 || r1 == r0) && cost < 256) {
+            e->r = r0;
+            e->gen = r0->gen;
+            e->pc = cs->pc;
+            e->h0 = (u16)h[0];
+            e->h1 = (u16)h[1];
+            e->size = (u8)size;
+            e->cost = (u8)cost;
+            e->br = (u8)br;
+        }
     }
-    int br;
-    u32 cost = (u32)esk_cm_cost(b, (size_t)size, &br);
     s->insns++;
     s->cycles += cost;
 
@@ -856,8 +888,12 @@ static void cpu_reset(struct esk_cpu *c)
     void (*sev)(void *) = k->sev;
     void *sev_ctx = k->sev_ctx;
     int mpu_regions = k->mpu_regions;
+    struct esk_cm_dc *dc = k->dc;
     memset(k, 0, sizeof *k);
     k->mpu_regions = mpu_regions;
+    k->dc = dc;
+    if (dc)
+        memset(dc, 0, ESK_CM_DC * sizeof *dc);
     k->cpu = keep;
     k->sim = s;
     k->model = model;
@@ -1133,11 +1169,18 @@ static int cpu_disasm(struct esk_cpu *c, u32 addr, char *text, size_t cap)
     return esk_dis_thumb(addr & ~1u, h1, h2, text, cap);
 }
 
+static void cpu_run(struct esk_cpu *c, u64 end)
+{
+    struct esk_mach *s = ((struct esk_cm_state *)c)->sim;
+    while (s->state == ESK_MACH_RUN && s->cycles < end && !s->yield && !s->asleep && !s->bus.watch_hit)
+        step(c);
+}
+
 static const struct esk_cpu_ops cortexm_ops = {
     "cortex-m", 40, "an ARM image",
     cpu_reset, step, cpu_pc, cpu_reg_read, cpu_reg_write,
     cpu_gdb_g_regs, cpu_gdb_xml, 2, cpu_interrupt, 15, 1, 0, cpu_reg_name, cpu_wake_pending,
-    cpu_disasm,
+    cpu_disasm, cpu_run,
 };
 
 /* the core of an MCU: the model, its NVIC's priority bits, and its own
@@ -1158,6 +1201,9 @@ struct esk_cm_state *esk_cm_new(struct esk_mach *s, const char *model, int prio_
         return 0;
     k->cpu.ops = &cortexm_ops;
     k->sim = s;
+    k->dc = (struct esk_cm_dc *)esk_mach_alloc(s, ESK_CM_DC * sizeof *k->dc);
+    if (!k->dc)
+        return 0;
     k->model = m;
     k->prio_bits = prio_bits;
     k->tbit = 1;

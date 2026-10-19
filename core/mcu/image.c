@@ -40,6 +40,7 @@ static es_status put(struct esk_mach *m, u32 pa, const u8 *b, u32 n, char *why, 
         }
         r->mem[pa + k - r->base] = b[k];
     }
+    esk_bus_code_changed(&m->bus);
     return ES_OK;
 }
 
