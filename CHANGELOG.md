@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### EmbLinkRTOS on the NUCLEO-F446RE (the NUCLEO-F446RE plan, step 11)
+
+- **EmbLinkRTOS's `nucleo_f446re` board** runs its conformance suite on
+  EmbSIM's NUCLEO-F446RE (`emblink/nucleo_f446re`): the ten test images of
+  its checked base profile pass in 4 s. The board brings the part from HSI
+  to 180 MHz as RM0390 orders it: HSE bypass from the ST-LINK's MCO, the
+  PLL, over-drive, five wait states. Its console is USART2, the virtual COM
+  port. EmbLinkRTOS's `cm4-embsim` CI job builds EmbSIM and runs them
+  there, as `avr-embsim` does on the Uno.
+
 ### Two boards over I2C, and the F4's flash (the NUCLEO-F446RE plan, step 10, part 2)
 
 - **CubeF4's I2C_TwoBoards examples** run on two NUCLEO-F446RE boards wired
@@ -32,7 +42,11 @@ versions follow semantic versioning. There is no release yet.
   - A byte received goes to DR over what the program wrote there. The
     HAL writes 0 to clear TXE, and the model then held the next byte as
     if DR were unread.
-  - The interrupt lines are re-evaluated on reads too, as levels.
+  - No interrupt is pended again by a register read. A level line
+    asserted while its handler runs pends again only at the exception
+    return; pending it from the handler's own SR1, SR2 and DR reads ran
+    the HAL's handler once more, which cleared ADDR before the receive
+    and stalled ComIT and ComDMA after one byte.
 - **SPEC-002:** the core quantum's default is 1 000 000 ps (1 µs); the text
   said 1 000 000 000.
 

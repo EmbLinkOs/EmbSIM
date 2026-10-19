@@ -160,6 +160,11 @@ after each one.
     the manual has them.
 11. **EmbLinkRTOS on the board.** Its `nucleo_f446re` board and the
     conformance suite in its CI on EmbSIM.
+    *Done:* EmbLinkRTOS's `boards/st/nucleo_f446re` takes the part from
+    HSI to 180 MHz from the ST-LINK's MCO (HSE bypass, the PLL,
+    over-drive, five wait states) and writes its console to USART2. Its
+    ten conformance images pass on `emblink/nucleo_f446re` (preset
+    `cm4-nucleo-embsim`), in its `cm4-embsim` CI job too.
 
 Before step 10, **the core's speed.** The devices' clocks become lazy on
 Cortex-M as on the AVR (SysTick and the timers told their cycles when
