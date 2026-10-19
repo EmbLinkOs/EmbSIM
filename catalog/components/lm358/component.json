@@ -102,7 +102,8 @@
             "gain": "100k",
             "gbw": "700k",
             "vpos": "$vout_high",
-            "vneg": "$vout_low"
+            "vneg": "$vout_low",
+            "slew": 0.3
           }
         },
         {
@@ -112,7 +113,8 @@
             "gain": "100k",
             "gbw": "700k",
             "vpos": "$vout_high",
-            "vneg": "$vout_low"
+            "vneg": "$vout_low",
+            "slew": 0.3
           }
         }
       ],
@@ -145,10 +147,9 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Two emblink/opamp: open-loop gain 100k, 0.7 MHz gain-bandwidth, output limited to vout_low..vout_high.",
+      "claims": "Two emblink/opamp: open-loop gain 100k, a dominant pole at 0.7 MHz gain-bandwidth, slewing at 0.3 V/us, output limited to vout_low..vout_high.",
       "omissions": [
         "input offset and bias current",
-        "slew rate (0.3 V/us)",
         "crossover distortion",
         "output current limit"
       ],

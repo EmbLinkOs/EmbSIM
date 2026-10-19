@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "Operational amplifier",
   "category": "analog",
-  "description": "Behavioural op-amp with open-loop gain, optional single pole and output saturation at the supplies.",
+  "description": "Behavioural op-amp with open-loop gain, a dominant pole, slew rate and output saturation at the supplies.",
   "keywords": [
     "opamp",
     "amplifier",
@@ -68,7 +68,15 @@
       "type": "number",
       "unit": "Hz",
       "default": "1meg",
-      "doc": "Gain-bandwidth product (0 = no pole)",
+      "doc": "Gain-bandwidth product: the dominant pole at gbw/gain (0 = no pole, the output follows the input at once)",
+      "min": 0,
+      "advanced": true
+    },
+    "slew": {
+      "type": "number",
+      "unit": "V/us",
+      "default": 0,
+      "doc": "Slew rate: how fast the output can move for a large input step (0 = only the pole limits it)",
       "min": 0,
       "advanced": true
     },
@@ -163,14 +171,14 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Vout = gain*(V+ - V-) saturating at the supply pins or vpos/vneg, single pole from gbw, rout and rin (SPEC-004 \u00a77 opamp).",
+      "claims": "Vout = gain*(V+ - V-) saturating at the supply pins or vpos/vneg, a single dominant pole at gbw/gain with the slew rate `slew` for large steps and recovery from saturation within tens of nanoseconds, rout and rin (SPEC-004 §7 opamp).",
       "omissions": [
         "input offset",
         "bias current",
-        "slew rate",
         "CMRR",
         "noise",
-        "rail-to-rail limits"
+        "rail-to-rail limits",
+        "further poles and phase margin"
       ],
       "range": {
         "voltage_v": [

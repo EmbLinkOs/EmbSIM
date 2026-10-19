@@ -1409,15 +1409,36 @@ static const esk_adev_ops pmos_ops = {"pmos", sizeof(mos_state), pmos_setup, mos
 
 /* ---- behavioural op-amp ---------------------------------------------------------------- */
 
+/* With `gbw` the op-amp has its dominant pole (SPEC-004 §7): an internal node
+ * y integrates the input stage's drive, as the compensation capacitor does,
+ *
+ *     dy/dt = SR tanh(wu vd / SR) gate - (y - vmid) / tau,
+ *
+ * wu = 2 pi gbw and tau = gain / wu, so the DC gain is `gain`, the
+ * unity-gain frequency `gbw`, and a large step slews at `slew` (V/us) rather
+ * than at the linear pole's rate. The output follows y, clamped at the
+ * output limits with corners OPAMP_CORNER wide; `gate` stops the drive
+ * pushing y past the limit it is already at, so the amplifier comes out of
+ * saturation within tens of nanoseconds instead of winding up. At the
+ * operating point y is on the characteristic without `gbw`. */
+#define OPAMP_CORNER 0.01 /* volts */
+
 typedef struct opamp_state {
     double gain, rin, rout, vpos, vneg, headroom_high, headroom_low;
     int supply_pins;
-    double vout_trial;
+    double vout_trial, dvo_trial;
+    double arg_old; /* tanh's argument at the last iteration (limiting) */
+    /* the single pole, when `gbw` is given */
+    int dynamic;
+    double wu, tau, slew;
+    double y_prev, r_prev, r_prev2, y_trial, r_trial;
+    int nhist, trial_first, trial_negligible;
 } opamp_state;
 
 static es_status opamp_setup(esk_adev *d)
 {
     opamp_state *s = (opamp_state *)d->state;
+    double gbw = pd(d, "gbw", 0.0);
     s->headroom_high = pd(d, "headroom_high", 0.0);
     s->headroom_low = pd(d, "headroom_low", 0.0);
     s->gain = pd(d, "gain", 1e5);
@@ -1432,29 +1453,98 @@ static es_status opamp_setup(esk_adev *d)
         s->rin = 1e12;
         s->rout = 0.0;
     }
-    d->nbranch = 1;
+    s->slew = pd(d, "slew", 0.0) * 1e6; /* V/us to V/s; 0: no limit */
+    if (gbw < 0.0 || s->slew < 0.0) {
+        param_error(d, "gbw/slew", "must be >= 0");
+        gbw = 0.0;
+        s->slew = 0.0;
+    }
+    s->dynamic = gbw > 0.0;
+    s->wu = 2.0 * 3.14159265358979323846 * gbw;
+    s->tau = s->dynamic ? s->gain / s->wu : 0.0;
+    d->nbranch = s->dynamic ? 2 : 1;
     return ES_OK;
 }
 
-static void opamp_load(esk_adev *d, esk_amatrix *m)
+static double opamp_sigmoid(double x)
 {
-    opamp_state *s = (opamp_state *)d->state;
-    int np = d->node[0], nm = d->node[1], no = d->node[2], b = d->branch[0];
+    return x > 40.0 ? 1.0 : x < -40.0 ? 0.0 : 1.0 / (1.0 + exp(-x));
+}
+
+static double opamp_softplus(double x)
+{
+    double u = x / OPAMP_CORNER;
+    return u > 40.0 ? x : OPAMP_CORNER * log1p(exp(u));
+}
+
+/* the output limits after headroom, and which supply pin gives each: hi and
+ * lo index d->node (-1: a fixed vpos/vneg); a collapsed supply (the limits
+ * crossed) puts both on the lower pin */
+static void opamp_limits(esk_adev *d, esk_amatrix *m, double *vp, double *vn, int *hi, int *lo,
+                         int *collapsed)
+{
+    const opamp_state *s = (const opamp_state *)d->state;
     double vpos = s->vpos, vneg = s->vneg;
-    double vd = esk_am_v(m, np, nm), vamp, vmid, arg, th, vo, dvo;
-    double ib = esk_am_x(m, b);
+    *hi = -1;
+    *lo = -1;
     if (s->supply_pins) {
         vpos = esk_am_x(m, d->node[3]);
         vneg = esk_am_x(m, d->node[4]);
+        *hi = 3;
+        *lo = 4;
     }
     if (vpos < vneg) {
         double t = vpos;
+        int ti = *hi;
         vpos = vneg;
         vneg = t;
+        *hi = *lo;
+        *lo = ti;
     }
     vpos -= s->headroom_high;
     vneg += s->headroom_low;
-    if (vpos < vneg) vpos = vneg;
+    *collapsed = vpos < vneg;
+    if (*collapsed) {
+        vpos = vneg;
+        *hi = *lo;
+    }
+    *vp = vpos;
+    *vn = vneg;
+}
+
+static void opamp_stamp_inputs(esk_adev *d, esk_amatrix *m)
+{
+    const opamp_state *s = (const opamp_state *)d->state;
+    int b = d->branch[0], no = d->node[2];
+    esk_am_stamp_g(m, d->node[0], d->node[1], 1.0 / s->rin);
+    esk_am_stamp_j(m, no, b, 1.0);
+    esk_am_stamp_f(m, no, esk_am_x(m, b));
+}
+
+/* row `row`'s dependence on the output limits: dvp on the pin giving vp, dvn
+ * on the one giving vn */
+static void opamp_stamp_limits(esk_adev *d, esk_amatrix *m, int row, int hi, int lo, double dvp, double dvn)
+{
+    if (hi >= 0)
+        esk_am_stamp_j(m, row, d->node[hi], dvp);
+    if (lo >= 0)
+        esk_am_stamp_j(m, row, d->node[lo], dvn);
+}
+
+/* the static characteristic: vo(vd) between the limits, and its slope.
+ * Newton evaluates it with tanh's argument moved at most OPAMP_ARG_STEP from
+ * the last iteration's, linearised from there (SPICE's limiting, as pnjlim
+ * does for a junction): deep in saturation tanh's slope underflows, and a
+ * follower whose input hangs on its own output (the Uno's L buffer on a
+ * floating D13) would otherwise bounce between the rails */
+#define OPAMP_ARG_STEP 4.0
+
+static double opamp_static(esk_adev *d, esk_amatrix *m, double *dvo)
+{
+    opamp_state *s = (opamp_state *)d->state;
+    double vd = esk_am_v(m, d->node[0], d->node[1]), vpos, vneg, vamp, vmid, arg, lim, th;
+    int hi, lo, collapsed;
+    opamp_limits(d, m, &vpos, &vneg, &hi, &lo, &collapsed);
     vamp = 0.5 * (vpos - vneg);
     vmid = 0.5 * (vpos + vneg);
     if (vamp < 1e-6)
@@ -1464,24 +1554,129 @@ static void opamp_load(esk_adev *d, esk_amatrix *m)
         arg = 40.0;
     if (arg < -40.0)
         arg = -40.0;
-    th = tanh(arg);
-    vo = vmid + vamp * th;
-    dvo = s->gain * (1.0 - th * th);
-    esk_am_stamp_g(m, np, nm, 1.0 / s->rin);
+    lim = arg;
+    if (lim > s->arg_old + OPAMP_ARG_STEP)
+        lim = s->arg_old + OPAMP_ARG_STEP;
+    if (lim < s->arg_old - OPAMP_ARG_STEP)
+        lim = s->arg_old - OPAMP_ARG_STEP;
+    if (lim != arg)
+        esk_am_noncon(m);
+    s->arg_old = lim;
+    th = tanh(lim);
+    *dvo = s->gain * (1.0 - th * th);
+    /* linearised from the limited point: exact when nothing was limited */
+    return vmid + vamp * th + *dvo * (vd - lim * vamp / s->gain);
+}
+
+static void opamp_load_static(esk_adev *d, esk_amatrix *m)
+{
+    opamp_state *s = (opamp_state *)d->state;
+    int np = d->node[0], nm = d->node[1], no = d->node[2], b = d->branch[0];
+    double ib = esk_am_x(m, b), dvo;
+    double vo = opamp_static(d, m, &dvo);
+    opamp_stamp_inputs(d, m);
     /* branch: v_out - vo(vd) - rout i_b = 0 */
-    esk_am_stamp_j(m, no, b, 1.0);
-    esk_am_stamp_f(m, no, ib);
     esk_am_stamp_j(m, b, no, 1.0);
     esk_am_stamp_j(m, b, np, -dvo);
     esk_am_stamp_j(m, b, nm, dvo);
     esk_am_stamp_j(m, b, b, -s->rout);
     esk_am_stamp_f(m, b, esk_am_x(m, no) - vo - s->rout * ib);
     s->vout_trial = vo;
+    s->dvo_trial = dvo;
+}
+
+/* a step with the single pole */
+static void opamp_load_pole(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    opamp_state *s = (opamp_state *)d->state;
+    int np = d->node[0], nm = d->node[1], no = d->node[2], b = d->branch[0], by = d->branch[1];
+    double vd = esk_am_v(m, np, nm), ib = esk_am_x(m, b), y = esk_am_x(m, by);
+    double vp, vn, drive, ddrive, g, gy, gp = 0.0, gn = 0.0, rate, sn, sp, out, geq, ieq;
+    int hi, lo, collapsed;
+    opamp_limits(d, m, &vp, &vn, &hi, &lo, &collapsed);
+    if (s->slew > 0.0) {
+        double th = tanh(s->wu * vd / s->slew);
+        drive = s->slew * th;
+        ddrive = s->wu * (1.0 - th * th);
+    } else {
+        drive = s->wu * vd;
+        ddrive = s->wu;
+    }
+    /* the drive stops at the limit it pushes towards */
+    if (drive >= 0.0) {
+        g = opamp_sigmoid((vp - y) / OPAMP_CORNER);
+        gy = -g * (1.0 - g) / OPAMP_CORNER;
+        gp = -gy;
+    } else {
+        g = opamp_sigmoid((y - vn) / OPAMP_CORNER);
+        gy = g * (1.0 - g) / OPAMP_CORNER;
+        gn = -gy;
+    }
+    rate = drive * g - (y - 0.5 * (vp + vn)) / s->tau;
+    /* y's row: dy/dt - rate = 0 */
+    esk_integ_companion(in, y, s->y_prev, s->r_prev, 1.0, &geq, &ieq);
+    esk_am_stamp_j(m, by, by, geq - (drive * gy - 1.0 / s->tau));
+    esk_am_stamp_j(m, by, np, -ddrive * g);
+    esk_am_stamp_j(m, by, nm, ddrive * g);
+    opamp_stamp_limits(d, m, by, hi, lo, -(drive * gp + 0.5 / s->tau), -(drive * gn + 0.5 / s->tau));
+    esk_am_stamp_f(m, by, ieq - rate);
+    s->r_trial = ieq;
+    s->trial_first = esk_integ_first_order(in);
+    s->trial_negligible = esk_integ_negligible(in);
+    s->y_trial = y;
+    /* the output: y clamped at the limits, through rout */
+    sn = opamp_sigmoid((y - vn) / OPAMP_CORNER);
+    sp = opamp_sigmoid((y - vp) / OPAMP_CORNER);
+    out = vn + opamp_softplus(y - vn) - opamp_softplus(y - vp);
+    if (collapsed) {
+        out = vn;
+        sn = sp = 0.0;
+    }
+    opamp_stamp_inputs(d, m);
+    esk_am_stamp_j(m, b, no, 1.0);
+    esk_am_stamp_j(m, b, by, -(sn - sp));
+    opamp_stamp_limits(d, m, b, hi, lo, -sp, collapsed ? -1.0 : -(1.0 - sn));
+    esk_am_stamp_j(m, b, b, -s->rout);
+    esk_am_stamp_f(m, b, esk_am_x(m, no) - out - s->rout * ib);
+    s->vout_trial = out;
+}
+
+/* the operating point: the output on the static characteristic, and with the
+ * pole y there too, the pole's own equilibrium in the linear range (solved
+ * through y and its clamp, a balance of 1e5 to one, Newton would bounce
+ * between the rails) */
+static void opamp_load(esk_adev *d, esk_amatrix *m)
+{
+    opamp_state *s = (opamp_state *)d->state;
+    int by;
+    double dvo, vo;
+    opamp_load_static(d, m);
+    if (!s->dynamic)
+        return;
+    by = d->branch[1];
+    vo = s->vout_trial;
+    dvo = s->dvo_trial;
+    esk_am_stamp_j(m, by, by, 1.0);
+    esk_am_stamp_j(m, by, d->node[0], -dvo);
+    esk_am_stamp_j(m, by, d->node[1], dvo);
+    esk_am_stamp_f(m, by, esk_am_x(m, by) - vo);
+    s->y_trial = vo;
+    s->r_trial = 0.0;
+    s->trial_first = 1;
+    s->trial_negligible = 0;
+}
+
+static void opamp_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    if (((const opamp_state *)d->state)->dynamic)
+        opamp_load_pole(d, m, in);
+    else
+        opamp_load_static(d, m);
 }
 
 static void opamp_accept(esk_adev *d, es_time_t t)
 {
-    const opamp_state *s = (const opamp_state *)d->state;
+    opamp_state *s = (opamp_state *)d->state;
     double ib = acc_x(d, d->branch[0]);
     double iin = (acc_v(d, 0) - acc_v(d, 1)) / s->rin;
     ES_UNUSED(t);
@@ -1493,6 +1688,25 @@ static void opamp_accept(esk_adev *d, es_time_t t)
         d->i_last[3] = ib < 0.0 ? -ib : 0.0;
         d->i_last[4] = ib > 0.0 ? -ib : 0.0;
     }
+    if (s->dynamic) {
+        if (s->trial_first) {
+            s->nhist = 1;
+            s->r_prev2 = s->r_prev;
+        } else if (!(s->trial_negligible && s->nhist >= 1)) {
+            if (s->nhist < 2)
+                s->nhist++;
+            s->r_prev2 = s->r_prev;
+        }
+        s->r_prev = s->r_trial;
+        s->y_prev = s->y_trial;
+    }
+}
+
+/* the internal node's error, in volts */
+static double opamp_lte(esk_adev *d, const esk_integ *in)
+{
+    const opamp_state *s = (const opamp_state *)d->state;
+    return s->dynamic ? reactive_lte(in, s->r_trial, s->r_prev, s->r_prev2, s->nhist) : 0.0;
 }
 
 static void opamp_observe(esk_adev *d, esk_json *o)
@@ -1502,9 +1716,9 @@ static void opamp_observe(esk_adev *d, esk_json *o)
     esk_json_set_number(d->isl->a, o, "iout", -d->i_last[2]);
 }
 
-static const esk_adev_ops opamp_ops = {"opamp", sizeof(opamp_state), opamp_setup, opamp_load,
-                                       NULL,    opamp_accept,        NULL,        NULL,
-                                       NULL,    opamp_observe,       NULL};
+static const esk_adev_ops opamp_ops = {"opamp",       sizeof(opamp_state), opamp_setup, opamp_load,
+                                       opamp_load_tr, opamp_accept,        NULL,        NULL,
+                                       opamp_lte,     opamp_observe,       NULL};
 
 /* ---- behavioural regulator (LDO) ----------------------------------------------------- */
 
