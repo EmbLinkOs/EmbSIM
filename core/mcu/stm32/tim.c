@@ -757,8 +757,8 @@ static void capture(struct tim *t, int ch)
     if (lead && !counting_down(t) && lead <= cnt)
         cnt -= lead;
     v = (u32)cnt;
-    if (t->sr->value & (1u << (ch + 1)))
-        esk_rf_hw(t->sr, t->sr->value | (1u << (ch + 9))); /* CCxOF */
+    if (t->sr->value & ((u64)1u << (ch + 1)))
+        esk_rf_hw(t->sr, t->sr->value | ((u64)1u << (ch + 9))); /* CCxOF */
     esk_rf_hw(t->ccr[ch], (t->ccr[ch]->value & ~t->cntmask) | v);
     set_flag(t, 1u << (ch + 1));
     if (!(t->cr2 && (t->cr2->value & CCDS)))
@@ -1045,8 +1045,8 @@ static u32 tim_read(void *ctx, u32 off, int n)
         return v;
     for (ch = 0; ch < t->nch; ch++)
         if (t->ccr[ch] && off == esk_rf_off(t->ccr[ch]) && is_input(t, ch) &&
-            (t->sr->value & (1u << (ch + 1))))
-            esk_rf_hw(t->sr, t->sr->value & ~(u64)(1u << (ch + 1))); /* reading CCRx clears CCxIF */
+            (t->sr->value & ((u64)1u << (ch + 1))))
+            esk_rf_hw(t->sr, t->sr->value & ~((u64)1u << (ch + 1))); /* reading CCRx clears CCxIF */
     return v;
 }
 
@@ -1176,7 +1176,7 @@ static void tim_write(void *ctx, u32 off, int n, u32 v)
         if (!(t->dier->value & (1u << 8)))
             esk_stm32_dma_request(t->s, t->sig_up, 0);
         for (ch = 0; ch < t->nch; ch++)
-            if (!(t->dier->value & (1u << (ch + 9))))
+            if (!(t->dier->value & ((u64)1u << (ch + 9))))
                 esk_stm32_dma_request(t->s, t->sig_ch[ch], 0);
         if (!(t->dier->value & (1u << 14)))
             esk_stm32_dma_request(t->s, t->sig_trig, 0);
