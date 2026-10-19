@@ -15,6 +15,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 | RP2040 | 23 | 6 | 6 | 35 |
 | FE310-G002 | 13 | 0 | 1 | 14 |
 | STM32F103C8 | 23 | 0 | 4 | 27 |
+| STM32F446RE | 0 | 0 | 71 | 71 |
 
 ## ATmega328P (`microchip/atmega328p`)
 
@@ -317,3 +318,84 @@ Boards: Blue Pill (STM32F103C8T6).
 | CRC | — | **missing** |
 
 Declared omissions: the ADC's injected group, analog watchdog, external triggers, dual mode and DMA; SPI and I2C slave modes, I2C's 10-bit addressing, SMBus, PEC, slave clock stretching and arbitration, SPI's CRC and bidirectional modes; DMA; CAN; USB; RTC and backup domain; timer input capture, counting down and center-aligned, the complementary outputs and dead time; IWDG and WWDG; flash programming; low-power modes beyond WFI.
+
+## STM32F446RE (`st/stm32f446re`)
+
+Boards: none in the catalog.  
+0 of 71 peripherals modelled, 0 registers only, 71 missing.
+
+| Peripheral | Model | State |
+|---|---|---|
+| TIM2 | — | **missing** |
+| TIM3 | — | **missing** |
+| TIM4 | — | **missing** |
+| TIM5 | — | **missing** |
+| TIM6 | — | **missing** |
+| TIM7 | — | **missing** |
+| TIM12 | — | **missing** |
+| TIM13 | — | **missing** |
+| TIM14 | — | **missing** |
+| RTC | — | **missing** |
+| WWDG | — | **missing** |
+| IWDG | — | **missing** |
+| SPI2 | — | **missing** |
+| SPI3 | — | **missing** |
+| SPDIF_RX | — | **missing** |
+| USART2 | — | **missing** |
+| USART3 | — | **missing** |
+| UART4 | — | **missing** |
+| UART5 | — | **missing** |
+| I2C1 | — | **missing** |
+| I2C2 | — | **missing** |
+| I2C3 | — | **missing** |
+| FMPI2C | — | **missing** |
+| CAN1 | — | **missing** |
+| CAN2 | — | **missing** |
+| HDMI_CEC | — | **missing** |
+| PWR | — | **missing** |
+| DAC | — | **missing** |
+| TIM1 | — | **missing** |
+| TIM8 | — | **missing** |
+| USART1 | — | **missing** |
+| USART6 | — | **missing** |
+| ADC1 | — | **missing** |
+| ADC2 | — | **missing** |
+| ADC3 | — | **missing** |
+| C_ADC | — | **missing** |
+| SDIO | — | **missing** |
+| SPI1 | — | **missing** |
+| SPI4 | — | **missing** |
+| SYSCFG | — | **missing** |
+| EXTI | — | **missing** |
+| TIM9 | — | **missing** |
+| TIM10 | — | **missing** |
+| TIM11 | — | **missing** |
+| SAI1 | — | **missing** |
+| SAI2 | — | **missing** |
+| GPIOA | — | **missing** |
+| GPIOB | — | **missing** |
+| GPIOC | — | **missing** |
+| GPIOD | — | **missing** |
+| GPIOE | — | **missing** |
+| GPIOF | — | **missing** |
+| GPIOG | — | **missing** |
+| GPIOH | — | **missing** |
+| CRC | — | **missing** |
+| RCC | — | **missing** |
+| FLASH | — | **missing** |
+| DMA1 | — | **missing** |
+| DMA2 | — | **missing** |
+| OTG_HS_GLOBAL | — | **missing** |
+| OTG_HS_HOST | — | **missing** |
+| OTG_HS_DEVICE | — | **missing** |
+| OTG_HS_PWRCLK | — | **missing** |
+| OTG_FS_GLOBAL | — | **missing** |
+| OTG_FS_HOST | — | **missing** |
+| OTG_FS_DEVICE | — | **missing** |
+| OTG_FS_PWRCLK | — | **missing** |
+| DCMI | — | **missing** |
+| FMC | — | **missing** |
+| QUADSPI | — | **missing** |
+| DBG | — | **missing** |
+
+Declared omissions: every peripheral model: RCC, FLASH, PWR, GPIO, SYSCFG, EXTI, the timers, USART and UART, DMA, ADC, DAC, SPI, I2C, the watchdogs and the RTC keep their register values and raise mcu.unsupported_access until their models land (docs/engineering/rtos-boards.md, steps 3 to 8); CAN, SDIO, QUADSPI, SAI, SPDIF-RX, HDMI-CEC, DCMI, FMC, FMPI2C and the USB OTG controllers; flash programming and the option bytes' effects; low-power modes beyond WFI.

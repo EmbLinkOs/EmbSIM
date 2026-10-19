@@ -12,7 +12,16 @@ the SVD's %s substitutions give them; fields keep their bit ranges, and
 their access, modifiedWriteValues and readAction become the reference
 manuals' notation (r, w, rw, w1, rw1, rc_w0, rc_w1, rs, t, rc_r). An SVD
 file usually carries its vendor's licence: the description made from it is
-for the user's own use unless that licence allows distributing it."""
+for the user's own use unless that licence allows distributing it.
+
+    --reset PERIPH.REG=0xVALUE   (repeatable) a reset value where the SVD
+                                 and the reference manual disagree, the
+                                 manual's; recorded in the description's
+                                 source so the conversion can be repeated
+    --interrupts PERIPH=A,B      (repeatable) the interrupts a peripheral
+                                 requests, where the SVD lists them on
+                                 another (an STM32's TIM9 on TIM1_BRK_TIM9);
+                                 recorded likewise"""
 import argparse
 import json
 import re
@@ -159,13 +168,66 @@ def convert(svd: Path, ident: str) -> dict:
     }
 
 
+def apply_resets(doc: dict, resets: list[str]) -> None:
+    """Corrected reset values, PERIPH.REG=0xVALUE, on peripherals that have
+    their own registers (those derived from one share its correction)."""
+    by_name = {p["name"]: p for p in doc["peripherals"]}
+    done = []
+    for spec in resets:
+        target, _, value = spec.partition("=")
+        pname, _, rname = target.partition(".")
+        p = by_name.get(pname)
+        if p is None or "registers" not in p:
+            raise SystemExit(f"--reset {spec}: no peripheral {pname} with its own registers")
+        reg = next((r for r in p["registers"] if r["name"] == rname), None)
+        if reg is None:
+            raise SystemExit(f"--reset {spec}: {pname} has no register {rname}")
+        v = num(value)
+        if v:
+            reg["reset"] = "0x%08X" % v
+        else:
+            reg.pop("reset", None)
+        done.append(f"{pname}.{rname}=0x{v:08X}")
+    if done:
+        doc["source"] += "; reset values corrected from the reference manual: " + ", ".join(done)
+
+
+def apply_interrupts(doc: dict, specs: list[str]) -> None:
+    """Interrupt lists, PERIPH=NAME[,NAME...], replacing the SVD's; every
+    name must be one of the device's interrupts (empty: none)."""
+    by_name = {p["name"]: p for p in doc["peripherals"]}
+    done = []
+    for spec in specs:
+        pname, _, names = spec.partition("=")
+        p = by_name.get(pname)
+        if p is None:
+            raise SystemExit(f"--interrupts {spec}: no peripheral {pname}")
+        irqs = [n for n in names.split(",") if n]
+        bad = [n for n in irqs if n not in doc["interrupts"]]
+        if bad:
+            raise SystemExit(f"--interrupts {spec}: unknown interrupts {', '.join(bad)}")
+        if irqs:
+            p["interrupts"] = irqs
+        else:
+            p.pop("interrupts", None)
+        done.append(f"{pname}={','.join(irqs)}")
+    if done:
+        doc["source"] += "; interrupts reassigned from the reference manual: " + "; ".join(done)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("svd", type=Path)
     ap.add_argument("-o", "--output", type=Path, required=True)
     ap.add_argument("--id", default=None, help="the description's id (default: the device name)")
+    ap.add_argument("--reset", action="append", default=[], metavar="PERIPH.REG=0xVALUE",
+                    help="a reset value from the reference manual where the SVD differs")
+    ap.add_argument("--interrupts", action="append", default=[], metavar="PERIPH=A,B",
+                    help="a peripheral's interrupts where the SVD lists them elsewhere")
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
+    apply_resets(doc, args.reset)
+    apply_interrupts(doc, args.interrupts)
     args.output.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
     nregs = sum(len(p.get("registers", [])) for p in doc["peripherals"])
     print(f"{args.output}: {len(doc['peripherals'])} peripherals, {nregs} registers, {len(doc['interrupts'])} interrupts")

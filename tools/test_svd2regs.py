@@ -65,6 +65,35 @@ class Svd2Regs(unittest.TestCase):
         self.assertEqual(regs["CH1_CTRL"], {"name": "CH1_CTRL", "offset": "0x28", "fields": [["CH1_CTRL", 0, 32, "w"]]})
         json.dumps(doc)
 
+    def test_reset_corrections(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "toy.svd"
+            p.write_text(SVD)
+            doc = svd2regs.convert(p, "toy/registers")
+        svd2regs.apply_resets(doc, ["UART0.DR=0x5A", "UART0.SR=0"])
+        regs = {r["name"]: r for r in doc["peripherals"][0]["registers"]}
+        self.assertEqual(regs["DR"]["reset"], "0x0000005A")
+        self.assertNotIn("reset", regs["SR"])
+        self.assertIn("UART0.DR=0x0000005A", doc["source"])
+        # a derived peripheral shares its base's registers: correct the base
+        with self.assertRaises(SystemExit):
+            svd2regs.apply_resets(doc, ["UART1.DR=1"])
+        with self.assertRaises(SystemExit):
+            svd2regs.apply_resets(doc, ["UART0.NOPE=1"])
+
+    def test_interrupt_reassignment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "toy.svd"
+            p.write_text(SVD)
+            doc = svd2regs.convert(p, "toy/registers")
+        svd2regs.apply_interrupts(doc, ["UART1=UART0,UART1", "UART0="])
+        u0, u1 = doc["peripherals"]
+        self.assertEqual(u1["interrupts"], ["UART0", "UART1"])
+        self.assertNotIn("interrupts", u0)
+        self.assertIn("UART1=UART0,UART1", doc["source"])
+        with self.assertRaises(SystemExit):
+            svd2regs.apply_interrupts(doc, ["UART0=NOPE"])
+
 
 if __name__ == "__main__":
     unittest.main()

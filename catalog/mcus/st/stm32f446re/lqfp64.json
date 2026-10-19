@@ -1,0 +1,279 @@
+{
+ "schema_version": 1,
+ "kind": "package",
+ "id": "st/stm32f446re/lqfp64",
+ "name": "LQFP64",
+ "description": "LQFP64 package of the STM32F446R(C-E)Tx, its pinout from ST's open pin data.",
+ "pins": [
+  {
+   "number": 1,
+   "signal": "VBAT"
+  },
+  {
+   "number": 2,
+   "signal": "PC13"
+  },
+  {
+   "number": 3,
+   "signal": "PC14",
+   "doc": "PC14-OSC32_IN"
+  },
+  {
+   "number": 4,
+   "signal": "PC15",
+   "doc": "PC15-OSC32_OUT"
+  },
+  {
+   "number": 5,
+   "signal": "PH0",
+   "doc": "PH0-OSC_IN"
+  },
+  {
+   "number": 6,
+   "signal": "PH1",
+   "doc": "PH1-OSC_OUT"
+  },
+  {
+   "number": 7,
+   "signal": "NRST"
+  },
+  {
+   "number": 8,
+   "signal": "PC0"
+  },
+  {
+   "number": 9,
+   "signal": "PC1"
+  },
+  {
+   "number": 10,
+   "signal": "PC2"
+  },
+  {
+   "number": 11,
+   "signal": "PC3"
+  },
+  {
+   "number": 12,
+   "signal": "VSSA"
+  },
+  {
+   "number": 13,
+   "signal": "VDDA"
+  },
+  {
+   "number": 14,
+   "signal": "PA0",
+   "doc": "PA0-WKUP"
+  },
+  {
+   "number": 15,
+   "signal": "PA1"
+  },
+  {
+   "number": 16,
+   "signal": "PA2"
+  },
+  {
+   "number": 17,
+   "signal": "PA3"
+  },
+  {
+   "number": 18,
+   "signal": "VSS"
+  },
+  {
+   "number": 19,
+   "signal": "VDD"
+  },
+  {
+   "number": 20,
+   "signal": "PA4"
+  },
+  {
+   "number": 21,
+   "signal": "PA5"
+  },
+  {
+   "number": 22,
+   "signal": "PA6"
+  },
+  {
+   "number": 23,
+   "signal": "PA7"
+  },
+  {
+   "number": 24,
+   "signal": "PC4"
+  },
+  {
+   "number": 25,
+   "signal": "PC5"
+  },
+  {
+   "number": 26,
+   "signal": "PB0"
+  },
+  {
+   "number": 27,
+   "signal": "PB1"
+  },
+  {
+   "number": 28,
+   "signal": "PB2"
+  },
+  {
+   "number": 29,
+   "signal": "PB10"
+  },
+  {
+   "number": 30,
+   "signal": "VCAP_1"
+  },
+  {
+   "number": 31,
+   "signal": "VSS"
+  },
+  {
+   "number": 32,
+   "signal": "VDD"
+  },
+  {
+   "number": 33,
+   "signal": "PB12"
+  },
+  {
+   "number": 34,
+   "signal": "PB13"
+  },
+  {
+   "number": 35,
+   "signal": "PB14"
+  },
+  {
+   "number": 36,
+   "signal": "PB15"
+  },
+  {
+   "number": 37,
+   "signal": "PC6"
+  },
+  {
+   "number": 38,
+   "signal": "PC7"
+  },
+  {
+   "number": 39,
+   "signal": "PC8"
+  },
+  {
+   "number": 40,
+   "signal": "PC9"
+  },
+  {
+   "number": 41,
+   "signal": "PA8"
+  },
+  {
+   "number": 42,
+   "signal": "PA9"
+  },
+  {
+   "number": 43,
+   "signal": "PA10"
+  },
+  {
+   "number": 44,
+   "signal": "PA11"
+  },
+  {
+   "number": 45,
+   "signal": "PA12"
+  },
+  {
+   "number": 46,
+   "signal": "PA13"
+  },
+  {
+   "number": 47,
+   "signal": "VSS"
+  },
+  {
+   "number": 48,
+   "signal": "VDD"
+  },
+  {
+   "number": 49,
+   "signal": "PA14"
+  },
+  {
+   "number": 50,
+   "signal": "PA15"
+  },
+  {
+   "number": 51,
+   "signal": "PC10"
+  },
+  {
+   "number": 52,
+   "signal": "PC11"
+  },
+  {
+   "number": 53,
+   "signal": "PC12"
+  },
+  {
+   "number": 54,
+   "signal": "PD2"
+  },
+  {
+   "number": 55,
+   "signal": "PB3"
+  },
+  {
+   "number": 56,
+   "signal": "PB4"
+  },
+  {
+   "number": 57,
+   "signal": "PB5"
+  },
+  {
+   "number": 58,
+   "signal": "PB6"
+  },
+  {
+   "number": 59,
+   "signal": "PB7"
+  },
+  {
+   "number": 60,
+   "signal": "BOOT0"
+  },
+  {
+   "number": 61,
+   "signal": "PB8"
+  },
+  {
+   "number": 62,
+   "signal": "PB9"
+  },
+  {
+   "number": 63,
+   "signal": "VSS"
+  },
+  {
+   "number": 64,
+   "signal": "VDD"
+  }
+ ],
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "STMicroelectronics STM32_open_pin_data STM32F446R(C-E)Tx.xml (BSD-3-Clause), converted by tools/importers/stm32pins.py"
+   }
+  ]
+ }
+}

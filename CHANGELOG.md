@@ -5,6 +5,26 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32F446RE described (the NUCLEO-F446RE plan, step 2)
+
+- `st/stm32f446re`: the Cortex-M4F with FPU and MPU, the memory map
+  (512 KiB flash, 128 KiB SRAM, system memory, OTP, option bytes, backup
+  SRAM), bit-band, clocks, the LQFP64 pinout and the ADC channels.
+- **Register file:** converted from ST's own STM32F446.svd (v1.9,
+  Apache-2.0), vendored with its licence. Where the SVD differs from RM0390,
+  the manual wins, and each correction is recorded in the file's source:
+  - GPIOA's OSPEEDR reset value;
+  - USART SR's reset value (TXE and TC at bits 7:6);
+  - DBGMCU_IDCODE's DEV_ID (0x421);
+  - the interrupts of TIM9 to TIM14, FMPI2C, the ADCs and the DAC.
+- **Importer changes.** `tools/importers/svd2regs.py` gains `--reset` and
+  `--interrupts`, recorded corrections. `tools/importers/stm32pins.py`
+  converts ST's open pin data (BSD-3-Clause) into a package description
+  and the analog map.
+- **No peripheral models yet.** Each peripheral keeps its register values
+  and reports unsupported access until steps 3 to 8; `docs/coverage.md`
+  says 0 of 71.
+
 ### The Cortex-M core an RTOS port needs (the NUCLEO-F446RE plan, step 1)
 
 - **The MPU** on the parts that have one: the nRF52840 and RP2040 today, the

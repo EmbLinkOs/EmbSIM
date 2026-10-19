@@ -1,0 +1,319 @@
+{
+ "schema_version": 1,
+ "kind": "mcu",
+ "id": "st/stm32f446re",
+ "version": "1.0.0",
+ "name": "STM32F446RE",
+ "description": "STMicroelectronics STM32F446RE: an Arm Cortex-M4F at up to 180 MHz with an MPU, 512 KiB of flash and 128 KiB of SRAM, in an LQFP64; the NUCLEO-F446RE's MCU.",
+ "keywords": [
+  "stm32f446re",
+  "stm32f446",
+  "stm32f4",
+  "stm32",
+  "cortex-m4f",
+  "nucleo"
+ ],
+ "vendor": "st",
+ "family": "stm32f4",
+ "core": {
+  "backend": "cortex-m",
+  "model": "cortex-m4",
+  "priority_bits": 4,
+  "timing_tier": "estimated",
+  "fpu": true,
+  "mpu": true,
+  "endian": "little"
+ },
+ "memory": [
+  {
+   "name": "flash",
+   "base": "0x08000000",
+   "size": "512K",
+   "kind": "flash",
+   "erased": "0xFFFFFFFF",
+   "doc": "Main memory: sectors 0-3 of 16 KiB, 4 of 64 KiB, 5-7 of 128 KiB"
+  },
+  {
+   "name": "flash_alias",
+   "base": "0x00000000",
+   "size": "512K",
+   "kind": "alias",
+   "target": "0x08000000",
+   "doc": "Boot alias of the main flash when BOOT0 is low"
+  },
+  {
+   "name": "sram",
+   "base": "0x20000000",
+   "size": "128K",
+   "kind": "ram",
+   "main": true,
+   "doc": "SRAM1 (112 KiB) and SRAM2 (16 KiB), contiguous"
+  },
+  {
+   "name": "system_memory",
+   "base": "0x1FFF0000",
+   "size": "30K",
+   "kind": "rom",
+   "doc": "ST's bootloader; contents not shipped"
+  },
+  {
+   "name": "otp",
+   "base": "0x1FFF7800",
+   "size": 528,
+   "kind": "flash",
+   "erased": "0xFFFFFFFF",
+   "doc": "One-time programmable area: 512 bytes and 16 lock bytes"
+  },
+  {
+   "name": "option_bytes",
+   "base": "0x1FFFC000",
+   "size": 16,
+   "kind": "flash",
+   "erased": "0xFFFFFFFF"
+  },
+  {
+   "name": "backup_sram",
+   "base": "0x40024000",
+   "size": "4K",
+   "kind": "ram",
+   "doc": "Backup SRAM, kept by VBAT"
+  }
+ ],
+ "bitband": [
+  {
+   "base": "0x22000000",
+   "size": "0x02000000",
+   "target": "0x20000000"
+  },
+  {
+   "base": "0x42000000",
+   "size": "0x02000000",
+   "target": "0x40000000"
+  }
+ ],
+ "clocks": {
+  "sources": [
+   {
+    "name": "hsi",
+    "hz": 16000000,
+    "doc": "Internal 16 MHz RC, the clock out of reset"
+   },
+   {
+    "name": "hse",
+    "hz": "board",
+    "doc": "External crystal 4 to 26 MHz, or an external clock up to 50 MHz (bypass)"
+   },
+   {
+    "name": "lsi",
+    "hz": 32000,
+    "doc": "Internal low-speed RC"
+   },
+   {
+    "name": "lse",
+    "hz": "board",
+    "doc": "External 32.768 kHz crystal"
+   }
+  ],
+  "reset_core_hz": 16000000,
+  "max_core_hz": 180000000
+ },
+ "register_file": {
+  "format": "embsim",
+  "file": "registers.json",
+  "vendored": true,
+  "license": "Apache-2.0 (converted from STMicroelectronics' STM32F446.svd v1.9, Copyright (c) 2024 STMicroelectronics; LICENSES/Apache-2.0.txt)"
+ },
+ "io": {
+  "family": "cmos_3v3",
+  "ports": [
+   {
+    "name": "A",
+    "pins": 16
+   },
+   {
+    "name": "B",
+    "pins": 16,
+    "mask": "0xF7FF"
+   },
+   {
+    "name": "C",
+    "pins": 16
+   },
+   {
+    "name": "D",
+    "pins": 3,
+    "mask": "0x0004"
+   },
+   {
+    "name": "H",
+    "pins": 2
+   }
+  ],
+  "electrical": {
+   "vdd": 3.3,
+   "voh": 2.9,
+   "vol": 0.4,
+   "rout": {
+    "low": 60,
+    "medium": 50,
+    "fast": 40,
+    "high": 30
+   },
+   "vih": 1.79,
+   "vil": 0.99,
+   "hysteresis": 0.2,
+   "rpull": 40000,
+   "leak_a": 1e-06,
+   "slew_v_per_us": {
+    "low": 40,
+    "medium": 200,
+    "fast": 400,
+    "high": 700
+   },
+   "ioh_max": 0.025,
+   "iol_max": 0.025
+  },
+  "analog": {
+   "PA0": "ADC123_IN0",
+   "PA1": "ADC123_IN1",
+   "PA2": "ADC123_IN2",
+   "PA3": "ADC123_IN3",
+   "PA4": "ADC12_IN4",
+   "PA5": "ADC12_IN5",
+   "PA6": "ADC12_IN6",
+   "PA7": "ADC12_IN7",
+   "PB0": "ADC12_IN8",
+   "PB1": "ADC12_IN9",
+   "PC0": "ADC123_IN10",
+   "PC1": "ADC123_IN11",
+   "PC2": "ADC123_IN12",
+   "PC3": "ADC123_IN13",
+   "PC4": "ADC12_IN14",
+   "PC5": "ADC12_IN15"
+  }
+ },
+ "signals": [
+  "VBAT",
+  "NRST",
+  "VSSA",
+  "VDDA",
+  "VSS",
+  "VDD",
+  "VCAP_1",
+  "BOOT0",
+  "PA0",
+  "PA1",
+  "PA2",
+  "PA3",
+  "PA4",
+  "PA5",
+  "PA6",
+  "PA7",
+  "PA8",
+  "PA9",
+  "PA10",
+  "PA11",
+  "PA12",
+  "PA13",
+  "PA14",
+  "PA15",
+  "PB0",
+  "PB1",
+  "PB2",
+  "PB3",
+  "PB4",
+  "PB5",
+  "PB6",
+  "PB7",
+  "PB8",
+  "PB9",
+  "PB10",
+  "PB12",
+  "PB13",
+  "PB14",
+  "PB15",
+  "PC0",
+  "PC1",
+  "PC2",
+  "PC3",
+  "PC4",
+  "PC5",
+  "PC6",
+  "PC7",
+  "PC8",
+  "PC9",
+  "PC10",
+  "PC11",
+  "PC12",
+  "PC13",
+  "PC14",
+  "PC15",
+  "PD2",
+  "PH0",
+  "PH1"
+ ],
+ "packages": {
+  "lqfp64": "lqfp64.json"
+ },
+ "console": {
+  "default": "USART2"
+ },
+ "fidelity": {
+  "functional": {
+   "claims": "Cortex-M4F instruction execution (Thumb-2 with ARMv7E-M's DSP instructions, FPv4-SP, NVIC with 4 priority bits, SCB, SysTick, DWT, the MPU with eight regions, lazy floating-point context stacking, semihosting); every register of ST's STM32F446 SVD at its address with its reset value and access type, corrected where RM0390 differs (the corrections are listed in registers.json).",
+   "omissions": [
+    "every peripheral model: RCC, FLASH, PWR, GPIO, SYSCFG, EXTI, the timers, USART and UART, DMA, ADC, DAC, SPI, I2C, the watchdogs and the RTC keep their register values and raise mcu.unsupported_access until their models land (docs/engineering/rtos-boards.md, steps 3 to 8)",
+    "CAN, SDIO, QUADSPI, SAI, SPDIF-RX, HDMI-CEC, DCMI, FMC, FMPI2C and the USB OTG controllers",
+    "flash programming and the option bytes' effects",
+    "low-power modes beyond WFI"
+   ],
+   "validation": [
+    "repo:tests/firmware/cm4-core"
+   ]
+  },
+  "timed": {
+   "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact.",
+   "omissions": [
+    "flash wait states and the ART accelerator",
+    "bus arbitration",
+    "pipeline effects beyond branch refill"
+   ],
+   "validation": [
+    "repo:tests/firmware/cm4-core"
+   ]
+  },
+  "electrical": {
+   "claims": "GPIO pin-model defaults at 3.3 V: VIH 0.45 VDD + 0.3, VIL 0.3 VDD, 40 kOhm pull resistors, VOL 0.4 V at 8 mA; output resistance and slew estimated per OSPEEDR setting from the datasheet's maximum frequencies.",
+   "omissions": [
+    "5 V tolerance of the FT pins and the absolute maximum ratings",
+    "the I/O compensation cell",
+    "per-pin current injection"
+   ],
+   "validation": [
+    "repo:tests/firmware/cm4-core"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "RM0390 Reference manual: STM32F446xx advanced Arm-based 32-bit MCUs",
+    "rev": "6"
+   },
+   {
+    "title": "STM32F446xC/E datasheet (DS10693)"
+   },
+   {
+    "title": "PM0214 Programming manual: STM32 Cortex-M4 MCUs and MPUs"
+   },
+   {
+    "title": "STMicroelectronics STM32F446.svd 1.9 (STM32F4 SVD pack 2.0), Apache-2.0"
+   },
+   {
+    "title": "STMicroelectronics STM32_open_pin_data, STM32F446R(C-E)Tx.xml, BSD-3-Clause"
+   }
+  ]
+ }
+}
