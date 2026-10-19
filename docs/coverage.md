@@ -8,7 +8,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
-| ESP32-C3 | 10 | 0 | 26 | 36 |
+| ESP32-C3 | 15 | 0 | 21 | 36 |
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
@@ -21,7 +21,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 ## ESP32-C3 (`espressif/esp32c3`)
 
 Boards: none in the catalog.  
-10 of 36 peripherals modelled, 0 registers only, 26 missing.
+15 of 36 peripherals modelled, 0 registers only, 21 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -31,7 +31,7 @@ Boards: none in the catalog.
 | GPIO | `esp32c3-gpio` | modelled |
 | GPIO_SD | — | **missing** |
 | RTC_CNTL | `esp32c3-rtc` | modelled |
-| EFUSE | — | **missing** |
+| EFUSE | `esp32c3-efuse` | modelled |
 | IO_MUX | — | **missing** |
 | UHCI1 | — | **missing** |
 | UART1 | `esp32c3-uart` | modelled |
@@ -40,9 +40,9 @@ Boards: none in the catalog.
 | RMT | — | **missing** |
 | LEDC | — | **missing** |
 | BB | — | **missing** |
-| TIMG0 | — | **missing** |
-| TIMG1 | — | **missing** |
-| SYSTIMER | — | **missing** |
+| TIMG0 | `esp32c3-timg` | modelled |
+| TIMG1 | `esp32c3-timg` | modelled |
+| SYSTIMER | `esp32c3-systimer` | modelled |
 | SPI2 | — | **missing** |
 | APB_CTRL | — | **missing** |
 | TWAI0 | — | **missing** |
@@ -55,14 +55,14 @@ Boards: none in the catalog.
 | DMA | — | **missing** |
 | APB_SARADC | — | **missing** |
 | USB_DEVICE | — | **missing** |
-| SYSTEM | — | **missing** |
+| SYSTEM | `esp32c3-system` | modelled |
 | SENSITIVE | — | **missing** |
 | INTERRUPT_CORE0 | `esp32c3-intmtx` | modelled |
 | EXTMEM | `esp32c3-cache` | modelled |
 | XTS_AES | — | **missing** |
 | ASSIST_DEBUG | `esp32c3-assist` | modelled |
 
-Declared omissions: the clocks (SYSTEM, the PLL), SYSTIMER, the timer groups and their watchdogs (TIMG0's flash-boot watchdog does not run), the GPIO matrix and IO MUX, USB Serial/JTAG, the eFuse controller and every other peripheral (in progress); the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c); the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none); the SHA accelerator's DMA mode and its block time; the debug module and the debug CSRs; the performance counter's load and jump hazard events; the interrupt controller's transient state after a register write; Wi-Fi and Bluetooth LE.
+Declared omissions: the GPIO matrix and IO MUX, USB Serial/JTAG and every peripheral not named in the claims (in progress); the PLL's power and lock, and the RC oscillators' spread (they run at their nominal frequencies); the eFuses' write and read protection, their check values and times; the chip's calibration data (BLOCK2 is blank); the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c); the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none); the SHA accelerator's DMA mode and its block time; the debug module and the debug CSRs; the performance counter's load and jump hazard events; the interrupt controller's transient state after a register write; Wi-Fi and Bluetooth LE.
 
 ## ATmega328P (`microchip/atmega328p`)
 

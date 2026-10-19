@@ -248,9 +248,11 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         if (missing[0])
             esk_rf_diag(m, ES_SEV_INFO, "mcu.model_missing",
                         "no behavioural model yet for %s: those peripherals are plain registers", missing);
-        /* the STM32 models report in next_event every interrupt flag, pin
-         * edge, trigger and DMA request they make: their clocks run lazily */
-        if (esk_str_eq(esk_json_get_str(mcu, "vendor", ""), "st"))
+        /* the STM32 and ESP32-C3 models report in next_event every
+         * interrupt flag, pin edge, trigger and DMA request they make:
+         * their clocks run lazily */
+        if (esk_str_eq(esk_json_get_str(mcu, "vendor", ""), "st") ||
+            esk_str_eq(esk_json_get_str(mcu, "vendor", ""), "espressif"))
             esk_mach_lazy(m);
     }
     return m->oom ? ES_ENOMEM : ES_OK;

@@ -219,6 +219,13 @@ Started only once the NUCLEO-F446RE is done.
    - SYSTIMER, the RTOS tick.
    - Timer groups 0/1 with their watchdogs.
    - The RTC watchdog and super watchdog.
+
+   *Done:* SYSTEM's clocks, enables, resets and software interrupts
+   (`esp32c3-system`), the system timer (`esp32c3-systimer`), the timer
+   groups with their MWDTs and the RTC_SLOW_CLK calibration
+   (`esp32c3-timg`), and the eFuse controller moved here from step 2
+   (`esp32c3-efuse`); the RTC watchdog came with step 2. The super
+   watchdog's own timeout waits for a value: the TRM gives none.
 4. **GPIO and serial.**
    - GPIO with the GPIO matrix and IO MUX on the pins.
    - UART0/1.

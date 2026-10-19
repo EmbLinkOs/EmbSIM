@@ -177,7 +177,7 @@ static void test_csrs(void)
     if (!c3_open(&f, prog, sizeof prog / sizeof prog[0], vec5(), 3))
         return;
     CHECK_STR(f.m.cpu->ops->name, "riscv");
-    CHECK_EQ(esk_mach_core_hz(&f.m), 40000000u);
+    CHECK_EQ(esk_mach_core_hz(&f.m), 20000000u); /* XTAL_CLK / 2 (TRM 6.2.4.1) */
     esk_mach_run(&f.m, 0xffffff, 13);
     CHECK_EQ(x(&f, 10), 0x40101104u);
     CHECK_EQ(x(&f, 11), 0x612u);
@@ -404,8 +404,13 @@ static void test_wfi_wakes(void)
 #define MMU           0x600C5000u
 #define SHA           0x6003B000u
 #define ASSIST        0x600CE000u
+#define SYSTEM          0x600C0000u
+#define CPU_PERI_CLK_EN (SYSTEM + 0x00u)
+#define CPU_PERI_RST_EN (SYSTEM + 0x04u)
+#define PERIP_CLK_EN1   (SYSTEM + 0x14u)
+#define PERIP_RST_EN1   (SYSTEM + 0x1Cu)
 
-static char uart_out[4096];
+static char uart_out[65536];
 static size_t uart_n;
 
 static void uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
@@ -447,9 +452,9 @@ static int c3_rom(c3 *f, const u8 *image, size_t len)
 /* runs `cycles`, doing the resets the part asks for as the runtime does */
 static void c3_run(c3 *f, u64 cycles)
 {
-    u64 end = f->m.cycles + cycles;
-    while (f->m.cycles < end && f->m.state == ESK_MACH_RUN) {
-        esk_mach_run(&f->m, end - f->m.cycles, 0);
+    /* a reset starts the machine's cycle count again */
+    while (cycles && f->m.state == ESK_MACH_RUN) {
+        cycles -= esk_mach_run(&f->m, cycles, 0);
         if (f->m.reset_req) {
             f->m.reset_req = 0;
             f->m.yield = 0;
@@ -528,6 +533,12 @@ static void test_rom_blank_flash(void)
     CHECK(strstr(uart_out, "Build:Feb  7 2021") != NULL);
     CHECK(strstr(uart_out, "rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)") != NULL);
     CHECK(strstr(uart_out, "invalid header: 0xffffffff") != NULL);
+    /* TIMG0's flash boot protection: its stage 0, 26 000 000 APB_CLK
+     * cycles at 20 MHz, then a core reset; the ROM again, with the PC */
+    CHECK(strstr(uart_out, "rst:0x7") == NULL);
+    c3_run(&f, 26000000u - 4000000u + 2000000u);
+    CHECK(strstr(uart_out, "rst:0x7 (TG0WDT_SYS_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)") != NULL);
+    CHECK(strstr(uart_out, "Saved PC:0x4004c0") != NULL);
     c3_close(&f);
 }
 
@@ -614,7 +625,7 @@ static void test_flash_commands(void)
     CHECK_EQ(spi_status(&f), 0x03u); /* BUSY and WEL */
     spi_read(&f, 0x03, 0x1000, 4);
     CHECK_EQ(rd(&f, SPI_W0), 0xffffffffu);         /* ignored while busy */
-    esk_mach_idle(&f.m, 40000000u / 2000u + 100u); /* tPP 0.5 ms at 40 MHz */
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 2000u + 100u); /* tPP 0.5 ms */
     CHECK_EQ(spi_status(&f), 0x00u);
     spi_read(&f, 0x0b, 0x1000, 4);
     CHECK_EQ(rd(&f, SPI_W0), 0x44332211u);
@@ -622,15 +633,15 @@ static void test_flash_commands(void)
     wr(&f, SPI_W0, 0xf0f0f0f0u);
     wr(&f, SPI_ADDR, 0x1000u | 4u << 24);
     wr(&f, SPI_CMD, 1u << 25);
-    esk_mach_idle(&f.m, 40000000u / 2000u + 100u);
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 2000u + 100u);
     spi_read(&f, 0x03, 0x1000, 4);
     CHECK_EQ(rd(&f, SPI_W0), 0x40302010u); /* only 1 to 0 */
     wr(&f, SPI_CMD, 1u << 30);
     wr(&f, SPI_ADDR, 0x1000u);
     wr(&f, SPI_CMD, 1u << 24);            /* SE */
-    esk_mach_idle(&f.m, 40000000u / 25u); /* 40 ms: tSE is 50 */
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 25u); /* 40 ms: tSE is 50 */
     CHECK_EQ(spi_status(&f) & 1u, 1u);
-    esk_mach_idle(&f.m, 40000000u / 100u);
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 50u);
     CHECK_EQ(spi_status(&f), 0x00u);
     spi_read(&f, 0x03, 0x1000, 4);
     CHECK_EQ(rd(&f, SPI_W0), 0xffffffffu);
@@ -712,6 +723,10 @@ static void test_sha(void)
     c3 f;
     if (!c3_open(&f, NULL, 0, NULL, 0))
         return;
+    CHECK_EQ(rd(&f, SHA + 0x2Cu), 0u); /* its clock is off out of reset */
+    wr(&f, PERIP_CLK_EN1, rd(&f, PERIP_CLK_EN1) | 1u << 2);
+    wr(&f, PERIP_RST_EN1, rd(&f, PERIP_RST_EN1) & ~(1u << 2));
+    CHECK_EQ(rd(&f, SHA + 0x2Cu), 0x20200616u); /* DATE */
     sha_abc(&f, 0, out, 5);
     CHECK(memcmp(out, d1, sizeof d1) == 0);
     sha_abc(&f, 1, out, 7);
@@ -730,6 +745,8 @@ static void test_pc_logging(void)
     if (!c3_open(&f, prog, 2, NULL, 0))
         return;
     esk_mach_run(&f.m, 0xffff, 4);
+    wr(&f, CPU_PERI_CLK_EN, 1u << 6); /* the Debug Assistant's clock, out of reset */
+    wr(&f, CPU_PERI_RST_EN, 0u);
     CHECK_EQ(rd(&f, ASSIST + 0x48u), 0u);
     wr(&f, ASSIST + 0x44u, 3u);
     CHECK_EQ(rd(&f, ASSIST + 0x48u), BASE + 4u);
@@ -737,6 +754,275 @@ static void test_pc_logging(void)
     CHECK(f.m.reset_req && f.m.reset_cpu_only);
     CHECK_EQ(rd(&f, ASSIST + 0x44u), 0u);
     CHECK_EQ(rd(&f, ASSIST + 0x48u), BASE + 4u);
+    c3_close(&f);
+}
+
+/* ---- clocks and timers ------------------------------------------------------- */
+
+#define ST_CONF       (0x60023000u + 0x00u)
+#define ST_UNIT0_OP   (0x60023000u + 0x04u)
+#define ST_UNIT1_OP   (0x60023000u + 0x08u)
+#define ST_UNIT1_LDHI (0x60023000u + 0x14u)
+#define ST_UNIT1_LDLO (0x60023000u + 0x18u)
+#define ST_T0_HI      (0x60023000u + 0x1Cu)
+#define ST_T0_LO      (0x60023000u + 0x20u)
+#define ST_T0_CONF    (0x60023000u + 0x34u)
+#define ST_T1_CONF    (0x60023000u + 0x38u)
+#define ST_VAL0_LO    (0x60023000u + 0x44u)
+#define ST_VAL1_HI    (0x60023000u + 0x48u)
+#define ST_VAL1_LO    (0x60023000u + 0x4Cu)
+#define ST_COMP0_LOAD (0x60023000u + 0x50u)
+#define ST_COMP1_LOAD (0x60023000u + 0x54u)
+#define ST_UNIT1_LOAD (0x60023000u + 0x60u)
+#define ST_INT_ENA    (0x60023000u + 0x64u)
+#define ST_INT_RAW    (0x60023000u + 0x68u)
+#define ST_INT_CLR    (0x60023000u + 0x6Cu)
+#define ST_INT_ST     (0x60023000u + 0x70u)
+
+static u32 st_unit0(c3 *f)
+{
+    wr(f, ST_UNIT0_OP, 1u << 30);
+    CHECK(rd(f, ST_UNIT0_OP) & (1u << 29)); /* VALUE_VALID */
+    return rd(f, ST_VAL0_LO);
+}
+
+static void test_cpu_clock(void)
+{
+    /* CPU_CLK: XTAL_CLK / (PRE_DIV_CNT + 1), 20 MHz out of reset; the PLL's
+     * 80 or 160 MHz; RC_FAST_CLK; APB_CLK 80 MHz from the PLL */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    CHECK_EQ(esk_mach_core_hz(&f.m), 20000000u);
+    CHECK_EQ(esk_esp32c3_apb_hz(&f.m), 20000000u);
+    wr(&f, SYSTEM + 0x58u, 0u); /* SYSCLK_CONF: XTAL_CLK / 1 */
+    CHECK_EQ(esk_mach_core_hz(&f.m), 40000000u);
+    wr(&f, SYSTEM + 0x08u, 1u << 2 | 1u); /* CPU_PER_CONF: 480 MHz PLL, 160 MHz */
+    wr(&f, SYSTEM + 0x58u, 1u << 10);      /* SOC_CLK_SEL: PLL_CLK */
+    CHECK_EQ(esk_mach_core_hz(&f.m), 160000000u);
+    CHECK_EQ(esk_esp32c3_apb_hz(&f.m), 80000000u);
+    wr(&f, SYSTEM + 0x08u, 0u); /* 320 MHz PLL, 80 MHz */
+    CHECK_EQ(esk_mach_core_hz(&f.m), 80000000u);
+    wr(&f, SYSTEM + 0x58u, 2u << 10 | 1u); /* RC_FAST_CLK / 2 */
+    CHECK_EQ(esk_mach_core_hz(&f.m), 8750000u);
+    c3_close(&f);
+}
+
+static void test_software_interrupt(void)
+{
+    /* CPU_INTR_FROM_CPU_0 is matrix source 50, at the level written */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, SYSTEM + 0x28u, 1u);
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (50 - 32)));
+    wr(&f, SYSTEM + 0x28u, 0u);
+    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (50 - 32))));
+    c3_close(&f);
+}
+
+static void test_systimer(void)
+{
+    /* UNIT0 counts 16 MHz from reset; a target alarm on COMP0; a period
+     * alarm on COMP1 from UNIT1 loaded with a value; the matrix sources */
+    const u32 hz = 20000000u;
+    u32 a, b;
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    a = st_unit0(&f);
+    esk_mach_idle(&f.m, hz / 1000u); /* 1 ms */
+    b = st_unit0(&f);
+    CHECK_EQ(b - a, 16000u);
+    /* COMP0: target 1 ms ahead */
+    wr(&f, ST_T0_HI, 0u);
+    wr(&f, ST_T0_LO, b + 16000u);
+    wr(&f, ST_T0_CONF, 0u);
+    wr(&f, ST_COMP0_LOAD, 1u);
+    wr(&f, ST_INT_ENA, 1u);
+    wr(&f, ST_CONF, rd(&f, ST_CONF) | 1u << 24);
+    CHECK_EQ(rd(&f, ST_INT_RAW), 0u);
+    CHECK(esk_mach_event_coming(&f.m));
+    esk_mach_idle(&f.m, hz / 1000u - 100u);
+    CHECK_EQ(rd(&f, ST_INT_RAW), 0u);
+    esk_mach_idle(&f.m, 200u);
+    CHECK_EQ(rd(&f, ST_INT_RAW), 1u);
+    CHECK_EQ(rd(&f, ST_INT_ST), 1u);
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (37 - 32)));
+    wr(&f, ST_INT_CLR, 1u);
+    CHECK_EQ(rd(&f, ST_INT_ST), 0u);
+    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (37 - 32))));
+    esk_mach_idle(&f.m, hz / 100u);
+    CHECK_EQ(rd(&f, ST_INT_RAW), 0u); /* one alarm in target mode */
+    /* a target already passed fires at once */
+    wr(&f, ST_T0_LO, 5u);
+    wr(&f, ST_COMP0_LOAD, 1u);
+    CHECK_EQ(rd(&f, ST_INT_RAW), 1u);
+    wr(&f, ST_INT_CLR, 1u);
+    /* UNIT1 loaded with 2^32 - 8000, counting; COMP1 every 4000 counts */
+    wr(&f, ST_UNIT1_LDHI, 0u);
+    wr(&f, ST_UNIT1_LDLO, 0xFFFFFFFFu - 7999u);
+    wr(&f, ST_UNIT1_LOAD, 1u);
+    wr(&f, ST_CONF, rd(&f, ST_CONF) | 1u << 29);
+    wr(&f, ST_T1_CONF, 1u << 31 | 4000u);
+    wr(&f, ST_COMP1_LOAD, 1u);
+    wr(&f, ST_T1_CONF, 1u << 31 | 1u << 30 | 4000u);
+    wr(&f, ST_CONF, rd(&f, ST_CONF) | 1u << 23);
+    esk_mach_idle(&f.m, hz / 4000u + 10u); /* 250 us: 4000 counts */
+    CHECK_EQ(rd(&f, ST_INT_RAW) & 2u, 2u);
+    wr(&f, ST_INT_CLR, 2u);
+    esk_mach_idle(&f.m, hz / 4000u);
+    CHECK_EQ(rd(&f, ST_INT_RAW) & 2u, 2u);
+    wr(&f, ST_UNIT1_OP, 1u << 30);
+    CHECK_EQ(rd(&f, ST_VAL1_HI), 1u); /* past 2^32 */
+    CHECK(rd(&f, ST_VAL1_LO) < 100u);
+    c3_close(&f);
+}
+
+#define TG0           0x6001F000u
+#define TG_T0CONFIG   (TG0 + 0x00u)
+#define TG_T0LO       (TG0 + 0x04u)
+#define TG_T0UPDATE   (TG0 + 0x0Cu)
+#define TG_T0ALARMLO  (TG0 + 0x10u)
+#define TG_T0LOADLO   (TG0 + 0x18u)
+#define TG_T0LOAD     (TG0 + 0x20u)
+#define TG_WDTCONFIG0 (TG0 + 0x48u)
+#define TG_WDTCONFIG1 (TG0 + 0x4Cu)
+#define TG_WDTCONFIG2 (TG0 + 0x50u)
+#define TG_WDTFEED    (TG0 + 0x60u)
+#define TG_WPROTECT   (TG0 + 0x64u)
+#define TG_CALI       (TG0 + 0x68u)
+#define TG_CALI1      (TG0 + 0x6Cu)
+#define TG_CALI2      (TG0 + 0x80u)
+#define TG_INT_ENA    (TG0 + 0x70u)
+#define TG_INT_RAW    (TG0 + 0x74u)
+#define TG_INT_CLR    (TG0 + 0x7Cu)
+
+static u32 tg_value(c3 *f)
+{
+    wr(f, TG_T0UPDATE, 1u);
+    CHECK_EQ(rd(f, TG_T0UPDATE), 0u);
+    return rd(f, TG_T0LO);
+}
+
+static void test_timg_timer(void)
+{
+    /* T0 on XTAL_CLK / 40: 1 MHz; an alarm 1000 counts on with auto
+     * reload to 0, again and again; the matrix source 32 */
+    c3 f;
+    u32 a;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, TG_WPROTECT, 0x50D83AA1u); /* the flash boot watchdog off */
+    wr(&f, TG_WDTCONFIG0, 0u);
+    wr(&f, TG_WDTCONFIG0, 1u << 22);
+    wr(&f, TG_T0CONFIG, 1u << 30 | 40u << 13 | 1u << 9); /* up, /40, XTAL */
+    wr(&f, TG_T0LOADLO, 0u);
+    wr(&f, TG_T0LOAD, 1u);
+    wr(&f, TG_T0CONFIG, rd(&f, TG_T0CONFIG) | 1u << 31);
+    esk_mach_idle(&f.m, 20000u); /* 1 ms at 20 MHz */
+    a = tg_value(&f);
+    CHECK_EQ(a, 1000u);
+    wr(&f, TG_T0ALARMLO, 2000u);
+    wr(&f, TG_INT_ENA, 1u);
+    wr(&f, TG_T0CONFIG, rd(&f, TG_T0CONFIG) | 1u << 29 | 1u << 10);
+    esk_mach_idle(&f.m, 19980u);
+    CHECK_EQ(rd(&f, TG_INT_RAW) & 1u, 0u);
+    esk_mach_idle(&f.m, 40u);
+    CHECK_EQ(rd(&f, TG_INT_RAW) & 1u, 1u);
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & 1u); /* source 32 */
+    CHECK_EQ(rd(&f, TG_T0CONFIG) & (1u << 10), 0u); /* ALARM_EN cleared */
+    CHECK(tg_value(&f) < 10u);                     /* reloaded */
+    wr(&f, TG_INT_CLR, 1u);
+    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & 1u));
+    /* an alarm already behind fires when enabled */
+    wr(&f, TG_T0ALARMLO, 1u);
+    esk_mach_idle(&f.m, 2000u);
+    wr(&f, TG_T0CONFIG, (rd(&f, TG_T0CONFIG) & ~(1u << 29)) | 1u << 10);
+    CHECK_EQ(rd(&f, TG_INT_RAW) & 1u, 1u);
+    c3_close(&f);
+}
+
+static void test_timg_wdt(void)
+{
+    /* the write key; the stages taking effect at WDT_CONF_UPDATE_EN; a
+     * stage-0 interrupt after 1000 ticks of APB_CLK / 20 (1 ms), the feed;
+     * a stage-1 CPU reset */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, TG_WPROTECT, 0u);
+    wr(&f, TG_WDTCONFIG0, 0u); /* protected: ignored */
+    CHECK(rd(&f, TG_WDTCONFIG0) & (1u << 14));
+    wr(&f, TG_WPROTECT, 0x50D83AA1u);
+    wr(&f, TG_WDTCONFIG1, 20u << 16);
+    wr(&f, TG_WDTCONFIG2, 1000u);
+    wr(&f, TG_WDTCONFIG2 + 4u, 1000u);
+    wr(&f, TG_WDTCONFIG0, 1u << 31 | 1u << 29 | 2u << 27); /* stage 0 int, 1 CPU reset */
+    esk_mach_idle(&f.m, 20000u + 100u);
+    CHECK_EQ(rd(&f, TG_INT_RAW) & 2u, 0u); /* not updated yet: still flash boot's */
+    wr(&f, TG_WDTCONFIG0, 1u << 31 | 1u << 29 | 2u << 27 | 1u << 22);
+    wr(&f, TG_WDTFEED, 1u);
+    esk_mach_idle(&f.m, 19900u);
+    CHECK_EQ(rd(&f, TG_INT_RAW) & 2u, 0u);
+    esk_mach_idle(&f.m, 200u);
+    CHECK_EQ(rd(&f, TG_INT_RAW) & 2u, 2u);
+    wr(&f, TG_INT_CLR, 2u);
+    CHECK(!f.m.reset_req);
+    esk_mach_idle(&f.m, 20100u);
+    CHECK(f.m.reset_req && f.m.reset_cpu_only); /* 0x0B, MWDT0 CPU reset */
+    c3_close(&f);
+}
+
+static void test_rtc_calibration(void)
+{
+    /* 1024 cycles of RC_SLOW_CLK (136 kHz) are 301 176 of XTAL_CLK, ready
+     * after 7.5 ms; XTAL32K_CLK without a crystal times out */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, TG_CALI, 1024u << 16);
+    wr(&f, TG_CALI, 1024u << 16 | 1u << 31);
+    CHECK_EQ(rd(&f, TG_CALI) & (1u << 15), 0u);
+    esk_mach_idle(&f.m, 20000000u / 1000u * 7u);
+    CHECK_EQ(rd(&f, TG_CALI) & (1u << 15), 0u);
+    esk_mach_idle(&f.m, 20000000u / 1000u);
+    CHECK(rd(&f, TG_CALI) & (1u << 15));
+    CHECK_EQ(rd(&f, TG_CALI1) >> 7, 301176u);
+    wr(&f, TG_CALI, 2u << 13 | 1024u << 16);
+    wr(&f, TG_CALI, 2u << 13 | 1024u << 16 | 1u << 31);
+    esk_mach_idle(&f.m, 20000000u); /* 1 s: past 0x1ffffff XTAL_CLK cycles */
+    CHECK_EQ(rd(&f, TG_CALI) & (1u << 15), 0u);
+    CHECK_EQ(rd(&f, TG_CALI2) & 1u, 1u);
+    c3_close(&f);
+}
+
+#define EFUSE 0x60008800u
+
+static void test_efuse(void)
+{
+    /* the factory bits as esptool decodes them; a program command ORs
+     * PGM_DATA into a block, which a read command loads */
+    c3 f;
+    u32 w3;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    CHECK_EQ(rd(&f, EFUSE + 0x44u), 0xA1456D62u); /* MAC 7C:DF:A1:45:6D:62 */
+    CHECK_EQ(rd(&f, EFUSE + 0x48u) & 0xffffu, 0x7CDFu);
+    w3 = rd(&f, EFUSE + 0x50u);
+    CHECK_EQ((w3 >> 21) & 7u, 0u); /* PKG_VERSION: QFN32 */
+    CHECK_EQ((w3 >> 18) & 7u, 3u); /* WAFER_VERSION_MINOR_LO: v0.3 */
+    CHECK_EQ((w3 >> 27) & 7u, 1u); /* FLASH_CAP: 4 MB */
+    CHECK_EQ(rd(&f, EFUSE + 0x54u) & 7u, 1u); /* FLASH_VENDOR: XMC */
+    wr(&f, EFUSE + 0x00u, 0x00000081u);       /* PGM_DATA0 */
+    wr(&f, EFUSE + 0x1CCu, 0x5A5Au);
+    wr(&f, EFUSE + 0x1D4u, 3u << 2 | 2u); /* BLOCK3 (USR_DATA) */
+    CHECK_EQ(rd(&f, EFUSE + 0x1D4u), 0u);
+    CHECK_EQ(rd(&f, EFUSE + 0x7Cu), 0u); /* not read yet */
+    wr(&f, EFUSE + 0x1CCu, 0x5AA5u);
+    wr(&f, EFUSE + 0x1D4u, 1u);
+    CHECK_EQ(rd(&f, EFUSE + 0x7Cu), 0x81u);
+    CHECK_EQ(rd(&f, EFUSE + 0x1D8u), 3u); /* READ_DONE, PGM_DONE */
     c3_close(&f);
 }
 
@@ -757,4 +1043,11 @@ RUN(test_flash_commands);
 RUN(test_cache_mmu);
 RUN(test_sha);
 RUN(test_pc_logging);
+RUN(test_cpu_clock);
+RUN(test_software_interrupt);
+RUN(test_systimer);
+RUN(test_timg_timer);
+RUN(test_timg_wdt);
+RUN(test_rtc_calibration);
+RUN(test_efuse);
 TEST_MAIN_END

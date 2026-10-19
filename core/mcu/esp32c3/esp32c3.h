@@ -17,8 +17,11 @@
  *   nor.c     the in-package flash, an XMC XM25QH32C
  *   assist.c  the Debug Assistant: the PC logging
  *   sha.c     the SHA accelerator, Typical SHA mode
- *   efuse.c   the eFuse values other devices read
- *   clk.c     the clocks the devices read */
+ *   efuse.c   the eFuse controller and the chip's factory bits
+ *   timg.c    TIMG0 and TIMG1: T0, the MWDT, the RTC_SLOW_CLK calibration
+ *   systimer.c the system timer: two 52-bit counters, three comparators
+ *   system.c  SYSTEM: the CPU and APB clocks, the peripherals' clock
+ *             enables and resets, the software interrupts */
 #ifndef ESK_MCU_ESP32C3_H
 #define ESK_MCU_ESP32C3_H
 
@@ -44,6 +47,14 @@ extern const struct esk_dev_ops esk_esp32c3_cache_ops;
 void *esk_esp32c3_cache_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_spimem_ops;
 void *esk_esp32c3_spimem_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_efuse_ops;
+void *esk_esp32c3_efuse_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_timg_ops;
+void *esk_esp32c3_timg_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_systimer_ops;
+void *esk_esp32c3_systimer_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_system_ops;
+void *esk_esp32c3_system_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_sha_ops;
 void *esk_esp32c3_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_assist_ops;

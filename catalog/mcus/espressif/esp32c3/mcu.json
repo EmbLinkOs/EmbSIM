@@ -103,7 +103,7 @@
       {
         "name": "xtal",
         "hz": 40000000,
-        "doc": "The 40 MHz crystal, the clock out of reset (XTAL_CLK); the board's"
+        "doc": "The board's 40 MHz crystal (XTAL_CLK); CPU_CLK comes out of reset at XTAL_CLK / 2, 20 MHz (TRM 6.2.4.1)"
       },
       {
         "name": "rc_fast",
@@ -121,7 +121,7 @@
         "doc": "PLL_CLK, 480 MHz (or 320 MHz) from the crystal"
       }
     ],
-    "reset_core_hz": 40000000,
+    "reset_core_hz": 20000000,
     "max_core_hz": 160000000
   },
   "register_file": {
@@ -131,6 +131,11 @@
     "license": "Apache-2.0 (converted from Espressif's esp32c3.svd, Copyright 2024 Espressif Systems (Shanghai) PTE LTD; LICENSES/Apache-2.0.txt)"
   },
   "peripherals": [
+    {
+      "match": "SYSTEM",
+      "model": "esp32c3-system",
+      "order": 0
+    },
     {
       "match": "RTC_CNTL",
       "model": "esp32c3-rtc",
@@ -168,6 +173,18 @@
     {
       "match": "SHA",
       "model": "esp32c3-sha"
+    },
+    {
+      "match": "SYSTIMER",
+      "model": "esp32c3-systimer"
+    },
+    {
+      "match": "TIMG?",
+      "model": "esp32c3-timg"
+    },
+    {
+      "match": "EFUSE",
+      "model": "esp32c3-efuse"
     }
   ],
   "io": {
@@ -234,9 +251,10 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Work in progress (the RTOS boards plan, part 2, steps 1 and 2). The ESP-RV core: RV32IMC with user mode and the ESP32-C3's own CSRs (TRM chapter 1): mstatus's MIE, MPIE, MPP and TW, a vectored mtvec, five-bit mcause codes, the performance counter (mpcer, mpcmr, mpccr) and the user-mode one the ROM uses, the trigger module's eight triggers (exact and NAPOT match on execute, load and store, tcontrol), 16 PMP entries without static priority, and the cpu_gpio CSRs. The interrupt matrix and controller: 62 sources mapped onto CPU interrupts 1-31, level and edge types, priorities 1-15, the threshold, the 4-cycle latency, the clear toggle. The boot: Espressif's own boot ROM (esp32c3_rev3_rom.elf, chip revision v0.3) runs from the reset vector, reads the strapping pins (GPIO_STRAP), reports the reset cause (RTC_CNTL), loads an ESP image's segments from the flash through SPI1, checks its checksum and SHA-256 on the SHA accelerator and jumps to it. The in-package 4 MB flash, an XMC XM25QH32C as its datasheet has it (its instructions, status registers, busy times, security registers and power-down), behind SPI0 and SPI1; the cache and MMU mapping its 64 KB pages on the instruction and data buses. UART0 and UART1 (FIFOs, frames at the baud rate, interrupts); RTC_CNTL's reset causes, RTC timer, RTC watchdog with its flash-boot protection and the software resets; the Debug Assistant's PC logging (the ROM's Saved PC). Every register of Espressif's SVD with its reset value.",
+      "claims": "Work in progress (the RTOS boards plan, part 2, steps 1 to 3). The ESP-RV core: RV32IMC with user mode and the ESP32-C3's own CSRs (TRM chapter 1): mstatus's MIE, MPIE, MPP and TW, a vectored mtvec, five-bit mcause codes, the performance counter (mpcer, mpcmr, mpccr) and the user-mode one the ROM uses, the trigger module's eight triggers (exact and NAPOT match on execute, load and store, tcontrol), 16 PMP entries without static priority, and the cpu_gpio CSRs. The interrupt matrix and controller: 62 sources mapped onto CPU interrupts 1-31, level and edge types, priorities 1-15, the threshold, the 4-cycle latency, the clear toggle. The boot: Espressif's own boot ROM (esp32c3_rev3_rom.elf, chip revision v0.3) runs from the reset vector, reads the strapping pins (GPIO_STRAP), reports the reset cause (RTC_CNTL), loads an ESP image's segments from the flash through SPI1, checks its checksum and SHA-256 on the SHA accelerator and jumps to it. The in-package 4 MB flash, an XMC XM25QH32C as its datasheet has it (its instructions, status registers, busy times, security registers and power-down), behind SPI0 and SPI1; the cache and MMU mapping its 64 KB pages on the instruction and data buses. UART0 and UART1 (FIFOs, frames at the baud rate, interrupts); RTC_CNTL's reset causes, RTC timer, RTC watchdog with its flash-boot protection and the software resets; the Debug Assistant's PC logging (the ROM's Saved PC). The clocks and timers: SYSTEM's CPU clock (XTAL_CLK / 2 out of reset, the PLL's 80 or 160 MHz, RC_FAST_CLK), APB_CLK, the peripherals' clock enables and resets and the software interrupts; the system timer (two 52-bit counters at 16 MHz, three comparators in target or period mode); the timer groups' T0 (prescaler, up or down, alarm, auto-reload), MWDT (four stages, write key, flash-boot protection: a blank chip resets with TG0WDT_SYS_RST) and RTC_SLOW_CLK calibration; the eFuse controller with the chip's factory bits (revision v0.3, QFN32, 4 MB XMC flash in the package, a MAC). Every register of Espressif's SVD with its reset value.",
       "omissions": [
-        "the clocks (SYSTEM, the PLL), SYSTIMER, the timer groups and their watchdogs (TIMG0's flash-boot watchdog does not run), the GPIO matrix and IO MUX, USB Serial/JTAG, the eFuse controller and every other peripheral (in progress)",
+        "the GPIO matrix and IO MUX, USB Serial/JTAG and every peripheral not named in the claims (in progress); the PLL's power and lock, and the RC oscillators' spread (they run at their nominal frequencies)",
+        "the eFuses' write and read protection, their check values and times; the chip's calibration data (BLOCK2 is blank)",
         "the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c)",
         "the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none)",
         "the SHA accelerator's DMA mode and its block time",

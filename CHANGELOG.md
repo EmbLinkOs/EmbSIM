@@ -5,6 +5,32 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's clocks and timers (the RTOS boards plan, part 2, step 3)
+
+- **SYSTEM** (`esp32c3-system`): CPU_CLK as the TRM's tables 6.2-1 and
+  6.2-2 have it: XTAL_CLK / (PRE_DIV_CNT + 1), 20 MHz out of reset, the
+  PLL's 80 or 160 MHz, or RC_FAST_CLK; APB_CLK 80 MHz from the PLL. The
+  peripherals' clock enables gate their registers, with a diagnostic, and
+  their reset bits reset them (the ROM itself turns on the SHA
+  accelerator's and the Debug Assistant's clocks). CPU_INTR_FROM_CPU_0-3
+  are the software interrupts, matrix sources 50-53.
+- **The system timer** (`esp32c3-systimer`): two 52-bit counters at
+  16 MHz with update, value-valid and load; three comparators, in target
+  mode (an alarm at once for a target already passed) or period mode,
+  their level interrupts on sources 37-39.
+- **TIMG0 and TIMG1** (`esp32c3-timg`): T0's prescaler, direction, latch,
+  load, alarm and auto-reload; the MWDT's four stages and their actions,
+  its write key, its configuration taking effect at WDT_CONF_UPDATE_EN and
+  the flash-boot protection: a blank chip now resets as a real one does,
+  `rst:0x7 (TG0WDT_SYS_RST)` after 1.3 s; the RTC_SLOW_CLK calibration
+  ESP-IDF runs at start-up, timing out without a 32 kHz crystal.
+- **The eFuse controller** (`esp32c3-efuse`): read and program commands
+  over eleven blocks. The chip's factory bits are a revision v0.3 in the
+  QFN32 package with 4 MB of XMC flash and a MAC in Espressif's OUI, as
+  esptool decodes them.
+- The ESP32-C3's devices run on lazy clocks, as the STM32's do: the ROM's
+  polling loops run at about 0.7 times real time instead of 0.3.
+
 ### The ESP32-C3 boots its own ROM from its flash (the RTOS boards plan, part 2, step 2)
 
 - **Espressif's boot ROM** runs on EmbSIM's ESP32-C3, unmodified: its image
