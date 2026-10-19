@@ -772,7 +772,7 @@ static void test_tim_capture(void)
 static void test_tim_complementary(void)
 {
     f4 f;
-    int i, both_high = 0, o = 0, on = 0, total = 0;
+    int both_high = 0, o = 0, on = 0, total = 0;
     if (!f4_open(&f, 1))
         return;
     busy(&f);
@@ -795,7 +795,7 @@ static void test_tim_complementary(void)
     {
         u64 fell = 0, gap_min = ~0ULL, gap_max = 0;
         int po = f.pin[0][8].drive, pon = f.pin[0][7].drive, gaps = 0;
-        for (i = 0; total < 500; i++) {
+        while (total < 500) {
             total += (int)esk_mach_run(&f.m, 1, 0);
             o = f.pin[0][8].drive;
             on = f.pin[0][7].drive;
