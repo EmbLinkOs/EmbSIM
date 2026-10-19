@@ -62,7 +62,7 @@ Boards: none in the catalog.
 | XTS_AES | — | **missing** |
 | ASSIST_DEBUG | `esp32c3-assist` | modelled |
 
-Declared omissions: the boot ROM's contents and every peripheral but the interrupt matrix (in progress); the debug module and the debug CSRs; the performance counter's load and jump hazard events; the interrupt controller's transient state after a register write; the cache, the MMU and the external flash; Wi-Fi and Bluetooth LE.
+Declared omissions: the clocks (SYSTEM, the PLL), SYSTIMER, the timer groups and their watchdogs (TIMG0's flash-boot watchdog does not run), the GPIO matrix and IO MUX, USB Serial/JTAG, the eFuse controller and every other peripheral (in progress); the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c); the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none); the SHA accelerator's DMA mode and its block time; the debug module and the debug CSRs; the performance counter's load and jump hazard events; the interrupt controller's transient state after a register write; Wi-Fi and Bluetooth LE.
 
 ## ATmega328P (`microchip/atmega328p`)
 
