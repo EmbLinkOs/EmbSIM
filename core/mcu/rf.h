@@ -43,7 +43,11 @@
  * The description's interrupt table is kept for the models that find an
  * interrupt by name (esk_rf_irq_named), with each one's vector where
  * requests share them (esk_rf_vector), and its pins table for the models
- * that find a function's pin (esk_rf_pin). */
+ * that find a function's pin (esk_rf_pin). The MCU description's
+ * alternate-function table (io.alternate, an STM32's AFR choices) is kept
+ * for the GPIO model that routes a pin to its peripheral and the
+ * peripheral models that find their pins (esk_rf_af_signal,
+ * esk_rf_af_pin). */
 #ifndef ESK_MCU_RF_H
 #define ESK_MCU_RF_H
 
@@ -147,6 +151,11 @@ struct esk_rf {
     const char **pps_name;
     int *pps_fn;
     int npps;
+    /* the MCU description's alternate functions (io.alternate): pin
+     * (port * 32 + bit), AF number and signal, one entry each */
+    int *af_at, *af_num;
+    const char **af_sig;
+    int naf;
 };
 
 /* Build the register file from a register description and put it on the
@@ -189,6 +198,14 @@ int esk_rf_irq_named(const struct esk_rf *rf, const char *name);
 int esk_rf_vector(const struct esk_rf *rf, int irq);
 /* the port pin function `name` is on, as port * 32 + bit (port A 0), or -1 */
 int esk_rf_pin(const struct esk_rf *rf, const char *name);
+/* the MCU description's alternate-function table (io.alternate) */
+es_status esk_rf_alternates(struct esk_mach *m, const esk_json *alt, char *why, size_t cap);
+/* the k-th signal (from 0) that alternate function `af` of the pin (port,
+ * bit) carries, or 0 */
+const char *esk_rf_af_signal(const struct esk_rf *rf, int port, int bit, int af, int k);
+/* the k-th pin (from 0, as port * 32 + bit) that carries `sig` on an
+ * alternate function, whose number goes to *af; -1 after the last */
+int esk_rf_af_pin(const struct esk_rf *rf, const char *sig, int k, int *af);
 /* the address of the configuration word of that name, or dflt */
 u32 esk_rf_config(const struct esk_rf *rf, const char *name, u32 dflt);
 /* the number of the PPS output function of that name (U2TX), or -1 */

@@ -81,6 +81,29 @@ es_status esk_bus_add_mirror(struct esk_bus *b, u32 base, u32 target)
     return ES_OK;
 }
 
+es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size)
+{
+    struct esk_region *t = size ? esk_bus_region(b, target, 1) : 0;
+    int i;
+    for (i = 0; i < b->nrg; i++) {
+        struct esk_region *r = &b->rg[i];
+        if (!r->mirror || r->base != base)
+            continue;
+        if (!t || t == r) {
+            r->size = 0;
+            r->mem = 0;
+            return ES_OK;
+        }
+        r->mem = t->mem + (target - t->base);
+        r->size = size < t->size - (target - t->base) ? size : t->size - (target - t->base);
+        r->rom = t->rom;
+        r->kind = t->kind;
+        r->erased = t->erased;
+        return ES_OK;
+    }
+    return ES_ENOTFOUND;
+}
+
 es_status esk_bus_add_alias(struct esk_bus *b, u32 base, u32 size, u32 target)
 {
     if (!size)

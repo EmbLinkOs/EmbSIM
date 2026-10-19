@@ -410,6 +410,25 @@ es_status esk_cortexm_set_mpu(struct esk_mach *m, int regions)
     return ES_OK;
 }
 
+void esk_cortexm_event(struct esk_mach *m)
+{
+    struct smp *x = smp_of(m);
+    struct esk_cm_state *cs;
+    if (x) {
+        smp_sev(x);
+        return;
+    }
+    if (!m->cpu)
+        return;
+    cs = (struct esk_cm_state *)m->cpu;
+    if (m->asleep && cs->in_wfe) {
+        cs->event = 0; /* the event that ends a WFE is consumed */
+        m->asleep = 0;
+    } else {
+        cs->event = 1;
+    }
+}
+
 int esk_cortexm_cores(struct esk_mach *m)
 {
     struct smp *x = smp_of(m);

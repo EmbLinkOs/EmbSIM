@@ -76,6 +76,10 @@ after each one.
      the pins.
    - SYSCFG's EXTI routing.
    - EXTI: edges, software trigger, pending.
+   - *Done:* `stm32f4-gpio` (with LCKR's lock sequence and pin speed),
+     `stm32f4-syscfg` (EXTICR, the boot remap, CMPCR), EXTI's 23 lines with
+     events, the alternate-function table from ST's open pin data, and
+     RCC's peripheral reset bits; tests/unit/test_stm32f4.c.
 5. **Timers and SysTick.**
    - TIM1/TIM8 (advanced), TIM2-5 (general, 32-bit), TIM6/7 (basic) and
      TIM9-14.

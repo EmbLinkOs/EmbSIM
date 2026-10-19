@@ -132,6 +132,9 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
         st = esk_rf_create(m, regs, rules, why, cap);
         if (st != ES_OK)
             return st;
+        st = esk_rf_alternates(m, esk_json_get(esk_json_get(mcu, "io"), "alternate"), why, cap);
+        if (st != ES_OK)
+            return st;
         st = esk_rf_bind(m, esk_json_get(mcu, "peripherals"), missing, sizeof missing);
         if (st != ES_OK) {
             snprintf(why, cap, "peripheral models cannot be bound");

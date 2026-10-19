@@ -15,7 +15,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 | RP2040 | 23 | 6 | 6 | 35 |
 | FE310-G002 | 13 | 0 | 1 | 14 |
 | STM32F103C8 | 23 | 0 | 4 | 27 |
-| STM32F446RE | 2 | 1 | 68 | 71 |
+| STM32F446RE | 12 | 1 | 58 | 71 |
 
 ## ATmega328P (`microchip/atmega328p`)
 
@@ -322,7 +322,7 @@ Declared omissions: the ADC's injected group, analog watchdog, external triggers
 ## STM32F446RE (`st/stm32f446re`)
 
 Boards: none in the catalog.  
-2 of 71 peripherals modelled, 1 registers only, 68 missing.
+12 of 71 peripherals modelled, 1 registers only, 58 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -365,21 +365,21 @@ Boards: none in the catalog.
 | SDIO | — | **missing** |
 | SPI1 | — | **missing** |
 | SPI4 | — | **missing** |
-| SYSCFG | — | **missing** |
-| EXTI | — | **missing** |
+| SYSCFG | `stm32f4-syscfg` | modelled |
+| EXTI | `stm32-exti` | modelled |
 | TIM9 | — | **missing** |
 | TIM10 | — | **missing** |
 | TIM11 | — | **missing** |
 | SAI1 | — | **missing** |
 | SAI2 | — | **missing** |
-| GPIOA | — | **missing** |
-| GPIOB | — | **missing** |
-| GPIOC | — | **missing** |
-| GPIOD | — | **missing** |
-| GPIOE | — | **missing** |
-| GPIOF | — | **missing** |
-| GPIOG | — | **missing** |
-| GPIOH | — | **missing** |
+| GPIOA | `stm32f4-gpio` | modelled |
+| GPIOB | `stm32f4-gpio` | modelled |
+| GPIOC | `stm32f4-gpio` | modelled |
+| GPIOD | `stm32f4-gpio` | modelled |
+| GPIOE | `stm32f4-gpio` | modelled |
+| GPIOF | `stm32f4-gpio` | modelled |
+| GPIOG | `stm32f4-gpio` | modelled |
+| GPIOH | `stm32f4-gpio` | modelled |
 | CRC | — | **missing** |
 | RCC | `stm32-rcc` | modelled |
 | FLASH | `storage` | registers only |
@@ -398,4 +398,4 @@ Boards: none in the catalog.
 | QUADSPI | — | **missing** |
 | DBG | — | **missing** |
 
-Declared omissions: the peripheral models of GPIO, SYSCFG, EXTI, the timers, USART and UART, DMA, ADC, DAC, SPI, I2C, the watchdogs and the RTC: they keep their register values and raise mcu.unsupported_access until their models land (docs/engineering/rtos-boards.md, steps 4 to 8); RCC: the clock security system, CIR's interrupts, the peripheral reset registers, RMVF and the reset flags, the oscillators' and PLLs' start-up times (ready at once), MCO1 and MCO2 on their pins, and the I2S, SAI, SPDIF-RX, CEC, FMPI2C and 48 MHz clocks from PLLI2S and PLLSAI (DCKCFGR, DCKCFGR2) beyond TIMPRE; PWR: the regulator's settling times, the programmable voltage detector, the low-power modes' regulator and under-drive settings, standby, wake-up flags and the backup regulator; CAN, SDIO, QUADSPI, SAI, SPDIF-RX, HDMI-CEC, DCMI, FMC, FMPI2C and the USB OTG controllers; flash programming (KEYR, SR, CR) and the option bytes' effects: FLASH keeps its registers; low-power modes beyond WFI.
+Declared omissions: the peripheral models of the timers, USART and UART, DMA, ADC, DAC, SPI, I2C, the watchdogs and the RTC: they keep their register values and raise mcu.unsupported_access until their models land (docs/engineering/rtos-boards.md, steps 5 to 8); until then no alternate function drives its pin; GPIO: EVENTOUT (AF15, SEV's pulse), the I/O compensation cell's effect on the edges; SYSCFG: the FMC memories MEMRMP can map at 0 (none is on the bus), PMC's ADC DC2 bits' effect; EXTI: the internal lines' sources (the PVD, the RTC, the USB OTG controllers) until their models land; SWIER triggers them; RCC: the clock security system, CIR's interrupts, a peripheral held in reset while its *RSTR bit stays set (its reset happens on the write), RMVF and the reset flags, the oscillators' and PLLs' start-up times (ready at once), MCO1 and MCO2 on their pins, and the I2S, SAI, SPDIF-RX, CEC, FMPI2C and 48 MHz clocks from PLLI2S and PLLSAI (DCKCFGR, DCKCFGR2) beyond TIMPRE; PWR: the regulator's settling times, the programmable voltage detector, the low-power modes' regulator and under-drive settings, standby, wake-up flags and the backup regulator; CAN, SDIO, QUADSPI, SAI, SPDIF-RX, HDMI-CEC, DCMI, FMC, FMPI2C and the USB OTG controllers; flash programming (KEYR, SR, CR) and the option bytes' effects: FLASH keeps its registers; low-power modes beyond WFI.

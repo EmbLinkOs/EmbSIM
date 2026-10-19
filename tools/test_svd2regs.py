@@ -93,6 +93,19 @@ class Svd2Regs(unittest.TestCase):
         with self.assertRaises(SystemExit):
             svd2regs.apply_merges(doc, ["RCC.PLLCFGR.PLLN"])
 
+    def test_added_register(self):
+        doc = {"source": "s", "interrupts": {}, "peripherals": [{"name": "SYSCFG", "base": "0x0", "registers": [
+            {"name": "CMPCR", "offset": "0x20", "fields": []}]}]}
+        svd2regs.apply_registers(doc, ["SYSCFG.CFGR=0x2C"])
+        svd2regs.apply_fields(doc, ["SYSCFG.CFGR=FMPI2C1_SCL:0:1", "SYSCFG.CFGR=FMPI2C1_SDA:1:1"])
+        regs = doc["peripherals"][0]["registers"]
+        self.assertEqual([r["name"] for r in regs], ["CMPCR", "CFGR"])
+        self.assertEqual(regs[1]["offset"], "0x2C")
+        self.assertEqual(regs[1]["fields"], [["FMPI2C1_SDA", 1, 1], ["FMPI2C1_SCL", 0, 1]])
+        self.assertIn("registers added from the reference manual: SYSCFG.CFGR=0x2C", doc["source"])
+        with self.assertRaises(SystemExit):
+            svd2regs.apply_registers(doc, ["SYSCFG.CFGR=0x30"])
+
     def test_interrupt_reassignment(self):
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / "toy.svd"

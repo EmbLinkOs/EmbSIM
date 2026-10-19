@@ -59,10 +59,15 @@
  *     part would fetch wrong instructions, the model only warns.
  *   - PWR's ready bits follow (pwr_f4.c).
  *
+ * Any family's: a peripheral's bit in an *RSTR register (GPIOARST, an F1's
+ * IOPARST) set by a write resets it: its registers return to their reset
+ * values and its model starts again.
+ *
  * Not modelled: the clock security system, the interrupts of CIR, the
- * reset registers (a peripheral is not reset by them), RMVF, the
- * oscillators' and the PLL's start-up times (ready at once), MCO1 and MCO2
- * on their pins, the I2S, SAI and SPDIF clocks from PLLI2S and PLLSAI.
+ * peripheral held in reset while its reset bit stays set (accesses then
+ * land), RMVF and the reset flags, the oscillators' and the PLL's start-up
+ * times (ready at once), MCO1 and MCO2 on their pins, the I2S, SAI and
+ * SPDIF clocks from PLLI2S and PLLSAI.
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/stm32-rcc.c. Changes:
  * the HSE frequency is the board's and the core clock is reported to the
@@ -96,6 +101,9 @@ struct rcc {
     int f4;
     struct esk_rf_reg *pllcfgr, *csr, *bdcr, *dckcfgr;
     unsigned warned;                /* the warnings already given */
+    /* the peripherals' reset bits in the *RSTR registers */
+    struct rst { struct esk_rf_periph *q; struct esk_rf_reg *r; u64 m; } *rst;
+    int nrst;
 };
 
 /* the F1's internal oscillator */
@@ -462,6 +470,7 @@ static u32 rcc_read(void *ctx, u32 off, int n)
 static void rcc_write(void *ctx, u32 off, int n, u32 v)
 {
     struct rcc *c = (struct rcc *)ctx;
+    int i;
     if (c->f4 && c->bdcr && off - esk_rf_off(c->bdcr) < 4) {
         /* the backup domain is written only while PWR's DBP allows it */
         struct esk_rf_reg *pcr = other_reg(c->s, "PWR", "CR");
@@ -477,6 +486,9 @@ static void rcc_write(void *ctx, u32 off, int n, u32 v)
     } else {
         esk_rf_write(c->p, off, n, v);
     }
+    for (i = 0; i < c->nrst; i++)
+        if (off - esk_rf_off(c->rst[i].r) < 4 && (c->rst[i].r->value & c->rst[i].m))
+            esk_rf_periph_reset(c->rst[i].q); /* its registers to their reset values */
     settle(c);
     if (c->f1)
         f1_settle(c);
@@ -509,14 +521,43 @@ static int ends_with(const char *s, const char *t)
     return a >= b && !strcmp(s + a - b, t);
 }
 
-/* the peripherals whose clock enables are in this RCC */
+/* the peripheral's reset bit in this RCC's *RSTR registers (an F1's GPIO
+ * port's is IOPxRST) */
+static void reset_bit(struct rcc *c, struct esk_rf_periph *q)
+{
+    char want[64];
+    struct esk_rf_reg *apb2 = esk_rf_reg(c->p, "APB2RSTR");
+    int k;
+    snprintf(want, sizeof want, "%sRST", q->name);
+    if (!strncmp(q->name, "GPIO", 4) && strlen(q->name) == 5 && !esk_rf_mask(apb2, want) &&
+        esk_rf_mask(apb2, "IOPARST"))
+        snprintf(want, sizeof want, "IOP%cRST", q->name[4]);
+    for (k = 0; k < c->p->nreg; k++) {
+        struct esk_rf_reg *r = c->p->reg[k];
+        u64 m = ends_with(r->name, "RSTR") ? esk_rf_mask(r, want) : 0;
+        if (m) {
+            c->rst[c->nrst].q = q;
+            c->rst[c->nrst].r = r;
+            c->rst[c->nrst].m = m;
+            c->nrst++;
+            return;
+        }
+    }
+}
+
+/* the peripherals whose clock enables and resets are in this RCC */
 static int gates(struct esk_mach *s, struct rcc *c)
 {
     char want[64];
     struct esk_rf_periph *q;
     struct esk_rf_reg *apb2 = esk_rf_reg(c->p, "APB2ENR");
     int i, k;
+    c->rst = (struct rst *)esk_mach_alloc(s, (size_t)(s->rf->np > 0 ? s->rf->np : 1) * sizeof *c->rst);
+    if (!c->rst)
+        return -1;
     for (i = 0; (q = esk_rf_periph_at(s->rf, i)) != 0; i++) {
+        if (q != c->p && strlen(q->name) + 4 <= sizeof want)
+            reset_bit(c, q);
         if (q == c->p || strlen(q->name) + 3 > sizeof want)
             continue;
         snprintf(want, sizeof want, "%sEN", q->name);

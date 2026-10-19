@@ -202,7 +202,15 @@ The F4's clock tree is the same `stm32-rcc` (an RCC with `PLLCFGR`):
 HSI, HSE as crystal or bypass clock, LSE, LSI, the main PLL's P and R
 outputs, the bus prescalers and the timers' clock (`esk_stm32_hclk`,
 `esk_stm32_pclk`, `esk_stm32_timclk`); `stm32f4-pwr` gives PWR's voltage
-scaling and over-drive ready bits.
+scaling and over-drive ready bits; `stm32f4-gpio` is the F4's GPIO port
+(MODER, OTYPER, OSPEEDR, PUPDR, LCKR, AFRL/AFRH), `stm32f4-syscfg` its
+EXTI routing and boot remap, and `stm32-exti` serves both families with
+every line IMR has. An MCU description's `io.alternate` (pin, AF number,
+signals) is the register file's alternate-function table: the GPIO model
+routes a pin in alternate-function mode to its signal's peripheral, and
+a peripheral model finds its pins (`esk_rf_af_signal`, `esk_rf_af_pin`).
+A GPIO model's `esk_mach_pin.speed` picks the pin's output resistance and
+edge rate from `io.electrical`'s per-speed `rout` and `slew_v_per_us`.
 
 ## 7. Pins, multiplexing and nets
 

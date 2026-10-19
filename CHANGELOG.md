@@ -5,6 +5,42 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32F446's GPIO, SYSCFG and EXTI (the NUCLEO-F446RE plan, step 4)
+
+- **GPIO** (`stm32f4-gpio`, RM0390 7):
+  - MODER's input, output, alternate-function and analog modes;
+  - OTYPER's push-pull and open-drain; PUPDR's pulls in every mode but
+    analog; IDR sampled from the pins;
+  - BSRR, a set winning over a reset, written by word or by halfword (the
+    older HAL's BSRRL and BSRRH);
+  - LCKR's key sequence freezing the locked pins' configuration until
+    reset;
+  - AFRL and AFRH choosing among the alternate functions the description's
+    new `io.alternate` lists for each pin. An alternate function whose
+    peripheral has no model yet lets its pin go; the debug port's pins come
+    out of reset in AF0 with their pulls.
+- **Pin speed:** a GPIO model's speed setting (an F4's OSPEEDR, an F1's
+  2, 10 and 50 MHz) picks the pin's output resistance and edge rate from the
+  description's `io.electrical` tables. They were declared and never
+  applied; the Blue Pill's outputs now use them too.
+- **SYSCFG** (`stm32f4-syscfg`): EXTICR's port for each EXTI line; MEMRMP's
+  memory at 0 (main flash, system memory, SRAM1's 112 KiB; nothing for the
+  FMC banks), mapped back to the flash on reset; CMPCR's READY.
+- **EXTI:** every line IMR has (23 on the F4, 19 on the Blue Pill's
+  F103), the internal lines' interrupts (PVD, RTC alarm, tamper and
+  wake-up, the USB wake-ups), and EMR's events, which end a WFE
+  (`esk_cortexm_event`).
+- **RCC's peripheral reset bits** (`*RSTR`, an F1's `IOPxRST`) reset their
+  peripherals, on every STM32.
+- **Importers:** `tools/importers/stm32pins.py --alternate` converts ST's
+  GPIO modes file into `io.alternate` (AF15 EVENTOUT on every pin);
+  `tools/importers/svd2regs.py --register` adds a register the SVD leaves
+  out (the F446's SYSCFG_CFGR), and CMPCR's CMP_PD is writable as RM0390
+  says.
+- **Proof:** `tests/unit/test_stm32f4.c` covers the reset state, the
+  modes, the lock sequence, the AF table, B1's EXTI13 on PC13 through
+  SYSCFG, a software trigger on line 22, an event and the boot remap.
+
 ### The STM32F446's clocks and power (the NUCLEO-F446RE plan, step 3)
 
 - **RCC to 180 MHz** (`stm32-rcc` on an RCC with `PLLCFGR`, RM0390 6):

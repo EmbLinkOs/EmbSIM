@@ -233,6 +233,26 @@ def find_reg(doc: dict, target: str, opt: str) -> dict:
     return reg
 
 
+def apply_registers(doc: dict, specs: list[str]) -> None:
+    """Registers PERIPH.REG=0xOFFSET the SVD leaves out, added without
+    fields (--field gives them theirs) and with a reset value of 0
+    (--reset changes it)."""
+    done = []
+    for spec in specs:
+        target, _, off = spec.partition("=")
+        pname, _, rname = target.partition(".")
+        p = next((q for q in doc["peripherals"] if q["name"] == pname), None)
+        if p is None or "registers" not in p or not rname or not off:
+            raise SystemExit(f"--register {spec}: PERIPH.REG=0xOFFSET on a peripheral with its own registers")
+        if any(r["name"] == rname for r in p["registers"]):
+            raise SystemExit(f"--register {spec}: {pname} already has {rname}")
+        p["registers"].append({"name": rname, "offset": f"0x{num(off):02X}", "fields": []})
+        p["registers"].sort(key=lambda r: num(r["offset"]))
+        done.append(spec)
+    if done:
+        doc["source"] += "; registers added from the reference manual: " + ", ".join(done)
+
+
 def apply_fields(doc: dict, specs: list[str]) -> None:
     """Fields PERIPH.REG=NAME:LSB:WIDTH[:ACCESS] added, or replacing those
     they overlap (the SVD's narrower or missing field)."""
@@ -289,11 +309,14 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="a peripheral's interrupts where the SVD lists them elsewhere")
     ap.add_argument("--field", action="append", default=[], metavar="PERIPH.REG=NAME:LSB:WIDTH[:ACCESS]",
                     help="a field the SVD leaves out or sizes wrongly")
+    ap.add_argument("--register", action="append", default=[], metavar="PERIPH.REG=0xOFFSET",
+                    help="a register the SVD leaves out (its fields with --field)")
     ap.add_argument("--merge", action="append", default=[], metavar="PERIPH.REG.NAME",
                     help="one-bit fields NAME0..NAMEn joined into NAME")
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
     apply_merges(doc, args.merge)
+    apply_registers(doc, args.register)
     apply_fields(doc, args.field)
     apply_resets(doc, args.reset)
     apply_interrupts(doc, args.interrupts)

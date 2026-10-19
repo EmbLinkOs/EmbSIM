@@ -358,6 +358,81 @@ int esk_rf_pin(const struct esk_rf *rf, const char *name)
     return -1;
 }
 
+es_status esk_rf_alternates(struct esk_mach *m, const esk_json *alt, char *why, size_t cap)
+{
+    struct esk_rf *rf = m->rf;
+    size_t i, j, k, n = 0;
+    int at = 0;
+    if (!rf || !alt)
+        return ES_OK;
+    for (i = 0; i < esk_json_len(alt); i++)
+        for (j = 0; j < esk_json_len(esk_json_at(alt, i)); j++)
+            n += esk_json_len(esk_json_at(esk_json_at(alt, i), j));
+    if (!n)
+        return ES_OK;
+    rf->af_at = (int *)esk_mach_alloc(m, n * sizeof *rf->af_at);
+    rf->af_num = (int *)esk_mach_alloc(m, n * sizeof *rf->af_num);
+    rf->af_sig = (const char **)esk_mach_alloc(m, n * sizeof *rf->af_sig);
+    if (!rf->af_at || !rf->af_num || !rf->af_sig)
+        return ES_ENOMEM;
+    for (i = 0; i < esk_json_len(alt); i++) {
+        const esk_json *pin = esk_json_at(alt, i);
+        const char *pn = pin ? pin->key : NULL;
+        long bit = -1;
+        if (pn && pn[0] == 'P' && pn[1] >= 'A' && pn[1] <= 'K' && pn[2] >= '0' && pn[2] <= '9')
+            bit = strtol(pn + 2, NULL, 10);
+        if (bit < 0 || bit > 15) {
+            snprintf(why, cap, "io.alternate: %s is not a port pin (PA0 to PK15)", pn ? pn : "?");
+            return ES_ESCHEMA;
+        }
+        for (j = 0; j < esk_json_len(pin); j++) {
+            const esk_json *sigs = esk_json_at(pin, j);
+            const char *an = sigs ? sigs->key : NULL;
+            long af = an && an[0] >= '0' && an[0] <= '9' ? strtol(an, NULL, 10) : -1;
+            if (af < 0 || af > 15) {
+                snprintf(why, cap, "io.alternate: %s's AF %s is not 0 to 15", pn, an ? an : "?");
+                return ES_ESCHEMA;
+            }
+            for (k = 0; k < esk_json_len(sigs); k++) {
+                const char *sig = esk_json_str(esk_json_at(sigs, k));
+                if (!sig) {
+                    snprintf(why, cap, "io.alternate: %s's AF %s names no signal", pn, an);
+                    return ES_ESCHEMA;
+                }
+                rf->af_at[at] = (pn[1] - 'A') * 32 + (int)bit;
+                rf->af_num[at] = (int)af;
+                rf->af_sig[at] = esk_mach_strdup(m, sig);
+                if (!rf->af_sig[at])
+                    return ES_ENOMEM;
+                at++;
+            }
+        }
+    }
+    rf->naf = at;
+    return ES_OK;
+}
+
+const char *esk_rf_af_signal(const struct esk_rf *rf, int port, int bit, int af, int k)
+{
+    int i, at = port * 32 + bit;
+    for (i = 0; rf && i < rf->naf; i++)
+        if (rf->af_at[i] == at && rf->af_num[i] == af && k-- == 0)
+            return rf->af_sig[i];
+    return 0;
+}
+
+int esk_rf_af_pin(const struct esk_rf *rf, const char *sig, int k, int *af)
+{
+    int i;
+    for (i = 0; rf && sig && i < rf->naf; i++)
+        if (!strcmp(rf->af_sig[i], sig) && k-- == 0) {
+            if (af)
+                *af = rf->af_num[i];
+            return rf->af_at[i];
+        }
+    return -1;
+}
+
 static void sort_regs(struct esk_rf_reg **r, int n)
 {
     int i, j;

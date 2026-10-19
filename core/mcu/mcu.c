@@ -9,6 +9,7 @@
 #include "mcu/dwarf.h"
 #include "mcu/mcu.h"
 #include "protocol/wsutil.h"
+#include "util/num.h"
 #include "util/str.h"
 
 #define MCU_PORTS 8
@@ -68,6 +69,9 @@ typedef struct mcu_state {
     int attached;
     esk_pin *gpio[MCU_PORTS][16];
     mcu_pinq pq[MCU_PORTS][16];
+    /* an output's resistance and edge rate at each speed setting, from the
+     * description's io.electrical (esk_mach_pin.speed); 0 left as is */
+    double rout[4], slew[4];
     esk_pin *nrst, *boot0;
     unsigned char *image;
     size_t image_len;
@@ -381,6 +385,22 @@ typedef struct pin_apply {
     int port, bit;
 } pin_apply;
 
+/* io.electrical's rout or slew_v_per_us: one value for every speed, or one
+ * per speed setting in the order the GPIO model numbers them */
+static void speed_table(const esk_json *v, double out[4])
+{
+    double d;
+    size_t i;
+    if (v && esk_json_to_double(v, &d) == 0) {
+        for (i = 0; i < 4; i++)
+            out[i] = d;
+        return;
+    }
+    for (i = 0; i < 4 && i < esk_json_len(v); i++)
+        if (esk_json_to_double(esk_json_at(v, i), &d) == 0)
+            out[i] = d;
+}
+
 static void apply_cfg(mcu_state *st, int port, int bit)
 {
     esk_pin *p = st->gpio[port][bit];
@@ -389,6 +409,12 @@ static void apply_cfg(mcu_state *st, int port, int bit)
         return;
     p->model.pull = cfg->pull == 1 ? ESK_PULL_UP : cfg->pull == 2 ? ESK_PULL_DOWN : ESK_PULL_NONE;
     p->model.drive = cfg->open_drain ? ESK_DRIVE_OPEN_DRAIN : ESK_DRIVE_PUSH_PULL;
+    if (cfg->speed >= 1 && cfg->speed <= 4) {
+        if (st->rout[cfg->speed - 1] > 0.0)
+            p->model.rout = st->rout[cfg->speed - 1];
+        if (st->slew[cfg->speed - 1] > 0.0)
+            p->model.slew_v_per_us = st->slew[cfg->speed - 1];
+    }
     /* an open-drain output's 1 lets the pin go: it is an input then, whose
      * level (what an I2C slave's ACK makes of it) the program reads */
     if (cfg->drive >= 0 && !(cfg->open_drain && cfg->drive)) {
@@ -1172,6 +1198,9 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.pin_volts = h_pin_volts;
     st->m.host.pin_watch = h_pin_watch;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
+    speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);
+    speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "slew_v_per_us"),
+                st->slew);
     snprintf(st->console, sizeof st->console, "%s", su->console ? su->console : "USART1");
     for (port = 0; port < MCU_PORTS; port++)
         for (bit = 0; bit < 16; bit++) {

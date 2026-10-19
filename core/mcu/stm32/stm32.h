@@ -13,6 +13,8 @@
  *   spi_f1.c   the F1's SPI as a master, on its pins
  *   i2c_f1.c   the F1's I2C as a master, on its pins
  *   pwr_f4.c   the F4's power control: voltage scaling and over-drive ready
+ *   gpio_f4.c  an F4 GPIO port (MODER, AFR, LCKR): pins to the runtime
+ *   syscfg_f4.c the F4's system configuration: EXTI line ports, boot remap
  *   storage.c  registers that only keep what is written (FLASH's ACR) */
 #ifndef ESK_MCU_STM32_H
 #define ESK_MCU_STM32_H
@@ -45,6 +47,16 @@ u32 esk_stm32_timclk(struct esk_mach *m, int apb);
 /* the F4's PWR: VOSRDY, ODRDY and ODSWRDY as the RCC's PLL and PWR's
  * enables have them (pwr_f4.c); nothing without the F4's PWR */
 void esk_stm32f4_pwr_settle(struct esk_mach *m);
+/* the F4's GPIO ports and SYSCFG (gpio_f4.c, syscfg_f4.c) */
+extern const struct esk_dev_ops esk_stm32f4_gpio_ops, esk_stm32f4_syscfg_ops;
+void *esk_stm32f4_gpio_create(struct esk_mach *m, struct esk_rf_periph *p);
+void *esk_stm32f4_syscfg_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* the pins' outside levels changed: every port's IDR again, and EXTI's
+ * edges; one port's pins again (a peripheral's output on them changed) */
+void esk_stm32f4_pins_changed(struct esk_mach *m);
+void esk_stm32f4_port_changed(struct esk_mach *m, int port);
+/* the port (0 for A) SYSCFG's EXTICR gives EXTI line 0-15, or -1 */
+int esk_stm32f4_exti_port(struct esk_mach *m, int line);
 extern const struct esk_dev_ops esk_stm32f4_pwr_ops;
 void *esk_stm32f4_pwr_create(struct esk_mach *m, struct esk_rf_periph *p);
 /* AFIO's MAPR (0 without AFIO) and the port an EXTI line listens to */

@@ -156,6 +156,10 @@ es_status esk_bus_add_device(struct esk_bus *b, u32 base, u32 size, const struct
 es_status esk_bus_add_alias(struct esk_bus *b, u32 base, u32 size, u32 target);
 /* a second name for the memory region holding `target`, at `base` */
 es_status esk_bus_add_mirror(struct esk_bus *b, u32 base, u32 target);
+/* the mirror at `base` shows `size` bytes of the memory at `target` from
+ * now on (an STM32's boot remap, SYSCFG's MEMRMP); a size of 0, or a
+ * target no memory holds, leaves nothing there */
+es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size);
 /* a device's read or write hook refuses the access in progress: the core
  * takes its bus fault, as when nothing answers */
 ES_INLINE void esk_bus_fault(struct esk_bus *b) { b->dev_fault = 1; }
@@ -219,6 +223,12 @@ typedef struct esk_mach_pin {
     int pull;       /* 0 none, 1 up, 2 down (weak) */
     int analog;     /* analog mode: the digital input is off */
     int af;         /* an alternate function (a peripheral) drives it */
+    /* the output's speed setting: 0 none given, else 1 + its place in
+     * the description's io.electrical rout and slew_v_per_us maps (an
+     * STM32F4's OSPEEDR low to very high: 1 to 4; an F1's 2, 10 and
+     * 50 MHz: 1 to 3), which then set the pin's output resistance and
+     * edge rate */
+    int speed;
 } esk_mach_pin;
 
 typedef struct esk_mach_host {
@@ -534,6 +544,9 @@ es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio
 /* the MPU the part has: its regions (8 on the parts that have one), 0 for
  * none, on every core */
 es_status esk_cortexm_set_mpu(struct esk_mach *m, int regions);
+/* an event from a device (an STM32's EXTI line in event mode): as SEV, the
+ * event register set, or a core waiting in WFE woken */
+void esk_cortexm_event(struct esk_mach *m);
 /* the cores, and the one whose access is in progress (a debugger's: the one
  * that runs next) */
 int esk_cortexm_cores(struct esk_mach *m);

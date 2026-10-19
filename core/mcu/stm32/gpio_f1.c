@@ -32,6 +32,8 @@
  *     (esk_mach_host.pin_cfg: driven 0 or 1, open-drain, the weak pull, or
  *     analog), which drives the pin's net; what the rest of the circuit
  *     drives comes back into IDR (pin_in), and IDR's changes go to EXTI;
+ *   - an output's MODE (2, 10 or 50 MHz) is its speed: the description's
+ *     output resistance and edge rate for it;
  *   - LCKR is a plain register: the lock sequence is not modelled.
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/stm32f1-gpio.c. Changes:
@@ -135,6 +137,9 @@ static void update(struct f1gpio *g)
                 else if (!(cnf & 1) || !(odr >> i & 1))
                     o.drive = (int)(odr >> i & 1);
                 o.open_drain = (cnf & 1) != 0;
+                /* MODE 10 2 MHz, 01 10 MHz, 11 50 MHz: the description's
+                 * rout and slew in that order */
+                o.speed = mode == 2 ? 1 : mode == 1 ? 2 : 3;
             } else if (cnf == 0) {
                 o.analog = 1;
             } else if (cnf == 2) {
