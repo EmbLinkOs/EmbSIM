@@ -544,6 +544,9 @@ es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio
 /* the MPU the part has: its regions (8 on the parts that have one), 0 for
  * none, on every core */
 es_status esk_cortexm_set_mpu(struct esk_mach *m, int regions);
+/* SysTick's external reference clock (processor cycles per tick, 0 for
+ * none) and CALIB, on every core */
+es_status esk_cortexm_set_systick(struct esk_mach *m, u32 ref_div, u32 calib);
 /* an event from a device (an STM32's EXTI line in event mode): as SEV, the
  * event register set, or a core waiting in WFE woken */
 void esk_cortexm_event(struct esk_mach *m);

@@ -299,6 +299,9 @@ extern const struct esk_dev_ops esk_systick_ops, esk_scs_ops, esk_dwt_ops;
 void *esk_systick_create(struct esk_mach *m);
 /* where the SysTick exception goes: `pend(ctx, 15)`, else the machine's core */
 void esk_systick_target(void *systick, void (*pend)(void *ctx, int n), void *ctx);
+/* the part's reference clock (processor cycles per tick, 0 for none) and
+ * CALIB's value */
+void esk_systick_config(void *systick, u32 ref_div, u32 calib);
 void *esk_dwt_create(struct esk_mach *m);
 
 #endif

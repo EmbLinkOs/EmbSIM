@@ -32,6 +32,15 @@
         "ram_base": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "A PIC24's RAM's start, as a data address (W15 out of reset)"},
         "fpu": {"type": "boolean"},
         "mpu": {"type": "boolean"},
+        "systick": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "A Cortex-M's SysTick: its external reference clock as processor cycles per tick (an STM32's HCLK/8: 8; absent, the part has none and CLKSOURCE reads 1) and STK_CALIB's value (NOREF follows ref_div; TENMS 0 with SKEW when the manual gives none)",
+          "properties": {
+            "ref_div": {"type": "integer", "minimum": 1, "maximum": 256},
+            "calib": {"$ref": "common.schema.json#/$defs/hex_or_size"}
+          }
+        },
         "endian": {"type": "string", "enum": ["little", "big"]},
         "isa": {"type": "string"}
       }

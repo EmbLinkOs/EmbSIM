@@ -5,6 +5,33 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32 timers and SysTick (the NUCLEO-F446RE plan, step 5)
+
+- **`stm32-tim` rewritten as the whole timer**, for the F4's TIM1-TIM14 and
+  the Blue Pill's TIM1-TIM4 alike (RM0390 12-16, RM0008 14-15):
+  - up, down and center-aligned counting with DIR, the repetition counter,
+    the preloads and update events;
+  - output compare and PWM in every counting mode, OCxCE's clear on ETRF;
+  - input capture: the edge, ICxPSC, overcapture, the ICxF filter that
+    drops short pulses, TI1S, reading CCRx clearing CCxIF;
+  - the advanced timers' complementary outputs with dead time, MOE,
+    OSSR, OSSI and idle levels, break on BKIN or BG, LOCK's levels, COM
+    events with CCPC;
+  - the slave modes (reset, gated, trigger, external clock 1, encoder
+    1-3) on ITR0-ITR3, TI1F_ED, TI1FP1, TI2FP2 or ETRF, external clock mode
+    2, TRGO to the timers that listen, by the interconnection tables;
+  - the counter clocked by the clock RCC gives the timers (TIMPRE
+    included), each deadline acting at its own cycle.
+- **Pins:** the F4's timer signals come through the alternate functions of
+  `io.alternate` (TIMx_CHy, TIMx_CHyN, TIMx_BKIN, TIMx_ETR), both ways; the
+  F1's channels now also capture from their pins.
+- **SysTick:** CLKSOURCE 0 counts the part's external reference
+  (`core.systick.ref_div`: HCLK/8 on the STM32s), CALIB reads the part's
+  value (`core.systick.calib`: RM0008's 9000 on the F103, TENMS not given
+  on the F446), a long wait is counted at once.
+- **Proof:** `tests/unit/test_stm32f4.c`'s timer and SysTick tests; the
+  Blue Pill's timer tests and HAL applications unchanged.
+
 ### The STM32F446's GPIO, SYSCFG and EXTI (the NUCLEO-F446RE plan, step 4)
 
 - **GPIO** (`stm32f4-gpio`, RM0390 7):

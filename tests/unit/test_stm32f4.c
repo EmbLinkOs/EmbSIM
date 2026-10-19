@@ -41,6 +41,27 @@
 #define SYSCFG 0x40013800u
 #define EXTI 0x40013C00u
 #define NVIC_ISPR0 0xE000E200u
+#define RCC_APB1ENR (RCC + 0x40u)
+#define GPIOB 0x40020400u
+#define AFRH 0x24u
+#define TIM1 0x40010000u
+#define TIM2 0x40000000u
+#define TIM3 0x40000400u
+#define T_CR1 0x00u
+#define T_CR2 0x04u
+#define T_SMCR 0x08u
+#define T_DIER 0x0Cu
+#define T_SR 0x10u
+#define T_EGR 0x14u
+#define T_CCMR1 0x18u
+#define T_CCER 0x20u
+#define T_CNT 0x24u
+#define T_PSC 0x28u
+#define T_ARR 0x2Cu
+#define T_RCR 0x30u
+#define T_CCR1 0x34u
+#define T_CCR2 0x38u
+#define T_BDTR 0x44u
 
 /* PLLM 8, PLLN 360, PLLP /2, PLLQ 2, PLLR 2 from HSE: 1 MHz into the VCO,
  * 360 MHz out of it, 180 MHz SYSCLK (CubeF4's NUCLEO-F446RE templates) */
@@ -564,6 +585,317 @@ static void test_syscfg(void)
     f4_close(&f);
 }
 
+/* ---- timers ------------------------------------------------------------------ */
+
+/* the core kept busy (nop; b back) so that time passes instruction by
+ * instruction, as firmware's main loop does */
+static void busy(f4 *f)
+{
+    CHECK_EQ(esk_bus_debug_write(&f->m.bus, 0x100, 4, 0xe7fdbf00u), 0);
+}
+
+/* a pin of port `port` on alternate function `af` */
+static void pin_af(f4 *f, u32 port, int pin, u32 af)
+{
+    u32 afr = port + (pin < 8 ? AFRL : AFRH);
+    int sh = 4 * (pin & 7);
+    wr(f, afr, (rd(f, afr) & ~(15u << sh)) | af << sh);
+    wr(f, port + MODER, (rd(f, port + MODER) & ~(3u << (2 * pin))) | 2u << (2 * pin));
+}
+
+/* TIM2 CH1 PWM on PA5 at 1 kHz, 25 %: the HAL's TIM_PWMOutput, the
+ * NUCLEO's LD2 dimmed */
+static void test_tim_pwm(void)
+{
+    f4 f;
+    int i, high = 0, edges = 0, last = 0;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    wr(&f, RCC_AHB1ENR, 1u);
+    wr(&f, RCC_APB1ENR, 1u);         /* TIM2EN */
+    pin_af(&f, GPIOA, 5, 1);         /* TIM2_CH1 */
+    CHECK_EQ(f.pin[0][5].drive, -1); /* the channel is off: let go */
+    wr(&f, TIM2 + T_PSC, 15);        /* 16 MHz / 16 = 1 MHz */
+    wr(&f, TIM2 + T_ARR, 999);
+    wr(&f, TIM2 + T_CCR1, 250);
+    wr(&f, TIM2 + T_CCMR1, 6u << 4 | 1u << 3); /* PWM mode 1, OC1PE */
+    wr(&f, TIM2 + T_CCER, 1u);                 /* CC1E */
+    wr(&f, TIM2 + T_EGR, 1u);
+    wr(&f, TIM2 + T_CR1, 1u | 1u << 7);        /* CEN, ARPE */
+    for (i = 0; i < 2000; i++) {
+        int d;
+        esk_mach_run(&f.m, 16, 0);
+        d = f.pin[0][5].drive;
+        high += d == 1;
+        edges += d != last;
+        last = d;
+    }
+    CHECK(high >= 495 && high <= 505); /* 2 ms at 25 % */
+    CHECK(edges >= 3 && edges <= 5);
+    CHECK_EQ(f.pin[0][5].af, 1);
+    CHECK(rd(&f, TIM2 + T_SR) & 1u); /* UIF */
+    CHECK(rd(&f, TIM2 + T_SR) & 2u); /* CC1IF */
+    /* CC1P inverts it */
+    wr(&f, TIM2 + T_CCER, 3u);
+    for (i = 0, high = 0; i < 1000; i++) {
+        esk_mach_run(&f.m, 16, 0);
+        high += f.pin[0][5].drive == 1;
+    }
+    CHECK(high >= 745 && high <= 755);
+    CHECK_EQ(f.warnings, 0);
+    f4_close(&f);
+}
+
+/* center-aligned counting, and counting down with the repetition counter */
+static void test_tim_counting(void)
+{
+    f4 f;
+    u32 c;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    wr(&f, RCC_APB1ENR, 2u); /* TIM3EN */
+    wr(&f, TIM3 + T_ARR, 100);
+    wr(&f, TIM3 + T_CR1, 1u << 5 | 1u); /* CMS 01, CEN */
+    esk_mach_run(&f.m, 150, 0);
+    c = rd(&f, TIM3 + T_CNT);
+    CHECK(c >= 47 && c <= 53);                 /* up to 100, back down */
+    CHECK(rd(&f, TIM3 + T_CR1) & 1u << 4);     /* DIR: down */
+    CHECK(rd(&f, TIM3 + T_SR) & 1u);           /* the overflow's update */
+    wr(&f, TIM3 + T_SR, 0);
+    esk_mach_run(&f.m, 60, 0);
+    CHECK_EQ(rd(&f, TIM3 + T_CR1) & 1u << 4, 0u); /* turned at 0 */
+    CHECK(rd(&f, TIM3 + T_SR) & 1u);              /* the underflow's */
+    wr(&f, TIM3 + T_CR1, 1u << 5 | 1u | 1u << 4); /* DIR is the hardware's */
+    CHECK_EQ(rd(&f, TIM3 + T_CR1) & 1u << 4, 0u);
+    /* TIM1 counting down, ARR 9, RCR 2: an update every 30 counts */
+    wr(&f, RCC_APB2ENR, 1u); /* TIM1EN */
+    wr(&f, TIM1 + T_ARR, 9);
+    wr(&f, TIM1 + T_RCR, 2);
+    wr(&f, TIM1 + T_CR1, 1u << 4 | 1u << 2); /* DIR, URS */
+    wr(&f, TIM1 + T_EGR, 1u);                /* UG: RCR in, no UIF */
+    CHECK_EQ(rd(&f, TIM1 + T_CNT), 9u);      /* from ARR counting down */
+    CHECK_EQ(rd(&f, TIM1 + T_SR), 0u);
+    wr(&f, TIM1 + T_CR1, 1u << 4 | 1u << 2 | 1u);
+    esk_mach_run(&f.m, 24, 0);
+    CHECK_EQ(rd(&f, TIM1 + T_SR) & 1u, 0u);
+    esk_mach_run(&f.m, 10, 0);
+    CHECK(rd(&f, TIM1 + T_SR) & 1u);
+    f4_close(&f);
+}
+
+/* input capture on TIM2 CH2 (PA1): the edge, overcapture, reading CCR2,
+ * and the filter dropping a pulse shorter than its 8 samples */
+static void test_tim_capture(void)
+{
+    f4 f;
+    u32 c1, c2;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    wr(&f, RCC_AHB1ENR, 1u);
+    wr(&f, RCC_APB1ENR, 1u);
+    pin_af(&f, GPIOA, 1, 1); /* TIM2_CH2 */
+    wr(&f, TIM2 + T_ARR, 0xFFFFFFFFu);
+    wr(&f, TIM2 + T_CCMR1, 1u << 8); /* CC2S 01: IC2 on TI2 */
+    wr(&f, TIM2 + T_CCER, 1u << 4);  /* CC2E, rising */
+    wr(&f, TIM2 + T_CR1, 1u);
+    esk_mach_run(&f.m, 1000, 0);
+    f.ext[0][1] = 1;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(rd(&f, TIM2 + T_SR) & 1u << 2); /* CC2IF */
+    CHECK(esk_bus_debug_read(&f.m.bus, TIM2 + T_CCR2, 4, &c1) == 0); /* a debugger's read clears nothing */
+    CHECK(c1 >= 995 && c1 <= 1005);
+    f.ext[0][1] = 0; /* a falling edge: not selected */
+    esk_stm32f4_pins_changed(&f.m);
+    esk_mach_run(&f.m, 500, 0);
+    f.ext[0][1] = 1;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(rd(&f, TIM2 + T_SR) & 1u << 10); /* CC2OF: CC2IF was still set */
+    c2 = rd(&f, TIM2 + T_CCR2);            /* and the read clears CC2IF */
+    CHECK(c2 - c1 >= 495 && c2 - c1 <= 505);
+    CHECK_EQ(rd(&f, TIM2 + T_SR) & 1u << 2, 0u);
+    /* both edges (CC2NP:CC2P 11) */
+    wr(&f, TIM2 + T_CCER, 1u << 4 | 1u << 5 | 1u << 7);
+    f.ext[0][1] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK(rd(&f, TIM2 + T_SR) & 1u << 2);
+    (void)rd(&f, TIM2 + T_CCR2);
+    /* IC2F 0011: 8 samples at fCK_INT; a 4-cycle pulse vanishes */
+    wr(&f, TIM2 + T_CCMR1, 1u << 8 | 3u << 12);
+    f.ext[0][1] = 1;
+    esk_stm32f4_pins_changed(&f.m);
+    esk_mach_run(&f.m, 4, 0);
+    f.ext[0][1] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    esk_mach_run(&f.m, 50, 0);
+    CHECK_EQ(rd(&f, TIM2 + T_SR) & 1u << 2, 0u);
+    f.ext[0][1] = 1;
+    esk_stm32f4_pins_changed(&f.m);
+    c1 = rd(&f, TIM2 + T_CNT);
+    esk_mach_run(&f.m, 50, 0);
+    CHECK(rd(&f, TIM2 + T_SR) & 1u << 2);
+    c2 = rd(&f, TIM2 + T_CCR2);
+    if (!(c2 - c1 >= 7 && c2 - c1 <= 11))
+        printf("filter: c1 %u c2 %u\n", c1, c2);
+    CHECK(c2 - c1 >= 7 && c2 - c1 <= 11); /* taken once the filter passed it */
+    f4_close(&f);
+}
+
+/* TIM1 CH1 and CH1N with a dead time, then a break: the complementary
+ * outputs a half bridge needs */
+static void test_tim_complementary(void)
+{
+    f4 f;
+    int i, both_high = 0, o = 0, on = 0, total = 0;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    wr(&f, RCC_AHB1ENR, 3u);
+    wr(&f, RCC_APB2ENR, 1u);
+    pin_af(&f, GPIOA, 8, 1);  /* TIM1_CH1 */
+    pin_af(&f, GPIOA, 7, 1);  /* TIM1_CH1N */
+    pin_af(&f, GPIOB, 12, 1); /* TIM1_BKIN */
+    f.ext[1][12] = 1;         /* the break input idle (high) */
+    esk_stm32f4_pins_changed(&f.m);
+    wr(&f, TIM1 + T_ARR, 99);
+    wr(&f, TIM1 + T_CCR1, 50);
+    wr(&f, TIM1 + T_CCMR1, 6u << 4);
+    wr(&f, TIM1 + T_CCER, 1u | 1u << 2); /* CC1E, CC1NE */
+    wr(&f, TIM1 + T_CR2, 1u << 8);       /* OIS1: OC1 high when idle */
+    wr(&f, TIM1 + T_BDTR, 10u | 1u << 15 | 1u << 12 | 1u << 10); /* DTG 10, MOE, BKE, OSSI */
+    wr(&f, TIM1 + T_CR1, 1u);
+    esk_mach_run(&f.m, 300, 0);
+    /* the gaps between one output falling and the other rising */
+    {
+        u64 fell = 0, gap_min = ~0ULL, gap_max = 0;
+        int po = f.pin[0][8].drive, pon = f.pin[0][7].drive, gaps = 0;
+        for (i = 0; total < 500; i++) {
+            total += (int)esk_mach_run(&f.m, 1, 0);
+            o = f.pin[0][8].drive;
+            on = f.pin[0][7].drive;
+            both_high += o == 1 && on == 1;
+            if ((po == 1 && o == 0) || (pon == 1 && on == 0))
+                fell = f.m.cycles;
+            if (fell && ((po == 0 && o == 1) || (pon == 0 && on == 1))) {
+                u64 g = f.m.cycles - fell;
+                gap_min = g < gap_min ? g : gap_min;
+                gap_max = g > gap_max ? g : gap_max;
+                gaps++;
+                fell = 0;
+            }
+            po = o;
+            pon = on;
+        }
+        CHECK_EQ(both_high, 0);
+        CHECK(gaps >= 9 && gaps <= 10); /* 5 periods, two edges each (the window may cut one) */
+        if (!(gap_min >= 9 && gap_max <= 12))
+            printf("dead time: gaps %u to %u cycles\n", (unsigned)gap_min, (unsigned)gap_max);
+        CHECK(gap_min >= 9 && gap_max <= 12); /* DTG 10: 10 tDTS of 1 cycle */
+    }
+    /* the break input goes low (BKP 0: active low) */
+    f.ext[1][12] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    CHECK_EQ(rd(&f, TIM1 + T_BDTR) & 1u << 15, 0u); /* MOE cleared */
+    CHECK(rd(&f, TIM1 + T_SR) & 1u << 7);            /* BIF */
+    CHECK_EQ(f.pin[0][8].drive, 1);                   /* OIS1 */
+    CHECK_EQ(f.pin[0][7].drive, 0);                   /* OIS1N */
+    wr(&f, TIM1 + T_BDTR, rd(&f, TIM1 + T_BDTR) | 1u << 15);
+    CHECK_EQ(rd(&f, TIM1 + T_BDTR) & 1u << 15, 0u);   /* not while it is active */
+    /* LOCK: the first write froze LOCK at 0; level 0 freezes nothing else */
+    wr(&f, TIM1 + T_BDTR, (rd(&f, TIM1 + T_BDTR) & ~0xFFu) | 20u | 3u << 8);
+    CHECK_EQ(rd(&f, TIM1 + T_BDTR) & 0x3FFu, 20u);
+    f4_close(&f);
+}
+
+/* master and slave: TIM3's updates clock TIM2 (ITR2, external clock mode
+ * 1); TIM3's in encoder mode on PA6 and PA7; one-pulse mode */
+static void test_tim_slave(void)
+{
+    f4 f;
+    static const int fwd[4][2] = { { 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 } };
+    int i;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    wr(&f, RCC_AHB1ENR, 1u);
+    wr(&f, RCC_APB1ENR, 3u);
+    wr(&f, TIM3 + T_ARR, 9);
+    wr(&f, TIM3 + T_CR2, 2u << 4);              /* MMS: update */
+    wr(&f, TIM2 + T_ARR, 0xFFFFu);
+    wr(&f, TIM2 + T_SMCR, 7u | 2u << 4);        /* external clock 1 on ITR2 (TIM3) */
+    wr(&f, TIM2 + T_CR1, 1u);
+    wr(&f, TIM3 + T_CR1, 1u);
+    esk_mach_run(&f.m, 100, 0);
+    CHECK(rd(&f, TIM2 + T_CNT) >= 9 && rd(&f, TIM2 + T_CNT) <= 10);
+    CHECK(rd(&f, TIM2 + T_SR) & 1u << 6);       /* TIF */
+    /* TIM3 as a quadrature decoder */
+    wr(&f, TIM3 + T_CR1, 0);
+    wr(&f, TIM3 + T_CR2, 0);
+    pin_af(&f, GPIOA, 6, 2); /* TIM3_CH1 */
+    pin_af(&f, GPIOA, 7, 2); /* TIM3_CH2 */
+    f.ext[0][6] = f.ext[0][7] = 0;
+    esk_stm32f4_pins_changed(&f.m);
+    wr(&f, TIM3 + T_ARR, 0xFFFFu);
+    wr(&f, TIM3 + T_CCMR1, 1u | 1u << 8); /* CC1S, CC2S 01 */
+    wr(&f, TIM3 + T_SMCR, 3u);            /* encoder mode 3 */
+    wr(&f, TIM3 + T_CNT, 100);
+    wr(&f, TIM3 + T_CR1, 1u);
+    for (i = 0; i < 8; i++) {
+        f.ext[0][6] = fwd[i % 4][0];
+        f.ext[0][7] = fwd[i % 4][1];
+        esk_stm32f4_pins_changed(&f.m);
+    }
+    CHECK_EQ(rd(&f, TIM3 + T_CNT), 108u); /* two cycles, four counts each */
+    CHECK_EQ(rd(&f, TIM3 + T_CR1) & 1u << 4, 0u);
+    for (i = 3; i >= 0; i--) {
+        f.ext[0][6] = fwd[(i + 3) % 4][0];
+        f.ext[0][7] = fwd[(i + 3) % 4][1];
+        esk_stm32f4_pins_changed(&f.m);
+    }
+    CHECK_EQ(rd(&f, TIM3 + T_CNT), 104u); /* one cycle back */
+    CHECK(rd(&f, TIM3 + T_CR1) & 1u << 4); /* DIR: down */
+    /* one-pulse: CEN cleared at the update */
+    wr(&f, TIM3 + T_SMCR, 0);
+    wr(&f, TIM3 + T_ARR, 20);
+    wr(&f, TIM3 + T_CNT, 0);
+    wr(&f, TIM3 + T_CR1, 1u | 1u << 3);
+    esk_mach_run(&f.m, 60, 0);
+    CHECK_EQ(rd(&f, TIM3 + T_CR1) & 1u, 0u);
+    CHECK_EQ(rd(&f, TIM3 + T_CNT), 0u);
+    f4_close(&f);
+}
+
+/* SysTick: the processor clock, or the STM32's external reference HCLK/8
+ * (CLKSOURCE 0); CALIB with a reference, its TENMS not given */
+static void test_systick(void)
+{
+    f4 f;
+    u32 c;
+    if (!f4_open(&f, 1))
+        return;
+    busy(&f);
+    CHECK_EQ(rd(&f, 0xE000E01Cu), 0x40000000u); /* NOREF 0, SKEW 1, TENMS 0 */
+    CHECK_EQ(rd(&f, 0xE000E010u), 0u);          /* CLKSOURCE 0 out of reset */
+    wr(&f, 0xE000E014u, 999);
+    wr(&f, 0xE000E018u, 0);
+    wr(&f, 0xE000E010u, 1u); /* ENABLE, the reference clock */
+    esk_mach_run(&f.m, 4000, 0);
+    c = rd(&f, 0xE000E018u);
+    CHECK(c >= 497 && c <= 502);              /* 500 counts of HCLK/8 */
+    CHECK_EQ(rd(&f, 0xE000E010u) & 1u << 16, 0u);
+    esk_mach_run(&f.m, 4100, 0);
+    CHECK(rd(&f, 0xE000E010u) & 1u << 16);    /* COUNTFLAG, cleared by the read */
+    CHECK_EQ(rd(&f, 0xE000E010u) & 1u << 16, 0u);
+    wr(&f, 0xE000E018u, 0);
+    wr(&f, 0xE000E010u, 5u); /* the processor clock */
+    esk_mach_run(&f.m, 500, 0);
+    c = rd(&f, 0xE000E018u);
+    CHECK(c >= 496 && c <= 504);
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -575,4 +907,10 @@ RUN(test_gpio_modes);
 RUN(test_gpio_lock);
 RUN(test_exti);
 RUN(test_syscfg);
+RUN(test_tim_pwm);
+RUN(test_tim_counting);
+RUN(test_tim_capture);
+RUN(test_tim_complementary);
+RUN(test_tim_slave);
+RUN(test_systick);
 TEST_MAIN_END

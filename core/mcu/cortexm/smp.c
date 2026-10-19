@@ -410,6 +410,23 @@ es_status esk_cortexm_set_mpu(struct esk_mach *m, int regions)
     return ES_OK;
 }
 
+es_status esk_cortexm_set_systick(struct esk_mach *m, u32 ref_div, u32 calib)
+{
+    struct smp *x = smp_of(m);
+    int i;
+    if (x) {
+        for (i = 0; i < x->n; i++)
+            esk_systick_config(x->st[i], ref_div, calib);
+        return ES_OK;
+    }
+    for (i = 0; i < m->bus.ndev; i++)
+        if (m->bus.dev[i].ops == &esk_systick_ops) {
+            esk_systick_config(m->bus.dev[i].ctx, ref_div, calib);
+            return ES_OK;
+        }
+    return ES_ENOTFOUND;
+}
+
 void esk_cortexm_event(struct esk_mach *m)
 {
     struct smp *x = smp_of(m);

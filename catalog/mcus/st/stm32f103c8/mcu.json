@@ -20,7 +20,11 @@
     "timing_tier": "estimated",
     "fpu": false,
     "mpu": false,
-    "endian": "little"
+    "endian": "little",
+    "systick": {
+      "ref_div": 8,
+      "calib": "0x00002328"
+    }
   },
   "memory": [
     {
@@ -293,7 +297,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Cortex-M3 instruction execution (Thumb-2, NVIC, SCB, SysTick, DWT, semihosting) extracted from EmbCC; every register of the RM0008 description with its reset value and access type; behavioural models of RCC (HSI, HSE, PLL, bus prescalers and clock gates), GPIO (modes, ODR/BSRR/BRR, IDR from the pin's net), AFIO (EXTI routing, USART1 remap), EXTI (edges, pending, interrupts), USART (8N1 frames at the baud rate on TX and from RX, interrupts), TIM1 to TIM4 time base (prescaler, auto-reload, update interrupt) and output compare (CCRx matches, their flags and interrupts, the OCxM modes with PWM 1 and 2, preload, CCxE and CCxP, TIM1's MOE) on their AFIO pins, ADC1 and ADC2's regular group (software start, scan, continuous, sampling times, the ADC clock from ADCPRE, the pins' voltages, alignment, EOC and its interrupt, calibration's timing), SPI1 and SPI2 as masters on their pins (modes 0 to 3, 8 and 16 bits, MSB or LSB first, the baud prescaler, TXE, RXNE, OVR, BSY and their interrupts, NSS with SSOE), I2C1 and I2C2 as masters on their open-drain pins (START, repeated START, STOP, 7-bit addressing, ACK and POS, the SR1 and SR2 flags with their clearing sequences, BTF clock holding, CCR's standard and fast timing, the event and error interrupts), FLASH and PWR registers. Other peripherals keep their register values and raise mcu.unsupported_access on first access.",
+      "claims": "Cortex-M3 instruction execution (Thumb-2, NVIC, SCB, SysTick, DWT, semihosting) extracted from EmbCC; every register of the RM0008 description with its reset value and access type; behavioural models of RCC (HSI, HSE, PLL, bus prescalers and clock gates), GPIO (modes, ODR/BSRR/BRR, IDR from the pin's net), AFIO (EXTI routing, USART1 remap), EXTI (edges, pending, interrupts), USART (8N1 frames at the baud rate on TX and from RX, interrupts), TIM1 to TIM4 (up, down and center-aligned counting, the repetition counter, output compare and PWM, input capture with its filter and prescaler, TIM1's MOE, OSSR and OSSI, the software break (BG) and LOCK, the slave modes and encoder mode, external clocks, TRGO between the timers) with their channels on their AFIO pins, SysTick's HCLK/8 reference and its CALIB of 9000 (RM0008), ADC1 and ADC2's regular group (software start, scan, continuous, sampling times, the ADC clock from ADCPRE, the pins' voltages, alignment, EOC and its interrupt, calibration's timing), SPI1 and SPI2 as masters on their pins (modes 0 to 3, 8 and 16 bits, MSB or LSB first, the baud prescaler, TXE, RXNE, OVR, BSY and their interrupts, NSS with SSOE), I2C1 and I2C2 as masters on their open-drain pins (START, repeated START, STOP, 7-bit addressing, ACK and POS, the SR1 and SR2 flags with their clearing sequences, BTF clock holding, CCR's standard and fast timing, the event and error interrupts), FLASH and PWR registers. Other peripherals keep their register values and raise mcu.unsupported_access on first access.",
       "omissions": [
         "the ADC's injected group, analog watchdog, external triggers, dual mode and DMA",
         "SPI and I2C slave modes, I2C's 10-bit addressing, SMBus, PEC, slave clock stretching and arbitration, SPI's CRC and bidirectional modes",
@@ -301,7 +305,7 @@
         "CAN",
         "USB",
         "RTC and backup domain",
-        "timer input capture, counting down and center-aligned, the complementary outputs and dead time",
+        "the timers' complementary outputs, break and ETR on pins (TIM1's CHxN, BKIN and ETR are not routed through AFIO), their DMA requests",
         "IWDG and WWDG",
         "flash programming",
         "low-power modes beyond WFI"

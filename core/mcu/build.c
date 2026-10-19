@@ -93,6 +93,12 @@ es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json
                                     (int)esk_json_get_int(core, "cores", 1), &cpu);
         if (st == ES_OK && esk_json_get_bool(core, "mpu", 0))
             st = esk_cortexm_set_mpu(m, 8); /* every Cortex-M0+, M3 and M4 MPU has eight regions */
+        if (st == ES_OK && esk_json_get(core, "systick")) {
+            const esk_json *stk = esk_json_get(core, "systick");
+            u32 calib = 0;
+            (void)u32_of(esk_json_get(stk, "calib"), &calib);
+            st = esk_cortexm_set_systick(m, (u32)esk_json_get_int(stk, "ref_div", 0), calib);
+        }
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "avr")) {
         st = esk_avr_create(m, esk_json_get_str(core, "model", ""), &cpu);
     } else if (esk_str_eq(esk_json_get_str(core, "backend", ""), "riscv")) {

@@ -211,6 +211,10 @@ routes a pin in alternate-function mode to its signal's peripheral, and
 a peripheral model finds its pins (`esk_rf_af_signal`, `esk_rf_af_pin`).
 A GPIO model's `esk_mach_pin.speed` picks the pin's output resistance and
 edge rate from `io.electrical`'s per-speed `rout` and `slew_v_per_us`.
+`stm32-tim` is the whole STM32 timer on both families; its signals reach
+the F4's pins through the AF table (`esk_stm32_tim_signal`,
+`esk_stm32_tim_signal_input`) and the F1's through AFIO. A Cortex-M part's
+`core.systick` gives SysTick's external reference divider and CALIB.
 
 ## 7. Pins, multiplexing and nets
 

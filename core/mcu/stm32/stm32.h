@@ -8,7 +8,7 @@
  *   afio_f1.c  the F1's alternate-function I/O (remaps, EXTI line sources)
  *   exti.c     external interrupt and event lines from the pins
  *   usart.c    a USART of the SR/DR layout, at its baud rate
- *   tim.c      a timer's time base and its output compare and PWM
+ *   tim.c      a timer: time base, capture/compare, PWM, dead time, slave modes
  *   adc_f1.c   the F1's ADC: its regular group from the pins' voltages
  *   spi_f1.c   the F1's SPI as a master, on its pins
  *   i2c_f1.c   the F1's I2C as a master, on its pins
@@ -68,6 +68,13 @@ void esk_stm32f1_pins_changed(struct esk_mach *m);
 /* a USART's TX or RX pin as AFIO's MAPR places it: 0 and the port and bit,
  * or -1 */
 int esk_stm32f1_usart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
+/* a timer's alternate-function signal (TIM1_CH1, TIM1_CH1N): the level it
+ * drives, or -1; a level a pin gives TIMx_CHy, TIMx_ETR or TIMx_BKIN */
+int esk_stm32_tim_signal(struct esk_mach *m, const char *sig);
+void esk_stm32_tim_signal_input(struct esk_mach *m, const char *sig, int level);
+/* the F1: the level a pin (port, bit) gives the timer channels AFIO's MAPR
+ * places there */
+void esk_stm32f1_tim_input(struct esk_mach *m, int port, int bit, int level);
 /* the level a timer's compare channel, an SPI master or an I2C master
  * drives on a pin (port, bit) that AFIO's MAPR gives it, or -1 */
 int esk_stm32f1_tim_pin(struct esk_mach *m, int port, int bit);

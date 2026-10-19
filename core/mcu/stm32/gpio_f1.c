@@ -165,9 +165,13 @@ static void update(struct f1gpio *g)
     g->known = 1;
     if (old != idr) {
         esk_rf_hw(g->idr, (g->idr->value & ~(u64)0xffffu) | idr);
-        for (i = 0; i < 16; i++)
-            if (((old ^ idr) >> i & 1) && esk_stm32f1_exti_port(s, i) == g->port)
+        for (i = 0; i < 16; i++) {
+            if (!((old ^ idr) >> i & 1))
+                continue;
+            if (esk_stm32f1_exti_port(s, i) == g->port)
                 esk_stm32_exti_input(s, i, (int)(idr >> i & 1));
+            esk_stm32f1_tim_input(s, g->port, i, (int)(idr >> i & 1)); /* input capture */
+        }
     }
 }
 

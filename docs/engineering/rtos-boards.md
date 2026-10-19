@@ -85,6 +85,11 @@ after each one.
      TIM9-14.
    - Time base, output compare, PWM on the pins, input capture, one-pulse
      mode and encoder mode.
+   - *Done:* `stm32-tim` rewritten as the whole timer (counting modes,
+     repetition, capture with filters, complementary outputs with dead
+     time and break, LOCK, COM, slave modes, encoder, external clocks,
+     TRGO between timers) for both families, and SysTick's HCLK/8
+     reference; the DMA requests come with step 7.
 6. **USART and UART.** USART1-3, UART4-5 and USART6: frames on the pins,
    oversampling 8 and 16, interrupts. USART2 is the board's ST-Link virtual
    COM port.

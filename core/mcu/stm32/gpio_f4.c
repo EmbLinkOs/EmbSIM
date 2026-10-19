@@ -18,9 +18,10 @@
  *     floating being EmbSIM's choice), an input's or alternate function's
  *     the circuit's, else the pull, else 0; analog mode reads 0;
  *   - an alternate function is the one AFRL or AFRH selects among those the
- *     description's io.alternate gives the pin; it drives the pin only when
- *     its peripheral's model does (none yet on the F4: each is let go, so
- *     it reads what the circuit drives), the debug port's (AF0 on PA13,
+ *     description's io.alternate gives the pin; it drives the pin when its
+ *     peripheral's model does (a timer's channel, tim.c), else the pin is
+ *     let go and reads what the circuit drives; the pin's level goes to the
+ *     function's input (a timer's channel, ETR, BKIN); the debug port's (AF0 on PA13,
  *     PA14, PA15, PB3 and PB4, as the reset values of MODER and PUPDR select
  *     them) among them: with no debugger attached its pins are inputs with
  *     their pulls;
@@ -48,6 +49,7 @@ struct f4gpio {
     struct esk_rf_reg *moder, *otyper, *ospeedr, *pupdr, *idr, *odr, *bsrr, *lckr, *afrl, *afrh;
     int port;             /* 0 for A */
     esk_mach_pin out[16]; /* what each pin was told to be */
+    int af_in[16];        /* the level last given to a pin's AF inputs, -1 none */
     int known;
     int lck_step;         /* the lock sequence's writes so far (3: a read locks) */
     u32 lck_bits;
@@ -64,13 +66,25 @@ static u32 af_of(const struct f4gpio *g, int pin)
 }
 
 /* the level a peripheral's model drives on its alternate function `af` of
- * the pin, or -1: none drives one yet on the F4 */
+ * the pin, or -1 */
 static int af_level(const struct f4gpio *g, int pin, u32 af)
 {
-    (void)g;
-    (void)pin;
-    (void)af;
+    const char *sig;
+    int k, v;
+    for (k = 0; (sig = esk_rf_af_signal(g->s->rf, g->port, pin, (int)af, k)) != 0; k++)
+        if ((v = esk_stm32_tim_signal(g->s, sig)) >= 0)
+            return v;
     return -1;
+}
+
+/* a pin in alternate-function mode gives its level to its signals' inputs
+ * (a timer's channel, ETR or BKIN) */
+static void af_input(struct f4gpio *g, int pin, u32 af, int level)
+{
+    const char *sig;
+    int k;
+    for (k = 0; (sig = esk_rf_af_signal(g->s->rf, g->port, pin, (int)af, k)) != 0; k++)
+        esk_stm32_tim_signal_input(g->s, sig, level);
 }
 
 static void update(struct f4gpio *g)
@@ -106,6 +120,12 @@ static void update(struct f4gpio *g)
         else
             lvl = o.pull == 1;
         idr |= (u32)lvl << i;
+        if (mode == 2 && lvl != g->af_in[i]) {
+            g->af_in[i] = lvl;
+            af_input(g, i, af_of(g, i), lvl);
+        } else if (mode != 2) {
+            g->af_in[i] = -1;
+        }
         if (s->host.pin_cfg && (!g->known || memcmp(&g->out[i], &o, sizeof o) != 0))
             s->host.pin_cfg(s->host.ctx, g->port, i, &o);
         g->out[i] = o;
@@ -222,8 +242,11 @@ static void f4gpio_write(void *ctx, u32 off, int n, u32 v)
 static void f4gpio_reset(void *ctx)
 {
     struct f4gpio *g = (struct f4gpio *)ctx;
+    int i;
     g->known = 0;
     g->lck_step = 0;
+    for (i = 0; i < 16; i++)
+        g->af_in[i] = -1;
     update(g);
 }
 
@@ -256,6 +279,7 @@ void esk_stm32f4_port_changed(struct esk_mach *s, int port)
 void *esk_stm32f4_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)
 {
     struct f4gpio g, *c;
+    int i;
     memset(&g, 0, sizeof g);
     g.s = s;
     g.p = p;
@@ -274,6 +298,8 @@ void *esk_stm32f4_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)
         p->name[5])
         return 0; /* not this layout: the registers alone */
     g.port = p->name[4] - 'A';
+    for (i = 0; i < 16; i++)
+        g.af_in[i] = -1;
     s->pins_changed = esk_stm32f4_pins_changed;
     c = (struct f4gpio *)esk_mach_alloc(s, sizeof *c);
     if (c)
