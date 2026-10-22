@@ -8,6 +8,7 @@
 
 #include "embsim/types.h"
 #include "engine/air.h"
+#include "engine/inet.h"
 #include "engine/world.h"
 #include "time/clock.h"
 #include "time/sched.h"
@@ -161,6 +162,8 @@ struct esk_engine {
     esk_world world;
     /* the 2.4 GHz medium its radios share (air.h) */
     esk_air air;
+    /* the internet beyond its routers (inet.h) */
+    esk_inet inet;
 };
 
 /* the world's value for a component's input bound to it (its description's

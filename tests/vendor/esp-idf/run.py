@@ -53,6 +53,7 @@ EXAMPLES = {
     "espnow": "examples/wifi/espnow",
     "gptimer": "examples/peripherals/timer_group/gptimer",
     "hello_world": "examples/get-started/hello_world",
+    "http_request": "examples/protocols/http_request",
     "i2c_eeprom": "examples/peripherals/i2c/i2c_eeprom",
     "ledc_basic": "examples/peripherals/ledc/ledc_basic",
     "real_time_stats": "examples/system/freertos/real_time_stats",

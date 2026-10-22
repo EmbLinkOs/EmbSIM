@@ -985,6 +985,157 @@ static void test_ble_active_scan(void)
     esk_registry_free(&r);
 }
 
+/* the internet beyond the routers (inet.h): a packet arrives after both
+ * ends' latencies, one to no address is dropped, names resolve; and a web
+ * server (web_server.c) a scripted client talks TCP and HTTP to */
+typedef struct t_client {
+    esk_inet_node n;
+    int got;
+    uint8_t last[ESK_INET_MTU];
+    uint32_t last_len;
+    es_time_t at;
+    char stream[2048];
+    uint32_t stream_len;
+    unsigned port; /* its own, this connection's */
+} t_client;
+
+static void tc_rx(void *ctx, const uint8_t *p, uint32_t len, es_time_t at)
+{
+    t_client *t = (t_client *)ctx;
+    t->got++;
+    t->at = at;
+    t->last_len = len < sizeof t->last ? len : (uint32_t)sizeof t->last;
+    memcpy(t->last, p, t->last_len);
+    if (p[9] == 6 && len >= 40u) { /* TCP: the data it carries */
+        uint32_t hl = (uint32_t)(p[32] >> 4) * 4u, n = len - 20u - hl;
+        if (n && t->stream_len + n < sizeof t->stream) {
+            memcpy(t->stream + t->stream_len, p + 20 + hl, n);
+            t->stream_len += n;
+            t->stream[t->stream_len] = 0;
+        }
+    }
+}
+
+static uint32_t t_get32(const uint8_t *p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
+
+static void t_tcp(esk_engine *e, t_client *c, const uint8_t dst[4], unsigned flags, uint32_t seq, uint32_t ack,
+                  const char *data)
+{
+    uint8_t seg[600], p[700];
+    uint32_t n = data ? (uint32_t)strlen(data) : 0u;
+    memset(seg, 0, 20);
+    seg[0] = (uint8_t)(c->port >> 8);
+    seg[1] = (uint8_t)c->port;
+    seg[2] = 0;
+    seg[3] = 80;
+    seg[4] = (uint8_t)(seq >> 24), seg[5] = (uint8_t)(seq >> 16), seg[6] = (uint8_t)(seq >> 8), seg[7] = (uint8_t)seq;
+    seg[8] = (uint8_t)(ack >> 24), seg[9] = (uint8_t)(ack >> 16), seg[10] = (uint8_t)(ack >> 8), seg[11] = (uint8_t)ack;
+    seg[12] = 0x50;
+    seg[13] = (uint8_t)flags;
+    seg[14] = 0x16, seg[15] = 0x80; /* a window of 5760, lwIP's */
+    if (n)
+        memcpy(seg + 20, data, n);
+    CHECK(esk_inet_send(e, &c->n, p, esk_inet_packet(p, c->n.ip, dst, 6, 64, 1, seg, 20u + n), e->sched.now) ==
+          ES_OK);
+}
+
+static void test_inet_web(void)
+{
+    static const uint8_t srv[4] = { 93, 184, 215, 14 }, nowhere[4] = { 10, 9, 8, 7 };
+    esk_engine e;
+    esk_registry r;
+    esk_comp *web;
+    t_client cl;
+    esk_json *o;
+    uint8_t p[100];
+    uint32_t iss, ack;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_registry_init(&r, &A);
+    web = add(&e, &r, "WEB", "web_server", NULL, NULL, 0, "{\"latency\": 10}");
+    CHECK(web != NULL);
+    esk_engine_reset(&e);
+    memset(&cl, 0, sizeof cl);
+    cl.n.ctx = &cl;
+    cl.n.ip[0] = 100, cl.n.ip[1] = 64, cl.n.ip[2] = 0, cl.n.ip[3] = 2;
+    cl.n.latency = 5u * ES_PS_PER_MS;
+    cl.n.rx = tc_rx;
+    cl.port = 50000;
+    CHECK(esk_inet_attach(&e, &cl.n) == ES_OK);
+    CHECK(esk_inet_lookup(&e, "EXAMPLE.com") != NULL);
+    CHECK(!memcmp(esk_inet_lookup(&e, "example.com")->ip, srv, 4));
+    CHECK(esk_inet_lookup(&e, "example.org") == NULL);
+    /* nowhere: dropped */
+    CHECK(esk_inet_send(&e, &cl.n, p, esk_inet_packet(p, cl.n.ip, nowhere, 17, 64, 1, (const uint8_t *)"12345678", 8),
+                        0) == ES_OK);
+    CHECK_EQ(e.inet.dropped, 1u);
+    /* a ping: answered after 2 x (5 + 10) ms */
+    {
+        static const uint8_t echo[8] = { 8, 0, 0, 0, 0x12, 0x34, 0, 1 };
+        CHECK(esk_inet_send(&e, &cl.n, p, esk_inet_packet(p, cl.n.ip, srv, 1, 64, 2, echo, 8), 0) == ES_OK);
+        esk_engine_advance(&e, 40u * ES_PS_PER_MS);
+        CHECK_EQ(cl.got, 1);
+        CHECK_EQ(cl.at, 30u * ES_PS_PER_MS);
+        CHECK_EQ(cl.last[20], 0u); /* echo reply */
+        CHECK_EQ(esk_inet_csum(cl.last + 20, 8, 0), 0u);
+    }
+    /* SYN: SYN-ACK with the MSS */
+    t_tcp(&e, &cl, srv, 0x02, 1000u, 0, NULL);
+    esk_engine_advance(&e, 80u * ES_PS_PER_MS);
+    CHECK_EQ(cl.got, 2);
+    CHECK_EQ(cl.last[33], 0x12u); /* SYN | ACK */
+    CHECK_EQ(t_get32(cl.last + 28), 1001u);
+    CHECK_EQ(cl.last[40], 2u); /* MSS 1460 */
+    CHECK_EQ((unsigned)cl.last[42] << 8 | cl.last[43], 1460u);
+    iss = t_get32(cl.last + 24);
+    /* the handshake's ACK, then the request in two segments */
+    t_tcp(&e, &cl, srv, 0x10, 1001u, iss + 1u, NULL);
+    t_tcp(&e, &cl, srv, 0x18, 1001u, iss + 1u, "GET / HTTP/1.0\r\nHost: example.com\r\n");
+    esk_engine_advance(&e, 120u * ES_PS_PER_MS);
+    CHECK_EQ(cl.last[33], 0x10u); /* its ACK of the first part */
+    CHECK_EQ(t_get32(cl.last + 28), 1001u + 35u);
+    t_tcp(&e, &cl, srv, 0x18, 1001u + 35u, iss + 1u, "\r\n");
+    esk_engine_advance(&e, 160u * ES_PS_PER_MS);
+    CHECK(strstr(cl.stream, "HTTP/1.1 200 OK\r\n") == cl.stream);
+    CHECK(strstr(cl.stream, "Content-Length: 170\r\nConnection: close\r\n\r\n<!doctype html>") != NULL);
+    CHECK(cl.last[33] & 0x01u); /* then FIN */
+    ack = t_get32(cl.last + 24) + 1u;
+    CHECK_EQ(ack, iss + 1u + cl.stream_len + 1u);
+    /* the client's ACK and FIN, acknowledged */
+    t_tcp(&e, &cl, srv, 0x11, 1001u + 37u, ack, NULL);
+    esk_engine_advance(&e, 200u * ES_PS_PER_MS);
+    CHECK_EQ(cl.last[33], 0x10u);
+    CHECK_EQ(t_get32(cl.last + 28), 1001u + 38u);
+    o = esk_json_new_object(&A);
+    web->ops->observe(web, o);
+    CHECK_EQ(esk_json_get_num(o, "requests", -1), 1);
+    CHECK_EQ(esk_json_get_num(o, "pings", -1), 1);
+    CHECK(strstr(esk_json_get_str(o, "log", ""), "GET / HTTP/1.0 from 100.64.0.2:50000 (Host: example.com): 200") !=
+          NULL);
+    esk_json_free(&A, o);
+    /* a segment for no connection: RST; another path: 404 */
+    cl.port = 50001;
+    t_tcp(&e, &cl, srv, 0x10, 5000u, 77u, NULL);
+    esk_engine_advance(&e, 240u * ES_PS_PER_MS);
+    CHECK(cl.last[33] & 0x04u);
+    cl.stream_len = 0;
+    cl.port = 50002;
+    t_tcp(&e, &cl, srv, 0x02, 9000u, 0, NULL);
+    esk_engine_advance(&e, 280u * ES_PS_PER_MS);
+    iss = t_get32(cl.last + 24);
+    t_tcp(&e, &cl, srv, 0x18, 9001u, iss + 1u, "GET /missing HTTP/1.1\r\nHost: example.com\r\n\r\n");
+    esk_engine_advance(&e, 320u * ES_PS_PER_MS);
+    CHECK(strstr(cl.stream, "HTTP/1.1 404 Not Found\r\n") == cl.stream);
+    /* unacknowledged: sent again after 1 s */
+    {
+        int before = cl.got;
+        esk_engine_advance(&e, 1400u * ES_PS_PER_MS);
+        CHECK(cl.got > before);
+    }
+    esk_inet_detach(&e, &cl.n);
+    esk_engine_free(&e);
+    esk_registry_free(&r);
+}
+
 /* a peripheral the test plays for the phone (ble_central.c): it follows
  * the connection's channels, answers each packet T_IFS later with the
  * sequence numbers, and serves a battery service */
@@ -1336,6 +1487,7 @@ RUN(test_wifi_ap_wpa2);
 RUN(test_ble_scanner);
 RUN(test_ble_active_scan);
 RUN(test_ble_central);
+RUN(test_inet_web);
 esk_diag_free(&D);
 CHECK_EQ(A.allocations, 0);
 TEST_MAIN_END

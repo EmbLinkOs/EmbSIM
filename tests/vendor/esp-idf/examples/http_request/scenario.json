@@ -1,0 +1,130 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "http_request",
+ "until": "6000ms",
+ "description": "protocols/http_request, unmodified: example_connect joins the router (WPA2-PSK) and leases its address; getaddrinfo asks the router's DNS forwarder for example.com, which answers after its round trip to the ISP's resolver; the socket connects through the router's NAT to the web server (a round trip of 2 x (5 + 10) ms), sends its HTTP/1.0 GET, reads the response to the server's FIN and prints it, then counts down to the next request. Its putchar goes through newlib's stdout, which turns each LF into CR LF (CONFIG_NEWLIB_STDOUT_LINE_ENDING_CRLF), so the response's CR LF reach the serial line as CR CR LF, as on a board.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "connecting",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example_connect: Connecting to myssid..."
+   }
+  },
+  {
+   "id": "joined",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:connected with myssid, aid = 1, channel 6, BW20, bssid = 02:e5:00:00:00:02"
+   }
+  },
+  {
+   "id": "address",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example_connect: Got IPv4 event: Interface \"example_netif_sta\" address: 192.168.1.100"
+   }
+  },
+  {
+   "id": "dns",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: DNS lookup succeeded. IP=93.184.215.14"
+   }
+  },
+  {
+   "id": "connected",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: ... connected"
+   }
+  },
+  {
+   "id": "sent",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: ... socket send success"
+   }
+  },
+  {
+   "id": "status",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "HTTP/1.1 200 OK\r\r\nContent-Type: text/html; charset=UTF-8\r\r\nContent-Length: 170\r\r\nConnection: close\r\r\n\r\r\n<!doctype html>"
+   }
+  },
+  {
+   "id": "page",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "<h1>Example Domain</h1>"
+   }
+  },
+  {
+   "id": "closed",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: ... done reading from socket. Last read return=0 errno=128."
+   }
+  },
+  {
+   "id": "countdown",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: 10... "
+   }
+  },
+  {
+   "id": "router-dns",
+   "at": "6000ms",
+   "probe": "router",
+   "expect": {
+    "contains": "dns example.com: 93.184.215.14"
+   }
+  },
+  {
+   "id": "router-nat",
+   "at": "6000ms",
+   "probe": "router",
+   "expect": {
+    "contains": "tcp to 93.184.215.14"
+   }
+  },
+  {
+   "id": "served",
+   "at": "6000ms",
+   "probe": "web",
+   "expect": {
+    "contains": "GET / HTTP/1.0 from 100.64.0.2:49152 (Host: example.com:80): 200"
+   }
+  },
+  {
+   "id": "one-request",
+   "at": "6000ms",
+   "probe": "requests",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "no-error",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "DNS lookup failed"
+   }
+  }
+ ]
+}

@@ -26,7 +26,18 @@
  *     a dozing station are kept and announced in the beacon's TIM, sent on
  *     its PS-Poll (one, with More Data while more wait) or when it wakes;
  *     group frames wait for the DTIM beacon (every beacon) while any
- *     station dozes.
+ *     station dozes;
+ *   - the network beyond the router (engine/inet.h): its WAN side at
+ *     `wan_ip`, `wan_latency` ms from the internet's core; packets from
+ *     its stations to addresses beyond its /24 leave through a NAT (RFC
+ *     3022: TCP's and UDP's source ports, ICMP echo's identifier, mapped
+ *     to ports of its own from 49152, its address as their source, the TTL
+ *     lowered), and the answers come back to the station that sent them;
+ *   - a DNS forwarder at its address, the DNS server its DHCP gives (RFC
+ *     1035): an A query is answered from the internet's names after a
+ *     round trip to the ISP's resolver (twice `wan_latency`), with its
+ *     address and a TTL of 300 s, or NXDOMAIN; another type of a known name
+ *     with no answer.
  *
  *   - WPA2-Personal, with a password: the PSK from it and the SSID
  *     (PBKDF2), the 4-way handshake after association (IEEE 802.11-2020
@@ -39,8 +50,9 @@
  *
  * Unicast data goes at 54 Mbit/s, management and group frames at 1 Mbit/s.
  * Not yet: group key rekeying, PMKSA caching, WPA2-Enterprise, TKIP,
- * protected management frames; the network beyond the router (DNS,
- * TCP and UDP to the host); 802.11n (HT capabilities and operation); WPA3
+ * protected management frames; DNS beyond A records (AAAA, CNAME, MX)
+ * and over TCP; port forwarding, UPnP and the NAT's timeouts (its 64
+ * mappings are reused oldest first); the host's own network; 802.11n (HT capabilities and operation); WPA3
  * (SAE); hidden SSIDs; retransmissions; contention (it sends when the air
  * is free of its own frames). */
 #include <stdio.h>
@@ -60,7 +72,10 @@
 #define RATE_1M      1000u
 #define LOG_CAP      4096
 
-enum { WAKE_BEACON = 1, WAKE_EAPOL = 16 }; /* WAKE_EAPOL + a station's index */
+enum { WAKE_BEACON = 1, WAKE_EAPOL = 16, WAKE_DNS = 32 }; /* + a station's or a query's index */
+#define AP_NAT 64
+#define AP_DNS 8
+#define NAT_PORT0 49152u
 #define EAPOL_TIMEOUT_PS (UINT64_C(1000) * ES_PS_PER_MS) /* hostapd's 1 s */
 #define EAPOL_TRIES 4
 
@@ -77,6 +92,22 @@ typedef struct ap_sta {
     uint8_t anonce[32], ptk[48];
     uint64_t replay, tx_pn, rx_pn;
 } ap_sta;
+
+/* a NAT mapping: a station's (proto, port or echo identifier) to the
+ * router's own port */
+typedef struct ap_nat {
+    int used, sta;
+    unsigned proto, lan_port, wan_port;
+    uint64_t last;
+} ap_nat;
+
+/* a DNS answer waiting for the resolver's round trip */
+typedef struct ap_dns {
+    int used, sta;
+    uint8_t to_ip[4];
+    uint32_t len;
+    uint8_t udp[512];
+} ap_dns;
 
 /* a frame kept for a dozing station (sta >= 0) or for the DTIM (-1) */
 typedef struct ap_kept {
@@ -107,6 +138,13 @@ typedef struct ap_state {
     uint8_t pmk[32], gtk[16]; /* WPA2's PMK from the passphrase, its group key */
     uint64_t gtk_pn, nonces;
     unsigned ip_id;
+    /* the WAN side, its NAT and DNS forwarder */
+    esk_inet_node wan;
+    int wan_attached;
+    ap_nat nat[AP_NAT];
+    unsigned next_port;
+    uint64_t nat_order;
+    ap_dns dns[AP_DNS];
     uint64_t beacons, rx_frames, tx_frames, probes;
     char log[LOG_CAP];
     size_t log_len;
@@ -670,6 +708,189 @@ static void dhcp_in(ap_state *s, ap_sta *st, const uint8_t *m, uint32_t len, es_
     }
 }
 
+static uint32_t get16(const uint8_t *p) { return (uint32_t)p[0] << 8 | p[1]; }
+
+/* the transport's port (TCP, UDP) or echo identifier (ICMP) at `t`, or -1 */
+static int nat_key(unsigned proto, const uint8_t *t, uint32_t len, int src)
+{
+    if ((proto == 6 && len >= 20) || (proto == 17 && len >= 8))
+        return (int)get16(t + (src ? 0 : 2));
+    if (proto == 1 && len >= 8 && (t[0] == 8 || t[0] == 0))
+        return (int)get16(t + 4);
+    return -1;
+}
+
+/* a packet from a station to beyond the router: out through the NAT */
+static void nat_out(ap_state *s, ap_sta *st, const uint8_t *p, uint32_t tot)
+{
+    uint8_t q[ESK_INET_MTU];
+    uint32_t hl = (uint32_t)(p[0] & 15u) * 4u;
+    unsigned proto = p[9];
+    int key = nat_key(proto, p + hl, tot - hl, 1), i, free_i = -1, old = 0;
+    ap_nat *m = NULL;
+    if (!s->wan_attached || key < 0 || tot > ESK_INET_MTU || p[8] <= 1)
+        return; /* nothing to map, or its TTL is spent */
+    for (i = 0; i < AP_NAT; i++) {
+        ap_nat *n = &s->nat[i];
+        if (n->used && n->proto == proto && n->sta == sta_index(s, st) && n->lan_port == (unsigned)key) {
+            m = n;
+            break;
+        }
+        if (!n->used && free_i < 0)
+            free_i = i;
+        if (n->used && n->last < s->nat[old].last)
+            old = i;
+    }
+    if (!m) {
+        char what[64];
+        m = &s->nat[free_i >= 0 ? free_i : old]; /* full: the oldest mapping goes */
+        m->used = 1;
+        m->proto = proto;
+        m->sta = sta_index(s, st);
+        m->lan_port = (unsigned)key;
+        m->wan_port = s->next_port;
+        s->next_port = s->next_port >= 65535u ? NAT_PORT0 : s->next_port + 1u;
+        snprintf(what, sizeof what, "%s to %u.%u.%u.%u", proto == 6 ? "tcp" : proto == 17 ? "udp" : "icmp", p[16],
+                 p[17], p[18], p[19]);
+        note(s, st->mac, what);
+    }
+    m->last = ++s->nat_order;
+    memcpy(q, p, tot);
+    memcpy(q + 12, s->wan.ip, 4);
+    q[8]--;
+    if (proto == 1) {
+        q[hl + 4] = (uint8_t)(m->wan_port >> 8);
+        q[hl + 5] = (uint8_t)m->wan_port;
+    } else {
+        q[hl] = (uint8_t)(m->wan_port >> 8);
+        q[hl + 1] = (uint8_t)m->wan_port;
+    }
+    if (esk_inet_rechecksum(q, tot))
+        (void)esk_inet_send(s->c->e, &s->wan, q, tot, esk_comp_now(s->c));
+}
+
+/* a packet from beyond for the router's WAN address: back through the NAT */
+static void wan_rx(void *ctx, const uint8_t *p, uint32_t len, es_time_t at)
+{
+    ap_state *s = (ap_state *)ctx;
+    uint8_t q[ESK_INET_MTU];
+    uint32_t hl = (uint32_t)(p[0] & 15u) * 4u, tot = get16(p + 2);
+    unsigned proto = p[9];
+    uint8_t lan_ip[4];
+    ap_sta *st;
+    int key, i;
+    if (hl < 20 || tot < hl || tot > len || tot > ESK_INET_MTU || esk_inet_csum(p, hl, 0) != 0 || p[8] <= 1)
+        return;
+    key = nat_key(proto, p + hl, tot - hl, 0);
+    for (i = 0; key >= 0 && i < AP_NAT; i++)
+        if (s->nat[i].used && s->nat[i].proto == proto && s->nat[i].wan_port == (unsigned)key)
+            break;
+    if (key < 0 || i == AP_NAT)
+        return; /* no mapping: dropped, as a NAT drops it */
+    st = &s->sta[s->nat[i].sta];
+    if (!st->used || !st->assoc || !st->leased)
+        return;
+    s->nat[i].last = ++s->nat_order;
+    lease_ip(s, st, lan_ip);
+    memcpy(q, p, tot);
+    memcpy(q + 16, lan_ip, 4);
+    q[8]--;
+    if (proto == 1) {
+        q[hl + 4] = (uint8_t)(s->nat[i].lan_port >> 8);
+        q[hl + 5] = (uint8_t)s->nat[i].lan_port;
+    } else {
+        q[hl + 2] = (uint8_t)(s->nat[i].lan_port >> 8);
+        q[hl + 3] = (uint8_t)s->nat[i].lan_port;
+    }
+    if (esk_inet_rechecksum(q, tot))
+        data_out(s, st->mac, s->bssid, 0x0800, q, tot, at);
+}
+
+/* a DNS query to the router (RFC 1035 4.1): its answer, after the round
+ * trip to the resolver */
+static void dns_in(ap_state *s, ap_sta *st, const uint8_t *ip, const uint8_t *u, uint32_t len)
+{
+    char name[256];
+    uint32_t i = 12, n = 0, qend, rlen;
+    unsigned qtype, qclass, rcode = 0, ancount = 0;
+    const esk_inet_node *host;
+    ap_dns *d = NULL;
+    uint8_t *r;
+    int k;
+    unsigned sport;
+    if (len < 8u + 12u)
+        return;
+    sport = get16(u);
+    u += 8;
+    len -= 8;
+    if ((u[2] & 0x80u) || ((u[2] >> 3) & 15u) != 0 || get16(u + 4) != 1)
+        return; /* not a standard query of one question */
+    while (i < len && u[i]) {
+        uint32_t l = u[i];
+        if (l > 63 || i + 1 + l > len || n + l + 1 >= sizeof name)
+            return;
+        if (n)
+            name[n++] = '.';
+        memcpy(name + n, u + i + 1, l);
+        n += l;
+        i += 1 + l;
+    }
+    name[n] = 0;
+    if (i + 5 > len)
+        return;
+    qend = i + 5;
+    qtype = get16(u + i + 1);
+    qclass = get16(u + i + 3);
+    host = qclass == 1 ? esk_inet_lookup(s->c->e, name) : NULL;
+    if (!host)
+        rcode = 3; /* NXDOMAIN */
+    else if (qtype == 1)
+        ancount = 1;
+    for (k = 0; k < AP_DNS; k++)
+        if (!s->dns[k].used) {
+            d = &s->dns[k];
+            break;
+        }
+    if (!d || qend + 16u + 8u > sizeof d->udp)
+        return; /* busy: the station asks again */
+    r = d->udp + 8;
+    memcpy(r, u, qend);
+    r[2] = (uint8_t)(0x80u | (u[2] & 0x01u)); /* a response; RD as asked */
+    r[3] = (uint8_t)(0x80u | rcode);          /* RA */
+    r[6] = 0;
+    r[7] = (uint8_t)ancount;
+    r[8] = r[9] = r[10] = r[11] = 0;
+    rlen = qend;
+    if (ancount) {
+        static const uint8_t a[] = { 0xC0, 12, 0, 1, 0, 1, 0, 0, 0x01, 0x2C, 0, 4 }; /* the name, A, IN, 300 s */
+        memcpy(r + rlen, a, sizeof a);
+        rlen += (uint32_t)sizeof a;
+        memcpy(r + rlen, host->ip, 4);
+        rlen += 4;
+    }
+    d->udp[0] = 0;
+    d->udp[1] = 53;
+    d->udp[2] = (uint8_t)(sport >> 8); /* to the asker's port */
+    d->udp[3] = (uint8_t)sport;
+    d->udp[4] = (uint8_t)((rlen + 8u) >> 8);
+    d->udp[5] = (uint8_t)(rlen + 8u);
+    d->udp[6] = d->udp[7] = 0;
+    d->len = rlen + 8u;
+    d->used = 1;
+    d->sta = sta_index(s, st);
+    memcpy(d->to_ip, ip, 4);
+    {
+        char what[300];
+        if (host)
+            snprintf(what, sizeof what, "dns %s: %u.%u.%u.%u", name, host->ip[0], host->ip[1], host->ip[2],
+                     host->ip[3]);
+        else
+            snprintf(what, sizeof what, "dns %s: NXDOMAIN", name);
+        note(s, st->mac, what);
+    }
+    esk_comp_wake_at(s->c, esk_comp_now(s->c) + 2u * s->wan.latency + ES_PS_PER_MS, (uint32_t)(WAKE_DNS + k));
+}
+
 /* an IPv4 packet for the router */
 static void ip_in(ap_state *s, ap_sta *st, const uint8_t *p, uint32_t len, es_time_t at)
 {
@@ -681,11 +902,17 @@ static void ip_in(ap_state *s, ap_sta *st, const uint8_t *p, uint32_t len, es_ti
     tot = (uint32_t)p[2] << 8 | p[3];
     if (hl < 20 || tot < hl || tot > len || csum(p, hl, 0) != 0)
         return;
+    if (memcmp(p + 16, s->ip, 4) && memcmp(p + 16, all, 4) && memcmp(p + 16, s->ip, 3)) {
+        nat_out(s, st, p, tot); /* beyond the router */
+        return;
+    }
     if (p[9] == 17 && tot >= hl + 8u) { /* UDP */
         const uint8_t *u = p + hl;
         unsigned dport = (unsigned)u[2] << 8 | u[3];
         if (dport == 67 && (!memcmp(p + 16, all, 4) || !memcmp(p + 16, s->ip, 4)))
             dhcp_in(s, st, u + 8, tot - hl - 8u, at);
+        else if (dport == 53 && !memcmp(p + 16, s->ip, 4) && hl == 20)
+            dns_in(s, st, p + 12, u, tot - hl);
         return;
     }
     if (p[9] == 1 && !memcmp(p + 16, s->ip, 4) && tot >= hl + 8u && p[hl] == 8) { /* an echo request */
@@ -1055,6 +1282,31 @@ static es_status ap_create(esk_comp *c)
     if (esk_air_attach(c->e, &s->node) != ES_OK)
         return ES_ENOMEM;
     s->attached = 1;
+    {
+        /* the WAN side: its address from the ISP (a carrier-grade NAT's
+         * range, from the BSSID, by default) */
+        unsigned a[4];
+        char def[20];
+        const char *wan;
+        double wl = 5;
+        snprintf(def, sizeof def, "100.64.%u.%u", s->bssid[4], s->bssid[5] ? s->bssid[5] : 1u);
+        esk_comp_param_double(c, "wan_latency", &wl);
+        wan = esk_comp_param_str(c, "wan_ip", "");
+        if (sscanf(wan[0] ? wan : def, "%u.%u.%u.%u", &a[0], &a[1], &a[2], &a[3]) != 4 ||
+            a[0] > 255 || a[1] > 255 || a[2] > 255 || a[3] > 255 || wl < 0 || wl > 2000) {
+            esk_comp_diag(c, ES_SEV_ERROR, "wifi_ap.wan", "a dotted IPv4 WAN address and a latency of 0 to 2000 ms");
+            return ES_ESCHEMA;
+        }
+        for (i = 0; i < 4; i++)
+            s->wan.ip[i] = (uint8_t)a[i];
+        s->wan.ctx = s;
+        s->wan.name = NULL;
+        s->wan.latency = (es_time_t)(wl * (double)ES_PS_PER_MS);
+        s->wan.rx = wan_rx;
+        if (esk_inet_attach(c->e, &s->wan) != ES_OK)
+            return ES_ENOMEM;
+        s->wan_attached = 1;
+    }
     return ES_OK;
 }
 
@@ -1063,8 +1315,10 @@ static void ap_destroy(esk_comp *c)
     ap_state *s = (ap_state *)c->state;
     if (s && s->attached)
         esk_air_detach(c->e, &s->node);
+    if (s && s->wan_attached)
+        esk_inet_detach(c->e, &s->wan);
     if (s)
-        s->attached = 0;
+        s->attached = s->wan_attached = 0;
 }
 
 static void ap_reset(esk_comp *c)
@@ -1074,6 +1328,10 @@ static void ap_reset(esk_comp *c)
     memset(s->sta, 0, sizeof s->sta);
     memset(s->kept, 0, sizeof s->kept);
     s->kept_order = 0;
+    memset(s->nat, 0, sizeof s->nat);
+    memset(s->dns, 0, sizeof s->dns);
+    s->nat_order = 0;
+    s->next_port = NAT_PORT0;
     s->ip_id = 0;
     s->nonces = 0;
     s->gtk_pn = 0;
@@ -1109,6 +1367,14 @@ static void ap_time(esk_comp *c, uint32_t token)
             eapol_msg1(s, st, now);
         else
             eapol_msg3(s, st, now);
+        return;
+    }
+    if (token >= WAKE_DNS && token < WAKE_DNS + AP_DNS) {
+        ap_dns *d = &s->dns[token - WAKE_DNS];
+        ap_sta *st = d->used ? &s->sta[d->sta] : NULL;
+        if (st && st->used && st->assoc)
+            ip_out(s, st->mac, d->to_ip, 17, d->udp, d->len, esk_comp_now(c));
+        d->used = 0;
         return;
     }
     if (token != WAKE_BEACON)

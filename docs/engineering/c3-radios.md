@@ -167,8 +167,19 @@ Each step lands usable and green, as in the RTOS boards plan.
    the AES accelerator, which ESP-IDF's wpa_supplicant uses for PBKDF2 and
    the key unwrap. `station` as it ships (WPA2-PSK) joins and gets its
    address. Arduino-ESP32's `WiFiScan` and `WiFiClientConnect` run as
-   they ship. Next: the network beyond the router (DNS, TCP and UDP to the
-   host) for `http_request`, then step 5.
+   they ship. And the network beyond the router: the internet a router's
+   WAN port reaches (`core/engine/inet.h`: IPv4 packets between the
+   routers' WAN sides and the hosts out there, after each link's
+   latency; names resolved as the internet's DNS would), the access
+   point's NAT (TCP and UDP ports and ICMP echo identifiers mapped to its
+   own on its WAN address) and DNS forwarder (A queries answered after a
+   round trip to the ISP's resolver), and `emblink/web_server`, a web
+   server there with its own TCP (the handshake, MSS, window,
+   retransmission, FIN, RST) and HTTP/1.x. ESP-IDF's `http_request` and
+   Arduino-ESP32's `BasicHttpClient` resolve example.com, connect and
+   print its page, unmodified. It differs inside in one way the board
+   cannot see: the WAN is a delay, not links and routers. Not yet: the
+   host's own network (a NAT onto the host's sockets), TLS, IPv6.
 5. **The rest of Wi-Fi.** The access point mode with a station part and
    with another board; `http_request`; ESP-NOW between two boards; power
    save and the radio's current; Arduino-ESP32's Wi-Fi sketches.

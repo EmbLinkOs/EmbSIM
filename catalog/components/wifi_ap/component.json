@@ -2,10 +2,10 @@
   "schema_version": 1,
   "kind": "component",
   "id": "emblink/wifi_ap",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "name": "Wi-Fi access point",
   "category": "instruments",
-  "description": "A 2.4 GHz 802.11b/g access point with a router behind it, as a home router is seen from a station across the room: it beacons its SSID every beacon interval, answers probe requests, authenticates (open system) and associates stations, runs WPA2-Personal's 4-way handshake and CCMP, leases them addresses by DHCP, answers ARP and pings for its own address, relays frames between its stations and keeps frames for dozing ones. It reaches the circuit only through the air; its signal reaches a board at the free-space path loss over their distance on the bench.",
+  "description": "A 2.4 GHz 802.11b/g access point with a router behind it, as a home router is seen from a station across the room: it beacons its SSID every beacon interval, answers probe requests, authenticates (open system) and associates stations, runs WPA2-Personal's 4-way handshake and CCMP, leases them addresses by DHCP, answers ARP and pings for its own address, relays frames between its stations and keeps frames for dozing ones; its router reaches the internet beyond (emblink/web_server) through a NAT on its WAN address and answers DNS for its stations. It reaches the circuit only through the air; its signal reaches a board at the free-space path loss over their distance on the bench.",
   "keywords": [
     "wifi",
     "wi-fi",
@@ -57,6 +57,21 @@
       "default": "192.168.1.1",
       "doc": "The router's address on its /24 network; stations lease .100 onwards by DHCP"
     },
+    "wan_ip": {
+      "type": "string",
+      "default": "",
+      "doc": "Its WAN address from the ISP; empty for one in 100.64.0.0/10 from its BSSID",
+      "advanced": true
+    },
+    "wan_latency": {
+      "type": "number",
+      "unit": "ms",
+      "default": 5,
+      "min": 0,
+      "max": 2000,
+      "doc": "Its WAN link's one-way delay to the internet's core",
+      "advanced": true
+    },
     "bssid": {
       "type": "string",
       "default": "",
@@ -98,7 +113,7 @@
     {
       "name": "log",
       "type": "string",
-      "doc": "What its stations did: authenticated, associated (with the AID), leased an address, disassociated, deauthenticated"
+      "doc": "What its stations did: authenticated, associated (with the AID), leased an address, disassociated, deauthenticated; the names they resolved and the addresses beyond they reached"
     }
   ],
   "model": {
@@ -115,15 +130,15 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Beacons (TSF timestamp, interval, ESS and privacy capabilities, SSID, rates, DS parameter set, TIM with the AIDs it keeps frames for, ERP, the WPA2-Personal RSN element with a password) every beacon interval at 1 Mbit/s, every one a DTIM; probe responses to wildcard and matching probe requests; open system authentication; association and reassociation with AIDs from 1; deauthentication and disassociation (IEEE 802.11-2020 9.3.3, 11.3); WPA2-Personal: the PSK from the passphrase and SSID, the 4-way handshake (the PTK from both nonces and addresses, the MICs, the GTK wrapped under the KEK in message 3, message 1 or 3 sent again after a second without an answer, four times), then CCMP on every data frame, pairwise to a station and group (key ID 1) to all, the PN checked against replay (12.7.6, 12.5.3); data frames with 802.2 LLC/SNAP to and from its stations (unicast at 54 Mbit/s, group at 1 Mbit/s); its stations' power management: frames kept for a dozing station, announced in the TIM, sent on a PS-Poll with More Data or when it wakes, group frames after the DTIM beacon (11.2.3); the router behind it: ARP for its address, ICMP echo, a DHCP server (RFC 2131, 2132: DISCOVER, OFFER, REQUEST, ACK, NAK, DECLINE, RELEASE; mask, router, DNS server, broadcast address, a day's lease) leasing .100 onwards; relaying frames between its stations. Frames carry their airtime and reach stations at the free-space path loss over the bench distance (engine/air.h). ESP-IDF's wifi/getting_started/station joins it, open or WPA2-PSK, and gets its address.",
+      "claims": "Beacons (TSF timestamp, interval, ESS and privacy capabilities, SSID, rates, DS parameter set, TIM with the AIDs it keeps frames for, ERP, the WPA2-Personal RSN element with a password) every beacon interval at 1 Mbit/s, every one a DTIM; probe responses to wildcard and matching probe requests; open system authentication; association and reassociation with AIDs from 1; deauthentication and disassociation (IEEE 802.11-2020 9.3.3, 11.3); WPA2-Personal: the PSK from the passphrase and SSID, the 4-way handshake (the PTK from both nonces and addresses, the MICs, the GTK wrapped under the KEK in message 3, message 1 or 3 sent again after a second without an answer, four times), then CCMP on every data frame, pairwise to a station and group (key ID 1) to all, the PN checked against replay (12.7.6, 12.5.3); data frames with 802.2 LLC/SNAP to and from its stations (unicast at 54 Mbit/s, group at 1 Mbit/s); its stations' power management: frames kept for a dozing station, announced in the TIM, sent on a PS-Poll with More Data or when it wakes, group frames after the DTIM beacon (11.2.3); the router behind it: ARP for its address, ICMP echo, a DHCP server (RFC 2131, 2132: DISCOVER, OFFER, REQUEST, ACK, NAK, DECLINE, RELEASE; mask, router, DNS server, broadcast address, a day's lease) leasing .100 onwards; relaying frames between its stations; a NAT to the internet beyond (RFC 3022: TCP and UDP ports and ICMP echo identifiers mapped to its own from 49152, its WAN address as the source, the TTL lowered, the answers back to the station; 64 mappings, the oldest reused) and a DNS forwarder (RFC 1035: A queries answered from the internet's names after twice its WAN latency, TTL 300 s, or NXDOMAIN). Frames carry their airtime and reach stations at the free-space path loss over the bench distance (engine/air.h). ESP-IDF's wifi/getting_started/station joins it, open or WPA2-PSK, and gets its address; its protocols/http_request resolves example.com and fetches its page through it.",
       "omissions": [
         "group key rekeying, PMKSA caching, WPA2-Enterprise, TKIP and protected management frames",
-        "the network beyond the router: DNS answers, TCP and UDP to the host",
         "802.11n (HT capabilities and operation), WMM and QoS",
         "WPA3 (SAE)",
         "hidden SSIDs",
         "retransmissions and contention",
-        "more than 8 stations, more than 32 frames kept for dozing ones (the oldest is dropped)"
+        "more than 8 stations, more than 32 frames kept for dozing ones (the oldest is dropped)",
+        "DNS beyond A records (AAAA, CNAME, MX answers) and over TCP; the NAT's timeouts, port forwarding and UPnP; the host's own network"
       ]
     },
     "timed": {

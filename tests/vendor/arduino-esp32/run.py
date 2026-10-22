@@ -49,6 +49,7 @@ EXAMPLES = {
     "WiFiClientConnect": ("core", "WiFi/examples/WiFiClientConnect"),
     "BLE_Server": ("core", "BLE/examples/Server"),
     "BLE_iBeacon": ("core", "BLE/examples/iBeacon"),
+    "BasicHttpClient": ("core", "HTTPClient/examples/BasicHttpClient"),
 }
 
 

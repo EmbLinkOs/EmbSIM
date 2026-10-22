@@ -14,7 +14,7 @@ toolchains.
 | `pico-sdk/` | The Raspberry Pi Pico SDK | `emblink/pico` |
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
 | `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |
-| `esp-idf/` | ESP-IDF v5.4's own examples (hello_world, blink, LEDC, the temperature sensor, the ADC, an I2C EEPROM, the general-purpose timer, a UART echo, FreeRTOS's run-time statistics; Wi-Fi's scan, station, softAP with a station and ESP-NOW; BLE's NimBLE bleprph and blecent and Bluedroid's ble_ibeacon, some on two boards), built by `idf.py` into a flash image | `emblink/esp32c3_devkitm1` |
-| `arduino-esp32/` | Arduino-ESP32 3.2.0 through arduino-cli, as the IDE builds for "ESP32C3 Dev Module": the IDE's Blink, DigitalReadSerial and Fade, the core's GetChipID, RepeatTimer, WiFiScan and WiFiClientConnect, the BLE library's Server and iBeacon | `emblink/esp32c3_devkitm1` |
+| `esp-idf/` | ESP-IDF v5.4's own examples (hello_world, blink, LEDC, the temperature sensor, the ADC, an I2C EEPROM, the general-purpose timer, a UART echo, FreeRTOS's run-time statistics; Wi-Fi's scan, station, softAP with a station, ESP-NOW and http_request; BLE's NimBLE bleprph and blecent and Bluedroid's ble_ibeacon, some on two boards), built by `idf.py` into a flash image | `emblink/esp32c3_devkitm1` |
+| `arduino-esp32/` | Arduino-ESP32 3.2.0 through arduino-cli, as the IDE builds for "ESP32C3 Dev Module": the IDE's Blink, DigitalReadSerial and Fade, the core's GetChipID, RepeatTimer, WiFiScan and WiFiClientConnect, the BLE library's Server and iBeacon, HTTPClient's BasicHttpClient | `emblink/esp32c3_devkitm1` |
 
 `vendor_run.py` is what their runners share.

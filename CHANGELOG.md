@@ -15,6 +15,26 @@ versions follow semantic versioning. There is no release yet.
   a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
   advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
   hosts, NimBLE and Bluedroid, run on the controller.
+- **The network beyond the router** (`core/engine/inet.h`, new): the
+  internet a router's WAN port reaches. IPv4 packets go between the
+  routers' WAN sides and the hosts out there after each link's latency;
+  a name resolves to the host that has it.
+  - `emblink/wifi_ap`'s router has a NAT (TCP and UDP ports and ICMP echo
+    identifiers mapped to its own from 49152 on its WAN address, `wan_ip`,
+    `wan_latency`) and a DNS forwarder at its address, the DNS server its
+    DHCP gives (A queries answered after a round trip to the ISP's
+    resolver, or NXDOMAIN). Its log has the names resolved and the
+    addresses reached.
+  - `emblink/web_server` (new): a web server on the internet, by its DNS
+    name at its address. Its TCP answers SYN with SYN-ACK and its MSS,
+    follows the client's MSS and window, acknowledges in order, sends the
+    response then FIN, retransmits after 1 s (doubling, five times),
+    keeps TIME-WAIT and answers a stray segment with RST. Its HTTP/1.x
+    serves GET and HEAD of its path (and its index.html), 404 and 501
+    otherwise, and it answers pings.
+  - ESP-IDF's `protocols/http_request` (`http_request`, 15 assertions)
+    and Arduino-ESP32's `HTTPClient/BasicHttpClient` (7 assertions)
+    resolve example.com, connect and print its page, unmodified.
 - **The softAP serves a station on another board** (`wifi_softap`, 15
   assertions, both examples unmodified): WPA3's SAE, the 4-way handshake
   and DHCP, a 40 MHz BSS on channel 1.
