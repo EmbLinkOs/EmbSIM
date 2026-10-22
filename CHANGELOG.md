@@ -15,6 +15,27 @@ versions follow semantic versioning. There is no release yet.
   a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
   advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
   hosts, NimBLE and Bluedroid, run on the controller.
+- **The air as phones and sniffers see it** (the ESP32-C3 radios plan,
+  step 7):
+  - `emblink/wifi_scanner` (new), a phone's Wi-Fi analyzer: it scans
+    channels 1 to 13 as a phone does (40 ms each, a probe request for any
+    SSID on each, every 10 s; or passively) and lists the networks it
+    hears, the strongest first: SSID (hidden ones' empty), BSSID, channel,
+    security from the Privacy bit, the RSN element's AKM suites and WPA's
+    vendor element, RSSI.
+  - `emblink/air_sniffer` (new), a sniffer for Wireshark: a Wi-Fi adapter
+    in monitor mode on one channel (every frame with its FCS) or a BLE
+    sniffer on one advertising channel (the access address, the PDU and
+    its CRC-24), the snapshot length as tcpdump's -s, the last 64 frames
+    in its `capture` output.
+  - The workbench's Air panel (Run, the Air tab): the phones' networks and
+    devices with signal bars and an iBeacon's fields; the sniffer's frames
+    gathered as the session reports them and named as Wireshark's packet
+    list names them (management frames by SSID, EAPOL's messages 1 to 4,
+    ARP, IPv4 with its ports, BLE PDUs with their addresses and names); a
+    frame's bytes; Save .pcap (radiotap, or
+    LINKTYPE_BLUETOOTH_LE_LL_WITH_PHDR, nanosecond timestamps). A phone or
+    a sniffer can be added from the panel.
 - **The network beyond the router** (`core/engine/inet.h`, new): the
   internet a router's WAN port reaches. IPv4 packets go between the
   routers' WAN sides and the hosts out there after each link's latency;

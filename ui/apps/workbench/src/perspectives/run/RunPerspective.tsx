@@ -16,6 +16,7 @@ import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useSession } from '../../stores/session';
 import { BoardPanel } from '../BoardPanel';
 import { WorldPanel } from '../WorldPanel';
+import { AirPanel } from './AirPanel';
 import { ControlsPanel } from './ControlsPanel';
 import { MetersPanel } from './MetersPanel';
 import { useHostPort } from './useHostPort';
@@ -36,7 +37,7 @@ export function RunPerspective() {
   const serialTarget = inst.serialTarget && serialTargets.includes(inst.serialTarget) ? inst.serialTarget : (serialTargets[0] ?? null);
   const hostPort = useHostPort(serialTarget);
   const { toast } = useToast();
-  const [bottomTab, setBottomTab] = useState<'serial' | 'diagnostics' | 'meters' | 'schematic'>('meters');
+  const [bottomTab, setBottomTab] = useState<'serial' | 'diagnostics' | 'meters' | 'schematic' | 'air'>('meters');
 
   const win = followWindow(inst.window, now);
   const scopeTraces = useMemo<ScopeTrace[]>(
@@ -139,7 +140,7 @@ export function RunPerspective() {
     ) },
     {
       id: 'bottom',
-      title: { serial: 'Serial terminal', diagnostics: 'Diagnostics', meters: 'Meters', schematic: 'Schematic' }[bottomTab],
+      title: { serial: 'Serial terminal', diagnostics: 'Diagnostics', meters: 'Meters', schematic: 'Schematic', air: 'The air' }[bottomTab],
       flush: true,
       weight: 1,
       minSize: 140,
@@ -181,6 +182,7 @@ export function RunPerspective() {
                 onHostPort={hostPort.toggle}
               />
             ) },
+            { value: 'air', label: 'Air', content: <AirPanel /> },
             { value: 'diagnostics', label: 'Diagnostics', content: <DiagnosticsPanel /> },
           ]}
         />

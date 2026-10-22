@@ -138,13 +138,13 @@ static es_status sn_create(esk_comp *c)
 {
     sn_state *s = (sn_state *)c->state;
     const char *radio = esk_comp_param_str(c, "radio", "wifi");
-    double channel = -1, snaplen = 256;
+    double channel = 0, snaplen = 256; /* 0: the radio's usual channel */
     s->c = c;
     esk_comp_param_double(c, "channel", &channel);
     esk_comp_param_double(c, "snaplen", &snaplen);
     if (!strcmp(radio, "ble")) {
         s->kind = ESK_AIR_BLE;
-        if (channel < 0)
+        if (channel <= 0)
             channel = 37;
         if (channel != 37 && channel != 38 && channel != 39) {
             esk_comp_diag(c, ES_SEV_ERROR, "air_sniffer.channel", "a BLE sniffer listens on advertising channel 37, 38 or 39");
@@ -153,7 +153,7 @@ static es_status sn_create(esk_comp *c)
         s->mhz = channel == 37 ? 2402u : channel == 38 ? 2426u : 2480u;
     } else if (!strcmp(radio, "wifi")) {
         s->kind = ESK_AIR_WIFI;
-        if (channel < 0)
+        if (channel <= 0)
             channel = 6;
         if (channel < 1 || channel > 14 || channel != (double)(int)channel) {
             esk_comp_diag(c, ES_SEV_ERROR, "air_sniffer.channel", "a Wi-Fi sniffer listens on a channel from 1 to 14");

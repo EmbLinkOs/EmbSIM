@@ -5,6 +5,26 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The air, as phones and sniffers see it (2026-10-22)
+
+The ESP32-C3 radios plan, step 7, and the network beyond the router. On
+the left, the DevKitM-1 runs ESP-IDF's `protocols/http_request` as it
+ships: a phone's Wi-Fi analyzer beside the bench lists the home router
+and the neighbour's, and a sniffer on channel 6 captures the board's
+probe, authentication, association, the WPA2 4-way handshake (EAPOL's
+messages 1 to 4) and then protected data, as Wireshark would without the
+key. On the right, two DevKitM-1s run NimBLE's `bleprph` and Bluedroid's
+`ble_ibeacon`: the phone's scanner lists both (the iBeacon's UUID, major
+and minor), and the sniffer on channel 37 captures their advertising, the
+phone's SCAN_REQ and the SCAN_RSP 150 us later. Each capture is saved as
+a pcap file Wireshark opens.
+
+| Wi-Fi | Bluetooth LE |
+|---|---|
+| ![http_request associating and keying, seen by a phone and a sniffer](radio/air-wifi.png) | ![bleprph and an iBeacon advertising, a phone scanning them](radio/air-ble.png) |
+
+![http_request fetching example.com through the router: the DNS lookup, the socket and the page](radio/http-request-serial.png)
+
 ## The ESP32-C3-DevKitM-1 qualified (2026-10-22)
 
 The DevKitM-1's artwork checked against Espressif's V1.0 dimension

@@ -300,8 +300,26 @@ Each step lands usable and green, as in the RTOS boards plan.
    which scans actively (control structure format 9: T_IFS after a
    scannable PDU the SCAN_REQ of its transmit descriptor, whose header the
    controller leaves there, with the backoff), with the RSSI -21 dBm its
-   controller reports 30 cm away. Next: the workbench's air panel (step 7)
-   and the rest of Wi-Fi (step 5).
+   controller reports 30 cm away. Next: the rest of Wi-Fi (step 5).
 7. **The workbench.** The air as a phone and a scanner see it (the
    access points with their RSSI, BLE devices and their data), the
    capture, the radio's current on the power instruments.
+   Done but the current: the receivers are parts on the bench, as they
+   are in a lab, so what each lists is what it hears where it stands.
+   `emblink/wifi_scanner` is a phone's Wi-Fi analyzer (channels 1 to 13
+   in turn, a probe request on each or passively, each network's SSID,
+   BSSID, channel, security and RSSI); `emblink/ble_scanner` the phone's
+   BLE scanner; `emblink/air_sniffer` a Wi-Fi adapter in monitor mode on
+   one channel or an nRF Sniffer on one advertising channel, taking every
+   frame it hears with its FCS, or the access address and CRC-24. The
+   Run perspective's Air tab lists the phones' networks and devices with
+   their bars and the sniffer's frames as Wireshark's packet list names
+   them, shows a frame's bytes and saves the capture as pcap for
+   Wireshark (radiotap; LINKTYPE_BLUETOOTH_LE_LL_WITH_PHDR), which scapy
+   reads with every checksum right. `http_request` is seen associating,
+   keying (EAPOL's four messages) and sending protected data; `bleprph`
+   and `ble_ibeacon` advertising on two boards, the phone's SCAN_REQ and
+   the SCAN_RSP T_IFS later. It differs inside in one way: the air
+   carries ACKs implicitly, so the capture has none. Not yet: the
+   radio's current on the power instruments, following a BLE
+   connection.

@@ -30,10 +30,10 @@
     },
     "channel": {
       "type": "integer",
-      "default": 6,
-      "min": 1,
+      "min": 0,
       "max": 39,
-      "doc": "Wi-Fi: the channel, 1 to 14; BLE: the advertising channel, 37, 38 or 39"
+      "doc": "Wi-Fi: the channel, 1 to 14; BLE: the advertising channel, 37, 38 or 39; 0 for the usual one (6 for Wi-Fi, 37 for BLE)",
+      "default": 0
     },
     "snaplen": {
       "type": "integer",
