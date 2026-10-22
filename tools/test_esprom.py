@@ -3,7 +3,9 @@
 """esprom.py on a small ELF made here: the loadable segments at their
 physical addresses inside the ROM, the ones outside left out, and a section
 no segment loads placed where the ROM's copy table says its bytes come
-from, and words outside every section given by number or by symbol."""
+from, a section linked at the ROM's address on another bus placed through
+its alias, and words outside every section given by number or by
+symbol."""
 import struct
 import sys
 import unittest
@@ -64,6 +66,17 @@ class EspromTest(unittest.TestCase):
         img = esprom.build(e, BASE, 0x100, (BASE + 0x40, BASE + 0x50))
         self.assertEqual(img[0x84:0x88], b"DATA")
         self.assertEqual(esprom.build(e, BASE, 0x100)[0x84:0x88], bytes(4))
+
+    def test_alias_places_sections_no_segment_loads(self):
+        # the ROM's last 0x80 bytes seen at 0x3FF00000 on the data bus (the
+        # ESP32-C3's .rodata.interface: pointers no segment loads)
+        e = elf([(BASE, b"CODE")], [(0x3FF00010, b"PTR!"), (0x3FC80000, b"RAM?")])
+        img = esprom.build(e, BASE, 0x100, aliases=[(0x3FF00000, BASE + 0x80, 0x80)])
+        self.assertEqual(img[0x90:0x94], b"PTR!")
+        self.assertNotIn(b"RAM?", img)  # a section outside the alias is not placed
+        self.assertEqual(esprom.build(e, BASE, 0x100)[0x90:0x94], bytes(4))
+        with self.assertRaises(SystemExit):  # an alias whose bytes fall outside the image
+            esprom.build(e, BASE, 0x100, aliases=[(0x3FF00000, BASE + 0xF0, 0x80)])
 
     def test_words_by_number_and_symbol(self):
         e = elf([(BASE, b"CODE")], [], [("ets_rom_layout", 0x3FF1BE3C)])

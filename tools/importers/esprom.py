@@ -13,7 +13,11 @@ initial values are in sections no segment loads (the ESP32-C3's
 .data.interface pointers): --data-table START:END names the ROM's own copy
 table, entries of {destination, destination end, source, 0}, and each
 section with bytes that falls in a destination range is placed at its
-source. Words the mask holds outside every section are given with --word
+source. Some read-only sections are linked at the ROM's address on a
+second bus and no segment loads them either (the ESP32-C3's
+.rodata.interface, at 0x3FF1EE3C on the data bus: the Wi-Fi and Bluetooth
+code's pointers and constant tables): --alias VADDR=PADDR:SIZE places each
+section with bytes in VADDR's SIZE bytes at the same offset from PADDR. Words the mask holds outside every section are given with --word
 ADDRESS=VALUE, the value a number or the address of a symbol of the ELF
 (the ESP32-C3's ets_rom_layout_p, ROM1's last word, which ESP-IDF's ROM
 linker script places at 0x3FF1FFFC and reads as a pointer to the ROM's
@@ -75,12 +79,19 @@ def symbol(elf: bytes, name: str) -> int:
     raise SystemExit(f"esprom: no symbol {name}")
 
 
-def build(elf: bytes, base: int, size: int, table=None, words=()) -> bytes:
+def build(elf: bytes, base: int, size: int, table=None, words=(), aliases=()) -> bytes:
     img = bytearray(size)
     for paddr, data in segments(elf):
         if paddr < base or paddr + len(data) > base + size:
             continue  # not in the ROM (a debugger's view of RAM)
         img[paddr - base:paddr - base + len(data)] = data
+    for vaddr, paddr, length in aliases:
+        for addr, data in sections(elf):
+            if vaddr <= addr and addr + len(data) <= vaddr + length:
+                o = paddr + (addr - vaddr) - base
+                if o < 0 or o + len(data) > size:
+                    raise SystemExit(f"esprom: section at 0x{addr:08x} falls outside the image")
+                img[o:o + len(data)] = data
     if table:
         start, end = table
         entries = [struct.unpack_from("<3I", img, o - base) for o in range(start, end, 16)]
@@ -107,8 +118,17 @@ def main(argv=None) -> int:
                     help="the ROM's copy table of its RAM variables' initial values")
     ap.add_argument("--word", action="append", default=[], metavar="ADDRESS=VALUE",
                     help="a word outside every section: a number or a symbol's address")
+    ap.add_argument("--alias", action="append", default=[], metavar="VADDR=PADDR:SIZE",
+                    help="the ROM seen at VADDR on another bus: its sections are placed from PADDR")
     ap.add_argument("-o", "--output", type=Path, required=True)
     args = ap.parse_args(argv)
+    aliases = []
+    for a in args.alias:
+        v, _, rest = a.partition("=")
+        p, _, n = rest.partition(":")
+        if not n:
+            raise SystemExit(f"esprom: --alias {a}: VADDR=PADDR:SIZE")
+        aliases.append((int(v, 0), int(p, 0), int(n, 0)))
     table = tuple(int(x, 0) for x in args.data_table.split(":")) if args.data_table else None
     words = []
     for w in args.word:
@@ -116,7 +136,7 @@ def main(argv=None) -> int:
         if not value:
             raise SystemExit(f"esprom: --word {w}: ADDRESS=VALUE")
         words.append((int(addr, 0), value))
-    img = build(args.elf.read_bytes(), args.base, args.size, table, words)
+    img = build(args.elf.read_bytes(), args.base, args.size, table, words, aliases)
     args.output.write_bytes(img)
     print(f"{args.output}: {len(img)} bytes, sha256 {hashlib.sha256(img).hexdigest()}")
     return 0

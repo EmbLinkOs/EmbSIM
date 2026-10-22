@@ -32,9 +32,9 @@
       "base": "0x40000000",
       "size": "384K",
       "kind": "rom",
-      "doc": "Internal ROM0 and ROM1 on the instruction bus (TRM table 3.3-1): the boot ROM, chip revision v0.3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x60000 --data-table 0x40059200:0x40059400, the ROM's copy table of its RAM variables; --word 0x4005FFFC=ets_rom_layout, ROM1's last word, the pointer ESP-IDF's ROM linker script names ets_rom_layout_p at 0x3FF1FFFC, to the ROM's ets_rom_layout, which no section of the ELF holds) from Espressif's esp32c3_rev3_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). Bytes no segment of the ELF covers read as zeros",
+      "doc": "Internal ROM0 and ROM1 on the instruction bus (TRM table 3.3-1): the boot ROM, chip revision v0.3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x60000 --data-table 0x40059200:0x40059400, the ROM's copy table of its RAM variables; --word 0x4005FFFC=ets_rom_layout, ROM1's last word, the pointer ESP-IDF's ROM linker script names ets_rom_layout_p at 0x3FF1FFFC, to the ROM's ets_rom_layout, which no section of the ELF holds; --alias 0x3FF00000=0x40040000:0x20000, ROM1 as the data bus sees it, which places the ELF's .rodata.interface at 0x3FF1EE3C, the Wi-Fi and Bluetooth code's pointers and constant tables, which no segment loads) from Espressif's esp32c3_rev3_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). Bytes no segment of the ELF covers read as zeros",
       "file": "rom.bin",
-      "sha256": "536475fbec909fab6657e8633717c737d1b2c034029373fc0452cdba9b2a92e9"
+      "sha256": "3a69ac75662367dc99fbd5b8ddf265515b6288e79e51e4c4168c597aced7b79d"
     },
     {
       "name": "rom1_data",
