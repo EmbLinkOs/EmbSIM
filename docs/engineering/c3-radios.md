@@ -181,6 +181,21 @@ Each step lands usable and green, as in the RTOS boards plan.
    random number at each read. The two chips draw their own numbers
    (RND_DATA too is seeded by the chip's MAC), so their magics differ as
    on real boards.
+   And the access point: `softAP` and `station` as they ship (both set
+   for myssid) on two boards. The access point stalled in its start,
+   waiting on the RSA accelerator, which WPA3's SAE uses for its elliptic
+   curves (`rsa.c`: modular products and powers by Montgomery
+   multiplication with the r and M' the driver gives, products); its
+   interrupt then never came, because the AES, SHA and RSA models had the
+   interrupt sources of ESP-IDF's enumeration miscounted (they are 47 to
+   49; 50 to 53 are the CPUs' own). The access point runs a 40 MHz BSS:
+   the RF PLL at the pair's centre, and the MAC's +0x400 bits 1:0
+   (`rom_mac_tx_chan_offset`: 3 the secondary above, 1 below) put the
+   frames on the primary channel, where a 20 MHz station hears them. Its
+   frames to the station are encrypted under the key entry the PLCP word
+   names (bits 21:17: the access point's stations from 8). The station
+   authenticates by SAE, associates, completes the 4-way handshake and
+   leases 192.168.4.2 from the access point's DHCP server.
 6. **Bluetooth LE.** The BT baseband, the RW BLE core and its exchange
    memory as ESP-IDF's controller drives them; the BLE air (advertising
    channels, connection events, the PHYs); BLE peer parts (a scanner, a

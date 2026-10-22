@@ -15,6 +15,25 @@ versions follow semantic versioning. There is no release yet.
   a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
   advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
   hosts, NimBLE and Bluedroid, run on the controller.
+- **The softAP serves a station on another board** (`wifi_softap`, 15
+  assertions, both examples unmodified): WPA3's SAE, the 4-way handshake
+  and DHCP, a 40 MHz BSS on channel 1.
+  - **The RSA accelerator** (`rsa.c`, new): modular multiplication and
+    exponentiation through Montgomery products with the r and M' the
+    driver writes, multiplication, operands to 3072 bits, SEARCH_POS, the
+    interrupt. ESP-IDF's mbedtls uses it for SAE's elliptic curves; the
+    access point's start waited on it for ever.
+  - **Fixed: the AES and SHA accelerators raised the wrong interrupt
+    sources** (51 and 52, the CPUs' FROM_CPU_INTR1 and 2, which FreeRTOS
+    uses); they are 48 and 49, and RSA's 47, as the interrupt matrix's
+    map registers have them.
+  - **A 40 MHz BSS** (`wifi.c`): the RF PLL sits at the channel pair's
+    centre and the MAC's +0x400 says where the primary channel is; frames
+    go out and are heard there.
+  - **The key entry a frame names** (`wifi.c`): the PLCP word's bits
+    21:17 pick the key the MAC encrypts under, as the access point's
+    frames to its stations need (only bits 19:17 were read before, so
+    entry 8 read as none and its frames left in clear).
 - **ESP-NOW between two boards** (`espnow`, 12 assertions, unmodified):
   ESP-IDF's `wifi/espnow` broadcasts, each board adds the other as a
   peer, and one sends the other encrypted unicast data. The Wi-Fi MAC's

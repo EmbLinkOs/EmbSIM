@@ -59,6 +59,7 @@ EXAMPLES = {
     "temp_sensor": "examples/peripherals/temperature_sensor/temp_sensor",
     "uart_echo": "examples/peripherals/uart/uart_echo",
     "wifi_scan": "examples/wifi/scan",
+    "wifi_softap": "examples/wifi/getting_started/softAP",
     "wifi_station": "examples/wifi/getting_started/station",
     "wifi_station_open": "examples/wifi/getting_started/station",
 }
@@ -72,6 +73,7 @@ COMPANIONS = {
     "blecent": {"bleprph.bin": "bleprph"},
     "ble_ibeacon": {"receiver.bin": "ble_ibeacon_receiver"},
     "espnow": {"peer.bin": "espnow"},
+    "wifi_softap": {"station.bin": "wifi_station"},
 }
 FLASH_SIZE = 4 * 1024 * 1024
 

@@ -13,7 +13,7 @@
  *     out channel connected to AES (peripheral 6) gives, into its in
  *     channel, then ends the in channel's list (its EOF), leaves the IV for
  *     the next call in IV_MEM, reads DONE (2) in STATE and raises the
- *     interrupt (source 51, while INT_ENA; INT_CLEAR clears it); a write to
+ *     interrupt (source 48, while INT_ENA; INT_CLEAR clears it); a write to
  *     DMA_EXIT makes it idle again. BLOCK_MODE: ECB, CBC, OFB, CTR (INC_SEL
  *     0 counts the last 32 bits, 1 all 128), CFB8 and CFB128; the stream
  *     modes use the key's encryption whatever MODE says, as they do.
@@ -31,7 +31,7 @@
 #define OFF_INT_ENA   0xB0u
 #define OFF_DMA_EXIT  0xB8u
 #define AES_PERI      6  /* its GDMA peripheral number */
-#define AES_SOURCE    51 /* ETS_AES_INTR_SOURCE */
+#define AES_SOURCE    48 /* ETS_AES_INTR_SOURCE */
 
 enum { ECB, CBC, OFB, CTR, CFB8, CFB128 };
 

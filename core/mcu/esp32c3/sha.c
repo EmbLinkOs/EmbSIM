@@ -13,7 +13,7 @@
  * The DMA-SHA mode (21.4.3): a write to DMA_START (from the initial hash
  * value) or DMA_CONTINUE (from H_MEM) hashes DMA_BLOCK_NUM blocks the GDMA
  * out channel connected to SHA (peripheral 7, as ESP-IDF's mbedtls port
- * sets it) gives, then raises the interrupt (source 52, while IRQ_ENA;
+ * sets it) gives, then raises the interrupt (source 49, while IRQ_ENA;
  * CLEAR_IRQ clears it). ESP-IDF's SHA-1, SHA-224 and SHA-256 use it for
  * whole blocks (wpa_supplicant's PBKDF2 among them).
  * Not yet: the time a block takes (BUSY is never seen set), a GDMA list
@@ -34,7 +34,7 @@
 #define OFF_CLEAR_IRQ    0x24u
 #define OFF_IRQ_ENA      0x28u
 #define SHA_PERI         7  /* its GDMA peripheral number */
-#define SHA_SOURCE       52 /* ETS_SHA_INTR_SOURCE */
+#define SHA_SOURCE       49 /* ETS_SHA_INTR_SOURCE */
 
 static const u32 iv1[5] = { 0x67452301u, 0xefcdab89u, 0x98badcfeu, 0x10325476u, 0xc3d2e1f0u };
 static const u32 iv224[8] = { 0xc1059ed8u, 0x367cd507u, 0x3070dd17u, 0xf70e5939u,

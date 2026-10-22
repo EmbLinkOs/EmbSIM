@@ -43,15 +43,20 @@
  *     that differs from the last): a generator seeded by the chip's own
  *     MAC, as apbctrl.c's RND_DATA is, in place of the radio's noise.
  *   - The channel is the RF PLL's: the analog I2C block's frequency code
- *     (0x6000E150 bits 26:20) is the MHz above 2400.
+ *     (0x6000E150 bits 26:20) is the MHz above 2400; with a 40 MHz
+ *     channel the PLL sits at its centre and +0x400 bits 1:0 (rom_mac_tx_
+ *     chan_offset) say where the 20 MHz primary is: 3 below it (the
+ *     secondary above, HT40+), 1 above it (HT40-), 0 none. The frames are
+ *     sent and heard on the primary channel.
  *   - CCMP (hal_crypto_set_key_entry, hal_crypto_enable): 40-byte key
  *     entries from +0x1400 (the peer's MAC, a word whose bits 20:18 are the
  *     cipher, 3 for CCMP, and 31:30 its kind, 0 pairwise and 1 group; the
  *     key), valid by their bit in +0x814; an interface's crypto on by bit 0
  *     of +0x800 (+0x804). A frame queued with the Protected bit and the
- *     PLCP word's bits 19:17 set leaves encrypted under the key for its
- *     receiver: the driver wrote the CCMP header (its PN and key ID) and
- *     left the MIC's 8 bytes. A protected data frame received is decrypted
+ *     PLCP word's bits 21:17 naming a key entry (a station's pairwise key
+ *     at 4; an access point's group key at 2, its stations' from 8) leaves
+ *     encrypted under that entry's key: the driver wrote the CCMP header
+ *     (its PN and key ID) and left the MIC's 8 bytes. A protected data frame received is decrypted
  *     in place under a key of its transmitter, its CCMP header and MIC kept
  *     for net80211's ccmp_decap, which checks the PN and strips them; one
  *     no key opens is answered and dropped.
@@ -106,6 +111,7 @@
 #define INT_RX        (1u << 24)
 #define INT_TX        (1u << 7)
 #define RFPLL_CODE    0x6000E150u
+#define CHAN_OFFSET   0x400u
 #define TX_DBM        20
 #define MAX_FRAME     2400u
 #define RX_CTRL_LEN   48u
@@ -148,7 +154,16 @@ static u32 tuned_mhz(struct c3_wifi *k)
     u32 v = 0, code;
     (void)esk_bus_debug_read(&k->s->bus, RFPLL_CODE, 4, &v);
     code = (v >> 20) & 0x7Fu;
-    return code ? 2400u + code : 0u;
+    if (!code)
+        return 0u;
+    switch (*reg(k, CHAN_OFFSET) & 3u) {
+    case 3u: /* HT40+: the primary 10 MHz below the centre */
+        return 2400u + code - 10u;
+    case 1u: /* HT40- */
+        return 2400u + code + 10u;
+    default:
+        return 2400u + code;
+    }
 }
 
 /* wifi_phy_rate_t's rates, in kbit/s */
@@ -200,11 +215,13 @@ static int key_entry(struct c3_wifi *k, int n, const u8 *mac, u8 tk[16])
  * pairwise one at entry 4) */
 static int key_pairwise(struct c3_wifi *k, int n) { return ((*reg(k, KEY_ENTRY(n) + 4u) >> 30) & 3u) == 0u; }
 
-/* a frame queued with the PLCP word's encryption: the payload between the
+/* a frame queued with the PLCP word's key entry: the payload between the
  * CCMP header the driver wrote (its PN, its key ID) and the MIC's 8 bytes
- * encrypted under the key for the receiver (a pairwise one to a station or
- * an access point, a group one to a group) */
-static void tx_encrypt(struct c3_wifi *k, u32 len)
+ * encrypted under that entry's key (a station's pairwise key at 4, an
+ * access point's group key at 1-3 and its stations' from 8); an entry not
+ * valid, the key for the receiver (a pairwise one to a station or an access
+ * point, a group one to a group) */
+static void tx_encrypt(struct c3_wifi *k, u32 len, int entry)
 {
     u8 *f = k->frame, tk[16];
     size_t hl = esk_80211_header_len(f, len);
@@ -215,6 +232,15 @@ static void tx_encrypt(struct c3_wifi *k, u32 len)
         return;
     pn = (uint64_t)f[hl] | (uint64_t)f[hl + 1] << 8 | (uint64_t)f[hl + 4] << 16 | (uint64_t)f[hl + 5] << 24 |
          (uint64_t)f[hl + 6] << 32 | (uint64_t)f[hl + 7] << 40;
+    if (entry < NKEYS && ((*reg(k, KEY_VALID) >> entry) & 1u) && ((*reg(k, KEY_ENTRY(entry) + 4u) >> 18) & 7u) == 3u) {
+        int i;
+        size_t out;
+        for (i = 0; i < 16; i++)
+            tk[i] = (u8)(*reg(k, KEY_ENTRY(entry) + 8u + 4u * (u32)(i / 4)) >> (8 * (i % 4)));
+        out = esk_ccmp_encrypt(tk, f, hl, pn, f[hl + 3] >> 6, f + hl + 8, len - hl - 16u, k->scratch);
+        memcpy(f + hl, k->scratch, out);
+        return;
+    }
     for (pass = 0; pass < 2; pass++) /* the kind the receiver asks for first */
         for (n = 0; n < NKEYS; n++) {
             int want = !(ra[0] & 1u);
@@ -302,8 +328,8 @@ static void tx_next(struct c3_wifi *k)
     if (n && n < len)
         len = n;
     len = len > 4u ? len - 4u : 0u; /* the hardware adds the FCS */
-    if ((k->frame[1] & 0x40u) && ((plcp >> 17) & 7u))
-        tx_encrypt(k, len);
+    if ((k->frame[1] & 0x40u) && ((plcp >> 17) & 31u))
+        tx_encrypt(k, len, (int)((plcp >> 17) & 31u));
     mhz = tuned_mhz(k);
     k->seq++;
     k->busy = (int)q + 1;

@@ -68,6 +68,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "esp32c3-assist", &esk_esp32c3_assist_ops, esk_esp32c3_assist_create },
     { "esp32c3-sha", &esk_esp32c3_sha_ops, esk_esp32c3_sha_create },
     { "esp32c3-aes", &esk_esp32c3_aes_ops, esk_esp32c3_aes_create },
+    { "esp32c3-rsa", &esk_esp32c3_rsa_ops, esk_esp32c3_rsa_create },
     { "esp32c3-system", &esk_esp32c3_system_ops, esk_esp32c3_system_create },
     { "esp32c3-systimer", &esk_esp32c3_systimer_ops, esk_esp32c3_systimer_create },
     { "esp32c3-timg", &esk_esp32c3_timg_ops, esk_esp32c3_timg_create },

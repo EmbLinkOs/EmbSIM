@@ -2090,9 +2090,9 @@ static void test_sha_dma(void)
         out[4 * i + 3] = (u8)(w >> 24);
     }
     CHECK(!memcmp(out, d1, 20));
-    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (52 - 32)));
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (49 - 32)));
     wr(&f, SHA + 0x24u, 1); /* CLEAR_IRQ */
-    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (52 - 32))));
+    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (49 - 32))));
     /* two blocks, one call each */
     memset(blk, 0, sizeof blk);
     memcpy(blk, m2, 56);
@@ -2149,6 +2149,73 @@ static void unhex(const char *h, u8 *out)
     }
 }
 
+/* the RSA accelerator (rsa.c) as esp_bignum.c drives it, against Python's
+ * big integers: 64-bit operands (MODE 1) modulo the prime 2^64 - 59, with r
+ * = R^2 mod M and M' = -M^-1 mod 2^32; a 64 x 64-bit product (MODE 3); the
+ * interrupt; a wrong M' gives a wrong result, as on the part */
+static void rsa_put(c3 *f, u32 block, const u32 *v, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        wr(f, 0x6003C000u + block + 4u * (u32)i, v[i]);
+}
+
+static void test_rsa(void)
+{
+    static const u32 m[2] = { 0xffffffc5u, 0xffffffffu }, x[2] = { 0x89abcdefu, 0x01234567u },
+                     y[2] = { 0x76543210u, 0xfedcba98u }, r[2] = { 0xd99u, 0 }, e[2] = { 0x10001u, 0 };
+    enum { RSA = 0x6003C000u, M = 0x000u, Z = 0x200u, Y = 0x400u, X = 0x600u };
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 3); /* CRYPTO_RSA */
+    CHECK_EQ(rd(&f, RSA + 0x808u), 1u); /* QUERY_CLEAN */
+    CHECK_EQ(rd(&f, RSA + 0x818u), 1u); /* QUERY_IDLE */
+    /* Z = X * Y mod M */
+    wr(&f, RSA + 0x804u, 1u);
+    rsa_put(&f, M, m, 2);
+    rsa_put(&f, X, x, 2);
+    rsa_put(&f, Y, y, 2);
+    rsa_put(&f, Z, r, 2);
+    wr(&f, RSA + 0x800u, 0xa08ad8f3u);
+    wr(&f, RSA + 0x82Cu, 1u); /* INT_ENA */
+    wr(&f, RSA + 0x810u, 1u);
+    CHECK_EQ(rd(&f, RSA + Z), 0xe0002926u);
+    CHECK_EQ(rd(&f, RSA + Z + 4u), 0x650b76b7u);
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (47 - 32))); /* source 47 */
+    wr(&f, RSA + 0x81Cu, 1u);
+    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (47 - 32))));
+    /* Z = X ^ Y mod M, from bit 63, and X ^ 65537 from the search position 16 */
+    rsa_put(&f, Z, r, 2);
+    wr(&f, RSA + 0x80Cu, 1u);
+    CHECK_EQ(rd(&f, RSA + Z), 0x6915a48bu);
+    CHECK_EQ(rd(&f, RSA + Z + 4u), 0xe5fd58e4u);
+    rsa_put(&f, Y, e, 2);
+    rsa_put(&f, Z, r, 2);
+    wr(&f, RSA + 0x824u, 1u); /* SEARCH_ENABLE */
+    wr(&f, RSA + 0x828u, 16u);
+    wr(&f, RSA + 0x80Cu, 1u);
+    CHECK_EQ(rd(&f, RSA + Z), 0x901a4710u);
+    CHECK_EQ(rd(&f, RSA + Z + 4u), 0xd3097250u);
+    wr(&f, RSA + 0x824u, 0);
+    /* a wrong M' */
+    rsa_put(&f, Y, y, 2);
+    rsa_put(&f, Z, r, 2);
+    wr(&f, RSA + 0x800u, 0x12345679u);
+    wr(&f, RSA + 0x810u, 1u);
+    CHECK(rd(&f, RSA + Z) != 0xe0002926u || rd(&f, RSA + Z + 4u) != 0x650b76b7u);
+    /* Z = X * Y: Y in Z's upper half, MODE the result's 4 words - 1 */
+    wr(&f, RSA + 0x804u, 3u);
+    rsa_put(&f, X, x, 2);
+    rsa_put(&f, Z + 8u, y, 2);
+    wr(&f, RSA + 0x814u, 1u);
+    CHECK_EQ(rd(&f, RSA + Z), 0xe5618cf0u);
+    CHECK_EQ(rd(&f, RSA + Z + 4u), 0x2236d88fu);
+    CHECK_EQ(rd(&f, RSA + Z + 8u), 0xad77d742u);
+    CHECK_EQ(rd(&f, RSA + Z + 12u), 0x0121fa00u);
+    c3_close(&f);
+}
+
 static void test_aes(void)
 {
     /* Typical AES against FIPS 197 C.1 and C.3; DMA-AES's CBC and CTR
@@ -2198,7 +2265,7 @@ static void test_aes(void)
     wr(&f, AES_C3 + 0xB0u, 1); /* INT_ENA */
     wr(&f, AES_C3 + 0x48u, 1);
     CHECK_EQ(rd(&f, AES_C3 + 0x4Cu), 2); /* DONE */
-    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (51 - 32)));
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (48 - 32)));
     get_mem(&f, 0x3FC90100u, b, 32);
     {
         u8 want[32];
@@ -2210,7 +2277,7 @@ static void test_aes(void)
     wr(&f, AES_C3 + 0xB8u, 0); /* DMA_EXIT */
     CHECK_EQ(rd(&f, AES_C3 + 0x4Cu), 0);
     wr(&f, AES_C3 + 0xACu, 1); /* INT_CLEAR */
-    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (51 - 32))));
+    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (48 - 32))));
     /* CTR, the counter's last 32 bits counting */
     unhex("f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff", b);
     aes_words(&f, AES_C3 + 0x50u, b, 4);
@@ -3496,6 +3563,7 @@ RUN(test_rng_and_radio);
     RUN(test_wifi_ccmp);
     RUN(test_sha_dma);
     RUN(test_aes);
+    RUN(test_rsa);
     RUN(test_ble);
     RUN(test_ble_con);
     RUN(test_ble_master);
