@@ -3,7 +3,7 @@
  "kind": "scenario",
  "name": "gptimer",
  "until": "9600ms",
- "description": "gptimer: TIMG0's T0 at 1 MHz (APB_CLK / 80). Stopped at its 1 s alarm, the count the ISR reads is 1000001 (about 1 us from the alarm to the read at 160 MHz; ESP-IDF's README shows 1000002 on its chip); set to 100 and read back; four auto-reloads a second apart, each read 1 after its reload to 0; then four alarms moved 1 s on each time. ESP-IDF's log time counts FreeRTOS's 10 ms ticks.",
+ "description": "gptimer: TIMG0's T0 at 1 MHz (APB_CLK / 80). Stopped at its 1 s alarm, the count the ISR reads is 1000001 (about 1 us from the alarm to the read at 160 MHz; ESP-IDF's README shows 1000002 on its chip); set to 100 and read back; four auto-reloads a second apart, each read 1 after its reload to 0; then four alarms moved 1 s on each time. Each event is pinned by a window (absent before, present after) rather than by the log's timestamps, which move by a millisecond with the image's size (the build's paths and compile time are in it).",
  "inputs": [],
  "assertions": [
   {
@@ -40,18 +40,90 @@
   },
   {
    "id": "reloaded",
-   "at": "5300ms",
+   "at": "2300ms",
    "probe": "console",
    "expect": {
-    "contains": "I (2274) example: Timer reloaded, count=1\r\nI (3274) example: Timer reloaded, count=1\r\nI (4274) example: Timer reloaded, count=1\r\nI (5274) example: Timer reloaded, count=1\r\n"
+    "contains": "example: Timer reloaded, count=1\r\n"
    }
   },
   {
-   "id": "alarmed",
-   "at": "9400ms",
+   "id": "reloading",
+   "at": "5200ms",
    "probe": "console",
    "expect": {
-    "contains": "I (6284) example: Timer alarmed, count=1000001\r\nI (7284) example: Timer alarmed, count=2000001\r\nI (8284) example: Timer alarmed, count=3000001\r\nI (9284) example: Timer alarmed, count=4000001\r\n"
+    "not_contains": "example: Stop timer"
+   }
+  },
+  {
+   "id": "reloads-done",
+   "at": "5300ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: Stop timer"
+   }
+  },
+  {
+   "id": "alarm1-not-early",
+   "at": "6200ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "example: Timer alarmed, count=1000001"
+   }
+  },
+  {
+   "id": "alarm1",
+   "at": "6300ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: Timer alarmed, count=1000001\r\n"
+   }
+  },
+  {
+   "id": "alarm2-not-early",
+   "at": "7200ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "example: Timer alarmed, count=2000001"
+   }
+  },
+  {
+   "id": "alarm2",
+   "at": "7300ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: Timer alarmed, count=2000001\r\n"
+   }
+  },
+  {
+   "id": "alarm3-not-early",
+   "at": "8200ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "example: Timer alarmed, count=3000001"
+   }
+  },
+  {
+   "id": "alarm3",
+   "at": "8300ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: Timer alarmed, count=3000001\r\n"
+   }
+  },
+  {
+   "id": "alarm4-not-early",
+   "at": "9200ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "example: Timer alarmed, count=4000001"
+   }
+  },
+  {
+   "id": "alarm4",
+   "at": "9300ms",
+   "probe": "console",
+   "expect": {
+    "contains": "example: Timer alarmed, count=4000001\r\n"
    }
   },
   {
