@@ -2197,6 +2197,124 @@ static void test_spi2_dma(void)
     c3_close(&f);
 }
 
+#define SARADC 0x60040000u
+#define REGI2C_C3 0x6000E000u
+
+static double pins_v[32];
+
+static int h_pin_volts(void *ctx, int port, int bit, double *v)
+{
+    int n = 16 * port + bit;
+    (void)ctx;
+    if (pins_v[n] < 0)
+        return 0;
+    *v = pins_v[n];
+    return 1;
+}
+
+static int adc_open(c3 *f)
+{
+    int i;
+    if (!gpio_open(f))
+        return 0;
+    for (i = 0; i < 32; i++)
+        pins_v[i] = -1;
+    f->m.host.pin_volts = h_pin_volts;
+    wr(f, SYSTEM + 0x10u, rd(f, SYSTEM + 0x10u) | 1u << 28); /* APB_SARADC */
+    wr(f, SYSTEM + 0x18u, rd(f, SYSTEM + 0x18u) & ~(1u << 28));
+    wr(f, SYSTEM + 0x14u, rd(f, SYSTEM + 0x14u) | 1u << 6);  /* DMA */
+    wr(f, SYSTEM + 0x1Cu, rd(f, SYSTEM + 0x1Cu) & ~(1u << 6));
+    return 1;
+}
+
+/* a one-time sample of `unit`'s channel `ch` at `atten`: its data */
+static u32 adc_once(c3 *f, u32 unit, u32 ch, u32 atten)
+{
+    u32 sel = unit ? 1u << 30 : 1u << 31;
+    wr(f, SARADC + 0x4Cu, 3u << 30);
+    wr(f, SARADC + 0x20u, sel | (unit << 3 | ch) << 25 | atten << 23);
+    wr(f, SARADC + 0x20u, sel | (unit << 3 | ch) << 25 | atten << 23 | 1u << 29);
+    /* 25 SAR_CLK cycles: at reset APB_CLK is 20 MHz, ADC_CTRL_CLK a fifth
+     * of it and SAR_CLK a quarter of that, 1 us: 500 CPU cycles */
+    esk_mach_idle(&f->m, 490u);
+    CHECK_EQ(rd(f, SARADC + 0x44u) & (unit ? 1u << 30 : 1u << 31), 0u);
+    esk_mach_idle(&f->m, 20u);
+    CHECK(rd(f, SARADC + 0x44u) & (unit ? 1u << 30 : 1u << 31)); /* ADCn_DONE */
+    return rd(f, SARADC + (unit ? 0x30u : 0x2Cu)) & 0xfffu;
+}
+
+static void test_adc_oneshot(void)
+{
+    /* 0.55 V on GPIO2: half of Vref at 0 dB, an eighth at 12 dB; 2 V clips;
+     * ENCAL_GND grounds the input; a threshold monitor */
+    c3 f;
+    u32 v;
+    if (!adc_open(&f))
+        return;
+    pins_v[2] = 0.55;
+    pins_v[5] = 1.0;
+    v = adc_once(&f, 0, 2, 0);
+    CHECK_EQ(v, 2048u);
+    v = adc_once(&f, 0, 2, 3);
+    CHECK_EQ(v, 512u);
+    v = adc_once(&f, 1, 0, 2); /* ADC2: GPIO5, 6 dB */
+    CHECK_EQ(v, 1861u); /* 1.0 x 0.5 / 1.1 x 4095 */
+    pins_v[2] = 2.0;
+    v = adc_once(&f, 0, 2, 0);
+    CHECK_EQ(v, 4095u);
+    wr(&f, REGI2C_C3, 0x69u | 7u << 8 | 1u << 5 << 16 | 1u << 24); /* ENCAL_GND */
+    v = adc_once(&f, 0, 2, 0);
+    CHECK_EQ(v, 0u);
+    wr(&f, REGI2C_C3, 0x69u | 7u << 8 | 1u << 24);
+    /* monitor 0 on ADC1 channel 2: high above 3000 */
+    wr(&f, SARADC + 0x34u, 2u | 3000u << 5 | 100u << 18);
+    wr(&f, SARADC + 0x3Cu, 1u << 31);
+    v = adc_once(&f, 0, 2, 0);
+    CHECK(rd(&f, SARADC + 0x44u) & (1u << 29)); /* THRES0_HIGH */
+    c3_close(&f);
+}
+
+static void test_adc_scan_dma_and_tsens(void)
+{
+    /* the pattern table's one entry (ADC1, channel 2, 0 dB) sampled by the
+     * timer into a GDMA list, its frame ended after four; then the
+     * temperature sensor at 25 degC */
+    c3 f;
+    const u32 buf = 0x3FC90400u, dsc = 0x3FC90500u;
+    u32 i, w;
+    if (!adc_open(&f))
+        return;
+    pins_v[2] = 0.55;
+    wr(&f, dsc, 1u << 31 | 64u);
+    wr(&f, dsc + 4u, buf);
+    wr(&f, dsc + 8u, 0u);
+    wr(&f, GDMA + 0x70u, 1u);
+    wr(&f, GDMA + 0x70u, 0u);
+    wr(&f, GDMA + 0xA0u, 8u); /* IN_PERI_SEL: ADC */
+    wr(&f, GDMA + 0x80u, (dsc & 0xfffffu) | 1u << 22);
+    wr(&f, SARADC + 0x18u, 0x08u << 18);              /* cmd0: ADC1, ch 2, 0 dB */
+    wr(&f, SARADC + 0x00u, rd(&f, SARADC + 0x00u) & ~(7u << 15)); /* one entry */
+    wr(&f, SARADC + 0x50u, 1u << 31 | 4u);            /* APB_ADC_TRANS, EOF every 4 */
+    wr(&f, SARADC + 0x04u, (rd(&f, SARADC + 0x04u) & ~(0xfffu << 12)) | 100u << 12 | 1u << 24);
+    esk_mach_idle(&f.m, 1000u * 3u + 10u);
+    CHECK_EQ(rd(&f, GDMA + 0x00u) & (1u << 1), 0u); /* three samples: no EOF */
+    esk_mach_idle(&f.m, 1000u);
+    CHECK(rd(&f, GDMA + 0x00u) & (1u << 1));        /* IN_SUC_EOF */
+    CHECK_EQ((rd(&f, dsc) >> 12) & 0xfffu, 16u);    /* four words */
+    for (i = 0; i < 4; i++) {
+        w = rd(&f, buf + 4u * i);
+        CHECK_EQ(w, 2048u | 2u << 13);
+    }
+    wr(&f, SARADC + 0x04u, rd(&f, SARADC + 0x04u) & ~(1u << 24));
+    /* the temperature sensor: TSENS_DAC 15 (offset 0) */
+    CHECK_EQ(rd(&f, SARADC + 0x58u) & 0xffu, 0u); /* off */
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 10); /* TSENS_CLK_EN */
+    wr(&f, SARADC + 0x58u, rd(&f, SARADC + 0x58u) | 1u << 22);  /* TSENS_PU */
+    wr(&f, REGI2C_C3, 0x69u | 6u << 8 | 15u << 16 | 1u << 24);
+    CHECK_EQ(rd(&f, SARADC + 0x58u) & 0xffu, 104u); /* (25 + 20.52) / 0.4386 */
+    c3_close(&f);
+}
+
 #define USJ 0x60043000u
 
 static void test_usb_serial_jtag(void)
@@ -2278,4 +2396,6 @@ RUN(test_spi2_full_duplex);
 RUN(test_spi2_half_duplex_quad);
 RUN(test_spi2_lsb_first);
 RUN(test_spi2_dma);
+RUN(test_adc_oneshot);
+RUN(test_adc_scan_dma_and_tsens);
 TEST_MAIN_END

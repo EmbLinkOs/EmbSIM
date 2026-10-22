@@ -254,6 +254,19 @@ Started only once the NUCLEO-F446RE is done.
      and the temperature sensor.
    - TWAI is declared.
    - WiFi and Bluetooth answer as stubs, a scripted access point (Q11).
+
+   *Done* but for the radios' stubs: the GPIO matrix carries every modelled
+   peripheral's signals both ways; RMT (`esp32c3-rmt`), LEDC
+   (`esp32c3-ledc`), the I2C controller as master and slave
+   (`esp32c3-i2c`), GP-SPI2 as a master (`esp32c3-spi2`) with the GDMA
+   (`esp32c3-gdma`), the SAR ADCs and the temperature sensor
+   (`esp32c3-adc`), each from its TRM chapter and checked against what
+   ESP-IDF's HAL does with it (`test_esp32c3`). TWAI, I2S, UHCI, the crypto
+   accelerators but SHA and GP-SPI2's slave mode are declared. The radios
+   stay declared too: ESP-IDF drives their MAC and PHY from binary
+   libraries through registers Espressif does not document, so a stub that
+   answers them (a scripted access point) is its own piece of work, after
+   step 7 shows what ESP-IDF's examples need.
 6. **The board.**
    - The WS2812 RGB LED on GPIO8 and the BOOT button on GPIO9.
    - The CP2102 bridge on UART0, as a host serial port with

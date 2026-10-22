@@ -116,6 +116,18 @@ static const struct esk_dev_ops regi2c_ops = {
     "esp32c3-regi2c", ri_read, ri_write, ri_reset, 0, 0,
 };
 
+/* a block's register, as the analog side has it (0 for none) */
+u32 esk_esp32c3_regi2c_get(struct esk_mach *s, u32 block, u32 r)
+{
+    int i;
+    for (i = 0; i < s->bus.ndev; i++)
+        if (s->bus.dev[i].ops == &regi2c_ops) {
+            u8 *p = block_reg((struct c3_regi2c *)s->bus.dev[i].ctx, block, r);
+            return p ? *p : 0;
+        }
+    return 0;
+}
+
 int esk_esp32c3_regi2c_create(struct esk_mach *s)
 {
     struct c3_regi2c *k = (struct c3_regi2c *)esk_mach_alloc(s, sizeof *k);

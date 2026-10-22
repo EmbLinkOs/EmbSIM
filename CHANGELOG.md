@@ -5,6 +5,41 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's peripherals (the RTOS boards plan, part 2, step 5)
+
+- **The GPIO matrix** carries any modelled peripheral's output signal and
+  enable to the pins and gives its inputs back through IN_SEL (or a pin's
+  IO MUX function), with the TRM table's defaults; a model can follow the
+  pins' inputs.
+- **RMT** (`esp32c3-rmt`): two transmitters and two receivers over the
+  192-word RAM, CONF_UPDATE, normal, wrap and continuous modes with loop
+  counts, the carrier, simultaneous starts and TX_STOP; the receivers' idle
+  threshold, filter, demodulation and wrap; the edges at the clock that
+  makes them, so the board's SK6812 sees exact widths.
+- **LEDC** (`esp32c3-ledc`): four timers with the fractional divider and six
+  generators with HPOINT, duty, dithering, fading (ESP-IDF's `ledc_set_duty`
+  is a one-step fade) and the overflow counter.
+- **I2C** (`esp32c3-i2c`): the master's command list (RSTART, WRITE, READ,
+  STOP, END) at its timing registers' bus timing, a slave's stretching,
+  arbitration, the timeout and the bus-clear pulses; the slave with 7- and
+  10-bit addresses, the general call, double addressing, ACK control and
+  stretching; the FIFOs with their interrupts.
+- **GP-SPI2** (`esp32c3-spi2`) as a master: CS setup and hold, CMD, ADDR,
+  DUMMY and data on 1, 2 or 4 lines or QPI, full and half duplex, the four
+  clock modes, the bit orders, its buffer or the GDMA.
+- **GDMA** (`esp32c3-gdma`): three transmit and three receive channels on
+  descriptor lists with the owner check, RESTART, write-back, the EOF
+  interrupts and memory-to-memory transfers.
+- **The SAR ADCs and the temperature sensor** (`esp32c3-adc`): one-time
+  sampling with the attenuations, the timer's pattern-table scanning into
+  the GDMA, the filters and threshold monitors, the self-calibration's
+  grounded input; the sensor reads the world's temperature through
+  ESP-IDF's offset table.
+- `svd2regs.py --memory` adds the memories an SVD leaves out (the RMT's RAM,
+  the I2C controller's FIFOs) as word registers, recorded in the source.
+- TWAI, I2S, UHCI, the crypto accelerators but SHA, GP-SPI2's slave mode and
+  the radios are declared.
+
 ### The ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 6)
 
 - **The board** (`emblink/esp32c3_devkitm1`), from Espressif's V1.0

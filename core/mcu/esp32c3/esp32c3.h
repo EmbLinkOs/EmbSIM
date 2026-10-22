@@ -34,6 +34,7 @@
  *   gdma.c    the GDMA controller: three transmit and three receive
  *             channels on descriptor lists
  *   spi2.c    GP-SPI2 as a master, from its buffer or the GDMA
+ *   adc.c     the SAR ADCs, their scanning and the temperature sensor
  *   radio.c   the radio's register blocks the TRM leaves out (FE2, FE,
  *             NRX), which keep what is written */
 #ifndef ESK_MCU_ESP32C3_H
@@ -85,6 +86,8 @@ void *esk_esp32c3_system_create(struct esk_mach *s, struct esk_rf_periph *p);
 /* the internal I2C master to the analog blocks at 0x6000E000 (regi2c.c),
  * mapped by the SYSTEM model: 0, or -1 */
 int esk_esp32c3_regi2c_create(struct esk_mach *s);
+/* an analog block's register (block 0x60-0x6F), as the internal I2C left it */
+u32 esk_esp32c3_regi2c_get(struct esk_mach *s, u32 block, u32 r);
 /* the radio's register blocks FE2, FE and NRX (radio.c), mapped by the
  * SYSTEM model: 0, or -1 */
 int esk_esp32c3_radio_create(struct esk_mach *s);
@@ -137,6 +140,8 @@ int esk_esp32c3_dma_in(struct esk_mach *m, int peri, u8 byte);
 void esk_esp32c3_dma_in_eof(struct esk_mach *m, int peri);
 extern const struct esk_dev_ops esk_esp32c3_spi2_ops;
 void *esk_esp32c3_spi2_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_adc_ops;
+void *esk_esp32c3_adc_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_apbctrl_ops;
 void *esk_esp32c3_apbctrl_create(struct esk_mach *s, struct esk_rf_periph *p);
 
