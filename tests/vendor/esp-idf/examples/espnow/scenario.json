@@ -1,0 +1,106 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "espnow",
+ "until": "8000ms",
+ "description": "wifi/espnow on two boards, unmodified: each starts Wi-Fi as a station on channel 1 and, after its five seconds, broadcasts ESP-NOW data (vendor-specific action frames) each second; each hears the other's, adds it as a peer with the example's local master key, and the one whose random magic is larger (each chip draws its own numbers) sends it unicast data, encrypted (CCMP under the LMK) and acknowledged, which the other logs. net80211 asks the MAC's random number register for each frame's nonce until it differs from the last.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "station",
+   "at": "8000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:mode : sta (7c:df:a1:45:6d:62)"
+   }
+  },
+  {
+   "id": "peer-station",
+   "at": "8000ms",
+   "probe": "peer",
+   "expect": {
+    "contains": "wifi:mode : sta (7c:df:a1:45:6d:70)"
+   }
+  },
+  {
+   "id": "init",
+   "at": "8000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ESPNOW: espnow [version: 2.0] init"
+   }
+  },
+  {
+   "id": "broadcast",
+   "at": "8000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "espnow_example: Start sending broadcast data"
+   }
+  },
+  {
+   "id": "heard",
+   "at": "8000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "espnow_example: Receive 0th broadcast data from: 7c:df:a1:45:6d:70, len: 10"
+   }
+  },
+  {
+   "id": "peer-heard",
+   "at": "8000ms",
+   "probe": "peer",
+   "expect": {
+    "contains": "espnow_example: Receive 0th broadcast data from: 7c:df:a1:45:6d:62, len: 10"
+   }
+  },
+  {
+   "id": "peer-unicast",
+   "at": "8000ms",
+   "probe": "peer",
+   "expect": {
+    "contains": "espnow_example: Start sending unicast data"
+   }
+  },
+  {
+   "id": "peer-sends",
+   "at": "8000ms",
+   "probe": "peer",
+   "expect": {
+    "contains": "espnow_example: send data to 7c:df:a1:45:6d:62"
+   }
+  },
+  {
+   "id": "unicast",
+   "at": "8000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "espnow_example: Receive 0th unicast data from: 7c:df:a1:45:6d:70, len: 10"
+   }
+  },
+  {
+   "id": "unicast-again",
+   "at": "8000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "espnow_example: Receive 1th unicast data from: 7c:df:a1:45:6d:70, len: 10"
+   }
+  },
+  {
+   "id": "no-error",
+   "at": "8000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Send error"
+   }
+  },
+  {
+   "id": "peer-no-error",
+   "at": "8000ms",
+   "probe": "peer",
+   "expect": {
+    "not_contains": "Send error"
+   }
+  }
+ ]
+}

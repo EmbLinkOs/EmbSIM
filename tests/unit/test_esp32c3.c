@@ -1260,8 +1260,8 @@ static void test_regi2c(void)
 
 static void test_rng_and_radio(void)
 {
-    /* RND_DATA: a new number at every read, the same sequence every run;
-     * the radio's blocks keep what is written */
+    /* RND_DATA: a new number at every read, the same sequence every run
+     * for a chip; the radio's blocks keep what is written */
     c3 f, g;
     u32 a, b;
     if (!c3_open(&f, NULL, 0, NULL, 0))
@@ -1272,6 +1272,20 @@ static void test_rng_and_radio(void)
     CHECK(a != 0u && b != 0u);
     if (c3_open(&g, NULL, 0, NULL, 0)) {
         CHECK_EQ(rd(&g, 0x600260B0u), a);
+        c3_close(&g);
+    }
+    /* another chip (its own MAC) draws its own numbers, from RND_DATA and
+     * from the Wi-Fi MAC's +0x207C (hal_random) alike */
+    if (c3_open(&g, NULL, 0, NULL, 0)) {
+        static const u8 mac[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x70 };
+        u32 m1, m2;
+        memcpy(g.m.factory_mac, mac, 6);
+        g.m.has_factory_mac = 1;
+        CHECK(rd(&g, 0x600260B0u) != a);
+        m1 = rd(&g, 0x6003507Cu);
+        m2 = rd(&g, 0x6003507Cu);
+        CHECK(m1 != m2);
+        CHECK(m1 != rd(&f, 0x6003507Cu));
         c3_close(&g);
     }
     wr(&f, 0x6001CCD4u, 0xA5A50000u); /* NRXPD_CTRL */

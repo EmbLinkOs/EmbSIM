@@ -38,6 +38,10 @@
  *     write of bit 0 (bit 1) to +0x200C latches the station's (the access
  *     point's) TSF at +0x2018 (low) and +0x201C (high), hal_get_tsf_time.
  *   - hal_init's request (+0xD14 bit 1) reads acknowledged (bit 0).
+ *   - +0x207C (hal_random) is a new random number at each read, which
+ *     net80211 uses for ESP-NOW's and the scans' nonces (it waits for one
+ *     that differs from the last): a generator seeded by the chip's own
+ *     MAC, as apbctrl.c's RND_DATA is, in place of the radio's noise.
  *   - The channel is the RF PLL's: the analog I2C block's frequency code
  *     (0x6000E150 bits 26:20) is the MHz above 2400.
  *   - CCMP (hal_crypto_set_key_entry, hal_crypto_enable): 40-byte key
@@ -96,6 +100,7 @@
 #define TSF_LATCH     0x200Cu
 #define TSF_LO        0x2018u
 #define TSF_HI        0x201Cu
+#define MAC_RANDOM    0x207Cu
 
 #define NQUEUES       5
 #define INT_RX        (1u << 24)
@@ -115,6 +120,7 @@ struct c3_wifi {
     u64 us;          /* the microseconds since the MAC's start */
     u64 frac;        /* cycles * 1e6 owed, in core_hz units */
     int clocked;
+    u64 rng;         /* hal_random's generator, 0 until seeded */
     u8 frame[MAX_FRAME];
     u8 scratch[MAX_FRAME];
 };
@@ -414,6 +420,21 @@ static u32 mac_read(void *ctx, u32 off, int n)
     (void)n;
     if (w == MAC_TIME)
         *reg(k, w) = (u32)k->us;
+    if (w == MAC_RANDOM) { /* xorshift64*, this chip's own sequence */
+        if (!k->rng) {
+            int i;
+            k->rng = 0x6D61635F726E6731ull;
+            if (k->s->has_factory_mac)
+                for (i = 0; i < 6; i++)
+                    k->rng = (k->rng ^ k->s->factory_mac[i]) * 0x100000001B3ull;
+            if (!k->rng)
+                k->rng = 1;
+        }
+        k->rng ^= k->rng >> 12;
+        k->rng ^= k->rng << 25;
+        k->rng ^= k->rng >> 27;
+        *reg(k, w) = (u32)((k->rng * 0x2545F4914F6CDD1Dull) >> 32);
+    }
     return *reg(k, w) >> (8u * (off & 3u));
 }
 

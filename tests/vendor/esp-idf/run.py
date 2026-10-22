@@ -50,6 +50,7 @@ EXAMPLES = {
     "blecent": "examples/bluetooth/nimble/blecent",
     "ble_ibeacon": "examples/bluetooth/bluedroid/ble/ble_ibeacon",
     "blink": "examples/get-started/blink",
+    "espnow": "examples/wifi/espnow",
     "gptimer": "examples/peripherals/timer_group/gptimer",
     "hello_world": "examples/get-started/hello_world",
     "i2c_eeprom": "examples/peripherals/i2c/i2c_eeprom",
@@ -70,6 +71,7 @@ VARIANTS = {
 COMPANIONS = {
     "blecent": {"bleprph.bin": "bleprph"},
     "ble_ibeacon": {"receiver.bin": "ble_ibeacon_receiver"},
+    "espnow": {"peer.bin": "espnow"},
 }
 FLASH_SIZE = 4 * 1024 * 1024
 

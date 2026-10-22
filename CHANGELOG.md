@@ -15,6 +15,13 @@ versions follow semantic versioning. There is no release yet.
   a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
   advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
   hosts, NimBLE and Bluedroid, run on the controller.
+- **ESP-NOW between two boards** (`espnow`, 12 assertions, unmodified):
+  ESP-IDF's `wifi/espnow` broadcasts, each board adds the other as a
+  peer, and one sends the other encrypted unicast data. The Wi-Fi MAC's
+  +0x207C (`hal_random`) is now a new random number at each read:
+  net80211 waits there for a nonce that differs from the last, so
+  `esp_now_send` had never returned. Each chip (its `settings.mac`) draws
+  its own random numbers, from RND_DATA too.
 - **Bluedroid's `ble_ibeacon` on two boards** (`ble_ibeacon`, 14
   assertions, unmodified): the sender advertises its iBeacon, and the
   same example built as the receiver (`IBEACON_RECEIVER`, `run.py`'s

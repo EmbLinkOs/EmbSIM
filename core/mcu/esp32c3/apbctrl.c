@@ -7,7 +7,9 @@
  *
  * Where it differs inside: the chip's numbers come from the noise of its
  * ADCs and RC_FAST_CLK's jitter; the model's from a generator (xorshift64*
- * with a fixed seed), the same sequence every run so that a run replays.
+ * with a fixed seed, which a board's own chip, its settings.mac, changes),
+ * the same sequence every run so that a run replays, and another for each
+ * chip, as two chips never draw the same numbers.
  * Its numbers do not depend on which noise sources are on (the TRM's
  * pseudo-random numbers with none), nor on the rate they are read at. */
 #include <string.h>
@@ -17,12 +19,23 @@
 #define RND_DATA 0xB0u
 
 struct c3_apbctrl {
+    struct esk_mach *s;
     struct esk_rf_periph *p;
     u64 state;
+    int seeded;
 };
 
 static u32 next(struct c3_apbctrl *k)
 {
+    if (!k->seeded) { /* this chip's own sequence */
+        int i;
+        k->seeded = 1;
+        if (k->s->has_factory_mac)
+            for (i = 0; i < 6; i++)
+                k->state = (k->state ^ k->s->factory_mac[i]) * 0x100000001B3ull;
+        if (!k->state)
+            k->state = 1;
+    }
     k->state ^= k->state >> 12;
     k->state ^= k->state << 25;
     k->state ^= k->state >> 27;
@@ -54,6 +67,7 @@ void *esk_esp32c3_apbctrl_create(struct esk_mach *s, struct esk_rf_periph *p)
     if (!k)
         return 0;
     memset(k, 0, sizeof *k);
+    k->s = s;
     k->p = p;
     k->state = 0x456D6253696D0003ull; /* any value but 0 */
     return k;

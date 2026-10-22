@@ -172,6 +172,15 @@ Each step lands usable and green, as in the RTOS boards plan.
 5. **The rest of Wi-Fi.** The access point mode with a station part and
    with another board; `http_request`; ESP-NOW between two boards; power
    save and the radio's current; Arduino-ESP32's Wi-Fi sketches.
+   *Under way:* ESP-NOW. `wifi/espnow` on two boards as it ships: each
+   broadcasts, adds the other as a peer, and the one with the larger
+   random magic sends it unicast data encrypted under the local master
+   key. It waited for ever at first: net80211 takes each vendor action
+   frame's nonce from the MAC's +0x207C (`hal_random`) until it differs
+   from the last, and the register kept what was written; it is now a new
+   random number at each read. The two chips draw their own numbers
+   (RND_DATA too is seeded by the chip's MAC), so their magics differ as
+   on real boards.
 6. **Bluetooth LE.** The BT baseband, the RW BLE core and its exchange
    memory as ESP-IDF's controller drives them; the BLE air (advertising
    channels, connection events, the PHYs); BLE peer parts (a scanner, a
