@@ -1,0 +1,146 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "blecent",
+ "until": "3500ms",
+ "description": "bluetooth/nimble/blecent and its peer bleprph on two boards: blecent scans (passive, its controller's scan events on the advertising channels), finds bleprph advertising the Alert Notification service, initiates (its controller sends the CONNECT_IND, its window offset aimed at the first anchor) and holds the connection as the master, bleprph as the slave, on channel selection algorithm #2. Over it blecent discovers bleprph's services, characteristics and descriptors, reads the Supported New Alert Category, writes the Alert Notification Control Point (bleprph supports no category: an ATT error, as on a board), subscribes to the Unread Alert Status and to the example's characteristic, writes it, receives its notification and reads it back.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "discovery",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: GAP procedure initiated: discovery;"
+   }
+  },
+  {
+   "id": "connect",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: GAP procedure initiated: connect;"
+   }
+  },
+  {
+   "id": "peer-address",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: 7c:df:a1:45:6d:72"
+   }
+  },
+  {
+   "id": "connected",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: Connection established"
+   }
+  },
+  {
+   "id": "services",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: Service discovery complete; status=0 conn_handle=1"
+   }
+  },
+  {
+   "id": "read",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: Read complete; status=0 conn_handle=1"
+   }
+  },
+  {
+   "id": "subscribe",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: Subscribe complete; status=0 conn_handle=1 attr_handle=24"
+   }
+  },
+  {
+   "id": "subscribe-custom",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: Subscribe to the custom subscribable characteristic complete; status=0 conn_handle=1"
+   }
+  },
+  {
+   "id": "write-custom",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: Write to the custom subscribable characteristic complete; status=0 conn_handle=1 attr_handle=29"
+   }
+  },
+  {
+   "id": "notified",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: received notification; conn_handle=1 attr_handle=29 attr_len=1"
+   }
+  },
+  {
+   "id": "read-custom",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: Read complete for the subscribable characteristic; status=0 conn_handle=1"
+   }
+  },
+  {
+   "id": "peripheral-connected",
+   "at": "3500ms",
+   "probe": "peripheral",
+   "expect": {
+    "contains": "NimBLE: connection established; status=0"
+   }
+  },
+  {
+   "id": "peripheral-peer",
+   "at": "3500ms",
+   "probe": "peripheral",
+   "expect": {
+    "contains": "NimBLE: 7c:df:a1:45:6d:64"
+   }
+  },
+  {
+   "id": "peripheral-subscribed",
+   "at": "3500ms",
+   "probe": "peripheral",
+   "expect": {
+    "contains": "NimBLE: subscribe event; conn_handle=1 attr_handle=29 reason=1 prevn=0 curn=1"
+   }
+  },
+  {
+   "id": "peripheral-notified",
+   "at": "3500ms",
+   "probe": "peripheral",
+   "expect": {
+    "contains": "NimBLE: notify_tx event; conn_handle=1 attr_handle=29 status=0 is_indication=0"
+   }
+  },
+  {
+   "id": "no-assert",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "assert"
+   }
+  },
+  {
+   "id": "peripheral-no-assert",
+   "at": "3500ms",
+   "probe": "peripheral",
+   "expect": {
+    "not_contains": "assert"
+   }
+  }
+ ]
+}

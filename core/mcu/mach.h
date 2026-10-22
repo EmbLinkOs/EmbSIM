@@ -413,6 +413,10 @@ struct esk_mach {
     u64 lag_mark;
     int lazy_known;
     u64 lazy_at; /* when the devices are next owed their cycles */
+    /* this chip's factory MAC, when its board gives one (a project's board
+     * settings.mac): the eFuse model's, otherwise its description's */
+    u8 factory_mac[6];
+    int has_factory_mac;
     /* set by a model when something outside the machine must see a change
      * now (a pin, the core clock): the runtime ends its quantum */
     int yield;

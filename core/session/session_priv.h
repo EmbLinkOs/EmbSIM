@@ -47,6 +47,7 @@ typedef struct esk_board_inst {
     char *board_id;
     const esk_catalog_item *item;
     esk_json *firmware;  /* copy of the project's firmware object, or NULL */
+    esk_json *settings;  /* copy of its settings (the chip's MAC), or NULL */
     esk_comp *mcu;       /* the placeholder MCU component */
 } esk_board_inst;
 

@@ -6,6 +6,7 @@
  * nets merged through board ports and functional wires, probes, settings. */
 #include "project/loader.h"
 #include "ext/lua_model.h"
+#include <stdio.h>
 #include <string.h>
 #include "host/host.h"
 #include "mcu/mcu.h"
@@ -719,6 +720,7 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
     esk_json *regs = NULL;
     esk_mcu_setup su;
     esk_mcu_file files[LD_MAX_FILES];
+    unsigned char mac_bytes[6];
     es_status st = ES_OK;
     int line = 0, nfiles = 0, k;
     const char *err = NULL;
@@ -768,6 +770,15 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         nfiles = read_memory_files(s, bi, mi, files);
         su.files = files;
         su.nfiles = nfiles;
+        {
+            unsigned v[6];
+            const char *mac = bi->settings ? esk_json_get_str(bi->settings, "mac", NULL) : NULL;
+            if (mac && sscanf(mac, "%2x:%2x:%2x:%2x:%2x:%2x", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) == 6) {
+                for (k = 0; k < 6; k++)
+                    mac_bytes[k] = (unsigned char)v[k];
+                su.mac = mac_bytes;
+            }
+        }
         st = esk_mcu_attach(mc, &su, why, sizeof why);
         if (st != ES_OK)
             esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.image", 0, "board", bi->id, NULL, 0, "%s: %s", bi->id, why);
@@ -810,6 +821,7 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
     bi->board_id = esk_strdup(s->a, board_id);
     bi->item = item;
     bi->firmware = esk_json_get(entry, "firmware") ? esk_json_clone(s->a, esk_json_get(entry, "firmware")) : NULL;
+    bi->settings = esk_json_get(entry, "settings") ? esk_json_clone(s->a, esk_json_get(entry, "settings")) : NULL;
     if (esk_vec_push(s->a, &s->boards, bi))
         return ES_ENOMEM;
     /* the MCU as a placeholder with the package's pins */
@@ -1190,6 +1202,7 @@ void esk_project_unload(es_session *s)
         esk_strfree(s->a, bi->id);
         esk_strfree(s->a, bi->board_id);
         esk_json_free(s->a, bi->firmware);
+        esk_json_free(s->a, bi->settings);
         esk_free(s->a, bi, sizeof *bi);
     }
     esk_vec_clear(&s->boards);

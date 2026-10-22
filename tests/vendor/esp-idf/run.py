@@ -22,7 +22,9 @@ table and the application are put into a 4 MB flash image at the offsets
 the build's flasher_args.json gives, the rest erased (0xFF), as `idf.py
 merge-bin` and a flasher leave it. The image then runs examples/<name>/
 project.json, or this directory's, under the example's scenario.json, whose
-assertions must all pass.
+assertions must all pass. A project with more boards names their examples
+in COMPANIONS: they are built too, and their images put beside it under the
+names the project gives (blecent's peripheral runs bleprph).
 
     run.py --idf DIR [--embsim PATH] [--keep DIR] [EXAMPLE...]
 
@@ -45,6 +47,7 @@ from vendor_run import run_scenario, sh  # noqa: E402
 EXAMPLES = {
     "adc_oneshot_read": "examples/peripherals/adc/oneshot_read",
     "bleprph": "examples/bluetooth/nimble/bleprph",
+    "blecent": "examples/bluetooth/nimble/blecent",
     "blink": "examples/get-started/blink",
     "gptimer": "examples/peripherals/timer_group/gptimer",
     "hello_world": "examples/get-started/hello_world",
@@ -56,6 +59,10 @@ EXAMPLES = {
     "wifi_scan": "examples/wifi/scan",
     "wifi_station": "examples/wifi/getting_started/station",
     "wifi_station_open": "examples/wifi/getting_started/station",
+}
+# a project's other boards: their images' names and examples
+COMPANIONS = {
+    "blecent": {"bleprph.bin": "bleprph"},
 }
 FLASH_SIZE = 4 * 1024 * 1024
 
@@ -106,13 +113,21 @@ def main() -> int:
     work = Path(args.keep or tmp.name)
     work.mkdir(parents=True, exist_ok=True)
     bad = 0
+    built = {}
+
+    def image(name: str) -> Path:
+        if name not in built:
+            built[name] = build(idf, name, work / "build")
+        return built[name]
+
     try:
         for name in names:
-            flash = build(idf, name, work / "build")
+            flash = image(name)
+            extra = {file: image(other) for file, other in COMPANIONS.get(name, {}).items()}
             mine = HERE / "examples" / name
             project = mine / "project.json" if (mine / "project.json").exists() else HERE / "project.json"
             bad += not run_scenario(Path(args.embsim), project, name, flash, mine / "scenario.json", work / "run",
-                                    image_name="flash.bin")
+                                    extra=extra, image_name="flash.bin")
     finally:
         if tmp:
             tmp.cleanup()

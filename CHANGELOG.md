@@ -16,6 +16,18 @@ versions follow semantic versioning. There is no release yet.
   PDU on each channel of its map at +9 dBm. The chip's Wi-Fi and BLE share
   its port to the air (`radio.c`). NimBLE's `bluetooth/nimble/bleprph`,
   unmodified, advertises as "nimble-bleprph" (`bleprph`, 6 assertions).
+- **Bluetooth LE as the central, two boards on one air** (`ble.c`): scan
+  events (format 8) take every advertising PDU on their channel for their
+  window; initiating events (format 14) answer their peer's connectable
+  PDU with the controller's CONNECT_IND, its window offset aimed at the
+  first anchor the controller planned; connection events as the master
+  (format 2); channel selection algorithm #2. ESP-IDF's `blecent` on one
+  board finds `bleprph` on another, connects as the master and runs its
+  six GATT operations to the notification (`blecent`, 17 assertions, the
+  two examples unmodified; `run.py` builds a project's other boards'
+  examples too).
+- **A board's own chip**: a project's board `settings.mac` gives its chip's
+  factory MAC (an ESP32-C3's eFuse BLOCK1), so two boards are two chips.
 - **Bluetooth LE connections** (`ble.c`): the core listens after a
   connectable advertising PDU and takes a CONNECT_IND into its receive
   descriptors; connection events as the slave on channel selection

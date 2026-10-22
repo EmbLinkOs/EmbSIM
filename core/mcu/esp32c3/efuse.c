@@ -20,7 +20,8 @@
  * flash in the package from XMC (FLASH_CAP 1, FLASH_VENDOR 1), the
  * fields esptool reads as "ESP32-C3 (QFN32) (revision v0.3)" and
  * "Embedded Flash 4MB (XMC)"; the MAC 7C:DF:A1:45:6D:62, Espressif's OUI
- * and a serial of the model's ("Emb"); every other bit 0 (no secure boot,
+ * and a serial of the model's ("Emb"), or the one the board's settings give
+ * its chip (settings.mac: two boards are two chips); every other bit 0 (no secure boot,
  * no flash encryption, no keys, and no calibration data in BLOCK2,
  * BLK_VERSION 0 as on the first lots).
  * Not yet: the write and read protection bits (WR_DIS, RD_DIS), the
@@ -59,6 +60,11 @@ static void factory(struct c3_efuse *k)
     memset(k->bits, 0, sizeof k->bits);
     k->bits[1][0] = 0xA1456D62u;                         /* MAC_0: the MAC's last four bytes */
     k->bits[1][1] = 0x00007CDFu;                         /* MAC_1: its first two */
+    if (k->s->has_factory_mac) { /* this board's chip */
+        const u8 *m = k->s->factory_mac;
+        k->bits[1][0] = (u32)m[2] << 24 | (u32)m[3] << 16 | (u32)m[4] << 8 | m[5];
+        k->bits[1][1] = (u32)m[0] << 8 | m[1];
+    }
     k->bits[1][3] = 1u << 27 | 0u << 21 | 3u << 18;     /* FLASH_CAP, PKG_VERSION, MINOR_LO */
     k->bits[1][4] = 1u;                                 /* FLASH_VENDOR: XMC */
 }

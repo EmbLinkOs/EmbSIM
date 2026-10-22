@@ -24,7 +24,8 @@
  *     source 8 (RWBLE) is asserted while the FIFO holds an entry (or,
  *     without it, while one is raised and enabled). The scheduler's bits:
  *     1 a connection's packet sent after one of its descriptors was
- *     acknowledged, 2 a connection's packet received, 5 an event's end;
+ *     acknowledged, 2 a packet received (a connection's, a scan's or an
+ *     initiator's), 5 an event's end;
  *   - the exchange memory (EM), the controller's structures in RAM, in
  *     1 KB blocks each mapped through one of the registers from +0x204 by
  *     the hardware's fixed table (the ROM's em_base_reg_lut): a register's
@@ -46,17 +47,32 @@
  *     (T_IFS and a SCAN_REQ's airtime), at +9 dBm (ESP-IDF's default level,
  *     P9). After a connectable PDU it listens T_IFS on its channel: a
  *     CONNECT_IND for its address is received, and ends the event;
- *   - a connection event as the slave (format 3): on the data channel
- *     channel selection algorithm #1 gives from the last unmapped channel
- *     and the hop increment (+0x16 bits 5:0 and 12:8) and the map (+0x22,
- *     37 bits), it listens from its start for the receive window (+0x1A, in
- *     2 us units, or 625 us ones with bit 15); the master's packet is
- *     received, and answered T_IFS after it with the packet at the
+ *   - a scan event (format 8): it listens on the advertising channel +0x16
+ *     gives (bits 5:0: 37, 38, 39) for the receive window (+0x1A, in 2 us
+ *     units, or 625 us ones with bit 15), taking every advertising PDU it
+ *     hears, then ends;
+ *   - an initiating event (format 14): it scans as a scan event for the
+ *     address at +0x2C; after that peer's connectable PDU it sends the
+ *     CONNECT_IND of its transmit descriptor (+0x1C: the header, the link
+ *     layer data at the data's EM offset) with its own address (+6), the
+ *     peer's and the RxAdd it advertised, the window offset made from the
+ *     first anchor the controller planned ((+0x1E + 2) x 1.25 ms after the
+ *     event's start on the clock's 1.25 ms grid: r_lld_init_compute_
+ *     winoffset) so that the transmit window holds it; the descriptor is
+ *     then done and the event ends;
+ *   - a connection event, as the master (format 2) or the slave (format 3):
+ *     on the data channel channel selection algorithm #2 gives (+0x16 bit
+ *     14: from the event counter +0x50 and the access address +0xC) or #1
+ *     (the last unmapped channel and the hop increment, +0x16 bits 5:0 and
+ *     12:8), with the map (+0x22, 37 bits). The master sends first, at the
+ *     event's start, and hears the slave's answer T_IFS after; the slave
+ *     listens from the event's start for the receive window and answers
+ *     T_IFS after the master's packet. A packet sent is the one at the
  *     transmit descriptor (+0x1C: next at +0 bits 14:0, header at +2, data
  *     at +4) or an empty one; the sequence numbers acknowledge (the
  *     descriptor acknowledged is marked done, bit 15 of its first
  *     halfword, and +0x1C moves to the next) and drop a resent packet;
- *     while either side has more data it listens again, otherwise the
+ *     while either side has more data the exchange goes on, otherwise the
  *     event ends;
  *   - the received packets go into the receive descriptors (20 bytes from
  *     0x1000, the next at +0x24): +0 bit 15 filled, +2 the status (bit 6 a
@@ -66,13 +82,12 @@
  *     of the buffer the payload goes to (r_lld_rxdesc_check, ..._free,
  *     r_lld_adv_pkt_rx_connect_ind, r_lld_con_rx).
  * The other registers keep what is written.
- * Not yet: scan requests and responses, scanning and initiating (the
- * master's side), the transmit power the controller sets, the received
- * signal strength in the descriptor, the 2M and Coded PHYs, channel
- * selection algorithm #2, extended and periodic advertising, encryption,
- * privacy (resolvable addresses), slave latency, an event's maximum length,
- * sleep, CRC errors, the radio's controls (+0x70 to +0x9C) beyond keeping
- * their values. */
+ * Not yet: scan requests and responses (active scanning, a scan response
+ * sent), the scan and initiator filter policies, the transmit power the
+ * controller sets, the 2M and Coded PHYs, extended and periodic
+ * advertising, encryption, privacy (resolvable addresses), slave latency,
+ * an event's maximum length, sleep, CRC errors, the radio's controls (+0x70
+ * to +0x9C) beyond keeping their values. */
 #include <string.h>
 
 #include "mcu/esp32c3/esp32c3.h"
@@ -151,6 +166,8 @@ struct c3_ble {
     u32 txsent[16];
     u8 tx_acked[16]; /* a descriptor acknowledged: the transmit interrupt after the answer */
     u32 ch_mhz[ET_N]; /* each event's data channel */
+    u8 adv_peer[8];   /* the initiator's peer's advertising PDU: its header and address */
+    u64 et_start[ET_N]; /* each event's start */
 };
 
 static const u32 ADV_MHZ[3] = { 2402u, 2426u, 2480u };
@@ -297,18 +314,38 @@ static int link_of(u32 cs) { return (int)(((cs - CS_BASE) / CS_SIZE) & 15u); }
 
 static u32 data_mhz(u32 ch) { return ch <= 10u ? 2404u + 2u * ch : 2428u + 2u * (ch - 11u); }
 
-/* the event's data channel by channel selection algorithm #1: the last
- * unmapped channel and the hop increment (+0x16), the map (+0x22) */
+/* channel selection algorithm #2's permutation: each byte's bits reversed */
+static u32 csa2_perm(u32 v)
+{
+    u32 r = 0, i;
+    for (i = 0; i < 8u; i++)
+        r |= ((v >> i) & 1u) << (7u - i) | ((v >> (8u + i)) & 1u) << (15u - i);
+    return r;
+}
+
+/* the event's data channel: by channel selection algorithm #2 (+0x16 bit
+ * 14: from the event counter +0x50 and the access address +0xC, Core 5.4
+ * Vol 6 Part B 4.5.8.3) or #1 (the last unmapped channel and the hop
+ * increment, +0x16 bits 5:0 and 12:8), with the map (+0x22) */
 static u32 con_channel(struct c3_ble *k, u32 cs)
 {
-    u32 w = em_read(k, cs + 0x16u, 2), un = ((w & 0x3Fu) + ((w >> 8) & 0x1Fu)) % 37u, used = 0, i, map[37], n = 0;
+    u32 w = em_read(k, cs + 0x16u, 2), un, i, map[37], n = 0, prn = 0;
+    int csa2 = (w >> 14) & 1u;
     for (i = 0; i < 37u; i++)
         if ((em_read(k, cs + 0x22u + i / 8u, 1) >> (i % 8u)) & 1u)
             map[n++] = i;
-    used = n;
-    if (!used || ((em_read(k, cs + 0x22u + un / 8u, 1) >> (un % 8u)) & 1u))
+    if (csa2) {
+        u32 id = em_read(k, cs + 0x0Cu, 2) ^ em_read(k, cs + 0x0Eu, 2), r;
+        prn = em_read(k, cs + 0x50u, 2) ^ id;
+        for (r = 0; r < 3u; r++)
+            prn = (17u * csa2_perm(prn) + id) & 0xFFFFu;
+        prn ^= id;
+        un = prn % 37u;
+    } else
+        un = ((w & 0x3Fu) + ((w >> 8) & 0x1Fu)) % 37u;
+    if (!n || ((em_read(k, cs + 0x22u + un / 8u, 1) >> (un % 8u)) & 1u))
         return un;
-    return map[un % used];
+    return map[csa2 ? (n * prn) >> 16 : un % n];
 }
 
 /* the receive window from now: +0x1A in 2 us units, or in 625 us ones
@@ -358,12 +395,19 @@ static void con_send(struct c3_ble *k, int e)
         k->tx_acked[l] = 0;
         raise(k, I_TX);
     }
-    if (md || k->md_peer[l]) /* more: the master's next packet */
+    if ((em_read(k, cs, 2) & 0x1Fu) == 2u || md || k->md_peer[l]) /* the master hears the answer; more */
         con_listen(k, e, k->hus + air / (ES_PS_PER_US / 2u) + T_IFS_HUS + SYNC_HUS + 32u);
     else {
         k->et_step[e] = 3;
         k->et_at[e] = k->hus + air / (ES_PS_PER_US / 2u);
     }
+}
+
+/* the link has a descriptor to send */
+static int con_more(struct c3_ble *k, u32 cs)
+{
+    u32 desc = em_read(k, cs + 0x1Cu, 2) & 0x7FFFu;
+    return desc && !(em_read(k, desc, 2) & 0x8000u) && (em_read(k, desc + 2u, 2) & 3u);
 }
 
 /* a connection event's next step: its start (listening on its channel),
@@ -378,7 +422,10 @@ static void con_step(struct c3_ble *k, int e)
             k->txsent[l] = 0;
         }
         k->ch_mhz[e] = data_mhz(con_channel(k, cs));
-        con_listen(k, e, k->hus + con_window(k, cs) + SYNC_HUS);
+        if ((em_read(k, cs, 2) & 0x1Fu) == 2u) /* the master speaks first */
+            con_send(k, e);
+        else
+            con_listen(k, e, k->hus + con_window(k, cs) + SYNC_HUS);
         return;
     }
     if (k->et_step[e] == 2) {
@@ -389,13 +436,76 @@ static void con_step(struct c3_ble *k, int e)
     et_over(k, e);
 }
 
+/* ---- scanning ------------------------------------------------------------------ */
+
+/* an advertising channel's index (37-39) to its frequency */
+static u32 adv_mhz_of(u32 ch) { return ch == 37u ? 2402u : ch == 38u ? 2426u : 2480u; }
+
+/* a scan event: it listens on the channel +0x16 gives (bits 5:0) for the
+ * window (+0x1A), taking the advertising PDUs it hears */
+static void scan_step(struct c3_ble *k, int e)
+{
+    u32 cs = cs_of(k, e);
+    if (k->et_step[e] == 0) {
+        k->ch_mhz[e] = adv_mhz_of(em_read(k, cs + 0x16u, 2) & 0x3Fu);
+        con_listen(k, e, k->hus + con_window(k, cs));
+        return;
+    }
+    k->listen_mhz = 0;
+    et_over(k, e);
+}
+
+/* an initiating event: it scans as a scan event does, for its peer; after
+ * the peer's connectable PDU, its CONNECT_IND from the transmit descriptor
+ * (+0x1C): the header, InitA (+6), the peer's AdvA, the link layer data
+ * with the window offset +0x1E gives; the descriptor is then done */
+static void init_step(struct c3_ble *k, int e)
+{
+    u32 cs = cs_of(k, e), desc, hdr, data, n = 0, i;
+    u64 air;
+    if (k->et_step[e] != 2) {
+        scan_step(k, e);
+        return;
+    }
+    desc = em_read(k, cs + 0x1Cu, 2) & 0x7FFFu;
+    hdr = em_read(k, desc + 2u, 2);
+    data = em_read(k, desc + 4u, 2);
+    k->pdu[n++] = (u8)((hdr & 0x3Fu) | (k->adv_peer[0] & 0x40u) << 1); /* RxAdd: the peer's TxAdd */
+    k->pdu[n++] = 34;
+    for (i = 0; i < 6u; i++)
+        k->pdu[n++] = (u8)em_read(k, cs + 6u + i, 1);
+    for (i = 0; i < 6u; i++)
+        k->pdu[n++] = k->adv_peer[2u + i];
+    for (i = 0; i < 22u; i++)
+        k->pdu[n++] = (u8)em_read(k, data + i, 1);
+    air = (u64)(1u + 4u + n + 3u) * 8u * ES_PS_PER_US;
+    {
+        /* the first anchor is +0x1E and two 1.25 ms units after the event's
+         * start on the clock's 1.25 ms grid (r_lld_init_compute_winoffset):
+         * the window offset puts the transmit window, 1.25 ms after the
+         * CONNECT_IND, at or before it, by less than 1.25 ms */
+        u64 end = k->hus + air / (ES_PS_PER_US / 2u) + 2500u;
+        u64 anchor = k->et_start[e] / 2500u * 2500u + ((u64)em_read(k, cs + 0x1Eu, 2) + 2u) * 2500u;
+        u32 off = anchor > end ? (u32)((anchor - end) / 2500u) : 0u;
+        k->pdu[2u + 12u + 8u] = (u8)off; /* WinOffset */
+        k->pdu[2u + 12u + 9u] = (u8)(off >> 8);
+    }
+    if (k->s->host.radio_tx)
+        (void)k->s->host.radio_tx(k->s->host.ctx, k->pdu, n, k->ch_mhz[e], TX_DBM, 1000u, air, ESK_RADIO_BLE,
+                                  0x80000000u | (u32)e);
+    em_write16(k, desc, em_read(k, desc, 2) | 0x8000u);
+    k->listen_mhz = 0;
+    k->et_step[e] = 3;
+    k->et_at[e] = k->hus + air / (ES_PS_PER_US / 2u);
+}
+
 /* the packet received is whole: into the receive descriptor */
 static void rx_done(struct c3_ble *k)
 {
     u32 d = *reg(k, RXDESCPTR) & 0x7FFFu, buf, i, cs = 2u * em_read(k, ET_SIZE * (u32)k->rx_e + 8u, 2);
     u64 slot = k->rx_sync / HUS_PER_HS;
     u32 fine = 624u - (u32)(k->rx_sync % HUS_PER_HS), status = 0, fmt = em_read(k, cs, 2) & 0x1Fu;
-    int con = fmt != 4u && fmt != 5u, l = link_of(cs);
+    int con = fmt == 2u || fmt == 3u, l = link_of(cs);
     k->rx_on = 0;
     if (!d)
         d = RXDESC;
@@ -430,8 +540,26 @@ static void rx_done(struct c3_ble *k)
     *reg(k, RXDESCPTR) = em_read(k, d, 2) & 0x7FFFu;
     if (con) {
         raise(k, I_RX);
-        k->et_step[k->rx_e] = 2; /* the answer */
+        if (fmt == 3u || k->md_peer[l] || con_more(k, cs)) { /* the answer; the master's next packet */
+            k->et_step[k->rx_e] = 2;
+            k->et_at[k->rx_e] = k->rx_end + T_IFS_HUS;
+        } else { /* the master's event is over */
+            if (k->tx_acked[l]) {
+                k->tx_acked[l] = 0;
+                raise(k, I_TX);
+            }
+            k->et_step[k->rx_e] = 3;
+            k->et_at[k->rx_e] = k->rx_end;
+        }
+    } else if (fmt == 14u) { /* initiating: the CONNECT_IND T_IFS after it */
+        raise(k, I_RX);
+        k->et_step[k->rx_e] = 2;
         k->et_at[k->rx_e] = k->rx_end + T_IFS_HUS;
+        memcpy(k->adv_peer, k->rx_pdu, 8);
+    } else if (fmt == 8u) { /* scanning: on to the window's end */
+        raise(k, I_RX);
+        if (k->hus < k->listen_until)
+            k->listen_mhz = k->ch_mhz[k->rx_e];
     } else if ((k->rx_pdu[0] & 15u) == 5u) /* CONNECT_IND: the advertising is over */
         et_over(k, k->rx_e);
 }
@@ -450,8 +578,12 @@ static void events(struct c3_ble *k)
                     et_state(k, e, ST_RUNNING);
                 if (fmt == 4u || fmt == 5u)
                     adv_step(k, e);
-                else if (fmt == 3u)
+                else if (fmt == 2u || fmt == 3u)
                     con_step(k, e);
+                else if (fmt == 8u)
+                    scan_step(k, e);
+                else if (fmt == 14u)
+                    init_step(k, e);
                 else
                     et_over(k, e); /* not modelled yet */
                 again = 1;
@@ -592,6 +724,7 @@ static void ble_write(void *ctx, u32 off, int n, u32 v)
             u64 slot = (u64)em_read(k, et + 2u, 2) | (u64)(em_read(k, et + 4u, 2) & 0x0FFFu) << 16;
             k->et_at[e] = slot * HUS_PER_HS + 624u - (em_read(k, et + 6u, 2) & 0x3FFu);
             k->et_step[e] = 0;
+            k->et_start[e] = k->et_at[e];
             k->et_pending |= 1u << e;
             *r &= ~0x80000000u;
         }
@@ -651,7 +784,18 @@ static int ble_rx(void *ctx, const u8 *f, u32 len, u32 mhz, int rssi, u32 kbps, 
         len > sizeof k->rx_pdu)
         return 0;
     cs = 2u * em_read(k, ET_SIZE * (u32)k->listen_e + 8u, 2);
-    if ((em_read(k, cs, 2) & 0x1Fu) == 4u || (em_read(k, cs, 2) & 0x1Fu) == 5u) {
+    if ((em_read(k, cs, 2) & 0x1Fu) == 14u) { /* initiating: its peer's connectable PDU */
+        u32 t = f[0] & 15u;
+        if ((t != 0u && t != 1u) || len < 8u)
+            return 0;
+        for (i = 0; i < 6u; i++)
+            if (f[2u + i] != (u8)em_read(k, cs + 0x2Cu + i, 1))
+                return 0;
+    } else if ((em_read(k, cs, 2) & 0x1Fu) == 8u) { /* scanning: the advertising PDUs */
+        u32 t = f[0] & 15u;
+        if (t != 0u && t != 1u && t != 2u && t != 4u && t != 6u)
+            return 0;
+    } else if ((em_read(k, cs, 2) & 0x1Fu) == 4u || (em_read(k, cs, 2) & 0x1Fu) == 5u) {
         if ((f[0] & 15u) != 5u || len != 36u) /* a CONNECT_IND, for this advertiser */
             return 0;
         for (i = 0; i < 6u; i++)

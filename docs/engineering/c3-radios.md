@@ -231,9 +231,22 @@ Each step lands usable and green, as in the RTOS boards plan.
    whole. `emblink/ble_central`, a phone's GATT browser, connects as the
    master and discovers the database: `bleprph`, unmodified, logs the
    connection and the read, and the browser lists its GAP, GATT, Alert
-   Notification and own services with their characteristics. Next: scan
-   requests and responses, `blecent` (scanning and initiating, the master's
-   side), `ble_ibeacon`, Arduino-ESP32's BLE.
+   Notification and own services with their characteristics.
+   And the master's side: scan events (control structure format 8: the
+   advertising channel in +0x16 bits 5:0, the window +0x1A, every
+   advertising PDU into the receive descriptors), initiating events
+   (format 14: the peer's address at +0x2C; after its connectable PDU the
+   CONNECT_IND of the transmit descriptor, with its window offset aimed at
+   the first anchor the controller planned, +0x1E and two 1.25 ms units
+   after the event's start on the clock's 1.25 ms grid, as
+   `r_lld_init_compute_winoffset` reckons it) and connection events as the
+   master (format 2: it speaks first). Channel selection algorithm #2 (+0x16
+   bit 14), which two ESP32-C3s use, from the event counter (+0x50) and the
+   access address. A project's boards are distinct chips: a board's
+   `settings.mac` gives its eFuse MAC. Two boards on one air: `blecent`
+   finds `bleprph`, connects, discovers, reads, writes, subscribes and is
+   notified, both unmodified. Next: scan requests and responses,
+   `ble_ibeacon`, Arduino-ESP32's BLE.
 7. **The workbench.** The air as a phone and a scanner see it (the
    access points with their RSSI, BLE devices and their data), the
    capture, the radio's current on the power instruments.

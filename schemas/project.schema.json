@@ -44,7 +44,8 @@
             "additionalProperties": false,
             "properties": {
               "sram_size": {"$ref": "common.schema.json#/$defs/hex_or_size", "description": "Resize of the MCU's main RAM region."},
-              "flash_size": {"$ref": "common.schema.json#/$defs/hex_or_size"}
+              "flash_size": {"$ref": "common.schema.json#/$defs/hex_or_size"},
+              "mac": {"type": "string", "pattern": "^[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}$", "description": "The chip's factory MAC address, for a part that keeps one (an ESP32-C3's eFuse BLOCK1): two boards of a project are two chips. Without it, the part description's."}
             }
           }
         }

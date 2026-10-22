@@ -51,6 +51,7 @@ typedef struct esk_mcu_setup {
     const char *console;  /* the default serial unit ("USART1") */
     const esk_mcu_file *files; /* the memory regions' factory files */
     int nfiles;
+    const unsigned char *mac; /* this chip's factory MAC (6 bytes), or NULL */
 } esk_mcu_setup;
 
 /* Give a component made with esk_mcu_ops its machine and firmware. Errors

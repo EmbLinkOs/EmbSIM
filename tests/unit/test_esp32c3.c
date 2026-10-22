@@ -1737,6 +1737,164 @@ static void test_ble_con(void)
     c3_close(&f);
 }
 
+/* an event of `e` at control structure `cs`, a little after now */
+static void ble_start(c3 *f, int e, u32 cs)
+{
+    u32 et = 0x10u * (u32)e, slot;
+    wr(f, BLE_C3 + 0x1Cu, 0x80000000u);
+    slot = rd(f, BLE_C3 + 0x1Cu) + 4u;
+    em16(f, et, 0);
+    em16(f, et + 2u, slot);
+    em16(f, et + 4u, 0);
+    em16(f, et + 6u, 624u);
+    em16(f, et + 8u, cs / 2u);
+    wr(f, BLE_C3 + 0x100u, 0x80000000u | (u32)e);
+}
+
+static u32 ble_until_tuned(c3 *f)
+{
+    u32 us;
+    for (us = 0; us < 3000u && !f->m.radio.tuned(f->m.radio.ctx, ESK_RADIO_BLE); us++)
+        esk_mach_idle(&f->m, esk_mach_core_hz(&f->m) / 1000000u);
+    return f->m.radio.tuned(f->m.radio.ctx, ESK_RADIO_BLE);
+}
+
+/* the master's side (ble.c): a connection event that speaks first, on the
+ * channel channel selection algorithm #2 gives; a scan event; an
+ * initiating event's CONNECT_IND */
+static void test_ble_master(void)
+{
+    static const u8 peer[6] = { 0x72, 0x6D, 0x45, 0xA1, 0xDF, 0x7C }; /* as on the air */
+    static const u16 csa2[4] = { 0, 2446, 2416, 2448 };               /* events 1-3: channels 20, 6, 21 */
+    u8 m[40];
+    c3 f;
+    u32 i, ev, off;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    memset(&wtx, 0, sizeof wtx);
+    f.m.host.radio_tx = wifi_radio_tx;
+    em_map(&f);
+    wr(&f, BLE_C3 + 0x0Cu, 1u << 1 | 1u << 2 | 1u << 5);
+    wr(&f, BLE_C3 + 0x2D8u, 0x80000000u);
+    em16(&f, 0x1000u, 0x1014u);
+    em16(&f, 0x1000u + 18u, 0x1800u);
+    em16(&f, 0x1014u, 0x1000u);
+    em16(&f, 0x1014u + 18u, 0x1840u);
+    wr(&f, BLE_C3 + 0x24u, 0x1000u);
+    /* a master's link (format 2): channel selection #2 (+0x16 bit 14) with
+     * the access address 0x8E89BED6, its channel identifier 0x305F (Core
+     * 5.4 Vol 6 Part C 3.1); a 2-byte packet to send */
+    em16(&f, 0x45Au, 2u);
+    em16(&f, 0x45Au + 0x0Cu, 0xBED6u);
+    em16(&f, 0x45Au + 0x0Eu, 0x8E89u);
+    em16(&f, 0x45Au + 0x16u, 0xC000u);
+    em16(&f, 0x45Au + 0x1Au, 30u);
+    for (i = 0; i < 4u; i++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x45Au + 0x22u + i, 1, 0xFFu), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x45Au + 0x26u, 1, 0x1Fu), 0);
+    em16(&f, 0x45Au + 0x1Cu, 0x147Eu);
+    em16(&f, 0x147Eu, 0);
+    em16(&f, 0x147Eu + 2u, 2u | 2u << 8);
+    em16(&f, 0x147Eu + 4u, 0x1C00u);
+    em16(&f, 0x1C00u, 'h' | 'i' << 8);
+    for (ev = 1; ev <= 3u; ev++) {
+        int n0 = wtx.n;
+        em16(&f, 0x45Au + 0x50u, ev);
+        ble_start(&f, (int)ev, 0x45Au);
+        for (i = 0; i < 3000u && wtx.n == n0; i++)
+            ble_idle_us(&f, 1);
+        CHECK_EQ(wtx.n, n0 + 1); /* it speaks first, at the event's start */
+        CHECK_EQ(wtx.mhz, csa2[ev]);
+        if (ev == 1u) {
+            CHECK_EQ(wtx.frame[0], 0x02); /* LLID 2, NESN 0, SN 0 */
+            CHECK_EQ(wtx.frame[1], 2);
+            CHECK_EQ(wtx.frame[2], 'h');
+            /* the slave acknowledges T_IFS after it: an empty packet,
+             * NESN 1 */
+            ble_idle_us(&f, 32u + 150u + 10u);
+            CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 2446);
+            m[0] = 0x01 | 1u << 2;
+            m[1] = 0;
+            esk_mach_outside(&f.m);
+            CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, m, 2, 2446u, -40, 1000u, ESK_RADIO_BLE), 0);
+            ble_idle_us(&f, 40u);
+            CHECK(em16r(&f, 0x147Eu) & 0x8000u); /* done */
+            CHECK_EQ(em16r(&f, 0x45Au + 0x1Cu), 0);
+            CHECK_EQ((em16r(&f, 0x10u) >> 3) & 7u, 3u); /* over: neither has more */
+            CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 5) & 31u, 3u); /* received, sent, end */
+            for (i = 0; i < 3u; i++)
+                wr(&f, BLE_C3 + 0x2D8u, 0x80000001u);
+        } else {
+            CHECK_EQ(wtx.frame[0], 0x01 | 1u << 2 | 1u << 3); /* empty, NESN 1, SN 1 */
+            ble_idle_us(&f, 600u); /* no answer: over */
+            CHECK_EQ((em16r(&f, 0x10u * ev) >> 3) & 7u, 3u);
+        }
+    }
+    /* a scan event (format 8) on channel 37 for a 1.25 ms window */
+    em16(&f, 0x400u, 8u);
+    em16(&f, 0x400u + 0x16u, 0x8025u);
+    em16(&f, 0x400u + 0x1Au, 0x8002u);
+    ble_start(&f, 4, 0x400u);
+    CHECK_EQ(ble_until_tuned(&f), 2402);
+    m[0] = 0x00; /* ADV_IND */
+    m[1] = 9;
+    memcpy(m + 2, peer, 6);
+    m[8] = 2, m[9] = 1, m[10] = 6;
+    esk_mach_outside(&f.m);
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, m, 11, 2402u, -50, 1000u, ESK_RADIO_BLE), 0);
+    ble_idle_us(&f, 120u);
+    CHECK_EQ(em16r(&f, 0x1014u + 4u), 0x0900u); /* the second descriptor: ADV_IND, 9 bytes */
+    CHECK_EQ(em16r(&f, 0x1840u), 0x6D72u);       /* its AdvA */
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 2402); /* on to the window's end */
+    ble_idle_us(&f, 1300u);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 0);
+    CHECK_EQ((em16r(&f, 0x40u) >> 3) & 7u, 3u);
+    /* an initiating event (format 14) for the peer on 38: its connectable
+     * PDU answered with the CONNECT_IND, the first anchor (8 + 2) x 1.25 ms
+     * after the event's start on the clock's 1.25 ms grid */
+    em16(&f, 0x400u, 14u);
+    for (i = 0; i < 6u; i++) {
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x400u + 6u + i, 1, 0x64u + i), 0);
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x400u + 0x2Cu + i, 1, peer[i]), 0);
+    }
+    em16(&f, 0x400u + 0x16u, 0x8026u);
+    em16(&f, 0x400u + 0x1Au, 0x8010u);
+    em16(&f, 0x400u + 0x1Cu, 0x148Cu);
+    em16(&f, 0x400u + 0x1Eu, 8u);
+    em16(&f, 0x148Cu, 0);
+    em16(&f, 0x148Cu + 2u, 0x25u | 34u << 8); /* CONNECT_IND, ChSel */
+    em16(&f, 0x148Cu + 4u, 0x1C40u);
+    for (i = 0; i < 22u; i++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x1C40u + i, 1, i + 1u), 0);
+    ble_start(&f, 5, 0x400u);
+    CHECK_EQ(ble_until_tuned(&f), 2426);
+    ble_idle_us(&f, 500u);
+    esk_mach_outside(&f.m);
+    m[0] = 0x20; /* ADV_IND, ChSel, public */
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, m, 11, 2426u, -50, 1000u, ESK_RADIO_BLE), 0);
+    ev = (u32)wtx.n;
+    for (i = 0; i < 400u && (u32)wtx.n == ev; i++)
+        ble_idle_us(&f, 1);
+    CHECK(i >= 112u + 140u && i <= 112u + 160u); /* its end (11 bytes and the CRC), then T_IFS */
+    CHECK_EQ(wtx.mhz, 2426);
+    CHECK_EQ(wtx.len, 36);
+    CHECK_EQ(wtx.frame[0], 0x25);
+    CHECK_EQ(wtx.frame[1], 34);
+    CHECK_EQ(wtx.frame[2], 0x64);                  /* InitA */
+    CHECK(!memcmp(wtx.frame + 8, peer, 6));         /* AdvA */
+    CHECK_EQ(wtx.frame[14], 1);                     /* the link layer data */
+    CHECK_EQ(wtx.frame[35], 22);
+    /* WinOffset: the transmit window 1.25 ms after the CONNECT_IND's end
+     * (about 2.4 ms after the event's start) starts at or before the
+     * anchor (12.5 ms after the grid point before it), by less than 1.25 ms */
+    off = (u32)(wtx.frame[22] | wtx.frame[23] << 8);
+    CHECK_EQ(off, 7u);
+    CHECK(em16r(&f, 0x148Cu) & 0x8000u); /* sent: done */
+    ble_idle_us(&f, 400u);
+    CHECK_EQ((em16r(&f, 0x50u) >> 3) & 7u, 3u);
+    c3_close(&f);
+}
+
 #define GDMA 0x6003F000u
 
 /* a GDMA channel 0 list from `out` (peripheral `peri`'s out link), and an
@@ -3224,6 +3382,7 @@ RUN(test_rng_and_radio);
     RUN(test_aes);
     RUN(test_ble);
     RUN(test_ble_con);
+    RUN(test_ble_master);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
 RUN(test_peripheral_reset_keeps_rate);

@@ -1377,6 +1377,10 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     if (!esk_mcu_is(c))
         return ES_EINVAL;
     esk_mach_init(&st->m, e->a);
+    if (su->mac) {
+        memcpy(st->m.factory_mac, su->mac, 6);
+        st->m.has_factory_mac = 1;
+    }
     st->attached = 1;
     st->m.host.ctx = st;
     st->m.host.out = h_out;
