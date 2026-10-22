@@ -31,7 +31,7 @@ EmbLinkRTOS is developed against are completed first, one at a time. First
 the NUCLEO-F446RE (STM32F446RE, Cortex-M4F; EmbLinkRTOS's ADR-025), then the
 ESP32-C3-DevKitM-1 (M6's ESP32-class board, Q11). Each board is done when
 its MCU, its on-board devices, its vendor's examples and EmbLinkRTOS's
-conformance suite all pass ([the plan](../engineering/rtos-boards.md)).
+conformance suite all pass ([the plan](../engineering/rtos-boards.md)). The ESP32-C3's Wi-Fi and Bluetooth LE follow ([their plan](../engineering/c3-radios.md)).
 M6's remaining parts and M7 follow.
 
 ## 2. Milestones

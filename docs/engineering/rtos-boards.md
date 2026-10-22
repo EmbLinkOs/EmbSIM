@@ -266,7 +266,7 @@ Started only once the NUCLEO-F446RE is done.
    stay declared too: ESP-IDF drives their MAC and PHY from binary
    libraries through registers Espressif does not document, so a stub that
    answers them (a scripted access point) is its own piece of work, after
-   step 7 shows what ESP-IDF's examples need.
+   step 7 shows what ESP-IDF's examples need: [its plan](c3-radios.md).
 6. **The board.**
    - The WS2812 RGB LED on GPIO8 and the BOOT button on GPIO9.
    - The CP2102 bridge on UART0, as a host serial port with

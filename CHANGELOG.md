@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's radios (their plan, step 1)
+
+- **The plan** (`docs/engineering/c3-radios.md`): Wi-Fi and Bluetooth LE
+  modelled at the registers ESP-IDF's closed radio libraries drive, so
+  that ESP-IDF's and Arduino-ESP32's examples run unmodified, with an air
+  that carries frames between boards and the bench's access points and
+  BLE peers.
+- **Fixed:** the ESP32-C3's ROM image lacked `.rodata.interface`, which
+  Espressif's ROM ELF links at 0x3FF1EE3C (ROM1 on the data bus) but loads
+  with no segment: the Wi-Fi and Bluetooth code's pointers into the ROM's
+  RAM and their constant tables read zeros, and ESP-IDF's `esp_wifi_init`
+  panicked storing through `our_instances_ptr`. `esprom.py --alias
+  VADDR=PADDR:SIZE` places a section linked in an alias of the ROM; the
+  image changes only in those 0x11C4 bytes. The Wi-Fi driver now gets as
+  far as `phy_init`.
+
 ### EmbLinkRTOS on the ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 8)
 
 - **EmbLinkRTOS's `esp32c3_devkitm1` board** runs its conformance suite on
