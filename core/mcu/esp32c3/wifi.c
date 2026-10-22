@@ -482,11 +482,17 @@ int esk_esp32c3_wifi_create(struct esk_mach *s)
         return -1;
     memset(k, 0, sizeof *k);
     k->s = s;
-    s->radio.ctx = k;
-    s->radio.kinds = ESK_RADIO_WIFI;
-    s->radio.tuned = tuned;
-    s->radio.rx = rx;
-    s->radio.tx_done = tx_done;
+    {
+        struct esk_radio_port part;
+        memset(&part, 0, sizeof part);
+        part.ctx = k;
+        part.kinds = ESK_RADIO_WIFI;
+        part.tuned = tuned;
+        part.rx = rx;
+        part.tx_done = tx_done;
+        if (esk_esp32c3_radio_join(s, ESK_RADIO_WIFI, &part) != 0)
+            return -1;
+    }
     if (esk_mach_add_dev(s, MAC_BASE, MAC_SIZE, &wifi_ops, k) != ES_OK)
         return -1;
     mac_reset(k);

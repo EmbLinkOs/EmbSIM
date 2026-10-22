@@ -63,6 +63,55 @@ static void rd_reset(void *ctx)
     memset(k->word, 0, k->size);
 }
 
+/* the chip's one radio, which the Wi-Fi MAC and the Bluetooth LE core share:
+ * the air asks each for what it listens on and gives it its frames; a
+ * frame's end goes back to the one that sent it (Bluetooth's tokens have
+ * bit 31 set) */
+struct c3_air {
+    struct esk_radio_port part[2]; /* ESK_RADIO_WIFI, ESK_RADIO_BLE */
+};
+
+static struct esk_radio_port *part_of(struct c3_air *a, int kind)
+{
+    return kind == ESK_RADIO_BLE ? &a->part[1] : &a->part[0];
+}
+
+static u32 air_tuned(void *ctx, int kind)
+{
+    struct esk_radio_port *p = part_of((struct c3_air *)ctx, kind);
+    return p->tuned ? p->tuned(p->ctx, kind) : 0u;
+}
+
+static int air_rx(void *ctx, const u8 *frame, u32 len, u32 mhz, int rssi, u32 kbps, int kind)
+{
+    struct esk_radio_port *p = part_of((struct c3_air *)ctx, kind);
+    return p->rx ? p->rx(p->ctx, frame, len, mhz, rssi, kbps, kind) : 0;
+}
+
+static void air_tx_done(void *ctx, u32 token, int acked)
+{
+    struct esk_radio_port *p = part_of((struct c3_air *)ctx, (token & 0x80000000u) ? ESK_RADIO_BLE : ESK_RADIO_WIFI);
+    if (p->tx_done)
+        p->tx_done(p->ctx, token, acked);
+}
+
+int esk_esp32c3_radio_join(struct esk_mach *s, int kind, const struct esk_radio_port *part)
+{
+    struct c3_air *a = (struct c3_air *)s->radio.ctx;
+    if (!a) {
+        if (!(a = (struct c3_air *)esk_mach_alloc(s, sizeof *a)))
+            return -1;
+        memset(a, 0, sizeof *a);
+        s->radio.ctx = a;
+        s->radio.tuned = air_tuned;
+        s->radio.rx = air_rx;
+        s->radio.tx_done = air_tx_done;
+    }
+    *part_of(a, kind) = *part;
+    s->radio.kinds |= kind;
+    return 0;
+}
+
 static const struct esk_dev_ops radio_ops = {
     "esp32c3-radio", rd_read, rd_write, rd_reset, 0, 0,
 };

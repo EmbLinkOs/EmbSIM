@@ -177,6 +177,34 @@ Each step lands usable and green, as in the RTOS boards plan.
    central, a peripheral with a GATT database). NimBLE's `bleprph` and
    `blecent`, Bluedroid's `ble_ibeacon`, Arduino-ESP32's BLE examples;
    two boards connected.
+   *Under way:* advertising (`ble.c`), found as in step 2 with the
+   controller's ROM routines (`r_lld_*`, `r_sch_*`, `r_rwip_*`, `r_emi_*`)
+   read where they wait. The core is RivieraWaves' BLE IP: VERSION (+0x04)
+   reads 0x09001B00, which `r_lld_core_init` checks; the soft resets in
+   +0x00 bits 31:29 are done at once. The native clock is sampled by +0x1C
+   bit 31 (the half-slots, 312.5 us, in bits 27:0; +0x20 the
+   half-microseconds left in the half-slot, counting down from 624). Three
+   timers raise their interrupts when the clock reaches them: +0xE4 (in
+   10 ms units, bit 9), +0xE8 (a half-slot, bit 10), +0xEC and +0xF0 (a
+   half-slot and the count within it, bit 11). With +0x2D8 bit 31 set the
+   interrupts go through a FIFO (`r_rwble_isr`: the oldest entry's bits in
+   30:10, the count in 9:5, a write of bit 0 removes it), to interrupt
+   source 8. The exchange memory is the controller's RAM, mapped by the
+   registers from +0x204 (`r_emi_em_base_init`: bits 31:18 the EM offset
+   in words, 17:0 the RAM's word address); its exchange table (16 entries
+   of 16 bytes, `r_sch_prog_ble_push`) holds each event's state, start
+   (half-slot and count) and control structure, and a write of bit 31 with
+   the entry's index to +0x100 starts one. An advertising event's control
+   structure (format 4 or 5) gives the address, the channel map and the
+   transmit descriptor; its PDU goes out on each channel of the map at
+   +9 dBm, one T_IFS and a SCAN_REQ's time apart, then the entry reads
+   over and the end interrupt (bit 5) is raised. The radio's Wi-Fi and BLE
+   share the chip's port to the air (`radio.c`). `emblink/ble_scanner`, a
+   phone's scanner app, lists what it hears. NimBLE's `bleprph` as it
+   ships advertises as "nimble-bleprph" and the scanner 2 m away lists it
+   at -37 dBm. Next: receiving (scan requests and responses, CONNECT_IND),
+   connection events and GATT with a central part, `blecent`,
+   `ble_ibeacon`, Arduino-ESP32's BLE.
 7. **The workbench.** The air as a phone and a scanner see it (the
    access points with their RSSI, BLE devices and their data), the
    capture, the radio's current on the power instruments.

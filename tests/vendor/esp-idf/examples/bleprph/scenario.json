@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "bleprph",
+ "until": "1500ms",
+ "description": "bluetooth/nimble/bleprph: ESP-IDF's BLE controller (its ROM's RivieraWaves link layer) and the NimBLE host start, read the public address from eFuse (the station's MAC + 2) and advertise as a connectable peripheral (ADV_IND, general discoverable, the name nimble-bleprph) on the three primary channels at +9 dBm; a phone's scanner 2 m away lists it at -37 dBm, the free-space path loss at 2.4 GHz.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "controller",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "BLE_INIT: Bluetooth MAC: 7c:df:a1:45:6d:64"
+   }
+  },
+  {
+   "id": "host",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE_BLE_PRPH: BLE Host Task Started"
+   }
+  },
+  {
+   "id": "advertising",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: GAP procedure initiated: advertise; "
+   }
+  },
+  {
+   "id": "no-assert",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "assert"
+   }
+  },
+  {
+   "id": "phone-sees-one",
+   "at": "1500ms",
+   "probe": "phone-devices",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "phone-list",
+   "at": "1500ms",
+   "probe": "phone",
+   "expect": {
+    "contains": "7c:df:a1:45:6d:64 (public) ADV_IND -37dBm connectable \"nimble-bleprph\""
+   }
+  }
+ ]
+}

@@ -44,6 +44,7 @@ from vendor_run import run_scenario, sh  # noqa: E402
 # examples/<name>/ and its directory in ESP-IDF
 EXAMPLES = {
     "adc_oneshot_read": "examples/peripherals/adc/oneshot_read",
+    "bleprph": "examples/bluetooth/nimble/bleprph",
     "blink": "examples/get-started/blink",
     "gptimer": "examples/peripherals/timer_group/gptimer",
     "hello_world": "examples/get-started/hello_world",

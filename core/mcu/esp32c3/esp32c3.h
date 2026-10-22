@@ -94,9 +94,15 @@ u32 esk_esp32c3_regi2c_get(struct esk_mach *s, u32 block, u32 r);
 /* the radio's register blocks FE2, FE and NRX (radio.c), mapped by the
  * SYSTEM model: 0, or -1 */
 int esk_esp32c3_radio_create(struct esk_mach *s);
-/* the Wi-Fi MAC (wifi.c), mapped by the SYSTEM model, the machine's radio
- * port: 0, or -1 */
+/* the chip's radio port, shared by the Wi-Fi MAC and the Bluetooth LE core
+ * (radio.c): `part` takes the frames of `kind` (ESK_RADIO_WIFI or
+ * ESK_RADIO_BLE; Bluetooth's transmit tokens have bit 31 set): 0, or -1 */
+int esk_esp32c3_radio_join(struct esk_mach *s, int kind, const struct esk_radio_port *part);
+/* the Wi-Fi MAC (wifi.c), mapped by the SYSTEM model, on the radio port:
+ * 0, or -1 */
 int esk_esp32c3_wifi_create(struct esk_mach *s);
+/* the Bluetooth LE core (ble.c), mapped by the SYSTEM model: 0, or -1 */
+int esk_esp32c3_ble_create(struct esk_mach *s);
 extern const struct esk_dev_ops esk_esp32c3_sha_ops;
 void *esk_esp32c3_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_aes_ops;

@@ -705,6 +705,88 @@ static void test_wifi_ap(void)
     esk_registry_free(&r);
 }
 
+/* a BLE advertiser for the scanner: ADV_IND (or `type`) from `addr` with a
+ * Complete Local Name */
+static void t_adv(esk_engine *e, t_node *from, unsigned type, const uint8_t addr[6], const char *name, es_time_t start)
+{
+    static uint8_t p[40];
+    esk_air_frame fr;
+    uint32_t i, n = (uint32_t)strlen(name), len = 6u + 3u + 2u + n;
+    p[0] = (uint8_t)type;
+    p[1] = (uint8_t)len;
+    for (i = 0; i < 6; i++)
+        p[2 + i] = addr[5 - i]; /* AdvA, little-endian */
+    p[8] = 2;
+    p[9] = 1;
+    p[10] = 6;
+    p[11] = (uint8_t)(n + 1u);
+    p[12] = 9;
+    memcpy(p + 13, name, n);
+    fr.data = p;
+    fr.len = len + 2u;
+    fr.mhz = from->mhz;
+    fr.dbm = 0.0;
+    fr.rate_kbps = 1000u;
+    fr.kind = ESK_AIR_BLE;
+    CHECK(esk_air_send(e, &from->n, &fr, start, esk_air_ble_airtime(fr.len, 1000u), 1u) == ES_OK);
+}
+
+/* the scanner (ble_scanner.c): one advertising channel each interval, in
+ * turn; the advertisers it heard, as a phone's scanner app lists them */
+static void test_ble_scanner(void)
+{
+    static const uint8_t a1[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x64 };
+    static const uint8_t a2[6] = { 0xc0, 0x11, 0x22, 0x33, 0x44, 0x55 };
+    esk_engine e;
+    esk_registry r;
+    esk_comp *sc, *sc2;
+    t_node adv;
+    esk_json *o;
+    const char *list;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_registry_init(&r, &A);
+    sc = add(&e, &r, "PHONE", "ble_scanner", NULL, NULL, 0, NULL);
+    sc2 = add(&e, &r, "PHONE2", "ble_scanner", NULL, NULL, 0, "{\"window\": 10, \"interval\": 30}");
+    CHECK(sc != NULL && sc2 != NULL);
+    esk_engine_reset(&e);
+    t_init(&adv, 2402u);
+    adv.n.kind = ESK_AIR_BLE;
+    CHECK(esk_air_attach(&e, &adv.n) == ES_OK);
+    /* on 37 for the first 30 ms; the second scanner only for 10 */
+    t_adv(&e, &adv, 0, a1, "nimble-bleprph", 1 * ES_PS_PER_MS);
+    adv.mhz = 2426u; /* 38: not heard now */
+    t_adv(&e, &adv, 0, a1, "nimble-bleprph", 2 * ES_PS_PER_MS);
+    adv.mhz = 2402u;
+    t_adv(&e, &adv, 0x42, a2, "tag", 15 * ES_PS_PER_MS); /* ADV_NONCONN_IND, random */
+    esk_engine_advance(&e, 20 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    sc->ops->observe(sc, o);
+    CHECK_EQ(esk_json_get_num(o, "devices", -1), 2);
+    CHECK_EQ(esk_json_get_num(o, "pdus", -1), 2);
+    list = esk_json_get_str(o, "list", "");
+    CHECK(strstr(list, "7c:df:a1:45:6d:64 (public) ADV_IND -40dBm connectable \"nimble-bleprph\"\n") != NULL);
+    CHECK(strstr(list, "c0:11:22:33:44:55 (random) ADV_NONCONN_IND -40dBm - \"tag\"\n") != NULL);
+    esk_json_free(&A, o);
+    o = esk_json_new_object(&A);
+    sc2->ops->observe(sc2, o);
+    CHECK_EQ(esk_json_get_num(o, "pdus", -1), 1); /* its window had closed */
+    esk_json_free(&A, o);
+    /* then on 38 */
+    adv.mhz = 2426u;
+    t_adv(&e, &adv, 0, a1, "nimble-bleprph", 32 * ES_PS_PER_MS);
+    adv.mhz = 2402u;
+    t_adv(&e, &adv, 0, a1, "nimble-bleprph", 33 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 40 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    sc->ops->observe(sc, o);
+    CHECK_EQ(esk_json_get_num(o, "devices", -1), 2);
+    CHECK_EQ(esk_json_get_num(o, "pdus", -1), 3);
+    esk_json_free(&A, o);
+    esk_air_detach(&e, &adv.n);
+    esk_engine_free(&e);
+    esk_registry_free(&r);
+}
+
 /* WPA2-Personal: the test plays the station's supplicant through the 4-way
  * handshake, then sends and receives CCMP frames */
 static void test_wifi_ap_wpa2(void)
@@ -856,6 +938,7 @@ RUN(test_virtual_terminal);
 RUN(test_air);
 RUN(test_wifi_ap);
 RUN(test_wifi_ap_wpa2);
+RUN(test_ble_scanner);
 esk_diag_free(&D);
 CHECK_EQ(A.allocations, 0);
 TEST_MAIN_END

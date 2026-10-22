@@ -5,8 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### The ESP32-C3's radios (their plan, steps 1 to 3; step 4's WPA2)
+### The ESP32-C3's radios (their plan, steps 1 to 3; step 4's WPA2; step 6's advertising)
 
+- **Bluetooth LE advertising** (`ble.c`, step 6). The ESP32-C3's BLE core,
+  RivieraWaves' IP as the controller in the ROM drives it: its version,
+  soft resets, the native clock (half-slots and the half-microsecond count
+  down), the 10 ms, half-slot and half-microsecond timers, the interrupt
+  FIFO on source 8, the exchange memory's mapping into RAM, the exchange
+  table's events started by +0x100, and an advertising event sending its
+  PDU on each channel of its map at +9 dBm. The chip's Wi-Fi and BLE share
+  its port to the air (`radio.c`). NimBLE's `bluetooth/nimble/bleprph`,
+  unmodified, advertises as "nimble-bleprph" (`bleprph`, 6 assertions).
+- **`emblink/ble_scanner`**, a phone's BLE scanner app: passive scanning
+  on channels 37, 38 and 39 in turn with a window and interval, the
+  advertisers heard with their address, PDU type, name and RSSI. It lists
+  `bleprph` 2 m from the board at -37 dBm.
 - **WPA2-Personal end to end.** ESP-IDF's `wifi/getting_started/station`
   as it ships (WPA2-PSK, `myssid`/`mypassword`) joins the bench's access
   point and leases its address (`wifi_station`, 13 assertions): the

@@ -1288,16 +1288,17 @@ static struct {
     int n;
     u8 frame[64];
     u32 len, mhz, kbps, token;
-    int kind;
+    int kind, dbm;
+    u64 airtime;
 } wtx;
 
 static int wifi_radio_tx(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32 kbps, u64 airtime, int kind,
                          u32 token)
 {
     (void)ctx;
-    (void)dbm;
-    (void)airtime;
     wtx.n++;
+    wtx.dbm = dbm;
+    wtx.airtime = airtime;
     wtx.len = len;
     memcpy(wtx.frame, frame, len < sizeof wtx.frame ? len : sizeof wtx.frame);
     wtx.mhz = mhz;
@@ -1323,7 +1324,7 @@ static void test_wifi_mac(void)
         return;
     memset(&wtx, 0, sizeof wtx);
     f.m.host.radio_tx = wifi_radio_tx;
-    CHECK(f.m.radio.rx != NULL && f.m.radio.kinds == ESK_RADIO_WIFI);
+    CHECK(f.m.radio.rx != NULL && (f.m.radio.kinds & ESK_RADIO_WIFI));
     wr(&f, REGI2C + 0x150u, 37u << 20); /* the RF PLL at 2437 MHz, channel 6 */
     wr(&f, MAC + 0xC34u, 0x19A879E0u);  /* hal_init's interrupt enables */
     /* transmit: a 24-byte probe request (28 with its FCS) on queue 0 */
@@ -1435,6 +1436,146 @@ static void test_wifi_mac(void)
     wr(&f, MAC + 0x200Cu, 1u);
     CHECK_NEAR((double)rd(&f, MAC + 0x2018u), (double)rd(&f, MAC + 0x2000u), 1.0);
     CHECK_EQ(rd(&f, MAC + 0x201Cu), 0);
+    c3_close(&f);
+}
+
+/* the Bluetooth LE core (ble.c): its exchange memory, mapped at EM_RAM */
+#define BLE_C3 0x60031000u
+#define EM_RAM 0x3FCA0000u
+
+static void em16(c3 *f, u32 o, u32 v)
+{
+    CHECK_EQ(esk_bus_debug_write(&f->m.bus, EM_RAM + o, 2, v), 0);
+}
+
+static u32 em16r(c3 *f, u32 o)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_debug_read(&f->m.bus, EM_RAM + o, 2, &v), 0);
+    return v;
+}
+
+/* microseconds until the radio has sent `n` frames */
+static u32 ble_us_until(c3 *f, int n)
+{
+    u32 us = 0;
+    while (wtx.n < n && us < 100000u) {
+        esk_mach_idle(&f->m, esk_mach_core_hz(&f->m) / 1000000u);
+        us++;
+    }
+    return us;
+}
+
+static void test_ble(void)
+{
+    /* the controller's way with the core (c3-radios.md step 6): the IP's
+     * version, the native clock sampled, a half-slot timer's interrupt with
+     * and without the FIFO, and an advertising event started from the
+     * exchange table: its PDU on 37, 38 and 39 at +9 dBm, then its end */
+    static const u8 ad[9] = { 2, 1, 6, 5, 9, 'b', 'e', 'n', 'c' };
+    c3 f;
+    u32 i, slot, w, us;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    memset(&wtx, 0, sizeof wtx);
+    f.m.host.radio_tx = wifi_radio_tx;
+    CHECK(f.m.radio.kinds & ESK_RADIO_BLE);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 0);
+    CHECK_EQ(rd(&f, BLE_C3 + 0x04u), 0x09001B00u);
+    wr(&f, BLE_C3, 0xE0000001u); /* the soft resets: done at once */
+    CHECK_EQ(rd(&f, BLE_C3), 1u);
+    /* 1 ms: 2000 half-microseconds, 3 half-slots and 125 into the fourth */
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000u);
+    wr(&f, BLE_C3 + 0x1Cu, 0x80000000u);
+    CHECK_EQ(rd(&f, BLE_C3 + 0x1Cu), 3u);
+    CHECK_EQ(rd(&f, BLE_C3 + 0x20u), 499u);
+    /* the half-slot timer at 10 (3125 us) */
+    wr(&f, BLE_C3 + 0x0Cu, 1u << 10 | 1u << 5);
+    wr(&f, BLE_C3 + 0xE8u, 10u);
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000u);
+    CHECK_EQ(rd(&f, BLE_C3 + 0x10u), 0);
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 800u);
+    CHECK_EQ(rd(&f, BLE_C3 + 0x10u), 1u << 10);
+    CHECK(rd(&f, INTR_STATUS_0) & 1u << 8); /* source 8, RWBLE */
+    wr(&f, BLE_C3 + 0x18u, 1u << 10);
+    CHECK_EQ(rd(&f, BLE_C3 + 0x10u), 0);
+    CHECK_EQ(rd(&f, INTR_STATUS_0) & 1u << 8, 0);
+    /* with the FIFO: the entry until it is taken */
+    wr(&f, BLE_C3 + 0x2D8u, 0x80000000u);
+    wr(&f, BLE_C3 + 0xE8u, 12u);
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000u);
+    w = rd(&f, BLE_C3 + 0x2D8u);
+    CHECK_EQ((w >> 5) & 31u, 1u);
+    CHECK_EQ((w >> 10) & 0x1FFFFFu, 1u << 10);
+    CHECK(rd(&f, INTR_STATUS_0) & 1u << 8);
+    wr(&f, BLE_C3 + 0x18u, 1u << 10);
+    CHECK(rd(&f, INTR_STATUS_0) & 1u << 8); /* still in the FIFO */
+    wr(&f, BLE_C3 + 0x2D8u, 0x80000001u);
+    CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 5) & 31u, 0);
+    CHECK_EQ(rd(&f, INTR_STATUS_0) & 1u << 8, 0);
+    /* the exchange memory from EM_RAM; an advertising event: the control
+     * structure at 0x400, its descriptor at 0x500, its data at 0x600 */
+    wr(&f, BLE_C3 + 0x204u, (EM_RAM & 0xFFFFCu) >> 2);
+    em16(&f, 0x400u, 4u);
+    for (i = 0; i < 6u; i += 2)
+        em16(&f, 0x406u + i, (u32)(0x11u * (i + 1u)) | (u32)(0x11u * (i + 2u)) << 8);
+    em16(&f, 0x416u, 7u);
+    em16(&f, 0x41Cu, 0x500u);
+    em16(&f, 0x502u, 0u | (6u + sizeof ad) << 8); /* ADV_IND, public */
+    em16(&f, 0x504u, 0x600u);
+    for (i = 0; i < sizeof ad; i++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x600u + i, 1, ad[i]), 0);
+    wr(&f, BLE_C3 + 0x1Cu, 0x80000000u);
+    slot = rd(&f, BLE_C3 + 0x1Cu) + 4u; /* 1.25 ms on */
+    em16(&f, 0, 0);
+    em16(&f, 2, slot);
+    em16(&f, 4, 0);
+    em16(&f, 6, 624u);
+    em16(&f, 8, 0x400u / 2u);
+    wr(&f, BLE_C3 + 0x100u, 0x80000000u);
+    CHECK_EQ(rd(&f, BLE_C3 + 0x100u) & 0x80000000u, 0);
+    us = ble_us_until(&f, 1); /* at the start of half-slot `slot` */
+    CHECK(us >= 937u && us <= 1251u);
+    CHECK_EQ((em16r(&f, 0) >> 3) & 7u, 2u); /* under way */
+    CHECK_EQ(wtx.kind, ESK_RADIO_BLE);
+    CHECK_EQ(wtx.mhz, 2402);
+    CHECK_EQ(wtx.kbps, 1000);
+    CHECK_EQ(wtx.dbm, 9);
+    CHECK_EQ(wtx.token, 0x80000000u);
+    CHECK_EQ(wtx.len, 8u + sizeof ad);
+    CHECK_EQ(wtx.frame[0], 0);
+    CHECK_EQ(wtx.frame[1], 6u + sizeof ad);
+    CHECK_EQ(wtx.frame[2], 0x11);
+    CHECK_EQ(wtx.frame[7], 0x66);
+    CHECK(!memcmp(wtx.frame + 8, ad, sizeof ad));
+    CHECK_EQ(wtx.airtime, (u64)(1u + 4u + 8u + sizeof ad + 3u) * 8u * ES_PS_PER_US);
+    /* the next channels each after the PDU, T_IFS and a SCAN_REQ's time:
+     * 152 + 150 + 176 us */
+    us = ble_us_until(&f, 2);
+    CHECK(us >= 520u && us <= 530u);
+    CHECK_EQ(wtx.mhz, 2426);
+    us = ble_us_until(&f, 3);
+    CHECK(us >= 520u && us <= 530u);
+    CHECK_EQ(wtx.mhz, 2480);
+    CHECK_EQ(rd(&f, INTR_STATUS_0) & 1u << 8, 0);
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000u);
+    CHECK_EQ(wtx.n, 3);
+    CHECK_EQ((em16r(&f, 0) >> 3) & 7u, 3u); /* over */
+    w = rd(&f, BLE_C3 + 0x2D8u);
+    CHECK_EQ((w >> 5) & 31u, 1u);
+    CHECK_EQ((w >> 10) & 0x1FFFFFu, 1u << 5);
+    CHECK(rd(&f, INTR_STATUS_0) & 1u << 8);
+    /* one channel in the map: one PDU */
+    em16(&f, 0x416u, 2u);
+    em16(&f, 0, 0);
+    wr(&f, BLE_C3 + 0x1Cu, 0x80000000u);
+    em16(&f, 2, rd(&f, BLE_C3 + 0x1Cu) + 2u);
+    wr(&f, BLE_C3 + 0x100u, 0x80000000u);
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 200u);
+    CHECK_EQ(wtx.n, 4);
+    CHECK_EQ(wtx.mhz, 2426);
+    CHECK_EQ((em16r(&f, 0) >> 3) & 7u, 3u);
+    CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 5) & 31u, 2u);
     c3_close(&f);
 }
 
@@ -2923,6 +3064,7 @@ RUN(test_rng_and_radio);
     RUN(test_wifi_ccmp);
     RUN(test_sha_dma);
     RUN(test_aes);
+    RUN(test_ble);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
 RUN(test_peripheral_reset_keeps_rate);
