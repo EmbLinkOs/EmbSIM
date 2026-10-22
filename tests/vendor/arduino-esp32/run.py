@@ -45,6 +45,10 @@ EXAMPLES = {
     "Fade": ("builtin", "01.Basics/Fade"),
     "GetChipID": ("core", "ESP32/examples/ChipID/GetChipID"),
     "RepeatTimer": ("core", "ESP32/examples/Timer/RepeatTimer"),
+    "WiFiScan": ("core", "WiFi/examples/WiFiScan"),
+    "WiFiClientConnect": ("core", "WiFi/examples/WiFiClientConnect"),
+    "BLE_Server": ("core", "BLE/examples/Server"),
+    "BLE_iBeacon": ("core", "BLE/examples/iBeacon"),
 }
 
 

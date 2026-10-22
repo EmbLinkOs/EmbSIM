@@ -15,6 +15,6 @@ toolchains.
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
 | `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |
 | `esp-idf/` | ESP-IDF v5.4's own examples (hello_world, blink, LEDC, the temperature sensor, the ADC, an I2C EEPROM, the general-purpose timer, a UART echo, FreeRTOS's run-time statistics), built by `idf.py` into a flash image | `emblink/esp32c3_devkitm1` |
-| `arduino-esp32/` | Arduino-ESP32 3.2.0 through arduino-cli, as the IDE builds for "ESP32C3 Dev Module": the IDE's Blink, DigitalReadSerial and Fade, the core's GetChipID and RepeatTimer | `emblink/esp32c3_devkitm1` |
+| `arduino-esp32/` | Arduino-ESP32 3.2.0 through arduino-cli, as the IDE builds for "ESP32C3 Dev Module": the IDE's Blink, DigitalReadSerial and Fade, the core's GetChipID, RepeatTimer, WiFiScan and WiFiClientConnect, the BLE library's Server and iBeacon | `emblink/esp32c3_devkitm1` |
 
 `vendor_run.py` is what their runners share.

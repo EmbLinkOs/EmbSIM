@@ -166,7 +166,8 @@ Each step lands usable and green, as in the RTOS boards plan.
    place for net80211's `ccmp_decap`); the SHA accelerator's DMA mode and
    the AES accelerator, which ESP-IDF's wpa_supplicant uses for PBKDF2 and
    the key unwrap. `station` as it ships (WPA2-PSK) joins and gets its
-   address. Next: the network beyond the router (DNS, TCP and UDP to the
+   address. Arduino-ESP32's `WiFiScan` and `WiFiClientConnect` run as
+   they ship. Next: the network beyond the router (DNS, TCP and UDP to the
    host) for `http_request`, then step 5.
 5. **The rest of Wi-Fi.** The access point mode with a station part and
    with another board; `http_request`; ESP-NOW between two boards; power
@@ -245,8 +246,11 @@ Each step lands usable and green, as in the RTOS boards plan.
    access address. A project's boards are distinct chips: a board's
    `settings.mac` gives its eFuse MAC. Two boards on one air: `blecent`
    finds `bleprph`, connects, discovers, reads, writes, subscribes and is
-   notified, both unmodified. Next: scan requests and responses,
-   `ble_ibeacon`, Arduino-ESP32's BLE.
+   notified, both unmodified. Arduino-ESP32's BLE library, which is
+   Bluedroid in 3.2.0, runs on the same controller: its `Server` sketch is
+   connected to and read by the tablet, its `iBeacon` sketch's beacon is
+   decoded by the phone's scanner. Next: scan requests and responses,
+   Bluedroid's `ble_ibeacon` from ESP-IDF.
 7. **The workbench.** The air as a phone and a scanner see it (the
    access points with their RSSI, BLE devices and their data), the
    capture, the radio's current on the power instruments.

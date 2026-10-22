@@ -10,8 +10,10 @@
  *   - an advertising PDU heard (ADV_IND, ADV_DIRECT_IND,
  *     ADV_NONCONN_IND, ADV_SCAN_IND) adds or updates its advertiser: its
  *     address and whether it is public or random, the PDU type, its name
- *     (the AD types Complete and Shortened Local Name), the last RSSI and
- *     how many it heard;
+ *     (the AD types Complete and Shortened Local Name), an iBeacon's
+ *     proximity UUID, major, minor and measured power (Apple's manufacturer
+ *     data: company 0x004C, type 0x02, length 0x15), the last RSSI and how
+ *     many it heard;
  *   - its outputs list them as a scanner app does.
  *
  * Not yet: active scanning (SCAN_REQ, SCAN_RSP), connections, extended
@@ -34,6 +36,7 @@ typedef struct sc_dev {
     int random;
     unsigned type;
     char name[32];
+    char beacon[80];
     int rssi;
     uint64_t heard;
 } sc_dev;
@@ -77,6 +80,24 @@ static sc_dev *dev_find(sc_state *s, const uint8_t *addr, int random)
     return free_one;
 }
 
+/* an iBeacon as scanner apps show it: the UUID in its usual form, major
+ * and minor (big-endian), the measured power at 1 m */
+static void beacon_text(char *out, size_t cap, const uint8_t *b)
+{
+    char *o = out;
+    size_t left = cap;
+    int i, k;
+    for (i = 0; i < 16; i++) {
+        k = snprintf(o, left, "%s%02X", i == 4 || i == 6 || i == 8 || i == 10 ? "-" : "", b[i]);
+        if (k < 0 || (size_t)k >= left)
+            return;
+        o += k;
+        left -= (size_t)k;
+    }
+    snprintf(o, left, " major %u minor %u %ddBm@1m", (unsigned)(b[16] << 8 | b[17]), (unsigned)(b[18] << 8 | b[19]),
+             (int)(int8_t)b[20]);
+}
+
 static int sc_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
 {
     sc_state *s = (sc_state *)ctx;
@@ -112,6 +133,8 @@ static int sc_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
                 memcpy(d->name, p + i + 2, l - 1u);
                 d->name[l - 1u] = 0;
             }
+            if (t == 0xFF && l == 26u && p[i + 2] == 0x4C && p[i + 3] == 0x00 && p[i + 4] == 0x02 && p[i + 5] == 0x15)
+                beacon_text(d->beacon, sizeof d->beacon, p + i + 6);
             i += 1u + l;
         }
     return 0;
@@ -192,10 +215,11 @@ static void sc_observe(esk_comp *c, esk_json *out)
         if (!d->used)
             continue;
         count++;
-        k = snprintf(s->list + n, LIST_CAP - n, "%02x:%02x:%02x:%02x:%02x:%02x (%s) %s %ddBm %s \"%s\"\n", d->addr[0],
-                     d->addr[1], d->addr[2], d->addr[3], d->addr[4], d->addr[5], d->random ? "random" : "public",
-                     types[d->type < 7 ? d->type : 3], d->rssi, d->type == 0 || d->type == 1 ? "connectable" : "-",
-                     d->name);
+        k = snprintf(s->list + n, LIST_CAP - n, "%02x:%02x:%02x:%02x:%02x:%02x (%s) %s %ddBm %s \"%s\"%s%s\n",
+                     d->addr[0], d->addr[1], d->addr[2], d->addr[3], d->addr[4], d->addr[5],
+                     d->random ? "random" : "public", types[d->type < 7 ? d->type : 3], d->rssi,
+                     d->type == 0 || d->type == 1 ? "connectable" : "-", d->name, d->beacon[0] ? " iBeacon " : "",
+                     d->beacon);
         if (k < 0 || (size_t)k >= LIST_CAP - n)
             break;
         n += (size_t)k;

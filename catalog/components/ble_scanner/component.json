@@ -66,7 +66,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Passive scanning on the primary advertising channels at 1M: ADV_IND, ADV_DIRECT_IND, ADV_NONCONN_IND and ADV_SCAN_IND heard on the channel its window is open on, the scan window and interval as set (Bluetooth Core 5.4 Vol 6 Part B 2.3, 4.4.3); each advertiser's address and kind, its local name from the AD structures, the RSSI the free-space path loss over the bench distance gives (engine/air.h).",
+      "claims": "Passive scanning on the primary advertising channels at 1M: ADV_IND, ADV_DIRECT_IND, ADV_NONCONN_IND and ADV_SCAN_IND heard on the channel its window is open on, the scan window and interval as set (Bluetooth Core 5.4 Vol 6 Part B 2.3, 4.4.3); each advertiser's address and kind, its local name from the AD structures, an iBeacon's proximity UUID, major, minor and measured power (Apple's manufacturer data), the RSSI the free-space path loss over the bench distance gives (engine/air.h).",
       "omissions": [
         "active scanning (SCAN_REQ, SCAN_RSP)",
         "connecting",

@@ -824,6 +824,27 @@ static void test_ble_scanner(void)
     CHECK_EQ(esk_json_get_num(o, "devices", -1), 2);
     CHECK_EQ(esk_json_get_num(o, "pdus", -1), 3);
     esk_json_free(&A, o);
+    /* an iBeacon (Apple's manufacturer data) on 38: decoded */
+    {
+        static const uint8_t ib[] = { 0x00, 6 + 3 + 27, 0x55, 0x44, 0x33, 0x22, 0x11, 0xc0, 2, 1, 0x1a, 26, 0xff,
+                                      0x4c, 0x00, 0x02, 0x15, 0x2d, 0x7a, 0x9f, 0x0c, 0xe0, 0xe8, 0x4c, 0xc9, 0xa7,
+                                      0x1b, 0xa2, 0x1d, 0xb2, 0xd0, 0x34, 0xa1, 0x00, 0x05, 0x00, 0x58, 0xc5 };
+        esk_air_frame fr;
+        fr.data = ib;
+        fr.len = sizeof ib;
+        fr.mhz = 2426u;
+        fr.dbm = 0.0;
+        fr.rate_kbps = 1000u;
+        fr.kind = ESK_AIR_BLE;
+        CHECK(esk_air_send(&e, &adv.n, &fr, 45 * ES_PS_PER_MS, esk_air_ble_airtime(fr.len, 1000u), 1u) == ES_OK);
+        esk_engine_advance(&e, 50 * ES_PS_PER_MS);
+        o = esk_json_new_object(&A);
+        sc->ops->observe(sc, o);
+        CHECK(strstr(esk_json_get_str(o, "list", ""),
+                     "c0:11:22:33:44:55 (public) ADV_IND -40dBm connectable \"\" iBeacon "
+                     "2D7A9F0C-E0E8-4CC9-A71B-A21DB2D034A1 major 5 minor 88 -59dBm@1m\n") != NULL);
+        esk_json_free(&A, o);
+    }
     esk_air_detach(&e, &adv.n);
     esk_engine_free(&e);
     esk_registry_free(&r);

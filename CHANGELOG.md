@@ -7,6 +7,17 @@ versions follow semantic versioning. There is no release yet.
 
 ### The ESP32-C3's radios (their plan, steps 1 to 3; step 4's WPA2; step 6's advertising and connections)
 
+- **Arduino-ESP32's Wi-Fi and BLE sketches**, unmodified
+  (`tests/vendor/arduino-esp32`): `WiFiScan` lists the bench's two access
+  points with their RSSI, channel and security; `WiFiClientConnect` joins
+  the WPA2 network it names and prints its DHCP address; the BLE library's
+  `Server` (Bluedroid, as Arduino-ESP32 3.2.0 builds it) is connected to by
+  a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
+  advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
+  hosts, NimBLE and Bluedroid, run on the controller.
+- **`emblink/ble_scanner` decodes iBeacons**: Apple's manufacturer data
+  (company 0x004C, type 0x02) gives the proximity UUID, major, minor and
+  measured power, as a beacon app shows them.
 - **Bluetooth LE advertising** (`ble.c`, step 6). The ESP32-C3's BLE core,
   RivieraWaves' IP as the controller in the ROM drives it: its version,
   soft resets, the native clock (half-slots and the half-microsecond count

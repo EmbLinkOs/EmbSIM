@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "WiFiScan",
+ "until": "4000ms",
+ "description": "WiFi/examples/WiFiScan, unmodified: the sketch sets the station mode and scans every channel (WiFi.scanNetworks, ESP-IDF's esp_wifi_scan_start below it); the two access points nearby answer its probe requests, and it prints each one with its SSID, its RSSI at the board (free-space loss at 2.4 GHz over their distance), its channel and its security, as on a real board.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "scan",
+   "at": "4000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "2 networks found"
+   }
+  },
+  {
+   "id": "home",
+   "at": "4000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "HomeNet"
+   }
+  },
+  {
+   "id": "home-wpa2",
+   "at": "4000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "|  -30 |  6 | WPA2"
+   }
+  },
+  {
+   "id": "coffee",
+   "at": "4000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "CoffeeShop"
+   }
+  },
+  {
+   "id": "coffee-open",
+   "at": "4000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "|  -42 |  1 | open"
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "4000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  }
+ ]
+}
