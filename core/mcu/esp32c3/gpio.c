@@ -252,7 +252,7 @@ int esk_esp32c3_uart_pin(struct esk_mach *m, const char *unit, int tx, int *port
     if (tx) {
         for (n = 0; n < NPIN; n++) {
             u32 sel = mux_sel(k, n);
-            if ((sel == 1 && (reg(k->fout[n]) & 0xffu) == (u ? SIG_U1TXD : SIG_U0TXD)) ||
+            if ((sel == 1 && (reg(k->fout[n]) & 0xffu) == (u32)(u ? SIG_U1TXD : SIG_U0TXD)) ||
                 (u == 0 && sel == 0 && n == 21)) {
                 *port = n / 16;
                 *bit = n % 16;
