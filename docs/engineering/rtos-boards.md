@@ -292,6 +292,12 @@ Started only once the NUCLEO-F446RE is done.
    now plugs a board into a USB port. ESP-IDF v5.4's hello_world runs on
    the board from its flash image (`embsim run --target
    emblink/esp32c3_devkitm1 --image flash.bin --console`).
+   Its `reference.json` qualifies the artwork against Espressif's V1.0
+   dimension drawing, read from the PDF's vector paths: the outline, the
+   30 header pads (pad 1 at 2.063 mm, 2.54 mm pitch, rows 22.86 mm apart)
+   and the micro-USB's body. Every part is placed from the drawing's pads;
+   the pads had been 0.39 mm high, the RGB LED 1.1 mm and the micro-USB
+   0.64 mm out.
 7. **Vendor examples.** ESP-IDF's examples, unmodified: hello_world, blink
    with led_strip on RMT, gptimer, uart_echo, i2c, ledc, and the FreeRTOS
    it ships. Then Arduino-ESP32's basics.
@@ -319,3 +325,15 @@ Started only once the NUCLEO-F446RE is done.
 8. **EmbLinkRTOS on the board.** Its RISC-V port moved from QEMU `virt`
    (CLINT and PLIC) to the ESP32-C3 (SYSTIMER and the interrupt matrix),
    with the conformance suite in its CI.
+   *Done:* EmbLinkRTOS's RISC-V port keeps `virt` and gains the ESP32-C3
+   behind its SoC layer (`CONFIG_EMB_RV_ESP32C3`): the tick from SYSTIMER's
+   target 0 through the interrupt matrix, the vectored `mtvec`, no `mie` or
+   `mip` (illegal on the part), the RV32IMC variant without the A
+   extension, and the TIMG0 and RTC watchdogs the ROM leaves armed turned
+   off (the super watchdog set to feed itself). Its `esp32c3_devkitm1` board links into internal SRAM and its
+   `esp_image.py` writes the flash image the ROM checks and boots (no
+   second-stage bootloader); the console is UART0 at the ROM's 115200 baud
+   and 20 MHz. The twelve test images of its checked base profile pass on
+   `emblink/esp32c3_devkitm1`, booted by Espressif's ROM, in its
+   `rv32-embsim` CI job (EmbLinkOs/EmbLinkRTOS#20). The board does not yet
+   switch to the 160 MHz PLL.

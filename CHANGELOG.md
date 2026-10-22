@@ -5,6 +5,25 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### EmbLinkRTOS on the ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 8)
+
+- **EmbLinkRTOS's `esp32c3_devkitm1` board** runs its conformance suite on
+  EmbSIM's ESP32-C3-DevKitM-1 (`emblink/esp32c3_devkitm1`): the twelve
+  test images of its checked base profile, each a flash image Espressif's
+  boot ROM checks and loads, pass. Its RISC-V port takes the tick from
+  SYSTIMER through the interrupt matrix and its console is UART0, the
+  board's USB-serial bridge. EmbLinkRTOS's `rv32-embsim` CI job builds
+  EmbSIM and runs them there, as `cm4-embsim` does on the NUCLEO-F446RE.
+- The ESP-IDF gptimer scenario pins each event by a window, not by the
+  log's millisecond timestamps, which move with the image's size.
+- **The ESP32-C3-DevKitM-1 is qualified against its reference**
+  (`reference.json`): Espressif's V1.0 dimension drawing, read from the
+  PDF's vector paths, gives the outline, the 30 header pads and the
+  micro-USB's body, and places every other part. The artwork's pads had
+  been 0.39 mm high, the RGB LED 1.1 mm and the micro-USB 0.64 mm out; the
+  header labels are now the board's narrow vertical silkscreen. The
+  reference check reads oblong (rect) pads as well as round ones.
+
 ### ESP-IDF's examples on the ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 7)
 
 - **`tests/vendor/esp-idf/`** builds ESP-IDF v5.4's own examples

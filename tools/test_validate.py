@@ -597,6 +597,23 @@ class BoardTests(Base):
         (d / "board.json").write_text(json.dumps(doc), encoding="utf-8")
         self.assertCode(self.check(d / "board.json"), "board.reference_connector")
 
+    def test_devkitm1_qualified_against_its_reference(self):
+        src = validate.CATALOG_DIR / "boards" / "esp32c3_devkitm1"
+        d = self.tmp / "boards" / "esp32c3_devkitm1"
+        shutil.rmtree(d, ignore_errors=True)
+        shutil.copytree(src, d)
+        self.assertClean(self.check(d / "board.json"))
+        # an oblong pad (a rect) where the earlier artwork had J1's first, 0.39 mm high
+        art = (d / "artwork.svg").read_text(encoding="utf-8")
+        (d / "artwork.svg").write_text(art.replace('id="pin-j1-1" class="pad" x="3.175" y="14.28"', 'id="pin-j1-1" class="pad" x="3.175" y="10.38"'), encoding="utf-8")
+        self.assertCode(self.check(d / "board.json"), "board.reference_terminal")
+        (d / "artwork.svg").write_text(art, encoding="utf-8")
+        # the micro-USB where the earlier bench had it
+        doc = json.loads((d / "board.json").read_text(encoding="utf-8"))
+        next(f for f in doc["bench"]["features"] if f["kind"] == "usb_micro")["at"] = [12.7, 37.4]
+        (d / "board.json").write_text(json.dumps(doc), encoding="utf-8")
+        self.assertCode(self.check(d / "board.json"), "board.reference_connector")
+
     def test_todo_refused(self):
         doc = self.board()
         doc["components"][0]["todo"] = True

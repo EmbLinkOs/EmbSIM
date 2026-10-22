@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The ESP32-C3-DevKitM-1 qualified (2026-10-22)
+
+The DevKitM-1's artwork checked against Espressif's V1.0 dimension
+drawing (`catalog/boards/esp32c3_devkitm1/reference.json`), read from the
+PDF's vector paths: the outline, the 30 header pads and the micro-USB's
+body, and every other part placed from its pads. The pads had been
+0.39 mm high, the RGB LED 1.1 mm and the micro-USB 0.64 mm out; the header
+labels are now the board's narrow vertical silkscreen, beside the pads.
+
+| Before | Qualified |
+|---|---|
+| ![The earlier artwork](qualified-c3/artwork-before.png) | ![The artwork as the drawing places it](qualified-c3/artwork.png) |
+
 ## The ESP32-C3-DevKitM-1 (2026-10-22)
 
 The RISC-V board of the RTOS boards plan, step 6 of its part 2:

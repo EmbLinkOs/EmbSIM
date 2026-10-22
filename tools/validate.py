@@ -1220,15 +1220,22 @@ def check_board_reference(report: Report, file: Path, doc: dict) -> None:
         return  # reported by the artwork check
     vb = [float(v) for v in (root.get("viewBox") or "0 0 1 1").split()]
     sx, sy = art.get("width_mm", w) / vb[2], art.get("height_mm", h) / vb[3]
-    circles = {el.get("id"): el for el in root.iter() if el.tag.endswith("circle") and el.get("id")}
+    # a pad is a circle (a through-hole's ring) or a rect (an oblong pad), at its centre
+    pads = {el.get("id"): el for el in root.iter()
+            if (el.tag.endswith("circle") or el.tag.endswith("rect")) and el.get("id")}
     selector = {hs["port"]: hs.get("selector", "") for hs in art.get("hotspots") or [] if "port" in hs}
 
     def at(el: Any) -> tuple[float, float]:
-        return (float(el.get("cx")) - vb[0]) * sx, (float(el.get("cy")) - vb[1]) * sy
+        if el.tag.endswith("rect"):
+            cx = float(el.get("x", 0)) + float(el.get("width", 0)) / 2
+            cy = float(el.get("y", 0)) + float(el.get("height", 0)) / 2
+        else:
+            cx, cy = float(el.get("cx")), float(el.get("cy"))
+        return (cx - vb[0]) * sx, (cy - vb[1]) * sy
 
     for name, (x, y) in ref.get("terminals", {}).items():
         sel = selector.get(name, "#pin-" + name.lower())
-        el = circles.get(sel.lstrip("#"))
+        el = pads.get(sel.lstrip("#"))
         if el is None:
             report.error(file, node, "board.reference_terminal", f"the artwork has no pad {sel} for {name}")
             continue
