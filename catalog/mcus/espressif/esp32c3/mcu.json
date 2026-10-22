@@ -209,6 +209,14 @@
     {
       "match": "I2C0",
       "model": "esp32c3-i2c"
+    },
+    {
+      "match": "DMA",
+      "model": "esp32c3-gdma"
+    },
+    {
+      "match": "SPI2",
+      "model": "esp32c3-spi2"
     }
   ],
   "io": {

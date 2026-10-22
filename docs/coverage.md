@@ -8,7 +8,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
-| ESP32-C3 | 21 | 0 | 15 | 36 |
+| ESP32-C3 | 23 | 0 | 13 | 36 |
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
@@ -21,7 +21,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 ## ESP32-C3 (`espressif/esp32c3`)
 
 Boards: ESP32-C3-DevKitM-1.  
-21 of 36 peripherals modelled, 0 registers only, 15 missing.
+23 of 36 peripherals modelled, 0 registers only, 13 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -43,7 +43,7 @@ Boards: ESP32-C3-DevKitM-1.
 | TIMG0 | `esp32c3-timg` | modelled |
 | TIMG1 | `esp32c3-timg` | modelled |
 | SYSTIMER | `esp32c3-systimer` | modelled |
-| SPI2 | — | **missing** |
+| SPI2 | `esp32c3-spi2` | modelled |
 | APB_CTRL | `esp32c3-apbctrl` | modelled |
 | TWAI0 | — | **missing** |
 | I2S0 | — | **missing** |
@@ -52,7 +52,7 @@ Boards: ESP32-C3-DevKitM-1.
 | RSA | — | **missing** |
 | DS | — | **missing** |
 | HMAC | — | **missing** |
-| DMA | — | **missing** |
+| DMA | `esp32c3-gdma` | modelled |
 | APB_SARADC | — | **missing** |
 | USB_DEVICE | `esp32c3-usbjtag` | modelled |
 | SYSTEM | `esp32c3-system` | modelled |

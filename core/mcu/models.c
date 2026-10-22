@@ -75,6 +75,8 @@ static const struct esk_rf_model_type model_types[] = {
     { "esp32c3-rmt", &esk_esp32c3_rmt_ops, esk_esp32c3_rmt_create },
     { "esp32c3-ledc", &esk_esp32c3_ledc_ops, esk_esp32c3_ledc_create },
     { "esp32c3-i2c", &esk_esp32c3_i2c_ops, esk_esp32c3_i2c_create },
+    { "esp32c3-gdma", &esk_esp32c3_gdma_ops, esk_esp32c3_gdma_create },
+    { "esp32c3-spi2", &esk_esp32c3_spi2_ops, esk_esp32c3_spi2_create },
     { "esp32c3-apbctrl", &esk_esp32c3_apbctrl_ops, esk_esp32c3_apbctrl_create },
     { "nrf-clock", &esk_nrf_clock_ops, esk_nrf_clock_create },
     { "nrf-gpio", &esk_nrf_gpio_ops, esk_nrf_gpio_create },

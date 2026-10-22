@@ -31,6 +31,9 @@
  *   ledc.c    the LED PWM controller: four timers, six PWM generators,
  *             fading
  *   i2c.c     the I2C controller, master and slave, on the pins
+ *   gdma.c    the GDMA controller: three transmit and three receive
+ *             channels on descriptor lists
+ *   spi2.c    GP-SPI2 as a master, from its buffer or the GDMA
  *   radio.c   the radio's register blocks the TRM leaves out (FE2, FE,
  *             NRX), which keep what is written */
 #ifndef ESK_MCU_ESP32C3_H
@@ -123,6 +126,17 @@ extern const struct esk_dev_ops esk_esp32c3_ledc_ops;
 void *esk_esp32c3_ledc_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_i2c_ops;
 void *esk_esp32c3_i2c_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_gdma_ops;
+void *esk_esp32c3_gdma_create(struct esk_mach *s, struct esk_rf_periph *p);
+/* the GDMA channels a peripheral (PERI_SEL's number: 0 SPI2, 8 ADC) is
+ * connected to: the next byte to send (1, and its EOF), or 0 for none */
+int esk_esp32c3_dma_out(struct esk_mach *m, int peri, u8 *byte, int *eof);
+/* a byte received: 1 when stored, 0 when there was no room */
+int esk_esp32c3_dma_in(struct esk_mach *m, int peri, u8 byte);
+/* the received data's end (the descriptor written back with suc_eof) */
+void esk_esp32c3_dma_in_eof(struct esk_mach *m, int peri);
+extern const struct esk_dev_ops esk_esp32c3_spi2_ops;
+void *esk_esp32c3_spi2_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_apbctrl_ops;
 void *esk_esp32c3_apbctrl_create(struct esk_mach *s, struct esk_rf_periph *p);
 

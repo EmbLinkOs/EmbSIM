@@ -2002,6 +2002,201 @@ static void test_i2c_slave(void)
     c3_close(&f);
 }
 
+#define SPI2 0x60024000u
+#define GS_CMD (SPI2 + 0x00u)
+#define GS_ADDR (SPI2 + 0x04u)
+#define GS_CTRL (SPI2 + 0x08u)
+#define GS_CLOCK (SPI2 + 0x0Cu)
+#define GS_USER (SPI2 + 0x10u)
+#define GS_USER1 (SPI2 + 0x14u)
+#define GS_USER2 (SPI2 + 0x18u)
+#define GS_MS_DLEN (SPI2 + 0x1Cu)
+#define GS_MISC (SPI2 + 0x20u)
+#define GS_DMA_CONF (SPI2 + 0x30u)
+#define GS_INT_CLR (SPI2 + 0x38u)
+#define GS_INT_RAW (SPI2 + 0x3Cu)
+#define GS_W(i) (SPI2 + 0x98u + 4u * (u32)(i))
+#define GS_CLK_GATE (SPI2 + 0xE8u)
+#define GDMA 0x6003F000u
+#define SPI_CLK_PIN 6
+#define SPI_D_PIN 7
+#define SPI_Q_PIN 2
+#define SPI_CS_PIN 10
+
+/* FSPID's level at each rising edge of FSPICLK */
+static int spi_d_at_rise[256], nrise;
+
+static void h_spi_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
+{
+    int was = pins_out[SPI_CLK_PIN].drive;
+    h_edges(ctx, port, bit, cfg);
+    if (16 * port + bit == SPI_CLK_PIN && was == 0 && cfg->drive == 1 && nrise < 256)
+        spi_d_at_rise[nrise++] = pins_out[SPI_D_PIN].drive;
+}
+
+/* GP-SPI2 on XTAL_CLK divided by 4: 10 MHz, 2 CPU cycles a clock; FSPICLK
+ * on GPIO6, FSPID GPIO7, FSPICS0 GPIO10 through the matrix, FSPIQ read
+ * from GPIO7 (MOSI looped back) unless `q_pin` says otherwise */
+static int spi_open(c3 *f, int q_pin)
+{
+    if (!gpio_open(f))
+        return 0;
+    f->m.host.pin_cfg = h_spi_cfg;
+    edge_m = &f->m;
+    edge_pin = SPI_CLK_PIN;
+    nrise = 0;
+    wr(f, SYSTEM + 0x10u, rd(f, SYSTEM + 0x10u) | 1u << 6); /* SPI2 */
+    wr(f, SYSTEM + 0x18u, rd(f, SYSTEM + 0x18u) & ~(1u << 6));
+    wr(f, SYSTEM + 0x14u, rd(f, SYSTEM + 0x14u) | 1u << 6); /* DMA */
+    wr(f, SYSTEM + 0x1Cu, rd(f, SYSTEM + 0x1Cu) & ~(1u << 6));
+    wr(f, 0x60009004u + 4u * SPI_CLK_PIN, 1u << 12 | 1u << 9 | 2u << 10); /* IO MUX: GPIO (not MTCK) */
+    wr(f, 0x60009004u + 4u * SPI_D_PIN, 1u << 12 | 1u << 9 | 2u << 10);   /* not MTDO */
+    wr(f, GPIO + 0x554u + 4u * SPI_CLK_PIN, 63u);
+    wr(f, GPIO + 0x554u + 4u * SPI_D_PIN, 65u);
+    wr(f, GPIO + 0x554u + 4u * SPI_CS_PIN, 68u);
+    wr(f, GPIO + 0x154u + 4u * 64u, 1u << 6 | (u32)q_pin); /* FSPIQ in */
+    wr(f, G_EN_W1TS, 1u << SPI_CLK_PIN | 1u << SPI_D_PIN | 1u << SPI_CS_PIN);
+    wr(f, GS_CLK_GATE, 1u | 2u); /* clocks on, XTAL_CLK */
+    wr(f, GS_CLOCK, 3u << 12 | 1u << 6 | 3u); /* N 3, H 1, L 3 */
+    wr(f, GS_MISC, 0x3Eu);                   /* CS0 only */
+    wr(f, GS_CMD, 1u << 23);                 /* SPI_UPDATE */
+    nedge = 0;
+    return 1;
+}
+
+static void test_spi2_full_duplex(void)
+{
+    /* 32 bits out of W0 and back into W8, in each SPI mode */
+    c3 f;
+    int mode;
+    for (mode = 0; mode < 4; mode++) {
+        u32 idle = mode >= 2;
+        if (!spi_open(&f, SPI_D_PIN))
+            return;
+        wr(&f, GS_MISC, 0x3Eu | idle << 29);
+        wr(&f, GS_USER, 1u | 1u << 27 | 1u << 28 | 1u << 24 | (u32)(mode == 1 || mode == 2) << 9);
+        wr(&f, GS_MS_DLEN, 31u);
+        wr(&f, GS_W(0), 0xA55A1234u);
+        wr(&f, GS_W(8), 0u);
+        nedge = 0;
+        wr(&f, GS_CMD, 1u << 24); /* SPI_USR */
+        CHECK_EQ(pins_out[SPI_CS_PIN].drive, 0); /* CS active, low */
+        CHECK(rd(&f, GS_CMD) & (1u << 24));
+        esk_mach_idle(&f.m, 200u);
+        CHECK_EQ(rd(&f, GS_W(8)), 0xA55A1234u);
+        CHECK_EQ(rd(&f, GS_CMD) & (1u << 24), 0u); /* done */
+        CHECK(rd(&f, GS_INT_RAW) & (1u << 12));    /* TRANS_DONE */
+        CHECK_EQ(pins_out[SPI_CS_PIN].drive, 1);
+        CHECK_EQ(nedge, 64);                        /* 32 clocks */
+        CHECK_EQ(edge_t[2] - edge_t[0], 2u);        /* 100 ns each */
+        CHECK_EQ(pins_out[SPI_CLK_PIN].drive, (int)idle);
+        c3_close(&f);
+    }
+}
+
+static void test_spi2_half_duplex_quad(void)
+{
+    /* a quad I/O read: command 0xEB on FSPID, a 24-bit address on four
+     * lines, 4 dummy clocks, then two bytes in on four lines from outside
+     * (HD 0, WP 1, Q 0, D 1: each nibble 5) */
+    c3 f;
+    int i;
+    u32 cmd = 0;
+    if (!spi_open(&f, SPI_Q_PIN))
+        return;
+    wr(&f, GPIO + 0x154u + 4u * 65u, 1u << 6 | SPI_D_PIN); /* FSPID in */
+    wr(&f, GPIO + 0x154u + 4u * 66u, 1u << 6 | 0x1Fu);      /* HD: 0 */
+    wr(&f, GPIO + 0x154u + 4u * 67u, 1u << 6 | 0x1Eu);      /* WP: 1 */
+    wr(&f, GPIO + 0x154u + 4u * 64u, 1u << 6 | 0x1Fu);      /* Q: 0 */
+    pins_ext[SPI_D_PIN] = 1;
+    esk_mach_outside(&f.m);
+    esk_esp32c3_pins_changed(&f.m);
+    wr(&f, GS_USER2, 7u << 28 | 0xEBu);
+    wr(&f, GS_ADDR, 0x123456u << 8);
+    wr(&f, GS_USER1, 23u << 27 | 3u);
+    wr(&f, GS_CTRL, rd(&f, GS_CTRL) | 1u << 6 | 1u << 15); /* FADDR_QUAD, FREAD_QUAD */
+    wr(&f, GS_USER, 1u << 31 | 1u << 30 | 1u << 29 | 1u << 28);
+    wr(&f, GS_MS_DLEN, 15u);
+    wr(&f, GS_W(0), 0u);
+    wr(&f, GS_CMD, 1u << 24);
+    esk_mach_idle(&f.m, 200u);
+    CHECK(rd(&f, GS_INT_RAW) & (1u << 12));
+    CHECK_EQ(rd(&f, GS_W(0)) & 0xffffu, 0x5555u);
+    CHECK_EQ(nrise, 8 + 6 + 4 + 4); /* clocks: command, address, dummy, data */
+    for (i = 0; i < 8; i++)
+        cmd = cmd << 1 | (u32)spi_d_at_rise[i];
+    CHECK_EQ(cmd, 0xEBu);
+    c3_close(&f);
+}
+
+static void test_spi2_lsb_first(void)
+{
+    /* WR_BIT_ORDER: each byte LSB first; RD_BIT_ORDER back */
+    c3 f;
+    int i;
+    u32 first = 0;
+    if (!spi_open(&f, SPI_D_PIN))
+        return;
+    wr(&f, GS_CTRL, rd(&f, GS_CTRL) | 1u << 25 | 1u << 26);
+    wr(&f, GS_USER, 1u | 1u << 27 | 1u << 28 | 1u << 24);
+    wr(&f, GS_MS_DLEN, 7u);
+    wr(&f, GS_W(0), 0x01u);
+    wr(&f, GS_CMD, 1u << 24);
+    esk_mach_idle(&f.m, 100u);
+    for (i = 0; i < 8; i++)
+        first |= (u32)spi_d_at_rise[i] << i;
+    CHECK_EQ(spi_d_at_rise[0], 1); /* bit 0 first */
+    CHECK_EQ(first, 0x01u);
+    CHECK_EQ(rd(&f, GS_W(8)) & 0xffu, 0x01u);
+    c3_close(&f);
+}
+
+static void test_spi2_dma(void)
+{
+    /* 100 bytes out of a GDMA list and back into another, MOSI looped back:
+     * the receive descriptor written back with its length and suc_eof */
+    c3 f;
+    const u32 tx = 0x3FC90000u, rx = 0x3FC90100u, dtx = 0x3FC90200u, drx = 0x3FC90210u;
+    u32 i, ok = 1;
+    if (!spi_open(&f, SPI_D_PIN))
+        return;
+    for (i = 0; i < 100; i += 4)
+        wr(&f, tx + i, (i + 1u) | (i + 2u) << 8 | (i + 3u) << 16 | (i + 4u) << 24);
+    wr(&f, dtx, 1u << 31 | 1u << 30 | 100u << 12 | 100u); /* owner, suc_eof, length, size */
+    wr(&f, dtx + 4u, tx);
+    wr(&f, dtx + 8u, 0u);
+    wr(&f, drx, 1u << 31 | 128u);
+    wr(&f, drx + 4u, rx);
+    wr(&f, drx + 8u, 0u);
+    wr(&f, GDMA + 0xD0u, 1u); /* OUT_RST */
+    wr(&f, GDMA + 0xD0u, 0u);
+    wr(&f, GDMA + 0x70u, 1u); /* IN_RST */
+    wr(&f, GDMA + 0x70u, 0u);
+    wr(&f, GDMA + 0x100u, 0u); /* OUT_PERI_SEL: SPI2 */
+    wr(&f, GDMA + 0xA0u, 0u);  /* IN_PERI_SEL */
+    wr(&f, GDMA + 0xE0u, (dtx & 0xfffffu) | 1u << 21);
+    wr(&f, GDMA + 0x80u, (drx & 0xfffffu) | 1u << 22);
+    wr(&f, GDMA + 0x08u, 1u << 1); /* IN_SUC_EOF enabled */
+    wr(&f, GS_DMA_CONF, 1u << 27 | 1u << 28);
+    wr(&f, GS_USER, 1u | 1u << 27 | 1u << 28);
+    wr(&f, GS_MS_DLEN, 100u * 8u - 1u);
+    wr(&f, GS_CMD, 1u << 24);
+    esk_mach_idle(&f.m, 2000u);
+    CHECK(rd(&f, GS_INT_RAW) & (1u << 12));
+    CHECK(rd(&f, GDMA + 0x00u) & (1u << 1));       /* IN_SUC_EOF */
+    CHECK(rd(&f, GDMA + 0x00u) & (1u << 8));       /* OUT_TOTAL_EOF */
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (44 - 32)));
+    CHECK_EQ(rd(&f, drx), 1u << 30 | 100u << 12 | 128u); /* written back */
+    CHECK_EQ(rd(&f, GDMA + 0x88u), drx);           /* IN_SUC_EOF_DES_ADDR */
+    for (i = 0; i < 100; i++) {
+        u32 v = rd(&f, (rx + i) & ~3u) >> (8u * ((rx + i) & 3u)) & 0xffu;
+        if (v != i + 1u)
+            ok = 0;
+    }
+    CHECK(ok);
+    c3_close(&f);
+}
+
 #define USJ 0x60043000u
 
 static void test_usb_serial_jtag(void)
@@ -2079,4 +2274,8 @@ RUN(test_ledc_dither_and_fade);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);
+RUN(test_spi2_full_duplex);
+RUN(test_spi2_half_duplex_quad);
+RUN(test_spi2_lsb_first);
+RUN(test_spi2_dma);
 TEST_MAIN_END
