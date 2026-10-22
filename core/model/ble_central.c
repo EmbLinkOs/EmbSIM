@@ -567,13 +567,13 @@ static void connect(bc_state *s, const uint8_t *adv, es_time_t end)
     for (i = 0; i < 6; i++)
         p[2 + i] = s->me[5 - i];
     memcpy(p + 8, adv + 2, 6);
-    p[14] = (uint8_t)ACCESS;
-    p[15] = (uint8_t)(ACCESS >> 8);
-    p[16] = (uint8_t)(ACCESS >> 16);
-    p[17] = (uint8_t)(ACCESS >> 24);
-    p[18] = (uint8_t)CRC_INIT;
-    p[19] = (uint8_t)(CRC_INIT >> 8);
-    p[20] = (uint8_t)(CRC_INIT >> 16);
+    p[14] = (uint8_t)((ACCESS) & 0xFFu);
+    p[15] = (uint8_t)((ACCESS >> 8) & 0xFFu);
+    p[16] = (uint8_t)((ACCESS >> 16) & 0xFFu);
+    p[17] = (uint8_t)((ACCESS >> 24) & 0xFFu);
+    p[18] = (uint8_t)((CRC_INIT) & 0xFFu);
+    p[19] = (uint8_t)((CRC_INIT >> 8) & 0xFFu);
+    p[20] = (uint8_t)((CRC_INIT >> 16) & 0xFFu);
     p[21] = 2; /* WinSize: 2.5 ms */
     p[22] = 0; /* WinOffset */
     p[23] = 0;
