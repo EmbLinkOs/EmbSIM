@@ -205,6 +205,10 @@
     {
       "match": "LEDC",
       "model": "esp32c3-ledc"
+    },
+    {
+      "match": "I2C0",
+      "model": "esp32c3-i2c"
     }
   ],
   "io": {

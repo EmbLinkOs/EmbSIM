@@ -30,6 +30,7 @@
  *             receivers, its RAM
  *   ledc.c    the LED PWM controller: four timers, six PWM generators,
  *             fading
+ *   i2c.c     the I2C controller, master and slave, on the pins
  *   radio.c   the radio's register blocks the TRM leaves out (FE2, FE,
  *             NRX), which keep what is written */
 #ifndef ESK_MCU_ESP32C3_H
@@ -120,6 +121,8 @@ extern const struct esk_dev_ops esk_esp32c3_rmt_ops;
 void *esk_esp32c3_rmt_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_ledc_ops;
 void *esk_esp32c3_ledc_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_i2c_ops;
+void *esk_esp32c3_i2c_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_apbctrl_ops;
 void *esk_esp32c3_apbctrl_create(struct esk_mach *s, struct esk_rf_periph *p);
 

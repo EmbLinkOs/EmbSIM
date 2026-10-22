@@ -5,7 +5,7 @@
  "version": "1.0.0",
  "device": "ESP32-C3",
  "description": "ESP32-C3 peripheral registers at their addresses, reset values and field access, and the interrupt matrix's 62 source numbers, converted by tools/importers/svd2regs.py from Espressif's esp32c3.svd (espressif/svd at be20aa1), Copyright 2024 Espressif Systems (Shanghai) PTE LTD, SPDX-License-Identifier: Apache-2.0 (LICENSES/Apache-2.0.txt). The interrupt numbers are the interrupt matrix's sources (ESP32-C3 TRM v1.4 table 8.3-1), not CPU interrupts.",
- "source": "converted from Espressif esp32c3.svd (espressif/svd be20aa12560889d6125d144cdb48cf615ac17628) by tools/importers/svd2regs.py; peripherals left out: RNG (its one register, DATA at 0x600260B0, is APB_CTRL's RND_DATA: the TRM's RNG_DATA_REG (TRM v1.4 section 24.5)); registers filled in: SPI0 from SPI1, 29 registers (SPI_MEM0 and SPI_MEM1 share one register layout, ESP-IDF's soc/esp32c3/register/soc/spi_mem_reg.h; the SVD lists part of SPI0's); memories added: RMT.RAM at 0x400, 192 words (the four channels' 192 x 32-bit RAM, TRM v1.4 section 33.3.2)",
+ "source": "converted from Espressif esp32c3.svd (espressif/svd be20aa12560889d6125d144cdb48cf615ac17628) by tools/importers/svd2regs.py; peripherals left out: RNG (its one register, DATA at 0x600260B0, is APB_CTRL's RND_DATA: the TRM's RNG_DATA_REG (TRM v1.4 section 24.5)); registers filled in: SPI0 from SPI1, 29 registers (SPI_MEM0 and SPI_MEM1 share one register layout, ESP-IDF's soc/esp32c3/register/soc/spi_mem_reg.h; the SVD lists part of SPI0's); memories added: RMT.RAM at 0x400, 192 words (the four channels' 192 x 32-bit RAM, TRM v1.4 section 33.3.2); I2C0.TXRAM at 0x104, 31 words (the TX RAM's other 31 bytes after TXFIFO_START_ADDR, a word each, TRM v1.4 section 28.4.10); I2C0.RXRAM at 0x184, 31 words (the RX RAM's other 31 bytes after RXFIFO_START_ADDR, a word each, TRM v1.4 section 28.4.10)",
  "interrupts": {
   "WIFI_MAC": 0,
   "WIFI_MAC_NMI": 1,
@@ -15437,6 +15437,347 @@
      ]
     },
     {
+     "name": "TXRAM0",
+     "offset": "0x104",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM1",
+     "offset": "0x108",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM2",
+     "offset": "0x10C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM3",
+     "offset": "0x110",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM4",
+     "offset": "0x114",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM5",
+     "offset": "0x118",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM6",
+     "offset": "0x11C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM7",
+     "offset": "0x120",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM8",
+     "offset": "0x124",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM9",
+     "offset": "0x128",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM10",
+     "offset": "0x12C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM11",
+     "offset": "0x130",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM12",
+     "offset": "0x134",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM13",
+     "offset": "0x138",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM14",
+     "offset": "0x13C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM15",
+     "offset": "0x140",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM16",
+     "offset": "0x144",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM17",
+     "offset": "0x148",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM18",
+     "offset": "0x14C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM19",
+     "offset": "0x150",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM20",
+     "offset": "0x154",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM21",
+     "offset": "0x158",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM22",
+     "offset": "0x15C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM23",
+     "offset": "0x160",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM24",
+     "offset": "0x164",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM25",
+     "offset": "0x168",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM26",
+     "offset": "0x16C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM27",
+     "offset": "0x170",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM28",
+     "offset": "0x174",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM29",
+     "offset": "0x178",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "TXRAM30",
+     "offset": "0x17C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
      "name": "RXFIFO_START_ADDR",
      "offset": "0x180",
      "fields": [
@@ -15445,6 +15786,347 @@
        0,
        32,
        "r"
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM0",
+     "offset": "0x184",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM1",
+     "offset": "0x188",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM2",
+     "offset": "0x18C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM3",
+     "offset": "0x190",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM4",
+     "offset": "0x194",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM5",
+     "offset": "0x198",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM6",
+     "offset": "0x19C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM7",
+     "offset": "0x1A0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM8",
+     "offset": "0x1A4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM9",
+     "offset": "0x1A8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM10",
+     "offset": "0x1AC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM11",
+     "offset": "0x1B0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM12",
+     "offset": "0x1B4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM13",
+     "offset": "0x1B8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM14",
+     "offset": "0x1BC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM15",
+     "offset": "0x1C0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM16",
+     "offset": "0x1C4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM17",
+     "offset": "0x1C8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM18",
+     "offset": "0x1CC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM19",
+     "offset": "0x1D0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM20",
+     "offset": "0x1D4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM21",
+     "offset": "0x1D8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM22",
+     "offset": "0x1DC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM23",
+     "offset": "0x1E0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM24",
+     "offset": "0x1E4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM25",
+     "offset": "0x1E8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM26",
+     "offset": "0x1EC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM27",
+     "offset": "0x1F0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM28",
+     "offset": "0x1F4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM29",
+     "offset": "0x1F8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RXRAM30",
+     "offset": "0x1FC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
       ]
      ]
     }

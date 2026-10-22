@@ -8,7 +8,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
-| ESP32-C3 | 20 | 0 | 16 | 36 |
+| ESP32-C3 | 21 | 0 | 15 | 36 |
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
@@ -21,7 +21,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 ## ESP32-C3 (`espressif/esp32c3`)
 
 Boards: ESP32-C3-DevKitM-1.  
-20 of 36 peripherals modelled, 0 registers only, 16 missing.
+21 of 36 peripherals modelled, 0 registers only, 15 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -35,7 +35,7 @@ Boards: ESP32-C3-DevKitM-1.
 | IO_MUX | `esp32c3-iomux` | modelled |
 | UHCI1 | — | **missing** |
 | UART1 | `esp32c3-uart` | modelled |
-| I2C0 | — | **missing** |
+| I2C0 | `esp32c3-i2c` | modelled |
 | UHCI0 | — | **missing** |
 | RMT | `esp32c3-rmt` | modelled |
 | LEDC | `esp32c3-ledc` | modelled |

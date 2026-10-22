@@ -1630,6 +1630,378 @@ static void test_ledc_dither_and_fade(void)
     c3_close(&f);
 }
 
+#define I2C 0x60013000u
+#define I2C_SCL_LOW (I2C + 0x00u)
+#define I2C_CTR (I2C + 0x04u)
+#define I2C_SR (I2C + 0x08u)
+#define I2C_TO (I2C + 0x0Cu)
+#define I2C_SLAVE_ADDR (I2C + 0x10u)
+#define I2C_FIFO_CONF (I2C + 0x18u)
+#define I2C_DATA (I2C + 0x1Cu)
+#define I2C_INT_RAW (I2C + 0x20u)
+#define I2C_INT_CLR (I2C + 0x24u)
+#define I2C_SDA_HOLD (I2C + 0x30u)
+#define I2C_SDA_SAMPLE (I2C + 0x34u)
+#define I2C_SCL_HIGH (I2C + 0x38u)
+#define I2C_STRETCH (I2C + 0x84u)
+#define I2C_COMD(i) (I2C + 0x58u + 4u * (u32)(i))
+#define I2C_CMD(op, n, chk, exp, val) ((u32)(op) << 11 | (u32)(val) << 10 | (u32)(exp) << 9 | (u32)(chk) << 8 | (u32)(n))
+#define I2C_SCL_PIN 4
+#define I2C_SDA_PIN 5
+
+/* a register device at 0x50 on the bus, as the test's own: its eight
+ * registers written and read from a pointer the first written byte sets */
+static struct {
+    int scl, sda;      /* the lines */
+    int drive_sda;     /* 0 pulls SDA low */
+    int hold_scl;      /* 1 holds SCL low (stretching) */
+    int state, bit, rw, first, acking;
+    u32 byte, ptr;
+    u8 mem[8];
+    int starts, stops;
+} dev;
+
+static int i2c_line(int pin)
+{
+    const esk_mach_pin *o = &pins_out[pin];
+    int mcu = o->drive == 0 ? 0 : 1;
+    if (pin == I2C_SDA_PIN)
+        return mcu && dev.drive_sda;
+    return mcu && !dev.hold_scl;
+}
+
+static void dev_edges(void)
+{
+    int scl = i2c_line(I2C_SCL_PIN), sda = i2c_line(I2C_SDA_PIN);
+    if (scl && dev.scl && sda != dev.sda) {
+        if (!sda) { /* START */
+            dev.state = 1;
+            dev.bit = 0;
+            dev.byte = 0;
+            dev.starts++;
+        } else { /* STOP */
+            dev.state = 0;
+            dev.stops++;
+        }
+    }
+    if (scl && !dev.scl && dev.state) { /* SCL rises: read */
+        if (dev.bit < 8 && (dev.state == 1 || dev.state == 2))
+            dev.byte = dev.byte << 1 | (u32)sda;
+        if (dev.bit == 8 && dev.state == 3 && sda)
+            dev.state = 4; /* the master's NACK */
+        dev.bit++;
+    }
+    if (!scl && dev.scl && dev.state) { /* SCL falls: write */
+        if (dev.bit == 8 && (dev.state == 1 || dev.state == 2)) {
+            int ack = 1;
+            if (dev.state == 1) {
+                if ((dev.byte >> 1) == 0x50u) {
+                    ack = 0;
+                    dev.rw = (int)(dev.byte & 1u);
+                    dev.first = 1;
+                }
+            } else {
+                ack = 0;
+                if (dev.first)
+                    dev.ptr = dev.byte & 7u;
+                else
+                    dev.mem[dev.ptr++ & 7u] = (u8)dev.byte;
+                dev.first = 0;
+            }
+            dev.drive_sda = ack;
+            dev.acking = !ack;
+        } else if (dev.bit == 9) {
+            dev.bit = 0;
+            dev.byte = 0;
+            dev.drive_sda = 1;
+            if (dev.state == 1)
+                dev.state = dev.acking ? (dev.rw ? 3 : 2) : 0; /* addressed, or not */
+            dev.acking = 0;
+            if (dev.state == 3)
+                dev.byte = dev.mem[dev.ptr & 7u];
+        }
+        if (dev.state == 3 && dev.bit < 8)
+            dev.drive_sda = (int)((dev.mem[dev.ptr & 7u] >> (7 - dev.bit)) & 1u);
+        if (dev.state == 3 && dev.bit == 8) {
+            dev.drive_sda = 1;
+            dev.ptr++;
+        }
+    }
+    dev.scl = scl;
+    dev.sda = sda;
+}
+
+static void h_i2c_cfg(void *ctx, int port, int bit, const esk_mach_pin *cfg)
+{
+    int n = 16 * port + bit;
+    h_edges(ctx, port, bit, cfg);
+    if (n == I2C_SCL_PIN || n == I2C_SDA_PIN) {
+        dev_edges();
+        pins_ext[I2C_SDA_PIN] = dev.drive_sda ? -1 : 0;
+        pins_ext[I2C_SCL_PIN] = dev.hold_scl ? 0 : -1;
+        esk_esp32c3_pins_changed(edge_m);
+    }
+}
+
+/* I2C0 on GPIO4 (SCL) and GPIO5 (SDA): open-drain, pulled up, through the
+ * matrix; I2C_SCLK at XTAL_CLK's 40 MHz, SCL low 20 and high 20 cycles of
+ * it (1 us a bit, 20 CPU cycles) */
+static int i2c_open(c3 *f, int master)
+{
+    int i;
+    if (!gpio_open(f))
+        return 0;
+    memset(&dev, 0, sizeof dev);
+    dev.drive_sda = 1;
+    dev.scl = dev.sda = 1;
+    f->m.host.pin_cfg = master ? h_i2c_cfg : h_edges;
+    edge_m = &f->m;
+    edge_pin = I2C_SCL_PIN;
+    wr(f, SYSTEM + 0x10u, rd(f, SYSTEM + 0x10u) | 1u << 7); /* PERIP_CLK_EN0's I2C_EXT0 */
+    wr(f, SYSTEM + 0x18u, rd(f, SYSTEM + 0x18u) & ~(1u << 7));
+    for (i = I2C_SCL_PIN; i <= I2C_SDA_PIN; i++) {
+        wr(f, GPIO + 0x74u + 4u * (u32)i, 1u << 2); /* PINn: open-drain */
+        wr(f, 0x60009004u + 4u * (u32)i, 1u << 12 | 1u << 9 | 1u << 8 | 2u << 10); /* IO MUX: GPIO, IE, WPU */
+        wr(f, GPIO + 0x554u + 4u * (u32)i, i == I2C_SCL_PIN ? 53u : 54u);
+        wr(f, GPIO + 0x154u + 4u * (i == I2C_SCL_PIN ? 53u : 54u), 1u << 6 | (u32)i);
+    }
+    wr(f, G_EN_W1TS, 1u << I2C_SCL_PIN | 1u << I2C_SDA_PIN);
+    wr(f, I2C_CTR, (master ? 1u << 4 : 0u) | 1u << 8 | 3u | 1u << 9);
+    wr(f, I2C_SCL_LOW, 19u);
+    wr(f, I2C_SCL_HIGH, 8u << 9 | 10u); /* wait 9, high 11: 20 */
+    wr(f, I2C_SDA_HOLD, 4u);
+    wr(f, I2C_SDA_SAMPLE, 13u);
+    wr(f, I2C + 0x40u, 9u); /* START hold */
+    wr(f, I2C + 0x44u, 9u);
+    wr(f, I2C + 0x48u, 9u);
+    wr(f, I2C + 0x4Cu, 9u);
+    wr(f, I2C_FIFO_CONF, rd(f, I2C_FIFO_CONF) | 1u << 12 | 1u << 13);
+    wr(f, I2C_FIFO_CONF, rd(f, I2C_FIFO_CONF) & ~(1u << 12 | 1u << 13));
+    wr(f, I2C_CTR, rd(f, I2C_CTR) | 1u << 11); /* CONF_UPGATE */
+    nedge = 0;
+    return 1;
+}
+
+static void test_i2c_master(void)
+{
+    /* a write of two registers, then reading them back with a repeated
+     * START, to the test's device at 0x50; the bus's timing; a NACK */
+    c3 f;
+    u32 i, raw;
+    if (!i2c_open(&f, 1))
+        return;
+    wr(&f, I2C_DATA, 0xA0u);
+    wr(&f, I2C_DATA, 0x02u);
+    wr(&f, I2C_DATA, 0x11u);
+    wr(&f, I2C_DATA, 0x22u);
+    wr(&f, I2C_COMD(0), I2C_CMD(6, 0, 0, 0, 0));
+    wr(&f, I2C_COMD(1), I2C_CMD(1, 4, 1, 0, 0));
+    wr(&f, I2C_COMD(2), I2C_CMD(2, 0, 0, 0, 0));
+    wr(&f, I2C_INT_CLR, 0x3ffffu);
+    wr(&f, I2C_CTR, rd(&f, I2C_CTR) | 1u << 5); /* TRANS_START */
+    esk_mach_idle(&f.m, 20u * 50u);
+    raw = rd(&f, I2C_INT_RAW);
+    CHECK(raw & (1u << 7));  /* TRANS_COMPLETE */
+    CHECK(raw & (1u << 9));  /* TRANS_START */
+    CHECK(!(raw & (1u << 10))); /* no NACK */
+    CHECK_EQ(dev.mem[2], 0x11u);
+    CHECK_EQ(dev.mem[3], 0x22u);
+    CHECK_EQ(dev.starts, 1);
+    CHECK_EQ(dev.stops, 1);
+    for (i = 0; i < 3; i++)
+        CHECK(rd(&f, I2C_COMD(i)) & (1u << 31));
+    CHECK_EQ(rd(&f, I2C_SR) & (1u << 4), 0u); /* the bus free */
+    /* SCL: 36 edges (four bytes of nine clocks), a period of 20 cycles */
+    /* SCL: its fall after the START, 36 clocks (four bytes of nine), its
+     * rise for the STOP; a clock every 20 cycles, low for 10 */
+    CHECK_EQ(nedge, 1 + 72 + 1);
+    CHECK_EQ(edge_t[2] - edge_t[0], 20u);
+    CHECK_EQ(edge_t[1] - edge_t[0], 10u);
+    /* reading: a write of the pointer, a repeated START, two bytes */
+    wr(&f, I2C_DATA, 0xA0u);
+    wr(&f, I2C_DATA, 0x02u);
+    wr(&f, I2C_DATA, 0xA1u);
+    wr(&f, I2C_COMD(0), I2C_CMD(6, 0, 0, 0, 0));
+    wr(&f, I2C_COMD(1), I2C_CMD(1, 2, 1, 0, 0));
+    wr(&f, I2C_COMD(2), I2C_CMD(6, 0, 0, 0, 0));
+    wr(&f, I2C_COMD(3), I2C_CMD(1, 1, 1, 0, 0));
+    wr(&f, I2C_COMD(4), I2C_CMD(3, 1, 0, 0, 0));
+    wr(&f, I2C_COMD(5), I2C_CMD(3, 1, 0, 0, 1));
+    wr(&f, I2C_COMD(6), I2C_CMD(2, 0, 0, 0, 0));
+    wr(&f, I2C_INT_CLR, 0x3ffffu);
+    wr(&f, I2C_CTR, rd(&f, I2C_CTR) | 1u << 5);
+    esk_mach_idle(&f.m, 20u * 60u);
+    CHECK(rd(&f, I2C_INT_RAW) & (1u << 7));
+    CHECK_EQ((rd(&f, I2C_SR) >> 8) & 0x3fu, 2u); /* RXFIFO_CNT */
+    raw = rd(&f, I2C_DATA);
+    CHECK_EQ(raw, 0x11u);
+    raw = rd(&f, I2C_DATA);
+    CHECK_EQ(raw, 0x22u);
+    CHECK_EQ(dev.starts, 3);
+    /* nobody at 0x51: NACK, a STOP, the commands stop */
+    wr(&f, I2C_DATA, 0xA2u);
+    wr(&f, I2C_DATA, 0x00u);
+    wr(&f, I2C_COMD(0), I2C_CMD(6, 0, 0, 0, 0));
+    wr(&f, I2C_COMD(1), I2C_CMD(1, 2, 1, 0, 0));
+    wr(&f, I2C_COMD(2), I2C_CMD(2, 0, 0, 0, 0));
+    wr(&f, I2C_INT_CLR, 0x3ffffu);
+    wr(&f, I2C_CTR, rd(&f, I2C_CTR) | 1u << 5);
+    esk_mach_idle(&f.m, 20u * 40u);
+    raw = rd(&f, I2C_INT_RAW);
+    CHECK(raw & (1u << 10)); /* NACK */
+    CHECK(raw & (1u << 7));  /* the STOP after it */
+    CHECK_EQ(rd(&f, I2C_SR) & 1u, 1u); /* RESP_REC: the NACK */
+    CHECK_EQ(rd(&f, I2C_COMD(1)) & (1u << 31), 0u);
+    c3_close(&f);
+}
+
+static void test_i2c_stretch_and_end(void)
+{
+    /* the device holds SCL low after the address: the master waits; then a
+     * transfer in two command sequences through END */
+    c3 f;
+    u32 i, raw;
+    if (!i2c_open(&f, 1))
+        return;
+    wr(&f, I2C_DATA, 0xA0u);
+    wr(&f, I2C_DATA, 0x05u);
+    wr(&f, I2C_COMD(0), I2C_CMD(6, 0, 0, 0, 0));
+    wr(&f, I2C_COMD(1), I2C_CMD(1, 2, 1, 0, 0));
+    wr(&f, I2C_COMD(2), I2C_CMD(4, 0, 0, 0, 0)); /* END */
+    wr(&f, I2C_INT_CLR, 0x3ffffu);
+    wr(&f, I2C_CTR, rd(&f, I2C_CTR) | 1u << 5);
+    esk_mach_idle(&f.m, 20u * 30u);
+    CHECK(rd(&f, I2C_INT_RAW) & (1u << 3)); /* END_DETECT */
+    CHECK_EQ(pins_out[I2C_SCL_PIN].drive, 0); /* SCL held low */
+    CHECK_EQ(dev.stops, 0);
+    dev.hold_scl = 1; /* the device stretches the next clock */
+    pins_ext[I2C_SCL_PIN] = 0;
+    esk_mach_outside(&f.m);
+    esk_esp32c3_pins_changed(&f.m);
+    dev_edges();
+    wr(&f, I2C_DATA, 0x33u);
+    wr(&f, I2C_COMD(0), I2C_CMD(1, 1, 1, 0, 0));
+    wr(&f, I2C_COMD(1), I2C_CMD(2, 0, 0, 0, 0));
+    wr(&f, I2C_INT_CLR, 0x3ffffu);
+    wr(&f, I2C_CTR, rd(&f, I2C_CTR) | 1u << 5);
+    i = (u32)nedge;
+    esk_mach_idle(&f.m, 20u * 20u);
+    CHECK_EQ(rd(&f, I2C_INT_RAW) & (1u << 7), 0u); /* still waiting */
+    dev.hold_scl = 0;
+    pins_ext[I2C_SCL_PIN] = -1;
+    esk_mach_outside(&f.m);
+    esk_esp32c3_pins_changed(&f.m);
+    dev_edges();
+    esk_mach_idle(&f.m, 20u * 20u);
+    raw = rd(&f, I2C_INT_RAW);
+    CHECK(raw & (1u << 7));
+    CHECK_EQ(dev.mem[5], 0x33u);
+    CHECK((u32)nedge > i);
+    c3_close(&f);
+}
+
+/* the test as a master, bit-banging GPIO4 and GPIO5 from outside: each
+ * level 3 us (60 cycles) */
+static void bb(c3 *f, int scl, int sda)
+{
+    pins_ext[I2C_SCL_PIN] = scl ? -1 : 0;
+    pins_ext[I2C_SDA_PIN] = sda ? -1 : 0;
+    esk_mach_outside(&f->m); /* as the runtime tells it a change from outside */
+    esk_esp32c3_pins_changed(&f->m);
+    esk_mach_idle(&f->m, 60u);
+}
+
+static int bb_sda(void) { return pins_out[I2C_SDA_PIN].drive == 0 || pins_ext[I2C_SDA_PIN] == 0 ? 0 : 1; }
+
+/* a byte out MSB first; the ACK read back (0 ACK) */
+static int bb_write(c3 *f, u32 b)
+{
+    int i, ack;
+    for (i = 7; i >= 0; i--) {
+        int bit = (int)((b >> i) & 1u);
+        bb(f, 0, bit);
+        bb(f, 1, bit);
+        bb(f, 0, bit);
+    }
+    bb(f, 0, 1);
+    bb(f, 1, 1);
+    ack = bb_sda();
+    bb(f, 0, 1);
+    return ack;
+}
+
+static u32 bb_read(c3 *f, int nack)
+{
+    u32 b = 0;
+    int i;
+    for (i = 0; i < 8; i++) {
+        bb(f, 0, 1);
+        bb(f, 1, 1);
+        b = b << 1 | (u32)bb_sda();
+        bb(f, 0, 1);
+    }
+    bb(f, 0, nack);
+    bb(f, 1, nack);
+    bb(f, 0, nack);
+    return b;
+}
+
+static void test_i2c_slave(void)
+{
+    /* as the slave at 0x28: a write of two bytes into the RX FIFO, a read
+     * of the TX FIFO's two bytes, an address that is not its own */
+    c3 f;
+    u32 v;
+    if (!i2c_open(&f, 0))
+        return;
+    wr(&f, I2C_SLAVE_ADDR, 0x28u);
+    wr(&f, I2C_CTR, rd(&f, I2C_CTR) | 1u << 11);
+    wr(&f, I2C_INT_CLR, 0x3ffffu);
+    bb(&f, 1, 1);
+    bb(&f, 1, 0); /* START */
+    CHECK(rd(&f, I2C_INT_RAW) & (1u << 15)); /* DET_START */
+    CHECK(rd(&f, I2C_SR) & (1u << 4));       /* BUS_BUSY */
+    v = (u32)bb_write(&f, 0x50u);
+    CHECK_EQ(v, 0u); /* ACKed */
+    CHECK(rd(&f, I2C_SR) & (1u << 5));       /* SLAVE_ADDRESSED */
+    v = (u32)bb_write(&f, 0x5Au);
+    CHECK_EQ(v, 0u);
+    v = (u32)bb_write(&f, 0xC3u);
+    CHECK_EQ(v, 0u);
+    bb(&f, 0, 0);
+    bb(&f, 1, 0);
+    bb(&f, 1, 1); /* STOP */
+    CHECK(rd(&f, I2C_INT_RAW) & (1u << 7));
+    CHECK_EQ(rd(&f, I2C_SR) & (1u << 4), 0u);
+    v = rd(&f, I2C_DATA);
+    CHECK_EQ(v, 0x5Au);
+    v = rd(&f, I2C_DATA);
+    CHECK_EQ(v, 0xC3u);
+    /* a read */
+    wr(&f, I2C_DATA, 0x81u);
+    wr(&f, I2C_DATA, 0x7Eu);
+    bb(&f, 1, 0);
+    v = (u32)bb_write(&f, 0x51u);
+    CHECK_EQ(v, 0u);
+    CHECK(rd(&f, I2C_SR) & (1u << 1)); /* SLAVE_RW */
+    v = bb_read(&f, 0);
+    CHECK_EQ(v, 0x81u);
+    v = bb_read(&f, 1);
+    CHECK_EQ(v, 0x7Eu);
+    CHECK(rd(&f, I2C_INT_RAW) & (1u << 10)); /* the master's NACK */
+    bb(&f, 0, 0);
+    bb(&f, 1, 0);
+    bb(&f, 1, 1);
+    /* another address: no ACK */
+    bb(&f, 1, 0);
+    v = (u32)bb_write(&f, 0x52u);
+    CHECK_EQ(v, 1u);
+    bb(&f, 0, 0);
+    bb(&f, 1, 0);
+    bb(&f, 1, 1);
+    c3_close(&f);
+}
+
 #define USJ 0x60043000u
 
 static void test_usb_serial_jtag(void)
@@ -1704,4 +2076,7 @@ RUN(test_rmt_carrier_and_filter);
 RUN(test_rmt_rx_filter);
 RUN(test_ledc_pwm);
 RUN(test_ledc_dither_and_fade);
+RUN(test_i2c_master);
+RUN(test_i2c_stretch_and_end);
+RUN(test_i2c_slave);
 TEST_MAIN_END
