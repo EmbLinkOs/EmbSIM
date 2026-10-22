@@ -19,6 +19,7 @@ typedef struct air_slot {
     esk_air_frame f;
     uint8_t data[AIR_MAX_FRAME];
     uint32_t token;
+    es_time_t end; /* when its airtime ends */
 } air_slot;
 
 typedef struct air_store {
@@ -153,19 +154,11 @@ static void done_cb(void *ctx, void *arg, es_time_t now)
         s->from->tx_done(s->from->ctx, s->token, acked, now);
 }
 
-static void end_cb(void *ctx, void *arg, es_time_t now)
+/* the frame reaches the radios tuned to it: 1 when one answers it */
+static int deliver(esk_engine *e, air_slot *s)
 {
-    esk_engine *e = (esk_engine *)ctx;
-    air_store *st = store_of(e, 0);
-    uintptr_t i = (uintptr_t)arg;
-    air_slot *s;
     size_t k;
     int acked = 0;
-    if (!st)
-        return;
-    s = &st->slot[i];
-    if (!s->used)
-        return;
     s->f.data = s->data;
     for (k = 0; k < e->air.nodes.len; k++) {
         esk_air_node *n = e->air.nodes.data[k];
@@ -175,9 +168,41 @@ static void end_cb(void *ctx, void *arg, es_time_t now)
         rssi = s->from ? esk_air_rssi(s->from, n, s->f.dbm, s->f.mhz) : s->f.dbm - 40.0;
         if (rssi < SENSITIVITY_DBM || !n->rx)
             continue;
-        if (n->rx(n->ctx, &s->f, (int)floor(rssi + 0.5), now))
+        if (n->rx(n->ctx, &s->f, (int)floor(rssi + 0.5), s->end))
             acked = 1;
     }
+    return acked;
+}
+
+/* a BLE packet's access address heard: the receivers tuned to it now take
+ * it whole; its sender hears its end */
+static void sync_cb(void *ctx, void *arg, es_time_t now)
+{
+    esk_engine *e = (esk_engine *)ctx;
+    air_store *st = store_of(e, 0);
+    uintptr_t i = (uintptr_t)arg;
+    air_slot *s;
+    (void)now;
+    if (!st || !(s = &st->slot[i])->used)
+        return;
+    deliver(e, s);
+    if (esk_sched_at(&e->sched, s->end, ESK_EV_EXTERNAL, done_cb, e, (void *)(i << 1), NULL) != ES_OK)
+        s->used = 0;
+}
+
+static void end_cb(void *ctx, void *arg, es_time_t now)
+{
+    esk_engine *e = (esk_engine *)ctx;
+    air_store *st = store_of(e, 0);
+    uintptr_t i = (uintptr_t)arg;
+    air_slot *s;
+    int acked;
+    if (!st)
+        return;
+    s = &st->slot[i];
+    if (!s->used)
+        return;
+    acked = deliver(e, s);
     if (group_addressed(&s->f) || !acked) {
         /* nothing answers: the sender finds out after the ACK it waited for */
         es_time_t at = group_addressed(&s->f) ? now : now + SIFS_PS + ACK_PS;
@@ -212,6 +237,19 @@ es_status esk_air_send(esk_engine *e, esk_air_node *from, const esk_air_frame *f
     e->air.frames++;
     if (start < e->sched.now)
         start = e->sched.now;
+    st->slot[i].end = start + airtime;
+    if (f->kind == ESK_AIR_BLE) {
+        /* heard at the end of the preamble and access address */
+        uint32_t kbps = f->rate_kbps ? f->rate_kbps : 1000u;
+        es_time_t sync = (es_time_t)(((kbps >= 2000u ? 2u : 1u) + 4u) * 8u * UINT64_C(1000000000) / kbps);
+        if (sync > airtime)
+            sync = airtime;
+        if (esk_sched_at(&e->sched, start + sync, ESK_EV_EXTERNAL, sync_cb, e, (void *)i, NULL) != ES_OK) {
+            st->slot[i].used = 0;
+            return ES_ELIMIT;
+        }
+        return ES_OK;
+    }
     if (esk_sched_at(&e->sched, start + airtime, ESK_EV_EXTERNAL, end_cb, e, (void *)i, NULL) != ES_OK) {
         st->slot[i].used = 0;
         return ES_ELIMIT;

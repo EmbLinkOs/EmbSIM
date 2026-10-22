@@ -270,7 +270,7 @@ typedef struct t_node {
     es_time_t done_at;
 } t_node;
 
-static uint32_t t_tuned(void *ctx, int kind) { return kind == ESK_AIR_WIFI ? ((t_node *)ctx)->mhz : 0u; }
+static uint32_t t_tuned(void *ctx, int kind) { return (kind & ((t_node *)ctx)->n.kind) ? ((t_node *)ctx)->mhz : 0u; }
 static int t_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
 {
     t_node *t = (t_node *)ctx;
@@ -408,6 +408,48 @@ static void test_air(void)
     esk_air_detach(&e, &b.n);
     esk_air_detach(&e, &c.n);
     CHECK_EQ(e.air.nodes.len, 0);
+    esk_engine_free(&e);
+}
+
+/* a BLE packet is taken by the receivers tuned to it when its access
+ * address ends, whole, with its end as its time */
+static void test_air_ble(void)
+{
+    static const uint8_t pdu[10] = { 0x02, 8, 1, 2, 3, 4, 5, 6, 7, 8 };
+    const es_time_t us = ES_PS_PER_US;
+    esk_engine e;
+    t_node a, b, c;
+    esk_air_frame fr;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_engine_reset(&e);
+    t_init(&a, 2402u);
+    t_init(&b, 2402u);
+    t_init(&c, 2426u);
+    a.n.kind = b.n.kind = c.n.kind = ESK_AIR_BLE;
+    CHECK(esk_air_attach(&e, &a.n) == ES_OK && esk_air_attach(&e, &b.n) == ES_OK && esk_air_attach(&e, &c.n) == ES_OK);
+    fr.data = pdu;
+    fr.len = sizeof pdu;
+    fr.mhz = 2402u;
+    fr.dbm = 0.0;
+    fr.rate_kbps = 1000u;
+    fr.kind = ESK_AIR_BLE;
+    CHECK(esk_air_send(&e, &a.n, &fr, 100 * us, esk_air_ble_airtime(sizeof pdu, 1000u), 5u) == ES_OK);
+    esk_engine_advance(&e, 139 * us);
+    CHECK_EQ(b.got, 0);
+    esk_engine_advance(&e, 141 * us); /* 1 byte of preamble, 4 of access address */
+    CHECK_EQ(b.got, 1);
+    CHECK_EQ(b.got_at, 244 * us);
+    CHECK_EQ(c.got, 0);
+    CHECK_EQ(a.done, 0);
+    c.mhz = 2402u; /* too late for this one */
+    b.mhz = 2480u;
+    esk_engine_advance(&e, 300 * us);
+    CHECK_EQ(c.got, 0);
+    CHECK_EQ(a.done, 1);
+    CHECK_EQ(a.done_at, 244 * us);
+    esk_air_detach(&e, &a.n);
+    esk_air_detach(&e, &b.n);
+    esk_air_detach(&e, &c.n);
     esk_engine_free(&e);
 }
 
@@ -787,6 +829,201 @@ static void test_ble_scanner(void)
     esk_registry_free(&r);
 }
 
+/* a peripheral the test plays for the phone (ble_central.c): it follows
+ * the connection's channels, answers each packet T_IFS later with the
+ * sequence numbers, and serves a battery service */
+typedef struct t_slave {
+    esk_air_node n;
+    esk_engine *e;
+    es_time_t anchor0, interval;
+    int connected, silent;
+    uint8_t ci[36];
+    int sn, nesn;
+    uint8_t q[8][32];
+    uint8_t qlen[8];
+    int qh, qn, sent_data;
+    int packets;
+} t_slave;
+
+static uint32_t sl_mhz(uint32_t ch) { return ch <= 10u ? 2404u + 2u * ch : 2428u + 2u * (ch - 11u); }
+
+static uint32_t sl_tuned(void *ctx, int kind)
+{
+    t_slave *s = (t_slave *)ctx;
+    es_time_t now = s->e->sched.now;
+    uint32_t k;
+    if (kind != ESK_AIR_BLE || s->silent)
+        return 0;
+    if (!s->connected)
+        return 2402u;
+    if (now + ES_PS_PER_MS < s->anchor0)
+        return 0;
+    k = (uint32_t)((now + s->interval / 2u - s->anchor0) / s->interval); /* the event */
+    return sl_mhz(((k + 1u) * 7u) % 37u);
+}
+
+static void sl_att(t_slave *s, const uint8_t *a, uint32_t n)
+{
+    uint8_t r[32];
+    uint32_t len = 0;
+    if (!n || s->qn == 8)
+        return;
+    if (a[0] == 0x02) { /* MTU: 100 */
+        r[0] = 0x03, r[1] = 100, r[2] = 0, len = 3;
+    } else if (a[0] == 0x10 && (a[1] | a[2] << 8) == 1) { /* the battery service, 1-3 */
+        static const uint8_t svc[8] = { 0x11, 6, 1, 0, 3, 0, 0x0F, 0x18 };
+        memcpy(r, svc, sizeof svc), len = sizeof svc;
+    } else if (a[0] == 0x08 && (a[1] | a[2] << 8) == 1) { /* its level, readable, at 3 */
+        static const uint8_t chr[9] = { 0x09, 7, 2, 0, 0x02, 3, 0, 0x19, 0x2A };
+        memcpy(r, chr, sizeof chr), len = sizeof chr;
+    } else if (a[0] == 0x0A && (a[1] | a[2] << 8) == 3) {
+        r[0] = 0x0B, r[1] = 100, len = 2;
+    } else if (a[0] == 0x10 || a[0] == 0x08) { /* nothing more */
+        r[0] = 0x01, r[1] = a[0], r[2] = a[1], r[3] = a[2], r[4] = 0x0A, len = 5;
+    }
+    if (!len)
+        return;
+    s->q[(s->qh + s->qn) % 8][0] = (uint8_t)len;
+    s->q[(s->qh + s->qn) % 8][1] = 0;
+    s->q[(s->qh + s->qn) % 8][2] = 4;
+    s->q[(s->qh + s->qn) % 8][3] = 0;
+    memcpy(s->q[(s->qh + s->qn) % 8] + 4, r, len);
+    s->qlen[(s->qh + s->qn) % 8] = (uint8_t)(len + 4u);
+    s->qn++;
+}
+
+static int sl_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
+{
+    t_slave *s = (t_slave *)ctx;
+    const uint8_t *p = f->data;
+    uint8_t out[40];
+    esk_air_frame fr;
+    uint32_t n = 0;
+    (void)rssi;
+    if (!s->connected) {
+        if ((p[0] & 15u) == 5u && f->len == 36u) { /* CONNECT_IND */
+            memcpy(s->ci, p, 36);
+            s->connected = 1;
+            s->interval = (es_time_t)(p[24] | p[25] << 8) * 1250u * ES_PS_PER_US;
+            s->anchor0 = at + 1250u * ES_PS_PER_US;
+        }
+        return 0;
+    }
+    s->packets++;
+    if (((p[0] >> 2) & 1u) != (unsigned)s->sn) { /* ours was received */
+        if (s->sent_data && s->qn) {
+            s->qh = (s->qh + 1) % 8;
+            s->qn--;
+        }
+        s->sn ^= 1;
+    }
+    if (((p[0] >> 3) & 1u) == (unsigned)s->nesn) { /* new */
+        s->nesn ^= 1;
+        if ((p[0] & 3u) == 2u && p[1] >= 4u)
+            sl_att(s, p + 6, p[1] - 4u);
+    }
+    s->sent_data = s->qn > 0;
+    if (s->qn) {
+        out[n++] = (uint8_t)(2u | (unsigned)s->nesn << 2 | (unsigned)s->sn << 3);
+        out[n++] = s->qlen[s->qh];
+        memcpy(out + n, s->q[s->qh], s->qlen[s->qh]);
+        n += s->qlen[s->qh];
+    } else {
+        out[n++] = (uint8_t)(1u | (unsigned)s->nesn << 2 | (unsigned)s->sn << 3);
+        out[n++] = 0;
+    }
+    fr.data = out;
+    fr.len = n;
+    fr.mhz = f->mhz;
+    fr.dbm = 0.0;
+    fr.rate_kbps = 1000u;
+    fr.kind = ESK_AIR_BLE;
+    CHECK(esk_air_send(s->e, &s->n, &fr, at + 150u * ES_PS_PER_US, esk_air_ble_airtime(n, 1000u), 9u) == ES_OK);
+    return 0;
+}
+
+/* the phone (ble_central.c) against it: the CONNECT_IND, the connection's
+ * channels and timing, GATT discovery, the supervision timeout */
+static void test_ble_central(void)
+{
+    static const uint8_t dev[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x64 };
+    esk_engine e;
+    esk_registry r;
+    esk_comp *ph;
+    t_slave sl;
+    t_node adv;
+    esk_json *o;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_registry_init(&r, &A);
+    ph = add(&e, &r, "PHONE", "ble_central", NULL, NULL, 0, "{\"target\": \"dev\", \"timeout\": 200}");
+    CHECK(ph != NULL);
+    esk_engine_reset(&e);
+    memset(&sl, 0, sizeof sl);
+    sl.n.ctx = &sl;
+    sl.n.kind = ESK_AIR_BLE;
+    sl.n.tuned = sl_tuned;
+    sl.n.rx = sl_rx;
+    sl.e = &e;
+    CHECK(esk_air_attach(&e, &sl.n) == ES_OK);
+    /* its advertising, on 37, from the slave's own node */
+    t_init(&adv, 2402u);
+    adv.n.kind = ESK_AIR_BLE;
+    {
+        static uint8_t p[16];
+        uint32_t i;
+        esk_air_frame fr;
+        p[0] = 0; /* ADV_IND, public */
+        p[1] = 6 + 5;
+        for (i = 0; i < 6; i++)
+            p[2 + i] = dev[5 - i];
+        p[8] = 4, p[9] = 9, p[10] = 'd', p[11] = 'e', p[12] = 'v';
+        fr.data = p;
+        fr.len = 13;
+        fr.mhz = 2402u;
+        fr.dbm = 0.0;
+        fr.rate_kbps = 1000u;
+        fr.kind = ESK_AIR_BLE;
+        CHECK(esk_air_send(&e, &sl.n, &fr, ES_PS_PER_MS, esk_air_ble_airtime(13, 1000u), 1u) == ES_OK);
+    }
+    esk_engine_advance(&e, 2 * ES_PS_PER_MS);
+    CHECK(sl.connected);
+    /* the CONNECT_IND: the phone's random address, the device's, 30 ms,
+     * latency 0, 200 ms, all 37 channels, hop 7 */
+    CHECK_EQ(sl.ci[0], 0x05 | 0x40);
+    CHECK_EQ(sl.ci[1], 34);
+    CHECK(sl.ci[2] == 0x33 && sl.ci[7] == 0xc4);
+    CHECK(sl.ci[8] == 0x64 && sl.ci[13] == 0x7c);
+    CHECK_EQ(sl.ci[24] | sl.ci[25] << 8, 24);
+    CHECK_EQ(sl.ci[26] | sl.ci[27] << 8, 0);
+    CHECK_EQ(sl.ci[28] | sl.ci[29] << 8, 20);
+    CHECK(sl.ci[30] == 0xFF && sl.ci[34] == 0x1F);
+    CHECK_EQ(sl.ci[35], 7);
+    /* the discovery: the MTU, the services, their characteristics, the reads */
+    esk_engine_advance(&e, 600 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    ph->ops->observe(ph, o);
+    CHECK_STR(esk_json_get_str(o, "state", ""), "connected");
+    CHECK_STR(esk_json_get_str(o, "peer", ""), "7c:df:a1:45:6d:64");
+    CHECK_EQ(esk_json_get_num(o, "mtu", -1), 100);
+    CHECK_EQ(esk_json_get_num(o, "services", -1), 1);
+    CHECK_STR(esk_json_get_str(o, "gatt", ""), "service 0x180F handles 1-3\n  characteristic 0x2A19 handle 3 [ read ] = 64\n");
+    CHECK(strstr(esk_json_get_str(o, "log", ""), "GATT database discovered: 1 services") != NULL);
+    CHECK(esk_json_get_num(o, "events", -1) >= 19);
+    esk_json_free(&A, o);
+    CHECK(sl.packets >= 19);
+    /* the device goes silent: lost after the supervision timeout */
+    sl.silent = 1;
+    esk_engine_advance(&e, 900 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    ph->ops->observe(ph, o);
+    CHECK_STR(esk_json_get_str(o, "state", ""), "disconnected");
+    CHECK(strstr(esk_json_get_str(o, "log", ""), "connection lost (supervision timeout)") != NULL);
+    esk_json_free(&A, o);
+    esk_air_detach(&e, &sl.n);
+    esk_engine_free(&e);
+    esk_registry_free(&r);
+}
+
 /* WPA2-Personal: the test plays the station's supplicant through the 4-way
  * handshake, then sends and receives CCMP frames */
 static void test_wifi_ap_wpa2(void)
@@ -936,9 +1173,11 @@ RUN(test_gates_and_delay);
 RUN(test_switch_gate);
 RUN(test_virtual_terminal);
 RUN(test_air);
+RUN(test_air_ble);
 RUN(test_wifi_ap);
 RUN(test_wifi_ap_wpa2);
 RUN(test_ble_scanner);
+RUN(test_ble_central);
 esk_diag_free(&D);
 CHECK_EQ(A.allocations, 0);
 TEST_MAIN_END

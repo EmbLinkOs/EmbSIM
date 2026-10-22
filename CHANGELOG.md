@@ -5,7 +5,7 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### The ESP32-C3's radios (their plan, steps 1 to 3; step 4's WPA2; step 6's advertising)
+### The ESP32-C3's radios (their plan, steps 1 to 3; step 4's WPA2; step 6's advertising and connections)
 
 - **Bluetooth LE advertising** (`ble.c`, step 6). The ESP32-C3's BLE core,
   RivieraWaves' IP as the controller in the ROM drives it: its version,
@@ -16,6 +16,31 @@ versions follow semantic versioning. There is no release yet.
   PDU on each channel of its map at +9 dBm. The chip's Wi-Fi and BLE share
   its port to the air (`radio.c`). NimBLE's `bluetooth/nimble/bleprph`,
   unmodified, advertises as "nimble-bleprph" (`bleprph`, 6 assertions).
+- **Bluetooth LE connections** (`ble.c`): the core listens after a
+  connectable advertising PDU and takes a CONNECT_IND into its receive
+  descriptors; connection events as the slave on channel selection
+  algorithm #1, its receive window, the answer from its transmit
+  descriptor or an empty packet, the sequence numbers' acknowledgement and
+  resending, the receive, transmit and end interrupts; the exchange
+  memory's blocks mapped by the hardware's fixed table. NimBLE's `bleprph`,
+  unmodified, is connected to and logs it; a tablet's GATT browser
+  discovers its services and reads its characteristic (`bleprph`, 14
+  assertions).
+- **`emblink/ble_central`**, a phone or tablet with a GATT browser (nRF
+  Connect): it scans, connects to its target with a CONNECT_IND, holds the
+  connection as the master (channel selection #1, acknowledgement,
+  L2CAP's fragments, the slave's link layer procedures answered, the
+  supervision timeout), discovers the GATT database (MTU, primary
+  services, characteristics) and reads the readable values.
+- **The air synchronises on BLE packets**: a BLE packet reaches the radios
+  tuned to it when its access address ends, and they take it whole, so a
+  receiver's window need only cover its start.
+- **The ESP32-C3's ROM image** now holds the Bluetooth controller's initial
+  data, which ESP-IDF's `btdm_controller_rom_data_init` copies from
+  0x4005966C: `esprom.py` takes more than one copy table (`--data-table`
+  again for the entry at 0x400591F4). Without it the controller's MISC task
+  had no handler and each advertising buffer freed after a connection
+  leaked.
 - **`emblink/ble_scanner`**, a phone's BLE scanner app: passive scanning
   on channels 37, 38 and 39 in turn with a window and interval, the
   advertisers heard with their address, PDU type, name and RSSI. It lists

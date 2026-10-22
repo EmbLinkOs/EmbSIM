@@ -202,9 +202,38 @@ Each step lands usable and green, as in the RTOS boards plan.
    share the chip's port to the air (`radio.c`). `emblink/ble_scanner`, a
    phone's scanner app, lists what it hears. NimBLE's `bleprph` as it
    ships advertises as "nimble-bleprph" and the scanner 2 m away lists it
-   at -37 dBm. Next: receiving (scan requests and responses, CONNECT_IND),
-   connection events and GATT with a central part, `blecent`,
-   `ble_ibeacon`, Arduino-ESP32's BLE.
+   at -37 dBm.
+   And connections, as the slave: after a connectable PDU the core listens
+   T_IFS for a CONNECT_IND to its address, which goes into the receive
+   descriptors (20 bytes from EM 0x1000, the next at +0x24: bit 15 of +0
+   filled, +2 the status, +4 the header, +8 to +12 the access address's
+   half-slot and count down with the link in bits 15:11, +18 the payload's
+   buffer; `r_lld_rxdesc_check`, `r_lld_adv_pkt_rx_connect_ind`) and ends
+   the advertising event. A connection event (control structure format 3)
+   runs on the channel channel selection algorithm #1 gives from +0x16 (the
+   last unmapped channel and the hop increment) and the map at +0x22,
+   listens for the receive window +0x1A gives (in 2 us units; 625 us ones
+   with bit 15: `r_lld_con_evt_start_cbk`), answers the master T_IFS later
+   with its transmit descriptor (14 bytes from EM 0x1400: next, header,
+   data; +0x1C) or an empty packet, keeps the sequence numbers (a
+   descriptor acknowledged is marked done, bit 15, and +0x1C moves on; a
+   resent packet's status has bit 6) and raises the receive interrupt
+   (bit 2), the transmit one after an acknowledgement (bit 1: `r_lld_con_tx`
+   frees the descriptors done) and the end (bit 5). The exchange memory's
+   1 KB blocks are mapped by the hardware's fixed table
+   (`r_emi_get_mem_addr_by_offset`, the ROM's `em_base_reg_lut`). On the
+   way, the ROM image lacked the Bluetooth controller's initial data
+   (`btdm_controller_rom_data_init` copies 12 bytes from 0x4005966C, whose
+   entry precedes the ROM's own copy table), so its MISC task had no
+   handler and every advertising buffer freed leaked: `esprom.py` takes
+   that entry too. The air gives a BLE packet to the receivers tuned to it
+   when its access address ends, as a radio synchronises, and they take it
+   whole. `emblink/ble_central`, a phone's GATT browser, connects as the
+   master and discovers the database: `bleprph`, unmodified, logs the
+   connection and the read, and the browser lists its GAP, GATT, Alert
+   Notification and own services with their characteristics. Next: scan
+   requests and responses, `blecent` (scanning and initiating, the master's
+   side), `ble_ibeacon`, Arduino-ESP32's BLE.
 7. **The workbench.** The air as a phone and a scanner see it (the
    access points with their RSSI, BLE devices and their data), the
    capture, the radio's current on the power instruments.

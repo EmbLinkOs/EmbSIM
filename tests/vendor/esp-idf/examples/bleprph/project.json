@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "esp-idf-bleprph",
- "description": "An ESP32-C3-DevKitM-1 running ESP-IDF's bluetooth/nimble/bleprph, plugged into USB, with a phone's BLE scanner app 2 m from the board.",
+ "description": "An ESP32-C3-DevKitM-1 running ESP-IDF's bluetooth/nimble/bleprph, plugged into USB, with a phone's BLE scanner app 2 m from the board and a tablet with a GATT browser 1 m from it, told to connect to nimble-bleprph.",
  "policy": "electrical",
  "boards": [
   {
@@ -46,6 +46,17 @@
     "x": 640,
     "y": 120
    }
+  },
+  {
+   "id": "TABLET",
+   "component": "emblink/ble_central",
+   "params": {
+    "target": "nimble-bleprph"
+   },
+   "layout": {
+    "x": 640,
+    "y": 260
+   }
   }
  ],
  "nets": {
@@ -74,6 +85,21 @@
    "id": "phone-devices",
    "target": "output:PHONE.devices",
    "kind": "value"
+  },
+  {
+   "id": "tablet-state",
+   "target": "output:TABLET.state",
+   "kind": "value"
+  },
+  {
+   "id": "tablet-services",
+   "target": "output:TABLET.services",
+   "kind": "value"
+  },
+  {
+   "id": "tablet-gatt",
+   "target": "output:TABLET.gatt",
+   "kind": "value"
   }
  ],
  "layout": {
@@ -87,6 +113,11 @@
     "PHONE": {
      "x": 2000.0,
      "y": 0.0,
+     "rotation": 0
+    },
+    "TABLET": {
+     "x": 0.0,
+     "y": 1000.0,
      "rotation": 0
     }
    }

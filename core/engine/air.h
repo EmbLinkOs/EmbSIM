@@ -7,7 +7,10 @@
  * power, PHY rate and airtime. It reaches every other node tuned to its
  * frequency when its airtime ends, at the power the free-space path loss
  * leaves over the distance between the two on the bench, if that is above
- * the receiver's sensitivity; a receiver that takes a unicast frame for
+ * the receiver's sensitivity (a BLE packet: to the nodes tuned to it when
+ * its preamble and access address end, as a receiver synchronises on it
+ * and then takes it whole; `rx` hears it then, with its end as `at`); a
+ * receiver that takes a unicast frame for
  * itself answers it (an 802.11 ACK), which the sender hears an ACK's time
  * later. Fading, interference, collisions and adjacent-channel leakage are
  * not modelled.
@@ -39,7 +42,8 @@ typedef struct esk_air_node {
     int kind;              /* the radios it has: ESK_AIR_WIFI | ESK_AIR_BLE */
     /* the frequency it listens on now for `kind` (MHz), 0 when it does not */
     uint32_t (*tuned)(void *ctx, int kind);
-    /* a frame arrived at `at` with `rssi` dBm: 1 when it answers it (an ACK) */
+    /* a frame arrived at `at` with `rssi` dBm: 1 when it answers it (an ACK).
+     * A BLE packet arrives when its access address is heard; `at` is its end */
     int (*rx)(void *ctx, const esk_air_frame *f, int rssi, es_time_t at);
     /* its frame `token` went out: answered or not, at `at` */
     void (*tx_done)(void *ctx, uint32_t token, int acked, es_time_t at);

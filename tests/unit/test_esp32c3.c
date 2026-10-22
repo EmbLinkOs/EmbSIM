@@ -1455,6 +1455,17 @@ static u32 em16r(c3 *f, u32 o)
     return v;
 }
 
+/* the exchange memory's first 8 KB contiguous at EM_RAM: the mapping
+ * registers of its 1 KB blocks (0, 1-2, 3, 4, 5-6, 7) as the controller sets
+ * them (r_emi_*) */
+static void em_map(c3 *f)
+{
+    static const u32 start[6] = { 0x000u, 0x400u, 0xC00u, 0x1000u, 0x1400u, 0x1C00u };
+    u32 i;
+    for (i = 0; i < 6u; i++)
+        wr(f, BLE_C3 + 0x204u + 4u * i, (start[i] / 4u) << 18 | ((EM_RAM + start[i]) & 0xFFFFCu) >> 2);
+}
+
 /* microseconds until the radio has sent `n` frames */
 static u32 ble_us_until(c3 *f, int n)
 {
@@ -1515,7 +1526,7 @@ static void test_ble(void)
     CHECK_EQ(rd(&f, INTR_STATUS_0) & 1u << 8, 0);
     /* the exchange memory from EM_RAM; an advertising event: the control
      * structure at 0x400, its descriptor at 0x500, its data at 0x600 */
-    wr(&f, BLE_C3 + 0x204u, (EM_RAM & 0xFFFFCu) >> 2);
+    em_map(&f);
     em16(&f, 0x400u, 4u);
     for (i = 0; i < 6u; i += 2)
         em16(&f, 0x406u + i, (u32)(0x11u * (i + 1u)) | (u32)(0x11u * (i + 2u)) << 8);
@@ -1576,6 +1587,153 @@ static void test_ble(void)
     CHECK_EQ(wtx.mhz, 2426);
     CHECK_EQ((em16r(&f, 0) >> 3) & 7u, 3u);
     CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 5) & 31u, 2u);
+    c3_close(&f);
+}
+
+/* `us` microseconds a microsecond at a time, as a running program sees the
+ * core's steps one after another */
+static void ble_idle_us(c3 *f, u32 us)
+{
+    while (us--)
+        esk_mach_idle(&f->m, esk_mach_core_hz(&f->m) / 1000000u);
+}
+
+/* a connection event as the slave (ble.c): the test plays the master */
+static void test_ble_con(void)
+{
+    static const u8 hello[5] = { 'h', 'e', 'l', 'l', 'o' };
+    u8 m[8];
+    c3 f;
+    u32 i, slot, us;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    memset(&wtx, 0, sizeof wtx);
+    f.m.host.radio_tx = wifi_radio_tx;
+    em_map(&f);
+    wr(&f, BLE_C3 + 0x0Cu, 1u << 1 | 1u << 2 | 1u << 5);
+    wr(&f, BLE_C3 + 0x2D8u, 0x80000000u);
+    /* link 1's control structure: format 3, the last unmapped channel 0 and
+     * the hop 7 (channel 7: 2418 MHz), all 37 channels, a 200 us window, its
+     * transmit descriptor; event counter 0 */
+    em16(&f, 0x45Au, 3u);
+    em16(&f, 0x45Au + 0x16u, 0x8700u);
+    em16(&f, 0x45Au + 0x1Au, 100u);
+    em16(&f, 0x45Au + 0x1Cu, 0x147Eu);
+    for (i = 0; i < 4u; i++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x45Au + 0x22u + i, 1, 0xFFu), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x45Au + 0x26u, 1, 0x1Fu), 0);
+    em16(&f, 0x45Au + 0x50u, 0);
+    /* its data: "hello" in an L2CAP start fragment */
+    em16(&f, 0x147Eu, 0);
+    em16(&f, 0x147Eu + 2u, 2u | 5u << 8);
+    em16(&f, 0x147Eu + 4u, 0x1C00u);
+    for (i = 0; i < sizeof hello; i++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x1C00u + i, 1, hello[i]), 0);
+    /* two receive descriptors from 0x1000 */
+    em16(&f, 0x1000u, 0x1014u);
+    em16(&f, 0x1000u + 18u, 0x1800u);
+    em16(&f, 0x1014u, 0x1000u);
+    em16(&f, 0x1014u + 18u, 0x1840u);
+    wr(&f, BLE_C3 + 0x24u, 0x1000u);
+    /* the event at a half-slot's start */
+    wr(&f, BLE_C3 + 0x1Cu, 0x80000000u);
+    slot = rd(&f, BLE_C3 + 0x1Cu) + 4u;
+    em16(&f, 0x10u, 0);
+    em16(&f, 0x12u, slot);
+    em16(&f, 0x14u, 0);
+    em16(&f, 0x16u, 624u);
+    em16(&f, 0x18u, 0x45Au / 2u);
+    wr(&f, BLE_C3 + 0x100u, 0x80000001u);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 0);
+    for (us = 0; us < 2000u && !f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE); us++)
+        esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000000u);
+    CHECK(us >= 937u && us <= 1251u);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 2418);
+    CHECK_EQ((em16r(&f, 0x10u) >> 3) & 7u, 2u);
+    /* the master's packet: LLID 2, SN 0, NESN 0, "abc" */
+    ble_idle_us(&f, 20u); /* 20 us into the window */
+    m[0] = 0x02;
+    m[1] = 3;
+    m[2] = 'a';
+    m[3] = 'b';
+    m[4] = 'c';
+    esk_mach_outside(&f.m); /* as the air delivers it (mcu.c) */
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, m, 5, 2418u, -40, 1000u, ESK_RADIO_BLE), 0);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 0); /* taking it */
+    ble_idle_us(&f, 64u); /* its end: 64 us on */
+    CHECK(em16r(&f, 0x1000u) & 0x8000u);                       /* filled */
+    CHECK_EQ(em16r(&f, 0x1002u), 0);                            /* status: new */
+    CHECK_EQ(em16r(&f, 0x1004u), 0x0302u);
+    CHECK_EQ(em16r(&f, 0x100Cu) >> 11, 1u);                     /* link 1 */
+    CHECK_EQ(em16r(&f, 0x1800u), 'a' | 'b' << 8);
+    CHECK_EQ(rd(&f, BLE_C3 + 0x24u), 0x1014u);
+    CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 10) & 0x1FFFFFu, 1u << 2); /* received */
+    wr(&f, BLE_C3 + 0x2D8u, 0x80000001u);
+    /* the answer T_IFS later: "hello", SN 0, NESN 1 */
+    us = ble_us_until(&f, 1);
+    CHECK(us >= 140u && us <= 160u);
+    CHECK_EQ(wtx.mhz, 2418);
+    CHECK_EQ(wtx.kind, ESK_RADIO_BLE);
+    CHECK_EQ(wtx.frame[0], 0x06);
+    CHECK_EQ(wtx.frame[1], 5);
+    CHECK(!memcmp(wtx.frame + 2, hello, sizeof hello));
+    CHECK_EQ(em16r(&f, 0x147Eu) & 0x8000u, 0); /* not acknowledged yet */
+    ble_idle_us(&f, 200u);
+    CHECK_EQ((em16r(&f, 0x10u) >> 3) & 7u, 3u); /* over: neither has more */
+    CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 10) & 0x1FFFFFu, 1u << 5);
+    wr(&f, BLE_C3 + 0x2D8u, 0x80000001u);
+    /* the next event, on channel 14 (2434 MHz): the master acknowledges
+     * (NESN 1) with an empty packet, SN 1 */
+    em16(&f, 0x45Au + 0x16u, 0x8707u);
+    em16(&f, 0x45Au + 0x50u, 1u);
+    wr(&f, BLE_C3 + 0x1Cu, 0x80000000u);
+    slot = rd(&f, BLE_C3 + 0x1Cu) + 4u;
+    em16(&f, 0x20u, 0);
+    em16(&f, 0x22u, slot);
+    em16(&f, 0x24u, 0);
+    em16(&f, 0x26u, 624u);
+    em16(&f, 0x28u, 0x45Au / 2u);
+    wr(&f, BLE_C3 + 0x100u, 0x80000002u);
+    for (us = 0; us < 2000u && !f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE); us++)
+        esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000000u);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 2434);
+    m[0] = 0x01 | 1u << 2 | 1u << 3;
+    m[1] = 0;
+    esk_mach_outside(&f.m);
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, m, 2, 2434u, -40, 1000u, ESK_RADIO_BLE), 0);
+    us = ble_us_until(&f, 2);
+    CHECK(em16r(&f, 0x147Eu) & 0x8000u); /* acknowledged: done */
+    CHECK_EQ(em16r(&f, 0x45Au + 0x1Cu), 0);
+    CHECK_EQ(wtx.frame[0], 0x01 | 1u << 3); /* empty, SN 1, NESN 0 */
+    CHECK_EQ(wtx.frame[1], 0);
+    CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 5) & 31u, 2u); /* received, then sent after the acknowledgement */
+    CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 10) & 0x1FFFFFu, 1u << 2);
+    wr(&f, BLE_C3 + 0x2D8u, 0x80000001u);
+    CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 10) & 0x1FFFFFu, 1u << 1);
+    CHECK_EQ(em16r(&f, 0x1014u + 2u), 0);
+    /* a third event: the master resends (SN 1 again): taken as already
+     * received */
+    ble_idle_us(&f, 500u);
+    em16(&f, 0x45Au + 0x16u, 0x870Eu);
+    em16(&f, 0x45Au + 0x50u, 2u);
+    wr(&f, BLE_C3 + 0x1Cu, 0x80000000u);
+    slot = rd(&f, BLE_C3 + 0x1Cu) + 4u;
+    em16(&f, 0x30u, 0);
+    em16(&f, 0x32u, slot);
+    em16(&f, 0x34u, 0);
+    em16(&f, 0x36u, 624u);
+    em16(&f, 0x38u, 0x45Au / 2u);
+    wr(&f, BLE_C3 + 0x100u, 0x80000003u);
+    for (us = 0; us < 2000u && !f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE); us++)
+        esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000000u);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 2448);
+    esk_mach_outside(&f.m);
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, m, 2, 2448u, -40, 1000u, ESK_RADIO_BLE), 0);
+    ble_idle_us(&f, 100u);
+    CHECK_EQ(em16r(&f, 0x1000u + 2u), 1u << 6);
+    /* answered, then the event ends */
+    ble_idle_us(&f, 1000u);
+    CHECK_EQ((em16r(&f, 0x30u) >> 3) & 7u, 3u);
     c3_close(&f);
 }
 
@@ -3065,6 +3223,7 @@ RUN(test_rng_and_radio);
     RUN(test_sha_dma);
     RUN(test_aes);
     RUN(test_ble);
+    RUN(test_ble_con);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
 RUN(test_peripheral_reset_keeps_rate);

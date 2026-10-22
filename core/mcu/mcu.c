@@ -1009,7 +1009,8 @@ static int air_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
 {
     mcu_state *st = (mcu_state *)ctx;
     int r;
-    catch_up(st, at);
+    (void)at; /* a BLE packet's end: the radio takes it from its access address on */
+    catch_up(st, st->c->e->sched.now);
     esk_mach_outside(&st->m);
     r = st->m.radio.rx(st->m.radio.ctx, f->data, f->len, f->mhz, rssi, f->rate_kbps, f->kind);
     wake(st);

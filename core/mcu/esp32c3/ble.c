@@ -22,33 +22,57 @@
  *     controller's r_rwble_isr reads there: the oldest entry's bits in
  *     bits 30:10, the count in 9:5; a write of bit 0 removes it. Interrupt
  *     source 8 (RWBLE) is asserted while the FIFO holds an entry (or,
- *     without it, while one is raised and enabled). The bits the scheduler
- *     uses: 1 a PDU sent, 2 one received, 5 an event's end, 6 an event
- *     skipped;
- *   - the exchange memory (EM), the controller's structures in RAM: each
- *     register from +0x204 maps an EM offset (bits 31:18, in words) to RAM
- *     (bits 17:0, its word address under 0x3FC00000; r_emi_em_base_init);
+ *     without it, while one is raised and enabled). The scheduler's bits:
+ *     1 a connection's packet sent after one of its descriptors was
+ *     acknowledged, 2 a connection's packet received, 5 an event's end;
+ *   - the exchange memory (EM), the controller's structures in RAM, in
+ *     1 KB blocks each mapped through one of the registers from +0x204 by
+ *     the hardware's fixed table (the ROM's em_base_reg_lut): a register's
+ *     bits 31:18 are the EM offset its region starts at (in words), bits
+ *     17:0 the RAM's word address under 0x3FC00000 (r_emi_*);
  *   - the exchange table: 16 entries of 16 bytes from EM offset 0
  *     (r_sch_prog_ble_push): its first halfword's bits 5:3 the event's
  *     state (0 waiting, 2 under way, 3 over), its start (+2 and +4 the
  *     half-slot, +6 the count down within it), +8 its control structure
- *     (the EM offset / 2). A write of bit 31 with an entry's index to
- *     +0x100 starts it: at its time the event runs as its control
- *     structure's format says, then its state reads 3 and the end
- *     interrupt is raised;
+ *     (the EM offset / 2; 90-byte structures from 0x400, one per link). A
+ *     write of bit 31 with an entry's index to +0x100 starts it: at its
+ *     time the event runs as its control structure's format says, then its
+ *     state reads 3 and the end interrupt is raised;
  *   - an advertising event (format 4 or 5): the control structure's
  *     address (+6 to +11) and transmit descriptor (+0x1C: its PDU header
  *     at +2, its data's EM offset at +4) make the advertising PDU, sent on
  *     each primary channel of the map (+0x16 bits 2:0: 37, 38, 39) at 1
- *     Mbit/s, one after another with time for a scan request between them
- *     (T_IFS and a SCAN_REQ's airtime), at +9 dBm (ESP-IDF's default
- *     level, P9).
+ *     Mbit/s, one after another with time for a request between them
+ *     (T_IFS and a SCAN_REQ's airtime), at +9 dBm (ESP-IDF's default level,
+ *     P9). After a connectable PDU it listens T_IFS on its channel: a
+ *     CONNECT_IND for its address is received, and ends the event;
+ *   - a connection event as the slave (format 3): on the data channel
+ *     channel selection algorithm #1 gives from the last unmapped channel
+ *     and the hop increment (+0x16 bits 5:0 and 12:8) and the map (+0x22,
+ *     37 bits), it listens from its start for the receive window (+0x1A, in
+ *     2 us units, or 625 us ones with bit 15); the master's packet is
+ *     received, and answered T_IFS after it with the packet at the
+ *     transmit descriptor (+0x1C: next at +0 bits 14:0, header at +2, data
+ *     at +4) or an empty one; the sequence numbers acknowledge (the
+ *     descriptor acknowledged is marked done, bit 15 of its first
+ *     halfword, and +0x1C moves to the next) and drop a resent packet;
+ *     while either side has more data it listens again, otherwise the
+ *     event ends;
+ *   - the received packets go into the receive descriptors (20 bytes from
+ *     0x1000, the next at +0x24): +0 bit 15 filled, +2 the status (bit 6 a
+ *     packet already received), +4 the header, +6 bits 15:14 the PHY (1M:
+ *     0), +8 and +10 the half-slot of the access address's end and +12 its
+ *     count down (bits 9:0) with the link (bits 15:11), +18 the EM offset
+ *     of the buffer the payload goes to (r_lld_rxdesc_check, ..._free,
+ *     r_lld_adv_pkt_rx_connect_ind, r_lld_con_rx).
  * The other registers keep what is written.
- * Not yet: receiving (SCAN_REQ and SCAN_RSP, CONNECT_IND, scanning,
- * connection events: an event of another format ends at once), the
- * transmit power the controller sets, the 2M and Coded PHYs, extended and
- * periodic advertising, encryption, privacy (resolvable addresses), sleep,
- * the radio's controls (+0x70 to +0x9C) beyond keeping their values. */
+ * Not yet: scan requests and responses, scanning and initiating (the
+ * master's side), the transmit power the controller sets, the received
+ * signal strength in the descriptor, the 2M and Coded PHYs, channel
+ * selection algorithm #2, extended and periodic advertising, encryption,
+ * privacy (resolvable addresses), slave latency, an event's maximum length,
+ * sleep, CRC errors, the radio's controls (+0x70 to +0x9C) beyond keeping
+ * their values. */
 #include <string.h>
 
 #include "mcu/esp32c3/esp32c3.h"
@@ -68,12 +92,15 @@
 #define TGT_HUS_FINE 0x0F0u
 #define ACTSCHCNTL   0x100u
 #define EMI_MAP      0x204u
-#define EMI_MAPS     51
+#define EMI_MAPS     39
+#define EM_BLOCKS    51
 #define ISR_FIFO     0x2D8u
 #define INTACK2      0x38Cu
 #define IP_VERSION   0x09001B00u
 #define SOURCE       8 /* ETS_RWBLE_INTR_SOURCE */
 #define FIFO_DEPTH   16
+#define I_TX         (1u << 1)
+#define I_RX         (1u << 2)
 #define I_END        (1u << 5)
 #define I_10MS       (1u << 9)
 #define I_HS         (1u << 10)
@@ -86,6 +113,12 @@
 #define TX_DBM       9
 #define T_IFS_HUS    300u /* 150 us */
 #define SCAN_REQ_HUS 352u /* a SCAN_REQ's 176 us at 1 Mbit/s */
+#define SYNC_HUS     80u  /* a 1M packet's preamble and access address */
+#define RXDESC       0x1000u
+#define RXDESC_SIZE  20u
+#define RXDESCPTR    0x024u
+#define CS_BASE      0x400u
+#define CS_SIZE      90u
 
 struct c3_ble {
     struct esk_mach *s;
@@ -103,6 +136,21 @@ struct c3_ble {
     u64 et_at[ET_N];
     int et_step[ET_N];
     u8 pdu[264];
+    /* listening after an advertising PDU */
+    u32 listen_mhz;
+    u64 listen_until;
+    int listen_e;
+    /* a packet being received: whole at rx_end */
+    int rx_on, rx_e, rx_rssi;
+    u64 rx_sync, rx_end;
+    u32 rx_len;
+    u8 rx_pdu[264];
+    /* each link's (control structure's) sequence numbers, the descriptor it
+     * sent last and whether the peer has more */
+    u8 sn[16], nesn[16], md_peer[16];
+    u32 txsent[16];
+    u8 tx_acked[16]; /* a descriptor acknowledged: the transmit interrupt after the answer */
+    u32 ch_mhz[ET_N]; /* each event's data channel */
 };
 
 static const u32 ADV_MHZ[3] = { 2402u, 2426u, 2480u };
@@ -152,22 +200,24 @@ static void timers(struct c3_ble *k)
 
 /* ---- the exchange memory ----------------------------------------------------- */
 
-/* an EM offset's RAM address, by the mapping registers: 0 when none maps it */
+/* the exchange memory's 1 KB blocks: the mapping register each one goes
+ * through and the EM offset that register's region starts at (the
+ * hardware's wiring, as the ROM's em_base_reg_lut gives it) */
+static const u8 EM_REG[EM_BLOCKS] = { 0,  1,  1,  2,  3,  4,  4,  5,  6,  7,  7,  8,  8,  9,  9,  10, 10,
+                                      11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 18, 19, 20, 21,
+                                      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38 };
+
+/* an EM offset's RAM address: 0 when it is not mapped */
 static u32 em_addr(struct c3_ble *k, u32 o)
 {
-    u32 best = 0, bstart = 0;
-    int i, any = 0;
-    for (i = 0; i < EMI_MAPS; i++) {
-        u32 r = *reg(k, EMI_MAP + 4u * (u32)i), start = (r >> 18) << 2;
-        if (!(r & 0x3FFFFu) || start > o)
-            continue;
-        if (!any || start >= bstart) {
-            best = r;
-            bstart = start;
-            any = 1;
-        }
-    }
-    return any ? (0x3FC00000u | ((best << 2) & 0xFFFFCu)) + (o - bstart) : 0u;
+    u32 b = o >> 10, r, start;
+    if (b >= EM_BLOCKS)
+        return 0;
+    r = *reg(k, EMI_MAP + 4u * EM_REG[b]);
+    start = (r >> 18) << 2;
+    if (!(r & 0x3FFFFu) || start > o)
+        return 0; /* not mapped */
+    return (0x3FC00000u | ((r << 2) & 0xFFFFCu)) + (o - start);
 }
 
 static u32 em_read(struct c3_ble *k, u32 o, int n)
@@ -231,21 +281,177 @@ static void adv_step(struct c3_ble *k, int e)
         (void)k->s->host.radio_tx(k->s->host.ctx, k->pdu, n, ADV_MHZ[ch], TX_DBM, 1000u, air, ESK_RADIO_BLE,
                                   0x80000000u | (u32)e);
     k->et_step[e]++;
+    if ((hdr & 15u) == 0u || (hdr & 15u) == 1u || (hdr & 15u) == 6u) { /* it listens for a request */
+        k->listen_mhz = ADV_MHZ[ch];
+        k->listen_e = e;
+        k->listen_until = k->et_at[e] + air / (ES_PS_PER_US / 2u) + T_IFS_HUS + SYNC_HUS + 32u;
+    }
     k->et_at[e] += air / (ES_PS_PER_US / 2u) + T_IFS_HUS + SCAN_REQ_HUS;
+}
+
+/* ---- connections --------------------------------------------------------------- */
+
+static u32 cs_of(struct c3_ble *k, int e) { return 2u * em_read(k, ET_SIZE * (u32)e + 8u, 2); }
+
+static int link_of(u32 cs) { return (int)(((cs - CS_BASE) / CS_SIZE) & 15u); }
+
+static u32 data_mhz(u32 ch) { return ch <= 10u ? 2404u + 2u * ch : 2428u + 2u * (ch - 11u); }
+
+/* the event's data channel by channel selection algorithm #1: the last
+ * unmapped channel and the hop increment (+0x16), the map (+0x22) */
+static u32 con_channel(struct c3_ble *k, u32 cs)
+{
+    u32 w = em_read(k, cs + 0x16u, 2), un = ((w & 0x3Fu) + ((w >> 8) & 0x1Fu)) % 37u, used = 0, i, map[37], n = 0;
+    for (i = 0; i < 37u; i++)
+        if ((em_read(k, cs + 0x22u + i / 8u, 1) >> (i % 8u)) & 1u)
+            map[n++] = i;
+    used = n;
+    if (!used || ((em_read(k, cs + 0x22u + un / 8u, 1) >> (un % 8u)) & 1u))
+        return un;
+    return map[un % used];
+}
+
+/* the receive window from now: +0x1A in 2 us units, or in 625 us ones
+ * with bit 15 */
+static u64 con_window(struct c3_ble *k, u32 cs)
+{
+    u32 w = em_read(k, cs + 0x1Au, 2);
+    return (w & 0x8000u) ? (u64)(w & 0x7FFFu) * 1250u : (u64)w * 4u;
+}
+
+static void con_listen(struct c3_ble *k, int e, u64 until)
+{
+    k->listen_mhz = k->ch_mhz[e];
+    k->listen_e = e;
+    k->listen_until = until;
+    k->et_step[e] = 1;
+    k->et_at[e] = until + 1u;
+}
+
+/* the slave's answer, T_IFS after the master's packet: its descriptor
+ * (+0x1C) or an empty PDU */
+static void con_send(struct c3_ble *k, int e)
+{
+    u32 cs = cs_of(k, e), l = (u32)link_of(cs), desc = em_read(k, cs + 0x1Cu, 2) & 0x7FFFu, n = 0, i, len = 0, llid = 1;
+    u32 next = 0;
+    u64 air;
+    int md = 0;
+    if (desc && !(em_read(k, desc, 2) & 0x8000u)) {
+        u32 hdr = em_read(k, desc + 2u, 2), data = em_read(k, desc + 4u, 2);
+        llid = hdr & 3u;
+        len = hdr >> 8;
+        for (i = 0; i < len; i++)
+            k->pdu[2u + i] = (u8)em_read(k, data + i, 1);
+        next = em_read(k, desc, 2) & 0x7FFFu;
+        md = next && !(em_read(k, next, 2) & 0x8000u) && (em_read(k, next + 2u, 2) & 3u);
+        k->txsent[l] = desc;
+    } else
+        k->txsent[l] = 0;
+    k->pdu[n++] = (u8)(llid | (u32)k->nesn[l] << 2 | (u32)k->sn[l] << 3 | (md ? 1u << 4 : 0u));
+    k->pdu[n++] = (u8)len;
+    n += len;
+    air = (u64)(1u + 4u + n + 3u) * 8u * ES_PS_PER_US;
+    if (k->s->host.radio_tx)
+        (void)k->s->host.radio_tx(k->s->host.ctx, k->pdu, n, k->ch_mhz[e], TX_DBM, 1000u, air, ESK_RADIO_BLE,
+                                  0x80000000u | (u32)e);
+    if (k->tx_acked[l]) { /* this answer sent: the controller frees what was acknowledged */
+        k->tx_acked[l] = 0;
+        raise(k, I_TX);
+    }
+    if (md || k->md_peer[l]) /* more: the master's next packet */
+        con_listen(k, e, k->hus + air / (ES_PS_PER_US / 2u) + T_IFS_HUS + SYNC_HUS + 32u);
+    else {
+        k->et_step[e] = 3;
+        k->et_at[e] = k->hus + air / (ES_PS_PER_US / 2u);
+    }
+}
+
+/* a connection event's next step: its start (listening on its channel),
+ * no packet heard (its end), its answer sent */
+static void con_step(struct c3_ble *k, int e)
+{
+    u32 cs = cs_of(k, e);
+    int l = link_of(cs);
+    if (k->et_step[e] == 0) {
+        if (em_read(k, cs + 0x50u, 2) == 0) { /* a new link: its event counter (+0x50) at 0 */
+            k->sn[l] = k->nesn[l] = k->md_peer[l] = k->tx_acked[l] = 0;
+            k->txsent[l] = 0;
+        }
+        k->ch_mhz[e] = data_mhz(con_channel(k, cs));
+        con_listen(k, e, k->hus + con_window(k, cs) + SYNC_HUS);
+        return;
+    }
+    if (k->et_step[e] == 2) {
+        con_send(k, e);
+        return;
+    }
+    k->listen_mhz = 0;
+    et_over(k, e);
+}
+
+/* the packet received is whole: into the receive descriptor */
+static void rx_done(struct c3_ble *k)
+{
+    u32 d = *reg(k, RXDESCPTR) & 0x7FFFu, buf, i, cs = 2u * em_read(k, ET_SIZE * (u32)k->rx_e + 8u, 2);
+    u64 slot = k->rx_sync / HUS_PER_HS;
+    u32 fine = 624u - (u32)(k->rx_sync % HUS_PER_HS), status = 0, fmt = em_read(k, cs, 2) & 0x1Fu;
+    int con = fmt != 4u && fmt != 5u, l = link_of(cs);
+    k->rx_on = 0;
+    if (!d)
+        d = RXDESC;
+    if (con) { /* the sequence numbers */
+        u32 h = k->rx_pdu[0];
+        if (((h >> 2) & 1u) != k->sn[l]) { /* ours was received */
+            if (k->txsent[l]) {
+                em_write16(k, k->txsent[l], em_read(k, k->txsent[l], 2) | 0x8000u);
+                em_write16(k, cs + 0x1Cu, em_read(k, k->txsent[l], 2) & 0x7FFFu);
+                k->txsent[l] = 0;
+                k->tx_acked[l] = 1;
+            }
+            k->sn[l] ^= 1u;
+        }
+        if (((h >> 3) & 1u) != k->nesn[l])
+            status |= 1u << 6; /* resent: already taken */
+        else
+            k->nesn[l] ^= 1u;
+        k->md_peer[l] = (u8)((h >> 4) & 1u);
+    }
+    buf = em_read(k, d + 18u, 2);
+    for (i = 2; i < k->rx_len; i++)
+        (void)esk_bus_debug_write(&k->s->bus, em_addr(k, buf + i - 2u), 1, k->rx_pdu[i]);
+    em_write16(k, d + 2u, status);
+    em_write16(k, d + 4u, (u32)k->rx_pdu[0] | (u32)k->rx_pdu[1] << 8);
+    em_write16(k, d + 6u, (u32)(u8)k->rx_rssi); /* 1M (bits 15:14 0) */
+    em_write16(k, d + 8u, (u32)slot);
+    em_write16(k, d + 10u, (u32)(slot >> 16) & 0xFFFu);
+    em_write16(k, d + 12u, (fine & 0x3FFu) | ((cs - CS_BASE) / CS_SIZE) << 11);
+    em_write16(k, d + 14u, 0);
+    em_write16(k, d + 0u, em_read(k, d, 2) | 0x8000u);
+    *reg(k, RXDESCPTR) = em_read(k, d, 2) & 0x7FFFu;
+    if (con) {
+        raise(k, I_RX);
+        k->et_step[k->rx_e] = 2; /* the answer */
+        k->et_at[k->rx_e] = k->rx_end + T_IFS_HUS;
+    } else if ((k->rx_pdu[0] & 15u) == 5u) /* CONNECT_IND: the advertising is over */
+        et_over(k, k->rx_e);
 }
 
 /* the events' steps due, each at its time */
 static void events(struct c3_ble *k)
 {
     int e, again = 1;
+    if (k->rx_on && k->hus >= k->rx_end)
+        rx_done(k);
     while (again)
         for (again = 0, e = 0; e < ET_N; e++)
-            if (((k->et_pending >> e) & 1u) && k->hus >= k->et_at[e]) {
+            if (((k->et_pending >> e) & 1u) && k->hus >= k->et_at[e] && !(k->rx_on && k->rx_e == e)) {
                 u32 cs = 2u * em_read(k, ET_SIZE * (u32)e + 8u, 2), fmt = em_read(k, cs, 2) & 0x1Fu;
                 if (k->et_step[e] == 0)
                     et_state(k, e, ST_RUNNING);
                 if (fmt == 4u || fmt == 5u)
                     adv_step(k, e);
+                else if (fmt == 3u)
+                    con_step(k, e);
                 else
                     et_over(k, e); /* not modelled yet */
                 again = 1;
@@ -263,7 +469,7 @@ static void ble_tick(void *ctx, u32 cycles)
     k->frac %= hz;
     if (k->arm_10ms || k->arm_hs || k->arm_hus)
         timers(k);
-    if (k->et_pending)
+    if (k->et_pending || k->rx_on)
         events(k);
 }
 
@@ -298,6 +504,10 @@ static int ble_next(void *ctx, u32 *cycles)
                 best = k->et_at[e];
             any = 1;
         }
+    if (k->rx_on && (!any || k->rx_end < best)) {
+        best = k->rx_end;
+        any = 1;
+    }
     if (!any)
         return 0;
     if (best <= k->hus) {
@@ -404,6 +614,13 @@ static void ble_reset(void *ctx)
     k->nfifo = 0;
     k->et_pending = 0;
     k->arm_10ms = k->arm_hs = k->arm_hus = 0;
+    k->listen_mhz = 0;
+    k->rx_on = 0;
+    memset(k->sn, 0, sizeof k->sn);
+    memset(k->nesn, 0, sizeof k->nesn);
+    memset(k->md_peer, 0, sizeof k->md_peer);
+    memset(k->tx_acked, 0, sizeof k->tx_acked);
+    memset(k->txsent, 0, sizeof k->txsent);
     k->clocked = 0;
     esk_mach_clock(k->s, &k->clocked, 1);
 }
@@ -414,9 +631,42 @@ static const struct esk_dev_ops ble_ops = {
 
 static u32 ble_tuned(void *ctx, int kind)
 {
-    (void)ctx;
-    (void)kind;
-    return 0; /* it does not receive yet */
+    struct c3_ble *k = (struct c3_ble *)ctx;
+    if (kind != ESK_RADIO_BLE || k->rx_on || !k->listen_mhz)
+        return 0;
+    if (k->hus > k->listen_until) {
+        k->listen_mhz = 0;
+        return 0;
+    }
+    return k->listen_mhz;
+}
+
+/* a packet's access address heard: it is taken whole at its end */
+static int ble_rx(void *ctx, const u8 *f, u32 len, u32 mhz, int rssi, u32 kbps, int kind)
+{
+    struct c3_ble *k = (struct c3_ble *)ctx;
+    u32 cs, i;
+    (void)kbps;
+    if (kind != ESK_RADIO_BLE || k->rx_on || !k->listen_mhz || mhz != k->listen_mhz || len < 2u ||
+        len > sizeof k->rx_pdu)
+        return 0;
+    cs = 2u * em_read(k, ET_SIZE * (u32)k->listen_e + 8u, 2);
+    if ((em_read(k, cs, 2) & 0x1Fu) == 4u || (em_read(k, cs, 2) & 0x1Fu) == 5u) {
+        if ((f[0] & 15u) != 5u || len != 36u) /* a CONNECT_IND, for this advertiser */
+            return 0;
+        for (i = 0; i < 6u; i++)
+            if (f[8u + i] != (u8)em_read(k, cs + 6u + i, 1))
+                return 0;
+    }
+    k->rx_on = 1;
+    k->rx_e = k->listen_e;
+    k->rx_rssi = rssi;
+    k->rx_sync = k->hus;
+    k->rx_end = k->hus + (u64)(len + 3u) * 16u;
+    k->rx_len = len;
+    memcpy(k->rx_pdu, f, len);
+    k->listen_mhz = 0;
+    return 0;
 }
 
 int esk_esp32c3_ble_create(struct esk_mach *s)
@@ -431,6 +681,7 @@ int esk_esp32c3_ble_create(struct esk_mach *s)
     part.ctx = k;
     part.kinds = ESK_RADIO_BLE;
     part.tuned = ble_tuned;
+    part.rx = ble_rx;
     if (esk_esp32c3_radio_join(s, ESK_RADIO_BLE, &part) != 0)
         return -1;
     if (esk_mach_add_dev(s, BLE_BASE, BLE_SIZE, &ble_ops, k) != ES_OK)

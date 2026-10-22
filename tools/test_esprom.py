@@ -63,9 +63,20 @@ class EspromTest(unittest.TestCase):
         # the table at +0x40: {dst 0x3FCE0000, dst end 0x3FCE0008, src +0x80, 0}
         table = struct.pack("<4I", 0x3FCE0000, 0x3FCE0008, BASE + 0x80, 0)
         e = elf([(BASE + 0x40, table)], [(0x3FCE0004, b"DATA")])
-        img = esprom.build(e, BASE, 0x100, (BASE + 0x40, BASE + 0x50))
+        img = esprom.build(e, BASE, 0x100, [(BASE + 0x40, BASE + 0x50)])
         self.assertEqual(img[0x84:0x88], b"DATA")
         self.assertEqual(esprom.build(e, BASE, 0x100)[0x84:0x88], bytes(4))
+
+    def test_two_copy_tables(self):
+        # an entry of its own before the table (the ESP32-C3's Bluetooth
+        # data, which ESP-IDF copies itself): both are placed
+        tables = struct.pack("<3I", 0x3FCD0000, 0x3FCD0004, BASE + 0x90) + struct.pack(
+            "<4I", 0x3FCE0000, 0x3FCE0008, BASE + 0x80, 0)
+        e = elf([(BASE + 0x34, tables)], [(0x3FCE0004, b"DATA"), (0x3FCD0000, b"BTDM")])
+        img = esprom.build(e, BASE, 0x100, [(BASE + 0x40, BASE + 0x50), (BASE + 0x34, BASE + 0x40)])
+        self.assertEqual(img[0x84:0x88], b"DATA")
+        self.assertEqual(img[0x90:0x94], b"BTDM")
+        self.assertEqual(esprom.build(e, BASE, 0x100, [(BASE + 0x40, BASE + 0x50)])[0x90:0x94], bytes(4))
 
     def test_alias_places_sections_no_segment_loads(self):
         # the ROM's last 0x80 bytes seen at 0x3FF00000 on the data bus (the
