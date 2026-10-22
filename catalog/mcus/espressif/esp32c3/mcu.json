@@ -256,7 +256,8 @@
     "XTAL_P"
   ],
   "packages": {
-    "qfn32": "qfn32.json"
+    "qfn32": "qfn32.json",
+    "mini1": "mini1.json"
   },
   "console": {
     "default": "UART0"

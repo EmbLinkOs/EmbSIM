@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import type { ComponentDescription, Project } from '@embsim/protocol';
 import { describe, expect, it } from 'vitest';
 import { addJumper, benchModel, moveParts } from './layout';
-import { parseValue, resistorBands } from './parts3d';
+import { indicatorLight, parseValue, resistorBands } from './parts3d';
 import { benchContext, elevationOf, jumperViews, linkViews, snapPart, terminalNear, terminalPoint, terminalTargets, type BenchCatalogEntry } from './view';
 
 const CATALOG = resolve(__dirname, '../../../../catalog');
@@ -109,5 +109,19 @@ describe('the bench view', () => {
     expect(linkViews(p, model)).toHaveLength(0);
     const [j] = jumperViews(p, model);
     expect(j!.color).toBe('#27ae60');
+  });
+});
+
+describe('indicatorLight', () => {
+  it('shows a level, a state or an addressable LED\'s colour', () => {
+    expect(indicatorLight(1).level).toBe(1);
+    expect(indicatorLight(0.125).level).toBeCloseTo(0.5);
+    expect(indicatorLight(true).level).toBe(1);
+    expect(indicatorLight(false).level).toBe(0);
+    expect(indicatorLight('#000000')).toEqual({ level: 0 });
+    const red = indicatorLight('#ff0000');
+    expect(red.level).toBe(1);
+    expect(red.color).toBe('#ff0000');
+    expect(indicatorLight('#000040').level).toBeCloseTo(Math.cbrt(64 / 255));
   });
 });

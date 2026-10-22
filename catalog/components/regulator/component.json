@@ -56,6 +56,7 @@
         "AMS1117-3.3",
         "LD1117S50",
         "LD39050PU33R",
+        "SGM2212-3.3",
         "generic"
       ],
       "default": "LM1117-3.3",
@@ -96,6 +97,12 @@
           "dropout": 1.0,
           "imax": 1.0,
           "quiescent": 0
+        },
+        "SGM2212-3.3": {
+          "vout": 3.3,
+          "dropout": 0.39,
+          "imax": 1.1,
+          "quiescent": "80u"
         }
       }
     },
@@ -214,6 +221,9 @@
       },
       {
         "title": "LD39050 500 mA low quiescent current low noise voltage regulator datasheet (STMicroelectronics): 200 mV dropout at 500 mA, 20 uA quiescent"
+      },
+      {
+        "title": "SGM2212 800mA, low noise, low quiescent current, high PSRR, low dropout linear regulator datasheet (SG Micro), Rev. A.2: 390 mV dropout at 800 mA, 1.1 A current limit, 80 uA ground current (typical)"
       }
     ]
   },

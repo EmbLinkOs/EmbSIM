@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-on-released",
+  "description": "Some 60 ms after power-up, C6 has charged and CHIP_PU is at 3V3: the chip runs.",
+  "policy": "electrical",
+  "until": "60ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/esp32c3_devkitm1"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "EN": [
+        "B1.RST"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:EN": {
+      "at": "60ms",
+      "min_v": 3.25
+    }
+  }
+}

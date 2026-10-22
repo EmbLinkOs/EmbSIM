@@ -5,6 +5,23 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The ESP32-C3-DevKitM-1 (2026-10-22)
+
+The RISC-V board of the RTOS boards plan, step 6 of its part 2:
+Espressif's ESP32-C3-DevKitM-1, from its V1.0 schematic, with the
+ESP32-C3-MINI-1 module, the SGM2212 regulator, the RST and BOOT buttons and
+the SK6812MINI-HS RGB LED on GPIO8. It runs ESP-IDF v5.4's hello_world from
+its flash image: the ROM, the second-stage bootloader and the application,
+built unmodified, counting down to its restart one second at a time on the
+CP2102N's serial port. The artwork is drawn for EmbSIM to the board's
+25.4 x 38.91 mm outline.
+
+| Design | Run |
+|---|---|
+| ![The DevKitM-1 project in the Design workspace](esp32c3-devkitm1/design-c3.png) | ![hello_world's countdown on the serial terminal, the board on the 3D bench plugged into USB](esp32c3-devkitm1/run-c3.png) |
+
+![The DevKitM-1's artwork: the module, the regulator, the RGB LED, BOOT and RST](esp32c3-devkitm1/board-c3.png)
+
 ## Two NUCLEO-F446REs over I2C (2026-10-19)
 
 Step 10 of the NUCLEO-F446RE plan: STM32CubeF4's own examples, built

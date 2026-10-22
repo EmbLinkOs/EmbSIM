@@ -1,0 +1,682 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "emblink/esp32c3_devkitm1",
+  "version": "1.0.0",
+  "name": "ESP32-C3-DevKitM-1",
+  "description": "Espressif's ESP32-C3-DevKitM-1 (V1.0): an ESP32-C3-MINI-1 module (the ESP32-C3FN4 with its 40 MHz crystal and 4 MB of flash), the SGM2212 regulator making 3.3 V from the micro-USB's 5 V through a 1N5819HW, the red 5 V LED, the addressable RGB LED (SK68XXMINI-HS) on GPIO8, the BOOT button on GPIO9, the RST button on CHIP_PU and two 15-pin headers. The CP2102N's USB-to-UART bridge on UART0 (GPIO21/GPIO20) is the session's serial console, and a serial port on the host (embsim serve --serial). The firmware is a flash image (bin), as idf.py and esptool write it.",
+  "keywords": [
+    "esp32-c3",
+    "esp32c3",
+    "devkitm-1",
+    "esp32-c3-mini-1",
+    "risc-v",
+    "espressif",
+    "cp2102n",
+    "sk6812"
+  ],
+  "revision": "V1.0",
+  "mcu": {
+    "ref": "espressif/esp32c3",
+    "package": "mini1",
+    "instance": "U4"
+  },
+  "oscillators": {
+    "hse": {
+      "hz": 40000000,
+      "source": "external_crystal"
+    }
+  },
+  "components": [
+    {
+      "id": "D1",
+      "component": "emblink/diode_schottky",
+      "params": {
+        "part": "1N5819"
+      },
+      "doc": "1N5819HW-7-F: the USB's VBUS to the board's 5 V, so 5 V fed at the header does not reach the host (the SOD-123 1N5819's model)"
+    },
+    {
+      "id": "U2",
+      "component": "emblink/regulator",
+      "params": {
+        "part": "SGM2212-3.3"
+      },
+      "doc": "SGM2212-3.3XKC3G/TR: 3.3 V from 5 V for the module, the LED and the bridge"
+    },
+    {
+      "id": "C7",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "10u"
+      },
+      "doc": "U2's input capacitor, 10 uF/25 V"
+    },
+    {
+      "id": "R11",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "5.1k"
+      },
+      "doc": "D5's resistor"
+    },
+    {
+      "id": "D5",
+      "component": "emblink/led",
+      "params": {
+        "color": "red"
+      },
+      "doc": "The 5 V power-on LED"
+    },
+    {
+      "id": "R5",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "doc": "CHIP_PU's pull-up to 3V3"
+    },
+    {
+      "id": "C6",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "1u"
+      },
+      "doc": "CHIP_PU's 1 uF/16 V: with R5 it delays the chip's start after power-up (the RC the datasheet asks for)"
+    },
+    {
+      "id": "SW2",
+      "component": "emblink/push_button",
+      "doc": "RST (NTC013-AT1J-A160T): joins CHIP_PU to ground"
+    },
+    {
+      "id": "SW1",
+      "component": "emblink/push_button",
+      "doc": "BOOT (NTC013-AT1J-A160T): joins GPIO9 to ground; held through a reset, the ROM waits for a download"
+    },
+    {
+      "id": "R20",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "doc": "GPIO8's pull-up to 3V3: the strapping pin high, as download mode needs"
+    },
+    {
+      "id": "D6",
+      "component": "emblink/sk6812mini_hs",
+      "doc": "The addressable RGB LED (SK68XXMINI-HS) on GPIO8, through R17 (0 ohm), supplied from 3V3"
+    },
+    {
+      "id": "J1",
+      "component": "emblink/header",
+      "params": {
+        "pins": 15
+      },
+      "doc": "The left header"
+    },
+    {
+      "id": "J3",
+      "component": "emblink/header",
+      "params": {
+        "pins": 15
+      },
+      "doc": "The right header"
+    }
+  ],
+  "nets": {
+    "VBUS": [
+      "D1.A"
+    ],
+    "5V": [
+      "D1.K",
+      "U2.IN",
+      "C7.1",
+      "R11.1",
+      "J1.13",
+      "J1.14"
+    ],
+    "3V3": [
+      "U2.OUT",
+      "U4.VDD3P3",
+      "R5.1",
+      "R20.1",
+      "D6.VDD",
+      "J1.2",
+      "J1.3"
+    ],
+    "GND": [
+      "U2.GND",
+      "C7.2",
+      "D5.K",
+      "C6.2",
+      "SW2.2",
+      "SW1.2",
+      "D6.VSS",
+      "U4.GND",
+      "J1.1",
+      "J1.6",
+      "J1.8",
+      "J1.12",
+      "J1.15",
+      "J3.1",
+      "J3.4",
+      "J3.7",
+      "J3.12",
+      "J3.15"
+    ],
+    "D5_A": [
+      "R11.2",
+      "D5.A"
+    ],
+    "CHIP_PU": [
+      "U4.CHIP_EN",
+      "R5.2",
+      "C6.1",
+      "SW2.1",
+      "J1.7"
+    ],
+    "GPIO0": [
+      "U4.GPIO0",
+      "J1.9"
+    ],
+    "GPIO1": [
+      "U4.GPIO1",
+      "J1.10"
+    ],
+    "GPIO2": [
+      "U4.GPIO2",
+      "J1.4"
+    ],
+    "GPIO3": [
+      "U4.GPIO3",
+      "J1.5"
+    ],
+    "GPIO4": [
+      "U4.GPIO4",
+      "J3.11"
+    ],
+    "GPIO5": [
+      "U4.GPIO5",
+      "J3.10"
+    ],
+    "GPIO6": [
+      "U4.GPIO6",
+      "J3.9"
+    ],
+    "GPIO7": [
+      "U4.GPIO7",
+      "J3.8"
+    ],
+    "GPIO8": [
+      "U4.GPIO8",
+      "R20.2",
+      "D6.DIN",
+      "J3.6"
+    ],
+    "GPIO9": [
+      "U4.GPIO9",
+      "SW1.1",
+      "J3.5"
+    ],
+    "GPIO10": [
+      "U4.GPIO10",
+      "J1.11"
+    ],
+    "GPIO18": [
+      "U4.GPIO18",
+      "J3.13"
+    ],
+    "GPIO19": [
+      "U4.GPIO19",
+      "J3.14"
+    ],
+    "GPIO21": [
+      "U4.GPIO21",
+      "J3.2"
+    ],
+    "GPIO20": [
+      "U4.GPIO20",
+      "J3.3"
+    ]
+  },
+  "ports": {
+    "VBUS": {
+      "net": "VBUS",
+      "doc": "The micro-USB connector's VBUS (J2 pin 1): where a USB host's 5 V comes in"
+    },
+    "GND": {
+      "net": "GND",
+      "connector": "J1",
+      "pin": 1,
+      "doc": "Ground"
+    },
+    "3V3": {
+      "net": "3V3",
+      "connector": "J1",
+      "pin": 2,
+      "doc": "U2's 3.3 V: an input when the board runs from 3.3 V"
+    },
+    "IO2": {
+      "net": "GPIO2",
+      "connector": "J1",
+      "pin": 4,
+      "doc": "GPIO2, a strapping pin"
+    },
+    "IO3": {
+      "net": "GPIO3",
+      "connector": "J1",
+      "pin": 5
+    },
+    "RST": {
+      "net": "CHIP_PU",
+      "connector": "J1",
+      "pin": 7,
+      "doc": "CHIP_PU: low holds the chip off and in reset"
+    },
+    "IO0": {
+      "net": "GPIO0",
+      "connector": "J1",
+      "pin": 9
+    },
+    "IO1": {
+      "net": "GPIO1",
+      "connector": "J1",
+      "pin": 10
+    },
+    "IO10": {
+      "net": "GPIO10",
+      "connector": "J1",
+      "pin": 11
+    },
+    "5V": {
+      "net": "5V",
+      "connector": "J1",
+      "pin": 13,
+      "doc": "The 5 V rail, after D1: an input when the board runs without USB"
+    },
+    "TX": {
+      "net": "GPIO21",
+      "connector": "J3",
+      "pin": 2,
+      "doc": "GPIO21, U0TXD: also the CP2102N's RXD"
+    },
+    "RX": {
+      "net": "GPIO20",
+      "connector": "J3",
+      "pin": 3,
+      "doc": "GPIO20, U0RXD: also the CP2102N's TXD (its 0 ohm R21 between)"
+    },
+    "IO9": {
+      "net": "GPIO9",
+      "connector": "J3",
+      "pin": 5,
+      "doc": "GPIO9, a strapping pin: the BOOT button"
+    },
+    "IO8": {
+      "net": "GPIO8",
+      "connector": "J3",
+      "pin": 6,
+      "doc": "GPIO8, a strapping pin: the RGB LED's data and R20's pull-up"
+    },
+    "IO7": {
+      "net": "GPIO7",
+      "connector": "J3",
+      "pin": 8
+    },
+    "IO6": {
+      "net": "GPIO6",
+      "connector": "J3",
+      "pin": 9
+    },
+    "IO5": {
+      "net": "GPIO5",
+      "connector": "J3",
+      "pin": 10
+    },
+    "IO4": {
+      "net": "GPIO4",
+      "connector": "J3",
+      "pin": 11
+    },
+    "IO18": {
+      "net": "GPIO18",
+      "connector": "J3",
+      "pin": 13,
+      "doc": "GPIO18, USB_D-: not wired to the USB connector on this board"
+    },
+    "IO19": {
+      "net": "GPIO19",
+      "connector": "J3",
+      "pin": 14,
+      "doc": "GPIO19, USB_D+: not wired to the USB connector on this board"
+    }
+  },
+  "leds": [
+    {
+      "name": "rgb",
+      "component": "D6",
+      "gpio": "GPIO8",
+      "color": "rgb",
+      "doc": "Addressable: its colour comes from the bits on GPIO8 (ESP-IDF's led_strip on RMT)"
+    },
+    {
+      "name": "power",
+      "component": "D5",
+      "color": "red"
+    }
+  ],
+  "buttons": [
+    {
+      "name": "boot",
+      "component": "SW1",
+      "gpio": "GPIO9",
+      "active": "low"
+    },
+    {
+      "name": "reset",
+      "component": "SW2",
+      "signal": "CHIP_EN",
+      "active": "low"
+    }
+  ],
+  "console": {
+    "peripheral": "UART0",
+    "tx": "GPIO21",
+    "rx": "GPIO20",
+    "baud": 115200,
+    "bridge": {
+      "part": "CP2102N-A02-GQFN28"
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 25.4,
+    "height_mm": 38.91,
+    "hotspots": [
+      {
+        "component": "D6",
+        "selector": "#rgb-die",
+        "output": "color"
+      },
+      {
+        "component": "D5",
+        "selector": "#led-pwr",
+        "output": "luminance"
+      },
+      {
+        "component": "SW1",
+        "selector": "#btn-boot",
+        "input": "pressed"
+      },
+      {
+        "component": "SW2",
+        "selector": "#btn-reset",
+        "input": "pressed"
+      },
+      {
+        "port": "VBUS",
+        "selector": "#usb"
+      },
+      {
+        "port": "GND",
+        "selector": "#pin-j1-1"
+      },
+      {
+        "port": "3V3",
+        "selector": "#pin-j1-2"
+      },
+      {
+        "port": "IO2",
+        "selector": "#pin-j1-4"
+      },
+      {
+        "port": "IO3",
+        "selector": "#pin-j1-5"
+      },
+      {
+        "port": "RST",
+        "selector": "#pin-j1-7"
+      },
+      {
+        "port": "IO0",
+        "selector": "#pin-j1-9"
+      },
+      {
+        "port": "IO1",
+        "selector": "#pin-j1-10"
+      },
+      {
+        "port": "IO10",
+        "selector": "#pin-j1-11"
+      },
+      {
+        "port": "5V",
+        "selector": "#pin-j1-13"
+      },
+      {
+        "port": "TX",
+        "selector": "#pin-j3-2"
+      },
+      {
+        "port": "RX",
+        "selector": "#pin-j3-3"
+      },
+      {
+        "port": "IO9",
+        "selector": "#pin-j3-5"
+      },
+      {
+        "port": "IO8",
+        "selector": "#pin-j3-6"
+      },
+      {
+        "port": "IO7",
+        "selector": "#pin-j3-8"
+      },
+      {
+        "port": "IO6",
+        "selector": "#pin-j3-9"
+      },
+      {
+        "port": "IO5",
+        "selector": "#pin-j3-10"
+      },
+      {
+        "port": "IO4",
+        "selector": "#pin-j3-11"
+      },
+      {
+        "port": "IO18",
+        "selector": "#pin-j3-13"
+      },
+      {
+        "port": "IO19",
+        "selector": "#pin-j3-14"
+      }
+    ]
+  },
+  "bench": {
+    "thickness_mm": 1.6,
+    "standoff_mm": 0,
+    "headers": "male",
+    "features": [
+      {
+        "kind": "box",
+        "at": [
+          12.75,
+          5.5
+        ],
+        "size": [
+          13.2,
+          16.6,
+          2.4
+        ],
+        "label": "ESP32-C3-MINI-1",
+        "color": "#c9ccd2"
+      },
+      {
+        "kind": "qfn",
+        "at": [
+          10.3,
+          25.6
+        ],
+        "pins": 28,
+        "label": "CP2102N"
+      },
+      {
+        "kind": "box",
+        "at": [
+          11.2,
+          17.8
+        ],
+        "size": [
+          6.5,
+          7.0,
+          1.8
+        ],
+        "label": "SGM2212"
+      },
+      {
+        "kind": "usb_micro",
+        "at": [
+          12.7,
+          37.4
+        ],
+        "size": [
+          7.5,
+          5.6,
+          2.8
+        ]
+      },
+      {
+        "kind": "button",
+        "at": [
+          5.4,
+          35.7
+        ],
+        "size": [
+          3.6,
+          3.6,
+          2.0
+        ],
+        "color": "#e8e8e8",
+        "input": "SW1.pressed"
+      },
+      {
+        "kind": "button",
+        "at": [
+          20.3,
+          35.7
+        ],
+        "size": [
+          3.6,
+          3.6,
+          2.0
+        ],
+        "color": "#e8e8e8",
+        "input": "SW2.pressed"
+      },
+      {
+        "kind": "led",
+        "at": [
+          19.1,
+          16.8
+        ],
+        "size": [
+          3.5,
+          3.7,
+          1.95
+        ],
+        "color": "#ffffff",
+        "output": "D6.color"
+      },
+      {
+        "kind": "led",
+        "at": [
+          4.5,
+          30.5
+        ],
+        "size": [
+          1.6,
+          0.8,
+          0.6
+        ],
+        "color": "#ff3a3a",
+        "output": "D5.luminance"
+      }
+    ]
+  },
+  "toolchains": {
+    "gcc-riscv": {
+      "cpu": "rv32imc",
+      "flags": [
+        "-march=rv32imc_zicsr_zifencei",
+        "-mabi=ilp32"
+      ]
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Nets, ports, the RGB LED, the power LED and the two buttons as parts; the ESP32-C3 runs its firmware from the flash image (see its description): its own ROM, the second-stage bootloader and the app, as on the board. RST pulls CHIP_PU low and the chip starts again with rst:0x1 (POWERON); BOOT held through it makes the ROM wait for a download (boot:0x4 (DOWNLOAD(USB/UART0/1)), waiting for download). The CP2102N's port is the session's console on UART0 (GPIO21/GPIO20) and a serial port on the host.",
+      "omissions": [
+        "the CP2102N itself: its USB enumeration, its VBUS sensing (R18, R19) and its supply current; its bytes reach UART0 directly, not as frames on GPIO20/GPIO21",
+        "the auto-program circuit (Q1, Q2, R10, R12): a host's port has no modem lines here (a pseudo-terminal), so DTR and RTS stay deasserted and leave EN and IO9 alone, as a terminal that opens the port does; esptool's reset into download mode is not reachable through it (hold BOOT and press RST instead)",
+        "the ROM's serial download protocol is the ROM's own, but esptool cannot reach it without the modem lines",
+        "the USB's D+ and D- (to the CP2102N only: GPIO18 and GPIO19 are not wired to the connector, R2 and R3 unpopulated)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "as functional"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "The power path of the schematic: the USB's VBUS through D1 (a 1N5819) to 5 V, U2 (SGM2212-3.3) making 3V3 for the module, R20, the RGB LED and CHIP_PU's R5; D5 lit from 5 V through R11 (5.1 k); C6 (1 uF) with R5 (10 k) holding CHIP_PU low for some milliseconds at power-up; SW2 joins CHIP_PU to ground, SW1 GPIO9; R20 (10 k) holds GPIO8 high.",
+      "omissions": [
+        "the ESD diodes (D2, D3, D4) and the USB's 22 ohm and 0 ohm series resistors",
+        "decoupling and bulk capacitors (C1, C2, C8, C9, C10, C12: with C1's 10 uF on the regulator's output the analog engine does not converge yet) and the unpopulated C4, C5, C13, C14, R2, R3, R14",
+        "the module's and the bridge's supply current: 3V3 carries only what the pins and the LEDs draw",
+        "R17 (0 ohm) between GPIO8 and the LED: the LED's DIN is GPIO8's net",
+        "the 1 uF on CHIP_PU makes the first 200 ms of a run slow: the analog engine steps its charge with the MCU's quanta (about 2.5 s of wall time)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ESP32-C3-DevKitM-1 schematic (Espressif)",
+        "rev": "V1.0, 2020-09-15",
+        "url": "https://dl.espressif.com/dl/schematics/SCH_ESP32-C3-DEVKITM-1_V1_20200915A.pdf"
+      },
+      {
+        "title": "ESP32-C3-DevKitM-1 dimensions (Espressif)",
+        "rev": "V1.0",
+        "url": "https://dl.espressif.com/dl/schematics/DIMENSION_ESP32-C3-DEVKITM-1_V1_20200915AA.pdf"
+      },
+      {
+        "title": "ESP32-C3-DevKitM-1 user guide (Espressif esp-dev-kits)"
+      },
+      {
+        "title": "ESP32-C3-MINI-1 & ESP32-C3-MINI-1U datasheet (Espressif)",
+        "rev": "v2.2"
+      }
+    ],
+    "notes": "Artwork is an original SVG drawn for EmbSIM to the board's 25.40 x 38.91 mm outline; no Espressif artwork or logo is used."
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

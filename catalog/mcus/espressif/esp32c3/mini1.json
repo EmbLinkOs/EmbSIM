@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "kind": "package",
+  "id": "espressif/esp32c3/mini1",
+  "name": "ESP32-C3-MINI-1",
+  "description": "The ESP32-C3-MINI-1 module (ESP32-C3-MINI-1 & MINI-1U datasheet v2.2, table 3-1), 13.2 x 16.6 mm, 53 pads: an ESP32-C3FN4 with its 40 MHz crystal, its in-package 4 MB flash and the antenna, so the module is the chip in another package. Pads that are GPIOs carry the GPIO's signal; the module's pad name is in each one's doc.",
+  "pins": [
+    {
+      "number": 1,
+      "signal": "GND"
+    },
+    {
+      "number": 2,
+      "signal": "GND"
+    },
+    {
+      "number": 3,
+      "signal": "VDD3P3",
+      "doc": "pin 3V3, the module's supply"
+    },
+    {
+      "number": 4,
+      "signal": "NC"
+    },
+    {
+      "number": 5,
+      "signal": "GPIO2",
+      "doc": "pin IO2, a strapping pin"
+    },
+    {
+      "number": 6,
+      "signal": "GPIO3",
+      "doc": "pin IO3"
+    },
+    {
+      "number": 7,
+      "signal": "NC"
+    },
+    {
+      "number": 8,
+      "signal": "CHIP_EN",
+      "doc": "pin EN: high on, low off and reset; do not leave it floating"
+    },
+    {
+      "number": 9,
+      "signal": "NC"
+    },
+    {
+      "number": 10,
+      "signal": "NC"
+    },
+    {
+      "number": 11,
+      "signal": "GND"
+    },
+    {
+      "number": 12,
+      "signal": "GPIO0",
+      "doc": "pin IO0, XTAL_32K_P"
+    },
+    {
+      "number": 13,
+      "signal": "GPIO1",
+      "doc": "pin IO1, XTAL_32K_N"
+    },
+    {
+      "number": 14,
+      "signal": "GND"
+    },
+    {
+      "number": 15,
+      "signal": "NC"
+    },
+    {
+      "number": 16,
+      "signal": "GPIO10",
+      "doc": "pin IO10"
+    },
+    {
+      "number": 17,
+      "signal": "NC"
+    },
+    {
+      "number": 18,
+      "signal": "GPIO4",
+      "doc": "pin IO4, MTMS"
+    },
+    {
+      "number": 19,
+      "signal": "GPIO5",
+      "doc": "pin IO5, MTDI"
+    },
+    {
+      "number": 20,
+      "signal": "GPIO6",
+      "doc": "pin IO6, MTCK"
+    },
+    {
+      "number": 21,
+      "signal": "GPIO7",
+      "doc": "pin IO7, MTDO"
+    },
+    {
+      "number": 22,
+      "signal": "GPIO8",
+      "doc": "pin IO8, a strapping pin"
+    },
+    {
+      "number": 23,
+      "signal": "GPIO9",
+      "doc": "pin IO9, a strapping pin (boot mode, internal weak pull-up)"
+    },
+    {
+      "number": 24,
+      "signal": "NC"
+    },
+    {
+      "number": 25,
+      "signal": "NC"
+    },
+    {
+      "number": 26,
+      "signal": "GPIO18",
+      "doc": "pin IO18, USB_D-"
+    },
+    {
+      "number": 27,
+      "signal": "GPIO19",
+      "doc": "pin IO19, USB_D+"
+    },
+    {
+      "number": 28,
+      "signal": "NC"
+    },
+    {
+      "number": 29,
+      "signal": "NC"
+    },
+    {
+      "number": 30,
+      "signal": "GPIO20",
+      "doc": "pin RXD0, U0RXD"
+    },
+    {
+      "number": 31,
+      "signal": "GPIO21",
+      "doc": "pin TXD0, U0TXD"
+    },
+    {
+      "number": 32,
+      "signal": "NC"
+    },
+    {
+      "number": 33,
+      "signal": "NC"
+    },
+    {
+      "number": 34,
+      "signal": "NC"
+    },
+    {
+      "number": 35,
+      "signal": "NC"
+    },
+    {
+      "number": 36,
+      "signal": "GND"
+    },
+    {
+      "number": 37,
+      "signal": "GND"
+    },
+    {
+      "number": 38,
+      "signal": "GND"
+    },
+    {
+      "number": 39,
+      "signal": "GND"
+    },
+    {
+      "number": 40,
+      "signal": "GND"
+    },
+    {
+      "number": 41,
+      "signal": "GND"
+    },
+    {
+      "number": 42,
+      "signal": "GND"
+    },
+    {
+      "number": 43,
+      "signal": "GND"
+    },
+    {
+      "number": 44,
+      "signal": "GND"
+    },
+    {
+      "number": 45,
+      "signal": "GND"
+    },
+    {
+      "number": 46,
+      "signal": "GND"
+    },
+    {
+      "number": 47,
+      "signal": "GND"
+    },
+    {
+      "number": 48,
+      "signal": "GND"
+    },
+    {
+      "number": 49,
+      "signal": "GND",
+      "doc": "the exposed pad (EPAD)"
+    },
+    {
+      "number": 50,
+      "signal": "GND"
+    },
+    {
+      "number": 51,
+      "signal": "GND"
+    },
+    {
+      "number": 52,
+      "signal": "GND"
+    },
+    {
+      "number": 53,
+      "signal": "GND"
+    }
+  ],
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ESP32-C3-MINI-1 & ESP32-C3-MINI-1U datasheet (Espressif)",
+        "rev": "v2.2"
+      }
+    ]
+  }
+}

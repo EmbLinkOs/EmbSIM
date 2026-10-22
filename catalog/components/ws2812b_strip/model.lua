@@ -3,8 +3,10 @@
 --
 -- WS2812B intelligent control LED (an RGB LED with its driver inside), and
 -- strips and rings of them chained DOUT to DIN, as Worldsemi's datasheet
--- describes the part.
--- Shared by: ws2812b, ws2812b_strip
+-- describes the part; the same protocol's SK6812MINI-HS with OPSCO's
+-- figures, from the parameters t_bit, t0h, t1h and v_on when a part
+-- declares them (the WS2812B's below otherwise).
+-- Shared by: ws2812b, ws2812b_strip, sk6812mini_hs
 --
 --   - DIN at 800 kbit/s, NRZ: each bit a high pulse then a low, the high
 --     0.4 us for a 0 and 0.8 us for a 1 (+-150 ns); the part tells them
@@ -27,14 +29,21 @@
 -- strip is decided by the pin model's levels), the reshaping's 0.2 us delay.
 local M = {}
 
-local US = 1000000
-local T_THRESHOLD = 600000 -- ps: 0.6 us
-local T0H, T1H = 400000, 800000
 local TOK_LATCH, TOK_OUT_LOW = 1, 2
+
+-- a time parameter in ps, or the WS2812B's
+local function ps(ctx, name, default)
+  local v = ctx.params[name]
+  return v and math.floor(v * 1e12 + 0.5) or default
+end
+
+local function t_threshold(ctx) return ps(ctx, "t_bit", 600000) end -- 0.6 us
+local function t0h(ctx) return ps(ctx, "t0h", 400000) end
+local function t1h(ctx) return ps(ctx, "t1h", 800000) end
 
 local function powered(ctx)
   local v = ctx.analog.voltage("VDD")
-  return v == nil or v >= 3.5
+  return v == nil or v >= (ctx.params.v_on or 3.5)
 end
 
 local function count(ctx) return math.tointeger(ctx.params.count) or 1 end
@@ -60,6 +69,7 @@ end
 function M.on_input(ctx, pin)
   local s = ctx.state
   if pin ~= "DIN" then return end
+  if not s.bits then M.reset(ctx) end -- an edge before the part's reset
   local v = ctx.pins.DIN.value
   if v == s.din then return end
   s.din = v
@@ -74,7 +84,7 @@ function M.on_input(ctx, pin)
     s.fall = now
     ctx.wake_at(now + math.floor(ctx.params.t_reset * 1e12 + 0.5), TOK_LATCH)
     if not s.rise or not powered(ctx) then return end
-    local bit = (now - s.rise) >= T_THRESHOLD and 1 or 0
+    local bit = (now - s.rise) >= t_threshold(ctx) and 1 or 0
     local n = count(ctx)
     if s.bits < 24 * n then
       local led = s.bits // 24 + 1
@@ -83,7 +93,7 @@ function M.on_input(ctx, pin)
       if k == 23 then s.recv[led] = bit << 23 end -- a new LED's first bit
     elseif s.out_high then
       -- reshaped: the high lasts the part's own 0.4 or 0.8 us
-      local t = s.rise + (bit == 1 and T1H or T0H)
+      local t = s.rise + (bit == 1 and t1h(ctx) or t0h(ctx))
       if t <= now then
         ctx.drive("DOUT", 0)
         s.out_high = false

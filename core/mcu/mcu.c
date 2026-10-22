@@ -1351,6 +1351,8 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
                 st->gpio[port][bit] = NULL;
         }
     st->nrst = esk_comp_pin(c, "NRST");
+    if (!st->nrst) /* an ESP32-C3's CHIP_EN: low, the chip is off and resets */
+        st->nrst = esk_comp_pin(c, "CHIP_EN");
     st->boot0 = esk_comp_pin(c, "BOOT0");
     if (st->nrst)
         esk_pin_watch(st->nrst, 1);

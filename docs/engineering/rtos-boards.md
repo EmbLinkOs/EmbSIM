@@ -260,6 +260,25 @@ Started only once the NUCLEO-F446RE is done.
      DTR/RTS auto-reset into download mode.
    - The 4 MB flash.
    - The power path and the headers.
+
+   *Done, before step 5,* so that the chip runs in a project, in the
+   workbench and under `embsim run --target` as the RTOS's runner needs:
+   `emblink/esp32c3_devkitm1` from Espressif's V1.0 schematic and dimension
+   drawing. The ESP32-C3-MINI-1 is a package of the chip (`mini1`); the
+   micro-USB's VBUS feeds 5 V through a 1N5819 and the SGM2212-3.3 makes
+   3V3 (a preset from its datasheet); R5 and C6 hold CHIP_PU low for some
+   14 ms at power-up, RST (SW2) pulls it down and the chip starts with
+   `rst:0x1 (POWERON)`, BOOT (SW1) held through it gives `boot:0x4
+   (DOWNLOAD(USB/UART0/1))` and `waiting for download`; R20 holds GPIO8
+   high. The LED is not a WS2812 but an SK68XXMINI-HS (OPSCO's figures, a
+   new part, `emblink/sk6812mini_hs`), run from 3.3 V below its rated
+   3.7 V as Espressif runs it. The CP2102N is the console's bridge on UART0
+   and a host serial port; its DTR/RTS auto-program circuit waits for
+   modem lines a pseudo-terminal does not have, so esptool's reset into
+   download mode is not reachable yet (BOOT and RST are). `run --target`
+   now plugs a board into a USB port. ESP-IDF v5.4's hello_world runs on
+   the board from its flash image (`embsim run --target
+   emblink/esp32c3_devkitm1 --image flash.bin --console`).
 7. **Vendor examples.** ESP-IDF's examples, unmodified: hello_world, blink
    with led_strip on RMT, gptimer, uart_echo, i2c, ledc, and the FreeRTOS
    it ships. Then Arduino-ESP32's basics.

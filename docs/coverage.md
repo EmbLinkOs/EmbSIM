@@ -20,7 +20,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 ## ESP32-C3 (`espressif/esp32c3`)
 
-Boards: none in the catalog.  
+Boards: ESP32-C3-DevKitM-1.  
 18 of 36 peripherals modelled, 0 registers only, 18 missing.
 
 | Peripheral | Model | State |

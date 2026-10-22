@@ -408,6 +408,7 @@ static void test_wfi_wakes(void)
 #define CPU_PERI_CLK_EN (SYSTEM + 0x00u)
 #define CPU_PERI_RST_EN (SYSTEM + 0x04u)
 #define PERIP_CLK_EN1   (SYSTEM + 0x14u)
+#define PERIP_RST_EN0   (SYSTEM + 0x18u)
 #define PERIP_RST_EN1   (SYSTEM + 0x1Cu)
 
 static char uart_out[65536];
@@ -1293,6 +1294,33 @@ static void test_cpu_reset_clears_pms(void)
     c3_close(&f);
 }
 
+static void test_peripheral_reset_keeps_rate(void)
+{
+    /* a peripheral's reset through SYSTEM (ESP-IDF resets SYSTIMER and the
+     * timer groups as it starts) leaves its counters at their rate */
+    c3 f;
+    u32 a;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    for (i = 0; i < 2; i++) {
+        wr(&f, PERIP_RST_EN0, rd(&f, PERIP_RST_EN0) | 1u << 29 | 1u << 13);
+        wr(&f, PERIP_RST_EN0, rd(&f, PERIP_RST_EN0) & ~(1u << 29 | 1u << 13));
+    }
+    a = st_unit0(&f);
+    esk_mach_idle(&f.m, 20000u); /* 1 ms at 20 MHz */
+    CHECK_EQ(st_unit0(&f) - a, 16000u);
+    wr(&f, TG_WPROTECT, 0x50D83AA1u);
+    wr(&f, TG_WDTCONFIG0, 0u);
+    wr(&f, TG_T0CONFIG, 1u << 30 | 40u << 13 | 1u << 9);
+    wr(&f, TG_T0LOADLO, 0u);
+    wr(&f, TG_T0LOAD, 1u);
+    wr(&f, TG_T0CONFIG, rd(&f, TG_T0CONFIG) | 1u << 31);
+    esk_mach_idle(&f.m, 20000u);
+    CHECK_EQ(tg_value(&f), 1000u);
+    c3_close(&f);
+}
+
 #define USJ 0x60043000u
 
 static void test_usb_serial_jtag(void)
@@ -1360,4 +1388,5 @@ RUN(test_regi2c);
 RUN(test_rng_and_radio);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
+RUN(test_peripheral_reset_keeps_rate);
 TEST_MAIN_END

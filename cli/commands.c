@@ -30,7 +30,8 @@ static void usage(void)
 {
     fputs("usage: embsim <command> [options]\n"
           "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json]\n"
-          "  run --target BOARD --image FILE [options]   one board of the catalog running an image, no project\n"
+          "  run --target BOARD --image FILE [options]   one board of the catalog running an image, no project,\n"
+          "      plugged into a USB port (5 V on its VBUS)\n"
           "      [--image [ID=]FILE] [--until-text TEXT] [--console]\n"
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]]\n"
@@ -197,7 +198,21 @@ static int follow_consoles(es_session *s, follow *f)
     return found;
 }
 
-/* a project of one catalog board running `image` (--target BOARD --image FILE) */
+/* the board's USB power port (its USB connector's VBUS), or NULL */
+static const char *usb_power_port(es_session *s, const char *target)
+{
+    static const char *const names[] = { "USB_VBUS", "VBUS", "U5V" };
+    const esk_catalog_item *it = esk_catalog_find(s->catalog, "board", target);
+    const esk_json *ports = it ? esk_json_get(it->desc, "ports") : NULL;
+    size_t i;
+    for (i = 0; ports && i < sizeof names / sizeof names[0]; i++)
+        if (esk_json_get(ports, names[i]) && esk_json_get(ports, "GND"))
+            return names[i];
+    return NULL;
+}
+
+/* a project of one catalog board running `image` (--target BOARD --image FILE),
+ * plugged into the computer's USB port when it has one: 5 V on its VBUS */
 static es_status load_target(es_session *s, const char *target, const char *image)
 {
     esk_json *p = esk_json_new_object(s->a), *boards = esk_json_new_array(s->a), *b = esk_json_new_object(s->a);
@@ -231,6 +246,47 @@ static es_status load_target(es_session *s, const char *target, const char *imag
         pr = NULL;
         esk_json_object_set(s->a, p, "probes", probes);
         probes = NULL;
+        if (usb_power_port(s, target)) {
+            esk_json *comps = esk_json_new_array(s->a), *nets = esk_json_new_object(s->a);
+            esk_json *host = esk_json_new_object(s->a), *gnd = esk_json_new_object(s->a);
+            esk_json *params = esk_json_new_object(s->a), *vb = esk_json_new_array(s->a), *g = esk_json_new_array(s->a);
+            char pin[48];
+            if (comps && nets && host && gnd && params && vb && g) {
+                esk_json_set_string(s->a, host, "id", "USB");
+                esk_json_set_string(s->a, host, "component", "emblink/vsource");
+                esk_json_set_string(s->a, params, "kind", "dc");
+                esk_json_set_number(s->a, params, "dc", 5.0);
+                esk_json_object_set(s->a, host, "params", params);
+                params = NULL;
+                esk_json_array_push(s->a, comps, host);
+                host = NULL;
+                esk_json_set_string(s->a, gnd, "id", "GND0");
+                esk_json_set_string(s->a, gnd, "component", "emblink/gnd");
+                esk_json_array_push(s->a, comps, gnd);
+                gnd = NULL;
+                esk_snprintf(pin, sizeof pin, "B1.%s", usb_power_port(s, target));
+                esk_json_array_push(s->a, vb, esk_json_new_string(s->a, "USB.+"));
+                esk_json_array_push(s->a, vb, esk_json_new_string(s->a, pin));
+                esk_json_array_push(s->a, g, esk_json_new_string(s->a, "USB.-"));
+                esk_json_array_push(s->a, g, esk_json_new_string(s->a, "GND0.GND"));
+                esk_json_array_push(s->a, g, esk_json_new_string(s->a, "B1.GND"));
+                esk_json_object_set(s->a, nets, "USB_5V", vb);
+                vb = NULL;
+                esk_json_object_set(s->a, nets, "USB_GND", g);
+                g = NULL;
+                esk_json_object_set(s->a, p, "components", comps);
+                comps = NULL;
+                esk_json_object_set(s->a, p, "nets", nets);
+                nets = NULL;
+            }
+            esk_json_free(s->a, comps);
+            esk_json_free(s->a, nets);
+            esk_json_free(s->a, host);
+            esk_json_free(s->a, gnd);
+            esk_json_free(s->a, params);
+            esk_json_free(s->a, vb);
+            esk_json_free(s->a, g);
+        }
         text = esk_json_format(s->a, p, 0, &len);
     }
     if (text) {

@@ -955,11 +955,22 @@ int esk_rf_gated(const struct esk_rf_periph *p)
 
 void esk_rf_periph_reset(struct esk_rf_periph *p)
 {
+    struct esk_rf *rf = p->rf;
     int i;
     for (i = 0; i < p->nreg && !(p->backup && p->sim->reset_cause != ESK_RESET_POWER); i++) {
         p->reg[i]->value = p->reg[i]->reset;
         p->reg[i]->once = 0;
     }
+    /* the reset stops its clock, as the machine's reset stops them all: the
+     * model's reset starts from a stopped clock (and starts it again) */
+    for (i = 0; rf && i < rf->ntk; i++)
+        if (rf->tk[i] == p) {
+            rf->tk[i] = rf->tk[--rf->ntk];
+            if (p->sim->counting > 0)
+                p->sim->counting--;
+            p->sim->bus.touched = 1;
+            break;
+        }
     if (p->ops->reset)
         p->ops->reset(p->ctx);
 }

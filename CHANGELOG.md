@@ -5,6 +5,34 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 6)
+
+- **The board** (`emblink/esp32c3_devkitm1`), from Espressif's V1.0
+  schematic and dimension drawing: the ESP32-C3-MINI-1 module (a new
+  package of the ESP32-C3, `mini1`), the micro-USB's VBUS through a
+  1N5819HW to 5 V, the SGM2212-3.3 regulator (a new preset from SG Micro's
+  datasheet), the 5 V LED, R5 and C6 delaying CHIP_PU at power-up, the RST
+  and BOOT buttons, R20 holding GPIO8 high, the RGB LED on GPIO8, the two
+  15-pin headers, an original artwork and its place on the 3D bench. The
+  CP2102N is the console's bridge on UART0 and a host serial port. Pressing
+  RST restarts the chip with `rst:0x1 (POWERON)`; holding BOOT through it,
+  the ROM waits for a download. Six fixtures check the power path, the
+  reset delay and the buttons.
+- **The SK6812MINI-HS** (`emblink/sk6812mini_hs`), the board's RGB LED,
+  with OPSCO's timing (0 and 1 told apart at 0.49 us, a reset of more than
+  80 us); the WS2812B's Lua model now takes a part's figures as parameters.
+  The 3D bench shows an addressable LED in the colour it reports.
+- **An ESP32-C3's CHIP_EN** is its reset pin: low, the chip is off and in
+  reset, without the pull-up an NRST has.
+- **`embsim run --target`** plugs the board into a USB port (5 V on its
+  VBUS), so a board whose MCU waits for its supply starts as on the bench.
+- ESP-IDF v5.4's hello_world runs on the board from its flash image.
+- **Fixed:** a peripheral reset by its MCU (STM32's RCC, RP2040's RESETS,
+  the ESP32-C3's SYSTEM) no longer registers the peripheral's clock a second
+  time: a timer reset that way counted twice as fast (ESP-IDF's FreeRTOS
+  tick on SYSTIMER ran at 2 kHz instead of 1 kHz), and a stopped one stayed
+  listed. A unit test resets SYSTIMER and TIMG0 and checks their rates.
+
 ### The ESP32-C3's pins and ESP-IDF's hello_world (the RTOS boards plan, part 2, step 4)
 
 - **The GPIO matrix and IO MUX** (`esp32c3-gpio`, `esp32c3-iomux`): each
