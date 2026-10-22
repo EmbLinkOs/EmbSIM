@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "passive",
+  "description": "Passively, 110 ms on each channel, it hears the access point's beacons and sends no probe.",
+  "policy": "functional",
+  "until": "1500ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wifi_scanner",
+        "params": {
+          "active": false,
+          "dwell": 110
+        }
+      },
+      {
+        "id": "AP",
+        "component": "emblink/wifi_ap",
+        "params": {
+          "ssid": "Lab",
+          "password": "secret123",
+          "channel": 6,
+          "bssid": "02:e5:00:00:00:01"
+        }
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.networks": {
+      "at": "1500ms",
+      "equals": 1
+    },
+    "output:DUT.probes": {
+      "at": "1500ms",
+      "equals": 0
+    }
+  }
+}

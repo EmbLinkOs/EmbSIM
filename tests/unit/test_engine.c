@@ -1039,6 +1039,112 @@ static void t_tcp(esk_engine *e, t_client *c, const uint8_t dst[4], unsigned fla
           ES_OK);
 }
 
+/* the Wi-Fi analyzer (wifi_scanner.c): a scan of channels 1 to 13, a
+ * probe request on each; the access points' probe responses and beacons
+ * listed, the strongest first, with their security */
+static void test_wifi_scanner(void)
+{
+    esk_engine e;
+    esk_registry r;
+    esk_comp *ph, *ap1, *ap2, *pas;
+    esk_json *o;
+    const char *list;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_registry_init(&r, &A);
+    ap1 = add(&e, &r, "AP1", "wifi_access_point", NULL, NULL, 0,
+              "{\"ssid\": \"Lab\", \"password\": \"secret123\", \"channel\": 6, \"bssid\": \"02:e5:00:00:00:01\"}");
+    ap2 = add(&e, &r, "AP2", "wifi_access_point", NULL, NULL, 0,
+              "{\"ssid\": \"Guest\", \"channel\": 11, \"bssid\": \"02:e5:00:00:00:02\", \"tx_dbm\": 8}");
+    ph = add(&e, &r, "PHONE", "wifi_scanner", NULL, NULL, 0, NULL);
+    pas = add(&e, &r, "PASSIVE", "wifi_scanner", NULL, NULL, 0, "{\"active\": false, \"dwell\": 110}");
+    CHECK(ap1 != NULL && ap2 != NULL && ph != NULL && pas != NULL);
+    esk_engine_reset(&e);
+    esk_engine_advance(&e, 600 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    ph->ops->observe(ph, o);
+    CHECK_EQ(esk_json_get_num(o, "scans", -1), 1);
+    CHECK_EQ(esk_json_get_num(o, "probes", -1), 13);
+    CHECK_EQ(esk_json_get_num(o, "networks", -1), 2);
+    list = esk_json_get_str(o, "list", "");
+    CHECK(strstr(list, "02:e5:00:00:00:01 ch 6 -20dBm WPA2 \"Lab\"\n02:e5:00:00:00:02 ch 11 -32dBm Open \"Guest\"\n") == list);
+    esk_json_free(&A, o);
+    o = esk_json_new_object(&A);
+    ap1->ops->observe(ap1, o);
+    CHECK(esk_json_get_num(o, "probe_responses", -1) >= 1);
+    esk_json_free(&A, o);
+    /* passively: the beacons in its 110 ms on each channel, no probe */
+    esk_engine_advance(&e, 1500 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    pas->ops->observe(pas, o);
+    CHECK_EQ(esk_json_get_num(o, "probes", -1), 0);
+    CHECK_EQ(esk_json_get_num(o, "networks", -1), 2);
+    esk_json_free(&A, o);
+    esk_engine_free(&e);
+    esk_registry_free(&r);
+}
+
+/* the sniffer (air_sniffer.c): what it hears on its channel as the link
+ * layer has it, the BLE access address and CRC-24, the 802.11 FCS */
+static void test_air_sniffer(void)
+{
+    static const uint8_t a1[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x64 };
+    static const uint8_t w[] = { 0x08, 0x02, 0, 0, 1, 2, 3, 4, 5, 6, 0x02, 0xe5, 0, 0, 0, 2,
+                                 0x02, 0xe5, 0, 0, 0, 2, 0x10, 0x00, 0xaa, 0xbb };
+    esk_engine e;
+    esk_registry r;
+    esk_comp *ble, *wifi, *snap;
+    t_node adv, sta;
+    esk_json *o;
+    const char *cap;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_registry_init(&r, &A);
+    ble = add(&e, &r, "NRF", "air_sniffer", NULL, NULL, 0, "{\"radio\": \"ble\", \"channel\": 37}");
+    wifi = add(&e, &r, "MON", "air_sniffer", NULL, NULL, 0, "{\"radio\": \"wifi\", \"channel\": 6}");
+    snap = add(&e, &r, "SNAP", "air_sniffer", NULL, NULL, 0, "{\"radio\": \"wifi\", \"channel\": 6, \"snaplen\": 16}");
+    CHECK(ble != NULL && wifi != NULL && snap != NULL);
+    {
+        int line;
+        const char *err;
+        esk_comp *bad = NULL;
+        esk_json *pj = esk_json_parse(&A, "{\"radio\": \"ble\", \"channel\": 12}", 31, &line, &err);
+        CHECK(esk_engine_add_comp(&e, "BAD", "air_sniffer", esk_registry_find(&r, "air_sniffer"), NULL, NULL, 0, pj,
+                                  NULL, &bad) != ES_OK); /* no advertising channel */
+        esk_json_free(&A, pj);
+    }
+    esk_engine_reset(&e);
+    t_init(&adv, 2402u);
+    adv.n.kind = ESK_AIR_BLE;
+    t_init(&sta, 2437u);
+    CHECK(esk_air_attach(&e, &adv.n) == ES_OK);
+    CHECK(esk_air_attach(&e, &sta.n) == ES_OK);
+    t_adv(&e, &adv, 0, a1, "tag", 1 * ES_PS_PER_MS);
+    adv.mhz = 2426u; /* 38: not heard */
+    t_adv(&e, &adv, 0, a1, "tag", 2 * ES_PS_PER_MS);
+    t_send(&e, &sta, w, sizeof w, 3 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 10 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    ble->ops->observe(ble, o);
+    CHECK_EQ(esk_json_get_num(o, "frames", -1), 1);
+    cap = esk_json_get_str(o, "capture", "");
+    CHECK(strncmp(cap, "1 ", 2) == 0);
+    CHECK(strstr(cap, " b 2402 -40 23 d6be898e000e646d45a1df7c0201060409746167bec180\n") != NULL);
+    esk_json_free(&A, o);
+    o = esk_json_new_object(&A);
+    wifi->ops->observe(wifi, o);
+    CHECK_EQ(esk_json_get_num(o, "frames", -1), 1);
+    CHECK(strstr(esk_json_get_str(o, "capture", ""),
+                 " w 2437 -20 30 0802000001020304050602e50000000202e5000000021000aabbd9ff642a\n") != NULL);
+    esk_json_free(&A, o);
+    o = esk_json_new_object(&A);
+    snap->ops->observe(snap, o);
+    CHECK(strstr(esk_json_get_str(o, "capture", ""), " w 2437 -20 30 0802000001020304050602e500000002\n") != NULL);
+    esk_json_free(&A, o);
+    esk_air_detach(&e, &adv.n);
+    esk_air_detach(&e, &sta.n);
+    esk_engine_free(&e);
+    esk_registry_free(&r);
+}
+
 static void test_inet_web(void)
 {
     static const uint8_t srv[4] = { 93, 184, 215, 14 }, nowhere[4] = { 10, 9, 8, 7 };
@@ -1488,6 +1594,8 @@ RUN(test_ble_scanner);
 RUN(test_ble_active_scan);
 RUN(test_ble_central);
 RUN(test_inet_web);
+RUN(test_wifi_scanner);
+RUN(test_air_sniffer);
 esk_diag_free(&D);
 CHECK_EQ(A.allocations, 0);
 TEST_MAIN_END

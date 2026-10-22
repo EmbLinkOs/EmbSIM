@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "other-channel",
+  "description": "On channel 1 it hears nothing of an access point on channel 6.",
+  "policy": "functional",
+  "until": "930ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/air_sniffer",
+        "params": {
+          "radio": "wifi",
+          "channel": 1
+        }
+      },
+      {
+        "id": "AP",
+        "component": "emblink/wifi_ap",
+        "params": {
+          "ssid": "Lab",
+          "password": "secret123",
+          "channel": 6,
+          "bssid": "02:e5:00:00:00:01"
+        }
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.frames": {
+      "at": "930ms",
+      "equals": 0
+    }
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/air_sniffer",
+  "version": "0.1.0",
+  "name": "Radio sniffer (Wi-Fi monitor or BLE)",
+  "category": "instruments",
+  "description": "A sniffer for Wireshark: a Wi-Fi adapter in monitor mode on one channel, or a Bluetooth LE sniffer dongle (as Nordic's nRF Sniffer) on one advertising channel. It takes every frame it hears, whoever it is for, with its FCS or CRC; the workbench's Air panel lists them and saves them as a pcap file.",
+  "keywords": [
+    "sniffer",
+    "wireshark",
+    "pcap",
+    "monitor mode",
+    "nrf sniffer",
+    "capture",
+    "wifi",
+    "ble",
+    "packet"
+  ],
+  "pins": [],
+  "params": {
+    "radio": {
+      "type": "enum",
+      "enum": [
+        "wifi",
+        "ble"
+      ],
+      "default": "wifi",
+      "doc": "A Wi-Fi adapter in monitor mode or a Bluetooth LE sniffer"
+    },
+    "channel": {
+      "type": "integer",
+      "default": 6,
+      "min": 1,
+      "max": 39,
+      "doc": "Wi-Fi: the channel, 1 to 14; BLE: the advertising channel, 37, 38 or 39"
+    },
+    "snaplen": {
+      "type": "integer",
+      "unit": "B",
+      "default": 256,
+      "min": 16,
+      "max": 2400,
+      "doc": "The bytes of each frame it keeps, as tcpdump's -s"
+    }
+  },
+  "outputs": [
+    {
+      "name": "frames",
+      "type": "integer",
+      "doc": "Frames captured"
+    },
+    {
+      "name": "bytes",
+      "type": "integer",
+      "doc": "Their bytes, whole"
+    },
+    {
+      "name": "capture",
+      "type": "string",
+      "doc": "The last 64 frames, one a line: its number, the time it ended (ps), w or b, the MHz, the RSSI (dBm), its length and its first snaplen bytes in hex"
+    }
+  ],
+  "model": {
+    "primitive": "air_sniffer"
+  },
+  "functional": {
+    "primitive": "air_sniffer"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {}
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Every 802.11 frame on its Wi-Fi channel or every BLE packet on its advertising channel it hears above the sensitivity (engine/air.h), whoever it is for: an 802.11 frame with its FCS (CRC-32, IEEE 802.11-2020 9.2.4.8), a BLE packet as the link layer has it, the advertising access address, the PDU and its CRC-24 from 0x555555 (Bluetooth Core 5.4 Vol 6 Part B 3.1.1); the time each ended, its frequency and RSSI; the first snaplen bytes and the whole length, as tcpdump keeps them.",
+      "omissions": [
+        "ACKs and other control responses (the air carries them implicitly, not as frames)",
+        "following a BLE connection onto the data channels after a CONNECT_IND",
+        "channel hopping",
+        "decryption"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "As functional: it has no pins.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "IEEE Std 802.11-2020: scanning (11.1.4), the beacon and probe frames (9.3.3), the RSN element (9.4.2.24)",
+        "url": "https://standards.ieee.org/ieee/802.11/7028/",
+        "date": "2026-10-22",
+        "notes": "Active and passive scanning, the probe request and response, the capability information's Privacy bit, the RSN element's AKM suites."
+      },
+      {
+        "title": "Bluetooth Core Specification 5.4, Vol 6 Part B: the Link Layer (the packet format, the CRC)",
+        "url": "https://www.bluetooth.com/specifications/specs/core-specification-5-4/",
+        "date": "2026-10-22",
+        "notes": "The advertising access address 0x8E89BED6, the CRC-24 (polynomial 0x00065B, from 0x555555 on the advertising channels)."
+      },
+      {
+        "title": "tcpdump.org: link-layer header types (LINKTYPE_IEEE802_11_RADIOTAP 127, LINKTYPE_BLUETOOTH_LE_LL_WITH_PHDR 256)",
+        "url": "https://www.tcpdump.org/linktypes.html",
+        "date": "2026-10-22",
+        "notes": "The pcap formats the workbench saves the capture in."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

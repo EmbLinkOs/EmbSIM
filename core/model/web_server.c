@@ -185,7 +185,7 @@ static int is_ours(const char *target, const char *path)
 /* the request, whole: the response, its status by method and path */
 static void respond(ws_state *s, ws_conn *k)
 {
-    char method[16] = "", target[160] = "", version[16] = "", host[96] = "", line[320];
+    char method[16] = "", target[160] = "", version[16] = "", host[96] = "", line[384];
     const char *h, *reason = "OK", *ct = s->content_type, *b = s->body;
     int status = 200, head;
     size_t blen;

@@ -25,6 +25,10 @@ const esk_model_ops *const *esk_digital_models(size_t *n);
 extern const esk_model_ops esk_wifi_ap_ops;
 /* a Bluetooth LE scanner on the session's air (ble_scanner.c) */
 extern const esk_model_ops esk_ble_scanner_ops;
+/* a phone's Wi-Fi analyzer on the session's air (wifi_scanner.c) */
+extern const esk_model_ops esk_wifi_scanner_ops;
+/* a Wi-Fi or Bluetooth LE sniffer on the session's air (air_sniffer.c) */
+extern const esk_model_ops esk_air_sniffer_ops;
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;
 /* a phone connecting to a BLE peripheral and browsing its GATT database (ble_central.c) */
