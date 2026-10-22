@@ -1,0 +1,4 @@
+# menuconfig: Example Configuration, the network to join: an open one
+CONFIG_ESP_WIFI_SSID="CoffeeShop"
+CONFIG_ESP_WIFI_PASSWORD=""
+CONFIG_ESP_WIFI_AUTH_OPEN=y

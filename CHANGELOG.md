@@ -21,12 +21,18 @@ versions follow semantic versioning. There is no release yet.
   the receive list filled with ESP-IDF's rx_ctrl header for frames the
   station's or the access point's address filter takes, its reload; the
   interrupt status on source 0; the microsecond counter and the TSF latch.
-- **`emblink/wifi_ap`**, a Wi-Fi access point across the room: beacons
-  (SSID, rates, channel, TIM, ERP, WPA2-Personal's RSN element),
-  probe responses, open authentication, association; its stations in its
-  outputs. ESP-IDF's unmodified `wifi/scan` lists two of them on the bench
-  as a board does: HomeNet (WPA2-PSK, CCMP, channel 6) at -30 dBm from 3 m
-  and CoffeeShop (open, channel 1) at -42 dBm from 12 m.
+- **`emblink/wifi_ap`**, a Wi-Fi access point across the room with a
+  router behind it: beacons (SSID, rates, channel, TIM, ERP, WPA2-Personal's
+  RSN element), probe responses, open authentication, association; data
+  frames to and from its stations, kept for dozing ones and announced in
+  the TIM until a PS-Poll or a wake; the router answering ARP and pings and
+  leasing addresses by DHCP; its stations and their leases in its outputs.
+  ESP-IDF's unmodified `wifi/scan` lists two of them on the bench as a
+  board does: HomeNet (WPA2-PSK, CCMP, channel 6) at -30 dBm from 3 m and
+  CoffeeShop (open, channel 1) at -42 dBm from 12 m. Its
+  `wifi/getting_started/station`, set in menuconfig for CoffeeShop,
+  authenticates, associates, starts modem sleep and gets 192.168.1.100 by
+  DHCP (`wifi_station_open`, 13 assertions).
 - A board's own parts (its MCU, its sensors) are where the board is on the
   bench, for the world's rays and the air's distances. A component may have
   no pins (one that reaches the circuit only through the air).

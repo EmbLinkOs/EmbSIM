@@ -152,10 +152,13 @@ Each step lands usable and green, as in the RTOS boards plan.
    *Under way:* the air (`core/engine/air.h`: frames with their channel,
    power, rate and airtime, free-space path loss over the bench distance,
    the receiver's sensitivity, ACKs) and `emblink/wifi_ap` (beacons,
-   probe responses, open authentication and association). `wifi/scan`
-   lists the two access points of its project with the RSSI their
-   distances give. Next: WPA2's 4-way handshake and the MAC's CCMP, then
-   DHCP and ARP, for `station`.
+   probe responses, open authentication and association, data frames,
+   power-save buffering with the TIM and PS-Poll, a router answering ARP
+   and pings and leasing addresses by DHCP). `wifi/scan` lists the two
+   access points of its project with the RSSI their distances give;
+   `station`, set for an open network, joins it and gets its address.
+   Next: WPA2's 4-way handshake and the MAC's CCMP, for `station` as it
+   ships (WPA2-PSK).
 5. **The rest of Wi-Fi.** The access point mode with a station part and
    with another board; `http_request`; ESP-NOW between two boards; power
    save and the radio's current; Arduino-ESP32's Wi-Fi sketches.

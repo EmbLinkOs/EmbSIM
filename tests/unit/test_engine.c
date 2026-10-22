@@ -423,6 +423,98 @@ static uint32_t t_mgmt(uint8_t *f, unsigned subtype, const uint8_t *bssid, const
     return 24 + n;
 }
 
+/* a station's data frame to the distribution system: to `da`, `ethertype` */
+static uint32_t t_data(uint8_t *f, const uint8_t *bssid, const uint8_t *da, int pm, unsigned ethertype,
+                       const uint8_t *body, uint32_t n)
+{
+    static const uint8_t sta[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x62 };
+    static const uint8_t snap[6] = { 0xAA, 0xAA, 0x03, 0, 0, 0 };
+    memset(f, 0, 24);
+    f[0] = 0x08;
+    f[1] = (uint8_t)(0x01u | (pm ? 0x10u : 0u)); /* to DS, power management */
+    memcpy(f + 4, bssid, 6);
+    memcpy(f + 10, sta, 6);
+    memcpy(f + 16, da, 6);
+    memcpy(f + 24, snap, 6);
+    f[30] = (uint8_t)(ethertype >> 8);
+    f[31] = (uint8_t)ethertype;
+    memcpy(f + 32, body, n);
+    return 32 + n;
+}
+
+/* a UDP datagram in an IPv4 packet from 0.0.0.0 (or `src`) to `dst` */
+static uint32_t t_udp(uint8_t *p, const uint8_t *src, const uint8_t *dst, unsigned sport, unsigned dport,
+                      const uint8_t *body, uint32_t n)
+{
+    uint32_t tot = 28 + n, sum = 0, i;
+    memset(p, 0, 28);
+    p[0] = 0x45;
+    p[2] = (uint8_t)(tot >> 8);
+    p[3] = (uint8_t)tot;
+    p[8] = 64;
+    p[9] = 17;
+    memcpy(p + 12, src, 4);
+    memcpy(p + 16, dst, 4);
+    for (i = 0; i < 20; i += 2)
+        sum += (uint32_t)p[i] << 8 | p[i + 1];
+    while (sum >> 16)
+        sum = (sum & 0xFFFFu) + (sum >> 16);
+    p[10] = (uint8_t)(~sum >> 8);
+    p[11] = (uint8_t)~sum;
+    p[20] = (uint8_t)(sport >> 8);
+    p[21] = (uint8_t)sport;
+    p[22] = (uint8_t)(dport >> 8);
+    p[23] = (uint8_t)dport;
+    p[24] = (uint8_t)((8 + n) >> 8);
+    p[25] = (uint8_t)(8 + n);
+    memcpy(p + 28, body, n);
+    return tot;
+}
+
+/* a DHCP client message of `type`, asking for `want` (or none) */
+static uint32_t t_dhcp(uint8_t *m, unsigned type, const uint8_t *want)
+{
+    static const uint8_t sta[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x62 };
+    uint32_t n = 240;
+    memset(m, 0, 300);
+    m[0] = 1;
+    m[1] = 1;
+    m[2] = 6;
+    m[4] = 0x12;
+    m[5] = 0x34;
+    m[6] = 0x56;
+    m[7] = 0x78;
+    memcpy(m + 28, sta, 6);
+    m[236] = 99;
+    m[237] = 130;
+    m[238] = 83;
+    m[239] = 99;
+    m[n++] = 53;
+    m[n++] = 1;
+    m[n++] = (uint8_t)type;
+    if (want) {
+        m[n++] = 50;
+        m[n++] = 4;
+        memcpy(m + n, want, 4);
+        n += 4;
+    }
+    m[n++] = 255;
+    return 300;
+}
+
+/* the DHCP message type of a reply frame from the AP (FromDS, LLC, IPv4, UDP 67 -> 68), 0 for none */
+static unsigned t_dhcp_type(const uint8_t *f, uint32_t len)
+{
+    uint32_t i;
+    if (len < 32 + 28 + 244 || f[0] != 0x08 || f[1] != 0x02 || f[30] != 0x08 || f[31] != 0x00 || f[32 + 9] != 17 ||
+        f[32 + 23] != 68)
+        return 0;
+    for (i = 32 + 28 + 240; i + 2 < len && f[i] != 255; i += 2u + f[i + 1])
+        if (f[i] == 53)
+            return f[i + 2];
+    return 0;
+}
+
 static void test_wifi_ap(void)
 {
     static const uint8_t bcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -483,9 +575,120 @@ static void test_wifi_ap(void)
     CHECK_STR(esk_json_get_str(o, "mac", ""), "02:00:00:00:00:01");
     CHECK(strstr(esk_json_get_str(o, "log", ""), "7c:df:a1:45:6d:62 associated, aid 1") != NULL);
     esk_json_free(&A, o);
+    /* ARP for the router: answered with the BSSID */
+    {
+        static const uint8_t gw[4] = { 192, 168, 1, 1 }, zero[4] = { 0, 0, 0, 0 }, all[4] = { 255, 255, 255, 255 };
+        static const uint8_t want[4] = { 192, 168, 1, 100 }, other[4] = { 192, 168, 1, 77 };
+        uint8_t arp[28], ip[400], m[300], d[512];
+        uint32_t n;
+        memset(arp, 0, sizeof arp);
+        arp[1] = 1;
+        arp[2] = 8;
+        arp[4] = 6;
+        arp[5] = 4;
+        arp[7] = 1;
+        arp[8] = 0x7c;
+        arp[9] = 0xdf;
+        arp[10] = 0xa1;
+        arp[11] = 0x45;
+        arp[12] = 0x6d;
+        arp[13] = 0x62;
+        arp[14] = 192;
+        arp[15] = 168;
+        arp[16] = 1;
+        arp[17] = 100;
+        memcpy(arp + 24, gw, 4);
+        t_send(&e, &sta, d, t_data(d, bssid, bcast, 0, 0x0806, arp, sizeof arp), 46 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 49 * ES_PS_PER_MS);
+        CHECK_EQ(sta.got, 5);
+        CHECK(sta.last[0] == 0x08 && sta.last[1] == 0x02 && sta.last[30] == 0x08 && sta.last[31] == 0x06);
+        CHECK(sta.last[39] == 2 && !memcmp(sta.last + 40, bssid, 6) && !memcmp(sta.last + 46, gw, 4));
+        /* DHCP: DISCOVER, OFFER of 192.168.1.100; REQUEST, ACK; another address, NAK */
+        n = t_udp(ip, zero, all, 68, 67, m, t_dhcp(m, 1, NULL));
+        t_send(&e, &sta, d, t_data(d, bssid, bcast, 0, 0x0800, ip, n), 50 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 55 * ES_PS_PER_MS);
+        CHECK_EQ(sta.got, 6);
+        CHECK_EQ(t_dhcp_type(sta.last, sta.last_len), 2);
+        CHECK(!memcmp(sta.last + 32 + 28 + 16, want, 4));
+        CHECK(!memcmp(sta.last + 32 + 28 + 4, m + 4, 4)); /* its xid */
+        n = t_udp(ip, zero, all, 68, 67, m, t_dhcp(m, 3, want));
+        t_send(&e, &sta, d, t_data(d, bssid, bcast, 0, 0x0800, ip, n), 56 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 61 * ES_PS_PER_MS);
+        CHECK_EQ(t_dhcp_type(sta.last, sta.last_len), 5);
+        n = t_udp(ip, zero, all, 68, 67, m, t_dhcp(m, 3, other));
+        t_send(&e, &sta, d, t_data(d, bssid, bcast, 0, 0x0800, ip, n), 62 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 67 * ES_PS_PER_MS);
+        CHECK_EQ(t_dhcp_type(sta.last, sta.last_len), 6);
+        o = esk_json_new_object(&A);
+        ap->ops->observe(ap, o);
+        CHECK(strstr(esk_json_get_str(o, "log", ""), "7c:df:a1:45:6d:62 leased 192.168.1.100") != NULL);
+        esk_json_free(&A, o);
+        /* a ping to the router is answered, its checksum right */
+        memset(ip, 0, 28 + 8);
+        ip[0] = 0x45;
+        ip[3] = 36;
+        ip[8] = 64;
+        ip[9] = 1;
+        memcpy(ip + 12, want, 4);
+        memcpy(ip + 16, gw, 4);
+        {
+            uint32_t sum = 0, i;
+            for (i = 0; i < 20; i += 2)
+                sum += (uint32_t)ip[i] << 8 | ip[i + 1];
+            while (sum >> 16)
+                sum = (sum & 0xFFFFu) + (sum >> 16);
+            ip[10] = (uint8_t)(~sum >> 8);
+            ip[11] = (uint8_t)~sum;
+            ip[20] = 8; /* echo request */
+            ip[24] = 0;
+            ip[25] = 0;
+            ip[28] = 'p';
+            ip[29] = 'i';
+            ip[30] = 'n';
+            ip[31] = 'g';
+            ip[22] = 0x87; /* ~(0x0800 + 'pi' + 'ng') */
+            ip[23] = 0x29;
+        }
+        t_send(&e, &sta, d, t_data(d, bssid, bssid, 0, 0x0800, ip, 36), 68 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 71 * ES_PS_PER_MS);
+        CHECK(sta.last[32 + 9] == 1 && sta.last[32 + 20] == 0 && !memcmp(sta.last + 32 + 16, want, 4));
+        CHECK(!memcmp(sta.last + 32 + 28, "ping", 4));
+        {
+            uint32_t sum = 0, i;
+            for (i = 0; i < 16; i += 2)
+                sum += (uint32_t)sta.last[52 + i] << 8 | sta.last[52 + i + 1];
+            while (sum >> 16)
+                sum = (sum & 0xFFFFu) + (sum >> 16);
+            CHECK_EQ(sum, 0xFFFF);
+        }
+        /* dozing: the ARP reply is kept, announced in the TIM, sent on a PS-Poll */
+        n = (uint32_t)sta.got;
+        t_send(&e, &sta, d, t_data(d, bssid, bcast, 1, 0x0806, arp, sizeof arp), 72 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 76 * ES_PS_PER_MS);
+        CHECK_EQ(sta.got, (int)n);
+        esk_engine_advance(&e, 106 * ES_PS_PER_MS); /* the beacon at 2 TU + 100 TU, 104.448 ms */
+        CHECK_EQ(sta.got, (int)n + 1);
+        CHECK_EQ(sta.last[0], 0x80);
+        CHECK(sta.last[60] == 5 && sta.last[61] == 4 && sta.last[64] == 0 && sta.last[65] == 0x02); /* AID 1 */
+        memset(d, 0, 16);
+        d[0] = 0xA4; /* PS-Poll */
+        d[2] = 1;
+        d[3] = 0xC0;
+        memcpy(d + 4, bssid, 6);
+        d[10] = 0x7c;
+        d[11] = 0xdf;
+        d[12] = 0xa1;
+        d[13] = 0x45;
+        d[14] = 0x6d;
+        d[15] = 0x62;
+        t_send(&e, &sta, d, 16, 107 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 109 * ES_PS_PER_MS);
+        CHECK_EQ(sta.got, (int)n + 2);
+        CHECK(sta.last[0] == 0x08 && sta.last[31] == 0x06 && !(sta.last[1] & 0x20u));
+    }
     /* a deauthentication forgets it */
-    t_send(&e, &sta, f, t_mgmt(f, 12, bssid, auth, 2), 50 * ES_PS_PER_MS);
-    esk_engine_advance(&e, 55 * ES_PS_PER_MS);
+    t_send(&e, &sta, f, t_mgmt(f, 12, bssid, auth, 2), 110 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 115 * ES_PS_PER_MS);
     o = esk_json_new_object(&A);
     ap->ops->observe(ap, o);
     CHECK_EQ(esk_json_get_num(o, "stations", -1), 0);

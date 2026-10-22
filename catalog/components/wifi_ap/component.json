@@ -2,10 +2,10 @@
   "schema_version": 1,
   "kind": "component",
   "id": "emblink/wifi_ap",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "Wi-Fi access point",
   "category": "instruments",
-  "description": "A 2.4 GHz 802.11b/g access point, as a home router is seen from a station across the room: it beacons its SSID every beacon interval, answers probe requests, and authenticates (open system) and associates stations. It reaches the circuit only through the air; its signal reaches a board at the free-space path loss over their distance on the bench.",
+  "description": "A 2.4 GHz 802.11b/g access point with a router behind it, as a home router is seen from a station across the room: it beacons its SSID every beacon interval, answers probe requests, authenticates (open system) and associates stations, leases them addresses by DHCP, answers ARP and pings for its own address, relays frames between its stations and keeps frames for dozing ones. It reaches the circuit only through the air; its signal reaches a board at the free-space path loss over their distance on the bench.",
   "keywords": [
     "wifi",
     "wi-fi",
@@ -52,6 +52,11 @@
       "max": 65535,
       "doc": "The time between beacons, in 1024 us time units"
     },
+    "ip": {
+      "type": "string",
+      "default": "192.168.1.1",
+      "doc": "The router's address on its /24 network; stations lease .100 onwards by DHCP"
+    },
     "bssid": {
       "type": "string",
       "default": "",
@@ -93,7 +98,7 @@
     {
       "name": "log",
       "type": "string",
-      "doc": "What its stations did: authenticated, associated (with the AID), disassociated, deauthenticated"
+      "doc": "What its stations did: authenticated, associated (with the AID), leased an address, disassociated, deauthenticated"
     }
   ],
   "model": {
@@ -110,15 +115,15 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Beacons (TSF timestamp, interval, ESS and privacy capabilities, SSID, rates, DS parameter set, TIM, ERP, the WPA2-Personal RSN element with a password) every beacon interval at 1 Mbit/s; probe responses to wildcard and matching probe requests; open system authentication; association and reassociation with AIDs from 1; deauthentication and disassociation (IEEE 802.11-2020 9.3.3, 11.3). Frames carry their airtime and reach stations at the free-space path loss over the bench distance (engine/air.h).",
+      "claims": "Beacons (TSF timestamp, interval, ESS and privacy capabilities, SSID, rates, DS parameter set, TIM with the AIDs it keeps frames for, ERP, the WPA2-Personal RSN element with a password) every beacon interval at 1 Mbit/s, every one a DTIM; probe responses to wildcard and matching probe requests; open system authentication; association and reassociation with AIDs from 1; deauthentication and disassociation (IEEE 802.11-2020 9.3.3, 11.3); data frames with 802.2 LLC/SNAP to and from its stations (unicast at 54 Mbit/s, group at 1 Mbit/s); its stations' power management: frames kept for a dozing station, announced in the TIM, sent on a PS-Poll with More Data or when it wakes, group frames after the DTIM beacon (11.2.3); the router behind it: ARP for its address, ICMP echo, a DHCP server (RFC 2131, 2132: DISCOVER, OFFER, REQUEST, ACK, NAK, DECLINE, RELEASE; mask, router, DNS server, broadcast address, a day's lease) leasing .100 onwards; relaying frames between its stations. Frames carry their airtime and reach stations at the free-space path loss over the bench distance (engine/air.h). ESP-IDF's wifi/getting_started/station joins it and gets its address.",
       "omissions": [
-        "the data path: WPA2's 4-way handshake, DHCP, ARP, ICMP, DNS, TCP and UDP",
-        "802.11n (HT capabilities and operation)",
+        "WPA2's 4-way handshake and CCMP: with a password it associates stations but passes no data",
+        "the network beyond the router: DNS answers, TCP and UDP to the host",
+        "802.11n (HT capabilities and operation), WMM and QoS",
         "WPA3 (SAE)",
-        "power save buffering (the TIM is always empty)",
         "hidden SSIDs",
         "retransmissions and contention",
-        "more than 8 stations"
+        "more than 8 stations, more than 32 frames kept for dozing ones (the oldest is dropped)"
       ]
     },
     "timed": {

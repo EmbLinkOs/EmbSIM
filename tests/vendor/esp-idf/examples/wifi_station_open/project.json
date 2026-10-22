@@ -1,0 +1,100 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-wifi-station-open",
+ "description": "An ESP32-C3-DevKitM-1 running ESP-IDF's wifi/getting_started/station, configured for the open network CoffeeShop (channel 1), whose access point is 5 m from the board.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "AP2",
+   "component": "emblink/wifi_ap",
+   "params": {
+    "ssid": "CoffeeShop",
+    "channel": 1,
+    "bssid": "02:e5:00:00:00:02"
+   },
+   "layout": {
+    "x": 640,
+    "y": 260
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "ap_stations",
+   "target": "output:AP2.stations",
+   "kind": "value"
+  },
+  {
+   "id": "ap_log",
+   "target": "output:AP2.log",
+   "kind": "value"
+  }
+ ],
+ "layout": {
+  "bench": {
+   "parts": {
+    "B1": {
+     "x": 0.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "AP2": {
+     "x": 0.0,
+     "y": 5000.0,
+     "rotation": 0
+    }
+   }
+  }
+ }
+}
