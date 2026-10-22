@@ -36,7 +36,9 @@
  *   spi2.c    GP-SPI2 as a master, from its buffer or the GDMA
  *   adc.c     the SAR ADCs, their scanning and the temperature sensor
  *   radio.c   the radio's register blocks the TRM leaves out (FE2, FE,
- *             NRX), which keep what is written */
+ *             NRX, BB), which keep what is written
+ *   wifi.c    the Wi-Fi MAC: its transmit queues and receive list on the
+ *             air, its interrupts, its time */
 #ifndef ESK_MCU_ESP32C3_H
 #define ESK_MCU_ESP32C3_H
 
@@ -91,6 +93,9 @@ u32 esk_esp32c3_regi2c_get(struct esk_mach *s, u32 block, u32 r);
 /* the radio's register blocks FE2, FE and NRX (radio.c), mapped by the
  * SYSTEM model: 0, or -1 */
 int esk_esp32c3_radio_create(struct esk_mach *s);
+/* the Wi-Fi MAC (wifi.c), mapped by the SYSTEM model, the machine's radio
+ * port: 0, or -1 */
+int esk_esp32c3_wifi_create(struct esk_mach *s);
 extern const struct esk_dev_ops esk_esp32c3_sha_ops;
 void *esk_esp32c3_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_assist_ops;

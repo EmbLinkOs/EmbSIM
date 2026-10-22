@@ -127,12 +127,35 @@ Each step lands usable and green, as in the RTOS boards plan.
    descriptor lists, its interrupts, the TSF timer, the power states. A
    frame the driver queues leaves as an 802.11 frame; a frame on the air
    reaches the driver as the hardware delivers it.
+   *Done for a scan* (`wifi.c`), found the same way as step 2 and checked
+   in libpp's routines: a queue's register (+0xD08 - 8q) takes its first
+   lldesc and starts it; its PLCP word (+0x12F8 - 76q,
+   `mac_tx_set_plcp1`) gives the length and the rate; at the end the
+   queue's PMD word (+0x1320 - 76q) holds the outcome
+   (`hal_mac_get_txq_pmd`: 0 sent, 5 no ACK), +0xCB0 its done bit
+   (`hal_mac_get_txq_state`, cleared at +0xCAC) and the interrupt status
+   (+0xC3C) bit 7. The receive list starts at +0x88; +0x8C is the
+   hardware's next descriptor and +0x90 the last it filled; +0x84 bit 0
+   reloads it (`wDev_Rxbuf_Init`'s and `wdevProcessRxSucDataAll`'s
+   reading of them); a frame is taken only with word 0 bit 28 (the
+   station's filter) or 29 set in ESP-IDF's rx_ctrl header; the addresses
+   and masks at +0x40 to +0x6C. +0x2000 counts microseconds
+   (`lmacSetTxFrame` stamps frames with it), and +0x200C latches the TSF
+   at +0x2018 and +0x201C (`hal_get_tsf_time`). Not yet: retransmissions,
+   contention, the TSF's adjustment and timers, CCMP, aggregation.
 4. **The air and the access point.** The engine's medium (channels,
    airtime, RSSI from the world's distances, loss); an access point part
    (beacons, probe responses, authentication, association, WPA2 and WPA3
    personal handshakes, DHCP, ARP, DNS, ICMP, and TCP and UDP through to
    the host's loopback); a pcap capture instrument. `wifi/scan` lists the
    bench's access points; `station` joins and gets its address.
+   *Under way:* the air (`core/engine/air.h`: frames with their channel,
+   power, rate and airtime, free-space path loss over the bench distance,
+   the receiver's sensitivity, ACKs) and `emblink/wifi_ap` (beacons,
+   probe responses, open authentication and association). `wifi/scan`
+   lists the two access points of its project with the RSSI their
+   distances give. Next: WPA2's 4-way handshake and the MAC's CCMP, then
+   DHCP and ARP, for `station`.
 5. **The rest of Wi-Fi.** The access point mode with a station part and
    with another board; `http_request`; ESP-NOW between two boards; power
    save and the radio's current; Arduino-ESP32's Wi-Fi sketches.

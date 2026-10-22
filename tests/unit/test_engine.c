@@ -253,6 +253,254 @@ static void test_virtual_terminal(void)
     esk_registry_free(&r);
 }
 
+/* ---- the air (engine/air.h) ------------------------------------------------ */
+
+typedef struct t_node {
+    esk_air_node n;
+    uint32_t mhz;
+    int answer;            /* rx answers a unicast frame */
+    int got;               /* frames received */
+    es_time_t got_at;
+    int rssi;
+    uint8_t last[512];
+    uint32_t last_len;
+    int done;
+    int acked;
+    es_time_t done_at;
+} t_node;
+
+static uint32_t t_tuned(void *ctx, int kind) { return kind == ESK_AIR_WIFI ? ((t_node *)ctx)->mhz : 0u; }
+static int t_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
+{
+    t_node *t = (t_node *)ctx;
+    t->got++;
+    t->got_at = at;
+    t->rssi = rssi;
+    t->last_len = f->len < sizeof t->last ? f->len : (uint32_t)sizeof t->last;
+    memcpy(t->last, f->data, t->last_len);
+    return t->answer && !(f->data[4] & 1u);
+}
+static void t_done(void *ctx, uint32_t token, int acked, es_time_t at)
+{
+    t_node *t = (t_node *)ctx;
+    (void)token;
+    t->done++;
+    t->acked = acked;
+    t->done_at = at;
+}
+static void t_init(t_node *t, uint32_t mhz)
+{
+    memset(t, 0, sizeof *t);
+    t->n.ctx = t;
+    t->n.kind = ESK_AIR_WIFI;
+    t->n.tuned = t_tuned;
+    t->n.rx = t_rx;
+    t->n.tx_done = t_done;
+    t->mhz = mhz;
+}
+static void t_send(esk_engine *e, t_node *from, const uint8_t *f, uint32_t len, es_time_t start)
+{
+    esk_air_frame fr;
+    fr.data = f;
+    fr.len = len;
+    fr.mhz = from->mhz;
+    fr.dbm = 20.0;
+    fr.rate_kbps = 1000u;
+    fr.kind = ESK_AIR_WIFI;
+    CHECK(esk_air_send(e, &from->n, &fr, start, esk_air_wifi_airtime(len, 1000u), 7u) == ES_OK);
+}
+
+static void test_air(void)
+{
+    esk_engine e;
+    t_node a, b, c;
+    esk_comp ca, cb;
+    uint8_t unicast[24], group[24];
+    const es_time_t us = ES_PS_PER_US;
+    /* airtimes: DSSS (192 us of preamble and header, the bits at the rate)
+     * and OFDM (20 us, then 4 us symbols with SERVICE and tail bits) */
+    CHECK_EQ(esk_air_wifi_airtime(24, 1000u), 416 * us);
+    CHECK_EQ(esk_air_wifi_airtime(24, 11000u), 192 * us + 224 * us / 11);
+    CHECK_EQ(esk_air_wifi_airtime(24, 6000u), 64 * us);
+    CHECK_EQ(esk_air_wifi_airtime(1500, 54000u), 244 * us);
+    CHECK_EQ(esk_air_ble_airtime(10, 1000u), 144 * us);
+    CHECK_EQ(esk_air_ble_airtime(10, 2000u), 76 * us);
+    /* the channels */
+    CHECK_EQ(esk_air_wifi_mhz(1), 2412);
+    CHECK_EQ(esk_air_wifi_mhz(6), 2437);
+    CHECK_EQ(esk_air_wifi_mhz(13), 2472);
+    CHECK_EQ(esk_air_wifi_mhz(14), 2484);
+    CHECK_EQ(esk_air_wifi_mhz(15), 0);
+    CHECK_EQ(esk_air_wifi_channel(2437), 6);
+    CHECK_EQ(esk_air_wifi_channel(2484), 14);
+    CHECK_EQ(esk_air_wifi_channel(2413), 0);
+    /* free-space path loss over the bench distance: 3 m at 2437 MHz is
+     * 49.7 dB; nearer than 10 cm counts as 10 cm */
+    memset(&ca, 0, sizeof ca);
+    memset(&cb, 0, sizeof cb);
+    ca.posed = cb.posed = 1;
+    cb.pose[0] = 3000.0;
+    t_init(&a, 2437u);
+    t_init(&b, 2437u);
+    a.n.comp = &ca;
+    b.n.comp = &cb;
+    CHECK_NEAR(esk_air_rssi(&a.n, &b.n, 20.0, 2437u), -29.73, 0.01);
+    cb.pose[0] = 10.0;
+    CHECK_NEAR(esk_air_rssi(&a.n, &b.n, 20.0, 2437u), 20.0 - (-20.0 + 67.738 - 27.55), 0.01);
+    a.n.comp = b.n.comp = NULL; /* unplaced: a metre apart */
+    CHECK_NEAR(esk_air_rssi(&a.n, &b.n, 0.0, 2412u), -40.10, 0.01);
+
+    esk_engine_init(&e, &A, &D, ESK_POLICY_TIMED);
+    esk_engine_reset(&e);
+    t_init(&a, 2437u);
+    t_init(&b, 2437u);
+    t_init(&c, 2412u);
+    b.answer = 1;
+    CHECK(esk_air_attach(&e, &a.n) == ES_OK);
+    CHECK(esk_air_attach(&e, &b.n) == ES_OK);
+    CHECK(esk_air_attach(&e, &c.n) == ES_OK);
+    memset(unicast, 0, sizeof unicast);
+    unicast[4] = 0x02; /* address 1, unicast */
+    memset(group, 0, sizeof group);
+    group[4] = 0xFF;
+    /* a unicast frame reaches the receivers on its channel when it ends;
+     * one answers, and the sender hears so a SIFS and an ACK later */
+    t_send(&e, &a, unicast, sizeof unicast, 100 * us);
+    esk_engine_advance(&e, 2 * ES_PS_PER_MS);
+    CHECK_EQ(b.got, 1);
+    CHECK_EQ(b.got_at, 516 * us);
+    CHECK_EQ(b.rssi, -20);
+    CHECK_EQ(c.got, 0);
+    CHECK_EQ(a.done, 1);
+    CHECK_EQ(a.acked, 1);
+    CHECK_EQ(a.done_at, (516 + 10 + 304) * us);
+    /* no one answers: the sender learns it when the ACK's time is over */
+    b.answer = 0;
+    t_send(&e, &a, unicast, sizeof unicast, 3 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 4 * ES_PS_PER_MS);
+    CHECK_EQ(a.done, 2);
+    CHECK_EQ(a.acked, 0);
+    CHECK_EQ(a.done_at, 3 * ES_PS_PER_MS + (416 + 10 + 304) * us);
+    /* a group frame: no ACK, done when it ends */
+    t_send(&e, &a, group, sizeof group, 5 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 6 * ES_PS_PER_MS);
+    CHECK_EQ(b.got, 3);
+    CHECK_EQ(a.done, 3);
+    CHECK_EQ(a.acked, 0);
+    CHECK_EQ(a.done_at, 5 * ES_PS_PER_MS + 416 * us);
+    CHECK_EQ(e.air.frames, 3);
+    /* out of range: 20 km away (-106 dBm) is below the receiver's sensitivity */
+    ca.pose[0] = 0.0;
+    cb.pose[0] = 20000000.0;
+    a.n.comp = &ca;
+    b.n.comp = &cb;
+    t_send(&e, &a, group, sizeof group, 7 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 8 * ES_PS_PER_MS);
+    CHECK_EQ(b.got, 3);
+    /* a reset clears what was in flight */
+    t_send(&e, &a, group, sizeof group, 9 * ES_PS_PER_MS);
+    esk_engine_reset(&e);
+    CHECK_EQ(e.air.frames, 0);
+    esk_engine_advance(&e, 20 * ES_PS_PER_MS);
+    CHECK_EQ(a.done, 4);
+    esk_air_detach(&e, &a.n);
+    esk_air_detach(&e, &b.n);
+    esk_air_detach(&e, &c.n);
+    CHECK_EQ(e.air.nodes.len, 0);
+    esk_engine_free(&e);
+}
+
+/* a station's frame to the access point: management `subtype`, `body` */
+static uint32_t t_mgmt(uint8_t *f, unsigned subtype, const uint8_t *bssid, const uint8_t *body, uint32_t n)
+{
+    static const uint8_t sta[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x62 };
+    memset(f, 0, 24);
+    f[0] = (uint8_t)(subtype << 4);
+    memcpy(f + 4, bssid, 6);
+    memcpy(f + 10, sta, 6);
+    memcpy(f + 16, bssid, 6);
+    memcpy(f + 24, body, n);
+    return 24 + n;
+}
+
+static void test_wifi_ap(void)
+{
+    static const uint8_t bcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+    static const uint8_t bssid[6] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x01 };
+    static const uint8_t probe[] = { 0, 0, 1, 4, 0x82, 0x84, 0x8b, 0x96 };   /* any SSID */
+    static const uint8_t probe_other[] = { 0, 3, 'f', 'o', 'o' };
+    static const uint8_t auth[] = { 0, 0, 1, 0, 0, 0 };                       /* open, transaction 1 */
+    static const uint8_t assoc[] = { 0x21, 0x04, 10, 0, 0, 3, 'L', 'a', 'b' };
+    esk_engine e;
+    esk_registry r;
+    esk_comp *ap;
+    t_node sta;
+    uint8_t f[64];
+    esk_json *o;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_registry_init(&r, &A);
+    ap = add(&e, &r, "AP", "wifi_access_point", NULL, NULL, 0,
+             "{\"ssid\": \"Lab\", \"password\": \"correct horse\", \"channel\": 11, \"bssid\": \"02:00:00:00:00:01\"}");
+    esk_engine_reset(&e);
+    t_init(&sta, 2462u);
+    sta.answer = 1;
+    CHECK(esk_air_attach(&e, &sta.n) == ES_OK);
+    /* its first beacon (at 1 TU + its airtime): the SSID, rates, channel,
+     * TIM, ERP and the RSN element of WPA2-Personal */
+    esk_engine_advance(&e, 5 * ES_PS_PER_MS);
+    CHECK_EQ(sta.got, 1);
+    CHECK_EQ(sta.last[0], 0x80);
+    CHECK(!memcmp(sta.last + 4, bcast, 6) && !memcmp(sta.last + 10, bssid, 6) && !memcmp(sta.last + 16, bssid, 6));
+    CHECK_EQ(sta.last[32] | sta.last[33] << 8, 100);               /* the interval */
+    CHECK_EQ(sta.last[34] | sta.last[35] << 8, 0x0431);            /* ESS, privacy, short preamble and slot */
+    CHECK(sta.last[36] == 0 && sta.last[37] == 3 && !memcmp(sta.last + 38, "Lab", 3));
+    CHECK_EQ(sta.last_len, 24 + 12 + 5 + 10 + 6 + 3 + 6 + 3 + 22);
+    CHECK(sta.last[41] == 1 && sta.last[51] == 50 && sta.last[57] == 3 && sta.last[59] == 11);
+    CHECK(sta.last[60] == 5 && sta.last[66] == 42 && sta.last[69] == 48);
+    /* a probe request for any SSID is answered; one for another is not */
+    t_send(&e, &sta, f, t_mgmt(f, 4, bcast, probe, sizeof probe), 10 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 15 * ES_PS_PER_MS);
+    CHECK_EQ(sta.got, 2);
+    CHECK_EQ(sta.last[0], 0x50);
+    CHECK(!memcmp(sta.last + 4, f + 10, 6));
+    CHECK_EQ(sta.last_len, 24 + 12 + 5 + 10 + 6 + 3 + 3 + 22); /* no TIM */
+    t_send(&e, &sta, f, t_mgmt(f, 4, bcast, probe_other, sizeof probe_other), 20 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 25 * ES_PS_PER_MS);
+    CHECK_EQ(sta.got, 2);
+    /* open system authentication, then association: AID 1 */
+    t_send(&e, &sta, f, t_mgmt(f, 11, bssid, auth, sizeof auth), 30 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 35 * ES_PS_PER_MS);
+    CHECK_EQ(sta.acked, 1);
+    CHECK_EQ(sta.got, 3);
+    CHECK(sta.last[0] == 0xB0 && sta.last[26] == 2 && sta.last[28] == 0);
+    t_send(&e, &sta, f, t_mgmt(f, 0, bssid, assoc, sizeof assoc), 40 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 45 * ES_PS_PER_MS);
+    CHECK_EQ(sta.got, 4);
+    CHECK(sta.last[0] == 0x10 && sta.last[26] == 0 && sta.last[28] == 1 && sta.last[29] == 0xC0);
+    o = esk_json_new_object(&A);
+    ap->ops->observe(ap, o);
+    CHECK_EQ(esk_json_get_num(o, "stations", -1), 1);
+    CHECK_STR(esk_json_get_str(o, "mac", ""), "02:00:00:00:00:01");
+    CHECK(strstr(esk_json_get_str(o, "log", ""), "7c:df:a1:45:6d:62 associated, aid 1") != NULL);
+    esk_json_free(&A, o);
+    /* a deauthentication forgets it */
+    t_send(&e, &sta, f, t_mgmt(f, 12, bssid, auth, 2), 50 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 55 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    ap->ops->observe(ap, o);
+    CHECK_EQ(esk_json_get_num(o, "stations", -1), 0);
+    esk_json_free(&A, o);
+    /* beacons go on every 102.4 ms */
+    esk_engine_advance(&e, 1000 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    ap->ops->observe(ap, o);
+    CHECK_EQ(esk_json_get_num(o, "beacons", -1), 10);
+    esk_json_free(&A, o);
+    esk_air_detach(&e, &sta.n);
+    esk_engine_free(&e);
+    esk_registry_free(&r);
+}
+
 TEST_MAIN_BEGIN
 esk_alloc_init(&A, NULL);
 esk_diag_init(&D, &A, 64);
@@ -261,6 +509,8 @@ RUN(test_floating);
 RUN(test_gates_and_delay);
 RUN(test_switch_gate);
 RUN(test_virtual_terminal);
+RUN(test_air);
+RUN(test_wifi_ap);
 esk_diag_free(&D);
 CHECK_EQ(A.allocations, 0);
 TEST_MAIN_END

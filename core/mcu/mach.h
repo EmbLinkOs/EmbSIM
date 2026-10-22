@@ -302,7 +302,28 @@ typedef struct esk_mach_host {
      * interrupt's vector or an exception's ExcCode, a PIC24's vector
      * number), for a recording's observations */
     void (*exc)(void *ctx, int core, int n);
+    /* the chip's radio sends a frame (without its FCS or CRC) now, on `mhz`
+     * at `dbm` and `rate_kbps`, for `airtime_ps` (0: what its kind's PHY
+     * takes), of `kind` (ESK_RADIO_WIFI, ESK_RADIO_BLE); the radio port's
+     * tx_done hears `token` back. 0 when the frame is on the air */
+    int (*radio_tx)(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32 rate_kbps, u64 airtime_ps,
+                    int kind, u32 token);
 } esk_mach_host;
+
+enum { ESK_RADIO_WIFI = 1, ESK_RADIO_BLE = 2 };
+
+/* the chip's radio, as the air reaches it (esk_mach.radio) */
+struct esk_radio_port {
+    void *ctx;
+    int kinds; /* ESK_RADIO_WIFI | ESK_RADIO_BLE */
+    /* the frequency (MHz) it listens on for `kind` now, 0 when it does not */
+    u32 (*tuned)(void *ctx, int kind);
+    /* a frame arrived (without its FCS or CRC) at `rssi` dBm: 1 when the
+     * radio answers it with an ACK */
+    int (*rx)(void *ctx, const u8 *frame, u32 len, u32 mhz, int rssi, u32 rate_kbps, int kind);
+    /* the frame `token` went out, answered or not */
+    void (*tx_done)(void *ctx, u32 token, int acked);
+};
 
 /* ---- the machine ---------------------------------------------------------- */
 
@@ -452,6 +473,8 @@ struct esk_mach {
      * schedule the wake-up itself */
     int return_on_sleep;
     struct esk_rx_port rx[ESK_MACH_RX_PORTS];
+    /* the chip's radio, when it has one (its model sets it) */
+    struct esk_radio_port radio;
     int nrx;
     int bus_errors; /* reported by esk_mach_bus_error */
     /* breakpoints, by program counter; a run resumed from one steps off

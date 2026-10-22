@@ -5,7 +5,31 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### The ESP32-C3's radios (their plan, steps 1 and 2)
+### The ESP32-C3's radios (their plan, steps 1 to 3)
+
+- **The air** (`core/engine/air.h`): the 2.4 GHz medium a session's radios
+  share. A frame is carried whole with its channel, power, rate and
+  airtime (802.11's DSSS and OFDM preambles and symbols, BLE's packet);
+  it reaches every radio tuned to its channel when it ends, at the power
+  the free-space path loss leaves over their distance on the bench, above
+  a receiver's sensitivity; a unicast frame taken is answered with an ACK
+  the sender hears a SIFS and an ACK's airtime later.
+- **The ESP32-C3's Wi-Fi MAC** (`wifi.c`, step 3), learnt from what
+  ESP-IDF's libpp does with its registers: five transmit queues on
+  descriptor lists sending one frame at a time at the PLCP word's rate on
+  the RF PLL's channel, their completions (sent, or no ACK) and interrupt;
+  the receive list filled with ESP-IDF's rx_ctrl header for frames the
+  station's or the access point's address filter takes, its reload; the
+  interrupt status on source 0; the microsecond counter and the TSF latch.
+- **`emblink/wifi_ap`**, a Wi-Fi access point across the room: beacons
+  (SSID, rates, channel, TIM, ERP, WPA2-Personal's RSN element),
+  probe responses, open authentication, association; its stations in its
+  outputs. ESP-IDF's unmodified `wifi/scan` lists two of them on the bench
+  as a board does: HomeNet (WPA2-PSK, CCMP, channel 6) at -30 dBm from 3 m
+  and CoffeeShop (open, channel 1) at -42 dBm from 12 m.
+- A board's own parts (its MCU, its sensors) are where the board is on the
+  bench, for the world's rays and the air's distances. A component may have
+  no pins (one that reaches the circuit only through the air).
 
 - **The plan** (`docs/engineering/c3-radios.md`): Wi-Fi and Bluetooth LE
   modelled at the registers ESP-IDF's closed radio libraries drive, so
@@ -27,8 +51,7 @@ versions follow semantic versioning. There is no release yet.
   calibrated and locked, the power detector's, DC and IQ measurements
   done). ESP-IDF v5.4's `wifi/scan` runs unmodified, as on a board's first
   start: a full RF calibration saved to NVS, the station with the eFuse
-  MAC, a scan of every channel finding nothing, since the MAC sends no
-  frame yet (step 3). It joins the ESP-IDF suite.
+  MAC and a scan of every channel. It joins the ESP-IDF suite.
 - **Fixed:** the ESP32-C3's temperature sensor registers (APB_TSENS_CTRL,
   TSENS_CTRL2) were gated by APB_SARADC's clock; they follow TSENS_CLK_EN,
   the one ESP-IDF turns on to use them. A register may now have a clock

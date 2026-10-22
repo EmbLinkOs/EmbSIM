@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "policy": "functional",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wifi_ap",
+        "params": {
+          "ssid": "Lab",
+          "bssid": "02:00:00:00:00:00"
+        }
+      }
+    ],
+    "nets": {}
+  },
+  "name": "beacons-before",
+  "description": "Its tenth beacon has not gone out at 922 ms (it does at 922.624 ms).",
+  "until": "922ms",
+  "expect": {
+    "output:DUT.beacons": {
+      "at": "922ms",
+      "equals": 9
+    }
+  }
+}

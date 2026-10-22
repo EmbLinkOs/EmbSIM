@@ -3,7 +3,7 @@
  "kind": "scenario",
  "name": "wifi_scan",
  "until": "3500ms",
- "description": "wifi/scan: ESP-IDF's Wi-Fi driver on a first start: phy_init finds no stored RF calibration, calibrates in full (the PHY's measurements answer as an ideal radio) and saves it to NVS; the station starts with the eFuse MAC; an active scan of every channel takes some 2.5 s and, with nothing on the air yet (the radios' plan, step 4), finds no access point.",
+ "description": "wifi/scan: ESP-IDF's Wi-Fi driver on a first start: phy_init finds no stored RF calibration, calibrates in full (the PHY's measurements answer as an ideal radio) and saves it to NVS; the station starts with the eFuse MAC; an active scan of every channel sends probe requests, which both access points of the room answer, and finds them, strongest first: HomeNet (WPA2-Personal, CCMP, channel 6) 3 m away at -30 dBm and CoffeeShop (open, channel 1) 12 m away at -42 dBm, the free-space path loss at 2437 and 2412 MHz.",
  "inputs": [],
  "assertions": [
   {
@@ -51,7 +51,95 @@
    "at": "3200ms",
    "probe": "console",
    "expect": {
-    "contains": "scan: Total APs scanned = 0, actual AP number ap_info holds = 0\r\n"
+    "contains": "scan: Total APs scanned = 2, actual AP number ap_info holds = 2\r\n"
+   }
+  },
+  {
+   "id": "home-ssid",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: SSID \t\tHomeNet\r\n"
+   }
+  },
+  {
+   "id": "home-rssi",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: RSSI \t\t-30\r\n"
+   }
+  },
+  {
+   "id": "home-auth",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Authmode \tWIFI_AUTH_WPA2_PSK\r\n"
+   }
+  },
+  {
+   "id": "home-cipher",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Pairwise Cipher \tWIFI_CIPHER_TYPE_CCMP\r\n"
+   }
+  },
+  {
+   "id": "home-channel",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Channel \t\t6\r\n"
+   }
+  },
+  {
+   "id": "coffee-ssid",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: SSID \t\tCoffeeShop\r\n"
+   }
+  },
+  {
+   "id": "coffee-rssi",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: RSSI \t\t-42\r\n"
+   }
+  },
+  {
+   "id": "coffee-auth",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Authmode \tWIFI_AUTH_OPEN\r\n"
+   }
+  },
+  {
+   "id": "coffee-channel",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Channel \t\t1\r\n"
+   }
+  },
+  {
+   "id": "home-answered",
+   "at": "3200ms",
+   "probe": "ap1_probes",
+   "expect": {
+    "min": 1
+   }
+  },
+  {
+   "id": "coffee-answered",
+   "at": "3200ms",
+   "probe": "ap2_probes",
+   "expect": {
+    "min": 1
    }
   },
   {

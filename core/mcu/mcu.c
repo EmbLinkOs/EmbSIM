@@ -105,6 +105,8 @@ typedef struct mcu_state {
     char console[16];
     esk_an *an;      /* the analyses watching the firmware, or NULL */
     unsigned an_what;
+    esk_air_node air; /* its radio on the session's air, when it has one */
+    int on_air;
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -993,6 +995,56 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     schedule_at(st, e->sched.now + 1);
 }
 
+/* ---- the radio ----------------------------------------------------------------- */
+
+static uint32_t air_tuned(void *ctx, int kind)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (!runnable(st) && !(st->attached && st->m.asleep))
+        return 0;
+    return st->m.radio.tuned ? st->m.radio.tuned(st->m.radio.ctx, kind) : 0;
+}
+
+static int air_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    int r;
+    catch_up(st, at);
+    esk_mach_outside(&st->m);
+    r = st->m.radio.rx(st->m.radio.ctx, f->data, f->len, f->mhz, rssi, f->rate_kbps, f->kind);
+    wake(st);
+    return r;
+}
+
+static void air_tx_done(void *ctx, uint32_t token, int acked, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (!st->m.radio.tx_done)
+        return;
+    catch_up(st, at);
+    esk_mach_outside(&st->m);
+    st->m.radio.tx_done(st->m.radio.ctx, token, acked);
+    wake(st);
+}
+
+static int h_radio_tx(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32 rate_kbps, u64 airtime_ps,
+                      int kind, u32 token)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_air_frame f;
+    if (!st->on_air)
+        return -1;
+    f.data = frame;
+    f.len = len;
+    f.mhz = mhz;
+    f.dbm = (double)dbm;
+    f.rate_kbps = rate_kbps;
+    f.kind = kind;
+    if (!airtime_ps)
+        airtime_ps = kind == ESK_AIR_BLE ? esk_air_ble_airtime(len, rate_kbps) : esk_air_wifi_airtime(len, rate_kbps);
+    return esk_air_send(st->c->e, &st->air, &f, local_now(st), airtime_ps, token) == ES_OK ? 0 : -1;
+}
+
 /* ---- the component ------------------------------------------------------------- */
 
 static es_status mcu_create(esk_comp *c)
@@ -1008,6 +1060,9 @@ static void mcu_destroy(esk_comp *c)
     esk_engine *e = c->e;
     if (!st)
         return;
+    if (st->on_air)
+        esk_air_detach(e, &st->air);
+    st->on_air = 0;
     esk_an_free(st->an);
     st->an = NULL;
     st->m.an = NULL;
@@ -1333,6 +1388,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.pin_volts = h_pin_volts;
     st->m.host.temperature = h_temperature;
     st->m.host.pin_watch = h_pin_watch;
+    st->m.host.radio_tx = h_radio_tx;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "slew_v_per_us"),
@@ -1391,5 +1447,17 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     }
     map_rx_pins(st);
     (void)uart_named(st, st->console, 1);
+    if (st->m.radio.rx && !st->on_air) {
+        /* its radio joins the session's air */
+        st->air.ctx = st;
+        st->air.comp = c;
+        st->air.kind = st->m.radio.kinds;
+        st->air.tuned = air_tuned;
+        st->air.rx = air_rx;
+        st->air.tx_done = air_tx_done;
+        if (esk_air_attach(e, &st->air) != ES_OK)
+            return ES_ENOMEM;
+        st->on_air = 1;
+    }
     return ES_OK;
 }

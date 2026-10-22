@@ -86,8 +86,8 @@
       "description": "Default logic family for the component's digital pins (SPEC-005 §4)."
     },
     "pins": {
+      "description": "The part's pins; none for a part that reaches the circuit only through the air (a Wi-Fi access point across the room).",
       "type": "array",
-      "minItems": 1,
       "items": {
         "$ref": "#/$defs/pin"
       }

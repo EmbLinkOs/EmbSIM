@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/wifi_ap",
+  "version": "0.1.0",
+  "name": "Wi-Fi access point",
+  "category": "instruments",
+  "description": "A 2.4 GHz 802.11b/g access point, as a home router is seen from a station across the room: it beacons its SSID every beacon interval, answers probe requests, and authenticates (open system) and associates stations. It reaches the circuit only through the air; its signal reaches a board at the free-space path loss over their distance on the bench.",
+  "keywords": [
+    "wifi",
+    "wi-fi",
+    "802.11",
+    "access point",
+    "router",
+    "ap",
+    "ssid",
+    "wireless",
+    "2.4 ghz"
+  ],
+  "pins": [],
+  "params": {
+    "ssid": {
+      "type": "string",
+      "default": "EmbSIM",
+      "doc": "The network's name (1 to 32 bytes)"
+    },
+    "password": {
+      "type": "string",
+      "default": "",
+      "doc": "The WPA2-Personal passphrase (8 to 63 characters); empty for an open network"
+    },
+    "channel": {
+      "type": "integer",
+      "default": 6,
+      "min": 1,
+      "max": 14,
+      "doc": "The 2.4 GHz channel (1 to 13, 14 in Japan)"
+    },
+    "tx_dbm": {
+      "type": "number",
+      "unit": "dBm",
+      "default": 20,
+      "min": -10,
+      "max": 30,
+      "doc": "Transmit power (EIRP)"
+    },
+    "beacon_interval": {
+      "type": "integer",
+      "unit": "TU",
+      "default": 100,
+      "min": 15,
+      "max": 65535,
+      "doc": "The time between beacons, in 1024 us time units"
+    },
+    "bssid": {
+      "type": "string",
+      "default": "",
+      "doc": "Its MAC address (aa:bb:cc:dd:ee:ff); empty for a locally administered one from its name",
+      "advanced": true
+    }
+  },
+  "outputs": [
+    {
+      "name": "mac",
+      "type": "string",
+      "doc": "Its MAC address, the network's BSSID"
+    },
+    {
+      "name": "stations",
+      "type": "integer",
+      "doc": "The stations associated"
+    },
+    {
+      "name": "beacons",
+      "type": "integer",
+      "doc": "Beacons sent"
+    },
+    {
+      "name": "probe_responses",
+      "type": "integer",
+      "doc": "Probe responses sent"
+    },
+    {
+      "name": "rx_frames",
+      "type": "integer",
+      "doc": "Frames received for it"
+    },
+    {
+      "name": "tx_frames",
+      "type": "integer",
+      "doc": "Frames sent"
+    },
+    {
+      "name": "log",
+      "type": "string",
+      "doc": "What its stations did: authenticated, associated (with the AID), disassociated, deauthenticated"
+    }
+  ],
+  "model": {
+    "primitive": "wifi_access_point"
+  },
+  "functional": {
+    "primitive": "wifi_access_point"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {}
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Beacons (TSF timestamp, interval, ESS and privacy capabilities, SSID, rates, DS parameter set, TIM, ERP, the WPA2-Personal RSN element with a password) every beacon interval at 1 Mbit/s; probe responses to wildcard and matching probe requests; open system authentication; association and reassociation with AIDs from 1; deauthentication and disassociation (IEEE 802.11-2020 9.3.3, 11.3). Frames carry their airtime and reach stations at the free-space path loss over the bench distance (engine/air.h).",
+      "omissions": [
+        "the data path: WPA2's 4-way handshake, DHCP, ARP, ICMP, DNS, TCP and UDP",
+        "802.11n (HT capabilities and operation)",
+        "WPA3 (SAE)",
+        "power save buffering (the TIM is always empty)",
+        "hidden SSIDs",
+        "retransmissions and contention",
+        "more than 8 stations"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the interframe timing of a real AP's firmware: responses follow a received frame after its ACK and DIFS"
+      ]
+    },
+    "electrical": {
+      "claims": "As functional: it has no pins.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "IEEE Std 802.11-2020: frame formats (9.3.3), elements (9.4.2), authentication and association (11.3)",
+        "url": "https://standards.ieee.org/ieee/802.11/7028/",
+        "date": "2026-10-22",
+        "notes": "The beacon, probe response, authentication and association frames and their fields; the RSN element of WPA2-Personal (CCMP pairwise and group, PSK)."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

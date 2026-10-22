@@ -21,6 +21,8 @@ void esk_registry_free(esk_registry *r);
 const esk_model_ops *esk_registry_find(const esk_registry *r, const char *name);
 /* the digital primitives (digital.c) */
 const esk_model_ops *const *esk_digital_models(size_t *n);
+/* a Wi-Fi access point on the session's air (wifi_ap.c) */
+extern const esk_model_ops esk_wifi_ap_ops;
 /* a JSON array of {name, kind: "digital"|"electrical"} */
 esk_json *esk_registry_list(const esk_registry *r);
 

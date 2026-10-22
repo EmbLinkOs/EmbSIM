@@ -1152,7 +1152,9 @@ static int json_same(esk_alloc *a, const esk_json *x, const esk_json *y)
     return eq;
 }
 
-/* the parts' places on the bench (layout.bench.parts), for the world's rays; 1 when one moved */
+/* the parts' places on the bench (layout.bench.parts), for the world's rays
+ * and the air's distances; a board's own parts ("B1.U1") are where the board
+ * is. 1 when one moved */
 static int world_poses(es_session *s)
 {
     const esk_json *parts = esk_json_get(esk_json_get(esk_json_get(s->project, "layout"), "bench"), "parts");
@@ -1161,7 +1163,14 @@ static int world_poses(es_session *s)
     for (i = 0; i < s->eng.comps.len; i++) {
         esk_comp *c = s->eng.comps.data[i];
         const esk_json *pl = esk_json_get(parts, c->id);
+        const char *dot = strchr(c->id, '.');
         double p[3] = { 0, 0, 0 };
+        if (!pl && dot && (size_t)(dot - c->id) < 64) {
+            char board[64];
+            memcpy(board, c->id, (size_t)(dot - c->id));
+            board[dot - c->id] = 0;
+            pl = esk_json_get(parts, board);
+        }
         if (pl) {
             p[0] = esk_json_get_num(pl, "x", 0);
             p[1] = esk_json_get_num(pl, "y", 0);

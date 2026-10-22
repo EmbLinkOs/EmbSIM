@@ -1282,6 +1282,161 @@ static void test_rng_and_radio(void)
     c3_close(&f);
 }
 
+/* the Wi-Fi MAC (wifi.c): what the host's air saw of a transmitted frame */
+static struct {
+    int n;
+    u8 frame[64];
+    u32 len, mhz, kbps, token;
+    int kind;
+} wtx;
+
+static int wifi_radio_tx(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32 kbps, u64 airtime, int kind,
+                         u32 token)
+{
+    (void)ctx;
+    (void)dbm;
+    (void)airtime;
+    wtx.n++;
+    wtx.len = len;
+    memcpy(wtx.frame, frame, len < sizeof wtx.frame ? len : sizeof wtx.frame);
+    wtx.mhz = mhz;
+    wtx.kbps = kbps;
+    wtx.kind = kind;
+    wtx.token = token;
+    return 0;
+}
+
+static void test_wifi_mac(void)
+{
+    /* libpp's way with the MAC (c3-radios.md step 3): a frame queued on
+     * a transmit queue leaves on the RF PLL's channel at its PLCP rate and
+     * completes with its outcome; a frame for the station's address fills
+     * the receive list's next descriptor with ESP-IDF's rx_ctrl header */
+    enum { MAC = 0x60033000u, D_TX = 0x3FC90000u, B_TX = 0x3FC90100u, D1 = 0x3FC90200u, D2 = 0x3FC90210u,
+           B1 = 0x3FC91000u, B2 = 0x3FC92000u };
+    static const u8 me[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x62 };
+    c3 f;
+    u8 fr[30];
+    u32 i, w0, us;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    memset(&wtx, 0, sizeof wtx);
+    f.m.host.radio_tx = wifi_radio_tx;
+    CHECK(f.m.radio.rx != NULL && f.m.radio.kinds == ESK_RADIO_WIFI);
+    wr(&f, REGI2C + 0x150u, 37u << 20); /* the RF PLL at 2437 MHz, channel 6 */
+    wr(&f, MAC + 0xC34u, 0x19A879E0u);  /* hal_init's interrupt enables */
+    /* transmit: a 24-byte probe request (28 with its FCS) on queue 0 */
+    for (i = 0; i < 24; i++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, B_TX + i, 1, i < 4 ? 0x40u >> (8 * i) : 0xFFu), 0);
+    wr(&f, D_TX, 0x80000000u | 0x40000000u | 28u << 12 | 64u);
+    wr(&f, D_TX + 4u, B_TX);
+    wr(&f, D_TX + 8u, 0);
+    wr(&f, MAC + 0x12F8u, 28u); /* PLCP1: the length, rate 0 (1 Mbit/s) */
+    wr(&f, MAC + 0xD08u, 0xC0000000u | (D_TX & 0xFFFFFu));
+    CHECK_EQ(wtx.n, 1);
+    CHECK_EQ(wtx.len, 24);
+    CHECK_EQ(wtx.mhz, 2437);
+    CHECK_EQ(wtx.kbps, 1000);
+    CHECK_EQ(wtx.kind, ESK_RADIO_WIFI);
+    CHECK_EQ(wtx.frame[0], 0x40);
+    CHECK_EQ(wtx.token & 7u, 0);
+    CHECK(rd(&f, MAC + 0xD08u) & 0xC0000000u); /* still sending */
+    CHECK_EQ(rd(&f, MAC + 0xCB0u), 0);
+    /* queue 1 waits for the radio */
+    wr(&f, MAC + 0x12F8u - 76u, 28u | 11u << 12); /* 6 Mbit/s */
+    wr(&f, MAC + 0xD00u, 0xC0000000u | (D_TX & 0xFFFFFu));
+    CHECK_EQ(wtx.n, 1);
+    f.m.radio.tx_done(f.m.radio.ctx, wtx.token, 0); /* a group frame: sent */
+    CHECK_EQ(rd(&f, MAC + 0xD08u) & 0xC0000000u, 0);
+    CHECK_EQ((rd(&f, MAC + 0x1320u) >> 12) & 15u, 0);
+    CHECK_EQ(rd(&f, MAC + 0xCB0u), 1u);
+    CHECK(rd(&f, MAC + 0xC3Cu) & (1u << 7));
+    CHECK(rd(&f, INTR_STATUS_0) & 1u); /* source 0, WIFI_MAC */
+    CHECK_EQ(wtx.n, 2);                /* then queue 1's */
+    CHECK_EQ(wtx.kbps, 6000);
+    CHECK_EQ(wtx.token & 7u, 1);
+    f.m.radio.tx_done(f.m.radio.ctx, wtx.token - 1u, 1); /* not its token: ignored */
+    CHECK_EQ(rd(&f, MAC + 0xCB0u), 1u);
+    wr(&f, MAC + 0xCACu, 1u); /* hal_mac_clr_txq_state */
+    CHECK_EQ(rd(&f, MAC + 0xCB0u), 0);
+    wr(&f, MAC + 0xC40u, 1u << 7);
+    CHECK_EQ(rd(&f, MAC + 0xC3Cu) & (1u << 7), 0);
+    CHECK_EQ(rd(&f, INTR_STATUS_0) & 1u, 0);
+    f.m.radio.tx_done(f.m.radio.ctx, wtx.token, 1);
+    CHECK_EQ((rd(&f, MAC + 0x1320u - 76u) >> 12) & 15u, 0);
+    CHECK_EQ(rd(&f, MAC + 0xCB0u), 2u);
+    /* a unicast frame unanswered: no ACK (5) */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, B_TX + 4u, 1, 0x02u), 0);
+    wr(&f, MAC + 0xD08u, 0xC0000000u | (D_TX & 0xFFFFFu));
+    CHECK_EQ(wtx.n, 3);
+    f.m.radio.tx_done(f.m.radio.ctx, wtx.token, 0);
+    CHECK_EQ((rd(&f, MAC + 0x1320u) >> 12) & 15u, 5u);
+    CHECK_EQ(rd(&f, MAC + 0xCB0u), 3u);
+    /* receive: off until enabled; the station's address and mask */
+    memset(fr, 0, sizeof fr);
+    fr[0] = 0x50;
+    memcpy(fr + 4, me, 6);
+    for (i = 24; i < sizeof fr; i++)
+        fr[i] = (u8)i;
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_WIFI), 0);
+    wr(&f, MAC + 0x40u, 0x45a1df7cu);
+    wr(&f, MAC + 0x44u, 0x626du);
+    wr(&f, MAC + 0x60u, 0xFFFFFFFFu);
+    wr(&f, MAC + 0x64u, 0x1FFFFu);
+    wr(&f, D1, 0x80000000u | 1600u);
+    wr(&f, D1 + 4u, B1);
+    wr(&f, D1 + 8u, D2);
+    wr(&f, D2, 0x80000000u | 1600u);
+    wr(&f, D2 + 4u, B2);
+    wr(&f, D2 + 8u, D1);
+    wr(&f, MAC + 0xC64u, 0x3FC00000u);
+    wr(&f, MAC + 0x88u, D1);
+    wr(&f, MAC + 0x84u, 0x80000000u);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_WIFI), 2437);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 0);
+    CHECK_EQ(rd(&f, MAC + 0x8Cu), D1);
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, fr, sizeof fr, 2437u, -42, 1000u, ESK_RADIO_WIFI), 1);
+    w0 = rd(&f, D1);
+    CHECK_EQ(w0 >> 30, 1u); /* the driver's, eof */
+    CHECK_EQ((w0 >> 12) & 0xFFFu, 48u + 30u + 4u);
+    CHECK_EQ(w0 & 0xFFFu, 1600u);
+    CHECK_EQ(rd(&f, B1) & 0xFFu, (u32)(u8)-42);
+    CHECK(rd(&f, B1) & (1u << 28)); /* the station interface took it */
+    CHECK_EQ(rd(&f, B1 + 8u) >> 16 & 15u, 6u);
+    CHECK_EQ(rd(&f, B1 + 44u) & 0xFFFu, 34u);
+    CHECK_EQ(rd(&f, B1 + 44u) >> 24, 0);
+    CHECK_EQ(rd(&f, B1 + 48u) & 0xFFu, 0x50u);
+    CHECK_EQ(rd(&f, B1 + 48u + 24u), 0x1B1A1918u);
+    CHECK_EQ(rd(&f, MAC + 0x90u), D1 & 0xFFFFFu);
+    CHECK_EQ(rd(&f, MAC + 0x8Cu), D2);
+    CHECK(rd(&f, MAC + 0xC3Cu) & (1u << 24));
+    CHECK(rd(&f, INTR_STATUS_0) & 1u);
+    /* another station's frame is not taken, nor answered */
+    fr[9] = 0x63;
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, fr, sizeof fr, 2437u, -42, 1000u, ESK_RADIO_WIFI), 0);
+    CHECK_EQ(rd(&f, MAC + 0x8Cu), D2);
+    /* a group frame is taken, not answered; then the list has run out */
+    fr[4] = 0xFF;
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, fr, sizeof fr, 2437u, -42, 1000u, ESK_RADIO_WIFI), 0);
+    CHECK_EQ(rd(&f, D2) >> 30, 1u);
+    CHECK_EQ(rd(&f, MAC + 0x90u), D2 & 0xFFFFFu);
+    CHECK_EQ(rd(&f, MAC + 0x8Cu), 0); /* D1 is still the driver's */
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, fr, sizeof fr, 2437u, -42, 1000u, ESK_RADIO_WIFI), 0);
+    /* the driver gives D1 back and reloads: the MAC goes on there */
+    wr(&f, D1, 0x80000000u | 1600u);
+    wr(&f, MAC + 0x84u, 0x80000001u);
+    CHECK_EQ(rd(&f, MAC + 0x84u), 0x80000000u);
+    CHECK_EQ(rd(&f, MAC + 0x8Cu), D1);
+    /* the MAC's time: microseconds, latched for hal_get_tsf_time */
+    us = rd(&f, MAC + 0x2000u);
+    esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000u);
+    CHECK_NEAR((double)(rd(&f, MAC + 0x2000u) - us), 1000.0, 1.0);
+    wr(&f, MAC + 0x200Cu, 1u);
+    CHECK_NEAR((double)rd(&f, MAC + 0x2018u), (double)rd(&f, MAC + 0x2000u), 1.0);
+    CHECK_EQ(rd(&f, MAC + 0x201Cu), 0);
+    c3_close(&f);
+}
+
 static void test_radio_calibrations(void)
 {
     /* the PHY's calibrations answer as an ideal radio (c3-radios.md step 2):
@@ -2453,6 +2608,7 @@ RUN(test_rtc_calibration_periodic);
 RUN(test_regi2c);
 RUN(test_rng_and_radio);
     RUN(test_radio_calibrations);
+    RUN(test_wifi_mac);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
 RUN(test_peripheral_reset_keeps_rate);

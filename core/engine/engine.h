@@ -7,6 +7,7 @@
 #define ESK_ENGINE_H
 
 #include "embsim/types.h"
+#include "engine/air.h"
 #include "engine/world.h"
 #include "time/clock.h"
 #include "time/sched.h"
@@ -158,6 +159,8 @@ struct esk_engine {
     void (*ext_free)(void *ext);
     /* the room the circuit sits in (ADR-026) */
     esk_world world;
+    /* the 2.4 GHz medium its radios share (air.h) */
+    esk_air air;
 };
 
 /* the world's value for a component's input bound to it (its description's
