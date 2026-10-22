@@ -173,7 +173,7 @@ void esk_prf_sha1(const unsigned char *key, size_t key_len, const char *label, c
 static unsigned char sbox[256];
 static int sbox_ready;
 
-static unsigned char xtime(unsigned char x) { return (unsigned char)((x << 1) ^ ((x & 0x80u) ? 0x1Bu : 0u)); }
+static unsigned char xtime(unsigned char x) { return (unsigned char)(((unsigned)x << 1) ^ ((x & 0x80u) ? 0x1Bu : 0u)); }
 
 static unsigned char gmul(unsigned char a, unsigned char b)
 {
