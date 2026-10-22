@@ -1721,7 +1721,7 @@ static void dev_edges(void)
                 dev.byte = dev.mem[dev.ptr & 7u];
         }
         if (dev.state == 3 && dev.bit < 8)
-            dev.drive_sda = (int)((dev.mem[dev.ptr & 7u] >> (7 - dev.bit)) & 1u);
+            dev.drive_sda = (int)(((u32)dev.mem[dev.ptr & 7u] >> (u32)(7 - dev.bit)) & 1u);
         if (dev.state == 3 && dev.bit == 8) {
             dev.drive_sda = 1;
             dev.ptr++;

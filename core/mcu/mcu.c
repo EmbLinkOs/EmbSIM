@@ -250,8 +250,16 @@ static void wake(mcu_state *st)
     /* a core not yet started since its reset starts when the reset said,
      * whatever the pins do meanwhile (its first quantum reads them): so a
      * session as loaded runs as one reset does */
-    if (!runnable(st) || (st->m.asleep && !st->m.reset_req) || (st->fresh && st->ev))
+    if (!runnable(st) || (st->fresh && st->ev))
         return;
+    if (st->m.asleep && !st->m.reset_req) {
+        /* still asleep, but the input may have given a device an event
+         * sooner than the wake-up scheduled (an I2C master seeing SCL
+         * high): its quantum comes then, or that device would catch up
+         * past it and its edges in between run together */
+        schedule_sleep(st);
+        return;
+    }
     schedule_at(st, st->t > e->sched.now ? st->t : e->sched.now);
 }
 

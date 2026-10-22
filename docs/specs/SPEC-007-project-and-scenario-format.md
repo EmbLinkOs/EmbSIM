@@ -158,7 +158,9 @@ Rules:
   sample in a window; `by` checks that the expectation holds at some time up
   to the bound; `always` with `diagnostics.forbid` fails on any listed
   diagnostic. `expect` keys: `logic` (`0|1|Z|X`), `min`, `max`, `min_v`,
-  `max_v`, `equals`, `contains`, `edges` (a count), `frequency_hz`.
+  `max_v`, `equals`, `contains`, `not_contains` (text that must not be
+  there yet: a console that has not printed too early), `edges` (a count),
+  `frequency_hz`.
   `tolerance` is the absolute difference a numeric `equals` allows (exact
   otherwise) and the fraction a `frequency_hz` allows (5 % otherwise).
 - A run with a scenario ends at `until`; the report (SPEC-008 §8) lists each
