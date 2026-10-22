@@ -38,6 +38,10 @@ versions follow semantic versioning. There is no release yet.
   gave them (the ESP32-C3's I2C master seeing SCL high while ESP-IDF waited
   in WFI): they caught up at the next wake-up and the edges in between ran
   together on the pins. The core's next quantum now comes at that event.
+- **Fixed:** `embsim run --target` under the functional policy refused a
+  board with a USB port (the DevKitM-1, the NUCLEO-F446RE): the port's 5 V
+  source is an electrical primitive. The board now runs unplugged there,
+  its supplies ideal, as EmbLinkRTOS's EmbSIM runner asks.
 - **Fixed:** a pin the ESP32-C3's GPIO matrix gave U0RXD or U1RXD was not
   the UART's to the runtime (only GPIO20 through the IO MUX was): ESP-IDF
   connects TXD first, so UART1 never received what came in on its pin.
