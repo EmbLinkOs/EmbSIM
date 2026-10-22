@@ -1477,6 +1477,14 @@ static u32 ble_us_until(c3 *f, int n)
     return us;
 }
 
+/* `us` microseconds a microsecond at a time, as a running program sees the
+ * core's steps one after another */
+static void ble_idle_us(c3 *f, u32 us)
+{
+    while (us--)
+        esk_mach_idle(&f->m, esk_mach_core_hz(&f->m) / 1000000u);
+}
+
 static void test_ble(void)
 {
     /* the controller's way with the core (c3-radios.md step 6): the IP's
@@ -1587,15 +1595,46 @@ static void test_ble(void)
     CHECK_EQ(wtx.mhz, 2426);
     CHECK_EQ((em16r(&f, 0) >> 3) & 7u, 3u);
     CHECK_EQ((rd(&f, BLE_C3 + 0x2D8u) >> 5) & 31u, 2u);
+    /* a SCAN_REQ for its address T_IFS after the PDU: the scan response,
+     * the descriptor the advertising one's next gives, T_IFS after it */
+    {
+        static const u8 rsp[4] = { 3, 9, 'r', 's' };
+        u8 req[14];
+        em16(&f, 0x500u, 0x50Eu);
+        em16(&f, 0x510u, 4u | (6u + sizeof rsp) << 8); /* SCAN_RSP */
+        em16(&f, 0x512u, 0x680u);
+        for (i = 0; i < sizeof rsp; i++)
+            CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x680u + i, 1, rsp[i]), 0);
+        req[0] = 0x43; /* SCAN_REQ, random ScanA */
+        req[1] = 12;
+        for (i = 0; i < 6u; i++) {
+            req[2 + i] = (u8)(0xC0u + i);
+            req[8 + i] = (u8)(0x11u * (i + 1u));
+        }
+        em16(&f, 0, 0);
+        wr(&f, BLE_C3 + 0x1Cu, 0x80000000u);
+        em16(&f, 2, rd(&f, BLE_C3 + 0x1Cu) + 2u);
+        wr(&f, BLE_C3 + 0x100u, 0x80000000u);
+        (void)ble_us_until(&f, 5);
+        CHECK_EQ(wtx.mhz, 2426);
+        ble_idle_us(&f, 200u + 150u + 40u); /* the PDU, T_IFS, the request's access address */
+        CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 2426u);
+        esk_mach_outside(&f.m);
+        CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, req, sizeof req, 2426u, -40, 1000u, ESK_RADIO_BLE), 0);
+        us = ble_us_until(&f, 6);
+        CHECK(us >= 280u && us <= 292u); /* the request's 136 us left and T_IFS */
+        CHECK_EQ(wtx.mhz, 2426);
+        CHECK_EQ(wtx.len, 8u + sizeof rsp);
+        CHECK_EQ(wtx.frame[0], 4u);
+        CHECK_EQ(wtx.frame[1], 6u + sizeof rsp);
+        CHECK_EQ(wtx.frame[2], 0x11);
+        CHECK_EQ(wtx.frame[7], 0x66);
+        CHECK(!memcmp(wtx.frame + 8, rsp, sizeof rsp));
+        esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 1000u);
+        CHECK_EQ(wtx.n, 6);
+        CHECK_EQ((em16r(&f, 0) >> 3) & 7u, 3u);
+    }
     c3_close(&f);
-}
-
-/* `us` microseconds a microsecond at a time, as a running program sees the
- * core's steps one after another */
-static void ble_idle_us(c3 *f, u32 us)
-{
-    while (us--)
-        esk_mach_idle(&f->m, esk_mach_core_hz(&f->m) / 1000000u);
 }
 
 /* a connection event as the slave (ble.c): the test plays the master */
@@ -1757,6 +1796,69 @@ static u32 ble_until_tuned(c3 *f)
     for (us = 0; us < 3000u && !f->m.radio.tuned(f->m.radio.ctx, ESK_RADIO_BLE); us++)
         esk_mach_idle(&f->m, esk_mach_core_hz(&f->m) / 1000000u);
     return f->m.radio.tuned(f->m.radio.ctx, ESK_RADIO_BLE);
+}
+
+/* an active scan event (format 9, ble.c): after the ADV_IND, T_IFS later,
+ * the transmit descriptor's SCAN_REQ with its own address and the
+ * advertiser's; the SCAN_RSP taken into the next descriptor */
+static void test_ble_active_scan(void)
+{
+    static const u8 peer[6] = { 0x72, 0x6D, 0x45, 0xA1, 0xDF, 0x7C }; /* as on the air */
+    u8 m[40];
+    c3 f;
+    u32 i, ev;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    memset(&wtx, 0, sizeof wtx);
+    f.m.host.radio_tx = wifi_radio_tx;
+    em_map(&f);
+    wr(&f, BLE_C3 + 0x0Cu, 1u << 1 | 1u << 2 | 1u << 5);
+    wr(&f, BLE_C3 + 0x2D8u, 0x80000000u);
+    em16(&f, 0x1000u, 0x1014u);
+    em16(&f, 0x1000u + 18u, 0x1800u);
+    em16(&f, 0x1014u, 0x1000u);
+    em16(&f, 0x1014u + 18u, 0x1840u);
+    wr(&f, BLE_C3 + 0x24u, 0x1000u);
+    em16(&f, 0x400u + 0x16u, 0x8025u); /* channel 37 */
+    em16(&f, 0x400u + 0x1Au, 0x8002u); /* a 1.25 ms window */
+    m[1] = 9;
+    memcpy(m + 2, peer, 6);
+    m[8] = 2, m[9] = 1, m[10] = 6;
+    em16(&f, 0x400u, 9u);
+    for (i = 0; i < 6u; i++)
+        CHECK_EQ(esk_bus_debug_write(&f.m.bus, EM_RAM + 0x400u + 6u + i, 1, 0x64u + i), 0);
+    em16(&f, 0x400u + 0x1Cu, 0x1470u);
+    em16(&f, 0x1470u, 0);
+    em16(&f, 0x1470u + 2u, 0x03u | 12u << 8); /* SCAN_REQ, as the controller leaves it */
+    ble_start(&f, 4, 0x400u);
+    CHECK_EQ(ble_until_tuned(&f), 2402);
+    m[0] = 0x00; /* ADV_IND, public */
+    esk_mach_outside(&f.m);
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, m, 11, 2402u, -50, 1000u, ESK_RADIO_BLE), 0);
+    ev = (u32)wtx.n;
+    for (i = 0; i < 400u && (u32)wtx.n == ev; i++)
+        ble_idle_us(&f, 1);
+    CHECK(i >= 112u + 140u && i <= 112u + 160u); /* its end, then T_IFS */
+    CHECK_EQ(em16r(&f, 0x1000u + 4u), 0x0900u);
+    CHECK_EQ(wtx.mhz, 2402);
+    CHECK_EQ(wtx.len, 14u);
+    CHECK_EQ(wtx.frame[0], 0x03u);
+    CHECK_EQ(wtx.frame[1], 12u);
+    CHECK_EQ(wtx.frame[2], 0x64u);
+    CHECK_EQ(wtx.frame[7], 0x69u);
+    CHECK(!memcmp(wtx.frame + 8, peer, 6));
+    ble_idle_us(&f, 176u + 150u + 40u); /* the request, T_IFS, the response's access address */
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 2402);
+    m[0] = 0x04; /* SCAN_RSP */
+    esk_mach_outside(&f.m);
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, m, 11, 2402u, -50, 1000u, ESK_RADIO_BLE), 0);
+    ble_idle_us(&f, 120u);
+    CHECK_EQ(em16r(&f, 0x1014u + 4u), 0x0904u);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_BLE), 2402); /* on to the window's end */
+    ble_idle_us(&f, 1300u);
+    CHECK_EQ((em16r(&f, 0x40u) >> 3) & 7u, 3u);
+    CHECK_EQ((u32)wtx.n, ev + 1u);
+    c3_close(&f);
 }
 
 /* the master's side (ble.c): a connection event that speaks first, on the
@@ -3383,6 +3485,7 @@ RUN(test_rng_and_radio);
     RUN(test_ble);
     RUN(test_ble_con);
     RUN(test_ble_master);
+    RUN(test_ble_active_scan);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
 RUN(test_peripheral_reset_keeps_rate);

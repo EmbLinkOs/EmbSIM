@@ -45,12 +45,21 @@
  *     each primary channel of the map (+0x16 bits 2:0: 37, 38, 39) at 1
  *     Mbit/s, one after another with time for a request between them
  *     (T_IFS and a SCAN_REQ's airtime), at +9 dBm (ESP-IDF's default level,
- *     P9). After a connectable PDU it listens T_IFS on its channel: a
- *     CONNECT_IND for its address is received, and ends the event;
+ *     P9). After a connectable or scannable PDU it listens T_IFS on its
+ *     channel: a CONNECT_IND for its address is received, and ends the
+ *     event; a SCAN_REQ for its address (after ADV_IND or ADV_SCAN_IND) is
+ *     answered T_IFS later with the scan response, the descriptor the
+ *     advertising one's next pointer gives (+0: the controller keeps it
+ *     there, r_lld_adv_scan_rsp_data_set), then the event goes on;
  *   - a scan event (format 8): it listens on the advertising channel +0x16
  *     gives (bits 5:0: 37, 38, 39) for the receive window (+0x1A, in 2 us
  *     units, or 625 us ones with bit 15), taking every advertising PDU it
- *     hears, then ends;
+ *     hears, then ends; an active one (format 9) also sends, T_IFS after
+ *     a scannable PDU (ADV_IND, ADV_SCAN_IND), the SCAN_REQ of its transmit
+ *     descriptor (the controller leaves its header there, 0x0C03), with its
+ *     own address (+6) and the advertiser's, and takes the SCAN_RSP that
+ *     follows like any PDU; the requests follow the specification's
+ *     backoff (Vol 6 Part B 4.4.3.2), which the hardware runs;
  *   - an initiating event (format 14): it scans as a scan event for the
  *     address at +0x2C; after that peer's connectable PDU it sends the
  *     CONNECT_IND of its transmit descriptor (+0x1C: the header, the link
@@ -82,8 +91,9 @@
  *     of the buffer the payload goes to (r_lld_rxdesc_check, ..._free,
  *     r_lld_adv_pkt_rx_connect_ind, r_lld_con_rx).
  * The other registers keep what is written.
- * Not yet: scan requests and responses (active scanning, a scan response
- * sent), the scan and initiator filter policies, the transmit power the
+ * Not yet: the SCAN_REQs heard as an advertiser are not put into the
+ * receive descriptors (the scan request notification of extended
+ * advertising); the scan and initiator filter policies, the transmit power the
  * controller sets, the 2M and Coded PHYs, extended and periodic
  * advertising, encryption, privacy (resolvable addresses), slave latency,
  * an event's maximum length, sleep, CRC errors, the radio's controls (+0x70
@@ -157,6 +167,7 @@ struct c3_ble {
     int listen_e;
     /* a packet being received: whole at rx_end */
     int rx_on, rx_e, rx_rssi;
+    u32 rx_mhz;
     u64 rx_sync, rx_end;
     u32 rx_len;
     u8 rx_pdu[264];
@@ -168,6 +179,16 @@ struct c3_ble {
     u32 ch_mhz[ET_N]; /* each event's data channel */
     u8 adv_peer[8];   /* the initiator's peer's advertising PDU: its header and address */
     u64 et_start[ET_N]; /* each event's start */
+    u32 rsp_due;        /* the advertising events owing a scan response */
+    u32 rsp_mhz;        /* and its channel */
+    /* active scanning: the window's end, the request owed or outstanding
+     * (its advertiser's AdvA and TxAdd, when its response is due by) and
+     * the backoff (Vol 6 Part B 4.4.3.2) */
+    u64 win_end[ET_N];
+    u8 req_adv[7];
+    int req_pending;
+    u64 req_deadline;
+    u32 upper, count, ok_run, fail_run, rng;
 };
 
 static const u32 ADV_MHZ[3] = { 2402u, 2426u, 2480u };
@@ -275,6 +296,25 @@ static void adv_step(struct c3_ble *k, int e)
     u32 chmap = em_read(k, cs + 0x16u, 2) & 7u, i, n = 0, nth = 0;
     int ch = -1, c;
     u64 air;
+    if ((k->rsp_due >> e) & 1u) { /* the scan response, on the channel the request came on */
+        u32 rsp = em_read(k, desc, 2) & 0x7FFFu, rh = rsp ? em_read(k, rsp + 2u, 2) : 0u, rl = rh >> 8;
+        u32 rdata = rsp ? em_read(k, rsp + 4u, 2) : 0u;
+        k->rsp_due &= ~(1u << e);
+        if ((rh & 15u) == 4u && rl >= 6u && rl <= 37u) {
+            k->pdu[n++] = (u8)((rh & 0xBFu) | (hdr & 0x40u)); /* TxAdd as the advertising PDU's */
+            k->pdu[n++] = (u8)rl;
+            for (i = 0; i < 6u; i++)
+                k->pdu[n++] = (u8)em_read(k, cs + 6u + i, 1);
+            for (i = 0; i < rl - 6u; i++)
+                k->pdu[n++] = (u8)em_read(k, rdata + i, 1);
+            air = (u64)(1u + 4u + n + 3u) * 8u * ES_PS_PER_US;
+            if (k->s->host.radio_tx)
+                (void)k->s->host.radio_tx(k->s->host.ctx, k->pdu, n, k->rsp_mhz, TX_DBM, 1000u, air, ESK_RADIO_BLE,
+                                          0x80000000u | (u32)e);
+            k->et_at[e] += air / (ES_PS_PER_US / 2u) + T_IFS_HUS;
+        }
+        return;
+    }
     for (c = 0; c < 3; c++)
         if ((chmap >> c) & 1u) {
             if ((int)nth == k->et_step[e]) {
@@ -441,16 +481,71 @@ static void con_step(struct c3_ble *k, int e)
 /* an advertising channel's index (37-39) to its frequency */
 static u32 adv_mhz_of(u32 ch) { return ch == 37u ? 2402u : ch == 38u ? 2426u : 2480u; }
 
+/* the backoff's result for the request outstanding */
+static void backoff(struct c3_ble *k, int ok)
+{
+    k->req_pending = 0;
+    if (ok) {
+        k->fail_run = 0;
+        if (++k->ok_run == 2u) {
+            k->ok_run = 0;
+            if (k->upper > 1u)
+                k->upper /= 2u;
+        }
+    } else {
+        k->ok_run = 0;
+        if (++k->fail_run == 2u) {
+            k->fail_run = 0;
+            if (k->upper < 256u)
+                k->upper *= 2u;
+        }
+    }
+    k->rng = k->rng * 1103515245u + 12345u;
+    k->count = 1u + (k->rng >> 16) % k->upper;
+}
+
 /* a scan event: it listens on the channel +0x16 gives (bits 5:0) for the
- * window (+0x1A), taking the advertising PDUs it hears */
+ * window (+0x1A), taking the advertising PDUs it hears; an active one
+ * (format 9) sends its SCAN_REQ (step 2) when the backoff lets it, then
+ * listens on */
 static void scan_step(struct c3_ble *k, int e)
 {
     u32 cs = cs_of(k, e);
     if (k->et_step[e] == 0) {
         k->ch_mhz[e] = adv_mhz_of(em_read(k, cs + 0x16u, 2) & 0x3Fu);
-        con_listen(k, e, k->hus + con_window(k, cs));
+        k->win_end[e] = k->hus + con_window(k, cs);
+        con_listen(k, e, k->win_end[e]);
         return;
     }
+    if (k->et_step[e] == 2) { /* the SCAN_REQ of the transmit descriptor: ScanA, the advertiser's AdvA */
+        u32 desc = em_read(k, cs + 0x1Cu, 2), hdr = em_read(k, desc + 2u, 2), i, n = 0;
+        u64 air;
+        k->pdu[n++] = (u8)((hdr & 0x4Fu) | (u32)k->req_adv[6] << 7);
+        k->pdu[n++] = 12u;
+        for (i = 0; i < 6u; i++)
+            k->pdu[n++] = (u8)em_read(k, cs + 6u + i, 1);
+        for (i = 0; i < 6u; i++)
+            k->pdu[n++] = k->req_adv[i];
+        air = (u64)(1u + 4u + n + 3u) * 8u * ES_PS_PER_US;
+        if (k->s->host.radio_tx)
+            (void)k->s->host.radio_tx(k->s->host.ctx, k->pdu, n, k->ch_mhz[e], TX_DBM, 1000u, air, ESK_RADIO_BLE,
+                                      0x80000000u | (u32)e);
+        k->req_pending = 1;
+        k->req_deadline = k->hus + air / (ES_PS_PER_US / 2u) + T_IFS_HUS + SYNC_HUS + 32u;
+        if (k->req_deadline < k->win_end[e]) { /* the response, and the rest of the window */
+            k->listen_mhz = k->ch_mhz[e];
+            k->listen_e = e;
+            k->listen_until = k->win_end[e];
+            k->et_step[e] = 1;
+            k->et_at[e] = k->win_end[e] + 1u;
+        } else {
+            k->et_step[e] = 1;
+            k->et_at[e] = k->req_deadline;
+        }
+        return;
+    }
+    if (k->req_pending)
+        backoff(k, 0);
     k->listen_mhz = 0;
     et_over(k, e);
 }
@@ -507,6 +602,12 @@ static void rx_done(struct c3_ble *k)
     u32 fine = 624u - (u32)(k->rx_sync % HUS_PER_HS), status = 0, fmt = em_read(k, cs, 2) & 0x1Fu;
     int con = fmt == 2u || fmt == 3u, l = link_of(cs);
     k->rx_on = 0;
+    if ((fmt == 4u || fmt == 5u) && (k->rx_pdu[0] & 15u) == 3u) { /* a SCAN_REQ: the response T_IFS after */
+        k->rsp_due |= 1u << k->rx_e;
+        k->rsp_mhz = k->rx_mhz;
+        k->et_at[k->rx_e] = k->rx_end + T_IFS_HUS;
+        return;
+    }
     if (!d)
         d = RXDESC;
     if (con) { /* the sequence numbers */
@@ -556,10 +657,22 @@ static void rx_done(struct c3_ble *k)
         k->et_step[k->rx_e] = 2;
         k->et_at[k->rx_e] = k->rx_end + T_IFS_HUS;
         memcpy(k->adv_peer, k->rx_pdu, 8);
-    } else if (fmt == 8u) { /* scanning: on to the window's end */
+    } else if (fmt == 8u || fmt == 9u) { /* scanning: on to the window's end */
+        u32 t = k->rx_pdu[0] & 15u;
         raise(k, I_RX);
-        if (k->hus < k->listen_until)
+        if (k->req_pending) /* the response to the request, or none came */
+            backoff(k, t == 4u && k->rx_sync <= k->req_deadline && !memcmp(k->rx_pdu + 2, k->req_adv, 6) &&
+                           ((k->rx_pdu[0] >> 6) & 1u) == k->req_adv[6]);
+        if (fmt == 9u && (t == 0u || t == 6u) && --k->count == 0u &&
+            k->rx_end + T_IFS_HUS + SCAN_REQ_HUS < k->win_end[k->rx_e]) { /* a SCAN_REQ, T_IFS after */
+            memcpy(k->req_adv, k->rx_pdu + 2, 6);
+            k->req_adv[6] = (u8)((k->rx_pdu[0] >> 6) & 1u);
+            k->et_step[k->rx_e] = 2;
+            k->et_at[k->rx_e] = k->rx_end + T_IFS_HUS;
+        } else if (k->hus < k->listen_until)
             k->listen_mhz = k->ch_mhz[k->rx_e];
+        if (!k->count)
+            k->count = 1u;
     } else if ((k->rx_pdu[0] & 15u) == 5u) /* CONNECT_IND: the advertising is over */
         et_over(k, k->rx_e);
 }
@@ -580,7 +693,7 @@ static void events(struct c3_ble *k)
                     adv_step(k, e);
                 else if (fmt == 2u || fmt == 3u)
                     con_step(k, e);
-                else if (fmt == 8u)
+                else if (fmt == 8u || fmt == 9u)
                     scan_step(k, e);
                 else if (fmt == 14u)
                     init_step(k, e);
@@ -746,6 +859,11 @@ static void ble_reset(void *ctx)
     k->raw = 0;
     k->nfifo = 0;
     k->et_pending = 0;
+    k->rsp_due = 0;
+    k->req_pending = 0;
+    k->upper = k->count = 1u;
+    k->ok_run = k->fail_run = 0;
+    k->rng = 0x2545F491u;
     k->arm_10ms = k->arm_hs = k->arm_hus = 0;
     k->listen_mhz = 0;
     k->rx_on = 0;
@@ -791,12 +909,14 @@ static int ble_rx(void *ctx, const u8 *f, u32 len, u32 mhz, int rssi, u32 kbps, 
         for (i = 0; i < 6u; i++)
             if (f[2u + i] != (u8)em_read(k, cs + 0x2Cu + i, 1))
                 return 0;
-    } else if ((em_read(k, cs, 2) & 0x1Fu) == 8u) { /* scanning: the advertising PDUs */
+    } else if ((em_read(k, cs, 2) & 0x1Fu) == 8u || (em_read(k, cs, 2) & 0x1Fu) == 9u) { /* scanning */
         u32 t = f[0] & 15u;
         if (t != 0u && t != 1u && t != 2u && t != 4u && t != 6u)
             return 0;
     } else if ((em_read(k, cs, 2) & 0x1Fu) == 4u || (em_read(k, cs, 2) & 0x1Fu) == 5u) {
-        if ((f[0] & 15u) != 5u || len != 36u) /* a CONNECT_IND, for this advertiser */
+        u32 t = f[0] & 15u, adv = k->pdu[0] & 15u;
+        /* a CONNECT_IND, or a SCAN_REQ after a scannable PDU, for this advertiser */
+        if (!(t == 5u && len == 36u) && !(t == 3u && len == 14u && (adv == 0u || adv == 6u)))
             return 0;
         for (i = 0; i < 6u; i++)
             if (f[8u + i] != (u8)em_read(k, cs + 6u + i, 1))
@@ -806,6 +926,7 @@ static int ble_rx(void *ctx, const u8 *f, u32 len, u32 mhz, int rssi, u32 kbps, 
     k->rx_e = k->listen_e;
     k->rx_rssi = rssi;
     k->rx_sync = k->hus;
+    k->rx_mhz = mhz;
     k->rx_end = k->hus + (u64)(len + 3u) * 16u;
     k->rx_len = len;
     memcpy(k->rx_pdu, f, len);

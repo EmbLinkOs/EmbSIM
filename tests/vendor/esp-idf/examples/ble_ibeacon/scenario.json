@@ -1,0 +1,122 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "ble_ibeacon",
+ "until": "1000ms",
+ "description": "bluetooth/bluedroid/ble/ble_ibeacon on two boards, unmodified: B1 as it ships, the sender, advertises an iBeacon (ADV_NONCONN_IND with Apple's manufacturer data: the proximity UUID FDA50693-A4E2-4FB1-AFCF-C6EB07647825, major 10167, minor 61958, -59 dBm measured at 1 m) through Bluedroid; B2, built as the receiver, scans actively (control structure format 9) and logs the beacon it decodes with the RSSI its controller reports, -21 dBm 30 cm away (the free-space path loss from +9 dBm at 2402 MHz); a phone's scanner 2 m from B1 lists and decodes it at -37 dBm.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "advertising",
+   "at": "1000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "IBEACON_DEMO: Advertising start successfully"
+   }
+  },
+  {
+   "id": "controller",
+   "at": "1000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "BLE_INIT: Bluetooth MAC: 7c:df:a1:45:6d:64"
+   }
+  },
+  {
+   "id": "receiver-mac",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "BLE_INIT: Bluetooth MAC: 7c:df:a1:45:6d:72"
+   }
+  },
+  {
+   "id": "scanning",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "IBEACON_DEMO: Scanning start successfully"
+   }
+  },
+  {
+   "id": "found",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "IBEACON_DEMO: ----------iBeacon Found----------"
+   }
+  },
+  {
+   "id": "address",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "IBEACON_DEMO: Device address: 7c:df:a1:45:6d:64"
+   }
+  },
+  {
+   "id": "uuid",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "IBEACON_DEMO: Proximity UUID: fd a5 06 93 a4 e2 4f b1 af cf c6 eb 07 64 78 25"
+   }
+  },
+  {
+   "id": "major",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "IBEACON_DEMO: Major: 0x27b7 (10167)"
+   }
+  },
+  {
+   "id": "minor",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "IBEACON_DEMO: Minor: 0xf206 (61958)"
+   }
+  },
+  {
+   "id": "power",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "IBEACON_DEMO: Measured power (RSSI at a 1m distance): -59 dBm"
+   }
+  },
+  {
+   "id": "rssi",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "contains": "IBEACON_DEMO: RSSI of packet: -21 dbm"
+   }
+  },
+  {
+   "id": "phone",
+   "at": "1000ms",
+   "probe": "phone",
+   "expect": {
+    "contains": "7c:df:a1:45:6d:64 (public) ADV_NONCONN_IND -37dBm - \"\" iBeacon FDA50693-A4E2-4FB1-AFCF-C6EB07647825 major 10167 minor 61958 -59dBm@1m"
+   }
+  },
+  {
+   "id": "no-assert",
+   "at": "1000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "assert"
+   }
+  },
+  {
+   "id": "receiver-no-assert",
+   "at": "1000ms",
+   "probe": "receiver",
+   "expect": {
+    "not_contains": "assert"
+   }
+  }
+ ]
+}

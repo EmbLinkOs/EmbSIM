@@ -17,7 +17,9 @@
  *     packet at the anchor, the slave's answer T_IFS after it, more while
  *     either has more data; the sequence numbers acknowledge and resend
  *     (4.5.9); 27-byte payloads, L2CAP's frames split and joined (Vol 3 Part
- *     A); the supervision timeout ends it;
+ *     A); the supervision timeout ends it; when nothing is heard from the
+ *     slave in its first six intervals the connection failed to be
+ *     established (4.5.2, 0x3E) and it scans and connects again;
  *   - the link layer's control procedures the slave starts answered (Vol 6
  *     Part B 5.1): the feature exchange, the version, the data length (27
  *     bytes kept), LL_UNKNOWN_RSP to those it does not do (the PHY update,
@@ -98,7 +100,8 @@ typedef struct bc_state {
     /* the connection */
     uint32_t listen_mhz;
     es_time_t listen_until;
-    es_time_t anchor, last_rx;
+    es_time_t anchor, last_rx, connect_at;
+    int established; /* a packet heard from the slave */
     uint32_t unmapped, event;
     int sn, nesn, md_peer, in_event, sent_in_event, awaiting;
     bc_pdu q[QUEUE];
@@ -491,6 +494,16 @@ static void event_start(bc_state *s)
 {
     if (s->state != ST_CONNECTED)
         return;
+    if (!s->established && esk_comp_now(s->c) - s->connect_at >= 6u * (es_time_t)s->interval * 1250u * ES_PS_PER_US) {
+        /* nothing heard in six intervals: it failed to be established
+         * (4.5.2); the app tries again */
+        s->state = ST_SCANNING;
+        s->listen_mhz = 0;
+        s->gen++;
+        logf_(s, "%sconnection failed to be established (0x3E); scanning again", "", 0ul);
+        esk_comp_wake_at(s->c, esk_comp_now(s->c) + SCAN_PS, WAKE_HOP);
+        return;
+    }
     if (esk_comp_now(s->c) - s->last_rx > (es_time_t)s->timeout * 10u * ES_PS_PER_MS) {
         s->state = ST_DISCONNECTED;
         s->listen_mhz = 0;
@@ -515,6 +528,7 @@ static void conn_rx(bc_state *s, const uint8_t *p, uint32_t len, es_time_t end)
     s->listen_mhz = 0;
     s->awaiting = 0;
     s->last_rx = end;
+    s->established = 1;
     s->md_peer = (p[0] >> 4) & 1;
     if (nesn != s->sn && s->qn) { /* ours was received */
         s->qh = (s->qh + 1) % QUEUE;
@@ -581,6 +595,8 @@ static void connect(bc_state *s, const uint8_t *adv, es_time_t end)
         s->peer[i] = adv[2 + 5 - i];
     s->peer_random = (adv[0] >> 6) & 1;
     s->state = ST_CONNECTED;
+    s->established = 0;
+    s->connect_at = end + T_IFS_PS + esk_air_ble_airtime(sizeof p, 1000u);
     s->gen++;
     s->unmapped = 0;
     s->sn = s->nesn = 0;
@@ -739,7 +755,7 @@ static void bc_observe(esk_comp *c, esk_json *out)
     if (s->state != ST_SCANNING)
         snprintf(peer, sizeof peer, "%02x:%02x:%02x:%02x:%02x:%02x", s->peer[0], s->peer[1], s->peer[2], s->peer[3],
                  s->peer[4], s->peer[5]);
-    esk_json_set_string(c->e->a, out, "state", states[s->state]);
+    esk_json_set_string(c->e->a, out, "state", states[s->state == ST_CONNECTED && !s->established ? ST_CONNECTING : s->state]);
     esk_json_set_string(c->e->a, out, "peer", peer);
     esk_json_set_integer(c->e->a, out, "events", (int64_t)s->events);
     esk_json_set_integer(c->e->a, out, "mtu", s->mtu);

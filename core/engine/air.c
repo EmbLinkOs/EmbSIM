@@ -12,6 +12,7 @@
 #define DEFAULT_DISTANCE_MM 1000.0
 #define SIFS_PS UINT64_C(10000000)          /* 10 us */
 #define ACK_PS (UINT64_C(304000000))         /* an ACK at 1 Mbps: 192 us preamble, 14 bytes */
+#define BLE_CI_DB 21.0 /* BLE's co-channel rejection (Core 5.4 Vol 6 Part A 4.4: C/I 21 dB) */
 
 typedef struct air_slot {
     int used;
@@ -19,7 +20,7 @@ typedef struct air_slot {
     esk_air_frame f;
     uint8_t data[AIR_MAX_FRAME];
     uint32_t token;
-    es_time_t end; /* when its airtime ends */
+    es_time_t start, end; /* when its airtime starts and ends */
 } air_slot;
 
 typedef struct air_store {
@@ -154,6 +155,26 @@ static void done_cb(void *ctx, void *arg, es_time_t now)
         s->from->tx_done(s->from->ctx, s->token, acked, now);
 }
 
+/* the strongest of the other BLE packets on `s`'s channel overlapping it,
+ * as `n` hears them (dBm), or -1000 */
+static double ble_interference(esk_engine *e, const air_slot *s, const esk_air_node *n)
+{
+    air_store *st = store_of(e, 0);
+    double worst = -1000.0;
+    size_t i;
+    for (i = 0; st && i < AIR_SLOTS; i++) {
+        const air_slot *t = &st->slot[i];
+        double r;
+        if (t == s || !t->used || t->f.kind != ESK_AIR_BLE || t->f.mhz != s->f.mhz || t->from == n ||
+            t->start >= s->end || t->end <= s->start)
+            continue;
+        r = t->from ? esk_air_rssi(t->from, n, t->f.dbm, t->f.mhz) : t->f.dbm - 40.0;
+        if (r > worst)
+            worst = r;
+    }
+    return worst;
+}
+
 /* the frame reaches the radios tuned to it: 1 when one answers it */
 static int deliver(esk_engine *e, air_slot *s)
 {
@@ -168,6 +189,8 @@ static int deliver(esk_engine *e, air_slot *s)
         rssi = s->from ? esk_air_rssi(s->from, n, s->f.dbm, s->f.mhz) : s->f.dbm - 40.0;
         if (rssi < SENSITIVITY_DBM || !n->rx)
             continue;
+        if (s->f.kind == ESK_AIR_BLE && rssi - ble_interference(e, s, n) < BLE_CI_DB)
+            continue; /* a collision: its CRC fails */
         if (n->rx(n->ctx, &s->f, (int)floor(rssi + 0.5), s->end))
             acked = 1;
     }
@@ -237,6 +260,7 @@ es_status esk_air_send(esk_engine *e, esk_air_node *from, const esk_air_frame *f
     e->air.frames++;
     if (start < e->sched.now)
         start = e->sched.now;
+    st->slot[i].start = start;
     st->slot[i].end = start + airtime;
     if (f->kind == ESK_AIR_BLE) {
         /* heard at the end of the preamble and access address */

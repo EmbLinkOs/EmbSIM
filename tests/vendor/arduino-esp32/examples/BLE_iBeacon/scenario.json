@@ -3,7 +3,7 @@
  "kind": "scenario",
  "name": "BLE_iBeacon",
  "until": "2000ms",
- "description": "BLE/examples/iBeacon, unmodified: the sketch advertises an iBeacon (Apple's manufacturer data: the proximity UUID, major 5, minor 88, -59 dBm measured at 1 m) with Bluedroid; a phone's scanner 2 m away lists the board at -37 dBm and decodes the beacon, as a beacon app would.",
+ "description": "BLE/examples/iBeacon, unmodified: the sketch advertises an iBeacon (Apple's manufacturer data: the proximity UUID, major 5, minor 88, -59 dBm measured at 1 m) with Bluedroid and its name in the scan response; a phone's scanner 2 m away scans actively, lists the board at -37 dBm with the name its SCAN_REQ brings back, and decodes the beacon, as a beacon app would.",
  "inputs": [],
  "assertions": [
   {
@@ -19,7 +19,7 @@
    "at": "2000ms",
    "probe": "phone",
    "expect": {
-    "contains": "7c:df:a1:45:6d:64 (public) ADV_IND -37dBm connectable"
+    "contains": "7c:df:a1:45:6d:64 (public) ADV_IND -37dBm connectable \"ESP32\""
    }
   },
   {

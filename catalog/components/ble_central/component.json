@@ -102,7 +102,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Scanning the primary advertising channels in turn, a CONNECT_IND T_IFS after the target's ADV_IND (Bluetooth Core 5.4 Vol 6 Part B 2.3.3.1); the connection as its central at 1M: connection events every interval on channel selection algorithm #1, the sequence numbers' acknowledgement and resending, 27-byte payloads with L2CAP's fragmentation, the supervision timeout (4.5); the slave's feature exchange, version, data length and terminate answered, LL_UNKNOWN_RSP otherwise (5.1); GATT discovery as a client: the MTU exchange, primary services, characteristics, reading the readable ones (Vol 3 Part G 4); indications confirmed; L2CAP parameter update requests rejected; pairing not supported.",
+      "claims": "Scanning the primary advertising channels in turn, a CONNECT_IND T_IFS after the target's ADV_IND (Bluetooth Core 5.4 Vol 6 Part B 2.3.3.1); the connection as its central at 1M: connection events every interval on channel selection algorithm #1, the sequence numbers' acknowledgement and resending, 27-byte payloads with L2CAP's fragmentation, the supervision timeout, a connection not heard from in six intervals failed to be established (0x3E) and tried again (4.5); the slave's feature exchange, version, data length and terminate answered, LL_UNKNOWN_RSP otherwise (5.1); GATT discovery as a client: the MTU exchange, primary services, characteristics, reading the readable ones (Vol 3 Part G 4); indications confirmed; L2CAP parameter update requests rejected; pairing not supported.",
       "omissions": [
         "active scanning",
         "channel selection algorithm #2",

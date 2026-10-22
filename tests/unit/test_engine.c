@@ -413,6 +413,54 @@ static void test_air(void)
 
 /* a BLE packet is taken by the receivers tuned to it when its access
  * address ends, whole, with its end as its time */
+/* two BLE packets on one channel at once collide: neither is taken when they
+ * are as strong, the one 21 dB stronger is (the co-channel rejection) */
+static void t_ble(esk_engine *e, t_node *from, uint8_t tag, double dbm, es_time_t start)
+{
+    uint8_t p[8] = { 0x02, 6, 0, 0, 0, 0, 0, 0 };
+    esk_air_frame fr;
+    p[2] = tag;
+    fr.data = p;
+    fr.len = sizeof p;
+    fr.mhz = 2402u;
+    fr.dbm = dbm;
+    fr.rate_kbps = 1000u;
+    fr.kind = ESK_AIR_BLE;
+    CHECK(esk_air_send(e, &from->n, &fr, start, esk_air_ble_airtime(fr.len, 1000u), 1u) == ES_OK);
+}
+
+static void test_air_ble_collision(void)
+{
+    esk_engine e;
+    t_node a, b, rx;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_engine_reset(&e);
+    t_init(&a, 2402u);
+    t_init(&b, 2402u);
+    t_init(&rx, 2402u);
+    a.n.kind = b.n.kind = rx.n.kind = ESK_AIR_BLE;
+    CHECK(esk_air_attach(&e, &a.n) == ES_OK);
+    CHECK(esk_air_attach(&e, &b.n) == ES_OK);
+    CHECK(esk_air_attach(&e, &rx.n) == ES_OK);
+    t_ble(&e, &a, 0xA, 0.0, 1 * ES_PS_PER_MS);
+    t_ble(&e, &b, 0xB, 0.0, 1 * ES_PS_PER_MS + 50u * ES_PS_PER_US); /* overlapping */
+    esk_engine_advance(&e, 2 * ES_PS_PER_MS);
+    CHECK_EQ(rx.got, 0);
+    t_ble(&e, &a, 0xA, 0.0, 3 * ES_PS_PER_MS);
+    t_ble(&e, &b, 0xB, -21.0, 3 * ES_PS_PER_MS); /* captured */
+    esk_engine_advance(&e, 4 * ES_PS_PER_MS);
+    CHECK_EQ(rx.got, 1);
+    CHECK_EQ(rx.last[2], 0xAu);
+    t_ble(&e, &a, 0xA, 0.0, 5 * ES_PS_PER_MS);
+    t_ble(&e, &b, 0xB, 0.0, 5 * ES_PS_PER_MS + esk_air_ble_airtime(8u, 1000u)); /* one after the other */
+    esk_engine_advance(&e, 6 * ES_PS_PER_MS);
+    CHECK_EQ(rx.got, 3);
+    esk_air_detach(&e, &a.n);
+    esk_air_detach(&e, &b.n);
+    esk_air_detach(&e, &rx.n);
+    esk_engine_free(&e);
+}
+
 static void test_air_ble(void)
 {
     static const uint8_t pdu[10] = { 0x02, 8, 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -850,6 +898,93 @@ static void test_ble_scanner(void)
     esk_registry_free(&r);
 }
 
+/* active scanning (ble_scanner.c): a SCAN_REQ T_IFS after a scannable
+ * PDU, the SCAN_RSP's name taken; no request after a non-scannable one;
+ * the backoff's limit doubled after two requests unanswered */
+static void test_ble_active_scan(void)
+{
+    static const uint8_t a1[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x64 };
+    static const uint8_t me[6] = { 0xf2, 0x4b, 0x9c, 0x01, 0x23, 0x45 };
+    esk_engine e;
+    esk_registry r;
+    esk_comp *sc;
+    t_node adv;
+    esk_json *o;
+    es_time_t req_end;
+    uint32_t i;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_registry_init(&r, &A);
+    sc = add(&e, &r, "PHONE", "ble_scanner", NULL, NULL, 0, NULL);
+    CHECK(sc != NULL);
+    esk_engine_reset(&e);
+    t_init(&adv, 2402u);
+    adv.n.kind = ESK_AIR_BLE;
+    CHECK(esk_air_attach(&e, &adv.n) == ES_OK);
+    t_adv(&e, &adv, 0, a1, "esp", 1 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 1600 * ES_PS_PER_US);
+    /* the request: random ScanA, public AdvA */
+    CHECK_EQ(adv.got, 1);
+    CHECK_EQ(adv.last_len, 14u);
+    CHECK_EQ(adv.last[0], 0x43u);
+    CHECK_EQ(adv.last[1], 12u);
+    for (i = 0; i < 6; i++) {
+        CHECK_EQ(adv.last[2 + i], me[5 - i]);
+        CHECK_EQ(adv.last[8 + i], a1[5 - i]);
+    }
+    req_end = 1 * ES_PS_PER_MS + esk_air_ble_airtime(6u + 3u + 2u + 3u + 2u, 1000u) + 150u * ES_PS_PER_US +
+              esk_air_ble_airtime(14u, 1000u);
+    CHECK_EQ(adv.got_at, req_end);
+    /* the response T_IFS later: its name joins the advertiser's */
+    {
+        static const char name[] = "Long name works now";
+        uint8_t p[40];
+        esk_air_frame fr;
+        uint32_t n = (uint32_t)strlen(name);
+        p[0] = 0x04;
+        p[1] = (uint8_t)(6u + 2u + n);
+        for (i = 0; i < 6; i++)
+            p[2 + i] = a1[5 - i];
+        p[8] = (uint8_t)(n + 1u);
+        p[9] = 0x09;
+        memcpy(p + 10, name, n);
+        fr.data = p;
+        fr.len = 10u + n;
+        fr.mhz = 2402u;
+        fr.dbm = 0.0;
+        fr.rate_kbps = 1000u;
+        fr.kind = ESK_AIR_BLE;
+        CHECK(esk_air_send(&e, &adv.n, &fr, req_end + 150u * ES_PS_PER_US, esk_air_ble_airtime(fr.len, 1000u), 1u) ==
+              ES_OK);
+    }
+    esk_engine_advance(&e, 3 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    sc->ops->observe(sc, o);
+    CHECK_EQ(esk_json_get_num(o, "requests", -1), 1);
+    CHECK_EQ(esk_json_get_num(o, "pdus", -1), 2);
+    CHECK(strstr(esk_json_get_str(o, "list", ""),
+                 "7c:df:a1:45:6d:64 (public) ADV_IND -40dBm connectable \"Long name works now\"\n") != NULL);
+    esk_json_free(&A, o);
+    /* not after ADV_NONCONN_IND */
+    t_adv(&e, &adv, 2, a1, "esp", 5 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 6 * ES_PS_PER_MS);
+    CHECK_EQ(adv.got, 1);
+    /* unanswered: a request each time until two fail, then a count from 1 to 2 */
+    t_adv(&e, &adv, 0, a1, "esp", 7 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 8 * ES_PS_PER_MS);
+    CHECK_EQ(adv.got, 2);
+    t_adv(&e, &adv, 0, a1, "esp", 9 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 10 * ES_PS_PER_MS);
+    CHECK_EQ(adv.got, 3);
+    for (i = 0; i < 8; i++) {
+        t_adv(&e, &adv, 0, a1, "esp", (11 + 2 * (es_time_t)i) * ES_PS_PER_MS);
+        esk_engine_advance(&e, (12 + 2 * (es_time_t)i) * ES_PS_PER_MS);
+    }
+    CHECK(adv.got < 3 + 8);
+    esk_air_detach(&e, &adv.n);
+    esk_engine_free(&e);
+    esk_registry_free(&r);
+}
+
 /* a peripheral the test plays for the phone (ble_central.c): it follows
  * the connection's channels, answers each packet T_IFS later with the
  * sequence numbers, and serves a battery service */
@@ -1195,9 +1330,11 @@ RUN(test_switch_gate);
 RUN(test_virtual_terminal);
 RUN(test_air);
 RUN(test_air_ble);
+RUN(test_air_ble_collision);
 RUN(test_wifi_ap);
 RUN(test_wifi_ap_wpa2);
 RUN(test_ble_scanner);
+RUN(test_ble_active_scan);
 RUN(test_ble_central);
 esk_diag_free(&D);
 CHECK_EQ(A.allocations, 0);

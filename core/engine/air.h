@@ -12,8 +12,12 @@
  * and then takes it whole; `rx` hears it then, with its end as `at`); a
  * receiver that takes a unicast frame for
  * itself answers it (an 802.11 ACK), which the sender hears an ACK's time
- * later. Fading, interference, collisions and adjacent-channel leakage are
- * not modelled.
+ * later. Two BLE packets on one channel that overlap collide: a receiver
+ * takes one only if it hears it 21 dB above the other (the co-channel
+ * rejection BLE's receivers meet), so neither is taken when they are about
+ * as strong. Not yet: Wi-Fi's collisions, a BLE packet spoilt by one that
+ * starts after its access address was heard, fading, interference between
+ * Wi-Fi and BLE and adjacent-channel leakage.
  */
 #ifndef ESK_ENGINE_AIR_H
 #define ESK_ENGINE_AIR_H

@@ -48,6 +48,7 @@ EXAMPLES = {
     "adc_oneshot_read": "examples/peripherals/adc/oneshot_read",
     "bleprph": "examples/bluetooth/nimble/bleprph",
     "blecent": "examples/bluetooth/nimble/blecent",
+    "ble_ibeacon": "examples/bluetooth/bluedroid/ble/ble_ibeacon",
     "blink": "examples/get-started/blink",
     "gptimer": "examples/peripherals/timer_group/gptimer",
     "hello_world": "examples/get-started/hello_world",
@@ -60,16 +61,22 @@ EXAMPLES = {
     "wifi_station": "examples/wifi/getting_started/station",
     "wifi_station_open": "examples/wifi/getting_started/station",
 }
+# examples built only for another's project (with examples/<name>/'s
+# sdkconfig.defaults), not run on their own
+VARIANTS = {
+    "ble_ibeacon_receiver": "examples/bluetooth/bluedroid/ble/ble_ibeacon",
+}
 # a project's other boards: their images' names and examples
 COMPANIONS = {
     "blecent": {"bleprph.bin": "bleprph"},
+    "ble_ibeacon": {"receiver.bin": "ble_ibeacon_receiver"},
 }
 FLASH_SIZE = 4 * 1024 * 1024
 
 
 def build(idf: Path, name: str, out: Path) -> Path:
     """The example built as a user builds it: its flash image"""
-    src = idf / EXAMPLES[name]
+    src = idf / (EXAMPLES.get(name) or VARIANTS[name])
     proj = out / name
     shutil.rmtree(proj, ignore_errors=True)
     shutil.copytree(src, proj, ignore=shutil.ignore_patterns("build", "managed_components", "sdkconfig"))

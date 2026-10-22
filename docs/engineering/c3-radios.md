@@ -249,8 +249,24 @@ Each step lands usable and green, as in the RTOS boards plan.
    notified, both unmodified. Arduino-ESP32's BLE library, which is
    Bluedroid in 3.2.0, runs on the same controller: its `Server` sketch is
    connected to and read by the tablet, its `iBeacon` sketch's beacon is
-   decoded by the phone's scanner. Next: scan requests and responses,
-   Bluedroid's `ble_ibeacon` from ESP-IDF.
+   decoded by the phone's scanner. And scan responses: after ADV_IND or
+   ADV_SCAN_IND the core takes a SCAN_REQ for its address and answers
+   T_IFS later with the scan response, which the controller keeps in the
+   descriptor after the advertising one, at its next pointer
+   (`r_lld_adv_scan_rsp_data_set`: descriptor 9 x the advertising set + 1,
+   from EM 0x1400). The phone's scanner scans actively, as phones do, with
+   the specification's backoff. BLE packets that overlap on a channel
+   collide (a receiver takes one only 21 dB above the other): bleprph's
+   phone and tablet answer the same ADV_IND, their SCAN_REQ and CONNECT_IND
+   collide until the phone's backoff gives way, and the tablet, having
+   heard nothing in six intervals, takes the connection as failed to be
+   established (0x3E) and connects again. Bluedroid's `ble_ibeacon` runs on
+   two boards as it ships: the sender's beacon is logged by the receiver,
+   which scans actively (control structure format 9: T_IFS after a
+   scannable PDU the SCAN_REQ of its transmit descriptor, whose header the
+   controller leaves there, with the backoff), with the RSSI -21 dBm its
+   controller reports 30 cm away. Next: the workbench's air panel (step 7)
+   and the rest of Wi-Fi (step 5).
 7. **The workbench.** The air as a phone and a scanner see it (the
    access points with their RSSI, BLE devices and their data), the
    capture, the radio's current on the power instruments.

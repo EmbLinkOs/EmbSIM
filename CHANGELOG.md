@@ -15,6 +15,29 @@ versions follow semantic versioning. There is no release yet.
   a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
   advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
   hosts, NimBLE and Bluedroid, run on the controller.
+- **Bluedroid's `ble_ibeacon` on two boards** (`ble_ibeacon`, 14
+  assertions, unmodified): the sender advertises its iBeacon, and the
+  same example built as the receiver (`IBEACON_RECEIVER`, `run.py`'s
+  variants) on a second board scans actively and logs the beacon's UUID,
+  major, minor and the RSSI its controller reports (-21 dBm 30 cm away).
+  The core runs active scan events (format 9): T_IFS after a scannable PDU
+  the SCAN_REQ of its transmit descriptor, with the specification's
+  backoff, and the SCAN_RSP taken.
+- **Scan requests and responses** (`ble.c`): after ADV_IND or ADV_SCAN_IND
+  the core takes a SCAN_REQ for its address and sends T_IFS later the
+  scan response the controller keeps at the advertising descriptor's next
+  pointer (`r_lld_adv_scan_rsp_data_set`). `emblink/ble_scanner` now scans
+  actively, as phones do, with the specification's backoff, so a phone
+  lists the names advertisers put in their scan response (the iBeacon
+  sketch's "ESP32").
+- **BLE packets collide on the air**: two packets on one channel that
+  overlap are both lost unless a receiver hears one 21 dB above the other
+  (BLE's co-channel rejection). With bleprph's phone and tablet both
+  answering the same ADV_IND, the phone's SCAN_REQ and the tablet's
+  CONNECT_IND collide until the phone's backoff leaves the tablet a turn;
+  `emblink/ble_central` takes a connection not heard from in its first six
+  intervals as failed to be established (0x3E) and connects again, as the
+  specification has it.
 - **`emblink/ble_scanner` decodes iBeacons**: Apple's manufacturer data
   (company 0x004C, type 0x02) gives the proximity UUID, major, minor and
   measured power, as a beacon app shows them.
