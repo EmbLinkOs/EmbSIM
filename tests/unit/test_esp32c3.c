@@ -1164,9 +1164,16 @@ static void test_gpio_matrix_uart(void)
     CHECK_EQ(16 * port + bit, 7);
     CHECK_EQ(pins_out[7].drive, 1);
     CHECK(pins_out[7].af);
+    CHECK(!pins_out[8].af);
     wr(&f, G_FIN(9), 1u << 6 | 8u);
     CHECK_EQ(esk_esp32c3_uart_pin(&f.m, "UART1", 0, &port, &bit), 0);
     CHECK_EQ(16 * port + bit, 8);
+    /* the RX pin is the UART's to the runtime, which then reads its frames
+     * (ESP-IDF connects TXD first, so nothing else would tell it) */
+    CHECK(pins_out[8].af);
+    wr(&f, G_FIN(9), 1u << 6 | 0x1Fu);
+    CHECK(!pins_out[8].af);
+    wr(&f, G_FIN(9), 1u << 6 | 8u);
     wr(&f, IOMUX(20), 1u << 12 | 1u << 9);
     CHECK_EQ(esk_esp32c3_uart_pin(&f.m, "UART0", 0, &port, &bit), -1);
     c3_close(&f);

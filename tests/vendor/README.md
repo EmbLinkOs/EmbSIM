@@ -12,6 +12,6 @@ frameworks are fetched, not vendored; CI's linux-gcc job pins them.
 | `pico-sdk/` | The Raspberry Pi Pico SDK | `emblink/pico` |
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
 | `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |
-| `esp-idf/` | ESP-IDF v5.4's own examples (hello_world, blink, LEDC, the temperature sensor, the ADC, an I2C EEPROM), built by `idf.py` into a flash image | `emblink/esp32c3_devkitm1` |
+| `esp-idf/` | ESP-IDF v5.4's own examples (hello_world, blink, LEDC, the temperature sensor, the ADC, an I2C EEPROM, the general-purpose timer, a UART echo, FreeRTOS's run-time statistics), built by `idf.py` into a flash image | `emblink/esp32c3_devkitm1` |
 
 `vendor_run.py` is what their runners share.

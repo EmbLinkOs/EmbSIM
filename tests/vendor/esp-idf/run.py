@@ -45,10 +45,13 @@ from vendor_run import run_scenario, sh  # noqa: E402
 EXAMPLES = {
     "adc_oneshot_read": "examples/peripherals/adc/oneshot_read",
     "blink": "examples/get-started/blink",
+    "gptimer": "examples/peripherals/timer_group/gptimer",
     "hello_world": "examples/get-started/hello_world",
     "i2c_eeprom": "examples/peripherals/i2c/i2c_eeprom",
     "ledc_basic": "examples/peripherals/ledc/ledc_basic",
+    "real_time_stats": "examples/system/freertos/real_time_stats",
     "temp_sensor": "examples/peripherals/temperature_sensor/temp_sensor",
+    "uart_echo": "examples/peripherals/uart/uart_echo",
 }
 FLASH_SIZE = 4 * 1024 * 1024
 

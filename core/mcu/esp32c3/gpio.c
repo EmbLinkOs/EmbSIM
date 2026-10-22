@@ -221,10 +221,25 @@ static void irqs(struct c3_gpio *k, u32 rise, u32 fall)
 }
 
 /* every pin's level, GPIO_IN, the interrupts */
+/* the pins the matrix gives a UART's RX (U0RXD, U1RXD): the runtime reads
+ * their frames, as it does GPIO20's through the IO MUX */
+static u32 uart_rx_pins(const struct c3_gpio *k)
+{
+    static const int sig[2] = { 6, 9 };
+    u32 m = 0;
+    int i;
+    for (i = 0; i < 2; i++) {
+        u32 f = k->fin[sig[i]] ? reg(k->fin[sig[i]]) : 0, n = f & 0x1fu;
+        if ((f & (1u << 6)) && n < NPIN)
+            m |= 1u << n;
+    }
+    return m;
+}
+
 static void settle(struct c3_gpio *k)
 {
     struct esk_mach *s = k->s;
-    u32 lvl = 0, in = 0, rise, fall;
+    u32 lvl = 0, in = 0, rise, fall, rx;
     int n;
     if (k->busy) {
         k->again = 1;
@@ -233,6 +248,7 @@ static void settle(struct c3_gpio *k)
     k->busy = 1;
 again:
     k->again = 0;
+    rx = uart_rx_pins(k);
     for (n = 0; n < NPIN; n++) {
         u32 mux = reg(k->iomux[n]);
         int level = 0, oe = 0, af = 0, drive, ext = 0, pin;
@@ -246,7 +262,7 @@ again:
         o.drive = oe ? level : -1;
         o.open_drain = od;
         o.pull = wpu && !wpd ? 1 : wpd && !wpu ? 2 : 0;
-        o.af = af || (mux_sel(k, n) == 0 && n == 20); /* U0RXD */
+        o.af = af || (mux_sel(k, n) == 0 && n == 20) /* U0RXD */ || (rx >> n & 1u);
         o.analog = !(mux & MUX_FUN_IE) && !oe;
         if (s->host.pin_cfg && (!k->known || memcmp(&k->cfg[n], &o, sizeof o) != 0))
             s->host.pin_cfg(s->host.ctx, n / 16, n % 16, &o);

@@ -14,8 +14,11 @@ versions follow semantic versioning. There is no release yet.
   scenario: hello_world (to its restart), blink (the SK6812 on GPIO8
   through RMT and led_strip), ledc_basic (4 kHz on GPIO5), temp_sensor (the
   room's 25 degC, uncalibrated as BLOCK2 is blank), adc_oneshot_read (1.1 V
-  and 2.2 V on IO2 and IO3) and i2c_eeprom (48 bytes written to a 24LC256
-  and read back).
+  and 2.2 V on IO2 and IO3), i2c_eeprom (48 bytes written to a 24LC256
+  and read back), gptimer (TIMG0's alarms, stop, reload and moved alarm,
+  each count as the ISR reads it), uart_echo (UART1 on IO4 and IO5 to a
+  terminal and back) and real_time_stats (FreeRTOS's run-time statistics
+  of six spinning tasks).
 - **The 24LC256** (`emblink/eeprom_24lc256`), Microchip's 256-kbit I2C
   EEPROM: two address bytes, 64-byte page writes with the page wrap, the
   self-timed write cycle without ACK (ACK polling), the address from
@@ -26,6 +29,9 @@ versions follow semantic versioning. There is no release yet.
   gave them (the ESP32-C3's I2C master seeing SCL high while ESP-IDF waited
   in WFI): they caught up at the next wake-up and the edges in between ran
   together on the pins. The core's next quantum now comes at that event.
+- **Fixed:** a pin the ESP32-C3's GPIO matrix gave U0RXD or U1RXD was not
+  the UART's to the runtime (only GPIO20 through the IO MUX was): ESP-IDF
+  connects TXD first, so UART1 never received what came in on its pin.
 
 ### The ESP32-C3's peripherals (the RTOS boards plan, part 2, step 5)
 
