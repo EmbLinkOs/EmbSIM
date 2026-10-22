@@ -143,6 +143,19 @@ class Svd2Regs(unittest.TestCase):
         self.assertNotIn("UART9", [p["name"] for p in doc["peripherals"]])
         self.assertIn("UART9 (a copy)", doc["source"])
 
+    def test_memory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "toy.svd"
+            p.write_text(SVD)
+            doc = svd2regs.convert(p, "toy/registers")
+        svd2regs.apply_memories(doc, ["UART0.RAM=0x400:3:its buffer"])
+        regs = {r["name"]: r for r in doc["peripherals"][0]["registers"]}
+        self.assertEqual([regs[f"RAM{i}"]["offset"] for i in range(3)], ["0x400", "0x404", "0x408"])
+        self.assertEqual(regs["RAM2"]["fields"], [["DATA", 0, 32]])
+        self.assertIn("UART0.RAM at 0x400, 3 words (its buffer)", doc["source"])
+        with self.assertRaises(SystemExit):
+            svd2regs.apply_memories(doc, ["UART0.RAM=0x404:2:again"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -5,7 +5,7 @@
  "version": "1.0.0",
  "device": "ESP32-C3",
  "description": "ESP32-C3 peripheral registers at their addresses, reset values and field access, and the interrupt matrix's 62 source numbers, converted by tools/importers/svd2regs.py from Espressif's esp32c3.svd (espressif/svd at be20aa1), Copyright 2024 Espressif Systems (Shanghai) PTE LTD, SPDX-License-Identifier: Apache-2.0 (LICENSES/Apache-2.0.txt). The interrupt numbers are the interrupt matrix's sources (ESP32-C3 TRM v1.4 table 8.3-1), not CPU interrupts.",
- "source": "converted from Espressif esp32c3.svd (espressif/svd be20aa12560889d6125d144cdb48cf615ac17628) by tools/importers/svd2regs.py; peripherals left out: RNG (its one register, DATA at 0x600260B0, is APB_CTRL's RND_DATA: the TRM's RNG_DATA_REG (TRM v1.4 section 24.5)); registers filled in: SPI0 from SPI1, 29 registers (SPI_MEM0 and SPI_MEM1 share one register layout, ESP-IDF's soc/esp32c3/register/soc/spi_mem_reg.h; the SVD lists part of SPI0's)",
+ "source": "converted from Espressif esp32c3.svd (espressif/svd be20aa12560889d6125d144cdb48cf615ac17628) by tools/importers/svd2regs.py; peripherals left out: RNG (its one register, DATA at 0x600260B0, is APB_CTRL's RND_DATA: the TRM's RNG_DATA_REG (TRM v1.4 section 24.5)); registers filled in: SPI0 from SPI1, 29 registers (SPI_MEM0 and SPI_MEM1 share one register layout, ESP-IDF's soc/esp32c3/register/soc/spi_mem_reg.h; the SVD lists part of SPI0's); memories added: RMT.RAM at 0x400, 192 words (the four channels' 192 x 32-bit RAM, TRM v1.4 section 33.3.2)",
  "interrupts": {
   "WIFI_MAC": 0,
   "WIFI_MAC_NMI": 1,
@@ -16489,38 +16489,6 @@
      ]
     },
     {
-     "name": "CH3_RX_CONF0",
-     "offset": "0x20",
-     "reset": "0x30FFFF02",
-     "fields": [
-      [
-       "DIV_CNT",
-       0,
-       8
-      ],
-      [
-       "IDLE_THRES",
-       8,
-       15
-      ],
-      [
-       "MEM_SIZE",
-       23,
-       3
-      ],
-      [
-       "CARRIER_EN",
-       28,
-       1
-      ],
-      [
-       "CARRIER_OUT_LV",
-       29,
-       1
-      ]
-     ]
-    },
-    {
      "name": "CH2_RX_CONF1",
      "offset": "0x1C",
      "reset": "0x000001E8",
@@ -16573,6 +16541,38 @@
        15,
        1,
        "w"
+      ]
+     ]
+    },
+    {
+     "name": "CH3_RX_CONF0",
+     "offset": "0x20",
+     "reset": "0x30FFFF02",
+     "fields": [
+      [
+       "DIV_CNT",
+       0,
+       8
+      ],
+      [
+       "IDLE_THRES",
+       8,
+       15
+      ],
+      [
+       "MEM_SIZE",
+       23,
+       3
+      ],
+      [
+       "CARRIER_EN",
+       28,
+       1
+      ],
+      [
+       "CARRIER_OUT_LV",
+       29,
+       1
       ]
      ]
     },
@@ -17407,6 +17407,2118 @@
        "DATE",
        0,
        28
+      ]
+     ]
+    },
+    {
+     "name": "RAM0",
+     "offset": "0x400",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM1",
+     "offset": "0x404",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM2",
+     "offset": "0x408",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM3",
+     "offset": "0x40C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM4",
+     "offset": "0x410",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM5",
+     "offset": "0x414",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM6",
+     "offset": "0x418",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM7",
+     "offset": "0x41C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM8",
+     "offset": "0x420",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM9",
+     "offset": "0x424",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM10",
+     "offset": "0x428",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM11",
+     "offset": "0x42C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM12",
+     "offset": "0x430",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM13",
+     "offset": "0x434",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM14",
+     "offset": "0x438",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM15",
+     "offset": "0x43C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM16",
+     "offset": "0x440",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM17",
+     "offset": "0x444",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM18",
+     "offset": "0x448",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM19",
+     "offset": "0x44C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM20",
+     "offset": "0x450",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM21",
+     "offset": "0x454",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM22",
+     "offset": "0x458",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM23",
+     "offset": "0x45C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM24",
+     "offset": "0x460",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM25",
+     "offset": "0x464",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM26",
+     "offset": "0x468",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM27",
+     "offset": "0x46C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM28",
+     "offset": "0x470",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM29",
+     "offset": "0x474",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM30",
+     "offset": "0x478",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM31",
+     "offset": "0x47C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM32",
+     "offset": "0x480",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM33",
+     "offset": "0x484",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM34",
+     "offset": "0x488",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM35",
+     "offset": "0x48C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM36",
+     "offset": "0x490",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM37",
+     "offset": "0x494",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM38",
+     "offset": "0x498",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM39",
+     "offset": "0x49C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM40",
+     "offset": "0x4A0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM41",
+     "offset": "0x4A4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM42",
+     "offset": "0x4A8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM43",
+     "offset": "0x4AC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM44",
+     "offset": "0x4B0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM45",
+     "offset": "0x4B4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM46",
+     "offset": "0x4B8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM47",
+     "offset": "0x4BC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM48",
+     "offset": "0x4C0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM49",
+     "offset": "0x4C4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM50",
+     "offset": "0x4C8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM51",
+     "offset": "0x4CC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM52",
+     "offset": "0x4D0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM53",
+     "offset": "0x4D4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM54",
+     "offset": "0x4D8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM55",
+     "offset": "0x4DC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM56",
+     "offset": "0x4E0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM57",
+     "offset": "0x4E4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM58",
+     "offset": "0x4E8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM59",
+     "offset": "0x4EC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM60",
+     "offset": "0x4F0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM61",
+     "offset": "0x4F4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM62",
+     "offset": "0x4F8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM63",
+     "offset": "0x4FC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM64",
+     "offset": "0x500",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM65",
+     "offset": "0x504",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM66",
+     "offset": "0x508",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM67",
+     "offset": "0x50C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM68",
+     "offset": "0x510",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM69",
+     "offset": "0x514",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM70",
+     "offset": "0x518",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM71",
+     "offset": "0x51C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM72",
+     "offset": "0x520",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM73",
+     "offset": "0x524",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM74",
+     "offset": "0x528",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM75",
+     "offset": "0x52C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM76",
+     "offset": "0x530",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM77",
+     "offset": "0x534",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM78",
+     "offset": "0x538",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM79",
+     "offset": "0x53C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM80",
+     "offset": "0x540",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM81",
+     "offset": "0x544",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM82",
+     "offset": "0x548",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM83",
+     "offset": "0x54C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM84",
+     "offset": "0x550",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM85",
+     "offset": "0x554",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM86",
+     "offset": "0x558",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM87",
+     "offset": "0x55C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM88",
+     "offset": "0x560",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM89",
+     "offset": "0x564",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM90",
+     "offset": "0x568",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM91",
+     "offset": "0x56C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM92",
+     "offset": "0x570",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM93",
+     "offset": "0x574",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM94",
+     "offset": "0x578",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM95",
+     "offset": "0x57C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM96",
+     "offset": "0x580",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM97",
+     "offset": "0x584",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM98",
+     "offset": "0x588",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM99",
+     "offset": "0x58C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM100",
+     "offset": "0x590",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM101",
+     "offset": "0x594",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM102",
+     "offset": "0x598",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM103",
+     "offset": "0x59C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM104",
+     "offset": "0x5A0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM105",
+     "offset": "0x5A4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM106",
+     "offset": "0x5A8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM107",
+     "offset": "0x5AC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM108",
+     "offset": "0x5B0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM109",
+     "offset": "0x5B4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM110",
+     "offset": "0x5B8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM111",
+     "offset": "0x5BC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM112",
+     "offset": "0x5C0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM113",
+     "offset": "0x5C4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM114",
+     "offset": "0x5C8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM115",
+     "offset": "0x5CC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM116",
+     "offset": "0x5D0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM117",
+     "offset": "0x5D4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM118",
+     "offset": "0x5D8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM119",
+     "offset": "0x5DC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM120",
+     "offset": "0x5E0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM121",
+     "offset": "0x5E4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM122",
+     "offset": "0x5E8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM123",
+     "offset": "0x5EC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM124",
+     "offset": "0x5F0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM125",
+     "offset": "0x5F4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM126",
+     "offset": "0x5F8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM127",
+     "offset": "0x5FC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM128",
+     "offset": "0x600",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM129",
+     "offset": "0x604",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM130",
+     "offset": "0x608",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM131",
+     "offset": "0x60C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM132",
+     "offset": "0x610",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM133",
+     "offset": "0x614",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM134",
+     "offset": "0x618",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM135",
+     "offset": "0x61C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM136",
+     "offset": "0x620",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM137",
+     "offset": "0x624",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM138",
+     "offset": "0x628",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM139",
+     "offset": "0x62C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM140",
+     "offset": "0x630",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM141",
+     "offset": "0x634",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM142",
+     "offset": "0x638",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM143",
+     "offset": "0x63C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM144",
+     "offset": "0x640",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM145",
+     "offset": "0x644",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM146",
+     "offset": "0x648",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM147",
+     "offset": "0x64C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM148",
+     "offset": "0x650",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM149",
+     "offset": "0x654",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM150",
+     "offset": "0x658",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM151",
+     "offset": "0x65C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM152",
+     "offset": "0x660",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM153",
+     "offset": "0x664",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM154",
+     "offset": "0x668",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM155",
+     "offset": "0x66C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM156",
+     "offset": "0x670",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM157",
+     "offset": "0x674",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM158",
+     "offset": "0x678",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM159",
+     "offset": "0x67C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM160",
+     "offset": "0x680",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM161",
+     "offset": "0x684",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM162",
+     "offset": "0x688",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM163",
+     "offset": "0x68C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM164",
+     "offset": "0x690",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM165",
+     "offset": "0x694",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM166",
+     "offset": "0x698",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM167",
+     "offset": "0x69C",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM168",
+     "offset": "0x6A0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM169",
+     "offset": "0x6A4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM170",
+     "offset": "0x6A8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM171",
+     "offset": "0x6AC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM172",
+     "offset": "0x6B0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM173",
+     "offset": "0x6B4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM174",
+     "offset": "0x6B8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM175",
+     "offset": "0x6BC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM176",
+     "offset": "0x6C0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM177",
+     "offset": "0x6C4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM178",
+     "offset": "0x6C8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM179",
+     "offset": "0x6CC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM180",
+     "offset": "0x6D0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM181",
+     "offset": "0x6D4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM182",
+     "offset": "0x6D8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM183",
+     "offset": "0x6DC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM184",
+     "offset": "0x6E0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM185",
+     "offset": "0x6E4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM186",
+     "offset": "0x6E8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM187",
+     "offset": "0x6EC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM188",
+     "offset": "0x6F0",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM189",
+     "offset": "0x6F4",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM190",
+     "offset": "0x6F8",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
+      ]
+     ]
+    },
+    {
+     "name": "RAM191",
+     "offset": "0x6FC",
+     "fields": [
+      [
+       "DATA",
+       0,
+       32
       ]
      ]
     }

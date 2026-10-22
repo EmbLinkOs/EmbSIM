@@ -1321,6 +1321,315 @@ static void test_peripheral_reset_keeps_rate(void)
     c3_close(&f);
 }
 
+#define RMT 0x60016000u
+#define RMT_CONF0(n) (RMT + 0x10u + 4u * (n))
+#define RMT_RX_CONF0(m) (RMT + 0x18u + 8u * (m))
+#define RMT_RX_CONF1(m) (RMT + 0x1Cu + 8u * (m))
+#define RMT_RX_STATUS(m) (RMT + 0x30u + 4u * (m))
+#define RMT_INT_RAW (RMT + 0x38u)
+#define RMT_INT_ENA (RMT + 0x40u)
+#define RMT_INT_CLR (RMT + 0x44u)
+#define RMT_DUTY(n) (RMT + 0x48u + 4u * (n))
+#define RMT_TX_LIM(n) (RMT + 0x58u + 4u * (n))
+#define RMT_RX_LIM(m) (RMT + 0x60u + 4u * (m))
+#define RMT_SYS (RMT + 0x68u)
+#define RMT_RAM(i) (RMT + 0x400u + 4u * (u32)(i))
+
+static u64 edge_t[256];
+static int edge_lv[256], nedge, edge_pin;
+static struct esk_mach *edge_m;
+
+static void h_edges(void *ctx, int port, int bit, const esk_mach_pin *cfg)
+{
+    int n = 16 * port + bit;
+    h_pin_cfg(ctx, port, bit, cfg);
+    if (n != edge_pin || nedge >= 256 || cfg->drive < 0)
+        return;
+    if (nedge && edge_lv[nedge - 1] == cfg->drive)
+        return;
+    edge_t[nedge] = edge_m->cycles - edge_m->output_lag;
+    edge_lv[nedge++] = cfg->drive;
+}
+
+/* the RMT clocked from XTAL_CLK, 40 MHz, its sclk undivided: a channel's
+ * DIV_CNT of 4 makes 100 ns ticks, 2 cycles of the CPU's 20 MHz */
+static int rmt_open(c3 *f)
+{
+    if (!gpio_open(f))
+        return 0;
+    f->m.host.pin_cfg = h_edges;
+    edge_m = &f->m;
+    edge_pin = 8;
+    nedge = 0;
+    wr(f, SYSTEM + 0x10u, rd(f, SYSTEM + 0x10u) | 1u << 9); /* PERIP_CLK_EN0's RMT */
+    wr(f, SYSTEM + 0x18u, rd(f, SYSTEM + 0x18u) & ~(1u << 9));
+    wr(f, RMT_SYS, 3u << 24 | 1u << 26 | 1u); /* XTAL, active, direct access */
+    wr(f, GPIO + 0x574u, 51u);                /* GPIO8 out: rmt_sig_out0 */
+    wr(f, G_EN_W1TS, 1u << 8);
+    CHECK_EQ(edge_lv[nedge - 1], 0); /* the idle output, low */
+    nedge = 0;
+    return 1;
+}
+
+static u32 sym(int l0, u32 p0, int l1, u32 p1) { return (u32)l0 << 15 | p0 | ((u32)l1 << 15 | p1) << 16; }
+
+static void test_rmt_tx_rx(void)
+{
+    /* channel 0 sends high 3, low 5, high 2 ticks and an end marker on
+     * GPIO8; channel 2 receives the pin back through the matrix */
+    c3 f;
+    u64 t0;
+    if (!rmt_open(&f))
+        return;
+    wr(&f, GPIO + 0x220u, 1u << 6 | 8u); /* rmt_sig_in0 from GPIO8 */
+    wr(&f, RMT_RAM(0), sym(1u, 3u, 0u, 5u));
+    wr(&f, RMT_RAM(1), sym(1u, 2u, 0u, 0u));
+    wr(&f, RMT_RX_CONF0(0), 4u | 20u << 8 | 1u << 23); /* /4, idle after 20 ticks */
+    wr(&f, RMT_RX_LIM(0), 0x80u);
+    wr(&f, RMT_RX_CONF1(0), 1u | 1u << 3 | 1u << 15); /* RX_EN, the RMT owns it, update */
+    wr(&f, RMT_INT_ENA, 1u | 4u);
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 24); /* /4, one block, update */
+    CHECK_EQ(nedge, 0);
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 24 | 1u); /* TX_START */
+    esk_mach_idle(&f.m, 200u);
+    CHECK_EQ(nedge, 4);
+    t0 = edge_t[0];
+    CHECK_EQ(edge_lv[0], 1);
+    CHECK_EQ(edge_t[1] - t0, 6u);
+    CHECK_EQ(edge_lv[1], 0);
+    CHECK_EQ(edge_t[2] - t0, 16u);
+    CHECK_EQ(edge_t[3] - t0, 20u);
+    CHECK_EQ(edge_lv[3], 0); /* the marker's level */
+    CHECK(rd(&f, RMT_INT_RAW) & 1u);     /* CH0_TX_END */
+    CHECK(rd(&f, INTR_STATUS_0) & (1u << 28));
+    CHECK(rd(&f, RMT_INT_RAW) & 4u);     /* CH2_RX_END, 20 ticks after */
+    CHECK_EQ(rd(&f, RMT_RAM(96)), sym(1u, 3u, 0u, 5u));
+    CHECK_EQ(rd(&f, RMT_RAM(97)), sym(1u, 2u, 0u, 0u));
+    CHECK_EQ(rd(&f, RMT_RX_STATUS(0)) & 0x1ffu, 98u); /* MEM_WADDR_EX */
+    wr(&f, RMT_INT_CLR, 5u);
+    CHECK(!(rd(&f, INTR_STATUS_0) & (1u << 28)));
+    /* the idle level as configured: IDLE_OUT_EN, high */
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 5 | 1u << 6 | 1u << 24);
+    CHECK_EQ(edge_lv[nedge - 1], 1);
+    c3_close(&f);
+}
+
+static void test_rmt_loop_wrap_stop(void)
+{
+    /* continuous mode counting loops; wrap mode's threshold events; TX_STOP */
+    c3 f;
+    int i;
+    if (!rmt_open(&f))
+        return;
+    wr(&f, RMT_RAM(0), sym(1u, 1u, 0u, 1u));
+    wr(&f, RMT_RAM(1), sym(0u, 0u, 0u, 0u));
+    wr(&f, RMT_TX_LIM(0), 0x80u | 3u << 9 | 1u << 19); /* three loops */
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 3 | 1u << 24 | 1u);
+    esk_mach_idle(&f.m, 9u); /* two loops of 4 cycles */
+    CHECK_EQ(rd(&f, RMT_INT_RAW) & (1u << 12), 0u);
+    esk_mach_idle(&f.m, 4u);
+    CHECK(rd(&f, RMT_INT_RAW) & (1u << 12)); /* CH0_TX_LOOP */
+    CHECK_EQ(rd(&f, RMT_INT_RAW) & 1u, 0u);  /* no TX_END: it goes on */
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 3 | 1u << 7 | 1u << 24); /* TX_STOP */
+    i = nedge;
+    esk_mach_idle(&f.m, 100u);
+    CHECK_EQ(nedge, i); /* stopped */
+    CHECK_EQ(rd(&f, RMT_CONF0(0)) & (1u << 7), 0u); /* TX_STOP cleared itself */
+    /* wrap mode: 48 words of one-tick pulses with no marker, TX_LIM 24:
+     * an event every 24 words; the marker written in the event's place */
+    wr(&f, RMT_INT_CLR, 0xffffu);
+    for (i = 0; i < 48; i++)
+        wr(&f, RMT_RAM(i), sym(1u, 1u, 0u, 1u));
+    wr(&f, RMT_TX_LIM(0), 24u);
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 4 | 1u << 24 | 1u);
+    esk_mach_idle(&f.m, 24u * 4u + 1u);
+    CHECK(rd(&f, RMT_INT_RAW) & (1u << 8)); /* CH0_TX_THR_EVENT */
+    wr(&f, RMT_INT_CLR, 1u << 8);
+    wr(&f, RMT_RAM(0), sym(1u, 1u, 0u, 0u)); /* the next lap ends at word 0 */
+    esk_mach_idle(&f.m, 24u * 4u);
+    CHECK(rd(&f, RMT_INT_RAW) & (1u << 8));
+    CHECK_EQ(rd(&f, RMT_INT_RAW) & 1u, 0u);
+    esk_mach_idle(&f.m, 4u);
+    CHECK(rd(&f, RMT_INT_RAW) & 1u); /* the end, a whole lap later */
+    /* without wrap mode the memory's end is an error */
+    wr(&f, RMT_INT_CLR, 0xffffu);
+    wr(&f, RMT_RAM(0), sym(1u, 1u, 0u, 1u));
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 24 | 1u);
+    esk_mach_idle(&f.m, 48u * 4u + 2u);
+    CHECK(rd(&f, RMT_INT_RAW) & (1u << 4)); /* CH0_TX_ERR */
+    c3_close(&f);
+}
+
+static void test_rmt_carrier_and_filter(void)
+{
+    /* a carrier of 2 sclk high, 2 low (20 MHz at 40 MHz... 10 MHz) on a
+     * high entry of 2 ticks: 4 carrier cycles; then a receiver with a
+     * filter drops a short pulse */
+    c3 f;
+    if (!rmt_open(&f))
+        return;
+    wr(&f, RMT_RAM(0), sym(1u, 2u, 0u, 1u));
+    wr(&f, RMT_RAM(1), sym(0u, 0u, 0u, 0u));
+    wr(&f, RMT_DUTY(0), 7u << 16 | 7u); /* 8 sclk high, 8 low: 400 ns */
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 20 | 1u << 21 | 1u << 22 | 1u << 24 | 1u);
+    esk_mach_idle(&f.m, 100u);
+    /* 200 ns high data: the carrier's 200 ns high half, then low */
+    CHECK_EQ(nedge, 2);
+    CHECK_EQ(edge_t[1] - edge_t[0], 4u);
+    wr(&f, RMT_RAM(0), sym(1u, 20u, 0u, 1u)); /* 2 us: five carrier cycles */
+    nedge = 0;
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 20 | 1u << 21 | 1u << 22 | 1u << 24 | 1u);
+    esk_mach_idle(&f.m, 100u);
+    CHECK_EQ(nedge, 10);
+    CHECK_EQ(edge_t[2] - edge_t[0], 8u); /* 400 ns a cycle */
+    c3_close(&f);
+}
+
+static void test_rmt_rx_filter(void)
+{
+    /* a 1-tick glitch inside a long low: RX_FILTER_THRES of 8 sclk (200 ns)
+     * drops it, the low written whole */
+    c3 f;
+    if (!rmt_open(&f))
+        return;
+    wr(&f, GPIO + 0x220u, 1u << 6 | 8u);
+    wr(&f, RMT_RAM(0), sym(1u, 10u, 0u, 6u));
+    wr(&f, RMT_RAM(1), sym(1u, 1u, 0u, 6u));
+    wr(&f, RMT_RAM(2), sym(1u, 10u, 0u, 0u));
+    wr(&f, RMT_RX_CONF0(0), 4u | 30u << 8 | 1u << 23);
+    wr(&f, RMT_RX_CONF1(0), 1u | 1u << 3 | 1u << 4 | 8u << 5 | 1u << 15);
+    wr(&f, RMT_CONF0(0), 4u << 8 | 1u << 16 | 1u << 24 | 1u);
+    esk_mach_idle(&f.m, 400u);
+    CHECK(rd(&f, RMT_INT_RAW) & 4u);
+    CHECK_EQ(rd(&f, RMT_RAM(96)), sym(1u, 10u, 0u, 13u));
+    CHECK_EQ(rd(&f, RMT_RAM(97)), sym(1u, 10u, 0u, 0u));
+    c3_close(&f);
+}
+
+#define LEDC 0x60019000u
+#define LEDC_CH_CONF0(n) (LEDC + 0x14u * (n))
+#define LEDC_CH_HPOINT(n) (LEDC + 0x04u + 0x14u * (n))
+#define LEDC_CH_DUTY(n) (LEDC + 0x08u + 0x14u * (n))
+#define LEDC_CH_CONF1(n) (LEDC + 0x0Cu + 0x14u * (n))
+#define LEDC_CH_DUTY_R(n) (LEDC + 0x10u + 0x14u * (n))
+#define LEDC_TIMER_CONF(x) (LEDC + 0xA0u + 8u * (x))
+#define LEDC_TIMER_VALUE(x) (LEDC + 0xA4u + 8u * (x))
+#define LEDC_INT_RAW (LEDC + 0xC0u)
+#define LEDC_INT_CLR (LEDC + 0xCCu)
+#define LEDC_CONF (LEDC + 0xD0u)
+
+/* timer 0 on XTAL_CLK divided by 4: 100 ns counts, 2 CPU cycles; 16 counts
+ * (DUTY_RES 4) a period; channel 0 on GPIO8 from HPOINT and a duty */
+static int ledc_open(c3 *f, u32 hpoint, u32 duty)
+{
+    if (!gpio_open(f))
+        return 0;
+    f->m.host.pin_cfg = h_edges;
+    edge_m = &f->m;
+    edge_pin = 8;
+    wr(f, SYSTEM + 0x10u, rd(f, SYSTEM + 0x10u) | 1u << 11); /* PERIP_CLK_EN0's LEDC */
+    wr(f, SYSTEM + 0x18u, rd(f, SYSTEM + 0x18u) & ~(1u << 11));
+    wr(f, LEDC_CONF, 3u | 1u << 31);
+    wr(f, LEDC_TIMER_CONF(0), 1u << 23 | (4u << 8) << 4 | 4u | 1u << 25); /* held, /4, 4 bits */
+    wr(f, LEDC_CH_HPOINT(0), hpoint);
+    wr(f, LEDC_CH_DUTY(0), duty);
+    wr(f, LEDC_CH_CONF1(0), 1u << 31 | 1u << 30 | 1u << 20 | 1u << 10); /* ESP-IDF's set_duty */
+    wr(f, LEDC_CH_CONF0(0), 1u << 2 | 1u << 4);
+    wr(f, GPIO + 0x574u, 45u); /* GPIO8 out: ledc_ls_sig_out0 */
+    wr(f, G_EN_W1TS, 1u << 8);
+    nedge = 0;
+    wr(f, LEDC_TIMER_CONF(0), (4u << 8) << 4 | 4u); /* counting */
+    return 1;
+}
+
+static void test_ledc_pwm(void)
+{
+    /* high from count 2 to count 7: 500 ns of every 1.6 us */
+    c3 f;
+    u64 t0;
+    u32 v;
+    if (!ledc_open(&f, 2u, 5u << 4))
+        return;
+    esk_mach_idle(&f.m, 100u);
+    CHECK(nedge >= 6);
+    t0 = edge_t[0];
+    CHECK_EQ(edge_lv[0], 1);
+    CHECK_EQ(edge_t[0] - edge_t[0], 0u);
+    CHECK_EQ(edge_t[1] - t0, 10u);
+    CHECK_EQ(edge_lv[1], 0);
+    CHECK_EQ(edge_t[2] - t0, 32u);
+    CHECK_EQ(edge_t[3] - t0, 42u);
+    CHECK(rd(&f, LEDC_INT_RAW) & 1u);        /* LSTIMER0_OVF */
+    CHECK(rd(&f, LEDC_INT_RAW) & (1u << 4)); /* the one-step fade ended */
+    CHECK_EQ(rd(&f, LEDC_CH_DUTY_R(0)), 5u << 4);
+    v = rd(&f, LEDC_TIMER_VALUE(0));
+    CHECK(v < 16u);
+    /* a new duty at the next overflow: 0 % stays low */
+    wr(&f, LEDC_CH_DUTY(0), 0u);
+    wr(&f, LEDC_CH_CONF0(0), 1u << 2 | 1u << 4);
+    esk_mach_idle(&f.m, 64u);
+    nedge = 0;
+    esk_mach_idle(&f.m, 100u);
+    CHECK_EQ(nedge, 0);
+    CHECK_EQ(pins_out[8].drive, 0);
+    /* 16 counts: 100 %, high throughout */
+    wr(&f, LEDC_CH_DUTY(0), 16u << 4);
+    wr(&f, LEDC_CH_CONF0(0), 1u << 2 | 1u << 4);
+    esk_mach_idle(&f.m, 64u);
+    nedge = 0;
+    esk_mach_idle(&f.m, 100u);
+    CHECK_EQ(nedge, 0);
+    CHECK_EQ(pins_out[8].drive, 1);
+    /* SIG_OUT_EN off: IDLE_LV */
+    wr(&f, LEDC_CH_CONF0(0), 1u << 3 | 1u << 4);
+    esk_mach_idle(&f.m, 64u);
+    CHECK_EQ(pins_out[8].drive, 1);
+    wr(&f, LEDC_CH_CONF0(0), 1u << 4);
+    esk_mach_idle(&f.m, 64u);
+    CHECK_EQ(pins_out[8].drive, 0);
+    c3_close(&f);
+}
+
+static void test_ledc_dither_and_fade(void)
+{
+    /* DUTY 5 + 8/16: half the periods 6 counts high */
+    c3 f;
+    int i;
+    u64 high = 0;
+    if (!ledc_open(&f, 0u, 5u << 4 | 8u))
+        return;
+    esk_mach_idle(&f.m, 32u * 16u + 4u);
+    CHECK(nedge >= 32);
+    for (i = 0; i + 1 < 32; i += 2)
+        high += edge_t[i + 1] - edge_t[i];
+    CHECK_EQ(high, (16u * 5u + 8u) * 2u);
+    c3_close(&f);
+    /* a fade from 0 up by 2 every overflow, 3 steps: 6 */
+    if (!ledc_open(&f, 0u, 0u))
+        return;
+    wr(&f, LEDC_INT_CLR, 0xffffu);
+    wr(&f, LEDC_CH_CONF1(0), 1u << 31 | 1u << 30 | 3u << 20 | 1u << 10 | 2u);
+    wr(&f, LEDC_CH_CONF0(0), 1u << 2 | 1u << 4);
+    esk_mach_idle(&f.m, 32u * 2u + 4u);
+    CHECK_EQ(rd(&f, LEDC_INT_RAW) & (1u << 4), 0u);
+    esk_mach_idle(&f.m, 32u * 2u);
+    CHECK(rd(&f, LEDC_INT_RAW) & (1u << 4)); /* DUTY_CHNG_END_LSCH0 */
+    CHECK_EQ(rd(&f, LEDC_CH_DUTY_R(0)), 6u << 4);
+    nedge = 0;
+    esk_mach_idle(&f.m, 64u);
+    CHECK(nedge >= 3);
+    i = edge_lv[0] ? 0 : 1; /* from a rising edge */
+    CHECK_EQ(edge_t[i + 1] - edge_t[i], 12u); /* 6 counts */
+    /* the overflow counter: every third overflow */
+    wr(&f, LEDC_INT_CLR, 0xffffu);
+    wr(&f, LEDC_CH_CONF0(0), 1u << 2 | 1u << 15 | 2u << 5 | 1u << 16 | 1u << 4);
+    esk_mach_idle(&f.m, 32u * 2u + 2u);
+    CHECK_EQ(rd(&f, LEDC_INT_RAW) & (1u << 10), 0u);
+    esk_mach_idle(&f.m, 32u);
+    CHECK(rd(&f, LEDC_INT_RAW) & (1u << 10)); /* OVF_CNT_LSCH0 */
+    c3_close(&f);
+}
+
 #define USJ 0x60043000u
 
 static void test_usb_serial_jtag(void)
@@ -1389,4 +1698,10 @@ RUN(test_rng_and_radio);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
 RUN(test_peripheral_reset_keeps_rate);
+RUN(test_rmt_tx_rx);
+RUN(test_rmt_loop_wrap_stop);
+RUN(test_rmt_carrier_and_filter);
+RUN(test_rmt_rx_filter);
+RUN(test_ledc_pwm);
+RUN(test_ledc_dither_and_fade);
 TEST_MAIN_END

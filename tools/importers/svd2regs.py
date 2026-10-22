@@ -35,7 +35,12 @@ for the user's own use unless that licence allows distributing it.
     --fill PERIPH=FROM:WHY       (repeatable) the registers of FROM at offsets
                                  PERIPH lacks, where the two share one layout
                                  and the SVD lists only part of PERIPH's
-                                 (the ESP32-C3's SPI0, SPI_MEM's layout)"""
+                                 (the ESP32-C3's SPI0, SPI_MEM's layout)
+    --memory PERIPH.NAME=0xOFFSET:WORDS:WHY
+                                 (repeatable) a memory inside a peripheral
+                                 the SVD leaves out, as WORDS 32-bit
+                                 registers NAME0, NAME1, ... (the ESP32-C3's
+                                 RMT RAM); recorded likewise"""
 import argparse
 import json
 import re
@@ -342,6 +347,30 @@ def apply_fills(doc: dict, specs: list[str]) -> None:
         doc["source"] += "; registers filled in: " + "; ".join(done)
 
 
+def apply_memories(doc: dict, specs: list[str]) -> None:
+    """to each PERIPH of `specs` (PERIPH.NAME=0xOFFSET:WORDS:WHY), WORDS
+    word registers NAME0.. from OFFSET, recorded in source"""
+    done = []
+    for spec in specs:
+        target, _, rest = spec.partition("=")
+        pname, _, name = target.partition(".")
+        parts = rest.split(":", 2)
+        p = next((q for q in doc["peripherals"] if q["name"] == pname), None)
+        if p is None or "registers" not in p or not name or len(parts) < 2:
+            sys.exit(f"svd2regs: --memory {spec}: PERIPH.NAME=0xOFFSET:WORDS:WHY on a peripheral with registers")
+        base, words = num(parts[0]), num(parts[1])
+        have = {num(r["offset"]) for r in p["registers"]}
+        if words < 1 or any(base + 4 * i in have for i in range(words)):
+            sys.exit(f"svd2regs: --memory {spec}: no words, or a register already there")
+        for i in range(words):
+            p["registers"].append({"name": f"{name}{i}", "offset": f"0x{base + 4 * i:02X}", "fields": [["DATA", 0, 32]]})
+        p["registers"].sort(key=lambda r: num(r["offset"]))
+        why = parts[2] if len(parts) > 2 else ""
+        done.append(f"{pname}.{name} at 0x{base:X}, {words} words" + (f" ({why})" if why else ""))
+    if done:
+        doc["source"] += "; memories added: " + "; ".join(done)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("svd", type=Path)
@@ -359,12 +388,15 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="FROM's registers at the offsets PERIPH lacks, recorded in source")
     ap.add_argument("--drop", action="append", default=[], metavar="PERIPH=WHY",
                     help="a peripheral left out, with the reason recorded in source")
+    ap.add_argument("--memory", action="append", default=[], metavar="PERIPH.NAME=0xOFFSET:WORDS:WHY",
+                    help="a memory the SVD leaves out, as word registers NAME0..")
     ap.add_argument("--merge", action="append", default=[], metavar="PERIPH.REG.NAME",
                     help="one-bit fields NAME0..NAMEn joined into NAME")
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
     apply_drops(doc, args.drop)
     apply_fills(doc, args.fill)
+    apply_memories(doc, args.memory)
     apply_merges(doc, args.merge)
     apply_registers(doc, args.register)
     apply_fields(doc, args.field)

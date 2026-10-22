@@ -26,6 +26,10 @@
  *             regulators), as the ROM's regi2c routines use it
  *   apbctrl.c APB_CTRL: the random number generator's RND_DATA
  *   usbjtag.c the USB Serial/JTAG controller's CDC-ACM side, with no host
+ *   rmt.c     the remote control peripheral: two transmitters, two
+ *             receivers, its RAM
+ *   ledc.c    the LED PWM controller: four timers, six PWM generators,
+ *             fading
  *   radio.c   the radio's register blocks the TRM leaves out (FE2, FE,
  *             NRX), which keep what is written */
 #ifndef ESK_MCU_ESP32C3_H
@@ -54,6 +58,13 @@ void *esk_esp32c3_iomux_create(struct esk_mach *s, struct esk_rf_periph *p);
 void esk_esp32c3_pins_changed(struct esk_mach *m);
 /* where a UART's TXD (tx) or RXD is: 0 and the runtime's port and bit */
 int esk_esp32c3_uart_pin(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
+/* a peripheral output signal of the GPIO matrix (table 5.11-1) driven by
+ * its model: its level and enable */
+void esk_esp32c3_signal(struct esk_mach *m, int sig, int level, int oe);
+/* a peripheral input signal's level as the matrix or the IO MUX gives it */
+int esk_esp32c3_signal_in(struct esk_mach *m, int sig);
+/* fn(ctx) whenever a pin's input changes; 0, or -1 when no room is left */
+int esk_esp32c3_signal_watch(struct esk_mach *m, void (*fn)(void *ctx), void *ctx);
 
 extern const struct esk_dev_ops esk_esp32c3_cache_ops;
 void *esk_esp32c3_cache_create(struct esk_mach *s, struct esk_rf_periph *p);
@@ -105,6 +116,10 @@ void esk_esp32c3_reset(struct esk_mach *m, int code);
 int esk_esp32c3_efuse_wdt_delay_sel(struct esk_mach *m);
 extern const struct esk_dev_ops esk_esp32c3_usbjtag_ops;
 void *esk_esp32c3_usbjtag_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_rmt_ops;
+void *esk_esp32c3_rmt_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_ledc_ops;
+void *esk_esp32c3_ledc_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_apbctrl_ops;
 void *esk_esp32c3_apbctrl_create(struct esk_mach *s, struct esk_rf_periph *p);
 

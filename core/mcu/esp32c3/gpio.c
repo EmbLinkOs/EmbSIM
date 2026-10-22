@@ -7,12 +7,16 @@
  * Each pin's IO_MUX_GPIOn_REG picks its function (MCU_SEL, table 5.12-1):
  * function 1 -- and function 0 where it is the pin's GPIO -- is the GPIO
  * matrix; GPIO21's function 0 is U0TXD and GPIO20's U0RXD, directly;
- * the others (the SPI flash's, JTAG's and FSPI's) leave the pin undriven.
+ * function 2 of GPIO2, 4-7 and 10 is FSPI's signal directly; the others
+ * (the SPI flash's and JTAG's) leave the pin undriven.
  *   - Through the matrix, GPIO_FUNCn_OUT_SEL_CFG's OUT_SEL names the pin's
  *     output: 128 is GPIO_OUT's bit, with GPIO_ENABLE's as its enable; a
  *     peripheral signal (table 5.11-1) is that signal, its enable the
- *     peripheral's (1 for the UARTs' TXD, RTS and DTR) unless OEN_SEL
- *     takes GPIO_ENABLE's; INV_SEL and OEN_INV_SEL invert them.
+ *     peripheral's (1 for the UARTs' TXD, RTS and DTR, and for the others
+ *     whose table entry is 1'd1) unless OEN_SEL takes GPIO_ENABLE's;
+ *     INV_SEL and OEN_INV_SEL invert them. A peripheral's model sets its
+ *     signals' levels and enables (esk_esp32c3_signal); a signal no model
+ *     drives leaves the pin undriven.
  *   - GPIO_PINn's PAD_DRIVER makes the output open-drain; FUN_WPU and
  *     FUN_WPD pull the pin; FUN_IE lets its level into GPIO_IN, into the
  *     interrupt and into the peripherals' inputs.
@@ -20,7 +24,10 @@
  *     else its pull; else 0.
  *   - A peripheral input (GPIO_FUNCy_IN_SEL_CFG) comes through the matrix
  *     from IN_SEL's pin (0x1E: 1, 0x1F: 0, IN_INV_SEL inverting) when SEL
- *     is set, else directly from the pin whose IO MUX function it is.
+ *     is set, else directly from the pin whose IO MUX function it is, else
+ *     the table's default (1 for I2C's SCL and SDA and TWAI's RX, else 0);
+ *     a model that follows its inputs is told when the pins' inputs change
+ *     (esk_esp32c3_signal_watch).
  *   - Interrupts (GPIO_PINn's INT_TYPE: 1 rising, 2 falling, 3 any edge, 4
  *     low level, 5 high level; INT_ENA bit 0 the CPU's, bit 1 its NMI's)
  *     set GPIO_STATUS (W1TS and W1TC set and clear it; a level sets it
@@ -70,6 +77,13 @@ struct c3_gpio {
     u32 level;  /* each pin's level */
     u32 input;  /* each pin's input (its level where IE is set) */
     esk_mach_pin cfg[NPIN];
+    u8 sig_on[128], sig_lv[128], sig_oe[128]; /* the peripherals' outputs */
+    int again; /* a change while the pins settle: settle again */
+    struct {
+        void (*fn)(void *ctx);
+        void *ctx;
+    } watch[8];
+    int nwatch;
 };
 
 static u32 reg(const struct esk_rf_reg *r) { return (u32)r->value; }
@@ -96,10 +110,30 @@ static u32 mux_sel(const struct c3_gpio *k, int n)
     return sel == 0 && f0_is_gpio[n] ? 1u : sel;
 }
 
+/* the FSPI signal of pin n's IO MUX function 2, or -1 (table 5.12-1:
+ * FSPIQ on GPIO2, FSPIHD 4, FSPIWP 5, FSPICLK 6, FSPID 7, FSPICS0 10) */
+static int fspi_sig(int n)
+{
+    switch (n) {
+    case 2: return 64;
+    case 4: return 66;
+    case 5: return 67;
+    case 6: return 63;
+    case 7: return 65;
+    case 10: return 68;
+    default: return -1;
+    }
+}
+
 /* a peripheral output signal's level and enable: 0 when it is not one
  * EmbSIM drives */
-static int signal_out(int sig, int *level, int *oe)
+static int signal_out(const struct c3_gpio *k, int sig, int *level, int *oe)
 {
+    if (sig >= 0 && sig < 128 && k->sig_on[sig]) {
+        *level = k->sig_lv[sig];
+        *oe = k->sig_oe[sig];
+        return 1;
+    }
     switch (sig) {
     case SIG_U0TXD:
     case SIG_U1TXD: /* idle high: the frames are the runtime's */
@@ -128,7 +162,7 @@ static int pin_out(const struct c3_gpio *k, int n, int *level, int *oe, int *af)
             lv = (int)(reg(k->out) >> n & 1u);
             en = (int)(reg(k->enable) >> n & 1u);
         } else {
-            if (!signal_out((int)sig, &lv, &en))
+            if (!signal_out(k, (int)sig, &lv, &en))
                 return 0;
             *af = 1;
             if (f & (1u << 9)) /* OEN_SEL: GPIO_ENABLE's */
@@ -147,6 +181,10 @@ static int pin_out(const struct c3_gpio *k, int n, int *level, int *oe, int *af)
         *oe = 1;
         *af = 1;
         return 1;
+    }
+    if (sel == 2 && fspi_sig(n) >= 0) { /* FSPI's, through the IO MUX */
+        *af = 1;
+        return signal_out(k, fspi_sig(n), level, oe);
     }
     return 0;
 }
@@ -188,9 +226,13 @@ static void settle(struct c3_gpio *k)
     struct esk_mach *s = k->s;
     u32 lvl = 0, in = 0, rise, fall;
     int n;
-    if (k->busy)
+    if (k->busy) {
+        k->again = 1;
         return;
+    }
     k->busy = 1;
+again:
+    k->again = 0;
     for (n = 0; n < NPIN; n++) {
         u32 mux = reg(k->iomux[n]);
         int level = 0, oe = 0, af = 0, drive, ext = 0, pin;
@@ -226,7 +268,59 @@ static void settle(struct c3_gpio *k)
     k->known = 1;
     esk_rf_hw(k->in, in);
     irqs(k, rise, fall);
+    if (rise | fall)
+        for (n = 0; n < k->nwatch; n++)
+            k->watch[n].fn(k->watch[n].ctx);
+    if (k->again)
+        goto again;
     k->busy = 0;
+}
+
+void esk_esp32c3_signal(struct esk_mach *m, int sig, int level, int oe)
+{
+    struct c3_gpio *k = gpio_of(m);
+    u8 lv = level != 0, en = oe != 0;
+    if (!k || sig < 0 || sig >= 128)
+        return;
+    if (k->sig_on[sig] && k->sig_lv[sig] == lv && k->sig_oe[sig] == en)
+        return;
+    k->sig_on[sig] = 1;
+    k->sig_lv[sig] = lv;
+    k->sig_oe[sig] = en;
+    if (k->known)
+        settle(k);
+}
+
+int esk_esp32c3_signal_in(struct esk_mach *m, int sig)
+{
+    struct c3_gpio *k = gpio_of(m);
+    u32 f;
+    int n;
+    if (!k || sig < 0 || sig >= 128)
+        return 0;
+    f = k->fin[sig] ? reg(k->fin[sig]) : 0;
+    if (f & (1u << 6)) { /* through the matrix */
+        u32 pin = f & 0x1fu;
+        int v = pin == 0x1Eu ? 1 : pin == 0x1Fu ? 0 : pin < NPIN ? (int)(k->input >> pin & 1u) : 0;
+        return (f & (1u << 5)) ? !v : v;
+    }
+    if (sig == 6 && mux_sel(k, 20) == 0) /* U0RXD */
+        return (int)(k->input >> 20 & 1u);
+    for (n = 0; n < NPIN; n++)
+        if (fspi_sig(n) == sig && mux_sel(k, n) == 2)
+            return (int)(k->input >> n & 1u);
+    return sig == 53 || sig == 54 || sig == 74; /* the table's defaults */
+}
+
+int esk_esp32c3_signal_watch(struct esk_mach *m, void (*fn)(void *ctx), void *ctx)
+{
+    struct c3_gpio *k = gpio_of(m);
+    if (!k || k->nwatch >= (int)(sizeof k->watch / sizeof k->watch[0]))
+        return -1;
+    k->watch[k->nwatch].fn = fn;
+    k->watch[k->nwatch].ctx = ctx;
+    k->nwatch++;
+    return 0;
 }
 
 void esk_esp32c3_pins_changed(struct esk_mach *m)

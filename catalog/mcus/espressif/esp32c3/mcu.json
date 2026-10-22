@@ -197,6 +197,14 @@
     {
       "match": "USB_DEVICE",
       "model": "esp32c3-usbjtag"
+    },
+    {
+      "match": "RMT",
+      "model": "esp32c3-rmt"
+    },
+    {
+      "match": "LEDC",
+      "model": "esp32c3-ledc"
     }
   ],
   "io": {
