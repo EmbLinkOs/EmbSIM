@@ -56,8 +56,10 @@
  *     PLCP word's bits 21:17 naming a key entry (a station's pairwise key
  *     at 4; an access point's group key at 2, its stations' from 8) leaves
  *     encrypted under that entry's key: the driver wrote the CCMP header
- *     (its PN and key ID) and left the MIC's 8 bytes. A protected data frame received is decrypted
- *     in place under a key of its transmitter, its CCMP header and MIC kept
+ *     (its PN and key ID) and left the MIC's 8 bytes. A protected data frame
+ *     received (and a management one, an ESP-NOW action frame, with bit 17
+ *     of the interface's +0x800) is decrypted in place under a key of its
+ *     transmitter, its CCMP header and MIC kept
  *     for net80211's ccmp_decap, which checks the PN and strips them; one
  *     no key opens is answered and dropped.
  * The rest of its registers keep what is written.
@@ -378,14 +380,20 @@ static int rx(void *ctx, const u8 *frame, u32 len, u32 mhz, int rssi, u32 kbps, 
         match |= 1u << 29;
     if (!match)
         return 0;
-    if ((frame[1] & 0x40u) && ((frame[0] >> 2) & 3u) == 2u) {
-        /* CCMP, when the interface's crypto is on */
-        if (!(*reg(k, CRYPTO_CONF) & 1u) && !(*reg(k, CRYPTO_CONF + 4u) & 1u))
-            return !(frame[4] & 1u);
+    if ((frame[1] & 0x40u) && ((frame[0] >> 2) & 3u) != 1u) {
+        /* CCMP, when the interface's crypto is on: bit 0 for data frames,
+         * bit 17 for management ones (hal_crypto_mgmt_rx_enabled) */
+        u32 on = ((frame[0] >> 2) & 3u) == 2u ? 1u : 1u << 17;
+        if (!(*reg(k, CRYPTO_CONF) & on) && !(*reg(k, CRYPTO_CONF + 4u) & on)) {
+            if (on == 1u)
+                return !(frame[4] & 1u);
+            goto take; /* as it came, for the driver */
+        }
         if (!rx_decrypt(k, frame, len, k->scratch))
             return !(frame[4] & 1u); /* answered, then dropped: no key opens it */
         frame = k->scratch;
     }
+take:
     w0 = d ? rd32(k, d) : 0u;
     if (!(w0 & 0x80000000u)) {
         k->rx_next = 0;

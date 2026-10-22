@@ -33,7 +33,10 @@ versions follow semantic versioning. There is no release yet.
   - **The key entry a frame names** (`wifi.c`): the PLCP word's bits
     21:17 pick the key the MAC encrypts under, as the access point's
     frames to its stations need (only bits 19:17 were read before, so
-    entry 8 read as none and its frames left in clear).
+    entry 8 read as none and its frames left in clear, as ESP-NOW's
+    encrypted unicast did with entry 24). Protected management frames,
+    ESP-NOW's action frames, are decrypted on receipt when the interface's
+    management crypto (+0x800 bit 17) is on.
 - **ESP-NOW between two boards** (`espnow`, 12 assertions, unmodified):
   ESP-IDF's `wifi/espnow` broadcasts, each board adds the other as a
   peer, and one sends the other encrypted unicast data. The Wi-Fi MAC's
