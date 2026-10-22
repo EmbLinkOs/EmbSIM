@@ -953,6 +953,11 @@ int esk_rf_gated(const struct esk_rf_periph *p)
     return p->gate && (!(p->gate->value & p->gate_mask)) != (p->gate_held != 0);
 }
 
+int esk_rf_reg_gated(const struct esk_rf_reg *r)
+{
+    return r->gate ? !(r->gate->value & r->gate_mask) : esk_rf_gated(r->p);
+}
+
 void esk_rf_periph_reset(struct esk_rf_periph *p)
 {
     struct esk_rf *rf = p->rf;
@@ -981,19 +986,20 @@ static void gated_access(struct esk_rf *rf, struct esk_rf_periph *p, u32 a, int 
 {
     struct esk_mach *m = rf->m;
     struct esk_rf_reg *r = reg_at(rf, a, n);
+    const char *gate = r && r->gate ? r->gate_name : p->gate_name;
     if (m->bus.debug || p->gate_warned)
         return;
     p->gate_warned = 1;
-    if (p->gate_held)
+    if (p->gate_held && !(r && r->gate))
         esk_rf_diag(m, ES_SEV_WARNING, "mcu.held_in_reset",
                     "%s at pc 0x%08lx: %s.%s %s while it is held in reset (%s is 1)",
                     write ? "a write" : "a read", (unsigned long)m->cpu->ops->pc(m->cpu), p->name,
-                    r ? r->name : "?", write ? "is ignored" : "reads its reset value", p->gate_name);
+                    r ? r->name : "?", write ? "is ignored" : "reads its reset value", gate);
     else
         esk_rf_diag(m, ES_SEV_WARNING, "mcu.clock_gated",
                     "%s at pc 0x%08lx: %s.%s %s while its clock is off (%s is 0)",
                     write ? "a write" : "a read", (unsigned long)m->cpu->ops->pc(m->cpu), p->name,
-                    r ? r->name : "?", write ? "is ignored" : "reads as 0", p->gate_name);
+                    r ? r->name : "?", write ? "is ignored" : "reads as 0", gate);
 }
 
 /* ESK_RF_ATOMIC_ALIASES: the register an address +0x1000, +0x2000 or
@@ -1070,8 +1076,8 @@ static u32 map_read(void *ctx, u32 off, int n)
         return 0;
     }
     p = r->p;
-    if (esk_rf_gated(p)) {
-        if (p->gate_held)
+    if (esk_rf_reg_gated(r)) {
+        if (p->gate_held && !r->gate)
             access(rf, a, n, &v, 0, 0);
         gated_access(rf, p, a, n, 0);
         return v;
@@ -1112,7 +1118,7 @@ static void map_write(void *ctx, u32 off, int n, u32 v)
         return;
     }
     p = r->p;
-    if (esk_rf_gated(p)) {
+    if (esk_rf_reg_gated(r)) {
         gated_access(rf, p, a, n, 1);
         return;
     }

@@ -5,7 +5,7 @@
  "version": "1.0.0",
  "device": "ESP32-C3",
  "description": "ESP32-C3 peripheral registers at their addresses, reset values and field access, and the interrupt matrix's 62 source numbers, converted by tools/importers/svd2regs.py from Espressif's esp32c3.svd (espressif/svd at be20aa1), Copyright 2024 Espressif Systems (Shanghai) PTE LTD, SPDX-License-Identifier: Apache-2.0 (LICENSES/Apache-2.0.txt). The interrupt numbers are the interrupt matrix's sources (ESP32-C3 TRM v1.4 table 8.3-1), not CPU interrupts.",
- "source": "converted from Espressif esp32c3.svd (espressif/svd be20aa12560889d6125d144cdb48cf615ac17628) by tools/importers/svd2regs.py; peripherals left out: RNG (its one register, DATA at 0x600260B0, is APB_CTRL's RND_DATA: the TRM's RNG_DATA_REG (TRM v1.4 section 24.5)); registers filled in: SPI0 from SPI1, 29 registers (SPI_MEM0 and SPI_MEM1 share one register layout, ESP-IDF's soc/esp32c3/register/soc/spi_mem_reg.h; the SVD lists part of SPI0's); memories added: RMT.RAM at 0x400, 192 words (the four channels' 192 x 32-bit RAM, TRM v1.4 section 33.3.2); I2C0.TXRAM at 0x104, 31 words (the TX RAM's other 31 bytes after TXFIFO_START_ADDR, a word each, TRM v1.4 section 28.4.10); I2C0.RXRAM at 0x184, 31 words (the RX RAM's other 31 bytes after RXFIFO_START_ADDR, a word each, TRM v1.4 section 28.4.10)",
+ "source": "converted from Espressif esp32c3.svd (espressif/svd be20aa12560889d6125d144cdb48cf615ac17628) by tools/importers/svd2regs.py; peripherals left out: RNG (its one register, DATA at 0x600260B0, is APB_CTRL's RND_DATA: the TRM's RNG_DATA_REG (TRM v1.4 section 24.5)), BB (its one register, BBPD_CTRL at 0x6001D054, is part of the Wi-Fi baseband block, whose other registers the SVD leaves out and ESP-IDF's PHY uses: esp32c3-radio models the block); registers filled in: SPI0 from SPI1, 29 registers (SPI_MEM0 and SPI_MEM1 share one register layout, ESP-IDF's soc/esp32c3/register/soc/spi_mem_reg.h; the SVD lists part of SPI0's); memories added: RMT.RAM at 0x400, 192 words (the four channels' 192 x 32-bit RAM, TRM v1.4 section 33.3.2); I2C0.TXRAM at 0x104, 31 words (the TX RAM's other 31 bytes after TXFIFO_START_ADDR, a word each, TRM v1.4 section 28.4.10); I2C0.RXRAM at 0x184, 31 words (the RX RAM's other 31 bytes after RXFIFO_START_ADDR, a word each, TRM v1.4 section 28.4.10)",
  "interrupts": {
   "WIFI_MAC": 0,
   "WIFI_MAC_NMI": 1,
@@ -21470,38 +21470,6 @@
        "LEDC_DATE",
        0,
        32
-      ]
-     ]
-    }
-   ]
-  },
-  {
-   "name": "BB",
-   "base": "0x6001D000",
-   "registers": [
-    {
-     "name": "BBPD_CTRL",
-     "offset": "0x54",
-     "fields": [
-      [
-       "DC_EST_FORCE_PD",
-       0,
-       1
-      ],
-      [
-       "DC_EST_FORCE_PU",
-       1,
-       1
-      ],
-      [
-       "FFT_FORCE_PD",
-       2,
-       1
-      ],
-      [
-       "FFT_FORCE_PU",
-       3,
-       1
       ]
      ]
     }

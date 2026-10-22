@@ -22,8 +22,24 @@
  *     IR_RESETB (register 0, bit 0) going from 0 to 1, reports done
  *     (register 3, O_DONE_FLAG bit 0 and BG_O_DONE_FLAG bit 3), which
  *     ESP-IDF's calibrate_ocode waits for.
+ *   - The radio's calibrations answer as an ideal radio
+ *     (docs/engineering/c3-radios.md, step 2): the BBPLL block (0x66)
+ *     reads calibrated and locked, OR_CAL_END and OR_LOCK set and OR_CAL_CAP
+ *     8, mid-range (register 8, ESP-IDF's soc/regi2c_bbpll.h); the RF PLL
+ *     block (0x62) reads its calibration ended (register 7 bit 1, which
+ *     libphy's wait_rfpll_cal_end waits for).
+ *   - The rest of the page (+0x4C to +0xFFC) holds the radio's analog
+ *     controls, which ESP-IDF's closed PHY drives and no document names;
+ *     kept as written, with the measurements its calibrations wait for:
+ *     the power detector's start (+0x5C bit 19, rom_pkdet_vol_start) sets
+ *     its state (+0x50 bits 26:24) to 7, done; the DC estimator
+ *     (txdc_cal_v70) reads done (+0x4C bit 24); the RF PLL's frequency
+ *     calibration (set_chan_freq_sw_start) is never busy (+0x168 bit 31)
+ *     and finds the code it was given (+0x150 bits 26:20, read back at
+ *     +0x170 bits 23:17). Their readings are those of a calibrated front
+ *     end: nothing outside the chip sees them.
  * Not yet: the registers' reset values (a block's registers read 0 until
- * written), the time a transfer and the calibration take, and what the
+ * written), the time a transfer and the calibrations take, and what the
  * values do (the PLL's frequency comes from SYSTEM's CPU_PER_CONF and
  * SYSCLK_CONF, the regulators' voltages are not modelled). */
 #include <string.h>
@@ -31,7 +47,7 @@
 #include "mcu/esp32c3/esp32c3.h"
 
 #define REGI2C_BASE 0x6000E000u
-#define REGI2C_SIZE 0x100u
+#define REGI2C_SIZE 0x1000u
 #define NBLOCKS     16 /* the blocks' addresses are 0x60 to 0x6F */
 #define BLOCK_ULP   0x61u
 
@@ -40,7 +56,12 @@ struct c3_regi2c {
     u32 ctrl[2];
     u32 conf[3]; /* ANA_CONF0, ANA_CONFIG, ANA_CONFIG2 */
     u8 reg[NBLOCKS][256];
+    u32 ana[(REGI2C_SIZE - 0x4Cu) / 4u]; /* the radio's analog controls, +0x4C on */
 };
+
+#define BLOCK_RFPLL 0x62u
+#define BLOCK_BBPLL 0x66u
+#define ANA(k, off) ((k)->ana[((off) - 0x4Cu) / 4u])
 
 static u8 *block_reg(struct c3_regi2c *k, u32 block, u32 r)
 {
@@ -66,6 +87,10 @@ static void transfer(struct c3_regi2c *k, int host, u32 v)
         }
         k->ctrl[host] = v & ~(1u << 25);
     } else {
+        if (block == BLOCK_RFPLL && r == 7u)
+            *p = (u8)(*p | 0x02u); /* the RF PLL's calibration has ended */
+        if (block == BLOCK_BBPLL && r == 8u)
+            *p = 0xC8u; /* OR_LOCK, OR_CAL_END, OR_CAL_CAP 8 */
         data = p ? *p : 0;
         k->ctrl[host] = (v & ~(0xffu << 16 | 1u << 25)) | data << 16;
     }
@@ -80,6 +105,13 @@ static u32 ri_read(void *ctx, u32 off, int n)
         v = k->ctrl[w / 4u];
     else if (w >= 0x40u && w < 0x4Cu)
         v = k->conf[(w - 0x40u) / 4u];
+    else if (w >= 0x4Cu) {
+        if (w == 0x4Cu)
+            ANA(k, 0x4Cu) |= 1u << 24; /* the DC estimate is done */
+        if (w == 0x170u) /* the RF PLL found the code it was given */
+            ANA(k, 0x170u) = (ANA(k, 0x170u) & ~(0x7Fu << 17)) | ((ANA(k, 0x150u) >> 20) & 0x7Fu) << 17;
+        v = ANA(k, w);
+    }
     return v >> (8u * (off & 3u));
 }
 
@@ -93,19 +125,25 @@ static void ri_write(void *ctx, u32 off, int n, u32 v)
         slot = &k->ctrl[w / 4u];
     else if (w >= 0x40u && w < 0x4Cu)
         slot = &k->conf[(w - 0x40u) / 4u];
-    if (!slot)
-        return;
-    v = (*slot & ~mask) | (v << sh & mask);
-    if (w < 8u)
-        transfer(k, (int)(w / 4u), v);
     else
-        *slot = v;
+        slot = &ANA(k, w);
+    v = (*slot & ~mask) | (v << sh & mask);
+    if (w < 8u) {
+        transfer(k, (int)(w / 4u), v);
+        return;
+    }
+    if (w == 0x5Cu && (v & ~*slot & 1u << 19)) /* the power detector's reading: done */
+        ANA(k, 0x50u) |= 7u << 24;
+    *slot = v;
+    if (w == 0x168u)
+        *slot &= ~(1u << 31); /* the RF PLL is never busy */
 }
 
 static void ri_reset(void *ctx)
 {
     struct c3_regi2c *k = (struct c3_regi2c *)ctx;
     k->ctrl[0] = k->ctrl[1] = 0;
+    memset(k->ana, 0, sizeof k->ana);
     if (k->s->reset_cause == ESK_RESET_POWER || k->s->reset_cause == ESK_RESET_PIN) {
         memset(k->conf, 0, sizeof k->conf);
         memset(k->reg, 0, sizeof k->reg);

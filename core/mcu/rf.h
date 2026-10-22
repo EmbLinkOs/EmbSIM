@@ -80,6 +80,12 @@ struct esk_rf_reg {
     struct esk_rf_periph *p;
     struct esk_rf_field *f;
     int nf;
+    /* a clock of its own, which stands for its peripheral's gate (an
+     * ESP32-C3's TSENS registers in APB_SARADC, on TSENS_CLK_EN): 0 for
+     * the peripheral's */
+    struct esk_rf_reg *gate;
+    u64 gate_mask;
+    const char *gate_name;
 };
 
 /* a peripheral model's hooks: struct esk_dev_ops over one peripheral */
@@ -189,6 +195,8 @@ const struct esk_rf_model_type *esk_rf_model_find(const char *name);
 /* ---- for the models --------------------------------------------------- */
 
 int esk_rf_gated(const struct esk_rf_periph *p);
+/* the register's clock is off: its own gate, or its peripheral's */
+int esk_rf_reg_gated(const struct esk_rf_reg *r);
 /* the peripheral's registers to their reset values, and its model's reset */
 void esk_rf_periph_reset(struct esk_rf_periph *p);
 struct esk_rf_periph *esk_rf_periph(struct esk_rf *rf, const char *name);

@@ -1282,6 +1282,49 @@ static void test_rng_and_radio(void)
     c3_close(&f);
 }
 
+static void test_radio_calibrations(void)
+{
+    /* the PHY's calibrations answer as an ideal radio (c3-radios.md step 2):
+     * the BBPLL calibrated and locked, the RF PLL's calibration ended, the
+     * power detector's reading, the DC and IQ estimates done, the RF PLL
+     * finding the code it was given; the baseband, AGC, gain table and MAC
+     * pages keep what is written; the MAC acknowledges hal_init */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, REGI2C, 0x66u | 8u << 8 | 0x04000000u);
+    CHECK_EQ((rd(&f, REGI2C) >> 16) & 0xffu, 0xC8u); /* OR_LOCK, OR_CAL_END, CAP 8 */
+    wr(&f, REGI2C, 0x62u | 7u << 8 | 0x04000000u);
+    CHECK_EQ((rd(&f, REGI2C) >> 16) & 0x02u, 0x02u);
+    wr(&f, REGI2C + 0x5Cu, 0x0080016Au); /* the power detector: bit 19 clear */
+    CHECK_EQ((rd(&f, REGI2C + 0x50u) >> 24) & 7u, 0u);
+    wr(&f, REGI2C + 0x5Cu, 0x0088016Au); /* then set: the reading is done */
+    CHECK_EQ((rd(&f, REGI2C + 0x50u) >> 24) & 7u, 7u);
+    CHECK_EQ(rd(&f, REGI2C + 0x5Cu), 0x0088016Au);
+    CHECK(rd(&f, REGI2C + 0x4Cu) & (1u << 24)); /* the DC estimate */
+    wr(&f, REGI2C + 0x150u, 0x2Au << 20);       /* the RF PLL's code */
+    wr(&f, REGI2C + 0x168u, 0xFFFFFFFFu);
+    CHECK_EQ(rd(&f, REGI2C + 0x168u) >> 31, 0u); /* never busy */
+    CHECK_EQ((rd(&f, REGI2C + 0x170u) >> 17) & 0x7Fu, 0x2Au);
+    wr(&f, REGI2C + 0x130u, 0x13572468u); /* another analog control */
+    CHECK_EQ(rd(&f, REGI2C + 0x130u), 0x13572468u);
+    CHECK(rd(&f, 0x60006174u) & (1u << 16)); /* FE's IQ estimate */
+    wr(&f, 0x6001D054u, 0x5u);               /* BB's BBPD_CTRL */
+    wr(&f, 0x6001D03Cu, 0x3C3C3C3Cu);        /* a baseband register the SVD leaves out */
+    wr(&f, 0x6001C02Cu, 0x32004E00u);        /* the AGC */
+    wr(&f, 0x60011848u, 0x00A00000u);        /* the receive gain table */
+    CHECK_EQ(rd(&f, 0x6001D054u), 0x5u);
+    CHECK_EQ(rd(&f, 0x6001D03Cu), 0x3C3C3C3Cu);
+    CHECK_EQ(rd(&f, 0x6001C02Cu), 0x32004E00u);
+    CHECK_EQ(rd(&f, 0x60011848u), 0x00A00000u);
+    CHECK_EQ(rd(&f, 0x60033D14u) & 1u, 0u); /* the MAC: hal_init's request */
+    wr(&f, 0x60033D14u, 2u);
+    CHECK_EQ(rd(&f, 0x60033D14u), 3u);
+    wr(&f, 0x60035028u, 0x11u);
+    CHECK_EQ(rd(&f, 0x60035028u), 0x11u);
+    c3_close(&f);
+}
+
 static void test_cpu_reset_clears_pms(void)
 {
     /* a software CPU reset (RTC_SW_CPU_RST) keeps the devices but clears the
@@ -2322,6 +2365,28 @@ static void test_adc_scan_dma_and_tsens(void)
     c3_close(&f);
 }
 
+static void test_tsens_own_clock(void)
+{
+    /* the temperature sensor's registers follow TSENS_CLK_EN, not
+     * APB_SARADC's clock: ESP-IDF turns on only the first to use them, and
+     * its PHY reads TSENS_CTRL2 with the second off */
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, SYSTEM + 0x10u, rd(&f, SYSTEM + 0x10u) & ~(1u << 28)); /* APB_SARADC off */
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) & ~(1u << 10)); /* TSENS_CLK_EN off */
+    wr(&f, SARADC + 0x5Cu, 0x8005u);
+    CHECK_EQ(rd(&f, SARADC + 0x5Cu), 0u); /* its clock off: ignored, reads 0 */
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 10);
+    CHECK_EQ(rd(&f, SARADC + 0x5Cu), 0x4002u); /* its reset value */
+    wr(&f, SARADC + 0x5Cu, 0x8005u);
+    CHECK_EQ(rd(&f, SARADC + 0x5Cu), 0x8005u);
+    CHECK_EQ(rd(&f, SARADC + 0x58u), 0x00018000u);
+    wr(&f, SARADC + 0x00u, 0x12345678u); /* the ADC's own registers stay off */
+    CHECK_EQ(rd(&f, SARADC + 0x00u), 0u);
+    c3_close(&f);
+}
+
 #define USJ 0x60043000u
 
 static void test_usb_serial_jtag(void)
@@ -2387,6 +2452,7 @@ RUN(test_gpio_matrix_uart);
 RUN(test_rtc_calibration_periodic);
 RUN(test_regi2c);
 RUN(test_rng_and_radio);
+    RUN(test_radio_calibrations);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
 RUN(test_peripheral_reset_keeps_rate);
@@ -2405,4 +2471,5 @@ RUN(test_spi2_lsb_first);
 RUN(test_spi2_dma);
 RUN(test_adc_oneshot);
 RUN(test_adc_scan_dma_and_tsens);
+    RUN(test_tsens_own_clock);
 TEST_MAIN_END

@@ -5,7 +5,7 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### The ESP32-C3's radios (their plan, step 1)
+### The ESP32-C3's radios (their plan, steps 1 and 2)
 
 - **The plan** (`docs/engineering/c3-radios.md`): Wi-Fi and Bluetooth LE
   modelled at the registers ESP-IDF's closed radio libraries drive, so
@@ -18,8 +18,21 @@ versions follow semantic versioning. There is no release yet.
   RAM and their constant tables read zeros, and ESP-IDF's `esp_wifi_init`
   panicked storing through `our_instances_ptr`. `esprom.py --alias
   VADDR=PADDR:SIZE` places a section linked in an alias of the ROM; the
-  image changes only in those 0x11C4 bytes. The Wi-Fi driver now gets as
-  far as `phy_init`.
+  image changes only in those 0x11C4 bytes.
+- **The PHY's start (step 2).** The radio's register blocks as ESP-IDF's
+  closed PHY drives them: FE2, FE, the receive gain table, the AGC and
+  NRX, the baseband (taken out of the register file, where the SVD named
+  one of its registers) and the Wi-Fi MAC's registers keep what is
+  written; the calibrations answer as an ideal radio (the BBPLL and RF PLL
+  calibrated and locked, the power detector's, DC and IQ measurements
+  done). ESP-IDF v5.4's `wifi/scan` runs unmodified, as on a board's first
+  start: a full RF calibration saved to NVS, the station with the eFuse
+  MAC, a scan of every channel finding nothing, since the MAC sends no
+  frame yet (step 3). It joins the ESP-IDF suite.
+- **Fixed:** the ESP32-C3's temperature sensor registers (APB_TSENS_CTRL,
+  TSENS_CTRL2) were gated by APB_SARADC's clock; they follow TSENS_CLK_EN,
+  the one ESP-IDF turns on to use them. A register may now have a clock
+  of its own in the register file.
 
 ### EmbLinkRTOS on the ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 8)
 

@@ -1,0 +1,74 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "wifi_scan",
+ "until": "3500ms",
+ "description": "wifi/scan: ESP-IDF's Wi-Fi driver on a first start: phy_init finds no stored RF calibration, calibrates in full (the PHY's measurements answer as an ideal radio) and saves it to NVS; the station starts with the eFuse MAC; an active scan of every channel takes some 2.5 s and, with nothing on the air yet (the radios' plan, step 4), finds no access point.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "phy",
+   "at": "700ms",
+   "probe": "console",
+   "expect": {
+    "contains": "phy_init: phy_version 1180,01f2a49"
+   }
+  },
+  {
+   "id": "full-calibration",
+   "at": "700ms",
+   "probe": "console",
+   "expect": {
+    "contains": "failed to load RF calibration data (0x1102), falling back to full calibration"
+   }
+  },
+  {
+   "id": "saved",
+   "at": "700ms",
+   "probe": "console",
+   "expect": {
+    "contains": "saving new calibration data because of checksum failure, mode(2)"
+   }
+  },
+  {
+   "id": "station",
+   "at": "700ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:mode : sta (7c:df:a1:45:6d:62)"
+   }
+  },
+  {
+   "id": "scanning",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Total APs scanned"
+   }
+  },
+  {
+   "id": "scanned",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Total APs scanned = 0, actual AP number ap_info holds = 0\r\n"
+   }
+  },
+  {
+   "id": "no-pll-timeout",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "pll_cal exceeds"
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  }
+ ]
+}

@@ -102,9 +102,27 @@ Each step lands usable and green, as in the RTOS boards plan.
    calibration), FE's IQ estimator and the baseband answer as an ideal
    radio, at the hardware's times. `phy_init` completes, reports its
    calibration, and stores it in NVS as a board does, so the next start
-   loads it. Research so far: `rom_pkdet_vol_start` waits for 0x6000E050
-   bits 26:24 to read 7, `txdc_cal_v70` for bit 24 of 0x6000E04C,
-   `rom_iq_est_enable` for bit 16 of 0x60006174.
+   loads it.
+   *Done:* found by running ESP-IDF's `wifi/scan` with every access to the
+   unclaimed blocks traced, each wait read in the code that waits (the
+   closed libraries keep their symbols): the power detector
+   (`rom_pkdet_vol_start`: +0x5C bit 19 starts, +0x50 bits 26:24 read 7),
+   the DC estimator (`txdc_cal_v70`: +0x4C bit 24), the RF PLL's frequency
+   calibration (`set_chan_freq_sw_start`: busy at +0x168 bit 31, the code
+   given at +0x150 bits 26:20 found at +0x170 bits 23:17) and its end
+   (`wait_rfpll_cal_end`: analog block 0x62, register 7 bit 1), the BBPLL
+   (block 0x66 register 8: OR_LOCK, OR_CAL_END, OR_CAL_CAP), FE's IQ
+   estimator (`rom_iq_est_enable`: +0x174 bit 16). The blocks
+   `phy_init` programs keep what is written: FE2, FE, the receive gain
+   table (0x60011000), the AGC and NRX (0x6001C000), the baseband
+   (0x6001D000, now out of the register file: the SVD names one of its
+   registers) and the MAC's registers (0x60033000-0x60035FFF, whose
+   `hal_init` request at +0xD14 is acknowledged). `wifi/scan` runs as on a
+   board on its first start: a full calibration saved to NVS, the
+   station's MAC, a 2.5 s scan finding nothing (the MAC sends nothing
+   yet). On the way: the temperature sensor's registers follow their own
+   clock (TSENS_CLK_EN), not APB_SARADC's, as the PHY's reading of them
+   shows.
 3. **The Wi-Fi MAC.** Its registers, the transmit and receive DMA
    descriptor lists, its interrupts, the TSF timer, the power states. A
    frame the driver queues leaves as an 802.11 frame; a frame on the air

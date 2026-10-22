@@ -183,6 +183,22 @@ void *esk_esp32c3_system_create(struct esk_mach *s, struct esk_rf_periph *p)
         q->gate_mask = 1ull << gates[i].bit;
         q->gate_name = g;
     }
+    /* the temperature sensor's registers in APB_SARADC run on their own
+     * clock, PERIP_CLK_EN1's TSENS_CLK_EN (ESP-IDF turns on only that one
+     * to use the sensor, and the PHY reads it with APB_SARADC's off) */
+    {
+        static const char *const tsens[] = { "APB_TSENS_CTRL", "TSENS_CTRL2" };
+        struct esk_rf_periph *sar = esk_rf_periph(s->rf, "APB_SARADC");
+        struct esk_rf_reg *en1 = esk_rf_reg(p, "PERIP_CLK_EN1");
+        for (i = 0; sar && en1 && i < 2; i++) {
+            struct esk_rf_reg *r = esk_rf_reg(sar, tsens[i]);
+            if (r) {
+                r->gate = en1;
+                r->gate_mask = 1ull << 10;
+                r->gate_name = "SYSTEM.PERIP_CLK_EN1 bit 10";
+            }
+        }
+    }
     /* the analog blocks' bus and the radio's registers, which the register
      * file does not have */
     if (esk_esp32c3_regi2c_create(s) != 0 || esk_esp32c3_radio_create(s) != 0)

@@ -52,6 +52,7 @@ EXAMPLES = {
     "real_time_stats": "examples/system/freertos/real_time_stats",
     "temp_sensor": "examples/peripherals/temperature_sensor/temp_sensor",
     "uart_echo": "examples/peripherals/uart/uart_echo",
+    "wifi_scan": "examples/wifi/scan",
 }
 FLASH_SIZE = 4 * 1024 * 1024
 
