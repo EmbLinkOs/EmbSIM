@@ -6,6 +6,7 @@
 #include "engine/engine.h"
 #include "model/registry.h"
 #include "util/num.h"
+#include "util/wcrypto.h"
 
 static esk_alloc A;
 static esk_diag D;
@@ -532,30 +533,30 @@ static void test_wifi_ap(void)
     esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
     esk_registry_init(&r, &A);
     ap = add(&e, &r, "AP", "wifi_access_point", NULL, NULL, 0,
-             "{\"ssid\": \"Lab\", \"password\": \"correct horse\", \"channel\": 11, \"bssid\": \"02:00:00:00:00:01\"}");
+             "{\"ssid\": \"Lab\", \"channel\": 11, \"bssid\": \"02:00:00:00:00:01\"}");
     esk_engine_reset(&e);
     t_init(&sta, 2462u);
     sta.answer = 1;
     CHECK(esk_air_attach(&e, &sta.n) == ES_OK);
-    /* its first beacon (at 1 TU + its airtime): the SSID, rates, channel,
-     * TIM, ERP and the RSN element of WPA2-Personal */
+    /* its first beacon (at 2 TU + its airtime): the SSID, rates, channel,
+     * TIM, ERP; an open network's */
     esk_engine_advance(&e, 5 * ES_PS_PER_MS);
     CHECK_EQ(sta.got, 1);
     CHECK_EQ(sta.last[0], 0x80);
     CHECK(!memcmp(sta.last + 4, bcast, 6) && !memcmp(sta.last + 10, bssid, 6) && !memcmp(sta.last + 16, bssid, 6));
     CHECK_EQ(sta.last[32] | sta.last[33] << 8, 100);               /* the interval */
-    CHECK_EQ(sta.last[34] | sta.last[35] << 8, 0x0431);            /* ESS, privacy, short preamble and slot */
+    CHECK_EQ(sta.last[34] | sta.last[35] << 8, 0x0421);            /* ESS, short preamble and slot */
     CHECK(sta.last[36] == 0 && sta.last[37] == 3 && !memcmp(sta.last + 38, "Lab", 3));
-    CHECK_EQ(sta.last_len, 24 + 12 + 5 + 10 + 6 + 3 + 6 + 3 + 22);
+    CHECK_EQ(sta.last_len, 24 + 12 + 5 + 10 + 6 + 3 + 6 + 3);
     CHECK(sta.last[41] == 1 && sta.last[51] == 50 && sta.last[57] == 3 && sta.last[59] == 11);
-    CHECK(sta.last[60] == 5 && sta.last[66] == 42 && sta.last[69] == 48);
+    CHECK(sta.last[60] == 5 && sta.last[66] == 42);
     /* a probe request for any SSID is answered; one for another is not */
     t_send(&e, &sta, f, t_mgmt(f, 4, bcast, probe, sizeof probe), 10 * ES_PS_PER_MS);
     esk_engine_advance(&e, 15 * ES_PS_PER_MS);
     CHECK_EQ(sta.got, 2);
     CHECK_EQ(sta.last[0], 0x50);
     CHECK(!memcmp(sta.last + 4, f + 10, 6));
-    CHECK_EQ(sta.last_len, 24 + 12 + 5 + 10 + 6 + 3 + 3 + 22); /* no TIM */
+    CHECK_EQ(sta.last_len, 24 + 12 + 5 + 10 + 6 + 3 + 3); /* no TIM */
     t_send(&e, &sta, f, t_mgmt(f, 4, bcast, probe_other, sizeof probe_other), 20 * ES_PS_PER_MS);
     esk_engine_advance(&e, 25 * ES_PS_PER_MS);
     CHECK_EQ(sta.got, 2);
@@ -704,6 +705,146 @@ static void test_wifi_ap(void)
     esk_registry_free(&r);
 }
 
+/* WPA2-Personal: the test plays the station's supplicant through the 4-way
+ * handshake, then sends and receives CCMP frames */
+static void test_wifi_ap_wpa2(void)
+{
+    static const uint8_t bssid[6] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x01 };
+    static const uint8_t me[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x62 };
+    static const uint8_t auth[] = { 0, 0, 1, 0, 0, 0 };
+    static const uint8_t assoc[] = { 0x31, 0x04, 10, 0, 0, 3, 'L', 'a', 'b', 48, 20, 1, 0, 0x00, 0x0f, 0xac, 4,
+                                     1, 0, 0x00, 0x0f, 0xac, 4, 1, 0, 0x00, 0x0f, 0xac, 2, 0, 0 };
+    static const uint8_t gw[4] = { 192, 168, 1, 1 };
+    esk_engine e;
+    esk_registry r;
+    esk_comp *ap;
+    t_node sta;
+    uint8_t f[600], pmk[32], ptk[48], snonce[32], anonce[32], eap[200], mic[20], kd[64], gtk[16], plain[600];
+    uint8_t data[76];
+    uint32_t n, i;
+    long pl;
+    uint64_t pn;
+    esk_json *o;
+    esk_engine_init(&e, &A, &D, ESK_POLICY_FUNCTIONAL);
+    esk_registry_init(&r, &A);
+    ap = add(&e, &r, "AP", "wifi_access_point", NULL, NULL, 0,
+             "{\"ssid\": \"Lab\", \"password\": \"correct horse\", \"channel\": 11, \"bssid\": \"02:00:00:00:00:01\"}");
+    esk_engine_reset(&e);
+    t_init(&sta, 2462u);
+    sta.answer = 1;
+    CHECK(esk_air_attach(&e, &sta.n) == ES_OK);
+    esk_engine_advance(&e, 5 * ES_PS_PER_MS);
+    CHECK_EQ(sta.last[34] | sta.last[35] << 8, 0x0431); /* privacy */
+    CHECK(sta.last[69] == 48 && sta.last[70] == 20);    /* the RSN element: CCMP, PSK */
+    t_send(&e, &sta, f, t_mgmt(f, 11, bssid, auth, sizeof auth), 10 * ES_PS_PER_MS);
+    t_send(&e, &sta, f, t_mgmt(f, 0, bssid, assoc, sizeof assoc), 12 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 20 * ES_PS_PER_MS);
+    /* message 1: ANonce, replay counter 1, ACK, no MIC */
+    CHECK(sta.last[0] == 0x08 && sta.last[30] == 0x88 && sta.last[31] == 0x8E && !(sta.last[1] & 0x40u));
+    memcpy(eap, sta.last + 32, sta.last_len - 32);
+    CHECK(eap[1] == 3 && eap[4] == 2 && eap[5] == 0x00 && eap[6] == 0x8A && eap[16] == 1);
+    memcpy(anonce, eap + 17, 32);
+    /* the supplicant: PMK, SNonce, PTK; message 2 with its MIC */
+    esk_pbkdf2_sha1((const uint8_t *)"correct horse", 13, (const uint8_t *)"Lab", 3, 4096, pmk, 32);
+    memset(snonce, 0x5A, sizeof snonce);
+    memcpy(data, bssid, 6); /* the BSSID is the smaller address */
+    memcpy(data + 6, me, 6);
+    if (memcmp(anonce, snonce, 32) < 0) {
+        memcpy(data + 12, anonce, 32);
+        memcpy(data + 44, snonce, 32);
+    } else {
+        memcpy(data + 12, snonce, 32);
+        memcpy(data + 44, anonce, 32);
+    }
+    esk_prf_sha1(pmk, 32, "Pairwise key expansion", data, sizeof data, ptk, 48);
+    memset(eap, 0, 99 + 22);
+    eap[0] = 1;
+    eap[1] = 3;
+    eap[3] = 95 + 22;
+    eap[4] = 2;
+    eap[5] = 0x01;
+    eap[6] = 0x0A; /* MIC, pairwise, version 2 */
+    eap[16] = 1;
+    memcpy(eap + 17, snonce, 32);
+    eap[98] = 22;
+    memcpy(eap + 99, assoc + 9, 22);
+    esk_hmac_sha1(ptk, 16, eap, 99 + 22, mic);
+    memcpy(eap + 81, mic, 16);
+    t_send(&e, &sta, f, t_data(f, bssid, bssid, 0, 0x888E, eap, 99 + 22), 30 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 40 * ES_PS_PER_MS);
+    /* message 3: install, secure, its MIC right, the GTK wrapped under the KEK */
+    memcpy(eap, sta.last + 32, sta.last_len - 32);
+    CHECK(eap[5] == 0x13 && eap[6] == 0xCA && eap[16] == 2);
+    memcpy(mic, eap + 81, 16);
+    memset(eap + 81, 0, 16);
+    {
+        uint8_t m2[20];
+        esk_hmac_sha1(ptk, 16, eap, sta.last_len - 32, m2);
+        CHECK(!memcmp(m2, mic, 16));
+    }
+    n = (uint32_t)eap[97] << 8 | eap[98];
+    CHECK_EQ(n, 56);
+    CHECK_EQ(esk_aes_unwrap(ptk + 16, eap + 99, n / 8 - 1, kd), 0);
+    CHECK(kd[0] == 48 && kd[22] == 0xdd && kd[24] == 0x00 && kd[27] == 1 && kd[28] == 1);
+    memcpy(gtk, kd + 30, 16);
+    /* message 4 */
+    memset(eap, 0, 99);
+    eap[0] = 1;
+    eap[1] = 3;
+    eap[3] = 95;
+    eap[4] = 2;
+    eap[5] = 0x03;
+    eap[6] = 0x0A; /* secure, MIC, pairwise */
+    eap[16] = 2;
+    esk_hmac_sha1(ptk, 16, eap, 99, mic);
+    memcpy(eap + 81, mic, 16);
+    t_send(&e, &sta, f, t_data(f, bssid, bssid, 0, 0x888E, eap, 99), 45 * ES_PS_PER_MS);
+    esk_engine_advance(&e, 50 * ES_PS_PER_MS);
+    o = esk_json_new_object(&A);
+    ap->ops->observe(ap, o);
+    CHECK(strstr(esk_json_get_str(o, "log", ""), "7c:df:a1:45:6d:62 keys installed (WPA2-PSK, CCMP)") != NULL);
+    esk_json_free(&A, o);
+    /* an ARP request under CCMP is answered under CCMP, PN 1 */
+    {
+        uint8_t arp[28], clear[64];
+        size_t cl;
+        memset(arp, 0, sizeof arp);
+        arp[1] = 1;
+        arp[2] = 8;
+        arp[4] = 6;
+        arp[5] = 4;
+        arp[7] = 1;
+        memcpy(arp + 8, me, 6);
+        memcpy(arp + 24, gw, 4);
+        n = t_data(clear, bssid, bssid, 0, 0x0806, arp, sizeof arp);
+        memcpy(f, clear, 24);
+        f[1] |= 0x40u;
+        cl = esk_ccmp_encrypt(ptk + 32, f, 24, 1, 0, clear + 24, n - 24, f + 24);
+        t_send(&e, &sta, f, (uint32_t)(24 + cl), 55 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 60 * ES_PS_PER_MS);
+        CHECK(sta.last[0] == 0x08 && (sta.last[1] & 0x40u));
+        pl = esk_ccmp_decrypt(ptk + 32, sta.last, 24, sta.last + 24, sta.last_len - 24, plain, &pn);
+        CHECK_EQ(pl, 8 + 28);
+        CHECK_EQ(pn, 1);
+        CHECK(plain[6] == 0x08 && plain[7] == 0x06 && plain[15] == 2 && !memcmp(plain + 16, bssid, 6));
+        /* a replayed frame (the same PN) is dropped */
+        n = (uint32_t)sta.got;
+        t_send(&e, &sta, f, (uint32_t)(24 + cl), 65 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 70 * ES_PS_PER_MS);
+        CHECK_EQ(sta.got, (int)n);
+        /* a frame in the clear is dropped too */
+        t_send(&e, &sta, clear, (uint32_t)(24 + 8 + 28), 75 * ES_PS_PER_MS);
+        esk_engine_advance(&e, 80 * ES_PS_PER_MS);
+        CHECK_EQ(sta.got, (int)n);
+    }
+    for (n = 0, i = 0; i < 16; i++)
+        n |= gtk[i];
+    CHECK(n != 0); /* a group key was given */
+    esk_air_detach(&e, &sta.n);
+    esk_engine_free(&e);
+    esk_registry_free(&r);
+}
+
 TEST_MAIN_BEGIN
 esk_alloc_init(&A, NULL);
 esk_diag_init(&D, &A, 64);
@@ -714,6 +855,7 @@ RUN(test_switch_gate);
 RUN(test_virtual_terminal);
 RUN(test_air);
 RUN(test_wifi_ap);
+RUN(test_wifi_ap_wpa2);
 esk_diag_free(&D);
 CHECK_EQ(A.allocations, 0);
 TEST_MAIN_END

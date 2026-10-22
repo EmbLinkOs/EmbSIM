@@ -40,18 +40,32 @@
  *   - hal_init's request (+0xD14 bit 1) reads acknowledged (bit 0).
  *   - The channel is the RF PLL's: the analog I2C block's frequency code
  *     (0x6000E150 bits 26:20) is the MHz above 2400.
+ *   - CCMP (hal_crypto_set_key_entry, hal_crypto_enable): 40-byte key
+ *     entries from +0x1400 (the peer's MAC, a word whose bits 20:18 are the
+ *     cipher, 3 for CCMP, and 31:30 its kind, 0 pairwise and 1 group; the
+ *     key), valid by their bit in +0x814; an interface's crypto on by bit 0
+ *     of +0x800 (+0x804). A frame queued with the Protected bit and the
+ *     PLCP word's bits 19:17 set leaves encrypted under the key for its
+ *     receiver: the driver wrote the CCMP header (its PN and key ID) and
+ *     left the MIC's 8 bytes. A protected data frame received is decrypted
+ *     in place under a key of its transmitter, its CCMP header and MIC kept
+ *     for net80211's ccmp_decap, which checks the PN and strips them; one
+ *     no key opens is answered and dropped.
  * The rest of its registers keep what is written.
  * Not yet: retransmissions (a frame without its ACK is not sent again by
  * the hardware), contention (EDCA backoff, CCA: a frame goes out when the
  * radio is free), the TSF's adjustment to an access point's beacons and its
- * timers (TBTT, the TSF timer interrupts at 0x60035118), hardware
- * encryption (CCMP, the key entries at +0x800), aggregation (A-MPDU), the
- * transmit power the PHY sets (20 dBm, the chip's maximum, is used), the
- * receive filters for promiscuous mode and the BSSID filter (+0x00 to
- * +0x2C: frames of other networks reach the driver, which drops them). */
+ * timers (TBTT, the TSF timer interrupts at 0x60035118), TKIP, WEP, GCMP
+ * and protected management frames, the key entries' other fields (their
+ * key ID and index bits are not used: every key of the peer is tried),
+ * aggregation (A-MPDU), the transmit power the PHY sets (20 dBm, the chip's
+ * maximum, is used), the receive filters for promiscuous mode and the BSSID
+ * filter (+0x00 to +0x2C: frames of other networks reach the driver, which
+ * drops them). */
 #include <string.h>
 
 #include "mcu/esp32c3/esp32c3.h"
+#include "util/wcrypto.h"
 
 #define MAC_BASE      0x60033000u
 #define MAC_SIZE      0x3000u
@@ -74,6 +88,10 @@
 #define INIT          0xD14u
 #define PLCP1(q)      (0x12F8u - 76u * (q))
 #define PMD(q)        (0x1320u - 76u * (q))
+#define CRYPTO_CONF   0x800u /* +4 per interface (hal_crypto_enable) */
+#define KEY_VALID     0x814u /* a bit per key entry */
+#define KEY_ENTRY(n)  (0x1400u + 40u * (u32)(n))
+#define NKEYS         25
 #define MAC_TIME      0x2000u
 #define TSF_LATCH     0x200Cu
 #define TSF_LO        0x2018u
@@ -98,6 +116,7 @@ struct c3_wifi {
     u64 frac;        /* cycles * 1e6 owed, in core_hz units */
     int clocked;
     u8 frame[MAX_FRAME];
+    u8 scratch[MAX_FRAME];
 };
 
 static u32 *reg(struct c3_wifi *k, u32 off) { return &k->word[(off % MAC_SIZE) / 4u]; }
@@ -152,6 +171,82 @@ static u32 desc_addr(struct c3_wifi *k, u32 v)
     return (hi ? hi : 0x3FC00000u) | (v & 0xFFFFFu);
 }
 
+/* ---- the key table and CCMP --------------------------------------------------- */
+
+/* key entry `n` (hal_crypto_set_key_entry): valid, CCMP (bits 20:18 of its
+ * second word 3), for the peer `mac`; its 16-byte key */
+static int key_entry(struct c3_wifi *k, int n, const u8 *mac, u8 tk[16])
+{
+    u32 w0 = *reg(k, KEY_ENTRY(n)), w1 = *reg(k, KEY_ENTRY(n) + 4u);
+    int i;
+    if (!((*reg(k, KEY_VALID) >> n) & 1u) || ((w1 >> 18) & 7u) != 3u)
+        return 0;
+    if (mac[0] != (u8)w0 || mac[1] != (u8)(w0 >> 8) || mac[2] != (u8)(w0 >> 16) || mac[3] != (u8)(w0 >> 24) ||
+        mac[4] != (u8)w1 || mac[5] != (u8)(w1 >> 8))
+        return 0;
+    for (i = 0; i < 16; i++)
+        tk[i] = (u8)(*reg(k, KEY_ENTRY(n) + 8u + 4u * (u32)(i / 4)) >> (8 * (i % 4)));
+    return 1;
+}
+
+/* the entry's kind (bits 31:30 of its second word): 0 a pairwise key, 1 a
+ * group one (the station puts its access point's group key at entry 0, the
+ * pairwise one at entry 4) */
+static int key_pairwise(struct c3_wifi *k, int n) { return ((*reg(k, KEY_ENTRY(n) + 4u) >> 30) & 3u) == 0u; }
+
+/* a frame queued with the PLCP word's encryption: the payload between the
+ * CCMP header the driver wrote (its PN, its key ID) and the MIC's 8 bytes
+ * encrypted under the key for the receiver (a pairwise one to a station or
+ * an access point, a group one to a group) */
+static void tx_encrypt(struct c3_wifi *k, u32 len)
+{
+    u8 *f = k->frame, tk[16];
+    size_t hl = esk_80211_header_len(f, len);
+    const u8 *ra = f + 4;
+    uint64_t pn;
+    int n, pass;
+    if (!hl || len < hl + 16u)
+        return;
+    pn = (uint64_t)f[hl] | (uint64_t)f[hl + 1] << 8 | (uint64_t)f[hl + 4] << 16 | (uint64_t)f[hl + 5] << 24 |
+         (uint64_t)f[hl + 6] << 32 | (uint64_t)f[hl + 7] << 40;
+    for (pass = 0; pass < 2; pass++) /* the kind the receiver asks for first */
+        for (n = 0; n < NKEYS; n++) {
+            int want = !(ra[0] & 1u);
+            if (key_pairwise(k, n) != (pass ? !want : want))
+                continue;
+            if (key_entry(k, n, (ra[0] & 1u) ? f + 10 : ra, tk) || key_entry(k, n, f + 16, tk)) {
+                size_t out = esk_ccmp_encrypt(tk, f, hl, pn, f[hl + 3] >> 6, f + hl + 8, len - hl - 16u,
+                                              k->scratch);
+                memcpy(f + hl, k->scratch, out);
+                return;
+            }
+        }
+}
+
+/* a protected frame received decrypted in place, its CCMP header and MIC
+ * kept (net80211's ccmp_decap checks the PN and strips them): 1, or 0 when
+ * no key of its transmitter opens it */
+static int rx_decrypt(struct c3_wifi *k, const u8 *f, u32 len, u8 *out)
+{
+    size_t hl = esk_80211_header_len(f, len);
+    int n;
+    if (!hl || len < hl + 16u)
+        return 0;
+    for (n = 0; n < NKEYS; n++) {
+        u8 tk[16];
+        long pl;
+        if (!key_entry(k, n, f + 10, tk))
+            continue;
+        pl = esk_ccmp_decrypt(tk, f, hl, f + hl, len - hl, out + hl + 8, NULL);
+        if (pl >= 0) {
+            memcpy(out, f, hl + 8);
+            memcpy(out + hl + 8 + pl, f + len - 8, 8);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /* ---- transmit --------------------------------------------------------------- */
 
 static void tx_next(struct c3_wifi *k);
@@ -201,6 +296,8 @@ static void tx_next(struct c3_wifi *k)
     if (n && n < len)
         len = n;
     len = len > 4u ? len - 4u : 0u; /* the hardware adds the FCS */
+    if ((k->frame[1] & 0x40u) && ((plcp >> 17) & 7u))
+        tx_encrypt(k, len);
     mhz = tuned_mhz(k);
     k->seq++;
     k->busy = (int)q + 1;
@@ -249,6 +346,14 @@ static int rx(void *ctx, const u8 *frame, u32 len, u32 mhz, int rssi, u32 kbps, 
         match |= 1u << 29;
     if (!match)
         return 0;
+    if ((frame[1] & 0x40u) && ((frame[0] >> 2) & 3u) == 2u) {
+        /* CCMP, when the interface's crypto is on */
+        if (!(*reg(k, CRYPTO_CONF) & 1u) && !(*reg(k, CRYPTO_CONF + 4u) & 1u))
+            return !(frame[4] & 1u);
+        if (!rx_decrypt(k, frame, len, k->scratch))
+            return !(frame[4] & 1u); /* answered, then dropped: no key opens it */
+        frame = k->scratch;
+    }
     w0 = d ? rd32(k, d) : 0u;
     if (!(w0 & 0x80000000u)) {
         k->rx_next = 0;

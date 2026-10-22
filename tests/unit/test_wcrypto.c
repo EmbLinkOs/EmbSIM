@@ -77,12 +77,21 @@ static void test_psk_prf(void)
 static void test_aes_wrap(void)
 {
     unsigned char k[16], p[16], c[16], w[24], u[16];
-    esk_aes128 a;
+    unsigned char k256[32];
+    esk_aes a;
     hex("000102030405060708090a0b0c0d0e0f", k);
     hex("00112233445566778899aabbccddeeff", p);
-    esk_aes128_init(&a, k);
-    esk_aes128_encrypt(&a, p, c);
+    esk_aes_init(&a, k, 16);
+    esk_aes_encrypt(&a, p, c);
     CHECK(same(c, "69c4e0d86a7b0430d8cdb78070b4c55a")); /* FIPS 197 C.1 */
+    esk_aes_decrypt(&a, c, u);
+    CHECK(!memcmp(u, p, 16));
+    hex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", k256);
+    esk_aes_init(&a, k256, 32);
+    esk_aes_encrypt(&a, p, c);
+    CHECK(same(c, "8ea2b7ca516745bfeafc49904b496089")); /* C.3 */
+    esk_aes_decrypt(&a, c, u);
+    CHECK(!memcmp(u, p, 16));
     esk_aes_wrap(k, p, 2, w);
     CHECK(same(w, "1fa68b0a8112b447aef34bd8fb5a7b829d3e862371d2cfe5")); /* RFC 3394 4.1 */
     CHECK_EQ(esk_aes_unwrap(k, w, 2, u), 0);

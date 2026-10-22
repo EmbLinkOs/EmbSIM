@@ -214,33 +214,39 @@ static uint32_t sub_word(uint32_t w)
            (uint32_t)sbox[(w >> 8) & 0xFFu] << 8 | (uint32_t)sbox[w & 0xFFu];
 }
 
-void esk_aes128_init(esk_aes128 *a, const unsigned char key[16])
+void esk_aes_init(esk_aes *a, const unsigned char *key, size_t key_bytes)
 {
     static const unsigned char rcon[10] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36 };
-    int i;
+    int i, nk = (int)(key_bytes / 4u), total;
     if (!sbox_ready)
         make_sbox();
-    for (i = 0; i < 4; i++)
+    if (nk != 4 && nk != 6 && nk != 8)
+        nk = 4;
+    a->nr = nk + 6;
+    total = 4 * (a->nr + 1);
+    for (i = 0; i < nk; i++)
         a->rk[i] = (uint32_t)key[4 * i] << 24 | (uint32_t)key[4 * i + 1] << 16 | (uint32_t)key[4 * i + 2] << 8 |
                    (uint32_t)key[4 * i + 3];
-    for (i = 4; i < 44; i++) {
+    for (i = nk; i < total; i++) {
         uint32_t t = a->rk[i - 1];
-        if (i % 4 == 0)
-            t = sub_word(t << 8 | t >> 24) ^ (uint32_t)rcon[i / 4 - 1] << 24;
-        a->rk[i] = a->rk[i - 4] ^ t;
+        if (i % nk == 0)
+            t = sub_word(t << 8 | t >> 24) ^ (uint32_t)rcon[i / nk - 1] << 24;
+        else if (nk > 6 && i % nk == 4)
+            t = sub_word(t);
+        a->rk[i] = a->rk[i - nk] ^ t;
     }
 }
 
-void esk_aes128_encrypt(const esk_aes128 *a, const unsigned char in[16], unsigned char out[16])
+void esk_aes_encrypt(const esk_aes *a, const unsigned char in[16], unsigned char out[16])
 {
     unsigned char s[16], t[16];
     int r, i, c;
     for (i = 0; i < 16; i++)
         s[i] = (unsigned char)(in[i] ^ (a->rk[i / 4] >> (24 - 8 * (i % 4))));
-    for (r = 1; r <= 10; r++) {
+    for (r = 1; r <= a->nr; r++) {
         for (i = 0; i < 16; i++) /* SubBytes, ShiftRows */
             t[i] = sbox[s[(i + 4 * (i % 4)) % 16]];
-        if (r < 10)
+        if (r < a->nr)
             for (c = 0; c < 4; c++) { /* MixColumns */
                 unsigned char *col = t + 4 * c, a0 = col[0], a1 = col[1], a2 = col[2], a3 = col[3];
                 col[0] = (unsigned char)(xtime(a0) ^ xtime(a1) ^ a1 ^ a2 ^ a3);
@@ -254,43 +260,22 @@ void esk_aes128_encrypt(const esk_aes128 *a, const unsigned char in[16], unsigne
     memcpy(out, s, 16);
 }
 
-/* ---- the key wrap (RFC 3394) ------------------------------------------------ */
-
-void esk_aes_wrap(const unsigned char kek[16], const unsigned char *in, size_t n, unsigned char *out)
-{
-    esk_aes128 a;
-    unsigned char b[16], *r = out + 8;
-    size_t i;
-    int j;
-    esk_aes128_init(&a, kek);
-    memset(out, 0xA6, 8);
-    memcpy(r, in, 8 * n);
-    for (j = 0; j < 6; j++)
-        for (i = 1; i <= n; i++) {
-            uint64_t t = (uint64_t)n * (uint64_t)j + i;
-            int k;
-            memcpy(b, out, 8);
-            memcpy(b + 8, r + 8 * (i - 1), 8);
-            esk_aes128_encrypt(&a, b, b);
-            for (k = 0; k < 8; k++)
-                out[k] = (unsigned char)(b[k] ^ (unsigned char)(t >> (56 - 8 * k)));
-            memcpy(r + 8 * (i - 1), b + 8, 8);
-        }
-}
-
-/* AES's inverse cipher, for the unwrap only */
+/* the inverse cipher */
 static unsigned char inv_sbox[256];
+static int inv_ready;
 
-static void aes128_decrypt(const esk_aes128 *a, const unsigned char in[16], unsigned char out[16])
+void esk_aes_decrypt(const esk_aes *a, const unsigned char in[16], unsigned char out[16])
 {
     unsigned char s[16], t[16];
     int r, i, c;
-    if (!inv_sbox[0x63] && !inv_sbox[0])
+    if (!inv_ready) {
         for (i = 0; i < 256; i++)
             inv_sbox[sbox[i]] = (unsigned char)i;
+        inv_ready = 1;
+    }
     for (i = 0; i < 16; i++)
-        s[i] = (unsigned char)(in[i] ^ (a->rk[40 + i / 4] >> (24 - 8 * (i % 4))));
-    for (r = 9; r >= 0; r--) {
+        s[i] = (unsigned char)(in[i] ^ (a->rk[4 * a->nr + i / 4] >> (24 - 8 * (i % 4))));
+    for (r = a->nr - 1; r >= 0; r--) {
         for (i = 0; i < 16; i++) /* InvShiftRows, InvSubBytes */
             t[(i + 4 * (i % 4)) % 16] = inv_sbox[s[i]];
         for (i = 0; i < 16; i++)
@@ -308,13 +293,37 @@ static void aes128_decrypt(const esk_aes128 *a, const unsigned char in[16], unsi
     memcpy(out, s, 16);
 }
 
+/* ---- the key wrap (RFC 3394) ------------------------------------------------ */
+
+void esk_aes_wrap(const unsigned char kek[16], const unsigned char *in, size_t n, unsigned char *out)
+{
+    esk_aes a;
+    unsigned char b[16], *r = out + 8;
+    size_t i;
+    int j;
+    esk_aes_init(&a, kek, 16);
+    memset(out, 0xA6, 8);
+    memcpy(r, in, 8 * n);
+    for (j = 0; j < 6; j++)
+        for (i = 1; i <= n; i++) {
+            uint64_t t = (uint64_t)n * (uint64_t)j + i;
+            int k;
+            memcpy(b, out, 8);
+            memcpy(b + 8, r + 8 * (i - 1), 8);
+            esk_aes_encrypt(&a, b, b);
+            for (k = 0; k < 8; k++)
+                out[k] = (unsigned char)(b[k] ^ (unsigned char)(t >> (56 - 8 * k)));
+            memcpy(r + 8 * (i - 1), b + 8, 8);
+        }
+}
+
 int esk_aes_unwrap(const unsigned char kek[16], const unsigned char *in, size_t n, unsigned char *out)
 {
-    esk_aes128 a;
+    esk_aes a;
     unsigned char b[16], top[8];
     size_t i;
     int j, k;
-    esk_aes128_init(&a, kek);
+    esk_aes_init(&a, kek, 16);
     memcpy(top, in, 8);
     memcpy(out, in + 8, 8 * n);
     for (j = 5; j >= 0; j--)
@@ -323,7 +332,7 @@ int esk_aes_unwrap(const unsigned char kek[16], const unsigned char *in, size_t 
             for (k = 0; k < 8; k++)
                 b[k] = (unsigned char)(top[k] ^ (unsigned char)(t >> (56 - 8 * k)));
             memcpy(b + 8, out + 8 * (i - 1), 8);
-            aes128_decrypt(&a, b, b);
+            esk_aes_decrypt(&a, b, b);
             memcpy(top, b, 8);
             memcpy(out + 8 * (i - 1), b + 8, 8);
         }
@@ -387,11 +396,11 @@ static size_t ccmp_aad(const unsigned char *h, size_t hl, uint64_t pn, unsigned 
 static void ccm(const unsigned char tk[16], const unsigned char nonce[13], const unsigned char *aad, size_t aad_len,
                 const unsigned char *in, size_t len, unsigned char *out, unsigned char mic[8], int enc)
 {
-    esk_aes128 a;
+    esk_aes a;
     unsigned char x[16], blk[16], ctr[16], s[16];
     size_t i, j;
     uint16_t cnt = 1;
-    esk_aes128_init(&a, tk);
+    esk_aes_init(&a, tk, 16);
     /* the counter mode first when decrypting, to MAC the plaintext */
     ctr[0] = 0x01;
     memcpy(ctr + 1, nonce, 13);
@@ -400,7 +409,7 @@ static void ccm(const unsigned char tk[16], const unsigned char nonce[13], const
         ctr[14] = (unsigned char)(cnt >> 8);
         ctr[15] = (unsigned char)cnt;
         cnt++;
-        esk_aes128_encrypt(&a, ctr, s);
+        esk_aes_encrypt(&a, ctr, s);
         for (j = 0; j < n; j++)
             out[i + j] = (unsigned char)(in[i + j] ^ s[j]);
     }
@@ -409,7 +418,7 @@ static void ccm(const unsigned char tk[16], const unsigned char nonce[13], const
     memcpy(x + 1, nonce, 13);
     x[14] = (unsigned char)(len >> 8);
     x[15] = (unsigned char)len;
-    esk_aes128_encrypt(&a, x, x);
+    esk_aes_encrypt(&a, x, x);
     memset(blk, 0, 16);
     blk[0] = (unsigned char)(aad_len >> 8);
     blk[1] = (unsigned char)aad_len;
@@ -418,7 +427,7 @@ static void ccm(const unsigned char tk[16], const unsigned char nonce[13], const
         if (j == 16) {
             for (j = 0; j < 16; j++)
                 x[j] ^= blk[j];
-            esk_aes128_encrypt(&a, x, x);
+            esk_aes_encrypt(&a, x, x);
             memset(blk, 0, 16);
             j = 0;
         }
@@ -426,17 +435,17 @@ static void ccm(const unsigned char tk[16], const unsigned char nonce[13], const
     if (j) {
         for (j = 0; j < 16; j++)
             x[j] ^= blk[j];
-        esk_aes128_encrypt(&a, x, x);
+        esk_aes_encrypt(&a, x, x);
     }
     for (i = 0; i < len; i += 16) {
         size_t n = len - i < 16 ? len - i : 16;
         const unsigned char *p = enc ? in + i : out + i;
         for (j = 0; j < n; j++)
             x[j] ^= p[j];
-        esk_aes128_encrypt(&a, x, x);
+        esk_aes_encrypt(&a, x, x);
     }
     ctr[14] = ctr[15] = 0;
-    esk_aes128_encrypt(&a, ctr, s);
+    esk_aes_encrypt(&a, ctr, s);
     for (j = 0; j < 8; j++)
         mic[j] = (unsigned char)(x[j] ^ s[j]);
 }

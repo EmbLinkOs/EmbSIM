@@ -157,8 +157,17 @@ Each step lands usable and green, as in the RTOS boards plan.
    and pings and leasing addresses by DHCP). `wifi/scan` lists the two
    access points of its project with the RSSI their distances give;
    `station`, set for an open network, joins it and gets its address.
-   Next: WPA2's 4-way handshake and the MAC's CCMP, for `station` as it
-   ships (WPA2-PSK).
+   And WPA2-Personal: the access point's 4-way handshake (the PSK from
+   the passphrase, the PTK, the GTK wrapped under the KEK) and CCMP; the
+   MAC's key table and CCMP (`hal_crypto_set_key_entry`: 40-byte entries
+   from +0x1400, valid bits at +0x814; a frame queued with the PLCP
+   word's bits 19:17 set is encrypted under its receiver's key, the PN the
+   driver's CCMP header gives; a protected frame received is decrypted in
+   place for net80211's `ccmp_decap`); the SHA accelerator's DMA mode and
+   the AES accelerator, which ESP-IDF's wpa_supplicant uses for PBKDF2 and
+   the key unwrap. `station` as it ships (WPA2-PSK) joins and gets its
+   address. Next: the network beyond the router (DNS, TCP and UDP to the
+   host) for `http_request`, then step 5.
 5. **The rest of Wi-Fi.** The access point mode with a station part and
    with another board; `http_request`; ESP-NOW between two boards; power
    save and the radio's current; Arduino-ESP32's Wi-Fi sketches.

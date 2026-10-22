@@ -53,6 +53,7 @@ EXAMPLES = {
     "temp_sensor": "examples/peripherals/temperature_sensor/temp_sensor",
     "uart_echo": "examples/peripherals/uart/uart_echo",
     "wifi_scan": "examples/wifi/scan",
+    "wifi_station": "examples/wifi/getting_started/station",
     "wifi_station_open": "examples/wifi/getting_started/station",
 }
 FLASH_SIZE = 4 * 1024 * 1024

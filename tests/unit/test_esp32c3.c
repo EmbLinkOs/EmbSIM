@@ -7,6 +7,7 @@
  * flash (an ESP image through SPI1, the SHA accelerator, the cache and
  * MMU), the flash's commands, the PC logging. */
 #include "harness.h"
+#include "util/wcrypto.h"
 #include "mcu/build.h"
 #include "mcu/esp32c3/esp32c3.h"
 #include "mcu/riscv/riscv.h"
@@ -1437,6 +1438,316 @@ static void test_wifi_mac(void)
     c3_close(&f);
 }
 
+#define GDMA 0x6003F000u
+
+/* a GDMA channel 0 list from `out` (peripheral `peri`'s out link), and an
+ * in list into `in` when given */
+static void gdma_link(c3 *f, u32 peri, u32 out, u32 in)
+{
+    wr(f, SYSTEM + 0x14u, rd(f, SYSTEM + 0x14u) | 1u << 6); /* DMA */
+    wr(f, SYSTEM + 0x1Cu, rd(f, SYSTEM + 0x1Cu) & ~(1u << 6));
+    wr(f, GDMA + 0xD0u, 1u); /* OUT_RST */
+    wr(f, GDMA + 0xD0u, 0u);
+    wr(f, GDMA + 0x100u, peri);
+    wr(f, GDMA + 0xE0u, (out & 0xfffffu) | 1u << 21);
+    if (in) {
+        wr(f, GDMA + 0x70u, 1u); /* IN_RST */
+        wr(f, GDMA + 0x70u, 0u);
+        wr(f, GDMA + 0xA0u, peri);
+        wr(f, GDMA + 0x80u, (in & 0xfffffu) | 1u << 22);
+    }
+}
+
+static void put_mem(c3 *f, u32 at, const u8 *b, u32 n)
+{
+    u32 i;
+    for (i = 0; i < n; i++)
+        CHECK_EQ(esk_bus_debug_write(&f->m.bus, at + i, 1, b[i]), 0);
+}
+
+static void get_mem(c3 *f, u32 at, u8 *b, u32 n)
+{
+    u32 i, v = 0;
+    for (i = 0; i < n; i++) {
+        CHECK_EQ(esk_bus_debug_read(&f->m.bus, at + i, 1, &v), 0);
+        b[i] = (u8)v;
+    }
+}
+
+/* a descriptor at `d` for `n` bytes at `buf`: owner, suc_eof */
+static void desc(c3 *f, u32 d, u32 buf, u32 n)
+{
+    wr(f, d, 1u << 31 | 1u << 30 | n << 12 | n);
+    wr(f, d + 4u, buf);
+    wr(f, d + 8u, 0u);
+}
+
+static void test_sha_dma(void)
+{
+    /* DMA-SHA: FIPS 180-4's one-block "abc" by DMA_START, and its two-block
+     * message by DMA_START then DMA_CONTINUE, the blocks from the GDMA;
+     * the interrupt, source 52 */
+    static const u8 d1[20] = { 0xa9, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e,
+                              0x25, 0x71, 0x78, 0x50, 0xc2, 0x6c, 0x9c, 0xd0, 0xd8, 0x9d };
+    static const u8 d2[20] = { 0x84, 0x98, 0x3e, 0x44, 0x1c, 0x3b, 0xd2, 0x6e, 0xba, 0xae,
+                              0x4a, 0xa1, 0xf9, 0x51, 0x29, 0xe5, 0xe5, 0x46, 0x70, 0xf1 };
+    const char *m2 = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+    u8 blk[128], out[20];
+    c3 f;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 2); /* CRYPTO_SHA */
+    memset(blk, 0, sizeof blk);
+    memcpy(blk, "abc", 3);
+    blk[3] = 0x80;
+    blk[63] = 24;
+    put_mem(&f, 0x3FC90000u, blk, 64);
+    desc(&f, 0x3FC90200u, 0x3FC90000u, 64);
+    gdma_link(&f, 7, 0x3FC90200u, 0);
+    wr(&f, SHA + 0x00u, 0);  /* SHA-1 */
+    wr(&f, SHA + 0x0Cu, 1);  /* DMA_BLOCK_NUM */
+    wr(&f, SHA + 0x28u, 1);  /* IRQ_ENA */
+    wr(&f, SHA + 0x1Cu, 1);  /* DMA_START */
+    for (i = 0; i < 5; i++) {
+        u32 w = rd(&f, SHA + 0x40u + 4u * (u32)i);
+        out[4 * i] = (u8)w;
+        out[4 * i + 1] = (u8)(w >> 8);
+        out[4 * i + 2] = (u8)(w >> 16);
+        out[4 * i + 3] = (u8)(w >> 24);
+    }
+    CHECK(!memcmp(out, d1, 20));
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (52 - 32)));
+    wr(&f, SHA + 0x24u, 1); /* CLEAR_IRQ */
+    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (52 - 32))));
+    /* two blocks, one call each */
+    memset(blk, 0, sizeof blk);
+    memcpy(blk, m2, 56);
+    blk[56] = 0x80;
+    blk[126] = 0x01;
+    blk[127] = 0xC0; /* 448 bits */
+    put_mem(&f, 0x3FC90000u, blk, 128);
+    desc(&f, 0x3FC90200u, 0x3FC90000u, 64);
+    gdma_link(&f, 7, 0x3FC90200u, 0);
+    wr(&f, SHA + 0x1Cu, 1);
+    desc(&f, 0x3FC90200u, 0x3FC90040u, 64);
+    gdma_link(&f, 7, 0x3FC90200u, 0);
+    wr(&f, SHA + 0x20u, 1); /* DMA_CONTINUE */
+    for (i = 0; i < 5; i++) {
+        u32 w = rd(&f, SHA + 0x40u + 4u * (u32)i);
+        out[4 * i] = (u8)w;
+        out[4 * i + 1] = (u8)(w >> 8);
+        out[4 * i + 2] = (u8)(w >> 16);
+        out[4 * i + 3] = (u8)(w >> 24);
+    }
+    CHECK(!memcmp(out, d2, 20));
+    c3_close(&f);
+}
+
+#define AES_C3 0x6003A000u
+
+static void aes_words(c3 *f, u32 at, const u8 *b, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        wr(f, at + 4u * (u32)i, (u32)b[4 * i] | (u32)b[4 * i + 1] << 8 | (u32)b[4 * i + 2] << 16 |
+                                    (u32)b[4 * i + 3] << 24);
+}
+
+static int aes_is(c3 *f, u32 at, const char *hexs)
+{
+    int i;
+    for (i = 0; i < 16; i++) {
+        unsigned v = 0;
+        sscanf(hexs + 2 * i, "%2x", &v);
+        if (((rd(f, at + 4u * (u32)(i / 4)) >> (8 * (i % 4))) & 0xFFu) != v)
+            return 0;
+    }
+    return 1;
+}
+
+static void unhex(const char *h, u8 *out)
+{
+    size_t i;
+    for (i = 0; h[2 * i] && h[2 * i + 1]; i++) {
+        unsigned v = 0;
+        sscanf(h + 2 * i, "%2x", &v);
+        out[i] = (u8)v;
+    }
+}
+
+static void test_aes(void)
+{
+    /* Typical AES against FIPS 197 C.1 and C.3; DMA-AES's CBC and CTR
+     * against SP 800-38A F.2.1 and F.5.1, the IV left for the next call,
+     * DONE, DMA_EXIT and the interrupt (source 51) */
+    u8 b[64];
+    c3 f;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    wr(&f, SYSTEM + 0x14u, rd(&f, SYSTEM + 0x14u) | 1u << 1); /* CRYPTO_AES */
+    unhex("000102030405060708090a0b0c0d0e0f", b);
+    aes_words(&f, AES_C3, b, 4);
+    unhex("00112233445566778899aabbccddeeff", b);
+    aes_words(&f, AES_C3 + 0x20u, b, 4);
+    wr(&f, AES_C3 + 0x40u, 0); /* AES-128 encryption */
+    wr(&f, AES_C3 + 0x48u, 1);
+    CHECK(aes_is(&f, AES_C3 + 0x30u, "69c4e0d86a7b0430d8cdb78070b4c55a"));
+    CHECK_EQ(rd(&f, AES_C3 + 0x4Cu), 0); /* idle */
+    unhex("69c4e0d86a7b0430d8cdb78070b4c55a", b);
+    aes_words(&f, AES_C3 + 0x20u, b, 4);
+    wr(&f, AES_C3 + 0x40u, 4); /* AES-128 decryption */
+    wr(&f, AES_C3 + 0x48u, 1);
+    CHECK(aes_is(&f, AES_C3 + 0x30u, "00112233445566778899aabbccddeeff"));
+    unhex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", b);
+    aes_words(&f, AES_C3, b, 8);
+    unhex("00112233445566778899aabbccddeeff", b);
+    aes_words(&f, AES_C3 + 0x20u, b, 4);
+    wr(&f, AES_C3 + 0x40u, 2); /* AES-256 encryption */
+    wr(&f, AES_C3 + 0x48u, 1);
+    CHECK(aes_is(&f, AES_C3 + 0x30u, "8ea2b7ca516745bfeafc49904b496089"));
+    /* DMA-AES, CBC */
+    unhex("2b7e151628aed2a6abf7158809cf4f3c", b);
+    aes_words(&f, AES_C3, b, 4);
+    unhex("000102030405060708090a0b0c0d0e0f", b);
+    aes_words(&f, AES_C3 + 0x50u, b, 4);
+    unhex("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51", b);
+    put_mem(&f, 0x3FC90000u, b, 32);
+    desc(&f, 0x3FC90200u, 0x3FC90000u, 32);
+    wr(&f, 0x3FC90210u, 1u << 31 | 64u);
+    wr(&f, 0x3FC90214u, 0x3FC90100u);
+    wr(&f, 0x3FC90218u, 0u);
+    gdma_link(&f, 6, 0x3FC90200u, 0x3FC90210u);
+    wr(&f, AES_C3 + 0x40u, 0);
+    wr(&f, AES_C3 + 0x94u, 1); /* CBC */
+    wr(&f, AES_C3 + 0x98u, 2); /* two blocks */
+    wr(&f, AES_C3 + 0x90u, 1); /* DMA_ENABLE */
+    wr(&f, AES_C3 + 0xB0u, 1); /* INT_ENA */
+    wr(&f, AES_C3 + 0x48u, 1);
+    CHECK_EQ(rd(&f, AES_C3 + 0x4Cu), 2); /* DONE */
+    CHECK(rd(&f, INTR_STATUS_0 + 4u) & (1u << (51 - 32)));
+    get_mem(&f, 0x3FC90100u, b, 32);
+    {
+        u8 want[32];
+        unhex("7649abac8119b246cee98e9b12e9197d5086cb9b507219ee95db113a917678b2", want);
+        CHECK(!memcmp(b, want, 32));
+    }
+    CHECK(aes_is(&f, AES_C3 + 0x50u, "5086cb9b507219ee95db113a917678b2")); /* the next IV */
+    CHECK_EQ(rd(&f, 0x3FC90210u), 1u << 30 | 32u << 12 | 64u); /* the in list's EOF */
+    wr(&f, AES_C3 + 0xB8u, 0); /* DMA_EXIT */
+    CHECK_EQ(rd(&f, AES_C3 + 0x4Cu), 0);
+    wr(&f, AES_C3 + 0xACu, 1); /* INT_CLEAR */
+    CHECK(!(rd(&f, INTR_STATUS_0 + 4u) & (1u << (51 - 32))));
+    /* CTR, the counter's last 32 bits counting */
+    unhex("f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff", b);
+    aes_words(&f, AES_C3 + 0x50u, b, 4);
+    unhex("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51", b);
+    put_mem(&f, 0x3FC90000u, b, 32);
+    desc(&f, 0x3FC90200u, 0x3FC90000u, 32);
+    wr(&f, 0x3FC90210u, 1u << 31 | 64u);
+    gdma_link(&f, 6, 0x3FC90200u, 0x3FC90210u);
+    wr(&f, AES_C3 + 0x94u, 3); /* CTR */
+    wr(&f, AES_C3 + 0x9Cu, 0); /* INC_SEL: 32 bits */
+    wr(&f, AES_C3 + 0x48u, 1);
+    get_mem(&f, 0x3FC90100u, b, 32);
+    {
+        u8 want[32];
+        unhex("874d6191b620e3261bef6864990db6ce9806f66b7970fdff8617187bb9fffdff", want);
+        CHECK(!memcmp(b, want, 32));
+    }
+    CHECK(aes_is(&f, AES_C3 + 0x50u, "f0f1f2f3f4f5f6f7f8f9fafbfcfdff01"));
+    c3_close(&f);
+}
+
+static void test_wifi_ccmp(void)
+{
+    /* the station's keys in the table (as hal_crypto_set_key_entry leaves
+     * them: the pairwise key at entry 4, its kind 0): a protected frame
+     * queued with the PLCP word's encryption leaves under CCMP, its PN the
+     * driver's; a protected frame from the access point arrives decrypted
+     * in place, its CCMP header and MIC kept; one under another key is
+     * answered and dropped */
+    enum { MAC = 0x60033000u, D_TX = 0x3FC90000u, B_TX = 0x3FC90100u, D1 = 0x3FC90200u, B1 = 0x3FC91000u };
+    static const u8 me[6] = { 0x7c, 0xdf, 0xa1, 0x45, 0x6d, 0x62 }, ap[6] = { 0x02, 0xe5, 0, 0, 0, 0x02 };
+    u8 tk[16], fr[80], plain[64], ct[96];
+    uint64_t pn = 0;
+    long n;
+    size_t cl;
+    c3 f;
+    u32 i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    memset(&wtx, 0, sizeof wtx);
+    f.m.host.radio_tx = wifi_radio_tx;
+    wr(&f, REGI2C + 0x150u, 37u << 20);
+    for (i = 0; i < 16; i++)
+        tk[i] = (u8)(0xA0u + i);
+    wr(&f, MAC + 0x1400u + 160u, 0x0000e502u); /* entry 4: the access point's MAC */
+    wr(&f, MAC + 0x1404u + 160u, 0x086c0200u); /* CCMP, pairwise */
+    for (i = 0; i < 4; i++)
+        wr(&f, MAC + 0x1408u + 160u + 4u * i,
+           (u32)tk[4 * i] | (u32)tk[4 * i + 1] << 8 | (u32)tk[4 * i + 2] << 16 | (u32)tk[4 * i + 3] << 24);
+    wr(&f, MAC + 0x814u, 1u << 4);
+    wr(&f, MAC + 0x800u, 0x30103u); /* hal_crypto_enable */
+    /* transmit: header, CCMP header (PN 3, key ID 0), 20 bytes, the MIC's 8 */
+    memset(fr, 0, sizeof fr);
+    fr[0] = 0x08;
+    fr[1] = 0x41; /* to DS, Protected */
+    memcpy(fr + 4, ap, 6);
+    memcpy(fr + 10, me, 6);
+    memset(fr + 16, 0xFF, 6);
+    fr[24] = 3;
+    fr[27] = 0x20;
+    for (i = 0; i < 20; i++)
+        fr[32 + i] = (u8)(i + 1);
+    put_mem(&f, B_TX, fr, 60);
+    wr(&f, D_TX, 0x80000000u | 0x40000000u | 64u << 12 | 64u);
+    wr(&f, D_TX + 4u, B_TX);
+    wr(&f, D_TX + 8u, 0);
+    wr(&f, MAC + 0x12F8u, 64u | 4u << 17); /* the length; encryption */
+    wr(&f, MAC + 0xD08u, 0xC0000000u | (D_TX & 0xFFFFFu));
+    CHECK_EQ(wtx.n, 1);
+    CHECK_EQ(wtx.len, 60);
+    n = esk_ccmp_decrypt(tk, wtx.frame, 24, wtx.frame + 24, 36, plain, &pn);
+    CHECK_EQ(n, 20);
+    CHECK_EQ(pn, 3);
+    CHECK(!memcmp(plain, fr + 32, 20));
+    /* receive: from the access point, PN 7 */
+    wr(&f, MAC + 0x40u, 0x45a1df7cu);
+    wr(&f, MAC + 0x44u, 0x626du);
+    wr(&f, MAC + 0x60u, 0xFFFFFFFFu);
+    wr(&f, MAC + 0x64u, 0x1FFFFu);
+    wr(&f, D1, 0x80000000u | 1600u);
+    wr(&f, D1 + 4u, B1);
+    wr(&f, D1 + 8u, 0);
+    wr(&f, MAC + 0xC64u, 0x3FC00000u);
+    wr(&f, MAC + 0x88u, D1);
+    wr(&f, MAC + 0x84u, 0x80000000u);
+    memset(fr, 0, 24);
+    fr[0] = 0x08;
+    fr[1] = 0x42; /* from DS, Protected */
+    memcpy(fr + 4, me, 6);
+    memcpy(fr + 10, ap, 6);
+    memcpy(fr + 16, ap, 6);
+    cl = esk_ccmp_encrypt(tk, fr, 24, 7, 0, plain, 20, ct);
+    memcpy(fr + 24, ct, cl);
+    tk[0] ^= 1; /* first under another key: answered, dropped */
+    {
+        u8 other[80];
+        memcpy(other, fr, 24);
+        esk_ccmp_encrypt(tk, fr, 24, 8, 0, plain, 20, other + 24);
+        CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, other, (u32)(24 + cl), 2437u, -40, 54000u, ESK_RADIO_WIFI), 1);
+        CHECK_EQ(rd(&f, D1) >> 31, 1u); /* still the hardware's */
+    }
+    CHECK_EQ(f.m.radio.rx(f.m.radio.ctx, fr, (u32)(24 + cl), 2437u, -40, 54000u, ESK_RADIO_WIFI), 1);
+    CHECK_EQ(rd(&f, D1) >> 30, 1u);
+    CHECK_EQ((rd(&f, D1) >> 12) & 0xFFFu, 48u + 24u + 36u + 4u);
+    get_mem(&f, B1 + 48u, fr, 60);
+    CHECK(fr[24] == 7 && fr[27] == 0x20); /* the CCMP header kept */
+    CHECK(!memcmp(fr + 32, plain, 20));   /* the payload in the clear */
+    c3_close(&f);
+}
+
 static void test_radio_calibrations(void)
 {
     /* the PHY's calibrations answer as an ideal radio (c3-radios.md step 2):
@@ -2609,6 +2920,9 @@ RUN(test_regi2c);
 RUN(test_rng_and_radio);
     RUN(test_radio_calibrations);
     RUN(test_wifi_mac);
+    RUN(test_wifi_ccmp);
+    RUN(test_sha_dma);
+    RUN(test_aes);
 RUN(test_usb_serial_jtag);
 RUN(test_cpu_reset_clears_pms);
 RUN(test_peripheral_reset_keeps_rate);

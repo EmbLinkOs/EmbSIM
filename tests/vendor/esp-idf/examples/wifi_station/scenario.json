@@ -1,0 +1,114 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "wifi_station",
+ "until": "3500ms",
+ "description": "wifi/getting_started/station as it ships (menuconfig's defaults: WPA2-Personal, SSID myssid, passphrase mypassword) against the bench's access point 5 m away: wpa_supplicant derives the PSK by PBKDF2 on the SHA accelerator (DMA-SHA, some 0.9 s), the station finds the network on channel 6, authenticates, associates, runs the 4-way handshake (the GTK unwrapped on the AES accelerator, DMA-AES), installs its keys in the MAC's table, and leases 192.168.1.100 by DHCP over CCMP, the MAC encrypting and decrypting its frames.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "scan-after-psk",
+   "at": "2s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:new:<6,0>, old:<1,0>, ap:<255,255>, sta:<6,0>, prof:1, snd_ch_cfg:0x0\r\n"
+   }
+  },
+  {
+   "id": "run",
+   "at": "2s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:state: assoc -> run (0x10)\r\n"
+   }
+  },
+  {
+   "id": "connected",
+   "at": "2s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:connected with myssid, aid = 1, channel 6, BW20, bssid = 02:e5:00:00:00:02\r\n"
+   }
+  },
+  {
+   "id": "security",
+   "at": "2s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:security: WPA2-PSK, phy: bg, rssi: -34\r\n"
+   }
+  },
+  {
+   "id": "ap-keys",
+   "at": "2s",
+   "probe": "ap_log",
+   "expect": {
+    "contains": "7c:df:a1:45:6d:62 keys installed (WPA2-PSK, CCMP)"
+   }
+  },
+  {
+   "id": "lease",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "esp_netif_handlers: sta ip: 192.168.1.100, mask: 255.255.255.0, gw: 192.168.1.1\r\n"
+   }
+  },
+  {
+   "id": "got-ip",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi station: got ip:192.168.1.100\r\n"
+   }
+  },
+  {
+   "id": "reported",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi station: connected to ap SSID:myssid password:mypassword\r\n"
+   }
+  },
+  {
+   "id": "ap-leased",
+   "at": "3500ms",
+   "probe": "ap_log",
+   "expect": {
+    "contains": "7c:df:a1:45:6d:62 leased 192.168.1.100"
+   }
+  },
+  {
+   "id": "no-handshake-failure",
+   "at": "3500ms",
+   "probe": "ap_log",
+   "expect": {
+    "not_contains": "4-way handshake"
+   }
+  },
+  {
+   "id": "no-disconnect",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "wifi:state: run -> init"
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  },
+  {
+   "id": "no-abort",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "abort()"
+   }
+  }
+ ]
+}

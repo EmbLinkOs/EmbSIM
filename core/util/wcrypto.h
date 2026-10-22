@@ -33,12 +33,15 @@ void esk_pbkdf2_sha1(const unsigned char *pass, size_t pass_len, const unsigned 
 void esk_prf_sha1(const unsigned char *key, size_t key_len, const char *label, const unsigned char *data,
                   size_t data_len, unsigned char *out, size_t out_len);
 
-typedef struct esk_aes128 {
-    uint32_t rk[44];
-} esk_aes128;
+typedef struct esk_aes {
+    uint32_t rk[60];
+    int nr; /* rounds: 10, 12 or 14 */
+} esk_aes;
 
-void esk_aes128_init(esk_aes128 *a, const unsigned char key[16]);
-void esk_aes128_encrypt(const esk_aes128 *a, const unsigned char in[16], unsigned char out[16]);
+/* a 16-, 24- or 32-byte key's schedule */
+void esk_aes_init(esk_aes *a, const unsigned char *key, size_t key_bytes);
+void esk_aes_encrypt(const esk_aes *a, const unsigned char in[16], unsigned char out[16]);
+void esk_aes_decrypt(const esk_aes *a, const unsigned char in[16], unsigned char out[16]);
 /* RFC 3394: `n` 64-bit blocks of `in` wrapped under `kek` into n + 1 blocks */
 void esk_aes_wrap(const unsigned char kek[16], const unsigned char *in, size_t n, unsigned char *out);
 /* its inverse: 0, or -1 when the integrity check fails */

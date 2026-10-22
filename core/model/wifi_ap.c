@@ -28,9 +28,18 @@
  *     group frames wait for the DTIM beacon (every beacon) while any
  *     station dozes.
  *
+ *   - WPA2-Personal, with a password: the PSK from it and the SSID
+ *     (PBKDF2), the 4-way handshake after association (IEEE 802.11-2020
+ *     12.7.6: the ANonce, the PTK from both nonces and addresses, message
+ *     2's and 4's MICs checked, the GTK wrapped under the KEK in message 3,
+ *     message 1 or 3 again after a second without its answer, four times),
+ *     then CCMP on every data frame (12.5.3): pairwise to a station, group
+ *     (key ID 1) to all, the PN checked against replay; nothing but EAPOL
+ *     passes before the keys.
+ *
  * Unicast data goes at 54 Mbit/s, management and group frames at 1 Mbit/s.
- * Not yet: WPA2's 4-way handshake and CCMP (a network with a password
- * associates but passes no data); the network beyond the router (DNS,
+ * Not yet: group key rekeying, PMKSA caching, WPA2-Enterprise, TKIP,
+ * protected management frames; the network beyond the router (DNS,
  * TCP and UDP to the host); 802.11n (HT capabilities and operation); WPA3
  * (SAE); hidden SSIDs; retransmissions; contention (it sends when the air
  * is free of its own frames). */
@@ -39,6 +48,7 @@
 
 #include "engine/engine.h"
 #include "model/registry.h"
+#include "util/wcrypto.h"
 
 #define AP_MAX_STA   8
 #define AP_FRAME     1600
@@ -50,7 +60,9 @@
 #define RATE_1M      1000u
 #define LOG_CAP      4096
 
-enum { WAKE_BEACON = 1 };
+enum { WAKE_BEACON = 1, WAKE_EAPOL = 16 }; /* WAKE_EAPOL + a station's index */
+#define EAPOL_TIMEOUT_PS (UINT64_C(1000) * ES_PS_PER_MS) /* hostapd's 1 s */
+#define EAPOL_TRIES 4
 
 typedef struct ap_sta {
     int used, assoc;
@@ -58,6 +70,12 @@ typedef struct ap_sta {
     uint8_t mac[6];
     unsigned aid;
     int leased;
+    /* WPA2: the 4-way handshake's state (1: message 1 sent, 3: message 3
+     * sent, 4: keys installed), its nonces, keys and counters */
+    int wpa, tries;
+    es_time_t eapol_due;
+    uint8_t anonce[32], ptk[48];
+    uint64_t replay, tx_pn, rx_pn;
 } ap_sta;
 
 /* a frame kept for a dozing station (sta >= 0) or for the DTIM (-1) */
@@ -86,6 +104,8 @@ typedef struct ap_state {
     ap_kept kept[AP_PS_FRAMES];
     uint64_t kept_order;
     uint8_t ip[4], mask[4]; /* the router's */
+    uint8_t pmk[32], gtk[16]; /* WPA2's PMK from the passphrase, its group key */
+    uint64_t gtk_pn, nonces;
     unsigned ip_id;
     uint64_t beacons, rx_frames, tx_frames, probes;
     char log[LOG_CAP];
@@ -95,6 +115,9 @@ typedef struct ap_state {
 /* ---- frames ------------------------------------------------------------------ */
 
 static void release(ap_state *s, int sta, int max, es_time_t at);
+static void eapol_msg1(ap_state *s, ap_sta *st, es_time_t at);
+static void eapol_msg3(ap_state *s, ap_sta *st, es_time_t at);
+static void eapol_in(ap_state *s, ap_sta *st, const uint8_t *e, uint32_t len, es_time_t at);
 static int sta_index(ap_state *s, const ap_sta *st) { return (int)(st - s->sta); }
 
 static void note(ap_state *s, const uint8_t *mac, const char *what)
@@ -339,6 +362,12 @@ static void on_mgmt(ap_state *s, const esk_air_frame *fr, es_time_t now)
             char what[32];
             snprintf(what, sizeof what, "associated, aid %u", aid);
             note(s, sa, what);
+            st->wpa = 0;
+            st->leased = 0;
+            if (s->secure) {
+                st->tries = 0;
+                eapol_msg1(s, st, s->free_at + DIFS_PS);
+            }
         }
         return;
     }
@@ -416,13 +445,22 @@ static int any_dozing(ap_state *s)
 
 /* a data frame from the distribution system to `da` (a station, or a group),
  * from `sa`, with an LLC/SNAP header and its ethertype */
+static int any_keyed(ap_state *s)
+{
+    int i;
+    for (i = 0; i < AP_MAX_STA; i++)
+        if (s->sta[i].used && s->sta[i].assoc && s->sta[i].wpa == 4)
+            return 1;
+    return 0;
+}
+
 static void data_out(ap_state *s, const uint8_t *da, const uint8_t *sa, unsigned ethertype, const uint8_t *payload,
                      uint32_t plen, es_time_t at)
 {
     uint8_t f[AP_FRAME];
     ap_sta *st = NULL;
     uint32_t n;
-    if (plen + 32u > AP_FRAME)
+    if (plen + 48u > AP_FRAME)
         return;
     if (!(da[0] & 1u)) {
         st = sta_find(s, da, 0);
@@ -449,6 +487,18 @@ static void data_out(ap_state *s, const uint8_t *da, const uint8_t *sa, unsigned
     f[n++] = (uint8_t)ethertype;
     memcpy(f + n, payload, plen);
     n += plen;
+    if (s->secure && (st ? st->wpa == 4 : 1)) {
+        /* CCMP: the pairwise key to a station, the group key (ID 1) to all */
+        uint8_t body[AP_FRAME];
+        uint32_t blen = n - 24u;
+        if (!st && !any_keyed(s))
+            return;
+        memcpy(body, f + 24, blen);
+        f[1] |= 0x40u; /* Protected */
+        n = 24u + (uint32_t)esk_ccmp_encrypt(st ? st->ptk + 32 : s->gtk, f, 24, st ? ++st->tx_pn : ++s->gtk_pn,
+                                            st ? 0 : 1, body, blen, f + 24);
+    } else if (s->secure && ethertype != 0x888E)
+        return; /* nothing but EAPOL before the keys */
     if (st && st->ps)
         keep(s, sta_index(s, st), f, n);
     else if (!st && any_dozing(s))
@@ -678,10 +728,24 @@ static void on_data(ap_state *s, ap_sta *st, const uint8_t *f, uint32_t len, es_
     uint32_t hdr = (subtype & 8u) ? 26u : 24u; /* QoS data has its control field */
     const uint8_t *da = f + 16, *body;
     uint32_t blen;
+    uint8_t plain[AP_FRAME + 32];
     if ((f[1] & 3u) != 1u || (subtype & 4u))
         return; /* not to the DS, or a null frame */
-    if (f[1] & 0x40u)
-        return; /* protected: no keys yet (WPA2's handshake is not modelled) */
+    if (f[1] & 0x40u) {
+        /* CCMP under the station's pairwise key, its PN rising */
+        uint64_t pn = 0;
+        long n;
+        if (st->wpa != 4 || len < hdr + 16u)
+            return;
+        memcpy(plain, f, hdr);
+        n = esk_ccmp_decrypt(st->ptk + 32, f, hdr, f + hdr, len - hdr, plain + hdr, &pn);
+        if (n < 0 || pn <= st->rx_pn)
+            return; /* forged, or replayed */
+        st->rx_pn = pn;
+        f = plain;
+        len = hdr + (uint32_t)n;
+    } else if (s->secure && !(len >= hdr + 8u && f[hdr + 6] == 0x88 && f[hdr + 7] == 0x8E))
+        return; /* a secure network takes nothing but EAPOL in the clear */
     if (len < hdr + 8u || f[hdr] != 0xAA || f[hdr + 1] != 0xAA || f[hdr + 2] != 0x03)
         return;
     ethertype = (unsigned)f[hdr + 6] << 8 | f[hdr + 7];
@@ -704,6 +768,164 @@ static void on_data(ap_state *s, ap_sta *st, const uint8_t *f, uint32_t len, es_
         arp_in(s, st, body, blen, at);
     else if (ethertype == 0x0800)
         ip_in(s, st, body, blen, at);
+    else if (ethertype == 0x888E && s->secure)
+        eapol_in(s, st, body, blen, at);
+}
+
+/* ---- WPA2-Personal: the 4-way handshake (IEEE 802.11-2020 12.7.6) ------------- */
+
+#define KI_VERSION   2u       /* HMAC-SHA1 MIC, AES key wrap */
+#define KI_PAIRWISE  0x0008u
+#define KI_INSTALL   0x0040u
+#define KI_ACK       0x0080u
+#define KI_MIC       0x0100u
+#define KI_SECURE    0x0200u
+#define KI_ENC_DATA  0x1000u
+
+static const uint8_t RSN_IE[22] = { 48, 20, 1, 0, 0x00, 0x0f, 0xac, 4, 1, 0, 0x00, 0x0f, 0xac, 4,
+                                    1, 0, 0x00, 0x0f, 0xac, 2, 0, 0 };
+
+/* a fresh nonce: the PRF over the BSSID and a counter, as 12.7.5 suggests
+ * (the same sequence every run, so that a run replays) */
+static void fresh_nonce(ap_state *s, uint8_t out[32])
+{
+    uint8_t data[14];
+    int i;
+    memcpy(data, s->bssid, 6);
+    for (i = 0; i < 8; i++)
+        data[6 + i] = (uint8_t)(s->nonces >> (56 - 8 * i));
+    s->nonces++;
+    esk_prf_sha1(s->pmk, 32, "Init Counter", data, sizeof data, out, 32);
+}
+
+/* an EAPOL-Key frame to `st`: its key information, replay counter, nonce,
+ * RSC and key data; its MIC under the KCK when KI_MIC */
+static void eapol_send(ap_state *s, ap_sta *st, unsigned info, const uint8_t *nonce, const uint8_t *kd,
+                       uint32_t kdlen, es_time_t at)
+{
+    uint8_t e[256];
+    uint32_t n = 99u + kdlen, i;
+    if (n > sizeof e)
+        return;
+    memset(e, 0, n);
+    e[0] = 2; /* 802.1X-2004 */
+    e[1] = 3; /* EAPOL-Key */
+    e[2] = (uint8_t)((n - 4u) >> 8);
+    e[3] = (uint8_t)(n - 4u);
+    e[4] = 2; /* the RSN descriptor */
+    e[5] = (uint8_t)(info >> 8);
+    e[6] = (uint8_t)info;
+    e[8] = 16; /* the pairwise key's length: CCMP's */
+    for (i = 0; i < 8; i++)
+        e[9 + i] = (uint8_t)(st->replay >> (56 - 8 * i));
+    memcpy(e + 17, nonce, 32);
+    if (info & KI_INSTALL)
+        for (i = 0; i < 6; i++) /* the RSC: the group key's next PN */
+            e[65 + i] = (uint8_t)((s->gtk_pn + 1u) >> (8 * i));
+    e[97] = (uint8_t)(kdlen >> 8);
+    e[98] = (uint8_t)kdlen;
+    if (kdlen)
+        memcpy(e + 99, kd, kdlen);
+    if (info & KI_MIC) { /* over the whole frame, its MIC field zero */
+        uint8_t mic[ESK_SHA1_LEN];
+        esk_hmac_sha1(st->ptk, 16, e, n, mic);
+        memcpy(e + 81, mic, 16);
+    }
+    data_out(s, st->mac, s->bssid, 0x888E, e, n, at);
+}
+
+static void eapol_msg1(ap_state *s, ap_sta *st, es_time_t at)
+{
+    fresh_nonce(s, st->anonce);
+    st->replay++;
+    st->wpa = 1;
+    eapol_send(s, st, KI_VERSION | KI_PAIRWISE | KI_ACK, st->anonce, NULL, 0, at);
+    st->eapol_due = at + EAPOL_TIMEOUT_PS;
+    esk_comp_wake_at(s->c, st->eapol_due, WAKE_EAPOL + (uint32_t)sta_index(s, st));
+}
+
+static void eapol_msg3(ap_state *s, ap_sta *st, es_time_t at)
+{
+    /* the key data: its RSN element and the GTK's KDE, padded and wrapped
+     * under the KEK */
+    uint8_t kd[64], wrapped[72];
+    uint32_t n = 0;
+    memcpy(kd, RSN_IE, sizeof RSN_IE);
+    n += (uint32_t)sizeof RSN_IE;
+    kd[n++] = 0xdd;
+    kd[n++] = 22;
+    kd[n++] = 0x00;
+    kd[n++] = 0x0f;
+    kd[n++] = 0xac;
+    kd[n++] = 1;    /* the GTK KDE */
+    kd[n++] = 1;    /* key ID 1 */
+    kd[n++] = 0;
+    memcpy(kd + n, s->gtk, 16);
+    n += 16;
+    kd[n++] = 0xdd; /* padding to a multiple of 8 */
+    while (n % 8u)
+        kd[n++] = 0;
+    esk_aes_wrap(st->ptk + 16, kd, n / 8u, wrapped);
+    st->replay++;
+    st->wpa = 3;
+    eapol_send(s, st, KI_VERSION | KI_PAIRWISE | KI_INSTALL | KI_ACK | KI_MIC | KI_SECURE | KI_ENC_DATA, st->anonce,
+               wrapped, n + 8u, at);
+    st->eapol_due = at + EAPOL_TIMEOUT_PS;
+    esk_comp_wake_at(s->c, st->eapol_due, WAKE_EAPOL + (uint32_t)sta_index(s, st));
+}
+
+static int eapol_mic_ok(const ap_sta *st, const uint8_t *e, uint32_t len)
+{
+    uint8_t copy[512], mic[ESK_SHA1_LEN];
+    if (len > sizeof copy || len < 99)
+        return 0;
+    memcpy(copy, e, len);
+    memset(copy + 81, 0, 16);
+    esk_hmac_sha1(st->ptk, 16, copy, len, mic);
+    return memcmp(mic, e + 81, 16) == 0;
+}
+
+/* an EAPOL-Key frame from a station: message 2 or 4 */
+static void eapol_in(ap_state *s, ap_sta *st, const uint8_t *e, uint32_t len, es_time_t at)
+{
+    unsigned info;
+    uint64_t replay = 0;
+    uint32_t i, body;
+    if (len < 99 || e[1] != 3 || e[4] != 2)
+        return;
+    body = 4u + ((uint32_t)e[2] << 8 | e[3]);
+    if (body > len || body < 99)
+        return;
+    len = body;
+    info = (unsigned)e[5] << 8 | e[6];
+    for (i = 0; i < 8; i++)
+        replay = replay << 8 | e[9 + i];
+    if (!(info & KI_MIC) || (info & KI_ACK) || !(info & KI_PAIRWISE) || replay != st->replay)
+        return;
+    if (st->wpa == 1 && !(info & KI_SECURE)) {
+        /* message 2: the PTK from both nonces and addresses, then its MIC */
+        uint8_t data[76];
+        const uint8_t *sn = e + 17, *aa = s->bssid, *sp = st->mac;
+        int amin = memcmp(aa, sp, 6) < 0, nmin = memcmp(st->anonce, sn, 32) < 0;
+        memcpy(data, amin ? aa : sp, 6);
+        memcpy(data + 6, amin ? sp : aa, 6);
+        memcpy(data + 12, nmin ? st->anonce : sn, 32);
+        memcpy(data + 44, nmin ? sn : st->anonce, 32);
+        esk_prf_sha1(s->pmk, 32, "Pairwise key expansion", data, sizeof data, st->ptk, 48);
+        if (!eapol_mic_ok(st, e, len)) {
+            note(s, st->mac, "4-way handshake: message 2's MIC is wrong (another passphrase)");
+            return;
+        }
+        st->tries = 0;
+        eapol_msg3(s, st, at);
+    } else if (st->wpa == 3 && (info & KI_SECURE)) {
+        if (!eapol_mic_ok(st, e, len))
+            return;
+        st->wpa = 4; /* message 4: the keys are installed */
+        st->tx_pn = st->rx_pn = 0;
+        st->eapol_due = 0;
+        note(s, st->mac, "keys installed (WPA2-PSK, CCMP)");
+    }
 }
 
 /* ---- the air ------------------------------------------------------------------ */
@@ -785,6 +1007,8 @@ static es_status ap_create(esk_comp *c)
         esk_comp_diag(c, ES_SEV_ERROR, "wifi_ap.password", "a WPA2 passphrase is 8 to 63 characters");
         return ES_ESCHEMA;
     }
+    if (s->secure) /* the PSK, from the passphrase and the SSID (12.7.1.3) */
+        esk_pbkdf2_sha1((const uint8_t *)pass, strlen(pass), (const uint8_t *)s->ssid, s->ssid_len, 4096, s->pmk, 32);
     esk_comp_param_double(c, "channel", &ch);
     esk_comp_param_double(c, "tx_dbm", &dbm);
     esk_comp_param_double(c, "beacon_interval", &interval);
@@ -851,6 +1075,13 @@ static void ap_reset(esk_comp *c)
     memset(s->kept, 0, sizeof s->kept);
     s->kept_order = 0;
     s->ip_id = 0;
+    s->nonces = 0;
+    s->gtk_pn = 0;
+    if (s->secure) { /* a group key for this session */
+        uint8_t gnonce[32];
+        fresh_nonce(s, gnonce);
+        memcpy(s->gtk, gnonce, 16);
+    }
     s->seq = 0;
     s->free_at = 0;
     s->beacons = s->rx_frames = s->tx_frames = s->probes = 0;
@@ -862,6 +1093,24 @@ static void ap_reset(esk_comp *c)
 static void ap_time(esk_comp *c, uint32_t token)
 {
     ap_state *s = (ap_state *)c->state;
+    if (token >= WAKE_EAPOL && token < WAKE_EAPOL + AP_MAX_STA) {
+        /* no answer to message 1 or 3 in a second: again, then give up */
+        ap_sta *st = &s->sta[token - WAKE_EAPOL];
+        es_time_t now = esk_comp_now(c);
+        if (!st->used || !st->assoc || st->eapol_due != now || (st->wpa != 1 && st->wpa != 3))
+            return;
+        if (++st->tries >= EAPOL_TRIES) {
+            note(s, st->mac, "4-way handshake timed out");
+            st->assoc = 0;
+            st->wpa = 0;
+            return;
+        }
+        if (st->wpa == 1)
+            eapol_msg1(s, st, now);
+        else
+            eapol_msg3(s, st, now);
+        return;
+    }
     if (token != WAKE_BEACON)
         return;
     beacon(s);

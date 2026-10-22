@@ -16,7 +16,8 @@
  *   spimem.c  SPI0 and SPI1, the controllers in front of the flash
  *   nor.c     the in-package flash, an XMC XM25QH32C
  *   assist.c  the Debug Assistant: the PC logging
- *   sha.c     the SHA accelerator, Typical SHA mode
+ *   sha.c     the SHA accelerator: Typical SHA and DMA-SHA
+ *   aes.c     the AES accelerator: Typical AES and DMA-AES
  *   efuse.c   the eFuse controller and the chip's factory bits
  *   timg.c    TIMG0 and TIMG1: T0, the MWDT, the RTC_SLOW_CLK calibration
  *   systimer.c the system timer: two 52-bit counters, three comparators
@@ -98,6 +99,8 @@ int esk_esp32c3_radio_create(struct esk_mach *s);
 int esk_esp32c3_wifi_create(struct esk_mach *s);
 extern const struct esk_dev_ops esk_esp32c3_sha_ops;
 void *esk_esp32c3_sha_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_aes_ops;
+void *esk_esp32c3_aes_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_assist_ops;
 void *esk_esp32c3_assist_create(struct esk_mach *s, struct esk_rf_periph *p);
 /* the CPU is reset: the PC logging keeps the PC and SP it was at */

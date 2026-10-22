@@ -5,7 +5,33 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### The ESP32-C3's radios (their plan, steps 1 to 3)
+### The ESP32-C3's radios (their plan, steps 1 to 3; step 4's WPA2)
+
+- **WPA2-Personal end to end.** ESP-IDF's `wifi/getting_started/station`
+  as it ships (WPA2-PSK, `myssid`/`mypassword`) joins the bench's access
+  point and leases its address (`wifi_station`, 13 assertions): the
+  station's wpa_supplicant derives the PSK by PBKDF2 on the SHA
+  accelerator, the access point runs the 4-way handshake (IEEE
+  802.11-2020 12.7.6: the PTK, MICs, the GTK wrapped under the KEK, EAPOL
+  retransmission), the station unwraps the GTK on the AES accelerator and
+  installs both keys in the MAC, whose CCMP encrypts and decrypts its data
+  frames.
+- **The ESP32-C3's MAC: CCMP** (`wifi.c`): its key table (+0x1400, 40-byte
+  entries, the valid bits at +0x814) and crypto enables, learnt from
+  libpp's hal_crypto_* routines; a frame queued with the PLCP word's
+  encryption leaves under the receiver's key, its PN the driver's; a
+  protected frame received is decrypted in place for net80211's
+  ccmp_decap.
+- **The ESP32-C3's SHA accelerator: DMA-SHA** (DMA_START, DMA_CONTINUE,
+  DMA_BLOCK_NUM, the interrupt), its blocks from the GDMA, as ESP-IDF's
+  mbedtls port uses it for every SHA-1 and SHA-2 hash. **The AES
+  accelerator** (`aes.c`, new): Typical AES and DMA-AES with ECB, CBC,
+  OFB, CTR, CFB8 and CFB128, AES-128 and AES-256, the IV kept, the
+  interrupt. Both were missing: ESP-IDF's PBKDF2 aborted on an all-zero
+  digest, and its AES waited for ever.
+- **`util/wcrypto`**: SHA-1, HMAC, PBKDF2, 802.11's PRF, AES-128/256, the
+  key wrap and CCMP, checked against FIPS 180-4, RFC 2202, IEEE 802.11
+  Annex J, FIPS 197, RFC 3394 and SP 800-38A's vectors.
 
 - **The air** (`core/engine/air.h`): the 2.4 GHz medium a session's radios
   share. A frame is carried whole with its channel, power, rate and
