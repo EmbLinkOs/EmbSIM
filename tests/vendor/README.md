@@ -2,7 +2,8 @@
 
 Firmware written for a vendor's own framework, built with that framework
 unchanged and run on EmbSIM's boards under scenarios (01 §8.2). The
-frameworks are fetched, not vendored; CI's linux-gcc job pins them.
+frameworks are fetched, not vendored; CI's linux-gcc job pins them, and
+its esp-idf job ESP-IDF with its toolchain.
 
 | Directory | Framework | Board |
 | --- | --- | --- |

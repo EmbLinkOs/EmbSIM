@@ -308,8 +308,9 @@ Started only once the NUCLEO-F446RE is done.
    pin given by IN_SEL was not the runtime's).
    The example waits one FreeRTOS tick for the EEPROM's write cycle, so
    with a part at its datasheet's 5 ms the read is NACKed, as on a bench;
-   the project's part writes in 2 ms. Still to come: a CI job with
-   ESP-IDF's toolchain, then Arduino-ESP32's basics.
+   the project's part writes in 2 ms. CI's esp-idf job fetches ESP-IDF at
+   v5.4 with its toolchain and runs them. Still to come: Arduino-ESP32's
+   basics.
 8. **EmbLinkRTOS on the board.** Its RISC-V port moved from QEMU `virt`
    (CLINT and PLIC) to the ESP32-C3 (SYSTIMER and the interrupt matrix),
    with the conformance suite in its CI.

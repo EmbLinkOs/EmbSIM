@@ -18,7 +18,8 @@ versions follow semantic versioning. There is no release yet.
   and read back), gptimer (TIMG0's alarms, stop, reload and moved alarm,
   each count as the ISR reads it), uart_echo (UART1 on IO4 and IO5 to a
   terminal and back) and real_time_stats (FreeRTOS's run-time statistics
-  of six spinning tasks).
+  of six spinning tasks). CI's `esp-idf` job fetches ESP-IDF v5.4 and its
+  RISC-V toolchain and runs them.
 - **The 24LC256** (`emblink/eeprom_24lc256`), Microchip's 256-kbit I2C
   EEPROM: two address bytes, 64-byte page writes with the page wrap, the
   self-timed write cycle without ACK (ACK polling), the address from
