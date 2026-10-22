@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "page-wrap",
+  "description": "With A0 high (0x51), four bytes from 0x003E: A1 A2 fill the page's end, A3 A4 wrap to its start (0x0000).",
+  "policy": "functional",
+  "until": "216us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,1,3,1,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/eeprom_24lc256"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.WP"
+      ],
+      "HI": [
+        "H.OUT",
+        "DUT.A0"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.writes": {
+      "at": "206us",
+      "equals": 4
+    },
+    "output:DUT.cycles": {
+      "at": "206us",
+      "equals": 1
+    },
+    "output:DUT.view": {
+      "at": "206us",
+      "equals": "A3A4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA1A2"
+    },
+    "output:DUT.busy": {
+      "at": "206us",
+      "equals": true
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "adc_oneshot_read",
+ "until": "2500ms",
+ "description": "adc/oneshot_read on the ESP32-C3: ADC1's channels 2 and 3 (GPIO2, GPIO3) at 12 dB, read once a second; 1.1 V and 2.2 V give 1.1 x 0.25 / 1.1 x 4095 = 1024 and 2048 at the TRM's ideal transfer. The eFuses hold no calibration, so the example reports the raw values only.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "ch2",
+   "at": "2400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ADC1 Channel[2] Raw Data: 1024"
+   }
+  },
+  {
+   "id": "ch3",
+   "at": "2400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "ADC1 Channel[3] Raw Data: 2048"
+   }
+  }
+ ]
+}

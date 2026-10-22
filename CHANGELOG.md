@@ -5,6 +5,28 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### ESP-IDF's examples on the ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 7)
+
+- **`tests/vendor/esp-idf/`** builds ESP-IDF v5.4's own examples
+  unmodified, as a user does (`idf.py set-target esp32c3`, `idf.py build`),
+  puts the bootloader, partition table and application into a 4 MB flash
+  image at flasher_args.json's offsets, and runs each on the board under a
+  scenario: hello_world (to its restart), blink (the SK6812 on GPIO8
+  through RMT and led_strip), ledc_basic (4 kHz on GPIO5), temp_sensor (the
+  room's 25 degC, uncalibrated as BLOCK2 is blank), adc_oneshot_read (1.1 V
+  and 2.2 V on IO2 and IO3) and i2c_eeprom (48 bytes written to a 24LC256
+  and read back).
+- **The 24LC256** (`emblink/eeprom_24lc256`), Microchip's 256-kbit I2C
+  EEPROM: two address bytes, 64-byte page writes with the page wrap, the
+  self-timed write cycle without ACK (ACK polling), the address from
+  A0-A2, write protect; five fixtures. The KiCad importer maps it.
+- **Scenarios** take `not_contains`: text a serial, value-text or memory
+  probe must not show (hello_world's restart not before its countdown).
+- **Fixed:** a sleeping core's devices got no quantum for an event an input
+  gave them (the ESP32-C3's I2C master seeing SCL high while ESP-IDF waited
+  in WFI): they caught up at the next wake-up and the edges in between ran
+  together on the pins. The core's next quantum now comes at that event.
+
 ### The ESP32-C3's peripherals (the RTOS boards plan, part 2, step 5)
 
 - **The GPIO matrix** carries any modelled peripheral's output signal and

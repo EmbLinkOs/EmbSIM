@@ -18,15 +18,15 @@ def sh(cmd, **kw):
 
 
 def run_scenario(embsim: Path, project: Path, name: str, elf: Path, scenario: Path, work: Path,
-                 extra: dict = None) -> bool:
-    """`elf` as the project's sketch.elf (and `extra`'s images under their
-    names, for a project's other boards), under `scenario`: True when every
-    assertion holds."""
+                 extra: dict = None, image_name: str = "sketch.elf") -> bool:
+    """`elf` as the project's sketch.elf, or `image_name` (and `extra`'s
+    images under their names, for a project's other boards), under
+    `scenario`: True when every assertion holds."""
     d = work / name
     shutil.rmtree(d, ignore_errors=True)
     d.mkdir(parents=True)
     shutil.copy(project, d / "project.json")
-    shutil.copy(elf, d / "sketch.elf")
+    shutil.copy(elf, d / image_name)
     for file, path in (extra or {}).items():
         shutil.copy(path, d / file)
     p = subprocess.run([str(embsim), "run", str(d / "project.json"), "--scenario", str(scenario), "--json"],

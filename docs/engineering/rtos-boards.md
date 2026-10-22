@@ -295,6 +295,18 @@ Started only once the NUCLEO-F446RE is done.
 7. **Vendor examples.** ESP-IDF's examples, unmodified: hello_world, blink
    with led_strip on RMT, gptimer, uart_echo, i2c, ledc, and the FreeRTOS
    it ships. Then Arduino-ESP32's basics.
+
+   *In progress:* `tests/vendor/esp-idf/` builds ESP-IDF v5.4's examples
+   with `idf.py` as a user does and runs the flash image under scenarios:
+   hello_world, blink (the SK6812 through RMT and the registry's
+   led_strip), ledc_basic, temp_sensor, adc_oneshot_read and i2c_eeprom,
+   whose EEPROM, a 24LC256 (`emblink/eeprom_24lc256`), is new. Running them
+   found a runtime fault every board had (a sleeping core's devices got no
+   quantum for an event an input gave them) and nothing in the models.
+   The example waits one FreeRTOS tick for the EEPROM's write cycle, so
+   with a part at its datasheet's 5 ms the read is NACKed, as on a bench;
+   the project's part writes in 2 ms. Still to come: gptimer, uart_echo and
+   a FreeRTOS example, then a CI job with ESP-IDF's toolchain.
 8. **EmbLinkRTOS on the board.** Its RISC-V port moved from QEMU `virt`
    (CLINT and PLIC) to the ESP32-C3 (SYSTIMER and the interrupt matrix),
    with the conformance suite in its CI.
