@@ -279,7 +279,7 @@ again:
 void esk_esp32c3_signal(struct esk_mach *m, int sig, int level, int oe)
 {
     struct c3_gpio *k = gpio_of(m);
-    u8 lv = level != 0, en = oe != 0;
+    u8 lv = (u8)(level != 0), en = (u8)(oe != 0);
     if (!k || sig < 0 || sig >= 128)
         return;
     if (k->sig_on[sig] && k->sig_lv[sig] == lv && k->sig_oe[sig] == en)

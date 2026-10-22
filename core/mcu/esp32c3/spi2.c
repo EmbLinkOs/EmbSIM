@@ -390,7 +390,7 @@ static void present(struct c3_spi2 *k)
     case PH_DIN:
         if (n > 1)
             for (i = 0; i < n; i++)
-                k->out_oe[i == 2 ? 2 : i == 3 ? 3 : i] = 0;
+                k->out_oe[i] = 0;
         else if (u & U_SIO)
             k->out_oe[0] = 0;
         break;
