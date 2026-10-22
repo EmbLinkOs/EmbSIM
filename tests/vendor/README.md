@@ -3,7 +3,8 @@
 Firmware written for a vendor's own framework, built with that framework
 unchanged and run on EmbSIM's boards under scenarios (01 §8.2). The
 frameworks are fetched, not vendored; CI's linux-gcc job pins them, and
-its esp-idf job ESP-IDF with its toolchain.
+its esp-idf and arduino-esp32 jobs ESP-IDF and Arduino-ESP32 with their
+toolchains.
 
 | Directory | Framework | Board |
 | --- | --- | --- |
@@ -14,5 +15,6 @@ its esp-idf job ESP-IDF with its toolchain.
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
 | `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |
 | `esp-idf/` | ESP-IDF v5.4's own examples (hello_world, blink, LEDC, the temperature sensor, the ADC, an I2C EEPROM, the general-purpose timer, a UART echo, FreeRTOS's run-time statistics), built by `idf.py` into a flash image | `emblink/esp32c3_devkitm1` |
+| `arduino-esp32/` | Arduino-ESP32 3.2.0 through arduino-cli, as the IDE builds for "ESP32C3 Dev Module": the IDE's Blink, DigitalReadSerial and Fade, the core's GetChipID and RepeatTimer | `emblink/esp32c3_devkitm1` |
 
 `vendor_run.py` is what their runners share.

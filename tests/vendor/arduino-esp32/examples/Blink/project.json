@@ -1,0 +1,71 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-esp32-Blink",
+ "description": "Arduino's Blink on the ESP32-C3-DevKitM-1: LED_BUILTIN is the board's RGB LED (the variant's RGB_BUILTIN, GPIO8), which digitalWrite drives through RMT.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "led",
+   "target": "output:B1.D6.color",
+   "kind": "value"
+  },
+  {
+   "id": "frames",
+   "target": "output:B1.D6.frames",
+   "kind": "value"
+  }
+ ]
+}

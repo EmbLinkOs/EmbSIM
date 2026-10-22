@@ -1,0 +1,58 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "Blink",
+ "until": "4500ms",
+ "description": "Blink: digitalWrite(LED_BUILTIN) is rgbLedWrite on the RGB LED at the variant's RGB_BRIGHTNESS (64), so the SK6812 shows #404040 for a second and black for a second. Six frames by 4.5 s: the one pinMode sends when it sets the LED up, then on, off, on, off, on.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "on",
+   "at": "800ms",
+   "probe": "led",
+   "expect": {
+    "equals": "#404040"
+   }
+  },
+  {
+   "id": "off",
+   "at": "1800ms",
+   "probe": "led",
+   "expect": {
+    "equals": "#000000"
+   }
+  },
+  {
+   "id": "on-again",
+   "at": "2800ms",
+   "probe": "led",
+   "expect": {
+    "equals": "#404040"
+   }
+  },
+  {
+   "id": "off-again",
+   "at": "3800ms",
+   "probe": "led",
+   "expect": {
+    "equals": "#000000"
+   }
+  },
+  {
+   "id": "frames-early",
+   "at": "500ms",
+   "probe": "frames",
+   "expect": {
+    "equals": 2
+   }
+  },
+  {
+   "id": "frames",
+   "at": "4500ms",
+   "probe": "frames",
+   "expect": {
+    "equals": 6
+   }
+  }
+ ]
+}

@@ -309,8 +309,13 @@ Started only once the NUCLEO-F446RE is done.
    The example waits one FreeRTOS tick for the EEPROM's write cycle, so
    with a part at its datasheet's 5 ms the read is NACKed, as on a bench;
    the project's part writes in 2 ms. CI's esp-idf job fetches ESP-IDF at
-   v5.4 with its toolchain and runs them. Still to come: Arduino-ESP32's
-   basics.
+   v5.4 with its toolchain and runs them. Arduino-ESP32 3.2.0's sketches
+   (`tests/vendor/arduino-esp32/`) build through arduino-cli as the IDE
+   builds them and run from the merged image: the IDE's Blink (on this
+   board LED_BUILTIN is the RGB LED, which digitalWrite drives through
+   RMT), DigitalReadSerial and Fade, the core's GetChipID and RepeatTimer;
+   CI's arduino-esp32 job installs the platform as the board manager does.
+   *Done.*
 8. **EmbLinkRTOS on the board.** Its RISC-V port moved from QEMU `virt`
    (CLINT and PLIC) to the ESP32-C3 (SYSTIMER and the interrupt matrix),
    with the conformance suite in its CI.

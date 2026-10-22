@@ -1,0 +1,47 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "RepeatTimer",
+ "until": "6s",
+ "description": "RepeatTimer: a timer at 1 MHz with a 1 s auto-reload alarm, its ISR giving a semaphore the loop prints from, with millis() as the ISR saw it; the button on IO0 pressed at 3.5 s ends the timer, so there is no fourth.",
+ "inputs": [
+  {
+   "at": "3500ms",
+   "target": "SW1",
+   "input": "pressed",
+   "value": true
+  },
+  {
+   "at": "3700ms",
+   "target": "SW1",
+   "input": "pressed",
+   "value": false
+  }
+ ],
+ "assertions": [
+  {
+   "id": "first",
+   "at": "1100ms",
+   "probe": "console",
+   "expect": {
+    "contains": "onTimer no. 1 at 1003 ms\r\n"
+   }
+  },
+  {
+   "id": "third",
+   "at": "3400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "onTimer no. 2 at 2003 ms\r\nonTimer no. 3 at 3003 ms\r\n"
+   }
+  },
+  {
+   "id": "stopped",
+   "at": "6s",
+   "probe": "console",
+   "expect": {
+    "not_contains": "onTimer no. 4"
+   }
+  }
+ ]
+}

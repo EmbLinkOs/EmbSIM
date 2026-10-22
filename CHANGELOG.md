@@ -20,6 +20,14 @@ versions follow semantic versioning. There is no release yet.
   terminal and back) and real_time_stats (FreeRTOS's run-time statistics
   of six spinning tasks). CI's `esp-idf` job fetches ESP-IDF v5.4 and its
   RISC-V toolchain and runs them.
+- **`tests/vendor/arduino-esp32/`** builds sketches with Espressif's
+  Arduino-ESP32 3.2.0 (on ESP-IDF v5.4) through arduino-cli as the IDE
+  builds them for "ESP32C3 Dev Module", and runs the merged flash image:
+  Blink (LED_BUILTIN is the RGB LED, white at 64 through RMT),
+  DigitalReadSerial, Fade (LEDC at 1 kHz on pin 9), GetChipID (the eFuse
+  MAC's last bytes) and RepeatTimer (a timer's ISR each second until the
+  button on IO0 ends it). CI's `arduino-esp32` job installs the platform as
+  the board manager does.
 - **The 24LC256** (`emblink/eeprom_24lc256`), Microchip's 256-kbit I2C
   EEPROM: two address bytes, 64-byte page writes with the page wrap, the
   self-timed write cycle without ACK (ACK polling), the address from

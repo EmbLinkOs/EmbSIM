@@ -1,0 +1,22 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "Fade",
+ "until": "1300ms",
+ "description": "Fade: analogWrite on pin 9 is LEDC at Arduino-ESP32's 1 kHz and 8 bits; the duty steps by 5 every 30 ms, between 0 and 255 only after 1.53 s, so the PWM runs at 1 kHz throughout the window.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "frequency",
+   "between": [
+    "400ms",
+    "1200ms"
+   ],
+   "probe": "pwm",
+   "expect": {
+    "frequency_hz": 1000,
+    "tolerance": 0.01
+   }
+  }
+ ]
+}

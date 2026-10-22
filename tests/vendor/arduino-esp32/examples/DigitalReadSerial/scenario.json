@@ -1,0 +1,47 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "DigitalReadSerial",
+ "until": "2000ms",
+ "description": "DigitalReadSerial: the button's state printed at 9600 baud, a line a millisecond or as fast as the UART takes it: 0 until the button is pressed at 1 s, 1 while it is held.",
+ "inputs": [
+  {
+   "at": "1s",
+   "target": "SW1",
+   "input": "pressed",
+   "value": true
+  },
+  {
+   "at": "1500ms",
+   "target": "SW1",
+   "input": "pressed",
+   "value": false
+  }
+ ],
+ "assertions": [
+  {
+   "id": "released",
+   "at": "900ms",
+   "probe": "console",
+   "expect": {
+    "contains": "\r\n0\r\n0\r\n"
+   }
+  },
+  {
+   "id": "not-yet",
+   "at": "900ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "\r\n1\r\n"
+   }
+  },
+  {
+   "id": "pressed",
+   "at": "1450ms",
+   "probe": "console",
+   "expect": {
+    "contains": "\r\n1\r\n1\r\n1\r\n"
+   }
+  }
+ ]
+}
