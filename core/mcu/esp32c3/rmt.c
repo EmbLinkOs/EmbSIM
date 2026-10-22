@@ -187,7 +187,7 @@ static u32 tx_size(const struct tx *t)
     return n ? n : 1u;
 }
 
-static u32 tx_entry(const struct c3_rmt *k, int n, const struct tx *t, u32 e)
+static u32 tx_entry(const struct c3_rmt *k, int n, u32 e)
 {
     u32 w = (u32)BLOCK * (u32)n + e / 2u, v;
     if (w >= NWORDS)
@@ -257,7 +257,7 @@ static void tx_load(struct c3_rmt *k, int n)
                 return;
             }
         }
-        v = tx_entry(k, n, t, t->e);
+        v = tx_entry(k, n, t->e);
         period = v & 0x7fffu;
         if (period) {
             double tf = tick_fs(k, (t->conf_l >> 8) & 0xffu);

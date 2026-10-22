@@ -136,8 +136,10 @@ jobs:
           cmake --build --preset ci-gcc
       - name: ESP-IDF v5.4 and its tools for the ESP32-C3
         run: |
+          # an origin remote: ESP-IDF's submodules are relative to it (../../espressif/...)
           git init -q "$RUNNER_TEMP/esp-idf"
-          git -C "$RUNNER_TEMP/esp-idf" fetch -q --depth 1 https://github.com/espressif/esp-idf.git 67c1de1eebe095d554d281952fde63c16ee2dca0 # v5.4
+          git -C "$RUNNER_TEMP/esp-idf" remote add origin https://github.com/espressif/esp-idf.git
+          git -C "$RUNNER_TEMP/esp-idf" fetch -q --depth 1 origin 67c1de1eebe095d554d281952fde63c16ee2dca0 # v5.4
           git -C "$RUNNER_TEMP/esp-idf" checkout -q FETCH_HEAD
           git -C "$RUNNER_TEMP/esp-idf" submodule update -q --init --depth 1 --recursive
           "$RUNNER_TEMP/esp-idf/install.sh" esp32c3
