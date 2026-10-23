@@ -37,6 +37,20 @@
  *   - The time: +0x2000 counts microseconds from the MAC's start, and a
  *     write of bit 0 (bit 1) to +0x200C latches the station's (the access
  *     point's) TSF at +0x2018 (low) and +0x201C (high), hal_get_tsf_time.
+ *     The station's TSF is what libpp loads from its access point's beacons
+ *     (+0x2010 and +0x2014, then +0x200C bit 4, hal_set_sta_tsf).
+ *   - Power save (step 5): the TBTT (hal_set_sta_tbtt: the next target
+ *     beacon time's low 26 bits at +0x2020, taken by +0x200C bit 8; the
+ *     beacon interval in TU and the interrupt's ahead time in us at +0x2030;
+ *     on by +0x2028 bit 26) raises the power interrupt's bit 4 its ahead
+ *     time before each target beacon time, and four TSF timers (control
+ *     +0x205C + 8i, bit 31 on; the TSF target +0x2060 + 8i) raise bit 8 - i
+ *     once; the power interrupt's enable, status and clear (+0x2110,
+ *     +0x2118, +0x211C) drive source 2 (WIFI_PWR). Between beacons ESP-IDF
+ *     stops the Wi-Fi/BT common clock (SYSCON WIFI_CLK_EN, 0x78078F) as it
+ *     powers the PHY down, and the radio hears nothing until it is on again:
+ *     a station in power save misses what its access point does not buffer,
+ *     and draws its sleeping current.
  *   - hal_init's request (+0xD14 bit 1) reads acknowledged (bit 0).
  *   - +0x207C (hal_random) is a new random number at each read, which
  *     net80211 uses for ESP-NOW's and the scans' nonces (it waits for one
@@ -65,8 +79,8 @@
  * The rest of its registers keep what is written.
  * Not yet: retransmissions (a frame without its ACK is not sent again by
  * the hardware), contention (EDCA backoff, CCA: a frame goes out when the
- * radio is free), the TSF's adjustment to an access point's beacons and its
- * timers (TBTT, the TSF timer interrupts at 0x60035118), TKIP, WEP, GCMP
+ * radio is free), the TSF timers' wake-up of a chip in light sleep (bit 30:
+ * the chip does not sleep lightly yet), TKIP, WEP, GCMP
  * and protected management frames, the key entries' other fields (their
  * key ID and index bits are not used: every key of the peer is tried),
  * aggregation (A-MPDU), the transmit power the PHY sets (20 dBm, the chip's
@@ -108,6 +122,26 @@
 #define TSF_LO        0x2018u
 #define TSF_HI        0x201Cu
 #define MAC_RANDOM    0x207Cu
+/* the station's TSF and its timers (hal_tsf.o): a TSF loaded from +0x2010
+ * and +0x2014 by +0x200C bit 4; the next TBTT's low 26 bits at +0x2020,
+ * taken by +0x200C bit 8; the beacon interval in TU (bits 15:0) and how
+ * long before the TBTT its interrupt comes in us (bits 31:16) at +0x2030;
+ * TBTT on by +0x2028 bit 26; four TSF timers (control +0x205C + 8i, bit 31
+ * on; their TSF target +0x2060 + 8i); the power interrupt's enable, status
+ * and clear (+0x2110, +0x2118, +0x211C: bit 4 the TBTT, bit 8 - i timer i)
+ * on interrupt source 2 (WIFI_PWR) */
+#define TSF_SET_LO    0x2010u
+#define TSF_SET_HI    0x2014u
+#define TBTT_TGT      0x2020u
+#define TSF_CTRL      0x2028u
+#define TBTT_INTV     0x2030u
+#define TSF_TMR(i)    (0x205Cu + 8u * (u32)(i))
+#define TSF_TGT(i)    (0x2060u + 8u * (u32)(i))
+#define PWR_ENA       0x2110u
+#define PWR_ST        0x2118u
+#define PWR_CLR       0x211Cu
+#define PWR_TBTT      0x10u
+#define PWR_TMR(i)    (0x100u >> (i))
 
 #define NQUEUES       5
 #define INT_RX        (1u << 24)
@@ -129,6 +163,9 @@ struct c3_wifi {
     u64 frac;        /* cycles * 1e6 owed, in core_hz units */
     int clocked;
     u64 rng;         /* hal_random's generator, 0 until seeded */
+    long long sta_off; /* the station's TSF less the microseconds */
+    u64 tbtt;          /* the station's next TBTT, its TSF */
+    int tbtt_set;
     u8 frame[MAX_FRAME];
     u8 scratch[MAX_FRAME];
 };
@@ -147,6 +184,57 @@ static void wr32(struct c3_wifi *k, u32 a, u32 v) { (void)esk_bus_write(&k->s->b
 static void irq(struct c3_wifi *k)
 {
     esk_esp32c3_source(k->s, 0, (*reg(k, INT_ST) & *reg(k, INT_ENA)) != 0);
+}
+
+static void pwr_irq(struct c3_wifi *k)
+{
+    esk_esp32c3_source(k->s, 2, (*reg(k, PWR_ST) & *reg(k, PWR_ENA)) != 0);
+}
+
+static u64 sta_tsf(const struct c3_wifi *k) { return (u64)((long long)k->us + k->sta_off); }
+
+/* the TBTT's interrupt (its ahead time before it) and the TSF timers'
+ * targets come: their status bits are set; the TBTT moves on a beacon
+ * interval, a timer is done until set again */
+static void tsf_events(struct c3_wifi *k)
+{
+    u64 t = sta_tsf(k), intv = (u64)(*reg(k, TBTT_INTV) & 0xFFFFu) * 1024u;
+    u32 ahead = *reg(k, TBTT_INTV) >> 16, before = *reg(k, PWR_ST);
+    int i;
+    if (k->tbtt_set && (*reg(k, TSF_CTRL) & (1u << 26)) && intv && t + ahead >= k->tbtt) {
+        *reg(k, PWR_ST) |= PWR_TBTT;
+        while (t + ahead >= k->tbtt)
+            k->tbtt += intv;
+    }
+    for (i = 0; i < 4; i++)
+        if ((*reg(k, TSF_TMR(i)) & 0x80000000u) && (int)((u32)t - *reg(k, TSF_TGT(i))) >= 0) {
+            *reg(k, PWR_ST) |= PWR_TMR(i);
+            *reg(k, TSF_TMR(i)) &= ~0x80000000u;
+        }
+    if (*reg(k, PWR_ST) != before)
+        pwr_irq(k);
+}
+
+/* the microseconds until the next of them, or 0 for none */
+static int tsf_next_us(const struct c3_wifi *k, u64 *us)
+{
+    u64 t = sta_tsf(k), best = 0, intv = (u64)(*reg((struct c3_wifi *)k, TBTT_INTV) & 0xFFFFu) * 1024u;
+    u32 ahead = *reg((struct c3_wifi *)k, TBTT_INTV) >> 16;
+    int any = 0, i;
+    if (k->tbtt_set && (*reg((struct c3_wifi *)k, TSF_CTRL) & (1u << 26)) && intv) {
+        best = k->tbtt > t + ahead ? k->tbtt - ahead - t : 0;
+        any = 1;
+    }
+    for (i = 0; i < 4; i++)
+        if (*reg((struct c3_wifi *)k, TSF_TMR(i)) & 0x80000000u) {
+            int d = (int)(*reg((struct c3_wifi *)k, TSF_TGT(i)) - (u32)t);
+            u64 at = d > 0 ? (u64)d : 0;
+            if (!any || at < best)
+                best = at;
+            any = 1;
+        }
+    *us = best;
+    return any;
 }
 
 /* the 2.4 GHz channel's centre frequency the RF PLL is on, 0 before the
@@ -357,10 +445,21 @@ static int addr_match(struct c3_wifi *k, int i, const u8 *a1)
            ((hi ^ *reg(k, ADDR_HI(i))) & *reg(k, MASK_HI(i)) & 0xFFFFu) == 0;
 }
 
+/* the Wi-Fi and Bluetooth common clock (SYSCON's WIFI_CLK_EN, the
+ * WIFI_BT_COMMON bits) runs: ESP-IDF stops it as it powers the PHY down
+ * (esp_phy_disable: modem sleep between beacons), and the radio hears
+ * nothing then */
+static int common_clock(struct c3_wifi *k)
+{
+    u32 v = 0x78078Fu;
+    (void)esk_bus_debug_read(&k->s->bus, 0x60026014u, 4, &v);
+    return (v & 0x78078Fu) != 0;
+}
+
 static u32 tuned(void *ctx, int kind)
 {
     struct c3_wifi *k = (struct c3_wifi *)ctx;
-    if (kind != ESK_RADIO_WIFI || !(*reg(k, RX_CTRL) & 0x80000000u))
+    if (kind != ESK_RADIO_WIFI || !(*reg(k, RX_CTRL) & 0x80000000u) || !common_clock(k))
         return 0;
     return tuned_mhz(k);
 }
@@ -503,16 +602,61 @@ static void mac_write(void *ctx, u32 off, int n, u32 v)
             k->rx_next = 0;
         *reg(k, RX_NEXT) = k->rx_next;
         *r &= ~1u;
-    } else if (w == TSF_LATCH && (*r & 3u)) {
-        *reg(k, TSF_LO) = (u32)k->us;
-        *reg(k, TSF_HI) = (u32)(k->us >> 32);
+    } else if (w == TSF_LATCH) {
+        if (*r & 0x10u) /* hal_set_sta_tsf */
+            k->sta_off = (long long)((u64)*reg(k, TSF_SET_HI) << 32 | *reg(k, TSF_SET_LO)) - (long long)k->us;
+        if (*r & 0x100u) { /* hal_set_sta_tbtt: the next TBTT's low 26 bits, near the TSF now */
+            u64 t = sta_tsf(k), c = (t & ~(u64)0x3FFFFFFu) | (*reg(k, TBTT_TGT) & 0x3FFFFFFu);
+            if (c + 0x2000000u < t)
+                c += 0x4000000u;
+            else if (c > t + 0x2000000u && c >= 0x4000000u)
+                c -= 0x4000000u;
+            k->tbtt = c;
+            k->tbtt_set = 1;
+        }
+        *r &= ~0x110u; /* commands, done */
+        if (*r & 1u) {
+            u64 t = sta_tsf(k);
+            *reg(k, TSF_LO) = (u32)t;
+            *reg(k, TSF_HI) = (u32)(t >> 32);
+        } else if (*r & 2u) {
+            *reg(k, TSF_LO) = (u32)k->us;
+            *reg(k, TSF_HI) = (u32)(k->us >> 32);
+        }
+        tsf_events(k);
+    } else if (w == PWR_CLR) {
+        *reg(k, PWR_ST) &= ~*r;
+        *r = 0;
+        pwr_irq(k);
+    } else if (w == PWR_ENA || w == TSF_CTRL || w == TBTT_INTV || (w >= TSF_TMR(0) && w <= TSF_TGT(3))) {
+        tsf_events(k);
+        pwr_irq(k);
     } else if (w >= TXQ(NQUEUES - 1u) && w <= TXQ(0) && ((TXQ(0) - w) & 7u) == 0 && (v & 0xC0000000u)) {
         k->pending |= 1u << ((TXQ(0) - w) / 8u);
         tx_next(k);
     }
 }
 
-static void mac_tick(void *ctx, u32 cycles) { sync_time((struct c3_wifi *)ctx, cycles); }
+static void mac_tick(void *ctx, u32 cycles)
+{
+    struct c3_wifi *k = (struct c3_wifi *)ctx;
+    sync_time(k, cycles);
+    if (k->tbtt_set || (*reg(k, TSF_TMR(0)) | *reg(k, TSF_TMR(1)) | *reg(k, TSF_TMR(2)) | *reg(k, TSF_TMR(3))) & 0x80000000u)
+        tsf_events(k);
+}
+
+/* the cycles until the TBTT's interrupt or a TSF timer's */
+static int mac_next(void *ctx, u32 *cycles)
+{
+    struct c3_wifi *k = (struct c3_wifi *)ctx;
+    u32 hz = esk_mach_core_hz(k->s);
+    u64 us, c;
+    if (!hz || !tsf_next_us(k, &us))
+        return 0;
+    c = us * hz > k->frac ? (us * hz - k->frac + 999999u) / 1000000u : 1u;
+    *cycles = c == 0 ? 1u : c > 0xffffffffu ? 0xffffffffu : (u32)c;
+    return 1;
+}
 
 static void mac_reset(void *ctx)
 {
@@ -522,12 +666,15 @@ static void mac_reset(void *ctx)
     k->pending = 0;
     k->busy = 0; /* a frame on the air is no longer heard back */
     k->us = k->frac = 0;
+    k->sta_off = 0;
+    k->tbtt = 0;
+    k->tbtt_set = 0;
     k->clocked = 0;
     esk_mach_clock(k->s, &k->clocked, 1);
 }
 
 static const struct esk_dev_ops wifi_ops = {
-    "esp32c3-wifi", mac_read, mac_write, mac_reset, mac_tick, 0,
+    "esp32c3-wifi", mac_read, mac_write, mac_reset, mac_tick, mac_next,
 };
 
 int esk_esp32c3_wifi_create(struct esk_mach *s)

@@ -190,9 +190,14 @@ Each step lands usable and green, as in the RTOS boards plan.
    16.7 mA and the second request of `http_request` goes through, but with
    no traffic the station never wakes for its DTIM beacons and reports
    `bcn_timeout` some 17 s after it slept: what wakes it before each
-   beacon (a MAC timer on the TSF, by the look of libpp's `pm_*`) is not
-   modelled yet, so the radio still hears while the clock is off and a
-   station in power save reads its awake current.
+   beacon (a MAC timer on the TSF, by the look of libpp's `pm_*`) was not
+   modelled. It is now (`wifi.c`, from libpp's `hal_tsf.o`): the station's
+   TSF libpp loads from its access point's beacons, the TBTT's interrupt
+   its ahead time before each target beacon time, four TSF timers, the
+   power interrupt on source 2. The station wakes for each DTIM beacon,
+   keeps its access point, and `http_request` reads 21.9 mA in power save
+   on the USB power meter (102 mA while it scans with the receiver on).
+   Not yet: light sleep, and the TSF timers' wake-up from it.
    *Under way:* ESP-NOW. `wifi/espnow` on two boards as it ships: each
    broadcasts, adds the other as a peer, and the one with the larger
    random magic sends it unicast data encrypted under the local master
@@ -336,7 +341,6 @@ Each step lands usable and green, as in the RTOS boards plan.
    84 mA while it listens and the transmitter's 335, 285 or 276 mA by
    modulation for each frame, through the board's regulator and VBUS to
    `emblink/usb_power_meter`, an inline USB tester: `hello_world` reads
-   16.7 mA, `http_request` 102 mA while it scans. Not yet: following a
-   BLE connection; the radio off in Wi-Fi's modem sleep (a station in
-   power save reads its awake current), the peripherals' clocks in the
-   chip's current, Bluetooth LE's own currents.
+   16.7 mA, `http_request` 102 mA while it scans and 21.9 mA in power
+   save (step 5). Not yet: following a BLE connection; the peripherals'
+   clocks in the chip's current, Bluetooth LE's own currents.

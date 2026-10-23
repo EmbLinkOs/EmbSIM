@@ -2299,6 +2299,68 @@ static void test_aes(void)
     c3_close(&f);
 }
 
+/* the station's TSF and its timers (hal_tsf.o, c3-radios.md step 5): the
+ * TSF libpp loads from a beacon's, the TBTT's interrupt its ahead time
+ * before each target beacon time, the TSF timers, the power interrupt on
+ * source 2; the radio deaf while the Wi-Fi/BT common clock is off */
+static void test_wifi_tsf(void)
+{
+    enum { MAC = 0x60033000u, SYSCON_WIFI_CLK = 0x60026014u };
+    c3 f;
+    u32 ms, left = 0;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    ms = esk_mach_core_hz(&f.m) / 1000u;
+    wr(&f, MAC + 0x2010u, 1000000u); /* hal_set_sta_tsf: 1 s */
+    wr(&f, MAC + 0x2014u, 0);
+    wr(&f, MAC + 0x200Cu, 0x10u);
+    wr(&f, MAC + 0x200Cu, 0x1u); /* hal_get_sta_tsf */
+    CHECK_NEAR((double)rd(&f, MAC + 0x2018u), 1000000.0, 2.0);
+    CHECK_EQ(rd(&f, MAC + 0x201Cu), 0);
+    /* hal_set_sta_tbtt: 100 TU, its interrupt 2 ms ahead, the next TBTT at 1.1024 s */
+    wr(&f, MAC + 0x2030u, 100u | 2000u << 16);
+    wr(&f, MAC + 0x2020u, 1102400u);
+    wr(&f, MAC + 0x200Cu, 0x100u);
+    wr(&f, MAC + 0x2110u, 0x10u);           /* hal_enable_sta_tbtt */
+    wr(&f, MAC + 0x2028u, 1u << 26);
+    CHECK(esk_mach_next_event(&f.m, &left));
+    CHECK_NEAR((double)left / ms, 100.4, 0.01); /* 1.1004 s, from 1 s */
+    esk_mach_idle(&f.m, 99u * ms);
+    CHECK_EQ(rd(&f, MAC + 0x2118u) & 0x10u, 0);
+    CHECK_EQ(rd(&f, INTR_STATUS_0) & 4u, 0);
+    esk_mach_idle(&f.m, 2u * ms);
+    CHECK_EQ(rd(&f, MAC + 0x2118u) & 0x10u, 0x10u);
+    CHECK(rd(&f, INTR_STATUS_0) & 4u); /* source 2, WIFI_PWR */
+    wr(&f, MAC + 0x211Cu, 0x10u); /* hal_pwr_interrupt_clr_event */
+    CHECK_EQ(rd(&f, MAC + 0x2118u), 0);
+    CHECK_EQ(rd(&f, MAC + 0x211Cu), 0);
+    CHECK_EQ(rd(&f, INTR_STATUS_0) & 4u, 0);
+    /* the next one a beacon interval on, at 1.2028 s */
+    esk_mach_idle(&f.m, 100u * ms);
+    CHECK_EQ(rd(&f, MAC + 0x2118u) & 0x10u, 0);
+    esk_mach_idle(&f.m, 2u * ms);
+    CHECK_EQ(rd(&f, MAC + 0x2118u) & 0x10u, 0x10u);
+    wr(&f, MAC + 0x211Cu, 0x10u);
+    /* TSF timer 1, 5 ms from now: once */
+    wr(&f, MAC + 0x200Cu, 0x1u);
+    wr(&f, MAC + 0x2068u, rd(&f, MAC + 0x2018u) + 5000u);
+    wr(&f, MAC + 0x2110u, 0x10u | 0x80u);
+    wr(&f, MAC + 0x2064u, 0x80000000u);
+    esk_mach_idle(&f.m, 4u * ms);
+    CHECK_EQ(rd(&f, MAC + 0x2118u) & 0x80u, 0);
+    esk_mach_idle(&f.m, 2u * ms);
+    CHECK_EQ(rd(&f, MAC + 0x2118u) & 0x80u, 0x80u);
+    CHECK_EQ(rd(&f, MAC + 0x2064u) & 0x80000000u, 0);
+    /* deaf while the common clock is off */
+    wr(&f, REGI2C + 0x150u, 37u << 20);
+    wr(&f, MAC + 0x84u, 0x80000000u);
+    wr(&f, SYSCON_WIFI_CLK, 0x78078Fu);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_WIFI), 2437);
+    wr(&f, SYSCON_WIFI_CLK, 0);
+    CHECK_EQ(f.m.radio.tuned(f.m.radio.ctx, ESK_RADIO_WIFI), 0);
+    c3_close(&f);
+}
+
 static void test_wifi_ccmp(void)
 {
     /* the station's keys in the table (as hal_crypto_set_key_entry leaves
@@ -3561,6 +3623,7 @@ RUN(test_rng_and_radio);
     RUN(test_radio_calibrations);
     RUN(test_wifi_mac);
     RUN(test_wifi_ccmp);
+RUN(test_wifi_tsf);
     RUN(test_sha_dma);
     RUN(test_aes);
     RUN(test_rsa);

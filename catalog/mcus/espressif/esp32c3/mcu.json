@@ -345,11 +345,10 @@
       "validation": []
     },
     "electrical": {
-      "claims": "GPIO pin-model defaults at 3.3 V from the datasheet's DC characteristics (table 5-4): VIH 0.75 VDD, VIL 0.25 VDD, VOH 0.8 VDD, VOL 0.1 VDD, 45 kOhm pulls, 40 mA source and 28 mA sink at the strongest drive. The supply current (ADR-036, datasheet 5.6): the core running and waiting at its clock with the peripherals' clocks off (table 5-8), averaged over 1 ms; held off by CHIP_EN, 1 uA; the radio receiving, 84 mA, and sending at 802.11b's rates 335 mA, 11g's 285 mA, 11n's 276 mA from a frame's first bit to its last (table 5-7).",
+      "claims": "GPIO pin-model defaults at 3.3 V from the datasheet's DC characteristics (table 5-4): VIH 0.75 VDD, VIL 0.25 VDD, VOH 0.8 VDD, VOL 0.1 VDD, 45 kOhm pulls, 40 mA source and 28 mA sink at the strongest drive. The supply current (ADR-036, datasheet 5.6): the core running and waiting at its clock with the peripherals' clocks off (table 5-8), averaged over 1 ms; held off by CHIP_EN, 1 uA; the radio receiving, 84 mA, while it hears (not while ESP-IDF's power save has the Wi-Fi/BT common clock off between beacons), and sending at 802.11b's rates 335 mA, 11g's 285 mA, 11n's 276 mA from a frame's first bit to its last (table 5-7).",
       "omissions": [
         "the four drive strengths (FUN_DRV)",
         "the peripherals' clocks in the supply current (up to 5 mA more with all on, table 5-8) and the flash's 10 mA while it is read (its note 3)",
-        "Wi-Fi's modem sleep between beacons: the receiver draws while ESP-IDF's power save has it off, so a station in power save reads its awake current",
         "Light-sleep (130 uA) and Deep-sleep (5 uA), which the chip does not enter yet",
         "Bluetooth LE's own currents (the datasheet gives none: its packets draw the receive current) and a lower transmit power's smaller current",
         "the RTC and SPI pads' own supplies"

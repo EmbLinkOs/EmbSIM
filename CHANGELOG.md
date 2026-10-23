@@ -15,6 +15,14 @@ versions follow semantic versioning. There is no release yet.
   a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
   advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
   hosts, NimBLE and Bluedroid, run on the controller.
+- **Wi-Fi's power save on the ESP32-C3** (the radios plan, step 5): the
+  MAC's station TSF (loaded from the access point's beacons), the TBTT's
+  interrupt ahead of each target beacon time, four TSF timers and the
+  power interrupt (source 2), learnt from libpp's `hal_tsf.o`; the radio
+  is deaf while ESP-IDF has the Wi-Fi/BT common clock off between
+  beacons. A station in power save wakes for each DTIM beacon and keeps
+  its access point; `http_request` reads 21.9 mA on the USB power meter
+  in power save, 102 mA while it scans.
 - **Parts draw the current their datasheets give** (ADR-036, new): a
   part's model sets the current its supply pins draw; under the
   electrical policy each power pin a supply of the circuit feeds sinks
