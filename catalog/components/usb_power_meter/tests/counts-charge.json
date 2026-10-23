@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "counts-charge",
+  "description": "About 1 A for 7.2 s: 2 mAh and 10 mWh counted.",
+  "policy": "electrical",
+  "until": "7300ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/usb_power_meter"
+      },
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "LOAD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 5
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HV": [
+        "HOST.+",
+        "DUT.IN"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "LOAD.1"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "DUT.GND",
+        "LOAD.2"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.capacity_mah": {
+      "at": "7300ms",
+      "equals": 2
+    },
+    "output:DUT.energy_mwh": {
+      "at": "7300ms",
+      "min": 9,
+      "max": 11
+    }
+  }
+}

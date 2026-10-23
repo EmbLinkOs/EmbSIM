@@ -1034,3 +1034,36 @@ the protocol's conformance suite; examples show an assistant building and
 verifying a circuit.
 
 **Status.** Accepted direction (owner, 2026-10-18).
+
+## ADR-036 Parts draw the current their datasheets give
+
+**Context.** A real board's supply current tells an engineer what the
+firmware is doing: a core in WFI, a radio sending, a part held in reset.
+On the bench every digital part drew nothing from its supply pins, so a
+USB power meter or an ammeter in JP6 read only the LEDs and resistors,
+and power and battery-life questions (07, M8) had no answer.
+
+**Decision.** A part's model says the current its supply pins draw now
+(`esk_comp_set_supply`). Under the electrical policy each of its power
+pins that a supply of the circuit feeds sinks an equal share of it to the
+part's ground pin, falling away with its supply below about 1 V as a
+browned-out chip's does. An MCU's comes from its description's `supply`:
+the datasheet's current for the core running and waiting at its clock
+(interpolated between the given clocks), held in reset, in its low-power
+modes, and for its radio listening and sending by modulation. The core's
+running and waiting are averaged over 1 ms windows, as the board's
+decoupling smooths them; a radio frame draws from its first bit to its
+last. A change below the noise (0.5 mA, or 3 %) does not re-solve the
+circuit.
+
+**Alternatives.** A fixed current per part (it would hide what the
+firmware does); a current per instruction (no datasheet gives one, and
+it would step the analog island at the core's clock).
+
+**Consequences.** Meters on the bench (`emblink/usb_power_meter`, an
+ammeter's shunt) read what a board draws as the firmware runs. Each MCU
+and part gains its table from its datasheet as it is qualified; until
+then it draws nothing, which its fidelity says. Under the functional and
+timed policies nothing changes.
+
+**Status.** Accepted (2026-10-23).

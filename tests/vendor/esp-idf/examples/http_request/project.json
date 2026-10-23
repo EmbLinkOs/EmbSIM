@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "project",
  "name": "esp-idf-http_request",
- "description": "An ESP32-C3-DevKitM-1 running ESP-IDF's protocols/http_request, plugged into USB, 5 m from a home router (myssid, WPA2-PSK mypassword, channel 6) whose WAN side reaches the internet, where example.com's web server is.",
+ "description": "An ESP32-C3-DevKitM-1 running ESP-IDF's protocols/http_request, plugged into USB, 5 m from a home router (myssid, WPA2-PSK mypassword, channel 6) whose WAN side reaches the internet, where example.com's web server is. A USB power meter sits between the port and the cable.",
  "policy": "electrical",
  "boards": [
   {
@@ -60,17 +60,30 @@
     "x": 640,
     "y": 260
    }
+  },
+  {
+   "id": "METER",
+   "component": "emblink/usb_power_meter",
+   "layout": {
+    "x": 240,
+    "y": 160
+   }
   }
  ],
  "nets": {
-  "USB5V": [
-   "USB.+",
-   "B1.VBUS"
-  ],
   "GND": [
    "USB.-",
    "GND1.GND",
-   "B1.GND"
+   "B1.GND",
+   "METER.GND"
+  ],
+  "HOSTV": [
+   "USB.+",
+   "METER.IN"
+  ],
+  "USB5V": [
+   "METER.OUT",
+   "B1.VBUS"
   ]
  },
  "probes": [
@@ -92,6 +105,16 @@
   {
    "id": "requests",
    "target": "output:WEB.requests",
+   "kind": "value"
+  },
+  {
+   "id": "usb_current",
+   "target": "output:METER.current",
+   "kind": "value"
+  },
+  {
+   "id": "usb_voltage",
+   "target": "output:METER.voltage",
    "kind": "value"
   }
  ],

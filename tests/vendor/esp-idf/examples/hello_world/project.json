@@ -1,0 +1,84 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-hello_world",
+ "description": "An ESP32-C3-DevKitM-1 running one of ESP-IDF's examples, built unmodified by ESP-IDF's tools (tests/vendor/esp-idf/run.py puts its 4 MB flash image beside this file as flash.bin), plugged into USB. The console is UART0 through the CP2102N; the RGB LED is on GPIO8, BOOT on GPIO9. A USB power meter sits between the port and the cable.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "METER",
+   "component": "emblink/usb_power_meter",
+   "layout": {
+    "x": 240,
+    "y": 160
+   }
+  }
+ ],
+ "nets": {
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND",
+   "METER.GND"
+  ],
+  "HOSTV": [
+   "USB.+",
+   "METER.IN"
+  ],
+  "USB5V": [
+   "METER.OUT",
+   "B1.VBUS"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "usb_current",
+   "target": "output:METER.current",
+   "kind": "value"
+  },
+  {
+   "id": "usb_voltage",
+   "target": "output:METER.voltage",
+   "kind": "value"
+  }
+ ]
+}

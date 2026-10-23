@@ -15,6 +15,23 @@ versions follow semantic versioning. There is no release yet.
   a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
   advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
   hosts, NimBLE and Bluedroid, run on the controller.
+- **Parts draw the current their datasheets give** (ADR-036, new): a
+  part's model sets the current its supply pins draw; under the
+  electrical policy each power pin a supply of the circuit feeds sinks
+  its share to the part's ground, less as its supply falls away. An MCU
+  description's `supply` (new in the schema) gives its datasheet's
+  currents: the core running and waiting at its clock, held in reset, its
+  low-power modes, its radio listening and sending by modulation.
+  - The ESP32-C3's, from its datasheet v2.4 (5.6): 13 to 23 mA by clock
+    and activity, 1 uA held off, receiving 84 mA, sending 335 mA at
+    802.11b's rates, 285 mA at 11g's, 276 mA at 11n's, frame by frame.
+  - `emblink/usb_power_meter` (new), an inline USB tester between a port
+    and a board's cable: VBUS's voltage, the current and the power
+    averaged over its refresh (twice a second) at its resolution, the
+    mAh and mWh since plugged in; its 50 mOhm in VBUS; its own draw from
+    the host's side, not shown; dark below 3.5 V. Four fixtures.
+  - ESP-IDF's `hello_world` and `http_request` run through the meter:
+    16.7 mA idle at 160 MHz, 102 mA while the radio scans.
 - **The air as phones and sniffers see it** (the ESP32-C3 radios plan,
   step 7):
   - `emblink/wifi_scanner` (new), a phone's Wi-Fi analyzer: it scans

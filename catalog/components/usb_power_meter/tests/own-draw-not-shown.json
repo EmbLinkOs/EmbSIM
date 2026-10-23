@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "own-draw-not-shown",
+  "description": "With nothing plugged into it, it shows no current: its own draw comes from the host's side.",
+  "policy": "electrical",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/usb_power_meter"
+      },
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "LOAD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 1000000000.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HV": [
+        "HOST.+",
+        "DUT.IN"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "LOAD.1"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "DUT.GND",
+        "LOAD.2"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.current": {
+      "at": "600ms",
+      "equals": 0
+    },
+    "output:DUT.on": {
+      "at": "600ms",
+      "equals": true
+    }
+  }
+}

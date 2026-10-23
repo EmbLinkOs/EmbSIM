@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* mcu.c -- the MCU runtime (mcu.h says what it does). */
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -24,6 +25,26 @@
 #define MCU_QUIET_QUANTUM_PS 100000000u /* 100 us */
 #define PS_PER_S UINT64_C(1000000000000)
 #define MEGA UINT64_C(1000000)
+/* the supply current's window (ADR-036): the core's running and waiting
+ * times are averaged over it, as the board's decoupling smooths them; a
+ * frame on the air draws from its start to its end */
+#define SUPPLY_WINDOW_PS 1000000000u /* 1 ms */
+#define SUPPLY_POINTS 6
+enum { MCU_WAKE_SUPPLY = 1 };
+
+/* the part's supply current from its description's `supply` (ADR-036) */
+typedef struct mcu_supply {
+    int on;
+    double run[SUPPLY_POINTS][2], idle[SUPPLY_POINTS][2]; /* (Hz, A) */
+    int nrun, nidle;
+    double held_a, stop_a, standby_a;
+    double tx_dsss_a, tx_ofdm_a, tx_ht_a, tx_ble_a, rx_a;
+    es_time_t win_t;  /* the window's start */
+    es_time_t run_ps; /* how long the core ran in it */
+    double cpu_a;     /* the core's average over the last window */
+    double tx_a;      /* a frame being sent: the radio's current for it */
+    double set_a;     /* what the part draws now */
+} mcu_supply;
 
 typedef struct mcu_uart {
     const char *unit;
@@ -107,6 +128,7 @@ typedef struct mcu_state {
     unsigned an_what;
     esk_air_node air; /* its radio on the session's air, when it has one */
     int on_air;
+    mcu_supply sup;
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -223,6 +245,131 @@ static void schedule_sleep(mcu_state *st)
 static int runnable(const mcu_state *st)
 {
     return st->attached && !st->held && !st->boot_fail && !st->stopped && st->m.state == ESK_MACH_RUN;
+}
+
+/* ---- the supply current (ADR-036) ---------------------------------------------- */
+
+/* a table's current at `hz`: between its points, and on the line through
+ * the nearest two beyond them (not below 0) */
+static double supply_at(double (*t)[2], int n, double hz)
+{
+    int i = 0;
+    double a;
+    if (n <= 0)
+        return 0.0;
+    if (n == 1)
+        return t[0][1];
+    while (i < n - 2 && hz > t[i + 1][0])
+        i++;
+    a = t[i][1] + (t[i + 1][1] - t[i][1]) * (hz - t[i][0]) / (t[i + 1][0] - t[i][0]);
+    return a > 0.0 ? a : 0.0;
+}
+
+static int supply_table(const esk_json *j, double (*t)[2])
+{
+    size_t i;
+    int n = 0;
+    for (i = 0; i < esk_json_len(j) && n < SUPPLY_POINTS; i++) {
+        const esk_json *pt = esk_json_at(j, i);
+        double hz = -1.0, a = -1.0;
+        if (esk_json_to_double(esk_json_at(pt, 0), &hz) == 0 && esk_json_to_double(esk_json_at(pt, 1), &a) == 0 &&
+            hz > 0.0 && a >= 0.0 && (n == 0 || hz > t[n - 1][0])) {
+            t[n][0] = hz;
+            t[n][1] = a;
+            n++;
+        }
+    }
+    return n;
+}
+
+static void supply_setup(mcu_state *st, const esk_json *mcu)
+{
+    const esk_json *j = esk_json_get(mcu, "supply"), *r = esk_json_get(j, "radio");
+    mcu_supply *s = &st->sup;
+    memset(s, 0, sizeof *s);
+    if (!j)
+        return;
+    s->nrun = supply_table(esk_json_get(j, "run_a"), s->run);
+    s->nidle = supply_table(esk_json_get(j, "idle_a"), s->idle);
+    if (!s->nidle) {
+        memcpy(s->idle, s->run, sizeof s->idle);
+        s->nidle = s->nrun;
+    }
+    s->held_a = esk_json_get_num(j, "held_a", 0.0);
+    s->stop_a = esk_json_get_num(j, "stop_a", 0.0);
+    s->standby_a = esk_json_get_num(j, "standby_a", s->stop_a);
+    s->rx_a = esk_json_get_num(r, "rx_a", 0.0);
+    s->tx_dsss_a = esk_json_get_num(r, "tx_dsss_a", s->rx_a);
+    s->tx_ofdm_a = esk_json_get_num(r, "tx_ofdm_a", s->tx_dsss_a);
+    s->tx_ht_a = esk_json_get_num(r, "tx_ht_a", s->tx_ofdm_a);
+    s->tx_ble_a = esk_json_get_num(r, "tx_ble_a", s->rx_a);
+    s->on = s->nrun > 0;
+}
+
+/* a frame's transmit current: 802.11b's DSSS rates, 11g's OFDM, 11n's MCS */
+static double supply_tx(const mcu_supply *s, int kind, u32 rate_kbps)
+{
+    if (kind == ESK_AIR_BLE)
+        return s->tx_ble_a;
+    if (rate_kbps == 1000u || rate_kbps == 2000u || rate_kbps == 5500u || rate_kbps == 11000u)
+        return s->tx_dsss_a;
+    if (rate_kbps == 6000u || rate_kbps == 9000u || rate_kbps == 12000u || rate_kbps == 18000u ||
+        rate_kbps == 24000u || rate_kbps == 36000u || rate_kbps == 48000u || rate_kbps == 54000u)
+        return s->tx_ofdm_a;
+    return s->tx_ht_a;
+}
+
+/* what the part draws now: the core's state (its last window's average
+ * while it runs or waits), and the radio sending or listening */
+static double supply_now(const mcu_state *st)
+{
+    const mcu_supply *s = &st->sup;
+    double a;
+    if (!st->attached)
+        return 0.0;
+    if (st->held)
+        return s->held_a;
+    if (st->m.powered_down)
+        a = s->standby_a;
+    else if (st->m.clocks_stopped)
+        a = s->stop_a;
+    else
+        a = s->cpu_a;
+    if (s->tx_a > 0.0)
+        a += s->tx_a;
+    else if (st->m.radio.tuned && (runnable(st) || st->m.asleep) &&
+             (st->m.radio.tuned(st->m.radio.ctx, ESK_AIR_WIFI) || st->m.radio.tuned(st->m.radio.ctx, ESK_AIR_BLE)))
+        a += s->rx_a;
+    return a;
+}
+
+/* the window ends when it is due; the part's current is set again when it
+ * changed by more than its noise (0.5 mA, or 3 %): an island is not
+ * stepped again for nothing */
+static void supply_update(mcu_state *st, int force)
+{
+    mcu_supply *s = &st->sup;
+    esk_engine *e = st->c->e;
+    es_time_t now = e->sched.now;
+    double a;
+    if (!s->on)
+        return;
+    if (now >= s->win_t + SUPPLY_WINDOW_PS) {
+        double hz = (double)esk_mach_core_hz(&st->m), run = (double)s->run_ps / (double)(now - s->win_t);
+        if (run > 1.0)
+            run = 1.0;
+        s->cpu_a = run * supply_at(s->run, s->nrun, hz) + (1.0 - run) * supply_at(s->idle, s->nidle, hz);
+        s->win_t = now;
+        s->run_ps = 0;
+        /* a core asleep until later closes its next window all the same */
+        if (st->m.asleep || !runnable(st))
+            (void)esk_comp_wake_at(st->c, now + SUPPLY_WINDOW_PS, MCU_WAKE_SUPPLY);
+    }
+    a = supply_now(st);
+    if (force || fabs(a - s->set_a) > (s->set_a * 0.03 > 0.0005 ? s->set_a * 0.03 : 0.0005)) {
+        s->set_a = a;
+        esk_comp_set_supply(st->c, a, now);
+    }
 }
 
 /* the earliest time another core of the circuit waits to run from (its
@@ -379,6 +526,8 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         used = esk_mach_run(&st->m, budget, stepping);
         st->in_quantum = 0;
         advance_time(st, used, hz);
+        st->sup.run_ps += st->t > st->q_t ? st->t - st->q_t : 0;
+        supply_update(st, 0);
         if (stepping) {
             u64 ran = st->m.insns - insns0;
             st->steps = ran >= stepping ? 0 : stepping - ran;
@@ -1020,6 +1169,8 @@ static int air_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
 static void air_tx_done(void *ctx, uint32_t token, int acked, es_time_t at)
 {
     mcu_state *st = (mcu_state *)ctx;
+    st->sup.tx_a = 0.0;
+    supply_update(st, 0);
     if (!st->m.radio.tx_done)
         return;
     catch_up(st, at);
@@ -1043,7 +1194,12 @@ static int h_radio_tx(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32
     f.kind = kind;
     if (!airtime_ps)
         airtime_ps = kind == ESK_AIR_BLE ? esk_air_ble_airtime(len, rate_kbps) : esk_air_wifi_airtime(len, rate_kbps);
-    return esk_air_send(st->c->e, &st->air, &f, local_now(st), airtime_ps, token) == ES_OK ? 0 : -1;
+    if (esk_air_send(st->c->e, &st->air, &f, local_now(st), airtime_ps, token) != ES_OK)
+        return -1;
+    /* the power amplifier draws while the frame is on the air */
+    st->sup.tx_a = supply_tx(&st->sup, kind, rate_kbps);
+    supply_update(st, 0);
+    return 0;
 }
 
 /* ---- the component ------------------------------------------------------------- */
@@ -1106,6 +1262,20 @@ static void mcu_reset(esk_comp *c)
     st->held = 0;
     st->steps = 0;
     mcu_reset_now(st, 1);
+    /* the core starts running: its first window counts from here */
+    st->sup.win_t = 0;
+    st->sup.run_ps = 0;
+    st->sup.tx_a = 0.0;
+    st->sup.cpu_a = supply_at(st->sup.run, st->sup.nrun, (double)esk_mach_core_hz(&st->m));
+    st->sup.set_a = -1.0;
+    supply_update(st, 1);
+}
+
+static void mcu_on_time(esk_comp *c, uint32_t token)
+{
+    mcu_state *st = state_of(c);
+    if (token == MCU_WAKE_SUPPLY && st->attached)
+        supply_update(st, 0);
 }
 
 static void mcu_on_input(esk_comp *c, esk_pin *p)
@@ -1128,12 +1298,15 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
                 st->m.pin_reset(&st->m, 0);
             st->m.reset_cause = ESK_RESET_PIN;
             esk_mach_reset(&st->m);
+            st->sup.tx_a = 0.0;
+            supply_update(st, 1);
         } else if (!low && st->held) {
             st->held = 0;
             st->m.reset_cause = ESK_RESET_PIN;
             mcu_reset_now(st, 0);
             if (st->m.pin_reset)
                 st->m.pin_reset(&st->m, 1);
+            supply_update(st, 1);
         }
         return;
     }
@@ -1207,7 +1380,7 @@ static void mcu_observe(esk_comp *c, esk_json *out)
 }
 
 const esk_model_ops esk_mcu_ops = { "mcu", sizeof(mcu_state), mcu_create, mcu_destroy, mcu_reset,
-                                     mcu_on_input, NULL, mcu_on_set, mcu_observe, NULL, 0 };
+                                     mcu_on_input, mcu_on_time, mcu_on_set, mcu_observe, NULL, 0 };
 
 int esk_mcu_is(const esk_comp *c) { return c && c->ops == &esk_mcu_ops; }
 
@@ -1395,6 +1568,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.pin_watch = h_pin_watch;
     st->m.host.radio_tx = h_radio_tx;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
+    supply_setup(st, su->mcu);
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "slew_v_per_us"),
                 st->slew);

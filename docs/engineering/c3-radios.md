@@ -304,7 +304,7 @@ Each step lands usable and green, as in the RTOS boards plan.
 7. **The workbench.** The air as a phone and a scanner see it (the
    access points with their RSSI, BLE devices and their data), the
    capture, the radio's current on the power instruments.
-   Done but the current: the receivers are parts on the bench, as they
+   Done: the receivers are parts on the bench, as they
    are in a lab, so what each lists is what it hears where it stands.
    `emblink/wifi_scanner` is a phone's Wi-Fi analyzer (channels 1 to 13
    in turn, a probe request on each or passively, each network's SSID,
@@ -320,6 +320,13 @@ Each step lands usable and green, as in the RTOS boards plan.
    keying (EAPOL's four messages) and sending protected data; `bleprph`
    and `ble_ibeacon` advertising on two boards, the phone's SCAN_REQ and
    the SCAN_RSP T_IFS later. It differs inside in one way: the air
-   carries ACKs implicitly, so the capture has none. Not yet: the
-   radio's current on the power instruments, following a BLE
-   connection.
+   carries ACKs implicitly, so the capture has none. The radio's current
+   (ADR-036): the chip draws its datasheet's currents (5.6), the core's
+   running and waiting at its clock averaged over 1 ms, the receiver's
+   84 mA while it listens and the transmitter's 335, 285 or 276 mA by
+   modulation for each frame, through the board's regulator and VBUS to
+   `emblink/usb_power_meter`, an inline USB tester: `hello_world` reads
+   16.7 mA, `http_request` 102 mA while it scans. Not yet: following a
+   BLE connection; the radio off in Wi-Fi's modem sleep (a station in
+   power save reads its awake current), the peripherals' clocks in the
+   chip's current, Bluetooth LE's own currents.

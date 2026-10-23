@@ -643,7 +643,7 @@
       "omissions": [
         "the ESD diodes (D2, D3, D4) and the USB's 22 ohm and 0 ohm series resistors",
         "decoupling and bulk capacitors (C1, C2, C8, C9, C10, C12: with C1's 10 uF on the regulator's output the analog engine does not converge yet) and the unpopulated C4, C5, C13, C14, R2, R3, R14",
-        "the module's and the bridge's supply current: 3V3 carries only what the pins and the LEDs draw",
+        "the bridge's supply current (the CP2102N's); the module draws its chip's (the ESP32-C3's supply table, ADR-036) but not its flash's own",
         "R17 (0 ohm) between GPIO8 and the LED: the LED's DIN is GPIO8's net",
         "the 1 uF on CHIP_PU makes the first 200 ms of a run slow: the analog engine steps its charge with the MCU's quanta (about 2.5 s of wall time)"
       ],

@@ -697,6 +697,29 @@ es_status esk_comp_wake_at(esk_comp *c, es_time_t t, uint32_t token)
     return st;
 }
 
+void esk_comp_set_supply(esk_comp *c, double amps, es_time_t at)
+{
+    uint32_t k, j;
+    if (!(amps >= 0.0))
+        amps = 0.0;
+    if (amps == c->supply_a)
+        return;
+    /* each island its power pins are in integrates up to `at` with the
+     * current as it was, once */
+    for (k = 0; k < c->npins; k++) {
+        esk_island *isl = c->pins[k].net ? c->pins[k].net->island : NULL;
+        int seen = 0;
+        if (!isl || c->pins[k].model.kind != ESK_PIN_POWER || !c->pins[k].bridge)
+            continue;
+        for (j = 0; j < k && !seen; j++)
+            seen = c->pins[j].model.kind == ESK_PIN_POWER && c->pins[j].bridge && c->pins[j].net &&
+                   c->pins[j].net->island == isl;
+        if (!seen)
+            esk_island_touch(isl, at);
+    }
+    c->supply_a = amps;
+}
+
 void esk_comp_wake_cancel(esk_comp *c, uint32_t token)
 {
     if (token < ES_COUNTOF(c->wake) && c->wake[token]) {
@@ -1262,6 +1285,7 @@ es_status esk_engine_reset(esk_engine *e)
         }
         for (k = 0; k < ES_COUNTOF(c->wake); k++)
             c->wake[k] = 0;
+        c->supply_a = 0.0;
     }
     if (!e->partitioned) {
         st = esk_engine_partition(e);

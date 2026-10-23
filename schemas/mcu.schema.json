@@ -218,6 +218,31 @@
         }
       }
     },
+    "supply": {
+      "type": "object",
+      "description": "The current the part draws from its supply pins (ADR-036), from its datasheet: while its core runs and while it waits for an interrupt, as [core clock Hz, A] points it is interpolated between; held in reset; in a mode that stops its clocks or powers its core off; its radio sending (by modulation) and listening. Split between the power pins the circuit feeds.",
+      "additionalProperties": false,
+      "required": ["run_a"],
+      "properties": {
+        "run_a": {"type": "array", "minItems": 1, "maxItems": 6, "items": {"type": "array", "minItems": 2, "maxItems": 2, "prefixItems": [{"type": "number", "exclusiveMinimum": 0}, {"type": "number", "minimum": 0}]}, "description": "The core running, by clock"},
+        "idle_a": {"type": "array", "minItems": 1, "maxItems": 6, "items": {"type": "array", "minItems": 2, "maxItems": 2, "prefixItems": [{"type": "number", "exclusiveMinimum": 0}, {"type": "number", "minimum": 0}]}, "description": "The core waiting for an interrupt (WFI), by clock; run_a when not given"},
+        "held_a": {"type": "number", "minimum": 0, "description": "Held in reset by its reset or enable pin"},
+        "stop_a": {"type": "number", "minimum": 0, "description": "A mode that stops the core's clocks (an STM32's Stop)"},
+        "standby_a": {"type": "number", "minimum": 0, "description": "A mode that powers the core's domain off (an STM32's Standby); stop_a when not given"},
+        "radio": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rx_a": {"type": "number", "minimum": 0, "description": "Listening"},
+            "tx_dsss_a": {"type": "number", "minimum": 0, "description": "Sending at 802.11b's DSSS and CCK rates"},
+            "tx_ofdm_a": {"type": "number", "minimum": 0, "description": "Sending at 802.11g's OFDM rates"},
+            "tx_ht_a": {"type": "number", "minimum": 0, "description": "Sending at 802.11n's MCS rates"},
+            "tx_ble_a": {"type": "number", "minimum": 0, "description": "Sending Bluetooth LE; rx_a when not given"}
+          }
+        },
+        "doc": {"type": "string"}
+      }
+    },
     "signals": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"}},
     "packages": {
       "type": "object",

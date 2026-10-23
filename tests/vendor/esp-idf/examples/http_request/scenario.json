@@ -3,7 +3,7 @@
  "kind": "scenario",
  "name": "http_request",
  "until": "6000ms",
- "description": "protocols/http_request, unmodified: example_connect joins the router (WPA2-PSK) and leases its address; getaddrinfo asks the router's DNS forwarder for example.com, which answers after its round trip to the ISP's resolver; the socket connects through the router's NAT to the web server (a round trip of 2 x (5 + 10) ms), sends its HTTP/1.0 GET, reads the response to the server's FIN and prints it, then counts down to the next request. Its putchar goes through newlib's stdout, which turns each LF into CR LF (CONFIG_NEWLIB_STDOUT_LINE_ENDING_CRLF), so the response's CR LF reach the serial line as CR CR LF, as on a board.",
+ "description": "protocols/http_request, unmodified: example_connect joins the router (WPA2-PSK) and leases its address; getaddrinfo asks the router's DNS forwarder for example.com, which answers after its round trip to the ISP's resolver; the socket connects through the router's NAT to the web server (a round trip of 2 x (5 + 10) ms), sends its HTTP/1.0 GET, reads the response to the server's FIN and prints it, then counts down to the next request. Its putchar goes through newlib's stdout, which turns each LF into CR LF (CONFIG_NEWLIB_STDOUT_LINE_ENDING_CRLF), so the response's CR LF reach the serial line as CR CR LF, as on a board. While it scans for the access point its receiver is on: the USB power meter shows the datasheet's 84 mA receiving (table 5-7) and the CPU's 16 to 23 mA.",
  "inputs": [],
  "assertions": [
   {
@@ -124,6 +124,15 @@
    "probe": "console",
    "expect": {
     "not_contains": "DNS lookup failed"
+   }
+  },
+  {
+   "id": "usb-current-scanning",
+   "at": "2s",
+   "probe": "usb_current",
+   "expect": {
+    "min": 0.095,
+    "max": 0.115
    }
   }
  ]
