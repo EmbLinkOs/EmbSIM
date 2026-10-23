@@ -1,0 +1,29 @@
+reset fpccr=c0000000 mpu-ctrl=00000000
+mpu-registers type=00000800 rbar3=200011a3 rasr3=00000009 rnr=00000006 ctrl=00000005
+priv-write-ro exc=00000004 cfsr=00000082 far=20001181 hfsr=00000000
+priv-read-ro v=00000000 exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+priv-read-na exc=00000004 cfsr=00000082 far=200011a4 hfsr=00000000
+subregion-on exc=00000004 cfsr=00000082 far=20001208 hfsr=00000000
+subregion-off exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+overlap exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+ldrt-priv-only v=00000000 exc=00000004 cfsr=00000082 far=20001324 hfsr=00000000
+ldr-priv-only v=00001234 exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+faultmask-no-hfnmiena exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+no-privdefena exc=00000004 cfsr=00000082 far=20010000 hfsr=00000000
+privdefena exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+mpu-off exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+exec-xn r=00000000 exc=00000004 cfsr=00000001 far=00000000 hfsr=00000000
+exec-ram r=0000002a exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+exec-peripheral r=00000000 exc=00000004 cfsr=00000001 far=00000000 hfsr=00000000
+exec-system r=00000000 exc=00000004 cfsr=00000001 far=00000000 hfsr=00000000
+exec-peripheral-mpu-off r=00000000 exc=00000004 cfsr=00000001 far=00000000 hfsr=00000000
+unpriv-read-ram exc=00000000 cfsr=00000000 far=00000000 hfsr=00000000
+unpriv-read-ro exc=00000004 cfsr=00000082 far=20001182 hfsr=00000000
+unpriv-read-priv-only exc=00000004 cfsr=00000082 far=20001324 hfsr=00000000
+unpriv-read-scs exc=00000005 cfsr=00008200 far=e000ed00 hfsr=00000000
+svc-back control=00000000 svc=00000001
+stack-fault exc=00000004 cfsr=00000010 far=00000000 hfsr=00000000 lr=fffffffd svc=00000001
+unstack-fault exc=00000004 cfsr=00000008 far=00000000 hfsr=00000000 lr=fffffffd
+fp-lazy fpccr-in=c0000079 fpcar-off=00000020 lr=ffffffe9 slot-before=a5a5a5a5 slot-after=3fc00000 fpccr-after=c0000078 fpscr-handler=02000000 s0-thread=3fc00000 fpscr-thread=00000000
+fp-eager fpccr-in=80000000 fpcar-off=00000020 lr=ffffffe9 slot-before=3fc00000 slot-after=3fc00000 fpccr-after=80000000 fpscr-handler=02000000 s0-thread=3fc00000 fpscr-thread=00000000
+done

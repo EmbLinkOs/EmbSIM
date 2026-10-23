@@ -8,7 +8,10 @@
   - --until-text ends the run at the millisecond the text appears (reason
     `until_text`), at the same time on every run; exit 1 when it never does;
   - --image ID=FILE replaces a project's board image (an image for another
-    core is refused, exit 2); --target without --image is a usage error.
+    core is refused, exit 2); --target without --image is a usage error;
+  - a board with a USB port runs plugged in under the electrical policy and
+    unplugged, its supplies ideal, under the functional one (the RTOS
+    runner's).
 
     test_target.py --embsim PATH
 """
@@ -21,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 UNO = ROOT / "examples" / "uno-blink-serial"
 ELF = UNO / "firmware" / "blink-serial.elf"
+NUCLEO_ELF = ROOT / "examples" / "nucleo-f446re-blink-serial" / "firmware" / "blink-serial.elf"
 
 
 def run(embsim, *args):
@@ -53,6 +57,10 @@ def main() -> int:
     r = run(e, ROOT / "examples" / "bluepill-button-led" / "project.json", "--image", f"B1={ELF}", "--until", "1ms")
     if r.returncode != 2 or "AVR" not in r.stderr and "image" not in r.stderr:
         problems.append(f"an AVR image on a Blue Pill: exit {r.returncode}: {r.stderr.strip()}")
+    r = run(e, "--target", "emblink/nucleo_f446re", "--image", NUCLEO_ELF, "--policy", "functional", "--until", "20ms",
+            "--json")
+    if r.returncode or json.loads(r.stdout or "{}").get("policy") != "functional":
+        problems.append(f"a USB-powered board under the functional policy: exit {r.returncode}: {r.stderr.strip()[:200]}")
     r = run(e, "--target", "emblink/arduino_uno")
     if r.returncode != 2:
         problems.append(f"--target without --image: exit {r.returncode}")

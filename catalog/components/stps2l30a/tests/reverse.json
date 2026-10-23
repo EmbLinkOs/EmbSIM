@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reverse",
+  "description": "30 V reverse through a 10 kOhm sense resistor: under 200 uA, less than 2 V across the resistor.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 30.0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/stps2l30a"
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10000
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "P": [
+        "VS.+",
+        "R.1"
+      ],
+      "K": [
+        "R.2",
+        "DUT.K"
+      ],
+      "GND": [
+        "VS.-",
+        "DUT.A",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:K": {
+      "at": "1ms",
+      "min_v": 28.0,
+      "max_v": 30.0
+    }
+  }
+}

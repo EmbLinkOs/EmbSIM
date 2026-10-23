@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "kind": "board_reference",
+  "board": "emblink/esp32c3_devkitm1",
+  "revision": "ESP32-C3-DevKitM-1 V1.0",
+  "frame": "Millimetres from the board's top-left corner, x right, y down, seen from the top with the module's antenna at the top and the micro-USB at the bottom: the artwork's frame (SPEC-006).",
+  "sources": [
+    {
+      "what": "outline, header pads, the module's outline and land, the micro-USB's body and every part's pads",
+      "title": "ESP32-C3-DevKitM-1 dimensions V1.0 (Espressif, DIMENSION_ESP32-C3-DEVKITM-1_V1_20200915AA): the vector assembly drawing, its pads and outlines read from the PDF's paths, its designators (J1x1 to J3x15) from its text",
+      "url": "https://dl.espressif.com/dl/schematics/DIMENSION_ESP32-C3-DEVKITM-1_V1_20200915AA.pdf",
+      "read": "2026-10-22"
+    },
+    {
+      "what": "which pad is which pin",
+      "title": "ESP32-C3-DevKitM-1 schematic V1.0 (Espressif, SCH_ESP32-C3-DEVKITM-1_V1_20200915A), J1 and J3",
+      "url": "https://dl.espressif.com/dl/schematics/SCH_ESP32-C3-DEVKITM-1_V1_20200915A.pdf",
+      "read": "2026-10-22"
+    }
+  ],
+  "transform": "The drawing's page (points, y up) to this frame: (x - 140.681) / 11.4736 and (568.343 - y) / 11.4736, where 140.681 and 568.343 are the outline's left and top edges and 11.4736 points per millimetre is its 291.43-point width over the dimensioned 25.40 mm (its height gives 38.913 mm against the dimensioned 38.91). The 22.86 mm between the rows and the 2.54 mm pitch come out as dimensioned.",
+  "outline_mm": [
+    25.4,
+    38.91
+  ],
+  "outline": [
+    [
+      0,
+      0
+    ],
+    [
+      25.4,
+      0
+    ],
+    [
+      25.4,
+      38.91
+    ],
+    [
+      0,
+      38.91
+    ]
+  ],
+  "terminals": {
+    "GND": [
+      1.27,
+      2.063
+    ],
+    "3V3": [
+      1.27,
+      4.603
+    ],
+    "J1-3": [
+      1.27,
+      7.143
+    ],
+    "IO2": [
+      1.27,
+      9.683
+    ],
+    "IO3": [
+      1.27,
+      12.223
+    ],
+    "J1-6": [
+      1.27,
+      14.763
+    ],
+    "RST": [
+      1.27,
+      17.303
+    ],
+    "J1-8": [
+      1.27,
+      19.843
+    ],
+    "IO0": [
+      1.27,
+      22.383
+    ],
+    "IO1": [
+      1.27,
+      24.923
+    ],
+    "IO10": [
+      1.27,
+      27.463
+    ],
+    "J1-12": [
+      1.27,
+      30.003
+    ],
+    "5V": [
+      1.27,
+      32.543
+    ],
+    "J1-14": [
+      1.27,
+      35.083
+    ],
+    "J1-15": [
+      1.27,
+      37.623
+    ],
+    "J3-1": [
+      24.13,
+      2.063
+    ],
+    "TX": [
+      24.13,
+      4.603
+    ],
+    "RX": [
+      24.13,
+      7.143
+    ],
+    "J3-4": [
+      24.13,
+      9.683
+    ],
+    "IO9": [
+      24.13,
+      12.223
+    ],
+    "IO8": [
+      24.13,
+      14.763
+    ],
+    "J3-7": [
+      24.13,
+      17.303
+    ],
+    "IO7": [
+      24.13,
+      19.843
+    ],
+    "IO6": [
+      24.13,
+      22.383
+    ],
+    "IO5": [
+      24.13,
+      24.923
+    ],
+    "IO4": [
+      24.13,
+      27.463
+    ],
+    "J3-12": [
+      24.13,
+      30.003
+    ],
+    "IO18": [
+      24.13,
+      32.543
+    ],
+    "IO19": [
+      24.13,
+      35.083
+    ],
+    "J3-15": [
+      24.13,
+      37.623
+    ],
+    "VBUS": [
+      12.7,
+      36.76
+    ]
+  },
+  "connectors": {
+    "usb_micro": {
+      "from": [
+        8.95,
+        33.96
+      ],
+      "to": [
+        16.45,
+        39.56
+      ],
+      "note": "the receptacle's lip overhangs the bottom edge by 0.65 mm"
+    }
+  },
+  "tolerance_mm": 0.05,
+  "unqualified": [
+    "the outline's corners are rounded to 1.0 mm in the drawing; the artwork rounds them to 0.9 mm, inside its stroke",
+    "the module's antenna end, which overhangs the top edge by 5.35 mm (13.2 x 16.6 mm from y -5.35 to 11.25), is on the bench but not in the artwork, which stops at the board's edge",
+    "the parts other than the micro-USB are placed from the drawing's pads (the ESP32-C3-MINI-1, the SGM2212 in SOT-223, the CP2102N in QFN-28, the SK68XXMINI-HS, the power LED, both buttons) but the checks cover only the outline, the header pads and the micro-USB; their heights are their datasheets'",
+    "VBUS sits at the micro-USB's centre, where the cable plugs in: a socket, not a header pad",
+    "the resistors and capacitors are not drawn"
+  ]
+}

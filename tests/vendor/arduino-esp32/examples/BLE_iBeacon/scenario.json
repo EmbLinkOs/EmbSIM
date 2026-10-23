@@ -1,0 +1,42 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "BLE_iBeacon",
+ "until": "2000ms",
+ "description": "BLE/examples/iBeacon, unmodified: the sketch advertises an iBeacon (Apple's manufacturer data: the proximity UUID, major 5, minor 88, -59 dBm measured at 1 m) with Bluedroid and its name in the scan response; a phone's scanner 2 m away scans actively, lists the board at -37 dBm with the name its SCAN_REQ brings back, and decodes the beacon, as a beacon app would.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "advertising",
+   "at": "2000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "iBeacon + service defined and advertising!"
+   }
+  },
+  {
+   "id": "beacon",
+   "at": "2000ms",
+   "probe": "phone",
+   "expect": {
+    "contains": "7c:df:a1:45:6d:64 (public) ADV_IND -37dBm connectable \"ESP32\""
+   }
+  },
+  {
+   "id": "decoded",
+   "at": "2000ms",
+   "probe": "phone",
+   "expect": {
+    "contains": "iBeacon 2D7A9F0C-E0E8-4CC9-A71B-A21DB2D034A1 major 5 minor 88 -59dBm@1m"
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "2000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  }
+ ]
+}

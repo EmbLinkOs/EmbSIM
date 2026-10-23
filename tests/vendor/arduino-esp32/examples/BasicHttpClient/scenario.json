@@ -1,0 +1,66 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "BasicHttpClient",
+ "until": "9000ms",
+ "description": "HTTPClient/examples/BasicHttpClient, unmodified: WiFiMulti joins the network the sketch names (SSID, WPA2-PSK PASSWORD); after its four-second wait HTTPClient resolves example.com through the router's DNS forwarder, connects through its NAT, sends its HTTP/1.1 GET of /index.html and prints the 200 and the page the web server answers with (its directory index).",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "wait",
+   "at": "9000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "[SETUP] WAIT 1..."
+   }
+  },
+  {
+   "id": "begin",
+   "at": "9000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "[HTTP] begin..."
+   }
+  },
+  {
+   "id": "code",
+   "at": "9000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "[HTTP] GET... code: 200"
+   }
+  },
+  {
+   "id": "page",
+   "at": "9000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "<h1>Example Domain</h1>"
+   }
+  },
+  {
+   "id": "router-dns",
+   "at": "9000ms",
+   "probe": "router",
+   "expect": {
+    "contains": "dns example.com: 93.184.215.14"
+   }
+  },
+  {
+   "id": "served",
+   "at": "9000ms",
+   "probe": "web",
+   "expect": {
+    "contains": "GET /index.html HTTP/1.1 from 100.64.0.3:49152 (Host: example.com): 200"
+   }
+  },
+  {
+   "id": "no-failure",
+   "at": "9000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "[HTTP] GET... failed"
+   }
+  }
+ ]
+}

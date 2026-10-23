@@ -131,6 +131,10 @@ reads the world (SPEC-003 §8), in its own unit; set by a user or a
 scenario, the part's own value wins, as a sensor held by hand does. The
 input's `default` is what it reads while the world does not declare the
 field.
+An input's first value on one instance is its `default`, or the instance's
+parameter `initially_<name>` when the description declares one: a toggle
+switch's `initially_closed` is a jumper fitted at the factory, which the
+input then moves as a hand does.
 
 ## 8. Symbols and artwork
 
@@ -188,8 +192,9 @@ field.
 "circuit": {...}, "inputs": [...], "expect": {...}, "policy": "electrical"}`.
 `expect` maps probe targets (`net:`, `pin:`, `device:`, `output:`, and
 `serial:` for what a terminal in the circuit received) to an expectation
-with a time selector; `inputs` may target the component or a member of a
-composite, and `output:` a member's output (SPEC-007). `embsim catalog validate` runs them. In a fixture longer than 2 s, an `output:` or `device:` target is sampled at most 20000 times over the run (a fuse heating for half an hour), not at the value probe's default 10 kHz. A component whose
+with a time selector; `inputs` may target the component, a member of a
+composite or one of a board's own parts (`B1.JP5_E5V`), and `output:` a
+member's output (SPEC-007). `embsim catalog validate` runs them. In a fixture longer than 2 s, an `output:` or `device:` target is sampled at most 20000 times over the run (a fuse heating for half an hour), not at the value probe's default 10 kHz. A component whose
 tests fail is listed as broken in the catalog, not hidden.
 
 ## 10. The primitive model contract (C)

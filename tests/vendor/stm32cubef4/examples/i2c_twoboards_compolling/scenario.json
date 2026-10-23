@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "i2c_twoboards_compolling",
+  "until": "3s",
+  "description": "I2C_TwoBoards_ComPolling on two NUCLEO-F446RE wired as its readme draws them (two_boards.json): I2C1 at 400 kHz with the slave's 10-bit own address 0x30F. B1's USER button, read once a second, starts each step: the master sends its 162-byte buffer, which the slave receives, then reads it back from the slave. SCL clocks 164 bytes the first time (the 10-bit address's two bytes and the data: 2954 edges with START and STOP) and 165 the second (the address, a repeated START, the header for reading and the data: 2974). Both boards' buffers then hold the text and LD2 stays on on both (an error would toggle it).",
+  "inputs": [
+    {
+      "at": "0.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.2s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "2.0s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "slave-received",
+      "at": "1.5s",
+      "probe": "slave_rx",
+      "expect": {
+        "contains": " ****I2C_TwoBoards communication based on Polling****  ****I2C_TwoBoards communication based on Polling****  ****I2C_TwoBoards communication based on Polling**** "
+      }
+    },
+    {
+      "id": "master-received",
+      "at": "2.8s",
+      "probe": "master_rx",
+      "expect": {
+        "contains": " ****I2C_TwoBoards communication based on Polling****  ****I2C_TwoBoards communication based on Polling****  ****I2C_TwoBoards communication based on Polling**** "
+      }
+    },
+    {
+      "id": "master-ld2-on",
+      "between": [
+        "2.6s",
+        "3s"
+      ],
+      "probe": "led1",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "slave-ld2-on",
+      "between": [
+        "2.6s",
+        "3s"
+      ],
+      "probe": "led2",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "scl-transmit",
+      "between": [
+        "1.1s",
+        "1.4s"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 2954
+      }
+    },
+    {
+      "id": "scl-receive",
+      "between": [
+        "2.4s",
+        "2.7s"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 2974
+      }
+    }
+  ]
+}

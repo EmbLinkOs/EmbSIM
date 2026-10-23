@@ -94,7 +94,12 @@ After load and after every topology transaction, nets are partitioned:
   island's supply or ground node.
 - A `power` pin on an analog island is an ideal source unless a component
   on the island declares it drives that net (a regulator model), in which case
-  the component's model is used.
+  the component's model is used. A part's supply input (a power pin of a
+  component that has other pins, such as an MCU's VDD) is no source either
+  when the island holds a supply of its own (a source or a regulator): the
+  part then takes what that supply gives it through the circuit (a jumper,
+  a switch), and its net falls when they are opened. A supply symbol (a
+  component of power pins only, such as `vcc`) stays a source.
 
 In `functional` policy all nets are digital; electrical parameters are
 ignored; a diode or transistor used as a logic element behaves as its

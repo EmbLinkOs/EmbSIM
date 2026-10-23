@@ -1,0 +1,82 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "real_time_stats",
+ "until": "3500ms",
+ "description": "real_time_stats (FreeRTOS's run-time statistics on esp_timer's microseconds): six spin tasks of 500000 iterations and 100 ms sleeps, measured over 100 ticks (1 s) twice. The table's run times are the core's timing model's (each spin about 30 ms at 160 MHz, about ten cycles an iteration from the flash cache), so the scenario checks the table's rows, not the figures: every spin task and IDLE listed, main deleted, the stats obtained each time. ESP-IDF's console turns each \\n into \\r\\n.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "first",
+   "at": "600ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Getting real time stats over 100 ticks\r\n"
+   }
+  },
+  {
+   "id": "table",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "| Task | Run Time | Percentage\r\n"
+   }
+  },
+  {
+   "id": "spin0",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "| spin0 | "
+   }
+  },
+  {
+   "id": "spin5",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "| spin5 | "
+   }
+  },
+  {
+   "id": "idle",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "| IDLE | "
+   }
+  },
+  {
+   "id": "main-deleted",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "| main | Deleted\r\n"
+   }
+  },
+  {
+   "id": "obtained",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Real time stats obtained\r\n"
+   }
+  },
+  {
+   "id": "second",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Real time stats obtained\r\n\r\n\r\nGetting real time stats over 100 ticks\r\n"
+   }
+  },
+  {
+   "id": "no-error",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Error getting real time stats"
+   }
+  }
+ ]
+}

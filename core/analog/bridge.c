@@ -24,7 +24,16 @@ typedef struct bridge_state {
     double pull_g, pull_v; /* the input pull (0 when none) */
     int supply_noted;      /* the implicit-supply note was raised */
     double v_src_trial, i_trial;
+    /* a part's supply input fed by the circuit (ADR-036): it sinks its share
+     * of the part's supply current to the part's ground pin's node */
+    int load, gnd;
+    double share;
 } bridge_state;
+
+/* below about this, a part draws less than its model says, as its supply
+ * falls away (a chip in brown-out draws little): the load's current is its
+ * model's times tanh(v / LOAD_KNEE_V), smooth for the solver */
+#define LOAD_KNEE_V 0.5
 
 static int out_role(const esk_adev *d)
 {
@@ -71,7 +80,32 @@ static int device_drives_node(const esk_adev *o, int node)
     return 0;
 }
 
-/* a power pin's ideal source is dropped when the node is already held */
+/* is device `o` a supply: a source or a regulator anywhere in the island? */
+static int device_is_supply(const esk_adev *o)
+{
+    const char *name = o->ops->name;
+    return !strcmp(name, "vsource") || !strcmp(name, "regulator");
+}
+
+/* is the power pin a part's supply input (an MCU's VDD), not a supply
+ * symbol (a component of power pins only, such as VCC)? */
+static int pin_is_load(const esk_pin *p)
+{
+    const esk_comp *c = p->comp;
+    uint32_t i;
+    if (!c)
+        return 0;
+    for (i = 0; i < c->npins; i++)
+        if (c->pins[i].model.kind != ESK_PIN_POWER)
+            return 1;
+    return 0;
+}
+
+/* a power pin's ideal source is dropped when the node is already held, or,
+ * for a part's supply input, when the circuit around it has a supply of its
+ * own: the part is then a load on whatever that supply reaches it through
+ * (a jumper, a switch), and its pin carries no voltage the circuit does not
+ * give it */
 static void check_duplicate_supply(esk_adev *d, bridge_state *s)
 {
     esk_island *isl = d->isl;
@@ -100,12 +134,14 @@ static void check_duplicate_supply(esk_adev *d, bridge_state *s)
     }
     for (i = 0; i < isl->devs.len; i++) {
         esk_adev *o = isl->devs.data[i];
-        if (o->pin || !device_drives_node(o, node))
+        if (o->pin || !(device_drives_node(o, node) || (device_is_supply(o) && pin_is_load(d->pin))))
             continue;
         s->disabled = 1;
         raise_pin(
             d, ES_SEV_INFO, "analog.supply_driven",
-            "the net is driven by a component model; the power pin's ideal source is not added");
+            device_drives_node(o, node)
+                ? "the net is driven by a component model; the power pin's ideal source is not added"
+                : "the circuit has a supply of its own; the power pin's ideal source is not added");
         return;
     }
 }
@@ -131,6 +167,53 @@ static void setup_pull(esk_adev *d, bridge_state *s)
     }
 }
 
+/* a part's supply pin that the circuit feeds is a load: its share of the
+ * part's current (an equal one of each such pin) flows to the part's
+ * ground pin in this island, or to the island's ground */
+static void setup_load(esk_adev *d, bridge_state *s)
+{
+    const esk_comp *c = d->pin->comp;
+    uint32_t k;
+    int n = 0;
+    s->load = 0;
+    s->gnd = 0;
+    s->share = 0.0;
+    if (!c || !s->disabled || d->pin->model.power_ground || d->node[0] == 0 || !pin_is_load(d->pin))
+        return;
+    for (k = 0; k < c->npins; k++) {
+        const esk_pin *p = &c->pins[k];
+        if (p->model.kind != ESK_PIN_POWER || !p->net || !p->net->island)
+            continue;
+        if (!p->model.power_ground)
+            n++;
+        else if (p->net->island == d->isl && !s->gnd)
+            s->gnd = p->net->node;
+    }
+    s->load = 1;
+    s->share = n > 0 ? 1.0 / (double)n : 1.0;
+}
+
+static void stamp_load(esk_adev *d, bridge_state *s, esk_amatrix *m)
+{
+    int n = d->node[0], g = s->gnd;
+    double i0 = d->pin->comp->supply_a * s->share * esk_am_source_scale(m), v, th, id, gd;
+    s->i_trial = 0.0;
+    if (!(i0 > 0.0))
+        return;
+    v = esk_am_v(m, n, g);
+    if (v <= 0.0) { /* tanh's slope at 0 continued: the iterate comes back */
+        esk_am_stamp_g(m, n, g, i0 / LOAD_KNEE_V);
+        s->i_trial = i0 / LOAD_KNEE_V * v;
+        return;
+    }
+    th = v > 20.0 * LOAD_KNEE_V ? 1.0 : tanh(v / LOAD_KNEE_V);
+    id = i0 * th;
+    gd = i0 / LOAD_KNEE_V * (1.0 - th * th) + 1e-12;
+    esk_am_stamp_g(m, n, g, gd);
+    esk_am_stamp_i(m, n, g, id - gd * v);
+    s->i_trial = id;
+}
+
 static es_status bridge_setup(esk_adev *d)
 {
     bridge_state *s = (bridge_state *)d->state;
@@ -148,6 +231,7 @@ static es_status bridge_setup(esk_adev *d)
     if (s->is_power) {
         check_duplicate_supply(d, s);
         d->nbranch = s->disabled ? 0 : 1;
+        setup_load(d, s);
     }
     return ES_OK;
 }
@@ -205,8 +289,11 @@ static void bridge_stamp(esk_adev *d, esk_amatrix *m, es_time_t t)
     double scale = esk_am_source_scale(m);
     s->i_trial = 0.0;
     s->v_src_trial = 0.0;
-    if (s->disabled)
+    if (s->disabled) {
+        if (s->load)
+            stamp_load(d, s, m);
         return;
+    }
     if (out_role(d)) {
         double v;
         if (s->open_cur)

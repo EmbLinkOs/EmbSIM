@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-on-delay",
+  "description": "At power-up C6 (1 uF) charges through R5 (10 k): for the first 10 ms CHIP_PU stays below the chip's 0.75 VDD threshold (2.47 V), so the chip starts after its supply has settled.",
+  "policy": "electrical",
+  "until": "60ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/esp32c3_devkitm1"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "EN": [
+        "B1.RST"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:EN": {
+      "between": [
+        "0ms",
+        "10ms"
+      ],
+      "max_v": 2.4
+    }
+  }
+}

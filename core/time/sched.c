@@ -186,6 +186,16 @@ es_time_t esk_sched_next_time_excluding(const esk_sched *s, esk_event_class cls)
     return best;
 }
 
+es_time_t esk_sched_next_time_without(const esk_sched *s, unsigned mask)
+{
+    es_time_t best = ES_TIME_MAX;
+    size_t i;
+    for (i = 0; i < s->len; i++)
+        if (!(mask >> s->heap[i].cls & 1u) && !s->heap[i].cancelled && s->heap[i].time < best)
+            best = s->heap[i].time;
+    return best;
+}
+
 int esk_sched_run_one(esk_sched *s, es_time_t until)
 {
     esk_event e;

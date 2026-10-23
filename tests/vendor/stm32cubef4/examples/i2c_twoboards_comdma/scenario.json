@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "i2c_twoboards_comdma",
+  "until": "3s",
+  "description": "I2C_TwoBoards_ComDMA on two NUCLEO-F446RE wired as its readme draws them (two_boards.json): as ComPolling, by DMA (HAL_I2C_*_DMA, DMA1 streams on I2C1's requests): I2C1 at 400 kHz, the slave's 10-bit address 0x30F, B1's USER button starting each step. The master sends its 150-byte buffer (SCL clocks 152 bytes: 2738 edges with START and STOP), then reads it back (153 bytes with the repeated START: 2758 edges). Both boards' buffers then hold the text and LD2 stays on on both.",
+  "inputs": [
+    {
+      "at": "0.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.2s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "2.0s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "slave-received",
+      "at": "1.5s",
+      "probe": "slave_rx",
+      "expect": {
+        "contains": " ****I2C_TwoBoards communication based on DMA****  ****I2C_TwoBoards communication based on DMA****  ****I2C_TwoBoards communication based on DMA**** "
+      }
+    },
+    {
+      "id": "master-received",
+      "at": "2.8s",
+      "probe": "master_rx",
+      "expect": {
+        "contains": " ****I2C_TwoBoards communication based on DMA****  ****I2C_TwoBoards communication based on DMA****  ****I2C_TwoBoards communication based on DMA**** "
+      }
+    },
+    {
+      "id": "master-ld2-on",
+      "between": [
+        "2.6s",
+        "3s"
+      ],
+      "probe": "led1",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "slave-ld2-on",
+      "between": [
+        "2.6s",
+        "3s"
+      ],
+      "probe": "led2",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "scl-transmit",
+      "between": [
+        "1.1s",
+        "1.4s"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 2738
+      }
+    },
+    {
+      "id": "scl-receive",
+      "between": [
+        "2.4s",
+        "2.7s"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 2758
+      }
+    }
+  ]
+}

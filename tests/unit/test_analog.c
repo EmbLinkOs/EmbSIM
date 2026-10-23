@@ -1427,6 +1427,78 @@ static void run_fixture(const char *dir)
     esk_json_free(&A, ngspice);
 }
 
+/* a part's supply current (ADR-036): its model sets it; the power pins a
+ * supply of the circuit feeds sink it to the part's ground pin */
+static esk_comp *add_chip(esk_engine *e, const char *id, const char *vdd, const char *gnd, const char *io)
+{
+    static const char *const names[] = { "VDD", "GND", "IO" };
+    esk_pin_model m[3];
+    esk_comp *c = NULL;
+    int k;
+    for (k = 0; k < 3; k++)
+        esk_pin_model_family(NULL, &m[k]);
+    m[0].kind = ESK_PIN_POWER;
+    m[0].nominal_v = 3.3;
+    m[1].kind = ESK_PIN_POWER;
+    m[1].power_ground = 1;
+    m[2].kind = ESK_PIN_DIGITAL_IN;
+    CHECK(esk_engine_add_comp(e, id, "chip", &power_ops, names, m, 3, NULL, NULL, &c) == ES_OK);
+    if (c) {
+        CHECK(esk_engine_connect(e, &c->pins[0], net_of(e, vdd)) == ES_OK);
+        CHECK(esk_engine_connect(e, &c->pins[1], net_of(e, gnd)) == ES_OK);
+        CHECK(esk_engine_connect(e, &c->pins[2], net_of(e, io)) == ES_OK);
+    }
+    return c;
+}
+
+static void test_supply_current(void)
+{
+    esk_engine e;
+    esk_comp *u1, *u2;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 3.3}", "vin", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": 1}", "vin", "vdd");
+    u1 = add_chip(&e, "U1", "vdd", "gnd", "io");
+    engine_run(&e);
+    CHECK(u1 != NULL);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "vdd"), 3.3, 1e-6); /* it draws nothing until its model says */
+    esk_comp_set_supply(u1, 0.1, ES_PS_PER_MS);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "vdd"), 3.2, 1e-4);
+    CHECK_NEAR(obs_num(&e, "R1", "i"), 0.1, 1e-4);
+    esk_comp_set_supply(u1, 0.0, 2 * ES_PS_PER_MS);
+    CHECK(esk_engine_advance(&e, 3 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "vdd"), 3.3, 1e-6);
+    esk_engine_free(&e);
+
+    /* a part whose own supply pin is the only supply draws from nothing */
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "resistor", "R1", "{\"r\": 1000}", "vdd", "gnd");
+    u2 = add_chip(&e, "U2", "vdd", "gnd", "io");
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_MS) == ES_OK);
+    esk_comp_set_supply(u2, 0.1, ES_PS_PER_MS);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_MS) == ES_OK);
+    CHECK_NEAR(v_of(&e, "vdd"), 3.3, 1e-6);
+    esk_engine_free(&e);
+
+    /* a supply that falls away: the load's current with it */
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 3.3}", "vin", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": 100}", "vin", "vdd");
+    u1 = add_chip(&e, "U1", "vdd", "gnd", "io");
+    engine_run(&e);
+    esk_comp_set_supply(u1, 0.1, 0);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_MS) == ES_OK);
+    CHECK(v_of(&e, "vdd") > 0.0 && v_of(&e, "vdd") < 0.3); /* 100 ohm cannot carry 100 mA from 3.3 V */
+    CHECK(obs_num(&e, "R1", "i") < 0.033);
+    esk_engine_free(&e);
+}
+
 static void test_fixtures(void)
 {
     run_fixture("divider");
@@ -1477,6 +1549,7 @@ RUN(test_quiet_island);
 RUN(test_two_islands_step_independently);
 RUN(test_regulator_board_rails);
 RUN(test_regulator_unpowered);
+RUN(test_supply_current);
 RUN(test_fixtures);
 esk_diag_free(&D);
 TEST_MAIN_END

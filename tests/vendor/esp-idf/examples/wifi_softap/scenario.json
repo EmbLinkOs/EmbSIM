@@ -1,0 +1,130 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "wifi_softap",
+ "until": "6000ms",
+ "description": "wifi/getting_started/softAP and station on two boards, both as they ship: the access point starts on channel 1 as a 40 MHz BSS (the RF PLL at the centre, its frames on the primary channel), WPA2/WPA3 with SAE, whose elliptic-curve arithmetic runs on the RSA accelerator, and serves DHCP; the station, which starts first, finds nothing in its first scans, then authenticates by SAE, associates, runs the 4-way handshake, its data frames encrypted under the key entries the driver names, and leases 192.168.4.2.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "ap-mode",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:mode : softAP (7c:df:a1:45:6d:63)"
+   }
+  },
+  {
+   "id": "dhcp-server",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1"
+   }
+  },
+  {
+   "id": "ap-up",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi softAP: wifi_init_softap finished. SSID:myssid password:mypassword channel:1"
+   }
+  },
+  {
+   "id": "join",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:station: 7c:df:a1:45:6d:70 join, AID=1, bgn, 40U"
+   }
+  },
+  {
+   "id": "join-logged",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi softAP: station 7c:df:a1:45:6d:70 join, AID=1"
+   }
+  },
+  {
+   "id": "lease",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2"
+   }
+  },
+  {
+   "id": "sta-mode",
+   "at": "6000ms",
+   "probe": "station",
+   "expect": {
+    "contains": "wifi:mode : sta (7c:df:a1:45:6d:70)"
+   }
+  },
+  {
+   "id": "auth",
+   "at": "6000ms",
+   "probe": "station",
+   "expect": {
+    "contains": "wifi:state: init -> auth (0xb0)"
+   }
+  },
+  {
+   "id": "run",
+   "at": "6000ms",
+   "probe": "station",
+   "expect": {
+    "contains": "wifi:state: assoc -> run (0x10)"
+   }
+  },
+  {
+   "id": "connected",
+   "at": "6000ms",
+   "probe": "station",
+   "expect": {
+    "contains": "wifi:connected with myssid, aid = 1, channel 1, 40U, bssid = 7c:df:a1:45:6d:63"
+   }
+  },
+  {
+   "id": "sae",
+   "at": "6000ms",
+   "probe": "station",
+   "expect": {
+    "contains": "wifi:security: WPA3-SAE, phy: bgn"
+   }
+  },
+  {
+   "id": "got-ip",
+   "at": "6000ms",
+   "probe": "station",
+   "expect": {
+    "contains": "wifi station: got ip:192.168.4.2"
+   }
+  },
+  {
+   "id": "done",
+   "at": "6000ms",
+   "probe": "station",
+   "expect": {
+    "contains": "wifi station: connected to ap SSID:myssid password:mypassword"
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "6000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  },
+  {
+   "id": "station-no-panic",
+   "at": "6000ms",
+   "probe": "station",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  }
+ ]
+}

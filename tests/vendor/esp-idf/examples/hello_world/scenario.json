@@ -1,0 +1,68 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "hello_world",
+ "until": "11400ms",
+ "description": "hello_world: the ROM, ESP-IDF's second-stage bootloader and the application at 160 MHz; its chip report, a countdown of eleven one-second FreeRTOS delays, and esp_restart back to the ROM with a software CPU reset. The USB power meter shows the chip waiting for its next delay in FreeRTOS's idle at 160 MHz: the datasheet's 16 mA with the peripherals' clocks off (table 5-8; each peripheral's clock is not yet counted), and the board's own small draws.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "rom",
+   "at": "100ms",
+   "probe": "console",
+   "expect": {
+    "contains": "rst:0x1 (POWERON),boot:0xc (SPI_FAST_FLASH_BOOT)"
+   }
+  },
+  {
+   "id": "hello",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "Hello world!"
+   }
+  },
+  {
+   "id": "chip",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "This is esp32c3 chip with 1 CPU core(s)"
+   }
+  },
+  {
+   "id": "not-yet",
+   "at": "11200ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Restarting now."
+   }
+  },
+  {
+   "id": "restart",
+   "at": "11400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "rst:0xc (RTC_SW_CPU_RST)"
+   }
+  },
+  {
+   "id": "usb-current",
+   "at": "5s",
+   "probe": "usb_current",
+   "expect": {
+    "min": 0.015,
+    "max": 0.019
+   }
+  },
+  {
+   "id": "usb-voltage",
+   "at": "5s",
+   "probe": "usb_voltage",
+   "expect": {
+    "min": 4.99,
+    "max": 5.0
+   }
+  }
+ ]
+}

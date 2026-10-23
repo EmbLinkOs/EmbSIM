@@ -26,6 +26,42 @@
  * still there. A compressed instruction is expanded into the 32-bit
  * instruction it stands for, and that is executed.
  *
+ * Espressif's ESP-RV (the ESP32-C3's core, model "esp-rv32imc"; ESP32-C3
+ * TRM v1.4 chapter 1) differs where the manual says it does:
+ *   - RV32IMC with user mode; no A (the AMOs are illegal), no counters but
+ *     its own: mpcer, mpcmr and mpccr count the selected events (cycles,
+ *     outside WFI; instructions; idle cycles; loads, stores, jumps,
+ *     branches, branches taken, compressed instructions), saturating or
+ *     wrapping as mpcmr says;
+ *   - only the CSRs of its table: the others, mie and mip among them, are
+ *     illegal instructions; mstatus has MIE, MPIE, MPP (its high bit tied
+ *     to its low one) and TW; mtvec is vectored only, its base 256-byte
+ *     aligned; mcause keeps the interrupt flag and five bits of code;
+ *   - interrupts come from the interrupt controller (the MCU's device),
+ *     ids 1-31 in mcause and at mtvec + 4 * id; MRET clears MPIE;
+ *   - the trigger module: tselect (eight triggers, a larger index clipped),
+ *     tdata1 as mcontrol (match type, exact or NAPOT, on execute, load or
+ *     store, in M or U mode), tdata2 as maddress, and tcontrol's MTE and
+ *     MPTE, pushed by a trap and popped by MRET; a trigger fires as a
+ *     breakpoint exception before the instruction or access, setting its
+ *     hit bit; the debugger's mode (action 1, dmode) is not modelled;
+ *   - PMP without static priority: an access succeeds when some enabled
+ *     entry (in machine mode, some locked one) grants it whole, fails when
+ *     entries match it and none does, and in user mode when none matches;
+ *     NAPOT regions are at most 1 GB;
+ *   - cpu_gpio_oen, cpu_gpio_in and cpu_gpio_out reach the GPIO matrix.
+ * The part also answers CSRs its manual leaves out, which its boot ROM
+ * writes: the user trap CSRs (ustatus, uie, utvec, uscratch, uepc, ucause,
+ * utval, uip) keep what is written, and 0x800-0x802 reach the counter
+ * mpcer, mpcmr and mpccr name: the ROM starts it there (cycles, wrapping)
+ * and ESP-IDF's bootloader reads it as mpccr, which is what a chip's
+ * timestamped bootloader log shows counting with mpcer reset to 0.
+ * Not modelled: the debug module and its CSRs (dcsr, dpc, dscratch0-1 are
+ * illegal outside debug mode, which is never entered), user-level traps
+ * (the user trap CSRs have no effect), the load and jump hazard events
+ * (never counted), the interrupt controller's transient state after a
+ * write.
+ *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/riscv.c (RV32 and RV64,
  * refereed there against QEMU's virt). Changes for EmbSIM: the core state
  * is a parameter (no file-scope `rs`, CS-18); the width is 32 bits and the
@@ -43,6 +79,19 @@
 #include "mcu/riscv/riscv.h"
 
 
+
+/* ESP-RV's trigger module (mcontrol, tcontrol) and counter (mpcmr) */
+#define TRIG_LOAD 1u
+#define TRIG_STORE 2u
+#define TRIG_EXEC 4u
+#define TRIG_U 8u
+#define TRIG_M 0x40u
+#define TRIG_HIT 0x100000u
+#define TRIG_RESET 0x23e00000u /* type 2 (match), maskmax 31 */
+#define TCONTROL_MTE 8u
+#define TCONTROL_MPTE 0x80u
+#define PC_COUNT_EN 1u
+#define PC_COUNT_SAT 2u
 
 /* ---- traps -------------------------------------------------------------- */
 
@@ -74,6 +123,8 @@ static void trap_enter(struct rv_state *rs, u64 cause, u64 tval, int intr)
     rs->mstatus = st;
     rs->priv = PRV_M;
     rs->resv = 0;
+    if (rs->esp) /* tcontrol: MTE to MPTE, and the triggers off */
+        rs->tcontrol = (rs->tcontrol & 8u) << 4;
     u64 base = rs->mtvec & ~(u64)3;
     rs->pc = intr && (rs->mtvec & 1) ? base + 4 * cause : base;
 }
@@ -112,40 +163,70 @@ static int data_priv(const struct rv_state *rs)
     return rs->priv;
 }
 
+/* entry i's range [lo, hi): 0 when the entry is off */
+static int pmp_range(const struct rv_state *rs, int i, u64 *lo, u64 *hi)
+{
+    u64 y = rs->pmpaddr[i];
+    switch (pmp_cfg(rs, i) >> 3 & 3) {
+    case PMP_TOR:
+        *lo = i ? rs->pmpaddr[i - 1] << 2 : 0;
+        *hi = y << 2;
+        return 1;
+    case PMP_NA4:
+        *lo = y << 2;
+        *hi = *lo + 4;
+        return 1;
+    case PMP_NAPOT: {
+        int t = 0;
+        while (t < 64 && (y >> t & 1))
+            t++;
+        if (rs->esp && t > 27)
+            t = 27; /* ESP-RV: 1 GB at most */
+        if (t >= 61) {
+            *lo = 0;
+            *hi = ~(u64)0;
+        } else {
+            *lo = (y & ~(((u64)1 << t) - 1)) << 2;
+            *hi = *lo + ((u64)8 << t);
+        }
+        return 1;
+    }
+    }
+    return 0;
+}
+
+/* ESP-RV's PMP, which has no static priority: an access passes when an
+ * enabled entry that binds the privilege grants it whole */
+static int pmp_denies_esp(const struct rv_state *rs, u64 a, int n, int priv, u32 perm)
+{
+    int i, matched = 0;
+    for (i = 0; i < rs->npmp; i++) {
+        u8 c = pmp_cfg(rs, i);
+        u64 lo, hi;
+        if (!pmp_range(rs, i, &lo, &hi) || (priv == PRV_M && !(c & PMP_L)))
+            continue;
+        if (lo >= hi || a + (u64)n <= lo || a >= hi)
+            continue;
+        matched = 1;
+        if (a >= lo && a + (u64)n <= hi && (c & perm) == perm)
+            return 0;
+    }
+    return priv < PRV_M || matched;
+}
+
 /* nonzero when the PMP fails n bytes at `a` for `perm` at privilege `priv` */
 static int pmp_denies(const struct rv_state *rs, u64 a, int n, int priv, u32 perm)
 {
     int i;
+    if (rs->esp && rs->pmp_any)
+        return pmp_denies_esp(rs, a, n, priv, perm);
     if (!rs->pmp_any)
         return priv < PRV_M && rs->npmp > 0;
     for (i = 0; i < rs->npmp; i++) {
         u8 c = pmp_cfg(rs, i);
-        u64 y = rs->pmpaddr[i], lo, hi;
-        switch (c >> 3 & 3) {
-        case PMP_TOR:
-            lo = i ? rs->pmpaddr[i - 1] << 2 : 0;
-            hi = y << 2;
-            break;
-        case PMP_NA4:
-            lo = y << 2;
-            hi = lo + 4;
-            break;
-        case PMP_NAPOT: {
-            int t = 0;
-            while (t < 64 && (y >> t & 1))
-                t++;
-            if (t >= 61) {
-                lo = 0;
-                hi = ~(u64)0;
-            } else {
-                lo = (y & ~(((u64)1 << t) - 1)) << 2;
-                hi = lo + ((u64)8 << t);
-            }
-            break;
-        }
-        default:
+        u64 lo, hi;
+        if (!pmp_range(rs, i, &lo, &hi))
             continue;
-        }
         if (lo >= hi || a + (u64)n <= lo || a >= hi)
             continue;
         if (a < lo || a + (u64)n > hi)
@@ -188,6 +269,8 @@ static void pmpaddr_write(struct rv_state *rs, int i, u64 v)
 
 /* ---- memory ------------------------------------------------------------- */
 
+static int esp_trigger(struct rv_state *rs, u32 a, int n, u32 kind);
+
 /* A load or store of the core's. A debugger's watchpoint stops the
  * instruction before the access, as QEMU's stub does (gdb then steps it
  * with the watchpoint out). */
@@ -207,6 +290,10 @@ u64 rv_load(struct rv_state *rs, u64 a, int n)
     u32 a32 = (u32)a;
     if (b->nwatch && esk_bus_watch_check(b, a32, n, 0)) {
         rv_trap(rs, TRAP_WATCH, 0);
+        return 0;
+    }
+    if (rs->esp && esp_trigger(rs, a32, n, TRIG_LOAD)) {
+        rv_trap(rs, EXC_BREAKPOINT, a);
         return 0;
     }
     struct esk_region *r = esk_bus_region(b, a32, (u32)n);
@@ -247,6 +334,10 @@ void rv_store(struct rv_state *rs, u64 a, int n, u64 v)
     u32 a32 = (u32)a;
     if (b->nwatch && esk_bus_watch_check(b, a32, n, 1)) {
         rv_trap(rs, TRAP_WATCH, 0);
+        return;
+    }
+    if (rs->esp && esp_trigger(rs, a32, n, TRIG_STORE)) {
+        rv_trap(rs, EXC_BREAKPOINT, a);
         return;
     }
     struct esk_region *r = esk_bus_region(b, a32, (u32)n);
@@ -296,9 +387,199 @@ static u64 mstatus_rd(struct rv_state *rs)
 
 static u64 misa(struct rv_state *rs)
 {
-    /* A C I M U, and the base's width */
-    u64 ext = 0x00101105u; /* A C I M U */
+    /* C I M U and A when there, and the base's width */
+    u64 ext = 0x00101104u | (rs->ext_a ? 1u : 0u);
     return rs->xlen == 64 ? 2ull << 62 | ext : 1ull << 30 | ext;
+}
+
+/* ---- ESP-RV's CSRs (ESP32-C3 TRM 1.4) ---------------------------------- */
+
+/* the user trap CSRs' slots: ustatus 0x000, uie 0x004, utvec 0x005,
+ * uscratch 0x040, uepc 0x041, ucause 0x042, utval 0x043, uip 0x044 */
+static int esp_ucsr(u32 csr)
+{
+    switch (csr) {
+    case 0x000: return 0;
+    case 0x004: return 1;
+    case 0x005: return 2;
+    case 0x040: case 0x041: case 0x042: case 0x043: case 0x044: return 3 + (int)(csr - 0x040);
+    }
+    return -1;
+}
+
+static int esp_csr_rd(struct rv_state *rs, u32 csr, u64 *v)
+{
+    if (esp_ucsr(csr) >= 0) {
+        *v = rs->ucsr[esp_ucsr(csr)];
+        return 1;
+    }
+    if (csr >= 0x3a0 && csr <= 0x3a3) {
+        *v = rs->pmpcfg[csr - 0x3a0];
+        return 1;
+    }
+    if (csr >= 0x3b0 && csr <= 0x3bf) {
+        *v = rs->pmpaddr[csr - 0x3b0];
+        return 1;
+    }
+    switch (csr) {
+    case 0xf11: *v = 0x612; return 1;           /* Espressif */
+    case 0xf12: *v = 0x80000001u; return 1;
+    case 0xf13: *v = 1; return 1;
+    case 0xf14: *v = 0; return 1;
+    case 0x300: *v = rs->mstatus; return 1;
+    case 0x301: *v = misa(rs); return 1;
+    case 0x305: *v = rs->mtvec; return 1;
+    case 0x340: *v = rs->mscratch; return 1;
+    case 0x341: *v = rs->mepc; return 1;
+    case 0x342: *v = rs->mcause; return 1;
+    case 0x343: *v = rs->mtval; return 1;
+    case 0x7a0: *v = rs->tselect; return 1;
+    case 0x7a1: *v = rs->mcontrol[rs->tselect]; return 1;
+    case 0x7a2: *v = rs->maddress[rs->tselect]; return 1;
+    case 0x7a5: *v = rs->tcontrol; return 1;
+    case 0x7e0: case 0x800: *v = rs->mpcer; return 1;
+    case 0x7e1: case 0x801: *v = rs->mpcmr; return 1;
+    case 0x7e2: case 0x802: *v = rs->mpccr; return 1;
+    case 0x803: case 0x804: case 0x805:
+        *v = rs->gpio_csr ? rs->gpio_csr(rs->gpio_ctx, csr, 0, 0) : 0;
+        return 1;
+    }
+    return 0; /* dcsr, dpc, dscratch: debug mode only; the rest absent */
+}
+
+static void esp_csr_wr(struct rv_state *rs, u32 csr, u32 v)
+{
+    if (esp_ucsr(csr) >= 0) {
+        rs->ucsr[esp_ucsr(csr)] = v;
+        return;
+    }
+    if (csr >= 0x3a0 && csr <= 0x3a3) {
+        pmpcfg_write(rs, (int)(csr - 0x3a0), v);
+        return;
+    }
+    if (csr >= 0x3b0 && csr <= 0x3bf) {
+        pmpaddr_write(rs, (int)(csr - 0x3b0), v);
+        return;
+    }
+    switch (csr) {
+    case 0x300: {
+        u32 mpp = (v & 0x800u) ? MSTATUS_MPP : 0; /* the high bit follows the low */
+        rs->mstatus = (v & (MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_TW)) | mpp;
+        return;
+    }
+    case 0x305: rs->mtvec = (v & ~0xffu) | 1u; return;     /* vectored only */
+    case 0x340: rs->mscratch = v; return;
+    case 0x341: rs->mepc = v & ~1u; return;
+    case 0x342: rs->mcause = v & 0x8000001fu; return;
+    case 0x343: rs->mtval = v; return;
+    case 0x7a0: rs->tselect = v > 7 ? 7 : v; return;
+    case 0x7a1: {
+        /* dmode and action are the debugger's; match is 0 or 1 */
+        u32 keep = rs->mcontrol[rs->tselect];
+        u32 match = (v >> 7) & 15u;
+        if (keep & 0x08000000u)
+            return; /* the debugger's trigger */
+        rs->mcontrol[rs->tselect] = TRIG_RESET | (v & (TRIG_HIT | TRIG_M | TRIG_U | TRIG_EXEC |
+                                                       TRIG_STORE | TRIG_LOAD)) |
+                                    (match > 1 ? 1u : match) << 7;
+        return;
+    }
+    case 0x7a2:
+        if (!(rs->mcontrol[rs->tselect] & 0x08000000u))
+            rs->maddress[rs->tselect] = v;
+        return;
+    case 0x7a5: rs->tcontrol = v & (TCONTROL_MTE | TCONTROL_MPTE); return;
+    case 0x7e0: case 0x800: rs->mpcer = v & 0x7ffu; return;
+    case 0x7e1: case 0x801: rs->mpcmr = v & 3u; return;
+    case 0x7e2: case 0x802: rs->mpccr = v; return;
+    case 0x803: case 0x805:
+        if (rs->gpio_csr)
+            rs->gpio_csr(rs->gpio_ctx, csr, 1, v & 0xffu);
+        return;
+    }
+    /* misa and the IDs keep their values */
+}
+
+/* the triggers matching n bytes at `a` for `kind` (TRIG_EXEC, _LOAD or
+ * _STORE) in the core's mode: their hit bits set, and 1 if one fires */
+static int esp_trigger(struct rv_state *rs, u32 a, int n, u32 kind)
+{
+    int t, fired = 0;
+    u32 mode = rs->priv == PRV_M ? TRIG_M : TRIG_U;
+    if (!(rs->tcontrol & TCONTROL_MTE))
+        return 0; /* action 0 triggers are off in a trap handler */
+    for (t = 0; t < 8; t++) {
+        u32 mc = rs->mcontrol[t], ma = rs->maddress[t];
+        u64 lo, hi;
+        if (!(mc & kind) || !(mc & mode) || ((mc >> 12) & 15u))
+            continue;
+        if ((mc >> 7) & 15u) { /* NAPOT: the trailing ones give the size */
+            u32 k = 0;
+            while (k < 31 && (ma >> k & 1u))
+                k++;
+            hi = (u64)1 << (k + 1);
+            lo = ma & ~(u32)(hi - 1);
+            hi += lo;
+        } else {
+            lo = ma;
+            hi = (u64)ma + 1;
+        }
+        if ((u64)a + (u64)n <= lo || a >= hi)
+            continue;
+        rs->mcontrol[t] |= TRIG_HIT;
+        fired = 1;
+    }
+    return fired;
+}
+
+/* a counter's increase by inc, saturating or wrapping as its mode says */
+static void count_add(u32 mode, u32 *cnt, u64 inc)
+{
+    if (!(mode & PC_COUNT_EN) || !inc)
+        return;
+    if (mode & PC_COUNT_SAT)
+        *cnt = (u64)*cnt + inc > 0xffffffffu ? 0xffffffffu : (u32)(*cnt + inc);
+    else
+        *cnt += (u32)inc;
+}
+
+/* the events of selection e for an instruction (the expanded encoding x)
+ * that took `cost` cycles */
+static u32 count_events(u32 e, u32 x, int size, int taken, u32 cost)
+{
+    u32 op = x & 0x7f;
+    if (e & 1u)
+        return cost; /* cycles: an instruction's other events fall in them */
+    return (e & 2u) || ((e & 0x20u) && op == 0x03) || ((e & 0x40u) && op == 0x23) ||
+           ((e & 0x80u) && (op == 0x6f || op == 0x67)) || ((e & 0x100u) && op == 0x63) ||
+           ((e & 0x200u) && op == 0x63 && taken) || ((e & 0x400u) && size == 2);
+}
+
+/* the counter, for an instruction */
+static void esp_count(struct rv_state *rs, u32 x, int size, int taken, u32 cost)
+{
+    if (rs->mpcer)
+        count_add(rs->mpcmr, &rs->mpccr, count_events(rs->mpcer, x, size, taken, cost));
+}
+
+/* the events of selection e while the core slept n cycles: WFI's idle
+ * cycles, or a jump to itself run again and again */
+static u64 sleep_events(const struct rv_state *rs, u32 e, u64 n)
+{
+    if (rs->idle == 1)
+        return (e & 0x10u) ? n : 0;
+    if (e & 1u)
+        return n;
+    if ((e & (2u | 0x80u)) || ((e & 0x400u) && rs->spin_size == 2))
+        return rs->spin_cost ? n / rs->spin_cost : 0;
+    return 0;
+}
+
+static void esp_count_sleep(struct rv_state *rs, u64 now)
+{
+    u64 n = now - rs->idle_from;
+    count_add(rs->mpcmr, &rs->mpccr, sleep_events(rs, rs->mpcer, n));
+    rs->idle = 0;
 }
 
 /* A CSR's value: 0 when there is no such CSR. A debugger's read (debug)
@@ -309,6 +590,8 @@ static int csr_rd(struct rv_state *rs, u32 csr, u64 *v, int debug)
     u64 cyc = rs->cyc_now + rs->mcycle_off;
     u64 ins = rs->insn_now + rs->minstret_off;
     ES_UNUSED(debug);
+    if (rs->esp)
+        return esp_csr_rd(rs, csr, v);
     if (csr >= 0x323 && csr <= 0x33f) {         /* mhpmevent3..31 */
         *v = 0;
         return 1;
@@ -369,6 +652,10 @@ static void csr_wr(struct rv_state *rs, u32 csr, u64 v)
     u64 cyc;
     u64 ins;
     rs->sim->bus.touched = 1;           /* mie, time: the CLINT's next event */
+    if (rs->esp) {
+        esp_csr_wr(rs, csr, (u32)v);
+        return;
+    }
     cyc = rs->cyc_now + rs->mcycle_off;
     ins = rs->insn_now + rs->minstret_off;
     switch (csr) {
@@ -429,8 +716,8 @@ static void csr_insn(struct rv_state *rs, u32 i)
     u64 src = (f3 & 4) ? rs1 : rs->x[rs1];
     int write = (f3 & 3) == 1 || rs1 != 0;
     u64 old = 0;
-    if (((csr >> 8) & 3) > (u32)rs->priv ||
-        (write && (csr >> 10) == 3) || !csr_rd(rs, csr, &old, 0)) {
+    if (((csr >> 8) & 3) > (u32)rs->priv || (write && (csr >> 10) == 3) ||
+        (write && rs->esp && csr == 0x804) || !csr_rd(rs, csr, &old, 0)) {
         rv_illegal(rs);
         return;
     }
@@ -635,7 +922,7 @@ static void amo(struct rv_state *rs, u32 i, u32 rd, u32 f3, u64 a, u64 b)
 {
     int n = f3 == 2 ? 4 : f3 == 3 && rs->xlen == 64 ? 8 : 0;
     u32 f5 = i >> 27;
-    if (!n) {
+    if (!n || !rs->ext_a) {
         rv_illegal(rs);
         return;
     }
@@ -717,9 +1004,13 @@ static void wfi(struct rv_state *rs)
         rv_illegal(rs);
         return;
     }
-    if (rs->mie & rv_mip(rs))
+    if (rs->esp ? (rs->ext_claim && rs->ext_claim(rs->ext_ctx, 0)) : (rs->mie & rv_mip(rs)) != 0)
         return;
     rs->sim->asleep = 1;
+    if (rs->esp) {
+        rs->idle = 1;
+        rs->idle_from = rs->sim->cycles;
+    }
 }
 
 static void sys_insn(struct rv_state *rs, u32 i, u32 rd, u32 f3)
@@ -747,7 +1038,12 @@ static void sys_insn(struct rv_state *rs, u32 i, u32 rd, u32 f3)
         u64 st = rs->mstatus;
         int mpp = (int)((st >> 11) & 3);
         st = (st & ~(u64)MSTATUS_MIE) | ((st & MSTATUS_MPIE) ? MSTATUS_MIE : 0);
-        st |= MSTATUS_MPIE;
+        if (rs->esp) { /* MPIE cleared; tcontrol's MPTE back to MTE */
+            st &= ~(u64)MSTATUS_MPIE;
+            rs->tcontrol = (rs->tcontrol & TCONTROL_MPTE) >> 4;
+        } else {
+            st |= MSTATUS_MPIE;
+        }
         st &= ~(u64)MSTATUS_MPP;                /* to U, the least privileged */
         if (mpp != PRV_M)
             st &= ~(u64)MSTATUS_MPRV;
@@ -1052,6 +1348,13 @@ static int take_interrupt(struct rv_state *rs)
 {
     if (rs->priv == PRV_M && !(rs->mstatus & MSTATUS_MIE))
         return 0;
+    if (rs->esp) {
+        int id = rs->ext_claim ? rs->ext_claim(rs->ext_ctx, 1) : 0;
+        if (!id)
+            return 0;
+        trap_enter(rs, (u64)id, 0, 1);
+        return 1;
+    }
     u64 p = rs->mie & rv_mip(rs);
     if (!p)
         return 0;
@@ -1078,9 +1381,11 @@ static void step(struct esk_cpu *c)
 {
     struct rv_state *rs = (struct rv_state *)c;
     struct esk_mach *s = rs->sim;
-    u32 h0, h1 = 0, pc, insn, cost;
+    u32 h0, h1 = 0, pc, insn, cost, x;
     int size, br;
-    if (rs->mie && take_interrupt(rs))
+    if (rs->idle)
+        esp_count_sleep(rs, s->cycles);
+    if ((rs->esp ? rs->ext_claim != NULL : rs->mie != 0) && take_interrupt(rs))
         return;
     pc = (u32)rs->pc;
     if ((rs->pc >> 32) || !fetch16(rs, pc, &h0) || ((h0 & 3) == 3 && !fetch16(rs, pc + 2, &h1))) {
@@ -1098,6 +1403,10 @@ static void step(struct esk_cpu *c)
         return;
     }
     insn = size == 4 ? h0 | h1 << 16 : h0;
+    if (rs->esp && esp_trigger(rs, pc, size, TRIG_EXEC)) {
+        trap_enter(rs, EXC_BREAKPOINT, rs->pc, 0);
+        return;
+    }
     cost = (u32)esk_rv_cost(insn, size, &br);
     rs->cyc_now = s->cycles;
     rs->insn_now = s->insns;
@@ -1108,15 +1417,11 @@ static void step(struct esk_cpu *c)
     rs->trap = 0;
     rs->changed = 0;
     rs->insn = insn;
-    if (size == 4) {
-        exec32(rs, insn);
-    } else {
-        u32 x = esk_rvc_expand(insn, rs->xlen);
-        if (x)
-            exec32(rs, x);
-        else
-            rv_illegal(rs);
-    }
+    x = size == 4 ? insn : esk_rvc_expand(insn, rs->xlen);
+    if (x)
+        exec32(rs, x);
+    else
+        rv_illegal(rs);
     if (rs->trap) {
         if (rs->cause == TRAP_WATCH) {
             /* not run: the debugger stops here, and the instruction is
@@ -1134,14 +1439,25 @@ static void step(struct esk_cpu *c)
         s->cycles += 2;
         cost += 2;
     }
+    if (rs->esp)
+        esp_count(rs, x, size, br && rs->npc != rs->pc + (u64)size, cost);
     if (s->counting)
         esk_mach_advance(s, cost);
     if (rs->npc == rs->pc && !rs->changed && s->state == ESK_MACH_RUN) {
         /* a jump to itself that changed nothing waits, as WFI does, for an
          * interrupt it can take */
         int on = rs->priv < PRV_M || (rs->mstatus & MSTATUS_MIE);
-        if (!on || !(rs->mie & rv_mip(rs)))
+        int pending = rs->esp ? rs->ext_claim && rs->ext_claim(rs->ext_ctx, 0)
+                              : (rs->mie & rv_mip(rs)) != 0;
+        if (!on || !pending) {
             s->asleep = 1;
+            if (rs->esp) {
+                rs->idle = 2; /* still running it: its cycles are counted on waking */
+                rs->idle_from = s->cycles;
+                rs->spin_cost = cost;
+                rs->spin_size = size;
+            }
+        }
     }
     rs->pc = rs->npc;
 }
@@ -1158,7 +1474,11 @@ static void cpu_reset(struct esk_cpu *c)
     u64 (*mtime)(void *) = k->mtime;
     void *mtime_ctx = k->mtime_ctx;
     u32 reset_pc = k->reset_pc;
-    int npmp = k->npmp;
+    int npmp = k->npmp, ext_a = k->ext_a, esp = k->esp, t;
+    int (*claim)(void *, int) = k->ext_claim;
+    void *ext_ctx = k->ext_ctx;
+    u32 (*gpio_csr)(void *, u32, int, u32) = k->gpio_csr;
+    void *gpio_ctx = k->gpio_ctx;
     memset(k, 0, sizeof *k);
     k->npmp = npmp;
     k->cpu = keep;
@@ -1166,9 +1486,21 @@ static void cpu_reset(struct esk_cpu *c)
     k->mtime = mtime;
     k->mtime_ctx = mtime_ctx;
     k->reset_pc = reset_pc;
+    k->ext_a = ext_a;
+    k->esp = esp;
+    k->ext_claim = claim;
+    k->ext_ctx = ext_ctx;
+    k->gpio_csr = gpio_csr;
+    k->gpio_ctx = gpio_ctx;
     k->xlen = 32;
     k->priv = PRV_M;
     k->pc = reset_pc;
+    if (esp) {
+        k->mtvec = 1;                   /* vectored, base 0 */
+        k->mpcmr = PC_COUNT_EN | PC_COUNT_SAT;
+        for (t = 0; t < 8; t++)
+            k->mcontrol[t] = TRIG_RESET;
+    }
 }
 
 static u32 cpu_pc(struct esk_cpu *c)
@@ -1189,6 +1521,8 @@ static void cpu_interrupt(struct esk_cpu *c, int n)
 static int cpu_wake_pending(struct esk_cpu *c)
 {
     struct rv_state *rs = (struct rv_state *)c;
+    if (rs->esp)
+        return rs->ext_claim && rs->ext_claim(rs->ext_ctx, 0);
     return (rs->mie & rv_mip(rs)) != 0;
 }
 
@@ -1392,7 +1726,7 @@ static const struct esk_cpu_ops riscv_ops = {
     "riscv", 243, "a RISC-V image",
     cpu_reset, step, cpu_pc, cpu_reg_read, cpu_reg_write,
     cpu_gdb_g_regs, cpu_gdb_xml, 4, cpu_interrupt, GR_PC, 1, 0, cpu_reg_name, cpu_wake_pending,
-    cpu_disasm,
+    cpu_disasm, 0,
 };
 
 int esk_riscv_is(const struct esk_cpu *c)
@@ -1427,6 +1761,31 @@ void esk_riscv_mtime_source(struct esk_mach *m, u64 (*mtime)(void *ctx), void *c
     }
 }
 
+void esk_riscv_ext_source(struct esk_mach *m, int (*claim)(void *ctx, int take), void *ctx)
+{
+    struct rv_state *rs = core_of(m);
+    if (rs) {
+        rs->ext_claim = claim;
+        rs->ext_ctx = ctx;
+    }
+}
+
+void esk_riscv_ext_changed(struct esk_mach *m)
+{
+    struct rv_state *rs = core_of(m);
+    if (rs && m->asleep && rs->ext_claim && rs->ext_claim(rs->ext_ctx, 0))
+        m->asleep = 0;
+}
+
+void esk_riscv_gpio_csr(struct esk_mach *m, u32 (*fn)(void *ctx, u32 csr, int write, u32 v), void *ctx)
+{
+    struct rv_state *rs = core_of(m);
+    if (rs) {
+        rs->gpio_csr = fn;
+        rs->gpio_ctx = ctx;
+    }
+}
+
 void esk_riscv_pmp_entries(struct esk_cpu *c, int n)
 {
     struct rv_state *k = (struct rv_state *)c;
@@ -1436,18 +1795,19 @@ void esk_riscv_pmp_entries(struct esk_cpu *c, int n)
 es_status esk_riscv_create(struct esk_mach *m, const char *model, u32 reset_pc, struct esk_cpu **out)
 {
     struct rv_state *k;
-    if (strcmp(model, "rv32imac") && strcmp(model, "rv32imc") && strcmp(model, "rv32i"))
+    int esp = !strcmp(model, "esp-rv32imc");
+    if (strcmp(model, "rv32imac") && strcmp(model, "rv32imc") && strcmp(model, "rv32i") && !esp)
         return ES_ENOTFOUND;
     k = (struct rv_state *)esk_mach_alloc(m, sizeof *k);
     if (!k)
         return ES_ENOMEM;
     k->cpu.ops = &riscv_ops;
     k->sim = m;
-    k->xlen = 32;
-    k->priv = PRV_M;
-    k->reset_pc = reset_pc;
-    k->pc = reset_pc;
     k->npmp = 16;
+    k->ext_a = !strcmp(model, "rv32imac");
+    k->esp = esp;
+    k->reset_pc = reset_pc;
+    cpu_reset(&k->cpu);
     m->cpu = &k->cpu;
     *out = &k->cpu;
     return ES_OK;

@@ -49,8 +49,11 @@ embsim run --target emblink/arduino_uno --image build/tests/test_sched.elf \
     --until 60s --until-text EMB_TEST_END --console
 ```
 
-`--target` names a board of the catalog (`embsim board list`), `--image`
-the ELF or HEX it runs, `--console` streams the board's console to stdout
+`--target` names a board of the catalog (`embsim board list`), plugged
+into the computer's USB port when it has one (5 V on its USB connector's
+VBUS, as a cable gives it: a board that holds its MCU in reset until its
+supply is up, an ESP32-C3-DevKitM-1's CHIP_PU, starts as it would),
+`--image` the ELF, HEX or flash image (`.bin`) it runs, `--console` streams the board's console to stdout
 as the run goes, and `--until-text` ends the run at the millisecond that
 text appears, so a suite that finishes in 30 ms of target time takes about
 that much wall time too. The runner then reads the console as it reads any

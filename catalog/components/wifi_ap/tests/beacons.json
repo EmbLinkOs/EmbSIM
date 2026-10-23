@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "policy": "functional",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wifi_ap",
+        "params": {
+          "ssid": "Lab",
+          "bssid": "02:00:00:00:00:00"
+        }
+      }
+    ],
+    "nets": {}
+  },
+  "name": "beacons",
+  "description": "Alone on the air it beacons every 100 TU (102.4 ms); with BSSID 02:00:00:00:00:00 its first beacon is at 1 TU, its tenth at 922.624 ms.",
+  "until": "923ms",
+  "expect": {
+    "output:DUT.beacons": {
+      "at": "923ms",
+      "equals": 10
+    },
+    "output:DUT.mac": {
+      "at": "1ms",
+      "equals": "02:00:00:00:00:00"
+    }
+  }
+}

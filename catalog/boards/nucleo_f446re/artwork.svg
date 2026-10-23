@@ -1,0 +1,285 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700.0 825.0" width="700.0" height="825.0">
+<defs>
+  <radialGradient id="glow-green" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#5dff8a" stop-opacity="1"/><stop offset="100%" stop-color="#5dff8a" stop-opacity="0"/></radialGradient>
+  <radialGradient id="glow-red" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff5a5a" stop-opacity="1"/><stop offset="100%" stop-color="#ff5a5a" stop-opacity="0"/></radialGradient>
+</defs>
+<style>.pcb{fill:#f3f3ee;stroke:#9a9a92;stroke-width:3}.silk{fill:#202226;font-family:sans-serif;font-size:13px}.silks{fill:#202226;font-family:sans-serif;font-size:9px;text-anchor:middle}.pad{fill:#d9b94a;stroke:#8a6f1c;stroke-width:1}.hole{fill:#15171b}.hdr{fill:#15171b}.chip{fill:#202226;stroke:#000;stroke-width:1}.metal{fill:#b8bcc6;stroke:#6b7079;stroke-width:1.5}.cut{stroke:#9a9a92;stroke-width:2;stroke-dasharray:8 6;fill:none}</style>
+<rect id="pcb" class="pcb" x="1.5" y="1.5" width="697.0" height="822.0" rx="12"/>
+<!-- an original drawing for EmbSIM to the Nucleo-64's 70 x 82.5 mm outline; positions are approximate until reference.json -->
+<path class="cut" d="M0 175.0 L700.0 175.0"/>
+<g id="usb"><rect class="metal" x="311.0" y="-20" width="78.0" height="92.0" rx="4"/><text class="silk" x="305.0" y="116.0">USB ST-LINK</text></g>
+<circle id="pin-u5v" cx="350.0" cy="20.0" r="8" fill="none"/>
+<rect class="chip" x="485.0" y="55.0" width="70" height="70" transform="rotate(45 520.0 90.0)"/>
+<text class="silks" x="520.0" y="155.0">STM32F103CBT6</text>
+<g id="led-com"><rect x="200.0" y="80.0" width="20" height="12" fill="#e9d6d6" stroke="#8a6f6f"/><text class="silks" x="210.0" y="128.0">LD1 COM</text></g>
+<text class="silks" x="595.4" y="194.0">JP5 PWR</text>
+<rect class="hdr" x="557.3" y="197.3" width="25.4" height="25.4"/><circle class="pad" cx="570.0" cy="210.0" r="7"/>
+<text class="silks" x="570.0" y="240.0">U5V</text>
+<rect class="hdr" x="582.7" y="197.3" width="25.4" height="25.4"/><circle class="pad" cx="595.4" cy="210.0" r="7"/>
+<rect class="hdr" x="608.1" y="197.3" width="25.4" height="25.4"/><circle class="pad" cx="620.8" cy="210.0" r="7"/>
+<text class="silks" x="620.8" y="240.0">E5V</text>
+<rect id="jp5-u5v" x="560.0" y="200.0" width="45.4" height="20" rx="3" fill="#2554c7" opacity="0.85"/>
+<rect id="jp5-e5v" x="585.4" y="200.0" width="45.4" height="20" rx="3" fill="#2554c7" opacity="0.25"/>
+<text class="silks" x="462.7" y="287.0">IDD</text>
+<circle id="pin-idd_3v3" class="pad" cx="450.0" cy="305.0" r="7"/><circle id="pin-idd_vdd" class="pad" cx="475.4" cy="305.0" r="7"/>
+<rect id="jp6" x="440.0" y="295.0" width="45.4" height="20" rx="3" fill="#2554c7" opacity="0.85"/>
+<g id="btn-user"><rect x="140.0" y="210.0" width="60" height="60" rx="4" fill="#cfd3da" stroke="#6b7079"/><circle cx="170.0" cy="240.0" r="18" fill="#2554c7"/><text class="silks" x="170.0" y="286.0">USER</text></g>
+<g id="btn-reset"><rect x="140.0" y="720.0" width="60" height="60" rx="4" fill="#cfd3da" stroke="#6b7079"/><circle cx="170.0" cy="750.0" r="18" fill="#15171b"/><text class="silks" x="170.0" y="796.0">RESET</text></g>
+<rect id="led-ld2" x="510.0" y="364.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld2-glow" cx="520.0" cy="370.0" r="22" fill="url(#glow-green)" opacity="0"/><text class="silks" x="520.0" y="396.0">LD2</text>
+<rect id="led-ld3" x="510.0" y="234.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld3-glow" cx="520.0" cy="240.0" r="22" fill="url(#glow-red)" opacity="0"/><text class="silks" x="520.0" y="266.0">LD3 PWR</text>
+<rect class="chip" x="300.0" y="470.0" width="100" height="100" transform="rotate(45 350.0 520.0)"/>
+<text class="silks" x="350.0" y="524.0" fill="#f2f4f8" style="fill:#f2f4f8">STM32F446RET6</text>
+<rect class="metal" x="240.0" y="460.0" width="30" height="12" rx="5"/><text class="silks" x="255.0" y="495.0">X2</text>
+<rect class="hdr" x="629.9" y="262.3" width="25.4" height="25.4"/>
+<circle id="pin-cn10_1" class="pad" cx="642.6" cy="275.0" r="7"><title>CN10 pin 1: CN10_1</title></circle>
+<rect class="hdr" x="655.3" y="262.3" width="25.4" height="25.4"/>
+<circle id="pin-cn10_2" class="pad" cx="668.0" cy="275.0" r="7"><title>CN10 pin 2: CN10_2</title></circle>
+<rect class="hdr" x="629.9" y="287.7" width="25.4" height="25.4"/>
+<circle id="pin-cn10_3" class="pad" cx="642.6" cy="300.4" r="7"><title>CN10 pin 3: CN10_3</title></circle>
+<rect class="hdr" x="655.3" y="287.7" width="25.4" height="25.4"/>
+<circle id="pin-cn10_4" class="pad" cx="668.0" cy="300.4" r="7"><title>CN10 pin 4: CN10_4</title></circle>
+<rect class="hdr" x="629.9" y="313.1" width="25.4" height="25.4"/>
+<circle id="pin-cn10_5" class="pad" cx="642.6" cy="325.8" r="7"><title>CN10 pin 5: CN10_5</title></circle>
+<rect class="hdr" x="655.3" y="313.1" width="25.4" height="25.4"/>
+<circle id="pin-cn10_6" class="pad" cx="668.0" cy="325.8" r="7"><title>CN10 pin 6: CN10_6</title></circle>
+<rect class="hdr" x="629.9" y="338.5" width="25.4" height="25.4"/>
+<circle id="pin-cn10_7" class="pad" cx="642.6" cy="351.2" r="7"><title>CN10 pin 7: CN10_7</title></circle>
+<rect class="hdr" x="655.3" y="338.5" width="25.4" height="25.4"/>
+<circle id="pin-cn10_8" class="pad" cx="668.0" cy="351.2" r="7"><title>CN10 pin 8: CN10_8</title></circle>
+<rect class="hdr" x="629.9" y="363.9" width="25.4" height="25.4"/>
+<circle id="pin-cn10_9" class="pad" cx="642.6" cy="376.6" r="7"><title>CN10 pin 9: CN10_9</title></circle>
+<rect class="hdr" x="655.3" y="363.9" width="25.4" height="25.4"/>
+<circle class="pad" cx="668.0" cy="376.6" r="7"/>
+<rect class="hdr" x="629.9" y="389.3" width="25.4" height="25.4"/>
+<circle id="pin-cn10_11" class="pad" cx="642.6" cy="402.0" r="7"><title>CN10 pin 11: CN10_11</title></circle>
+<rect class="hdr" x="655.3" y="389.3" width="25.4" height="25.4"/>
+<circle id="pin-cn10_12" class="pad" cx="668.0" cy="402.0" r="7"><title>CN10 pin 12: CN10_12</title></circle>
+<rect class="hdr" x="629.9" y="414.7" width="25.4" height="25.4"/>
+<circle id="pin-cn10_13" class="pad" cx="642.6" cy="427.4" r="7"><title>CN10 pin 13: CN10_13</title></circle>
+<rect class="hdr" x="655.3" y="414.7" width="25.4" height="25.4"/>
+<circle id="pin-cn10_14" class="pad" cx="668.0" cy="427.4" r="7"><title>CN10 pin 14: CN10_14</title></circle>
+<rect class="hdr" x="629.9" y="440.1" width="25.4" height="25.4"/>
+<circle id="pin-cn10_15" class="pad" cx="642.6" cy="452.8" r="7"><title>CN10 pin 15: CN10_15</title></circle>
+<rect class="hdr" x="655.3" y="440.1" width="25.4" height="25.4"/>
+<circle id="pin-cn10_16" class="pad" cx="668.0" cy="452.8" r="7"><title>CN10 pin 16: CN10_16</title></circle>
+<rect class="hdr" x="629.9" y="465.5" width="25.4" height="25.4"/>
+<circle id="pin-cn10_17" class="pad" cx="642.6" cy="478.2" r="7"><title>CN10 pin 17: CN10_17</title></circle>
+<rect class="hdr" x="655.3" y="465.5" width="25.4" height="25.4"/>
+<circle class="pad" cx="668.0" cy="478.2" r="7"/>
+<rect class="hdr" x="629.9" y="490.9" width="25.4" height="25.4"/>
+<circle id="pin-cn10_19" class="pad" cx="642.6" cy="503.6" r="7"><title>CN10 pin 19: CN10_19</title></circle>
+<rect class="hdr" x="655.3" y="490.9" width="25.4" height="25.4"/>
+<circle id="pin-cn10_20" class="pad" cx="668.0" cy="503.6" r="7"><title>CN10 pin 20: CN10_20</title></circle>
+<rect class="hdr" x="629.9" y="516.3" width="25.4" height="25.4"/>
+<circle id="pin-cn10_21" class="pad" cx="642.6" cy="529.0" r="7"><title>CN10 pin 21: CN10_21</title></circle>
+<rect class="hdr" x="655.3" y="516.3" width="25.4" height="25.4"/>
+<circle id="pin-cn10_22" class="pad" cx="668.0" cy="529.0" r="7"><title>CN10 pin 22: CN10_22</title></circle>
+<rect class="hdr" x="629.9" y="541.7" width="25.4" height="25.4"/>
+<circle id="pin-cn10_23" class="pad" cx="642.6" cy="554.4" r="7"><title>CN10 pin 23: CN10_23</title></circle>
+<rect class="hdr" x="655.3" y="541.7" width="25.4" height="25.4"/>
+<circle id="pin-cn10_24" class="pad" cx="668.0" cy="554.4" r="7"><title>CN10 pin 24: CN10_24</title></circle>
+<rect class="hdr" x="629.9" y="567.1" width="25.4" height="25.4"/>
+<circle id="pin-cn10_25" class="pad" cx="642.6" cy="579.8" r="7"><title>CN10 pin 25: CN10_25</title></circle>
+<rect class="hdr" x="655.3" y="567.1" width="25.4" height="25.4"/>
+<circle id="pin-cn10_26" class="pad" cx="668.0" cy="579.8" r="7"><title>CN10 pin 26: CN10_26</title></circle>
+<rect class="hdr" x="629.9" y="592.5" width="25.4" height="25.4"/>
+<circle id="pin-cn10_27" class="pad" cx="642.6" cy="605.2" r="7"><title>CN10 pin 27: CN10_27</title></circle>
+<rect class="hdr" x="655.3" y="592.5" width="25.4" height="25.4"/>
+<circle id="pin-cn10_28" class="pad" cx="668.0" cy="605.2" r="7"><title>CN10 pin 28: CN10_28</title></circle>
+<rect class="hdr" x="629.9" y="617.9" width="25.4" height="25.4"/>
+<circle id="pin-cn10_29" class="pad" cx="642.6" cy="630.6" r="7"><title>CN10 pin 29: CN10_29</title></circle>
+<rect class="hdr" x="655.3" y="617.9" width="25.4" height="25.4"/>
+<circle id="pin-cn10_30" class="pad" cx="668.0" cy="630.6" r="7"><title>CN10 pin 30: CN10_30</title></circle>
+<rect class="hdr" x="629.9" y="643.3" width="25.4" height="25.4"/>
+<circle id="pin-cn10_31" class="pad" cx="642.6" cy="656.0" r="7"><title>CN10 pin 31: CN10_31</title></circle>
+<rect class="hdr" x="655.3" y="643.3" width="25.4" height="25.4"/>
+<circle id="pin-cn10_32" class="pad" cx="668.0" cy="656.0" r="7"><title>CN10 pin 32: CN10_32</title></circle>
+<rect class="hdr" x="629.9" y="668.7" width="25.4" height="25.4"/>
+<circle id="pin-cn10_33" class="pad" cx="642.6" cy="681.4" r="7"><title>CN10 pin 33: CN10_33</title></circle>
+<rect class="hdr" x="655.3" y="668.7" width="25.4" height="25.4"/>
+<circle id="pin-cn10_34" class="pad" cx="668.0" cy="681.4" r="7"><title>CN10 pin 34: CN10_34</title></circle>
+<rect class="hdr" x="629.9" y="694.1" width="25.4" height="25.4"/>
+<circle id="pin-cn10_35" class="pad" cx="642.6" cy="706.8" r="7"><title>CN10 pin 35: CN10_35</title></circle>
+<rect class="hdr" x="655.3" y="694.1" width="25.4" height="25.4"/>
+<circle class="pad" cx="668.0" cy="706.8" r="7"/>
+<rect class="hdr" x="629.9" y="719.5" width="25.4" height="25.4"/>
+<circle id="pin-cn10_37" class="pad" cx="642.6" cy="732.2" r="7"><title>CN10 pin 37: CN10_37</title></circle>
+<rect class="hdr" x="655.3" y="719.5" width="25.4" height="25.4"/>
+<circle class="pad" cx="668.0" cy="732.2" r="7"/>
+<rect class="hdr" x="578.6" y="474.5" width="25.4" height="25.4"/>
+<circle id="pin-d8" class="pad" cx="591.3" cy="487.2" r="7"><title>CN5 pin 1: D8</title></circle>
+<text class="silks" x="559.3" y="490.7">D8</text>
+<rect class="hdr" x="578.6" y="449.1" width="25.4" height="25.4"/>
+<circle id="pin-d9" class="pad" cx="591.3" cy="461.8" r="7"><title>CN5 pin 2: D9</title></circle>
+<text class="silks" x="559.3" y="465.3">D9</text>
+<rect class="hdr" x="578.6" y="423.7" width="25.4" height="25.4"/>
+<circle id="pin-d10" class="pad" cx="591.3" cy="436.4" r="7"><title>CN5 pin 3: D10</title></circle>
+<text class="silks" x="559.3" y="439.9">D10</text>
+<rect class="hdr" x="578.6" y="398.3" width="25.4" height="25.4"/>
+<circle id="pin-d11" class="pad" cx="591.3" cy="411.0" r="7"><title>CN5 pin 4: D11</title></circle>
+<text class="silks" x="559.3" y="414.5">D11</text>
+<rect class="hdr" x="578.6" y="372.9" width="25.4" height="25.4"/>
+<circle id="pin-d12" class="pad" cx="591.3" cy="385.6" r="7"><title>CN5 pin 5: D12</title></circle>
+<text class="silks" x="559.3" y="389.1">D12</text>
+<rect class="hdr" x="578.6" y="347.5" width="25.4" height="25.4"/>
+<circle id="pin-d13" class="pad" cx="591.3" cy="360.2" r="7"><title>CN5 pin 6: D13</title></circle>
+<text class="silks" x="559.3" y="363.7">D13</text>
+<rect class="hdr" x="578.6" y="322.1" width="25.4" height="25.4"/>
+<circle id="pin-gnd_d" class="pad" cx="591.3" cy="334.8" r="7"><title>CN5 pin 7: GND_D</title></circle>
+<text class="silks" x="559.3" y="338.3">GND_D</text>
+<rect class="hdr" x="578.6" y="296.7" width="25.4" height="25.4"/>
+<circle id="pin-aref" class="pad" cx="591.3" cy="309.4" r="7"><title>CN5 pin 8: AREF</title></circle>
+<text class="silks" x="559.3" y="312.9">AREF</text>
+<rect class="hdr" x="578.6" y="271.3" width="25.4" height="25.4"/>
+<circle id="pin-d14" class="pad" cx="591.3" cy="284.0" r="7"><title>CN5 pin 9: D14</title></circle>
+<text class="silks" x="559.3" y="287.5">D14</text>
+<rect class="hdr" x="578.6" y="245.9" width="25.4" height="25.4"/>
+<circle id="pin-d15" class="pad" cx="591.3" cy="258.6" r="7"><title>CN5 pin 10: D15</title></circle>
+<text class="silks" x="559.3" y="262.1">D15</text>
+<rect class="hdr" x="96.0" y="337.3" width="25.4" height="25.4"/>
+<circle class="pad" cx="108.7" cy="350.0" r="7"/>
+<rect class="hdr" x="96.0" y="362.7" width="25.4" height="25.4"/>
+<circle id="pin-ioref" class="pad" cx="108.7" cy="375.4" r="7"><title>CN6 pin 2: IOREF</title></circle>
+<text class="silks" x="140.7" y="378.9">IOREF</text>
+<rect class="hdr" x="96.0" y="388.1" width="25.4" height="25.4"/>
+<circle id="pin-reset" class="pad" cx="108.7" cy="400.8" r="7"><title>CN6 pin 3: RESET</title></circle>
+<text class="silks" x="140.7" y="404.3">RESET</text>
+<rect class="hdr" x="96.0" y="413.5" width="25.4" height="25.4"/>
+<circle id="pin-3v3" class="pad" cx="108.7" cy="426.2" r="7"><title>CN6 pin 4: 3V3</title></circle>
+<text class="silks" x="140.7" y="429.7">3V3</text>
+<rect class="hdr" x="96.0" y="438.9" width="25.4" height="25.4"/>
+<circle id="pin-5v" class="pad" cx="108.7" cy="451.6" r="7"><title>CN6 pin 5: 5V</title></circle>
+<text class="silks" x="140.7" y="455.1">5V</text>
+<rect class="hdr" x="96.0" y="464.3" width="25.4" height="25.4"/>
+<circle id="pin-gnd" class="pad" cx="108.7" cy="477.0" r="7"><title>CN6 pin 6: GND</title></circle>
+<text class="silks" x="140.7" y="480.5">GND</text>
+<rect class="hdr" x="96.0" y="489.7" width="25.4" height="25.4"/>
+<circle id="pin-gnd_2" class="pad" cx="108.7" cy="502.4" r="7"><title>CN6 pin 7: GND_2</title></circle>
+<text class="silks" x="140.7" y="505.9">GND_2</text>
+<rect class="hdr" x="96.0" y="515.1" width="25.4" height="25.4"/>
+<circle id="pin-vin" class="pad" cx="108.7" cy="527.8" r="7"><title>CN6 pin 8: VIN</title></circle>
+<text class="silks" x="140.7" y="531.3">VIN</text>
+<rect class="hdr" x="19.3" y="262.3" width="25.4" height="25.4"/>
+<circle id="pin-cn7_1" class="pad" cx="32.0" cy="275.0" r="7"><title>CN7 pin 1: CN7_1</title></circle>
+<rect class="hdr" x="44.7" y="262.3" width="25.4" height="25.4"/>
+<circle id="pin-cn7_2" class="pad" cx="57.4" cy="275.0" r="7"><title>CN7 pin 2: CN7_2</title></circle>
+<rect class="hdr" x="19.3" y="287.7" width="25.4" height="25.4"/>
+<circle id="pin-cn7_3" class="pad" cx="32.0" cy="300.4" r="7"><title>CN7 pin 3: CN7_3</title></circle>
+<rect class="hdr" x="44.7" y="287.7" width="25.4" height="25.4"/>
+<circle id="pin-cn7_4" class="pad" cx="57.4" cy="300.4" r="7"><title>CN7 pin 4: CN7_4</title></circle>
+<rect class="hdr" x="19.3" y="313.1" width="25.4" height="25.4"/>
+<circle id="pin-cn7_5" class="pad" cx="32.0" cy="325.8" r="7"><title>CN7 pin 5: CN7_5</title></circle>
+<rect class="hdr" x="44.7" y="313.1" width="25.4" height="25.4"/>
+<circle id="pin-e5v" class="pad" cx="57.4" cy="325.8" r="7"><title>CN7 pin 6: E5V</title></circle>
+<rect class="hdr" x="19.3" y="338.5" width="25.4" height="25.4"/>
+<circle id="pin-cn7_7" class="pad" cx="32.0" cy="351.2" r="7"><title>CN7 pin 7: CN7_7</title></circle>
+<rect class="hdr" x="44.7" y="338.5" width="25.4" height="25.4"/>
+<circle id="pin-cn7_8" class="pad" cx="57.4" cy="351.2" r="7"><title>CN7 pin 8: CN7_8</title></circle>
+<rect class="hdr" x="19.3" y="363.9" width="25.4" height="25.4"/>
+<circle class="pad" cx="32.0" cy="376.6" r="7"/>
+<rect class="hdr" x="44.7" y="363.9" width="25.4" height="25.4"/>
+<circle class="pad" cx="57.4" cy="376.6" r="7"/>
+<rect class="hdr" x="19.3" y="389.3" width="25.4" height="25.4"/>
+<circle class="pad" cx="32.0" cy="402.0" r="7"/>
+<rect class="hdr" x="44.7" y="389.3" width="25.4" height="25.4"/>
+<circle id="pin-cn7_12" class="pad" cx="57.4" cy="402.0" r="7"><title>CN7 pin 12: CN7_12</title></circle>
+<rect class="hdr" x="19.3" y="414.7" width="25.4" height="25.4"/>
+<circle id="pin-cn7_13" class="pad" cx="32.0" cy="427.4" r="7"><title>CN7 pin 13: CN7_13</title></circle>
+<rect class="hdr" x="44.7" y="414.7" width="25.4" height="25.4"/>
+<circle id="pin-cn7_14" class="pad" cx="57.4" cy="427.4" r="7"><title>CN7 pin 14: CN7_14</title></circle>
+<rect class="hdr" x="19.3" y="440.1" width="25.4" height="25.4"/>
+<circle id="pin-cn7_15" class="pad" cx="32.0" cy="452.8" r="7"><title>CN7 pin 15: CN7_15</title></circle>
+<rect class="hdr" x="44.7" y="440.1" width="25.4" height="25.4"/>
+<circle id="pin-cn7_16" class="pad" cx="57.4" cy="452.8" r="7"><title>CN7 pin 16: CN7_16</title></circle>
+<rect class="hdr" x="19.3" y="465.5" width="25.4" height="25.4"/>
+<circle id="pin-cn7_17" class="pad" cx="32.0" cy="478.2" r="7"><title>CN7 pin 17: CN7_17</title></circle>
+<rect class="hdr" x="44.7" y="465.5" width="25.4" height="25.4"/>
+<circle id="pin-cn7_18" class="pad" cx="57.4" cy="478.2" r="7"><title>CN7 pin 18: CN7_18</title></circle>
+<rect class="hdr" x="19.3" y="490.9" width="25.4" height="25.4"/>
+<circle id="pin-cn7_19" class="pad" cx="32.0" cy="503.6" r="7"><title>CN7 pin 19: CN7_19</title></circle>
+<rect class="hdr" x="44.7" y="490.9" width="25.4" height="25.4"/>
+<circle id="pin-cn7_20" class="pad" cx="57.4" cy="503.6" r="7"><title>CN7 pin 20: CN7_20</title></circle>
+<rect class="hdr" x="19.3" y="516.3" width="25.4" height="25.4"/>
+<circle id="pin-cn7_21" class="pad" cx="32.0" cy="529.0" r="7"><title>CN7 pin 21: CN7_21</title></circle>
+<rect class="hdr" x="44.7" y="516.3" width="25.4" height="25.4"/>
+<circle id="pin-cn7_22" class="pad" cx="57.4" cy="529.0" r="7"><title>CN7 pin 22: CN7_22</title></circle>
+<rect class="hdr" x="19.3" y="541.7" width="25.4" height="25.4"/>
+<circle id="pin-cn7_23" class="pad" cx="32.0" cy="554.4" r="7"><title>CN7 pin 23: CN7_23</title></circle>
+<rect class="hdr" x="44.7" y="541.7" width="25.4" height="25.4"/>
+<circle id="pin-cn7_24" class="pad" cx="57.4" cy="554.4" r="7"><title>CN7 pin 24: CN7_24</title></circle>
+<rect class="hdr" x="19.3" y="567.1" width="25.4" height="25.4"/>
+<circle id="pin-cn7_25" class="pad" cx="32.0" cy="579.8" r="7"><title>CN7 pin 25: CN7_25</title></circle>
+<rect class="hdr" x="44.7" y="567.1" width="25.4" height="25.4"/>
+<circle class="pad" cx="57.4" cy="579.8" r="7"/>
+<rect class="hdr" x="19.3" y="592.5" width="25.4" height="25.4"/>
+<circle id="pin-cn7_27" class="pad" cx="32.0" cy="605.2" r="7"><title>CN7 pin 27: CN7_27</title></circle>
+<rect class="hdr" x="44.7" y="592.5" width="25.4" height="25.4"/>
+<circle id="pin-cn7_28" class="pad" cx="57.4" cy="605.2" r="7"><title>CN7 pin 28: CN7_28</title></circle>
+<rect class="hdr" x="19.3" y="617.9" width="25.4" height="25.4"/>
+<circle class="pad" cx="32.0" cy="630.6" r="7"/>
+<rect class="hdr" x="44.7" y="617.9" width="25.4" height="25.4"/>
+<circle id="pin-cn7_30" class="pad" cx="57.4" cy="630.6" r="7"><title>CN7 pin 30: CN7_30</title></circle>
+<rect class="hdr" x="19.3" y="643.3" width="25.4" height="25.4"/>
+<circle id="pin-cn7_31" class="pad" cx="32.0" cy="656.0" r="7"><title>CN7 pin 31: CN7_31</title></circle>
+<rect class="hdr" x="44.7" y="643.3" width="25.4" height="25.4"/>
+<circle id="pin-cn7_32" class="pad" cx="57.4" cy="656.0" r="7"><title>CN7 pin 32: CN7_32</title></circle>
+<rect class="hdr" x="19.3" y="668.7" width="25.4" height="25.4"/>
+<circle id="pin-cn7_33" class="pad" cx="32.0" cy="681.4" r="7"><title>CN7 pin 33: CN7_33</title></circle>
+<rect class="hdr" x="44.7" y="668.7" width="25.4" height="25.4"/>
+<circle id="pin-cn7_34" class="pad" cx="57.4" cy="681.4" r="7"><title>CN7 pin 34: CN7_34</title></circle>
+<rect class="hdr" x="19.3" y="694.1" width="25.4" height="25.4"/>
+<circle id="pin-cn7_35" class="pad" cx="32.0" cy="706.8" r="7"><title>CN7 pin 35: CN7_35</title></circle>
+<rect class="hdr" x="44.7" y="694.1" width="25.4" height="25.4"/>
+<circle id="pin-cn7_36" class="pad" cx="57.4" cy="706.8" r="7"><title>CN7 pin 36: CN7_36</title></circle>
+<rect class="hdr" x="19.3" y="719.5" width="25.4" height="25.4"/>
+<circle id="pin-cn7_37" class="pad" cx="32.0" cy="732.2" r="7"><title>CN7 pin 37: CN7_37</title></circle>
+<rect class="hdr" x="44.7" y="719.5" width="25.4" height="25.4"/>
+<circle id="pin-cn7_38" class="pad" cx="57.4" cy="732.2" r="7"><title>CN7 pin 38: CN7_38</title></circle>
+<rect class="hdr" x="96.0" y="565.9" width="25.4" height="25.4"/>
+<circle id="pin-a0" class="pad" cx="108.7" cy="578.6" r="7"><title>CN8 pin 1: A0</title></circle>
+<text class="silks" x="140.7" y="582.1">A0</text>
+<rect class="hdr" x="96.0" y="591.3" width="25.4" height="25.4"/>
+<circle id="pin-a1" class="pad" cx="108.7" cy="604.0" r="7"><title>CN8 pin 2: A1</title></circle>
+<text class="silks" x="140.7" y="607.5">A1</text>
+<rect class="hdr" x="96.0" y="616.7" width="25.4" height="25.4"/>
+<circle id="pin-a2" class="pad" cx="108.7" cy="629.4" r="7"><title>CN8 pin 3: A2</title></circle>
+<text class="silks" x="140.7" y="632.9">A2</text>
+<rect class="hdr" x="96.0" y="642.1" width="25.4" height="25.4"/>
+<circle id="pin-a3" class="pad" cx="108.7" cy="654.8" r="7"><title>CN8 pin 4: A3</title></circle>
+<text class="silks" x="140.7" y="658.3">A3</text>
+<rect class="hdr" x="96.0" y="667.5" width="25.4" height="25.4"/>
+<circle id="pin-a4" class="pad" cx="108.7" cy="680.2" r="7"><title>CN8 pin 5: A4</title></circle>
+<text class="silks" x="140.7" y="683.7">A4</text>
+<rect class="hdr" x="96.0" y="692.9" width="25.4" height="25.4"/>
+<circle id="pin-a5" class="pad" cx="108.7" cy="705.6" r="7"><title>CN8 pin 6: A5</title></circle>
+<text class="silks" x="140.7" y="709.1">A5</text>
+<rect class="hdr" x="578.6" y="692.9" width="25.4" height="25.4"/>
+<circle id="pin-d0" class="pad" cx="591.3" cy="705.6" r="7"><title>CN9 pin 1: D0</title></circle>
+<text class="silks" x="559.3" y="709.1">D0</text>
+<rect class="hdr" x="578.6" y="667.5" width="25.4" height="25.4"/>
+<circle id="pin-d1" class="pad" cx="591.3" cy="680.2" r="7"><title>CN9 pin 2: D1</title></circle>
+<text class="silks" x="559.3" y="683.7">D1</text>
+<rect class="hdr" x="578.6" y="642.1" width="25.4" height="25.4"/>
+<circle id="pin-d2" class="pad" cx="591.3" cy="654.8" r="7"><title>CN9 pin 3: D2</title></circle>
+<text class="silks" x="559.3" y="658.3">D2</text>
+<rect class="hdr" x="578.6" y="616.7" width="25.4" height="25.4"/>
+<circle id="pin-d3" class="pad" cx="591.3" cy="629.4" r="7"><title>CN9 pin 4: D3</title></circle>
+<text class="silks" x="559.3" y="632.9">D3</text>
+<rect class="hdr" x="578.6" y="591.3" width="25.4" height="25.4"/>
+<circle id="pin-d4" class="pad" cx="591.3" cy="604.0" r="7"><title>CN9 pin 5: D4</title></circle>
+<text class="silks" x="559.3" y="607.5">D4</text>
+<rect class="hdr" x="578.6" y="565.9" width="25.4" height="25.4"/>
+<circle id="pin-d5" class="pad" cx="591.3" cy="578.6" r="7"><title>CN9 pin 6: D5</title></circle>
+<text class="silks" x="559.3" y="582.1">D5</text>
+<rect class="hdr" x="578.6" y="540.5" width="25.4" height="25.4"/>
+<circle id="pin-d6" class="pad" cx="591.3" cy="553.2" r="7"><title>CN9 pin 7: D6</title></circle>
+<text class="silks" x="559.3" y="556.7">D6</text>
+<rect class="hdr" x="578.6" y="515.1" width="25.4" height="25.4"/>
+<circle id="pin-d7" class="pad" cx="591.3" cy="527.8" r="7"><title>CN9 pin 8: D7</title></circle>
+<text class="silks" x="559.3" y="531.3">D7</text>
+<text class="silks" x="44.7" y="249.0">CN7</text>
+<text class="silks" x="655.3" y="249.0">CN10</text>
+<text class="silks" x="108.7" y="324.0">CN6</text>
+<text class="silks" x="591.3" y="232.6">CN5</text>
+<text class="silk" x="230.0" y="680.0">NUCLEO-F446RE</text>
+</svg>

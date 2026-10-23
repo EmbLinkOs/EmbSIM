@@ -14,4 +14,8 @@
 es_status esk_mach_build(struct esk_mach *m, const esk_json *mcu, const esk_json *regs, u32 hse_hz,
                          char *why, size_t cap);
 
+/* `len` bytes the part holds from the factory at `base` (a boot ROM's
+ * image, a memory region's `file`): kept through every erase */
+es_status esk_mach_factory(struct esk_mach *m, u32 base, const unsigned char *data, size_t len);
+
 #endif

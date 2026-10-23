@@ -1,0 +1,126 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-blecent",
+ "description": "Two ESP32-C3-DevKitM-1 boards 1 m apart, each plugged into USB: B1 runs ESP-IDF's bluetooth/nimble/blecent, B2 its peer, bluetooth/nimble/bleprph (a second chip, its own MAC).",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  },
+  {
+   "id": "B2",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 420
+   },
+   "firmware": {
+    "image": "bleprph.bin",
+    "format": "bin"
+   },
+   "settings": {
+    "mac": "7c:df:a1:45:6d:70"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "USB2",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 460
+   }
+  },
+  {
+   "id": "GND2",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 620
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ],
+  "USB5V_2": [
+   "USB2.+",
+   "B2.VBUS"
+  ],
+  "GND_2": [
+   "USB2.-",
+   "GND2.GND",
+   "B2.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "peripheral",
+   "target": "serial:B2",
+   "kind": "serial"
+  }
+ ],
+ "layout": {
+  "bench": {
+   "parts": {
+    "B1": {
+     "x": 0.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "B2": {
+     "x": 1000.0,
+     "y": 0.0,
+     "rotation": 0
+    }
+   }
+  }
+ }
+}

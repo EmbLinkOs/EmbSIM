@@ -76,6 +76,21 @@ jobs:
           fetch cmsis_device_f1 https://github.com/STMicroelectronics/cmsis_device_f1.git c8e9a4a4f16b6d2cb2a2083cbe5161025280fb22
           fetch CMSIS_5 https://github.com/ARM-software/CMSIS_5.git 55b19837f5703e418ca37894d5745b1dc05e4c91 /CMSIS/Core/Include/
           python3 tests/vendor/stm32cube/run.py --st "$RUNNER_TEMP/st" --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: STM32CubeF4's examples on the NUCLEO-F446RE
+        if: matrix.name == 'linux-gcc'
+        # at the submodule commits CubeF4 pins; CMSIS_5's core headers are the STM32F1 step's checkout
+        run: |
+          fetch() { # directory, repository, commit[, sparse path]
+            git init -q "$RUNNER_TEMP/st/$1"
+            git -C "$RUNNER_TEMP/st/$1" fetch -q --depth 1 --filter=blob:none "$2" "$3"
+            if [ -n "$4" ]; then git -C "$RUNNER_TEMP/st/$1" sparse-checkout set "$4"; fi
+            git -C "$RUNNER_TEMP/st/$1" checkout -q FETCH_HEAD
+          }
+          fetch cubef4 https://github.com/STMicroelectronics/STM32CubeF4.git 60c8abe0ae88a23bbd1c925358330031e36dd20f Projects/STM32446E-Nucleo
+          fetch stm32f4xx_hal_driver https://github.com/STMicroelectronics/stm32f4xx_hal_driver.git 1f6451c3e07728b4c830744de380e56bf5bc0026
+          fetch cmsis_device_f4 https://github.com/STMicroelectronics/cmsis_device_f4.git 9192c7b9df75a142f2027ab266601fe061fc00b3
+          fetch stm32f4xx-nucleo-bsp https://github.com/STMicroelectronics/stm32f4xx-nucleo-bsp.git 84b99c762908ef56f711acf970ab13d4ec278df6
+          python3 tests/vendor/stm32cubef4/run.py --st "$RUNNER_TEMP/st" --embsim build/${{ matrix.preset }}/bin/embsim
       - name: Pico SDK applications on the unmodified SDK
         if: matrix.name == 'linux-gcc'
         run: |
@@ -104,6 +119,71 @@ jobs:
           git -C "$RUNNER_TEMP/freedom-metal" checkout -q FETCH_HEAD
           python3 tests/vendor/freedom-metal/run.py --sdk "$RUNNER_TEMP/freedom-e-sdk" --metal "$RUNNER_TEMP/freedom-metal" --embsim build/${{ matrix.preset }}/bin/embsim
 
+  esp-idf:
+    # its own job: ESP-IDF and its RISC-V toolchain take a while to fetch,
+    # and each example is built with idf.py as a user builds it
+    name: ESP-IDF's examples on the ESP32-C3-DevKitM-1
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+      - name: Build EmbSIM
+        run: |
+          cmake --preset ci-gcc
+          cmake --build --preset ci-gcc
+      - name: ESP-IDF v5.4 and its tools for the ESP32-C3
+        run: |
+          # an origin remote: ESP-IDF's submodules are relative to it (../../espressif/...)
+          git init -q "$RUNNER_TEMP/esp-idf"
+          git -C "$RUNNER_TEMP/esp-idf" remote add origin https://github.com/espressif/esp-idf.git
+          git -C "$RUNNER_TEMP/esp-idf" fetch -q --depth 1 origin 67c1de1eebe095d554d281952fde63c16ee2dca0 # v5.4
+          git -C "$RUNNER_TEMP/esp-idf" checkout -q FETCH_HEAD
+          git -C "$RUNNER_TEMP/esp-idf" submodule update -q --init --depth 1 --recursive
+          "$RUNNER_TEMP/esp-idf/install.sh" esp32c3
+      - name: Run the examples
+        run: |
+          . "$RUNNER_TEMP/esp-idf/export.sh" >/dev/null
+          python tests/vendor/esp-idf/run.py --idf "$RUNNER_TEMP/esp-idf" --embsim build/ci-gcc/bin/embsim
+
+  arduino-esp32:
+    # its own job: the esp32 platform is installed as the IDE's board
+    # manager installs it, a few gigabytes
+    name: Arduino-ESP32's sketches on the ESP32-C3-DevKitM-1
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+      - name: Build EmbSIM
+        run: |
+          cmake --preset ci-gcc
+          cmake --build --preset ci-gcc
+      - name: arduino-cli, the esp32 platform 3.2.0 and the IDE's built-in examples
+        run: |
+          A="$RUNNER_TEMP/arduino"
+          mkdir -p "$A"
+          curl -sSL -o "$A/cli.tar.gz" https://downloads.arduino.cc/arduino-cli/arduino-cli_1.1.1_Linux_64bit.tar.gz
+          echo "2b807add5c3a518861bfd4d3e78de9e02b0a2723df3d90386df2200a767349c4  $A/cli.tar.gz" | sha256sum -c -
+          tar xzf "$A/cli.tar.gz" -C "$A" arduino-cli
+          printf 'board_manager:\n  additional_urls:\n    - %s\ndirectories:\n  data: %s\n  downloads: %s\n  user: %s\n' \
+            https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json \
+            "$A/data" "$A/downloads" "$A/user" > "$A/cli.yaml"
+          "$A/arduino-cli" --config-file "$A/cli.yaml" core update-index
+          "$A/arduino-cli" --config-file "$A/cli.yaml" core install esp32:esp32@3.2.0
+          rm -rf "$A/downloads"
+          git init -q "$A/arduino-examples"
+          git -C "$A/arduino-examples" fetch -q --depth 1 https://github.com/arduino/arduino-examples.git 50b66a3ce1e4e5e69cd96d3af5ca41a3383b311a
+          git -C "$A/arduino-examples" checkout -q FETCH_HEAD
+      - name: Run the sketches
+        run: |
+          A="$RUNNER_TEMP/arduino"
+          python3 tests/vendor/arduino-esp32/run.py --cli "$A/arduino-cli" --config "$A/cli.yaml" --examples "$A/arduino-examples" --embsim build/ci-gcc/bin/embsim
+
   tools:
     name: tools and catalog
     runs-on: ubuntu-24.04
@@ -120,10 +200,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ngspice
           python3 tools/analog/ngspice_fixture.py --check
-      - name: The DSP test's expected hashes are QEMU's Cortex-M4's
+      - name: The DSP and core tests' expected outputs are QEMU's Cortex-M4's
         run: |
           sudo apt-get install -y qemu-system-arm
           python3 tests/protocol/test_dsp.py --qemu
+          python3 tests/protocol/test_cm4_core.py --qemu
 
   workbench:
     name: workbench
@@ -247,7 +328,7 @@ jobs:
   merge_gate:
     name: CI merge gate
     runs-on: ubuntu-24.04
-    needs: [core, tools, workbench, smoke, desktop]
+    needs: [core, esp-idf, arduino-esp32, tools, workbench, smoke, desktop]
     if: always()
     steps:
       - name: Require every job to succeed

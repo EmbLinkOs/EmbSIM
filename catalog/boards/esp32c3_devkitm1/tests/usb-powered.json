@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "usb-powered",
+  "description": "Plugged into a computer's USB port through a 0.25 ohm cable: D1 passes VBUS to 5V less its Schottky drop, D5 glows dimly (about 0.6 mA through R11's 5.1 k), U2 (SGM2212-3.3) makes 3V3 and R20 holds GPIO8 high.",
+  "policy": "electrical",
+  "until": "60ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/esp32c3_devkitm1"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "V5": [
+        "B1.5V"
+      ],
+      "V33": [
+        "B1.3V3"
+      ],
+      "IO8": [
+        "B1.IO8"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:V5": {
+      "at": "50ms",
+      "min_v": 4.6,
+      "max_v": 4.95
+    },
+    "net:V33": {
+      "at": "50ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "net:IO8": {
+      "at": "50ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "output:B1.D5.luminance": {
+      "at": "50ms",
+      "min": 0.02,
+      "max": 0.05
+    }
+  }
+}

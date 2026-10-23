@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/stps2l30a",
+  "version": "1.0.0",
+  "name": "STPS2L30A",
+  "category": "diodes",
+  "description": "STMicroelectronics STPS2L30A, a 30 V, 2 A low-drop power Schottky rectifier in SMA (0.45 V maximum at 2 A): the NUCLEO-64's D4, between VIN's regulator and E5V.",
+  "keywords": [
+    "schottky",
+    "diode",
+    "rectifier",
+    "stps2l30",
+    "stps2l30a",
+    "stmicroelectronics",
+    "sma",
+    "nucleo"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode"
+    },
+    {
+      "name": "K",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode (the band)"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "D",
+          "component": "emblink/diode_schottky",
+          "params": {
+            "part": "generic",
+            "is": "20u",
+            "n": 1.0,
+            "rs": 0.05,
+            "bv": 35,
+            "cj0": "150p"
+          }
+        }
+      ],
+      "nets": {},
+      "ports": {
+        "A": "D.A",
+        "K": "D.K"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no diode drops.",
+      "omissions": [
+        "conduction"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "A diode fitted to the datasheet: 0.40 V at 2 A (0.45 V maximum at 25 C), 0.22 V at 0.1 A, 20 uA reverse at 30 V (200 uA maximum), breakdown above 30 V.",
+      "omissions": [
+        "temperature (the drop falls to about 0.33 V at 2 A and 125 C, and the leakage rises to milliamperes)",
+        "the junction capacitance is an estimate",
+        "avalanche energy and surge: no damage"
+      ],
+      "range": {
+        "voltage_v": [
+          -30,
+          1
+        ],
+        "current_a": [
+          -0.001,
+          2
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "STMicroelectronics STPS2L30 datasheet",
+        "url": "https://www.st.com/resource/en/datasheet/stps2l30.pdf",
+        "date": "2026-10-19",
+        "notes": "Read through distributor and search excerpts (the PDF could not be fetched): VRRM 30 V, IF(AV) 2 A, IFSM 75 A, VF 0.45 V maximum at 2 A and 25 C, 0.325 typical and 0.375 maximum at 125 C, IR 200 uA maximum at 30 V and 25 C"
+      },
+      {
+        "title": "MB1136 C-03 electrical schematics (NUCLEO-F446RE), D4",
+        "url": "https://www.st.com/en/evaluation-tools/nucleo-f446re.html#cad-resources",
+        "date": "2026-10-19"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "STPS2L30A",
+    "manufacturer": "STMicroelectronics",
+    "package": "SMA (DO-214AC)",
+    "datasheet": "https://www.st.com/resource/en/datasheet/stps2l30.pdf"
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/usb_power_meter",
+  "version": "0.1.0",
+  "name": "USB power meter (inline tester)",
+  "category": "instruments",
+  "description": "An inline USB power meter, the tester plugged between a computer's port and a board's cable: it shows VBUS's voltage, the current the board draws and its power, refreshed twice a second, and counts the charge and energy since it was plugged in. Its shunt is in VBUS; it powers itself from the host's side, so its own draw is not in what it shows.",
+  "keywords": [
+    "usb",
+    "power meter",
+    "usb tester",
+    "ammeter",
+    "current",
+    "um25c",
+    "fnb48",
+    "vbus",
+    "consumption"
+  ],
+  "pins": [
+    {
+      "name": "IN",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "VBUS from the host's port"
+    },
+    {
+      "name": "OUT",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "VBUS to the board's cable"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "GND, passed through"
+    }
+  ],
+  "params": {
+    "resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "min": 0.001,
+      "max": 1,
+      "doc": "Its insertion resistance in VBUS: the shunt and the connectors"
+    },
+    "self_a": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.012,
+      "min": 0,
+      "max": 0.1,
+      "doc": "Its own draw from the host's side at 5 V (its display and microcontroller)"
+    },
+    "refresh": {
+      "type": "number",
+      "unit": "s",
+      "default": 0.5,
+      "min": 0.05,
+      "max": 10,
+      "doc": "How often its display shows new readings, each the average over the period"
+    },
+    "v_resolution": {
+      "type": "number",
+      "unit": "V",
+      "default": 0.001,
+      "min": 0,
+      "doc": "The voltage's last digit"
+    },
+    "i_resolution": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.0001,
+      "min": 0,
+      "doc": "The current's last digit"
+    },
+    "v_min": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.5,
+      "min": 0,
+      "doc": "Below this at IN it is dark"
+    }
+  },
+  "outputs": [
+    {
+      "name": "on",
+      "type": "boolean",
+      "doc": "Its display is lit"
+    },
+    {
+      "name": "voltage",
+      "type": "number",
+      "unit": "V",
+      "doc": "VBUS at OUT, as its display shows it"
+    },
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A",
+      "doc": "The current to the board, averaged over the last refresh period"
+    },
+    {
+      "name": "power",
+      "type": "number",
+      "unit": "W",
+      "doc": "The power to the board, averaged over the last refresh period"
+    },
+    {
+      "name": "capacity_mah",
+      "type": "number",
+      "unit": "mAh",
+      "doc": "The charge counted since it was powered"
+    },
+    {
+      "name": "energy_mwh",
+      "type": "number",
+      "unit": "mWh",
+      "doc": "The energy counted since it was powered"
+    }
+  ],
+  "model": {
+    "primitive": "usb_meter"
+  },
+  "functional": {
+    "primitive": "wire"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 40,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 80,
+        "y": 10,
+        "side": "right"
+      },
+      "GND": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "VBUS passed through.",
+      "omissions": [
+        "the readings (they need the electrical policy)"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the readings"
+      ]
+    },
+    "electrical": {
+      "claims": "Its insertion resistance in VBUS, its own draw from IN (not shown), the display refreshed each period with the voltage at OUT and the current and power averaged over the period at its resolution, the charge and energy counted while lit, dark below v_min; the readings integrate the circuit's accepted solutions (ADR-036: a part's supply current, such as an ESP32-C3's radio bursts, shows as it would).",
+      "omissions": [
+        "the data lines D+ and D- and their voltages (the cable's data passes as the board's console does)",
+        "the shunt's heating",
+        "quick-charge protocols and their triggers",
+        "a record of the readings over time (the oscilloscope or a scenario does that)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "USB 2.0 Specification, 7.2.1: VBUS (4.75 to 5.25 V at the host's port)",
+        "url": "https://www.usb.org/document-library/usb-20-specification",
+        "date": "2026-10-23",
+        "notes": "The range its readings are read against; the meter itself is a generic inline tester (its typical shunt, self-draw, refresh and resolution), not one maker's."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

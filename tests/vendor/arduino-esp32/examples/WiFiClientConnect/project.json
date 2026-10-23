@@ -1,0 +1,96 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-esp32-wificlientconnect",
+ "description": "Arduino-ESP32's WiFiClientConnect on the ESP32-C3-DevKitM-1, with the access point it names, your-ssid (WPA2-Personal, password your-password), 5 m away, as a user sets one up for it.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "AP1",
+   "component": "emblink/wifi_ap",
+   "params": {
+    "ssid": "your-ssid",
+    "password": "your-password",
+    "channel": 11,
+    "bssid": "02:e5:00:00:00:03"
+   },
+   "layout": {
+    "x": 640,
+    "y": 120
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "ap-log",
+   "target": "output:AP1.log",
+   "kind": "value"
+  }
+ ],
+ "layout": {
+  "bench": {
+   "parts": {
+    "B1": {
+     "x": 0.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "AP1": {
+     "x": 5000.0,
+     "y": 0.0,
+     "rotation": 0
+    }
+   }
+  }
+ }
+}

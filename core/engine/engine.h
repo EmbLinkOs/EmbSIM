@@ -7,6 +7,8 @@
 #define ESK_ENGINE_H
 
 #include "embsim/types.h"
+#include "engine/air.h"
+#include "engine/inet.h"
 #include "engine/world.h"
 #include "time/clock.h"
 #include "time/sched.h"
@@ -126,6 +128,9 @@ struct esk_comp {
      * turn in degrees, clockwise seen from above; for the world's rays */
     double pose[3];
     int posed;
+    /* the current its supply pins draw now (ADR-036), amps: a part's model
+     * sets it (esk_comp_set_supply); its power pins' bridges sink it */
+    double supply_a;
 };
 
 typedef void (*esk_net_change_fn)(void *ctx, esk_net *net);
@@ -158,6 +163,10 @@ struct esk_engine {
     void (*ext_free)(void *ext);
     /* the room the circuit sits in (ADR-026) */
     esk_world world;
+    /* the 2.4 GHz medium its radios share (air.h) */
+    esk_air air;
+    /* the internet beyond its routers (inet.h) */
+    esk_inet inet;
 };
 
 /* the world's value for a component's input bound to it (its description's
@@ -218,6 +227,10 @@ esk_logic esk_pin_level(const esk_pin *p);
 void esk_pin_refresh(esk_pin *p);
 void esk_pin_watch(esk_pin *p, int watch);
 es_status esk_comp_wake_at(esk_comp *c, es_time_t t, uint32_t token);
+/* the part draws `amps` from its supply pins from `at` on (ADR-036): under
+ * the electrical policy, split between its power pins that a supply of the
+ * circuit's feeds, from each to the part's ground pin; nothing otherwise */
+void esk_comp_set_supply(esk_comp *c, double amps, es_time_t at);
 void esk_comp_wake_cancel(esk_comp *c, uint32_t token);
 int esk_comp_param_double(const esk_comp *c, const char *name, double *out);
 int esk_comp_param_int(const esk_comp *c, const char *name, int64_t *out);

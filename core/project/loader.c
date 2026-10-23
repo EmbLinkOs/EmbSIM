@@ -6,10 +6,12 @@
  * nets merged through board ports and functional wires, probes, settings. */
 #include "project/loader.h"
 #include "ext/lua_model.h"
+#include <stdio.h>
 #include <string.h>
 #include "host/host.h"
 #include "mcu/mcu.h"
 #include "util/num.h"
+#include "util/sha256.h"
 #include "util/str.h"
 
 /* ---- diagnostics --------------------------------------------------------- */
@@ -73,7 +75,9 @@ static void mcu_signal_model(const char *sig, const char *family, esk_pin_model 
                (sig[0] == 'R' && sig[1] >= 'A' && sig[1] <= 'K' && sig[2] >= '0' && sig[2] <= '9') ||
                (!strncmp(sig, "GPIO", 4) && sig[4] >= '0' && sig[4] <= '9')) {
         m->kind = ESK_PIN_DIGITAL_IO; m->pull = ESK_PULL_NONE;
-    } else if (!strncmp(sig, "OSC", 3) || !strncmp(sig, "XTAL", 4) || !strcmp(sig, "AREF")) {
+    } else if (!strncmp(sig, "OSC", 3) || !strncmp(sig, "XTAL", 4) || !strcmp(sig, "AREF") ||
+               !strncmp(sig, "VCAP_", 5)) {
+        /* VCAP_1, VCAP_2: the core regulator's capacitors, the regulator not modelled */
         m->kind = ESK_PIN_ANALOG;
     } else if (!strcmp(sig, "NC")) {
         m->kind = ESK_PIN_NC;
@@ -514,13 +518,18 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
         ld_diag(s, ES_SEV_ERROR, "catalog.instantiate", id, "cannot instantiate %s: %s", item->id, es_strerror(st));
         goto done;
     }
-    /* interactive input defaults */
+    /* interactive input defaults; a parameter initially_NAME gives the input
+     * NAME its first value on this instance (a jumper fitted at the factory) */
     {
         const esk_json *inputs = esk_json_get(desc, "inputs");
         for (i = 0; i < esk_json_len(inputs); i++) {
             const esk_json *in = esk_json_at(inputs, i);
             const esk_json *def = esk_json_get(in, "default");
             const char *name = esk_json_get_str(in, "name", NULL);
+            char initially[96];
+            if (name && esk_snprintf(initially, sizeof initially, "initially_%s", name) < sizeof initially &&
+                esk_json_get(params, initially))
+                def = esk_json_get(params, initially);
             /* an input bound to the world stays unset: it reads the world, or its default */
             if (name && def && !esk_json_get(in, "world")) {
                 esk_json *v = esk_json_clone(s->a, def);
@@ -656,18 +665,64 @@ static es_status join_ties(graph *g, esk_comp *c)
 
 /* the board's firmware on its MCU's runtime (SPEC-009): the image, the register
  * description beside the MCU description, the board's oscillator */
+#define LD_MAX_FILES 4
+
+/* the MCU's memory regions' factory files (a boot ROM's image), checked
+ * against their SHA-256: n of them in files[], their bytes to be freed */
+static int read_memory_files(es_session *s, const esk_board_inst *bi, const esk_catalog_item *mi,
+                             esk_mcu_file *files)
+{
+    const esk_json *mem = esk_json_get(mi->desc, "memory");
+    size_t i;
+    int n = 0;
+    for (i = 0; i < esk_json_len(mem) && n < LD_MAX_FILES; i++) {
+        const esk_json *r = esk_json_at(mem, i);
+        const char *rel = esk_json_get_str(r, "file", NULL), *want = esk_json_get_str(r, "sha256", NULL);
+        char *path, *data = NULL, got[72];
+        size_t len = 0;
+        u64 base = 0;
+        if (!rel)
+            continue;
+        path = esk_host_path_join(s->a, mi->dir, rel);
+        if (!path || esk_host_read_file(s->a, path, &data, &len) != ES_OK) {
+            esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.memory_file", 0, "board", bi->id, NULL, 0,
+                           "%s: %s cannot be read", bi->id, path ? path : rel);
+            esk_strfree(s->a, path);
+            continue;
+        }
+        esk_sha256_text(data, len, got);
+        if (want && strcmp(got + 7, want)) {
+            esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.memory_file", 0, "board", bi->id, NULL, 0,
+                           "%s: %s is not the file the description names (sha256 %s)", bi->id, path, got + 7);
+            esk_free(s->a, data, len + 1);
+            esk_strfree(s->a, path);
+            continue;
+        }
+        esk_strfree(s->a, path);
+        (void)esk_json_to_u64(esk_json_get(r, "base"), &base);
+        files[n].base = (u32)base;
+        files[n].data = (const unsigned char *)data;
+        files[n].len = len;
+        n++;
+    }
+    return n;
+}
+
 static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_catalog_item *board,
                                  const esk_catalog_item *mi, esk_comp *mc)
 {
     const char *rel = esk_json_get_str(bi->firmware, "image", NULL);
     const esk_json *rfd = esk_json_get(mi->desc, "register_file");
     const esk_json *hse = esk_json_get(esk_json_get(board->desc, "oscillators"), "hse");
+    const esk_json *lse = esk_json_get(esk_json_get(board->desc, "oscillators"), "lse");
     char *path = NULL, *rpath = NULL, *img = NULL, *rtext = NULL, why[256];
     size_t len = 0, rlen = 0;
     esk_json *regs = NULL;
     esk_mcu_setup su;
+    esk_mcu_file files[LD_MAX_FILES];
+    unsigned char mac_bytes[6];
     es_status st = ES_OK;
-    int line = 0;
+    int line = 0, nfiles = 0, k;
     const char *err = NULL;
     why[0] = 0;
     memset(&su, 0, sizeof su);
@@ -703,11 +758,27 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         su.mcu = mi->desc;
         su.regs = regs;
         su.hse_hz = (u32)esk_json_get_int(hse, "hz", 0);
+        /* a clock or an oscillator module drives OSC_IN: no crystal to start */
+        su.hse_clock = esk_str_eq(esk_json_get_str(hse, "source", ""), "external_clock") ||
+                       esk_str_eq(esk_json_get_str(hse, "source", ""), "oscillator_module");
+        su.lse_hz = (u32)esk_json_get_int(lse, "hz", 0);
         su.image = (const unsigned char *)img;
         su.image_len = len;
         su.image_name = rel;
         su.console = esk_json_get_str(esk_json_get(mi->desc, "console"), "default", "USART1");
         su.quantum_ps = s->core_quantum_ps;
+        nfiles = read_memory_files(s, bi, mi, files);
+        su.files = files;
+        su.nfiles = nfiles;
+        {
+            unsigned v[6];
+            const char *mac = bi->settings ? esk_json_get_str(bi->settings, "mac", NULL) : NULL;
+            if (mac && sscanf(mac, "%2x:%2x:%2x:%2x:%2x:%2x", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) == 6) {
+                for (k = 0; k < 6; k++)
+                    mac_bytes[k] = (unsigned char)v[k];
+                su.mac = mac_bytes;
+            }
+        }
         st = esk_mcu_attach(mc, &su, why, sizeof why);
         if (st != ES_OK)
             esk_diag_raise(&s->diag, ES_SEV_ERROR, "mcu.image", 0, "board", bi->id, NULL, 0, "%s: %s", bi->id, why);
@@ -715,6 +786,8 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
         st = ES_ESCHEMA;
     }
     esk_json_free(s->a, regs);
+    for (k = 0; k < nfiles; k++)
+        esk_free(s->a, (void *)files[k].data, files[k].len + 1);
     if (img)
         esk_free(s->a, img, len + 1);
     esk_strfree(s->a, path);
@@ -748,6 +821,7 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
     bi->board_id = esk_strdup(s->a, board_id);
     bi->item = item;
     bi->firmware = esk_json_get(entry, "firmware") ? esk_json_clone(s->a, esk_json_get(entry, "firmware")) : NULL;
+    bi->settings = esk_json_get(entry, "settings") ? esk_json_clone(s->a, esk_json_get(entry, "settings")) : NULL;
     if (esk_vec_push(s->a, &s->boards, bi))
         return ES_ENOMEM;
     /* the MCU as a placeholder with the package's pins */
@@ -1128,6 +1202,7 @@ void esk_project_unload(es_session *s)
         esk_strfree(s->a, bi->id);
         esk_strfree(s->a, bi->board_id);
         esk_json_free(s->a, bi->firmware);
+        esk_json_free(s->a, bi->settings);
         esk_free(s->a, bi, sizeof *bi);
     }
     esk_vec_clear(&s->boards);

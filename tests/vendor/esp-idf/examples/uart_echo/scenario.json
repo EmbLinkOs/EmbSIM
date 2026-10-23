@@ -1,0 +1,71 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "uart_echo",
+ "until": "1200ms",
+ "description": "uart_echo: what the terminal sends to IO5 comes back on IO4, and the console logs it. The echo task reads with a 20 ms timeout (two FreeRTOS ticks), so a line typed at once comes back whole.",
+ "inputs": [
+  {
+   "at": "500ms",
+   "target": "VT1",
+   "input": "tx_text",
+   "value": "hello EmbSIM"
+  },
+  {
+   "at": "900ms",
+   "target": "VT1",
+   "input": "tx_text",
+   "value": "0123456789"
+  }
+ ],
+ "assertions": [
+  {
+   "id": "quiet",
+   "at": "450ms",
+   "probe": "received",
+   "expect": {
+    "equals": ""
+   }
+  },
+  {
+   "id": "sent",
+   "at": "600ms",
+   "probe": "sent",
+   "expect": {
+    "equals": "hello EmbSIM"
+   }
+  },
+  {
+   "id": "echo",
+   "at": "600ms",
+   "probe": "received",
+   "expect": {
+    "equals": "hello EmbSIM"
+   }
+  },
+  {
+   "id": "logged",
+   "at": "600ms",
+   "probe": "console",
+   "expect": {
+    "contains": "UART TEST: Recv str: hello EmbSIM\r\n"
+   }
+  },
+  {
+   "id": "again",
+   "at": "1200ms",
+   "probe": "received",
+   "expect": {
+    "equals": "hello EmbSIM0123456789"
+   }
+  },
+  {
+   "id": "logged-again",
+   "at": "1200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "UART TEST: Recv str: 0123456789\r\n"
+   }
+  }
+ ]
+}

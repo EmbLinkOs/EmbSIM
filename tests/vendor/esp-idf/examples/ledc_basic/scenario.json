@@ -1,0 +1,33 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "ledc_basic",
+ "until": "1200ms",
+ "description": "ledc_basic: timer 0 at 4 kHz with 13 bits from APB_CLK (ESP-IDF's divider), channel 0 at a duty of 4096/8192 on GPIO5.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "frequency",
+   "between": [
+    "1000ms",
+    "1100ms"
+   ],
+   "probe": "pwm",
+   "expect": {
+    "frequency_hz": 4000,
+    "tolerance": 0.01
+   }
+  },
+  {
+   "id": "edges",
+   "between": [
+    "1000ms",
+    "1100ms"
+   ],
+   "probe": "pwm",
+   "expect": {
+    "edges": 800
+   }
+  }
+ ]
+}

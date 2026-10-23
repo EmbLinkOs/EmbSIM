@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "forward",
+  "description": "2 A forward: about 0.40 V (0.45 V maximum at 25 C).",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/stps2l30a"
+      },
+      {
+        "id": "I",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 2
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "A": [
+        "DUT.A",
+        "I.-"
+      ],
+      "GND": [
+        "DUT.K",
+        "I.+",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:A": {
+      "at": "1ms",
+      "min_v": 0.35,
+      "max_v": 0.45
+    }
+  }
+}

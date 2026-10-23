@@ -20,6 +20,15 @@ file the board loads with its core held in reset and a `mcu.no_image`
 warning; without a `firmware` block its MCU's pins stay high-impedance
 inputs, as a blank part's do.
 
+The ESP32-C3 is different: it boots Espressif's own ROM, which loads the
+firmware from the in-package flash. Its `image` is a flash image written at
+offset 0 (`format` `bin`), as `esptool.py write_flash 0x0` writes it: the
+output of `esptool.py merge_bin`, or `idf.py`'s bootloader, partition table
+and app merged at their offsets. Without one the ROM runs on an erased
+flash and prints `invalid header: 0xffffffff`, as a new chip does. An ELF's
+bytes in the flash's cache window (0x42000000, 0x3C000000) are refused:
+that memory is the flash seen through the cache, not something to load.
+
 Three MCUs run firmware; each description's fidelity says what is
 modelled:
 

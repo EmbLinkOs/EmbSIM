@@ -23,6 +23,9 @@ FLAGS = ["-O2", "-g", "-ffreestanding", "-fno-builtin", "-nostdlib", "-fuse-ld=l
          "-Wl,--build-id=none", f"-ffile-prefix-map={ROOT}=.", "-I", str(HERE / "common")]
 CM3 = ["--target=thumbv7m-none-eabi", "-mcpu=cortex-m3", "-mthumb"]
 CM4 = ["--target=thumbv7em-none-eabi", "-mcpu=cortex-m4", "-mthumb"]
+# the Cortex-M4F: floating-point instructions in inline assembly, the soft
+# float ABI so the compiler uses none of its own
+CM4F = CM4 + ["-mfpu=fpv4-sp-d16", "-mfloat-abi=softfp"]
 # the Uno's ATmega328P, with the uno-blink-serial example's header and startup
 UNO = "../../examples/uno-blink-serial/firmware"
 AVR = ["--target=avr", "-mmcu=atmega328p", "-Wl,--gc-sections", "-I", str(HERE / UNO)]
@@ -36,6 +39,7 @@ IMAGES = {
                                           "stack-overflow/stack.ld"),
     "fault/fault.elf": (["common/startup.c", "fault/main.c"], "common/stm32f103c8.ld"),
     "dsp/dsp.elf": (["common/startup.c", "dsp/main.c"], "dsp/dsp.ld", CM4),
+    "cm4-core/cm4-core.elf": (["common/startup.c", "cm4-core/main.c"], "cm4-core/cm4-core.ld", CM4F),
     "uno-echo/uno-echo.elf": ([f"{UNO}/startup.S", "uno-echo/main.c"], f"{UNO}/atmega328p.ld", AVR),
 }
 

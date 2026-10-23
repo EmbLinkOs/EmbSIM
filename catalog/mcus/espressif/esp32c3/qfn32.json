@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "kind": "package",
+  "id": "espressif/esp32c3/qfn32",
+  "name": "QFN32",
+  "description": "32-pin QFN, 5 x 5 mm, with the exposed ground pad as pin 33 (ESP32-C3 datasheet v2.4, table 2-1). Pins that are GPIOs carry the GPIO's signal; the datasheet's pin name is in each one's doc.",
+  "pins": [
+    {
+      "number": 1,
+      "signal": "LNA_IN",
+      "doc": "RF input and output"
+    },
+    {
+      "number": 2,
+      "signal": "VDD3P3",
+      "doc": "Analog power supply"
+    },
+    {
+      "number": 3,
+      "signal": "VDD3P3",
+      "doc": "Analog power supply"
+    },
+    {
+      "number": 4,
+      "signal": "GPIO0",
+      "doc": "pin XTAL_32K_P"
+    },
+    {
+      "number": 5,
+      "signal": "GPIO1",
+      "doc": "pin XTAL_32K_N"
+    },
+    {
+      "number": 6,
+      "signal": "GPIO2",
+      "doc": "Strapping pin"
+    },
+    {
+      "number": 7,
+      "signal": "CHIP_EN",
+      "doc": "Chip enable, high: on; low: off and reset. Do not leave floating"
+    },
+    {
+      "number": 8,
+      "signal": "GPIO3"
+    },
+    {
+      "number": 9,
+      "signal": "GPIO4",
+      "doc": "pin MTMS"
+    },
+    {
+      "number": 10,
+      "signal": "GPIO5",
+      "doc": "pin MTDI"
+    },
+    {
+      "number": 11,
+      "signal": "VDD3P3_RTC",
+      "doc": "Power supply of the RTC domain pins"
+    },
+    {
+      "number": 12,
+      "signal": "GPIO6",
+      "doc": "pin MTCK"
+    },
+    {
+      "number": 13,
+      "signal": "GPIO7",
+      "doc": "pin MTDO"
+    },
+    {
+      "number": 14,
+      "signal": "GPIO8",
+      "doc": "Strapping pin"
+    },
+    {
+      "number": 15,
+      "signal": "GPIO9",
+      "doc": "Strapping pin: boot mode (internal weak pull-up)"
+    },
+    {
+      "number": 16,
+      "signal": "GPIO10"
+    },
+    {
+      "number": 17,
+      "signal": "VDD3P3_CPU",
+      "doc": "Power supply of the CPU domain pins"
+    },
+    {
+      "number": 18,
+      "signal": "GPIO11",
+      "doc": "pin VDD_SPI; Flash supply out, or GPIO11"
+    },
+    {
+      "number": 19,
+      "signal": "GPIO12",
+      "doc": "pin SPIHD"
+    },
+    {
+      "number": 20,
+      "signal": "GPIO13",
+      "doc": "pin SPIWP"
+    },
+    {
+      "number": 21,
+      "signal": "GPIO14",
+      "doc": "pin SPICS0"
+    },
+    {
+      "number": 22,
+      "signal": "GPIO15",
+      "doc": "pin SPICLK"
+    },
+    {
+      "number": 23,
+      "signal": "GPIO16",
+      "doc": "pin SPID"
+    },
+    {
+      "number": 24,
+      "signal": "GPIO17",
+      "doc": "pin SPIQ"
+    },
+    {
+      "number": 25,
+      "signal": "GPIO18",
+      "doc": "USB D-"
+    },
+    {
+      "number": 26,
+      "signal": "GPIO19",
+      "doc": "USB D+"
+    },
+    {
+      "number": 27,
+      "signal": "GPIO20",
+      "doc": "pin U0RXD"
+    },
+    {
+      "number": 28,
+      "signal": "GPIO21",
+      "doc": "pin U0TXD"
+    },
+    {
+      "number": 29,
+      "signal": "XTAL_N",
+      "doc": "40 MHz crystal"
+    },
+    {
+      "number": 30,
+      "signal": "XTAL_P",
+      "doc": "40 MHz crystal"
+    },
+    {
+      "number": 31,
+      "signal": "VDDA",
+      "doc": "Analog power supply"
+    },
+    {
+      "number": 32,
+      "signal": "VDDA",
+      "doc": "Analog power supply"
+    },
+    {
+      "number": 33,
+      "signal": "GND",
+      "doc": "The exposed pad"
+    }
+  ]
+}

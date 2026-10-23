@@ -27,10 +27,11 @@ describe('scenario validation', () => {
     expect(scenarioProblems({ ...s, assertions: [{ ...s.assertions[0]!, by: '20ms' }] }).join(' ')).toContain('exactly one');
   });
   it('rejects unknown or wrongly typed checks and impossible bounds', () => {
-    for (const value of [{}, [], null, { typo: 1 }, { logic: 1 }, { edges: -1 }, { frequency_hz: 0 }, { min_v: 4, max_v: 2 }, { equals: Infinity }]) {
+    for (const value of [{}, [], null, { typo: 1 }, { logic: 1 }, { edges: -1 }, { frequency_hz: 0 }, { min_v: 4, max_v: 2 }, { equals: Infinity }, { not_contains: 3 }]) {
       expect(expectationProblem(value)).toBeTruthy();
     }
     expect(expectationProblem({ min_v: 0, max_v: 3.3, tolerance: 0 })).toBeUndefined();
+    expect(expectationProblem({ not_contains: 'Restarting now.' })).toBeUndefined();
   });
   it('rejects missing input bindings and values the scenario schema cannot store', () => {
     expect(scenarioProblems({ ...emptyScenario(), inputs: [{ at: '1ms', target: '', input: '', value: {} }] })).toHaveLength(3);

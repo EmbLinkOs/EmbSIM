@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40" data-grid="10">
+  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}</style>
+  <rect class="f" x="20" y="4" width="20" height="32" rx="3"/>
+  <path class="s" d="M24.5 17 A8 8 0 0 1 35.5 17"/><path class="s" d="M26.8 20 A4.5 4.5 0 0 1 33.2 20"/><circle class="s" cx="30" cy="23" r="0.8"/>
+  <text class="t" x="30" y="32" text-anchor="middle">WiFi</text>
+</svg>

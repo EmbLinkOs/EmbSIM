@@ -15,6 +15,9 @@ receives in upper case, at 9600 baud. As on a real Uno:
 - closing the port does not reset; reopening it does;
 - the host's bytes are recorded inputs (record.input), so a replay needs no
   host.
+The NUCLEO-F446RE's ST-LINK/V2-1 is a bridge too, without the auto-reset:
+opening its virtual COM port leaves the STM32 running, and the example's
+firmware echoes at 115200 baud.
 POSIX only: Windows has no pseudo-terminals (Q16)."""
 import argparse
 import json
@@ -151,6 +154,22 @@ def main() -> int:
                 check(False, "a port on a target that is neither a board nor a terminal is refused")
             except Exception:  # noqa: BLE001 (EmbsimError)
                 check(True, "a port on a target that is neither a board nor a terminal is refused")
+    # the NUCLEO-F446RE's ST-LINK virtual COM port: no DTR reset, 115200 baud
+    with tempfile.TemporaryDirectory(prefix="embsim-hostserial-") as tmp:
+        ex = Path(tmp) / "nucleo"
+        shutil.copytree(ROOT / "examples/nucleo-f446re-blink-serial", ex)
+        with StdioClient([args.embsim, "sidecar", str(ex / "project.json")]) as c:
+            path = c.call("port.open", {"target": "B1"})["path"]
+            c.call("control.run", {"speed": 1})
+            wait_for(lambda: int(c.call("session.info")["now_ps"]) > 50_000_000_000)
+            fd = open_port(path, 115200)
+            quiet = read_for(fd, 1.0)
+            check(b"nucleo-f446re" not in quiet, f"opening the VCP does not reset the STM32: {quiet!r}")
+            os.write(fd, b"hello, nucleo")
+            echo = read_for(fd, 15.0, b"O, NUCLEO")
+            check(echo == b"HELLO, NUCLEO", f"the firmware's echo through the ST-LINK: {echo!r}")
+            os.close(fd)
+            c.call("control.pause")
     print("PASS" if not failures else f"FAIL: {failures} check(s)")
     return 1 if failures else 0
 

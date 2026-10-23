@@ -36,8 +36,11 @@ struct esk_rf;
 
 /* ---- the bus ------------------------------------------------------------ */
 
-/* MEM_ALIAS: another name for the region at a description's `target` */
-enum { ESK_MEM_RAM, ESK_MEM_FLASH, ESK_MEM_ALIAS, ESK_MEM_ROM };
+/* MEM_ALIAS: another name for the region at a description's `target`;
+ * MEM_EXTERNAL: a store (struct esk_store), on no address of the bus;
+ * MEM_WINDOW: read-only, its bytes a device's (an ESP32-C3's cache showing
+ * the flash), so no image is loaded there */
+enum { ESK_MEM_RAM, ESK_MEM_FLASH, ESK_MEM_ALIAS, ESK_MEM_ROM, ESK_MEM_EXTERNAL, ESK_MEM_WINDOW };
 
 struct esk_region {
     u32 base, size;
@@ -46,6 +49,10 @@ struct esk_region {
     int kind;     /* ESK_MEM_RAM, ESK_MEM_FLASH or ESK_MEM_ROM */
     u32 erased;   /* each word of it before the image (esk_bus_erase) */
     int mirror;   /* shares another region's memory */
+    u8 *factory;  /* what it holds from the factory, size bytes, or 0 */
+    /* changes when its bytes or what it mirrors change other than by the
+     * core's stores: a core keeps its decoded code per region and gen */
+    u32 gen;
 };
 
 /* A memory-mapped device. `off` is the offset of the access from the
@@ -92,6 +99,7 @@ struct esk_watch {
 struct esk_bus {
     struct esk_region rg[ESK_BUS_REGIONS];
     int nrg;
+    int last_rg; /* the region the last lookup found: looked at first */
     struct esk_device dev[ESK_BUS_DEVICES];
     int ndev;
     struct esk_alias bb[ESK_BUS_ALIASES];
@@ -113,6 +121,11 @@ struct esk_bus {
      * clocks run lazily gives them the cycles they are owed first */
     void (*sync)(void *ctx);
     void *sync_ctx;
+    /* a store of the core's to read-only memory (an STM32's flash): the
+     * flash interface's to program, or to refuse with its error flags;
+     * without one the store is ignored */
+    void (*rom_write)(void *ctx, struct esk_region *r, u32 a, int n, u32 v);
+    void *rom_write_ctx;
     /* a device was written since the lazy clocks' next event was found (a
      * read never brings a device's event nearer) */
     int written;
@@ -121,14 +134,23 @@ struct esk_bus {
 es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind);
 /* the region as before an image: every 4 bytes its `erased` word */
 void esk_bus_erase(struct esk_region *r);
+/* code changed from outside the core (an image, a debugger's write): every
+ * region's gen moves on */
+void esk_bus_code_changed(struct esk_bus *b);
 /* the region holding all `n` bytes at `a`, or 0: memory's fast path */
 ES_INLINE struct esk_region *esk_bus_region(struct esk_bus *b, u32 a, u32 n)
 {
+    struct esk_region *r = &b->rg[b->last_rg];
     int i;
+    /* regions do not overlap: the last one found is as good as the first */
+    if (a - r->base < r->size && r->size - (a - r->base) >= n)
+        return r;
     for (i = 0; i < b->nrg; i++) {
-        struct esk_region *r = &b->rg[i];
-        if (a - r->base < r->size && r->size - (a - r->base) >= n)
+        r = &b->rg[i];
+        if (a - r->base < r->size && r->size - (a - r->base) >= n) {
+            b->last_rg = i;
             return r;
+        }
     }
     return 0;
 }
@@ -156,6 +178,10 @@ es_status esk_bus_add_device(struct esk_bus *b, u32 base, u32 size, const struct
 es_status esk_bus_add_alias(struct esk_bus *b, u32 base, u32 size, u32 target);
 /* a second name for the memory region holding `target`, at `base` */
 es_status esk_bus_add_mirror(struct esk_bus *b, u32 base, u32 target);
+/* the mirror at `base` shows `size` bytes of the memory at `target` from
+ * now on (an STM32's boot remap, SYSCFG's MEMRMP); a size of 0, or a
+ * target no memory holds, leaves nothing there */
+es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size);
 /* a device's read or write hook refuses the access in progress: the core
  * takes its bus fault, as when nothing answers */
 ES_INLINE void esk_bus_fault(struct esk_bus *b) { b->dev_fault = 1; }
@@ -204,6 +230,11 @@ struct esk_cpu_ops {
     /* the instruction at `addr`: its text and its size in bytes (0 when
      * memory there cannot be read) */
     int (*disasm)(struct esk_cpu *c, u32 addr, char *text, size_t cap);
+    /* instructions until the machine's cycles reach `end`, or it stops,
+     * sleeps, yields or hits a watchpoint: esk_mach_run's loop without its
+     * per-instruction checks, used while no breakpoint, analysis or
+     * instruction limit applies. 0: step by step */
+    void (*run)(struct esk_cpu *c, u64 end);
 };
 
 struct esk_cpu {
@@ -219,6 +250,16 @@ typedef struct esk_mach_pin {
     int pull;       /* 0 none, 1 up, 2 down (weak) */
     int analog;     /* analog mode: the digital input is off */
     int af;         /* an alternate function (a peripheral) drives it */
+    /* the output's speed setting: 0 none given, else 1 + its place in
+     * the description's io.electrical rout and slew_v_per_us maps (an
+     * STM32F4's OSPEEDR low to very high: 1 to 4; an F1's 2, 10 and
+     * 50 MHz: 1 to 3), which then set the pin's output resistance and
+     * edge rate */
+    int speed;
+    /* an analog output (a DAC's): 1 and the voltage it drives behind its
+     * output resistance (ohms) */
+    int aout;
+    double volts, aout_r;
 } esk_mach_pin;
 
 typedef struct esk_mach_host {
@@ -236,11 +277,20 @@ typedef struct esk_mach_host {
     /* a UART's transmitter starts a byte; `bit_cycles` is the bit time in
      * core cycles, for the serial line's waveform */
     void (*uart_tx)(void *ctx, const char *unit, int c, u32 bit_cycles);
+    /* the same with the frame's own format: `bits` the data (and parity)
+     * bits LSB first, `nbits` of them, then `stop_halves` half bits of stop
+     * (1 to 4); `c` the character for the serial stream, or -1 for none (a
+     * break) */
+    void (*uart_frame)(void *ctx, const char *unit, int c, u32 bits, int nbits, int stop_halves,
+                       u32 bit_cycles);
     /* a diagnostic (es_severity_t, a code from docs/user/diagnostics.md) */
     void (*diag)(void *ctx, int severity, const char *code, const char *msg);
     /* the voltage on a pin's net, for an ADC: 1 and *v, or 0 when the pin
      * is not connected */
     int (*pin_volts)(void *ctx, int port, int bit, double *v);
+    /* the temperature (degC) of the room the part sits in, as the world
+     * declares it: 1, or 0 when the world has none (the part's 25 degC) */
+    int (*temperature)(void *ctx, double *celsius);
     /* an analog comparator's threshold on a pin: the pins' outside levels
      * change (pins_changed) when its net's voltage crosses `v`, at the
      * crossing's time; `on` 0 takes it off. 1 when the pin's net is analog
@@ -252,7 +302,28 @@ typedef struct esk_mach_host {
      * interrupt's vector or an exception's ExcCode, a PIC24's vector
      * number), for a recording's observations */
     void (*exc)(void *ctx, int core, int n);
+    /* the chip's radio sends a frame (without its FCS or CRC) now, on `mhz`
+     * at `dbm` and `rate_kbps`, for `airtime_ps` (0: what its kind's PHY
+     * takes), of `kind` (ESK_RADIO_WIFI, ESK_RADIO_BLE); the radio port's
+     * tx_done hears `token` back. 0 when the frame is on the air */
+    int (*radio_tx)(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32 rate_kbps, u64 airtime_ps,
+                    int kind, u32 token);
 } esk_mach_host;
+
+enum { ESK_RADIO_WIFI = 1, ESK_RADIO_BLE = 2 };
+
+/* the chip's radio, as the air reaches it (esk_mach.radio) */
+struct esk_radio_port {
+    void *ctx;
+    int kinds; /* ESK_RADIO_WIFI | ESK_RADIO_BLE */
+    /* the frequency (MHz) it listens on for `kind` now, 0 when it does not */
+    u32 (*tuned)(void *ctx, int kind);
+    /* a frame arrived (without its FCS or CRC) at `rssi` dBm: 1 when the
+     * radio answers it with an ACK */
+    int (*rx)(void *ctx, const u8 *frame, u32 len, u32 mhz, int rssi, u32 rate_kbps, int kind);
+    /* the frame `token` went out, answered or not */
+    void (*tx_done)(void *ctx, u32 token, int acked);
+};
 
 /* ---- the machine ---------------------------------------------------------- */
 
@@ -274,11 +345,44 @@ struct esk_rx_port {
     u32 (*bit_cycles)(void *ctx);
     void *ctx;
     const char *unit;
+    /* optional (esk_mach_rx_frames): the frame's data bits after the start
+     * bit (parity included) and its stop half bits, as data | stop << 8;
+     * and a frame from the RX pin with those bits and whether its stop bit
+     * was low (a framing error; all zero: a break) */
+    u32 (*format)(void *ctx);
+    void (*put_frame)(void *ctx, u32 bits, int framing_error);
+    /* a start bit's falling edge on the RX pin (an idle line no more) */
+    void (*started)(void *ctx);
 };
 
 #define ESK_MACH_RX_PORTS 8
 
 struct esk_rom_call;
+
+/* A memory no address of the core's reaches: a device reads and writes it
+ * for the core (an ESP32-C3's SPI flash, behind its cache and SPI_MEM). It
+ * keeps its bytes through every reset, as a flash does. */
+struct esk_store {
+    const char *name; /* the description's memory name: "flash" */
+    u8 *mem;
+    u32 size;
+    u32 erased; /* each word of it before an image */
+};
+#define ESK_MACH_STORES 2
+
+/* a reset's cause; the runtime sets the pin's and the power's, a model
+ * that resets the part its own */
+enum esk_reset_cause {
+    ESK_RESET_POWER,    /* power-on (the session's start, a new image) */
+    ESK_RESET_PIN,      /* the reset pin (NRST, a board's button) */
+    ESK_RESET_SOFTWARE, /* the core's request (AIRCR.SYSRESETREQ) */
+    ESK_RESET_WATCHDOG, /* an independent watchdog's time-out */
+    ESK_RESET_WINDOW,   /* a window watchdog's */
+    ESK_RESET_LOW_POWER, /* entering a low-power mode the option bytes forbid */
+    /* leaving a mode that powered the core's domain off (an STM32's
+     * Standby): a power reset of all but the backup domain, RAM lost */
+    ESK_RESET_STANDBY
+};
 
 struct esk_mach {
     esk_alloc *a;
@@ -309,14 +413,36 @@ struct esk_mach {
     u64 lag_mark;
     int lazy_known;
     u64 lazy_at; /* when the devices are next owed their cycles */
+    /* this chip's factory MAC, when its board gives one (a project's board
+     * settings.mac): the eFuse model's, otherwise its description's */
+    u8 factory_mac[6];
+    int has_factory_mac;
     /* set by a model when something outside the machine must see a change
      * now (a pin, the core clock): the runtime ends its quantum */
     int yield;
     /* the core waits for an exception (WFI, WFE, a branch to itself): it
      * runs no instructions; its devices' time still passes */
     int asleep;
+    /* the core slept deeply (SCR.SLEEPDEEP) into a mode that stops its
+     * domain's clocks (an STM32's Stop and Standby): only the devices
+     * clocked from outside it (esk_rf_periph.always_on: the RTC, the IWDG)
+     * see time pass. The low-power model sets it from deep_sleep; the
+     * machine calls deep_wake once the core wakes, before it runs */
+    int clocks_stopped;
+    /* the core's domain is off (Standby): no interrupt wakes the core, only
+     * a reset (the low-power model's reset_req) */
+    int powered_down;
+    void (*deep_sleep)(struct esk_mach *m);
+    void (*deep_wake)(struct esk_mach *m);
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
+    /* that reset is the core's alone (an ESP32-C3's CPU reset): the
+     * devices keep their state */
+    int reset_cpu_only;
+    /* what the coming (or current) reset is, for the models that record it
+     * (an STM32's RCC_CSR flags) or that keep their state through all but a
+     * power-on reset (the backup domain): an esk_reset_cause */
+    int reset_cause;
     /* while pins_changed reports an outside change: how many whole cycles
      * the core has run past the change's time (it runs whole instructions),
      * for a model that timestamps the change (an input capture) */
@@ -339,6 +465,8 @@ struct esk_mach {
     void *pin_reset_ctx;
     u32 reset_hz;
     u32 hse_hz;   /* the board's external oscillator, 0 for none */
+    int hse_clock; /* it is a clock (an STM32's HSE then needs HSEBYP), not a crystal */
+    u32 lse_hz;   /* the board's 32.768 kHz crystal, 0 for none */
     double vdd;   /* the I/O supply in volts (the ADC's AVCC) */
     esk_mach_host host;
     /* the GPIO model's: the pins' outside levels changed; where a UART's
@@ -349,6 +477,8 @@ struct esk_mach {
      * schedule the wake-up itself */
     int return_on_sleep;
     struct esk_rx_port rx[ESK_MACH_RX_PORTS];
+    /* the chip's radio, when it has one (its model sets it) */
+    struct esk_radio_port radio;
     int nrx;
     int bus_errors; /* reported by esk_mach_bus_error */
     /* breakpoints, by program counter; a run resumed from one steps off
@@ -371,6 +501,9 @@ struct esk_mach {
      * `pc` is one, 0 for an ordinary breakpoint instruction */
     int (*rom_call)(struct esk_mach *m, u32 pc, unsigned n, struct esk_rom_call *c);
     void *rom_ctx;
+    /* the memories the core does not address (esk_mach_store) */
+    struct esk_store store[ESK_MACH_STORES];
+    int nstore;
 };
 
 es_status esk_mach_init(struct esk_mach *m, esk_alloc *a);
@@ -385,11 +518,16 @@ void esk_mach_sync(struct esk_mach *m);
  * again after it, as the change may bring one (an input capture's noise
  * canceler) */
 void esk_mach_outside(struct esk_mach *m);
+/* the core's domain's clocks stop (1: esk_mach.clocks_stopped) or run
+ * again: the devices are first given the cycles they are owed */
+void esk_mach_clocks(struct esk_mach *m, int stopped);
 void esk_mach_free(struct esk_mach *m);
 /* zeroed memory owned by the machine, freed by esk_mach_free; 0 when out
  * of memory (and m->oom set) */
 void *esk_mach_alloc(struct esk_mach *m, size_t n);
 char *esk_mach_strdup(struct esk_mach *m, const char *s);
+/* the store the description calls `name`, or 0 */
+struct esk_store *esk_mach_store(struct esk_mach *m, const char *name);
 /* a device on the bus, keeping time if it has a tick or next_event hook */
 es_status esk_mach_add_dev(struct esk_mach *m, u32 base, u32 size, const struct esk_dev_ops *ops,
                            void *ctx);
@@ -438,7 +576,20 @@ void esk_mach_end(struct esk_mach *m, int state, const char *fmt, ...);
 void esk_mach_out(struct esk_mach *m, int stream, int c);
 int esk_mach_readc(struct esk_mach *m);
 /* `cycles` of time pass for the devices */
-void esk_mach_advance(struct esk_mach *m, u32 cycles);
+void esk_mach_advance_slow(struct esk_mach *m, u32 cycles);
+/* the most cycles lazy devices are owed before they are told */
+#define ESK_MACH_LAZY_MAX 0x10000u
+ES_INLINE void esk_mach_advance(struct esk_mach *m, u32 cycles)
+{
+    /* lazy clocks, no event due and nothing written: the cycles are owed */
+    if (m->lazy && m->lazy_known && !m->bus.written && m->cycles < m->lazy_at &&
+        m->lag + cycles < ESK_MACH_LAZY_MAX) {
+        m->lag += cycles;
+        m->lag_mark = m->cycles;
+        return;
+    }
+    esk_mach_advance_slow(m, cycles);
+}
 /* a device's clock starts (1) or stops (0) */
 void esk_mach_clock(struct esk_mach *m, int *running, int on);
 /* 1 and the cycles to the next device event, or 0 when none is due */
@@ -448,6 +599,9 @@ int esk_mach_event_coming(struct esk_mach *m);
 /* a UART offers its receiver to the host's input */
 void esk_mach_rx_port(struct esk_mach *m, const char *unit, int (*room)(void *ctx),
                       void (*put)(void *ctx, int c), u32 (*bit_cycles)(void *ctx), void *ctx);
+/* the receiver just offered (esk_mach_rx_port) takes whole frames */
+void esk_mach_rx_frames(struct esk_mach *m, u32 (*format)(void *ctx),
+                        void (*put_frame)(void *ctx, u32 bits, int framing_error), void (*started)(void *ctx));
 /* a core's access that nothing answers: a diagnostic (the first ten) */
 void esk_mach_bus_error(struct esk_mach *m, u32 addr, int n, int write);
 /* the receiver of the UART named `unit` ("USART1"), or NULL */
@@ -506,6 +660,8 @@ es_status esk_mach_load_image(struct esk_mach *m, const u8 *data, size_t len, u3
 /* an ELF image's symbol `name` (a function's address without the Thumb bit):
  * 1 and its value, or 0 */
 int esk_elf_symbol(const u8 *f, size_t len, const char *name, u32 *value);
+/* esk_elf_symbol with the symbol's size in bytes (st_size; 0 when not given) */
+int esk_elf_symbol_size(const u8 *f, size_t len, const char *name, u32 *value, u32 *size);
 /* a symbol of any kind but a section's or a file's, defined or absolute (the
  * link's __stack_limit, _end): 1 and its value, or 0 */
 int esk_elf_label(const u8 *f, size_t len, const char *name, u32 *value);
@@ -529,6 +685,15 @@ es_status esk_cortexm_create(struct esk_mach *m, const char *model, int prio_bit
  * esk_cortexm_create */
 es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio_bits, int cores,
                                  struct esk_cpu **out);
+/* the MPU the part has: its regions (8 on the parts that have one), 0 for
+ * none, on every core */
+es_status esk_cortexm_set_mpu(struct esk_mach *m, int regions);
+/* SysTick's external reference clock (processor cycles per tick, 0 for
+ * none) and CALIB, on every core */
+es_status esk_cortexm_set_systick(struct esk_mach *m, u32 ref_div, u32 calib);
+/* an event from a device (an STM32's EXTI line in event mode): as SEV, the
+ * event register set, or a core waiting in WFE woken */
+void esk_cortexm_event(struct esk_mach *m);
 /* the cores, and the one whose access is in progress (a debugger's: the one
  * that runs next) */
 int esk_cortexm_cores(struct esk_mach *m);

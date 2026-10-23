@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "rtc_calendar",
+  "until": "1.6s",
+  "description": "RTC_Calendar: the RTC on the LSE crystal X2 (32.768 kHz) set to 02:00:00 on 14 April 2015, the backup register DR1 marked; the time and date are formatted into aShowTime and aShowDate as they count.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "time",
+      "at": "1.5s",
+      "probe": "showtime",
+      "expect": {
+        "equals": "02:00:01"
+      }
+    },
+    {
+      "id": "date",
+      "at": "1.5s",
+      "probe": "showdate",
+      "expect": {
+        "equals": " 4-14-2015"
+      }
+    },
+    {
+      "id": "bkp",
+      "at": "1.5s",
+      "probe": "bkp1r",
+      "expect": {
+        "equals": 13042
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "100ms",
+        "1.5s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 0
+      }
+    }
+  ]
+}

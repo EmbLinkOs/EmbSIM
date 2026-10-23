@@ -1,0 +1,144 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-ble_ibeacon",
+ "description": "Two ESP32-C3-DevKitM-1 boards running ESP-IDF's bluetooth/bluedroid/ble/ble_ibeacon, each plugged into USB: B1 built as it ships (the sender), B2 as its receiver (IBEACON_RECEIVER), 30 cm apart, with a phone's BLE scanner app 2 m from B1.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  },
+  {
+   "id": "B2",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 420
+   },
+   "firmware": {
+    "image": "receiver.bin",
+    "format": "bin"
+   },
+   "settings": {
+    "mac": "7c:df:a1:45:6d:70"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "USB2",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 460
+   }
+  },
+  {
+   "id": "GND2",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 620
+   }
+  },
+  {
+   "id": "PHONE",
+   "component": "emblink/ble_scanner",
+   "layout": {
+    "x": 640,
+    "y": 120
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ],
+  "USB5V_2": [
+   "USB2.+",
+   "B2.VBUS"
+  ],
+  "GND_2": [
+   "USB2.-",
+   "GND2.GND",
+   "B2.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "receiver",
+   "target": "serial:B2",
+   "kind": "serial"
+  },
+  {
+   "id": "phone",
+   "target": "output:PHONE.list",
+   "kind": "value"
+  }
+ ],
+ "layout": {
+  "bench": {
+   "parts": {
+    "B1": {
+     "x": 0.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "B2": {
+     "x": 300.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "PHONE": {
+     "x": 0.0,
+     "y": 2000.0,
+     "rotation": 0
+    }
+   }
+  }
+ }
+}

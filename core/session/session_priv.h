@@ -16,7 +16,8 @@ typedef enum esk_probe_kind { ESK_PROBE_DIGITAL, ESK_PROBE_ANALOG, ESK_PROBE_VAL
 typedef struct esk_probe {
     uint32_t id;
     char *name;         /* user id or generated */
-    char *target;       /* "net:X", "pin:I.P", "device:I.q", "output:I.name", "serial:I" */
+    char *target;       /* "net:X", "pin:I.P", "device:I.q", "output:I.name", "serial:I",
+                         * "reg:B.PERIPH.REG", "mem:B:ADDR:LEN", "var:B:SYMBOL" */
     esk_probe_kind kind;
     esk_net *net;
     esk_comp *comp;
@@ -34,13 +35,19 @@ typedef struct esk_probe {
     es_time_t next_sample;
     esk_event_handle sample_event;
     size_t serial_sent; /* a serial probe: the bytes of its text already sent as serial.data */
+    uint32_t mem_addr;  /* a memory probe (reg:, mem:, var:): the bytes it reads on its */
+    uint32_t mem_len;   /* board's MCU (p->comp), little-endian; 0 for other probes */
 } esk_probe;
+
+/* a memory probe's bytes (esk_probe.mem_len), up to `cap`: the number read */
+size_t esk_session_probe_bytes(esk_probe *p, unsigned char *buf, size_t cap);
 
 typedef struct esk_board_inst {
     char *id;
     char *board_id;
     const esk_catalog_item *item;
     esk_json *firmware;  /* copy of the project's firmware object, or NULL */
+    esk_json *settings;  /* copy of its settings (the chip's MAC), or NULL */
     esk_comp *mcu;       /* the placeholder MCU component */
 } esk_board_inst;
 

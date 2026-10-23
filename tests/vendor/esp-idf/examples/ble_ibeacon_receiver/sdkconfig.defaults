@@ -1,0 +1,2 @@
+# menuconfig: Example Configuration, the iBeacon mode: the receiver
+CONFIG_IBEACON_RECEIVER=y

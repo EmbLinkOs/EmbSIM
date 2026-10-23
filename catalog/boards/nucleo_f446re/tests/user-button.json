@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "user-button",
+  "description": "B1 (USER) pulls PC13 low while pressed (through R29, 100 ohm); R30 (4.7 k) holds it at VDD otherwise (usb-powered checks the idle level).",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_f446re"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.U5V"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "BTN": [
+        "B1.CN7_23"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "10ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:BTN": {
+      "at": "15ms",
+      "max_v": 0.05
+    }
+  }
+}

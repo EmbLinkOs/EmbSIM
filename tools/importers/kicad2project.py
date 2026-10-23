@@ -115,6 +115,7 @@ SYMBOLS = [
     (r"Timer:(NE|LM|TLC)?555\w*$", "timer_555", "number", None),
     (r"Amplifier_Operational:LM358\w*$", "lm358", "number", None),
     (r"Memory_EEPROM:(24LC02|AT24C02|AT24CS02|CAT24C02)\w*$", "eeprom_24c02", "number", None),
+    (r"Memory_EEPROM:(24(AA|LC|FC)256|AT24C256)\w*$", "eeprom_24lc256", "number", None),
     (r"Memory_EEPROM:25(AA|LC)040\w*$", "eeprom_25lc040", "number", None),
     (r"Analog_ADC:MCP3008\w*$", "mcp3008", "number", None),
     (r"Analog_DAC:MCP4921\w*$", "mcp4921", "number", None),

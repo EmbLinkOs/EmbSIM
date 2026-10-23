@@ -849,8 +849,12 @@ static void ldst_single(struct esk_cm_state *cs, u32 h1, u32 h2)
     }
     if (load && rt == 15 && n != 4)
         return;                         /* PLD, PLI, and other hints */
+    /* LDRT, STRT and their byte and halfword forms (imm8 with P, U, W =
+     * 1, 1, 0): the access is unprivileged whatever the mode */
+    cs->force_unpriv = rn != 15 && !(h1 & 0x80) && (h2 & 0xf00) == 0xe00;
     if (load) {
         u32 v = esk_cm_mem_ld(cs, a, n, 0);
+        cs->force_unpriv = 0;
         if (sgn)
             v = n == 1 ? (u32)(s32)(int8_t)v : (u32)(s32)(int16_t)v;
         if (cs->fault_exc)
@@ -867,6 +871,7 @@ static void ldst_single(struct esk_cm_state *cs, u32 h1, u32 h2)
             esk_cm_set_reg(cs, rt, v);
     } else {
         esk_cm_mem_st(cs, a, n, esk_cm_reg(cs, rt), 0);
+        cs->force_unpriv = 0;
         if (!cs->fault_exc && wb)
             esk_cm_set_reg(cs, rn, base);
     }

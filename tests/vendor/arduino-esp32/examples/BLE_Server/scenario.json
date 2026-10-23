@@ -1,0 +1,50 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "BLE_Server",
+ "until": "4000ms",
+ "description": "BLE/examples/Server, unmodified: the sketch starts Bluedroid, creates a service with one readable and writable characteristic holding \"Hello World says Neil\" and advertises it; a tablet's GATT browser connects to the board (it is the link's slave), discovers its GATT database (GATT, GAP and the sketch's service) and reads the characteristic, as an app such as nRF Connect would.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "started",
+   "at": "4000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Characteristic defined! Now you can read it in your phone!"
+   }
+  },
+  {
+   "id": "connected",
+   "at": "4000ms",
+   "probe": "tablet-state",
+   "expect": {
+    "equals": "connected"
+   }
+  },
+  {
+   "id": "service",
+   "at": "4000ms",
+   "probe": "tablet-gatt",
+   "expect": {
+    "contains": "service 4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+   }
+  },
+  {
+   "id": "value",
+   "at": "4000ms",
+   "probe": "tablet-gatt",
+   "expect": {
+    "contains": "characteristic beb5483e-36e1-4688-b7f5-ea07361b26a8 handle 42 [ read write ] = \"Hello World says Neil\""
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "4000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  }
+ ]
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ack-polling",
+  "description": "During the write cycle the part does not acknowledge: a second write 100 us after the first is lost (tWR 5 ms); an address-only write starts no cycle.",
+  "policy": "functional",
+  "until": "249us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,3,3,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,1,3,1,0,2,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/eeprom_24lc256"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.A0",
+        "DUT.WP"
+      ],
+      "HI": [
+        "H.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.writes": {
+      "at": "239us",
+      "equals": 1
+    },
+    "output:DUT.cycles": {
+      "at": "239us",
+      "equals": 1
+    },
+    "output:DUT.view": {
+      "at": "239us",
+      "contains": "11FFFF"
+    }
+  }
+}

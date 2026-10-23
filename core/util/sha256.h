@@ -18,6 +18,9 @@ typedef struct esk_sha256 {
 } esk_sha256;
 
 void esk_sha256_init(esk_sha256 *c);
+/* the compression function: one 64-byte block into the state `h` (an
+ * accelerator's model computes with it) */
+void esk_sha256_block(uint32_t h[8], const unsigned char *p);
 void esk_sha256_update(esk_sha256 *c, const void *data, size_t len);
 void esk_sha256_final(esk_sha256 *c, unsigned char out[ESK_SHA256_LEN]);
 /* "sha256:" and the digest of `len` bytes in lower-case hex: 72 characters

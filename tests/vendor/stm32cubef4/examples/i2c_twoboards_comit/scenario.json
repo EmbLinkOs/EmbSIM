@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "i2c_twoboards_comit",
+  "until": "3s",
+  "description": "I2C_TwoBoards_ComIT on two NUCLEO-F446RE wired as its readme draws them (two_boards.json): as ComPolling, by interrupts (HAL_I2C_*_IT): I2C1 at 400 kHz, the slave's 10-bit address 0x30F, B1's USER button starting each step. The master sends its 147-byte buffer (SCL clocks 149 bytes: 2684 edges with START and STOP), then reads it back (150 bytes with the repeated START: 2704 edges). Both boards' buffers then hold the text and LD2 stays on on both.",
+  "inputs": [
+    {
+      "at": "0.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.2s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "2.0s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "slave-received",
+      "at": "1.5s",
+      "probe": "slave_rx",
+      "expect": {
+        "contains": " ****I2C_TwoBoards communication based on IT****  ****I2C_TwoBoards communication based on IT****  ****I2C_TwoBoards communication based on IT**** "
+      }
+    },
+    {
+      "id": "master-received",
+      "at": "2.8s",
+      "probe": "master_rx",
+      "expect": {
+        "contains": " ****I2C_TwoBoards communication based on IT****  ****I2C_TwoBoards communication based on IT****  ****I2C_TwoBoards communication based on IT**** "
+      }
+    },
+    {
+      "id": "master-ld2-on",
+      "between": [
+        "2.6s",
+        "3s"
+      ],
+      "probe": "led1",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "slave-ld2-on",
+      "between": [
+        "2.6s",
+        "3s"
+      ],
+      "probe": "led2",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "scl-transmit",
+      "between": [
+        "1.1s",
+        "1.4s"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 2684
+      }
+    },
+    {
+      "id": "scl-receive",
+      "between": [
+        "2.4s",
+        "2.7s"
+      ],
+      "probe": "scl",
+      "expect": {
+        "edges": 2704
+      }
+    }
+  ]
+}

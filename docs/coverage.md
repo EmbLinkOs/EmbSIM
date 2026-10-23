@@ -8,13 +8,60 @@ evidence for each model is in [STATUS.md](STATUS.md).
 
 | MCU | Modelled | Registers only | Missing | Peripherals |
 |---|---|---|---|---|
+| ESP32-C3 | 26 | 0 | 9 | 35 |
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
 | nRF52840 | 23 | 4 | 22 | 49 |
 | RP2040 | 23 | 6 | 6 | 35 |
 | FE310-G002 | 13 | 0 | 1 | 14 |
-| STM32F103C8 | 23 | 0 | 4 | 27 |
+| STM32F103C8 | 25 | 0 | 2 | 27 |
+| STM32F446RE | 50 | 0 | 21 | 71 |
+
+## ESP32-C3 (`espressif/esp32c3`)
+
+Boards: ESP32-C3-DevKitM-1.  
+26 of 35 peripherals modelled, 0 registers only, 9 missing.
+
+| Peripheral | Model | State |
+|---|---|---|
+| UART0 | `esp32c3-uart` | modelled |
+| SPI1 | `esp32c3-spimem` | modelled |
+| SPI0 | `esp32c3-spimem` | modelled |
+| GPIO | `esp32c3-gpio` | modelled |
+| GPIO_SD | — | **missing** |
+| RTC_CNTL | `esp32c3-rtc` | modelled |
+| EFUSE | `esp32c3-efuse` | modelled |
+| IO_MUX | `esp32c3-iomux` | modelled |
+| UHCI1 | — | **missing** |
+| UART1 | `esp32c3-uart` | modelled |
+| I2C0 | `esp32c3-i2c` | modelled |
+| UHCI0 | — | **missing** |
+| RMT | `esp32c3-rmt` | modelled |
+| LEDC | `esp32c3-ledc` | modelled |
+| TIMG0 | `esp32c3-timg` | modelled |
+| TIMG1 | `esp32c3-timg` | modelled |
+| SYSTIMER | `esp32c3-systimer` | modelled |
+| SPI2 | `esp32c3-spi2` | modelled |
+| APB_CTRL | `esp32c3-apbctrl` | modelled |
+| TWAI0 | — | **missing** |
+| I2S0 | — | **missing** |
+| AES | `esp32c3-aes` | modelled |
+| SHA | `esp32c3-sha` | modelled |
+| RSA | `esp32c3-rsa` | modelled |
+| DS | — | **missing** |
+| HMAC | — | **missing** |
+| DMA | `esp32c3-gdma` | modelled |
+| APB_SARADC | `esp32c3-adc` | modelled |
+| USB_DEVICE | `esp32c3-usbjtag` | modelled |
+| SYSTEM | `esp32c3-system` | modelled |
+| SENSITIVE | — | **missing** |
+| INTERRUPT_CORE0 | `esp32c3-intmtx` | modelled |
+| EXTMEM | `esp32c3-cache` | modelled |
+| XTS_AES | — | **missing** |
+| ASSIST_DEBUG | `esp32c3-assist` | modelled |
+
+Declared omissions: every peripheral not named in the claims: TWAI, I2S, UHCI, HMAC, the digital signature and the permission control's checks (their registers keep what is written); the PLL's power and lock, and the RC oscillators' spread (they run at their nominal frequencies); a USB host on GPIO18 and GPIO19 (the CDC-ACM port on the computer, its DTR and RTS resets, the JTAG side: ADR-031's native USB); the USB pads' own pull-ups and pin swap beyond the IO MUX's reset; the analog blocks' registers' reset values (they read 0 until written) and what their values do (the PLL's frequency comes from SYSTEM, the regulators' voltages are not modelled); the o-code calibration's time; the random number generator's entropy: RND_DATA and the Wi-Fi MAC's random number register are seeded generators (a chip's MAC seeds them), the same sequence every run so that a run replays, whatever noise sources are on; the GPIO's input filter and synchronisation, sleep mode (the pads' sleep configuration), the sigma-delta modulation and the drive strengths' effect; RMT: the free-running divider's phase (REF_CNT_RST; each transmission is timed from its start) and the carrier's phase (it restarts with each stretch it modulates); the memory's power-down; the status registers' STATE and APB-side error bits; LEDC: a fractional divider's alternating A and A + 1 counts (each count is the average length); a CLK_DIV below 1 (the timer stops); light-sleep; I2C: the SCL and SDA filters (the nets are clean); the state machines' own timeouts (SCL_ST_TO, SCL_MAIN_ST_TO); SR's state fields; a slave's SDA_SAMPLE point (it reacts at the edge), SLV_TX_AUTO_START_EN 0 and 10-bit addressing's R/W check; GP-SPI2: slave mode and the configurable segmented transfer (USR_CONF); the timing compensation (DIN_MODE, DIN_NUM, DOUT_MODE); CLK_MODE's clock after CS; SPI_UPDATE takes no time; the AFIFO errors; GDMA: bytes move at once, with no FIFO and no bus bandwidth (the priorities change nothing); the in-link's auto return; err_eof (UHCI0's); SAR ADC: the TRM's ideal transfer (no offset, gain error, nonlinearity or noise; the eFuses hold no calibration); ADC2's errata; the arbiter's priorities; the initial code's offset. Temperature sensor: no self-heating or settling; the eFuses' write and read protection, their check values and times; the chip's calibration data (BLOCK2 is blank); the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c); the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none); the SHA, AES and RSA accelerators' times (they finish at once, CONSTANT_TIME's too); the RSA memories' power-down; the debug module and the debug CSRs; the performance counter's load and jump hazard events; the interrupt controller's transient state after a register write; Wi-Fi beyond WPA2- and WPA3-Personal (a 40 MHz PPDU is carried as a 20 MHz one on the primary channel), and Bluetooth LE beyond advertising, scanning and connections (docs/engineering/c3-radios.md, steps 3 to 6): the MAC's retransmissions, contention (EDCA, CCA), the TSF's adjustment to an access point's beacons and its timers (TBTT, the TSF timer interrupts), TKIP, WEP, GCMP and protected management frames, aggregation, the transmit power the PHY sets (20 dBm is sent), promiscuous reception and the BSSID filter. Bluetooth LE beyond advertising (with scan responses), passive and active scanning and connections: the SCAN_REQs received reported in the receive descriptors (the scan request notification), the scan and initiator filter policies, the 2M and Coded PHYs, extended and periodic advertising, encryption, privacy, slave latency, an event's maximum length, CRC errors, sleep, the received signal strength in the descriptors, the transmit power the controller sets (+9 dBm is sent) and the radio's controls (they keep what is written). The PHY's measurements read as a calibrated front end at once (their real readings and times are not published), and the radio's register blocks' reset values are unknown (they read 0).
 
 ## ATmega328P (`microchip/atmega328p`)
 
@@ -284,20 +331,20 @@ Declared omissions: the mask ROM and the bootloader; the always-on domain's PMU 
 ## STM32F103C8 (`st/stm32f103c8`)
 
 Boards: Blue Pill (STM32F103C8T6).  
-23 of 27 peripherals modelled, 0 registers only, 4 missing.
+25 of 27 peripherals modelled, 0 registers only, 2 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
 | TIM2 | `stm32-tim` | modelled |
 | TIM3 | `stm32-tim` | modelled |
 | TIM4 | `stm32-tim` | modelled |
-| WWDG | — | **missing** |
-| IWDG | `stm32-iwdg` | **missing** |
-| SPI2 | `stm32f1-spi` | modelled |
+| WWDG | `stm32-wwdg` | modelled |
+| IWDG | `stm32-iwdg` | modelled |
+| SPI2 | `stm32-spi` | modelled |
 | USART2 | `stm32-usart` | modelled |
 | USART3 | `stm32-usart` | modelled |
-| I2C1 | `stm32f1-i2c` | modelled |
-| I2C2 | `stm32f1-i2c` | modelled |
+| I2C1 | `stm32-i2c` | modelled |
+| I2C2 | `stm32-i2c` | modelled |
 | PWR | `stm32-pwr` | modelled |
 | AFIO | `stm32f1-afio` | modelled |
 | EXTI | `stm32-exti` | modelled |
@@ -309,11 +356,92 @@ Boards: Blue Pill (STM32F103C8T6).
 | ADC1 | `stm32f1-adc` | modelled |
 | ADC2 | `stm32f1-adc` | modelled |
 | TIM1 | `stm32-tim` | modelled |
-| SPI1 | `stm32f1-spi` | modelled |
+| SPI1 | `stm32-spi` | modelled |
 | USART1 | `stm32-usart` | modelled |
 | DMA1 | — | **missing** |
 | RCC | `stm32-rcc` | modelled |
 | FLASH | `stm32f1-flash` | modelled |
 | CRC | — | **missing** |
 
-Declared omissions: the ADC's injected group, analog watchdog, external triggers, dual mode and DMA; SPI and I2C slave modes, I2C's 10-bit addressing, SMBus, PEC, slave clock stretching and arbitration, SPI's CRC and bidirectional modes; DMA; CAN; USB; RTC and backup domain; timer input capture, counting down and center-aligned, the complementary outputs and dead time; IWDG and WWDG; flash programming; low-power modes beyond WFI.
+Declared omissions: the ADC's injected group, analog watchdog, external triggers, dual mode and DMA; I2S; I2C's noise filtering, the SMBus's cumulative clock low extensions, clock synchronization between two masters; DMA; CAN; USB; RTC and backup domain; the timers' complementary outputs, break and ETR on pins (TIM1's CHxN, BKIN and ETR are not routed through AFIO), their DMA requests; the watchdogs' debug freeze bits and LSI's spread (40 kHz typical on the F1, 32 kHz here); flash programming; low-power modes beyond WFI.
+
+## STM32F446RE (`st/stm32f446re`)
+
+Boards: NUCLEO-F446RE (STM32F446RE).  
+50 of 71 peripherals modelled, 0 registers only, 21 missing.
+
+| Peripheral | Model | State |
+|---|---|---|
+| TIM2 | `stm32-tim` | modelled |
+| TIM3 | `stm32-tim` | modelled |
+| TIM4 | `stm32-tim` | modelled |
+| TIM5 | `stm32-tim` | modelled |
+| TIM6 | `stm32-tim` | modelled |
+| TIM7 | `stm32-tim` | modelled |
+| TIM12 | `stm32-tim` | modelled |
+| TIM13 | `stm32-tim` | modelled |
+| TIM14 | `stm32-tim` | modelled |
+| RTC | `stm32f4-rtc` | modelled |
+| WWDG | `stm32-wwdg` | modelled |
+| IWDG | `stm32-iwdg` | modelled |
+| SPI2 | `stm32-spi` | modelled |
+| SPI3 | `stm32-spi` | modelled |
+| SPDIF_RX | — | **missing** |
+| USART2 | `stm32-usart` | modelled |
+| USART3 | `stm32-usart` | modelled |
+| UART4 | `stm32-usart` | modelled |
+| UART5 | `stm32-usart` | modelled |
+| I2C1 | `stm32-i2c` | modelled |
+| I2C2 | `stm32-i2c` | modelled |
+| I2C3 | `stm32-i2c` | modelled |
+| FMPI2C | — | **missing** |
+| CAN1 | — | **missing** |
+| CAN2 | — | **missing** |
+| HDMI_CEC | — | **missing** |
+| PWR | `stm32f4-pwr` | modelled |
+| DAC | `stm32f4-dac` | modelled |
+| TIM1 | `stm32-tim` | modelled |
+| TIM8 | `stm32-tim` | modelled |
+| USART1 | `stm32-usart` | modelled |
+| USART6 | `stm32-usart` | modelled |
+| ADC1 | `stm32f4-adc` | modelled |
+| ADC2 | `stm32f4-adc` | modelled |
+| ADC3 | `stm32f4-adc` | modelled |
+| C_ADC | `stm32f4-adc-common` | modelled |
+| SDIO | — | **missing** |
+| SPI1 | `stm32-spi` | modelled |
+| SPI4 | `stm32-spi` | modelled |
+| SYSCFG | `stm32f4-syscfg` | modelled |
+| EXTI | `stm32-exti` | modelled |
+| TIM9 | `stm32-tim` | modelled |
+| TIM10 | `stm32-tim` | modelled |
+| TIM11 | `stm32-tim` | modelled |
+| SAI1 | — | **missing** |
+| SAI2 | — | **missing** |
+| GPIOA | `stm32f4-gpio` | modelled |
+| GPIOB | `stm32f4-gpio` | modelled |
+| GPIOC | `stm32f4-gpio` | modelled |
+| GPIOD | `stm32f4-gpio` | modelled |
+| GPIOE | `stm32f4-gpio` | modelled |
+| GPIOF | `stm32f4-gpio` | modelled |
+| GPIOG | `stm32f4-gpio` | modelled |
+| GPIOH | `stm32f4-gpio` | modelled |
+| CRC | — | **missing** |
+| RCC | `stm32-rcc` | modelled |
+| FLASH | `stm32f4-flash` | modelled |
+| DMA1 | `stm32f4-dma` | modelled |
+| DMA2 | `stm32f4-dma` | modelled |
+| OTG_HS_GLOBAL | — | **missing** |
+| OTG_HS_HOST | — | **missing** |
+| OTG_HS_DEVICE | — | **missing** |
+| OTG_HS_PWRCLK | — | **missing** |
+| OTG_FS_GLOBAL | — | **missing** |
+| OTG_FS_HOST | — | **missing** |
+| OTG_FS_DEVICE | — | **missing** |
+| OTG_FS_PWRCLK | — | **missing** |
+| DCMI | — | **missing** |
+| FMC | — | **missing** |
+| QUADSPI | — | **missing** |
+| DBG | — | **missing** |
+
+Declared omissions: watchdogs: LSI's spread (32 kHz here), the debug freeze bits (a debugger's halt stops all of the machine's time); the WWDG's counter while WDGA is clear counts from the last access made while its clock is on; RTC: the reference clock detection (REFCKON, RTC_REFIN), RTC_AF2 (PI8, not bonded), the tamper input's precharge and pull-up, the 8 and 16 s calibration windows (the rate is applied evenly), RECALPF's wait; ADC: the start-up time after ADON (conversions are exact at once), the input's source impedance against the sampling time, the converter's offset, gain, linearity errors and noise (the code is the ideal one), the die's self-heating; DAC: the buffer's offset and gain errors and load regulation, the conversion's non-linearity; I2C: FLTR's analog and digital noise filters (the circuit's edges are taken as they come), the SMBus's cumulative clock low extensions (TLOW:SEXT, TLOW:MEXT), clock synchronization between two masters, TRISE's rise time compensation, CR2.FREQ (times come from the real PCLK1); FMPI2C1 (another IP) keeps its registers; SPI: I2S (I2SCFGR's I2SMOD keeps its value and the SPI stays an SPI; no catalog part speaks I2S), the TI slave's MISO release half a clock after the last bit (let go at the frame's end); DMA: the arbitration's delays between streams (a request is served at once), the direct mode and FIFO overrun/underrun errors (DMEIF never sets, FEIF only for the configuration error), the peripheral flow controller (PFCTRL), the bus matrix's timing (memory-to-memory moves an item every two cycles); dma_requests omits SAI2's and SPI4's requests; USART: noise detection (one sample a bit: NF never sets, ONEBIT changes nothing), smartcard mode (SCEN, NACK, GTPR) and IrDA (IREN, IRLP), which no catalog part speaks; timers: TIMx_OR's internal remaps (TIM2's ITR1, TIM5's TI4 to the LSI, LSE or RTC, TIM11's TI1 to HSE_RTC), MSM's delay, the idle levels' dead time after a break, OCxFE; TIMx_CCy as an ADC trigger is OCyREF for an output channel and a pulse at a capture or a frozen channel's match; SysTick: STK_CALIB's TENMS (RM0390's value not taken: it reads 0 with SKEW set); GPIO: EVENTOUT (AF15, SEV's pulse), the I/O compensation cell's effect on the edges; SYSCFG: the FMC memories MEMRMP can map at 0 (none is on the bus), PMC's ADC DC2 bits' effect; EXTI: the internal lines' sources but the RTC's (the PVD, the USB OTG controllers) until their models land; SWIER triggers them; RCC: the clock security system, CIR's interrupts, a peripheral held in reset while its *RSTR bit stays set (its reset happens on the write), the brownout reset (BORRSTF only at power-on), the oscillators' and PLLs' start-up times (ready at once), MCO1 and MCO2 on their pins, and the I2S, SAI, SPDIF-RX, CEC, FMPI2C and 48 MHz clocks from PLLI2S and PLLSAI (DCKCFGR, DCKCFGR2) beyond TIMPRE; PWR: the regulator's settling times and the low-power modes' wake-up times (DS10693's low-power mode wake-up timings: the core runs at the wake-up event), the regulator's settings (LPDS, FPDS, LPLVDS, MRLVDS: the supply current is not modelled), the programmable voltage detector, DBGMCU_CR's DBG_STOP and DBG_STANDBY (a debugger's halt stops all of the machine's time), the tamper and timestamp pin in Standby beyond RTC_OUT; DWT's CYCCNT counts through Stop; CAN, SDIO, QUADSPI, SAI, SPDIF-RX, HDMI-CEC, DCMI, FMC, FMPI2C and the USB OTG controllers; flash: the program and erase times (done at once, BSY never read 1: the datasheet's times not at hand), the bus stall of a read during an operation, HCLK's 1 MHz minimum, the read protection's levels (RDP stored, no mass erase on a regression), PCROP's read refusal (RDERR), the ART accelerator's caches (DCRST, ICRST).

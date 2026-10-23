@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/sk6812mini_hs",
+  "version": "1.0.0",
+  "name": "SK6812MINI-HS addressable RGB LED",
+  "category": "displays",
+  "description": "OPSCO SK6812MINI-HS, a 3.5 x 3.7 mm RGB LED with its driver inside (the ESP32-C3-DevKitM-1's): 24-bit colour received on DIN in the WS2812's single-wire code, 0 and 1 told apart by the high's length, the rest passed on at DOUT, latched by a low of more than 80 us.",
+  "keywords": [
+    "led",
+    "rgb",
+    "sk6812",
+    "sk6812mini",
+    "sk6812mini-hs",
+    "addressable",
+    "smart led",
+    "neopixel"
+  ],
+  "family": "cmos_5v",
+  "pins": [
+    {
+      "name": "VSS",
+      "number": 1,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "DIN",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Data in",
+      "power_ref": "VDD"
+    },
+    {
+      "name": "VDD",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 5.0,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 3.7 to 5.5 V by its datasheet; the ESP32-C3-DevKitM-1 runs it from 3.3 V"
+    },
+    {
+      "name": "DOUT",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "drive": "push_pull"
+      },
+      "doc": "Data out to the next LED's DIN (not connected on the ESP32-C3-DevKitM-1)",
+      "power_ref": "VDD",
+      "required": false
+    }
+  ],
+  "params": {
+    "count": {
+      "type": "integer",
+      "default": 1,
+      "min": 1,
+      "max": 1,
+      "doc": "LEDs in this part (one)"
+    },
+    "t_reset": {
+      "type": "number",
+      "unit": "s",
+      "default": "80u",
+      "min": "80u",
+      "max": "300u",
+      "doc": "Low time that latches a frame: more than 80 us (Trst)"
+    },
+    "t_bit": {
+      "type": "number",
+      "unit": "s",
+      "default": "0.49u",
+      "min": "0.49u",
+      "max": "0.49u",
+      "doc": "A high this long or longer is a 1: between the longest 0 (T0H max 0.4 us) and the shortest 1 (T1H min 0.58 us)"
+    },
+    "t0h": {
+      "type": "number",
+      "unit": "s",
+      "default": "0.32u",
+      "min": "0.32u",
+      "max": "0.32u",
+      "doc": "A reshaped 0's high at DOUT (T0H typical)"
+    },
+    "t1h": {
+      "type": "number",
+      "unit": "s",
+      "default": "0.64u",
+      "min": "0.64u",
+      "max": "0.64u",
+      "doc": "A reshaped 1's high at DOUT (T1H typical)"
+    },
+    "v_on": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.0,
+      "min": 3.0,
+      "max": 3.0,
+      "doc": "VDD below which the part is dark and takes no data: assumed (see the fidelity)"
+    }
+  },
+  "outputs": [
+    {
+      "name": "color",
+      "type": "string",
+      "doc": "The colour shown, #RRGGBB"
+    },
+    {
+      "name": "colors",
+      "type": "string",
+      "doc": "RRGGBB"
+    },
+    {
+      "name": "lit",
+      "type": "integer"
+    },
+    {
+      "name": "frames",
+      "type": "integer",
+      "doc": "Frames latched since reset"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The WS2812's single-wire code on DIN told apart at 0.49 us (between the datasheet's longest 0, 0.4 us, and shortest 1, 0.58 us); the first 24 bits after a reset kept (GRB, MSB first), the rest passed on at DOUT reshaped to 0.32 / 0.64 us highs; a low of more than 80 us latches the colour; off at power-up; dark and deaf below 3.0 V.",
+      "omissions": [
+        "the light itself (colours reported as the 8-bit PWM levels, no intensity per channel, nor its dimming below the rated supply)",
+        "the PWM flicker",
+        "supply current (up to 12 mA per colour) and its voltage drop",
+        "the input threshold's dependence on VDD (VIH 0.7 VDD, VIL 0.3 VDD) beyond the pin model's levels",
+        "the reshaping's delay (TPLH, TPHL up to 500 ns)",
+        "the supply below which it stops: the datasheet rates 3.7 to 5.5 V and gives no lower limit of operation; Espressif runs it from 3.3 V on the ESP32-C3-DevKitM-1, where it lights, so the model takes data down to 3.0 V, an assumption"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the light itself (colours reported as the 8-bit PWM levels, no intensity per channel, nor its dimming below the rated supply)",
+        "the PWM flicker",
+        "supply current (up to 12 mA per colour) and its voltage drop",
+        "the input threshold's dependence on VDD (VIH 0.7 VDD, VIL 0.3 VDD) beyond the pin model's levels",
+        "the reshaping's delay (TPLH, TPHL up to 500 ns)",
+        "the supply below which it stops: the datasheet rates 3.7 to 5.5 V and gives no lower limit of operation; Espressif runs it from 3.3 V on the ESP32-C3-DevKitM-1, where it lights, so the model takes data down to 3.0 V, an assumption"
+      ]
+    },
+    "electrical": {
+      "claims": "DIN and DOUT bridge to analog nets with the family's pin-model defaults; VDD's voltage gates the LED; the behaviour is the Lua model's.",
+      "omissions": [
+        "the light itself (colours reported as the 8-bit PWM levels, no intensity per channel, nor its dimming below the rated supply)",
+        "the PWM flicker",
+        "supply current (up to 12 mA per colour) and its voltage drop",
+        "the input threshold's dependence on VDD (VIH 0.7 VDD, VIL 0.3 VDD) beyond the pin model's levels",
+        "the reshaping's delay (TPLH, TPHL up to 500 ns)",
+        "the supply below which it stops: the datasheet rates 3.7 to 5.5 V and gives no lower limit of operation; Espressif runs it from 3.3 V on the ESP32-C3-DevKitM-1, where it lights, so the model takes data down to 3.0 V, an assumption"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "OPSCO SK6812MINI-HS product specification (OSK-SPC-SK6812MINI-HS)",
+        "rev": "A/0, 2020-04-05"
+      },
+      {
+        "title": "ESP32-C3-DevKitM-1 schematic (Espressif)",
+        "rev": "V1.0"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "DIN": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "DOUT": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VDD": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "VSS": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 3.5,
+    "height_mm": 3.7,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "color",
+        "selector": "#die",
+        "attr": "fill",
+        "format": "{}"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

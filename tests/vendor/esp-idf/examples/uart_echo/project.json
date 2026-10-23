@@ -1,0 +1,91 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "esp-idf-uart_echo",
+ "description": "ESP-IDF's uart/uart_echo on the ESP32-C3-DevKitM-1: UART1 on TXD IO4 and RXD IO5 at 115200 baud, the example's defaults, to a 3.3 V USB-serial adapter's terminal.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "VT1",
+   "component": "emblink/virtual_terminal",
+   "params": {
+    "baud": 115200
+   },
+   "layout": {
+    "x": 120,
+    "y": 460
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND",
+   "VT1.GND"
+  ],
+  "U1TXD": [
+   "B1.IO4",
+   "VT1.RX"
+  ],
+  "U1RXD": [
+   "B1.IO5",
+   "VT1.TX"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "sent",
+   "target": "serial:VT1",
+   "kind": "serial"
+  },
+  {
+   "id": "received",
+   "target": "output:VT1.rx_text",
+   "kind": "value"
+  }
+ ]
+}

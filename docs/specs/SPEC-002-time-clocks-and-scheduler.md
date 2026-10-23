@@ -86,8 +86,11 @@ for that time. The session then schedules the next `CORE` event at the
 backend's clock time. If two cores interleave, each sees the other's pin
 changes no later than its next quantum boundary or the next event, whichever
 is earlier; the quantum is configurable (`core_quantum_ps`, default
-1 000 000 000 = 1 µs) and may be reduced by a model requesting a wake-up at
-an exact time (`esk_sched_wake_at`).
+1 000 000 ps = 1 µs) and may be reduced by a model requesting a wake-up at
+an exact time (`esk_sched_wake_at`). Another core's next quantum is not such
+an event: a core runs up to the next event that is not a core's, and no
+further than one quantum past the core furthest behind, so two busy cores do
+not step each other an instruction at a time.
 
 ## 6. Analog steps
 

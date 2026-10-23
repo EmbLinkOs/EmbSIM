@@ -20,7 +20,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { ArtworkSurface } from './artwork';
-import { buildPart, type Built, type PickData } from './parts3d';
+import { buildPart, indicatorLight, type Built, type PickData } from './parts3d';
 import type { BenchShape } from './shape';
 import { pickTerminal, type ProjectedTerminal } from './picking';
 import type { InsertionPreview } from './layout';
@@ -437,8 +437,12 @@ export function Bench3D(props: Bench3DProps) {
         e.built.halo.scale.setScalar(10 + bright * 14);
       }
       for (const ind of e.built.indicators ?? []) {
-        const v2 = v.outputs?.[ind.output];
-        const on = typeof v2 === 'number' ? Math.cbrt(Math.max(0, Math.min(1, v2))) : v2 ? 1 : 0;
+        const light = indicatorLight(v.outputs?.[ind.output]);
+        const on = light.level;
+        if (light.color) {
+          ind.material.emissive.set(light.color);
+          (ind.halo?.material as THREE.SpriteMaterial | undefined)?.color.set(light.color);
+        }
         ind.material.emissiveIntensity = on * 3;
         if (ind.halo) {
           ind.halo.visible = on > 0.02;
