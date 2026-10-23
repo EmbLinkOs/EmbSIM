@@ -183,6 +183,16 @@ Each step lands usable and green, as in the RTOS boards plan.
 5. **The rest of Wi-Fi.** The access point mode with a station part and
    with another board; `http_request`; ESP-NOW between two boards; power
    save and the radio's current; Arduino-ESP32's Wi-Fi sketches.
+   *Power save, found:* after `pm start, type: 1` ESP-IDF powers the PHY
+   down between beacons (`esp_phy_disable`: `phy_close_rf`, then the
+   Wi-Fi/BT common clock, SYSCON `WIFI_CLK_EN` bits 0x78078F, cleared).
+   With the radio deaf while that clock is off, the board's draw falls to
+   16.7 mA and the second request of `http_request` goes through, but with
+   no traffic the station never wakes for its DTIM beacons and reports
+   `bcn_timeout` some 17 s after it slept: what wakes it before each
+   beacon (a MAC timer on the TSF, by the look of libpp's `pm_*`) is not
+   modelled yet, so the radio still hears while the clock is off and a
+   station in power save reads its awake current.
    *Under way:* ESP-NOW. `wifi/espnow` on two boards as it ships: each
    broadcasts, adds the other as a peer, and the one with the larger
    random magic sends it unicast data encrypted under the local master
