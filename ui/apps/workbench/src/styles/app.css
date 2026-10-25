@@ -1735,3 +1735,15 @@
   .es-panel__header .es-panel__title { display: none; }
   .es-panel__actions:has(.wb-canvas-actions) { flex: 1; min-width: 0; }
 }
+
+/* Wire drafts and traces live beside the canvas, with usable numeric controls. */
+.wb-bench-list:has(.wb-wire-editor) { width: clamp(250px, 25%, 330px); }
+.wb-wire-editor form { display: grid; gap: var(--space-2); margin-bottom: var(--space-3); }
+.wb-wire-editor p, .wb-bench-trace p { color: var(--text-muted); overflow-wrap: anywhere; margin: var(--space-1) 0; }
+.wb-wire-point { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: var(--space-1); align-items: end; }
+.wb-wire-point input { width: 100%; min-width: 0; }
+.wb-wire-swatch { width: 10px; height: 10px; border: 1px solid var(--line); border-radius: 50%; flex: none; }
+.wb-bench-trace { padding: var(--space-2); margin: var(--space-2) 0; border: 1px solid var(--line); border-radius: var(--radius-md); }
+@media (max-width: 700px) { .wb-bench-list:has(.wb-wire-editor) { width: auto; } }
+
+.eb-route-point { color: #075985; background: #fff; font: 600 10px/14px system-ui; width: 14px; height: 14px; text-align: center; border-radius: 50%; pointer-events: none; }

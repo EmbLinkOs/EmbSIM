@@ -78,7 +78,7 @@
     {
       "name": "lit",
       "type": "boolean",
-      "doc": "Functional: anode 1 and cathode 0"
+      "doc": "True with forward current above 1 \u00b5A in electrical policy; functional policy requires A=1 and K=0."
     }
   ],
   "model": {
@@ -129,19 +129,12 @@
             1
           ]
         }
-      },
-      {
-        "output": "lit",
-        "selector": "#glow",
-        "attr": "opacity",
-        "true": "1",
-        "false": "0"
       }
     ]
   },
   "fidelity": {
     "functional": {
-      "claims": "Lit when the anode net is 1 and the cathode net is 0 (SPEC-003 §5 indicator).",
+      "claims": "Lit when the anode net is 1 and the cathode net is 0 (SPEC-003 \u00a75 indicator).",
       "omissions": [
         "current",
         "brightness"
@@ -152,7 +145,7 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Diode with per-colour vf/is/n defaults and series rs; observe reports current and a luminance saturating at if_nom (SPEC-004 §7 led).",
+      "claims": "Diode with per-colour vf/is/n defaults and series rs; observe reports current and a luminance saturating at if_nom (SPEC-004 \u00a77 led).",
       "omissions": [
         "temperature",
         "ageing",

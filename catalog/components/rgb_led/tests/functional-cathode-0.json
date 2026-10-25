@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "functional-cathode-0",
+  "description": "functional cathode 0",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/rgb_led",
+        "params": {
+          "common": "cathode"
+        }
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.COM",
+        "DUT.R",
+        "DUT.G",
+        "DUT.B"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.color": {
+      "at": "500ns",
+      "equals": "#000000"
+    },
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": false
+    }
+  }
+}

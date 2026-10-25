@@ -21,6 +21,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { CSS2DObject, CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { ArtworkSurface } from './artwork';
 import { buildPart, indicatorLight, type Built, type PickData } from './parts3d';
+import { updateEmission } from './emission';
 import type { BenchShape } from './shape';
 import { pickTerminal, type ProjectedTerminal } from './picking';
 import type { InsertionPreview } from './layout';
@@ -51,6 +52,9 @@ export interface JumperView {
   color: string;
   /** the ends sit in a breadboard (a bare pin) or on a header (a Dupont housing) */
   housings?: [boolean, boolean];
+  points?: Point3[];
+  rise_mm?: number;
+  traced?: boolean;
 }
 
 export interface LinkView {
@@ -102,6 +106,8 @@ export interface Bench3DProps {
   selected?: { part?: string; jumper?: number };
   snap(id: string, x: number, y: number, rotation: number): SnapResult;
   terminals: TerminalHit[];
+  traceTerminals?: string[];
+  onRoute?(index: number, points: Point3[]): void;
   surface?: 'mat' | 'paper' | 'graphite';
   labels?: 'adaptive' | 'all' | 'selected';
   showNotes?: boolean;
@@ -136,18 +142,32 @@ function v3([x, y, z]: Point3): THREE.Vector3 {
  * is a flexible Dupont wire: up from each end, then an arc that rises with
  * its length.
  */
-export function jumperCurve(a: Point3, b: Point3): THREE.Curve<THREE.Vector3> {
+export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: number): THREE.Curve<THREE.Vector3> {
+  if (points?.length) {
+    const path = new THREE.CurvePath<THREE.Vector3>();
+    const route = [a, ...points, b].map(v3);
+    for (let i = 1; i < route.length; i++) if (route[i - 1]!.distanceToSquared(route[i]!) > 1e-12) path.add(new THREE.LineCurve3(route[i - 1]!, route[i]!));
+    if (path.curves.length) return path;
+    return new THREE.LineCurve3(v3(a), v3(b));
+  }
   const A = v3(a);
   const B = v3(b);
+  if (rise !== undefined) {
+    const top = Math.max(A.y, B.y) + rise;
+    const route = [A, A.clone().setY(top), B.clone().setY(top), B];
+    const path = new THREE.CurvePath<THREE.Vector3>();
+    for (let i = 1; i < route.length; i++) if (route[i - 1]!.distanceToSquared(route[i]!) > 1e-12) path.add(new THREE.LineCurve3(route[i - 1]!, route[i]!));
+    return path.curves.length ? path : new THREE.LineCurve3(A, B);
+  }
   const len = A.distanceTo(B);
-  if (Math.abs(A.y - B.y) < 0.01 && len < 60) {
+  if (rise === undefined && Math.abs(A.y - B.y) < 0.01 && len < 60) {
     const h = A.y + 1.5;
     const path = new THREE.CurvePath<THREE.Vector3>();
     const pts = [A, A.clone().setY(h - 0.6), A.clone().setY(h).lerp(B.clone().setY(h), Math.min(0.5, 0.8 / Math.max(len, 0.1))), B.clone().setY(h).lerp(A.clone().setY(h), Math.min(0.5, 0.8 / Math.max(len, 0.1))), B.clone().setY(h - 0.6), B];
     for (let i = 0; i < pts.length - 1; i++) path.add(new THREE.LineCurve3(pts[i]!, pts[i + 1]!));
     return path;
   }
-  const lift = Math.min(18, 5 + len * 0.1);
+  const lift = rise ?? Math.min(18, 5 + len * 0.1);
   const top = Math.max(A.y, B.y) + lift;
   const mid = A.clone().lerp(B, 0.5);
   mid.y = top;
@@ -426,16 +446,7 @@ export function Bench3D(props: Bench3DProps) {
       e.label.visible = chosen || (props.labels !== 'selected' && (props.labels === 'all' || !small));
       // live state: the artwork, an LED's light, a control's position
       e.surface?.update(v.outputs ?? {});
-      const lum = typeof v.outputs?.luminance === 'number' ? v.outputs.luminance : 0;
-      // the eye sees brightness roughly as its cube root: a 30 % duty LED looks well lit
-      const bright = lum > 0 ? Math.cbrt(Math.min(1, lum)) : 0;
-      if (e.built.glow) e.built.glow.emissiveIntensity = bright * 3.5;
-      if (e.built.light) e.built.light.intensity = bright * 450;
-      if (e.built.halo) {
-        e.built.halo.visible = bright > 0.02;
-        (e.built.halo.material as THREE.SpriteMaterial).opacity = Math.min(0.9, bright);
-        e.built.halo.scale.setScalar(10 + bright * 14);
-      }
+      updateEmission(e.built, v.outputs);
       for (const ind of e.built.indicators ?? []) {
         const light = indicatorLight(v.outputs?.[ind.output]);
         const on = light.level;
@@ -500,9 +511,9 @@ export function Bench3D(props: Bench3DProps) {
     const housingMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
     for (const j of props.jumpers) {
       const g = new THREE.Group();
-      const sel = props.selected?.jumper === j.index;
+      const sel = props.selected?.jumper === j.index || j.traced;
       const insul = new THREE.MeshStandardMaterial({ color: new THREE.Color(j.color), roughness: 0.45, emissive: sel ? new THREE.Color(j.color) : new THREE.Color(0), emissiveIntensity: sel ? 0.5 : 0 });
-      const tube = new THREE.Mesh(new THREE.TubeGeometry(jumperCurve(j.a, j.b), 96, 0.8, 10, false), insul);
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(jumperCurve(j.a, j.b, j.points, j.rise_mm), 96, 0.8, 10, false), insul);
       tube.castShadow = true;
       tube.userData = { jumper: j.index };
       g.add(tube);
@@ -525,6 +536,23 @@ export function Bench3D(props: Bench3DProps) {
         sleeve.userData = { jumper: j.index };
         g.add(sleeve);
       });
+      g.userData.jumperGroup = j.index;
+      if (props.selected?.jumper === j.index && props.editable) {
+        const points = j.points?.length ? j.points : [jumperCurve(j.a, j.b, undefined, j.rise_mm).getPoint(0.5).toArray() as Point3];
+        points.forEach((point, index) => {
+          const handle = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false }));
+          handle.position.copy(v3(point));
+          handle.renderOrder = 20;
+          handle.userData = { jumper: j.index, routePoint: index };
+          const tag = document.createElement('span');
+          tag.className = 'eb-route-point';
+          tag.textContent = String(index + 1);
+          tag.setAttribute('aria-label', `Jumper ${j.index + 1} route point ${index + 1}`);
+          const label = new CSS2DObject(tag);
+          handle.add(label);
+          g.add(handle);
+        });
+      }
       s.jumpers.add(g);
     }
     for (const l of props.links) {
@@ -547,7 +575,7 @@ export function Bench3D(props: Bench3DProps) {
       }
     });
     invalidate();
-  }, [props.jumpers, props.links, props.notes, props.selected, invalidate]);
+  }, [props.jumpers, props.links, props.notes, props.selected, props.editable, invalidate]);
 
   // the world: its bodies, and the beams that meet them
   useEffect(() => {
@@ -615,6 +643,24 @@ export function Bench3D(props: Bench3DProps) {
     };
   }, [props.insertionPreview, invalidate]);
 
+  // A trace includes free contacts on the same breadboard strip.
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const markers: THREE.Mesh[] = [];
+    const refs = new Set(props.traceTerminals ?? []);
+    for (const terminal of props.terminals) if (refs.has(terminal.ref)) {
+      const marker = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.25, 6, 16), new THREE.MeshBasicMaterial({ color: 0x38bdf8, depthTest: false }));
+      marker.rotation.x = -Math.PI / 2;
+      marker.position.copy(v3(terminal.at)).add(new THREE.Vector3(0, 0.4, 0));
+      marker.renderOrder = 12;
+      s.hints.add(marker);
+      markers.push(marker);
+    }
+    invalidate();
+    return () => { for (const marker of markers) { s.hints.remove(marker); marker.geometry.dispose(); (marker.material as THREE.Material).dispose(); } };
+  }, [props.traceTerminals, props.terminals, invalidate]);
+
   // pointer gestures
   useEffect(() => {
     const s = state.current;
@@ -631,6 +677,19 @@ export function Bench3D(props: Bench3DProps) {
     };
     const onDesk = (): THREE.Vector3 | null => ray.ray.intersectPlane(desk, new THREE.Vector3());
     const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, ...s.world.children.filter((object) => object.userData.body)], true);
+    let routeDrag: { jumper: JumperView; points: Point3[]; index: number; start: Point3[]; moved: boolean } | null = null;
+    const routePreview = (j: JumperView, points: Point3[]) => {
+      const group = s.jumpers.children.find((g) => g.userData.jumperGroup === j.index);
+      const tube = group?.children[0] as THREE.Mesh<THREE.TubeGeometry> | undefined;
+      if (!tube) return;
+      tube.geometry.dispose();
+      tube.geometry = new THREE.TubeGeometry(jumperCurve(j.a, j.b, points, j.rise_mm), 96, 0.8, 10, false);
+      for (const child of group!.children) if (typeof child.userData.routePoint === 'number') {
+        const point = points[child.userData.routePoint];
+        if (point) child.position.copy(v3(point));
+      }
+      invalidate();
+    };
     let dragBody: { id: string; mesh: THREE.Object3D; dx: number; dz: number; moved: boolean; start: THREE.Vector3 } | null = null;
     let activePointer: number | null = null;
 
@@ -697,8 +756,20 @@ export function Bench3D(props: Bench3DProps) {
       const p = propsRef.current;
       cast(ev);
       const hits = hitParts();
-      const hit = hits[0];
-      const data = (hit?.object.userData ?? {}) as PickData & { jumper?: number };
+      // Route handles are visible overlay controls, so their picking priority
+      // matches their depth-independent display even over a component body.
+      const hit = p.editable && p.tool === 'select' ? hits.find((h) => h.object.userData.routePoint !== undefined) ?? hits[0] : hits[0];
+      const data = (hit?.object.userData ?? {}) as PickData & { jumper?: number; routePoint?: number };
+      if (data.routePoint !== undefined && data.jumper !== undefined && p.editable && p.tool === 'select' && p.onRoute) {
+        const j = p.jumpers.find((wire) => wire.index === data.jumper);
+        if (!j) return;
+        const points = structuredClone(j.points?.length ? j.points : [jumperCurve(j.a, j.b, undefined, j.rise_mm).getPoint(0.5).toArray() as Point3]);
+        routeDrag = { jumper: j, index: data.routePoint, points, start: structuredClone(points), moved: false };
+        activePointer = ev.pointerId;
+        el.setPointerCapture(ev.pointerId);
+        el.style.cursor = 'grabbing';
+        return;
+      }
       // a control of a part, while the circuit runs
       if (p.live && p.tool !== 'wire' && data.part && data.input) {
         const view = s.parts.get(data.part)?.view;
@@ -782,6 +853,18 @@ export function Bench3D(props: Bench3DProps) {
         return;
       }
       cast(ev);
+      if (routeDrag) {
+        const point = routeDrag.points[routeDrag.index]!;
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -point[1]);
+        const at = ray.ray.intersectPlane(plane, new THREE.Vector3());
+        if (!at) return;
+        point[0] = Math.round(at.x * 10) / 10;
+        point[2] = Math.round(at.z * 10) / 10;
+        routeDrag.moved = true;
+        routePreview(routeDrag.jumper, routeDrag.points);
+        setFeedback({ text: `Route point ${routeDrag.index + 1}: ${point.join(', ')} mm · Esc cancels` });
+        return;
+      }
       if (dragBody) {
         const at = onDesk();
         if (!at) return;
@@ -840,6 +923,12 @@ export function Bench3D(props: Bench3DProps) {
       if (ev.pointerId !== activePointer) return;
       cast(ev);
       const p = propsRef.current;
+      if (routeDrag) {
+        const proposal = routeDrag;
+        routeDrag = null;
+        routePreview(proposal.jumper, proposal.jumper.points ?? []);
+        if (proposal.moved) p.onRoute?.(proposal.jumper.index, proposal.points);
+      }
       let rejection: string | undefined;
       if (held) {
         p.onInput(held.target, held.input, false);
@@ -890,6 +979,13 @@ export function Bench3D(props: Bench3DProps) {
       if (el.hasPointerCapture(ev.pointerId)) el.releasePointerCapture(ev.pointerId);
     };
     const cancel = () => {
+      if (routeDrag) {
+        routePreview(routeDrag.jumper, routeDrag.jumper.points ?? []);
+        // Restore handles too, including the automatic route's temporary midpoint.
+        const group = s.jumpers.children.find((g) => g.userData.jumperGroup === routeDrag!.jumper.index);
+        for (const child of group?.children ?? []) if (typeof child.userData.routePoint === 'number') child.position.copy(v3(routeDrag.start[child.userData.routePoint]!));
+        routeDrag = null;
+      }
       if (held) propsRef.current.onInput(held.target, held.input, false);
       held = null;
       turning = null;

@@ -5,6 +5,21 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Circuit construction and electrically driven RGB (2026-10-25)
+
+Actual native `embsim serve` on `examples/rgb-indicator-bench`, in electrical
+policy. Physical switch inputs, separate current-limiting resistors and three
+LED junctions determine the scene; the browser does not animate colors itself.
+The off capture precedes pressing red and blue. The magenta capture is paused
+with engine observations of approximately 19.994 mA red, 19.991 mA blue and
+3.70 nA green, color `#ff00ff`, and no engine diagnostics or browser page errors.
+The wire editor/tracer operates on that same project. These captures establish
+integration and inspection, not manufacturer photometric or mechanical fidelity.
+
+| Off | Red and blue powered |
+|---|---|
+| ![Native RGB circuit with all switches released](circuit-construction/rgb-off.png) | ![Native RGB circuit emitting magenta from measured channel currents](circuit-construction/rgb-magenta.png) |
+
 ## Responsive workspaces (2026-10-25)
 
 The same 1024 × 900 demo project before and after: the Perspective selector and

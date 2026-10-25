@@ -6,6 +6,7 @@ transactions, save and reload, without restarting the simulation; removing
 a part removes its place and the jumpers to it; a strip joins what is
 plugged into it."""
 import argparse
+import copy
 import json
 from pathlib import Path
 import sys
@@ -38,7 +39,7 @@ PROJECT = {
 
 BENCH = {
     "parts": {"BB1": {"x": 100, "y": 60}, "R1": {"x": 51.2, "y": 30.7, "rotation": 0}, "R2": {"x": 60, "y": 40, "rotation": 90}},
-    "wires": [{"from": "BB1.TP2", "to": "BB1.e3", "color": "#d63031"}, {"from": "R2.2", "to": "BB1.TN12"}],
+    "wires": [{"from": "BB1.TP2", "to": "BB1.e3", "color": "#d63031", "points": [[90, 20, 50]], "rise_mm": 12}, {"from": "R2.2", "to": "BB1.TN12"}],
     "notes": [{"x": 10, "y": 5, "text": "A divider on strip 8", "to": [40, 30]}],
 }
 
@@ -76,6 +77,44 @@ def main():
                 raise AssertionError("a bench that is not an object was accepted")
             except EmbsimError:
                 pass
+            # A layout-only transaction must enforce the same connection and route
+            # rules as import, while retaining the circuit, clock and probe samples.
+            baseline = client.call("project.get")["project"]
+            invalid = [
+                [{"from": "BB1.TP2", "to": "R1.1"}],  # different nets
+                [{"from": "BB1.TP2", "to": "BB1.TP2"}],
+                [BENCH["wires"][0], {"from": "BB1.e3", "to": "BB1.TP2"}],
+                [{"from": "BB1.TP2", "to": "BB1.e3", "points": [[1, -1, 2]]}],
+                [{"from": "BB1.TP2", "to": "BB1.e3", "points": [[1, 2]]}],
+                [{"from": "BB1.TP2", "to": "BB1.e3", "rise_mm": 1001}],
+                [{"from": "BB1.TP2", "to": "BB1.e3", "color": "red"}],
+                [{"from": "BB1.TP2", "to": "missing.pin"}],
+                [{"from": "BB1.TP2", "to": "BB1.e3"}, {"from": "BB1.TP2", "to": "BB1.e3", "color": "#ffffff"}],
+            ]
+            for wires in invalid:
+                bad = copy.deepcopy(BENCH)
+                bad["wires"] = wires
+                imported = copy.deepcopy(baseline)
+                imported["layout"]["bench"] = bad
+                report = client.call("project.validate", {"json": imported})
+                assert not report["ok"], report
+                try:
+                    edit(client, [{"set_layout": {"bench": bad}}])
+                    raise AssertionError(f"invalid bench accepted: {wires}")
+                except EmbsimError:
+                    pass
+                assert client.call("project.get")["project"] == baseline
+                assert client.call("session.info")["now_ps"] == now
+                assert abs(client.call("probe.read", {"probe": probe})["samples"][-1][1] - 2.5) < 1e-6
+            # Occupancy is per hole, even if three endpoints share the same net.
+            bad = copy.deepcopy(BENCH)
+            bad["wires"] = [{"from": "BB1.TP2", "to": "BB1.e3"}, {"from": "BB1.TP2", "to": "BB1.d3"}]
+            try:
+                edit(client, [{"connect": {"net": "J1", "pin": "BB1.d3"}}, {"set_layout": {"bench": bad}}])
+                raise AssertionError("two jumpers occupied the same hole")
+            except EmbsimError:
+                pass
+            assert client.call("project.get")["project"] == baseline
             client.call("project.save", {"path": str(saved)})
             persisted = json.loads(saved.read_text(encoding="utf-8"))
             assert persisted["layout"]["bench"] == BENCH, persisted["layout"]

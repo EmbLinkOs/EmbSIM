@@ -2,7 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import type { Project } from '@embsim/protocol';
 import { describe, expect, it } from 'vitest';
-import { addJumper, benchModel, legsOf, moveParts, previewInsertion, removeJumper, turn, unbuilt, type BenchContext } from './layout';
+import { addJumper, benchModel, dressJumper, jumperNet, legsOf, moveParts, previewInsertion, reconnectJumper, removeJumper, traceBench, turn, unbuilt, type BenchContext } from './layout';
 import { PITCH, type BenchShape } from './shape';
 
 // a breadboard of six strips (a-e over f-j would be more; one half is enough):
@@ -32,6 +32,34 @@ function project(): Project {
     layout: { bench: { parts: { BB1: { x: 7.62, y: 6.35 }, U1: { x: 100, y: 100 }, R1: { x: 200, y: 0 }, R2: { x: 200, y: 20 } } } },
   };
 }
+
+describe('wire appearance, reconnection and tracing', () => {
+  it('dresses a wire without changing its electrical graph and rejects invalid proposals atomically', () => {
+    const p = addJumper(project(), ctx, { from: 'R1.1', to: 'U1.D13' });
+    const nets = structuredClone(p.nets);
+    dressJumper(p, 0, { color: '#16a085', points: [[20, 15, 40]], rise_mm: 10 });
+    expect(p.nets).toEqual(nets);
+    expect(p.layout?.bench?.wires?.[0]?.points).toEqual([[20, 15, 40]]);
+    const before = structuredClone(p);
+    expect(() => dressJumper(p, 0, { points: [[0, -1, 0]] })).toThrow();
+    expect(() => dressJumper(p, 0, { rise_mm: Infinity })).toThrow();
+    expect(() => reconnectJumper(p, ctx, 0, 'R1.1', 'missing.pin')).toThrow();
+    expect(p).toEqual(before);
+    const reconnected = reconnectJumper(p, ctx, 0, 'R1.2', 'U1.D13');
+    expect(reconnected.layout?.bench?.wires?.[0]).toEqual({ ...before.layout?.bench?.wires?.[0], from: 'R1.2' });
+    expect(jumperNet(reconnected, reconnected.layout!.bench!.wires![0]!)).toBeDefined();
+    expect(Object.values(reconnected.nets).some((pins) => pins.includes('R1.1') && pins.includes('U1.D13'))).toBe(false);
+    expect(p).toEqual(before);
+  });
+  it('traces all contacts of a connected strip without crossing to adjacent strips', () => {
+    const p = addJumper(project(), ctx, { from: 'BB1.a1', to: 'U1.D13' });
+    const wire = p.layout!.bench!.wires![0]!;
+    const trace = traceBench(p, benchModel(p, ctx.shapes, ctx.ties), jumperNet(p, wire)!);
+    expect(trace.has('BB1.e1')).toBe(true);
+    expect(trace.has('U1.D13')).toBe(true);
+    expect(trace.has('BB1.a2')).toBe(false);
+  });
+});
 
 // hole a1 is at (1.27, 1.27) relative to BB1's corner (0, 0): the board's centre is (7.62, 6.35)
 const hole = (col: number, row: number): [number, number] => [1.27 + (col - 1) * PITCH, 1.27 + row * PITCH];

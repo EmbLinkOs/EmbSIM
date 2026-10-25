@@ -404,6 +404,31 @@ class ProjectTests(Base):
         r = self.check(self.write_project(p))
         self.assertIn("bench.jumper_net", [f.code for f in r.findings])
 
+    def test_bench_route_and_duplicate_validation(self):
+        p = copy.deepcopy(PROJECT)
+        pins = p["nets"]["VCC"]
+        wire = {"from": pins[0], "to": pins[1], "points": [[0, 15, -20]], "rise_mm": 12}
+        p["layout"] = {"bench": {"wires": [wire]}}
+        self.assertClean(self.check(self.write_project(p)))
+        for point in ([0, -1, 0], [0, 2], [0, 1, 0, 3], [1000001, 1, 0]):
+            wire["points"] = [point]
+            self.assertTrue(self.codes(self.check(self.write_project(p))), point)
+        wire["points"] = [[0, 15, -20]]
+        p["layout"]["bench"]["wires"].append({"from": pins[1], "to": pins[0]})
+        self.assertCode(self.check(self.write_project(p)), "bench.duplicate")
+
+    def test_bench_hole_occupancy_is_per_contact(self):
+        p = copy.deepcopy(PROJECT)
+        p["components"].append({"id": "BB1", "component": "emblink/breadboard_830"})
+        p["nets"]["VCC"] += ["BB1.a1", "BB1.b1"]
+        p["layout"] = {"bench": {"wires": [
+            {"from": "BB1.a1", "to": "V.VCC"},
+            {"from": "BB1.b1", "to": "SW1.1"},
+        ]}}
+        self.assertClean(self.check(self.write_project(p)))
+        p["layout"]["bench"]["wires"][1]["from"] = "BB1.a1"
+        self.assertCode(self.check(self.write_project(p)), "bench.occupied")
+
     def test_unknown_component(self):
         p = copy.deepcopy(PROJECT)
         p["components"][1]["component"] = "emblink/no_such_part"

@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "electrical-anode-unpowered",
+  "description": "electrical anode unpowered",
+  "policy": "electrical",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rgb_led",
+        "params": {
+          "common": "anode"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 0
+        }
+      },
+      {
+        "id": "RR",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 159
+        }
+      },
+      {
+        "id": "RG",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 144
+        }
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 104
+        }
+      }
+    ],
+    "nets": {
+      "GND": [
+        "G.GND",
+        "VC.-",
+        "RR.1",
+        "RG.1",
+        "RB.1"
+      ],
+      "COM": [
+        "VC.+",
+        "DUT.COM"
+      ],
+      "DR": [
+        "RR.2",
+        "DUT.R"
+      ],
+      "DG": [
+        "RG.2",
+        "DUT.G"
+      ],
+      "DB": [
+        "RB.2",
+        "DUT.B"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.red_current": {
+      "at": "500ns",
+      "min": -1e-06,
+      "max": 1e-06
+    },
+    "output:DUT.red": {
+      "at": "500ns",
+      "equals": false
+    },
+    "output:DUT.green_current": {
+      "at": "500ns",
+      "min": -1e-06,
+      "max": 1e-06
+    },
+    "output:DUT.green": {
+      "at": "500ns",
+      "equals": false
+    },
+    "output:DUT.blue_current": {
+      "at": "500ns",
+      "min": -1e-06,
+      "max": 1e-06
+    },
+    "output:DUT.blue": {
+      "at": "500ns",
+      "equals": false
+    },
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": false
+    },
+    "output:DUT.color": {
+      "at": "500ns",
+      "equals": "#000000"
+    }
+  }
+}

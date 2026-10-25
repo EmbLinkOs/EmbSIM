@@ -58,6 +58,35 @@ arrows nudge by one pitch and Delete removes the selection. The list also offers
 plug/turn/lift actions. Controls remain usable while firmware runs: hold buttons,
 flip switches and drag knobs. The engine determines the resulting circuit state.
 
+## Edit and trace existing jumpers
+
+Select a jumper on the canvas or in **Parts & wiring → Jumpers**. Its shared net
+is highlighted in the schematic and bench, including contacts on the same
+breadboard strip. The trace lists named terminals and the engine's latest voltage
+or logic level; it reports no observation when disconnected from the engine.
+
+**Selected jumper** edits insulation color and automatic rise. **Add route point**
+adds a numbered handle: drag it across its horizontal plane, or type its X, height
+and Y coordinates in millimetres. **Apply appearance** commits the numeric draft
+as one undoable edit. Drag release commits once; Escape, blur and pointer
+cancellation restore the original path. **Automatic route** clears the draft's
+points; apply it to return to automatic routing. Ends stay attached when parts
+move, while intermediate points remain in bench coordinates.
+
+Appearance changes preserve nets, time and measurements. **Reconnect jumper**
+changes named endpoints and restarts simulation; invalid endpoints leave the old
+wire intact. **Remove selected jumper** removes the connection it alone built.
+Undo restores both wiring and appearance. Crossings are never junctions.
+Native validation also rejects duplicate/reversed imported jumpers, endpoints in
+different nets, malformed paths and multiple direct wires in one breadboard hole.
+It does not yet infer component-leg occupancy in imported geometry.
+
+Try [RGB indicator bench](../../examples/rgb-indicator-bench/README.md) for three
+resistor-fed LED dies controlled by physical buttons. Current limiting, polarity
+and an actual return path determine light. RGB color and brightness follow engine
+outputs in 2D and 3D; the generic model's color mixing is illustrative, without
+spectral calibration, thermal damage or perceived PWM averaging.
+
 ## Physical insertion previews
 
 Select a part in **Parts & wiring** and type a hole for its first leg. The

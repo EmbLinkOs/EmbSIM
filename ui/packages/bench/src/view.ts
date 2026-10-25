@@ -136,8 +136,13 @@ export function jumperViews(p: Project, model: BenchModel): JumperView[] {
     const a = terminalPoint(model, w.from);
     const b = terminalPoint(model, w.to);
     if (!a || !b) return;
-    const onHeader = (ref: string) => !model.holes.has(ref) && !model.plugs.has(ref) && !isSurfaceMount(model.byId.get(ref.split('.')[0]!)!.shape);
-    out.push({ index, a, b, color: w.color ?? WIRE_COLORS[index % WIRE_COLORS.length]!, housings: [onHeader(w.from), onHeader(w.to)] });
+    const onHeader = (ref: string) => {
+      if (model.holes.has(ref) || model.plugs.has(ref)) return false;
+      const shape = model.byId.get(ref.split('.')[0]!)?.shape;
+      // Bare LED/resistor/IC legs are not tall Dupont header connectors.
+      return shape?.package === 'board' || shape?.package === 'module';
+    };
+    out.push({ index, a, b, points: w.points, rise_mm: w.rise_mm, color: w.color ?? WIRE_COLORS[index % WIRE_COLORS.length]!, housings: [onHeader(w.from), onHeader(w.to)] });
   });
   return out;
 }

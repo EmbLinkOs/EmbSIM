@@ -127,7 +127,9 @@ nets}}` after each recomputation.
   `dff` (with set/reset, edge), `latch`, `counter`, `shift_register`,
   `clock_source`, `pulse_source`, `logic_level` (constant), `pull`,
   `switch` and `push_button` (momentary, toggle, with optional bounce model),
-  `indicator` (functional LED), `virtual_terminal` (UART decoder/encoder on
+  `indicator` (functional LED, floating cathode off),
+  `rgb_indicator` (ideal common-anode/cathode RGB; floating/unknown common or
+  channel off; binary luminance and mixed color), `virtual_terminal` (UART decoder/encoder on
   a net), `logic_probe`. Datasheet timing (`tpd`, setup, hold, minimum pulse)
   come from the description's `timed` section.
 - Buses at the logic level (UART, SPI, I²C) are modelled by components

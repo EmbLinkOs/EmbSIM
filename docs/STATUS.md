@@ -5,6 +5,29 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Circuit construction and live RGB indication (2026-10-25)
+
+Branch `feat/circuit-construction` builds on the workspace milestone. It adds
+existing-jumper selection, appearance and route editing, atomic reconnection,
+shared net/strip tracing, and native load/commit plus Python validation of direct
+wire invariants. Appearance-only transactions preserve the clock and probes.
+RGB electrical behavior uses three native junctions with external current
+limiting; functional mode requires a known common return. The 3D emitter consumes
+engine color/luminance instead of an independent animation. The switch-driven
+RGB acceptance circuit visits every mix and off, with 28 assertions; isolated
+LED/RGB fixtures execute 143 assertions across 30 circuits. These are generic
+model checks, not manufacturer qualification or an expanded IC support claim.
+
+[Construction contract and evidence](engineering/circuit-construction.md) and
+[bench instructions](user/bench.md) state the controls and limits. Local checks
+pass all 45 native targets, 238 UI unit tests, 134 validator tests
+and 819 strict schema/catalog files. Native RGB captures show engine-observed
+magenta and off without browser errors. Subsequent work prioritizes qualified
+named component families before loaded instruments.
+Native pose-dependent component-leg import occupancy, an external ESP32-C3
+firmware/PWM RGB circuit, optical calibration and full mechanical qualification
+remain open.
+
 ## Responsive workspace and deferred bench loading (2026-10-25)
 
 Branch `ui/workspace-layout`, based on main `896e4f0`, separates the project menu,

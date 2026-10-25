@@ -76,7 +76,7 @@ GPIO_RE = re.compile(r"^P([A-Z])([0-9]+)$")
 PRIMITIVE_PINS = {
     "resistor": ["1", "2"], "capacitor": ["1", "2"], "inductor": ["1", "2"],
     "vsource": ["+", "-"], "isource": ["+", "-"], "switch": ["1", "2"],
-    "potentiometer": ["1", "W", "2"], "diode": ["A", "K"], "led": ["A", "K"], "zener": ["A", "K"],
+    "potentiometer": ["1", "W", "2"], "diode": ["A", "K"], "led": ["A", "K"], "rgb_led": ["R", "COM", "G", "B"], "rgb_indicator": ["R", "COM", "G", "B"], "zener": ["A", "K"],
     "bjt_npn": ["C", "B", "E"], "bjt_pnp": ["C", "B", "E"], "nmos": ["D", "G", "S"],
     "pmos": ["D", "G", "S"], "opamp": ["+", "-", "OUT"], "regulator": ["IN", "OUT", "GND"],
     "pull": ["1"], "indicator": ["A", "K"],
@@ -417,9 +417,10 @@ class Schemas:
                     if item in seen:
                         errs.append((ptr(*path, i), "duplicate item"))
                     seen.append(item)
-            if "items" in schema:
-                for i, item in enumerate(value):
-                    self._check(item, schema["items"], base, path + [i], errs, depth + 1)
+            prefix = schema.get("prefixItems", [])
+            for i, item in enumerate(value):
+                item_schema = prefix[i] if i < len(prefix) else schema.get("items", True)
+                self._check(item, item_schema, base, path + [i], errs, depth + 1)
         if isinstance(value, dict):
             for req in schema.get("required", []):
                 if req not in value:
@@ -1555,6 +1556,7 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
     for iid in bench.get("parts") or {}:
         if iid not in ctx.components and iid not in ctx.boards:
             report.error(file, ptr("layout", "bench", "parts", iid), "catalog.not_found", f"bench place for undeclared instance {iid}")
+    jumper_pairs, occupied_holes = set(), set()
     for i, w in enumerate(bench.get("wires") or []):
         node = ptr("layout", "bench", "wires", i)
         for end in ("from", "to"):
@@ -1564,7 +1566,19 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
                 report.error(file, f"{node}/{end}", "catalog.pin_unknown", why)
         a, b = net_of.get(w.get("from")), net_of.get(w.get("to"))
         if a is None or a != b:
-            report.warning(file, node, "bench.jumper_net", f"jumper {w.get('from')} to {w.get('to')}: its ends are not in one net")
+            report.error(file, node, "bench.jumper_net", f"jumper {w.get('from')} to {w.get('to')}: its ends are not in one net")
+        ends = (w.get("from", ""), w.get("to", ""))
+        pair = tuple(sorted(ends))
+        if ends[0] == ends[1] or pair in jumper_pairs:
+            report.error(file, node, "bench.duplicate", "jumper needs distinct terminals and must not duplicate another jumper")
+        jumper_pairs.add(pair)
+        for ref in ends:
+            iid = ref.partition(".")[0]
+            description = ctx.components.get(iid) or {}
+            if (description.get("bench") or {}).get("package") == "breadboard":
+                if ref in occupied_holes:
+                    report.error(file, node, "bench.occupied", f"hole {ref} already holds a jumper; choose another hole on its strip")
+                occupied_holes.add(ref)
     # probes
     for i, probe in enumerate(doc.get("probes") or []):
         node = ptr("probes", i)

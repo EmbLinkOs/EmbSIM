@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "RGB LED",
   "category": "indicators",
-  "description": "Four-lead RGB LED, common cathode or common anode: each colour lights when its pin and COM are at opposite levels; the board view shows the mixed colour.",
+  "description": "Four-lead RGB LED: three independent diode junctions sharing a cathode or anode. Electrical policy reports channel current, brightness and mixed color; other policies use explicitly ideal logic.",
   "keywords": [
     "led",
     "rgb",
@@ -14,13 +14,12 @@
     "common cathode",
     "common anode"
   ],
-  "family": "cmos_3v3",
   "pins": [
     {
       "name": "R",
       "number": 1,
       "model": {
-        "kind": "digital_in"
+        "kind": "passive"
       },
       "doc": "Red"
     },
@@ -28,7 +27,7 @@
       "name": "COM",
       "number": 2,
       "model": {
-        "kind": "digital_in"
+        "kind": "passive"
       },
       "doc": "Common cathode or anode"
     },
@@ -36,7 +35,7 @@
       "name": "G",
       "number": 3,
       "model": {
-        "kind": "digital_in"
+        "kind": "passive"
       },
       "doc": "Green"
     },
@@ -44,7 +43,7 @@
       "name": "B",
       "number": 4,
       "model": {
-        "kind": "digital_in"
+        "kind": "passive"
       },
       "doc": "Blue"
     }
@@ -58,6 +57,50 @@
       ],
       "default": "cathode",
       "doc": "Common cathode or common anode"
+    },
+    "red_vf": {
+      "type": "number",
+      "unit": "V",
+      "default": 1.8,
+      "min": 0.1,
+      "max": 10,
+      "advanced": true,
+      "doc": "Illustrative junction voltage at if_nom; not a manufacturer-qualified fit."
+    },
+    "green_vf": {
+      "type": "number",
+      "unit": "V",
+      "default": 2.1,
+      "min": 0.1,
+      "max": 10,
+      "advanced": true,
+      "doc": "Illustrative junction voltage at if_nom; not a manufacturer-qualified fit."
+    },
+    "blue_vf": {
+      "type": "number",
+      "unit": "V",
+      "default": 2.9,
+      "min": 0.1,
+      "max": 10,
+      "advanced": true,
+      "doc": "Illustrative junction voltage at if_nom; not a manufacturer-qualified fit."
+    },
+    "if_nom": {
+      "type": "number",
+      "unit": "A",
+      "default": 0.02,
+      "min": 1e-06,
+      "max": 1,
+      "advanced": true,
+      "doc": "Per-die nominal current for normalized luminance."
+    },
+    "rs": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 1,
+      "min": 0,
+      "advanced": true,
+      "doc": "Per-die series resistance; external current-limiting resistors are still required."
     }
   },
   "outputs": [
@@ -81,11 +124,49 @@
       "name": "color",
       "type": "string",
       "doc": "#rrggbb of the lit colours"
+    },
+    {
+      "name": "luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "red_luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "green_luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "blue_luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "red_current",
+      "type": "number",
+      "unit": "A"
+    },
+    {
+      "name": "green_current",
+      "type": "number",
+      "unit": "A"
+    },
+    {
+      "name": "blue_current",
+      "type": "number",
+      "unit": "A"
     }
   ],
   "model": {
-    "script": "model.lua",
-    "api": 1
+    "primitive": "rgb_led"
   },
   "artwork": {
     "svg": "artwork.svg",
@@ -100,11 +181,19 @@
         "format": "{}"
       },
       {
-        "output": "lit",
+        "output": "luminance",
         "selector": "#glow",
         "attr": "opacity",
-        "true": "0.9",
-        "false": "0"
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            0.9
+          ]
+        }
       }
     ]
   },
@@ -129,13 +218,13 @@
       ]
     },
     "electrical": {
-      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "claims": "Three Shockley junctions with independent forward characteristics and series resistance, common-anode/cathode orientation, channel currents, normalized luminance and illustrative color mixing.",
       "omissions": [
-        "forward voltages per colour",
-        "PWM dimming",
-        "colour mixing by intensity",
-        "supply current",
-        "output current limits"
+        "manufacturer qualification",
+        "temperature dependence and aging",
+        "reverse breakdown and damage",
+        "spectral/colorimetric calibration",
+        "perceptual PWM averaging"
       ],
       "validation": [
         "tests/*.json"
@@ -180,5 +269,8 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "functional": {
+    "primitive": "rgb_indicator"
+  }
 }

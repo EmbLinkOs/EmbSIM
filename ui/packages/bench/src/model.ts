@@ -4,6 +4,12 @@ export { PITCH, benchShape, artworkAnchors, dipPins, isSurfaceMount, type BenchS
 export {
   PLUG_TOLERANCE,
   addJumper,
+  dressJumper,
+  reconnectJumper,
+  jumperNet,
+  traceBench,
+  validateJumperStyle,
+  type JumperStyle,
   addNote,
   benchModel,
   footprint,

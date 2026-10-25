@@ -108,6 +108,7 @@ ranges, from the description (SPEC-005 §4).
 | `potentiometer` | `r` (Ω), `position` (0..1, interactive), `taper` (`linear`, `log`) | two resistors |
 | `diode` | `is` (1e-14 A), `n` (1), `rs` (0), `bv` (none), `ibv`, `cj0` (0), `vj`, `m`, `tt` (0) | Shockley with series `rs`, optional breakdown, junction and diffusion capacitance; limiting on the exponential (pnjlim) |
 | `led` | diode parameters with defaults per `color` (`red`, `green`, `blue`, `yellow`, `white`): `vf` typical and `is`/`n` fitted; `if_nom` (20 mA); `efficiency` curve | `observe` reports current and a normalised luminance (0..1 at `if_nom`, saturating) for the workbench |
+| `rgb_led` | `R`, `COM`, `G`, `B`; `common` cathode/anode; per-die `red_vf` (1.8), `green_vf` (2.1), `blue_vf` (2.9 V), `if_nom` (20 mA), `rs` (1 Ω) | three independently stamped Shockley junctions; channel currents, normalized luminance, lit booleans and illustrative `#rrggbb` mixing. Generic nominal fits, no manufacturer, spectral, temperature, damage or perceived PWM qualification |
 | `zener` | diode plus `vz`, `rz` | breakdown model |
 | `bjt_npn`, `bjt_pnp` | `is`, `bf` (100), `br` (1), `nf`, `nr`, `vaf` (none), `rb`, `rc`, `re` (0), `cje`, `cjc`, `tf`, `tr` (0) | Ebers-Moll with Early effect and optional charges; Gummel-Poon parameters (`ikf`, `ise`, `ne`) accepted and used when present |
 | `nmos`, `pmos` | level-1: `vto`, `kp`, `lambda`, `gamma`, `phi`, `w`, `l`, `cgs`, `cgd`, `cgb`; `rds` (none) | Shichman-Hodges with cutoff, linear, saturation; body tied to source unless a `B` pin is connected |
