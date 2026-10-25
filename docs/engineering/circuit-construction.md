@@ -76,6 +76,9 @@ copy, so failed proposals cannot delete a wire. Removal also handles wires betwe
 two loose components, without retaining a stale connection. The shared selection
 net drives tracing. The 3D renderer uses anchored polyline points and cancellable
 numbered handles; numeric drafts commit through the same project transaction.
+Cancellation restores picking matrices and DOM handle labels together, before
+the next gesture can target a stale position. The browser regression checks the
+restored target coordinates as well as the absence of a saved route edit.
 
 Native load and commit check bench invariants independently of UI guards. Python
 schema/semantic validation applies the same direct-wire rules; the built-in

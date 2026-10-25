@@ -984,6 +984,11 @@ export function Bench3D(props: Bench3DProps) {
         // Restore handles too, including the automatic route's temporary midpoint.
         const group = s.jumpers.children.find((g) => g.userData.jumperGroup === routeDrag!.jumper.index);
         for (const child of group?.children ?? []) if (typeof child.userData.routePoint === 'number') child.position.copy(v3(routeDrag.start[child.userData.routePoint]!));
+        // A cancelled route is immediately pickable at its restored position.
+        // Otherwise CSS labels and raycast matrices can retain the last drag
+        // until the next frame, making a quick second gesture hit stale data.
+        s.scene.updateMatrixWorld(true);
+        s.labels.render(s.scene, s.camera);
         routeDrag = null;
       }
       if (held) propsRef.current.onInput(held.target, held.input, false);

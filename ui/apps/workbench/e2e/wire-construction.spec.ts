@@ -64,6 +64,7 @@ test('route handles cancel without edits and commit once with exact undo', async
   await list.getByRole('button', { name: 'R2.1 → R2.2', exact: true }).click();
   const editor = list.getByRole('region', { name: 'Selected jumper' });
   const handle = page.getByLabel('Jumper 1 route point 1', { exact: true });
+  const original = (await handle.boundingBox())!;
   for (const cancellation of ['Escape', 'pointercancel']) {
     const box = (await handle.boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -74,11 +75,17 @@ test('route handles cancel without edits and commit once with exact undo', async
     else await page.locator('.eb-bench3d canvas').dispatchEvent('pointercancel');
     await page.mouse.up();
     await expect(editor.getByLabel('Point 1 X', { exact: true })).toHaveCount(0);
+    // Cancellation restores the visible target, not only the saved project.
+    await expect.poll(async () => {
+      const restored = await handle.boundingBox();
+      return restored ? Math.hypot(restored.x - original.x, restored.y - original.y) : Infinity;
+    }).toBeLessThan(1);
   }
   const box = (await handle.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 25, box.y + box.height / 2 + 15);
+  await expect(page.locator('.eb-connection-feedback')).toContainText('Route point 1');
   await page.mouse.up();
   await expect(editor.getByLabel('Point 1 X', { exact: true })).toBeVisible();
   await page.locator('.eb-bench3d').focus();
