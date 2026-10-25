@@ -1077,10 +1077,13 @@ a {
   font-size: var(--text-xs);
   color: var(--text-muted);
   flex: none;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .es-statusbar__item {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);

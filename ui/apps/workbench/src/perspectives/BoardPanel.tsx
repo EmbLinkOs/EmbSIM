@@ -13,7 +13,6 @@ import {
   addJumper,
   addNote,
   beams,
-  Bench3D,
   benchContext,
   benchModel,
   elevationOf,
@@ -28,14 +27,15 @@ import {
   unbuilt,
   WIRE_COLORS,
   type Bench3DHandle,
+  type Bench3DProps,
   type BenchPartView,
   type BenchTool,
   type InsertionPreview,
-} from '@embsim/bench';
+} from '@embsim/bench/model';
 import type { ArtworkState, BenchPlace, Hotspot, OutputValue, Project } from '@embsim/protocol';
 import { BoardView, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
 import { Box, Cable, CircuitBoard, List, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
 import { useProject, type CatalogEntry } from '../stores/project';
 import { useSelection } from '../stores/selection';
@@ -108,6 +108,21 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const [flat, setFlat] = useState(() => typeof document === 'undefined' || !webglAvailable());
   const [preferences, setPreferences] = useState(loadBenchPreferences);
   const [rendererFailed, setRendererFailed] = useState(false);
+  const [rendererLoadFailed, setRendererLoadFailed] = useState(false);
+  const [Renderer, setRenderer] = useState<ComponentType<Bench3DProps> | null>(null);
+  useEffect(() => {
+    if (flat || Renderer) return;
+    let active = true;
+    void import('@embsim/bench/renderer').then((module) => {
+      if (active) setRenderer(() => module.Bench3D);
+    }).catch(() => {
+      if (active) {
+        setRendererLoadFailed(true);
+        setFlat(true);
+      }
+    });
+    return () => { active = false; };
+  }, [flat, Renderer]);
   const preference = <K extends keyof BenchPreferences>(key: K, value: BenchPreferences[K]) => {
     setPreferences((previous) => {
       const next = { ...previous, [key]: value };
@@ -272,7 +287,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         value={flat ? '2d' : '3d'}
         onValueChange={(v) => { setRendererFailed(false); setFlat(v === '2d'); }}
         options={[
-          { value: '3d', label: '3D', title: 'The bench in 3D' },
+          { value: '3d', label: '3D', title: 'The bench in 3D', disabled: rendererLoadFailed },
           { value: '2d', label: '2D', title: 'The parts\' artwork, flat' },
         ]}
       />
@@ -345,8 +360,10 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       <div className="wb-bench-body">
       {flat ? (
         <Bench2D interactive={interactive} />
+      ) : !Renderer ? (
+        <div className="wb-bench-loading" role="status">Opening 3D bench…</div>
       ) : (
-        <Bench3D
+        <Renderer
           handle={handle}
           parts={parts}
           jumpers={jumpers}
@@ -392,6 +409,10 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       )}
       {preferences.list && list}
       </div>
+      {rendererLoadFailed && <div className="wb-bench-recovery" role="status">
+        The 3D bench could not be loaded. The 2D view and Parts & wiring remain available.
+        <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>Reload to retry 3D</Button>
+      </div>}
       {rendererFailed && <div className="wb-bench-recovery" role="status">3D rendering is unavailable. The 2D view and Parts & wiring remain available. Select 3D to retry.</div>}
       {note !== null && (
         <Dialog

@@ -80,146 +80,148 @@ export function Toolbar({ theme, commands = [] }: { theme: { resolved: 'dark' | 
 
   return (
     <div className="wb-toolbar" role="toolbar" aria-label="Workbench toolbar">
-      <div className="wb-toolbar__brand">
-        {projectItems.length ? (
-          <Menu
-            label={`Project menu${projectName ? `: ${projectName}` : ''}`}
-            items={projectItems}
-            trigger={
-              <>
-                <CircuitBoard aria-hidden="true" />
-                <span>EmbSIM</span>
-                {projectName && <span className="wb-toolbar__project">{projectName}</span>}
-                <ChevronDown aria-hidden="true" style={{ width: 14, height: 14, color: 'var(--text-muted)' }} />
-              </>
-            }
-          />
-        ) : (
-          <>
-            <CircuitBoard aria-hidden="true" />
-            <span>EmbSIM</span>
-          </>
-        )}
-        {isDemo && (
-          <Badge tone="accent" title="No engine is connected: an in-memory demo session answers the protocol">
-            Demo session
-          </Badge>
-        )}
-      </div>
-
-      <div className="wb-toolbar__group" role="group" aria-label="Transport">
-        <Tooltip content={running ? 'Pause' : 'Run'} shortcut="F5">
-          <IconButton label={running ? 'Pause' : 'Run'} variant={running ? 'default' : 'primary'} onClick={guard(controls.toggle)} disabled={!connected} data-testid="run-toggle">
-            {running ? <Pause /> : <Play />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip content="Step one event" shortcut="F6">
-          <IconButton label="Step" onClick={guard(() => controls.step('event'))} disabled={!connected || running}>
-            <StepForward />
-          </IconButton>
-        </Tooltip>
-        <Tooltip content={`Advance by ${advanceBy}`} shortcut="F7">
-          <IconButton label={`Advance by ${advanceBy}`} onClick={guard(() => controls.advance(advanceBy))} disabled={!connected || running || !advanceValid}>
-            <SkipForward />
-          </IconButton>
-        </Tooltip>
-        <Input
-          aria-label="Advance amount"
-          wrapperClassName="wb-advance"
-          mono
-          value={advanceBy}
-          onChange={(e) => setAdvanceBy(e.target.value)}
-          error={advanceValid ? undefined : 'Enter a duration such as 10ms'}
-          hint={undefined}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && advanceValid && !running) guard(() => controls.advance(advanceBy))();
-          }}
-        />
-        <Tooltip content="Reset: time to zero, inputs released">
-          <IconButton label="Reset" onClick={guard(controls.reset)} disabled={!connected}>
-            <RotateCcw />
-          </IconButton>
-        </Tooltip>
-      </div>
-
-      <div className="wb-toolbar__group">
-        <SegmentedControl
-          label="Speed"
-          size="sm"
-          value={String(speed)}
-          options={SPEEDS.map((s) => ({ value: s.value, label: s.label, title: s.speed === 0 ? 'Unbounded' : `${s.speed}× real time` }))}
-          onValueChange={(v) => guard(() => controls.setSpeed(Number(v)))()}
-        />
-      </div>
-
-      <Tooltip content={<span className="es-mono">{formatPsRaw(now)}</span>}>
-        <div className={`wb-clock${running ? ' wb-clock--running' : ''}`} tabIndex={0} role="timer" aria-label={`Virtual time ${formatTime(now)}, ${running ? 'running' : 'paused'}`} data-testid="clock">
-          <span className="wb-clock__state">{running ? 'run' : 'paused'}</span>
-          <span>{formatTime(now)}</span>
-          {rate !== null && (
-            <span className="wb-clock__rate" title="Virtual time against wall time" data-testid="clock-rate">
-              {rate >= 10 ? `${rate.toFixed(0)}×` : `${Math.round(rate * 100)}%`}
-            </span>
+      <div className="wb-toolbar__navigation">
+        <div className="wb-toolbar__brand">
+          {projectItems.length ? (
+            <Menu
+              label={`Project menu${projectName ? `: ${projectName}` : ''}`}
+              items={projectItems}
+              trigger={
+                <>
+                  <CircuitBoard aria-hidden="true" />
+                  <span>EmbSIM</span>
+                  {projectName && <span className="wb-toolbar__project">{projectName}</span>}
+                  <ChevronDown aria-hidden="true" style={{ width: 14, height: 14, color: 'var(--text-muted)' }} />
+                </>
+              }
+            />
+          ) : (
+            <>
+              <CircuitBoard aria-hidden="true" />
+              <span>EmbSIM</span>
+            </>
           )}
         </div>
-      </Tooltip>
-
-      <div className="wb-toolbar__group">
-        <Select
-          label="Fidelity policy"
-          size="sm"
-          value={policy}
-          disabled={running || !connected}
-          options={[
-            { value: 'functional', label: 'Functional' },
-            { value: 'timed', label: 'Timed' },
-            { value: 'electrical', label: 'Electrical' },
-          ]}
-          onValueChange={(v) => guard(() => controls.setPolicy(v as Policy))()}
+        <SegmentedControl<Perspective>
+          className="wb-toolbar__perspectives"
+          label="Perspective"
+          value={perspective}
+          onValueChange={setPerspective}
+          options={PERSPECTIVES.map((p) => ({ value: p, label: <span className="wb-toolbar__label-text">{perspectiveMeta(p).label}</span>, icon: perspectiveMeta(p).icon, title: `${perspectiveMeta(p).label} (${perspectiveMeta(p).shortcut})` }))}
         />
-      </div>
-
-      {perspective === 'design' && (
-        <div className="wb-toolbar__group" role="group" aria-label="Edit">
-          <Tooltip content={undoLabel ? `Undo ${undoLabel}` : 'Undo'} shortcut="Ctrl+Z">
-            <IconButton label="Undo" disabled={!canUndo} onClick={guard(() => stack.undo())}>
-              <Undo2 />
+        <div className="wb-toolbar__group wb-toolbar__utilities">
+          <Tooltip content={`${summary.errors} errors, ${summary.warnings} warnings, ${summary.infos} notes`}>
+            <IconButton label={`Diagnostics: ${diagnostics.length} records, ${unread} new`} className="wb-diag-badge" onClick={() => setDiagnosticsOpen(true)}>
+              <AlertTriangle />
+              {unread > 0 && <span className={`wb-diag-badge__count${summary.errors ? ' wb-diag-badge__count--error' : ''}`}>{unread > 99 ? '99+' : unread}</span>}
             </IconButton>
           </Tooltip>
-          <Tooltip content={redoLabel ? `Redo ${redoLabel}` : 'Redo'} shortcut="Ctrl+Shift+Z">
-            <IconButton label="Redo" disabled={!canRedo} onClick={guard(() => stack.redo())}>
-              <Redo2 />
+          <Tooltip content={theme.resolved === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
+            <IconButton label={theme.resolved === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} onClick={theme.toggle}>
+              {theme.resolved === 'dark' ? <Sun /> : <Moon />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Command palette" shortcut="Ctrl+K">
+            <Button variant="ghost" icon={<CommandIcon />} onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
+              <span className="wb-toolbar__label-text">Commands</span>
+            </Button>
+          </Tooltip>
+        </div>
+      </div>
+      <div className="wb-toolbar__simulation" role="group" aria-label="Simulation controls">
+        <div className="wb-toolbar__group" role="group" aria-label="Transport">
+          <Tooltip content={running ? 'Pause' : 'Run'} shortcut="F5">
+            <IconButton label={running ? 'Pause' : 'Run'} variant={running ? 'default' : 'primary'} onClick={guard(controls.toggle)} disabled={!connected} data-testid="run-toggle">
+              {running ? <Pause /> : <Play />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Step one event" shortcut="F6">
+            <IconButton label="Step" onClick={guard(() => controls.step('event'))} disabled={!connected || running}>
+              <StepForward />
+            </IconButton>
+          </Tooltip>
+          <Tooltip content={`Advance by ${advanceBy}`} shortcut="F7">
+            <IconButton label={`Advance by ${advanceBy}`} onClick={guard(() => controls.advance(advanceBy))} disabled={!connected || running || !advanceValid}>
+              <SkipForward />
+            </IconButton>
+          </Tooltip>
+          <Input
+            aria-label="Advance amount"
+            wrapperClassName="wb-advance"
+            mono
+            value={advanceBy}
+            onChange={(e) => setAdvanceBy(e.target.value)}
+            error={advanceValid ? undefined : 'Enter a duration such as 10ms'}
+            hint={undefined}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && advanceValid && !running) guard(() => controls.advance(advanceBy))();
+            }}
+          />
+          <Tooltip content="Reset: time to zero, inputs released">
+            <IconButton label="Reset" onClick={guard(controls.reset)} disabled={!connected}>
+              <RotateCcw />
             </IconButton>
           </Tooltip>
         </div>
-      )}
 
-      <div className="wb-toolbar__spacer" />
+        <div className="wb-toolbar__group">
+          <SegmentedControl
+            label="Speed"
+            size="sm"
+            value={String(speed)}
+            options={SPEEDS.map((s) => ({ value: s.value, label: s.label, title: s.speed === 0 ? 'Unbounded' : `${s.speed}× real time` }))}
+            onValueChange={(v) => guard(() => controls.setSpeed(Number(v)))()}
+          />
+        </div>
 
-      <SegmentedControl<Perspective>
-        label="Perspective"
-        value={perspective}
-        onValueChange={setPerspective}
-        options={PERSPECTIVES.map((p) => ({ value: p, label: <span className="wb-toolbar__label-text">{perspectiveMeta(p).label}</span>, icon: perspectiveMeta(p).icon, title: `${perspectiveMeta(p).label} (${perspectiveMeta(p).shortcut})` }))}
-      />
+        <Tooltip content={<span className="es-mono">{formatPsRaw(now)}</span>}>
+          <div className={`wb-clock${running ? ' wb-clock--running' : ''}`} tabIndex={0} role="timer" aria-label={`Virtual time ${formatTime(now)}, ${running ? 'running' : 'paused'}`} data-testid="clock">
+            <span className="wb-clock__state">{running ? 'run' : 'paused'}</span>
+            <span>{formatTime(now)}</span>
+            {rate !== null && (
+              <span className="wb-clock__rate" title="Virtual time against wall time" data-testid="clock-rate">
+                {rate >= 10 ? `${rate.toFixed(0)}×` : `${Math.round(rate * 100)}%`}
+              </span>
+            )}
+          </div>
+        </Tooltip>
 
-      <div className="wb-toolbar__group">
-        <Tooltip content={`${summary.errors} errors, ${summary.warnings} warnings, ${summary.infos} notes`}>
-          <IconButton label={`Diagnostics: ${diagnostics.length} records, ${unread} new`} className="wb-diag-badge" onClick={() => setDiagnosticsOpen(true)}>
-            <AlertTriangle />
-            {unread > 0 && <span className={`wb-diag-badge__count${summary.errors ? ' wb-diag-badge__count--error' : ''}`}>{unread > 99 ? '99+' : unread}</span>}
-          </IconButton>
-        </Tooltip>
-        <Tooltip content={theme.resolved === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
-          <IconButton label={theme.resolved === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} onClick={theme.toggle}>
-            {theme.resolved === 'dark' ? <Sun /> : <Moon />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip content="Command palette" shortcut="Ctrl+K">
-          <Button variant="ghost" icon={<CommandIcon />} onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
-            <span className="wb-toolbar__label-text">Commands</span>
-          </Button>
-        </Tooltip>
+        <div className="wb-toolbar__group">
+          <Select
+            label="Fidelity policy"
+            size="sm"
+            value={policy}
+            disabled={running || !connected}
+            options={[
+              { value: 'functional', label: 'Functional' },
+              { value: 'timed', label: 'Timed' },
+              { value: 'electrical', label: 'Electrical' },
+            ]}
+            onValueChange={(v) => guard(() => controls.setPolicy(v as Policy))()}
+          />
+        </div>
+
+        {perspective === 'design' && (
+          <div className="wb-toolbar__group" role="group" aria-label="Edit">
+            <Tooltip content={undoLabel ? `Undo ${undoLabel}` : 'Undo'} shortcut="Ctrl+Z">
+              <IconButton label="Undo" disabled={!canUndo} onClick={guard(() => stack.undo())}>
+                <Undo2 />
+              </IconButton>
+            </Tooltip>
+            <Tooltip content={redoLabel ? `Redo ${redoLabel}` : 'Redo'} shortcut="Ctrl+Shift+Z">
+              <IconButton label="Redo" disabled={!canRedo} onClick={guard(() => stack.redo())}>
+                <Redo2 />
+              </IconButton>
+            </Tooltip>
+          </div>
+        )}
+        <div className="wb-toolbar__session">
+          {isDemo && (
+            <Badge tone="accent" title="No engine is connected: an in-memory demo session answers the protocol">
+              Demo session
+            </Badge>
+          )}
+        </div>
       </div>
     </div>
   );

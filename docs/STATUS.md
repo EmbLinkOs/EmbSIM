@@ -5,6 +5,32 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Responsive workspace and deferred bench loading (2026-10-25)
+
+Branch `ui/workspace-layout`, based on main `896e4f0`, separates the project menu,
+perspective navigation and utilities from the simulation controls. Long project
+names truncate within their menu instead of intercepting navigation. The shell
+fits compact windows; dock minima scale only when space is insufficient, retain
+saved proportions/fold choices, and restore them as space returns. Split resizing
+starts from the displayed pane edges. Status details remain keyboard-scrollable.
+The schematic ribbon uses a more compact height and stays out of Bench view.
+
+The pure bench model is separate from the optional 3D renderer. Schematic startup
+does not request the renderer; loading retains keyboard selection and a later
+choice of 2D. Asset failure retains 2D and offers a fresh-page reload, separately
+from in-place context-loss retry. The initial JS entry changes from 1,550.42 to
+909.17 kB (estimated gzip 466.36 to 300.17 kB); 640.97 kB is deferred until 3D
+is requested. Frame-time and wall-clock startup qualification remain open.
+
+[Workspace behavior and limits](engineering/workspace-layout.md),
+[bundle evidence](engineering/bench-loading.md) and the [gallery](gallery/README.md)
+record the scope. Local typecheck, lint, production build, 232 unit tests across
+49 files, all 27 browser workflows, the affected follow-up workflows, 790
+schema/catalog files and documentation integrity pass. A fresh GCC Debug CLI
+build validates the Uno project and serves its deferred renderer without browser
+page errors. Hosted platform checks are recorded on the milestone PR; these are
+client viewing/layout changes, not new simulation models or hardware qualification.
+
 ## Named surface-mount package milestone
 
 Branch `feat/named-package-bodies` adds reusable SOT-23 and SOT-223 procedural

@@ -148,3 +148,17 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-18
 **Verification.** Per-leg/occupancy/atomic-swap/rotation fixtures; browser insertion rejection, free-strip construction, exact numeric carriage and undo, and occupied jumper rejection; native protocol regression.
 **Trace.** SPEC-011 Physical assembly authoring; ADR-027; ADR-030
+
+### UI-021  Deferred 3D loading and asset recovery
+**Statement.** The schematic shall open without requesting optional 3D renderer assets. Opening the 3D bench shall announce loading and retain part selection through its keyboard list. Failed renderer downloads shall preserve the 2D view and keyboard editor with an explicit reload action; successful renderer initialization/context recovery shall remain independently retryable. Loading shall not alter project connectivity or simulation state.
+**Rationale.** Optional 3D geometry must not delay ordinary circuit work or make a partial network failure disable the editor.
+**Status.** Accepted 2026-10-18
+**Verification.** Browser intercepted-request fixtures prove no renderer request during schematic use, selection across a delayed download, 2D/keyboard fallback and recovery after a fresh document load. Production bundle measurements are recorded separately from frame-time qualification.
+**Trace.** SPEC-011 Renderer loading; ADR-027; ADR-028; ADR-030
+
+### UI-022  Reachable global navigation and constrained workspaces
+**Statement.** Global perspective navigation, project and utility actions shall remain reachable independently of transport settings in compact desktop windows. Long project names shall stay inside their allocated header region. Dock panels shall fit the available extent, scale requested minima only when needed, preserve stored proportions/fold choices through viewport changes, and resize from their visible boundaries. Status details shall remain keyboard-scrollable.
+**Rationale.** A window resize or project name must not hide the application controls or silently replace a configured workspace.
+**Status.** Accepted 2026-10-25
+**Verification.** Browser long-name/all-perspective/utility workflows at 768, 900 and 1440 px; open-panel bounds, unchanged stored weights, restored proportions, constrained-edge keyboard resize and reload; actual light/dark/bench captures.
+**Trace.** SPEC-011 Global workspace; ADR-008; ADR-028; ADR-030

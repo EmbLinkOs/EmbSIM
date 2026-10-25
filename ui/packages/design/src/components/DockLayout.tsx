@@ -111,6 +111,21 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
   useEffect(() => save(storageKey, state), [storageKey, state]);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const [extent, setExtent] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setExtent((previous) => previous.width === el.clientWidth && previous.height === el.clientHeight
+      ? previous : { width: el.clientWidth, height: el.clientHeight });
+    measure();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure);
+      return () => window.removeEventListener('resize', measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const [dragging, setDragging] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
@@ -118,32 +133,44 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
   const isCollapsed = (item: DockItem) => Boolean(item.collapsible && !item.bare && (state.collapsed?.[item.id] ?? item.defaultCollapsed ?? false));
   const setCollapsed = (id: string, folded: boolean) => setState((s) => ({ ...s, collapsed: { ...(s.collapsed ?? {}), [id]: folded } }));
   const folded = ordered.filter(isCollapsed).length;
+  const gutters = ordered.filter((item, index) => !isCollapsed(item) && ordered[index + 1] && !isCollapsed(ordered[index + 1]!)).length;
+  const minimum = ordered.filter((item) => !isCollapsed(item)).reduce((sum, item) => sum + (item.minSize ?? 120), 0);
+  const axisSize = direction === 'row' ? extent.width : extent.height;
+  // Honor the requested minima whenever they fit. A smaller viewport temporarily
+  // scales them without rewriting the user's relative sizes or folded choices.
+  const minimumScale = axisSize > 0 && minimum > 0 ? Math.min(1, Math.max(0, axisSize - folded * RAIL - gutters * 4) / minimum) : 1;
 
   const resize = useCallback(
     (index: number, deltaPx: number) => {
       const el = containerRef.current;
       if (!el) return;
-      const total = (direction === 'row' ? el.clientWidth : el.clientHeight) - folded * RAIL;
+      const total = (direction === 'row' ? el.clientWidth : el.clientHeight) - folded * RAIL - gutters * 4;
       if (total <= 0) return;
+      const sizes = new Map([...el.querySelectorAll<HTMLElement>('.es-dock__pane')]
+        .filter((pane) => pane.closest('.es-dock') === el)
+        .map((pane) => [pane.dataset.dockId, direction === 'row' ? pane.clientWidth : pane.clientHeight]));
       setState((s) => {
         const a = ordered[index];
         const b = ordered[index + 1];
         if (!a || !b) return s;
         const sum = ordered.filter((it) => !isCollapsed(it)).reduce((acc, it) => acc + (s.weights[it.id] ?? 1), 0);
         const pxPerWeight = total / sum;
-        const wa = (s.weights[a.id] ?? 1) * pxPerWeight;
-        const wb = (s.weights[b.id] ?? 1) * pxPerWeight;
-        const minA = a.minSize ?? 120;
-        const minB = b.minSize ?? 120;
+        const wa = sizes.get(a.id) ?? (s.weights[a.id] ?? 1) * pxPerWeight;
+        const wb = sizes.get(b.id) ?? (s.weights[b.id] ?? 1) * pxPerWeight;
+        const scale = minimum > 0 ? Math.min(1, total / minimum) : 1;
+        const minA = (a.minSize ?? 120) * scale;
+        const minB = (b.minSize ?? 120) * scale;
         let d = deltaPx;
         if (wa + d < minA) d = minA - wa;
         if (wb - d < minB) d = wb - minB;
-        return { ...s, weights: { ...s.weights, [a.id]: (wa + d) / pxPerWeight, [b.id]: (wb - d) / pxPerWeight } };
+        const weights = { ...s.weights };
+        for (const item of ordered) if (!isCollapsed(item) && sizes.has(item.id)) weights[item.id] = sizes.get(item.id)! / pxPerWeight;
+        return { ...s, weights: { ...weights, [a.id]: (wa + d) / pxPerWeight, [b.id]: (wb - d) / pxPerWeight } };
       });
     },
     // isCollapsed reads state.collapsed and the items, which `ordered` and `folded` follow
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [direction, ordered, folded],
+    [direction, ordered, folded, gutters, minimum],
   );
 
   const onGutterPointerDown = (index: number) => (e: React.PointerEvent<HTMLDivElement>) => {
@@ -214,7 +241,7 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
         if (collapsed) {
           const Unfold = direction === 'row' ? (index === 0 ? ChevronRight : ChevronLeft) : ChevronDown;
           return (
-            <div key={item.id} className={cx('es-dock__pane', 'es-dock__pane--collapsed')} style={{ flex: `0 0 ${RAIL}px` }}>
+            <div key={item.id} className={cx('es-dock__pane', 'es-dock__pane--collapsed')} data-dock-id={item.id} style={{ flex: `0 0 ${RAIL}px` }}>
               <button
                 type="button"
                 className="es-dock__rail"
@@ -274,7 +301,8 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
           <div key={item.id} style={{ display: 'contents' }}>
             <div
               className="es-dock__pane"
-              style={{ flex: `${weight} 1 0px`, minWidth: direction === 'row' ? item.minSize ?? 120 : 0, minHeight: direction === 'column' ? item.minSize ?? 120 : 0 }}
+              data-dock-id={item.id}
+              style={{ flex: `${weight} 1 0px`, minWidth: direction === 'row' ? (item.minSize ?? 120) * minimumScale : 0, minHeight: direction === 'column' ? (item.minSize ?? 120) * minimumScale : 0 }}
             >
               <div
                 className="es-dock__slot"

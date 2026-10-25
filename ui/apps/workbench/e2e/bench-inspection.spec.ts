@@ -5,7 +5,8 @@ import { expect, test, type Page } from '@playwright/test';
 async function openBench(page: Page) {
   await page.goto('/?mock=1');
   await page.getByRole('radio', { name: 'Bench', exact: true }).click();
-  await expect(page.locator('.eb-bench3d canvas')).toBeVisible();
+  // First entry now includes the optional chunk and a cold software-WebGL context.
+  await expect(page.locator('.eb-bench3d canvas')).toBeVisible({ timeout: 15_000 });
 }
 async function viewMenu(page: Page) {
   await page.locator('.wb-bench-view-menu summary').click();

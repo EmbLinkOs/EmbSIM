@@ -2,7 +2,13 @@
 
 In Design, select **Bench** above the canvas. The bench and schematic edit the
 same project connections; changing views does not create a second circuit.
-The Run perspective shows the bench with live controls.
+The Run perspective shows the bench with live controls. The schematic opens
+without downloading the optional 3D scene. When you open the bench, **Opening 3D
+bench…** announces that loading is underway; **Parts & wiring** remains usable,
+and its selected part stays selected when the scene appears.
+
+See [Arrange your workspace](workspace.md) for global navigation, panel sizing
+and keyboard access to status details.
 
 ## Inspect the circuit
 
@@ -109,3 +115,8 @@ needs correction against manufacturer evidence. Generic lead anchors may sit ins
 the owning body; occlusion rejection excludes other components and is not a
 mechanical contact-accessibility check. Instrument loading and connector
 compatibility follow their separate model fidelity, not the quality of the render.
+
+If the 3D files cannot be loaded, the bench switches to 2D and keeps the keyboard
+editor available. **Reload to retry 3D** starts a fresh page request; check the
+connection if it fails again. This differs from a graphics-context failure after
+loading, where selecting **3D** retries the renderer without reloading the page.
