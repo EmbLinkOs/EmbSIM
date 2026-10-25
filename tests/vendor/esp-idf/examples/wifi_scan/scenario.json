@@ -1,0 +1,162 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "wifi_scan",
+ "until": "3500ms",
+ "description": "wifi/scan: ESP-IDF's Wi-Fi driver on a first start: phy_init finds no stored RF calibration, calibrates in full (the PHY's measurements answer as an ideal radio) and saves it to NVS; the station starts with the eFuse MAC; an active scan of every channel sends probe requests, which both access points of the room answer, and finds them, strongest first: HomeNet (WPA2-Personal, CCMP, channel 6) 3 m away at -30 dBm and CoffeeShop (open, channel 1) 12 m away at -42 dBm, the free-space path loss at 2437 and 2412 MHz.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "phy",
+   "at": "700ms",
+   "probe": "console",
+   "expect": {
+    "contains": "phy_init: phy_version 1180,01f2a49"
+   }
+  },
+  {
+   "id": "full-calibration",
+   "at": "700ms",
+   "probe": "console",
+   "expect": {
+    "contains": "failed to load RF calibration data (0x1102), falling back to full calibration"
+   }
+  },
+  {
+   "id": "saved",
+   "at": "700ms",
+   "probe": "console",
+   "expect": {
+    "contains": "saving new calibration data because of checksum failure, mode(2)"
+   }
+  },
+  {
+   "id": "station",
+   "at": "700ms",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:mode : sta (7c:df:a1:45:6d:62)"
+   }
+  },
+  {
+   "id": "scanning",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Total APs scanned"
+   }
+  },
+  {
+   "id": "scanned",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Total APs scanned = 2, actual AP number ap_info holds = 2\r\n"
+   }
+  },
+  {
+   "id": "home-ssid",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: SSID \t\tHomeNet\r\n"
+   }
+  },
+  {
+   "id": "home-rssi",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: RSSI \t\t-30\r\n"
+   }
+  },
+  {
+   "id": "home-auth",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Authmode \tWIFI_AUTH_WPA2_PSK\r\n"
+   }
+  },
+  {
+   "id": "home-cipher",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Pairwise Cipher \tWIFI_CIPHER_TYPE_CCMP\r\n"
+   }
+  },
+  {
+   "id": "home-channel",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Channel \t\t6\r\n"
+   }
+  },
+  {
+   "id": "coffee-ssid",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: SSID \t\tCoffeeShop\r\n"
+   }
+  },
+  {
+   "id": "coffee-rssi",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: RSSI \t\t-42\r\n"
+   }
+  },
+  {
+   "id": "coffee-auth",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Authmode \tWIFI_AUTH_OPEN\r\n"
+   }
+  },
+  {
+   "id": "coffee-channel",
+   "at": "3200ms",
+   "probe": "console",
+   "expect": {
+    "contains": "scan: Channel \t\t1\r\n"
+   }
+  },
+  {
+   "id": "home-answered",
+   "at": "3200ms",
+   "probe": "ap1_probes",
+   "expect": {
+    "min": 1
+   }
+  },
+  {
+   "id": "coffee-answered",
+   "at": "3200ms",
+   "probe": "ap2_probes",
+   "expect": {
+    "min": 1
+   }
+  },
+  {
+   "id": "no-pll-timeout",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "pll_cal exceeds"
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "pwr_currentconsumption",
+  "until": "3.3s",
+  "description": "PWR_CurrentConsumption in Sleep mode (stm32f4xx_lp_modes.h's own choice). LD2 toggles once a second while B1 is up; B1 is read after each toggle's second, held from 0.5 to 1.2 s; released, the pins go analog (LD2 dark), SysTick is suspended and WFI sleeps. B1 pressed again wakes the core by EXTI15_10, whose callback sets uwCounter to 2, and LD2 toggles every 100 ms.",
+  "inputs": [
+    {"at": "0.5s", "target": "B1.B1", "input": "pressed", "value": true},
+    {"at": "1.2s", "target": "B1.B1", "input": "pressed", "value": false},
+    {"at": "2.0s", "target": "B1.B1", "input": "pressed", "value": true},
+    {"at": "2.1s", "target": "B1.B1", "input": "pressed", "value": false}
+  ],
+  "assertions": [
+    {"id": "slow-blink", "between": ["100ms", "0.95s"], "probe": "led", "expect": {"logic": "1"}},
+    {"id": "dark-asleep", "between": ["1.3s", "1.99s"], "probe": "led", "expect": {"logic": "0"}},
+    {"id": "still-asleep", "at": "1.99s", "probe": "counter", "expect": {"equals": 0}},
+    {"id": "woken-by-b1", "at": "2.05s", "probe": "counter", "expect": {"equals": 2}},
+    {"id": "fast-blink", "between": ["2.2s", "3.2s"], "probe": "led", "expect": {"edges": 10}}
+  ]
+}

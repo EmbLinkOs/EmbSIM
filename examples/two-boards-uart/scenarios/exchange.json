@@ -30,6 +30,14 @@
       }
     },
     {
+      "id": "not-third-yet",
+      "at": "100ms",
+      "probe": "uno",
+      "expect": {
+        "not_contains": "ok 3"
+      }
+    },
+    {
       "id": "third-ok",
       "at": "400ms",
       "probe": "uno",

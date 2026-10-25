@@ -19,7 +19,7 @@ static const uint32_t K[64] = {
 
 static uint32_t rotr(uint32_t x, int n) { return x >> n | x << (32 - n); }
 
-static void block(esk_sha256 *c, const unsigned char *p)
+void esk_sha256_block(uint32_t hv[8], const unsigned char *p)
 {
     uint32_t w[64], a, b, d, e, f, g, h, cc, t1, t2;
     int i;
@@ -31,14 +31,14 @@ static void block(esk_sha256 *c, const unsigned char *p)
         uint32_t s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >> 10);
         w[i] = w[i - 16] + s0 + w[i - 7] + s1;
     }
-    a = c->h[0];
-    b = c->h[1];
-    cc = c->h[2];
-    d = c->h[3];
-    e = c->h[4];
-    f = c->h[5];
-    g = c->h[6];
-    h = c->h[7];
+    a = hv[0];
+    b = hv[1];
+    cc = hv[2];
+    d = hv[3];
+    e = hv[4];
+    f = hv[5];
+    g = hv[6];
+    h = hv[7];
     for (i = 0; i < 64; i++) {
         t1 = h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i];
         t2 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & cc) ^ (b & cc));
@@ -51,15 +51,17 @@ static void block(esk_sha256 *c, const unsigned char *p)
         b = a;
         a = t1 + t2;
     }
-    c->h[0] += a;
-    c->h[1] += b;
-    c->h[2] += cc;
-    c->h[3] += d;
-    c->h[4] += e;
-    c->h[5] += f;
-    c->h[6] += g;
-    c->h[7] += h;
+    hv[0] += a;
+    hv[1] += b;
+    hv[2] += cc;
+    hv[3] += d;
+    hv[4] += e;
+    hv[5] += f;
+    hv[6] += g;
+    hv[7] += h;
 }
+
+static void block(esk_sha256 *c, const unsigned char *p) { esk_sha256_block(c->h, p); }
 
 void esk_sha256_init(esk_sha256 *c)
 {

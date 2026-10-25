@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "quiet",
+  "description": "With nothing advertising it hears nothing.",
+  "policy": "functional",
+  "until": "200ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ble_scanner"
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.devices": {
+      "at": "200ms",
+      "equals": 0
+    }
+  }
+}

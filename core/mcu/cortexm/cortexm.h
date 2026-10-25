@@ -42,11 +42,37 @@ enum { EXC_RESET = 1, EXC_NMI, EXC_HARD, EXC_MEM, EXC_BUS, EXC_USAGE,
 #define UFSR_DIVBYZERO  (1u << 25)
 #define BFSR_IBUSERR    (1u << 8)
 #define BFSR_PRECISERR  (1u << 9)
+#define BFSR_UNSTKERR   (1u << 11)
+#define BFSR_STKERR     (1u << 12)
+#define BFSR_LSPERR     (1u << 13)
+#define MMFSR_IACCVIOL  (1u << 0)
+#define MMFSR_DACCVIOL  (1u << 1)
+#define MMFSR_MUNSTKERR (1u << 3)
+#define MMFSR_MSTKERR   (1u << 4)
+#define MMFSR_MLSPERR   (1u << 5)
+#define MMFSR_MMARVALID (1u << 7)
+
+/* what the core's memory access is for: its faults are reported apart
+ * (a stacking fault is MSTKERR or STKERR, not DACCVIOL), and the vector
+ * table is always read through the default memory map */
+enum { ACC_NORMAL, ACC_STACK, ACC_UNSTACK, ACC_LAZYFP, ACC_VECTOR };
+
+#define MPU_MAX_REGIONS 16
 
 #define NEXC 256                    /* 16 system exceptions + 240 IRQs */
 
 /* fault_exc's value for an access a debugger's watchpoint stops before */
 #define FAULT_WATCH (-1)
+
+/* decoded code (step): an instruction fetched from read-only memory, kept
+ * by its halfword address while its region's gen holds */
+#define ESK_CM_DC 4096
+struct esk_cm_dc {
+    const struct esk_region *r; /* the region it came from; 0: empty */
+    u32 gen, pc;
+    u16 h0, h1;
+    u8 size, cost, br;
+};
 
 struct esk_cm_state {
     struct esk_cpu cpu;                 /* the interface; first */
@@ -89,6 +115,19 @@ struct esk_cm_state {
     u32 vtor, aircr_prigroup, ccr, shcsr, cfsr, hfsr, mmfar, bfar, scr;
     u32 cpacr, fpccr, fpcar, fpdscr;
     u32 demcr;
+
+    /* the MPU (mpu.c): PMSAv7 on ARMv7-M, PMSAv6 on ARMv6-M; no regions
+     * when the part has none. mpu_on caches CTRL.ENABLE for the hot path;
+     * `access` is what the access in progress is for, and force_unpriv
+     * makes it unprivileged whatever the mode (LDRT, STRT, and lazy FP
+     * preservation of an unprivileged thread's context) */
+    int mpu_regions;
+    u32 mpu_ctrl, mpu_rnr;
+    u32 mpu_rbar[MPU_MAX_REGIONS], mpu_rasr[MPU_MAX_REGIONS];
+    int mpu_on;
+    int access;
+    int force_unpriv;
+    struct esk_cm_dc *dc;           /* ESK_CM_DC entries */
     char xml[4096];                 /* the target description, built on demand */
 
     /* the event register (WFE and SEV), and whether the wait in progress
@@ -123,6 +162,10 @@ u32 esk_cm_prio_mask(struct esk_cm_state *cs);
 int esk_cm_exec_prio(struct esk_cm_state *cs);
 int esk_cm_cond_passed(struct esk_cm_state *cs, u32 cond);
 void esk_cm_it_advance(struct esk_cm_state *cs);
+/* SCR's bits */
+#define SCR_SLEEPONEXIT 0x02u
+#define SCR_SLEEPDEEP 0x04u
+#define SCR_SEVONPEND 0x10u
 int esk_cm_wfx_idle(struct esk_cm_state *cs);
 /* WFI (wfe 0) and WFE (wfe 1): the core waits, unless an exception is
  * pending or, for WFE, the event register is set (it is cleared); SEV */
@@ -131,6 +174,17 @@ void esk_cm_sev(struct esk_cm_state *cs);
 /* a core's state without its devices on the bus: smp.c's second core */
 struct esk_cm_state *esk_cm_new(struct esk_mach *m, const char *model, int prio_bits);
 void esk_cm_semihost(struct esk_cm_state *cs);
+
+/* mpu.c */
+/* whether an access of n bytes at a is refused (the fault raised): data
+ * when exec is 0, an instruction fetch when it is 1 */
+int esk_cm_mpu_denied(struct esk_cm_state *cs, u32 a, int n, int write, int exec);
+/* the default memory map's execute-never regions */
+int esk_cm_default_xn(u32 a);
+int esk_cm_mpu_read(struct esk_cm_state *cs, u32 off, u32 *v);
+int esk_cm_mpu_write(struct esk_cm_state *cs, u32 off, u32 v);
+/* the privilege an access is checked with */
+int esk_cm_access_privileged(struct esk_cm_state *cs);
 
 /* cortexm-thumb.c */
 void esk_cm_exec16(struct esk_cm_state *cs, u32 h);
@@ -164,6 +218,8 @@ ES_INLINE u32 esk_cm_ld(struct esk_cm_state *cs, u32 a, int n)
 {
     if (cs->fault_exc)
         return 0;
+    if (cs->mpu_on && esk_cm_mpu_denied(cs, a, n, 0, 0))
+        return 0;
     struct esk_bus *b = &cs->sim->bus;
     if (!b->nwatch) {
         struct esk_region *r = esk_bus_region(b, a, (u32)n);
@@ -177,6 +233,8 @@ ES_INLINE void esk_cm_st(struct esk_cm_state *cs, u32 a, int n, u32 v)
 {
     if (cs->fault_exc)
         return;
+    if (cs->mpu_on && esk_cm_mpu_denied(cs, a, n, 1, 0))
+        return;
     struct esk_bus *b = &cs->sim->bus;
     if (!b->nwatch) {
         struct esk_region *r = esk_bus_region(b, a, (u32)n);
@@ -185,6 +243,8 @@ ES_INLINE void esk_cm_st(struct esk_cm_state *cs, u32 a, int n, u32 v)
                 cs->excl_valid = 0;
             if (!r->rom)
                 esk_mem_wr_le(r->mem + (a - r->base), n, v);
+            else if (b->rom_write)
+                b->rom_write(b->rom_write_ctx, r, a, n, v); /* the flash interface's */
             return;
         }
     }
@@ -256,6 +316,9 @@ extern const struct esk_dev_ops esk_systick_ops, esk_scs_ops, esk_dwt_ops;
 void *esk_systick_create(struct esk_mach *m);
 /* where the SysTick exception goes: `pend(ctx, 15)`, else the machine's core */
 void esk_systick_target(void *systick, void (*pend)(void *ctx, int n), void *ctx);
+/* the part's reference clock (processor cycles per tick, 0 for none) and
+ * CALIB's value */
+void esk_systick_config(void *systick, u32 ref_div, u32 calib);
 void *esk_dwt_create(struct esk_mach *m);
 
 #endif

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "hal_timebase_tim",
+  "until": "3.2s",
+  "description": "HAL_TimeBase_TIM: TIM6 is the HAL's 1 ms time base; LD2 toggles every HAL_Delay(1000). B1 suspends the tick (TIM6's interrupt off), so LD2 stops; a second press resumes it.",
+  "inputs": [
+    {
+      "at": "1.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.55s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "2.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2.55s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "blink",
+      "between": [
+        "50ms",
+        "1.45s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 1
+      }
+    },
+    {
+      "id": "suspended",
+      "between": [
+        "1.6s",
+        "2.45s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 0
+      }
+    }
+  ]
+}

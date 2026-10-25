@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "finds",
+  "description": "Its first scan (13 channels of 40 ms) finds the access point on channel 6 by its probe response.",
+  "policy": "functional",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wifi_scanner"
+      },
+      {
+        "id": "AP",
+        "component": "emblink/wifi_ap",
+        "params": {
+          "ssid": "Lab",
+          "password": "secret123",
+          "channel": 6,
+          "bssid": "02:e5:00:00:00:01"
+        }
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.networks": {
+      "at": "600ms",
+      "equals": 1
+    },
+    "output:DUT.probes": {
+      "at": "600ms",
+      "equals": 13
+    },
+    "output:DUT.scans": {
+      "at": "600ms",
+      "equals": 1
+    }
+  }
+}

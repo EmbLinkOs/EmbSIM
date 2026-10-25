@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "boot-button",
+  "description": "BOOT (SW1) joins GPIO9 to ground while held.",
+  "policy": "electrical",
+  "until": "60ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/esp32c3_devkitm1"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "IO9": [
+        "B1.IO9"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "40ms",
+      "target": "B1.SW1",
+      "input": "pressed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:IO9": {
+      "at": "55ms",
+      "max_v": 0.05
+    }
+  }
+}

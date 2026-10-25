@@ -82,6 +82,7 @@ void esk_rp2040_boot(struct esk_mach *s)
     memcpy(rom->mem + (0 - rom->base), rom_image, sizeof rom_image);
     esk_rp2040_rom(rom->mem + (0 - rom->base), 0x4000u);
     esk_rp2040_rom_install(s);
+    esk_bus_code_changed(&s->bus);
     b2 = f->mem + (FLASH_BASE - f->base);
     sum = esk_rp2040_crc32(b2, 252);
     want = (u32)b2[252] | (u32)b2[253] << 8 | (u32)b2[254] << 16 | (u32)b2[255] << 24;
@@ -89,6 +90,7 @@ void esk_rp2040_boot(struct esk_mach *s)
         /* the reset vector: the USB boot's wait */
         rom->mem[4] = (u8)ROM_DEAD;
         rom->mem[5] = rom->mem[6] = rom->mem[7] = 0;
+        esk_bus_code_changed(&s->bus);
         esk_rf_diag(s, ES_SEV_WARNING, "mcu.no_boot2",
                     "the RP2040's bootrom finds no boot2 in flash (the CRC-32 of its first 252 bytes is "
                     "0x%08lx, the word after them 0x%08lx): the part waits in its USB boot",

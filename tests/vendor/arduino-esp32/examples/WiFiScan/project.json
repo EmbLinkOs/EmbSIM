@@ -1,0 +1,109 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-esp32-wifiscan",
+ "description": "Arduino-ESP32's WiFiScan on the ESP32-C3-DevKitM-1, with two access points in the room: HomeNet (WPA2-Personal, channel 6) 3 m from the board and CoffeeShop (open, channel 1) 12 m away.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "AP1",
+   "component": "emblink/wifi_ap",
+   "params": {
+    "ssid": "HomeNet",
+    "password": "correct horse",
+    "channel": 6,
+    "bssid": "02:e5:00:00:00:01"
+   },
+   "layout": {
+    "x": 640,
+    "y": 120
+   }
+  },
+  {
+   "id": "AP2",
+   "component": "emblink/wifi_ap",
+   "params": {
+    "ssid": "CoffeeShop",
+    "channel": 1,
+    "bssid": "02:e5:00:00:00:02"
+   },
+   "layout": {
+    "x": 640,
+    "y": 260
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  }
+ ],
+ "layout": {
+  "bench": {
+   "parts": {
+    "B1": {
+     "x": 0.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "AP1": {
+     "x": 3000.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "AP2": {
+     "x": 0.0,
+     "y": 12000.0,
+     "rotation": 0
+    }
+   }
+  }
+ }
+}

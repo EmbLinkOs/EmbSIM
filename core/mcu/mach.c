@@ -67,6 +67,15 @@ char *esk_mach_strdup(struct esk_mach *m, const char *s)
     return p;
 }
 
+struct esk_store *esk_mach_store(struct esk_mach *m, const char *name)
+{
+    int i;
+    for (i = 0; i < m->nstore; i++)
+        if (strcmp(m->store[i].name, name) == 0)
+            return &m->store[i];
+    return 0;
+}
+
 es_status esk_mach_add_dev(struct esk_mach *m, u32 base, u32 size, const struct esk_dev_ops *ops,
                            void *ctx)
 {
@@ -114,7 +123,7 @@ static void tick_all(struct esk_mach *m, u32 cycles)
 }
 
 /* at most this many cycles owed before the devices are given them anyway */
-#define LAZY_MAX 0x10000u
+#define LAZY_MAX ESK_MACH_LAZY_MAX
 
 void esk_mach_sync(struct esk_mach *m)
 {
@@ -140,6 +149,14 @@ void esk_mach_outside(struct esk_mach *m)
     m->lazy_known = 0;
 }
 
+void esk_mach_clocks(struct esk_mach *m, int stopped)
+{
+    esk_mach_sync(m);
+    m->clocks_stopped = stopped != 0;
+    m->lazy_known = 0;
+    m->ev_known = 0;
+}
+
 static void bus_sync(void *ctx) { esk_mach_sync((struct esk_mach *)ctx); }
 
 void esk_mach_lazy(struct esk_mach *m)
@@ -149,7 +166,7 @@ void esk_mach_lazy(struct esk_mach *m)
     m->bus.sync_ctx = m;
 }
 
-void esk_mach_advance(struct esk_mach *m, u32 cycles)
+void esk_mach_advance_slow(struct esk_mach *m, u32 cycles)
 {
     if (!m->lazy) {
         tick_all(m, cycles);
@@ -215,7 +232,20 @@ void esk_mach_rx_port(struct esk_mach *m, const char *unit, int (*room)(void *ct
     m->rx[m->nrx].bit_cycles = bit_cycles;
     m->rx[m->nrx].ctx = ctx;
     m->rx[m->nrx].unit = unit;
+    m->rx[m->nrx].format = 0;
+    m->rx[m->nrx].put_frame = 0;
+    m->rx[m->nrx].started = 0;
     m->nrx++;
+}
+
+void esk_mach_rx_frames(struct esk_mach *m, u32 (*format)(void *ctx),
+                        void (*put_frame)(void *ctx, u32 bits, int framing_error), void (*started)(void *ctx))
+{
+    if (!m->nrx)
+        return;
+    m->rx[m->nrx - 1].format = format;
+    m->rx[m->nrx - 1].put_frame = put_frame;
+    m->rx[m->nrx - 1].started = started;
 }
 
 void esk_mach_bus_error(struct esk_mach *m, u32 addr, int n, int write)
@@ -260,7 +290,10 @@ void esk_mach_reset(struct esk_mach *m)
     m->end_why[0] = 0;
     m->bus.watch_hit = 0;
     m->asleep = 0;
+    m->clocks_stopped = 0;
+    m->powered_down = 0;
     m->reset_req = 0;
+    m->reset_cpu_only = 0;
     m->yield = 0;
     m->bus_errors = 0;
     if (m->cpu)
@@ -299,6 +332,14 @@ u64 esk_mach_run(struct esk_mach *m, u64 budget, u64 max_insns)
     m->yield = 0;
     m->stop_bp = m->stop_watch = 0;
     while (m->state == ESK_MACH_RUN && m->cycles < end && !m->yield) {
+        if (m->clocks_stopped && !m->asleep) {
+            /* woken from a deep sleep: the clocks run before the core does */
+            if (m->deep_wake)
+                m->deep_wake(m);
+            else
+                esk_mach_clocks(m, 0);
+            continue;
+        }
         if (m->asleep) {
             u32 left = 0;
             u64 room = end - m->cycles;
@@ -311,6 +352,14 @@ u64 esk_mach_run(struct esk_mach *m, u64 budget, u64 max_insns)
             if (left == 0)
                 left = 1;
             esk_mach_idle(m, left < room ? left : room);
+            continue;
+        }
+        if (!max_insns && !m->nbp && !m->an && m->cpu->ops->run) {
+            m->cpu->ops->run(m->cpu, end);
+            if (m->bus.watch_hit) {
+                m->stop_watch = 1;
+                break;
+            }
             continue;
         }
         if (max_insns && m->insns - insns0 >= max_insns)

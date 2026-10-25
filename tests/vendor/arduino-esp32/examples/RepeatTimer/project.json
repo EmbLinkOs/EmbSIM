@@ -1,0 +1,74 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-esp32-RepeatTimer",
+ "description": "RepeatTimer with a push button from IO0 (BTN_STOP_ALARM, INPUT_PULLUP) to ground.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "SW1",
+   "component": "emblink/push_button",
+   "layout": {
+    "x": 120,
+    "y": 460
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND",
+   "SW1.2"
+  ],
+  "STOP": [
+   "B1.IO0",
+   "SW1.1"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  }
+ ]
+}

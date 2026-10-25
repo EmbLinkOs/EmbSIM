@@ -268,15 +268,52 @@ static u64 vfp_imm_d(u32 imm8)
     return (u64)hi << 32;
 }
 
-/* the FP context becomes active with the first FP instruction */
+/* PreserveFPState: the floating-point registers an exception frame
+ * reserved room for, written there now, with the privilege and the
+ * readiness to take a fault recorded when the frame was stacked. A fault
+ * of the MemManage or BusFault that could not have been taken then
+ * escalates to HardFault. */
+static int fp_preserve(struct esk_cm_state *cs)
+{
+    u32 a = cs->fpcar;
+    cs->access = ACC_LAZYFP;
+    cs->force_unpriv = (cs->fpccr >> 1) & 1;    /* USER */
+    for (int i = 0; i < 16; i++)
+        esk_cm_st(cs, a + 4 * (u32)i, 4, cs->S[i]);
+    esk_cm_st(cs, a + 64, 4, cs->fpscr);
+    cs->access = ACC_NORMAL;
+    cs->force_unpriv = 0;
+    if (cs->fault_exc) {
+        int ready = cs->fault_exc == EXC_MEM ? (int)(cs->fpccr >> 5 & 1)
+                  : cs->fault_exc == EXC_BUS ? (int)(cs->fpccr >> 6 & 1) : 1;
+        if (!ready) {
+            cs->cfsr |= cs->fault_bits;
+            cs->hfsr |= 1u << 30;               /* FORCED */
+            cs->fault_exc = EXC_HARD;
+            cs->fault_bits = 0;
+        }
+        return 0;
+    }
+    cs->fpccr &= ~1u;                           /* LSPACT */
+    return 1;
+}
+
+/* ExecuteFPCheck, before each floating-point instruction: the coprocessor
+ * enabled for this privilege, the state an exception left to preserve
+ * lazily written first, and a new floating-point context begun with
+ * FPDSCR's defaults when ASPEN tracks it */
 int esk_cm_fp_begin(struct esk_cm_state *cs)
 {
     if (!fp_enabled(cs)) {
         esk_cm_fault_raise(cs, EXC_USAGE, UFSR_NOCP);
         return 0;
     }
-    if (cs->fpccr & 0x80000000u)            /* ASPEN */
+    if ((cs->fpccr & 1u) && !fp_preserve(cs))   /* LSPACT */
+        return 0;
+    if ((cs->fpccr & 0x80000000u) && !(cs->control & 4)) {   /* ASPEN, no FPCA */
+        cs->fpscr = (cs->fpscr & ~0x07C00000u) | (cs->fpdscr & 0x07C00000u);
         cs->control |= 4;
+    }
     return 1;
 }
 

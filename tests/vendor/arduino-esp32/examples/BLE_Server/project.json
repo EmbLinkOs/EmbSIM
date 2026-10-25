@@ -1,0 +1,98 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-esp32-ble-server",
+ "description": "Arduino-ESP32's BLE Server on the ESP32-C3-DevKitM-1, with a tablet's GATT browser 1 m away told to connect to the board's address.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "TABLET",
+   "component": "emblink/ble_central",
+   "params": {
+    "target": "7c:df:a1:45:6d:64"
+   },
+   "layout": {
+    "x": 640,
+    "y": 120
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "tablet-state",
+   "target": "output:TABLET.state",
+   "kind": "value"
+  },
+  {
+   "id": "tablet-gatt",
+   "target": "output:TABLET.gatt",
+   "kind": "value"
+  }
+ ],
+ "layout": {
+  "bench": {
+   "parts": {
+    "B1": {
+     "x": 0.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "TABLET": {
+     "x": 1000.0,
+     "y": 0.0,
+     "rotation": 0
+    }
+   }
+  }
+ }
+}

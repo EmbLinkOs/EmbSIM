@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "uart_printf",
+  "until": "300ms",
+  "description": "UART_Printf: printf retargeted to USART2, the ST-LINK's virtual COM port, at 115200 baud (9 bits with odd parity, as the example sets it).",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "200ms",
+      "probe": "console",
+      "expect": {
+        "contains": "UART Printf Example: retarget the C library printf function to the UART"
+      }
+    }
+  ]
+}

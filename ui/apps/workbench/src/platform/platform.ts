@@ -17,6 +17,8 @@ export interface Platform {
   openProjectFile(): Promise<OpenedFile | null>;
   /** Saves text through the host's dialog or a download; returns the path or name, null when cancelled. */
   saveTextFile(suggestedName: string, text: string, mime: string): Promise<string | null>;
+  /** Saves bytes (a capture's pcap) the same way. */
+  saveBinaryFile(suggestedName: string, bytes: Uint8Array, mime: string): Promise<string | null>;
   writeClipboard(text: string): Promise<void>;
   /** Starts (or finds) the `embsim serve` sidecar and returns its WebSocket URL; null when the host has none. */
   startSidecar(projectPath?: string): Promise<string | null>;

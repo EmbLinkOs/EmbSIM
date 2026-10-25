@@ -1,0 +1,42 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "WiFiClientConnect",
+ "until": "3000ms",
+ "description": "WiFi/examples/WiFiClientConnect, unmodified: the sketch joins the access point named in it (your-ssid, WPA2 with your-password, on channel 11, 5 m away): the scan, authentication, association, the WPA2 four-way handshake and DHCP run over the air as on a real board, and it prints the address the access point's DHCP server leases it.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "connecting",
+   "at": "3000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "[WiFi] Connecting to your-ssid"
+   }
+  },
+  {
+   "id": "connected",
+   "at": "3000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "[WiFi] WiFi is connected!"
+   }
+  },
+  {
+   "id": "address",
+   "at": "3000ms",
+   "probe": "console",
+   "expect": {
+    "contains": "[WiFi] IP address: 192.168.1.100"
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "3000ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  }
+ ]
+}

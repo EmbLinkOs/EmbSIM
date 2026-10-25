@@ -1005,8 +1005,14 @@ def check_component_test(report: Report, file: Path, doc: dict, index: Index) ->
         f_.node = "/circuit" + f_.node
     until = parse_time_ps(doc.get("until")) if doc.get("until") else None
     def member(target: str) -> Optional[dict]:
-        """COMPONENT.MEMBER: a member of a composite instance (a keypad's key)"""
+        """COMPONENT.MEMBER: a member of a composite instance (a keypad's key),
+        or BOARD.COMPONENT: a part on a board (a jumper, a button)"""
         top, _, sub = (target or "").partition(".")
+        if sub and top in boards:
+            for c in boards[top].get("components") or []:
+                if c.get("id") == sub:
+                    return index.component(c.get("component", ""))
+            return None
         parent = inst.get(top)
         if not sub or parent is None:
             return None
@@ -1214,15 +1220,22 @@ def check_board_reference(report: Report, file: Path, doc: dict) -> None:
         return  # reported by the artwork check
     vb = [float(v) for v in (root.get("viewBox") or "0 0 1 1").split()]
     sx, sy = art.get("width_mm", w) / vb[2], art.get("height_mm", h) / vb[3]
-    circles = {el.get("id"): el for el in root.iter() if el.tag.endswith("circle") and el.get("id")}
+    # a pad is a circle (a through-hole's ring) or a rect (an oblong pad), at its centre
+    pads = {el.get("id"): el for el in root.iter()
+            if (el.tag.endswith("circle") or el.tag.endswith("rect")) and el.get("id")}
     selector = {hs["port"]: hs.get("selector", "") for hs in art.get("hotspots") or [] if "port" in hs}
 
     def at(el: Any) -> tuple[float, float]:
-        return (float(el.get("cx")) - vb[0]) * sx, (float(el.get("cy")) - vb[1]) * sy
+        if el.tag.endswith("rect"):
+            cx = float(el.get("x", 0)) + float(el.get("width", 0)) / 2
+            cy = float(el.get("y", 0)) + float(el.get("height", 0)) / 2
+        else:
+            cx, cy = float(el.get("cx")), float(el.get("cy"))
+        return (cx - vb[0]) * sx, (cy - vb[1]) * sy
 
     for name, (x, y) in ref.get("terminals", {}).items():
         sel = selector.get(name, "#pin-" + name.lower())
-        el = circles.get(sel.lstrip("#"))
+        el = pads.get(sel.lstrip("#"))
         if el is None:
             report.error(file, node, "board.reference_terminal", f"the artwork has no pad {sel} for {name}")
             continue
@@ -1666,8 +1679,9 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
             elif periph:
                 if inp.get("input") not in ("rx", "voltage"):
                     report.error(file, node + "/input", "catalog.input_unknown", f"peripheral input must be rx or voltage, not {inp.get('input')}")
-            elif inp.get("input") not in ("reset", "power"):
-                report.error(file, node + "/input", "catalog.input_unknown", f"board input must be reset or power, not {inp.get('input')}")
+            elif inp.get("input") not in ("reset", "power", "serial"):
+                # serial: text into the board's console (SPEC-008)
+                report.error(file, node + "/input", "catalog.input_unknown", f"board input must be reset, power or serial, not {inp.get('input')}")
         else:
             report.error(file, node + "/target", "catalog.not_found", f"target {inst} is not a component or board of the project")
     ids: set[str] = set()

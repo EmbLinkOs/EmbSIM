@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ble_central",
+  "version": "0.1.0",
+  "name": "Phone with a GATT browser (BLE central)",
+  "category": "instruments",
+  "description": "A phone running a Bluetooth LE browser (nRF Connect, LightBlue): it scans, connects to the peripheral it is told to as the connection's central, and lists its GATT database: services, characteristics, their properties and the values it can read. It reaches the circuit only through the air.",
+  "keywords": [
+    "bluetooth",
+    "ble",
+    "central",
+    "gatt",
+    "phone",
+    "nrf connect",
+    "lightblue",
+    "connect",
+    "2.4 ghz"
+  ],
+  "pins": [],
+  "params": {
+    "target": {
+      "type": "string",
+      "default": "",
+      "doc": "The peripheral to connect to: its advertised name or its address (aa:bb:cc:dd:ee:ff); empty for the first connectable one heard"
+    },
+    "address": {
+      "type": "string",
+      "default": "c4:5e:7a:11:22:33",
+      "doc": "The phone's random static address"
+    },
+    "interval": {
+      "type": "number",
+      "unit": "ms",
+      "default": 30,
+      "min": 7.5,
+      "max": 4000,
+      "doc": "The connection interval it asks for"
+    },
+    "timeout": {
+      "type": "number",
+      "unit": "ms",
+      "default": 5000,
+      "min": 100,
+      "max": 32000,
+      "doc": "The supervision timeout"
+    }
+  },
+  "outputs": [
+    {
+      "name": "state",
+      "type": "string",
+      "doc": "scanning, connected or disconnected"
+    },
+    {
+      "name": "peer",
+      "type": "string",
+      "doc": "The peripheral's address"
+    },
+    {
+      "name": "events",
+      "type": "integer",
+      "doc": "Connection events held"
+    },
+    {
+      "name": "mtu",
+      "type": "integer",
+      "doc": "The ATT MTU agreed"
+    },
+    {
+      "name": "services",
+      "type": "integer",
+      "doc": "Primary services discovered"
+    },
+    {
+      "name": "notifications",
+      "type": "integer",
+      "doc": "Notifications and indications received"
+    },
+    {
+      "name": "gatt",
+      "type": "string",
+      "doc": "The GATT database: each service and its characteristics, their properties and the values read"
+    },
+    {
+      "name": "log",
+      "type": "string",
+      "doc": "What happened: connecting, the discovery, a disconnection"
+    }
+  ],
+  "model": {
+    "primitive": "ble_central"
+  },
+  "functional": {
+    "primitive": "ble_central"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {}
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Scanning the primary advertising channels in turn, a CONNECT_IND T_IFS after the target's ADV_IND (Bluetooth Core 5.4 Vol 6 Part B 2.3.3.1); the connection as its central at 1M: connection events every interval on channel selection algorithm #1, the sequence numbers' acknowledgement and resending, 27-byte payloads with L2CAP's fragmentation, the supervision timeout, a connection not heard from in six intervals failed to be established (0x3E) and tried again (4.5); the slave's feature exchange, version, data length and terminate answered, LL_UNKNOWN_RSP otherwise (5.1); GATT discovery as a client: the MTU exchange, primary services, characteristics, reading the readable ones (Vol 3 Part G 4); indications confirmed; L2CAP parameter update requests rejected; pairing not supported.",
+      "omissions": [
+        "active scanning",
+        "channel selection algorithm #2",
+        "the 2M and Coded PHYs",
+        "data length extension",
+        "encryption and pairing",
+        "writes, subscriptions and descriptors",
+        "connection parameter updates",
+        "slave latency",
+        "more than 16 services and 48 characteristics"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "As functional: it has no pins.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Bluetooth Core Specification 5.4: Vol 6 Part B (the Link Layer), Vol 3 Part A (L2CAP), Part F (ATT), Part G (GATT)",
+        "url": "https://www.bluetooth.com/specifications/specs/core-specification-5-4/",
+        "date": "2026-10-22",
+        "notes": "CONNECT_IND, connection events, channel selection #1, acknowledgement and flow control, the control procedures, L2CAP's fragmentation, ATT's PDUs and GATT's discovery procedures."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

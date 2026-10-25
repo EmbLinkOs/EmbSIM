@@ -96,6 +96,7 @@ const dk = 'examples/nrf52840dk-blink/project.json';
 const explorer = 'examples/explorer16-pic32mx/project.json';
 const explorer24 = 'examples/explorer16-pic24/project.json';
 const picoDual = 'examples/pico-dual-core/project.json';
+const nucleo = 'examples/nucleo-f446re-blink-serial/project.json';
 const faulting = 'tests/firmware/fault/project.json';
 
 /** the Debug perspective stopped at a breakpoint on `symbol` */
@@ -202,6 +203,18 @@ try {
     await run(page, 2700);
   });
   await shot(browser, 'debug-pico-core1', picoDual, (page) => debugAt(page, 'sio_irq_proc1', 1500));
+  // the NUCLEO-F446RE (STM32F446RE, Cortex-M4F) for EmbLinkRTOS
+  await shot(browser, 'design-nucleo', nucleo, async (page) => run(page, 1500));
+  await shot(browser, 'run-nucleo', nucleo, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
+  await shot(browser, 'board-nucleo', nucleo, async (page) => {
+    await perspective(page, 2);
+    await page.getByRole('radio', { name: '2D', exact: true }).click();
+    await run(page, 2700);
+  }, { scale: 2, element: '.es-board svg' });
+  await shot(browser, 'debug-nucleo', nucleo, (page) => debugAt(page, 'SysTick_Handler', 1500));
   // M5: verification. A scenario opened, edited in place and run; coverage of
   // the Blue Pill's firmware with its source; a recording replayed
   const verifyRegion = (page, name) => page.getByRole('region', { name });

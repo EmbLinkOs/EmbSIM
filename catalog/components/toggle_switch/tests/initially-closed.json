@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "initially-closed",
+  "description": "A switch fitted closed (initially_closed, a factory jumper) drives the pulled-down net to 1 from the start, and opening it releases the net.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vcc",
+        "params": {
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/toggle_switch",
+        "params": {
+          "initially_closed": true
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/pull_down"
+      },
+      {
+        "id": "P",
+        "component": "emblink/logic_probe"
+      }
+    ],
+    "nets": {
+      "VCC": [
+        "V.VCC",
+        "DUT.1"
+      ],
+      "OUT": [
+        "DUT.2",
+        "R.1",
+        "P.IN"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "10ms",
+      "target": "DUT",
+      "input": "closed",
+      "value": false
+    }
+  ],
+  "expect": {
+    "net:OUT": {
+      "at": "5ms",
+      "logic": "1"
+    },
+    "output:DUT.closed": {
+      "at": "5ms",
+      "equals": true
+    }
+  }
+}

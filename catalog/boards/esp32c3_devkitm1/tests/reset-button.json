@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reset-button",
+  "description": "RST (SW2) joins CHIP_PU to ground while held (60 to 70 ms).",
+  "policy": "electrical",
+  "until": "100ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/esp32c3_devkitm1"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.VBUS"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "EN": [
+        "B1.RST"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "60ms",
+      "target": "B1.SW2",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "70ms",
+      "target": "B1.SW2",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "expect": {
+    "net:EN": {
+      "between": [
+        "62ms",
+        "70ms"
+      ],
+      "max_v": 0.05
+    }
+  }
+}

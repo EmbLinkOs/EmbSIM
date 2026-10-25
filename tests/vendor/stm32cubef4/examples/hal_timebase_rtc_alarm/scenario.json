@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "hal_timebase_rtc_alarm",
+  "until": "2.2s",
+  "description": "HAL_TimeBase_RTC_ALARM: the RTC's alarm A, every subsecond of a 1 kHz calendar, is the HAL's tick; LD2 toggles every HAL_Delay(500). B1 suspends the tick.",
+  "inputs": [
+    {
+      "at": "1.2s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.25s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "blink",
+      "between": [
+        "50ms",
+        "1.15s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 2
+      }
+    },
+    {
+      "id": "suspended",
+      "between": [
+        "1.3s",
+        "2.2s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 0
+      }
+    }
+  ]
+}

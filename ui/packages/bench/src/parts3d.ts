@@ -647,6 +647,19 @@ export interface Indicator {
   halo?: THREE.Sprite;
 }
 
+/** how an indicator shows an output: a level (0..1, a duty or a luminance),
+ * on or off, or the colour an addressable RGB LED reports (#RRGGBB, its
+ * brightest channel the level) */
+export function indicatorLight(v: unknown): { level: number; color?: string } {
+  if (typeof v === 'number') return { level: Math.cbrt(Math.max(0, Math.min(1, v))) };
+  if (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)) {
+    const n = parseInt(v.slice(1), 16);
+    const peak = Math.max((n >> 16) & 255, (n >> 8) & 255, n & 255) / 255;
+    return peak > 0 ? { level: Math.cbrt(peak), color: v } : { level: 0 };
+  }
+  return { level: v ? 1 : 0 };
+}
+
 function dipPackage(pins: number, label: string | undefined, socket: boolean): THREE.Group {
   const g = new THREE.Group();
   const half = Math.ceil(pins / 2);

@@ -51,7 +51,14 @@
       "doc": "Initial voltage at t=0 (pin 1 relative to pin 2)",
       "advanced": true
     }
+  },  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
   },
+
   "model": {
     "primitive": "capacitor",
     "bind": {
@@ -78,7 +85,15 @@
     }
   },
   "fidelity": {
-    "functional": null,
+    "functional": {
+      "claims": "Pins only: an open circuit, as a capacitor is at DC (so a board's decoupling and filter capacitors run under every policy).",
+      "omissions": [
+        "charge and the delays it gives"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
     "timed": {
       "claims": "As electrical; a capacitor has no logic-level meaning.",
       "omissions": []

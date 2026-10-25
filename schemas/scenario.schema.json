@@ -45,6 +45,7 @@
         "max_v": {"type": "number"},
         "equals": {"oneOf": [{"type": "number"}, {"type": "string"}, {"type": "boolean"}]},
         "contains": {"type": "string"},
+        "not_contains": {"type": "string"},
         "edges": {"type": "integer", "minimum": 0},
         "frequency_hz": {"type": "number", "exclusiveMinimum": 0},
         "tolerance": {"type": "number", "minimum": 0}

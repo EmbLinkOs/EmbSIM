@@ -66,6 +66,44 @@ watchpoint, a lockup, a semihosting exit, a reset request, a device's
 devices see every cycle. M1 implements Cortex-M3 (Thumb-2, the NVIC, SCB,
 SysTick, DWT, the FPU for M4F images); its timing tier is `instruction`.
 
+What an RTOS port relies on is architectural. It is checked against QEMU's
+mps2-an386 by `tests/firmware/cm4-core`.
+
+- **The MPU (`cortexm/mpu.c`).** Present when the MCU description says
+  `core.mpu`, with eight regions. It is PMSAv7 on ARMv7-M, with the RBAR and
+  RASR aliases, and PMSAv6 on ARMv6-M.
+  - Regions are sized from 32 bytes to 4 GB, with subregion disables, AP and
+    XN. The highest-numbered region covering an address decides.
+  - PRIVDEFENA's background region applies to privileged accesses.
+  - The private peripheral bus and vector table reads always use the default
+    map, and the MPU is off at a priority below 0 unless HFNMIENA.
+  - A refused data access is a MemManage fault: DACCVIOL with MMFAR, MSTKERR
+    while stacking, MUNSTKERR while unstacking, MLSPERR during lazy FP
+    preservation. A refused fetch is IACCVIOL.
+  - The default map's System region never executes; with the MPU off, nor do
+    its Peripheral and Device regions.
+- **Privilege.** LDRT and STRT access as unprivileged. An unprivileged access
+  to the private peripheral bus is a BusFault (PRECISERR, BFAR), except a
+  STIR write that CCR.USERSETMPEND allows.
+- **Faults of exception entry and return.** A fault while stacking is a
+  derived exception that arrives late:
+  - it is escalated against the priority the core ran at;
+  - the more urgent of it and the exception being entered is taken, ties
+    going to the lower number, and the other pends.
+
+  A fault while unstacking abandons the return. The derived exception is
+  taken with the frame left in place and LR set to the EXC_RETURN that
+  failed. Only a fault HardFault cannot take locks the core up.
+- **Floating-point context stacking.**
+  - With FPCCR.LSPEN, an exception reserves the frame's FP area. It records
+    LSPACT, USER, THREAD, HFRDY, MMRDY and BFRDY in FPCCR and the area's
+    address in FPCAR.
+  - The handler's first floating-point instruction writes the area, with
+    that recorded privilege and readiness (ExecuteFPCheck). If nothing
+    wrote it, a return leaves the registers as they are.
+  - A new context (CONTROL.FPCA clear, ASPEN) takes FPSCR's defaults from
+    FPDSCR.
+
 A part with several cores of one model (the MCU description's
 `core.cores`, the RP2040's 2) is one machine with one core interface
 (`cortexm/smp.c`). Each core keeps its own time; a step runs the core
@@ -160,6 +198,49 @@ instruction and `next_event` says how many cycles until its next interrupt
 or output, so a sleeping core skips to it. M1's models (`core/mcu/models.c`):
 `stm32-rcc`, `stm32f1-gpio`, `stm32f1-afio`, `stm32-exti`, `stm32-usart`,
 `stm32-tim` (time base and interrupts), `stm32f1-flash`, `stm32-pwr`.
+The F4's clock tree is the same `stm32-rcc` (an RCC with `PLLCFGR`):
+HSI, HSE as crystal or bypass clock, LSE, LSI, the main PLL's P and R
+outputs, the bus prescalers and the timers' clock (`esk_stm32_hclk`,
+`esk_stm32_pclk`, `esk_stm32_timclk`); `stm32f4-pwr` gives PWR's voltage
+scaling and over-drive ready bits; `stm32f4-gpio` is the F4's GPIO port
+(MODER, OTYPER, OSPEEDR, PUPDR, LCKR, AFRL/AFRH), `stm32f4-syscfg` its
+EXTI routing and boot remap, and `stm32-exti` serves both families with
+every line IMR has. An MCU description's `io.alternate` (pin, AF number,
+signals) is the register file's alternate-function table: the GPIO model
+routes a pin in alternate-function mode to its signal's peripheral, and
+a peripheral model finds its pins (`esk_rf_af_signal`, `esk_rf_af_pin`).
+A GPIO model's `esk_mach_pin.speed` picks the pin's output resistance and
+edge rate from `io.electrical`'s per-speed `rout` and `slew_v_per_us`.
+`stm32-tim` is the whole STM32 timer on both families; its signals reach
+the F4's pins through the AF table (`esk_stm32_tim_signal`,
+`esk_stm32_tim_signal_input`) and the F1's through AFIO. A Cortex-M part's
+`core.systick` gives SysTick's external reference divider and CALIB.
+A UART model that knows its frame format sends it with
+`esk_mach_host.uart_frame` (data and parity bits, stop half bits) and
+offers its receiver whole frames with `esk_mach_rx_frames` (its format,
+a frame with its framing error, a start bit's edge); the runtime's RX
+decoder then reads that many bits and checks the stop bit. `stm32-usart`
+is the SR/DR-layout USART of both families. An MCU description's
+`dma_requests` (controller, stream, channel, requests) is the register
+file's DMA mapping (`esk_rf_dma_maps`); a peripheral model raises or drops
+a request with `esk_stm32_dma_request`, and `stm32f4-dma` serves it from
+the stream that takes it, or keeps it waiting, telling the peripheral of a
+round's last two items (an SPI's CRC, an I2C's NACK, an ADC's or DAC's
+DDS). A reset's cause is the machine's `reset_cause` (power, pin,
+software, a watchdog's): the runtime sets the first two, a model that
+resets the part its own, and a model may record it (an STM32's RCC_CSR
+flags); a peripheral marked `backup` (an RTC) keeps its registers through
+every reset but a power-on one. `stm32-spi` and `stm32-i2c` are the SPI
+and I2C of both families,
+master and slave, their inputs reaching them from the pins. A timer's
+trigger outputs (TIMx_TRGO, TIMx_CCy) and EXTI's lines 9, 11 and 15 reach
+the ADCs and the DAC through `esk_stm32_trigger`. An MCU description's
+`io.analog` is the register file's analog channel table
+(`esk_rf_analog_pin`); an ADC model reads a channel's pin voltage with
+`pin_volts`, and the room's temperature, for a temperature sensor, with
+`esk_mach_host.temperature` (the world's, SPEC-003 §8). A DAC drives a
+pin's net as `esk_mach_pin.aout`: its voltage behind its output
+resistance.
 
 ## 7. Pins, multiplexing and nets
 

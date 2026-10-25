@@ -32,7 +32,7 @@
 #include "util/str.h"
 
 #define RF_MAX_PERIPHS 256
-#define RF_MAX_REGS 512
+#define RF_MAX_REGS 1024 /* the ESP32-C3's DS: its memories as 659 words */
 #define RF_MAX_FIELDS 32
 
 static u32 plain_read(void *ctx, u32 off, int n);
@@ -358,6 +358,188 @@ int esk_rf_pin(const struct esk_rf *rf, const char *name)
     return -1;
 }
 
+es_status esk_rf_alternates(struct esk_mach *m, const esk_json *alt, char *why, size_t cap)
+{
+    struct esk_rf *rf = m->rf;
+    size_t i, j, k, n = 0;
+    int at = 0;
+    if (!rf || !alt)
+        return ES_OK;
+    for (i = 0; i < esk_json_len(alt); i++)
+        for (j = 0; j < esk_json_len(esk_json_at(alt, i)); j++)
+            n += esk_json_len(esk_json_at(esk_json_at(alt, i), j));
+    if (!n)
+        return ES_OK;
+    rf->af_at = (int *)esk_mach_alloc(m, n * sizeof *rf->af_at);
+    rf->af_num = (int *)esk_mach_alloc(m, n * sizeof *rf->af_num);
+    rf->af_sig = (const char **)esk_mach_alloc(m, n * sizeof *rf->af_sig);
+    if (!rf->af_at || !rf->af_num || !rf->af_sig)
+        return ES_ENOMEM;
+    for (i = 0; i < esk_json_len(alt); i++) {
+        const esk_json *pin = esk_json_at(alt, i);
+        const char *pn = pin ? pin->key : NULL;
+        long bit = -1;
+        if (pn && pn[0] == 'P' && pn[1] >= 'A' && pn[1] <= 'K' && pn[2] >= '0' && pn[2] <= '9')
+            bit = strtol(pn + 2, NULL, 10);
+        if (bit < 0 || bit > 15) {
+            snprintf(why, cap, "io.alternate: %s is not a port pin (PA0 to PK15)", pn ? pn : "?");
+            return ES_ESCHEMA;
+        }
+        for (j = 0; j < esk_json_len(pin); j++) {
+            const esk_json *sigs = esk_json_at(pin, j);
+            const char *an = sigs ? sigs->key : NULL;
+            long af = an && an[0] >= '0' && an[0] <= '9' ? strtol(an, NULL, 10) : -1;
+            if (af < 0 || af > 15) {
+                snprintf(why, cap, "io.alternate: %s's AF %s is not 0 to 15", pn, an ? an : "?");
+                return ES_ESCHEMA;
+            }
+            for (k = 0; k < esk_json_len(sigs); k++) {
+                const char *sig = esk_json_str(esk_json_at(sigs, k));
+                if (!sig) {
+                    snprintf(why, cap, "io.alternate: %s's AF %s names no signal", pn, an);
+                    return ES_ESCHEMA;
+                }
+                rf->af_at[at] = (pn[1] - 'A') * 32 + (int)bit;
+                rf->af_num[at] = (int)af;
+                rf->af_sig[at] = esk_mach_strdup(m, sig);
+                if (!rf->af_sig[at])
+                    return ES_ENOMEM;
+                at++;
+            }
+        }
+    }
+    rf->naf = at;
+    return ES_OK;
+}
+
+es_status esk_rf_dma_requests(struct esk_mach *m, const esk_json *map, char *why, size_t cap)
+{
+    struct esk_rf *rf = m->rf;
+    size_t i, j, k, l, n = 0;
+    int at = 0;
+    if (!rf || !map)
+        return ES_OK;
+    for (i = 0; i < esk_json_len(map); i++)
+        for (j = 0; j < esk_json_len(esk_json_at(map, i)); j++)
+            for (k = 0; k < esk_json_len(esk_json_at(esk_json_at(map, i), j)); k++)
+                n += esk_json_len(esk_json_at(esk_json_at(esk_json_at(map, i), j), k));
+    if (!n)
+        return ES_OK;
+    rf->dma_ctl = (const char **)esk_mach_alloc(m, n * sizeof *rf->dma_ctl);
+    rf->dma_sig = (const char **)esk_mach_alloc(m, n * sizeof *rf->dma_sig);
+    rf->dma_stream = (int *)esk_mach_alloc(m, n * sizeof *rf->dma_stream);
+    rf->dma_chan = (int *)esk_mach_alloc(m, n * sizeof *rf->dma_chan);
+    if (!rf->dma_ctl || !rf->dma_sig || !rf->dma_stream || !rf->dma_chan)
+        return ES_ENOMEM;
+    for (i = 0; i < esk_json_len(map); i++) {
+        const esk_json *ctl = esk_json_at(map, i);
+        const char *cn = ctl ? esk_mach_strdup(m, ctl->key) : NULL;
+        if (!cn)
+            return ES_ENOMEM;
+        for (j = 0; j < esk_json_len(ctl); j++) {
+            const esk_json *st = esk_json_at(ctl, j);
+            long sn = st && st->key ? strtol(st->key, NULL, 10) : -1;
+            for (k = 0; k < esk_json_len(st); k++) {
+                const esk_json *ch = esk_json_at(st, k);
+                long chn = ch && ch->key ? strtol(ch->key, NULL, 10) : -1;
+                if (sn < 0 || sn > 15 || chn < 0 || chn > 15) {
+                    snprintf(why, cap, "dma_requests: %s has a bad stream or channel", cn);
+                    return ES_ESCHEMA;
+                }
+                for (l = 0; l < esk_json_len(ch); l++) {
+                    const char *sig = esk_json_str(esk_json_at(ch, l));
+                    if (!sig) {
+                        snprintf(why, cap, "dma_requests: %s stream %ld names no request", cn, sn);
+                        return ES_ESCHEMA;
+                    }
+                    rf->dma_ctl[at] = cn;
+                    rf->dma_stream[at] = (int)sn;
+                    rf->dma_chan[at] = (int)chn;
+                    rf->dma_sig[at] = esk_mach_strdup(m, sig);
+                    if (!rf->dma_sig[at])
+                        return ES_ENOMEM;
+                    at++;
+                }
+            }
+        }
+    }
+    rf->ndma = at;
+    return ES_OK;
+}
+
+es_status esk_rf_analog(struct esk_mach *m, const esk_json *an, char *why, size_t cap)
+{
+    struct esk_rf *rf = m->rf;
+    size_t i, n = an ? esk_json_len(an) : 0;
+    if (!rf || !n)
+        return ES_OK;
+    rf->an_at = (int *)esk_mach_alloc(m, n * sizeof *rf->an_at);
+    rf->an_sig = (const char **)esk_mach_alloc(m, n * sizeof *rf->an_sig);
+    if (!rf->an_at || !rf->an_sig)
+        return ES_ENOMEM;
+    for (i = 0; i < n; i++) {
+        const esk_json *e = esk_json_at(an, i);
+        const char *pin = e ? e->key : NULL, *sig = esk_json_str(e);
+        if (!pin || !sig || pin[0] != 'P' || pin[1] < 'A' || pin[1] > 'K' || pin[2] < '0' || pin[2] > '9') {
+            snprintf(why, cap, "io.analog: %s is not a port pin", pin ? pin : "?");
+            return ES_ESCHEMA;
+        }
+        rf->an_at[i] = (pin[1] - 'A') * 32 + (int)strtol(pin + 2, NULL, 10);
+        rf->an_sig[i] = esk_mach_strdup(m, sig);
+        if (!rf->an_sig[i])
+            return ES_ENOMEM;
+    }
+    rf->nan = (int)n;
+    return ES_OK;
+}
+
+int esk_rf_analog_pin(const struct esk_rf *rf, int unit, int ch)
+{
+    int i;
+    for (i = 0; rf && i < rf->nan; i++) {
+        const char *s = rf->an_sig[i], *in;
+        int k, has = 0;
+        if (strncmp(s, "ADC", 3) || !(in = strstr(s, "_IN")) || strtol(in + 3, NULL, 10) != ch)
+            continue;
+        for (k = 3; s + k < in; k++)
+            has |= s[k] - '0' == unit;
+        if (has)
+            return rf->an_at[i];
+    }
+    return -1;
+}
+
+int esk_rf_dma_maps(const struct esk_rf *rf, const char *ctl, int stream, int chan, const char *sig)
+{
+    int i;
+    for (i = 0; rf && i < rf->ndma; i++)
+        if (rf->dma_stream[i] == stream && rf->dma_chan[i] == chan && !strcmp(rf->dma_sig[i], sig) &&
+            !strcmp(rf->dma_ctl[i], ctl))
+            return 1;
+    return 0;
+}
+
+const char *esk_rf_af_signal(const struct esk_rf *rf, int port, int bit, int af, int k)
+{
+    int i, at = port * 32 + bit;
+    for (i = 0; rf && i < rf->naf; i++)
+        if (rf->af_at[i] == at && rf->af_num[i] == af && k-- == 0)
+            return rf->af_sig[i];
+    return 0;
+}
+
+int esk_rf_af_pin(const struct esk_rf *rf, const char *sig, int k, int *af)
+{
+    int i;
+    for (i = 0; rf && sig && i < rf->naf; i++)
+        if (!strcmp(rf->af_sig[i], sig) && k-- == 0) {
+            if (af)
+                *af = rf->af_num[i];
+            return rf->af_at[i];
+        }
+    return -1;
+}
+
 static void sort_regs(struct esk_rf_reg **r, int n)
 {
     int i, j;
@@ -521,33 +703,27 @@ es_status esk_rf_create(struct esk_mach *m, const esk_json *desc, int rules, cha
 
 /* ---- lookups ---------------------------------------------------------------- */
 
-static struct esk_rf_reg *reg_at(struct esk_rf *rf, u32 a, int n)
+/* the index of the first register [a, a + n) touches, or -1 */
+static int reg_at_index(const struct esk_rf *rf, u32 a, int n)
 {
     int lo = 0, hi = rf->nreg; /* the first whose end is past a */
     while (lo < hi) {
         int mid = (lo + hi) / 2;
-        struct esk_rf_reg *r = rf->reg[mid];
+        const struct esk_rf_reg *r = rf->reg[mid];
         if ((u64)r->addr + (u64)r->bytes <= a)
             lo = mid + 1;
         else
             hi = mid;
     }
     if (lo < rf->nreg && rf->reg[lo]->addr < (u64)a + (u64)n)
-        return rf->reg[lo];
-    return 0;
+        return lo;
+    return -1;
 }
 
-static int reg_index(struct esk_rf *rf, const struct esk_rf_reg *r)
+static struct esk_rf_reg *reg_at(struct esk_rf *rf, u32 a, int n)
 {
-    int lo = 0, hi = rf->nreg - 1;
-    while (lo < hi) {
-        int mid = (lo + hi) / 2;
-        if (rf->reg[mid]->addr < r->addr)
-            lo = mid + 1;
-        else
-            hi = mid;
-    }
-    return lo;
+    int i = reg_at_index(rf, a, n);
+    return i < 0 ? 0 : rf->reg[i];
 }
 
 struct esk_rf_periph *esk_rf_periph(struct esk_rf *rf, const char *name)
@@ -691,12 +867,12 @@ static void read_action(struct esk_rf_reg *r, u64 rm)
 /* the registers [a, a + n) touches: 0, or -1 when it touches none */
 static int access(struct esk_rf *rf, u32 a, int n, u32 *v, int write, int side)
 {
-    struct esk_rf_reg *r = reg_at(rf, a, n);
+    struct esk_rf_reg *r;
     u32 out = 0;
-    int i;
-    if (!r)
+    int i = reg_at_index(rf, a, n);
+    if (i < 0)
         return -1;
-    for (i = reg_index(rf, r); i < rf->nreg; i++) {
+    for (; i < rf->nreg; i++) {
         u32 lo;
         u64 e1, e2, rm;
         int cnt, at, sh;
@@ -777,13 +953,29 @@ int esk_rf_gated(const struct esk_rf_periph *p)
     return p->gate && (!(p->gate->value & p->gate_mask)) != (p->gate_held != 0);
 }
 
+int esk_rf_reg_gated(const struct esk_rf_reg *r)
+{
+    return r->gate ? !(r->gate->value & r->gate_mask) : esk_rf_gated(r->p);
+}
+
 void esk_rf_periph_reset(struct esk_rf_periph *p)
 {
+    struct esk_rf *rf = p->rf;
     int i;
-    for (i = 0; i < p->nreg; i++) {
+    for (i = 0; i < p->nreg && !(p->backup && p->sim->reset_cause != ESK_RESET_POWER); i++) {
         p->reg[i]->value = p->reg[i]->reset;
         p->reg[i]->once = 0;
     }
+    /* the reset stops its clock, as the machine's reset stops them all: the
+     * model's reset starts from a stopped clock (and starts it again) */
+    for (i = 0; rf && i < rf->ntk; i++)
+        if (rf->tk[i] == p) {
+            rf->tk[i] = rf->tk[--rf->ntk];
+            if (p->sim->counting > 0)
+                p->sim->counting--;
+            p->sim->bus.touched = 1;
+            break;
+        }
     if (p->ops->reset)
         p->ops->reset(p->ctx);
 }
@@ -794,19 +986,20 @@ static void gated_access(struct esk_rf *rf, struct esk_rf_periph *p, u32 a, int 
 {
     struct esk_mach *m = rf->m;
     struct esk_rf_reg *r = reg_at(rf, a, n);
+    const char *gate = r && r->gate ? r->gate_name : p->gate_name;
     if (m->bus.debug || p->gate_warned)
         return;
     p->gate_warned = 1;
-    if (p->gate_held)
+    if (p->gate_held && !(r && r->gate))
         esk_rf_diag(m, ES_SEV_WARNING, "mcu.held_in_reset",
                     "%s at pc 0x%08lx: %s.%s %s while it is held in reset (%s is 1)",
                     write ? "a write" : "a read", (unsigned long)m->cpu->ops->pc(m->cpu), p->name,
-                    r ? r->name : "?", write ? "is ignored" : "reads its reset value", p->gate_name);
+                    r ? r->name : "?", write ? "is ignored" : "reads its reset value", gate);
     else
         esk_rf_diag(m, ES_SEV_WARNING, "mcu.clock_gated",
                     "%s at pc 0x%08lx: %s.%s %s while its clock is off (%s is 0)",
                     write ? "a write" : "a read", (unsigned long)m->cpu->ops->pc(m->cpu), p->name,
-                    r ? r->name : "?", write ? "is ignored" : "reads as 0", p->gate_name);
+                    r ? r->name : "?", write ? "is ignored" : "reads as 0", gate);
 }
 
 /* ESK_RF_ATOMIC_ALIASES: the register an address +0x1000, +0x2000 or
@@ -870,19 +1063,21 @@ static u32 map_read(void *ctx, u32 off, int n)
     struct esk_rf_reg *r;
     struct esk_rf_periph *p;
     int kind = 0;
-    if (atomic_alias(rf, a, n, &kind))
+    r = reg_at(rf, a, n); /* a register there: no alias is */
+    if (!r && atomic_alias(rf, a, n, &kind)) {
         a &= ~0x3000u; /* a read there is the register's */
-    else if (sci_alias(rf, a, n, &kind))
+        r = reg_at(rf, a, n);
+    } else if (!r && sci_alias(rf, a, n, &kind)) {
         return 0;
-    r = reg_at(rf, a, n);
+    }
     if (!r) {
         if (!reserved(rf, a, n))
             hole(rf, a, n, 0);
         return 0;
     }
     p = r->p;
-    if (esk_rf_gated(p)) {
-        if (p->gate_held)
+    if (esk_rf_reg_gated(r)) {
+        if (p->gate_held && !r->gate)
             access(rf, a, n, &v, 0, 0);
         gated_access(rf, p, a, n, 0);
         return v;
@@ -923,7 +1118,7 @@ static void map_write(void *ctx, u32 off, int n, u32 v)
         return;
     }
     p = r->p;
-    if (esk_rf_gated(p)) {
+    if (esk_rf_reg_gated(r)) {
         gated_access(rf, p, a, n, 1);
         return;
     }
@@ -961,6 +1156,8 @@ static void map_reset(void *ctx)
     int i;
     rf->ntk = 0; /* the models' resets stop their clocks */
     for (i = 0; i < rf->nreg; i++) {
+        if (rf->reg[i]->p->backup && rf->m->reset_cause != ESK_RESET_POWER)
+            continue; /* the backup domain keeps its registers */
         rf->reg[i]->value = rf->reg[i]->reset;
         rf->reg[i]->once = 0;
     }
@@ -975,9 +1172,9 @@ static void map_reset(void *ctx)
 static void map_tick(void *ctx, u32 cycles)
 {
     struct esk_rf *rf = (struct esk_rf *)ctx;
-    int i;
+    int i, stopped = rf->m->clocks_stopped;
     for (i = 0; i < rf->ntk; i++)
-        if (rf->tk[i]->ops->tick)
+        if (rf->tk[i]->ops->tick && (!stopped || rf->tk[i]->always_on))
             rf->tk[i]->ops->tick(rf->tk[i]->ctx, cycles);
 }
 
@@ -987,6 +1184,8 @@ static int map_next_event(void *ctx, u32 *cycles)
     int any = 0, i;
     for (i = 0; i < rf->ntk; i++) {
         u32 c = 0;
+        if (rf->m->clocks_stopped && !rf->tk[i]->always_on)
+            continue;
         if (rf->tk[i]->ops->next_event && rf->tk[i]->ops->next_event(rf->tk[i]->ctx, &c) &&
             (!any || c < *cycles)) {
             *cycles = c;

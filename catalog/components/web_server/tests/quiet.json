@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "policy": "functional",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/web_server"
+      }
+    ],
+    "nets": {}
+  },
+  "name": "quiet",
+  "description": "With no router to reach it, no request comes and no connection opens.",
+  "until": "100ms",
+  "expect": {
+    "output:DUT.requests": {
+      "at": "100ms",
+      "equals": 0
+    },
+    "output:DUT.connections": {
+      "at": "100ms",
+      "equals": 0
+    }
+  }
+}

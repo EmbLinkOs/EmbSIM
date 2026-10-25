@@ -176,6 +176,8 @@ es_status esk_engine_init(esk_engine *e, esk_alloc *a, esk_diag *diag, esk_polic
     esk_map_init(&e->comp_by_id, a);
     esk_map_init(&e->net_by_name, a);
     esk_world_init(&e->world);
+    esk_air_init(&e->air);
+    esk_inet_init(&e->inet);
     return esk_sched_init(&e->sched, a, 0, 0);
 }
 
@@ -247,6 +249,8 @@ void esk_engine_free(esk_engine *e)
     esk_map_free(&e->comp_by_id);
     esk_map_free(&e->net_by_name);
     esk_world_free(e->a, &e->world);
+    esk_air_free(e->a, &e->air);
+    esk_inet_free(e->a, &e->inet);
     esk_sched_free(&e->sched);
     if (e->ext && e->ext_free)
         e->ext_free(e->ext);
@@ -691,6 +695,29 @@ es_status esk_comp_wake_at(esk_comp *c, es_time_t t, uint32_t token)
     if (st == ES_OK && token < ES_COUNTOF(c->wake))
         c->wake[token] = h;
     return st;
+}
+
+void esk_comp_set_supply(esk_comp *c, double amps, es_time_t at)
+{
+    uint32_t k, j;
+    if (!(amps >= 0.0))
+        amps = 0.0;
+    if (amps == c->supply_a)
+        return;
+    /* each island its power pins are in integrates up to `at` with the
+     * current as it was, once */
+    for (k = 0; k < c->npins; k++) {
+        esk_island *isl = c->pins[k].net ? c->pins[k].net->island : NULL;
+        int seen = 0;
+        if (!isl || c->pins[k].model.kind != ESK_PIN_POWER || !c->pins[k].bridge)
+            continue;
+        for (j = 0; j < k && !seen; j++)
+            seen = c->pins[j].model.kind == ESK_PIN_POWER && c->pins[j].bridge && c->pins[j].net &&
+                   c->pins[j].net->island == isl;
+        if (!seen)
+            esk_island_touch(isl, at);
+    }
+    c->supply_a = amps;
 }
 
 void esk_comp_wake_cancel(esk_comp *c, uint32_t token)
@@ -1232,6 +1259,8 @@ es_status esk_engine_reset(esk_engine *e)
     uint32_t k;
     es_status st = ES_OK;
     esk_sched_reset(&e->sched);
+    esk_air_reset(&e->air);
+    esk_inet_reset(&e->inet);
     e->signal_events = 0;
     for (i = 0; i < e->nets.len; i++) {
         esk_net *n = e->nets.data[i];
@@ -1256,6 +1285,7 @@ es_status esk_engine_reset(esk_engine *e)
         }
         for (k = 0; k < ES_COUNTOF(c->wake); k++)
             c->wake[k] = 0;
+        c->supply_a = 0.0;
     }
     if (!e->partitioned) {
         st = esk_engine_partition(e);

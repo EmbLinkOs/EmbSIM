@@ -55,8 +55,10 @@ Rules:
   library directory, then the bundled catalog (SPEC-014).
 - `policy` is `functional`, `timed` or `electrical` (SPEC-003 §4; ADR-011);
   the CLI and workbench may override it per run, recorded in the recording.
-- `boards[].firmware.image` is relative to the project; `format` is `elf`
-  or `hex` (inferred from the extension when absent); `toolchain` and
+- `boards[].firmware.image` is relative to the project; `format` is `elf`,
+  `hex` or `bin` (inferred from the extension when absent; `bin` is a flash
+  image from offset 0 for a part whose flash no address reaches, the
+  ESP32-C3's, as esptool's `merge_bin` writes it); `toolchain` and
   `sources` are for `embsim build` only.
 - `nets` reference `<instance>.<pin>` for components and
   `<board>.<port>` for boards; a pin appears in at most one net; the loader
@@ -105,6 +107,11 @@ Rules:
   board's LED). `kind` selects
   the sample type (`digital`, `analog`, `serial`, `value`); `rate_hz` resamples
   analog probes for instruments; absent, samples are at accepted steps.
+  A `reg`, `mem` or `var` probe is a `value` probe of the board's memory as
+  a debugger reads it at that time (no side effect): its bytes
+  little-endian, up to 8 of them as a number (`var` takes the ELF symbol's
+  size, at most 256 bytes); `equals` and `contains` with text compare the
+  bytes up to the first NUL (a C string).
 - `settings` override SPEC-002 defaults for this project.
 
 ## 2. Scenario
@@ -136,10 +143,12 @@ Rules:
   decimal; the loader converts exactly to picoseconds and refuses sub-
   picosecond fractions. Inputs may appear in any order; equal times keep file
   order (they become `EXTERNAL` events in sequence).
-- `target` is a component, a board (inputs: `reset`, `power`), a board
+- `target` is a component, a board (inputs: `reset`, `power`, and `serial`,
+  text into its console as its USB-serial bridge brings it), a board
   peripheral (`rx` bytes for a serial peripheral, `voltage` for an ADC
-  terminal through a component), or `COMPONENT.MEMBER`, a member of a
-  composite component (a keypad's key, `KP.k5`). `input` names an entry in
+  terminal through a component), one of a board's own parts (`B1.B1`, a
+  NUCLEO's USER button; `B1.JP5_E5V`, a jumper), or `COMPONENT.MEMBER`, a
+  member of a composite component (a keypad's key, `KP.k5`). `input` names an entry in
   the target's description. Component fixtures (SPEC-005 §9) take the same
   targets. `world` sets one of the room's fields (the input its name, the
   value a number, or null to undeclare it) and `world.BODY` places a body
@@ -149,7 +158,9 @@ Rules:
   sample in a window; `by` checks that the expectation holds at some time up
   to the bound; `always` with `diagnostics.forbid` fails on any listed
   diagnostic. `expect` keys: `logic` (`0|1|Z|X`), `min`, `max`, `min_v`,
-  `max_v`, `equals`, `contains`, `edges` (a count), `frequency_hz`.
+  `max_v`, `equals`, `contains`, `not_contains` (text that must not be
+  there yet: a console that has not printed too early), `edges` (a count),
+  `frequency_hz`.
   `tolerance` is the absolute difference a numeric `equals` allows (exact
   otherwise) and the fraction a `frequency_hz` allows (5 % otherwise).
 - A run with a scenario ends at `until`; the report (SPEC-008 §8) lists each

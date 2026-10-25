@@ -1,0 +1,81 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "stm32cubef4-eeprom",
+ "description": "A NUCLEO-F446RE running STM32CubeF4's EEPROM_Emulation, built from ST's unmodified sources: three 16-bit variables kept in flash sectors 2 and 3 (16 KiB each at 0x08008000 and 0x0800C000), programmed halfword by halfword and the sectors erased as they fill, through the flash interface. LD2 on PA5 stays on when every write read back right, and toggles fast on an error.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/nucleo_f446re",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.U5V"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "led",
+   "target": "net:B1.PA5",
+   "kind": "digital"
+  },
+  {
+   "id": "button",
+   "target": "net:B1.PC13",
+   "kind": "digital"
+  },
+  {
+   "id": "tab",
+   "target": "var:B1:VarDataTab",
+   "kind": "value"
+  },
+  {
+   "id": "page0",
+   "target": "mem:B1:0x08008000:2",
+   "kind": "value"
+  },
+  {
+   "id": "page1",
+   "target": "mem:B1:0x0800C000:2",
+   "kind": "value"
+  }
+ ]
+}

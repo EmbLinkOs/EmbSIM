@@ -24,7 +24,12 @@
  * of a taken branch reach the devices as well as the core's count; an
  * unreadable vector table locks the core up instead of exiting; WFE and
  * SEV keep the event register (a WFE after a SEV goes on at once), and a
- * second core shares the machine through smp.c. */
+ * second core shares the machine through smp.c. SCR: a wait with
+ * SLEEPDEEP set is the part's deep sleep (esk_mach.deep_sleep: an STM32's
+ * Stop or Standby); SLEEPONEXIT sleeps on the return to Thread mode (the
+ * frame unstacked, and stacked again by the interrupt that wakes it,
+ * where the part keeps it: the same registers, more cycles); SEVONPEND
+ * makes an interrupt's becoming pending, enabled or not, an event. */
 #include <stdio.h>
 #include <string.h>
 
@@ -57,9 +62,27 @@ static void bus_error(struct esk_cm_state *cs, u32 a, int ifetch)
 {
     if (cs->fault_exc)
         return;
+    switch (cs->access) {
+    case ACC_STACK: esk_cm_fault_raise(cs, EXC_BUS, BFSR_STKERR); return;
+    case ACC_UNSTACK: esk_cm_fault_raise(cs, EXC_BUS, BFSR_UNSTKERR); return;
+    case ACC_LAZYFP: esk_cm_fault_raise(cs, EXC_BUS, BFSR_LSPERR); return;
+    default: break;
+    }
     esk_cm_fault_raise(cs, EXC_BUS, ifetch ? BFSR_IBUSERR : BFSR_PRECISERR);
     cs->fault_addr = a;
     cs->fault_addr_valid = !ifetch;
+}
+
+/* An unprivileged access to the private peripheral bus is a BusFault,
+ * except a write to STIR that CCR.USERSETMPEND allows */
+static int ppb_refused(struct esk_cm_state *cs, u32 a, int write)
+{
+    if (a - 0xE0000000u >= 0x100000u || esk_cm_access_privileged(cs))
+        return 0;
+    if (write && a == 0xE000EF00u && (cs->ccr & 2))
+        return 0;
+    bus_error(cs, a, 0);
+    return 1;
 }
 
 void esk_cm_undef(struct esk_cm_state *cs)
@@ -74,6 +97,8 @@ void esk_cm_set_pend(struct esk_cm_state *cs, int n)
     if (n > 0 && n < NEXC && !cs->pend[n]) {
         cs->pend[n] = 1;
         cs->npend++;
+        if (n >= 16 && (cs->scr & SCR_SEVONPEND))
+            cs->event = 1;
     }
 }
 
@@ -146,7 +171,7 @@ static int watched(struct esk_cm_state *cs, u32 a, int n, int write)
 u32 esk_cm_ld_bus(struct esk_cm_state *cs, u32 a, int n)
 {
     u32 v;
-    if (watched(cs, a, n, 0))
+    if (watched(cs, a, n, 0) || ppb_refused(cs, a, 0))
         return 0;
     cs->sim->bus.unmapped = 0;
     if (esk_bus_read(&cs->sim->bus, a, n, &v) == 0)
@@ -159,7 +184,7 @@ u32 esk_cm_ld_bus(struct esk_cm_state *cs, u32 a, int n)
 
 void esk_cm_st_bus(struct esk_cm_state *cs, u32 a, int n, u32 v)
 {
-    if (watched(cs, a, n, 1))
+    if (watched(cs, a, n, 1) || ppb_refused(cs, a, 1))
         return;
     cs->sim->bus.unmapped = 0;
     if (esk_bus_write(&cs->sim->bus, a, n, v)) {
@@ -288,11 +313,84 @@ static void lockup(struct esk_cm_state *cs, const char *why)
     esk_mach_end(cs->sim, ESK_MACH_LOCKUP, "lockup: %s at 0x%08x", why, cs->pc);
 }
 
-/* ExceptionEntry: push the frame onto the stack in use, and go to the
- * handler. `ret` is the address the frame returns to. */
+/* whether exception n's own handler can take a fault now: enabled, and
+ * of a priority that preempts `prio` */
+static int fault_takes(struct esk_cm_state *cs, int n, int prio)
+{
+    int enabled = 1;
+    if (n == EXC_MEM)
+        enabled = (cs->shcsr >> 16) & 1;
+    else if (n == EXC_BUS)
+        enabled = (cs->shcsr >> 17) & 1;
+    else if (n == EXC_USAGE)
+        enabled = (cs->shcsr >> 18) & 1;
+    return enabled && group_prio(cs, n) < prio;
+}
+
+/* ExceptionTaken: Handler mode in exception n, with `lr` its EXC_RETURN,
+ * and the handler's address from the vector table, read through the
+ * default memory map */
+static void exc_taken(struct esk_cm_state *cs, int n, u32 lr)
+{
+    cs->R[14] = lr;
+    esk_cm_use_psp(cs, 0);
+    cs->ipsr = (u32)n;
+    cs->active[n] = 1;
+    esk_cm_clr_pend(cs, n);
+    cs->itstate = 0;
+    cs->excl_valid = 0;
+    if (cs->model->fpu)
+        cs->control &= ~4u;
+    cs->access = ACC_VECTOR;
+    u32 v = esk_cm_ld(cs, cs->vtor + 4 * (u32)n, 4);
+    cs->access = ACC_NORMAL;
+    if (cs->fault_exc) {
+        cs->fault_exc = 0;
+        lockup(cs, "the vector table cannot be read");
+        return;
+    }
+    /* a vector without the Thumb bit: the first instruction takes an
+     * INVSTATE UsageFault */
+    cs->tbit = (v & 1) ? 1 : 0;
+    cs->pc = v & ~1u;
+}
+
+/* A fault of exception entry or return (a stacking, unstacking or lazy
+ * state preservation access the MPU or the bus refused): its CFSR bits
+ * set, and the exception that takes it, escalated to HardFault when its
+ * own handler is disabled or does not preempt `prio`; 0 when even
+ * HardFault cannot, a lockup */
+static int derived_fault(struct esk_cm_state *cs, int prio)
+{
+    int exc = cs->fault_exc;
+    u32 bits = cs->fault_bits;
+    cs->fault_exc = 0;
+    if (exc != EXC_HARD) {
+        cs->cfsr |= bits;
+        if (fault_takes(cs, exc, prio))
+            return exc;
+        if (cs->model->arch == ARCH_V7M)
+            cs->hfsr |= 1u << 30; /* FORCED */
+    }
+    if (prio <= -1)
+        return 0;
+    return EXC_HARD;
+}
+
+/* ExceptionEntry: push the frame onto the stack in use, with the
+ * interrupted code's privilege, and go to the handler. `ret` is the
+ * address the frame returns to. With an active floating-point context the
+ * frame has room for s0-s15 and FPSCR: written now when FPCCR.LSPEN is
+ * clear, else left for the handler's first floating-point instruction
+ * (lazy state preservation, FPCCR.LSPACT). A fault while stacking takes
+ * its derived exception instead, from the frame as far as it was written;
+ * the exception being entered stays pending if it was asynchronous. */
 static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
 {
     int fp_frame = cs->model->fpu && (cs->control & 4);
+    int lazy = fp_frame && (cs->fpccr & 0x40000000u);
+    int was_thread = cs->ipsr == 0, was_priv = esk_cm_privileged(cs);
+    int prio_before = esk_cm_exec_prio(cs);
     esk_mach_exc(cs->sim, esk_cortexm_core(cs->sim), n, ret & ~1u);
     u32 frame = fp_frame ? 0x68 : 0x20;
     /* PushStack: with CCR.STKALIGN (always on ARMv6-M) the frame is
@@ -303,6 +401,7 @@ static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
     u32 x = esk_cm_xpsr(cs) & ~(1u << 9);
     if (align)
         x |= 1u << 9;
+    cs->access = ACC_STACK;
     esk_cm_st(cs, sp, 4, cs->R[0]);
     esk_cm_st(cs, sp + 4, 4, cs->R[1]);
     esk_cm_st(cs, sp + 8, 4, cs->R[2]);
@@ -311,18 +410,12 @@ static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
     esk_cm_st(cs, sp + 20, 4, cs->R[14]);
     esk_cm_st(cs, sp + 24, 4, ret);
     esk_cm_st(cs, sp + 28, 4, x);
-    if (fp_frame) {
+    if (fp_frame && !lazy) {
         for (int i = 0; i < 16; i++)
             esk_cm_st(cs, sp + 32 + 4 * (u32)i, 4, cs->S[i]);
         esk_cm_st(cs, sp + 96, 4, cs->fpscr);
     }
-    if (cs->fault_exc) {
-        /* a stacking fault: give up on the exception rather than model
-         * the derived fault's own stacking */
-        cs->fault_exc = 0;
-        lockup(cs, "a fault while stacking an exception frame");
-        return;
-    }
+    cs->access = ACC_NORMAL;
     cs->R[13] = sp;
     u32 lr;
     if (cs->ipsr)
@@ -331,29 +424,47 @@ static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
         lr = cs->psp_active ? 0xFFFFFFFDu : 0xFFFFFFF9u;
     if (fp_frame)
         lr &= ~0x10u;
-    cs->R[14] = lr;
-    esk_cm_use_psp(cs, 0);
-    cs->ipsr = (u32)n;
-    cs->active[n] = 1;
-    esk_cm_clr_pend(cs, n);
-    cs->itstate = 0;
-    cs->excl_valid = 0;
-    if (cs->model->fpu)
-        cs->control &= ~4u;
-    u32 v = esk_cm_ld(cs, cs->vtor + 4 * (u32)n, 4);
+    if (lazy) {
+        /* the frame's FP area is reserved; who could take a fault when
+         * it is written is recorded with it */
+        u32 f = (cs->fpccr & 0xC0000000u) | 1u;     /* LSPACT */
+        if (!was_priv)
+            f |= 1u << 1;                           /* USER */
+        if (was_thread)
+            f |= 1u << 3;                           /* THREAD */
+        if (prio_before > -1)
+            f |= 1u << 4;                           /* HFRDY */
+        if (fault_takes(cs, EXC_MEM, prio_before))
+            f |= 1u << 5;                           /* MMRDY */
+        if (fault_takes(cs, EXC_BUS, prio_before))
+            f |= 1u << 6;                           /* BFRDY */
+        cs->fpccr = f;
+        cs->fpcar = (sp + 32) & ~7u;
+    }
     if (cs->fault_exc) {
-        cs->fault_exc = 0;
-        lockup(cs, "the vector table cannot be read");
+        /* the derived fault, escalated against the priority the core ran
+         * at, arrives late: the more urgent of it and the exception being
+         * entered is taken (on a tie, the lower number), the other pends.
+         * An asynchronous exception stays pending (only the one taken is
+         * cleared); SVC pends; a fault is raised again when its
+         * instruction runs again */
+        int d = derived_fault(cs, prio_before);
+        if (!d) {
+            lockup(cs, "a fault while stacking an exception frame");
+            return;
+        }
+        int pd = group_prio(cs, d), pn = group_prio(cs, n);
+        if (pd < pn || (pd == pn && d < n)) {
+            if (n == EXC_SVC)
+                esk_cm_set_pend(cs, EXC_SVC);
+            exc_taken(cs, d, lr);
+        } else {
+            esk_cm_set_pend(cs, d);
+            exc_taken(cs, n, lr);
+        }
         return;
     }
-    if (!(v & 1)) {
-        /* a vector without the Thumb bit: the first instruction would
-         * take an INVSTATE UsageFault */
-        cs->tbit = 0;
-    } else {
-        cs->tbit = 1;
-    }
-    cs->pc = v & ~1u;
+    exc_taken(cs, n, lr);
 }
 
 /* A synchronous fault, or SVC: taken at once, escalated to HardFault when
@@ -362,6 +473,9 @@ static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
 static void take_sync(struct esk_cm_state *cs, int n, u32 bits, u32 ret)
 {
     int ep = esk_cm_exec_prio(cs);
+    /* ARMv6-M has no configurable faults: each is a HardFault */
+    if (cs->model->arch == ARCH_V6M && n >= EXC_MEM && n <= EXC_USAGE)
+        n = EXC_HARD;
     if (n != EXC_HARD) {
         int enabled = 1;
         if (n == EXC_MEM)
@@ -403,6 +517,8 @@ static int pending_to_take(struct esk_cm_state *cs)
     return 0;
 }
 
+static void sleep_now(struct esk_cm_state *cs, int wfe);
+
 static void exc_return(struct esk_cm_state *cs, u32 ret)
 {
     int n = (int)cs->ipsr;
@@ -417,29 +533,62 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
         take_sync(cs, EXC_USAGE, UFSR_INVPC, cs->pc);
         return;
     }
+    u32 control = cs->control, other = cs->other_sp;
+    int psp_was = cs->psp_active;
     esk_cm_use_psp(cs, to_thread && psp);
     if (to_thread)
         cs->control = (cs->control & ~2u) | (psp ? 2u : 0u);
     u32 sp = cs->R[13];
-    cs->R[0] = esk_cm_ld(cs, sp, 4);
-    cs->R[1] = esk_cm_ld(cs, sp + 4, 4);
-    cs->R[2] = esk_cm_ld(cs, sp + 8, 4);
-    cs->R[3] = esk_cm_ld(cs, sp + 12, 4);
-    cs->R[12] = esk_cm_ld(cs, sp + 16, 4);
-    cs->R[14] = esk_cm_ld(cs, sp + 20, 4);
+    /* PopStack, with the privilege of the mode returned to */
+    cs->access = ACC_UNSTACK;
+    cs->force_unpriv = to_thread && (cs->control & 1);
+    u32 r0 = esk_cm_ld(cs, sp, 4), r1 = esk_cm_ld(cs, sp + 4, 4);
+    u32 r2 = esk_cm_ld(cs, sp + 8, 4), r3 = esk_cm_ld(cs, sp + 12, 4);
+    u32 r12 = esk_cm_ld(cs, sp + 16, 4), r14 = esk_cm_ld(cs, sp + 20, 4);
     u32 ra = esk_cm_ld(cs, sp + 24, 4);
     u32 x = esk_cm_ld(cs, sp + 28, 4);
-    u32 frame = 0x20;
+    u32 frame = 0x20, fs[16] = { 0 }, fpscr = cs->fpscr;
+    /* an FP area lazy preservation never wrote: the registers still hold
+     * the context's values */
+    int fp_load = fp_frame && !(cs->fpccr & 1u);
     if (fp_frame) {
-        for (int i = 0; i < 16; i++)
-            cs->S[i] = esk_cm_ld(cs, sp + 32 + 4 * (u32)i, 4);
-        cs->fpscr = esk_cm_ld(cs, sp + 96, 4);
+        if (fp_load) {
+            for (int i = 0; i < 16; i++)
+                fs[i] = esk_cm_ld(cs, sp + 32 + 4 * (u32)i, 4);
+            fpscr = esk_cm_ld(cs, sp + 96, 4);
+        }
         frame = 0x68;
     }
+    cs->access = ACC_NORMAL;
+    cs->force_unpriv = 0;
     if (cs->fault_exc) {
-        cs->fault_exc = 0;
-        lockup(cs, "a fault while unstacking an exception frame");
+        /* the return is abandoned: the derived exception is taken from
+         * Handler mode, the frame left where it is, LR the EXC_RETURN that
+         * failed */
+        int d = derived_fault(cs, esk_cm_exec_prio(cs));
+        if (!d) {
+            lockup(cs, "a fault while unstacking an exception frame");
+            return;
+        }
+        if (psp_was != cs->psp_active)
+            esk_cm_use_psp(cs, psp_was);
+        cs->control = control;
+        cs->other_sp = other;
+        exc_taken(cs, d, ret);
         return;
+    }
+    cs->R[0] = r0;
+    cs->R[1] = r1;
+    cs->R[2] = r2;
+    cs->R[3] = r3;
+    cs->R[12] = r12;
+    cs->R[14] = r14;
+    if (fp_frame) {
+        if (fp_load) {
+            memcpy(cs->S, fs, sizeof fs);
+            cs->fpscr = fpscr;
+        }
+        cs->fpccr &= ~1u;                   /* LSPACT */
     }
     cs->R[13] = (sp + frame) | ((x >> 9 & 1) ? 4 : 0);
     if (cs->model->fpu)
@@ -452,6 +601,8 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
     cs->ipsr = to_thread ? 0 : (x & 0x1ff);
     cs->excl_valid = 0;
     cs->pc = ra & ~1u;
+    if (to_thread && (cs->scr & SCR_SLEEPONEXIT))
+        sleep_now(cs, 0);
 }
 
 /* ---- semihosting ------------------------------------------------------ */
@@ -534,14 +685,21 @@ int esk_cm_wfx_idle(struct esk_cm_state *cs)
     return 1;
 }
 
+/* the core sleeps, deeply with SLEEPDEEP */
+static void sleep_now(struct esk_cm_state *cs, int wfe)
+{
+    cs->in_wfe = wfe;
+    if (esk_cm_wfx_idle(cs) && (cs->scr & SCR_SLEEPDEEP) && cs->sim->deep_sleep)
+        cs->sim->deep_sleep(cs->sim);
+}
+
 void esk_cm_wait(struct esk_cm_state *cs, int wfe)
 {
     if (wfe && cs->event) {
         cs->event = 0;
         return;
     }
-    cs->in_wfe = wfe;
-    (void)esk_cm_wfx_idle(cs);
+    sleep_now(cs, wfe);
 }
 
 void esk_cm_sev(struct esk_cm_state *cs)
@@ -553,12 +711,16 @@ void esk_cm_sev(struct esk_cm_state *cs)
 }
 
 /* A halfword of code: from memory, or from a device that answers there (a
- * ROM: the RP2040's, rp2040.c). 0 when nothing does. */
-static int fetch16(struct esk_mach *s, u32 a, u8 *b)
+ * ROM: the RP2040's, rp2040.c). 0 when nothing does; *rom the read-only
+ * region it came from, whose code may be kept decoded */
+static int fetch16(struct esk_mach *s, u32 a, u8 *b, const struct esk_region **rom)
 {
     struct esk_region *r = esk_bus_region(&s->bus, a, 2);
+    *rom = 0;
     if (r) {
         memcpy(b, r->mem + (a - r->base), 2);
+        if (r->rom)
+            *rom = r;
         return 1;
     }
     u32 v;
@@ -590,24 +752,60 @@ static void step(struct esk_cpu *c)
         return;
     }
     u8 b[4];
-    if (!fetch16(s, cs->pc, b)) {
-        take_sync(cs, EXC_BUS, BFSR_IBUSERR, cs->pc);
+    if ((cs->mpu_on || cs->pc >= 0x40000000u) && esk_cm_mpu_denied(cs, cs->pc, 2, 0, 1)) {
+        take_sync(cs, EXC_MEM, MMFSR_IACCVIOL, cs->pc);
         return;
     }
     u32 h[2];
-    h[0] = (u32)b[0] | (u32)b[1] << 8;
-    h[1] = 0;
-    int size = 2;
-    if ((h[0] >> 11) >= 0x1d) {
-        if (!fetch16(s, cs->pc + 2, b + 2)) {
+    int size, br;
+    u32 cost;
+    struct esk_cm_dc *e = &cs->dc[(cs->pc >> 1) & (ESK_CM_DC - 1)];
+    if (e->r && e->pc == cs->pc && e->gen == e->r->gen) {
+        /* decoded before, from memory that has not changed */
+        h[0] = e->h0;
+        h[1] = e->h1;
+        size = e->size;
+        cost = e->cost;
+        br = e->br;
+        if (size == 4 && (cs->mpu_on || cs->pc + 2 >= 0x40000000u) &&
+            esk_cm_mpu_denied(cs, cs->pc + 2, 2, 0, 1)) {
+            take_sync(cs, EXC_MEM, MMFSR_IACCVIOL, cs->pc);
+            return;
+        }
+    } else {
+        const struct esk_region *r0, *r1 = 0;
+        if (!fetch16(s, cs->pc, b, &r0)) {
             take_sync(cs, EXC_BUS, BFSR_IBUSERR, cs->pc);
             return;
         }
-        h[1] = (u32)b[2] | (u32)b[3] << 8;
-        size = 4;
+        h[0] = (u32)b[0] | (u32)b[1] << 8;
+        h[1] = 0;
+        size = 2;
+        if ((h[0] >> 11) >= 0x1d) {
+            if ((cs->mpu_on || cs->pc + 2 >= 0x40000000u) && esk_cm_mpu_denied(cs, cs->pc + 2, 2, 0, 1)) {
+                take_sync(cs, EXC_MEM, MMFSR_IACCVIOL, cs->pc);
+                return;
+            }
+            if (!fetch16(s, cs->pc + 2, b + 2, &r1)) {
+                take_sync(cs, EXC_BUS, BFSR_IBUSERR, cs->pc);
+                return;
+            }
+            h[1] = (u32)b[2] | (u32)b[3] << 8;
+            size = 4;
+        }
+        cost = (u32)esk_cm_cost(b, (size_t)size, &br);
+        /* kept when it all came from one read-only region */
+        if (r0 && (size == 2 || r1 == r0) && cost < 256) {
+            e->r = r0;
+            e->gen = r0->gen;
+            e->pc = cs->pc;
+            e->h0 = (u16)h[0];
+            e->h1 = (u16)h[1];
+            e->size = (u8)size;
+            e->cost = (u8)cost;
+            e->br = (u8)br;
+        }
     }
-    int br;
-    u32 cost = (u32)esk_cm_cost(b, (size_t)size, &br);
     s->insns++;
     s->cycles += cost;
 
@@ -651,6 +849,8 @@ static void step(struct esk_cpu *c)
             cs->bfar = cs->fault_addr;
             bits |= 1u << 15;
         }
+        if (exc == EXC_MEM && (bits & MMFSR_MMARVALID))
+            cs->mmfar = cs->fault_addr;
         if (exc == EXC_SVC) {
             /* SVC completes: it returns past itself */
             if (was_in_it && !is_it)
@@ -685,8 +885,10 @@ static void step(struct esk_cpu *c)
          * not one -- a recursive function's last frame returns to the
          * same pop in its caller, with sp moved on -- and nor is any
          * jump to itself that wrote a register. */
-        if (!wake_pending(cs))
+        if (!wake_pending(cs)) {
             s->asleep = 1;
+            cs->in_wfe = 0;
+        }
     }
     cs->pc = cs->npc;
 }
@@ -705,7 +907,13 @@ static void cpu_reset(struct esk_cpu *c)
     int prio_bits = k->prio_bits;
     void (*sev)(void *) = k->sev;
     void *sev_ctx = k->sev_ctx;
+    int mpu_regions = k->mpu_regions;
+    struct esk_cm_dc *dc = k->dc;
     memset(k, 0, sizeof *k);
+    k->mpu_regions = mpu_regions;
+    k->dc = dc;
+    if (dc)
+        memset(dc, 0, ESK_CM_DC * sizeof *dc);
     k->cpu = keep;
     k->sim = s;
     k->model = model;
@@ -741,13 +949,23 @@ static void cpu_interrupt(struct esk_cpu *c, int n)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
     esk_cm_set_pend(cs, n);
-    if (cs->sim->asleep && wake_pending(cs))
+    if (cs->sim->asleep && !cs->sim->powered_down && wake_pending(cs)) {
         cs->sim->asleep = 0;
+        if (cs->in_wfe)
+            cs->event = 0; /* SEVONPEND's event ended the WFE with it */
+    }
 }
 
 static int cpu_wake_pending(struct esk_cpu *c)
 {
-    return wake_pending((const struct esk_cm_state *)c);
+    struct esk_cm_state *cs = (struct esk_cm_state *)c;
+    if (cs->sim->powered_down)
+        return 0;
+    if (cs->in_wfe && cs->event) {
+        cs->event = 0; /* the event that ends a WFE is consumed (SEVONPEND's) */
+        return 1;
+    }
+    return wake_pending(cs);
 }
 
 /* ---- the registers, as GDB numbers them --------------------------------
@@ -981,11 +1199,18 @@ static int cpu_disasm(struct esk_cpu *c, u32 addr, char *text, size_t cap)
     return esk_dis_thumb(addr & ~1u, h1, h2, text, cap);
 }
 
+static void cpu_run(struct esk_cpu *c, u64 end)
+{
+    struct esk_mach *s = ((struct esk_cm_state *)c)->sim;
+    while (s->state == ESK_MACH_RUN && s->cycles < end && !s->yield && !s->asleep && !s->bus.watch_hit)
+        step(c);
+}
+
 static const struct esk_cpu_ops cortexm_ops = {
     "cortex-m", 40, "an ARM image",
     cpu_reset, step, cpu_pc, cpu_reg_read, cpu_reg_write,
     cpu_gdb_g_regs, cpu_gdb_xml, 2, cpu_interrupt, 15, 1, 0, cpu_reg_name, cpu_wake_pending,
-    cpu_disasm,
+    cpu_disasm, cpu_run,
 };
 
 /* the core of an MCU: the model, its NVIC's priority bits, and its own
@@ -1006,6 +1231,9 @@ struct esk_cm_state *esk_cm_new(struct esk_mach *s, const char *model, int prio_
         return 0;
     k->cpu.ops = &cortexm_ops;
     k->sim = s;
+    k->dc = (struct esk_cm_dc *)esk_mach_alloc(s, ESK_CM_DC * sizeof *k->dc);
+    if (!k->dc)
+        return 0;
     k->model = m;
     k->prio_bits = prio_bits;
     k->tbit = 1;

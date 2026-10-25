@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/wifi_scanner",
+  "version": "0.1.0",
+  "name": "Wi-Fi analyzer (phone)",
+  "category": "instruments",
+  "description": "A phone's Wi-Fi list, or a Wi-Fi analyzer app on it: it scans the 2.4 GHz channels as a phone does and lists each network it hears, its SSID, BSSID, channel, security and RSSI, the strongest first. It reaches the circuit only through the air.",
+  "keywords": [
+    "wifi",
+    "wi-fi",
+    "scanner",
+    "analyzer",
+    "phone",
+    "ssid",
+    "access point",
+    "rssi",
+    "2.4 ghz"
+  ],
+  "pins": [],
+  "params": {
+    "channels": {
+      "type": "integer",
+      "default": 13,
+      "min": 1,
+      "max": 14,
+      "doc": "It scans channels 1 to this one (13 in Europe and most of the world, 11 in North America)"
+    },
+    "dwell": {
+      "type": "number",
+      "unit": "ms",
+      "default": 40,
+      "min": 5,
+      "max": 500,
+      "doc": "How long it stays on each channel"
+    },
+    "period": {
+      "type": "number",
+      "unit": "s",
+      "default": 10,
+      "min": 1,
+      "max": 600,
+      "doc": "A scan begins every period, as a phone scans while its Wi-Fi settings are open"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "doc": "Active scanning: a probe request for any SSID on each channel, as phones scan; passively it hears beacons only"
+    },
+    "address": {
+      "type": "string",
+      "default": "da:a1:19:6e:2c:01",
+      "doc": "Its MAC address, randomised and locally administered as phones' are"
+    }
+  },
+  "outputs": [
+    {
+      "name": "networks",
+      "type": "integer",
+      "doc": "The networks heard in the scan going on or the last one finished"
+    },
+    {
+      "name": "scans",
+      "type": "integer",
+      "doc": "Scans finished"
+    },
+    {
+      "name": "probes",
+      "type": "integer",
+      "doc": "Probe requests sent"
+    },
+    {
+      "name": "channel",
+      "type": "integer",
+      "doc": "The channel it listens on now, 0 between scans"
+    },
+    {
+      "name": "list",
+      "type": "string",
+      "doc": "Each network, the strongest first: its BSSID, channel, RSSI, security (Open, WEP, WPA, WPA2, WPA3, WPA2/WPA3, WPA2-Enterprise) and SSID; a hidden one's SSID is empty"
+    }
+  ],
+  "model": {
+    "primitive": "wifi_scanner"
+  },
+  "functional": {
+    "primitive": "wifi_scanner"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {}
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Scanning as phones do (IEEE 802.11-2020 11.1.4): channels 1 to `channels` in turn, `dwell` ms on each, a scan every `period`; active scanning: DIFS after it tunes, a probe request for the wildcard SSID from its address, the probe responses addressed to it taken and acknowledged; passive: the beacons only; each BSS's BSSID, SSID (hidden ones' empty), channel from its DS Parameter Set, security from the Privacy bit, the RSN element's AKM suites (PSK, SAE, 802.1X) and WPA's vendor element, the RSSI the free-space path loss over the bench distance gives (engine/air.h); the networks of the scan going on and the last one, the strongest first.",
+      "omissions": [
+        "the 5 and 6 GHz bands",
+        "DFS channels",
+        "802.11k/v neighbour reports",
+        "connecting to a network (it is no station)",
+        "more than 24 networks"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "As functional: it has no pins.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "IEEE Std 802.11-2020: scanning (11.1.4), the beacon and probe frames (9.3.3), the RSN element (9.4.2.24)",
+        "url": "https://standards.ieee.org/ieee/802.11/7028/",
+        "date": "2026-10-22",
+        "notes": "Active and passive scanning, the probe request and response, the capability information's Privacy bit, the RSN element's AKM suites."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

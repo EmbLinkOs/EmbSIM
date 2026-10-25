@@ -7,7 +7,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readTextFile, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import type { OpenedFile, Platform } from './platform';
 
 /** Sends the workbench's errors to the shell, which prints them: the webview's console is not visible. */
@@ -42,6 +42,12 @@ export function createTauriPlatform(): Platform {
       const path = await save({ defaultPath: suggestedName });
       if (!path) return null;
       await writeTextFile(path, text);
+      return path;
+    },
+    async saveBinaryFile(suggestedName, bytes) {
+      const path = await save({ defaultPath: suggestedName });
+      if (!path) return null;
+      await writeFile(path, bytes);
       return path;
     },
     async writeClipboard(text) {

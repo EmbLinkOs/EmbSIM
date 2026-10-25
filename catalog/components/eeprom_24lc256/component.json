@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/eeprom_24lc256",
+  "version": "1.0.0",
+  "name": "24LC256 I2C EEPROM",
+  "category": "misc",
+  "description": "256-kbit (32768 x 8) serial EEPROM on I2C (Microchip 24LC256): two address bytes, byte and 64-byte page writes with a self-timed write cycle during which it does not acknowledge, sequential reads, address from A0-A2, write protect.",
+  "keywords": [
+    "memory",
+    "eeprom",
+    "24LC256",
+    "24AA256",
+    "24FC256",
+    "AT24C256",
+    "i2c",
+    "non-volatile",
+    "storage"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A0",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Address bit 0: 0x50 + A2..A0 (unconnected reads low)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Address bit 1: 0x50 + A2..A0 (unconnected reads low)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A2",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Address bit 2: 0x50 + A2..A0 (unconnected reads low)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground"
+    },
+    {
+      "name": "SDA",
+      "number": 5,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCL",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "WP",
+      "number": 7,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Write protect, active high (unconnected reads low: writes enabled)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply (defaults to the family rail)"
+    }
+  ],
+  "params": {
+    "twr": {
+      "type": "number",
+      "unit": "s",
+      "default": "5m",
+      "min": 0,
+      "max": "20m",
+      "doc": "Write cycle time (the datasheet's maximum, 5 ms)"
+    },
+    "view_at": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 32767,
+      "doc": "First address of the 64 bytes the view output shows (an inspector setting, not a pin)"
+    }
+  },
+  "outputs": [
+    {
+      "name": "view",
+      "type": "string",
+      "doc": "64 bytes from view_at, in hexadecimal"
+    },
+    {
+      "name": "writes",
+      "type": "integer",
+      "doc": "Bytes committed"
+    },
+    {
+      "name": "cycles",
+      "type": "integer",
+      "doc": "Write cycles started"
+    },
+    {
+      "name": "busy",
+      "type": "boolean",
+      "doc": "In a write cycle"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Address 0x50 + A2..A0, two address bytes (A15 don't care), byte and page writes committed at STOP with the 64-byte page wrap, no write cycle after a repeated START, sequential and current-address reads rolling over at 7FFF, no ACK during the write cycle (ACK polling), WP high blocks writes but still runs the cycle.",
+      "omissions": [
+        "endurance and retention",
+        "contents are not kept between sessions",
+        "the bus speed limits (400 kHz at 2.5 V, 1 MHz for the 24FC256): faster clocks are decoded too",
+        "the write cycle time is always twr (the datasheet's maximum), not the shorter typical"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; tWR as set.",
+      "omissions": [
+        "endurance and retention",
+        "contents are not kept between sessions",
+        "the bus speed limits (400 kHz at 2.5 V, 1 MHz for the 24FC256): faster clocks are decoded too",
+        "the write cycle time is always twr (the datasheet's maximum), not the shorter typical"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "endurance and retention",
+        "contents are not kept between sessions",
+        "the bus speed limits (400 kHz at 2.5 V, 1 MHz for the 24FC256): faster clocks are decoded too",
+        "the write cycle time is always twr (the datasheet's maximum), not the shorter typical",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Microchip 24AA256/24LC256/24FC256, 256K I2C Serial EEPROM, data sheet DS20001203 (addressing, page size, tWR, ACK polling)"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "SDA": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCL": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "WP": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "A0": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "A1": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "A2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

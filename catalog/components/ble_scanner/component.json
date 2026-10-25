@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ble_scanner",
+  "version": "0.1.0",
+  "name": "Bluetooth LE scanner",
+  "category": "instruments",
+  "description": "A Bluetooth LE scanner, as a phone's scanner app sees the devices around it: it listens on the advertising channels and lists each advertiser it hears, its address, PDU type, name and RSSI. It reaches the circuit only through the air.",
+  "keywords": [
+    "bluetooth",
+    "ble",
+    "bluetooth le",
+    "scanner",
+    "advertising",
+    "nrf connect",
+    "beacon",
+    "2.4 ghz"
+  ],
+  "pins": [],
+  "params": {
+    "window": {
+      "type": "number",
+      "unit": "ms",
+      "default": 30,
+      "min": 2.5,
+      "max": 10240,
+      "doc": "How long it listens in each scan interval"
+    },
+    "interval": {
+      "type": "number",
+      "unit": "ms",
+      "default": 30,
+      "min": 2.5,
+      "max": 10240,
+      "doc": "The scan interval: it listens on the next advertising channel (37, 38, 39) each interval"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "doc": "Active scanning, as phones scan: a SCAN_REQ after each scannable PDU (with the specification's backoff) for the advertiser's scan response"
+    },
+    "address": {
+      "type": "string",
+      "default": "f2:4b:9c:01:23:45",
+      "doc": "The phone's random static address, its SCAN_REQs' ScanA"
+    }
+  },
+  "outputs": [
+    {
+      "name": "devices",
+      "type": "integer",
+      "doc": "The advertisers heard"
+    },
+    {
+      "name": "pdus",
+      "type": "integer",
+      "doc": "Advertising PDUs and scan responses heard"
+    },
+    {
+      "name": "requests",
+      "type": "integer",
+      "doc": "SCAN_REQs sent"
+    },
+    {
+      "name": "list",
+      "type": "string",
+      "doc": "Each advertiser: its address (public or random), last PDU type, RSSI, whether it is connectable, its name and, for an iBeacon, its UUID, major, minor and measured power"
+    }
+  ],
+  "model": {
+    "primitive": "ble_scanner"
+  },
+  "functional": {
+    "primitive": "ble_scanner"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {}
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Passive scanning on the primary advertising channels at 1M: ADV_IND, ADV_DIRECT_IND, ADV_NONCONN_IND and ADV_SCAN_IND heard on the channel its window is open on, the scan window and interval as set (Bluetooth Core 5.4 Vol 6 Part B 2.3, 4.4.3); active scanning: a SCAN_REQ T_IFS after ADV_IND and ADV_SCAN_IND from its random static address, the backoff procedure (4.4.3.2), the SCAN_RSP taken; each advertiser's address and kind, its local name from the AD structures, an iBeacon's proximity UUID, major, minor and measured power (Apple's manufacturer data), the RSSI the free-space path loss over the bench distance gives (engine/air.h).",
+      "omissions": [
+        "connecting",
+        "extended advertising on the secondary channels",
+        "the 2M and Coded PHYs",
+        "filter policies",
+        "more than 16 advertisers"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "As functional: it has no pins.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Bluetooth Core Specification 5.4, Vol 6 Part B: the Link Layer (advertising PDUs, scanning)",
+        "url": "https://www.bluetooth.com/specifications/specs/core-specification-5-4/",
+        "date": "2026-10-22",
+        "notes": "The advertising channel PDUs and their headers, the AD structures' local names, the scan window and interval."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

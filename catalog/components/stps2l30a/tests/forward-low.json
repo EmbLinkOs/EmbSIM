@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "forward-low",
+  "description": "0.1 A forward: about 0.22 V.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/stps2l30a"
+      },
+      {
+        "id": "I",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.1
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "A": [
+        "DUT.A",
+        "I.-"
+      ],
+      "GND": [
+        "DUT.K",
+        "I.+",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:A": {
+      "at": "1ms",
+      "min_v": 0.18,
+      "max_v": 0.27
+    }
+  }
+}

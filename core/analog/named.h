@@ -13,6 +13,9 @@ extern const esk_adev_ops esk_relay_contacts_ops;
 extern const esk_adev_ops esk_spdt_ops;
 extern const esk_adev_ops esk_button4_ops;
 extern const esk_adev_ops esk_ptc_fuse_ops;
+/* an inline USB power meter (meter.c) */
+extern const esk_adev_ops esk_usb_meter_ops;
+void esk_usb_meter_on_time(esk_adev *d, es_time_t now);
 /* a PTC fuse's look at its temperatures (its component's wake) */
 void esk_ptc_on_time(esk_adev *d, es_time_t now);
 #endif

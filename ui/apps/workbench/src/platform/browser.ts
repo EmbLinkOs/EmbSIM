@@ -2,6 +2,19 @@
 // Copyright 2026 Junior Deogracias
 import type { OpenedFile, Platform } from './platform';
 
+/** Hands a blob to the browser as a download; its name as given. */
+function download(suggestedName: string, blob: Blob): string {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return suggestedName;
+}
+
 export function createBrowserPlatform(): Platform {
   return {
     kind: 'browser',
@@ -29,16 +42,10 @@ export function createBrowserPlatform(): Platform {
       });
     },
     async saveTextFile(suggestedName, text, mime) {
-      const blob = new Blob([text], { type: mime });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = suggestedName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      return suggestedName;
+      return download(suggestedName, new Blob([text], { type: mime }));
+    },
+    async saveBinaryFile(suggestedName, bytes, mime) {
+      return download(suggestedName, new Blob([bytes as Uint8Array<ArrayBuffer>], { type: mime }));
     },
     async writeClipboard(text) {
       await navigator.clipboard?.writeText(text);

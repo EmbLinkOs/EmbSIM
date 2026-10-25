@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "alone",
+  "description": "With nothing advertising it keeps scanning.",
+  "policy": "functional",
+  "until": "200ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ble_central"
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.state": {
+      "at": "200ms",
+      "equals": "scanning"
+    }
+  }
+}

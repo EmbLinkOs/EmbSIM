@@ -18,11 +18,11 @@
  *       alternate-function output (10, 11): a USART's TX pin, the line
  *         idle, reads 1 (USART1 PA9, or PB6 remapped; USART2 PA2; USART3
  *         PB10, or PC10 partly remapped); a timer's enabled compare
- *         channel's pin is its output (tim.c), an SPI master's SCK, MOSI
- *         and NSS and an I2C master's SCL and SDA are theirs (spi_f1.c,
- *         i2c_f1.c; open-drain for I2C, CNF 11); any other is let go (its
- *         peripheral has no model to drive it) and reads what the circuit
- *         drives, else 0;
+ *         channel's pin is its output (tim.c), an SPI's SCK, MOSI, MISO
+ *         and NSS and an I2C's SCL, SDA and SMBA are theirs (spi.c, i2c.c;
+ *         open-drain for I2C, CNF 11, a 1 letting go); any other is let go
+ *         (its peripheral has no model to drive it) and reads what the
+ *         circuit drives, else 0;
  *   - the debug port's pins, while AFIO's MAPR.SWJ_CFG keeps them (out of
  *     reset all five), are its, whatever CRL and CRH say: PA13 (JTMS)
  *     and PA15 (JTDI) pulled up, PA14 (JTCK) pulled down, PB4 (JNTRST)
@@ -31,12 +31,16 @@
  *   - each pin's configuration as it changes goes to the MCU runtime
  *     (esk_mach_host.pin_cfg: driven 0 or 1, open-drain, the weak pull, or
  *     analog), which drives the pin's net; what the rest of the circuit
- *     drives comes back into IDR (pin_in), and IDR's changes go to EXTI;
+ *     drives comes back into IDR (pin_in), and IDR's changes go to EXTI,
+ *     the timers' inputs, nCTS and the SPIs' and I2Cs' inputs;
+ *   - an output's MODE (2, 10 or 50 MHz) is its speed: the description's
+ *     output resistance and edge rate for it;
  *   - LCKR is a plain register: the lock sequence is not modelled.
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/stm32f1-gpio.c. Changes:
  * pins are reported as configurations (with their pulls) rather than
  * levels, and IDR's edges feed EXTI. */
+#include <stdio.h>
 #include <string.h>
 
 #include "mcu/stm32/stm32.h"
@@ -48,6 +52,7 @@ struct f1gpio {
     int port;               /* 0 for A */
     esk_mach_pin out[16];   /* what each pin was told to be */
     int known;
+    int updating, again;    /* update() under way, and asked for again */
 };
 
 static u32 cfg(const struct f1gpio *g, int pin)
@@ -91,6 +96,58 @@ int esk_stm32f1_usart_pin(struct esk_mach *m, const char *unit, int tx, int *por
     return 0;
 }
 
+int esk_stm32f1_usart_fn_pin(struct esk_mach *m, const char *unit, const char *fn)
+{
+    /* RM0008 tables 54-56: CK, CTS, RTS as port * 16 + bit */
+    static const int u1[3] = { 8, 11, 12 };
+    static const int u2[2][3] = { { 4, 0, 1 }, { 3 * 16 + 7, 3 * 16 + 3, 3 * 16 + 4 } };
+    static const int u3[3][3] = { { 16 + 12, 16 + 13, 16 + 14 }, { 32 + 12, 16 + 13, 16 + 14 },
+                                  { 48 + 10, 48 + 11, 48 + 12 } };
+    u32 mp = esk_stm32f1_mapr(m);
+    int i = !strcmp(fn, "CK") ? 0 : !strcmp(fn, "CTS") ? 1 : !strcmp(fn, "RTS") ? 2 : -1, r;
+    if (i < 0)
+        return -1;
+    if (!strcmp(unit, "USART1"))
+        return u1[i];
+    if (!strcmp(unit, "USART2"))
+        return u2[mp >> 3 & 1][i];
+    if (!strcmp(unit, "USART3")) {
+        r = (int)(mp >> 4 & 3);
+        return u3[r == 3 ? 2 : r == 1 ? 1 : 0][i];
+    }
+    return -1;
+}
+
+/* a USART's RTS or CK output on the pin, or -1 */
+static int usart_fn_out(const struct f1gpio *g, int pin)
+{
+    static const char *const units[3] = { "USART1", "USART2", "USART3" };
+    static const char *const fns[2] = { "RTS", "CK" };
+    char sig[16];
+    int i, k, v;
+    for (i = 0; i < 3; i++)
+        for (k = 0; k < 2; k++)
+            if (esk_stm32f1_usart_fn_pin(g->s, units[i], fns[k]) == g->port * 16 + pin) {
+                snprintf(sig, sizeof sig, "%s_%s", units[i], fns[k]);
+                if ((v = esk_stm32_usart_signal(g->s, sig)) >= 0)
+                    return v;
+            }
+    return -1;
+}
+
+/* nCTS's level from its pin */
+static void usart_cts_in(const struct f1gpio *g, int pin, int level)
+{
+    static const char *const units[3] = { "USART1", "USART2", "USART3" };
+    char sig[16];
+    int i;
+    for (i = 0; i < 3; i++)
+        if (esk_stm32f1_usart_fn_pin(g->s, units[i], "CTS") == g->port * 16 + pin) {
+            snprintf(sig, sizeof sig, "%s_CTS", units[i]);
+            esk_stm32_usart_signal_input(g->s, sig, level);
+        }
+}
+
 /* a USART's TX pin, as AFIO's MAPR places it */
 static int usart_tx(const struct f1gpio *g, int pin)
 {
@@ -103,7 +160,7 @@ static int usart_tx(const struct f1gpio *g, int pin)
     return 0;
 }
 
-static void update(struct f1gpio *g)
+static void update_once(struct f1gpio *g)
 {
     struct esk_mach *s = g->s;
     u32 mp = esk_stm32f1_mapr(s), idr = 0, odr = (u32)g->odr->value;
@@ -127,14 +184,21 @@ static void update(struct f1gpio *g)
                      * circuit (an I2C bus's pull-ups) */
                     o.drive = usart_tx(g, i) ? 1 : esk_stm32f1_tim_pin(s, g->port, i);
                     if (o.drive < 0)
+                        o.drive = usart_fn_out(g, i);
+                    if (o.drive < 0)
                         o.drive = esk_stm32f1_spi_pin(s, g->port, i);
                     if (o.drive < 0)
                         o.drive = esk_stm32f1_i2c_pin(s, g->port, i);
+                    if (o.drive == 1 && (cnf & 1))
+                        o.drive = -1; /* open-drain: a 1 lets go */
                     o.af = 1;
                 }
                 else if (!(cnf & 1) || !(odr >> i & 1))
                     o.drive = (int)(odr >> i & 1);
                 o.open_drain = (cnf & 1) != 0;
+                /* MODE 10 2 MHz, 01 10 MHz, 11 50 MHz: the description's
+                 * rout and slew in that order */
+                o.speed = mode == 2 ? 1 : mode == 1 ? 2 : 3;
             } else if (cnf == 0) {
                 o.analog = 1;
             } else if (cnf == 2) {
@@ -160,10 +224,36 @@ static void update(struct f1gpio *g)
     g->known = 1;
     if (old != idr) {
         esk_rf_hw(g->idr, (g->idr->value & ~(u64)0xffffu) | idr);
-        for (i = 0; i < 16; i++)
-            if (((old ^ idr) >> i & 1) && esk_stm32f1_exti_port(s, i) == g->port)
+        for (i = 0; i < 16; i++) {
+            if (!((old ^ idr) >> i & 1))
+                continue;
+            if (esk_stm32f1_exti_port(s, i) == g->port)
                 esk_stm32_exti_input(s, i, (int)(idr >> i & 1));
+            esk_stm32f1_tim_input(s, g->port, i, (int)(idr >> i & 1)); /* input capture */
+            usart_cts_in(g, i, (int)(idr >> i & 1));
+            esk_stm32f1_spi_input(s, g->port, i, (int)(idr >> i & 1));
+            esk_stm32f1_i2c_input(s, g->port, i, (int)(idr >> i & 1));
+        }
     }
+}
+
+/* again while a peripheral that heard a pin changed its own pins on this
+ * port (a slave SPI's MISO after its SCK's edge) */
+static void update(struct f1gpio *g)
+{
+    int round;
+    if (g->updating) {
+        g->again = 1;
+        return;
+    }
+    g->updating = 1;
+    for (round = 0; round < 8; round++) {
+        g->again = 0;
+        update_once(g);
+        if (!g->again)
+            break;
+    }
+    g->updating = 0;
 }
 
 static u32 f1gpio_read(void *ctx, u32 off, int n)
@@ -239,7 +329,7 @@ void *esk_stm32f1_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)
         return 0; /* not this layout: the registers alone */
     g.port = p->name[4] - 'A';
     s->pins_changed = esk_stm32f1_pins_changed;
-    s->uart_pin = esk_stm32f1_usart_pin;
+    s->uart_pin = esk_stm32_usart_pin;
     c = (struct f1gpio *)esk_mach_alloc(s, sizeof *c);
     if (c)
         *c = g;

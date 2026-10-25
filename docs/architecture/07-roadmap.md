@@ -26,6 +26,14 @@ instruments used as the real ones, imperfections and damage, and AI
 access (ADR-030 to ADR-035). Every item is built by ADR-030's five
 questions.
 
+The owner's decision of 2026-10-19 orders the next work: the two boards
+EmbLinkRTOS is developed against are completed first, one at a time. First
+the NUCLEO-F446RE (STM32F446RE, Cortex-M4F; EmbLinkRTOS's ADR-025), then the
+ESP32-C3-DevKitM-1 (M6's ESP32-class board, Q11). Each board is done when
+its MCU, its on-board devices, its vendor's examples and EmbLinkRTOS's
+conformance suite all pass ([the plan](../engineering/rtos-boards.md)). The ESP32-C3's Wi-Fi and Bluetooth LE follow ([their plan](../engineering/c3-radios.md)).
+M6's remaining parts and M7 follow.
+
 ## 2. Milestones
 
 | Milestone | Deliverable | Exit criteria |

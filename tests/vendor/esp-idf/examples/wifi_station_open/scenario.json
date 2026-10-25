@@ -1,0 +1,114 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "wifi_station_open",
+ "until": "3s",
+ "description": "wifi/getting_started/station, configured in menuconfig for the open network CoffeeShop: the station finds its access point on channel 1 by a probe, authenticates (open system), associates (AID 1) at -34 dBm, its 5 m away, starts modem sleep, and leases 192.168.1.100 from the router behind the access point by DHCP; the example reports the address and returns.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "auth",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:state: init -> auth (0xb0)\r\n"
+   }
+  },
+  {
+   "id": "assoc",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:state: auth -> assoc (0x0)\r\n"
+   }
+  },
+  {
+   "id": "run",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:state: assoc -> run (0x10)\r\n"
+   }
+  },
+  {
+   "id": "connected",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:connected with CoffeeShop, aid = 1, channel 1, BW20, bssid = 02:e5:00:00:00:02\r\n"
+   }
+  },
+  {
+   "id": "security",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:security: Open Auth, phy: bg, rssi: -34\r\n"
+   }
+  },
+  {
+   "id": "beacon",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi:AP's beacon interval = 102400 us, DTIM period = 1\r\n"
+   }
+  },
+  {
+   "id": "lease",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "esp_netif_handlers: sta ip: 192.168.1.100, mask: 255.255.255.0, gw: 192.168.1.1\r\n"
+   }
+  },
+  {
+   "id": "got-ip",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi station: got ip:192.168.1.100\r\n"
+   }
+  },
+  {
+   "id": "reported",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "contains": "wifi station: connected to ap SSID:CoffeeShop password:\r\n"
+   }
+  },
+  {
+   "id": "ap-leased",
+   "at": "3s",
+   "probe": "ap_log",
+   "expect": {
+    "contains": "7c:df:a1:45:6d:62 leased 192.168.1.100"
+   }
+  },
+  {
+   "id": "one-station",
+   "at": "3s",
+   "probe": "ap_stations",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "no-disconnect",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "not_contains": "wifi:state: run -> init"
+   }
+  },
+  {
+   "id": "no-panic",
+   "at": "3s",
+   "probe": "console",
+   "expect": {
+    "not_contains": "Guru Meditation"
+   }
+  }
+ ]
+}

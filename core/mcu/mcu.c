@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* mcu.c -- the MCU runtime (mcu.h says what it does). */
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -9,6 +10,7 @@
 #include "mcu/dwarf.h"
 #include "mcu/mcu.h"
 #include "protocol/wsutil.h"
+#include "util/num.h"
 #include "util/str.h"
 
 #define MCU_PORTS 8
@@ -23,6 +25,26 @@
 #define MCU_QUIET_QUANTUM_PS 100000000u /* 100 us */
 #define PS_PER_S UINT64_C(1000000000000)
 #define MEGA UINT64_C(1000000)
+/* the supply current's window (ADR-036): the core's running and waiting
+ * times are averaged over it, as the board's decoupling smooths them; a
+ * frame on the air draws from its start to its end */
+#define SUPPLY_WINDOW_PS 1000000000u /* 1 ms */
+#define SUPPLY_POINTS 6
+enum { MCU_WAKE_SUPPLY = 1 };
+
+/* the part's supply current from its description's `supply` (ADR-036) */
+typedef struct mcu_supply {
+    int on;
+    double run[SUPPLY_POINTS][2], idle[SUPPLY_POINTS][2]; /* (Hz, A) */
+    int nrun, nidle;
+    double held_a, stop_a, standby_a;
+    double tx_dsss_a, tx_ofdm_a, tx_ht_a, tx_ble_a, rx_a;
+    es_time_t win_t;  /* the window's start */
+    es_time_t run_ps; /* how long the core ran in it */
+    double cpu_a;     /* the core's average over the last window */
+    double tx_a;      /* a frame being sent: the radio's current for it */
+    double set_a;     /* what the part draws now */
+} mcu_supply;
 
 typedef struct mcu_uart {
     const char *unit;
@@ -41,6 +63,8 @@ typedef struct mcu_uart {
     struct {
         es_time_t at, bit_ps;
         unsigned frame;
+        int nbits;      /* start, data and one stop bit on the line */
+        int halves;     /* the frame's length in half bits */
     } txq[MCU_TXQ_CAP];
     unsigned txq_head, txq_len;
     es_time_t tx_free; /* when the last frame's stop bit ends */
@@ -68,6 +92,9 @@ typedef struct mcu_state {
     int attached;
     esk_pin *gpio[MCU_PORTS][16];
     mcu_pinq pq[MCU_PORTS][16];
+    /* an output's resistance and edge rate at each speed setting, from the
+     * description's io.electrical (esk_mach_pin.speed); 0 left as is */
+    double rout[4], slew[4];
     esk_pin *nrst, *boot0;
     unsigned char *image;
     size_t image_len;
@@ -99,6 +126,9 @@ typedef struct mcu_state {
     char console[16];
     esk_an *an;      /* the analyses watching the firmware, or NULL */
     unsigned an_what;
+    esk_air_node air; /* its radio on the session's air, when it has one */
+    int on_air;
+    mcu_supply sup;
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -217,6 +247,150 @@ static int runnable(const mcu_state *st)
     return st->attached && !st->held && !st->boot_fail && !st->stopped && st->m.state == ESK_MACH_RUN;
 }
 
+/* ---- the supply current (ADR-036) ---------------------------------------------- */
+
+/* a table's current at `hz`: between its points, and on the line through
+ * the nearest two beyond them (not below 0) */
+static double supply_at(double (*t)[2], int n, double hz)
+{
+    int i = 0;
+    double a;
+    if (n <= 0)
+        return 0.0;
+    if (n == 1)
+        return t[0][1];
+    while (i < n - 2 && hz > t[i + 1][0])
+        i++;
+    a = t[i][1] + (t[i + 1][1] - t[i][1]) * (hz - t[i][0]) / (t[i + 1][0] - t[i][0]);
+    return a > 0.0 ? a : 0.0;
+}
+
+static int supply_table(const esk_json *j, double (*t)[2])
+{
+    size_t i;
+    int n = 0;
+    for (i = 0; i < esk_json_len(j) && n < SUPPLY_POINTS; i++) {
+        const esk_json *pt = esk_json_at(j, i);
+        double hz = -1.0, a = -1.0;
+        if (esk_json_to_double(esk_json_at(pt, 0), &hz) == 0 && esk_json_to_double(esk_json_at(pt, 1), &a) == 0 &&
+            hz > 0.0 && a >= 0.0 && (n == 0 || hz > t[n - 1][0])) {
+            t[n][0] = hz;
+            t[n][1] = a;
+            n++;
+        }
+    }
+    return n;
+}
+
+static void supply_setup(mcu_state *st, const esk_json *mcu)
+{
+    const esk_json *j = esk_json_get(mcu, "supply"), *r = esk_json_get(j, "radio");
+    mcu_supply *s = &st->sup;
+    memset(s, 0, sizeof *s);
+    if (!j)
+        return;
+    s->nrun = supply_table(esk_json_get(j, "run_a"), s->run);
+    s->nidle = supply_table(esk_json_get(j, "idle_a"), s->idle);
+    if (!s->nidle) {
+        memcpy(s->idle, s->run, sizeof s->idle);
+        s->nidle = s->nrun;
+    }
+    s->held_a = esk_json_get_num(j, "held_a", 0.0);
+    s->stop_a = esk_json_get_num(j, "stop_a", 0.0);
+    s->standby_a = esk_json_get_num(j, "standby_a", s->stop_a);
+    s->rx_a = esk_json_get_num(r, "rx_a", 0.0);
+    s->tx_dsss_a = esk_json_get_num(r, "tx_dsss_a", s->rx_a);
+    s->tx_ofdm_a = esk_json_get_num(r, "tx_ofdm_a", s->tx_dsss_a);
+    s->tx_ht_a = esk_json_get_num(r, "tx_ht_a", s->tx_ofdm_a);
+    s->tx_ble_a = esk_json_get_num(r, "tx_ble_a", s->rx_a);
+    s->on = s->nrun > 0;
+}
+
+/* a frame's transmit current: 802.11b's DSSS rates, 11g's OFDM, 11n's MCS */
+static double supply_tx(const mcu_supply *s, int kind, u32 rate_kbps)
+{
+    if (kind == ESK_AIR_BLE)
+        return s->tx_ble_a;
+    if (rate_kbps == 1000u || rate_kbps == 2000u || rate_kbps == 5500u || rate_kbps == 11000u)
+        return s->tx_dsss_a;
+    if (rate_kbps == 6000u || rate_kbps == 9000u || rate_kbps == 12000u || rate_kbps == 18000u ||
+        rate_kbps == 24000u || rate_kbps == 36000u || rate_kbps == 48000u || rate_kbps == 54000u)
+        return s->tx_ofdm_a;
+    return s->tx_ht_a;
+}
+
+/* what the part draws now: the core's state (its last window's average
+ * while it runs or waits), and the radio sending or listening */
+static double supply_now(const mcu_state *st)
+{
+    const mcu_supply *s = &st->sup;
+    double a;
+    if (!st->attached)
+        return 0.0;
+    if (st->held)
+        return s->held_a;
+    if (st->m.powered_down)
+        a = s->standby_a;
+    else if (st->m.clocks_stopped)
+        a = s->stop_a;
+    else
+        a = s->cpu_a;
+    if (s->tx_a > 0.0)
+        a += s->tx_a;
+    else if (st->m.radio.tuned && (runnable(st) || st->m.asleep) &&
+             (st->m.radio.tuned(st->m.radio.ctx, ESK_AIR_WIFI) || st->m.radio.tuned(st->m.radio.ctx, ESK_AIR_BLE)))
+        a += s->rx_a;
+    return a;
+}
+
+/* the window ends when it is due; the part's current is set again when it
+ * changed by more than its noise (0.5 mA, or 3 %): an island is not
+ * stepped again for nothing */
+static void supply_update(mcu_state *st, int force)
+{
+    mcu_supply *s = &st->sup;
+    esk_engine *e = st->c->e;
+    es_time_t now = e->sched.now;
+    double a;
+    if (!s->on)
+        return;
+    if (now >= s->win_t + SUPPLY_WINDOW_PS) {
+        double hz = (double)esk_mach_core_hz(&st->m), run = (double)s->run_ps / (double)(now - s->win_t);
+        if (run > 1.0)
+            run = 1.0;
+        s->cpu_a = run * supply_at(s->run, s->nrun, hz) + (1.0 - run) * supply_at(s->idle, s->nidle, hz);
+        s->win_t = now;
+        s->run_ps = 0;
+        /* a core asleep until later closes its next window all the same */
+        if (st->m.asleep || !runnable(st))
+            (void)esk_comp_wake_at(st->c, now + SUPPLY_WINDOW_PS, MCU_WAKE_SUPPLY);
+    }
+    a = supply_now(st);
+    if (force || fabs(a - s->set_a) > (s->set_a * 0.03 > 0.0005 ? s->set_a * 0.03 : 0.0005)) {
+        s->set_a = a;
+        esk_comp_set_supply(st->c, a, now);
+    }
+}
+
+/* the earliest time another core of the circuit waits to run from (its
+ * next quantum), or ES_TIME_MAX */
+static es_time_t peers_behind(const mcu_state *st)
+{
+    const esk_engine *e = st->c->e;
+    es_time_t t = ES_TIME_MAX;
+    size_t i;
+    for (i = 0; i < e->comps.len; i++) {
+        const esk_comp *c = e->comps.data[i];
+        const mcu_state *o;
+        if (c == st->c || !esk_mcu_is(c))
+            continue;
+        o = state_of(c);
+        if (o && o->ev && o->ev_at < t)
+            t = o->ev_at;
+    }
+    return t;
+}
+
 /* after something outside changed the machine (a pin, a byte): a sleeping
  * core an interrupt woke runs from now */
 static void wake(mcu_state *st)
@@ -225,8 +399,16 @@ static void wake(mcu_state *st)
     /* a core not yet started since its reset starts when the reset said,
      * whatever the pins do meanwhile (its first quantum reads them): so a
      * session as loaded runs as one reset does */
-    if (!runnable(st) || st->m.asleep || (st->fresh && st->ev))
+    if (!runnable(st) || (st->fresh && st->ev))
         return;
+    if (st->m.asleep && !st->m.reset_req) {
+        /* still asleep, but the input may have given a device an event
+         * sooner than the wake-up scheduled (an I2C master seeing SCL
+         * high): its quantum comes then, or that device would catch up
+         * past it and its edges in between run together */
+        schedule_sleep(st);
+        return;
+    }
     schedule_at(st, st->t > e->sched.now ? st->t : e->sched.now);
 }
 
@@ -294,6 +476,12 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
             return;
         }
     }
+    if (st->m.reset_req) {
+        /* a reset from outside the core's run (a pin's edge ending an
+         * STM32's Standby) */
+        mcu_reset_now(st, 0);
+        return;
+    }
     if (st->m.asleep) {
         if (st->m.cpu->ops->wake_pending(st->m.cpu)) {
             st->m.asleep = 0;
@@ -303,8 +491,17 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         }
     }
     /* up to the next event that is not an analog step (islands clip to
-     * this quantum's end instead), and the quantum's bound */
-    next = esk_sched_next_time_excluding(&e->sched, ESK_EV_ANALOG);
+     * this quantum's end instead) or another core's quantum, and the
+     * quantum's bound: no further than a quantum past the core furthest
+     * behind, so each core sees the others' pin changes by its next
+     * quantum boundary (SPEC-002 §5) without the two stepping each other
+     * an instruction at a time */
+    next = esk_sched_next_time_without(&e->sched, 1u << ESK_EV_ANALOG | 1u << ESK_EV_CORE);
+    {
+        es_time_t peer = peers_behind(st);
+        if (peer != ES_TIME_MAX && peer + st->quantum_ps < next)
+            next = peer + st->quantum_ps;
+    }
     limit = next;
     {
         es_time_t q = st->quantum_ps;
@@ -329,6 +526,8 @@ static void quantum_cb(void *ctx, void *arg, es_time_t now)
         used = esk_mach_run(&st->m, budget, stepping);
         st->in_quantum = 0;
         advance_time(st, used, hz);
+        st->sup.run_ps += st->t > st->q_t ? st->t - st->q_t : 0;
+        supply_update(st, 0);
         if (stepping) {
             u64 ran = st->m.insns - insns0;
             st->steps = ran >= stepping ? 0 : stepping - ran;
@@ -381,6 +580,22 @@ typedef struct pin_apply {
     int port, bit;
 } pin_apply;
 
+/* io.electrical's rout or slew_v_per_us: one value for every speed, or one
+ * per speed setting in the order the GPIO model numbers them */
+static void speed_table(const esk_json *v, double out[4])
+{
+    double d;
+    size_t i;
+    if (v && esk_json_to_double(v, &d) == 0) {
+        for (i = 0; i < 4; i++)
+            out[i] = d;
+        return;
+    }
+    for (i = 0; i < 4 && i < esk_json_len(v); i++)
+        if (esk_json_to_double(esk_json_at(v, i), &d) == 0)
+            out[i] = d;
+}
+
 static void apply_cfg(mcu_state *st, int port, int bit)
 {
     esk_pin *p = st->gpio[port][bit];
@@ -389,6 +604,30 @@ static void apply_cfg(mcu_state *st, int port, int bit)
         return;
     p->model.pull = cfg->pull == 1 ? ESK_PULL_UP : cfg->pull == 2 ? ESK_PULL_DOWN : ESK_PULL_NONE;
     p->model.drive = cfg->open_drain ? ESK_DRIVE_OPEN_DRAIN : ESK_DRIVE_PUSH_PULL;
+    if (cfg->aout) {
+        /* a DAC: its voltage behind its output resistance, both levels the
+         * same so the net settles there (as a 1 or 0 on a digital net) */
+        p->model.voc_set = 3;
+        p->model.voc_high = p->model.voc_low = cfg->volts;
+        p->model.rout = cfg->aout_r > 0.0 ? cfg->aout_r : 1.0;
+        p->model.slew_v_per_us = 1.0;
+        esk_pin_output(p, cfg->volts > (p->model.vih + p->model.vil) / 2.0 ? ESK_L1 : ESK_L0, ESK_STR_STRONG);
+        esk_pin_refresh(p);
+        return;
+    }
+    p->model.voc_set = p->model0.voc_set;
+    p->model.voc_high = p->model0.voc_high;
+    p->model.voc_low = p->model0.voc_low;
+    if (cfg->speed < 1) {
+        p->model.rout = p->model0.rout;
+        p->model.slew_v_per_us = p->model0.slew_v_per_us;
+    }
+    if (cfg->speed >= 1 && cfg->speed <= 4) {
+        if (st->rout[cfg->speed - 1] > 0.0)
+            p->model.rout = st->rout[cfg->speed - 1];
+        if (st->slew[cfg->speed - 1] > 0.0)
+            p->model.slew_v_per_us = st->slew[cfg->speed - 1];
+    }
     /* an open-drain output's 1 lets the pin go: it is an input then, whose
      * level (what an I2C slave's ACK makes of it) the program reads */
     if (cfg->drive >= 0 && !(cfg->open_drain && cfg->drive)) {
@@ -502,6 +741,16 @@ static int h_pin_volts(void *ctx, int port, int bit, double *v)
     return 1;
 }
 
+static int h_temperature(void *ctx, double *celsius)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    const esk_world *w = &st->c->e->world;
+    if (!(w->set & (1u << ESK_WF_TEMPERATURE)))
+        return 0;
+    *celsius = w->value[ESK_WF_TEMPERATURE];
+    return 1;
+}
+
 static int h_pin_watch(void *ctx, int port, int bit, int on, double v)
 {
     mcu_state *st = (mcu_state *)ctx;
@@ -555,17 +804,18 @@ static void tx_next(mcu_state *st, mcu_uart *u)
 {
     esk_engine *e = st->c->e;
     es_time_t at = u->txq[u->txq_head].at;
+    int halves = u->txq[u->txq_head].halves;
     u->frame = u->txq[u->txq_head].frame;
     u->bit_ps = u->txq[u->txq_head].bit_ps;
+    u->nbits = u->txq[u->txq_head].nbits;
     u->txq_head = (u->txq_head + 1) % MCU_TXQ_CAP;
     u->txq_len--;
-    u->nbits = 10;
     u->bit = 0;
     if (at < u->tx_free)
         at = u->tx_free;
     if (at < e->sched.now)
         at = e->sched.now;
-    u->tx_free = at + 10 * u->bit_ps;
+    u->tx_free = at + (es_time_t)halves * u->bit_ps / 2;
     (void)esk_sched_at(&e->sched, at, ESK_EV_SIGNAL, tx_bit_cb, st, (void *)(uintptr_t)(u - st->uart), &u->tx_ev);
 }
 
@@ -585,7 +835,8 @@ static void tx_bit_cb(void *ctx, void *arg, es_time_t now)
         tx_next(st, u);
 }
 
-static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
+static void h_uart_frame(void *ctx, const char *unit, int c, u32 bits, int nbits, int stop_halves,
+                         u32 bit_cycles)
 {
     mcu_state *st = (mcu_state *)ctx;
     esk_engine *e = st->c->e;
@@ -595,8 +846,14 @@ static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
     es_time_t bit_ps;
     if (!u)
         return;
-    u->tx_bytes++;
-    text_append(u, c);
+    if (nbits < 1 || nbits > 16)
+        nbits = 8;
+    if (stop_halves < 1 || stop_halves > 4)
+        stop_halves = 2;
+    if (c >= 0) {
+        u->tx_bytes++;
+        text_append(u, c);
+    }
     /* the waveform, when the TX pin is the UART's */
     if (!(st->m.uart_pin && st->m.uart_pin(&st->m, unit, 1, &port, &bit) == 0 && port < MCU_PORTS &&
           st->gpio[port][bit] && st->pq[port][bit].cfg.af && st->pq[port][bit].cfg.drive >= 0)) {
@@ -621,16 +878,38 @@ static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
     slot = (u->txq_head + u->txq_len) % MCU_TXQ_CAP;
     u->txq[slot].at = local_now(st);
     u->txq[slot].bit_ps = bit_ps ? bit_ps : 1;
-    u->txq[slot].frame = ((unsigned)c & 0xffu) << 1 | 0x200u; /* start 0, 8 data, stop 1 */
+    /* start 0, the data, a stop 1 held for the stop bits' length */
+    u->txq[slot].frame = (unsigned)((bits & ((1u << nbits) - 1)) << 1 | 1u << (nbits + 1));
+    u->txq[slot].nbits = nbits + 2;
+    u->txq[slot].halves = 2 * (nbits + 1) + stop_halves;
     u->txq_len++;
     if (!u->tx_ev)
         tx_next(st, u);
 }
 
+static void h_uart_tx(void *ctx, const char *unit, int c, u32 bit_cycles)
+{
+    h_uart_frame(ctx, unit, c, (u32)c & 0xffu, 8, 2, bit_cycles);
+}
+
+/* the receiver's frame: its data bits and stop half bits (8N1 without a
+ * format) */
+static void rx_format(const mcu_uart *u, int *data, int *halves)
+{
+    u32 f = u->rx && u->rx->format ? u->rx->format(u->rx->ctx) : 0;
+    *data = f & 0xff ? (int)(f & 0xff) : 8;
+    *halves = f >> 8 & 0xff ? (int)(f >> 8 & 0xff) : 2;
+    if (*data > 16)
+        *data = 16;
+}
+
 static es_time_t frame_ps(mcu_state *st, mcu_uart *u)
 {
     u32 bc = u->rx && u->rx->bit_cycles ? u->rx->bit_cycles(u->rx->ctx) : 1;
-    es_time_t ps = cycles_to_ps((u64)bc * 10u, esk_mach_core_hz(&st->m), NULL);
+    int data, halves;
+    es_time_t ps;
+    rx_format(u, &data, &halves);
+    ps = cycles_to_ps((u64)bc * (u64)(2 * (data + 1) + halves) / 2u, esk_mach_core_hz(&st->m), NULL);
     return ps ? ps : 1;
 }
 
@@ -692,21 +971,30 @@ static void rx_bit_cb(void *ctx, void *arg, es_time_t now)
     mcu_uart *u = &st->uart[(uintptr_t)arg];
     esk_engine *e = st->c->e;
     esk_logic v;
+    int data, halves;
     u->rx_ev = 0;
     if (!u->rx_busy || !u->rx_pin)
         return;
     v = esk_pin_level(u->rx_pin);
-    if (u->rx_bit < 8) {
+    rx_format(u, &data, &halves);
+    if (u->rx_bit < data) {
         if (v == ESK_L1)
             u->rx_shift |= 1u << u->rx_bit;
         u->rx_bit++;
         (void)esk_sched_at(&e->sched, now + u->rx_bit_ps, ESK_EV_PERIPHERAL, rx_bit_cb, st, arg, &u->rx_ev);
         return;
     }
+    /* the middle of the first stop bit */
     u->rx_busy = 0;
     catch_up(st, now);
     esk_mach_outside(&st->m);
-    if (v == ESK_L1 && runnable(st) && u->rx && u->rx->room(u->rx->ctx)) {
+    if (!runnable(st) || !u->rx || !u->rx->room(u->rx->ctx))
+        return;
+    if (u->rx->put_frame) {
+        u->rx->put_frame(u->rx->ctx, u->rx_shift, v != ESK_L1);
+        u->rx_bytes++;
+        wake(st);
+    } else if (v == ESK_L1) {
         u->rx->put(u->rx->ctx, (int)(u->rx_shift & 0xffu));
         u->rx_bytes++;
         wake(st);
@@ -731,6 +1019,11 @@ static void rx_edge(mcu_state *st, esk_pin *p)
         u->rx_busy = 1;
         u->rx_bit = 0;
         u->rx_shift = 0;
+        if (u->rx->started) {
+            catch_up(st, e->sched.now);
+            esk_mach_outside(&st->m);
+            u->rx->started(u->rx->ctx);
+        }
         (void)esk_sched_at(&e->sched, e->sched.now + u->rx_bit_ps + u->rx_bit_ps / 2, ESK_EV_PERIPHERAL,
                            rx_bit_cb, st, (void *)(uintptr_t)i, &u->rx_ev);
     }
@@ -806,24 +1099,39 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     u32 entry = 0;
     char why[160];
     int r;
+    if (!power_on && st->m.reset_cpu_only) {
+        /* the core alone starts again: memory and devices keep their state */
+        st->m.reset_req = 0;
+        st->m.reset_cpu_only = 0;
+        st->m.asleep = 0;
+        st->m.yield = 0;
+        st->m.cpu->ops->reset(st->m.cpu);
+        return;
+    }
     if (st->ev) {
         esk_sched_cancel(&e->sched, st->ev);
         st->ev = 0;
     }
+    if (power_on)
+        st->m.reset_cause = ESK_RESET_POWER;
     for (r = 0; r < st->m.bus.nrg; r++)
         if (!st->m.bus.rg[r].mirror && (power_on || st->m.bus.rg[r].kind != ESK_MEM_RAM))
             esk_bus_erase(&st->m.bus.rg[r]);
-    if (!st->image) {
-        /* no image yet: the part sits blank, its pins inputs */
+    if (!st->image && !esk_mach_store(&st->m, "flash")) {
+        /* no image yet: the part sits blank, its pins inputs (a part that
+         * boots its ROM from a flash it reaches through a device, as the
+         * ESP32-C3, runs it on whatever the flash holds) */
         esk_mach_reset(&st->m);
+        st->m.reset_cause = ESK_RESET_POWER;
         st->boot_fail = 1;
         st->t = e->sched.now;
         return;
     }
-    if (esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
+    if (st->image && esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
     esk_mach_reset(&st->m);
+    st->m.reset_cause = ESK_RESET_POWER; /* what a model does not say next */
     if (st->an)
         esk_an_restart(st->an);
     st->stopped = 0;
@@ -834,6 +1142,64 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     map_rx_pins(st);
     st->fresh = 1;
     schedule_at(st, e->sched.now + 1);
+}
+
+/* ---- the radio ----------------------------------------------------------------- */
+
+static uint32_t air_tuned(void *ctx, int kind)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (!runnable(st) && !(st->attached && st->m.asleep))
+        return 0;
+    return st->m.radio.tuned ? st->m.radio.tuned(st->m.radio.ctx, kind) : 0;
+}
+
+static int air_rx(void *ctx, const esk_air_frame *f, int rssi, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    int r;
+    (void)at; /* a BLE packet's end: the radio takes it from its access address on */
+    catch_up(st, st->c->e->sched.now);
+    esk_mach_outside(&st->m);
+    r = st->m.radio.rx(st->m.radio.ctx, f->data, f->len, f->mhz, rssi, f->rate_kbps, f->kind);
+    wake(st);
+    return r;
+}
+
+static void air_tx_done(void *ctx, uint32_t token, int acked, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    st->sup.tx_a = 0.0;
+    supply_update(st, 0);
+    if (!st->m.radio.tx_done)
+        return;
+    catch_up(st, at);
+    esk_mach_outside(&st->m);
+    st->m.radio.tx_done(st->m.radio.ctx, token, acked);
+    wake(st);
+}
+
+static int h_radio_tx(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32 rate_kbps, u64 airtime_ps,
+                      int kind, u32 token)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_air_frame f;
+    if (!st->on_air)
+        return -1;
+    f.data = frame;
+    f.len = len;
+    f.mhz = mhz;
+    f.dbm = (double)dbm;
+    f.rate_kbps = rate_kbps;
+    f.kind = kind;
+    if (!airtime_ps)
+        airtime_ps = kind == ESK_AIR_BLE ? esk_air_ble_airtime(len, rate_kbps) : esk_air_wifi_airtime(len, rate_kbps);
+    if (esk_air_send(st->c->e, &st->air, &f, local_now(st), airtime_ps, token) != ES_OK)
+        return -1;
+    /* the power amplifier draws while the frame is on the air */
+    st->sup.tx_a = supply_tx(&st->sup, kind, rate_kbps);
+    supply_update(st, 0);
+    return 0;
 }
 
 /* ---- the component ------------------------------------------------------------- */
@@ -851,6 +1217,9 @@ static void mcu_destroy(esk_comp *c)
     esk_engine *e = c->e;
     if (!st)
         return;
+    if (st->on_air)
+        esk_air_detach(e, &st->air);
+    st->on_air = 0;
     esk_an_free(st->an);
     st->an = NULL;
     st->m.an = NULL;
@@ -893,6 +1262,20 @@ static void mcu_reset(esk_comp *c)
     st->held = 0;
     st->steps = 0;
     mcu_reset_now(st, 1);
+    /* the core starts running: its first window counts from here */
+    st->sup.win_t = 0;
+    st->sup.run_ps = 0;
+    st->sup.tx_a = 0.0;
+    st->sup.cpu_a = supply_at(st->sup.run, st->sup.nrun, (double)esk_mach_core_hz(&st->m));
+    st->sup.set_a = -1.0;
+    supply_update(st, 1);
+}
+
+static void mcu_on_time(esk_comp *c, uint32_t token)
+{
+    mcu_state *st = state_of(c);
+    if (token == MCU_WAKE_SUPPLY && st->attached)
+        supply_update(st, 0);
 }
 
 static void mcu_on_input(esk_comp *c, esk_pin *p)
@@ -913,12 +1296,17 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
             /* the pins go to their reset state while NRST is held */
             if (st->m.pin_reset)
                 st->m.pin_reset(&st->m, 0);
+            st->m.reset_cause = ESK_RESET_PIN;
             esk_mach_reset(&st->m);
+            st->sup.tx_a = 0.0;
+            supply_update(st, 1);
         } else if (!low && st->held) {
             st->held = 0;
+            st->m.reset_cause = ESK_RESET_PIN;
             mcu_reset_now(st, 0);
             if (st->m.pin_reset)
                 st->m.pin_reset(&st->m, 1);
+            supply_update(st, 1);
         }
         return;
     }
@@ -942,6 +1330,7 @@ static es_status mcu_on_set(esk_comp *c, const char *input, const esk_json *valu
         return ES_ESTATE;
     if (!strcmp(input, "reset")) {
         catch_up(st, c->e->sched.now);
+        st->m.reset_cause = ESK_RESET_PIN; /* the board's reset button */
         mcu_reset_now(st, 0);
         return ES_OK;
     }
@@ -961,7 +1350,7 @@ static void mcu_observe(esk_comp *c, esk_json *out)
     const char *state;
     if (!st->attached)
         return;
-    state = !st->image                            ? "no_image"
+    state = !st->image && !esk_mach_store(&st->m, "flash") ? "no_image"
             : st->boot_fail                       ? "boot_mode"
             : st->held                            ? "reset"
             : st->m.state == ESK_MACH_EXIT        ? "exited"
@@ -991,7 +1380,7 @@ static void mcu_observe(esk_comp *c, esk_json *out)
 }
 
 const esk_model_ops esk_mcu_ops = { "mcu", sizeof(mcu_state), mcu_create, mcu_destroy, mcu_reset,
-                                     mcu_on_input, NULL, mcu_on_set, mcu_observe, NULL, 0 };
+                                     mcu_on_input, mcu_on_time, mcu_on_set, mcu_observe, NULL, 0 };
 
 int esk_mcu_is(const esk_comp *c) { return c && c->ops == &esk_mcu_ops; }
 
@@ -1156,22 +1545,33 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     mcu_state *st = state_of(c);
     esk_engine *e = c->e;
     es_status st2;
-    int port, bit;
+    int port, bit, i;
     char name[12];
     if (!esk_mcu_is(c))
         return ES_EINVAL;
     esk_mach_init(&st->m, e->a);
+    if (su->mac) {
+        memcpy(st->m.factory_mac, su->mac, 6);
+        st->m.has_factory_mac = 1;
+    }
     st->attached = 1;
     st->m.host.ctx = st;
     st->m.host.out = h_out;
     st->m.host.pin_cfg = h_pin_cfg;
     st->m.host.pin_in = h_pin_in;
     st->m.host.uart_tx = h_uart_tx;
+    st->m.host.uart_frame = h_uart_frame;
     st->m.host.diag = h_diag;
     st->m.host.exc = h_exc;
     st->m.host.pin_volts = h_pin_volts;
+    st->m.host.temperature = h_temperature;
     st->m.host.pin_watch = h_pin_watch;
+    st->m.host.radio_tx = h_radio_tx;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
+    supply_setup(st, su->mcu);
+    speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);
+    speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "slew_v_per_us"),
+                st->slew);
     snprintf(st->console, sizeof st->console, "%s", su->console ? su->console : "USART1");
     for (port = 0; port < MCU_PORTS; port++)
         for (bit = 0; bit < 16; bit++) {
@@ -1194,12 +1594,21 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
                 st->gpio[port][bit] = NULL;
         }
     st->nrst = esk_comp_pin(c, "NRST");
+    if (!st->nrst) /* an ESP32-C3's CHIP_EN: low, the chip is off and resets */
+        st->nrst = esk_comp_pin(c, "CHIP_EN");
     st->boot0 = esk_comp_pin(c, "BOOT0");
     if (st->nrst)
         esk_pin_watch(st->nrst, 1);
+    st->m.hse_clock = su->hse_clock;
+    st->m.lse_hz = su->lse_hz;
     st2 = esk_mach_build(&st->m, su->mcu, su->regs, su->hse_hz, why, cap);
     if (st2 != ES_OK)
         return st2;
+    for (i = 0; i < su->nfiles; i++)
+        if (esk_mach_factory(&st->m, su->files[i].base, su->files[i].data, su->files[i].len) != ES_OK) {
+            snprintf(why, cap, "the memory file at 0x%08x does not fit its region", (unsigned)su->files[i].base);
+            return ES_ESCHEMA;
+        }
     st->image_name = esk_strdup(e->a, su->image_name ? su->image_name : "firmware");
     if (!st->image_name)
         return ES_ENOMEM;
@@ -1217,5 +1626,17 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     }
     map_rx_pins(st);
     (void)uart_named(st, st->console, 1);
+    if (st->m.radio.rx && !st->on_air) {
+        /* its radio joins the session's air */
+        st->air.ctx = st;
+        st->air.comp = c;
+        st->air.kind = st->m.radio.kinds;
+        st->air.tuned = air_tuned;
+        st->air.rx = air_rx;
+        st->air.tx_done = air_tx_done;
+        if (esk_air_attach(e, &st->air) != ES_OK)
+            return ES_ENOMEM;
+        st->on_air = 1;
+    }
     return ES_OK;
 }

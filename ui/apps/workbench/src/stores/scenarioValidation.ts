@@ -66,6 +66,7 @@ export function expectationProblem(value: unknown): string | undefined {
       case 'logic': valid = ['0', '1', 'Z', 'X'].includes(v as string); break;
       case 'equals': valid = ['string', 'boolean'].includes(typeof v) || (typeof v === 'number' && Number.isFinite(v)); break;
       case 'contains': valid = typeof v === 'string'; break;
+      case 'not_contains': valid = typeof v === 'string'; break;
       case 'edges': valid = typeof v === 'number' && Number.isInteger(v) && v >= 0; break;
       case 'frequency_hz': valid = typeof v === 'number' && Number.isFinite(v) && v > 0; break;
       case 'tolerance': valid = typeof v === 'number' && Number.isFinite(v) && v >= 0; break;

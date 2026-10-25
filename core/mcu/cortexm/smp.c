@@ -247,7 +247,7 @@ static const struct esk_cpu_ops smp_ops = {
     "cortex-m", 40, "an ARM image",
     smp_reset, smp_step, smp_pc, smp_reg_read, smp_reg_write,
     smp_g_regs, smp_xml, 2, smp_interrupt, 15, 1, 0, smp_reg_name, smp_wake_pending,
-    smp_disasm,
+    smp_disasm, 0,
 };
 
 /* ---- each core's devices: the access goes to the core making it ---------- */
@@ -393,6 +393,57 @@ es_status esk_cortexm_create_smp(struct esk_mach *m, const char *model, int prio
     m->steps_cores = 1;
     *out = &x->cpu;
     return ES_OK;
+}
+
+es_status esk_cortexm_set_mpu(struct esk_mach *m, int regions)
+{
+    struct smp *x = smp_of(m);
+    int i;
+    if (regions < 0 || regions > MPU_MAX_REGIONS || !m->cpu)
+        return ES_EINVAL;
+    if (!x) {
+        ((struct esk_cm_state *)m->cpu)->mpu_regions = regions;
+        return ES_OK;
+    }
+    for (i = 0; i < x->n; i++)
+        x->c[i]->mpu_regions = regions;
+    return ES_OK;
+}
+
+es_status esk_cortexm_set_systick(struct esk_mach *m, u32 ref_div, u32 calib)
+{
+    struct smp *x = smp_of(m);
+    int i;
+    if (x) {
+        for (i = 0; i < x->n; i++)
+            esk_systick_config(x->st[i], ref_div, calib);
+        return ES_OK;
+    }
+    for (i = 0; i < m->bus.ndev; i++)
+        if (m->bus.dev[i].ops == &esk_systick_ops) {
+            esk_systick_config(m->bus.dev[i].ctx, ref_div, calib);
+            return ES_OK;
+        }
+    return ES_ENOTFOUND;
+}
+
+void esk_cortexm_event(struct esk_mach *m)
+{
+    struct smp *x = smp_of(m);
+    struct esk_cm_state *cs;
+    if (x) {
+        smp_sev(x);
+        return;
+    }
+    if (!m->cpu)
+        return;
+    cs = (struct esk_cm_state *)m->cpu;
+    if (m->asleep && cs->in_wfe && !m->powered_down) {
+        cs->event = 0; /* the event that ends a WFE is consumed */
+        m->asleep = 0;
+    } else {
+        cs->event = 1;
+    }
 }
 
 int esk_cortexm_cores(struct esk_mach *m)

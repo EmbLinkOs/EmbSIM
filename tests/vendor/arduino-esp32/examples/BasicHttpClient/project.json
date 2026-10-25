@@ -1,0 +1,109 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-esp32-BasicHttpClient",
+ "description": "An ESP32-C3-DevKitM-1 running Arduino-ESP32's HTTPClient/BasicHttpClient, plugged into USB, 5 m from a home router (SSID SSID, WPA2-PSK PASSWORD, as the sketch names them) whose WAN side reaches the internet, where example.com's web server is.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/esp32c3_devkitm1",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "flash.bin",
+    "format": "bin"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "AP1",
+   "component": "emblink/wifi_ap",
+   "params": {
+    "ssid": "SSID",
+    "password": "PASSWORD",
+    "channel": 6,
+    "bssid": "02:e5:00:00:00:03"
+   },
+   "layout": {
+    "x": 640,
+    "y": 120
+   }
+  },
+  {
+   "id": "WEB",
+   "component": "emblink/web_server",
+   "layout": {
+    "x": 640,
+    "y": 260
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "router",
+   "target": "output:AP1.log",
+   "kind": "value"
+  },
+  {
+   "id": "web",
+   "target": "output:WEB.log",
+   "kind": "value"
+  }
+ ],
+ "layout": {
+  "bench": {
+   "parts": {
+    "B1": {
+     "x": 0.0,
+     "y": 0.0,
+     "rotation": 0
+    },
+    "AP1": {
+     "x": 5000.0,
+     "y": 0.0,
+     "rotation": 0
+    }
+   }
+  }
+ }
+}

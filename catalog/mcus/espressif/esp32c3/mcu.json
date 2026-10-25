@@ -1,0 +1,396 @@
+{
+  "schema_version": 1,
+  "kind": "mcu",
+  "id": "espressif/esp32c3",
+  "version": "0.1.0",
+  "name": "ESP32-C3",
+  "description": "Espressif ESP32-C3: a 32-bit RISC-V core (RV32IMC, ESP-RV) at up to 160 MHz, 400 KiB of SRAM, 384 KiB of ROM, external SPI flash behind an instruction and data cache, Wi-Fi and Bluetooth LE; the ESP32-C3-DevKitM-1's MCU. In progress (the RTOS boards plan, part 2): the core and its interrupt controller first.",
+  "keywords": [
+    "risc-v",
+    "riscv",
+    "rv32imc",
+    "espressif",
+    "esp32",
+    "esp32-c3",
+    "esp32c3"
+  ],
+  "vendor": "espressif",
+  "family": "esp32-c3",
+  "core": {
+    "backend": "riscv",
+    "model": "esp-rv32imc",
+    "pmp_entries": 16,
+    "timing_tier": "estimated",
+    "fpu": false,
+    "mpu": false,
+    "endian": "little",
+    "reset_pc": "0x40000000"
+  },
+  "memory": [
+    {
+      "name": "rom",
+      "base": "0x40000000",
+      "size": "384K",
+      "kind": "rom",
+      "doc": "Internal ROM0 and ROM1 on the instruction bus (TRM table 3.3-1): the boot ROM, chip revision v0.3, its image made by tools/importers/esprom.py (--base 0x40000000 --size 0x60000 --data-table 0x40059200:0x40059400, the ROM's copy table of its RAM variables; --data-table 0x400591F4:0x40059200, the Bluetooth controller's entry, whose data ESP-IDF's btdm_controller_rom_data_init copies from 0x4005966C; --word 0x4005FFFC=ets_rom_layout, ROM1's last word, the pointer ESP-IDF's ROM linker script names ets_rom_layout_p at 0x3FF1FFFC, to the ROM's ets_rom_layout, which no section of the ELF holds; --alias 0x3FF00000=0x40040000:0x20000, ROM1 as the data bus sees it, which places the ELF's .rodata.interface at 0x3FF1EE3C, the Wi-Fi and Bluetooth code's pointers and constant tables, which no segment loads) from Espressif's esp32c3_rev3_rom.elf (espressif/esp-rom-elfs 20241011, Apache-2.0: LICENSES/Apache-2.0.txt; the ROM's code is Copyright (c) 2015-2022 Espressif Systems (Shanghai) Co. Ltd.). Bytes no segment of the ELF covers read as zeros",
+      "file": "rom.bin",
+      "sha256": "0de1e65020e803bea0d7443dca149d61895e01fca3bb9c82d073234eebd73f99"
+    },
+    {
+      "name": "rom1_data",
+      "base": "0x3FF00000",
+      "size": "128K",
+      "kind": "alias",
+      "target": "0x40040000",
+      "doc": "Internal ROM1 on the data bus"
+    },
+    {
+      "name": "sram0",
+      "base": "0x4037C000",
+      "size": "16K",
+      "kind": "ram",
+      "doc": "Internal SRAM0 on the instruction bus, the instruction cache's memory once the cache is enabled"
+    },
+    {
+      "name": "sram1",
+      "base": "0x3FC80000",
+      "size": "384K",
+      "kind": "ram",
+      "main": true,
+      "doc": "Internal SRAM1 on the data bus"
+    },
+    {
+      "name": "sram1_ibus",
+      "base": "0x40380000",
+      "size": "384K",
+      "kind": "alias",
+      "target": "0x3FC80000",
+      "doc": "Internal SRAM1 on the instruction bus"
+    },
+    {
+      "name": "rtc_fast",
+      "base": "0x50000000",
+      "size": "8K",
+      "kind": "ram",
+      "doc": "RTC FAST memory, kept in deep sleep"
+    },
+    {
+      "name": "flash",
+      "base": "0x0",
+      "size": "4M",
+      "kind": "external",
+      "erased": "0xFFFFFFFF",
+      "doc": "The ESP32-C3FN4's in-package SPI flash, an XMC XM25QH32C (RDID 20 40 16; esptool's \"Embedded Flash 4MB (XMC)\"), reached through SPI0 and SPI1 and read in place through the cache (core/mcu/esp32c3/nor.c)"
+    },
+    {
+      "name": "flash_ibus",
+      "base": "0x42000000",
+      "size": "8M",
+      "kind": "window",
+      "doc": "The instruction bus's window on the flash (TRM table 3.3-2), 128 pages of 64 KB that the MMU maps (core/mcu/esp32c3/cache.c)"
+    },
+    {
+      "name": "flash_dbus",
+      "base": "0x3C000000",
+      "size": "8M",
+      "kind": "alias",
+      "target": "0x42000000",
+      "doc": "The data bus's window on the flash: the same pages, read-only"
+    }
+  ],
+  "clocks": {
+    "sources": [
+      {
+        "name": "xtal",
+        "hz": 40000000,
+        "doc": "The board's 40 MHz crystal (XTAL_CLK); CPU_CLK comes out of reset at XTAL_CLK / 2, 20 MHz (TRM 6.2.4.1)"
+      },
+      {
+        "name": "rc_fast",
+        "hz": 17500000,
+        "doc": "The internal fast RC oscillator, about 17.5 MHz"
+      },
+      {
+        "name": "rc_slow",
+        "hz": 136000,
+        "doc": "The internal slow RC oscillator, about 136 kHz"
+      },
+      {
+        "name": "pll",
+        "hz": 480000000,
+        "doc": "PLL_CLK, 480 MHz (or 320 MHz) from the crystal"
+      }
+    ],
+    "reset_core_hz": 20000000,
+    "max_core_hz": 160000000
+  },
+  "register_file": {
+    "format": "embsim",
+    "file": "registers.json",
+    "vendored": true,
+    "license": "Apache-2.0 (converted from Espressif's esp32c3.svd, Copyright 2024 Espressif Systems (Shanghai) PTE LTD; LICENSES/Apache-2.0.txt)"
+  },
+  "peripherals": [
+    {
+      "match": "SYSTEM",
+      "model": "esp32c3-system",
+      "order": 0
+    },
+    {
+      "match": "RTC_CNTL",
+      "model": "esp32c3-rtc",
+      "order": 1
+    },
+    {
+      "match": "INTERRUPT_CORE0",
+      "model": "esp32c3-intmtx",
+      "order": 0
+    },
+    {
+      "match": "UART?",
+      "model": "esp32c3-uart"
+    },
+    {
+      "match": "GPIO",
+      "model": "esp32c3-gpio"
+    },
+    {
+      "match": "EXTMEM",
+      "model": "esp32c3-cache"
+    },
+    {
+      "match": "SPI0",
+      "model": "esp32c3-spimem"
+    },
+    {
+      "match": "SPI1",
+      "model": "esp32c3-spimem"
+    },
+    {
+      "match": "ASSIST_DEBUG",
+      "model": "esp32c3-assist"
+    },
+    {
+      "match": "SHA",
+      "model": "esp32c3-sha"
+    },
+    {
+      "match": "AES",
+      "model": "esp32c3-aes"
+    },
+    {
+      "match": "RSA",
+      "model": "esp32c3-rsa"
+    },
+    {
+      "match": "SYSTIMER",
+      "model": "esp32c3-systimer"
+    },
+    {
+      "match": "TIMG?",
+      "model": "esp32c3-timg"
+    },
+    {
+      "match": "EFUSE",
+      "model": "esp32c3-efuse"
+    },
+    {
+      "match": "IO_MUX",
+      "model": "esp32c3-iomux"
+    },
+    {
+      "match": "APB_CTRL",
+      "model": "esp32c3-apbctrl"
+    },
+    {
+      "match": "USB_DEVICE",
+      "model": "esp32c3-usbjtag"
+    },
+    {
+      "match": "RMT",
+      "model": "esp32c3-rmt"
+    },
+    {
+      "match": "LEDC",
+      "model": "esp32c3-ledc"
+    },
+    {
+      "match": "I2C0",
+      "model": "esp32c3-i2c"
+    },
+    {
+      "match": "DMA",
+      "model": "esp32c3-gdma"
+    },
+    {
+      "match": "SPI2",
+      "model": "esp32c3-spi2"
+    },
+    {
+      "match": "APB_SARADC",
+      "model": "esp32c3-adc"
+    }
+  ],
+  "io": {
+    "family": "cmos_3v3",
+    "ports": [
+      {
+        "name": "GPIO",
+        "pins": 22,
+        "mask": "0x003FFFFF"
+      }
+    ],
+    "electrical": {
+      "vdd": 3.3,
+      "voh": 2.64,
+      "vol": 0.33,
+      "rout": 20,
+      "vih": 2.475,
+      "vil": 0.825,
+      "hysteresis": 0.1,
+      "rpull": 45000,
+      "leak_a": 5e-08,
+      "ioh_max": 0.04,
+      "iol_max": 0.028
+    }
+  },
+  "supply": {
+    "doc": "ESP32-C3 Series Datasheet v2.4, 5.6: Modem-sleep with all peripherals' clocks disabled (table 5-8: 17 and 13 mA at 80 MHz running and idle, 23 and 16 mA at 160 MHz), power off with CHIP_EN low (table 5-9: 1 uA), and the RF currents in active mode at 3.3 V and 100 % duty (table 5-7: 802.11b 1 Mbps at 21 dBm 335 mA, 802.11g 54 Mbps at 19 dBm 285 mA, 802.11n HT20 MCS7 at 18.5 dBm 276 mA, receiving 84 mA). The datasheet gives no Bluetooth LE figures: its packets draw the receive current.",
+    "run_a": [[80000000, 0.017], [160000000, 0.023]],
+    "idle_a": [[80000000, 0.013], [160000000, 0.016]],
+    "held_a": 0.000001,
+    "radio": {
+      "rx_a": 0.084,
+      "tx_dsss_a": 0.335,
+      "tx_ofdm_a": 0.285,
+      "tx_ht_a": 0.276
+    }
+  },
+  "signals": [
+    "GPIO0",
+    "GPIO1",
+    "GPIO2",
+    "GPIO3",
+    "GPIO4",
+    "GPIO5",
+    "GPIO6",
+    "GPIO7",
+    "GPIO8",
+    "GPIO9",
+    "GPIO10",
+    "GPIO11",
+    "GPIO12",
+    "GPIO13",
+    "GPIO14",
+    "GPIO15",
+    "GPIO16",
+    "GPIO17",
+    "GPIO18",
+    "GPIO19",
+    "GPIO20",
+    "GPIO21",
+    "CHIP_EN",
+    "GND",
+    "LNA_IN",
+    "VDD3P3",
+    "VDD3P3_CPU",
+    "VDD3P3_RTC",
+    "VDDA",
+    "XTAL_N",
+    "XTAL_P"
+  ],
+  "packages": {
+    "qfn32": "qfn32.json",
+    "mini1": "mini1.json"
+  },
+  "console": {
+    "default": "UART0"
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Work in progress (the RTOS boards plan, part 2, steps 1 to 6). The ESP-RV core: RV32IMC with user mode and the ESP32-C3's own CSRs (TRM chapter 1): mstatus's MIE, MPIE, MPP and TW, a vectored mtvec, five-bit mcause codes, the performance counter (mpcer, mpcmr, mpccr, also reached at 0x800-0x802 where the ROM starts it), the trigger module's eight triggers (exact and NAPOT match on execute, load and store, tcontrol), 16 PMP entries without static priority, and the cpu_gpio CSRs. The interrupt matrix and controller: 62 sources mapped onto CPU interrupts 1-31, level and edge types, priorities 1-15, the threshold, the 4-cycle latency, the clear toggle. The boot: Espressif's own boot ROM (esp32c3_rev3_rom.elf, chip revision v0.3) runs from the reset vector, reads the strapping pins (GPIO_STRAP), reports the reset cause (RTC_CNTL), loads an ESP image's segments from the flash through SPI1, checks its checksum and SHA-256 on the SHA accelerator and jumps to it. The in-package 4 MB flash, an XMC XM25QH32C as its datasheet has it (its instructions, status registers, busy times, security registers and power-down), behind SPI0 and SPI1; the cache and MMU mapping its 64 KB pages on the instruction and data buses. UART0 and UART1 (FIFOs, frames at the baud rate, interrupts); RTC_CNTL's reset causes, RTC timer, RTC watchdog with its flash-boot protection and the software resets; the Debug Assistant's PC logging (the ROM's Saved PC). The clocks and timers: SYSTEM's CPU clock (XTAL_CLK / 2 out of reset, the PLL's 80 or 160 MHz, RC_FAST_CLK), APB_CLK, the peripherals' clock enables and resets and the software interrupts; the system timer (two 52-bit counters at 16 MHz, three comparators in target or period mode); the timer groups' T0 (prescaler, up or down, alarm, auto-reload), MWDT (four stages, write key, flash-boot protection: a blank chip resets with TG0WDT_SYS_RST) and RTC_SLOW_CLK calibration; the eFuse controller with the chip's factory bits (revision v0.3, QFN32, 4 MB XMC flash in the package, a MAC: 7C:DF:A1:45:6D:62, or the one a project's board settings.mac gives, so that two boards are two chips). The pins: the GPIO matrix and IO MUX (each pad's reset configuration from TRM table 5.12-1, the matrix's output signals and the IO MUX functions, open drain, input selection, the five interrupt types on the CPU and NMI sources, the strapping latch, the UARTs on whichever pins the matrix gives them); USB Serial/JTAG's CDC-ACM registers with no host on its pins (the 64-byte buffer flushed and never read, its interrupts). What ESP-IDF's start reaches beyond the TRM: the internal I2C master to the analog blocks as the ROM's regi2c routines drive it, RND_DATA's random numbers (each chip, by its MAC, its own sequence), the ROM's ets_rom_layout_p, the RTC_SLOW_CLK periodic calibration running from reset, a CPU reset clearing the permission control (TRM 14.8). The radio's register blocks as ESP-IDF's closed PHY and Wi-Fi libraries drive them (FE2, FE, the receive gain table, the AGC and NRX, the baseband), their PHY calibrations answering as an ideal radio (the BBPLL and RF PLL calibrated and locked, the power detector's, DC and IQ measurements done), so that ESP-IDF's Wi-Fi driver initialises, calibrates and stores its calibration and starts the station. The Wi-Fi MAC (wifi.c, learnt from libpp's hal_* routines, docs/engineering/c3-radios.md step 3) on the session's air: its five transmit queues on lldesc lists send their frames one at a time on the RF PLL's channel at the PLCP word's rate, for their airtime, and complete with the outcome (sent, or no ACK for a unicast frame), the queue's done bit and interrupt; frames for the station's or the access point's address (under its mask) or for a group fill the receive list's next descriptor with ESP-IDF's 48-byte rx_ctrl header (RSSI, rate, channel, time, length, the interfaces that took it), and a unicast one taken is answered with an ACK; the reload of the list; the interrupt status, enable and clear on source 0; the microsecond counter and the TSF latch. Its key table (+0x1400) and CCMP: frames queued for encryption leave under their receiver's key, protected frames received are decrypted in place. The Bluetooth LE core (ble.c, learnt from the ROM controller's r_lld_*, r_sch_* and r_rwip_* routines, step 6): RivieraWaves' IP version, its soft resets, the native clock sampled in half-slots and half-microseconds, the 10 ms, half-slot and half-microsecond timers, the interrupt status, acknowledgement and FIFO on source 8, the exchange memory mapped into RAM, the exchange table's events started at their time, and advertising events sending their PDU on each primary channel of their map at +9 dBm, a T_IFS and a SCAN_REQ's time apart, then their end; after a connectable PDU a CONNECT_IND for its address is received into the receive descriptors and ends the event; scan events (format 8) taking the advertising PDUs on their channel for their window; initiating events (format 14) answering their peer's connectable PDU with the CONNECT_IND, its window offset aimed at the planned first anchor; connection events as the master (format 2, speaking first) and as the slave (format 3) on the channel channel selection algorithm #2 or #1 gives, listening for their receive window, answering the master's packet T_IFS later from the transmit descriptor or with an empty packet, the sequence numbers acknowledging (the descriptor marked done) and dropping a resent packet, the receive, transmit and end interrupts; the exchange memory's 1 KB blocks mapped by the hardware's fixed table. The SHA accelerator's DMA-SHA mode, the AES accelerator (Typical AES; DMA-AES in ECB, CBC, OFB, CTR, CFB8 and CFB128; AES-128 and AES-256) and the RSA accelerator (modular multiplication and exponentiation through Montgomery products with the r and M' given, multiplication, operands to 3072 bits, the search position, the interrupt on source 47), as ESP-IDF's mbedtls port and wpa_supplicant use them (WPA3's SAE). A 40 MHz BSS: the RF PLL at the channel pair's centre and the MAC's channel offset (+0x400) put the frames on the primary channel; frames are encrypted under the key entry the PLCP word names. ESP-IDF's softAP example serves a station on another board (SAE, the 4-way handshake, DHCP). ESP-IDF's wifi/scan finds the bench's access points with their SSID, RSSI, security and channel, and its station, as it ships, joins a WPA2-PSK network and gets its address by DHCP. ESP-IDF v5.4's hello_world runs unmodified, from the ROM through the second-stage bootloader to app_main and esp_restart. The peripherals on the pins (step 5): the GPIO matrix carries any modelled peripheral's output signal and gives its inputs back; RMT's two transmitters and two receivers over the 192-word RAM (normal, wrap and continuous modes, loop counts, the carrier, simultaneous start, the receivers' idle threshold, filter, demodulation and wrap, CONF_UPDATE); LEDC's four timers and six generators (the fractional divider, HPOINT and duty with dithering, fading, the overflow counter, PARA_UP at the overflow); the I2C controller as master (the command list, its timing registers' bus timing, stretching, arbitration, the timeout, the clear pulses) and slave (7- and 10-bit addresses, the general call, double addressing, ACK control, stretching), with its FIFOs; GP-SPI2 as a master (CS setup and hold, command, address, dummy and data phases on 1, 2 or 4 lines or QPI, full and half duplex, the four clock modes, bit orders, its buffer or the GDMA); the GDMA's three transmit and three receive channels on descriptor lists, memory to memory included; the SAR ADCs (one-time sampling and the timer's pattern-table scanning into the GDMA, filters, threshold monitors, attenuation, the self-calibration's grounded input) and the temperature sensor reading the world's temperature. Every register of Espressif's SVD with its reset value, and the RAMs it leaves out (RMT, I2C).",
+      "omissions": [
+        "every peripheral not named in the claims: TWAI, I2S, UHCI, HMAC, the digital signature and the permission control's checks (their registers keep what is written); the PLL's power and lock, and the RC oscillators' spread (they run at their nominal frequencies)",
+        "a USB host on GPIO18 and GPIO19 (the CDC-ACM port on the computer, its DTR and RTS resets, the JTAG side: ADR-031's native USB); the USB pads' own pull-ups and pin swap beyond the IO MUX's reset",
+        "the analog blocks' registers' reset values (they read 0 until written) and what their values do (the PLL's frequency comes from SYSTEM, the regulators' voltages are not modelled); the o-code calibration's time",
+        "the random number generator's entropy: RND_DATA and the Wi-Fi MAC's random number register are seeded generators (a chip's MAC seeds them), the same sequence every run so that a run replays, whatever noise sources are on",
+        "the GPIO's input filter and synchronisation, sleep mode (the pads' sleep configuration), the sigma-delta modulation and the drive strengths' effect",
+        "RMT: the free-running divider's phase (REF_CNT_RST; each transmission is timed from its start) and the carrier's phase (it restarts with each stretch it modulates); the memory's power-down; the status registers' STATE and APB-side error bits",
+        "LEDC: a fractional divider's alternating A and A + 1 counts (each count is the average length); a CLK_DIV below 1 (the timer stops); light-sleep",
+        "I2C: the SCL and SDA filters (the nets are clean); the state machines' own timeouts (SCL_ST_TO, SCL_MAIN_ST_TO); SR's state fields; a slave's SDA_SAMPLE point (it reacts at the edge), SLV_TX_AUTO_START_EN 0 and 10-bit addressing's R/W check",
+        "GP-SPI2: slave mode and the configurable segmented transfer (USR_CONF); the timing compensation (DIN_MODE, DIN_NUM, DOUT_MODE); CLK_MODE's clock after CS; SPI_UPDATE takes no time; the AFIFO errors",
+        "GDMA: bytes move at once, with no FIFO and no bus bandwidth (the priorities change nothing); the in-link's auto return; err_eof (UHCI0's)",
+        "SAR ADC: the TRM's ideal transfer (no offset, gain error, nonlinearity or noise; the eFuses hold no calibration); ADC2's errata; the arbiter's priorities; the initial code's offset. Temperature sensor: no self-heating or settling",
+        "the eFuses' write and read protection, their check values and times; the chip's calibration data (BLOCK2 is blank)",
+        "the cache's enable and bus-shut bits, the MMU entry fault and the access counters; the cache holds whole pages, not 16 KB of lines (core/mcu/esp32c3/cache.c)",
+        "the flash's QPI mode, continuous read mode, SFDP table and block protection; SPI_MEM's auto-suspend and wait-idle, and the SPI clock's time (transfers take none)",
+        "the SHA, AES and RSA accelerators' times (they finish at once, CONSTANT_TIME's too); the RSA memories' power-down",
+        "the debug module and the debug CSRs",
+        "the performance counter's load and jump hazard events",
+        "the interrupt controller's transient state after a register write",
+        "Wi-Fi beyond WPA2- and WPA3-Personal (a 40 MHz PPDU is carried as a 20 MHz one on the primary channel), and Bluetooth LE beyond advertising, scanning and connections (docs/engineering/c3-radios.md, steps 3 to 6): the MAC's retransmissions, contention (EDCA, CCA), the TSF's adjustment to an access point's beacons and its timers (TBTT, the TSF timer interrupts), TKIP, WEP, GCMP and protected management frames, aggregation, the transmit power the PHY sets (20 dBm is sent), promiscuous reception and the BSSID filter. Bluetooth LE beyond advertising (with scan responses), passive and active scanning and connections: the SCAN_REQs received reported in the receive descriptors (the scan request notification), the scan and initiator filter policies, the 2M and Coded PHYs, extended and periodic advertising, encryption, privacy, slave latency, an event's maximum length, CRC errors, sleep, the received signal strength in the descriptors, the transmit power the controller sets (+9 dBm is sent) and the radio's controls (they keep what is written). The PHY's measurements read as a calibrated front end at once (their real readings and times are not published), and the radio's register blocks' reset values are unknown (they read 0)"
+      ],
+      "validation": [
+        "repo:tests/unit/test_esp32c3.c",
+        "repo:tools/test_esprom.py"
+      ]
+    },
+    "timed": {
+      "claims": "Instruction timing estimated from the RISC-V core's per-class cost table, not the ESP-RV pipeline's.",
+      "omissions": [
+        "the ESP-RV pipeline's hazards",
+        "cache misses and flash latency",
+        "the SPI flash transfers' time (the flash's own program and erase times are counted)"
+      ],
+      "validation": []
+    },
+    "electrical": {
+      "claims": "GPIO pin-model defaults at 3.3 V from the datasheet's DC characteristics (table 5-4): VIH 0.75 VDD, VIL 0.25 VDD, VOH 0.8 VDD, VOL 0.1 VDD, 45 kOhm pulls, 40 mA source and 28 mA sink at the strongest drive. The supply current (ADR-036, datasheet 5.6): the core running and waiting at its clock with the peripherals' clocks off (table 5-8), averaged over 1 ms; held off by CHIP_EN, 1 uA; the radio receiving, 84 mA, while it hears (not while ESP-IDF's power save has the Wi-Fi/BT common clock off between beacons), and sending at 802.11b's rates 335 mA, 11g's 285 mA, 11n's 276 mA from a frame's first bit to its last (table 5-7).",
+      "omissions": [
+        "the four drive strengths (FUN_DRV)",
+        "the peripherals' clocks in the supply current (up to 5 mA more with all on, table 5-8) and the flash's 10 mA while it is read (its note 3)",
+        "Light-sleep (130 uA) and Deep-sleep (5 uA), which the chip does not enter yet",
+        "Bluetooth LE's own currents (the datasheet gives none: its packets draw the receive current) and a lower transmit power's smaller current",
+        "the RTC and SPI pads' own supplies"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          3.6
+        ],
+        "current_a": [
+          -0.04,
+          0.028
+        ]
+      },
+      "validation": []
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ESP32-C3 Technical Reference Manual",
+        "rev": "v1.4"
+      },
+      {
+        "title": "ESP32-C3 Series Datasheet",
+        "rev": "v2.4"
+      },
+      {
+        "title": "Espressif esp32c3.svd (espressif/svd)",
+        "rev": "be20aa1"
+      },
+      {
+        "title": "Espressif esp-rom-elfs, esp32c3_rev3_rom.elf (sha256 19ac22e08707df926fb0cf4c54795d4067b983fae8635f396ded173a6d78fc3c)",
+        "rev": "20241011"
+      },
+      {
+        "title": "XMC XM25QH32C datasheet (the in-package flash)",
+        "rev": "Rev. 2.0, 2023-04-25"
+      }
+    ],
+    "notes": "The register description is converted from Espressif's Apache-2.0 SVD; the boot ROM's image from Espressif's Apache-2.0 ROM ELF."
+  }
+}

@@ -82,6 +82,12 @@ carries its own licence beside it:
                                (pico-sdk 2.0.0), Copyright (c) 2024
                                Raspberry Pi Ltd.; BSD-3-Clause
                                (catalog/mcus/raspberrypi/rp2040/LICENSES/)
+  catalog/mcus/st/stm32f446re/registers.json
+                               converted from STMicroelectronics'
+                               STM32F446.svd (version 1.9, STM32F4 SVD pack
+                               2.0), Copyright (c) 2024 STMicroelectronics;
+                               Apache-2.0
+                               (catalog/mcus/st/stm32f446re/LICENSES/)
   catalog/mcus/nordic/nrf52840/registers.json
                                converted from Nordic Semiconductor's
                                nrf52840.svd (nrfx 3.4.0), Copyright (c)

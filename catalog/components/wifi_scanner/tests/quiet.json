@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "quiet",
+  "description": "With no access point around it finds none.",
+  "policy": "functional",
+  "until": "600ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wifi_scanner"
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.networks": {
+      "at": "600ms",
+      "equals": 0
+    }
+  }
+}

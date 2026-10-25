@@ -47,6 +47,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "vsource", src, 2 }, { "isource", src, 2 }, { "potentiometer", pot, 3 }, { "diode", dio, 2 },
         { "led", dio, 2 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
+        { "usb_meter", reg, 3 },
     };
     size_t i;
     for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)
@@ -1873,13 +1874,15 @@ static const esk_adev_ops *const device_table[] = {
     &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
     &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,
-    &esk_ptc_fuse_ops,
+    &esk_ptc_fuse_ops, &esk_usb_meter_ops,
 };
 
 void esk_adev_on_time(esk_adev *d, es_time_t now)
 {
     if (d && d->ops == &esk_ptc_fuse_ops)
         esk_ptc_on_time(d, now);
+    else if (d && d->ops == &esk_usb_meter_ops)
+        esk_usb_meter_on_time(d, now);
 }
 
 const esk_adev_ops *esk_adev_find(const char *name)

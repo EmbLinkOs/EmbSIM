@@ -8,10 +8,11 @@
  *      ignores the core's stores once the image is loaded);
  *   2. a bit-band alias: one word per bit of the target, a read giving
  *      the bit and a write setting or clearing it;
- *   3. a device, in the order the board and the core added them, so a
- *      device inside a wider one (SysTick inside the system control
- *      space, a UART inside the peripheral space that reads as zero) is
- *      added first.
+ *   3. a device: of those whose range holds the address, the smallest,
+ *      so a device inside a wider one (SysTick inside the system control
+ *      space, a UART inside the peripheral space that reads as zero, the
+ *      ESP32-C3's MMU table inside its register file's span) answers for
+ *      its own range.
  * Nothing answering is a bus error, which the core turns into its fault
  * (bus->fail_addr says where); so is a device refusing the access
  * (bus_fault: the SVD's register file, where no register is).
@@ -34,7 +35,7 @@ es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind)
     r = &b->rg[b->nrg];
     r->base = base;
     r->size = size;
-    r->rom = 0;
+    r->rom = kind == ESK_MEM_ROM || kind == ESK_MEM_WINDOW; /* flash: once the image is in */
     r->kind = kind;
     r->mirror = 0;
     r->mem = (u8 *)esk_mach_alloc(m, size);
@@ -44,8 +45,20 @@ es_status esk_bus_add_region(struct esk_mach *m, u32 base, u32 size, int kind)
     return ES_OK;
 }
 
+void esk_bus_code_changed(struct esk_bus *b)
+{
+    int i;
+    for (i = 0; i < b->nrg; i++)
+        b->rg[i].gen++;
+}
+
 void esk_bus_erase(struct esk_region *r)
 {
+    r->gen++;
+    if (r->factory) {
+        memcpy(r->mem, r->factory, r->size);
+        return;
+    }
     if (!r->erased) {
         memset(r->mem, 0, r->size);
         return;
@@ -81,6 +94,31 @@ es_status esk_bus_add_mirror(struct esk_bus *b, u32 base, u32 target)
     return ES_OK;
 }
 
+es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size)
+{
+    struct esk_region *t = size ? esk_bus_region(b, target, 1) : 0;
+    int i;
+    for (i = 0; i < b->nrg; i++) {
+        struct esk_region *r = &b->rg[i];
+        if (!r->mirror || r->base != base)
+            continue;
+        if (!t || t == r) {
+            r->size = 0;
+            r->mem = 0;
+            r->gen++;
+            return ES_OK;
+        }
+        r->mem = t->mem + (target - t->base);
+        r->gen++;
+        r->size = size < t->size - (target - t->base) ? size : t->size - (target - t->base);
+        r->rom = t->rom;
+        r->kind = t->kind;
+        r->erased = t->erased;
+        return ES_OK;
+    }
+    return ES_ENOTFOUND;
+}
+
 es_status esk_bus_add_alias(struct esk_bus *b, u32 base, u32 size, u32 target)
 {
     if (!size)
@@ -105,12 +143,16 @@ static int alias_of(struct esk_bus *b, u32 a, u32 *target, int *bit)
     return 0;
 }
 
+/* the device answering at `a`: of those whose range holds it, the smallest
+ * (a device inside another's range, as the ESP32-C3's MMU table inside its
+ * register file's span, or SysTick inside the SCS) */
 static struct esk_device *device_of(struct esk_bus *b, u32 a)
 {
+    struct esk_device *best = 0;
     for (int i = 0; i < b->ndev; i++)
-        if (a - b->dev[i].base < b->dev[i].size)
-            return &b->dev[i];
-    return 0;
+        if (a - b->dev[i].base < b->dev[i].size && (!best || b->dev[i].size < best->size))
+            best = &b->dev[i];
+    return best;
 }
 
 static int rd(struct esk_bus *b, u32 a, int n, u32 *v)
@@ -156,6 +198,10 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
     if (r) {
         if (!r->rom || debug)
             esk_mem_wr_le(r->mem + (a - r->base), n, v);
+        else if (b->rom_write)
+            b->rom_write(b->rom_write_ctx, r, a, n, v);
+        if (r->rom && debug)
+            esk_bus_code_changed(b);
         return 0;
     }
     u32 t, byte;

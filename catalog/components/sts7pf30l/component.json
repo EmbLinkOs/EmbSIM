@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/sts7pf30l",
+  "version": "1.0.0",
+  "name": "STS7PF30L P-channel MOSFET",
+  "category": "transistors",
+  "description": "STMicroelectronics STS7PF30L, a -30 V, -7 A P-channel STripFET II MOSFET in SO-8 (16 mOhm typical): the NUCLEO-64's T2, which joins the ST-LINK's USB 5 V to the board once the ST-LINK enables it.",
+  "keywords": [
+    "mosfet",
+    "pmos",
+    "p-channel",
+    "sts7pf30l",
+    "stmicroelectronics",
+    "stripfet",
+    "so-8",
+    "load switch",
+    "nucleo"
+  ],
+  "pins": [
+    {
+      "name": "G",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Gate (SO-8 pin 4)"
+    },
+    {
+      "name": "S",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Source (SO-8 pins 1 to 3)"
+    },
+    {
+      "name": "D",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Drain (SO-8 pins 5 to 8)"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "M",
+          "component": "emblink/pmos",
+          "params": {
+            "part": "generic",
+            "vto": -1.2,
+            "kp": 7.1,
+            "lambda": 0.005
+          }
+        },
+        {
+          "id": "DB",
+          "component": "emblink/diode",
+          "params": {
+            "part": "generic",
+            "is": "1e-12",
+            "n": 1.0,
+            "rs": 0.03,
+            "bv": 30
+          }
+        }
+      ],
+      "nets": {
+        "D": [
+          "M.D",
+          "DB.A"
+        ],
+        "S": [
+          "M.S",
+          "DB.K"
+        ]
+      },
+      "ports": {
+        "G": "M.G",
+        "S": "M.S",
+        "D": "M.D"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 80,
+    "pins": {
+      "G": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "S": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "D": {
+        "x": 40,
+        "y": 80,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no gate voltages.",
+      "omissions": [
+        "switching"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "A level-1 P-MOSFET (threshold -1.2 V, kp 7.1 A/V^2: 16 mOhm at -10 V and 3.5 A, the datasheet's 16 typical, 21 maximum) with its body diode (1.0 V at 7 A, the datasheet's 1.2 V maximum).",
+      "omissions": [
+        "the on-resistance at -4.5 V comes out near 43 mOhm (level 1 has no mobility degradation; the datasheet's value at -4.5 V was not available)",
+        "gate capacitances and gate charge (the datasheet's Ciss was not available)",
+        "temperature",
+        "threshold spread",
+        "avalanche and SOA: no damage"
+      ],
+      "range": {
+        "voltage_v": [
+          -30,
+          20
+        ],
+        "current_a": [
+          -28,
+          7
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "STMicroelectronics STS7PF30L datasheet",
+        "url": "https://www.st.com/resource/en/datasheet/sts7pf30l.pdf",
+        "date": "2026-10-19",
+        "notes": "Read through distributor and search excerpts (the PDF could not be fetched): VDS -30 V, ID -7 A, IDM -28 A, RDS(on) 0.016 typical and 0.021 maximum, VGS(th) 1.6 V maximum, VSD 1.2 V maximum, Ptot 2.5 W"
+      },
+      {
+        "title": "MB1136 C-03 electrical schematics (NUCLEO-F446RE), T2",
+        "url": "https://www.st.com/en/evaluation-tools/nucleo-f446re.html#cad-resources",
+        "date": "2026-10-19"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "STS7PF30L",
+    "manufacturer": "STMicroelectronics",
+    "package": "SO-8",
+    "datasheet": "https://www.st.com/resource/en/datasheet/sts7pf30l.pdf"
+  }
+}

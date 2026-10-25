@@ -5,6 +5,1051 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's radios (their plan, steps 1 to 3; step 4's WPA2; step 6's advertising and connections)
+
+- **Arduino-ESP32's Wi-Fi and BLE sketches**, unmodified
+  (`tests/vendor/arduino-esp32`): `WiFiScan` lists the bench's two access
+  points with their RSSI, channel and security; `WiFiClientConnect` joins
+  the WPA2 network it names and prints its DHCP address; the BLE library's
+  `Server` (Bluedroid, as Arduino-ESP32 3.2.0 builds it) is connected to by
+  a tablet's GATT browser, which reads "Hello World says Neil"; `iBeacon`
+  advertises a beacon a phone's scanner decodes. So both ESP-IDF's BLE
+  hosts, NimBLE and Bluedroid, run on the controller.
+- **Wi-Fi's power save on the ESP32-C3** (the radios plan, step 5): the
+  MAC's station TSF (loaded from the access point's beacons), the TBTT's
+  interrupt ahead of each target beacon time, four TSF timers and the
+  power interrupt (source 2), learnt from libpp's `hal_tsf.o`; the radio
+  is deaf while ESP-IDF has the Wi-Fi/BT common clock off between
+  beacons. A station in power save wakes for each DTIM beacon and keeps
+  its access point; `http_request` reads 21.9 mA on the USB power meter
+  in power save, 102 mA while it scans.
+- **Parts draw the current their datasheets give** (ADR-036, new): a
+  part's model sets the current its supply pins draw; under the
+  electrical policy each power pin a supply of the circuit feeds sinks
+  its share to the part's ground, less as its supply falls away. An MCU
+  description's `supply` (new in the schema) gives its datasheet's
+  currents: the core running and waiting at its clock, held in reset, its
+  low-power modes, its radio listening and sending by modulation.
+  - The ESP32-C3's, from its datasheet v2.4 (5.6): 13 to 23 mA by clock
+    and activity, 1 uA held off, receiving 84 mA, sending 335 mA at
+    802.11b's rates, 285 mA at 11g's, 276 mA at 11n's, frame by frame.
+  - `emblink/usb_power_meter` (new), an inline USB tester between a port
+    and a board's cable: VBUS's voltage, the current and the power
+    averaged over its refresh (twice a second) at its resolution, the
+    mAh and mWh since plugged in; its 50 mOhm in VBUS; its own draw from
+    the host's side, not shown; dark below 3.5 V. Four fixtures.
+  - ESP-IDF's `hello_world` and `http_request` run through the meter:
+    16.7 mA idle at 160 MHz, 102 mA while the radio scans.
+- **The air as phones and sniffers see it** (the ESP32-C3 radios plan,
+  step 7):
+  - `emblink/wifi_scanner` (new), a phone's Wi-Fi analyzer: it scans
+    channels 1 to 13 as a phone does (40 ms each, a probe request for any
+    SSID on each, every 10 s; or passively) and lists the networks it
+    hears, the strongest first: SSID (hidden ones' empty), BSSID, channel,
+    security from the Privacy bit, the RSN element's AKM suites and WPA's
+    vendor element, RSSI.
+  - `emblink/air_sniffer` (new), a sniffer for Wireshark: a Wi-Fi adapter
+    in monitor mode on one channel (every frame with its FCS) or a BLE
+    sniffer on one advertising channel (the access address, the PDU and
+    its CRC-24), the snapshot length as tcpdump's -s, the last 64 frames
+    in its `capture` output.
+  - The workbench's Air panel (Run, the Air tab): the phones' networks and
+    devices with signal bars and an iBeacon's fields; the sniffer's frames
+    gathered as the session reports them and named as Wireshark's packet
+    list names them (management frames by SSID, EAPOL's messages 1 to 4,
+    ARP, IPv4 with its ports, BLE PDUs with their addresses and names); a
+    frame's bytes; Save .pcap (radiotap, or
+    LINKTYPE_BLUETOOTH_LE_LL_WITH_PHDR, nanosecond timestamps). A phone or
+    a sniffer can be added from the panel.
+- **The network beyond the router** (`core/engine/inet.h`, new): the
+  internet a router's WAN port reaches. IPv4 packets go between the
+  routers' WAN sides and the hosts out there after each link's latency;
+  a name resolves to the host that has it.
+  - `emblink/wifi_ap`'s router has a NAT (TCP and UDP ports and ICMP echo
+    identifiers mapped to its own from 49152 on its WAN address, `wan_ip`,
+    `wan_latency`) and a DNS forwarder at its address, the DNS server its
+    DHCP gives (A queries answered after a round trip to the ISP's
+    resolver, or NXDOMAIN). Its log has the names resolved and the
+    addresses reached.
+  - `emblink/web_server` (new): a web server on the internet, by its DNS
+    name at its address. Its TCP answers SYN with SYN-ACK and its MSS,
+    follows the client's MSS and window, acknowledges in order, sends the
+    response then FIN, retransmits after 1 s (doubling, five times),
+    keeps TIME-WAIT and answers a stray segment with RST. Its HTTP/1.x
+    serves GET and HEAD of its path (and its index.html), 404 and 501
+    otherwise, and it answers pings.
+  - ESP-IDF's `protocols/http_request` (`http_request`, 15 assertions)
+    and Arduino-ESP32's `HTTPClient/BasicHttpClient` (7 assertions)
+    resolve example.com, connect and print its page, unmodified.
+- **The softAP serves a station on another board** (`wifi_softap`, 15
+  assertions, both examples unmodified): WPA3's SAE, the 4-way handshake
+  and DHCP, a 40 MHz BSS on channel 1.
+  - **The RSA accelerator** (`rsa.c`, new): modular multiplication and
+    exponentiation through Montgomery products with the r and M' the
+    driver writes, multiplication, operands to 3072 bits, SEARCH_POS, the
+    interrupt. ESP-IDF's mbedtls uses it for SAE's elliptic curves; the
+    access point's start waited on it for ever.
+  - **Fixed: the AES and SHA accelerators raised the wrong interrupt
+    sources** (51 and 52, the CPUs' FROM_CPU_INTR1 and 2, which FreeRTOS
+    uses); they are 48 and 49, and RSA's 47, as the interrupt matrix's
+    map registers have them.
+  - **A 40 MHz BSS** (`wifi.c`): the RF PLL sits at the channel pair's
+    centre and the MAC's +0x400 says where the primary channel is; frames
+    go out and are heard there.
+  - **The key entry a frame names** (`wifi.c`): the PLCP word's bits
+    21:17 pick the key the MAC encrypts under, as the access point's
+    frames to its stations need (only bits 19:17 were read before, so
+    entry 8 read as none and its frames left in clear, as ESP-NOW's
+    encrypted unicast did with entry 24). Protected management frames,
+    ESP-NOW's action frames, are decrypted on receipt when the interface's
+    management crypto (+0x800 bit 17) is on.
+- **ESP-NOW between two boards** (`espnow`, 12 assertions, unmodified):
+  ESP-IDF's `wifi/espnow` broadcasts, each board adds the other as a
+  peer, and one sends the other encrypted unicast data. The Wi-Fi MAC's
+  +0x207C (`hal_random`) is now a new random number at each read:
+  net80211 waits there for a nonce that differs from the last, so
+  `esp_now_send` had never returned. Each chip (its `settings.mac`) draws
+  its own random numbers, from RND_DATA too.
+- **Bluedroid's `ble_ibeacon` on two boards** (`ble_ibeacon`, 14
+  assertions, unmodified): the sender advertises its iBeacon, and the
+  same example built as the receiver (`IBEACON_RECEIVER`, `run.py`'s
+  variants) on a second board scans actively and logs the beacon's UUID,
+  major, minor and the RSSI its controller reports (-21 dBm 30 cm away).
+  The core runs active scan events (format 9): T_IFS after a scannable PDU
+  the SCAN_REQ of its transmit descriptor, with the specification's
+  backoff, and the SCAN_RSP taken.
+- **Scan requests and responses** (`ble.c`): after ADV_IND or ADV_SCAN_IND
+  the core takes a SCAN_REQ for its address and sends T_IFS later the
+  scan response the controller keeps at the advertising descriptor's next
+  pointer (`r_lld_adv_scan_rsp_data_set`). `emblink/ble_scanner` now scans
+  actively, as phones do, with the specification's backoff, so a phone
+  lists the names advertisers put in their scan response (the iBeacon
+  sketch's "ESP32").
+- **BLE packets collide on the air**: two packets on one channel that
+  overlap are both lost unless a receiver hears one 21 dB above the other
+  (BLE's co-channel rejection). With bleprph's phone and tablet both
+  answering the same ADV_IND, the phone's SCAN_REQ and the tablet's
+  CONNECT_IND collide until the phone's backoff leaves the tablet a turn;
+  `emblink/ble_central` takes a connection not heard from in its first six
+  intervals as failed to be established (0x3E) and connects again, as the
+  specification has it.
+- **`emblink/ble_scanner` decodes iBeacons**: Apple's manufacturer data
+  (company 0x004C, type 0x02) gives the proximity UUID, major, minor and
+  measured power, as a beacon app shows them.
+- **Bluetooth LE advertising** (`ble.c`, step 6). The ESP32-C3's BLE core,
+  RivieraWaves' IP as the controller in the ROM drives it: its version,
+  soft resets, the native clock (half-slots and the half-microsecond count
+  down), the 10 ms, half-slot and half-microsecond timers, the interrupt
+  FIFO on source 8, the exchange memory's mapping into RAM, the exchange
+  table's events started by +0x100, and an advertising event sending its
+  PDU on each channel of its map at +9 dBm. The chip's Wi-Fi and BLE share
+  its port to the air (`radio.c`). NimBLE's `bluetooth/nimble/bleprph`,
+  unmodified, advertises as "nimble-bleprph" (`bleprph`, 6 assertions).
+- **Bluetooth LE as the central, two boards on one air** (`ble.c`): scan
+  events (format 8) take every advertising PDU on their channel for their
+  window; initiating events (format 14) answer their peer's connectable
+  PDU with the controller's CONNECT_IND, its window offset aimed at the
+  first anchor the controller planned; connection events as the master
+  (format 2); channel selection algorithm #2. ESP-IDF's `blecent` on one
+  board finds `bleprph` on another, connects as the master and runs its
+  six GATT operations to the notification (`blecent`, 17 assertions, the
+  two examples unmodified; `run.py` builds a project's other boards'
+  examples too).
+- **A board's own chip**: a project's board `settings.mac` gives its chip's
+  factory MAC (an ESP32-C3's eFuse BLOCK1), so two boards are two chips.
+- **Bluetooth LE connections** (`ble.c`): the core listens after a
+  connectable advertising PDU and takes a CONNECT_IND into its receive
+  descriptors; connection events as the slave on channel selection
+  algorithm #1, its receive window, the answer from its transmit
+  descriptor or an empty packet, the sequence numbers' acknowledgement and
+  resending, the receive, transmit and end interrupts; the exchange
+  memory's blocks mapped by the hardware's fixed table. NimBLE's `bleprph`,
+  unmodified, is connected to and logs it; a tablet's GATT browser
+  discovers its services and reads its characteristic (`bleprph`, 14
+  assertions).
+- **`emblink/ble_central`**, a phone or tablet with a GATT browser (nRF
+  Connect): it scans, connects to its target with a CONNECT_IND, holds the
+  connection as the master (channel selection #1, acknowledgement,
+  L2CAP's fragments, the slave's link layer procedures answered, the
+  supervision timeout), discovers the GATT database (MTU, primary
+  services, characteristics) and reads the readable values.
+- **The air synchronises on BLE packets**: a BLE packet reaches the radios
+  tuned to it when its access address ends, and they take it whole, so a
+  receiver's window need only cover its start.
+- **The ESP32-C3's ROM image** now holds the Bluetooth controller's initial
+  data, which ESP-IDF's `btdm_controller_rom_data_init` copies from
+  0x4005966C: `esprom.py` takes more than one copy table (`--data-table`
+  again for the entry at 0x400591F4). Without it the controller's MISC task
+  had no handler and each advertising buffer freed after a connection
+  leaked.
+- **`emblink/ble_scanner`**, a phone's BLE scanner app: passive scanning
+  on channels 37, 38 and 39 in turn with a window and interval, the
+  advertisers heard with their address, PDU type, name and RSSI. It lists
+  `bleprph` 2 m from the board at -37 dBm.
+- **WPA2-Personal end to end.** ESP-IDF's `wifi/getting_started/station`
+  as it ships (WPA2-PSK, `myssid`/`mypassword`) joins the bench's access
+  point and leases its address (`wifi_station`, 13 assertions): the
+  station's wpa_supplicant derives the PSK by PBKDF2 on the SHA
+  accelerator, the access point runs the 4-way handshake (IEEE
+  802.11-2020 12.7.6: the PTK, MICs, the GTK wrapped under the KEK, EAPOL
+  retransmission), the station unwraps the GTK on the AES accelerator and
+  installs both keys in the MAC, whose CCMP encrypts and decrypts its data
+  frames.
+- **The ESP32-C3's MAC: CCMP** (`wifi.c`): its key table (+0x1400, 40-byte
+  entries, the valid bits at +0x814) and crypto enables, learnt from
+  libpp's hal_crypto_* routines; a frame queued with the PLCP word's
+  encryption leaves under the receiver's key, its PN the driver's; a
+  protected frame received is decrypted in place for net80211's
+  ccmp_decap.
+- **The ESP32-C3's SHA accelerator: DMA-SHA** (DMA_START, DMA_CONTINUE,
+  DMA_BLOCK_NUM, the interrupt), its blocks from the GDMA, as ESP-IDF's
+  mbedtls port uses it for every SHA-1 and SHA-2 hash. **The AES
+  accelerator** (`aes.c`, new): Typical AES and DMA-AES with ECB, CBC,
+  OFB, CTR, CFB8 and CFB128, AES-128 and AES-256, the IV kept, the
+  interrupt. Both were missing: ESP-IDF's PBKDF2 aborted on an all-zero
+  digest, and its AES waited for ever.
+- **`util/wcrypto`**: SHA-1, HMAC, PBKDF2, 802.11's PRF, AES-128/256, the
+  key wrap and CCMP, checked against FIPS 180-4, RFC 2202, IEEE 802.11
+  Annex J, FIPS 197, RFC 3394 and SP 800-38A's vectors.
+
+- **The air** (`core/engine/air.h`): the 2.4 GHz medium a session's radios
+  share. A frame is carried whole with its channel, power, rate and
+  airtime (802.11's DSSS and OFDM preambles and symbols, BLE's packet);
+  it reaches every radio tuned to its channel when it ends, at the power
+  the free-space path loss leaves over their distance on the bench, above
+  a receiver's sensitivity; a unicast frame taken is answered with an ACK
+  the sender hears a SIFS and an ACK's airtime later.
+- **The ESP32-C3's Wi-Fi MAC** (`wifi.c`, step 3), learnt from what
+  ESP-IDF's libpp does with its registers: five transmit queues on
+  descriptor lists sending one frame at a time at the PLCP word's rate on
+  the RF PLL's channel, their completions (sent, or no ACK) and interrupt;
+  the receive list filled with ESP-IDF's rx_ctrl header for frames the
+  station's or the access point's address filter takes, its reload; the
+  interrupt status on source 0; the microsecond counter and the TSF latch.
+- **`emblink/wifi_ap`**, a Wi-Fi access point across the room with a
+  router behind it: beacons (SSID, rates, channel, TIM, ERP, WPA2-Personal's
+  RSN element), probe responses, open authentication, association; data
+  frames to and from its stations, kept for dozing ones and announced in
+  the TIM until a PS-Poll or a wake; the router answering ARP and pings and
+  leasing addresses by DHCP; its stations and their leases in its outputs.
+  ESP-IDF's unmodified `wifi/scan` lists two of them on the bench as a
+  board does: HomeNet (WPA2-PSK, CCMP, channel 6) at -30 dBm from 3 m and
+  CoffeeShop (open, channel 1) at -42 dBm from 12 m. Its
+  `wifi/getting_started/station`, set in menuconfig for CoffeeShop,
+  authenticates, associates, starts modem sleep and gets 192.168.1.100 by
+  DHCP (`wifi_station_open`, 13 assertions).
+- A board's own parts (its MCU, its sensors) are where the board is on the
+  bench, for the world's rays and the air's distances. A component may have
+  no pins (one that reaches the circuit only through the air).
+
+- **The plan** (`docs/engineering/c3-radios.md`): Wi-Fi and Bluetooth LE
+  modelled at the registers ESP-IDF's closed radio libraries drive, so
+  that ESP-IDF's and Arduino-ESP32's examples run unmodified, with an air
+  that carries frames between boards and the bench's access points and
+  BLE peers.
+- **Fixed:** the ESP32-C3's ROM image lacked `.rodata.interface`, which
+  Espressif's ROM ELF links at 0x3FF1EE3C (ROM1 on the data bus) but loads
+  with no segment: the Wi-Fi and Bluetooth code's pointers into the ROM's
+  RAM and their constant tables read zeros, and ESP-IDF's `esp_wifi_init`
+  panicked storing through `our_instances_ptr`. `esprom.py --alias
+  VADDR=PADDR:SIZE` places a section linked in an alias of the ROM; the
+  image changes only in those 0x11C4 bytes.
+- **The PHY's start (step 2).** The radio's register blocks as ESP-IDF's
+  closed PHY drives them: FE2, FE, the receive gain table, the AGC and
+  NRX, the baseband (taken out of the register file, where the SVD named
+  one of its registers) and the Wi-Fi MAC's registers keep what is
+  written; the calibrations answer as an ideal radio (the BBPLL and RF PLL
+  calibrated and locked, the power detector's, DC and IQ measurements
+  done). ESP-IDF v5.4's `wifi/scan` runs unmodified, as on a board's first
+  start: a full RF calibration saved to NVS, the station with the eFuse
+  MAC and a scan of every channel. It joins the ESP-IDF suite.
+- **Fixed:** the ESP32-C3's temperature sensor registers (APB_TSENS_CTRL,
+  TSENS_CTRL2) were gated by APB_SARADC's clock; they follow TSENS_CLK_EN,
+  the one ESP-IDF turns on to use them. A register may now have a clock
+  of its own in the register file.
+
+### EmbLinkRTOS on the ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 8)
+
+- **EmbLinkRTOS's `esp32c3_devkitm1` board** runs its conformance suite on
+  EmbSIM's ESP32-C3-DevKitM-1 (`emblink/esp32c3_devkitm1`): the twelve
+  test images of its checked base profile, each a flash image Espressif's
+  boot ROM checks and loads, pass. Its RISC-V port takes the tick from
+  SYSTIMER through the interrupt matrix and its console is UART0, the
+  board's USB-serial bridge. EmbLinkRTOS's `rv32-embsim` CI job builds
+  EmbSIM and runs them there, as `cm4-embsim` does on the NUCLEO-F446RE.
+- The ESP-IDF gptimer scenario pins each event by a window, not by the
+  log's millisecond timestamps, which move with the image's size.
+- **The ESP32-C3-DevKitM-1 is qualified against its reference**
+  (`reference.json`): Espressif's V1.0 dimension drawing, read from the
+  PDF's vector paths, gives the outline, the 30 header pads and the
+  micro-USB's body, and places every other part. The artwork's pads had
+  been 0.39 mm high, the RGB LED 1.1 mm and the micro-USB 0.64 mm out; the
+  header labels are now the board's narrow vertical silkscreen. The
+  reference check reads oblong (rect) pads as well as round ones.
+
+### ESP-IDF's examples on the ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 7)
+
+- **`tests/vendor/esp-idf/`** builds ESP-IDF v5.4's own examples
+  unmodified, as a user does (`idf.py set-target esp32c3`, `idf.py build`),
+  puts the bootloader, partition table and application into a 4 MB flash
+  image at flasher_args.json's offsets, and runs each on the board under a
+  scenario: hello_world (to its restart), blink (the SK6812 on GPIO8
+  through RMT and led_strip), ledc_basic (4 kHz on GPIO5), temp_sensor (the
+  room's 25 degC, uncalibrated as BLOCK2 is blank), adc_oneshot_read (1.1 V
+  and 2.2 V on IO2 and IO3), i2c_eeprom (48 bytes written to a 24LC256
+  and read back), gptimer (TIMG0's alarms, stop, reload and moved alarm,
+  each count as the ISR reads it), uart_echo (UART1 on IO4 and IO5 to a
+  terminal and back) and real_time_stats (FreeRTOS's run-time statistics
+  of six spinning tasks). CI's `esp-idf` job fetches ESP-IDF v5.4 and its
+  RISC-V toolchain and runs them.
+- **`tests/vendor/arduino-esp32/`** builds sketches with Espressif's
+  Arduino-ESP32 3.2.0 (on ESP-IDF v5.4) through arduino-cli as the IDE
+  builds them for "ESP32C3 Dev Module", and runs the merged flash image:
+  Blink (LED_BUILTIN is the RGB LED, white at 64 through RMT),
+  DigitalReadSerial, Fade (LEDC at 1 kHz on pin 9), GetChipID (the eFuse
+  MAC's last bytes) and RepeatTimer (a timer's ISR each second until the
+  button on IO0 ends it). CI's `arduino-esp32` job installs the platform as
+  the board manager does.
+- **The 24LC256** (`emblink/eeprom_24lc256`), Microchip's 256-kbit I2C
+  EEPROM: two address bytes, 64-byte page writes with the page wrap, the
+  self-timed write cycle without ACK (ACK polling), the address from
+  A0-A2, write protect; five fixtures. The KiCad importer maps it.
+- **Scenarios** take `not_contains`: text a serial, value-text or memory
+  probe must not show (hello_world's restart not before its countdown).
+- **Fixed:** a sleeping core's devices got no quantum for an event an input
+  gave them (the ESP32-C3's I2C master seeing SCL high while ESP-IDF waited
+  in WFI): they caught up at the next wake-up and the edges in between ran
+  together on the pins. The core's next quantum now comes at that event.
+- **Fixed:** `embsim run --target` under the functional policy refused a
+  board with a USB port (the DevKitM-1, the NUCLEO-F446RE): the port's 5 V
+  source is an electrical primitive. The board now runs unplugged there,
+  its supplies ideal, as EmbLinkRTOS's EmbSIM runner asks.
+- **Fixed:** a pin the ESP32-C3's GPIO matrix gave U0RXD or U1RXD was not
+  the UART's to the runtime (only GPIO20 through the IO MUX was): ESP-IDF
+  connects TXD first, so UART1 never received what came in on its pin.
+
+### The ESP32-C3's peripherals (the RTOS boards plan, part 2, step 5)
+
+- **The GPIO matrix** carries any modelled peripheral's output signal and
+  enable to the pins and gives its inputs back through IN_SEL (or a pin's
+  IO MUX function), with the TRM table's defaults; a model can follow the
+  pins' inputs.
+- **RMT** (`esp32c3-rmt`): two transmitters and two receivers over the
+  192-word RAM, CONF_UPDATE, normal, wrap and continuous modes with loop
+  counts, the carrier, simultaneous starts and TX_STOP; the receivers' idle
+  threshold, filter, demodulation and wrap; the edges at the clock that
+  makes them, so the board's SK6812 sees exact widths.
+- **LEDC** (`esp32c3-ledc`): four timers with the fractional divider and six
+  generators with HPOINT, duty, dithering, fading (ESP-IDF's `ledc_set_duty`
+  is a one-step fade) and the overflow counter.
+- **I2C** (`esp32c3-i2c`): the master's command list (RSTART, WRITE, READ,
+  STOP, END) at its timing registers' bus timing, a slave's stretching,
+  arbitration, the timeout and the bus-clear pulses; the slave with 7- and
+  10-bit addresses, the general call, double addressing, ACK control and
+  stretching; the FIFOs with their interrupts.
+- **GP-SPI2** (`esp32c3-spi2`) as a master: CS setup and hold, CMD, ADDR,
+  DUMMY and data on 1, 2 or 4 lines or QPI, full and half duplex, the four
+  clock modes, the bit orders, its buffer or the GDMA.
+- **GDMA** (`esp32c3-gdma`): three transmit and three receive channels on
+  descriptor lists with the owner check, RESTART, write-back, the EOF
+  interrupts and memory-to-memory transfers.
+- **The SAR ADCs and the temperature sensor** (`esp32c3-adc`): one-time
+  sampling with the attenuations, the timer's pattern-table scanning into
+  the GDMA, the filters and threshold monitors, the self-calibration's
+  grounded input; the sensor reads the world's temperature through
+  ESP-IDF's offset table.
+- `svd2regs.py --memory` adds the memories an SVD leaves out (the RMT's RAM,
+  the I2C controller's FIFOs) as word registers, recorded in the source.
+- TWAI, I2S, UHCI, the crypto accelerators but SHA, GP-SPI2's slave mode and
+  the radios are declared.
+
+### The ESP32-C3-DevKitM-1 (the RTOS boards plan, part 2, step 6)
+
+- **The board** (`emblink/esp32c3_devkitm1`), from Espressif's V1.0
+  schematic and dimension drawing: the ESP32-C3-MINI-1 module (a new
+  package of the ESP32-C3, `mini1`), the micro-USB's VBUS through a
+  1N5819HW to 5 V, the SGM2212-3.3 regulator (a new preset from SG Micro's
+  datasheet), the 5 V LED, R5 and C6 delaying CHIP_PU at power-up, the RST
+  and BOOT buttons, R20 holding GPIO8 high, the RGB LED on GPIO8, the two
+  15-pin headers, an original artwork and its place on the 3D bench. The
+  CP2102N is the console's bridge on UART0 and a host serial port. Pressing
+  RST restarts the chip with `rst:0x1 (POWERON)`; holding BOOT through it,
+  the ROM waits for a download. Six fixtures check the power path, the
+  reset delay and the buttons.
+- **The SK6812MINI-HS** (`emblink/sk6812mini_hs`), the board's RGB LED,
+  with OPSCO's timing (0 and 1 told apart at 0.49 us, a reset of more than
+  80 us); the WS2812B's Lua model now takes a part's figures as parameters.
+  The 3D bench shows an addressable LED in the colour it reports.
+- **An ESP32-C3's CHIP_EN** is its reset pin: low, the chip is off and in
+  reset, without the pull-up an NRST has.
+- **`embsim run --target`** plugs the board into a USB port (5 V on its
+  VBUS), so a board whose MCU waits for its supply starts as on the bench.
+- ESP-IDF v5.4's hello_world runs on the board from its flash image.
+- **Fixed:** a peripheral reset by its MCU (STM32's RCC, RP2040's RESETS,
+  the ESP32-C3's SYSTEM) no longer registers the peripheral's clock a second
+  time: a timer reset that way counted twice as fast (ESP-IDF's FreeRTOS
+  tick on SYSTIMER ran at 2 kHz instead of 1 kHz), and a stopped one stayed
+  listed. A unit test resets SYSTIMER and TIMG0 and checks their rates.
+
+### The ESP32-C3's pins and ESP-IDF's hello_world (the RTOS boards plan, part 2, step 4)
+
+- **The GPIO matrix and IO MUX** (`esp32c3-gpio`, `esp32c3-iomux`): each
+  pad's reset configuration from the TRM's table 5.12-1 (U0TXD and U0RXD
+  on GPIO21 and GPIO20, the pull-ups on GPIO9, MTCK and USB D+), outputs
+  through the matrix's 128 signals or the pad's IO MUX function, open
+  drain, inputs through FUNCn_IN_SEL, the five interrupt types on the CPU
+  and NMI sources (16, 17), and the UARTs' TX and RX on whichever pins the
+  matrix gives them.
+- **USB Serial/JTAG** (`esp32c3-usbjtag`), as on a DevKitM-1 with no host
+  on its D- and D+: 64 bytes of send buffer, flushed by the 64th byte or
+  WR_DONE and then never read, the interrupts on source 26. The ROM and
+  ESP-IDF time out on it as the TRM asks (30.4).
+- **What ESP-IDF's start needs**: the internal I2C master to the analog
+  blocks (`regi2c.c`, as the ROM's regi2c routines drive it, with the
+  o-code calibration's done flags); RND_DATA's random numbers
+  (`esp32c3-apbctrl`, a seeded generator, the same every run); the radio's
+  register blocks FE, FE2 and NRX (`radio.c`); the ROM's last word, the
+  `ets_rom_layout_p` pointer (`esprom.py --word`); the performance counter
+  reached through 0x800-0x802, where the ROM starts it; the timer group's
+  periodic RTC_SLOW_CLK calibration from reset and its timeout; a CPU
+  reset clearing the permission control's locks (TRM 14.8).
+- **ESP-IDF v5.4's hello_world runs unmodified**: built by `idf.py`, its
+  bootloader, partition table and app merged into the flash as `idf.py
+  flash` writes them, it boots through the ROM and the second-stage
+  bootloader, prints its banner, chip revision v0.3 and `Hello world!`,
+  counts down on FreeRTOS's tick and restarts with `rst:0xc
+  (RTC_SW_CPU_RST)`.
+
+### The ESP32-C3's clocks and timers (the RTOS boards plan, part 2, step 3)
+
+- **SYSTEM** (`esp32c3-system`): CPU_CLK as the TRM's tables 6.2-1 and
+  6.2-2 have it: XTAL_CLK / (PRE_DIV_CNT + 1), 20 MHz out of reset, the
+  PLL's 80 or 160 MHz, or RC_FAST_CLK; APB_CLK 80 MHz from the PLL. The
+  peripherals' clock enables gate their registers, with a diagnostic, and
+  their reset bits reset them (the ROM itself turns on the SHA
+  accelerator's and the Debug Assistant's clocks). CPU_INTR_FROM_CPU_0-3
+  are the software interrupts, matrix sources 50-53.
+- **The system timer** (`esp32c3-systimer`): two 52-bit counters at
+  16 MHz with update, value-valid and load; three comparators, in target
+  mode (an alarm at once for a target already passed) or period mode,
+  their level interrupts on sources 37-39.
+- **TIMG0 and TIMG1** (`esp32c3-timg`): T0's prescaler, direction, latch,
+  load, alarm and auto-reload; the MWDT's four stages and their actions,
+  its write key, its configuration taking effect at WDT_CONF_UPDATE_EN and
+  the flash-boot protection: a blank chip now resets as a real one does,
+  `rst:0x7 (TG0WDT_SYS_RST)` after 1.3 s; the RTC_SLOW_CLK calibration
+  ESP-IDF runs at start-up, timing out without a 32 kHz crystal.
+- **The eFuse controller** (`esp32c3-efuse`): read and program commands
+  over eleven blocks. The chip's factory bits are a revision v0.3 in the
+  QFN32 package with 4 MB of XMC flash and a MAC in Espressif's OUI, as
+  esptool decodes them.
+- The ESP32-C3's devices run on lazy clocks, as the STM32's do: the ROM's
+  polling loops run at about 0.7 times real time instead of 0.3.
+
+### The ESP32-C3 boots its own ROM from its flash (the RTOS boards plan, part 2, step 2)
+
+- **Espressif's boot ROM** runs on EmbSIM's ESP32-C3, unmodified: its image
+  is made from Espressif's Apache-2.0 ROM ELF by `tools/importers/esprom.py`
+  (the loadable segments, and the RAM variables' initial values its own
+  copy table names) and checked against the description's SHA-256. It
+  prints its banner, the strapping (`boot:0x8 (SPI_FAST_FLASH_BOOT)`) and
+  the reset cause, then boots the flash:
+  - a blank flash: `invalid header: 0xffffffff`, again and again, until the
+    RTC watchdog's flash-boot protection resets the part
+    (`rst:0x10 (RTCWDT_RTC_RST)`, then `Saved PC:0x...`);
+  - an ESP image: its segments loaded through SPI1, the checksum and the
+    SHA-256 checked, `entry 0x...`; a wrong digest is reported and the
+    image booted anyway, as with secure boot off.
+- **The in-package flash**, an XMC XM25QH32C as its datasheet has it: the
+  standard, dual and quad reads, page program and the erases with their
+  typical busy times (0.5 ms to 20 s), the three status registers, the
+  security registers, suspend and resume, power-down and ultra-deep
+  power-down, the IDs (`20 40 16`), the reset pair.
+- **SPI0 and SPI1** (`esp32c3-spimem`): the user command's phases and the
+  fixed commands as the ROM and ESP-IDF drive them.
+- **The cache and MMU** (`esp32c3-cache`): 128 entries mapping the flash's
+  64 KB pages on the instruction bus (0x42000000) and the data bus
+  (0x3C000000); invalidate, preload, lock and freeze complete at once. A
+  page shows the flash as it was mapped until an invalidate covers it.
+- **The SHA accelerator** (`esp32c3-sha`): SHA-1, SHA-224 and SHA-256 in
+  Typical SHA mode, interleaving included.
+- **The Debug Assistant's PC logging** (`esp32c3-assist`): the PC and SP at
+  a CPU reset, which the ROM prints as `Saved PC`.
+- **A project's `bin` firmware** is a flash image written at offset 0, as
+  `esptool.py write_flash 0x0` writes `merge_bin`'s output; it is written at
+  power-on only, so the flash keeps the program's writes through the
+  part's other resets. An ESP32-C3 without firmware runs its ROM on an
+  erased flash. Memory descriptions gain `external` (a store no address
+  reaches) and `window` (bytes a device provides) kinds, and `file` and
+  `sha256` for a region's factory contents (SPEC-006).
+- **UART fix (ESP32-C3):** TX_IDLE_NUM is the idle time between transfers,
+  after the FIFO empties, not after every frame. With its reset value, 256
+  bit times, every character took 266 bit times instead of 10, and the ROM
+  printed about 27 times slower than its 115200 baud.
+- The bus gives an access to the smallest device whose range holds it (the
+  MMU table inside the register file's span), and the register file finds
+  a register with one search instead of five.
+- The RISC-V core's ESP-RV variant has the user CSRs and the user-mode
+  counter the ROM writes (`ustatus`, `utvec`, `uscratch`, ...).
+
+### The ESP32-C3's core and interrupt controller (the RTOS boards plan, part 2, step 1)
+
+- **The ESP-RV core** (`esp-rv32imc`), as the ESP32-C3 TRM's chapter 1 has it:
+  - RV32IMC with user mode; the AMOs are illegal, as are mie, mip and the
+    standard counters, which the part does not have;
+  - mstatus's MIE, MPIE, MPP and TW; mtvec vectored only, on a 256-byte
+    base; five-bit mcause codes; MRET clears MPIE;
+  - the performance counter (mpcer, mpcmr, mpccr), counting cycles outside
+    WFI, instructions, idle cycles, loads, stores, jumps, branches, taken
+    branches or compressed instructions, saturating or wrapping;
+  - the trigger module: eight triggers matching an address exactly or a
+    NAPOT region, on execute, load or store, raising a breakpoint
+    exception; tcontrol's MTE and MPTE;
+  - PMP without static priority (any matching entry may grant), NAPOT up to
+    1 GB; the cpu_gpio CSRs.
+- **The interrupt matrix and controller** (`esp32c3-intmtx`): 62 sources
+  routed onto CPU interrupts 1-31, level and edge types, priorities 1-15
+  and the threshold, the 4-cycle latency, the clear toggle for claimed edge
+  interrupts.
+- **`espressif/esp32c3`**: the register file converted from Espressif's
+  Apache-2.0 esp32c3.svd, the QFN32 pinout, the memory map with SRAM1 and
+  ROM1 on both buses.
+- `svd2regs.py`: field arrays step by `dimIncrement` (Espressif's RMT had
+  its channels' bits on top of each other), and `--drop` leaves out a
+  peripheral that is another's registers (the C3's RNG). The register file
+  takes up to 1024 registers per peripheral (the DS block's memories).
+- The RISC-V core's model `rv32imc` no longer executes the A extension.
+
+### EmbLinkRTOS on the NUCLEO-F446RE (the NUCLEO-F446RE plan, step 11)
+
+- **EmbLinkRTOS's `nucleo_f446re` board** runs its conformance suite on
+  EmbSIM's NUCLEO-F446RE (`emblink/nucleo_f446re`): the ten test images of
+  its checked base profile pass in 4 s. The board brings the part from HSI
+  to 180 MHz as RM0390 orders it: HSE bypass from the ST-LINK's MCO, the
+  PLL, over-drive, five wait states. Its console is USART2, the virtual COM
+  port. EmbLinkRTOS's `cm4-embsim` CI job builds EmbSIM and runs them
+  there, as `avr-embsim` does on the Uno.
+
+### Two boards over I2C, and the F4's flash (the NUCLEO-F446RE plan, step 10, part 2)
+
+- **CubeF4's I2C_TwoBoards examples** run on two NUCLEO-F446RE boards wired
+  as their readmes draw them: ComPolling, ComIT, ComDMA and AdvComIT. The
+  slave's image is the example with `#define MASTER_BOARD` commented out,
+  as each readme asks. Every buffer arrives whole, and SCL's edges count
+  exactly the bytes sent.
+- **EEPROM_Emulation** runs its thousands of writes of three variables
+  through the F4's flash interface (`stm32f4-flash`):
+  - KEYR's unlock;
+  - programming at PSIZE's width, bits going only from 1 to 0;
+  - PGPERR, PGAERR, PGSERR and WRPERR;
+  - sector and mass erase;
+  - EOP, OPERR and the FLASH interrupt;
+  - OPTKEYR and OPTSTRT writing the option bytes, which each reset loads.
+  - **Not modelled:** the program and erase times. BSY never reads 1.
+- **Two cores on one circuit.** A core no longer stops at another core's
+  next quantum. It runs to the next event that is not a core's, and no
+  further than one quantum past the core furthest behind (SPEC-002 §5).
+  Before, two busy cores stepped each other almost an instruction at a
+  time: 50 ms of two NUCLEOs took 194 s, and now takes 2.3 s.
+- **I2C fixes, as RM0390 has them:**
+  - A slave transmitter's STOP after the master's NACK no longer sets
+    STOPF. A stale STOPF used to end the next reception early.
+  - A byte received goes to DR over what the program wrote there. The
+    HAL writes 0 to clear TXE, and the model then held the next byte as
+    if DR were unread.
+  - No interrupt is pended again by a register read. A level line
+    asserted while its handler runs pends again only at the exception
+    return; pending it from the handler's own SR1, SR2 and DR reads ran
+    the HAL's handler once more, which cleared ADDR before the receive
+    and stalled ComIT and ComDMA after one byte.
+- **SPEC-002:** the core quantum's default is 1 000 000 ps (1 µs); the text
+  said 1 000 000 000.
+
+### STM32CubeF4's examples on the NUCLEO-F446RE (the NUCLEO-F446RE plan, step 10, part 1)
+
+- **`tests/vendor/stm32cubef4/`** builds STM32CubeF4's own examples for the
+  NUCLEO-F446RE unmodified, as their STM32CubeIDE projects build them:
+  - the sources each `.project` links;
+  - the defines and include paths of its `.cproject`'s Debug configuration;
+  - its startup file, linker script and newlib-nano.
+  Each runs on `emblink/nucleo_f446re` under a scenario. CI fetches CubeF4
+  at the submodule commits it pins.
+- **Passing so far (15 scenarios):**
+  - GPIO_IOToggle; HAL_TimeBase_TIM, _RTC_ALARM and _RTC_WKUP.
+  - RCC_ClockConfig; RTC_Calendar; TIM_PWMInput (a 20 kHz, 25 % input).
+  - UART_Printf; UART_ReceptionToIdle_CircularDMA (typed text echoed, also
+    across the buffer's wrap).
+  - PWR_CurrentConsumption in all six of its modes, each chosen by the
+    define its readme uncomments: Sleep, Stop, under-drive Stop, Standby,
+    Standby with the RTC, Standby with the RTC and the backup SRAM.
+- **The low-power modes of the STM32F4** (RM0390 5.3):
+  - **Stop.** The 1.2 V domain's clocks stop: the core, SysTick and every
+    peripheral but the RTC and the IWDG, which count on LSE or LSI. HSE
+    and the PLLs turn off. Any EXTI line's interrupt or event wakes the
+    core on HSI. Under-drive's UDRDY sets with UDEN and LPUDS or MRUDS.
+  - **Standby.** RAM is lost; the backup SRAM is kept while BRE holds its
+    regulator on. The pins let go, but for the enabled WKUP pins (PA0,
+    PC13, inputs with a pull-down) and RTC_OUT. No interrupt wakes it.
+  - **Leaving Standby.** A WKUP pin's rising edge, an RTC alarm, wake-up,
+    tamper or timestamp event, NRST or the IWDG resets the part. That
+    reset is a power reset but for the backup domain: RCC_CSR's flags read
+    as at power-on, and PWR_CSR keeps WUF, EWUP and BRE with SBF set.
+  - **The flags and option bytes.** WUF already set ends Standby at once,
+    and a WKUP pin enabled while high is a wake-up event. CWUF and CSBF
+    clear their flags. With nRST_STOP or nRST_STDBY 0 in the option
+    bytes, entering the mode resets the part (LPWRRSTF,
+    `mcu.low_power_reset`).
+  - **The core.** SCR's SLEEPDEEP selects the part's deep sleep,
+    SLEEPONEXIT sleeps on the return to Thread mode, and SEVONPEND makes
+    an interrupt's pending an event that ends a WFE.
+  - **Not modelled:** the wake-up times (the core runs at the wake-up
+    event), the regulator's settings (the supply current is not
+    modelled), the debug unit's DBG_STOP and DBG_STANDBY.
+- **Value probes of memory** (SPEC-007): `reg:B.PERIPH.REG`, `mem:B:ADDR:LEN`
+  and `var:B:SYMBOL` read the board's memory as a debugger does. A number
+  is the bytes little-endian, up to 8; text is the bytes up to the first
+  NUL.
+- **Fixes:**
+  - The F4's RTC keeps a date register as written, even the forbidden
+    values (a date or month of 0), until it next counts. ST's HAL time
+    base on the RTC alarm writes DR as 0.
+  - A reset asked for from outside the core's run (a pin's edge ending
+    Standby) is no longer lost while the core sleeps.
+
+### The Cortex-M core's speed (the NUCLEO-F446RE plan, before step 10)
+
+- **Lazy device clocks on the STM32s.** Devices are no longer ticked after
+  every instruction. They are told their cycles when their next event
+  comes, or when the program reads or writes them, as the AVR's are.
+  - A timer's DMA requests now count as events even without an interrupt.
+  - A read of the NVIC's pending bits brings the devices up to date first.
+- **Decoded instructions.** The Cortex-M core keeps each instruction it
+  fetched from read-only memory (its halfwords, size and cycle cost). A
+  region's generation moves on when its bytes change from outside the
+  core: an image, a debugger's write, an erase, the memory at 0 remapped.
+- **Bursts.** A core runs instructions to the quantum's end without the
+  run loop's per-instruction checks while no breakpoint, analysis or
+  instruction limit applies.
+- **Smaller costs:** the lazy clocks' inline path, and a bus that looks
+  first in the region it found last.
+- **Result:** a busy firmware on the NUCLEO-F446RE at 180 MHz runs about
+  31 million instructions a second on a release build, up from 21 million.
+  That is a sixth of the part's own speed. A program that waits in WFI
+  between interrupts runs faster than real time.
+
+### The NUCLEO-F446RE board (the NUCLEO-F446RE plan, step 9)
+
+- **`emblink/nucleo_f446re`** (MB1136 C-03, from UM1724 Rev 14 and the
+  board's schematics):
+  - **Clocks:** HSE is the ST-LINK's 8 MHz MCO (HSEBYP needed) and LSE is
+    X2.
+  - **LEDs and buttons:** LD2 on PA5 through 510 ohm; B1 on PC13 with R29,
+    R30 and C15; B2 on NRST with C14; LD3 on +5V.
+  - **Boot and VCAP:** R33 holds BOOT0 low, and C26 sits on VCAP_1.
+  - **Headers:** the Arduino headers CN5, CN6, CN8 and CN9 and the morpho
+    headers CN7 and CN10, every pin a port. D0 and D1 are not connected,
+    as SB62/SB63 leave the factory open.
+  - **Console:** the ST-LINK's virtual COM port on USART2 (PA2/PA3,
+    115200).
+  - **Power paths:**
+    - U5V through T2 (STS7PF30L, PWR_ENn) and JP5 to +5V;
+    - VIN through U3 (LD1117S50) and D4 (STPS2L30A) to E5V;
+    - U4 (LD39050PU33R) to +3.3V;
+    - JP6 (IDD) to VDD, VBAT and, through SB57, VDDA.
+    - With VIN and JP5 left on U5V, the board stays dark, as UM1724 warns.
+    - Removing JP6 and putting an ammeter across `IDD_3V3`/`IDD_VDD`
+      powers the STM32 through the meter.
+  - **Artwork and toolchains:** original artwork to the 70 x 82.5 mm
+    outline; the linker script and the Cortex-M4F toolchain profiles.
+- **New parts:** `emblink/sts7pf30l` (P-MOSFET with its body diode) and
+  `emblink/stps2l30a` (Schottky), fitted to their datasheets. The
+  regulator gains the LD1117S50 and LD39050PU33R presets.
+- **`examples/nucleo-f446re-blink-serial`:**
+  - the firmware runs at 180 MHz from the MCO;
+  - LD2 blinks from SysTick and B1 is counted through EXTI13;
+  - the VCP echoes text in upper case;
+  - the banner reads F_SIZE and RCC_CSR.
+- **Engine changes:**
+  - **Initial input values:** a parameter `initially_<input>` gives an
+    input its first value on one instance. A toggle switch's
+    `initially_closed` is a jumper fitted at the factory.
+  - **MCU supply pins:** a part's supply pin (an MCU's VDD) is no longer an
+    ideal source when the circuit has a supply of its own. It takes what
+    the circuit gives it, so VDD follows JP6. Supply symbols stay sources.
+  - **Capacitors** have a pins-only functional model: an open circuit, as
+    at DC. A board's decoupling and filter capacitors therefore run under
+    every policy.
+  - **Fixtures and scenarios:** they may move a board's own parts
+    (`B1.JP5_E5V`). A scenario may type into a board's console (input
+    `serial` on `B1`, SPEC-008). A board UART takes `rx` as SPEC-007 says.
+
+### The STM32 watchdogs, the F446's RTC and the reset causes (the NUCLEO-F446RE plan, step 8)
+
+- **A reset's cause** (`esk_mach.reset_cause`):
+  - the runtime sets power-on and the reset pin;
+  - SYSRESETREQ sets software, and the watchdogs set their own.
+  - RCC_CSR records it as on the part: PORRSTF, PINRSTF and BORRSTF at
+    power-on; PINRSTF with every other reset, plus SFTRSTF, IWDGRSTF or
+    WWDGRSTF; the flags are kept until RMVF.
+- **The backup domain:** a peripheral marked `backup` keeps its registers
+  through every reset but a power-on one. RCC keeps BDCR the same way,
+  and BDRST resets both.
+- **`stm32-iwdg`** (both families): the keys, PR/RLR with PVU/RVU five LSI
+  clocks later, LSI forced on, RLR+1 counts to the reset. The option
+  bytes' hardware watchdog is loaded at every reset; the F446's option
+  bytes now hold their factory values.
+- **`stm32-wwdg`** (both families): the counter at PCLK1/4096/2^WDGTB;
+  WDGA, the window, and T6's reset; EWI and EWIF.
+- **`stm32f4-rtc`:**
+  - **Calendar:** BCD, with its leap years and 12/24-hour modes, from LSE,
+    LSI or HSE through the two prescalers.
+  - **Setting it:** INIT (counting again four RTCCLK clocks after it), the
+    write protections, the shadow registers with RSF, their locking and
+    BYPSHAD.
+  - **Events:** alarms A and B with their masks and subseconds, and the
+    wakeup timer, through EXTI lines 17 and 22. On PC13, the timestamp and
+    the tamper (which erases the backup registers) through EXTI21, and
+    RTC_OUT.
+  - **Adjustments:** the smooth and coarse calibrations, SHIFTR,
+    ADD1H/SUB1H.
+  - **Storage:** the backup registers.
+  - **Time:** counted lazily in the RTC's own clock, at the core clock it
+    last saw, and caught up at every RCC write, so a PLL switch keeps the
+    room's time.
+- **GPIO:** an F4 port without its clock keeps driving its pins as set (the
+  part does): only its registers' accesses need the clock.
+- **Proof (`tests/unit/test_stm32f4.c`):**
+  - the reset flags through power-on, RMVF, SYSRESETREQ (RAM kept) and the
+    pin;
+  - the IWDG's timing, keys, LSI and hardware option;
+  - the WWDG's window, EWI and reset;
+  - the RTC across a leap day's midnight, its protections, the shadow
+    lock, 12-hour mode and ADD1H;
+  - alarm A on PC13's RTC_OUT, the wakeup timer;
+  - the backup domain through a reset, the timestamp and the tamper;
+  - the calendar across a switch to 180 MHz.
+
+### The STM32F446's ADCs and DAC (the NUCLEO-F446RE plan, step 8)
+
+- **`stm32f4-adc`** for ADC1-3 (RM0390 13):
+  - **Groups:** the regular and injected groups, on software starts, the
+    timers' and EXTI's triggers with their edges, or JAUTO. An injected
+    group interrupts a regular conversion, which starts again after it.
+  - **Modes:** scan, continuous and discontinuous.
+  - **Timing:** SMPRx's sampling times and RES's 12, 10, 8 or 6 bits, at
+    the ADC clock.
+  - **Results and flags:** EOC with EOCS, OVR stopping the group, JOFRx's
+    offsets with the signed alignments, the analog watchdog, DMA with DDS,
+    and the interrupts.
+  - **Inputs:** the pins of the description's new `io.analog` table,
+    VREFINT, VBAT/4, and the temperature sensor at the world's
+    temperature.
+- **`stm32f4-adc-common`:** CSR, CCR, and the dual and triple modes
+  (regular and injected simultaneous, interleaved with DELAY, alternate
+  trigger) with CDR's DMA modes.
+- **`stm32f4-dac`** (RM0390 14):
+  - every holding register's view, and DOR after one APB1 clock, or three
+    after a trigger (TIM2 and TIM4-8 TRGO, EXTI9, SWTRIG);
+  - noise and triangle waves, DMA with its underrun;
+  - the output buffer's range, or 15 kOhm without it;
+  - its voltage drives PA4 and PA5 through a new analog output on
+    `esk_mach_pin` (`aout`), which the runtime puts on the pin's net
+    behind the output resistance.
+- **Triggers:**
+  - the timers announce TIMx_TRGO and TIMx_CCy (OCyREF, or a pulse at a
+    capture or a frozen channel's match);
+  - EXTI announces lines 9, 11 and 15;
+  - the DMA tells the peripheral of a round's last item.
+- **The part's factory bytes:** memory regions take `contents`, restored at
+  every reset. The F446's device signature carries its UID, its flash size
+  and the calibration values TS_CAL1, TS_CAL2 and VREFINT_CAL, which agree
+  with the sensors' model.
+- **The world's temperature** reaches MCU models through
+  `esk_mach_host.temperature`.
+- **Proof (`tests/unit/test_stm32f4.c`):**
+  - a conversion's code and time;
+  - RES and ALIGN;
+  - the temperature at 25 and 85 degC through ST's formula with TS_CAL1/2;
+  - VBAT/4, and VREFINT against VREFINT_CAL;
+  - a scan into memory by circular DMA;
+  - OVR;
+  - an injected group interrupting a regular one, with JOFR and the
+    watchdog;
+  - TIM2's TRGO pacing conversions;
+  - dual simultaneous mode's CDR;
+  - for the DAC: DOR's timing, the pin's voltage and the buffer's floor,
+    a triangle on TIM6's TRGO, the software trigger, an underrun.
+
+### The STM32 I2Cs (the NUCLEO-F446RE plan, step 8)
+
+- **`stm32-i2c`** for the F1's and F4's I2C (RM0008 26, RM0390 27). It
+  replaces `stm32f1-i2c`, which was a master only.
+- **The master:**
+  - a START waits for the bus to be free;
+  - 10-bit addresses with ADD10, and the read header after a repeated
+    START;
+  - a slave holding SCL low stretches the clock: the high time counts
+    from SCL seen high;
+  - a 1 sent while SDA reads 0 loses the arbitration (ARLO), and the
+    interface listens on as a slave.
+- **The slave:**
+  - addressed by OAR1 (7 or 10 bits), OAR2 (DUALF), the general call,
+    and the SMBus default, host and alert response addresses;
+  - holds SCL low for ADDR, an empty DR (TXE, BTF) and a full one (BTF),
+    or with NOSTRETCH sets OVR;
+  - STOPF, and AF on the master's NACK.
+- **Both:**
+  - BUSY and BERR from the bus as the pins show it;
+  - PEC with CR1.PEC and PECERR, and SMBus's TIMEOUT and SMBALERT;
+  - SWRST;
+  - DMAEN's requests, with LAST NACKing the byte after the DMA's EOT-1 (the
+    DMA now tells the peripheral about its last two items).
+- **Pins:** the F4's I2C1-3 on their alternate functions, inputs
+  included; the F1's open-drain alternate-function pins let go for a 1
+  (they used to read back 1 whatever the circuit did).
+- **Proof:**
+  - `tests/unit/test_stm32f4.c`:
+    - the master against a scripted device: a write, the POS read, an
+      absent address, stretching, ARLO, and no START without pull-ups;
+    - the slave against a master driven by hand: ADDR and its
+      stretching, BTF both ways, STOPF, the NACK's AF, the dual address,
+      the general call, BERR;
+    - DMA with the PEC sent by itself, and LAST's NACK;
+    - I2C1 wired to I2C3: a 10-bit address, the PEC checked by the slave
+      model, the slave's stretching, a read after a repeated START;
+  - STM32Cube F1's I2C application against the 24C02 still passes.
+
+### The STM32 SPIs (the NUCLEO-F446RE plan, step 8)
+
+- **`stm32-spi`** for the F1's and F4's SPI (RM0008 25, RM0390 26). It
+  replaces `stm32f1-spi`, which was a master only:
+  - master and slave, modes 0 to 3, 8 or 16 bits, MSB or LSB first;
+  - OVR keeps the older frame, and clears by reading DR then SR;
+  - receive-only (RXONLY) and bidirectional (BIDIMODE, BIDIOE) modes; a
+    receive-only master clocks frame after frame until SPE clears, and the
+    frame under way when SPE clears finishes;
+  - NSS by SSM/SSI, SSOE's output or the pin's input; MODF clears SPE and
+    MSTR and keeps them write-protected until SR is read and CR1 written;
+  - a slave drives MISO only while selected. Like the part, it keeps its
+    bit count when NSS rises in the middle of a frame, and sends back the
+    frame it received when nothing was written;
+  - the F4's TI mode: the master's frame pulse, the slave's frame start
+    on it, and FRE;
+  - CRC: TXCRCR and RXCRCR with CRCPR's polynomial, CRCNEXT, the CRC
+    frame and CRCERR. With DMA, the CRC frame follows the stream's last
+    item by itself; the DMA now tells the peripheral about that item;
+  - the DMA requests SPIx_TX and SPIx_RX, and the TXE, RXNE and error
+    interrupts as levels.
+- **Pins:** the F4's SPI1-4 on their alternate functions (inputs too: a
+  slave's SCK and NSS, a master's NSS); the F1's on AFIO's pins, its GPIO
+  passing the pins' levels to the SPIs. A GPIO update asked for while
+  another runs (a slave's MISO changing on its SCK's edge) runs again
+  after it.
+- **Proof:**
+  - `tests/unit/test_stm32f4.c`: a master's frames with OVR and 16-bit
+    LSB-first mode 3; MODF and SSOE; a slave across NSS and its echo;
+    CRC-8 and CRC-16 with CRCERR; full-duplex DMA with the automatic CRC;
+    the bidirectional, receive-only and TI modes;
+  - STM32Cube F1's SPI application still passes.
+
+### The STM32F446's DMA (the NUCLEO-F446RE plan, step 7)
+
+- **`stm32f4-dma`** for DMA1 and DMA2 (RM0390 9):
+  - eight streams each, CHSEL's channel taking the requests of a new
+    `dma_requests` table, transcribed from RM0390's tables 28 and 29;
+  - a request waits while no stream takes it, and a stream enabled on its
+    channel serves it at once;
+  - transfers through the bus as the core's accesses go, so a peripheral
+    sees the DMA read or write its data register;
+  - direct mode, and the FIFO's packing, threshold, peripheral bursts and
+    FS;
+  - NDTR with half and full transfer flags, circular mode, double buffer
+    with CT, memory-to-memory on DMA2;
+  - transfer errors and the FIFO configuration error, LIFCR/HIFCR, and
+    each stream's interrupt.
+- **Requests:** the USARTs' DMAT and DMAR, and the timers' UDE, CCxDE (at
+  the update with CCDS), TDE and COMDE; the timers' DMA burst through
+  DCR/DMAR.
+- **Proof:** `tests/unit/test_stm32f4.c`:
+  - USART2 sent by DMA, the request waiting for its stream;
+  - received into a circular buffer, then double buffered;
+  - memory-to-memory packing bytes into words;
+  - the FIFO configuration and transfer errors;
+  - a timer's DMA burst sweeping ARR.
+
+### The STM32 USARTs (the NUCLEO-F446RE plan, step 6)
+
+- **`stm32-usart` rewritten** for every USART and UART of the SR/DR layout,
+  the F4's six and the Blue Pill's three (RM0390 25, RM0008 27):
+  - 8 or 9 data bits with even or odd parity, 0.5 to 2 stop bits, the
+    F4's OVER8;
+  - TE's idle frame, breaks (LIN's 13 bits), SBK clearing as the break
+    ends;
+  - the receiver's RXNE, ORE (a frame arriving while RXNE is set is lost,
+    as on the part, rather than waiting), PE, FE, IDLE and LBD, cleared by
+    reading SR then DR;
+  - mute mode woken by an idle line or this node's address mark;
+  - nCTS holding frames and nRTS signalling a full receiver, half-duplex,
+    and the synchronous master clock on CK with RX sampled at its edges;
+  - every interrupt source.
+- **The runtime carries each frame's format:** the TX pin's waveform has the
+  frame's data, parity and stop bits (`esk_mach_host.uart_frame`), and the
+  RX decoder reads the receiver's format and reports framing errors and
+  breaks (`esk_mach_rx_frames`); the session's serial input is paced at the
+  frame's length. Other UART models keep 8N1.
+- **Pins:** the F4's USART signals through `io.alternate` (TX, RX, CK, CTS,
+  RTS); the F1's CK, CTS and RTS through AFIO.
+- **Proof:** `tests/unit/test_stm32f4.c`'s USART tests; the Blue Pill's
+  serial input test now types after the program's prompt, since bytes sent
+  before it are overrun as on the part.
+
+### The STM32 timers and SysTick (the NUCLEO-F446RE plan, step 5)
+
+- **`stm32-tim` rewritten as the whole timer**, for the F4's TIM1-TIM14 and
+  the Blue Pill's TIM1-TIM4 alike (RM0390 12-16, RM0008 14-15):
+  - up, down and center-aligned counting with DIR, the repetition counter,
+    the preloads and update events;
+  - output compare and PWM in every counting mode, OCxCE's clear on ETRF;
+  - input capture: the edge, ICxPSC, overcapture, the ICxF filter that
+    drops short pulses, TI1S, reading CCRx clearing CCxIF;
+  - the advanced timers' complementary outputs with dead time, MOE,
+    OSSR, OSSI and idle levels, break on BKIN or BG, LOCK's levels, COM
+    events with CCPC;
+  - the slave modes (reset, gated, trigger, external clock 1, encoder
+    1-3) on ITR0-ITR3, TI1F_ED, TI1FP1, TI2FP2 or ETRF, external clock mode
+    2, TRGO to the timers that listen, by the interconnection tables;
+  - the counter clocked by the clock RCC gives the timers (TIMPRE
+    included), each deadline acting at its own cycle.
+- **Pins:** the F4's timer signals come through the alternate functions of
+  `io.alternate` (TIMx_CHy, TIMx_CHyN, TIMx_BKIN, TIMx_ETR), both ways; the
+  F1's channels now also capture from their pins.
+- **SysTick:** CLKSOURCE 0 counts the part's external reference
+  (`core.systick.ref_div`: HCLK/8 on the STM32s), CALIB reads the part's
+  value (`core.systick.calib`: RM0008's 9000 on the F103, TENMS not given
+  on the F446), a long wait is counted at once.
+- **Proof:** `tests/unit/test_stm32f4.c`'s timer and SysTick tests; the
+  Blue Pill's timer tests and HAL applications unchanged.
+
+### The STM32F446's GPIO, SYSCFG and EXTI (the NUCLEO-F446RE plan, step 4)
+
+- **GPIO** (`stm32f4-gpio`, RM0390 7):
+  - MODER's input, output, alternate-function and analog modes;
+  - OTYPER's push-pull and open-drain; PUPDR's pulls in every mode but
+    analog; IDR sampled from the pins;
+  - BSRR, a set winning over a reset, written by word or by halfword (the
+    older HAL's BSRRL and BSRRH);
+  - LCKR's key sequence freezing the locked pins' configuration until
+    reset;
+  - AFRL and AFRH choosing among the alternate functions the description's
+    new `io.alternate` lists for each pin. An alternate function whose
+    peripheral has no model yet lets its pin go; the debug port's pins come
+    out of reset in AF0 with their pulls.
+- **Pin speed:** a GPIO model's speed setting (an F4's OSPEEDR, an F1's
+  2, 10 and 50 MHz) picks the pin's output resistance and edge rate from the
+  description's `io.electrical` tables. They were declared and never
+  applied; the Blue Pill's outputs now use them too.
+- **SYSCFG** (`stm32f4-syscfg`): EXTICR's port for each EXTI line; MEMRMP's
+  memory at 0 (main flash, system memory, SRAM1's 112 KiB; nothing for the
+  FMC banks), mapped back to the flash on reset; CMPCR's READY.
+- **EXTI:** every line IMR has (23 on the F4, 19 on the Blue Pill's
+  F103), the internal lines' interrupts (PVD, RTC alarm, tamper and
+  wake-up, the USB wake-ups), and EMR's events, which end a WFE
+  (`esk_cortexm_event`).
+- **RCC's peripheral reset bits** (`*RSTR`, an F1's `IOPxRST`) reset their
+  peripherals, on every STM32.
+- **Importers:** `tools/importers/stm32pins.py --alternate` converts ST's
+  GPIO modes file into `io.alternate` (AF15 EVENTOUT on every pin);
+  `tools/importers/svd2regs.py --register` adds a register the SVD leaves
+  out (the F446's SYSCFG_CFGR), and CMPCR's CMP_PD is writable as RM0390
+  says.
+- **Proof:** `tests/unit/test_stm32f4.c` covers the reset state, the
+  modes, the lock sequence, the AF table, B1's EXTI13 on PC13 through
+  SYSCFG, a software trigger on line 22, an event and the boot remap.
+
+### The STM32F446's clocks and power (the NUCLEO-F446RE plan, step 3)
+
+- **RCC to 180 MHz** (`stm32-rcc` on an RCC with `PLLCFGR`, RM0390 6):
+  - HSI 16 MHz; HSE ready only as the board drives OSC_IN, a crystal with
+    HSEBYP clear or a clock (the NUCLEO's ST-Link MCO) with it set, and
+    HSEBYP kept while HSE is on; LSE from the board's crystal; LSI;
+  - the main PLL from HSI or HSE: PLLM, PLLN, PLL_P and the F446's PLL_R;
+    PLLRDY, PLLI2SRDY and PLLSAIRDY once the source is ready;
+  - SYSCLK from HSI, HSE, PLL_P or PLL_R, switched once its source is ready
+    (SWS); HCLK, PCLK1, PCLK2 and the timers' clock with DCKCFGR's TIMPRE
+    (`esk_stm32_hclk`, `esk_stm32_pclk`, `esk_stm32_timclk`); the core
+    runs at HCLK;
+  - what SYSCLK uses cannot be turned off; BDCR is written only while
+    PWR's DBP is set;
+  - said once, as warnings: a VCO input outside 1 to 2 MHz or output
+    outside 100 to 432 MHz, SYSCLK above the voltage scale's and
+    over-drive's limit, PCLK1 above 45 MHz, PCLK2 above 90 MHz
+    (`mcu.clock_out_of_spec`), and too few flash wait states for HCLK
+    (`mcu.flash_wait_states`).
+- **PWR** (`stm32f4-pwr`): VOSRDY with the PLL, ODRDY and ODSWRDY as the
+  over-drive sequence sets them.
+- **The board's clocks:** a board's HSE `source` of `external_clock` or
+  `oscillator_module` makes HSE a clock that needs HSEBYP; its LSE's
+  frequency reaches the part.
+- **Register file:** split RCC fields joined (PLLM, PLLN, PLLP, PLLQ, SW,
+  SWS) and missing ones added from RM0390 (PLLR, PLLSAION, PLLSAIRDY,
+  FLASH's 4-bit LATENCY); `tools/importers/svd2regs.py` gains `--merge` and
+  `--field`, recorded in the file's source.
+- **Faster STM32 clock lookups:** the RCC model is the machine's clock
+  model, no longer found by name on every core clock query.
+- **Proof:** `tests/unit/test_stm32f4.c`; STM32CubeF4's RCC_ClockConfig
+  clock functions (HSI and HSE bypass to 180 MHz with over-drive, and back)
+  run unmodified on a bench board, the HAL reporting 180, 45 and 90 MHz and
+  `HAL_Delay` taking its cycles. The ST examples run APB2 at 180 MHz,
+  which the model reports as out of spec.
+
+### The STM32F446RE described (the NUCLEO-F446RE plan, step 2)
+
+- `st/stm32f446re`: the Cortex-M4F with FPU and MPU, the memory map
+  (512 KiB flash, 128 KiB SRAM, system memory, OTP, option bytes, backup
+  SRAM), bit-band, clocks, the LQFP64 pinout and the ADC channels.
+- **Register file:** converted from ST's own STM32F446.svd (v1.9,
+  Apache-2.0), vendored with its licence. Where the SVD differs from RM0390,
+  the manual wins, and each correction is recorded in the file's source:
+  - GPIOA's OSPEEDR reset value;
+  - USART SR's reset value (TXE and TC at bits 7:6);
+  - DBGMCU_IDCODE's DEV_ID (0x421);
+  - the interrupts of TIM9 to TIM14, FMPI2C, the ADCs and the DAC.
+- **Importer changes.** `tools/importers/svd2regs.py` gains `--reset` and
+  `--interrupts`, recorded corrections. `tools/importers/stm32pins.py`
+  converts ST's open pin data (BSD-3-Clause) into a package description
+  and the analog map.
+- **No peripheral models yet.** Each peripheral keeps its register values
+  and reports unsupported access until steps 3 to 8; `docs/coverage.md`
+  says 0 of 71.
+
+### The Cortex-M core an RTOS port needs (the NUCLEO-F446RE plan, step 1)
+
+- **The MPU** on the parts that have one: the nRF52840 and RP2040 today, the
+  STM32F446 next.
+  - PMSAv7 and PMSAv6 with eight regions, subregion disables,
+    access permissions, XN and the background region (PRIVDEFENA).
+  - HFNMIENA; the private peripheral bus and vector table reads always on
+    the default map.
+  - MemManage faults with DACCVIOL and MMFAR, IACCVIOL, MSTKERR, MUNSTKERR
+    and MLSPERR.
+- **The default memory map's execute-never regions:** a jump into peripheral,
+  device or system space faults.
+- **Privilege.**
+  - LDRT and STRT access as unprivileged.
+  - An unprivileged access to the system control space is a BusFault.
+- **Stacking faults.**
+  - A fault while stacking or unstacking an exception frame (an RTOS's stack
+    guard, a task's stack pointer gone bad) is taken as the derived
+    MemManage or BusFault, as the architecture says. It no longer locks the
+    core up.
+- **Lazy floating-point context stacking** as the hardware does it:
+  - the frame's FP area is reserved and written by the handler's first FP
+    instruction (FPCCR.LSPACT, FPCAR, the ready bits);
+  - FPDSCR is loaded into a new context.
+- **Proof:** a 28-case test image, `tests/firmware/cm4-core`, prints the same
+  on EmbSIM's nRF52840 as on QEMU's mps2-an386. Its expected output is
+  checked against QEMU in CI.
+
 ### The Uno powered from USB: fuse, switch and the VIN comparator (ADR-031, ADR-034)
 
 - The Uno R3 board has its USB power path:

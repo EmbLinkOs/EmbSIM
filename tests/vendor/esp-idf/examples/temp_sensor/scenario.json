@@ -1,0 +1,34 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "temp_sensor",
+ "until": "2500ms",
+ "description": "temp_sensor: the sensor for 10-50 degC (ESP-IDF picks its DAC offset 0) read once a second; the room at 25 degC reads 104, 0.4386 x 104 - 20.52 = 25.09 degC, which ESP-IDF's temp_sensor_get_raw_value returns as an int: 25. The eFuses hold no calibration (BLOCK2 blank), so the driver warns and applies none.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "enabled",
+   "at": "1s",
+   "probe": "console",
+   "expect": {
+    "contains": "Enable temperature sensor"
+   }
+  },
+  {
+   "id": "reading",
+   "at": "2400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "Temperature value 25.00"
+   }
+  },
+  {
+   "id": "uncalibrated",
+   "at": "2400ms",
+   "probe": "console",
+   "expect": {
+    "contains": "temperature_sensor: Calibration failed"
+   }
+  }
+ ]
+}

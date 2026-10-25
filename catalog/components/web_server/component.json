@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/web_server",
+  "version": "0.1.0",
+  "name": "Web server",
+  "category": "instruments",
+  "description": "A web server on the internet beyond the bench's routers, as a board's HTTP client finds it: its DNS name resolves (through a router's DNS forwarder) to its public address, a TCP connection to its port is accepted, and a GET of its path is answered with its content, then the connection closed. It reaches the circuit only through a router's WAN side (emblink/wifi_ap), the latency it is set at away.",
+  "keywords": [
+    "web",
+    "http",
+    "server",
+    "tcp",
+    "dns",
+    "internet",
+    "example.com",
+    "network"
+  ],
+  "pins": [],
+  "params": {
+    "name": {
+      "type": "string",
+      "default": "example.com",
+      "doc": "Its DNS name; empty for an address alone"
+    },
+    "address": {
+      "type": "string",
+      "default": "93.184.215.14",
+      "doc": "Its public IPv4 address"
+    },
+    "port": {
+      "type": "integer",
+      "default": 80,
+      "min": 1,
+      "max": 65535,
+      "doc": "The TCP port it listens on"
+    },
+    "latency": {
+      "type": "number",
+      "unit": "ms",
+      "default": 10,
+      "min": 0,
+      "max": 2000,
+      "doc": "Its link's one-way delay to the internet's core"
+    },
+    "path": {
+      "type": "string",
+      "default": "/",
+      "doc": "The path it serves (a directory's index.html too); any other is 404 Not Found"
+    },
+    "content_type": {
+      "type": "string",
+      "default": "text/html; charset=UTF-8",
+      "doc": "The Content-Type of its content"
+    },
+    "body": {
+      "type": "string",
+      "default": "<!doctype html>\n<html>\n<head><title>Example Domain</title></head>\n<body>\n<h1>Example Domain</h1>\n<p>This domain is for use in documentation examples.</p>\n</body>\n</html>\n",
+      "doc": "Its content, at most 12287 bytes"
+    }
+  },
+  "outputs": [
+    {
+      "name": "requests",
+      "type": "integer",
+      "doc": "HTTP requests answered"
+    },
+    {
+      "name": "connections",
+      "type": "integer",
+      "doc": "TCP connections open now"
+    },
+    {
+      "name": "pings",
+      "type": "integer",
+      "doc": "ICMP echo requests answered"
+    },
+    {
+      "name": "log",
+      "type": "string",
+      "doc": "Each request: its method, target and version, the client's public address and port, its Host header and the status answered"
+    }
+  ],
+  "model": {
+    "primitive": "web_server"
+  },
+  "functional": {
+    "primitive": "web_server"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {}
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "TCP as a server (RFC 9293): SYN answered by SYN-ACK with an MSS of 1460 and a window of 65535; the client's MSS option (536 without one) and window followed; the request taken in order and acknowledged, a segment out of order answered with the sequence number expected; the response in segments of the MSS within the window, PSH on the last, then FIN; the client's FIN acknowledged; unacknowledged data, SYN-ACK or FIN sent again after 1 s, the time doubling, five times before the connection is reset; TIME-WAIT for 2 s; RST to a segment for no connection. HTTP/1.0 and 1.1 (RFC 9112): GET and HEAD of its path (and of its index.html when it is a directory) answered 200 OK with its Content-Type, Content-Length and Connection: close, an absolute-form target of its path too; another path 404 Not Found, another method 501 Not Implemented, a malformed request 400 Bad Request; the connection closed after the response. ICMP echo requests answered. Reached by its name through a router's DNS forwarder and at its address through the router's NAT (engine/inet.h), its latency on each way. ESP-IDF's protocols/http_request fetches its page unmodified.",
+      "omissions": [
+        "HTTPS (TLS)",
+        "persistent connections and pipelining",
+        "request bodies beyond 2 KB, chunked transfer",
+        "more than 8 connections at a time (a SYN beyond them is ignored, as a full backlog does)",
+        "UDP (no ICMP port unreachable)",
+        "IPv6",
+        "the time a server takes to answer (it answers at once)"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "As functional: it has no pins.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "RFC 9293: Transmission Control Protocol",
+        "url": "https://www.rfc-editor.org/rfc/rfc9293",
+        "date": "2026-10-23",
+        "notes": "The connection states, the handshake, sequence numbers and acknowledgement, the MSS option, retransmission, RST for segments of no connection."
+      },
+      {
+        "title": "RFC 9112: HTTP/1.1",
+        "url": "https://www.rfc-editor.org/rfc/rfc9112",
+        "date": "2026-10-23",
+        "notes": "The request line, the status line, Content-Length and Connection: close."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

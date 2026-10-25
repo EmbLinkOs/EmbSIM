@@ -1,0 +1,122 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "bleprph",
+ "until": "3500ms",
+ "description": "bluetooth/nimble/bleprph: ESP-IDF's BLE controller (its ROM's RivieraWaves link layer) and the NimBLE host start, read the public address from eFuse (the station's MAC + 2) and advertise as a connectable peripheral (ADV_IND, general discoverable, the name nimble-bleprph) on the three primary channels at +9 dBm; a phone's scanner 2 m away lists it at -37 dBm, the free-space path loss at 2.4 GHz. A tablet's GATT browser connects to it (CONNECT_IND, a 30 ms interval, channel selection algorithm #1): the controller holds the connection as its slave, the host logs it, and the browser discovers its GATT database by ATT over the link (the MTU, the primary services GAP, GATT, Alert Notification and the example's own, their characteristics) and reads what is readable, which the example logs.",
+ "inputs": [],
+ "assertions": [
+  {
+   "id": "controller",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "BLE_INIT: Bluetooth MAC: 7c:df:a1:45:6d:64"
+   }
+  },
+  {
+   "id": "host",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE_BLE_PRPH: BLE Host Task Started"
+   }
+  },
+  {
+   "id": "advertising",
+   "at": "1500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: GAP procedure initiated: advertise; "
+   }
+  },
+  {
+   "id": "no-assert",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "not_contains": "assert"
+   }
+  },
+  {
+   "id": "phone-sees-one",
+   "at": "1500ms",
+   "probe": "phone-devices",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "phone-list",
+   "at": "1500ms",
+   "probe": "phone",
+   "expect": {
+    "contains": "7c:df:a1:45:6d:64 (public) ADV_IND -37dBm connectable \"nimble-bleprph\""
+   }
+  },
+  {
+   "id": "connected",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: connection established; status=0"
+   }
+  },
+  {
+   "id": "peer",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: c4:5e:7a:11:22:33"
+   }
+  },
+  {
+   "id": "read-logged",
+   "at": "3500ms",
+   "probe": "console",
+   "expect": {
+    "contains": "NimBLE: Characteristic read; conn_handle=1 attr_handle=29"
+   }
+  },
+  {
+   "id": "tablet-connected",
+   "at": "3500ms",
+   "probe": "tablet-state",
+   "expect": {
+    "equals": "connected"
+   }
+  },
+  {
+   "id": "tablet-four-services",
+   "at": "3500ms",
+   "probe": "tablet-services",
+   "expect": {
+    "equals": 4
+   }
+  },
+  {
+   "id": "tablet-gap",
+   "at": "3500ms",
+   "probe": "tablet-gatt",
+   "expect": {
+    "contains": "service 0x1800 handles 1-5\n  characteristic 0x2A00 handle 3 [ read ] = \"nimble-bleprph\"\n"
+   }
+  },
+  {
+   "id": "tablet-alert-notification",
+   "at": "3500ms",
+   "probe": "tablet-gatt",
+   "expect": {
+    "contains": "service 0x1811 handles 14-26\n"
+   }
+  },
+  {
+   "id": "tablet-example-service",
+   "at": "3500ms",
+   "probe": "tablet-gatt",
+   "expect": {
+    "contains": "service 59462f12-9543-9999-12c8-58b459a2712d handles 27-65535\n  characteristic 33333333-2222-2222-1111-111100000000 handle 29 [ read write notify indicate ] = 00\n"
+   }
+  }
+ ]
+}

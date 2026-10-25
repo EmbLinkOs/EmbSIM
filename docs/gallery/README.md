@@ -5,6 +5,85 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The air, as phones and sniffers see it (2026-10-22)
+
+The ESP32-C3 radios plan, step 7, and the network beyond the router. On
+the left, the DevKitM-1 runs ESP-IDF's `protocols/http_request` as it
+ships: a phone's Wi-Fi analyzer beside the bench lists the home router
+and the neighbour's, and a sniffer on channel 6 captures the board's
+probe, authentication, association, the WPA2 4-way handshake (EAPOL's
+messages 1 to 4) and then protected data, as Wireshark would without the
+key. On the right, two DevKitM-1s run NimBLE's `bleprph` and Bluedroid's
+`ble_ibeacon`: the phone's scanner lists both (the iBeacon's UUID, major
+and minor), and the sniffer on channel 37 captures their advertising, the
+phone's SCAN_REQ and the SCAN_RSP 150 us later. Each capture is saved as
+a pcap file Wireshark opens.
+
+| Wi-Fi | Bluetooth LE |
+|---|---|
+| ![http_request associating and keying, seen by a phone and a sniffer](radio/air-wifi.png) | ![bleprph and an iBeacon advertising, a phone scanning them](radio/air-ble.png) |
+
+![http_request fetching example.com through the router: the DNS lookup, the socket and the page](radio/http-request-serial.png)
+
+## The ESP32-C3-DevKitM-1 qualified (2026-10-22)
+
+The DevKitM-1's artwork checked against Espressif's V1.0 dimension
+drawing (`catalog/boards/esp32c3_devkitm1/reference.json`), read from the
+PDF's vector paths: the outline, the 30 header pads and the micro-USB's
+body, and every other part placed from its pads. The pads had been
+0.39 mm high, the RGB LED 1.1 mm and the micro-USB 0.64 mm out; the header
+labels are now the board's narrow vertical silkscreen, beside the pads.
+
+| Before | Qualified |
+|---|---|
+| ![The earlier artwork](qualified-c3/artwork-before.png) | ![The artwork as the drawing places it](qualified-c3/artwork.png) |
+
+## The ESP32-C3-DevKitM-1 (2026-10-22)
+
+The RISC-V board of the RTOS boards plan, step 6 of its part 2:
+Espressif's ESP32-C3-DevKitM-1, from its V1.0 schematic, with the
+ESP32-C3-MINI-1 module, the SGM2212 regulator, the RST and BOOT buttons and
+the SK6812MINI-HS RGB LED on GPIO8. It runs ESP-IDF v5.4's hello_world from
+its flash image: the ROM, the second-stage bootloader and the application,
+built unmodified, counting down to its restart one second at a time on the
+CP2102N's serial port. The artwork is drawn for EmbSIM to the board's
+25.4 x 38.91 mm outline.
+
+| Design | Run |
+|---|---|
+| ![The DevKitM-1 project in the Design workspace](esp32c3-devkitm1/design-c3.png) | ![hello_world's countdown on the serial terminal, the board on the 3D bench plugged into USB](esp32c3-devkitm1/run-c3.png) |
+
+![The DevKitM-1's artwork: the module, the regulator, the RGB LED, BOOT and RST](esp32c3-devkitm1/board-c3.png)
+
+## Two NUCLEO-F446REs over I2C (2026-10-19)
+
+Step 10 of the NUCLEO-F446RE plan: STM32CubeF4's own examples, built
+unmodified. Here two boards run I2C_TwoBoards_ComIT, wired as its readme
+draws them: I2C1's SCL (D10) and SDA (D14) joined, with the grounds, from
+one USB supply. B1 runs the example as it is, the master; B2 runs it with
+`MASTER_BOARD` commented out, the slave. The project is the one
+`tests/vendor/stm32cubef4/run.py` generates.
+
+![Two NUCLEO-F446REs on the bench, SCL and SDA wired between their Arduino headers](nucleo-f446re/two-nucleos-i2c.png)
+
+## The NUCLEO-F446RE (2026-10-19)
+
+The board EmbLinkRTOS is developed against, step 9 of its plan: ST's
+NUCLEO-F446RE with its STM32F446RE at 180 MHz from the ST-LINK's MCO,
+running `examples/nucleo-f446re-blink-serial`. The board's jumpers are
+controls: JP5 on U5V or E5V, JP6 (IDD) fitted or removed for an ammeter.
+The artwork is drawn for EmbSIM to the 70 x 82.5 mm outline. Its header
+positions are approximate until a dimensioned drawing gives
+`reference.json`.
+
+| Design | Run |
+|---|---|
+| ![The NUCLEO-F446RE example in the Design workspace](nucleo-f446re/design-nucleo.png) | ![The example running: VDD on the oscilloscope, LD2 and B1 on the logic analyzer, the jumpers among the controls](nucleo-f446re/run-nucleo.png) |
+
+![The NUCLEO-F446RE's artwork while it runs: LD3 and LD2 lit](nucleo-f446re/board-nucleo.png)
+
+![Stopped in SysTick_Handler at 180 MHz in the Debug workspace](nucleo-f446re/debug-nucleo.png)
+
 ## The Uno R3 qualified (2026-10-18)
 
 The first step of the visual benchmark's V1. The Uno's artwork, before and
