@@ -384,7 +384,7 @@ export function DesignPerspective() {
 
   return (
     <div className="wb-perspective wb-design-studio">
-      {!insideOf && <SchematicToolbar onChecks={() => setBottomTab('checks')} checkCount={checks.issues.length} checking={checks.pending} canvas={canvasRef} display={display} onDisplay={setDisplay} onStudio={() => setBottomTab('studio')} onPreview={setPreview} />}
+      {!insideOf && designView === 'schematic' && <SchematicToolbar onChecks={() => setBottomTab('checks')} checkCount={checks.issues.length} checking={checks.pending} canvas={canvasRef} display={display} onDisplay={setDisplay} onStudio={() => setBottomTab('studio')} onPreview={setPreview} />}
       <DockLayout direction="row" items={items} storageKey={`embsim.layout.design.${project?.name ?? 'none'}.${display.focusMode ? 'focus' : 'panels'}`} />
       {context && context.source === project && <SchematicContextMenu context={context.value} actions={contextActions} onClose={closeContext} />}
       <Dialog

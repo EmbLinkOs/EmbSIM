@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Responsive workspaces
+
+- Keep project, perspective and utility navigation in a clear header row, with
+  simulation controls below; constrain long project names and keep popups usable.
+- Fit open dock panels to compact windows without replacing saved proportions or
+  folded choices; resize from the visible pane edge and restore sizes on expansion.
+- Make status details keyboard-scrollable and reduce schematic ribbon height;
+  show schematic tools in their own view while the bench uses its physical controls.
+
+### Workbench startup
+
+- Load the 3D bench when opened, keeping its geometry/Three.js code out of the
+  initial schematic entry. Keep part selection available during loading and
+  recover to 2D with an explicit reload action if its files cannot be fetched.
+
 ### The ESP32-C3's radios (their plan, steps 1 to 3; step 4's WPA2; step 6's advertising and connections)
 
 - **Arduino-ESP32's Wi-Fi and BLE sketches**, unmodified
@@ -1153,6 +1168,7 @@ versions follow semantic versioning. There is no release yet.
   for its body, its 630-point area and its four continuous 50-point
   rails. The holes' offsets from its edges are not dimensioned there, and
   are declared as such.
+
 ### Named surface-mount package bodies
 
 - Render BSS138 in SOT-23 and LM1117IMP-3.3 in SOT-223 from reviewed package

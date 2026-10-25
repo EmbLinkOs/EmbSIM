@@ -28,6 +28,14 @@ ADR-008. **Requirements:** `docs/requirements/UI.md`.
 | Debug | Source; Disassembly; Registers; Memory; Peripherals (register and field decode, writable); Breakpoints; Call stack; Variables; Console | step into/over/out, continue, break, set breakpoints in source, watch variable, edit register |
 | Verify | Scenario editor (inputs timeline, assertions); Recordings; Reports; Coverage | record, stop, replay, convert to scenario, run scenario, view report |
 
+Global workspace: project/perspective/utility navigation has its own header row;
+simulation controls occupy a separate row. Long project names truncate within
+their menu region, with full accessible labels. Navigation shall remain reachable
+in compact desktop windows. Dock minima temporarily scale when the available
+extent cannot contain them; resizing uses visible pane sizes, and viewport changes
+shall not overwrite stored weights or folded choices. Status details remain
+keyboard-scrollable when wider than the window.
+
 Global: toolbar with transport controls, virtual clock (ps with unit
 formatting and a raw picosecond tooltip), policy selector, diagnostics badge,
 theme toggle; command palette; status bar with engine version, timing tier
@@ -141,6 +149,13 @@ neutral canvas surfaces, rounded chrome and subtle shadows.
   are in; plugging the selected part's first leg into a named hole,
   turning it, lifting it off; a jumper between two named terminals), and
   without WebGL the bench is the flat view below.
+- Renderer loading: the schematic shall not fetch the optional 3D renderer before
+  it is requested. The bench shall announce loading and retain its keyboard list
+  while waiting. A renderer asset-download failure shall preserve 2D and keyboard
+  access, explain recovery, and offer a document reload; browser module-fetch
+  failures can be cached for a document's lifetime. Renderer initialization/context
+  failures after a successful download retain the in-place 3D retry. Loading and
+  recovery do not modify the project's connectivity or simulation state.
 - Bench inspection and wiring: projected terminal positions define an 11 CSS-pixel
   hit radius, with clipped/covered contacts excluded and near-equal neighboring
   targets rejected with a zoom-in hint. A screen-space contact ring and named

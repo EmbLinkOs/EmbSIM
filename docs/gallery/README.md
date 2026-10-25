@@ -5,6 +5,35 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Responsive workspaces (2026-10-25)
+
+The same 1024 × 900 demo project before and after: the Perspective selector and
+utilities had been beyond the right edge. Global navigation now has its own row,
+with simulation controls below. These are actual built workbench captures.
+
+| Before, 1024 px | After, 1024 px |
+|---|---|
+| ![The former toolbar clips navigation beyond the window](workspace-layout/before-1024.png) | ![Perspective navigation and utilities remain visible at 1024 px](workspace-layout/after-1024.png) |
+
+The current native `embsim serve` host, paused on `examples/uno-breadboard`, at
+1440 × 900. The schematic-only ribbon is absent from the physical bench. Parts &
+wiring is folded for inspection. The initial schematic made no renderer request;
+opening Bench fetched its 3D chunk once and rendered without page errors. This
+is a host/layout inspection, not a new electronics or frame-rate qualification.
+
+![The native Uno and breadboard with the revised workspace](workspace-layout/native-bench.png)
+
+The demo session also exercises a 900 × 760 window with Library and Inspector
+open, plus the settled dark theme at 1440 × 900. The compact canvas keeps its own
+view/tool controls available; panel constraints do not replace stored proportions.
+
+| Compact panels | Dark theme |
+|---|---|
+| ![The compact workspace with editable Inspector and canvas controls](workspace-layout/compact.png) | ![The same workbench after the dark-theme transition settles](workspace-layout/dark.png) |
+
+[Light schematic](workspace-layout/schematic.png).
+[Workspace behavior and limits](../engineering/workspace-layout.md).
+
 ## The air, as phones and sniffers see it (2026-10-22)
 
 The ESP32-C3 radios plan, step 7, and the network beyond the router. On
