@@ -6,7 +6,7 @@
 // through `useRegisterCommands`.
 
 import { useToast, type Command, type ThemePreference } from '@embsim/design';
-import { JsonRpcError, formatTime } from '@embsim/protocol';
+import { JsonRpcError, formatTime, parseDuration } from '@embsim/protocol';
 import { useCommandStack } from '@embsim/scene';
 import {
   Activity,
@@ -36,6 +36,7 @@ import { platform } from '../platform/platform';
 import { useLayout, type Perspective } from '../stores/layout';
 import { useProject } from '../stores/project';
 import { useSession } from '../stores/session';
+import { useTransportPreferences } from '../stores/transportPreferences';
 
 interface RegistryState {
   extra: Record<string, Command[]>;
@@ -79,6 +80,7 @@ export function perspectiveMeta(p: Perspective) {
 export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: (p: ThemePreference) => void }): Command[] {
   const extra = useRegistry((s) => s.extra);
   const running = useSession((s) => s.running);
+  const advanceBy = useTransportPreferences((s) => s.advanceBy);
   const isDemo = useSession((s) => s.isDemo);
   const perspective = useLayout((s) => s.perspective);
   const setPerspective = useLayout((s) => s.setPerspective);
@@ -101,7 +103,7 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
     const list: Command[] = [
       { id: 'control.run', label: running ? 'Pause' : 'Run', group: 'Control', icon: running ? <Pause /> : <Play />, shortcut: 'F5', keywords: ['start', 'stop'], run: guard(controls.toggle) },
       { id: 'control.step', label: 'Step one event', group: 'Control', icon: <StepForward />, shortcut: 'F6', run: guard(() => controls.step('event')) },
-      { id: 'control.advance', label: 'Advance 1 ms', group: 'Control', icon: <SkipForward />, shortcut: 'F7', run: guard(() => controls.advance('1ms')) },
+      { id: 'control.advance', label: `Advance by ${advanceBy}`, group: 'Control', icon: <SkipForward />, shortcut: 'F7', disabled: (() => { try { return running || parseDuration(advanceBy) <= 0n; } catch { return true; } })(), run: guard(() => controls.advance(advanceBy)) },
       { id: 'control.advance10', label: 'Advance 10 ms', group: 'Control', icon: <SkipForward />, run: guard(() => controls.advance('10ms')) },
       { id: 'control.reset', label: 'Reset session', group: 'Control', icon: <RotateCcw />, run: guard(controls.reset) },
       ...(['design', 'run', 'debug', 'verify'] as Perspective[]).map((p) => ({
@@ -220,7 +222,7 @@ export function useCommands(theme: { resolved: 'dark' | 'light'; setPreference: 
     }
     for (const owner of Object.keys(extra).sort()) list.push(...(extra[owner] ?? []));
     return list;
-  }, [running, isDemo, perspective, setPerspective, canUndo, canRedo, undoLabel, redoLabel, commandsStack, theme, toast, extra]);
+  }, [running, advanceBy, isDemo, perspective, setPerspective, canUndo, canRedo, undoLabel, redoLabel, commandsStack, theme, toast, extra]);
 }
 
 function isEditable(el: Element | null): boolean {

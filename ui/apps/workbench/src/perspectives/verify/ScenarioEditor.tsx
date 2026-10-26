@@ -398,7 +398,21 @@ function AssertionsTable({ assertions, duplicate, onChange, expectDraft, setExpe
                     {when === 'always' ? (
                       <span className="es-muted">diagnostics</span>
                     ) : (
-                      <Input aria-label={`Assertion ${k + 1} probe`} mono list="wb-verify-probes" value={a.probe ?? ''} onChange={(e) => set(k, { ...a, probe: e.target.value })} />
+                      <>
+                        <Input aria-label={`Assertion ${k + 1} probe`} mono list="wb-verify-probes" value={a.probe ?? ''} onChange={(e) => set(k, { ...a, probe: e.target.value })} />
+                        {when === 'between' && <Select<NonNullable<ScenarioAssertion['measure']> | 'samples'>
+                          label={`Assertion ${k + 1} measurement`}
+                          size="sm"
+                          value={a.measure ?? 'samples'}
+                          options={[{ value: 'samples', label: 'Every sample' }, { value: 'mean', label: 'Time mean' }, { value: 'rms', label: 'Time RMS' }, { value: 'duty_cycle', label: 'Duty cycle' }]}
+                          onValueChange={(measure) => {
+                            const next = { ...a };
+                            if (measure !== 'samples') next.measure = measure;
+                            else delete next.measure;
+                            set(k, next);
+                          }}
+                        />}
+                      </>
                     )}
                   </td>
                   <td>

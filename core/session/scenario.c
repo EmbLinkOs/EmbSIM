@@ -54,7 +54,7 @@ static int expect_value(es_session *s, const esk_json *expect, double v, esk_pro
     return 1;
 }
 
-static double sample_at(esk_probe *p, es_time_t t, int *have)
+static double sample_at(const esk_probe *p, es_time_t t, int *have)
 {
     size_t i;
     double v = 0;
@@ -71,6 +71,54 @@ static double sample_at(esk_probe *p, es_time_t t, int *have)
     return v;
 }
 
+/* Integrate the recorded sample-and-hold signal, not the number of samples.
+ * A retained anchor proves coverage of the left edge; the scheduler proves the
+ * right edge. The ring only evicts its oldest records, never an interior span. */
+int esk_probe_window(const esk_probe *p, const char *measure, es_time_t from,
+                     es_time_t to, es_time_t through, double *out, char *why, size_t cap)
+{
+    size_t i;
+    es_time_t cursor = from;
+    double value, mean = 0, rms = 0;
+    int have, duty = !strcmp(measure, "duty_cycle");
+    if (strcmp(measure, "mean") && strcmp(measure, "rms") && !duty) {
+        esk_snprintf(why, cap, "unknown waveform measurement %s", measure);
+        return 0;
+    }
+    if (to <= from || to > through || p->kind == ESK_PROBE_SERIAL ||
+        (duty && p->kind != ESK_PROBE_DIGITAL)) {
+        esk_snprintf(why, cap, "measurement needs a nonempty completed window and a numeric probe (digital for duty cycle)");
+        return 0;
+    }
+    value = sample_at(p, from, &have);
+    if (!have) {
+        esk_snprintf(why, cap, "measurement window begins before retained probe history");
+        return 0;
+    }
+    for (i = 0; i <= p->len; i++) {
+        const es_sample_t *sample = i < p->len ? &p->ring[(p->head + i) % p->cap] : NULL;
+        es_time_t next = sample && sample->time_ps < to ? sample->time_ps : to;
+        if (sample && sample->time_ps <= from)
+            continue;
+        if (next > cursor) {
+            double weight = (double)(next - cursor) / (double)(to - from);
+            if (!isfinite(value) || (p->kind == ESK_PROBE_DIGITAL && value != 0 && value != 1)) {
+                esk_snprintf(why, cap, "measurement contains a nonfinite or unknown/high-impedance interval");
+                return 0;
+            }
+            mean += value * weight;
+            rms = hypot(rms, value * sqrt(weight));
+            cursor = next;
+        }
+        if (cursor == to)
+            break;
+        if (sample)
+            value = sample->value;
+    }
+    *out = !strcmp(measure, "rms") ? rms : mean;
+    return isfinite(*out);
+}
+
 static void evaluate(es_session *s, assertion *a)
 {
     const esk_json *def = a->def;
@@ -81,6 +129,11 @@ static void evaluate(es_session *s, assertion *a)
     a->done = 1;
     a->ok = 1;
     why[0] = 0;
+    if (esk_json_get(def, "measure") && a->mode != 1) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "measure requires a between window");
+        return;
+    }
     if (a->mode == 3) {
         const esk_json *forbid = esk_json_get(esk_json_get(def, "diagnostics"), "forbid");
         esk_json *all = esk_diag_to_json(&s->diag);
@@ -100,6 +153,36 @@ static void evaluate(es_session *s, assertion *a)
     if (!p) {
         a->ok = 0;
         esk_snprintf(a->reason, sizeof a->reason, "unknown probe %s", pname ? pname : "(none)");
+        return;
+    }
+    if (esk_json_get(def, "measure")) {
+        const char *measure = esk_json_get_str(def, "measure", "");
+        double value = 0;
+        es_time_t measured_to = a->t1;
+        size_t k;
+        int numeric = a->mode == 1 && esk_json_len(expect) > 0, bound = 0;
+        for (k = 0; k < esk_json_len(expect); k++) {
+            const esk_json *v = esk_json_at(expect, k);
+            int allowed = !strcmp(v->key, "min") || !strcmp(v->key, "max") ||
+                          !strcmp(v->key, "equals") || !strcmp(v->key, "tolerance");
+            numeric &= allowed && v->type == ESK_JSON_NUMBER && isfinite(v->u.number.value);
+            if (strcmp(v->key, "tolerance")) bound = 1;
+            if (!strcmp(v->key, "tolerance") && v->type == ESK_JSON_NUMBER && v->u.number.value < 0) numeric = 0;
+        }
+        if (!numeric || !bound) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "measure requires between and numeric min/max/equals expectations");
+            return;
+        }
+        /* Scheduling clamps assertion evaluation to until; measurement must
+         * still reject a requested window that extends beyond the run. */
+        esk_json_to_time(esk_json_at(esk_json_get(def, "between"), 1), &measured_to);
+        a->ok = esk_probe_window(p, measure, a->t0, measured_to, s->eng.sched.now, &value, why, sizeof why);
+        if (a->ok) {
+            a->observed = esk_json_new_number(s->a, value);
+            a->ok = expect_value(s, expect, value, NULL, why, sizeof why);
+        }
+        if (!a->ok) esk_snprintf(a->reason, sizeof a->reason, "%s", why[0] ? why : "invalid waveform measurement");
         return;
     }
     /* a text expectation on a memory probe: its bytes up to the first NUL */
@@ -425,6 +508,19 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
             if (esk_json_get(as[k].def, "expect"))
                 esk_json_object_set(s->a, o, "expected", esk_json_clone(s->a, esk_json_get(as[k].def, "expect")));
             esk_json_set_u64_string(s->a, o, "at_ps", as[k].t1);
+            if (esk_json_get(as[k].def, "measure")) {
+                const esk_json *window = esk_json_get(as[k].def, "between");
+                esk_json *times = esk_json_new_object(s->a);
+                es_time_t t0 = 0, t1 = 0;
+                esk_json_to_time(esk_json_at(window, 0), &t0);
+                esk_json_to_time(esk_json_at(window, 1), &t1);
+                esk_json_object_set(s->a, o, "measure", esk_json_clone(s->a, esk_json_get(as[k].def, "measure")));
+                esk_json_set_string(s->a, o, "unit", esk_str_eq(esk_json_get_str(as[k].def, "measure", ""), "duty_cycle") ? "" :
+                                    esk_probe_unit(esk_session_probe_find(s, esk_json_get_str(as[k].def, "probe", ""))));
+                esk_json_set_u64_string(s->a, times, "from", t0);
+                esk_json_set_u64_string(s->a, times, "to", t1);
+                esk_json_object_set(s->a, o, "window_ps", times);
+            }
             esk_json_array_push(s->a, arr, o);
         }
         for (k = 0; k < na; k++)

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { describe, expect, it } from 'vitest';
-import { emptyScenario } from './verify';
+import { emptyScenario, withWhen } from './verify';
 import { expectationProblem, scenarioProblems } from './scenarioValidation';
 
 const valid = () => ({ ...emptyScenario(), assertions: [{ id: 'check', at: '10ms', probe: 'led', expect: { logic: '1' } }] });
@@ -35,5 +35,14 @@ describe('scenario validation', () => {
   });
   it('rejects missing input bindings and values the scenario schema cannot store', () => {
     expect(scenarioProblems({ ...emptyScenario(), inputs: [{ at: '1ms', target: '', input: '', value: {} }] })).toHaveLength(3);
+  });
+  it('validates numeric window measurements and clears them when timing changes', () => {
+    const assertion = { id: 'mean', between: ['1ms', '2ms'] as [string, string], probe: 'pwm', measure: 'mean' as const, expect: { min: 0, max: 1 } };
+    expect(scenarioProblems({ ...emptyScenario(), assertions: [assertion] })).toEqual([]);
+    for (const invalid of [{ ...assertion, between: ['1ms', '1ms'] as [string, string] }, { ...assertion, expect: { equals: true } }, { ...assertion, between: undefined, at: '1ms' }]) {
+      expect(scenarioProblems({ ...emptyScenario(), assertions: [invalid] }).length).toBeGreaterThan(0);
+    }
+    expect(withWhen(assertion, 'at').measure).toBeUndefined();
+    expect(withWhen(assertion, 'between').measure).toBe('mean');
   });
 });

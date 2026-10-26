@@ -175,6 +175,14 @@ Rules:
   `frequency_hz`.
   `tolerance` is the absolute difference a numeric `equals` allows (exact
   otherwise) and the fraction a `frequency_hz` allows (5 % otherwise).
+- With `between`, optional `measure: "mean" | "rms" | "duty_cycle"` applies
+  numeric `min`, `max`, `equals` and absolute `tolerance` to a time-weighted
+  sample-and-hold measurement over `[start,end)`. The window must be nonempty,
+  completed and covered by retained history. Duty requires a digital probe;
+  X/Z or nonfinite intervals fail rather than count as zero. A measurement
+  window beyond `until` fails, even though evaluation runs at `until`.
+  Analog/value results retain the probe's sampling resolution. See the
+  [PWM contract](../engineering/indicator-pwm.md) for evidence and exclusions.
 - A run with a scenario ends at `until`; the report (SPEC-008 §8) lists each
   assertion with pass, fail and the observed value.
 

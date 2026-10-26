@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Firmware-driven indicators and waveform acceptance
+
+- Boot a native ESP32-C3 RGB acceptance circuit from a flash image; physical
+  button inputs change real LEDC duty while firmware runs.
+- Apply scalar MCU driver resistance/slew settings to base GPIO models.
+- Add time-weighted mean/RMS/digital duty scenario assertions, with strict
+  coverage and unknown-state handling, and expose them in the scenario editor.
+- Show scope RMS, time-weighted mean, logic-analyzer duty and capture coverage;
+  preserve same-time waveform timestamps instead of shifting edges by 1 ps.
+- Carry declared probe units and sampling rates through the native protocol;
+  switch scope trace groups by unit instead of mixing voltage and current axes.
+- Deliver every retained waveform sample in bounded chunks, report real history
+  gaps and producer watermarks, and replace captures explicitly on restart.
+- Make F7 and the command palette use the toolbar's selected advance interval.
+
 ### Named indicator evidence
 
 - Add Kingbright WP7113ID and WP154A4SUREQBFZGC with exact terminal mappings,

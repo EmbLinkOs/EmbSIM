@@ -69,6 +69,7 @@
         "by": {"$ref": "common.schema.json#/$defs/time"},
         "always": {"const": true},
         "probe": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"},
+        "measure": {"type": "string", "enum": ["mean", "rms", "duty_cycle"], "description": "Time-weighted sample-and-hold measurement over a completed, nonempty between window. Numeric min/max/equals expectations only. Duty cycle requires a digital probe with no X/Z intervals."},
         "expect": {"$ref": "#/$defs/expect"},
         "diagnostics": {
           "type": "object",

@@ -33,6 +33,8 @@ embsim run project.json --scenario scenarios/press.json --json \
 - **Coverage** as lcov is what `genhtml`, Codecov and Coveralls read; the
   **profile** as collapsed stacks is what `flamegraph.pl` and speedscope
   read ([cli](cli.md#coverage-and-profile)).
+  These analyses require ELF function symbols; a ROM-booted raw flash image
+  still runs scenarios but is rejected for coverage without those symbols.
 - `tools/verify/compare_reports.py old.json new.json` diffs two reports,
   ignoring wall time, for a firmware change's review.
 

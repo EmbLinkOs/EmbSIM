@@ -9,6 +9,7 @@ import { controls, errorMessage } from '../actions';
 import { PERSPECTIVES, useLayout, type Perspective } from '../stores/layout';
 import { useProject } from '../stores/project';
 import { diagnosticSummary, useSession } from '../stores/session';
+import { useTransportPreferences } from '../stores/transportPreferences';
 import { perspectiveMeta } from './commands';
 
 const SPEEDS: { value: string; label: string; speed: number }[] = [
@@ -57,7 +58,7 @@ export function Toolbar({ theme, commands = [] }: { theme: { resolved: 'dark' | 
   const stack = useProject((s) => s.commands);
   const { canUndo, canRedo, undoLabel, redoLabel } = useCommandStack(stack);
   const { toast } = useToast();
-  const [advanceBy, setAdvanceBy] = useState('1ms');
+  const { advanceBy, setAdvanceBy } = useTransportPreferences();
   const advanceValid = (() => {
     try {
       return parseDuration(advanceBy) > 0n;
