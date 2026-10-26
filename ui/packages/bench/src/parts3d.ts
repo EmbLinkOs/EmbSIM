@@ -220,13 +220,15 @@ function led(shape: BenchShape, look: PartLook): { group: THREE.Group; glow: THR
   const g = new THREE.Group();
   const color = new THREE.Color(shape.color ?? ledColor(look.params));
   const pins = local(shape);
-  const r = 2.5;
-  const base = 4.2;
+  const r = (shape.led?.diameter_mm ?? 5) / 2;
+  const flange = (shape.led?.flange_mm ?? 5.8) / 2;
+  const base = shape.led?.standoff_mm ?? 4.2;
+  const height = shape.led?.body_height_mm;
   // the dome: a cylinder with a hemisphere on top, and the rim with its flat
-  const profile: THREE.Vector2[] = [new THREE.Vector2(0, 0), new THREE.Vector2(r + 0.4, 0), new THREE.Vector2(r + 0.4, 1), new THREE.Vector2(r, 1)];
+  const profile: THREE.Vector2[] = [new THREE.Vector2(0, 0), new THREE.Vector2(flange, 0), new THREE.Vector2(flange, 1), new THREE.Vector2(r, 1)];
   for (let i = 0; i <= 12; i++) {
     const a = (i / 12) * (Math.PI / 2);
-    profile.push(new THREE.Vector2(r * Math.cos(a), 1 + 4.6 + r * Math.sin(a) * 0.95));
+    profile.push(new THREE.Vector2(r * Math.cos(a), (height === undefined ? 5.6 : height - r) + r * Math.sin(a) * (height === undefined ? 0.95 : 1)));
   }
   // tinted, diffused epoxy: the colour of the die when off, glowing from it when lit
   const glow = new THREE.MeshStandardMaterial({
@@ -240,6 +242,7 @@ function led(shape: BenchShape, look: PartLook): { group: THREE.Group; glow: THR
   });
   const dome = mesh(new THREE.LatheGeometry(profile, 32), glow);
   dome.position.y = base;
+  dome.name = 'led-body';
   g.add(dome);
   // the legs: the anode longer, straight down
   for (const [name, [px, pz]] of Object.entries(pins)) g.add(leg(px, pz, base + 0.5, name === 'A' ? -3.5 : -2.5, 0.25));

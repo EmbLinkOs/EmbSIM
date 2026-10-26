@@ -383,6 +383,22 @@ static void test_led_resistor(void)
     esk_engine_free(&e);
 }
 
+/* Positional embedding keeps a missing cathode floating as well. */
+static void test_led_open_return(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_power(&e, "P", "vcc", 3.3);
+    add_dev2(&e, "resistor", "R1", "{\"r\": 100}", "vcc", "a");
+    add_dev(&e, "led", "D1", "{\"color\": \"red\"}", (const char *const[]){"a"}, 1);
+    engine_run(&e);
+    CHECK_NEAR(obs_num(&e, "D1", "i"), 0.0, 1e-8);
+    CHECK_NEAR(obs_num(&e, "D1", "luminance"), 0.0, 1e-6);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
 static void test_zener(void)
 {
     esk_engine e;
@@ -1526,7 +1542,8 @@ RUN(test_rl);
 RUN(test_rl_transient);
 RUN(test_diode_curve);
 RUN(test_diode_reverse_and_series);
-RUN(test_led_resistor);
+    RUN(test_led_resistor);
+    RUN(test_led_open_return);
 RUN(test_zener);
 RUN(test_npn_switch);
 RUN(test_pnp_switch);

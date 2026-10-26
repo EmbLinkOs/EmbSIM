@@ -1133,6 +1133,7 @@ static const esk_adev_ops zener_ops = {"zener", sizeof(diode_state), zener_setup
  * stamps the same Shockley/series-resistance equations as the discrete LED. */
 typedef struct rgb_state {
     diode_state die[3];
+    int branch_slot[3];
     int anode;
 } rgb_state;
 
@@ -1140,23 +1141,35 @@ static es_status rgb_setup(esk_adev *d)
 {
     static const char *const keys[] = {"red_vf", "green_vf", "blue_vf"};
     static const double defaults[] = {1.8, 2.1, 2.9};
+    static const char *const names[] = {"red", "green", "blue"};
     rgb_state *s = (rgb_state *)d->state;
     int i;
     s->anode = !strcmp(ps(d, "common", "cathode"), "anode");
+    d->nbranch = 0;
     for (i = 0; i < 3; i++) {
         esk_adev die = *d;
-        double vf = pd(d, keys[i], defaults[i]), n = i == 2 ? 3.0 : 2.0;
-        double nominal = pd(d, "if_nom", 0.02);
-        if (!(vf > 0.0) || !(nominal > 0.0)) {
-            param_error(d, keys[i], "forward voltage and nominal current must be positive");
+        char key[32];
+        double vf = pd(d, keys[i], defaults[i]), n, nominal, rs;
+        snprintf(key, sizeof key, "%s_n", names[i]);
+        n = pd(d, key, pd(d, "n", i == 2 ? 3.0 : 2.0));
+        snprintf(key, sizeof key, "%s_if_nom", names[i]);
+        nominal = pd(d, key, pd(d, "if_nom", 0.02));
+        snprintf(key, sizeof key, "%s_rs", names[i]);
+        rs = pd(d, key, pd(d, "rs", 0.0));
+        if (!isfinite(vf) || !isfinite(n) || !isfinite(nominal) || !isfinite(rs) ||
+            !(vf > 0.0) || !(n > 0.0) || !(nominal > 0.0) || rs < 0.0 || vf / (n * VT_27C) > 700) {
+            param_error(d, keys[i], "finite positive forward voltage, ideality and current, and nonnegative series resistance required");
             return ES_ESCHEMA;
         }
         s->die[i].kind = JN_LED;
         s->die[i].if_nom = nominal;
         s->die[i].vf = vf;
-        diode_common_setup(&die, &s->die[i], nominal / (exp(vf / (n * VT_27C)) - 1.0), n);
+        diode_common_setup(&die, &s->die[i], nominal / expm1(vf / (n * VT_27C)), n);
+        s->die[i].nvt = n * VT_27C;
+        s->die[i].rs = rs;
+        s->die[i].vcrit = vcrit_of(s->die[i].is, s->die[i].nvt);
+        s->branch_slot[i] = rs > 0.0 ? d->nbranch++ : -1;
     }
-    d->nbranch = s->die[0].rs > 0.0 ? 3 : 0;
     return ES_OK;
 }
 
@@ -1169,7 +1182,7 @@ static void rgb_load(esk_adev *d, esk_amatrix *m)
         esk_adev die = *d;
         die.node[0] = d->node[s->anode ? 1 : pins[i]];
         die.node[1] = d->node[s->anode ? pins[i] : 1];
-        die.branch[0] = d->branch[i];
+        die.branch[0] = s->branch_slot[i] >= 0 ? d->branch[s->branch_slot[i]] : -1;
         junction_stamp(&die, m, &s->die[i]);
     }
 }

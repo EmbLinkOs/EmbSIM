@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "wp154a4sureqbfzgc-dc-10ma",
+  "description": "Source current forces independently extracted terminal-voltage bounds. Holdout samples were not used for coefficient fitting.",
+  "policy": "electrical",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wp154a4sureqbfzgc"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "IR",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.01
+        }
+      },
+      {
+        "id": "IB",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.01
+        }
+      },
+      {
+        "id": "IG",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.01
+        }
+      }
+    ],
+    "nets": {
+      "GND": [
+        "G.GND",
+        "DUT.COM",
+        "IR.+",
+        "IB.+",
+        "IG.+"
+      ],
+      "DR": [
+        "IR.-",
+        "DUT.R"
+      ],
+      "DB": [
+        "IB.-",
+        "DUT.B"
+      ],
+      "DG": [
+        "IG.-",
+        "DUT.G"
+      ]
+    }
+  },
+  "expect": {
+    "net:DR": {
+      "at": "500ns",
+      "min_v": 1.788969,
+      "max_v": 1.908969
+    },
+    "output:DUT.red_current": {
+      "at": "500ns",
+      "min": 0.00999,
+      "max": 0.01001
+    },
+    "net:DB": {
+      "at": "500ns",
+      "min_v": 2.940125,
+      "max_v": 3.060125
+    },
+    "output:DUT.blue_current": {
+      "at": "500ns",
+      "min": 0.00999,
+      "max": 0.01001
+    },
+    "net:DG": {
+      "at": "500ns",
+      "min_v": 2.941969,
+      "max_v": 3.061969
+    },
+    "output:DUT.green_current": {
+      "at": "500ns",
+      "min": 0.00999,
+      "max": 0.01001
+    },
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": true
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "wp154a4sureqbfzgc-logic-0",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wp154a4sureqbfzgc"
+      },
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.COM",
+        "DUT.R",
+        "DUT.G",
+        "DUT.B"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.color": {
+      "at": "500ns",
+      "equals": "#000000"
+    }
+  }
+}

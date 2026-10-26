@@ -88,7 +88,9 @@ advanced}`; `type` is `number`, `integer`, `boolean`, `string`, `enum`,
 `table` (a list of `[x, y]` pairs for curves). Numbers in descriptions and
 projects accept SI suffixes (`4.7k`, `100n`, `2.2u`, `1meg`); the loader
 normalises to doubles in base units. A parameter without `default` is
-required. `min`/`max` are enforced at load (`analog.param_out_of_range`).
+required unless it declares `required: false`. An absent optional parameter stays
+absent so the model can inherit another value; supplied values retain normal
+type/range validation. `min`/`max` are enforced at load (`analog.param_out_of_range`).
 Families (`family: "cmos_3v3"`) supply pin-model defaults (SPEC-003 §2).
 
 ## 5. Models
@@ -214,3 +216,18 @@ used; the catalog may hold several versions. `provenance.license` is an SPDX
 identifier; `provenance.sources` cite datasheets by title, URL and date;
 vendored third-party material carries its licence file beside the
 description (ADR-017).
+
+### Indicator evidence and body dimensions
+
+`qualification` optionally declares `scope: nominal-dc`, temperature, current
+range, voltage tolerance, pinned source identity and per-channel calibration /
+holdout samples linked to native fixtures. It is currently supported for `led`
+and `rgb_led` models. The validator checks the source and calibration-only fit,
+disjoint sample roles and acceptance bounds. This is bounded source evidence,
+not a manufacturer certification or a full electrical/optical qualification.
+See [the indicator contract](../engineering/indicator-qualification.md).
+
+`bench.led` optionally supplies `diameter_mm`, `flange_mm`, `body_height_mm` and
+`standoff_mm`. `size_mm` includes the selected clearance above the mounting plane;
+the body height excludes that clearance. Pin positions remain explicit in `bench.pins`.
+Curvature and lead forming remain representative unless separately qualified.

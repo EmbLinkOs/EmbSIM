@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "wp7113id-driver-3v3v",
+  "policy": "electrical",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wp7113id"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "DRA",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 25
+        }
+      },
+      {
+        "id": "RLA",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100
+        }
+      }
+    ],
+    "nets": {
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.K"
+      ],
+      "VDD": [
+        "V.+",
+        "DRA.1"
+      ],
+      "OUTA": [
+        "DRA.2",
+        "RLA.1"
+      ],
+      "DA": [
+        "RLA.2",
+        "DUT.A"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.current": {
+      "at": "500ns",
+      "min": 0.010794004072011846,
+      "max": 0.011354004072011847
+    },
+    "device:V.i": {
+      "at": "500ns",
+      "min": -0.011354004072011847,
+      "max": -0.010794004072011846
+    },
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": true
+    }
+  }
+}

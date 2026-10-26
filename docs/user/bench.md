@@ -149,3 +149,14 @@ If the 3D files cannot be loaded, the bench switches to 2D and keeps the keyboar
 editor available. **Reload to retry 3D** starts a fresh page request; check the
 connection if it fails again. This differs from a graphics-context failure after
 loading, where selecting **3D** retries the renderer without reloading the page.
+
+## Source-checked named indicators
+
+WP7113ID and WP154A4SUREQBFZGC have a **Nominal DC envelope** card in the
+selected-part inspector and the library's Models tab. It states the 25 °C,
+2–20 mA source-curve range, voltage tolerance and separate holdout points; expand
+Source snapshot for the reviewed revision and hash. This is bounded model
+evidence, not a manufacturer certification or calibrated optical/thermal model.
+The RGB package uses R–COM–B–G at 1.27 mm pitch; check its pin table before wiring.
+Try the [named RGB driver bench](../../examples/qualified-rgb-driver/README.md)
+for actual resistor-limited channel loading and physical switches.

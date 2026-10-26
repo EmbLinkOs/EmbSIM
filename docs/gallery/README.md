@@ -5,6 +5,28 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Named RGB indicator and source evidence (2026-10-26)
+
+The native `examples/qualified-rgb-driver` circuit uses Kingbright's
+WP154A4SUREQBFZGC, its R/COM/B/G terminal order, independent typical DC curves,
+220 Ω limiting resistors and representative 25 Ω drivers. Pressing red and blue
+produces approximately 12.788 mA red, 8.404 mA blue and 3.80 nA green at 5 V.
+The observed illustrative color is `#ff00a8`; unequal electrical currents do not
+become equal merely because two switches are pressed. Both captures use the
+actual native host, with no engine diagnostics or browser page errors.
+
+| Switches released | Red and blue powered |
+|---|---|
+| ![Named RGB circuit with all switches released](indicator-qualification/rgb-off.png) | ![Named RGB circuit with independently solved red and blue currents](indicator-qualification/rgb-red-blue.png) |
+
+![Source revision, hash and bounded DC evidence beside the named RGB package](indicator-qualification/rgb-evidence.png)
+
+The inspector exposes the 25 °C, 2–20 mA curve envelope, tolerance, independent
+holdouts and exact source snapshot. Body envelope and lead pitch follow the
+source drawing; formed leads, lens curvature and displayed light remain
+representative. These images establish integration, not full optical, thermal,
+damage or mechanical qualification. [Evidence and reproduction](../engineering/indicator-qualification.md).
+
 ## Circuit construction and electrically driven RGB (2026-10-25)
 
 Actual native `embsim serve` on `examples/rgb-indicator-bench`, in electrical

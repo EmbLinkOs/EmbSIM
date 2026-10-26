@@ -259,3 +259,13 @@ into a pull-up (crossing events count).
 `analog.singular_topology`, `analog.param_out_of_range`,
 `analog.implicit_supply`, `analog.overvoltage` (a device's declared absolute
 maximum exceeded, warning), `analog.overcurrent`.
+
+### Source-checked indicator curves
+
+`rgb_led` accepts channel overrides `red_n`/`green_n`/`blue_n`, `*_rs` and
+`*_if_nom`; absent resistance/reference-current overrides inherit global
+`rs`/`if_nom`. Positive per-channel series resistance allocates its own internal
+node; zero resistance uses the terminal node directly. LED/RGB unconnected pins
+retain their identities and become floating private nodes, rather than ground.
+Named static fits and qualification boundaries are described in
+[indicator evidence](../engineering/indicator-qualification.md).

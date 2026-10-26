@@ -183,7 +183,7 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
     /* required parameters */
     for (i = 0; i < esk_json_len(pdefs); i++) {
         const esk_json *pd = esk_json_at(pdefs, i);
-        if (!esk_json_get(pd, "default") && !esk_json_get(params, pd->key)) {
+        if (esk_json_get_bool(pd, "required", 1) && !esk_json_get(pd, "default") && !esk_json_get(params, pd->key)) {
             ld_diag(s, ES_SEV_ERROR, "schema.missing_field", id, "parameter %s of %s is required", pd->key, id);
             st = ES_ESCHEMA;
         }

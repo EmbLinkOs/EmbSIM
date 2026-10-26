@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "wp154a4sureqbfzgc-driver-5v",
+  "policy": "electrical",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wp154a4sureqbfzgc"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DRR",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 25
+        }
+      },
+      {
+        "id": "RLR",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "DRB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 25
+        }
+      },
+      {
+        "id": "RLB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "DRG",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 25
+        }
+      },
+      {
+        "id": "RLG",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      }
+    ],
+    "nets": {
+      "GND": [
+        "V.-",
+        "G.GND",
+        "DUT.COM"
+      ],
+      "VDD": [
+        "V.+",
+        "DRR.1",
+        "DRB.1",
+        "DRG.1"
+      ],
+      "OUTR": [
+        "DRR.2",
+        "RLR.1"
+      ],
+      "DR": [
+        "RLR.2",
+        "DUT.R"
+      ],
+      "OUTB": [
+        "DRB.2",
+        "RLB.1"
+      ],
+      "DB": [
+        "RLB.2",
+        "DUT.B"
+      ],
+      "OUTG": [
+        "DRG.2",
+        "RLG.1"
+      ],
+      "DG": [
+        "RLG.2",
+        "DUT.G"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.red_current": {
+      "at": "500ns",
+      "min": 0.012560677267238349,
+      "max": 0.013050473185605697
+    },
+    "output:DUT.blue_current": {
+      "at": "500ns",
+      "min": 0.008175350238644592,
+      "max": 0.00866514615701194
+    },
+    "output:DUT.green_current": {
+      "at": "500ns",
+      "min": 0.008132619544127924,
+      "max": 0.008622415462495273
+    },
+    "device:V.i": {
+      "at": "500ns",
+      "min": -0.03033803480511291,
+      "max": -0.028868647050010864
+    },
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": true
+    }
+  }
+}

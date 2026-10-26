@@ -8,7 +8,7 @@
 // 0.1 in legs, a DIP's 0.3 in rows), so that the legs land on a
 // breadboard's 2.54 mm holes as the real part's do.
 
-import type { BenchPackage, ComponentDescription } from '@embsim/protocol';
+import type { LedBody, BenchPackage, ComponentDescription } from '@embsim/protocol';
 
 export const PITCH = 2.54;
 
@@ -46,6 +46,7 @@ export interface BenchShape {
   color?: string;
   label?: string;
   wiringAid?: boolean;
+  led?: LedBody;
   /** the artwork is the body's top face (modules, boards) */
   textured?: boolean;
   /** a distance sensor's beam: from `at` along `dir`, mm, x right, y towards the viewer, z up */
@@ -279,7 +280,7 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
   const anchors = artwork && artMm ? artworkAnchors(artwork, artMm[0], artMm[1]) : {};
 
   if (own?.pins && own.size_mm) {
-    return { package: own.package ?? 'box', size: own.size_mm, pins: own.pins, color: own.color, label: own.label, wiringAid: own.wiring_aid, textured: own.package === 'module' || own.package === 'board' || own.package === 'breadboard' };
+    return { package: own.package ?? 'box', size: own.size_mm, pins: own.pins, color: own.color, label: own.label, wiringAid: own.wiring_aid, led: own.led, textured: own.package === 'module' || own.package === 'board' || own.package === 'breadboard' };
   }
   if (desc.kind === 'board') {
     const size: [number, number, number] = artMm ? [artMm[0], artMm[1], 1.6] : [68.6, 53.3, 1.6];

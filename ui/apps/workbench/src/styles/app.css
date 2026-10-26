@@ -1747,3 +1747,8 @@
 @media (max-width: 700px) { .wb-bench-list:has(.wb-wire-editor) { width: auto; } }
 
 .eb-route-point { color: #075985; background: #fff; font: 600 10px/14px system-ui; width: 14px; height: 14px; text-align: center; border-radius: 50%; pointer-events: none; }
+
+.wb-indicator-evidence { padding: var(--space-2); margin: var(--space-2) 0; border: 1px solid var(--line); border-radius: var(--radius-md); font-size: var(--text-xs); }
+.wb-indicator-evidence h4 { margin: 0 0 var(--space-1); }
+.wb-indicator-evidence p { margin: var(--space-1) 0; }
+.wb-indicator-evidence code { display: block; overflow-wrap: anywhere; white-space: normal; }

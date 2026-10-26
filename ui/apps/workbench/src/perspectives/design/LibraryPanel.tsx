@@ -6,6 +6,7 @@ import { SymbolThumbnail } from '@embsim/scene';
 import { ArrowUpRight, BookOpen, Check, Layers, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useProject, type CatalogEntry } from '../../stores/project';
+import { IndicatorEvidence } from './IndicatorEvidence';
 import { categoryGroups, categoryName, filterLibrary } from './libraryFilters';
 
 const TIERS: { tier: FidelityTier; letter: string; title: string }[] = [
@@ -115,6 +116,7 @@ function LibraryPreview({ item, entry, policy, onClose, onPlace }: { item: Catal
     <div className="wb-library__detailbody">
       {tab === 'overview' && <><p>{d.description}</p>{d.part && <><span className="wb-library__source"><Check size={12} />{reviewed ? 'Source reviewed · behavioral model' : 'Source reference · behavioral model'}</span><a className="wb-library__datasheet" href={d.part.datasheet} target="_blank" rel="noopener noreferrer"><BookOpen size={13} /> Manufacturer datasheet <ArrowUpRight size={12} /></a></>}{Boolean(d.inputs?.length) && <p className="wb-library__hint">Live controls: {d.inputs?.map((i) => `${i.name}${i.unit ? ` (${i.unit})` : ''}`).join(', ')}. Adjust them in Run while the circuit is running.</p>}<code>{item.id}</code></>}
       {tab === 'pins' && <table className="es-table"><thead><tr><th scope="col">No.</th><th scope="col">Terminal</th><th scope="col">Function</th></tr></thead><tbody>{[...d.pins].sort((a, b) => (a.number ?? 0) - (b.number ?? 0)).map((p) => <tr key={p.name}><td>{p.number ?? '—'}</td><td>{p.name}</td><td>{p.doc ?? p.model?.kind ?? '—'}</td></tr>)}</tbody></table>}
+      {tab === 'models' && d.qualification && <IndicatorEvidence evidence={d.qualification} />}
       {tab === 'models' && TIERS.map(({ tier }) => <div className="wb-library__model" key={tier}><strong>{tier}<span>{d.fidelity[tier] ? 'Provided' : 'Not provided'}</span></strong>{d.fidelity[tier] && <><p>{d.fidelity[tier]?.claims}</p>{Boolean(d.fidelity[tier]?.omissions?.length) && <p className="wb-library__hint">Limits: {d.fidelity[tier]?.omissions?.join('; ')}</p>}</>}</div>)}
     </div>
     {!item.fidelity_tiers.includes(policy) && <p className="wb-library__hint">No {policy} model. Choose a supported project policy before placing this part.</p>}

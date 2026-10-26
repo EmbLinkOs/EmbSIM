@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/wp7113id",
+  "version": "1.0.0",
+  "name": "WP7113ID",
+  "category": "indicators",
+  "description": "WP7113ID, Kingbright 5 mm red diffused LED. Source-checked package and nominal DC curve at 25 C, 2–20 mA. No manufacturer corner, optical, thermal or damage qualification.",
+  "keywords": [
+    "Kingbright",
+    "WP7113ID",
+    "LED",
+    "source checked",
+    "25 C",
+    "nominal DC",
+    "red"
+  ],
+  "pins": [
+    {
+      "name": "A",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Anode, longer lead. Number 1 is a catalog convention; source identifies polarity without numbering."
+    },
+    {
+      "name": "K",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Cathode, shorter lead, marked in source drawing. Catalog number 2."
+    }
+  ],
+  "params": {},
+  "outputs": [
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A",
+      "doc": "Forward current"
+    },
+    {
+      "name": "luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "doc": "Normalised brightness, 1 at if_nom"
+    },
+    {
+      "name": "lit",
+      "type": "boolean",
+      "doc": "True with forward current above 1 µA in electrical policy; functional policy requires A=1 and K=0."
+    }
+  ],
+  "model": {
+    "primitive": "led",
+    "params": {
+      "vf": 1.8734468562298117,
+      "n": 4.409247850680504,
+      "rs": 2.5054319828360243,
+      "if_nom": 0.01,
+      "color": "red"
+    }
+  },
+  "functional": {
+    "primitive": "indicator",
+    "params": {}
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 20,
+    "pins": {
+      "A": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "K": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 5,
+    "height_mm": 8.6,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "luminance",
+        "selector": "#glow",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Ideal binary indication with a known forward logic return path; no electrical qualification.",
+      "omissions": [
+        "current loading",
+        "manufacturer transfer curve",
+        "optical calibration"
+      ]
+    },
+    "timed": {
+      "claims": "Ideal binary indication with a known forward logic return path; no electrical qualification.",
+      "omissions": [
+        "current loading",
+        "manufacturer transfer curve",
+        "optical calibration"
+      ]
+    },
+    "electrical": {
+      "claims": "Source-checked static terminal I–V fit at 25 C over 2–20 mA, within 0.035 V of independent source-curve holdout points. Pin mapping and 5/5.9/8.6 mm body envelope follow the cited source; 3 mm mounting clearance and curvature are representative. Generic normalized display brightness/color, not photometric units.",
+      "omissions": [
+        "guaranteed manufacturer corners and device-to-device variation",
+        "temperature and self-heating",
+        "damage and absolute-maximum enforcement",
+        "reverse breakdown/leakage qualification",
+        "junction capacitance and charge storage",
+        "optical/colorimetric calibration",
+        "perceived PWM averaging",
+        "connector mating, lead forming and mechanical qualification"
+      ],
+      "range": {
+        "current_a": [
+          0.002,
+          0.02
+        ],
+        "temperature_c": [
+          25,
+          25
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Kingbright WP7113ID, DSAF0012 V.14A 2026-01-08, pp.1–3",
+        "url": "https://www.kingbrightusa.com/images/catalog/SPEC/WP7113ID.pdf",
+        "date": "2026-10-26",
+        "rev": "DSAF0012 V.14A 2026-01-08",
+        "hash": "sha256:b5bb33f69c13fd92ab6d47a8fd71168b6e7ee685139c8f381957aeea9286c9da",
+        "notes": "Curve samples extracted from PDF vector paths, not a vendor SPICE model. Typical DC envelope only. Source body dimensions/pitch; representative mounting clearance. Red LED 1/2 numbers are catalog conventions; RGB 1/2/3/4 numbers are manufacturer identifiers."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "manufacturer": "Kingbright",
+    "mpn": "WP7113ID",
+    "package": "T-1 3/4 (5 mm)",
+    "datasheet": "https://www.kingbrightusa.com/images/catalog/SPEC/WP7113ID.pdf"
+  },
+  "bench": {
+    "package": "led",
+    "size_mm": [
+      5.9,
+      5.9,
+      11.6
+    ],
+    "pins": {
+      "A": [
+        4.22,
+        2.95
+      ],
+      "K": [
+        1.68,
+        2.95
+      ]
+    },
+    "color": "#ef4d24",
+    "led": {
+      "diameter_mm": 5,
+      "flange_mm": 5.9,
+      "body_height_mm": 8.6,
+      "standoff_mm": 3
+    }
+  },
+  "qualification": {
+    "scope": "nominal-dc",
+    "temperature_c": 25,
+    "current_a": [
+      0.002,
+      0.02
+    ],
+    "voltage_tolerance_v": 0.035,
+    "source": {
+      "url": "https://www.kingbrightusa.com/images/catalog/SPEC/WP7113ID.pdf",
+      "revision": "DSAF0012 V.14A 2026-01-08",
+      "sha256": "b5bb33f69c13fd92ab6d47a8fd71168b6e7ee685139c8f381957aeea9286c9da",
+      "pages": [
+        1,
+        2,
+        3
+      ]
+    },
+    "curves": [
+      {
+        "pin": "A",
+        "reference_current_a": 0.01,
+        "pdf_path_indices": [
+          528,
+          529,
+          530
+        ],
+        "axes_pdf_pt": [
+          55.02,
+          286.8,
+          151.08,
+          376.14
+        ],
+        "axis_voltage_v": [
+          1.3,
+          2.3
+        ],
+        "axis_max_current_a": 0.02,
+        "points": [
+          {
+            "current_a": 0.002,
+            "voltage_v": 1.696565,
+            "role": "calibration",
+            "fixture": "tests/dc-2ma.json"
+          },
+          {
+            "current_a": 0.003,
+            "voltage_v": 1.735498,
+            "role": "holdout",
+            "fixture": "tests/dc-3ma.json"
+          },
+          {
+            "current_a": 0.004,
+            "voltage_v": 1.775578,
+            "role": "holdout",
+            "fixture": "tests/dc-4ma.json"
+          },
+          {
+            "current_a": 0.005,
+            "voltage_v": 1.802204,
+            "role": "calibration",
+            "fixture": "tests/dc-5ma.json"
+          },
+          {
+            "current_a": 0.007,
+            "voltage_v": 1.848363,
+            "role": "holdout",
+            "fixture": "tests/dc-7ma.json"
+          },
+          {
+            "current_a": 0.01,
+            "voltage_v": 1.902826,
+            "role": "calibration",
+            "fixture": "tests/dc-10ma.json"
+          },
+          {
+            "current_a": 0.012,
+            "voltage_v": 1.926892,
+            "role": "holdout",
+            "fixture": "tests/dc-12ma.json"
+          },
+          {
+            "current_a": 0.015,
+            "voltage_v": 1.951702,
+            "role": "holdout",
+            "fixture": "tests/dc-15ma.json"
+          },
+          {
+            "current_a": 0.018,
+            "voltage_v": 1.981543,
+            "role": "holdout",
+            "fixture": "tests/dc-18ma.json"
+          },
+          {
+            "current_a": 0.02,
+            "voltage_v": 2.001437,
+            "role": "calibration",
+            "fixture": "tests/dc-20ma.json"
+          }
+        ],
+        "page": 3
+      }
+    ]
+  }
+}

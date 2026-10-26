@@ -212,6 +212,7 @@ export interface PinDescription {
 }
 
 export interface ParamDescription {
+  required?: boolean;
   type: 'number' | 'integer' | 'boolean' | 'string' | 'enum' | 'table';
   unit?: string;
   default?: number | string | boolean | [number, number][];
@@ -296,11 +297,28 @@ export interface ArtworkDescription {
 export type BenchPackage = 'breadboard' | 'axial' | 'radial' | 'led' | 'to92' | 'to220' | 'sot23' | 'sot223' | 'dip' | 'tactile' | 'switch' | 'pot' | 'module' | 'board' | 'box';
 
 /** The part as it sits on the bench (SPEC-005 §8.1): millimetres from its top-left corner seen from above. */
+export interface LedBody {
+  diameter_mm: number;
+  flange_mm: number;
+  body_height_mm: number;
+  standoff_mm: number;
+}
+
+export interface IndicatorQualification {
+  scope: 'nominal-dc';
+  temperature_c: number;
+  current_a: [number, number];
+  voltage_tolerance_v: number;
+  source: { url: string; revision: string; sha256: string; pages: number[] };
+  curves: { pin: string; points: { current_a: number; voltage_v: number; role: 'calibration' | 'holdout'; fixture: string }[] }[];
+}
+
 export interface BenchDescription {
   package?: BenchPackage;
   size_mm?: [number, number, number];
   pins?: Record<string, [number, number]>;
   wiring_aid?: boolean;
+  led?: LedBody;
   color?: string;
   label?: string;
 }
@@ -333,6 +351,7 @@ export interface ComponentDescription {
   name: string;
   category: string;
   part?: ManufacturerPart;
+  qualification?: IndicatorQualification;
   description?: string;
   keywords?: string[];
   pins: PinDescription[];
