@@ -124,6 +124,14 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `probe.list({}) -> {probes: [...]}`
   Probe entries include `unit` from the declared output/native electrical
   quantity and actual `rate_hz` (zero for an event-driven probe).
+- `probe.move({probe, target}) -> {id, target, capture_epoch, now_ps}` atomically
+  retargets an existing analog/digital net/pin observation. It preserves handle,
+  name, kind, rate and subscription and starts a new capture at the current time.
+  Same-target moves preserve history. Invalid targets/allocation failures preserve
+  the existing capture; moves during recording return an invalid-state error.
+  Numeric probe metadata and waveform notifications carry additive `capture_epoch`
+  source/reset identities. A newer epoch replaces live history; older packets must
+  be ignored. Packet `seq` retains its independent stream-order meaning.
 - `probe.read({probe, from_ps?, to_ps?, max?}) -> {samples: [[time_ps, value], ...], gap?}`
 - `waveform.subscribe({probes: [...], max_rate_hz?}) -> {stream}`; samples arrive as `waveform.samples` notifications (`base64`) or binary frames; `waveform.unsubscribe({stream})`.
 - Sample encodings: digital `u8` (`0,1,2=Z,3=X`), analog `f32`, serial bytes, value `f64`; each frame is monotonic in time; a `gap` marker reports dropped frames.

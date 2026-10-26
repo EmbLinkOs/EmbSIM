@@ -1775,3 +1775,11 @@
 .wb-voltage-comparison__lead--b label { color: #c47419; }
 .wb-voltage-comparison select { min-width: 0; width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px; }
 .wb-voltage-comparison p, .wb-voltage-comparison small { font-size: 11px; line-height: 1.5; color: var(--text-muted); margin: 0; }
+
+/* Acquisition settings retain native form semantics and compact inspector rhythm. */
+.wb-acquisition { height: 100%; overflow: auto; padding: var(--space-3); font-size: var(--text-sm); }
+.wb-acquisition p { line-height: 1.5; }
+.wb-acquisition__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); margin-block: var(--space-3); }
+.wb-acquisition label { display: flex; flex-direction: column; gap: 4px; color: var(--text-muted); }
+.wb-acquisition input, .wb-acquisition select { min-width: 0; width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
+.wb-acquisition__probe { margin-block: var(--space-2); }

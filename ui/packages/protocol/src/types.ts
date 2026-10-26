@@ -527,6 +527,7 @@ export interface InputEntry {
 }
 
 export interface ProbeInfo {
+  capture_epoch?: number;
   /** The probe id; the 0.1 server reports a numeric handle here and the id under `id`. */
   probe: string | number;
   id?: string;
@@ -539,6 +540,7 @@ export interface ProbeInfo {
 }
 
 export interface WaveformSamples {
+  capture_epoch?: number;
   stream: string | number;
   seq: number;
   encoding: SampleEncoding | 'json';
@@ -550,7 +552,7 @@ export interface WaveformSamples {
   first_time_ps?: PsString;
   data?: string;
   /** `json` encoding: explicit [time_ps, value] pairs (event-driven probes). */
-  samples?: [PsString, number][];
+  samples?: [PsString, number | null][];
   kind?: ProbeKind;
   /** For resampled analog streams: the sample period. */
   period_ps?: PsString;

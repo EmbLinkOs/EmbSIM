@@ -412,6 +412,7 @@ static void probe_start(es_session *s, esk_probe *p)
         if (!p->period_ps)
             p->period_ps = (es_time_t)(1e12 / (p->rate_hz > 0 ? p->rate_hz : 100000.0));
     }
+    p->capture_epoch++;
     p->len = p->head = 0;
     p->has_last = 0;
     p->dropped = 0;
@@ -614,6 +615,64 @@ notfound:
     esk_strfree(s->a, p->name); esk_strfree(s->a, p->target); esk_strfree(s->a, p->quantity);
     esk_free(s->a, p, sizeof *p);
     return ES_ENOTFOUND;
+}
+
+/* Resolve and allocate the replacement before touching a live capture. The
+ * temporary sample event is canceled before its object can be freed. */
+es_status esk_session_probe_move(es_session *s, esk_probe *p, const char *target)
+{
+    esk_probe *replacement = NULL;
+    esk_probe previous;
+    uint32_t temporary_id;
+    esk_event_handle next_sample = 0;
+    es_status st;
+    if (!p || !target || !p->net ||
+        (p->kind != ESK_PROBE_ANALOG && p->kind != ESK_PROBE_DIGITAL) ||
+        (strncmp(target, "net:", 4) && strncmp(target, "pin:", 4)))
+        return ES_EINVAL;
+    /* Recording replay has no probe-move operation yet. Do not silently make
+     * a recording whose source identity cannot be reproduced. */
+    if (s->recording)
+        return ES_ESTATE;
+    if (!strcmp(target, p->target))
+        return ES_OK;
+    st = esk_session_probe_add(s, p->name, target,
+                              p->kind == ESK_PROBE_ANALOG ? "analog" : "digital",
+                              p->rate_hz, &replacement);
+    if (st != ES_OK)
+        return st;
+    temporary_id = replacement->id;
+    if (!replacement->name || !replacement->target) {
+        esk_session_probe_remove(s, temporary_id);
+        return ES_ENOMEM;
+    }
+    if (replacement->sample_event)
+        esk_sched_cancel(&s->eng.sched, replacement->sample_event);
+    replacement->sample_event = 0;
+    /* Preflight the callback allocation too. Its stable argument is p; the
+     * scheduler cannot execute it until this synchronous move completes. */
+    if (replacement->period_ps) {
+        st = esk_sched_at(&s->eng.sched, s->eng.sched.now + replacement->period_ps,
+                          ESK_EV_PROBE, probe_sample_cb, s, p, &next_sample);
+        if (st != ES_OK) {
+            esk_session_probe_remove(s, temporary_id);
+            return st;
+        }
+    }
+    if (p->sample_event)
+        esk_sched_cancel(&s->eng.sched, p->sample_event);
+    p->sample_event = 0;
+    previous = *p;
+    *p = *replacement;
+    *replacement = previous;
+    p->id = previous.id;
+    p->subscribed = previous.subscribed;
+    p->stream_seq = previous.stream_seq;
+    p->capture_epoch = previous.capture_epoch + 1;
+    p->sample_event = next_sample;
+    replacement->id = temporary_id;
+    esk_session_probe_remove(s, temporary_id);
+    return ES_OK;
 }
 
 void esk_session_probe_remove(es_session *s, uint32_t id)
@@ -1045,6 +1104,7 @@ esk_json *esk_session_snapshot(es_session *s, const esk_json *include)
             esk_json_set_integer(s->a, o, "probe", (int64_t)p->id);
             esk_json_set_string(s->a, o, "id", p->name);
             esk_json_set_string(s->a, o, "target", p->target);
+            esk_json_set_integer(s->a, o, "capture_epoch", (int64_t)p->capture_epoch);
             esk_json_set_string(s->a, o, "kind", p->kind == ESK_PROBE_DIGITAL ? "digital" : p->kind == ESK_PROBE_ANALOG ? "analog" : p->kind == ESK_PROBE_VALUE ? "value" : "serial");
             esk_json_set_string(s->a, o, "unit", esk_probe_unit(p));
             esk_json_set_number(s->a, o, "rate_hz", p->period_ps ? 1e12 / (double)p->period_ps : 0);
@@ -1210,6 +1270,7 @@ void esk_session_emit_observations(es_session *s, int force)
             esk_json_set_integer(s->a, params, "stream", (int64_t)p->id);
             esk_json_set_string(s->a, params, "probe", p->name);
             esk_json_set_integer(s->a, params, "seq", (int64_t)p->stream_seq++);
+            esk_json_set_integer(s->a, params, "capture_epoch", (int64_t)p->capture_epoch);
             esk_json_set_string(s->a, params, "encoding", "json");
             esk_json_set_string(s->a, params, "kind", p->kind == ESK_PROBE_DIGITAL ? "digital" : p->kind == ESK_PROBE_ANALOG ? "analog" : "value");
             esk_json_set_u64_string(s->a, params, "through_time_ps", through);

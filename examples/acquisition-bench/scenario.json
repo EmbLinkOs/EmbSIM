@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Loaded RC acquisition reference",
+  "until": "8ms",
+  "assertions": [
+    {
+      "id": "loaded-rc-1500us",
+      "probe": "response",
+      "at": "0.0015s",
+      "expect": {
+        "min_v": 1.960873020039842,
+        "max_v": 1.972873020039842
+      }
+    },
+    {
+      "id": "loaded-rc-2000us",
+      "probe": "response",
+      "at": "0.002s",
+      "expect": {
+        "min_v": 3.153254426792163,
+        "max_v": 3.1652544267921625
+      }
+    },
+    {
+      "id": "loaded-rc-2500us",
+      "probe": "response",
+      "at": "0.0025s",
+      "expect": {
+        "min_v": 3.8761142172731167,
+        "max_v": 3.8881142172731162
+      }
+    }
+  ]
+}

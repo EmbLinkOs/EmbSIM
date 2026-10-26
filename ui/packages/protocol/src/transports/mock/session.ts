@@ -227,6 +227,8 @@ export class MockSession {
   reset(): void {
     this.pause('stop');
     this.now = 0n;
+    this.probeStarts.clear();
+    for (const p of this.probes.values()) p.capture_epoch = (p.capture_epoch ?? 0) + 1;
     this.pressed = false;
     this.edges = [{ t: 0n, pressed: false, at: { ...POINT.released } }];
     for (const s of this.streams.values()) {
@@ -398,8 +400,21 @@ export class MockSession {
     let n = 2;
     while (this.probes.has(id)) id = `${base}_${n++}`;
     const info: ProbeInfo = { probe: id, target, kind, rate_hz: rateHz ?? 200_000 };
+    this.probeStarts.set(id, this.now);
     this.probes.set(id, info);
     return info;
+  }
+
+  private probeStarts = new Map<string, Time>();
+
+  moveProbe(id: string, target: string) {
+    const info = this.probes.get(id);
+    if (!info) throw new EngineError(-32002, `no probe ${id}`);
+    if (!['analog', 'digital'].includes(info.kind) || !/^(net|pin):/.test(info.target)) throw new EngineError(-32602, 'Only net/pin voltage or logic probes can move');
+    const valid = target.startsWith('net:') ? Object.hasOwn(this.project.nets, target.slice(4)) : target.startsWith('pin:') && Object.values(this.project.nets).some((pins) => pins.includes(target.slice(4)));
+    if (!valid) throw new EngineError(-32602, 'Unknown connected net or pin');
+    if (target !== info.target) { info.target = target; info.capture_epoch = (info.capture_epoch ?? 0) + 1; this.probeStarts.set(id, this.now); }
+    return { id, target, capture_epoch: info.capture_epoch ?? 0, now_ps: this.now.toString() };
   }
 
   removeProbe(id: string): void {
@@ -444,7 +459,9 @@ export class MockSession {
   readProbe(id: string, fromPs?: string, toPs?: string, max = 2000): { samples: [string, number][] } {
     const info = this.probes.get(id);
     if (!info) throw new EngineError(-32002, `no probe ${id}`);
-    const from = fromPs ? BigInt(fromPs) : 0n;
+    const requested = fromPs ? BigInt(fromPs) : 0n;
+    const start = this.probeStarts.get(id) ?? 0n;
+    const from = requested > start ? requested : start;
     const to = toPs ? BigInt(toPs) : this.now;
     const period = BigInt(Math.max(1, Math.round(1e12 / (info.rate_hz ?? 200_000))));
     const q = this.quantityOf(info);
@@ -474,7 +491,8 @@ export class MockSession {
         if (!info) continue;
         const rate = Math.min(info.rate_hz ?? 200_000, s.maxRateHz);
         const period = BigInt(Math.max(1, Math.round(1e12 / rate)));
-        let first = s.cursor;
+        const start = this.probeStarts.get(probeId) ?? 0n;
+        let first = s.cursor > start ? s.cursor : start;
         let n = Number((this.now - first) / period);
         if (n <= 0) continue;
         let gap = false;
@@ -505,6 +523,8 @@ export class MockSession {
           data: bytesToBase64(bytes),
           period_ps: period.toString(),
           probe: probeId,
+          capture_epoch: info.capture_epoch ?? 0,
+          through_time_ps: this.now.toString(),
         };
         if (gap) frame.gap = true;
         this.notify('waveform.samples', frame);

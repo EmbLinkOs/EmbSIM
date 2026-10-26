@@ -534,6 +534,42 @@ static void test_bad_project(void)
     es_session_destroy(s);
 }
 
+/* Callback reservation failure must not destroy the old capture or callback. */
+static void test_probe_move_limit(void)
+{
+    es_session *s = NULL;
+    es_session_config_t cfg;
+    esk_probe *p = NULL;
+    es_sample_t *ring;
+    esk_event_handle event;
+    uint32_t epoch;
+    size_t max_events, count, samples;
+    char *proj = subst(PROJECT);
+    memset(&cfg, 0, sizeof cfg);
+    CHECK(es_session_create(&cfg, &s) == ES_OK);
+    CHECK(es_session_load_json(s, proj, strlen(proj), lib_dir) == ES_OK);
+    CHECK(esk_session_probe_add(s, "sample", "net:SIG", "analog", 100000, &p) == ES_OK);
+    if (p) {
+        event = p->sample_event;
+        ring = p->ring;
+        epoch = p->capture_epoch;
+        samples = p->len;
+        count = s->probes.len;
+        max_events = s->eng.sched.max;
+        s->eng.sched.max = s->eng.sched.len;
+        CHECK(esk_session_probe_move(s, p, "net:VCC") == ES_ELIMIT);
+        CHECK_STR(p->target, "net:SIG");
+        CHECK(p->sample_event == event && p->ring == ring);
+        CHECK(p->capture_epoch == epoch && p->len == samples && s->probes.len == count);
+        s->eng.sched.max = max_events;
+        CHECK(esk_session_probe_move(s, p, "net:VCC") == ES_OK);
+        CHECK_STR(p->target, "net:VCC");
+        CHECK(p->capture_epoch == epoch + 1 && p->sample_event != 0);
+    }
+    es_session_destroy(s);
+    free(proj);
+}
+
 /* the host port's bridge at another baud rate than the sketch's: what a
  * UART reads from frames sent at the other rate (hostport.c) */
 static void test_uart_rebaud(void)
@@ -561,6 +597,7 @@ setup_library();
 RUN(test_load_and_run);
 RUN(test_scenario_and_rpc);
 RUN(test_determinism);
+RUN(test_probe_move_limit);
 RUN(test_composite);
 RUN(test_bad_project);
 RUN(test_edit_transactions);

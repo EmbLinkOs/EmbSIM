@@ -5,12 +5,15 @@
 // time window and cursors, probe list, serial lines. Records are mutable
 // buffers; `revision` tells renderers that samples arrived.
 
-import { appendSerialText, defaultWindow, WaveformRecord, type Cursors, type SerialLine, type TimeWindow } from '@embsim/instruments';
+import { Acquisition, type AcquisitionSettings, appendSerialText, defaultWindow, WaveformRecord, type Cursors, type SerialLine, type TimeWindow } from '@embsim/instruments';
 import type { ProbeInfo, WaveformSamples } from '@embsim/protocol';
 import { create } from 'zustand';
 
 export interface InstrumentsState {
   probes: ProbeInfo[];
+  acquisition: Acquisition | null;
+  arm(settings: AcquisitionSettings, now: bigint): void;
+  live(): void;
   records: Map<string, WaveformRecord>;
   revision: number;
   window: TimeWindow;
@@ -35,7 +38,7 @@ export interface InstrumentsState {
   /** text a serial port received: joined into lines (appendSerialText) */
   addSerialText(target: string, at: SerialLine['at'], text: string): void;
   setSerialTarget(target: string | null): void;
-  clearRecords(): void;
+  clearRecords(newSession?: boolean): void;
 }
 
 let pendingBump: number | null = null;
@@ -51,6 +54,9 @@ function normalizeProbe(p: ProbeInfo): ProbeInfo {
 
 export const useInstruments = create<InstrumentsState>((set, get) => ({
   probes: [],
+  acquisition: null,
+  arm: (settings, now) => { const acquisition = new Acquisition(settings, now); acquisition.update(get().records); set({ acquisition }); },
+  live: () => set((s) => ({ acquisition: null, window: { ...s.window, follow: true } })),
   records: new Map(),
   revision: 0,
   window: defaultWindow(),
@@ -68,6 +74,7 @@ export const useInstruments = create<InstrumentsState>((set, get) => ({
     const probes = raw.map(normalizeProbe);
     const records = new Map(get().records);
     for (const p of probes) {
+      if (!['analog', 'digital', 'value'].includes(p.kind)) continue;
       const id = p.probe as string;
       if (!records.has(id)) {
         const unit = p.unit ?? (p.target.startsWith('device:') && p.target.endsWith('.ic') ? 'A' : p.kind === 'analog' ? 'V' : '');
@@ -75,6 +82,8 @@ export const useInstruments = create<InstrumentsState>((set, get) => ({
       }
     }
     for (const id of [...records.keys()]) if (!probes.some((p) => p.probe === id)) records.delete(id);
+    for (const p of probes) if (p.capture_epoch !== undefined) records.get(p.probe as string)?.setCaptureEpoch(p.capture_epoch);
+    get().acquisition?.update(records);
     set({ probes, records });
   },
   recordFor: (raw) => {
@@ -89,6 +98,9 @@ export const useInstruments = create<InstrumentsState>((set, get) => ({
     const record = get().records.get(id);
     if (!record) return;
     record.appendFrame(frame);
+    const acquisition = get().acquisition, previous = acquisition?.frame;
+    acquisition?.update(get().records);
+    if (acquisition?.frame && acquisition.frame !== previous) set({ window: acquisition.frame.window });
     const s = get();
     s.frames++;
     if (frame.gap) s.gaps++;
@@ -107,8 +119,9 @@ export const useInstruments = create<InstrumentsState>((set, get) => ({
   addSerialLine: (line) => set((s) => ({ serialLines: [...s.serialLines, line].slice(-2000) })),
   addSerialText: (target, at, text) => set((s) => ({ serialLines: appendSerialText(s.serialLines, target, at, text) })),
   setSerialTarget: (serialTarget) => set({ serialTarget }),
-  clearRecords: () => {
-    for (const r of get().records.values()) r.clear();
-    set((s) => ({ revision: s.revision + 1, cursors: { a: null, b: null }, window: defaultWindow(), serialLines: [] }));
+  clearRecords: (newSession = false) => {
+    if (newSession) set((s) => ({ records: new Map([...s.records].map(([id, r]) => [id, new WaveformRecord(id, r.kind, r.label, r.unit, r.capacity)])) }));
+    else for (const r of get().records.values()) r.clear();
+    set((s) => ({ acquisition: null, revision: s.revision + 1, cursors: { a: null, b: null }, window: defaultWindow(), serialLines: [] }));
   },
 }));

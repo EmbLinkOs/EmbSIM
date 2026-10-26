@@ -56,8 +56,8 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
     const pf = current.record.periodAndFrequency(win.start, end);
     const edges = current.record.risingEdges(win.start, end).length;
     const weighted = current.record.measurements(win.start, end, now ?? current.record.end ?? win.start);
-    const la = cursors.a !== null ? current.record.valueAt(cursors.a) : NaN;
-    const lb = cursors.b !== null ? current.record.valueAt(cursors.b) : NaN;
+    const la = cursors.a !== null ? current.record.observedValueAt(cursors.a) : NaN;
+    const lb = cursors.b !== null ? current.record.observedValueAt(cursors.b) : NaN;
     return { pf, edges, weighted, la, lb };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, win.start, end, cursors.a, cursors.b, revision, now]);
@@ -161,7 +161,7 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
       ctx.lineWidth = 1.5;
       // a probe reports changes only: the level before the window holds
       // until its first change, and nothing is drawn past the present
-      const held = ch.record.valueAt(win.start);
+      const held = ch.record.observedValueAt(win.start);
       let prevLevel: number | null = Number.isFinite(held) ? held : null;
       const frontier = ch.record.captureEnd ?? win.start;
       const through = now !== undefined && now < frontier ? now : frontier;
@@ -172,8 +172,9 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
       ctx.rect(PLOT_LEFT, top, extent, ROW - 2);
       ctx.clip();
       for (let i = 0; i < Math.min(buckets, stop + 1); i++) {
+        if (d.missing[i]) { prevLevel = null; continue; }
         if (d.count[i] === 0) {
-          if (prevLevel === null) continue;
+          if (prevLevel === null) { const value = ch.record.observedValueAt(win.start + BigInt(Math.floor(Number(win.span) * i / buckets))); if (!Number.isFinite(value)) continue; prevLevel = value; }
           // Extend the previous level across unsampled columns.
           const y = prevLevel === 1 ? yHigh : prevLevel === 0 ? yLow : yMid;
           ctx.strokeStyle = prevLevel === DIGITAL_Z ? colors.z : prevLevel === DIGITAL_X ? colors.x : color;

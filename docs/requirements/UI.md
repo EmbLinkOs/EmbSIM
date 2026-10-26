@@ -185,3 +185,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-26
 **Verification.** Native live circuit and browser acceptance, scene/store/control fixtures, component binding validation and existing instrument loading checks.
 **Trace.** SPEC-005 §8; SPEC-011; docs/engineering/live-schematic.md
+
+
+### UI-026  Sampled acquisition and movable observation probes
+**Statement.** Triggered captures shall qualify native sampled edges, require complete source prehistory, wait for participating producer frontiers and preserve immutable completed records during continued simulation. Source movement shall preserve probe identity and subscriptions while separating old and new histories, without altering connectivity/loading. Pointer cancellation and keyboard retargeting shall be supported. Missing observations shall not become zero or future held readings.
+**Rationale.** A useful interactive schematic needs reproducible timing evidence and movable observations with explicit electrical meaning.
+**Status.** Accepted 2026-10-26
+**Verification.** Acquisition and waveform unit fixtures, native probe movement protocol tests, loaded RC analytic scenario and native browser frozen-export/retarget workflow.
+**Trace.** SPEC-008 §5; ADR-038; docs/engineering/schematic-acquisition.md

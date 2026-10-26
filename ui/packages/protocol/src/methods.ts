@@ -111,6 +111,7 @@ export interface Methods {
     params: { target: string; kind: ProbeKind; rate_hz?: number; decode?: { protocol: string; params?: Record<string, unknown> } };
     result: { probe: string | number; id?: string; stream?: string };
   };
+  'probe.move': { params: { probe: string; target: string }; result: { id: string; target: string; capture_epoch: number; now_ps: PsString } };
   'probe.remove': { params: { probe: string }; result: Record<string, never> };
   'probe.list': { params: Record<string, never>; result: { probes: ProbeInfo[] } };
   'probe.read': {
@@ -251,6 +252,7 @@ export const METHOD_NAMES = [
   'port.close',
   'port.list',
   'probe.add',
+  'probe.move',
   'probe.remove',
   'probe.list',
   'probe.read',

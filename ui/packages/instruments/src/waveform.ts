@@ -38,6 +38,9 @@ export class WaveformRecord {
   readonly unit: string;
   private segments: Segment[] = [];
   private total = 0;
+  private dropped = 0;
+  private resets = 0;
+  private epoch = -1;
   /** Oldest samples are dropped past this many. */
   readonly capacity: number;
   private version = 0;
@@ -54,6 +57,18 @@ export class WaveformRecord {
   /** Increments on every append; cheap change detection for renderers. */
   get revision(): number {
     return this.version;
+  }
+
+  get generation(): number { return this.resets; }
+  get firstOrdinal(): number { return this.dropped; }
+  get nextOrdinal(): number { return this.dropped + this.total; }
+  get captureEpoch(): number { return this.epoch; }
+
+  /** Ignore stale metadata/packets; a source change replaces the capture. */
+  setCaptureEpoch(epoch: number): boolean {
+    if (epoch < this.epoch) return false;
+    if (epoch > this.epoch) { this.clear(); this.epoch = epoch; }
+    return true;
   }
 
   get length(): number {
@@ -78,6 +93,8 @@ export class WaveformRecord {
   clear(): void {
     this.segments = [];
     this.total = 0;
+    this.dropped = 0;
+    this.resets++;
     this.capturedThrough = null;
     this.version++;
   }
@@ -112,6 +129,7 @@ export class WaveformRecord {
    * a new one, so a step waveform costs one segment per edge.
    */
   appendFrame(frame: WaveformSamples): void {
+    if (frame.capture_epoch !== undefined && !this.setCaptureEpoch(frame.capture_epoch)) return;
     if (frame.restart) this.clear();
     if (frame.through_time_ps !== undefined) {
       this.capturedThrough = BigInt(frame.through_time_ps);
@@ -131,7 +149,7 @@ export class WaveformRecord {
           if (j === i + 1 && j + 1 < pairs.length) j = i + 1; // a run of two still packs
         }
         const run = pairs.slice(i, j === i ? i + 1 : j + 1);
-        const arr = this.kind === 'digital' ? Uint8Array.from(run, (p) => p[1]) : Float32Array.from(run, (p) => p[1]);
+        const arr = this.kind === 'digital' ? Uint8Array.from(run, (p) => typeof p[1] === 'number' && Number.isFinite(p[1]) ? p[1] : DIGITAL_X) : Float32Array.from(run, (p) => typeof p[1] === 'number' && Number.isFinite(p[1]) ? p[1] : NaN);
         this.append(t0, period, arr, Boolean(frame.gap) && i === 0);
         i += run.length;
       }
@@ -154,10 +172,12 @@ export class WaveformRecord {
       if (s.values.length <= excess) {
         this.segments.shift();
         this.total -= s.values.length;
+        this.dropped += s.values.length;
       } else {
         s.values = s.values.subarray(excess) as SampleArray;
         s.first += s.period * BigInt(excess);
         this.total -= excess;
+        this.dropped += excess;
       }
     }
   }
@@ -186,6 +206,52 @@ export class WaveformRecord {
     return s.values[Math.min(idx, s.values.length - 1)]!;
   }
 
+  /** Samples after an absolute cursor; trimming cannot silently reuse ordinals. */
+  *events(ordinal = this.firstOrdinal): IterableIterator<{ ordinal: number; t: Time; v: number; gap: boolean }> {
+    let base = this.firstOrdinal;
+    for (const s of this.segments) {
+      for (let i = Math.max(0, ordinal - base); i < s.values.length; i++) {
+        yield { ordinal: base + i, t: s.first + s.period * BigInt(i), v: s.values[i]!, gap: i === 0 && s.gapBefore };
+      }
+      base += s.values.length;
+    }
+  }
+
+  /** Open missing intervals: boundary samples themselves remain observations. */
+  *gaps(from: Time, to: Time): IterableIterator<{ from: Time; to: Time }> {
+    for (let k = 1; k < this.segments.length; k++) {
+      const next = this.segments[k]!, previous = this.segments[k - 1]!;
+      const left = previous.first + previous.period * BigInt(previous.values.length - 1);
+      if (next.gapBefore && next.first >= from && left <= to) yield { from: left > from ? left : from, to: next.first < to ? next.first : to };
+    }
+  }
+
+  /** Missing data and the unobserved future never become a held reading. */
+  observedValueAt(t: Time): number {
+    if (this.captureEnd === null || t > this.captureEnd) return NaN;
+    const i = this.segmentIndex(t);
+    if (i < 0) return NaN;
+    const s = this.segments[i]!, next = this.segments[i + 1];
+    if (next?.gapBefore && t > s.first + s.period * BigInt(s.values.length - 1)) return NaN;
+    return this.valueAt(t);
+  }
+
+  /** Owned copy; future appends, eviction and reset cannot alter a frozen frame. */
+  snapshot(from: Time, to: Time): WaveformRecord {
+    const copy = new WaveformRecord(this.id, this.kind, this.label, this.unit, this.capacity);
+    copy.epoch = this.epoch;
+    const start = Math.max(0, this.segmentIndex(from));
+    for (let k = start; k < this.segments.length; k++) {
+      const s = this.segments[k]!;
+      if (s.first > to) break;
+      const first = k === start && from > s.first ? Math.min(s.values.length - 1, Number((from - s.first) / s.period)) : 0;
+      const end = Math.min(s.values.length, Number((to - s.first) / s.period) + 1);
+      if (end > first) copy.append(s.first + s.period * BigInt(first), s.period, s.values.slice(first, end) as SampleArray, s.gapBefore && first === 0);
+    }
+    copy.capturedThrough = this.captureEnd === null ? null : this.captureEnd < to ? this.captureEnd : to;
+    return copy;
+  }
+
   /** Iterates samples in [from, to] in time order. */
   *samples(from: Time, to: Time): IterableIterator<{ t: Time; v: number }> {
     let start = Math.max(0, this.segmentIndex(from));
@@ -196,7 +262,7 @@ export class WaveformRecord {
       const s = this.segments[k]!;
       const segEnd = s.first + s.period * BigInt(s.values.length - 1);
       if (segEnd < from || s.first > to) continue;
-      const startIdx = from > s.first ? Number((from - s.first) / s.period) : 0;
+      const startIdx = from > s.first ? Number((from - s.first + s.period - 1n) / s.period) : 0;
       for (let i = startIdx; i < s.values.length; i++) {
         const t = s.first + s.period * BigInt(i);
         if (t > to) return;
@@ -209,14 +275,24 @@ export class WaveformRecord {
    * Min/max decimation: for `buckets` equal slices of [from, to], the min and
    * max sample in each (NaN where empty) and whether a gap starts there.
    */
-  decimate(from: Time, to: Time, buckets: number): { min: Float32Array; max: Float32Array; first: Float32Array; last: Float32Array; count: Uint32Array } {
+  decimate(from: Time, to: Time, buckets: number): { min: Float32Array; max: Float32Array; first: Float32Array; last: Float32Array; count: Uint32Array; missing: Uint8Array } {
     const min = new Float32Array(buckets).fill(NaN);
     const max = new Float32Array(buckets).fill(NaN);
     const first = new Float32Array(buckets).fill(NaN);
     const last = new Float32Array(buckets).fill(NaN);
     const count = new Uint32Array(buckets);
+    const missing = new Uint8Array(buckets);
     const span = Number(to - from);
-    if (span <= 0 || buckets <= 0) return { min, max, first, last, count };
+    if (span <= 0 || buckets <= 0) return { min, max, first, last, count, missing };
+    for (let k = 1; k < this.segments.length; k++) {
+      const next = this.segments[k]!, previous = this.segments[k - 1]!;
+      if (!next.gapBefore) continue;
+      const left = previous.first + previous.period * BigInt(previous.values.length - 1);
+      if (next.first < from || left > to) continue;
+      const a = Math.max(0, Math.floor(Number(left - from) / span * buckets));
+      const b = Math.min(buckets - 1, Math.floor(Number(next.first - from) / span * buckets));
+      for (let i = a; i <= b; i++) missing[i] = 1;
+    }
     const startSeg = Math.max(0, this.segmentIndex(from));
     for (let k = startSeg; k < this.segments.length; k++) {
       const s = this.segments[k]!;
@@ -245,7 +321,7 @@ export class WaveformRecord {
         count[b] = count[b]! + 1;
       }
     }
-    return { min, max, first, last, count };
+    return { min, max, first, last, count, missing };
   }
 
   /** Sample extrema and arithmetic sample mean; use measurements for time averages. */
@@ -255,7 +331,7 @@ export class WaveformRecord {
     let sum = 0;
     let count = 0;
     for (const { v } of this.samples(from, to)) {
-      if (this.kind === 'digital' && v > 1) continue;
+      if (!Number.isFinite(v) || (this.kind === 'digital' && v > 1)) continue;
       if (v < min) min = v;
       if (v > max) max = v;
       sum += v;
@@ -329,7 +405,7 @@ export class WaveformRecord {
     }
     let prev: number | null = null;
     for (const { t, v } of this.samples(from, to)) {
-      if (this.kind === 'digital' && v > 1) {
+      if (!Number.isFinite(v) || (this.kind === 'digital' && v > 1)) {
         prev = null;
         continue;
       }
@@ -346,6 +422,7 @@ export class WaveformRecord {
   periodAndFrequency(from: Time, to: Time): { period: Time | null; frequencyHz: number | null; edges: number } {
     const edges = this.risingEdges(from, to);
     if (edges.length < 2) return { period: null, frequencyHz: null, edges: edges.length };
+    if (this.measurements(edges[0]!, edges[edges.length - 1]!).coverage !== 1) return { period: null, frequencyHz: null, edges: edges.length };
     const total = edges[edges.length - 1]! - edges[0]!;
     const period = total / BigInt(edges.length - 1);
     return { period, frequencyHz: period > 0n ? 1e12 / Number(period) : null, edges: edges.length };

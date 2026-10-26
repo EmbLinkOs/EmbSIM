@@ -570,6 +570,25 @@ static esk_probe *probe_param(rpc_ctx *r, const char *key)
     return esk_session_probe_find(r->s, esk_json_str(pj));
 }
 
+static es_status m_probe_move(rpc_ctx *r)
+{
+    esk_probe *p = probe_param(r, "probe");
+    es_status st;
+    if (!p)
+        return fail_status(r, ES_ENOTFOUND);
+    st = esk_session_probe_move(r->s, p, pstr(r, "target", NULL));
+    if (st != ES_OK)
+        return fail_status(r, st);
+    r->result = obj(r);
+    if (!r->result)
+        return ES_ENOMEM;
+    esk_json_set_string(r->s->a, r->result, "id", p->name);
+    esk_json_set_string(r->s->a, r->result, "target", p->target);
+    esk_json_set_integer(r->s->a, r->result, "capture_epoch", (int64_t)p->capture_epoch);
+    esk_json_set_u64_string(r->s->a, r->result, "now_ps", r->s->eng.sched.now);
+    return ES_OK;
+}
+
 static es_status m_probe_read(rpc_ctx *r)
 {
     esk_probe *p = probe_param(r, "probe");
@@ -1309,7 +1328,7 @@ static const method methods[] = {
     { "port.open", m_port_open }, { "port.close", m_port_close }, { "port.list", m_port_list },
     { "input.set", m_input_set }, { "input.press", m_input_press }, { "input.release", m_input_release },
     { "input.serial", m_input_serial }, { "input.list", m_input_list },
-    { "probe.add", m_probe_add }, { "probe.remove", m_probe_remove }, { "probe.list", m_probe_list }, { "probe.read", m_probe_read },
+    { "probe.add", m_probe_add }, { "probe.remove", m_probe_remove }, { "probe.list", m_probe_list }, { "probe.read", m_probe_read }, { "probe.move", m_probe_move },
     { "waveform.subscribe", m_waveform_subscribe }, { "waveform.unsubscribe", m_waveform_unsubscribe },
     { "observe.snapshot", m_observe_snapshot }, { "observe.subscribe", m_observe_subscribe }, { "observe.unsubscribe", m_observe_unsubscribe },
     { "catalog.list", m_catalog_list }, { "catalog.get", m_catalog_get }, { "catalog.libraries", m_catalog_libraries },

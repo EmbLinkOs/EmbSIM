@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Triggered schematic acquisition
+
+- Add sampled rising/falling/either Single and Normal captures with hysteresis,
+  pre/post windows, holdoff, trigger markers and immutable exported records.
+- Move ideal waveform probes directly on the schematic or through keyboard net
+  selectors while retaining native identity and subscriptions. Capture epochs
+  prevent signals from old targets entering a new recording.
+- Break plots/readings at lost data, preserve null readings, bound exports and
+  frequency estimates to observed data, and include component labels when fitting.
+- Add a loaded RC acceptance bench with native protocol/browser verification.
+
 ### Live schematic simulation surface
 
 - Center Run on an interactive schematic without loading the optional 3D renderer.

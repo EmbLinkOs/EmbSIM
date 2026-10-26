@@ -23,3 +23,5 @@ export {
   type FrameSummary,
   type AirKind,
 } from './air';
+
+export * from "./acquisition";
