@@ -74,6 +74,9 @@ actual interval in its selector; **Instant** uses the native instantaneous value
 A selectable 1×/4×/16× illustrative display gain makes small emitters legible;
 default 4× scales only rendered luminance, keeps zero dark and preserves RGB
 channel ratios. It is not a physical LED parameter or measurement correction.
+A valid interval requires two complete observations; startup/reconnect waits for
+a baseline, and policy changes clear prior electrical exposure. Partial notifications
+do not treat cached integrals as newly measured zero light.
 The renderer does not replace electrical current, voltage, raw observations or
 recorded measurements. This is an observation-interval exposure, not a fixed
 human-vision window, calibrated radiometry, gamma-correct photometry or qualified
@@ -83,9 +86,10 @@ instantaneous behavior.
 ## Differential voltage and label tracing
 
 Run's Voltage comparison selects A/B by named-net dropdowns, on-sheet picks or
-movable markers. It reports the signed difference of two finite solved voltages
+movable markers. Marker movement preserves the selected wire/pin drop point,
+including movement within a named net with remote branches. It reports the signed difference of two finite solved voltages
 from the same session observation. Logic-only/missing/nonfinite values show an
-unavailable reading; a logic 1 is never assumed to mean 3.3 V. Invalid/canceled
+unavailable reading; a logic 1 is never assumed to mean 3.3 V. Escape, focus loss and invalid/canceled
 marker drops preserve the prior connection. The two leads add no electrical load
 and do not modify the project. Wired voltmeters/scope inputs remain the way to
 include resistance/capacitance/burden in the solve.

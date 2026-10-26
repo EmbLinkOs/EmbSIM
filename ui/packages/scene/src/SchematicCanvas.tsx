@@ -117,8 +117,8 @@ export interface SchematicCanvasProps {
   /** Voltage range for the analog gradient; default [0, 3.3]. */
   analogRange?: [number, number];
   probes?: ProbeInfo[];
-  voltageComparison?: { a?: string; b?: string };
-  onCompareNet?: (side: 'a' | 'b', net: string) => void;
+  voltageComparison?: { a?: string; b?: string; aPoint?: Point; bPoint?: Point };
+  onCompareNet?: (side: 'a' | 'b', net: string, at?: Point) => void;
   readOnly?: boolean;
   showGrid?: boolean;
   appearance?: CanvasAppearance;
@@ -1249,10 +1249,10 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {(['a', 'b'] as const).map((side) => {
               const net = voltageComparison?.[side]; if (!net || !project.nets[net]) return null;
               const wire = wires.find((w) => w.net === net);
-              const at = wire ? { x: wire.points[0]![0], y: wire.points[0]![1] } : pinsByNet[net]?.[0];
+              const at = (side === 'a' ? voltageComparison?.aPoint : voltageComparison?.bPoint) ?? (wire ? { x: wire.points[0]![0], y: wire.points[0]![1] } : pinsByNet[net]?.[0]);
               return at ? <MeasurementProbe key={`${side}-${net}`} side={side} net={net} at={at} onDrop={onCompareNet ? (lead, client) => {
-                const world = toWorld(client.x, client.y), pin = findPinAt(world, 12), hit = pin?.net ?? findWireAt(world, 10)?.wire.net;
-                if (hit) { onCompareNet(lead, hit); setAnnouncement(`Voltage probe ${lead.toUpperCase()} moved to ${hit}.`); }
+                const world = toWorld(client.x, client.y), pin = findPinAt(world, 12), wireHit = findWireAt(world, 10), hit = pin?.net ?? wireHit?.wire.net;
+                if (hit) { onCompareNet(lead, hit, pin?.net ? pin.point : wireHit!.point); setAnnouncement(`Voltage probe ${lead.toUpperCase()} moved to ${hit}.`); }
                 else setAnnouncement('No connected wire or pin at the probe drop; connection preserved.');
               } : undefined} /> : null;
             })}

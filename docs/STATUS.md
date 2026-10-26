@@ -14,7 +14,7 @@ reuse independent junctions. Existing LCD/OLED, serial displays, segments and
 bargraphs now show model outputs on their symbols. Floating-common functional
 segments/bargraphs stay dark. Attached repeated labels complete drawing traces.
 
-Local checks pass 49 native CTest targets, 273 UI unit tests, all 31 browser
+Local checks pass 49 native CTest targets, 274 UI unit tests, all 31 browser
 workflows, strict validation of 899 JSON descriptions/projects/fixtures and the
 native live-schematic browser acceptance. The live circuit passes ten assertions;
 the fully routed firmware RGB example retains all 39 assertions. Analog tests

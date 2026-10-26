@@ -48,6 +48,15 @@ def main():
             expect(page.locator('[data-board-item="symbol-MATRIX"] #D12')).to_have_attribute('opacity','0.000')
             # Hold a real contact through an engine advance, then blur it. No editor transaction.
             button=page.get_by_role('button',name='HOLD pressed',exact=True)
+            contact=button.bounding_box()
+            assert contact
+            page.mouse.move(contact['x']+contact['width']/2,contact['y']+contact['height']/2)
+            page.mouse.down()
+            page.wait_for_timeout(100)
+            page.keyboard.press('F7')
+            expect(page.get_by_test_id('clock')).to_contain_text('2.000')
+            expect(emitter('D1')).to_have_attribute('opacity',re.compile(r'0\.[3-6]\d+'))
+            page.mouse.up()
             button.focus()
             page.keyboard.down('Space')
             page.wait_for_timeout(100)
@@ -83,7 +92,22 @@ def main():
             page.mouse.move(ground['x']+ground['width']/2,ground['y']+ground['height']/2,steps=8)
             page.mouse.up()
             expect(page.get_by_label('Voltage probe A net',exact=True)).to_have_value('GND')
+            # A lead stays at the actual drop anchor, even when the named net
+            # also has remote wires. It must not jump to the first net vertex.
+            tip=page.get_by_role('img',name='Voltage probe A on GND',exact=True).locator('circle').bounding_box()
+            assert tip and abs((tip['x']+tip['width']/2)-(ground['x']+ground['width']/2)) < 2 and abs((tip['y']+tip['height']/2)-(ground['y']+ground['height']/2)) < 2
             expect(page.get_by_label('Differential voltage A minus B',exact=True)).to_have_text('0 V')
+            stable_tip=dict(tip)
+            marker=page.get_by_role('img',name='Voltage probe A on GND',exact=True)
+            source=marker.locator('path').bounding_box()
+            assert source
+            page.mouse.move(source['x']+source['width']/2,source['y']+source['height']/2)
+            page.mouse.down()
+            page.mouse.move(source['x']+70,source['y']+40,steps=6)
+            page.keyboard.press('Escape')
+            page.mouse.up()
+            canceled=marker.locator('circle').bounding_box()
+            assert canceled and abs(canceled['x']-stable_tip['x'])<2 and abs(canceled['y']-stable_tip['y'])<2
             assert not any(m.get('method')=='project.edit' for m in sent)
             # A 25% pulse still emits interval-average light at an off-time boundary.
             expect(emitter('DPWM')).to_have_attribute('opacity',re.compile(r'0\.[0-3]\d+'))
@@ -98,7 +122,7 @@ def main():
             page.keyboard.down('Space')
             page.wait_for_timeout(100)
             page.keyboard.press('F7')
-            expect(page.get_by_test_id('clock')).to_contain_text('7.000',timeout=15000)
+            expect(page.get_by_test_id('clock')).to_contain_text('8.000',timeout=15000)
             expect(emitter('D1')).to_have_attribute('opacity','1.000')
             page.mouse.move(10,10)
             page.screenshot(path=str(out/'live-schematic.png'))

@@ -30,5 +30,5 @@ export function measureEmission(previous: EmissionFrame, now: Time, outputs: Rec
     means[`${id}.luminance`] = peak;
     means[`${id}.color`] = '#' + levels.map((x) => Math.round(peak > 0 ? 255 * x / peak : 0).toString(16).padStart(2, '0')).join('');
   }
-  return { at: now, totals, means, duration: now > previous.at ? now - previous.at : previous.duration };
+  return { at: now, totals, means, duration: now > previous.at ? (Object.keys(means).length ? now - previous.at : 0n) : previous.duration };
 }

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { describe, expect, it } from 'vitest';
+import { useSession } from './session';
 import { emptyEmission, measureEmission } from './schematicEmission';
 
 describe('schematic exposure from native accepted-time integrals', () => {
   it('uses elapsed virtual time and preserves an average through a same-time pause', () => {
     const start = measureEmission(emptyEmission(), 1000000000n, { 'D.emission_integral': .00025 });
+    expect(start.duration).toBe(0n); // one snapshot is not an exposure window
     const frame = measureEmission(start, 5000000000n, { 'D.emission_integral': .00125 });
     expect(frame.means['D.luminance']).toBeCloseTo(.25);
     expect(measureEmission(frame, frame.at, { 'D.emission_integral': .00125 }).means).toEqual(frame.means);
@@ -20,6 +22,21 @@ describe('schematic exposure from native accepted-time integrals', () => {
     expect(next.means['A.luminance']).toBeCloseTo(.5);
     expect(next.means['B.luminance']).toBeCloseTo(.25);
     expect(measureEmission(next, next.at, { 'A.emission_integral': 0, 'B.emission_integral': 0 }).means).toEqual({});
+  });
+  it('clears electrical exposure when policy changes through metadata or an observation', () => {
+    const saved = useSession.getState();
+    try {
+      useSession.setState({policy:'electrical',outputs:{},emission:emptyEmission()});
+      const observe = (now: string, total: number) => useSession.getState().applyObserve({now_ps:now,outputs:{'D.emission_integral':total}});
+      observe('0',0);observe('1000000000',.0005);
+      expect(useSession.getState().emission.means['D.luminance']).toBeCloseTo(.5);
+      useSession.getState().setInfo({policy:'functional'});
+      expect(useSession.getState().emission.means).toEqual({});
+      useSession.getState().setInfo({policy:'electrical'});
+      observe('0',0);observe('1000000000',.0005);
+      useSession.getState().applyObserve({now_ps:'1000000000',policy:'functional',outputs:{'D.luminance':0}});
+      expect(useSession.getState().emission.means).toEqual({});
+    } finally { useSession.setState(saved,true); }
   });
   it('mixes independent RGB channel exposures without changing electrical outputs', () => {
     const frame = measureEmission({ ...emptyEmission(), totals: { 'D.red_emission_integral': 0, 'D.green_emission_integral': 0, 'D.blue_emission_integral': 0 } }, 1000000000n, { 'D.red_emission_integral': .00025, 'D.green_emission_integral': .0005, 'D.blue_emission_integral': .001 });

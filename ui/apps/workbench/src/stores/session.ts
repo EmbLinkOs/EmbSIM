@@ -75,7 +75,7 @@ export const useSession = create<SessionState & SessionActions>((set, get) => ({
   lastControlReason: null,
 
   setConnection: (patch) => set(patch),
-  setInfo: (patch) => set((s) => ({ ...patch, ...((patch.outputs && Object.keys(patch.outputs).length === 0) || (patch.projectName !== undefined && patch.projectName !== s.projectName) ? { emission: emptyEmission() } : {}) })),
+  setInfo: (patch) => set((s) => ({ ...patch, ...((patch.outputs && Object.keys(patch.outputs).length === 0) || (patch.policy !== undefined && patch.policy !== s.policy) || (patch.projectName !== undefined && patch.projectName !== s.projectName) ? { emission: emptyEmission() } : {}) })),
   applyObserve: (u) =>
     set((s) => {
       // Outputs arrive flat (`"D1.lit": true`) per SPEC-008 or nested under
@@ -96,7 +96,7 @@ export const useSession = create<SessionState & SessionActions>((set, get) => ({
         now: BigInt(u.now_ps),
         nets: u.nets ? { ...s.nets, ...u.nets } : s.nets,
         outputs,
-        emission: measureEmission(s.emission, BigInt(u.now_ps), freshOutputs),
+        emission: measureEmission(u.policy && u.policy !== s.policy ? emptyEmission() : s.emission, BigInt(u.now_ps), freshOutputs),
         inputs,
         running: u.running ?? s.running,
         speed: u.speed ?? s.speed,

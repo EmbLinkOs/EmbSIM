@@ -2,7 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import { Button, DockLayout, IconButton, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
 import { followWindow, LogicAnalyzer, Oscilloscope, SerialTerminal, type ScopeTrace } from '@embsim/instruments';
-import { SchematicCanvas, type CanvasMode, type SchematicCanvasHandle } from '@embsim/scene';
+import { SchematicCanvas, type CanvasMode, type Point, type SchematicCanvasHandle } from '@embsim/scene';
 import { Download, Locate, Maximize2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage, exportCsv, exportVcd, inputs as inputActions, probes as probeActions } from '../../actions';
@@ -33,11 +33,11 @@ export function RunPerspective() {
   const outputs = useSchematicOutputs();
   const inputs = useSession((s) => s.inputs);
   const [mode, setMode] = useState<CanvasMode>('interact');
-  const [comparison, setComparison] = useState<{project: unknown; a?: string; b?: string}>({project:null});
+  const [comparison, setComparison] = useState<{project: unknown; a?: string; b?: string; aPoint?: Point; bPoint?: Point}>({project:null});
   const [pickLead, setPickLead] = useState<'a'|'b'|null>(null);
   const project = useProject((s) => s.project);
   const leads = comparison.project === project ? comparison : {};
-  const changeLead = useCallback((side: 'a'|'b', net: string) => setComparison((old) => ({ ...(old.project === project ? old : {}), project, [side]: net || undefined })), [project]);
+  const changeLead = useCallback((side: 'a'|'b', net: string, at?: Point) => setComparison((old) => ({ ...(old.project === project ? old : {}), project, [side]: net || undefined, [`${side}Point`]: at })), [project]);
   const sceneCatalog = useProject((s) => s.sceneCatalog);
   const selection = useSelection((s) => s.selection);
   const setSelection = useSelection((s) => s.setSelection);
@@ -184,7 +184,7 @@ export function RunPerspective() {
                 onCompareNet={changeLead}
                 probes={inst.probes}
                 readOnly
-                onNetClick={(net) => { if (pickLead) { changeLead(pickLead, net); setPickLead(null); return; } guard(() => probeActions.add(`net:${net}`, 'analog', 200_000).then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` })))(); }}
+                onNetClick={(net, at) => { if (pickLead) { changeLead(pickLead, net, at); setPickLead(null); return; } guard(() => probeActions.add(`net:${net}`, 'analog', 200_000).then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` })))(); }}
                 label="Live schematic"
               />
     ) : null },
