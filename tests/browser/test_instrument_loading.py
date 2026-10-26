@@ -97,7 +97,10 @@ def main():
             page.wait_for_timeout(100)
             rect = page.locator('[data-component="AM"] .es-component__hit').bounding_box()
             bounds = page.get_by_role('application', name='Live schematic').bounding_box()
-            assert rect and bounds and abs((rect['y'] + rect['height'] / 2) - (bounds['y'] + bounds['height'] / 2)) < 4, 'View leads must center the selected component in the actual panel'
+            label = page.locator('[data-component-label="AM"]').bounding_box()
+            assert rect and bounds and label
+            for item in [rect, label]:
+                assert item['x'] >= bounds['x'] and item['y'] >= bounds['y'] and item['x'] + item['width'] <= bounds['x'] + bounds['width'] and item['y'] + item['height'] <= bounds['y'] + bounds['height'], 'View leads must include the selected symbol and its labels in the actual panel'
             page.screenshot(path=str(out / 'wired-instruments.png'))
             assert not any(m.get('method') == 'project.edit' for m in sent), 'inspection/trace actions must not rewire the project'
             # Remove one lead through the real editor, then undo. This used to

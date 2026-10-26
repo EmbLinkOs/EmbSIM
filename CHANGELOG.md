@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Physically loaded instrument controls
+
+- Configure meter/scope/shunt/generator impedances and actual lead nets in Run,
+  including representative scope loading presets and explicit restart behavior.
+- Add signed voltage/current observations with selectable sampling and expose
+  qualified instrument readouts inside reusable project blocks.
+- Protect parameter bindings and stale drafts; retain time for unchanged settings.
+- Verify native differential loading, burden, source impedance, triggered physical
+  output capture, frozen CSV and independent nested measurement stages.
+
 ### LM358P nominal dynamic behavior
 
 - Correct the named LM358P wrapper to forward the legacy device's nominal

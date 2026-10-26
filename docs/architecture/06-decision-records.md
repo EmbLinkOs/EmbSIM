@@ -1178,3 +1178,26 @@ a replacement for native validation or proof of a fault-free design. Declared
 board ports count as boundaries; firmware-configured direction is not guessed.
 
 **Status.** Accepted (2026-10-27), following the owner's complete-schematic direction.
+
+
+## ADR-041 Instrument configuration edits physical project components
+
+**Context.** Readout-only instrument cards hide the distinction between changing
+an observation and changing the circuit's input/shunt/output impedance or leads.
+Project blocks also require qualified physical readouts and parameter scope.
+
+**Decision.** Edit the actual native component parameters/net memberships through
+existing staged transactions. Reject stale drafts and protect parameter bindings;
+explain shared-definition scope. Keep unchanged settings as no-ops. Use qualified
+native device outputs for signed voltage/current traces and existing sampled
+acquisition, with no new observation load. Presets represent effective terminal
+loading and do not claim calibrated commercial probes.
+
+**Consequences.** Electrical changes restart the session and clear acquisition,
+explicitly stated before applying. This does not claim hot-plugging without a
+firmware restart. Existing ideal-probe movement retains its separate behavior.
+Native differential/loading calculations and frozen-CSV acceptance verify the
+physical distinction; manufacturer bandwidth/protection and advanced triggers
+remain independent gates.
+
+**Status.** Accepted (2026-10-27), within the owner's complete-schematic direction.

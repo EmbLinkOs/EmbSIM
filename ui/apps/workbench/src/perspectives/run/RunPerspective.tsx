@@ -25,7 +25,8 @@ import { MetersPanel } from './MetersPanel';
 import { useHostPort } from './useHostPort';
 import { SchematicDisplayOptions } from './SchematicDisplayOptions';
 import { useSchematicOutputs } from '../../stores/schematicDisplay';
-import { isWiredInstrument, WiredInstrumentsPanel } from './WiredInstrumentsPanel';
+import { WiredInstrumentsPanel } from './WiredInstrumentsPanel';
+import { instrumentInstances } from './instrumentConnections';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
@@ -39,6 +40,8 @@ export function RunPerspective() {
   const [comparison, setComparison] = useState<{project: unknown; a?: string; b?: string; aPoint?: Point; bPoint?: Point}>({project:null});
   const [pickLead, setPickLead] = useState<'a'|'b'|null>(null);
   const project = useProject((s) => s.project);
+  const hierarchy = useProject((s) => s.hierarchy);
+  const physicalInstruments = useMemo(() => instrumentInstances(project, hierarchy), [project, hierarchy]);
   const leads = comparison.project === project ? comparison : {};
   const changeLead = useCallback((side: 'a'|'b', net: string, at?: Point) => setComparison((old) => ({ ...(old.project === project ? old : {}), project, [side]: net || undefined, [`${side}Point`]: at })), [project]);
   const sceneCatalog = useProject((s) => s.sceneCatalog);
@@ -166,7 +169,7 @@ export function RunPerspective() {
 
   const left: DockItem[] = [
     { id: 'acquisition', title: 'Acquisition and probes', weight: 1.5, minSize: 240, collapsible: true, defaultCollapsed: false, content: <AcquisitionPanel /> },
-    { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: !project?.components.some((c) => isWiredInstrument(c.component)), content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
+    { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: !physicalInstruments.length, content: <WiredInstrumentsPanel onLocate={(id, path) => { if (path) { useHierarchy.getState().show(path); useLayout.getState().setPerspective('design'); return; } setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); }} onTrace={(target, rate) => guard(() => probeActions.add(target, 'value', rate))()} /> },
     { id: 'voltage-comparison', title: 'Voltage comparison', weight: 1, minSize: 170, collapsible: true, defaultCollapsed: true, content: <VoltageComparison names={Object.keys(project?.nets ?? {}).sort()} nets={nets} leads={leads} onChange={changeLead} active={pickLead} onPick={(side) => { setPickLead(side); if (side) setMode('probe'); }} /> },
     { id: 'controls', title: 'Controls', content: <ControlsPanel />, collapsible: true, defaultCollapsed: inputs.length === 0, weight: 1, minSize: 120 },
     { id: 'world', title: 'World', content: <WorldPanel />, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: true },
@@ -242,7 +245,7 @@ export function RunPerspective() {
     },
   ];
   const items: DockItem[] = [
-    { id: 'left', title: 'Controls and instruments', flush: true, collapsible: true, defaultCollapsed: inputs.length === 0 && !project?.components.some((c) => isWiredInstrument(c.component)), weight: 1, minSize: 260, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.run.left.${project?.name ?? 'none'}`} /> },
+    { id: 'left', title: 'Controls and instruments', flush: true, collapsible: true, defaultCollapsed: inputs.length === 0 && !physicalInstruments.length, weight: 1, minSize: 260, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.run.left.${project?.name ?? 'none'}`} /> },
     { id: 'centre', title: 'Instruments', bare: true, weight: 2.6, minSize: 480, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.run.schematic.centre.${project?.name ?? 'none'}`} /> },
   ];
   return (
