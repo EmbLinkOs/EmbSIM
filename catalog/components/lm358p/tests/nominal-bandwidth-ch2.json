@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "nominal-bandwidth-ch2",
+  "description": "Native LM358P channel 2: source-anchored nominal dynamics. A gain of 11 given a 10 mV step, too small to slew: the output rises as one pole, its time constant 11 / (2 pi x 0.7 MHz) = 2.50 us, reaching 63 % of its 110 mV step then.",
+  "policy": "electrical",
+  "until": "40us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0.1,
+          "v2": 0.11,
+          "td": "10u",
+          "tr": "10n",
+          "tf": "10n",
+          "pw": "1m",
+          "per": "2m"
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm358p"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RF",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "RG",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k"
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.IN2+"
+      ],
+      "VCC": [
+        "VS.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "VI.-",
+        "VS.-",
+        "DUT.GND",
+        "G.GND",
+        "RG.2"
+      ],
+      "OUT": [
+        "DUT.OUT2",
+        "RF.1"
+      ],
+      "FB": [
+        "DUT.IN2-",
+        "RF.2",
+        "RG.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "12.50us",
+      "min_v": 1.16,
+      "max_v": 1.179
+    },
+    "pin:RF.1": {
+      "at": "35us",
+      "min_v": 1.205,
+      "max_v": 1.212
+    }
+  }
+}

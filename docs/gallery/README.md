@@ -5,6 +5,17 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Named LM358P nominal dynamics (2026-10-27)
+
+Native `lm358p-dynamics` session, captured by `tests/browser/test_lm358p.py`.
+The package's two channels show small-signal gain/bandwidth and a loaded follower's
+rising/falling slew, with wired 1 MΩ ∥ 15 pF scope inputs. The browser verifies
+actual CSV samples against independent circuit bounds. Source anchors are legacy
+LM358 typical values at 5 V, 25 °C; excluded device effects and manufacturer
+corners remain unqualified. See [evidence and limits](../engineering/lm358p-dynamics.md).
+
+![Native named LM358P waveform response and loaded schematic](component-dynamics/lm358p-native-dynamics.png)
+
 ## Project-wide schematic reliability (2026-10-27)
 
 Native `electrical-feedback` acceptance, captured by

@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### LM358P nominal dynamic behavior
+
+- Correct the named LM358P wrapper to forward the legacy device's nominal
+  0.7 MHz bandwidth and 0.3 V/µs slew to both native channels; expose experimental
+  overrides. Existing saved circuits can change transient response.
+- Add both-channel rising/falling, bandwidth, forwarding and isolation fixtures,
+  a routed two-channel bench with actual scope loading and native CSV acceptance.
+- Pin the reviewed source and distinguish typical dynamic anchors from complete
+  manufacturer qualification and the model's excluded physical effects.
+
 ### Project-wide schematic reliability
 
 - Author block parameter declarations and rename their bindings/parent overrides.

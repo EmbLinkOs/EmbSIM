@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component",
   "category": "amplifiers",
-  "description": "LM358P dual-channel PDIP-8 behavioral approximation; both channels share explicit supply pins.",
+  "description": "LM358P dual PDIP-8 nominal behavioral approximation with shared explicit supply pins, a 0.7 MHz dominant-pole bandwidth and 0.3 V/us slew limit at the 5 V, 25 C reference.",
   "pins": [
     {
       "name": "IN1+",
@@ -93,6 +93,20 @@
       "default": 0.02,
       "unit": "V",
       "min": 0
+    },
+    "gbw": {
+      "type": "number",
+      "default": "700k",
+      "unit": "Hz",
+      "min": 0,
+      "doc": "Nominal legacy LM358 gain-bandwidth product at 5 V, 25 C; 0 disables the dynamic pole (and its slew limit). Overrides are model experiments, not manufacturer corners."
+    },
+    "slew": {
+      "type": "number",
+      "default": 0.3,
+      "unit": "V/us",
+      "min": 0,
+      "doc": "Nominal legacy LM358 large-signal slew at gain +1, 5 V, 25 C. Requires gbw > 0; 0 removes the explicit slew limit."
     }
   },
   "model": {
@@ -105,7 +119,9 @@
             "gain": "$gain",
             "rout": "$rout",
             "headroom_high": "$headroom_high",
-            "headroom_low": "$headroom_low"
+            "headroom_low": "$headroom_low",
+            "gbw": "$gbw",
+            "slew": "$slew"
           }
         },
         {
@@ -115,7 +131,9 @@
             "gain": "$gain",
             "rout": "$rout",
             "headroom_high": "$headroom_high",
-            "headroom_low": "$headroom_low"
+            "headroom_low": "$headroom_low",
+            "gbw": "$gbw",
+            "slew": "$slew"
           }
         }
       ],
@@ -145,18 +163,19 @@
     "functional": null,
     "timed": null,
     "electrical": {
-      "claims": "Two independent DC op-amp channels with finite gain, output resistance and headroom.",
+      "claims": "Two independent channels share supply pins; nominal 5 V, 25 C reference uses 0.7 MHz dominant-pole gain-bandwidth and symmetric 0.3 V/us slew, finite gain and representative output resistance/headroom. Dynamic defaults follow the legacy LM358 table, not LM358B. Tests establish the declared approximation, not all manufacturer behavior.",
       "omissions": [
         "manufacturer tolerances",
         "supply current",
         "input protection",
         "temperature effects",
         "input common-mode violations",
-        "gain-bandwidth",
-        "slew rate",
         "output current limit",
         "phase reversal",
-        "no manufacturer model qualification"
+        "no manufacturer model qualification",
+        "bandwidth/slew spread over process, supply and temperature",
+        "asymmetric slew and higher poles",
+        "overload recovery and capacitive-load stability qualification"
       ],
       "validation": [
         "tests/*.json"
@@ -171,7 +190,7 @@
   },
   "id": "emblink/lm358p",
   "name": "LM358P",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "part": {
     "manufacturer": "Texas Instruments",
     "mpn": "LM358P",
@@ -191,9 +210,9 @@
         "title": "Texas Instruments SLOS068AB manufacturer datasheet",
         "url": "https://www.ti.com/lit/ds/symlink/lm358.pdf",
         "rev": "October 2024",
-        "date": "2026-10-16",
+        "date": "2026-10-27",
         "hash": "sha256:8277dff7b89138c63b3582d37f378065a1dea3cae5ed1e2926ddc2779eb7e3a2",
-        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. PDIP-8: OUT1=1, IN1-=2, IN1+=3, V-=4, IN2+=5, IN2-=6, OUT2=7, V+=8. Select legacy LM358, not LM358B electrical tables. Package/source review only; electrical model is not manufacturer-qualified."
+        "notes": "Retrieved and reviewed 2026-10-16. PDF pages 3. PDIP-8: OUT1=1, IN1-=2, IN1+=3, V-=4, IN2+=5, IN2-=6, OUT2=7, V+=8. Select legacy LM358, not LM358B electrical tables. Package/source review only; electrical model is not manufacturer-qualified. Revalidated identical SHA-256 2026-10-27. Physical PDF p.10, section 5.7: at VS=5 V, TA=25 C, legacy LM358 typical GBW=0.7 MHz, SR=0.3 V/us (G=+1). Nominal dynamics use these two anchors; finite-gain/resistance/headroom circuits are analytic equivalent checks, not manufacturer corner qualification."
       },
       {
         "title": "KiCad family/package reference, revision 4e17d759",
