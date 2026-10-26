@@ -2,6 +2,10 @@
 
 Research date: 2026-10-18. Related work: [issue #40](https://github.com/EmbLinkOs/EmbSIM/issues/40).
 
+Follow-up: the [Proteus schematic survey](proteus-schematic-survey.md), dated
+2026-10-26, examines capture, on-sheet interaction, instruments and debugging
+in more detail against current vendor pages and an explicit EmbSIM branch.
+
 **Conclusion:** EmbSIM should combine a precise schematic, a buildable physical
 bench and live instruments around the same circuit. Better materials alone will
 not close the gap with established tools: connector accuracy, reliable editing,
