@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "loaded-50",
+  "description": "50 \u03a9 generator, open-circuit 2 V. Vload = 2 Rload/(50 + Rload).",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/function_generator",
+        "params": {
+          "dc": 2
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 50
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUTPUT": [
+        "DUT.+",
+        "R.1"
+      ],
+      "GND": [
+        "DUT.-",
+        "R.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.voltage": {
+      "at": "0.5ms",
+      "min": 0.99999,
+      "max": 1.00001
+    },
+    "device:DUT.value": {
+      "at": "0.5ms",
+      "min": 1.99999,
+      "max": 2.00001
+    },
+    "device:DUT.i": {
+      "at": "0.5ms",
+      "min": -0.0200001,
+      "max": -0.0199999
+    }
+  }
+}

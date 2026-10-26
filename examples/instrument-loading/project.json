@@ -1,0 +1,919 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "instrument-loading",
+  "description": "Four analytic before/after comparisons: voltmeter input resistance, ammeter burden, 50 Ω generator termination and scope input capacitance. Generic configurable equivalents; no commercial instrument accuracy or protection qualification.",
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V10",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 10
+      },
+      "layout": {
+        "x": 50,
+        "y": 80
+      }
+    },
+    {
+      "id": "R_VM",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1meg"
+      },
+      "layout": {
+        "x": 180,
+        "y": 70
+      }
+    },
+    {
+      "id": "VM",
+      "component": "emblink/voltmeter",
+      "layout": {
+        "x": 310,
+        "y": 50
+      }
+    },
+    {
+      "id": "R_REF",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1meg"
+      },
+      "layout": {
+        "x": 180,
+        "y": 180
+      }
+    },
+    {
+      "id": "V5",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 5
+      },
+      "layout": {
+        "x": 570,
+        "y": 80
+      }
+    },
+    {
+      "id": "AM",
+      "component": "emblink/ammeter",
+      "params": {
+        "shunt_resistance": 10
+      },
+      "layout": {
+        "x": 690,
+        "y": 50
+      }
+    },
+    {
+      "id": "LOAD",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 100
+      },
+      "layout": {
+        "x": 850,
+        "y": 70
+      }
+    },
+    {
+      "id": "REF_LOAD",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 100
+      },
+      "layout": {
+        "x": 690,
+        "y": 180
+      }
+    },
+    {
+      "id": "GEN",
+      "component": "emblink/function_generator",
+      "params": {
+        "dc": 2
+      },
+      "layout": {
+        "x": 50,
+        "y": 360
+      }
+    },
+    {
+      "id": "MATCH",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 50
+      },
+      "layout": {
+        "x": 200,
+        "y": 350
+      }
+    },
+    {
+      "id": "GEN_REF",
+      "component": "emblink/function_generator",
+      "params": {
+        "dc": 2
+      },
+      "layout": {
+        "x": 50,
+        "y": 460
+      }
+    },
+    {
+      "id": "HIGH_Z",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1G"
+      },
+      "layout": {
+        "x": 200,
+        "y": 450
+      }
+    },
+    {
+      "id": "STEP",
+      "component": "emblink/vsource",
+      "params": {
+        "kind": "pulse",
+        "v1": 0,
+        "v2": 10,
+        "td": "1u",
+        "tr": "1n",
+        "tf": "1n",
+        "pw": "1m",
+        "per": "2m"
+      },
+      "layout": {
+        "x": 570,
+        "y": 350
+      }
+    },
+    {
+      "id": "RS",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1meg"
+      },
+      "layout": {
+        "x": 690,
+        "y": 340
+      }
+    },
+    {
+      "id": "SCOPE",
+      "component": "emblink/scope_input",
+      "params": {
+        "input_capacitance": "20p"
+      },
+      "layout": {
+        "x": 820,
+        "y": 320
+      }
+    },
+    {
+      "id": "RS_REF",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "1meg"
+      },
+      "layout": {
+        "x": 690,
+        "y": 450
+      }
+    },
+    {
+      "id": "RESISTIVE",
+      "component": "emblink/scope_input",
+      "params": {
+        "input_capacitance": 0
+      },
+      "layout": {
+        "x": 820,
+        "y": 430
+      }
+    },
+    {
+      "id": "GROUND",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 480,
+        "y": 560
+      }
+    }
+  ],
+  "nets": {
+    "SUPPLY_10V": [
+      "V10.+",
+      "R_VM.1",
+      "R_REF.1"
+    ],
+    "METER_LOADED": [
+      "R_VM.2",
+      "VM.+"
+    ],
+    "UNLOADED_REFERENCE": [
+      "R_REF.2"
+    ],
+    "SUPPLY_5V": [
+      "V5.+",
+      "AM.+",
+      "REF_LOAD.1"
+    ],
+    "AMMETER_LOAD": [
+      "AM.-",
+      "LOAD.1"
+    ],
+    "MATCHED_50": [
+      "GEN.+",
+      "MATCH.1"
+    ],
+    "HIGH_Z_OUTPUT": [
+      "GEN_REF.+",
+      "HIGH_Z.1"
+    ],
+    "STEP_SOURCE": [
+      "STEP.+",
+      "RS.1",
+      "RS_REF.1"
+    ],
+    "CAPACITIVE_INPUT": [
+      "RS.2",
+      "SCOPE.+"
+    ],
+    "RESISTIVE_INPUT": [
+      "RS_REF.2",
+      "RESISTIVE.+"
+    ],
+    "GND": [
+      "V10.-",
+      "VM.-",
+      "V5.-",
+      "LOAD.2",
+      "REF_LOAD.2",
+      "GEN.-",
+      "MATCH.2",
+      "GEN_REF.-",
+      "HIGH_Z.2",
+      "STEP.-",
+      "SCOPE.-",
+      "RESISTIVE.-",
+      "GROUND.GND"
+    ]
+  },
+  "probes": [
+    {
+      "id": "meter-voltage",
+      "target": "device:VM.voltage",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "meter-current",
+      "target": "device:VM.current",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "unloaded-node",
+      "target": "net:UNLOADED_REFERENCE",
+      "kind": "analog",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "ammeter-current",
+      "target": "device:AM.current",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "burden-voltage",
+      "target": "device:AM.voltage",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "no-ammeter-current",
+      "target": "device:REF_LOAD.i",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "generator-loaded",
+      "target": "device:GEN.voltage",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "generator-open",
+      "target": "device:GEN.value",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "generator-current",
+      "target": "device:GEN.i",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "generator-high-z",
+      "target": "device:GEN_REF.voltage",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "scope-step",
+      "target": "device:SCOPE.voltage",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "resistive-step",
+      "target": "device:RESISTIVE.voltage",
+      "kind": "value",
+      "rate_hz": 1000000
+    }
+  ],
+  "scenarios": [
+    "scenario.json"
+  ],
+  "layout": {
+    "sheet": {
+      "width": 1200,
+      "height": 800
+    },
+    "groups": [
+      {
+        "id": "voltage",
+        "name": "Voltmeter loading · 10 V / 1 MΩ",
+        "members": [
+          "V10",
+          "R_VM",
+          "VM",
+          "R_REF"
+        ]
+      },
+      {
+        "id": "current",
+        "name": "Ammeter burden · 5 V / 100 Ω",
+        "members": [
+          "V5",
+          "AM",
+          "LOAD",
+          "REF_LOAD"
+        ]
+      },
+      {
+        "id": "generator",
+        "name": "Generator · matched vs high impedance",
+        "members": [
+          "GEN",
+          "MATCH",
+          "GEN_REF",
+          "HIGH_Z"
+        ]
+      },
+      {
+        "id": "scope",
+        "name": "Scope loading · resistive vs R ∥ C",
+        "members": [
+          "STEP",
+          "RS",
+          "SCOPE",
+          "RS_REF",
+          "RESISTIVE"
+        ]
+      }
+    ],
+    "wires": [
+      {
+        "net": "AMMETER_LOAD",
+        "points": [
+          [
+            790,
+            80
+          ],
+          [
+            850,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "CAPACITIVE_INPUT",
+        "points": [
+          [
+            750,
+            350
+          ],
+          [
+            820,
+            350
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            80,
+            120
+          ],
+          [
+            80,
+            140
+          ],
+          [
+            130,
+            140
+          ],
+          [
+            130,
+            420
+          ],
+          [
+            80,
+            420
+          ],
+          [
+            80,
+            400
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            80,
+            400
+          ],
+          [
+            80,
+            420
+          ],
+          [
+            130,
+            420
+          ],
+          [
+            130,
+            520
+          ],
+          [
+            80,
+            520
+          ],
+          [
+            80,
+            500
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            80,
+            400
+          ],
+          [
+            80,
+            420
+          ],
+          [
+            280,
+            420
+          ],
+          [
+            280,
+            360
+          ],
+          [
+            260,
+            360
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            260,
+            360
+          ],
+          [
+            280,
+            360
+          ],
+          [
+            280,
+            460
+          ],
+          [
+            260,
+            460
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            260,
+            460
+          ],
+          [
+            490,
+            460
+          ],
+          [
+            490,
+            560
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            490,
+            560
+          ],
+          [
+            490,
+            540
+          ],
+          [
+            600,
+            540
+          ],
+          [
+            600,
+            390
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            600,
+            390
+          ],
+          [
+            600,
+            410
+          ],
+          [
+            650,
+            410
+          ],
+          [
+            650,
+            140
+          ],
+          [
+            600,
+            140
+          ],
+          [
+            600,
+            120
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            600,
+            120
+          ],
+          [
+            600,
+            140
+          ],
+          [
+            770,
+            140
+          ],
+          [
+            770,
+            190
+          ],
+          [
+            750,
+            190
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            600,
+            120
+          ],
+          [
+            600,
+            140
+          ],
+          [
+            430,
+            140
+          ],
+          [
+            430,
+            80
+          ],
+          [
+            410,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            750,
+            190
+          ],
+          [
+            930,
+            190
+          ],
+          [
+            930,
+            80
+          ],
+          [
+            910,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            910,
+            80
+          ],
+          [
+            930,
+            80
+          ],
+          [
+            930,
+            350
+          ],
+          [
+            920,
+            350
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            920,
+            350
+          ],
+          [
+            940,
+            350
+          ],
+          [
+            940,
+            460
+          ],
+          [
+            920,
+            460
+          ]
+        ]
+      },
+      {
+        "net": "HIGH_Z_OUTPUT",
+        "points": [
+          [
+            80,
+            460
+          ],
+          [
+            80,
+            440
+          ],
+          [
+            180,
+            440
+          ],
+          [
+            180,
+            460
+          ],
+          [
+            200,
+            460
+          ]
+        ]
+      },
+      {
+        "net": "MATCHED_50",
+        "points": [
+          [
+            80,
+            360
+          ],
+          [
+            80,
+            340
+          ],
+          [
+            180,
+            340
+          ],
+          [
+            180,
+            360
+          ],
+          [
+            200,
+            360
+          ]
+        ]
+      },
+      {
+        "net": "METER_LOADED",
+        "points": [
+          [
+            240,
+            80
+          ],
+          [
+            310,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "RESISTIVE_INPUT",
+        "points": [
+          [
+            750,
+            460
+          ],
+          [
+            820,
+            460
+          ]
+        ]
+      },
+      {
+        "net": "STEP_SOURCE",
+        "points": [
+          [
+            600,
+            350
+          ],
+          [
+            600,
+            330
+          ],
+          [
+            670,
+            330
+          ],
+          [
+            670,
+            350
+          ],
+          [
+            690,
+            350
+          ]
+        ]
+      },
+      {
+        "net": "STEP_SOURCE",
+        "points": [
+          [
+            690,
+            350
+          ],
+          [
+            670,
+            350
+          ],
+          [
+            670,
+            460
+          ],
+          [
+            690,
+            460
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY_10V",
+        "points": [
+          [
+            80,
+            80
+          ],
+          [
+            80,
+            60
+          ],
+          [
+            160,
+            60
+          ],
+          [
+            160,
+            80
+          ],
+          [
+            180,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY_10V",
+        "points": [
+          [
+            180,
+            80
+          ],
+          [
+            160,
+            80
+          ],
+          [
+            160,
+            190
+          ],
+          [
+            180,
+            190
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY_5V",
+        "points": [
+          [
+            600,
+            80
+          ],
+          [
+            600,
+            60
+          ],
+          [
+            670,
+            60
+          ],
+          [
+            670,
+            80
+          ],
+          [
+            690,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY_5V",
+        "points": [
+          [
+            690,
+            80
+          ],
+          [
+            670,
+            80
+          ],
+          [
+            670,
+            190
+          ],
+          [
+            690,
+            190
+          ]
+        ]
+      }
+    ]
+  }
+}

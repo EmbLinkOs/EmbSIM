@@ -23,6 +23,14 @@ export type RecordKind = 'digital' | 'analog';
 export const DIGITAL_Z = 2;
 export const DIGITAL_X = 3;
 
+export interface WindowMeasurements {
+  mean: number;
+  rms: number;
+  dutyCycle: number;
+  /** Fraction of the requested duration covered by finite, known data. */
+  coverage: number;
+}
+
 export class WaveformRecord {
   readonly id: string;
   readonly kind: RecordKind;
@@ -33,6 +41,7 @@ export class WaveformRecord {
   /** Oldest samples are dropped past this many. */
   readonly capacity: number;
   private version = 0;
+  private capturedThrough: Time | null = null;
 
   constructor(id: string, kind: RecordKind, label = id, unit = kind === 'analog' ? 'V' : '', capacity = 4_000_000) {
     this.id = id;
@@ -61,9 +70,15 @@ export class WaveformRecord {
     return s.first + s.period * BigInt(Math.max(0, s.values.length - 1));
   }
 
+  /** Producer-proven capture frontier, including constant-signal watermarks. */
+  get captureEnd(): Time | null {
+    return this.capturedThrough ?? this.end;
+  }
+
   clear(): void {
     this.segments = [];
     this.total = 0;
+    this.capturedThrough = null;
     this.version++;
   }
 
@@ -97,6 +112,11 @@ export class WaveformRecord {
    * a new one, so a step waveform costs one segment per edge.
    */
   appendFrame(frame: WaveformSamples): void {
+    if (frame.restart) this.clear();
+    if (frame.through_time_ps !== undefined) {
+      this.capturedThrough = BigInt(frame.through_time_ps);
+      this.version++;
+    }
     if (frame.encoding === 'json' || frame.samples) {
       const pairs = frame.samples ?? [];
       let i = 0;
@@ -106,8 +126,8 @@ export class WaveformRecord {
         let j = i + 1;
         if (j < pairs.length) {
           period = BigInt(pairs[j]![0]) - t0;
-          if (period <= 0n) period = 1n;
-          while (j + 1 < pairs.length && BigInt(pairs[j + 1]![0]) - BigInt(pairs[j]![0]) === period) j++;
+          if (period <= 0n) { period = 1n; j = i; }
+          while (j > i && j + 1 < pairs.length && BigInt(pairs[j + 1]![0]) - BigInt(pairs[j]![0]) === period) j++;
           if (j === i + 1 && j + 1 < pairs.length) j = i + 1; // a run of two still packs
         }
         const run = pairs.slice(i, j === i ? i + 1 : j + 1);
@@ -168,7 +188,10 @@ export class WaveformRecord {
 
   /** Iterates samples in [from, to] in time order. */
   *samples(from: Time, to: Time): IterableIterator<{ t: Time; v: number }> {
-    const start = Math.max(0, this.segmentIndex(from));
+    let start = Math.max(0, this.segmentIndex(from));
+    // Preserve ordered same-time transitions at the left endpoint. valueAt
+    // still selects the final value, as sample-and-hold integration requires.
+    while (start > 0 && this.segments[start]!.first === from && this.segments[start - 1]!.first === from) start--;
     for (let k = start; k < this.segments.length; k++) {
       const s = this.segments[k]!;
       const segEnd = s.first + s.period * BigInt(s.values.length - 1);
@@ -225,7 +248,7 @@ export class WaveformRecord {
     return { min, max, first, last, count };
   }
 
-  /** Min, max and mean over [from, to]. */
+  /** Sample extrema and arithmetic sample mean; use measurements for time averages. */
   stats(from: Time, to: Time): { min: number; max: number; mean: number; count: number } {
     let min = Infinity;
     let max = -Infinity;
@@ -239,6 +262,54 @@ export class WaveformRecord {
       count++;
     }
     return count ? { min, max, mean: sum / count, count } : { min: NaN, max: NaN, mean: NaN, count: 0 };
+  }
+
+  /** Time-weighted sample-and-hold integration over [from, to). `through`
+   * is the capture's known simulation frontier; never extrapolate beyond it.
+   * A gap invalidates the interval from the preceding sample to its next frame. */
+  measurements(from: Time, to: Time, through: Time = this.capturedThrough ?? this.end ?? from): WindowMeasurements {
+    const empty = { mean: NaN, rms: NaN, dutyCycle: NaN, coverage: 0 };
+    if (to <= from) return empty;
+    // The engine clock may arrive before this probe's final data chunk.
+    // Never call that missing tail a held value or complete capture.
+    if (this.capturedThrough !== null && through > this.capturedThrough) through = this.capturedThrough;
+    let covered = 0n;
+    let mean = 0;
+    let rms = 0;
+    let previous: { t: Time; v: number } | null = null;
+    const integrate = (end: Time, gap = false) => {
+      if (!previous || gap || !Number.isFinite(previous.v) || (this.kind === 'digital' && previous.v !== 0 && previous.v !== 1)) return;
+      const left = previous.t > from ? previous.t : from;
+      const right = end < to ? (end < through ? end : through) : (to < through ? to : through);
+      if (right <= left) return;
+      const duration = right - left;
+      const weight = Number(duration) / Number(to - from);
+      covered += duration;
+      mean += previous.v * weight;
+      rms = Math.hypot(rms, previous.v * Math.sqrt(weight));
+    };
+    const firstSegment = Math.max(0, this.segmentIndex(from));
+    for (let k = firstSegment; k < this.segments.length; k++) {
+      const segment = this.segments[k]!;
+      const begin = k === firstSegment && from > segment.first
+        ? Math.min(segment.values.length - 1, Number((from - segment.first) / segment.period)) : 0;
+      for (let i = begin; i < segment.values.length; i++) {
+        const t = segment.first + segment.period * BigInt(i);
+        integrate(t, i === 0 && segment.gapBefore);
+        if (t >= to) {
+          const coverage = Number(covered) / Number(to - from);
+          return covered === to - from && Number.isFinite(mean) && Number.isFinite(rms)
+            ? { mean, rms, dutyCycle: this.kind === 'digital' ? mean : NaN, coverage }
+            : { ...empty, coverage };
+        }
+        previous = { t, v: segment.values[i]! };
+      }
+    }
+    integrate(to);
+    const coverage = Number(covered) / Number(to - from);
+    return covered === to - from && Number.isFinite(mean) && Number.isFinite(rms)
+      ? { mean, rms, dutyCycle: this.kind === 'digital' ? mean : NaN, coverage }
+      : { ...empty, coverage };
   }
 
   /**

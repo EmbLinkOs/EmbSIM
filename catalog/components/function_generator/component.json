@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/function_generator",
+  "version": "0.1.0",
+  "name": "Function generator (50 \u03a9 output)",
+  "category": "instruments",
+  "description": "DC, sine, pulse or PWL generator with finite series output resistance. Waveform values specify the open-circuit voltage; a matched 50 \u03a9 load receives half the voltage.",
+  "keywords": [
+    "instrument",
+    "function generator",
+    "50 ohm",
+    "source",
+    "impedance",
+    "sine",
+    "pulse",
+    "pwl"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive terminal"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative terminal"
+    }
+  ],
+  "params": {
+    "kind": {
+      "type": "enum",
+      "enum": [
+        "dc",
+        "pulse",
+        "sine",
+        "pwl"
+      ],
+      "default": "dc",
+      "doc": "Waveform"
+    },
+    "dc": {
+      "type": "number",
+      "unit": "V",
+      "default": 5,
+      "doc": "DC value (kind dc) or offset"
+    },
+    "v1": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "pulse: initial value"
+    },
+    "v2": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "doc": "pulse: pulsed value"
+    },
+    "td": {
+      "type": "number",
+      "unit": "s",
+      "default": 0,
+      "min": 0,
+      "doc": "pulse/sine: delay before the first edge"
+    },
+    "tr": {
+      "type": "number",
+      "unit": "s",
+      "default": "10n",
+      "min": 0,
+      "doc": "pulse: rise time"
+    },
+    "tf": {
+      "type": "number",
+      "unit": "s",
+      "default": "10n",
+      "min": 0,
+      "doc": "pulse: fall time"
+    },
+    "pw": {
+      "type": "number",
+      "unit": "s",
+      "default": "500u",
+      "min": 0,
+      "doc": "pulse: pulse width"
+    },
+    "per": {
+      "type": "number",
+      "unit": "s",
+      "default": "1m",
+      "min": "1p",
+      "doc": "pulse: period"
+    },
+    "vo": {
+      "type": "number",
+      "unit": "V",
+      "default": 0,
+      "doc": "sine: offset"
+    },
+    "va": {
+      "type": "number",
+      "unit": "V",
+      "default": 1,
+      "doc": "sine: amplitude"
+    },
+    "freq": {
+      "type": "number",
+      "unit": "Hz",
+      "default": "1k",
+      "min": 0,
+      "doc": "sine: frequency"
+    },
+    "phase": {
+      "type": "number",
+      "unit": "deg",
+      "default": 0,
+      "doc": "sine: phase",
+      "advanced": true
+    },
+    "points": {
+      "type": "table",
+      "default": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "doc": "pwl: [time_s, value] breakpoints"
+    },
+    "output_resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 50,
+      "min": 1e-06,
+      "max": 1000000000.0,
+      "doc": "Series output resistance; 50 \u03a9 by default. Values are open-circuit amplitudes, not amplitudes calibrated into 50 \u03a9."
+    }
+  },
+  "outputs": [
+    {
+      "name": "value",
+      "type": "number",
+      "unit": "V",
+      "doc": "Open-circuit waveform value."
+    },
+    {
+      "name": "voltage",
+      "type": "number",
+      "unit": "V",
+      "doc": "Loaded voltage across the output terminals."
+    },
+    {
+      "name": "i",
+      "type": "number",
+      "unit": "A",
+      "doc": "Current entering +; negative when delivering current to the load."
+    }
+  ],
+  "model": {
+    "primitive": "vsource",
+    "bind": {
+      "rout": "output_resistance"
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "+": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "-": {
+        "x": 30,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Thevenin source: Vterminal = Vopen + Ientering \u00d7 Rout, with dc/pulse/sine/pwl breakpoints. Open-circuit amplitude convention.",
+      "omissions": [
+        "Manufacturer-specific calibration and accuracy",
+        "Current limiting, clipping, bandwidth and protection",
+        "Noise and distortion",
+        "Chassis/earth coupling; return terminal must be wired explicitly"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Tektronix: ABCs of Probes Primer",
+        "url": "https://www.tek.com/en/documents/whitepaper/abcs-probes-primer",
+        "date": "2026-10-26",
+        "notes": "Input loading and equivalent-circuit background. All instrument defaults are representative and configurable; no manufacturer-specific qualification is claimed. The generator uses an explicitly defined Thevenin model."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

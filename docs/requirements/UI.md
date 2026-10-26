@@ -169,3 +169,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-25
 **Verification.** Wire graph/atomic failure/strip fixtures, browser appearance/undo/invalid endpoint workflows and native retained-clock/measurement/import validation tests; RGB switch acceptance scenario.
 **Trace.** SPEC-007 Project; SPEC-011 Scene rendering; ADR-027; ADR-030; docs/engineering/circuit-construction.md
+
+
+### UI-024  Wired instruments and observed electrical feedback
+**Statement.** Wired instrument cards shall display configured impedances, lead nets and engine readings with locate/trace actions. Schematic net selection shall highlight all named-net terminals and reveal horizontal pin names with observed logic states. Live warnings shall distinguish high impedance, unknown inputs and confirmed opposing known digital drives; no analog voltage alone shall imply floating.
+**Rationale.** The diagram and measurement tools must expose electrical loading and current connection problems.
+**Status.** Accepted 2026-10-26
+**Verification.** Native electrical feedback protocol checks, scene feedback tests, wired-instrument action tests and browser schematic selection checks; native loading bench captures.
+**Trace.** SPEC-008 Net observation; SPEC-011 Scene rendering; docs/engineering/instrument-loading.md

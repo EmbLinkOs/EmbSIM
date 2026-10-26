@@ -757,8 +757,7 @@ es_status esk_island_add_device(esk_island *isl, esk_comp *c, const esk_adev_ops
         return ES_ENOMEM;
     d->comp = c;
     for (k = 0; k < npins; k++) {
-        int indicator = !strcmp(ops->name, "led") || !strcmp(ops->name, "rgb_led");
-        if (indicator && (!pins[k] || !pins[k]->net)) {
+        if (esk_adev_preserves_open_pins(ops) && (!pins[k] || !pins[k]->net)) {
             /* A detached lead is a private floating node, never a ground
              * connection. gmin regularizes it; it is not a project net. */
             int node = esk_island_add_net(isl, NULL, 0);

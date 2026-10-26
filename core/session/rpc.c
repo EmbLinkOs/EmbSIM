@@ -613,7 +613,9 @@ static es_status m_waveform_subscribe(rpc_ctx *r)
         }
         if (p && p->kind != ESK_PROBE_SERIAL) {
             p->subscribed = 1;
-            p->next_sample = 0;
+            p->stream_next = 0;
+            p->stream_through = 0;
+            p->stream_restart = 1;
             esk_json_array_push(r->s->a, streams, esk_json_new_integer(r->s->a, (int64_t)p->id));
         }
     }

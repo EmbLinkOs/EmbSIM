@@ -70,7 +70,7 @@ export const useInstruments = create<InstrumentsState>((set, get) => ({
     for (const p of probes) {
       const id = p.probe as string;
       if (!records.has(id)) {
-        const unit = p.target.startsWith('device:') && p.target.endsWith('.ic') ? 'A' : p.kind === 'analog' ? 'V' : '';
+        const unit = p.unit ?? (p.target.startsWith('device:') && p.target.endsWith('.ic') ? 'A' : p.kind === 'analog' ? 'V' : '');
         records.set(id, new WaveformRecord(id, p.kind === 'digital' ? 'digital' : 'analog', id, unit));
       }
     }

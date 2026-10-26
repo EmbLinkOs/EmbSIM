@@ -32,12 +32,20 @@ typedef struct esk_probe {
     int subscribed;     /* waveform stream active */
     int threshold;      /* a digital probe on an analog net: logic from the voltage, changes only */
     uint32_t stream_seq;
-    es_time_t next_sample;
+    uint64_t stream_next; /* absolute next sample ordinal, including evicted samples */
+    es_time_t stream_through;
+    int stream_restart;
     esk_event_handle sample_event;
     size_t serial_sent; /* a serial probe: the bytes of its text already sent as serial.data */
     uint32_t mem_addr;  /* a memory probe (reg:, mem:, var:): the bytes it reads on its */
     uint32_t mem_len;   /* board's MCU (p->comp), little-endian; 0 for other probes */
 } esk_probe;
+
+/* Time-weighted sample-and-hold mean/RMS/digital duty over [from,to).
+ * Fails on missing retained history, unknown intervals or a future endpoint. */
+int esk_probe_window(const esk_probe *p, const char *measure, es_time_t from,
+                     es_time_t to, es_time_t through, double *out, char *why, size_t cap);
+const char *esk_probe_unit(const esk_probe *p);
 
 /* a memory probe's bytes (esk_probe.mem_len), up to `cap`: the number read */
 size_t esk_session_probe_bytes(esk_probe *p, unsigned char *buf, size_t cap);

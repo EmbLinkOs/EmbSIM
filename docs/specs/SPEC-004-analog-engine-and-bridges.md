@@ -269,3 +269,18 @@ node; zero resistance uses the terminal node directly. LED/RGB unconnected pins
 retain their identities and become floating private nodes, rather than ground.
 Named static fits and qualification boundaries are described in
 [indicator evidence](../engineering/indicator-qualification.md).
+
+
+## Wired instrument equivalents
+
+`instrument_input` is a two-terminal analog primitive, pin order `+`, `-`, with
+finite `r > 0` and optional `c >= 0` in parallel. It reports signed `voltage`
+and total `current` entering +. It shares capacitor integration, accepted/rejected
+history, reset and LTE handling. Catalog bindings provide voltmeter input
+resistance, ammeter insertion resistance and oscilloscope input R/C.
+
+The voltage source primitive accepts optional finite `rout >= 0` (default zero)
+in its MNA branch equation. `value` remains open-circuit waveform voltage;
+`voltage` is the loaded terminal voltage. The generic function generator binds
+`output_resistance` with default 50 Ω. No implicit load calibration, protection
+or bandwidth model is added. See [instrument loading](../engineering/instrument-loading.md).
