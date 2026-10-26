@@ -8,6 +8,13 @@ test or review that establishes it; STATUS.md records whether it passed.
 
 ---
 
+### VER-006  Time-weighted waveform acceptance
+**Statement.** Windowed mean/RMS and digital duty assertions shall integrate recorded sample-and-hold intervals over a completed, nonempty window, requiring retained coverage and known finite values. The workbench shall expose the same measurements and capture coverage.
+**Rationale.** Counting samples or averaging GUI frames cannot qualify a PWM-driven electrical load.
+**Status.** Accepted 2026-10-26
+**Verification.** `test_waveform_measure`, `tests/protocol/test_waveform_measurements.py`, browser waveform tests and the firmware RGB example's source-derived acceptance circuit.
+**Trace.** SPEC-007 §2, [PWM evidence](../engineering/indicator-pwm.md)
+
 ### VER-001  Recording of all external inputs
 **Statement.** Every EXTERNAL event shall be recorded with time, sequence, target, input and value, with the identities of the project, images, catalog and engine.
 **Rationale.** ADR-012.

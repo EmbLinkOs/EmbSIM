@@ -74,4 +74,62 @@ describe('waveform record', () => {
     d.appendFrame({ stream: 's1', seq: 0, first_time_ps: '0', encoding: 'u8', data: bytesToBase64(Uint8Array.from([1, 0, 2])), period_ps: '1' });
     expect(d.valueAt(2n)).toBe(2);
   });
+
+  it('integrates uneven PWM edges and clipped endpoints by time', () => {
+    const r = new WaveformRecord('pwm', 'digital');
+    r.appendFrame({ stream: 1, seq: 0, encoding: 'json', samples: [['0', 1], ['250', 0], ['1000', 1], ['1250', 0], ['2000', 1]] });
+    expect(r.measurements(0n, 2000n).mean).toBe(.25);
+    expect(r.measurements(0n, 2000n).rms).toBeCloseTo(.5);
+    expect(r.measurements(0n, 2000n).dutyCycle).toBe(.25);
+    expect(r.measurements(0n, 2000n).coverage).toBe(1);
+    expect(r.measurements(125n, 1125n).dutyCycle).toBeCloseTo(.25);
+    expect(r.measurements(500n, 900n).dutyCycle).toBe(0);
+    expect(r.measurements(0n, 250n).dutyCycle).toBe(1);
+  });
+
+  it('measures average and RMS current without interpreting analog values as duty', () => {
+    const r = new WaveformRecord('current', 'analog', 'red current', 'A');
+    r.append(0n, 250n, Float64Array.from([.02, 0, 0, 0, .02]));
+    const m = r.measurements(0n, 1000n);
+    expect(m.mean).toBeCloseTo(.005);
+    expect(m.rms).toBeCloseTo(.01);
+    expect(Number.isNaN(m.dutyCycle)).toBe(true);
+  });
+
+  it('reports incomplete coverage for gaps, evicted anchors and future windows', () => {
+    const r = new WaveformRecord('pwm', 'digital', 'pwm', '', 4);
+    r.append(0n, 10n, Uint8Array.from([1, 0]));
+    r.append(100n, 10n, Uint8Array.from([1, 0]), true);
+    expect(Number.isNaN(r.measurements(0n, 110n).mean)).toBe(true);
+    expect(r.measurements(0n, 110n).coverage).toBeCloseTo(20 / 110);
+    expect(r.measurements(100n, 110n).dutyCycle).toBe(1);
+    expect(Number.isNaN(r.measurements(100n, 120n).mean)).toBe(true);
+    expect(r.measurements(100n, 120n, 120n).coverage).toBe(1);
+    r.append(120n, 10n, Uint8Array.from([0, 1]));
+    expect(Number.isNaN(r.measurements(0n, 130n).mean)).toBe(true);
+  });
+
+  it('rejects X/Z and nonfinite intervals but excludes zero-duration and right-edge changes', () => {
+    const r = new WaveformRecord('pwm', 'digital');
+    const base = 10_000_000_000_000_000n;
+    r.appendFrame({ stream: 1, seq: 0, encoding: 'json', samples: [[String(base), 3], [String(base), 1], [String(base + 250n), 0], [String(base + 1000n), 2]] });
+    expect(r.measurements(base, base + 1000n).dutyCycle).toBeCloseTo(.25);
+    expect(Number.isNaN(r.measurements(base, base + 1100n, base + 1100n).mean)).toBe(true);
+    const a = new WaveformRecord('nan', 'analog');
+    a.append(0n, 10n, Float64Array.from([1, NaN, 1]));
+    expect(Number.isNaN(a.measurements(0n, 20n).rms)).toBe(true);
+  });
+
+  it('does not extrapolate a partial stream to the engine clock, and advances constant captures with empty watermarks', () => {
+    const r = new WaveformRecord('current', 'analog');
+    r.appendFrame({ stream: 1, seq: 0, encoding: 'json', restart: true, through_time_ps: '10', samples: [['0', 1], ['10', 0]] });
+    expect(r.measurements(0n, 20n, 20n).coverage).toBe(.5);
+    expect(Number.isNaN(r.measurements(0n, 20n, 20n).mean)).toBe(true);
+    r.appendFrame({ stream: 1, seq: 1, encoding: 'json', through_time_ps: '20', samples: [] });
+    expect(r.measurements(0n, 20n).mean).toBe(.5);
+    r.appendFrame({ stream: 1, seq: 2, encoding: 'json', restart: true, through_time_ps: '5', samples: [['0', 2], ['5', 2]] });
+    expect(r.length).toBe(2);
+    expect(r.measurements(0n, 5n, 5n).mean).toBe(2);
+    expect(Number.isNaN(r.measurements(0n, 20n, 20n).mean)).toBe(true);
+  });
 });

@@ -74,4 +74,18 @@ describe('scenario editor', () => {
     });
     expect(screen.getByText('No probes')).toBeTruthy();
   });
+
+  it('shows measured windows and blocks nonnumeric measurement bounds', async () => {
+    useProject.setState({ project: bare });
+    useSession.setState({ capabilities: ['scenario', 'scenario.edit'], running: false });
+    useVerify.getState().openDraft(null, { ...emptyScenario(), assertions: [
+      { id: 'mean', between: ['1ms', '5ms'], probe: 'current', measure: 'mean', expect: { min: 0, max: .01 } },
+    ] });
+    render(<TooltipProvider><ToastProvider><ScenarioEditor /></ToastProvider></TooltipProvider>);
+    expect(screen.getByRole('combobox', { name: 'Assertion 1 measurement' }).textContent).toContain('Time mean');
+    expect((screen.getByRole('button', { name: 'Run' }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.change(screen.getByLabelText('Assertion 1 expectation'), { target: { value: '{"logic":"1"}' } });
+    expect(screen.getByRole('alert').textContent).toContain('measurements require numeric');
+    expect((screen.getByRole('button', { name: 'Run' }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });

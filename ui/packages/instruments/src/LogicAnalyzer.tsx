@@ -55,11 +55,12 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
     if (!current) return null;
     const pf = current.record.periodAndFrequency(win.start, end);
     const edges = current.record.risingEdges(win.start, end).length;
+    const weighted = current.record.measurements(win.start, end, now ?? current.record.end ?? win.start);
     const la = cursors.a !== null ? current.record.valueAt(cursors.a) : NaN;
     const lb = cursors.b !== null ? current.record.valueAt(cursors.b) : NaN;
-    return { pf, edges, la, lb };
+    return { pf, edges, weighted, la, lb };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current, win.start, end, cursors.a, cursors.b, revision]);
+  }, [current, win.start, end, cursors.a, cursors.b, revision, now]);
 
   // decoded frames in the window, per decoded channel
   const annotations = useMemo(() => {
@@ -270,6 +271,8 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
         {measurements && current && (
           <dl className="es-instrument__measurements">
             <Measure label="edges" value={String(measurements.edges)} />
+            <Measure label="duty" value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />
+            <Measure label="coverage" value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />
             <Measure label="period" value={measurements.pf.period !== null ? formatTime(measurements.pf.period, { padZeros: false }) : '—'} />
             <Measure label="freq" value={measurements.pf.frequencyHz !== null ? formatFrequency(measurements.pf.frequencyHz) : '—'} />
             {cursors.a !== null && <Measure label="A" value={`${formatTime(cursors.a, { padZeros: false })} · ${level(measurements.la)}`} />}

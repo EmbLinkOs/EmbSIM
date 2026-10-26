@@ -5,6 +5,40 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Firmware-driven RGB and waveform measurements (2026-10-26)
+
+Branch `feat/indicator-pwm-evidence` extends the named indicators with an
+ESP32-C3-DevKitM-1 circuit booted from a normal flash image through the ROM.
+Firmware programs LEDC and polls a physical MODE button; 39 assertions check
+1 kHz at 25/50/75% duty, off/full-on/return transitions, mean/RMS currents and
+finite GPIO voltage drop against independent source-derived bounds. Scalar MCU
+resistance/slew settings now initialize base GPIO models; the example uses the
+declared 20 Ω driver instead of the generic 25 Ω fallback. This linear driver
+is representative and does not qualify MCU drive-strength or process corners.
+
+CLI and workbench share time-weighted sample-and-hold mean/RMS/digital duty
+semantics, rejecting missing coverage and unknown/nonfinite intervals. Reports
+retain measurement/window identity and units. The scenario editor exposes these
+checks; scope/logic strips show RMS, duty and coverage. Native probe metadata
+preserves declared units/sample rates, and the scope separates voltage/current
+groups on its single vertical axis. Same-time waveform events retain their
+original timestamps.
+
+Local verification passes all 48 native CTest targets, 249 UI unit tests and all
+30 browser workflows. The CLI measurement contract checks 22 valid/invalid
+assertions. Repeating the firmware circuit at doubled capture rates passes its
+39 assertions and agrees within 1 nA for measured mean/RMS currents and 0.001 of
+duty fraction. These are numerical circuit checks, not real-device accuracy.
+Native streaming checks also cover bounded 30,001-sample delivery, eviction of
+unsent versus already delivered history, constant-signal watermarks and restart.
+The workbench does not extrapolate a partial delivered chunk to the engine clock.
+The selected advance interval is shared by the toolbar, F7 and command palette.
+[PWM evidence and limits](engineering/indicator-pwm.md) and the
+[rebuildable example](../examples/esp32c3-qualified-rgb/README.md) explain the
+source bounds, sampling, raw-image analysis limits and unsupported effects.
+Thermal/charge/optical behavior and physical instrument loading remain open;
+the 3D emitter still shows instantaneous observations and can alias PWM.
+
 ## First named indicator evidence batch (2026-10-26)
 
 Branch `feat/qualified-indicators` builds on the circuit-construction milestone.

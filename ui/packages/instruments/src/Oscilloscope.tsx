@@ -54,21 +54,25 @@ function fmt(v: number, unit: string): string {
 
 export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onCursorsChange, now, selected, onSelect, revision = 0, label = 'Oscilloscope', className }: OscilloscopeProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const visibleTraces = traces.filter((t) => t.visible !== false);
-  const current = traces.find((t) => t.record.id === selected) ?? visibleTraces[0] ?? null;
+  const enabledTraces = traces.filter((t) => t.visible !== false);
+  const current = enabledTraces.find((t) => t.record.id === selected) ?? enabledTraces[0] ?? null;
+  // One vertical axis has one unit. Selecting a voltage/current trace switches
+  // the visible group instead of plotting volts on an axis labelled amperes.
+  const visibleTraces = enabledTraces.filter((t) => t.record.unit === current?.record.unit);
   const end = win.start + win.span;
 
   const measurements = useMemo(() => {
     if (!current) return null;
     const r = current.record;
     const stats = r.stats(win.start, end);
+    const weighted = r.measurements(win.start, end, now ?? r.end ?? win.start);
     const pf = r.periodAndFrequency(win.start, end);
     const ca = cursors.a !== null ? r.valueAt(cursors.a) : NaN;
     const cb = cursors.b !== null ? r.valueAt(cursors.b) : NaN;
-    return { stats, pf, ca, cb };
+    return { stats, weighted, pf, ca, cb };
     // revision drives recomputation as samples arrive
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current, win.start, end, cursors.a, cursors.b, revision]);
+  }, [current, win.start, end, cursors.a, cursors.b, revision, now]);
 
   const { ref, size, redraw } = useCanvas((ctx, { width, height }) => {
     const el = wrapRef.current;
@@ -222,7 +226,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
   const handlers = useTimeInteraction(wrapRef, { window: win, onWindowChange, cursors, onCursorsChange, plotLeft: PLOT_LEFT, width: size.width });
 
   const summary = measurements
-    ? `${current?.record.label ?? ''}: min ${fmt(measurements.stats.min, current?.record.unit ?? '')}, max ${fmt(measurements.stats.max, current?.record.unit ?? '')}, mean ${fmt(measurements.stats.mean, current?.record.unit ?? '')}${
+    ? `${current?.record.label ?? ''}: min ${fmt(measurements.stats.min, current?.record.unit ?? '')}, max ${fmt(measurements.stats.max, current?.record.unit ?? '')}, mean ${fmt(measurements.weighted.mean, current?.record.unit ?? '')}, RMS ${fmt(measurements.weighted.rms, current?.record.unit ?? '')}${
         measurements.pf.frequencyHz ? `, ${formatFrequency(measurements.pf.frequencyHz)}` : ''
       }`
     : 'no trace';
@@ -260,7 +264,10 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
           <dl className="es-instrument__measurements">
             <Measure label="min" value={fmt(measurements.stats.min, current.record.unit)} />
             <Measure label="max" value={fmt(measurements.stats.max, current.record.unit)} />
-            <Measure label="mean" value={fmt(measurements.stats.mean, current.record.unit)} />
+            <Measure label="mean" value={fmt(measurements.weighted.mean, current.record.unit)} />
+            <Measure label="RMS" value={fmt(measurements.weighted.rms, current.record.unit)} />
+            {current.record.kind === 'digital' && <Measure label="duty" value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />}
+            <Measure label="coverage" value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />
             <Measure label="period" value={measurements.pf.period !== null ? formatTime(measurements.pf.period, { padZeros: false }) : '—'} />
             <Measure label="freq" value={measurements.pf.frequencyHz !== null ? formatFrequency(measurements.pf.frequencyHz) : '—'} />
             {cursors.a !== null && <Measure label="A" value={`${formatTime(cursors.a, { padZeros: false })} · ${fmt(measurements.ca, current.record.unit)}`} />}

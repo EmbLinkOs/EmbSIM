@@ -1,0 +1,321 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "esp32c3-qualified-rgb",
+  "description": "ROM-booted ESP32-C3 LEDC firmware driving the named RGB LED at 1 kHz through finite GPIO drivers and separate 100 ohm resistors. Mode button cycles mixed, off and full on. Static LED/DC and representative MCU driver model; no photometric or full transient qualification.",
+  "policy": "electrical",
+  "boards": [
+    {
+      "id": "B1",
+      "board": "emblink/esp32c3_devkitm1",
+      "layout": {
+        "x": 300,
+        "y": 140
+      },
+      "firmware": {
+        "image": "firmware/pwm.bin",
+        "format": "bin"
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "USB",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 5
+      },
+      "layout": {
+        "x": 100,
+        "y": 140
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 100,
+        "y": 400
+      }
+    },
+    {
+      "id": "D1",
+      "component": "emblink/wp154a4sureqbfzgc",
+      "layout": {
+        "x": 700,
+        "y": 240
+      }
+    },
+    {
+      "id": "MODE",
+      "component": "emblink/push_button",
+      "layout": {
+        "x": 160,
+        "y": 320
+      }
+    },
+    {
+      "id": "PULL",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10000
+      },
+      "layout": {
+        "x": 160,
+        "y": 240
+      }
+    },
+    {
+      "id": "RR",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 100
+      },
+      "layout": {
+        "x": 560,
+        "y": 180
+      }
+    },
+    {
+      "id": "RG",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 100
+      },
+      "layout": {
+        "x": 560,
+        "y": 260
+      }
+    },
+    {
+      "id": "RB",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 100
+      },
+      "layout": {
+        "x": 560,
+        "y": 340
+      }
+    }
+  ],
+  "nets": {
+    "USB5V": [
+      "USB.+",
+      "B1.VBUS"
+    ],
+    "GND": [
+      "USB.-",
+      "G.GND",
+      "B1.GND",
+      "D1.COM",
+      "MODE.2"
+    ],
+    "VDD": [
+      "B1.3V3",
+      "PULL.1"
+    ],
+    "BUTTON": [
+      "PULL.2",
+      "MODE.1",
+      "B1.IO0"
+    ],
+    "PWM_R": [
+      "B1.IO4",
+      "RR.1"
+    ],
+    "LED_R": [
+      "RR.2",
+      "D1.R"
+    ],
+    "PWM_G": [
+      "B1.IO5",
+      "RG.1"
+    ],
+    "LED_G": [
+      "RG.2",
+      "D1.G"
+    ],
+    "PWM_B": [
+      "B1.IO6",
+      "RB.1"
+    ],
+    "LED_B": [
+      "RB.2",
+      "D1.B"
+    ]
+  },
+  "probes": [
+    {
+      "id": "pwm_R",
+      "target": "net:PWM_R",
+      "kind": "digital",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "current_R",
+      "target": "output:D1.red_current",
+      "kind": "value",
+      "rate_hz": 200000
+    },
+    {
+      "id": "gpio_R",
+      "target": "net:PWM_R",
+      "kind": "analog",
+      "rate_hz": 200000
+    },
+    {
+      "id": "pwm_G",
+      "target": "net:PWM_G",
+      "kind": "digital",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "current_G",
+      "target": "output:D1.green_current",
+      "kind": "value",
+      "rate_hz": 200000
+    },
+    {
+      "id": "gpio_G",
+      "target": "net:PWM_G",
+      "kind": "analog",
+      "rate_hz": 200000
+    },
+    {
+      "id": "pwm_B",
+      "target": "net:PWM_B",
+      "kind": "digital",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "current_B",
+      "target": "output:D1.blue_current",
+      "kind": "value",
+      "rate_hz": 200000
+    },
+    {
+      "id": "gpio_B",
+      "target": "net:PWM_B",
+      "kind": "analog",
+      "rate_hz": 200000
+    }
+  ],
+  "layout": {
+    "bench": {
+      "parts": {
+        "B1": {
+          "x": -35,
+          "y": 0
+        },
+        "USB": {
+          "x": -100,
+          "y": -30
+        },
+        "D1": {
+          "x": 45,
+          "y": 25
+        },
+        "G": {
+          "x": -10,
+          "y": -20
+        },
+        "MODE": {
+          "x": -60,
+          "y": 45
+        },
+        "PULL": {
+          "x": -60,
+          "y": 30
+        },
+        "RR": {
+          "x": 10,
+          "y": 10
+        },
+        "RG": {
+          "x": 10,
+          "y": 25
+        },
+        "RB": {
+          "x": 10,
+          "y": 40
+        }
+      },
+      "wires": [
+        {
+          "from": "USB.+",
+          "to": "B1.VBUS",
+          "color": "#ef4444"
+        },
+        {
+          "from": "USB.-",
+          "to": "G.GND",
+          "color": "#334155"
+        },
+        {
+          "from": "USB.-",
+          "to": "B1.GND",
+          "color": "#334155"
+        },
+        {
+          "from": "USB.-",
+          "to": "D1.COM",
+          "color": "#334155"
+        },
+        {
+          "from": "USB.-",
+          "to": "MODE.2",
+          "color": "#334155"
+        },
+        {
+          "from": "B1.3V3",
+          "to": "PULL.1",
+          "color": "#8b5fc6"
+        },
+        {
+          "from": "PULL.2",
+          "to": "MODE.1",
+          "color": "#8b5fc6"
+        },
+        {
+          "from": "PULL.2",
+          "to": "B1.IO0",
+          "color": "#8b5fc6"
+        },
+        {
+          "from": "B1.IO4",
+          "to": "RR.1",
+          "color": "#e59b32"
+        },
+        {
+          "from": "RR.2",
+          "to": "D1.R",
+          "color": "#e59b32"
+        },
+        {
+          "from": "B1.IO5",
+          "to": "RG.1",
+          "color": "#258e64"
+        },
+        {
+          "from": "RG.2",
+          "to": "D1.G",
+          "color": "#258e64"
+        },
+        {
+          "from": "B1.IO6",
+          "to": "RB.1",
+          "color": "#3483c5"
+        },
+        {
+          "from": "RB.2",
+          "to": "D1.B",
+          "color": "#3483c5"
+        }
+      ]
+    }
+  },
+  "scenarios": [
+    "scenarios/pwm.json"
+  ]
+}

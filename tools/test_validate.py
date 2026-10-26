@@ -552,6 +552,22 @@ class ProjectTests(Base):
         path = self.write_project(scenario=s)
         self.assertCode(self.check(path.parent / "scenarios" / "press.json"), "schema.type")
 
+    def test_waveform_measurement_contract(self):
+        s = copy.deepcopy(SCENARIO)
+        a = s["assertions"][0]
+        a.pop("at", None)
+        a.pop("by", None)
+        a.update(between=["1ms", "2ms"], measure="mean", expect={"min": 0, "max": 1})
+        path = self.write_project(scenario=s).parent / "scenarios" / "press.json"
+        self.assertClean(self.check(path))
+        for change in ({"between": ["1ms", "1ms"]}, {"measure": "median"},
+                       {"expect": {"equals": True}}, {"expect": {"edges": 2}},
+                       {"expect": [1]}, {"expect": [{"min": 0}]}, {"expect": 1}):
+            invalid = copy.deepcopy(s)
+            invalid["assertions"][0].update(change)
+            path.write_text(json.dumps(invalid))
+            self.assertCode(self.check(path), "schema.type")
+
     def test_missing_scenario_file(self):
         self.assertCode(self.check(self.write_project(scenario=None)), "catalog.file_missing")
 

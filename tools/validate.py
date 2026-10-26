@@ -20,6 +20,7 @@ found, 2 on a usage error.
 from __future__ import annotations
 
 import argparse
+import math
 import fnmatch
 import glob
 import json
@@ -1722,7 +1723,18 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
                 report.warning(file, node + "/between", "scenario.after_until", "window ends after until")
         if "probe" in a and ctx is not None and a["probe"] not in ctx.probes:
             report.error(file, node + "/probe", "catalog.not_found", f"probe {a['probe']} is not declared by the project")
-        exp = a.get("expect") or {}
+        raw_exp = a.get("expect")
+        exp = raw_exp if isinstance(raw_exp, dict) else {}
+        if "measure" in a:
+            if a["measure"] not in ("mean", "rms", "duty_cycle") or "between" not in a:
+                report.error(file, node + "/measure", "schema.type", "measure requires mean/rms/duty_cycle and a between window")
+            if not exp or set(exp) - {"min", "max", "equals", "tolerance"} or not set(exp) & {"min", "max", "equals"} or any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) for v in exp.values()):
+                report.error(file, node + "/expect", "schema.type", "measure requires numeric min/max/equals expectations")
+            window = a.get("between", [])
+            if len(window) == 2 and parse_time_ps(window[0]) == parse_time_ps(window[1]):
+                report.error(file, node + "/between", "schema.type", "measurement window must have positive duration")
+            if ctx is not None and a["measure"] == "duty_cycle" and ctx.probes.get(a.get("probe"), {}).get("kind") != "digital":
+                report.error(file, node + "/measure", "schema.type", "duty cycle requires a digital probe")
         if "tolerance" in exp and "frequency_hz" not in exp and not isinstance(exp.get("equals"), (int, float)):
             report.warning(file, node + "/expect", "schema.type", "tolerance without frequency_hz or a number to equal")
         if "min" in exp and "max" in exp and exp["min"] > exp["max"]:

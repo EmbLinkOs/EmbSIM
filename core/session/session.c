@@ -273,6 +273,34 @@ es_status es_session_load_file(es_session *s, const char *path)
 
 /* ---- probes ------------------------------------------------------------------- */
 
+const char *esk_probe_unit(const esk_probe *p)
+{
+    size_t i;
+    const esk_json *outputs;
+    if (!p) return "";
+    if (p->kind == ESK_PROBE_DIGITAL || p->kind == ESK_PROBE_SERIAL)
+        return "";
+    if (p->net)
+        return "V";
+    outputs = p->comp ? esk_json_get(p->comp->desc, "outputs") : NULL;
+    for (i = 0; p->quantity && i < esk_json_len(outputs); i++) {
+        const esk_json *output = esk_json_at(outputs, i);
+        if (esk_str_eq(esk_json_get_str(output, "name", ""), p->quantity))
+            return esk_json_get_str(output, "unit", "");
+    }
+    /* Native electrical quantities; arbitrary custom outputs need a declared
+     * unit and are never classified by a suffix or a user-chosen probe name. */
+    if (p->comp && p->comp->adev && p->quantity) {
+        if (!strcmp(p->quantity, "i") || !strcmp(p->quantity, "ic") ||
+            !strcmp(p->quantity, "ib") || !strcmp(p->quantity, "ie")) return "A";
+        if (!strcmp(p->quantity, "p")) return "W";
+        if (!strcmp(p->quantity, "v") || !strcmp(p->quantity, "vbe") ||
+            !strcmp(p->quantity, "vce") || !strcmp(p->quantity, "vds") ||
+            !strcmp(p->quantity, "vgs")) return "V";
+    }
+    return "";
+}
+
 static void probe_push(es_session *s, esk_probe *p, es_time_t t, double v)
 {
     size_t idx;
@@ -387,6 +415,9 @@ static void probe_start(es_session *s, esk_probe *p)
     p->len = p->head = 0;
     p->has_last = 0;
     p->dropped = 0;
+    p->stream_next = 0;
+    p->stream_through = 0;
+    p->stream_restart = 1;
     p->sample_event = 0;
     probe_push(s, p, s->eng.sched.now, probe_value(s, p));
     if (p->period_ps)
@@ -991,6 +1022,8 @@ esk_json *esk_session_snapshot(es_session *s, const esk_json *include)
             esk_json_set_string(s->a, o, "id", p->name);
             esk_json_set_string(s->a, o, "target", p->target);
             esk_json_set_string(s->a, o, "kind", p->kind == ESK_PROBE_DIGITAL ? "digital" : p->kind == ESK_PROBE_ANALOG ? "analog" : p->kind == ESK_PROBE_VALUE ? "value" : "serial");
+            esk_json_set_string(s->a, o, "unit", esk_probe_unit(p));
+            esk_json_set_number(s->a, o, "rate_hz", p->period_ps ? 1e12 / (double)p->period_ps : 0);
             esk_json_set_integer(s->a, o, "samples", (int64_t)p->len);
             if (p->has_last)
                 esk_json_set_number(s->a, o, "last", p->last);
@@ -1109,29 +1142,60 @@ void esk_session_emit_observations(es_session *s, int force)
     }
     for (i = 0; i < s->probes.len; i++) {
         esk_probe *p = s->probes.data[i];
-        esk_json *params, *samples;
-        es_time_t from;
+        uint64_t total;
         if (!p->subscribed || !p->len)
             continue;
-        from = p->next_sample;
-        samples = esk_session_probe_samples(s, p, from, ES_TIME_MAX, 20000);
-        if (!samples || !esk_json_len(samples)) {
-            esk_json_free(s->a, samples);
-            continue;
-        }
-        params = esk_json_new_object(s->a);
-        if (!params) {
-            esk_json_free(s->a, samples);
-            continue;
-        }
-        esk_json_set_integer(s->a, params, "stream", (int64_t)p->id);
-        esk_json_set_string(s->a, params, "probe", p->name);
-        esk_json_set_integer(s->a, params, "seq", (int64_t)p->stream_seq++);
-        esk_json_set_string(s->a, params, "encoding", "json");
-        esk_json_set_string(s->a, params, "kind", p->kind == ESK_PROBE_DIGITAL ? "digital" : p->kind == ESK_PROBE_ANALOG ? "analog" : "value");
-        esk_json_object_set(s->a, params, "samples", samples);
-        p->next_sample = p->ring[(p->head + p->len - 1) % p->cap].time_ps + 1;
-        esk_session_notify(s, "waveform.samples", params);
+        total = p->dropped + (uint64_t)p->len;
+        /* Ordinals, rather than timestamp+1, preserve same-time transitions
+         * across packet boundaries. Flush every retained sample in bounded
+         * chunks; a GUI update is not permission to skip the unsent tail. */
+        do {
+            uint64_t begin = p->stream_next < p->dropped ? p->dropped : p->stream_next;
+            size_t offset = (size_t)(begin - p->dropped), n, count = p->len - offset;
+            esk_json *params, *samples;
+            es_time_t through;
+            int gap = p->stream_next < p->dropped;
+            if (count > 20000) count = 20000;
+            if (!count && !p->stream_restart && p->stream_through == s->eng.sched.now)
+                break;
+            samples = esk_json_new_array(s->a);
+            params = esk_json_new_object(s->a);
+            if (!samples || !params) {
+                esk_json_free(s->a, samples);
+                esk_json_free(s->a, params);
+                break;
+            }
+            for (n = 0; n < count; n++) {
+                const es_sample_t *sample = &p->ring[(p->head + offset + n) % p->cap];
+                esk_json *pair = esk_json_new_array(s->a);
+                char time[32];
+                if (!pair) break;
+                esk_snprintf(time, sizeof time, "%llu", (unsigned long long)sample->time_ps);
+                esk_json_array_push(s->a, pair, esk_json_new_string(s->a, time));
+                esk_json_array_push(s->a, pair, esk_json_new_number(s->a, sample->value));
+                esk_json_array_push(s->a, samples, pair);
+            }
+            if (n != count) {
+                esk_json_free(s->a, samples);
+                esk_json_free(s->a, params);
+                break;
+            }
+            p->stream_next = begin + (uint64_t)count;
+            through = p->stream_next == total ? s->eng.sched.now :
+                      p->ring[(p->head + offset + count - 1) % p->cap].time_ps;
+            esk_json_set_integer(s->a, params, "stream", (int64_t)p->id);
+            esk_json_set_string(s->a, params, "probe", p->name);
+            esk_json_set_integer(s->a, params, "seq", (int64_t)p->stream_seq++);
+            esk_json_set_string(s->a, params, "encoding", "json");
+            esk_json_set_string(s->a, params, "kind", p->kind == ESK_PROBE_DIGITAL ? "digital" : p->kind == ESK_PROBE_ANALOG ? "analog" : "value");
+            esk_json_set_u64_string(s->a, params, "through_time_ps", through);
+            if (gap) esk_json_set_bool(s->a, params, "gap", 1);
+            if (p->stream_restart) esk_json_set_bool(s->a, params, "restart", 1);
+            esk_json_object_set(s->a, params, "samples", samples);
+            p->stream_restart = 0;
+            p->stream_through = through;
+            esk_session_notify(s, "waveform.samples", params);
+        } while (p->stream_next < total);
     }
     for (i = 0; i < s->probes.len; i++)
         if (s->probes.data[i]->kind == ESK_PROBE_SERIAL)
@@ -1274,7 +1338,9 @@ es_status esk_session_do_reset(es_session *s)
     if (s->recording)
         esk_record_start(s); /* a reset starts the recording's observations again */
     for (i = 0; i < s->probes.len; i++) {
-        s->probes.data[i]->next_sample = 0;
+        s->probes.data[i]->stream_next = 0;
+        s->probes.data[i]->stream_through = 0;
+        s->probes.data[i]->stream_restart = 1;
         s->probes.data[i]->stream_seq = 0;
         s->probes.data[i]->serial_sent = 0;
         if (s->probes.data[i]->cap)

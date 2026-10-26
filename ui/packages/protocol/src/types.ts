@@ -240,6 +240,7 @@ export interface InputDescription {
 export interface OutputDescription {
   name: string;
   type: 'boolean' | 'number' | 'bitmap' | 'string' | 'pattern';
+  unit?: string;
   doc?: string;
 }
 
@@ -523,6 +524,7 @@ export interface ProbeInfo {
   id?: string;
   target: string;
   kind: ProbeKind;
+  unit?: string;
   rate_hz?: number;
   stream?: string;
   decode?: { protocol: string; params?: Record<string, unknown> };
@@ -532,6 +534,10 @@ export interface WaveformSamples {
   stream: string | number;
   seq: number;
   encoding: SampleEncoding | 'json';
+  /** Producer's completed capture frontier; partial chunks stop at their last sample. */
+  through_time_ps?: PsString;
+  /** A new subscription/reset replaces the preceding capture for this probe. */
+  restart?: boolean;
   /** Uniformly sampled frames: start time and base64 payload. */
   first_time_ps?: PsString;
   data?: string;
@@ -713,7 +719,7 @@ export interface Report {
   policy: Policy;
   until_ps?: PsString;
   ended: { reason: string; now_ps: PsString };
-  assertions: { id: string; ok: boolean; observed: unknown; expected: unknown; at_ps: PsString }[];
+  assertions: { id: string; ok: boolean; observed: unknown; expected: unknown; at_ps: PsString; measure?: 'mean' | 'rms' | 'duty_cycle'; unit?: string; window_ps?: { from: PsString; to: PsString } }[];
   diagnostics?: DiagnosticRecord[];
   statistics?: {
     events?: number;
@@ -745,6 +751,7 @@ export interface ScenarioAssertion {
   by?: string;
   always?: boolean;
   probe?: string;
+  measure?: 'mean' | 'rms' | 'duty_cycle';
   expect?: Record<string, unknown>;
   diagnostics?: { forbid: string[] };
 }

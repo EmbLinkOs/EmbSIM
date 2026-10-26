@@ -122,9 +122,17 @@ Notation: `method(params) -> result`. Params and results are objects.
 - `probe.add({target, kind, rate_hz?, decode?: {protocol, params}}) -> {probe, stream?}`
 - `probe.remove({probe}) -> {}`
 - `probe.list({}) -> {probes: [...]}`
+  Probe entries include `unit` from the declared output/native electrical
+  quantity and actual `rate_hz` (zero for an event-driven probe).
 - `probe.read({probe, from_ps?, to_ps?, max?}) -> {samples: [[time_ps, value], ...], gap?}`
 - `waveform.subscribe({probes: [...], max_rate_hz?}) -> {stream}`; samples arrive as `waveform.samples` notifications (`base64`) or binary frames; `waveform.unsubscribe({stream})`.
 - Sample encodings: digital `u8` (`0,1,2=Z,3=X`), analog `f32`, serial bytes, value `f64`; each frame is monotonic in time; a `gap` marker reports dropped frames.
+- Native JSON waveform frames carry `through_time_ps`, the producer's completed
+  capture frontier. Intermediate bounded chunks stop at their last sample;
+  the final chunk extends to the engine clock. Empty sample arrays may advance
+  a constant signal's frontier. `restart: true` replaces the previous capture
+  on subscription/reset. `gap: true` identifies evicted unsent history; normal
+  chunk boundaries and eviction of already delivered samples are not gaps.
 
 ### observe
 - `observe.snapshot({include?: ["nets", "components", "boards", "outputs", "probes"]}) -> {...}`: the full state at `now` for simple clients and the CLI.
@@ -225,7 +233,7 @@ stream are in order; different streams are independent.
 `scenario.run`, `record.replay` and `embsim run --json` produce one JSON
 report: `{engine, protocol, project: {name, hash}, images: [{board, path,
 hash}], policy, until_ps, ended: {reason, now_ps}, assertions: [{id, ok,
-observed, expected, at_ps}], diagnostics: [...], statistics: {events,
+observed, expected, at_ps, measure?, unit?, window_ps?: {from, to}}], diagnostics: [...], statistics: {events,
 instructions: {board: n}, analog_steps, wall_time_s}}`. With the analyses
 on, it has `coverage` (each board's totals and files' counts, as
 `analysis.coverage` without `detail`) and `profile` (each board's first ten
