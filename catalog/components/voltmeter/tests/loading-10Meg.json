@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "loading-10meg",
+  "description": "10 V through 1 M\u03a9: finite meter input creates a divider.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 10
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1meg"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/voltmeter",
+        "params": {
+          "input_resistance": "10meg"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SUPPLY": [
+        "V.+",
+        "R.1"
+      ],
+      "MEASURE": [
+        "R.2",
+        "DUT.+"
+      ],
+      "GND": [
+        "V.-",
+        "DUT.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.voltage": {
+      "at": "0.5ms",
+      "min": 9.090709090909092,
+      "max": 9.091109090909091
+    },
+    "device:DUT.current": {
+      "at": "0.5ms",
+      "min": 9.080909090909092e-07,
+      "max": 9.100909090909091e-07
+    }
+  }
+}

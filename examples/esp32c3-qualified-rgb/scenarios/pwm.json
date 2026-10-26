@@ -1,0 +1,545 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "firmware-rgb-pwm",
+  "description": "Registers programmed by firmware: 1 kHz, 25/50/75% duty, physical mode button selects off/full/mixed. Time-weighted electrical averages use captured samples, not GUI frames.",
+  "until": "330ms",
+  "inputs": [
+    {
+      "at": "270ms",
+      "target": "MODE",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "275ms",
+      "target": "MODE",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "290ms",
+      "target": "MODE",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "295ms",
+      "target": "MODE",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "310ms",
+      "target": "MODE",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "315ms",
+      "target": "MODE",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "mixed_duty_R",
+      "probe": "pwm_R",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "equals": 0.25,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "mixed_frequency_R",
+      "probe": "pwm_R",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "off_duty_R",
+      "probe": "pwm_R",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "equals": 0,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "full_duty_R",
+      "probe": "pwm_R",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "equals": 1,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "restored_duty_R",
+      "probe": "pwm_R",
+      "between": [
+        "320ms",
+        "328ms"
+      ],
+      "expect": {
+        "equals": 0.25,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "restored_frequency_R",
+      "probe": "pwm_R",
+      "between": [
+        "320ms",
+        "328ms"
+      ],
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "mixed_duty_G",
+      "probe": "pwm_G",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "equals": 0.5,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "mixed_frequency_G",
+      "probe": "pwm_G",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "off_duty_G",
+      "probe": "pwm_G",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "equals": 0,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "full_duty_G",
+      "probe": "pwm_G",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "equals": 1,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "restored_duty_G",
+      "probe": "pwm_G",
+      "between": [
+        "320ms",
+        "328ms"
+      ],
+      "expect": {
+        "equals": 0.5,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "restored_frequency_G",
+      "probe": "pwm_G",
+      "between": [
+        "320ms",
+        "328ms"
+      ],
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "mixed_duty_B",
+      "probe": "pwm_B",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "equals": 0.75,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "mixed_frequency_B",
+      "probe": "pwm_B",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "off_duty_B",
+      "probe": "pwm_B",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "equals": 0,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "full_duty_B",
+      "probe": "pwm_B",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "equals": 1,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "restored_duty_B",
+      "probe": "pwm_B",
+      "between": [
+        "320ms",
+        "328ms"
+      ],
+      "expect": {
+        "equals": 0.75,
+        "tolerance": 0.002
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "restored_frequency_B",
+      "probe": "pwm_B",
+      "between": [
+        "320ms",
+        "328ms"
+      ],
+      "expect": {
+        "frequency_hz": 1000,
+        "tolerance": 0.01
+      }
+    },
+    {
+      "id": "mixed_mean_R",
+      "probe": "current_R",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "min": 0.0027582105471864594,
+        "max": 0.003248686426118664
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "mixed_rms_R",
+      "probe": "current_R",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "min": 0.005516521094372918,
+        "max": 0.006497272852237329
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "off_mean_R",
+      "probe": "current_R",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "min": -1e-06,
+        "max": 1e-06
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "off_rms_R",
+      "probe": "current_R",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "min": 0,
+        "max": 1e-06
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "full_mean_R",
+      "probe": "current_R",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 0.011393556007144144,
+        "max": 0.01263403188607635
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "full_rms_R",
+      "probe": "current_R",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 0.011273418067678042,
+        "max": 0.012754169825542451
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "loaded_gpio_R",
+      "probe": "gpio_R",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 3.044724121067795,
+        "max": 3.0747241210677947
+      }
+    },
+    {
+      "id": "mixed_mean_B",
+      "probe": "current_B",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "min": 0.002858210917768597,
+        "max": 0.0036957976993299106
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "mixed_rms_B",
+      "probe": "current_B",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "min": 0.0032634591558994173,
+        "max": 0.004304458122806483
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "off_mean_B",
+      "probe": "current_B",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "min": -1e-06,
+        "max": 1e-06
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "off_rms_B",
+      "probe": "current_B",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "min": 0,
+        "max": 1e-06
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "full_mean_B",
+      "probe": "current_B",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 0.003825545687285015,
+        "max": 0.004913132468846329
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "full_rms_B",
+      "probe": "current_B",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 0.0037818522965043584,
+        "max": 0.004956825859626986
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "loaded_gpio_B",
+      "probe": "gpio_B",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 3.1976132184386863,
+        "max": 3.227613218438686
+      }
+    },
+    {
+      "id": "mixed_mean_G",
+      "probe": "current_G",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "min": 0.0018048122566001663,
+        "max": 0.002388886226257316
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "mixed_rms_G",
+      "probe": "current_G",
+      "between": [
+        "255ms",
+        "265ms"
+      ],
+      "expect": {
+        "min": 0.002527865275229839,
+        "max": 0.0034029199957306857
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "off_mean_G",
+      "probe": "current_G",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "min": -1e-06,
+        "max": 1e-06
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "off_rms_G",
+      "probe": "current_G",
+      "between": [
+        "280ms",
+        "288ms"
+      ],
+      "expect": {
+        "min": 0,
+        "max": 1e-06
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "full_mean_G",
+      "probe": "current_G",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 0.0036516614980289077,
+        "max": 0.004735735467686057
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "full_rms_G",
+      "probe": "current_G",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 0.003609724513200333,
+        "max": 0.004777672452514632
+      },
+      "measure": "rms"
+    },
+    {
+      "id": "loaded_gpio_G",
+      "probe": "gpio_G",
+      "between": [
+        "300ms",
+        "308ms"
+      ],
+      "expect": {
+        "min": 3.2011260303428504,
+        "max": 3.23112603034285
+      }
+    }
+  ]
+}

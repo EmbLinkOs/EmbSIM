@@ -6,6 +6,7 @@
  * nets merged through board ports and functional wires, probes, settings. */
 #include "project/loader.h"
 #include "ext/lua_model.h"
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include "host/host.h"
@@ -55,12 +56,17 @@ static int rec_get(graph *g, const char *name, int project_level);
 /* an MCU description's io.electrical: its supply sets the GPIO pins' high
  * level and pulls (a 3.0 V nRF52840 on its DK); the logic family's levels
  * and thresholds stay, since the datasheets' VOH and VOL are worst cases
- * at full load */
+ * at full load. Scalar resistance/slew describe every GPIO setting; arrays
+ * remain the runtime's per-speed overrides. */
 static void mcu_electrical(const esk_json *el, esk_pin_model *m)
 {
     double v;
     if (el && esk_json_get(el, "vdd") && esk_json_to_double(esk_json_get(el, "vdd"), &v) == 0 && v > 0)
         m->nominal_v = v;
+    if (esk_json_to_double(esk_json_get(el, "rout"), &v) == 0 && isfinite(v) && v > 0)
+        m->rout = v;
+    if (esk_json_to_double(esk_json_get(el, "slew_v_per_us"), &v) == 0 && isfinite(v) && v > 0)
+        m->slew_v_per_us = v;
 }
 
 static void mcu_signal_model(const char *sig, const char *family, esk_pin_model *m)

@@ -258,6 +258,114 @@ static void test_rc_charge(void)
     esk_engine_free(&e);
 }
 
+/* These targets come from closed-form circuit equations, not the model's
+ * observations. Refine the RC solve independently of catalog fixture bounds. */
+static void test_loaded_instruments_dc(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V", "{\"dc\": 10}", "vin", "gnd");
+    add_dev2(&e, "resistor", "R", "{\"r\": \"1meg\"}", "vin", "out");
+    add_dev2(&e, "instrument_input", "M", "{\"r\": \"10meg\"}", "out", "gnd");
+    engine_run(&e);
+    CHECK_NEAR(obs_num(&e, "M", "voltage"), 100.0 / 11.0, 2e-4);
+    CHECK_NEAR(obs_num(&e, "M", "current"), 1.0 / 1.1e6, 1e-10);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V", "{\"dc\": 5}", "vin", "gnd");
+    add_dev2(&e, "instrument_input", "A", "{\"r\": 10}", "vin", "out");
+    add_dev2(&e, "resistor", "R", "{\"r\": 100}", "out", "gnd");
+    engine_run(&e);
+    CHECK_NEAR(obs_num(&e, "A", "current"), 5.0 / 110.0, 1e-8);
+    CHECK_NEAR(obs_num(&e, "A", "voltage"), 5.0 / 11.0, 1e-6);
+    CHECK_NEAR(v_of(&e, "out"), 50.0 / 11.0, 1e-6);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+static void test_instrument_open_leads(void)
+{
+    int lead;
+    for (lead = 0; lead < 2; lead++) {
+        esk_engine e;
+        engine_open(&e);
+        add_power(&e, "G", "gnd", 0.0);
+        add_dev2(&e, "vsource", "V", "{\"dc\": 5}", "vin", "gnd");
+        add_dev2(&e, "resistor", "R", "{\"r\": \"1meg\"}", "vin", "out");
+        add_dev2(&e, "instrument_input", "M", "{\"r\": \"10meg\", \"c\": \"15p\"}", lead ? NULL : "out", lead ? "out" : NULL);
+        engine_run(&e);
+        CHECK(esk_engine_advance(&e, ES_PS_PER_US) == ES_OK);
+        CHECK_NEAR(v_of(&e, "out"), 5.0, 2e-5);
+        CHECK(fabs(obs_num(&e, "M", "current")) < 1e-9);
+        CHECK_EQ(diag_errors, 0);
+        esk_engine_free(&e);
+
+        engine_open(&e);
+        add_power(&e, "G", "gnd", 0.0);
+        add_dev2(&e, "vsource", "GEN", "{\"dc\": 2, \"rout\": 50}", lead ? NULL : "out", lead ? "out" : NULL);
+        add_dev2(&e, "resistor", "R", "{\"r\": 50}", "out", "gnd");
+        engine_run(&e);
+        CHECK_NEAR(v_of(&e, "out"), 0.0, 1e-8);
+        CHECK(fabs(obs_num(&e, "GEN", "i")) < 1e-9);
+        CHECK_EQ(diag_errors, 0);
+        esk_engine_free(&e);
+    }
+}
+
+static void test_generator_output_impedance(void)
+{
+    esk_engine e;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V", "{\"dc\": 2, \"rout\": 50}", "out", "gnd");
+    add_dev2(&e, "resistor", "R", "{\"r\": 50}", "out", "gnd");
+    engine_run(&e);
+    CHECK_NEAR(v_of(&e, "out"), 1.0, 1e-7);
+    CHECK_NEAR(obs_num(&e, "V", "value"), 2.0, 1e-9);
+    CHECK_NEAR(obs_num(&e, "V", "voltage"), 1.0, 1e-7);
+    CHECK_NEAR(obs_num(&e, "V", "i"), -0.02, 1e-9);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+static void test_scope_input_refinement(void)
+{
+    double values[2], expected, tau = 1e-5, tr = 1e-9;
+    int pass;
+    expected = 5.0 * (1.0 - tau / tr * (-expm1(-tr / tau)) * exp(-(11e-6 - 1.001e-6) / tau));
+    for (pass = 0; pass < 2; pass++) {
+        esk_engine e;
+        esk_island *isl;
+        double charge_current, voltage;
+        engine_open(&e);
+        add_power(&e, "G", "gnd", 0.0);
+        add_dev2(&e, "vsource", "V", "{\"kind\": \"pulse\", \"v1\": 0, \"v2\": 10, \"td\": \"1u\", \"tr\": \"1n\", \"pw\": \"1m\", \"per\": \"2m\"}", "vin", "gnd");
+        add_dev2(&e, "resistor", "R", "{\"r\": \"1meg\"}", "vin", "out");
+        add_dev2(&e, "instrument_input", "S", "{\"r\": \"1meg\", \"c\": \"20p\"}", "out", "gnd");
+        engine_run(&e);
+        isl = esk_engine_net(&e, "out")->island;
+        if (pass) {
+            isl->p.lte_tol = 1e-6;
+            isl->p.h_max_ps = 100000; /* 100 ns, tau / 100 */
+        }
+        CHECK(esk_engine_advance(&e, 11000000) == ES_OK);
+        values[pass] = voltage = obs_num(&e, "S", "voltage");
+        /* KCL includes the capacitor's charging current, not only V/R. */
+        charge_current = (10.0 - voltage) / 1e6;
+        CHECK_NEAR(obs_num(&e, "S", "current"), charge_current, 2e-10);
+        CHECK_NEAR(values[pass], expected, pass ? 2e-4 : .015);
+        CHECK(esk_engine_reset(&e) == ES_OK);
+        CHECK_NEAR(obs_num(&e, "S", "voltage"), 0.0, 1e-9);
+        CHECK_EQ(diag_errors, 0);
+        esk_engine_free(&e);
+    }
+    CHECK(fabs(values[1] - expected) < fabs(values[0] - expected));
+}
+
 static void test_rc_with_ic(void)
 {
     esk_engine e;
@@ -807,6 +915,32 @@ static void test_thevenin_bridge(void)
 
 /* a TTL totem pole's open high level is below its supply: voh and vol are
  * its sources; a description's voc_high and voc_low override a family's */
+static void test_mixed_driver_contention(void)
+{
+    esk_engine e;
+    esk_comp *high, *low;
+    esk_net *net;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    high = add_driver(&e, "HIGH", "bus");
+    low = add_driver(&e, "LOW", "bus");
+    add_dev2(&e, "instrument_input", "S", "{\"r\": \"1meg\"}", "bus", "gnd");
+    engine_run(&e);
+    net = esk_engine_net(&e, "bus");
+    CHECK(!esk_net_has_contention(net));
+    esk_pin_drive(&high->pins[0], ESK_L1, ESK_STR_STRONG, 0);
+    esk_pin_drive(&low->pins[0], ESK_L0, ESK_STR_STRONG, 0);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_US) == ES_OK);
+    CHECK(esk_net_has_contention(net));
+    CHECK_NEAR(v_of(&e, "bus"), 1.65, 1e-3); /* finite 25 Ω outputs, not X voltage */
+    esk_pin_release(&low->pins[0]);
+    CHECK(esk_engine_advance(&e, 2 * ES_PS_PER_US) == ES_OK);
+    CHECK(!esk_net_has_contention(net));
+    CHECK(v_of(&e, "bus") > 3.29);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
 static void test_driver_levels(void)
 {
     esk_engine e;
@@ -1537,6 +1671,10 @@ RUN(test_supply_pin_divider);
 RUN(test_implicit_ground);
 RUN(test_observe_json);
 RUN(test_rc_charge);
+RUN(test_loaded_instruments_dc);
+RUN(test_generator_output_impedance);
+RUN(test_instrument_open_leads);
+RUN(test_scope_input_refinement);
 RUN(test_rc_with_ic);
 RUN(test_rl);
 RUN(test_rl_transient);
@@ -1557,6 +1695,7 @@ RUN(test_comparator_bridge);
 RUN(test_pull_up_input);
 RUN(test_thevenin_bridge);
 RUN(test_driver_levels);
+RUN(test_mixed_driver_contention);
 RUN(test_released_io_samples);
 RUN(test_opamp_inverting);
 RUN(test_regulator);

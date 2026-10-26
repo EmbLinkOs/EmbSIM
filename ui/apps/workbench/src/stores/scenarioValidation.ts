@@ -38,6 +38,11 @@ export function scenarioProblems(s: Scenario): string[] {
     ids.add(a.id);
     const modes = [a.at !== undefined, a.by !== undefined, a.between !== undefined, a.always !== undefined].filter(Boolean).length;
     if (modes !== 1) problems.push(`${label}: choose exactly one timing mode.`);
+    if (a.measure !== undefined) {
+      if (!['mean', 'rms', 'duty_cycle'].includes(a.measure) || !a.between) problems.push(`${label}: measurements require a between window.`);
+      const checks = Object.entries(a.expect ?? {});
+      if (!checks.some(([key]) => ['min', 'max', 'equals'].includes(key)) || checks.some(([key, value]) => !['min', 'max', 'equals', 'tolerance'].includes(key) || typeof value !== 'number' || !Number.isFinite(value))) problems.push(`${label}: measurements require numeric min/max/equals expectations.`);
+    }
     if (a.always !== undefined) {
       if (a.always !== true) problems.push(`${label}: always must be true.`);
       const codes = [...(a.diagnostics?.forbid ?? [])];
@@ -48,6 +53,7 @@ export function scenarioProblems(s: Scenario): string[] {
       const from = bounded(a.between[0], `${label} start`);
       const to = bounded(a.between[1], `${label} end`);
       if (from !== undefined && to !== undefined && from > to) problems.push(`${label}: start must not follow end.`);
+      if (a.measure && from !== undefined && from === to) problems.push(`${label}: measurement window must have positive duration.`);
     } else bounded(a.at ?? a.by, `${label} time`);
     if (!a.probe || !/^[A-Za-z_][A-Za-z0-9_-]*$/.test(a.probe)) problems.push(`${label}: enter a valid probe ID.`);
     const error = expectationProblem(a.expect);

@@ -2,6 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import { Meter } from '@embsim/instruments';
 import { useSession } from '../../stores/session';
+import { useProject } from '../../stores/project';
 
 /** The unit of an output from its name (SPEC-005 output conventions). */
 function outputUnit(key: string): string {
@@ -21,6 +22,14 @@ function depth(key: string): number {
 export function MetersPanel() {
   const outputs = useSession((s) => s.outputs);
   const nets = useSession((s) => s.nets);
+  const components = useProject((s) => s.project?.components);
+  const catalog = useProject((s) => s.catalog);
+  const declaredUnit = (key: string) => {
+    const split = key.lastIndexOf('.');
+    const instance = components?.find((c) => c.id === key.slice(0, split));
+    const output = instance && catalog[instance.component]?.description.outputs?.find((o) => o.name === key.slice(split + 1));
+    return output?.unit ?? outputUnit(key);
+  };
   const entries = Object.entries(outputs)
     // a text that grows (a terminal's, an EEPROM's dump) is no reading: the Serial tab and
     // the inspector show those; a short state word still is
@@ -33,7 +42,7 @@ export function MetersPanel() {
   return (
     <div className="es-meter-grid">
       {entries.map(([k, v]) => (
-        <Meter key={k} label={k} value={v} unit={outputUnit(k)} track={typeof v === 'number'} tone={typeof v === 'boolean' ? 'accent' : 'default'} />
+        <Meter key={k} label={k} value={v} unit={declaredUnit(k)} track={typeof v === 'number'} tone={typeof v === 'boolean' ? 'accent' : 'default'} />
       ))}
       {analog.map(([k, s]) => (
         <Meter key={`net:${k}`} label={`net ${k}`} value={s.voltage} unit="V" track />

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dc-loading",
+  "description": "At DC, 1 M\u03a9 scope input loads a 1 M\u03a9 source to half voltage.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 10
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1meg"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/scope_input"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SUPPLY": [
+        "V.+",
+        "R.1"
+      ],
+      "MEASURE": [
+        "R.2",
+        "DUT.+"
+      ],
+      "GND": [
+        "V.-",
+        "DUT.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.voltage": {
+      "at": "0.5ms",
+      "min": 4.9999,
+      "max": 5.0001
+    }
+  }
+}

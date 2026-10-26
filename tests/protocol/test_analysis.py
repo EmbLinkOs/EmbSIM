@@ -4,7 +4,7 @@
 """The firmware's coverage, profile, stacks and faults (SPEC-008 §5
 analysis, SPEC-009 §12):
 
-  - every example whose boards run firmware, its first scenario run with
+  - every example whose boards run ELF firmware, its first scenario run with
     --coverage, --profile and --stack as JSON, then again as lcov, collapsed
     stacks and text: each board covers some of its lines and functions; the
     profile's functions add up to its instructions and cycles; the lcov
@@ -46,7 +46,10 @@ def examples(only):
     for project in sorted((ROOT / "examples").glob("*/project.json")):
         doc = json.loads(project.read_text())
         scen = doc.get("scenarios") or []
-        if not scen or not any(b.get("firmware") for b in doc.get("boards") or []):
+        images = [project.parent / b["firmware"]["image"] for b in doc.get("boards") or [] if b.get("firmware")]
+        # Coverage/profile require ELF function symbols. ROM-booted flash-image
+        # projects still run headless; their unsupported analysis is checked below.
+        if not scen or not images or not all(p.is_file() and p.read_bytes()[:4] == b'\x7fELF' for p in images):
             continue
         if only and project.parent.name not in only:
             continue
@@ -315,6 +318,13 @@ def main() -> int:
             failures += 1
         else:
             print("ok    a project without firmware is refused")
+        flash = ROOT / "examples" / "esp32c3-qualified-rgb" / "project.json"
+        r = run([args.embsim, "run", flash, "--coverage", tmp / "flash-cov.txt"])
+        if r.returncode != 2 or "function symbols" not in r.stderr:
+            print(f"FAIL  binary firmware analysis: exit {r.returncode}: {r.stderr.strip()}")
+            failures += 1
+        else:
+            print("ok    a ROM-booted flash image without ELF function symbols is refused for coverage")
     if not only:
         problems = check_protocol(args.embsim)
         for p in problems:

@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/voltmeter",
+  "version": "0.1.0",
+  "name": "Voltmeter (loaded input)",
+  "category": "instruments",
+  "description": "Wired differential DC voltage meter. Its finite input resistance draws current between + and -; reversing the leads reverses the reading.",
+  "keywords": [
+    "instrument",
+    "measurement",
+    "voltmeter",
+    "loading",
+    "impedance"
+  ],
+  "pins": [
+    {
+      "name": "+",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive lead"
+    },
+    {
+      "name": "-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative/reference lead"
+    }
+  ],
+  "params": {
+    "input_resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "10meg",
+      "min": 1,
+      "max": 1000000000000.0,
+      "doc": "Resistance directly across the measurement leads; 10 M\u03a9 by default."
+    }
+  },
+  "outputs": [
+    {
+      "name": "voltage",
+      "type": "number",
+      "unit": "V",
+      "doc": "Signed terminal voltage V(+) \u2212 V(-); ammeter burden voltage."
+    },
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A",
+      "doc": "Total current entering +, including displacement current for a capacitive input."
+    }
+  ],
+  "model": {
+    "primitive": "instrument_input",
+    "bind": {
+      "r": "input_resistance"
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 100,
+    "height": 60,
+    "pins": {
+      "+": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "-": {
+        "x": 100,
+        "y": 30,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": null,
+    "electrical": {
+      "claims": "Finite linear resistance; signed terminal voltage and current observations.",
+      "omissions": [
+        "Manufacturer-specific ranges, accuracy, noise and calibration",
+        "Overload protection, fuse failure, heating and damage",
+        "Bandwidth limits and sampling/ADC quantization",
+        "Common-mode limits and an earth/chassis connection; reference lead must be wired explicitly"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Tektronix: ABCs of Probes Primer",
+        "url": "https://www.tek.com/en/documents/whitepaper/abcs-probes-primer",
+        "date": "2026-10-26",
+        "notes": "Input loading and equivalent-circuit background. All instrument defaults are representative and configurable; no manufacturer-specific qualification is claimed. The generator uses an explicitly defined Thevenin model."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -5,6 +5,68 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Wired instrument loading and electrical feedback (2026-10-26)
+
+Branch `feat/loaded-instruments` adds generic configurable wired voltmeter,
+ammeter, scope-input and function-generator equivalents. Their finite input,
+shunt and output impedances enter the native solve; scope capacitance reuses the
+adaptive integrator. The loading bench checks 13 independent analytic targets;
+twelve component fixtures exercise loading, polarity and transient behavior.
+Local verification passes 49 native CTest targets, 12 instrument fixtures /
+37 assertions, and the 13-assertion loading and 3-assertion deliberate-fault
+scenarios. Native tests check zero/one/two-lead construction without implicit grounding,
+current conservation, reset, refined RC convergence, digital
+conflict clearing and loaded opposing drivers. Protocol checks verify current
+contention and receiver identities for digital and mixed nets.
+
+The Run panel shows impedance, lead nets and actual readings with locate/trace
+actions. Selected nets expose every terminal, junction and label. Pin names and
+live states remain horizontal through rotation. Live input warnings distinguish
+Z, X and opposing known drives, and locate their nets; unwired declared digital
+inputs without declared pulls also produce structural warnings. A zero analog
+voltage is not treated as proof of floating.
+
+See the [instrument contract and limits](engineering/instrument-loading.md) and
+[interactive loading bench](../examples/instrument-loading/README.md). These are
+linear equivalent circuits, not commercial instrument accuracy, bandwidth,
+protection, noise, thermal/damage or earth/chassis qualification. Ideal observation
+probes remain available alongside the explicitly wired loads.
+
+## Firmware-driven RGB and waveform measurements (2026-10-26)
+
+Branch `feat/indicator-pwm-evidence` extends the named indicators with an
+ESP32-C3-DevKitM-1 circuit booted from a normal flash image through the ROM.
+Firmware programs LEDC and polls a physical MODE button; 39 assertions check
+1 kHz at 25/50/75% duty, off/full-on/return transitions, mean/RMS currents and
+finite GPIO voltage drop against independent source-derived bounds. Scalar MCU
+resistance/slew settings now initialize base GPIO models; the example uses the
+declared 20 Ω driver instead of the generic 25 Ω fallback. This linear driver
+is representative and does not qualify MCU drive-strength or process corners.
+
+CLI and workbench share time-weighted sample-and-hold mean/RMS/digital duty
+semantics, rejecting missing coverage and unknown/nonfinite intervals. Reports
+retain measurement/window identity and units. The scenario editor exposes these
+checks; scope/logic strips show RMS, duty and coverage. Native probe metadata
+preserves declared units/sample rates, and the scope separates voltage/current
+groups on its single vertical axis. Same-time waveform events retain their
+original timestamps.
+
+Local verification passes all 48 native CTest targets, 249 UI unit tests and all
+30 browser workflows. The CLI measurement contract checks 22 valid/invalid
+assertions. Repeating the firmware circuit at doubled capture rates passes its
+39 assertions and agrees within 1 nA for measured mean/RMS currents and 0.001 of
+duty fraction. These are numerical circuit checks, not real-device accuracy.
+Native streaming checks also cover bounded 30,001-sample delivery, eviction of
+unsent versus already delivered history, constant-signal watermarks and restart.
+The workbench does not extrapolate a partial delivered chunk to the engine clock.
+The selected advance interval is shared by the toolbar, F7 and command palette.
+[PWM evidence and limits](engineering/indicator-pwm.md) and the
+[rebuildable example](../examples/esp32c3-qualified-rgb/README.md) explain the
+source bounds, sampling, raw-image analysis limits and unsupported effects.
+Thermal/charge/optical behavior remains open; configurable physical instrument
+loading follows in the milestone above;
+the 3D emitter still shows instantaneous observations and can alias PWM.
+
 ## First named indicator evidence batch (2026-10-26)
 
 Branch `feat/qualified-indicators` builds on the circuit-construction milestone.

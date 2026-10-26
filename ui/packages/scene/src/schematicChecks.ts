@@ -65,6 +65,8 @@ export function checkSchematic(project: Project, catalog: SceneCatalog): Schemat
       continue;
     }
     const unconnected = (catalog[part.ref]!.terminals ?? Object.keys(part.symbol.pins)).filter((pin) => !pinNets.has(`${part.id}.${pin}`));
+    const inputs = catalog[part.ref]!.pins?.filter((pin) => pin.model?.kind === 'digital_in' && unconnected.includes(pin.name) && !['up', 'down'].includes(String(pin.model?.pull))) ?? [];
+    if (inputs.length) add('unconnected-input', part.id, 'warning', `${part.id}: ${inputs.length} unconnected digital input${inputs.length === 1 ? '' : 's'}`, `${inputs.map((p) => p.name).join(', ')} has no declared connection or input pull. Wire unused inputs to a valid level according to the part's datasheet.`, { components: [part.id], point: pinPosition(part.layout, part.symbol, inputs[0]!.name) ?? undefined });
     if (unconnected.length) add('unconnected-pins', part.id, 'info', `${part.id}: ${unconnected.length} unconnected terminal${unconnected.length === 1 ? '' : 's'}`, `${unconnected.join(', ')}. Unused pins may be intentional; this is not an electrical fault diagnosis.`, { components: [part.id], point: pinPosition(part.layout, part.symbol, unconnected[0]!) ?? undefined });
     if (part.layout.x % 10 !== 0 || part.layout.y % 10 !== 0) add('off-grid', part.id, 'info', `${part.id} is off the editing grid`, 'Symbol origin is not a multiple of 10 sheet units. Exact placement snaps origins to the editing grid.', { components: [part.id] });
   }

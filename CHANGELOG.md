@@ -5,6 +5,39 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Wired instrument loading and electrical feedback
+
+- Add configurable voltmeter input resistance, ammeter insertion burden,
+  oscilloscope input R/C and a function generator with 50 Ω output impedance.
+- Keep detached instrument/voltage-source leads floating during incremental
+  wiring; do not compress terminal order or manufacture a ground return.
+- Show wired instruments, connected leads and native readings with trace and
+  schematic actions; observation-only probes retain zero loading.
+- Highlight selected nets through pin rings, junctions and labels; reveal readable
+  pin names and observed logic states on selected/focused terminals.
+- Report active receiver identities and current driver conflicts in native net
+  observations, retaining solved mixed-signal voltages; distinguish unknown
+  inputs from confirmed opposing known drives.
+- Fit captured waveforms to the available interval, stop plots/cursor readings at
+  the producer frontier and center instrument lead navigation in the actual pane.
+- Add unconnected-input and live electrical warnings, an analytic loading bench,
+  twelve component fixtures and RC refinement/driver-release checks.
+
+### Firmware-driven indicators and waveform acceptance
+
+- Boot a native ESP32-C3 RGB acceptance circuit from a flash image; physical
+  button inputs change real LEDC duty while firmware runs.
+- Apply scalar MCU driver resistance/slew settings to base GPIO models.
+- Add time-weighted mean/RMS/digital duty scenario assertions, with strict
+  coverage and unknown-state handling, and expose them in the scenario editor.
+- Show scope RMS, time-weighted mean, logic-analyzer duty and capture coverage;
+  preserve same-time waveform timestamps instead of shifting edges by 1 ps.
+- Carry declared probe units and sampling rates through the native protocol;
+  switch scope trace groups by unit instead of mixing voltage and current axes.
+- Deliver every retained waveform sample in bounded chunks, report real history
+  gaps and producer watermarks, and replace captures explicitly on restart.
+- Make F7 and the command palette use the toolbar's selected advance interval.
+
 ### Named indicator evidence
 
 - Add Kingbright WP7113ID and WP154A4SUREQBFZGC with exact terminal mappings,

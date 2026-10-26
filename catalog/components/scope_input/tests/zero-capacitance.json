@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "zero-capacitance",
+  "description": "Zero input capacitance is allowed: a resistive measurement has no RC lag.",
+  "policy": "electrical",
+  "until": "30us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 10,
+          "td": "1u",
+          "tr": "1n",
+          "pw": "1m",
+          "per": "2m"
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1meg"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/scope_input",
+        "params": {
+          "input_capacitance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SUPPLY": [
+        "V.+",
+        "R.1"
+      ],
+      "MEASURE": [
+        "R.2",
+        "DUT.+"
+      ],
+      "GND": [
+        "V.-",
+        "DUT.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.voltage": {
+      "at": "11us",
+      "min": 4.9999,
+      "max": 5.0001
+    }
+  }
+}

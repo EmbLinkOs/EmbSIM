@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "burden-1-ohm",
+  "description": "5 V, 100 \u03a9 load: meter insertion reduces current to 5/(100 + Rshunt).",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ammeter",
+        "params": {
+          "shunt_resistance": 1
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SUPPLY": [
+        "V.+",
+        "DUT.+"
+      ],
+      "LOAD": [
+        "DUT.-",
+        "R.1"
+      ],
+      "GND": [
+        "V.-",
+        "R.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.current": {
+      "at": "0.5ms",
+      "min": 0.049504850495049504,
+      "max": 0.04950505049504951
+    },
+    "device:DUT.voltage": {
+      "at": "0.5ms",
+      "min": 0.049494950495049504,
+      "max": 0.04951495049504951
+    },
+    "net:LOAD": {
+      "at": "0.5ms",
+      "min_v": 4.950485049504951,
+      "max_v": 4.95050504950495
+    }
+  }
+}

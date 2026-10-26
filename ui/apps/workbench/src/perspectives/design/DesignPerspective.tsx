@@ -267,7 +267,7 @@ export function DesignPerspective() {
       mode={mode}
       selection={selection}
       onSelectionChange={previewProject ? () => undefined : setSelection}
-      live={running}
+      live={Object.keys(nets).length > 0}
       netStates={nets}
       readOnly={!editable || !!previewProject}
       appearance={appearance}
@@ -277,6 +277,7 @@ export function DesignPerspective() {
       smartWires={display.smartWires && !display.autoArrange}
       alignmentGuides={display.guides}
       highlightNet={spotlight}
+      onHighlightNet={selectNet}
       issueMarker={activeIssue?.point ? { point: activeIssue.point, label: activeIssue.title, severity: activeIssue.severity } : undefined}
       onCanvasContext={(value) => setContext({ source: project, value })}
       onReshapeWire={(index, segment, offset, source) => void store.reshapeWire(index, segment, offset, source).catch(fail('Reshape failed'))}

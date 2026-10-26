@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "sine-matched-load",
+  "description": "2 V open-circuit sine peak becomes 1 V into a matched 50 \u03a9 load.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/function_generator",
+        "params": {
+          "kind": "sine",
+          "va": 2,
+          "freq": 1000
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 50
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUTPUT": [
+        "DUT.+",
+        "R.1"
+      ],
+      "GND": [
+        "DUT.-",
+        "R.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.voltage": {
+      "at": "250us",
+      "min": 0.9999,
+      "max": 1.0001
+    },
+    "device:DUT.value": {
+      "at": "250us",
+      "min": 1.9999,
+      "max": 2.0001
+    }
+  }
+}

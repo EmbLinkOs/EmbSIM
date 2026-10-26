@@ -65,6 +65,7 @@ static void test_resolution(void)
     CHECK(esk_engine_reset(&e) == ES_OK);
     CHECK(esk_net_value(n) == ESK_L1);            /* strong beats weak */
     CHECK(n->strength == ESK_STR_STRONG);
+    CHECK(!esk_net_has_contention(n));
     {
         esk_json v; memset(&v, 0, sizeof v); v.type = ESK_JSON_NUMBER; v.u.number.value = 0; v.u.number.is_integer = 1;
         esk_engine_set_input(&e, lvl, "level", &v);
@@ -79,7 +80,13 @@ static void test_resolution(void)
         esk_engine_reset(&e);
         esk_engine_advance(&e, 10);
         CHECK(esk_net_value(n) == ESK_LX);
+        CHECK(esk_net_has_contention(n));
         CHECK(diag_count_code("net.contention") >= 1);
+        esk_pin_drive(&l2->pins[0], ESK_LX, ESK_STR_STRONG, 0);
+        esk_engine_advance(&e, 20);
+        CHECK(esk_net_value(n) == ESK_LX);
+        CHECK(!esk_net_has_contention(n)); /* unknown is not an opposing known level */
+        CHECK(!n->contention_reported);
     }
     esk_engine_free(&e); /* its components use the registry's models */
     esk_registry_free(&r);

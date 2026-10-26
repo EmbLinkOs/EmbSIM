@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "reverse-leads",
+  "description": "Floating differential measurement: reversing leads measures \u22123 V between two nonzero nodes.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "W",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 2
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/voltmeter"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HIGH": [
+        "V.+",
+        "DUT.-"
+      ],
+      "LOW": [
+        "W.+",
+        "DUT.+"
+      ],
+      "GND": [
+        "V.-",
+        "W.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.voltage": {
+      "at": "0.5ms",
+      "min": -3.00001,
+      "max": -2.99999
+    },
+    "device:DUT.current": {
+      "at": "0.5ms",
+      "min": -3.001e-07,
+      "max": -2.999e-07
+    }
+  }
+}

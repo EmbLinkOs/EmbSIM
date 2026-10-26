@@ -71,3 +71,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-25
 **Verification.** Common-anode/cathode nominal/current-limited/reverse/unpowered fixtures, all binary colors and floating-common fixtures, switch-driven acceptance scenario and actual renderer material tests.
 **Trace.** SPEC-003 The digital engine; SPEC-004 Device models; ADR-030; docs/engineering/circuit-construction.md
+
+
+### ANA-010  Explicit instrument loading
+**Statement.** Wired instrument equivalents shall contribute finite voltmeter input resistance, ammeter insertion resistance, oscilloscope parallel input R/C and generator series output resistance to the electrical solve. Signed voltage/current observations shall include burden and displacement current. Observation-only probes shall not add a load.
+**Rationale.** Measurement changes a real circuit, especially at high impedance or during edges.
+**Status.** Accepted 2026-10-26
+**Verification.** Twelve instrument component fixtures, loading acceptance scenario, native DC/KCL/reset checks and refined RC convergence against analytic equations.
+**Trace.** SPEC-004 §7; docs/engineering/instrument-loading.md

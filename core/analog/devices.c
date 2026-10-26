@@ -48,7 +48,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "vsource", src, 2 }, { "isource", src, 2 }, { "potentiometer", pot, 3 }, { "diode", dio, 2 },
         { "led", dio, 2 }, { "rgb_led", rgb, 4 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
-        { "usb_meter", reg, 3 },
+        { "usb_meter", reg, 3 }, { "instrument_input", src, 2 },
     };
     size_t i;
     for (i = 0; ops && i < sizeof table / sizeof table[0]; i++)
@@ -61,6 +61,12 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
 }
 
 /* ---- shared helpers ----------------------------------------------------- */
+
+int esk_adev_preserves_open_pins(const esk_adev_ops *ops)
+{
+    return ops && (!strcmp(ops->name, "led") || !strcmp(ops->name, "rgb_led") ||
+                   !strcmp(ops->name, "instrument_input") || !strcmp(ops->name, "vsource"));
+}
 
 static double pd(const esk_adev *d, const char *name, double def)
 {
@@ -351,6 +357,66 @@ static const esk_adev_ops capacitor_ops = {"capacitor", sizeof(cap_state), cap_s
                                            cap_load_tr, cap_accept,        NULL,      NULL,
                                            cap_lte,     cap_observe,       NULL};
 
+/* Wired instrument terminals: a finite resistance in parallel with an optional
+ * capacitance. Reuse the capacitor's integration/history and LTE control, so a
+ * scope input participates in accepted/rejected steps exactly as a capacitor.
+ * The first member must remain cap_state for those callbacks. */
+typedef struct instrument_state {
+    cap_state cap;
+    double r;
+} instrument_state;
+
+static es_status instrument_setup(esk_adev *d)
+{
+    instrument_state *s = (instrument_state *)d->state;
+    s->r = pd(d, "r", 1e7);
+    s->cap.c = pd(d, "c", 0.0);
+    if (d->nnodes != 2 || !isfinite(s->r) || !(s->r > 0.0) ||
+        !isfinite(s->cap.c) || s->cap.c < 0.0) {
+        param_error(d, "instrument impedance", "requires two terminals, finite r > 0 and c >= 0");
+        return ES_EINVAL;
+    }
+    return ES_OK;
+}
+
+static void instrument_load_dc(esk_adev *d, esk_amatrix *m)
+{
+    const instrument_state *s = (const instrument_state *)d->state;
+    cap_load_dc(d, m);
+    esk_am_stamp_g(m, d->node[0], d->node[1], 1.0 / s->r);
+}
+
+static void instrument_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
+{
+    const instrument_state *s = (const instrument_state *)d->state;
+    if (s->cap.c > 0.0)
+        cap_load_tr(d, m, in);
+    esk_am_stamp_g(m, d->node[0], d->node[1], 1.0 / s->r);
+}
+
+static void instrument_accept(esk_adev *d, es_time_t t)
+{
+    const instrument_state *s = (const instrument_state *)d->state;
+    cap_accept(d, t);
+    set_pin_currents2(d, d->i_last[0] + (acc_v(d, 0) - acc_v(d, 1)) / s->r);
+}
+
+static double instrument_lte(esk_adev *d, const esk_integ *in)
+{
+    return ((const instrument_state *)d->state)->cap.c > 0.0 ? cap_lte(d, in) : 0.0;
+}
+
+static void instrument_observe(esk_adev *d, esk_json *o)
+{
+    observe_basic(d, o);
+    esk_json_set_number(d->isl->a, o, "voltage", acc_v(d, 0) - acc_v(d, 1));
+    esk_json_set_number(d->isl->a, o, "current", d->i_last[0]);
+}
+
+static const esk_adev_ops instrument_ops = {
+    "instrument_input", sizeof(instrument_state), instrument_setup, instrument_load_dc,
+    instrument_load_tr, instrument_accept, NULL, NULL, instrument_lte, instrument_observe, NULL};
+
 /* ---- inductor ------------------------------------------------------------------- */
 
 typedef struct ind_state {
@@ -463,7 +529,7 @@ typedef struct src_state {
     double v1, v2, td, tr, tf, pw, per; /* pulse */
     double vo, va, freq, phase, theta;  /* sine */
     double td1, tau1, td2, tau2;        /* exp */
-    double value_trial;
+    double value_trial, rout;
 } src_state;
 
 static void src_setup(esk_adev *d, src_state *s, const char *dc_name)
@@ -666,7 +732,13 @@ static int src_breakpoint(const esk_adev *d, const src_state *s, es_time_t after
 
 static es_status vsrc_setup(esk_adev *d)
 {
-    src_setup(d, (src_state *)d->state, "v");
+    src_state *s = (src_state *)d->state;
+    src_setup(d, s, "v");
+    s->rout = pd(d, "rout", 0.0);
+    if (!isfinite(s->rout) || s->rout < 0.0) {
+        param_error(d, "rout", "must be finite and >= 0");
+        return ES_EINVAL;
+    }
     d->nbranch = 1;
     return ES_OK;
 }
@@ -676,7 +748,7 @@ static void vsrc_stamp(esk_adev *d, esk_amatrix *m, double t)
     src_state *s = (src_state *)d->state;
     double v = src_value(d, s, t) * esk_am_source_scale(m);
     s->value_trial = v;
-    stamp_vsrc(m, d->node[0], d->node[1], d->branch[0], v, 0.0);
+    stamp_vsrc(m, d->node[0], d->node[1], d->branch[0], v, s->rout);
 }
 
 static void vsrc_load_dc(esk_adev *d, esk_amatrix *m)
@@ -704,6 +776,7 @@ static void src_observe(esk_adev *d, esk_json *o)
     const src_state *s = (const src_state *)d->state;
     observe_basic(d, o);
     esk_json_set_number(d->isl->a, o, "value", s->value_trial);
+    esk_json_set_number(d->isl->a, o, "voltage", acc_v(d, 0) - acc_v(d, 1));
 }
 
 static const esk_adev_ops vsource_ops = {
@@ -1979,7 +2052,7 @@ static const esk_adev_ops *const device_table[] = {
     &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
     &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,
-    &esk_ptc_fuse_ops, &esk_usb_meter_ops,
+    &esk_ptc_fuse_ops, &esk_usb_meter_ops, &instrument_ops,
 };
 
 void esk_adev_on_time(esk_adev *d, es_time_t now)

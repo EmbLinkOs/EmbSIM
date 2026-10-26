@@ -117,7 +117,7 @@ export function whenOf(a: ScenarioAssertion): AssertionWhen {
 
 /** The assertion with its timing changed to `when`, keeping what applies. */
 export function withWhen(a: ScenarioAssertion, when: AssertionWhen): ScenarioAssertion {
-  const { at, between, by, always, diagnostics, ...rest } = a;
+  const { at, between, by, always, diagnostics, measure, ...rest } = a;
   const t = at ?? by ?? between?.[0] ?? '10ms';
   switch (when) {
     case 'at':
@@ -125,7 +125,7 @@ export function withWhen(a: ScenarioAssertion, when: AssertionWhen): ScenarioAss
     case 'by':
       return { ...rest, by: t };
     case 'between':
-      return { ...rest, between: between ?? [t, t] };
+      return { ...rest, ...(measure ? { measure } : {}), between: between ?? [t, t] };
     default:
       return { id: a.id, always: always ?? true, diagnostics: diagnostics ?? { forbid: [] } };
   }

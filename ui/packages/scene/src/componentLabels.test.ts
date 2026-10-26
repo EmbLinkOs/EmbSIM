@@ -28,3 +28,10 @@ describe('component annotations', () => {
     expect(compact.name).toBe(''); expect(compact.height).toBeLessThan(clear.height);
   });
 });
+
+it('keeps component details away from group header text', () => {
+  const part = { id: 'AM', name: 'Ammeter', value: '10 Ω', bounds: { x: 100, y: 100, width: 100, height: 60 }, pins: [] };
+  const right = { x: 210, y: 95, width: 160, height: 70 };
+  const label = placeComponentLabels([part], [], true, [right]).get('AM')!;
+  expect(label.x < part.bounds.x).toBe(true);
+});

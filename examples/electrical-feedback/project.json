@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "electrical-feedback",
+  "description": "Deliberate opposing digital outputs on a loaded analog bus, plus an isolated digital receiver. Inspect current contention, solved voltage and floating-input warnings. This is a fault demonstration, not a recommended hardware connection.",
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "HIGH",
+      "component": "emblink/logic_level",
+      "layout": {
+        "x": 100,
+        "y": 100
+      },
+      "params": {
+        "level": 1
+      }
+    },
+    {
+      "id": "CLOCK",
+      "component": "emblink/clock_source",
+      "layout": {
+        "x": 100,
+        "y": 200
+      },
+      "params": {
+        "freq": 1000,
+        "duty": 0.5,
+        "td": "1m"
+      }
+    },
+    {
+      "id": "RECEIVER",
+      "component": "emblink/logic_probe",
+      "layout": {
+        "x": 440,
+        "y": 100
+      }
+    },
+    {
+      "id": "INPUT",
+      "component": "emblink/scope_input",
+      "layout": {
+        "x": 280,
+        "y": 200
+      },
+      "params": {
+        "input_capacitance": 0
+      }
+    },
+    {
+      "id": "FLOATING",
+      "component": "emblink/logic_probe",
+      "layout": {
+        "x": 440,
+        "y": 320
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 380,
+        "y": 400
+      }
+    }
+  ],
+  "nets": {
+    "BUS": [
+      "HIGH.OUT",
+      "CLOCK.OUT",
+      "RECEIVER.IN",
+      "INPUT.+"
+    ],
+    "FLOAT": [
+      "FLOATING.IN"
+    ],
+    "GND": [
+      "INPUT.-",
+      "G.GND"
+    ]
+  },
+  "probes": [
+    {
+      "id": "bus-voltage",
+      "target": "net:BUS",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "burden-current",
+      "target": "device:INPUT.current",
+      "kind": "value",
+      "rate_hz": 100000
+    }
+  ],
+  "scenarios": [
+    "scenario.json"
+  ],
+  "layout": {
+    "wires": [
+      {
+        "net": "BUS",
+        "points": [
+          [
+            140,
+            110
+          ],
+          [
+            160,
+            110
+          ],
+          [
+            160,
+            210
+          ],
+          [
+            140,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "BUS",
+        "points": [
+          [
+            140,
+            210
+          ],
+          [
+            160,
+            210
+          ],
+          [
+            160,
+            230
+          ],
+          [
+            280,
+            230
+          ]
+        ]
+      },
+      {
+        "net": "BUS",
+        "points": [
+          [
+            280,
+            230
+          ],
+          [
+            260,
+            230
+          ],
+          [
+            260,
+            110
+          ],
+          [
+            440,
+            110
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            380,
+            230
+          ],
+          [
+            400,
+            230
+          ],
+          [
+            400,
+            380
+          ],
+          [
+            390,
+            380
+          ],
+          [
+            390,
+            400
+          ]
+        ]
+      }
+    ]
+  }
+}

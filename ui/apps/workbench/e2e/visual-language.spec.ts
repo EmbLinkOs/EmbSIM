@@ -56,3 +56,22 @@ test('colored selectable tracks, terminal sockets, semantic cursors and readable
   await page.getByRole('button', { name: 'Place Resistor', exact: true }).click();
   await expect(page.locator('[data-component-label="R4"] .es-component__value')).toHaveText('1 kΩ');
 });
+
+test('a selected track spotlights the whole net and reveals readable terminal names', async ({ page }) => {
+  await page.goto('/?mock=1');
+  const wire = page.locator('[data-wire="0"]');
+  await wire.press('Enter');
+  await expect(page.locator('.es-net-spotlight')).toContainText('3V3');
+  for (const ref of ['VCC1.+', 'R1.1', 'R3.1']) {
+    const pin = page.locator(`[data-pin="${ref}"]`);
+    await expect(pin).toHaveClass(/es-pin--spotlight/);
+    await expect(pin.locator('.es-pin__halo')).toHaveCSS('opacity', '1');
+    await expect(pin.locator('.es-pin__label')).toHaveCSS('opacity', '1');
+  }
+  await expect(page.locator('[data-pin="SW1.1"]')).not.toHaveClass(/es-pin--spotlight/);
+  await expect(page.locator('[data-pin="SW1.1"] .es-pin__label')).toHaveCSS('opacity', '0');
+  await page.locator('[data-wire="2"]').press('Enter');
+  await expect(page.locator('.es-net-spotlight')).toContainText('BTN');
+  await expect(page.locator('[data-pin="SW1.1"] .es-pin__label')).toHaveCSS('opacity', '1');
+  await expect(page.locator('[data-pin="R1.1"]')).not.toHaveClass(/es-pin--spotlight/);
+});

@@ -5,6 +5,34 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Firmware-driven RGB and measured waveforms (2026-10-26)
+
+Actual native `embsim serve` on `examples/esp32c3-qualified-rgb`. The ESP32-C3
+boots its flash image through the ROM and programs LEDC, driving three named
+RGB junctions through finite GPIO drivers and separate 100 Ω resistors. The
+mixed capture shows 1 kHz, R/G/B duties of 25/50/75%, red mean 2.996 mA and
+RMS 5.991 mA, with 100% delivered capture coverage. These match CLI electrical
+measurements; the scene's instantaneous LED glow is not optical/PWM qualification.
+
+![Native PWM current traces and digital duty measurements](indicator-pwm/mixed-measurements.png)
+
+Holding the physical MODE input while advancing firmware selects off and then
+full-on. At full-on the red mean/RMS is 11.98 mA; selecting its GPIO voltage
+trace switches the scope's unit group and shows approximately 3.060 V under load.
+All captures have no browser page errors and no engine error/fatal diagnostics.
+The boot ROM retains the existing warning for unmodeled SENSITIVE behavior.
+
+| Off | Full-on |
+|---|---|
+| ![Firmware mode input turns the RGB currents off](indicator-pwm/off-measurements.png) | ![Firmware mode input turns all three RGB channels fully on](indicator-pwm/full-measurements.png) |
+
+![Loaded GPIO voltage on a separate voltage axis](indicator-pwm/loaded-gpio.png)
+
+![Authoring a time-mean current assertion in the native scenario editor](indicator-pwm/measured-scenario.png)
+
+[Measurement contract, delivery bug and limitations](../engineering/indicator-pwm.md).
+[Circuit, firmware and rebuild instructions](../../examples/esp32c3-qualified-rgb/README.md).
+
 ## Named RGB indicator and source evidence (2026-10-26)
 
 The native `examples/qualified-rgb-driver` circuit uses Kingbright's
@@ -604,3 +632,23 @@ The engine runs circuits; the workbench shows them.
 |---|---|
 | ![Design perspective](m0/design-transistor.png) | **Design.** The button, transistor and LED circuit on the schematic, its library, inspector and net voltages. |
 | ![Run perspective](m0/run-transistor.png) | **Run.** The 1 kHz pulse switching the transistor on the oscilloscope, the LED current and the transistor in saturation on the meters. |
+
+## Wired instrument loading and electrical feedback
+
+Captured at 1800 × 1200 against the native engine on 2026-10-26 with
+`tests/browser/test_instrument_loading.py`, using the instrument-loading and
+electrical-feedback examples. The readouts and warnings come from native circuit
+observations; these generic equivalents do not qualify commercial instrument
+accuracy, protection, thermal/damage behavior or earth coupling.
+
+![Loaded instrument readings and focused ammeter leads](instrument-loading/wired-instruments.png)
+
+The ammeter's 10 Ω insertion resistance changes a 5 V / 100 Ω circuit from
+50 mA to 45.45 mA, with 454.5 mV burden. The fitted scope capture compares the
+loaded capacitive input with a resistive input.
+
+![Selected meter net and highlighted terminals](instrument-loading/selected-meter-net.png)
+
+![Opposing digital outputs with a real solved bus voltage](instrument-loading/conflicting-drivers.png)
+
+![Floating input located from the warning list](instrument-loading/floating-input.png)

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "capacitive-step",
+  "description": "Scope input capacitance changes the response: analytic 1 M\u03a9 source into 1 M\u03a9 \u2225 20 pF, tau = 10 \u00b5s. Acceptance tolerance: 15 mV (0.3% of the 5 V final value) at default adaptive settings.",
+  "policy": "electrical",
+  "until": "30us",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 0,
+          "v2": 10,
+          "td": "1u",
+          "tr": "1n",
+          "tf": "1n",
+          "pw": "1m",
+          "per": "2m"
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1meg"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/scope_input",
+        "params": {
+          "input_capacitance": "20p"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "SUPPLY": [
+        "V.+",
+        "R.1"
+      ],
+      "MEASURE": [
+        "R.2",
+        "DUT.+"
+      ],
+      "GND": [
+        "V.-",
+        "DUT.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "device:DUT.voltage": {
+      "at": "11us",
+      "min": 3.1455108212167557,
+      "max": 3.175510821216756
+    }
+  }
+}

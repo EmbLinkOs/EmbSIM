@@ -551,3 +551,45 @@
 .es-scene--probe .es-pin { cursor: cell; }
 .es-wire:not(.es-wire--selected):hover .es-wire__line { stroke-width: 2.6; }
 .es-scene--readonly .es-component { cursor: default; }
+
+/* Keep names horizontal through symbol rotation; expose details only for the
+ * selected part/net or the focused terminal, so dense circuits stay readable. */
+.es-pin .es-pin__label {
+  opacity: 0;
+  fill: var(--canvas-ink);
+  stroke: var(--canvas-paper);
+  stroke-width: 3px;
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+  font: 9px var(--font-mono, monospace);
+}
+.es-pin:hover .es-pin__label,
+.es-pin:focus .es-pin__label,
+.es-pin--labelled .es-pin__label,
+.es-pin--spotlight .es-pin__label { opacity: 1; }
+.es-pin__halo { fill: none; stroke: var(--symbol-selected); stroke-width: 1.5; opacity: 0; pointer-events: none; }
+.es-pin--spotlight .es-pin__halo { opacity: 1; }
+.es-pin--spotlight .es-pin__dot { stroke-width: 2.2; }
+.es-net-spotlight, .es-electrical-feedback {
+  position: absolute;
+  z-index: 3;
+  border: 1px solid color-mix(in srgb, var(--canvas-ink) 16%, transparent);
+  background: color-mix(in srgb, var(--canvas-paper) 96%, transparent);
+  color: var(--canvas-ink);
+  box-shadow: 0 4px 18px #00000012;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.es-net-spotlight { top: 12px; left: 12px; display: flex; gap: 10px; padding: 8px 12px; max-width: calc(100% - 24px); pointer-events: none; }
+.es-net-spotlight strong { font-family: var(--font-mono, monospace); }
+.es-net-spotlight span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.es-electrical-feedback { right: 12px; bottom: 36px; max-width: min(380px, calc(100% - 24px)); }
+.es-electrical-feedback button { font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; text-align: left; }
+.es-electrical-feedback > button { display: flex; gap: 10px; align-items: center; width: 100%; padding: 10px 12px; }
+.es-electrical-feedback > button > span:first-child { color: #b36c12; }
+.es-electrical-feedback > button > span:last-child { margin-left: auto; font-size: 11px; }
+.es-electrical-feedback ul { margin: 0; padding: 0 6px 6px; list-style: none; max-height: 200px; overflow: auto; }
+.es-electrical-feedback li button { width: 100%; display: grid; gap: 4px; padding: 9px; border-radius: 6px; }
+.es-electrical-feedback li button:hover { background: color-mix(in srgb, var(--canvas-ink) 6%, transparent); }
+.es-electrical-feedback small { font-size: 11px; line-height: 1.5; opacity: .8; }
+.es-electrical-feedback button:focus-visible { outline: 2px solid var(--line-focus); outline-offset: -2px; }

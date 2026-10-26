@@ -210,6 +210,10 @@ void esk_pin_drive(esk_pin *p, esk_logic value, esk_strength strength, es_time_t
 void esk_pin_release(esk_pin *p);
 esk_logic esk_pin_read(esk_pin *p);           /* samples the net with floating/unknown diagnostics */
 esk_logic esk_net_value(const esk_net *n);
+/* Current opposing known digital drives. Analog islands compare active digital
+ * output intents; digital nets compare known values at the strongest strength.
+ * X by itself is not evidence of contention. */
+int esk_net_has_contention(const esk_net *n);
 /* resolve a digital net ignoring the drivers of `excluded` (transmission-gate models) */
 void esk_net_resolve_excluding(const esk_net *n, const esk_comp *excluded, esk_logic *v, esk_strength *s);
 void esk_pin_set_direction(esk_pin *p, int output);
