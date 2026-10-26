@@ -2,9 +2,9 @@
 // Copyright 2026 Junior Deogracias
 import { Button, DockLayout, IconButton, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
 import { followWindow, LogicAnalyzer, Oscilloscope, SerialTerminal, type ScopeTrace } from '@embsim/instruments';
-import { AnalogLegend, SchematicCanvas } from '@embsim/scene';
-import { Download, Locate, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { AnalogLegend, SchematicCanvas, type SchematicCanvasHandle } from '@embsim/scene';
+import { Download, Locate, Maximize2, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage, exportCsv, exportVcd, inputs as inputActions, probes as probeActions } from '../../actions';
 import { platform } from '../../platform/platform';
 import { useRegisterCommands } from '../../shell/commands';
@@ -20,6 +20,7 @@ import { AirPanel } from './AirPanel';
 import { ControlsPanel } from './ControlsPanel';
 import { MetersPanel } from './MetersPanel';
 import { useHostPort } from './useHostPort';
+import { WiredInstrumentsPanel } from './WiredInstrumentsPanel';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
@@ -31,6 +32,8 @@ export function RunPerspective() {
   const sceneCatalog = useProject((s) => s.sceneCatalog);
   const selection = useSelection((s) => s.selection);
   const setSelection = useSelection((s) => s.setSelection);
+  const selectedNet = useSelection((s) => s.net);
+  const selectNet = useSelection((s) => s.selectNet);
   const inst = useInstruments();
   const serialTargets = inst.probes.filter((p) => p.kind === 'serial').map((p) => p.target.replace(/^serial:/, ''));
   // the port chosen, else the first: a terminal can send before one is picked
@@ -38,6 +41,13 @@ export function RunPerspective() {
   const hostPort = useHostPort(serialTarget);
   const { toast } = useToast();
   const [bottomTab, setBottomTab] = useState<'serial' | 'diagnostics' | 'meters' | 'schematic' | 'air'>('meters');
+  const schematicRef = useRef<SchematicCanvasHandle>(null);
+  const [focusInstrument, setFocusInstrument] = useState<{ id: string } | null>(null);
+  useEffect(() => {
+    if (bottomTab !== 'schematic' || !focusInstrument) return;
+    const frame = requestAnimationFrame(() => schematicRef.current?.focusComponents([focusInstrument.id]));
+    return () => cancelAnimationFrame(frame);
+  }, [bottomTab, focusInstrument]);
 
   const win = followWindow(inst.window, now);
   const scopeTraces = useMemo<ScopeTrace[]>(
@@ -64,6 +74,14 @@ export function RunPerspective() {
   );
 
   const noScope = scopeTraces.length === 0;
+  const fitCapture = () => {
+    const captured = [...inst.records.values()].filter((r) => r.start !== null && r.captureEnd !== null);
+    if (!captured.length) return;
+    const start = captured.reduce((v, r) => r.start! < v ? r.start! : v, captured[0]!.start!);
+    const frontier = captured.reduce((v, r) => r.captureEnd! > v ? r.captureEnd! : v, start);
+    const end = frontier < now ? frontier : now;
+    inst.setWindow({ start, span: end > start ? end - start : 1n, follow: false });
+  };
 
   const exportAs = async (kind: 'csv' | 'vcd') => {
     const ids = inst.probes.map((p) => p.probe as string);
@@ -82,6 +100,7 @@ export function RunPerspective() {
       { id: 'run.export.vcd', label: 'Export window as VCD', group: 'Instruments', icon: <Download />, run: guard(() => exportAs('vcd')) },
       { id: 'run.follow', label: inst.window.follow ? 'Stop following the clock' : 'Follow the clock', group: 'Instruments', shortcut: 'F', run: () => inst.setWindow({ ...inst.window, follow: !inst.window.follow }) },
       { id: 'run.clear-cursors', label: 'Clear cursors', group: 'Instruments', run: () => inst.setCursors({ a: null, b: null }) },
+      { id: 'run.fit-capture', label: 'Fit captured waveforms', group: 'Instruments', run: fitCapture },
       ...(project ? Object.keys(project.nets).map((net) => ({ id: `probe.${net}`, label: `Add probe on net ${net}`, group: 'Probes', keywords: ['probe', net], run: guard(() => probeActions.add(`net:${net}`, 'analog', 200_000)) })) : []),
       ...inst.probes.map((p) => ({ id: `unprobe.${p.probe}`, label: `Remove probe ${p.probe}`, group: 'Probes', icon: <Trash2 />, run: guard(() => probeActions.remove(p.probe as string)) })),
       { id: 'input.press', label: 'Press and release the button (SW1)', group: 'Inputs', keywords: ['button'], run: guard(async () => {
@@ -91,7 +110,7 @@ export function RunPerspective() {
       }) },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [inst.window, inst.probes, project],
+    [inst.window, inst.probes, project, now, inst.records],
   );
   useRegisterCommands('run', commands);
 
@@ -110,6 +129,9 @@ export function RunPerspective() {
 
   const instrumentActions = (
     <>
+      <Tooltip content="Fit captured waveforms">
+        <IconButton label="Fit captured waveforms" size="sm" variant="ghost" onClick={fitCapture}><Maximize2 /></IconButton>
+      </Tooltip>
       <Tooltip content={inst.window.follow ? 'Following the clock (F)' : 'Follow the clock (F)'}>
         <IconButton label={inst.window.follow ? 'Stop following the clock' : 'Follow the clock'} size="sm" variant="ghost" pressed={inst.window.follow} onClick={() => inst.setWindow({ ...inst.window, follow: !inst.window.follow })}>
           <Locate />
@@ -125,6 +147,7 @@ export function RunPerspective() {
   );
 
   const left: DockItem[] = [
+    { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); setBottomTab('schematic'); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
     { id: 'board', title: 'Board', content: <BoardPanel interactive />, flush: true, weight: 1.4, minSize: 160 },
     { id: 'controls', title: 'Controls', content: <ControlsPanel />, weight: 1, minSize: 120 },
     { id: 'world', title: 'World', content: <WorldPanel />, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: true },
@@ -154,6 +177,7 @@ export function RunPerspective() {
             { value: 'meters', label: 'Meters', content: <MetersPanel /> },
             { value: 'schematic', label: 'Schematic', content: project ? (
               <SchematicCanvas
+                handle={schematicRef}
                 appearance={appearance}
                 project={project}
                 catalog={sceneCatalog}
@@ -162,6 +186,8 @@ export function RunPerspective() {
                 onSelectionChange={setSelection}
                 live
                 netStates={nets}
+                highlightNet={selectedNet}
+                onHighlightNet={selectNet}
                 probes={inst.probes}
                 readOnly
                 onNetClick={(net) => guard(() => probeActions.add(`net:${net}`, 'analog', 200_000).then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` })))()}

@@ -262,3 +262,18 @@ prune memberships and empty groups. These rules also apply when loading projects
 locks. Existing locked placement rejects position/orientation changes unless the
 edit explicitly supplies `locked: false`; omission preserves a lock. Undo of a
 lock must therefore explicitly unlock. Layout-only edits retain simulation time.
+
+
+## Net observation: receivers and current contention
+
+Net states include `contention` (boolean) and `receivers` (active digital input
+terminal references, including board internals). A digital net retains its
+resolved `logic`. An analog net with active digital receivers has `kind: "mixed"`,
+retains `voltage` and adds aggregate sampled `logic`; different receiver levels
+aggregate to X. Pure analog nets retain `kind: "analog"` without invented logic.
+
+Contention means opposing known 0/1 drives at the strongest digital strength, or
+opposing active digital output intents on a mixed island. Released drivers and
+open-drain high outputs do not count. Analog supply-input bridges are excluded.
+X alone is not proof of contention. This is current state, not a historical
+fault latch, and does not classify all analog shorts or power conflicts.

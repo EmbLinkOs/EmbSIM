@@ -632,3 +632,23 @@ The engine runs circuits; the workbench shows them.
 |---|---|
 | ![Design perspective](m0/design-transistor.png) | **Design.** The button, transistor and LED circuit on the schematic, its library, inspector and net voltages. |
 | ![Run perspective](m0/run-transistor.png) | **Run.** The 1 kHz pulse switching the transistor on the oscilloscope, the LED current and the transistor in saturation on the meters. |
+
+## Wired instrument loading and electrical feedback
+
+Captured at 1800 × 1200 against the native engine on 2026-10-26 with
+`tests/browser/test_instrument_loading.py`, using the instrument-loading and
+electrical-feedback examples. The readouts and warnings come from native circuit
+observations; these generic equivalents do not qualify commercial instrument
+accuracy, protection, thermal/damage behavior or earth coupling.
+
+![Loaded instrument readings and focused ammeter leads](instrument-loading/wired-instruments.png)
+
+The ammeter's 10 Ω insertion resistance changes a 5 V / 100 Ω circuit from
+50 mA to 45.45 mA, with 454.5 mV burden. The fitted scope capture compares the
+loaded capacitive input with a resistive input.
+
+![Selected meter net and highlighted terminals](instrument-loading/selected-meter-net.png)
+
+![Opposing digital outputs with a real solved bus voltage](instrument-loading/conflicting-drivers.png)
+
+![Floating input located from the warning list](instrument-loading/floating-input.png)

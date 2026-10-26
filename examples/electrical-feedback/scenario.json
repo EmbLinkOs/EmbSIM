@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Conflicting outputs retain real voltage",
+  "until": "1.2ms",
+  "assertions": [
+    {
+      "id": "opposing-voltage",
+      "probe": "bus-voltage",
+      "at": "100us",
+      "expect": {
+        "min_v": 1.64,
+        "max_v": 1.66
+      }
+    },
+    {
+      "id": "agreeing-voltage",
+      "probe": "bus-voltage",
+      "at": "1.1ms",
+      "expect": {
+        "min_v": 3.29,
+        "max_v": 3.31
+      }
+    },
+    {
+      "id": "solver-health",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}

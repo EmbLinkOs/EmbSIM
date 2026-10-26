@@ -24,6 +24,10 @@ const VALUE_PARAM: Record<string, string> = {
   'emblink/vcc': 'voltage',
   'emblink/vsource': 'dc',
   'emblink/isource': 'dc',
+  'emblink/function_generator': 'dc',
+  'emblink/voltmeter': 'input_resistance',
+  'emblink/ammeter': 'shunt_resistance',
+  'emblink/scope_input': 'input_resistance',
   'emblink/led': 'color',
   'emblink/bjt_npn': 'part',
 };
@@ -165,7 +169,7 @@ function sceneEntry(entry: CatalogEntry): SceneCatalog[string] {
   }
   const valueParam = VALUE_PARAM[d.id] ?? ['resistance', 'capacitance', 'inductance', 'voltage', 'frequency', 'part', 'color'].find((key) => d.params?.[key]);
   const parameter = valueParam ? d.params?.[valueParam] : undefined;
-  return { name: d.name, symbol: d.symbol, svg: entry.files.symbol ?? '', terminals: d.pins.map((p) => p.name), valueParam, valueDefault: parameter?.default, valueUnit: parameter?.unit, wiringAid: d.bench?.wiring_aid };
+  return { name: d.name, symbol: d.symbol, svg: entry.files.symbol ?? '', terminals: d.pins.map((p) => p.name), pins: d.pins, valueParam, valueDefault: parameter?.default, valueUnit: parameter?.unit, wiringAid: d.bench?.wiring_aid };
 }
 
 /** The parts and boards of a project, which place, move and delete alike. */

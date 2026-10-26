@@ -28,7 +28,7 @@ export function SchematicChecksPanel({ issues, pending, error, selected, onFocus
       <Button size="sm" variant="ghost" icon={<ChevronDown />} disabled={!filtered.length || pending} onClick={() => navigate(1)}>Next</Button>
       <Button size="sm" variant="ghost" icon={<RefreshCw />} disabled={pending} onClick={onRefresh}>Recheck</Button>
     </div>
-    <p className="wb-checks-scope">Drawing and connectivity checks · unused pins may be intentional · electrical rules, analog accuracy and physical clearances are not checked.</p>
+    <p className="wb-checks-scope">Drawing and connectivity checks include unconnected digital inputs. Live net warnings report observed floating or unknown inputs and contention. Analog accuracy and physical clearances are not checked.</p>
     {pending ? <p role="status" className="wb-checks-empty">Checking current sheet…</p> : error ? <p role="alert" className="wb-checks-empty wb-properties-error">{error}</p> : !filtered.length ? <p role="status" className="wb-checks-empty"><CheckCircle2 size={18} />{issues.length ? 'No checks match these filters.' : 'No structural or drawing issues found.'}</p> : <div className="wb-checks-body">
       <div className="wb-checks-list" role="list" aria-label="Check results">
         {filtered.slice(0, 200).map((issue) => {

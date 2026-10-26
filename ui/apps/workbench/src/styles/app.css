@@ -1752,3 +1752,15 @@
 .wb-indicator-evidence h4 { margin: 0 0 var(--space-1); }
 .wb-indicator-evidence p { margin: var(--space-1) 0; }
 .wb-indicator-evidence code { display: block; overflow-wrap: anywhere; white-space: normal; }
+
+.wb-wired-instruments { display: grid; gap: 12px; font-size: 12px; }
+.wb-wired-instruments > p { margin: 0; line-height: 1.5; }
+.wb-wired-instrument { padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-raised); }
+.wb-wired-instrument header { display: flex; gap: 10px; align-items: baseline; }
+.wb-wired-instrument header strong { font-family: var(--font-mono); }
+.wb-wired-instrument header span { color: var(--text-muted); }
+.wb-wired-instrument__impedance { margin: 8px 0; font-weight: 600; }
+.wb-wired-instrument__leads { display: flex; gap: 12px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; overflow-wrap: anywhere; }
+.wb-wired-instrument__readings { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 8px; }
+.wb-wired-instrument__readings .es-meter { padding: 6px 0; border: 0; background: transparent; }
+.wb-wired-instrument__readings .es-meter__value { font-size: 18px; }

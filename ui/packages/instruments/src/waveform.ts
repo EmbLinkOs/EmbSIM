@@ -70,6 +70,11 @@ export class WaveformRecord {
     return s.first + s.period * BigInt(Math.max(0, s.values.length - 1));
   }
 
+  /** Producer-proven capture frontier, including constant-signal watermarks. */
+  get captureEnd(): Time | null {
+    return this.capturedThrough ?? this.end;
+  }
+
   clear(): void {
     this.segments = [];
     this.total = 0;

@@ -67,8 +67,10 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
     const stats = r.stats(win.start, end);
     const weighted = r.measurements(win.start, end, now ?? r.end ?? win.start);
     const pf = r.periodAndFrequency(win.start, end);
-    const ca = cursors.a !== null ? r.valueAt(cursors.a) : NaN;
-    const cb = cursors.b !== null ? r.valueAt(cursors.b) : NaN;
+    const frontier = r.captureEnd ?? win.start;
+    const through = now !== undefined && now < frontier ? now : frontier;
+    const ca = cursors.a !== null && cursors.a <= through ? r.valueAt(cursors.a) : NaN;
+    const cb = cursors.b !== null && cursors.b <= through ? r.valueAt(cursors.b) : NaN;
     return { stats, weighted, pf, ca, cb };
     // revision drives recomputation as samples arrive
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,6 +103,11 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
         hi = Math.max(hi, t.range[1]);
       } else {
         const s = t.record.stats(win.start, end);
+        const held = t.record.valueAt(win.start);
+        if (Number.isFinite(held) && (t.record.captureEnd ?? win.start) >= win.start) {
+          lo = Math.min(lo, held);
+          hi = Math.max(hi, held);
+        }
         if (Number.isFinite(s.min)) {
           lo = Math.min(lo, s.min);
           hi = Math.max(hi, s.max);
@@ -156,14 +163,25 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
     // Traces: one min/max column per pixel.
     const buckets = Math.floor(pw);
     for (const t of visibleTraces) {
+      const frontier = t.record.captureEnd;
+      if (frontier === null || frontier < win.start) continue;
+      const through = now !== undefined && now < frontier ? now : frontier;
+      const extent = Math.max(0, Math.min(pw, timeToX(through, win, pw)));
+      if (extent <= 0) continue;
       const d = t.record.decimate(win.start, end, buckets);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(PLOT_LEFT, PLOT_TOP, extent, ph);
+      ctx.clip();
       ctx.strokeStyle = t.color;
       ctx.lineWidth = 1.4;
       ctx.lineJoin = 'round';
       ctx.beginPath();
-      let pen = false;
-      let lastY = 0;
-      for (let i = 0; i < buckets; i++) {
+      const held = t.record.valueAt(win.start);
+      let pen = Number.isFinite(held);
+      let lastY = pen ? yOf(held) : 0;
+      if (pen) ctx.moveTo(PLOT_LEFT, lastY);
+      for (let i = 0; i < Math.min(buckets, Math.ceil(extent) + 1); i++) {
         if (d.count[i] === 0) {
           // Carry the last value across empty columns inside the record (sparse sampling).
           if (pen) {
@@ -172,6 +190,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
           continue;
         }
         const x = PLOT_LEFT + i;
+        if (![d.min[i], d.max[i], d.first[i], d.last[i]].every(Number.isFinite)) { pen = false; continue; }
         const yMin = yOf(d.min[i]!);
         const yMax = yOf(d.max[i]!);
         const yFirst = yOf(d.first[i]!);
@@ -188,6 +207,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
         lastY = yLast;
       }
       ctx.stroke();
+      ctx.restore();
     }
 
     // Cursors and the virtual clock.

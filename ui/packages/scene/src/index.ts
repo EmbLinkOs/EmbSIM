@@ -30,3 +30,4 @@ export { autoPlace, autoRoute, createLayout, arrange, layoutParts, routeConnecti
 export { canvasBackground, normalizeAppearance, DEFAULT_CANVAS_APPEARANCE, type CanvasAppearance, type CanvasPalette, type GridStyle } from './canvasAppearance';
 export { shiftWireSegment, projectPinPoints, cleanWirePoints, segmentContacts } from './wireEditing';
 export { checkSchematic, type SchematicIssue, type CheckSeverity } from './schematicChecks';
+export { liveElectricalIssues, type ElectricalIssue } from './electricalFeedback';

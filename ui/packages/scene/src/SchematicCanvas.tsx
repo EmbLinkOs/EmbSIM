@@ -7,7 +7,7 @@
 // Editing callbacks describe intents (move, wire, delete); the owner turns
 // them into project transactions and feeds the new project back in.
 
-import type { Layout, NetState, ProbeInfo, Project, SymbolDescription, Wire } from '@embsim/protocol';
+import type { Layout, NetState, PinDescription, ProbeInfo, Project, SymbolDescription, Wire } from '@embsim/protocol';
 import { memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type Ref } from 'react';
 import { componentValue, placeComponentLabels } from './componentLabels';
 import { ComponentSymbol } from './ComponentSymbol';
@@ -18,6 +18,7 @@ import {
   findJunctions,
   findAirwires,
   pinPosition,
+  localToSheet,
   rectContainsRect,
   rectsIntersect,
   routeOrthogonal,
@@ -33,10 +34,13 @@ import { busText, busValue } from './bus';
 import { routeConnection } from './autoLayout';
 import { shiftWireSegment } from './wireEditing';
 import { canvasBackground, DEFAULT_CANVAS_APPEARANCE, type CanvasAppearance } from './canvasAppearance';
+import { liveElectricalIssues } from './electricalFeedback';
 
 export interface SceneSymbol {
   /** Authoritative terminal names; symbols may omit hidden terminals. */
   terminals?: string[];
+  /** Electrical metadata for declared component terminals (boards may omit it). */
+  pins?: PinDescription[];
   name: string;
   symbol: SymbolDescription;
   svg: string;
@@ -117,6 +121,7 @@ export interface SchematicCanvasProps {
   smartWires?: boolean;
   alignmentGuides?: boolean;
   highlightNet?: string | null;
+  onHighlightNet?: (net: string) => void;
   issueMarker?: { point: Point; label: string; severity: 'error' | 'warning' | 'info' };
   onReshapeWire?: (index: number, segment: number, offset: number, source: Project) => void;
   onCanvasContext?: (context: CanvasContext) => void;
@@ -146,7 +151,7 @@ export type NetVisual = { kind: 'low' | 'high' | 'z' | 'x' | 'analog' | 'idle'; 
 
 export function describeNetState(state: NetState | undefined, range: [number, number]): NetVisual {
   if (!state) return { kind: 'idle', text: 'no state' };
-  if (state.contention) return { kind: 'x', text: 'contention' };
+  if (state.contention) return { kind: 'x', text: `conflicting drivers${state.voltage !== undefined ? ` · ${state.voltage.toFixed(3)} V` : ''}` };
   if (state.logic === 'X') return { kind: 'x', text: 'X (unknown)' };
   if (state.logic === 'Z') return { kind: 'z', text: 'Z (floating)' };
   if (state.logic === '0' || state.logic === '1') {
@@ -186,7 +191,7 @@ interface PlacedComponent {
   layout: Layout;
   symbol: SceneSymbol | undefined;
   bounds: Rect;
-  pins: { name: string; point: Point; net: string | undefined }[];
+  pins: { name: string; point: Point; net: string | undefined; label: { x: number; y: number; anchor: 'start' | 'middle' | 'end' } }[];
   value: string;
 }
 
@@ -203,13 +208,14 @@ interface PartViewProps {
   pinVisuals: NetVisual[];
   pinKey: string;
   activePin: string | null;
+  highlightNet: string | null;
   onHover: HoverFn;
   onLeave: () => void;
 }
 
 /** One placed part: re-rendered only when it, its selection or its pins' nets change. */
 const PartView = memo(
-  function PartView({ c, selected, offset, showPins, live, pinVisuals, activePin, onHover, onLeave }: PartViewProps) {
+  function PartView({ c, selected, offset, showPins, live, pinVisuals, activePin, highlightNet, onHover, onLeave }: PartViewProps) {
     const sym = c.symbol;
     const desc = `${c.id}, ${sym?.name ?? c.componentId}${c.value ? `, ${c.value}` : ''}${selected ? ', selected' : ''}`;
     return (
@@ -238,16 +244,22 @@ const PartView = memo(
               <g
                 key={pin.name}
                 data-pin={`${c.id}.${pin.name}`}
-                className={`es-pin${pin.net ? ' es-pin--connected' : ''} es-wire--${vis.kind}${activePin === pin.name ? ' es-pin--active' : ''}`}
+                className={`es-pin${pin.net ? ' es-pin--connected' : ''} es-wire--${vis.kind}${activePin === pin.name ? ' es-pin--active' : ''}${pin.net && pin.net === highlightNet ? ' es-pin--spotlight' : ''}${selected ? ' es-pin--labelled' : ''}`}
                 tabIndex={0}
                 role="button"
                 aria-label={`Pin ${c.id}.${pin.name}${pin.net ? `, net ${pin.net}` : ', unconnected'}${live && pin.net ? `, ${vis.text}` : ''}`}
                 transform={`translate(${pin.point.x} ${pin.point.y})`}
                 onPointerEnter={(e) => onHover(`${c.id}.${pin.name}`, pin.net ? (live ? `${pin.net} · ${vis.text}` : `net ${pin.net}`) : 'unconnected', e.clientX, e.clientY)}
                 onPointerLeave={onLeave}
+                onFocus={(e) => { const r = e.currentTarget.getBoundingClientRect(); onHover(`${c.id}.${pin.name}`, pin.net ? `${pin.net}${live ? ` · ${vis.text}` : ''}` : 'unconnected', r.x, r.y); }}
+                onBlur={onLeave}
               >
                 <circle className="es-pin__hit" r={7} />
                 <circle className="es-pin__dot" r={3.2} style={vis.color ? { stroke: vis.color } : undefined} />
+                <circle className="es-pin__halo" r={6} />
+                <text className="es-pin__label" x={pin.label.x} y={pin.label.y} textAnchor={pin.label.anchor} pointerEvents="none">
+                  {pin.name}{live && ['low', 'high', 'x', 'z'].includes(vis.kind) ? ` · ${vis.kind === 'low' ? '0' : vis.kind === 'high' ? '1' : vis.kind.toUpperCase()}` : ''}
+                </text>
               </g>
             );
           })}
@@ -255,7 +267,7 @@ const PartView = memo(
     );
   },
   (a, b) =>
-    a.c === b.c && a.selected === b.selected && a.offset === b.offset && a.showPins === b.showPins && a.live === b.live && a.pinKey === b.pinKey && a.activePin === b.activePin && a.onHover === b.onHover,
+    a.c === b.c && a.selected === b.selected && a.offset === b.offset && a.showPins === b.showPins && a.live === b.live && a.pinKey === b.pinKey && a.activePin === b.activePin && a.highlightNet === b.highlightNet && a.onHover === b.onHover,
 );
 
 interface WireViewProps {
@@ -302,7 +314,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     showMinimap = false,
     smartWires = false,
     alignmentGuides = true,
-    highlightNet,
+    highlightNet: requestedHighlightNet,
+    onHighlightNet,
     issueMarker,
     onMove,
     onReshapeWire,
@@ -356,18 +369,28 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       const symbol = catalog[c.component];
       const layout = c.layout ?? { x: 0, y: 0 };
       const sym = symbol?.symbol ?? { svg: '', width: 60, height: 20, pins: {} };
-      const pins = Object.keys(sym.pins).map((name) => ({
-        name,
-        point: pinPosition(layout, sym, name) ?? { x: layout.x, y: layout.y },
-        net: pinNet.get(`${c.id}.${name}`),
-      }));
+      const pins = Object.entries(sym.pins).map(([name, anchor]) => {
+        const point = pinPosition(layout, sym, name) ?? { x: layout.x, y: layout.y };
+        const side = anchor.side ?? (anchor.x <= sym.width / 2 ? 'left' : 'right');
+        const outside = localToSheet({ x: anchor.x + (side === 'left' ? -10 : side === 'right' ? 10 : 0), y: anchor.y + (side === 'top' ? -10 : side === 'bottom' ? 10 : 0) }, layout, sym);
+        const dx = Math.round(outside.x - point.x), dy = Math.round(outside.y - point.y);
+        const label = { x: dx, y: dy + (dx ? -5 : dy > 0 ? 8 : 0), anchor: (dx < 0 ? 'end' : dx > 0 ? 'start' : 'middle') as 'start' | 'end' | 'middle' };
+        return { name, point, net: pinNet.get(`${c.id}.${name}`), label };
+      });
       const valueParam = symbol?.valueParam;
       const value = valueParam === 'dc' && typeof c.params?.kind === 'string' && c.params.kind !== 'dc' ? c.params.kind : valueParam ? componentValue(c.params?.[valueParam] ?? symbol?.valueDefault, symbol?.valueUnit) : '';
       return { id: c.id, componentId: c.component, layout, symbol, bounds: symbolBounds(layout, sym, 4), pins, value };
     });
   }, [project.components, project.boards, catalog, pinNet]);
 
-  const componentLabels = useMemo(() => placeComponentLabels(placed.map((part) => ({ id: part.id, bounds: part.bounds, pins: part.pins.map((pin) => pin.point), name: part.symbol?.name ?? part.componentId.split('/').at(-1) ?? part.componentId, value: part.value })), wires, appearance.labels !== 'compact'), [placed, wires, appearance.labels]);
+  const componentLabels = useMemo(() => {
+    const headers = (project.layout?.groups ?? []).flatMap((group) => {
+      const members = placed.filter((part) => group.members.includes(part.id));
+      if (!members.length) return [];
+      return [{ x: Math.min(...members.map((part) => part.bounds.x)) - 14, y: Math.min(...members.map((part) => part.bounds.y)) - 39, width: Math.max(100, group.name.length * 8 + 24), height: 24 }];
+    });
+    return placeComponentLabels(placed.map((part) => ({ id: part.id, bounds: part.bounds, pins: part.pins.map((pin) => pin.point), name: part.symbol?.name ?? part.componentId.split('/').at(-1) ?? part.componentId, value: part.value })), wires, appearance.labels !== 'compact', headers);
+  }, [placed, wires, appearance.labels, project.layout?.groups]);
 
   const placedById = useMemo(() => new Map(placed.map((p) => [p.id, p])), [placed]);
 
@@ -428,12 +451,16 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
 
   const focusBounds = useCallback((rects: Rect[]) => {
     if (!rects.length) return;
+    // An imperative focus can run before ResizeObserver's first delivery when
+    // a tab mounts. Use the actual canvas dimensions instead of its fallback.
+    const width = svgRef.current?.clientWidth || size.width;
+    const height = svgRef.current?.clientHeight || size.height;
     const minX = Math.min(...rects.map((r) => r.x)) - 50;
     const minY = Math.min(...rects.map((r) => r.y)) - 50;
     const maxX = Math.max(...rects.map((r) => r.x + r.width)) + 50;
     const maxY = Math.max(...rects.map((r) => r.y + r.height)) + 50;
-    const k = Math.max(MIN_ZOOM, Math.min(2, Math.min(size.width / (maxX - minX), size.height / (maxY - minY))));
-    setViewport({ x: (size.width - (maxX - minX) * k) / 2 - minX * k, y: (size.height - (maxY - minY) * k) / 2 - minY * k, k });
+    const k = Math.max(MIN_ZOOM, Math.min(2, Math.min(width / (maxX - minX), height / (maxY - minY))));
+    setViewport({ x: (width - (maxX - minX) * k) / 2 - minX * k, y: (height - (maxY - minY) * k) / 2 - minY * k, k });
   }, [size, setViewport]);
 
   const zoomToFit = useCallback(() => {
@@ -1034,6 +1061,10 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const hideHover = useCallback(() => setHover(null), []);
 
   const netVisual = (net: string): NetVisual => (live ? describeNetState(netStates?.[net], analogRange) : { kind: 'idle', text: '' });
+  const selectedNets = new Set(selection.wires.map((i) => wires[i]?.net).filter((n): n is string => !!n));
+  const highlightNet = requestedHighlightNet ?? (selectedNets.size === 1 ? [...selectedNets][0]! : null);
+  const electricalIssues = useMemo(() => live ? liveElectricalIssues(project, catalog, netStates ?? {}) : [], [live, project, catalog, netStates]);
+  const [showElectricalIssues, setShowElectricalIssues] = useState(false);
 
   const wireTarget = wiring ? findPinAt(wiring.cursor, .1) : null;
   const smartPreview = wiring && !wiring.manual && smartWires ? routeConnection(project, catalog, wiring.from, wireTarget ?? { point: wiring.cursor, net: findWireAt(wiring.cursor, .1)?.wire.net }) : null;
@@ -1095,7 +1126,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             })}
             {junctions.map((j, i) => {
               const vis = netVisual(j.net);
-              return <circle key={`j-${i}`} className={`es-junction es-wire--${vis.kind}`} cx={j.point.x} cy={j.point.y} r={2.4} style={vis.color ? { fill: vis.color } : undefined} />;
+              return <circle key={`j-${i}`} className={`es-junction es-wire--${vis.kind}`} cx={j.point.x} cy={j.point.y} r={highlightNet === j.net ? 3.5 : 2.4} opacity={highlightNet && highlightNet !== j.net ? .18 : 1} style={vis.color ? { fill: vis.color } : undefined} />;
             })}
           </g>
 
@@ -1140,6 +1171,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
                   pinVisuals={pinVisuals}
                   pinKey={pinVisuals.map((v) => `${v.kind}|${v.color ?? ''}|${v.text}`).join(';')}
                   activePin={wiring && wiring.from.component === c.id ? wiring.from.pin : null}
+                  highlightNet={highlightNet}
                   onHover={showHover}
                   onLeave={hideHover}
                 />
@@ -1151,7 +1183,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {labels.map((l, i) => {
               const vis = netVisual(l.net);
               return (
-                <g key={`l-${i}`} data-net-label={l.net} className={`es-net-label es-wire--${vis.kind}`} transform={`translate(${l.x} ${l.y})`}>
+                <g key={`l-${i}`} data-net-label={l.net} opacity={highlightNet && highlightNet !== l.net ? .25 : 1} className={`es-net-label es-wire--${vis.kind}`} transform={`translate(${l.x} ${l.y})`}>
                   <text style={vis.color ? { fill: vis.color } : undefined}>{l.net}</text>
                   {live && vis.text && (
                     <text className="es-net-label__state" y={11}>
@@ -1218,6 +1250,18 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
           </g>
         </g>
       </svg>
+      {highlightNet && <div className="es-net-spotlight" role="status"><strong>{highlightNet}</strong><span>{project.nets[highlightNet]?.length ?? 0} terminals{live ? ` · ${netVisual(highlightNet).text}` : ''}</span></div>}
+      {electricalIssues.length > 0 && <div className="es-electrical-feedback" aria-label="Live electrical warnings">
+        <button type="button" aria-expanded={showElectricalIssues} onClick={() => setShowElectricalIssues((v) => !v)}>
+          <span aria-hidden="true">⚠</span> {electricalIssues.length} electrical warning{electricalIssues.length === 1 ? '' : 's'} <span>{showElectricalIssues ? 'Hide' : 'Review'}</span>
+        </button>
+        {showElectricalIssues && <ul>{electricalIssues.map((issue) => <li key={`${issue.code}:${issue.net}`}><button type="button" onClick={() => {
+          onSelectionChange({ components: [], wires: wires.flatMap((w, i) => w.net === issue.net ? [i] : []) });
+          onHighlightNet?.(issue.net);
+          const points = pinsByNet[issue.net] ?? [];
+          focusBounds([...points.map((p) => ({ ...p, width: 0, height: 0 })), ...wires.filter((w) => w.net === issue.net).flatMap((w) => w.points.map(([x, y]) => ({ x, y, width: 0, height: 0 })))]);
+        }}><strong>{issue.title}</strong><small>{issue.detail}</small></button></li>)}</ul>}
+      </div>}
       {/* a narrow canvas keeps its sheet: the navigator would cover a third of it */}
       {showMinimap && size.width >= 640 && (
         <div className="es-scene__navigator" aria-label="Sheet navigator">

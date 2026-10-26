@@ -463,6 +463,41 @@ static void pin_contribution(const esk_pin *p, esk_logic *v, esk_strength *s)
     }
 }
 
+static int contention_drivers(const esk_net *n, const esk_pin **low, const esk_pin **high)
+{
+    size_t i;
+    esk_strength strongest = ESK_STR_HIZ;
+    *low = *high = NULL;
+    for (i = 0; i < n->pins.len; i++) {
+        const esk_pin *p = n->pins.data[i];
+        esk_logic v;
+        esk_strength s;
+        /* Power pins on analog islands may be supply inputs with disabled
+         * bridges. Restrict analog intent conflicts to active digital outputs. */
+        if (n->island && p->model.kind != ESK_PIN_DIGITAL_OUT &&
+            !(p->model.kind == ESK_PIN_DIGITAL_IO && p->is_output))
+            continue;
+        pin_contribution(p, &v, &s);
+        if (s < ESK_STR_STRONG)
+            continue;
+        if (!n->island && s > strongest) {
+            strongest = s;
+            *low = *high = NULL;
+        }
+        if (!n->island && s < strongest)
+            continue;
+        if (v == ESK_L0 && !*low) *low = p;
+        if (v == ESK_L1 && !*high) *high = p;
+    }
+    return *low && *high;
+}
+
+int esk_net_has_contention(const esk_net *n)
+{
+    const esk_pin *low, *high;
+    return contention_drivers(n, &low, &high);
+}
+
 static void resolve_net(esk_engine *e, esk_net *n, esk_logic *out_v, esk_strength *out_s, const esk_pin **a, const esk_pin **b)
 {
     esk_logic v = ESK_LZ;
@@ -536,18 +571,20 @@ static void update_net(esk_engine *e, esk_net *n)
     esk_logic v;
     esk_strength s;
     const esk_pin *a, *b;
+    int contention;
     if (n->island) {
         /* analog net: the digital drivers are bridges; the island is told by the bridge */
         return;
     }
     resolve_net(e, n, &v, &s, &a, &b);
+    contention = contention_drivers(n, &a, &b);
     /* two pulls that disagree are a divider, not a fight: X, but no
      * diagnostic (a pad's pull-down meeting a terminal's pull-up) */
-    if (v == ESK_LX && s >= ESK_STR_STRONG && !n->contention_reported && a && b) {
+    if (contention && !n->contention_reported) {
         n->contention_reported = 1;
         esk_diag_raise(e->diag, ES_SEV_WARNING, "net.contention", e->sched.now, "net", n->name, NULL, 0,
-                       "drivers %s.%s and %s.%s disagree at equal strength", a->comp->id, a->name, b->comp->id, b->name);
-    } else if (v != ESK_LX) {
+                       "drivers %s.%s and %s.%s disagree at the strongest active drive strength", a->comp->id, a->name, b->comp->id, b->name);
+    } else if (!contention) {
         n->contention_reported = 0;
     }
     if (v != n->value || s != n->strength) {

@@ -339,3 +339,23 @@ positions minimize intersections with bodies, terminal neighborhoods, prior labe
 and track bounding boxes; they do not alter geometry or guarantee an overlap-free
 dense sheet. Compact reference/value labels and idle-wire color persist as device
 appearance preferences, independent of project and electrical data.
+
+## Wired instruments and electrical feedback
+
+Run includes wired-instrument cards with configured impedance, lead nets and
+engine readings, plus locate/trace actions. Tracing a component output does not
+insert another load. Missing leads disable that panel's trace action. The
+separate catalog instruments and explicit leads control electrical loading.
+
+Wire selection highlights its complete net, including terminal rings, junctions
+and labels. Pin names remain horizontal through symbol rotation and appear for
+selected parts, highlighted nets and focused/hovered terminals. Live 0/1/X/Z
+states accompany exposed pin names. Pausing retains current Design observations.
+
+A live warning list distinguishes floating/unknown receivers and confirmed
+opposing known drivers using native observation metadata, including board
+internals. Selecting a warning locates/highlights its net without changing the
+netlist. Static checks additionally identify unconnected declared digital inputs
+without declared pulls. These are bounded checks, not complete electrical-rule,
+overcurrent, analog floating-node or voltage-domain qualification. See
+[instrument loading](../engineering/instrument-loading.md).

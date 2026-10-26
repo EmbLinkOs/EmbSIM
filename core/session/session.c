@@ -893,11 +893,35 @@ static const char *strength_name(esk_strength s)
 static esk_json *net_state(es_session *s, const esk_net *n)
 {
     esk_json *o = esk_json_new_object(s->a);
+    esk_json *receivers;
     size_t k;
     if (!o)
         return NULL;
+    esk_json_set_bool(s->a, o, "contention", esk_net_has_contention(n));
+    receivers = esk_json_new_array(s->a);
+    if (receivers) {
+        esk_logic level = ESK_LZ;
+        int seen = 0;
+        for (k = 0; k < n->pins.len; k++) {
+            const esk_pin *p = n->pins.data[k];
+            if (p->model.kind == ESK_PIN_DIGITAL_IN ||
+                (p->model.kind == ESK_PIN_DIGITAL_IO && !p->is_output)) {
+                char ref[256];
+                esk_logic v = esk_pin_level(p);
+                esk_snprintf(ref, sizeof ref, "%s.%s", p->comp->id, p->name);
+                esk_json_array_push(s->a, receivers, esk_json_new_string(s->a, ref));
+                if (!seen) level = v;
+                else if (level != v) level = ESK_LX;
+                seen = 1;
+            }
+        }
+        if (n->island && seen) {
+            esk_json_set_string(s->a, o, "logic", esk_logic_name(level));
+        }
+        esk_json_object_set(s->a, o, "receivers", receivers);
+    }
     if (n->island) {
-        esk_json_set_string(s->a, o, "kind", "analog");
+        esk_json_set_string(s->a, o, "kind", esk_json_get(o, "logic") ? "mixed" : "analog");
         esk_json_set_number(s->a, o, "voltage", n->voltage);
         esk_json_set_integer(s->a, o, "island", (int64_t)n->island->id);
     } else {

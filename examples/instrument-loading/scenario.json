@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Instrument loading acceptance",
+  "until": "30us",
+  "assertions": [
+    {
+      "id": "meter-voltage",
+      "probe": "meter-voltage",
+      "at": "20us",
+      "expect": {
+        "min": 9.090709090909092,
+        "max": 9.091109090909091
+      }
+    },
+    {
+      "id": "meter-current",
+      "probe": "meter-current",
+      "at": "20us",
+      "expect": {
+        "min": 9.08990909090909e-07,
+        "max": 9.09190909090909e-07
+      }
+    },
+    {
+      "id": "unloaded-reference",
+      "probe": "unloaded-node",
+      "at": "20us",
+      "expect": {
+        "min_v": 9.999,
+        "max_v": 10.001
+      }
+    },
+    {
+      "id": "ammeter-current",
+      "probe": "ammeter-current",
+      "at": "20us",
+      "expect": {
+        "min": 0.04545444545454545,
+        "max": 0.04545464545454546
+      }
+    },
+    {
+      "id": "burden-voltage",
+      "probe": "burden-voltage",
+      "at": "20us",
+      "expect": {
+        "min": 0.45444545454545454,
+        "max": 0.4546454545454545
+      }
+    },
+    {
+      "id": "no-ammeter-current",
+      "probe": "no-ammeter-current",
+      "at": "20us",
+      "expect": {
+        "min": 0.0499999,
+        "max": 0.050000100000000006
+      }
+    },
+    {
+      "id": "generator-loaded",
+      "probe": "generator-loaded",
+      "at": "20us",
+      "expect": {
+        "min": 0.9999,
+        "max": 1.0001
+      }
+    },
+    {
+      "id": "generator-open",
+      "probe": "generator-open",
+      "at": "20us",
+      "expect": {
+        "min": 1.9999,
+        "max": 2.0001
+      }
+    },
+    {
+      "id": "generator-current",
+      "probe": "generator-current",
+      "at": "20us",
+      "expect": {
+        "min": -0.0200001,
+        "max": -0.0199999
+      }
+    },
+    {
+      "id": "generator-high-z",
+      "probe": "generator-high-z",
+      "at": "20us",
+      "expect": {
+        "min": 1.9999,
+        "max": 2.0001
+      }
+    },
+    {
+      "id": "scope-step",
+      "probe": "scope-step",
+      "at": "11us",
+      "expect": {
+        "min": 3.1455108212167557,
+        "max": 3.175510821216756
+      }
+    },
+    {
+      "id": "resistive-step",
+      "probe": "resistive-step",
+      "at": "11us",
+      "expect": {
+        "min": 4.9999,
+        "max": 5.0001
+      }
+    },
+    {
+      "id": "solver-health",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}

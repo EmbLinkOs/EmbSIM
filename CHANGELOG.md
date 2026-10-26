@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Wired instrument loading and electrical feedback
+
+- Add configurable voltmeter input resistance, ammeter insertion burden,
+  oscilloscope input R/C and a function generator with 50 Ω output impedance.
+- Show wired instruments, connected leads and native readings with trace and
+  schematic actions; observation-only probes retain zero loading.
+- Highlight selected nets through pin rings, junctions and labels; reveal readable
+  pin names and observed logic states on selected/focused terminals.
+- Report active receiver identities and current driver conflicts in native net
+  observations, retaining solved mixed-signal voltages; distinguish unknown
+  inputs from confirmed opposing known drives.
+- Fit captured waveforms to the available interval, stop plots/cursor readings at
+  the producer frontier and center instrument lead navigation in the actual pane.
+- Add unconnected-input and live electrical warnings, an analytic loading bench,
+  twelve component fixtures and RC refinement/driver-release checks.
+
 ### Firmware-driven indicators and waveform acceptance
 
 - Boot a native ESP32-C3 RGB acceptance circuit from a flash image; physical

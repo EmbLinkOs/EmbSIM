@@ -163,7 +163,14 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
       // until its first change, and nothing is drawn past the present
       const held = ch.record.valueAt(win.start);
       let prevLevel: number | null = Number.isFinite(held) ? held : null;
-      const stop = now !== undefined && now < end ? Math.max(0, Math.floor(timeToX(now, win, pw))) : buckets;
+      const frontier = ch.record.captureEnd ?? win.start;
+      const through = now !== undefined && now < frontier ? now : frontier;
+      const extent = Math.max(0, Math.min(pw, timeToX(through, win, pw)));
+      const stop = Math.floor(extent);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(PLOT_LEFT, top, extent, ROW - 2);
+      ctx.clip();
       for (let i = 0; i < Math.min(buckets, stop + 1); i++) {
         if (d.count[i] === 0) {
           if (prevLevel === null) continue;
@@ -209,6 +216,7 @@ export function LogicAnalyzer({ channels, window: win, onWindowChange, cursors, 
         }
         prevLevel = last;
       }
+      ctx.restore();
     });
 
     const drawCursor = (t: Time | null, c: string, name: string) => {

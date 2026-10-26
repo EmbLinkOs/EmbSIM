@@ -76,7 +76,7 @@ GPIO_RE = re.compile(r"^P([A-Z])([0-9]+)$")
 
 PRIMITIVE_PINS = {
     "resistor": ["1", "2"], "capacitor": ["1", "2"], "inductor": ["1", "2"],
-    "vsource": ["+", "-"], "isource": ["+", "-"], "switch": ["1", "2"],
+    "instrument_input": ["+", "-"], "vsource": ["+", "-"], "isource": ["+", "-"], "switch": ["1", "2"],
     "potentiometer": ["1", "W", "2"], "diode": ["A", "K"], "led": ["A", "K"], "rgb_led": ["R", "COM", "G", "B"], "rgb_indicator": ["R", "COM", "G", "B"], "zener": ["A", "K"],
     "bjt_npn": ["C", "B", "E"], "bjt_pnp": ["C", "B", "E"], "nmos": ["D", "G", "S"],
     "pmos": ["D", "G", "S"], "opamp": ["+", "-", "OUT"], "regulator": ["IN", "OUT", "GND"],

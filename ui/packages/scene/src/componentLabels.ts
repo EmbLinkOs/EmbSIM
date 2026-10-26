@@ -13,8 +13,8 @@ export function componentValue(value: unknown, unit = ''): string {
 export interface LabelPart { id: string; bounds: Rect; name: string; value: string; pins: Point[] }
 export interface ComponentLabel { x: number; y: number; width: number; height: number; name: string }
 /** Bounded deterministic candidate placement. Labels never move electrical geometry. */
-export function placeComponentLabels(parts: LabelPart[], wires: { points: [number, number][] }[], detailed: boolean): Map<string, ComponentLabel> {
-  const placed: Rect[] = [];
+export function placeComponentLabels(parts: LabelPart[], wires: { points: [number, number][] }[], detailed: boolean, reserved: Rect[] = []): Map<string, ComponentLabel> {
+  const placed: Rect[] = [...reserved];
   const result = new Map<string, ComponentLabel>();
   for (const part of [...parts].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
     const name = detailed ? (part.name.length > 24 ? `${part.name.slice(0, 23)}…` : part.name) : '';

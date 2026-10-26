@@ -30,8 +30,9 @@ must check frequency, duty, on-state current, mean current and driver voltage
 drop, including off and full-on endpoints. Averaged electrical current is not
 calibrated optical brightness or a manufacturer PWM/transient qualification.
 
-The scope remains an ideal inspection probe. Connected oscilloscope input R/C,
-voltmeter loading and ammeter burden follow component qualification separately.
+Scope traces remain ideal inspection probes. Wire the separate
+[loaded instrument components](instrument-loading.md) to include oscilloscope
+input R/C, voltmeter loading, ammeter burden or generator output impedance.
 
 ## Circuit and independent bounds
 

@@ -5,6 +5,32 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Wired instrument loading and electrical feedback (2026-10-26)
+
+Branch `feat/loaded-instruments` adds generic configurable wired voltmeter,
+ammeter, scope-input and function-generator equivalents. Their finite input,
+shunt and output impedances enter the native solve; scope capacitance reuses the
+adaptive integrator. The loading bench checks 13 independent analytic targets;
+twelve component fixtures exercise loading, polarity and transient behavior.
+Local verification passes 49 native CTest targets, 12 instrument fixtures /
+37 assertions, and the 13-assertion loading and 3-assertion deliberate-fault
+scenarios. Native tests check current conservation, reset, refined RC convergence, digital
+conflict clearing and loaded opposing drivers. Protocol checks verify current
+contention and receiver identities for digital and mixed nets.
+
+The Run panel shows impedance, lead nets and actual readings with locate/trace
+actions. Selected nets expose every terminal, junction and label. Pin names and
+live states remain horizontal through rotation. Live input warnings distinguish
+Z, X and opposing known drives, and locate their nets; unwired declared digital
+inputs without declared pulls also produce structural warnings. A zero analog
+voltage is not treated as proof of floating.
+
+See the [instrument contract and limits](engineering/instrument-loading.md) and
+[interactive loading bench](../examples/instrument-loading/README.md). These are
+linear equivalent circuits, not commercial instrument accuracy, bandwidth,
+protection, noise, thermal/damage or earth/chassis qualification. Ideal observation
+probes remain available alongside the explicitly wired loads.
+
 ## Firmware-driven RGB and waveform measurements (2026-10-26)
 
 Branch `feat/indicator-pwm-evidence` extends the named indicators with an
@@ -36,7 +62,8 @@ The selected advance interval is shared by the toolbar, F7 and command palette.
 [PWM evidence and limits](engineering/indicator-pwm.md) and the
 [rebuildable example](../examples/esp32c3-qualified-rgb/README.md) explain the
 source bounds, sampling, raw-image analysis limits and unsupported effects.
-Thermal/charge/optical behavior and physical instrument loading remain open;
+Thermal/charge/optical behavior remains open; configurable physical instrument
+loading follows in the milestone above;
 the 3D emitter still shows instantaneous observations and can alias PWM.
 
 ## First named indicator evidence batch (2026-10-26)

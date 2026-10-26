@@ -20,6 +20,8 @@ add_test(NAME catalog_fixtures COMMAND embsim_cli catalog validate ${CMAKE_SOURC
 # protocol conformance suite over the stdio and WebSocket transports.
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
+  add_test(NAME electrical_feedback COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_electrical_feedback.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   add_test(NAME tools_unittests COMMAND ${Python3_EXECUTABLE} -m unittest discover -s ${CMAKE_SOURCE_DIR}/tools -p "test_*.py"
            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   add_test(NAME catalog_sdk COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_sdk.py

@@ -433,6 +433,8 @@ export interface NetState {
   voltage?: number;
   /** Driver conflict present. */
   contention?: boolean;
+  /** Active digital receivers, including terminals inside board instances. */
+  receivers?: string[];
   strength?: string;
   changed_at_ps?: PsString;
 }

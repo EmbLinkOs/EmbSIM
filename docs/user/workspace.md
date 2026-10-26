@@ -47,3 +47,21 @@ In **Verify**, a `between` assertion can check **Every sample**, **Time mean**,
 **Time RMS** or **Duty cycle**. Measured assertions use numeric bounds or equals
 with an absolute tolerance. Duty is a fraction from 0 to 1 and requires a digital
 probe. [Try the firmware-driven RGB example](../../examples/esp32c3-qualified-rgb/README.md).
+
+
+To include measurement loading, place **Voltmeter (loaded input)**,
+**Ammeter (shunt burden)**, **Oscilloscope input (R ∥ C)** or
+**Function generator (50 Ω output)** from the Instruments category in Design.
+Use electrical policy and wire both leads. Run's **Wired instruments** panel
+shows their configured impedance, connected nets and engine readings; **View
+leads** selects the part, and **Add trace** plots its output. The ammeter belongs
+in series. Generator waveform values specify open-circuit voltage; a matched
+50 Ω load receives half that voltage. The negative lead is an explicit reference,
+not an automatic earth connection.
+
+Selecting a schematic wire highlights the whole net and its terminal rings.
+Selected parts, highlighted terminals and focused/hovered pins reveal names and
+observed logic states. Paused Design views retain observations. The **electrical
+warnings** control reveals current floating/unknown inputs and conflicting drivers;
+choose a warning to locate its net. An X level alone is not called a conflict.
+Try the [instrument loading bench](../../examples/instrument-loading/README.md).
