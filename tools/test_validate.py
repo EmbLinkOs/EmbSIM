@@ -561,7 +561,8 @@ class ProjectTests(Base):
         path = self.write_project(scenario=s).parent / "scenarios" / "press.json"
         self.assertClean(self.check(path))
         for change in ({"between": ["1ms", "1ms"]}, {"measure": "median"},
-                       {"expect": {"equals": True}}, {"expect": {"edges": 2}}):
+                       {"expect": {"equals": True}}, {"expect": {"edges": 2}},
+                       {"expect": [1]}, {"expect": [{"min": 0}]}, {"expect": 1}):
             invalid = copy.deepcopy(s)
             invalid["assertions"][0].update(change)
             path.write_text(json.dumps(invalid))

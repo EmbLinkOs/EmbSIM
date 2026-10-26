@@ -1723,7 +1723,8 @@ def check_scenario(report: Report, file: Path, doc: dict, index: Index, ctx: Opt
                 report.warning(file, node + "/between", "scenario.after_until", "window ends after until")
         if "probe" in a and ctx is not None and a["probe"] not in ctx.probes:
             report.error(file, node + "/probe", "catalog.not_found", f"probe {a['probe']} is not declared by the project")
-        exp = a.get("expect") or {}
+        raw_exp = a.get("expect")
+        exp = raw_exp if isinstance(raw_exp, dict) else {}
         if "measure" in a:
             if a["measure"] not in ("mean", "rms", "duty_cycle") or "between" not in a:
                 report.error(file, node + "/measure", "schema.type", "measure requires mean/rms/duty_cycle and a between window")

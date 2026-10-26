@@ -53,6 +53,7 @@ def main():
         for mutation in [{'measure': 'median'}, {'between': ['1ms', '1ms']},
                          {'between': ['1ms', '12ms']}, {'expect': {'logic': '1'}},
                          {'expect': {'equals': True}}, {'expect': {'tolerance': .1}},
+                         {'expect': [1]}, {'expect': [{'min': 0}]}, {'expect': 1}, {'expect': 'invalid'},
                          {'expect': {'equals': .25, 'tolerance': -1}},
                          {'probe': 'analog', 'measure': 'duty_cycle'}, {'probe': 'missing'}]:
             assertion = {**copy.deepcopy(base), **mutation, 'id': f'invalid_{len(invalid)}'}

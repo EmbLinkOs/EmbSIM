@@ -160,8 +160,8 @@ static void evaluate(es_session *s, assertion *a)
         double value = 0;
         es_time_t measured_to = a->t1;
         size_t k;
-        int numeric = a->mode == 1 && esk_json_len(expect) > 0, bound = 0;
-        for (k = 0; k < esk_json_len(expect); k++) {
+        int numeric = a->mode == 1 && expect && expect->type == ESK_JSON_OBJECT && esk_json_len(expect) > 0, bound = 0;
+        for (k = 0; numeric && k < esk_json_len(expect); k++) {
             const esk_json *v = esk_json_at(expect, k);
             int allowed = !strcmp(v->key, "min") || !strcmp(v->key, "max") ||
                           !strcmp(v->key, "equals") || !strcmp(v->key, "tolerance");

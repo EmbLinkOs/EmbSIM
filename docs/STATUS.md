@@ -25,7 +25,7 @@ groups on its single vertical axis. Same-time waveform events retain their
 original timestamps.
 
 Local verification passes all 48 native CTest targets, 249 UI unit tests and all
-30 browser workflows. The CLI measurement contract checks 18 valid/invalid
+30 browser workflows. The CLI measurement contract checks 22 valid/invalid
 assertions. Repeating the firmware circuit at doubled capture rates passes its
 39 assertions and agrees within 1 nA for measured mean/RMS currents and 0.001 of
 duty fraction. These are numerical circuit checks, not real-device accuracy.
