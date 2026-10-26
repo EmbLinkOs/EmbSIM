@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "functional-floating-cathode",
+  "description": "A driven anode with a disconnected cathode has no return path and remains off.",
+  "policy": "functional",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/led",
+        "params": {
+          "color": "green"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.A"
+      ],
+      "GND": [
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit": {
+      "at": "0.5ms",
+      "equals": false
+    }
+  }
+}

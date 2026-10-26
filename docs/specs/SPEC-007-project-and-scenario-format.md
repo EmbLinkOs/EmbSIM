@@ -90,11 +90,23 @@ Rules:
   bench, in millimetres (x to the right, y towards the viewer seen from
   above), and its `rotation`, clockwise; `wires` are jumpers, each from one
   terminal to another (`INSTANCE.PIN`, a breadboard's hole such as
-  `BB1.a12`, a board's port) with an optional `color`; `notes` are text
+  `BB1.a12`, a board's port) with optional `color` (`#RRGGBB`), `rise_mm`
+  (0..1000 mm above the higher endpoint for automatic routing) and `points`
+  (at most 64 intermediate `[X, height, Y]` millimetre triples; finite coordinates
+  within ±1,000,000, height nonnegative). Explicit points override automatic rise;
+  ends remain attached to their named terminals. Paths/crossings are drawing only.
+  `notes` are text
   placed on the bench, optionally pointing `to` a place. A part whose legs
   sit on a breadboard's holes is plugged into them: its pins are in the
   nets of those holes, and the holes of one strip share one net. A jumper's
-  ends are in one net. Removing an instance removes its place and the
+  ends must be distinct known terminals in one declared project net. Duplicate
+  or reversed jumpers and two direct jumper ends in one catalog breadboard hole
+  are invalid. Use another free hole of that strip. Native load/validation and
+  transaction commit enforce these rules. A rejected commit leaves project,
+  clock and probes intact. Native validation does not infer pose-dependent
+  component-leg occupancy or certify connector mating. Appearance-only edits
+  preserve simulation time; changing connectivity rebuilds the circuit.
+  Removing an instance removes its place and the
   jumpers to it. A client building on the bench edits `nets` and
   `layout.bench` in one transaction, so the schematic shows what the bench
   built and the bench shows, as unbuilt connections, what the schematic

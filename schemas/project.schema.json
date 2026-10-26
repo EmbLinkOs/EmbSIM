@@ -146,8 +146,8 @@
                 "required": ["x", "y"],
                 "additionalProperties": false,
                 "properties": {
-                  "x": {"type": "number"},
-                  "y": {"type": "number"},
+                  "x": {"type": "number", "minimum": -1000000, "maximum": 1000000},
+                  "y": {"type": "number", "minimum": -1000000, "maximum": 1000000},
                   "rotation": {"type": "number", "enum": [0, 90, 180, 270]}
                 }
               }
@@ -161,7 +161,9 @@
                 "properties": {
                   "from": {"$ref": "common.schema.json#/$defs/pin_ref"},
                   "to": {"$ref": "common.schema.json#/$defs/pin_ref"},
-                  "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
+                  "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+                  "rise_mm": {"type": "number", "minimum": 0, "maximum": 1000, "description": "Automatic route rise above the higher terminal, in millimetres."},
+                  "points": {"type": "array", "maxItems": 64, "description": "Intermediate route points [X, height, Y] in bench millimetres; endpoints stay attached to terminals.", "items": {"type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{"type": "number", "minimum": -1000000, "maximum": 1000000}, {"type": "number", "minimum": 0, "maximum": 1000000}, {"type": "number", "minimum": -1000000, "maximum": 1000000}], "items": false}}
                 }
               }
             },
@@ -212,7 +214,9 @@
               "shape": {"type": "string", "enum": ["box", "sphere"]},
               "at": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}, "description": "Centre on the bench, mm: x right, y towards the viewer, z up."},
               "size": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "exclusiveMinimum": 0}, "description": "Width, depth, height, mm (a sphere's diameter first)."},
-              "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
+              "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+                  "rise_mm": {"type": "number", "minimum": 0, "maximum": 1000, "description": "Automatic route rise above the higher terminal, in millimetres."},
+                  "points": {"type": "array", "maxItems": 64, "description": "Intermediate route points [X, height, Y] in bench millimetres; endpoints stay attached to terminals.", "items": {"type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{"type": "number", "minimum": -1000000, "maximum": 1000000}, {"type": "number", "minimum": 0, "maximum": 1000000}, {"type": "number", "minimum": -1000000, "maximum": 1000000}], "items": false}}
             }
           }
         }

@@ -4,6 +4,7 @@
  * sources, pulls, switches as transmission gates, the functional indicator,
  * the logic probe and the UART virtual terminal. */
 #include <string.h>
+#include <stdio.h>
 #include "engine/engine.h"
 #include "model/registry.h"
 #include "util/num.h"
@@ -517,14 +518,14 @@ static void sw_observe(esk_comp *c, esk_json *out)
 static const esk_model_ops button_ops = { "push_button_digital", sizeof(sw_state), btn_create, NULL, sw_reset, sw_in, NULL, sw_set, sw_observe, NULL, 0 };
 static const esk_model_ops switch_ops = { "switch_digital", sizeof(sw_state), swd_create, NULL, sw_reset, sw_in, NULL, sw_set, sw_observe, NULL, 0 };
 
-/* ---- indicator (functional LED): A, K; lit when A=1 and K=0 (or K unconnected) */
+/* ---- indicator (functional LED): A, K; lit only with a driven anode and cathode */
 
 typedef struct ind_state { esk_pin *a, *k; int lit; } ind_state;
 static void ind_eval(esk_comp *c)
 {
     ind_state *s = (ind_state *)c->state;
     esk_logic a = esk_pin_read(s->a);
-    esk_logic k = (s->k && s->k->net) ? esk_pin_read(s->k) : ESK_L0;
+    esk_logic k = s->k ? esk_pin_read(s->k) : ESK_LZ;
     s->lit = a == ESK_L1 && k == ESK_L0;
 }
 static es_status ind_create(esk_comp *c)
@@ -548,6 +549,49 @@ static void ind_observe(esk_comp *c, esk_json *out)
     esk_json_set_string(c->e->a, out, "logic", esk_logic_name(s->a->sampled));
 }
 static const esk_model_ops indicator_ops = { "indicator", sizeof(ind_state), ind_create, NULL, ind_reset, ind_in, NULL, NULL, ind_observe, NULL, 0 };
+
+/* Ideal RGB indication still needs a complete, known logic return path. */
+typedef struct rgb_ind_state { esk_pin *pin[4]; int on[3], anode; } rgb_ind_state;
+static void rgb_ind_eval(esk_comp *c)
+{
+    rgb_ind_state *s = (rgb_ind_state *)c->state;
+    esk_logic common = esk_pin_read(s->pin[1]);
+    const int channel[] = {0, 2, 3};
+    int i;
+    for (i = 0; i < 3; i++) {
+        esk_logic level = esk_pin_read(s->pin[channel[i]]);
+        s->on[i] = s->anode ? common == ESK_L1 && level == ESK_L0 :
+                                            common == ESK_L0 && level == ESK_L1;
+    }
+}
+static es_status rgb_ind_create(esk_comp *c)
+{
+    rgb_ind_state *s = (rgb_ind_state *)c->state;
+    const char *names[] = {"R", "COM", "G", "B"};
+    int i;
+    s->anode = esk_str_eq(esk_json_get_str(c->params, "common", "cathode"), "anode");
+    for (i = 0; i < 4; i++) {
+        s->pin[i] = pin_or_null(c, names[i]);
+        if (!s->pin[i]) return ES_ESCHEMA;
+        esk_pin_watch(s->pin[i], 1);
+    }
+    return ES_OK;
+}
+static void rgb_ind_in(esk_comp *c, esk_pin *p) { ES_UNUSED(p); rgb_ind_eval(c); }
+static void rgb_ind_observe(esk_comp *c, esk_json *out)
+{
+    rgb_ind_state *s = (rgb_ind_state *)c->state;
+    char color[8];
+    int lit = s->on[0] || s->on[1] || s->on[2];
+    snprintf(color, sizeof color, "#%02x%02x%02x", s->on[0] ? 255 : 0, s->on[1] ? 255 : 0, s->on[2] ? 255 : 0);
+    esk_json_set_bool(c->e->a, out, "red", s->on[0]);
+    esk_json_set_bool(c->e->a, out, "green", s->on[1]);
+    esk_json_set_bool(c->e->a, out, "blue", s->on[2]);
+    esk_json_set_bool(c->e->a, out, "lit", lit);
+    esk_json_set_number(c->e->a, out, "luminance", lit ? 1 : 0);
+    esk_json_set_string(c->e->a, out, "color", color);
+}
+static const esk_model_ops rgb_indicator_ops = { "rgb_indicator", sizeof(rgb_ind_state), rgb_ind_create, NULL, rgb_ind_eval, rgb_ind_in, NULL, NULL, rgb_ind_observe, NULL, 0 };
 
 /* ---- logic probe: pin 1; output logic -------------------------------------- */
 
@@ -705,7 +749,7 @@ static const esk_model_ops vt_ops = { "virtual_terminal", sizeof(vt_state), vt_c
 static const esk_model_ops *const digital_table[] = {
     &wire_ops, &none_ops, &buffer_ops, &inverter_ops, &and_ops, &nand_ops, &or_ops, &nor_ops, &xor_ops, &xnor_ops,
     &tristate_ops, &dff_ops, &clock_ops, &pulse_ops, &level_ops, &pull_ops, &button_ops, &switch_ops,
-    &indicator_ops, &probe_ops, &vt_ops, &hc_ops, &esk_wifi_ap_ops, &esk_ble_scanner_ops, &esk_web_server_ops, &esk_wifi_scanner_ops, &esk_air_sniffer_ops,
+    &indicator_ops, &rgb_indicator_ops, &probe_ops, &vt_ops, &hc_ops, &esk_wifi_ap_ops, &esk_ble_scanner_ops, &esk_web_server_ops, &esk_wifi_scanner_ops, &esk_air_sniffer_ops,
     &esk_ble_central_ops
 };
 

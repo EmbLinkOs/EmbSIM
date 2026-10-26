@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "rgb-indicator-bench",
+  "description": "Three physical switches feed an RGB LED through separate current-limiting resistors. Press while running; light and loading come from the electrical solver.",
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V1",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 5
+      },
+      "layout": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": "D1",
+      "component": "emblink/rgb_led",
+      "layout": {
+        "x": 650,
+        "y": 220
+      }
+    },
+    {
+      "id": "G1",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 770,
+        "y": 350
+      }
+    },
+    {
+      "id": "SWR",
+      "component": "emblink/push_button",
+      "layout": {
+        "x": 240,
+        "y": 100
+      }
+    },
+    {
+      "id": "RR",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 159
+      },
+      "layout": {
+        "x": 420,
+        "y": 100
+      }
+    },
+    {
+      "id": "SWG",
+      "component": "emblink/push_button",
+      "layout": {
+        "x": 240,
+        "y": 200
+      }
+    },
+    {
+      "id": "RG",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 144
+      },
+      "layout": {
+        "x": 420,
+        "y": 200
+      }
+    },
+    {
+      "id": "SWB",
+      "component": "emblink/push_button",
+      "layout": {
+        "x": 240,
+        "y": 300
+      }
+    },
+    {
+      "id": "RB",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 104
+      },
+      "layout": {
+        "x": 420,
+        "y": 300
+      }
+    }
+  ],
+  "nets": {
+    "V5": [
+      "V1.+",
+      "SWR.1",
+      "SWG.1",
+      "SWB.1"
+    ],
+    "GND": [
+      "V1.-",
+      "G1.GND",
+      "D1.COM"
+    ],
+    "SW_R": [
+      "SWR.2",
+      "RR.1"
+    ],
+    "LED_R": [
+      "RR.2",
+      "D1.R"
+    ],
+    "SW_G": [
+      "SWG.2",
+      "RG.1"
+    ],
+    "LED_G": [
+      "RG.2",
+      "D1.G"
+    ],
+    "SW_B": [
+      "SWB.2",
+      "RB.1"
+    ],
+    "LED_B": [
+      "RB.2",
+      "D1.B"
+    ]
+  },
+  "layout": {
+    "bench": {
+      "parts": {
+        "D1": {
+          "x": 20,
+          "y": 10
+        },
+        "V1": {
+          "x": -60,
+          "y": -40
+        },
+        "G1": {
+          "x": 60,
+          "y": 20
+        },
+        "SWR": {
+          "x": -40,
+          "y": -10
+        },
+        "RR": {
+          "x": -40,
+          "y": 35
+        },
+        "SWG": {
+          "x": -10,
+          "y": -10
+        },
+        "RG": {
+          "x": -10,
+          "y": 35
+        },
+        "SWB": {
+          "x": 20,
+          "y": -10
+        },
+        "RB": {
+          "x": 20,
+          "y": 35
+        }
+      },
+      "wires": [
+        {
+          "from": "V1.+",
+          "to": "SWR.1",
+          "color": "#e74c3c"
+        },
+        {
+          "from": "V1.+",
+          "to": "SWG.1",
+          "color": "#e74c3c"
+        },
+        {
+          "from": "V1.+",
+          "to": "SWB.1",
+          "color": "#e74c3c"
+        },
+        {
+          "from": "V1.-",
+          "to": "G1.GND",
+          "color": "#2c3e50"
+        },
+        {
+          "from": "V1.-",
+          "to": "D1.COM",
+          "color": "#2c3e50"
+        },
+        {
+          "from": "SWR.2",
+          "to": "RR.1",
+          "color": "#e67e22"
+        },
+        {
+          "from": "RR.2",
+          "to": "D1.R",
+          "color": "#e67e22"
+        },
+        {
+          "from": "SWG.2",
+          "to": "RG.1",
+          "color": "#27ae60"
+        },
+        {
+          "from": "RG.2",
+          "to": "D1.G",
+          "color": "#27ae60"
+        },
+        {
+          "from": "SWB.2",
+          "to": "RB.1",
+          "color": "#2e86de"
+        },
+        {
+          "from": "RB.2",
+          "to": "D1.B",
+          "color": "#2e86de"
+        }
+      ]
+    }
+  },
+  "probes": [
+    {
+      "id": "red",
+      "target": "output:D1.red",
+      "kind": "value"
+    },
+    {
+      "id": "green",
+      "target": "output:D1.green",
+      "kind": "value"
+    },
+    {
+      "id": "blue",
+      "target": "output:D1.blue",
+      "kind": "value"
+    },
+    {
+      "id": "lit",
+      "target": "output:D1.lit",
+      "kind": "value"
+    },
+    {
+      "id": "color",
+      "target": "output:D1.color",
+      "kind": "value"
+    },
+    {
+      "id": "luminance",
+      "target": "output:D1.luminance",
+      "kind": "value"
+    },
+    {
+      "id": "red_current",
+      "target": "output:D1.red_current",
+      "kind": "value"
+    },
+    {
+      "id": "green_current",
+      "target": "output:D1.green_current",
+      "kind": "value"
+    },
+    {
+      "id": "blue_current",
+      "target": "output:D1.blue_current",
+      "kind": "value"
+    }
+  ],
+  "scenarios": [
+    "colors.json"
+  ]
+}

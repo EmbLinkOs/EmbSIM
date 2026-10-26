@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "electrical-cathode-current-limited",
+  "description": "electrical cathode current limited",
+  "policy": "electrical",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/rgb_led",
+        "params": {
+          "common": "cathode"
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RR",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 318
+        }
+      },
+      {
+        "id": "VR",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "RG",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 288
+        }
+      },
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 208
+        }
+      },
+      {
+        "id": "VB",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5
+        }
+      }
+    ],
+    "nets": {
+      "GND": [
+        "G.GND",
+        "DUT.COM",
+        "VR.-",
+        "VG.-",
+        "VB.-"
+      ],
+      "DR": [
+        "RR.2",
+        "DUT.R"
+      ],
+      "SR": [
+        "VR.+",
+        "RR.1"
+      ],
+      "DG": [
+        "RG.2",
+        "DUT.G"
+      ],
+      "SG": [
+        "VG.+",
+        "RG.1"
+      ],
+      "DB": [
+        "RB.2",
+        "DUT.B"
+      ],
+      "SB": [
+        "VB.+",
+        "RB.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.red_current": {
+      "at": "500ns",
+      "min": 0.009,
+      "max": 0.012
+    },
+    "output:DUT.red": {
+      "at": "500ns",
+      "equals": true
+    },
+    "output:DUT.green_current": {
+      "at": "500ns",
+      "min": 0.009,
+      "max": 0.012
+    },
+    "output:DUT.green": {
+      "at": "500ns",
+      "equals": true
+    },
+    "output:DUT.blue_current": {
+      "at": "500ns",
+      "min": 0.009,
+      "max": 0.012
+    },
+    "output:DUT.blue": {
+      "at": "500ns",
+      "equals": true
+    },
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": true
+    }
+  }
+}

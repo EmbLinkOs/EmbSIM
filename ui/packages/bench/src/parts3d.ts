@@ -243,12 +243,9 @@ function led(shape: BenchShape, look: PartLook): { group: THREE.Group; glow: THR
   g.add(dome);
   // the legs: the anode longer, straight down
   for (const [name, [px, pz]] of Object.entries(pins)) g.add(leg(px, pz, base + 0.5, name === 'A' ? -3.5 : -2.5, 0.25));
-  let light: THREE.PointLight | undefined;
-  if (look.component.endsWith('/led')) {
-    light = new THREE.PointLight(color, 0, 60, 2);
-    light.position.y = base + 6;
-    g.add(light);
-  }
+  const light = new THREE.PointLight(color, 0, 60, 2);
+  light.position.y = base + 6;
+  g.add(light);
   // the glow a camera sees round a lit LED
   const tex = halo();
   let sprite: THREE.Sprite | undefined;

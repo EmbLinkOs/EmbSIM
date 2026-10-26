@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "functional-floating-common",
+  "description": "functional floating common",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/rgb_led"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.R",
+        "DUT.G",
+        "DUT.B"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": false
+    },
+    "output:DUT.color": {
+      "at": "500ns",
+      "equals": "#000000"
+    }
+  }
+}

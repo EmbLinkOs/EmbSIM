@@ -174,6 +174,10 @@ export interface BenchWire {
   from: string;
   to: string;
   color?: string;
+  /** Drawing only. Intermediate [X, height, Y] points, in bench millimetres. */
+  points?: [number, number, number][];
+  /** Automatic routing height above the higher terminal. Ignored with explicit points. */
+  rise_mm?: number;
 }
 
 export interface BenchNote {

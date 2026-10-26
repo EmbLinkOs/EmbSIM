@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "functional-anode-7",
+  "description": "functional anode 7",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/rgb_led",
+        "params": {
+          "common": "anode"
+        }
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.COM"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.R",
+        "DUT.G",
+        "DUT.B"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.color": {
+      "at": "500ns",
+      "equals": "#ffffff"
+    },
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": true
+    }
+  }
+}

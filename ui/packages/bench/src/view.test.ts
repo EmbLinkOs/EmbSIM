@@ -109,6 +109,7 @@ describe('the bench view', () => {
     expect(linkViews(p, model)).toHaveLength(0);
     const [j] = jumperViews(p, model);
     expect(j!.color).toBe('#27ae60');
+    expect(j!.housings).toEqual([false, false]);
   });
 });
 

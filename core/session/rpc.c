@@ -1182,6 +1182,16 @@ static es_status m_project_transaction(rpc_ctx *r)
         size_t before = s->diag.len;
         int applied = 1, restarted = 0;
         s->tx_project = NULL;
+        {
+            char why[256];
+            if (esk_project_validate_organization(edited, why, sizeof why) ||
+                esk_project_validate_bench(s->catalog, edited, why, sizeof why)) {
+                esk_diag_raise(&s->diag, ES_SEV_ERROR, "bench.invalid", s->eng.sched.now,
+                               "project", s->name ? s->name : "", NULL, 0, "%s", why);
+                esk_json_free(s->a, edited);
+                return fail_status(r, ES_ESCHEMA);
+            }
+        }
         if (!s->tx_structural) {
             esk_json *was = s->project;
             s->project = edited;

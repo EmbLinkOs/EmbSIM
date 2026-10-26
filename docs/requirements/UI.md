@@ -162,3 +162,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-25
 **Verification.** Browser long-name/all-perspective/utility workflows at 768, 900 and 1440 px; open-panel bounds, unchanged stored weights, restored proportions, constrained-edge keyboard resize and reload; actual light/dark/bench captures.
 **Trace.** SPEC-011 Global workspace; ADR-008; ADR-028; ADR-030
+
+### UI-023  Coherent wire construction and tracing
+**Statement.** Existing bench jumpers shall expose named endpoint editing, color, bounded rise and intermediate route points, with pointer and keyboard access and transactional undo. Drawing edits shall preserve connectivity/time/probes; reconnection shall atomically validate endpoints and identify its simulation restart. Interrupted route gestures shall restore the prior path. Shared net selection shall trace wires and breadboard-strip contacts and display engine observations without computing simulation state.
+**Rationale.** Construction, inspection and live behavior must describe one circuit across views.
+**Status.** Accepted 2026-10-25
+**Verification.** Wire graph/atomic failure/strip fixtures, browser appearance/undo/invalid endpoint workflows and native retained-clock/measurement/import validation tests; RGB switch acceptance scenario.
+**Trace.** SPEC-007 Project; SPEC-011 Scene rendering; ADR-027; ADR-030; docs/engineering/circuit-construction.md

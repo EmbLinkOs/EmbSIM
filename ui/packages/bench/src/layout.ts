@@ -453,8 +453,59 @@ function round(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
+export type JumperStyle = Pick<BenchWire, 'color' | 'points' | 'rise_mm'>;
+
+export function validateJumperStyle(style: JumperStyle): void {
+  if (style.color !== undefined && !/^#[\da-f]{6}$/i.test(style.color)) throw new Error('Wire colour must be #RRGGBB');
+  if (style.rise_mm !== undefined && (!Number.isFinite(style.rise_mm) || style.rise_mm < 0 || style.rise_mm > 1000)) throw new Error('Wire rise must be 0–1000 mm');
+  if (style.points !== undefined && (!Array.isArray(style.points) || style.points.length > 64 || style.points.some((point) => !Array.isArray(point) || point.length !== 3 || point.some((v) => !Number.isFinite(v) || Math.abs(v) > 1e6) || point[1] < 0))) throw new Error('Route needs at most 64 finite [X, height, Y] points above the desk');
+}
+
+/** Changes only the drawing. Connections and simulation state are untouched. */
+export function dressJumper(p: Project, index: number, style: JumperStyle): Project {
+  validateJumperStyle(style);
+  const wire = p.layout?.bench?.wires?.[index];
+  if (!wire) throw new Error('Wire no longer exists');
+  // Explicit undefined removes an override (automatic routing). JSON drops these keys.
+  Object.assign(wire, structuredClone(style));
+  return p;
+}
+
+/** Validate on a copy first: a failed reconnection cannot remove the original wire. */
+export function reconnectJumper(p: Project, ctx: BenchContext, index: number, from: string, to: string): Project {
+  const wire = p.layout?.bench?.wires?.[index];
+  if (!wire) throw new Error('Wire no longer exists');
+  if (from === to) throw new Error('Choose two distinct terminals');
+  if (p.layout?.bench?.wires?.some((w, i) => i !== index && ((w.from === from && w.to === to) || (w.to === from && w.from === to)))) throw new Error('That jumper already exists');
+  if (wire.from === from && wire.to === to) return p;
+  const next = structuredClone(p);
+  removeJumper(next, ctx, index);
+  addJumper(next, ctx, { ...wire, from, to });
+  const wires = next.layout!.bench!.wires!;
+  wires.splice(index, 0, wires.pop()!);
+  return next;
+}
+
+/** The project net of a wire, shared by the schematic and bench. */
+export function jumperNet(p: Project, wire: Pick<BenchWire, 'from' | 'to'>): string | undefined {
+  return Object.entries(p.nets).find(([, refs]) => refs.includes(wire.from) && refs.includes(wire.to))?.[0];
+}
+
+/** Expand a canonical net through physical strips, insertions and declared nets. */
+export function traceBench(p: Project, model: BenchModel, net: string): Set<string> {
+  const refs = new Set(p.nets[net] ?? []);
+  let changed = true;
+  const groups = [...Object.values(p.nets), ...[...new Set(model.strip.values())].map((strip) => [...model.strip].filter(([, key]) => key === strip).map(([ref]) => ref)), ...[...model.plugs].map(([pin, hole]) => [pin, hole])];
+  while (changed) {
+    changed = false;
+    for (const group of groups) if (group.some((ref) => refs.has(ref))) for (const ref of group) if (!refs.has(ref)) { refs.add(ref); changed = true; }
+  }
+  return refs;
+}
+
 /** a jumper from one terminal to another: their nets become one */
 export function addJumper(p: Project, ctx: BenchContext, wire: BenchWire): Project {
+  validateJumperStyle(wire);
   const model = benchModel(p, ctx.shapes, ctx.ties);
   for (const ref of [wire.from, wire.to]) {
     const [id, ...pin] = ref.split('.');
@@ -479,13 +530,14 @@ export function removeJumper(p: Project, ctx: BenchContext, index: number): Proj
   const wires = b.wires ?? [];
   const gone = wires[index];
   if (!gone) return p;
+  const explained = benchTerminals(p, benchModel(p, ctx.shapes, ctx.ties));
   b.wires = wires.filter((_, i) => i !== index);
   const model = benchModel(p, ctx.shapes, ctx.ties);
   // an end that is a part's pin and that nothing else on the bench joins leaves the net
   const used = benchTerminals(p, model);
   for (const end of [gone.from, gone.to]) if (!model.holes.has(end) && !used.has(end)) {
     const net = netOf(p, end);
-    if (net && p.nets[net]!.every((t) => t === end || used.has(t) || model.holes.has(t))) removeTerminal(p, end);
+    if (net && p.nets[net]!.every((t) => t === end || explained.has(t) || model.holes.has(t))) removeTerminal(p, end);
   }
   settle(p, model);
   return p;

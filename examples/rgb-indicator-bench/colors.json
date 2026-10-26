@@ -1,0 +1,285 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "all-rgb-mixes",
+  "until": "9ms",
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "SWR",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2ms",
+      "target": "SWG",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "3ms",
+      "target": "SWR",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "4ms",
+      "target": "SWB",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "5ms",
+      "target": "SWR",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "6ms",
+      "target": "SWG",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "7ms",
+      "target": "SWR",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "8ms",
+      "target": "SWB",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "color-0-R",
+      "at": "0.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-0-G",
+      "at": "0.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-0-B",
+      "at": "0.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-1-R",
+      "at": "1.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-1-G",
+      "at": "1.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-1-B",
+      "at": "1.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-2-R",
+      "at": "2.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-2-G",
+      "at": "2.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-2-B",
+      "at": "2.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-3-R",
+      "at": "3.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-3-G",
+      "at": "3.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-3-B",
+      "at": "3.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-4-R",
+      "at": "4.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-4-G",
+      "at": "4.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-4-B",
+      "at": "4.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-5-R",
+      "at": "5.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-5-G",
+      "at": "5.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-5-B",
+      "at": "5.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-6-R",
+      "at": "6.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-6-G",
+      "at": "6.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-6-B",
+      "at": "6.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-7-R",
+      "at": "7.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-7-G",
+      "at": "7.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-7-B",
+      "at": "7.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "color-8-R",
+      "at": "8.5ms",
+      "probe": "red",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-8-G",
+      "at": "8.5ms",
+      "probe": "green",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "color-8-B",
+      "at": "8.5ms",
+      "probe": "blue",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "healthy-solver",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}

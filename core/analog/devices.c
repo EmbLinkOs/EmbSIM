@@ -24,6 +24,7 @@
 #include "analog/named.h"
 #include "util/num.h"
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 #define VT_27C      0.025852 /* kT/q at 27 degrees C, volts */
@@ -35,7 +36,7 @@
 const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
 {
     static const char *const two[] = { "1", "2" }, *const src[] = { "+", "-" }, *const pot[] = { "1", "W", "2" },
-                             *const dio[] = { "A", "K" }, *const bjt[] = { "C", "B", "E" }, *const mos[] = { "D", "G", "S" },
+                             *const dio[] = { "A", "K" }, *const rgb[] = { "R", "COM", "G", "B" }, *const bjt[] = { "C", "B", "E" }, *const mos[] = { "D", "G", "S" },
                              *const amp[] = { "+", "-", "OUT", "V+", "V-" }, *const reg[] = { "IN", "OUT", "GND" },
                              *const env[] = { "1", "2" }, *const opto[] = { "A", "K", "C", "E" },
                              *const relay[] = { "S+", "S-", "COM", "NC", "NO" },
@@ -45,7 +46,7 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
         { "relay_contacts", relay, 5 }, { "spdt_contact", spdt, 3 },
         { "resistor", two, 2 }, { "capacitor", two, 2 }, { "inductor", two, 2 }, { "switch", two, 2 },
         { "vsource", src, 2 }, { "isource", src, 2 }, { "potentiometer", pot, 3 }, { "diode", dio, 2 },
-        { "led", dio, 2 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
+        { "led", dio, 2 }, { "rgb_led", rgb, 4 }, { "zener", dio, 2 }, { "bjt_npn", bjt, 3 }, { "bjt_pnp", bjt, 3 },
         { "nmos", mos, 3 }, { "pmos", mos, 3 }, { "opamp", amp, 5 }, { "regulator", reg, 3 }, { "pull", one, 1 },
         { "usb_meter", reg, 3 },
     };
@@ -1114,6 +1115,7 @@ static void diode_observe(esk_adev *d, esk_json *o)
         if (lum > 1.0)
             lum = 1.0;
         esk_json_set_number(a, o, "luminance", lum);
+        esk_json_set_bool(a, o, "lit", s->id_trial > 1e-6);
     }
 }
 
@@ -1126,6 +1128,96 @@ static const esk_adev_ops led_ops = {"led", sizeof(diode_state), led_setup, diod
 static const esk_adev_ops zener_ops = {"zener", sizeof(diode_state), zener_setup, diode_load,
                                        NULL,    diode_accept,        NULL,        NULL,
                                        NULL,    diode_observe,       NULL};
+
+/* Three independent LED junctions sharing a cathode or anode. Each die
+ * stamps the same Shockley/series-resistance equations as the discrete LED. */
+typedef struct rgb_state {
+    diode_state die[3];
+    int anode;
+} rgb_state;
+
+static es_status rgb_setup(esk_adev *d)
+{
+    static const char *const keys[] = {"red_vf", "green_vf", "blue_vf"};
+    static const double defaults[] = {1.8, 2.1, 2.9};
+    rgb_state *s = (rgb_state *)d->state;
+    int i;
+    s->anode = !strcmp(ps(d, "common", "cathode"), "anode");
+    for (i = 0; i < 3; i++) {
+        esk_adev die = *d;
+        double vf = pd(d, keys[i], defaults[i]), n = i == 2 ? 3.0 : 2.0;
+        double nominal = pd(d, "if_nom", 0.02);
+        if (!(vf > 0.0) || !(nominal > 0.0)) {
+            param_error(d, keys[i], "forward voltage and nominal current must be positive");
+            return ES_ESCHEMA;
+        }
+        s->die[i].kind = JN_LED;
+        s->die[i].if_nom = nominal;
+        s->die[i].vf = vf;
+        diode_common_setup(&die, &s->die[i], nominal / (exp(vf / (n * VT_27C)) - 1.0), n);
+    }
+    d->nbranch = s->die[0].rs > 0.0 ? 3 : 0;
+    return ES_OK;
+}
+
+static void rgb_load(esk_adev *d, esk_amatrix *m)
+{
+    static const int pins[] = {0, 2, 3};
+    rgb_state *s = (rgb_state *)d->state;
+    int i;
+    for (i = 0; i < 3; i++) {
+        esk_adev die = *d;
+        die.node[0] = d->node[s->anode ? 1 : pins[i]];
+        die.node[1] = d->node[s->anode ? pins[i] : 1];
+        die.branch[0] = d->branch[i];
+        junction_stamp(&die, m, &s->die[i]);
+    }
+}
+
+static void rgb_accept(esk_adev *d, es_time_t t)
+{
+    static const int pins[] = {0, 2, 3};
+    rgb_state *s = (rgb_state *)d->state;
+    int i;
+    ES_UNUSED(t);
+    d->i_last[1] = 0.0;
+    for (i = 0; i < 3; i++) {
+        double current = s->die[i].id_trial * (s->anode ? -1.0 : 1.0);
+        d->i_last[pins[i]] = current;
+        d->i_last[1] -= current;
+    }
+}
+
+static void rgb_observe(esk_adev *d, esk_json *out)
+{
+    static const char *const names[] = {"red", "green", "blue"};
+    rgb_state *s = (rgb_state *)d->state;
+    double lum[3], peak = 0.0;
+    int i, lit = 0;
+    char key[32], color[8];
+    observe_basic(d, out);
+    for (i = 0; i < 3; i++) {
+        double current = s->die[i].id_trial;
+        lum[i] = fmax(0.0, fmin(1.0, current / s->die[i].if_nom));
+        if (lum[i] > peak) peak = lum[i];
+        snprintf(key, sizeof key, "%s_current", names[i]);
+        esk_json_set_number(d->isl->a, out, key, current);
+        snprintf(key, sizeof key, "%s_luminance", names[i]);
+        esk_json_set_number(d->isl->a, out, key, lum[i]);
+        esk_json_set_bool(d->isl->a, out, names[i], current > 1e-6);
+        if (current > 1e-6) lit = 1;
+    }
+    snprintf(color, sizeof color, "#%02x%02x%02x",
+             lit ? (unsigned)(255.0 * lum[0] / peak + 0.5) : 0u,
+             lit ? (unsigned)(255.0 * lum[1] / peak + 0.5) : 0u,
+             lit ? (unsigned)(255.0 * lum[2] / peak + 0.5) : 0u);
+    esk_json_set_string(d->isl->a, out, "color", color);
+    esk_json_set_number(d->isl->a, out, "luminance", peak);
+    esk_json_set_bool(d->isl->a, out, "lit", lit);
+}
+
+static const esk_adev_ops rgb_ops = {"rgb_led", sizeof(rgb_state), rgb_setup, rgb_load,
+                                    NULL, rgb_accept, NULL, NULL, NULL, rgb_observe, NULL};
 
 /* ---- bipolar transistors (Ebers-Moll transport model with Early effect) ------------- */
 
@@ -1870,7 +1962,7 @@ static const esk_adev_ops pull_ops = {"pull", sizeof(pull_state), pull_setup, pu
 
 static const esk_adev_ops *const device_table[] = {
     &resistor_ops,      &capacitor_ops, &inductor_ops, &vsource_ops,   &isource_ops, &switch_ops,
-    &potentiometer_ops, &diode_ops,     &led_ops,      &zener_ops,     &bjt_npn_ops, &bjt_pnp_ops,
+    &potentiometer_ops, &diode_ops,     &led_ops, &rgb_ops,      &zener_ops,     &bjt_npn_ops, &bjt_pnp_ops,
     &nmos_ops,          &pmos_ops,      &opamp_ops,    &regulator_ops, &pull_ops,
     &esk_comparator_ops, &esk_temperature_ops, &esk_timer555_ops,
     &esk_environmental_ops, &esk_photodiode_ops, &esk_optocoupler_ops, &esk_relay_contacts_ops, &esk_spdt_ops, &esk_button4_ops,

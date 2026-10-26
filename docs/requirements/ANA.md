@@ -64,3 +64,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Verification.** Fixtures.
 **Trace.** SPEC-004 §11
 
+
+### ANA-009  Electrically driven discrete RGB indication
+**Statement.** A four-lead RGB LED shall load its three channels through independently oriented diode junctions and external resistors under electrical policy. Observations shall expose channel current, normalized luminance and illustrative mixed color. Functional/timed indication shall require a complete known logic path. Display rendering shall consume observations. Generic fits shall not imply manufacturer, spectral, thermal, damage or perceived PWM qualification.
+**Rationale.** A driven GPIO level alone does not establish LED current or light.
+**Status.** Accepted 2026-10-25
+**Verification.** Common-anode/cathode nominal/current-limited/reverse/unpowered fixtures, all binary colors and floating-common fixtures, switch-driven acceptance scenario and actual renderer material tests.
+**Trace.** SPEC-003 The digital engine; SPEC-004 Device models; ADR-030; docs/engineering/circuit-construction.md

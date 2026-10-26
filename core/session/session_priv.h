@@ -149,6 +149,7 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
 /* edit.c: one project.transaction edit applied to a project's JSON; 0 or
  * -1 with the reason in `why`. `*structural` is set unless it only moves
  * or draws. */
+int esk_project_validate_bench(const es_catalog *catalog, const esk_json *project, char *why, size_t cap);
 int esk_project_validate_organization(const esk_json *project, char *why, size_t cap);
 int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit, int *structural, char *why,
                            size_t cap);

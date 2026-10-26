@@ -11,6 +11,10 @@
 import { Badge, Button, Dialog, EmptyState, IconButton, Input, Select, SegmentedControl, Tooltip, useToast } from '@embsim/design';
 import {
   addJumper,
+  dressJumper,
+  reconnectJumper,
+  jumperNet,
+  traceBench,
   addNote,
   beams,
   benchContext,
@@ -32,14 +36,15 @@ import {
   type BenchTool,
   type InsertionPreview,
 } from '@embsim/bench/model';
-import type { ArtworkState, BenchPlace, Hotspot, OutputValue, Project } from '@embsim/protocol';
-import { BoardView, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
+import type { ArtworkState, BenchPlace, BenchWire, Hotspot, OutputValue, Project } from '@embsim/protocol';
+import { BoardView, describeNetState, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
 import { Box, Cable, CircuitBoard, List, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
 import { useProject, type CatalogEntry } from '../stores/project';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
+import { BenchWireEditor } from './BenchWireEditor';
 import { loadBenchPreferences, saveBenchPreferences, type BenchPreferences } from './bench-preferences';
 
 /** the colours an LED's `color` parameter names, for its artwork's --led-color */
@@ -89,6 +94,8 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const catalog = useProject((s) => s.catalog);
   const editableProject = useProject((s) => s.editable);
   const outputs = useSession((s) => s.outputs);
+  const netStates = useSession((s) => s.nets);
+  const traceNet = useSelection((s) => s.net);
   const inputs = useSession((s) => s.inputs);
   const connected = useSession((s) => s.status === 'open');
   const { toast } = useToast();
@@ -98,11 +105,21 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   // the selected part is the workbench's selection (the inspector shows it, the schematic too); a jumper is the bench's own
   const globalPart = useSelection((s) => (s.selection.components.length === 1 ? s.selection.components[0] : undefined));
   const [jumper, setJumper] = useState<number | undefined>(undefined);
-  const selected = useMemo(() => (jumper !== undefined ? { jumper } : globalPart ? { part: globalPart } : {}), [jumper, globalPart]);
+  const selected = useMemo(() => {
+    if (globalPart) return { part: globalPart };
+    const wire = jumper !== undefined ? project?.layout?.bench?.wires?.[jumper] : undefined;
+    return jumper !== undefined && project && wire && jumperNet(project, wire) === traceNet ? { jumper } : {};
+  }, [jumper, globalPart, project, traceNet]);
   const setSelected = useCallback((sel: { part?: string; jumper?: number }) => {
     setJumper(sel.jumper);
     if (sel.part) useSelection.getState().selectComponent(sel.part);
-    else useSelection.getState().clear();
+    else {
+      const selection = useSelection.getState();
+      selection.clear();
+      const p = useProject.getState().project;
+      const wire = sel.jumper !== undefined ? p?.layout?.bench?.wires?.[sel.jumper] : undefined;
+      if (p && wire) selection.selectNet(jumperNet(p, wire) ?? null);
+    }
   }, []);
   const [note, setNote] = useState<string | null>(null);
   const [flat, setFlat] = useState(() => typeof document === 'undefined' || !webglAvailable());
@@ -172,7 +189,14 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
     });
   }, [project, model, catalog, inputs, outputs]);
 
-  const jumpers = useMemo(() => (project && model ? jumperViews(project, model) : []), [project, model]);
+  const tracedTerminals = useMemo(() => project && model && traceNet ? [...traceBench(project, model, traceNet)] : [], [project, model, traceNet]);
+  const jumpers = useMemo(() => {
+    if (!project || !model) return [];
+    return jumperViews(project, model).map((j) => {
+      const wire = project.layout?.bench?.wires?.[j.index];
+      return { ...j, traced: Boolean(wire && tracedTerminals.includes(wire.from) && tracedTerminals.includes(wire.to)) };
+    });
+  }, [project, model, tracedTerminals]);
   const links = useMemo(() => (project && model ? linkViews(project, model) : []), [project, model]);
   const pending = useMemo(() => (project && model ? unbuilt(project, model) : []), [project, model]);
   const terminals = useMemo(() => (model ? terminalTargets(model) : []), [model]);
@@ -318,6 +342,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const list = (
     <BenchList
       parts={parts}
+      wires={project.layout?.bench?.wires ?? []}
       plugs={model.plugs}
       selected={selected}
       editable={editable}
@@ -351,7 +376,23 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         mutate(`Lift ${id}`, (p) => moveParts(p, ctx, { [id]: { ...part.place, y: Math.round(back * 100) / 100 } }));
       }}
       onJumper={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
-    />
+    >
+      {traceNet && <section className="wb-bench-trace" aria-label="Traced net">
+        <h3>Trace · {traceNet}</h3>
+        <p>{connected && netStates[traceNet] ? describeNetState(netStates[traceNet], [0, 3.3]).text : 'No engine observation'}</p>
+        <p>{(project.nets[traceNet] ?? []).join(' · ')}</p>
+        <Button size="sm" variant="ghost" onClick={() => { setJumper(undefined); useSelection.getState().selectNet(null); }}>Clear trace</Button>
+      </section>}
+      {selectedJumper && selected.jumper !== undefined && <BenchWireEditor
+        key={`${selected.jumper}:${JSON.stringify(selectedJumper)}`}
+        wire={selectedJumper}
+        editable={editable}
+        midpoint={(() => { const j = jumpers.find((w) => w.index === selected.jumper); return j ? [(j.a[0] + j.b[0]) / 2, Math.max(j.a[1], j.b[1]) + 15, (j.a[2] + j.b[2]) / 2] : [0, 15, 0]; })()}
+        onDress={(style) => mutate('Dress jumper', (p) => dressJumper(p, selected.jumper!, style))}
+        onReconnect={(from, to) => mutate('Reconnect jumper', (p) => reconnectJumper(p, ctx, selected.jumper!, from, to))}
+        onRemove={() => { mutate('Remove jumper', (p) => removeJumper(p, ctx, selected.jumper!)); setSelected({}); }}
+      />}
+    </BenchList>
   );
 
   return (
@@ -388,6 +429,8 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           selected={selected}
           snap={(id, x, y, rotation) => snapPart(model, ctx, id, x, y, rotation)}
           terminals={terminals}
+          traceTerminals={tracedTerminals}
+          onRoute={(index, points) => mutate('Route jumper', (p) => dressJumper(p, index, { points }))}
           insertionPreview={insertionPreview}
           surface={preferences.surface}
           labels={preferences.labels}
@@ -484,6 +527,8 @@ function BenchViewMenu({ children }: { children: ReactNode }) {
  */
 function BenchList({
   parts,
+  wires,
+  children,
   plugs,
   selected,
   editable,
@@ -498,13 +543,15 @@ function BenchList({
   onJumper,
 }: {
   parts: BenchPartView[];
+  wires: BenchWire[];
+  children?: ReactNode;
   plugs: Map<string, string>;
   selected: { part?: string; jumper?: number };
   editable: boolean;
   hole: string;
   onHoleChange(value: string): void;
   previewPlug(id: string, hole: string): InsertionPreview | null;
-  onSelect(sel: { part?: string }): void;
+  onSelect(sel: { part?: string; jumper?: number }): void;
   onPlace(id: string, place: Required<BenchPlace>): void;
   onPlug(id: string, hole: string): void;
   onTurn(id: string): void;
@@ -532,6 +579,13 @@ function BenchList({
           );
         })}
       </ul>
+      {Boolean(wires?.length) && <><h3>Jumpers</h3><ul aria-label="Bench jumpers">{wires?.map((wire, index) => <li key={index}>
+        <button type="button" aria-pressed={selected.jumper === index} onClick={() => onSelect({ jumper: index })}>
+          <span className="wb-wire-swatch" style={{ background: wire.color ?? WIRE_COLORS[index % WIRE_COLORS.length] }} />
+          <span>{wire.from} → {wire.to}</span>
+        </button>
+      </li>)}</ul></>}
+      {children}
       {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? 'Check the actual package and pinout before building hardware.' : 'Source metadata does not establish mechanical qualification.'}</p>}
       {part && editable && <BenchPlacement key={`${part.id}:${part.place.x}:${part.place.y}:${part.place.rotation}`} part={part} onPlace={onPlace} />}
       {part?.shape.package === 'breadboard' && editable && <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>Turn breadboard</Button>}

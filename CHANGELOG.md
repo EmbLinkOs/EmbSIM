@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Circuit construction and live RGB indication
+
+- Edit/select/trace bench jumpers by keyboard or pointer; change color, rise and
+  route points without resetting simulation, reconnect atomically, and undo wiring
+  together with appearance. Trace connected strip contacts across shared views.
+- Reject invalid net endpoints, duplicate/reversed jumpers, reused direct holes
+  and malformed routes in native load/commit and schema/semantic validation.
+- Model discrete RGB LEDs as three current-carrying junctions in electrical mode;
+  show engine-driven mixed light in 3D and keep floating functional LEDs off.
+  Add an interactive resistor-fed RGB acceptance circuit with all color mixes.
+
 ### Responsive workspaces
 
 - Keep project, perspective and utility navigation in a clear header row, with

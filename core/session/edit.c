@@ -22,6 +22,8 @@
 #include "session/session_priv.h"
 
 #include <stdio.h>
+#include <math.h>
+#include <ctype.h>
 #include <string.h>
 
 static int err(char *why, size_t cap, const char *fmt, const char *a)
@@ -139,6 +141,92 @@ int esk_project_validate_organization(const esk_json *project, char *why, size_t
     }
     return validate_groups(project, esk_json_get(esk_json_get(project, "layout"), "groups"), why,
                            cap);
+}
+
+/* A bench jumper represents an existing connection, never a second graph. */
+static const char *bench_net(const esk_json *project, const char *ref)
+{
+    const esk_json *nets = esk_json_get(project, "nets");
+    size_t i, j;
+    for (i = 0; i < esk_json_len(nets); i++) {
+        const esk_json *pins = esk_json_at(nets, i);
+        for (j = 0; j < esk_json_len(pins); j++)
+            if (esk_str_eq(ref, esk_json_str(esk_json_at(pins, j)))) return pins->key;
+    }
+    return NULL;
+}
+
+static int bench_hole(const es_catalog *catalog, const esk_json *project, const char *ref)
+{
+    const esk_json *parts = esk_json_get(project, "components");
+    size_t i;
+    const char *dot = strchr(ref, '.');
+    if (!catalog || !dot) return 0;
+    for (i = 0; i < esk_json_len(parts); i++) {
+        const esk_json *part = esk_json_at(parts, i);
+        const char *id = esk_json_get_str(part, "id", "");
+        const esk_catalog_item *item;
+        if (strlen(id) != (size_t)(dot-ref) || strncmp(id, ref, (size_t)(dot-ref))) continue;
+        item = esk_catalog_find(catalog, "component", esk_json_get_str(part, "component", ""));
+        return item && esk_str_eq(esk_json_get_str(esk_json_get(item->desc, "bench"), "package", ""), "breadboard");
+    }
+    return 0;
+}
+
+int esk_project_validate_bench(const es_catalog *catalog, const esk_json *project, char *why, size_t cap)
+{
+    const esk_json *bench = esk_json_get(esk_json_get(project, "layout"), "bench");
+    const esk_json *parts = esk_json_get(bench, "parts"), *wires = esk_json_get(bench, "wires");
+    size_t i, j, k;
+    if (!bench) return 0;
+    if (!esk_json_is(bench, ESK_JSON_OBJECT) || (parts && !esk_json_is(parts, ESK_JSON_OBJECT)) ||
+        (wires && !esk_json_is(wires, ESK_JSON_ARRAY))) return err(why, cap, "invalid bench container%s", NULL);
+    for (i = 0; i < esk_json_len(parts); i++) {
+        const esk_json *place = esk_json_at(parts, i);
+        const char *id = place->key;
+        const char *fields[] = {"x", "y"};
+        if (find_id(esk_json_get(project, "components"), id) < 0 && find_id(esk_json_get(project, "boards"), id) < 0)
+            return err(why, cap, "unknown bench part %s", id);
+        if (validate_placement(place, id, why, cap)) return -1;
+        for (j = 0; j < 2; j++) {
+            const esk_json *n = esk_json_get(place, fields[j]);
+            if (!esk_json_is(n, ESK_JSON_NUMBER) || !isfinite(n->u.number.value) || fabs(n->u.number.value) > 1e6)
+                return err(why, cap, "invalid bench position %s", id);
+        }
+    }
+    for (i = 0; i < esk_json_len(wires); i++) {
+        const esk_json *w = esk_json_at(wires, i), *points = esk_json_get(w, "points"), *rise = esk_json_get(w, "rise_mm");
+        const char *from = esk_json_get_str(w, "from", ""), *to = esk_json_get_str(w, "to", "");
+        const char *color = esk_json_get_str(w, "color", NULL), *net = bench_net(project, from);
+        if (!*from || !*to || esk_str_eq(from, to) || !net || !esk_str_eq(net, bench_net(project, to)))
+            return err(why, cap, "bench jumper endpoints must be distinct terminals of one net: %s", from);
+        if (esk_json_get(w, "color")) {
+            if (!color || strlen(color) != 7 || color[0] != '#') return err(why, cap, "invalid bench wire color %s", from);
+            for (j = 1; j < 7; j++) if (!isxdigit((unsigned char)color[j])) return err(why, cap, "invalid bench wire color %s", from);
+        }
+        if (rise && (!esk_json_is(rise, ESK_JSON_NUMBER) || !isfinite(rise->u.number.value) || rise->u.number.value < 0 || rise->u.number.value > 1000))
+            return err(why, cap, "invalid bench wire rise %s", from);
+        if (points && (!esk_json_is(points, ESK_JSON_ARRAY) || esk_json_len(points) > 64)) return err(why, cap, "invalid bench route %s", from);
+        for (j = 0; j < esk_json_len(points); j++) {
+            const esk_json *point = esk_json_at(points, j);
+            if (!esk_json_is(point, ESK_JSON_ARRAY) || esk_json_len(point) != 3) return err(why, cap, "invalid bench route point %s", from);
+            for (k = 0; k < 3; k++) {
+                const esk_json *n = esk_json_at(point, k);
+                if (!esk_json_is(n, ESK_JSON_NUMBER) || !isfinite(n->u.number.value) || fabs(n->u.number.value) > 1e6 || (k == 1 && n->u.number.value < 0))
+                    return err(why, cap, "invalid bench route coordinate %s", from);
+            }
+        }
+        for (j = 0; j < i; j++) {
+            const esk_json *prev = esk_json_at(wires, j);
+            const char *a = esk_json_get_str(prev, "from", ""), *b = esk_json_get_str(prev, "to", "");
+            if ((esk_str_eq(from, a) && esk_str_eq(to, b)) || (esk_str_eq(from, b) && esk_str_eq(to, a)))
+                return err(why, cap, "duplicate bench jumper %s", from);
+            if ((bench_hole(catalog, project, from) && (esk_str_eq(from, a) || esk_str_eq(from, b))) ||
+                (bench_hole(catalog, project, to) && (esk_str_eq(to, a) || esk_str_eq(to, b))))
+                return err(why, cap, "bench hole already occupied by a jumper: %s", from);
+        }
+    }
+    return 0;
 }
 
 /* removes `pin` from every net; with `prefix`, every pin "prefix.X" */

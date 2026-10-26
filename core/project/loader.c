@@ -1038,6 +1038,13 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             esk_strfree(s->a, path);
         }
     }
+    {
+        char why[256];
+        if (esk_project_validate_bench(s->catalog, project, why, sizeof why)) {
+            ld_diag(s, ES_SEV_ERROR, "bench.invalid", "project", "%s%s", why, "");
+            return ES_ESCHEMA;
+        }
+    }
     memset(&g, 0, sizeof g);
     g.s = s;
     esk_map_init(&g.rec_by_name, s->a);
