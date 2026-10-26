@@ -1,21 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 150" width="80" height="150" data-grid="10">
-  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
-  <rect class="f" x="10" y="10" width="60" height="130" rx="2"/>
-  <line class="s" id="pin-rs" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">RS</text>
-  <line class="s" id="pin-rw" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">RW</text>
-  <line class="s" id="pin-e" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">E</text>
-  <line class="s" id="pin-d0" x1="0" y1="60" x2="10" y2="60"/><text class="p" x="13" y="62">D0</text>
-  <line class="s" id="pin-d1" x1="0" y1="70" x2="10" y2="70"/><text class="p" x="13" y="72">D1</text>
-  <line class="s" id="pin-d2" x1="0" y1="80" x2="10" y2="80"/><text class="p" x="13" y="82">D2</text>
-  <line class="s" id="pin-d3" x1="0" y1="90" x2="10" y2="90"/><text class="p" x="13" y="92">D3</text>
-  <line class="s" id="pin-d4" x1="0" y1="100" x2="10" y2="100"/><text class="p" x="13" y="102">D4</text>
-  <line class="s" id="pin-d5" x1="0" y1="110" x2="10" y2="110"/><text class="p" x="13" y="112">D5</text>
-  <line class="s" id="pin-d6" x1="0" y1="120" x2="10" y2="120"/><text class="p" x="13" y="122">D6</text>
-  <line class="s" id="pin-d7" x1="0" y1="130" x2="10" y2="130"/><text class="p" x="13" y="132">D7</text>
-  <line class="s" id="pin-v0" x1="80" y1="20" x2="70" y2="20"/><text class="p" x="67" y="22" text-anchor="end">V0</text>
-  <line class="s" id="pin-a" x1="80" y1="30" x2="70" y2="30"/><text class="p" x="67" y="32" text-anchor="end">A</text>
-  <line class="s" id="pin-k" x1="80" y1="40" x2="70" y2="40"/><text class="p" x="67" y="42" text-anchor="end">K</text>
-  <line class="s" id="pin-vdd" x1="40" y1="0" x2="40" y2="10"/>
-  <line class="s" id="pin-vss" x1="40" y1="150" x2="40" y2="140"/>
-  <text class="t" x="40.0" y="19" text-anchor="middle">LCD 16x2</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+<rect x="10" y="10" width="180" height="130" rx="4" fill="var(--symbol-fill,#fff)" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<line x1="0" y1="20" x2="10" y2="20" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="17" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">RS</text>
+<line x1="0" y1="30" x2="10" y2="30" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="27" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">RW</text>
+<line x1="0" y1="40" x2="10" y2="40" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="37" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">E</text>
+<line x1="0" y1="60" x2="10" y2="60" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="57" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">D0</text>
+<line x1="0" y1="70" x2="10" y2="70" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="67" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">D1</text>
+<line x1="0" y1="80" x2="10" y2="80" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="77" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">D2</text>
+<line x1="0" y1="90" x2="10" y2="90" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="87" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">D3</text>
+<line x1="0" y1="100" x2="10" y2="100" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="97" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">D4</text>
+<line x1="0" y1="110" x2="10" y2="110" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="107" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">D5</text>
+<line x1="0" y1="120" x2="10" y2="120" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="117" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">D6</text>
+<line x1="0" y1="130" x2="10" y2="130" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="127" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">D7</text>
+<line x1="200" y1="20" x2="190" y2="20" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="187" y="17" text-anchor="end" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">V0</text>
+<line x1="200" y1="30" x2="190" y2="30" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="187" y="27" text-anchor="end" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">A</text>
+<line x1="200" y1="40" x2="190" y2="40" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="187" y="37" text-anchor="end" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">K</text>
+<line x1="40" y1="0" x2="40" y2="10" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<line x1="40" y1="150" x2="40" y2="140" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<g transform="translate(36.0 56.666666666666664) scale(0.7111111111111111)">
+  <rect x="0" y="0" width="180" height="60" rx="3" fill="#0b4d2e"/>
+  <rect x="8" y="9" width="164" height="42" rx="2" fill="#1e2a12"/>
+  <rect id="glass" x="10" y="11" width="160" height="38" fill="#9bbc0f" opacity="0.35"/>
+  <g font-family="monospace" font-size="15" fill="#0e1a07" style="white-space: pre">
+    <text id="line1" x="14" y="27" textLength="152" lengthAdjust="spacingAndGlyphs"> </text>
+    <text id="line2" x="14" y="45" textLength="152" lengthAdjust="spacingAndGlyphs"> </text>
+  </g>
+</g>
 </svg>

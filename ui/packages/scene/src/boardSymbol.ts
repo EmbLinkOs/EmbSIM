@@ -6,7 +6,7 @@
 // like the board. The first connector goes down the left edge, the second
 // down the right, the others along the bottom; each in its pin order.
 
-import type { SymbolDescription } from '@embsim/protocol';
+import type { ArtworkState, Hotspot, SymbolDescription } from '@embsim/protocol';
 import { GRID } from './geometry';
 
 export interface BoardPort {
@@ -75,4 +75,25 @@ export function boardSymbol(title: string, ports: Record<string, BoardPort>): { 
     parts.join('') +
     `</svg>`;
   return { symbol: { svg: 'generated', width, height, pins }, svg };
+}
+
+
+/** Controls and indicators in a board module's header, preserving every port
+ * coordinate. Additional board controls remain available in the controls panel. */
+export function boardRuntimeHeader(view: { symbol: SymbolDescription; svg: string }, descriptors: { component?: string; input?: string; output?: string; selector?: string }[]) {
+  const entries = descriptors.filter((h) => h.component && (h.input || h.output)).slice(0, Math.floor((view.symbol.width - 16) / 28));
+  const states: ArtworkState[] = [], hotspots: Hotspot[] = [], parts: string[] = [];
+  entries.forEach((entry, i) => {
+    const x = 8 + i * 28, id = `runtime-${i}`, member = entry.component!;
+    if (entry.input) {
+      const text = entry.selector?.includes('reset') ? 'RST' : entry.selector?.includes('boot') ? 'BOOT' : member;
+      parts.push(`<rect id="${id}" x="${x}" y="22" width="25" height="12" rx="3" fill="var(--symbol-fill,#fff)" stroke="var(--symbol-stroke,#243044)"/><text x="${x+12.5}" y="30.5" text-anchor="middle" font-size="5.5" fill="var(--symbol-stroke,#243044)">${escapeXml(text)}</text>`);
+      hotspots.push({ target: member, input: entry.input, selector: `#${id}`, gesture: entry.input === 'pressed' ? 'hold' : 'toggle' });
+    } else {
+      parts.push(`<circle cx="${x+12}" cy="27" r="4" fill="#29323e"/><circle id="${id}" cx="${x+12}" cy="27" r="4" fill="#30d158" opacity="0"/>`);
+      if (entry.output === 'color') states.push({ output: `${member}.color`, selector: `#${id}`, attr: 'fill', format: '{}' });
+      states.push({ output: `${member}.${entry.output === 'color' ? 'luminance' : entry.output}`, selector: `#${id}`, attr: 'opacity', scale: { from: [0,1], to: [0,1] } });
+    }
+  });
+  return { symbol: { ...view.symbol, states, hotspots }, svg: view.svg.replace('</svg>', parts.join('') + '</svg>') };
 }

@@ -52,6 +52,12 @@
       "name": "lit",
       "type": "boolean",
       "doc": "True with forward current above 1 µA in electrical policy; functional policy requires A=1 and K=0."
+    },
+    {
+      "name": "emission_integral",
+      "type": "number",
+      "unit": "s",
+      "doc": "Accepted-time integral of illustrative normalized emission; differences divided by elapsed simulation time give interval exposure. No calibrated optical units."
     }
   ],
   "model": {
@@ -83,7 +89,39 @@
         "y": 10,
         "side": "right"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "luminance",
+        "selector": "#emitter",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "luminance",
+        "selector": "#emission-halo",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            0.28
+          ]
+        }
+      }
+    ]
   },
   "artwork": {
     "svg": "artwork.svg",

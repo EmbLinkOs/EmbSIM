@@ -1067,3 +1067,35 @@ then it draws nothing, which its fidelity says. Under the functional and
 timed policies nothing changes.
 
 **Status.** Accepted (2026-10-23).
+
+## ADR-037 The schematic operates and observes the native circuit
+
+**Context.** The owner requires a complete interactive schematic, with 3D work
+in a later version. Static symbols required a second view to operate contacts or
+read peripheral displays. Snapshot light can miss every pulse of a correctly
+simulated PWM signal. Ideal probe readings and physically loaded instruments
+also need distinct meanings.
+
+**Decision.** Make the schematic the primary Run surface. Reuse the catalog's
+state/gesture declaration contract on symbols, scope instances independently,
+and route controls through existing native inputs. Expose accepted-time
+normalized LED emission integrals from electrical models; measure interval
+exposure in the client while preserving instantaneous and raw electrical values.
+Display gain changes presentation only. Compute ideal A/B readouts from finite
+solved voltages; retain wired R/C/shunt/output equivalents for actual loading.
+Keep the optional 3D renderer deferred until explicitly opened.
+
+**Alternatives.** Parallel schematic-only simulation models would duplicate
+physics and diverge from CLI acceptance. Snapshot-only illumination aliases PWM.
+Assuming voltage from logic or deriving current arrows from voltage would present
+quantities the solver has not established.
+
+**Consequences.** Catalog symbols, controls, displays and CLI use the same device
+state. Read-only catalog internals can expose runtime controls without becoming
+editable project hierarchy. Enlarged display symbols can require drawing repair.
+Static junction/functional display limits remain explicit; exposure does not
+qualify optics or switching transients. Complete hierarchy, triggered acquisition,
+analysis and engineering workflows retain independent release gates in
+[live schematic engineering](../engineering/live-schematic.md).
+
+**Status.** Accepted (2026-10-26), following the owner's schematic-first direction.

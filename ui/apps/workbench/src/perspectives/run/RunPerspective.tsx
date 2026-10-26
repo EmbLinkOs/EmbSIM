@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { Button, DockLayout, IconButton, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
+import { Button, DockLayout, IconButton, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
 import { followWindow, LogicAnalyzer, Oscilloscope, SerialTerminal, type ScopeTrace } from '@embsim/instruments';
-import { AnalogLegend, SchematicCanvas, type SchematicCanvasHandle } from '@embsim/scene';
+import { SchematicCanvas, type CanvasMode, type SchematicCanvasHandle } from '@embsim/scene';
 import { Download, Locate, Maximize2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage, exportCsv, exportVcd, inputs as inputActions, probes as probeActions } from '../../actions';
@@ -14,12 +14,14 @@ import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useSession } from '../../stores/session';
-import { BoardPanel } from '../BoardPanel';
 import { WorldPanel } from '../WorldPanel';
+import { VoltageComparison } from './VoltageComparison';
 import { AirPanel } from './AirPanel';
 import { ControlsPanel } from './ControlsPanel';
 import { MetersPanel } from './MetersPanel';
 import { useHostPort } from './useHostPort';
+import { SchematicDisplayOptions } from './SchematicDisplayOptions';
+import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { isWiredInstrument, WiredInstrumentsPanel } from './WiredInstrumentsPanel';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
@@ -28,7 +30,14 @@ export function RunPerspective() {
   const appearance = useCanvasAppearance((s) => s.appearance);
   const now = useSession((s) => s.now);
   const nets = useSession((s) => s.nets);
+  const outputs = useSchematicOutputs();
+  const inputs = useSession((s) => s.inputs);
+  const [mode, setMode] = useState<CanvasMode>('interact');
+  const [comparison, setComparison] = useState<{project: unknown; a?: string; b?: string}>({project:null});
+  const [pickLead, setPickLead] = useState<'a'|'b'|null>(null);
   const project = useProject((s) => s.project);
+  const leads = comparison.project === project ? comparison : {};
+  const changeLead = useCallback((side: 'a'|'b', net: string) => setComparison((old) => ({ ...(old.project === project ? old : {}), project, [side]: net || undefined })), [project]);
   const sceneCatalog = useProject((s) => s.sceneCatalog);
   const selection = useSelection((s) => s.selection);
   const setSelection = useSelection((s) => s.setSelection);
@@ -40,11 +49,11 @@ export function RunPerspective() {
   const serialTarget = inst.serialTarget && serialTargets.includes(inst.serialTarget) ? inst.serialTarget : (serialTargets[0] ?? null);
   const hostPort = useHostPort(serialTarget);
   const { toast } = useToast();
-  const [bottomTab, setBottomTab] = useState<'serial' | 'diagnostics' | 'meters' | 'schematic' | 'air'>('meters');
+  const [bottomTab, setBottomTab] = useState<'serial' | 'diagnostics' | 'meters' | 'air'>('meters');
   const schematicRef = useRef<SchematicCanvasHandle>(null);
   const [focusInstrument, setFocusInstrument] = useState<{ id: string } | null>(null);
   useEffect(() => {
-    if (bottomTab !== 'schematic' || !focusInstrument) return;
+    if (!focusInstrument) return;
     const frame = requestAnimationFrame(() => schematicRef.current?.focusComponents([focusInstrument.id]));
     return () => cancelAnimationFrame(frame);
   }, [bottomTab, focusInstrument]);
@@ -93,6 +102,8 @@ export function RunPerspective() {
     if (where) toast({ kind: 'success', title: `Exported ${where}` });
   };
   const guard = (fn: () => Promise<unknown>) => () => void fn().catch((e: unknown) => toast({ kind: 'error', title: 'Action failed', description: errorMessage(e) }));
+
+  const sendInput = useCallback((target: string, input: string, value: unknown) => void inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: 'Input rejected', description: errorMessage(e) })), [toast]);
 
   const commands = useMemo<Command[]>(
     () => [
@@ -147,27 +158,51 @@ export function RunPerspective() {
   );
 
   const left: DockItem[] = [
-    { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: !project?.components.some((c) => isWiredInstrument(c.component)), content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); setBottomTab('schematic'); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
-    { id: 'board', title: 'Board', content: <BoardPanel interactive />, flush: true, weight: 1.4, minSize: 160 },
+    { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: !project?.components.some((c) => isWiredInstrument(c.component)), content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
+    { id: 'voltage-comparison', title: 'Voltage comparison', weight: 1, minSize: 170, collapsible: true, defaultCollapsed: true, content: <VoltageComparison names={Object.keys(project?.nets ?? {}).sort()} nets={nets} leads={leads} onChange={changeLead} active={pickLead} onPick={(side) => { setPickLead(side); if (side) setMode('probe'); }} /> },
     { id: 'controls', title: 'Controls', content: <ControlsPanel />, weight: 1, minSize: 120 },
     { id: 'world', title: 'World', content: <WorldPanel />, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: true },
   ];
   const centre: DockItem[] = [
+    { id: 'schematic', title: 'Live schematic', weight: 2.4, minSize: 240, flush: true, actions: <><SegmentedControl label="Schematic interaction" value={mode} onValueChange={(next) => { setMode(next); setPickLead(null); }} options={[{value:'interact',label:'Operate'},{value:'select',label:'Inspect'},{value:'probe',label:'Probe'}]} /><SchematicDisplayOptions /><IconButton label="Fit live schematic" size="sm" variant="ghost" onClick={() => schematicRef.current?.zoomToFit()}><Maximize2 /></IconButton></>, content: project ? (
+              <SchematicCanvas
+                handle={schematicRef}
+                appearance={appearance}
+                project={project}
+                catalog={sceneCatalog}
+                mode={mode}
+                selection={selection}
+                onSelectionChange={setSelection}
+                live
+                netStates={nets}
+                outputs={outputs}
+                inputs={inputs}
+                onInput={sendInput}
+                highlightNet={selectedNet}
+                onHighlightNet={selectNet}
+                voltageComparison={leads}
+                onCompareNet={changeLead}
+                probes={inst.probes}
+                readOnly
+                onNetClick={(net) => { if (pickLead) { changeLead(pickLead, net); setPickLead(null); return; } guard(() => probeActions.add(`net:${net}`, 'analog', 200_000).then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` })))(); }}
+                label="Live schematic"
+              />
+    ) : null },
     // an instrument with no probe of its kind folds to its rail until the user opens it; the
     // shared window's actions go with the one that shows something
-    { id: 'scope', title: 'Oscilloscope', flush: true, weight: 1.3, minSize: 140, collapsible: true, defaultCollapsed: noScope && logicChannels.length > 0, actions: noScope && logicChannels.length > 0 ? undefined : instrumentActions, content: (
+    { id: 'scope', title: 'Oscilloscope', flush: true, weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: noScope, actions: noScope && logicChannels.length > 0 ? undefined : instrumentActions, content: (
       <Oscilloscope traces={scopeTraces} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedScope} onSelect={inst.setSelectedScope} revision={inst.revision} />
     ) },
-    { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0 && !noScope, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
+    { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
       <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
     {
       id: 'bottom',
-      title: { serial: 'Serial terminal', diagnostics: 'Diagnostics', meters: 'Meters', schematic: 'Schematic', air: 'The air' }[bottomTab],
+      title: { serial: 'Serial terminal', diagnostics: 'Diagnostics', meters: 'Meters', air: 'The air' }[bottomTab],
       flush: true,
       weight: 1,
       minSize: 140,
-      actions: bottomTab === 'schematic' ? <AnalogLegend /> : bottomTab === 'meters' ? probesList : undefined,
+      actions: bottomTab === 'meters' ? probesList : undefined,
       content: (
         <Tabs
           label="Run details"
@@ -175,25 +210,6 @@ export function RunPerspective() {
           onValueChange={setBottomTab}
           items={[
             { value: 'meters', label: 'Meters', content: <MetersPanel /> },
-            { value: 'schematic', label: 'Schematic', content: project ? (
-              <SchematicCanvas
-                handle={schematicRef}
-                appearance={appearance}
-                project={project}
-                catalog={sceneCatalog}
-                mode="probe"
-                selection={selection}
-                onSelectionChange={setSelection}
-                live
-                netStates={nets}
-                highlightNet={selectedNet}
-                onHighlightNet={selectNet}
-                probes={inst.probes}
-                readOnly
-                onNetClick={(net) => guard(() => probeActions.add(`net:${net}`, 'analog', 200_000).then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` })))()}
-                label="Live schematic"
-              />
-            ) : null },
             { value: 'serial', label: 'Serial', content: (
               <SerialTerminal
                 target={serialTarget}
@@ -216,8 +232,8 @@ export function RunPerspective() {
     },
   ];
   const items: DockItem[] = [
-    { id: 'left', title: 'Board and controls', bare: true, weight: 1, minSize: 260, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.run.left.${project?.name ?? 'none'}`} /> },
-    { id: 'centre', title: 'Instruments', bare: true, weight: 2.6, minSize: 480, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.run.centre.${project?.name ?? 'none'}`} /> },
+    { id: 'left', title: 'Controls and instruments', flush: true, collapsible: true, defaultCollapsed: inputs.length === 0 && !project?.components.some((c) => isWiredInstrument(c.component)), weight: 1, minSize: 260, content: <DockLayout direction="column" items={left} storageKey={`embsim.layout.run.left.${project?.name ?? 'none'}`} /> },
+    { id: 'centre', title: 'Instruments', bare: true, weight: 2.6, minSize: 480, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.run.schematic.centre.${project?.name ?? 'none'}`} /> },
   ];
   return (
     <div className="wb-perspective">

@@ -84,6 +84,7 @@ export interface Bus {
 }
 
 export interface NetLabel {
+  rotation?: 0 | 90 | 180 | 270;
   net: string;
   x: number;
   y: number;
@@ -245,6 +246,9 @@ export interface OutputDescription {
 }
 
 export interface SymbolDescription {
+  /** State/interaction bindings in schematic symbol coordinates. */
+  states?: ArtworkState[];
+  hotspots?: Hotspot[];
   svg: string;
   width: number;
   height: number;
@@ -260,6 +264,8 @@ export interface Hotspot {
   selector: string;
   gesture: HotspotGesture;
   axis?: 'x' | 'y' | 'angle';
+  range?: [number, number];
+  travel?: number;
   min?: number;
   max?: number;
   step?: number;

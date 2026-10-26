@@ -17,13 +17,17 @@ test('open, run, press, observe, export', async ({ page }) => {
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   await expect(page.getByTestId('clock')).toContainText('run');
 
-  // the bench's flat view: the parts' artwork with its hotspots
-  await page.getByRole('radio', { name: '2D', exact: true }).click();
-  const hold = page.getByRole('button', { name: /SW1 Push button Button cap/ });
-  await hold.dispatchEvent('pointerdown', { button: 0 });
-  await page.waitForTimeout(300);
-  await hold.dispatchEvent('pointerup');
-  await page.waitForTimeout(300);
+  // Operate the on-sheet contact while the demo engine runs. The optional
+  // 3D bench is no longer mounted automatically in Run.
+  const schematic = page.getByRole('application', { name: 'Live schematic' });
+  const hold = schematic.getByRole('button', { name: 'SW1 pressed', exact: true });
+  await hold.focus();
+  await page.keyboard.down('Space');
+  await expect(hold).toHaveAttribute('aria-pressed', 'true');
+  await expect(schematic.locator('#emitter')).toHaveAttribute('opacity', '0.000');
+  await page.keyboard.up('Space');
+  await expect(hold).toHaveAttribute('aria-pressed', 'false');
+  await expect(schematic.locator('#emitter')).not.toHaveAttribute('opacity', '0.000');
 
   await page.getByRole('button', { name: 'Pause' }).click();
   await expect(page.getByTestId('clock')).toContainText('paused');

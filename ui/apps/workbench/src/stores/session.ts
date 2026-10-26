@@ -7,6 +7,7 @@
 
 import type { BoardInfo, Capability, DiagnosticRecord, InputEntry, NetState, ObserveUpdate, OutputValue, Policy, Time, TimingTier } from '@embsim/protocol';
 import { create } from 'zustand';
+import { emptyEmission, measureEmission, type EmissionFrame } from './schematicEmission';
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'open' | 'closed' | 'error';
 
@@ -28,6 +29,7 @@ export interface SessionState {
   latencyMs: number;
   nets: Record<string, NetState>;
   outputs: Record<string, OutputValue>;
+  emission: EmissionFrame;
   inputs: InputEntry[];
   diagnostics: DiagnosticRecord[];
   unreadDiagnostics: number;
@@ -66,23 +68,25 @@ export const useSession = create<SessionState & SessionActions>((set, get) => ({
   latencyMs: 0,
   nets: {},
   outputs: {},
+  emission: emptyEmission(),
   inputs: [],
   diagnostics: [],
   unreadDiagnostics: 0,
   lastControlReason: null,
 
   setConnection: (patch) => set(patch),
-  setInfo: (patch) => set(patch),
+  setInfo: (patch) => set((s) => ({ ...patch, ...((patch.outputs && Object.keys(patch.outputs).length === 0) || (patch.projectName !== undefined && patch.projectName !== s.projectName) ? { emission: emptyEmission() } : {}) })),
   applyObserve: (u) =>
     set((s) => {
       // Outputs arrive flat (`"D1.lit": true`) per SPEC-008 or nested under
       // components (0.1 server); both are mirrored into the flat map.
       let outputs = u.outputs ? { ...s.outputs, ...u.outputs } : s.outputs;
+      const freshOutputs = { ...u.outputs };
       let inputs = s.inputs;
       if (u.components) {
         outputs = { ...outputs };
         for (const [id, comp] of Object.entries(u.components)) {
-          for (const [name, value] of Object.entries(comp.outputs ?? {})) outputs[`${id}.${name}`] = value;
+          for (const [name, value] of Object.entries(comp.outputs ?? {})) { outputs[`${id}.${name}`] = value; freshOutputs[`${id}.${name}`] = value; }
           if (comp.inputs) {
             inputs = inputs.map((i) => (i.target === id && i.input in comp.inputs! && i.value !== comp.inputs![i.input] ? { ...i, value: comp.inputs![i.input] } : i));
           }
@@ -92,6 +96,7 @@ export const useSession = create<SessionState & SessionActions>((set, get) => ({
         now: BigInt(u.now_ps),
         nets: u.nets ? { ...s.nets, ...u.nets } : s.nets,
         outputs,
+        emission: measureEmission(s.emission, BigInt(u.now_ps), freshOutputs),
         inputs,
         running: u.running ?? s.running,
         speed: u.speed ?? s.speed,

@@ -261,7 +261,7 @@ export function magneticDrag(moving: Rect[], fixed: Rect[], delta: Point, tolera
 /** Missing drawn connections between pin groups, including two disconnected
  * clusters whose pins already touch wires. A nearest-tree gives n-1 airwires
  * without duplicate lines. Connectivity here is visual; nets stay authoritative. */
-export function findAirwires(pins: Point[], wires: Wire[]): { a: Point; b: Point }[] {
+export function findAirwires(pins: Point[], wires: Wire[], labels: Point[] = []): { a: Point; b: Point }[] {
   if (pins.length < 2) return [];
   const parent = Array.from({ length: pins.length + wires.length }, (_, i) => i);
   const root = (n: number): number => { while (parent[n] !== n) { parent[n] = parent[parent[n]!]!; n = parent[n]!; } return n; };
@@ -279,6 +279,16 @@ export function findAirwires(pins: Point[], wires: Wire[]): { a: Point; b: Point
   for (let i = 0; i < wires.length; i++) for (let j = 0; j < i; j++) {
     if (root(pins.length + i) !== root(pins.length + j) && segments[i]!.some((a) => segments[j]!.some((b) => intersects(a, b)))) join(pins.length + i, pins.length + j);
   }
+  // Repeated names describe a connection only where each label is attached
+  // to drawn copper or a terminal. A remote label cannot hide a missing link.
+  const attached: number[] = [];
+  for (const label of labels) {
+    let closest = GRID, member = -1;
+    pins.forEach((point, i) => { const d = Math.hypot(label.x - point.x, label.y - point.y); if (d <= closest) { closest = d; member = i; } });
+    segments.forEach((list, i) => list.forEach(([a,b]) => { const d = distanceToSegment(label,a,b); if (d <= closest) { closest = d; member = pins.length + i; } }));
+    if (member >= 0) attached.push(member);
+  }
+  for (const member of attached.slice(1)) join(attached[0]!, member);
   const grouped = new Map<number, Point[]>();
   pins.forEach((p, i) => { const key = root(i); const list = grouped.get(key) ?? []; list.push(p); grouped.set(key, list); });
   const groups = [...grouped.values()];

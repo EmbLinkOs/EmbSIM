@@ -1,0 +1,1380 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "live-schematic",
+  "description": "Live schematic acceptance: five LED colors, hold/latch contacts, 1 kHz 25% PWM exposure, current-mixed RGB, loaded potentiometer, two-lead bicolor and a current-carrying 8x8 matrix. Generic static device models; no calibrated optics or thermal qualification.",
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V",
+      "component": "emblink/vsource",
+      "layout": {
+        "x": 10,
+        "y": 30
+      },
+      "params": {
+        "dc": 5
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 10,
+        "y": 100
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 180,
+        "y": 40
+      },
+      "params": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "D1",
+      "component": "emblink/led",
+      "layout": {
+        "x": 310,
+        "y": 40
+      },
+      "params": {
+        "color": "red"
+      }
+    },
+    {
+      "id": "HOLD",
+      "component": "emblink/push_button",
+      "layout": {
+        "x": 450,
+        "y": 40
+      }
+    },
+    {
+      "id": "R2",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 180,
+        "y": 145
+      },
+      "params": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "D2",
+      "component": "emblink/led",
+      "layout": {
+        "x": 310,
+        "y": 145
+      },
+      "params": {
+        "color": "green"
+      }
+    },
+    {
+      "id": "LATCH",
+      "component": "emblink/toggle_switch",
+      "layout": {
+        "x": 450,
+        "y": 145
+      }
+    },
+    {
+      "id": "R3",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 180,
+        "y": 250
+      },
+      "params": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "D3",
+      "component": "emblink/led",
+      "layout": {
+        "x": 310,
+        "y": 250
+      },
+      "params": {
+        "color": "blue"
+      }
+    },
+    {
+      "id": "R4",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 180,
+        "y": 355
+      },
+      "params": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "D4",
+      "component": "emblink/led",
+      "layout": {
+        "x": 310,
+        "y": 355
+      },
+      "params": {
+        "color": "yellow"
+      }
+    },
+    {
+      "id": "R5",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 180,
+        "y": 460
+      },
+      "params": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "D5",
+      "component": "emblink/led",
+      "layout": {
+        "x": 310,
+        "y": 460
+      },
+      "params": {
+        "color": "white"
+      }
+    },
+    {
+      "id": "PWM",
+      "component": "emblink/vsource",
+      "layout": {
+        "x": 700,
+        "y": 40
+      },
+      "params": {
+        "kind": "pulse",
+        "v1": 0,
+        "v2": 3.3,
+        "tr": 1e-09,
+        "tf": 1e-09,
+        "pw": 0.00025,
+        "per": 0.001
+      }
+    },
+    {
+      "id": "RPWM",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 800,
+        "y": 50
+      },
+      "params": {
+        "resistance": 100
+      }
+    },
+    {
+      "id": "DPWM",
+      "component": "emblink/led",
+      "layout": {
+        "x": 930,
+        "y": 50
+      },
+      "params": {
+        "color": "green"
+      }
+    },
+    {
+      "id": "RGB",
+      "component": "emblink/rgb_led",
+      "layout": {
+        "x": 930,
+        "y": 200
+      }
+    },
+    {
+      "id": "RR",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 700,
+        "y": 170
+      },
+      "params": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "RG",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 700,
+        "y": 240
+      },
+      "params": {
+        "resistance": 470
+      }
+    },
+    {
+      "id": "RB",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 700,
+        "y": 310
+      },
+      "params": {
+        "resistance": 680
+      }
+    },
+    {
+      "id": "POT",
+      "component": "emblink/potentiometer",
+      "layout": {
+        "x": 700,
+        "y": 440
+      },
+      "params": {
+        "resistance": 10000
+      }
+    },
+    {
+      "id": "VM",
+      "component": "emblink/voltmeter",
+      "layout": {
+        "x": 930,
+        "y": 420
+      }
+    },
+    {
+      "id": "BICOLOR",
+      "component": "emblink/bicolor_led",
+      "layout": {
+        "x": 310,
+        "y": 600
+      }
+    },
+    {
+      "id": "RBI",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 180,
+        "y": 610
+      },
+      "params": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "MATRIX",
+      "component": "emblink/led_matrix_8x8",
+      "layout": {
+        "x": 700,
+        "y": 590
+      }
+    },
+    {
+      "id": "RM",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 930,
+        "y": 760
+      },
+      "params": {
+        "resistance": 330
+      }
+    }
+  ],
+  "nets": {
+    "SUPPLY": [
+      "V.+",
+      "R1.1",
+      "R2.1",
+      "R3.1",
+      "R4.1",
+      "R5.1",
+      "RR.1",
+      "RG.1",
+      "RB.1",
+      "POT.1",
+      "RBI.1",
+      "MATRIX.R1",
+      "MATRIX.C2",
+      "MATRIX.C3",
+      "MATRIX.C4",
+      "MATRIX.C5",
+      "MATRIX.C6",
+      "MATRIX.C7",
+      "MATRIX.C8"
+    ],
+    "GND": [
+      "V.-",
+      "G.GND",
+      "HOLD.2",
+      "LATCH.2",
+      "D3.K",
+      "D4.K",
+      "D5.K",
+      "PWM.-",
+      "DPWM.K",
+      "RGB.COM",
+      "POT.2",
+      "VM.-",
+      "BICOLOR.2",
+      "RM.2",
+      "MATRIX.R2",
+      "MATRIX.R3",
+      "MATRIX.R4",
+      "MATRIX.R5",
+      "MATRIX.R6",
+      "MATRIX.R7",
+      "MATRIX.R8"
+    ],
+    "RED": [
+      "R1.2",
+      "D1.A"
+    ],
+    "RED_RETURN": [
+      "D1.K",
+      "HOLD.1"
+    ],
+    "GREEN": [
+      "R2.2",
+      "D2.A"
+    ],
+    "GREEN_RETURN": [
+      "D2.K",
+      "LATCH.1"
+    ],
+    "BLUE": [
+      "R3.2",
+      "D3.A"
+    ],
+    "YELLOW": [
+      "R4.2",
+      "D4.A"
+    ],
+    "WHITE": [
+      "R5.2",
+      "D5.A"
+    ],
+    "PWM_HIGH": [
+      "PWM.+",
+      "RPWM.1"
+    ],
+    "PWM_ANODE": [
+      "RPWM.2",
+      "DPWM.A"
+    ],
+    "R_DIE": [
+      "RR.2",
+      "RGB.R"
+    ],
+    "G_DIE": [
+      "RG.2",
+      "RGB.G"
+    ],
+    "B_DIE": [
+      "RB.2",
+      "RGB.B"
+    ],
+    "WIPER": [
+      "POT.W",
+      "VM.+"
+    ],
+    "BICOLOR_A": [
+      "RBI.2",
+      "BICOLOR.1"
+    ],
+    "MATRIX_RETURN": [
+      "MATRIX.C1",
+      "RM.1"
+    ]
+  },
+  "layout": {
+    "wires": [
+      {
+        "net": "RED",
+        "points": [
+          [
+            240,
+            50
+          ],
+          [
+            310,
+            50
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            180,
+            50
+          ],
+          [
+            160,
+            50
+          ]
+        ]
+      },
+      {
+        "net": "RED_RETURN",
+        "points": [
+          [
+            370,
+            50
+          ],
+          [
+            450,
+            50
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            510,
+            50
+          ],
+          [
+            530,
+            50
+          ]
+        ]
+      },
+      {
+        "net": "GREEN",
+        "points": [
+          [
+            240,
+            155
+          ],
+          [
+            310,
+            155
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            180,
+            155
+          ],
+          [
+            160,
+            155
+          ]
+        ]
+      },
+      {
+        "net": "GREEN_RETURN",
+        "points": [
+          [
+            370,
+            155
+          ],
+          [
+            450,
+            155
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            510,
+            155
+          ],
+          [
+            530,
+            155
+          ]
+        ]
+      },
+      {
+        "net": "BLUE",
+        "points": [
+          [
+            240,
+            260
+          ],
+          [
+            310,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            180,
+            260
+          ],
+          [
+            160,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            370,
+            260
+          ],
+          [
+            390,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "YELLOW",
+        "points": [
+          [
+            240,
+            365
+          ],
+          [
+            310,
+            365
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            180,
+            365
+          ],
+          [
+            160,
+            365
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            370,
+            365
+          ],
+          [
+            390,
+            365
+          ]
+        ]
+      },
+      {
+        "net": "WHITE",
+        "points": [
+          [
+            240,
+            470
+          ],
+          [
+            310,
+            470
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            180,
+            470
+          ],
+          [
+            160,
+            470
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            370,
+            470
+          ],
+          [
+            390,
+            470
+          ]
+        ]
+      },
+      {
+        "net": "PWM_HIGH",
+        "points": [
+          [
+            730,
+            40
+          ],
+          [
+            800,
+            40
+          ],
+          [
+            800,
+            60
+          ]
+        ]
+      },
+      {
+        "net": "PWM_ANODE",
+        "points": [
+          [
+            860,
+            60
+          ],
+          [
+            930,
+            60
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            990,
+            60
+          ],
+          [
+            1010,
+            60
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            730,
+            80
+          ],
+          [
+            710,
+            80
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            980,
+            210
+          ],
+          [
+            1000,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            700,
+            180
+          ],
+          [
+            680,
+            180
+          ]
+        ]
+      },
+      {
+        "net": "R_DIE",
+        "points": [
+          [
+            760,
+            180
+          ],
+          [
+            930,
+            180
+          ],
+          [
+            930,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            700,
+            250
+          ],
+          [
+            680,
+            250
+          ]
+        ]
+      },
+      {
+        "net": "G_DIE",
+        "points": [
+          [
+            760,
+            250
+          ],
+          [
+            930,
+            250
+          ],
+          [
+            930,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            700,
+            320
+          ],
+          [
+            680,
+            320
+          ]
+        ]
+      },
+      {
+        "net": "B_DIE",
+        "points": [
+          [
+            760,
+            320
+          ],
+          [
+            930,
+            320
+          ],
+          [
+            930,
+            230
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            700,
+            450
+          ],
+          [
+            680,
+            450
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            760,
+            450
+          ],
+          [
+            780,
+            450
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            1030,
+            450
+          ],
+          [
+            1050,
+            450
+          ]
+        ]
+      },
+      {
+        "net": "WIPER",
+        "points": [
+          [
+            730,
+            470
+          ],
+          [
+            930,
+            470
+          ],
+          [
+            930,
+            450
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            180,
+            620
+          ],
+          [
+            160,
+            620
+          ]
+        ]
+      },
+      {
+        "net": "BICOLOR_A",
+        "points": [
+          [
+            240,
+            620
+          ],
+          [
+            310,
+            620
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            370,
+            620
+          ],
+          [
+            390,
+            620
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            700,
+            620
+          ],
+          [
+            680,
+            620
+          ]
+        ]
+      },
+      {
+        "net": "MATRIX_RETURN",
+        "points": [
+          [
+            730,
+            790
+          ],
+          [
+            930,
+            790
+          ],
+          [
+            930,
+            770
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            990,
+            770
+          ],
+          [
+            1010,
+            770
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            700,
+            640
+          ],
+          [
+            680,
+            640
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            750,
+            790
+          ],
+          [
+            750,
+            810
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            700,
+            660
+          ],
+          [
+            680,
+            660
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            770,
+            790
+          ],
+          [
+            770,
+            810
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            700,
+            680
+          ],
+          [
+            680,
+            680
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            790,
+            790
+          ],
+          [
+            790,
+            810
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            700,
+            700
+          ],
+          [
+            680,
+            700
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            810,
+            790
+          ],
+          [
+            810,
+            810
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            700,
+            720
+          ],
+          [
+            680,
+            720
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            830,
+            790
+          ],
+          [
+            830,
+            810
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            700,
+            740
+          ],
+          [
+            680,
+            740
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            850,
+            790
+          ],
+          [
+            850,
+            810
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            700,
+            760
+          ],
+          [
+            680,
+            760
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            870,
+            790
+          ],
+          [
+            870,
+            810
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            40,
+            30
+          ],
+          [
+            60,
+            30
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            40,
+            70
+          ],
+          [
+            60,
+            70
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            20,
+            100
+          ],
+          [
+            0,
+            100
+          ]
+        ]
+      }
+    ],
+    "labels": [
+      {
+        "net": "SUPPLY",
+        "x": 160,
+        "y": 45
+      },
+      {
+        "net": "GND",
+        "x": 530,
+        "y": 45
+      },
+      {
+        "net": "SUPPLY",
+        "x": 160,
+        "y": 150
+      },
+      {
+        "net": "GND",
+        "x": 530,
+        "y": 150
+      },
+      {
+        "net": "SUPPLY",
+        "x": 160,
+        "y": 255
+      },
+      {
+        "net": "GND",
+        "x": 390,
+        "y": 255
+      },
+      {
+        "net": "SUPPLY",
+        "x": 160,
+        "y": 360
+      },
+      {
+        "net": "GND",
+        "x": 390,
+        "y": 360
+      },
+      {
+        "net": "SUPPLY",
+        "x": 160,
+        "y": 465
+      },
+      {
+        "net": "GND",
+        "x": 390,
+        "y": 465
+      },
+      {
+        "net": "GND",
+        "x": 1010,
+        "y": 55
+      },
+      {
+        "net": "GND",
+        "x": 710,
+        "y": 75
+      },
+      {
+        "net": "GND",
+        "x": 1000,
+        "y": 205
+      },
+      {
+        "net": "SUPPLY",
+        "x": 680,
+        "y": 175
+      },
+      {
+        "net": "SUPPLY",
+        "x": 680,
+        "y": 245
+      },
+      {
+        "net": "SUPPLY",
+        "x": 680,
+        "y": 315
+      },
+      {
+        "net": "SUPPLY",
+        "x": 680,
+        "y": 445
+      },
+      {
+        "net": "GND",
+        "x": 780,
+        "y": 445
+      },
+      {
+        "net": "GND",
+        "x": 1050,
+        "y": 445
+      },
+      {
+        "net": "SUPPLY",
+        "x": 160,
+        "y": 615
+      },
+      {
+        "net": "GND",
+        "x": 390,
+        "y": 615
+      },
+      {
+        "net": "SUPPLY",
+        "x": 680,
+        "y": 615
+      },
+      {
+        "net": "GND",
+        "x": 1010,
+        "y": 765
+      },
+      {
+        "net": "GND",
+        "x": 680,
+        "y": 635
+      },
+      {
+        "net": "SUPPLY",
+        "x": 747,
+        "y": 810,
+        "rotation": 90
+      },
+      {
+        "net": "GND",
+        "x": 680,
+        "y": 655
+      },
+      {
+        "net": "SUPPLY",
+        "x": 767,
+        "y": 810,
+        "rotation": 90
+      },
+      {
+        "net": "GND",
+        "x": 680,
+        "y": 675
+      },
+      {
+        "net": "SUPPLY",
+        "x": 787,
+        "y": 810,
+        "rotation": 90
+      },
+      {
+        "net": "GND",
+        "x": 680,
+        "y": 695
+      },
+      {
+        "net": "SUPPLY",
+        "x": 807,
+        "y": 810,
+        "rotation": 90
+      },
+      {
+        "net": "GND",
+        "x": 680,
+        "y": 715
+      },
+      {
+        "net": "SUPPLY",
+        "x": 827,
+        "y": 810,
+        "rotation": 90
+      },
+      {
+        "net": "GND",
+        "x": 680,
+        "y": 735
+      },
+      {
+        "net": "SUPPLY",
+        "x": 847,
+        "y": 810,
+        "rotation": 90
+      },
+      {
+        "net": "GND",
+        "x": 680,
+        "y": 755
+      },
+      {
+        "net": "SUPPLY",
+        "x": 867,
+        "y": 810,
+        "rotation": 90
+      },
+      {
+        "net": "SUPPLY",
+        "x": 60,
+        "y": 25
+      },
+      {
+        "net": "GND",
+        "x": 60,
+        "y": 65
+      },
+      {
+        "net": "GND",
+        "x": 0,
+        "y": 95
+      }
+    ]
+  },
+  "probes": [
+    {
+      "id": "red",
+      "target": "output:D1.luminance",
+      "kind": "value"
+    },
+    {
+      "id": "green",
+      "target": "output:D2.luminance",
+      "kind": "value"
+    },
+    {
+      "id": "blue",
+      "target": "output:D3.luminance",
+      "kind": "value"
+    },
+    {
+      "id": "wiper",
+      "target": "net:WIPER",
+      "kind": "analog",
+      "rate_hz": 10000
+    },
+    {
+      "id": "pixel",
+      "target": "output:MATRIX.D11.luminance",
+      "kind": "value"
+    }
+  ],
+  "scenarios": [
+    "scenarios/controls.json"
+  ]
+}

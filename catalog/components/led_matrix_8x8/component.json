@@ -1,0 +1,1882 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/led_matrix_8x8",
+  "version": "1.0.0",
+  "name": "LED matrix \u00b7 8 \u00d7 8 row-anode",
+  "category": "displays",
+  "description": "64 independent red LED junctions with eight shared row anodes and eight column cathodes. Every pixel follows junction current, including ghost currents from circuit wiring. External per-column or per-row current limiting is required. Generic logical terminal map R1\u2013R8/C1\u2013C8; not a manufacturer pinout.",
+  "keywords": [
+    "LED",
+    "live",
+    "schematic",
+    "matrix",
+    "8x8",
+    "multiplex",
+    "row anode"
+  ],
+  "params": {},
+  "pins": [
+    {
+      "name": "R1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "C1",
+      "number": 9,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "R2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "C2",
+      "number": 10,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "R3",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "C3",
+      "number": 11,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "R4",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "C4",
+      "number": 12,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "R5",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "C5",
+      "number": 13,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "R6",
+      "number": 6,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "C6",
+      "number": 14,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "R7",
+      "number": 7,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "C7",
+      "number": 15,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "R8",
+      "number": 8,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "C8",
+      "number": 16,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    }
+  ],
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "D11",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D12",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D13",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D14",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D15",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D16",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D17",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D18",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D21",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D22",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D23",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D24",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D25",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D26",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D27",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D28",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D31",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D32",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D33",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D34",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D35",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D36",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D37",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D38",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D41",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D42",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D43",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D44",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D45",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D46",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D47",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D48",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D51",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D52",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D53",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D54",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D55",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D56",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D57",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D58",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D61",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D62",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D63",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D64",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D65",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D66",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D67",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D68",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D71",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D72",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D73",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D74",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D75",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D76",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D77",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D78",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D81",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D82",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D83",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D84",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D85",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D86",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D87",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "D88",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        }
+      ],
+      "nets": {
+        "R1": [
+          "D11.A",
+          "D12.A",
+          "D13.A",
+          "D14.A",
+          "D15.A",
+          "D16.A",
+          "D17.A",
+          "D18.A"
+        ],
+        "C1": [
+          "D11.K",
+          "D21.K",
+          "D31.K",
+          "D41.K",
+          "D51.K",
+          "D61.K",
+          "D71.K",
+          "D81.K"
+        ],
+        "R2": [
+          "D21.A",
+          "D22.A",
+          "D23.A",
+          "D24.A",
+          "D25.A",
+          "D26.A",
+          "D27.A",
+          "D28.A"
+        ],
+        "C2": [
+          "D12.K",
+          "D22.K",
+          "D32.K",
+          "D42.K",
+          "D52.K",
+          "D62.K",
+          "D72.K",
+          "D82.K"
+        ],
+        "R3": [
+          "D31.A",
+          "D32.A",
+          "D33.A",
+          "D34.A",
+          "D35.A",
+          "D36.A",
+          "D37.A",
+          "D38.A"
+        ],
+        "C3": [
+          "D13.K",
+          "D23.K",
+          "D33.K",
+          "D43.K",
+          "D53.K",
+          "D63.K",
+          "D73.K",
+          "D83.K"
+        ],
+        "R4": [
+          "D41.A",
+          "D42.A",
+          "D43.A",
+          "D44.A",
+          "D45.A",
+          "D46.A",
+          "D47.A",
+          "D48.A"
+        ],
+        "C4": [
+          "D14.K",
+          "D24.K",
+          "D34.K",
+          "D44.K",
+          "D54.K",
+          "D64.K",
+          "D74.K",
+          "D84.K"
+        ],
+        "R5": [
+          "D51.A",
+          "D52.A",
+          "D53.A",
+          "D54.A",
+          "D55.A",
+          "D56.A",
+          "D57.A",
+          "D58.A"
+        ],
+        "C5": [
+          "D15.K",
+          "D25.K",
+          "D35.K",
+          "D45.K",
+          "D55.K",
+          "D65.K",
+          "D75.K",
+          "D85.K"
+        ],
+        "R6": [
+          "D61.A",
+          "D62.A",
+          "D63.A",
+          "D64.A",
+          "D65.A",
+          "D66.A",
+          "D67.A",
+          "D68.A"
+        ],
+        "C6": [
+          "D16.K",
+          "D26.K",
+          "D36.K",
+          "D46.K",
+          "D56.K",
+          "D66.K",
+          "D76.K",
+          "D86.K"
+        ],
+        "R7": [
+          "D71.A",
+          "D72.A",
+          "D73.A",
+          "D74.A",
+          "D75.A",
+          "D76.A",
+          "D77.A",
+          "D78.A"
+        ],
+        "C7": [
+          "D17.K",
+          "D27.K",
+          "D37.K",
+          "D47.K",
+          "D57.K",
+          "D67.K",
+          "D77.K",
+          "D87.K"
+        ],
+        "R8": [
+          "D81.A",
+          "D82.A",
+          "D83.A",
+          "D84.A",
+          "D85.A",
+          "D86.A",
+          "D87.A",
+          "D88.A"
+        ],
+        "C8": [
+          "D18.K",
+          "D28.K",
+          "D38.K",
+          "D48.K",
+          "D58.K",
+          "D68.K",
+          "D78.K",
+          "D88.K"
+        ]
+      },
+      "ports": {
+        "R1": "D11.A",
+        "C1": "D11.K",
+        "R2": "D21.A",
+        "C2": "D12.K",
+        "R3": "D31.A",
+        "C3": "D13.K",
+        "R4": "D41.A",
+        "C4": "D14.K",
+        "R5": "D51.A",
+        "C5": "D15.K",
+        "R6": "D61.A",
+        "C6": "D16.K",
+        "R7": "D71.A",
+        "C7": "D17.K",
+        "R8": "D81.A",
+        "C8": "D18.K"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Each die follows known high anode and known low cathode using emblink/led ideal indication.",
+      "omissions": [
+        "manufacturer qualification",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "Each die follows known high anode and known low cathode using emblink/led ideal indication.",
+      "omissions": [
+        "manufacturer qualification",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "Independent LED junctions using emblink/led static current/voltage models; internal row and column connections conserve current.",
+      "omissions": [
+        "manufacturer qualification",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Generic illustrative LED topology; no manufacturer part-number or package qualification claimed"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 200,
+    "height": 200,
+    "pins": {
+      "R1": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "C1": {
+        "x": 30,
+        "y": 200,
+        "side": "bottom"
+      },
+      "R2": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "C2": {
+        "x": 50,
+        "y": 200,
+        "side": "bottom"
+      },
+      "R3": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "C3": {
+        "x": 70,
+        "y": 200,
+        "side": "bottom"
+      },
+      "R4": {
+        "x": 0,
+        "y": 90,
+        "side": "left"
+      },
+      "C4": {
+        "x": 90,
+        "y": 200,
+        "side": "bottom"
+      },
+      "R5": {
+        "x": 0,
+        "y": 110,
+        "side": "left"
+      },
+      "C5": {
+        "x": 110,
+        "y": 200,
+        "side": "bottom"
+      },
+      "R6": {
+        "x": 0,
+        "y": 130,
+        "side": "left"
+      },
+      "C6": {
+        "x": 130,
+        "y": 200,
+        "side": "bottom"
+      },
+      "R7": {
+        "x": 0,
+        "y": 150,
+        "side": "left"
+      },
+      "C7": {
+        "x": 150,
+        "y": 200,
+        "side": "bottom"
+      },
+      "R8": {
+        "x": 0,
+        "y": 170,
+        "side": "left"
+      },
+      "C8": {
+        "x": 170,
+        "y": 200,
+        "side": "bottom"
+      }
+    },
+    "states": [
+      {
+        "output": "D11.luminance",
+        "selector": "#D11",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D12.luminance",
+        "selector": "#D12",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D13.luminance",
+        "selector": "#D13",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D14.luminance",
+        "selector": "#D14",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D15.luminance",
+        "selector": "#D15",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D16.luminance",
+        "selector": "#D16",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D17.luminance",
+        "selector": "#D17",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D18.luminance",
+        "selector": "#D18",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D21.luminance",
+        "selector": "#D21",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D22.luminance",
+        "selector": "#D22",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D23.luminance",
+        "selector": "#D23",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D24.luminance",
+        "selector": "#D24",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D25.luminance",
+        "selector": "#D25",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D26.luminance",
+        "selector": "#D26",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D27.luminance",
+        "selector": "#D27",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D28.luminance",
+        "selector": "#D28",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D31.luminance",
+        "selector": "#D31",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D32.luminance",
+        "selector": "#D32",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D33.luminance",
+        "selector": "#D33",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D34.luminance",
+        "selector": "#D34",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D35.luminance",
+        "selector": "#D35",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D36.luminance",
+        "selector": "#D36",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D37.luminance",
+        "selector": "#D37",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D38.luminance",
+        "selector": "#D38",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D41.luminance",
+        "selector": "#D41",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D42.luminance",
+        "selector": "#D42",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D43.luminance",
+        "selector": "#D43",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D44.luminance",
+        "selector": "#D44",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D45.luminance",
+        "selector": "#D45",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D46.luminance",
+        "selector": "#D46",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D47.luminance",
+        "selector": "#D47",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D48.luminance",
+        "selector": "#D48",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D51.luminance",
+        "selector": "#D51",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D52.luminance",
+        "selector": "#D52",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D53.luminance",
+        "selector": "#D53",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D54.luminance",
+        "selector": "#D54",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D55.luminance",
+        "selector": "#D55",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D56.luminance",
+        "selector": "#D56",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D57.luminance",
+        "selector": "#D57",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D58.luminance",
+        "selector": "#D58",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D61.luminance",
+        "selector": "#D61",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D62.luminance",
+        "selector": "#D62",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D63.luminance",
+        "selector": "#D63",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D64.luminance",
+        "selector": "#D64",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D65.luminance",
+        "selector": "#D65",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D66.luminance",
+        "selector": "#D66",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D67.luminance",
+        "selector": "#D67",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D68.luminance",
+        "selector": "#D68",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D71.luminance",
+        "selector": "#D71",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D72.luminance",
+        "selector": "#D72",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D73.luminance",
+        "selector": "#D73",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D74.luminance",
+        "selector": "#D74",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D75.luminance",
+        "selector": "#D75",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D76.luminance",
+        "selector": "#D76",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D77.luminance",
+        "selector": "#D77",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D78.luminance",
+        "selector": "#D78",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D81.luminance",
+        "selector": "#D81",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D82.luminance",
+        "selector": "#D82",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D83.luminance",
+        "selector": "#D83",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D84.luminance",
+        "selector": "#D84",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D85.luminance",
+        "selector": "#D85",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D86.luminance",
+        "selector": "#D86",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D87.luminance",
+        "selector": "#D87",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "D88.luminance",
+        "selector": "#D88",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      }
+    ]
+  }
+}

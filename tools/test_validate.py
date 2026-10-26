@@ -112,6 +112,20 @@ class Base(unittest.TestCase):
 
 
 class ComponentTests(Base):
+    def test_live_symbol_bindings_check_declarations_selectors_and_attributes(self):
+        desc = copy.deepcopy(COMPONENT)
+        desc['symbol']['hotspots'] = [{'input': 'pressed', 'selector': '#contact', 'gesture': 'hold'}]
+        desc['symbol']['states'] = [{'output': 'closed', 'selector': '#contact', 'attr': 'opacity'}]
+        symbol = SYMBOL.replace('<line ', '<line id="contact" ', 1)
+        path = self.write_component(desc, symbol=symbol)
+        self.assertClean(self.check(path))
+        desc['symbol']['hotspots'][0]['input'] = 'typo'
+        desc['symbol']['states'][0].update(output='typo', selector='#missing', attr='onclick')
+        path = self.write_component(desc, symbol=symbol)
+        report = self.check(path)
+        for code in ['catalog.input_unknown', 'catalog.output_unknown', 'symbol.state_attribute', 'artwork.selector']:
+            self.assertCode(report, code)
+
     def test_optional_parameter_inherits_without_weakening_validation(self):
         desc = copy.deepcopy(COMPONENT)
         del desc['params']['mode']['default']

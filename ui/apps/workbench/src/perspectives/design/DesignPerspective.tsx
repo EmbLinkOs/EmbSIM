@@ -2,9 +2,9 @@
 // Copyright 2026 Junior Deogracias
 import { Badge, Button, Dialog, DockLayout, IconButton, Input, SegmentedControl, Tabs, Tooltip, useMediaQuery, useToast, type Command, type DockItem } from '@embsim/design';
 import { EMPTY_SELECTION, SchematicCanvas, routeConnection, type CanvasContext, type CanvasMode, type SchematicIssue, type SchematicCanvasHandle } from '@embsim/scene';
-import { ArrowLeft, Box, Cable, Maximize2, MousePointer2, Workflow, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Box, Cable, Hand, Maximize2, MousePointer2, Workflow, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { errorMessage, probes as probeActions } from '../../actions';
+import { errorMessage, inputs as inputActions, probes as probeActions } from '../../actions';
 import { useRegisterCommands } from '../../shell/commands';
 import { insideSource, insideView } from '../../stores/inside';
 import { openInside } from '../../stores/openInside';
@@ -13,6 +13,8 @@ import { useLayout, type DesignView } from '../../stores/layout';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
+import { useSchematicOutputs } from '../../stores/schematicDisplay';
+import { SchematicDisplayOptions } from '../run/SchematicDisplayOptions';
 import { BoardPanel } from '../BoardPanel';
 import { WorldPanel } from '../WorldPanel';
 import { InspectorPanel } from './InspectorPanel';
@@ -37,6 +39,8 @@ export function DesignPerspective() {
   const running = useSession((s) => s.running);
   const editable = useProject((s) => s.editable);
   const nets = useSession((s) => s.nets);
+  const outputs = useSchematicOutputs();
+  const inputs = useSession((s) => s.inputs);
   const { toast } = useToast();
   const canvasRef = useRef<SchematicCanvasHandle>(null);
   const [context, setContext] = useState<{ source: typeof project; value: CanvasContext } | null>(null);
@@ -61,6 +65,9 @@ export function DesignPerspective() {
   const catalog = useProject((s) => s.catalog);
 
   const fail = useCallback((title: string) => (e: unknown) => toast({ kind: 'error', title, description: errorMessage(e) }), [toast]);
+
+  const sendInput = useCallback((target: string, input: string, value: unknown) => void inputActions.set(target, input, value).catch(fail('Input rejected')), [fail]);
+  const sendInsideInput = useCallback((target: string, input: string, value: unknown) => sendInput(`${inside}.${target}`, input, value), [inside, sendInput]);
 
   const placeAtCentre = useCallback(
     (componentId: string) => {
@@ -189,8 +196,10 @@ export function DesignPerspective() {
     const view = insideView(inside, src, sceneCatalog, project);
     const states: typeof nets = {};
     for (const [net, outer] of Object.entries(view.alias)) if (nets[outer]) states[net] = nets[outer]!;
-    return { ...view, states, catalog: { ...sceneCatalog, ...view.scene } };
-  }, [inside, project, catalog, sceneCatalog, nets]);
+    const childOutputs = Object.fromEntries(Object.entries(outputs).filter(([key]) => key.startsWith(`${inside}.`)).map(([key, value]) => [key.slice(inside.length + 1), value]));
+    const childInputs = inputs.filter((entry) => entry.target.startsWith(`${inside}.`)).map((entry) => ({ ...entry, target: entry.target.slice(inside.length + 1) }));
+    return { ...view, states, outputs: childOutputs, inputs: childInputs, catalog: { ...sceneCatalog, ...view.scene } };
+  }, [inside, project, catalog, sceneCatalog, nets, outputs, inputs]);
 
   const viewSwitch = (
     <SegmentedControl<DesignView>
@@ -232,8 +241,11 @@ export function DesignPerspective() {
         options={[
           { value: 'select', label: 'Select', icon: <MousePointer2 />, title: 'Select and move (V)' },
           { value: 'wire', label: 'Wire', icon: <Cable />, title: 'Wire pin to pin (W)' },
+          { value: 'interact', label: 'Operate', icon: <Hand />, title: 'Operate switches, buttons and controls' },
+          { value: 'probe', label: 'Probe', title: 'Click a net to add a trace' },
         ]}
       />
+      <SchematicDisplayOptions />
       <Tooltip content="Zoom to fit" shortcut="0">
         <IconButton label="Zoom to fit" size="sm" variant="ghost" onClick={() => canvasRef.current?.zoomToFit()}>
           <Maximize2 />
@@ -250,7 +262,10 @@ export function DesignPerspective() {
       appearance={appearance}
       project={insideOf.project}
       catalog={insideOf.catalog}
-      mode="select"
+      mode="interact"
+      outputs={insideOf.outputs}
+      inputs={insideOf.inputs}
+      onInput={sendInsideInput}
       selection={EMPTY_SELECTION}
       onSelectionChange={() => undefined}
       live={running}
@@ -269,6 +284,9 @@ export function DesignPerspective() {
       onSelectionChange={previewProject ? () => undefined : setSelection}
       live={Object.keys(nets).length > 0}
       netStates={nets}
+      outputs={outputs}
+      inputs={inputs}
+      onInput={sendInput}
       readOnly={!editable || !!previewProject}
       appearance={appearance}
       showGrid={appearance.style !== 'blank'}

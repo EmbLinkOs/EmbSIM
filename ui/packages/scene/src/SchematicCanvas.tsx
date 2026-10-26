@@ -7,9 +7,10 @@
 // Editing callbacks describe intents (move, wire, delete); the owner turns
 // them into project transactions and feeds the new project back in.
 
-import type { Layout, NetState, PinDescription, ProbeInfo, Project, SymbolDescription, Wire } from '@embsim/protocol';
+import type { InputEntry, Layout, NetState, OutputValue, PinDescription, ProbeInfo, Project, SymbolDescription, Wire } from '@embsim/protocol';
 import { memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type Ref } from 'react';
 import { componentValue, placeComponentLabels } from './componentLabels';
+import { MeasurementProbe } from './MeasurementProbe';
 import { ComponentSymbol } from './ComponentSymbol';
 import {
   GRID,
@@ -54,7 +55,7 @@ export interface SceneSymbol {
 
 export type SceneCatalog = Record<string, SceneSymbol>;
 
-export type CanvasMode = 'select' | 'wire' | 'probe';
+export type CanvasMode = 'select' | 'wire' | 'probe' | 'interact';
 
 export interface Selection {
   components: string[];
@@ -110,9 +111,14 @@ export interface SchematicCanvasProps {
   /** Colour nets by state and show voltages (Run perspective). */
   live?: boolean;
   netStates?: Record<string, NetState>;
+  outputs?: Record<string, OutputValue>;
+  inputs?: InputEntry[];
+  onInput?: (target: string, input: string, value: unknown) => void;
   /** Voltage range for the analog gradient; default [0, 3.3]. */
   analogRange?: [number, number];
   probes?: ProbeInfo[];
+  voltageComparison?: { a?: string; b?: string };
+  onCompareNet?: (side: 'a' | 'b', net: string) => void;
   readOnly?: boolean;
   showGrid?: boolean;
   appearance?: CanvasAppearance;
@@ -193,6 +199,7 @@ interface PlacedComponent {
   bounds: Rect;
   pins: { name: string; point: Point; net: string | undefined; label: { x: number; y: number; anchor: 'start' | 'middle' | 'end' } }[];
   value: string;
+  emitterColor: string;
 }
 
 type HoverFn = (text: string, sub: string, clientX: number, clientY: number) => void;
@@ -209,13 +216,19 @@ interface PartViewProps {
   pinKey: string;
   activePin: string | null;
   highlightNet: string | null;
+  outputs: Record<string, OutputValue>;
+  outputKey: string;
+  inputs: InputEntry[];
+  inputKey: string;
+  interactive: boolean;
+  onInput?: SchematicCanvasProps['onInput'];
   onHover: HoverFn;
   onLeave: () => void;
 }
 
 /** One placed part: re-rendered only when it, its selection or its pins' nets change. */
 const PartView = memo(
-  function PartView({ c, selected, offset, showPins, live, pinVisuals, activePin, highlightNet, onHover, onLeave }: PartViewProps) {
+  function PartView({ c, selected, offset, showPins, live, pinVisuals, activePin, highlightNet, outputs, inputs, interactive, onInput, onHover, onLeave }: PartViewProps) {
     const sym = c.symbol;
     const desc = `${c.id}, ${sym?.name ?? c.componentId}${c.value ? `, ${c.value}` : ''}${selected ? ', selected' : ''}`;
     return (
@@ -228,7 +241,7 @@ const PartView = memo(
       >
         <rect className="es-component__hit" role="button" tabIndex={0} aria-label={desc} aria-pressed={selected} x={c.bounds.x} y={c.bounds.y} width={c.bounds.width} height={c.bounds.height} rx={2} />
         {sym ? (
-          <ComponentSymbol svg={sym.svg} symbol={sym.symbol} layout={c.layout} selected={selected} fallbackLabel={c.id} />
+          <ComponentSymbol id={c.id} svg={sym.svg} symbol={sym.symbol} layout={c.layout} selected={selected} fallbackLabel={c.id} emitterColor={c.emitterColor} outputs={live ? outputs : undefined} inputs={inputs} interactive={interactive} onInput={onInput} />
         ) : (
           <g className="es-symbol__fallback">
             <rect x={c.layout.x} y={c.layout.y} width={60} height={20} rx={2} />
@@ -267,7 +280,7 @@ const PartView = memo(
     );
   },
   (a, b) =>
-    a.c === b.c && a.selected === b.selected && a.offset === b.offset && a.showPins === b.showPins && a.live === b.live && a.pinKey === b.pinKey && a.activePin === b.activePin && a.highlightNet === b.highlightNet && a.onHover === b.onHover,
+    a.c === b.c && a.selected === b.selected && a.offset === b.offset && a.showPins === b.showPins && a.live === b.live && a.pinKey === b.pinKey && a.activePin === b.activePin && a.highlightNet === b.highlightNet && a.outputKey === b.outputKey && a.inputKey === b.inputKey && a.interactive === b.interactive && a.onInput === b.onInput && a.onHover === b.onHover,
 );
 
 interface WireViewProps {
@@ -305,8 +318,13 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     onSelectionChange,
     live,
     netStates,
+    outputs = {},
+    inputs = [],
+    onInput,
     analogRange = [0, 3.3],
     probes,
+    voltageComparison,
+    onCompareNet,
     readOnly,
     showGrid = true,
     appearance = DEFAULT_CANVAS_APPEARANCE,
@@ -379,7 +397,9 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       });
       const valueParam = symbol?.valueParam;
       const value = valueParam === 'dc' && typeof c.params?.kind === 'string' && c.params.kind !== 'dc' ? c.params.kind : valueParam ? componentValue(c.params?.[valueParam] ?? symbol?.valueDefault, symbol?.valueUnit) : '';
-      return { id: c.id, componentId: c.component, layout, symbol, bounds: symbolBounds(layout, sym, 4), pins, value };
+      const colors: Record<string, string> = { red: '#ff453a', green: '#30d158', blue: '#0a84ff', yellow: '#ffd60a', white: '#f5f5ff' };
+      const emitterColor = colors[String(c.params?.color ?? symbol?.valueDefault ?? 'red')] ?? '#ff453a';
+      return { emitterColor, id: c.id, componentId: c.component, layout, symbol, bounds: symbolBounds(layout, sym, 4), pins, value };
     });
   }, [project.components, project.boards, catalog, pinNet]);
 
@@ -406,10 +426,10 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     const lines: { net: string; a: Point; b: Point }[] = [];
     for (const [net, points] of Object.entries(pinsByNet)) {
       const netWires = wires.filter((w) => w.net === net);
-      for (const line of findAirwires(points, netWires)) lines.push({ net, ...line });
+      for (const line of findAirwires(points, netWires, labels.filter((l) => l.net === net))) lines.push({ net, ...line });
     }
     return lines;
-  }, [pinsByNet, wires]);
+  }, [pinsByNet, wires, labels]);
 
   // --- viewport -----------------------------------------------------------
 
@@ -430,6 +450,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       }, 90);
     }
   }, []);
+
+  useEffect(() => () => { if (rafRef.current !== null) window.clearTimeout(rafRef.current); }, []);
 
   const toWorld = useCallback((clientX: number, clientY: number): Point => {
     const rect = svgRef.current?.getBoundingClientRect();
@@ -642,7 +664,9 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     const compEl = target.closest('[data-component]');
     const wireEl = target.closest('[data-wire]');
 
-    if (pinEl && e.button === 0 && !readOnly && mode !== 'probe') {
+    if (pinEl && e.button === 0 && mode === 'probe') { const pin = findPinAt(world, 12); if (pin?.net) onNetClick?.(pin.net, pin.point); return; }
+
+    if (pinEl && e.button === 0 && !readOnly && mode !== 'probe' && mode !== 'interact') {
       const pin = findPinAt(world, 12);
       if (pin) {
         e.preventDefault();
@@ -899,6 +923,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     if (wireEl && !wiring && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       const index = Number(wireEl.getAttribute('data-wire'));
+      if (mode === 'probe') { const wire = wires[index]; if (wire) onNetClick?.(wire.net, {x:wire.points[0]![0],y:wire.points[0]![1]}); return; }
       onSelectionChange(e.shiftKey ? { components: selection.components, wires: selection.wires.includes(index) ? selection.wires.filter((i) => i !== index) : [...selection.wires, index] } : { components: [], wires: [index] });
       return;
     }
@@ -910,6 +935,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         const p = c?.pins.find((x) => x.name === pin);
         if (c && p) {
           if (mode === 'probe' && p.net) onNetClick?.(p.net, p.point);
+          else if (mode === 'interact') { onSelectionChange({ components: [c.id], wires: [] }); if (p.net) onHighlightNet?.(p.net); }
           else onPinActivate({ component: c.id, pin: p.name, net: p.net, point: p.point });
         }
         return;
@@ -1070,7 +1096,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const smartPreview = wiring && !wiring.manual && smartWires ? routeConnection(project, catalog, wiring.from, wireTarget ?? { point: wiring.cursor, net: findWireAt(wiring.cursor, .1)?.wire.net }) : null;
   const routeBlocked = !!wiring && !wiring.manual && smartWires && !smartPreview;
   const wiringPreview = wiring ? smartPreview ?? extendWirePath(wiring.from.point, wiring.legs, wiring.cursor, wiring.horizontalFirst) : null;
-  const showPins = !readOnly || mode === 'probe';
+  const showPins = !readOnly || mode === 'probe' || mode === 'interact';
   const cursorClass = mode === 'wire' || wiring ? 'es-scene--wire' : mode === 'probe' ? 'es-scene--probe' : '';
 
   const mapRects = [...placed.map((p) => p.bounds), visibleWorld];
@@ -1108,7 +1134,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             ))}
             {wires.map((w, i) => {
               const vis = netVisual(w.net);
-              return <g key={`w-${i}`} opacity={highlightNet && highlightNet !== w.net ? 0.18 : 1}><WireView selectable={!readOnly} index={i} wire={w} vis={vis} selected={selection.wires.includes(i)} sub={live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`} onHover={showHover} onLeave={hideHover} /></g>;
+              return <g key={`w-${i}`} opacity={highlightNet && highlightNet !== w.net ? 0.18 : 1}><WireView selectable={!readOnly || mode === 'probe' || mode === 'select' || mode === 'interact'} index={i} wire={w} vis={vis} selected={selection.wires.includes(i)} sub={live ? vis.text : `${project.nets[w.net]?.length ?? 0} pins`} onHover={showHover} onLeave={hideHover} /></g>;
             })}
             {buses.map((b, i) => {
               const pts = b.points.map(([x, y]) => `${x},${y}`).join(' ');
@@ -1159,6 +1185,8 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {visible.filter((c) => c.layout.locked).map((c) => <text key={`lock-${c.id}`} className="es-placement-lock" x={c.bounds.x + c.bounds.width - 8} y={c.bounds.y - 3} pointerEvents="none" aria-label={`${c.id} placement locked`}>▣</text>)}
             {visible.map((c) => {
               const selected = selectedSet.has(c.id);
+              const ownOutputs = Object.fromEntries((c.symbol?.symbol.states ?? []).map((s) => [s.output, outputs[`${c.id}.${s.output}`]]).filter(([, value]) => value !== undefined)) as Record<string, OutputValue>;
+              const ownInputs = inputs.filter((i) => i.target === c.id || i.target.startsWith(`${c.id}.`));
               const pinVisuals = showPins ? c.pins.map((pin) => (pin.net ? netVisual(pin.net) : IDLE)) : [];
               return (
                 <PartView
@@ -1172,6 +1200,12 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
                   pinKey={pinVisuals.map((v) => `${v.kind}|${v.color ?? ''}|${v.text}`).join(';')}
                   activePin={wiring && wiring.from.component === c.id ? wiring.from.pin : null}
                   highlightNet={highlightNet}
+                  outputs={ownOutputs}
+                  outputKey={JSON.stringify(ownOutputs)}
+                  inputs={ownInputs}
+                  inputKey={JSON.stringify(ownInputs)}
+                  interactive={mode === 'interact' && !!onInput}
+                  onInput={onInput}
                   onHover={showHover}
                   onLeave={hideHover}
                 />
@@ -1183,7 +1217,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {labels.map((l, i) => {
               const vis = netVisual(l.net);
               return (
-                <g key={`l-${i}`} data-net-label={l.net} opacity={highlightNet && highlightNet !== l.net ? .25 : 1} className={`es-net-label es-wire--${vis.kind}`} transform={`translate(${l.x} ${l.y})`}>
+                <g key={`l-${i}`} data-net-label={l.net} opacity={highlightNet && highlightNet !== l.net ? .25 : 1} className={`es-net-label es-wire--${vis.kind}`} transform={`translate(${l.x} ${l.y}) rotate(${l.rotation ?? 0})`}>
                   <text style={vis.color ? { fill: vis.color } : undefined}>{l.net}</text>
                   {live && vis.text && (
                     <text className="es-net-label__state" y={11}>
@@ -1208,6 +1242,19 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
                   </text>
                 </g>
               );
+            })}
+          </g>
+
+          <g className="es-scene__layer es-scene__layer--comparison">
+            {(['a', 'b'] as const).map((side) => {
+              const net = voltageComparison?.[side]; if (!net || !project.nets[net]) return null;
+              const wire = wires.find((w) => w.net === net);
+              const at = wire ? { x: wire.points[0]![0], y: wire.points[0]![1] } : pinsByNet[net]?.[0];
+              return at ? <MeasurementProbe key={`${side}-${net}`} side={side} net={net} at={at} onDrop={onCompareNet ? (lead, client) => {
+                const world = toWorld(client.x, client.y), pin = findPinAt(world, 12), hit = pin?.net ?? findWireAt(world, 10)?.wire.net;
+                if (hit) { onCompareNet(lead, hit); setAnnouncement(`Voltage probe ${lead.toUpperCase()} moved to ${hit}.`); }
+                else setAnnouncement('No connected wire or pin at the probe drop; connection preserved.');
+              } : undefined} /> : null;
             })}
           </g>
 
