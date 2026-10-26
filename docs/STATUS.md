@@ -14,7 +14,8 @@ adaptive integrator. The loading bench checks 13 independent analytic targets;
 twelve component fixtures exercise loading, polarity and transient behavior.
 Local verification passes 49 native CTest targets, 12 instrument fixtures /
 37 assertions, and the 13-assertion loading and 3-assertion deliberate-fault
-scenarios. Native tests check current conservation, reset, refined RC convergence, digital
+scenarios. Native tests check zero/one/two-lead construction without implicit grounding,
+current conservation, reset, refined RC convergence, digital
 conflict clearing and loaded opposing drivers. Protocol checks verify current
 contention and receiver identities for digital and mixed nets.
 

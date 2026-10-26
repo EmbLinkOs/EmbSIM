@@ -9,6 +9,8 @@ versions follow semantic versioning. There is no release yet.
 
 - Add configurable voltmeter input resistance, ammeter insertion burden,
   oscilloscope input R/C and a function generator with 50 Ω output impedance.
+- Keep detached instrument/voltage-source leads floating during incremental
+  wiring; do not compress terminal order or manufacture a ground return.
 - Show wired instruments, connected leads and native readings with trace and
   schematic actions; observation-only probes retain zero loading.
 - Highlight selected nets through pin rings, junctions and labels; reveal readable

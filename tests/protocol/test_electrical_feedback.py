@@ -64,6 +64,37 @@ def main():
             client.call('control.advance', {'by': '1us'})
             state = client.call('observe.snapshot', {'include': ['nets']})['nets']['CONFLICT']
             check(state['contention'] is False and state['logic'] == '1', 'agreeing outputs must clear contention and report the loaded receiver level')
+        # Authoring is incremental: zero/one connected lead must load without
+        # compressing a detached return into ground or swapping terminal slots.
+        for ref, resistance in [('voltmeter', 1e7), ('ammeter', 1), ('scope_input', 1e6), ('function_generator', 50)]:
+            for leads in ([], ['+'], ['-'], ['+', '-']):
+                generator = ref == 'function_generator'
+                project = dict(schema_version=1, kind='project', name='incremental-instrument', policy='electrical',
+                               components=[dict(id='DUT', component='emblink/' + ref), dict(id='G', component='emblink/gnd')],
+                               nets={'NODE': [], 'GND': ['G.GND']})
+                if generator:
+                    project['components'][0]['params'] = {'dc': 2}
+                    project['components'].append(dict(id='R', component='emblink/resistor', params={'resistance': 100}))
+                    project['nets']['NODE'] = ['R.1']
+                    project['nets']['GND'].append('R.2')
+                    target = 2 * 100 / 150 if len(leads) == 2 else 0
+                else:
+                    project['components'] += [dict(id='V', component='emblink/vsource', params={'dc': 5}),
+                                              dict(id='R', component='emblink/resistor', params={'resistance': '1meg'})]
+                    project['nets']['VCC'] = ['V.+', 'R.1']
+                    project['nets']['NODE'] = ['R.2']
+                    project['nets']['GND'].append('V.-')
+                    target = 5 * resistance / (1e6 + resistance) if len(leads) == 2 else 5
+                for lead in leads:
+                    project['nets']['NODE' if lead == '+' or len(leads) == 1 else 'GND'].append('DUT.' + lead)
+                path.write_text(json.dumps(project))
+                with StdioClient([str(Path(args.embsim).resolve()), 'sidecar', str(path)]) as client:
+                    client.call('session.open', {'client': 'incremental-instrument', 'protocol': '1.0'})
+                    client.call('control.advance', {'by': '1us'})
+                    snap = client.call('observe.snapshot', {'include': ['nets', 'diagnostics']})
+                    check(abs(snap['nets']['NODE']['voltage'] - target) < 2e-4, f'{ref} {leads}: missing lead created an unintended current path')
+                    counts = snap.get('diagnostics', {})
+                    check(not counts.get('error') and not counts.get('fatal'), f'{ref} {leads}: incremental authoring produced an engine error')
     print(f'{checked} native electrical feedback checks, 0 failures')
 
 

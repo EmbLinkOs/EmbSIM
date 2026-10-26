@@ -287,6 +287,35 @@ static void test_loaded_instruments_dc(void)
     esk_engine_free(&e);
 }
 
+static void test_instrument_open_leads(void)
+{
+    int lead;
+    for (lead = 0; lead < 2; lead++) {
+        esk_engine e;
+        engine_open(&e);
+        add_power(&e, "G", "gnd", 0.0);
+        add_dev2(&e, "vsource", "V", "{\"dc\": 5}", "vin", "gnd");
+        add_dev2(&e, "resistor", "R", "{\"r\": \"1meg\"}", "vin", "out");
+        add_dev2(&e, "instrument_input", "M", "{\"r\": \"10meg\", \"c\": \"15p\"}", lead ? NULL : "out", lead ? "out" : NULL);
+        engine_run(&e);
+        CHECK(esk_engine_advance(&e, ES_PS_PER_US) == ES_OK);
+        CHECK_NEAR(v_of(&e, "out"), 5.0, 2e-5);
+        CHECK(fabs(obs_num(&e, "M", "current")) < 1e-9);
+        CHECK_EQ(diag_errors, 0);
+        esk_engine_free(&e);
+
+        engine_open(&e);
+        add_power(&e, "G", "gnd", 0.0);
+        add_dev2(&e, "vsource", "GEN", "{\"dc\": 2, \"rout\": 50}", lead ? NULL : "out", lead ? "out" : NULL);
+        add_dev2(&e, "resistor", "R", "{\"r\": 50}", "out", "gnd");
+        engine_run(&e);
+        CHECK_NEAR(v_of(&e, "out"), 0.0, 1e-8);
+        CHECK(fabs(obs_num(&e, "GEN", "i")) < 1e-9);
+        CHECK_EQ(diag_errors, 0);
+        esk_engine_free(&e);
+    }
+}
+
 static void test_generator_output_impedance(void)
 {
     esk_engine e;
@@ -1644,6 +1673,7 @@ RUN(test_observe_json);
 RUN(test_rc_charge);
 RUN(test_loaded_instruments_dc);
 RUN(test_generator_output_impedance);
+RUN(test_instrument_open_leads);
 RUN(test_scope_input_refinement);
 RUN(test_rc_with_ic);
 RUN(test_rl);

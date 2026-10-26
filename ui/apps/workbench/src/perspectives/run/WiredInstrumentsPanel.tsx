@@ -13,12 +13,14 @@ const KINDS: Record<string, { title: string; resistance: string; fallback: numbe
   'emblink/function_generator': { title: 'Generator', resistance: 'output_resistance', fallback: 50, current: 'i' },
 };
 
+export const isWiredInstrument = (reference: string) => Object.hasOwn(KINDS, reference);
+
 /** Readouts are engine observations. Merely adding a trace never inserts a load;
  * the visible terminals belong to components wired into the project. */
 export function WiredInstrumentsPanel({ onLocate, onTrace }: { onLocate(id: string): void; onTrace(target: string): void }) {
   const project = useProject((s) => s.project);
   const outputs = useSession((s) => s.outputs);
-  const instruments = project?.components.filter((c) => KINDS[c.component]) ?? [];
+  const instruments = project?.components.filter((c) => isWiredInstrument(c.component)) ?? [];
   return <div className="wb-wired-instruments" aria-label="Wired instruments">
     <p className="es-muted">Wired instruments load the circuit. Observation traces alone add no electrical load.</p>
     {!instruments.length && <p className="es-muted">Place a voltmeter, ammeter, scope input or function generator from the Instruments category in Design, then wire both leads.</p>}

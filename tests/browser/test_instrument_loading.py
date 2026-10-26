@@ -100,6 +100,22 @@ def main():
             assert rect and bounds and abs((rect['y'] + rect['height'] / 2) - (bounds['y'] + bounds['height'] / 2)) < 4, 'View leads must center the selected component in the actual panel'
             page.screenshot(path=str(out / 'wired-instruments.png'))
             assert not any(m.get('method') == 'project.edit' for m in sent), 'inspection/trace actions must not rewire the project'
+            # Remove one lead through the real editor, then undo. This used to
+            # reject the project or manufacture an implicit ground return.
+            page.get_by_role('radio', name='Design', exact=True).click()
+            page.get_by_role('button', name=re.compile(r'Track \d+, net GND')).first.press('Enter')
+            page.get_by_role('button', name='Disconnect VM.-', exact=True).click()
+            page.get_by_role('radio', name='Run', exact=True).click()
+            partial = page.get_by_role('region', name='VM Voltmeter', exact=True)
+            expect(partial.get_by_role('button', name='Add trace')).to_be_disabled()
+            expect(partial.get_by_role('status')).to_contain_text('Wire both leads')
+            page.get_by_role('radio', name='Design', exact=True).click()
+            page.get_by_role('button', name='Undo', exact=True).click()
+            page.get_by_role('radio', name='Run', exact=True).click()
+            restored = page.get_by_role('region', name='VM Voltmeter', exact=True)
+            expect(restored.get_by_role('button', name='Add trace')).to_be_enabled()
+            expect(restored.get_by_role('group', name='Terminal voltage: 9.091 V')).to_be_attached()
+
 
         with serve(args.embsim.resolve(), 'electrical-feedback') as url:
             page.goto(url)

@@ -62,6 +62,12 @@ const char *const *esk_adev_pin_names(const esk_adev_ops *ops, int *n)
 
 /* ---- shared helpers ----------------------------------------------------- */
 
+int esk_adev_preserves_open_pins(const esk_adev_ops *ops)
+{
+    return ops && (!strcmp(ops->name, "led") || !strcmp(ops->name, "rgb_led") ||
+                   !strcmp(ops->name, "instrument_input") || !strcmp(ops->name, "vsource"));
+}
+
 static double pd(const esk_adev *d, const char *name, double def)
 {
     double v;

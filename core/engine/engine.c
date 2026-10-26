@@ -1279,17 +1279,17 @@ es_status esk_engine_partition(esk_engine *e)
                 byname[k] = p;
                 if (p) named++;
             }
-            /* Indicator terminals retain their identities even when one is
-             * open. Compressing connected pins can turn B into COM, or K into
-             * implicit ground. Their missing nodes are floating in mna.c. */
-            int indicator = !strcmp(c->ops->adev->name, "led") || !strcmp(c->ops->adev->name, "rgb_led");
-            if (indicator && !named) {
+            /* Indicators, instrument inputs and voltage sources retain their
+             * terminal identities with open leads. Their missing nodes float
+             * in mna.c; no detached return becomes an implicit ground. */
+            int preserve_open = esk_adev_preserves_open_pins(c->ops->adev);
+            if (preserve_open && !named) {
                 /* Low-level embedders may use positional p0/p1 names. Keep
                  * their slots too, including a missing trailing terminal. */
                 for (k = 0; k < (size_t)nnames; k++)
                     byname[k] = k < c->npins ? &c->pins[k] : NULL;
             }
-            if (names && ((all && nnames >= np) || indicator))
+            if (names && ((all && nnames >= np) || preserve_open))
                 st = esk_island_add_device(isl, c, c->ops->adev, byname, nnames, &c->adev);
             else
                 st = esk_island_add_device(isl, c, c->ops->adev, pins, np, &c->adev);

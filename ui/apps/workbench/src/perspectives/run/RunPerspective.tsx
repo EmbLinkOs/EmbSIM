@@ -20,7 +20,7 @@ import { AirPanel } from './AirPanel';
 import { ControlsPanel } from './ControlsPanel';
 import { MetersPanel } from './MetersPanel';
 import { useHostPort } from './useHostPort';
-import { WiredInstrumentsPanel } from './WiredInstrumentsPanel';
+import { isWiredInstrument, WiredInstrumentsPanel } from './WiredInstrumentsPanel';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
@@ -147,7 +147,7 @@ export function RunPerspective() {
   );
 
   const left: DockItem[] = [
-    { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); setBottomTab('schematic'); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
+    { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: !project?.components.some((c) => isWiredInstrument(c.component)), content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); setBottomTab('schematic'); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
     { id: 'board', title: 'Board', content: <BoardPanel interactive />, flush: true, weight: 1.4, minSize: 160 },
     { id: 'controls', title: 'Controls', content: <ControlsPanel />, weight: 1, minSize: 120 },
     { id: 'world', title: 'World', content: <WorldPanel />, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: true },

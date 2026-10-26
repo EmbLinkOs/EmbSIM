@@ -8,7 +8,10 @@ with configurable values, not full commercial instrument qualification.
 ## Electrical contract
 
 All four components require **electrical policy**. Both + and − leads must be
-wired. Voltage is V(+) − V(−); current is positive entering +. The negative lead
+wired for a complete measurement. During placement and incremental wiring,
+detached instrument/source leads keep their terminal slots and private floating
+nodes; they never become an implicit ground return. Solver gmin regularizes
+these nodes, so tiny numerical leakage can remain. Voltage is V(+) − V(−); current is positive entering +. The negative lead
 is an explicit circuit connection, not an implicit earth reference.
 
 | Catalog component | Equivalent circuit and default | Observations |
@@ -109,7 +112,9 @@ python3 tests/browser/test_instrument_loading.py --embsim build/dev/bin/embsim \
 Build the workbench first for the browser workflow. It verifies signed readings,
 trace creation without project edits, full-net highlighting, centered lead
 navigation, contention clearing and floating receiver feedback against the native
-backend. [Native captures](../gallery/README.md#wired-instrument-loading-and-electrical-feedback)
+backend, including disconnecting one meter lead and restoring it with undo.
+Projects with no wired instruments initially fold that panel to its rail.
+[Native captures](../gallery/README.md#wired-instrument-loading-and-electrical-feedback)
 record that workflow. **Fit captured waveforms** selects the available capture
 interval; analog/digital plots and analog cursor readings stop at the lesser of
 the engine clock and producer capture frontier, including empty constant-signal
