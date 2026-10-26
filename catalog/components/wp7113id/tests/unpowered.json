@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "wp7113id-unpowered",
+  "policy": "electrical",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wp7113id"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 0
+        }
+      },
+      {
+        "id": "RA",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      }
+    ],
+    "nets": {
+      "GND": [
+        "G.GND",
+        "V.-",
+        "DUT.K"
+      ],
+      "SUPPLY": [
+        "V.+",
+        "RA.1"
+      ],
+      "DA": [
+        "RA.2",
+        "DUT.A"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": false
+    },
+    "device:V.i": {
+      "at": "500ns",
+      "min": -1e-06,
+      "max": 1e-06
+    }
+  }
+}

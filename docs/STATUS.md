@@ -5,6 +5,33 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## First named indicator evidence batch (2026-10-26)
+
+Branch `feat/qualified-indicators` builds on the circuit-construction milestone.
+It adds WP7113ID and WP154A4SUREQBFZGC with source-backed pin maps and body
+envelopes and a checked **25 °C, 2–20 mA typical DC curve** envelope. The latter
+uses independent RGB die parameters and the manufacturer's R/COM/B/G order at
+1.27 mm pitch. The library and inspector expose the evidence scope. This is not
+full manufacturer corner, optical, thermal, damage, transient or mechanical
+qualification. Numeric LED body dimensions replace the generic dome envelope for
+these exact entries; source lead forming is not automatically manufactured.
+
+Native indicator terminal mapping now preserves open leads as floating private
+nodes. Optional channel overrides inherit generic global parameters, and mixed
+zero/nonzero series resistance allocates only active internal rows. Source-point
+holdouts, loaded 3.3/5 V circuits and a physical-switch named RGB example exercise
+those contracts. [Indicator source/evidence methodology](engineering/indicator-qualification.md)
+records reproduction, fixtures and exclusions. Further named families precede
+realistically loaded instruments.
+
+Local verification passes all 45 native CTest targets, 73 LED/RGB fixtures with
+354 assertions, and the named RGB example's 28 assertions. The UI passes 241 unit
+tests and all 29 browser workflows, typecheck, lint and the production build.
+Both exact source PDFs reproduce the stored plot samples. Native
+[captures](gallery/README.md) show unequal red/blue currents and the evidence
+panel without engine diagnostics or browser errors. These checks establish the
+declared nominal DC envelope and integration, not the excluded device behavior.
+
 ## Circuit construction and live RGB indication (2026-10-25)
 
 Branch `feat/circuit-construction` builds on the workspace milestone. It adds

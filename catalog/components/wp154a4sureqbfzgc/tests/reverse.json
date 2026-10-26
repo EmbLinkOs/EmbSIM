@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "wp154a4sureqbfzgc-reverse",
+  "policy": "electrical",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wp154a4sureqbfzgc"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": -3
+        }
+      },
+      {
+        "id": "RR",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "RG",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      }
+    ],
+    "nets": {
+      "GND": [
+        "G.GND",
+        "V.-",
+        "DUT.COM"
+      ],
+      "SUPPLY": [
+        "V.+",
+        "RR.1",
+        "RG.1",
+        "RB.1"
+      ],
+      "DR": [
+        "RR.2",
+        "DUT.R"
+      ],
+      "DG": [
+        "RG.2",
+        "DUT.G"
+      ],
+      "DB": [
+        "RB.2",
+        "DUT.B"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": false
+    },
+    "device:V.i": {
+      "at": "500ns",
+      "min": -1e-06,
+      "max": 1e-06
+    }
+  }
+}

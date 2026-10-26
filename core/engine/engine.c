@@ -1233,15 +1233,26 @@ es_status esk_engine_partition(esk_engine *e)
         if (st == ES_OK && isl && comp_is_electrical(c)) {
             /* by name when every pin the primitive names is here and connected:
              * a description may list them in any order */
-            int nnames, all = 1;
+            int nnames, all = 1, named = 0;
             const char *const *names = esk_adev_pin_names(c->ops->adev, &nnames);
             esk_pin *byname[8];
-            for (k = 0; names && k < (size_t)nnames && all; k++) {
+            for (k = 0; names && k < (size_t)nnames; k++) {
                 esk_pin *p = esk_comp_pin(c, names[k]);
-                all = p && p->net && p->net->island == isl;
+                all = all && p && p->net && p->net->island == isl;
                 byname[k] = p;
+                if (p) named++;
             }
-            if (names && all && nnames >= np)
+            /* Indicator terminals retain their identities even when one is
+             * open. Compressing connected pins can turn B into COM, or K into
+             * implicit ground. Their missing nodes are floating in mna.c. */
+            int indicator = !strcmp(c->ops->adev->name, "led") || !strcmp(c->ops->adev->name, "rgb_led");
+            if (indicator && !named) {
+                /* Low-level embedders may use positional p0/p1 names. Keep
+                 * their slots too, including a missing trailing terminal. */
+                for (k = 0; k < (size_t)nnames; k++)
+                    byname[k] = k < c->npins ? &c->pins[k] : NULL;
+            }
+            if (names && ((all && nnames >= np) || indicator))
                 st = esk_island_add_device(isl, c, c->ops->adev, byname, nnames, &c->adev);
             else
                 st = esk_island_add_device(isl, c, c->ops->adev, pins, np, &c->adev);

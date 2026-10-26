@@ -188,6 +188,9 @@
           "pattern": "^https://"
         }
       }
+    },
+    "qualification": {
+      "$ref": "#/$defs/qualification"
     }
   },
   "$defs": {
@@ -303,6 +306,11 @@
           "additionalProperties": {
             "$ref": "common.schema.json#/$defs/param_values"
           }
+        },
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "Without a default, require an instance value unless false. Optional absent values let model bindings inherit other parameters."
         }
       }
     },
@@ -909,6 +917,211 @@
               "maxItems": 3,
               "items": {
                 "type": "number"
+              }
+            }
+          }
+        },
+        "led": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "diameter_mm",
+            "flange_mm",
+            "body_height_mm",
+            "standoff_mm"
+          ],
+          "properties": {
+            "diameter_mm": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "flange_mm": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 25
+            },
+            "body_height_mm": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 30
+            },
+            "standoff_mm": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 30
+            }
+          }
+        }
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "temperature_c",
+        "current_a",
+        "voltage_tolerance_v",
+        "source",
+        "curves"
+      ],
+      "properties": {
+        "scope": {
+          "const": "nominal-dc"
+        },
+        "temperature_c": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 200
+        },
+        "current_a": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number",
+            "minimum": 1e-06,
+            "maximum": 1
+          }
+        },
+        "voltage_tolerance_v": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 0.1
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "url",
+            "revision",
+            "sha256",
+            "pages"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "pattern": "^https://"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "pages": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "curves": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "pin",
+              "reference_current_a",
+              "pdf_path_indices",
+              "axes_pdf_pt",
+              "axis_voltage_v",
+              "axis_max_current_a",
+              "points",
+              "page"
+            ],
+            "properties": {
+              "pin": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reference_current_a": {
+                "type": "number",
+                "minimum": 1e-06,
+                "maximum": 1
+              },
+              "pdf_path_indices": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "axes_pdf_pt": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 2000
+                }
+              },
+              "axis_voltage_v": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                }
+              },
+              "axis_max_current_a": {
+                "type": "number",
+                "minimum": 1e-06,
+                "maximum": 1
+              },
+              "points": {
+                "type": "array",
+                "minItems": 6,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "current_a",
+                    "voltage_v",
+                    "role",
+                    "fixture"
+                  ],
+                  "properties": {
+                    "current_a": {
+                      "type": "number",
+                      "minimum": 1e-06,
+                      "maximum": 1
+                    },
+                    "voltage_v": {
+                      "type": "number",
+                      "minimum": 0.1,
+                      "maximum": 10
+                    },
+                    "role": {
+                      "enum": [
+                        "calibration",
+                        "holdout"
+                      ]
+                    },
+                    "fixture": {
+                      "type": "string",
+                      "pattern": "^tests/[a-z0-9_-]+\\.json$"
+                    }
+                  }
+                }
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }

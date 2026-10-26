@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
+import { IndicatorEvidence } from './IndicatorEvidence';
 import { Badge, Button, EmptyState, Input, Select, SignalChip, Toggle, useToast } from '@embsim/design';
 import { type ParamDescription } from '@embsim/protocol';
 import { describeNetState } from '@embsim/scene';
@@ -109,6 +110,7 @@ function ComponentInspector({ id }: { id: string }) {
         {desc && ` v${desc.version}`}
         {desc?.description && ` — ${desc.description}`}
       </div>
+      {desc?.qualification && <IndicatorEvidence evidence={desc.qualification} />}
       <OpenInsideButton id={id} />
       <SelectionProperties />
       {desc?.part && (

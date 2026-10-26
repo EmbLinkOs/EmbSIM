@@ -85,3 +85,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-18; SOT-23/SOT-223 bodies for BSS138, LM1117IMP-3.3 and reference-only BAT54.
 **Verification.** Datasheet pitch/pin-side and actual mesh-envelope fixtures, all-catalog shape checks, direct-over-hole non-insertion fixture, schema/native catalog validation and native gallery inspection.
 **Trace.** SPEC-005 bench representation; SPEC-011 Scene rendering; docs/engineering/package-geometry.md
+
+### CAT-012  Bounded named indicator evidence
+**Statement.** Source-checked indicators shall retain exact manufacturer/package/polarity mapping, pinned source revisions and hashes, a declared operating envelope, calibration-only fits and independent source holdouts linked to executable native acceptance bounds. UI evidence shall distinguish nominal DC/source package checks from full manufacturer, optical, transient, thermal or mechanical qualification.
+**Rationale.** A familiar name, reviewed source or passing self-derived model output cannot establish device fidelity.
+**Status.** Accepted 2026-10-26; first WP7113ID and WP154A4SUREQBFZGC static 25 °C, 2–20 mA envelope.
+**Verification.** Pinned PDF vector reproduction; malformed/drifting evidence tests; forced-current and driver load-line fixtures; native all-color reference scenario; actual body-envelope/pitch and UI evidence tests.
+**Trace.** SPEC-005 Indicator evidence; SPEC-004 Source-checked indicator curves; ADR-030; docs/engineering/indicator-qualification.md

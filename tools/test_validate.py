@@ -112,6 +112,23 @@ class Base(unittest.TestCase):
 
 
 class ComponentTests(Base):
+    def test_optional_parameter_inherits_without_weakening_validation(self):
+        desc = copy.deepcopy(COMPONENT)
+        del desc['params']['mode']['default']
+        desc['params']['mode']['required'] = False
+        path = self.write_component(desc)
+        idx = self.index.with_extra([self.tmp / 'testlib'])
+        self.assertClean(self.check(path.parent / 'tests/basic.json', idx))
+        fixture = copy.deepcopy(FIXTURE)
+        fixture['circuit']['components'][0]['params']['mode'] = 'invalid'
+        fixture_path = path.parent / 'tests/basic.json'
+        fixture_path.write_text(json.dumps(fixture))
+        self.assertCode(self.check(fixture_path, idx), 'schema.type')
+        del desc['params']['mode']['required']
+        path = self.write_component(desc)
+        idx = self.index.with_extra([self.tmp / 'testlib'])
+        self.assertCode(self.check(path.parent / 'tests/basic.json', idx), 'schema.missing_field')
+
     def test_valid_component_passes(self):
         path = self.write_component()
         idx = self.index.with_extra([self.tmp / "testlib"])

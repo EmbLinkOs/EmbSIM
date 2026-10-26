@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Named indicator evidence
+
+- Add Kingbright WP7113ID and WP154A4SUREQBFZGC with exact terminal mappings,
+  source body dimensions and bounded 25 °C, 2–20 mA nominal DC curve evidence.
+- Fit RGB die slopes/resistances independently; preserve parameter inheritance
+  and allocate only active internal rows for zero/mixed series resistance.
+- Keep open LED/RGB leads floating without reordering terminals or inventing a
+  ground return; add source holdouts, driver load lines and an interactive example.
+- Show checked envelopes and source snapshots in part details, with explicit limits.
+
 ### Circuit construction and live RGB indication
 
 - Edit/select/trace bench jumpers by keyboard or pointer; change color, rise and

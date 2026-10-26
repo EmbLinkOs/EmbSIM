@@ -633,7 +633,7 @@ def check_instances_params(report: Report, file: Path, node_base: str, instances
         for pname, pval in (inst.get("params") or {}).items():
             check_param_value(report, file, node + "/params/" + pname, pname, pval, desc)
         for pname, pspec in (desc.get("params") or {}).items():
-            if "default" not in pspec and pname not in (inst.get("params") or {}):
+            if pspec.get("required", True) and "default" not in pspec and pname not in (inst.get("params") or {}):
                 report.error(file, node + "/params", "schema.missing_field", f"parameter {pname} of {desc.get('id')} has no default and is not given")
     return found
 
@@ -681,6 +681,9 @@ def check_provenance(report: Report, file: Path, doc: dict) -> None:
 
 
 def check_component(report: Report, file: Path, doc: dict, index: Index) -> None:
+    from catalog.indicator_evidence import check as check_indicator_evidence
+    for message in check_indicator_evidence(doc, file.parent):
+        report.error(file, "/qualification", "catalog.qualification", message)
     base = file.parent
     # identity: directory and library
     lib_dir = base.parent.parent

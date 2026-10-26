@@ -1,0 +1,563 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/wp154a4sureqbfzgc",
+  "version": "1.0.0",
+  "name": "WP154A4SUREQBFZGC",
+  "category": "indicators",
+  "description": "WP154A4SUREQBFZGC, Kingbright 5 mm water-clear common-cathode RGB LED. Source-checked package and nominal DC curve at 25 C, 2–20 mA. No manufacturer corner, optical, thermal or damage qualification.",
+  "keywords": [
+    "Kingbright",
+    "WP154A4SUREQBFZGC",
+    "LED",
+    "source checked",
+    "25 C",
+    "nominal DC",
+    "RGB",
+    "common cathode"
+  ],
+  "pins": [
+    {
+      "name": "R",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Red"
+    },
+    {
+      "name": "COM",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Common cathode, manufacturer pin 2"
+    },
+    {
+      "name": "B",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Blue"
+    },
+    {
+      "name": "G",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Green"
+    }
+  ],
+  "params": {},
+  "outputs": [
+    {
+      "name": "red",
+      "type": "boolean"
+    },
+    {
+      "name": "green",
+      "type": "boolean"
+    },
+    {
+      "name": "blue",
+      "type": "boolean"
+    },
+    {
+      "name": "lit",
+      "type": "boolean"
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "doc": "#rrggbb of the lit colours"
+    },
+    {
+      "name": "luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "red_luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "green_luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "blue_luminance",
+      "type": "number",
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "red_current",
+      "type": "number",
+      "unit": "A"
+    },
+    {
+      "name": "green_current",
+      "type": "number",
+      "unit": "A"
+    },
+    {
+      "name": "blue_current",
+      "type": "number",
+      "unit": "A"
+    }
+  ],
+  "model": {
+    "primitive": "rgb_led",
+    "params": {
+      "common": "cathode",
+      "red_vf": 1.8723108181545174,
+      "red_n": 1.89452938455131,
+      "red_rs": 1.239915762434207,
+      "red_if_nom": 0.02,
+      "blue_vf": 2.817120949852509,
+      "blue_n": 3.5021479839677783,
+      "blue_rs": 24.04402884032504,
+      "blue_if_nom": 0.02,
+      "green_vf": 2.8710053861568814,
+      "green_n": 4.187555084274988,
+      "green_rs": 21.291191470031475,
+      "green_if_nom": 0.02
+    }
+  },
+  "artwork": {
+    "svg": "artwork.svg",
+    "width_mm": 5,
+    "height_mm": 8.6,
+    "hotspots": [],
+    "states": [
+      {
+        "output": "color",
+        "selector": "#glow",
+        "attr": "fill",
+        "format": "{}"
+      },
+      {
+        "output": "luminance",
+        "selector": "#glow",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            0.9
+          ]
+        }
+      }
+    ]
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Ideal binary indication with a known forward logic return path; no electrical qualification.",
+      "omissions": [
+        "current loading",
+        "manufacturer transfer curve",
+        "optical calibration"
+      ]
+    },
+    "timed": {
+      "claims": "Ideal binary indication with a known forward logic return path; no electrical qualification.",
+      "omissions": [
+        "current loading",
+        "manufacturer transfer curve",
+        "optical calibration"
+      ]
+    },
+    "electrical": {
+      "claims": "Source-checked static terminal I–V fit at 25 C over 2–20 mA, within 0.06 V of independent source-curve holdout points. Pin mapping and 5/5.9/8.6 mm body envelope follow the cited source; 3 mm mounting clearance and curvature are representative. Generic normalized display brightness/color, not photometric units.",
+      "omissions": [
+        "guaranteed manufacturer corners and device-to-device variation",
+        "temperature and self-heating",
+        "damage and absolute-maximum enforcement",
+        "reverse breakdown/leakage qualification",
+        "junction capacitance and charge storage",
+        "optical/colorimetric calibration",
+        "perceived PWM averaging",
+        "connector mating, lead forming and mechanical qualification"
+      ],
+      "range": {
+        "current_a": [
+          0.002,
+          0.02
+        ],
+        "temperature_c": [
+          25,
+          25
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Kingbright WP154A4SUREQBFZGC, DSAJ8687 V.11A 2025-03-25, pp.1–3",
+        "url": "https://www.kingbrightusa.com/images/catalog/SPEC/WP154A4SUREQBFZGC.pdf",
+        "date": "2026-10-26",
+        "rev": "DSAJ8687 V.11A 2025-03-25",
+        "hash": "sha256:2433a90345da743a9b442d52146e2f0841fa1b8d68f11334e8ac6a92e47fdcbf",
+        "notes": "Curve samples extracted from PDF vector paths, not a vendor SPICE model. Typical DC envelope only. Source body dimensions/pitch; representative mounting clearance. Red LED 1/2 numbers are catalog conventions; RGB 1/2/3/4 numbers are manufacturer identifiers."
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 50,
+    "height": 40,
+    "pins": {
+      "R": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "G": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "B": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "COM": {
+        "x": 50,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "functional": {
+    "primitive": "rgb_indicator",
+    "params": {
+      "common": "cathode"
+    }
+  },
+  "part": {
+    "manufacturer": "Kingbright",
+    "mpn": "WP154A4SUREQBFZGC",
+    "package": "T-1 3/4 (5 mm)",
+    "datasheet": "https://www.kingbrightusa.com/images/catalog/SPEC/WP154A4SUREQBFZGC.pdf"
+  },
+  "bench": {
+    "package": "led",
+    "size_mm": [
+      5.9,
+      5.9,
+      11.6
+    ],
+    "pins": {
+      "R": [
+        1.045,
+        2.95
+      ],
+      "COM": [
+        2.315,
+        2.95
+      ],
+      "B": [
+        3.585,
+        2.95
+      ],
+      "G": [
+        4.855,
+        2.95
+      ]
+    },
+    "color": "#f4f6ff",
+    "led": {
+      "diameter_mm": 5,
+      "flange_mm": 5.9,
+      "body_height_mm": 8.6,
+      "standoff_mm": 3
+    }
+  },
+  "qualification": {
+    "scope": "nominal-dc",
+    "temperature_c": 25,
+    "current_a": [
+      0.002,
+      0.02
+    ],
+    "voltage_tolerance_v": 0.06,
+    "source": {
+      "url": "https://www.kingbrightusa.com/images/catalog/SPEC/WP154A4SUREQBFZGC.pdf",
+      "revision": "DSAJ8687 V.11A 2025-03-25",
+      "sha256": "2433a90345da743a9b442d52146e2f0841fa1b8d68f11334e8ac6a92e47fdcbf",
+      "pages": [
+        1,
+        2,
+        3
+      ]
+    },
+    "curves": [
+      {
+        "pin": "R",
+        "reference_current_a": 0.02,
+        "pdf_path_indices": [
+          156,
+          157
+        ],
+        "axes_pdf_pt": [
+          55.26,
+          273.9,
+          151.32,
+          363.24
+        ],
+        "axis_voltage_v": [
+          1.5,
+          2.5
+        ],
+        "axis_max_current_a": 0.05,
+        "points": [
+          {
+            "current_a": 0.002,
+            "voltage_v": 1.761368,
+            "role": "calibration",
+            "fixture": "tests/dc-2ma.json"
+          },
+          {
+            "current_a": 0.003,
+            "voltage_v": 1.78441,
+            "role": "holdout",
+            "fixture": "tests/dc-3ma.json"
+          },
+          {
+            "current_a": 0.004,
+            "voltage_v": 1.801528,
+            "role": "holdout",
+            "fixture": "tests/dc-4ma.json"
+          },
+          {
+            "current_a": 0.005,
+            "voltage_v": 1.812586,
+            "role": "calibration",
+            "fixture": "tests/dc-5ma.json"
+          },
+          {
+            "current_a": 0.007,
+            "voltage_v": 1.830514,
+            "role": "holdout",
+            "fixture": "tests/dc-7ma.json"
+          },
+          {
+            "current_a": 0.01,
+            "voltage_v": 1.848969,
+            "role": "calibration",
+            "fixture": "tests/dc-10ma.json"
+          },
+          {
+            "current_a": 0.012,
+            "voltage_v": 1.85827,
+            "role": "holdout",
+            "fixture": "tests/dc-12ma.json"
+          },
+          {
+            "current_a": 0.015,
+            "voltage_v": 1.874522,
+            "role": "holdout",
+            "fixture": "tests/dc-15ma.json"
+          },
+          {
+            "current_a": 0.018,
+            "voltage_v": 1.890136,
+            "role": "holdout",
+            "fixture": "tests/dc-18ma.json"
+          },
+          {
+            "current_a": 0.02,
+            "voltage_v": 1.897577,
+            "role": "calibration",
+            "fixture": "tests/dc-20ma.json"
+          }
+        ],
+        "page": 3
+      },
+      {
+        "pin": "B",
+        "reference_current_a": 0.02,
+        "pdf_path_indices": [
+          37,
+          38
+        ],
+        "axes_pdf_pt": [
+          55.26,
+          447.54,
+          151.8,
+          535.92
+        ],
+        "axis_voltage_v": [
+          2,
+          4
+        ],
+        "axis_max_current_a": 0.05,
+        "points": [
+          {
+            "current_a": 0.002,
+            "voltage_v": 2.658662,
+            "role": "calibration",
+            "fixture": "tests/dc-2ma.json"
+          },
+          {
+            "current_a": 0.003,
+            "voltage_v": 2.707053,
+            "role": "holdout",
+            "fixture": "tests/dc-3ma.json"
+          },
+          {
+            "current_a": 0.004,
+            "voltage_v": 2.757937,
+            "role": "holdout",
+            "fixture": "tests/dc-4ma.json"
+          },
+          {
+            "current_a": 0.005,
+            "voltage_v": 2.805975,
+            "role": "calibration",
+            "fixture": "tests/dc-5ma.json"
+          },
+          {
+            "current_a": 0.007,
+            "voltage_v": 2.880323,
+            "role": "holdout",
+            "fixture": "tests/dc-7ma.json"
+          },
+          {
+            "current_a": 0.01,
+            "voltage_v": 3.000125,
+            "role": "calibration",
+            "fixture": "tests/dc-10ma.json"
+          },
+          {
+            "current_a": 0.012,
+            "voltage_v": 3.063133,
+            "role": "holdout",
+            "fixture": "tests/dc-12ma.json"
+          },
+          {
+            "current_a": 0.015,
+            "voltage_v": 3.160044,
+            "role": "holdout",
+            "fixture": "tests/dc-15ma.json"
+          },
+          {
+            "current_a": 0.018,
+            "voltage_v": 3.24627,
+            "role": "holdout",
+            "fixture": "tests/dc-18ma.json"
+          },
+          {
+            "current_a": 0.02,
+            "voltage_v": 3.296613,
+            "role": "calibration",
+            "fixture": "tests/dc-20ma.json"
+          }
+        ],
+        "page": 3
+      },
+      {
+        "pin": "G",
+        "reference_current_a": 0.02,
+        "pdf_path_indices": [
+          1803,
+          1804
+        ],
+        "axes_pdf_pt": [
+          54,
+          624.36,
+          150.54,
+          712.8
+        ],
+        "axis_voltage_v": [
+          2,
+          4.5
+        ],
+        "axis_max_current_a": 0.05,
+        "points": [
+          {
+            "current_a": 0.002,
+            "voltage_v": 2.661819,
+            "role": "calibration",
+            "fixture": "tests/dc-2ma.json"
+          },
+          {
+            "current_a": 0.003,
+            "voltage_v": 2.722892,
+            "role": "holdout",
+            "fixture": "tests/dc-3ma.json"
+          },
+          {
+            "current_a": 0.004,
+            "voltage_v": 2.787571,
+            "role": "holdout",
+            "fixture": "tests/dc-4ma.json"
+          },
+          {
+            "current_a": 0.005,
+            "voltage_v": 2.834991,
+            "role": "calibration",
+            "fixture": "tests/dc-5ma.json"
+          },
+          {
+            "current_a": 0.007,
+            "voltage_v": 2.90127,
+            "role": "holdout",
+            "fixture": "tests/dc-7ma.json"
+          },
+          {
+            "current_a": 0.01,
+            "voltage_v": 3.001969,
+            "role": "calibration",
+            "fixture": "tests/dc-10ma.json"
+          },
+          {
+            "current_a": 0.012,
+            "voltage_v": 3.07065,
+            "role": "holdout",
+            "fixture": "tests/dc-12ma.json"
+          },
+          {
+            "current_a": 0.015,
+            "voltage_v": 3.147268,
+            "role": "holdout",
+            "fixture": "tests/dc-15ma.json"
+          },
+          {
+            "current_a": 0.018,
+            "voltage_v": 3.243528,
+            "role": "holdout",
+            "fixture": "tests/dc-18ma.json"
+          },
+          {
+            "current_a": 0.02,
+            "voltage_v": 3.298633,
+            "role": "calibration",
+            "fixture": "tests/dc-20ma.json"
+          }
+        ],
+        "page": 3
+      }
+    ]
+  }
+}

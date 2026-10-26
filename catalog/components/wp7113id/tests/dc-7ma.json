@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "wp7113id-dc-7ma",
+  "description": "Source current forces independently extracted terminal-voltage bounds. Holdout samples were not used for coefficient fitting.",
+  "policy": "electrical",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/wp7113id"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "IA",
+        "component": "emblink/isource",
+        "params": {
+          "dc": 0.007
+        }
+      }
+    ],
+    "nets": {
+      "GND": [
+        "G.GND",
+        "DUT.K",
+        "IA.+"
+      ],
+      "DA": [
+        "IA.-",
+        "DUT.A"
+      ]
+    }
+  },
+  "expect": {
+    "net:DA": {
+      "at": "500ns",
+      "min_v": 1.813363,
+      "max_v": 1.883363
+    },
+    "output:DUT.current": {
+      "at": "500ns",
+      "min": 0.006993,
+      "max": 0.007006999999999999
+    },
+    "output:DUT.lit": {
+      "at": "500ns",
+      "equals": true
+    }
+  }
+}
