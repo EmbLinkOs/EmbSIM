@@ -126,6 +126,31 @@ Rules:
   bytes up to the first NUL (a C string).
 - `settings` override SPEC-002 defaults for this project.
 
+### Project-owned reusable blocks
+
+`blocks` maps lowercase definition identifiers to `{name, components, nets, ports,
+params?, layout?}`. Instantiate one as an ordinary component with
+`component: "block/<definition>"`. Blocks may contain other block instances;
+boards/firmware remain at the project root. `params` uses the component parameter
+declaration format and child values may reference `$name`.
+
+Each instance owns its component/net scope. `layout.port_order` stores graphical port order independently of object key order;
+unlisted names use deterministic name order. This placement does not declare
+electrical drive direction. Port entries map names to local
+component pins, e.g. `"OUT": "RT.2"`; the pin must belong to a named local net.
+Parent nets connect `INSTANCE.PORT`. Matching local net names alone do not join
+instances. Runtime identities use dot-qualified instance paths. Root net names
+must not overlap an instantiated block namespace; block-local net names have no
+dots. Definitions are saved intact and do not install parts into global libraries.
+
+The native elaborator and its existing component ties determine actual net aliases.
+Recursive/unknown references and duplicate pin memberships fail, including unused
+definitions. Bounds: 256 definitions, eight block levels, 10,000 expanded components
+and instance paths shorter than 150 characters; catalog composite limits also apply.
+Use the [hierarchy contract](../engineering/editable-hierarchy.md) for GUI workflow,
+atomicity, compatibility and remaining gates, and the
+[acceptance circuit](../../examples/hierarchical-divider/README.md) for verification.
+
 ## 2. Scenario
 
 ```json

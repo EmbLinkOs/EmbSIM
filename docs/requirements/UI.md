@@ -193,3 +193,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-26
 **Verification.** Acquisition and waveform unit fixtures, native probe movement protocol tests, loaded RC analytic scenario and native browser frozen-export/retarget workflow.
 **Trace.** SPEC-008 §5; ADR-038; docs/engineering/schematic-acquisition.md
+
+
+### UI-027  Editable hierarchy, reusable blocks and native tracing
+**Statement.** The workbench shall author shared project block definitions and their instance sheets, expose explicit ports, extract connected selections, support validated undo/redo and preserve saved hierarchy. Concrete instance interaction and cross-sheet tracing shall use native qualified components and net aliases. Uninstantiated definitions shall not display another instance's live state. Drawing changes shall preserve time; structural changes shall report simulation restart.
+**Rationale.** Reusable circuits need explicit electrical scope and coherent editing rather than visual grouping alone.
+**Status.** Accepted 2026-10-26
+**Verification.** Native loaded/isolated divider calculations, shared edits and reverse edits, failed-transaction retention, native browser navigation/port/extraction workflow, pure editing fixtures and cross-platform browser workflow.
+**Trace.** SPEC-007; SPEC-008; ADR-039; docs/engineering/editable-hierarchy.md

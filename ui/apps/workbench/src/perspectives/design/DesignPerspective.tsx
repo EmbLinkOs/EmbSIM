@@ -10,6 +10,8 @@ import { insideSource, insideView } from '../../stores/inside';
 import { openInside } from '../../stores/openInside';
 import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useLayout, type DesignView } from '../../stores/layout';
+import { HierarchyWorkspace } from './HierarchyWorkspace';
+import { useHierarchy } from '../../stores/hierarchy';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
@@ -27,6 +29,11 @@ import { SchematicContextMenu, type ContextAction } from './SchematicContextMenu
 import { LayoutStudio, SchematicToolbar, type CanvasDisplay, type LayoutPreview } from './SchematicTools';
 
 export function DesignPerspective() {
+  const open = useHierarchy((s)=>s.open), blocks = useProject((s)=>s.project?.blocks);
+  return open ?? Boolean(Object.keys(blocks??{}).length) ? <HierarchyWorkspace/> : <FlatDesignPerspective/>;
+}
+
+function FlatDesignPerspective() {
   const compact = useMediaQuery('(max-width: 1199px)');
   const project = useProject((s) => s.project);
   const sceneCatalog = useProject((s) => s.sceneCatalog);
@@ -403,7 +410,7 @@ export function DesignPerspective() {
 
   return (
     <div className="wb-perspective wb-design-studio">
-      {!insideOf && designView === 'schematic' && <SchematicToolbar onChecks={() => setBottomTab('checks')} checkCount={checks.issues.length} checking={checks.pending} canvas={canvasRef} display={display} onDisplay={setDisplay} onStudio={() => setBottomTab('studio')} onPreview={setPreview} />}
+      {!insideOf && designView === 'schematic' && <SchematicToolbar onSheets={()=>useHierarchy.getState().show()} onChecks={() => setBottomTab('checks')} checkCount={checks.issues.length} checking={checks.pending} canvas={canvasRef} display={display} onDisplay={setDisplay} onStudio={() => setBottomTab('studio')} onPreview={setPreview} />}
       <DockLayout direction="row" items={items} storageKey={`embsim.layout.design.${project?.name ?? 'none'}.${display.focusMode ? 'focus' : 'panels'}`} />
       {context && context.source === project && <SchematicContextMenu context={context.value} actions={contextActions} onClose={closeContext} />}
       <Dialog

@@ -1783,3 +1783,20 @@
 .wb-acquisition label { display: flex; flex-direction: column; gap: 4px; color: var(--text-muted); }
 .wb-acquisition input, .wb-acquisition select { min-width: 0; width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; }
 .wb-acquisition__probe { margin-block: var(--space-2); }
+
+.wb-hierarchy { display: flex; flex-direction: column; min-height: 0; }
+.wb-hierarchy > .es-dock { flex: 1; min-height: 0; }
+.wb-hierarchy__toolbar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; overflow-x: auto; flex: 0 0 auto; border-bottom: 1px solid var(--line); }
+.wb-hierarchy__toolbar label { display: flex; gap: 8px; align-items: center; white-space: nowrap; font-size: var(--text-sm); }
+.wb-hierarchy__sidebar { padding: 12px; font-size: var(--text-sm); display: flex; flex-direction: column; gap: 10px; }
+.wb-hierarchy__sidebar h3 { font-size: 12px; margin: 8px 0 0; }
+.wb-hierarchy__sidebar p { line-height: 1.5; margin: 0; }
+.wb-hierarchy__sidebar label { display: flex; flex-direction: column; gap: 5px; color: var(--text-muted); }
+.wb-hierarchy input, .wb-hierarchy select { background: var(--surface); color: var(--text); font: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 7px; min-width: 0; max-width: 100%; }
+.wb-hierarchy nav, .wb-hierarchy__trace { display: flex; flex-direction: column; gap: 3px; }
+.wb-hierarchy__sidebar button:not(.es-button) { text-align: left; padding: 8px; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
+.wb-hierarchy__sidebar button:hover, .wb-hierarchy__sidebar button.is-active { background: var(--surface-raised); border-color: var(--line); }
+.wb-hierarchy small { display: block; color: var(--text-muted); font-size: 11px; padding-top: 3px; overflow-wrap: anywhere; }
+.wb-hierarchy__block { display: flex; justify-content: space-between; gap: 4px; }
+.wb-hierarchy__port { padding: 8px; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 8px; }
+.wb-hierarchy__canvas { height: 100%; min-height: 0; }

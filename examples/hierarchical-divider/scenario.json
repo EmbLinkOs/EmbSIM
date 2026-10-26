@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Hierarchical loading and isolation",
+  "until": "1ms",
+  "assertions": [
+    {
+      "id": "loaded-2V",
+      "probe": "loaded",
+      "at": "1ms",
+      "expect": {
+        "min_v": 1.9999,
+        "max_v": 2.0001
+      }
+    },
+    {
+      "id": "isolated-1V65",
+      "probe": "isolated",
+      "at": "1ms",
+      "expect": {
+        "min_v": 1.6499,
+        "max_v": 1.6501
+      }
+    }
+  ]
+}

@@ -26,6 +26,7 @@ import type {
   ProfileReport,
   StackReport,
   FaultReport,
+  HierarchyNode,
   Project,
   Recording,
   ReplayResult,
@@ -47,6 +48,7 @@ import type {
 } from './types';
 
 export type ProjectEdit =
+  | { set_circuit: { components: Project["components"]; nets: Project["nets"]; blocks: NonNullable<Project["blocks"]>; layout?: Project["layout"]; probes?: Project["probes"] } }
   | { add_component: { id: string; component: string; version?: string; params?: Record<string, unknown>; layout?: Layout } }
   | { remove_component: { id: string } }
   | { set_param: { id: string; param: string; value: unknown } }
@@ -81,6 +83,7 @@ export interface Methods {
       | { op: 'abort'; tx: string };
     result: { tx?: string; applied?: number | boolean; restarted?: boolean; diagnostics?: DiagnosticRecord[]; islands?: number };
   };
+  'project.hierarchy': { params: { trace?: string }; result: HierarchyNode[] };
   'project.topology': { params: Record<string, never>; result: Topology };
 
   // control
@@ -236,6 +239,7 @@ export const METHOD_NAMES = [
   'project.validate',
   'project.transaction',
   'project.topology',
+  'project.hierarchy',
   'control.run',
   'control.pause',
   'control.step',

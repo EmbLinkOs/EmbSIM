@@ -5,6 +5,33 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Editable hierarchy and reusable blocks (2026-10-26)
+
+Branch `feat/editable-hierarchy` builds on sampled acquisition. Project-owned
+block definitions now support explicit ports, nested instances, parameter
+forwarding and independent native device state. The sheet editor creates and
+extracts blocks, edits shared definitions, places instances, renames/remaps ports,
+imports/exports dependency-complete blocks and traces actual native net aliases
+across sheets. Drawing changes preserve time; electrical edits use staged native
+validation and restart only when the circuit changes. Undo restores both.
+
+Local verification passes all 51 native CTest targets, 307 UI unit tests and all
+33 Playwright workflows. Strict validation covers 903 JSON files; 148 validator
+unit tests pass. The hierarchy protocol checks 39 cases, and the loaded divider
+scenario passes two analytic voltage assertions. Final session, hierarchy,
+probe-move and streaming targets also pass AddressSanitizer and
+UndefinedBehaviorSanitizer with leak detection. Native browser acceptance closes
+one nested contact while its sibling stays unchanged, edits/undoes a shared
+resistor, preserves time through a drawing move, renames a port, extracts a block
+and exports its dependencies. See the [contract and limits](engineering/editable-hierarchy.md),
+[acceptance circuit](../examples/hierarchical-divider/README.md) and
+[native capture](gallery/README.md).
+
+This delivers basic editable project hierarchy, not the complete engineering
+workflow. Nested firmware-board declarations, graphical parameter declarations,
+managed/versioned libraries, hierarchy BOM/PCB integration and industrial-size
+performance qualification remain open. No new 3D development is included.
+
 ## Sampled acquisition and movable probes (2026-10-26)
 
 Branch `feat/schematic-acquisition` builds on the reviewed live-schematic branch.

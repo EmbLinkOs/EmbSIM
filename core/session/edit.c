@@ -139,6 +139,20 @@ int esk_project_validate_organization(const esk_json *project, char *why, size_t
                 return -1;
         }
     }
+    {
+        const esk_json *order = esk_json_get(esk_json_get(project, "layout"), "port_order");
+        const esk_json *ports = esk_json_get(project, "ports");
+        if (order) {
+            if (order->type != ESK_JSON_ARRAY || !ports || ports->type != ESK_JSON_OBJECT)
+                return err(why, cap, "%s", "port_order requires a block's port array");
+            for (i = 0; i < esk_json_len(order); i++) {
+                const char *name = esk_json_str(esk_json_at(order, i));
+                if (!name || !esk_json_get(ports, name)) return err(why, cap, "%s", "port_order references an unknown port");
+                for (k = 0; k < i; k++)
+                    if (esk_str_eq(name, esk_json_str(esk_json_at(order, k)))) return err(why, cap, "%s", "duplicate port_order entry");
+            }
+        }
+    }
     return validate_groups(project, esk_json_get(esk_json_get(project, "layout"), "groups"), why,
                            cap);
 }
@@ -315,6 +329,83 @@ static void prune_bench(esk_alloc *a, esk_json *project, const char *id)
     }
 }
 
+/* Geometry is presentation at every depth; moving a child must retain time. */
+static void strip_geometry(esk_alloc *a, esk_json *circuit)
+{
+    static const char *const kinds[] = {"components", "boards"};
+    esk_json *blocks;
+    size_t i, k;
+    if (!circuit) return;
+    esk_json_remove(a, circuit, "layout");
+    for (k = 0; k < 2; k++) {
+        esk_json *parts = esk_json_get_mut(circuit, kinds[k]);
+        for (i = 0; i < esk_json_len(parts); i++)
+            esk_json_remove(a, esk_json_at_mut(parts, i), "layout");
+    }
+    blocks = esk_json_get_mut(circuit, "blocks");
+    for (i = 0; i < esk_json_len(blocks); i++) strip_geometry(a, esk_json_at_mut(blocks, i));
+}
+
+/* JSON objects are maps: key serialization order must not restart a drawing edit. */
+static int same_circuit(const esk_json *a, const esk_json *b)
+{
+    size_t i;
+    if (!a || !b) return a == b;
+    if (a->type != b->type) return 0;
+    if (a->type == ESK_JSON_NULL) return 1;
+    if (a->type == ESK_JSON_BOOL) return a->u.boolean == b->u.boolean;
+    if (a->type == ESK_JSON_STRING)
+        return a->u.string.len == b->u.string.len && !memcmp(a->u.string.data, b->u.string.data, a->u.string.len);
+    if (a->type == ESK_JSON_NUMBER) {
+        if (a->u.number.is_integer && b->u.number.is_integer) return a->u.number.integer == b->u.number.integer;
+        if ((a->u.number.is_integer && fabs(a->u.number.value) > 9007199254740992.0) ||
+            (b->u.number.is_integer && fabs(b->u.number.value) > 9007199254740992.0)) return 0;
+        return a->u.number.value == b->u.number.value;
+    }
+    if (esk_json_len(a) != esk_json_len(b)) return 0;
+    for (i = 0; i < esk_json_len(a); i++) {
+        const esk_json *value = esk_json_at(a, i);
+        const esk_json *other = a->type == ESK_JSON_OBJECT ? esk_json_get(b, value->key) : esk_json_at(b, i);
+        if (!same_circuit(value, other)) return 0;
+    }
+    return 1;
+}
+
+static int replace_circuit(esk_alloc *a, esk_json *project, const esk_json *e,
+                           int *structural, char *why, size_t cap)
+{
+    static const char *const keys[] = {"components", "nets", "blocks", "layout"};
+    esk_json *before = esk_json_clone(a, project), *after;
+    size_t i;
+    if (!before) return -1;
+    for (i = 0; i < 4; i++) {
+        const esk_json *v = esk_json_get(e, keys[i]);
+        if ((!v || v->type == ESK_JSON_NULL) && i == 3) { esk_json_remove(a, project, keys[i]); continue; }
+        if (!v || v->type != (i == 0 ? ESK_JSON_ARRAY : ESK_JSON_OBJECT)) {
+            esk_json_free(a, before);
+            return err(why, cap, "Invalid circuit field %s", keys[i]);
+        }
+        if (esk_json_object_set(a, project, keys[i], esk_json_clone(a, v))) { esk_json_free(a, before); return -1; }
+    }
+    {
+        const esk_json *probes = esk_json_get(e, "probes");
+        const esk_json *blocks = esk_json_get(project, "blocks");
+        if (probes) {
+            if (probes->type != ESK_JSON_ARRAY) { esk_json_free(a, before); return err(why, cap, "Invalid %s", "probes"); }
+            esk_json_object_set(a, project, "probes", esk_json_clone(a, probes));
+        } else esk_json_remove(a, project, "probes");
+        if (esk_project_validate_organization(project, why, cap)) { esk_json_free(a, before); return -1; }
+        for (i = 0; i < esk_json_len(blocks); i++)
+            if (esk_project_validate_organization(esk_json_at(blocks, i), why, cap)) { esk_json_free(a, before); return -1; }
+    }
+    after = esk_json_clone(a, project);
+    if (!after) { esk_json_free(a, before); return -1; }
+    strip_geometry(a, before); strip_geometry(a, after);
+    if (!same_circuit(before, after)) *structural = 1;
+    esk_json_free(a, before); esk_json_free(a, after);
+    return 0;
+}
+
 int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit, int *structural,
                            char *why, size_t cap)
 {
@@ -326,6 +417,20 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
     if (!nets)
         return -1;
     e = esk_json_at(edit, 0);
+    if (esk_str_eq(e->key, "set_circuit")) {
+        esk_json *draft = esk_json_clone(a, project);
+        int changed = *structural, result;
+        if (!draft) return -1;
+        result = replace_circuit(a, draft, e, &changed, why, cap);
+        if (!result) {
+            esk_json previous = *project;
+            *project = *draft;
+            *draft = previous;
+            *structural = changed;
+        }
+        esk_json_free(a, draft);
+        return result;
+    }
 
     if (esk_str_eq(e->key, "add_component")) {
         *structural = 1;

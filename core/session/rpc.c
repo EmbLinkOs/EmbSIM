@@ -3,6 +3,7 @@
 /* rpc.c -- the session protocol's method table (SPEC-008 §5) over the
  * in-process transport. Every transport ends here. */
 #include "session/session_priv.h"
+#include "project/hierarchy.h"
 #include "mcu/analysis.h"
 #include "mcu/mcu.h"
 #include <stdlib.h>
@@ -259,6 +260,12 @@ static es_status m_project_validate(rpc_ctx *r)
     }
     es_session_destroy(tmp);
     return ES_OK;
+}
+
+static es_status m_project_hierarchy(rpc_ctx *r)
+{
+    r->result = esk_project_hierarchy(r->s, pstr(r, "trace", NULL));
+    return r->result ? ES_OK : ES_ENOMEM;
 }
 
 static es_status m_project_topology(rpc_ctx *r)
@@ -696,7 +703,7 @@ static es_status m_catalog_get(rpc_ctx *r)
     esk_json *files;
     if (!id) return fail(r, -32602, "id is required");
     /* without a kind: a component, else a board, else an MCU */
-    it = esk_catalog_find(r->s->catalog, kind ? kind : "component", id);
+    it = (!kind || !strcmp(kind, "component")) ? esk_project_component(r->s, id) : esk_catalog_find(r->s->catalog, kind, id);
     if (!it && !kind)
         it = esk_catalog_find(r->s->catalog, "board", id);
     if (!it && !kind)
@@ -706,7 +713,7 @@ static es_status m_catalog_get(rpc_ctx *r)
     files = obj(r);
     if (!r->result || !files) { esk_json_free(r->s->a, files); return ES_ENOMEM; }
     esk_json_object_set(r->s->a, r->result, "description", esk_json_clone(r->s->a, it->desc));
-    esk_json_set_string(r->s->a, r->result, "dir", it->dir);
+    esk_json_set_string(r->s->a, r->result, "dir", it->dir ? it->dir : "");
     {
         static const char *const keys[2][2] = { { "symbol", "svg" }, { "artwork", "svg" } };
         size_t i;
@@ -1321,7 +1328,7 @@ static const method methods[] = {
     { "session.open", m_session_open }, { "session.close", m_session_close }, { "session.info", m_session_info },
     { "session.policy", m_session_policy },
     { "project.load", m_project_load }, { "project.get", m_project_get }, { "project.validate", m_project_validate },
-    { "project.topology", m_project_topology }, { "project.transaction", m_project_transaction }, { "project.save", m_project_save },
+    { "project.hierarchy", m_project_hierarchy }, { "project.topology", m_project_topology }, { "project.transaction", m_project_transaction }, { "project.save", m_project_save },
     { "control.run", m_control_run }, { "control.pause", m_control_pause }, { "control.step", m_control_step },
     { "control.advance", m_control_advance }, { "control.reset", m_control_reset }, { "control.speed", m_control_speed },
     { "world.get", m_world_get },

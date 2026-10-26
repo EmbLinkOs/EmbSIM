@@ -68,6 +68,7 @@ struct es_session {
     esk_registry reg;
     es_catalog *catalog;
     int owns_catalog;
+    ESK_VEC(esk_catalog_item *) local_blocks;
     char *catalog_dir;
     /* project */
     esk_json *project;      /* the canonical project JSON as loaded (with resolved layout) */

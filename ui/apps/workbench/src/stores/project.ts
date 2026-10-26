@@ -7,7 +7,7 @@
 // transaction (see projectDiff.ts) and comes back through refresh().
 
 import { CommandStack, shiftWireSegment, projectPinPoints, GRID, boardSymbol, boardRuntimeHeader, freePlacement, autoRoute, createLayout, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
-import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
+import { blockPortOrder, JsonRpcCode, JsonRpcError, type CircuitBlock, type HierarchyNode, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
 import { create } from 'zustand';
 import { getClient, primeStores } from '../connection';
 import { useInstruments } from './instruments';
@@ -56,6 +56,7 @@ export interface ProjectState {
   catalog: Record<string, CatalogEntry>;
   sceneCatalog: SceneCatalog;
   topology: Topology | null;
+  hierarchy: HierarchyNode[];
   commands: CommandStack;
   busy: boolean;
   lastError: string | null;
@@ -158,8 +159,15 @@ function clone<T>(v: T): T {
   return structuredClone(v);
 }
 
-function sceneEntry(entry: CatalogEntry): SceneCatalog[string] {
+function sceneEntry(entry: CatalogEntry, block?: CircuitBlock): SceneCatalog[string] {
   const d = entry.description as ComponentDescription & { kind?: string; ports?: Record<string, BoardPort>; artwork?: { hotspots?: { component?: string; input?: string; output?: string; selector?: string }[] } };
+  if (d.id?.startsWith('block/')) {
+    const names = block ? blockPortOrder(block) : (d.pins ?? []).map((p)=>p.name).sort();
+    const pins = names.map((name)=>d.pins.find((p)=>p.name===name)).filter((p): p is NonNullable<typeof p>=>Boolean(p));
+    const { symbol, svg } = boardSymbol(d.name, Object.fromEntries(pins.map((p, i) => [p.name, { connector: i % 2 === 0 ? 'L' : 'R', pin: Math.floor(i / 2) }])));
+    entry.description = { ...d, symbol };
+    return { name: d.name, symbol, svg };
+  }
   if (d.kind === 'board') {
     // a board has no drawn symbol: a block of its ports stands for it
     const { symbol, svg } = boardRuntimeHeader(boardSymbol(d.name, d.ports ?? {}), d.artwork?.hotspots ?? []);
@@ -184,7 +192,7 @@ function freeId(componentId: string, used: Set<string>): string {
   return `${prefix}${Date.now()}`;
 }
 const catalogId = (x: ProjectComponent | ProjectBoard) => ('board' in x ? x.board : x.component);
-const projectIds = (p: Project) => [...p.components.map((x) => x.component), ...(p.boards ?? []).map((b) => b.board)];
+const projectIds = (p: Project) => [...p.components.map((x) => x.component), ...(p.boards ?? []).map((b) => b.board), ...Object.entries(p.blocks ?? {}).flatMap(([id, block]) => [`block/${id}`, ...block.components.map((c) => c.component)])];
 
 /** Applies a diff through one transaction. */
 async function applyEdits(edits: ProjectEdit[]): Promise<void> {
@@ -195,6 +203,7 @@ async function applyEdits(edits: ProjectEdit[]): Promise<void> {
   try {
     await c.project.transaction({ op: 'edit', tx, edits });
     const committed = await c.project.transaction({ op: 'commit', tx });
+    if (committed.applied === false || committed.applied === 0) throw new Error(committed.diagnostics?.filter((d)=>d.severity==='error').map((d)=>d.message).join('; ') || 'Native validation rejected the circuit; the previous circuit is preserved.');
     if (committed.restarted) {
       useInstruments.getState().clearRecords();
       await primeStores(c);
@@ -217,6 +226,7 @@ export const useProject = create<ProjectState>((set, get) => ({
   catalog: {},
   sceneCatalog: {},
   topology: null,
+  hierarchy: [],
   commands: new CommandStack(),
   busy: false,
   lastError: null,
@@ -228,7 +238,8 @@ export const useProject = create<ProjectState>((set, get) => ({
     set({ project, items });
     await get().ensureCatalog([...new Set([...items.map((i) => i.id), ...projectIds(project)])]);
     const topology = await c.project.topology({}).catch(() => null);
-    set({ topology });
+    const hierarchy = await c.project.hierarchy?.({}).catch(() => []) ?? [];
+    set({ topology, hierarchy });
   },
 
   async refresh() {
@@ -239,11 +250,12 @@ export const useProject = create<ProjectState>((set, get) => ({
     if (JSON.stringify(get().project) !== JSON.stringify(project)) set({ project });
     await get().ensureCatalog(projectIds(project));
     const topology = await c.project.topology({}).catch(() => null);
-    set({ topology });
+    const hierarchy = await c.project.hierarchy?.({}).catch(() => []) ?? [];
+    set({ topology, hierarchy });
   },
 
   async ensureCatalog(ids) {
-    const missing = ids.filter((id) => !get().catalog[id]);
+    const missing = [...new Set(ids)].filter((id) => id.startsWith('block/') || !get().catalog[id]);
     if (missing.length === 0) return;
     const c = getClient();
     const results = await Promise.all(
@@ -260,7 +272,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     for (const [id, entry] of results) {
       if (!entry) continue;
       catalog[id] = entry;
-      sceneCatalog[id] = sceneEntry(entry);
+      sceneCatalog[id] = sceneEntry(entry, get().project?.blocks?.[id.slice(6)]);
     }
     set({ catalog, sceneCatalog });
   },

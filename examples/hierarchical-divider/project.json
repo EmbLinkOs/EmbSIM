@@ -1,0 +1,505 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "hierarchical-divider",
+  "description": "Two isolated supplies drive shared divider definitions. A nested divider has a real 2 kohm load; its output is 2 V while the independent 3.3 V divider output is 1.65 V. All scopes remain explicit through block ports.",
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V5",
+      "component": "emblink/vsource",
+      "layout": {
+        "x": 40,
+        "y": 80
+      },
+      "params": {
+        "dc": 5
+      }
+    },
+    {
+      "id": "V33",
+      "component": "emblink/vsource",
+      "layout": {
+        "x": 40,
+        "y": 280
+      },
+      "params": {
+        "dc": 3.3
+      }
+    },
+    {
+      "id": "A",
+      "component": "block/stage",
+      "layout": {
+        "x": 240,
+        "y": 60
+      }
+    },
+    {
+      "id": "B",
+      "component": "block/divider",
+      "layout": {
+        "x": 240,
+        "y": 260
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 500,
+        "y": 400
+      }
+    }
+  ],
+  "nets": {
+    "SUPPLY5": [
+      "V5.+",
+      "A.IN"
+    ],
+    "SUPPLY33": [
+      "V33.+",
+      "B.IN"
+    ],
+    "AOUT": [
+      "A.OUT"
+    ],
+    "BOUT": [
+      "B.OUT"
+    ],
+    "GND": [
+      "V5.-",
+      "V33.-",
+      "G.GND",
+      "A.GND",
+      "B.GND"
+    ]
+  },
+  "blocks": {
+    "divider": {
+      "name": "Reusable divider",
+      "components": [
+        {
+          "id": "RT",
+          "component": "emblink/resistor",
+          "layout": {
+            "x": 140,
+            "y": 80
+          },
+          "params": {
+            "resistance": 1000
+          }
+        },
+        {
+          "id": "RB",
+          "component": "emblink/resistor",
+          "layout": {
+            "x": 300,
+            "y": 80
+          },
+          "params": {
+            "resistance": 1000
+          }
+        },
+        {
+          "id": "SW",
+          "component": "emblink/push_button",
+          "layout": {
+            "x": 230,
+            "y": 200
+          }
+        }
+      ],
+      "nets": {
+        "IN": [
+          "RT.1"
+        ],
+        "OUT": [
+          "RT.2",
+          "RB.1",
+          "SW.1"
+        ],
+        "GND": [
+          "RB.2",
+          "SW.2"
+        ]
+      },
+      "ports": {
+        "IN": "RT.1",
+        "OUT": "RT.2",
+        "GND": "RB.2"
+      },
+      "layout": {
+        "wires": [
+          {
+            "net": "GND",
+            "points": [
+              [
+                360,
+                90
+              ],
+              [
+                380,
+                90
+              ],
+              [
+                380,
+                210
+              ],
+              [
+                290,
+                210
+              ]
+            ]
+          },
+          {
+            "net": "OUT",
+            "points": [
+              [
+                200,
+                90
+              ],
+              [
+                300,
+                90
+              ]
+            ]
+          },
+          {
+            "net": "OUT",
+            "points": [
+              [
+                200,
+                90
+              ],
+              [
+                220,
+                90
+              ],
+              [
+                220,
+                210
+              ],
+              [
+                230,
+                210
+              ]
+            ]
+          }
+        ],
+        "labels": [
+          {
+            "net": "IN",
+            "x": 100,
+            "y": 90
+          },
+          {
+            "net": "OUT",
+            "x": 240,
+            "y": 90
+          },
+          {
+            "net": "GND",
+            "x": 400,
+            "y": 90
+          }
+        ],
+        "port_order": [
+          "IN",
+          "OUT",
+          "GND"
+        ]
+      }
+    },
+    "stage": {
+      "name": "Loaded divider stage",
+      "components": [
+        {
+          "id": "D",
+          "component": "block/divider",
+          "layout": {
+            "x": 140,
+            "y": 80
+          }
+        },
+        {
+          "id": "LOAD",
+          "component": "emblink/resistor",
+          "layout": {
+            "x": 420,
+            "y": 120
+          },
+          "params": {
+            "resistance": 2000
+          }
+        }
+      ],
+      "nets": {
+        "IN": [
+          "D.IN"
+        ],
+        "OUT": [
+          "D.OUT",
+          "LOAD.1"
+        ],
+        "GND": [
+          "D.GND",
+          "LOAD.2"
+        ]
+      },
+      "ports": {
+        "IN": "D.IN",
+        "OUT": "D.OUT",
+        "GND": "D.GND"
+      },
+      "layout": {
+        "labels": [
+          {
+            "net": "IN",
+            "x": 100,
+            "y": 120
+          },
+          {
+            "net": "OUT",
+            "x": 360,
+            "y": 120
+          },
+          {
+            "net": "GND",
+            "x": 100,
+            "y": 140
+          }
+        ],
+        "wires": [
+          {
+            "net": "GND",
+            "points": [
+              [
+                140,
+                140
+              ],
+              [
+                120,
+                140
+              ],
+              [
+                120,
+                180
+              ],
+              [
+                500,
+                180
+              ],
+              [
+                500,
+                130
+              ],
+              [
+                480,
+                130
+              ]
+            ]
+          },
+          {
+            "net": "OUT",
+            "points": [
+              [
+                300,
+                120
+              ],
+              [
+                320,
+                120
+              ],
+              [
+                320,
+                130
+              ],
+              [
+                420,
+                130
+              ]
+            ]
+          }
+        ],
+        "port_order": [
+          "IN",
+          "OUT",
+          "GND"
+        ]
+      }
+    }
+  },
+  "probes": [
+    {
+      "id": "loaded",
+      "target": "net:AOUT",
+      "kind": "analog",
+      "rate_hz": 100000
+    },
+    {
+      "id": "isolated",
+      "target": "net:BOUT",
+      "kind": "analog",
+      "rate_hz": 100000
+    }
+  ],
+  "layout": {
+    "wires": [
+      {
+        "net": "GND",
+        "points": [
+          [
+            70,
+            120
+          ],
+          [
+            70,
+            140
+          ],
+          [
+            220,
+            140
+          ],
+          [
+            220,
+            120
+          ],
+          [
+            240,
+            120
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            70,
+            120
+          ],
+          [
+            70,
+            140
+          ],
+          [
+            120,
+            140
+          ],
+          [
+            120,
+            340
+          ],
+          [
+            70,
+            340
+          ],
+          [
+            70,
+            320
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            70,
+            320
+          ],
+          [
+            70,
+            340
+          ],
+          [
+            220,
+            340
+          ],
+          [
+            220,
+            320
+          ],
+          [
+            240,
+            320
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            240,
+            320
+          ],
+          [
+            220,
+            320
+          ],
+          [
+            220,
+            380
+          ],
+          [
+            510,
+            380
+          ],
+          [
+            510,
+            400
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY33",
+        "points": [
+          [
+            70,
+            280
+          ],
+          [
+            70,
+            260
+          ],
+          [
+            220,
+            260
+          ],
+          [
+            220,
+            300
+          ],
+          [
+            240,
+            300
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY5",
+        "points": [
+          [
+            70,
+            80
+          ],
+          [
+            70,
+            60
+          ],
+          [
+            220,
+            60
+          ],
+          [
+            220,
+            100
+          ],
+          [
+            240,
+            100
+          ]
+        ]
+      }
+    ]
+  }
+}
