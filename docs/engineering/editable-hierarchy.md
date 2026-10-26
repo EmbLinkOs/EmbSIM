@@ -55,8 +55,9 @@ A definition is shared. Editing it through `A.D` also updates `B` when both use
 `divider`. The inspector states this explicitly. Choose the parent instance and
 edit its declared parameters for per-instance values. Parameter declarations and
 `$name` bindings can be authored in project JSON; native parameter metadata supplies
-resolved instance values to the drawing. The GUI exposes instance values but does
-not yet provide a parameter-declaration wizard.
+resolved instance values to the drawing. The GUI exposes instance values and now provides a declaration editor; see
+[project-wide reliability](schematic-reliability.md) for types, rename propagation
+and limits.
 
 **New block** creates an editable empty definition. **Extract selection** moves
 selected unlocked components into a reusable definition, creates ports for
@@ -118,11 +119,12 @@ ports, duplicate pins, namespace overlap and malformed staged patches preserve t
 prior circuit. Address/undefined-behavior sanitizers exercise session ownership.
 
 Remaining work includes sheet-local board firmware, explicit global-net/sheet-port
-objects, port-interface migration/removal tooling, a graphical parameter-declaration
-editor, managed/versioned library packages, hierarchy-aware BOM/PCB workflows and
+objects, advanced port-interface migration, managed/versioned library packages,
+hierarchy-aware BOM/PCB workflows and
 qualified industrial-size editing performance. The flat overview and hierarchy
 editor have different command surfaces; block editing does not yet reproduce every
-flat-editor clipboard, annotation or template command. No Proteus-parity, market
+flat-editor annotation or template command. Cross-sheet copying and protected
+port removal are described in [project-wide reliability](schematic-reliability.md). No Proteus-parity, market
 leadership or full 1.0 completion is claimed.
 
 ```sh

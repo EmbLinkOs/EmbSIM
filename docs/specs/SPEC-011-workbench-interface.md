@@ -380,3 +380,15 @@ from the same frame. Picks/drags must not edit the project or add impedance.
 Missing voltage cannot be inferred from logic state. Physically loaded instruments
 remain distinct. The implementation, acceptance and outstanding complete-schematic
 gates are documented in [live schematic engineering](../engineering/live-schematic.md).
+
+
+## Project-wide schematic reliability
+
+The hierarchy editor shall offer dependency-aware selection copying with fresh
+local net/component identities, typed block parameter declaration editing with
+binding/override rename propagation, protected port/parameter removal and ordered
+bus editing. Bus membership remains presentation-only. Project search shall
+identify concrete instance/definition locations. Electrical review shall use native
+aliases, separate advisory metadata topology from live contention evidence, expose
+coverage gaps and export structured navigable reports. See
+[workflow, rules, acceptance and limits](../engineering/schematic-reliability.md).

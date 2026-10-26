@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { Badge, Button, DockLayout, IconButton, SegmentedControl, useToast, type DockItem } from '@embsim/design';
+import {
+  Badge,
+  Button,
+  DockLayout,
+  IconButton,
+  SegmentedControl,
+  useToast,
+  type DockItem,
+} from '@embsim/design';
 import { blockDependencies, parseSi, sheetAt, type CircuitBlock, type Project } from '@embsim/protocol';
 import {
   EMPTY_SELECTION,
@@ -21,7 +29,27 @@ import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useSchematicOutputs } from '../../stores/schematicDisplay';
-import { connectSheet, editSheet, exposePort, extractBlock, renamePort, routeSheet } from './hierarchyEditing';
+import { checkProject, liveProjectChecks } from './projectChecks';
+import { ProjectReview } from './ProjectReview';
+import { BlockParameters } from './BlockParameters';
+import { SheetBuses } from './SheetBuses';
+import {
+  copySheet,
+  pasteSheet,
+  portUses,
+  removePort,
+  sameDefinition,
+  type SheetClipboard,
+} from './hierarchyTools';
+import { projectSearch, type ProjectSearchHit } from './projectSearch';
+import {
+  connectSheet,
+  editSheet,
+  exposePort,
+  extractBlock,
+  renamePort,
+  routeSheet,
+} from './hierarchyEditing';
 
 export function HierarchyWorkspace() {
   const store = useProject(),
@@ -34,13 +62,32 @@ export function HierarchyWorkspace() {
   const canvas = useRef<SchematicCanvasHandle>(null),
     host = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<CanvasMode>('select'),
-    [chosen, setChosen] = useState<{ path: string; value: Selection }>({ path: '', value: EMPTY_SELECTION });
+    [chosen, setChosen] = useState<{ path: string; value: Selection }>({
+      path: '',
+      value: EMPTY_SELECTION,
+    });
   const [query, setQuery] = useState(''),
     [part, setPart] = useState('emblink/resistor'),
     [blockName, setBlockName] = useState(''),
     [portName, setPortName] = useState(''),
     [target, setTarget] = useState('');
   const [trace, setTrace] = useState<string | null>(null);
+  const [clipboard, setClipboard] = useState<SheetClipboard | null>(null),
+    [find, setFind] = useState('');
+  const pasteCount = useRef(0);
+  const [review, setReview] = useState(false);
+  const staticIssues = useMemo(
+    () => (p ? checkProject(p, store.hierarchy, store.catalog, store.sceneCatalog) : []),
+    [p, store.hierarchy, store.catalog, store.sceneCatalog],
+  );
+  const issues = useMemo(
+    () => [...liveProjectChecks(store.hierarchy, session.nets), ...staticIssues],
+    [store.hierarchy, session.nets, staticIssues],
+  );
+  const searchResults = useMemo(
+    () => (p ? projectSearch(p, store.hierarchy, find) : []),
+    [p, store.hierarchy, find],
+  );
   const context = useMemo(() => {
     if (!p) return null;
     let path = h.path,
@@ -98,7 +145,11 @@ export function HierarchyWorkspace() {
     : (Object.keys(aliases).find((net) => aliases[net] === trace) ?? null);
   const guard = (fn: () => Promise<unknown>) => () =>
     void fn().catch((e: unknown) =>
-      toast({ kind: 'error', title: 'Hierarchy edit rejected', description: errorMessage(e) }),
+      toast({
+        kind: 'error',
+        title: 'Hierarchy edit rejected',
+        description: errorMessage(e),
+      }),
     );
   const edit = (label: string, fn: (s: Project | CircuitBlock, p: Project) => void) =>
     store.mutate(label, (doc) => editSheet(doc, path, (s) => fn(s, doc)));
@@ -106,6 +157,39 @@ export function HierarchyWorkspace() {
   const go = (next: string) => {
     h.show(next);
     setChosen({ path: next, value: EMPTY_SELECTION });
+  };
+  const fail = (e: unknown) =>
+    toast({
+      kind: 'error',
+      title: 'Schematic action rejected',
+      description: errorMessage(e),
+    });
+  const locate = (hit: ProjectSearchHit) => {
+    go(hit.path);
+    const native = store.hierarchy.find((n) => n.path === hit.path)?.nets[hit.net ?? ''];
+    if (hit.net) setTrace(hit.path.startsWith('@') ? `${hit.path}:${hit.net}` : (native ?? null));
+    if (hit.component)
+      setChosen({
+        path: hit.path,
+        value: { components: [hit.component], wires: [] },
+      });
+    requestAnimationFrame(() => {
+      if (hit.net) canvas.current?.focusNet(hit.net);
+      else if (hit.component) canvas.current?.focusComponents([hit.component]);
+    });
+  };
+  const copy = () => {
+    setClipboard(copySheet(p, path, selection.components));
+    pasteCount.current = 0;
+  };
+  const paste = async () => {
+    if (!clipboard) return;
+    let ids: string[] = [];
+    await edit('Paste components into sheet', (_s, doc) => {
+      ids = pasteSheet(doc, path, clipboard, 40 * (pasteCount.current + 1));
+    });
+    pasteCount.current++;
+    select({ components: ids, wires: [] });
   };
   const numericKey = (base: string) => {
     let n = 1;
@@ -127,7 +211,12 @@ export function HierarchyWorkspace() {
       id.startsWith('block/') ? 'X' : id.endsWith('/resistor') ? 'R' : id.endsWith('/capacitor') ? 'C' : 'U',
     );
     await edit(`Place ${cid} on ${path || 'Main'}`, (s) => {
-      const placement = freePlacement({ ...view, components: s.components, nets: s.nets }, catalog, symbol, centre);
+      const placement = freePlacement(
+        { ...view, components: s.components, nets: s.nets },
+        catalog,
+        symbol,
+        centre,
+      );
       s.components.push({ id: cid, component: id, layout: placement });
     });
     select({ components: [cid], wires: [] });
@@ -158,7 +247,10 @@ export function HierarchyWorkspace() {
           .map((b) => ({ ...b, nets: b.nets.filter((n) => n in s.nets) }))
           .filter((b) => b.nets.length),
         groups: (s.layout?.groups ?? [])
-          .map((g) => ({ ...g, members: g.members.filter((id) => !ids.has(id)) }))
+          .map((g) => ({
+            ...g,
+            members: g.members.filter((id) => !ids.has(id)),
+          }))
           .filter((g) => g.members.length),
       };
     });
@@ -167,10 +259,20 @@ export function HierarchyWorkspace() {
       for (const c of [...s.components, ...('boards' in s ? (s.boards ?? []) : [])])
         if (ids.includes(c.id)) {
           if (c.layout?.locked) throw new Error('Component is locked');
-          c.layout = { ...c.layout, x: (c.layout?.x ?? 0) + dx, y: (c.layout?.y ?? 0) + dy };
+          c.layout = {
+            ...c.layout,
+            x: (c.layout?.x ?? 0) + dx,
+            y: (c.layout?.y ?? 0) + dy,
+          };
         }
       s.layout = routeSheet(
-        { ...view, components: s.components, boards: 'boards' in s ? s.boards : [], nets: s.nets, layout: s.layout },
+        {
+          ...view,
+          components: s.components,
+          boards: 'boards' in s ? s.boards : [],
+          nets: s.nets,
+          layout: s.layout,
+        },
         store.sceneCatalog,
         new Set(
           Object.entries(s.nets)
@@ -192,13 +294,20 @@ export function HierarchyWorkspace() {
           };
         }
       s.layout = routeSheet(
-        { ...view, components: s.components, boards: 'boards' in s ? s.boards : [], nets: s.nets, layout: s.layout },
+        {
+          ...view,
+          components: s.components,
+          boards: 'boards' in s ? s.boards : [],
+          nets: s.nets,
+          layout: s.layout,
+        },
         store.sceneCatalog,
       ).layout;
     });
   const addBlock = async (extract: boolean) => {
     const id = blockName.trim();
-    if (!/^[a-z][a-z0-9_-]{0,63}$/.test(id) || p.blocks?.[id]) throw new Error('Enter a unique block identifier');
+    if (!/^[a-z][a-z0-9_-]{0,63}$/.test(id) || p.blocks?.[id])
+      throw new Error('Enter a unique block identifier');
     await store.mutate(extract ? 'Extract reusable circuit block' : 'Create circuit block', (doc) => {
       if (extract) {
         extractBlock(doc, path, selection.components, id);
@@ -206,7 +315,13 @@ export function HierarchyWorkspace() {
       }
       doc.blocks = {
         ...doc.blocks,
-        [id]: { name: id, components: [], nets: {}, ports: {}, layout: { port_order: [] } },
+        [id]: {
+          name: id,
+          components: [],
+          nets: {},
+          ports: {},
+          layout: { port_order: [] },
+        },
       };
       return doc;
     });
@@ -220,7 +335,10 @@ export function HierarchyWorkspace() {
   );
   const parts = [
     ...store.items.filter((i) => i.kind === 'component'),
-    ...Object.entries(p.blocks ?? {}).map(([id, b]) => ({ id: `block/${id}`, name: b.name })),
+    ...Object.entries(p.blocks ?? {}).map(([id, b]) => ({
+      id: `block/${id}`,
+      name: b.name,
+    })),
   ]
     .filter((i) => `${i.id} ${i.name}`.toLowerCase().includes(query.toLowerCase()))
     .slice(0, 100);
@@ -229,7 +347,8 @@ export function HierarchyWorkspace() {
     if (!block) return;
     const instanceParams = store.hierarchy.find((n) => n.path === path)?.params;
     const requiredMissing = Object.entries(definition?.params ?? {}).some(
-      ([name, spec]) => (spec.required ?? true) && spec.default === undefined && instanceParams?.[name] === undefined,
+      ([name, spec]) =>
+        (spec.required ?? true) && spec.default === undefined && instanceParams?.[name] === undefined,
     );
     const doc: Project = {
       schema_version: 1,
@@ -240,12 +359,42 @@ export function HierarchyWorkspace() {
       nets: {},
       blocks: blockDependencies(p, block),
     };
-    await (await platform()).saveTextFile(`${block}.embsim.json`, JSON.stringify(doc, null, 2), 'application/json');
+    await (
+      await platform()
+    ).saveTextFile(`${block}.embsim.json`, JSON.stringify(doc, null, 2), 'application/json');
   };
   const tree = (
     <div className="wb-hierarchy__sidebar">
+      <label>
+        Find in project
+        <input
+          aria-label="Find in project"
+          value={find}
+          onChange={(e) => setFind(e.target.value)}
+          placeholder="Reference, value, net, port…"
+        />
+      </label>
+      {find.trim() && (
+        <div className="wb-hierarchy__search" role="region" aria-label="Project search results">
+          <small>
+            {searchResults.length} results
+            {searchResults.length > 100 ? ' · first 100 shown; refine search' : ''}
+          </small>
+          {searchResults.slice(0, 100).map((hit) => (
+            <button key={hit.id} onClick={() => locate(hit)}>
+              <strong>
+                {hit.path || 'Main'} · {hit.name}
+              </strong>
+              <small>
+                {hit.kind} · {hit.detail}
+              </small>
+            </button>
+          ))}
+        </div>
+      )}
       <p className="es-muted">
-        Instance sheets share their block definition. Electrical edits restart simulation; drawing edits preserve time.
+        Instance sheets share their block definition. Electrical edits restart simulation; drawing edits
+        preserve time.
       </p>
       <nav aria-label="Hierarchy sheets">
         {store.hierarchy.map((n) => (
@@ -253,7 +402,9 @@ export function HierarchyWorkspace() {
             className={path === n.path ? 'is-active' : ''}
             key={n.path}
             onClick={() => go(n.path)}
-            style={{ paddingLeft: 12 + n.path.split('.').filter(Boolean).length * 14 }}
+            style={{
+              paddingLeft: 12 + n.path.split('.').filter(Boolean).length * 14,
+            }}
           >
             {n.path || 'Main'}
             {n.block && <small>{p.blocks?.[n.block]?.name}</small>}
@@ -285,13 +436,21 @@ export function HierarchyWorkspace() {
         <Button size="sm" disabled={!writable} onClick={guard(() => addBlock(false))}>
           New block
         </Button>
-        <Button size="sm" disabled={!writable || !selection.components.length} onClick={guard(() => addBlock(true))}>
+        <Button
+          size="sm"
+          disabled={!writable || !selection.components.length}
+          onClick={guard(() => addBlock(true))}
+        >
           Extract selection
         </Button>
       </div>
       <label>
         Search parts
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Resistor, amplifier, block…" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Resistor, amplifier, block…"
+        />
       </label>
       <label>
         Part to place
@@ -322,7 +481,7 @@ export function HierarchyWorkspace() {
             throw new Error('Choose an EmbSIM project with block definitions');
           await store.mutate('Import reusable blocks', (next) => {
             for (const [id, b] of Object.entries(doc.blocks!))
-              if (next.blocks?.[id] && JSON.stringify(next.blocks[id]) !== JSON.stringify(b))
+              if (next.blocks?.[id] && !sameDefinition(next.blocks[id], b))
                 throw new Error(`Block ${id} already exists with different content`);
             next.blocks = { ...next.blocks, ...doc.blocks };
             return next;
@@ -365,7 +524,9 @@ export function HierarchyWorkspace() {
           {selected.component.startsWith('block/') && (
             <Button
               size="sm"
-              onClick={() => go(path.startsWith('@') ? `@${selected.component.slice(6)}` : `${prefix}${selected.id}`)}
+              onClick={() =>
+                go(path.startsWith('@') ? `@${selected.component.slice(6)}` : `${prefix}${selected.id}`)
+              }
             >
               Open sheet
             </Button>
@@ -385,12 +546,18 @@ export function HierarchyWorkspace() {
                       const c = s.components.find((c) => c.id === selected.id)!;
                       const raw = e.target.value;
                       let value: string | number | boolean = raw;
-                      if (spec.type === 'number' || spec.type === 'integer') {
+                      if (
+                        (spec.type === 'number' || spec.type === 'integer') &&
+                        !(definition && /^\$[a-z][a-z0-9_]*$/.test(raw))
+                      ) {
                         const n = parseSi(raw);
                         if (n === undefined) throw new Error('Enter a valid number with optional SI suffix');
                         value = n;
                       }
-                      if (spec.type === 'boolean') value = raw === 'true';
+                      if (spec.type === 'boolean' && !(definition && raw.startsWith('$'))) {
+                        if (raw !== 'true' && raw !== 'false') throw new Error('Enter true or false');
+                        value = raw === 'true';
+                      }
                       c.params = { ...c.params, [name]: value };
                     }),
                   )()
@@ -419,7 +586,9 @@ export function HierarchyWorkspace() {
                         if (e.target.value) s.nets[e.target.value]!.push(ref);
                         s.layout = {
                           ...s.layout,
-                          wires: (s.layout?.wires ?? []).filter((w) => w.net !== net && w.net !== e.target.value),
+                          wires: (s.layout?.wires ?? []).filter(
+                            (w) => w.net !== net && w.net !== e.target.value,
+                          ),
                         };
                       }),
                     )()
@@ -476,6 +645,20 @@ export function HierarchyWorkspace() {
                   ))}
                 </select>
               </label>
+              <small>{portUses(p, block, name).length} references</small>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!writable}
+                onClick={guard(() =>
+                  store.mutate('Remove unused block port', (doc) => {
+                    removePort(doc, block, name);
+                    return doc;
+                  }),
+                )}
+              >
+                Remove port {name}
+              </Button>
             </div>
           ))}
           <label>
@@ -505,6 +688,24 @@ export function HierarchyWorkspace() {
           </Button>
         </>
       )}
+      {definition && (
+        <BlockParameters
+          key={block}
+          block={block}
+          definition={definition}
+          writable={writable}
+          mutate={store.mutate}
+          fail={fail}
+        />
+      )}
+      <SheetBuses
+        key={path}
+        sheet={sheet}
+        writable={writable}
+        edit={edit}
+        trace={(net) => setTrace(path.startsWith('@') ? `@${block}:${net}` : (aliases[net] ?? null))}
+        fail={fail}
+      />
       <h3>Cross-sheet net trace</h3>
       <label>
         Trace local net
@@ -620,7 +821,9 @@ export function HierarchyWorkspace() {
           guard(() =>
             edit('Reshape sheet wire', (s) => {
               const w = s.layout?.wires?.[index];
-              if (w) s.layout!.wires = shiftWireSegment(s.layout!.wires!, index, segment, offset) ?? s.layout!.wires;
+              if (w)
+                s.layout!.wires =
+                  shiftWireSegment(s.layout!.wires!, index, segment, offset) ?? s.layout!.wires;
             }),
           )();
         }}
@@ -636,7 +839,14 @@ export function HierarchyWorkspace() {
     </div>
   );
   const items: DockItem[] = [
-    { id: 'tree', title: 'Sheets and blocks', content: tree, weight: 1, minSize: 230, collapsible: true },
+    {
+      id: 'tree',
+      title: 'Sheets and blocks',
+      content: tree,
+      weight: 1,
+      minSize: 230,
+      collapsible: true,
+    },
     {
       id: 'canvas',
       title: path.startsWith('@') ? 'Block definition' : path || 'Main sheet',
@@ -655,7 +865,36 @@ export function HierarchyWorkspace() {
     },
   ];
   return (
-    <div className="wb-perspective wb-hierarchy">
+    <div
+      className="wb-perspective wb-hierarchy"
+      onKeyDown={(e) => {
+        if (
+          !(e.ctrlKey || e.metaKey) ||
+          (e.target as Element).closest('input, textarea, select, [contenteditable="true"]')
+        )
+          return;
+        const key = e.key.toLowerCase();
+        if (key === 'c' && selection.components.length) {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            copy();
+          } catch (error) {
+            fail(error);
+          }
+        }
+        if (key === 'v' && clipboard && writable) {
+          e.preventDefault();
+          e.stopPropagation();
+          guard(paste)();
+        }
+        if (key === 'z' && !store.busy) {
+          e.preventDefault();
+          e.stopPropagation();
+          guard(() => (e.shiftKey ? store.commands.redo() : store.commands.undo()))();
+        }
+      }}
+    >
       <div className="wb-hierarchy__toolbar">
         <Button size="sm" variant="ghost" icon={<ArrowLeft />} onClick={h.close}>
           Overview
@@ -697,7 +936,12 @@ export function HierarchyWorkspace() {
           onClick={guard(() =>
             edit('Route active sheet', (s) => {
               s.layout = routeSheet(
-                { ...view, components: s.components, nets: s.nets, layout: s.layout },
+                {
+                  ...view,
+                  components: s.components,
+                  nets: s.nets,
+                  layout: s.layout,
+                },
                 store.sceneCatalog,
               ).layout;
             }),
@@ -705,7 +949,32 @@ export function HierarchyWorkspace() {
         >
           Route sheet
         </Button>
-        <IconButton label="Fit active sheet" size="sm" variant="ghost" onClick={() => canvas.current?.zoomToFit()}>
+        <Button size="sm" variant="ghost" onClick={() => setReview(!review)} aria-expanded={review}>
+          Project checks ({issues.filter((i) => i.severity === 'error').length})
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!selection.components.length}
+          onClick={() => {
+            try {
+              copy();
+            } catch (e) {
+              fail(e);
+            }
+          }}
+        >
+          Copy sheet selection
+        </Button>
+        <Button size="sm" variant="ghost" disabled={!writable || !clipboard} onClick={guard(paste)}>
+          Paste into sheet
+        </Button>
+        <IconButton
+          label="Fit active sheet"
+          size="sm"
+          variant="ghost"
+          onClick={() => canvas.current?.zoomToFit()}
+        >
           <Maximize2 />
         </IconButton>
         <IconButton
@@ -749,6 +1018,45 @@ export function HierarchyWorkspace() {
         </IconButton>
       </div>
       <DockLayout direction="row" items={items} storageKey="embsim.layout.hierarchy" />
+      {review && (
+        <ProjectReview
+          issues={issues}
+          locate={(issue) => {
+            locate({
+              id: issue.id,
+              path: issue.path,
+              kind: issue.net ? 'net' : 'component',
+              name: issue.title,
+              detail: issue.detail,
+              component: issue.components[0],
+              net: issue.net,
+            });
+            if (issue.point) requestAnimationFrame(() => canvas.current?.focusPoint(issue.point!));
+          }}
+          exportReport={async () => {
+            try {
+              await (
+                await platform()
+              ).saveTextFile(
+                'schematic-checks.json',
+                JSON.stringify(
+                  {
+                    project: p.name,
+                    scope: 'advisory-project-erc-and-drawing',
+                    time_ps: session.now.toString(),
+                    issues,
+                  },
+                  null,
+                  2,
+                ),
+                'application/json',
+              );
+            } catch (e) {
+              fail(e);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

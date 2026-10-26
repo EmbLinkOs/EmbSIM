@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Project-wide schematic reliability
+
+- Author block parameter declarations and rename their bindings/parent overrides.
+- Copy circuits between sheets with isolated nets and dependency-aware conflict
+  checking; protect connected ports and referenced parameters against removal.
+- Edit ordered sheet buses, trace members and find references/nets/ports across
+  concrete instances and shared definitions.
+- Review/export project-wide advisory electrical and drawing checks alongside
+  native observed contention/floating/unknown states, with navigable locations.
+
 ### Editable hierarchy and reusable circuit blocks
 
 - Add project-owned block definitions, explicit port aliases, nested instances and

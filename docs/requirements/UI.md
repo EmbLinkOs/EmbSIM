@@ -201,3 +201,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-26
 **Verification.** Native loaded/isolated divider calculations, shared edits and reverse edits, failed-transaction retention, native browser navigation/port/extraction workflow, pure editing fixtures and cross-platform browser workflow.
 **Trace.** SPEC-007; SPEC-008; ADR-039; docs/engineering/editable-hierarchy.md
+
+
+### UI-028  Project-wide reliability and electrical review
+**Statement.** Hierarchical editing shall preserve scope when copying selections, carry reusable dependencies, author typed parameter declarations and propagate renames to bindings/overrides. Removal of referenced ports/parameters shall reject with actionable information. Ordered bus groups shall retain separate electrical nets. Search and checks shall navigate concrete instances and shared definitions. Advisory metadata checks shall distinguish possible driver conflicts from confirmed native contention and export their scope and locations.
+**Rationale.** Larger reusable circuits need predictable edits and inspectable electrical evidence rather than drawing appearance alone.
+**Status.** Accepted 2026-10-27
+**Verification.** Pure topology/parameter/bus/search/ERC fixtures, browser editing workflow and native loaded-divider GUI parameter/bus acceptance.
+**Trace.** SPEC-007; SPEC-008; SPEC-011; ADR-040; docs/engineering/schematic-reliability.md

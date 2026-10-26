@@ -5,6 +5,21 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Project-wide schematic reliability (2026-10-27)
+
+Native `electrical-feedback` acceptance, captured by
+`tests/browser/test_project_review.py`. Project review separates confirmed native
+contention and floating receiver observations from advisory topology checks.
+The opposing drivers produce a solved 1.65 V bus; the workflow exports structured
+checks and verifies the contention clears when the drivers agree.
+
+![Native electrical review and selected solved bus](hierarchy/native-project-review.png)
+
+The nested divider acceptance also authors/binds/renames parameters in the GUI,
+checks both solved outputs after override/undo and retains time after a bus edit.
+[Rules and limits](../engineering/schematic-reliability.md) describe what these
+checks establish and which physical effects remain outside their scope.
+
 ## Editable hierarchy and cross-sheet tracing (2026-10-26)
 
 Actual native `hierarchical-divider` session, captured by
