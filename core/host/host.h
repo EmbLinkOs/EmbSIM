@@ -28,6 +28,9 @@ es_status esk_host_mkdir_p(const char *path);
 int esk_host_file_exists(const char *path);
 /* 1 when `path` names an existing directory. */
 int esk_host_is_dir(const char *path);
+/* Non-following type: 0 missing/error, 1 regular file, 2 directory, 3 other
+ * (including links/reparse points). File size is optional. */
+int esk_host_path_type(const char *path, uint64_t *size);
 /* The directory part of a path ("." when there is none). esk_strfree to release. */
 char *esk_host_dirname(esk_alloc *a, const char *path);
 /* base + separator + rel, normalised: "." components dropped, ".." resolved

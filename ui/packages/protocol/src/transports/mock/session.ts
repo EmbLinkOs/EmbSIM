@@ -611,6 +611,11 @@ function round(v: number, digits = 4): number {
 }
 
 function applyEdit(p: Project, edit: ProjectEdit): void {
+  if ('set_library_lock' in edit) {
+    if (edit.set_library_lock === null) delete p.library_lock;
+    else p.library_lock = structuredClone(edit.set_library_lock);
+    return;
+  }
   if ('set_circuit' in edit) { Object.assign(p, structuredClone(edit.set_circuit)); return; }
   if ('add_component' in edit) {
     const e = edit.add_component;

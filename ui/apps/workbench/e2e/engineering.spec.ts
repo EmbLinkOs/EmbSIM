@@ -41,3 +41,11 @@ test('export grouped hierarchy inventory, locate parts and reject stale snapshot
   await expect(dialog).toContainText('Loaded libraries');
   expect(errors).toEqual([]);
 });
+
+test('demo reports explain native-only library locking', async ({page}) => {
+  await page.goto('/?mock=1');
+  await page.getByRole('button', {name: 'Engineering reports', exact: true}).click();
+  const dialog = page.getByRole('dialog', {name: 'Engineering reports', exact: true});
+  await expect(dialog).toContainText('Library locking requires a native session with filesystem access.');
+  await expect(dialog.getByRole('button', {name: 'Pin reviewed library inputs', exact: true})).toHaveCount(0);
+});

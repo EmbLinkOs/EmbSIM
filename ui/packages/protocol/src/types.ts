@@ -104,6 +104,7 @@ export interface Project {
   name: string;
   description?: string;
   libraries?: string[];
+  library_lock?: LibraryLock;
   policy?: Policy;
   boards?: ProjectBoard[];
   components: ProjectComponent[];
@@ -114,6 +115,17 @@ export interface Project {
   scenarios?: string[];
   settings?: Record<string, unknown>;
   world?: WorldSpec;
+}
+
+export interface LibraryLock {
+  schema_version: 1;
+  kind: 'library_lock';
+  libraries: Record<string, { version: string; files: Record<string, string> }>;
+  catalog: Record<string, { library: string; version: string; sha256: string }>;
+}
+export interface LibraryLockCheck {
+  ok: boolean;
+  changes: { scope: string; path: string; change: 'added' | 'removed' | 'changed' | 'invalid' }[];
 }
 
 /** Exact native-serialized JSON text and SHA-256 of its UTF-8 bytes. */

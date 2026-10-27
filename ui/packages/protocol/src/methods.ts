@@ -28,6 +28,8 @@ import type {
   FaultReport,
   HierarchyNode,
   EngineeringManifest,
+  LibraryLock,
+  LibraryLockCheck,
   Project,
   Recording,
   ReplayResult,
@@ -49,6 +51,7 @@ import type {
 } from './types';
 
 export type ProjectEdit =
+  | { set_library_lock: LibraryLock | null }
   | { set_circuit: { components: Project["components"]; nets: Project["nets"]; blocks: NonNullable<Project["blocks"]>; layout?: Project["layout"]; probes?: Project["probes"] } }
   | { add_component: { id: string; component: string; version?: string; params?: Record<string, unknown>; layout?: Layout } }
   | { remove_component: { id: string } }
@@ -84,6 +87,7 @@ export interface Methods {
       | { op: 'abort'; tx: string };
     result: { tx?: string; applied?: number | boolean; restarted?: boolean; diagnostics?: DiagnosticRecord[]; islands?: number };
   };
+  'project.library_lock': { params: {op: 'capture' | 'check'; lock?: LibraryLock}; result: LibraryLock | LibraryLockCheck };
   'project.manifest': { params: Record<string, never>; result: EngineeringManifest };
   'project.hierarchy': { params: { trace?: string }; result: HierarchyNode[] };
   'project.topology': { params: Record<string, never>; result: Topology };
@@ -241,6 +245,7 @@ export const METHOD_NAMES = [
   'project.validate',
   'project.transaction',
   'project.topology',
+  'project.library_lock',
   'project.manifest',
   'project.hierarchy',
   'control.run',

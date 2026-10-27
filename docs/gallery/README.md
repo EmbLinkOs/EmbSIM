@@ -5,6 +5,16 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Native library input review and pinning (2026-10-27)
+
+A real hierarchical instrument session reviews and pins its library inputs,
+checks the baseline, removes it and restores it through Undo while retaining the
+1 µs native clock. Exported native project metadata matches the reviewed lock.
+
+![Native library lock review and matching saved baseline](library-locks/native-library-lock.png)
+
+See [scope, reproduction and exclusions](../engineering/library-locks.md).
+
 ## Native engineering model ledger and assembly inventory (2026-10-27)
 
 Actual `hierarchical-instruments` session captured by

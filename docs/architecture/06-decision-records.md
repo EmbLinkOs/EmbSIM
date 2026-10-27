@@ -1223,3 +1223,25 @@ a signed authenticity claim or a complete execution archive. Referenced external
 files and full engine build identity remain additional reproducibility gates.
 
 **Status.** Accepted (2026-10-27), within the owner's engineering workflow direction.
+
+
+## ADR-043 Pin library content and effective selection before instantiation
+
+**Context.** A saved version label and a model report cannot prevent changed Lua,
+register data, assets or catalog selection from altering the next load.
+
+**Decision.** Add opt-in project library locks containing exact non-hidden file
+hashes for complete loaded library roots and canonical effective catalog
+selections. Enforce in the native loader before model instantiation and during
+metadata transaction commit. Review is read-only; replacement/removal is explicit
+and undoable. Capture refuses stale loaded descriptions, ambiguous library roots,
+links and oversized trees. CLI review uses an unlocked temporary copy so a drifted
+project can be inspected without weakening ordinary load enforcement.
+
+**Limits.** This pins local content, not a dependency solver, installer, publisher
+trust, engine binary, firmware or full executable archive. Hidden/external inputs
+and concurrent tree mutation are outside the contract. Version ranges remain an
+explicit separate gate. See [format and acceptance](../engineering/library-locks.md).
+
+**Status.** Implemented 2026-10-27. **Trace.** CAT-013; UI-031; CLI-006; SPEC-014;
+SPEC-008; tests/protocol/test_library_lock.py; tests/browser/test_library_locks.py.

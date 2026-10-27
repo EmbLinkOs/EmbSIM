@@ -5,6 +5,15 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Pinned library inputs
+
+- Pin non-hidden library file bytes and effective catalog selection with portable
+  SHA-256 baselines; reject drift in the native loader before instantiation.
+- Review named file changes through CLI/RPC and graphical engineering reports;
+  explicitly pin/remove/undo metadata without resetting the simulation clock.
+- Refuse stale descriptions, ambiguous roots, links and special files; retain
+  explicit engine/firmware/hidden/external-input and dependency-solver limits.
+
 ### Native engineering reports
 
 - Decode native CLI artifacts explicitly as UTF-8 on Windows; wait for browser

@@ -111,6 +111,17 @@ int esk_host_is_dir(const char *path)
     return attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0;
 }
 
+int esk_host_path_type(const char *path, uint64_t *size)
+{
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (!path || !GetFileAttributesExA(path, GetFileExInfoStandard, &data)) return 0;
+    if (data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) return 3;
+    if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) return 2;
+    if (data.dwFileAttributes & FILE_ATTRIBUTE_DEVICE) return 3;
+    if (size) *size = ((uint64_t)data.nFileSizeHigh << 32) | data.nFileSizeLow;
+    return 1;
+}
+
 static int cmp_json_string(const void *x, const void *y)
 {
     const esk_json *const *p = (const esk_json *const *)x, *const *q = (const esk_json *const *)y;

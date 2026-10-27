@@ -107,6 +107,16 @@ int esk_host_is_dir(const char *path)
     return path && stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
+int esk_host_path_type(const char *path, uint64_t *size)
+{
+    struct stat st;
+    if (!path || lstat(path, &st)) return 0;
+    if (S_ISDIR(st.st_mode)) return 2;
+    if (!S_ISREG(st.st_mode)) return 3;
+    if (size) *size = (uint64_t)st.st_size;
+    return 1;
+}
+
 static int cmp_json_string(const void *x, const void *y)
 {
     const esk_json *const *p = (const esk_json *const *)x, *const *q = (const esk_json *const *)y;

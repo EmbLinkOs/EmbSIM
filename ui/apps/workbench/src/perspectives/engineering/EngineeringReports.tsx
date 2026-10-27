@@ -21,6 +21,7 @@ import { useHierarchy } from '../../stores/hierarchy';
 import { useLayout } from '../../stores/layout';
 import { useSession } from '../../stores/session';
 import { useProject } from '../../stores/project';
+import { LibraryLockPanel } from './LibraryLockPanel';
 
 export function EngineeringReports() {
   const currentProject = useProject((s) => s.project),
@@ -182,6 +183,8 @@ export function EngineeringReports() {
           </>
         }
       >
+        {result?.data.source === 'native' && <LibraryLockPanel />}
+        {result?.data.source === 'demo' && <p>Library locking requires a native session with filesystem access.</p>}
         {pending && <p role="status">Reading native inventory and verifying document identities…</p>}
         {stale && (
           <p role="status">

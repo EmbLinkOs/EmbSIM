@@ -225,3 +225,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native manifest protocol/CLI checks, schema/hash/CSV fixtures, stale snapshot browser workflow and native GUI/CLI/offline verification acceptance.
 **Trace.** SPEC-008; SPEC-011; ADR-042; docs/engineering/engineering-reports.md
+
+
+### UI-031  Explicit library baseline review
+**Statement.** Engineering reports shall review native library inputs and differences before pinning, checking, replacing or removing a project lock. Metadata edits shall be undoable, preserve the simulation clock and retain the previous project on validation failure. Demo sessions shall not claim native lock success.
+**Rationale.** Reproducibility needs a reviewable baseline rather than silent automatic lock updates.
+**Status.** Accepted 2026-10-27
+**Verification.** Native review/pin/check/remove/undo/export browser acceptance, transaction checks and demo browser workflow.
+**Trace.** SPEC-008; ADR-043; docs/engineering/library-locks.md

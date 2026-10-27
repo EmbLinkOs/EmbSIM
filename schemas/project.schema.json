@@ -60,6 +60,7 @@
     "name": {"type": "string", "minLength": 1},
     "description": {"type": "string"},
     "libraries": {"type": "array", "items": {"type": "string"}, "description": "Library directories relative to the project file (SPEC-014 §2)."},
+    "library_lock": {"$ref": "library-lock.schema.json", "description": "Opt-in exact loaded-library contents and effective catalog selection, enforced before model instantiation."},
     "policy": {"$ref": "common.schema.json#/$defs/policy"},
     "boards": {
       "type": "array",

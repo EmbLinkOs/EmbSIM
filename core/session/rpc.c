@@ -5,6 +5,7 @@
 #include "session/session_priv.h"
 #include "project/hierarchy.h"
 #include "project/manifest.h"
+#include "project/library_lock.h"
 #include "mcu/analysis.h"
 #include "mcu/mcu.h"
 #include <stdlib.h>
@@ -217,6 +218,17 @@ static es_status m_project_load(rpc_ctx *r)
     if (st != ES_OK)
         return fail_status(r, st);
     return ES_OK;
+}
+
+static es_status m_project_library_lock(rpc_ctx *r)
+{
+    const char *op = pstr(r, "op", "check");
+    const esk_json *lock = esk_json_get(r->params, "lock");
+    if (!r->s->loaded) return fail_status(r, ES_ESTATE);
+    if (!strcmp(op, "capture")) return esk_library_lock_capture(r->s, &r->result);
+    if (strcmp(op, "check")) return fail(r, -32602, "op must be capture or check");
+    if (!lock) lock = esk_json_get(r->s->project, "library_lock");
+    return esk_library_lock_check(r->s, lock, &r->result);
 }
 
 static es_status m_project_get(rpc_ctx *r)
@@ -1226,6 +1238,10 @@ static es_status m_project_transaction(rpc_ctx *r)
                 return fail_status(r, ES_ESCHEMA);
             }
         }
+        if (esk_library_lock_enforce(s, edited) != ES_OK) {
+            esk_json_free(s->a, edited);
+            return fail_status(r, ES_ESCHEMA);
+        }
         if (!s->tx_structural) {
             esk_json *was = s->project;
             s->project = edited;
@@ -1333,6 +1349,7 @@ typedef struct method { const char *name; es_status (*fn)(rpc_ctx *); } method;
 static const method methods[] = {
     { "session.open", m_session_open }, { "session.close", m_session_close }, { "session.info", m_session_info },
     { "session.policy", m_session_policy },
+    { "project.library_lock", m_project_library_lock },
     { "project.load", m_project_load }, { "project.get", m_project_get }, { "project.validate", m_project_validate },
     { "project.manifest", m_project_manifest }, { "project.hierarchy", m_project_hierarchy }, { "project.topology", m_project_topology }, { "project.transaction", m_project_transaction }, { "project.save", m_project_save },
     { "control.run", m_control_run }, { "control.pause", m_control_pause }, { "control.step", m_control_step },

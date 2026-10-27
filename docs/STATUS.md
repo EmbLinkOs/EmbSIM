@@ -5,6 +5,30 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Pinned library inputs (2026-10-27)
+
+Branch `feat/verified-library-locks` adds opt-in native content baselines for the
+whole loaded non-hidden library scope and effective catalog selections. Locks
+reject changed/removed/added inputs before instantiation. CLI/RPC and graphical
+review share the native implementation; searchable file identities and candidate
+exports precede explicit pin/replacement/removal. Validated metadata edits and
+Undo preserve time. Normal loading never silently refreshes a baseline.
+
+All 53 native CTest targets, 336 UI tests, all 36 browser workflows, native
+protocol acceptance and the
+session/lock/manifest/hierarchy ASan/UBSan targets pass. All 166 validator tests pass across both backends; strict validation covers
+918 files, and docs integrity passes 145 documents/128 requirements. Native browser acceptance reviews, pins, checks, removes, undoes and
+exports a real baseline while the clock stays at 1 µs. See
+[contract, reproduction and limits](engineering/library-locks.md) and
+[gallery](gallery/README.md). This also carries the prior PR stack's UTF-8 artifact
+and asynchronous browser-readiness CI fixes without rewriting branch history.
+
+Locks pin local non-hidden content, not a package solver, remote registry,
+firmware/engine executable archive, publisher identity or device accuracy.
+Version-range/dependency resolution, variants, PCB integration and advanced
+analysis remain separate gates. Explicit limitations include hidden/external
+resources, concurrently mutated trees and previously loaded script state.
+
 ## Native assembly and model/source reports (2026-10-27)
 
 Branch `feat/hierarchical-engineering-reports` captures canonical project,
