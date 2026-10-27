@@ -323,3 +323,14 @@ half-open endpoint, window/mean, coherent-amplitude and edge conventions. It doe
 not run a new electrical analysis or qualify bandwidth/noise/distortion. The
 [spectral contract](../engineering/frequency-spectrum.md), ANA-014 and ADR-048
 specify independent DFT/analytic RC/loading acceptance and remaining analysis gates.
+
+## Linear AC phasor sweeps
+
+Native AC analysis solves linear RLC/source/instrument circuits as complex MNA
+using initialized native parameters and explicit unit excitation. It preserves
+source impedance, C ESR, L DCR and physical R∥C instrument inputs, subtracts the
+reference before voltage response conversion and leaves the live source unchanged.
+Nonlinear/digital/scripted/firmware devices and unreliable/singular or excessive
+solves are refused. The [AC contract](../engineering/ac-sweeps.md), ANA-015 and
+ADR-049 define supported elements, numerical gates, independent ngspice acceptance
+and the nonlinear/noise/distortion/hardware qualification work still outstanding.

@@ -23,6 +23,7 @@ export type Capability =
   | 'analysis.sweep'
   | 'analysis.transient'
   | 'analysis.spectrum'
+  | 'analysis.ac'
   | 'analog'
   | 'lua'
   | 'gdb'
@@ -890,4 +891,17 @@ export interface FrequencySpectrum {
   used_samples: number; sample_rate_hz: number; bin_width_hz: number; nyquist_hz: number;
   mean_v: number; coherent_gain: number; enbw_bins: number;
   bins: {index: number; frequency_hz: number; real_v: number; imag_v: number; peak_v: number; rms_v: number; dbv_rms: number | null; phase_deg: number | null}[];
+}
+
+/** Linear native phasor sweep; all other independent source perturbations zero. */
+export interface AcRequest {
+  schema_version?: 1; kind?: 'ac_sweep_request';
+  source: string; reference: string; frequencies_hz: number[]; probes: string[];
+}
+export interface AcResponse {target: string; real: number; imag: number; magnitude: number; db: number | null; phase_deg: number | null}
+export interface AcSweep {
+  schema_version: 1; kind: 'ac_sweep'; method: 'linear_phasor_mna'; ok: true;
+  excitation: 'unit_real_source_phasor'; unit: 'V/V' | 'ohm';
+  source: ManifestDocument; request: AcRequest;
+  points: {frequency_hz: number; responses: AcResponse[]}[];
 }

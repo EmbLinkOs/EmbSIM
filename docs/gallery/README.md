@@ -5,6 +5,17 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Native linear AC Bode review (2026-10-27)
+
+The native solver sweeps a real RC model, without advancing the 1 µs live bench.
+The cursor selects 1 kHz and reports V/V, dB, wrapped phase and full complex
+response. Plots retain physical source/instrument impedances; exports retain every
+point/channel and exact source evidence.
+
+![Native RC AC magnitude, phase and exact-point cursor](ac-sweeps/native-rc-ac-bode.png)
+
+See the [linear AC contract, independent ngspice evidence and limits](../engineering/ac-sweeps.md).
+
 ## Captured RC gain and relative phase (2026-10-27)
 
 The native input/output capture now supports channel comparison. The selected

@@ -273,3 +273,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native analytic/direct-DFT vectors, independent NumPy checks, loaded RC reference, source-bound CLI/RPC, actual native browser and both offline backends. Channel-ratio unit checks and native analytic RC browser acceptance verify comparison scaling, weak-reference exclusion and complete exports.
 **Trace.** SPEC-004; SPEC-008; ADR-048; docs/engineering/frequency-spectrum.md
+
+### UI-037  Native AC Bode review
+**Statement.** The schematic workspace shall prepare exact linear/logarithmic frequency grids, verify native AC evidence, review magnitude and wrapped phase with exact-point cursors, preserve revised settings and export every raw point/channel. Zero responses shall retain undefined phase/logarithms. Demo sessions shall not fabricate AC results.
+**Rationale.** Frequency-domain review must retain evidence and units while leaving the live bench intact.
+**Status.** Accepted 2026-10-27
+**Verification.** Native RC browser acceptance, grid/hash/scaling and Bode gap/wrap unit checks, complete exports and demo refusal.
+**Trace.** SPEC-004; SPEC-008; ADR-049; docs/engineering/ac-sweeps.md

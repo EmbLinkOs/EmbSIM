@@ -1361,3 +1361,25 @@ not authenticity or physical qualification. See [the contract](../engineering/fr
 **Status.** Implemented 2026-10-27. **Trace.** ANA-014; UI-036; CLI-010;
 SPEC-004; SPEC-008; tests/protocol/test_spectrum.py;
 tests/browser/test_spectrum_review.py.
+
+## ADR-049 — Native linear AC phasor sweeps
+
+**Context.** Captured FFT ratios answer a finite-record question. Engineers also
+need deterministic steady sinusoidal circuit response across frequency, with
+physical source and instrument impedances, without stepping the live circuit.
+
+**Decision.** Solve native linear elements in an isolated reset engine with an
+explicit unit phasor source and zero perturbations on other independent sources.
+Read initialized resistor/C/L/source/instrument values through a native accessor;
+form `[G -B; B G]`, row-equilibrate and pivot with explicit backward-error/work
+bounds. Keep exact source evidence, complex differential responses and complete
+exports through CLI/RPC and Bode review. Validate against analytic cases and an
+external ngspice referee, including resonant voltage magnification and loading.
+
+**Limits.** Reject nonlinear, digital, scripted and firmware models; no invented
+linearization or artificial AC shunt. This does not provide noise/distortion,
+transient startup, automatic fitting or manufacturer/hardware qualification.
+The [contract](../engineering/ac-sweeps.md) states units, matrix limits and proof.
+
+**Status.** Implemented 2026-10-27. **Trace.** ANA-015; UI-037; CLI-011;
+SPEC-004; SPEC-008; tests/protocol/test_ac.py; tests/browser/test_ac_review.py.

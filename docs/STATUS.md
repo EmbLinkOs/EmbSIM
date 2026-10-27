@@ -5,6 +5,24 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Native linear AC sweeps (2026-10-27)
+
+Branch `feat/native-ac-sweeps` builds on captured-channel comparison. Native
+CLI/RPC `analysis.ac` solves linear RLC, independent sources and loaded instrument
+inputs from initialized model values in an isolated reset circuit. Physical
+ESR/DCR/source resistance and R∥C loading participate in complex response.
+The schematic workspace provides Bode plots, exact-point cursors, differential
+reference, V/V or ohm units and complete verified exports. Zero responses retain
+undefined phase/logarithms. Nonlinear/digital/scripted/firmware models and singular,
+unreliable or excessive-work requests are refused. This does not complete AC
+bias linearization, noise/distortion or hardware qualification release gates.
+
+Native acceptance has 2,890 checks, including 123 independently generated ngspice
+complex points, RC/RLC/current/loading equations, unchanged live state, CLI/RPC,
+maximum matrix/grid/workload and both validator backends. Full compiler/sanitizer
+and browser evidence is being collected. See the
+[AC contract](engineering/ac-sweeps.md) and [example](../examples/ac-rlc/README.md).
+
 ## Captured channel gain and phase comparison (2026-10-27)
 
 Based on `feat/native-spectrum-analysis` (EmbLinkOs/EmbSIM#77), the frequency

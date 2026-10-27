@@ -6,6 +6,7 @@
 #include "session/sweep.h"
 #include "session/circuit_analysis.h"
 #include "session/spectrum.h"
+#include "session/ac.h"
 #include "project/hierarchy.h"
 #include "project/manifest.h"
 #include "project/library_lock.h"
@@ -75,7 +76,7 @@ static es_status m_session_open(rpc_ctx *r)
     {
         static const char *const names[] = { "analog", "digital", "catalog", "scenario", "scenario.edit", "record", "record.inputs",
                                              "record.replay", "streams.json", "observe.subscribe", "mcu", "debug", "toolchain",
-                                             "analysis", "assembly.variants", "analysis.sweep", "analysis.transient", "analysis.spectrum" };
+                                             "analysis", "assembly.variants", "analysis.sweep", "analysis.transient", "analysis.spectrum", "analysis.ac" };
         size_t i;
         for (i = 0; i < ES_COUNTOF(names); i++)
             esk_json_array_push(s->a, caps, esk_json_new_string(s->a, names[i]));
@@ -222,6 +223,13 @@ static es_status m_project_load(rpc_ctx *r)
     if (st != ES_OK)
         return fail_status(r, st);
     return ES_OK;
+}
+
+static es_status m_analysis_ac(rpc_ctx *r)
+{
+    char why[256];
+    es_status st = esk_session_ac(r->s, r->params, &r->result, why, sizeof why);
+    return st != ES_OK && *why ? fail(r, -32602, why) : st;
 }
 
 static es_status m_analysis_spectrum(rpc_ctx *r)
@@ -1417,6 +1425,7 @@ typedef struct method { const char *name; es_status (*fn)(rpc_ctx *); } method;
 static const method methods[] = {
     { "session.open", m_session_open }, { "session.close", m_session_close }, { "session.info", m_session_info },
     { "session.policy", m_session_policy },
+    { "analysis.ac", m_analysis_ac },
     { "analysis.spectrum", m_analysis_spectrum },
     { "analysis.transient", m_analysis_transient },
     { "analysis.sweep", m_analysis_sweep },

@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "ac-rlc",
+  "description": "Linear 10 ohm / 10 mH / 1 uF resonant low-pass, driven by an explicit unit AC excitation.",
+  "libraries": [],
+  "policy": "electrical",
+  "boards": [],
+  "components": [
+    {
+      "id": "V1",
+      "component": "emblink/vsource",
+      "params": {
+        "kind": "dc",
+        "dc": 0
+      },
+      "layout": {
+        "x": 100,
+        "y": 140
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": 10
+      },
+      "layout": {
+        "x": 250,
+        "y": 100
+      }
+    },
+    {
+      "id": "C1",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "1u"
+      },
+      "layout": {
+        "x": 400,
+        "y": 140,
+        "rotation": 90
+      }
+    },
+    {
+      "id": "GND1",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 400,
+        "y": 240
+      }
+    },
+    {
+      "id": "L1",
+      "component": "emblink/inductor",
+      "params": {
+        "inductance": "10m"
+      },
+      "layout": {
+        "x": 330,
+        "y": 100
+      }
+    }
+  ],
+  "nets": {
+    "IN": [
+      "V1.+",
+      "R1.1"
+    ],
+    "OUT": [
+      "C1.1",
+      "L1.2"
+    ],
+    "GND": [
+      "V1.-",
+      "C1.2",
+      "GND1.GND"
+    ],
+    "MID": [
+      "R1.2",
+      "L1.1"
+    ]
+  },
+  "layout": {},
+  "probes": [
+    {
+      "id": "in",
+      "target": "net:IN",
+      "kind": "analog",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "out",
+      "target": "net:OUT",
+      "kind": "analog",
+      "rate_hz": 1000000
+    }
+  ],
+  "settings": {
+    "h_max": "5us",
+    "lte_tol": 0.001
+  }
+}

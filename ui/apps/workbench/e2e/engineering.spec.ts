@@ -73,3 +73,12 @@ test('transient review refuses fabricated demo waveforms', async ({page}) => {
   await expect(dialog).toContainText('Transient capture requires an updated native electrical session.');
   await expect(dialog.getByRole('button', {name: 'Capture isolated response', exact: true})).toBeDisabled();
 });
+
+test('AC review refuses fabricated demo frequency responses', async ({page}) => {
+  await page.goto('/?mock=1');
+  await page.getByRole('button', {name: 'AC sweep', exact: true}).click();
+  const dialog = page.getByRole('dialog', {name: 'AC sweep', exact: true});
+  await expect(dialog).toContainText('AC sweeps require an updated native linear electrical session.');
+  await expect(dialog.getByRole('button', {name: 'Run AC sweep', exact: true})).toBeDisabled();
+  await expect(dialog.getByRole('region', {name: 'AC sweep results', exact: true})).toHaveCount(0);
+});

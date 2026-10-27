@@ -43,6 +43,8 @@ EXAMPLES_DIR = ROOT / "examples"
 SCHEMA_BASE = "https://emblink.dev/embsim/schemas/"
 
 KIND_SCHEMAS = {
+    "ac_sweep_request": "ac-sweep-request.schema.json",
+    "ac_sweep": "ac-sweep.schema.json",
     "frequency_spectrum": "frequency-spectrum.schema.json",
     "transient_request": "transient-request.schema.json",
     "transient_capture": "transient-capture.schema.json",
@@ -2212,6 +2214,42 @@ def check_sweep_request(report: Report, file: Path, doc: dict, index: Index) -> 
         report.error(file, "/sample_at", "sweep.time", "0–1 ms per point and 10 ms total are supported")
 
 
+def check_ac_request(report: Report, file: Path, doc: dict, index: Index) -> None:
+    frequencies = doc["frequencies_hz"]
+    if any(not math.isfinite(f) or f < .001 or f > 1e12 or (i and f <= frequencies[i-1]) for i, f in enumerate(frequencies)):
+        report.error(file, "/frequencies_hz", "ac.grid", "AC frequencies must be finite and strictly ascending")
+
+
+def check_ac_sweep(report: Report, file: Path, doc: dict, index: Index) -> None:
+    request = doc["request"]
+    check_ac_request(report, file, request, index)
+    before = report.errors
+    check_engineering_manifest(report, file, doc["source"], index)
+    if report.errors != before:
+        return
+    manifest = json.loads(doc["source"]["json"])
+    source = next((m for m in manifest["models"] if m["path"] == request["source"]), None)
+    expected_unit = {"vsource": "V/V", "isource": "ohm"}.get(source["model"] if source else "")
+    if expected_unit != doc["unit"]:
+        report.error(file, "/unit", "ac.source", "AC source/unit disagrees with native manifest")
+    if len(doc["points"]) != len(request["frequencies_hz"]):
+        report.error(file, "/points", "ac.grid", "AC point count differs from request")
+    for i, point in enumerate(doc["points"]):
+        if i >= len(request["frequencies_hz"]) or point["frequency_hz"] != request["frequencies_hz"][i]:
+            report.error(file, f"/points/{i}", "ac.grid", "AC frequency differs from requested grid")
+        if [r["target"] for r in point["responses"]] != request["probes"]:
+            report.error(file, f"/points/{i}/responses", "ac.targets", "AC response targets differ from request")
+        for j, response in enumerate(point["responses"]):
+            re, im = response["real"], response["imag"]
+            magnitude = math.hypot(re, im)
+            expected = {"magnitude": magnitude, "db": 20*math.log10(magnitude) if magnitude else None,
+                        "phase_deg": math.degrees(math.atan2(im, re)) if magnitude else None}
+            for key, value in expected.items():
+                actual = response[key]
+                if (value is None and actual is not None) or (value is not None and (actual is None or not math.isfinite(actual) or not math.isfinite(value) or not math.isclose(actual, value, rel_tol=1e-10, abs_tol=1e-12))):
+                    report.error(file, f"/points/{i}/responses/{j}/{key}", "ac.scaling", "AC magnitude/logarithm/phase disagrees with complex coefficient")
+
+
 def check_parameter_sweep(report: Report, file: Path, doc: dict, index: Index) -> None:
     check_sweep_request(report, file, doc["request"], index)
     check_engineering_manifest(report, file, doc["source"], index)
@@ -2355,6 +2393,8 @@ def check_frequency_spectrum(report: Report, file: Path, doc: dict, index: Index
 
 CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
     "frequency_spectrum": check_frequency_spectrum,
+    "ac_sweep_request": check_ac_request,
+    "ac_sweep": check_ac_sweep,
     "transient_request": check_transient_request,
     "transient_capture": check_transient_capture,
     "parameter_sweep_request": check_sweep_request,

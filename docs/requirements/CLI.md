@@ -84,3 +84,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native analytic/direct-DFT vectors, independent NumPy checks, loaded RC reference, source-bound CLI/RPC, actual native browser and both offline backends.
 **Trace.** SPEC-004; SPEC-008; ADR-048; docs/engineering/frequency-spectrum.md
+
+### CLI-011  Source-bound native AC exports
+**Statement.** The AC CLI shall share the native RPC linear phasor solver, preserve project/request inputs and export complete source-bound complex results with explicit source/reference/units. Invalid, unsupported or failed solves shall return nonzero without a successful artifact.
+**Rationale.** Engineers need the same measured circuit response in the workbench and headless verification.
+**Status.** Accepted 2026-10-27
+**Verification.** CLI/RPC coefficient parity, analytic and ngspice cases, failed inputs and both offline artifact validators.
+**Trace.** SPEC-004; SPEC-008; ADR-049; docs/engineering/ac-sweeps.md

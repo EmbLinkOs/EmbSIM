@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "kind": "ac_sweep_request",
+  "source": "V1",
+  "reference": "net:GND",
+  "frequencies_hz": [
+    10,
+    100,
+    500,
+    1000,
+    1591.5494309189535,
+    2000,
+    5000,
+    10000,
+    100000
+  ],
+  "probes": [
+    "net:IN",
+    "net:OUT",
+    "net:GND"
+  ]
+}

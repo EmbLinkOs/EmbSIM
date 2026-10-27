@@ -2110,3 +2110,43 @@ const esk_adev_ops *const *esk_adev_table(size_t *n)
         *n = ES_COUNTOF(device_table);
     return device_table;
 }
+
+/* AC uses exactly the initialized linear element values, including temperature
+ * corrections and series/parallel impedance. Transient history and initial
+ * conditions do not participate in a steady sinusoidal perturbation. */
+es_status esk_adev_ac_element(const esk_adev *d, esk_ac_element *out)
+{
+    memset(out, 0, sizeof *out);
+    if (d->ops == &resistor_ops) {
+        out->kind = ESK_AC_R;
+        out->value = ((const res_state *)d->state)->g;
+    } else if (d->ops == &capacitor_ops) {
+        const cap_state *s = (const cap_state *)d->state;
+        out->kind = ESK_AC_C;
+        out->value = s->c;
+        out->resistance = s->esr;
+    } else if (d->ops == &inductor_ops) {
+        const ind_state *s = (const ind_state *)d->state;
+        out->kind = ESK_AC_L;
+        out->value = s->l;
+        out->resistance = s->dcr;
+    } else if (d->ops == &vsource_ops) {
+        out->kind = ESK_AC_V;
+        out->resistance = ((const src_state *)d->state)->rout;
+    } else if (d->ops == &isource_ops)
+        out->kind = ESK_AC_I;
+    else if (d->ops == &instrument_ops) {
+        const instrument_state *s = (const instrument_state *)d->state;
+        out->kind = ESK_AC_INPUT;
+        out->value = s->cap.c;
+        out->resistance = s->r;
+    } else if (d->ops == &esk_bridge_out_ops && d->pin && d->pin->model.power_ground &&
+               d->node[0] == 0)
+        out->kind = ESK_AC_R;
+    else
+        return ES_EINVAL;
+    return isfinite(out->value) && isfinite(out->resistance) && out->value >= 0.0 &&
+                   out->resistance >= 0.0
+               ? ES_OK
+               : ES_EINVAL;
+}

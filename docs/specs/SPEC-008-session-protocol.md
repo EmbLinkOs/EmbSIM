@@ -393,3 +393,15 @@ It returns a half-open coherent-amplitude spectrum with exact raw-record evidenc
 sampling/window metadata and all ordered complex/peak/RMS/dBV/phase bins. Missing,
 partial or invalid records are refused. See [schema, equations and limits](../engineering/frequency-spectrum.md),
 ANA-014, UI-036, CLI-010 and ADR-048.
+
+## Native linear AC sweeps
+
+Capability/method `analysis.ac` accepts an independent `source`, voltage
+`reference`, strictly ascending `frequencies_hz` and 1–8 `probes`. A temporary
+reset native electrical circuit returns `ac_sweep` with the exact request,
+unit-real excitation convention, V/V or ohm units, source manifest and ordered
+complex/magnitude/dB/phase responses. It refuses running/transactional sources,
+boards, unsupported/nonlinear models, floating/unreliable solves and excessive
+workloads. No live state or partial successful artifact is substituted. See
+[schemas, limits and CLI](../engineering/ac-sweeps.md), ANA-015, UI-037, CLI-011
+and ADR-049.

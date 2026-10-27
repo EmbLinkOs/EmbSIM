@@ -84,6 +84,11 @@ repair, exact placement, shared-property editing, and navigable drawing checks.
 All editing uses the native transaction and undo history. Drawing checks are
 explicitly scoped; they do not certify electrical rules or physical clearances.
 
+The native [AC sweep workspace](docs/engineering/ac-sweeps.md) reviews linear
+RLC/source/instrument circuits with Bode plots, exact frequency cursors, actual
+loading and source-bound CLI/CSV/JSON evidence. Unsupported nonlinear, digital
+and firmware contexts are refused explicitly.
+
 ## Repository layout
 
 | Path | Content |
