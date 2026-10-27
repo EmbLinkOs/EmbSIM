@@ -21,7 +21,7 @@ import {
   type Selection,
 } from '@embsim/scene';
 import { ArrowLeft, Maximize2, RotateCw, Trash2, Undo2, Redo2 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage, inputs as inputActions, probes as probeActions } from '../../actions';
 import { platform } from '../../platform/platform';
 import { useHierarchy } from '../../stores/hierarchy';
@@ -31,6 +31,7 @@ import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { checkProject, liveProjectChecks } from './projectChecks';
 import { ProjectReview } from './ProjectReview';
+import { EngineeringReports } from '../engineering/EngineeringReports';
 import { BlockParameters } from './BlockParameters';
 import { SheetBuses } from './SheetBuses';
 import {
@@ -126,6 +127,13 @@ export function HierarchyWorkspace() {
     };
     return { path, sheet, block, view };
   }, [p, h.path, store.hierarchy]);
+  useEffect(() => {
+    if (!h.target) return;
+    const component = h.target.component;
+    setChosen({ path: h.path, value: { components: [component], wires: [] } });
+    const frame = requestAnimationFrame(() => canvas.current?.focusComponents([component]));
+    return () => cancelAnimationFrame(frame);
+  }, [h.path, h.target]);
   if (!p || !context) return <p>Loading project…</p>;
   const { path, sheet, block, view } = context;
   const definition = block ? p.blocks![block]! : null;
@@ -917,6 +925,7 @@ export function HierarchyWorkspace() {
             ))}
           </select>
         </label>
+        <EngineeringReports />
         <Badge tone="accent">{path.startsWith('@') ? 'Definition' : path || 'Main'}</Badge>
         <SegmentedControl
           label="Sheet interaction"

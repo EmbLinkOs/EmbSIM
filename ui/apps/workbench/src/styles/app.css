@@ -1827,3 +1827,19 @@
 .wb-instrument-settings p { font-size: var(--text-xs); line-height: 1.5; }
 .wb-instrument-settings label, .wb-instrument-rate { display: grid; gap: 4px; font-size: var(--text-xs); color: var(--text-muted); }
 .wb-instrument-settings select, .wb-instrument-settings input, .wb-instrument-rate input { min-width: 0; width: 100%; padding: 6px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+
+.wb-engineering-reports { width: min(1200px, 96vw); max-width: 1200px; }
+.wb-engineering-reports__summary, .wb-engineering-reports__filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
+.wb-engineering-reports__filters label { display: grid; gap: 5px; }
+.wb-engineering-reports__checkbox { display: flex !important; align-items: center; gap: 8px; }
+.wb-engineering-reports input { background: var(--surface); color: var(--text); border: 1px solid var(--line); padding: 7px; border-radius: 6px; font: inherit; }
+.wb-engineering-reports__table { overflow: auto; max-height: 48vh; }
+.wb-engineering-reports table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.wb-engineering-reports th { position: sticky; top: 0; background: var(--surface-raised); text-align: left; z-index: 1; }
+.wb-engineering-reports td, .wb-engineering-reports th { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.wb-engineering-reports small { display: block; color: var(--text-muted); overflow-wrap: anywhere; }
+.wb-engineering-reports details { margin: 8px 0; }
+.wb-engineering-reports summary { cursor: pointer; }
+.wb-engineering-reports details button { display: block; margin: 4px 0; padding: 4px 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 5px; cursor: pointer; }
+.wb-engineering-reports pre { max-width: 450px; overflow: auto; font-size: var(--text-xs); }
+.wb-engineering-reports__identity dd, .wb-engineering-reports code { overflow-wrap: anywhere; font: var(--text-xs) var(--font-mono); }

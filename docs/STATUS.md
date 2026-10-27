@@ -5,6 +5,32 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Native assembly and model/source reports (2026-10-27)
+
+Branch `feat/hierarchical-engineering-reports` captures canonical project,
+resolved package instances, compiled model instances and attached loaded catalog
+descriptions in one read-only native manifest. Project blocks expand; catalog
+packages and boards remain whole assembly items. The GUI groups configured
+quantities, identifies unassigned procurement parts/fixtures, exports BOM and
+verifiable source artifacts, and selects exact schematic references. CLI and GUI
+use the same native projection. Stale export guards compare exact native text;
+large integer previews cannot silently merge configurations or replace raw data.
+
+All 52 native CTest targets pass; 67 manifest checks verify defaults, overrides,
+package/model counts, exact digests, CLI/RPC parity, board assemblies and retained
+clock/probes/aliases. Session/manifest/hierarchy/probe/streaming targets also pass
+ASan/UBSan with leak detection. UI checks pass 335 unit tests, all 35 Playwright
+workflows, final report/hierarchy reruns, typecheck, lint and build. Native browser
+acceptance verifies grouped quantities, exported native values, GUI/CLI/offline
+identity parity and selected-part navigation without page errors. Strict validation
+covers 917 files, both validator backends pass 156 tests, and docs integrity passes.
+See [format, acceptance and limits](engineering/engineering-reports.md) and the
+[native model ledger](gallery/README.md).
+
+This delivers assembly/model audit reports, not managed dependency locks,
+assembly variants, PCB integration, full executable archives or device accuracy
+qualification. External resource bytes and full engine build identity remain open.
+
 ## Physically loaded instrument controls (2026-10-27)
 
 Branch `feat/loaded-instrument-controls` adds actual lead/impedance configuration

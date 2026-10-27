@@ -1201,3 +1201,25 @@ physical distinction; manufacturer bandwidth/protection and advanced triggers
 remain independent gates.
 
 **Status.** Accepted (2026-10-27), within the owner's complete-schematic direction.
+
+
+## ADR-042 Native manifests separate assembly packages from compiled models
+
+**Context.** Frontend parameter merging misses native defaults/presets/forwarding.
+Counting engine primitives turns one packaged IC into several fictitious parts;
+reporting only package metadata omits the model dependencies used to simulate it.
+
+**Decision.** Capture canonical project, loaded package/compiled-model descriptions,
+resolved parameters and library/version context in one read-only native request.
+Project blocks expand; catalog packages and boards remain assembly items. Keep
+compiled model records separately. Hash exact native JSON text and include those
+bytes, so every client can verify identities without matching serializer details.
+Use the same projection for CLI and GUI. Protect stale snapshots and exact integer
+representation, and navigate report references to the selected schematic part.
+
+**Consequences.** The report provides auditable source facts and conservative
+configuration grouping. It is not a library lock, an assembly variant, a PCB file,
+a signed authenticity claim or a complete execution archive. Referenced external
+files and full engine build identity remain additional reproducibility gates.
+
+**Status.** Accepted (2026-10-27), within the owner's engineering workflow direction.

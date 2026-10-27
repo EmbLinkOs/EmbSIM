@@ -27,6 +27,7 @@ import type {
   StackReport,
   FaultReport,
   HierarchyNode,
+  EngineeringManifest,
   Project,
   Recording,
   ReplayResult,
@@ -83,6 +84,7 @@ export interface Methods {
       | { op: 'abort'; tx: string };
     result: { tx?: string; applied?: number | boolean; restarted?: boolean; diagnostics?: DiagnosticRecord[]; islands?: number };
   };
+  'project.manifest': { params: Record<string, never>; result: EngineeringManifest };
   'project.hierarchy': { params: { trace?: string }; result: HierarchyNode[] };
   'project.topology': { params: Record<string, never>; result: Topology };
 
@@ -239,6 +241,7 @@ export const METHOD_NAMES = [
   'project.validate',
   'project.transaction',
   'project.topology',
+  'project.manifest',
   'project.hierarchy',
   'control.run',
   'control.pause',

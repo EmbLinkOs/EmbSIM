@@ -4,6 +4,7 @@
  * in-process transport. Every transport ends here. */
 #include "session/session_priv.h"
 #include "project/hierarchy.h"
+#include "project/manifest.h"
 #include "mcu/analysis.h"
 #include "mcu/mcu.h"
 #include <stdlib.h>
@@ -260,6 +261,11 @@ static es_status m_project_validate(rpc_ctx *r)
     }
     es_session_destroy(tmp);
     return ES_OK;
+}
+
+static es_status m_project_manifest(rpc_ctx *r)
+{
+    return esk_project_manifest(r->s, &r->result);
 }
 
 static es_status m_project_hierarchy(rpc_ctx *r)
@@ -1328,7 +1334,7 @@ static const method methods[] = {
     { "session.open", m_session_open }, { "session.close", m_session_close }, { "session.info", m_session_info },
     { "session.policy", m_session_policy },
     { "project.load", m_project_load }, { "project.get", m_project_get }, { "project.validate", m_project_validate },
-    { "project.hierarchy", m_project_hierarchy }, { "project.topology", m_project_topology }, { "project.transaction", m_project_transaction }, { "project.save", m_project_save },
+    { "project.manifest", m_project_manifest }, { "project.hierarchy", m_project_hierarchy }, { "project.topology", m_project_topology }, { "project.transaction", m_project_transaction }, { "project.save", m_project_save },
     { "control.run", m_control_run }, { "control.pause", m_control_pause }, { "control.step", m_control_step },
     { "control.advance", m_control_advance }, { "control.reset", m_control_reset }, { "control.speed", m_control_speed },
     { "world.get", m_world_get },

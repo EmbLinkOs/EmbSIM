@@ -68,7 +68,12 @@ controls and four wired GUI/CLI examples. The models declare their approximation
 boundaries; catalog presence does not imply manufacturer-qualified accuracy.
 
 The schematic also provides persistent named groups, placement locks, a searchable
-Objects panel and top-level CSV parts inventory.
+Objects panel and top-level CSV parts inventory. The
+[engineering reports](docs/engineering/engineering-reports.md) add native
+hierarchy-aware package counts, resolved configurations, model/source identities
+and exact schematic navigation. `embsim manifest PROJECT --json` exports the same
+verifiable audit artifact as the GUI; it is not a manufacturing/PCB release or a
+complete execution archive.
 
 The [schematic authoring guide](docs/user/schematic-studio.md) covers connected
 layout previews, configurable drafting surfaces, manual wire bends and segment

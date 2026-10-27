@@ -403,3 +403,14 @@ native values and support voltage/current observations with selected sampling.
 Representative scope presets change effective circuit loading and shall not imply
 manufacturer calibration or bandwidth qualification. Unchanged settings preserve
 time. See [physical rules and acceptance](../engineering/loaded-instrument-controls.md).
+
+
+## Assembly and model/source reports
+
+Both schematic toolbars shall open native engineering reports with package counts,
+resolved configurations, source/version/qualification context, full CSV/manifest
+exports and exact sheet/component navigation. Compiled primitives shall remain
+separate from physical assembly quantities. Native content identities shall verify
+before export; changed project/policy shall require Refresh. Demo parameters and
+unassigned procurement parts shall remain explicitly identified. See
+[engineering report contract](../engineering/engineering-reports.md).
