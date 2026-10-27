@@ -87,6 +87,8 @@ test('a pending breadboard placement preserves a later part selection', async ({
   await page.getByRole('radio', { name: 'Bench', exact: true }).click();
   const list = page.getByRole('complementary', { name: 'On the bench' });
   await expect(list.getByRole('button', { name: /^R2/ })).toBeVisible();
+  // This checks selection ordering after renderer startup, not software-GPU startup latency.
+  await expect(page.locator('.eb-bench3d canvas')).toBeVisible({ timeout: 15_000 });
   // The initial project/catalog load may still be finishing on slower hosts.
   await expect(page.getByRole('button', { name: 'Breadboard', exact: true })).toBeEnabled();
   // Dispatch both intents in one task, before the placement promise can settle.
@@ -99,7 +101,7 @@ test('a pending breadboard placement preserves a later part selection', async ({
     add.click();
     select.click();
   });
-  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible();
+  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible({ timeout: 15_000 });
   await expect(list.getByRole('button', { name: /^R2/ })).toHaveAttribute('aria-pressed', 'true');
   await expect(list.getByLabel("Plug R2's first leg into")).toBeVisible();
 });
