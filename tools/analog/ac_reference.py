@@ -5,7 +5,7 @@
 import argparse
 import json
 import math
-import re
+import re as regex
 from pathlib import Path
 import subprocess
 import tempfile
@@ -24,7 +24,7 @@ def main():
     ap.add_argument('--check', action='store_true')
     args = ap.parse_args()
     version = subprocess.run([args.ngspice, "--version"], check=True, capture_output=True, text=True, encoding="utf-8")
-    match = re.search(r"ngspice-([0-9.]+)", version.stdout)
+    match = regex.search(r"ngspice-([0-9.]+)", version.stdout)
     if not match: raise RuntimeError("Cannot identify ngspice referee version")
     referee = "ngspice-"+match.group(1)
     cases = {}
