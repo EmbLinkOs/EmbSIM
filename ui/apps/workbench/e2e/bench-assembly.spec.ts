@@ -87,6 +87,8 @@ test('a pending breadboard placement preserves a later part selection', async ({
   await page.getByRole('radio', { name: 'Bench', exact: true }).click();
   const list = page.getByRole('complementary', { name: 'On the bench' });
   await expect(list.getByRole('button', { name: /^R2/ })).toBeVisible();
+  // The initial project/catalog load may still be finishing on slower hosts.
+  await expect(page.getByRole('button', { name: 'Breadboard', exact: true })).toBeEnabled();
   // Dispatch both intents in one task, before the placement promise can settle.
   await page.evaluate(() => {
     const add = [...document.querySelectorAll<HTMLButtonElement>('button')]
