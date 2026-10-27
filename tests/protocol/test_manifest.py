@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from embsim_client import StdioClient  # noqa: E402
@@ -30,9 +31,9 @@ def main():
         check(data['source']=='native' and data['kind']=='engineering_manifest','native evidence source missing')
         return data
     project=ROOT/'examples/hierarchical-instruments/project.json'
-    cli=subprocess.run([binary,'manifest',str(project),'--json'],cwd=ROOT,capture_output=True,text=True,check=True)
+    cli=subprocess.run([binary,'manifest',str(project),'--json'],cwd=ROOT,capture_output=True,text=True,encoding="utf-8",check=True)
     exported=unpack(json.loads(cli.stdout))
-    human=subprocess.run([binary,'manifest',str(project)],cwd=ROOT,capture_output=True,text=True,check=True)
+    human=subprocess.run([binary,'manifest',str(project)],cwd=ROOT,capture_output=True,text=True,encoding="utf-8",check=True)
     check('Project inventory instances: 6' in human.stdout and 'Manifest identity: sha256:' in human.stdout,'human summary is missing native counts/identity')
     with StdioClient([binary,'sidecar',str(project)]) as c:
         c.call('session.open',{'client':'engineering-acceptance','protocol':'1.0'})
@@ -71,9 +72,17 @@ def main():
         c.call('project.load',{'json':{'schema_version':1,'kind':'project','name':'Board assembly','policy':'functional','boards':[{'id':'B1','board':'emblink/arduino_uno'}],'components':[],'nets':{}}})
         data=unpack(c.call('project.manifest',{}))
         check(len(data['instances'])==1 and data['instances'][0]['kind']=='board' and data['instances'][0]['resolution']=='board-assembly','board interior duplicated into the assembly BOM')
-    invalid=subprocess.run([binary,'manifest','--invalid'],cwd=ROOT,capture_output=True,text=True)
+    # Native output is UTF-8 on every host, independent of Python's locale.
+    with tempfile.TemporaryDirectory(prefix='embsim-manifest-unicode-') as temp:
+        path=Path(temp)/'project.json'
+        source={'schema_version':1,'kind':'project','name':'Précision µΩ ±', 'policy':'electrical','components':[], 'nets':{}}
+        path.write_text(json.dumps(source,ensure_ascii=False),encoding='utf-8')
+        result=subprocess.run([binary,'manifest',str(path),'--json'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',check=True)
+        data=unpack(json.loads(result.stdout))
+        check(json.loads(data['project']['json'])['name']==source['name'],'UTF-8 project identity corrupted by host code page')
+    invalid=subprocess.run([binary,'manifest','--invalid'],cwd=ROOT,capture_output=True,text=True,encoding="utf-8")
     check(invalid.returncode==2 and not invalid.stdout,'invalid CLI invocation emits a misleading manifest')
-    missing=subprocess.run([binary,'manifest',str(ROOT/'missing-manifest-project.json'),'--json'],cwd=ROOT,capture_output=True,text=True)
+    missing=subprocess.run([binary,'manifest',str(ROOT/'missing-manifest-project.json'),'--json'],cwd=ROOT,capture_output=True,text=True,encoding="utf-8")
     check(missing.returncode==2 and not missing.stdout,'load failure emits a misleading artifact')
     print(f'{count} native engineering manifest checks, 0 failed')
 

@@ -7,6 +7,9 @@ versions follow semantic versioning. There is no release yet.
 
 ### Native engineering reports
 
+- Decode native CLI artifacts explicitly as UTF-8 on Windows; wait for browser
+  editing/projection readiness and compare connectivity independently of live states.
+
 - Capture atomic project/package/model inventories with native resolved parameters
   and exact SHA-256 document identities through RPC and the manifest CLI command.
 - Group hierarchy-aware assembly quantities, retain compiled model dependencies
