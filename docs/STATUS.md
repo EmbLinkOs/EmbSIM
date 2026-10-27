@@ -13,7 +13,14 @@ Selected bins expose output/reference V/V, dB and wrapped relative phase; comple
 CSV and JSON review bundles preserve the threshold, statuses and native evidence.
 Weak/zero reference bins and unrepresentable ratios stay undefined. This is a
 finite-record ratio, not a small-signal AC solver, tone estimator or calibrated
-noise measurement. See the [contract](engineering/frequency-spectrum.md).
+noise measurement. Verification passes all 59 native development targets, four
+focused ASan/UBSan analysis targets, UI typecheck/lint/build and 360 UI tests.
+Native browser acceptance verifies analytic RC gain/phase, weak-reference handling,
+complete exports and an unchanged live bench. Strict validation passes 931 files. The browser suite passes 38/39 on its initial
+run; the one transient rebuild-related HTTP 404 passes on an isolated rerun.
+Local Clang/TinyCC presets are unavailable because those compilers are absent;
+cross-platform results require CI. See the
+[contract](engineering/frequency-spectrum.md).
 
 ## Native captured-data frequency spectra (2026-10-27)
 
