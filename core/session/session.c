@@ -865,6 +865,11 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
         if (!c)
             return ES_ENOTFOUND;
     }
+    if (c && !strcmp(c->ops->name, "unpopulated")) {
+        esk_diag_raise(&s->diag, ES_SEV_WARNING, "assembly.not_populated", at, "component", c->id, NULL, 0,
+                       "Cannot apply input %s: %s is an unfitted footprint.", input, c->id);
+        return ES_EUNSUPPORTED;
+    }
     if (at == s->eng.sched.now) {
         if (c)
             apply_input_now(s, c, input, value);

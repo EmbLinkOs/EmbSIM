@@ -74,3 +74,14 @@ describe('observed electrical feedback', () => {
     expect(text.getAttribute('transform')).toBeNull();
   });
 });
+
+describe('unfitted footprints', () => {
+  it('keeps pad sockets and live voltages in read-only designs without inventing input receivers', () => {
+    const project = circuit(); project.components[0]!.populated = false;
+    const states = {INPUT: {voltage: 5, logic: 'Z' as const}, OUTPUT: {voltage: 0}};
+    render(<SchematicCanvas project={project} catalog={catalog} readOnly live netStates={states} mode="select" selection={{components:[],wires:[]}} onSelectionChange={() => undefined} />);
+    expect(screen.getByRole('button', {name: /Pin U1.A, net INPUT.*5.000 V/})).toBeTruthy();
+    expect(screen.getByRole('button', {name: /Pin U1.Y, net OUTPUT.*0.000 V/})).toBeTruthy();
+    expect(liveElectricalIssues(project, catalog, states)).toEqual([]);
+  });
+});

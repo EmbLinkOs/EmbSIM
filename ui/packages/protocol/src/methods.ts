@@ -29,6 +29,8 @@ import type {
   HierarchyNode,
   EngineeringManifest,
   LibraryLock,
+  AssemblyVariant,
+  VariantPreview,
   LibraryLockCheck,
   Project,
   Recording,
@@ -51,10 +53,12 @@ import type {
 } from './types';
 
 export type ProjectEdit =
+  | { set_population: {id: string; populated: boolean | null} }
+  | { set_variants: Record<string, AssemblyVariant> | null }
   | { set_version: {id: string; version: string | null} }
   | { set_library_lock: LibraryLock | null }
   | { set_circuit: { components: Project["components"]; nets: Project["nets"]; blocks: NonNullable<Project["blocks"]>; layout?: Project["layout"]; probes?: Project["probes"] } }
-  | { add_component: { id: string; component: string; version?: string; params?: Record<string, unknown>; layout?: Layout } }
+  | { add_component: { id: string; component: string; populated?: boolean; version?: string; params?: Record<string, unknown>; layout?: Layout } }
   | { remove_component: { id: string } }
   | { set_param: { id: string; param: string; value: unknown } }
   | { connect: { net: string; pin: string } }
@@ -88,6 +92,7 @@ export interface Methods {
       | { op: 'abort'; tx: string };
     result: { tx?: string; applied?: number | boolean; restarted?: boolean; diagnostics?: DiagnosticRecord[]; islands?: number };
   };
+  'project.variant': {params: {op: 'base' | 'preview' | 'activate'; name?: string; expected_sha256?: string}; result: Project | VariantPreview | {activated: boolean}};
   'project.library_lock': { params: {op: 'capture' | 'check'; lock?: LibraryLock}; result: LibraryLock | LibraryLockCheck };
   'project.manifest': { params: Record<string, never>; result: EngineeringManifest };
   'project.hierarchy': { params: { trace?: string }; result: HierarchyNode[] };
@@ -246,6 +251,7 @@ export const METHOD_NAMES = [
   'project.validate',
   'project.transaction',
   'project.topology',
+  'project.variant',
   'project.library_lock',
   'project.manifest',
   'project.hierarchy',

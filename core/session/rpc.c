@@ -6,6 +6,7 @@
 #include "project/hierarchy.h"
 #include "project/manifest.h"
 #include "project/library_lock.h"
+#include "project/variants.h"
 #include "mcu/analysis.h"
 #include "mcu/mcu.h"
 #include <stdlib.h>
@@ -71,7 +72,7 @@ static es_status m_session_open(rpc_ctx *r)
     {
         static const char *const names[] = { "analog", "digital", "catalog", "scenario", "scenario.edit", "record", "record.inputs",
                                              "record.replay", "streams.json", "observe.subscribe", "mcu", "debug", "toolchain",
-                                             "analysis" };
+                                             "analysis", "assembly.variants" };
         size_t i;
         for (i = 0; i < ES_COUNTOF(names); i++)
             esk_json_array_push(s->a, caps, esk_json_new_string(s->a, names[i]));
@@ -217,6 +218,41 @@ static es_status m_project_load(rpc_ctx *r)
     }
     if (st != ES_OK)
         return fail_status(r, st);
+    return ES_OK;
+}
+
+static es_status m_project_variant(rpc_ctx *r)
+{
+    es_session *s = r->s;
+    const char *op = pstr(r, "op", "base"), *name = pstr(r, "name", NULL);
+    esk_json *review = NULL, *project = NULL;
+    es_status st;
+    if (!strcmp(op, "base")) return esk_project_variant_base(s, &r->result);
+    if (!strcmp(op, "preview")) {
+        st = esk_project_variant_review(s, name, &r->result);
+        return st == ES_EUNSUPPORTED ? fail(r, -32602, "Catalog replacements must preserve visible terminal names, coordinates and symbol dimensions; edit the base circuit for a pin-map change.") : st;
+    }
+    if (strcmp(op, "activate")) return fail(r, -32602, "op must be base, preview or activate");
+    if (s->tx_project) return fail(r, -32602, "Finish or abort the open project transaction before activating a variant.");
+    st = esk_project_variant_review(s, name, &review);
+    if (st == ES_EUNSUPPORTED) return fail(r, -32602, "Catalog replacement changes schematic terminal geometry; edit the base circuit explicitly.");
+    if (st != ES_OK) return fail_status(r, st);
+    if (!esk_json_get_bool(review, "valid", 0)) { esk_json_free(s->a, review); return fail(r, -32602, "Variant does not validate; review its native diagnostics."); }
+    if (pstr(r, "expected_sha256", NULL) && !esk_str_eq(pstr(r, "expected_sha256", ""), esk_json_get_str(review, "base_sha256", ""))) {
+        esk_json_free(s->a, review); return fail(r, -32602, "Base project changed after preview; review the variant again.");
+    }
+    project = esk_json_clone(s->a, esk_json_get(review, "project"));
+    if (!project) { esk_json_free(s->a, review); return ES_ENOMEM; }
+    /* Loader copies base_dir before unload. Do not overwrite the saved base on Save. */
+    st = esk_project_load(s, project, s->base_dir);
+    if (st == ES_OK) st = esk_session_do_reset(s);
+    esk_json_free(s->a, project); esk_json_free(s->a, review);
+    if (st != ES_OK) return fail_status(r, st);
+    esk_strfree(s->a, s->project_path); s->project_path = NULL;
+    r->result = obj(r);
+    if (!r->result) return ES_ENOMEM;
+    esk_json_set_bool(s->a, r->result, "activated", 1);
+    esk_session_emit_observations(s, 1);
     return ES_OK;
 }
 
@@ -513,6 +549,7 @@ static es_status m_input_list(rpc_ctx *r)
     for (i = 0; i < s->eng.comps.len; i++) {
         esk_comp *c = s->eng.comps.data[i];
         const esk_json *inputs = esk_json_get(c->desc, "inputs");
+        if (!strcmp(c->ops->name, "unpopulated")) continue;
         for (k = 0; k < esk_json_len(inputs); k++) {
             const esk_json *in = esk_json_at(inputs, k);
             esk_json *o = obj(r);
@@ -1182,6 +1219,7 @@ static es_status m_project_transaction(rpc_ctx *r)
     const esk_json *txj = esk_json_get(r->params, "tx");
     /* the id is a string (SPEC-008); a number is accepted too */
     int tx = txj && txj->type == ESK_JSON_STRING ? atoi(esk_json_str(txj)) : (int)esk_json_get_int(r->params, "tx", 0);
+    if (esk_json_get(s->project, "variant_origin") && !esk_str_eq(op, "abort")) return fail(r, -32602, "Return to the base project before editing a derived assembly variant.");
     if (esk_str_eq(op, "begin")) {
         if (!s->loaded || !s->project)
             return fail_status(r, ES_ESTATE);
@@ -1230,6 +1268,12 @@ static es_status m_project_transaction(rpc_ctx *r)
         s->tx_project = NULL;
         {
             char why[256];
+            if (esk_project_validate_variants(edited, why, sizeof why)) {
+                esk_diag_raise(&s->diag, ES_SEV_ERROR, "assembly.variant.invalid", s->eng.sched.now,
+                               "project", s->name ? s->name : "", NULL, 0, "%s", why);
+                esk_json_free(s->a, edited);
+                return fail_status(r, ES_ESCHEMA);
+            }
             if (esk_project_validate_organization(edited, why, sizeof why) ||
                 esk_project_validate_bench(s->catalog, edited, why, sizeof why)) {
                 esk_diag_raise(&s->diag, ES_SEV_ERROR, "bench.invalid", s->eng.sched.now,
@@ -1349,6 +1393,7 @@ typedef struct method { const char *name; es_status (*fn)(rpc_ctx *); } method;
 static const method methods[] = {
     { "session.open", m_session_open }, { "session.close", m_session_close }, { "session.info", m_session_info },
     { "session.policy", m_session_policy },
+    { "project.variant", m_project_variant },
     { "project.library_lock", m_project_library_lock },
     { "project.load", m_project_load }, { "project.get", m_project_get }, { "project.validate", m_project_validate },
     { "project.manifest", m_project_manifest }, { "project.hierarchy", m_project_hierarchy }, { "project.topology", m_project_topology }, { "project.transaction", m_project_transaction }, { "project.save", m_project_save },

@@ -417,6 +417,31 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
     if (!nets)
         return -1;
     e = esk_json_at(edit, 0);
+    if (esk_str_eq(e->key, "set_population")) {
+        const char *id = esk_json_get_str(e, "id", "");
+        const esk_json *value = esk_json_get(e, "populated");
+        esk_json *items = esk_json_get_mut(project, "components"), *item;
+        long index = find_id(items, id);
+        int was, now;
+        if (index < 0 || !value || (value->type != ESK_JSON_BOOL && value->type != ESK_JSON_NULL))
+            return err(why, cap, "Invalid physical population target or flag %s", id);
+        item = esk_json_at_mut(items, (size_t)index);
+        was = esk_json_get_bool(item, "populated", 1);
+        now = value->type == ESK_JSON_NULL ? 1 : value->u.boolean;
+        if (value->type == ESK_JSON_NULL) esk_json_remove(a, item, "populated");
+        else if (esk_json_set_bool(a, item, "populated", now)) return -1;
+        if (was != now) *structural = 1;
+        return 0;
+    }
+    if (esk_str_eq(e->key, "set_variants")) {
+        esk_json *copy;
+        if (e->type == ESK_JSON_NULL) { esk_json_remove(a, project, "variants"); return 0; }
+        if (e->type != ESK_JSON_OBJECT) return err(why, cap, "Invalid %s", "assembly variants");
+        copy = esk_json_clone(a, e);
+        if (!copy) return -1;
+        if (esk_json_object_set(a, project, "variants", copy)) { esk_json_free(a, copy); return -1; }
+        return 0;
+    }
     if (esk_str_eq(e->key, "set_version")) {
         const char *id = esk_json_get_str(e, "id", "");
         const esk_json *value = esk_json_get(e, "version");

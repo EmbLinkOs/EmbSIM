@@ -1268,3 +1268,26 @@ syntax are explicit in [the contract](../engineering/library-versions.md).
 **Status.** Implemented 2026-10-27. **Trace.** CAT-014; UI-032; SPEC-014;
 tests/protocol/test_version_contracts.py; tests/unit/test_version.c;
 tests/browser/test_version_requests.py.
+
+
+## ADR-045 — Native assembly variants and ideal empty footprints
+
+**Context.** A manufacturing population alternative must affect circuit behavior,
+not merely hide a schematic symbol. Shared sheet definitions require independent
+concrete-instance alternatives without mutating sibling assemblies.
+
+**Decision.** Materialize named per-path overrides into bounded cloned project
+sheets, review through an isolated native session and activate only after native
+validation and source-hash comparison. Retain exact base JSON plus SHA-256 for
+recovery; derived circuits are immutable. DNP keeps passive terminal placeholders
+without model callbacks, pulls, ties, active children or inputs. BOMs separate
+population and zero quantities; save paths are cleared after activation.
+
+**Limits.** Ideal empty footprint only; no pad parasitics, PCB footprint
+qualification, firmware build variants, board-internal assembly or 3D assembly.
+Replacement compatibility checks schematic geometry. Provenance is not a signature.
+See [contract and evidence](../engineering/assembly-variants.md).
+
+**Status.** Implemented 2026-10-27. **Trace.** CAT-015; UI-033; CLI-007;
+SPEC-008; SPEC-014; tests/protocol/test_variants.py;
+tests/browser/test_assembly_variants.py.

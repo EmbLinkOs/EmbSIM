@@ -241,3 +241,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Diff/evidence/error fixtures and native shared-sheet rejection, restart, exported satisfaction and Undo browser acceptance.
 **Trace.** SPEC-008; SPEC-014; ADR-044; docs/engineering/library-versions.md
+
+
+### UI-033  Native variant review and recovery
+**Statement.** The schematic shall author named population/value alternatives, preview isolated native validation and resolved BOMs without disturbing time, explicitly restart on verified activation, retain DNP terminals and permit return-to-base. Derived circuit edits shall be refused; optional DNP BOM rows shall have zero quantity.
+**Rationale.** Assembly alternatives must change the real compiled circuit while preserving an inspectable, recoverable source.
+**Status.** Accepted 2026-10-27
+**Verification.** Native protocol/CLI and actual native browser acceptance, offline validation, population/edit/report fixtures.
+**Trace.** SPEC-008; SPEC-014; ADR-045; docs/engineering/assembly-variants.md

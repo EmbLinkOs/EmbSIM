@@ -19,6 +19,7 @@ export type ProbeKind = 'digital' | 'analog' | 'serial' | 'value';
 export type SampleEncoding = 'u8' | 'f32' | 'f64' | 'bytes';
 
 export type Capability =
+  | 'assembly.variants'
   | 'analog'
   | 'lua'
   | 'gdb'
@@ -65,6 +66,7 @@ export interface ProjectBoard {
 }
 
 export interface ProjectComponent {
+  populated?: boolean;
   id: string;
   component: string;
   version?: string;
@@ -106,6 +108,8 @@ export interface Project {
   description?: string;
   libraries?: string[];
   library_lock?: LibraryLock;
+  variants?: Record<string, AssemblyVariant>;
+  variant_origin?: VariantOrigin;
   policy?: Policy;
   boards?: ProjectBoard[];
   components: ProjectComponent[];
@@ -116,6 +120,19 @@ export interface Project {
   scenarios?: string[];
   settings?: Record<string, unknown>;
   world?: WorldSpec;
+}
+
+export interface AssemblyVariantOverride {
+  populated?: boolean;
+  params?: Record<string, unknown>;
+  component?: string;
+  version?: string | null;
+}
+export interface AssemblyVariant { description?: string; overrides: Record<string, AssemblyVariantOverride> }
+export interface VariantOrigin extends ManifestDocument { name: string }
+export interface VariantPreview {
+  base_sha256: string; project: Project; valid: boolean; diagnostics: DiagnosticRecord[];
+  manifest?: EngineeringManifest;
 }
 
 export interface LibraryLock {
@@ -133,6 +150,7 @@ export interface LibraryLockCheck {
 export interface ManifestDocument { json: string; sha256: string }
 export interface ManifestInstance {
   path: string; sheet: string; id: string; kind: 'component' | 'board'; reference: string;
+  populated?: boolean;
   catalog: string; resolution: 'native' | 'board-assembly' | 'unavailable' | 'demo';
   params: Record<string, unknown>; requested_version?: string; version_satisfied?: boolean; model?: string;
 }

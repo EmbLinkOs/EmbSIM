@@ -611,3 +611,7 @@
 .es-scene__layer--sheet-ports rect { fill: var(--canvas-paper); stroke: #0a84ff; stroke-width: 1; }
 .es-scene__layer--sheet-ports text { fill: #0a84ff; font: 9px var(--font-mono, monospace); }
 .es-scene__layer--sheet-ports g:focus rect { stroke-width: 2; }
+
+.es-component--dnp .es-symbol { opacity: 0.34; }
+.es-component__dnp path { stroke: var(--text-muted); stroke-width: 1.5; stroke-dasharray: 3 2; fill: none; }
+.es-component__dnp text { fill: var(--text-muted); font-size: 9px; font-weight: 700; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }

@@ -65,3 +65,18 @@ describe('version request diff', () => {
     expect(diffProject(before, after)).toContainEqual({set_version: {id: 'B', version: '~1.0'}});
   });
 });
+
+describe('assembly alternatives and population edits', () => {
+  it('keeps variant metadata separate from physical population and preserves DNP on restored parts', () => {
+    const before = demoProject(), after = structuredClone(before);
+    after.variants = {production: {overrides: {'R1': {populated: false}}}};
+    expect(diffProject(before, after)).toEqual([{set_variants: after.variants}]);
+    expect(diffProject(after, before)).toEqual([{set_variants: null}]);
+    delete after.variants;
+    after.components[0]!.populated = false;
+    expect(diffProject(before, after)).toEqual([{set_population: {id: after.components[0]!.id, populated: false}}]);
+    const removed = structuredClone(after);
+    removed.components = removed.components.filter((c) => c.id !== after.components[0]!.id);
+    expect(diffProject(removed, after).find((e) => 'add_component' in e)).toMatchObject({add_component: {populated: false}});
+  });
+});

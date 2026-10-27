@@ -394,6 +394,34 @@ class ProjectTests(Base):
     def manifest_envelope(self, payload):
         return {"schema_version": 1, "kind": "engineering_manifest", **self.manifest_document(payload)}
 
+    def test_assembly_variant_targets_and_population(self):
+        project = copy.deepcopy(PROJECT); project.pop("scenarios", None)
+        project["variants"] = {"production": {"overrides": {"SW1": {"populated": False}}}}
+        self.assertClean(self.check_doc(project, "variant-project.json"))
+        project["variants"]["production"]["overrides"] = {"not_a_component": {"populated": False}}
+        self.assertCode(self.check_doc(project, "variant-project.json"), "assembly.variant.target")
+        project["variants"]["production"]["overrides"] = {"SW1": {"populated": "false"}}
+        self.assertGreater(self.check_doc(project, "variant-project.json").errors, 0)
+
+    def test_assembly_variant_origin_identity_and_named_base(self):
+        base = copy.deepcopy(PROJECT); base.pop("scenarios", None)
+        base["variants"] = {"production": {"overrides": {"SW1": {"populated": False}}}}
+        derived = copy.deepcopy(base); del derived["variants"]
+        derived["components"][1]["populated"] = False
+        derived["variant_origin"] = {"name": "production", **self.manifest_document(base)}
+        self.assertClean(self.check_doc(derived, "derived.json"))
+        derived["variant_origin"]["sha256"] = "sha256:" + "0" * 64
+        self.assertCode(self.check_doc(derived, "derived.json"), "assembly.variant.hash")
+        derived["variant_origin"] = {"name": "missing", **self.manifest_document(base)}
+        self.assertCode(self.check_doc(derived, "derived.json"), "assembly.variant.origin")
+
+    def test_manifest_population_requires_passive_native_footprint(self):
+        data = self.manifest_fixture(); item = data["instances"][0]
+        item["populated"] = False; item["model"] = "opamp"
+        self.assertCode(self.check_doc(self.manifest_envelope(data), "dnp.manifest.json"), "manifest.population")
+        item["model"] = "unpopulated"
+        self.assertClean(self.check_doc(self.manifest_envelope(data), "dnp.manifest.json"))
+
     def test_manifest_version_satisfaction_evidence(self):
         data = self.manifest_fixture(); item = data["instances"][0]
         item["requested_version"] = "^1"; item["version_satisfied"] = True

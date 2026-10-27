@@ -108,3 +108,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native range vectors, independent npm comparison, both offline backends and native project/block/composite/board/MCU/dependency protocol acceptance.
 **Trace.** SPEC-014; ADR-044; docs/engineering/library-versions.md
+
+
+### CAT-015  Native assembly population and alternatives
+**Statement.** Named alternatives shall address concrete project-owned parts independently, validate replacement symbol compatibility and compile unfitted footprints without electrical behavior, controls, ties or composite children. Derived provenance shall verify exact retained base bytes and support recovery.
+**Rationale.** Assembly alternatives must change the real compiled circuit while preserving an inspectable, recoverable source.
+**Status.** Accepted 2026-10-27
+**Verification.** Native protocol/CLI and actual native browser acceptance, offline validation, population/edit/report fixtures.
+**Trace.** SPEC-008; SPEC-014; ADR-045; docs/engineering/assembly-variants.md

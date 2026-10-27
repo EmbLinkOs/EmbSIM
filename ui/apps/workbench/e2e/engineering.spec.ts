@@ -49,3 +49,11 @@ test('demo reports explain native-only library locking', async ({page}) => {
   await expect(dialog).toContainText('Library locking requires a native session with filesystem access.');
   await expect(dialog.getByRole('button', {name: 'Pin reviewed library inputs', exact: true})).toHaveCount(0);
 });
+
+test('assembly alternatives require native validation in demo sessions', async ({page}) => {
+  await page.goto('/?mock=1');
+  await page.getByRole('button', {name: 'Assembly variants', exact: true}).click();
+  const dialog = page.getByRole('dialog', {name: 'Assembly variants', exact: true});
+  await expect(dialog.getByRole('alert')).toContainText('Assembly variants require native electrical validation.');
+  await expect(dialog.getByRole('button', {name: 'Create variant', exact: true})).toHaveCount(0);
+});

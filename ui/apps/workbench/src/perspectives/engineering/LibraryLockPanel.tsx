@@ -41,7 +41,7 @@ export function LibraryLockPanel() {
     } catch (e) { setError(errorMessage(e)); }
     finally { setPending(false); }
   };
-  const disabled = pending || busy || !project;
+  const disabled = pending || busy || !project || Boolean(project.variant_origin);
   const files = candidate ? Object.entries(candidate.libraries).flatMap(([library, entry]) =>
     Object.entries(entry.files).map(([path, sha256]) => ({library, path, sha256})))
     .filter((f) => `${f.library}/${f.path} ${f.sha256}`.toLowerCase().includes(fileQuery.toLowerCase())) : [];

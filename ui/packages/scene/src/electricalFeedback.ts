@@ -8,7 +8,7 @@ export interface ElectricalIssue { net: string; code: 'driver-conflict' | 'float
 /** Report observed states, never infer a driver conflict from X alone. Analog
  * nodes without digital receivers are not classified as floating from voltage. */
 export function liveElectricalIssues(project: Project, catalog: SceneCatalog, states: Record<string, NetState>): ElectricalIssue[] {
-  const parts = new Map(project.components.map((c) => [c.id, catalog[c.component]]));
+  const parts = new Map(project.components.filter((c) => c.populated !== false).map((c) => [c.id, catalog[c.component]]));
   return Object.entries(project.nets).flatMap(([net, pins]): ElectricalIssue[] => {
     const state = states[net];
     if (!state) return [];

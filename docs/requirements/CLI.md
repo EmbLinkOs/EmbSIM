@@ -52,3 +52,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native CLI/RPC parity, matching/drift/missing baseline and explicit recapture checks.
 **Trace.** SPEC-014; ADR-043; docs/engineering/library-locks.md
+
+
+### CLI-007  Validated assembly variant export
+**Statement.** Variant list/render shall inspect named alternatives and emit only natively validated derived projects without modifying source files. Native RPC shall share materialization, base-hash checks and recovery behavior.
+**Rationale.** Assembly alternatives must change the real compiled circuit while preserving an inspectable, recoverable source.
+**Status.** Accepted 2026-10-27
+**Verification.** Native protocol/CLI and actual native browser acceptance, offline validation, population/edit/report fixtures.
+**Trace.** SPEC-008; SPEC-014; ADR-045; docs/engineering/assembly-variants.md

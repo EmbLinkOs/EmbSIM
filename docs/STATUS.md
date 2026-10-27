@@ -5,6 +5,22 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Native assembly variants (2026-10-27)
+
+Branch `feat/assembly-variants` adds named per-concrete-reference population,
+value, compatible symbol/catalog and version alternatives. Native preview leaves
+the running session untouched; validated activation restarts with a retained,
+hash-verified base and explicit save-path protection. DNP footprints retain their
+terminals but have no electrical model, pulls, drives, internal ties or controls.
+Derived projects are immutable while fitted runtime controls remain usable.
+BOM review separates fitted and optional zero-quantity DNP entries.
+
+All 56 native targets pass; the focused variant acceptance also passes ASan/UBSan
+with leak detection. See [contract, acceptance and limits](engineering/assembly-variants.md)
+and [gallery](gallery/README.md). This closes the local schematic assembly-variant
+milestone, not PCB/firmware build variants, pad parasitics or manufacturer qualification.
+Advanced analysis and remaining component/instrument qualification remain open.
+
 ## Declared version contracts (2026-10-27)
 
 Branch `feat/library-version-contracts` enforces requested component, board,
