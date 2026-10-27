@@ -3,6 +3,7 @@
 #include "project/manifest.h"
 #include "project/hierarchy.h"
 #include "util/sha256.h"
+#include "util/version.h"
 #include "util/str.h"
 #include <string.h>
 
@@ -138,6 +139,8 @@ static es_status add_instance(es_session *s, const esk_json *entry, const char *
                             : description ? "board-assembly"
                                           : "unavailable") ||
         (requested && esk_json_set_string(s->a, row, "requested_version", requested)) ||
+        (requested && esk_json_set_bool(s->a, row, "version_satisfied",
+                      esk_version_satisfies(esk_json_get_str(description, "version", ""), requested) == 1)) ||
         (component && esk_json_set_string(s->a, row, "model", component->ops->name)) ||
         put(s, row, "params",
             component && component->params ? esk_json_clone(s->a, component->params)

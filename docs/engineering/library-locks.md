@@ -89,8 +89,10 @@ that native session; no client-only success is used as evidence.
 
 This is a content baseline, **not** a remote registry, downloader, dependency
 solver, archive of resources, publisher signature or accuracy qualification.
-It pins the existing first-match resolver's actual selection; semver constraints
-and library dependency declarations remain a separate gate. It does not pin the
+It pins the existing first-match resolver's actual selection. The subsequent
+[declared version milestone](library-versions.md) additionally checks SemVer
+requests and installed library dependency declarations. It does not add an
+alternate-revision or remote dependency solver. It does not pin the
 native executable, OS/toolchain, firmware images, inputs outside library roots,
 or hidden files (the same exclusion used by library installation). A hidden or
 external resource is outside this baseline even if a description references it.

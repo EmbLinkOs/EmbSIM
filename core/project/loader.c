@@ -7,6 +7,7 @@
 #include "project/loader.h"
 #include "project/hierarchy.h"
 #include "project/library_lock.h"
+#include "project/version_rules.h"
 #include "ext/lua_model.h"
 #include <math.h>
 #include <stdio.h>
@@ -314,6 +315,8 @@ static es_status expand_composite(es_session *s, graph *g, const char *id, const
             return ES_ENOTFOUND;
         }
         esk_snprintf(scoped, sizeof scoped, "%s.%s", id, cid);
+        st = esk_project_require_version(s, ci, ce, scoped);
+        if (st != ES_OK) return st;
         sub_params = subst_params(s, esk_json_get(ce, "params"), params);
         if (!sub_params)
             return ES_ENOMEM;
@@ -827,6 +830,8 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
         ld_diag(s, ES_SEV_ERROR, "catalog.not_found", bid, "board %s is not in any library%s", board_id, "");
         return ES_ENOTFOUND;
     }
+    st = esk_project_require_version(s, item, entry, bid);
+    if (st != ES_OK) return st;
     bi = (esk_board_inst *)esk_calloc(s->a, 1, sizeof *bi);
     if (!bi)
         return ES_ENOMEM;
@@ -850,6 +855,8 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
             ld_diag(s, ES_SEV_ERROR, "catalog.not_found", bid, "MCU %s of board %s is not in any library", mref ? mref : "?", board_id);
             return ES_ENOTFOUND;
         }
+        st = esk_project_require_version(s, mi, mcu, bid);
+        if (st != ES_OK) return st;
         {
             char pid[192];
             esk_snprintf(pid, sizeof pid, "%s/%s", mref, pkg ? pkg : "");
@@ -917,7 +924,8 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
             break;
         }
         esk_snprintf(scoped, sizeof scoped, "%s.%s", bid, cid);
-        st = instantiate(s, g, scoped, ci, esk_json_get(ce, "params"), 0, &c);
+        st = esk_project_require_version(s, ci, ce, scoped);
+        if (st == ES_OK) st = instantiate(s, g, scoped, ci, esk_json_get(ce, "params"), 0, &c);
     }
     if (st != ES_OK)
         return st;
@@ -1058,6 +1066,8 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             return ES_ESCHEMA;
         }
     }
+    st = esk_project_require_libraries(s);
+    if (st != ES_OK) return st;
     st = esk_library_lock_enforce(s, project);
     if (st != ES_OK) return st;
     st = esk_project_blocks_prepare(s);
@@ -1089,7 +1099,8 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             st = ES_ENOTFOUND;
             break;
         }
-        st = instantiate(s, &g, cid, ci, esk_json_get(ce, "params"), 0, &c);
+        st = esk_project_require_version(s, ci, ce, cid);
+        if (st == ES_OK) st = instantiate(s, &g, cid, ci, esk_json_get(ce, "params"), 0, &c);
     }
     /* project nets */
     nets = esk_json_get(project, "nets");

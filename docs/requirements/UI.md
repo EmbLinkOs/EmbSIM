@@ -233,3 +233,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native review/pin/check/remove/undo/export browser acceptance, transaction checks and demo browser workflow.
 **Trace.** SPEC-008; ADR-043; docs/engineering/library-locks.md
+
+
+### UI-032  Native schematic version requests
+**Statement.** Engineering reports shall expose loaded and requested revisions with native satisfaction evidence and allow explicit undoable request changes. Shared-definition scope and successful restart/acquisition effects shall be stated before Apply. Rejected edits shall retain the prior circuit/clock and show the native diagnostic reason; demo/legacy evidence shall not imply native compatibility validation.
+**Rationale.** Engineers need to repair and review dependency contracts at the schematic references they affect.
+**Status.** Accepted 2026-10-27
+**Verification.** Diff/evidence/error fixtures and native shared-sheet rejection, restart, exported satisfaction and Undo browser acceptance.
+**Trace.** SPEC-008; SPEC-014; ADR-044; docs/engineering/library-versions.md

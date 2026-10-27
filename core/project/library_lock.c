@@ -149,7 +149,7 @@ es_status esk_library_lock_capture(es_session *s, esk_json **out)
             size_t len = 0;
             st = file ? esk_host_read_file(s->a, file, &text, &len) : ES_ENOMEM;
             if (st == ES_OK) manifest = esk_json_parse(s->a, text, len, NULL, NULL);
-            if (st == ES_OK && (!manifest || !esk_str_eq(esk_json_get_str(manifest, "name", ""), name) ||
+            if (st == ES_OK && (!manifest || !equal(manifest, esk_json_get(s->catalog->library_manifests, path)) || !esk_str_eq(esk_json_get_str(manifest, "name", ""), name) ||
                 !esk_str_eq(esk_json_get_str(manifest, "version", ""), esk_json_get_str(info, "version", ""))))
                 st = problem(s, "library.lock.stale", name, "Loaded library identity differs from disk. Start a new session before capturing a lock.");
             esk_json_free(s->a, manifest);

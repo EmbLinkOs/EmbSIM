@@ -11,7 +11,14 @@ import { useInstruments } from './stores/instruments';
 import { useSession } from './stores/session';
 
 export function errorMessage(e: unknown): string {
-  if (e instanceof JsonRpcError) return `${e.message} (${e.code})`;
+  if (e instanceof JsonRpcError) {
+    const data = e.data;
+    if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
+      const code = 'code' in data && typeof data.code === 'string' ? data.code : e.code;
+      return `${data.message} (${code})`;
+    }
+    return `${e.message} (${e.code})`;
+  }
   return e instanceof Error ? e.message : String(e);
 }
 

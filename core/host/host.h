@@ -38,6 +38,9 @@ char *esk_host_dirname(esk_alloc *a, const char *path);
  * collapsed. An absolute `rel` ("/x", "C:\x", "C:/x", "\\server\share")
  * replaces `base`. esk_strfree to release. */
 char *esk_host_path_join(esk_alloc *a, const char *base, const char *rel);
+/* Absolute normalized spelling, resolving the working directory but not links.
+ * Release with esk_strfree. NULL on failure. */
+char *esk_host_absolute_path(esk_alloc *a, const char *path);
 /* The names in a directory (no "." and ".."), sorted, as a JSON array of
  * strings. esk_json_free to release. */
 es_status esk_host_list_dir(esk_alloc *a, const char *path, esk_json **out);

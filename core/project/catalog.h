@@ -27,6 +27,7 @@ struct es_catalog {
     esk_alloc *a;
     ESK_VEC(esk_catalog_item *) items;
     esk_map by_id;      /* "kind:id" -> item */
+    esk_json *library_manifests; /* loaded manifest by root, private dependency declarations */
     esk_json *libraries; /* array of {name, version, path, items} */
 };
 

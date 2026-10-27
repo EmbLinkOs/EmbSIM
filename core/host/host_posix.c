@@ -117,6 +117,27 @@ int esk_host_path_type(const char *path, uint64_t *size)
     return 1;
 }
 
+char *esk_host_absolute_path(esk_alloc *a, const char *path)
+{
+    size_t cap;
+    if (!path) return NULL;
+    if (*path == '/') return esk_host_path_join(a, "", path);
+    for (cap = 1024; cap <= 65536; cap *= 2) {
+        char *cwd = (char *)esk_malloc(a, cap), *out;
+        int error;
+        if (!cwd) return NULL;
+        if (getcwd(cwd, cap)) {
+            out = esk_host_path_join(a, cwd, path);
+            esk_free(a, cwd, cap);
+            return out;
+        }
+        error = errno;
+        esk_free(a, cwd, cap);
+        if (error != ERANGE) return NULL;
+    }
+    return NULL;
+}
+
 static int cmp_json_string(const void *x, const void *y)
 {
     const esk_json *const *p = (const esk_json *const *)x, *const *q = (const esk_json *const *)y;

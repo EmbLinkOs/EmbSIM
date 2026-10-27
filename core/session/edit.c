@@ -417,6 +417,23 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
     if (!nets)
         return -1;
     e = esk_json_at(edit, 0);
+    if (esk_str_eq(e->key, "set_version")) {
+        const char *id = esk_json_get_str(e, "id", "");
+        const esk_json *value = esk_json_get(e, "version");
+        esk_json *items = esk_json_get_mut(project, "components"), *item;
+        long index = find_id(items, id);
+        if (index < 0) { items = esk_json_get_mut(project, "boards"); index = find_id(items, id); }
+        if (index < 0) return err(why, cap, "Unknown version target %s", id);
+        if (!value || (value->type != ESK_JSON_STRING && value->type != ESK_JSON_NULL))
+            return err(why, cap, "Invalid version request for %s", id);
+        item = esk_json_at_mut(items, (size_t)index);
+        if ((value->type == ESK_JSON_NULL && !esk_json_get(item, "version")) ||
+            (value->type == ESK_JSON_STRING && esk_str_eq(esk_json_get_str(item, "version", ""), esk_json_str(value)))) return 0;
+        if (value->type == ESK_JSON_NULL) esk_json_remove(a, item, "version");
+        else if (esk_json_set_string(a, item, "version", esk_json_str(value))) return -1;
+        *structural = 1;
+        return 0;
+    }
     if (esk_str_eq(e->key, "set_library_lock")) {
         if (e->type == ESK_JSON_NULL) { esk_json_remove(a, project, "library_lock"); return 0; }
         if (e->type != ESK_JSON_OBJECT) return err(why, cap, "Invalid %s", "library lock");

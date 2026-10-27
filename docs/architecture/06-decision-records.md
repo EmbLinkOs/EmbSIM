@@ -1245,3 +1245,26 @@ explicit separate gate. See [format and acceptance](../engineering/library-locks
 
 **Status.** Implemented 2026-10-27. **Trace.** CAT-013; UI-031; CLI-006; SPEC-014;
 SPEC-008; tests/protocol/test_library_lock.py; tests/browser/test_library_locks.py.
+
+
+## ADR-044 Enforce declared versions against the selected catalog revision
+
+**Context.** Saved version requests and library dependency declarations were
+accepted without checking loaded revisions. A content lock alone cannot make a
+request for ^2 compatible with revision 1.
+
+**Decision.** Add bounded SemVer precedence/range checks to native project,
+shared-definition, composite, board, MCU and loaded library boundaries. Retain the
+existing first-match resolver and reject incompatibility rather than silently
+changing the selected model. Expose graphical version edits through native staged
+transactions; successful changes explicitly restart, failures preserve state.
+Export additive native satisfaction evidence and verify it offline. Share golden
+boundary vectors between C/Python and check supported bounds against npm SemVer.
+
+**Limits.** This enforces local declared constraints, not a multi-version solver,
+registry, downloader or device qualification. Grammar/bounds and unsupported
+syntax are explicit in [the contract](../engineering/library-versions.md).
+
+**Status.** Implemented 2026-10-27. **Trace.** CAT-014; UI-032; SPEC-014;
+tests/protocol/test_version_contracts.py; tests/unit/test_version.c;
+tests/browser/test_version_requests.py.

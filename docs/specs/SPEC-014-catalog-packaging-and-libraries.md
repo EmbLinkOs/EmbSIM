@@ -59,7 +59,8 @@ required fields and a fixture skeleton; `tools/import/` holds the importers
   (`$EMBSIM_LIBRARIES` overrides it), then the project's `libraries`. An id
   is defined by the first library that provides it; ids are namespaced by
   library (`acme/part`), so a library cannot replace a bundled part. Version
-  constraints and `depends` are not checked yet.
+  constraints and `depends` were not checked in M3; §8 records the later
+  enforcement milestone.
 - **Validation.** `embsim catalog validate [DIR] [--library DEP] [--json]`
   (`es_catalog_validate`) loads DIR ahead of the session's libraries,
   instantiates each component and board alone under each policy whose
@@ -103,3 +104,15 @@ share the native implementation; no review silently replaces a baseline. This is
 not a version-range solver or remote installer. See
 [format, acceptance and exclusions](../engineering/library-locks.md), CAT-013,
 UI-031, CLI-006 and ADR-043.
+
+
+## 8. Declared version enforcement
+
+Explicit requests now enforce bounded SemVer compatibility at project parts,
+boards, MCU references, shared-block members and catalog composites. Every loaded
+library's `depends` declarations must resolve to an installed, unambiguous name
+with a compatible manifest revision. This checks the existing first-match
+selection; it does not search alternate revisions or download dependencies.
+Malformed/unsupported ranges are rejected, and unversioned local block wrappers
+do not acquire invented release versions. See [grammar, workflow and evidence](../engineering/library-versions.md),
+CAT-014, UI-032 and ADR-044. Content locks and version requests are complementary.

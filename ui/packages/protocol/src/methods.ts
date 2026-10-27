@@ -51,6 +51,7 @@ import type {
 } from './types';
 
 export type ProjectEdit =
+  | { set_version: {id: string; version: string | null} }
   | { set_library_lock: LibraryLock | null }
   | { set_circuit: { components: Project["components"]; nets: Project["nets"]; blocks: NonNullable<Project["blocks"]>; layout?: Project["layout"]; probes?: Project["probes"] } }
   | { add_component: { id: string; component: string; version?: string; params?: Record<string, unknown>; layout?: Layout } }
@@ -59,7 +60,7 @@ export type ProjectEdit =
   | { connect: { net: string; pin: string } }
   | { disconnect: { pin: string } }
   | { rename_net: { from: string; to: string } }
-  | { add_board: { id: string; board: string; layout?: Layout; firmware?: ProjectBoard['firmware'] } }
+  | { add_board: { id: string; board: string; version?: string; layout?: Layout; firmware?: ProjectBoard['firmware'] } }
   | { remove_board: { id: string } }
   | { set_world: { fields?: NonNullable<Project['world']>['fields']; bodies?: NonNullable<Project['world']>['bodies'] } }
   | { set_layout: { id?: string; layout?: Layout; wires?: Project['layout'] extends infer L ? (L extends { wires?: infer W } ? W : never) : never; labels?: NonNullable<Project['layout']>['labels']; buses?: NonNullable<Project['layout']>['buses']; groups?: NonNullable<Project['layout']>['groups']; bench?: NonNullable<Project['layout']>['bench'] } };

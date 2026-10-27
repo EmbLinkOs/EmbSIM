@@ -30,6 +30,7 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
+from version_ranges import matches as version_matches
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable, Optional
@@ -619,6 +620,49 @@ def check_param_value(report: Report, file: Path, node: str, name: str, value: A
         report.error(file, node, "schema.type", f"parameter {name} must be a table of [x, y] pairs")
 
 
+def check_version_request(report: Report, file: Path, node: str, entry: dict, description: dict) -> None:
+    if "version" not in entry:
+        return
+    try:
+        accepted = version_matches(description.get("version", ""), entry["version"])
+    except ValueError as exc:
+        report.error(file, node + "/version", "catalog.version.invalid", str(exc))
+        return
+    if not accepted:
+        report.error(file, node + "/version", "catalog.version.mismatch",
+                     f"requested {entry['version']}; selected {description.get('version')} of {description.get('id')}")
+
+
+def check_library_dependencies(report: Report, file: Path, doc: dict, index: Index) -> None:
+    manifests = []
+    seen = set()
+    for root in index.roots:
+        path = (root / "library.json").resolve()
+        if path in seen:
+            continue
+        seen.add(path)
+        manifest = index._load(path) if path.is_file() else None
+        if isinstance(manifest, dict):
+            manifests.append((path, manifest))
+    for i, dep in enumerate(doc.get("depends") or []):
+        if not isinstance(dep, dict):
+            continue
+        targets = [(p, m) for p, m in manifests if m.get("name") == dep.get("name")]
+        node = ptr("depends", i)
+        if not targets:
+            report.error(file, node, "library.dependency.missing", f"library {dep.get('name')} not loaded")
+        elif len(targets) > 1:
+            report.error(file, node, "library.dependency.ambiguous", f"library {dep.get('name')} has multiple roots")
+        elif "version" in dep:
+            try:
+                accepted = version_matches(targets[0][1].get("version", ""), dep["version"])
+            except ValueError as exc:
+                report.error(file, node + "/version", "library.dependency.invalid", str(exc))
+            else:
+                if not accepted:
+                    report.error(file, node + "/version", "library.dependency.mismatch", f"requested {dep['version']}; loaded {targets[0][1].get('version')}")
+
+
 def check_instances_params(report: Report, file: Path, node_base: str, instances: list, index: Index, template_params: Optional[dict] = None) -> dict[str, dict]:
     """Resolve component instances; returns {instance id: description}."""
     found: dict[str, dict] = {}
@@ -636,6 +680,7 @@ def check_instances_params(report: Report, file: Path, node_base: str, instances
             report.error(file, node + "/component", "catalog.not_found",
                          f"component {inst.get('component')} not found (looked in {', '.join(str(r) for r in index.roots)})")
             continue
+        check_version_request(report, file, node, inst, desc)
         found[iid] = desc
         for pname, pval in (inst.get("params") or {}).items():
             if isinstance(pval, str) and pval.startswith("$") and template_params is not None:
@@ -1308,6 +1353,7 @@ def check_board(report: Report, file: Path, doc: dict, index: Index) -> None:
     if mcu is None:
         report.error(file, "/mcu/ref", "catalog.not_found", f"MCU {mref.get('ref')} not found")
     else:
+        check_version_request(report, file, "/mcu", mref, mcu)
         signals = mcu_signals(mcu)
         pfile = (mcu.get("packages") or {}).get(mref.get("package"))
         if not pfile:
@@ -1526,6 +1572,11 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
         check_library_lock(report, file, doc["library_lock"], index)
     base = file.parent
     idx = project_index(file, doc, index)
+    for root in idx.roots:
+        manifest_path = root / "library.json"
+        manifest = idx._load(manifest_path) if manifest_path.is_file() else None
+        if isinstance(manifest, dict):
+            check_library_dependencies(report, manifest_path, manifest, idx)
     for i, lib in enumerate(doc.get("libraries") or []):
         if not (base / lib).is_dir():
             report.error(file, ptr("libraries", i), "catalog.not_found", f"library directory {lib} does not exist")
@@ -1576,6 +1627,7 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
         if bd is None:
             report.error(file, node + "/board", "catalog.not_found", f"board {b.get('board')} not found")
             continue
+        check_version_request(report, file, node, b, bd)
         ctx.boards[b["id"]] = bd
         fw = b.get("firmware") or {}
         if fw.get("image") and not (base / fw["image"]).exists():
@@ -1947,6 +1999,7 @@ def check_toolchain(report: Report, file: Path, doc: dict, index: Index) -> None
 
 
 def check_library(report: Report, file: Path, doc: dict, index: Index) -> None:
+    check_library_dependencies(report, file, doc, index)
     base = file.parent
     lic = doc.get("license")
     if isinstance(lic, str) and not is_spdx(lic):
@@ -2055,6 +2108,14 @@ def check_engineering_manifest(report: Report, file: Path, doc: dict, index: Ind
                 report.error(file, node + "/catalog", "manifest.catalog", "resolved item has no embedded loaded description")
         elif description.get("id") != item["reference"] or description.get("kind") != item["kind"]:
             report.error(file, node + "/reference", "manifest.catalog", "instance and embedded description identity disagree")
+        if "version_satisfied" in item:
+            try:
+                satisfied = version_matches((description or {}).get("version", ""), item.get("requested_version"))
+            except ValueError:
+                report.error(file, node + "/version_satisfied", "manifest.version", "version evidence requires a supported request and loaded version")
+            else:
+                if item["version_satisfied"] != satisfied:
+                    report.error(file, node + "/version_satisfied", "manifest.version", "claimed satisfaction disagrees with loaded metadata")
         if native and item["resolution"] == "demo":
             report.error(file, node + "/resolution", "manifest.source", "native manifest cannot claim demo parameters")
 

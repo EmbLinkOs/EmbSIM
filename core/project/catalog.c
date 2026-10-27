@@ -17,7 +17,13 @@ es_status esk_catalog_init(es_catalog *c)
     c->a = &c->alloc;
     esk_map_init(&c->by_id, c->a);
     c->libraries = esk_json_new_array(c->a);
-    return c->libraries ? ES_OK : ES_ENOMEM;
+    c->library_manifests = esk_json_new_object(c->a);
+    if (!c->libraries || !c->library_manifests) {
+        esk_json_free(c->a, c->libraries); esk_json_free(c->a, c->library_manifests);
+        c->libraries = NULL; c->library_manifests = NULL;
+        return ES_ENOMEM;
+    }
+    return ES_OK;
 }
 
 static void item_free(es_catalog *c, esk_catalog_item *it)
@@ -43,6 +49,8 @@ void esk_catalog_free(es_catalog *c)
     esk_map_free(&c->by_id);
     esk_json_free(c->a, c->libraries);
     c->libraries = NULL;
+    esk_json_free(c->a, c->library_manifests);
+    c->library_manifests = NULL;
 }
 
 static void diag(esk_diag *d, es_severity_t sev, const char *code, const char *file, const char *fmt, const char *arg)
@@ -153,7 +161,7 @@ static void scan(es_catalog *c, const char *root, const char *sub, const char *k
     esk_strfree(c->a, dir);
 }
 
-es_status esk_catalog_load_library(es_catalog *c, const char *path, esk_diag *d)
+static es_status load_library_at(es_catalog *c, const char *path, esk_diag *d)
 {
     char *lib_json = esk_host_path_join(c->a, path, "library.json");
     char *text = NULL;
@@ -218,9 +226,34 @@ es_status esk_catalog_load_library(es_catalog *c, const char *path, esk_diag *d)
         esk_json_set_integer(c->a, info, "items", count);
         esk_json_array_push(c->a, c->libraries, info);
     }
+    if (lib) {
+        esk_json *copy = esk_json_clone(c->a, lib);
+        if (!copy || esk_json_object_set(c->a, c->library_manifests, path, copy)) {
+            esk_json_free(c->a, copy);
+            esk_json_free(c->a, lib);
+            esk_strfree(c->a, lib_json);
+            return ES_ENOMEM;
+        }
+    }
     esk_json_free(c->a, lib);
     esk_strfree(c->a, lib_json);
     return ES_OK;
+}
+
+es_status esk_catalog_load_library(es_catalog *c, const char *path, esk_diag *d)
+{
+    char *absolute = esk_host_absolute_path(c->a, path);
+    es_status st;
+    size_t i;
+    if (!absolute) return ES_EIO;
+    for (i = 0; i < esk_json_len(c->libraries); i++)
+        if (!strcmp(absolute, esk_json_get_str(esk_json_at(c->libraries, i), "path", ""))) {
+            esk_strfree(c->a, absolute);
+            return ES_OK; /* one coherent loaded manifest/description revision per root */
+        }
+    st = load_library_at(c, absolute, d);
+    esk_strfree(c->a, absolute);
+    return st;
 }
 
 const esk_catalog_item *esk_catalog_find(const es_catalog *c, const char *kind, const char *id)
