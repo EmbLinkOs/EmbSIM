@@ -158,7 +158,7 @@ es_status esk_session_spectrum(es_session *s, const esk_json *request, esk_json 
         }
     }
     if (!esk_str_eq(text(esk_json_get(capture,"source"),"kind"),"engineering_manifest") || esk_json_get_num(esk_json_get(capture,"source"),"schema_version",0) != 1 || !source_ok(s, esk_json_get(capture, "source"))) return invalid(why, cap, "Capture source/project/model hashes or native electrical context do not verify.");
-    if (!scale) scale = 1;
+    if (scale == 0) scale = 1;
     for (i = 0; i < n; i++) { re[i] /= scale; mean += re[i] / (double)n; }
     for (i = 0; i < n; i++) {
         double w = !strcmp(window, "hann") ? .5 - .5 * cos(2 * PI * (double)i / (double)n) : 1;
