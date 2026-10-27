@@ -136,3 +136,6 @@ See [native assembly variants](docs/engineering/assembly-variants.md) for per-in
 
 
 See [native parameter sweeps](docs/engineering/parameter-sweeps.md) for independent reset-and-sample circuit comparisons with real instrument loading and source-bound exports.
+
+
+See [isolated native transient capture](docs/engineering/transient-capture.md) for overlaid circuit responses, exact sample cursors and source-bound waveform exports.

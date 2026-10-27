@@ -42,6 +42,8 @@ EXAMPLES_DIR = ROOT / "examples"
 SCHEMA_BASE = "https://emblink.dev/embsim/schemas/"
 
 KIND_SCHEMAS = {
+    "transient_request": "transient-request.schema.json",
+    "transient_capture": "transient-capture.schema.json",
     "parameter_sweep_request": "parameter-sweep-request.schema.json",
     "parameter_sweep": "parameter-sweep.schema.json",
     "library_lock": "library-lock.schema.json",
@@ -2233,7 +2235,60 @@ def check_parameter_sweep(report: Report, file: Path, doc: dict, index: Index) -
             report.error(file, f"/points/{i}", "sweep.failure", "failed point must not carry numeric results")
 
 
+def transient_grid(doc: dict) -> Optional[tuple[int, int, int]]:
+    start, stop, step = (parse_time_ps(doc[k]) for k in ("start", "stop", "step"))
+    if start is None or stop is None or step is None or not (0 <= start < stop <= 10**11) or step <= 0 or (stop-start) % step or (stop-start)//step > 4096:
+        return None
+    return start, stop, step
+
+
+def check_transient_request(report: Report, file: Path, doc: dict, index: Index) -> None:
+    if transient_grid(doc) is None:
+        report.error(file, "/step", "transient.grid", "need an exact uniform 2–4097-sample grid with 0 <= start < stop <= 100 ms")
+
+
+def check_transient_capture(report: Report, file: Path, doc: dict, index: Index) -> None:
+    check_engineering_manifest(report, file, doc["source"], index)
+    try:
+        context = json.loads(doc["source"]["json"])
+    except (ValueError, TypeError):
+        context = None
+    instances = context.get("instances", []) if isinstance(context, dict) else []
+    if not isinstance(instances, list):
+        instances = []
+    if isinstance(context, dict) and (context.get("source") != "native" or context.get("policy") != "electrical" or any(i.get("kind") == "board" for i in instances if isinstance(i, dict))):
+        report.error(file, "/source", "transient.source", "capture requires native board-free electrical source evidence")
+    grid = transient_grid(doc["request"])
+    if grid is None:
+        check_transient_request(report, file, doc["request"], index)
+        return
+    start, stop, step = grid
+    samples = doc["samples"]
+    count = (stop-start)//step + 1
+    end = int(doc["ended_at_ps"])
+    if len(samples) > count or end > stop or (samples and end < int(samples[-1]["at_ps"])):
+        report.error(file, "/samples", "transient.prefix", "samples/end must describe a bounded captured prefix")
+    if doc["ok"] and (len(samples) != count or end != stop or doc["failure"] is not None or any(d.get("severity") == "error" for d in doc["diagnostics"])):
+        report.error(file, "/ok", "transient.complete", "successful capture requires the complete grid, stop time and no error")
+    if not doc["ok"] and (not doc["failure"] or len(samples) >= count or end > start+len(samples)*step):
+        report.error(file, "/failure", "transient.failure", "incomplete capture needs a failure and must not claim a complete grid")
+    for i, row in enumerate(samples):
+        if int(row["at_ps"]) != start+i*step:
+            report.error(file, f"/samples/{i}/at_ps", "transient.time", "sample time differs from the requested exact grid")
+        if [m["target"] for m in row["measurements"]] != doc["request"]["probes"]:
+            report.error(file, f"/samples/{i}/measurements", "transient.targets", "measurement order differs from requested targets")
+        for m in row["measurements"]:
+            try:
+                finite = m["voltage"] is None or math.isfinite(m["voltage"])
+            except (TypeError, OverflowError):
+                finite = False
+            if not finite:
+                report.error(file, f"/samples/{i}/measurements", "transient.voltage", "numeric voltages must be finite; unavailable values use null")
+
+
 CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
+    "transient_request": check_transient_request,
+    "transient_capture": check_transient_capture,
     "parameter_sweep_request": check_sweep_request,
     "parameter_sweep": check_parameter_sweep,
     "library_lock": check_library_lock,

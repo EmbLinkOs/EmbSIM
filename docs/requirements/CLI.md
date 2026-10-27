@@ -68,3 +68,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native loaded-divider/RC equations, independent repeats and failures; CLI/RPC, actual native browser and both offline backends.
 **Trace.** SPEC-004; SPEC-008; ADR-046; docs/engineering/parameter-sweeps.md
+
+
+### CLI-009  Native transient prefix export
+**Statement.** Transient capture CLI shall share native RPC execution, preserve source files, emit inspectable complete/partial artifacts and distinguish complete, partial and usage/load/request exit codes.
+**Rationale.** A useful circuit waveform needs actual timing/loading, recoverable evidence and clear limits instead of interpolated or fabricated confidence.
+**Status.** Accepted 2026-10-27
+**Verification.** Native RC/loading equations, warm-up/history preservation, maximum grid, DNP and scripted failure; actual native browser, UI and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-047; docs/engineering/transient-capture.md

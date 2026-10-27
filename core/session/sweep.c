@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 #include "session/sweep.h"
+#include "session/circuit_analysis.h"
 #include "project/variants.h"
 #include "project/manifest.h"
 #include "project/loader.h"
@@ -19,16 +20,6 @@ static int put(es_session *s, esk_json *o, const char *key, esk_json *v)
     if (!v) return -1;
     if (esk_json_object_set(s->a, o, key, v)) { esk_json_free(s->a, v); return -1; }
     return 0;
-}
-/* Physical source observation only. Digital logic levels are not invented volts. */
-static esk_net *measurement(es_session *s, const char *target)
-{
-    if (esk_str_has_prefix(target, "net:")) return esk_engine_net(&s->eng, target + 4);
-    if (esk_str_has_prefix(target, "pin:")) {
-        esk_pin *pin = esk_project_pin(s, target + 4);
-        return pin ? pin->net : NULL;
-    }
-    return NULL;
 }
 
 es_status esk_session_sweep(es_session *s, const esk_json *request, esk_json **result, char *why, size_t cap)
@@ -72,7 +63,7 @@ es_status esk_session_sweep(es_session *s, const esk_json *request, esk_json **r
     }
     for (j = 0; j < esk_json_len(probes); j++) {
         const char *p = esk_json_str(esk_json_at(probes, j));
-        if (!p || !measurement(s, p)) return reject(why, cap, "Each measurement must name an existing net:NAME or pin:INSTANCE.PIN.");
+        if (!p || !esk_circuit_measurement(s, p)) return reject(why, cap, "Each measurement must name an existing net:NAME or pin:INSTANCE.PIN.");
         for (i = 0; i < j; i++) if (esk_str_eq(p, esk_json_str(esk_json_at(probes, i)))) return reject(why, cap, "Duplicate sweep measurement target.");
     }
     st = esk_project_manifest(s, &manifest);
@@ -139,7 +130,7 @@ es_status esk_session_sweep(es_session *s, const esk_json *request, esk_json **r
         samples = esk_json_get_mut(row, "measurements");
         for (j = 0; st == ES_OK && j < esk_json_len(probes); j++) {
             const char *p = esk_json_str(esk_json_at(probes, j));
-            esk_net *net = checked == ES_OK ? measurement(temporary, p) : NULL;
+            esk_net *net = checked == ES_OK ? esk_circuit_measurement(temporary, p) : NULL;
             esk_json *sample = esk_json_new_object(s->a);
             if (!sample) { st = ES_ENOMEM; break; }
             if (esk_json_array_push(s->a, samples, sample)) { esk_json_free(s->a, sample); st = ES_ENOMEM; break; }

@@ -1315,3 +1315,26 @@ is not authentication or manufacturer qualification.
 **Status.** Implemented 2026-10-27. **Trace.** ANA-012; UI-034; CLI-008;
 SPEC-004; SPEC-008; tests/protocol/test_sweeps.py;
 tests/browser/test_parameter_sweeps.py.
+
+
+## ADR-047 — Source-preserving native transient capture
+
+**Context.** Engineers need time-response review independent of the open bench.
+A parameter sweep's timed endpoint cannot replace a waveform, and line plotting
+must not invent physical bandwidth, future samples or a physical probe load.
+
+**Decision.** Capture bounded board-free electrical circuits in a temporary native
+session from reset, including warm-up to an exact uniform grid. Share native net
+resolution with sweeps, preserve connected instrument models, retain source/model
+identities and export actual sample records. Stop on error with a successful
+prefix and actual reached time. Offer trace overlay, sample zoom/cursors and
+explicit mathematical differential review; missing values remain gaps.
+
+**Limits.** No firmware/stimulus replay, long/background jobs, automatic anti-alias
+filtering, unsampled peaks, physical-instrument qualification or DC/AC/Fourier/noise/
+distortion analysis. Bounds, analytic proof and sampling caveats are in
+[the contract](../engineering/transient-capture.md).
+
+**Status.** Implemented 2026-10-27. **Trace.** ANA-013; UI-035; CLI-009;
+SPEC-004; SPEC-008; tests/protocol/test_transient.py;
+tests/browser/test_transient_capture.py.

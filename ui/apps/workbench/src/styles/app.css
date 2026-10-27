@@ -1900,3 +1900,11 @@
 .wb-sweep-table th, .wb-sweep-table td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; white-space: nowrap; }
 .wb-sweep-table td { font-family: var(--font-mono); font-size: var(--text-sm); }
 .wb-sweep-table small { display: block; color: var(--text-muted); }
+
+.wb-transient-capture { width: min(1200px, calc(100vw - 40px)); }
+.wb-transient-capture select, .wb-transient-capture textarea { border: 1px solid var(--line-strong); border-radius: var(--radius-md); padding: var(--space-2); background: var(--surface); color: var(--text); font: inherit; }
+.wb-transient-legend, .wb-transient-review { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-block: var(--space-3); }
+.wb-transient-legend label { display: inline-flex; align-items: center; gap: var(--space-1); font-family: var(--font-mono); }
+.wb-transient-review label { display: flex; flex-direction: column; gap: var(--space-1); flex: 1; min-width: 160px; }
+.wb-transient-review input[type="range"] { width: 100%; accent-color: var(--accent); }
+.wb-transient-cursor { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 4 4; }

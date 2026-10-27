@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "transient_request",
+  "start": "0us",
+  "stop": "500us",
+  "step": "5us",
+  "probes": [
+    "net:IN",
+    "net:OUT"
+  ]
+}

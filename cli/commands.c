@@ -20,6 +20,7 @@
 #include "project/library_lock.h"
 #include "project/variants.h"
 #include "session/sweep.h"
+#include "session/circuit_analysis.h"
 #include "sdk.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -43,6 +44,7 @@ static void usage(void)
           "      [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
+          "  transient PROJECT --request FILE [--library DIR]   isolated native waveform capture\n"
           "  sweep PROJECT --request FILE [--library DIR]   independent reset-and-sample parameter runs\n"
           "  variant list|render PROJECT [--name NAME] [--library DIR] [--json]\n"
           "  lock capture|check PROJECT [--library DIR]   emit a lock or check embedded library inputs\n"
@@ -1141,6 +1143,35 @@ static int cmd_sweep(int argc, char **argv, const char *argv0)
     return code;
 }
 
+static int cmd_transient(int argc, char **argv, const char *argv0)
+{
+    const char *project = NULL, *request_path = NULL, *library = NULL;
+    es_session *s;
+    esk_json *request = NULL, *result = NULL;
+    char why[256] = {0};
+    int i, code = 2;
+    es_status st;
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "--request") && i + 1 < argc) request_path = argv[++i];
+        else if (!strcmp(argv[i], "--library") && i + 1 < argc) library = argv[++i];
+        else if (argv[i][0] == '-' || project) { usage(); return 2; }
+        else project = argv[i];
+    }
+    if (!project || !request_path) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    st = es_session_load_file(s, project);
+    if (st == ES_OK) { request = read_json_file(s->a, request_path); if (!request) st = ES_ESCHEMA; }
+    if (st == ES_OK && request) st = esk_session_transient(s, request, &result, why, sizeof why);
+    if (st == ES_OK && result) {
+        size_t len = 0;
+        char *text = esk_json_format(s->a, result, 2, &len);
+        if (text) { fputs(text, stdout); fputc('\n', stdout); esk_free(s->a, text, len + 1); code = esk_json_get_bool(result, "ok", 0) ? 0 : 1; }
+    } else fprintf(stderr, "embsim: transient capture failed: %s\n", *why ? why : es_strerror(st));
+    esk_json_free(s->a, request); esk_json_free(s->a, result); es_session_destroy(s);
+    return code;
+}
+
 static int cmd_variant(int argc, char **argv, const char *argv0)
 {
     const char *op, *path = NULL, *name = NULL, *library = NULL;
@@ -1322,6 +1353,7 @@ int embsim_cli_main(int argc, char **argv)
     if (argc < 2) { usage(); return 2; }
     cmd = argv[1];
     if (!strcmp(cmd, "run")) return cmd_run(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "transient")) return cmd_transient(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "sweep")) return cmd_sweep(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "variant")) return cmd_variant(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "lock")) return cmd_lock(argc - 2, argv + 2, argv[0]);

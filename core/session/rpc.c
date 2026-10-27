@@ -4,6 +4,7 @@
  * in-process transport. Every transport ends here. */
 #include "session/session_priv.h"
 #include "session/sweep.h"
+#include "session/circuit_analysis.h"
 #include "project/hierarchy.h"
 #include "project/manifest.h"
 #include "project/library_lock.h"
@@ -73,7 +74,7 @@ static es_status m_session_open(rpc_ctx *r)
     {
         static const char *const names[] = { "analog", "digital", "catalog", "scenario", "scenario.edit", "record", "record.inputs",
                                              "record.replay", "streams.json", "observe.subscribe", "mcu", "debug", "toolchain",
-                                             "analysis", "assembly.variants", "analysis.sweep" };
+                                             "analysis", "assembly.variants", "analysis.sweep", "analysis.transient" };
         size_t i;
         for (i = 0; i < ES_COUNTOF(names); i++)
             esk_json_array_push(s->a, caps, esk_json_new_string(s->a, names[i]));
@@ -220,6 +221,13 @@ static es_status m_project_load(rpc_ctx *r)
     if (st != ES_OK)
         return fail_status(r, st);
     return ES_OK;
+}
+
+static es_status m_analysis_transient(rpc_ctx *r)
+{
+    char why[256];
+    es_status st = esk_session_transient(r->s, r->params, &r->result, why, sizeof why);
+    return st != ES_OK && *why ? fail(r, -32602, why) : st;
 }
 
 static es_status m_analysis_sweep(rpc_ctx *r)
@@ -1401,6 +1409,7 @@ typedef struct method { const char *name; es_status (*fn)(rpc_ctx *); } method;
 static const method methods[] = {
     { "session.open", m_session_open }, { "session.close", m_session_close }, { "session.info", m_session_info },
     { "session.policy", m_session_policy },
+    { "analysis.transient", m_analysis_transient },
     { "analysis.sweep", m_analysis_sweep },
     { "project.variant", m_project_variant },
     { "project.library_lock", m_project_library_lock },

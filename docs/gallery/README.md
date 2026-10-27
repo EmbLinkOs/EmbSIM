@@ -5,6 +5,18 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Native transient waveform review (2026-10-27)
+
+An actual RC circuit captures 101 native samples while preserving the live bench
+at 1 µs. Overlaid input/output and dashed differential traces share exact sample
+cursors; the view is zoomed to 0–200 µs, with B at 100 µs. Raw exports retain all
+101 samples, not just the view. Finite instrument loading is proven separately
+against the loaded RC equation.
+
+![Native overlaid response, differential trace and exact sample cursors](transient-capture/native-transient-review.png)
+
+See [reproduction, analytic bounds and omissions](../engineering/transient-capture.md).
+
 ## Native loaded parameter sweeps (2026-10-27)
 
 The native server varies A.R independently of its shared-sheet sibling while

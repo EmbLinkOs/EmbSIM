@@ -373,3 +373,13 @@ failed points remain explicit. It refuses running sources, open transactions,
 board/firmware contexts and non-electrical policy. It never replaces the source.
 See [fields, limits and artifacts](../engineering/parameter-sweeps.md), ANA-012,
 UI-034, CLI-008 and ADR-046. This method does not implement DC/AC convergence.
+
+
+## Uniform transient capture
+
+Capability/method `analysis.transient` accepts string Start/Stop/Step and net/pin
+voltage targets. It runs an isolated reset/warm-up circuit and returns exact native
+source evidence plus the successful uniformly sampled prefix. Source state is
+preserved; failures expose reached time and diagnostics without future records.
+See [fields, schemas, limits and CLI](../engineering/transient-capture.md),
+ANA-013, UI-035, CLI-009 and ADR-047.

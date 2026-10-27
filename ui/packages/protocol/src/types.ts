@@ -21,6 +21,7 @@ export type SampleEncoding = 'u8' | 'f32' | 'f64' | 'bytes';
 export type Capability =
   | 'assembly.variants'
   | 'analysis.sweep'
+  | 'analysis.transient'
   | 'analog'
   | 'lua'
   | 'gdb'
@@ -868,4 +869,15 @@ export interface ParameterSweep {
   source: EngineeringManifest; request: SweepRequest; ok: boolean;
   points: {requested: number | string; resolved: number | null; at_ps: string; ok: boolean;
     diagnostics: DiagnosticRecord[]; measurements: {target: string; logic: '0' | '1' | 'X' | 'Z'; voltage: number | null}[];}[];
+}
+
+export interface TransientRequest {
+  schema_version?: 1; kind?: 'transient_request';
+  start: string; stop: string; step: string; probes: string[];
+}
+export interface TransientCapture {
+  schema_version: 1; kind: 'transient_capture'; method: 'reset_uniform_sample';
+  source: EngineeringManifest; request: TransientRequest; ok: boolean;
+  ended_at_ps: string; failure: string | null; diagnostics: DiagnosticRecord[];
+  samples: {at_ps: string; measurements: {target: string; logic: '0' | '1' | 'X' | 'Z'; voltage: number | null}[]}[];
 }
