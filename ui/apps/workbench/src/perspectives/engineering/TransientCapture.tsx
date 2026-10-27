@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { Badge, Button, Dialog, Input } from '@embsim/design';
-import { captureTraces, formatSi, formatTime, transientCsv, verifyManifest, type CaptureTrace, type EngineeringManifestData, type Project, type TransientCapture as Capture } from '@embsim/protocol';
+import { captureTraces, fftInterval, formatSi, formatTime, transientCsv, verifyManifest, type CaptureTrace, type EngineeringManifestData, type Project, type TransientCapture as Capture } from '@embsim/protocol';
 import { useRef, useState } from 'react';
 import { errorMessage } from '../../actions';
 import { getClient } from '../../connection';
 import { platform } from '../../platform/platform';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
+import { SpectrumReview } from './SpectrumReview';
 
 const COLORS = ['var(--accent)', 'var(--info)', 'var(--signal-analog)', 'var(--danger)', 'var(--warning)', 'var(--signal-low)', 'var(--text)', 'var(--signal-z)', 'var(--text-muted)'];
 export function TransientCapture() {
@@ -68,13 +69,14 @@ export function TransientCapture() {
         <label className="wb-sweep-wide">Add terminal<select aria-label="Add capture terminal" value="" disabled={blocked} onChange={(e) => {if (e.target.value) setTargets((old) => [...new Set([...old.split(/[,\n]/).map((s) => s.trim()).filter(Boolean), e.target.value])].join(', '));}}><option value="">Choose a concrete circuit terminal</option>{terminalOptions.map((p) => <option key={p} value={p}>{p}</option>)}</select></label>
         <label className="wb-sweep-wide">Voltage targets<textarea aria-label="Capture measurements" rows={2} value={targets} disabled={blocked} onChange={(e) => setTargets(e.target.value)} placeholder="net:IN, net:OUT or pin:A.R.2" /></label>
       </div>
+      <Button size="sm" variant="ghost" disabled={blocked} onClick={() => {try {setStep(fftInterval(start,stop));setError('');} catch(e) {setError(errorMessage(e));}}}>Use 256 FFT intervals</Button>
       <p className="es-muted">Reset starts at 0; warm-up before Start is simulated. Up to 4097 uniform samples, eight voltage targets, 100 ms stop time and 256 compiled components. Reads add no load; connected instruments do. Narrow pulses and peaks between samples can be missed. Runtime stimulus and firmware are not replayed.</p>
       {result && <section aria-label="Transient results">
         <div className="es-row"><h3>Native circuit response</h3><Badge tone={result.ok ? 'accent' : 'danger'}>{result.ok ? `${result.samples.length} samples captured` : 'Capture incomplete'}</Badge></div>
         {result.failure && <p role="alert">{result.failure} · ended at {formatTime(BigInt(result.ended_at_ps))}. Only the captured prefix is shown.</p>}
         {result.diagnostics.length > 0 && <details><summary>{result.diagnostics.length} native diagnostics</summary>{result.diagnostics.map((d, i) => <p key={i}>{d.code}: {d.message}</p>)}</details>}
         <p>Captured source at {formatTime(BigInt(inventory?.now_ps ?? '0'))}; the open circuit was not restarted. Lines join sampled values; missing voltages break the trace.</p>
-        {result.samples.length > 0 && <>
+        {result.samples.length > 0 && <details open className="wb-transient-time-review"><summary>Transient waveform and sample cursors</summary>
           <div className="wb-transient-legend">{traces.map((t, i) => <label key={t.id}><input type="checkbox" checked={!hidden.includes(t.id)} onChange={(e) => setHidden((old) => e.target.checked ? old.filter((id) => id !== t.id) : [...old, t.id])} /><span style={{color: COLORS[i]}}>{t.label}</span></label>)}</div>
           <div className="wb-transient-review"><label>Differential positive<select aria-label="Differential positive" value={positive} onChange={(e) => setPositive(Number(e.target.value))}>{result.request.probes.map((p, i) => <option key={p} value={i}>{p}</option>)}</select></label><label>Differential negative<select aria-label="Differential negative" value={negative} onChange={(e) => setNegative(Number(e.target.value))}><option value={-1}>Off</option>{result.request.probes.map((p, i) => <option key={p} value={i}>{p}</option>)}</select></label></div>
           <p className="es-muted">Differential review subtracts captured voltages and adds no physical instrument.</p>
@@ -87,7 +89,8 @@ export function TransientCapture() {
             return <tr key={t.id}><td>{t.label}</td><td>{volts(a)}</td><td>{volts(b)}</td><td>{a === null || b === null ? 'Unavailable' : volts(b-a)}</td><td>{known.length ? `${volts(Math.min(...known))} / ${volts(Math.max(...known))}` : 'Unavailable'}</td></tr>;
           })}</tbody></table></div>
           <details><summary>Exact captured samples</summary><div className="es-row"><Button size="sm" disabled={page === 0} onClick={() => setPage(page-1)}>Previous samples</Button><span>Samples {page*100+1}–{Math.min(result.samples.length, (page+1)*100)}</span><Button size="sm" disabled={(page+1)*100 >= result.samples.length} onClick={() => setPage(page+1)}>Next samples</Button></div><div className="wb-sweep-table"><table aria-label="Native transient samples"><thead><tr><th>Time</th>{result.request.probes.map((p) => <th key={p}>{p}</th>)}</tr></thead><tbody>{result.samples.slice(page*100, (page+1)*100).map((s) => <tr key={s.at_ps}><td>{formatTime(BigInt(s.at_ps))}<small>{s.at_ps} ps</small></td>{s.measurements.map((m) => <td key={m.target}>{m.voltage === null ? 'Unavailable' : formatSi(m.voltage, 'V', 8)} <small>Logic {m.logic}</small></td>)}</tr>)}</tbody></table></div></details>
-        </>}
+        </details>}
+        <SpectrumReview capture={result} />
         <div className="es-row"><Button size="sm" variant="ghost" onClick={() => void download('csv')}>Export transient CSV</Button><Button size="sm" variant="ghost" onClick={() => void download('json')}>Export transient evidence</Button></div>
       </section>}
     </Dialog>

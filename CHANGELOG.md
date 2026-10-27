@@ -5,6 +5,15 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Native captured-data frequency spectra
+
+- Add native coherent-amplitude FFT through CLI/RPC and captured-waveform review,
+  with rectangular/periodic Hann, explicit mean handling, edge scaling and phase.
+- Preserve exact raw-record identities; inspect discrete peak/RMS/dBV bins and
+  export all coefficients independently of plot zoom or display floor.
+- Prepare exact FFT grids, fold time review, and independently check DFT/NumPy,
+  analytic RC response and physical meter loading. PSD, AC and distortion remain open.
+
 ### Isolated native transient capture
 
 - Exercise terminal wiring at the actual socket independently of annotation font

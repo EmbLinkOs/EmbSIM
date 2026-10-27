@@ -22,6 +22,7 @@ export type Capability =
   | 'assembly.variants'
   | 'analysis.sweep'
   | 'analysis.transient'
+  | 'analysis.spectrum'
   | 'analog'
   | 'lua'
   | 'gdb'
@@ -880,4 +881,13 @@ export interface TransientCapture {
   source: EngineeringManifest; request: TransientRequest; ok: boolean;
   ended_at_ps: string; failure: string | null; diagnostics: DiagnosticRecord[];
   samples: {at_ps: string; measurements: {target: string; logic: '0' | '1' | 'X' | 'Z'; voltage: number | null}[]}[];
+}
+
+export interface FrequencySpectrum {
+  schema_version: 1; kind: 'frequency_spectrum'; method: 'radix2_coherent_amplitude';
+  record_convention: 'half_open_drop_endpoint'; phase_reference: 'first_sample_cosine';
+  capture: ManifestDocument; target: string; window: 'hann' | 'rectangular'; remove_mean: boolean;
+  used_samples: number; sample_rate_hz: number; bin_width_hz: number; nyquist_hz: number;
+  mean_v: number; coherent_gain: number; enbw_bins: number;
+  bins: {index: number; frequency_hz: number; real_v: number; imag_v: number; peak_v: number; rms_v: number; dbv_rms: number | null; phase_deg: number | null}[];
 }

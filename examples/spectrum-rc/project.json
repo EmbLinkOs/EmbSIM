@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "spectrum-rc",
+  "description": "A 1 kHz, 1 V peak sine driving 10 kohm / 10 nF: capture after warm-up and compare amplitude/phase with the analytic RC transfer.",
+  "libraries": [],
+  "policy": "electrical",
+  "boards": [],
+  "components": [
+    {
+      "id": "V1",
+      "component": "emblink/vsource",
+      "params": {
+        "kind": "sine",
+        "vo": 0,
+        "va": 1,
+        "freq": 1000,
+        "phase": 0
+      },
+      "layout": {
+        "x": 100,
+        "y": 140
+      }
+    },
+    {
+      "id": "R1",
+      "component": "emblink/resistor",
+      "params": {
+        "resistance": "10k"
+      },
+      "layout": {
+        "x": 250,
+        "y": 100
+      }
+    },
+    {
+      "id": "C1",
+      "component": "emblink/capacitor",
+      "params": {
+        "capacitance": "10n"
+      },
+      "layout": {
+        "x": 400,
+        "y": 140,
+        "rotation": 90
+      }
+    },
+    {
+      "id": "GND1",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 400,
+        "y": 240
+      }
+    }
+  ],
+  "nets": {
+    "IN": [
+      "V1.+",
+      "R1.1"
+    ],
+    "OUT": [
+      "R1.2",
+      "C1.1"
+    ],
+    "GND": [
+      "V1.-",
+      "C1.2",
+      "GND1.GND"
+    ]
+  },
+  "layout": {
+    "wires": [
+      {
+        "net": "IN",
+        "points": [
+          [
+            130,
+            140
+          ],
+          [
+            130,
+            110
+          ],
+          [
+            250,
+            110
+          ]
+        ]
+      },
+      {
+        "net": "OUT",
+        "points": [
+          [
+            310,
+            110
+          ],
+          [
+            410,
+            110
+          ],
+          [
+            410,
+            140
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            130,
+            180
+          ],
+          [
+            130,
+            240
+          ],
+          [
+            410,
+            240
+          ],
+          [
+            410,
+            200
+          ]
+        ]
+      }
+    ],
+    "labels": [
+      {
+        "net": "IN",
+        "x": 180,
+        "y": 100
+      },
+      {
+        "net": "OUT",
+        "x": 340,
+        "y": 100
+      }
+    ],
+    "sheet": {
+      "width": 600,
+      "height": 320
+    }
+  },
+  "probes": [
+    {
+      "id": "in",
+      "target": "net:IN",
+      "kind": "analog",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "out",
+      "target": "net:OUT",
+      "kind": "analog",
+      "rate_hz": 1000000
+    }
+  ],
+  "settings": {
+    "h_max": "5us",
+    "lte_tol": 0.001
+  }
+}

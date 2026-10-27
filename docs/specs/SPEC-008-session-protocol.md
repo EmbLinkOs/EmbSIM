@@ -383,3 +383,13 @@ source evidence plus the successful uniformly sampled prefix. Source state is
 preserved; failures expose reached time and diagnostics without future records.
 See [fields, schemas, limits and CLI](../engineering/transient-capture.md),
 ANA-013, UI-035, CLI-009 and ADR-047.
+
+
+## Captured-data frequency spectra
+
+Capability/method `analysis.spectrum` accepts a complete captured artifact, target,
+window and boolean mean removal, without requiring a loaded current circuit.
+It returns a half-open coherent-amplitude spectrum with exact raw-record evidence,
+sampling/window metadata and all ordered complex/peak/RMS/dBV/phase bins. Missing,
+partial or invalid records are refused. See [schema, equations and limits](../engineering/frequency-spectrum.md),
+ANA-014, UI-036, CLI-010 and ADR-048.

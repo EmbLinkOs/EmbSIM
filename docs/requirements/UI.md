@@ -265,3 +265,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native RC/loading equations, warm-up/history preservation, maximum grid, DNP and scripted failure; actual native browser, UI and both offline backends.
 **Trace.** SPEC-004; SPEC-008; ADR-047; docs/engineering/transient-capture.md
+
+
+### UI-036  Calibrated native spectrum review
+**Statement.** The captured-waveform UI shall prepare exact FFT grids, inspect native discrete bins in peak volts or RMS-bin dBV with explicit display clipping, retain reviewed options, verify captured-record identity and export complete coefficients without changing the live circuit.
+**Rationale.** Frequency plots require defined units, sample/window semantics and independently inspectable evidence.
+**Status.** Accepted 2026-10-27
+**Verification.** Native analytic/direct-DFT vectors, independent NumPy checks, loaded RC reference, source-bound CLI/RPC, actual native browser and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-048; docs/engineering/frequency-spectrum.md

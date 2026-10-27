@@ -76,3 +76,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native RC/loading equations, warm-up/history preservation, maximum grid, DNP and scripted failure; actual native browser, UI and both offline backends.
 **Trace.** SPEC-004; SPEC-008; ADR-047; docs/engineering/transient-capture.md
+
+
+### CLI-010  Stateless native spectrum export
+**Statement.** The spectrum command shall transform saved captured data with explicit target/window/mean options, preserve inputs, share native RPC semantics and require no loaded original project or model execution. Invalid or incomplete records shall fail without producing a misleading spectrum.
+**Rationale.** Frequency plots require defined units, sample/window semantics and independently inspectable evidence.
+**Status.** Accepted 2026-10-27
+**Verification.** Native analytic/direct-DFT vectors, independent NumPy checks, loaded RC reference, source-bound CLI/RPC, actual native browser and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-048; docs/engineering/frequency-spectrum.md

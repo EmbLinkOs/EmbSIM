@@ -5,6 +5,17 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Native RC frequency-spectrum review (2026-10-27)
+
+The actual native 1 kHz RC response is captured after warm-up and reviewed with
+periodic Hann. The selected bin shows native peak/RMS/dBV and cosine-referenced
+phase; neighboring Hann bins remain visible. The live source stays at 1 µs,
+and exports retain the complete captured record and every coefficient.
+
+![Native source-bound spectrum, discrete bins and calibrated amplitude/phase](frequency-spectrum/native-rc-spectrum.png)
+
+See [reproduction, scaling and independent checks](../engineering/frequency-spectrum.md).
+
 ## Native transient waveform review (2026-10-27)
 
 An actual RC circuit captures 101 native samples while preserving the live bench

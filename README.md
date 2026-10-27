@@ -139,3 +139,6 @@ See [native parameter sweeps](docs/engineering/parameter-sweeps.md) for independ
 
 
 See [isolated native transient capture](docs/engineering/transient-capture.md) for overlaid circuit responses, exact sample cursors and source-bound waveform exports.
+
+
+See [native frequency-spectrum review](docs/engineering/frequency-spectrum.md) for source-bound peak/RMS/dBV/phase analysis of retained circuit waveforms.

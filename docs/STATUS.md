@@ -5,6 +5,22 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Native captured-data frequency spectra (2026-10-27)
+
+Branch `feat/native-spectrum-analysis` computes source-bound one-sided spectra
+from complete retained captures without executing or changing the live circuit.
+Rectangular/periodic Hann windows, mean handling, DC/Nyquist edge scaling,
+peak/RMS-bin/dBV/phase conventions and half-open records are explicit. The UI
+prepares exact grids, folds time review and inspects/exports native spectral bins.
+
+Independent direct DFT, 8,880 NumPy complex-bin comparisons, analytic RC response,
+real meter loading, maximum size, numeric scaling and native browser acceptance
+support this bounded milestone. Verification passes 59 native targets (194 spectrum
+acceptance checks), six focused sanitizer targets, 356 UI tests, 39 browser workflows,
+198 validator tests and strict validation of 931 files. See [contract and evidence](engineering/frequency-spectrum.md)
+and [gallery](gallery/README.md). It does not qualify broadband noise/RMS, distortion,
+small-signal AC response, anti-aliasing, firmware replay or general device fidelity.
+
 ## Isolated native transient capture (2026-10-27)
 
 Branch `feat/native-transient-capture` captures an isolated native reset/warm-up

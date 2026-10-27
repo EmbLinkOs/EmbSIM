@@ -18,3 +18,5 @@ export * from './engineering';
 export * from './sweeps';
 
 export * from './transient';
+
+export * from './spectrum';
