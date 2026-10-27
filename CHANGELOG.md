@@ -7,6 +7,9 @@ versions follow semantic versioning. There is no release yet.
 
 ### Native parameter sweeps
 
+- Synchronize viewport-resize acceptance with measured dock geometry while retaining
+  exact keyboard movement and independent neighboring-panel checks.
+
 - Run bounded independent reset-and-sample electrical sweeps through native CLI,
   RPC and schematic controls without replacing the live circuit.
 - Plot measured loaded responses, retain failed/unavailable points explicitly,

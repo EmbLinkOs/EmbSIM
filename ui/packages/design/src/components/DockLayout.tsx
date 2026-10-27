@@ -232,7 +232,7 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
 
   const totalWeight = ordered.filter((it) => !isCollapsed(it)).reduce((acc, it) => acc + (state.weights[it.id] ?? 1), 0) || 1;
   return (
-    <div ref={containerRef} className={cx('es-dock', `es-dock--${direction}`, className)}>
+    <div ref={containerRef} className={cx('es-dock', `es-dock--${direction}`, className)} data-measured-width={extent.width} data-measured-height={extent.height}>
       {ordered.map((item, index) => {
         const weight = state.weights[item.id] ?? 1;
         const collapsed = isCollapsed(item);

@@ -19,7 +19,10 @@ repeated reset history, CLI/RPC parity, actual native-browser exports and failed
 points. All 57 native targets, 348 UI tests and 38 browser workflows pass.
 The 56-check sweep acceptance and four focused native targets pass ASan/UBSan
 with leak detection. Offline checks pass 184 tests across both backends and
-strictly validate 925 files; docs integrity covers 149 documents/136 requirements. See [workflow, evidence and bounds](engineering/parameter-sweeps.md)
+strictly validate 925 files; docs integrity covers 149 documents/136 requirements.
+A macOS trace exposed viewport acceptance measuring before ResizeObserver
+constraints committed; measured-extent readiness preserves the strict 16 px
+keyboard resize and unchanged neighboring-panel checks. See [workflow, evidence and bounds](engineering/parameter-sweeps.md)
 and [gallery](gallery/README.md). This is timed reset-and-sample analysis, not a
 converged DC solver, firmware replay, AC/Fourier/noise/distortion analysis or model
 qualification. Those analysis release gates remain open.
