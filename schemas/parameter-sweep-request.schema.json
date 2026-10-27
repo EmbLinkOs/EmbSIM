@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "parameter_sweep_request"
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 149
+    },
+    "parameter": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "values": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": [
+          "number",
+          "string"
+        ]
+      }
+    },
+    "sample_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "probes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(net|pin):.+$"
+      }
+    }
+  },
+  "required": [
+    "target",
+    "parameter",
+    "values",
+    "sample_at",
+    "probes"
+  ],
+  "$id": "https://emblink.dev/embsim/schemas/parameter-sweep-request.schema.json",
+  "title": "Independent reset-and-sample parameter sweep request"
+}

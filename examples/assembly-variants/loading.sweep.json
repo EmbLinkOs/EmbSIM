@@ -1,0 +1,17 @@
+{
+  "target": "A.R",
+  "parameter": "resistance",
+  "values": [
+    "100k",
+    "1meg",
+    "2meg",
+    "10meg"
+  ],
+  "sample_at": "1us",
+  "probes": [
+    "pin:A.R.2",
+    "pin:B.R.2"
+  ],
+  "schema_version": 1,
+  "kind": "parameter_sweep_request"
+}

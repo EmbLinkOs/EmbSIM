@@ -42,6 +42,8 @@ EXAMPLES_DIR = ROOT / "examples"
 SCHEMA_BASE = "https://emblink.dev/embsim/schemas/"
 
 KIND_SCHEMAS = {
+    "parameter_sweep_request": "parameter-sweep-request.schema.json",
+    "parameter_sweep": "parameter-sweep.schema.json",
     "library_lock": "library-lock.schema.json",
     "engineering_manifest": "engineering-manifest.schema.json",
     "component": "component.schema.json",
@@ -2192,7 +2194,48 @@ def check_engineering_manifest(report: Report, file: Path, doc: dict, index: Ind
             report.error(file, node + "/resolution", "manifest.source", "native manifest cannot claim demo parameters")
 
 
+def check_sweep_request(report: Report, file: Path, doc: dict, index: Index) -> None:
+    values = doc["values"]
+    for i, value in enumerate(values):
+        try:
+            numeric = parse_si(value)
+        except (ValueError, OverflowError):
+            numeric = None
+        if numeric is None or not math.isfinite(numeric):
+            report.error(file, f"/values/{i}", "sweep.value", "expected finite number or SI string")
+    at = parse_time_ps(doc["sample_at"])
+    if at is None or at < 0 or at > 10**9 or at * len(values) > 10**10:
+        report.error(file, "/sample_at", "sweep.time", "0–1 ms per point and 10 ms total are supported")
+
+
+def check_parameter_sweep(report: Report, file: Path, doc: dict, index: Index) -> None:
+    check_sweep_request(report, file, doc["request"], index)
+    check_engineering_manifest(report, file, doc["source"], index)
+    points, request = doc["points"], doc["request"]
+    if len(points) != len(request["values"]) or doc["ok"] != all(p["ok"] for p in points):
+        report.error(file, "/points", "sweep.points", "point count or summary status disagrees")
+    for i, point in enumerate(points):
+        if i < len(request["values"]) and point["requested"] != request["values"][i]:
+            report.error(file, f"/points/{i}/requested", "sweep.requested", "point order/value differs from request")
+        if [m["target"] for m in point["measurements"]] != request["probes"]:
+            report.error(file, f"/points/{i}/measurements", "sweep.targets", "measurement order differs from request")
+        if point["ok"] and (point["resolved"] is None or int(point["at_ps"]) != parse_time_ps(request["sample_at"])):
+            report.error(file, f"/points/{i}", "sweep.sample", "successful point needs resolved value and requested sample time")
+        try:
+            expected_value = parse_si(point["requested"])
+        except (ValueError, OverflowError):
+            expected_value = None
+        if point["ok"] and (expected_value is None or not math.isclose(point["resolved"] or 0, expected_value, rel_tol=1e-12, abs_tol=1e-15)):
+            report.error(file, f"/points/{i}/resolved", "sweep.resolved", "resolved numeric value differs from requested value")
+        if point["ok"] and any(d.get("severity") == "error" for d in point["diagnostics"]):
+            report.error(file, f"/points/{i}/ok", "sweep.diagnostics", "successful point contains an error diagnostic")
+        if not point["ok"] and (point["resolved"] is not None or any(m["voltage"] is not None for m in point["measurements"])):
+            report.error(file, f"/points/{i}", "sweep.failure", "failed point must not carry numeric results")
+
+
 CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
+    "parameter_sweep_request": check_sweep_request,
+    "parameter_sweep": check_parameter_sweep,
     "library_lock": check_library_lock,
     "engineering_manifest": check_engineering_manifest,
     "component": check_component,

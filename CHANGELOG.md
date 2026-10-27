@@ -5,6 +5,15 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Native parameter sweeps
+
+- Run bounded independent reset-and-sample electrical sweeps through native CLI,
+  RPC and schematic controls without replacing the live circuit.
+- Plot measured loaded responses, retain failed/unavailable points explicitly,
+  and export samples with exact native source/model identities.
+- Validate sweep artifacts offline and check loaded dividers and RC responses
+  against analytic equations. Converged DC and AC/noise/distortion remain unsupported.
+
 ### Native assembly variants
 
 - Author independent per-instance population/value/catalog alternatives, review

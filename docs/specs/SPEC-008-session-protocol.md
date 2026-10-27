@@ -362,3 +362,14 @@ restarts and clears the saved path. Derived transaction edits are refused except
 abort. Metadata `set_variants` and root `set_population` support base authoring.
 See [stored fields, response shape and limits](../engineering/assembly-variants.md),
 CAT-015, UI-033, CLI-007 and ADR-045.
+
+
+## Independent parameter sweeps
+
+`analysis.sweep` (capability of the same name) accepts a concrete component target,
+numeric parameter, explicit values, sample time and net/pin voltage targets. It
+returns independent reset-and-sample points plus exact native source evidence;
+failed points remain explicit. It refuses running sources, open transactions,
+board/firmware contexts and non-electrical policy. It never replaces the source.
+See [fields, limits and artifacts](../engineering/parameter-sweeps.md), ANA-012,
+UI-034, CLI-008 and ADR-046. This method does not implement DC/AC convergence.

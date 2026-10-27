@@ -60,3 +60,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native protocol/CLI and actual native browser acceptance, offline validation, population/edit/report fixtures.
 **Trace.** SPEC-008; SPEC-014; ADR-045; docs/engineering/assembly-variants.md
+
+
+### CLI-008  Native sweep artifacts and exit status
+**Statement.** The sweep command shall share native RPC physics and emit source-bound ordered samples without modifying input files, distinguish complete/partial/request failure exit codes, and preserve inspectable failed points.
+**Rationale.** Analysis must expose its physical loading, evidence and supported method rather than manufacture confidence from a chart.
+**Status.** Accepted 2026-10-27
+**Verification.** Native loaded-divider/RC equations, independent repeats and failures; CLI/RPC, actual native browser and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-046; docs/engineering/parameter-sweeps.md

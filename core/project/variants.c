@@ -215,6 +215,22 @@ static es_status materialize(es_session *s, esk_json *project, esk_json *sheet, 
     return ES_OK;
 }
 
+/* Reuse concrete-path materialization without deriving a saved assembly artifact.
+ * Analysis callers own validation and never replace s->project. */
+es_status esk_project_override(es_session *s, const esk_json *overrides, esk_json **result)
+{
+    size_t budget = 10000;
+    unsigned serial = 0;
+    es_status st;
+    *result = esk_json_clone(s->a, s->project);
+    if (!*result) return ES_ENOMEM;
+    st = materialize(s, *result, *result, "", overrides, 0, &budget, &serial);
+    if (st != ES_OK) { esk_json_free(s->a, *result); *result = NULL; return st; }
+    esk_json_remove(s->a, *result, "variants");
+    esk_json_remove(s->a, *result, "variant_origin");
+    return ES_OK;
+}
+
 es_status esk_project_variant_preview(es_session *s, const char *name, esk_json **result)
 {
     esk_json *base = NULL, *effective = NULL, *out = NULL, *origin;

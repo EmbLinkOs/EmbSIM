@@ -5,6 +5,25 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Native parameter sweeps (2026-10-27)
+
+Branch `feat/native-parameter-sweeps` adds independent native reset-and-sample
+parameter runs through CLI/RPC and the schematic. It varies concrete sheet
+instances without changing siblings, includes actual instrument loading, retains
+source/model identities, and exports resolved samples/diagnostics as CSV or JSON.
+Failed points remain explicit null results; floating digital nets are not assigned
+invented voltages. Native preview and runs leave the open source circuit untouched.
+
+Acceptance independently checks loaded dividers and RC exponential responses,
+repeated reset history, CLI/RPC parity, actual native-browser exports and failed
+points. All 57 native targets, 348 UI tests and 38 browser workflows pass.
+The 56-check sweep acceptance and four focused native targets pass ASan/UBSan
+with leak detection. Offline checks pass 184 tests across both backends and
+strictly validate 925 files; docs integrity covers 149 documents/136 requirements. See [workflow, evidence and bounds](engineering/parameter-sweeps.md)
+and [gallery](gallery/README.md). This is timed reset-and-sample analysis, not a
+converged DC solver, firmware replay, AC/Fourier/noise/distortion analysis or model
+qualification. Those analysis release gates remain open.
+
 ## Native assembly variants (2026-10-27)
 
 Branch `feat/assembly-variants` adds named per-concrete-reference population,

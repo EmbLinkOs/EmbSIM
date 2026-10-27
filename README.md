@@ -133,3 +133,6 @@ Development process: [repository workflow](docs/engineering/repository-workflow.
 
 
 See [native assembly variants](docs/engineering/assembly-variants.md) for per-instance DNP/value alternatives, resolved BOMs and exact return-to-base.
+
+
+See [native parameter sweeps](docs/engineering/parameter-sweeps.md) for independent reset-and-sample circuit comparisons with real instrument loading and source-bound exports.

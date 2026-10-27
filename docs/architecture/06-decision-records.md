@@ -1291,3 +1291,27 @@ See [contract and evidence](../engineering/assembly-variants.md).
 **Status.** Implemented 2026-10-27. **Trace.** CAT-015; UI-033; CLI-007;
 SPEC-008; SPEC-014; tests/protocol/test_variants.py;
 tests/browser/test_assembly_variants.py.
+
+
+## ADR-046 — Independent reset-and-sample parameter sweeps
+
+**Context.** Circuit engineers need quantitative parameter/loading comparisons.
+Existing transient physics does not establish a converged DC or frequency-domain
+analysis; a chart must not imply either capability.
+
+**Decision.** Add bounded circuit-only electrical parameter runs using independent
+native sessions and concrete project-sheet materialization. Preserve the live
+source, resolve numeric parameters natively, retain real instrument loading and
+sample at the explicit time after reset. Keep failed/missing voltages null and
+break plotted lines at missing points. Share CLI/RPC/UI execution and retain exact
+native source/model evidence. Check loaded dividers and RC responses against
+independent equations, not self-derived golden output.
+
+**Limits.** No DC convergence, AC/Fourier/noise/distortion, firmware/stimulus replay,
+multidimensional or background/cancellable jobs. Bounds and model fidelity remain
+explicit in [the contract](../engineering/parameter-sweeps.md). Evidence integrity
+is not authentication or manufacturer qualification.
+
+**Status.** Implemented 2026-10-27. **Trace.** ANA-012; UI-034; CLI-008;
+SPEC-004; SPEC-008; tests/protocol/test_sweeps.py;
+tests/browser/test_parameter_sweeps.py.

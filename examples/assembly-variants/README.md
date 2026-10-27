@@ -15,3 +15,13 @@ The `loaded` alternative changes actual meter loading; `reference` leaves the
 base unchanged. Open the base in the workbench and use Assembly variants for
 native review, exports, activation and return-to-base. Keep exports beside this
 project when using relative inputs. See the [contract](../../docs/engineering/assembly-variants.md).
+
+
+## Loading sweep
+
+```sh
+embsim sweep project.json --request loading.sweep.json > /tmp/loading-results.json
+```
+
+The request varies only A.R and observes both loaded outputs; B stays at 100/11 V.
+See [native sweep equations and GUI](../../docs/engineering/parameter-sweeps.md).
