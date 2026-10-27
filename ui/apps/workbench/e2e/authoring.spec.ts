@@ -117,5 +117,6 @@ test('disconnect a terminal deliberately and restore it with one undo', async ({
   await button.click();
   await expect(terminal).toHaveAttribute('aria-label', new RegExp('unconnected$'));
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  await expect(terminal).toHaveAttribute('aria-label', before!);
+  // Connectivity is stable; asynchronously arriving live states may add a suffix.
+  await expect.poll(async () => (await terminal.getAttribute('aria-label'))?.split(',').slice(0, 2).join(',')).toBe(before!.split(',').slice(0, 2).join(','));
 });
