@@ -64,6 +64,8 @@ test('route handles cancel without edits and commit once with exact undo', async
   await list.getByRole('button', { name: 'R2.1 → R2.2', exact: true }).click();
   const editor = list.getByRole('region', { name: 'Selected jumper' });
   const handle = page.getByLabel('Jumper 1 route point 1', { exact: true });
+  // Camera projection creates route handles asynchronously on slower GPUs.
+  await expect(handle).toBeVisible();
   const original = (await handle.boundingBox())!;
   for (const cancellation of ['Escape', 'pointercancel']) {
     const box = (await handle.boundingBox())!;
