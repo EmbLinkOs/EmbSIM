@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Captured channel gain and phase comparison
+
+- Compare output/reference native spectra from the same verified capture, with
+  per-bin V/V, dB and wrapped relative phase beside absolute voltage review.
+- Exclude weak/zero reference bins using an explicit peak-voltage threshold;
+  preserve undefined phase/logarithms and numeric limits in complete exports.
+- Export both source spectra and derived ratios; verify the native RC response
+  without advancing the live bench. This is not small-signal AC analysis.
+
+
 ### Native captured-data frequency spectra
 
 - Add native coherent-amplitude FFT through CLI/RPC and captured-waveform review,

@@ -5,6 +5,16 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Captured channel gain and phase comparison (2026-10-27)
+
+Based on `feat/native-spectrum-analysis` (EmbLinkOs/EmbSIM#77), the frequency
+workspace compares two native spectra from the same verified retained capture.
+Selected bins expose output/reference V/V, dB and wrapped relative phase; complete
+CSV and JSON review bundles preserve the threshold, statuses and native evidence.
+Weak/zero reference bins and unrepresentable ratios stay undefined. This is a
+finite-record ratio, not a small-signal AC solver, tone estimator or calibrated
+noise measurement. See the [contract](engineering/frequency-spectrum.md).
+
 ## Native captured-data frequency spectra (2026-10-27)
 
 Branch `feat/native-spectrum-analysis` computes source-bound one-sided spectra
