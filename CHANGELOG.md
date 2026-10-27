@@ -7,6 +7,9 @@ versions follow semantic versioning. There is no release yet.
 
 ### Isolated native transient capture
 
+- Exercise terminal wiring at the actual socket independently of annotation font
+  bounds; preserve pointer-start/cancel checks with an enlarged-label regression.
+
 - Capture uniformly sampled native circuit responses through CLI/RPC and schematic
   controls while preserving the live project, clock, outputs and probe history.
 - Review overlaid and differential traces, zoom, exact sample cursors, raw records

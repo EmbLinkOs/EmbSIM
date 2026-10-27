@@ -18,7 +18,10 @@ warm-up, maximum picosecond grid, DNP assemblies, deterministic repeats,
 source/probe preservation and native Lua failure truncation. All 58 native targets,
 352 UI tests and 39 browser workflows pass. Five focused native targets pass
 ASan/UBSan with leak detection; 241 native capture checks and 192 offline tests
-pass. Strict validation covers 928 files; docs cover 150 documents/139 requirements. See
+pass. Strict validation covers 928 files; docs cover 150 documents/139 requirements.
+MacOS trace review also corrects a pointer acceptance target: click the painted
+terminal socket, not the label-inclusive group center, with enlarged annotation
+coverage and unchanged wire-start/cancel assertions. See
 [workflow, proof and limits](engineering/transient-capture.md) and
 [gallery](gallery/README.md). Bounds: board-free electrical circuits, up to 100 ms,
 4,097 samples and eight voltages. Firmware replay, unsampled peaks, anti-aliasing,
