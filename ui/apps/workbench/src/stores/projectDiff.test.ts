@@ -42,3 +42,14 @@ describe('project diff', () => {
     expect(edits.some((e) => 'disconnect' in e)).toBe(false);
   });
 });
+
+describe('library baseline diff', () => {
+  it('pins and removes metadata without synthesizing circuit edits', () => {
+    const before = demoProject(), after = structuredClone(before);
+    after.library_lock = {schema_version: 1, kind: 'library_lock', libraries: {emblink: {version: '1.0.0', files: {'library.json': `sha256:${'a'.repeat(64)}`}}}, catalog: {}};
+    expect(diffProject(before, after)).toEqual([{set_library_lock: after.library_lock}]);
+    expect(diffProject(after, before)).toEqual([{set_library_lock: null}]);
+    after.blocks = {}; before.blocks = {};
+    expect(diffProject(before, after)).toEqual([{set_library_lock: after.library_lock}]);
+  });
+});

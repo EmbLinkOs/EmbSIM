@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/library-lock.schema.json",
+  "title": "EmbSIM pinned library inputs",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "libraries",
+    "catalog"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "library_lock"
+    },
+    "libraries": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 256,
+      "propertyNames": {
+        "$ref": "common.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "version",
+          "files"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "$ref": "common.schema.json#/$defs/semver"
+          },
+          "files": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 20000,
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "catalog": {
+      "type": "object",
+      "maxProperties": 20000,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^(component|board|mcu|package|toolchain):[a-z][a-z0-9_-]*(/[a-z][a-z0-9_-]*)*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "library",
+          "version",
+          "sha256"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "library": {
+            "$ref": "common.schema.json#/$defs/name"
+          },
+          "version": {
+            "$ref": "common.schema.json#/$defs/semver"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  }
+}

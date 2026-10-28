@@ -6,6 +6,7 @@
  * nets merged through board ports and functional wires, probes, settings. */
 #include "project/loader.h"
 #include "project/hierarchy.h"
+#include "project/library_lock.h"
 #include "ext/lua_model.h"
 #include <math.h>
 #include <stdio.h>
@@ -1057,6 +1058,8 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             return ES_ESCHEMA;
         }
     }
+    st = esk_library_lock_enforce(s, project);
+    if (st != ES_OK) return st;
     st = esk_project_blocks_prepare(s);
     if (st != ES_OK) return st;
     memset(&g, 0, sizeof g);

@@ -104,10 +104,18 @@ function diffFlatProject(before: Project, after: Project): ProjectEdit[] {
   return edits;
 }
 
-export function diffProject(before: Project, after: Project): ProjectEdit[] {
+function diffCircuit(before: Project, after: Project): ProjectEdit[] {
   if (before.blocks !== undefined || after.blocks !== undefined) {
     const circuit = (p: Project) => ({ components: p.components, nets: p.nets, blocks: p.blocks ?? {}, layout: p.layout, probes: p.probes });
     if (JSON.stringify(circuit(before)) !== JSON.stringify(circuit(after))) return [{ set_circuit: circuit(after) }, ...diffFlatProject({ ...before, components: after.components, nets: after.nets, layout: after.layout }, after)];
   }
   return diffFlatProject(before, after);
+}
+
+/** Library baselines are metadata with native verification, not circuit changes. */
+export function diffProject(before: Project, after: Project): ProjectEdit[] {
+  const edits: ProjectEdit[] = [];
+  if (JSON.stringify(before.library_lock) !== JSON.stringify(after.library_lock))
+    edits.push({set_library_lock: after.library_lock ?? null});
+  return [...edits, ...diffCircuit(before, after)];
 }

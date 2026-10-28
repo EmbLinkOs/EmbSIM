@@ -329,3 +329,14 @@ descriptions. Missing metadata is explicit. The GUI and `embsim manifest PROJECT
 define the artifact. Hashes are content identities, not signatures or device
 qualification. External implementation/firmware/resource bytes are not embedded;
 this export is not a dependency lock or complete execution checkpoint.
+
+
+### Library input baselines
+
+`project.library_lock {op:"capture"}` returns the version-1 `library_lock` object.
+`{op:"check", lock?}` returns `{ok,changes:[{scope,path,change}]}` for the supplied
+candidate or saved baseline. Reads preserve circuit/time. `set_library_lock`
+transaction edits accept a lock or null; native commit enforces a supplied
+baseline before changing project metadata, without a circuit restart. The native
+loader enforces saved baselines before instantiating models. See SPEC-014 §7 and
+[limits and acceptance](../engineering/library-locks.md).

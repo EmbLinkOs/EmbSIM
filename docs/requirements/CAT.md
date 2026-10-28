@@ -92,3 +92,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-26; first WP7113ID and WP154A4SUREQBFZGC static 25 °C, 2–20 mA envelope.
 **Verification.** Pinned PDF vector reproduction; malformed/drifting evidence tests; forced-current and driver load-line fixtures; native all-color reference scenario; actual body-envelope/pitch and UI evidence tests.
 **Trace.** SPEC-005 Indicator evidence; SPEC-004 Source-checked indicator curves; ADR-030; docs/engineering/indicator-qualification.md
+
+
+### CAT-013  Pinned library content and selection
+**Statement.** Opt-in project locks shall pin loaded library file bytes and effective catalog selections, reject drift before model instantiation, report changed paths and require explicit baseline replacement. Machine root paths shall not affect identity; unsupported tree entries and stale loaded descriptions shall be refused.
+**Rationale.** Unchanged version strings cannot establish reproducible local model inputs.
+**Status.** Accepted 2026-10-27
+**Verification.** Native CLI/RPC relocation, binary hash, drift, stale description, tree rejection and load refusal acceptance.
+**Trace.** SPEC-014; ADR-043; docs/engineering/library-locks.md

@@ -44,3 +44,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native manifest CLI/RPC parity, package/default/override checks and offline artifact validation.
 **Trace.** SPEC-008; ADR-042; docs/engineering/engineering-reports.md
+
+
+### CLI-006  Library lock review
+**Statement.** Lock capture/check shall emit inspectable JSON without editing project files, allow drift review through a temporary copy, preserve normal loader enforcement, and return distinct match, difference and usage/load failure exit codes.
+**Rationale.** A rejected locked project needs a deliberate repair path usable in automation.
+**Status.** Accepted 2026-10-27
+**Verification.** Native CLI/RPC parity, matching/drift/missing baseline and explicit recapture checks.
+**Trace.** SPEC-014; ADR-043; docs/engineering/library-locks.md

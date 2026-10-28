@@ -1,0 +1,9 @@
+# Keep hashed library text identical across Windows, macOS and Linux checkouts.
+*.json text eol=lf
+*.svg text eol=lf
+*.lua text eol=lf
+*.md text eol=lf
+*.csv text eol=lf
+*.bin binary
+*.png binary
+*.pdf binary

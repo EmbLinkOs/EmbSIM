@@ -417,6 +417,16 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
     if (!nets)
         return -1;
     e = esk_json_at(edit, 0);
+    if (esk_str_eq(e->key, "set_library_lock")) {
+        if (e->type == ESK_JSON_NULL) { esk_json_remove(a, project, "library_lock"); return 0; }
+        if (e->type != ESK_JSON_OBJECT) return err(why, cap, "Invalid %s", "library lock");
+        {
+            esk_json *copy = esk_json_clone(a, e);
+            if (!copy) return -1;
+            if (esk_json_object_set(a, project, "library_lock", copy)) { esk_json_free(a, copy); return -1; }
+        }
+        return 0; /* metadata; verified before commit, no circuit restart */
+    }
     if (esk_str_eq(e->key, "set_circuit")) {
         esk_json *draft = esk_json_clone(a, project);
         int changed = *structural, result;

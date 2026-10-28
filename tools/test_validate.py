@@ -852,6 +852,28 @@ class OtherKindsTests(Base):
         (d / "r.json").write_text(json.dumps(doc))
         self.assertCode(self.check(d / "r.json"), "recording.order")
 
+    def test_library_lock_valid_and_unknown_library(self):
+        lock = {"schema_version": 1, "kind": "library_lock", "libraries": {"emblink": {"version": "1.0.0", "files": {"library.json": "sha256:" + "a" * 64}}},
+                "catalog": {"component:emblink/resistor": {"library": "emblink", "version": "1.0.0", "sha256": "sha256:" + "b" * 64}}}
+        path = self.tmp / "inputs.lock.json"; path.write_text(json.dumps(lock))
+        self.assertEqual(self.check(path).errors, 0)
+        lock["catalog"]["component:emblink/resistor"]["library"] = "missing"
+        path.write_text(json.dumps(lock)); self.assertCode(self.check(path), "library.lock.reference")
+
+    def test_library_lock_paths_and_manifest(self):
+        lock = {"schema_version": 1, "kind": "library_lock", "libraries": {"emblink": {"version": "1.0.0", "files": {"../escape": "sha256:" + "a" * 64}}}, "catalog": {}}
+        path = self.tmp / "bad.lock.json"; path.write_text(json.dumps(lock))
+        report = self.check(path)
+        self.assertCode(report, "library.lock.path"); self.assertCode(report, "library.lock.manifest")
+
+    def test_library_lock_hash_and_embedded_semantics(self):
+        lock = {"schema_version": 1, "kind": "library_lock", "libraries": {"emblink": {"version": "1.0.0", "files": {"library.json": "bad"}}}, "catalog": {}}
+        path = self.tmp / "bad.lock.json"; path.write_text(json.dumps(lock))
+        self.assertGreater(self.check(path).errors, 0)
+        project = copy.deepcopy(PROJECT); project["library_lock"] = lock
+        lock["libraries"]["emblink"]["files"] = {".hidden/file": "sha256:" + "a" * 64}
+        path.write_text(json.dumps(project)); self.assertCode(self.check(path), "library.lock.path")
+
     def test_library_manifest(self):
         d = self.tmp / "lib"
         d.mkdir()
@@ -863,6 +885,10 @@ class OtherKindsTests(Base):
         for p in sorted(validate.SCHEMA_DIR.glob("*.schema.json")):
             validate.validate_file(p, self.schemas, self.index, r)
         self.assertClean(r)
+
+
+class BuiltinOtherKindsTests(OtherKindsTests):
+    backend = "builtin"
 
 
 class BuiltinBackendTests(ComponentTests):

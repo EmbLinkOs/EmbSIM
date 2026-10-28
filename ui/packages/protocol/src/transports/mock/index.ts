@@ -93,6 +93,7 @@ export class MockTransport extends TransportBase implements Transport {
             return {};
         }
       },
+      'project.library_lock': () => { throw new EngineError(JsonRpcCode.INVALID_PARAMS, 'Library locks require a native session with filesystem access.'); },
       'project.manifest': () => demoManifest(s.project, (id) => MOCK_CATALOG[id]?.description, {policy: s.policy, now_ps: s.now.toString()}),
       'project.hierarchy': (p) => hierarchyOf(s.project, p.trace),
       'project.topology': () => s.topology(),

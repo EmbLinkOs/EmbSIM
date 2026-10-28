@@ -41,6 +41,7 @@ EXAMPLES_DIR = ROOT / "examples"
 SCHEMA_BASE = "https://emblink.dev/embsim/schemas/"
 
 KIND_SCHEMAS = {
+    "library_lock": "library-lock.schema.json",
     "engineering_manifest": "engineering-manifest.schema.json",
     "component": "component.schema.json",
     "component_test": "component-test.schema.json",
@@ -1521,6 +1522,8 @@ def project_index(file: Path, doc: dict, index: Index) -> Index:
 
 
 def check_project(report: Report, file: Path, doc: dict, index: Index) -> ProjectContext:
+    if isinstance(doc.get("library_lock"), dict):
+        check_library_lock(report, file, doc["library_lock"], index)
     base = file.parent
     idx = project_index(file, doc, index)
     for i, lib in enumerate(doc.get("libraries") or []):
@@ -1960,6 +1963,30 @@ def check_library(report: Report, file: Path, doc: dict, index: Index) -> None:
         pass
 
 
+def check_library_lock(report: Report, file: Path, doc: dict, index: Index) -> None:
+    libraries = doc.get("libraries", {})
+    if not isinstance(libraries, dict):
+        return
+    total = 0
+    for name, library in libraries.items():
+        if not isinstance(library, dict) or not isinstance(library.get("files"), dict):
+            continue
+        files = library["files"]
+        total += len(files)
+        if "library.json" not in files:
+            report.error(file, f"/libraries/{name}/files", "library.lock.manifest", "library.json must be pinned")
+        for path in files:
+            if "\\" in path or ":" in path or any(not part or part.startswith(".") for part in path.split("/")):
+                report.error(file, f"/libraries/{name}/files", "library.lock.path", "paths must be non-hidden normalized relative paths")
+    if total > 20000:
+        report.error(file, "/libraries", "library.lock.limit", "lock exceeds 20,000 files")
+    catalog = doc.get("catalog", {})
+    if isinstance(catalog, dict):
+        for key, item in catalog.items():
+            if isinstance(item, dict) and item.get("library") not in libraries:
+                report.error(file, f"/catalog/{key}/library", "library.lock.reference", "catalog selection refers to a library absent from the lock")
+
+
 def check_engineering_manifest(report: Report, file: Path, doc: dict, index: Index,
                                schemas: Optional[Schemas] = None) -> None:
     """Verify exact exported bytes without requiring the source libraries locally."""
@@ -2033,6 +2060,7 @@ def check_engineering_manifest(report: Report, file: Path, doc: dict, index: Ind
 
 
 CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
+    "library_lock": check_library_lock,
     "engineering_manifest": check_engineering_manifest,
     "component": check_component,
     "component_test": check_component_test,

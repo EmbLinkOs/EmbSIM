@@ -91,3 +91,15 @@ required fields and a fixture skeleton; `tools/import/` holds the importers
   passes: a two-terminal resistance, a Lua toggle flip-flop, or an
   STM32F103C8 board with a regulator, crystals, a header and a user LED.
 
+
+
+## 7. Opt-in content locks
+
+`project.library_lock` pins all loaded non-hidden library trees and the effective
+catalog selection. The native loader enforces the baseline before instantiating
+models. Exact binary SHA-256 hashes catch Lua/resource drift even without a version
+change. GUI review, explicit undoable pin/removal and `embsim lock capture|check`
+share the native implementation; no review silently replaces a baseline. This is
+not a version-range solver or remote installer. See
+[format, acceptance and exclusions](../engineering/library-locks.md), CAT-013,
+UI-031, CLI-006 and ADR-043.

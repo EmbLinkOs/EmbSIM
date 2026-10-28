@@ -17,6 +17,7 @@
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
 #include "project/manifest.h"
+#include "project/library_lock.h"
 #include "sdk.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -40,6 +41,7 @@ static void usage(void)
           "      [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
+          "  lock capture|check PROJECT [--library DIR]   emit a lock or check embedded library inputs\n"
           "  manifest PROJECT [--json] [--library DIR]   native engineering inventory and descriptor identities\n"
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
@@ -1106,6 +1108,72 @@ static int cmd_models(const char *argv0)
     return 0;
 }
 
+static int cmd_lock(int argc, char **argv, const char *argv0)
+{
+    const char *op, *path = NULL, *library = NULL;
+    es_session *s;
+    esk_json *result = NULL;
+    es_status st;
+    int i, code = 0;
+    if (argc < 2 || (strcmp(argv[0], "capture") && strcmp(argv[0], "check"))) { usage(); return 2; }
+    op = argv[0];
+    for (i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--library") && i + 1 < argc) library = argv[++i];
+        else if (argv[i][0] == '-' || path) { usage(); return 2; }
+        else path = argv[i];
+    }
+    if (!path) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    /* Inspect the saved baseline without bypassing the loader's normal run path.
+     * Only this read-only review command strips the lock in a temporary copy. */
+    {
+        char *source = NULL, *text = NULL, *dir = NULL;
+        size_t len = 0, formatted = 0;
+        esk_json *project = NULL, *saved = NULL;
+        st = esk_host_read_file(s->a, path, &source, &len);
+        if (st == ES_OK) {
+            project = esk_json_parse(s->a, source, len, NULL, NULL);
+            if (!project) st = ES_ESCHEMA;
+        }
+        if (st == ES_OK) {
+            const esk_json *lock = esk_json_get(project, "library_lock");
+            saved = lock ? esk_json_clone(s->a, lock) : NULL;
+            if (lock && !saved) st = ES_ENOMEM;
+            esk_json_remove(s->a, project, "library_lock");
+            text = esk_json_format(s->a, project, 0, &formatted);
+            dir = esk_host_dirname(s->a, path);
+            if (!text || !dir) st = ES_ENOMEM;
+        }
+        if (st == ES_OK) st = es_session_load_json(s, text, formatted, dir);
+        if (st == ES_OK) {
+            if (!strcmp(op, "capture")) st = esk_library_lock_capture(s, &result);
+            else {
+                st = esk_library_lock_check(s, saved, &result);
+                if (st == ES_OK && !esk_json_get_bool(result, "ok", 0)) code = 1;
+            }
+        }
+        esk_json_free(s->a, project);
+        esk_json_free(s->a, saved);
+        esk_free(s->a, source, len + 1);
+        esk_free(s->a, text, formatted + 1);
+        esk_strfree(s->a, dir);
+    }
+    if (st == ES_OK) {
+        size_t len = 0;
+        char *text = esk_json_format(s->a, result, 2, &len);
+        if (!text) st = ES_ENOMEM;
+        else {
+            if (fwrite(text, 1, len, stdout) != len || fputc('\n', stdout) == EOF || fflush(stdout)) st = ES_EIO;
+            esk_free(s->a, text, len + 1);
+        }
+    }
+    if (st != ES_OK) fprintf(stderr, "embsim: library lock failed (%d)\n", (int)st);
+    esk_json_free(s->a, result);
+    es_session_destroy(s);
+    return st == ES_OK ? code : 2;
+}
+
 static int cmd_manifest(int argc, char **argv, const char *argv0)
 {
     const char *path = NULL, *library = NULL;
@@ -1162,6 +1230,7 @@ int embsim_cli_main(int argc, char **argv)
     if (argc < 2) { usage(); return 2; }
     cmd = argv[1];
     if (!strcmp(cmd, "run")) return cmd_run(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "lock")) return cmd_lock(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "manifest")) return cmd_manifest(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "validate")) return cmd_validate(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "replay")) return cmd_replay(argc - 2, argv + 2, argv[0]);
