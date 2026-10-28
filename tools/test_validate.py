@@ -394,6 +394,38 @@ class ProjectTests(Base):
     def manifest_envelope(self, payload):
         return {"schema_version": 1, "kind": "engineering_manifest", **self.manifest_document(payload)}
 
+    def sweep_fixture(self):
+        request = {"target": "A.R", "parameter": "resistance", "values": ["1k", -1], "sample_at": "1us", "probes": ["net:OUT"]}
+        return {"schema_version": 1, "kind": "parameter_sweep", "method": "independent_reset_sample", "ok": False,
+                "source": self.manifest_envelope(self.manifest_fixture()), "request": request,
+                "points": [{"ok": True, "requested": "1k", "resolved": 1000, "at_ps": "1000000", "diagnostics": [],
+                            "measurements": [{"target": "net:OUT", "voltage": 0, "logic": "Z"}]},
+                           {"ok": False, "requested": -1, "resolved": None, "at_ps": "0", "diagnostics": [],
+                            "measurements": [{"target": "net:OUT", "voltage": None, "logic": "X"}]}]}
+
+    def test_sweep_validates_source_and_explicit_missing_values(self):
+        doc = self.sweep_fixture()
+        self.assertClean(self.check_doc(doc, "sweep.json"))
+        doc["source"]["json"] += " "
+        self.assertCode(self.check_doc(doc, "sweep.json"), "manifest.hash")
+
+    def test_sweep_rejects_inconsistent_success_order_values_or_clock(self):
+        for edit, code in [(lambda d: d.update(ok=True), "sweep.points"),
+                           (lambda d: d["points"][0].update(requested="2k"), "sweep.requested"),
+                           (lambda d: d["points"][0].update(resolved=1), "sweep.resolved"),
+                           (lambda d: d["points"][0].update(at_ps="0"), "sweep.sample"),
+                           (lambda d: d["points"][1]["measurements"][0].update(voltage=0), "sweep.failure"),
+                           (lambda d: d["points"][0]["measurements"][0].update(target="net:OTHER"), "sweep.targets")]:
+            doc = self.sweep_fixture(); edit(doc)
+            self.assertCode(self.check_doc(doc, "sweep.json"), code)
+
+    def test_sweep_request_rejects_nonfinite_si_and_time_budget(self):
+        doc = {**self.sweep_fixture()["request"], "schema_version": 1, "kind": "parameter_sweep_request"}
+        doc["values"] = ["1e999"]
+        self.assertCode(self.check_doc(doc, "request.json"), "sweep.value")
+        doc["values"] = [1000] * 11; doc["sample_at"] = "1ms"
+        self.assertCode(self.check_doc(doc, "request.json"), "sweep.time")
+
     def test_assembly_variant_targets_and_population(self):
         project = copy.deepcopy(PROJECT); project.pop("scenarios", None)
         project["variants"] = {"production": {"overrides": {"SW1": {"populated": False}}}}

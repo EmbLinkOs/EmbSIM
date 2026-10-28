@@ -249,3 +249,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native protocol/CLI and actual native browser acceptance, offline validation, population/edit/report fixtures.
 **Trace.** SPEC-008; SPEC-014; ADR-045; docs/engineering/assembly-variants.md
+
+
+### UI-034  Source-bound schematic sweep review
+**Statement.** The schematic shall configure numeric parameter ranges and voltage targets, plot available native samples with gaps for missing/failed results, retain diagnostics and source identities, and export CSV/JSON without disturbing the live clock. Demo transport shall refuse fabricated analysis.
+**Rationale.** Analysis must expose its physical loading, evidence and supported method rather than manufacture confidence from a chart.
+**Status.** Accepted 2026-10-27
+**Verification.** Native loaded-divider/RC equations, independent repeats and failures; CLI/RPC, actual native browser and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-046; docs/engineering/parameter-sweeps.md

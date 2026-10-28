@@ -20,6 +20,7 @@ export type SampleEncoding = 'u8' | 'f32' | 'f64' | 'bytes';
 
 export type Capability =
   | 'assembly.variants'
+  | 'analysis.sweep'
   | 'analog'
   | 'lua'
   | 'gdb'
@@ -854,4 +855,17 @@ export interface ReplayResult {
   compared?: number;
   divergence?: { index: number; expected: unknown; observed: unknown };
   drift?: { what: string; recorded: string; now: string }[];
+}
+
+/** Independent reset-and-sample analysis; not DC convergence or an AC solver. */
+export interface SweepRequest {
+  schema_version?: 1; kind?: 'parameter_sweep_request';
+  target: string; parameter: string; values: (number | string)[];
+  sample_at: string; probes: string[];
+}
+export interface ParameterSweep {
+  schema_version: 1; kind: 'parameter_sweep'; method: 'independent_reset_sample';
+  source: EngineeringManifest; request: SweepRequest; ok: boolean;
+  points: {requested: number | string; resolved: number | null; at_ps: string; ok: boolean;
+    diagnostics: DiagnosticRecord[]; measurements: {target: string; logic: '0' | '1' | 'X' | 'Z'; voltage: number | null}[];}[];
 }

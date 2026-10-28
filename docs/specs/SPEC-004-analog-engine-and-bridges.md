@@ -296,3 +296,11 @@ extends a quiet held state to the observation clock without advancing simulation
 Rejected trials are excluded; reset clears the integral. Difference-over-time
 provides an observation-interval exposure, not qualified photometry or switching
 transients. Raw instantaneous current/luminance remain unchanged.
+
+## Independent reset-and-sample analysis
+
+Bounded numeric parameter sweeps reuse native transient physics with a fresh
+circuit reset for every point, including instrument loading. These measurements
+are timed samples and do not certify settling or implement converged DC/AC
+analysis. The [analysis contract](../engineering/parameter-sweeps.md), ANA-012
+and ADR-046 define source preservation, null failures and independent acceptance.

@@ -57,3 +57,11 @@ test('assembly alternatives require native validation in demo sessions', async (
   await expect(dialog.getByRole('alert')).toContainText('Assembly variants require native electrical validation.');
   await expect(dialog.getByRole('button', {name: 'Create variant', exact: true})).toHaveCount(0);
 });
+
+test('parameter sweeps refuse fabricated demo analysis', async ({page}) => {
+  await page.goto('/?mock=1');
+  await page.getByRole('button', {name: 'Parameter sweep', exact: true}).click();
+  const dialog = page.getByRole('dialog', {name: 'Parameter sweep', exact: true});
+  await expect(dialog).toContainText('Parameter sweeps require a native session');
+  await expect(dialog.getByRole('button', {name: 'Run isolated sweep', exact: true})).toBeDisabled();
+});

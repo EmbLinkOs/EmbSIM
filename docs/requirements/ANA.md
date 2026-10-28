@@ -87,3 +87,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-26
 **Verification.** Native 1 kHz/25% exposure, repeated read/reset tests; interval/RGB/reset arithmetic and native-browser PWM off-boundary display checks.
 **Trace.** SPEC-004; SPEC-011; docs/engineering/live-schematic.md
+
+
+### ANA-012  Independent electrical parameter sweeps
+**Statement.** Parameter sweeps shall run independent reset-and-sample native circuits, preserve the open source, retain actual instrument loading and concrete sheet independence, and report failed or unavailable results without invented voltages. Timed samples shall not be presented as converged DC solutions.
+**Rationale.** Analysis must expose its physical loading, evidence and supported method rather than manufacture confidence from a chart.
+**Status.** Accepted 2026-10-27
+**Verification.** Native loaded-divider/RC equations, independent repeats and failures; CLI/RPC, actual native browser and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-046; docs/engineering/parameter-sweeps.md

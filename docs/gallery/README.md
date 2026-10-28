@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Native loaded parameter sweeps (2026-10-27)
+
+The native server varies A.R independently of its shared-sheet sibling while
+preserving the source clock at 1 µs. The plot and table retain actual meter loading,
+source-bound exports and separate logic/voltage evidence. Invalid resistance
+remains an explicit failed point with an unavailable voltage.
+
+![Loaded native sweep with independent sibling and measured samples](parameter-sweeps/native-loaded-parameter-sweep.png)
+
+![Failed point retained without fabricated voltage](parameter-sweeps/native-sweep-point-failure.png)
+
+See [reproduction, analytic checks and limits](../engineering/parameter-sweeps.md).
+
 ## Native assembly variants (2026-10-27)
 
 Independent concrete sheet alternatives are authored and reviewed against the

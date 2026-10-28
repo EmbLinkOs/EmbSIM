@@ -10,6 +10,15 @@ async function insideWindow(page: Page, locator: Locator) {
   }).toBe(true);
 }
 
+// Viewport changes can precede ResizeObserver delivery. Measure the visible
+// panel only once the dock has committed constraints for its current extent.
+async function settledDock(panel: Locator) {
+  await expect.poll(() => panel.evaluate((node) => {
+    const dock = node.closest<HTMLElement>('.es-dock');
+    return Boolean(dock && Number(dock.dataset.measuredWidth) === dock.clientWidth && Number(dock.dataset.measuredHeight) === dock.clientHeight);
+  })).toBe(true);
+}
+
 test('global navigation and simulation controls stay reachable with a long project name', async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 760 });
   await page.goto('/?mock=1');
@@ -43,6 +52,15 @@ test('global navigation and simulation controls stay reachable with a long proje
 });
 
 test('open side panels fit a compact window, restore their proportions and resize from their visible edge', async ({ page }) => {
+  // Exercise the delayed delivery seen in the macOS trace on every platform.
+  await page.addInitScript(() => {
+    class DeferredResizeObserver extends ResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        super((entries, observer) => { window.setTimeout(() => callback(entries, observer), 50); });
+      }
+    }
+    window.ResizeObserver = DeferredResizeObserver;
+  });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?mock=1');
   await page.getByRole('button', { name: /^R1, / }).press('Enter');
@@ -54,9 +72,11 @@ test('open side panels fit a compact window, restore their proportions and resiz
   const key = 'embsim.layout.design.button-transistor-led.panels';
   const weights = () => page.evaluate((storageKey) => JSON.parse(localStorage.getItem(storageKey)!).weights, key);
   const original = await weights();
+  await settledDock(library);
   const wide = (await library.boundingBox())!.width;
   for (const width of [900, 768]) {
     await page.setViewportSize({ width, height: 600 });
+    await settledDock(library);
     for (const panel of [library, inspector, canvas]) await insideWindow(page, panel);
     await expect(inspector.getByLabel('Position X', { exact: true })).toBeVisible();
     await page.getByRole('radio', { name: 'Bench', exact: true }).click();
@@ -67,8 +87,10 @@ test('open side panels fit a compact window, restore their proportions and resiz
     expect(await weights()).toEqual(original);
   }
   await page.setViewportSize({ width: 1440, height: 900 });
+  await settledDock(library);
   await expect.poll(async () => Math.abs((await library.boundingBox())!.width - wide)).toBeLessThan(2);
   await page.setViewportSize({ width: 1024, height: 760 });
+  await settledDock(library);
   await insideWindow(page, inspector);
   const before = (await library.boundingBox())!.width;
   const inspectorWidth = (await inspector.boundingBox())!.width;

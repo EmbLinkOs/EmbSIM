@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "parameter_sweep"
+    },
+    "method": {
+      "const": "independent_reset_sample"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "source": {
+      "$ref": "engineering-manifest.schema.json"
+    },
+    "request": {
+      "$ref": "parameter-sweep-request.schema.json"
+    },
+    "points": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "requested": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "resolved": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "at_ps": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "diagnostics": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "measurements": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "target": {
+                  "type": "string"
+                },
+                "logic": {
+                  "enum": [
+                    "0",
+                    "1",
+                    "X",
+                    "Z"
+                  ]
+                },
+                "voltage": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "target",
+                "logic",
+                "voltage"
+              ]
+            }
+          }
+        },
+        "required": [
+          "ok",
+          "requested",
+          "resolved",
+          "at_ps",
+          "diagnostics",
+          "measurements"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "method",
+    "ok",
+    "source",
+    "request",
+    "points"
+  ],
+  "$id": "https://emblink.dev/embsim/schemas/parameter-sweep.schema.json",
+  "title": "Native independent reset-and-sample results; not DC convergence"
+}
