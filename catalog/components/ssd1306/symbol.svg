@@ -1,9 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 50" width="70" height="50" data-grid="10">
-  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
-  <rect class="f" x="10" y="10" width="50" height="30" rx="2"/>
-  <line class="s" id="pin-scl" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">SCL</text>
-  <line class="s" id="pin-sda" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">SDA</text>
-  <line class="s" id="pin-vcc" x1="30" y1="0" x2="30" y2="10"/>
-  <line class="s" id="pin-gnd" x1="30" y1="50" x2="30" y2="40"/>
-  <text class="t" x="35.0" y="19" text-anchor="middle">SSD1306</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" width="200" height="100">
+<rect x="10" y="10" width="180" height="80" rx="4" fill="var(--symbol-fill,#fff)" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<line x1="0" y1="20" x2="10" y2="20" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="17" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">SCL</text>
+<line x1="0" y1="30" x2="10" y2="30" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="27" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">SDA</text>
+<line x1="30" y1="0" x2="30" y2="10" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<line x1="30" y1="100" x2="30" y2="90" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<g transform="translate(62.5 28.0) scale(0.5208333333333334)">
+  <rect x="0" y="0" width="144" height="96" rx="4" fill="#123c72"/>
+  <rect x="4" y="12" width="136" height="72" fill="#050505"/>
+  <g transform="translate(8 16)"><path id="pixels" d="" fill="#9fe0ff"/></g>
+  <g fill="#c9a227"><circle cx="34" cy="6" r="2.5"/><circle cx="56" cy="6" r="2.5"/><circle cx="88" cy="6" r="2.5"/><circle cx="110" cy="6" r="2.5"/></g>
+</g>
 </svg>

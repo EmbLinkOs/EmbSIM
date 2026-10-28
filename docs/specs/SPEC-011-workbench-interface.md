@@ -359,3 +359,24 @@ netlist. Static checks additionally identify unconnected declared digital inputs
 without declared pulls. These are bounded checks, not complete electrical-rule,
 overcurrent, analog floating-node or voltage-domain qualification. See
 [instrument loading](../engineering/instrument-loading.md).
+
+
+## Live schematic simulation surface
+
+The schematic is the primary Run surface; optional 3D renderer assets remain
+unrequested until a bench is explicitly opened. Operate, Inspect and Probe tools
+separate runtime input gestures from drawing edits. Catalog `symbol.states` and
+`symbol.hotspots` use the declaration contract of SPEC-005 §8. Hold controls must
+release on pointer/focus/document interruption and unmount. Read-only internal
+board/composite sheets may operate native inputs without editing their netlists.
+
+Electrical LED/RGB light may use native cumulative accepted-time emission to
+measure the mean over the interval between observations. The interval is shown;
+instant mode and raw electrical observations remain available. No calibrated
+optical or human-perception claim follows from this presentation.
+
+A/B ideal observation markers and net dropdowns compare finite solved voltages
+from the same frame. Picks/drags must not edit the project or add impedance.
+Missing voltage cannot be inferred from logic state. Physically loaded instruments
+remain distinct. The implementation, acceptance and outstanding complete-schematic
+gates are documented in [live schematic engineering](../engineering/live-schematic.md).

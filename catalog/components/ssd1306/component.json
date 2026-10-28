@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component",
   "id": "emblink/ssd1306",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "SSD1306 OLED 128x64",
   "category": "displays",
   "description": "SSD1306 OLED module (128x64 or 128x32) on I2C at 0x3C or 0x3D: write-only control bytes and commands, the three addressing modes, segment and COM remap, multiplex, offset and start line, the charge pump the panel needs to light, scrolling at the panel's frame rate. The image shows on the board view.",
@@ -178,8 +178,8 @@
   },
   "symbol": {
     "svg": "symbol.svg",
-    "width": 70,
-    "height": 50,
+    "width": 200,
+    "height": 100,
     "pins": {
       "SCL": {
         "x": 0,
@@ -198,10 +198,18 @@
       },
       "GND": {
         "x": 30,
-        "y": 50,
+        "y": 100,
         "side": "bottom"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "pixels",
+        "selector": "#pixels",
+        "attr": "d",
+        "format": "{}"
+      }
+    ]
   },
   "tests": [
     "tests/*.json"

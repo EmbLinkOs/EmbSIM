@@ -6,7 +6,7 @@
 // pure function on the project; its effect reaches the server as a
 // transaction (see projectDiff.ts) and comes back through refresh().
 
-import { CommandStack, shiftWireSegment, projectPinPoints, GRID, boardSymbol, freePlacement, autoRoute, createLayout, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
+import { CommandStack, shiftWireSegment, projectPinPoints, GRID, boardSymbol, boardRuntimeHeader, freePlacement, autoRoute, createLayout, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
 import { JsonRpcCode, JsonRpcError, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
 import { create } from 'zustand';
 import { getClient, primeStores } from '../connection';
@@ -159,10 +159,10 @@ function clone<T>(v: T): T {
 }
 
 function sceneEntry(entry: CatalogEntry): SceneCatalog[string] {
-  const d = entry.description as ComponentDescription & { kind?: string; ports?: Record<string, BoardPort> };
+  const d = entry.description as ComponentDescription & { kind?: string; ports?: Record<string, BoardPort>; artwork?: { hotspots?: { component?: string; input?: string; output?: string; selector?: string }[] } };
   if (d.kind === 'board') {
     // a board has no drawn symbol: a block of its ports stands for it
-    const { symbol, svg } = boardSymbol(d.name, d.ports ?? {});
+    const { symbol, svg } = boardRuntimeHeader(boardSymbol(d.name, d.ports ?? {}), d.artwork?.hotspots ?? []);
     // its description gains the symbol so pin geometry works as for parts
     entry.description = { ...d, symbol };
     return { name: d.name, symbol, svg, terminals: Object.keys(symbol.pins) };

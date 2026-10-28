@@ -13,7 +13,7 @@ local function eval(ctx)
   local n, lit = 0, {}
   local k = v(ctx, "K")
   for i = 1, 8 do
-    lit[i] = v(ctx, "A" .. i) == 1 and k ~= 1
+    lit[i] = v(ctx, "A" .. i) == 1 and k == 0
     if lit[i] then n = n + 1 end
   end
   ctx.state.lit, ctx.state.n = lit, n

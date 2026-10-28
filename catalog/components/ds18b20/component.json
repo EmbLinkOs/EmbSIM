@@ -167,7 +167,29 @@
         "y": 60,
         "side": "bottom"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "temperature",
+        "selector": "#temperature-value",
+        "attr": "text",
+        "format": "{} \u00b0C",
+        "precision": 1
+      }
+    ],
+    "hotspots": [
+      {
+        "input": "temperature",
+        "selector": "#temperature-control",
+        "gesture": "drag",
+        "axis": "y",
+        "range": [
+          -55,
+          125
+        ],
+        "travel": 120
+      }
+    ]
   },
   "tests": [
     "tests/*.json"

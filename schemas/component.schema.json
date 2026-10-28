@@ -681,6 +681,12 @@
             }
           },
           "description": "Pin name -> its position; every pin has one, except a wiring aid's (SPEC-005 §2.1)."
+        },
+        "states": {
+          "$ref": "#/$defs/artwork/properties/states"
+        },
+        "hotspots": {
+          "$ref": "#/$defs/artwork/properties/hotspots"
         }
       }
     },

@@ -305,7 +305,65 @@
         "y": 10,
         "side": "right"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "seg_a",
+        "selector": "#seg-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_b",
+        "selector": "#seg-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_c",
+        "selector": "#seg-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_d",
+        "selector": "#seg-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_e",
+        "selector": "#seg-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_f",
+        "selector": "#seg-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_g",
+        "selector": "#seg-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "seg_dp",
+        "selector": "#seg-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      }
+    ]
   },
   "tests": [
     "tests/*.json"

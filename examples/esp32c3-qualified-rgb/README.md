@@ -21,6 +21,10 @@ The 39 assertions check duty, frequency, mean/RMS channel currents, finite GPIO
 loading and physical-button transitions after a 250 ms boot allowance. Digital
 probes sample at 1 MHz; current and voltage probes at 200 kHz. The scenario's
 time-weighted measurements use recorded sample-and-hold intervals, not GUI frames.
+All 14 external connections are drawn in the live schematic; its board header
+exposes BOOT/RESET alongside the independent MODE input. Native interval exposure
+shows PWM illumination directly, with optional display gain; raw current/voltage
+measurements remain unchanged.
 In **Run**, inspect current traces on the scope and PWM duty in the logic analyzer.
 The probes are ideal inspection probes, without physical instrument loading.
 

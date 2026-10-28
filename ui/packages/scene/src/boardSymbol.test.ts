@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { describe, expect, it } from 'vitest';
-import { boardSymbol, portGroups } from './boardSymbol';
+import { boardRuntimeHeader, boardSymbol, portGroups } from './boardSymbol';
 import { GRID } from './geometry';
 
 const ports = {
@@ -28,5 +28,18 @@ describe('boardSymbol', () => {
       expect(p.y % GRID).toBe(0);
     }
     expect(svg).toContain('Board &lt;1&gt;');
+  });
+});
+
+
+describe('board live headers', () => {
+  it('preserves every connection anchor and binds controls to native member names', () => {
+    const original=boardSymbol('Board',ports);
+    const view=boardRuntimeHeader(original,[{component:'SW1',input:'pressed',selector:'#btn-boot'},{component:'D1',output:'color',selector:'#led'}]);
+    expect(view.symbol.pins).toEqual(original.symbol.pins);
+    expect(view.symbol.width).toBe(original.symbol.width);
+    expect(view.symbol.hotspots?.[0]).toMatchObject({target:'SW1',input:'pressed',gesture:'hold'});
+    expect(view.symbol.states?.map((s) => s.output)).toEqual(['D1.color','D1.luminance']);
+    expect(view.svg).toContain('BOOT');
   });
 });

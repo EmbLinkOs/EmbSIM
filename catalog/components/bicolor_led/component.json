@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/bicolor_led",
+  "version": "1.0.0",
+  "name": "Bicolor LED \u00b7 red/green, two leads",
+  "category": "indicators",
+  "description": "Two antiparallel red and green junctions. Reversing current selects the die; each die reports current and normalized light. External current limiting is required. Generic topology, not a named package.",
+  "keywords": [
+    "LED",
+    "live",
+    "schematic"
+  ],
+  "params": {},
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    }
+  ],
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "RED",
+          "component": "emblink/led",
+          "params": {
+            "color": "red"
+          }
+        },
+        {
+          "id": "GREEN",
+          "component": "emblink/led",
+          "params": {
+            "color": "green"
+          }
+        }
+      ],
+      "nets": {
+        "ONE": [
+          "RED.A",
+          "GREEN.K"
+        ],
+        "TWO": [
+          "RED.K",
+          "GREEN.A"
+        ]
+      },
+      "ports": {
+        "1": "RED.A",
+        "2": "RED.K"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Each die follows known high anode and known low cathode using emblink/led ideal indication.",
+      "omissions": [
+        "manufacturer qualification",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "Each die follows known high anode and known low cathode using emblink/led ideal indication.",
+      "omissions": [
+        "manufacturer qualification",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "electrical": {
+      "claims": "Independent LED junctions using emblink/led static current/voltage models; internal row and column connections conserve current.",
+      "omissions": [
+        "manufacturer qualification",
+        "optical calibration",
+        "thermal effects and damage",
+        "junction capacitance and reverse breakdown"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Generic illustrative LED topology; no manufacturer part-number or package qualification claimed"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "2": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      }
+    },
+    "states": [
+      {
+        "output": "RED.luminance",
+        "selector": "#red",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "GREEN.luminance",
+        "selector": "#green",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      }
+    ]
+  }
+}

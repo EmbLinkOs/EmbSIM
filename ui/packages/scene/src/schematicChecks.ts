@@ -52,7 +52,7 @@ export function checkSchematic(project: Project, catalog: SceneCatalog): Schemat
         add('undrawn-terminal', `${net}:${pin}`, 'info', `${pin} has no symbol anchor`, 'The terminal exists in the component description, but routing and visual connectivity checks cannot locate it on this symbol.', { net, components: [part.id] });
       }
     }
-    const missing = findAirwires(pinsByNet[net] ?? [], wires.filter((w) => w.net === net));
+    const missing = findAirwires(pinsByNet[net] ?? [], wires.filter((w) => w.net === net), (project.layout?.labels ?? []).filter((l) => l.net === net));
     if (missing.length) add('undrawn-net', net, 'info', `${net}: ${missing.length} undrawn link${missing.length === 1 ? '' : 's'}`, 'The net is electrically connected, but its drawn geometry has separated pin groups. Route this net or draw the missing links.', { net, point: missing[0]!.a, components: [...new Set(pins.map((p) => p.split('.')[0]!))], wires: wires.flatMap((w, i) => w.net === net ? [i] : []) });
   }
   for (const [pin, nets] of pinNets) if (nets.length > 1) add('duplicate-terminal', pin, 'error', `${pin} appears more than once`, `Memberships: ${nets.join(', ')}. A terminal must belong to one net once.`, { components: [pin.split('.')[0]!] });

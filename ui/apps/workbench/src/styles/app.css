@@ -1764,3 +1764,14 @@
 .wb-wired-instrument__readings { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 8px; }
 .wb-wired-instrument__readings .es-meter { padding: 6px 0; border: 0; background: transparent; }
 .wb-wired-instrument__readings .es-meter__value { font-size: 18px; }
+
+.wb-schematic-exposure { display: inline-flex; gap: 6px; align-items: center; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.wb-schematic-exposure select { max-width: 180px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: var(--surface); font: inherit; padding: 3px 5px; }
+
+.wb-voltage-comparison { padding: 12px; display: grid; gap: 10px; }
+.wb-voltage-comparison output { font: 24px var(--font-mono, monospace); color: var(--text); }
+.wb-voltage-comparison__lead { display: flex; align-items: center; gap: 6px; }
+.wb-voltage-comparison__lead label { display: flex; min-width: 0; align-items: center; gap: 10px; flex: 1; color: #0a84ff; font-weight: 650; }
+.wb-voltage-comparison__lead--b label { color: #c47419; }
+.wb-voltage-comparison select { min-width: 0; width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px; }
+.wb-voltage-comparison p, .wb-voltage-comparison small { font-size: 11px; line-height: 1.5; color: var(--text-muted); margin: 0; }

@@ -1,9 +1,62 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 50" width="80" height="50" data-grid="10">
-  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
-  <rect class="f" x="10" y="2" width="68" height="46" rx="2"/>
-  <line class="s" id="pin-clk" x1="0" y1="10" x2="10" y2="10"/><text class="p" x="13" y="12">CLK</text>
-  <line class="s" id="pin-dio" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">DIO</text>
-  <line class="s" id="pin-vcc" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">VCC</text>
-  <line class="s" id="pin-gnd" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">GND</text>
-  <text class="t" x="52" y="22" text-anchor="middle">88:88</text><text class="p" x="52" y="34" text-anchor="middle">TM1637</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" width="200" height="100">
+<rect x="10" y="10" width="180" height="80" rx="4" fill="var(--symbol-fill,#fff)" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<line x1="0" y1="10" x2="10" y2="10" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="7" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">CLK</text>
+<line x1="0" y1="20" x2="10" y2="20" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="17" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">DIO</text>
+<line x1="0" y1="30" x2="10" y2="30" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="27" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">VCC</text>
+<line x1="0" y1="40" x2="10" y2="40" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="37" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">GND</text>
+<g transform="translate(55.882352941176464 28.0) scale(0.7352941176470589)">
+  <rect x="0" y="0" width="120" height="68" rx="3" fill="#1f5fa8"/>
+  <rect x="8" y="10" width="104" height="44" rx="2" fill="#15171c"/>
+  <g id="digits" opacity="1" transform="translate(10 12) scale(1.25)">
+    <g transform="translate(0 5)">
+      <polygon id="d1-a" points="4,2 16,2 14,4.5 6,4.5" fill="#3a1414"/>
+      <polygon id="d1-b" points="16.5,2.5 16.5,14.5 14.5,13 14.5,5" fill="#3a1414"/>
+      <polygon id="d1-c" points="16.5,17.5 16.5,29.5 14.5,27 14.5,19" fill="#3a1414"/>
+      <polygon id="d1-d" points="4,30 16,30 14,27.5 6,27.5" fill="#3a1414"/>
+      <polygon id="d1-e" points="3.5,17.5 3.5,29.5 5.5,27 5.5,19" fill="#3a1414"/>
+      <polygon id="d1-f" points="3.5,2.5 3.5,14.5 5.5,13 5.5,5" fill="#3a1414"/>
+      <polygon id="d1-g" points="4.5,16 6.5,14.5 13.5,14.5 15.5,16 13.5,17.5 6.5,17.5" fill="#3a1414"/>
+      <circle id="d1-dp" cx="19" cy="29" r="1.3" fill="#3a1414"/>
+    </g>
+    <g transform="translate(21 5)">
+      <polygon id="d2-a" points="4,2 16,2 14,4.5 6,4.5" fill="#3a1414"/>
+      <polygon id="d2-b" points="16.5,2.5 16.5,14.5 14.5,13 14.5,5" fill="#3a1414"/>
+      <polygon id="d2-c" points="16.5,17.5 16.5,29.5 14.5,27 14.5,19" fill="#3a1414"/>
+      <polygon id="d2-d" points="4,30 16,30 14,27.5 6,27.5" fill="#3a1414"/>
+      <polygon id="d2-e" points="3.5,17.5 3.5,29.5 5.5,27 5.5,19" fill="#3a1414"/>
+      <polygon id="d2-f" points="3.5,2.5 3.5,14.5 5.5,13 5.5,5" fill="#3a1414"/>
+      <polygon id="d2-g" points="4.5,16 6.5,14.5 13.5,14.5 15.5,16 13.5,17.5 6.5,17.5" fill="#3a1414"/>
+      <circle id="d2-dp" cx="19" cy="29" r="1.3" fill="#3a1414"/>
+    </g>
+    <g transform="translate(44 5)">
+      <polygon id="d3-a" points="4,2 16,2 14,4.5 6,4.5" fill="#3a1414"/>
+      <polygon id="d3-b" points="16.5,2.5 16.5,14.5 14.5,13 14.5,5" fill="#3a1414"/>
+      <polygon id="d3-c" points="16.5,17.5 16.5,29.5 14.5,27 14.5,19" fill="#3a1414"/>
+      <polygon id="d3-d" points="4,30 16,30 14,27.5 6,27.5" fill="#3a1414"/>
+      <polygon id="d3-e" points="3.5,17.5 3.5,29.5 5.5,27 5.5,19" fill="#3a1414"/>
+      <polygon id="d3-f" points="3.5,2.5 3.5,14.5 5.5,13 5.5,5" fill="#3a1414"/>
+      <polygon id="d3-g" points="4.5,16 6.5,14.5 13.5,14.5 15.5,16 13.5,17.5 6.5,17.5" fill="#3a1414"/>
+      <circle id="d3-dp" cx="19" cy="29" r="1.3" fill="#3a1414"/>
+    </g>
+    <g transform="translate(65 5)">
+      <polygon id="d4-a" points="4,2 16,2 14,4.5 6,4.5" fill="#3a1414"/>
+      <polygon id="d4-b" points="16.5,2.5 16.5,14.5 14.5,13 14.5,5" fill="#3a1414"/>
+      <polygon id="d4-c" points="16.5,17.5 16.5,29.5 14.5,27 14.5,19" fill="#3a1414"/>
+      <polygon id="d4-d" points="4,30 16,30 14,27.5 6,27.5" fill="#3a1414"/>
+      <polygon id="d4-e" points="3.5,17.5 3.5,29.5 5.5,27 5.5,19" fill="#3a1414"/>
+      <polygon id="d4-f" points="3.5,2.5 3.5,14.5 5.5,13 5.5,5" fill="#3a1414"/>
+      <polygon id="d4-g" points="4.5,16 6.5,14.5 13.5,14.5 15.5,16 13.5,17.5 6.5,17.5" fill="#3a1414"/>
+      <circle id="d4-dp" cx="19" cy="29" r="1.3" fill="#3a1414"/>
+    </g>
+    <g id="colon" fill="#3a1414"><circle cx="41" cy="14" r="1.4"/><circle cx="41" cy="23" r="1.4"/></g>
+  </g>
+  <rect id="pin-clk" x="30" y="59" width="6" height="6" fill="#c9a227"/><text x="33" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">CLK</text>
+  <rect id="pin-dio" x="48" y="59" width="6" height="6" fill="#c9a227"/><text x="51" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">DIO</text>
+  <rect id="pin-vcc" x="66" y="59" width="6" height="6" fill="#c9a227"/><text x="69" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">VCC</text>
+  <rect id="pin-gnd" x="84" y="59" width="6" height="6" fill="#c9a227"/><text x="87" y="58" font-size="4" fill="#e8e8e8" text-anchor="middle" font-family="sans-serif">GND</text>
+</g>
 </svg>

@@ -866,10 +866,11 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
     # symbol
     sym = doc.get("symbol") or {}
     svg = base / sym.get("svg", "symbol.svg")
+    symbol_ids: Optional[set[str]] = None
     if not svg.exists():
         report.error(file, "/symbol/svg", "catalog.file_missing", f"{sym.get('svg')} does not exist")
     else:
-        svg_ids(svg, report)
+        symbol_ids = svg_ids(svg, report)
     for pname, pos in (sym.get("pins") or {}).items():
         if pname not in pin_names:
             report.error(file, ptr("symbol", "pins", pname), "catalog.pin_unknown", f"symbol pin {pname} is not a pin of this component")
@@ -905,6 +906,23 @@ def check_component(report: Report, file: Path, doc: dict, index: Index) -> None
         for name, (x, y) in (bench.get("pins") or {}).items():
             if not (0 <= x <= size[0] and 0 <= y <= size[1]):
                 report.error(file, ptr("bench", "pins", name), "bench.pin_outside", f"pin at ({x}, {y}) mm is outside the {size[0]} x {size[1]} mm part")
+    # schematic state/interaction bindings use the same declaration contract
+    # as artwork, with selectors resolved against symbol.svg.
+    for i, hs in enumerate(sym.get("hotspots") or []):
+        if hs.get("input") not in inputs:
+            report.error(file, ptr("symbol", "hotspots", i, "input"), "catalog.input_unknown", f"hotspot input {hs.get('input')} is not declared")
+        if hs.get("gesture") == "drag" and not hs.get("axis"):
+            report.error(file, ptr("symbol", "hotspots", i), "schema.missing_field", "drag hotspot needs an axis")
+        _check_selector(report, file, ptr("symbol", "hotspots", i, "selector"), hs.get("selector"), symbol_ids)
+    for i, st in enumerate(sym.get("states") or []):
+        if st.get("output") not in outputs and not ("." in (st.get("output") or "") and has_output(index, doc, st["output"])):
+            report.error(file, ptr("symbol", "states", i, "output"), "catalog.output_unknown", f"state output {st.get('output')} is not declared")
+        if not (st.get("attr") or st.get("class")):
+            report.error(file, ptr("symbol", "states", i), "schema.missing_field", "state binds neither an attr nor a class")
+        if st.get("attr") and st['attr'] not in {"text", "fill", "stroke", "opacity", "fill-opacity", "stroke-opacity", "stroke-width", "transform", "d", "x", "y", "width", "height", "visibility", "display", "r", "cx", "cy", "points", "textLength"}:
+            report.error(file, ptr("symbol", "states", i, "attr"), "symbol.state_attribute", "state attribute is not a supported presentation attribute")
+        _check_selector(report, file, ptr("symbol", "states", i, "selector"), st.get("selector"), symbol_ids)
+
     # artwork
     art = doc.get("artwork")
     if art:

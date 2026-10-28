@@ -23,7 +23,7 @@ export {
   type Viewport,
   type NetVisual,
 } from './SchematicCanvas';
-export { boardSymbol, portGroups, type BoardPort } from './boardSymbol';
+export { boardSymbol, boardRuntimeHeader, portGroups, type BoardPort } from './boardSymbol';
 export { busText, busValue } from './bus';
 export { BoardView, routeWire, applyState, type BoardViewProps, type BoardItem, type BenchWire, type WireEnd } from './BoardView';
 export { autoPlace, autoRoute, createLayout, arrange, layoutParts, routeConnection, freePlacement, type LayoutOptions, type LayoutResult, type Arrangement } from './autoLayout';

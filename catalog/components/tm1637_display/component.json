@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component",
   "id": "emblink/tm1637_display",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "TM1637 4-digit display module",
   "category": "displays",
   "description": "The common 4-digit 7-segment LED display module on a Titan Micro TM1637: its two-wire interface (not I2C: no address, LSB first, ACK on the 9th clock), the data, address and display-control commands with the eight pulse widths, the colon (clock variant) or decimal points on SEG8, and 10 kOhm pull-ups on CLK and DIO.",
@@ -580,8 +580,8 @@
   },
   "symbol": {
     "svg": "symbol.svg",
-    "width": 80,
-    "height": 50,
+    "width": 200,
+    "height": 100,
     "pins": {
       "CLK": {
         "x": 0,
@@ -603,7 +603,255 @@
         "y": 40,
         "side": "left"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "brightness",
+        "selector": "#digits",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            0.875
+          ],
+          "to": [
+            0.35,
+            1
+          ]
+        }
+      },
+      {
+        "output": "d1_a",
+        "selector": "#d1-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_b",
+        "selector": "#d1-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_c",
+        "selector": "#d1-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_d",
+        "selector": "#d1-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_e",
+        "selector": "#d1-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_f",
+        "selector": "#d1-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_g",
+        "selector": "#d1-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d1_dp",
+        "selector": "#d1-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_a",
+        "selector": "#d2-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_b",
+        "selector": "#d2-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_c",
+        "selector": "#d2-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_d",
+        "selector": "#d2-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_e",
+        "selector": "#d2-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_f",
+        "selector": "#d2-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_g",
+        "selector": "#d2-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d2_dp",
+        "selector": "#d2-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_a",
+        "selector": "#d3-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_b",
+        "selector": "#d3-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_c",
+        "selector": "#d3-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_d",
+        "selector": "#d3-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_e",
+        "selector": "#d3-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_f",
+        "selector": "#d3-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_g",
+        "selector": "#d3-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d3_dp",
+        "selector": "#d3-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_a",
+        "selector": "#d4-a",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_b",
+        "selector": "#d4-b",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_c",
+        "selector": "#d4-c",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_d",
+        "selector": "#d4-d",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_e",
+        "selector": "#d4-e",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_f",
+        "selector": "#d4-f",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_g",
+        "selector": "#d4-g",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "d4_dp",
+        "selector": "#d4-dp",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      },
+      {
+        "output": "colon",
+        "selector": "#colon",
+        "attr": "fill",
+        "true": "#ff3b30",
+        "false": "#3a1414"
+      }
+    ]
   },
   "tests": [
     "tests/*.json"

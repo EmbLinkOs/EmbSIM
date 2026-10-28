@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "one-pixel",
+  "description": "A selected row and resistor-return column light one junction; neighbors stay dark.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/led_matrix_8x8"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "UP",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10000
+        }
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V.+",
+        "DUT.R1",
+        "UP.1",
+        "DUT.C2",
+        "DUT.C3",
+        "DUT.C4",
+        "DUT.C5",
+        "DUT.C6",
+        "DUT.C7",
+        "DUT.C8"
+      ],
+      "SELECT": [
+        "DUT.C1",
+        "R.1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND",
+        "R.2",
+        "UP.2",
+        "DUT.R2",
+        "DUT.R3",
+        "DUT.R4",
+        "DUT.R5",
+        "DUT.R6",
+        "DUT.R7",
+        "DUT.R8"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.D11.luminance": {
+      "at": "0.5ms",
+      "min": 0.2,
+      "max": 0.5
+    },
+    "device:DUT.D11.i": {
+      "at": "0.5ms",
+      "min": 0.005,
+      "max": 0.009
+    },
+    "output:DUT.D12.luminance": {
+      "at": "0.5ms",
+      "min": 0,
+      "max": 1e-06
+    },
+    "output:DUT.D21.luminance": {
+      "at": "0.5ms",
+      "min": 0,
+      "max": 1e-06
+    },
+    "output:DUT.D88.luminance": {
+      "at": "0.5ms",
+      "min": 0,
+      "max": 1e-06
+    }
+  }
+}

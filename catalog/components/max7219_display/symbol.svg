@@ -1,11 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 60" width="70" height="60" data-grid="10">
-  <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}.p{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:5.5px}</style>
-  <rect class="f" x="10" y="10" width="50" height="40" rx="2"/>
-  <line class="s" id="pin-din" x1="0" y1="20" x2="10" y2="20"/><text class="p" x="13" y="22">DIN</text>
-  <line class="s" id="pin-cs" x1="0" y1="30" x2="10" y2="30"/><text class="p" x="13" y="32">CS</text>
-  <line class="s" id="pin-clk" x1="0" y1="40" x2="10" y2="40"/><text class="p" x="13" y="42">CLK</text>
-  <line class="s" id="pin-dout" x1="70" y1="20" x2="60" y2="20"/><text class="p" x="57" y="22" text-anchor="end">DOUT</text>
-  <line class="s" id="pin-vcc" x1="30" y1="0" x2="30" y2="10"/>
-  <line class="s" id="pin-gnd" x1="30" y1="60" x2="30" y2="50"/>
-  <text class="t" x="35.0" y="19" text-anchor="middle">MAX7219</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 100" width="240" height="100">
+<rect x="10" y="10" width="220" height="80" rx="4" fill="var(--symbol-fill,#fff)" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<line x1="0" y1="20" x2="10" y2="20" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="17" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">DIN</text>
+<line x1="0" y1="30" x2="10" y2="30" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="27" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">CS</text>
+<line x1="0" y1="40" x2="10" y2="40" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="13" y="37" text-anchor="start" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">CLK</text>
+<line x1="240" y1="20" x2="230" y2="20" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<text x="227" y="17" text-anchor="end" fill="var(--symbol-stroke,#243044)" font-family="sans-serif" font-size="6">DOUT</text>
+<line x1="30" y1="0" x2="30" y2="10" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<line x1="30" y1="100" x2="30" y2="90" stroke="var(--symbol-stroke,#243044)" stroke-width="1.5"/>
+<g transform="translate(36.0 32.0) scale(1.05)">
+  <rect x="0" y="0" width="160" height="40" rx="2" fill="#0f5132"/>
+  <rect x="6" y="6" width="148" height="28" rx="1" fill="#120808"/>
+  <text id="digits" x="80" y="29" text-anchor="middle" font-family="monospace" font-size="24" letter-spacing="2" fill="#ff3b30" style="white-space: pre">        </text>
+</g>
 </svg>

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component",
   "id": "emblink/max7219_display",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "MAX7219 8-digit display",
   "category": "displays",
   "description": "An 8-digit 7-segment display module driven by a MAX7219: 16-bit frames shifted on CLK rising (MSB first) and latched when CS rises set the digits, the code-B decode mode, intensity, scan limit and shutdown. The display shows on the board view.",
@@ -157,8 +157,8 @@
   },
   "symbol": {
     "svg": "symbol.svg",
-    "width": 70,
-    "height": 60,
+    "width": 240,
+    "height": 100,
     "pins": {
       "DIN": {
         "x": 0,
@@ -176,7 +176,7 @@
         "side": "left"
       },
       "DOUT": {
-        "x": 70,
+        "x": 240,
         "y": 20,
         "side": "right"
       },
@@ -187,10 +187,18 @@
       },
       "GND": {
         "x": 30,
-        "y": 60,
+        "y": 100,
         "side": "bottom"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "text",
+        "selector": "#digits",
+        "attr": "text",
+        "format": "{}"
+      }
+    ]
   },
   "tests": [
     "tests/*.json"

@@ -5,6 +5,39 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Live schematic operation and observation (2026-10-26)
+
+Actual native sessions, captured by `tests/browser/test_live_schematic.py`.
+The live circuit shows five LED colors, independent RGB currents, an antiparallel
+bicolor die and one selected matrix pixel. HOLD/LATCH and the loaded potentiometer
+operate through native inputs. The A/B readout uses ideal zero-loading probes;
+the wired voltmeter contributes 10 MΩ. The sheet has no undrawn connections.
+
+![Native schematic lights, controls, matrix and loaded meter](live-schematic/live-schematic.png)
+
+The display showcase's functional models write LCD text, SSD1306 pixels and
+MAX7219 digits directly on the sheet. This capture does not qualify individual
+segment currents, physical display optics or missing controller modes.
+
+![Native functional LCD, OLED, segment, bargraph and serial display states](live-schematic/live-displays.png)
+
+The ESP32-C3 firmware example has all 14 schematic connections routed. Its MODE
+contact is held on the schematic while firmware executes. Electrical LEDC outputs
+select mixed PWM, off and full-on; the native 39-assertion scenario still passes.
+Light uses accepted-time interval emission and illustrative 4× display gain;
+measurements remain raw electrical values, not calibrated photometry.
+
+![Firmware PWM and native mixed RGB light on a wired schematic](live-schematic/firmware-mixed-schematic.png)
+
+| Off | Full-on |
+|---|---|
+| ![Native firmware contact selects off](live-schematic/firmware-off-schematic.png) | ![Native firmware contact selects full-on](live-schematic/firmware-on-schematic.png) |
+
+No page errors or optional 3D asset requests occurred. The browser also checks
+keyboard controls, interrupted holds, moved voltage leads, exposure selection,
+and schematic bounds at 900×760 and 1280×800. See the
+[contract, compatibility limits and remaining completion gates](../engineering/live-schematic.md).
+
 ## Firmware-driven RGB and measured waveforms (2026-10-26)
 
 Actual native `embsim serve` on `examples/esp32c3-qualified-rgb`. The ESP32-C3
