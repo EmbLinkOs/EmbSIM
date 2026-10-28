@@ -18,6 +18,7 @@
 #include "session/session_priv.h"
 #include "sdk.h"
 #include "export.h"
+#include "plan.h"
 #include "util/num.h"
 #include "util/str.h"
 
@@ -57,6 +58,8 @@ static void usage_to(FILE *out)
           "  export svg PROJECT [-o FILE] [--theme light|dark]   the schematic sheet as SVG\n"
           "  export svg PROJECT --component ID [--at T] [--scenario FILE] [--scale N] [-o FILE]\n"
           "      what a display shows at T (a graphic display's pixels, a character module's lines)\n"
+          "  plan BOARD --needs spi,i2c,pwm:2,uart,adc:2,gpio:12 [--prefer arduino|CONNECTOR] [--header FILE] [--json]\n"
+          "      a conflict-free pin assignment on the board's headers, clear of its own parts\n"
           "  toolchains                  the toolchain profiles found on this host\n"
           "  catalog list|search QUERY|info ID [--json]|libraries [--library DIR]\n"
           "  catalog validate [LIBRARY_DIR] [--library DEPENDENCY] [--json]\n"
@@ -1364,6 +1367,37 @@ static int cmd_export(int argc, char **argv, const char *argv0)
     return ok ? 0 : 1;
 }
 
+/* plan BOARD --needs LIST [--prefer arduino|CONNECTOR] [--header FILE] [--json] (issue #101) */
+static int cmd_plan(int argc, char **argv, const char *argv0)
+{
+    const char *board = NULL, *needs = NULL, *prefer = NULL, *header = NULL, *library = NULL;
+    int i, rc;
+    es_session *s;
+    for (i = 0; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if (!strcmp(a, "--needs") && more) needs = argv[++i];
+        else if (!strcmp(a, "--prefer") && more) prefer = argv[++i];
+        else if (!strcmp(a, "--header") && more) header = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (!strcmp(a, "--json")) opt_json = 1;
+        else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
+        else board = a;
+    }
+    if (!board || !needs) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (!strchr(board, '/')) { /* nucleo_f446re: the bundled library's */
+        char full[96];
+        snprintf(full, sizeof full, "emblink/%s", board);
+        rc = embsim_plan(s, esk_catalog_find(s->catalog, "board", board) ? board : full, needs, prefer, header, opt_json);
+    } else {
+        rc = embsim_plan(s, board, needs, prefer, header, opt_json);
+    }
+    es_session_destroy(s);
+    return rc;
+}
+
 static int cmd_toolchains(const char *argv0)
 {
     es_session *s = open_session(NULL, argv0, NULL);
@@ -1767,6 +1801,7 @@ int embsim_cli_main(int argc, char **argv)
     if (!strcmp(cmd, "gdb")) return cmd_gdb(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "build")) return cmd_build(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "export")) return cmd_export(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "plan")) return cmd_plan(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "toolchains")) return cmd_toolchains(argv[0]);
     if (!strcmp(cmd, "catalog")) return cmd_catalog(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "board")) return cmd_board(argc - 2, argv + 2, argv[0]);

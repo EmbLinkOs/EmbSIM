@@ -80,7 +80,7 @@ if(NOT MSVC)
 endif()
 set_target_properties(embsim PROPERTIES C_VISIBILITY_PRESET hidden)
 
-add_executable(embsim_cli cli/main.c cli/commands.c cli/sdk.c cli/export.c)
+add_executable(embsim_cli cli/main.c cli/commands.c cli/sdk.c cli/export.c cli/plan.c)
 set_target_properties(embsim_cli PROPERTIES OUTPUT_NAME embsim)
 target_link_libraries(embsim_cli PRIVATE embsim)
 target_include_directories(embsim_cli PRIVATE core)
