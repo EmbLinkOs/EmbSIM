@@ -340,3 +340,14 @@ transaction edits accept a lock or null; native commit enforces a supplied
 baseline before changing project metadata, without a circuit restart. The native
 loader enforces saved baselines before instantiating models. See SPEC-014 §7 and
 [limits and acceptance](../engineering/library-locks.md).
+
+
+### Version request edits and evidence
+
+`set_version {id,version:string|null}` updates existing root components/boards as
+an undoable staged structural edit. Compatible changes restart the circuit;
+incompatible/malformed requests preserve the previous state and return the native
+diagnostic. Shared definition changes use `set_circuit`. Manifest instances may
+include `version_satisfied:boolean` alongside `requested_version`; absence means
+unchecked, not implied compatibility. See SPEC-014 §8 and
+[contract and limits](../engineering/library-versions.md).

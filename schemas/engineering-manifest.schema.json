@@ -156,6 +156,9 @@
               },
               "params": {
                 "type": "object"
+              },
+              "version_satisfied": {
+                "type": "boolean"
               }
             }
           }

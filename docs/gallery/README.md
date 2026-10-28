@@ -5,6 +5,18 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Native shared-sheet version requests (2026-10-27)
+
+The actual hierarchical instrument bench rejects an incompatible ^2 request
+without losing its 1 µs clock, then accepts ^1 through native validation. Both
+concrete resistor references retain native satisfaction evidence because the
+request belongs to their shared sheet definition. Successful Apply explicitly
+restarts; Undo removes the request. No alternate model is selected silently.
+
+![Native requested revisions and verified compatibility](library-versions/native-version-requests.png)
+
+See [grammar, reproduction and boundaries](../engineering/library-versions.md).
+
 ## Native library input review and pinning (2026-10-27)
 
 A real hierarchical instrument session reviews and pins its library inputs,

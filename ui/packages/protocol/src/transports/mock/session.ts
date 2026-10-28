@@ -7,7 +7,7 @@
 // `embsim serve` exists. Everything the UI shows still arrives through the
 // protocol, as observe.update and waveform.samples notifications.
 
-import { bytesToBase64 } from '../../jsonrpc';
+import { bytesToBase64, JsonRpcCode } from '../../jsonrpc';
 import { MS, US, parseDuration, type Time } from '../../time';
 import { hierarchyOf } from '../../hierarchy';
 import type {
@@ -611,6 +611,7 @@ function round(v: number, digits = 4): number {
 }
 
 function applyEdit(p: Project, edit: ProjectEdit): void {
+  if ('set_version' in edit) throw new EngineError(JsonRpcCode.INVALID_PARAMS, 'Version requests require native catalog validation.');
   if ('set_library_lock' in edit) {
     if (edit.set_library_lock === null) delete p.library_lock;
     else p.library_lock = structuredClone(edit.set_library_lock);

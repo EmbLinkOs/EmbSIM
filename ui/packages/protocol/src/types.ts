@@ -57,6 +57,7 @@ export interface SchematicGroup {
 }
 
 export interface ProjectBoard {
+  version?: string;
   id: string;
   board: string;
   firmware?: { image?: string; format?: 'elf' | 'hex'; toolchain?: string; sources?: string[] };
@@ -133,7 +134,7 @@ export interface ManifestDocument { json: string; sha256: string }
 export interface ManifestInstance {
   path: string; sheet: string; id: string; kind: 'component' | 'board'; reference: string;
   catalog: string; resolution: 'native' | 'board-assembly' | 'unavailable' | 'demo';
-  params: Record<string, unknown>; requested_version?: string; model?: string;
+  params: Record<string, unknown>; requested_version?: string; version_satisfied?: boolean; model?: string;
 }
 export interface EngineeringManifest extends ManifestDocument { schema_version: 1; kind: 'engineering_manifest' }
 export interface EngineeringManifestData {

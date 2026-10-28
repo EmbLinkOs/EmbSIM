@@ -5,6 +5,15 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Declared version contracts
+
+- Enforce part, board, MCU, shared/composite member and installed library dependency
+  requests against actual selected versions with bounded SemVer rules.
+- Edit schematic version requests through native staged transactions; report
+  shared scope, rollback, restart and native satisfaction evidence explicitly.
+- Show native diagnostic reasons instead of generic validation errors, and verify
+  version evidence offline with shared C/Python and independent reference cases.
+
 ### Pinned library inputs
 
 - Pin non-hidden library file bytes and effective catalog selection with portable

@@ -132,7 +132,7 @@ export function assemblyLines(data: EngineeringManifestData): AssemblyLine[] {
       };
       groups.set(key, group);
     }
-    if (item.requested_version && item.requested_version !== version) {
+    if (item.requested_version && item.requested_version !== version && item.version_satisfied !== true) {
       const warning = `${item.path}: requested ${item.requested_version}, loaded ${version || 'unknown'}`;
       if (!group.notes.includes(warning)) group.notes.push(warning);
     }

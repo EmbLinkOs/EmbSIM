@@ -100,3 +100,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native CLI/RPC relocation, binary hash, drift, stale description, tree rejection and load refusal acceptance.
 **Trace.** SPEC-014; ADR-043; docs/engineering/library-locks.md
+
+
+### CAT-014  Native declared version contracts
+**Statement.** Explicit component, board, MCU, shared block member, composite member and library dependency versions shall be checked against actual loaded revisions. Missing/ambiguous dependencies, incompatible versions and malformed or unsupported ranges shall be rejected; first-match selection shall not silently switch revisions. Native and offline semantics shall share executable precedence/boundary vectors.
+**Rationale.** A saved version request is a load contract, independently of content pinning or model qualification.
+**Status.** Accepted 2026-10-27
+**Verification.** Native range vectors, independent npm comparison, both offline backends and native project/block/composite/board/MCU/dependency protocol acceptance.
+**Trace.** SPEC-014; ADR-044; docs/engineering/library-versions.md

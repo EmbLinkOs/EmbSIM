@@ -122,6 +122,21 @@ int esk_host_path_type(const char *path, uint64_t *size)
     return 1;
 }
 
+char *esk_host_absolute_path(esk_alloc *a, const char *path)
+{
+    DWORD cap, written;
+    char *buffer, *out;
+    if (!path) return NULL;
+    cap = GetFullPathNameA(path, 0, NULL, NULL);
+    if (!cap || cap > 65536) return NULL;
+    buffer = (char *)esk_malloc(a, (size_t)cap);
+    if (!buffer) return NULL;
+    written = GetFullPathNameA(path, cap, buffer, NULL);
+    out = written && written < cap ? esk_host_path_join(a, "", buffer) : NULL;
+    esk_free(a, buffer, (size_t)cap);
+    return out;
+}
+
 static int cmp_json_string(const void *x, const void *y)
 {
     const esk_json *const *p = (const esk_json *const *)x, *const *q = (const esk_json *const *)y;

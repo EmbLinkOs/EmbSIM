@@ -5,6 +5,35 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Declared version contracts (2026-10-27)
+
+Branch `feat/library-version-contracts` enforces requested component, board,
+MCU, shared-definition/composite member and installed library dependency versions.
+The existing first-match resolver stays explicit; malformed, incompatible,
+missing and ambiguous requirements cannot silently run another revision.
+Normalized library roots are deduplicated and retain coherent loaded metadata.
+
+Engineering reports edit each part's version request through staged native
+transactions, state shared scope/restart/acquisition effects, preserve circuit and
+clock on rejection, and export native satisfaction evidence. Unchanged requests
+preserve time; Undo restores the request. Native diagnostic reasons now reach UI
+errors instead of generic validation messages. Offline checks use the same golden
+range vectors as C, and supported cases agree with independent npm SemVer bounds.
+All 55 native CTest targets pass against the final frozen build. Native acceptance
+passes 37 version-contract checks and 81 C range-vector checks; all six focused
+session/version/lock/manifest/hierarchy targets pass ASan/UBSan with leak detection.
+UI verification passes 340 tests, all 36 browser workflows, typecheck, lint and
+production build. Both native version and library-lock browser workflows pass
+without page errors. All 172 validator tests pass across both backends; strict
+validation covers 918 files, and docs integrity passes 146 documents/130 requirements.
+See [grammar, native/browser acceptance and limitations](engineering/library-versions.md)
+and [gallery](gallery/README.md).
+
+This is local constraint enforcement, not alternate-revision search, a remote
+package solver, downloaded dependencies or model qualification. Content locks
+pin bytes independently. Assembly variants, PCB integration, advanced analysis
+and remaining component/instrument qualification continue to be open gates.
+
 ## Pinned library inputs (2026-10-27)
 
 Branch `feat/verified-library-locks` adds opt-in native content baselines for the

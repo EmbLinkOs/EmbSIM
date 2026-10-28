@@ -195,3 +195,13 @@ describe('engineering assembly snapshots', () => {
     expect(csv).not.toContain('100000000000000000000');
   });
 });
+
+describe('native version satisfaction evidence', () => {
+  it('retains warnings for unchecked requests but accepts explicitly verified ranges', async () => {
+    const data = await manifest();
+    data.instances[0]!.requested_version = '^1.0.0';
+    expect(assemblyLines(data).some((line) => line.notes.some((note) => note.includes('requested ^1.0.0')))).toBe(true);
+    data.instances[0]!.version_satisfied = true;
+    expect(assemblyLines(data).some((line) => line.notes.some((note) => note.includes('requested ^1.0.0')))).toBe(false);
+  });
+});

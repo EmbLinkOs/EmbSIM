@@ -3,6 +3,7 @@
 /* Project-owned blocks reuse the native composite elaborator, never a second solver. */
 #include "project/hierarchy.h"
 #include "project/loader.h"
+#include "project/version_rules.h"
 #include "util/str.h"
 #include <string.h>
 
@@ -96,6 +97,7 @@ static es_status validate_block(es_session *s, const esk_json *block, const char
                 return invalid(s, id, "Duplicate instance id in one sheet");
         if (!esk_project_component(s, ref))
             return invalid(s, id, "Unknown block or catalog component");
+        if (esk_project_require_version(s, esk_project_component(s, ref), c, id) != ES_OK) return ES_ESCHEMA;
         if (esk_str_has_prefix(ref, "block/")) {
             const esk_json *child = esk_json_get(esk_json_get(s->project, "blocks"), ref + 6);
             es_status st;

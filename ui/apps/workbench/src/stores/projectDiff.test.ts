@@ -53,3 +53,15 @@ describe('library baseline diff', () => {
     expect(diffProject(before, after)).toEqual([{set_library_lock: after.library_lock}]);
   });
 });
+
+describe('version request diff', () => {
+  it('updates existing components and boards and emits reversible removal', () => {
+    const before = demoProject(), after = structuredClone(before);
+    after.components[0]!.version = '^1.0.0';
+    expect(diffProject(before, after)).toEqual([{set_version: {id: after.components[0]!.id, version: '^1.0.0'}}]);
+    expect(diffProject(after, before)).toEqual([{set_version: {id: after.components[0]!.id, version: null}}]);
+    before.boards = [{id: 'B', board: 'emblink/arduino_uno'}];
+    after.boards = [{id: 'B', board: 'emblink/arduino_uno', version: '~1.0'}];
+    expect(diffProject(before, after)).toContainEqual({set_version: {id: 'B', version: '~1.0'}});
+  });
+});

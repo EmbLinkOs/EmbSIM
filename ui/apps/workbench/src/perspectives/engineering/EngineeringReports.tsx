@@ -22,6 +22,7 @@ import { useLayout } from '../../stores/layout';
 import { useSession } from '../../stores/session';
 import { useProject } from '../../stores/project';
 import { LibraryLockPanel } from './LibraryLockPanel';
+import { VersionRequest } from './VersionRequest';
 
 export function EngineeringReports() {
   const currentProject = useProject((s) => s.project),
@@ -267,6 +268,7 @@ export function EngineeringReports() {
                                       {line.paths.length > 3 ? ` +${line.paths.length - 3}` : ''}
                                     </summary>
                                     {line.instances.slice(0, 100).map((i) => (
+                                      <div key={i.path}>
                                       <button
                                         key={i.path}
                                         disabled={stale}
@@ -278,6 +280,8 @@ export function EngineeringReports() {
                                       >
                                         Locate {i.path}
                                       </button>
+                                      {result.data.source === 'native' && <details><summary aria-label={`Edit version request for ${i.path}`}>Version request{i.requested_version ? ` · ${i.requested_version}` : ''}</summary><VersionRequest item={i} loaded={line.version} disabled={stale} /></details>}
+                                      </div>
                                     ))}
                                     {line.paths.length > 100 && (
                                       <small>All references are included in exports.</small>

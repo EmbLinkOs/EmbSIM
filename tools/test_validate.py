@@ -394,6 +394,22 @@ class ProjectTests(Base):
     def manifest_envelope(self, payload):
         return {"schema_version": 1, "kind": "engineering_manifest", **self.manifest_document(payload)}
 
+    def test_manifest_version_satisfaction_evidence(self):
+        data = self.manifest_fixture(); item = data["instances"][0]
+        item["requested_version"] = "^1"; item["version_satisfied"] = True
+        self.assertClean(self.check_doc(self.manifest_envelope(data), "version.manifest.json"))
+        item["version_satisfied"] = False
+        self.assertCode(self.check_doc(self.manifest_envelope(data), "version.manifest.json"), "manifest.version")
+
+    def test_project_version_request_contracts(self):
+        project = copy.deepcopy(PROJECT); project.pop("scenarios", None)
+        project["components"][0]["version"] = "^1.0.0"
+        self.assertClean(self.check_doc(project, "version-project.json"))
+        project["components"][0]["version"] = "^99"
+        self.assertCode(self.check_doc(project, "version-project.json"), "catalog.version.mismatch")
+        project["components"][0]["version"] = "^^1"
+        self.assertCode(self.check_doc(project, "version-project.json"), "catalog.version.invalid")
+
     def test_engineering_manifest_verifies_without_source_libraries(self):
         self.assertClean(self.check_doc(self.manifest_envelope(self.manifest_fixture()), "report.manifest.json"))
 
@@ -873,6 +889,13 @@ class OtherKindsTests(Base):
         project = copy.deepcopy(PROJECT); project["library_lock"] = lock
         lock["libraries"]["emblink"]["files"] = {".hidden/file": "sha256:" + "a" * 64}
         path.write_text(json.dumps(project)); self.assertCode(self.check(path), "library.lock.path")
+
+    def test_library_dependency_contracts(self):
+        doc = {"schema_version": 1, "kind": "library", "name": "x", "version": "1.0.0", "license": "Apache-2.0", "depends": [{"name": "emblink", "version": "^0.1"}]}
+        self.assertClean(self.check_doc(doc, "library.json"))
+        for target, version, code in [("missing", "1", "library.dependency.missing"), ("emblink", "^99", "library.dependency.mismatch"), ("emblink", "^^1", "library.dependency.invalid")]:
+            doc["depends"] = [{"name": target, "version": version}]
+            self.assertCode(self.check_doc(doc, "library.json"), code)
 
     def test_library_manifest(self):
         d = self.tmp / "lib"

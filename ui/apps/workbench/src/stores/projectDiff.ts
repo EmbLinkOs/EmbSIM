@@ -41,6 +41,7 @@ function diffFlatProject(before: Project, after: Project): ProjectEdit[] {
       edits.push({ add_component: { id: c.id, component: c.component, version: c.version, params: c.params, layout: c.layout } });
       continue;
     }
+    if (old.version !== c.version) edits.push({set_version: {id: c.id, version: c.version ?? null}});
     const keys = new Set([...Object.keys(old.params ?? {}), ...Object.keys(c.params ?? {})]);
     for (const k of keys) {
       if (old.params?.[k] !== c.params?.[k]) edits.push({ set_param: { id: c.id, param: k, value: c.params?.[k] } });
@@ -53,8 +54,11 @@ function diffFlatProject(before: Project, after: Project): ProjectEdit[] {
   const boardsAfter = new Map((after.boards ?? []).map((b) => [b.id, b]));
   for (const b of after.boards ?? []) {
     const old = boardsBefore.get(b.id);
-    if (!old) edits.push({ add_board: { id: b.id, board: b.board, layout: b.layout, firmware: b.firmware } });
-    else if (!layoutEqual(old.layout, b.layout)) edits.push({ set_layout: { id: b.id, layout: transactionLayout(old.layout, b.layout) } });
+    if (!old) edits.push({ add_board: { id: b.id, board: b.board, version: b.version, layout: b.layout, firmware: b.firmware } });
+    else {
+      if (old.version !== b.version) edits.push({set_version: {id: b.id, version: b.version ?? null}});
+      if (!layoutEqual(old.layout, b.layout)) edits.push({ set_layout: { id: b.id, layout: transactionLayout(old.layout, b.layout) } });
+    }
   }
 
   // Net renames: a vanished net whose pin set reappears under a new name.

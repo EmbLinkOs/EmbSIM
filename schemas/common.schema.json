@@ -56,9 +56,11 @@
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
     },
     "version_range": {
-      "description": "A semantic version or a range (^1.2.0, ~1.2, >=1.0 <2.0).",
+      "description": "Bounded semantic version conjunction: exact/partial, ^, ~, comparisons; whitespace/comma/adjacent comparison separators. Native/offline semantics reject unsupported forms.",
       "type": "string",
-      "pattern": "^[\\^~>=<]*[0-9]+(?:\\.[0-9]+){0,2}(?:-[0-9A-Za-z.-]+)?(?:\\s*[,<>=]*\\s*[0-9]+(?:\\.[0-9]+){0,2})?$"
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[0-9A-Za-z.+^~<>=, \\t\\r\\n-]+$"
     },
     "name": {
       "description": "A library, component, board or MCU name: [a-z][a-z0-9_-]*, at most 64 characters.",
