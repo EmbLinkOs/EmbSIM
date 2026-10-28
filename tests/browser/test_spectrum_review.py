@@ -54,9 +54,34 @@ def main():
             with page.expect_download() as pending:region.get_by_role('button',name='Export spectrum CSV',exact=True).click()
             rows=list(csv.DictReader(io.StringIO(Path(pending.value.path()).read_text(encoding='utf-8'))))
             assert len(rows)==129 and rows[16]['Target']=='net:OUT' and rows[16]['Capture SHA-256']==result['capture']['sha256']
+            d.get_by_label('Spectrum reference',exact=True).select_option('net:IN')
+            d.get_by_role('button',name='Analyze captured spectrum',exact=True).click()
+            ratios=region.get_by_role('table',name='Channel ratio measurements',exact=True)
+            expect(ratios).to_contain_text('Valid',timeout=15000)
+            expect(ratios).to_contain_text('-32.14')
+            with page.expect_download() as pending:region.get_by_role('button',name='Export comparison evidence',exact=True).click()
+            comparison=json.loads(Path(pending.value.path()).read_text(encoding='utf-8'))
+            rb=comparison['bins'][16]
+            assert abs(rb['gain']-1/math.sqrt(1+(2*math.pi*.1)**2))<2e-5
+            assert abs(rb['phase_deg']+math.degrees(math.atan(2*math.pi*.1)))<.01
+            assert comparison['output']['capture']==comparison['reference']['capture']
+            assert comparison['bins'][0]['status']=='weak_reference'
+            with page.expect_download() as pending:region.get_by_role('button',name='Export comparison CSV',exact=True).click()
+            ratios_csv=list(csv.DictReader(io.StringIO(Path(pending.value.path()).read_text(encoding='utf-8'))))
+            assert len(ratios_csv)==129 and ratios_csv[16]['Reference']=='net:IN'
+            d.get_by_label('Inspect spectrum bin',exact=True).fill('0')
+            expect(ratios).to_contain_text('Reference below threshold or zero')
+            expect(ratios).to_contain_text('Undefined')
+            d.get_by_label('Inspect spectrum bin',exact=True).fill('16')
+            region.scroll_into_view_if_needed();page.screenshot(path=str(out/'native-rc-comparison.png'))
             d.get_by_label('Spectrum amplitude display',exact=True).select_option('dbv')
             expect(region.get_by_role('img')).to_have_attribute('aria-label','Native frequency spectrum in RMS-bin dBV')
             expect(table).to_contain_text('-4.455')
+            d.get_by_label('Minimum spectrum reference peak voltage',exact=True).fill('2')
+            expect(region).to_contain_text('Options changed.')
+            d.get_by_role('button',name='Analyze captured spectrum',exact=True).click()
+            expect(ratios).to_contain_text('Reference below threshold or zero',timeout=15000)
+            d.get_by_label('Minimum spectrum reference peak voltage',exact=True).fill('0.000001')
             d.get_by_label('Spectrum window',exact=True).select_option('rectangular')
             expect(region).to_contain_text('Options changed.')
             d.get_by_role('button',name='Analyze captured spectrum',exact=True).click()
@@ -64,7 +89,7 @@ def main():
             expect(clock).to_contain_text('1.000 µs')
         assert not errors,errors
         browser.close()
-    print('Native spectrum UI: FFT-ready capture, calibrated 1kHz RC peak/RMS/dBV/phase, window review, complete exports and unchanged 1us bench; 0 page errors')
+    print('Native spectrum UI: FFT-ready capture, calibrated 1kHz RC peak/RMS/dBV/phase, window and channel-ratio review, weak-reference exclusion, complete exports and unchanged 1us bench; 0 page errors')
 
 
 if __name__=='__main__':main()

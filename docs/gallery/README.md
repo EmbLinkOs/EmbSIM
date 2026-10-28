@@ -5,6 +5,16 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Captured RC gain and relative phase (2026-10-27)
+
+The native input/output capture now supports channel comparison. The selected
+1 kHz bin reports output/reference gain and relative phase, with a configurable
+reference threshold and complete source-bound comparison exports.
+
+![Captured RC output/input gain and relative phase](frequency-spectrum/native-rc-comparison.png)
+
+See the [ratio contract and limits](../engineering/frequency-spectrum.md).
+
 ## Native RC frequency-spectrum review (2026-10-27)
 
 The actual native 1 kHz RC response is captured after warm-up and reviewed with

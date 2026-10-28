@@ -30,6 +30,47 @@ checks the record matches its retained capture, and verifies the embedded native
 project/model identities. This establishes content lineage, not authentication of
 an arbitrary edited file or physical manufacturer conformance.
 
+## Captured channel gain and relative phase
+
+Choose a **Reference channel** to compare the selected output to a voltage in the
+same retained capture. Analyze again to request both native spectra with identical
+window and mean handling. Both embedded captures are SHA-256 verified against the
+retained record before the client computes any ratios. Absolute-voltage review
+and its exports remain available.
+
+For each bin, the workbench divides output complex voltage by reference complex
+voltage: magnitude is `abs(output) / abs(reference)`, gain dB is
+`20 * (log10(abs(output)) - log10(abs(reference)))`, and relative phase is the
+output angle minus the reference angle, wrapped to `[-180, 180)` degrees.
+The **Minimum reference (V peak)** threshold defaults to 1 µV. Reference magnitude
+at or below that threshold (including exact zero at a zero threshold) yields an
+undefined ratio. It is a user-selected excitation threshold, not an instrument
+noise-floor specification. A valid zero output has zero gain, −∞ dB and undefined
+phase. Unrepresentable numeric ratios remain undefined with a separate status.
+
+The selected frequency bin shows gain and relative phase beside the absolute
+measurements. CSV exports every bin with status, threshold, channel names,
+window/mean handling and capture hash. Comparison JSON embeds both complete native
+spectra, threshold and every derived ratio (`method: captured_bin_ratio`); it is a
+workbench review bundle, not a new native artifact accepted by the offline schema
+validator. Each embedded spectrum can be validated independently. Changing channel,
+threshold or analysis settings marks the old result until recomputed.
+
+This mirrors comparing two synchronous scope/FFT channels on a real bench. The
+native engine still supplies all voltages; the only client abstraction is complex
+bin division. The analytic 1 kHz RC fixture verifies gain ≈0.846733 V/V,
+≈−1.44507 dB and relative phase ≈−32.141908°, while the live bench stays at 1 µs.
+Unit evidence covers mismatched records/grids/settings, weak and zero excitation,
+zero output, wrapped phase and floating-point limits. Browser acceptance checks
+native input/output review and complete CSV/JSON exports.
+
+Ratios at unexcited frequencies, leakage-dominated bins or aliased frequencies do
+not establish a circuit transfer function. Windowing can mix nearby components;
+nonlinear circuits need not have an input-independent gain. This workflow does
+not fit tones, unwrap phase, infer delay, calculate coherence, remove instrument
+loading, or perform a small-signal AC sweep. Its limits follow the captured
+models and sampling contract below.
+
 ## Exact record and scaling contract
 
 A complete native capture must contain `N + 1` uniform samples with `N` a power of

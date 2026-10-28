@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { Badge, Button, Input } from '@embsim/design';
-import { formatSi, spectrumCsv, verifySpectrum, type FrequencySpectrum, type TransientCapture } from '@embsim/protocol';
+import { compareSpectra, spectrumComparisonCsv, formatSi, spectrumCsv, verifySpectrum, type SpectrumComparison, type FrequencySpectrum, type TransientCapture } from '@embsim/protocol';
 import { useState } from 'react';
 import { errorMessage } from '../../actions';
 import { getClient } from '../../connection';
@@ -11,15 +11,23 @@ import { useSession } from '../../stores/session';
 export function SpectrumReview({capture}: {capture: TransientCapture}) {
   const supported = useSession((s) => s.capabilities.includes('analysis.spectrum'));
   const [target,setTarget] = useState(capture.request.probes[0] ?? ''), [window,setWindow] = useState<'hann' | 'rectangular'>('hann'), [removeMean,setRemoveMean] = useState(true);
+  const [reference,setReference] = useState(''), [threshold,setThreshold] = useState('0.000001');
+  const [comparison,setComparison] = useState<SpectrumComparison | null>(null);
   const [pending,setPending] = useState(false), [error,setError] = useState(''), [result,setResult] = useState<FrequencySpectrum | null>(null);
   const [bin,setBin] = useState(0), [first,setFirst] = useState(0), [last,setLast] = useState(0), [scale,setScale] = useState<'peak' | 'dbv'>('peak'), [floor,setFloor] = useState(-140);
   const n = capture.samples.length-1, ready = capture.ok && n >= 16 && n <= 4096 && !(n & (n-1));
   const analyze = async () => {
     if (pending || !ready || !supported) return;
-    setPending(true);setError('');setResult(null);
+    setPending(true);setError('');setResult(null);setComparison(null);
     try {
       const data = await getClient().analysis.spectrum({capture,target,window,remove_mean:removeMean});
       await verifySpectrum(data,capture);
+      if (reference) {
+        if (!threshold.trim()) throw new Error('Enter a reference threshold in peak volts.');
+        const ref = reference === target ? data : await getClient().analysis.spectrum({capture,target:reference,window,remove_mean:removeMean});
+        await verifySpectrum(ref,capture);
+        setComparison(compareSpectra(data,ref,Number(threshold)));
+      }
       setResult(data);setFirst(0);setLast(data.bins.length-1);
       const largest = data.bins.slice(1).reduce((best,b) => b.peak_v > best.peak_v ? b : best, data.bins[0]!);
       setBin(largest.index);
@@ -30,13 +38,19 @@ export function SpectrumReview({capture}: {capture: TransientCapture}) {
     try {await (await platform()).saveTextFile(`frequency-spectrum.${kind}`,kind === 'csv' ? spectrumCsv(result) : JSON.stringify(result,null,2),kind === 'csv' ? 'text/csv' : 'application/json');}
     catch (e) {setError(errorMessage(e));}
   };
+  const downloadComparison = async (kind: 'json' | 'csv') => {
+    if (!comparison) return;
+    try {await (await platform()).saveTextFile(`spectrum-comparison.${kind}`,kind === 'csv' ? spectrumComparisonCsv(comparison) : JSON.stringify(comparison,null,2),kind === 'csv' ? 'text/csv' : 'application/json');}
+    catch (e) {setError(errorMessage(e));}
+  };
+  const ratio = comparison?.bins[bin];
   const selected = result?.bins[bin];
-  const revised = Boolean(result && (result.target !== target || result.window !== window || result.remove_mean !== removeMean));
+  const revised = Boolean(result && (result.target !== target || result.window !== window || result.remove_mean !== removeMean || (comparison?.reference.target ?? '') !== reference || (comparison && comparison.minimum_reference_peak_v !== Number(threshold))));
   return <details className="wb-spectrum-review"><summary>Frequency spectrum</summary>
     <p>Analyze the retained capture without running the circuit again. The final endpoint is excluded to form a half-open FFT record.</p>
     {!supported && <p role="alert">Frequency spectra require an updated native engine.</p>}
     {!ready && <p role="status">FFT needs 17, 33, 65, …, 4097 complete samples. Use the 256-interval preset above and capture again; existing samples are never silently padded or interpolated.</p>}
-    <div className="wb-transient-review"><label>Spectrum target<select aria-label="Spectrum target" value={target} disabled={pending} onChange={(e) => setTarget(e.target.value)}>{capture.request.probes.map((p) => <option key={p} value={p}>{p}</option>)}</select></label><label>Window<select aria-label="Spectrum window" value={window} disabled={pending} onChange={(e) => setWindow(e.target.value as 'hann' | 'rectangular')}><option value="hann">Periodic Hann</option><option value="rectangular">Rectangular</option></select></label><label className="wb-spectrum-check"><input type="checkbox" checked={removeMean} disabled={pending} onChange={(e) => setRemoveMean(e.target.checked)} />Remove sample mean</label><Button size="sm" disabled={!supported || !ready || pending} onClick={() => void analyze()}>Analyze captured spectrum</Button></div>
+    <div className="wb-transient-review"><label>Spectrum target<select aria-label="Spectrum target" value={target} disabled={pending} onChange={(e) => setTarget(e.target.value)}>{capture.request.probes.map((p) => <option key={p} value={p}>{p}</option>)}</select></label><label>Reference channel<select aria-label="Spectrum reference" value={reference} disabled={pending} onChange={(e) => setReference(e.target.value)}><option value="">Absolute voltage only</option>{capture.request.probes.map((p) => <option key={p} value={p}>{p}</option>)}</select></label>{reference && <label>Minimum reference (V peak)<Input aria-label="Minimum spectrum reference peak voltage" type="number" min={0} value={threshold} disabled={pending} onChange={(e) => setThreshold(e.target.value)} /></label>}<label>Window<select aria-label="Spectrum window" value={window} disabled={pending} onChange={(e) => setWindow(e.target.value as 'hann' | 'rectangular')}><option value="hann">Periodic Hann</option><option value="rectangular">Rectangular</option></select></label><label className="wb-spectrum-check"><input type="checkbox" checked={removeMean} disabled={pending} onChange={(e) => setRemoveMean(e.target.checked)} />Remove sample mean</label><Button size="sm" disabled={!supported || !ready || pending} onClick={() => void analyze()}>Analyze captured spectrum</Button></div>
     {pending && <p role="status">Computing native spectrum…</p>}{error && <p role="alert">{error}</p>}
     {result && <section aria-label="Frequency spectrum results"><h3>{result.target} <Badge tone="accent">{result.used_samples} FFT samples</Badge></h3>
       {revised && <p role="status">Options changed. Recompute to apply them; the current plot/export retains the reviewed settings.</p>}
@@ -45,6 +59,7 @@ export function SpectrumReview({capture}: {capture: TransientCapture}) {
       <SpectrumPlot data={result} first={first} last={last} selected={bin} scale={scale} floor={floor} />
       <label className="wb-spectrum-bin">Inspect bin {bin}<input aria-label="Inspect spectrum bin" type="range" min={0} max={result.bins.length-1} value={bin} onChange={(e) => setBin(Number(e.target.value))} /></label>
       {selected && <div className="wb-sweep-table"><table aria-label="Spectrum bin measurements"><thead><tr><th>Frequency</th><th>Peak amplitude</th><th>RMS bin amplitude</th><th>dBV · RMS bin</th><th>Phase</th></tr></thead><tbody><tr><td>{formatSi(selected.frequency_hz,'Hz',8)}</td><td>{formatSi(selected.peak_v,'V',8)}</td><td>{formatSi(selected.rms_v,'V',8)}</td><td>{selected.dbv_rms === null ? '−∞ (zero)' : `${selected.dbv_rms.toFixed(6)} dBV`}</td><td>{selected.phase_deg === null ? 'Undefined (zero)' : `${selected.phase_deg.toFixed(6)}°`}</td></tr></tbody></table></div>}
+      {comparison && ratio && <section aria-label="Captured channel comparison"><h4>{comparison.output.target} / {comparison.reference.target}</h4><p>Measured bin ratio from the same capture. Reference bins at or below {formatSi(comparison.minimum_reference_peak_v,'V')} peak are excluded. Leakage, aliasing, weak excitation and nonlinear behavior limit interpretation; this is not a small-signal AC sweep.</p><div className="wb-sweep-table"><table aria-label="Channel ratio measurements"><thead><tr><th>Frequency</th><th>Status</th><th>Gain · V/V</th><th>Gain · dB</th><th>Relative phase</th></tr></thead><tbody><tr><td>{formatSi(ratio.frequency_hz,'Hz',8)}</td><td>{ratio.status === 'weak_reference' ? 'Reference below threshold or zero' : ratio.status === 'unrepresentable' ? 'Unrepresentable ratio' : 'Valid'}</td><td>{ratio.gain === null ? 'Undefined' : ratio.gain.toPrecision(8)}</td><td>{ratio.status !== 'valid' ? 'Undefined' : ratio.gain_db === null ? '−∞ (zero output)' : `${ratio.gain_db.toFixed(6)} dB`}</td><td>{ratio.phase_deg === null ? 'Undefined' : `${ratio.phase_deg.toFixed(6)}°`}</td></tr></tbody></table></div><div className="es-row"><Button size="sm" variant="ghost" onClick={() => void downloadComparison('csv')}>Export comparison CSV</Button><Button size="sm" variant="ghost" onClick={() => void downloadComparison('json')}>Export comparison evidence</Button></div></section>}
       <details><summary>Scaling and sampling limits</summary><p>Reviewed settings: {result.window}, sample mean {result.remove_mean ? 'removed' : 'retained'} ({formatSi(result.mean_v,'V')}). Coherent gain {result.coherent_gain.toPrecision(6)}; window ENBW {result.enbw_bins.toPrecision(6)} bins. Peak amplitudes correct for window coherent gain. Interior RMS bins divide peak by √2; DC/Nyquist use edge scaling. Phase is relative to the first retained sample; negligible-bin phases are unstable. dB floor clips only the display; zero bins are −∞.</p><p>Finite sampling can alias signals. Hann windowing spreads tone energy into neighboring bins; off-bin tones also have scalloping loss. These tone-scaled bins do not establish broadband RMS, noise density, distortion qualification or small-signal AC response.</p></details>
       <div className="es-row"><Button size="sm" variant="ghost" onClick={() => void download('csv')}>Export spectrum CSV</Button><Button size="sm" variant="ghost" onClick={() => void download('json')}>Export spectrum evidence</Button></div>
     </section>}

@@ -5,6 +5,23 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Captured channel gain and phase comparison (2026-10-27)
+
+Based on `feat/native-spectrum-analysis` (EmbLinkOs/EmbSIM#77), the frequency
+workspace compares two native spectra from the same verified retained capture.
+Selected bins expose output/reference V/V, dB and wrapped relative phase; complete
+CSV and JSON review bundles preserve the threshold, statuses and native evidence.
+Weak/zero reference bins and unrepresentable ratios stay undefined. This is a
+finite-record ratio, not a small-signal AC solver, tone estimator or calibrated
+noise measurement. Verification passes all 59 native development targets, four
+focused ASan/UBSan analysis targets, UI typecheck/lint/build and 360 UI tests.
+Native browser acceptance verifies analytic RC gain/phase, weak-reference handling,
+complete exports and an unchanged live bench. Strict validation passes 931 files. The browser suite passes 38/39 on its initial
+run; the one transient rebuild-related HTTP 404 passes on an isolated rerun.
+Local Clang/TinyCC presets are unavailable because those compilers are absent;
+cross-platform results require CI. See the
+[contract](engineering/frequency-spectrum.md).
+
 ## Native captured-data frequency spectra (2026-10-27)
 
 Branch `feat/native-spectrum-analysis` computes source-bound one-sided spectra

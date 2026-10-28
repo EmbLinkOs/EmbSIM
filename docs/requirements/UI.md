@@ -268,8 +268,8 @@ test or review that establishes it; STATUS.md records whether it passed.
 
 
 ### UI-036  Calibrated native spectrum review
-**Statement.** The captured-waveform UI shall prepare exact FFT grids, inspect native discrete bins in peak volts or RMS-bin dBV with explicit display clipping, retain reviewed options, verify captured-record identity and export complete coefficients without changing the live circuit.
+**Statement.** The captured-waveform UI shall prepare exact FFT grids, inspect native discrete bins in peak volts or RMS-bin dBV with explicit display clipping, retain reviewed options, verify captured-record identity and export complete coefficients without changing the live circuit. Optional output/reference comparison shall require the same captured record and FFT settings, expose per-bin gain and wrapped relative phase, exclude reference bins at or below an explicit peak-voltage threshold, and preserve both source spectra in comparison evidence.
 **Rationale.** Frequency plots require defined units, sample/window semantics and independently inspectable evidence.
 **Status.** Accepted 2026-10-27
-**Verification.** Native analytic/direct-DFT vectors, independent NumPy checks, loaded RC reference, source-bound CLI/RPC, actual native browser and both offline backends.
+**Verification.** Native analytic/direct-DFT vectors, independent NumPy checks, loaded RC reference, source-bound CLI/RPC, actual native browser and both offline backends. Channel-ratio unit checks and native analytic RC browser acceptance verify comparison scaling, weak-reference exclusion and complete exports.
 **Trace.** SPEC-004; SPEC-008; ADR-048; docs/engineering/frequency-spectrum.md
