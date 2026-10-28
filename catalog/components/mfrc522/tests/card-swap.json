@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "card-swap",
+  "description": "Cards presented by the card input: the project's \"admin\" card, named in the cards parameter, answers REQA; then the \"user\" card replaces it in the field.",
+  "policy": "functional",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,0,2,1,3,0,2,1,3,0,2,0,2,0,2,0,1,3,0,2,0,2,0,2,0,2,0,2,1,3,1,3,0,0,4,0,0,2,0,2,0,2,0,2,0,2,0,2,1,3,0,2,0,0,2,0,2,0,2,0,2,1,3,1,3,0,2,0,2,0,0,4,0,0,2,0,2,0,2,1,3,0,2,0,2,1,3,0,2,0,0,2,0,2,1,3,0,2,0,2,1,3,1,3,0,2,0,0,4,0,0,2,0,2,0,2,1,3,1,3,0,2,1,3,0,2,0,1,3,0,2,0,2,0,2,0,2,1,3,1,3,1,3,0,0,4,4",
+          "period": "1u",
+          "idle": 4
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/mfrc522",
+        "params": {
+          "cards": "admin=04 A1 B2 C3,user=11 22 33 44;4=00112233445566778899AABBCCDDEEFF"
+        }
+      }
+    ],
+    "nets": {
+      "MOSI": [
+        "PG.OUT0",
+        "DUT.MOSI"
+      ],
+      "SCK": [
+        "PG.OUT1",
+        "DUT.SCK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.SDA"
+      ],
+      "MISO": [
+        "DUT.MISO"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.card_state": {
+      "at": "1500us",
+      "equals": "ready"
+    },
+    "output:DUT.card": {
+      "at": "1900us",
+      "equals": "11223344"
+    }
+  },
+  "inputs": [
+    {
+      "at": "0",
+      "target": "DUT",
+      "input": "card",
+      "value": "admin"
+    },
+    {
+      "at": "1700us",
+      "target": "DUT",
+      "input": "card",
+      "value": "user"
+    }
+  ]
+}

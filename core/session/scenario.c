@@ -5,11 +5,14 @@
 #include "session/session_priv.h"
 #include "mcu/mcu.h"
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include "analog/analog.h"
 #include "host/host.h"
 #include "util/num.h"
 #include "util/str.h"
+#include "util/match.h"
+#include "project/loader.h"
 
 typedef struct assertion {
     const esk_json *def;
@@ -120,6 +123,111 @@ int esk_probe_window(const esk_probe *p, const char *measure, es_time_t from,
     return isfinite(*out);
 }
 
+/* a diagnostic code against a pattern: exact, or a prefix ending in '*' */
+static int code_matches(const char *pattern, const char *code)
+{
+    size_t n;
+    if (!pattern || !code)
+        return 0;
+    n = strlen(pattern);
+    if (n && pattern[n - 1] == '*')
+        return !strncmp(pattern, code, n - 1);
+    return !strcmp(pattern, code);
+}
+
+static int code_listed(const esk_json *list, const char *code)
+{
+    size_t k;
+    for (k = 0; k < esk_json_len(list); k++)
+        if (code_matches(esk_json_str(esk_json_at(list, k)), code))
+            return 1;
+    return 0;
+}
+
+static int severity_rank(const char *sev)
+{
+    return !strcmp(sev, "fatal") ? 3 : !strcmp(sev, "error") ? 2 : !strcmp(sev, "warning") ? 1 : 0;
+}
+
+/* a serial "matches": the pattern's last match in the text (the latest
+ * print), and its group as a number against equals, min/max or a part's
+ * output now (equals_output), within tolerance */
+static void serial_matches(es_session *s, assertion *a, const esk_json *expect, const char *text)
+{
+    const char *pattern = esk_json_get_str(expect, "matches", "");
+    const char *ref = esk_json_get_str(expect, "equals_output", NULL);
+    const esk_json *eq = esk_json_get(expect, "equals");
+    double tol = esk_json_get_num(expect, "tolerance", 0), v, want = 0;
+    esk_match m;
+    char num[64];
+    size_t n;
+    int r = esk_match_last(pattern, text, strlen(text), &m), have_want = 0;
+    if (r < 0) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "pattern \"%s\" uses what the matcher does not know (alternation, counted repeats, nested groups)", pattern);
+        return;
+    }
+    if (!r) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "text does not match \"%s\"", pattern);
+        return;
+    }
+    if (!m.has_group || (!ref && !esk_json_is(eq, ESK_JSON_NUMBER) && !esk_json_get(expect, "min") && !esk_json_get(expect, "max")))
+        return; /* the match itself is what was expected */
+    n = m.group_end - m.group_start < sizeof num - 1 ? m.group_end - m.group_start : sizeof num - 1;
+    memcpy(num, text + m.group_start, n);
+    num[n] = 0;
+    {
+        char *end = NULL;
+        v = strtod(num, &end);
+        if (!n || !end || *end) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "captured \"%s\" is not a number", num);
+            return;
+        }
+    }
+    esk_json_free(s->a, a->observed);
+    a->observed = esk_json_new_number(s->a, v);
+    if (ref) {
+        char inst[128], q[64];
+        esk_comp *c;
+        esk_json *out;
+        const esk_json *val;
+        if (esk_split_pin_ref(ref, inst, sizeof inst, q, sizeof q) || !(c = esk_engine_comp(&s->eng, inst)) || !c->ops->observe) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "equals_output names %s, which is no part's output", ref);
+            return;
+        }
+        out = esk_json_new_object(s->a);
+        if (out)
+            c->ops->observe(c, out);
+        val = esk_json_get(out, q);
+        if (val && val->type == ESK_JSON_NUMBER) {
+            want = val->u.number.value;
+            have_want = 1;
+        }
+        esk_json_free(s->a, out);
+        if (!have_want) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "%s has no numeric output %s", inst, q);
+            return;
+        }
+    } else if (esk_json_is(eq, ESK_JSON_NUMBER)) {
+        want = eq->u.number.value;
+        have_want = 1;
+    }
+    if (have_want && fabs(v - want) > tol) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "printed %g, expected %g%s%s within %g", v, want, ref ? " from " : "", ref ? ref : "", tol);
+    } else if (esk_json_get(expect, "min") && v < esk_json_get_num(expect, "min", 0)) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "printed %g, below %g", v, esk_json_get_num(expect, "min", 0));
+    } else if (esk_json_get(expect, "max") && v > esk_json_get_num(expect, "max", 0)) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "printed %g, above %g", v, esk_json_get_num(expect, "max", 0));
+    }
+}
+
 static void evaluate(es_session *s, assertion *a)
 {
     const esk_json *def = a->def;
@@ -136,16 +244,31 @@ static void evaluate(es_session *s, assertion *a)
         return;
     }
     if (a->mode == 3) {
-        const esk_json *forbid = esk_json_get(esk_json_get(def, "diagnostics"), "forbid");
+        const esk_json *dg = esk_json_get(def, "diagnostics");
+        const esk_json *forbid = esk_json_get(dg, "forbid"), *allow = esk_json_get(dg, "allow"), *require = esk_json_get(dg, "require");
+        const char *worst = esk_json_get_str(dg, "forbid_severity", NULL);
+        int floor = worst ? severity_rank(worst) : 99;
         esk_json *all = esk_diag_to_json(&s->diag);
         size_t i, k;
-        for (i = 0; all && i < esk_json_len(all); i++) {
-            const char *code = esk_json_get_str(esk_json_at(all, i), "code", "");
-            for (k = 0; k < esk_json_len(forbid); k++) {
-                if (esk_str_eq(esk_json_str(esk_json_at(forbid, k)), code)) {
-                    a->ok = 0;
-                    esk_snprintf(a->reason, sizeof a->reason, "diagnostic %s was raised", code);
-                }
+        for (i = 0; a->ok && all && i < esk_json_len(all); i++) {
+            const esk_json *d = esk_json_at(all, i);
+            const char *code = esk_json_get_str(d, "code", ""), *sev = esk_json_get_str(d, "severity", "info");
+            if (code_listed(forbid, code)) {
+                a->ok = 0;
+                esk_snprintf(a->reason, sizeof a->reason, "diagnostic %s was raised: %s", code, esk_json_get_str(d, "message", ""));
+            } else if (severity_rank(sev) >= floor && !code_listed(allow, code)) {
+                a->ok = 0;
+                esk_snprintf(a->reason, sizeof a->reason, "%s %s was raised: %s", sev, code, esk_json_get_str(d, "message", ""));
+            }
+        }
+        for (k = 0; a->ok && k < esk_json_len(require); k++) {
+            const char *want = esk_json_str(esk_json_at(require, k));
+            int seen = 0;
+            for (i = 0; all && !seen && i < esk_json_len(all); i++)
+                seen = code_matches(want, esk_json_get_str(esk_json_at(all, i), "code", ""));
+            if (!seen) {
+                a->ok = 0;
+                esk_snprintf(a->reason, sizeof a->reason, "no diagnostic %s was raised", want ? want : "?");
             }
         }
         esk_json_free(s->a, all);
@@ -264,6 +387,8 @@ static void evaluate(es_session *s, assertion *a)
         } else if (lacks && strstr(text, lacks)) {
             a->ok = 0;
             esk_snprintf(a->reason, sizeof a->reason, "text contains \"%s\"", lacks);
+        } else if (esk_json_get_str(expect, "matches", NULL)) {
+            serial_matches(s, a, expect, text);
         }
         esk_json_free(s->a, out);
         return;
@@ -352,6 +477,7 @@ esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *
         esk_json_free(s->a, assertions);
         return NULL;
     }
+    esk_session_perf_check(s);
     esk_json_set_string(s->a, root, "engine", es_version().string);
     esk_json_set_string(s->a, root, "protocol", "1.0");
     esk_json_set_string(s->a, proj, "name", s->name ? s->name : "");

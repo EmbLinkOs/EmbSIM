@@ -592,6 +592,29 @@ static void test_load_diagnostics(void)
         CHECK(!has_diag(s, "net.unconnected_required_pin", "load", NULL));
         CHECK(es_session_load_json(s, bad_probe, strlen(bad_probe), lib_dir) != ES_OK);
         CHECK(has_diag(s, "probe.invalid", "load", "did you mean output:D1.lit?"));
+        /* diagnostics.forbid by prefix, forbid_severity with allow, require */
+        CHECK(es_session_load_json(s, open_pin, strlen(open_pin), lib_dir) == ES_OK);
+        {
+            static const char *sc_text = "{\"schema_version\":1,\"kind\":\"scenario\",\"name\":\"d\",\"until\":\"1ms\",\"assertions\":["
+                "{\"id\":\"prefix\",\"always\":true,\"diagnostics\":{\"forbid\":[\"net.*\"]}},"
+                "{\"id\":\"other\",\"always\":true,\"diagnostics\":{\"forbid\":[\"mcu.*\"]}},"
+                "{\"id\":\"severity\",\"always\":true,\"diagnostics\":{\"forbid_severity\":\"warning\"}},"
+                "{\"id\":\"allowed\",\"always\":true,\"diagnostics\":{\"forbid_severity\":\"warning\",\"allow\":[\"net.unconnected*\"]}},"
+                "{\"id\":\"required\",\"always\":true,\"diagnostics\":{\"require\":[\"net.unconnected_required_pin\"]}},"
+                "{\"id\":\"absent\",\"always\":true,\"diagnostics\":{\"require\":[\"mcu.*\"]}}]}";
+            int line;
+            const char *err;
+            esk_json *sc = esk_json_parse(s->a, sc_text, strlen(sc_text), &line, &err);
+            esk_json *report = sc ? esk_scenario_run(s, sc, lib_dir, 0) : NULL;
+            const esk_json *as = esk_json_get(report, "assertions");
+            static const int want[] = {0, 1, 0, 1, 1, 0};
+            size_t i;
+            CHECK(esk_json_len(as) == 6);
+            for (i = 0; i < esk_json_len(as) && i < 6; i++)
+                CHECK(esk_json_get_bool(esk_json_at(as, i), "ok", 0) == want[i]);
+            esk_json_free(s->a, report);
+            esk_json_free(s->a, sc);
+        }
     }
     es_session_destroy(s);
     free(open_pin);

@@ -130,11 +130,63 @@ local function start_timer(ctx)
   ctx.wake_at(s.timer_at, TOK_TIMER)
 end
 
+-- whether the card is in the field: as the last `card` input left it, else
+-- as `card_present` says
+local function in_field(ctx)
+  local s = ctx.state
+  if s.present ~= nil then return s.present end
+  return ctx.input("card_present") and true or false
+end
+
+local function uid_key(uid) return string.format("%02X%02X%02X%02X", uid[1], uid[2], uid[3], uid[4]) end
+
+-- the card a `card` input names: one of the project's cards by name, else a
+-- UID; each card keeps its own memory between presentations, as a real one
+local function card_for(ctx, value)
+  local s = ctx.state
+  local named = s.named[value]
+  local uid = named and named.uid or hexbytes(value)
+  if #uid ~= 4 then return nil end
+  local key = uid_key(uid)
+  local c = s.cards[key]
+  if not c then
+    c = new_card(uid)
+    if named then for blk, bytes in pairs(named.blocks) do if blk > 0 then c.mem[blk] = bytes end end end
+    s.cards[key] = c
+  end
+  return c
+end
+
+-- the `cards` parameter: "name=UID[;N=32 hex digits]..." entries separated
+-- by commas, N a block (a sector trailer sets the keys and access bits)
+local function parse_cards(text)
+  local named = {}
+  for entry in tostring(text or ""):gmatch("[^,]+") do
+    local name, rest = entry:match("^%s*([%w_%-]+)%s*=%s*(.-)%s*$")
+    if name then
+      local parts, first = {}, true
+      for part in rest:gmatch("[^;]+") do
+        if first then parts.uid = hexbytes(part); first = false
+        else
+          local n, hex = part:match("^%s*(%d+)%s*=%s*(%x+)%s*$")
+          if n and #hex == 32 then parts[tonumber(n)] = hexbytes(hex) end
+        end
+      end
+      if parts.uid and #parts.uid == 4 then
+        local blocks = {}
+        for k, v in pairs(parts) do if type(k) == "number" and k < 64 then blocks[k] = v end end
+        named[name] = { uid = parts.uid, blocks = blocks }
+      end
+    end
+  end
+  return named
+end
+
 -- the card's answer to a frame (bytes, valid bits in the last), or nil
 local function card_answer(ctx, frame, lastbits)
   local s = ctx.state
   local c = s.card
-  if not c or not ctx.input("card_present") then return nil end
+  if not c or not in_field(ctx) then return nil end
   local function with_crc(t)
     local lo, hi = crc_a(t, 0x6363)
     t[#t + 1], t[#t + 2] = lo, hi
@@ -198,7 +250,7 @@ end
 local function authenticate(ctx, data)
   local s = ctx.state
   local c = s.card
-  if not c or not ctx.input("card_present") or (c.state ~= "active" and c.state ~= "auth") or #data < 12 then return false end
+  if not c or not in_field(ctx) or (c.state ~= "active" and c.state ~= "auth") or #data < 12 then return false end
   local which, blk = data[1], data[2]
   for i = 1, 4 do if data[8 + i] ~= c.uid[i] then return false end end
   local trailer = c.mem[(blk // 4) * 4 + 3]
@@ -342,7 +394,8 @@ end
 function M.reset(ctx)
   local s = ctx.state
   reset_regs(s)
-  s.card = new_card(hexbytes(ctx.params.card_uid))
+  s.cards, s.named, s.present = {}, parse_cards(ctx.params.cards), nil
+  s.card = card_for(ctx, ctx.params.card_uid) or new_card(hexbytes(ctx.params.card_uid))
   ctx.drive("RST", 1, "weak") -- the module's pull-up on NRSTPD
   s.down = false
   ctx.drive("IRQ", 0)
@@ -350,7 +403,22 @@ end
 
 function M.on_set(ctx, name, value)
   local s = ctx.state
+  if name == "card" then
+    -- a card taken away loses power; the one presented starts idle
+    if s.card then s.card.state, s.card.auth = "idle", nil end
+    s.crypto = false
+    if value == nil or value == "" then
+      s.present = false
+      return true
+    end
+    local c = card_for(ctx, value)
+    if not c then return false end
+    s.card, s.present = c, true
+    c.state, c.auth = "idle", nil
+    return true
+  end
   if name ~= "card_present" then return false end
+  s.present = nil -- card_present speaks for the card in hand
   if not value and s.card then s.card.state, s.card.auth = "idle", nil end -- out of the field: power lost
   return true
 end
@@ -395,6 +463,7 @@ function M.observe(ctx)
   local s = ctx.state
   local c = s.card
   return { antenna = antenna_on(s), card_state = c and c.state or "none", crypto = s.crypto and true or false,
+    card = (c and in_field(ctx)) and uid_key(c.uid) or "",
     block1 = c and string.format(string.rep("%02X", 16), table.unpack(c.mem[1])) or "" }
 end
 

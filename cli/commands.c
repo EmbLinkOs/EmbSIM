@@ -37,7 +37,9 @@ static void usage_to(FILE *out)
           "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json] [--quiet]\n"
           "  run --target BOARD --image FILE [options]   one board of the catalog running an image, no project,\n"
           "      plugged into a USB port (5 V on its VBUS) under the electrical policy\n"
-          "      [--image [ID=]FILE] [--until-text TEXT] [--console] [--allow-no-image]\n"
+          "      [--image [ID=]FILE] [--until-text TEXT] [--console] [--allow-no-image] [--build]\n"
+          "      [--dump-regs PERIPH[,BOARD.PERIPH]...]   registers at the end, decoded\n"
+          "      [--circuit-profile FILE|-]   islands, nets and parts by simulation cost (.json for JSON)\n"
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]]\n"
           "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
@@ -447,8 +449,150 @@ static int missing_images(es_session *s)
         }
     }
     if (n)
-        fputs("embsim: build the firmware, fix boards[].firmware.image, or pass --allow-no-image to run the circuit without it\n", stderr);
+        fputs("embsim: build the firmware (or run --build), fix boards[].firmware.image, or pass --allow-no-image to run the circuit without it\n", stderr);
     return n != 0;
+}
+
+/* run --build (issue #91): build each board whose image the load found
+ * missing (mcu.no_image) or older than its sources (mcu.stale_image), with
+ * the project's toolchain, as embsim build would. 1 when something was
+ * built (the caller loads the project again), 0 when nothing needed it, -1
+ * when a build failed. Never at load: building runs the host's compiler. */
+static int build_stale(es_session *s)
+{
+    char ids[8][96];
+    int n = 0, k, built = 0;
+    size_t i;
+    for (i = 0; i < s->diag.len && n < 8; i++) {
+        const esk_diag_record *r = &s->diag.log[(s->diag.head + i) % s->diag.cap];
+        if (!strcmp(r->code, "mcu.no_image") || !strcmp(r->code, "mcu.stale_image")) {
+            for (k = 0; k < n && strcmp(ids[k], r->subject); k++)
+                ;
+            if (k == n) {
+                snprintf(ids[n], sizeof ids[n], "%s", r->subject);
+                n++;
+            }
+        }
+    }
+    for (k = 0; k < n; k++) {
+        esk_json *rep = NULL;
+        es_status st = esk_toolchain_build(s, ids[k], NULL, &rep);
+        int ok = st == ES_OK && rep && esk_json_get_bool(rep, "ok", 0);
+        if (rep)
+            fputs(esk_json_get_str(rep, "log", ""), stderr);
+        fprintf(stderr, EMBSIM_ID ": %s %s: %s\n", ok ? "built" : "build failed for", ids[k],
+                rep ? esk_json_get_str(rep, "image", "?") : es_strerror(st));
+        esk_json_free(s->a, rep);
+        if (!ok)
+            return -1;
+        built = 1;
+    }
+    return built;
+}
+
+/* run --dump-regs LIST (issue #95): each named peripheral's registers as the
+ * run leaves them, decoded; a name is PERIPH (every board that has one) or
+ * BOARD.PERIPH. 0 when a name matched nothing */
+static int dump_regs(es_session *s, const char *list, FILE *out)
+{
+    char name[96];
+    const char *p = list;
+    int ok = 1;
+    while (*p) {
+        size_t n = strcspn(p, ",");
+        const char *dot;
+        size_t i;
+        int found = 0;
+        esk_strbuf b;
+        if (n && n < sizeof name) {
+            memcpy(name, p, n);
+            name[n] = 0;
+            dot = strchr(name, '.');
+            esk_strbuf_init(&b, s->a);
+            for (i = 0; i < s->boards.len; i++) {
+                esk_board_inst *bi = (esk_board_inst *)s->boards.data[i];
+                if (!bi->mcu)
+                    continue;
+                if (dot && (strncmp(bi->id, name, (size_t)(dot - name)) || bi->id[dot - name]))
+                    continue;
+                found |= esk_mcu_dump_regs(bi->mcu, dot ? dot + 1 : name, &b);
+            }
+            if (b.data)
+                fputs(b.data, out);
+            esk_strbuf_free(&b);
+            if (!found) {
+                fprintf(stderr, EMBSIM_ID ": --dump-regs: no peripheral %s on the project's boards\n", name);
+                ok = 0;
+            }
+        }
+        p += n;
+        if (*p == ',')
+            p++;
+    }
+    return ok;
+}
+
+/* run --circuit-profile FILE (issue #87): where the circuit's time went,
+ * as text, or JSON when FILE ends in .json; "-" for stderr */
+static int write_circuit_profile(es_session *s, const char *path)
+{
+    esk_json *p = esk_session_circuit_profile(s);
+    const esk_json *isl = esk_json_get(p, "islands"), *nets = esk_json_get(p, "nets"), *comps = esk_json_get(p, "components");
+    size_t n = strlen(path), i;
+    esk_strbuf b;
+    int ok;
+    if (!p)
+        return 0;
+    esk_strbuf_init(&b, s->a);
+    if (n > 5 && !strcmp(path + n - 5, ".json")) {
+        char *t = esk_json_format(s->a, p, 2, NULL);
+        if (t) {
+            esk_strbuf_puts(&b, t);
+            esk_strbuf_puts(&b, "\n");
+            esk_strfree(s->a, t);
+        }
+    } else {
+        esk_strbuf_printf(&b, "circuit profile: %.6g s simulated in %.3g s; %lld analog steps, %.3g s solving, %lld events\n",
+                          esk_json_get_num(p, "simulated_s", 0), esk_json_get_num(p, "wall_time_s", 0),
+                          (long long)esk_json_get_int(p, "analog_steps", 0), esk_json_get_num(p, "solve_s", 0),
+                          (long long)esk_json_get_int(p, "events", 0));
+        esk_strbuf_printf(&b, "\nanalog islands, by solve time\n  %-24s %6s %6s %10s %8s %10s %8s %6s  %s\n", "island", "nodes",
+                          "devs", "steps", "rejects", "newton", "solve s", "share", "busiest net");
+        for (i = 0; i < esk_json_len(isl); i++) {
+            const esk_json *o = esk_json_at(isl, i);
+            esk_strbuf_printf(&b, "  %-24s %6lld %6lld %10lld %8lld %10lld %8.3f %5.1f%%  %s\n", esk_json_get_str(o, "name", ""),
+                              (long long)esk_json_get_int(o, "nodes", 0), (long long)esk_json_get_int(o, "devices", 0),
+                              (long long)esk_json_get_int(o, "steps", 0), (long long)esk_json_get_int(o, "rejections", 0),
+                              (long long)esk_json_get_int(o, "newton_iterations", 0), esk_json_get_num(o, "solve_s", 0),
+                              100.0 * esk_json_get_num(o, "solve_share", 0), esk_json_get_str(o, "busiest_net", "-"));
+        }
+        esk_strbuf_printf(&b, "\nnets, by edges\n  %-24s %10s %12s %8s\n", "net", "edges", "Hz", "island");
+        for (i = 0; i < esk_json_len(nets); i++) {
+            const esk_json *o = esk_json_at(nets, i);
+            long long nodes = (long long)esk_json_get_int(o, "island_nodes", 0);
+            char where[24];
+            snprintf(where, sizeof where, nodes ? "%lld nodes" : "digital", nodes);
+            esk_strbuf_printf(&b, "  %-24s %10lld %12.4g %8s\n", esk_json_get_str(o, "name", ""), (long long)esk_json_get_int(o, "edges", 0),
+                              esk_json_get_num(o, "hz", 0), where);
+        }
+        esk_strbuf_printf(&b, "\nparts, by events\n  %-24s %-24s %10s %10s %10s\n", "part", "kind", "edges", "wakes", "inputs");
+        for (i = 0; i < esk_json_len(comps); i++) {
+            const esk_json *o = esk_json_at(comps, i);
+            esk_strbuf_printf(&b, "  %-24s %-24s %10lld %10lld %10lld\n", esk_json_get_str(o, "id", ""), esk_json_get_str(o, "kind", ""),
+                              (long long)esk_json_get_int(o, "edges", 0), (long long)esk_json_get_int(o, "wakes", 0),
+                              (long long)esk_json_get_int(o, "inputs", 0));
+        }
+    }
+    ok = !b.oom;
+    if (ok && !strcmp(path, "-"))
+        fputs(b.data ? b.data : "", stderr);
+    else if (ok && esk_host_write_file(path, b.data ? b.data : "", b.len) != ES_OK) {
+        fprintf(stderr, EMBSIM_ID ": cannot write the circuit profile %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    esk_json_free(s->a, p);
+    return ok;
 }
 
 static int cmd_run(int argc, char **argv, const char *argv0)
@@ -456,7 +600,8 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     const char *project = NULL, *scenario = NULL, *policy = NULL, *record = NULL, *library = NULL;
     const char *coverage = NULL, *profile = NULL, *stack = NULL, *faults = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
     int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, fault_fmt = ESK_AN_TEXT, console = 0;
-    int allow_no_image = 0;
+    int allow_no_image = 0, build = 0;
+    const char *dump = NULL, *circuit = NULL;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -484,6 +629,9 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--until-text") && more) until_text = argv[++i];
         else if (!strcmp(a, "--console")) console = 1;
         else if (!strcmp(a, "--allow-no-image")) allow_no_image = 1;
+        else if (!strcmp(a, "--build")) build = 1;
+        else if (!strcmp(a, "--dump-regs") && more) dump = argv[++i];
+        else if (!strcmp(a, "--circuit-profile") && more) circuit = argv[++i];
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
                   !strcmp(a, "--faults-format")) && more) {
             unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
@@ -510,6 +658,23 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         fprintf(stderr, "embsim: cannot load %s\n", target ? target : project);
         es_session_destroy(s);
         return 2;
+    }
+    if (build && !target && !image) {
+        int b = build_stale(s);
+        if (b < 0) {
+            es_session_destroy(s);
+            return 2;
+        }
+        if (b > 0) { /* the new images, from a fresh load */
+            es_session_destroy(s);
+            s = open_session(policy, argv0, library);
+            if (!s) return 2;
+            if (es_session_load_file(s, project) != ES_OK) {
+                fprintf(stderr, "embsim: cannot load %s\n", project);
+                es_session_destroy(s);
+                return 2;
+            }
+        }
     }
     if (target)
         project = image; /* the run's name in its report and recording */
@@ -632,6 +797,10 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         print_json(report, s->a);
     else
         print_human_report(s, report);
+    if (dump && !dump_regs(s, dump, opt_json ? stderr : stdout) && !rc)
+        rc = 2;
+    if (circuit && !write_circuit_profile(s, circuit) && !rc)
+        rc = 2;
     esk_json_free(s->a, report);
     es_session_destroy(s);
     return rc;

@@ -101,6 +101,15 @@ int esk_host_file_exists(const char *path)
     return path && stat(path, &st) == 0;
 }
 
+int esk_host_file_mtime(const char *path, double *seconds)
+{
+    struct stat st;
+    if (!path || stat(path, &st) != 0)
+        return -1;
+    *seconds = (double)st.st_mtime;
+    return 0;
+}
+
 int esk_host_is_dir(const char *path)
 {
     struct stat st;
@@ -178,6 +187,14 @@ uint64_t esk_host_monotonic_ms(void)
     if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
         return 0;
     return (uint64_t)ts.tv_sec * UINT64_C(1000) + (uint64_t)ts.tv_nsec / UINT64_C(1000000);
+}
+
+uint64_t esk_host_monotonic_ns(void)
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+        return 0;
+    return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
 }
 
 void esk_host_sleep_ms(uint32_t ms)

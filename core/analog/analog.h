@@ -73,6 +73,7 @@ struct esk_island {
     esk_event_handle step_event;
     uint64_t steps, rejections, newton_iters;
     uint64_t quiet_steps;         /* steps a steady island took without a solve */
+    uint64_t solve_ns;            /* host time in esk_island_step, for the circuit profile */
     int failed;                   /* frozen after a fatal diagnostic */
     void *priv;                   /* solver-private */
     /* the engine's: a touch woke the island at `at` (a quiet island has no

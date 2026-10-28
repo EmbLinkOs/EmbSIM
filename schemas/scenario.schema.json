@@ -46,6 +46,8 @@
         "equals": {"oneOf": [{"type": "number"}, {"type": "string"}, {"type": "boolean"}]},
         "contains": {"type": "string"},
         "not_contains": {"type": "string"},
+        "matches": {"type": "string", "minLength": 1, "description": "Serial text: a pattern (literals, ., [classes], \\d \\s \\w, * + ?, ^ $, one ( ) group), matched at its last place; its group as a number meets equals, min/max or equals_output within tolerance."},
+        "equals_output": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]*\\.[A-Za-z_][A-Za-z0-9_]*$", "description": "With matches: a part's numeric output (COMPONENT.OUTPUT) read at the same instant."},
         "edges": {"type": "integer", "minimum": 0},
         "frequency_hz": {"type": "number", "exclusiveMinimum": 0},
         "tolerance": {"type": "number", "minimum": 0}
@@ -75,8 +77,10 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "forbid": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+$"}},
-            "require": {"type": "array", "items": {"type": "string", "pattern": "^[a-z]+\\.[a-z_]+$"}}
+            "forbid": {"type": "array", "items": {"type": "string", "pattern": "^[a-z]+\\.([a-z_]+\\*?|\\*)$"}, "description": "Codes no diagnostic may have: exact (mcu.clock_gated) or a prefix ending in * (mcu.*)."},
+            "forbid_severity": {"enum": ["info", "warning", "error", "fatal"], "description": "Fails on any diagnostic of this severity or worse that allow does not name."},
+            "allow": {"type": "array", "items": {"type": "string", "pattern": "^[a-z]+\\.([a-z_]+\\*?|\\*)$"}, "description": "Codes forbid_severity lets through, exact or by prefix."},
+            "require": {"type": "array", "items": {"type": "string", "pattern": "^[a-z]+\\.([a-z_]+\\*?|\\*)$"}, "description": "Codes at least one diagnostic must have, exact or by prefix."}
           }
         }
       }

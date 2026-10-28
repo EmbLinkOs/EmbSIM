@@ -28,6 +28,7 @@
 
 #include "engine/engine.h"
 #include "mcu/mach.h"
+#include "util/str.h"
 
 extern const esk_model_ops esk_mcu_ops;
 
@@ -89,6 +90,10 @@ const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total);
 uint32_t esk_mcu_console_baud(esk_comp *c);
 /* each UART's received text by unit, and "console": the console's unit */
 esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a);
+/* the registers of peripheral `periph` as they read now, each with its set
+ * fields decoded from the description ("  SR1 = 0x0082: ADDR TXE"), after a
+ * "B1.I2C1" line; 0 when the MCU has no such peripheral */
+int esk_mcu_dump_regs(esk_comp *c, const char *periph, esk_strbuf *out);
 /* the firmware image's name as the project gives it */
 const char *esk_mcu_image_name(const esk_comp *c);
 

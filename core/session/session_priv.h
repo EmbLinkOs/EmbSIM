@@ -119,6 +119,7 @@ struct es_session {
     /* statistics */
     uint64_t rpc_count;
     double wall_time_s;
+    int perf_hot_said; /* perf.hot_net raised */
     /* called each millisecond of a scenario while set (the CLI's --console) */
     void (*scenario_follow)(es_session *s, void *ctx);
     void *scenario_follow_ctx;
@@ -199,6 +200,11 @@ es_status esk_rpc_dispatch(es_session *s, const esk_json *req, esk_json **respon
 /* scenario.c */
 esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *base_dir, es_time_t until_override);
 esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *assertions);
+/* perf.c: raise perf.hot_net and perf.island_size for what the run so far
+ * shows (once each; the report calls it), and the circuit profile (islands,
+ * nets and parts by cost, issue #87) */
+void esk_session_perf_check(es_session *s);
+esk_json *esk_session_circuit_profile(es_session *s);
 /* probes sampled from net changes */
 void esk_session_on_net_change(void *ctx, esk_net *net);
 /* record.c: recordings (SPEC-012): observations from now on; a core's
