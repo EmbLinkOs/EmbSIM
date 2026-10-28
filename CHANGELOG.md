@@ -5,6 +5,26 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Diagnostics, probes and images reported where they are found
+
+- STM32 I2C: a CR1 write between the SR1 and SR2 reads (clearing ACK before a
+  single-byte receive, as the reference manual has it) no longer stops the SR2
+  read clearing ADDR, which had left SCL held and firmware looping in its
+  event interrupt (#80). A START or repeated START in transmission now clears
+  BTF and TXE, as a STOP does (#81).
+- `embsim run` refuses a project whose firmware image cannot be read: exit 2
+  with `project.image_missing` and the path as written and as resolved;
+  `--allow-no-image` runs the circuit without it (#82).
+- Diagnostics carry a `phase` (`load` or `run`); a run's reset keeps the
+  load's, so netlist warnings reach `--json` reports and `diagnostics.forbid`
+  (#83). `net.unconnected_required_pin` names its pin as `PART.PIN`.
+- A probe whose target has an unknown kind or names nothing fails the load
+  with `probe.invalid`, listing the kinds and suggesting one (`did you mean
+  output:OLED.on?`) (#84). Not yet checked: whether an output or device
+  quantity exists on its part.
+- `embsim validate` reports the netlist checks, and what the circuit settled at
+  its first instant raises (contention, supplies), without running firmware;
+  `--json` lists each with its subject (#85).
 ### Live schematic simulation surface
 
 - Center Run on an interactive schematic without loading the optional 3D renderer.

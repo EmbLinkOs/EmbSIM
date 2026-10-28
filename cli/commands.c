@@ -32,7 +32,7 @@ static void usage(void)
           "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json]\n"
           "  run --target BOARD --image FILE [options]   one board of the catalog running an image, no project,\n"
           "      plugged into a USB port (5 V on its VBUS) under the electrical policy\n"
-          "      [--image [ID=]FILE] [--until-text TEXT] [--console]\n"
+          "      [--image [ID=]FILE] [--until-text TEXT] [--console] [--allow-no-image]\n"
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]]\n"
           "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
@@ -386,11 +386,29 @@ static int write_analysis(es_session *s, const char *board, unsigned which, int 
     return ok;
 }
 
+/* a board whose firmware image cannot be read would run its whole time
+ * doing nothing: say so and stop, unless the circuit is to run without it */
+static int missing_images(es_session *s)
+{
+    size_t i, n = 0;
+    for (i = 0; i < s->diag.len; i++) {
+        const esk_diag_record *r = &s->diag.log[(s->diag.head + i) % s->diag.cap];
+        if (!strcmp(r->code, "mcu.no_image")) {
+            fprintf(stderr, "embsim: error: project.image_missing (%s)\n        %s\n", r->subject, r->message);
+            n++;
+        }
+    }
+    if (n)
+        fputs("embsim: build the firmware, fix boards[].firmware.image, or pass --allow-no-image to run the circuit without it\n", stderr);
+    return n != 0;
+}
+
 static int cmd_run(int argc, char **argv, const char *argv0)
 {
     const char *project = NULL, *scenario = NULL, *policy = NULL, *record = NULL, *library = NULL;
     const char *coverage = NULL, *profile = NULL, *stack = NULL, *faults = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
     int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, fault_fmt = ESK_AN_TEXT, console = 0;
+    int allow_no_image = 0;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -417,6 +435,7 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--image") && more) image = argv[++i];
         else if (!strcmp(a, "--until-text") && more) until_text = argv[++i];
         else if (!strcmp(a, "--console")) console = 1;
+        else if (!strcmp(a, "--allow-no-image")) allow_no_image = 1;
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
                   !strcmp(a, "--faults-format")) && more) {
             unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
@@ -446,6 +465,10 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     if (target)
         project = image; /* the run's name in its report and recording */
     else if (image && !override_image(s, image)) {
+        es_session_destroy(s);
+        return 2;
+    }
+    if (!image && !allow_no_image && missing_images(s)) {
         es_session_destroy(s);
         return 2;
     }
@@ -746,6 +769,10 @@ static int cmd_validate(int argc, char **argv, const char *argv0)
         s = open_session(NULL, argv0, library);
         if (!s) return 2;
         st = es_session_load_file(s, path);
+        /* the circuit settled at its first instant, firmware not run: what
+         * the wiring itself gets wrong (contention, supplies, families) */
+        if (st == ES_OK)
+            st = esk_session_do_advance(s, 0);
         {
             size_t errors = esk_diag_count(&s->diag, ES_SEV_ERROR) + esk_diag_count(&s->diag, ES_SEV_FATAL);
             if (opt_json) {

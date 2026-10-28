@@ -742,7 +742,8 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
     if (esk_host_read_file(s->a, path, &img, &len) != ES_OK) {
         /* not built yet: the MCU waits for its image (embsim build) */
         esk_diag_raise(&s->diag, ES_SEV_WARNING, "mcu.no_image", 0, "board", bi->id, NULL, 0,
-                       "%s: %s cannot be read; build the firmware (embsim build) to run it", bi->id, path);
+                       "%s: the firmware image %s (%s) cannot be read; build the firmware (embsim build) to run it",
+                       bi->id, rel, path);
         img = NULL;
         len = 0;
     }
@@ -987,7 +988,41 @@ static es_status apply_settings(es_session *s, const esk_json *settings)
     return ES_OK;
 }
 
-es_status esk_project_load(es_session *s, const esk_json *project, const char *base_dir)
+/* what is wrong with a probe target the session refused: its kind, or what
+ * it names (SPEC-007's probe targets) */
+static const char *const probe_kinds[] = {"net", "pin", "output", "device", "reg", "mem", "var", "serial"};
+
+static void probe_problem(es_session *s, const char *target, char *why, size_t cap)
+{
+    const char *colon = strchr(target, ':');
+    size_t hl = colon ? (size_t)(colon - target) : 0, i, best = 0;
+    int known = 0;
+    ES_UNUSED(s);
+    if (!colon || !hl) {
+        esk_snprintf(why, cap, "target \"%s\" is not KIND:NAME; kinds are net, pin, output, device, reg, mem, var, serial",
+                     target);
+        return;
+    }
+    for (i = 0; i < sizeof probe_kinds / sizeof probe_kinds[0]; i++) {
+        size_t kl = strlen(probe_kinds[i]);
+        if (kl == hl && !strncmp(target, probe_kinds[i], hl))
+            known = 1;
+        else if (!best && (!strncmp(target, probe_kinds[i], hl < kl ? hl : kl)))
+            best = i + 1; /* a kind it begins, or that begins it */
+    }
+    if (known) {
+        esk_snprintf(why, cap, "%s names nothing on the bench (no such %.*s)", target, (int)hl, target);
+        return;
+    }
+    if (best)
+        esk_snprintf(why, cap, "unknown probe kind \"%.*s\" in %s; kinds are net, pin, output, device, reg, mem, var, serial; did you mean %s:%s?",
+                     (int)hl, target, target, probe_kinds[best - 1], colon + 1);
+    else
+        esk_snprintf(why, cap, "unknown probe kind \"%.*s\" in %s; kinds are net, pin, output, device, reg, mem, var, serial",
+                     (int)hl, target, target);
+}
+
+static es_status project_load(es_session *s, const esk_json *project, const char *base_dir)
 {
     graph g;
     const esk_json *libs, *boards, *comps, *nets, *probes;
@@ -1172,9 +1207,12 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             if (!c->pins[k].net && c->pins[k].model.kind != ESK_PIN_NC) {
                 const esk_json *pins = esk_json_get(c->desc, "pins");
                 const esk_json *pd = esk_json_at(pins, k);
-                if (esk_json_get_bool(pd, "required", 1))
-                    esk_diag_raise(&s->diag, ES_SEV_WARNING, "net.unconnected_required_pin", 0, "pin", c->pins[k].name, NULL, 0,
-                                   "%s.%s is not connected", c->id, c->pins[k].name);
+                if (esk_json_get_bool(pd, "required", 1)) {
+                    char ref[160];
+                    esk_snprintf(ref, sizeof ref, "%s.%s", c->id, c->pins[k].name);
+                    esk_diag_raise(&s->diag, ES_SEV_WARNING, "net.unconnected_required_pin", 0, "pin", ref, NULL, 0,
+                                   "%s is not connected", ref);
+                }
             }
         }
     }
@@ -1188,14 +1226,32 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
         esk_probe *p = NULL;
         es_status ps = esk_session_probe_add(s, esk_json_get_str(pe, "id", NULL), esk_json_get_str(pe, "target", ""),
                                              esk_json_get_str(pe, "kind", NULL), esk_json_get_num(pe, "rate_hz", 0), &p);
-        if (ps != ES_OK)
-            ld_diag(s, ES_SEV_WARNING, "probe.invalid", esk_json_get_str(pe, "id", "probe"), "probe %s could not be created: %s",
-                    esk_json_get_str(pe, "target", "?"), es_strerror(ps));
+        if (ps != ES_OK) {
+            char why[320];
+            probe_problem(s, esk_json_get_str(pe, "target", ""), why, sizeof why);
+            ld_diag(s, ES_SEV_ERROR, "probe.invalid", esk_json_get_str(pe, "id", "probe"), "probe %s: %s",
+                    esk_json_get_str(pe, "id", "?"), why);
+            st = ES_ESCHEMA;
+        }
     }
+    if (st != ES_OK)
+        return st;
     s->loaded = 1;
     esk_session_world_load(s);
     esk_session_analyses_apply(s);
     return ES_OK;
+}
+
+/* a new project: the old one's diagnostics go; what this load raises stays
+ * through the runs' resets, in every report (phase "load") */
+es_status esk_project_load(es_session *s, const esk_json *project, const char *base_dir)
+{
+    es_status st;
+    esk_diag_clear(&s->diag);
+    s->diag.phase = ESK_DIAG_LOAD;
+    st = project_load(s, project, base_dir);
+    s->diag.phase = ESK_DIAG_RUN;
+    return st;
 }
 
 void esk_project_unload(es_session *s)

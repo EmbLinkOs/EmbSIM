@@ -21,12 +21,31 @@ void esk_diag_free(esk_diag *d)
     d->log = NULL;
 }
 
-void esk_diag_reset(esk_diag *d)
+void esk_diag_clear(esk_diag *d)
 {
     d->len = d->head = 0;
     memset(d->counts, 0, sizeof d->counts);
     d->fatal = 0;
     d->fatal_code[0] = 0;
+}
+
+void esk_diag_reset(esk_diag *d)
+{
+    size_t i, kept = 0;
+    memset(d->counts, 0, sizeof d->counts);
+    d->fatal = 0;
+    d->fatal_code[0] = 0;
+    for (i = 0; i < d->len; i++) {
+        const esk_diag_record *r = &d->log[(d->head + i) % d->cap];
+        if (r->phase != ESK_DIAG_LOAD)
+            continue;
+        if (kept != i)
+            d->log[(d->head + kept) % d->cap] = *r;
+        if ((unsigned)r->severity < 4)
+            d->counts[r->severity]++;
+        kept++;
+    }
+    d->len = kept;
 }
 
 static void copy(char *dst, size_t cap, const char *src)
@@ -57,6 +76,7 @@ void esk_diag_raise(esk_diag *d, es_severity_t sev, const char *code, es_time_t 
     copy(r->subject, sizeof r->subject, subject);
     copy(r->file, sizeof r->file, file);
     r->line = line;
+    r->phase = d->phase;
     va_start(ap, fmt);
     vsnprintf(r->message, sizeof r->message, fmt, ap);
     va_end(ap);
@@ -105,6 +125,7 @@ esk_json *esk_diag_to_json(const esk_diag *d)
         esk_json_set_string(d->a, o, "code", r->code);
         esk_json_set_string(d->a, o, "message", r->message);
         esk_json_set_u64_string(d->a, o, "time_ps", r->time_ps);
+        esk_json_set_string(d->a, o, "phase", r->phase == ESK_DIAG_LOAD ? "load" : "run");
         if (r->subject_kind[0]) {
             esk_json *s = esk_json_new_object(d->a);
             if (s) {
