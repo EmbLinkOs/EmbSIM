@@ -36,3 +36,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Verification.** CLI tests.
 **Trace.** 05 §2
 
+
+
+### CLI-005  Native engineering manifest export
+**Statement.** The manifest subcommand shall offer a human inventory/identity summary and a JSON artifact matching project.manifest. It shall preserve loaded native configurations and exact document identities, distinguish assembly packages from compiled models and reject invalid invocations/load failures without emitting a misleading artifact.
+**Rationale.** Command-line engineering output must agree with the graphical report and remain independently inspectable.
+**Status.** Accepted 2026-10-27
+**Verification.** Native manifest CLI/RPC parity, package/default/override checks and offline artifact validation.
+**Trace.** SPEC-008; ADR-042; docs/engineering/engineering-reports.md

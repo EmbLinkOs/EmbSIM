@@ -116,6 +116,23 @@ export interface Project {
   world?: WorldSpec;
 }
 
+/** Exact native-serialized JSON text and SHA-256 of its UTF-8 bytes. */
+export interface ManifestDocument { json: string; sha256: string }
+export interface ManifestInstance {
+  path: string; sheet: string; id: string; kind: 'component' | 'board'; reference: string;
+  catalog: string; resolution: 'native' | 'board-assembly' | 'unavailable' | 'demo';
+  params: Record<string, unknown>; requested_version?: string; model?: string;
+}
+export interface EngineeringManifest extends ManifestDocument { schema_version: 1; kind: 'engineering_manifest' }
+export interface EngineeringManifestData {
+  schema_version: 1; kind: 'engineering_manifest'; source: 'native' | 'demo';
+  engine: string; abi: number; now_ps: PsString; policy: Policy;
+  project: ManifestDocument; catalog: Record<string, ManifestDocument>;
+  instances: ManifestInstance[];
+  models: { path: string; reference: string; model: string; catalog: string; params: Record<string, unknown> }[];
+  libraries: { path: string; name: string; version: string; items: number }[];
+}
+
 /** Project-owned composite: ports point to local pins, never implicitly global nets. */
 export interface CircuitBlock {
   name: string;

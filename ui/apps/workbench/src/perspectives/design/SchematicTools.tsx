@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
+import { EngineeringReports } from '../engineering/EngineeringReports';
 import { Badge, Button, IconButton, Input, Select, useToast } from '@embsim/design';
 import type { Project } from '@embsim/protocol';
 import { type Arrangement, type LayoutOptions, type LayoutResult, type SchematicCanvasHandle } from '@embsim/scene';
@@ -77,6 +78,7 @@ export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDispl
     <div className="wb-schematic-ribbon">
       <div className="wb-schematic-ribbon__identity"><Network size={18} /><div><strong>Schematic</strong><span>{project?.components.length ?? 0} parts · {Object.keys(project?.nets ?? {}).length} nets</span></div></div>
       <div className="wb-schematic-ribbon__tools" role="toolbar" aria-label="Schematic tools">
+        <EngineeringReports />
         {onSheets && <Button size="sm" variant="ghost" onClick={onSheets}>Sheets and reusable blocks</Button>}
         <Button size="sm" icon={<Sparkles />} disabled={!project || !editable || busy} onClick={onStudio}>Auto layout</Button>
         <Button size="sm" variant="ghost" icon={<AlignStartHorizontal />} disabled={!editable || busy || selection.components.length < 2} onClick={() => { setMenu(menu === 'arrange' ? null : 'arrange'); setFinder(false); }}>Arrange</Button>

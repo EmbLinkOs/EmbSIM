@@ -6,6 +6,7 @@ temporary directories, exercised with both the jsonschema backend (when
 installed) and the built-in checker."""
 import copy
 import json
+import hashlib
 import os
 import shutil
 import sys
@@ -378,6 +379,54 @@ class ComponentTests(Base):
 
 
 class ProjectTests(Base):
+    def manifest_document(self, value):
+        text = json.dumps(value, ensure_ascii=False)
+        return {"json": text, "sha256": "sha256:" + hashlib.sha256(text.encode()).hexdigest()}
+
+    def manifest_fixture(self):
+        payload = {"schema_version": 1, "kind": "engineering_manifest", "source": "native", "engine": "0.1.0", "abi": 1,
+                   "now_ps": "0", "policy": "electrical", "project": self.manifest_document({"schema_version": 1, "kind": "project", "name": "Report", "policy": "electrical", "components": [], "nets": {}}),
+                   "catalog": {"component:testlib/widget": self.manifest_document(COMPONENT)}, "libraries": [], "models": [],
+                   "instances": [{"path": "A.R", "sheet": "A", "id": "R", "kind": "component", "reference": "testlib/widget",
+                                  "catalog": "component:testlib/widget", "resolution": "native", "params": {"resistance": 1000}}]}
+        return payload
+
+    def manifest_envelope(self, payload):
+        return {"schema_version": 1, "kind": "engineering_manifest", **self.manifest_document(payload)}
+
+    def test_engineering_manifest_verifies_without_source_libraries(self):
+        self.assertClean(self.check_doc(self.manifest_envelope(self.manifest_fixture()), "report.manifest.json"))
+
+    def test_engineering_manifest_detects_outer_and_nested_corruption(self):
+        payload = self.manifest_fixture()
+        envelope = self.manifest_envelope(payload)
+        envelope["json"] += " "
+        self.assertCode(self.check_doc(envelope), "manifest.hash")
+        payload["catalog"]["component:testlib/widget"]["json"] += " "
+        self.assertCode(self.check_doc(self.manifest_envelope(payload)), "manifest.hash")
+
+    def test_engineering_manifest_checks_shapes_identity_and_unique_paths(self):
+        payload = self.manifest_fixture()
+        payload["instances"].append(copy.deepcopy(payload["instances"][0]))
+        self.assertCode(self.check_doc(self.manifest_envelope(payload)), "manifest.duplicate")
+        payload["instances"][0]["reference"] = "wrong/part"
+        self.assertCode(self.check_doc(self.manifest_envelope(payload)), "manifest.catalog")
+        payload["instances"][0]["params"] = []
+        self.assertCode(self.check_doc(self.manifest_envelope(payload)), "manifest.schema")
+
+    def test_engineering_manifest_rejects_bad_json_and_labels_demo_unverified(self):
+        envelope = {"schema_version": 1, "kind": "engineering_manifest", "json": "{bad", "sha256": ""}
+        self.assertCode(self.check_doc(envelope), "manifest.json")
+        invalid = self.manifest_fixture()
+        invalid["instances"][0]["params"]["resistance"] = float("nan")
+        self.assertCode(self.check_doc(self.manifest_envelope(invalid)), "manifest.json")
+        payload = self.manifest_fixture()
+        payload["source"] = "demo"
+        payload["instances"][0]["resolution"] = "demo"
+        report = self.check_doc(self.manifest_envelope(payload))
+        self.assertClean(report)
+        self.assertTrue(any(f.code == "manifest.demo" and f.severity == "warning" for f in report.findings))
+
     def test_project_owned_blocks_and_qualified_probe(self):
         p = json.loads((validate.ROOT / 'examples/hierarchical-divider/project.json').read_text())
         p['probes'].append(dict(id='nested',target='net:A.D.OUT',kind='analog'))

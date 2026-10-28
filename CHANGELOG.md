@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Native engineering reports
+
+- Decode native CLI artifacts explicitly as UTF-8 on Windows; wait for browser
+  editing/projection readiness and compare connectivity independently of live states.
+
+- Capture atomic project/package/model inventories with native resolved parameters
+  and exact SHA-256 document identities through RPC and the manifest CLI command.
+- Group hierarchy-aware assembly quantities, retain compiled model dependencies
+  separately, export BOM/source artifacts and locate exact schematic instances.
+- Verify exports offline, reject stale GUI snapshots and distinguish generic parts,
+  simulation fixtures, source declarations and unqualified model behavior.
+
 ### Physically loaded instrument controls
 
 - Configure meter/scope/shunt/generator impedances and actual lead nets in Run,

@@ -24,6 +24,7 @@ import copy
 import math
 import fnmatch
 import glob
+import hashlib
 import json
 import os
 import re
@@ -40,6 +41,7 @@ EXAMPLES_DIR = ROOT / "examples"
 SCHEMA_BASE = "https://emblink.dev/embsim/schemas/"
 
 KIND_SCHEMAS = {
+    "engineering_manifest": "engineering-manifest.schema.json",
     "component": "component.schema.json",
     "component_test": "component-test.schema.json",
     "mcu": "mcu.schema.json",
@@ -1958,7 +1960,80 @@ def check_library(report: Report, file: Path, doc: dict, index: Index) -> None:
         pass
 
 
+def check_engineering_manifest(report: Report, file: Path, doc: dict, index: Index,
+                               schemas: Optional[Schemas] = None) -> None:
+    """Verify exact exported bytes without requiring the source libraries locally."""
+    schemas = schemas or Schemas()
+    def reject_constant(value: str) -> None:
+        raise ValueError(f"non-finite JSON constant {value}")
+
+    def decode(entry: dict, node: str, verify: bool) -> Any:
+        text = entry.get("json", "")
+        try:
+            encoded = text.encode("utf-8")
+            value = json.loads(text, parse_constant=reject_constant)
+        except (ValueError, TypeError, UnicodeError) as exc:
+            report.error(file, node, "manifest.json", f"invalid embedded JSON/UTF-8: {exc}")
+            return None
+        if verify and entry.get("sha256") != "sha256:" + hashlib.sha256(encoded).hexdigest():
+            report.error(file, node, "manifest.hash", "content does not match its exact UTF-8 SHA-256")
+        return value
+    payload = decode(doc, "/json", False)
+    if payload is None:
+        return
+    schema = schemas.for_kind("engineering_manifest")
+    inner = {"$id": schema["$id"], "$defs": schema["$defs"], "$ref": "#/$defs/payload"}
+    violations = schemas.validate(payload, inner)
+    for node, message in violations:
+        report.error(file, "/json" + node, "manifest.schema", message)
+    if violations:
+        return
+    native = payload["source"] == "native"
+    if native:
+        decode(doc, "/json", True)
+    else:
+        report.warning(file, "/json/source", "manifest.demo", "demo inventory is not native resolved evidence")
+    project = decode(payload["project"], "/json/project", native)
+    if not isinstance(project, dict) or project.get("kind") != "project":
+        report.error(file, "/json/project", "manifest.project", "expected the canonical project document")
+    if isinstance(project, dict) and project.get("kind") == "project":
+        for node, message in schemas.validate(project, schemas.for_kind("project")):
+            report.error(file, "/json/project" + node, "manifest.project", message)
+    descriptions = {}
+    for key, entry in payload["catalog"].items():
+        description = decode(entry, "/json/catalog/" + key, native)
+        if not isinstance(description, dict) or description.get("kind") not in ("component", "board", "mcu", "package"):
+            report.error(file, "/json/catalog/" + key, "manifest.catalog", "expected a loaded component, board, MCU or package description")
+        else:
+            descriptions[key] = description
+    model_paths = set()
+    for i, model in enumerate(payload["models"]):
+        if model["path"] in model_paths:
+            report.error(file, f"/json/models/{i}/path", "manifest.duplicate", "model paths must be unique")
+        model_paths.add(model["path"])
+        if model["catalog"] and model["catalog"] not in descriptions:
+            report.error(file, f"/json/models/{i}/catalog", "manifest.catalog", "model description is absent")
+    paths = set()
+    for i, item in enumerate(payload["instances"]):
+        node = f"/json/instances/{i}"
+        if item["path"] in paths:
+            report.error(file, node + "/path", "manifest.duplicate", "instance paths must be unique")
+        paths.add(item["path"])
+        expected = (item["sheet"] + "." if item["sheet"] else "") + item["id"]
+        if item["path"] != expected:
+            report.error(file, node + "/path", "manifest.path", "qualified path does not match sheet and local identifier")
+        description = descriptions.get(item["catalog"])
+        if description is None:
+            if item["resolution"] != "unavailable":
+                report.error(file, node + "/catalog", "manifest.catalog", "resolved item has no embedded loaded description")
+        elif description.get("id") != item["reference"] or description.get("kind") != item["kind"]:
+            report.error(file, node + "/reference", "manifest.catalog", "instance and embedded description identity disagree")
+        if native and item["resolution"] == "demo":
+            report.error(file, node + "/resolution", "manifest.source", "native manifest cannot claim demo parameters")
+
+
 CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
+    "engineering_manifest": check_engineering_manifest,
     "component": check_component,
     "component_test": check_component_test,
     "mcu": check_mcu,
@@ -2006,7 +2081,10 @@ def validate_file(path: Path, schemas: Schemas, index: Index, report: Report, *,
         report.error(path, node, code, msg)
     if violations or not semantic:
         return
-    CHECKS[kind](report, path, doc, index)
+    if kind == "engineering_manifest":
+        check_engineering_manifest(report, path, doc, index, schemas)
+    else:
+        CHECKS[kind](report, path, doc, index)
 
 
 def _validate_meta(path: Path, doc: Any, schemas: Schemas, report: Report) -> None:

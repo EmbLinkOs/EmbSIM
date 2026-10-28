@@ -12,3 +12,5 @@ export { EngineError } from './transports/mock/session';
 export * from './units';
 
 export * from "./hierarchy";
+
+export * from './engineering';

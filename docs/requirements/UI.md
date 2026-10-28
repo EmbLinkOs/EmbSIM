@@ -217,3 +217,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Instrument configuration/card fixtures, native loading/differential/shunt/generator/preset/frozen-capture browser acceptance and independent two-instance native scenario.
 **Trace.** SPEC-008; SPEC-011; ADR-041; docs/engineering/loaded-instrument-controls.md
+
+
+### UI-030  Native assembly and model reports
+**Statement.** Schematic reports shall group concrete project parts using native resolved configurations, retain catalog packages/boards as whole assemblies, separate their compiled model records, display procurement/qualification limits and export verifiable source/BOM artifacts. References shall select their exact schematic instance. Changed project/policy shall invalidate stale export actions; native report reads shall preserve simulation state.
+**Rationale.** Engineering deliverables need correct package counts and traceable native configuration rather than symbol counts or inferred defaults.
+**Status.** Accepted 2026-10-27
+**Verification.** Native manifest protocol/CLI checks, schema/hash/CSV fixtures, stale snapshot browser workflow and native GUI/CLI/offline verification acceptance.
+**Trace.** SPEC-008; SPEC-011; ADR-042; docs/engineering/engineering-reports.md

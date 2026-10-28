@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/engineering-manifest.schema.json",
+  "title": "EmbSIM native engineering manifest",
+  "description": "One native project cut, with resolved package instances and exact UTF-8 JSON identities. Export integrity is not a signature or device qualification.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "json",
+    "sha256"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "engineering_manifest"
+    },
+    "json": {
+      "type": "string",
+      "minLength": 2
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^(sha256:[0-9a-f]{64})?$"
+    }
+  },
+  "$defs": {
+    "document": {
+      "type": "object",
+      "required": [
+        "json",
+        "sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "json": {
+          "type": "string",
+          "minLength": 2
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^(sha256:[0-9a-f]{64})?$"
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "kind",
+        "source",
+        "engine",
+        "abi",
+        "now_ps",
+        "policy",
+        "project",
+        "catalog",
+        "instances",
+        "libraries",
+        "models"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "kind": {
+          "const": "engineering_manifest"
+        },
+        "source": {
+          "enum": [
+            "native",
+            "demo"
+          ]
+        },
+        "engine": {
+          "type": "string"
+        },
+        "abi": {
+          "type": "integer"
+        },
+        "now_ps": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "policy": {
+          "enum": [
+            "functional",
+            "timed",
+            "electrical"
+          ]
+        },
+        "project": {
+          "$ref": "#/$defs/document"
+        },
+        "catalog": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/document"
+          }
+        },
+        "instances": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sheet",
+              "id",
+              "kind",
+              "reference",
+              "catalog",
+              "resolution",
+              "params"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "sheet": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "catalog": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "requested_version": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "component",
+                  "board"
+                ]
+              },
+              "resolution": {
+                "enum": [
+                  "native",
+                  "board-assembly",
+                  "unavailable",
+                  "demo"
+                ]
+              },
+              "params": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "libraries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "version",
+              "path",
+              "items"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "reference",
+              "model",
+              "catalog",
+              "params"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "catalog": {
+                "type": "string"
+              },
+              "params": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

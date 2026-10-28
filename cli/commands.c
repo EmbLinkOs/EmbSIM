@@ -16,6 +16,7 @@
 #include "mcu/mcu.h"
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
+#include "project/manifest.h"
 #include "sdk.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -39,6 +40,7 @@ static void usage(void)
           "      [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
+          "  manifest PROJECT [--json] [--library DIR]   native engineering inventory and descriptor identities\n"
           "  validate PATH...            validate projects (descriptions: tools/validate.py)\n"
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
           "        [--serial B1]...      a board's serial port on the host (a pseudo-terminal)\n"
@@ -1104,6 +1106,54 @@ static int cmd_models(const char *argv0)
     return 0;
 }
 
+static int cmd_manifest(int argc, char **argv, const char *argv0)
+{
+    const char *path = NULL, *library = NULL;
+    es_session *s;
+    esk_json *manifest = NULL;
+    es_status st;
+    int i;
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "--library") && i + 1 < argc) library = argv[++i];
+        else if (!strcmp(argv[i], "--json")) opt_json = 1;
+        else if (argv[i][0] == '-' || path) { fprintf(stderr, "embsim: manifest expects one project and optional --library DIR\n"); return 2; }
+        else path = argv[i];
+    }
+    if (!path) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    st = es_session_load_file(s, path);
+    if (st == ES_OK) st = esk_project_manifest(s, &manifest);
+    if (st == ES_OK && !opt_json) {
+        const char *text = esk_json_get_str(manifest, "json", "");
+        const char *why = NULL;
+        int line = 0;
+        esk_json *data = esk_json_parse(s->a, text, strlen(text), &line, &why);
+        if (!data) st = ES_ENOMEM;
+        else {
+            printf("Project: %s\nProject inventory instances: %u\nCompiled simulation models: %u\nProject identity: %s\nManifest identity: %s\nUse --json for the complete native snapshot.\n",
+                   s->name ? s->name : "", (unsigned)esk_json_len(esk_json_get(data, "instances")),
+                   (unsigned)esk_json_len(esk_json_get(data, "models")),
+                   esk_json_get_str(esk_json_get(data, "project"), "sha256", ""),
+                   esk_json_get_str(manifest, "sha256", ""));
+            esk_json_free(s->a, data);
+            if (fflush(stdout)) st = ES_EIO;
+        }
+    } else if (st == ES_OK) {
+        size_t len = 0;
+        char *text = esk_json_format(s->a, manifest, 2, &len);
+        if (!text) st = ES_ENOMEM;
+        else {
+            if (fwrite(text, 1, len, stdout) != len || fputc('\n', stdout) == EOF || fflush(stdout)) st = ES_EIO;
+            esk_free(s->a, text, len + 1);
+        }
+    }
+    if (st != ES_OK) fprintf(stderr, "embsim: cannot export project manifest (%d)\n", (int)st);
+    esk_json_free(s->a, manifest);
+    es_session_destroy(s);
+    return st == ES_OK ? 0 : 2;
+}
+
 int embsim_cli_main(int argc, char **argv);
 int embsim_cli_main(int argc, char **argv)
 {
@@ -1112,6 +1162,7 @@ int embsim_cli_main(int argc, char **argv)
     if (argc < 2) { usage(); return 2; }
     cmd = argv[1];
     if (!strcmp(cmd, "run")) return cmd_run(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "manifest")) return cmd_manifest(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "validate")) return cmd_validate(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "replay")) return cmd_replay(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "record")) return cmd_record(argc - 2, argv + 2);

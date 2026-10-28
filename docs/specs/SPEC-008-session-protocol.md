@@ -303,3 +303,29 @@ check `applied` rather than treating every RPC response as successful applicatio
 Drawing-only differences at root and child depth retain runtime; physical parameters
 named `layout` remain electrical. Other project fields retain their established
 edit operations. Installed catalog data is never modified by project blocks.
+
+
+## Native engineering manifest
+
+`project.manifest {}` requires a loaded project and returns a version-1
+`engineering_manifest` envelope `{schema_version:1, kind:"engineering_manifest",
+json:string, sha256:string}`. SHA-256 covers the exact UTF-8 JSON string bytes.
+The payload records source/engine/ABI, current picosecond string/policy, canonical
+project document, loaded description documents, package instances, compiled model
+instances and loaded library metadata. Project/description documents each retain
+their own exact JSON text and digest. The request is read-only and atomic within
+the session command path; it does not advance simulation or alter subscriptions.
+
+Package records identify qualified path, sheet/local identifier, kind/reference,
+catalog key, resolution, native resolved params and optional requested version and
+model. Boards are assemblies; project blocks expand; catalog composite internals
+are separate compiled-model records rather than extra assembly packages. Catalog
+records are deduplicated by identity/content and include attached compiled-model
+descriptions. Missing metadata is explicit. The GUI and `embsim manifest PROJECT
+--json` use this same projection. Human CLI output summarizes quantities/digests.
+
+[Schema](../../schemas/engineering-manifest.schema.json) and
+[format, validation, acceptance and limits](../engineering/engineering-reports.md)
+define the artifact. Hashes are content identities, not signatures or device
+qualification. External implementation/firmware/resource bytes are not embedded;
+this export is not a dependency lock or complete execution checkpoint.
