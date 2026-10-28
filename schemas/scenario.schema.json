@@ -61,7 +61,8 @@
         {"required": ["at", "probe", "expect"]},
         {"required": ["between", "probe", "expect"]},
         {"required": ["by", "probe", "expect"]},
-        {"required": ["always", "diagnostics"]}
+        {"required": ["always", "diagnostics"]},
+        {"required": ["always", "rtos"]}
       ],
       "properties": {
         "id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"},
@@ -73,6 +74,18 @@
         "probe": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"},
         "measure": {"type": "string", "enum": ["mean", "rms", "duty_cycle"], "description": "Time-weighted sample-and-hold measurement over a completed, nonempty between window. Numeric min/max/equals expectations only. Duty cycle requires a digital probe with no X/Z intervals."},
         "expect": {"$ref": "#/$defs/expect"},
+        "rtos": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "description": "The firmware's FreeRTOS tasks, sampled each millisecond of the run through the image's symbols (issue #96).",
+          "properties": {
+            "board": {"type": "string", "description": "The board whose MCU runs the kernel; without it, the first with an MCU."},
+            "stack_free_min": {"type": "integer", "minimum": 0, "description": "Bytes every task's stack keeps free at its deepest (the 0xA5 high-water mark)."},
+            "blocked_max": {"$ref": "common.schema.json#/$defs/time", "description": "The longest any task may stay blocked (a delay, a queue, a semaphore, a notification), sampled each millisecond."},
+            "ignore": {"type": "array", "items": {"type": "string"}, "description": "Tasks blocked_max leaves out: those that wait for ever by design."}
+          }
+        },
         "diagnostics": {
           "type": "object",
           "additionalProperties": false,

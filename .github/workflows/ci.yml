@@ -107,6 +107,13 @@ jobs:
           git -C "$RUNNER_TEMP/nrfx" sparse-checkout set --no-cone '/*.h' /drivers/ /hal/ /haly/ /helpers/ /lib/ /templates/ '/bsp/stable/*.h' /bsp/stable/soc/ /bsp/stable/templates/ '/bsp/stable/mdk/*.h' /bsp/stable/mdk/common/ /bsp/stable/mdk/nrf52/
           git -C "$RUNNER_TEMP/nrfx" checkout -q FETCH_HEAD
           python3 tests/vendor/nrfx/run.py --nrfx "$RUNNER_TEMP/nrfx" --cmsis "$RUNNER_TEMP/st/CMSIS_5" --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: FreeRTOS task awareness on the unmodified kernel
+        if: matrix.name == 'linux-gcc'
+        run: |
+          git init -q "$RUNNER_TEMP/freertos-kernel"
+          git -C "$RUNNER_TEMP/freertos-kernel" fetch -q --depth 1 https://github.com/FreeRTOS/FreeRTOS-Kernel.git dbf70559b27d39c1fdb68dfb9a32140b6a6777a0
+          git -C "$RUNNER_TEMP/freertos-kernel" checkout -q FETCH_HEAD
+          python3 tests/vendor/freertos/run.py --kernel "$RUNNER_TEMP/freertos-kernel" --embsim build/${{ matrix.preset }}/bin/embsim
       - name: SiFive's examples on the unmodified freedom-metal
         if: matrix.name == 'linux-gcc'
         run: |

@@ -14,6 +14,26 @@
 #include "util/match.h"
 #include "project/loader.h"
 
+#define RTOS_TRACKED 64
+
+/* an rtos assertion's watch over the run (issue #96): each task's blocked
+ * stretch, sampled every millisecond, and its stack's low-water mark */
+typedef struct rtos_watch {
+    struct {
+        int64_t tcb;
+        char name[24];
+        es_time_t since;
+        int blocked;
+        int64_t sig; /* the wait's identity: a new one is a new stretch */
+    } tk[RTOS_TRACKED];
+    int ntk, samples;
+    es_time_t worst;    /* the longest blocked stretch */
+    char worst_task[24];
+    int64_t min_stack;  /* the least stack_free_min seen, -1 none */
+    char min_task[24];
+    char err[160];
+} rtos_watch;
+
 typedef struct assertion {
     const esk_json *def;
     es_time_t t0, t1;   /* at: t0 == t1; between: window; by: [0, t1]; always: whole run */
@@ -21,7 +41,146 @@ typedef struct assertion {
     int done, ok;
     esk_json *observed;
     char reason[160];
+    rtos_watch *rw;     /* an rtos assertion's */
 } assertion;
+
+static int name_listed(const esk_json *list, const char *name)
+{
+    size_t i;
+    for (i = 0; i < esk_json_len(list); i++)
+        if (esk_str_eq(esk_json_str(esk_json_at(list, i)), name))
+            return 1;
+    return 0;
+}
+
+static esk_comp *rtos_mcu(es_session *s, const char *board)
+{
+    size_t i;
+    for (i = 0; i < s->boards.len; i++) {
+        esk_board_inst *bi = (esk_board_inst *)s->boards.data[i];
+        if (bi->mcu && (!board || !strcmp(board, bi->id)))
+            return bi->mcu;
+    }
+    return NULL;
+}
+
+/* one sample of the tasks: who is blocked since when, how low each stack
+ * has been */
+static void rtos_sample(es_session *s, assertion *a)
+{
+    const esk_json *spec = esk_json_get(a->def, "rtos"), *ignore = esk_json_get(spec, "ignore");
+    rtos_watch *w = a->rw;
+    esk_comp *mc = rtos_mcu(s, esk_json_get_str(spec, "board", NULL));
+    esk_json *r;
+    const esk_json *tasks;
+    es_time_t now = s->eng.sched.now;
+    size_t i;
+    int k;
+    if (!w || w->err[0])
+        return;
+    if (!mc) {
+        esk_snprintf(w->err, sizeof w->err, "no board %s with an MCU", esk_json_get_str(spec, "board", "(any)"));
+        return;
+    }
+    r = esk_mcu_rtos_json(mc, s->a, w->err, sizeof w->err);
+    if (!r)
+        return;
+    w->err[0] = 0;
+    if (!esk_json_get_bool(r, "started", 0)) { /* the scheduler not started yet */
+        esk_json_free(s->a, r);
+        return;
+    }
+    w->samples++;
+    tasks = esk_json_get(r, "tasks");
+    for (i = 0; i < esk_json_len(tasks); i++) {
+        const esk_json *t = esk_json_at(tasks, i);
+        const char *name = esk_json_get_str(t, "name", "");
+        int64_t tcb = esk_json_get_int(t, "tcb", 0);
+        int blocked = esk_str_eq(esk_json_get_str(t, "state", ""), "blocked");
+        const esk_json *wj = esk_json_get(t, "waits");
+        /* a task that woke and blocked again between two samples waits on
+         * a new wake tick (or another queue, index or list) */
+        int64_t sig = esk_json_get_int(wj, "until_tick", -1) * 31 + esk_json_get_int(wj, "queue", 0) * 7 +
+                      esk_json_get_int(wj, "list", 0) * 3 + esk_json_get_int(wj, "index", 0);
+        if (esk_json_get(t, "stack_free_min")) {
+            int64_t f = esk_json_get_int(t, "stack_free_min", 0);
+            if (w->min_stack < 0 || f < w->min_stack) {
+                w->min_stack = f;
+                esk_snprintf(w->min_task, sizeof w->min_task, "%s", name);
+            }
+        }
+        if (name_listed(ignore, name))
+            continue;
+        for (k = 0; k < w->ntk && w->tk[k].tcb != tcb; k++)
+            ;
+        if (k == w->ntk) {
+            if (w->ntk == RTOS_TRACKED)
+                continue;
+            w->ntk++;
+            w->tk[k].tcb = tcb;
+            w->tk[k].blocked = 0;
+        }
+        esk_snprintf(w->tk[k].name, sizeof w->tk[k].name, "%s", name);
+        if (blocked && (!w->tk[k].blocked || w->tk[k].sig != sig))
+            w->tk[k].since = now;
+        w->tk[k].blocked = blocked;
+        w->tk[k].sig = sig;
+        if (blocked && now - w->tk[k].since > w->worst) {
+            w->worst = now - w->tk[k].since;
+            esk_snprintf(w->worst_task, sizeof w->worst_task, "%s", name);
+        }
+    }
+    esk_json_free(s->a, r);
+}
+
+static void rtos_evaluate(es_session *s, assertion *a)
+{
+    const esk_json *spec = esk_json_get(a->def, "rtos");
+    rtos_watch *w = a->rw;
+    es_time_t limit = 0;
+    char t1[32], t2[32];
+    esk_json *obs = esk_json_new_object(s->a);
+    if (!w)
+        return;
+    rtos_sample(s, a); /* the end's state too */
+    if (obs) {
+        esk_json_set_integer(s->a, obs, "samples", w->samples);
+        esk_json_set_u64_string(s->a, obs, "blocked_max_ps", w->worst);
+        if (w->worst_task[0])
+            esk_json_set_string(s->a, obs, "blocked_max_task", w->worst_task);
+        if (w->min_stack >= 0) {
+            esk_json_set_integer(s->a, obs, "stack_free_min", w->min_stack);
+            esk_json_set_string(s->a, obs, "stack_free_min_task", w->min_task);
+        }
+        a->observed = obs;
+    }
+    if (w->err[0] || !w->samples) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "%s", w->err[0] ? w->err : "the scheduler never started");
+        return;
+    }
+    if (esk_json_get(spec, "stack_free_min") && w->min_stack >= 0 &&
+        w->min_stack < esk_json_get_int(spec, "stack_free_min", 0)) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "task %s's stack came within %lld bytes of its end (at least %lld wanted)",
+                     w->min_task, (long long)w->min_stack, (long long)esk_json_get_int(spec, "stack_free_min", 0));
+        return;
+    }
+    if (esk_json_get(spec, "stack_free_min") && w->min_stack < 0) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason,
+                     "no stack's high-water mark is known (the kernel fills stacks with 0xA5 only with stack checking, "
+                     "the trace facility or uxTaskGetStackHighWaterMark)");
+        return;
+    }
+    if (esk_json_get(spec, "blocked_max") && esk_json_to_time(esk_json_get(spec, "blocked_max"), &limit) == 0 &&
+        w->worst > limit) {
+        esk_format_time(t1, sizeof t1, w->worst);
+        esk_format_time(t2, sizeof t2, limit);
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "task %s stayed blocked for %s (at most %s wanted)", w->worst_task, t1, t2);
+    }
+}
 
 static int expect_value(es_session *s, const esk_json *expect, double v, esk_probe *p, char *why, size_t cap)
 {
@@ -241,6 +400,10 @@ static void evaluate(es_session *s, assertion *a)
     if (esk_json_get(def, "measure") && a->mode != 1) {
         a->ok = 0;
         esk_snprintf(a->reason, sizeof a->reason, "measure requires a between window");
+        return;
+    }
+    if (a->mode == 3 && esk_json_get(def, "rtos")) {
+        rtos_evaluate(s, a);
         return;
     }
     if (a->mode == 3) {
@@ -541,7 +704,7 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
     es_status st;
     uint64_t t_start = esk_host_monotonic_ms();
     const char *reason = "until";
-    int ok_all = 1;
+    int ok_all = 1, sample_rtos = 0;
     ES_UNUSED(base_dir);
     if (!s->loaded)
         return NULL;
@@ -606,6 +769,12 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
         }
         if (as[i].t1 > until)
             as[i].t1 = until;
+        if (as[i].mode == 3 && esk_json_get(d, "rtos")) {
+            as[i].rw = (rtos_watch *)esk_calloc(s->a, 1, sizeof *as[i].rw);
+            if (as[i].rw)
+                as[i].rw->min_stack = -1;
+            sample_rtos = 1;
+        }
     }
     /* run to each assertion's evaluation time in order, then to the end */
     for (;;) {
@@ -614,13 +783,18 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
             if (!as[i].done && as[i].t1 < next)
                 next = as[i].t1;
         if (next > s->eng.sched.now) {
-            if (s->scenario_follow) {
-                /* a millisecond at a time, for whoever follows the run */
+            if (s->scenario_follow || sample_rtos) {
+                /* a millisecond at a time, for whoever follows the run and
+                 * for the RTOS watches' samples */
                 st = ES_OK;
                 while (st == ES_OK && !s->diag.fatal && s->eng.sched.now < next) {
                     es_time_t step = next - s->eng.sched.now > ES_PS_PER_MS ? s->eng.sched.now + ES_PS_PER_MS : next;
                     st = esk_session_do_advance(s, step);
-                    s->scenario_follow(s, s->scenario_follow_ctx);
+                    if (s->scenario_follow)
+                        s->scenario_follow(s, s->scenario_follow_ctx);
+                    for (i = 0; sample_rtos && i < na; i++)
+                        if (as[i].rw && !as[i].done)
+                            rtos_sample(s, &as[i]);
                 }
             } else {
                 st = esk_session_do_advance(s, next);
@@ -672,8 +846,11 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
             }
             esk_json_array_push(s->a, arr, o);
         }
-        for (k = 0; k < na; k++)
+        for (k = 0; k < na; k++) {
             esk_json_free(s->a, as[k].observed);
+            if (as[k].rw)
+                esk_free(s->a, as[k].rw, sizeof *as[k].rw);
+        }
         esk_free(s->a, as, (na ? na : 1) * sizeof *as);
         result = esk_session_report(s, reason, arr);
     }

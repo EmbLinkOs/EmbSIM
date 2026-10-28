@@ -10,6 +10,7 @@
 #include "mcu/dwarf.h"
 #include "mcu/mcu.h"
 #include "mcu/rf.h"
+#include "mcu/rtos.h"
 #include "protocol/wsutil.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -142,6 +143,10 @@ typedef struct mcu_state {
     es_time_t storm_t[MCU_STORM_N];
     u32 storm_n[MCU_STORM_N];
     unsigned char storm_said[MCU_STORM_N];
+    /* the image's RTOS kernel, read on the first request (rtos.h) */
+    esk_rtos *rtos;
+    int rtos_tried;
+    char rtos_why[160];
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -1348,6 +1353,9 @@ static void mcu_destroy(esk_comp *c)
         esk_free(e->a, st->image, st->image_len);
     if (st->dwarf.a)
         esk_dwarf_free(&st->dwarf);
+    esk_rtos_close(st->rtos);
+    st->rtos = NULL;
+    st->rtos_tried = 0;
     esk_strfree(e->a, st->image_name);
     st->image = NULL;
     st->attached = 0;
@@ -1588,6 +1596,9 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
         esk_free(e->a, st->image, st->image_len);
     st->image = copy;
     st->image_len = len;
+    esk_rtos_close(st->rtos); /* the new image's kernel, when asked */
+    st->rtos = NULL;
+    st->rtos_tried = 0;
     if (st->dwarf.a)
         esk_dwarf_free(&st->dwarf);
     (void)esk_dwarf_load(&st->dwarf, e->a, st->image, st->image_len);
@@ -1638,6 +1649,27 @@ const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total)
     *len = u ? u->text_len : 0;
     *total = u ? u->text_total : 0;
     return u ? u->text : "";
+}
+
+esk_json *esk_mcu_rtos_json(esk_comp *c, esk_alloc *a, char *why, size_t cap)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    if (!st || !st->image) {
+        if (why && cap)
+            esk_snprintf(why, cap, "%s has no firmware image", c ? c->id : "?");
+        return NULL;
+    }
+    if (!st->rtos_tried) {
+        st->rtos_tried = 1;
+        st->rtos = esk_rtos_open(c->e->a, st->image, st->image_len, st->rtos_why, sizeof st->rtos_why);
+    }
+    if (!st->rtos) {
+        if (why && cap)
+            esk_snprintf(why, cap, "%s", st->rtos_why);
+        return NULL;
+    }
+    (void)a; /* the tasks are built in the engine's allocator, as the session's */
+    return esk_rtos_tasks(st->rtos, &st->m);
 }
 
 int esk_mcu_dump_regs(esk_comp *c, const char *periph, esk_strbuf *out)

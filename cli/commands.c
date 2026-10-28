@@ -40,6 +40,7 @@ static void usage_to(FILE *out)
           "      [--image [ID=]FILE] [--until-text TEXT] [--console] [--allow-no-image] [--build]\n"
           "      [--dump-regs PERIPH[,BOARD.PERIPH]...]   registers at the end, decoded\n"
           "      [--circuit-profile FILE|-]   islands, nets and parts by simulation cost (.json for JSON)\n"
+          "      [--rtos FILE|-]   FreeRTOS tasks at the end: state, waits, stack, notifications\n"
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]]\n"
           "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
@@ -595,13 +596,112 @@ static int write_circuit_profile(es_session *s, const char *path)
     return ok;
 }
 
+/* one task's wait, in words */
+static void rtos_wait_text(const esk_json *w, char *out, size_t cap)
+{
+    const char *kind = esk_json_get_str(w, "kind", "");
+    char when[48];
+    if (esk_json_get_bool(w, "forever", 0))
+        snprintf(when, sizeof when, "for ever");
+    else
+        snprintf(when, sizeof when, "until tick %lld (in %lld)", (long long)esk_json_get_int(w, "until_tick", 0),
+                 (long long)esk_json_get_int(w, "in_ticks", 0));
+    if (!strcmp(kind, "notification"))
+        snprintf(out, cap, "notification index %lld, %s", (long long)esk_json_get_int(w, "index", 0), when);
+    else if (!strncmp(kind, "queue_", 6))
+        snprintf(out, cap, "%s %s 0x%08llx, %s", !strcmp(kind, "queue_receive") ? "receive from" : "send to",
+                 esk_json_get_str(w, "queue_name", "queue"), (long long)esk_json_get_int(w, "queue", 0), when);
+    else if (!strcmp(kind, "event_list"))
+        snprintf(out, cap, "event list 0x%08llx, %s", (long long)esk_json_get_int(w, "list", 0), when);
+    else
+        snprintf(out, cap, "delay, %s", when);
+}
+
+/* run --rtos FILE (issue #96): each board's FreeRTOS tasks at the end of
+ * the run, as text, or JSON when FILE ends in .json; "-" for stdout (stderr
+ * with --json) */
+static int write_rtos(es_session *s, const char *board, const char *path)
+{
+    esk_json *all = esk_json_new_object(s->a);
+    esk_strbuf b;
+    size_t i, k, n = strlen(path);
+    int any = 0, ok = 1, as_json = n > 5 && !strcmp(path + n - 5, ".json");
+    esk_strbuf_init(&b, s->a);
+    for (i = 0; i < s->boards.len; i++) {
+        esk_board_inst *bi = (esk_board_inst *)s->boards.data[i];
+        char why[160];
+        esk_json *r;
+        const esk_json *tasks;
+        if (!bi->mcu || (board && strcmp(board, bi->id)))
+            continue;
+        r = esk_mcu_rtos_json(bi->mcu, s->a, why, sizeof why);
+        if (!r) {
+            fprintf(stderr, EMBSIM_ID ": --rtos: %s: %s\n", bi->id, why);
+            continue;
+        }
+        any = 1;
+        tasks = esk_json_get(r, "tasks");
+        esk_strbuf_printf(&b, "%s%s: FreeRTOS at tick %lld, %u task(s)%s\n", b.len ? "\n" : "", bi->id,
+                          (long long)esk_json_get_int(r, "tick", 0), (unsigned)esk_json_len(tasks),
+                          esk_json_get_bool(r, "started", 0) ? "" : ", the scheduler not started");
+        esk_strbuf_printf(&b, "  %-16s %-9s %4s %10s %10s  %s\n", "task", "state", "prio", "stack min", "stack now", "waits");
+        for (k = 0; k < esk_json_len(tasks); k++) {
+            const esk_json *t = esk_json_at(tasks, k), *w = esk_json_get(t, "waits"), *notes = esk_json_get(t, "notifications");
+            char wait[160], smin[16], snow[16];
+            size_t j;
+            wait[0] = 0;
+            if (w)
+                rtos_wait_text(w, wait, sizeof wait);
+            if (esk_json_get(t, "stack_free_min"))
+                snprintf(smin, sizeof smin, "%lld B", (long long)esk_json_get_int(t, "stack_free_min", 0));
+            else
+                snprintf(smin, sizeof smin, "?");
+            if (esk_json_get(t, "stack_free_now"))
+                snprintf(snow, sizeof snow, "%lld B", (long long)esk_json_get_int(t, "stack_free_now", 0));
+            else
+                snprintf(snow, sizeof snow, "?");
+            esk_strbuf_printf(&b, "  %-16s %-9s %4lld %10s %10s  %s\n", esk_json_get_str(t, "name", ""),
+                              esk_json_get_str(t, "state", ""), (long long)esk_json_get_int(t, "priority", 0), smin, snow, wait);
+            for (j = 0; j < esk_json_len(notes); j++) {
+                const esk_json *no = esk_json_at(notes, j);
+                if (esk_str_eq(esk_json_get_str(no, "state", "none"), "none"))
+                    continue;
+                esk_strbuf_printf(&b, "  %-16s notification %lld: %s, value 0x%llx\n", "",
+                                  (long long)esk_json_get_int(no, "index", 0), esk_json_get_str(no, "state", ""),
+                                  (unsigned long long)esk_json_get_int(no, "value", 0));
+            }
+        }
+        esk_json_object_set(s->a, all, bi->id, r);
+    }
+    if (as_json) {
+        char *t = esk_json_format(s->a, all, 2, NULL);
+        esk_strbuf_clear(&b);
+        if (t) {
+            esk_strbuf_puts(&b, t);
+            esk_strbuf_puts(&b, "\n");
+            esk_strfree(s->a, t);
+        }
+    }
+    if (!any)
+        ok = 0;
+    else if (!strcmp(path, "-"))
+        fputs(b.data ? b.data : "", opt_json ? stderr : stdout);
+    else if (esk_host_write_file(path, b.data ? b.data : "", b.len) != ES_OK) {
+        fprintf(stderr, EMBSIM_ID ": cannot write %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    esk_json_free(s->a, all);
+    return ok;
+}
+
 static int cmd_run(int argc, char **argv, const char *argv0)
 {
     const char *project = NULL, *scenario = NULL, *policy = NULL, *record = NULL, *library = NULL;
     const char *coverage = NULL, *profile = NULL, *stack = NULL, *faults = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
     int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, fault_fmt = ESK_AN_TEXT, console = 0;
     int allow_no_image = 0, build = 0;
-    const char *dump = NULL, *circuit = NULL;
+    const char *dump = NULL, *circuit = NULL, *rtos = NULL;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -632,6 +732,7 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--build")) build = 1;
         else if (!strcmp(a, "--dump-regs") && more) dump = argv[++i];
         else if (!strcmp(a, "--circuit-profile") && more) circuit = argv[++i];
+        else if (!strcmp(a, "--rtos") && more) rtos = argv[++i];
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
                   !strcmp(a, "--faults-format")) && more) {
             unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
@@ -800,6 +901,8 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     if (dump && !dump_regs(s, dump, opt_json ? stderr : stdout) && !rc)
         rc = 2;
     if (circuit && !write_circuit_profile(s, circuit) && !rc)
+        rc = 2;
+    if (rtos && !write_rtos(s, board, rtos) && !rc)
         rc = 2;
     esk_json_free(s->a, report);
     es_session_destroy(s);

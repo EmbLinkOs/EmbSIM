@@ -94,6 +94,9 @@ esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a);
  * fields decoded from the description ("  SR1 = 0x0082: ADDR TXE"), after a
  * "B1.I2C1" line; 0 when the MCU has no such peripheral */
 int esk_mcu_dump_regs(esk_comp *c, const char *periph, esk_strbuf *out);
+/* the RTOS tasks the firmware's memory holds now (mcu/rtos.h), or NULL with
+ * the reason in `why` */
+esk_json *esk_mcu_rtos_json(esk_comp *c, esk_alloc *a, char *why, size_t cap);
 /* the firmware image's name as the project gives it */
 const char *esk_mcu_image_name(const esk_comp *c);
 
