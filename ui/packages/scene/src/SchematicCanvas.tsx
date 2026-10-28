@@ -517,12 +517,13 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     getViewport: () => vpRef.current,
     focusWires: (indices) => focusBounds(wires.flatMap((w, i) => indices.includes(i) ? w.points.map(([x, y]) => ({ x, y, width: 0, height: 0 })) : [])),
     focusPoint: (point) => focusBounds([{ x: point.x - 80, y: point.y - 60, width: 160, height: 120 }]),
-    focusComponents: (ids) => focusBounds(placed.filter((p) => ids.includes(p.id)).map((p) => p.bounds)),
+    focusComponents: (ids) => focusBounds(placed.filter((p) => ids.includes(p.id)).flatMap((p) => [p.bounds, ...(componentLabels.has(p.id) ? [componentLabels.get(p.id)!] : [])])),
     focusNet: (net) => focusBounds([
+      ...placed.filter((p) => p.pins.some((pin) => pin.net === net)).flatMap((p) => [p.bounds, ...(componentLabels.has(p.id) ? [componentLabels.get(p.id)!] : [])]),
       ...(pinsByNet[net] ?? []).map((p) => ({ ...p, width: 0, height: 0 })),
       ...wires.filter((w) => w.net === net).flatMap((w) => w.points.map(([x, y]) => ({ x, y, width: 0, height: 0 }))),
     ]),
-  }), [zoomToFit, zoomAt, setViewport, focusBounds, placed, pinsByNet, wires]);
+  }), [zoomToFit, zoomAt, setViewport, focusBounds, placed, componentLabels, pinsByNet, wires]);
 
   useEffect(() => {
     const el = svgRef.current;

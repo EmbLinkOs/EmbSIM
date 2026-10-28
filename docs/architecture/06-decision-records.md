@@ -1155,3 +1155,26 @@ milestone. Managed library versions and industrial-size performance retain separ
 acceptance gates; basic hierarchy is not complete engineering workflow qualification.
 
 **Status.** Accepted (2026-10-26), following the owner's explicit hierarchy milestone.
+
+
+## ADR-040 Separate project ERC evidence from live and geometric observations
+
+**Context.** Project hierarchy makes local-name matching unsafe for electrical
+review. A static drawing cannot establish an active driver conflict or MCU mode.
+
+**Decision.** Use native instance aliases to group declared leaf terminals for
+advisory project ERC. Keep drawing checks per shared definition. Keep native live
+contention/receiver states as a distinct evidence source, refreshed independently
+of geometry. Export structured rule/source/path records and navigate their targets.
+Reuse staged transactions for declaration, clipboard, port and bus operations.
+
+**Alternatives.** Flattening in JavaScript would create a competing electrical
+authority. Calling any X a conflict or zero volts floating would fabricate a
+physical conclusion. Running geometric checks on every sample would waste work.
+
+**Consequences.** The workbench exposes actionable cross-sheet checks and explicit
+coverage boundaries. This is not voltage-domain/absolute-maximum qualification,
+a replacement for native validation or proof of a fault-free design. Declared
+board ports count as boundaries; firmware-configured direction is not guessed.
+
+**Status.** Accepted (2026-10-27), following the owner's complete-schematic direction.

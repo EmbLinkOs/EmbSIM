@@ -93,7 +93,7 @@ export function extractBlock(p: Project, path: string, selected: string[], id: s
     const external = pins.filter((pin) => !inside(pin));
     const exports = 'ports' in sheet ? Object.entries(sheet.ports).filter(([, pin]) => selectedPins.includes(pin)) : [];
     if (external.length || exports.length) {
-      let port = net.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 50) || 'PORT';
+      let port = net.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 24) || 'PORT';
       if (!/^[A-Za-z]/.test(port)) port = `P_${port}`;
       let suffix = 1;
       const base = port;

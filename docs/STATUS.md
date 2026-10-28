@@ -5,6 +5,26 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Project-wide schematic reliability (2026-10-27)
+
+Branch `feat/schematic-reliability` builds on editable hierarchy. It adds graphical
+parameter declarations and binding/override rename propagation, protected port and
+parameter removal, dependency-aware cross-sheet copying with fresh net identities,
+ordered bus editing, qualified-reference search and navigable project checks.
+Advisory terminal/power/driver topology checks use native instance aliases; live
+contention/X/Z observations remain distinct from drawing and metadata evidence.
+Structured reports preserve rule/source/path identities and the snapshot clock.
+
+Local checks pass 322 UI unit tests, all 34 browser workflows (the corrected new
+workflow also passes its focused rerun), typecheck, lint and production build.
+Native hierarchy browser acceptance verifies GUI declaration/binding/override/
+rename/undo against independently calculated voltages and preserved time for bus
+edits. Native fault-browser acceptance verifies 1.65 V contention, floating input,
+report export and conflict clearing, with zero page errors. See the
+[workflow and explicit coverage limits](engineering/schematic-reliability.md).
+This does not complete managed libraries, firmware-board hierarchy, full component
+qualification, advanced instruments/analysis or industrial-size performance gates.
+
 ## Editable hierarchy and reusable blocks (2026-10-26)
 
 Branch `feat/editable-hierarchy` builds on sampled acquisition. Project-owned
@@ -28,7 +48,7 @@ and exports its dependencies. See the [contract and limits](engineering/editable
 [native capture](gallery/README.md).
 
 This delivers basic editable project hierarchy, not the complete engineering
-workflow. Nested firmware-board declarations, graphical parameter declarations,
+workflow. Nested firmware-board declarations,
 managed/versioned libraries, hierarchy BOM/PCB integration and industrial-size
 performance qualification remain open. No new 3D development is included.
 
