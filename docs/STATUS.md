@@ -5,6 +5,28 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Isolated native transient capture (2026-10-27)
+
+Branch `feat/native-transient-capture` captures an isolated native reset/warm-up
+response on an exact uniform grid. The source stays intact. The schematic overlays
+traces, selects view bounds and exact sample cursors, computes explicitly ideal
+differential review, pages raw records and exports source-bound CSV/JSON. Missing
+values remain gaps; runtime failures retain only the actual successful prefix.
+
+Acceptance checks the RC exponential, meter-loaded amplitude/time constant,
+warm-up, maximum picosecond grid, DNP assemblies, deterministic repeats,
+source/probe preservation and native Lua failure truncation. All 58 native targets,
+352 UI tests and 39 browser workflows pass. Five focused native targets pass
+ASan/UBSan with leak detection; 241 native capture checks and 192 offline tests
+pass. Strict validation covers 928 files; docs cover 150 documents/139 requirements.
+MacOS trace review also corrects a pointer acceptance target: click the painted
+terminal socket, not the label-inclusive group center, with enlarged annotation
+coverage and unchanged wire-start/cancel assertions. See
+[workflow, proof and limits](engineering/transient-capture.md) and
+[gallery](gallery/README.md). Bounds: board-free electrical circuits, up to 100 ms,
+4,097 samples and eight voltages. Firmware replay, unsampled peaks, anti-aliasing,
+DC/AC/Fourier/noise/distortion and general device qualification remain open.
+
 ## Native parameter sweeps (2026-10-27)
 
 Branch `feat/native-parameter-sweeps` adds independent native reset-and-sample

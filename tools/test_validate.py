@@ -394,6 +394,39 @@ class ProjectTests(Base):
     def manifest_envelope(self, payload):
         return {"schema_version": 1, "kind": "engineering_manifest", **self.manifest_document(payload)}
 
+    def transient_fixture(self):
+        return {"schema_version":1,"kind":"transient_capture","method":"reset_uniform_sample",
+                "source":self.manifest_envelope(self.manifest_fixture()),
+                "request":{"start":"0ps","stop":"10ps","step":"10ps","probes":["net:OUT"]},
+                "ok":True,"failure":None,"ended_at_ps":"10","diagnostics":[],
+                "samples":[{"at_ps":str(t),"measurements":[{"target":"net:OUT","logic":"Z","voltage":v}]} for t,v in [(0,0),(10,None)]]}
+
+    def test_transient_source_identity_grid_and_missing_voltages(self):
+        doc=self.transient_fixture();self.assertClean(self.check_doc(doc,"capture.json"))
+        doc["source"]["json"]+=" "
+        self.assertCode(self.check_doc(doc,"capture.json"),"manifest.hash")
+
+    def test_transient_rejects_wrong_grid_targets_and_false_completion(self):
+        for edit,code in [(lambda d:d["samples"][1].update(at_ps="9"),"transient.time"),
+                          (lambda d:d["samples"][0]["measurements"][0].update(target="net:OTHER"),"transient.targets"),
+                          (lambda d:d.update(ended_at_ps="0"),"transient.complete"),
+                          (lambda d:d.update(failure="error"),"transient.complete"),
+                          (lambda d:d["request"].update(step="3ps"),"transient.grid")]:
+            doc=self.transient_fixture();edit(doc);self.assertCode(self.check_doc(doc,"capture.json"),code)
+
+    def test_transient_partial_prefix_cannot_fabricate_future_samples(self):
+        doc=self.transient_fixture();doc.update(ok=False,failure="runtime error",ended_at_ps="5");doc["samples"]=doc["samples"][:1]
+        self.assertClean(self.check_doc(doc,"capture.json"))
+        doc["failure"]=None;self.assertCode(self.check_doc(doc,"capture.json"),"transient.failure")
+
+    def test_transient_rejects_nonfinite_or_incompatible_source_evidence(self):
+        for value in [float("inf"),10**400]:
+            doc=self.transient_fixture();doc["samples"][0]["measurements"][0]["voltage"]=value
+            self.assertCode(self.check_doc(doc,"capture.json"),"transient.voltage")
+        doc=self.transient_fixture();payload=self.manifest_fixture();payload["policy"]="functional"
+        doc["source"]=self.manifest_envelope(payload)
+        self.assertCode(self.check_doc(doc,"capture.json"),"transient.source")
+
     def sweep_fixture(self):
         request = {"target": "A.R", "parameter": "resistance", "values": ["1k", -1], "sample_at": "1us", "probes": ["net:OUT"]}
         return {"schema_version": 1, "kind": "parameter_sweep", "method": "independent_reset_sample", "ok": False,

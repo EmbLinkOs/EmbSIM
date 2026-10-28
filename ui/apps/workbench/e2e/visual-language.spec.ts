@@ -28,10 +28,15 @@ test('colored selectable tracks, terminal sockets, semantic cursors and readable
   const fill = await pin.locator('.es-pin__dot').evaluate((el) => getComputedStyle(el).fill);
   const ring = await pin.locator('.es-pin__dot').evaluate((el) => getComputedStyle(el).stroke);
   expect(fill).not.toBe(ring);
-  await pin.click();
+  // A terminal group includes a non-interactive label. Its bounding-box center
+  // is not the socket center (font metrics differ across platforms). Exercise a
+  // large annotation, then click the actual painted socket without force.
+  await pin.locator('.es-pin__label').evaluate((el) => el.setAttribute('style', 'font-size: 24px'));
+  await pin.locator('.es-pin__dot').click();
   await expect(page.locator('.es-scene__wire-preview')).toHaveCount(1);
   await page.keyboard.press('Escape');
   await expect(page.locator('.es-scene__wire-preview')).toHaveCount(0);
+  await pin.locator('.es-pin__label').evaluate((el) => el.removeAttribute('style'));
   // Navigation must not hide terminals or annotations, even before the viewport settles.
   await page.getByRole('application', { name: 'Schematic canvas' }).evaluate((el) => el.classList.add('es-scene__svg--moving'));
   await expect(pin).toBeVisible();

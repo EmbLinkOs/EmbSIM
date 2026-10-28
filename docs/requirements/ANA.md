@@ -95,3 +95,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native loaded-divider/RC equations, independent repeats and failures; CLI/RPC, actual native browser and both offline backends.
 **Trace.** SPEC-004; SPEC-008; ADR-046; docs/engineering/parameter-sweeps.md
+
+
+### ANA-013  Isolated uniform transient capture
+**Statement.** Transient capture shall reset and warm up an isolated native circuit, retain physical instrument loading, sample an exact bounded time grid, preserve the live source and report only actual successful prefixes on failure. Missing voltages shall remain null and shall not imply zero or sampled bandwidth qualification.
+**Rationale.** A useful circuit waveform needs actual timing/loading, recoverable evidence and clear limits instead of interpolated or fabricated confidence.
+**Status.** Accepted 2026-10-27
+**Verification.** Native RC/loading equations, warm-up/history preservation, maximum grid, DNP and scripted failure; actual native browser, UI and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-047; docs/engineering/transient-capture.md

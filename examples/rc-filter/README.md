@@ -20,3 +20,14 @@ also catch numerical overshoot from the integrator (SPEC-004 §2).
 embsim validate examples/rc-filter/project.json
 embsim run examples/rc-filter/project.json --scenario examples/rc-filter/scenarios/step.json --json
 ```
+
+
+## Isolated response capture
+
+```sh
+embsim transient project.json --request response.transient.json > /tmp/rc-response.json
+```
+
+This records 0–500 µs every 5 µs. The schematic Transient capture tool reviews the
+same native response without restarting the live bench. See
+[cursors, loading equations and capture limits](../../docs/engineering/transient-capture.md).

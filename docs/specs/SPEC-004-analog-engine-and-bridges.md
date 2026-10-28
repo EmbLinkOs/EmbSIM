@@ -304,3 +304,13 @@ circuit reset for every point, including instrument loading. These measurements
 are timed samples and do not certify settling or implement converged DC/AC
 analysis. The [analysis contract](../engineering/parameter-sweeps.md), ANA-012
 and ADR-046 define source preservation, null failures and independent acceptance.
+
+
+## Source-preserving transient observation
+
+Uniform transient capture observes the existing adaptive native solve at exact
+requested times inside an isolated reset/warm-up session. Physical instrument
+parts remain loads; direct net reads and differential subtraction are ideal
+observations. Finite sampling does not qualify unsampled peaks or bandwidth.
+The [capture contract](../engineering/transient-capture.md), ANA-013 and ADR-047
+define partial-prefix evidence, analytic RC/loading acceptance and remaining gates.

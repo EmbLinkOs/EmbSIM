@@ -9,6 +9,8 @@
 import type {
   ProjectBoard,
   SweepRequest,
+  TransientRequest,
+  TransientCapture,
   ParameterSweep,
   BoardInfo,
   Breakpoint,
@@ -94,6 +96,7 @@ export interface Methods {
       | { op: 'abort'; tx: string };
     result: { tx?: string; applied?: number | boolean; restarted?: boolean; diagnostics?: DiagnosticRecord[]; islands?: number };
   };
+  'analysis.transient': {params: TransientRequest; result: TransientCapture};
   'analysis.sweep': {params: SweepRequest; result: ParameterSweep};
   'project.variant': {params: {op: 'base' | 'preview' | 'activate'; name?: string; expected_sha256?: string}; result: Project | VariantPreview | {activated: boolean}};
   'project.library_lock': { params: {op: 'capture' | 'check'; lock?: LibraryLock}; result: LibraryLock | LibraryLockCheck };
@@ -254,6 +257,7 @@ export const METHOD_NAMES = [
   'project.validate',
   'project.transaction',
   'project.topology',
+  'analysis.transient',
   'analysis.sweep',
   'project.variant',
   'project.library_lock',

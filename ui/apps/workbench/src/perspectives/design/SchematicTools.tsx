@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { EngineeringReports } from '../engineering/EngineeringReports';
+import { TransientCapture } from '../engineering/TransientCapture';
 import { ParameterSweeps } from '../engineering/ParameterSweeps';
 import { AssemblyVariants } from '../engineering/AssemblyVariants';
 import { Badge, Button, IconButton, Input, Select, useToast } from '@embsim/design';
@@ -83,6 +84,7 @@ export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDispl
         <EngineeringReports />
         <AssemblyVariants />
         <ParameterSweeps />
+        <TransientCapture />
         {onSheets && <Button size="sm" variant="ghost" onClick={onSheets}>Sheets and reusable blocks</Button>}
         <Button size="sm" icon={<Sparkles />} disabled={!project || !editable || busy} onClick={onStudio}>Auto layout</Button>
         <Button size="sm" variant="ghost" icon={<AlignStartHorizontal />} disabled={!editable || busy || selection.components.length < 2} onClick={() => { setMenu(menu === 'arrange' ? null : 'arrange'); setFinder(false); }}>Arrange</Button>

@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Isolated native transient capture
+
+- Exercise terminal wiring at the actual socket independently of annotation font
+  bounds; preserve pointer-start/cancel checks with an enlarged-label regression.
+
+- Capture uniformly sampled native circuit responses through CLI/RPC and schematic
+  controls while preserving the live project, clock, outputs and probe history.
+- Review overlaid and differential traces, zoom, exact sample cursors, raw records
+  and source-bound CSV/JSON exports with real connected-instrument loading.
+- Preserve explicit partial prefixes on model failures; reject invented future,
+  nonfinite or nonuniform evidence. Add analytic RC/loading and native-browser acceptance.
+
 ### Native parameter sweeps
 
 - Synchronize viewport-resize acceptance with measured dock geometry while retaining

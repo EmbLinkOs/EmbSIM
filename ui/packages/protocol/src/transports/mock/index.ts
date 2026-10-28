@@ -93,6 +93,7 @@ export class MockTransport extends TransportBase implements Transport {
             return {};
         }
       },
+      'analysis.transient': () => { throw new EngineError(JsonRpcCode.INVALID_PARAMS, 'Transient capture requires a native electrical session.'); },
       'analysis.sweep': () => { throw new EngineError(JsonRpcCode.INVALID_PARAMS, 'Parameter sweeps require a native electrical session.'); },
       'project.variant': () => { throw new EngineError(JsonRpcCode.INVALID_PARAMS, 'Assembly variants require native electrical validation.'); },
       'project.library_lock': () => { throw new EngineError(JsonRpcCode.INVALID_PARAMS, 'Library locks require a native session with filesystem access.'); },
