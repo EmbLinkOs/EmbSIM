@@ -1294,6 +1294,7 @@ a {
   gap: 5px;
   font-family: var(--font-mono);
   font-size: var(--text-sm);
+  white-space: nowrap;
 }
 
 .es-signal__swatch {

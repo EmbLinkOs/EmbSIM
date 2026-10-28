@@ -11,6 +11,7 @@ import { Badge, DockLayout, Table, type Column, type DockItem } from '@embsim/de
 import { formatTime, type Report } from '@embsim/protocol';
 import { useProject } from '../../stores/project';
 import { useVerify } from '../../stores/verify';
+import { ClipboardCheck } from 'lucide-react';
 import { Placeholder } from '../Placeholder';
 import { CoveragePanel } from './Coverage';
 import { RecordingsPanel } from './Recordings';
@@ -43,6 +44,7 @@ function ReportsPanel() {
     return (
       <Placeholder
         title="Report"
+        icon={<ClipboardCheck />}
         description="The last scenario run: each check with what was observed and what was expected, the diagnostics and the statistics."
         requires={['scenario']}
         actions={['run a scenario from the scenario editor to see its report here']}

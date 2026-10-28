@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Schematic labels and empty views
+
+- Part type names and group headers on the schematic are drawn at their
+  intended size and face; their rules named an undefined font variable, so the
+  browser drew them at its 16 px default.
+- A net label's live reading (its voltage, or its level) sits on the name's
+  line instead of under it, where the wire ran through it; part labels keep
+  clear of net labels. The full state stays in the Nets table and the net
+  spotlight, which no longer wraps it.
+- Debug, and Verify's report, show what they need as a centred card with a
+  checklist of requirements, each met or missing.
+
 ### Diagnostics, probes and images reported where they are found
 
 - STM32 I2C: a CR1 write between the SR1 and SR2 reads (clearing ACK before a

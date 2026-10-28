@@ -5,6 +5,28 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Schematic labels and empty views (2026-10-28)
+
+The demo session at 1440 × 900, dark theme, before and after. Part type names
+were drawn at the browser's default 16 px: their rule named an undefined font
+variable, which voids the whole declaration. Each net's live reading sat under
+its name, where the wire runs. Now the reading sits on the name's line,
+and part labels keep clear of net labels.
+
+| Before | After |
+|---|---|
+| ![Oversized type names and readings crossed by the wires](ui-polish/before-design.png) | ![Reference, type and value at their sizes, readings beside the net names](ui-polish/after-design.png) |
+
+A view that cannot work yet (Debug without a board running firmware, a report
+before any scenario has run) says what it does and what it needs, each
+requirement met or missing, instead of a line of text in the corner.
+
+| Before | After |
+|---|---|
+| ![Debug's requirements as plain text at the top left](ui-polish/before-debug.png) | ![Debug's requirements as a checklist in a centred card](ui-polish/after-debug.png) |
+
+[Verify in the light theme](ui-polish/after-verify-light.png).
+
 ## Live schematic operation and observation (2026-10-26)
 
 Actual native sessions, captured by `tests/browser/test_live_schematic.py`.

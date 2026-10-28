@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 //
-// Structured "not available in M0" panels for the Debug and Verify
-// perspectives. Availability is tied to the server's capability flags and
-// to the presence of boards, never faked.
+// What a perspective or panel needs before it can show anything: a centred
+// card naming the view, what it does and a checklist of its requirements,
+// each met or missing. Availability is tied to the server's capability flags
+// and to the presence of boards, never faked.
 
+import type { ReactNode } from 'react';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { Badge } from '@embsim/design';
 import type { Capability } from '@embsim/protocol';
 import { useSession } from '../stores/session';
@@ -17,10 +20,22 @@ export interface PlaceholderProps {
   requires?: Capability[];
   /** Needs at least one board with an MCU. */
   needsBoard?: boolean;
+  /** Further steps, shown as unmet requirements while the panel is unavailable and as hints once it is. */
   actions?: string[];
+  icon?: ReactNode;
 }
 
-export function Placeholder({ title, description, requires = [], needsBoard, actions = [] }: PlaceholderProps) {
+function Requirement({ met, children }: { met: boolean; children: ReactNode }) {
+  return (
+    <li className={met ? 'is-met' : undefined}>
+      {met ? <CheckCircle2 aria-hidden="true" /> : <Circle aria-hidden="true" />}
+      <span>{children}</span>
+      <span className="es-sr-only">{met ? ' (met)' : ' (missing)'}</span>
+    </li>
+  );
+}
+
+export function Placeholder({ title, description, requires = [], needsBoard, actions = [], icon }: PlaceholderProps) {
   const capabilities = useSession((s) => s.capabilities);
   const boards = useSession((s) => s.boards);
   const missing = requires.filter((c) => !capabilities.includes(c));
@@ -28,28 +43,27 @@ export function Placeholder({ title, description, requires = [], needsBoard, act
   const available = missing.length === 0 && !noBoard;
   return (
     <div className="wb-placeholder" role="status">
-      <div className="es-row">
-        <span className="wb-placeholder__title">{title}</span>
-        {!available && <Badge tone="warning">not available</Badge>}
-      </div>
-      <div>{description}</div>
-      {!available && (
-        <div>
-          {missing.length > 0 && (
-            <div>
-              Requires server capability {missing.map((m) => <code key={m}>{m}</code>).reduce<React.ReactNode[]>((acc, el, i) => (i ? [...acc, ', ', el] : [el]), [])}.
-            </div>
-          )}
-          {noBoard && <div>Requires a board with an MCU in the project.</div>}
+      <div className="wb-placeholder__card">
+        {icon && <div className="wb-placeholder__icon">{icon}</div>}
+        <div className="wb-placeholder__heading">
+          <span className="wb-placeholder__title">{title}</span>
+          {!available && <Badge tone="warning">not available</Badge>}
         </div>
-      )}
-      {actions.length > 0 && (
-        <ul>
-          {actions.map((a) => (
-            <li key={a}>{a}</li>
-          ))}
-        </ul>
-      )}
+        <p className="wb-placeholder__description">{description}</p>
+        {(requires.length > 0 || needsBoard || actions.length > 0) && (
+          <ul className="wb-placeholder__needs" aria-label={available ? 'Next steps' : 'What this needs'}>
+            {requires.map((c) => (
+              <Requirement key={c} met={!missing.includes(c)}>
+                Requires server capability <code>{c}</code>.
+              </Requirement>
+            ))}
+            {needsBoard && <Requirement met={!noBoard}>Requires a board with an MCU in the project.</Requirement>}
+            {actions.map((a) => (
+              <Requirement key={a} met={false}>{a.charAt(0).toUpperCase() + a.slice(1)}</Requirement>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
