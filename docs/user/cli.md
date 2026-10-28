@@ -8,6 +8,10 @@ machine-readable report of SPEC-008 §8.
 |---|---|
 | `embsim run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--coverage FILE] [--profile FILE] [--stack FILE] [--faults FILE] [--board ID] [--json]` | loads the project, runs it headless to `--until` (default 50 ms) or through the scenario's inputs and assertions, prints nets, outputs, assertions and statistics; with `--coverage`, `--profile`, `--stack` and `--faults`, writes the firmware's coverage, profile, stack depths and faults (below); exit 0 ok, 1 an assertion failed, 2 usage or load error, 3 a fatal diagnostic |
 | `embsim run --target BOARD --image FILE [--until T] [--until-text TEXT] [--console] [--json]` | one board of the catalog (`emblink/arduino_uno`) running an image, with no project: the way an RTOS's or a library's test runner uses the simulator as an emulated target ([CI](ci.md)). `--console` prints the board's console as the run goes (to stderr with `--json`); `--until-text` ends the run at the millisecond the text appears on a console (ended reason `until_text`), exit 1 when it never does. With a project, `--image [ID=]FILE` replaces a board's image |
+| `embsim run PROJECT ... [--build] [--dump-regs PERIPH[,BOARD.PERIPH]...] [--circuit-profile FILE] [--rtos FILE] [--quiet]` | `--build` first builds each board whose image is missing or older than its sources (`mcu.stale_image`), as `embsim build` would; `--dump-regs` prints the named peripherals' registers as the run leaves them, each with its set fields (`SR = 0x00C0: TC TXE`); `--circuit-profile` writes the analog islands by solve time, the nets by edges and the parts by events (`.json` for JSON, `-` to stderr); `--rtos` writes each board's FreeRTOS tasks (below); `--quiet` leaves out the nets and components |
+| `embsim export svg PROJECT [-o FILE] [--theme light\|dark]` | the schematic sheet as SVG, as the workbench lays it out: symbols, boards as the block of their ports, wires, net labels and notes, and a dashed line for a net no wire draws |
+| `embsim export svg PROJECT --component ID [--at T] [--scenario FILE] [--scale N] [-o FILE]` | what a display shows at `T` after the scenario's inputs to then: a graphic display's pixels (an SSD1306's), a character module's lines (an HD44780's) |
+| `embsim plan BOARD --needs spi,i2c,uart,can,pwm:N,adc:N,gpio:N [--prefer arduino\|CONNECTOR] [--header FILE] [--json]` | a pin plan on the board's headers: each peripheral on one instance, each signal on a pin whose alternate function carries it (the MCU's `io.alternate`), no pin twice, clear of what the board's own nets put on a pin (an LED, a crystal, the console) and never the SWD pins; `--header` writes the pins as C defines. An MCU without an alternate-function table gets GPIO only (exit 1 for the rest) |
 | `embsim replay RECORDING [--allow-drift] [--json]` | runs a recording again: its project from reset, its inputs at their times, to its end, comparing what the run observes with what was recorded, in order; exit 0 when all match, 4 at the first divergence (both observations printed, or in `divergence` with `--json`), 2 when the project or an image changed since the recording unless `--allow-drift` |
 | `embsim record to-scenario RECORDING [-o FILE] [--assert probes,serial\|none] [--name N]` | a scenario from a recording: its inputs at their times, and assertions on each digital probe's last level and edges and each serial probe's text |
 | `embsim validate PATH...` | loads each project through the real loader and reports its diagnostics (descriptions are validated against the schemas by `tools/validate.py`) |
@@ -112,3 +116,26 @@ flamegraph.pl prof.folded > profile.svg
 
 Diagnostics go to stderr as `embsim: <severity>: <code> (<subject>)` followed by
 the message; their codes are listed in [diagnostics](diagnostics.md).
+
+## FreeRTOS tasks
+
+`--rtos FILE` reads the FreeRTOS kernel's tasks from the firmware's memory at
+the end of the run, as a debugger's RTOS awareness does: `pxCurrentTCB`, the
+ready, delayed, suspended and pending lists and each TCB, through the image's
+symbols, with the structures' layouts from its DWARF (so FreeRTOSConfig.h
+moves nothing). For each task: its state (running, ready, blocked, suspended,
+deleted), priority, what it waits on (a delay until a tick, a notification
+index, a queue named by the queue registry, another event list) and for how
+long, its stack's high-water mark (the 0xA5 fill the kernel writes when stack
+checking, the trace facility or `uxTaskGetStackHighWaterMark` is on) and its
+notifications by index. A scenario's `rtos` assertion samples them each
+millisecond:
+
+```json
+{"id": "stacks", "always": true, "rtos": {"stack_free_min": 64}},
+{"id": "waits", "always": true, "rtos": {"blocked_max": "1s", "ignore": ["rx_task"]}}
+```
+
+Not read: SMP kernels (one current task per core), 16-bit ports (an AVR's),
+and without DWARF the notification state. A task that wakes and blocks again
+on the same indefinite wait within a millisecond counts as one stretch.
