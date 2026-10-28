@@ -19,8 +19,8 @@ versions follow semantic versioning. There is no release yet.
   and `require`, by exact code or prefix (`mcu.*`) (#89); `expect.matches`
   takes a pattern matched at its last place in a board's serial text, its
   group compared as a number with `equals`, `min`/`max` or another part's
-  output (`equals_output`) (#93).
-- Projects: `no_connect` lists pins left open on purpose (#97). The MFRC522
+  output (`equals_output`) (#97).
+- Projects: `no_connect` lists pins left open on purpose (#93). The MFRC522
   takes a `cards` list and a `card` input that presents, swaps and removes
   cards in its field (#88).
 - `mcu.stale_image` when an ELF is older than a source its line tables name;
