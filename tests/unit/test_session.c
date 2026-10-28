@@ -534,6 +534,71 @@ static void test_bad_project(void)
     es_session_destroy(s);
 }
 
+/* `proj` with its first `from` replaced by `to` (malloc'd) */
+static char *replaced(const char *proj, const char *from, const char *to)
+{
+    const char *at = strstr(proj, from);
+    size_t n = strlen(proj) - strlen(from) + strlen(to) + 1, head;
+    char *out;
+    if (!at)
+        return NULL;
+    out = (char *)malloc(n);
+    if (!out)
+        return NULL;
+    head = (size_t)(at - proj);
+    memcpy(out, proj, head);
+    strcpy(out + head, to);
+    strcat(out, at + strlen(from));
+    return out;
+}
+
+static int has_diag(es_session *s, const char *code, const char *phase, const char *text)
+{
+    esk_json *all = esk_diag_to_json(&s->diag);
+    size_t i;
+    int found = 0;
+    for (i = 0; all && i < esk_json_len(all); i++) {
+        const esk_json *d = esk_json_at(all, i);
+        if (esk_str_eq(esk_json_get_str(d, "code", ""), code) && esk_str_eq(esk_json_get_str(d, "phase", ""), phase) &&
+            (!text || strstr(esk_json_get_str(d, "message", ""), text)))
+            found = 1;
+    }
+    esk_json_free(s->a, all);
+    return found;
+}
+
+/* what loading finds stays through the runs' resets, in every report; a
+ * probe the session cannot make fails the load and says why */
+static void test_load_diagnostics(void)
+{
+    es_session *s = NULL;
+    es_session_config_t cfg;
+    char *proj = subst(PROJECT);
+    char *open_pin = proj ? replaced(proj, "\"R1.1\",", "") : NULL;
+    char *bad_probe = proj ? replaced(proj, "\"output:D1.lit\"", "\"out:D1.lit\"") : NULL;
+    memset(&cfg, 0, sizeof cfg);
+    CHECK(open_pin != NULL && bad_probe != NULL);
+    CHECK(es_session_create(&cfg, &s) == ES_OK);
+    if (s && open_pin && bad_probe) {
+        CHECK(es_session_load_json(s, open_pin, strlen(open_pin), lib_dir) == ES_OK);
+        CHECK(has_diag(s, "net.unconnected_required_pin", "load", "R1.1 is not connected"));
+        CHECK(esk_diag_count(&s->diag, ES_SEV_WARNING) >= 1);
+        CHECK(es_session_advance(s, ES_PS_PER_MS) == ES_OK);
+        CHECK(esk_session_do_reset(s) == ES_OK);
+        CHECK(has_diag(s, "net.unconnected_required_pin", "load", NULL));
+        CHECK(esk_diag_count(&s->diag, ES_SEV_WARNING) >= 1);
+        /* a new project forgets the old one's */
+        CHECK(es_session_load_json(s, proj, strlen(proj), lib_dir) == ES_OK);
+        CHECK(!has_diag(s, "net.unconnected_required_pin", "load", NULL));
+        CHECK(es_session_load_json(s, bad_probe, strlen(bad_probe), lib_dir) != ES_OK);
+        CHECK(has_diag(s, "probe.invalid", "load", "did you mean output:D1.lit?"));
+    }
+    es_session_destroy(s);
+    free(open_pin);
+    free(bad_probe);
+    free(proj);
+}
+
 /* the host port's bridge at another baud rate than the sketch's: what a
  * UART reads from frames sent at the other rate (hostport.c) */
 static void test_uart_rebaud(void)
@@ -563,6 +628,7 @@ RUN(test_scenario_and_rpc);
 RUN(test_determinism);
 RUN(test_composite);
 RUN(test_bad_project);
+RUN(test_load_diagnostics);
 RUN(test_edit_transactions);
 RUN(test_layout_organization);
 RUN(test_uart_rebaud);

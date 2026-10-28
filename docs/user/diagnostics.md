@@ -3,6 +3,14 @@
 Stable identifiers produced by the core (SPEC-001 §7). Each has a severity
 default and a subject.
 
+Every diagnostic in a report carries a `phase`: `load` for what loading the
+project found (netlist checks, missing images, probes), `run` for what the
+simulation raised. A run's reset forgets the run's own diagnostics and keeps
+the load's, so `embsim run --json`, scenario reports and `diagnostics.forbid`
+see both; loading another project forgets them all. `embsim validate` reports
+the load's and those of the circuit settled at its first instant (firmware not
+run).
+
 | Code | Default severity | Subject | Meaning |
 |---|---|---|---|
 | `schema.parse` | error | file | a description is not valid JSON |
@@ -59,7 +67,8 @@ default and a subject.
 | `mcu.exit` | info | board | the firmware exited through semihosting, with its status |
 | `mcu.lockup` | error | board | the core locked up (a fault with nowhere to go) |
 | `input.rejected` | warning | component | a component refused an input |
-| `probe.invalid` | warning | probe | a probe could not be created |
+| `probe.invalid` | error | probe | a probe's target has an unknown kind (with a suggestion) or names nothing on the bench: the project does not load |
+| `project.image_missing` | error | board | `embsim run`: a board's firmware image cannot be read; the run stops at load (exit 2) unless `--allow-no-image` |
 | `io.read` | error | file | a file could not be read |
 | `ext.budget_exceeded` | error | instance | a Lua evaluation exceeded its instruction budget |
 | `limit.exceeded` | fatal | limit | a configured capacity was exceeded |

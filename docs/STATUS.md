@@ -5,6 +5,22 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Diagnostics found at load, probes and images (2026-10-28)
+
+Issues #80-#85, from a FreeRTOS access-control firmware on the NUCLEO-F446RE.
+The STM32 I2C model keeps the SR1-then-SR2 ADDR sequence across a CR1 write
+(the reference manual's single-byte receive clears ACK in between) and clears
+BTF and TXE when a START completes in transmission; `test_stm32f4`'s
+`test_i2c_master` now runs the one-byte receive and a repeated START after BTF
+(14 failures on the old model, none now). Diagnostics carry the phase they were
+raised in and a run's reset keeps the load's, so `--json` reports, scenario
+reports and `diagnostics.forbid` see the netlist checks (`test_session`'s
+`test_load_diagnostics`). `embsim run` stops at load when a firmware image
+cannot be read (`--allow-no-image` to run without it); a probe with an unknown
+kind or target fails the load with a suggestion; `embsim validate` reports the
+netlist checks and the circuit settled at its first instant. Not yet: checking
+that an `output:` or `device:` probe's quantity exists on its part.
+
 ## Wired instrument loading and electrical feedback (2026-10-26)
 
 Branch `feat/loaded-instruments` adds generic configurable wired voltmeter,

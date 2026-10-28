@@ -577,6 +577,9 @@ static void step(struct i2c *k)
         } else {
             lines(k, 0, 0);
             esk_rf_hw(k->cr1, k->cr1->value & ~(u64)CR1_START);
+            /* I2C_SR1: BTF and TXE end with a START in transmission, as with a STOP */
+            if (reg(k->sr2) & SR2_TRA)
+                clr_sr1(k, SR1_BTF | SR1_TXE);
             set_sr1(k, SR1_SB);
             k->mode = M_HOLD;
             idle_clock(k); /* until DR is written */
@@ -1226,9 +1229,13 @@ static void i2c_write(void *ctx, u32 off, int n, u32 v)
             update(k);
         return;
     }
-    if (k->sr1_read && (reg(k->sr1) & SR1_STOPF))
-        clr_sr1(k, SR1_STOPF); /* read SR1, then write CR1 */
-    k->sr1_read = 0;
+    /* read SR1, then write CR1 clears STOPF; a CR1 write between reading SR1
+     * and SR2 (clearing ACK in EV6 before a single byte) keeps the ADDR
+     * sequence going, as in the reference manual's single-byte receive */
+    if (k->sr1_read && (reg(k->sr1) & SR1_STOPF)) {
+        clr_sr1(k, SR1_STOPF);
+        k->sr1_read = 0;
+    }
     if (!(reg(k->cr1) & CR1_PE)) {
         quiet(k);
         esk_rf_hw(k->sr1, 0);

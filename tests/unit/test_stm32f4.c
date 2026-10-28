@@ -1903,6 +1903,7 @@ static void test_i2c_master(void)
     f.idev.addr = 0x50;
     f.idev.data[0] = 0xab;
     f.idev.data[1] = 0xcd;
+    f.idev.data[2] = 0x5a;
     i2c1_on(&f);
     idev_step(&f);
     CHECK_EQ(f.pin[1][8].drive, -1);           /* open-drain, let go */
@@ -1942,6 +1943,47 @@ static void test_i2c_master(void)
     CHECK(i2c_free(&f, I2C1));
     CHECK_EQ(f.idev.k, 2);                     /* the second NACKed: no third */
     CHECK_EQ(f.idev.nstop, 2);
+    /* one byte, as the reference manual has it: SR1 read, ACK cleared, then
+     * the SR2 read clears ADDR (a CR1 write between them must not break the
+     * sequence), then STOP */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 10 | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xa1);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    (void)rd(&f, I2C1 + C_SR1);
+    wr(&f, I2C1 + C_CR1, 1u);                  /* ACK off, ADDR still set */
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & 2u, 2u);
+    (void)rd(&f, I2C1 + C_SR1);
+    wr(&f, I2C1 + C_CR1, 1u);
+    (void)rd(&f, I2C1 + C_SR2);
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & 2u, 0u);   /* ADDR cleared */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 9);        /* STOP */
+    CHECK(i2c_wait(&f, I2C1, 1u << 6));        /* RXNE */
+    CHECK_EQ(rd(&f, I2C1 + C_DR), 0x5au);
+    CHECK(i2c_free(&f, I2C1));
+    CHECK_EQ(f.idev.k, 3);                     /* NACKed: no second byte */
+    CHECK_EQ(f.idev.nstop, 3);
+    /* a repeated START after the register address clears BTF and TXE */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    wr(&f, I2C1 + C_DR, 0xa0);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    (void)rd(&f, I2C1 + C_SR2);
+    wr(&f, I2C1 + C_DR, 0x10);
+    CHECK(i2c_wait(&f, I2C1, 1u << 2));        /* BTF */
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 8);        /* repeated START */
+    CHECK(i2c_wait(&f, I2C1, 1u));
+    CHECK_EQ(rd(&f, I2C1 + C_SR1) & (1u << 2 | 1u << 7), 0u);
+    CHECK_EQ(f.idev.nstart, 5);
+    wr(&f, I2C1 + C_DR, 0xa1);
+    CHECK(i2c_wait(&f, I2C1, 2u));
+    (void)rd(&f, I2C1 + C_SR1);
+    wr(&f, I2C1 + C_CR1, 1u);
+    (void)rd(&f, I2C1 + C_SR2);
+    wr(&f, I2C1 + C_CR1, 1u | 1u << 9);
+    CHECK(i2c_wait(&f, I2C1, 1u << 6));
+    (void)rd(&f, I2C1 + C_DR);
+    CHECK(i2c_free(&f, I2C1));
     /* nobody at 0x51: AF */
     wr(&f, I2C1 + C_CR1, 1u | 1u << 8);
     CHECK(i2c_wait(&f, I2C1, 1u));
