@@ -28,6 +28,7 @@ export interface OscilloscopeProps {
   cursors: Cursors;
   onCursorsChange: (c: Cursors) => void;
   now?: Time;
+  triggerAt?: Time;
   /** Which trace the measurements describe. */
   selected?: string | null;
   onSelect?: (id: string) => void;
@@ -52,7 +53,7 @@ function fmt(v: number, unit: string): string {
   return formatMeterValue(v, unit, 4);
 }
 
-export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onCursorsChange, now, selected, onSelect, revision = 0, label = 'Oscilloscope', className }: OscilloscopeProps) {
+export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onCursorsChange, now, triggerAt, selected, onSelect, revision = 0, label = 'Oscilloscope', className }: OscilloscopeProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const enabledTraces = traces.filter((t) => t.visible !== false);
   const current = enabledTraces.find((t) => t.record.id === selected) ?? enabledTraces[0] ?? null;
@@ -69,8 +70,8 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
     const pf = r.periodAndFrequency(win.start, end);
     const frontier = r.captureEnd ?? win.start;
     const through = now !== undefined && now < frontier ? now : frontier;
-    const ca = cursors.a !== null && cursors.a <= through ? r.valueAt(cursors.a) : NaN;
-    const cb = cursors.b !== null && cursors.b <= through ? r.valueAt(cursors.b) : NaN;
+    const ca = cursors.a !== null && cursors.a <= through ? r.observedValueAt(cursors.a) : NaN;
+    const cb = cursors.b !== null && cursors.b <= through ? r.observedValueAt(cursors.b) : NaN;
     return { stats, weighted, pf, ca, cb };
     // revision drives recomputation as samples arrive
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +104,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
         hi = Math.max(hi, t.range[1]);
       } else {
         const s = t.record.stats(win.start, end);
-        const held = t.record.valueAt(win.start);
+        const held = t.record.observedValueAt(win.start);
         if (Number.isFinite(held) && (t.record.captureEnd ?? win.start) >= win.start) {
           lo = Math.min(lo, held);
           hi = Math.max(hi, held);
@@ -177,16 +178,18 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
       ctx.lineWidth = 1.4;
       ctx.lineJoin = 'round';
       ctx.beginPath();
-      const held = t.record.valueAt(win.start);
+      const held = t.record.observedValueAt(win.start);
       let pen = Number.isFinite(held);
       let lastY = pen ? yOf(held) : 0;
       if (pen) ctx.moveTo(PLOT_LEFT, lastY);
       for (let i = 0; i < Math.min(buckets, Math.ceil(extent) + 1); i++) {
+        if (d.missing[i]) { pen = false; continue; }
         if (d.count[i] === 0) {
           // Carry the last value across empty columns inside the record (sparse sampling).
-          if (pen) {
-            ctx.lineTo(PLOT_LEFT + i, lastY);
-          }
+          if (!pen) {
+            const held = t.record.observedValueAt(win.start + BigInt(Math.floor(Number(win.span) * i / buckets)));
+            if (Number.isFinite(held)) { pen = true; lastY = yOf(held); ctx.moveTo(PLOT_LEFT + i, lastY); }
+          } else ctx.lineTo(PLOT_LEFT + i, lastY);
           continue;
         }
         const x = PLOT_LEFT + i;
@@ -226,6 +229,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
       ctx.textBaseline = 'top';
       ctx.fillText(name, x + 3, PLOT_TOP + 2);
     };
+    drawCursor(triggerAt ?? null, colors.cursorB, 'T');
     drawCursor(cursors.a, colors.cursorA, 'A');
     drawCursor(cursors.b, colors.cursorB, 'B');
     if (now !== undefined && now >= win.start && now <= end) {
@@ -241,7 +245,7 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
   // Redraw whenever inputs change.
   useEffect(() => {
     redraw();
-  }, [redraw, win, cursors, now, revision, traces, selected]);
+  }, [redraw, win, cursors, now, triggerAt, revision, traces, selected]);
 
   const handlers = useTimeInteraction(wrapRef, { window: win, onWindowChange, cursors, onCursorsChange, plotLeft: PLOT_LEFT, width: size.width });
 

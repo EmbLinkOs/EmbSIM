@@ -31,6 +31,7 @@ typedef struct esk_probe {
     uint64_t dropped;
     int subscribed;     /* waveform stream active */
     int threshold;      /* a digital probe on an analog net: logic from the voltage, changes only */
+    uint32_t capture_epoch; /* source/reset identity, independent of packet sequencing */
     uint32_t stream_seq;
     uint64_t stream_next; /* absolute next sample ordinal, including evicted samples */
     es_time_t stream_through;
@@ -178,6 +179,7 @@ es_status esk_session_apply_input(es_session *s, const char *target, const char 
 esk_json *esk_session_snapshot(es_session *s, const esk_json *include);
 esk_json *esk_session_topology(es_session *s);
 es_status esk_session_probe_add(es_session *s, const char *name, const char *target, const char *kind, double rate_hz, esk_probe **out);
+es_status esk_session_probe_move(es_session *s, esk_probe *p, const char *target);
 void esk_session_probe_remove(es_session *s, uint32_t id);
 esk_probe *esk_session_probe_find(es_session *s, const char *name_or_id);
 esk_json *esk_session_probe_samples(es_session *s, esk_probe *p, es_time_t from, es_time_t to, size_t max);

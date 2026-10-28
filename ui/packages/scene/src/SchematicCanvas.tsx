@@ -117,6 +117,7 @@ export interface SchematicCanvasProps {
   /** Voltage range for the analog gradient; default [0, 3.3]. */
   analogRange?: [number, number];
   probes?: ProbeInfo[];
+  onMoveProbe?: (id: string, net: string) => Promise<void>;
   voltageComparison?: { a?: string; b?: string; aPoint?: Point; bPoint?: Point };
   onCompareNet?: (side: 'a' | 'b', net: string, at?: Point) => void;
   readOnly?: boolean;
@@ -323,6 +324,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     onInput,
     analogRange = [0, 3.3],
     probes,
+    onMoveProbe,
     voltageComparison,
     onCompareNet,
     readOnly,
@@ -403,14 +405,22 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     });
   }, [project.components, project.boards, catalog, pinNet]);
 
+  const [probePoints, setProbePoints] = useState<{ project: Project | null; points: Record<string, Point> }>({ project: null, points: {} });
   const componentLabels = useMemo(() => {
     const headers = (project.layout?.groups ?? []).flatMap((group) => {
       const members = placed.filter((part) => group.members.includes(part.id));
       if (!members.length) return [];
       return [{ x: Math.min(...members.map((part) => part.bounds.x)) - 14, y: Math.min(...members.map((part) => part.bounds.y)) - 39, width: Math.max(100, group.name.length * 8 + 24), height: 24 }];
     });
+    for (const probe of probes ?? []) {
+      const net = probe.target.startsWith('net:') ? probe.target.slice(4) : pinNet.get(probe.target.slice(4));
+      if (!net) continue;
+      const wire = wires.find((w) => w.net === net);
+      const point = (probePoints.project === project ? probePoints.points[`${probe.probe}:${net}`] : undefined) ?? (wire ? { x: wire.points[0]![0], y: wire.points[0]![1] } : placed.flatMap((p) => p.pins).find((p) => p.net === net)?.point);
+      if (point) headers.push({ x: point.x + 8, y: point.y - 24, width: Math.max(36, String(probe.probe).length * 6 + 22), height: 24 });
+    }
     return placeComponentLabels(placed.map((part) => ({ id: part.id, bounds: part.bounds, pins: part.pins.map((pin) => pin.point), name: part.symbol?.name ?? part.componentId.split('/').at(-1) ?? part.componentId, value: part.value })), wires, appearance.labels !== 'compact', headers);
-  }, [placed, wires, appearance.labels, project.layout?.groups]);
+  }, [placed, wires, appearance.labels, project, probes, pinNet, probePoints]);
 
   const placedById = useMemo(() => new Map(placed.map((p) => [p.id, p])), [placed]);
 
@@ -486,11 +496,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   }, [size, setViewport]);
 
   const zoomToFit = useCallback(() => {
-    const rects = placed.map((p) => p.bounds);
+    const rects = [...placed.map((p) => p.bounds), ...componentLabels.values()];
     for (const w of wires) for (const [x, y] of w.points) rects.push({ x, y, width: 0, height: 0 });
     if (!rects.length) setViewport({ x: 40, y: 40, k: 1 });
     else focusBounds(rects);
-  }, [placed, wires, focusBounds, setViewport]);
+  }, [placed, componentLabels, wires, focusBounds, setViewport]);
 
   useImperativeHandle(handle, () => ({
     zoomToFit,
@@ -1074,11 +1084,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
   const probeNets = useMemo(() => {
     const map = new Map<string, ProbeInfo[]>();
     for (const p of probes ?? []) {
-      const m = /^net:(.+)$/.exec(p.target);
-      if (m) (map.get(m[1]!) ?? map.set(m[1]!, []).get(m[1]!)!).push(p);
+      const net = p.target.startsWith('net:') ? p.target.slice(4) : p.target.startsWith('pin:') ? pinNet.get(p.target.slice(4)) : undefined;
+      if (net) (map.get(net) ?? map.set(net, []).get(net)!).push(p);
     }
     return map;
-  }, [probes]);
+  }, [probes, pinNet]);
 
   const showHover = useCallback<HoverFn>((text, sub, clientX, clientY) => {
     const rect = svgRef.current?.getBoundingClientRect();
@@ -1230,19 +1240,18 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
           </g>
 
           <g className="es-scene__layer es-scene__layer--probes">
-            {[...probeNets.entries()].map(([net, list]) => {
+            {[...probeNets.entries()].flatMap(([net, list]) => list.map((probe) => {
               const w = wires.find((x) => x.net === net);
-              const at = w ? { x: w.points[0]![0], y: w.points[0]![1] } : pinsByNet[net]?.[0];
+              const key = `${probe.probe}:${net}`;
+              const at = (probePoints.project === project ? probePoints.points[key] : undefined) ?? (w ? { x: w.points[0]![0], y: w.points[0]![1] } : pinsByNet[net]?.[0]);
               if (!at) return null;
-              return (
-                <g key={`p-${net}`} className="es-probe" transform={`translate(${at.x} ${at.y})`}>
-                  <path d="M0 0 L8 -12 H30 V-4 H14 Z" />
-                  <text x={11} y={-6.5}>
-                    {list.map((p) => p.probe).join(',')}
-                  </text>
-                </g>
-              );
-            })}
+              return <MeasurementProbe key={String(probe.probe)} label={String(probe.probe)} side="b" net={net} at={at} onDrop={onMoveProbe && ['analog', 'digital'].includes(probe.kind) ? (_, client) => {
+                const world = toWorld(client.x, client.y), pin = findPinAt(world, 12), wireHit = findWireAt(world, 10), hit = pin?.net ?? wireHit?.wire.net;
+                if (!hit) { setAnnouncement('No connected wire or pin at the probe drop; connection preserved.'); return; }
+                const point = pin?.net ? pin.point : wireHit!.point;
+                void onMoveProbe(String(probe.probe), hit).then(() => { setProbePoints((old) => ({ project, points: { ...(old.project === project ? old.points : {}), [`${probe.probe}:${hit}`]: point } })); setAnnouncement(hit === net ? `Waveform probe ${probe.probe} repositioned on ${hit}; capture preserved.` : `Waveform probe ${probe.probe} moved to ${hit}; new capture started.`); }).catch(() => setAnnouncement('Probe move rejected; connection preserved.'));
+              } : undefined} />;
+            }))}
           </g>
 
           <g className="es-scene__layer es-scene__layer--comparison">

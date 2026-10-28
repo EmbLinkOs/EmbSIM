@@ -133,3 +133,39 @@ describe('waveform record', () => {
     expect(Number.isNaN(r.measurements(0n, 20n, 20n).mean)).toBe(true);
   });
 });
+
+
+describe('capture integrity', () => {
+  it('does not include a sample before the requested left endpoint', () => {
+    const r = new WaveformRecord('x','analog'); r.append(0n,10n,Float32Array.of(1,2,3));
+    expect([...r.samples(5n,15n)]).toEqual([{t:10n,v:2}]);
+  });
+  it('keeps unknown JSON readings unknown rather than converting null to zero', () => {
+    for (const kind of ['analog','digital'] as const) {
+      const r = new WaveformRecord('x',kind);
+      r.appendFrame({stream:'s',seq:0,encoding:'json',samples:[['0',null]],through_time_ps:'10'});
+      expect(kind === 'analog' ? Number.isNaN(r.valueAt(0n)) : r.valueAt(0n) === 3).toBe(true);
+      expect(r.measurements(0n,10n).coverage).toBe(0);
+    }
+  });
+  it('rejects obsolete epochs without erasing an already received new capture', () => {
+    const r = new WaveformRecord('x','analog');
+    r.appendFrame({stream:'s',seq:0,encoding:'json',capture_epoch:2,samples:[['10',5]],through_time_ps:'20'});
+    expect(r.setCaptureEpoch(2)).toBe(true); expect(r.length).toBe(1);
+    r.appendFrame({stream:'s',seq:1,encoding:'json',capture_epoch:1,restart:true,samples:[['0',0]],through_time_ps:'5'});
+    expect(r.start).toBe(10n); expect(r.captureEnd).toBe(20n);
+  });
+  it('does not draw, read or infer frequency across loss', () => {
+    const r = new WaveformRecord('x','digital'); r.append(0n,10n,Uint8Array.of(0,1,0)); r.append(100n,10n,Uint8Array.of(1,0,1),true);
+    expect(Number.isNaN(r.observedValueAt(50n))).toBe(true);
+    expect(Number.isNaN(r.observedValueAt(121n))).toBe(true);
+    expect(r.decimate(0n,120n,12).missing[5]).toBe(1);
+    expect(r.periodAndFrequency(0n,120n).frequencyHz).toBeNull();
+  });
+  it('tracks absolute event positions through eviction and snapshot isolation', () => {
+    const r = new WaveformRecord('x','analog','x','V',3); r.append(0n,10n,Float32Array.of(0,1,2));
+    const copy = r.snapshot(5n,20n); r.append(30n,10n,Float32Array.of(3,4));
+    expect(r.firstOrdinal).toBe(2); expect([...r.events(3)].map((e) => e.v)).toEqual([3,4]);
+    r.clear(); expect(copy.observedValueAt(10n)).toBe(1); expect(copy.observedValueAt(20n)).toBe(2);
+  });
+});

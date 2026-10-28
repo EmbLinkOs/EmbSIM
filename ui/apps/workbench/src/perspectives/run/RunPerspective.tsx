@@ -16,6 +16,7 @@ import { useCanvasAppearance } from '../../stores/canvasAppearance';
 import { useSession } from '../../stores/session';
 import { WorldPanel } from '../WorldPanel';
 import { VoltageComparison } from './VoltageComparison';
+import { AcquisitionPanel } from './AcquisitionPanel';
 import { AirPanel } from './AirPanel';
 import { ControlsPanel } from './ControlsPanel';
 import { MetersPanel } from './MetersPanel';
@@ -58,42 +59,46 @@ export function RunPerspective() {
     return () => cancelAnimationFrame(frame);
   }, [bottomTab, focusInstrument]);
 
-  const win = followWindow(inst.window, now);
+  const capture = inst.acquisition?.frame;
+  const records = capture?.records ?? inst.records;
+  const plotNow = capture ? capture.window.start + capture.window.span : now;
+  const win = followWindow(inst.window, plotNow);
   const scopeTraces = useMemo<ScopeTrace[]>(
-    () =>
-      inst.probes
+    () => capture
+      ? [...records.values()].filter((r) => r.kind === 'analog').map((record, i) => ({ record, color: TRACE_COLORS[i % TRACE_COLORS.length]! }))
+      : inst.probes
         .filter((p) => p.kind === 'analog' || p.kind === 'value')
-        .map((p, i) => ({ record: inst.records.get(p.probe as string)!, color: TRACE_COLORS[i % TRACE_COLORS.length]! }))
+        .map((p, i) => ({ record: records.get(p.probe as string)!, color: TRACE_COLORS[i % TRACE_COLORS.length]! }))
         .filter((t) => t.record),
-    [inst.probes, inst.records],
+    [inst.probes, records, capture],
   );
-  const records = inst.records;
   const lookupRecord = useCallback((id: string) => records.get(id), [records]);
   // a digital probe's decoder comes from its definition in the project
   const logicChannels = useMemo(
-    () =>
-      inst.probes
+    () => capture
+      ? [...records.values()].filter((r) => r.kind === 'digital').map((record) => ({ record, decode: project?.probes?.find((p) => p.id === record.id)?.decode }))
+      : inst.probes
         .filter((p) => p.kind === 'digital')
         .map((p) => ({
-          record: inst.records.get(p.probe as string)!,
+          record: records.get(p.probe as string)!,
           decode: p.decode ?? project?.probes?.find((d) => d.id === (p.id ?? String(p.probe)))?.decode,
         }))
         .filter((c) => c.record),
-    [inst.probes, inst.records, project?.probes],
+    [inst.probes, records, project?.probes, capture],
   );
 
   const noScope = scopeTraces.length === 0;
   const fitCapture = () => {
-    const captured = [...inst.records.values()].filter((r) => r.start !== null && r.captureEnd !== null);
+    const captured = [...records.values()].filter((r) => r.start !== null && r.captureEnd !== null);
     if (!captured.length) return;
     const start = captured.reduce((v, r) => r.start! < v ? r.start! : v, captured[0]!.start!);
     const frontier = captured.reduce((v, r) => r.captureEnd! > v ? r.captureEnd! : v, start);
-    const end = frontier < now ? frontier : now;
+    const end = frontier < plotNow ? frontier : plotNow;
     inst.setWindow({ start, span: end > start ? end - start : 1n, follow: false });
   };
 
   const exportAs = async (kind: 'csv' | 'vcd') => {
-    const ids = inst.probes.map((p) => p.probe as string);
+    const ids = [...records.keys()];
     const from = win.start;
     const to = win.start + win.span;
     const text = kind === 'csv' ? exportCsv(ids, from, to) : exportVcd(ids, from, to);
@@ -158,9 +163,10 @@ export function RunPerspective() {
   );
 
   const left: DockItem[] = [
+    { id: 'acquisition', title: 'Acquisition and probes', weight: 1.5, minSize: 240, collapsible: true, defaultCollapsed: false, content: <AcquisitionPanel /> },
     { id: 'wired-instruments', title: 'Wired instruments', weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: !project?.components.some((c) => isWiredInstrument(c.component)), content: <WiredInstrumentsPanel onLocate={(id) => { setSelection({ components: [id], wires: [] }); setFocusInstrument({ id }); }} onTrace={(target) => guard(() => probeActions.add(target, 'value', 200_000))()} /> },
     { id: 'voltage-comparison', title: 'Voltage comparison', weight: 1, minSize: 170, collapsible: true, defaultCollapsed: true, content: <VoltageComparison names={Object.keys(project?.nets ?? {}).sort()} nets={nets} leads={leads} onChange={changeLead} active={pickLead} onPick={(side) => { setPickLead(side); if (side) setMode('probe'); }} /> },
-    { id: 'controls', title: 'Controls', content: <ControlsPanel />, weight: 1, minSize: 120 },
+    { id: 'controls', title: 'Controls', content: <ControlsPanel />, collapsible: true, defaultCollapsed: inputs.length === 0, weight: 1, minSize: 120 },
     { id: 'world', title: 'World', content: <WorldPanel />, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: true },
   ];
   const centre: DockItem[] = [
@@ -183,6 +189,7 @@ export function RunPerspective() {
                 voltageComparison={leads}
                 onCompareNet={changeLead}
                 probes={inst.probes}
+                onMoveProbe={async (id, net) => { try { await probeActions.move(id, `net:${net}`); } catch (e) { toast({ kind: 'error', title: 'Probe move rejected', description: errorMessage(e) }); throw e; } }}
                 readOnly
                 onNetClick={(net, at) => { if (pickLead) { changeLead(pickLead, net, at); setPickLead(null); return; } guard(() => probeActions.add(`net:${net}`, 'analog', 200_000).then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` })))(); }}
                 label="Live schematic"
@@ -191,10 +198,10 @@ export function RunPerspective() {
     // an instrument with no probe of its kind folds to its rail until the user opens it; the
     // shared window's actions go with the one that shows something
     { id: 'scope', title: 'Oscilloscope', flush: true, weight: 1.2, minSize: 140, collapsible: true, defaultCollapsed: noScope, actions: noScope && logicChannels.length > 0 ? undefined : instrumentActions, content: (
-      <Oscilloscope traces={scopeTraces} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedScope} onSelect={inst.setSelectedScope} revision={inst.revision} />
+      <Oscilloscope triggerAt={capture?.at} traces={scopeTraces} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={plotNow} selected={inst.selectedScope} onSelect={inst.setSelectedScope} revision={inst.revision} />
     ) },
     { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
-      <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
+      <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={plotNow} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
     {
       id: 'bottom',

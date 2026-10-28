@@ -1099,3 +1099,30 @@ analysis and engineering workflows retain independent release gates in
 [live schematic engineering](../engineering/live-schematic.md).
 
 **Status.** Accepted (2026-10-26), following the owner's schematic-first direction.
+
+
+## ADR-038 Sampled acquisition uses native capture frontiers and source epochs
+
+**Context.** Free-running plots cannot reliably inspect an edge or preserve evidence
+while firmware continues. Probe relocation must not splice different electrical
+signals, and engine time can arrive before all waveform packets.
+
+**Decision.** Implement a sampled Schmitt acquisition controller in the instruments
+package. Qualify edges and complete windows from native samples/frontiers; retain
+owned copies for captures and exports. Add atomic native observation-probe moves
+with stable identity/subscription and monotonically increasing source/reset epochs.
+Use the same backend operation for pointer and keyboard movement. Failed moves
+preserve the existing source. Reject moves while recording until replay supports them.
+
+**Alternatives.** Triggering from animation frames would depend on UI delivery.
+Using engine time alone would freeze incomplete packets. Removing/readding probes
+would discard identity, selections and subscriptions. A client-generated circuit
+response would not provide electrical evidence.
+
+**Consequences.** Trigger resolution is bounded by native sampling. This does not
+qualify commercial instrument acquisition or analog bandwidth. Frozen plots may
+show an earlier state than live schematic meters, explicitly identified as a
+capture. Physical input loading remains separate wired components. Automatic,
+protocol and pulse-width triggers retain independent acceptance gates.
+
+**Status.** Accepted (2026-10-26), within the owner's complete-schematic direction.

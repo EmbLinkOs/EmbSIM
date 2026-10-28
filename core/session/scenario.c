@@ -381,10 +381,16 @@ esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *
     {
         esk_json *inc = esk_json_new_array(s->a);
         if (inc) {
+            esk_json *snapshot, *probes;
             esk_json_array_push(s->a, inc, esk_json_new_string(s->a, "nets"));
             esk_json_array_push(s->a, inc, esk_json_new_string(s->a, "outputs"));
             esk_json_array_push(s->a, inc, esk_json_new_string(s->a, "probes"));
-            esk_json_object_set(s->a, root, "snapshot", esk_session_snapshot(s, inc));
+            snapshot = esk_session_snapshot(s, inc);
+            probes = esk_json_get_mut(snapshot, "probes");
+            /* Live transport identities do not belong in deterministic reports. */
+            for (i = 0; i < esk_json_len(probes); i++)
+                esk_json_remove(s->a, esk_json_at_mut(probes, i), "capture_epoch");
+            esk_json_object_set(s->a, root, "snapshot", snapshot);
             esk_json_free(s->a, inc);
         }
     }

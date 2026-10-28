@@ -83,6 +83,12 @@ export const probes = {
     await resubscribeWaveforms(c);
     return r.id ?? String(r.probe);
   },
+  async move(probe: string, target: string): Promise<void> {
+    const c = getClient();
+    await c.probe.move({ probe, target });
+    const list = await c.probe.list({});
+    useInstruments.getState().setProbes(list.probes);
+  },
   async remove(probe: string): Promise<void> {
     const c = getClient();
     await c.probe.remove({ probe });
@@ -95,13 +101,13 @@ export const probes = {
 /** Exports the records of the given probes over a window as CSV text. */
 export function exportCsv(probeIds: string[], from: bigint, to: bigint, max = 200_000): string {
   const inst = useInstruments.getState();
-  const records = probeIds.map((id) => inst.records.get(id)).filter((r): r is NonNullable<typeof r> => Boolean(r));
+  const records = probeIds.map((id) => (inst.acquisition?.frame?.records ?? inst.records).get(id)).filter((r): r is NonNullable<typeof r> => Boolean(r));
   const lines = [`time_ps,${records.map((r) => r.id).join(',')}`];
   if (records.length === 0) return lines.join('\n');
   const span = to - from;
   const step = span / BigInt(max) > 0n ? span / BigInt(max) : 1n;
   for (let t = from; t <= to; t += step) {
-    lines.push(`${t},${records.map((r) => r.valueAt(t)).join(',')}`);
+    lines.push(`${t},${records.map((r) => { const v = r.observedValueAt(t); return Number.isFinite(v) ? v : ''; }).join(',')}`);
     if (lines.length > max + 1) break;
   }
   return lines.join('\n');
@@ -110,7 +116,8 @@ export function exportCsv(probeIds: string[], from: bigint, to: bigint, max = 20
 /** Exports digital records as a minimal VCD. */
 export function exportVcd(probeIds: string[], from: bigint, to: bigint): string {
   const inst = useInstruments.getState();
-  const records = probeIds.map((id) => inst.records.get(id)).filter((r): r is NonNullable<typeof r> => Boolean(r));
+  const records = probeIds.map((id) => (inst.acquisition?.frame?.records ?? inst.records).get(id)).filter((r): r is NonNullable<typeof r> => Boolean(r));
+  if (records.some((r) => r.kind === 'analog' && (!Number.isFinite(r.observedValueAt(from)) || !Number.isFinite(r.observedValueAt(to)) || (to > from && r.measurements(from, to).coverage !== 1)))) throw new Error('VCD requires complete analog coverage. Export CSV for missing readings.');
   const ids = records.map((_, i) => String.fromCharCode(33 + i));
   const out = ['$timescale 1ps $end', '$scope module embsim $end'];
   records.forEach((r, i) => out.push(`$var ${r.kind === 'digital' ? 'wire 1' : 'real 64'} ${ids[i]} ${r.id} $end`));
@@ -118,7 +125,13 @@ export function exportVcd(probeIds: string[], from: bigint, to: bigint): string 
   const last: (number | null)[] = records.map(() => null);
   const changes = new Map<bigint, string[]>();
   records.forEach((r, i) => {
-    for (const { t, v } of r.samples(from, to)) {
+    const initial = r.observedValueAt(from);
+    const seed = Number.isFinite(initial) ? initial : r.kind === 'digital' ? 3 : NaN;
+    const samples = [{ t: from, v: seed }, ...r.samples(from, to)];
+    if (r.kind === 'digital') for (const gap of r.gaps(from, to)) if (gap.to > gap.from + 1n) samples.push({ t: gap.from + 1n, v: 3 });
+    if (r.kind === 'digital' && r.captureEnd !== null && r.captureEnd < to && r.captureEnd >= from) samples.push({ t: r.captureEnd + 1n, v: 3 });
+    samples.sort((a, b) => a.t < b.t ? -1 : a.t > b.t ? 1 : 0);
+    for (const { t, v } of samples) {
       if (last[i] === v) continue;
       last[i] = v;
       const code = r.kind === 'digital' ? (v === 2 ? 'z' : v === 3 ? 'x' : String(v)) + ids[i] : `r${v} ${ids[i]}`;

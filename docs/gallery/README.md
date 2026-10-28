@@ -5,6 +5,18 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Sampled acquisition and movable waveform probes (2026-10-26)
+
+Actual native `acquisition-bench` session, captured by
+`tests/browser/test_acquisition.py`. A sampled edge near 1.005 ms triggers a 2 ms
+Single capture with 25% pre-trigger memory. The two traces show the finite-output
+pulse generator and loaded RC response; the wired scope adds 1 MΩ ∥ 15 pF.
+The browser workflow also proves unchanged CSV after another 8 ms and retargets
+the observation by keyboard and pointer. This is sampled software acquisition,
+not qualified commercial scope bandwidth or trigger accuracy.
+
+![Native loaded RC schematic and frozen edge-triggered acquisition](acquisition/triggered-loaded-rc.png)
+
 ## Live schematic operation and observation (2026-10-26)
 
 Actual native sessions, captured by `tests/browser/test_live_schematic.py`.

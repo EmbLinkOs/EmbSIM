@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "acquisition-bench",
+  "description": "Sampled trigger acceptance: a 5 V pulse through a 50 ohm generator and 950 ohm resistor charges 1 uF. A wired 1 megohm / 15 pF scope input loads the response. Observation probes are ideal.",
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "GEN",
+      "component": "emblink/function_generator",
+      "layout": {
+        "x": 50,
+        "y": 80
+      },
+      "params": {
+        "kind": "pulse",
+        "v1": 0,
+        "v2": 5,
+        "td": "1m",
+        "tr": "1n",
+        "tf": "1n",
+        "pw": "2m",
+        "per": "4m",
+        "output_resistance": 50
+      }
+    },
+    {
+      "id": "R",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 180,
+        "y": 40
+      },
+      "params": {
+        "resistance": 950
+      }
+    },
+    {
+      "id": "C",
+      "component": "emblink/capacitor",
+      "layout": {
+        "x": 300,
+        "y": 100
+      },
+      "params": {
+        "capacitance": "1u"
+      }
+    },
+    {
+      "id": "SCOPE",
+      "component": "emblink/scope_input",
+      "layout": {
+        "x": 440,
+        "y": 60
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 350,
+        "y": 200
+      }
+    }
+  ],
+  "nets": {
+    "DRIVE": [
+      "GEN.+",
+      "R.1"
+    ],
+    "RESPONSE": [
+      "R.2",
+      "C.1",
+      "SCOPE.+"
+    ],
+    "GND": [
+      "GEN.-",
+      "C.2",
+      "SCOPE.-",
+      "G.GND"
+    ]
+  },
+  "probes": [
+    {
+      "id": "drive",
+      "target": "net:DRIVE",
+      "kind": "analog",
+      "rate_hz": 200000
+    },
+    {
+      "id": "response",
+      "target": "net:RESPONSE",
+      "kind": "analog",
+      "rate_hz": 200000
+    }
+  ],
+  "layout": {
+    "sheet": {
+      "width": 800,
+      "height": 400
+    },
+    "wires": [
+      {
+        "net": "DRIVE",
+        "points": [
+          [
+            80,
+            80
+          ],
+          [
+            80,
+            50
+          ],
+          [
+            180,
+            50
+          ]
+        ]
+      },
+      {
+        "net": "RESPONSE",
+        "points": [
+          [
+            240,
+            50
+          ],
+          [
+            280,
+            50
+          ],
+          [
+            280,
+            110
+          ],
+          [
+            300,
+            110
+          ]
+        ]
+      },
+      {
+        "net": "RESPONSE",
+        "points": [
+          [
+            280,
+            90
+          ],
+          [
+            440,
+            90
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            80,
+            120
+          ],
+          [
+            80,
+            180
+          ],
+          [
+            550,
+            180
+          ],
+          [
+            550,
+            90
+          ],
+          [
+            540,
+            90
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            360,
+            110
+          ],
+          [
+            360,
+            200
+          ]
+        ]
+      }
+    ]
+  }
+}

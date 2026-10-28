@@ -127,6 +127,7 @@ export class MockTransport extends TransportBase implements Transport {
         const info = s.addProbe(p.target, p.kind, p.rate_hz);
         return { probe: info.probe };
       },
+      'probe.move': (p) => s.moveProbe(p.probe, p.target),
       'probe.remove': (p) => {
         s.removeProbe(p.probe);
         return {};

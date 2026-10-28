@@ -5,6 +5,31 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Sampled acquisition and movable probes (2026-10-26)
+
+Branch `feat/schematic-acquisition` builds on the reviewed live-schematic branch.
+Run adds rising/falling/either Single and Normal sampled captures, hysteresis,
+pre/post windows, holdoff and a T cursor. Completed captures own their records;
+plots and exports remain inspectable while the simulation continues. Native
+probe moves retain identity/subscriptions and start a distinct capture epoch.
+Source/reset history cannot splice into another net. Failed resolution and
+callback reservation preserve the previous capture. New-session epochs are
+independent; deterministic scenario reports omit live transport identities.
+
+Local checks: all 50 native CTest targets, 296 UI unit tests, 32 Playwright
+workflows, strict validation of 901 JSON files and documentation checks pass.
+The native loaded-RC scenario passes three independent analytic checkpoints.
+Session/move/streaming tests also pass under AddressSanitizer and UndefinedBehaviorSanitizer,
+including repeated moves and scheduler-limit rollback. Native browser acceptance
+checks the sampled RC trigger, complete coverage, frozen CSV and keyboard/pointer
+source moves. The [acquisition contract](engineering/schematic-acquisition.md)
+and [bench](../examples/acquisition-bench/README.md) record reproduction and limits.
+
+This completes basic sampled Single/Normal acquisition, not commercial scope
+qualification or all complete-schematic gates. Automatic and advanced triggers,
+qualified bandwidth/noise/protection, editable hierarchy, analysis and engineering
+workflows remain separate work. No new 3D development is included.
+
 ## Live schematic milestone (2026-10-26)
 
 Branch `feat/live-schematic-workbench` makes the schematic the primary Run surface
@@ -24,8 +49,8 @@ Actual native captures are in the [gallery](gallery/README.md).
 See [implementation, evidence and remaining release gates](engineering/live-schematic.md)
 and the [live acceptance circuit](../examples/live-schematic/README.md).
 This is not completion of all surveyed capabilities, full device qualification,
-a Proteus-parity claim or a 1.0 release. Editable project hierarchy, triggered
-capture, advanced analyses and managed engineering workflows still require the
+a Proteus-parity claim or a 1.0 release. Editable project hierarchy, advanced
+acquisition, advanced analyses and managed engineering workflows still require the
 explicit gates in that document. No new 3D development is included.
 
 ## Wired instrument loading and electrical feedback (2026-10-26)
