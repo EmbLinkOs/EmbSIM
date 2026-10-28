@@ -392,3 +392,14 @@ identify concrete instance/definition locations. Electrical review shall use nat
 aliases, separate advisory metadata topology from live contention evidence, expose
 coverage gaps and export structured navigable reports. See
 [workflow, rules, acceptance and limits](../engineering/schematic-reliability.md).
+
+
+## Physically loaded instrument configuration
+
+Run's instrument cards shall edit actual lead nets and native impedance parameters,
+state simulation/acquisition restart effects, preserve bound block parameters and
+reject stale drafts. Qualified project-sheet instruments shall display their own
+native values and support voltage/current observations with selected sampling.
+Representative scope presets change effective circuit loading and shall not imply
+manufacturer calibration or bandwidth qualification. Unchanged settings preserve
+time. See [physical rules and acceptance](../engineering/loaded-instrument-controls.md).

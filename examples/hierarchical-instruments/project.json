@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "hierarchical-instruments",
+  "description": "Two instances of the same voltmeter-loaded 1 Mohm source network. Native instance r overrides give 5 V and 100/11 V; meter state and tracing remain qualified to each sheet.",
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "V",
+      "component": "emblink/vsource",
+      "params": {
+        "dc": 10
+      },
+      "layout": {
+        "x": 40,
+        "y": 80
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 280,
+        "y": 400
+      }
+    },
+    {
+      "id": "A",
+      "component": "block/probe",
+      "params": {
+        "r": "1meg"
+      },
+      "layout": {
+        "x": 240,
+        "y": 80
+      }
+    },
+    {
+      "id": "B",
+      "component": "block/probe",
+      "params": {
+        "r": "10meg"
+      },
+      "layout": {
+        "x": 240,
+        "y": 240
+      }
+    }
+  ],
+  "nets": {
+    "SUPPLY": [
+      "V.+",
+      "A.IN",
+      "B.IN"
+    ],
+    "GND": [
+      "V.-",
+      "G.GND",
+      "A.REF",
+      "B.REF"
+    ]
+  },
+  "blocks": {
+    "probe": {
+      "name": "Loaded measurement stage",
+      "params": {
+        "r": {
+          "type": "number",
+          "default": "10meg",
+          "min": 1,
+          "unit": "ohm"
+        }
+      },
+      "components": [
+        {
+          "id": "R",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "1meg"
+          },
+          "layout": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "id": "METER",
+          "component": "emblink/voltmeter",
+          "params": {
+            "input_resistance": "$r"
+          },
+          "layout": {
+            "x": 280,
+            "y": 100
+          }
+        }
+      ],
+      "nets": {
+        "IN": [
+          "R.1"
+        ],
+        "OUT": [
+          "R.2",
+          "METER.+"
+        ],
+        "REF": [
+          "METER.-"
+        ]
+      },
+      "ports": {
+        "IN": "R.1",
+        "REF": "METER.-"
+      },
+      "layout": {
+        "port_order": [
+          "IN",
+          "REF"
+        ],
+        "wires": [
+          {
+            "net": "OUT",
+            "points": [
+              [
+                160,
+                110
+              ],
+              [
+                180,
+                110
+              ],
+              [
+                180,
+                130
+              ],
+              [
+                280,
+                130
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "probes": [
+    {
+      "id": "loaded-a",
+      "target": "device:A.METER.voltage",
+      "kind": "value",
+      "rate_hz": 1000000
+    },
+    {
+      "id": "loaded-b",
+      "target": "device:B.METER.voltage",
+      "kind": "value",
+      "rate_hz": 1000000
+    }
+  ],
+  "layout": {
+    "wires": [
+      {
+        "net": "GND",
+        "points": [
+          [
+            70,
+            120
+          ],
+          [
+            70,
+            160
+          ],
+          [
+            420,
+            160
+          ],
+          [
+            420,
+            120
+          ],
+          [
+            400,
+            120
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            400,
+            120
+          ],
+          [
+            420,
+            120
+          ],
+          [
+            420,
+            280
+          ],
+          [
+            400,
+            280
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            400,
+            280
+          ],
+          [
+            420,
+            280
+          ],
+          [
+            420,
+            380
+          ],
+          [
+            290,
+            380
+          ],
+          [
+            290,
+            400
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            70,
+            80
+          ],
+          [
+            70,
+            60
+          ],
+          [
+            220,
+            60
+          ],
+          [
+            220,
+            120
+          ],
+          [
+            240,
+            120
+          ]
+        ]
+      },
+      {
+        "net": "SUPPLY",
+        "points": [
+          [
+            240,
+            120
+          ],
+          [
+            220,
+            120
+          ],
+          [
+            220,
+            280
+          ],
+          [
+            240,
+            280
+          ]
+        ]
+      }
+    ]
+  }
+}

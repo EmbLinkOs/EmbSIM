@@ -1822,3 +1822,8 @@
 .wb-hierarchy__checkbox { flex-direction: row !important; }
 .wb-hierarchy__checkbox input { margin: 0; }
 .wb-hierarchy__parameters form { display: grid; gap: 8px; }
+
+.wb-instrument-settings { display: grid; gap: 10px; padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--line); }
+.wb-instrument-settings p { font-size: var(--text-xs); line-height: 1.5; }
+.wb-instrument-settings label, .wb-instrument-rate { display: grid; gap: 4px; font-size: var(--text-xs); color: var(--text-muted); }
+.wb-instrument-settings select, .wb-instrument-settings input, .wb-instrument-rate input { min-width: 0; width: 100%; padding: 6px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font: inherit; }

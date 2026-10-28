@@ -5,6 +5,18 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Configure loaded instruments and capture their native outputs (2026-10-27)
+
+Captured by `tests/browser/test_instrument_controls.py` against the actual native
+instrument-loading bench. Scope settings display the effective input impedance;
+the frozen capture observes the loaded native output rather than a client-created
+RC curve. The workflow also checks differential lead changes, ammeter burden,
+generator output impedance and scope terminations, then verifies qualified nested
+meter instances. Actual electrical changes explicitly restart simulation and clear
+acquisition. [Rules and qualification limits](../engineering/loaded-instrument-controls.md).
+
+![Native loaded instrument settings and frozen waveform capture](instrument-controls/loaded-instrument-controls.png)
+
 ## Named LM358P nominal dynamics (2026-10-27)
 
 Native `lm358p-dynamics` session, captured by `tests/browser/test_lm358p.py`.

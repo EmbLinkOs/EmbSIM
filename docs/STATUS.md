@@ -5,6 +5,30 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Physically loaded instrument controls (2026-10-27)
+
+Branch `feat/loaded-instrument-controls` adds actual lead/impedance configuration
+in Run, representative scope loading presets and selectable-rate voltage/current
+observations. Nested project instruments display qualified native values and
+preserve block bindings. Shared edits and simulation/acquisition restart behavior
+are stated before Apply; unchanged settings preserve time.
+
+Local checks pass 329 UI unit tests, all 34 Playwright workflows, typecheck, lint
+and build. Native browser acceptance checks differential meter loading, shunt
+burden, generator impedance, 1×/10×/50 Ω scope equivalents, triggered physical
+output acquisition, unchanged frozen CSV and explicit restart. The existing
+native loading/feedback workflow also passes. A two-instance meter scenario checks
+5 V versus 100/11 V normally and under ASan/UBSan; its browser workflow verifies
+qualified readouts, protected bindings, trace target and sheet navigation.
+Strict validation covers 916 files; docs integrity passes. See
+[physical rules and limits](engineering/loaded-instrument-controls.md),
+[nested bench](../examples/hierarchical-instruments/README.md) and
+[native capture](gallery/README.md).
+
+These are generic linear equivalents. Uninterrupted firmware hot-plugging,
+manufacturer accuracy/protection/bandwidth, advanced triggers and qualified
+protocol-analyzer loading remain separate gates.
+
 ## LM358P nominal dynamics (2026-10-27)
 
 Branch `feat/lm358p-dynamics` corrects the named package wrapper to forward the

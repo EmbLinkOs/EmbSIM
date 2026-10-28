@@ -110,8 +110,7 @@ python3 tests/browser/test_instrument_loading.py --embsim build/dev/bin/embsim \
 ```
 
 Build the workbench first for the browser workflow. It verifies signed readings,
-trace creation without project edits, full-net highlighting, centered lead
-navigation, contention clearing and floating receiver feedback against the native
+trace creation without project edits, full-net highlighting, lead navigation including the selected symbol and labels, contention clearing and floating receiver feedback against the native
 backend, including disconnecting one meter lead and restoring it with undo.
 Projects with no wired instruments initially fold that panel to its rail.
 [Native captures](../gallery/README.md#wired-instrument-loading-and-electrical-feedback)
@@ -120,3 +119,8 @@ interval; analog/digital plots and analog cursor readings stop at the lesser of
 the engine clock and producer capture frontier, including empty constant-signal
 watermarks. Renderer tests exercise a partial producer delivery ahead of its
 last sample, rather than assuming the engine clock proves complete delivery.
+
+
+Run now exposes [physical configuration controls](loaded-instrument-controls.md)
+for actual lead nets and impedance, with explicit restart/acquisition behavior,
+qualified project-sheet instances and native loaded-capture acceptance.

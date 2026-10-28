@@ -209,3 +209,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Pure topology/parameter/bus/search/ERC fixtures, browser editing workflow and native loaded-divider GUI parameter/bus acceptance.
 **Trace.** SPEC-007; SPEC-008; SPEC-011; ADR-040; docs/engineering/schematic-reliability.md
+
+
+### UI-029  Native loaded instrument configuration and acquisition
+**Statement.** Run shall configure actual instrument impedance/leads through validated transactions, distinguish these changes from ideal observation movement, state restart/acquisition effects, protect bound parameters and stale drafts, and preserve time for unchanged settings. Repeated project instances shall expose qualified native readouts/traces. Signed voltage/current observations shall support declared sample rates and sampled acquisition without introducing another electrical load.
+**Rationale.** Measurement configuration must affect the native circuit and preserve the distinction between loading, sampling and display.
+**Status.** Accepted 2026-10-27
+**Verification.** Instrument configuration/card fixtures, native loading/differential/shunt/generator/preset/frozen-capture browser acceptance and independent two-instance native scenario.
+**Trace.** SPEC-008; SPEC-011; ADR-041; docs/engineering/loaded-instrument-controls.md
