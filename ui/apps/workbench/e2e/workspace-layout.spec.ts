@@ -4,10 +4,12 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 async function insideWindow(page: Page, locator: Locator) {
   await expect(locator).toBeVisible();
+  // A perspective's first open starts its 3D bench; on software GPUs that can
+  // hold the page for several seconds, which is startup latency, not layout.
   await expect.poll(async () => {
     const box = await locator.boundingBox();
     return Boolean(box && box.x >= -1 && box.y >= -1 && box.x + box.width <= page.viewportSize()!.width + 1 && box.y + box.height <= page.viewportSize()!.height + 1);
-  }).toBe(true);
+  }, { timeout: 15_000 }).toBe(true);
 }
 
 test('global navigation and simulation controls stay reachable with a long project name', async ({ page }) => {
