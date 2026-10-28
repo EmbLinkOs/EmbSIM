@@ -3,6 +3,7 @@
 /* scenario.c -- scenarios and assertions (SPEC-007 §2) and the run report
  * (SPEC-008 §8). */
 #include "session/session_priv.h"
+#include "mcu/mcu.h"
 #include <math.h>
 #include <string.h>
 #include "analog/analog.h"
@@ -388,6 +389,18 @@ esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *
             esk_json_free(s->a, inc);
         }
     }
+    {
+        /* each board's serial text, by board and UART, beside its console's
+         * name: no need to know the MCU's designator on the board */
+        esk_json *serial = esk_json_new_object(s->a);
+        for (i = 0; serial && i < s->boards.len; i++) {
+            esk_board_inst *bi = s->boards.data[i];
+            if (bi->mcu)
+                esk_json_object_set(s->a, serial, bi->id, esk_mcu_serial_json(bi->mcu, s->a));
+        }
+        if (serial)
+            esk_json_object_set(s->a, root, "serial", serial);
+    }
     esk_session_analysis_report(s, root);
     return root;
 }
@@ -475,7 +488,17 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
             if (!as[i].done && as[i].t1 < next)
                 next = as[i].t1;
         if (next > s->eng.sched.now) {
-            st = esk_session_do_advance(s, next);
+            if (s->scenario_follow) {
+                /* a millisecond at a time, for whoever follows the run */
+                st = ES_OK;
+                while (st == ES_OK && !s->diag.fatal && s->eng.sched.now < next) {
+                    es_time_t step = next - s->eng.sched.now > ES_PS_PER_MS ? s->eng.sched.now + ES_PS_PER_MS : next;
+                    st = esk_session_do_advance(s, step);
+                    s->scenario_follow(s, s->scenario_follow_ctx);
+                }
+            } else {
+                st = esk_session_do_advance(s, next);
+            }
             if (st != ES_OK || s->diag.fatal) {
                 reason = s->diag.fatal ? s->diag.fatal_code : es_strerror(st);
                 break;

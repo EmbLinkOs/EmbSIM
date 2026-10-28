@@ -1521,6 +1521,19 @@ const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total)
     return u ? u->text : "";
 }
 
+esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    esk_json *o = esk_json_new_object(a);
+    int i;
+    if (!st || !o)
+        return o;
+    for (i = 0; i < st->nuart; i++)
+        esk_json_set_string(a, o, st->uart[i].unit, st->uart[i].text);
+    esk_json_set_string(a, o, "console", st->console);
+    return o;
+}
+
 uint32_t esk_mcu_console_baud(esk_comp *c)
 {
     mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;

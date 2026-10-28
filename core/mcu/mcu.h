@@ -87,6 +87,8 @@ struct esk_an *esk_mcu_analysis(const esk_comp *c);
 const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total);
 /* the console's line rate as the firmware set its receiver (0: unknown) */
 uint32_t esk_mcu_console_baud(esk_comp *c);
+/* each UART's received text by unit, and "console": the console's unit */
+esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a);
 /* the firmware image's name as the project gives it */
 const char *esk_mcu_image_name(const esk_comp *c);
 

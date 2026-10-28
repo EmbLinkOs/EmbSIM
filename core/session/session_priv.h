@@ -119,6 +119,9 @@ struct es_session {
     /* statistics */
     uint64_t rpc_count;
     double wall_time_s;
+    /* called each millisecond of a scenario while set (the CLI's --console) */
+    void (*scenario_follow)(es_session *s, void *ctx);
+    void *scenario_follow_ctx;
 };
 
 /* measure.c: the analyses `what` (ESK_AN_*) on `board`'s MCU, or every
