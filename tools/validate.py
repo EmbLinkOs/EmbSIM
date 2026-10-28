@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import cmath
 import math
 import fnmatch
 import glob
@@ -42,6 +43,7 @@ EXAMPLES_DIR = ROOT / "examples"
 SCHEMA_BASE = "https://emblink.dev/embsim/schemas/"
 
 KIND_SCHEMAS = {
+    "frequency_spectrum": "frequency-spectrum.schema.json",
     "transient_request": "transient-request.schema.json",
     "transient_capture": "transient-capture.schema.json",
     "parameter_sweep_request": "parameter-sweep-request.schema.json",
@@ -2286,7 +2288,73 @@ def check_transient_capture(report: Report, file: Path, doc: dict, index: Index)
                 report.error(file, f"/samples/{i}/measurements", "transient.voltage", "numeric voltages must be finite; unavailable values use null")
 
 
+def check_frequency_spectrum(report: Report, file: Path, doc: dict, index: Index) -> None:
+    record=doc["capture"];text=record["json"]
+    try:
+        encoded=text.encode("utf-8")
+        capture=json.loads(text)
+    except (ValueError,TypeError,UnicodeError):
+        report.error(file,"/capture","spectrum.capture","invalid captured JSON/UTF-8")
+        return
+    if len(encoded)>8388608 or record["sha256"]!="sha256:"+hashlib.sha256(encoded).hexdigest():
+        report.error(file,"/capture","spectrum.hash","capture bytes/hash do not verify within the 8 MiB limit")
+    schemas=Schemas()
+    violations=schemas.validate(capture,schemas.for_kind("transient_capture"))
+    for node,message in violations:report.error(file,"/capture/json"+node,"spectrum.capture",message)
+    if violations:return
+    before=report.errors
+    check_transient_capture(report,file,capture,index)
+    if report.errors>before:return
+    n=len(capture["samples"])-1
+    if not capture["ok"] or n<16 or n>4096 or n&(n-1) or doc["used_samples"]!=n or len(doc["bins"])!=n//2+1:
+        report.error(file,"/used_samples","spectrum.samples","need a complete power-of-two half-open record and all one-sided bins")
+        return
+    probes=capture["request"]["probes"]
+    if doc["target"] not in probes:
+        report.error(file,"/target","spectrum.target","target is absent from the captured record")
+        return
+    channel=probes.index(doc["target"])
+    raw=[r["measurements"][channel]["voltage"] for r in capture["samples"]]
+    if any(v is None for v in raw):
+        report.error(file,"/capture","spectrum.gap","selected voltages must all be available")
+        return
+    values=raw[:-1];scale=max(map(abs,values)) or 1
+    normalized=[v/scale for v in values];mean=sum(v/n for v in normalized)
+    w=[1 if doc["window"]=="rectangular" else .5-.5*math.cos(2*math.pi*i/n) for i in range(n)]
+    sumw=sum(w);weighted=[(v-(mean if doc["remove_mean"] else 0))*weight for v,weight in zip(normalized,w)]
+    grid=transient_grid(capture["request"]);fs=1e12/grid[2]
+    def near(actual,expected,node,tolerance=0):
+        try:valid=math.isfinite(actual) and math.isfinite(expected) and math.isclose(actual,expected,rel_tol=1e-9,abs_tol=tolerance)
+        except (ValueError,TypeError,OverflowError):valid=False
+        if not valid:report.error(file,node,"spectrum.numeric","value disagrees with captured-data DFT/scaling")
+    for key,expected in [("sample_rate_hz",fs),("bin_width_hz",fs/n),("nyquist_hz",fs/2),("mean_v",mean*scale),("coherent_gain",sumw/n),("enbw_bins",n*sum(v*v for v in w)/(sumw*sumw))]:near(doc[key],expected,"/"+key,scale*1e-10 if key=="mean_v" else 1e-12)
+    for k,b in enumerate(doc["bins"]):
+        node=f"/bins/{k}"
+        if b["index"]!=k:report.error(file,node+"/index","spectrum.bin","bins must be ordered and contiguous")
+        factor=(1 if k in [0,n//2] else 2)/sumw
+        # Direct DFT is deliberately independent of the native radix-2 FFT.
+        ref=sum(v*cmath.exp(-2j*math.pi*k*i/n) for i,v in enumerate(weighted))*factor*scale
+        near(b["frequency_hz"],k*fs/n,node+"/frequency_hz",1e-10)
+        near(b["real_v"],ref.real,node+"/real_v",scale*1e-10);near(b["imag_v"],ref.imag,node+"/imag_v",scale*1e-10)
+        try:peak=math.hypot(b["real_v"],b["imag_v"]);rms=peak*(1 if k in [0,n//2] else 1/math.sqrt(2))
+        except (ValueError,TypeError,OverflowError):continue
+        near(b["peak_v"],peak,node+"/peak_v",scale*1e-12);near(b["rms_v"],rms,node+"/rms_v",scale*1e-12)
+        if rms==0:
+            if b["dbv_rms"] is not None:report.error(file,node+"/dbv_rms","spectrum.zero","zero RMS has no finite dBV")
+        else:near(b["dbv_rms"],20*math.log10(rms),node+"/dbv_rms",1e-9)
+        if peak==0:
+            if b["phase_deg"] is not None:report.error(file,node+"/phase_deg","spectrum.zero","zero amplitude has undefined phase")
+        elif b["phase_deg"] is None:
+            report.error(file,node+"/phase_deg","spectrum.phase","nonzero bin needs its computed phase")
+        else:
+            phase=math.degrees(math.atan2(b["imag_v"],b["real_v"]))
+            try:delta=(b["phase_deg"]-phase+180)%360-180
+            except (ValueError,TypeError,OverflowError):delta=float("nan")
+            near(delta,0,node+"/phase_deg",1e-8)
+
+
 CHECKS: dict[str, Callable[[Report, Path, dict, Index], Any]] = {
+    "frequency_spectrum": check_frequency_spectrum,
     "transient_request": check_transient_request,
     "transient_capture": check_transient_capture,
     "parameter_sweep_request": check_sweep_request,

@@ -1338,3 +1338,26 @@ distortion analysis. Bounds, analytic proof and sampling caveats are in
 **Status.** Implemented 2026-10-27. **Trace.** ANA-013; UI-035; CLI-009;
 SPEC-004; SPEC-008; tests/protocol/test_transient.py;
 tests/browser/test_transient_capture.py.
+
+
+## ADR-048 — Coherent-amplitude native captured-data spectra
+
+**Context.** Transient records need useful frequency review, but an FFT chart can
+mislead when endpoints, window gain, RMS units, phase, missing samples or aliasing
+are hidden. A sampled FFT does not establish a small-signal/noise solver.
+
+**Decision.** Analyze complete native captures as half-open power-of-two records
+using a normalized radix-2 transform. Declare rectangular/periodic Hann and mean
+handling, one-sided/edge scaling, peak/RMS-bin/dBV and cosine phase. Retain exact
+captured bytes/hashes and all coefficients; independently recompute them offline
+with a direct DFT. Expose stateless CLI/RPC and native captured-waveform review,
+without re-executing models or changing the live bench. Verify analytic/scalloping/
+edge cases, NumPy agreement and actual loaded RC amplitude/phase.
+
+**Limits.** No interpolation/padding, PSD/broadband RMS, distortion qualification,
+AC/DC solver, anti-alias filter or firmware replay. Evidence is content lineage,
+not authenticity or physical qualification. See [the contract](../engineering/frequency-spectrum.md).
+
+**Status.** Implemented 2026-10-27. **Trace.** ANA-014; UI-036; CLI-010;
+SPEC-004; SPEC-008; tests/protocol/test_spectrum.py;
+tests/browser/test_spectrum_review.py.

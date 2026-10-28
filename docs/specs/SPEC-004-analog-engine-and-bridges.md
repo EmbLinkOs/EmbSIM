@@ -314,3 +314,12 @@ parts remain loads; direct net reads and differential subtraction are ideal
 observations. Finite sampling does not qualify unsampled peaks or bandwidth.
 The [capture contract](../engineering/transient-capture.md), ANA-013 and ADR-047
 define partial-prefix evidence, analytic RC/loading acceptance and remaining gates.
+
+
+## Captured-data spectral review
+
+Native spectral review transforms retained uniform samples with explicit
+half-open endpoint, window/mean, coherent-amplitude and edge conventions. It does
+not run a new electrical analysis or qualify bandwidth/noise/distortion. The
+[spectral contract](../engineering/frequency-spectrum.md), ANA-014 and ADR-048
+specify independent DFT/analytic RC/loading acceptance and remaining analysis gates.

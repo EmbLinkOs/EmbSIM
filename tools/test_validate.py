@@ -6,6 +6,7 @@ temporary directories, exercised with both the jsonschema backend (when
 installed) and the built-in checker."""
 import copy
 import json
+import math
 import hashlib
 import os
 import shutil
@@ -393,6 +394,32 @@ class ProjectTests(Base):
 
     def manifest_envelope(self, payload):
         return {"schema_version": 1, "kind": "engineering_manifest", **self.manifest_document(payload)}
+
+    def spectrum_fixture(self):
+        n=16
+        capture=self.transient_fixture();capture["request"].update(stop="16ps",step="1ps")
+        capture["ended_at_ps"]="16";capture["samples"]=[{"at_ps":str(i),"measurements":[{"target":"net:OUT","logic":"Z","voltage":math.cos(2*math.pi*3*i/n)}]} for i in range(n+1)]
+        bins=[]
+        for k in range(n//2+1):
+            peak=1 if k==3 else 0;rms=peak/math.sqrt(2)
+            bins.append({"index":k,"frequency_hz":k*1e12/n,"real_v":peak,"imag_v":0,"peak_v":peak,"rms_v":rms,"dbv_rms":20*math.log10(rms) if rms else None,"phase_deg":0 if peak else None})
+        return {"schema_version":1,"kind":"frequency_spectrum","method":"radix2_coherent_amplitude","record_convention":"half_open_drop_endpoint","phase_reference":"first_sample_cosine",
+                "capture":self.manifest_document(capture),"target":"net:OUT","window":"rectangular","remove_mean":True,"used_samples":16,
+                "sample_rate_hz":1e12,"bin_width_hz":1e12/16,"nyquist_hz":5e11,"mean_v":0,"coherent_gain":1,"enbw_bins":1,"bins":bins}
+
+    def test_spectrum_independent_dft_and_exact_capture_identity(self):
+        doc=self.spectrum_fixture();self.assertClean(self.check_doc(doc,"spectrum.json"))
+        doc["capture"]["json"]+=" ";self.assertCode(self.check_doc(doc,"spectrum.json"),"spectrum.hash")
+
+    def test_spectrum_rejects_amplitude_phase_grid_and_mean_changes(self):
+        for mutate in [lambda d:d["bins"][3].update(real_v=.5),lambda d:d["bins"][3].update(peak_v=2),lambda d:d["bins"][3].update(phase_deg=90),lambda d:d["bins"][3].update(frequency_hz=1),lambda d:d.update(mean_v=1),lambda d:d.update(coherent_gain=.5)]:
+            doc=self.spectrum_fixture();mutate(doc);self.assertCode(self.check_doc(doc,"spectrum.json"),"spectrum.numeric")
+
+    def test_spectrum_zero_bins_and_sample_count_are_explicit(self):
+        doc=self.spectrum_fixture();doc["bins"][0]["dbv_rms"]=0
+        self.assertCode(self.check_doc(doc,"spectrum.json"),"spectrum.zero")
+        doc=self.spectrum_fixture();doc["used_samples"]=32
+        self.assertCode(self.check_doc(doc,"spectrum.json"),"spectrum.samples")
 
     def transient_fixture(self):
         return {"schema_version":1,"kind":"transient_capture","method":"reset_uniform_sample",

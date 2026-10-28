@@ -1908,3 +1908,9 @@
 .wb-transient-review label { display: flex; flex-direction: column; gap: var(--space-1); flex: 1; min-width: 160px; }
 .wb-transient-review input[type="range"] { width: 100%; accent-color: var(--accent); }
 .wb-transient-cursor { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 4 4; }
+
+.wb-spectrum-review { margin-block: var(--space-4); border-top: 1px solid var(--line); padding-block: var(--space-3); }
+.wb-transient-review label.wb-spectrum-check { flex-direction: row; align-items: center; }
+.wb-spectrum-check input { accent-color: var(--accent); }
+.wb-spectrum-bin { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
+.wb-spectrum-bin input { flex: 1; accent-color: var(--accent); }

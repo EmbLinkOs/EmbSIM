@@ -11,6 +11,7 @@ import type {
   SweepRequest,
   TransientRequest,
   TransientCapture,
+  FrequencySpectrum,
   ParameterSweep,
   BoardInfo,
   Breakpoint,
@@ -96,6 +97,7 @@ export interface Methods {
       | { op: 'abort'; tx: string };
     result: { tx?: string; applied?: number | boolean; restarted?: boolean; diagnostics?: DiagnosticRecord[]; islands?: number };
   };
+  'analysis.spectrum': {params: {capture: TransientCapture; target: string; window: 'hann' | 'rectangular'; remove_mean: boolean}; result: FrequencySpectrum};
   'analysis.transient': {params: TransientRequest; result: TransientCapture};
   'analysis.sweep': {params: SweepRequest; result: ParameterSweep};
   'project.variant': {params: {op: 'base' | 'preview' | 'activate'; name?: string; expected_sha256?: string}; result: Project | VariantPreview | {activated: boolean}};
@@ -257,6 +259,7 @@ export const METHOD_NAMES = [
   'project.validate',
   'project.transaction',
   'project.topology',
+  'analysis.spectrum',
   'analysis.transient',
   'analysis.sweep',
   'project.variant',

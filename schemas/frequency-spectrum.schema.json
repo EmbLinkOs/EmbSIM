@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/frequency-spectrum.schema.json",
+  "title": "Captured-data coherent-amplitude one-sided spectrum",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "frequency_spectrum"
+    },
+    "method": {
+      "const": "radix2_coherent_amplitude"
+    },
+    "record_convention": {
+      "const": "half_open_drop_endpoint"
+    },
+    "phase_reference": {
+      "const": "first_sample_cosine"
+    },
+    "capture": {
+      "$ref": "engineering-manifest.schema.json#/$defs/document"
+    },
+    "target": {
+      "type": "string"
+    },
+    "window": {
+      "enum": [
+        "rectangular",
+        "hann"
+      ]
+    },
+    "remove_mean": {
+      "type": "boolean"
+    },
+    "used_samples": {
+      "type": "integer",
+      "minimum": 16,
+      "maximum": 4096
+    },
+    "sample_rate_hz": {
+      "type": "number"
+    },
+    "bin_width_hz": {
+      "type": "number"
+    },
+    "nyquist_hz": {
+      "type": "number"
+    },
+    "mean_v": {
+      "type": "number"
+    },
+    "coherent_gain": {
+      "type": "number"
+    },
+    "enbw_bins": {
+      "type": "number"
+    },
+    "bins": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 2049,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "frequency_hz": {
+            "type": "number",
+            "minimum": 0
+          },
+          "real_v": {
+            "type": "number"
+          },
+          "imag_v": {
+            "type": "number"
+          },
+          "peak_v": {
+            "type": "number",
+            "minimum": 0
+          },
+          "rms_v": {
+            "type": "number",
+            "minimum": 0
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2048
+          },
+          "dbv_rms": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "phase_deg": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "frequency_hz",
+          "real_v",
+          "imag_v",
+          "peak_v",
+          "rms_v",
+          "index",
+          "dbv_rms",
+          "phase_deg"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "method",
+    "record_convention",
+    "phase_reference",
+    "capture",
+    "target",
+    "window",
+    "remove_mean",
+    "used_samples",
+    "sample_rate_hz",
+    "bin_width_hz",
+    "nyquist_hz",
+    "mean_v",
+    "coherent_gain",
+    "enbw_bins",
+    "bins"
+  ]
+}

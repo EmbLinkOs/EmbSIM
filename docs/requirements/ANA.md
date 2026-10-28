@@ -103,3 +103,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native RC/loading equations, warm-up/history preservation, maximum grid, DNP and scripted failure; actual native browser, UI and both offline backends.
 **Trace.** SPEC-004; SPEC-008; ADR-047; docs/engineering/transient-capture.md
+
+
+### ANA-014  Coherent captured-data spectra
+**Statement.** A captured-data spectrum shall use a complete known uniform half-open record, explicit window/mean handling, coherent one-sided and DC/Nyquist scaling, and source-bound evidence. Unknown/partial data shall not be interpolated; sampled amplitudes shall not imply PSD, broadband RMS, AC or device qualification.
+**Rationale.** Frequency plots require defined units, sample/window semantics and independently inspectable evidence.
+**Status.** Accepted 2026-10-27
+**Verification.** Native analytic/direct-DFT vectors, independent NumPy checks, loaded RC reference, source-bound CLI/RPC, actual native browser and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-048; docs/engineering/frequency-spectrum.md
