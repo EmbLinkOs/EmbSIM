@@ -108,12 +108,24 @@ export interface Project {
   boards?: ProjectBoard[];
   components: ProjectComponent[];
   nets: Record<string, string[]>;
-  layout?: { groups?: SchematicGroup[]; wires?: Wire[]; labels?: NetLabel[]; buses?: Bus[]; sheet?: { width: number; height: number }; bench?: BenchLayout };
+  blocks?: Record<string, CircuitBlock>;
+  layout?: { port_order?: string[]; groups?: SchematicGroup[]; wires?: Wire[]; labels?: NetLabel[]; buses?: Bus[]; sheet?: { width: number; height: number }; bench?: BenchLayout };
   probes?: ProjectProbe[];
   scenarios?: string[];
   settings?: Record<string, unknown>;
   world?: WorldSpec;
 }
+
+/** Project-owned composite: ports point to local pins, never implicitly global nets. */
+export interface CircuitBlock {
+  name: string;
+  components: ProjectComponent[];
+  nets: Record<string, string[]>;
+  ports: Record<string, string>;
+  layout?: Project['layout'];
+  params?: ComponentDescription['params'];
+}
+export interface HierarchyNode { path: string; block: string; nets: Record<string, string>; params?: Record<string, string | number | boolean> }
 
 /** The room the circuit sits in (ADR-026): fields every bound sensor reads, bodies distance sensors see. */
 export type WorldField = 'temperature' | 'humidity' | 'pressure' | 'illuminance' | 'sound' | 'wind';

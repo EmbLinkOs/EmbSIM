@@ -5,6 +5,7 @@
  * models, boards as composites with a placeholder MCU (no runtime in M0),
  * nets merged through board ports and functional wires, probes, settings. */
 #include "project/loader.h"
+#include "project/hierarchy.h"
 #include "ext/lua_model.h"
 #include <math.h>
 #include <stdio.h>
@@ -304,7 +305,7 @@ static es_status expand_composite(es_session *s, graph *g, const char *id, const
         const esk_json *ce = esk_json_at(comps, i);
         const char *cid = esk_json_get_str(ce, "id", NULL);
         const char *ref = esk_json_get_str(ce, "component", NULL);
-        const esk_catalog_item *ci = esk_catalog_find(s->catalog, "component", ref);
+        const esk_catalog_item *ci = esk_project_component(s, ref);
         esk_json *sub_params;
         esk_comp *c = NULL;
         if (!cid || !ci) {
@@ -395,6 +396,11 @@ static esk_pin *resolve_pin_ref(es_session *s, const char *full, int depth)
         return resolve_pin_ref(s, internal, depth + 1);
     }
     return esk_comp_pin(c, pin);
+}
+
+esk_pin *esk_project_pin(es_session *s, const char *ref)
+{
+    return resolve_pin_ref(s, ref, 0);
 }
 
 static es_status instantiate(es_session *s, graph *g, const char *id, const esk_catalog_item *item, const esk_json *inst_params, int depth, esk_comp **out)
@@ -902,7 +908,7 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
         const esk_json *ce = esk_json_at(comps, i);
         const char *cid = esk_json_get_str(ce, "id", NULL);
         const char *ref = esk_json_get_str(ce, "component", NULL);
-        const esk_catalog_item *ci = esk_catalog_find(s->catalog, "component", ref);
+        const esk_catalog_item *ci = esk_project_component(s, ref);
         esk_comp *c = NULL;
         if (!cid || !ci) {
             ld_diag(s, ES_SEV_ERROR, "catalog.not_found", bid, "board component %s (%s) is not in any library", cid ? cid : "?", ref ? ref : "?");
@@ -1051,6 +1057,8 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             return ES_ESCHEMA;
         }
     }
+    st = esk_project_blocks_prepare(s);
+    if (st != ES_OK) return st;
     memset(&g, 0, sizeof g);
     g.s = s;
     esk_map_init(&g.rec_by_name, s->a);
@@ -1066,7 +1074,7 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
         const esk_json *ce = esk_json_at(comps, i);
         const char *cid = esk_json_get_str(ce, "id", NULL);
         const char *ref = esk_json_get_str(ce, "component", NULL);
-        const esk_catalog_item *ci = esk_catalog_find(s->catalog, "component", ref);
+        const esk_catalog_item *ci = esk_project_component(s, ref);
         esk_comp *c = NULL;
         if (!cid || !esk_is_identifier(cid)) {
             ld_diag(s, ES_SEV_ERROR, "schema.type", cid ? cid : "components", "component ids must be identifiers%s%s", "", "");
@@ -1220,6 +1228,7 @@ void esk_project_unload(es_session *s)
     }
     esk_vec_clear(&s->boards);
     esk_engine_free(&s->eng);
+    esk_project_blocks_free(s);
     esk_engine_init(&s->eng, s->a, &s->diag, s->eng.policy);
     s->eng.on_net_change = esk_session_on_net_change;
     s->eng.on_net_change_ctx = s;

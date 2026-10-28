@@ -29,7 +29,7 @@ function transactionLayout(before: Layout | undefined, after: Layout | undefined
   return before?.locked && !after?.locked ? { ...layout, locked: false } : layout;
 }
 
-export function diffProject(before: Project, after: Project): ProjectEdit[] {
+function diffFlatProject(before: Project, after: Project): ProjectEdit[] {
   const edits: ProjectEdit[] = [];
   const beforeById = new Map(before.components.map((c) => [c.id, c]));
   const afterById = new Map(after.components.map((c) => [c.id, c]));
@@ -102,4 +102,12 @@ export function diffProject(before: Project, after: Project): ProjectEdit[] {
   // The bench (SPEC-007 §2): the places, jumpers and notes, as one object.
   if (JSON.stringify(before.layout?.bench ?? {}) !== JSON.stringify(after.layout?.bench ?? {})) edits.push({ set_layout: { bench: after.layout?.bench ?? {} } });
   return edits;
+}
+
+export function diffProject(before: Project, after: Project): ProjectEdit[] {
+  if (before.blocks !== undefined || after.blocks !== undefined) {
+    const circuit = (p: Project) => ({ components: p.components, nets: p.nets, blocks: p.blocks ?? {}, layout: p.layout, probes: p.probes });
+    if (JSON.stringify(circuit(before)) !== JSON.stringify(circuit(after))) return [{ set_circuit: circuit(after) }, ...diffFlatProject({ ...before, components: after.components, nets: after.nets, layout: after.layout }, after)];
+  }
+  return diffFlatProject(before, after);
 }

@@ -9,6 +9,7 @@
 
 import { bytesToBase64 } from '../../jsonrpc';
 import { MS, US, parseDuration, type Time } from '../../time';
+import { hierarchyOf } from '../../hierarchy';
 import type {
   ControlState,
   DiagnosticRecord,
@@ -551,6 +552,7 @@ export class MockSession {
     const staged = this.txs.get(tx);
     if (!staged) throw new EngineError(-32002, `no transaction ${tx}`);
     this.txs.delete(tx);
+    hierarchyOf(staged);
     const diagnostics = validateProject(staged);
     const worldChanged = JSON.stringify(this.project.world ?? {}) !== JSON.stringify(staged.world ?? {});
     this.project = staged;
@@ -609,6 +611,7 @@ function round(v: number, digits = 4): number {
 }
 
 function applyEdit(p: Project, edit: ProjectEdit): void {
+  if ('set_circuit' in edit) { Object.assign(p, structuredClone(edit.set_circuit)); return; }
   if ('add_component' in edit) {
     const e = edit.add_component;
     if (p.components.some((c) => c.id === e.id)) throw new EngineError(-32017, `component ${e.id} exists`);

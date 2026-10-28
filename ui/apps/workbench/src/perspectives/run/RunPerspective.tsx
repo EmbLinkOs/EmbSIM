@@ -10,6 +10,8 @@ import { platform } from '../../platform/platform';
 import { useRegisterCommands } from '../../shell/commands';
 import { DiagnosticsPanel } from '../../shell/DiagnosticsPanel';
 import { useInstruments } from '../../stores/instruments';
+import { useHierarchy } from '../../stores/hierarchy';
+import { useLayout } from '../../stores/layout';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useCanvasAppearance } from '../../stores/canvasAppearance';
@@ -189,6 +191,7 @@ export function RunPerspective() {
                 voltageComparison={leads}
                 onCompareNet={changeLead}
                 probes={inst.probes}
+                onOpenComponent={(id) => { if (project.components.find((c)=>c.id===id)?.component.startsWith('block/')) { useHierarchy.getState().show(id); useLayout.getState().setPerspective('design'); } }}
                 onMoveProbe={async (id, net) => { try { await probeActions.move(id, `net:${net}`); } catch (e) { toast({ kind: 'error', title: 'Probe move rejected', description: errorMessage(e) }); throw e; } }}
                 readOnly
                 onNetClick={(net, at) => { if (pickLead) { changeLead(pickLead, net, at); setPickLead(null); return; } guard(() => probeActions.add(`net:${net}`, 'analog', 200_000).then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` })))(); }}

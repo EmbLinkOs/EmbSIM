@@ -6,6 +6,7 @@
 // a "Demo session" badge when it is in use.
 
 import { JsonRpcCode, decodeMessage, encodeError, encodeNotification, encodeResult } from '../../jsonrpc';
+import { hierarchyOf } from '../../hierarchy';
 import type { MethodName, Methods, Params } from '../../methods';
 import { TransportBase, type Transport } from '../../transport';
 import type { Project } from '../../types';
@@ -91,6 +92,7 @@ export class MockTransport extends TransportBase implements Transport {
             return {};
         }
       },
+      'project.hierarchy': (p) => hierarchyOf(s.project, p.trace),
       'project.topology': () => s.topology(),
 
       'control.run': (p) => {
@@ -175,6 +177,11 @@ export class MockTransport extends TransportBase implements Transport {
         };
       },
       'catalog.get': (p) => {
+        if (p.id.startsWith('block/')) {
+          const block = s.project.blocks?.[p.id.slice(6)];
+          if (!block) throw new EngineError(-32002, 'No project block');
+          return { description: {schema_version:1, kind:'component', id:p.id, version:'0.1.0', name:block.name, category:'project', pins:Object.keys(block.ports).map((name)=>({name,model:{kind:'passive' as const}})), params:block.params, model:{composite:block}, symbol:{svg:'',width:160,height:80,pins:{}}, fidelity:{}, provenance:{author:'Project',license:'NOASSERTION'}}, files:{} };
+        }
         const entry = MOCK_CATALOG[p.id];
         if (!entry) throw new EngineError(-32002, `no component ${p.id} in the catalog`);
         return structuredClone(entry);

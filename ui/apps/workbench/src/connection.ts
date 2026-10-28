@@ -143,6 +143,7 @@ async function openSession(options: ConnectOptions): Promise<Client> {
 export async function primeStores(c: Client): Promise<void> {
   // Epochs belong to one native session; a replacement server starts its own.
   useInstruments.getState().clearRecords(true);
+  useSession.getState().setInfo({ nets: {}, outputs: {} });
   const info = await c.session.info({});
   useSession.getState().setInfo({
     projectName: info.project,

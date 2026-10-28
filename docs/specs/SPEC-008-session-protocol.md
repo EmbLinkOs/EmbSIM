@@ -70,6 +70,11 @@ Notation: `method(params) -> result`. Params and results are objects.
   `path`, relative to the project's folder, or to the file it was loaded
   from; `ES_EIO` when it cannot be written
 - `project.validate({path} | {json}) -> {ok, diagnostics}`
+- `project.hierarchy({trace?}) -> [{path, block, nets, params?}]` returns concrete
+  instance sheets. `nets` maps each declared local net to its native alias identity;
+  `params` contains resolved instance parameters. Optional `trace` is a native net
+  name/alias and filters to locations sharing that solved net. Unknown traces
+  return no locations. The empty path/block identifies the root.
 - `project.transaction({op: "begin"}) -> {tx}`;
   `project.transaction({op: "edit", tx, edits: [{add_component}, {remove_component}, {set_param}, {connect, net, pin}, {disconnect, pin}, {rename_net}, {add_board}, {set_layout}]}) -> {}`;
   `project.transaction({op: "commit", tx}) -> {applied, restarted, diagnostics}`;
@@ -285,3 +290,16 @@ opposing active digital output intents on a mixed island. Released drivers and
 open-drain high outputs do not count. Analog supply-input bridges are excluded.
 X alone is not proof of contention. This is current state, not a historical
 fault latch, and does not classify all analog shorts or power conflicts.
+
+
+### Coherent circuit and hierarchy edits
+
+`set_circuit {components, nets, blocks, layout?, probes?}` atomically replaces the
+project-owned circuit fields in the staged transaction. Omitted layout/probes are
+removed. A malformed patch leaves even the staged circuit unchanged. Definition
+and electrical changes preflight in an isolated session before commit, with
+`applied: false` preserving the old circuit/time/probes on failure. Clients must
+check `applied` rather than treating every RPC response as successful application.
+Drawing-only differences at root and child depth retain runtime; physical parameters
+named `layout` remain electrical. Other project fields retain their established
+edit operations. Installed catalog data is never modified by project blocks.

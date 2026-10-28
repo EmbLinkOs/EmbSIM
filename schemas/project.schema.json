@@ -6,6 +6,54 @@
   "type": "object",
   "required": ["schema_version", "kind", "name", "policy", "nets"],
   "additionalProperties": false,
+  "$defs": {
+    "block": {
+      "type": "object",
+      "required": [
+        "name",
+        "components",
+        "nets",
+        "ports"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "components": {
+          "$ref": "#/properties/components"
+        },
+        "nets": {
+          "$ref": "common.schema.json#/$defs/nets",
+          "propertyNames": {
+            "minLength": 1,
+            "maxLength": 63,
+            "pattern": "^[^.]+$"
+          }
+        },
+        "layout": {
+          "$ref": "#/properties/layout"
+        },
+        "ports": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[A-Za-z0-9_+\\-/~#]+$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 3
+          }
+        },
+        "params": {
+          "$ref": "component.schema.json#/properties/params"
+        }
+      }
+    }
+  },
   "properties": {
     "schema_version": {"const": 1},
     "kind": {"const": "project"},
@@ -67,11 +115,13 @@
         }
       }
     },
+    "blocks": {"type": "object", "maxProperties": 256, "propertyNames": {"$ref": "common.schema.json#/$defs/name"}, "additionalProperties": {"$ref": "#/$defs/block"}},
     "nets": {"$ref": "common.schema.json#/$defs/nets"},
     "layout": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "port_order": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/pin_name"}, "description": "Block drawing only: stable port order, independent of JSON object key order."},
         "wires": {
           "type": "array",
           "items": {

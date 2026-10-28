@@ -6,7 +6,7 @@
 // the caller can toast them.
 
 import { JsonRpcError, type Policy, type ProbeKind } from '@embsim/protocol';
-import { getClient, resubscribeWaveforms } from './connection';
+import { getClient, primeStores, resubscribeWaveforms } from './connection';
 import { useInstruments } from './stores/instruments';
 import { useSession } from './stores/session';
 
@@ -50,8 +50,11 @@ export const controls = {
     useSession.getState().setInfo({ speed: r.speed });
   },
   async setPolicy(policy: Policy): Promise<void> {
+    const previous = useSession.getState().policy;
     const r = await getClient().session.policy({ policy });
     useSession.getState().setInfo({ policy: r.policy });
+    // A policy rebuild creates new probe epochs and can change native net ties.
+    if (previous !== r.policy) await primeStores(getClient());
   },
 };
 

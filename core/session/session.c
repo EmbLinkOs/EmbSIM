@@ -535,12 +535,7 @@ es_status esk_session_probe_add(es_session *s, const char *name, const char *tar
         if (!p->net) goto notfound;
         p->kind = (kind && !strcmp(kind, "analog")) ? ESK_PROBE_ANALOG : (!kind && p->net->island) ? ESK_PROBE_ANALOG : ESK_PROBE_DIGITAL;
     } else if (!strcmp(head, "pin")) {
-        char inst[128], pin[64];
-        esk_comp *c;
-        esk_pin *pp;
-        if (esk_split_pin_ref(rest, inst, sizeof inst, pin, sizeof pin)) goto notfound;
-        c = esk_engine_comp(&s->eng, inst);
-        pp = c ? esk_comp_pin(c, pin) : NULL;
+        esk_pin *pp = esk_project_pin(s, rest);
         if (!pp || !pp->net) goto notfound;
         p->net = pp->net;
         p->kind = (kind && !strcmp(kind, "analog")) ? ESK_PROBE_ANALOG : ESK_PROBE_DIGITAL;

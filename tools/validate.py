@@ -20,6 +20,7 @@ found, 2 on a usage error.
 from __future__ import annotations
 
 import argparse
+import copy
 import math
 import fnmatch
 import glob
@@ -521,6 +522,8 @@ class Index:
         return self._cache[p]
 
     def component(self, cid: str) -> Optional[dict]:
+        local = getattr(self, "project_components", {}).get(cid)
+        if local is not None: return local
         p = self.components.get(cid)
         return self._load(p) if p else None
 
@@ -613,7 +616,7 @@ def check_param_value(report: Report, file: Path, node: str, name: str, value: A
         report.error(file, node, "schema.type", f"parameter {name} must be a table of [x, y] pairs")
 
 
-def check_instances_params(report: Report, file: Path, node_base: str, instances: list, index: Index) -> dict[str, dict]:
+def check_instances_params(report: Report, file: Path, node_base: str, instances: list, index: Index, template_params: Optional[dict] = None) -> dict[str, dict]:
     """Resolve component instances; returns {instance id: description}."""
     found: dict[str, dict] = {}
     seen: set[str] = set()
@@ -632,7 +635,13 @@ def check_instances_params(report: Report, file: Path, node_base: str, instances
             continue
         found[iid] = desc
         for pname, pval in (inst.get("params") or {}).items():
-            check_param_value(report, file, node + "/params/" + pname, pname, pval, desc)
+            if isinstance(pval, str) and pval.startswith("$") and template_params is not None:
+                if pname not in (desc.get("params") or {}):
+                    report.error(file, node + "/params/" + pname, "schema.unknown_field", f"unknown component parameter {pname}")
+                if pval[1:] not in template_params:
+                    report.error(file, node + "/params/" + pname, "catalog.param_unknown", f"unknown block parameter {pval}")
+            else:
+                check_param_value(report, file, node + "/params/" + pname, pname, pval, desc)
         for pname, pspec in (desc.get("params") or {}).items():
             if pspec.get("required", True) and "default" not in pspec and pname not in (inst.get("params") or {}):
                 report.error(file, node + "/params", "schema.missing_field", f"parameter {pname} of {desc.get('id')} has no default and is not given")
@@ -1502,7 +1511,11 @@ def project_index(file: Path, doc: dict, index: Index) -> Index:
     roots = []
     for lib in doc.get("libraries") or []:
         roots.append((file.parent / lib).resolve())
-    return index.with_extra(roots)
+    result = copy.copy(index.with_extra(roots))
+    result.project_components = {}
+    for key, block in (doc.get("blocks") or {}).items():
+        result.project_components["block/" + key] = dict(id="block/" + key, name=block.get("name", key), params=block.get("params", {}), pins=[dict(name=p, model={"kind": "passive"}) for p in block.get("ports", {})], model={"composite": block}, fidelity={tier: {"claims": "project-owned composition", "omissions": []} for tier in ["functional", "timed", "electrical"]})
+    return result
 
 
 def check_project(report: Report, file: Path, doc: dict, index: Index) -> ProjectContext:
@@ -1511,6 +1524,43 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
     for i, lib in enumerate(doc.get("libraries") or []):
         if not (base / lib).is_dir():
             report.error(file, ptr("libraries", i), "catalog.not_found", f"library directory {lib} does not exist")
+    blocks = doc.get("blocks") or {}
+    def visit(key, stack, budget=None):
+        if budget is None: budget = [10000]
+        if key in stack or len(stack) >= 8:
+            report.error(file, ptr("blocks", key), "hierarchy.invalid", "recursive block or nesting exceeds eight levels")
+            return
+        if key not in blocks:
+            report.error(file, ptr("blocks", key), "catalog.not_found", "unknown circuit block")
+            return
+        for part in blocks[key].get("components", []):
+            budget[0] -= 1
+            if budget[0] < 0:
+                report.error(file, ptr("blocks", key), "hierarchy.invalid", "block expansion exceeds 10000 components")
+                break
+            ref = part.get("component", "")
+            if ref.startswith("block/"): visit(ref[6:], stack + [key], budget)
+    for key, block in blocks.items():
+        visit(key, [])
+        order = (block.get("layout") or {}).get("port_order", [])
+        if any(name not in block.get("ports", {}) for name in order) or len(set(order)) != len(order):
+            report.error(file, ptr("blocks", key, "layout", "port_order"), "hierarchy.invalid", "port order needs unique declared port names")
+        for net in block.get("nets", {}):
+            if "." in net or len(net) > 63:
+                report.error(file, ptr("blocks", key, "nets", net), "hierarchy.invalid", "local net names must have no dots and at most 63 characters")
+        found = check_instances_params(report, file, ptr("blocks", key, "components"), block.get("components", []), idx, block.get("params", {}))
+        for iid, description in found.items():
+            if doc.get("policy", "functional") not in {tier for tier, claim in (description.get("fidelity") or {}).items() if claim}:
+                report.error(file, ptr("blocks", key), "fidelity.tier_missing", f"{iid} declares no {doc.get('policy', 'functional')} fidelity")
+        def resolve_block(i, pin):
+            return (True, "") if i in found and pin in component_pin_names(found[i]) else (False, f"unknown local pin {i}.{pin}")
+        check_nets(report, file, block.get("nets", {}), resolve_block)
+        for port, ref in block.get("ports", {}).items():
+            iid, _, pin = ref.partition(".")
+            ok, why = resolve_block(iid, pin)
+            if not ok: report.error(file, ptr("blocks", key, "ports", port), "catalog.pin_unknown", why)
+            if not any(ref in pins for pins in block.get("nets", {}).values()):
+                report.error(file, ptr("blocks", key, "ports", port), "hierarchy.invalid", "port pin must belong to a named local net")
     ctx = ProjectContext(policy=doc.get("policy", "functional"))
     ctx.components = check_instances_params(report, file, "/components", doc.get("components", []), idx)
     for i, b in enumerate(doc.get("boards") or []):
@@ -1601,6 +1651,24 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
                 if ref in occupied_holes:
                     report.error(file, node, "bench.occupied", f"hole {ref} already holds a jumper; choose another hole on its strip")
                 occupied_holes.add(ref)
+    hierarchy_nets = set()
+    def scoped_nets(sheet, path, depth=0, budget=None):
+        if budget is None: budget = [10000]
+        budget[0] -= len(sheet.get("components", [])) + 1
+        if depth > 8 or len(path) >= 150 or budget[0] < 0:
+            report.error(file, "/blocks", "hierarchy.invalid", "hierarchy exceeds expansion or path limits")
+            return
+        hierarchy_nets.update(path + name for name in sheet.get("nets", {}))
+        for part in sheet.get("components", []):
+            ref = part.get("component", "")
+            if ref.startswith("block/") and ref[6:] in blocks:
+                if budget[0] < 0: break
+                scoped_nets(blocks[ref[6:]], path + part["id"] + ".", depth + 1, budget)
+    if blocks:
+        for part in doc.get("components", []):
+            if part.get("component", "").startswith("block/") and any(net.startswith(part.get("id", "") + ".") for net in nets):
+                report.error(file, "/nets", "hierarchy.invalid", "root net overlaps a block instance namespace")
+    scoped_nets(doc, "")
     # probes
     for i, probe in enumerate(doc.get("probes") or []):
         node = ptr("probes", i)
@@ -1612,7 +1680,7 @@ def check_project(report: Report, file: Path, doc: dict, index: Index) -> Projec
         if kind == "net":
             b2, _, bnet = rest.partition(".")
             board_net = b2 in ctx.boards and bnet in (ctx.boards[b2].get("nets") or {})
-            if rest not in nets and not board_net:
+            if rest not in hierarchy_nets and not board_net:
                 report.error(file, node + "/target", "catalog.not_found", f"net {rest} is not declared (a board's own net is BOARD.NET)")
         elif kind in ("pin", "device", "output"):
             i2, _, sub = rest.partition(".")

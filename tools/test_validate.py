@@ -378,6 +378,36 @@ class ComponentTests(Base):
 
 
 class ProjectTests(Base):
+    def test_project_owned_blocks_and_qualified_probe(self):
+        p = json.loads((validate.ROOT / 'examples/hierarchical-divider/project.json').read_text())
+        p['probes'].append(dict(id='nested',target='net:A.D.OUT',kind='analog'))
+        p['blocks']['divider']['params']={'r':{'type':'number','default':1000}}
+        p['blocks']['divider']['components'][0]['params']['resistance']='$r'
+        self.assertClean(self.check_doc(p, 'project.json'))
+
+    def test_recursive_unused_block_and_unknown_port(self):
+        p = json.loads((validate.ROOT / 'examples/hierarchical-divider/project.json').read_text())
+        p['blocks']['unused']={'name':'Unused','components':[{'id':'X','component':'block/unused'}],'nets':{},'ports':{}}
+        self.assertCode(self.check_doc(p, 'project.json'), 'hierarchy.invalid')
+        del p['blocks']['unused']
+        p['blocks']['divider']['ports']['OUT']='RT.MISSING'
+        self.assertCode(self.check_doc(p, 'project.json'), 'catalog.pin_unknown')
+
+    def test_project_blocks_do_not_leak_into_another_project_index(self):
+        p = json.loads((validate.ROOT / 'examples/hierarchical-divider/project.json').read_text())
+        self.assertClean(self.check_doc(p, 'project.json'))
+        del p['blocks']
+        self.assertCode(self.check_doc(p, 'other.json'), 'catalog.not_found')
+
+    def test_project_block_namespace_and_child_fidelity(self):
+        p = json.loads((validate.ROOT / 'examples/hierarchical-divider/project.json').read_text())
+        p['nets']['A.OUT']=p['nets'].pop('AOUT')
+        self.assertCode(self.check_doc(p, 'project.json'), 'hierarchy.invalid')
+        p['nets']['AOUT']=p['nets'].pop('A.OUT')
+        p['blocks']['divider']['components'][0]['component']='emblink/scope_input'
+        p['policy']='functional'
+        self.assertCode(self.check_doc(p, 'project.json'), 'fidelity.tier_missing')
+
     def write_project(self, project=PROJECT, scenario=SCENARIO):
         d = self.tmp / "proj"
         (d / "scenarios").mkdir(parents=True, exist_ok=True)

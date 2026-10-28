@@ -27,8 +27,9 @@ export function applyLayoutFields(current: Project, planned: Project): Project {
   return current;
 }
 
-export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDisplay, onChecks, checkCount, checking }: {
+export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDisplay, onChecks, checkCount, checking, onSheets }: {
   canvas: RefObject<SchematicCanvasHandle | null>;
+  onSheets?(): void;
   onChecks?(): void;
   checkCount?: number;
   checking?: boolean;
@@ -76,6 +77,7 @@ export function SchematicToolbar({ canvas, onStudio, onPreview, display, onDispl
     <div className="wb-schematic-ribbon">
       <div className="wb-schematic-ribbon__identity"><Network size={18} /><div><strong>Schematic</strong><span>{project?.components.length ?? 0} parts · {Object.keys(project?.nets ?? {}).length} nets</span></div></div>
       <div className="wb-schematic-ribbon__tools" role="toolbar" aria-label="Schematic tools">
+        {onSheets && <Button size="sm" variant="ghost" onClick={onSheets}>Sheets and reusable blocks</Button>}
         <Button size="sm" icon={<Sparkles />} disabled={!project || !editable || busy} onClick={onStudio}>Auto layout</Button>
         <Button size="sm" variant="ghost" icon={<AlignStartHorizontal />} disabled={!editable || busy || selection.components.length < 2} onClick={() => { setMenu(menu === 'arrange' ? null : 'arrange'); setFinder(false); }}>Arrange</Button>
         <Button size="sm" variant="ghost" icon={<Focus />} disabled={!selection.components.length && !selectedNet} onClick={() => selectedNet ? canvas.current?.focusNet(selectedNet) : canvas.current?.focusComponents(selection.components)}>Focus</Button>

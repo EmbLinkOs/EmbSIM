@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Editable hierarchy and cross-sheet tracing (2026-10-26)
+
+Actual native `hierarchical-divider` session, captured by
+`tests/browser/test_hierarchy.py`. The nested A.D sheet exposes explicit ports;
+its OUT net resolves through A to the root and measures 2 V with the external
+2 kΩ load. The independent sibling measures 1.65 V. The browser workflow also
+operates A.D's contact without changing the sibling, edits/undoes a shared
+resistor, preserves time through a move, renames a port and extracts/exports a
+reusable block. These are native circuit observations, not client-side physics.
+See [scope and remaining limits](../engineering/editable-hierarchy.md).
+
+![Native nested sheet with explicit ports and selected OUT net](hierarchy/nested-sheet-trace.png)
+
 ## Sampled acquisition and movable waveform probes (2026-10-26)
 
 Actual native `acquisition-bench` session, captured by

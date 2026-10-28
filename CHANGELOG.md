@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Editable hierarchy and reusable circuit blocks
+
+- Add project-owned block definitions, explicit port aliases, nested instances and
+  native cross-sheet tracing with instance-local net scope.
+- Author/edit shared sheets, extract selections, expose/remap/rename ports,
+  import/export block projects and operate/probe qualified instances in the GUI.
+- Stage coherent circuit edits atomically; preserve clock/state for child drawing
+  edits and preflight electrical changes before a reported simulation restart.
+- Add loaded/isolated divider acceptance, native browser workflow and hierarchy
+  validation/undo fixtures. Nested board firmware and 3D rendering remain deferred.
+
 ### Triggered schematic acquisition
 
 - Add sampled rising/falling/either Single and Normal captures with hysteresis,

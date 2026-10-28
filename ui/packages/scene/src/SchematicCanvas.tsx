@@ -116,6 +116,7 @@ export interface SchematicCanvasProps {
   onInput?: (target: string, input: string, value: unknown) => void;
   /** Voltage range for the analog gradient; default [0, 3.3]. */
   analogRange?: [number, number];
+  sheetPorts?: Record<string, string>;
   probes?: ProbeInfo[];
   onMoveProbe?: (id: string, net: string) => Promise<void>;
   voltageComparison?: { a?: string; b?: string; aPoint?: Point; bPoint?: Point };
@@ -323,6 +324,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     inputs = [],
     onInput,
     analogRange = [0, 3.3],
+    sheetPorts,
     probes,
     onMoveProbe,
     voltageComparison,
@@ -412,6 +414,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       if (!members.length) return [];
       return [{ x: Math.min(...members.map((part) => part.bounds.x)) - 14, y: Math.min(...members.map((part) => part.bounds.y)) - 39, width: Math.max(100, group.name.length * 8 + 24), height: 24 }];
     });
+    for (const [name, ref] of Object.entries(sheetPorts ?? {})) {
+      const dot=ref.indexOf('.'), part=placed.find((p)=>p.id===ref.slice(0,dot)), pin=part?.pins.find((p)=>p.name===ref.slice(dot+1));
+      if(pin) headers.push({x:pin.point.x-48,y:pin.point.y-22,width:Math.max(44,name.length*6+12),height:15});
+    }
+    for (const label of project.layout?.labels ?? []) headers.push({x:label.x,y:label.y-14,width:label.net.length*7+12,height:14});
     for (const probe of probes ?? []) {
       const net = probe.target.startsWith('net:') ? probe.target.slice(4) : pinNet.get(probe.target.slice(4));
       if (!net) continue;
@@ -420,7 +427,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       if (point) headers.push({ x: point.x + 8, y: point.y - 24, width: Math.max(36, String(probe.probe).length * 6 + 22), height: 24 });
     }
     return placeComponentLabels(placed.map((part) => ({ id: part.id, bounds: part.bounds, pins: part.pins.map((pin) => pin.point), name: part.symbol?.name ?? part.componentId.split('/').at(-1) ?? part.componentId, value: part.value })), wires, appearance.labels !== 'compact', headers);
-  }, [placed, wires, appearance.labels, project, probes, pinNet, probePoints]);
+  }, [placed, wires, appearance.labels, project, probes, pinNet, probePoints, sheetPorts]);
 
   const placedById = useMemo(() => new Map(placed.map((p) => [p.id, p])), [placed]);
 
@@ -1264,6 +1271,17 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
                 if (hit) { onCompareNet(lead, hit, pin?.net ? pin.point : wireHit!.point); setAnnouncement(`Voltage probe ${lead.toUpperCase()} moved to ${hit}.`); }
                 else setAnnouncement('No connected wire or pin at the probe drop; connection preserved.');
               } : undefined} /> : null;
+            })}
+          </g>
+
+          <g className="es-scene__layer es-scene__layer--sheet-ports">
+            {Object.entries(sheetPorts ?? {}).map(([name, ref]) => {
+              const dot = ref.indexOf('.'), part = placedById.get(ref.slice(0,dot)), pin = part?.pins.find((p)=>p.name===ref.slice(dot+1));
+              if (!pin) return null;
+              const {x,y}=pin.point;
+              return <g key={name} role="button" tabIndex={0} aria-label={`Sheet port ${name}, ${ref}`} onPointerDown={(e)=>{e.stopPropagation();if(pin.net)onHighlightNet?.(pin.net);}} onKeyDown={(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();if(pin.net)onHighlightNet?.(pin.net);}}}>
+                <rect x={x-48} y={y-22} width={Math.max(44,name.length*6+12)} height={15} rx={3}/><text x={x-42} y={y-11}>{name}</text><title>{`${name} exports ${ref}; wire at the component terminal`}</title>
+              </g>;
             })}
           </g>
 

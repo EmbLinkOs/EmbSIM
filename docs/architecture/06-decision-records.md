@@ -1126,3 +1126,32 @@ capture. Physical input loading remains separate wired components. Automatic,
 protocol and pulse-width triggers retain independent acceptance gates.
 
 **Status.** Accepted (2026-10-26), within the owner's complete-schematic direction.
+
+
+## ADR-039 Project-owned blocks reuse native composite elaboration
+
+**Context.** Multi-sheet editing needs real scope and reusable definitions, not
+just visual groups. Read-only catalog interiors cannot author project hierarchy.
+A second frontend connectivity solver would diverge from native loading and ties.
+
+**Decision.** Add project-owned `blocks`, referenced by the reserved `block/`
+namespace through ordinary component instances. Materialize private session-local
+composite descriptors and reuse the existing native elaborator, port resolution,
+parameter substitution and net aliases. Keep canonical definitions in project
+save/transactions. Return native hierarchy locations/aliases and resolved instance
+parameters for navigation, live display and tracing. Share definition edits across
+instances and distinguish their qualified runtime identities.
+
+**Alternatives.** Visual-only sheet grouping would not provide instance-local
+nets or shared behavior. Installing generated parts into the shared catalog would
+pollute other projects and failed staged sessions. Flattening in JavaScript would
+create another authority for connectivity and disconnect CLI verification.
+
+**Consequences.** The editor can author/import/export reusable blocks and perform
+atomic undoable edits. Native validation rejects recursion, ambiguous namespaces,
+unknown ports and excessive expansion. Drawing edits preserve runtime; electrical
+changes restart after isolated preflight. Board firmware stays at the root in this
+milestone. Managed library versions and industrial-size performance retain separate
+acceptance gates; basic hierarchy is not complete engineering workflow qualification.
+
+**Status.** Accepted (2026-10-26), following the owner's explicit hierarchy milestone.
