@@ -8,6 +8,8 @@
 
 import type {
   ProjectBoard,
+  AcRequest,
+  AcSweep,
   SweepRequest,
   TransientRequest,
   TransientCapture,
@@ -98,6 +100,7 @@ export interface Methods {
     result: { tx?: string; applied?: number | boolean; restarted?: boolean; diagnostics?: DiagnosticRecord[]; islands?: number };
   };
   'analysis.spectrum': {params: {capture: TransientCapture; target: string; window: 'hann' | 'rectangular'; remove_mean: boolean}; result: FrequencySpectrum};
+  'analysis.ac': {params: AcRequest; result: AcSweep};
   'analysis.transient': {params: TransientRequest; result: TransientCapture};
   'analysis.sweep': {params: SweepRequest; result: ParameterSweep};
   'project.variant': {params: {op: 'base' | 'preview' | 'activate'; name?: string; expected_sha256?: string}; result: Project | VariantPreview | {activated: boolean}};
@@ -261,6 +264,7 @@ export const METHOD_NAMES = [
   'project.topology',
   'analysis.spectrum',
   'analysis.transient',
+  'analysis.ac',
   'analysis.sweep',
   'project.variant',
   'project.library_lock',

@@ -32,6 +32,7 @@ import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { checkProject, liveProjectChecks } from './projectChecks';
 import { ProjectReview } from './ProjectReview';
 import { EngineeringReports } from '../engineering/EngineeringReports';
+import { AcSweeps } from '../engineering/AcSweeps';
 import { TransientCapture } from '../engineering/TransientCapture';
 import { ParameterSweeps } from '../engineering/ParameterSweeps';
 import { AssemblyVariants } from '../engineering/AssemblyVariants';
@@ -932,6 +933,7 @@ export function HierarchyWorkspace() {
         <AssemblyVariants />
         <ParameterSweeps />
         <TransientCapture />
+        <AcSweeps />
         <Badge tone="accent">{path.startsWith('@') ? 'Definition' : path || 'Main'}</Badge>
         <SegmentedControl
           label="Sheet interaction"

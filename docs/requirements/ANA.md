@@ -111,3 +111,10 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-27
 **Verification.** Native analytic/direct-DFT vectors, independent NumPy checks, loaded RC reference, source-bound CLI/RPC, actual native browser and both offline backends.
 **Trace.** SPEC-004; SPEC-008; ADR-048; docs/engineering/frequency-spectrum.md
+
+### ANA-015  Native linear AC phasor analysis
+**Statement.** AC analysis shall solve supported native linear networks with explicit unit source excitation, physical source/element/instrument impedances, differential outputs and complete source-bound complex evidence. Unsupported, singular, unreliable or excessive-work requests shall fail without fabricated or partial successful points, preserving the live source.
+**Rationale.** Frequency response needs native electrical equations and declared source/loading conventions rather than sampled-tone assumptions.
+**Status.** Accepted 2026-10-27
+**Verification.** Analytic RC/RLC/current/differential/loading cases, 123 independent ngspice points, isolation, maximum matrix/grid, refusal and both offline backends.
+**Trace.** SPEC-004; SPEC-008; ADR-049; docs/engineering/ac-sweeps.md

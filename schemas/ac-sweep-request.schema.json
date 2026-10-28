@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "ac_sweep_request"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 191
+    },
+    "reference": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 191
+    },
+    "frequencies_hz": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "number",
+        "minimum": 0.001,
+        "maximum": 1000000000000.0
+      }
+    },
+    "probes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 191
+      }
+    }
+  },
+  "required": [
+    "source",
+    "reference",
+    "frequencies_hz",
+    "probes"
+  ],
+  "$id": "https://emblink.dev/embsim/schemas/ac-sweep-request.schema.json"
+}

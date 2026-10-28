@@ -147,4 +147,16 @@ void esk_am_noncon(esk_amatrix *m);
  * its sources); it never passes a SIGNAL, PROBE or other event. A catch-up from
  * esk_island_touch stops exactly at `now`. */
 
+/* Linear native AC element values, read from initialized model state.
+ * Unsupported/nonlinear/bridge devices return ES_EINVAL; never approximated. */
+typedef struct esk_ac_element {
+    enum { ESK_AC_R, ESK_AC_C, ESK_AC_L, ESK_AC_V, ESK_AC_I, ESK_AC_INPUT } kind;
+    double value, resistance;
+} esk_ac_element;
+es_status esk_adev_ac_element(const esk_adev *d, esk_ac_element *out);
+/* Unit real phasor on the selected source, all other independent sources zero.
+ * Allocates node phasors (ground included) with the island allocator. */
+es_status esk_island_ac(const esk_island *isl, const esk_comp *source, double frequency,
+                        double **real, double **imag, char *why, size_t cap);
+
 #endif

@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Native linear AC sweeps
+
+- Solve source-bound linear RLC/source/instrument phasor networks through native
+  CLI/RPC without advancing the live bench; include actual ESR/DCR/Rout/R∥C loading.
+- Add Bode magnitude/wrapped-phase review, exact frequency cursors, differential
+  reference, linear/log grids and complete verified CSV/JSON evidence exports.
+- Refuse nonlinear/digital/scripted/firmware models, floating/unreliable matrices
+  and excessive work. Verify analytic networks and 123 independent ngspice points.
+
+
 ### Captured channel gain and phase comparison
 
 - Compare output/reference native spectra from the same verified capture, with
