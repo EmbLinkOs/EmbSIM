@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "floating-columns",
+  "description": "A driven row without a column return does not light pixels.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/led_matrix_8x8"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V.+",
+        "R.1"
+      ],
+      "ROW": [
+        "R.2",
+        "DUT.R1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.D11.luminance": {
+      "at": "0.5ms",
+      "min": 0,
+      "max": 1e-06
+    },
+    "output:DUT.D18.luminance": {
+      "at": "0.5ms",
+      "min": 0,
+      "max": 1e-06
+    }
+  }
+}

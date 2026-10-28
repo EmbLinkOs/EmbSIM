@@ -107,7 +107,23 @@
         "y": 10,
         "side": "right"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "closed",
+        "selector": "#lever",
+        "attr": "transform",
+        "true": "rotate(13.25 12 10)",
+        "false": "rotate(0 12 10)"
+      }
+    ],
+    "hotspots": [
+      {
+        "input": "pressed",
+        "selector": "#operate",
+        "gesture": "hold"
+      }
+    ]
   },
   "artwork": {
     "svg": "artwork.svg",

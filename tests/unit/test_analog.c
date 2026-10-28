@@ -287,6 +287,77 @@ static void test_loaded_instruments_dc(void)
     esk_engine_free(&e);
 }
 
+static void test_led_emission_integral(void)
+{
+    esk_engine e;
+    double on, first, last;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V",
+             "{\"kind\":\"pulse\",\"v1\":0,\"v2\":3.3,\"tr\":\"1n\","
+             "\"tf\":\"1n\",\"pw\":\"250u\",\"per\":\"1m\"}", "vin", "gnd");
+    add_dev2(&e, "resistor", "R", "{\"r\":100}", "vin", "anode");
+    add_dev2(&e, "led", "D", "{\"color\":\"red\"}", "anode", "gnd");
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, 100 * ES_PS_PER_US) == ES_OK);
+    on = obs_num(&e, "D", "luminance");
+    CHECK(on > 0.1 && on < 1.0);
+    CHECK(esk_engine_advance(&e, ES_PS_PER_MS) == ES_OK);
+    first = obs_num(&e, "D", "emission_integral");
+    CHECK(esk_engine_advance(&e, 5 * ES_PS_PER_MS) == ES_OK);
+    last = obs_num(&e, "D", "emission_integral");
+    CHECK_NEAR((last-first) / .004, on*.25, .002);
+    CHECK_NEAR(obs_num(&e, "D", "emission_integral"), last, 1e-12); /* read-only */
+    CHECK(esk_engine_reset(&e) == ES_OK);
+    CHECK_NEAR(obs_num(&e, "D", "emission_integral"), 0.0, 1e-12);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
+static void test_rgb_emission_integrals(void)
+{
+    esk_engine e;
+    const char *nets[] = {"r", "gnd", "g", "b"};
+    const char *keys[] = {"red_emission_integral", "green_emission_integral",
+                          "blue_emission_integral"};
+    const char *levels[] = {"red_luminance", "green_luminance", "blue_luminance"};
+    double on[3], first[3];
+    int i;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "VR",
+             "{\"kind\":\"pulse\",\"v1\":0,\"v2\":3.3,\"tr\":\"1n\","
+             "\"tf\":\"1n\",\"pw\":\"250u\",\"per\":\"1m\"}", "vr", "gnd");
+    add_dev2(&e, "vsource", "VG",
+             "{\"kind\":\"pulse\",\"v1\":0,\"v2\":3.3,\"tr\":\"1n\","
+             "\"tf\":\"1n\",\"pw\":\"500u\",\"per\":\"1m\"}", "vg", "gnd");
+    add_dev2(&e, "vsource", "VB",
+             "{\"kind\":\"pulse\",\"v1\":0,\"v2\":3.3,\"tr\":\"1n\","
+             "\"tf\":\"1n\",\"pw\":\"750u\",\"per\":\"1m\"}", "vb", "gnd");
+    add_dev2(&e, "resistor", "RR", "{\"r\":100}", "vr", "r");
+    add_dev2(&e, "resistor", "RG", "{\"r\":100}", "vg", "g");
+    add_dev2(&e, "resistor", "RB", "{\"r\":100}", "vb", "b");
+    add_dev(&e, "rgb_led", "D", "{}", nets, 4);
+    engine_run(&e);
+    CHECK(esk_engine_advance(&e, 100 * ES_PS_PER_US) == ES_OK);
+    for (i = 0; i < 3; i++) {
+        on[i] = obs_num(&e, "D", levels[i]);
+        CHECK(on[i] > 0.1 && on[i] < 1.0);
+    }
+    CHECK(esk_engine_advance(&e, ES_PS_PER_MS) == ES_OK);
+    for (i = 0; i < 3; i++) first[i] = obs_num(&e, "D", keys[i]);
+    CHECK(esk_engine_advance(&e, 5 * ES_PS_PER_MS) == ES_OK);
+    for (i = 0; i < 3; i++) {
+        double last = obs_num(&e, "D", keys[i]);
+        CHECK_NEAR((last - first[i]) / .004, on[i] * .25 * (i + 1), .002);
+        CHECK_NEAR(obs_num(&e, "D", keys[i]), last, 1e-12);
+    }
+    CHECK(esk_engine_reset(&e) == ES_OK);
+    for (i = 0; i < 3; i++) CHECK_NEAR(obs_num(&e, "D", keys[i]), 0.0, 1e-12);
+    CHECK_EQ(diag_errors, 0);
+    esk_engine_free(&e);
+}
+
 static void test_instrument_open_leads(void)
 {
     int lead;
@@ -1674,6 +1745,8 @@ RUN(test_rc_charge);
 RUN(test_loaded_instruments_dc);
 RUN(test_generator_output_impedance);
 RUN(test_instrument_open_leads);
+RUN(test_led_emission_integral);
+RUN(test_rgb_emission_integrals);
 RUN(test_scope_input_refinement);
 RUN(test_rc_with_ic);
 RUN(test_rl);

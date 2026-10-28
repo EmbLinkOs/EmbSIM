@@ -1016,6 +1016,13 @@ static void pot_accept(esk_adev *d, es_time_t t)
     d->i_last[2] = -i2;
 }
 
+static void pot_observe(esk_adev *d, esk_json *out)
+{
+    double pos = d->comp ? esk_comp_input_double(d->comp, "position", pd(d, "position", 0.5)) : 0.5;
+    observe_basic(d, out);
+    esk_json_set_number(d->isl->a, out, "position", fmax(0.0, fmin(1.0, pos)));
+}
+
 static const esk_adev_ops potentiometer_ops = {"potentiometer",
                                                sizeof(pot_state),
                                                pot_setup,
@@ -1025,7 +1032,7 @@ static const esk_adev_ops potentiometer_ops = {"potentiometer",
                                                NULL,
                                                NULL,
                                                NULL,
-                                               observe_basic,
+                                               pot_observe,
                                                NULL};
 
 /* ---- diode, led, zener ------------------------------------------------------------------ */
@@ -1038,7 +1045,26 @@ typedef struct diode_state {
     int has_bv;
     double vd_old, vr_old; /* limiting history */
     double id_trial, vd_trial;
+    double emission_s, emission_level;
+    es_time_t emission_at;
 } diode_state;
+
+/* Integral of illustrative normalized emission over accepted electrical time.
+ * A renderer can measure exposure between observations without aliasing PWM.
+ * Rejected Newton/timestep trials never enter this history. */
+static void emission_accept(diode_state *s, es_time_t t)
+{
+    if (t > s->emission_at)
+        s->emission_s += s->emission_level * ps_to_s(t - s->emission_at);
+    s->emission_at = t;
+    s->emission_level = fmax(0.0, fmin(1.0, s->id_trial / s->if_nom));
+}
+
+static double emission_integral(const esk_adev *d, const diode_state *s)
+{
+    es_time_t now = d->isl->e->sched.now;
+    return s->emission_s + (now > s->emission_at ? s->emission_level * ps_to_s(now - s->emission_at) : 0.0);
+}
 
 static void diode_common_setup(esk_adev *d, diode_state *s, double is_def, double n_def)
 {
@@ -1170,7 +1196,8 @@ static void diode_load(esk_adev *d, esk_amatrix *m)
 static void diode_accept(esk_adev *d, es_time_t t)
 {
     diode_state *s = (diode_state *)d->state;
-    ES_UNUSED(t);
+    if (s->kind == JN_LED)
+        emission_accept(s, t);
     set_pin_currents2(d, s->id_trial);
 }
 
@@ -1189,6 +1216,7 @@ static void diode_observe(esk_adev *d, esk_json *o)
             lum = 1.0;
         esk_json_set_number(a, o, "luminance", lum);
         esk_json_set_bool(a, o, "lit", s->id_trial > 1e-6);
+        esk_json_set_number(a, o, "emission_integral", emission_integral(d, s));
     }
 }
 
@@ -1265,10 +1293,10 @@ static void rgb_accept(esk_adev *d, es_time_t t)
     static const int pins[] = {0, 2, 3};
     rgb_state *s = (rgb_state *)d->state;
     int i;
-    ES_UNUSED(t);
     d->i_last[1] = 0.0;
     for (i = 0; i < 3; i++) {
         double current = s->die[i].id_trial * (s->anode ? -1.0 : 1.0);
+        emission_accept(&s->die[i], t);
         d->i_last[pins[i]] = current;
         d->i_last[1] -= current;
     }
@@ -1290,6 +1318,8 @@ static void rgb_observe(esk_adev *d, esk_json *out)
         esk_json_set_number(d->isl->a, out, key, current);
         snprintf(key, sizeof key, "%s_luminance", names[i]);
         esk_json_set_number(d->isl->a, out, key, lum[i]);
+        snprintf(key, sizeof key, "%s_emission_integral", names[i]);
+        esk_json_set_number(d->isl->a, out, key, emission_integral(d, &s->die[i]));
         esk_json_set_bool(d->isl->a, out, names[i], current > 1e-6);
         if (current > 1e-6) lit = 1;
     }

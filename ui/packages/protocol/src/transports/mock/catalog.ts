@@ -26,14 +26,14 @@ const symbols: Record<string, string> = {
   <g ${STROKE}>
     <path d="M0 10 H16"/><path d="M44 10 H60"/>
     <circle cx="18" cy="10" r="2" fill="var(--symbol-fill)"/><circle cx="42" cy="10" r="2" fill="var(--symbol-fill)"/>
-    <path d="M16 4 H44"/>
+    <path id="lever" d="M16 4 H44"/>
     <path d="M30 4 V0"/><path d="M24 0 H36"/>
-  </g>
+  </g><rect id="operate" x="12" y="0" width="36" height="20" fill="transparent"/>
 </svg>`,
   led: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 20" width="60" height="20">
   <g ${STROKE}>
     <path d="M0 10 H20"/><path d="M40 10 H60"/>
-    <path d="M20 2 L40 10 L20 18 Z" fill="var(--symbol-fill)"/>
+    <path d="M20 2 L40 10 L20 18 Z" fill="var(--symbol-fill)"/><path id="emitter" d="M20 2 L40 10 L20 18 Z" fill="var(--led-color,#ff453a)" opacity="0"/>
     <path d="M40 2 V18"/>
     <path d="M30 0 L36 -6"/><path d="M34 -6 H36 V-4"/>
     <path d="M36 2 L42 -4"/><path d="M40 -4 H42 V-2"/>
@@ -177,7 +177,7 @@ export const MOCK_CATALOG: Record<string, Entry> = {
       outputs: [{ name: 'closed', type: 'boolean' }],
       model: { primitive: 'switch', bind: { state: 'pressed', ron: 'ron' } },
       functional: { primitive: 'switch_digital' },
-      symbol: { svg: 'symbol.svg', width: 60, height: 20, pins: { '1': { x: 0, y: 10, side: 'left' }, '2': { x: 60, y: 10, side: 'right' } } },
+      symbol: { hotspots: [{input:'pressed',selector:'#operate',gesture:'hold'}], states: [{output:'closed',selector:'#lever',attr:'transform',true:'translate(0 6)',false:''}], svg: 'symbol.svg', width: 60, height: 20, pins: { '1': { x: 0, y: 10, side: 'left' }, '2': { x: 60, y: 10, side: 'right' } } },
       artwork: {
         svg: 'artwork.svg',
         width: 80,
@@ -220,7 +220,7 @@ export const MOCK_CATALOG: Record<string, Entry> = {
       ],
       model: { primitive: 'diode_led', bind: { vf: 'vf', i_nom: 'i_nom' } },
       functional: { primitive: 'led_digital' },
-      symbol: { svg: 'symbol.svg', width: 60, height: 20, pins: { A: { x: 0, y: 10, side: 'left' }, K: { x: 60, y: 10, side: 'right' } } },
+      symbol: { states: [{output:'luminance',selector:'#emitter',attr:'opacity',scale:[0,1]}], svg: 'symbol.svg', width: 60, height: 20, pins: { A: { x: 0, y: 10, side: 'left' }, K: { x: 60, y: 10, side: 'right' } } },
       artwork: {
         svg: 'artwork.svg',
         width: 40,

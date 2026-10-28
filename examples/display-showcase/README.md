@@ -11,7 +11,7 @@ project, driven without firmware:
 - a CD4017 at 8 Hz chasing a bar graph;
 - a servo on 1.25 ms pulses (45°) and a 555 sounding a buzzer at 1.9 kHz.
 
-The board view (Run, Ctrl+2) shows them all. The pattern words were made
+The live schematic (Run, Ctrl+2) shows the modeled text, segments and pixels directly. The pattern words were made
 with `tools/catalog/stimulus.py`.
 
 ```sh

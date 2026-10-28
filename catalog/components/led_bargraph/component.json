@@ -193,7 +193,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Each bar is lit when its anode is 1 and the common cathode is not 1.",
+      "claims": "Each bar is lit when its anode is 1 and the common cathode is known low.",
       "omissions": [
         "forward voltage and current",
         "brightness"
@@ -281,7 +281,65 @@
         "y": 10,
         "side": "right"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "lit1",
+        "selector": "#bar1",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit2",
+        "selector": "#bar2",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit3",
+        "selector": "#bar3",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit4",
+        "selector": "#bar4",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit5",
+        "selector": "#bar5",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit6",
+        "selector": "#bar6",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit7",
+        "selector": "#bar7",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      },
+      {
+        "output": "lit8",
+        "selector": "#bar8",
+        "attr": "fill",
+        "true": "#39ff6a",
+        "false": "#16331c"
+      }
+    ]
   },
   "tests": [
     "tests/*.json"

@@ -79,3 +79,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-26
 **Verification.** Twelve instrument component fixtures, loading acceptance scenario, native DC/KCL/reset checks and refined RC convergence against analytic equations.
 **Trace.** SPEC-004 §7; docs/engineering/instrument-loading.md
+
+
+### ANA-011  Accepted-time indicator exposure
+**Statement.** Electrical LED/RGB observations shall expose cumulative illustrative normalized emission over accepted simulation time. Reads shall not advance state; rejected trials shall not enter the integral and reset shall clear it. GUI interval exposure shall be a difference of these integrals divided by elapsed simulation time, retaining an instantaneous mode and raw electrical observations. It shall not imply optical, thermal or switching qualification.
+**Rationale.** Snapshot-only light rendering can miss PWM pulses despite a correct electrical waveform.
+**Status.** Accepted 2026-10-26
+**Verification.** Native 1 kHz/25% exposure, repeated read/reset tests; interval/RGB/reset arithmetic and native-browser PWM off-boundary display checks.
+**Trace.** SPEC-004; SPEC-011; docs/engineering/live-schematic.md

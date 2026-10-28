@@ -18,7 +18,7 @@ local function eval(ctx)
   for _, s in ipairs(SEGS) do
     local x = v(ctx, s)
     local on
-    if cathode then on = x == 1 and com ~= 1 else on = x == 0 and com ~= 0 end
+    if cathode then on = x == 1 and com == 0 else on = x == 0 and com == 1 end
     lit[s] = on
     if on and s ~= "DP" then key = key .. s:lower() end
   end

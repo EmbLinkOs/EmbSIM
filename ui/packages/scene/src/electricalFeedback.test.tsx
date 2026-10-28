@@ -11,6 +11,23 @@ const catalog: SceneCatalog = { gate: { name: 'Gate', svg: '', symbol: { svg: ''
 const circuit = (): Project => ({ schema_version: 1, kind: 'project', name: 'feedback', components: [{ id: 'U1', component: 'gate', layout: { x: 100, y: 100 } }], nets: { INPUT: ['U1.A'], OUTPUT: ['U1.Y'] }, layout: { wires: [{ net: 'INPUT', points: [[0, 120], [100, 120]] }, { net: 'OUTPUT', points: [[180, 120], [240, 120]] }] } });
 
 describe('observed electrical feedback', () => {
+  it('picks observation probes from wires and pins by keyboard in read-only mode', () => {
+    const p=circuit(), before=structuredClone(p), pick=vi.fn();
+    render(<SchematicCanvas project={p} catalog={catalog} mode="probe" readOnly selection={{components:[],wires:[]}} onSelectionChange={() => undefined} onNetClick={pick}/>);
+    fireEvent.keyDown(screen.getByRole('button',{name:'Track 1, net INPUT'}),{key:'Enter'});
+    expect(pick).toHaveBeenLastCalledWith('INPUT',{x:0,y:120});
+    fireEvent.keyDown(screen.getByRole('button',{name:/Pin U1.A/}),{key:'Enter'});
+    expect(pick).toHaveBeenLastCalledWith('INPUT',{x:100,y:120});
+    expect(p).toEqual(before);
+  });
+  it('cancels deferred viewport work when a sheet is closed', () => {
+    vi.useFakeTimers();
+    try {
+      const {unmount}=render(<SchematicCanvas project={circuit()} catalog={catalog} mode="select" selection={{components:[],wires:[]}} onSelectionChange={() => undefined}/>);
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      unmount();expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
+  });
   it('distinguishes contention, unknown inputs and high impedance without diagnosing analog voltages', () => {
     const p = circuit();
     expect(liveElectricalIssues(p, catalog, { INPUT: { logic: 'X' } })[0]?.code).toBe('unknown-input');

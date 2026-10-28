@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "live-schematic-controls",
+  "until": "3ms",
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "HOLD",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2ms",
+      "target": "HOLD",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1ms",
+      "target": "LATCH",
+      "input": "closed",
+      "value": true
+    },
+    {
+      "at": "2ms",
+      "target": "LATCH",
+      "input": "closed",
+      "value": false
+    },
+    {
+      "at": "1ms",
+      "target": "POT",
+      "input": "position",
+      "value": 0.25
+    },
+    {
+      "at": "2ms",
+      "target": "POT",
+      "input": "position",
+      "value": 0.75
+    }
+  ],
+  "assertions": [
+    {
+      "id": "red-open",
+      "probe": "red",
+      "at": "500us",
+      "expect": {
+        "min": 0,
+        "max": 0.0001
+      }
+    },
+    {
+      "id": "red-held",
+      "probe": "red",
+      "at": "1500us",
+      "expect": {
+        "min": 0.3,
+        "max": 0.6
+      }
+    },
+    {
+      "id": "red-released",
+      "probe": "red",
+      "at": "2500us",
+      "expect": {
+        "min": 0,
+        "max": 0.0001
+      }
+    },
+    {
+      "id": "green-latched",
+      "probe": "green",
+      "at": "1500us",
+      "expect": {
+        "min": 0.3,
+        "max": 0.6
+      }
+    },
+    {
+      "id": "green-open",
+      "probe": "green",
+      "at": "2500us",
+      "expect": {
+        "min": 0,
+        "max": 0.0001
+      }
+    },
+    {
+      "id": "blue-conducts",
+      "probe": "blue",
+      "at": "1500us",
+      "expect": {
+        "min": 0.2,
+        "max": 0.5
+      }
+    },
+    {
+      "id": "matrix-selected",
+      "probe": "pixel",
+      "at": "1500us",
+      "expect": {
+        "min": 0.3,
+        "max": 0.6
+      }
+    },
+    {
+      "id": "pot-quarter-position",
+      "probe": "wiper",
+      "at": "1500us",
+      "expect": {
+        "min_v": 3.748,
+        "max_v": 3.751
+      }
+    },
+    {
+      "id": "pot-three-quarter-position",
+      "probe": "wiper",
+      "at": "2500us",
+      "expect": {
+        "min_v": 1.249,
+        "max_v": 1.251
+      }
+    },
+    {
+      "id": "solver-health",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}

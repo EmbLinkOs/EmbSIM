@@ -593,3 +593,16 @@
 .es-electrical-feedback li button:hover { background: color-mix(in srgb, var(--canvas-ink) 6%, transparent); }
 .es-electrical-feedback small { font-size: 11px; line-height: 1.5; opacity: .8; }
 .es-electrical-feedback button:focus-visible { outline: 2px solid var(--line-focus); outline-offset: -2px; }
+
+.es-symbol-control { cursor: pointer; outline: none; }
+.es-symbol-control rect { fill: transparent; stroke: transparent; stroke-width: 1; }
+.es-symbol-control:hover rect, .es-symbol-control:focus-visible rect { fill: color-mix(in srgb, var(--line-focus) 12%, transparent); stroke: var(--line-focus); }
+.es-symbol-control--drag { cursor: ew-resize; }
+.es-symbol-control[aria-pressed="true"] rect { fill: color-mix(in srgb, var(--line-focus) 25%, transparent); stroke: var(--line-focus); }
+.es-symbol-control[aria-disabled="true"] { pointer-events: none; }
+
+.es-comparison-probe { cursor: grab; fill: #0a84ff; stroke: var(--canvas-paper); stroke-width: 1.5; }
+.es-comparison-probe--b { fill: #e98a26; }
+.es-comparison-probe circle { fill: transparent; stroke: currentColor; color: #0a84ff; }
+.es-comparison-probe--b circle { color: #e98a26; }
+.es-comparison-probe text { fill: white; stroke: none; font: bold 10px var(--font-mono, monospace); }

@@ -111,6 +111,24 @@
       "name": "blue_current",
       "type": "number",
       "unit": "A"
+    },
+    {
+      "name": "red_emission_integral",
+      "type": "number",
+      "unit": "s",
+      "doc": "Accepted-time integral of illustrative normalized emission; differences divided by elapsed simulation time give interval exposure. No calibrated optical units."
+    },
+    {
+      "name": "green_emission_integral",
+      "type": "number",
+      "unit": "s",
+      "doc": "Accepted-time integral of illustrative normalized emission; differences divided by elapsed simulation time give interval exposure. No calibrated optical units."
+    },
+    {
+      "name": "blue_emission_integral",
+      "type": "number",
+      "unit": "s",
+      "doc": "Accepted-time integral of illustrative normalized emission; differences divided by elapsed simulation time give interval exposure. No calibrated optical units."
     }
   ],
   "model": {
@@ -243,7 +261,51 @@
         "y": 10,
         "side": "right"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "color",
+        "selector": "#emitter",
+        "attr": "fill",
+        "format": "{}"
+      },
+      {
+        "output": "color",
+        "selector": "#emission-halo",
+        "attr": "fill",
+        "format": "{}"
+      },
+      {
+        "output": "luminance",
+        "selector": "#emitter",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            1
+          ]
+        }
+      },
+      {
+        "output": "luminance",
+        "selector": "#emission-halo",
+        "attr": "opacity",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            0,
+            0.3
+          ]
+        }
+      }
+    ]
   },
   "tests": [
     "tests/*.json"

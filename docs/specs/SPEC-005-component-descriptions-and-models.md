@@ -231,3 +231,15 @@ See [the indicator contract](../engineering/indicator-qualification.md).
 `standoff_mm`. `size_mm` includes the selected clearance above the mounting plane;
 the body height excludes that clearance. Pin positions remain explicit in `bench.pins`.
 Curvature and lead forming remain representative unless separately qualified.
+
+
+### Live symbol binding extension
+
+`symbol.states` and `symbol.hotspots` optionally share the artwork state/hotspot
+schema. Selectors address the schematic SVG; inputs/outputs must be declared
+(or member outputs of a composite). State attributes are restricted to supported
+SVG presentation/text fields, never executable attributes. Runtime input limits
+take precedence over gesture metadata. A binding changes presentation or submits
+an input; it must not compute electrical behavior in the renderer. See
+[live schematic engineering](../engineering/live-schematic.md) for supported symbols,
+interaction semantics, exposure and compatibility limits.

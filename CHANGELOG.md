@@ -25,6 +25,21 @@ versions follow semantic versioning. There is no release yet.
 - `embsim validate` reports the netlist checks, and what the circuit settled at
   its first instant raises (contention, supplies), without running firmware;
   `--json` lists each with its subject (#85).
+### Live schematic simulation surface
+
+- Center Run on an interactive schematic without loading the optional 3D renderer.
+- Bind native LED/RGB, bargraph, segment, LCD/OLED and serial-display outputs to
+  schematic symbols; operate contacts, pots and temperature stimulus on the sheet.
+- Add accepted-time electrical LED/RGB emission integrals and selectable interval
+  exposure for PWM; retain instantaneous light and raw circuit observations.
+- Add two-lead bicolor and 8×8 row-anode matrix topologies using independent LED
+  junctions, with polarity, selected-pixel and floating-return fixtures.
+- Add signed A/B voltage comparison with net picks and movable observation leads;
+  explicitly distinguish ideal observations from physically loaded instruments.
+- Treat attached repeated labels as complete drawing connections, honor label
+  rotation, and keep functional displays dark without a known common return.
+- Document complete-schematic release gates and enlarged display-symbol drawing
+  compatibility; advanced analysis/hierarchy are not claimed complete.
 
 ### Wired instrument loading and electrical feedback
 

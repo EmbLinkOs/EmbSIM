@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component",
   "id": "emblink/lcd2004",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "20x4 character LCD",
   "category": "displays",
   "description": "HD44780-compatible 20x4 character LCD: commands and characters latched on E falling, 8-bit or 4-bit bus, each taking the controller's execution time (writes while busy are lost); the busy flag, address counter and RAM read back; the part's pull-ups on RS, R/W and DB0-DB7; the contrast voltage and backlight; the four rows show on the board view, rows 3 and 4 continuing lines 1 and 2 as on the module.",
@@ -310,7 +310,7 @@
   },
   "symbol": {
     "svg": "symbol.svg",
-    "width": 80,
+    "width": 200,
     "height": 150,
     "pins": {
       "RS": {
@@ -369,17 +369,17 @@
         "side": "left"
       },
       "V0": {
-        "x": 80,
+        "x": 200,
         "y": 20,
         "side": "right"
       },
       "A": {
-        "x": 80,
+        "x": 200,
         "y": 30,
         "side": "right"
       },
       "K": {
-        "x": 80,
+        "x": 200,
         "y": 40,
         "side": "right"
       },
@@ -393,7 +393,40 @@
         "y": 150,
         "side": "bottom"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "line1",
+        "selector": "#line1",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "line2",
+        "selector": "#line2",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "line3",
+        "selector": "#line3",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "line4",
+        "selector": "#line4",
+        "attr": "text",
+        "format": "{}"
+      },
+      {
+        "output": "on",
+        "selector": "#glass",
+        "attr": "opacity",
+        "true": "0.9",
+        "false": "0.35"
+      }
+    ]
   },
   "tests": [
     "tests/*.json"

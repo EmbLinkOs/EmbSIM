@@ -20,6 +20,28 @@ cannot be read (`--allow-no-image` to run without it); a probe with an unknown
 kind or target fails the load with a suggestion; `embsim validate` reports the
 netlist checks and the circuit settled at its first instant. Not yet: checking
 that an `output:` or `device:` probe's quantity exists on its part.
+## Live schematic milestone (2026-10-26)
+
+Branch `feat/live-schematic-workbench` makes the schematic the primary Run surface
+and adds native symbol bindings, on-sheet controls, accepted-time electrical LED
+exposure and ideal differential voltage leads. Generic bicolor and 8×8 matrices
+reuse independent junctions. Existing LCD/OLED, serial displays, segments and
+bargraphs now show model outputs on their symbols. Floating-common functional
+segments/bargraphs stay dark. Attached repeated labels complete drawing traces.
+
+Local checks pass 49 native CTest targets, 274 UI unit tests, all 31 browser
+workflows, strict validation of 899 JSON descriptions/projects/fixtures and the
+native live-schematic browser acceptance. The live circuit passes ten assertions;
+the fully routed firmware RGB example retains all 39 assertions. Analog tests
+include 1 kHz independent 25/50/75% RGB exposure, repeated reads and reset.
+Actual native captures are in the [gallery](gallery/README.md).
+
+See [implementation, evidence and remaining release gates](engineering/live-schematic.md)
+and the [live acceptance circuit](../examples/live-schematic/README.md).
+This is not completion of all surveyed capabilities, full device qualification,
+a Proteus-parity claim or a 1.0 release. Editable project hierarchy, triggered
+capture, advanced analyses and managed engineering workflows still require the
+explicit gates in that document. No new 3D development is included.
 
 ## Wired instrument loading and electrical feedback (2026-10-26)
 

@@ -10,5 +10,16 @@
   <line class="s" id="pin-a7" x1="0" y1="70" x2="10" y2="70"/><text class="p" x="13" y="72">A7</text>
   <line class="s" id="pin-a8" x1="0" y1="80" x2="10" y2="80"/><text class="p" x="13" y="82">A8</text>
   <line class="s" id="pin-k" x1="60" y1="10" x2="50" y2="10"/><text class="p" x="47" y="12" text-anchor="end">K</text>
-  <text class="t" x="30.0" y="47.5" text-anchor="middle">BAR</text>
+
+<g transform="translate(25.0 44.05) scale(0.23)">
+  <rect x="0" y="0" width="100" height="30" rx="2" fill="#1d1f24"/>
+  <rect id="bar1" x="5" y="5" width="9" height="20" rx="1" fill="#16331c"/>
+  <rect id="bar2" x="16.5" y="5" width="9" height="20" rx="1" fill="#16331c"/>
+  <rect id="bar3" x="28" y="5" width="9" height="20" rx="1" fill="#16331c"/>
+  <rect id="bar4" x="39.5" y="5" width="9" height="20" rx="1" fill="#16331c"/>
+  <rect id="bar5" x="51" y="5" width="9" height="20" rx="1" fill="#16331c"/>
+  <rect id="bar6" x="62.5" y="5" width="9" height="20" rx="1" fill="#16331c"/>
+  <rect id="bar7" x="74" y="5" width="9" height="20" rx="1" fill="#16331c"/>
+  <rect id="bar8" x="85.5" y="5" width="9" height="20" rx="1" fill="#16331c"/>
+</g>
 </svg>

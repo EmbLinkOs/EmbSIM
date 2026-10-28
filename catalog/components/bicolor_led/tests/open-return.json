@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "open-return",
+  "description": "One lead cannot create a current return.",
+  "policy": "electrical",
+  "until": "1ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "V",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "R",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 220
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/bicolor_led"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "V.+",
+        "R.1"
+      ],
+      "FEED": [
+        "R.2",
+        "DUT.1"
+      ],
+      "GND": [
+        "V.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.RED.luminance": {
+      "at": "0.5ms",
+      "min": 0,
+      "max": 1e-06
+    }
+  }
+}

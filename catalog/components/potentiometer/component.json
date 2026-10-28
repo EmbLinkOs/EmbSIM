@@ -104,7 +104,38 @@
         "y": 30,
         "side": "bottom"
       }
-    }
+    },
+    "states": [
+      {
+        "output": "position",
+        "selector": "#wiper-mark",
+        "attr": "transform",
+        "scale": {
+          "from": [
+            0,
+            1
+          ],
+          "to": [
+            -18,
+            18
+          ]
+        },
+        "format": "translate({} 0)"
+      }
+    ],
+    "hotspots": [
+      {
+        "input": "position",
+        "selector": "#operate",
+        "gesture": "drag",
+        "axis": "x",
+        "range": [
+          0,
+          1
+        ],
+        "travel": 36
+      }
+    ]
   },
   "artwork": {
     "svg": "artwork.svg",

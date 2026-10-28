@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "floating-common",
+  "description": "A high segment without a known return must remain dark.",
+  "policy": "functional",
+  "until": "1us",
+  "circuit": {
+    "components": [
+      {
+        "id": "H",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 1
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/led_bargraph"
+      }
+    ],
+    "nets": {
+      "HI": [
+        "H.OUT",
+        "DUT.A1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.lit1": {
+      "at": "500ns",
+      "equals": false
+    }
+  }
+}

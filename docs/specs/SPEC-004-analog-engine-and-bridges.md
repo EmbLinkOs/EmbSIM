@@ -284,3 +284,15 @@ in its MNA branch equation. `value` remains open-circuit waveform voltage;
 `voltage` is the loaded terminal voltage. The generic function generator binds
 `output_resistance` with default 50 Ω. No implicit load calibration, protection
 or bandwidth model is added. See [instrument loading](../engineering/instrument-loading.md).
+
+
+### Accepted-time LED emission observation
+
+Electrical LEDs expose `emission_integral`; RGB LEDs expose per-channel
+`red_emission_integral`, `green_emission_integral`, `blue_emission_integral`.
+Units are seconds of illustrative normalized emission (current divided by its
+nominal reference, bounded to 0–1). The history integrates accepted states and
+extends a quiet held state to the observation clock without advancing simulation.
+Rejected trials are excluded; reset clears the integral. Difference-over-time
+provides an observation-interval exposure, not qualified photometry or switching
+transients. Raw instantaneous current/luminance remain unchanged.

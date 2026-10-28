@@ -177,3 +177,11 @@ test or review that establishes it; STATUS.md records whether it passed.
 **Status.** Accepted 2026-10-26
 **Verification.** Native electrical feedback protocol checks, scene feedback tests, wired-instrument action tests and browser schematic selection checks; native loading bench captures.
 **Trace.** SPEC-008 Net observation; SPEC-011 Scene rendering; docs/engineering/instrument-loading.md
+
+
+### UI-025  Native live schematic symbols and controls
+**Statement.** Design and Run shall render declared schematic display bindings from native component observations, keep instance styles independent, restore default display state when observations disappear, and operate declared inputs independently of editing. Momentary controls shall release on interruption. Run shall center the schematic without loading optional 3D assets. Ideal A/B measurement leads shall compare finite solved voltages without modifying connectivity or claiming physical loading.
+**Rationale.** Board interaction, visible peripheral state and measurements must be possible directly in the electrical drawing.
+**Status.** Accepted 2026-10-26
+**Verification.** Native live circuit and browser acceptance, scene/store/control fixtures, component binding validation and existing instrument loading checks.
+**Trace.** SPEC-005 §8; SPEC-011; docs/engineering/live-schematic.md

@@ -79,6 +79,13 @@ describe('magnetic drag alignment', () => {
 
 
 describe('unrouted visual connectivity', () => {
+  it('joins repeated attached labels while keeping unlabelled and remote groups visible', () => {
+    const pins=[{x:0,y:0},{x:100,y:0},{x:300,y:0},{x:400,y:0}];
+    const wires=[{net:'N',points:[[0,0],[100,0]] as [number,number][]},{net:'N',points:[[300,0],[400,0]] as [number,number][]}];
+    expect(findAirwires(pins,wires,[{x:100,y:-5},{x:300,y:-5}])).toEqual([]);
+    expect(findAirwires(pins,wires,[{x:100,y:-5},{x:300,y:-50}])).toHaveLength(1);
+    expect(findAirwires(pins,wires,[{x:100,y:-5}])).toHaveLength(1);
+  });
   it('finds a missing connection even when every pin touches a wire', () => {
     const pins = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 300, y: 0 }, { x: 400, y: 0 }];
     expect(findAirwires(pins, [{ net: 'N', points: [[0, 0], [100, 0]] }, { net: 'N', points: [[300, 0], [400, 0]] }])).toEqual([{ a: pins[1], b: pins[2] }]);
