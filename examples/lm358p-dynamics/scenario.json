@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "LM358P nominal bandwidth and slew with wired scope loads",
+  "until": "55us",
+  "assertions": [
+    {
+      "id": "gain-one-tau",
+      "probe": "gain-output",
+      "at": "12.5us",
+      "expect": {
+        "min_v": 1.16,
+        "max_v": 1.179
+      }
+    },
+    {
+      "id": "gain-settled",
+      "probe": "gain-output",
+      "at": "25us",
+      "expect": {
+        "min_v": 1.205,
+        "max_v": 1.212
+      }
+    },
+    {
+      "id": "slew-rising",
+      "probe": "slew-output",
+      "at": "11us",
+      "expect": {
+        "min_v": 1.255,
+        "max_v": 1.345
+      }
+    },
+    {
+      "id": "slew-high",
+      "probe": "slew-output",
+      "at": "25us",
+      "expect": {
+        "min_v": 2.98,
+        "max_v": 3.02
+      }
+    },
+    {
+      "id": "slew-falling",
+      "probe": "slew-output",
+      "at": "31us",
+      "expect": {
+        "min_v": 2.65,
+        "max_v": 2.755
+      }
+    },
+    {
+      "id": "slew-low",
+      "probe": "slew-output",
+      "at": "50us",
+      "expect": {
+        "min_v": 0.98,
+        "max_v": 1.02
+      }
+    },
+    {
+      "id": "solver-health",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "analog.no_convergence",
+          "analog.timestep_too_small",
+          "sched.delta_overflow"
+        ]
+      }
+    }
+  ]
+}

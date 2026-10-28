@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "dual-loaded-isolation",
+  "description": "A loaded 1-to-3 V follower step on channel 1 must not move the independent 0.5 V channel 2 follower. Source anchors set nominal slew; loading/isolation bounds are independent circuit-equivalent checks. The quiet channel is checked after 5 us settling, spanning the other channel step at 10 us.",
+  "policy": "electrical",
+  "until": "40us",
+  "circuit": {
+    "components": [
+      {
+        "id": "VI",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "pulse",
+          "v1": 1.0,
+          "v2": 3.0,
+          "td": "10u",
+          "tr": "10n",
+          "tf": "10n",
+          "pw": "1m",
+          "per": "2m"
+        }
+      },
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/lm358p"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      },
+      {
+        "id": "VB",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 0.5
+        }
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "10k"
+        }
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VI.+",
+        "DUT.IN1+"
+      ],
+      "VCC": [
+        "VS.+",
+        "DUT.VCC"
+      ],
+      "GND": [
+        "VI.-",
+        "VS.-",
+        "DUT.GND",
+        "G.GND",
+        "RL.2",
+        "VB.-",
+        "RB.2"
+      ],
+      "OUT": [
+        "DUT.OUT1",
+        "DUT.IN1-",
+        "RL.1"
+      ],
+      "BIN": [
+        "VB.+",
+        "DUT.IN2+"
+      ],
+      "BOUT": [
+        "DUT.IN2-",
+        "DUT.OUT2",
+        "RB.1"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "11us",
+      "min_v": 1.255,
+      "max_v": 1.345
+    },
+    "pin:RL.1": {
+      "at": "19.6667us",
+      "min_v": 2.98,
+      "max_v": 3.02
+    },
+    "net:BOUT": {
+      "between": [
+        "5us",
+        "39us"
+      ],
+      "min_v": 0.499,
+      "max_v": 0.501
+    }
+  }
+}

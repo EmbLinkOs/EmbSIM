@@ -5,6 +5,25 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## LM358P nominal dynamics (2026-10-27)
+
+Branch `feat/lm358p-dynamics` corrects the named package wrapper to forward the
+legacy LM358's typical 0.7 MHz gain-bandwidth and 0.3 V/µs slew to both channels.
+The exact TI source hash was revalidated. Existing saved circuits can change
+transient response; the model version is 1.1.0. This is bounded nominal dynamic
+evidence, not full manufacturer qualification.
+
+All 51 native CTest targets pass, including the complete catalog fixture runners.
+Eleven LM358P fixtures execute 34 assertions normally and under ASan/UBSan with
+leak detection, and the wired two-channel bench
+passes seven assertions. Repeating it at 20 MHz instead of 10 MHz probe sampling
+passes and changes the six voltage checkpoints by less than 3.1 µV; this is
+numerical convergence evidence, not real-device accuracy. Native browser acceptance
+reads the source defaults and verifies exported gain/rising/falling/plateau samples
+with zero page errors. Strict validation covers 914 files; docs checks pass.
+See [source, calculations and omitted effects](engineering/lm358p-dynamics.md),
+[bench](../examples/lm358p-dynamics/README.md) and [capture](gallery/README.md).
+
 ## Project-wide schematic reliability (2026-10-27)
 
 Branch `feat/schematic-reliability` builds on editable hierarchy. It adds graphical

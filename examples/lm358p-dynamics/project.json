@@ -1,0 +1,622 @@
+{
+  "schema_version": 1,
+  "kind": "project",
+  "name": "lm358p-dynamics",
+  "description": "Legacy LM358P at 5 V, 25 C nominal: channel 1 small-step gain-bandwidth, channel 2 loaded follower slew. Wired scope inputs add 1 Mohm and 15 pF each. This bounded behavioral approximation does not qualify manufacturer corners or capacitive-load stability.",
+  "policy": "electrical",
+  "components": [
+    {
+      "id": "VS",
+      "component": "emblink/vsource",
+      "layout": {
+        "x": 40,
+        "y": 40
+      },
+      "params": {
+        "dc": 5
+      }
+    },
+    {
+      "id": "SMALL",
+      "component": "emblink/vsource",
+      "layout": {
+        "x": 40,
+        "y": 180
+      },
+      "params": {
+        "kind": "pulse",
+        "td": "10u",
+        "tr": "10n",
+        "tf": "10n",
+        "pw": "20u",
+        "per": "60u",
+        "v1": 0.1,
+        "v2": 0.11
+      }
+    },
+    {
+      "id": "LARGE",
+      "component": "emblink/vsource",
+      "layout": {
+        "x": 40,
+        "y": 400
+      },
+      "params": {
+        "kind": "pulse",
+        "td": "10u",
+        "tr": "10n",
+        "tf": "10n",
+        "pw": "20u",
+        "per": "60u",
+        "v1": 1,
+        "v2": 3
+      }
+    },
+    {
+      "id": "U1",
+      "component": "emblink/lm358p",
+      "layout": {
+        "x": 350,
+        "y": 200
+      }
+    },
+    {
+      "id": "RF",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 650,
+        "y": 160
+      },
+      "params": {
+        "resistance": "10k"
+      }
+    },
+    {
+      "id": "RG",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 650,
+        "y": 340
+      },
+      "params": {
+        "resistance": "1k"
+      }
+    },
+    {
+      "id": "RL",
+      "component": "emblink/resistor",
+      "layout": {
+        "x": 650,
+        "y": 510
+      },
+      "params": {
+        "resistance": "10k"
+      }
+    },
+    {
+      "id": "SCOPE_A",
+      "component": "emblink/scope_input",
+      "layout": {
+        "x": 900,
+        "y": 180
+      },
+      "params": {
+        "input_resistance": "1meg",
+        "input_capacitance": "15p"
+      }
+    },
+    {
+      "id": "SCOPE_B",
+      "component": "emblink/scope_input",
+      "layout": {
+        "x": 900,
+        "y": 450
+      },
+      "params": {
+        "input_resistance": "1meg",
+        "input_capacitance": "15p"
+      }
+    },
+    {
+      "id": "G",
+      "component": "emblink/gnd",
+      "layout": {
+        "x": 440,
+        "y": 650
+      }
+    }
+  ],
+  "nets": {
+    "VCC": [
+      "VS.+",
+      "U1.VCC"
+    ],
+    "GND": [
+      "VS.-",
+      "SMALL.-",
+      "LARGE.-",
+      "U1.GND",
+      "RG.2",
+      "RL.2",
+      "SCOPE_A.-",
+      "SCOPE_B.-",
+      "G.GND"
+    ],
+    "SMALL_IN": [
+      "SMALL.+",
+      "U1.IN1+"
+    ],
+    "LARGE_IN": [
+      "LARGE.+",
+      "U1.IN2+"
+    ],
+    "FEEDBACK": [
+      "U1.IN1-",
+      "RF.2",
+      "RG.1"
+    ],
+    "A_OUT": [
+      "U1.OUT1",
+      "RF.1",
+      "SCOPE_A.+"
+    ],
+    "B_OUT": [
+      "U1.OUT2",
+      "U1.IN2-",
+      "RL.1",
+      "SCOPE_B.+"
+    ]
+  },
+  "probes": [
+    {
+      "id": "small-input",
+      "target": "net:SMALL_IN",
+      "kind": "analog",
+      "rate_hz": 10000000
+    },
+    {
+      "id": "gain-output",
+      "target": "net:A_OUT",
+      "kind": "analog",
+      "rate_hz": 10000000
+    },
+    {
+      "id": "large-input",
+      "target": "net:LARGE_IN",
+      "kind": "analog",
+      "rate_hz": 10000000
+    },
+    {
+      "id": "slew-output",
+      "target": "net:B_OUT",
+      "kind": "analog",
+      "rate_hz": 10000000
+    }
+  ],
+  "layout": {
+    "wires": [
+      {
+        "net": "A_OUT",
+        "points": [
+          [
+            350,
+            220
+          ],
+          [
+            330,
+            220
+          ],
+          [
+            330,
+            170
+          ],
+          [
+            650,
+            170
+          ]
+        ]
+      },
+      {
+        "net": "A_OUT",
+        "points": [
+          [
+            650,
+            170
+          ],
+          [
+            630,
+            170
+          ],
+          [
+            630,
+            210
+          ],
+          [
+            900,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "B_OUT",
+        "points": [
+          [
+            530,
+            240
+          ],
+          [
+            550,
+            240
+          ],
+          [
+            550,
+            260
+          ],
+          [
+            530,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "B_OUT",
+        "points": [
+          [
+            530,
+            260
+          ],
+          [
+            630,
+            260
+          ],
+          [
+            630,
+            520
+          ],
+          [
+            650,
+            520
+          ]
+        ]
+      },
+      {
+        "net": "B_OUT",
+        "points": [
+          [
+            650,
+            520
+          ],
+          [
+            630,
+            520
+          ],
+          [
+            630,
+            480
+          ],
+          [
+            900,
+            480
+          ]
+        ]
+      },
+      {
+        "net": "FEEDBACK",
+        "points": [
+          [
+            350,
+            240
+          ],
+          [
+            330,
+            240
+          ],
+          [
+            330,
+            350
+          ],
+          [
+            650,
+            350
+          ]
+        ]
+      },
+      {
+        "net": "FEEDBACK",
+        "points": [
+          [
+            650,
+            350
+          ],
+          [
+            640,
+            350
+          ],
+          [
+            640,
+            200
+          ],
+          [
+            730,
+            200
+          ],
+          [
+            730,
+            170
+          ],
+          [
+            710,
+            170
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            70,
+            80
+          ],
+          [
+            70,
+            100
+          ],
+          [
+            120,
+            100
+          ],
+          [
+            120,
+            240
+          ],
+          [
+            70,
+            240
+          ],
+          [
+            70,
+            220
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            70,
+            220
+          ],
+          [
+            70,
+            240
+          ],
+          [
+            120,
+            240
+          ],
+          [
+            120,
+            460
+          ],
+          [
+            70,
+            460
+          ],
+          [
+            70,
+            440
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            70,
+            220
+          ],
+          [
+            70,
+            280
+          ],
+          [
+            350,
+            280
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            350,
+            280
+          ],
+          [
+            340,
+            280
+          ],
+          [
+            340,
+            320
+          ],
+          [
+            730,
+            320
+          ],
+          [
+            730,
+            350
+          ],
+          [
+            710,
+            350
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            710,
+            350
+          ],
+          [
+            730,
+            350
+          ],
+          [
+            730,
+            520
+          ],
+          [
+            710,
+            520
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            710,
+            520
+          ],
+          [
+            1020,
+            520
+          ],
+          [
+            1020,
+            480
+          ],
+          [
+            1000,
+            480
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            1000,
+            480
+          ],
+          [
+            1020,
+            480
+          ],
+          [
+            1020,
+            210
+          ],
+          [
+            1000,
+            210
+          ]
+        ]
+      },
+      {
+        "net": "GND",
+        "points": [
+          [
+            710,
+            520
+          ],
+          [
+            730,
+            520
+          ],
+          [
+            730,
+            630
+          ],
+          [
+            450,
+            630
+          ],
+          [
+            450,
+            650
+          ]
+        ]
+      },
+      {
+        "net": "LARGE_IN",
+        "points": [
+          [
+            70,
+            400
+          ],
+          [
+            70,
+            380
+          ],
+          [
+            550,
+            380
+          ],
+          [
+            550,
+            280
+          ],
+          [
+            530,
+            280
+          ]
+        ]
+      },
+      {
+        "net": "SMALL_IN",
+        "points": [
+          [
+            70,
+            180
+          ],
+          [
+            70,
+            160
+          ],
+          [
+            320,
+            160
+          ],
+          [
+            320,
+            260
+          ],
+          [
+            350,
+            260
+          ]
+        ]
+      },
+      {
+        "net": "VCC",
+        "points": [
+          [
+            70,
+            40
+          ],
+          [
+            70,
+            20
+          ],
+          [
+            550,
+            20
+          ],
+          [
+            550,
+            220
+          ],
+          [
+            530,
+            220
+          ]
+        ]
+      }
+    ]
+  }
+}

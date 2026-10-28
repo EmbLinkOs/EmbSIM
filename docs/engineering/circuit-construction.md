@@ -120,3 +120,9 @@ specifications determine defaults, ranges, accuracy and bandwidth. Tests compare
 loaded and unloaded circuits, include connection/polarity errors, and label ideal
 engine probes separately. No instrument loading or manufacturer accuracy claim
 is introduced by the current wire-editor milestone.
+
+
+The [LM358P nominal dynamics batch](lm358p-dynamics.md) now connects the named
+package to the source's typical bandwidth/slew anchors and adds both-channel
+loaded transient evidence. This does not close the analog/drive batch's
+common-mode, supply/current-limit or manufacturer-corner qualification gates.
