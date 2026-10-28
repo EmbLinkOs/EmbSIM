@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Native assembly variants (2026-10-27)
+
+Independent concrete sheet alternatives are authored and reviewed against the
+native engine without disturbing the 1 µs running circuit. A.R is DNP and B.R
+is 2 MΩ; exports include a zero-quantity DNP row. Activation opens A's footprint,
+retains terminal sockets and numeric pin evidence, and permits exact base recovery.
+
+![Native variant validation and resolved assembly preview](assembly-variants/native-variant-preview.png)
+
+![Unfitted resistor with live terminals and explicit derived-circuit status](assembly-variants/native-dnp-footprint.png)
+
+See [workflow, reproduction and boundaries](../engineering/assembly-variants.md).
+
 ## Native shared-sheet version requests (2026-10-27)
 
 The actual hierarchical instrument bench rejects an incompatible ^2 request

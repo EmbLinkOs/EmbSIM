@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Native assembly variants
+
+- Author independent per-instance population/value/catalog alternatives, review
+  isolated native circuits, export resolved BOMs and activate with stale-base protection.
+- Model DNP as real open footprints without drivers, pulls, controls, internal ties
+  or compiled composite channels; retain schematic terminals and live voltage evidence.
+- Keep derived circuits immutable, retain hash-verified exact base recovery and
+  require an explicit save path after activation. Include optional zero-quantity DNP rows.
+
+
 ### Declared version contracts
 
 - Enforce part, board, MCU, shared/composite member and installed library dependency

@@ -60,6 +60,8 @@
     "name": {"type": "string", "minLength": 1},
     "description": {"type": "string"},
     "libraries": {"type": "array", "items": {"type": "string"}, "description": "Library directories relative to the project file (SPEC-014 §2)."},
+    "variants": {"$ref": "assembly-variants.schema.json"},
+    "variant_origin": {"type": "object", "required": ["name", "json", "sha256"], "additionalProperties": false, "properties": {"name": {"type": "string", "minLength": 1}, "json": {"type": "string", "maxLength": 8388608}, "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}},
     "library_lock": {"$ref": "library-lock.schema.json", "description": "Opt-in exact loaded-library contents and effective catalog selection, enforced before model instantiation."},
     "policy": {"$ref": "common.schema.json#/$defs/policy"},
     "boards": {
@@ -112,6 +114,7 @@
           "version": {"$ref": "common.schema.json#/$defs/version_range"},
           "params": {"$ref": "common.schema.json#/$defs/param_values"},
           "layout": {"$ref": "common.schema.json#/$defs/layout"},
+          "populated": {"type": "boolean", "description": "False retains an ideal passive footprint with no fitted device behavior or load."},
           "doc": {"type": "string"}
         }
       }

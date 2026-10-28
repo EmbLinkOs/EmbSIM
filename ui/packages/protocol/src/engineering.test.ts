@@ -205,3 +205,17 @@ describe('native version satisfaction evidence', () => {
     expect(assemblyLines(data).some((line) => line.notes.some((note) => note.includes('requested ^1.0.0')))).toBe(false);
   });
 });
+
+describe('assembly population reports', () => {
+  it('keeps unfitted footprints separate and exports zero procurement quantity only when included', async () => {
+    const data = await manifest();
+    data.instances[0]!.populated = false;
+    const lines = assemblyLines(data);
+    const dnp = lines.find((l) => !l.populated)!;
+    expect(dnp.paths).toEqual(['B.U1']);
+    expect(assemblyCsv(lines)).not.toContain('B.U1');
+    expect(assemblyCsv(lines, false, true)).toContain('"0","B.U1"');
+    expect(assemblyCsv(lines, false, true)).toContain('"DNP","base"');
+    expect(lines.find((l) => l.populated && l.reference === 'test/ic')?.paths).toEqual(['A.U1']);
+  });
+});

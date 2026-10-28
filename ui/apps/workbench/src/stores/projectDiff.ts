@@ -38,9 +38,10 @@ function diffFlatProject(before: Project, after: Project): ProjectEdit[] {
   for (const c of after.components) {
     const old = beforeById.get(c.id);
     if (!old) {
-      edits.push({ add_component: { id: c.id, component: c.component, version: c.version, params: c.params, layout: c.layout } });
+      edits.push({ add_component: { id: c.id, component: c.component, ...(c.populated !== undefined ? {populated: c.populated} : {}), version: c.version, params: c.params, layout: c.layout } });
       continue;
     }
+    if (old.populated !== c.populated) edits.push({set_population: {id: c.id, populated: c.populated ?? null}});
     if (old.version !== c.version) edits.push({set_version: {id: c.id, version: c.version ?? null}});
     const keys = new Set([...Object.keys(old.params ?? {}), ...Object.keys(c.params ?? {})]);
     for (const k of keys) {
@@ -119,6 +120,7 @@ function diffCircuit(before: Project, after: Project): ProjectEdit[] {
 /** Library baselines are metadata with native verification, not circuit changes. */
 export function diffProject(before: Project, after: Project): ProjectEdit[] {
   const edits: ProjectEdit[] = [];
+  if (JSON.stringify(before.variants) !== JSON.stringify(after.variants)) edits.push({set_variants: after.variants ?? null});
   if (JSON.stringify(before.library_lock) !== JSON.stringify(after.library_lock))
     edits.push({set_library_lock: after.library_lock ?? null});
   return [...edits, ...diffCircuit(before, after)];

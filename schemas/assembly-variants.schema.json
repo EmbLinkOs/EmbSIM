@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://emblink.dev/embsim/schemas/assembly-variants.schema.json",
+  "title": "Named assembly alternatives",
+  "type": "object",
+  "maxProperties": 32,
+  "propertyNames": {
+    "$ref": "common.schema.json#/$defs/instance_id",
+    "maxLength": 63
+  },
+  "additionalProperties": {
+    "type": "object",
+    "required": [
+      "overrides"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "description": {
+        "type": "string"
+      },
+      "overrides": {
+        "type": "object",
+        "maxProperties": 10000,
+        "propertyNames": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 149,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$"
+        },
+        "additionalProperties": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": false,
+          "properties": {
+            "populated": {
+              "type": "boolean"
+            },
+            "params": {
+              "$ref": "common.schema.json#/$defs/param_values"
+            },
+            "component": {
+              "$ref": "common.schema.json#/$defs/catalog_id"
+            },
+            "version": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/version_range"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

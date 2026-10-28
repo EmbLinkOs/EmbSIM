@@ -680,6 +680,8 @@ def check_instances_params(report: Report, file: Path, node_base: str, instances
             report.error(file, node + "/component", "catalog.not_found",
                          f"component {inst.get('component')} not found (looked in {', '.join(str(r) for r in index.roots)})")
             continue
+        if inst.get("populated") is False and inst.get("component", "").startswith("block/"):
+            report.error(file, node + "/populated", "assembly.population", "block wrappers are not physical parts; select their members")
         check_version_request(report, file, node, inst, desc)
         found[iid] = desc
         for pname, pval in (inst.get("params") or {}).items():
@@ -1567,7 +1569,68 @@ def project_index(file: Path, doc: dict, index: Index) -> Index:
     return result
 
 
+def assembly_target(project: dict, path: str) -> Optional[dict]:
+    sheet = project
+    parts = path.split(".")
+    if not path or len(path) > 149 or len(parts) > 9:
+        return None
+    for i, key in enumerate(parts):
+        component = next((c for c in sheet.get("components", []) if c.get("id") == key), None)
+        if not component:
+            return None
+        ref = component.get("component", "")
+        if i == len(parts) - 1:
+            return component if not ref.startswith("block/") else None
+        if not ref.startswith("block/"):
+            return None
+        sheet = (project.get("blocks") or {}).get(ref[6:], {})
+    return None
+
+
+def check_assembly_variants(report: Report, file: Path, doc: dict, index: Index) -> None:
+    variants = doc.get("variants")
+    if isinstance(variants, dict):
+        for name, definition in variants.items():
+            if not isinstance(definition, dict) or not isinstance(definition.get("overrides"), dict):
+                continue
+            for path, change in definition["overrides"].items():
+                if assembly_target(doc, path) is None:
+                    report.error(file, f"/variants/{name}/overrides/{path}", "assembly.variant.target", "expected a concrete project-owned physical component path, not a board or block wrapper")
+                if isinstance(change, dict) and isinstance(change.get("version"), str):
+                    try: version_matches("0.0.0", change["version"])
+                    except ValueError as exc:
+                        report.error(file, f"/variants/{name}/overrides/{path}/version", "assembly.variant.range", str(exc))
+    origin = doc.get("variant_origin")
+    if isinstance(origin, dict):
+        text = origin.get("json")
+        if not isinstance(text, str):
+            return
+        if variants is not None:
+            report.error(file, "/variants", "assembly.variant.origin", "derived circuits retain definitions in the embedded base, not a second mutable definition set")
+        if len(text.encode("utf-8")) > 8388608 or origin.get("sha256") != "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest():
+            report.error(file, "/variant_origin", "assembly.variant.hash", "retained base identity does not match its UTF-8 bytes or exceeds 8 MiB")
+        def reject_constant(value: str) -> None:
+            raise ValueError(f"non-finite JSON constant {value}")
+        try:
+            base = json.loads(text, parse_constant=reject_constant)
+        except (TypeError, ValueError):
+            report.error(file, "/variant_origin/json", "assembly.variant.origin", "retained base is not valid JSON")
+            return
+        if not isinstance(base, dict) or base.get("kind") != "project" or "variant_origin" in base:
+            report.error(file, "/variant_origin/json", "assembly.variant.origin", "expected one original project, without recursive origins")
+            return
+        schemas = Schemas()
+        errors = schemas.validate(base, schemas.for_kind("project"))
+        for node, message in errors:
+            report.error(file, "/variant_origin/json" + node, "assembly.variant.origin", message)
+        if not errors:
+            check_assembly_variants(report, file, base, index)
+            if origin.get("name") not in (base.get("variants") or {}):
+                report.error(file, "/variant_origin/name", "assembly.variant.origin", "variant does not exist in retained base")
+
+
 def check_project(report: Report, file: Path, doc: dict, index: Index) -> ProjectContext:
+    check_assembly_variants(report, file, doc, index)
     if isinstance(doc.get("library_lock"), dict):
         check_library_lock(report, file, doc["library_lock"], index)
     base = file.parent
@@ -2108,6 +2171,15 @@ def check_engineering_manifest(report: Report, file: Path, doc: dict, index: Ind
                 report.error(file, node + "/catalog", "manifest.catalog", "resolved item has no embedded loaded description")
         elif description.get("id") != item["reference"] or description.get("kind") != item["kind"]:
             report.error(file, node + "/reference", "manifest.catalog", "instance and embedded description identity disagree")
+        if "populated" in item and native:
+            if item["kind"] == "component" and isinstance(project, dict):
+                part = assembly_target(project, item["path"])
+                if part and item["populated"] != (part.get("populated") is not False):
+                    report.error(file, node + "/populated", "manifest.population", "native population evidence disagrees with canonical project")
+            if item["populated"] and item.get("model") == "unpopulated":
+                report.error(file, node + "/populated", "manifest.population", "unpopulated native model cannot claim a fitted device")
+            if not item["populated"] and (item["kind"] != "component" or item.get("model") != "unpopulated" or any(model["path"].startswith(item["path"] + ".") for model in payload["models"])):
+                report.error(file, node + "/populated", "manifest.population", "DNP must be a passive footprint without compiled active children")
         if "version_satisfied" in item:
             try:
                 satisfied = version_matches((description or {}).get("version", ""), item.get("requested_version"))

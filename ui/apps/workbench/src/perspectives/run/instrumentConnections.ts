@@ -54,7 +54,7 @@ export function instrumentInstances(p: Project | null, hierarchy: HierarchyNode[
       continue;
     }
     const { sheet, block } = resolved;
-    for (const c of sheet.components.filter((c) => isWiredInstrument(c.component))) {
+    for (const c of sheet.components.filter((c) => c.populated !== false && isWiredInstrument(c.component))) {
       const value = (v: unknown) =>
         typeof v === 'string' && v.startsWith('$')
           ? (node.params?.[v.slice(1)] ??

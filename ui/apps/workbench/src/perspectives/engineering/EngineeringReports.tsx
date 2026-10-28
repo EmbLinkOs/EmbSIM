@@ -37,7 +37,8 @@ export function EngineeringReports() {
   } | null>(null);
   const [tab, setTab] = useState<'assembly' | 'models'>('assembly');
   const [query, setQuery] = useState(''),
-    [fixtures, setFixtures] = useState(false);
+    [fixtures, setFixtures] = useState(false),
+    [includeDnp, setIncludeDnp] = useState(false);
   const request = useRef(0);
   const [exporting, setExporting] = useState(false);
   const load = async () => {
@@ -85,7 +86,7 @@ export function EngineeringReports() {
   const project = result ? (JSON.parse(result.data.project.json) as Project) : null;
   const shown = lines.filter(
     (line) =>
-      (fixtures || !line.simulationFixture) &&
+      (fixtures || !line.simulationFixture) && (includeDnp || line.populated) &&
       `${line.reference} ${line.name} ${line.mpn} ${line.manufacturer} ${line.paths.join(' ')} ${JSON.stringify(line.params)}`
         .toLowerCase()
         .includes(query.toLowerCase()),
@@ -101,8 +102,8 @@ export function EngineeringReports() {
       await (
         await platform()
       ).saveTextFile(
-        `${project?.name ?? 'project'}-${kind === 'bom' ? 'bom.csv' : 'models.manifest.json'}`,
-        kind === 'bom' ? assemblyCsv(lines, fixtures) : JSON.stringify(result.envelope, null, 2),
+        `${project?.name ?? 'project'}${project?.variant_origin ? `-${project.variant_origin.name}` : ''}-${kind === 'bom' ? 'bom.csv' : 'models.manifest.json'}`,
+        kind === 'bom' ? assemblyCsv(lines, fixtures, includeDnp) : JSON.stringify(result.envelope, null, 2),
         kind === 'bom' ? 'text/csv' : 'application/json',
       );
     } catch (e) {
@@ -240,6 +241,7 @@ export function EngineeringReports() {
                           />
                           Include simulation fixtures
                         </label>
+                        <label><input type="checkbox" checked={includeDnp} onChange={(e) => setIncludeDnp(e.target.checked)} /> Include DNP footprints</label>
                       </div>
                       <p>
                         {shown.reduce((n, line) => n + line.paths.length, 0)} items in {shown.length}{' '}
@@ -260,7 +262,7 @@ export function EngineeringReports() {
                           <tbody>
                             {shown.slice(0, 200).map((line, index) => (
                               <tr key={index}>
-                                <td>{line.paths.length}</td>
+                                <td>{line.populated ? line.paths.length : 0}{!line.populated && <small>DNP · {line.paths.length} footprints</small>}</td>
                                 <td>
                                   <details>
                                     <summary>
@@ -280,7 +282,7 @@ export function EngineeringReports() {
                                       >
                                         Locate {i.path}
                                       </button>
-                                      {result.data.source === 'native' && <details><summary aria-label={`Edit version request for ${i.path}`}>Version request{i.requested_version ? ` · ${i.requested_version}` : ''}</summary><VersionRequest item={i} loaded={line.version} disabled={stale} /></details>}
+                                      {result.data.source === 'native' && <details><summary aria-label={`Edit version request for ${i.path}`}>Version request{i.requested_version ? ` · ${i.requested_version}` : ''}</summary><VersionRequest item={i} loaded={line.version} disabled={stale || Boolean(currentProject?.variant_origin)} /></details>}
                                       </div>
                                     ))}
                                     {line.paths.length > 100 && (

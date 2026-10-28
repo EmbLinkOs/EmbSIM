@@ -159,6 +159,9 @@
               },
               "version_satisfied": {
                 "type": "boolean"
+              },
+              "populated": {
+                "type": "boolean"
               }
             }
           }

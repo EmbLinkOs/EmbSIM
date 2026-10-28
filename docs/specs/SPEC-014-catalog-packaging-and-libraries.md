@@ -116,3 +116,12 @@ selection; it does not search alternate revisions or download dependencies.
 Malformed/unsupported ranges are rejected, and unversioned local block wrappers
 do not acquire invented release versions. See [grammar, workflow and evidence](../engineering/library-versions.md),
 CAT-014, UI-032 and ADR-044. Content locks and version requests are complementary.
+
+
+## Assembly population and alternatives
+
+Project-owned catalog parts may have named per-instance population, parameter,
+compatible-symbol catalog and version alternatives. DNP is an ideal passive
+footprint, not an active hidden model. Derived exact-base provenance, bounded
+materialization, resolved manifests and BOM quantities follow the
+[assembly contract](../engineering/assembly-variants.md), CAT-015 and ADR-045.

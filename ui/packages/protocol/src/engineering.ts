@@ -50,6 +50,8 @@ export interface AssemblyLine {
   params: Record<string, unknown>;
   unsafeIntegerPreview: boolean;
   simulationFixture: boolean;
+  populated: boolean;
+  variant: string;
   resolution: ManifestInstance['resolution'];
   catalog: string;
   notes: string[];
@@ -82,10 +84,10 @@ export function stableJson(value: unknown): string {
   return JSON.stringify(normalize(value));
 }
 
-function unsafeInteger(value: unknown): boolean {
+export function hasUnsafeInteger(value: unknown): boolean {
   if (typeof value === 'number') return Number.isInteger(value) && !Number.isSafeInteger(value);
-  if (Array.isArray(value)) return value.some(unsafeInteger);
-  return Boolean(value && typeof value === 'object' && Object.values(value).some(unsafeInteger));
+  if (Array.isArray(value)) return value.some(hasUnsafeInteger);
+  return Boolean(value && typeof value === 'object' && Object.values(value).some(hasUnsafeInteger));
 }
 
 /** Group actual configured packages, never the implementation primitives inside them. */
@@ -97,13 +99,14 @@ export function assemblyLines(data: EngineeringManifestData): AssemblyLine[] {
   for (const item of data.instances) {
     const desc = descriptions.get(item.catalog),
       version = desc?.version ?? '';
-    const unsafe = unsafeInteger(item.params);
+    const unsafe = hasUnsafeInteger(item.params);
     const key = stableJson([
       item.kind,
       item.reference,
       data.catalog[item.catalog]?.sha256 ?? '',
       item.resolution,
       item.params,
+      item.populated !== false,
       unsafe ? item.path : null,
     ]);
     let group = groups.get(key);
@@ -114,7 +117,10 @@ export function assemblyLines(data: EngineeringManifestData): AssemblyLine[] {
       if (item.resolution === 'unavailable' || item.resolution === 'demo')
         notes.push('Native resolved parameters unavailable');
       if (!desc?.part?.mpn) notes.push('Procurement part not assigned');
+      if (item.populated === false) notes.push('DNP: footprint retained; device is not fitted.');
       group = {
+        populated: item.populated !== false,
+        variant: (JSON.parse(data.project.json) as Project).variant_origin?.name ?? 'base',
         reference: item.reference,
         version,
         name: desc?.name ?? item.reference,
@@ -153,7 +159,7 @@ export function assemblyLines(data: EngineeringManifestData): AssemblyLine[] {
 }
 
 /** RFC 4180 text; JSON export retains typed configurations and full evidence. */
-export function assemblyCsv(lines: AssemblyLine[], includeFixtures = false): string {
+export function assemblyCsv(lines: AssemblyLine[], includeFixtures = false, includeUnpopulated = false): string {
   const cell = (v: unknown) => {
     const text = String(v),
       literal = /^[\s]*[=+@-]/.test(text) || /^[\t\r\n]/.test(text) ? "'" + text : text;
@@ -173,11 +179,13 @@ export function assemblyCsv(lines: AssemblyLine[], includeFixtures = false): str
       'Classification',
       'Resolution',
       'Notes',
+      'Population',
+      'Variant',
     ],
   ];
-  for (const line of lines.filter((l) => includeFixtures || !l.simulationFixture))
+  for (const line of lines.filter((l) => (includeFixtures || !l.simulationFixture) && (includeUnpopulated || l.populated)))
     rows.push([
-      line.paths.length,
+      line.populated ? line.paths.length : 0,
       line.paths.join('; '),
       line.reference,
       line.version,
@@ -195,6 +203,8 @@ export function assemblyCsv(lines: AssemblyLine[], includeFixtures = false): str
           : 'component',
       line.resolution,
       line.notes.join('; '),
+      line.populated ? 'Fitted' : 'DNP',
+      line.variant,
     ]);
   return rows.map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n';
 }

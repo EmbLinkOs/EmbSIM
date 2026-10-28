@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "Base assembly loads",
+  "until": "1us",
+  "assertions": [
+    {
+      "id": "load-1M",
+      "probe": "loaded-a",
+      "at": "1us",
+      "expect": {
+        "min": 4.9999,
+        "max": 5.0001
+      }
+    },
+    {
+      "id": "load-10M",
+      "probe": "loaded-b",
+      "at": "1us",
+      "expect": {
+        "min": 9.0908,
+        "max": 9.091
+      }
+    }
+  ]
+}

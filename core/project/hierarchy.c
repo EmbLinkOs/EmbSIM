@@ -99,6 +99,7 @@ static es_status validate_block(es_session *s, const esk_json *block, const char
             return invalid(s, id, "Unknown block or catalog component");
         if (esk_project_require_version(s, esk_project_component(s, ref), c, id) != ES_OK) return ES_ESCHEMA;
         if (esk_str_has_prefix(ref, "block/")) {
+            if (!esk_json_get_bool(c, "populated", 1)) return invalid(s, id, "Project block wrappers cannot be unpopulated; select their physical component members.");
             const esk_json *child = esk_json_get(esk_json_get(s->project, "blocks"), ref + 6);
             es_status st;
             for (j = 0; j < depth; j++)

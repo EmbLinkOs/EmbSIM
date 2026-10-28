@@ -351,3 +351,14 @@ diagnostic. Shared definition changes use `set_circuit`. Manifest instances may
 include `version_satisfied:boolean` alongside `requested_version`; absence means
 unchecked, not implied compatibility. See SPEC-014 §8 and
 [contract and limits](../engineering/library-versions.md).
+
+
+## Assembly variants
+
+Native capability `assembly.variants` exposes `project.variant` base/preview/activate
+operations, optional concrete variant names and expected base SHA-256 activation
+checks. Native preview is isolated; activation validates before replacement,
+restarts and clears the saved path. Derived transaction edits are refused except
+abort. Metadata `set_variants` and root `set_population` support base authoring.
+See [stored fields, response shape and limits](../engineering/assembly-variants.md),
+CAT-015, UI-033, CLI-007 and ADR-045.

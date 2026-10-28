@@ -611,6 +611,11 @@ function round(v: number, digits = 4): number {
 }
 
 function applyEdit(p: Project, edit: ProjectEdit): void {
+  if ('set_population' in edit) throw new EngineError(JsonRpcCode.INVALID_PARAMS, 'Population changes require native electrical validation.');
+  if ('set_variants' in edit) {
+    if (edit.set_variants === null) delete p.variants; else p.variants = structuredClone(edit.set_variants);
+    return;
+  }
   if ('set_version' in edit) throw new EngineError(JsonRpcCode.INVALID_PARAMS, 'Version requests require native catalog validation.');
   if ('set_library_lock' in edit) {
     if (edit.set_library_lock === null) delete p.library_lock;

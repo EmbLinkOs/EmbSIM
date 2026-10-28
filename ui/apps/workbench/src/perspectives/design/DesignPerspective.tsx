@@ -65,7 +65,9 @@ function FlatDesignPerspective() {
   useEffect(() => {
     if (previewProject) canvasRef.current?.zoomToFit();
   }, [previewProject]);
-  const designView = useLayout((s) => s.designView);
+  const requestedDesignView = useLayout((s) => s.designView);
+  const assemblySchematic = Boolean(project?.variant_origin || project?.components.some((c) => c.populated === false));
+  const designView = assemblySchematic ? 'schematic' : requestedDesignView;
   const setDesignView = useLayout((s) => s.setDesignView);
   const inside = useLayout((s) => s.inside);
   const setInside = useLayout((s) => s.setInside);
@@ -197,6 +199,7 @@ function FlatDesignPerspective() {
 
   const insideOf = useMemo(() => {
     if (!inside || !project) return null;
+    if (project.components.some((c) => c.id === inside && c.populated === false)) return null;
     const ref = project.components.find((c) => c.id === inside)?.component ?? project.boards?.find((b) => b.id === inside)?.board;
     const src = ref ? insideSource(catalog[ref]?.description) : null;
     if (!src) return null;
@@ -216,7 +219,7 @@ function FlatDesignPerspective() {
       onValueChange={setDesignView}
       options={[
         { value: 'schematic', label: 'Schematic', icon: <Workflow />, title: 'The schematic' },
-        { value: 'bench', label: 'Bench', icon: <Box />, title: 'The bench in 3D: breadboards, parts and jumpers, the same nets' },
+        { value: 'bench', label: 'Bench', icon: <Box />, disabled: assemblySchematic, title: assemblySchematic ? 'Assembly population is represented in the schematic in this release' : 'The bench in 3D: breadboards, parts and jumpers, the same nets' },
       ]}
     />
   );

@@ -160,8 +160,8 @@ export type NetVisual = { kind: 'low' | 'high' | 'z' | 'x' | 'analog' | 'idle'; 
 export function describeNetState(state: NetState | undefined, range: [number, number]): NetVisual {
   if (!state) return { kind: 'idle', text: 'no state' };
   if (state.contention) return { kind: 'x', text: `conflicting drivers${state.voltage !== undefined ? ` · ${state.voltage.toFixed(3)} V` : ''}` };
-  if (state.logic === 'X') return { kind: 'x', text: 'X (unknown)' };
-  if (state.logic === 'Z') return { kind: 'z', text: 'Z (floating)' };
+  if (state.logic === 'X') return { kind: 'x', text: `X (unknown)${state.voltage !== undefined ? ` · ${state.voltage.toFixed(3)} V` : ''}` };
+  if (state.logic === 'Z') return { kind: 'z', text: `Z (floating)${state.voltage !== undefined ? ` · ${state.voltage.toFixed(3)} V` : ''}` };
   if (state.logic === '0' || state.logic === '1') {
     const kind = state.logic === '0' ? 'low' : 'high';
     const v = state.voltage !== undefined ? ` · ${state.voltage.toFixed(3)} V` : '';
@@ -194,6 +194,7 @@ export function AnalogLegend({ range = [0, 3.3] }: { range?: [number, number] })
 }
 
 interface PlacedComponent {
+  populated: boolean;
   id: string;
   componentId: string;
   layout: Layout;
@@ -232,18 +233,19 @@ interface PartViewProps {
 const PartView = memo(
   function PartView({ c, selected, offset, showPins, live, pinVisuals, activePin, highlightNet, outputs, inputs, interactive, onInput, onHover, onLeave }: PartViewProps) {
     const sym = c.symbol;
-    const desc = `${c.id}, ${sym?.name ?? c.componentId}${c.value ? `, ${c.value}` : ''}${selected ? ', selected' : ''}`;
+    const desc = `${c.id}, ${sym?.name ?? c.componentId}${c.value ? `, ${c.value}` : ''}${!c.populated ? ', not populated' : ''}${selected ? ', selected' : ''}`;
     return (
       <g
         data-component={c.id}
-        className={`es-component${c.layout.locked ? ' es-component--locked' : ''}${selected ? ' es-component--selected' : ''}`}
+        data-populated={c.populated ? 'true' : 'false'}
+        className={`es-component${!c.populated ? ' es-component--dnp' : ''}${c.layout.locked ? ' es-component--locked' : ''}${selected ? ' es-component--selected' : ''}`}
         role="group"
         aria-label={c.id}
         transform={offset ? `translate(${offset.x} ${offset.y})` : undefined}
       >
         <rect className="es-component__hit" role="button" tabIndex={0} aria-label={desc} aria-pressed={selected} x={c.bounds.x} y={c.bounds.y} width={c.bounds.width} height={c.bounds.height} rx={2} />
         {sym ? (
-          <ComponentSymbol id={c.id} svg={sym.svg} symbol={sym.symbol} layout={c.layout} selected={selected} fallbackLabel={c.id} emitterColor={c.emitterColor} outputs={live ? outputs : undefined} inputs={inputs} interactive={interactive} onInput={onInput} />
+          <ComponentSymbol id={c.id} svg={sym.svg} symbol={sym.symbol} layout={c.layout} selected={selected} fallbackLabel={c.id} emitterColor={c.emitterColor} outputs={live && c.populated ? outputs : undefined} inputs={inputs} interactive={interactive && c.populated} onInput={onInput} />
         ) : (
           <g className="es-symbol__fallback">
             <rect x={c.layout.x} y={c.layout.y} width={60} height={20} rx={2} />
@@ -252,7 +254,10 @@ const PartView = memo(
             </text>
           </g>
         )}
-        {showPins &&
+        {!c.populated && <g className="es-component__dnp" pointerEvents="none" aria-label={`${c.id} not populated`}>
+          <path d={`M ${c.bounds.x} ${c.bounds.y} L ${c.bounds.x + c.bounds.width} ${c.bounds.y + c.bounds.height} M ${c.bounds.x + c.bounds.width} ${c.bounds.y} L ${c.bounds.x} ${c.bounds.y + c.bounds.height}`} />
+        </g>}
+        {(showPins || !c.populated) &&
           c.pins.map((pin, i) => {
             const vis = pinVisuals[i] ?? IDLE;
             return (
@@ -386,7 +391,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
 
   const placed = useMemo<PlacedComponent[]>(() => {
     // boards are drawn as blocks of their ports, beside the components
-    const boards = (project.boards ?? []).map((b) => ({ id: b.id, component: b.board, params: undefined, layout: b.layout }));
+    const boards = (project.boards ?? []).map((b) => ({ populated: true, id: b.id, component: b.board, params: undefined, layout: b.layout }));
     return [...project.components.filter((c) => !catalog[c.component]?.wiringAid), ...boards].map((c) => {
       const symbol = catalog[c.component];
       const layout = c.layout ?? { x: 0, y: 0 };
@@ -400,10 +405,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         return { name, point, net: pinNet.get(`${c.id}.${name}`), label };
       });
       const valueParam = symbol?.valueParam;
-      const value = valueParam === 'dc' && typeof c.params?.kind === 'string' && c.params.kind !== 'dc' ? c.params.kind : valueParam ? componentValue(c.params?.[valueParam] ?? symbol?.valueDefault, symbol?.valueUnit) : '';
+      const rawValue = valueParam === 'dc' && typeof c.params?.kind === 'string' && c.params.kind !== 'dc' ? c.params.kind : valueParam ? componentValue(c.params?.[valueParam] ?? symbol?.valueDefault, symbol?.valueUnit) : '';
+      const value = c.populated === false ? `${rawValue}${rawValue ? ' · ' : ''}DNP` : rawValue;
       const colors: Record<string, string> = { red: '#ff453a', green: '#30d158', blue: '#0a84ff', yellow: '#ffd60a', white: '#f5f5ff' };
       const emitterColor = colors[String(c.params?.color ?? symbol?.valueDefault ?? 'red')] ?? '#ff453a';
-      return { emitterColor, id: c.id, componentId: c.component, layout, symbol, bounds: symbolBounds(layout, sym, 4), pins, value };
+      return { populated: c.populated !== false, emitterColor, id: c.id, componentId: c.component, layout, symbol, bounds: symbolBounds(layout, sym, 4), pins, value };
     });
   }, [project.components, project.boards, catalog, pinNet]);
 
@@ -1205,7 +1211,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
               const selected = selectedSet.has(c.id);
               const ownOutputs = Object.fromEntries((c.symbol?.symbol.states ?? []).map((s) => [s.output, outputs[`${c.id}.${s.output}`]]).filter(([, value]) => value !== undefined)) as Record<string, OutputValue>;
               const ownInputs = inputs.filter((i) => i.target === c.id || i.target.startsWith(`${c.id}.`));
-              const pinVisuals = showPins ? c.pins.map((pin) => (pin.net ? netVisual(pin.net) : IDLE)) : [];
+              const pinVisuals = (showPins || !c.populated) ? c.pins.map((pin) => (pin.net ? netVisual(pin.net) : IDLE)) : [];
               return (
                 <PartView
                   key={c.id}

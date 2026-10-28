@@ -9,6 +9,7 @@
 import { CommandStack, shiftWireSegment, projectPinPoints, GRID, boardSymbol, boardRuntimeHeader, freePlacement, autoRoute, createLayout, pinPosition, rotateLayouts, snap, type BoardPort, type NetRef, type PinRef, type SceneCatalog, type Selection } from '@embsim/scene';
 import { blockPortOrder, JsonRpcCode, JsonRpcError, type CircuitBlock, type HierarchyNode, type CatalogItem, type ComponentDescription, type Layout, type Project, type ProjectBoard, type ProjectComponent, type ProjectEdit, type Topology, type Wire } from '@embsim/protocol';
 import { create } from 'zustand';
+import { useSession } from './session';
 import { getClient, primeStores } from '../connection';
 import { useInstruments } from './instruments';
 import { diffProject } from './projectDiff';
@@ -235,7 +236,10 @@ export const useProject = create<ProjectState>((set, get) => ({
   async loadAll() {
     const c = getClient();
     const [{ project }, { items }] = await Promise.all([c.project.get({}), c.catalog.list({})]);
-    set({ project, items });
+    const population = project.variant_origin || project.components.some((part) => part.populated === false) || Object.values(project.blocks ?? {}).some((block) => block.components.some((part) => part.populated === false));
+    if (population && !useSession.getState().hasCapability('assembly.variants') && !useSession.getState().engine?.includes('mock'))
+      throw new Error('This native server does not advertise assembly population support. Update it before running or displaying a DNP circuit.');
+    set({ project, items, editable: !project.variant_origin });
     await get().ensureCatalog([...new Set([...items.map((i) => i.id), ...projectIds(project)])]);
     const topology = await c.project.topology({}).catch(() => null);
     const hierarchy = await c.project.hierarchy?.({}).catch(() => []) ?? [];
@@ -247,7 +251,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     const { project } = await c.project.get({});
     // Duplicate project.changed notifications must not invalidate active drafts.
     // A new object identity represents an actual content revision, not a fetch.
-    if (JSON.stringify(get().project) !== JSON.stringify(project)) set({ project });
+    if (JSON.stringify(get().project) !== JSON.stringify(project)) set({ project, editable: project.variant_origin ? false : get().project?.variant_origin ? true : get().editable });
     await get().ensureCatalog(projectIds(project));
     const topology = await c.project.topology({}).catch(() => null);
     const hierarchy = await c.project.hierarchy?.({}).catch(() => []) ?? [];

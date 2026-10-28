@@ -124,6 +124,7 @@ export function checkProject(
         );
         continue;
       }
+      if (c.populated === false) continue;
       for (const pin of desc.pins ?? []) {
         const local = Object.entries(sheet.nets).find(([, pins]) =>
           pins.some(

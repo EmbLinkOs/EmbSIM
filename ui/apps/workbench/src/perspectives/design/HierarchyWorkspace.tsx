@@ -32,6 +32,7 @@ import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { checkProject, liveProjectChecks } from './projectChecks';
 import { ProjectReview } from './ProjectReview';
 import { EngineeringReports } from '../engineering/EngineeringReports';
+import { AssemblyVariants } from '../engineering/AssemblyVariants';
 import { BlockParameters } from './BlockParameters';
 import { SheetBuses } from './SheetBuses';
 import {
@@ -926,6 +927,7 @@ export function HierarchyWorkspace() {
           </select>
         </label>
         <EngineeringReports />
+        <AssemblyVariants />
         <Badge tone="accent">{path.startsWith('@') ? 'Definition' : path || 'Main'}</Badge>
         <SegmentedControl
           label="Sheet interaction"

@@ -130,3 +130,6 @@ Apache-2.0 (see `LICENSE` and `NOTICE`). See `CONTRIBUTING.md` for the
 process, the identity rule for commits, and the required checks.
 Development process: [repository workflow](docs/engineering/repository-workflow.md),
 [roadmap](docs/architecture/07-roadmap.md), [changelog](CHANGELOG.md).
+
+
+See [native assembly variants](docs/engineering/assembly-variants.md) for per-instance DNP/value alternatives, resolved BOMs and exact return-to-base.

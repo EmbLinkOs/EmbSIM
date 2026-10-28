@@ -142,6 +142,7 @@ static es_status add_instance(es_session *s, const esk_json *entry, const char *
         (requested && esk_json_set_bool(s->a, row, "version_satisfied",
                       esk_version_satisfies(esk_json_get_str(description, "version", ""), requested) == 1)) ||
         (component && esk_json_set_string(s->a, row, "model", component->ops->name)) ||
+        esk_json_set_bool(s->a, row, "populated", !component || strcmp(component->ops->name, "unpopulated") != 0) ||
         put(s, row, "params",
             component && component->params ? esk_json_clone(s->a, component->params)
                                            : esk_json_new_object(s->a)) ||

@@ -8,6 +8,7 @@
 #include "project/hierarchy.h"
 #include "project/library_lock.h"
 #include "project/version_rules.h"
+#include "project/variants.h"
 #include "ext/lua_model.h"
 #include <math.h>
 #include <stdio.h>
@@ -44,10 +45,11 @@ int esk_split_pin_ref(const char *ref, char *inst, size_t icap, char *pin, size_
 
 static const esk_model_ops mcu_placeholder_ops = { "mcu_placeholder", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 };
 /* a composite's shell: its pins redirect to internal pins through the ports (SPEC-005 §5) */
+static const esk_model_ops unpopulated_ops = { "unpopulated", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 };
 static const esk_model_ops composite_shell_ops = { "composite", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 };
 
 typedef struct graph graph;
-static es_status instantiate(es_session *s, graph *g, const char *id, const esk_catalog_item *item, const esk_json *inst_params, int depth, esk_comp **out);
+static es_status instantiate(es_session *s, graph *g, const char *id, const esk_catalog_item *item, const esk_json *inst_params, const esk_json *entry, int depth, esk_comp **out);
 static esk_pin *resolve_pin_ref(es_session *s, const char *full, int depth);
 static int resolve_via_port; /* set by resolve_pin_ref when the reference went through a composite port */
 /* connect a pin to a net record; a pin reached through a composite port whose internal net already
@@ -320,7 +322,7 @@ static es_status expand_composite(es_session *s, graph *g, const char *id, const
         sub_params = subst_params(s, esk_json_get(ce, "params"), params);
         if (!sub_params)
             return ES_ENOMEM;
-        st = instantiate(s, g, scoped, ci, sub_params, depth + 1, &c);
+        st = instantiate(s, g, scoped, ci, sub_params, ce, depth + 1, &c);
         esk_json_free(s->a, sub_params);
     }
     for (i = 0; i < esk_json_len(nets) && st == ES_OK; i++) {
@@ -407,8 +409,10 @@ esk_pin *esk_project_pin(es_session *s, const char *ref)
     return resolve_pin_ref(s, ref, 0);
 }
 
-static es_status instantiate(es_session *s, graph *g, const char *id, const esk_catalog_item *item, const esk_json *inst_params, int depth, esk_comp **out)
+static es_status instantiate(es_session *s, graph *g, const char *id, const esk_catalog_item *item, const esk_json *inst_params, const esk_json *entry, int depth, esk_comp **out)
 {
+    const esk_json *population = esk_json_get(entry, "populated");
+    int populated = esk_json_get_bool(entry, "populated", 1);
     const esk_json *desc = item->desc;
     const esk_json *pins = esk_json_get(desc, "pins");
     const char *family = esk_json_get_str(desc, "family", NULL);
@@ -420,7 +424,17 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
     esk_pin_model *models = NULL;
     size_t np = esk_json_len(pins), i;
     es_status st;
-    if (!binding) {
+    if ((population && population->type != ESK_JSON_BOOL) ||
+        (!populated && esk_str_has_prefix(item->id, "block/"))) {
+        ld_diag(s, ES_SEV_ERROR, "assembly.population", id, "%s needs a boolean population flag on a physical part, not a project block%s", id, "");
+        return ES_ESCHEMA;
+    }
+    if (!populated && esk_json_get_bool(esk_json_get(desc, "bench"), "wiring_aid", 0)) {
+        ld_diag(s, ES_SEV_ERROR, "assembly.population", id, "%s is a bench wiring aid; population variants require a schematic component%s", id, "");
+        return ES_EUNSUPPORTED;
+    }
+    if (!populated) { primitive = "none"; binding = NULL; }
+    if (populated && !binding) {
         ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s declares no model usable under this policy%s", item->id, "");
         return ES_ESCHEMA;
     }
@@ -458,7 +472,7 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
             return ES_EUNSUPPORTED;
         }
     }
-    ops = esk_str_eq(primitive, "lua") && esk_json_get_str(binding, "script", NULL) ? esk_lua_ops() : esk_registry_find(&s->reg, primitive);
+    ops = !populated ? &unpopulated_ops : esk_str_eq(primitive, "lua") && esk_json_get_str(binding, "script", NULL) ? esk_lua_ops() : esk_registry_find(&s->reg, primitive);
     if (!ops) {
         ld_diag(s, ES_SEV_ERROR, "catalog.model_unsupported", id, "%s binds unknown primitive %s", item->id, primitive);
         return ES_EUNSUPPORTED;
@@ -516,7 +530,7 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
         esk_json *resolved;
         names[i] = esk_json_get_str(pd, "name", NULL);
         if (!names[i] || !pm) {
-            ld_diag(s, ES_SEV_ERROR, "schema.missing_field", id, "pin %u of %s needs a name and a model", "", item->id);
+            ld_diag(s, ES_SEV_ERROR, "schema.missing_field", id, "pin %s of %s needs a name and a model", names[i] ? names[i] : "(unnamed)", item->id);
             st = ES_ESCHEMA;
             goto done;
         }
@@ -528,6 +542,7 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
             goto done;
         }
         esk_json_free(s->a, resolved);
+        if (!populated) { memset(&models[i], 0, sizeof models[i]); models[i].kind = ESK_PIN_PASSIVE; }
     }
     st = esk_engine_add_comp(&s->eng, id, item->id, ops, names, models, (uint32_t)np, params, desc, out);
     if (st != ES_OK) {
@@ -536,7 +551,7 @@ static es_status instantiate(es_session *s, graph *g, const char *id, const esk_
     }
     /* interactive input defaults; a parameter initially_NAME gives the input
      * NAME its first value on this instance (a jumper fitted at the factory) */
-    {
+    if (populated) {
         const esk_json *inputs = esk_json_get(desc, "inputs");
         for (i = 0; i < esk_json_len(inputs); i++) {
             const esk_json *in = esk_json_at(inputs, i);
@@ -647,7 +662,7 @@ static es_status join_ties(graph *g, esk_comp *c)
     const esk_json *ties = esk_json_get(c->desc, "ties");
     int *first;
     size_t k, t, nt = esk_json_len(ties);
-    if (!nt || c->ops == &composite_shell_ops)
+    if (!nt || c->ops == &composite_shell_ops || c->ops == &unpopulated_ops)
         return ES_OK;
     first = (int *)esk_calloc(g->s->a, nt, sizeof *first);
     if (!first)
@@ -925,7 +940,7 @@ static es_status load_board(es_session *s, graph *g, const esk_json *entry, cons
         }
         esk_snprintf(scoped, sizeof scoped, "%s.%s", bid, cid);
         st = esk_project_require_version(s, ci, ce, scoped);
-        if (st == ES_OK) st = instantiate(s, g, scoped, ci, esk_json_get(ce, "params"), 0, &c);
+        if (st == ES_OK) st = instantiate(s, g, scoped, ci, esk_json_get(ce, "params"), ce, 0, &c);
     }
     if (st != ES_OK)
         return st;
@@ -1021,6 +1036,10 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
     }
     {
         char why[256];
+        if (esk_project_validate_variants(project, why, sizeof why)) {
+            ld_diag(s, ES_SEV_ERROR, "assembly.variant.invalid", "project", "%s%s", why, "");
+            return ES_ESCHEMA;
+        }
         if (esk_project_validate_organization(project, why, sizeof why)) {
             ld_diag(s, ES_SEV_ERROR, "schema.layout", "project", "%s%s", why, "");
             return ES_ESCHEMA;
@@ -1100,7 +1119,7 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
             break;
         }
         st = esk_project_require_version(s, ci, ce, cid);
-        if (st == ES_OK) st = instantiate(s, &g, cid, ci, esk_json_get(ce, "params"), 0, &c);
+        if (st == ES_OK) st = instantiate(s, &g, cid, ci, esk_json_get(ce, "params"), ce, 0, &c);
     }
     /* project nets */
     nets = esk_json_get(project, "nets");
@@ -1188,7 +1207,7 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
     for (i = 0; i < s->eng.comps.len; i++) {
         esk_comp *c = s->eng.comps.data[i];
         uint32_t k;
-        if (c->ops == &mcu_placeholder_ops || c->ops == &composite_shell_ops)
+        if (c->ops == &mcu_placeholder_ops || c->ops == &composite_shell_ops || c->ops == &unpopulated_ops)
             continue;
         for (k = 0; k < c->npins; k++) {
             if (!c->pins[k].net && c->pins[k].model.kind != ESK_PIN_NC) {
