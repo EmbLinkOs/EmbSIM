@@ -685,3 +685,13 @@ loaded capacitive input with a resistive input.
 ![Opposing digital outputs with a real solved bus voltage](instrument-loading/conflicting-drivers.png)
 
 ![Floating input located from the warning list](instrument-loading/floating-input.png)
+
+## Exported SVG (2026-10-28)
+
+`embsim export svg` writes the schematic sheet as the workbench lays it out,
+and what a display shows at a moment, for a README or an issue (issue #94).
+The Uno example's sheet, and the display showcase's SSD1306 at 300 ms:
+
+![The Uno example's schematic, exported](export-svg/uno-blink-serial.svg)
+
+![The SSD1306 of the display showcase at 300 ms, exported](export-svg/oled.svg)
