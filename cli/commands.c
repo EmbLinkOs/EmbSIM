@@ -17,6 +17,7 @@
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
 #include "sdk.h"
+#include "export.h"
 #include "util/num.h"
 #include "util/str.h"
 
@@ -53,6 +54,9 @@ static void usage_to(FILE *out)
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
           "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
+          "  export svg PROJECT [-o FILE] [--theme light|dark]   the schematic sheet as SVG\n"
+          "  export svg PROJECT --component ID [--at T] [--scenario FILE] [--scale N] [-o FILE]\n"
+          "      what a display shows at T (a graphic display's pixels, a character module's lines)\n"
           "  toolchains                  the toolchain profiles found on this host\n"
           "  catalog list|search QUERY|info ID [--json]|libraries [--library DIR]\n"
           "  catalog validate [LIBRARY_DIR] [--library DEPENDENCY] [--json]\n"
@@ -1297,6 +1301,69 @@ static int cmd_build(int argc, char **argv, const char *argv0)
     return ok ? 0 : 1;
 }
 
+/* export svg PROJECT (issue #94): the schematic sheet, or with --component
+ * what a display shows at --at (after the scenario's inputs to then) */
+static int cmd_export(int argc, char **argv, const char *argv0)
+{
+    const char *project = NULL, *out = "-", *component = NULL, *scenario = NULL, *library = NULL;
+    es_time_t at = 0;
+    int i, dark = 0, scale = 4, ok;
+    es_session *s;
+    if (argc < 1 || strcmp(argv[0], "svg")) {
+        fprintf(stderr, EMBSIM_ID ": export: only svg (embsim export svg PROJECT -o FILE)\n");
+        return 2;
+    }
+    for (i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if ((!strcmp(a, "-o") || !strcmp(a, "--output")) && more) out = argv[++i];
+        else if (!strcmp(a, "--component") && more) component = argv[++i];
+        else if (!strcmp(a, "--scenario") && more) scenario = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (!strcmp(a, "--theme") && more) dark = !strcmp(argv[++i], "dark");
+        else if (!strcmp(a, "--scale") && more) scale = atoi(argv[++i]);
+        else if (!strcmp(a, "--at") && more) {
+            if (esk_parse_time(argv[++i], &at)) { fprintf(stderr, "embsim: bad time %s\n", argv[i]); return 2; }
+        } else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
+        else project = a;
+    }
+    if (!project) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", project);
+        es_session_destroy(s);
+        return 2;
+    }
+    if (!component) {
+        ok = embsim_export_sheet(s, out, dark);
+    } else {
+        /* the run to the moment: the scenario's inputs up to it */
+        esk_json *sc = scenario ? read_json_file(s->a, scenario) : NULL;
+        const esk_json *inputs = esk_json_get(sc, "inputs");
+        size_t k;
+        if (scenario && !sc) {
+            es_session_destroy(s);
+            return 2;
+        }
+        (void)esk_session_do_reset(s);
+        for (k = 0; k < esk_json_len(inputs); k++) {
+            const esk_json *in = esk_json_at(inputs, k);
+            es_time_t t = 0;
+            esk_json_to_time(esk_json_get(in, "at"), &t);
+            if (t <= at)
+                esk_session_apply_input(s, esk_json_get_str(in, "target", NULL), esk_json_get_str(in, "input", NULL),
+                                        esk_json_get(in, "value"), t, NULL, NULL);
+        }
+        esk_json_free(s->a, sc);
+        if (at && esk_session_do_advance(s, at) != ES_OK)
+            fprintf(stderr, EMBSIM_ID ": export: the run stopped before --at; the display as it stopped\n");
+        ok = embsim_export_display(s, component, out, scale);
+    }
+    es_session_destroy(s);
+    return ok ? 0 : 1;
+}
+
 static int cmd_toolchains(const char *argv0)
 {
     es_session *s = open_session(NULL, argv0, NULL);
@@ -1699,6 +1766,7 @@ int embsim_cli_main(int argc, char **argv)
     if (!strcmp(cmd, "sidecar")) return cmd_serve(argc - 2, argv + 2, argv[0], 1);
     if (!strcmp(cmd, "gdb")) return cmd_gdb(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "build")) return cmd_build(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "export")) return cmd_export(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "toolchains")) return cmd_toolchains(argv[0]);
     if (!strcmp(cmd, "catalog")) return cmd_catalog(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "board")) return cmd_board(argc - 2, argv + 2, argv[0]);
