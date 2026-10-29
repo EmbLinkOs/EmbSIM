@@ -721,12 +721,36 @@ static int read_memory_files(es_session *s, const esk_board_inst *bi, const esk_
  * checkout, which writes images and sources moments apart, quiet. Relative names resolve against
  * the project; names that cannot be read (system headers moved, another
  * machine's paths) are skipped. */
+/* where a source the line tables name is now: the longest tail of its path
+ * found under the project (an image built elsewhere names the builder's
+ * absolute paths: /home/a/proj/firmware/main.c is firmware/main.c here),
+ * else the path itself, relative to the project. esk_strfree to release */
+static char *source_in_project(es_session *s, const char *f)
+{
+    const char *p = f;
+    while (p && *p) {
+        char *full;
+        while (*p == '/' || *p == '\\')
+            p++;
+        if (!*p)
+            break;
+        if (p != f || (f[0] != '/' && f[0] != '\\' && !(f[0] && f[1] == ':'))) {
+            full = esk_host_path_join(s->a, s->base_dir, p);
+            if (full && esk_host_file_exists(full))
+                return full;
+            esk_strfree(s->a, full);
+        }
+        p += strcspn(p, "/\\");
+    }
+    return esk_host_path_join(s->a, s->base_dir, f);
+}
+
 static void check_stale_image(es_session *s, const esk_board_inst *bi, const char *rel, const char *path,
                               const char *img, size_t len)
 {
     esk_dwarf d;
     double t_img, t, newest = 0;
-    const char *which = NULL;
+    char *which = NULL; /* the newest source, where it is now */
     size_t i;
     if (len < 4 || memcmp(img, "\x7f" "ELF", 4) != 0 || esk_host_file_mtime(path, &t_img) != 0)
         return;
@@ -740,10 +764,12 @@ static void check_stale_image(es_session *s, const esk_board_inst *bi, const cha
         char *full;
         if (!f || !*f)
             continue;
-        full = esk_host_path_join(s->a, s->base_dir, f);
+        full = source_in_project(s, f);
         if (full && esk_host_file_mtime(full, &t) == 0 && t > t_img + 60.0 && t > newest) {
             newest = t;
-            which = f;
+            esk_strfree(s->a, which);
+            which = full;
+            continue;
         }
         esk_strfree(s->a, full);
     }
@@ -752,6 +778,7 @@ static void check_stale_image(es_session *s, const esk_board_inst *bi, const cha
                        "%s: the firmware image %s is older than its source %s (%.0f s newer); rebuild it "
                        "(embsim build, or embsim run --build) or the run shows the old program",
                        bi->id, rel, which, newest - t_img);
+    esk_strfree(s->a, which);
     esk_dwarf_free(&d);
 }
 

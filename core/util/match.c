@@ -14,7 +14,7 @@ typedef struct atom {
     int kind;
     unsigned char c;        /* A_CHAR */
     unsigned char set[32];  /* A_CLASS: a bit per byte */
-    char min, max;          /* repeats: min 0/1, max 1 or -1 (unbounded) */
+    signed char min, max;   /* repeats: min 0/1, max 1 or -1 (unbounded) */
 } atom;
 
 typedef struct prog {

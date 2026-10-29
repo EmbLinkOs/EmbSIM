@@ -908,7 +908,7 @@ static const char *strx(const dw_strs *s, u64 idx)
 static int attr_value(rd *r, u32 f, s64 implicit, int ver, int asz, const dw_strs *s, const char **str, u64 *num,
                       int *is_num)
 {
-    u64 n;
+    u64 n = 0;
     *str = NULL;
     *is_num = 0;
     switch (f) {
