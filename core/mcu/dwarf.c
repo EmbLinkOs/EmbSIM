@@ -1037,9 +1037,9 @@ int esk_dwarf_members(esk_alloc *a, const u8 *elf, size_t len, const char *strct
                 break;
             for (k = 0; k < ab->n; k++) {
                 const dw_attr *at = &t.at[ab->first + k];
-                const char *sv;
-                u64 nv;
-                int isn;
+                const char *sv = NULL;
+                u64 nv = 0;
+                int isn = 0;
                 if (attr_value(&r, at->form, at->implicit, ver, asz, &s, &sv, &nv, &isn) != 0)
                     break;
                 if (at->name == 0x03 && sv)

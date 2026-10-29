@@ -393,8 +393,11 @@ int embsim_plan(es_session *s, const char *board_id, const char *needs, const ch
         const char *q = needs;
         if (!strcmp(order[o], "spi_cs"))
             for (i = 0; i < p->ncs; i++) { /* the chip selects: GPIOs the driver toggles */
+                char cs[16];
                 simple(p, "spi_cs", 1, 0);
-                snprintf(p->rows[p->nrows - 1].signal, sizeof p->rows[0].signal, "%s_CS", p->cs[i]);
+                memcpy(cs, p->cs[i], sizeof p->cs[0]);
+                cs[sizeof p->cs[0]] = 0;
+                snprintf(p->rows[p->nrows - 1].signal, sizeof p->rows[0].signal, "%s_CS", cs);
             }
         while (*q) {
             size_t len = strcspn(q, ",");
@@ -416,7 +419,7 @@ int embsim_plan(es_session *s, const char *board_id, const char *needs, const ch
                 } else if (!strcmp(item, "spi")) {
                     for (i = 0; i < count; i++) {
                         if (peripheral(p, "spi", spi_pre, spi_sig, 3) && p->ncs < 8)
-                            snprintf(p->cs[p->ncs++], sizeof p->cs[0], "%s", p->taken[p->ntaken - 1]);
+                            memcpy(p->cs[p->ncs++], p->taken[p->ntaken - 1], sizeof p->cs[0]);
                     }
                 } else if (!strcmp(item, "i2c")) {
                     for (i = 0; i < count; i++)
