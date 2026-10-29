@@ -21,6 +21,23 @@ local function parse(s)
   return steps
 end
 
+-- the waveform once per reset: "word@duration" steps (a hexadecimal word
+-- held for a time with its unit: 20ms, 1.5us, 2), as a generator plays a
+-- recorded waveform back; empty when the pattern is used instead
+local UNITS = { s = 1e12, ms = 1e9, us = 1e6, ns = 1e3, ps = 1 }
+local function parse_waveform(s)
+  local steps = {}
+  for tok in string.gmatch(s or "", "[^,%s]+") do
+    local w, num, unit = tok:match("^([0-9a-fA-FxX]+)@([0-9.eE+-]+)(%a*)$")
+    local n = w and tonumber((w:gsub("^0[xX]", "")), 16)
+    local scale = UNITS[unit == "" and "s" or unit]
+    local d = num and tonumber(num)
+    if not (n and d and scale) or d < 0 then error("waveform: " .. tok .. " is not word@duration (1@20ms)") end
+    steps[#steps + 1] = { n & 0xFFFF, math.floor(d * scale + 0.5) }
+  end
+  return steps
+end
+
 local function apply(ctx, word)
   local od = ctx.params.drive == "open_drain"
   local last = ctx.state.word
@@ -35,6 +52,7 @@ local function apply(ctx, word)
 end
 
 function M.reset(ctx)
+  ctx.state.wave = parse_waveform(ctx.params.waveform)
   ctx.state.steps = parse(ctx.params.pattern)
   ctx.state.i = 1
   ctx.state.word = nil
@@ -46,6 +64,17 @@ end
 
 function M.on_time(ctx)
   local s = ctx.state
+  if #s.wave > 0 then -- each step held for its own duration
+    if s.i > #s.wave then
+      if not ctx.params["repeat"] then return end
+      s.i = 1
+    end
+    local step = s.wave[s.i]
+    apply(ctx, step[1])
+    s.i = s.i + 1
+    ctx.wake_at(ctx.now() + math.max(1, step[2]))
+    return
+  end
   if s.i > #s.steps then
     if not ctx.params["repeat"] then return end
     s.i = 1

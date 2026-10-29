@@ -5,6 +5,28 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Real parts' captures (2026-10-29)
+
+The first evidence from real hardware beyond datasheets: 15 sigrok captures
+of a real AM2302 (public domain, sigrok-dumps `am230x/am2302` at 0ad13477;
+about 230 reads, starts from 100 us to 20 ms, reads 71 ms to 2.3 s apart) are
+replayed into `emblink/dht22` by `tools/verify/replay_captures.py`
+(`real_captures` test). The host's starts are played back at the captured
+times; the model's answers are decoded and compared with the real part's:
+answered or not for every read from the real part's first answer, each
+timed phase's mean within 2 us (6 us for the response's end, which a host
+that drives the line after its start masks), the checksums. All 15 match.
+The comparison found the model's datasheet timing 3-14 us off the real
+part's, a byte-boundary delay the datasheet does not show, a start threshold
+of 800 us where the part answers from about 400 us, and no busy time where
+the part ignores reads for about 0.4 s after one; all are now modelled as
+measured. Four sibling parts' captures (AM2303, AM2320, AM2321, AM2322) agree
+with the AM2302's times within 2 us; they are not part of the suite. Not
+yet: captures of other parts (sigrok-dumps holds DS18B20, DS3231, MAX7219,
+BH1750, SHT3x and more, each needing its protocol's decoder in the harness)
+and of the boards themselves (a capture kit for an Uno and a NUCLEO is
+described in `tests/captures/README.md`).
+
 ## Diagnosis, documentation and planning commands (2026-10-28)
 
 Issues #86-#102, from the same project. Evidence: `test_diagnose` (a stale
