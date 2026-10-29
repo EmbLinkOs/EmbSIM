@@ -501,7 +501,7 @@ int embsim_plan(es_session *s, const char *board_id, const char *needs, const ch
         esk_strbuf_printf(&h, "/* %s's pins for %s, from embsim plan */\n#ifndef PINS_H\n#define PINS_H\n\n", board_id, needs);
         for (i = 0; i < p->nrows; i++) {
             const pl_row *r = &p->rows[i];
-            char macro[48];
+            char macro[64];
             size_t k;
             if (!r->pin[0])
                 continue;
