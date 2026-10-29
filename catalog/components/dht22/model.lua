@@ -4,11 +4,18 @@
 -- DHT22 (Aosong AM2302): humidity and temperature on a single open-drain
 -- wire, as its datasheet describes it.
 --
---   - the host holds DATA low for at least 1 ms (accepted from 800 us) and
---     lets go; 30 us later the sensor answers 80 us low, 80 us high, then 40
---     bits, each 50 us low and 26 us (0) or 70 us (1) high: humidity x10,
---     temperature x10 with its sign in the top bit, and a checksum; then
---     50 us low and the line released;
+--   - the host holds DATA low (the datasheet asks for at least 1 ms) and
+--     lets go; 25 us later the sensor answers 80 us low, 81 us high, then 40
+--     bits, each low for 54 us (64 us before the first bit of each byte) and
+--     high for 26 us (0) or 73 us (1): humidity x10, temperature x10 with its
+--     sign in the top bit, and a checksum; then 47 us low and the line
+--     released. These are a real AM2302's times, measured from sigrok's
+--     captures of one (tests/captures/am2302), not the datasheet's typical
+--     50/26/70 us;
+--   - as that part does, it answers a start of 400 us or more; a shorter one
+--     only after it has been idle a while (250 us after 3 s without a read,
+--     150 us after 11 s), and nothing shorter; and it ignores a start less
+--     than 0.4 s after its last answer (it measures then);
 --   - it answers only while VCC is at least 3.0 V (the datasheet's range is
 --     3.3 to 6 V), and not in the first second after power-up;
 --   - a read returns the measurement made at the end of the previous read
@@ -23,13 +30,18 @@
 --
 -- Not modelled: the accuracy spread between parts (+-0.5 C, +-2 %RH), long
 -- term drift, the supply current, power cycling between two reads (power
--- is looked at when a start signal comes).
+-- is looked at when a start signal comes), the timing spread between parts
+-- (the times above are one part's; four sibling AM23xx parts' captures
+-- agree within 2 us), the uncertain zone of a weak start (the real part's
+-- answer to a start near a threshold is a matter of chance; the model's is
+-- not).
 local M = {}
 
 local US = 1000000
 local S = 1000000 * US
 local TAU_H, TAU_T = 5 * S, 10 * S
 local VMIN = 3.0
+local BUSY = 400000 * US -- after an answer, starts are ignored this long
 
 local function ambient(ctx)
   return ctx.input("humidity") or 50, ctx.input("temperature") or 25
@@ -64,7 +76,7 @@ end
 
 function M.reset(ctx)
   local s = ctx.state
-  s.busy, s.low_at, s.count = false, nil, 0
+  s.busy, s.low_at, s.count, s.answered_at = false, nil, 0, nil
   s.ah, s.at = ambient(ctx)
   s.eh, s.et, s.upd = s.ah, s.at, ctx.now()
   s.reset_at = ctx.now()
@@ -94,14 +106,14 @@ local function frame(ctx)
   if t < 0 then t = 0x8000 | (-t) end
   local bytes = { h >> 8, h & 0xFF, t >> 8, t & 0xFF }
   bytes[5] = (bytes[1] + bytes[2] + bytes[3] + bytes[4]) & 0xFF
-  local seq = { { 0, 80 }, { 1, 80 } }
+  local seq = { { 0, 80 }, { 1, 81 } }
   for _, b in ipairs(bytes) do
     for i = 7, 0, -1 do
-      seq[#seq + 1] = { 0, 50 }
-      seq[#seq + 1] = { 1, ((b >> i) & 1) == 1 and 70 or 26 }
+      seq[#seq + 1] = { 0, i == 7 and 64 or 54 }
+      seq[#seq + 1] = { 1, ((b >> i) & 1) == 1 and 73 or 26 }
     end
   end
-  seq[#seq + 1] = { 0, 50 }
+  seq[#seq + 1] = { 0, 47 }
   return seq
 end
 
@@ -112,9 +124,13 @@ function M.on_input(ctx, pin)
     s.low_at = ctx.now()
     return
   end
-  local started = s.low_at and ctx.now() - s.low_at >= 800 * US -- the host's start signal
+  local held = s.low_at and ctx.now() - s.low_at or 0 -- the host's start signal
   s.low_at = nil
-  if not started then return end
+  local since = ctx.now() - (s.answered_at or s.on_at or s.reset_at)
+  if s.answered_at and since < BUSY then return end -- measuring after the last read
+  if not (held >= 400 * US or (held >= 250 * US and since >= 3 * S) or (held >= 150 * US and since >= 11 * S)) then
+    return
+  end
   if not powered(ctx) then
     s.on_at = nil
     return
@@ -123,7 +139,8 @@ function M.on_input(ctx, pin)
   if ctx.now() - s.on_at < S then return end -- still starting up
   s.busy, s.seq, s.i = true, frame(ctx), 0
   s.sent_h, s.sent_t = s.mh / 10, s.mt / 10
-  ctx.wake_at(ctx.now() + 30 * US, 0)
+  s.answered_at = ctx.now()
+  ctx.wake_at(ctx.now() + 25 * US, 0)
 end
 
 function M.on_time(ctx)

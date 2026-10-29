@@ -6,10 +6,11 @@
 --
 --   - 1-Wire signalling on DQ (open drain, the bus pulled up outside): a
 --     reset (the master holding the bus low; the part takes 456 us, the
---     datasheet's 480 us minimum less 5 %, as one) answered 30 us after the
+--     datasheet's 480 us minimum less 5 %, as one) answered 27 us after the
 --     bus rises with a 120 us presence pulse; write slots sampled 30 us
 --     after the master's falling edge; read slots answered on the falling
---     edge, a 0 holding the bus low for 30 us;
+--     edge, a 0 holding the bus low for 28 us (the presence and the 0 as two
+--     real parts did, from sigrok's capture of them);
 --   - the 64-bit ROM code: family 0x28, the 48-bit `serial`, the Maxim CRC;
 --     READ ROM, MATCH ROM, SKIP ROM, SEARCH ROM and ALARM SEARCH (the part
 --     answers only while its alarm flag is set), the search sending each
@@ -41,8 +42,11 @@ local M = {}
 local US = 1000000
 local MS = 1000 * US
 local T_RESET = 456 * US
-local T_PDHIGH, T_PDLOW = 30 * US, 120 * US
-local T_SAMPLE, T_HOLD = 30 * US, 30 * US
+-- the presence 27 us after the reset and a 0 held 28 us from the slot's
+-- start: two real parts' times (sigrok's capture, tests/captures/ds18b20),
+-- inside the datasheet's 15-60 us and 15 us minimum
+local T_PDHIGH, T_PDLOW = 27 * US, 120 * US
+local T_SAMPLE, T_HOLD = 30 * US, 28 * US
 local T_WR = 10 * MS
 local T_CONV = { [9] = 93750 * US, [10] = 187500 * US, [11] = 375 * MS, [12] = 750 * MS }
 

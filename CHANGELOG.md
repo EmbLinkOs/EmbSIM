@@ -5,6 +5,26 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Real parts' captures replayed into their models
+
+- `tools/verify/replay_captures.py` (the `real_captures` test) reads sigrok
+  captures of real parts (`tests/captures/`), plays the host's half into the
+  part's model at the same times, and compares the answers: which reads were
+  answered, each timed phase within tolerance, the checksums.
+- The DHT22 (AM2302) model now follows a real part, from 15 public-domain
+  sigrok captures of one (about 230 reads), where the datasheet's typical
+  figures differ: bits 54 us low (64 us before the first bit of each byte),
+  ones 73 us high, an 81 us response high, a 47 us closing low, the answer
+  25 us after the release. It answers starts from 400 us (shorter ones after
+  a long idle: 250 us after 3 s, 150 us after 11 s) where it required 800 us,
+  and ignores a start within 0.4 s of its last answer, as the real part does.
+  All 15 captures match.
+- The DS18B20 model answers a reset 27 us after it and holds a read 0 for
+  28 us, as two real parts on a bus did in a sigrok capture (it had 30 us);
+  their four ROM searches, 512 bits, replay bit for bit.
+- The pattern generator plays a recorded waveform back: `waveform` takes
+  steps held for their own durations (`1@1.2s,0@20ms,...`).
+
 ### Issues #86-#102, from building a FreeRTOS access-control project
 
 - CLI: usage errors name EmbSIM and its version; `--help` and `--version`

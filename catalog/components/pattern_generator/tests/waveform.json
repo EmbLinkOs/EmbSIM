@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "waveform",
+  "description": "A recorded waveform played back, each step for its own time: word 1 for 3 us, 0 for 1.5 us, then 3 for 2 us. OUT0 falls and rises once (at 3 and 4.5 us); OUT1 rises only with the last word.",
+  "policy": "functional",
+  "until": "8us",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "waveform": "1@3us,0@1.5us,3@2us",
+          "idle": 1
+        }
+      }
+    ],
+    "nets": {
+      "B0": [
+        "DUT.OUT0"
+      ],
+      "B1": [
+        "DUT.OUT1"
+      ]
+    }
+  },
+  "expect": {
+    "net:B0": {
+      "between": [
+        "1us",
+        "7us"
+      ],
+      "edges": 2
+    },
+    "net:B1": {
+      "at": "5us",
+      "logic": "1"
+    }
+  }
+}

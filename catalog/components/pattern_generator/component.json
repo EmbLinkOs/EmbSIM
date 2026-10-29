@@ -167,6 +167,11 @@
       "default": "1,0",
       "doc": "Hexadecimal words (bit i drives OUTi), separated by commas or spaces"
     },
+    "waveform": {
+      "type": "string",
+      "default": "",
+      "doc": "Instead of pattern and period: steps held for their own durations, word@duration separated by commas (1@1.2s,0@20ms,1@10ms), as a generator plays back a recorded waveform; idle before start"
+    },
     "period": {
       "type": "number",
       "unit": "s",
@@ -218,7 +223,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Each word is applied at once on all outputs at its step time; open drain releases ones.",
+      "claims": "Each word is applied at once on all outputs at its step time; open drain releases ones. A waveform's steps each last their own duration, to the picosecond.",
       "omissions": [
         "output edge rates"
       ],

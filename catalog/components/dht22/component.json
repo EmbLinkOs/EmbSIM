@@ -105,16 +105,19 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "The AM2302 single-wire protocol at the datasheet's timing (a start of 1 ms or more, the 80 us response, 40 bits of 50 us low and 26 or 70 us high, humidity and signed temperature x10 and a checksum); an answer only with VCC at 3.0 V or more and after the first second from power-up; each read sends the previous measurement, a new one made at most every 2 s; the element follows the air with the datasheet's response times (5 s humidity, 10 s temperature, first order); readings clamped to -40..80 C and 0..99.9 %RH in steps of 0.1.",
+      "claims": "The AM2302 single-wire protocol at a real part's timing, measured from 15 sigrok captures of an AM2302 (about 230 reads) and checked against them by tools/verify/replay_captures.py: the answer 25 us after the host lets go, 80 us low and 81 us high, then 40 bits each 54 us low (64 us before the first bit of each byte) and 26 us (0) or 73 us (1) high, humidity and signed temperature x10 and a checksum, and a 47 us closing low; a start of 400 us or more is answered, 250 us only after 3 s without a read and 150 us after 11 s, nothing shorter, and a start less than 0.4 s after the last answer is ignored (the real part's behaviour; the datasheet asks for 1 ms); an answer only with VCC at 3.0 V or more and after the first second from power-up; each read sends the previous measurement, a new one made at most every 2 s; the element follows the air with the datasheet's response times (5 s humidity, 10 s temperature, first order); readings clamped to -40..80 C and 0..99.9 %RH in steps of 0.1.",
       "omissions": [
         "the accuracy spread between parts (+-0.5 C, +-2 %RH)",
         "long-term drift",
         "supply current",
         "power cycling between two reads (power is looked at when a start signal comes)",
-        "timing tolerances (nominal values only)"
+        "the timing spread between parts: the times are one AM2302's (four sibling AM23xx parts' captures agree within 2 us)",
+        "the chance in a weak start's answer near a threshold (the real part answers some 300 us starts and not others; the model decides by the idle time alone)",
+        "which measurement a read returns is the datasheet's description, not checked against a capture (the captures' room did not change)"
       ],
       "validation": [
-        "tests/*.json"
+        "tests/*.json",
+        "../../../tests/captures/am2302/cases.json"
       ]
     },
     "timed": {
