@@ -212,7 +212,7 @@ esk_json *esk_session_circuit_profile(es_session *s)
     for (k = 0; k < nc && k < PERF_TOP && oc; k++) {
         const esk_comp *c = s->eng.comps.data[oc[k]];
         esk_json *o;
-        if (!kc[oc[k]])
+        if (kc[oc[k]] <= 0.0)
             break;
         o = esk_json_new_object(a);
         esk_json_set_string(a, o, "id", c->id);

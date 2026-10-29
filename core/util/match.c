@@ -31,7 +31,7 @@ typedef struct run {
 } run;
 
 static void set_bit(unsigned char *set, unsigned char c) { set[c >> 3] |= (unsigned char)(1u << (c & 7u)); }
-static int has_bit(const unsigned char *set, unsigned char c) { return (set[c >> 3] >> (c & 7u)) & 1u; }
+static int has_bit(const unsigned char *set, unsigned char c) { return (int)(((unsigned)set[c >> 3] >> (c & 7u)) & 1u); }
 
 static void class_escape(unsigned char *set, char e)
 {
