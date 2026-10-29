@@ -26,8 +26,7 @@
         }
       ],
       "tolerance_us": {
-        "default": 2.0,
-        "presence_wait": 3.0
+        "default": 1.0
       }
     }
   ]

@@ -21,9 +21,17 @@ part's, a byte-boundary delay the datasheet does not show, a start threshold
 of 800 us where the part answers from about 400 us, and no busy time where
 the part ignores reads for about 0.4 s after one; all are now modelled as
 measured. Four sibling parts' captures (AM2303, AM2320, AM2321, AM2322) agree
-with the AM2302's times within 2 us; they are not part of the suite. Not
-yet: captures of other parts (sigrok-dumps holds DS18B20, DS3231, MAX7219,
-BH1750, SHT3x and more, each needing its protocol's decoder in the harness)
+with the AM2302's times within 2 us; they are not part of the suite. A
+capture of two real DS18B20s on one bus (sigrok-dumps `onewire/ds18b20`) is
+replayed the same way through `emblink/ds18b20` twice over: the four ROM
+searches, 512 bits the parts sent, match bit for bit (the two ROM codes and
+their CRCs among them); the presence (27.4 us after the reset, 120.1 us) and
+a read 0 (28.4 us) now match within 0.4 us where the model had the
+datasheet's 30 us. The capture's scratchpad reads all come before a
+conversion could finish, so they show what the parts held before it and are
+not compared. Not yet: captures of other parts (sigrok-dumps holds DS3231,
+MAX7219, BH1750, SHT3x and more, each needing its protocol's decoder in the
+harness)
 and of the boards themselves (a capture kit for an Uno and a NUCLEO is
 described in `tests/captures/README.md`).
 

@@ -16,8 +16,10 @@ are decoded by the protocol's rules and compared.
     timed phase's mean within tolerance; the simulated checksums.
   onewire (DS18B20): every bit the parts sent in read slots, one for one
     (the ROM search, the scratchpads, their CRCs), past the transactions that
-    show what the parts held before the capture (a scratchpad read before the
-    first Convert T); the presence pulses and the 0 bits' timing.
+    show what the parts held before the capture (a scratchpad read before a
+    Convert T has had time to finish: the temperature register and the
+    EEPROM's configuration are from before); the presence pulses and the 0
+    bits' timing.
 
     replay_captures.py --embsim PATH [--case NAME]... [--report FILE] [-v]
 
@@ -207,7 +209,8 @@ def onewire_decode(tx):
     for t in tx:
         sl = t["slots"]
         bit = lambda k: 0 if sl[k] in ("w0", "r0") else 1  # noqa: E731
-        d = {"presence": t["presence"] is not None, "rom_cmd": None, "rom": None, "fn": None, "read": []}
+        d = {"at": t["at"], "presence": t["presence"] is not None, "rom_cmd": None, "rom": None, "fn": None,
+             "read": []}
         k = 0
         if len(sl) >= 8:
             d["rom_cmd"] = _byte([bit(i) for i in range(8)])
@@ -224,6 +227,22 @@ def onewire_decode(tx):
             d["read"] = [_byte(reads[i:i + 8]) for i in range(0, len(reads) - 7, 8)]
         d["read_bits"] = "".join("0" if s == "r0" else "1" for s in sl if s in ("r0", "r1"))
         out.append(d)
+    return out
+
+
+DS18B20_CONVERT_MAX = 750_000 * US  # a 12-bit conversion's longest time
+
+
+def ds18b20_history(tx):
+    """Which transactions show what the parts held before the capture: a
+    scratchpad read before any Convert T, or sooner after one than a
+    conversion can take (the temperature register still holds the conversion
+    before it, and the configuration is the EEPROM's)."""
+    out, convert_at = [], None
+    for d in tx:
+        if d["fn"] == 0x44:
+            convert_at = d["at"]
+        out.append(d["fn"] == 0xBE and (convert_at is None or d["at"] - convert_at < DS18B20_CONVERT_MAX))
     return out
 
 
@@ -348,14 +367,13 @@ def onewire_case(embsim, case, edges, work):
     before), and the parts' timing."""
     ev = onewire_events(edges)
     real_tx = onewire_decode(onewire_transactions(ev))
-    # each part's temperature, from its first scratchpad read after a conversion
-    temps, converted, selected = {}, False, None
-    for d in real_tx:
-        if d["fn"] == 0x44:
-            converted = True
+    history = ds18b20_history(real_tx)
+    # each part's temperature, from its first scratchpad read after a finished conversion
+    temps, selected = {}, None
+    for d, hist in zip(real_tx, history):
         if d["rom_cmd"] == 0x55:
             selected = d["rom"]
-        if d["fn"] == 0xBE and converted and selected is not None and len(d["read"]) >= 2:
+        if d["fn"] == 0xBE and not hist and selected is not None and len(d["read"]) >= 2:
             temps.setdefault(selected, ds18b20_temperature(d["read"]))
     lead = int(case.get("lead_s", 0.01) * 1e12)
     until = (ev[-1][1] + ev[-1][2] + lead + 10_000 * US) if ev else lead
@@ -372,14 +390,12 @@ def onewire_case(embsim, case, edges, work):
     problems = []
     if len(real_tx) != len(sim_tx):
         problems.append(f"{len(real_tx)} transactions in the capture, {len(sim_tx)} in the simulation")
-    converted, compared, differing = False, 0, 0
+    compared, differing, skipped = 0, 0, 0
     for i, (a, b) in enumerate(zip(real_tx, sim_tx)):
-        if a["fn"] == 0x44:
-            converted = True
-        history = a["fn"] == 0xBE and not converted
         if a["presence"] != b["presence"]:
             problems.append(f"transaction {i + 1}: presence {a['presence']} real, {b['presence']} model")
-        if history:
+        if history[i]:
+            skipped += 1
             continue
         compared += len(a["read_bits"])
         if a["read_bits"] != b["read_bits"]:
@@ -391,7 +407,8 @@ def onewire_case(embsim, case, edges, work):
     real, sim = onewire_phases(ev), onewire_phases(sim_ev)
     check_phases(real, sim, case.get("tolerance_us", {}), problems)
     return {"real": real, "model": sim, "problems": problems, "temperatures": {hex(k): v for k, v in temps.items()},
-            "summary": f"{len(real_tx)} transactions, {compared} bits the parts sent compared"}
+            "summary": f"{len(real_tx)} transactions, {compared} bits the parts sent compared ({skipped} "
+                       f"showing what the parts held before the capture left out)"}
 
 
 PROTOCOLS = {"am230x": am230x_case, "onewire": onewire_case}

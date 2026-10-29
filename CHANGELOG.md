@@ -19,6 +19,9 @@ versions follow semantic versioning. There is no release yet.
   a long idle: 250 us after 3 s, 150 us after 11 s) where it required 800 us,
   and ignores a start within 0.4 s of its last answer, as the real part does.
   All 15 captures match.
+- The DS18B20 model answers a reset 27 us after it and holds a read 0 for
+  28 us, as two real parts on a bus did in a sigrok capture (it had 30 us);
+  their four ROM searches, 512 bits, replay bit for bit.
 - The pattern generator plays a recorded waveform back: `waveform` takes
   steps held for their own durations (`1@1.2s,0@20ms,...`).
 

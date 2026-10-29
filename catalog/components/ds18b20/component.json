@@ -102,16 +102,18 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "The 1-Wire slots at the datasheet's timing (reset and 120 us presence, write slots sampled at 30 us, read slots answered on the falling edge); the ROM code (family 0x28, 48-bit serial, CRC) with READ, MATCH, SKIP, SEARCH ROM and ALARM SEARCH; CONVERT T at the resolution's maximum time (93.75 to 750 ms) with read slots 0 until done on its own supply; the scratchpad (85 C at power-up, TH, TL, configuration, CRC) written, read, copied to and recalled from the EEPROM; READ POWER SUPPLY; parasite power with VDD grounded; no answer with VDD between 0.5 and 3.0 V.",
+      "claims": "The 1-Wire slots at the datasheet's timing, with the presence (27 us after the reset, 120 us) and a read 0 (held 28 us) as two real parts did them in sigrok's capture of a bus (tests/captures/ds18b20, checked by tools/verify/replay_captures.py: their four ROM searches, 512 bits, match bit for bit, the ROM codes' CRCs among them) (write slots sampled at 30 us, read slots answered on the falling edge); the ROM code (family 0x28, 48-bit serial, CRC) with READ, MATCH, SKIP, SEARCH ROM and ALARM SEARCH; CONVERT T at the resolution's maximum time (93.75 to 750 ms) with read slots 0 until done on its own supply; the scratchpad (85 C at power-up, TH, TL, configuration, CRC) written, read, copied to and recalled from the EEPROM; READ POWER SUPPLY; parasite power with VDD grounded; no answer with VDD between 0.5 and 3.0 V.",
       "omissions": [
         "the accuracy spread between parts (+-0.5 C from -10 to 85 C)",
         "the package's thermal lag and self-heating",
         "the strong pull-up a parasite-powered conversion needs (not checked)",
         "the EEPROM keeping its values between runs (factory TH 75, TL 70, 12 bits each run)",
-        "supply current"
+        "supply current",
+        "a scratchpad after a conversion compared with a real part's (the capture's master read too soon after its Convert T)"
       ],
       "validation": [
-        "tests/*.json"
+        "tests/*.json",
+        "../../../tests/captures/ds18b20/cases.json"
       ]
     },
     "timed": {
@@ -173,7 +175,7 @@
         "output": "temperature",
         "selector": "#temperature-value",
         "attr": "text",
-        "format": "{} \u00b0C",
+        "format": "{} °C",
         "precision": 1
       }
     ],
