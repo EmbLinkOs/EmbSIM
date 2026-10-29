@@ -5,7 +5,7 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### The 21 issues from building a FreeRTOS access-control project
+### Issues #86-#102, from building a FreeRTOS access-control project
 
 - CLI: usage errors name EmbSIM and its version; `--help` and `--version`
   after any command; `version --json` (#102). Text reports put the
