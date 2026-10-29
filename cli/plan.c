@@ -48,7 +48,7 @@ typedef struct pl_pin {
 } pl_pin;
 
 typedef struct pl_row {
-    char need[24], signal[32], pin[12], port[16], af[8], note[160];
+    char need[24], signal[48], pin[12], port[16], af[8], note[160];
 } pl_row;
 
 typedef struct planner {
@@ -61,9 +61,9 @@ typedef struct planner {
     int nrows;
     const char *prefer;
     int failed;
-    char taken[16][12]; /* the instances given out: SPI2 */
+    char taken[16][32]; /* the instances given out: SPI2 */
     int ntaken;
-    char cs[8][12]; /* the SPIs whose chip selects come later */
+    char cs[8][32]; /* the SPIs whose chip selects come later */
     int ncs;
 } planner;
 
@@ -264,7 +264,7 @@ static int peripheral(planner *p, const char *need, const char *const *prefixes,
         for (inst = 1; inst <= 8; inst++) {
             int total = 0, ok = 1, t;
             int marks[8];
-            char iname[12];
+            char iname[32];
             snprintf(iname, sizeof iname, "%s%d", prefixes[pi], inst);
             for (t = 0; t < p->ntaken && strcmp(p->taken[t], iname); t++)
                 ;
@@ -393,7 +393,7 @@ int embsim_plan(es_session *s, const char *board_id, const char *needs, const ch
         const char *q = needs;
         if (!strcmp(order[o], "spi_cs"))
             for (i = 0; i < p->ncs; i++) { /* the chip selects: GPIOs the driver toggles */
-                char cs[16];
+                char cs[40];
                 simple(p, "spi_cs", 1, 0);
                 memcpy(cs, p->cs[i], sizeof p->cs[0]);
                 cs[sizeof p->cs[0]] = 0;
