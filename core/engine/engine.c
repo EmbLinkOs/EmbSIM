@@ -559,8 +559,10 @@ static void notify_net(esk_engine *e, esk_net *n)
     size_t i;
     for (i = 0; i < n->pins.len; i++) {
         esk_pin *p = n->pins.data[i];
-        if (p->watched && p->comp->ops->on_input)
+        if (p->watched && p->comp->ops->on_input) {
+            p->comp->heard++;
             p->comp->ops->on_input(p->comp, p);
+        }
     }
     if (e->on_net_change)
         e->on_net_change(e->on_net_change_ctx, n);
@@ -605,7 +607,9 @@ static void apply_pending(void *ctx, void *arg, es_time_t now)
         return;
     p->drive_value = p->pending_value;
     e->signal_events++;
+    p->comp->edges++;
     if (p->net) {
+        p->net->edges++;
         if (p->bridge && p->bridge->ops->set_logic)
             p->bridge->ops->set_logic(p->bridge, p->drive_value, now);
         else
@@ -699,8 +703,12 @@ void esk_pin_output(esk_pin *p, esk_logic value, esk_strength strength)
         p->pending = 0;
     }
     p->drive_strength = strength;
-    if (p->drive_value != value)
+    if (p->drive_value != value) {
         p->comp->e->signal_events++;
+        p->comp->edges++;
+        if (p->net)
+            p->net->edges++;
+    }
     p->drive_value = p->pending_value = value;
     esk_pin_set_direction(p, 1);
 }
@@ -716,6 +724,7 @@ static void wake_fn(void *ctx, void *arg, es_time_t now)
     ES_UNUSED(now);
     if (token < ES_COUNTOF(c->wake))
         c->wake[token] = 0;
+    c->wakes++;
     if (c->ops->on_time)
         c->ops->on_time(c, token);
 }
@@ -959,8 +968,10 @@ static esk_logic bridge_in_value(const esk_pin *p)
 
 static void bridge_notify(esk_engine *e, esk_pin *p)
 {
-    if (p->watched && p->comp->ops->on_input)
+    if (p->watched && p->comp->ops->on_input) {
+        p->comp->heard++;
         p->comp->ops->on_input(p->comp, p);
+    }
     if (e->on_net_change && p->net)
         e->on_net_change(e->on_net_change_ctx, p->net);
 }

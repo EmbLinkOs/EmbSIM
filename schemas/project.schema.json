@@ -222,6 +222,12 @@
         }
       }
     },
+    "no_connect": {
+      "type": "array",
+      "description": "Pins left open on purpose, as a schematic's no-connect flag: no net.unconnected_required_pin for them. Each is PART.PIN.",
+      "items": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*\\.[^.\\s]+$"},
+      "uniqueItems": true
+    },
     "probes": {
       "type": "array",
       "items": {

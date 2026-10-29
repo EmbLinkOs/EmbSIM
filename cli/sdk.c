@@ -386,7 +386,7 @@ static int cmd_new(int argc, char **argv)
         else if (!strcmp(argv[i], "--lua"))
             lua = 1;
         else {
-            fprintf(stderr, "embsim: unknown option %s\n", argv[i]);
+            fprintf(stderr, "EmbSIM: unknown option %s (embsim --help)\n", argv[i]);
             return 2;
         }
     }

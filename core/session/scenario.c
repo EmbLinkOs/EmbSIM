@@ -3,12 +3,36 @@
 /* scenario.c -- scenarios and assertions (SPEC-007 §2) and the run report
  * (SPEC-008 §8). */
 #include "session/session_priv.h"
+#include "mcu/mcu.h"
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include "analog/analog.h"
 #include "host/host.h"
 #include "util/num.h"
 #include "util/str.h"
+#include "util/match.h"
+#include "project/loader.h"
+
+#define RTOS_TRACKED 64
+
+/* an rtos assertion's watch over the run (issue #96): each task's blocked
+ * stretch, sampled every millisecond, and its stack's low-water mark */
+typedef struct rtos_watch {
+    struct {
+        int64_t tcb;
+        char name[24];
+        es_time_t since;
+        int blocked;
+        int64_t sig; /* the wait's identity: a new one is a new stretch */
+    } tk[RTOS_TRACKED];
+    int ntk, samples;
+    es_time_t worst;    /* the longest blocked stretch */
+    char worst_task[24];
+    int64_t min_stack;  /* the least stack_free_min seen, -1 none */
+    char min_task[24];
+    char err[160];
+} rtos_watch;
 
 typedef struct assertion {
     const esk_json *def;
@@ -17,7 +41,146 @@ typedef struct assertion {
     int done, ok;
     esk_json *observed;
     char reason[160];
+    rtos_watch *rw;     /* an rtos assertion's */
 } assertion;
+
+static int name_listed(const esk_json *list, const char *name)
+{
+    size_t i;
+    for (i = 0; i < esk_json_len(list); i++)
+        if (esk_str_eq(esk_json_str(esk_json_at(list, i)), name))
+            return 1;
+    return 0;
+}
+
+static esk_comp *rtos_mcu(es_session *s, const char *board)
+{
+    size_t i;
+    for (i = 0; i < s->boards.len; i++) {
+        esk_board_inst *bi = (esk_board_inst *)s->boards.data[i];
+        if (bi->mcu && (!board || !strcmp(board, bi->id)))
+            return bi->mcu;
+    }
+    return NULL;
+}
+
+/* one sample of the tasks: who is blocked since when, how low each stack
+ * has been */
+static void rtos_sample(es_session *s, assertion *a)
+{
+    const esk_json *spec = esk_json_get(a->def, "rtos"), *ignore = esk_json_get(spec, "ignore");
+    rtos_watch *w = a->rw;
+    esk_comp *mc = rtos_mcu(s, esk_json_get_str(spec, "board", NULL));
+    esk_json *r;
+    const esk_json *tasks;
+    es_time_t now = s->eng.sched.now;
+    size_t i;
+    int k;
+    if (!w || w->err[0])
+        return;
+    if (!mc) {
+        esk_snprintf(w->err, sizeof w->err, "no board %s with an MCU", esk_json_get_str(spec, "board", "(any)"));
+        return;
+    }
+    r = esk_mcu_rtos_json(mc, s->a, w->err, sizeof w->err);
+    if (!r)
+        return;
+    w->err[0] = 0;
+    if (!esk_json_get_bool(r, "started", 0)) { /* the scheduler not started yet */
+        esk_json_free(s->a, r);
+        return;
+    }
+    w->samples++;
+    tasks = esk_json_get(r, "tasks");
+    for (i = 0; i < esk_json_len(tasks); i++) {
+        const esk_json *t = esk_json_at(tasks, i);
+        const char *name = esk_json_get_str(t, "name", "");
+        int64_t tcb = esk_json_get_int(t, "tcb", 0);
+        int blocked = esk_str_eq(esk_json_get_str(t, "state", ""), "blocked");
+        const esk_json *wj = esk_json_get(t, "waits");
+        /* a task that woke and blocked again between two samples waits on
+         * a new wake tick (or another queue, index or list) */
+        int64_t sig = esk_json_get_int(wj, "until_tick", -1) * 31 + esk_json_get_int(wj, "queue", 0) * 7 +
+                      esk_json_get_int(wj, "list", 0) * 3 + esk_json_get_int(wj, "index", 0);
+        if (esk_json_get(t, "stack_free_min")) {
+            int64_t f = esk_json_get_int(t, "stack_free_min", 0);
+            if (w->min_stack < 0 || f < w->min_stack) {
+                w->min_stack = f;
+                esk_snprintf(w->min_task, sizeof w->min_task, "%s", name);
+            }
+        }
+        if (name_listed(ignore, name))
+            continue;
+        for (k = 0; k < w->ntk && w->tk[k].tcb != tcb; k++)
+            ;
+        if (k == w->ntk) {
+            if (w->ntk == RTOS_TRACKED)
+                continue;
+            w->ntk++;
+            w->tk[k].tcb = tcb;
+            w->tk[k].blocked = 0;
+        }
+        esk_snprintf(w->tk[k].name, sizeof w->tk[k].name, "%s", name);
+        if (blocked && (!w->tk[k].blocked || w->tk[k].sig != sig))
+            w->tk[k].since = now;
+        w->tk[k].blocked = blocked;
+        w->tk[k].sig = sig;
+        if (blocked && now - w->tk[k].since > w->worst) {
+            w->worst = now - w->tk[k].since;
+            esk_snprintf(w->worst_task, sizeof w->worst_task, "%s", name);
+        }
+    }
+    esk_json_free(s->a, r);
+}
+
+static void rtos_evaluate(es_session *s, assertion *a)
+{
+    const esk_json *spec = esk_json_get(a->def, "rtos");
+    rtos_watch *w = a->rw;
+    es_time_t limit = 0;
+    char t1[32], t2[32];
+    esk_json *obs = esk_json_new_object(s->a);
+    if (!w)
+        return;
+    rtos_sample(s, a); /* the end's state too */
+    if (obs) {
+        esk_json_set_integer(s->a, obs, "samples", w->samples);
+        esk_json_set_u64_string(s->a, obs, "blocked_max_ps", w->worst);
+        if (w->worst_task[0])
+            esk_json_set_string(s->a, obs, "blocked_max_task", w->worst_task);
+        if (w->min_stack >= 0) {
+            esk_json_set_integer(s->a, obs, "stack_free_min", w->min_stack);
+            esk_json_set_string(s->a, obs, "stack_free_min_task", w->min_task);
+        }
+        a->observed = obs;
+    }
+    if (w->err[0] || !w->samples) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "%s", w->err[0] ? w->err : "the scheduler never started");
+        return;
+    }
+    if (esk_json_get(spec, "stack_free_min") && w->min_stack >= 0 &&
+        w->min_stack < esk_json_get_int(spec, "stack_free_min", 0)) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "task %s's stack came within %lld bytes of its end (at least %lld wanted)",
+                     w->min_task, (long long)w->min_stack, (long long)esk_json_get_int(spec, "stack_free_min", 0));
+        return;
+    }
+    if (esk_json_get(spec, "stack_free_min") && w->min_stack < 0) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason,
+                     "no stack's high-water mark is known (the kernel fills stacks with 0xA5 only with stack checking, "
+                     "the trace facility or uxTaskGetStackHighWaterMark)");
+        return;
+    }
+    if (esk_json_get(spec, "blocked_max") && esk_json_to_time(esk_json_get(spec, "blocked_max"), &limit) == 0 &&
+        w->worst > limit) {
+        esk_format_time(t1, sizeof t1, w->worst);
+        esk_format_time(t2, sizeof t2, limit);
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "task %s stayed blocked for %s (at most %s wanted)", w->worst_task, t1, t2);
+    }
+}
 
 static int expect_value(es_session *s, const esk_json *expect, double v, esk_probe *p, char *why, size_t cap)
 {
@@ -119,6 +282,111 @@ int esk_probe_window(const esk_probe *p, const char *measure, es_time_t from,
     return isfinite(*out);
 }
 
+/* a diagnostic code against a pattern: exact, or a prefix ending in '*' */
+static int code_matches(const char *pattern, const char *code)
+{
+    size_t n;
+    if (!pattern || !code)
+        return 0;
+    n = strlen(pattern);
+    if (n && pattern[n - 1] == '*')
+        return !strncmp(pattern, code, n - 1);
+    return !strcmp(pattern, code);
+}
+
+static int code_listed(const esk_json *list, const char *code)
+{
+    size_t k;
+    for (k = 0; k < esk_json_len(list); k++)
+        if (code_matches(esk_json_str(esk_json_at(list, k)), code))
+            return 1;
+    return 0;
+}
+
+static int severity_rank(const char *sev)
+{
+    return !strcmp(sev, "fatal") ? 3 : !strcmp(sev, "error") ? 2 : !strcmp(sev, "warning") ? 1 : 0;
+}
+
+/* a serial "matches": the pattern's last match in the text (the latest
+ * print), and its group as a number against equals, min/max or a part's
+ * output now (equals_output), within tolerance */
+static void serial_matches(es_session *s, assertion *a, const esk_json *expect, const char *text)
+{
+    const char *pattern = esk_json_get_str(expect, "matches", "");
+    const char *ref = esk_json_get_str(expect, "equals_output", NULL);
+    const esk_json *eq = esk_json_get(expect, "equals");
+    double tol = esk_json_get_num(expect, "tolerance", 0), v, want = 0;
+    esk_match m;
+    char num[64];
+    size_t n;
+    int r = esk_match_last(pattern, text, strlen(text), &m), have_want = 0;
+    if (r < 0) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "pattern \"%s\" uses what the matcher does not know (alternation, counted repeats, nested groups)", pattern);
+        return;
+    }
+    if (!r) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "text does not match \"%s\"", pattern);
+        return;
+    }
+    if (!m.has_group || (!ref && !esk_json_is(eq, ESK_JSON_NUMBER) && !esk_json_get(expect, "min") && !esk_json_get(expect, "max")))
+        return; /* the match itself is what was expected */
+    n = m.group_end - m.group_start < sizeof num - 1 ? m.group_end - m.group_start : sizeof num - 1;
+    memcpy(num, text + m.group_start, n);
+    num[n] = 0;
+    {
+        char *end = NULL;
+        v = strtod(num, &end);
+        if (!n || !end || *end) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "captured \"%s\" is not a number", num);
+            return;
+        }
+    }
+    esk_json_free(s->a, a->observed);
+    a->observed = esk_json_new_number(s->a, v);
+    if (ref) {
+        char inst[128], q[64];
+        esk_comp *c;
+        esk_json *out;
+        const esk_json *val;
+        if (esk_split_pin_ref(ref, inst, sizeof inst, q, sizeof q) || !(c = esk_engine_comp(&s->eng, inst)) || !c->ops->observe) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "equals_output names %s, which is no part's output", ref);
+            return;
+        }
+        out = esk_json_new_object(s->a);
+        if (out)
+            c->ops->observe(c, out);
+        val = esk_json_get(out, q);
+        if (val && val->type == ESK_JSON_NUMBER) {
+            want = val->u.number.value;
+            have_want = 1;
+        }
+        esk_json_free(s->a, out);
+        if (!have_want) {
+            a->ok = 0;
+            esk_snprintf(a->reason, sizeof a->reason, "%s has no numeric output %s", inst, q);
+            return;
+        }
+    } else if (esk_json_is(eq, ESK_JSON_NUMBER)) {
+        want = eq->u.number.value;
+        have_want = 1;
+    }
+    if (have_want && fabs(v - want) > tol) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "printed %g, expected %g%s%s within %g", v, want, ref ? " from " : "", ref ? ref : "", tol);
+    } else if (esk_json_get(expect, "min") && v < esk_json_get_num(expect, "min", 0)) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "printed %g, below %g", v, esk_json_get_num(expect, "min", 0));
+    } else if (esk_json_get(expect, "max") && v > esk_json_get_num(expect, "max", 0)) {
+        a->ok = 0;
+        esk_snprintf(a->reason, sizeof a->reason, "printed %g, above %g", v, esk_json_get_num(expect, "max", 0));
+    }
+}
+
 static void evaluate(es_session *s, assertion *a)
 {
     const esk_json *def = a->def;
@@ -134,17 +402,36 @@ static void evaluate(es_session *s, assertion *a)
         esk_snprintf(a->reason, sizeof a->reason, "measure requires a between window");
         return;
     }
+    if (a->mode == 3 && esk_json_get(def, "rtos")) {
+        rtos_evaluate(s, a);
+        return;
+    }
     if (a->mode == 3) {
-        const esk_json *forbid = esk_json_get(esk_json_get(def, "diagnostics"), "forbid");
+        const esk_json *dg = esk_json_get(def, "diagnostics");
+        const esk_json *forbid = esk_json_get(dg, "forbid"), *allow = esk_json_get(dg, "allow"), *require = esk_json_get(dg, "require");
+        const char *worst = esk_json_get_str(dg, "forbid_severity", NULL);
+        int floor = worst ? severity_rank(worst) : 99;
         esk_json *all = esk_diag_to_json(&s->diag);
         size_t i, k;
-        for (i = 0; all && i < esk_json_len(all); i++) {
-            const char *code = esk_json_get_str(esk_json_at(all, i), "code", "");
-            for (k = 0; k < esk_json_len(forbid); k++) {
-                if (esk_str_eq(esk_json_str(esk_json_at(forbid, k)), code)) {
-                    a->ok = 0;
-                    esk_snprintf(a->reason, sizeof a->reason, "diagnostic %s was raised", code);
-                }
+        for (i = 0; a->ok && all && i < esk_json_len(all); i++) {
+            const esk_json *d = esk_json_at(all, i);
+            const char *code = esk_json_get_str(d, "code", ""), *sev = esk_json_get_str(d, "severity", "info");
+            if (code_listed(forbid, code)) {
+                a->ok = 0;
+                esk_snprintf(a->reason, sizeof a->reason, "diagnostic %s was raised: %s", code, esk_json_get_str(d, "message", ""));
+            } else if (severity_rank(sev) >= floor && !code_listed(allow, code)) {
+                a->ok = 0;
+                esk_snprintf(a->reason, sizeof a->reason, "%s %s was raised: %s", sev, code, esk_json_get_str(d, "message", ""));
+            }
+        }
+        for (k = 0; a->ok && k < esk_json_len(require); k++) {
+            const char *want = esk_json_str(esk_json_at(require, k));
+            int seen = 0;
+            for (i = 0; all && !seen && i < esk_json_len(all); i++)
+                seen = code_matches(want, esk_json_get_str(esk_json_at(all, i), "code", ""));
+            if (!seen) {
+                a->ok = 0;
+                esk_snprintf(a->reason, sizeof a->reason, "no diagnostic %s was raised", want ? want : "?");
             }
         }
         esk_json_free(s->a, all);
@@ -263,6 +550,8 @@ static void evaluate(es_session *s, assertion *a)
         } else if (lacks && strstr(text, lacks)) {
             a->ok = 0;
             esk_snprintf(a->reason, sizeof a->reason, "text contains \"%s\"", lacks);
+        } else if (esk_json_get_str(expect, "matches", NULL)) {
+            serial_matches(s, a, expect, text);
         }
         esk_json_free(s->a, out);
         return;
@@ -351,6 +640,7 @@ esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *
         esk_json_free(s->a, assertions);
         return NULL;
     }
+    esk_session_perf_check(s);
     esk_json_set_string(s->a, root, "engine", es_version().string);
     esk_json_set_string(s->a, root, "protocol", "1.0");
     esk_json_set_string(s->a, proj, "name", s->name ? s->name : "");
@@ -388,6 +678,18 @@ esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *
             esk_json_free(s->a, inc);
         }
     }
+    {
+        /* each board's serial text, by board and UART, beside its console's
+         * name: no need to know the MCU's designator on the board */
+        esk_json *serial = esk_json_new_object(s->a);
+        for (i = 0; serial && i < s->boards.len; i++) {
+            esk_board_inst *bi = s->boards.data[i];
+            if (bi->mcu)
+                esk_json_object_set(s->a, serial, bi->id, esk_mcu_serial_json(bi->mcu, s->a));
+        }
+        if (serial)
+            esk_json_object_set(s->a, root, "serial", serial);
+    }
     esk_session_analysis_report(s, root);
     return root;
 }
@@ -402,7 +704,7 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
     es_status st;
     uint64_t t_start = esk_host_monotonic_ms();
     const char *reason = "until";
-    int ok_all = 1;
+    int ok_all = 1, sample_rtos = 0;
     ES_UNUSED(base_dir);
     if (!s->loaded)
         return NULL;
@@ -467,6 +769,12 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
         }
         if (as[i].t1 > until)
             as[i].t1 = until;
+        if (as[i].mode == 3 && esk_json_get(d, "rtos")) {
+            as[i].rw = (rtos_watch *)esk_calloc(s->a, 1, sizeof *as[i].rw);
+            if (as[i].rw)
+                as[i].rw->min_stack = -1;
+            sample_rtos = 1;
+        }
     }
     /* run to each assertion's evaluation time in order, then to the end */
     for (;;) {
@@ -475,7 +783,22 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
             if (!as[i].done && as[i].t1 < next)
                 next = as[i].t1;
         if (next > s->eng.sched.now) {
-            st = esk_session_do_advance(s, next);
+            if (s->scenario_follow || sample_rtos) {
+                /* a millisecond at a time, for whoever follows the run and
+                 * for the RTOS watches' samples */
+                st = ES_OK;
+                while (st == ES_OK && !s->diag.fatal && s->eng.sched.now < next) {
+                    es_time_t step = next - s->eng.sched.now > ES_PS_PER_MS ? s->eng.sched.now + ES_PS_PER_MS : next;
+                    st = esk_session_do_advance(s, step);
+                    if (s->scenario_follow)
+                        s->scenario_follow(s, s->scenario_follow_ctx);
+                    for (i = 0; sample_rtos && i < na; i++)
+                        if (as[i].rw && !as[i].done)
+                            rtos_sample(s, &as[i]);
+                }
+            } else {
+                st = esk_session_do_advance(s, next);
+            }
             if (st != ES_OK || s->diag.fatal) {
                 reason = s->diag.fatal ? s->diag.fatal_code : es_strerror(st);
                 break;
@@ -523,8 +846,11 @@ esk_json *esk_scenario_run(es_session *s, const esk_json *scenario, const char *
             }
             esk_json_array_push(s->a, arr, o);
         }
-        for (k = 0; k < na; k++)
+        for (k = 0; k < na; k++) {
             esk_json_free(s->a, as[k].observed);
+            if (as[k].rw)
+                esk_free(s->a, as[k].rw, sizeof *as[k].rw);
+        }
         esk_free(s->a, as, (na ? na : 1) * sizeof *as);
         result = esk_session_report(s, reason, arr);
     }

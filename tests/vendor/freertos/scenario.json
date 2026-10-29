@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "freertos-tasks",
+  "description": "The task-awareness firmware for 1.5 s: every stack keeps 64 bytes free, and no task but the two that wait for ever by design stays blocked longer than its 1 s delay.",
+  "until": "1500ms",
+  "assertions": [
+    {
+      "id": "stacks",
+      "always": true,
+      "rtos": {
+        "stack_free_min": 64
+      }
+    },
+    {
+      "id": "waits",
+      "always": true,
+      "rtos": {
+        "blocked_max": "1s",
+        "ignore": [
+          "waiter",
+          "rx"
+        ]
+      }
+    }
+  ]
+}

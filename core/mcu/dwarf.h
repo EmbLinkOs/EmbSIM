@@ -33,6 +33,15 @@ int esk_dwarf_line_addrs(const esk_dwarf *d, const char *file, u32 line, u32 *ad
 /* the table's name for a file a request names, or NULL */
 const char *esk_dwarf_file(const esk_dwarf *d, const char *file);
 
+/* ---- types (.debug_info, DWARF 2 to 5, 32-bit DWARF) ---- */
+
+/* the byte offsets of `n` members of the structure named `strct` (its tag's
+ * name: "tskTaskControlBlock", not a typedef's), from the first complete
+ * definition in the image: offs[i] is -1 for a member it does not have. How
+ * many were found; 0 without .debug_info or that structure */
+int esk_dwarf_members(esk_alloc *a, const u8 *elf, size_t len, const char *strct, const char *const *members, int n,
+                      long *offs);
+
 /* ---- the call frame information (.debug_frame, CIE versions 1, 3, 4) ---- */
 
 #define ESK_CFI_REGS 64

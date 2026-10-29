@@ -5,6 +5,25 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Diagnosis, documentation and planning commands (2026-10-28)
+
+Issues #86-#102, from the same project. Evidence: `test_diagnose` (a stale
+image warned and a fresh one not; `--dump-regs` decoding USART2; the circuit
+profile; `perf.island_size` for a 4.7 kOhm pull-up from the Uno's UART TX to
+5 V, and not for the PWM line that drives an LED; `export svg` of a sheet and
+of an SSD1306; `plan` on the NUCLEO-F446RE checked against the F446's
+alternate-function table, no pin twice, clear of LD2 and SWD, and refused on
+the ATmega328P, which has no such table); `test_json`'s `test_match` and
+`test_session`'s diagnostics rules; the MFRC522's `card-swap` fixture; and
+`tests/vendor/freertos`, which builds the unmodified FreeRTOS kernel V11.1.0
+and checks every task's state, wait (delay, notification index 1 for ever, the
+`rxq` queue), pending notification and stack high-water mark, with scenario
+`rtos` assertions sampled each millisecond. `mcu.irq_storm` was checked by hand
+(INT0 held low on the Uno: "INT0 (exception 1) entered 401 times in 787 us").
+Not done: a regulated rail as a boundary between analog islands (#86 warns
+instead), SMP and 16-bit FreeRTOS ports, live symbol states in exported SVG,
+pin plans for MCUs without an alternate-function table.
+
 ## Diagnostics found at load, probes and images (2026-10-28)
 
 Issues #80-#85, from a FreeRTOS access-control firmware on the NUCLEO-F446RE.

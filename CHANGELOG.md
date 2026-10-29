@@ -5,6 +5,42 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The 21 issues from building a FreeRTOS access-control project
+
+- CLI: usage errors name EmbSIM and its version; `--help` and `--version`
+  after any command; `version --json` (#102). Text reports put the
+  assertions first, with a failure's expected and observed values, and end
+  with a verdict; `--quiet` (#92). The report's `serial` object holds each
+  board's UART text; `--console` with a scenario (#90). `catalog info`
+  summarises a part (#98); `board info ID --pins` lists the header pins, the
+  MCU pin behind each and the board's own use of it (#99); `mcu pins` and
+  `mcu signal` read the alternate functions and ADC channels (#100).
+- Scenarios: `diagnostics` takes `forbid`, `forbid_severity` with `allow`,
+  and `require`, by exact code or prefix (`mcu.*`) (#89); `expect.matches`
+  takes a pattern matched at its last place in a board's serial text, its
+  group compared as a number with `equals`, `min`/`max` or another part's
+  output (`equals_output`) (#97).
+- Projects: `no_connect` lists pins left open on purpose (#93). The MFRC522
+  takes a `cards` list and a `card` input that presents, swaps and removes
+  cards in its field (#88).
+- `mcu.stale_image` when an ELF is older than a source its line tables name;
+  `embsim run --build` rebuilds missing or stale images first (#91).
+- `run --dump-regs` decodes peripherals' registers at the end of a run;
+  `mcu.irq_storm` names an interrupt that is taken again as soon as it
+  returns, with its peripheral's status registers (#95).
+- `run --circuit-profile` ranks islands, nets and parts by cost;
+  `perf.hot_net` (#87) and `perf.island_size`, which names a busy line
+  joined to a large island through a pull-up resistor to a rail (#86). The
+  island is still solved whole: a regulated rail as a boundary between
+  islands is not done.
+- FreeRTOS task awareness: `run --rtos` and scenario `rtos` assertions on
+  stack high-water marks and blocked time, from the image's symbols and
+  DWARF; a vendor suite builds the unmodified kernel V11.1.0 (#96).
+- `embsim export svg`: the schematic sheet, or a display's content at a
+  moment (#94).
+- `embsim plan`: a conflict-free pin plan for a board's peripherals, with a
+  C header (#101).
+
 ### Schematic labels and empty views
 
 - Part type names and group headers on the schematic are drawn at their
