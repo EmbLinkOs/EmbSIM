@@ -102,6 +102,18 @@ int esk_host_file_exists(const char *path)
     return path && GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES;
 }
 
+int esk_host_file_mtime(const char *path, double *seconds)
+{
+    WIN32_FILE_ATTRIBUTE_DATA fa;
+    ULARGE_INTEGER t;
+    if (!path || !GetFileAttributesExA(path, GetFileExInfoStandard, &fa))
+        return -1;
+    t.LowPart = fa.ftLastWriteTime.dwLowDateTime;
+    t.HighPart = fa.ftLastWriteTime.dwHighDateTime;
+    *seconds = (double)t.QuadPart / 1e7; /* 100 ns since 1601 */
+    return 0;
+}
+
 int esk_host_is_dir(const char *path)
 {
     DWORD attr;
@@ -181,6 +193,18 @@ char *esk_host_temp_dir(esk_alloc *a)
 /* ---- time ---------------------------------------------------------------- */
 
 uint64_t esk_host_monotonic_ms(void) { return (uint64_t)GetTickCount64(); }
+
+uint64_t esk_host_monotonic_ns(void)
+{
+    LARGE_INTEGER c, f;
+    uint64_t q, r, hz;
+    if (!QueryPerformanceCounter(&c) || !QueryPerformanceFrequency(&f) || f.QuadPart <= 0)
+        return 0;
+    hz = (uint64_t)f.QuadPart;
+    q = (uint64_t)c.QuadPart / hz;
+    r = (uint64_t)c.QuadPart % hz;
+    return q * UINT64_C(1000000000) + r * UINT64_C(1000000000) / hz;
+}
 void esk_host_sleep_ms(uint32_t ms) { Sleep((DWORD)ms); }
 
 /* ---- sockets ------------------------------------------------------------- */

@@ -26,6 +26,9 @@ es_status esk_host_write_file(const char *path, const void *data, size_t len);
 es_status esk_host_mkdir_p(const char *path);
 /* 1 when `path` names an existing file or directory. */
 int esk_host_file_exists(const char *path);
+/* the file's last modification, in seconds on the host's clock (only to compare
+ * two files): 0, or -1 when it cannot be read */
+int esk_host_file_mtime(const char *path, double *seconds);
 /* 1 when `path` names an existing directory. */
 int esk_host_is_dir(const char *path);
 /* The directory part of a path ("." when there is none). esk_strfree to release. */
@@ -52,6 +55,8 @@ char *esk_host_temp_dir(esk_alloc *a);
 
 /* Milliseconds from an arbitrary origin; never decreases within a process. */
 uint64_t esk_host_monotonic_ms(void);
+/* the same clock in nanoseconds, for measuring short spans (a solve) */
+uint64_t esk_host_monotonic_ns(void);
 void esk_host_sleep_ms(uint32_t ms);
 
 /* ---- sockets ------------------------------------------------------------- */

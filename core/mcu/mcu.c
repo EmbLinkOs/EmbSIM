@@ -9,6 +9,8 @@
 #include "mcu/build.h"
 #include "mcu/dwarf.h"
 #include "mcu/mcu.h"
+#include "mcu/rf.h"
+#include "mcu/rtos.h"
 #include "protocol/wsutil.h"
 #include "util/num.h"
 #include "util/str.h"
@@ -86,6 +88,14 @@ typedef struct mcu_pinq {
     int known;
 } mcu_pinq;
 
+/* an interrupt storm (issue #95): one exception entered more often in a
+ * window than once per MCU_STORM_CYCLES core cycles on average, which no
+ * handler that returns to useful work does: a flag the handler never clears
+ * re-enters it at once */
+#define MCU_STORM_N 512
+#define MCU_STORM_WINDOW_PS (10 * ES_PS_PER_MS)
+#define MCU_STORM_CYCLES 400u
+
 typedef struct mcu_state {
     esk_comp *c;
     struct esk_mach m;
@@ -129,6 +139,14 @@ typedef struct mcu_state {
     esk_air_node air; /* its radio on the session's air, when it has one */
     int on_air;
     mcu_supply sup;
+    /* each exception's entries in the current window, for mcu.irq_storm */
+    es_time_t storm_t[MCU_STORM_N];
+    u32 storm_n[MCU_STORM_N];
+    unsigned char storm_said[MCU_STORM_N];
+    /* the image's RTOS kernel, read on the first request (rtos.h) */
+    esk_rtos *rtos;
+    int rtos_tried;
+    char rtos_why[160];
 } mcu_state;
 
 static mcu_state *state_of(const esk_comp *c) { return (mcu_state *)c->state; }
@@ -1054,10 +1072,116 @@ static void h_out(void *ctx, int stream, int c)
 }
 
 /* a core enters an exception or interrupt: the session's, at the core's time */
+/* "SR1 = 0x0082: ADDR TXE": a register's value with its set fields, one-bit
+ * fields by name and wider ones as NAME=value, from the description */
+static void reg_text(struct esk_mach *m, const struct esk_rf_reg *r, esk_strbuf *out)
+{
+    u32 v = 0;
+    int k, lsb, any = 0;
+    if (esk_bus_debug_read(&m->bus, r->addr, r->bytes, &v) != 0)
+        v = (u32)r->value;
+    esk_strbuf_printf(out, "%s = 0x%0*lX", r->name, r->bytes * 2, (unsigned long)v);
+    for (lsb = 0; lsb < 32; lsb++) /* low bits first, as a manual lists them */
+        for (k = 0; k < r->nf; k++) {
+            const struct esk_rf_field *f = &r->f[k];
+            u32 fv;
+            if (!f->name || f->width <= 0 || f->lsb != lsb)
+                continue;
+            fv = f->width >= 32 ? v : (v >> f->lsb) & ((1u << f->width) - 1u);
+            if (!fv)
+                continue;
+            esk_strbuf_puts(out, any ? " " : ": ");
+            any = 1;
+            if (f->width == 1)
+                esk_strbuf_puts(out, f->name);
+            else
+                esk_strbuf_printf(out, "%s=%lu", f->name, (unsigned long)fv);
+        }
+}
+
+/* the description's interrupt exception `n` enters through (h_exc's
+ * numbering): its index in the interrupt table, or -1 for a core exception
+ * or a number the table does not name (a RISC-V cause) */
+static int irq_entry(const mcu_state *st, int n)
+{
+    const struct esk_rf *rf = st->m.rf;
+    const char *arch = st->m.cpu && st->m.cpu->ops ? st->m.cpu->ops->name : "";
+    int i, want;
+    if (!rf)
+        return -1;
+    if (!strcmp(arch, "cortex-m") || !strcmp(arch, "mips"))
+        want = n - 16; /* 16 + the vector */
+    else if (!strcmp(arch, "riscv"))
+        return -1;
+    else
+        want = n; /* the vector itself (an AVR's, a PIC24's) */
+    for (i = 0; want >= 0 && i < rf->nirq; i++)
+        if (rf->irq_vec[i] == want)
+            return i;
+    return -1;
+}
+
+/* the peripheral raising interrupt `irq`, or NULL */
+static struct esk_rf_periph *periph_of_irq(struct esk_rf *rf, int irq)
+{
+    int i, k;
+    for (i = 0; rf && i < rf->np; i++)
+        for (k = 0; k < rf->p[i].nirq; k++)
+            if (rf->p[i].irq_nums[k] == irq)
+                return &rf->p[i];
+    return NULL;
+}
+
+static void storm_check(mcu_state *st, int n)
+{
+    es_time_t now = local_now(st);
+    u32 hz, limit;
+    if (n < 0 || n >= MCU_STORM_N || st->storm_said[n])
+        return;
+    if (!st->storm_n[n] || now - st->storm_t[n] > MCU_STORM_WINDOW_PS) {
+        st->storm_t[n] = now;
+        st->storm_n[n] = 1;
+        return;
+    }
+    st->storm_n[n]++;
+    hz = esk_mach_core_hz(&st->m);
+    limit = hz / MCU_STORM_CYCLES / (u32)(ES_PS_PER_S / MCU_STORM_WINDOW_PS);
+    if (limit < 200)
+        limit = 200;
+    if (st->storm_n[n] > limit) {
+        esk_strbuf why;
+        struct esk_rf *rf = st->m.rf;
+        int e = irq_entry(st, n), i;
+        const char *name = e >= 0 ? rf->irq_name[e] : NULL;
+        struct esk_rf_periph *p = e >= 0 ? periph_of_irq(rf, rf->irq_num[e]) : NULL;
+        char ms[32];
+        esk_strbuf_init(&why, st->c->e->a);
+        if (p) { /* its status registers as the handler leaves them */
+            for (i = 0; i < p->nreg; i++) {
+                const char *rn = p->reg[i]->name;
+                if (rn && (strstr(rn, "SR") || strstr(rn, "STAT") || strstr(rn, "IF") || strstr(rn, "INT"))) {
+                    esk_strbuf_puts(&why, why.len ? "; " : " with ");
+                    reg_text(&st->m, p->reg[i], &why);
+                }
+            }
+        }
+        esk_format_time(ms, sizeof ms, now - st->storm_t[n]);
+        esk_diag_raise(st->c->e->diag, ES_SEV_WARNING, "mcu.irq_storm", now, "component", st->c->id, NULL, 0,
+                       "%s: %s (exception %d) entered %lu times in %s%s: it is taken again as soon as its "
+                       "handler returns, so what raises it stays set (a flag the handler does not clear, a "
+                       "level-triggered input held active)",
+                       st->c->id, name ? name : "an exception", n, (unsigned long)st->storm_n[n], ms,
+                       why.len ? why.data : "");
+        esk_strbuf_free(&why);
+        st->storm_said[n] = 1;
+    }
+}
+
 static void h_exc(void *ctx, int core, int n)
 {
     mcu_state *st = (mcu_state *)ctx;
     esk_engine *e = st->c->e;
+    storm_check(st, n);
     if (e->on_irq)
         e->on_irq(e->on_irq_ctx, st->c, core, esk_cortexm_cores(&st->m), n, local_now(st));
 }
@@ -1229,6 +1353,9 @@ static void mcu_destroy(esk_comp *c)
         esk_free(e->a, st->image, st->image_len);
     if (st->dwarf.a)
         esk_dwarf_free(&st->dwarf);
+    esk_rtos_close(st->rtos);
+    st->rtos = NULL;
+    st->rtos_tried = 0;
     esk_strfree(e->a, st->image_name);
     st->image = NULL;
     st->attached = 0;
@@ -1469,6 +1596,9 @@ es_status esk_mcu_set_image(esk_comp *c, const unsigned char *image, size_t len,
         esk_free(e->a, st->image, st->image_len);
     st->image = copy;
     st->image_len = len;
+    esk_rtos_close(st->rtos); /* the new image's kernel, when asked */
+    st->rtos = NULL;
+    st->rtos_tried = 0;
     if (st->dwarf.a)
         esk_dwarf_free(&st->dwarf);
     (void)esk_dwarf_load(&st->dwarf, e->a, st->image, st->image_len);
@@ -1519,6 +1649,56 @@ const char *esk_mcu_console(esk_comp *c, size_t *len, u64 *total)
     *len = u ? u->text_len : 0;
     *total = u ? u->text_total : 0;
     return u ? u->text : "";
+}
+
+esk_json *esk_mcu_rtos_json(esk_comp *c, esk_alloc *a, char *why, size_t cap)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    if (!st || !st->image) {
+        if (why && cap)
+            esk_snprintf(why, cap, "%s has no firmware image", c ? c->id : "?");
+        return NULL;
+    }
+    if (!st->rtos_tried) {
+        st->rtos_tried = 1;
+        st->rtos = esk_rtos_open(c->e->a, st->image, st->image_len, st->rtos_why, sizeof st->rtos_why);
+    }
+    if (!st->rtos) {
+        if (why && cap)
+            esk_snprintf(why, cap, "%s", st->rtos_why);
+        return NULL;
+    }
+    (void)a; /* the tasks are built in the engine's allocator, as the session's */
+    return esk_rtos_tasks(st->rtos, &st->m);
+}
+
+int esk_mcu_dump_regs(esk_comp *c, const char *periph, esk_strbuf *out)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    struct esk_rf_periph *p = st && st->m.rf ? esk_rf_periph(st->m.rf, periph) : NULL;
+    int i;
+    if (!p)
+        return 0;
+    esk_strbuf_printf(out, "%s.%s%s\n", c->id, p->name, esk_rf_gated(p) ? " (clock off: its registers read 0)" : "");
+    for (i = 0; i < p->nreg; i++) {
+        esk_strbuf_puts(out, "  ");
+        reg_text(&st->m, p->reg[i], out);
+        esk_strbuf_puts(out, "\n");
+    }
+    return 1;
+}
+
+esk_json *esk_mcu_serial_json(esk_comp *c, esk_alloc *a)
+{
+    mcu_state *st = esk_mcu_is(c) ? state_of(c) : NULL;
+    esk_json *o = esk_json_new_object(a);
+    int i;
+    if (!st || !o)
+        return o;
+    for (i = 0; i < st->nuart; i++)
+        esk_json_set_string(a, o, st->uart[i].unit, st->uart[i].text);
+    esk_json_set_string(a, o, "console", st->console);
+    return o;
 }
 
 uint32_t esk_mcu_console_baud(esk_comp *c)

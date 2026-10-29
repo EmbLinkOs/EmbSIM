@@ -93,6 +93,8 @@ struct esk_net {
     int contention_reported;
     int is_ground, is_supply;
     double supply_v;
+    uint64_t edges;        /* its drivers' changes of drive, for the circuit profile */
+    int perf_said;         /* perf.island_size raised for it */
 };
 
 /* The model contract (SPEC-005 §10). */
@@ -131,6 +133,9 @@ struct esk_comp {
     /* the current its supply pins draw now (ADR-036), amps: a part's model
      * sets it (esk_comp_set_supply); its power pins' bridges sink it */
     double supply_a;
+    /* what it cost the run, for the circuit profile (issue #87): its pins'
+     * changes of drive, its timed wake-ups, the input changes it heard */
+    uint64_t edges, wakes, heard;
 };
 
 typedef void (*esk_net_change_fn)(void *ctx, esk_net *net);

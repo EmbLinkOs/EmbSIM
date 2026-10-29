@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "host/host.h"
+#include "mcu/dwarf.h"
 #include "mcu/mcu.h"
 #include "util/num.h"
 #include "util/sha256.h"
@@ -714,6 +715,73 @@ static int read_memory_files(es_session *s, const esk_board_inst *bi, const esk_
     return n;
 }
 
+/* an ELF image older than a source its line tables name was built before
+ * that source last changed (issue #91): a warning, never a refusal, since a
+ * touched-but-unchanged file looks the same. A minute of slack keeps a fresh
+ * checkout, which writes images and sources moments apart, quiet. Relative names resolve against
+ * the project; names that cannot be read (system headers moved, another
+ * machine's paths) are skipped. */
+/* where a source the line tables name is now: the longest tail of its path
+ * found under the project (an image built elsewhere names the builder's
+ * absolute paths: /home/a/proj/firmware/main.c is firmware/main.c here),
+ * else the path itself, relative to the project. esk_strfree to release */
+static char *source_in_project(es_session *s, const char *f)
+{
+    const char *p = f;
+    while (p && *p) {
+        char *full;
+        while (*p == '/' || *p == '\\')
+            p++;
+        if (!*p)
+            break;
+        if (p != f || (f[0] != '/' && f[0] != '\\' && !(f[0] && f[1] == ':'))) {
+            full = esk_host_path_join(s->a, s->base_dir, p);
+            if (full && esk_host_file_exists(full))
+                return full;
+            esk_strfree(s->a, full);
+        }
+        p += strcspn(p, "/\\");
+    }
+    return esk_host_path_join(s->a, s->base_dir, f);
+}
+
+static void check_stale_image(es_session *s, const esk_board_inst *bi, const char *rel, const char *path,
+                              const char *img, size_t len)
+{
+    esk_dwarf d;
+    double t_img, t, newest = 0;
+    char *which = NULL; /* the newest source, where it is now */
+    size_t i;
+    if (len < 4 || memcmp(img, "\x7f" "ELF", 4) != 0 || esk_host_file_mtime(path, &t_img) != 0)
+        return;
+    memset(&d, 0, sizeof d);
+    if (esk_dwarf_load(&d, s->a, (const u8 *)img, len) != ES_OK) {
+        esk_dwarf_free(&d);
+        return;
+    }
+    for (i = 0; i < d.nfiles; i++) {
+        const char *f = d.files[i];
+        char *full;
+        if (!f || !*f)
+            continue;
+        full = source_in_project(s, f);
+        if (full && esk_host_file_mtime(full, &t) == 0 && t > t_img + 60.0 && t > newest) {
+            newest = t;
+            esk_strfree(s->a, which);
+            which = full;
+            continue;
+        }
+        esk_strfree(s->a, full);
+    }
+    if (which)
+        esk_diag_raise(&s->diag, ES_SEV_WARNING, "mcu.stale_image", 0, "board", bi->id, NULL, 0,
+                       "%s: the firmware image %s is older than its source %s (%.0f s newer); rebuild it "
+                       "(embsim build, or embsim run --build) or the run shows the old program",
+                       bi->id, rel, which, newest - t_img);
+    esk_strfree(s->a, which);
+    esk_dwarf_free(&d);
+}
+
 static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_catalog_item *board,
                                  const esk_catalog_item *mi, esk_comp *mc)
 {
@@ -746,6 +814,8 @@ static es_status attach_firmware(es_session *s, esk_board_inst *bi, const esk_ca
                        bi->id, rel, path);
         img = NULL;
         len = 0;
+    } else {
+        check_stale_image(s, bi, rel, path, img, len);
     }
     if (esk_str_eq(esk_json_get_str(rfd, "format", ""), "embsim")) {
         rpath = esk_host_path_join(s->a, mi->dir, esk_json_get_str(rfd, "file", "registers.json"));
@@ -1022,10 +1092,20 @@ static void probe_problem(es_session *s, const char *target, char *why, size_t c
                      (int)hl, target, target);
 }
 
+/* `ref` is one of the strings of `list` */
+static int listed(const esk_json *list, const char *ref)
+{
+    size_t i;
+    for (i = 0; i < esk_json_len(list); i++)
+        if (esk_str_eq(esk_json_str(esk_json_at(list, i)), ref))
+            return 1;
+    return 0;
+}
+
 static es_status project_load(es_session *s, const esk_json *project, const char *base_dir)
 {
     graph g;
-    const esk_json *libs, *boards, *comps, *nets, *probes;
+    const esk_json *libs, *boards, *comps, *nets, *probes, *nc;
     const char *policy;
     size_t i;
     es_status st = ES_OK;
@@ -1197,6 +1277,21 @@ static es_status project_load(es_session *s, const esk_json *project, const char
     graph_free(&g);
     if (st != ES_OK)
         return st;
+    /* pins the project leaves open on purpose: named, and really open */
+    nc = esk_json_get(project, "no_connect");
+    for (i = 0; i < esk_json_len(nc); i++) {
+        const char *ref = esk_json_str(esk_json_at(nc, i));
+        esk_pin *p = ref ? resolve_pin_ref(s, ref, 0) : NULL;
+        if (!p) {
+            ld_diag(s, ES_SEV_ERROR, "project.no_connect", ref ? ref : "no_connect", "no_connect names %s, which is no pin of the project%s", ref ? ref : "?", "");
+            st = ES_ESCHEMA;
+        } else if (p->net) {
+            esk_diag_raise(&s->diag, ES_SEV_WARNING, "project.no_connect_wired", 0, "pin", ref, NULL, 0,
+                           "%s is in no_connect but is wired to %s", ref, p->net->name);
+        }
+    }
+    if (st != ES_OK)
+        return st;
     /* unconnected required pins */
     for (i = 0; i < s->eng.comps.len; i++) {
         esk_comp *c = s->eng.comps.data[i];
@@ -1207,9 +1302,9 @@ static es_status project_load(es_session *s, const esk_json *project, const char
             if (!c->pins[k].net && c->pins[k].model.kind != ESK_PIN_NC) {
                 const esk_json *pins = esk_json_get(c->desc, "pins");
                 const esk_json *pd = esk_json_at(pins, k);
-                if (esk_json_get_bool(pd, "required", 1)) {
-                    char ref[160];
-                    esk_snprintf(ref, sizeof ref, "%s.%s", c->id, c->pins[k].name);
+                char ref[160];
+                esk_snprintf(ref, sizeof ref, "%s.%s", c->id, c->pins[k].name);
+                if (esk_json_get_bool(pd, "required", 1) && !listed(nc, ref)) {
                     esk_diag_raise(&s->diag, ES_SEV_WARNING, "net.unconnected_required_pin", 0, "pin", ref, NULL, 0,
                                    "%s is not connected", ref);
                 }

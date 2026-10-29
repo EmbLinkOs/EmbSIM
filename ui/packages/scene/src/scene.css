@@ -244,8 +244,8 @@
 }
 
 .es-net-label__state {
-  font-weight: 400 !important;
-  font-size: 6.5px !important;
+  font-weight: 400;
+  font-size: 7.5px;
   fill: var(--text-muted) !important;
 }
 
@@ -511,7 +511,7 @@
 .es-schematic-group > rect { fill: var(--surface-raised); fill-opacity: .14; stroke: var(--text-muted); stroke-opacity: .45; stroke-dasharray: 6 5; }
 .es-schematic-group > g { cursor: pointer; }
 .es-schematic-group > g rect { fill: var(--surface-raised); stroke: var(--line); }
-.es-schematic-group text { fill: var(--text-muted); font: 11px var(--font-sans); }
+.es-schematic-group text { fill: var(--text-muted); font: 11px var(--font-ui); }
 .es-schematic-group > g:focus-visible rect { stroke: var(--accent); stroke-width: 2; }
 .es-placement-lock { fill: var(--text-muted); font: 8px var(--font-mono); letter-spacing: .8px; }
 
@@ -544,7 +544,7 @@
 .es-component--locked { cursor: default; }
 .es-scene__svg[data-dragging], .es-scene__svg[data-dragging] * { cursor: grabbing !important; }
 .es-component__ref { font-weight: 650; }
-.es-component__name { font: 10px var(--font-sans); fill: var(--text-muted); }
+.es-component__name { font: 10px var(--font-ui); fill: var(--text-muted); }
 .es-component__value { font-size: 10px; fill: var(--wire-color); }
 .es-component__name, .es-component__value, .es-component__ref { paint-order: stroke fill; stroke: var(--canvas-paper, var(--sheet)); stroke-width: 3; stroke-linejoin: round; pointer-events: none; }
 .es-scene--wire .es-component { cursor: var(--draw-cursor); }

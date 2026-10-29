@@ -7,6 +7,7 @@
  * stepping, and a transient of trapezoidal steps with backward-Euler restarts,
  * LTE step control, exact breakpoints and bisected comparator crossings. */
 #include "analog/analog.h"
+#include "host/host.h"
 #include "util/num.h"
 #include <math.h>
 #include <stdarg.h>
@@ -1163,7 +1164,7 @@ static int steady(esk_island *isl)
     return ok;
 }
 
-es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
+static es_status island_step(esk_island *isl, es_time_t until, es_time_t *reached)
 {
     mna *p = (mna *)isl->priv;
     es_time_t t = isl->t_accepted;
@@ -1476,4 +1477,12 @@ esk_json *esk_island_observe(esk_island *isl)
     esk_json_object_set(a, o, "nodes", nodes);
     esk_json_object_set(a, o, "devices", devs);
     return o;
+}
+
+es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached)
+{
+    uint64_t t0 = esk_host_monotonic_ns();
+    es_status st = island_step(isl, until, reached);
+    isl->solve_ns += esk_host_monotonic_ns() - t0;
+    return st;
 }

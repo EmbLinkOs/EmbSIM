@@ -17,6 +17,8 @@
 #include "protocol/protocol.h"
 #include "session/session_priv.h"
 #include "sdk.h"
+#include "export.h"
+#include "plan.h"
 #include "util/num.h"
 #include "util/str.h"
 
@@ -25,14 +27,22 @@
 #endif
 
 static int opt_json = 0;
+static int opt_quiet = 0; /* run: the verdict and the summary only */
 
-static void usage(void)
+/* who answers: another program called embsim may come first on PATH */
+#define EMBSIM_ID "EmbSIM " EMBSIM_VERSION_STRING " (github.com/EmbLinkOs/EmbSIM)"
+
+static void usage_to(FILE *out)
 {
-    fputs("usage: embsim <command> [options]\n"
-          "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json]\n"
+    fputs(EMBSIM_ID "\n"
+          "usage: embsim <command> [options]\n"
+          "  run PROJECT [--until T] [--scenario FILE] [--policy P] [--probe TARGET]... [--record FILE] [--json] [--quiet]\n"
           "  run --target BOARD --image FILE [options]   one board of the catalog running an image, no project,\n"
           "      plugged into a USB port (5 V on its VBUS) under the electrical policy\n"
-          "      [--image [ID=]FILE] [--until-text TEXT] [--console] [--allow-no-image]\n"
+          "      [--image [ID=]FILE] [--until-text TEXT] [--console] [--allow-no-image] [--build]\n"
+          "      [--dump-regs PERIPH[,BOARD.PERIPH]...]   registers at the end, decoded\n"
+          "      [--circuit-profile FILE|-]   islands, nets and parts by simulation cost (.json for JSON)\n"
+          "      [--rtos FILE|-]   FreeRTOS tasks at the end: state, waits, stack, notifications\n"
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]]\n"
           "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
@@ -45,17 +55,27 @@ static void usage(void)
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
           "  build PROJECT [--board B] [--toolchain T]   build a board's firmware\n"
+          "  export svg PROJECT [-o FILE] [--theme light|dark]   the schematic sheet as SVG\n"
+          "  export svg PROJECT --component ID [--at T] [--scenario FILE] [--scale N] [-o FILE]\n"
+          "      what a display shows at T (a graphic display's pixels, a character module's lines)\n"
+          "  plan BOARD --needs spi,i2c,pwm:2,uart,adc:2,gpio:12 [--prefer arduino|CONNECTOR] [--header FILE] [--json]\n"
+          "      a conflict-free pin assignment on the board's headers, clear of its own parts\n"
           "  toolchains                  the toolchain profiles found on this host\n"
-          "  catalog list|search QUERY|info ID|libraries [--library DIR]\n"
+          "  catalog list|search QUERY|info ID [--json]|libraries [--library DIR]\n"
           "  catalog validate [LIBRARY_DIR] [--library DEPENDENCY] [--json]\n"
           "  catalog new component|board NAME [--library DIR] [--lua]\n"
           "  catalog install LIBRARY_DIR|ARCHIVE.zip|URL [--to LIBRARIES_DIR] [--force]\n"
-          "  board list|info ID\n"
+          "  board list|info ID [--pins]\n"
+          "  mcu pins ID [PIN] [--json]    the alternate functions and ADC channels on each pin\n"
+          "  mcu signal ID SIGNAL [--json] the pins and AF numbers that carry a signal (TIM2_CH3)\n"
           "  models                      list the model primitives\n"
-          "  version\n"
+          "  version [--json]\n"
+          "  --help, --version\n"
           "Times: 10ms, 1.5us, 12345ps. Exit codes: 0 ok, 1 assertion failed, 2 usage/load, 3 fatal diagnostic, 4 replay diverged.\n",
-          stderr);
+          out);
 }
+
+static void usage(void) { usage_to(stderr); }
 
 static void print_diag(void *ctx, const es_diagnostic_t *d)
 {
@@ -114,52 +134,85 @@ static void print_json(esk_json *j, esk_alloc *a)
     }
 }
 
+/* a JSON value on one line, for an assertion's expected and observed */
+static void print_value(esk_alloc *a, const char *label, const esk_json *v)
+{
+    size_t len = 0;
+    char *t = v ? esk_json_format(a, v, 0, &len) : NULL;
+    printf("%s %s", label, t ? t : "(none)");
+    if (t)
+        esk_free(a, t, len + 1);
+}
+
+/* text mode: the verdict first, then (unless --quiet) the circuit's state,
+ * then one line that answers "did it pass?" */
 static void print_human_report(es_session *s, const esk_json *report)
 {
     const esk_json *snap = esk_json_get(report, "snapshot");
     const esk_json *nets = esk_json_get(snap, "nets");
     const esk_json *comps = esk_json_get(snap, "components");
     const esk_json *as = esk_json_get(report, "assertions");
-    size_t i;
+    const esk_json *st = esk_json_get(report, "statistics");
+    size_t i, passed = 0;
     char tbuf[48];
     esk_format_time(tbuf, sizeof tbuf, s->eng.sched.now);
     printf("%s  policy %s  ended at %s (%s)\n", s->name, esk_json_get_str(report, "policy", ""), tbuf,
            esk_json_get_str(esk_json_get(report, "ended"), "reason", ""));
-    printf("nets:\n");
-    for (i = 0; i < esk_json_len(nets); i++) {
-        const esk_json *n = esk_json_at(nets, i);
-        if (esk_str_eq(esk_json_get_str(n, "kind", ""), "analog"))
-            printf("  %-24s %8.4f V\n", n->key, esk_json_get_num(n, "voltage", 0));
-        else
-            printf("  %-24s %s (%s)\n", n->key, esk_json_get_str(n, "logic", "?"), esk_json_get_str(n, "strength", ""));
-    }
-    printf("components:\n");
-    for (i = 0; i < esk_json_len(comps); i++) {
-        const esk_json *c = esk_json_at(comps, i);
-        const esk_json *out = esk_json_get(c, "outputs");
-        size_t k;
-        printf("  %-16s %-28s", c->key, esk_json_get_str(c, "kind", ""));
-        for (k = 0; k < esk_json_len(out); k++) {
-            const esk_json *v = esk_json_at(out, k);
-            if (v->type == ESK_JSON_NUMBER) printf(" %s=%.4g", v->key, v->u.number.value);
-            else if (v->type == ESK_JSON_BOOL) printf(" %s=%s", v->key, v->u.boolean ? "true" : "false");
-            else if (v->type == ESK_JSON_STRING && v->u.string.len < 40) printf(" %s=%s", v->key, v->u.string.data);
-        }
-        printf("\n");
-    }
     if (esk_json_len(as)) {
         printf("assertions:\n");
         for (i = 0; i < esk_json_len(as); i++) {
             const esk_json *a = esk_json_at(as, i);
-            printf("  %-5s %s%s%s\n", esk_json_get_bool(a, "ok", 0) ? "PASS" : "FAIL", esk_json_get_str(a, "id", ""),
-                   esk_json_get_bool(a, "ok", 0) ? "" : ": ", esk_json_get_bool(a, "ok", 0) ? "" : esk_json_get_str(a, "reason", ""));
+            int ok = esk_json_get_bool(a, "ok", 0);
+            passed += ok ? 1u : 0u;
+            printf("  %-5s %s", ok ? "PASS" : "FAIL", esk_json_get_str(a, "id", ""));
+            if (!ok) {
+                const char *reason = esk_json_get_str(a, "reason", "");
+                const char *at = esk_json_get_str(a, "at_ps", NULL);
+                if (reason[0])
+                    printf(": %s", reason);
+                if (esk_json_get(a, "expected") || esk_json_get(a, "observed")) {
+                    printf("\n        ");
+                    print_value(s->a, "expected", esk_json_get(a, "expected"));
+                    print_value(s->a, ", observed", esk_json_get(a, "observed"));
+                    if (at) {
+                        char abuf[48];
+                        esk_format_time(abuf, sizeof abuf, (es_time_t)strtoull(at, NULL, 10));
+                        printf(" at %s", abuf);
+                    }
+                }
+            }
+            printf("\n");
         }
     }
-    {
-        const esk_json *st = esk_json_get(report, "statistics");
+    if (!opt_quiet) {
+        printf("nets:\n");
+        for (i = 0; i < esk_json_len(nets); i++) {
+            const esk_json *n = esk_json_at(nets, i);
+            if (esk_str_eq(esk_json_get_str(n, "kind", ""), "analog"))
+                printf("  %-24s %8.4f V\n", n->key, esk_json_get_num(n, "voltage", 0));
+            else
+                printf("  %-24s %s (%s)\n", n->key, esk_json_get_str(n, "logic", "?"), esk_json_get_str(n, "strength", ""));
+        }
+        printf("components:\n");
+        for (i = 0; i < esk_json_len(comps); i++) {
+            const esk_json *c = esk_json_at(comps, i);
+            const esk_json *out = esk_json_get(c, "outputs");
+            size_t k;
+            printf("  %-16s %-28s", c->key, esk_json_get_str(c, "kind", ""));
+            for (k = 0; k < esk_json_len(out); k++) {
+                const esk_json *v = esk_json_at(out, k);
+                if (v->type == ESK_JSON_NUMBER) printf(" %s=%.4g", v->key, v->u.number.value);
+                else if (v->type == ESK_JSON_BOOL) printf(" %s=%s", v->key, v->u.boolean ? "true" : "false");
+                else if (v->type == ESK_JSON_STRING && v->u.string.len < 40) printf(" %s=%s", v->key, v->u.string.data);
+            }
+            printf("\n");
+        }
         printf("statistics: %lld events, %lld analog steps, %.3f s wall\n", (long long)esk_json_get_int(st, "events", 0),
                (long long)esk_json_get_int(st, "analog_steps", 0), esk_json_get_num(st, "wall_time_s", 0));
     }
+    if (esk_json_len(as))
+        printf("%s: %u/%u passed (%s simulated in %.1f s)\n", s->name, (unsigned)passed, (unsigned)esk_json_len(as), tbuf,
+               esk_json_get_num(st, "wall_time_s", 0));
 }
 
 /* the boards' consoles followed during a run: what was printed of each, and
@@ -386,6 +439,11 @@ static int write_analysis(es_session *s, const char *board, unsigned which, int 
     return ok;
 }
 
+static void follow_scenario(es_session *s, void *ctx)
+{
+    (void)follow_consoles(s, (follow *)ctx);
+}
+
 /* a board whose firmware image cannot be read would run its whole time
  * doing nothing: say so and stop, unless the circuit is to run without it */
 static int missing_images(es_session *s)
@@ -399,8 +457,249 @@ static int missing_images(es_session *s)
         }
     }
     if (n)
-        fputs("embsim: build the firmware, fix boards[].firmware.image, or pass --allow-no-image to run the circuit without it\n", stderr);
+        fputs("embsim: build the firmware (or run --build), fix boards[].firmware.image, or pass --allow-no-image to run the circuit without it\n", stderr);
     return n != 0;
+}
+
+/* run --build (issue #91): build each board whose image the load found
+ * missing (mcu.no_image) or older than its sources (mcu.stale_image), with
+ * the project's toolchain, as embsim build would. 1 when something was
+ * built (the caller loads the project again), 0 when nothing needed it, -1
+ * when a build failed. Never at load: building runs the host's compiler. */
+static int build_stale(es_session *s)
+{
+    char ids[8][96];
+    int n = 0, k, built = 0;
+    size_t i;
+    for (i = 0; i < s->diag.len && n < 8; i++) {
+        const esk_diag_record *r = &s->diag.log[(s->diag.head + i) % s->diag.cap];
+        if (!strcmp(r->code, "mcu.no_image") || !strcmp(r->code, "mcu.stale_image")) {
+            for (k = 0; k < n && strcmp(ids[k], r->subject); k++)
+                ;
+            if (k == n) {
+                snprintf(ids[n], sizeof ids[n], "%s", r->subject);
+                n++;
+            }
+        }
+    }
+    for (k = 0; k < n; k++) {
+        esk_json *rep = NULL;
+        es_status st = esk_toolchain_build(s, ids[k], NULL, &rep);
+        int ok = st == ES_OK && rep && esk_json_get_bool(rep, "ok", 0);
+        if (rep)
+            fputs(esk_json_get_str(rep, "log", ""), stderr);
+        fprintf(stderr, EMBSIM_ID ": %s %s: %s\n", ok ? "built" : "build failed for", ids[k],
+                rep ? esk_json_get_str(rep, "image", "?") : es_strerror(st));
+        esk_json_free(s->a, rep);
+        if (!ok)
+            return -1;
+        built = 1;
+    }
+    return built;
+}
+
+/* run --dump-regs LIST (issue #95): each named peripheral's registers as the
+ * run leaves them, decoded; a name is PERIPH (every board that has one) or
+ * BOARD.PERIPH. 0 when a name matched nothing */
+static int dump_regs(es_session *s, const char *list, FILE *out)
+{
+    char name[96];
+    const char *p = list;
+    int ok = 1;
+    while (*p) {
+        size_t n = strcspn(p, ",");
+        const char *dot;
+        size_t i;
+        int found = 0;
+        esk_strbuf b;
+        if (n && n < sizeof name) {
+            memcpy(name, p, n);
+            name[n] = 0;
+            dot = strchr(name, '.');
+            esk_strbuf_init(&b, s->a);
+            for (i = 0; i < s->boards.len; i++) {
+                esk_board_inst *bi = (esk_board_inst *)s->boards.data[i];
+                if (!bi->mcu)
+                    continue;
+                if (dot && (strncmp(bi->id, name, (size_t)(dot - name)) || bi->id[dot - name]))
+                    continue;
+                found |= esk_mcu_dump_regs(bi->mcu, dot ? dot + 1 : name, &b);
+            }
+            if (b.data)
+                fputs(b.data, out);
+            esk_strbuf_free(&b);
+            if (!found) {
+                fprintf(stderr, EMBSIM_ID ": --dump-regs: no peripheral %s on the project's boards\n", name);
+                ok = 0;
+            }
+        }
+        p += n;
+        if (*p == ',')
+            p++;
+    }
+    return ok;
+}
+
+/* run --circuit-profile FILE (issue #87): where the circuit's time went,
+ * as text, or JSON when FILE ends in .json; "-" for stderr */
+static int write_circuit_profile(es_session *s, const char *path)
+{
+    esk_json *p = esk_session_circuit_profile(s);
+    const esk_json *isl = esk_json_get(p, "islands"), *nets = esk_json_get(p, "nets"), *comps = esk_json_get(p, "components");
+    size_t n = strlen(path), i;
+    esk_strbuf b;
+    int ok;
+    if (!p)
+        return 0;
+    esk_strbuf_init(&b, s->a);
+    if (n > 5 && !strcmp(path + n - 5, ".json")) {
+        char *t = esk_json_format(s->a, p, 2, NULL);
+        if (t) {
+            esk_strbuf_puts(&b, t);
+            esk_strbuf_puts(&b, "\n");
+            esk_strfree(s->a, t);
+        }
+    } else {
+        esk_strbuf_printf(&b, "circuit profile: %.6g s simulated in %.3g s; %lld analog steps, %.3g s solving, %lld events\n",
+                          esk_json_get_num(p, "simulated_s", 0), esk_json_get_num(p, "wall_time_s", 0),
+                          (long long)esk_json_get_int(p, "analog_steps", 0), esk_json_get_num(p, "solve_s", 0),
+                          (long long)esk_json_get_int(p, "events", 0));
+        esk_strbuf_printf(&b, "\nanalog islands, by solve time\n  %-24s %6s %6s %10s %8s %10s %8s %6s  %s\n", "island", "nodes",
+                          "devs", "steps", "rejects", "newton", "solve s", "share", "busiest net");
+        for (i = 0; i < esk_json_len(isl); i++) {
+            const esk_json *o = esk_json_at(isl, i);
+            esk_strbuf_printf(&b, "  %-24s %6lld %6lld %10lld %8lld %10lld %8.3f %5.1f%%  %s\n", esk_json_get_str(o, "name", ""),
+                              (long long)esk_json_get_int(o, "nodes", 0), (long long)esk_json_get_int(o, "devices", 0),
+                              (long long)esk_json_get_int(o, "steps", 0), (long long)esk_json_get_int(o, "rejections", 0),
+                              (long long)esk_json_get_int(o, "newton_iterations", 0), esk_json_get_num(o, "solve_s", 0),
+                              100.0 * esk_json_get_num(o, "solve_share", 0), esk_json_get_str(o, "busiest_net", "-"));
+        }
+        esk_strbuf_printf(&b, "\nnets, by edges\n  %-24s %10s %12s %8s\n", "net", "edges", "Hz", "island");
+        for (i = 0; i < esk_json_len(nets); i++) {
+            const esk_json *o = esk_json_at(nets, i);
+            long long nodes = (long long)esk_json_get_int(o, "island_nodes", 0);
+            char where[24];
+            snprintf(where, sizeof where, nodes ? "%lld nodes" : "digital", nodes);
+            esk_strbuf_printf(&b, "  %-24s %10lld %12.4g %8s\n", esk_json_get_str(o, "name", ""), (long long)esk_json_get_int(o, "edges", 0),
+                              esk_json_get_num(o, "hz", 0), where);
+        }
+        esk_strbuf_printf(&b, "\nparts, by events\n  %-24s %-24s %10s %10s %10s\n", "part", "kind", "edges", "wakes", "inputs");
+        for (i = 0; i < esk_json_len(comps); i++) {
+            const esk_json *o = esk_json_at(comps, i);
+            esk_strbuf_printf(&b, "  %-24s %-24s %10lld %10lld %10lld\n", esk_json_get_str(o, "id", ""), esk_json_get_str(o, "kind", ""),
+                              (long long)esk_json_get_int(o, "edges", 0), (long long)esk_json_get_int(o, "wakes", 0),
+                              (long long)esk_json_get_int(o, "inputs", 0));
+        }
+    }
+    ok = !b.oom;
+    if (ok && !strcmp(path, "-"))
+        fputs(b.data ? b.data : "", stderr);
+    else if (ok && esk_host_write_file(path, b.data ? b.data : "", b.len) != ES_OK) {
+        fprintf(stderr, EMBSIM_ID ": cannot write the circuit profile %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    esk_json_free(s->a, p);
+    return ok;
+}
+
+/* one task's wait, in words */
+static void rtos_wait_text(const esk_json *w, char *out, size_t cap)
+{
+    const char *kind = esk_json_get_str(w, "kind", "");
+    char when[48];
+    if (esk_json_get_bool(w, "forever", 0))
+        snprintf(when, sizeof when, "for ever");
+    else
+        snprintf(when, sizeof when, "until tick %lld (in %lld)", (long long)esk_json_get_int(w, "until_tick", 0),
+                 (long long)esk_json_get_int(w, "in_ticks", 0));
+    if (!strcmp(kind, "notification"))
+        snprintf(out, cap, "notification index %lld, %s", (long long)esk_json_get_int(w, "index", 0), when);
+    else if (!strncmp(kind, "queue_", 6))
+        snprintf(out, cap, "%s %s 0x%08llx, %s", !strcmp(kind, "queue_receive") ? "receive from" : "send to",
+                 esk_json_get_str(w, "queue_name", "queue"), (long long)esk_json_get_int(w, "queue", 0), when);
+    else if (!strcmp(kind, "event_list"))
+        snprintf(out, cap, "event list 0x%08llx, %s", (long long)esk_json_get_int(w, "list", 0), when);
+    else
+        snprintf(out, cap, "delay, %s", when);
+}
+
+/* run --rtos FILE (issue #96): each board's FreeRTOS tasks at the end of
+ * the run, as text, or JSON when FILE ends in .json; "-" for stdout (stderr
+ * with --json) */
+static int write_rtos(es_session *s, const char *board, const char *path)
+{
+    esk_json *all = esk_json_new_object(s->a);
+    esk_strbuf b;
+    size_t i, k, n = strlen(path);
+    int any = 0, ok = 1, as_json = n > 5 && !strcmp(path + n - 5, ".json");
+    esk_strbuf_init(&b, s->a);
+    for (i = 0; i < s->boards.len; i++) {
+        esk_board_inst *bi = (esk_board_inst *)s->boards.data[i];
+        char why[160];
+        esk_json *r;
+        const esk_json *tasks;
+        if (!bi->mcu || (board && strcmp(board, bi->id)))
+            continue;
+        r = esk_mcu_rtos_json(bi->mcu, s->a, why, sizeof why);
+        if (!r) {
+            fprintf(stderr, EMBSIM_ID ": --rtos: %s: %s\n", bi->id, why);
+            continue;
+        }
+        any = 1;
+        tasks = esk_json_get(r, "tasks");
+        esk_strbuf_printf(&b, "%s%s: FreeRTOS at tick %lld, %u task(s)%s\n", b.len ? "\n" : "", bi->id,
+                          (long long)esk_json_get_int(r, "tick", 0), (unsigned)esk_json_len(tasks),
+                          esk_json_get_bool(r, "started", 0) ? "" : ", the scheduler not started");
+        esk_strbuf_printf(&b, "  %-16s %-9s %4s %10s %10s  %s\n", "task", "state", "prio", "stack min", "stack now", "waits");
+        for (k = 0; k < esk_json_len(tasks); k++) {
+            const esk_json *t = esk_json_at(tasks, k), *w = esk_json_get(t, "waits"), *notes = esk_json_get(t, "notifications");
+            char wait[160], smin[16], snow[16];
+            size_t j;
+            wait[0] = 0;
+            if (w)
+                rtos_wait_text(w, wait, sizeof wait);
+            if (esk_json_get(t, "stack_free_min"))
+                snprintf(smin, sizeof smin, "%lld B", (long long)esk_json_get_int(t, "stack_free_min", 0));
+            else
+                snprintf(smin, sizeof smin, "?");
+            if (esk_json_get(t, "stack_free_now"))
+                snprintf(snow, sizeof snow, "%lld B", (long long)esk_json_get_int(t, "stack_free_now", 0));
+            else
+                snprintf(snow, sizeof snow, "?");
+            esk_strbuf_printf(&b, "  %-16s %-9s %4lld %10s %10s  %s\n", esk_json_get_str(t, "name", ""),
+                              esk_json_get_str(t, "state", ""), (long long)esk_json_get_int(t, "priority", 0), smin, snow, wait);
+            for (j = 0; j < esk_json_len(notes); j++) {
+                const esk_json *no = esk_json_at(notes, j);
+                if (esk_str_eq(esk_json_get_str(no, "state", "none"), "none"))
+                    continue;
+                esk_strbuf_printf(&b, "  %-16s notification %lld: %s, value 0x%llx\n", "",
+                                  (long long)esk_json_get_int(no, "index", 0), esk_json_get_str(no, "state", ""),
+                                  (unsigned long long)esk_json_get_int(no, "value", 0));
+            }
+        }
+        esk_json_object_set(s->a, all, bi->id, r);
+    }
+    if (as_json) {
+        char *t = esk_json_format(s->a, all, 2, NULL);
+        esk_strbuf_clear(&b);
+        if (t) {
+            esk_strbuf_puts(&b, t);
+            esk_strbuf_puts(&b, "\n");
+            esk_strfree(s->a, t);
+        }
+    }
+    if (!any)
+        ok = 0;
+    else if (!strcmp(path, "-"))
+        fputs(b.data ? b.data : "", opt_json ? stderr : stdout);
+    else if (esk_host_write_file(path, b.data ? b.data : "", b.len) != ES_OK) {
+        fprintf(stderr, EMBSIM_ID ": cannot write %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    esk_json_free(s->a, all);
+    return ok;
 }
 
 static int cmd_run(int argc, char **argv, const char *argv0)
@@ -408,7 +707,8 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     const char *project = NULL, *scenario = NULL, *policy = NULL, *record = NULL, *library = NULL;
     const char *coverage = NULL, *profile = NULL, *stack = NULL, *faults = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
     int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, fault_fmt = ESK_AN_TEXT, console = 0;
-    int allow_no_image = 0;
+    int allow_no_image = 0, build = 0;
+    const char *dump = NULL, *circuit = NULL, *rtos = NULL;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -436,6 +736,10 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--until-text") && more) until_text = argv[++i];
         else if (!strcmp(a, "--console")) console = 1;
         else if (!strcmp(a, "--allow-no-image")) allow_no_image = 1;
+        else if (!strcmp(a, "--build")) build = 1;
+        else if (!strcmp(a, "--dump-regs") && more) dump = argv[++i];
+        else if (!strcmp(a, "--circuit-profile") && more) circuit = argv[++i];
+        else if (!strcmp(a, "--rtos") && more) rtos = argv[++i];
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
                   !strcmp(a, "--faults-format")) && more) {
             unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
@@ -447,20 +751,38 @@ static int cmd_run(int argc, char **argv, const char *argv0)
             else prof_fmt = f;
         }
         else if (!strcmp(a, "--json")) opt_json = 1;
-        else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
+        else if (!strcmp(a, "--quiet") || !strcmp(a, "-q")) opt_quiet = 1;
+        else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
         else if (!project) project = a;
-        else { fprintf(stderr, "embsim: one project at a time\n"); return 2; }
+        else { fprintf(stderr, EMBSIM_ID ": one project at a time\n"); return 2; }
     }
     if (!project && !target) { usage(); return 2; }
     if (project && target) { fprintf(stderr, "embsim: a project or --target, not both\n"); return 2; }
     if (target && !image) { fprintf(stderr, "embsim: --target needs --image FILE\n"); return 2; }
-    if (scenario && (until_text || console)) { fprintf(stderr, "embsim: --until-text and --console run without a scenario\n"); return 2; }
+    if (scenario && until_text) { fprintf(stderr, EMBSIM_ID ": --until-text runs without a scenario (a scenario has its own end)\n"); return 2; }
     s = open_session(policy, argv0, library);
     if (!s) return 2;
     if (target ? load_target(s, target, image, policy) != ES_OK : es_session_load_file(s, project) != ES_OK) {
         fprintf(stderr, "embsim: cannot load %s\n", target ? target : project);
         es_session_destroy(s);
         return 2;
+    }
+    if (build && !target && !image) {
+        int b = build_stale(s);
+        if (b < 0) {
+            es_session_destroy(s);
+            return 2;
+        }
+        if (b > 0) { /* the new images, from a fresh load */
+            es_session_destroy(s);
+            s = open_session(policy, argv0, library);
+            if (!s) return 2;
+            if (es_session_load_file(s, project) != ES_OK) {
+                fprintf(stderr, "embsim: cannot load %s\n", project);
+                es_session_destroy(s);
+                return 2;
+            }
+        }
     }
     if (target)
         project = image; /* the run's name in its report and recording */
@@ -495,6 +817,7 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         const char *err;
         esk_json *sc;
         char *dir;
+        follow scen_follow;
         if (esk_host_read_file(s->a, scenario, &text, &len) != ES_OK) {
             fprintf(stderr, "embsim: cannot read %s\n", scenario);
             es_session_destroy(s);
@@ -508,7 +831,15 @@ static int cmd_run(int argc, char **argv, const char *argv0)
             return 2;
         }
         dir = esk_host_dirname(s->a, scenario);
+        if (console) {
+            /* the consoles as the scenario runs, on stderr under --json */
+            memset(&scen_follow, 0, sizeof scen_follow);
+            scen_follow.out = opt_json ? stderr : stdout;
+            s->scenario_follow = follow_scenario;
+            s->scenario_follow_ctx = &scen_follow;
+        }
         report = esk_scenario_run(s, sc, dir, until_given ? until : 0);
+        s->scenario_follow = NULL;
         esk_strfree(s->a, dir);
         esk_json_free(s->a, sc);
         if (report && !esk_json_get_bool(report, "ok", 0))
@@ -574,6 +905,12 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         print_json(report, s->a);
     else
         print_human_report(s, report);
+    if (dump && !dump_regs(s, dump, opt_json ? stderr : stdout) && !rc)
+        rc = 2;
+    if (circuit && !write_circuit_profile(s, circuit) && !rc)
+        rc = 2;
+    if (rtos && !write_rtos(s, board, rtos) && !rc)
+        rc = 2;
     esk_json_free(s->a, report);
     es_session_destroy(s);
     return rc;
@@ -634,7 +971,7 @@ static int cmd_replay(int argc, char **argv, const char *argv0)
         if (!strcmp(argv[i], "--allow-drift")) allow_drift = 1;
         else if (!strcmp(argv[i], "--json")) opt_json = 1;
         else if (!strcmp(argv[i], "--library") && i + 1 < argc) library = argv[++i];
-        else if (argv[i][0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", argv[i]); return 2; }
+        else if (argv[i][0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", argv[i]); return 2; }
         else if (!rec_path) rec_path = argv[i];
         else { fprintf(stderr, "embsim: one recording at a time\n"); return 2; }
     }
@@ -722,7 +1059,7 @@ static int cmd_record(int argc, char **argv)
         if ((!strcmp(argv[i], "-o") || !strcmp(argv[i], "--output")) && i + 1 < argc) outp = argv[++i];
         else if (!strcmp(argv[i], "--assert") && i + 1 < argc) assert_what = argv[++i];
         else if (!strcmp(argv[i], "--name") && i + 1 < argc) name = argv[++i];
-        else if (argv[i][0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", argv[i]); return 2; }
+        else if (argv[i][0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", argv[i]); return 2; }
         else if (!rec_path) rec_path = argv[i];
         else { fprintf(stderr, "embsim: one recording at a time\n"); return 2; }
     }
@@ -826,7 +1163,7 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
         else if (!strcmp(a, "--library") && more) library = argv[++i];
         else if (!strcmp(a, "--open")) open = 1;
-        else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
+        else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
         else project = a;
     }
     s = open_session(policy, argv0, library);
@@ -903,7 +1240,7 @@ static int cmd_gdb(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--host") && more) host = argv[++i];
         else if (!strcmp(a, "--board") && more) board = argv[++i];
         else if (!strcmp(a, "--library") && more) library = argv[++i];
-        else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
+        else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
         else project = a;
     }
     if (!project) { usage(); return 2; }
@@ -937,7 +1274,7 @@ static int cmd_build(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--toolchain") && more) profile = argv[++i];
         else if (!strcmp(a, "--library") && more) library = argv[++i];
         else if (!strcmp(a, "--json")) opt_json = 1;
-        else if (a[0] == '-') { fprintf(stderr, "embsim: unknown option %s\n", a); return 2; }
+        else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
         else project = a;
     }
     if (!project) { usage(); return 2; }
@@ -965,6 +1302,100 @@ static int cmd_build(int argc, char **argv, const char *argv0)
     esk_json_free(s->a, rep);
     es_session_destroy(s);
     return ok ? 0 : 1;
+}
+
+/* export svg PROJECT (issue #94): the schematic sheet, or with --component
+ * what a display shows at --at (after the scenario's inputs to then) */
+static int cmd_export(int argc, char **argv, const char *argv0)
+{
+    const char *project = NULL, *out = "-", *component = NULL, *scenario = NULL, *library = NULL;
+    es_time_t at = 0;
+    int i, dark = 0, scale = 4, ok;
+    es_session *s;
+    if (argc < 1 || strcmp(argv[0], "svg")) {
+        fprintf(stderr, EMBSIM_ID ": export: only svg (embsim export svg PROJECT -o FILE)\n");
+        return 2;
+    }
+    for (i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if ((!strcmp(a, "-o") || !strcmp(a, "--output")) && more) out = argv[++i];
+        else if (!strcmp(a, "--component") && more) component = argv[++i];
+        else if (!strcmp(a, "--scenario") && more) scenario = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (!strcmp(a, "--theme") && more) dark = !strcmp(argv[++i], "dark");
+        else if (!strcmp(a, "--scale") && more) scale = atoi(argv[++i]);
+        else if (!strcmp(a, "--at") && more) {
+            if (esk_parse_time(argv[++i], &at)) { fprintf(stderr, "embsim: bad time %s\n", argv[i]); return 2; }
+        } else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
+        else project = a;
+    }
+    if (!project) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (es_session_load_file(s, project) != ES_OK) {
+        fprintf(stderr, "embsim: cannot load %s\n", project);
+        es_session_destroy(s);
+        return 2;
+    }
+    if (!component) {
+        ok = embsim_export_sheet(s, out, dark);
+    } else {
+        /* the run to the moment: the scenario's inputs up to it */
+        esk_json *sc = scenario ? read_json_file(s->a, scenario) : NULL;
+        const esk_json *inputs = esk_json_get(sc, "inputs");
+        size_t k;
+        if (scenario && !sc) {
+            es_session_destroy(s);
+            return 2;
+        }
+        (void)esk_session_do_reset(s);
+        for (k = 0; k < esk_json_len(inputs); k++) {
+            const esk_json *in = esk_json_at(inputs, k);
+            es_time_t t = 0;
+            esk_json_to_time(esk_json_get(in, "at"), &t);
+            if (t <= at)
+                esk_session_apply_input(s, esk_json_get_str(in, "target", NULL), esk_json_get_str(in, "input", NULL),
+                                        esk_json_get(in, "value"), t, NULL, NULL);
+        }
+        esk_json_free(s->a, sc);
+        if (at && esk_session_do_advance(s, at) != ES_OK)
+            fprintf(stderr, EMBSIM_ID ": export: the run stopped before --at; the display as it stopped\n");
+        ok = embsim_export_display(s, component, out, scale);
+    }
+    es_session_destroy(s);
+    return ok ? 0 : 1;
+}
+
+/* plan BOARD --needs LIST [--prefer arduino|CONNECTOR] [--header FILE] [--json] (issue #101) */
+static int cmd_plan(int argc, char **argv, const char *argv0)
+{
+    const char *board = NULL, *needs = NULL, *prefer = NULL, *header = NULL, *library = NULL;
+    int i, rc;
+    es_session *s;
+    for (i = 0; i < argc; i++) {
+        const char *a = argv[i];
+        int more = i + 1 < argc;
+        if (!strcmp(a, "--needs") && more) needs = argv[++i];
+        else if (!strcmp(a, "--prefer") && more) prefer = argv[++i];
+        else if (!strcmp(a, "--header") && more) header = argv[++i];
+        else if (!strcmp(a, "--library") && more) library = argv[++i];
+        else if (!strcmp(a, "--json")) opt_json = 1;
+        else if (a[0] == '-') { fprintf(stderr, EMBSIM_ID ": unknown option %s (embsim --help)\n", a); return 2; }
+        else board = a;
+    }
+    if (!board || !needs) { usage(); return 2; }
+    s = open_session(NULL, argv0, library);
+    if (!s) return 2;
+    if (!strchr(board, '/')) { /* nucleo_f446re: the bundled library's */
+        char full[96];
+        snprintf(full, sizeof full, "emblink/%s", board);
+        rc = embsim_plan(s, esk_catalog_find(s->catalog, "board", board) ? board : full, needs, prefer, header, opt_json);
+    } else {
+        rc = embsim_plan(s, board, needs, prefer, header, opt_json);
+    }
+    es_session_destroy(s);
+    return rc;
 }
 
 static int cmd_toolchains(const char *argv0)
@@ -1015,6 +1446,85 @@ static void print_validation(const char *report, esk_alloc *a)
     esk_json_free(a, r);
 }
 
+/* a scalar for a table cell: a string, a number, a bool, or "" */
+static void cell(char *buf, size_t cap, const esk_json *v)
+{
+    if (!v) buf[0] = 0;
+    else if (v->type == ESK_JSON_STRING) esk_snprintf(buf, cap, "%s", v->u.string.data);
+    else if (v->type == ESK_JSON_NUMBER) esk_snprintf(buf, cap, "%g", v->u.number.value);
+    else if (v->type == ESK_JSON_BOOL) esk_snprintf(buf, cap, "%s", v->u.boolean ? "true" : "false");
+    else if (v->type == ESK_JSON_NULL) esk_snprintf(buf, cap, "null");
+    else buf[0] = 0;
+}
+
+/* catalog info: a part as one reads it to wire and test it, not its JSON */
+static void print_component_summary(const esk_json *d)
+{
+    const esk_json *pins = esk_json_get(d, "pins"), *params = esk_json_get(d, "params");
+    const esk_json *inputs = esk_json_get(d, "inputs"), *outputs = esk_json_get(d, "outputs");
+    const esk_json *fid = esk_json_get(d, "fidelity");
+    static const char *const tiers[] = {"functional", "timed", "electrical"};
+    char a[64], b[64], c[64];
+    size_t i, k;
+    printf("%s  %s  %s\n", esk_json_get_str(d, "id", ""), esk_json_get_str(d, "version", ""), esk_json_get_str(d, "name", ""));
+    if (esk_json_get_str(d, "category", NULL))
+        printf("category: %s\n", esk_json_get_str(d, "category", ""));
+    if (esk_json_get_str(d, "description", NULL))
+        printf("%s\n", esk_json_get_str(d, "description", ""));
+    if (esk_json_len(pins)) {
+        printf("\npins:\n  %-4s %-12s %-12s %s\n", "#", "name", "kind", "");
+        for (i = 0; i < esk_json_len(pins); i++) {
+            const esk_json *p = esk_json_at(pins, i);
+            cell(a, sizeof a, esk_json_get(p, "number"));
+            printf("  %-4s %-12s %-12s %s\n", a, esk_json_get_str(p, "name", ""), esk_json_get_str(esk_json_get(p, "model"), "kind", ""),
+                   esk_json_get_str(p, "doc", ""));
+        }
+    }
+    if (esk_json_len(params)) {
+        printf("\nparams:\n  %-18s %-8s %-14s %-16s %s\n", "name", "type", "default", "range", "");
+        for (k = 0; k < esk_json_len(params); k++) {
+            const esk_json *p = esk_json_at(params, k);
+            char range[64];
+            cell(a, sizeof a, esk_json_get(p, "default"));
+            cell(b, sizeof b, esk_json_get(p, "min"));
+            cell(c, sizeof c, esk_json_get(p, "max"));
+            range[0] = 0;
+            if (b[0] || c[0])
+                esk_snprintf(range, sizeof range, "%s..%s", b, c);
+            if (esk_json_get_str(p, "unit", NULL)) {
+                size_t n = strlen(a);
+                esk_snprintf(a + n, sizeof a - n, " %s", esk_json_get_str(p, "unit", ""));
+            }
+            printf("  %-18s %-8s %-14s %-16s %s\n", p->key, esk_json_get_str(p, "type", ""), a, range, esk_json_get_str(p, "doc", ""));
+        }
+    }
+    if (esk_json_len(inputs)) {
+        printf("\ninputs (scenario and workbench):\n");
+        for (i = 0; i < esk_json_len(inputs); i++) {
+            const esk_json *p = esk_json_at(inputs, i);
+            cell(a, sizeof a, esk_json_get(p, "default"));
+            printf("  %-18s %-8s %-10s %s\n", esk_json_get_str(p, "name", ""), esk_json_get_str(p, "type", ""), a,
+                   esk_json_get_str(p, "doc", ""));
+        }
+    }
+    if (esk_json_len(outputs)) {
+        printf("\noutputs (probe as output:ID.NAME):\n");
+        for (i = 0; i < esk_json_len(outputs); i++) {
+            const esk_json *p = esk_json_at(outputs, i);
+            printf("  %-18s %-8s %s\n", esk_json_get_str(p, "name", ""), esk_json_get_str(p, "type", ""), esk_json_get_str(p, "doc", ""));
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        const esk_json *t = esk_json_get(fid, tiers[i]), *om;
+        if (!t || t->type != ESK_JSON_OBJECT)
+            continue;
+        printf("\nfidelity, %s: %s\n", tiers[i], esk_json_get_str(t, "claims", ""));
+        om = esk_json_get(t, "omissions");
+        for (k = 0; k < esk_json_len(om); k++)
+            printf("  not modelled: %s\n", esk_json_str(esk_json_at(om, k)) ? esk_json_str(esk_json_at(om, k)) : "");
+    }
+}
+
 static int cmd_catalog(int argc, char **argv, const char *argv0)
 {
     const char *sub = argc ? argv[0] : "list", *library = NULL, *arg = NULL;
@@ -1063,7 +1573,10 @@ static int cmd_catalog(int argc, char **argv, const char *argv0)
             es_session_destroy(s);
             return 2;
         }
-        print_json(it->desc, s->catalog->a);
+        if (!opt_json && esk_str_eq(it->kind, "component"))
+            print_component_summary(it->desc);
+        else
+            print_json(it->desc, s->catalog->a);
     } else if (!strcmp(sub, "libraries")) {
         print_json(s->catalog->libraries, s->catalog->a);
     } else if (!strcmp(sub, "validate")) {
@@ -1093,6 +1606,55 @@ static int cmd_catalog(int argc, char **argv, const char *argv0)
     return 0;
 }
 
+/* the MCU pin a board net reaches ("U5.PA5" in the net: "PA5"), or NULL */
+static const char *net_mcu_pin(const esk_json *members, const char *mcu)
+{
+    size_t i, n = strlen(mcu);
+    for (i = 0; i < esk_json_len(members); i++) {
+        const char *m = esk_json_str(esk_json_at(members, i));
+        if (m && !strncmp(m, mcu, n) && m[n] == '.')
+            return m + n + 1;
+    }
+    return NULL;
+}
+
+/* board info --pins: each header pin, the MCU pin behind it, what the board
+ * itself does with that pin, and the board's note (solder bridges) */
+static void print_board_pins(const esk_json *d)
+{
+    const esk_json *ports = esk_json_get(d, "ports"), *nets = esk_json_get(d, "nets");
+    const esk_json *leds = esk_json_get(d, "leds"), *buttons = esk_json_get(d, "buttons"), *console = esk_json_get(d, "console");
+    const char *mcu = esk_json_get_str(esk_json_get(d, "mcu"), "instance", "U1");
+    size_t i, k;
+    printf("%s: %u header pins (MCU %s)\n", esk_json_get_str(d, "id", ""), (unsigned)esk_json_len(ports), mcu);
+    printf("  %-10s %-9s %-7s %-34s %s\n", "pin", "header", "MCU", "on the board", "note");
+    for (i = 0; i < esk_json_len(ports); i++) {
+        const esk_json *pt = esk_json_at(ports, i);
+        const char *net = esk_json_get_str(pt, "net", "");
+        const esk_json *members = esk_json_get(nets, net);
+        const char *pin = net_mcu_pin(members, mcu);
+        char hdr[24], uses[160];
+        size_t n = 0;
+        esk_snprintf(hdr, sizeof hdr, "%s.%lld", esk_json_get_str(pt, "connector", "?"), (long long)esk_json_get_int(pt, "pin", 0));
+        uses[0] = 0;
+        for (k = 0; pin && k < esk_json_len(leds); k++)
+            if (esk_str_eq(esk_json_get_str(esk_json_at(leds, k), "gpio", ""), pin))
+                n += (size_t)esk_snprintf(uses + n, sizeof uses - n, "%s%s (%s LED)", n ? ", " : "",
+                                          esk_json_get_str(esk_json_at(leds, k), "component", ""), esk_json_get_str(esk_json_at(leds, k), "color", ""));
+        for (k = 0; pin && k < esk_json_len(buttons); k++)
+            if (esk_str_eq(esk_json_get_str(esk_json_at(buttons, k), "gpio", ""), pin))
+                n += (size_t)esk_snprintf(uses + n, sizeof uses - n, "%s%s (%s button)", n ? ", " : "",
+                                          esk_json_get_str(esk_json_at(buttons, k), "component", ""), esk_json_get_str(esk_json_at(buttons, k), "name", ""));
+        if (pin && esk_str_eq(esk_json_get_str(console, "tx", ""), pin))
+            n += (size_t)esk_snprintf(uses + n, sizeof uses - n, "%sconsole %s TX", n ? ", " : "", esk_json_get_str(console, "peripheral", ""));
+        if (pin && esk_str_eq(esk_json_get_str(console, "rx", ""), pin))
+            n += (size_t)esk_snprintf(uses + n, sizeof uses - n, "%sconsole %s RX", n ? ", " : "", esk_json_get_str(console, "peripheral", ""));
+        if (n >= sizeof uses)
+            uses[sizeof uses - 1] = 0;
+        printf("  %-10s %-9s %-7s %-34s %s\n", pt->key, hdr, pin ? pin : "-", uses, esk_json_get_str(pt, "doc", ""));
+    }
+}
+
 static int cmd_board(int argc, char **argv, const char *argv0)
 {
     const char *sub = argc ? argv[0] : "list";
@@ -1107,7 +1669,10 @@ static int cmd_board(int argc, char **argv, const char *argv0)
     } else if (!strcmp(sub, "info") && argc > 1) {
         const esk_catalog_item *it = esk_catalog_find(s->catalog, "board", argv[1]);
         if (!it) { fprintf(stderr, "embsim: board %s not found\n", argv[1]); es_session_destroy(s); return 2; }
-        print_json(it->desc, s->catalog->a);
+        if (argc > 2 && !strcmp(argv[2], "--pins"))
+            print_board_pins(it->desc);
+        else
+            print_json(it->desc, s->catalog->a);
     } else {
         usage();
         es_session_destroy(s);
@@ -1115,6 +1680,90 @@ static int cmd_board(int argc, char **argv, const char *argv0)
     }
     es_session_destroy(s);
     return 0;
+}
+
+/* mcu pins ID [PIN] / mcu signal ID SIGNAL: the alternate-function table
+ * (io.alternate) and the ADC channels (io.analog), as CubeMX's pin view */
+static int cmd_mcu(int argc, char **argv, const char *argv0)
+{
+    const char *sub = argc > 0 ? argv[0] : "", *id = argc > 1 ? argv[1] : NULL, *what = NULL;
+    const esk_catalog_item *it;
+    const esk_json *alt, *analog;
+    es_session *s;
+    esk_json *out;
+    size_t i, k, j, found = 0;
+    int i_arg;
+    for (i_arg = 2; i_arg < argc; i_arg++) {
+        if (!strcmp(argv[i_arg], "--json")) opt_json = 1;
+        else if (!what) what = argv[i_arg];
+    }
+    if (!id || (strcmp(sub, "pins") && strcmp(sub, "signal")) || (!strcmp(sub, "signal") && !what)) { usage(); return 2; }
+    s = open_session(NULL, argv0, NULL);
+    if (!s) return 2;
+    it = esk_catalog_find(s->catalog, "mcu", id);
+    if (!it) { fprintf(stderr, "embsim: mcu %s not found\n", id); es_session_destroy(s); return 2; }
+    alt = esk_json_get(esk_json_get(it->desc, "io"), "alternate");
+    analog = esk_json_get(esk_json_get(it->desc, "io"), "analog");
+    if (!alt) {
+        fprintf(stderr, "embsim: %s's description has no alternate-function table (io.alternate)\n", id);
+        es_session_destroy(s);
+        return 2;
+    }
+    out = esk_json_new_array(s->a);
+    for (i = 0; out && i < esk_json_len(alt); i++) {
+        const esk_json *pin = esk_json_at(alt, i);
+        const char *adc = esk_json_get_str(analog, pin->key, NULL);
+        if (!strcmp(sub, "pins") && what && !esk_str_eq(pin->key, what))
+            continue;
+        for (k = 0; k < esk_json_len(pin); k++) {
+            const esk_json *af = esk_json_at(pin, k);
+            for (j = 0; j < esk_json_len(af); j++) {
+                const char *sig = esk_json_str(esk_json_at(af, j));
+                esk_json *row;
+                if (!sig || (!strcmp(sub, "signal") && !esk_str_eq(sig, what)))
+                    continue;
+                row = esk_json_new_object(s->a);
+                if (!row) continue;
+                esk_json_set_string(s->a, row, "pin", pin->key);
+                esk_json_set_integer(s->a, row, "af", strtol(af->key, NULL, 10));
+                esk_json_set_string(s->a, row, "signal", sig);
+                esk_json_array_push(s->a, out, row);
+                found++;
+            }
+        }
+        if (adc && (!strcmp(sub, "pins") || esk_str_eq(adc, what))) {
+            esk_json *row = esk_json_new_object(s->a);
+            if (row) {
+                esk_json_set_string(s->a, row, "pin", pin->key);
+                esk_json_set_string(s->a, row, "analog", adc);
+                esk_json_array_push(s->a, out, row);
+                found++;
+            }
+        }
+    }
+    if (opt_json) {
+        print_json(out, s->a);
+    } else {
+        const char *last = "";
+        if (!found)
+            printf("%s: no %s %s\n", id, !strcmp(sub, "pins") ? "pin" : "signal", what ? what : "");
+        for (i = 0; i < esk_json_len(out); i++) {
+            const esk_json *r = esk_json_at(out, i);
+            const char *pin = esk_json_get_str(r, "pin", "");
+            if (!strcmp(sub, "pins") && strcmp(pin, last))
+                printf("%s\n", pin);
+            last = pin;
+            if (esk_json_get_str(r, "analog", NULL))
+                printf("  %s%-6s %s\n", !strcmp(sub, "pins") ? "" : pin, !strcmp(sub, "pins") ? "analog" : "  ", esk_json_get_str(r, "analog", ""));
+            else if (!strcmp(sub, "pins"))
+                printf("  AF%-4lld %s\n", (long long)esk_json_get_int(r, "af", 0), esk_json_get_str(r, "signal", ""));
+            else
+                printf("  %-6s AF%lld\n", pin, (long long)esk_json_get_int(r, "af", 0));
+        }
+    }
+    esk_json_free(s->a, out);
+    es_session_destroy(s);
+    return found ? 0 : 1;
 }
 
 static int cmd_models(const char *argv0)
@@ -1138,6 +1787,11 @@ int embsim_cli_main(int argc, char **argv)
     esk_host_stdio_init();
     if (argc < 2) { usage(); return 2; }
     cmd = argv[1];
+    {
+        int i;
+        for (i = 2; i < argc; i++)
+            if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) { usage_to(stdout); return 0; }
+    }
     if (!strcmp(cmd, "run")) return cmd_run(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "validate")) return cmd_validate(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "replay")) return cmd_replay(argc - 2, argv + 2, argv[0]);
@@ -1146,13 +1800,23 @@ int embsim_cli_main(int argc, char **argv)
     if (!strcmp(cmd, "sidecar")) return cmd_serve(argc - 2, argv + 2, argv[0], 1);
     if (!strcmp(cmd, "gdb")) return cmd_gdb(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "build")) return cmd_build(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "export")) return cmd_export(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "plan")) return cmd_plan(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "toolchains")) return cmd_toolchains(argv[0]);
     if (!strcmp(cmd, "catalog")) return cmd_catalog(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "board")) return cmd_board(argc - 2, argv + 2, argv[0]);
     if (!strcmp(cmd, "models")) return cmd_models(argv[0]);
-    if (!strcmp(cmd, "version") || !strcmp(cmd, "--version")) { printf("embsim %s (protocol 1.0, abi %d)\n", EMBSIM_VERSION_STRING, es_abi_version()); return 0; }
-    if (!strcmp(cmd, "help") || !strcmp(cmd, "--help") || !strcmp(cmd, "-h")) { usage(); return 0; }
-    fprintf(stderr, "embsim: unknown command %s\n", cmd);
+    if (!strcmp(cmd, "mcu")) return cmd_mcu(argc - 2, argv + 2, argv[0]);
+    if (!strcmp(cmd, "version") || !strcmp(cmd, "--version")) {
+        if (argc > 2 && !strcmp(argv[2], "--json"))
+            printf("{\"name\": \"EmbSIM\", \"version\": \"%s\", \"protocol\": \"1.0\", \"abi\": %d, \"url\": \"https://github.com/EmbLinkOs/EmbSIM\"}\n",
+                   EMBSIM_VERSION_STRING, es_abi_version());
+        else
+            printf("embsim %s (protocol 1.0, abi %d)\n", EMBSIM_VERSION_STRING, es_abi_version());
+        return 0;
+    }
+    if (!strcmp(cmd, "help") || !strcmp(cmd, "--help") || !strcmp(cmd, "-h")) { usage_to(stdout); return 0; }
+    fprintf(stderr, EMBSIM_ID ": unknown command %s (embsim --help)\n", cmd);
     usage();
     return 2;
 }

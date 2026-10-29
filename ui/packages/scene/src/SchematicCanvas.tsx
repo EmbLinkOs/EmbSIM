@@ -171,6 +171,16 @@ export function describeNetState(state: NetState | undefined, range: [number, nu
   return { kind: 'idle', text: 'no state' };
 }
 
+/** The reading a net label carries on the sheet: the voltage when there is
+ * one, else the level. The wire's colour already says high, low, floating or
+ * conflicting; the full description is in the net table and the spotlight. */
+export function netReading(state: NetState | undefined): string {
+  if (!state) return '';
+  if (state.voltage !== undefined) return `${state.voltage.toFixed(3)} V`;
+  if (state.contention) return 'X';
+  return state.logic === '0' || state.logic === '1' || state.logic === 'Z' || state.logic === 'X' ? state.logic : '';
+}
+
 /** Interpolates the analog gradient colour for a voltage with CSS color-mix so it follows the theme. */
 export function analogColor(v: number, [min, max]: [number, number]): string {
   const t = max === min ? 0 : Math.max(0, Math.min(1, (v - min) / (max - min)));
@@ -409,8 +419,15 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       if (!members.length) return [];
       return [{ x: Math.min(...members.map((part) => part.bounds.x)) - 14, y: Math.min(...members.map((part) => part.bounds.y)) - 39, width: Math.max(100, group.name.length * 8 + 24), height: 24 }];
     });
-    return placeComponentLabels(placed.map((part) => ({ id: part.id, bounds: part.bounds, pins: part.pins.map((pin) => pin.point), name: part.symbol?.name ?? part.componentId.split('/').at(-1) ?? part.componentId, value: part.value })), wires, appearance.labels !== 'compact', headers);
-  }, [placed, wires, appearance.labels, project.layout?.groups]);
+    // a net label with room for its live reading ("3.300 V"), live or not, so
+    // part labels keep their places when the simulation starts
+    const netLabels = labels.map((l) => {
+      const length = l.net.length * 6.2 + 5 + 7 * 4.7;
+      const turned = Math.abs(((l.rotation ?? 0) % 180 + 180) % 180 - 90) < 1;
+      return turned ? { x: l.x - 10, y: l.y - length, width: 12, height: 2 * length } : { x: l.x - 1, y: l.y - 10, width: length + 2, height: 13 };
+    });
+    return placeComponentLabels(placed.map((part) => ({ id: part.id, bounds: part.bounds, pins: part.pins.map((pin) => pin.point), name: part.symbol?.name ?? part.componentId.split('/').at(-1) ?? part.componentId, value: part.value })), wires, appearance.labels !== 'compact', [...headers, ...netLabels]);
+  }, [placed, wires, appearance.labels, project.layout?.groups, labels]);
 
   const placedById = useMemo(() => new Map(placed.map((p) => [p.id, p])), [placed]);
 
@@ -1218,12 +1235,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
               const vis = netVisual(l.net);
               return (
                 <g key={`l-${i}`} data-net-label={l.net} opacity={highlightNet && highlightNet !== l.net ? .25 : 1} className={`es-net-label es-wire--${vis.kind}`} transform={`translate(${l.x} ${l.y}) rotate(${l.rotation ?? 0})`}>
-                  <text style={vis.color ? { fill: vis.color } : undefined}>{l.net}</text>
-                  {live && vis.text && (
-                    <text className="es-net-label__state" y={11}>
-                      {vis.text}
-                    </text>
-                  )}
+                  <text style={vis.color ? { fill: vis.color } : undefined}>
+                    {l.net}
+                    {/* on the name's line, not below it where the wire runs */}
+                    {live && netReading(netStates?.[l.net]) && <tspan className="es-net-label__state" dx={5}>{netReading(netStates?.[l.net])}</tspan>}
+                  </text>
                 </g>
               );
             })}

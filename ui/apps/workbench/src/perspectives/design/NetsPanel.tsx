@@ -35,7 +35,7 @@ export function NetsPanel({ live }: { live?: boolean }) {
     {
       id: 'state',
       header: 'State',
-      width: '160px',
+      width: '190px',
       cell: (r) => {
         const v = describeNetState(states[r.name], [0, 3.3]);
         return live || states[r.name] ? <SignalChip kind={v.kind} label={v.text} /> : <span className="es-muted">—</span>;

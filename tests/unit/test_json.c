@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
+#include <string.h>
 #include "harness.h"
+#include "util/match.h"
 #include "util/json.h"
 #include "util/num.h"
 
@@ -84,9 +86,31 @@ static void test_numbers(void)
     }
 }
 
+/* the scenario matcher: the last match, its group, and what it refuses */
+static void test_match(void)
+{
+    const char *t = "T=17.0 C\r\nT=25.25 C\r\nok";
+    esk_match m;
+    CHECK(esk_match_last("([0-9.]+) C", t, strlen(t), &m) == 1);
+    CHECK(m.has_group && strncmp(t + m.group_start, "25.25", m.group_end - m.group_start) == 0);
+    CHECK(esk_match_last("T=(\\d+)\\.\\d+ C", t, strlen(t), &m) == 1 && t[m.group_start] == '2');
+    CHECK(esk_match_last("^T=", t, strlen(t), &m) == 1 && m.start == 0);
+    CHECK(esk_match_last("ok$", t, strlen(t), &m) == 1);
+    CHECK(esk_match_last("C$", t, strlen(t), &m) == 0);
+    CHECK(esk_match_last("[^0-9 =T.C\r\n]+", t, strlen(t), &m) == 1 && !strncmp(t + m.start, "ok", 2));
+    CHECK(esk_match_last("x?ok", t, strlen(t), &m) == 1);
+    CHECK(esk_match_last("missing", t, strlen(t), &m) == 0);
+    CHECK(esk_match_last("a|b", t, strlen(t), &m) == -1);
+    CHECK(esk_match_last("a{2}", t, strlen(t), &m) == -1);
+    CHECK(esk_match_last("((a))", t, strlen(t), &m) == -1);
+    CHECK(esk_match_last("(ab)+", t, strlen(t), &m) == -1);
+    CHECK(esk_match_last("[abc", t, strlen(t), &m) == -1);
+}
+
 TEST_MAIN_BEGIN
 esk_alloc_init(&A, NULL);
 RUN(test_roundtrip);
+RUN(test_match);
 RUN(test_errors);
 RUN(test_build);
 RUN(test_numbers);

@@ -775,3 +775,302 @@ int esk_dwarf_cfi(const u8 *elf, size_t len, u32 pc, esk_cfi_row *row)
     }
     return 0;
 }
+
+/* ---- types: structure members (.debug_info) ----------------------------------- */
+
+typedef struct dw_attr {
+    u32 name, form;
+    s64 implicit;
+} dw_attr;
+
+typedef struct dw_abbrev {
+    u32 code, tag;
+    int children;
+    u32 first, n; /* in the attribute array */
+} dw_abbrev;
+
+typedef struct dw_abbrevs {
+    esk_alloc *a;
+    dw_abbrev *ab;
+    size_t nab, cab;
+    dw_attr *at;
+    size_t nat, cat;
+} dw_abbrevs;
+
+static void abbrevs_free(dw_abbrevs *t)
+{
+    if (t->ab)
+        esk_free(t->a, t->ab, t->cab * sizeof *t->ab);
+    if (t->at)
+        esk_free(t->a, t->at, t->cat * sizeof *t->at);
+    t->ab = NULL;
+    t->at = NULL;
+    t->nab = t->cab = t->nat = t->cat = 0;
+}
+
+static int grow(esk_alloc *a, void **p, size_t *cap, size_t need, size_t elem)
+{
+    size_t nc;
+    void *q;
+    if (need <= *cap)
+        return 0;
+    nc = *cap ? *cap * 2 : 64;
+    while (nc < need)
+        nc *= 2;
+    q = esk_calloc(a, nc, elem);
+    if (!q)
+        return -1;
+    if (*p) {
+        memcpy(q, *p, *cap * elem);
+        esk_free(a, *p, *cap * elem);
+    }
+    *p = q;
+    *cap = nc;
+    return 0;
+}
+
+/* the abbreviation table at `off` in .debug_abbrev */
+static int abbrevs_read(dw_abbrevs *t, const u8 *sec, u32 size, u32 off)
+{
+    rd r;
+    t->nab = t->nat = 0;
+    if (off >= size)
+        return -1;
+    r.p = sec + off;
+    r.end = sec + size;
+    r.bad = 0;
+    for (;;) {
+        dw_abbrev *ab;
+        u64 code = uleb(&r);
+        if (r.bad)
+            return -1;
+        if (!code)
+            return 0;
+        if (grow(t->a, (void **)&t->ab, &t->cab, t->nab + 1, sizeof *t->ab))
+            return -1;
+        ab = &t->ab[t->nab++];
+        ab->code = (u32)code;
+        ab->tag = (u32)uleb(&r);
+        ab->children = (int)u8_(&r);
+        ab->first = (u32)t->nat;
+        ab->n = 0;
+        for (;;) {
+            u64 name = uleb(&r), f = uleb(&r);
+            s64 imp = 0;
+            if (r.bad)
+                return -1;
+            if (f == 0x21)
+                imp = sleb(&r);
+            if (!name && !f)
+                break;
+            if (grow(t->a, (void **)&t->at, &t->cat, t->nat + 1, sizeof *t->at))
+                return -1;
+            t->at[t->nat].name = (u32)name;
+            t->at[t->nat].form = (u32)f;
+            t->at[t->nat].implicit = imp;
+            t->nat++;
+            ab->n++;
+        }
+    }
+}
+
+static const dw_abbrev *abbrev_of(const dw_abbrevs *t, u64 code)
+{
+    size_t i;
+    if (code && code <= t->nab && t->ab[code - 1].code == code)
+        return &t->ab[code - 1]; /* the usual numbering, 1 up */
+    for (i = 0; i < t->nab; i++)
+        if (t->ab[i].code == code)
+            return &t->ab[i];
+    return NULL;
+}
+
+typedef struct dw_strs {
+    const u8 *str, *line_str, *offs;
+    u32 str_len, line_str_len, offs_len, offs_base;
+} dw_strs;
+
+static const char *str_at(const u8 *sec, u32 len, u64 off)
+{
+    return sec && off < len ? (const char *)sec + off : NULL;
+}
+
+static const char *strx(const dw_strs *s, u64 idx)
+{
+    u64 at = (u64)s->offs_base + idx * 4u;
+    if (!s->offs || at + 4 > s->offs_len)
+        return NULL;
+    return str_at(s->str, s->str_len, le32(s->offs + at));
+}
+
+/* one attribute's value: a string in *str, a constant in *num (with
+ * *is_num), or skipped; -1 on a form this reader does not know */
+static int attr_value(rd *r, u32 f, s64 implicit, int ver, int asz, const dw_strs *s, const char **str, u64 *num,
+                      int *is_num)
+{
+    u64 n = 0;
+    *str = NULL;
+    *is_num = 0;
+    switch (f) {
+    case 0x01: r->p += asz; break;                                  /* addr */
+    case 0x03: n = u16_(r); r->p += n; break;                       /* block2 */
+    case 0x04: n = u32_(r); r->p += n; break;                       /* block4 */
+    case 0x0a: n = u8_(r); goto block;                              /* block1 */
+    case 0x09: case 0x18: n = uleb(r); goto block;                  /* block, exprloc */
+    case 0x05: *num = u16_(r); *is_num = 1; break;                  /* data2 */
+    case 0x06: *num = u32_(r); *is_num = 1; break;                  /* data4 */
+    case 0x07: *num = u32_(r); *num |= (u64)u32_(r) << 32; *is_num = 1; break;
+    case 0x0b: *num = u8_(r); *is_num = 1; break;                   /* data1 */
+    case 0x0c: r->p += 1; break;                                    /* flag */
+    case 0x0d: *num = (u64)sleb(r); *is_num = 1; break;             /* sdata */
+    case 0x0f: *num = uleb(r); *is_num = 1; break;                  /* udata */
+    case 0x08: *str = cstr(r); break;                               /* string */
+    case 0x0e: *str = str_at(s->str, s->str_len, u32_(r)); break;   /* strp */
+    case 0x1f: *str = str_at(s->line_str, s->line_str_len, u32_(r)); break; /* line_strp */
+    case 0x1a: case 0x1f21: *str = strx(s, uleb(r)); break;         /* strx, GNU_str_index */
+    case 0x25: *str = strx(s, u8_(r)); break;                       /* strx1 */
+    case 0x26: *str = strx(s, u16_(r)); break;                      /* strx2 */
+    case 0x27: n = u16_(r); n |= (u64)u8_(r) << 16; *str = strx(s, n); break;
+    case 0x28: *str = strx(s, u32_(r)); break;                      /* strx4 */
+    case 0x10: r->p += ver <= 2 ? asz : 4; break;                   /* ref_addr */
+    case 0x11: r->p += 1; break;
+    case 0x12: r->p += 2; break;
+    case 0x13: case 0x17: case 0x1c: case 0x1d: case 0x1f01: case 0x1f02: r->p += 4; break;
+    case 0x14: case 0x20: case 0x24: r->p += 8; break;
+    case 0x15: case 0x1b: case 0x22: case 0x23: case 0x1f20: (void)uleb(r); break;
+    case 0x19: break;                                               /* flag_present */
+    case 0x1e: r->p += 16; break;                                   /* data16 */
+    case 0x21: *num = (u64)implicit; *is_num = 1; break;            /* implicit_const */
+    case 0x29: r->p += 1; break;
+    case 0x2a: r->p += 2; break;
+    case 0x2b: r->p += 3; break;
+    case 0x2c: r->p += 4; break;
+    default: return -1;
+    }
+    if (r->p > r->end)
+        r->bad = 1;
+    return r->bad ? -1 : 0;
+block:
+    if ((u64)(r->end - r->p) < n) {
+        r->bad = 1;
+        return -1;
+    }
+    if (f == 0x18 || f == 0x0a || f == 0x09) { /* DW_OP_plus_uconst N: a member's place (DWARF 2's block) */
+        rd e;
+        e.p = r->p;
+        e.end = r->p + n;
+        e.bad = 0;
+        if (n && *e.p == 0x23) {
+            e.p++;
+            *num = uleb(&e);
+            *is_num = !e.bad;
+        }
+    }
+    r->p += n;
+    return 0;
+}
+
+int esk_dwarf_members(esk_alloc *a, const u8 *elf, size_t len, const char *strct, const char *const *members, int n,
+                      long *offs)
+{
+    u32 info_len = 0, abbr_len = 0;
+    const u8 *info = section(elf, len, ".debug_info", &info_len), *abbr = section(elf, len, ".debug_abbrev", &abbr_len);
+    dw_abbrevs t;
+    dw_strs s;
+    u32 cu = 0;
+    int i, found = 0;
+    for (i = 0; i < n; i++)
+        offs[i] = -1;
+    if (!info || !abbr || !strct)
+        return 0;
+    memset(&t, 0, sizeof t);
+    t.a = a;
+    memset(&s, 0, sizeof s);
+    s.str = section(elf, len, ".debug_str", &s.str_len);
+    s.line_str = section(elf, len, ".debug_line_str", &s.line_str_len);
+    s.offs = section(elf, len, ".debug_str_offsets", &s.offs_len);
+    while (cu + 11 <= info_len && !found) {
+        rd r;
+        u32 ulen = le32(info + cu), abbrev_off;
+        int ver, asz, depth = 0, in_struct = -1;
+        const u8 *next;
+        if (ulen == 0xffffffffu || ulen < 7 || (u64)cu + 4 + ulen > info_len)
+            break; /* 64-bit DWARF, or damaged */
+        next = info + cu + 4 + ulen;
+        r.p = info + cu + 4;
+        r.end = next;
+        r.bad = 0;
+        ver = (int)u16_(&r);
+        if (ver >= 5) {
+            u32 type = u8_(&r);
+            asz = (int)u8_(&r);
+            abbrev_off = u32_(&r);
+            if (type == 0x02 || type == 0x06) /* type units */
+                r.p += 12;
+            else if (type == 0x04 || type == 0x05) /* skeleton, split */
+                r.p += 8;
+        } else {
+            abbrev_off = u32_(&r);
+            asz = (int)u8_(&r);
+        }
+        s.offs_base = 8; /* the first unit's, when it does not say */
+        if (r.bad || ver < 2 || ver > 5 || abbrevs_read(&t, abbr, abbr_len, abbrev_off) != 0) {
+            cu = (u32)(next - info);
+            continue;
+        }
+        while (r.p < r.end && !r.bad) {
+            u64 code = uleb(&r);
+            const dw_abbrev *ab;
+            const char *name = NULL;
+            u64 loc = 0;
+            int has_loc = 0, decl = 0;
+            u32 k;
+            if (!code) { /* the end of a sibling chain */
+                if (depth == in_struct)
+                    goto done; /* the structure's members are all read */
+                if (depth > 0)
+                    depth--;
+                continue;
+            }
+            ab = abbrev_of(&t, code);
+            if (!ab)
+                break;
+            for (k = 0; k < ab->n; k++) {
+                const dw_attr *at = &t.at[ab->first + k];
+                const char *sv = NULL;
+                u64 nv = 0;
+                int isn = 0;
+                if (attr_value(&r, at->form, at->implicit, ver, asz, &s, &sv, &nv, &isn) != 0)
+                    break;
+                if (at->name == 0x03 && sv)
+                    name = sv; /* DW_AT_name */
+                else if (at->name == 0x38 && isn) {
+                    loc = nv; /* DW_AT_data_member_location */
+                    has_loc = 1;
+                } else if (at->name == 0x3c)
+                    decl = 1; /* DW_AT_declaration */
+                else if (at->name == 0x72 && isn)
+                    s.offs_base = (u32)nv; /* DW_AT_str_offsets_base */
+            }
+            if (r.bad)
+                break;
+            if (in_struct >= 0 && depth == in_struct && ab->tag == 0x0d && name) { /* DW_TAG_member */
+                for (i = 0; i < n; i++)
+                    if (offs[i] < 0 && !strcmp(members[i], name)) {
+                        offs[i] = has_loc ? (long)loc : 0; /* a union's members, at 0 */
+                        found++;
+                    }
+            }
+            if (in_struct < 0 && ab->tag == 0x13 && ab->children && !decl && name && !strcmp(name, strct))
+                in_struct = depth + 1; /* DW_TAG_structure_type, complete */
+            if (ab->children)
+                depth++;
+        }
+    done:
+        if (in_struct >= 0 && !found)
+            found = -1; /* the structure, without any of these members */
+        cu = (u32)(next - info);
+    }
+    abbrevs_free(&t);
+    return found < 0 ? 0 : found;
+}

@@ -102,7 +102,12 @@
     "card_uid": {
       "type": "string",
       "default": "DE AD BE EF",
-      "doc": "The card's 4-byte UID, hexadecimal"
+      "doc": "The UID of the card card_present holds to the antenna, hexadecimal"
+    },
+    "cards": {
+      "type": "string",
+      "default": "",
+      "doc": "Cards a scenario can present by name with the card input: name=UID[;N=32 hex digits], comma separated; N a block (a sector trailer sets the keys and access bits)"
     }
   },
   "inputs": [
@@ -111,9 +116,20 @@
       "type": "boolean",
       "default": false,
       "doc": "The card is held to the antenna"
+    },
+    {
+      "name": "card",
+      "type": "string",
+      "default": "",
+      "doc": "The card in the field: a UID in hexadecimal or a name from cards; empty takes it away. Each card keeps its own memory between presentations"
     }
   ],
   "outputs": [
+    {
+      "name": "card",
+      "type": "string",
+      "doc": "The UID of the card in the field, hexadecimal, or empty"
+    },
     {
       "name": "antenna",
       "type": "boolean"
@@ -140,7 +156,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "SPI mode 0 register access with FIFO bursts; NRSTPD power-down and hard reset; CommandReg's commands with SoftReset's PowerDown, the interrupt and error registers, the 64-byte FIFO, bit framing, the CRC coprocessor (CRC_A from ModeReg's preset), the timer with TAuto, the antenna drivers, VersionReg 0x92 and the IRQ pin; frames at 106 kbit/s answered after the frame delay time; a MIFARE Classic 1K card: REQA/WUPA, anticollision and SELECT of a 4-byte UID (ATQA 0004h, SAK 08h), HLTA, MFAuthent against the sector trailer (key B unusable while readable), READ and WRITE with ACK/NAK, trailers' key A read as zeros; silent below 2.5 V.",
+      "claims": "SPI mode 0 register access with FIFO bursts; NRSTPD power-down and hard reset; CommandReg's commands with SoftReset's PowerDown, the interrupt and error registers, the 64-byte FIFO, bit framing, the CRC coprocessor (CRC_A from ModeReg's preset), the timer with TAuto, the antenna drivers, VersionReg 0x92 and the IRQ pin; frames at 106 kbit/s answered after the frame delay time; a MIFARE Classic 1K card: REQA/WUPA, anticollision and SELECT of a 4-byte UID (ATQA 0004h, SAK 08h), HLTA, MFAuthent against the sector trailer (key B unusable while readable), READ and WRITE with ACK/NAK, trailers' key A read as zeros; silent below 2.5 V. Cards presented one at a time by the card input, by UID or by a name from cards (with their blocks and trailers), each keeping its own memory between presentations.",
       "omissions": [
         "the Crypto1 cipher on the air (the host sees plaintext after MFAuthent, as through a real MFRC522)",
         "value blocks' increment, decrement, restore and transfer",

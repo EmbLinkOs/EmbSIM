@@ -54,6 +54,7 @@ export function DebugPerspective() {
       <div className="wb-perspective">
         <Placeholder
           title="Debug"
+          icon={<Bug />}
           description="Halt, step and inspect a board's firmware: disassembly with breakpoints, registers, memory, peripherals and the console."
           requires={['debug']}
           needsBoard

@@ -64,11 +64,26 @@ test('route handles cancel without edits and commit once with exact undo', async
   await list.getByRole('button', { name: 'R2.1 → R2.2', exact: true }).click();
   const editor = list.getByRole('region', { name: 'Selected jumper' });
   const handle = page.getByLabel('Jumper 1 route point 1', { exact: true });
-  // Camera projection creates route handles asynchronously on slower GPUs.
+  // Camera projection creates route handles asynchronously on slower GPUs: a
+  // handle can be visible a frame before it has a box, and moves while the
+  // focus animation settles. Read it once two reads agree.
   await expect(handle).toBeVisible();
-  const original = (await handle.boundingBox())!;
+  type Box = { x: number; y: number; width: number; height: number };
+  const placed = async (): Promise<Box> => {
+    const seen: { box: Box | null; last: Box | null } = { box: null, last: null };
+    await expect
+      .poll(async () => {
+        seen.last = seen.box;
+        seen.box = await handle.boundingBox();
+        const { box, last } = seen;
+        return box !== null && last !== null && Math.hypot(box.x - last.x, box.y - last.y) < 0.5;
+      })
+      .toBe(true);
+    return seen.box!;
+  };
+  const original = await placed();
   for (const cancellation of ['Escape', 'pointercancel']) {
-    const box = (await handle.boundingBox())!;
+    const box = await placed();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 25, box.y + box.height / 2 + 15);
@@ -83,7 +98,7 @@ test('route handles cancel without edits and commit once with exact undo', async
       return restored ? Math.hypot(restored.x - original.x, restored.y - original.y) : Infinity;
     }).toBeLessThan(1);
   }
-  const box = (await handle.boundingBox())!;
+  const box = await placed();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 25, box.y + box.height / 2 + 15);

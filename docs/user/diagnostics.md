@@ -46,6 +46,12 @@ run).
 | `island.requires_electrical` | error | instance | a component has no functional model under functional policy |
 | `mcu.no_firmware` | info (warning for an input) | board | a board has no firmware: its MCU's pins stay inputs; an input to it has nowhere to go |
 | `mcu.no_image` | warning | board | the firmware's image file is missing: the core is held in reset until one is loaded |
+| `mcu.stale_image` | warning | board | an ELF image is older, by more than a minute, than a source file its line tables name: it was built before that source last changed (`embsim run --build` rebuilds it first) |
+| `mcu.irq_storm` | warning | component | one exception was entered again and again, more often than once per 400 core cycles over 10 ms: what raises it stays set (a flag its handler does not clear, a level-triggered input held active); the message names the interrupt and its peripheral's status registers as they read |
+| `project.no_connect` | error | project | `no_connect` names a pin no part or board has |
+| `project.no_connect_wired` | warning | pin | a pin `no_connect` lists is on a net after all |
+| `perf.hot_net` | info | net | one net's edges explain most of the run's analog steps: each re-solves its island (`embsim run --circuit-profile` shows the rest) |
+| `perf.island_size` | warning | net | a busy logic line is joined to a large analog island only through a resistor to a supply rail (a pull-up drawn to the board's 3V3): each edge solves the whole island; `emblink/pull_up` to the rail's voltage keeps the line on its own with the same levels |
 | `mcu.image` | error | board | the image could not be loaded (not ELF or HEX, wrong machine, outside memory) |
 | `mcu.register_file` | error | board | the MCU's register description is missing or invalid |
 | `mcu.model_missing` | info | board, peripheral | a peripheral is bound to a model this build does not have: its registers still hold values |
