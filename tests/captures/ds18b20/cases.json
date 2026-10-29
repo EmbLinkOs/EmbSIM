@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kind": "captures",
+  "part": "Maxim DS18B20",
+  "provenance": {
+    "source": "https://github.com/sigrokproject/sigrok-dumps (onewire/ds18b20)",
+    "commit": "0ad13477abc959d37fc9a5acbd23901c371c9c76",
+    "license": "public domain (sigrok-dumps README: 'Unless noted otherwise, all dump files are hereby released into the public domain by their authors')",
+    "setup": "two DS18B20 (marked Dallas 18B20 1619C4 +827AH) on one bus, mastered by an STM32F103C8 with a timer-driven 1-Wire; a Saleae Logic clone at 1 MHz on DQ (README.sigrok)"
+  },
+  "cases": [
+    {
+      "name": "ds18b20_two_on_a_bus",
+      "capture": "2xds18b20.sr",
+      "channel": 0,
+      "part": "emblink/ds18b20",
+      "pin": "DQ",
+      "protocol": "onewire",
+      "doc": "two parts: Search ROM four times, Read Scratchpad from each, Convert T on both (Skip ROM), Read Scratchpad again, Convert T",
+      "devices": [
+        {
+          "rom": "8d011627f794ee28"
+        },
+        {
+          "rom": "330216255487ee28"
+        }
+      ],
+      "tolerance_us": {
+        "default": 2.0,
+        "presence_wait": 3.0
+      }
+    }
+  ]
+}

@@ -5,22 +5,19 @@
 part matches the real one's).
 
 Each case in tests/captures/*/cases.json names a logic capture of a real
-part on its bus (a sigrok session file) and the catalog part that models it.
-The host's half of the capture is played into the model by a pattern
-generator at the same times; the model's answers are recorded; both the
-real and the simulated answers are decoded by the protocol's rules and
-compared:
+part on its bus (a sigrok session file), the catalog part that models it and
+the protocol. The host's half of the capture is played into the model by a
+pattern generator at the same times; the model's answers are recorded; both
+are decoded by the protocol's rules and compared.
 
-  - whether each read was answered. What the part did before the capture
-    began is not known, and it decides the first answers (a part still
-    measuring, or idle long enough to hear a weak start), so the replay
-    begins at the first read the real part answered, after a long idle, and
-    every read from there is compared; a capture the part never answers is
-    compared from its second read;
-  - each timed phase of the answers (the response, the bits' low and high
-    times, the first bit of each byte, the closing low), the mean over all
-    answered reads, within the case's tolerance;
-  - that every simulated frame's checksum holds.
+  am230x (AM2302/DHT22): whether each read was answered, from the real part's
+    first answer on (its history before the capture decides the first ones:
+    a part still measuring, or idle long enough to hear a weak start); each
+    timed phase's mean within tolerance; the simulated checksums.
+  onewire (DS18B20): every bit the parts sent in read slots, one for one
+    (the ROM search, the scratchpads, their CRCs), past the transactions that
+    show what the parts held before the capture (a scratchpad read before the
+    first Convert T); the presence pulses and the 0 bits' timing.
 
     replay_captures.py --embsim PATH [--case NAME]... [--report FILE] [-v]
 
@@ -133,86 +130,271 @@ def checksum_ok(b):
     return (sum(b[:4]) & 0xFF) == b[4]
 
 
-# ---- running the model ----------------------------------------------------------------
+# ---- the 1-Wire bus (DS18B20 and its kin) ------------------------------------------------
+
+# A slot names itself by its low: the master's reset (480 us or more), its
+# write 0 (60 us or more) and write 1 (a few us, released before the 15 us
+# sample), a read slot it starts with a pulse of a few us that a part answering
+# 0 stretches past 15 us; and a part's presence pulse after a reset.
+OW_RESET, OW_W0, OW_R0, OW_W1 = 400 * US, 55 * US, 15 * US, 6 * US
+OW_READ_START = 2 * US  # the master's start of a read slot a part stretched (hidden in the capture)
+
+
+def onewire_events(edges):
+    """The bus as events: ('reset', at, low), ('presence', at, low, after),
+    ('w0'|'w1'|'r0'|'r1', at, low)."""
+    ev = []
+    after_reset = None
+    for lv, t, w in segments(edges):
+        if lv != 0:
+            continue
+        if w >= OW_RESET:
+            ev.append(("reset", t, w))
+            after_reset = t + w
+            continue
+        if after_reset is not None:  # the first low after a reset is the parts' presence
+            ev.append(("presence", t, w, t - after_reset))
+            after_reset = None
+            continue
+        kind = "w0" if w >= OW_W0 else "r0" if w >= OW_R0 else "w1" if w >= OW_W1 else "r1"
+        ev.append((kind, t, w))
+    return ev
+
+
+def onewire_waveform(ev, lead_ps, until_ps):
+    """The master's half: its resets and write slots as they were, its read slots'
+    starts (the captured pulse for a 1, a typical start for a 0)."""
+    lows = []
+    for e in ev:
+        if e[0] in ("reset", "w0", "w1", "r1"):
+            lows.append((e[1], e[2]))
+        elif e[0] == "r0":
+            lows.append((e[1], OW_READ_START))
+    steps, t = [], 0
+    for at, w in lows:
+        at += lead_ps
+        steps.append(f"1@{(at - t) / US:.3f}us")
+        steps.append(f"0@{w / US:.3f}us")
+        t = at + w
+    steps.append(f"1@{max(1, until_ps - t) / US:.3f}us")
+    return ",".join(steps)
+
+
+def onewire_transactions(ev):
+    """Each reset's transaction: its slots as (kind, value) bits, grouped later
+    by the commands they carry."""
+    tx, cur = [], None
+    for e in ev:
+        if e[0] == "reset":
+            cur = {"at": e[1], "presence": None, "slots": []}
+            tx.append(cur)
+        elif e[0] == "presence" and cur is not None:
+            cur["presence"] = e
+        elif cur is not None:
+            cur["slots"].append(e[0])
+    return tx
+
+
+def _byte(bits):
+    return sum(b << k for k, b in enumerate(bits))
+
+
+def onewire_decode(tx):
+    """What each transaction says, by the DS18B20's commands: its ROM command,
+    the device it selects (Match ROM), its function and the bytes read. The
+    ROM search's triplets are kept as they are."""
+    out = []
+    for t in tx:
+        sl = t["slots"]
+        bit = lambda k: 0 if sl[k] in ("w0", "r0") else 1  # noqa: E731
+        d = {"presence": t["presence"] is not None, "rom_cmd": None, "rom": None, "fn": None, "read": []}
+        k = 0
+        if len(sl) >= 8:
+            d["rom_cmd"] = _byte([bit(i) for i in range(8)])
+            k = 8
+            if d["rom_cmd"] == 0x55 and len(sl) >= k + 64:
+                d["rom"] = _byte([bit(i) for i in range(k, k + 64)])
+                k += 64
+            elif d["rom_cmd"] in (0xF0, 0xEC):
+                k = len(sl)  # the search: triplets to the end
+            if len(sl) >= k + 8:
+                d["fn"] = _byte([bit(i) for i in range(k, k + 8)])
+                k += 8
+            reads = [bit(i) for i in range(k, len(sl)) if sl[i] in ("r0", "r1")]
+            d["read"] = [_byte(reads[i:i + 8]) for i in range(0, len(reads) - 7, 8)]
+        d["read_bits"] = "".join("0" if s == "r0" else "1" for s in sl if s in ("r0", "r1"))
+        out.append(d)
+    return out
+
+
+def ds18b20_temperature(scratch):
+    raw = scratch[0] | scratch[1] << 8
+    if raw & 0x8000:
+        raw -= 0x10000
+    return raw / 16
+
+
+# ---- running a model ------------------------------------------------------------------
 
 
 ALIGN_LEAD = 12.0  # s: long enough a part is idle for any start it will ever answer
 
 
-def simulate(embsim, case, reads, work, lead_s=None):
-    """The model's answers to the capture's host starts: its edges on the wire,
-    in the capture's time base."""
-    lead = int((lead_s if lead_s is not None else case.get("lead_s", 1.2)) * 1e12)
-    # past the last start's release and its answer (a frame takes about 5 ms)
-    until = (reads[-1]["at"] + reads[-1]["start"] + lead + 50_000 * US) if reads else lead
-    real_values = next((am230x_values(r["bytes"]) for r in reads if r["answered"]), (50.0, 25.0))
+def run_bench(embsim, name, components, net_pins, inputs, until_ps, lead_ps, work):
+    """A pattern generator as the host on one open-drain net with a pull-up and the
+    parts; the net's edges in the capture's time base (the lead taken off)."""
     proj = {
-        "schema_version": 1, "kind": "project", "name": case["name"], "policy": "functional",
-        "components": [
-            {"id": "HOST", "component": "emblink/pattern_generator",
-             "params": {"waveform": am230x_waveform(reads, lead, until), "idle": 1, "drive": "open_drain"}},
-            {"id": "PU", "component": "emblink/pull_up"},
-            {"id": "DUT", "component": case["part"]},
-        ],
-        "nets": {"DATA": ["HOST.OUT0", "PU.1", f"DUT.{case['pin']}"]},
+        "schema_version": 1, "kind": "project", "name": name, "policy": "functional",
+        "components": [{"id": "PU", "component": "emblink/pull_up"}] + components,
+        "nets": {"DATA": ["HOST.OUT0", "PU.1"] + net_pins},
         "probes": [{"name": "data", "target": "net:DATA", "kind": "digital"}],
     }
-    scen = {
-        "schema_version": 1, "kind": "scenario", "name": case["name"], "until": f"{until}ps",
-        "inputs": [{"at": "0", "target": "DUT", "input": "humidity", "value": real_values[0]},
-                   {"at": "0", "target": "DUT", "input": "temperature", "value": real_values[1]}],
-    }
-    p, s, rec = work / f"{case['name']}.json", work / f"{case['name']}-s.json", work / f"{case['name']}-rec.json"
+    scen = {"schema_version": 1, "kind": "scenario", "name": name, "until": f"{until_ps}ps", "inputs": inputs}
+    p, s, rec = work / f"{name}.json", work / f"{name}-s.json", work / f"{name}-rec.json"
     p.write_text(json.dumps(proj), encoding="utf-8")
     s.write_text(json.dumps(scen), encoding="utf-8")
     run = subprocess.run([embsim, "run", str(p), "--scenario", str(s), "--record", str(rec), "--quiet"],
                          capture_output=True, text=True, errors="replace", timeout=900)
     if run.returncode not in (0, 1) or not rec.exists():
-        raise RuntimeError(f"{case['name']}: embsim failed ({run.returncode}): {run.stderr[-600:]}")
+        raise RuntimeError(f"{name}: embsim failed ({run.returncode}): {run.stderr[-600:]}")
     obs = json.loads(rec.read_text(encoding="utf-8"))["observations"]
-    edges = [(int(o["at_ps"]) - lead, 1 if o["value"] == "1" else 0) for o in obs if o.get("kind") == "probe"]
-    # the real capture's time base: the lead taken off, the wire released before it
-    edges = [(max(0, t), v) for t, v in edges]
     out, last = [], None
-    for t, v in edges:
+    for o in obs:
+        if o.get("kind") != "probe":
+            continue
+        t, v = max(0, int(o["at_ps"]) - lead_ps), 1 if o["value"] == "1" else 0
         if v != last:
             out.append((t, v))
             last = v
     return out
 
 
-def compare(case, real_reads, sim_reads, first=1, offset=0):
-    """`first`: the first read whose answer is compared; `offset`: the number of
-    the capture's reads the replay began after (for the messages)."""
-    tol = case.get("tolerance_us", {})
-    problems = []
-    n = min(len(real_reads), len(sim_reads))
-    if len(real_reads) != len(sim_reads):
-        problems.append(f"{len(real_reads)} host starts in the capture, {len(sim_reads)} in the simulation")
-    for k in range(first, n):
-        a, b = real_reads[k]["answered"], sim_reads[k]["answered"]
-        if a != b:
-            problems.append(f"read {k + 1 + offset} (start {real_reads[k]['start'] / US:.0f} us): "
-                            f"the real part {'answered' if a else 'did not answer'}, the model "
-                            f"{'answered' if b else 'did not'}")
-    real, sim = am230x_phases(real_reads), am230x_phases(sim_reads)
+def host(waveform):
+    return {"id": "HOST", "component": "emblink/pattern_generator",
+            "params": {"waveform": waveform, "idle": 1, "drive": "open_drain"}}
+
+
+def check_phases(real, sim, tol, problems):
     for name, rv in real.items():
         sv = sim.get(name)
         limit = tol.get(name, tol.get("default", 2.0))
         if rv is None:
             continue
         if sv is None:
-            if real_reads and any(r["answered"] for r in sim_reads):
-                problems.append(f"{name}: real {rv:.1f} us, the model has none")
-            continue
-        if abs(rv - sv) > limit:
+            problems.append(f"{name}: real {rv:.1f} us, the model has none")
+        elif abs(rv - sv) > limit:
             problems.append(f"{name}: real {rv:.1f} us, model {sv:.1f} us (more than {limit} us apart)")
-    for k, r in enumerate(sim_reads):
+
+
+# ---- per protocol: replay, decode, compare -------------------------------------------------
+
+
+def am230x_simulate(embsim, case, reads, work, lead_s):
+    lead = int(lead_s * 1e12)
+    # past the last start's release and its answer (a frame takes about 5 ms)
+    until = (reads[-1]["at"] + reads[-1]["start"] + lead + 50_000 * US) if reads else lead
+    h, t = next((am230x_values(r["bytes"]) for r in reads if r["answered"]), (50.0, 25.0))
+    inputs = [{"at": "0", "target": "DUT", "input": "humidity", "value": h},
+              {"at": "0", "target": "DUT", "input": "temperature", "value": t}]
+    comps = [host(am230x_waveform(reads, lead, until)), {"id": "DUT", "component": case["part"]}]
+    return run_bench(embsim, case["name"], comps, [f"DUT.{case['pin']}"], inputs, until, lead, work)
+
+
+def am230x_case(embsim, case, edges, work):
+    real_reads = am230x_reads(edges)
+    k = next((i for i, r in enumerate(real_reads) if r["answered"]), None)
+    first, offset = 1, 0
+    if k is None:  # never answered: no history to align on
+        sim_reads = am230x_reads(am230x_simulate(embsim, case, real_reads, work, case.get("lead_s", 1.2)))
+    else:  # from the real part's first answer, after a long idle
+        tail = [dict(r, at=r["at"] - real_reads[k]["at"]) for r in real_reads[k:]]
+        sim_reads = am230x_reads(am230x_simulate(embsim, case, tail, work, ALIGN_LEAD))
+        real_reads, first, offset = real_reads[k:], 0, k
+    problems = []
+    n = min(len(real_reads), len(sim_reads))
+    if len(real_reads) != len(sim_reads):
+        problems.append(f"{len(real_reads)} host starts in the capture, {len(sim_reads)} in the simulation")
+    for i in range(first, n):
+        a, b = real_reads[i]["answered"], sim_reads[i]["answered"]
+        if a != b:
+            problems.append(f"read {i + 1 + offset} (start {real_reads[i]['start'] / US:.0f} us): "
+                            f"the real part {'answered' if a else 'did not answer'}, the model "
+                            f"{'answered' if b else 'did not'}")
+    real, sim = am230x_phases(real_reads), am230x_phases(sim_reads)
+    if any(r["answered"] for r in sim_reads) or not any(r["answered"] for r in real_reads):
+        check_phases(real, sim, case.get("tolerance_us", {}), problems)
+    elif real:
+        problems.append("the model answered none of the reads the real part answered")
+    for i, r in enumerate(sim_reads):
         if r["answered"] and not checksum_ok(r["bytes"]):
-            problems.append(f"simulated read {k + 1}: checksum {r['bytes']} does not hold")
-    return {"real": real, "model": sim, "reads": n,
-            "answered_real": sum(r["answered"] for r in real_reads),
-            "answered_model": sum(r["answered"] for r in sim_reads), "problems": problems}
+            problems.append(f"simulated read {i + 1}: checksum {r['bytes']} does not hold")
+    return {"real": real, "model": sim, "problems": problems,
+            "summary": f"{n} reads, answered {sum(r['answered'] for r in real_reads)} real / "
+                       f"{sum(r['answered'] for r in sim_reads)} model"}
+
+
+def onewire_phases(ev):
+    pres = [e for e in ev if e[0] == "presence"]
+    r0 = [e[2] for e in ev if e[0] == "r0"]
+    mean = lambda xs: statistics.mean(xs) / US if xs else None  # noqa: E731
+    return {"presence_wait": mean([e[3] for e in pres]), "presence_low": mean([e[2] for e in pres]),
+            "read_0_low": mean(r0)}
+
+
+def onewire_case(embsim, case, edges, work):
+    """Every bit the parts sent, compared one for one past the transactions that
+    show what they held before the capture (a scratchpad read before the first
+    Convert T: the last conversion and the EEPROM's configuration are from
+    before), and the parts' timing."""
+    ev = onewire_events(edges)
+    real_tx = onewire_decode(onewire_transactions(ev))
+    # each part's temperature, from its first scratchpad read after a conversion
+    temps, converted, selected = {}, False, None
+    for d in real_tx:
+        if d["fn"] == 0x44:
+            converted = True
+        if d["rom_cmd"] == 0x55:
+            selected = d["rom"]
+        if d["fn"] == 0xBE and converted and selected is not None and len(d["read"]) >= 2:
+            temps.setdefault(selected, ds18b20_temperature(d["read"]))
+    lead = int(case.get("lead_s", 0.01) * 1e12)
+    until = (ev[-1][1] + ev[-1][2] + lead + 10_000 * US) if ev else lead
+    comps, pins, inputs = [host(onewire_waveform(ev, lead, until))], [], []
+    for i, dev in enumerate(case["devices"]):
+        rom = int(dev["rom"], 16)
+        did = f"DUT{i + 1}"
+        comps.append({"id": did, "component": case["part"], "params": {"serial": (rom >> 8) & 0xFFFFFFFFFFFF}})
+        pins.append(f"{did}.{case['pin']}")
+        if rom in temps:
+            inputs.append({"at": "0", "target": did, "input": "temperature", "value": temps[rom]})
+    sim_ev = onewire_events(run_bench(embsim, case["name"], comps, pins, inputs, until, lead, work))
+    sim_tx = onewire_decode(onewire_transactions(sim_ev))
+    problems = []
+    if len(real_tx) != len(sim_tx):
+        problems.append(f"{len(real_tx)} transactions in the capture, {len(sim_tx)} in the simulation")
+    converted, compared, differing = False, 0, 0
+    for i, (a, b) in enumerate(zip(real_tx, sim_tx)):
+        if a["fn"] == 0x44:
+            converted = True
+        history = a["fn"] == 0xBE and not converted
+        if a["presence"] != b["presence"]:
+            problems.append(f"transaction {i + 1}: presence {a['presence']} real, {b['presence']} model")
+        if history:
+            continue
+        compared += len(a["read_bits"])
+        if a["read_bits"] != b["read_bits"]:
+            differing += 1
+            if differing <= 5:
+                problems.append(f"transaction {i + 1} (ROM 0x{a['rom_cmd'] or 0:02X}, function "
+                                f"0x{a['fn'] or 0:02X}): the parts sent {a['read_bits'] or '-'}, the models "
+                                f"{b['read_bits'] or '-'}")
+    real, sim = onewire_phases(ev), onewire_phases(sim_ev)
+    check_phases(real, sim, case.get("tolerance_us", {}), problems)
+    return {"real": real, "model": sim, "problems": problems, "temperatures": {hex(k): v for k, v in temps.items()},
+            "summary": f"{len(real_tx)} transactions, {compared} bits the parts sent compared"}
+
+
+PROTOCOLS = {"am230x": am230x_case, "onewire": onewire_case}
 
 
 def main() -> int:
@@ -232,21 +414,11 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="embsim-captures-") as tmp:
         for c in cases:
             cap = read_sr(c["dir"] / c["capture"])
-            real_reads = am230x_reads(cap.edges(c.get("channel", 0)))
-            k = next((i for i, r in enumerate(real_reads) if r["answered"]), None)
-            if k is None:  # never answered: no history to align on
-                sim_reads = am230x_reads(simulate(args.embsim, c, real_reads, Path(tmp)))
-                res = compare(c, real_reads, sim_reads)
-            else:  # from the real part's first answer, after a long idle
-                tail = [dict(r, at=r["at"] - real_reads[k]["at"]) for r in real_reads[k:]]
-                sim_reads = am230x_reads(simulate(args.embsim, c, tail, Path(tmp), ALIGN_LEAD))
-                res = compare(c, real_reads[k:], sim_reads, first=0, offset=k)
-                res["aligned_at_read"] = k + 1
+            res = PROTOCOLS[c["protocol"]](args.embsim, c, cap.edges(c.get("channel", 0)), Path(tmp))
             report[c["name"]] = res
             ok = not res["problems"]
             failed += not ok
-            print(f"{'ok  ' if ok else 'FAIL'}  {c['name']}: {res['reads']} reads, answered "
-                  f"{res['answered_real']} real / {res['answered_model']} model")
+            print(f"{'ok  ' if ok else 'FAIL'}  {c['name']}: {res['summary']}")
             if args.verbose or not ok:
                 for name, rv in res["real"].items():
                     sv = res["model"].get(name)
