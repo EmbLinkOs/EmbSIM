@@ -144,8 +144,8 @@ Exit:
   the reverse.
 - An exploded view (each part lifted off its host by its depth).
 - A view cube in a corner.
-- Jumpers that sag as wire does. Today a long jumper (to a supply across
-  the desk) arcs high over the bench; a real one lies on the desk.
+- Jumpers that sag as wire does: done for spans of 70 mm or more, which
+  drape onto the desk or the parts under them; short ones still arc.
 
 ### Stage 6: the world (M7)
 

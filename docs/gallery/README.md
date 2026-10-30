@@ -20,6 +20,14 @@ under a glossy soldermask.
 |---|---|
 | ![The Uno from above](bench-3d-pcb/3-uno-top.png) | ![The ESP32-C3 DevKit](bench-3d-pcb/4-esp32c3.png) |
 
+A long jumper (the supply's leads across the desk) used to arch over the
+bench; now it falls from its socket, lies on the desk, and climbs to the
+breadboard, resting on whatever is under it:
+
+| Before | After |
+|---|---|
+| ![Leads arched high above the bench](bench-3d-pcb/0-arched-leads-before.png) | ![Leads draped onto the desk](bench-3d-pcb/5-draped-leads.png) |
+
 ## Packages at their standard dimensions (2026-10-30)
 
 Stage 2 of [the 3D plan](../engineering/bench-3d.md): parts drawn from the

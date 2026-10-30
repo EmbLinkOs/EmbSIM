@@ -159,13 +159,21 @@ function v3([x, y, z]: Point3): THREE.Vector3 {
   return new THREE.Vector3(x, y, z);
 }
 
+/** a wire's radius and how far it lies above what it rests on */
+const WIRE_R = 0.8;
+/** a span at least this long drapes down onto the desk rather than arcing over it */
+const DRAPE_SPAN = 70;
+
 /**
  * A jumper's path. Between two holes of one surface it lies flat, as a
  * pre-cut breadboard jumper does: up 1.5 mm, along, down. Anywhere else it
  * is a flexible Dupont wire: up from each end, then an arc that rises with
- * its length.
+ * its length; a long one (a supply's lead across the desk) falls under its
+ * own weight and lies on the desk, or on whatever `floor` says is under it
+ * (the height of the bench's top at a point, so it never passes through a
+ * board), between its ends.
  */
-export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: number): THREE.Curve<THREE.Vector3> {
+export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: number, floor?: (x: number, z: number) => number): THREE.Curve<THREE.Vector3> {
   if (points?.length) {
     const path = new THREE.CurvePath<THREE.Vector3>();
     const route = [a, ...points, b].map(v3);
@@ -189,6 +197,37 @@ export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: numb
     const pts = [A, A.clone().setY(h - 0.6), A.clone().setY(h).lerp(B.clone().setY(h), Math.min(0.5, 0.8 / Math.max(len, 0.1))), B.clone().setY(h).lerp(A.clone().setY(h), Math.min(0.5, 0.8 / Math.max(len, 0.1))), B.clone().setY(h - 0.6), B];
     for (let i = 0; i < pts.length - 1; i++) path.add(new THREE.LineCurve3(pts[i]!, pts[i + 1]!));
     return path;
+  }
+  const span = Math.hypot(B.x - A.x, B.z - A.z);
+  if (span >= DRAPE_SPAN) {
+    const under = (t: number) => {
+      const p = A.clone().lerp(B, t);
+      return Math.max(0, floor?.(p.x, p.z) ?? 0) + WIRE_R;
+    };
+    // out of each socket, then falling to what is below, resting there between
+    const at = (t: number, y: number) => A.clone().lerp(B, t).setY(Math.max(y, under(t)));
+    const lowA = Math.min(A.y, B.y) * 0.35;
+    const route = [
+      A,
+      A.clone().setY(A.y + UP),
+      at(0.12, Math.max(A.y * 0.55, lowA)),
+      at(0.28, 0),
+      at(0.5, 0),
+      at(0.72, 0),
+      at(0.88, Math.max(B.y * 0.55, lowA)),
+      B.clone().setY(B.y + UP),
+      B,
+    ];
+    // a spline overshoots between its points: clamp a dense sampling of it above what is below
+    const rough = new THREE.CatmullRomCurve3(route, false, 'centripetal');
+    const span2 = Math.max(span, 1e-6);
+    const dense = rough.getPoints(96).map((p, i, all) => {
+      if (i === 0 || i === all.length - 1) return p;
+      const t = Math.min(1, Math.max(0, ((p.x - A.x) * (B.x - A.x) + (p.z - A.z) * (B.z - A.z)) / (span2 * span2)));
+      const lowest = Math.max(0, floor?.(p.x, p.z) ?? 0) + WIRE_R;
+      return t > 0.04 && t < 0.96 ? p.setY(Math.max(p.y, lowest)) : p;
+    });
+    return new THREE.CatmullRomCurve3(dense, false, 'centripetal');
   }
   const lift = rise ?? Math.min(18, 5 + len * 0.1);
   const top = Math.max(A.y, B.y) + lift;
@@ -240,6 +279,21 @@ function setOrthoFrustum(cam: THREE.OrthographicCamera, half: number, aspect: nu
   cam.bottom = -half;
   cam.left = -half * aspect;
   cam.right = half * aspect;
+}
+
+/** the height of the bench's top under a point: what a draped wire rests on (the parts, not the wires) */
+function floorOf(parts: Iterable<{ built: Built }>, camera: THREE.Camera): (x: number, z: number) => number {
+  const objects = [...parts].map((e) => e.built.group).filter((g) => g.visible);
+  const ray = new THREE.Raycaster();
+  // sprites (an LED's glow) need a camera to be tested, though they are then passed over
+  ray.camera = camera;
+  const down = new THREE.Vector3(0, -1, 0);
+  const from = new THREE.Vector3();
+  return (x, z) => {
+    ray.set(from.set(x, 500, z), down);
+    const hit = ray.intersectObjects(objects, true).find((h) => (h.object as THREE.Mesh).isMesh && !(h.object instanceof THREE.Sprite));
+    return hit ? hit.point.y : 0;
+  };
 }
 
 /** a part's body: its meshes, not the glow sprites, lights and labels round it */
@@ -753,13 +807,16 @@ export function Bench3D(props: Bench3DProps) {
     clear(s.jumpers);
     clear(s.links);
     clear(s.notes);
+    // what a long jumper drapes over: the parts as they stand now
+    s.scene.updateMatrixWorld(true);
+    const floor = floorOf(s.parts.values(), s.camera);
     const pinMat = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, metalness: 0.9, roughness: 0.3 });
     const housingMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
     for (const j of props.jumpers) {
       const g = new THREE.Group();
       const sel = props.selected?.jumper === j.index || j.traced;
       const insul = new THREE.MeshStandardMaterial({ color: new THREE.Color(j.color), roughness: 0.45, emissive: sel ? new THREE.Color(j.color) : new THREE.Color(0), emissiveIntensity: sel ? 0.5 : 0 });
-      const tube = new THREE.Mesh(new THREE.TubeGeometry(jumperCurve(j.a, j.b, j.points, j.rise_mm), 96, 0.8, 10, false), insul);
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(jumperCurve(j.a, j.b, j.points, j.rise_mm, floor), 96, 0.8, 10, false), insul);
       tube.castShadow = true;
       tube.userData = { jumper: j.index };
       g.add(tube);
@@ -995,7 +1052,7 @@ export function Bench3D(props: Bench3DProps) {
       const tube = group?.children[0] as THREE.Mesh<THREE.TubeGeometry> | undefined;
       if (!tube) return;
       tube.geometry.dispose();
-      tube.geometry = new THREE.TubeGeometry(jumperCurve(j.a, j.b, points, j.rise_mm), 96, 0.8, 10, false);
+      tube.geometry = new THREE.TubeGeometry(jumperCurve(j.a, j.b, points, j.rise_mm, floorOf(s.parts.values(), s.camera)), 96, 0.8, 10, false);
       for (const child of group!.children) if (typeof child.userData.routePoint === 'number') {
         const point = points[child.userData.routePoint];
         if (point) child.position.copy(v3(point));
