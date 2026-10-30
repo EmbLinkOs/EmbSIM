@@ -62,6 +62,11 @@ test('views, projection, height plane, layers and section are presentation only'
   for (const view of ['Top', 'Bottom', 'Front', 'Back', 'Left', 'Right', 'Isometric', 'Desk']) await page.getByRole('button', { name: view, exact: true }).click();
   await page.getByRole('radio', { name: 'Orthographic' }).click();
   await menu(page, 'View');
+  // the view cube's visible faces frame the standard views too: from the desk, Top and Front show
+  const face = (view: string) => page.locator(`.eb-viewcube__face[data-view="${view}"]`);
+  await face('front').click();
+  await expect(face('top')).toBeVisible();
+  await face('top').click();
   const bench = page.locator('.eb-bench3d');
   await bench.focus();
   for (const key of ['z', 'Shift+Z', 'y', 'x', 'i']) await page.keyboard.press(key);

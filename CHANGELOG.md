@@ -11,6 +11,9 @@ versions follow semantic versioning. There is no release yet.
   mounting holes drilled through (plated barrels and rings), the
   glass-epoxy core at its edges, and the artwork under a glossy soldermask.
   The underside takes the mask's colour from the artwork.
+- A view cube in the bench's corner turns with the camera; a click on a
+  face frames that view (the View menu and the Z, Y, X and I keys give the
+  same views to the keyboard).
 - A jumper spanning 70 mm or more drapes as a Dupont wire does: up out of
   its socket, down onto the desk (or onto whatever part is under it, never
   through it), and up to its other end. It used to arch over the bench.

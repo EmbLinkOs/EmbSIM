@@ -273,6 +273,24 @@ function labelElement(text: string): HTMLDivElement {
   return el;
 }
 
+/** the CSS transform that turns the view cube as the camera sees the scene */
+export function cubeTransform(view: THREE.Matrix4): string {
+  const e = view.elements;
+  const f = (v: number) => (Math.abs(v) < 1e-10 ? 0 : v).toFixed(6);
+  // the rotation only, with y flipped for CSS's y-down axis (as CSS3DRenderer does)
+  return `matrix3d(${f(e[0]!)},${f(-e[1]!)},${f(e[2]!)},0,${f(-e[4]!)},${f(e[5]!)},${f(-e[6]!)},0,${f(e[8]!)},${f(-e[9]!)},${f(e[10]!)},0,0,0,0,1)`;
+}
+
+/** the view cube's faces: the view each one frames, and where it sits on the cube */
+const CUBE_FACES: { view: StandardView; label: string; transform: string }[] = [
+  { view: 'front', label: 'Front', transform: 'translateZ(24px)' },
+  { view: 'back', label: 'Back', transform: 'rotateY(180deg) translateZ(24px)' },
+  { view: 'right', label: 'Right', transform: 'rotateY(90deg) translateZ(24px)' },
+  { view: 'left', label: 'Left', transform: 'rotateY(-90deg) translateZ(24px)' },
+  { view: 'top', label: 'Top', transform: 'rotateX(90deg) translateZ(24px)' },
+  { view: 'bottom', label: 'Bottom', transform: 'rotateX(-90deg) translateZ(24px)' },
+];
+
 /** an orthographic camera's frustum, `half` mm above and below its centre */
 function setOrthoFrustum(cam: THREE.OrthographicCamera, half: number, aspect: number): void {
   cam.top = half;
@@ -322,6 +340,7 @@ function disposeTree(o: THREE.Object3D): void {
 
 export function Bench3D(props: Bench3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const cubeRef = useRef<HTMLDivElement>(null);
   const cancelGesture = useRef<(() => void) | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; x?: number; y?: number; ref?: string; blocked?: boolean }>({ text: '' });
   const propsRef = useRef(props);
@@ -366,6 +385,8 @@ export function Bench3D(props: Bench3DProps) {
         }
       } else s.renderer.render(s.scene, s.camera);
       s.labels.render(s.scene, s.camera);
+      // the view cube turns with the camera: the scene's rotation seen from the camera, y down as CSS has it
+      if (cubeRef.current) cubeRef.current.style.transform = cubeTransform(s.camera.matrixWorldInverse);
     });
   }, []);
 
@@ -1486,6 +1507,15 @@ export function Bench3D(props: Bench3DProps) {
     >
       {feedback.x !== undefined && feedback.y !== undefined && <span className="eb-terminal-target" style={{ left: feedback.x, top: feedback.y }} aria-hidden="true" />}
       <div className="eb-connection-feedback" role="status">{feedback.text}</div>
+      {/* a pointer shortcut: its hidden faces cannot be seen, so it is out of the tab order;
+          the View menu and the Z, Y, X and I keys give every view to the keyboard */}
+      <div className="eb-viewcube" aria-hidden="true">
+        <div className="eb-viewcube__cube" ref={cubeRef}>
+          {CUBE_FACES.map((f) => (
+            <button key={f.view} type="button" className="eb-viewcube__face" style={{ transform: f.transform }} tabIndex={-1} data-view={f.view} title={`${f.label} view`} onClick={() => frame(f.view)}>{f.label}</button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

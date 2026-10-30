@@ -143,7 +143,8 @@ Exit:
 - Cross-probing: select in the schematic and the 3D view frames it, and
   the reverse.
 - An exploded view (each part lifted off its host by its depth).
-- A view cube in a corner.
+- A view cube in a corner: done (a CSS cube turned by the camera's
+  rotation; its faces frame the standard views).
 - Jumpers that sag as wire does: done for spans of 70 mm or more, which
   drape onto the desk or the parts under them; short ones still arc.
 

@@ -30,6 +30,8 @@ These work as an EDA tool's 3D viewer does
   chair). Each one frames the bench. The keys are KiCad's, with the bench
   focused: **Z** top (**Shift+Z** bottom), **Y** front (**Shift+Y** back),
   **X** left (**Shift+X** right), **I** isometric, **F** frame.
+- **View cube.** The cube in the top-right corner turns with the camera;
+  click a face to see the bench from that side.
 - **Projection.** Choose **Perspective** or **Orthographic**. An
   orthographic view keeps parallel lines parallel, as a drawing does.
 - **Render quality.** **Draft render** is the default. **Quality render**

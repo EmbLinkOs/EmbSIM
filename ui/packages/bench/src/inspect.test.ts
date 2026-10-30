@@ -109,3 +109,19 @@ describe('height plane', () => {
     expect(layerOf('dip')).toBe('parts');
   });
 });
+
+describe('the view cube', () => {
+  it('stands square to the camera when the camera looks from the front, and turns with it', async () => {
+    const THREE = await import('three');
+    const { cubeTransform } = await import('./Bench3D');
+    expect(cubeTransform(new THREE.Matrix4()).match(/-?[\d.]+/g)!.slice(1).map(Number)).toEqual([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    // looking straight down: the cube's top faces the viewer, so CSS's z takes the scene's y
+    const cam = new THREE.PerspectiveCamera();
+    cam.position.set(0, 10, 0.0001);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+    const m = cubeTransform(cam.matrixWorldInverse).match(/-?[\d.]+/g)!.slice(1).map(Number);
+    // column 1 (the scene's y) maps onto the screen's depth (z): row 2 of column 1 is +1 or -1
+    expect(Math.abs(m[6]!)).toBeCloseTo(1, 3);
+  });
+});

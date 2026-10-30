@@ -761,6 +761,43 @@
   color: var(--text-on-accent);
 }
 
+/* the view cube: the camera's orientation, each face a standard view */
+.eb-viewcube {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 48px;
+  height: 48px;
+  perspective: none;
+  z-index: 3;
+}
+.eb-viewcube__cube {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+.eb-viewcube__face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgb(120 130 145 / 0.9);
+  border-radius: 3px;
+  background: rgb(245 247 250 / 0.92);
+  color: #1f2937;
+  font: 600 9px var(--font-ui);
+  letter-spacing: 0.02em;
+  backface-visibility: hidden;
+  cursor: pointer;
+}
+.eb-viewcube__face:hover,
+.eb-viewcube__face:focus-visible {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  outline: none;
+}
+
 /* the measure tool's result, at the middle of its line */
 .eb-measure {
   padding: 2px 7px;
