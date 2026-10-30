@@ -5,6 +5,34 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The 3D bench as an inspection viewer (2026-10-30)
+
+The owner asked for the 3D bench and world to reach Proteus's, KiCad's and
+Altium's level. [The plan](engineering/bench-3d.md) compares the bench with
+their 3D views and sets seven stages: inspection, JEDEC package geometry,
+glTF model assets, the board's stack-up, CAD interaction, the world, and
+performance. Stage 1 is built (`ui/packages/bench`, the bench's toolbar):
+- standard views on KiCad's keys, and an orthographic camera;
+- a measure tool, snapping to pins and holes;
+- a section plane on any axis, and a height plane that lists the parts
+  through it (the Proteus height check);
+- layer visibility;
+- a quality render, with ambient occlusion and bloom only on what emits
+  light, falling back to draft when frames miss 60 Hz;
+- a PNG still at 2× or 4×, and GLB export (glTF binary in metres, a node per
+  part).
+
+Evidence: `inspect.test.ts` (12 tests: view framing, measurement, section,
+height plane) and `bench-tools.spec.ts`. The spec measures R2's legs as
+10.16 mm (4 × 2.54 mm) through the pointer, checks that the GLB file starts
+with `glTF`, and checks that no tool edits the project. Not yet:
+- real package geometry, model files and the board's copper, mask and
+  silkscreen (stages 2 to 4), which is where the bench still looks least
+  like a professional tool;
+- capped section faces;
+- STEP export (no permissively licensed B-rep kernel);
+- frame times measured against ADR-028.
+
 ## I2C parts' captures (2026-10-30)
 
 `replay_captures.py` now replays I2C captures: the master's half of SCL

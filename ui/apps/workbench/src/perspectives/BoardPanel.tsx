@@ -38,9 +38,11 @@ import {
 } from '@embsim/bench/model';
 import type { ArtworkState, BenchPlace, BenchWire, Hotspot, OutputValue, Project } from '@embsim/protocol';
 import { BoardView, describeNetState, parseSvg, type BenchWire as Wire2D, type BoardItem } from '@embsim/scene';
-import { Box, Cable, CircuitBoard, List, Maximize2, MousePointer2, StickyNote, Wand2 } from 'lucide-react';
+import { Box, Cable, CircuitBoard, List, Maximize2, MousePointer2, Ruler, StickyNote, Wand2 } from 'lucide-react';
+import { describeMeasurement, type BenchLayers, type Measurement, type Section, type SectionAxis, type StandardView } from '@embsim/bench/inspect';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { errorMessage, inputs as inputActions } from '../actions';
+import { platform } from '../platform/platform';
 import { useProject, type CatalogEntry } from '../stores/project';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
@@ -100,6 +102,11 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const connected = useSession((s) => s.status === 'open');
   const { toast } = useToast();
   const [tool, setTool] = useState<BenchTool>('select');
+  // inspection (docs/engineering/bench-3d.md, stage 1): the view, never the project
+  const [section, setSection] = useState<Section | null>(null);
+  const [heightPlane, setHeightPlane] = useState<number | null>(null);
+  const [above, setAbove] = useState<{ id: string; top: number }[]>([]);
+  const [measured, setMeasured] = useState<Measurement | null>(null);
   const [plugHole, setPlugHole] = useState('');
   const [wireColor, setWireColor] = useState(WIRE_COLORS[0]!);
   // the selected part is the workbench's selection (the inspector shows it, the schematic too); a jumper is the bench's own
@@ -148,6 +155,22 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
     });
   };
   const handle = useRef<Bench3DHandle>(null);
+  const exportImage = async (scale: number) => {
+    try {
+      const blob = await handle.current?.exportImage(scale);
+      if (!blob) return;
+      const host = await platform();
+      await host.saveBinaryFile(`${project?.name ?? 'bench'}-bench.png`, new Uint8Array(await blob.arrayBuffer()), 'image/png');
+    } catch (e) { toast({ kind: 'error', title: 'Image export failed', description: errorMessage(e) }); }
+  };
+  const exportGlb = async () => {
+    try {
+      const blob = await handle.current?.exportGlb();
+      if (!blob) return;
+      const host = await platform();
+      await host.saveBinaryFile(`${project?.name ?? 'bench'}-bench.glb`, new Uint8Array(await blob.arrayBuffer()), 'model/gltf-binary');
+    } catch (e) { toast({ kind: 'error', title: 'GLB export failed', description: errorMessage(e) }); }
+  };
   const editable = canEdit && editableProject;
 
   const fail = useCallback((title: string) => (e: unknown) => toast({ kind: 'error', title, description: errorMessage(e) }), [toast]);
@@ -236,6 +259,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         options={[
           { value: 'select', label: 'Move', icon: <MousePointer2 />, title: 'Move and plug parts (drag; R turns, arrows nudge, Delete removes)' },
           { value: 'wire', label: 'Jumper', icon: <Cable />, title: 'Wire a jumper from a hole or pin to another' },
+          { value: 'measure', label: 'Measure', icon: <Ruler />, title: 'Click two points (a pin or hole snaps) for the distance between them; Esc clears' },
         ]}
       />
       <div className="wb-bench-colors" role="radiogroup" aria-label="Jumper colour">
@@ -293,8 +317,21 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
       </Tooltip>
       <Button size="sm" variant="ghost" disabled={flat || !selectedPart} onClick={() => handle.current?.frame(undefined, true)}>Focus part</Button>
       <BenchViewMenu>
-          <Button size="sm" variant="ghost" disabled={flat} onClick={() => handle.current?.frame('top')}>Top</Button>
-          <Button size="sm" variant="ghost" disabled={flat} onClick={() => handle.current?.frame('perspective')}>Perspective</Button>
+          <div className="wb-bench-views" role="group" aria-label="Standard views">
+            {VIEWS.map(([view, label, key]) => (
+              <Button key={view} size="sm" variant="ghost" disabled={flat} title={key ? `${label} (${key})` : label} onClick={() => handle.current?.frame(view)}>{label}</Button>
+            ))}
+          </div>
+          <SegmentedControl<'perspective' | 'orthographic'>
+            label="Projection"
+            size="sm"
+            value={preferences.projection}
+            onValueChange={(v) => preference('projection', v)}
+            options={[{ value: 'perspective', label: 'Perspective' }, { value: 'orthographic', label: 'Orthographic' }]}
+          />
+          <Select label="Render quality" size="sm" value={preferences.quality} onValueChange={(v) => preference('quality', v)} options={[
+            { value: 'draft', label: 'Draft render' }, { value: 'quality', label: 'Quality render (occlusion, bloom)' },
+          ]} />
           <Select label="Bench surface" size="sm" value={preferences.surface} onValueChange={(v) => preference('surface', v)} options={[
             { value: 'paper', label: 'Paper' }, { value: 'graphite', label: 'Graphite' }, { value: 'mat', label: 'Bench mat' },
           ]} />
@@ -302,6 +339,27 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
             { value: 'adaptive', label: 'Adaptive labels' }, { value: 'all', label: 'All labels' }, { value: 'selected', label: 'Selected only' },
           ]} />
           <Button size="sm" variant="ghost" aria-pressed={preferences.notes} onClick={() => preference('notes', !preferences.notes)}>Notes</Button>
+      </BenchViewMenu>
+      <BenchViewMenu summary="Inspect">
+        <Select label="Section" size="sm" value={section?.axis ?? 'off'} onValueChange={(v) => setSection(v === 'off' ? null : { axis: v as SectionAxis, at: section?.at ?? 0, flip: section?.flip })} options={[
+          { value: 'off', label: 'No section' }, { value: 'x', label: 'Cut across X' }, { value: 'y', label: 'Cut across Y (depth)' }, { value: 'z', label: 'Cut across Z (height)' },
+        ]} />
+        {section && <>
+          <Input label="Section at" unit="mm" type="number" step={0.5} value={section.at} onChange={(e) => setSection({ ...section, at: Number(e.target.value) || 0 })} />
+          <Button size="sm" variant="ghost" aria-pressed={Boolean(section.flip)} onClick={() => setSection({ ...section, flip: !section.flip })}>Keep the other side</Button>
+        </>}
+        <Button size="sm" variant="ghost" aria-pressed={heightPlane !== null} onClick={() => setHeightPlane(heightPlane === null ? 15 : null)}>Height plane</Button>
+        {heightPlane !== null && <Input label="Height above the desk" unit="mm" type="number" step={0.5} min={0} value={heightPlane} onChange={(e) => setHeightPlane(Math.max(0, Number(e.target.value) || 0))} />}
+        <div className="wb-bench-layers" role="group" aria-label="Layers">
+          {LAYERS.map(([key, label]) => (
+            <Button key={key} size="sm" variant="ghost" aria-pressed={preferences.layers[key]} onClick={() => preference('layers', { ...preferences.layers, [key]: !preferences.layers[key] })}>{label}</Button>
+          ))}
+        </div>
+        <div className="wb-bench-layers" role="group" aria-label="Export">
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportImage(2)}>Image 2×</Button>
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportImage(4)}>Image 4×</Button>
+          <Button size="sm" variant="ghost" disabled={flat} onClick={() => void exportGlb()}>GLB model</Button>
+        </div>
       </BenchViewMenu>
       <Button size="sm" variant="ghost" aria-pressed={preferences.list} onClick={() => preference('list', !preferences.list)}><List /> Parts & wiring</Button>
       {onFocusCanvas && <Button size="sm" variant="ghost" aria-pressed={canvasFocused} onClick={onFocusCanvas}>Focus canvas</Button>}
@@ -316,13 +374,17 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         ]}
       />
       <span className="wb-bench-status" aria-live="polite">
-        {selectedPart
+        {tool === 'measure'
+          ? measured ? describeMeasurement(measured) : 'Click two points to measure · a pin or hole snaps · Esc clears'
+          : selectedPart
           ? `${selectedPart.label}${selectedHoles.length ? ` · in ${selectedHoles.join(', ')}` : ' · not plugged in'}`
           : selectedJumper
             ? `Jumper ${selectedJumper.from} → ${selectedJumper.to}`
             : tool === 'wire'
               ? 'Press on a hole or a pin and release on another'
-              : 'Right drag orbits · wheel zooms · drag a part onto the breadboard'}
+              : heightPlane !== null
+                  ? above.length ? `Above ${heightPlane} mm: ${above.map((a) => `${a.id} (${a.top} mm)`).join(', ')}` : `Nothing rises above ${heightPlane} mm`
+                  : 'Right drag orbits · wheel zooms · drag a part onto the breadboard'}
       </span>
     </div>
   );
@@ -435,6 +497,17 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           surface={preferences.surface}
           labels={preferences.labels}
           showNotes={preferences.notes}
+          projection={preferences.projection}
+          quality={preferences.quality}
+          onQualityFallback={() => {
+            preference('quality', 'draft');
+            toast({ kind: 'warning', title: 'Draft render', description: 'Quality render could not keep 60 frames a second on this machine.' });
+          }}
+          section={section}
+          heightPlane={heightPlane}
+          onHeightReport={setAbove}
+          layers={preferences.layers}
+          onMeasure={setMeasured}
           onRendererError={() => { setRendererFailed(true); setFlat(true); }}
           onMove={(id, place) => mutate(`Move ${id}`, (p) => moveParts(p, ctx, { [id]: place }))}
           onWire={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}
@@ -490,7 +563,17 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
 }
 
 /** Keep the popup inside its panel even when platform fonts wrap the toolbar. */
-function BenchViewMenu({ children }: { children: ReactNode }) {
+/** the standard views, KiCad's keys beside them */
+const VIEWS: [StandardView, string, string][] = [
+  ['top', 'Top', 'Z'], ['bottom', 'Bottom', 'Shift+Z'], ['front', 'Front', 'Y'], ['back', 'Back', 'Shift+Y'],
+  ['left', 'Left', 'X'], ['right', 'Right', 'Shift+X'], ['iso', 'Isometric', 'I'], ['perspective', 'Desk', ''],
+];
+
+const LAYERS: [keyof BenchLayers, string][] = [
+  ['boards', 'Boards'], ['breadboards', 'Breadboards'], ['parts', 'Parts'], ['jumpers', 'Jumpers'], ['world', 'World'], ['labels', 'Labels'],
+];
+
+function BenchViewMenu({ children, summary = 'View' }: { children: ReactNode; summary?: string }) {
   const ref = useRef<HTMLDetailsElement>(null);
   const place = useCallback(() => {
     const details = ref.current;
@@ -514,7 +597,7 @@ function BenchViewMenu({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, [place]);
   return <details ref={ref} className="wb-bench-view-menu" onToggle={place}>
-    <summary>View</summary>
+    <summary>{summary}</summary>
     <div className="wb-bench-view-menu__body">{children}</div>
   </details>;
 }

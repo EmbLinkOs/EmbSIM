@@ -5,6 +5,21 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The 3D bench as an inspection viewer (2026-10-30)
+
+`examples/uno-breadboard` at 1440 × 900, the circuit running. These are
+stage 1 of [the 3D plan](../engineering/bench-3d.md): EDA-style views, an
+orthographic camera, sections, a height plane, measurement and a quality
+render.
+
+| Draft render | Quality render (occlusion, bloom on the lit LED) |
+|---|---|
+| ![The bench in the draft render](bench-3d-inspect/1-draft.png) | ![The same view in quality: the blue LED glows](bench-3d-inspect/2-quality.png) |
+
+| Top, orthographic (Z) | Section across Y at 0 mm | Height plane at 12 mm |
+|---|---|---|
+| ![Top orthographic view](bench-3d-inspect/3-top-orthographic.png) | ![The front half of the bench cut away, the desk whole](bench-3d-inspect/4-section.png) | ![The amber plane, with the parts through it boxed in red](bench-3d-inspect/5-height-plane.png) |
+
 ## Schematic labels and empty views (2026-10-28)
 
 The demo session at 1440 × 900, dark theme, before and after. Part type names

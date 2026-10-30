@@ -699,6 +699,9 @@
   background: var(--surface-raised); border: 1px solid var(--line);
   border-radius: var(--radius-md); box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
 }
+.wb-bench-views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+.wb-bench-layers { display: flex; flex-wrap: wrap; gap: 2px; }
+.wb-bench-view-menu__body:has(.wb-bench-views) { width: 280px; }
 .wb-bench-recovery { padding: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
 
 .eb-bench3d {
@@ -756,6 +759,17 @@
 .eb-label.is-selected {
   background: var(--accent);
   color: var(--text-on-accent);
+}
+
+/* the measure tool's result, at the middle of its line */
+.eb-measure {
+  padding: 2px 7px;
+  border: 1px solid #38bdf8;
+  border-radius: var(--radius-sm);
+  background: rgb(8 20 32 / 0.85);
+  color: #e0f2fe;
+  font: 600 11px var(--font-mono);
+  white-space: nowrap;
 }
 
 .eb-note {

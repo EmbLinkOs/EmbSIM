@@ -5,6 +5,26 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The 3D bench as an inspection viewer
+
+- `docs/engineering/bench-3d.md`: what Proteus, KiCad and Altium do in 3D,
+  where the bench stands, and seven stages to reach them.
+- Stage 1, all presentation only:
+  - **Views:** Top, Bottom, Front, Back, Left, Right, Isometric and Desk,
+    on KiCad's keys (Z, Y, X with Shift, I), and an orthographic projection.
+  - **Measure tool:** two clicks, snapped to a pin or hole within 1.5 mm,
+    give the distance with Δx, Δy and Δz, and the 2.54 mm pitch count.
+  - **Inspect menu:** a section plane on X, Y or Z, either side kept (the
+    desk stays whole); a height plane that outlines and lists the parts rising
+    through it; layer visibility (boards, breadboards, parts, jumpers, world,
+    labels).
+  - **Quality render:** ground-truth ambient occlusion, bloom only on
+    emissive surfaces, 4× multisampling, finer shadows; it falls back to
+    draft when frames miss 60 Hz.
+  - **Export:** a PNG still at 2× or 4×, and GLB (glTF binary in metres, a
+    node per part).
+  - Projection, quality and layers persist with the other bench preferences.
+
 ### I2C parts' captures replayed
 
 - `replay_captures.py` replays I2C: the master's half of SCL and SDA is

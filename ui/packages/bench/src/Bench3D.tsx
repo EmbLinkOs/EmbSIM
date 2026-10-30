@@ -19,6 +19,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { ArtworkSurface } from './artwork';
 import { buildPart, indicatorLight, type Built, type PickData } from './parts3d';
 import { updateEmission } from './emission';
@@ -26,6 +27,8 @@ import type { BenchShape } from './shape';
 import { pickTerminal, type ProjectedTerminal } from './picking';
 import type { InsertionPreview } from './layout';
 import type { Beam } from './world';
+import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, sectionPlane, snapPoint, viewPose, type BenchLayers, type Measurement, type Section, type StandardView, type Vec3 } from './inspect';
+import { QualityRenderer, type RenderQuality } from './render';
 
 
 
@@ -79,13 +82,21 @@ export interface TerminalHit {
   occupiedBy?: string[];
 }
 
-export type BenchTool = 'select' | 'wire';
+export type BenchTool = 'select' | 'wire' | 'measure';
+
+export type Projection = 'perspective' | 'orthographic';
 
 export interface Bench3DHandle {
-  /** frames the camera on everything on the bench */
-  frame(view?: 'perspective' | 'top', selectedOnly?: boolean): void;
+  /** frames the camera on everything on the bench (or the selection) from a standard view */
+  frame(view?: StandardView, selectedOnly?: boolean): void;
   /** the canvas, for screenshots */
   canvas(): HTMLCanvasElement | null;
+  /** a still of the view at `scale` times its resolution, as PNG */
+  exportImage(scale: number): Promise<Blob | null>;
+  /** the bench as glTF binary, in metres, each part a named node */
+  exportGlb(): Promise<Blob>;
+  /** removes the measurement drawn in the scene */
+  clearMeasurement(): void;
 }
 
 export interface Bench3DProps {
@@ -120,6 +131,18 @@ export interface Bench3DProps {
   onInput(target: string, input: string, value: unknown): void;
   label?: string;
   handle?: Ref<Bench3DHandle>;
+  /** inspection (docs/engineering/bench-3d.md, stage 1): presentation only */
+  projection?: Projection;
+  quality?: RenderQuality;
+  /** quality could not keep the frame budget and dropped to draft */
+  onQualityFallback?(): void;
+  section?: Section | null;
+  /** a plane this many mm above the desk; the parts through it are reported */
+  heightPlane?: number | null;
+  onHeightReport?(above: { id: string; top: number }[]): void;
+  layers?: BenchLayers;
+  /** the measure tool's result, or null when cleared */
+  onMeasure?(m: Measurement | null): void;
 }
 
 interface PartEntry {
@@ -211,6 +234,38 @@ function labelElement(text: string): HTMLDivElement {
   return el;
 }
 
+/** an orthographic camera's frustum, `half` mm above and below its centre */
+function setOrthoFrustum(cam: THREE.OrthographicCamera, half: number, aspect: number): void {
+  cam.top = half;
+  cam.bottom = -half;
+  cam.left = -half * aspect;
+  cam.right = half * aspect;
+}
+
+/** a part's body: its meshes, not the glow sprites, lights and labels round it */
+function bodyBounds(group: THREE.Object3D): THREE.Box3 {
+  const box = new THREE.Box3();
+  group.updateWorldMatrix(true, true);
+  group.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !m.visible || o instanceof THREE.Sprite) return;
+    m.geometry.computeBoundingBox();
+    if (m.geometry.boundingBox) box.union(m.geometry.boundingBox.clone().applyMatrix4(m.matrixWorld));
+  });
+  return box;
+}
+
+function disposeTree(o: THREE.Object3D): void {
+  o.traverse((x) => {
+    if (x instanceof CSS2DObject) x.element.remove();
+    const m = x as THREE.Mesh;
+    m.geometry?.dispose();
+    const mat = m.material;
+    if (Array.isArray(mat)) mat.forEach((v) => v.dispose());
+    else (mat as THREE.Material | undefined)?.dispose();
+  });
+}
+
 export function Bench3D(props: Bench3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const cancelGesture = useRef<(() => void) | null>(null);
@@ -223,8 +278,15 @@ export function Bench3D(props: Bench3DProps) {
     desk: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
     labels: CSS2DRenderer;
     scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
+    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+    perspective: THREE.PerspectiveCamera;
+    orthographic: THREE.OrthographicCamera;
     controls: OrbitControls;
+    /** quality mode's passes, when chosen */
+    quality: QualityRenderer | null;
+    /** the measurement, the height plane and its marks */
+    inspect: THREE.Group;
+    measureFrom: Vec3 | null;
     parts: Map<string, PartEntry>;
     jumpers: THREE.Group;
     links: THREE.Group;
@@ -242,18 +304,25 @@ export function Bench3D(props: Bench3DProps) {
     s.raf = requestAnimationFrame(() => {
       s.raf = 0;
       s.controls.update();
-      s.renderer.render(s.scene, s.camera);
+      if (s.quality) {
+        if (!s.quality.draw()) {
+          s.quality.dispose();
+          s.quality = null;
+          propsRef.current.onQualityFallback?.();
+        }
+      } else s.renderer.render(s.scene, s.camera);
       s.labels.render(s.scene, s.camera);
     });
   }, []);
 
-  const frame = useCallback((view?: 'perspective' | 'top', selectedOnly = false) => {
+  const frame = useCallback((view?: StandardView, selectedOnly = false) => {
     const s = state.current;
     if (!s) return;
-    const mode = view ?? (s.camera.position.clone().sub(s.controls.target).normalize().y > 0.99 ? 'top' : 'perspective');
+    const toward = s.camera.position.clone().sub(s.controls.target).normalize();
+    const mode: StandardView = view ?? (toward.y > 0.99 ? 'top' : 'perspective');
     const box = new THREE.Box3();
     const chosen = selectedOnly && propsRef.current.selected?.part;
-    for (const e of s.parts.values()) if (!chosen || e.view.id === chosen) box.expandByObject(e.built.group);
+    for (const e of s.parts.values()) if (e.built.group.visible && (!chosen || e.view.id === chosen)) box.expandByObject(e.built.group);
     if (!selectedOnly && propsRef.current.showNotes !== false)
       for (const n of propsRef.current.notes) box.expandByPoint(new THREE.Vector3(n.x, 30, n.y));
     // the world's bodies near the bench, and where the beams meet them; what is far
@@ -265,25 +334,83 @@ export function Bench3D(props: Bench3DProps) {
       for (const beam of propsRef.current.beams ?? []) if (beam.distance >= 0) extra.push(new THREE.Vector3(beam.to[0], beam.to[2], beam.to[1]));
       for (const v of extra) if (near.containsPoint(v)) box.expandByPoint(v);
     }
-
     if (box.isEmpty()) box.set(new THREE.Vector3(-100, 0, -60), new THREE.Vector3(100, 20, 60));
-    const centre = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    // the whole bench in view, seen from the front and above as a person at the desk sees it
-    const fov = (s.camera.fov * Math.PI) / 180;
-    const fit = Math.max(size.z, size.x / Math.max(0.5, s.camera.aspect)) / 2 / Math.tan(fov / 2);
-    const r = fit * 1.05 + 20;
-    s.controls.target.copy(centre);
-    if (mode === 'top') s.camera.position.set(centre.x, centre.y + r, centre.z + 0.001);
-    else s.camera.position.set(centre.x, centre.y + r * 0.78, centre.z + r * 0.68);
+    const pose = viewPose({ min: box.min.toArray() as Vec3, max: box.max.toArray() as Vec3 }, mode, s.perspective.aspect, s.perspective.fov);
+    s.controls.target.set(...pose.target);
+    // the controls keep +y up: a view along y is nudged towards the person at the desk, so its far side is up
+    const nudge = mode === 'top' || mode === 'bottom' ? pose.distance * 1e-4 : 0;
+    s.camera.position.set(pose.position[0], pose.position[1], pose.position[2] + nudge);
+    // only the bottom view looks up from under the desk
+    s.controls.maxPolarAngle = mode === 'bottom' ? Math.PI : Math.PI * 0.48;
+    for (const cam of [s.perspective, s.orthographic]) {
+      cam.near = Math.max(0.5, pose.distance / 500);
+      cam.far = pose.distance * 20;
+    }
+    s.orthographic.zoom = 1;
+    setOrthoFrustum(s.orthographic, pose.halfHeight, s.perspective.aspect);
+    if (s.camera !== s.perspective) s.perspective.position.copy(s.camera.position);
     s.controls.update();
-    s.camera.near = 1;
-    s.camera.far = r * 20;
-    s.camera.updateProjectionMatrix();
+    s.perspective.updateProjectionMatrix();
+    s.orthographic.updateProjectionMatrix();
     invalidate();
   }, [invalidate]);
 
-  useImperativeHandle(props.handle, () => ({ frame, canvas: () => state.current?.renderer.domElement ?? null }), [frame]);
+  const clearMeasurement = useCallback(() => {
+    const s = state.current;
+    if (!s) return;
+    s.measureFrom = null;
+    for (const child of [...s.inspect.children]) if (child.userData.measurement) {
+      s.inspect.remove(child);
+      disposeTree(child);
+    }
+    invalidate();
+  }, [invalidate]);
+
+  const exportImage = useCallback(async (scale: number) => {
+    const s = state.current;
+    if (!s) return null;
+    const host = hostRef.current!;
+    const w = host.clientWidth || 1;
+    const h = host.clientHeight || 1;
+    const ratio = s.renderer.getPixelRatio();
+    s.renderer.setPixelRatio(scale);
+    s.renderer.setSize(w, h, false);
+    s.quality?.setSize(w, h, scale);
+    s.controls.update();
+    if (s.quality) s.quality.still();
+    else s.renderer.render(s.scene, s.camera);
+    const blob = await new Promise<Blob | null>((resolve) => s.renderer.domElement.toBlob(resolve, 'image/png'));
+    s.renderer.setPixelRatio(ratio);
+    s.renderer.setSize(w, h, false);
+    s.quality?.setSize(w, h, ratio);
+    invalidate();
+    return blob;
+  }, [invalidate]);
+
+  const exportGlb = useCallback(async () => {
+    const s = state.current;
+    if (!s) throw new Error('the bench is not drawn');
+    // glTF is in metres; the bench in millimetres. Each part is a node named by its id;
+    // the desk, labels, hints and lights are not part of the assembly.
+    const root = new THREE.Group();
+    root.name = 'bench';
+    root.scale.setScalar(0.001);
+    for (const e of s.parts.values()) {
+      if (!e.built.group.visible) continue;
+      const copy = e.built.group.clone(true);
+      copy.name = e.view.id;
+      root.add(copy);
+    }
+    if (s.jumpers.visible) { const j = s.jumpers.clone(true); j.name = 'jumpers'; root.add(j); }
+    if (s.world.visible) { const w = s.world.clone(true); w.name = 'world'; root.add(w); }
+    const drop: THREE.Object3D[] = [];
+    root.traverse((o) => { if (o instanceof THREE.Sprite || o instanceof THREE.Light || o instanceof THREE.Line || o instanceof CSS2DObject || o.userData.routePoint !== undefined) drop.push(o); });
+    for (const o of drop) o.removeFromParent();
+    const out = await new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true });
+    return new Blob([out as ArrayBuffer], { type: 'model/gltf-binary' });
+  }, []);
+
+  useImperativeHandle(props.handle, () => ({ frame, canvas: () => state.current?.renderer.domElement ?? null, exportImage, exportGlb, clearMeasurement }), [frame, exportImage, exportGlb, clearMeasurement]);
 
   // the scene, once
   useEffect(() => {
@@ -322,6 +449,7 @@ export function Bench3D(props: Bench3DProps) {
     scene.environmentIntensity = 0.55;
     const camera = new THREE.PerspectiveCamera(38, 1, 1, 5000);
     camera.position.set(0, 260, 240);
+    const orthographic = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 5000);
 
     scene.add(new THREE.HemisphereLight(0xdfe9f3, 0x1d262c, 0.65));
     const sun = new THREE.DirectionalLight(0xfff4e5, 2.1);
@@ -359,8 +487,12 @@ export function Bench3D(props: Bench3DProps) {
     const world = new THREE.Group();
     const hints = new THREE.Group();
     const preview = new THREE.Group();
-    scene.add(jumpers, links, notes, world, hints, preview);
-    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, world, hints, preview, raf: 0, framed: false };
+    const inspect = new THREE.Group();
+    scene.add(jumpers, links, notes, world, hints, preview, inspect);
+    state.current = {
+      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, parts: new Map(), jumpers, links, notes, world, hints, preview,
+      inspect, quality: null, measureFrom: null, raf: 0, framed: false,
+    };
 
     controls.addEventListener('change', invalidate);
 
@@ -371,8 +503,12 @@ export function Bench3D(props: Bench3DProps) {
       renderer.domElement.style.width = `${w}px`;
       renderer.domElement.style.height = `${h}px`;
       labels.setSize(w, h);
+      const half = (orthographic.top - orthographic.bottom) / 2;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      setOrthoFrustum(orthographic, half, w / h);
+      orthographic.updateProjectionMatrix();
+      state.current?.quality?.setSize(w, h, renderer.getPixelRatio());
       invalidate();
     };
     const ro = new ResizeObserver(resize);
@@ -383,6 +519,8 @@ export function Bench3D(props: Bench3DProps) {
       controls.dispose();
       for (const e of state.current?.parts.values() ?? []) e.surface?.dispose();
       if (state.current?.raf) cancelAnimationFrame(state.current.raf);
+      state.current?.quality?.dispose();
+      if (state.current) disposeTree(state.current.inspect);
       renderer.domElement.removeEventListener('webglcontextlost', contextLost);
       desk.material.map?.dispose();
       desk.material.dispose();
@@ -434,6 +572,8 @@ export function Bench3D(props: Bench3DProps) {
         s.parts.set(v.id, e);
       }
       e.view = v;
+      e.built.group.name = v.id;
+      e.built.group.visible = (props.layers ?? ALL_LAYERS)[layerOf(v.shape.package)];
       e.built.group.position.set(v.place.x, v.elevation, v.place.y);
       e.built.group.rotation.y = -(v.place.rotation * Math.PI) / 180;
       // the id on the bench, the whole name when selected
@@ -489,7 +629,109 @@ export function Bench3D(props: Bench3DProps) {
       frame();
     }
     invalidate();
-  }, [props.parts, props.selected, props.labels, invalidate, frame]);
+  }, [props.parts, props.selected, props.labels, props.layers, invalidate, frame]);
+
+  // the projection: the orthographic camera takes the perspective one's place, framing the same width
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const want = props.projection === 'orthographic' ? s.orthographic : s.perspective;
+    if (s.camera === want) return;
+    const distance = s.camera.position.distanceTo(s.controls.target);
+    if (want === s.orthographic) {
+      const half = distance * Math.tan((s.perspective.fov * Math.PI) / 360);
+      s.orthographic.zoom = 1;
+      setOrthoFrustum(s.orthographic, half, s.perspective.aspect);
+    } else {
+      // keep the apparent size: the distance at which the perspective camera sees the ortho frustum
+      const half = (s.orthographic.top - s.orthographic.bottom) / 2 / s.orthographic.zoom;
+      const dir = s.camera.position.clone().sub(s.controls.target).normalize();
+      s.perspective.position.copy(s.controls.target).addScaledVector(dir, half / Math.tan((s.perspective.fov * Math.PI) / 360));
+    }
+    if (want === s.orthographic) want.position.copy(s.camera.position);
+    want.near = s.camera.near;
+    want.far = s.camera.far;
+    want.updateProjectionMatrix();
+    s.camera = want;
+    s.controls.object = want;
+    s.quality?.setCamera(want);
+    s.controls.update();
+    invalidate();
+  }, [props.projection, invalidate]);
+
+  // the render quality
+  useEffect(() => {
+    const s = state.current;
+    const host = hostRef.current;
+    if (!s || !host) return;
+    if (props.quality === 'quality' && !s.quality) {
+      s.quality = new QualityRenderer(s.renderer, s.scene, s.camera, host.clientWidth || 1, host.clientHeight || 1);
+      s.quality.setSize(host.clientWidth || 1, host.clientHeight || 1, s.renderer.getPixelRatio());
+      // softer, finer shadows to go with the occlusion
+      s.scene.traverse((o) => { if (o instanceof THREE.DirectionalLight && o.castShadow) { o.shadow.mapSize.set(4096, 4096); o.shadow.map?.dispose(); o.shadow.map = null; } });
+    } else if (props.quality !== 'quality' && s.quality) {
+      s.quality.dispose();
+      s.quality = null;
+    }
+    invalidate();
+  }, [props.quality, invalidate]);
+
+  // the layers a user hides (the parts' own are set as they are built)
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const layers = props.layers ?? ALL_LAYERS;
+    s.jumpers.visible = layers.jumpers;
+    s.links.visible = layers.jumpers;
+    s.world.visible = layers.world;
+    s.labels.domElement.style.display = layers.labels ? '' : 'none';
+    invalidate();
+  }, [props.layers, invalidate]);
+
+  // the height plane, and a box around each part that rises through it
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const height = props.heightPlane;
+    const added: THREE.Object3D[] = [];
+    if (typeof height === 'number' && Number.isFinite(height)) {
+      const all = new THREE.Box3();
+      const bounds = [...s.parts.values()].filter((e) => e.built.group.visible).map((e) => {
+        const b = bodyBounds(e.built.group);
+        all.union(b);
+        return { id: e.view.id, box: b };
+      });
+      if (all.isEmpty()) all.set(new THREE.Vector3(-100, 0, -60), new THREE.Vector3(100, 20, 60));
+      const size = all.getSize(new THREE.Vector3());
+      const centre = all.getCenter(new THREE.Vector3());
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(size.x + 40, size.z + 40),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }),
+      );
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.set(centre.x, height, centre.z);
+      plane.renderOrder = 5;
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(plane.geometry), new THREE.LineBasicMaterial({ color: 0xf59e0b }));
+      edge.rotation.copy(plane.rotation);
+      edge.position.copy(plane.position);
+      added.push(plane, edge);
+      const above = aboveHeight(bounds.map((b) => ({ id: b.id, bounds: { min: b.box.min.toArray() as Vec3, max: b.box.max.toArray() as Vec3 } })), height);
+      for (const a of above) {
+        const b = bounds.find((x) => x.id === a.id)!.box;
+        const helper = new THREE.Box3Helper(b, new THREE.Color(0xef4444));
+        added.push(helper);
+      }
+      propsRef.current.onHeightReport?.(above);
+    } else propsRef.current.onHeightReport?.([]);
+    for (const o of added) s.inspect.add(o);
+    invalidate();
+    return () => {
+      for (const o of added) {
+        s.inspect.remove(o);
+        disposeTree(o);
+      }
+    };
+  }, [props.heightPlane, props.parts, props.layers, invalidate]);
 
   // the jumpers, the connections still to build, the notes
   useEffect(() => {
@@ -661,6 +903,30 @@ export function Bench3D(props: Bench3DProps) {
     return () => { for (const marker of markers) { s.hints.remove(marker); marker.geometry.dispose(); (marker.material as THREE.Material).dispose(); } };
   }, [props.traceTerminals, props.terminals, invalidate]);
 
+  // the section plane (after the effects that build what it cuts): the bench's objects on one side of it are cut away; the desk stays whole
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const cut = props.section;
+    let planes: THREE.Plane[] | null = null;
+    if (cut) {
+      const { normal, constant } = sectionPlane(cut);
+      planes = [new THREE.Plane(new THREE.Vector3(...normal), constant)];
+    }
+    s.renderer.localClippingEnabled = planes !== null;
+    const clip = (o: THREE.Object3D) => o.traverse((x) => {
+      const mat = (x as THREE.Mesh).material;
+      for (const m of Array.isArray(mat) ? mat : mat ? [mat] : []) {
+        if (m.clippingPlanes !== planes) { m.clippingPlanes = planes; m.clipShadows = planes !== null; m.needsUpdate = true; }
+      }
+    });
+    for (const e of s.parts.values()) clip(e.built.group);
+    clip(s.jumpers);
+    clip(s.links);
+    clip(s.world);
+    invalidate();
+  }, [props.section, props.parts, props.jumpers, props.bodies, invalidate]);
+
   // pointer gestures
   useEffect(() => {
     const s = state.current;
@@ -676,7 +942,49 @@ export function Bench3D(props: Bench3DProps) {
       ray.setFromCamera(ndc, s.camera);
     };
     const onDesk = (): THREE.Vector3 | null => ray.ray.intersectPlane(desk, new THREE.Vector3());
-    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, ...s.world.children.filter((object) => object.userData.body)], true);
+    // a hidden layer is not under the pointer
+    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].filter((e) => e.built.group.visible).map((e) => e.built.group), ...(s.jumpers.visible ? [s.jumpers] : []), ...(s.world.visible ? s.world.children.filter((object) => object.userData.body) : [])], true)
+      .filter((h) => !(h.object instanceof THREE.Sprite) && !(h.object instanceof THREE.Line));
+    // the measure tool: a first point, then a second; the measurement stays until the next one or Esc
+    const measureMark = (at: Vec3, color: number) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 8), new THREE.MeshBasicMaterial({ color, depthTest: false }));
+      m.position.set(...at);
+      m.renderOrder = 20;
+      m.userData.measurement = true;
+      s.inspect.add(m);
+    };
+    const measureAt = () => {
+      const p = propsRef.current;
+      const hit = hitParts()[0];
+      const raw = hit?.point ?? onDesk();
+      if (!raw) return;
+      const { at, snapped } = snapPoint(raw.toArray() as Vec3, p.terminals.map((t) => t.at), 1.5);
+      const done = s.inspect.children.some((c) => c.userData.measurement === 'line');
+      if (!s.measureFrom || done) {
+        for (const child of [...s.inspect.children]) if (child.userData.measurement) { s.inspect.remove(child); disposeTree(child); }
+        s.measureFrom = at;
+        measureMark(at, 0x38bdf8);
+        p.onMeasure?.(null);
+        setFeedback({ text: `From ${at.map((v) => Math.round(v * 100) / 100).join(', ')} mm${snapped ? ' (snapped to a contact)' : ''} · click the second point · Esc clears` });
+      } else {
+        const m = measure(s.measureFrom, at);
+        measureMark(at, 0x38bdf8);
+        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...m.a), new THREE.Vector3(...m.b)]), new THREE.LineBasicMaterial({ color: 0x38bdf8, depthTest: false }));
+        line.renderOrder = 20;
+        line.userData.measurement = 'line';
+        const el = document.createElement('div');
+        el.className = 'eb-measure';
+        el.textContent = describeMeasurement(m);
+        const label = new CSS2DObject(el);
+        label.position.set((m.a[0] + m.b[0]) / 2, (m.a[1] + m.b[1]) / 2 + 2, (m.a[2] + m.b[2]) / 2);
+        label.userData.measurement = true;
+        s.inspect.add(line, label);
+        s.measureFrom = null;
+        p.onMeasure?.(m);
+        setFeedback({ text: describeMeasurement(m) });
+      }
+      invalidate();
+    };
     let routeDrag: { jumper: JumperView; points: Point3[]; index: number; start: Point3[]; moved: boolean } | null = null;
     const routePreview = (j: JumperView, points: Point3[]) => {
       const group = s.jumpers.children.find((g) => g.userData.jumperGroup === j.index);
@@ -758,6 +1066,10 @@ export function Bench3D(props: Bench3DProps) {
       const hits = hitParts();
       // Route handles are visible overlay controls, so their picking priority
       // matches their depth-independent display even over a component body.
+      if (p.tool === 'measure') {
+        measureAt();
+        return;
+      }
       const hit = p.editable && p.tool === 'select' ? hits.find((h) => h.object.userData.routePoint !== undefined) ?? hits[0] : hits[0];
       const data = (hit?.object.userData ?? {}) as PickData & { jumper?: number; routePoint?: number };
       if (data.routePoint !== undefined && data.jumper !== undefined && p.editable && p.tool === 'select' && p.onRoute) {
@@ -913,6 +1225,7 @@ export function Bench3D(props: Bench3DProps) {
         showMarks(t ? [wire.from.at, t.at] : [wire.from.at]);
         invalidate();
       } else if (p.tool === 'wire' && p.editable) feedbackAt(ev);
+      else if (p.tool === 'measure') el.style.cursor = 'crosshair';
       else {
         const hit = hitParts()[0];
         const data = hit?.object.userData as PickData | undefined;
@@ -1017,7 +1330,15 @@ export function Bench3D(props: Bench3DProps) {
       invalidate();
     };
     const escape = (ev: globalThis.KeyboardEvent) => {
-      if (ev.key === 'Escape') { ev.preventDefault(); cancel(); }
+      if (ev.key !== 'Escape') return;
+      ev.preventDefault();
+      cancel();
+      if (propsRef.current.tool === 'measure') {
+        s.measureFrom = null;
+        for (const child of [...s.inspect.children]) if (child.userData.measurement) { s.inspect.remove(child); disposeTree(child); }
+        propsRef.current.onMeasure?.(null);
+        invalidate();
+      }
     };
     cancelGesture.current = cancel;
     const leave = () => { if (activePointer === null) setFeedback({ text: '' }); };
@@ -1056,6 +1377,16 @@ export function Bench3D(props: Bench3DProps) {
     if (ev.key === 'f' || ev.key === 'F') {
       frame();
       return;
+    }
+    // KiCad's 3D viewer keys: Z top (shift: bottom), Y front (back), X left (right), I isometric
+    if (!ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      const k = ev.key.toLowerCase();
+      const views: Record<string, [StandardView, StandardView]> = { z: ['top', 'bottom'], y: ['front', 'back'], x: ['left', 'right'], i: ['iso', 'iso'] };
+      if (views[k]) {
+        ev.preventDefault();
+        frame(views[k][ev.shiftKey ? 1 : 0]);
+        return;
+      }
     }
     if ((ev.key === 'Delete' || ev.key === 'Backspace') && p.editable && sel && (sel.part || sel.jumper !== undefined)) {
       ev.preventDefault();
