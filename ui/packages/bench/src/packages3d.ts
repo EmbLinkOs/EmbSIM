@@ -611,3 +611,81 @@ export function rfModule(w: number, d: number, h: number, nameplate?: THREE.Text
   }
   return g;
 }
+
+/** the glass-epoxy core seen at a board's cut edge */
+const FR4_EDGE = new THREE.MeshStandardMaterial({ color: 0xcfc6a0, roughness: 0.85 });
+
+export interface PcbBody {
+  /** width and depth, mm; the outline is in mm from the top-left corner */
+  w: number;
+  d: number;
+  thickness: number;
+  outline?: [number, number][];
+  holes?: { at: [number, number]; r: number }[];
+  /** the soldermask's colour, for the underside and the edges' film */
+  mask?: string;
+  /** the top: the board's artwork */
+  top?: THREE.Texture;
+}
+
+/**
+ * A PCB as made: its outline cut from glass-epoxy (the pale core at the
+ * edges), the drilled mounting holes with their plated barrels and rings,
+ * the top's soldermask over the artwork with its gloss, and the underside
+ * in the same mask. y = 0 is its underside; the origin is its centre.
+ */
+export function pcbBody(p: PcbBody): THREE.Group {
+  const g = new THREE.Group();
+  g.name = 'pcb';
+  const { w, d, thickness: t } = p;
+  // the outline in the shape's plane: x right, y away from the person (scene -z)
+  const toShape = ([x, y]: [number, number]) => new THREE.Vector2(x - w / 2, d / 2 - y);
+  const outline = p.outline?.length ? p.outline : ([[0, 0], [w, 0], [w, d], [0, d]] as [number, number][]);
+  const makeShape = () => {
+    const s = new THREE.Shape(outline.map(toShape));
+    for (const h of p.holes ?? []) {
+      const c = toShape(h.at);
+      const hole = new THREE.Path();
+      hole.absarc(c.x, c.y, h.r * 0.8, 0, Math.PI * 2, true);
+      s.holes.push(hole);
+    }
+    return s;
+  };
+  const core = new THREE.ExtrudeGeometry(makeShape(), { depth: t, bevelEnabled: false, curveSegments: 24 });
+  core.rotateX(-Math.PI / 2);
+  g.add(part(core, FR4_EDGE));
+  // the top's artwork, mapped by position (the shape's u right, v away from the person)
+  const skin = (y: number, up: boolean, material: THREE.Material) => {
+    const geo = new THREE.ShapeGeometry(makeShape(), 24);
+    const pos = geo.attributes.position as THREE.BufferAttribute;
+    const uv = geo.attributes.uv as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) + w / 2) / w, (pos.getY(i) + d / 2) / d);
+    geo.rotateX(up ? -Math.PI / 2 : Math.PI / 2);
+    if (!up) geo.scale(1, 1, -1);
+    const m = part(geo, material);
+    m.position.y = y;
+    return m;
+  };
+  const maskColour = new THREE.Color(p.mask ?? '#1f6f43');
+  const top = p.top
+    ? new THREE.MeshPhysicalMaterial({ map: p.top, roughness: 0.55, clearcoat: 0.55, clearcoatRoughness: 0.28 })
+    : new THREE.MeshPhysicalMaterial({ color: maskColour, roughness: 0.55, clearcoat: 0.55, clearcoatRoughness: 0.28 });
+  g.add(skin(t + 0.01, true, top));
+  // mirrored to keep the outline's handedness, so drawn from both sides
+  g.add(skin(-0.01, false, new THREE.MeshPhysicalMaterial({ color: maskColour, roughness: 0.55, clearcoat: 0.4, clearcoatRoughness: 0.3, side: THREE.DoubleSide })));
+  // the plated holes: the barrel through the board and the ring around it on both faces
+  for (const h of p.holes ?? []) {
+    const c = toShape(h.at);
+    const barrel = part(new THREE.CylinderGeometry(h.r * 0.8, h.r * 0.8, t + 0.04, 32, 1, true), TIN);
+    (barrel.material as THREE.Material).side = THREE.DoubleSide;
+    barrel.position.set(c.x, t / 2, -c.y);
+    g.add(barrel);
+    for (const [y, up] of [[t + 0.02, true], [-0.02, false]] as const) {
+      const ring = part(new THREE.RingGeometry(h.r * 0.8, h.r, 40), TIN);
+      ring.rotation.x = up ? -Math.PI / 2 : Math.PI / 2;
+      ring.position.set(c.x, y, -c.y);
+      g.add(ring);
+    }
+  }
+  return g;
+}

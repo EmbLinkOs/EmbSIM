@@ -5,6 +5,23 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Boards as boards (2026-10-30)
+
+Stage 4 of [the 3D plan](engineering/bench-3d.md) has begun. Every board's
+PCB is built from what its artwork says:
+- the outline is the `pcb` path or the `#pcb` rounded rectangle: the Uno's
+  chamfers and step, the DevKit's rounded corners;
+- the soldermask colour is the `.pcb` rule's fill, used for the underside;
+- the mounting holes are the `.mount` circles: the Uno's four, drilled
+  through with plated barrels and rings.
+
+The cut edge shows the glass-epoxy core, and the top is the artwork under a
+clearcoated mask. Evidence: `board-artwork.test.ts` (the Uno's outline, mask
+and 3.2 mm holes read from its real artwork; the body's extents and
+barrels) and the gallery. Not yet: copper traces under the mask (the
+artworks are pictures, not layers), and holes on boards whose artwork does
+not mark them.
+
 ## Packages at their standard dimensions (2026-10-30)
 
 Stage 2 of [the 3D plan](engineering/bench-3d.md) is under way. A package

@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature } from './shape';
-import { barrelJack, crystalHC49, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, socketStrip, tactileSwitch, usbB } from './packages3d';
+import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, socketStrip, tactileSwitch, usbB } from './packages3d';
 
 export interface PartLook {
   /** the component's id ("emblink/resistor") */
@@ -751,10 +751,9 @@ function board(shape: BenchShape, look: PartLook, id: string, indicators: Indica
   const g = new THREE.Group();
   const [w, d] = shape.size;
   const { standoff, thickness, surface, headers, contact } = boardStack(shape);
-  const top = look.texture ? new THREE.MeshStandardMaterial({ map: look.texture, roughness: 0.5 }) : standard('#00878f', 0.5);
-  const edge = standard('#006a70', 0.6);
-  const pcb = mesh(new THREE.BoxGeometry(w, thickness, d), [edge, edge, top, edge, edge, edge]);
-  pcb.position.y = standoff + thickness / 2;
+  // the PCB as made: its outline, holes and mask from the artwork, the top's gloss over it
+  const pcb = pcbBody({ w, d, thickness, outline: shape.board?.outline, holes: shape.board?.holes, mask: shape.board?.mask, top: look.texture });
+  pcb.position.y = standoff;
   g.add(pcb);
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
     const foot = mesh(new THREE.CylinderGeometry(1.5, 1.5, standoff, 12), standard('#efefef', 0.7));

@@ -32,6 +32,10 @@ export interface BoardBench {
   standoff_mm?: number;
   headers?: 'female' | 'male' | 'none';
   features?: BoardFeature[];
+  /** from the artwork: the PCB's outline (mm from its top-left corner), its soldermask colour, its plated holes */
+  outline?: [number, number][];
+  mask?: string;
+  holes?: { at: [number, number]; r: number }[];
 }
 
 export interface BenchShape {
@@ -239,6 +243,71 @@ export function artworkAnchors(svg: string, widthMm: number, heightMm: number): 
   return out;
 }
 
+/**
+ * What a board's artwork says of its PCB: the outline (the `pcb` path, or
+ * the `#pcb` rectangle with its rounded corners), the soldermask's colour
+ * (the `.pcb` rule's fill) and the plated mounting holes (`.mount` circles,
+ * whose radius is the pad's), in mm from the top-left corner.
+ */
+export function artworkBoard(svg: string, widthMm: number, heightMm: number): Pick<BoardBench, 'outline' | 'mask' | 'holes'> {
+  const vb = /viewBox\s*=\s*"([\d.\-\s]+)"/.exec(svg)?.[1]?.trim().split(/\s+/).map(Number);
+  if (!vb || vb.length !== 4 || !vb[2] || !vb[3]) return {};
+  const sx = widthMm / vb[2];
+  const sy = heightMm / vb[3];
+  const mm = (x: number, y: number): [number, number] => [round((x - vb[0]!) * sx), round((y - vb[1]!) * sy)];
+  const out: Pick<BoardBench, 'outline' | 'mask' | 'holes'> = {};
+  const fill = /\.pcb\s*\{[^}]*fill:\s*(#[0-9a-fA-F]{6})/.exec(svg)?.[1];
+  if (fill) out.mask = fill;
+  const path = /<path\b[^>]*class="pcb"[^>]*\bd="([^"]+)"/.exec(svg)?.[1] ?? /<path\b[^>]*\bd="([^"]+)"[^>]*class="pcb"/.exec(svg)?.[1];
+  if (path) {
+    // absolute M, L, H, V and Z, as the artworks draw outlines
+    const pts: [number, number][] = [];
+    let x = 0;
+    let y = 0;
+    const tokens = path.match(/[MLHVZ]|-?[\d.]+/gi) ?? [];
+    let cmd = 'M';
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i]!;
+      if (/^[MLHVZ]$/i.test(t)) { cmd = t.toUpperCase(); continue; }
+      if (cmd === 'H') x = Number(t);
+      else if (cmd === 'V') y = Number(t);
+      else { x = Number(t); y = Number(tokens[++i]); }
+      pts.push(mm(x, y));
+    }
+    if (pts.length >= 3) out.outline = pts;
+  } else {
+    const rect = /<rect\b[^>]*\bid="pcb"[^>]*>/.exec(svg)?.[0];
+    const num = (k: string) => Number(new RegExp(`\\b${k}="(-?[\\d.]+)"`).exec(rect ?? '')?.[1] ?? NaN);
+    if (rect && Number.isFinite(num('width'))) {
+      const [x0, y0, w, h] = [num('x') || 0, num('y') || 0, num('width'), num('height')];
+      const r = Number.isFinite(num('rx')) ? num('rx') : 0;
+      const pts: [number, number][] = [];
+      const corner = (cx: number, cy: number, a0: number) => {
+        for (let k = 0; k <= 6; k++) {
+          const a = a0 + (k / 6) * (Math.PI / 2);
+          pts.push(mm(cx + r * Math.cos(a), cy + r * Math.sin(a)));
+        }
+      };
+      corner(x0 + w - r, y0 + r, -Math.PI / 2);
+      corner(x0 + w - r, y0 + h - r, 0);
+      corner(x0 + r, y0 + h - r, Math.PI / 2);
+      corner(x0 + r, y0 + r, Math.PI);
+      out.outline = pts;
+    }
+  }
+  const holes: { at: [number, number]; r: number }[] = [];
+  const re = /<circle\b[^>]*class="mount"[^>]*>/g;
+  for (let m = re.exec(svg); m; m = re.exec(svg)) {
+    const a = m[0];
+    const cx = Number(/\bcx="(-?[\d.]+)"/.exec(a)?.[1]);
+    const cy = Number(/\bcy="(-?[\d.]+)"/.exec(a)?.[1]);
+    const r = Number(/\br="([\d.]+)"/.exec(a)?.[1]);
+    if ([cx, cy, r].every(Number.isFinite)) holes.push({ at: mm(cx, cy), r: round(r * sx) });
+  }
+  if (holes.length) out.holes = holes;
+  return out;
+}
+
 /** a description's pins by the anchor names (lower case) the artwork uses */
 function fromAnchors(names: string[], anchors: Record<string, [number, number]>): Record<string, [number, number]> | null {
   const pins: Record<string, [number, number]> = {};
@@ -286,7 +355,8 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     const size: [number, number, number] = artMm ? [artMm[0], artMm[1], 1.6] : [68.6, 53.3, 1.6];
     const ports = Object.keys(desc.ports ?? {});
     const pins = fromAnchors(ports, anchors) ?? header(ports, size[0], size[1]);
-    const board = (desc as { bench?: BoardBench }).bench;
+    const own = (desc as { bench?: BoardBench }).bench;
+    const board = artwork && artMm ? { ...own, ...artworkBoard(artwork, artMm[0], artMm[1]) } : own;
     return { package: 'board', size, pins, textured: true, label: desc.name, board };
   }
   if (VIRTUAL.has(short)) return { package: 'virtual', size: [1, 1, 1], pins: {} };

@@ -5,6 +5,13 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Boards as boards
+
+- A board's PCB on the 3D bench is cut from its artwork's outline, with its
+  mounting holes drilled through (plated barrels and rings), the
+  glass-epoxy core at its edges, and the artwork under a glossy soldermask.
+  The underside takes the mask's colour from the artwork.
+
 ### Packages at their standard dimensions
 
 - The 3D bench draws parts from their standards' dimension tables

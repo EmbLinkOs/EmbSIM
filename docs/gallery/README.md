@@ -5,6 +5,21 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Boards as boards: outline, holes, edge, mask (2026-10-30)
+
+Stage 4's first step: each board's PCB is cut from its artwork's own
+outline, its mounting holes are drilled through with plated barrels and
+rings, its edge is the pale glass-epoxy core, and its top is the artwork
+under a glossy soldermask.
+
+| The Uno before (a box with a picture) | After: the outline's chamfers and step, holes through to the desk |
+|---|---|
+| ![The Uno as a rectangle](bench-3d-pcb/1-uno-before.png) | ![The Uno's real outline and holes](bench-3d-pcb/2-uno-after.png) |
+
+| From the top | The ESP32-C3 DevKit's rounded corners |
+|---|---|
+| ![The Uno from above](bench-3d-pcb/3-uno-top.png) | ![The ESP32-C3 DevKit](bench-3d-pcb/4-esp32c3.png) |
+
 ## Packages at their standard dimensions (2026-10-30)
 
 Stage 2 of [the 3D plan](../engineering/bench-3d.md): parts drawn from the
