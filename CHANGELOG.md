@@ -11,6 +11,9 @@ versions follow semantic versioning. There is no release yet.
   mounting holes drilled through (plated barrels and rings), the
   glass-epoxy core at its edges, and the artwork under a glossy soldermask.
   The underside takes the mask's colour from the artwork.
+- The selected part, and the part under the pointer, are outlined in both
+  render qualities (drawn after tone mapping, so the outline keeps its
+  colour).
 - A view cube in the bench's corner turns with the camera; a click on a
   face frames that view (the View menu and the Z, Y, X and I keys give the
   same views to the keyboard).

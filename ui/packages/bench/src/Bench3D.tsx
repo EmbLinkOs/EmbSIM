@@ -28,7 +28,7 @@ import { pickTerminal, type ProjectedTerminal } from './picking';
 import type { InsertionPreview } from './layout';
 import type { Beam } from './world';
 import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, sectionPlane, snapPoint, viewPose, type BenchLayers, type Measurement, type Section, type StandardView, type Vec3 } from './inspect';
-import { QualityRenderer, type RenderQuality } from './render';
+import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
 
 
 
@@ -357,6 +357,10 @@ export function Bench3D(props: Bench3DProps) {
     controls: OrbitControls;
     /** quality mode's passes, when chosen */
     quality: QualityRenderer | null;
+    /** the draft render with outlines, made when something is first outlined */
+    outline: OutlineRenderer | null;
+    /** the part under the pointer, outlined as the selection is */
+    hover: string | null;
     /** the measurement, the height plane and its marks */
     inspect: THREE.Group;
     measureFrom: Vec3 | null;
@@ -377,12 +381,28 @@ export function Bench3D(props: Bench3DProps) {
     s.raf = requestAnimationFrame(() => {
       s.raf = 0;
       s.controls.update();
+      // the selected part, and the part under the pointer, are outlined
+      const outlined = [...new Set([propsRef.current.selected?.part, s.hover])]
+        .map((id) => (id ? s.parts.get(id)?.built.group : undefined))
+        .filter((g): g is THREE.Group => Boolean(g?.visible));
       if (s.quality) {
+        s.quality.outline.selectedObjects = outlined;
         if (!s.quality.draw()) {
           s.quality.dispose();
           s.quality = null;
           propsRef.current.onQualityFallback?.();
         }
+      } else if (outlined.length) {
+        const host = hostRef.current;
+        if (!s.outline && host) {
+          s.outline = new OutlineRenderer(s.renderer, s.scene, s.camera, host.clientWidth || 1, host.clientHeight || 1);
+          s.outline.setSize(host.clientWidth || 1, host.clientHeight || 1, s.renderer.getPixelRatio());
+        }
+        if (s.outline) {
+          s.outline.setCamera(s.camera);
+          s.outline.outline.selectedObjects = outlined;
+          s.outline.composer.render();
+        } else s.renderer.render(s.scene, s.camera);
       } else s.renderer.render(s.scene, s.camera);
       s.labels.render(s.scene, s.camera);
       // the view cube turns with the camera: the scene's rotation seen from the camera, y down as CSS has it
@@ -566,7 +586,7 @@ export function Bench3D(props: Bench3DProps) {
     scene.add(jumpers, links, notes, world, hints, preview, inspect);
     state.current = {
       renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, parts: new Map(), jumpers, links, notes, world, hints, preview,
-      inspect, quality: null, measureFrom: null, raf: 0, framed: false,
+      inspect, quality: null, outline: null, hover: null, measureFrom: null, raf: 0, framed: false,
     };
 
     controls.addEventListener('change', invalidate);
@@ -584,6 +604,7 @@ export function Bench3D(props: Bench3DProps) {
       setOrthoFrustum(orthographic, half, w / h);
       orthographic.updateProjectionMatrix();
       state.current?.quality?.setSize(w, h, renderer.getPixelRatio());
+      state.current?.outline?.setSize(w, h, renderer.getPixelRatio());
       invalidate();
     };
     const ro = new ResizeObserver(resize);
@@ -595,6 +616,7 @@ export function Bench3D(props: Bench3DProps) {
       for (const e of state.current?.parts.values() ?? []) e.surface?.dispose();
       if (state.current?.raf) cancelAnimationFrame(state.current.raf);
       state.current?.quality?.dispose();
+      state.current?.outline?.dispose();
       if (state.current) disposeTree(state.current.inspect);
       renderer.domElement.removeEventListener('webglcontextlost', contextLost);
       desk.material.map?.dispose();
@@ -1312,6 +1334,11 @@ export function Bench3D(props: Bench3DProps) {
         const hit = hitParts()[0];
         const data = hit?.object.userData as PickData | undefined;
         el.style.cursor = data?.input && p.live ? 'pointer' : data?.part && p.editable ? 'grab' : 'default';
+        const over = data?.part ?? null;
+        if (over !== s.hover) {
+          s.hover = over;
+          invalidate();
+        }
       }
     };
     const up = (ev: PointerEvent) => {
@@ -1423,7 +1450,13 @@ export function Bench3D(props: Bench3DProps) {
       }
     };
     cancelGesture.current = cancel;
-    const leave = () => { if (activePointer === null) setFeedback({ text: '' }); };
+    const leave = () => {
+      if (activePointer === null) setFeedback({ text: '' });
+      if (s.hover) {
+        s.hover = null;
+        invalidate();
+      }
+    };
     const visibility = () => { if (document.hidden) cancel(); };
     const lostCapture = (event: PointerEvent) => { if (event.pointerId === activePointer) cancel(); };
     host.addEventListener('keydown', escape);

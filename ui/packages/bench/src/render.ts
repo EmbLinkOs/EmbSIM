@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
@@ -35,10 +36,58 @@ export function glows(material: THREE.Material): boolean {
 const MIX_VERTEX = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
 const MIX_FRAGMENT = 'uniform sampler2D tDiffuse; uniform sampler2D bloom; varying vec2 vUv; void main() { gl_FragColor = texture2D(tDiffuse, vUv) + vec4(texture2D(bloom, vUv).rgb, 0.0); }';
 
+/** the outline a selected part (and the part under the pointer) gets, as CAD tools draw it */
+function outlinePass(scene: THREE.Scene, camera: THREE.Camera, width: number, height: number): OutlinePass {
+  const pass = new OutlinePass(new THREE.Vector2(width, height), scene, camera);
+  // drawn after tone mapping, into the display image: its colours are display values
+  // (sRGB), so they stay the colour they are named (tone-mapped, any visible blue washed to white)
+  pass.edgeStrength = 3;
+  pass.edgeThickness = 1;
+  pass.edgeGlow = 0;
+  pass.visibleEdgeColor.set('#0ea5e9').convertLinearToSRGB();
+  pass.hiddenEdgeColor.set('#0b5d80').convertLinearToSRGB();
+  return pass;
+}
+
+/**
+ * The draft render with outlines: used only while something is outlined, so
+ * a plain draft frame stays a single forward render.
+ */
+export class OutlineRenderer {
+  readonly composer: EffectComposer;
+  private readonly render: RenderPass;
+  readonly outline: OutlinePass;
+
+  constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, width: number, height: number) {
+    this.composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(width, height, { type: THREE.HalfFloatType, samples: 4 }));
+    this.render = new RenderPass(scene, camera);
+    this.outline = outlinePass(scene, camera, width, height);
+    this.composer.addPass(this.render);
+    this.composer.addPass(new OutputPass());
+    this.composer.addPass(this.outline);
+  }
+
+  setCamera(camera: THREE.Camera): void {
+    this.render.camera = camera;
+    this.outline.renderCamera = camera;
+  }
+
+  setSize(width: number, height: number, pixelRatio: number): void {
+    this.composer.setPixelRatio(pixelRatio);
+    this.composer.setSize(width, height);
+  }
+
+  dispose(): void {
+    this.composer.dispose();
+    this.outline.dispose();
+  }
+}
+
 export class QualityRenderer {
   private readonly glow: EffectComposer;
   readonly composer: EffectComposer;
   private readonly passes: { render: RenderPass; ao: GTAOPass; glowRender: RenderPass };
+  readonly outline: OutlinePass;
   private readonly black = new THREE.MeshBasicMaterial({ color: 0x000000 });
   private readonly times: number[] = [];
   /** the first frames compile shaders and are not counted */
@@ -72,10 +121,12 @@ export class QualityRenderer {
       vertexShader: MIX_VERTEX,
       fragmentShader: MIX_FRAGMENT,
     }), 'tDiffuse');
+    this.outline = outlinePass(scene, camera, width, height);
     this.composer.addPass(render);
     this.composer.addPass(ao);
     this.composer.addPass(mix);
     this.composer.addPass(new OutputPass());
+    this.composer.addPass(this.outline);
     this.passes = { render, ao, glowRender };
   }
 
@@ -83,6 +134,7 @@ export class QualityRenderer {
     this.passes.render.camera = camera;
     this.passes.ao.camera = camera;
     this.passes.glowRender.camera = camera;
+    this.outline.renderCamera = camera;
   }
 
   setSize(width: number, height: number, pixelRatio: number): void {
@@ -143,6 +195,7 @@ export class QualityRenderer {
     this.glow.dispose();
     this.composer.dispose();
     this.passes.ao.dispose();
+    this.outline.dispose();
     this.black.dispose();
   }
 }

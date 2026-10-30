@@ -139,7 +139,8 @@ Exit:
 
 ### Stage 5: interaction as a CAD tool
 
-- An outline on the selection and on hover (the outline pass).
+- An outline on the selection and on hover (the outline pass): done, drawn
+  after tone mapping in draft and in quality.
 - Cross-probing: select in the schematic and the 3D view frames it, and
   the reverse.
 - An exploded view (each part lifted off its host by its depth).

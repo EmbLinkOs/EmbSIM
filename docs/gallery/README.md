@@ -28,6 +28,13 @@ breadboard, resting on whatever is under it:
 |---|---|
 | ![Leads arched high above the bench](bench-3d-pcb/0-arched-leads-before.png) | ![Leads draped onto the desk](bench-3d-pcb/5-draped-leads.png) |
 
+The selected part (and the part under the pointer) is outlined as CAD tools
+draw it, and a view cube in the corner turns with the camera:
+
+| The Uno selected | The view cube, isometric |
+|---|---|
+| ![The Uno outlined](bench-3d-pcb/6-selected-outline.png) | ![The cube showing Top, Front and Right](bench-3d-pcb/7-view-cube.png) |
+
 ## Packages at their standard dimensions (2026-10-30)
 
 Stage 2 of [the 3D plan](../engineering/bench-3d.md): parts drawn from the
