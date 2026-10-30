@@ -103,6 +103,11 @@
       "min": -10,
       "max": 10,
       "doc": "The crystal's rate off true, ppm (the datasheet holds +-2 ppm from 0 to 40 C)"
+    },
+    "start": {
+      "type": "string",
+      "default": "2000-01-01 00:00:00",
+      "doc": "Date and time at power-up, YYYY-MM-DD HH:MM:SS: the power-on 00:00:00 01/01/00, or the time a clock kept by its battery shows"
     }
   },
   "inputs": [
@@ -153,7 +158,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "I2C at 0x68 with user buffers synchronised at each START; BCD time and date with 12/24-hour modes, the century bit and a user day of the week; the countdown chain reset by a seconds write; the rate off by drift_ppm and the aging offset; both alarms with every mask combination setting A1F/A2F and pulling INT# with INTCN; the square wave and 32 kHz outputs (open drain) while wired; temperature at power-up, every 64 s or on CONV (BSY, 125 ms), 0.25 C steps; power-on to 2000-01-01 with OSF and EN32kHz set and RST low 250 ms; no answer below 2.3 V.",
+      "claims": "I2C at 0x68 with user buffers synchronised at each START; BCD time and date with 12/24-hour modes, the century bit and a user day of the week; the countdown chain reset by a seconds write; the rate off by drift_ppm and the aging offset; both alarms with every mask combination setting A1F/A2F and pulling INT# with INTCN; the square wave and 32 kHz outputs (open drain) while wired; temperature at power-up, every 64 s or on CONV (BSY, 125 ms), 0.25 C steps; power-on to 2000-01-01 (or the start a battery kept) with OSF and EN32kHz set and RST low 250 ms; no answer below 2.3 V. Matched bit for bit to a real part's ACKs, time and temperature reads (sigrok's captures).",
       "omissions": [
         "the battery (VBAT) switchover and timekeeping on battery (EOSC, BBSQW and OSF on power loss have no effect on VCC)",
         "the RST pushbutton input and its debounce",
@@ -162,7 +167,8 @@
         "supply current"
       ],
       "validation": [
-        "tests/*.json"
+        "tests/*.json",
+        "../../../tests/captures/ds3231/cases.json"
       ]
     },
     "timed": {
@@ -185,7 +191,8 @@
         "supply current"
       ],
       "validation": [
-        "tests/*.json"
+        "tests/*.json",
+        "../../../tests/captures/ds3231/cases.json"
       ]
     }
   },

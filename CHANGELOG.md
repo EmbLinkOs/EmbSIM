@@ -5,6 +5,25 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### I2C parts' captures replayed
+
+- `replay_captures.py` replays I2C: the master's half of SCL and SDA is
+  played back, SDA released in the part's slots, and every bit the part
+  drove (ACKs, bytes read) is compared one for one; another part on the bus
+  is played back as captured. 21 captures of real parts match.
+- `emblink/eeprom_24aa025uid`: Microchip's 24AA025UID, 2 Kbit with 16-byte
+  pages and a write-protected upper half that holds 29h, 41h and a 32-bit
+  serial number; `contents` loads the lower half as a programmer left it.
+  Its 3.5 ms write cycle comes from 19 sigrok captures of a real part, which
+  stopped answering for between 3.10 and 4.03 ms after each write (the
+  datasheet gives only a 5 ms maximum). Page wraps, ACK polling and the
+  serial number all replay bit for bit.
+- The DS3231 takes `start`, the time a clock kept by its battery shows at
+  power-up. Two captures of a DS3231 module replay bit for bit: the ACKs,
+  the time and the temperature.
+- `tools/verify/sigrok.py` reads sigrok 0.2's session files, whose metadata
+  indents some keys.
+
 ### Real parts' captures replayed into their models
 
 - `tools/verify/replay_captures.py` (the `real_captures` test) reads sigrok

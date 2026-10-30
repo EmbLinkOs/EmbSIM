@@ -20,6 +20,12 @@ are decoded by the protocol's rules and compared.
     Convert T has had time to finish: the temperature register and the
     EEPROM's configuration are from before); the presence pulses and the 0
     bits' timing.
+  i2c (24AA025UID, DS3231): every bit the part drove (its ACKs, the bytes
+    read from it), one for one; the host's half and other parts' answers
+    are played back as captured; what the part held before the capture comes
+    from its reads before the first write (an EEPROM's contents) or the
+    case's params (a clock's time), and reads of registers set before the
+    capture are named in the case's history and left out.
 
     replay_captures.py --embsim PATH [--case NAME]... [--report FILE] [-v]
 
@@ -253,20 +259,167 @@ def ds18b20_temperature(scratch):
     return raw / 16
 
 
+# ---- I2C ------------------------------------------------------------------------------------
+
+I2C_GAP = 50_000  # ps: the master's SDA change after SCL falls, when the capture has both on one sample
+
+
+def i2c_bits(scl, sda):
+    """Every SCL rise as a bit {fall, rise, next_fall, value, sda_high: [(t, v)] edges while SCL
+    was high}, and the STARTs and STOPs as (t, "start"|"stop"). An SDA edge on SCL's sample
+    counts before a rise (data set up) and after a fall (data held)."""
+    rises = {t for t, v in scl[1:] if v == 1}
+    ev = sorted([(t, 1, "scl", v) for t, v in scl[1:]] + [(t, 0 if t in rises else 2, "sda", v) for t, v in sda[1:]])
+    lscl, lsda = scl[0][1], sda[0][1]
+    bits, conds, fall, cur = [], [], None, None
+    for t, _, ch, v in ev:
+        if ch == "scl":
+            if v == 1:
+                cur = {"fall": fall, "rise": t, "next_fall": None, "value": lsda, "sda_high": []}
+                bits.append(cur)
+            else:
+                fall = t
+                if cur is not None:
+                    cur["next_fall"] = t
+                cur = None
+            lscl = v
+        else:
+            if lscl == 1:
+                conds.append((t, "start" if v == 0 else "stop"))
+                if cur is not None:
+                    cur["sda_high"].append((t, v))
+            lsda = v
+    return bits, conds
+
+
+def i2c_transactions(bits, conds, addresses):
+    """The bits in order, each with its owner (the part when it drives SDA: the ACK after the
+    address and after each byte written to it, the bits of each byte read from it), grouped
+    into transactions {at, address, read, bytes: [(value, ack)], bits: [index]} by START."""
+    owner = ["host"] * len(bits)
+    txs, ci, state, k, byte, tx = [], 0, "idle", 0, 0, None
+    for i, b in enumerate(bits):
+        while ci < len(conds) and conds[ci][0] < b["rise"]:
+            t, c = conds[ci]
+            ci += 1
+            if c == "start":
+                tx = {"at": t, "address": None, "read": False, "bytes": [], "bits": []}
+                txs.append(tx)
+                state, k, byte = "addr", 0, 0
+            else:
+                state = "idle"
+        if state in ("idle", "ignore", "other") or tx is None:
+            continue
+        tx["bits"].append(i)
+        if k < 8:
+            byte = byte << 1 | b["value"]
+            if state == "read":
+                owner[i] = "part"
+            k += 1
+            continue
+        ack = b["value"] == 0
+        if state == "addr":
+            tx["address"], tx["read"] = byte >> 1, bool(byte & 1)
+            if tx["address"] not in addresses:
+                state = "other"  # a part not modelled: its answers are played as captured
+                for j in tx["bits"]:
+                    owner[j] = "host"
+                continue
+            owner[i] = "part"
+            state = ("read" if tx["read"] else "write") if ack else "ignore"
+        elif state == "write":
+            owner[i] = "part"
+            tx["bytes"].append((byte, ack))
+            if not ack:
+                state = "ignore"
+        else:
+            tx["bytes"].append((byte, ack))
+            if not ack:
+                state = "ignore"  # the master's NACK ends the read
+        k, byte = 0, 0
+    return owner, txs
+
+
+def _level(edges, t):
+    """The level at t, an edge at t included."""
+    v = edges[0][1]
+    for x, w in edges:
+        if x > t:
+            break
+        v = w
+    return v
+
+
+def i2c_waveform(scl, sda, bits, owner, lead_ps, until_ps):
+    """The host's SCL and SDA as the capture has them, SDA released while the part drives it."""
+    falls = [t for t, v in scl[1:] if v == 0]
+    first = falls[0] if falls else None
+    sda_ev = [(t, v) for t, v in sda[1:] if first is None or t < first]
+    for i, b in enumerate(bits):
+        if b["fall"] is not None:
+            gap = min(I2C_GAP, (b["rise"] - b["fall"]) // 2)
+            sda_ev.append((b["fall"] + gap, 1 if owner[i] == "part" else _level(sda, b["rise"])))
+        if owner[i] != "part":
+            sda_ev += b["sda_high"]
+    if bits and bits[-1]["next_fall"] is not None:
+        sda_ev += [(t, v) for t, v in sda[1:] if t > bits[-1]["next_fall"]]
+    changes = sorted([(t, 0, v) for t, v in scl[1:]] + [(t, 1, v) for t, v in sda_ev])
+    lvl = [scl[0][1], sda[0][1]]
+    steps, at = [], -lead_ps  # the first word is held through the lead
+    for t, ch, v in changes:
+        if t > at:
+            steps.append((lvl[0] | lvl[1] << 1, t - at))
+            at = t
+        lvl[ch] = v
+    steps.append((lvl[0] | lvl[1] << 1, max(1, until_ps - lead_ps - at)))
+    out = []
+    for w, d in steps:
+        if out and out[-1][0] == w:
+            out[-1] = (w, out[-1][1] + d)
+        else:
+            out.append((w, d))
+    return ",".join(f"{w:x}@{d}ps" for w, d in out)
+
+
+def i2c_preload(txs, size):
+    """The memory a part held before the capture, as its reads before the first write show it."""
+    mem, ptr = {}, 0
+    for tx in txs:
+        if tx["address"] is None:
+            continue
+        if not tx["read"]:
+            data = [v for v, _ in tx["bytes"]]
+            if len(data) > 1:
+                break
+            if data:
+                ptr = data[0]
+            continue
+        for v, _ in tx["bytes"]:
+            if ptr < size:
+                mem.setdefault(ptr, v)
+            ptr = (ptr + 1) & 0xFF
+    if all(v == 0xFF for v in mem.values()):
+        return ""
+    return "".join(f"{mem.get(a, 0xFF):02X}" for a in range(max(mem) + 1))
+
+
 # ---- running a model ------------------------------------------------------------------
 
 
 ALIGN_LEAD = 12.0  # s: long enough a part is idle for any start it will ever answer
 
 
-def run_bench(embsim, name, components, net_pins, inputs, until_ps, lead_ps, work):
-    """A pattern generator as the host on one open-drain net with a pull-up and the
-    parts; the net's edges in the capture's time base (the lead taken off)."""
+def run_bus(embsim, name, components, nets, inputs, until_ps, lead_ps, work):
+    """A pattern generator as the host on open-drain nets with a pull-up each and the
+    parts; each net's edges in the capture's time base (the lead taken off)."""
+    comps, wired = [], {}
+    for k, (net, pins) in enumerate(nets.items()):
+        comps.append({"id": f"PU{k}", "component": "emblink/pull_up"})
+        wired[net] = [f"PU{k}.1"] + pins
     proj = {
         "schema_version": 1, "kind": "project", "name": name, "policy": "functional",
-        "components": [{"id": "PU", "component": "emblink/pull_up"}] + components,
-        "nets": {"DATA": ["HOST.OUT0", "PU.1"] + net_pins},
-        "probes": [{"name": "data", "target": "net:DATA", "kind": "digital"}],
+        "components": comps + components, "nets": wired,
+        "probes": [{"name": net.lower(), "target": f"net:{net}", "kind": "digital"} for net in nets],
     }
     scen = {"schema_version": 1, "kind": "scenario", "name": name, "until": f"{until_ps}ps", "inputs": inputs}
     p, s, rec = work / f"{name}.json", work / f"{name}-s.json", work / f"{name}-rec.json"
@@ -277,20 +430,27 @@ def run_bench(embsim, name, components, net_pins, inputs, until_ps, lead_ps, wor
     if run.returncode not in (0, 1) or not rec.exists():
         raise RuntimeError(f"{name}: embsim failed ({run.returncode}): {run.stderr[-600:]}")
     obs = json.loads(rec.read_text(encoding="utf-8"))["observations"]
-    out, last = [], None
+    out = {net: [] for net in nets}
+    names = {f"p{k + 1}": net for k, net in enumerate(nets)}  # a recording names probes in project order
     for o in obs:
-        if o.get("kind") != "probe":
+        net = names.get(o.get("probe", o.get("name", "")))
+        if o.get("kind") != "probe" or net is None:
             continue
         t, v = max(0, int(o["at_ps"]) - lead_ps), 1 if o["value"] == "1" else 0
-        if v != last:
-            out.append((t, v))
-            last = v
+        if not out[net] or out[net][-1][1] != v:
+            out[net].append((t, v))
     return out
 
 
-def host(waveform):
+def run_bench(embsim, name, components, net_pins, inputs, until_ps, lead_ps, work):
+    """One open-drain net, DATA, driven by the host's OUT0."""
+    return run_bus(embsim, name, components, {"DATA": ["HOST.OUT0"] + net_pins}, inputs, until_ps, lead_ps,
+                   work)["DATA"]
+
+
+def host(waveform, idle=1):
     return {"id": "HOST", "component": "emblink/pattern_generator",
-            "params": {"waveform": waveform, "idle": 1, "drive": "open_drain"}}
+            "params": {"waveform": waveform, "idle": idle, "drive": "open_drain"}}
 
 
 def check_phases(real, sim, tol, problems):
@@ -411,7 +571,74 @@ def onewire_case(embsim, case, edges, work):
                        f"showing what the parts held before the capture left out)"}
 
 
-PROTOCOLS = {"am230x": am230x_case, "onewire": onewire_case}
+def i2c_case(embsim, case, edges, work):
+    """Every bit the part drove (its ACKs, the bytes read from it), one for one, with the host's
+    half of the capture and any other part's answers played back; what the part held before the
+    capture taken from its reads before the first write."""
+    scl, sda = edges
+    addresses = {int(a, 0) if isinstance(a, str) else a for a in case["addresses"]}
+    bits, conds = i2c_bits(scl, sda)
+    owner, txs = i2c_transactions(bits, conds, addresses)
+    params = dict(case.get("params", {}))
+    pre = case.get("preload")
+    if pre:
+        contents = i2c_preload([t for t in txs if t["address"] in addresses], pre["size"])
+        if contents:
+            params[pre["param"]] = contents
+    lead = int(case.get("lead_s", 0.001) * 1e12)
+    last = max([scl[-1][0], sda[-1][0]])
+    until = last + lead + 1000 * US
+    comps = [host(i2c_waveform(scl, sda, bits, owner, lead, until), idle=3),
+             {"id": "DUT", "component": case["part"], "params": params}]
+    comps += [{"id": f"TIE{k}", "component": "emblink/logic_level", "params": {"level": lvl}}
+              for k, lvl in enumerate((0, 1))]
+    nets = {"SCL": ["HOST.OUT0", f"DUT.{case['pins']['scl']}"], "SDA": ["HOST.OUT1", f"DUT.{case['pins']['sda']}"]}
+    for k, lvl in enumerate((0, 1)):
+        tied = [f"DUT.{p}" for p, v in case.get("tie", {}).items() if v == lvl]
+        if tied:
+            nets[f"TIE{k}"] = [f"TIE{k}.OUT"] + tied
+    inputs = [{"at": "0", "target": "DUT", "input": x["input"], "value": x["value"]} for x in case.get("inputs", [])]
+    sim = run_bus(embsim, case["name"], comps, nets, inputs, until, lead, work)
+    sim_bits, _ = i2c_bits(sim["SCL"], sim["SDA"])
+    problems = []
+    if len(sim_bits) != len(bits):
+        problems.append(f"{len(bits)} SCL clocks in the capture, {len(sim_bits)} in the simulation")
+    where = {}
+    for n, tx in enumerate(txs):
+        for j in tx["bits"]:
+            where[j] = n
+    mine = [n for n, t in enumerate(txs) if t["address"] in addresses]
+    # reads whose data the part held from before the capture (registers set earlier): their ACKs count
+    history = {mine[h["transaction"] - 1] for h in case.get("history", [])}
+    compared, differing, skipped = 0, 0, 0
+    for i, (a, b) in enumerate(zip(bits, sim_bits)):
+        if owner[i] != "part":
+            continue
+        if where.get(i) in history and txs[where[i]]["bits"].index(i) % 9 < 8:
+            skipped += 1
+            continue
+        compared += 1
+        if a["value"] != b["value"]:
+            differing += 1
+            if differing <= 8:
+                tx = txs[where[i]]
+                k = tx["bits"].index(i)
+                what = (f"byte {k // 9} bit {k % 9}" if k % 9 < 8 else
+                        ("the address's ACK" if k < 9 else f"the ACK of byte {k // 9}"))
+                said = (lambda v: "ACK" if v == 0 else "no ACK") if k % 9 == 8 else str  # noqa: E731
+                problems.append(f"transaction {where[i] + 1} at {tx['at'] / 1e9:.3f} ms (0x{tx['address']:02X} "
+                                f"{'read' if tx['read'] else 'write'}), {what}: the part {said(a['value'])}, the "
+                                f"model {said(b['value'])}")
+    if differing > 8:
+        problems.append(f"... {differing} bits differ in all")
+    nacked = sum(1 for n in mine if not txs[n]["bytes"] and not txs[n]["read"])
+    held = f", {skipped} read bits it held from before the capture left out" if skipped else ""
+    return {"real": {}, "model": {}, "problems": problems,
+            "summary": f"{len(mine)} transactions to the part ({nacked} not acknowledged), {compared} bits it "
+                       f"drove compared{held}"}
+
+
+PROTOCOLS = {"am230x": am230x_case, "onewire": onewire_case, "i2c": i2c_case}
 
 
 def main() -> int:
@@ -431,7 +658,9 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="embsim-captures-") as tmp:
         for c in cases:
             cap = read_sr(c["dir"] / c["capture"])
-            res = PROTOCOLS[c["protocol"]](args.embsim, c, cap.edges(c.get("channel", 0)), Path(tmp))
+            ch = c.get("channel", 0)
+            edges = tuple(cap.edges(x) for x in ch) if isinstance(ch, list) else cap.edges(ch)
+            res = PROTOCOLS[c["protocol"]](args.embsim, c, edges, Path(tmp))
             report[c["name"]] = res
             ok = not res["problems"]
             failed += not ok

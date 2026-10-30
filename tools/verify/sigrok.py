@@ -62,7 +62,9 @@ class Capture:
 def read_sr(path) -> Capture:
     with zipfile.ZipFile(path) as z:
         ini = configparser.ConfigParser()
-        ini.read_string(z.read("metadata").decode("utf-8", "replace"))
+        # old sigrok versions indent some keys, which configparser would take as continuations
+        text = z.read("metadata").decode("utf-8", "replace")
+        ini.read_string("\n".join(line.strip() for line in text.splitlines()))
         dev = ini["device 1"]
         unitsize = int(dev.get("unitsize", "1"))
         total = int(dev.get("total probes", "8"))
@@ -71,4 +73,6 @@ def read_sr(path) -> Capture:
         parts = sorted((n for n in z.namelist() if n == base or n.startswith(base + "-")),
                        key=lambda n: int(n.rsplit("-", 1)[1]) if n != base else 0)
         data = b"".join(z.read(n) for n in parts)
+        if "samplerate" not in dev:
+            raise ValueError(f"{path}: no samplerate in the metadata")
         return Capture(str(Path(path)), _rate(dev["samplerate"]), names, unitsize, data)

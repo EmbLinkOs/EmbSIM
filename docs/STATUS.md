@@ -5,6 +5,30 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## I2C parts' captures (2026-10-30)
+
+`replay_captures.py` now replays I2C captures: the master's half of SCL
+and SDA is played back at the captured times, SDA is released in the slots
+the part drives, and every bit it drove (each ACK or its absence, each bit
+read from it) is compared one for one. Another part on the bus is played
+back as captured. 19 sigrok captures of a real Microchip 24AA025UID (public
+domain, `i2c/eeprom_24xx/microchip_24aa025uid`) match through the new
+`emblink/eeprom_24aa025uid`, about 20,000 bits in all:
+- byte writes 1 to 6 ms apart, where the part does not answer during its
+  write cycle (between 3.10 and 4.03 ms on this part; the model takes
+  3.5 ms, the datasheet gives a 5 ms maximum);
+- page writes of 8 to 48 bytes, wrapping at 16;
+- reads of the whole array, ending in the protected half's codes and serial
+  number.
+
+With a 5 ms or 3 ms write cycle, or the 24C02's 8-byte pages, the same
+captures fail, as they should. Two captures of a DS3231 module (`i2c/rtc_dallas_ds3231`) match through
+`emblink/ds3231` with its new `start`: the ACKs, the time and temperature
+reads. Three reads show registers set before the capture, so only their
+ACKs are compared. The DS1307's captures are sampled too coarsely (200 and
+500 kHz) to replay. Not yet: SPI parts (MAX7219 and others) and the
+remaining I2C sensors in sigrok-dumps (BH1750, SHT3x, ...).
+
 ## Real parts' captures (2026-10-29)
 
 The first evidence from real hardware beyond datasheets: 15 sigrok captures

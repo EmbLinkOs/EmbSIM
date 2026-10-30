@@ -1,0 +1,526 @@
+{
+  "schema_version": 1,
+  "kind": "captures",
+  "part": "Microchip 24AA025UID",
+  "provenance": {
+    "source": "https://github.com/sigrokproject/sigrok-dumps (i2c/eeprom_24xx/microchip_24aa025uid)",
+    "commit": "0ad13477abc959d37fc9a5acbd23901c371c9c76",
+    "license": "public domain (sigrok-dumps README: 'Unless noted otherwise, all dump files are hereby released into the public domain by their authors')",
+    "setup": "a 24AA025UID at address 0x50 (serial number 000FAC0Fh) on a 100 kHz bus, sampled at 4 MHz; the directory has no README: each file's name says what the master did (the sequence, the number of bytes, the delay between byte writes); the copies triggered on SDA low are left out"
+  },
+  "cases": [
+    {
+      "name": "24aa025uid_bytewrite128_6ms_delay",
+      "capture": "24aa025uid_bytewrite128_6ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "byte writes: 128, 6 ms apart"
+    },
+    {
+      "name": "24aa025uid_bytewrite16_6ms_delay",
+      "capture": "24aa025uid_bytewrite16_6ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "byte writes: 16, 6 ms apart"
+    },
+    {
+      "name": "24aa025uid_bytewrite256_6ms_delay",
+      "capture": "24aa025uid_bytewrite256_6ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "byte writes: 256, 6 ms apart"
+    },
+    {
+      "name": "24aa025uid_bytewrite5_6ms_delay",
+      "capture": "24aa025uid_bytewrite5_6ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "byte writes: 5, 6 ms apart"
+    },
+    {
+      "name": "24aa025uid_bytewrite8_6ms_delay",
+      "capture": "24aa025uid_bytewrite8_6ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "byte writes: 8, 6 ms apart"
+    },
+    {
+      "name": "24aa025uid_bytewrite9_6ms_delay",
+      "capture": "24aa025uid_bytewrite9_6ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "byte writes: 9, 6 ms apart"
+    },
+    {
+      "name": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_1ms_delay",
+      "capture": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_1ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 128, byte writes: 128, sequential random read of 128, 1 ms apart"
+    },
+    {
+      "name": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_2ms_delay",
+      "capture": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_2ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 128, byte writes: 128, sequential random read of 128, 2 ms apart"
+    },
+    {
+      "name": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_3ms_delay",
+      "capture": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_3ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 128, byte writes: 128, sequential random read of 128, 3 ms apart"
+    },
+    {
+      "name": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_4ms_delay",
+      "capture": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_4ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 128, byte writes: 128, sequential random read of 128, 4 ms apart"
+    },
+    {
+      "name": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_5ms_delay",
+      "capture": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_5ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 128, byte writes: 128, sequential random read of 128, 5 ms apart"
+    },
+    {
+      "name": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_6ms_delay",
+      "capture": "24aa025uid_seqrndread128_bytewrite128_seqrndread128_6ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 128, byte writes: 128, sequential random read of 128, 6 ms apart"
+    },
+    {
+      "name": "24aa025uid_seqrndread16_pagewrite16_seqrndread16",
+      "capture": "24aa025uid_seqrndread16_pagewrite16_seqrndread16.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 16, page write of 16, sequential random read of 16"
+    },
+    {
+      "name": "24aa025uid_seqrndread17_bytewrite17_seqrndread17_6ms_delay",
+      "capture": "24aa025uid_seqrndread17_bytewrite17_seqrndread17_6ms_delay.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 17, byte writes: 17, sequential random read of 17, 6 ms apart"
+    },
+    {
+      "name": "24aa025uid_seqrndread17_pagewrite17_seqrndread17",
+      "capture": "24aa025uid_seqrndread17_pagewrite17_seqrndread17.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 17, page write of 17, sequential random read of 17"
+    },
+    {
+      "name": "24aa025uid_seqrndread256",
+      "capture": "24aa025uid_seqrndread256.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 256"
+    },
+    {
+      "name": "24aa025uid_seqrndread32_pagewrite16crosspageboundary_seqrndread32",
+      "capture": "24aa025uid_seqrndread32_pagewrite16crosspageboundary_seqrndread32.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 32, page write of 16 across a page boundary, sequential random read of 32"
+    },
+    {
+      "name": "24aa025uid_seqrndread48_pagewrite48crosspageboundary_seqrndread48",
+      "capture": "24aa025uid_seqrndread48_pagewrite48crosspageboundary_seqrndread48.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 48, page write of 48 across a page boundary, sequential random read of 48"
+    },
+    {
+      "name": "24aa025uid_seqrndread8_pagewrite8_seqrndread8",
+      "capture": "24aa025uid_seqrndread8_pagewrite8_seqrndread8.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/eeprom_24aa025uid",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "tie": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0
+      },
+      "addresses": [
+        "0x50"
+      ],
+      "protocol": "i2c",
+      "preload": {
+        "param": "contents",
+        "size": 128
+      },
+      "doc": "sequential random read of 8, page write of 8, sequential random read of 8"
+    }
+  ]
+}
