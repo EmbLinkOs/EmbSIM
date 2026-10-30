@@ -502,7 +502,7 @@
     "headers": "male",
     "features": [
       {
-        "kind": "box",
+        "kind": "rf_module",
         "at": [
           12.7,
           2.95
@@ -513,7 +513,7 @@
           2.4
         ],
         "label": "ESP32-C3-MINI-1",
-        "color": "#c9ccd2"
+        "color": "#1d2a36"
       },
       {
         "kind": "qfn",

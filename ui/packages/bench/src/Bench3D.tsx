@@ -603,7 +603,11 @@ export function Bench3D(props: Bench3DProps) {
       const ctl = e.built.control;
       if (ctl) {
         const d = ctl.userData as PickData;
-        if (d.gesture === 'hold') ctl.position.y = 4.45 - (v.inputs?.[d.input!] ? 0.45 : 0);
+        if (d.gesture === 'hold') {
+          // a plunger travels 0.25 mm (a 6 mm tactile switch's stroke), from where it rests
+          ctl.userData.rest ??= ctl.position.y;
+          ctl.position.y = (ctl.userData.rest as number) - (v.inputs?.[d.input!] ? 0.25 : 0);
+        }
       }
       // a board's button caps, pressed while held
       e.built.group.traverse((o) => {

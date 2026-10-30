@@ -5,6 +5,30 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Packages at their standard dimensions (2026-10-30)
+
+Stage 2 of [the 3D plan](engineering/bench-3d.md) is under way. A package
+module (`ui/packages/bench/src/packages3d.ts`) draws parts from their
+standards' dimension tables, as KiCad's generator does:
+- DIPs per JEDEC MS-001/MS-011, the 28-pin per Microchip's 28P3: drafted
+  bodies, pin-1 notch and dimple, stamped leads whose tips land on the pins;
+- DIP sockets;
+- 2.54 mm socket strips with their openings and contacts, and pin strips;
+- the USB-B (USB 2.0 mouth and tongue), micro-USB and USB-C receptacles;
+- a 2.1 mm barrel jack;
+- the 6 mm tactile switch;
+- HC-49/US crystals;
+- QFP and QFN bodies sized by pin count (MS-026, MO-220);
+- radial electrolytics with the stripe over the negative lead;
+- an RF module (the ESP32-C3-MINI-1's shield can and antenna area), a new
+  board-feature kind.
+
+Evidence: `packages3d.test.ts` (16 tests: the standards' nominal
+dimensions, every DIP lead's tip on its pin, outlines, which way mouths face,
+the stripe's side) and the gallery's close-ups. Not yet: SOIC/TSSOP and chip
+passives on modules, gull-wing bends on QFP leads (they lie flat), and
+models from files (stage 3).
+
 ## The 3D bench as an inspection viewer (2026-10-30)
 
 The owner asked for the 3D bench and world to reach Proteus's, KiCad's and

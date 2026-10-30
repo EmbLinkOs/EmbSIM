@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Packages at their standard dimensions
+
+- The 3D bench draws parts from their standards' dimension tables
+  (`packages3d.ts`):
+  - JEDEC DIPs, with stamped leads landing on their pins, and DIP sockets;
+  - socket and pin header strips with their openings, contacts and posts;
+  - USB-B, micro-USB and USB-C receptacles with their mouths, and a 2.1 mm
+    barrel jack;
+  - 6 mm tactile switches and HC-49/US crystals;
+  - QFP and QFN bodies sized by pin count;
+  - radial electrolytics with the stripe over the negative lead.
+- Boards may place an `rf_module` (a shield can and its antenna area); the
+  ESP32-C3-DevKitM-1's ESP32-C3-MINI-1 is one.
+- A short DIP's marking is drawn at the size of its own top; it was
+  squeezed from a 24 mm plate.
+
 ### The 3D bench as an inspection viewer
 
 - `docs/engineering/bench-3d.md`: what Proteus, KiCad and Altium do in 3D,

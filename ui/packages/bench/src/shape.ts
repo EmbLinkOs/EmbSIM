@@ -16,7 +16,7 @@ export type ShapePackage = BenchPackage | 'virtual';
 
 /** a physical component on a board's PCB (SPEC-006 §4): a socket, a chip, a button, an LED */
 export interface BoardFeature {
-  kind: 'usb_b' | 'usb_micro' | 'usb_c' | 'barrel_jack' | 'dip' | 'qfp' | 'qfn' | 'button' | 'crystal' | 'led' | 'box';
+  kind: 'usb_b' | 'usb_micro' | 'usb_c' | 'barrel_jack' | 'dip' | 'qfp' | 'qfn' | 'button' | 'crystal' | 'led' | 'rf_module' | 'box';
   at: [number, number];
   size?: [number, number, number];
   rotation?: number;

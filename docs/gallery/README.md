@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Packages at their standard dimensions (2026-10-30)
+
+Stage 2 of [the 3D plan](../engineering/bench-3d.md): parts drawn from the
+JEDEC and IPC dimension tables, as KiCad's generator draws them.
+
+| The Uno before | After: socket strips with openings and contacts, the DIP-28 in its socket, the USB-B mouth, the barrel jack's bore, the tactile switch |
+|---|---|
+| ![Headers as solid blocks, boxes for the connectors](bench-3d-packages/1-uno-before.png) | ![The same view with the parts as made](bench-3d-packages/2-uno-after.png) |
+
+| DIP-16, electrolytic (stripe, vent), HC-49, TO-220, TO-92, 6 mm switch, LED | ESP32-C3-MINI-1 (shield can, antenna), micro-USB | NUCLEO's LQFP on four sides |
+|---|---|---|
+| ![A row of through-hole packages](bench-3d-packages/3-packages.png) | ![The ESP32-C3 DevKit](bench-3d-packages/4-esp32c3.png) | ![The ST-Link's QFP](bench-3d-packages/5-nucleo-qfp.png) |
+
 ## The 3D bench as an inspection viewer (2026-10-30)
 
 `examples/uno-breadboard` at 1440 × 900, the circuit running. These are
