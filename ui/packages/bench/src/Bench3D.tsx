@@ -143,6 +143,8 @@ export interface Bench3DProps {
   layers?: BenchLayers;
   /** the measure tool's result, or null when cleared */
   onMeasure?(m: Measurement | null): void;
+  /** 0 to 1: lifts each part plugged into a breadboard off it (an exploded view) */
+  explode?: number;
 }
 
 interface PartEntry {
@@ -158,6 +160,9 @@ const UP = 6; // a jumper rises this far from its ends before it arcs
 function v3([x, y, z]: Point3): THREE.Vector3 {
   return new THREE.Vector3(x, y, z);
 }
+
+/** how far an exploded view lifts a plugged part off its breadboard, mm */
+export const EXPLODE_LIFT = 25;
 
 /** a wire's radius and how far it lies above what it rests on */
 const WIRE_R = 0.8;
@@ -671,7 +676,9 @@ export function Bench3D(props: Bench3DProps) {
       e.view = v;
       e.built.group.name = v.id;
       e.built.group.visible = (props.layers ?? ALL_LAYERS)[layerOf(v.shape.package)];
-      e.built.group.position.set(v.place.x, v.elevation, v.place.y);
+      // exploded: a part plugged into a breadboard rises off it, its legs out of the holes
+      const lift = v.elevation > 0 ? Math.max(0, Math.min(1, props.explode ?? 0)) * EXPLODE_LIFT : 0;
+      e.built.group.position.set(v.place.x, v.elevation + lift, v.place.y);
       e.built.group.rotation.y = -(v.place.rotation * Math.PI) / 180;
       // the id on the bench, the whole name when selected
       const chosen = props.selected?.part === v.id;
@@ -730,7 +737,7 @@ export function Bench3D(props: Bench3DProps) {
       frame();
     }
     invalidate();
-  }, [props.parts, props.selected, props.labels, props.layers, invalidate, frame]);
+  }, [props.parts, props.selected, props.labels, props.layers, props.explode, invalidate, frame]);
 
   // the projection: the orthographic camera takes the perspective one's place, framing the same width
   useEffect(() => {

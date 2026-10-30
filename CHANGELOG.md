@@ -11,6 +11,8 @@ versions follow semantic versioning. There is no release yet.
   mounting holes drilled through (plated barrels and rings), the
   glass-epoxy core at its edges, and the artwork under a glossy soldermask.
   The underside takes the mask's colour from the artwork.
+- An exploded view (Inspect, Explode) lifts each part plugged into a
+  breadboard up to 25 mm off it, its legs out of their holes.
 - The selected part, and the part under the pointer, are outlined in both
   render qualities (drawn after tone mapping, so the outline keeps its
   colour).

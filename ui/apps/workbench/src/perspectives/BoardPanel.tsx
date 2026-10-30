@@ -107,6 +107,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const [heightPlane, setHeightPlane] = useState<number | null>(null);
   const [above, setAbove] = useState<{ id: string; top: number }[]>([]);
   const [measured, setMeasured] = useState<Measurement | null>(null);
+  const [explode, setExplode] = useState(0);
   const [plugHole, setPlugHole] = useState('');
   const [wireColor, setWireColor] = useState(WIRE_COLORS[0]!);
   // the selected part is the workbench's selection (the inspector shows it, the schematic too); a jumper is the bench's own
@@ -350,6 +351,10 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         </>}
         <Button size="sm" variant="ghost" aria-pressed={heightPlane !== null} onClick={() => setHeightPlane(heightPlane === null ? 15 : null)}>Height plane</Button>
         {heightPlane !== null && <Input label="Height above the desk" unit="mm" type="number" step={0.5} min={0} value={heightPlane} onChange={(e) => setHeightPlane(Math.max(0, Number(e.target.value) || 0))} />}
+        <label className="wb-bench-explode">
+          <span>Explode</span>
+          <input type="range" min={0} max={1} step={0.05} value={explode} aria-label="Explode: lift the plugged parts off the breadboard" onChange={(e) => setExplode(Number(e.target.value))} />
+        </label>
         <div className="wb-bench-layers" role="group" aria-label="Layers">
           {LAYERS.map(([key, label]) => (
             <Button key={key} size="sm" variant="ghost" aria-pressed={preferences.layers[key]} onClick={() => preference('layers', { ...preferences.layers, [key]: !preferences.layers[key] })}>{label}</Button>
@@ -508,6 +513,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           onHeightReport={setAbove}
           layers={preferences.layers}
           onMeasure={setMeasured}
+          explode={explode}
           onRendererError={() => { setRendererFailed(true); setFlat(true); }}
           onMove={(id, place) => mutate(`Move ${id}`, (p) => moveParts(p, ctx, { [id]: place }))}
           onWire={(from, to) => mutate('Jumper', (p) => addJumper(p, ctx, { from, to, color: wireColor }))}

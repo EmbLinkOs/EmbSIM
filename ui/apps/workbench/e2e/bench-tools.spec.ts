@@ -82,6 +82,8 @@ test('views, projection, height plane, layers and section are presentation only'
   await page.getByRole('option', { name: 'Cut across X' }).click();
   await page.getByLabel('Section at').fill('5');
   await page.getByRole('button', { name: 'Keep the other side' }).click();
+  await page.getByLabel('Explode: lift the plugged parts off the breadboard').fill('1');
+  await page.getByLabel('Explode: lift the plugged parts off the breadboard').fill('0');
   await page.getByRole('button', { name: 'Labels', exact: true }).click();
   await expect(page.locator('.eb-labels')).toBeHidden();
   await page.getByRole('button', { name: 'Labels', exact: true }).click();

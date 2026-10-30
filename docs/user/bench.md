@@ -45,6 +45,8 @@ These work as an EDA tool's 3D viewer does
 - **Section.** In **Inspect**, cut across X, Y (depth) or Z (height) at a
   position in mm. **Keep the other side** flips the cut. The desk stays whole;
   cut bodies show open.
+- **Explode.** The slider lifts every part plugged into a breadboard off it,
+  so you can see which holes its legs use.
 - **Height plane.** A plane at a height above the desk, for an enclosure's
   lid. The parts that rise through it are outlined in red and listed in the
   status line, tallest first.

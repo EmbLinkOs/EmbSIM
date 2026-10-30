@@ -35,6 +35,11 @@ draw it, and a view cube in the corner turns with the camera:
 |---|---|
 | ![The Uno outlined](bench-3d-pcb/6-selected-outline.png) | ![The cube showing Top, Front and Right](bench-3d-pcb/7-view-cube.png) |
 
+The exploded view lifts the parts plugged into the breadboard off it (the
+breadboard, under the pointer, is outlined):
+
+![The resistor, LED, button and pot above their holes](bench-3d-pcb/8-exploded.png)
+
 ## Packages at their standard dimensions (2026-10-30)
 
 Stage 2 of [the 3D plan](../engineering/bench-3d.md): parts drawn from the
