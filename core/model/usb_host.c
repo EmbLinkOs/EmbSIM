@@ -331,7 +331,8 @@ static void control_out(uh_state *s, int type, int req, unsigned value, unsigned
                         uint32_t len)
 {
     control(s, type, req, value, index, len);
-    memcpy(s->ct.buf, data, s->ct.want);
+    if (data && s->ct.want)
+        memcpy(s->ct.buf, data, s->ct.want);
 }
 
 static const char *step_name(int step)
