@@ -538,7 +538,7 @@ static void f4_settle(struct rcc *c)
      * its flag, and the RCC interrupt is pending */
     for (i = 0; i < O_N; i++)
         if (c->osc[i].ready && !(was_ready >> i & 1) && c->cir) {
-            u64 f = 1u << osc_cir_bit[i];
+            u64 f = (u64)1 << osc_cir_bit[i];
             if ((c->cir->value & f << 8) && !(c->cir->value & f)) {
                 esk_rf_hw(c->cir, c->cir->value | f);
                 if (c->irq >= 0)
