@@ -3547,7 +3547,7 @@
     "title": "STS7PF30L P-channel 30 V STripFET II MOSFET datasheet: RDS(on) 0.016 ohm typical, 0.021 maximum"
    }
   ],
-  "notes": "Artwork is an original SVG drawn for EmbSIM to the board's 70 x 133.34 mm outline; no ST artwork or logo is used. The morpho pin assignment (CN11, CN12) places each of the 114 I/Os once."
+  "notes": "Artwork is an original SVG drawn for EmbSIM to the board's 70 x 133.34 mm outline; no ST artwork or logo is used. The morpho pin assignment (CN11, CN12) places each of the 114 I/Os once. The morpho assignment matches, pin for pin, CN11 and CN12 of ST's MB1364 C-01 schematic (the Nucleo-144 board of the NUCLEO-H743ZI, sheet 5), whose morpho headers carry the same LQFP144 pins; MB1364's board-specific parts (its transistor-driven LEDs, LD2 on PE1, its USB switch enabled from PD10, the ST-LINK-V3E) are not MB1137's and none of its values is used here."
  },
  "tests": [
   "tests/*.json"
