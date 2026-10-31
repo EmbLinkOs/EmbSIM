@@ -2,6 +2,7 @@
 /* Copyright 2026 Junior Deogracias */
 /* The world's fields and bodies, and the rays distance sensors cast (ADR-026). */
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "engine/world.h"
@@ -57,7 +58,7 @@ static void vec3(const esk_json *arr, double out[3], double def)
     }
 }
 
-es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const esk_json *spec)
+es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const esk_json *spec, es_time_t now)
 {
     size_t i;
     esk_body b;
@@ -80,6 +81,15 @@ es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const e
     b.sphere = esk_str_eq(esk_json_get_str(spec, "shape", "box"), "sphere");
     vec3(esk_json_get(spec, "at"), b.at, 0.0);
     vec3(esk_json_get(spec, "size"), b.size, 50.0);
+    vec3(esk_json_get(spec, "velocity_mm_s"), b.vel, 0.0);
+    b.travel = esk_json_get_num(spec, "travel_mm", 0.0);
+    if (b.travel < 0)
+        b.travel = 0;
+    /* the motion counts from `since_ps` when the spec says (a project's bodies: from 0), else from now */
+    {
+        const char *since = esk_json_get_str(spec, "since_ps", NULL);
+        b.since = since ? (es_time_t)strtoull(since, NULL, 10) : now;
+    }
     if (i < w->bodies.len) {
         b.id = w->bodies.data[i].id;
         w->bodies.data[i] = b;
@@ -91,6 +101,27 @@ es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const e
         return ES_ENOMEM;
     }
     return ES_OK;
+}
+
+void esk_world_body_at(const esk_body *b, es_time_t now, double out[3])
+{
+    double speed = sqrt(b->vel[0] * b->vel[0] + b->vel[1] * b->vel[1] + b->vel[2] * b->vel[2]);
+    double dt = now > b->since ? (double)(now - b->since) / 1e12 : 0.0, s;
+    int k;
+    if (speed <= 0 || dt <= 0) {
+        for (k = 0; k < 3; k++)
+            out[k] = b->at[k];
+        return;
+    }
+    s = speed * dt;
+    if (b->travel > 0) {
+        /* back and forth: out along the velocity for `travel`, then back */
+        s = fmod(s, 2 * b->travel);
+        if (s > b->travel)
+            s = 2 * b->travel - s;
+    }
+    for (k = 0; k < 3; k++)
+        out[k] = b->at[k] + b->vel[k] / speed * s;
 }
 
 /* the slab method: the ray against an axis-aligned box */
@@ -140,20 +171,22 @@ static double ray_sphere(const esk_body *b, const double o[3], const double d[3]
     return t < 0 ? -1.0 : (c <= 0 ? 0.0 : t);
 }
 
-double esk_world_ray(const esk_world *w, const double o[3], const double d[3])
+double esk_world_ray(const esk_world *w, const double o[3], const double d[3], es_time_t now)
 {
     double best = -1.0;
     size_t i;
     for (i = 0; i < w->bodies.len; i++) {
-        const esk_body *b = &w->bodies.data[i];
-        double t = b->sphere ? ray_sphere(b, o, d) : ray_box(b, o, d);
+        esk_body b = w->bodies.data[i];
+        double t;
+        esk_world_body_at(&w->bodies.data[i], now, b.at);
+        t = b.sphere ? ray_sphere(&b, o, d) : ray_box(&b, o, d);
         if (t >= 0 && (best < 0 || t < best))
             best = t;
     }
     return best;
 }
 
-esk_json *esk_world_json(esk_alloc *a, const esk_world *w)
+esk_json *esk_world_json(esk_alloc *a, const esk_world *w, es_time_t now)
 {
     esk_json *o = esk_json_new_object(a), *fields = esk_json_new_object(a), *bodies = esk_json_new_array(a);
     size_t i;
@@ -176,16 +209,27 @@ esk_json *esk_world_json(esk_alloc *a, const esk_world *w)
     for (i = 0; i < w->bodies.len; i++) {
         const esk_body *b = &w->bodies.data[i];
         esk_json *j = esk_json_new_object(a), *at = esk_json_new_array(a), *size = esk_json_new_array(a);
-        int m;
+        double pos[3];
+        int m, moving = b->vel[0] != 0 || b->vel[1] != 0 || b->vel[2] != 0;
         if (!j || !at || !size) {
             esk_json_free(a, j);
             esk_json_free(a, at);
             esk_json_free(a, size);
             continue;
         }
+        esk_world_body_at(b, now, pos);
         for (m = 0; m < 3; m++) {
-            esk_json_array_push(a, at, esk_json_new_number(a, b->at[m]));
+            esk_json_array_push(a, at, esk_json_new_number(a, pos[m]));
             esk_json_array_push(a, size, esk_json_new_number(a, b->size[m]));
+        }
+        if (moving) {
+            esk_json *v = esk_json_new_array(a);
+            for (m = 0; m < 3 && v; m++)
+                esk_json_array_push(a, v, esk_json_new_number(a, b->vel[m]));
+            if (v)
+                esk_json_object_set(a, j, "velocity_mm_s", v);
+            if (b->travel > 0)
+                esk_json_set_number(a, j, "travel_mm", b->travel);
         }
         esk_json_set_string(a, j, "id", b->id);
         esk_json_set_string(a, j, "shape", b->sphere ? "sphere" : "box");

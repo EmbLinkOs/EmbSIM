@@ -89,6 +89,25 @@ def main():
             client.call("input.set", {"target": "world.box", "input": "body", "value": None})
             assert client.call("world.get")["bodies"] == []
 
+            # a moving body: where it is follows virtual time; with a travel it goes back and forth
+            client.call("input.set", {"target": "world.cart", "input": "body", "value": {"shape": "box", "at": [0, -300, 50], "size": [100, 100, 100], "velocity_mm_s": [0, 100, 0], "travel_mm": 200}})
+            client.call("control.advance", {"by": "1s"})
+            cart = client.call("world.get")["bodies"][0]
+            assert abs(cart["at"][1] - (-200)) < 1e-6, cart  # 100 mm/s for 1 s
+            assert cart["velocity_mm_s"] == [0, 100, 0] and cart["travel_mm"] == 200, cart
+            client.call("control.advance", {"by": "2s"})
+            cart = client.call("world.get")["bodies"][0]
+            assert abs(cart["at"][1] - (-200)) < 1e-6, cart  # out 200 mm, then 100 back
+            client.call("input.set", {"target": "world.cart", "input": "body", "value": None})
+
+            # a project's moving body runs on the project's timeline (from 0), even when added later,
+            # as the bench draws it: 100 mm/s since 0 has carried it 100 mm a second
+            edit(client, [{"set_world": {"bodies": [{"id": "belt", "at": [0, -600, 50], "size": [50, 50, 50], "velocity_mm_s": [0, 100, 0]}]}}])
+            belt = [b for b in client.call("world.get")["bodies"] if b["id"] == "belt"][0]
+            elapsed = int(client.call("session.info")["now_ps"]) / 1e12
+            assert abs(belt["at"][1] - (-600 + 100 * elapsed)) < 1e-6, (belt, elapsed)
+            edit(client, [{"set_world": {"bodies": []}}])
+
             # set_world: the project's room changed without a restart, the change recorded as an input
             now = client.call("session.info")["now_ps"]
             result = edit(client, [{"set_world": {"fields": {"temperature": 30, "humidity": 40}, "bodies": [{"id": "wall", "at": [0, -500, 100], "size": [1000, 10, 200]}]}}])

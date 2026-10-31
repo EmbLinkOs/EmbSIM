@@ -882,7 +882,7 @@ int esk_comp_world_input(const esk_comp *c, const char *input, double *out)
         if (!w->bodies.len)
             goto fallback;
         beam(c, o, d);
-        mm = esk_world_ray(w, o, d);
+        mm = esk_world_ray(w, o, d, esk_engine_now(c->e));
         if (mm < 0)
             mm = 10000.0; /* nothing in the beam: far beyond any sensor's range */
         *out = esk_str_eq(unit, "cm") ? mm / 10.0 : esk_str_eq(unit, "m") ? mm / 1000.0 : mm;

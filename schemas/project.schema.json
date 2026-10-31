@@ -162,6 +162,8 @@
                   "from": {"$ref": "common.schema.json#/$defs/pin_ref"},
                   "to": {"$ref": "common.schema.json#/$defs/pin_ref"},
                   "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+              "velocity_mm_s": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": -100000, "maximum": 100000}, "description": "Motion in virtual time from `at`, mm/s (x right, y towards the viewer, z up)."},
+              "travel_mm": {"type": "number", "minimum": 0, "description": "With a velocity: back and forth over this distance from `at` (0: straight on)."},
                   "rise_mm": {"type": "number", "minimum": 0, "maximum": 1000, "description": "Automatic route rise above the higher terminal, in millimetres."},
                   "points": {"type": "array", "maxItems": 64, "description": "Intermediate route points [X, height, Y] in bench millimetres; endpoints stay attached to terminals.", "items": {"type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{"type": "number", "minimum": -1000000, "maximum": 1000000}, {"type": "number", "minimum": 0, "maximum": 1000000}, {"type": "number", "minimum": -1000000, "maximum": 1000000}], "items": false}}
                 }

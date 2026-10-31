@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Moving bodies in the world
+
+- A world body may move in virtual time: `velocity_mm_s`, and `travel_mm`
+  to go back and forth over that distance (a hand, a door, a cart). The
+  engine moves it as time runs: distance sensors measure it where it is,
+  `world.get` reports where it is now, and recordings replay it exactly.
+  A project's moving bodies run on the project's timeline from 0 (edits say
+  so in the recorded input, `since_ps`); a scenario's or client's start
+  when they are set.
+- NewPing's own example (unmodified) now also watches a wall come towards
+  the HC-SR04 at 40 cm/s: each ping about 2.3 cm nearer, as the sketch's
+  56 ms between pings and the 0 °C air put it.
+- The 3D bench draws a moving body where the engine has it; the World panel
+  sets a body's speed and travel.
+
 ### The window's sunlit patch
 
 - The walls, the ceiling and the window's bars cast shadows, and the sun's

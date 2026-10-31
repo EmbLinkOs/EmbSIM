@@ -5,6 +5,18 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Moving bodies (2026-10-31)
+
+World bodies move in virtual time (`velocity_mm_s`, `travel_mm`), in the
+engine (`esk_world_body_at`): distance sensors read them where they are.
+Evidence: `tests/protocol/test_world.py` (a cart out and back over its
+travel; a project body added at 3 s placed on the timeline from 0),
+NewPing's unmodified example measuring an approaching wall (105, 104, 101,
+99 ... 66, 64 cm, 8/8 assertions), `world-motion.test.ts` (the bench's copy of
+the motion, the same numbers), and the gallery. Not yet: physics (gravity,
+collisions; Rapier is the plan's choice), motion along a path, PIR sensors
+reading motion (they take an input today).
+
 ## The window's sunlit patch (2026-10-31)
 
 When the sun shines through the window, only a window-shaped patch of the

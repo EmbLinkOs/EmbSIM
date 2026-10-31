@@ -135,6 +135,10 @@ export interface WorldBody {
   at: [number, number, number];
   size: [number, number, number];
   color?: string;
+  /** motion in virtual time from `at`, mm/s */
+  velocity_mm_s?: [number, number, number];
+  /** with a velocity: back and forth over this distance from `at`, mm (0: straight on) */
+  travel_mm?: number;
 }
 
 /** the room around the bench, as the 3D bench draws it (presentation only) */

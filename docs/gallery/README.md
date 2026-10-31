@@ -5,6 +5,16 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Moving bodies in the world (2026-10-31)
+
+A body may move in virtual time (a velocity, and a travel to go back and
+forth over): the engine's distance sensors see it where it is, and the
+bench draws it there. The ball before and after 1.5 s of running:
+
+| At the start | After 1.5 s |
+|---|---|
+| ![The ball at the back of the desk](bench-3d-world/1-ball-before.png) | ![The ball nearer](bench-3d-world/2-ball-rolled.png) |
+
 ## Capped sections (2026-10-31)
 
 A section now shows solid red faces where it cuts a body, as a CAD tool's

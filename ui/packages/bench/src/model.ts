@@ -35,4 +35,4 @@ export type { Bench3DHandle, Bench3DProps, BenchPartView, BenchTool, JumperView,
 export type { Model3d } from './models3d';
 export { dayOfYear, solarPosition, sunDirection, sunlit } from './sun';
 export { ROOM, windowOpening } from './room';
-export { beams, rayDistance, type Beam } from './world';
+export { beams, bodiesAt, bodyAt, rayDistance, type Beam } from './world';

@@ -68,6 +68,11 @@ is always in view. The room is as lit as the world's **Light** field
 dark room, or to daylight values for a bright one. Only the picture
 changes; the light sensors read the same field.
 
+A body in the World panel may move: **v** is its speed towards you in mm/s
+(negative: away), **↔** a distance it goes back and forth over. It moves as
+the circuit's time runs (paused, it stays), and the distance sensors measure
+it where it is.
+
 In the World panel, **Room and daylight** sets the room's size and which
 way its window looks. Tick **Sun** to light the bench by the time of day:
 set the latitude, the date (MM-DD) and the time (local solar time, so

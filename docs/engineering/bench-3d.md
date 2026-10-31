@@ -178,7 +178,9 @@ Done (first step):
 - A room around the bench: floor, walls, table, window light, a sun by the
   time of day.
 - Bodies with physics (Rapier, Apache-2.0, ADR-029), and a robot on the
-  floor.
+  floor. First step done (2026-10-31): bodies move in virtual time in the
+  engine (a velocity, a travel back and forth), seen by the distance sensors
+  and drawn by the bench.
 - Temperature and light as fields drawn when asked (a heat map over the
   bench).
 - The world's objects are what the sensors' rays hit, as today.

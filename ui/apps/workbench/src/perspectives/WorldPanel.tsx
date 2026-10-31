@@ -252,7 +252,7 @@ export function WorldPanel() {
       <section>
         <h3>On the bench</h3>
         <p className="wb-world__hint">
-          Objects distance sensors see{readers.distance ? ` (${readers.distance.join(', ')})` : ''}. Drag them on the Bench, or set where they are, in mm from the bench's centre: x right, y towards you, z up.
+          Objects distance sensors see{readers.distance ? ` (${readers.distance.join(', ')})` : ''}. Drag them on the Bench, or set where they are, in mm from the bench's centre: x right, y towards you, z up. A speed (v) moves a body towards you (negative: away) in virtual time; a travel (↔) sends it back and forth.
         </p>
         {bodies.map((b, i) => (
           <div key={b.id} className="wb-world__body">
@@ -276,6 +276,47 @@ export function WorldPanel() {
                 />
               </label>
             ))}
+            <label className="wb-world__coord" title="Speed towards you (y), mm/s: the body moves in virtual time; sensors see it where it is">
+              v
+              <input
+                type="number"
+                aria-label={`${b.name ?? b.id} speed, mm/s`}
+                step={10}
+                value={b.velocity_mm_s?.[1] ?? 0}
+                disabled={!editable}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (!Number.isFinite(v)) return;
+                  setBodies(`Move ${b.name ?? b.id}`, (list) => {
+                    const body = list[i]!;
+                    const [vx, , vz] = body.velocity_mm_s ?? [0, 0, 0];
+                    if (v === 0 && vx === 0 && vz === 0) delete body.velocity_mm_s;
+                    else body.velocity_mm_s = [vx, v, vz];
+                    return list;
+                  });
+                }}
+              />
+            </label>
+            <label className="wb-world__coord" title="Back and forth over this distance, mm (0: straight on)">
+              ↔
+              <input
+                type="number"
+                aria-label={`${b.name ?? b.id} travel, mm`}
+                step={10}
+                min={0}
+                value={b.travel_mm ?? 0}
+                disabled={!editable || !b.velocity_mm_s}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (!Number.isFinite(v) || v < 0) return;
+                  setBodies(`Travel of ${b.name ?? b.id}`, (list) => {
+                    if (v === 0) delete list[i]!.travel_mm;
+                    else list[i]!.travel_mm = v;
+                    return list;
+                  });
+                }}
+              />
+            </label>
             <IconButton label={`Remove ${b.name ?? b.id}`} size="sm" variant="ghost" disabled={!editable} onClick={() => setBodies(`Remove ${b.name ?? b.id}`, (list) => list.filter((x) => x.id !== b.id))}>
               <Trash2 />
             </IconButton>

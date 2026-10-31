@@ -424,7 +424,7 @@ static es_status m_input_serial(rpc_ctx *r)
 /* the world as it is now (ADR-026): its fields (value, unit, declared) and bodies */
 static es_status m_world_get(rpc_ctx *r)
 {
-    r->result = esk_world_json(r->s->a, &r->s->eng.world);
+    r->result = esk_world_json(r->s->a, &r->s->eng.world, esk_engine_now(&r->s->eng));
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
