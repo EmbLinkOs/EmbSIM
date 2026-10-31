@@ -5,7 +5,7 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### USB host mode: the NUCLEO-F446ZE drives a mouse, with Adafruit's TFT shield
+### USB host mode: the NUCLEO-F446ZE drives a mouse and a flash drive, with Adafruit's TFT shield
 
 - The STM32F446's OTG FS core as a host (`stm32-otg-fs`, FHMOD): the port
   (PPWR, connection and disconnection, PRST's reset, the port enabled at
@@ -33,6 +33,17 @@ versions follow semantic versioning. There is no release yet.
 - `emblink/adafruit_tft_shield18`, Adafruit's 1.8" TFT shield (product
   802) on the Arduino header: the TFT and the five-way joystick's ladder
   on A3, its resistors from Adafruit's schematic.
+- `emblink/usb_flash_drive`, a USB flash drive: a full-speed mass storage
+  device (Bulk-Only Transport with its CBW, CSW, residues, STALLs and reset
+  recovery; SCSI's INQUIRY, TEST UNIT READY, REQUEST SENSE, MODE SENSE,
+  READ FORMAT CAPACITIES, READ CAPACITY(10), READ(10), WRITE(10) and the
+  rest a host sends), its medium formatted as from the shop (an MBR, one
+  FAT16 partition); its outputs list its files as a computer would.
+- STM32CubeF4's USB_Host/MSC_Standalone runs unmodified on the
+  NUCLEO-F446ZE with the shield and the drive on CN13: it mounts the drive
+  with FatFs, writes 'USBHost.txt', reads it back ('FatFs data compare
+  SUCCESS') and lists it; the drive then holds USBHOST.TXT, 40 bytes
+  (14/14).
 - STM32CubeF4's USB_Host/HID_Standalone runs unmodified on the NUCLEO-F446ZE
   with the shield and a mouse on CN13: it switches VBUS on through U12,
   enumerates the mouse at low speed, logs it on the LCD, starts its mouse

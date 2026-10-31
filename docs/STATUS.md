@@ -5,12 +5,14 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
-## USB host mode, a USB mouse, and Adafruit's TFT shield (2026-10-31)
+## USB host mode, a USB mouse, a flash drive, and Adafruit's TFT shield (2026-10-31)
 
 The STM32F446's OTG FS core works as a host too (`stm32-otg-fs` with
 FHMOD: the port, frames and twelve channels as ST's HCD driver uses them),
 and the MCU is both ends of its cable. USB parts share a device core
-(`core/model/usb_dev.c`); `emblink/usb_mouse` is a low-speed HID boot mouse.
+(`core/model/usb_dev.c`); `emblink/usb_mouse` is a low-speed HID boot mouse,
+`emblink/usb_flash_drive` a full-speed mass storage device (Bulk-Only,
+SCSI) whose medium is FAT16 as from the shop.
 The NUCLEO-F446ZE's U12 (`emblink/stmps2151str`, values from ST's
 datasheet) powers CN13's VBUS from PG6. `emblink/st7735_tft18` (a C model of
 the ST7735R and its 1.8" panel) and `emblink/adafruit_tft_shield18` (its
@@ -30,11 +32,15 @@ HID_Standalone, unmodified, 13/13: VBUS on through U12 at 150 ms, the
 mouse enumerated at low speed (address 1, report protocol), the log on the
 LCD, SEL starting the mouse demo once the log is quiet (while it scrolls
 the main loop draws and does not read the joystick, as on the board), its
-window drawn, reports as the mouse moves and clicks. The analog islands
+window drawn, reports as the mouse moves and clicks; the drive's fixture on
+the PC's port; CubeF4's USB_Host/MSC_Standalone, unmodified, 14/14: the
+drive enumerated at full speed, its LUN taken, FatFs mounting it, B1
+writing 'USBHost.txt' and reading it back, the drive then holding
+USBHOST.TXT (40 bytes). The analog islands
 lag up to 10 us behind an MCU's SPI clock instead of stepping at each edge
 (caught up before any reading), which brought this run from 18 min to
-2.5 min. Not yet: the ID pin, SRP and HNP, MSC_Standalone (needs a USB
-flash drive part), hubs and split transactions, the over-current flag's
+2.5 min. Not yet: the ID pin, SRP and HNP, the drive's NAND busy times
+and an image file kept between runs, hubs and split transactions, the over-current flag's
 blanking and current limit in U12, the shield's microSD socket, a
 workbench view of the LCD and the USB host's state.
 

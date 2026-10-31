@@ -35,6 +35,8 @@ extern const esk_model_ops esk_usb_host_ops;
 extern const esk_model_ops esk_usb_mouse_ops;
 /* a Sitronix ST7735R TFT controller and its 128 x 160 panel (st7735.c) */
 extern const esk_model_ops esk_st7735_ops;
+/* a USB flash drive: Bulk-Only mass storage, SCSI, a FAT16 medium (usb_flash_drive.c) */
+extern const esk_model_ops esk_usb_flash_drive_ops;
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;
 /* a phone connecting to a BLE peripheral and browsing its GATT database (ble_central.c) */

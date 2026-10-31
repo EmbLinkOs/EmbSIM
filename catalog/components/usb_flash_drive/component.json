@@ -1,0 +1,209 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/usb_flash_drive",
+ "version": "0.1.0",
+ "name": "USB flash drive (mass storage)",
+ "category": "misc",
+ "description": "A USB flash drive on its cable: a full-speed USB Mass Storage device (Bulk-Only Transport, SCSI transparent command set), bus powered, its medium formatted as one comes from the shop (an MBR with one FAT16 partition, the label EMBSIM). A host (a computer's port, a microcontroller's USB host with FatFs) mounts it, reads and writes its files; its outputs list them as a computer would.",
+ "keywords": [
+  "usb",
+  "flash drive",
+  "usb stick",
+  "mass storage",
+  "msc",
+  "bulk-only",
+  "scsi",
+  "fat16",
+  "host"
+ ],
+ "pins": [
+  {
+   "name": "VBUS",
+   "number": 1,
+   "model": {
+    "kind": "digital_in"
+   },
+   "doc": "VBUS from the host: it attaches while VBUS is above 4.4 V"
+  },
+  {
+   "name": "DM",
+   "number": 2,
+   "model": {
+    "kind": "digital_in"
+   },
+   "aliases": [
+    "D-"
+   ],
+   "doc": "D-: its pull-up (low speed)"
+  },
+  {
+   "name": "DP",
+   "number": 3,
+   "model": {
+    "kind": "digital_in"
+   },
+   "aliases": [
+    "D+"
+   ],
+   "doc": "D+: the host on this net is the one it talks to"
+  },
+  {
+   "name": "GND",
+   "number": 4,
+   "model": {
+    "kind": "power",
+    "role": "ground"
+   },
+   "doc": "Ground"
+  }
+ ],
+ "params": {
+  "capacity_mb": {
+   "type": "number",
+   "unit": "MiB",
+   "default": 8,
+   "min": 2,
+   "max": 64,
+   "doc": "Its capacity (512-byte sectors), held in memory"
+  },
+  "write_protect": {
+   "type": "boolean",
+   "default": false,
+   "doc": "Its write-protect switch: WRITE(10) fails with DATA PROTECT and MODE SENSE reports it"
+  }
+ },
+ "inputs": [
+  {
+   "name": "plugged",
+   "type": "boolean",
+   "default": true,
+   "doc": "Its cable is in"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "state",
+   "type": "string",
+   "doc": "detached, default, address or configured"
+  },
+  {
+   "name": "address",
+   "type": "integer",
+   "doc": "Its USB address"
+  },
+  {
+   "name": "files",
+   "type": "string",
+   "doc": "The root directory's files as a computer lists them: NAME.EXT (size in bytes), directories with a slash"
+  },
+  {
+   "name": "commands",
+   "type": "integer",
+   "doc": "SCSI commands taken"
+  },
+  {
+   "name": "last_command",
+   "type": "string",
+   "doc": "The last SCSI command"
+  },
+  {
+   "name": "sectors_read",
+   "type": "integer",
+   "doc": "Sectors read by the host"
+  },
+  {
+   "name": "sectors_written",
+   "type": "integer",
+   "doc": "Sectors written by the host"
+  },
+  {
+   "name": "capacity_sectors",
+   "type": "integer",
+   "doc": "Its capacity in 512-byte sectors"
+  }
+ ],
+ "model": {
+  "primitive": "usb_flash_drive"
+ },
+ "functional": {
+  "primitive": "usb_flash_drive"
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 60,
+  "height": 60,
+  "pins": {
+   "VBUS": {
+    "x": 0,
+    "y": 10,
+    "side": "left"
+   },
+   "DM": {
+    "x": 0,
+    "y": 20,
+    "side": "left"
+   },
+   "DP": {
+    "x": 0,
+    "y": 30,
+    "side": "left"
+   },
+   "GND": {
+    "x": 0,
+    "y": 50,
+    "side": "left"
+   }
+  }
+ },
+ "fidelity": {
+  "functional": {
+   "claims": "A full-speed USB 2.0 device (D+ pulled up) with chapter 9's standard requests, attached while VBUS is above 4.4 V; USB MSC Bulk-Only Transport 1.0: Get Max LUN (one LUN), the class reset, CBWs checked (length, signature, LUN, command length; an invalid one halts both endpoints until reset recovery), the data phase and the CSW with tag, residue and status, a short data phase ended by a short packet or the IN endpoint's STALL, a failed command's STALL and CHECK CONDITION; SCSI's TEST UNIT READY, REQUEST SENSE (fixed format), INQUIRY (removable), MODE SENSE(6) and (10) with write protection, START STOP UNIT, PREVENT ALLOW MEDIUM REMOVAL, READ FORMAT CAPACITIES, READ CAPACITY(10), READ(10), WRITE(10), VERIFY(10), SYNCHRONIZE CACHE(10); ILLEGAL REQUEST for anything else, LBA OUT OF RANGE, DATA PROTECT. The medium: 512-byte sectors, an MBR with one FAT16 partition at sector 2048, as Windows formats a small stick.",
+   "omissions": [
+    "the NAND's page program and block erase times (a real stick NAKs while busy; here data moves at once)",
+    "high speed and UAS",
+    "more than one LUN",
+    "the medium kept between runs or loaded from an image file: each power-up starts it empty",
+    "its activity LED and its supply current"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  },
+  "timed": {
+   "claims": "As functional.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "As functional.",
+   "omissions": [],
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "USB Mass Storage Class Bulk-Only Transport, revision 1.0 (CBW, CSW, the thirteen cases, reset recovery)",
+    "url": "https://www.usb.org/document-library/mass-storage-bulk-only-10",
+    "date": "2026-10-31"
+   },
+   {
+    "title": "Microsoft FAT32 File System Specification 1.03 (the BPB, FAT16's geometry, the directory entries)",
+    "url": "https://download.microsoft.com/download/1/6/1/161ba512-40e2-4cc9-843a-923143f3456c/fatgen103.doc",
+    "date": "2026-10-31"
+   },
+   {
+    "title": "STMicroelectronics stm32-mw-usb-host's MSC class (usbh_msc_bot.c, usbh_msc_scsi.c): the commands a host sends",
+    "url": "https://github.com/STMicroelectronics/stm32-mw-usb-host",
+    "date": "2026-10-31"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ]
+}

@@ -1,0 +1,148 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "usb_host_msc_standalone",
+ "until": "4300ms",
+ "description": "USB_Host/MSC_Standalone, as it ships, on a NUCLEO-F446ZE with Adafruit's 1.8\" TFT shield (its LCD log) and a USB flash drive on CN13, fresh from the shop (FAT16, empty). The firmware switches VBUS on through U12, its OTG core enumerates the drive at full speed, ST's MSC class takes its LUN (Get Max LUN, INQUIRY, TEST UNIT READY, READ CAPACITY) and FatFs mounts it. The first press of B1 writes 'USBHost.txt' (the 40 bytes of 'USB Host Library : Mass Storage Example' with its NUL), reads it back and compares; the second lists the disk. The drive's outputs show the file a computer would then see.",
+ "inputs": [
+  {
+   "at": "2500ms",
+   "target": "B1.B1",
+   "input": "pressed",
+   "value": true
+  },
+  {
+   "at": "2700ms",
+   "target": "B1.B1",
+   "input": "pressed",
+   "value": false
+  },
+  {
+   "at": "3600ms",
+   "target": "B1.B1",
+   "input": "pressed",
+   "value": true
+  },
+  {
+   "at": "3800ms",
+   "target": "B1.B1",
+   "input": "pressed",
+   "value": false
+  }
+ ],
+ "assertions": [
+  {
+   "id": "vbus-off-at-start",
+   "at": "50ms",
+   "probe": "pg6",
+   "expect": {
+    "logic": "0"
+   }
+  },
+  {
+   "id": "drive-unpowered",
+   "at": "50ms",
+   "probe": "drive_state",
+   "expect": {
+    "equals": "detached"
+   }
+  },
+  {
+   "id": "vbus-switched-on",
+   "at": "200ms",
+   "probe": "pg6",
+   "expect": {
+    "logic": "1"
+   }
+  },
+  {
+   "id": "vbus-5v",
+   "at": "200ms",
+   "probe": "vbus",
+   "expect": {
+    "min_v": 4.9,
+    "max_v": 5.05
+   }
+  },
+  {
+   "id": "configured",
+   "by": "1600ms",
+   "probe": "drive_state",
+   "expect": {
+    "equals": "configured"
+   }
+  },
+  {
+   "id": "address-1",
+   "at": "2000ms",
+   "probe": "drive_address",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "lun-taken",
+   "at": "2400ms",
+   "probe": "drive_last",
+   "expect": {
+    "equals": "READ CAPACITY(10)"
+   }
+  },
+  {
+   "id": "empty-before-b1",
+   "at": "2400ms",
+   "probe": "drive_files",
+   "expect": {
+    "equals": ""
+   }
+  },
+  {
+   "id": "nothing-written-before-b1",
+   "at": "2400ms",
+   "probe": "drive_written",
+   "expect": {
+    "equals": 0
+   }
+  },
+  {
+   "id": "file-written",
+   "by": "3500ms",
+   "probe": "drive_files",
+   "expect": {
+    "equals": "USBHOST.TXT (40)"
+   }
+  },
+  {
+   "id": "sectors-written",
+   "at": "3500ms",
+   "probe": "drive_written",
+   "expect": {
+    "min": 3
+   }
+  },
+  {
+   "id": "read-back",
+   "at": "3500ms",
+   "probe": "drive_read",
+   "expect": {
+    "min": 1
+   }
+  },
+  {
+   "id": "lcd-on",
+   "at": "1000ms",
+   "probe": "lcd_on",
+   "expect": {
+    "equals": true
+   }
+  },
+  {
+   "id": "file-kept",
+   "at": "4250ms",
+   "probe": "drive_files",
+   "expect": {
+    "equals": "USBHOST.TXT (40)"
+   }
+  }
+ ]
+}

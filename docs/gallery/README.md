@@ -20,6 +20,14 @@ memory's noise is gone once ST's BSP clears the screen.
 |---|---|
 | ![The LCD log after enumeration: the mouse's class, subclass and protocol, 'Mouse device found!', 'HID class started.', the HID menu](nucleo-f446ze/host-hid-enumerated.png) | ![The mouse demo: its window with the pointer moved, the three button boxes, the mouse menu](nucleo-f446ze/host-hid-mouse-demo.png) |
 
+USB_Host/MSC_Standalone, the same way, with a USB flash drive
+(`emblink/usb_flash_drive`) instead of the mouse: B1 writes 'USBHost.txt' on
+it and reads it back, then lists the disk.
+
+| Written and read back (3.9 s) | The disk's content (4.95 s) |
+|---|---|
+| ![The MSC demo's log: 'USBHost.txt' opened and written, the text read back, 'FatFs data compare SUCCESS'](nucleo-f446ze/host-msc-file-written.png) | ![The disk's content listed: USBHOST.TXT](nucleo-f446ze/host-msc-disk-content.png) |
+
 ## USB on the bench (2026-10-31)
 
 STM32CubeF4's USB_Device/HID_Standalone, unmodified, on the NUCLEO-F446ZE
