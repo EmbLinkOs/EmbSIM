@@ -381,6 +381,7 @@ void *esk_stm32f4_gpio_create(struct esk_mach *s, struct esk_rf_periph *p)
     for (i = 0; i < 16; i++)
         g.af_in[i] = -1;
     s->pins_changed = esk_stm32f4_pins_changed;
+    s->outputs_read_back = 1; /* update_once: an output reads its own drive */
     c = (struct f4gpio *)esk_mach_alloc(s, sizeof *c);
     if (c)
         *c = g;

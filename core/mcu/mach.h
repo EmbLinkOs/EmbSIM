@@ -513,6 +513,10 @@ struct esk_mach {
     /* the GPIO model's: the pins' outside levels changed; where a UART's
      * TX or RX pin is (0, or -1 when the part has no such UART) */
     void (*pins_changed)(struct esk_mach *m);
+    /* the GPIO model reads an output pin's level from its own drive (an
+     * STM32F4's IDR): the echo of its own output tells it nothing, and the
+     * runtime need not call pins_changed for it */
+    int outputs_read_back;
     int (*uart_pin)(struct esk_mach *m, const char *unit, int tx, int *port, int *bit);
     /* esk_mach_run returns as soon as the core sleeps, for the runtime to
      * schedule the wake-up itself */

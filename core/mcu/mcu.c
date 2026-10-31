@@ -1590,9 +1590,9 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
     }
     if (st->held)
         return;
-    /* the echo of its own output, which the net agrees with: IDR already
-     * has it (the GPIO model reads an output's own drive) */
-    if (p->is_output && p->drive_strength == ESK_STR_STRONG && p->drive_value != ESK_LZ && p->net &&
+    /* the echo of its own output, which the net agrees with, where the GPIO
+     * model reads an output's own drive: it has it already */
+    if (st->m.outputs_read_back && p->is_output && p->drive_strength == ESK_STR_STRONG && p->drive_value != ESK_LZ && p->net &&
         !p->net->island && esk_net_value(p->net) == p->drive_value)
         return;
     if (st->m.pins_changed) {
