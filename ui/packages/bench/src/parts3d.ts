@@ -11,7 +11,10 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature } from './shape';
+import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature, type SmallOutline } from './shape';
+import { modelBody, type Model3d } from './models3d';
+import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, smallOutlineAdapter, socketStrip, STATIC_MATERIALS, tactileSwitch, usbB } from './packages3d';
+import { batchStatic } from './batch';
 
 export interface PartLook {
   /** the component's id ("emblink/resistor") */
@@ -19,6 +22,8 @@ export interface PartLook {
   params?: Record<string, unknown>;
   /** the artwork's live picture for the top face, when it has one */
   texture?: THREE.Texture;
+  /** a 3D model from a file, drawn instead of the body built here (stage 3) */
+  model3d?: Model3d;
 }
 
 /** objects a pointer can act on carry what they are in userData */
@@ -35,6 +40,8 @@ const METAL = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, metalness: 0.9, 
 const GOLD = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.28 });
 const BLACK_PLASTIC = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.55 });
 const EPOXY = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.42 });
+/** the shared materials no part changes once built (merged per part, batch.ts) */
+const STATICS: ReadonlySet<THREE.Material> = new Set([...STATIC_MATERIALS, METAL, GOLD, BLACK_PLASTIC, EPOXY]);
 
 const COLOR_CODE = ['#111111', '#7b3f00', '#d63031', '#f39c12', '#f1c40f', '#27ae60', '#2e86de', '#8e44ad', '#808080', '#f5f5f5'];
 const GOLD_BAND = '#c9a227';
@@ -275,15 +282,12 @@ function radial(shape: BenchShape, look: PartLook): THREE.Group {
     disc.position.y = lift + h / 2;
     g.add(disc);
   } else if (short === 'electrolytic_capacitor') {
-    const can = mesh(new THREE.CylinderGeometry(d / 2, d / 2, h, 32), standard(shape.color ?? '#1f3a93', 0.35));
-    can.position.y = lift + h / 2;
-    g.add(can);
-    const stripe = mesh(new THREE.CylinderGeometry(d / 2 + 0.02, d / 2 + 0.02, h * 0.98, 32, 1, true, Math.PI * 0.85, Math.PI * 0.3), standard('#c8d0dc', 0.4));
-    stripe.position.y = lift + h / 2;
-    g.add(stripe);
-    const lid = mesh(new THREE.CylinderGeometry(d / 2 - 0.3, d / 2 - 0.3, 0.1, 32), METAL);
-    lid.position.y = lift + h + 0.02;
-    g.add(lid);
+    // the stripe faces the negative lead
+    const lp = local(shape);
+    const minus = lp['-'] ?? pins[1] ?? [1, 0];
+    const cap = electrolytic(d, h, shape.color ?? '#1f3a93', Math.atan2(-minus[1], minus[0]));
+    cap.position.y = lift;
+    g.add(cap);
   } else if (short === 'crystal') {
     const can = mesh(new RoundedBoxGeometry(11, h, d, 2, d / 2 - 0.1), METAL);
     can.position.y = lift + h / 2;
@@ -402,7 +406,47 @@ function to220(shape: BenchShape): THREE.Group {
   return g;
 }
 
+/** the standard DIP when the part's legs are where the standard puts them (any order), else null */
+function standardDip(shape: BenchShape): THREE.Group | null {
+  const pins = Object.values(local(shape));
+  if (pins.length < 4 || pins.length % 2) return null;
+  const zs = [...new Set(pins.map(([, z]) => Math.round(z * 100) / 100))];
+  const rows = zs.length === 2 ? Math.abs(zs[0]! - zs[1]!) : 0;
+  if (Math.abs(rows - 7.62) > 0.05 && Math.abs(rows - 15.24) > 0.05) return null;
+  const cx = pins.reduce((t, [x]) => t + x, 0) / pins.length;
+  const cz = pins.reduce((t, [, z]) => t + z, 0) / pins.length;
+  const key = (x: number, z: number) => `${Math.round(x * 100)},${Math.round(z * 100)}`;
+  const have = new Set(pins.map(([x, z]) => key(x - cx, z - cz)));
+  if (!dipPinPositions(pins.length, rows).every(([x, z]) => have.has(key(x, z)))) return null;
+  const [lw, lh] = dipLabelSize(pins.length, rows);
+  const body = dipBody(pins.length, { rows, labelTexture: labelTexture(shape.label ?? '', lw, lh, '#d0d0d0') });
+  body.position.set(cx, 0, cz);
+  const g = new THREE.Group();
+  g.add(body);
+  return g;
+}
+
+/** a small-outline part on its breakout, centred on the DIP's pins */
+function adapted(shape: BenchShape, so: SmallOutline): THREE.Group | null {
+  const pins = Object.values(local(shape));
+  const zs = [...new Set(pins.map(([, z]) => Math.round(z * 100) / 100))];
+  if (zs.length !== 2) return null;
+  const rows = Math.abs(zs[0]! - zs[1]!);
+  // the body is centred on the DIP footprint (a part may use only some of its pins)
+  const [cx, cz] = [0, 0];
+  const tex = labelTexture(shape.label ?? '', so.length * 0.7, so.width * 0.4, '#d0d0d0');
+  const { group } = smallOutlineAdapter(so, rows, tex ?? undefined);
+  group.position.set(cx, 0, cz);
+  const g = new THREE.Group();
+  g.add(group);
+  return g;
+}
+
 function dip(shape: BenchShape): THREE.Group {
+  const so = shape.smallOutline ? adapted(shape, shape.smallOutline) : null;
+  if (so) return so;
+  const exact = standardDip(shape);
+  if (exact) return exact;
   const g = new THREE.Group();
   const [w, d] = shape.size;
   const pins = Object.values(local(shape));
@@ -441,17 +485,12 @@ function dip(shape: BenchShape): THREE.Group {
 }
 
 function tactile(shape: BenchShape, look: PartLook, id: string): { group: THREE.Group; cap: THREE.Object3D } {
+  // a 6 x 6 mm through-hole tactile switch, 5 mm high, standing 0.3 mm on its legs' shoulders
+  const { group: sw, cap } = tactileSwitch(6, 5, look.params?.color === 'red' ? '#c0392b' : '#1a1a1a');
+  sw.position.y = 0.3;
   const g = new THREE.Group();
-  const base = mesh(new RoundedBoxGeometry(6, 3.4, 6, 2, 0.3), standard('#2d2d2d', 0.6));
-  base.position.y = 1.7 + 0.3;
-  g.add(base);
-  const plate = mesh(new THREE.BoxGeometry(6.1, 0.3, 6.1), METAL);
-  plate.position.y = 3.55;
-  g.add(plate);
-  const cap = mesh(new THREE.CylinderGeometry(1.75, 1.75, 1.5, 24), standard(look.params?.color === 'red' ? '#c0392b' : '#1a1a1a', 0.4));
-  cap.position.y = 4.45;
+  g.add(sw);
   cap.userData = { part: id, input: 'pressed', gesture: 'hold' } satisfies PickData;
-  g.add(cap);
   for (const [px, pz] of Object.values(local(shape))) g.add(leg(px, pz, 0.5, -2.5, 0.3));
   return { group: g, cap };
 }
@@ -496,15 +535,13 @@ function pot(shape: BenchShape, id: string): { group: THREE.Group; knob: THREE.O
   return { group: g, knob };
 }
 
-/** a male header's black spacer and gold pins under a module, standing it on its pins */
+/** a male header's moulded strips and gold posts under a module, standing it on its pins */
 function maleHeader(g: THREE.Group, pins: [number, number][], top: number): void {
-  for (const [px, pz] of pins) {
-    const spacer = mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), BLACK_PLASTIC);
-    spacer.position.set(px, top - 1.25, pz);
-    g.add(spacer);
-    const pin = mesh(new THREE.BoxGeometry(0.64, top + 3, 0.64), GOLD);
-    pin.position.set(px, (top - 3) / 2, pz);
-    g.add(pin);
+  for (const strip of headerStrips(pins)) {
+    // the spacer just under the module's PCB, the posts down into the breadboard 3 mm, through the PCB above
+    const s = pinStrip(strip.length, { spacer: 2.5, above: 2.1, below: top - 2.5 + 3 });
+    s.position.set((strip[0]![0] + strip[strip.length - 1]![0]) / 2, top - 2.5, strip[0]![1]);
+    g.add(s);
   }
 }
 
@@ -660,110 +697,59 @@ export function indicatorLight(v: unknown): { level: number; color?: string } {
   return { level: v ? 1 : 0 };
 }
 
-function dipPackage(pins: number, label: string | undefined, socket: boolean): THREE.Group {
-  const g = new THREE.Group();
-  const half = Math.ceil(pins / 2);
-  const len = half * 2.54 + 0.6;
-  const rows = pins >= 40 ? 15.24 : 7.62;
-  const bodyD = rows - 1.3;
-  let base = 0;
-  if (socket) {
-    const s = mesh(new THREE.BoxGeometry(len + 2, 3, rows + 2.5), BLACK_PLASTIC);
-    s.position.y = 1.5;
-    g.add(s);
-    base = 3;
-  }
-  const body = mesh(new RoundedBoxGeometry(len, 3.3, bodyD, 2, 0.35), EPOXY);
-  body.position.y = base + 0.4 + 1.65;
-  g.add(body);
-  const notch = mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.2, 20, 1, false, 0, Math.PI), standard('#050505', 0.8));
-  notch.rotation.y = Math.PI / 2;
-  notch.position.set(-len / 2, base + 0.4 + 3.31, 0);
-  g.add(notch);
-  if (label) {
-    const tex = labelTexture(label, Math.min(len * 0.8, 30), Math.min(bodyD * 0.38, 2.4), '#cfd3d8');
-    if (tex) {
-      const plate = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(len * 0.8, 30), Math.min(bodyD * 0.38, 2.4)), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
-      plate.rotation.x = -Math.PI / 2;
-      plate.position.y = base + 0.4 + 3.32;
-      g.add(plate);
-    }
-  }
-  for (let i = 0; i < half; i++) {
-    const x = -len / 2 + 0.3 + 1.27 + i * 2.54;
-    for (const side of [-1, 1]) {
-      const legM = mesh(new THREE.BoxGeometry(0.5, 1.8, 0.25), METAL);
-      legM.position.set(x, base + 0.9, side * (bodyD / 2 + 0.35));
-      g.add(legM);
-    }
-  }
-  return g;
-}
-
 /** a board's physical components on its PCB's surface (y = 0 there) */
 function feature(f: BoardFeature, id: string, indicators: Indicator[]): THREE.Object3D {
   const [w, d, h] = f.size ?? [5, 5, 2];
   const g = new THREE.Group();
   switch (f.kind) {
-    case 'usb_b': {
-      const shell = mesh(new RoundedBoxGeometry(w, h, d, 2, 0.4), METAL);
-      shell.position.y = h / 2;
-      g.add(shell);
-      const mouth = mesh(new THREE.BoxGeometry(0.6, h * 0.62, d * 0.72), standard('#16181c', 0.8));
-      mouth.position.set(-w / 2 - 0.05, h / 2, 0);
-      g.add(mouth);
-      const tongue = mesh(new THREE.BoxGeometry(1.2, h * 0.28, d * 0.42), standard('#f2f2f2', 0.6));
-      tongue.position.set(-w / 2 + 0.3, h / 2, 0);
-      g.add(tongue);
+    case 'usb_b':
+      g.add(usbB(w));
       break;
-    }
     case 'usb_micro':
-    case 'usb_c': {
-      const shell = mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(h, d) / 3), METAL);
-      shell.position.y = h / 2;
-      g.add(shell);
+      g.add(usbMicro(w, d, h));
+      break;
+    case 'usb_c':
+      g.add(usbC(w, d, h));
+      break;
+    case 'rf_module':
+      g.add(rfModule(w, d, h, f.label ? labelTexture(f.label, (w - 0.6) * 0.8, (d * 0.7 - 0.6) * 0.35, '#3a3f45') : undefined, f.color));
+      break;
+    case 'barrel_jack':
+      g.add(barrelJack(w, d, h));
+      break;
+    case 'dip': {
+      // in its socket, the chip's seating plane on the socket's top
+      const pins = f.pins ?? 28;
+      g.add(dipSocket(pins));
+      const [lw, lh] = dipLabelSize(pins);
+      const chip = dipBody(pins, { labelTexture: f.label ? labelTexture(f.label, lw, lh, '#cfd3d8') : undefined });
+      chip.position.y = 3;
+      g.add(chip);
       break;
     }
-    case 'barrel_jack': {
-      const body = mesh(new RoundedBoxGeometry(w, h, d, 2, 0.6), standard('#141414', 0.5));
-      body.position.y = h / 2;
-      g.add(body);
-      const bore = mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.6, 24), standard('#050505', 0.9));
-      bore.rotation.z = Math.PI / 2;
-      bore.position.set(-w / 2 - 0.05, h / 2 + 0.6, 0);
-      g.add(bore);
-      const pin = mesh(new THREE.CylinderGeometry(1, 1, 0.8, 16), METAL);
-      pin.rotation.z = Math.PI / 2;
-      pin.position.set(-w / 2 - 0.1, h / 2 + 0.6, 0);
-      g.add(pin);
-      break;
-    }
-    case 'dip':
-      g.add(dipPackage(f.pins ?? 28, f.label, true));
-      break;
     case 'qfp':
     case 'qfn': {
-      const body = mesh(new THREE.BoxGeometry(w, h, d), EPOXY);
-      body.position.y = h / 2;
-      g.add(body);
+      const [qw, qd, qh] = f.size ?? quadSize(f.kind, f.pins ?? 32);
+      g.add(quadPackage(f.kind, qw, qd, qh, f.pins ?? 32));
+      // the laser marking: the part number across the top, pale grey on the mould
+      const mark = f.label ? labelTexture(f.label, qd * 0.8, qw * 0.22, '#9da2a8') : undefined;
+      if (mark) {
+        const plate = new THREE.Mesh(new THREE.PlaneGeometry(qd * 0.8, qw * 0.22), new THREE.MeshBasicMaterial({ map: mark, transparent: true }));
+        // read upright, the pin-1 dimple (back left) is at the text's lower left, as vendors mark them
+        plate.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+        plate.position.y = qh + 0.012;
+        g.add(plate);
+      }
       break;
     }
-    case 'crystal': {
-      const can = mesh(new RoundedBoxGeometry(w, h, d, 2, Math.min(d, h) / 2.2), METAL);
-      can.position.y = h / 2;
-      g.add(can);
+    case 'crystal':
+      g.add(crystalHC49(w, d, h));
       break;
-    }
     case 'button': {
-      const base = mesh(new RoundedBoxGeometry(w, h * 0.6, d, 2, 0.3), standard('#d0d3d8', 0.35, 0.6));
-      base.position.y = (h * 0.6) / 2;
-      g.add(base);
-      const cap = mesh(new THREE.CylinderGeometry(w * 0.3, w * 0.3, h * 0.55, 24), standard(f.color ?? '#c0392b', 0.4));
-      cap.position.y = h * 0.6 + h * 0.27;
+      const { group, cap } = tactileSwitch(Math.min(w, d), h, f.color ?? '#c0392b');
+      g.add(group);
       const [target, input] = (f.input ?? '').split('.');
       if (target && input) cap.userData = { part: id, target, input, gesture: 'hold' } satisfies PickData;
-      cap.name = 'cap';
-      g.add(cap);
       break;
     }
     case 'led': {
@@ -798,10 +784,9 @@ function board(shape: BenchShape, look: PartLook, id: string, indicators: Indica
   const g = new THREE.Group();
   const [w, d] = shape.size;
   const { standoff, thickness, surface, headers, contact } = boardStack(shape);
-  const top = look.texture ? new THREE.MeshStandardMaterial({ map: look.texture, roughness: 0.5 }) : standard('#00878f', 0.5);
-  const edge = standard('#006a70', 0.6);
-  const pcb = mesh(new THREE.BoxGeometry(w, thickness, d), [edge, edge, top, edge, edge, edge]);
-  pcb.position.y = standoff + thickness / 2;
+  // the PCB as made: its outline, holes and mask from the artwork, the top's gloss over it
+  const pcb = pcbBody({ w, d, thickness, outline: shape.board?.outline, holes: shape.board?.holes, mask: shape.board?.mask, top: look.texture });
+  pcb.position.y = standoff;
   g.add(pcb);
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
     const foot = mesh(new THREE.CylinderGeometry(1.5, 1.5, standoff, 12), standard('#efefef', 0.7));
@@ -829,13 +814,13 @@ function board(shape: BenchShape, look: PartLook, id: string, indicators: Indica
       }
       continue;
     }
-    const socket = mesh(new THREE.BoxGeometry(2.54, 8.5, 2.54), BLACK_PLASTIC);
-    socket.position.set(px, surface + 4.25, pz);
-    g.add(socket);
-    const hole = mesh(new THREE.BoxGeometry(1, 0.05, 1), standard('#000000', 1), false);
-    hole.position.set(px, surface + 8.52, pz);
-    g.add(hole);
   }
+  if (headers === 'female')
+    for (const strip of headerStrips(Object.values(local(shape)))) {
+      const s = socketStrip(strip.length, contact - surface);
+      s.position.set((strip[0]![0] + strip[strip.length - 1]![0]) / 2, surface, strip[0]![1]);
+      g.add(s);
+    }
   return g;
 }
 
@@ -932,9 +917,34 @@ export function buildPart(id: string, shape: BenchShape, look: PartLook): Built 
     default:
       built = { group: box(shape), pinTop: shape.size[2] + 4 };
   }
+  if (look.model3d) drawModel(built, shape, look.model3d, id);
+  // one draw call per shared static material, not one per pin (stage 7)
+  batchStatic(built.group, STATICS, built.control);
   built.group.traverse((o) => {
     if (!o.userData.part) o.userData = { ...o.userData, part: id } satisfies PickData;
   });
   built.group.name = id;
   return built;
+}
+
+/**
+ * The model from the catalog in place of the built body, its origin on the
+ * first pin. A control (a trimmer's adjuster) keeps working: every mesh of
+ * the model takes the gesture, and the control becomes an unseen stand-in
+ * (the model's own adjuster does not turn).
+ */
+function drawModel(built: Built, shape: BenchShape, model: Model3d, id: string): void {
+  const first = Object.values(local(shape))[0] ?? [0, 0];
+  const body = modelBody(model, first);
+  if (!body) return; // the file did not parse: the built body stays
+  const gesture = built.control ? (built.control.userData as PickData) : undefined;
+  for (const child of [...built.group.children]) if (!(child instanceof THREE.Light) && !(child instanceof THREE.Sprite)) built.group.remove(child);
+  built.group.add(body);
+  if (gesture?.input) {
+    body.traverse((o) => { o.userData = { part: id, input: gesture.input, gesture: gesture.gesture } satisfies PickData; });
+    const proxy = new THREE.Object3D();
+    proxy.userData = { ...gesture };
+    built.group.add(proxy);
+    built.control = proxy;
+  }
 }

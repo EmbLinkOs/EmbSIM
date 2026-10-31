@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "protected-half",
+  "description": "A byte written to 80h is acknowledged, runs a write cycle and changes nothing; the lower half holds contents as programmed; FAh-FFh hold 29h, 41h and the serial number.",
+  "policy": "functional",
+  "until": "99us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3,3,2,0,1,3,1,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,1,3,1,0,2,3,3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "L",
+        "component": "emblink/logic_level",
+        "params": {
+          "level": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/eeprom_24aa025uid",
+        "params": {
+          "serial": 305419896,
+          "contents": "AB"
+        }
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "LO": [
+        "L.OUT",
+        "DUT.A0",
+        "DUT.A1",
+        "DUT.A2"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.dump": {
+      "equals": "ABFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF294112345678",
+      "at": "91us"
+    },
+    "output:DUT.writes": {
+      "equals": 0,
+      "at": "91us"
+    },
+    "output:DUT.cycles": {
+      "equals": 1,
+      "at": "91us"
+    }
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/eeprom_24aa025uid",
+  "version": "1.0.0",
+  "name": "24AA025UID I2C EEPROM with a serial number",
+  "category": "misc",
+  "description": "Microchip 24AA025UID 2-Kbit (256 x 8) serial EEPROM on I2C: the lower half writable in 16-byte pages with a self-timed write cycle (no ACK while it runs), the upper half write-protected with the manufacturer and device codes and a 32-bit serial number.",
+  "keywords": [
+    "memory",
+    "eeprom",
+    "24AA025UID",
+    "24AA02UID",
+    "unique id",
+    "serial number",
+    "i2c",
+    "non-volatile"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "A0",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Chip address bit 0: high adds it to 0x50 (tie low when unused)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Chip address bit 1: high adds it to 0x50 (tie low when unused)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "A2",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "Chip address bit 2: high adds it to 0x50 (tie low when unused)",
+      "power_ref": "VCC"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "Ground (VSS)"
+    },
+    {
+      "name": "SDA",
+      "number": 5,
+      "model": {
+        "kind": "digital_io"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "SCL",
+      "number": 6,
+      "model": {
+        "kind": "digital_in"
+      },
+      "power_ref": "VCC"
+    },
+    {
+      "name": "NC",
+      "number": 7,
+      "model": {
+        "kind": "nc"
+      },
+      "doc": "Not connected"
+    },
+    {
+      "name": "VCC",
+      "number": 8,
+      "model": {
+        "kind": "power",
+        "role": "supply",
+        "nominal_v": 3.3,
+        "tolerance": 0.1
+      },
+      "required": false,
+      "doc": "Supply, 1.7 to 5.5 V"
+    }
+  ],
+  "params": {
+    "twc": {
+      "type": "number",
+      "unit": "s",
+      "default": "3.5m",
+      "min": 0,
+      "max": "20m",
+      "doc": "Write cycle time: a real part took between 3.10 and 4.03 ms (sigrok's captures); the datasheet's maximum is 5 ms, for the worst case"
+    },
+    "serial": {
+      "type": "integer",
+      "default": 1027087,
+      "min": 0,
+      "max": 4294967295,
+      "doc": "The 32-bit serial number at FCh-FFh, programmed at the factory (default: the part sigrok's captures were taken from, 000FAC0Fh)"
+    },
+    "contents": {
+      "type": "string",
+      "default": "",
+      "doc": "The lower half as a programmer left it, up to 128 bytes in hexadecimal from 00h; empty is erased (FFh), as shipped"
+    }
+  },
+  "outputs": [
+    {
+      "name": "dump",
+      "type": "string",
+      "doc": "The 256 bytes in hexadecimal"
+    },
+    {
+      "name": "writes",
+      "type": "integer",
+      "doc": "Bytes committed to the lower half"
+    },
+    {
+      "name": "cycles",
+      "type": "integer",
+      "doc": "Write cycles started"
+    },
+    {
+      "name": "busy",
+      "type": "boolean",
+      "doc": "In a write cycle"
+    }
+  ],
+  "model": {
+    "script": "model.lua",
+    "api": 1
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Address 0x50 + A2..A0, one word-address byte, byte and page writes committed at STOP with the 16-byte page wrap (later bytes overwrite earlier ones), no write after a repeated START, an address alone moves the pointer, sequential reads rolling over at FFh, no ACK during the write cycle (ACK polling), the upper half write-protected (writes acknowledged, nothing changed) with 29h, 41h and the serial number at FAh-FFh.",
+      "omissions": [
+        "endurance and retention",
+        "contents are not kept between sessions",
+        "the bus speed limit (400 kHz): faster clocks are decoded too",
+        "whether a write to the protected half starts a write cycle (the captures do not show it): the model runs one",
+        "the write cycle time is fixed (twc); the real one varies with the part, supply and temperature"
+      ],
+      "validation": [
+        "tests/*.json",
+        "../../../tests/captures/24aa025uid/cases.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional; tWC as set.",
+      "omissions": [
+        "endurance and retention",
+        "contents are not kept between sessions",
+        "the bus speed limit (400 kHz): faster clocks are decoded too",
+        "whether a write to the protected half starts a write cycle (the captures do not show it): the model runs one",
+        "the write cycle time is fixed (twc); the real one varies with the part, supply and temperature"
+      ]
+    },
+    "electrical": {
+      "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
+      "omissions": [
+        "endurance and retention",
+        "contents are not kept between sessions",
+        "the bus speed limit (400 kHz): faster clocks are decoded too",
+        "whether a write to the protected half starts a write cycle (the captures do not show it): the model runs one",
+        "the write cycle time is fixed (twc); the real one varies with the part, supply and temperature",
+        "supply current",
+        "output current limits"
+      ],
+      "validation": [
+        "tests/*.json",
+        "../../../tests/captures/24aa025uid/cases.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Microchip 24AA02UID/24AA025UID, 2K I2C Serial EEPROM with a 32-bit serial number, data sheet DS20005202 (pins, addressing, page size, tWC, the protected half)"
+      },
+      {
+        "title": "sigrok-dumps i2c/eeprom_24xx/microchip_24aa025uid (public domain): captures of a real part, the write cycle and page wrap measured"
+      }
+    ]
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "SDA": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "SCL": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "A0": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "A1": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "A2": {
+        "x": 60,
+        "y": 40,
+        "side": "right"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      },
+      "NC": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      }
+    }
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

@@ -148,10 +148,10 @@
             "required": ["kind", "at"],
             "additionalProperties": false,
             "properties": {
-              "kind": {"type": "string", "enum": ["usb_b", "usb_micro", "usb_c", "barrel_jack", "dip", "qfp", "qfn", "button", "crystal", "led", "box"]},
+              "kind": {"type": "string", "enum": ["usb_b", "usb_micro", "usb_c", "barrel_jack", "dip", "qfp", "qfn", "button", "crystal", "led", "rf_module", "box"]},
               "at": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}, "description": "The centre, mm."},
               "size": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "exclusiveMinimum": 0}},
-              "rotation": {"type": "number", "enum": [0, 90, 180, 270]},
+              "rotation": {"type": "number", "minimum": 0, "exclusiveMaximum": 360, "description": "Degrees clockwise seen from above (the NUCLEO-64's MCUs sit at 45)."},
               "pins": {"type": "integer", "minimum": 4, "description": "A package's pin count."},
               "label": {"type": "string"},
               "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},

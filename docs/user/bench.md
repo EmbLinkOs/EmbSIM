@@ -16,9 +16,86 @@ Right-drag to orbit, middle-drag to pan and use the wheel to zoom. **F** or
 **Frame the bench** fits the assembly. Select a part and choose **Focus part**
 to fit that part while retaining a top view if one is active. **Focus canvas**
 in Design folds the library and inspector out of the way. In **View**, choose
-**Top** or **Perspective**, a paper/graphite/anti-static-mat surface, adaptive/all/
-selected-only labels, and whether notes are shown. These are viewing aids, not
-changes to the physical circuit. Paper is the default surface.
+a paper/graphite/anti-static-mat surface, adaptive/all/selected-only labels, and
+whether notes are shown. These are viewing aids, not changes to the physical
+circuit. Paper is the default surface.
+
+### Views, measurements and sections
+
+These work as an EDA tool's 3D viewer does
+([the plan](../engineering/bench-3d.md)). None of them changes the project.
+
+- **Standard views.** **View** has **Top**, **Bottom**, **Front**, **Back**,
+  **Left**, **Right**, **Isometric** and **Desk** (a person's view from a
+  chair). Each one frames the bench. The keys are KiCad's, with the bench
+  focused: **Z** top (**Shift+Z** bottom), **Y** front (**Shift+Y** back),
+  **X** left (**Shift+X** right), **I** isometric, **F** frame.
+- **View cube.** The cube in the top-right corner turns with the camera;
+  click a face to see the bench from that side.
+- **Projection.** Choose **Perspective** or **Orthographic**. An
+  orthographic view keeps parallel lines parallel, as a drawing does.
+- **Render quality.** **Draft render** is the default. **Quality render**
+  adds ambient occlusion, a glow around what emits light (lit LEDs and
+  indicators), 4× multisampling and finer shadows. It drops back to draft,
+  with a notice, when a frame takes longer than the 60 Hz budget.
+- **Measure.** Choose the **Measure** tool and click two points. A click near
+  a pin or a hole (within 1.5 mm) snaps to it. The distance shows in mm with
+  its Δx, Δy (depth) and Δz (height), and as a count of 2.54 mm pitches when
+  it falls on the grid. **Esc** clears it.
+- **Section.** In **Inspect**, cut across X, Y (depth) or Z (height) at a
+  position in mm. **Keep the other side** flips the cut. The desk stays whole;
+  where the cut passes through a body, its cut face is shown solid red, as
+  in a CAD section view.
+- **Explode.** The slider lifts every part plugged into a breadboard off it,
+  so you can see which holes its legs use.
+- **Height plane.** A plane at a height above the desk, for an enclosure's
+  lid. The parts that rise through it are outlined in red and listed in the
+  status line, tallest first.
+- **Layers.** Show or hide boards, breadboards, parts, jumpers, the world's
+  bodies and labels. A hidden layer is not under the pointer.
+- **Export.**
+  - **Image 2×** and **Image 4×** save the view at that multiple of its
+    resolution, as PNG, without the HTML labels.
+  - **GLB model** saves the bench as glTF binary, in metres, each part a node
+    named by its id, for Blender or an MCAD tool.
+
+### The room
+
+The bench stands on a lab table in a room, with a window on the left. Zoom
+out to see it. A wall between you and the table is not drawn, so the bench
+is always in view. The room is as lit as the world's **Light** field
+(illuminance) says: set it to 0 lx in the world panel to see the LEDs in a
+dark room, or to daylight values for a bright one. Only the picture
+changes; the light sensors read the same field.
+
+A **Person** stands on the floor, 1.7 m tall and **warm**; a PIR motion
+sensor sees a warm body that moves in front of it (not a still one, and not
+a moving box at the room's temperature). Give the person a speed to walk
+past the sensor.
+
+A body in the World panel may move: **v** is its speed towards you in mm/s
+(negative: away), **↔** a distance it goes back and forth over. It moves as
+the circuit's time runs (paused, it stays), and the distance sensors measure
+it where it is.
+
+In the World panel, **Room and daylight** sets the room's size and which
+way its window looks. Tick **Sun** to light the bench by the time of day:
+set the latitude, the date (MM-DD) and the time (local solar time, so
+12:00 is when the sun is highest). The panel says where the sun is and
+whether it shines on the bench through the window; when it does not, the
+window's daylight lights the bench, and at night the ceiling lamp does.
+
+### Parts drawn from 3D models
+
+Some parts are drawn from a 3D model file instead of the bench's own body:
+the Bourns 3296W trimmers and the buzzer use KiCad's models. A trimmer's
+adjuster still turns with a drag (the model's screw does not rotate). A
+library part can do the same by naming a VRML file in its
+`component.json` (`bench.model3d`, with its source and licence); if the file
+does not load, the bench draws its own body.
+
+Projection, quality and layers persist on this device. Section, height plane
+and measurement are cleared when the page reloads.
 
 **Parts & wiring** folds or reveals the part list and keyboard forms. On a narrow
 bench the list moves below the scene; it is not silently removed. Surface, labels,

@@ -12,13 +12,14 @@
 // luminance. Frames are drawn on demand (a change, a camera move), never
 // in a loop while nothing moves.
 
-import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue, WorldBody } from '@embsim/protocol';
+import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue, WorldBody, WorldRoom, WorldSun } from '@embsim/protocol';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { ArtworkSurface } from './artwork';
 import { buildPart, indicatorLight, type Built, type PickData } from './parts3d';
 import { updateEmission } from './emission';
@@ -26,6 +27,14 @@ import type { BenchShape } from './shape';
 import { pickTerminal, type ProjectedTerminal } from './picking';
 import type { InsertionPreview } from './layout';
 import type { Beam } from './world';
+import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, sectionPlane, snapPoint, viewPose, type BenchLayers, type Measurement, type Section, type StandardView, type Vec3 } from './inspect';
+import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
+import type { Model3d } from './models3d';
+import { GpuTimer, recordFrame } from './frames';
+import { isPerson, personFigure } from './figure';
+import { capSection, type Caps } from './caps';
+import { buildRoom, lightLevel, ROOM, windowOpening, type Room, type RoomSize } from './room';
+import { dayOfYear, solarPosition, sunColor, sunDirection, sunlit } from './sun';
 
 
 
@@ -39,6 +48,8 @@ export interface BenchPartView {
   /** the height of the surface it stands on (a breadboard's top, or the desk) */
   elevation: number;
   artwork?: { svg: string; states?: ArtworkState[]; hotspots?: Hotspot[]; vars?: Record<string, string> };
+  /** a 3D model from the catalog drawn instead of the built body (bench.model3d) */
+  model3d?: Model3d;
   inputs?: Record<string, unknown>;
   outputs?: Record<string, OutputValue>;
 }
@@ -79,13 +90,21 @@ export interface TerminalHit {
   occupiedBy?: string[];
 }
 
-export type BenchTool = 'select' | 'wire';
+export type BenchTool = 'select' | 'wire' | 'measure';
+
+export type Projection = 'perspective' | 'orthographic';
 
 export interface Bench3DHandle {
-  /** frames the camera on everything on the bench */
-  frame(view?: 'perspective' | 'top', selectedOnly?: boolean): void;
+  /** frames the camera on everything on the bench (or the selection) from a standard view */
+  frame(view?: StandardView, selectedOnly?: boolean): void;
   /** the canvas, for screenshots */
   canvas(): HTMLCanvasElement | null;
+  /** a still of the view at `scale` times its resolution, as PNG */
+  exportImage(scale: number): Promise<Blob | null>;
+  /** the bench as glTF binary, in metres, each part a named node */
+  exportGlb(): Promise<Blob>;
+  /** removes the measurement drawn in the scene */
+  clearMeasurement(): void;
 }
 
 export interface Bench3DProps {
@@ -109,6 +128,11 @@ export interface Bench3DProps {
   traceTerminals?: string[];
   onRoute?(index: number, points: Point3[]): void;
   surface?: 'mat' | 'paper' | 'graphite';
+  /** the world's illuminance, lx (ADR-026): how lit the room is */
+  illuminance?: number;
+  /** the room's size and window, and where and when it is (the sun's position) */
+  room?: WorldRoom;
+  sun?: WorldSun;
   labels?: 'adaptive' | 'all' | 'selected';
   showNotes?: boolean;
   insertionPreview?: InsertionPreview;
@@ -120,6 +144,20 @@ export interface Bench3DProps {
   onInput(target: string, input: string, value: unknown): void;
   label?: string;
   handle?: Ref<Bench3DHandle>;
+  /** inspection (docs/engineering/bench-3d.md, stage 1): presentation only */
+  projection?: Projection;
+  quality?: RenderQuality;
+  /** quality could not keep the frame budget and dropped to draft */
+  onQualityFallback?(): void;
+  section?: Section | null;
+  /** a plane this many mm above the desk; the parts through it are reported */
+  heightPlane?: number | null;
+  onHeightReport?(above: { id: string; top: number }[]): void;
+  layers?: BenchLayers;
+  /** the measure tool's result, or null when cleared */
+  onMeasure?(m: Measurement | null): void;
+  /** 0 to 1: lifts each part plugged into a breadboard off it (an exploded view) */
+  explode?: number;
 }
 
 interface PartEntry {
@@ -136,13 +174,24 @@ function v3([x, y, z]: Point3): THREE.Vector3 {
   return new THREE.Vector3(x, y, z);
 }
 
+/** how far an exploded view lifts a plugged part off its breadboard, mm */
+export const EXPLODE_LIFT = 25;
+
+/** a wire's radius and how far it lies above what it rests on */
+const WIRE_R = 0.8;
+/** a span at least this long drapes down onto the desk rather than arcing over it */
+const DRAPE_SPAN = 70;
+
 /**
  * A jumper's path. Between two holes of one surface it lies flat, as a
  * pre-cut breadboard jumper does: up 1.5 mm, along, down. Anywhere else it
  * is a flexible Dupont wire: up from each end, then an arc that rises with
- * its length.
+ * its length; a long one (a supply's lead across the desk) falls under its
+ * own weight and lies on the desk, or on whatever `floor` says is under it
+ * (the height of the bench's top at a point, so it never passes through a
+ * board), between its ends.
  */
-export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: number): THREE.Curve<THREE.Vector3> {
+export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: number, floor?: (x: number, z: number) => number): THREE.Curve<THREE.Vector3> {
   if (points?.length) {
     const path = new THREE.CurvePath<THREE.Vector3>();
     const route = [a, ...points, b].map(v3);
@@ -167,12 +216,46 @@ export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: numb
     for (let i = 0; i < pts.length - 1; i++) path.add(new THREE.LineCurve3(pts[i]!, pts[i + 1]!));
     return path;
   }
+  const span = Math.hypot(B.x - A.x, B.z - A.z);
+  if (span >= DRAPE_SPAN) {
+    const under = (t: number) => {
+      const p = A.clone().lerp(B, t);
+      return Math.max(0, floor?.(p.x, p.z) ?? 0) + WIRE_R;
+    };
+    // out of each socket, then falling to what is below, resting there between
+    const at = (t: number, y: number) => A.clone().lerp(B, t).setY(Math.max(y, under(t)));
+    const lowA = Math.min(A.y, B.y) * 0.35;
+    const route = [
+      A,
+      A.clone().setY(A.y + UP),
+      at(0.12, Math.max(A.y * 0.55, lowA)),
+      at(0.28, 0),
+      at(0.5, 0),
+      at(0.72, 0),
+      at(0.88, Math.max(B.y * 0.55, lowA)),
+      B.clone().setY(B.y + UP),
+      B,
+    ];
+    // a spline overshoots between its points: clamp a dense sampling of it above what is below
+    const rough = new THREE.CatmullRomCurve3(route, false, 'centripetal');
+    const span2 = Math.max(span, 1e-6);
+    const dense = rough.getPoints(96).map((p, i, all) => {
+      if (i === 0 || i === all.length - 1) return p;
+      const t = Math.min(1, Math.max(0, ((p.x - A.x) * (B.x - A.x) + (p.z - A.z) * (B.z - A.z)) / (span2 * span2)));
+      const lowest = Math.max(0, floor?.(p.x, p.z) ?? 0) + WIRE_R;
+      return t > 0.04 && t < 0.96 ? p.setY(Math.max(p.y, lowest)) : p;
+    });
+    return new THREE.CatmullRomCurve3(dense, false, 'centripetal');
+  }
   const lift = rise ?? Math.min(18, 5 + len * 0.1);
   const top = Math.max(A.y, B.y) + lift;
   const mid = A.clone().lerp(B, 0.5);
   mid.y = top;
   return new THREE.CatmullRomCurve3([A, A.clone().setY(A.y + UP), A.clone().lerp(B, 0.2).setY(top - lift * 0.25), mid, B.clone().lerp(A, 0.2).setY(top - lift * 0.25), B.clone().setY(B.y + UP), B], false, 'centripetal');
 }
+
+/** the anti-static mat on the table, mm */
+const MAT: [number, number] = [1400, 700];
 
 function deskTexture(surface: 'mat' | 'paper' | 'graphite' = 'mat'): THREE.CanvasTexture | undefined {
   if (typeof document === 'undefined') return undefined;
@@ -195,13 +278,16 @@ function deskTexture(surface: 'mat' | 'paper' | 'graphite' = 'mat'): THREE.Canva
   }
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(100, 100);
+  // 100 mm a tile: a 10 mm grid on the 1400 x 700 mm mat
+  t.repeat.set(MAT[0] / 100, MAT[1] / 100);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
 function partKey(v: BenchPartView): string {
-  return JSON.stringify([v.component, v.params ?? {}, v.shape, v.artwork?.svg ?? '']);
+  // a model's text is long: its length and placement stand for it (the catalog's files do not change under a part)
+  const m = v.model3d;
+  return JSON.stringify([v.component, v.params ?? {}, v.shape, v.artwork?.svg ?? '', m ? [m.text.length, m.scale, m.offset_mm, m.rotation_deg] : null]);
 }
 
 function labelElement(text: string): HTMLDivElement {
@@ -211,8 +297,74 @@ function labelElement(text: string): HTMLDivElement {
   return el;
 }
 
+/** the CSS transform that turns the view cube as the camera sees the scene */
+export function cubeTransform(view: THREE.Matrix4): string {
+  const e = view.elements;
+  const f = (v: number) => (Math.abs(v) < 1e-10 ? 0 : v).toFixed(6);
+  // the rotation only, with y flipped for CSS's y-down axis (as CSS3DRenderer does)
+  return `matrix3d(${f(e[0]!)},${f(-e[1]!)},${f(e[2]!)},0,${f(-e[4]!)},${f(e[5]!)},${f(-e[6]!)},0,${f(e[8]!)},${f(-e[9]!)},${f(e[10]!)},0,0,0,0,1)`;
+}
+
+/** the view cube's faces: the view each one frames, and where it sits on the cube */
+const CUBE_FACES: { view: StandardView; label: string; transform: string }[] = [
+  { view: 'front', label: 'Front', transform: 'translateZ(24px)' },
+  { view: 'back', label: 'Back', transform: 'rotateY(180deg) translateZ(24px)' },
+  { view: 'right', label: 'Right', transform: 'rotateY(90deg) translateZ(24px)' },
+  { view: 'left', label: 'Left', transform: 'rotateY(-90deg) translateZ(24px)' },
+  { view: 'top', label: 'Top', transform: 'rotateX(90deg) translateZ(24px)' },
+  { view: 'bottom', label: 'Bottom', transform: 'rotateX(-90deg) translateZ(24px)' },
+];
+
+/** an orthographic camera's frustum, `half` mm above and below its centre */
+function setOrthoFrustum(cam: THREE.OrthographicCamera, half: number, aspect: number): void {
+  cam.top = half;
+  cam.bottom = -half;
+  cam.left = -half * aspect;
+  cam.right = half * aspect;
+}
+
+/** the height of the bench's top under a point: what a draped wire rests on (the parts, not the wires) */
+function floorOf(parts: Iterable<{ built: Built }>, camera: THREE.Camera): (x: number, z: number) => number {
+  const objects = [...parts].map((e) => e.built.group).filter((g) => g.visible);
+  const ray = new THREE.Raycaster();
+  // sprites (an LED's glow) need a camera to be tested, though they are then passed over
+  ray.camera = camera;
+  const down = new THREE.Vector3(0, -1, 0);
+  const from = new THREE.Vector3();
+  return (x, z) => {
+    ray.set(from.set(x, 500, z), down);
+    const hit = ray.intersectObjects(objects, true).find((h) => (h.object as THREE.Mesh).isMesh && !(h.object instanceof THREE.Sprite));
+    return hit ? hit.point.y : 0;
+  };
+}
+
+/** a part's body: its meshes, not the glow sprites, lights and labels round it */
+function bodyBounds(group: THREE.Object3D): THREE.Box3 {
+  const box = new THREE.Box3();
+  group.updateWorldMatrix(true, true);
+  group.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !m.visible || o instanceof THREE.Sprite) return;
+    m.geometry.computeBoundingBox();
+    if (m.geometry.boundingBox) box.union(m.geometry.boundingBox.clone().applyMatrix4(m.matrixWorld));
+  });
+  return box;
+}
+
+function disposeTree(o: THREE.Object3D): void {
+  o.traverse((x) => {
+    if (x instanceof CSS2DObject) x.element.remove();
+    const m = x as THREE.Mesh;
+    m.geometry?.dispose();
+    const mat = m.material;
+    if (Array.isArray(mat)) mat.forEach((v) => v.dispose());
+    else (mat as THREE.Material | undefined)?.dispose();
+  });
+}
+
 export function Bench3D(props: Bench3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const cubeRef = useRef<HTMLDivElement>(null);
   const cancelGesture = useRef<(() => void) | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; x?: number; y?: number; ref?: string; blocked?: boolean }>({ text: '' });
   const propsRef = useRef(props);
@@ -221,10 +373,30 @@ export function Bench3D(props: Bench3DProps) {
   const state = useRef<{
     renderer: THREE.WebGLRenderer;
     desk: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
+    room: Room;
+    roomSize: RoomSize;
+    caps?: Caps | null;
+    /** the section's planes, for the renderers' own passes */
+    clipPlanes?: THREE.Plane[] | null;
+    /** the GPU's time per frame, where the browser can tell it */
+    gpu?: GpuTimer;
+    sky: THREE.HemisphereLight;
+    sun: THREE.DirectionalLight;
     labels: CSS2DRenderer;
     scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
+    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+    perspective: THREE.PerspectiveCamera;
+    orthographic: THREE.OrthographicCamera;
     controls: OrbitControls;
+    /** quality mode's passes, when chosen */
+    quality: QualityRenderer | null;
+    /** the draft render with outlines, made when something is first outlined */
+    outline: OutlineRenderer | null;
+    /** the part under the pointer, outlined as the selection is */
+    hover: string | null;
+    /** the measurement, the height plane and its marks */
+    inspect: THREE.Group;
+    measureFrom: Vec3 | null;
     parts: Map<string, PartEntry>;
     jumpers: THREE.Group;
     links: THREE.Group;
@@ -241,19 +413,51 @@ export function Bench3D(props: Bench3DProps) {
     if (!s || s.raf) return;
     s.raf = requestAnimationFrame(() => {
       s.raf = 0;
+      s.gpu?.poll();
+      s.gpu?.begin();
+      const t0 = performance.now();
       s.controls.update();
-      s.renderer.render(s.scene, s.camera);
+      // the selected part, and the part under the pointer, are outlined
+      const outlined = [...new Set([propsRef.current.selected?.part, s.hover])]
+        .map((id) => (id ? s.parts.get(id)?.built.group : undefined))
+        .filter((g): g is THREE.Group => Boolean(g?.visible));
+      if (s.quality) {
+        s.quality.outline.selectedObjects = outlined;
+        if (!s.quality.draw()) {
+          s.quality.dispose();
+          s.quality = null;
+          propsRef.current.onQualityFallback?.();
+        }
+      } else if (outlined.length) {
+        const host = hostRef.current;
+        if (!s.outline && host) {
+          s.outline = new OutlineRenderer(s.renderer, s.scene, s.camera, host.clientWidth || 1, host.clientHeight || 1);
+          s.outline.setClipping(s.clipPlanes ?? null);
+          s.outline.setSize(host.clientWidth || 1, host.clientHeight || 1, s.renderer.getPixelRatio());
+        }
+        if (s.outline) {
+          s.outline.setCamera(s.camera);
+          s.outline.outline.selectedObjects = outlined;
+          s.outline.composer.render();
+        } else s.renderer.render(s.scene, s.camera);
+      } else s.renderer.render(s.scene, s.camera);
       s.labels.render(s.scene, s.camera);
+      const mode = s.quality ? 'quality' : s.outline && outlined.length ? 'outline' : 'draft';
+      recordFrame(t0, mode);
+      s.gpu?.end(mode);
+      // the view cube turns with the camera: the scene's rotation seen from the camera, y down as CSS has it
+      if (cubeRef.current) cubeRef.current.style.transform = cubeTransform(s.camera.matrixWorldInverse);
     });
   }, []);
 
-  const frame = useCallback((view?: 'perspective' | 'top', selectedOnly = false) => {
+  const frame = useCallback((view?: StandardView, selectedOnly = false) => {
     const s = state.current;
     if (!s) return;
-    const mode = view ?? (s.camera.position.clone().sub(s.controls.target).normalize().y > 0.99 ? 'top' : 'perspective');
+    const toward = s.camera.position.clone().sub(s.controls.target).normalize();
+    const mode: StandardView = view ?? (toward.y > 0.99 ? 'top' : 'perspective');
     const box = new THREE.Box3();
     const chosen = selectedOnly && propsRef.current.selected?.part;
-    for (const e of s.parts.values()) if (!chosen || e.view.id === chosen) box.expandByObject(e.built.group);
+    for (const e of s.parts.values()) if (e.built.group.visible && (!chosen || e.view.id === chosen)) box.expandByObject(e.built.group);
     if (!selectedOnly && propsRef.current.showNotes !== false)
       for (const n of propsRef.current.notes) box.expandByPoint(new THREE.Vector3(n.x, 30, n.y));
     // the world's bodies near the bench, and where the beams meet them; what is far
@@ -265,25 +469,84 @@ export function Bench3D(props: Bench3DProps) {
       for (const beam of propsRef.current.beams ?? []) if (beam.distance >= 0) extra.push(new THREE.Vector3(beam.to[0], beam.to[2], beam.to[1]));
       for (const v of extra) if (near.containsPoint(v)) box.expandByPoint(v);
     }
-
     if (box.isEmpty()) box.set(new THREE.Vector3(-100, 0, -60), new THREE.Vector3(100, 20, 60));
-    const centre = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    // the whole bench in view, seen from the front and above as a person at the desk sees it
-    const fov = (s.camera.fov * Math.PI) / 180;
-    const fit = Math.max(size.z, size.x / Math.max(0.5, s.camera.aspect)) / 2 / Math.tan(fov / 2);
-    const r = fit * 1.05 + 20;
-    s.controls.target.copy(centre);
-    if (mode === 'top') s.camera.position.set(centre.x, centre.y + r, centre.z + 0.001);
-    else s.camera.position.set(centre.x, centre.y + r * 0.78, centre.z + r * 0.68);
+    const pose = viewPose({ min: box.min.toArray() as Vec3, max: box.max.toArray() as Vec3 }, mode, s.perspective.aspect, s.perspective.fov);
+    s.controls.target.set(...pose.target);
+    // the controls keep +y up: a view along y is nudged towards the person at the desk, so its far side is up
+    const nudge = mode === 'top' || mode === 'bottom' ? pose.distance * 1e-4 : 0;
+    s.camera.position.set(pose.position[0], pose.position[1], pose.position[2] + nudge);
+    // only the bottom view looks up from under the desk
+    s.controls.maxPolarAngle = mode === 'bottom' ? Math.PI : Math.PI * 0.48;
+    for (const cam of [s.perspective, s.orthographic]) {
+      cam.near = Math.max(0.5, pose.distance / 500);
+      // far enough for the room's farthest corner from the farthest orbit (the window's pane included)
+      cam.far = Math.max(pose.distance * 20, Math.hypot(s.roomSize.width, s.roomSize.depth, s.roomSize.height) + s.controls.maxDistance);
+    }
+    s.orthographic.zoom = 1;
+    setOrthoFrustum(s.orthographic, pose.halfHeight, s.perspective.aspect);
+    if (s.camera !== s.perspective) s.perspective.position.copy(s.camera.position);
     s.controls.update();
-    s.camera.near = 1;
-    s.camera.far = r * 20;
-    s.camera.updateProjectionMatrix();
+    s.perspective.updateProjectionMatrix();
+    s.orthographic.updateProjectionMatrix();
     invalidate();
   }, [invalidate]);
 
-  useImperativeHandle(props.handle, () => ({ frame, canvas: () => state.current?.renderer.domElement ?? null }), [frame]);
+  const clearMeasurement = useCallback(() => {
+    const s = state.current;
+    if (!s) return;
+    s.measureFrom = null;
+    for (const child of [...s.inspect.children]) if (child.userData.measurement) {
+      s.inspect.remove(child);
+      disposeTree(child);
+    }
+    invalidate();
+  }, [invalidate]);
+
+  const exportImage = useCallback(async (scale: number) => {
+    const s = state.current;
+    if (!s) return null;
+    const host = hostRef.current!;
+    const w = host.clientWidth || 1;
+    const h = host.clientHeight || 1;
+    const ratio = s.renderer.getPixelRatio();
+    s.renderer.setPixelRatio(scale);
+    s.renderer.setSize(w, h, false);
+    s.quality?.setSize(w, h, scale);
+    s.controls.update();
+    if (s.quality) s.quality.still();
+    else s.renderer.render(s.scene, s.camera);
+    const blob = await new Promise<Blob | null>((resolve) => s.renderer.domElement.toBlob(resolve, 'image/png'));
+    s.renderer.setPixelRatio(ratio);
+    s.renderer.setSize(w, h, false);
+    s.quality?.setSize(w, h, ratio);
+    invalidate();
+    return blob;
+  }, [invalidate]);
+
+  const exportGlb = useCallback(async () => {
+    const s = state.current;
+    if (!s) throw new Error('the bench is not drawn');
+    // glTF is in metres; the bench in millimetres. Each part is a node named by its id;
+    // the desk, labels, hints and lights are not part of the assembly.
+    const root = new THREE.Group();
+    root.name = 'bench';
+    root.scale.setScalar(0.001);
+    for (const e of s.parts.values()) {
+      if (!e.built.group.visible) continue;
+      const copy = e.built.group.clone(true);
+      copy.name = e.view.id;
+      root.add(copy);
+    }
+    if (s.jumpers.visible) { const j = s.jumpers.clone(true); j.name = 'jumpers'; root.add(j); }
+    if (s.world.visible) { const w = s.world.clone(true); w.name = 'world'; root.add(w); }
+    const drop: THREE.Object3D[] = [];
+    root.traverse((o) => { if (o instanceof THREE.Sprite || o instanceof THREE.Light || o instanceof THREE.Line || o instanceof CSS2DObject || o.userData.routePoint !== undefined || o.userData.stencil) drop.push(o); });
+    for (const o of drop) o.removeFromParent();
+    const out = await new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true });
+    return new Blob([out as ArrayBuffer], { type: 'model/gltf-binary' });
+  }, []);
+
+  useImperativeHandle(props.handle, () => ({ frame, canvas: () => state.current?.renderer.domElement ?? null, exportImage, exportGlb, clearMeasurement }), [frame, exportImage, exportGlb, clearMeasurement]);
 
   // the scene, once
   useEffect(() => {
@@ -291,7 +554,8 @@ export function Bench3D(props: Bench3DProps) {
     if (!host) return;
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      // a stencil buffer for the section's caps
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, stencil: true });
     } catch {
       host.dataset.webgl = 'unavailable';
       propsRef.current.onRendererError?.();
@@ -320,10 +584,13 @@ export function Bench3D(props: Bench3DProps) {
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environmentIntensity = 0.55;
-    const camera = new THREE.PerspectiveCamera(38, 1, 1, 5000);
+    // far enough to see the room's far corner from the farthest orbit
+    const camera = new THREE.PerspectiveCamera(38, 1, 1, 12000);
     camera.position.set(0, 260, 240);
+    const orthographic = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 12000);
 
-    scene.add(new THREE.HemisphereLight(0xdfe9f3, 0x1d262c, 0.65));
+    const sky = new THREE.HemisphereLight(0xdfe9f3, 0x1d262c, 0.65);
+    scene.add(sky);
     const sun = new THREE.DirectionalLight(0xfff4e5, 2.1);
     sun.position.set(-160, 420, 260);
     sun.castShadow = true;
@@ -339,11 +606,14 @@ export function Bench3D(props: Bench3DProps) {
     scene.add(sun.target);
 
     const mat = deskTexture();
-    const desk = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshStandardMaterial({ map: mat ?? null, color: mat ? 0xffffff : 0x2f4f5f, roughness: 0.92 }));
+    const desk = new THREE.Mesh(new THREE.PlaneGeometry(MAT[0], MAT[1]), new THREE.MeshStandardMaterial({ map: mat ?? null, color: mat ? 0xffffff : 0x2f4f5f, roughness: 0.92 }));
     desk.rotation.x = -Math.PI / 2;
     desk.receiveShadow = true;
     desk.name = 'desk';
     scene.add(desk);
+    // the table under the mat, and the room around it (stage 6)
+    const room = buildRoom();
+    scene.add(room.group);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = false;
@@ -359,8 +629,12 @@ export function Bench3D(props: Bench3DProps) {
     const world = new THREE.Group();
     const hints = new THREE.Group();
     const preview = new THREE.Group();
-    scene.add(jumpers, links, notes, world, hints, preview);
-    state.current = { renderer, labels, scene, camera, controls, desk, parts: new Map(), jumpers, links, notes, world, hints, preview, raf: 0, framed: false };
+    const inspect = new THREE.Group();
+    scene.add(jumpers, links, notes, world, hints, preview, inspect);
+    state.current = {
+      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, room, roomSize: ROOM, gpu: renderer.capabilities.isWebGL2 ? new GpuTimer(renderer.getContext() as WebGL2RenderingContext) : undefined, sky, sun, parts: new Map(), jumpers, links, notes, world, hints, preview,
+      inspect, quality: null, outline: null, hover: null, measureFrom: null, raf: 0, framed: false,
+    };
 
     controls.addEventListener('change', invalidate);
 
@@ -371,8 +645,13 @@ export function Bench3D(props: Bench3DProps) {
       renderer.domElement.style.width = `${w}px`;
       renderer.domElement.style.height = `${h}px`;
       labels.setSize(w, h);
+      const half = (orthographic.top - orthographic.bottom) / 2;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      setOrthoFrustum(orthographic, half, w / h);
+      orthographic.updateProjectionMatrix();
+      state.current?.quality?.setSize(w, h, renderer.getPixelRatio());
+      state.current?.outline?.setSize(w, h, renderer.getPixelRatio());
       invalidate();
     };
     const ro = new ResizeObserver(resize);
@@ -383,10 +662,15 @@ export function Bench3D(props: Bench3DProps) {
       controls.dispose();
       for (const e of state.current?.parts.values() ?? []) e.surface?.dispose();
       if (state.current?.raf) cancelAnimationFrame(state.current.raf);
+      state.current?.quality?.dispose();
+      state.current?.outline?.dispose();
+      if (state.current) disposeTree(state.current.inspect);
       renderer.domElement.removeEventListener('webglcontextlost', contextLost);
       desk.material.map?.dispose();
       desk.material.dispose();
       desk.geometry.dispose();
+      state.current?.room.dispose();
+      state.current?.caps?.dispose();
       renderer.dispose();
       pmrem.dispose();
       renderer.domElement.remove();
@@ -407,6 +691,85 @@ export function Bench3D(props: Bench3DProps) {
     invalidate();
   }, [props.surface, props.showNotes, invalidate]);
 
+  // the room's size, from the world (or the default room)
+  const roomW = props.room?.size_mm?.[0] ?? ROOM.width;
+  const roomD = props.room?.size_mm?.[1] ?? ROOM.depth;
+  const roomH = props.room?.size_mm?.[2] ?? ROOM.height;
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    if (s.roomSize.width === roomW && s.roomSize.depth === roomD && s.roomSize.height === roomH) return;
+    s.scene.remove(s.room.group);
+    s.room.dispose();
+    s.roomSize = { width: roomW, depth: roomD, height: roomH };
+    s.room = buildRoom(s.roomSize);
+    s.scene.add(s.room.group);
+    invalidate();
+  }, [roomW, roomD, roomH, invalidate]);
+
+  // the room is as lit as the world says (the value the light sensors read), its key light the sun
+  // through the window when the sun shines on the table, daylight from the window when it does not,
+  // the ceiling lamp at night
+  const sunSpec = props.sun;
+  const windowAz = props.room?.window_azimuth_deg ?? 180;
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const k = lightLevel(props.illuminance);
+    s.sky.intensity = 0.65 * k;
+    s.scene.environmentIntensity = 0.55 * k;
+    const pane = s.room.pane.color;
+    let key: { dir: [number, number, number]; color: [number, number, number]; intensity: number };
+    let lighting: string;
+    if (!sunSpec) {
+      key = { dir: [-160, 420, 260], color: [1, 0.957, 0.898], intensity: 2.1 };
+      pane.setRGB(0.87, 0.92, 0.96).multiplyScalar(Math.min(1.2, Math.max(0.04, k * 0.9)));
+      lighting = 'lamp';
+    } else {
+      const pos = solarPosition(sunSpec.latitude_deg ?? 45, dayOfYear(sunSpec.date), sunSpec.solar_time_h ?? 12);
+      const dir = sunDirection(pos, windowAz);
+      if (sunlit(dir, [0, 0, 0], windowOpening(s.roomSize))) {
+        key = { dir, color: sunColor(pos.elevation), intensity: 2.6 };
+        lighting = 'sun';
+      } else if (pos.elevation > 0) {
+        // the sky seen through the window: soft, from the window's side, a little cool
+        const w = windowOpening(s.roomSize);
+        key = { dir: [-s.roomSize.width / 2, (w.bottom + w.top) / 2 + 600, w.z], color: [0.92, 0.96, 1], intensity: 1.5 };
+        lighting = 'daylight';
+      } else {
+        key = { dir: [120, 1000, 180], color: [1, 0.94, 0.86], intensity: 2.1 };
+        lighting = 'night';
+      }
+      // the window: the sky's brightness by the sun's height, a dark blue at night
+      const day = Math.max(0, Math.min(1, (pos.elevation + 4) / 20));
+      pane.setRGB(0.04 + 0.83 * day, 0.06 + 0.86 * day, 0.12 + 0.84 * day);
+    }
+    // the sun shines from outside: its shadow camera starts beyond the window wall, so the wall,
+    // the frame's bars and the ceiling cast their shadows and only a window-shaped patch is sunlit;
+    // it then covers the whole table. A lamp or the window's daylight is inside the room, framed
+    // tight on the bench for crisp shadows of its small parts.
+    const outside = lighting === 'sun';
+    const reach = outside ? Math.hypot(s.roomSize.width, s.roomSize.depth, s.roomSize.height) : 520;
+    const v = new THREE.Vector3(...key.dir).normalize().multiplyScalar(reach);
+    const cam = s.sun.shadow.camera;
+    const half = outside ? 1000 : 400;
+    cam.left = -half;
+    cam.right = half;
+    cam.top = half;
+    cam.bottom = -half;
+    cam.near = outside ? 50 : 0.5;
+    cam.far = outside ? reach * 1.6 : 1500;
+    cam.updateProjectionMatrix();
+    // the bias is in the shadow camera's depth range: the same 0.6 mm either way
+    s.sun.shadow.bias = -0.6 / (cam.far - cam.near);
+    s.sun.position.copy(v);
+    s.sun.target.position.set(0, 0, 0);
+    s.sun.color.setRGB(...key.color);
+    s.sun.intensity = key.intensity * k;
+    s.renderer.domElement.dataset.lighting = lighting;
+    invalidate();
+  }, [props.illuminance, sunSpec, windowAz, invalidate, roomW, roomD, roomH]);
+
   // the parts: built when new or changed, moved when they move
   useEffect(() => {
     const s = state.current;
@@ -423,7 +786,7 @@ export function Bench3D(props: Bench3DProps) {
         }
         const surface = v.artwork && v.shape.textured ? new ArtworkSurface(v.artwork.svg, v.shape.size[0], v.shape.size[1], v.artwork.states, v.artwork.hotspots, v.artwork.vars) : undefined;
         if (surface) surface.onDraw = invalidate;
-        const built = buildPart(v.id, v.shape, { component: v.component, params: v.params, texture: surface?.texture });
+        const built = buildPart(v.id, v.shape, { component: v.component, params: v.params, texture: surface?.texture, model3d: v.model3d });
         const label = new CSS2DObject(labelElement(v.label));
         const top = new THREE.Box3().setFromObject(built.group).max.y;
         const labelGap = Math.min(14, Math.max(1.5, Math.max(v.shape.size[0], v.shape.size[1]) * 0.15));
@@ -434,7 +797,11 @@ export function Bench3D(props: Bench3DProps) {
         s.parts.set(v.id, e);
       }
       e.view = v;
-      e.built.group.position.set(v.place.x, v.elevation, v.place.y);
+      e.built.group.name = v.id;
+      e.built.group.visible = (props.layers ?? ALL_LAYERS)[layerOf(v.shape.package)];
+      // exploded: a part plugged into a breadboard rises off it, its legs out of the holes
+      const lift = v.elevation > 0 ? Math.max(0, Math.min(1, props.explode ?? 0)) * EXPLODE_LIFT : 0;
+      e.built.group.position.set(v.place.x, v.elevation + lift, v.place.y);
       e.built.group.rotation.y = -(v.place.rotation * Math.PI) / 180;
       // the id on the bench, the whole name when selected
       const chosen = props.selected?.part === v.id;
@@ -463,7 +830,11 @@ export function Bench3D(props: Bench3DProps) {
       const ctl = e.built.control;
       if (ctl) {
         const d = ctl.userData as PickData;
-        if (d.gesture === 'hold') ctl.position.y = 4.45 - (v.inputs?.[d.input!] ? 0.45 : 0);
+        if (d.gesture === 'hold') {
+          // a plunger travels 0.25 mm (a 6 mm tactile switch's stroke), from where it rests
+          ctl.userData.rest ??= ctl.position.y;
+          ctl.position.y = (ctl.userData.rest as number) - (v.inputs?.[d.input!] ? 0.25 : 0);
+        }
       }
       // a board's button caps, pressed while held
       e.built.group.traverse((o) => {
@@ -489,7 +860,110 @@ export function Bench3D(props: Bench3DProps) {
       frame();
     }
     invalidate();
-  }, [props.parts, props.selected, props.labels, invalidate, frame]);
+  }, [props.parts, props.selected, props.labels, props.layers, props.explode, invalidate, frame]);
+
+  // the projection: the orthographic camera takes the perspective one's place, framing the same width
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const want = props.projection === 'orthographic' ? s.orthographic : s.perspective;
+    if (s.camera === want) return;
+    const distance = s.camera.position.distanceTo(s.controls.target);
+    if (want === s.orthographic) {
+      const half = distance * Math.tan((s.perspective.fov * Math.PI) / 360);
+      s.orthographic.zoom = 1;
+      setOrthoFrustum(s.orthographic, half, s.perspective.aspect);
+    } else {
+      // keep the apparent size: the distance at which the perspective camera sees the ortho frustum
+      const half = (s.orthographic.top - s.orthographic.bottom) / 2 / s.orthographic.zoom;
+      const dir = s.camera.position.clone().sub(s.controls.target).normalize();
+      s.perspective.position.copy(s.controls.target).addScaledVector(dir, half / Math.tan((s.perspective.fov * Math.PI) / 360));
+    }
+    if (want === s.orthographic) want.position.copy(s.camera.position);
+    want.near = s.camera.near;
+    want.far = s.camera.far;
+    want.updateProjectionMatrix();
+    s.camera = want;
+    s.controls.object = want;
+    s.quality?.setCamera(want);
+    s.controls.update();
+    invalidate();
+  }, [props.projection, invalidate]);
+
+  // the render quality
+  useEffect(() => {
+    const s = state.current;
+    const host = hostRef.current;
+    if (!s || !host) return;
+    if (props.quality === 'quality' && !s.quality) {
+      s.quality = new QualityRenderer(s.renderer, s.scene, s.camera, host.clientWidth || 1, host.clientHeight || 1);
+      s.quality.setClipping(s.clipPlanes ?? null);
+      s.quality.setSize(host.clientWidth || 1, host.clientHeight || 1, s.renderer.getPixelRatio());
+      // softer, finer shadows to go with the occlusion
+      s.scene.traverse((o) => { if (o instanceof THREE.DirectionalLight && o.castShadow) { o.shadow.mapSize.set(4096, 4096); o.shadow.map?.dispose(); o.shadow.map = null; } });
+    } else if (props.quality !== 'quality' && s.quality) {
+      s.quality.dispose();
+      s.quality = null;
+    }
+    invalidate();
+  }, [props.quality, invalidate]);
+
+  // the layers a user hides (the parts' own are set as they are built)
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const layers = props.layers ?? ALL_LAYERS;
+    s.jumpers.visible = layers.jumpers;
+    s.links.visible = layers.jumpers;
+    s.world.visible = layers.world;
+    s.labels.domElement.style.display = layers.labels ? '' : 'none';
+    invalidate();
+  }, [props.layers, invalidate]);
+
+  // the height plane, and a box around each part that rises through it
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const height = props.heightPlane;
+    const added: THREE.Object3D[] = [];
+    if (typeof height === 'number' && Number.isFinite(height)) {
+      const all = new THREE.Box3();
+      const bounds = [...s.parts.values()].filter((e) => e.built.group.visible).map((e) => {
+        const b = bodyBounds(e.built.group);
+        all.union(b);
+        return { id: e.view.id, box: b };
+      });
+      if (all.isEmpty()) all.set(new THREE.Vector3(-100, 0, -60), new THREE.Vector3(100, 20, 60));
+      const size = all.getSize(new THREE.Vector3());
+      const centre = all.getCenter(new THREE.Vector3());
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(size.x + 40, size.z + 40),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }),
+      );
+      plane.rotation.x = -Math.PI / 2;
+      plane.position.set(centre.x, height, centre.z);
+      plane.renderOrder = 5;
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(plane.geometry), new THREE.LineBasicMaterial({ color: 0xf59e0b }));
+      edge.rotation.copy(plane.rotation);
+      edge.position.copy(plane.position);
+      added.push(plane, edge);
+      const above = aboveHeight(bounds.map((b) => ({ id: b.id, bounds: { min: b.box.min.toArray() as Vec3, max: b.box.max.toArray() as Vec3 } })), height);
+      for (const a of above) {
+        const b = bounds.find((x) => x.id === a.id)!.box;
+        const helper = new THREE.Box3Helper(b, new THREE.Color(0xef4444));
+        added.push(helper);
+      }
+      propsRef.current.onHeightReport?.(above);
+    } else propsRef.current.onHeightReport?.([]);
+    for (const o of added) s.inspect.add(o);
+    invalidate();
+    return () => {
+      for (const o of added) {
+        s.inspect.remove(o);
+        disposeTree(o);
+      }
+    };
+  }, [props.heightPlane, props.parts, props.layers, invalidate]);
 
   // the jumpers, the connections still to build, the notes
   useEffect(() => {
@@ -507,13 +981,16 @@ export function Bench3D(props: Bench3DProps) {
     clear(s.jumpers);
     clear(s.links);
     clear(s.notes);
+    // what a long jumper drapes over: the parts as they stand now
+    s.scene.updateMatrixWorld(true);
+    const floor = floorOf(s.parts.values(), s.camera);
     const pinMat = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, metalness: 0.9, roughness: 0.3 });
     const housingMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
     for (const j of props.jumpers) {
       const g = new THREE.Group();
       const sel = props.selected?.jumper === j.index || j.traced;
       const insul = new THREE.MeshStandardMaterial({ color: new THREE.Color(j.color), roughness: 0.45, emissive: sel ? new THREE.Color(j.color) : new THREE.Color(0), emissiveIntensity: sel ? 0.5 : 0 });
-      const tube = new THREE.Mesh(new THREE.TubeGeometry(jumperCurve(j.a, j.b, j.points, j.rise_mm), 96, 0.8, 10, false), insul);
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(jumperCurve(j.a, j.b, j.points, j.rise_mm, floor), 96, 0.8, 10, false), insul);
       tube.castShadow = true;
       tube.userData = { jumper: j.index };
       g.add(tube);
@@ -582,19 +1059,36 @@ export function Bench3D(props: Bench3DProps) {
     const s = state.current;
     if (!s) return;
     for (const c of [...s.world.children]) {
+      const mats = new Set<THREE.Material>();
       c.traverse((o) => {
         if (o instanceof CSS2DObject) o.element.remove();
-        if (o instanceof THREE.Mesh || o instanceof THREE.Line) o.geometry.dispose();
+        if (o instanceof THREE.Mesh || o instanceof THREE.Line) {
+          o.geometry.dispose();
+          for (const mat of Array.isArray(o.material) ? o.material : [o.material]) mats.add(mat);
+        }
       });
+      for (const mat of mats) mat.dispose();
       s.world.remove(c);
     }
     for (const b of props.bodies ?? []) {
       // bench (x, y, z up) to the scene (x, z up, y towards the viewer)
-      const geom = b.shape === 'sphere' ? new THREE.SphereGeometry(b.size[0] / 2, 32, 16) : new THREE.BoxGeometry(b.size[0], b.size[2], b.size[1]);
-      const m = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#b08d5b'), roughness: 0.85 }));
+      let m: THREE.Object3D;
+      if (isPerson(b)) {
+        // a person, drawn as one; the sensors still see the box
+        m = personFigure(b, {
+          clothes: new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#5a7fa8'), roughness: 0.8 }),
+          legs: new THREE.MeshStandardMaterial({ color: 0x2f3b4f, roughness: 0.85 }),
+          skin: new THREE.MeshStandardMaterial({ color: 0xc69477, roughness: 0.6 }),
+        });
+        m.traverse((o) => { o.userData = { body: b.id }; });
+      } else {
+        const geom = b.shape === 'sphere' ? new THREE.SphereGeometry(b.size[0] / 2, 32, 16) : new THREE.BoxGeometry(b.size[0], b.size[2], b.size[1]);
+        const box = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#b08d5b'), roughness: 0.85 }));
+        box.castShadow = true;
+        box.receiveShadow = true;
+        m = box;
+      }
       m.position.set(b.at[0], b.at[2], b.at[1]);
-      m.castShadow = true;
-      m.receiveShadow = true;
       m.userData = { body: b.id };
       const label = new CSS2DObject(labelElement(b.name ?? b.id));
       label.position.set(0, (b.shape === 'sphere' ? b.size[0] : b.size[2]) / 2 + 8, 0);
@@ -661,6 +1155,36 @@ export function Bench3D(props: Bench3DProps) {
     return () => { for (const marker of markers) { s.hints.remove(marker); marker.geometry.dispose(); (marker.material as THREE.Material).dispose(); } };
   }, [props.traceTerminals, props.terminals, invalidate]);
 
+  // the section plane (after the effects that build what it cuts): the bench's objects on one side of it are cut away; the desk stays whole
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const cut = props.section;
+    let planes: THREE.Plane[] | null = null;
+    if (cut) {
+      const { normal, constant } = sectionPlane(cut);
+      planes = [new THREE.Plane(new THREE.Vector3(...normal), constant)];
+    }
+    s.renderer.localClippingEnabled = planes !== null;
+    const clip = (o: THREE.Object3D) => o.traverse((x) => {
+      const mat = (x as THREE.Mesh).material;
+      for (const m of Array.isArray(mat) ? mat : mat ? [mat] : []) {
+        if (m.clippingPlanes !== planes) { m.clippingPlanes = planes; m.clipShadows = planes !== null; m.needsUpdate = true; }
+      }
+    });
+    for (const e of s.parts.values()) clip(e.built.group);
+    clip(s.jumpers);
+    clip(s.links);
+    clip(s.world);
+    s.clipPlanes = planes;
+    s.quality?.setClipping(planes);
+    s.outline?.setClipping(planes);
+    // the cut faces, capped
+    s.caps?.dispose();
+    s.caps = planes ? capSection([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, s.world], planes[0]!, s.scene, 4000) : null;
+    invalidate();
+  }, [props.section, props.parts, props.jumpers, props.bodies, invalidate]);
+
   // pointer gestures
   useEffect(() => {
     const s = state.current;
@@ -676,14 +1200,56 @@ export function Bench3D(props: Bench3DProps) {
       ray.setFromCamera(ndc, s.camera);
     };
     const onDesk = (): THREE.Vector3 | null => ray.ray.intersectPlane(desk, new THREE.Vector3());
-    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, ...s.world.children.filter((object) => object.userData.body)], true);
+    // a hidden layer is not under the pointer
+    const hitParts = () => ray.intersectObjects([...[...s.parts.values()].filter((e) => e.built.group.visible).map((e) => e.built.group), ...(s.jumpers.visible ? [s.jumpers] : []), ...(s.world.visible ? s.world.children.filter((object) => object.userData.body) : [])], true)
+      .filter((h) => !(h.object instanceof THREE.Sprite) && !(h.object instanceof THREE.Line));
+    // the measure tool: a first point, then a second; the measurement stays until the next one or Esc
+    const measureMark = (at: Vec3, color: number) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 8), new THREE.MeshBasicMaterial({ color, depthTest: false }));
+      m.position.set(...at);
+      m.renderOrder = 20;
+      m.userData.measurement = true;
+      s.inspect.add(m);
+    };
+    const measureAt = () => {
+      const p = propsRef.current;
+      const hit = hitParts()[0];
+      const raw = hit?.point ?? onDesk();
+      if (!raw) return;
+      const { at, snapped } = snapPoint(raw.toArray() as Vec3, p.terminals.map((t) => t.at), 1.5);
+      const done = s.inspect.children.some((c) => c.userData.measurement === 'line');
+      if (!s.measureFrom || done) {
+        for (const child of [...s.inspect.children]) if (child.userData.measurement) { s.inspect.remove(child); disposeTree(child); }
+        s.measureFrom = at;
+        measureMark(at, 0x38bdf8);
+        p.onMeasure?.(null);
+        setFeedback({ text: `From ${at.map((v) => Math.round(v * 100) / 100).join(', ')} mm${snapped ? ' (snapped to a contact)' : ''} · click the second point · Esc clears` });
+      } else {
+        const m = measure(s.measureFrom, at);
+        measureMark(at, 0x38bdf8);
+        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...m.a), new THREE.Vector3(...m.b)]), new THREE.LineBasicMaterial({ color: 0x38bdf8, depthTest: false }));
+        line.renderOrder = 20;
+        line.userData.measurement = 'line';
+        const el = document.createElement('div');
+        el.className = 'eb-measure';
+        el.textContent = describeMeasurement(m);
+        const label = new CSS2DObject(el);
+        label.position.set((m.a[0] + m.b[0]) / 2, (m.a[1] + m.b[1]) / 2 + 2, (m.a[2] + m.b[2]) / 2);
+        label.userData.measurement = true;
+        s.inspect.add(line, label);
+        s.measureFrom = null;
+        p.onMeasure?.(m);
+        setFeedback({ text: describeMeasurement(m) });
+      }
+      invalidate();
+    };
     let routeDrag: { jumper: JumperView; points: Point3[]; index: number; start: Point3[]; moved: boolean } | null = null;
     const routePreview = (j: JumperView, points: Point3[]) => {
       const group = s.jumpers.children.find((g) => g.userData.jumperGroup === j.index);
       const tube = group?.children[0] as THREE.Mesh<THREE.TubeGeometry> | undefined;
       if (!tube) return;
       tube.geometry.dispose();
-      tube.geometry = new THREE.TubeGeometry(jumperCurve(j.a, j.b, points, j.rise_mm), 96, 0.8, 10, false);
+      tube.geometry = new THREE.TubeGeometry(jumperCurve(j.a, j.b, points, j.rise_mm, floorOf(s.parts.values(), s.camera)), 96, 0.8, 10, false);
       for (const child of group!.children) if (typeof child.userData.routePoint === 'number') {
         const point = points[child.userData.routePoint];
         if (point) child.position.copy(v3(point));
@@ -758,6 +1324,10 @@ export function Bench3D(props: Bench3DProps) {
       const hits = hitParts();
       // Route handles are visible overlay controls, so their picking priority
       // matches their depth-independent display even over a component body.
+      if (p.tool === 'measure') {
+        measureAt();
+        return;
+      }
       const hit = p.editable && p.tool === 'select' ? hits.find((h) => h.object.userData.routePoint !== undefined) ?? hits[0] : hits[0];
       const data = (hit?.object.userData ?? {}) as PickData & { jumper?: number; routePoint?: number };
       if (data.routePoint !== undefined && data.jumper !== undefined && p.editable && p.tool === 'select' && p.onRoute) {
@@ -913,10 +1483,16 @@ export function Bench3D(props: Bench3DProps) {
         showMarks(t ? [wire.from.at, t.at] : [wire.from.at]);
         invalidate();
       } else if (p.tool === 'wire' && p.editable) feedbackAt(ev);
+      else if (p.tool === 'measure') el.style.cursor = 'crosshair';
       else {
         const hit = hitParts()[0];
         const data = hit?.object.userData as PickData | undefined;
         el.style.cursor = data?.input && p.live ? 'pointer' : data?.part && p.editable ? 'grab' : 'default';
+        const over = data?.part ?? null;
+        if (over !== s.hover) {
+          s.hover = over;
+          invalidate();
+        }
       }
     };
     const up = (ev: PointerEvent) => {
@@ -1017,10 +1593,24 @@ export function Bench3D(props: Bench3DProps) {
       invalidate();
     };
     const escape = (ev: globalThis.KeyboardEvent) => {
-      if (ev.key === 'Escape') { ev.preventDefault(); cancel(); }
+      if (ev.key !== 'Escape') return;
+      ev.preventDefault();
+      cancel();
+      if (propsRef.current.tool === 'measure') {
+        s.measureFrom = null;
+        for (const child of [...s.inspect.children]) if (child.userData.measurement) { s.inspect.remove(child); disposeTree(child); }
+        propsRef.current.onMeasure?.(null);
+        invalidate();
+      }
     };
     cancelGesture.current = cancel;
-    const leave = () => { if (activePointer === null) setFeedback({ text: '' }); };
+    const leave = () => {
+      if (activePointer === null) setFeedback({ text: '' });
+      if (s.hover) {
+        s.hover = null;
+        invalidate();
+      }
+    };
     const visibility = () => { if (document.hidden) cancel(); };
     const lostCapture = (event: PointerEvent) => { if (event.pointerId === activePointer) cancel(); };
     host.addEventListener('keydown', escape);
@@ -1056,6 +1646,16 @@ export function Bench3D(props: Bench3DProps) {
     if (ev.key === 'f' || ev.key === 'F') {
       frame();
       return;
+    }
+    // KiCad's 3D viewer keys: Z top (shift: bottom), Y front (back), X left (right), I isometric
+    if (!ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      const k = ev.key.toLowerCase();
+      const views: Record<string, [StandardView, StandardView]> = { z: ['top', 'bottom'], y: ['front', 'back'], x: ['left', 'right'], i: ['iso', 'iso'] };
+      if (views[k]) {
+        ev.preventDefault();
+        frame(views[k][ev.shiftKey ? 1 : 0]);
+        return;
+      }
     }
     if ((ev.key === 'Delete' || ev.key === 'Backspace') && p.editable && sel && (sel.part || sel.jumper !== undefined)) {
       ev.preventDefault();
@@ -1094,6 +1694,15 @@ export function Bench3D(props: Bench3DProps) {
     >
       {feedback.x !== undefined && feedback.y !== undefined && <span className="eb-terminal-target" style={{ left: feedback.x, top: feedback.y }} aria-hidden="true" />}
       <div className="eb-connection-feedback" role="status">{feedback.text}</div>
+      {/* a pointer shortcut: its hidden faces cannot be seen, so it is out of the tab order;
+          the View menu and the Z, Y, X and I keys give every view to the keyboard */}
+      <div className="eb-viewcube" aria-hidden="true">
+        <div className="eb-viewcube__cube" ref={cubeRef}>
+          {CUBE_FACES.map((f) => (
+            <button key={f.view} type="button" className="eb-viewcube__face" style={{ transform: f.transform }} tabIndex={-1} data-view={f.view} title={`${f.label} view`} onClick={() => frame(f.view)}>{f.label}</button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

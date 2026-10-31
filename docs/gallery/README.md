@@ -5,6 +5,169 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Moving bodies in the world (2026-10-31)
+
+A body may move in virtual time (a velocity, and a travel to go back and
+forth over): the engine's distance sensors see it where it is, and the
+bench draws it there. The ball before and after 1.5 s of running:
+
+| At the start | After 1.5 s |
+|---|---|
+| ![The ball at the back of the desk](bench-3d-world/1-ball-before.png) | ![The ball nearer](bench-3d-world/2-ball-rolled.png) |
+
+A person (warm, 1.7 m, standing on the floor behind the table) walking past
+the PIR sensor, which sees them as the HC-SR501 would (drawn as the box the
+sensors use):
+
+![A person walking behind the table](bench-3d-world/3-person-walking.png)
+
+The person is now drawn as a person, in an adult's proportions within the
+box the sensors see, facing the way they walk, legs and arms swinging with
+the distance covered:
+
+| Walking behind the table | In stride, from the front |
+|---|---|
+| ![A walking figure beside the table](bench-3d-world/4-person-figure.png) | ![Legs and arms in stride](bench-3d-world/5-person-stride.png) |
+
+## Capped sections (2026-10-31)
+
+A section now shows solid red faces where it cuts a body, as a CAD tool's
+section view does, instead of the body's hollow inside: here the
+breadboard cut along its length (quality render):
+
+![The breadboard cut, its cut face solid](bench-3d-inspect/6-capped-section.png)
+
+## The room around the bench (2026-10-31)
+
+Stage 6 of [the 3D plan](../engineering/bench-3d.md) begins: the bench is the
+top of a 750 mm lab table, with an anti-static mat on it, in a room with a
+window on the left, where the light comes from:
+
+| Zoomed out: the table, the mat, the walls | From the right: the window |
+|---|---|
+| ![The table in its room](bench-3d-room/1-the-room.png) | ![The window in the left wall](bench-3d-room/2-window.png) |
+
+The room is as lit as the world's illuminance says, the value the light
+sensors read. At 0 lx the bench falls dark and the lit LED glows as it does
+in a dark lab:
+
+![The bench in a dark room, the LED glowing](bench-3d-room/3-dark-room.png)
+
+The sun by the time of day: the world says where and when the room is
+(latitude, date, solar time) and which way its window looks. At 48° N at
+noon on 21 December the sun is 18.6° up in the south; through a
+south-facing window it falls on the table and the supply's shadow runs
+away from the window. At night the window is dark and the ceiling lamp
+lights the bench:
+
+| Winter noon: daylight in the window | The low sun's long shadows | Night |
+|---|---|---|
+| ![Daylight in the window](bench-3d-room/4-winter-noon-window.png) | ![Long shadows away from the window](bench-3d-room/5-winter-noon-shadows.png) | ![The window dark at night](bench-3d-room/6-night-window.png) |
+
+The walls, the ceiling and the window's bars stop the sun, so only what
+comes through the window reaches the table. At 38° N at noon in December
+the sun is 28.6° up: the wall above the window shades the far half of the
+table, and the window's patch and its bars' shadows lie on the near half:
+
+| The sunlit patch | From above: lit on the window's side |
+|---|---|
+| ![The window's patch on the table](bench-3d-room/7-sunlit-patch.png) | ![The table half sunlit](bench-3d-room/8-sunlit-patch-top.png) |
+
+## Gull-wing leads, SO breakouts, the NUCLEO's 45° MCUs (2026-10-31)
+
+QFP and SO leads are bent as they are made: out of the body's side, down,
+and a flat foot on the pad. A small-outline part on a breadboard sits on an
+SO-to-DIP breakout, as on a real bench; here the LMV358's VSSOP-8 (0.65 mm
+pitch) with its traces running under the mask to the header holes:
+
+![The VSSOP-8 on its green breakout](bench-3d-gullwing/1-vssop-breakout.png)
+
+The NUCLEO-64's MCUs sit at 45° on the real board (and in its artwork). The
+3D chip used to sit square, the artwork's chip showing at its corners; now
+it turns with the board's picture and carries its marking:
+
+| Before | After |
+|---|---|
+| ![The LQFP-64 square, the artwork's corners showing](bench-3d-gullwing/2-lqfp-square-before.png) | ![The LQFP-64 at 45°, marked STM32F446RET6](bench-3d-gullwing/3-lqfp-45-marked.png) |
+
+An SO-8 MOSFET with three pins (the STS7PF30L) stands on its breakout with
+S, G and D on pins 1, 4 and 5, as its datasheet numbers them:
+
+![The STS7PF30L's SOIC-8 on its breakout](bench-3d-gullwing/4-so8-mosfet-breakout.png)
+
+## Parts from KiCad's 3D models (2026-10-31)
+
+Stage 3 of [the 3D plan](../engineering/bench-3d.md): a part may be drawn
+from a 3D model file. The Bourns 3296W trimmer and the buzzer are KiCad's
+own models, standing on their pins (quality render):
+
+| The 3296W trimmer (P1) | The 12 × 9.5 mm buzzer (BZ) |
+|---|---|
+| ![KiCad's 3296W model, blue with a slotted brass adjuster](bench-3d-models/1-trimmer-kicad.png) | ![KiCad's buzzer model with its sound port](bench-3d-models/2-buzzer-kicad.png) |
+
+## Boards as boards: outline, holes, edge, mask (2026-10-30)
+
+Stage 4's first step: each board's PCB is cut from its artwork's own
+outline, its mounting holes are drilled through with plated barrels and
+rings, its edge is the pale glass-epoxy core, and its top is the artwork
+under a glossy soldermask.
+
+| The Uno before (a box with a picture) | After: the outline's chamfers and step, holes through to the desk |
+|---|---|
+| ![The Uno as a rectangle](bench-3d-pcb/1-uno-before.png) | ![The Uno's real outline and holes](bench-3d-pcb/2-uno-after.png) |
+
+| From the top | The ESP32-C3 DevKit's rounded corners |
+|---|---|
+| ![The Uno from above](bench-3d-pcb/3-uno-top.png) | ![The ESP32-C3 DevKit](bench-3d-pcb/4-esp32c3.png) |
+
+A long jumper (the supply's leads across the desk) used to arch over the
+bench; now it falls from its socket, lies on the desk, and climbs to the
+breadboard, resting on whatever is under it:
+
+| Before | After |
+|---|---|
+| ![Leads arched high above the bench](bench-3d-pcb/0-arched-leads-before.png) | ![Leads draped onto the desk](bench-3d-pcb/5-draped-leads.png) |
+
+The selected part (and the part under the pointer) is outlined as CAD tools
+draw it, and a view cube in the corner turns with the camera:
+
+| The Uno selected | The view cube, isometric |
+|---|---|
+| ![The Uno outlined](bench-3d-pcb/6-selected-outline.png) | ![The cube showing Top, Front and Right](bench-3d-pcb/7-view-cube.png) |
+
+The exploded view lifts the parts plugged into the breadboard off it (the
+breadboard, under the pointer, is outlined):
+
+![The resistor, LED, button and pot above their holes](bench-3d-pcb/8-exploded.png)
+
+## Packages at their standard dimensions (2026-10-30)
+
+Stage 2 of [the 3D plan](../engineering/bench-3d.md): parts drawn from the
+JEDEC and IPC dimension tables, as KiCad's generator draws them.
+
+| The Uno before | After: socket strips with openings and contacts, the DIP-28 in its socket, the USB-B mouth, the barrel jack's bore, the tactile switch |
+|---|---|
+| ![Headers as solid blocks, boxes for the connectors](bench-3d-packages/1-uno-before.png) | ![The same view with the parts as made](bench-3d-packages/2-uno-after.png) |
+
+| DIP-16, electrolytic (stripe, vent), HC-49, TO-220, TO-92, 6 mm switch, LED | ESP32-C3-MINI-1 (shield can, antenna), micro-USB | NUCLEO's LQFP on four sides |
+|---|---|---|
+| ![A row of through-hole packages](bench-3d-packages/3-packages.png) | ![The ESP32-C3 DevKit](bench-3d-packages/4-esp32c3.png) | ![The ST-Link's QFP](bench-3d-packages/5-nucleo-qfp.png) |
+
+## The 3D bench as an inspection viewer (2026-10-30)
+
+`examples/uno-breadboard` at 1440 × 900, the circuit running. These are
+stage 1 of [the 3D plan](../engineering/bench-3d.md): EDA-style views, an
+orthographic camera, sections, a height plane, measurement and a quality
+render.
+
+| Draft render | Quality render (occlusion, bloom on the lit LED) |
+|---|---|
+| ![The bench in the draft render](bench-3d-inspect/1-draft.png) | ![The same view in quality: the blue LED glows](bench-3d-inspect/2-quality.png) |
+
+| Top, orthographic (Z) | Section across Y at 0 mm | Height plane at 12 mm |
+|---|---|---|
+| ![Top orthographic view](bench-3d-inspect/3-top-orthographic.png) | ![The front half of the bench cut away, the desk whole](bench-3d-inspect/4-section.png) | ![The amber plane, with the parts through it boxed in red](bench-3d-inspect/5-height-plane.png) |
+
 ## Schematic labels and empty views (2026-10-28)
 
 The demo session at 1440 × 900, dark theme, before and after. Part type names

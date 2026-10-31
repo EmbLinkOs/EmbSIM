@@ -53,7 +53,7 @@ test('route handles cancel without edits and commit once with exact undo', async
   await expect(page.locator('.eb-bench3d canvas')).toBeVisible({ timeout: 15_000 });
   const list = page.getByRole('complementary', { name: 'On the bench' });
   await list.getByRole('button', { name: /^R2 / }).click();
-  const menu = page.locator('.wb-bench-view-menu summary');
+  const menu = page.locator('.wb-bench-view-menu summary', { hasText: 'View' });
   await menu.click();
   await page.getByRole('button', { name: 'Top', exact: true }).click();
   await menu.click();

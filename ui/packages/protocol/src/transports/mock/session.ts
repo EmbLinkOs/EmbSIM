@@ -645,6 +645,8 @@ function applyEdit(p: Project, edit: ProjectEdit): void {
     }
   } else if ('set_world' in edit) {
     p.world = { ...(p.world ?? {}), ...structuredClone(edit.set_world) };
+    // as the engine: an empty room or sun is none
+    for (const key of ['room', 'sun'] as const) if (p.world[key] && Object.keys(p.world[key]!).length === 0) delete p.world[key];
   } else if ('set_layout' in edit) {
     const e = edit.set_layout;
     if (e.id) {

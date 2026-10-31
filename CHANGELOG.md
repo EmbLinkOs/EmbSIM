@@ -5,6 +5,205 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### People drawn as people
+
+- A warm body of a person's size is drawn as a person (`figure.ts`): an
+  adult's proportions within its box, facing its walk, legs and arms
+  swinging with the distance walked (a 1.5 m stride, so the gait follows
+  virtual time). The sensors still see the box.
+
+### The PIR sensor as the HC-SR501 is
+
+- `emblink/pir_sensor` follows the HC-SR501 and its BISS0001: about a
+  minute's warm-up after power-up, the hold time Tx, the H (retrigger) and
+  L (single trigger) jumper, and the ~2.5 s block after OUT falls, motion
+  still present at its end triggering again.
+- Left unset, its motion comes from the world: a warm body (`warm: true`: a
+  person, an animal) moving within the lens's field of view (110°) and range
+  (up to 7 m), looked at every 100 ms. A cold body moving, or a warm one
+  standing still, is not seen. The World panel adds a person (1.7 m, on the
+  floor) and marks bodies warm.
+
+### Moving bodies in the world
+
+- A world body may move in virtual time: `velocity_mm_s`, and `travel_mm`
+  to go back and forth over that distance (a hand, a door, a cart). The
+  engine moves it as time runs: distance sensors measure it where it is,
+  `world.get` reports where it is now, and recordings replay it exactly.
+  A project's moving bodies run on the project's timeline from 0 (edits say
+  so in the recorded input, `since_ps`); a scenario's or client's start
+  when they are set.
+- NewPing's own example (unmodified) now also watches a wall come towards
+  the HC-SR04 at 40 cm/s: each ping about 2.3 cm nearer, as the sketch's
+  56 ms between pings and the 0 °C air put it.
+- The 3D bench draws a moving body where the engine has it; the World panel
+  sets a body's speed and travel.
+
+### The window's sunlit patch
+
+- The walls, the ceiling and the window's bars cast shadows, and the sun's
+  shadow camera starts outside the room: only a window-shaped patch of the
+  table is sunlit, crossed by the bars' shadows; the rest is in the wall's
+  shade. A lamp or the window's daylight keeps the tight shadow frame on
+  the bench. The edge falls where the geometry puts it (checked at 38° N,
+  December noon: within half a degree of the sun's elevation).
+
+### The GPU's time per frame
+
+- Where the browser exposes GPU timer queries
+  (`EXT_disjoint_timer_query_webgl2`), each frame's GPU time is a second
+  measure (`embsim.bench3d.gpu`), read a few frames later and dropped on a
+  disjoint event; the frame-budget spec reports it beside the CPU's time.
+  Software renderers (SwiftShader in CI) have no timer queries.
+
+### Capped sections
+
+- A section caps what it cuts: each closed body is drawn into the stencil
+  buffer (back faces counting up, front faces down) and a solid face is
+  drawn on the plane where the count is not zero, as a CAD tool's section
+  view shows it.
+- The outline of a selected or hovered part follows the cut (its mask shader
+  takes the section's planes).
+- Fixed: in the quality render, ambient occlusion and the glow drew the
+  bodies a section cuts away (their passes draw the scene with their own
+  materials, which were not clipped), leaving their ghosts on the desk.
+
+### Static batching on the 3D bench
+
+- Once a part is built, its meshes in shared materials no part changes
+  (tin, gold plate, black plastic, the mould) are merged, one mesh per
+  material: the NUCLEO-F446RE goes from 581 meshes (each a draw call, twice
+  with shadows) to 22. Controls, anything with a gesture or hotspot, named
+  meshes and the circuit-driven materials stay separate. On the demo bench
+  the quality render's 95th percentile went from 10.4 to 6.5 ms of CPU time
+  (headless).
+
+### The sun by the time of day, the room from the project
+
+- The world may say the room's size and which way its window looks
+  (`world.room`), and where and when the room is (`world.sun`: latitude,
+  date, local solar time). The World panel edits them (Room and daylight)
+  and says where the sun is and whether it shines on the bench.
+- The 3D bench's key light is the sun when its beam reaches the table
+  through the window (its direction, and a warmer colour when low), soft
+  daylight from the window when it does not, and the ceiling lamp at
+  night; the window shows the sky's brightness. The sun's position is
+  solar geometry (declination and hour angle), within about a degree.
+- Fixed: the camera's far plane stopped at twenty times the framing
+  distance, which cut off the room's far wall and the window's pane when
+  zoomed out.
+
+### The room around the bench, and its frame times
+
+- The 3D bench's surface is the top of a 750 mm lab table, with a
+  1400 x 700 mm anti-static mat on it, in a room with walls, a floor, a
+  ceiling and a window on the left, where the light comes from. A wall
+  between the camera and the table is seen from behind and not drawn.
+- The room is as lit as the world's illuminance (ADR-026): 300 lx as the
+  bench has always looked, a dark room with only the LEDs glowing,
+  brighter in daylight.
+- Each frame of the 3D bench is a User Timing measure
+  (`embsim.bench3d.frame`). `e2e/frame-budget.spec.ts` orbits the demo bench
+  in draft and quality and reports the frames' percentiles against
+  ADR-028's budgets; `EMBSIM_FRAME_BUDGET=enforce` fails the run when the
+  95th percentile is over them.
+
+### Gull-wing leads and small-outline parts
+
+- QFP leads are bent gull wings (MS-026: 1.0 mm to the tip, a 0.6 mm foot)
+  instead of flat strips; QFPs carry their part number as a marking.
+- A part whose datasheet package is SO/SOIC, VSSOP/MSOP or TSSOP (JEDEC
+  MS-012, MO-187, MO-153) is drawn on an SO-to-DIP breakout on its DIP
+  pins, as one is put on a breadboard: the breakout's pin strips, plated
+  rings, pads, traces under the mask, and the package at its real pitch.
+  A part with fewer pins than its package (the STS7PF30L's S, G and D on
+  SO-8 pins 1, 4 and 5) puts each pin at its number's place.
+- A board feature may turn by any angle (the schema took only quarter
+  turns); the NUCLEO-F446RE's two MCUs sit at 45°, as on the board.
+
+### Parts from KiCad's 3D models
+
+- A catalog part may name a 3D model (`bench.model3d` in `component.json`:
+  a VRML file with its scale, offset, rotation, source and licence). The
+  server sends the file with the part, and the 3D bench draws it in place
+  of the built body, on the part's pins. Parsed once, shared by every part
+  that uses it.
+- The Bourns 3296W trimmers and the buzzer use KiCad's models, shipped with
+  KiCad's licence beside them.
+
+### Boards as boards
+
+- A board's PCB on the 3D bench is cut from its artwork's outline, with its
+  mounting holes drilled through (plated barrels and rings), the
+  glass-epoxy core at its edges, and the artwork under a glossy soldermask.
+  The underside takes the mask's colour from the artwork.
+- An exploded view (Inspect, Explode) lifts each part plugged into a
+  breadboard up to 25 mm off it, its legs out of their holes.
+- The selected part, and the part under the pointer, are outlined in both
+  render qualities (drawn after tone mapping, so the outline keeps its
+  colour).
+- A view cube in the bench's corner turns with the camera; a click on a
+  face frames that view (the View menu and the Z, Y, X and I keys give the
+  same views to the keyboard).
+- A jumper spanning 70 mm or more drapes as a Dupont wire does: up out of
+  its socket, down onto the desk (or onto whatever part is under it, never
+  through it), and up to its other end. It used to arch over the bench.
+
+### Packages at their standard dimensions
+
+- The 3D bench draws parts from their standards' dimension tables
+  (`packages3d.ts`):
+  - JEDEC DIPs, with stamped leads landing on their pins, and DIP sockets;
+  - socket and pin header strips with their openings, contacts and posts;
+  - USB-B, micro-USB and USB-C receptacles with their mouths, and a 2.1 mm
+    barrel jack;
+  - 6 mm tactile switches and HC-49/US crystals;
+  - QFP and QFN bodies sized by pin count;
+  - radial electrolytics with the stripe over the negative lead.
+- Boards may place an `rf_module` (a shield can and its antenna area); the
+  ESP32-C3-DevKitM-1's ESP32-C3-MINI-1 is one.
+- A short DIP's marking is drawn at the size of its own top; it was
+  squeezed from a 24 mm plate.
+
+### The 3D bench as an inspection viewer
+
+- `docs/engineering/bench-3d.md`: what Proteus, KiCad and Altium do in 3D,
+  where the bench stands, and seven stages to reach them.
+- Stage 1, all presentation only:
+  - **Views:** Top, Bottom, Front, Back, Left, Right, Isometric and Desk,
+    on KiCad's keys (Z, Y, X with Shift, I), and an orthographic projection.
+  - **Measure tool:** two clicks, snapped to a pin or hole within 1.5 mm,
+    give the distance with Δx, Δy and Δz, and the 2.54 mm pitch count.
+  - **Inspect menu:** a section plane on X, Y or Z, either side kept (the
+    desk stays whole); a height plane that outlines and lists the parts rising
+    through it; layer visibility (boards, breadboards, parts, jumpers, world,
+    labels).
+  - **Quality render:** ground-truth ambient occlusion, bloom only on
+    emissive surfaces, 4× multisampling, finer shadows; it falls back to
+    draft when frames miss 60 Hz.
+  - **Export:** a PNG still at 2× or 4×, and GLB (glTF binary in metres, a
+    node per part).
+  - Projection, quality and layers persist with the other bench preferences.
+
+### I2C parts' captures replayed
+
+- `replay_captures.py` replays I2C: the master's half of SCL and SDA is
+  played back, SDA released in the part's slots, and every bit the part
+  drove (ACKs, bytes read) is compared one for one; another part on the bus
+  is played back as captured. 21 captures of real parts match.
+- `emblink/eeprom_24aa025uid`: Microchip's 24AA025UID, 2 Kbit with 16-byte
+  pages and a write-protected upper half that holds 29h, 41h and a 32-bit
+  serial number; `contents` loads the lower half as a programmer left it.
+  Its 3.5 ms write cycle comes from 19 sigrok captures of a real part, which
+  stopped answering for between 3.10 and 4.03 ms after each write (the
+  datasheet gives only a 5 ms maximum). Page wraps, ACK polling and the
+  serial number all replay bit for bit.
+- The DS3231 takes `start`, the time a clock kept by its battery shows at
+  power-up. Two captures of a DS3231 module replay bit for bit: the ACKs,
+  the time and the temperature.
+- `tools/verify/sigrok.py` reads sigrok 0.2's session files, whose metadata
+  indents some keys.
+
 ### Real parts' captures replayed into their models
 
 - `tools/verify/replay_captures.py` (the `real_captures` test) reads sigrok

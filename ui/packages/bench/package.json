@@ -9,7 +9,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./model": "./src/model.ts",
-    "./renderer": "./src/Bench3D.tsx"
+    "./renderer": "./src/Bench3D.tsx",
+    "./inspect": "./src/inspect.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

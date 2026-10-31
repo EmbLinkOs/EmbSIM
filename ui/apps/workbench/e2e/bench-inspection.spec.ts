@@ -9,7 +9,7 @@ async function openBench(page: Page) {
   await expect(page.locator('.eb-bench3d canvas')).toBeVisible({ timeout: 15_000 });
 }
 async function viewMenu(page: Page) {
-  await page.locator('.wb-bench-view-menu summary').click();
+  await page.locator('.wb-bench-view-menu summary', { hasText: 'View' }).click();
 }
 
 test('inspection preferences persist and the keyboard list remains usable on compact windows', async ({ page }) => {
@@ -19,7 +19,7 @@ test('inspection preferences persist and the keyboard list remains usable on com
   await viewMenu(page);
   // Font metrics can put View at the left of a wrapped row (macOS).
   // Its popup must remain inside the bench, above its own pointer targets.
-  const popup = (await page.locator('.wb-bench-view-menu__body').boundingBox())!;
+  const popup = (await page.locator('.wb-bench-view-menu[open] .wb-bench-view-menu__body').boundingBox())!;
   const bounds = (await page.locator('.wb-bench').boundingBox())!;
   expect(popup.x).toBeGreaterThanOrEqual(bounds.x);
   expect(popup.x + popup.width).toBeLessThanOrEqual(bounds.x + bounds.width);

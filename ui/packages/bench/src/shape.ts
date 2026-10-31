@@ -16,7 +16,7 @@ export type ShapePackage = BenchPackage | 'virtual';
 
 /** a physical component on a board's PCB (SPEC-006 §4): a socket, a chip, a button, an LED */
 export interface BoardFeature {
-  kind: 'usb_b' | 'usb_micro' | 'usb_c' | 'barrel_jack' | 'dip' | 'qfp' | 'qfn' | 'button' | 'crystal' | 'led' | 'box';
+  kind: 'usb_b' | 'usb_micro' | 'usb_c' | 'barrel_jack' | 'dip' | 'qfp' | 'qfn' | 'button' | 'crystal' | 'led' | 'rf_module' | 'box';
   at: [number, number];
   size?: [number, number, number];
   rotation?: number;
@@ -32,6 +32,10 @@ export interface BoardBench {
   standoff_mm?: number;
   headers?: 'female' | 'male' | 'none';
   features?: BoardFeature[];
+  /** from the artwork: the PCB's outline (mm from its top-left corner), its soldermask colour, its plated holes */
+  outline?: [number, number][];
+  mask?: string;
+  holes?: { at: [number, number]; r: number }[];
 }
 
 export interface BenchShape {
@@ -49,8 +53,51 @@ export interface BenchShape {
   led?: LedBody;
   /** the artwork is the body's top face (modules, boards) */
   textured?: boolean;
+  /** a small-outline part drawn on its SO-to-DIP breakout (the DIP's pins are the breakout's) */
+  smallOutline?: SmallOutline;
   /** a distance sensor's beam: from `at` along `dir`, mm, x right, y towards the viewer, z up */
   sense?: { at?: [number, number, number]; dir?: [number, number, number] };
+}
+
+/** a small-outline package's dimensions (mm), nominal, from its JEDEC outline */
+export interface SmallOutline {
+  /** the outline's name: "SOIC" (MS-012), "VSSOP" (MO-187, TI's DGK), "TSSOP" (MO-153) */
+  kind: 'SOIC' | 'VSSOP' | 'TSSOP';
+  pins: number;
+  pitch: number;
+  /** the body: length along the rows (D), width across them (E1), height above the board (A) */
+  length: number;
+  width: number;
+  height: number;
+  /** the standoff (A1) */
+  standoff: number;
+  /** tip to tip across the rows (E) */
+  span: number;
+  /** a lead's width (b), thickness (c) and foot (L) */
+  lead: number;
+  thickness: number;
+  foot: number;
+}
+
+/** the small-outline package a part's datasheet names ("SO-8", "SOIC-14", "VSSOP-8", "TSSOP-20"), or undefined */
+export function smallOutline(name: string | undefined): SmallOutline | undefined {
+  const m = /^(SO|SOIC|VSSOP|MSOP|TSSOP)-?(\d+)$/i.exec((name ?? '').trim());
+  if (!m) return undefined;
+  const pins = Number(m[2]);
+  if (pins < 4 || pins % 2) return undefined;
+  const kind = m[1]!.toUpperCase();
+  if (kind === 'SO' || kind === 'SOIC') {
+    // MS-012: 3.90 mm body, 6.00 mm span, 1.27 mm pitch; D 4.90 (8), 8.65 (14), 9.90 (16)
+    const length = pins <= 8 ? 4.9 : pins <= 14 ? 8.65 : pins <= 16 ? 9.9 : (pins / 2) * 1.27 + 0.6;
+    return { kind: 'SOIC', pins, pitch: 1.27, length, width: 3.9, height: 1.55, standoff: 0.15, span: 6.0, lead: 0.41, thickness: 0.2, foot: 0.84 };
+  }
+  if (kind === 'VSSOP' || kind === 'MSOP') {
+    // MO-187 (TI DGK): 3.00 x 3.00 mm body, 4.90 mm span, 0.65 mm pitch, 1.1 mm high
+    return { kind: 'VSSOP', pins, pitch: 0.65, length: (pins / 2) * 0.65 + 0.4, width: 3.0, height: 1.0, standoff: 0.1, span: 4.9, lead: 0.3, thickness: 0.15, foot: 0.55 };
+  }
+  // MO-153: 4.40 mm body, 6.40 mm span, 0.65 mm pitch; D 3.0 (8), 5.0 (14, 16), 6.5 (20)
+  const length = pins <= 8 ? 3.0 : pins <= 16 ? 5.0 : pins <= 20 ? 6.5 : (pins / 2) * 0.65 + 0.4;
+  return { kind: 'TSSOP', pins, pitch: 0.65, length, width: 4.4, height: 1.1, standoff: 0.1, span: 6.4, lead: 0.25, thickness: 0.15, foot: 0.6 };
 }
 
 export function isSurfaceMount(shape: BenchShape): boolean {
@@ -239,6 +286,71 @@ export function artworkAnchors(svg: string, widthMm: number, heightMm: number): 
   return out;
 }
 
+/**
+ * What a board's artwork says of its PCB: the outline (the `pcb` path, or
+ * the `#pcb` rectangle with its rounded corners), the soldermask's colour
+ * (the `.pcb` rule's fill) and the plated mounting holes (`.mount` circles,
+ * whose radius is the pad's), in mm from the top-left corner.
+ */
+export function artworkBoard(svg: string, widthMm: number, heightMm: number): Pick<BoardBench, 'outline' | 'mask' | 'holes'> {
+  const vb = /viewBox\s*=\s*"([\d.\-\s]+)"/.exec(svg)?.[1]?.trim().split(/\s+/).map(Number);
+  if (!vb || vb.length !== 4 || !vb[2] || !vb[3]) return {};
+  const sx = widthMm / vb[2];
+  const sy = heightMm / vb[3];
+  const mm = (x: number, y: number): [number, number] => [round((x - vb[0]!) * sx), round((y - vb[1]!) * sy)];
+  const out: Pick<BoardBench, 'outline' | 'mask' | 'holes'> = {};
+  const fill = /\.pcb\s*\{[^}]*fill:\s*(#[0-9a-fA-F]{6})/.exec(svg)?.[1];
+  if (fill) out.mask = fill;
+  const path = /<path\b[^>]*class="pcb"[^>]*\bd="([^"]+)"/.exec(svg)?.[1] ?? /<path\b[^>]*\bd="([^"]+)"[^>]*class="pcb"/.exec(svg)?.[1];
+  if (path) {
+    // absolute M, L, H, V and Z, as the artworks draw outlines
+    const pts: [number, number][] = [];
+    let x = 0;
+    let y = 0;
+    const tokens = path.match(/[MLHVZ]|-?[\d.]+/gi) ?? [];
+    let cmd = 'M';
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i]!;
+      if (/^[MLHVZ]$/i.test(t)) { cmd = t.toUpperCase(); continue; }
+      if (cmd === 'H') x = Number(t);
+      else if (cmd === 'V') y = Number(t);
+      else { x = Number(t); y = Number(tokens[++i]); }
+      pts.push(mm(x, y));
+    }
+    if (pts.length >= 3) out.outline = pts;
+  } else {
+    const rect = /<rect\b[^>]*\bid="pcb"[^>]*>/.exec(svg)?.[0];
+    const num = (k: string) => Number(new RegExp(`\\b${k}="(-?[\\d.]+)"`).exec(rect ?? '')?.[1] ?? NaN);
+    if (rect && Number.isFinite(num('width'))) {
+      const [x0, y0, w, h] = [num('x') || 0, num('y') || 0, num('width'), num('height')];
+      const r = Number.isFinite(num('rx')) ? num('rx') : 0;
+      const pts: [number, number][] = [];
+      const corner = (cx: number, cy: number, a0: number) => {
+        for (let k = 0; k <= 6; k++) {
+          const a = a0 + (k / 6) * (Math.PI / 2);
+          pts.push(mm(cx + r * Math.cos(a), cy + r * Math.sin(a)));
+        }
+      };
+      corner(x0 + w - r, y0 + r, -Math.PI / 2);
+      corner(x0 + w - r, y0 + h - r, 0);
+      corner(x0 + r, y0 + h - r, Math.PI / 2);
+      corner(x0 + r, y0 + r, Math.PI);
+      out.outline = pts;
+    }
+  }
+  const holes: { at: [number, number]; r: number }[] = [];
+  const re = /<circle\b[^>]*class="mount"[^>]*>/g;
+  for (let m = re.exec(svg); m; m = re.exec(svg)) {
+    const a = m[0];
+    const cx = Number(/\bcx="(-?[\d.]+)"/.exec(a)?.[1]);
+    const cy = Number(/\bcy="(-?[\d.]+)"/.exec(a)?.[1]);
+    const r = Number(/\br="([\d.]+)"/.exec(a)?.[1]);
+    if ([cx, cy, r].every(Number.isFinite)) holes.push({ at: mm(cx, cy), r: round(r * sx) });
+  }
+  if (holes.length) out.holes = holes;
+  return out;
+}
+
 /** a description's pins by the anchor names (lower case) the artwork uses */
 function fromAnchors(names: string[], anchors: Record<string, [number, number]>): Record<string, [number, number]> | null {
   const pins: Record<string, [number, number]> = {};
@@ -267,6 +379,8 @@ export function benchShape(desc: Desc, params?: Record<string, unknown>, artwork
     : shape.textured && names.length > 0 && names.every((name) => anchors[name.toLowerCase()]) ? 'artwork' : 'approximate';
   const sense = (desc.bench as { sense?: BenchShape['sense'] } | undefined)?.sense;
   if (sense) shape.sense = sense;
+  const so = smallOutline((desc as { part?: { package?: string } }).part?.package);
+  if (so && shape.package === 'dip' && Object.keys(shape.pins).length <= so.pins) shape.smallOutline = so;
   return shape;
 }
 
@@ -286,10 +400,21 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     const size: [number, number, number] = artMm ? [artMm[0], artMm[1], 1.6] : [68.6, 53.3, 1.6];
     const ports = Object.keys(desc.ports ?? {});
     const pins = fromAnchors(ports, anchors) ?? header(ports, size[0], size[1]);
-    const board = (desc as { bench?: BoardBench }).bench;
+    const own = (desc as { bench?: BoardBench }).bench;
+    const board = artwork && artMm ? { ...own, ...artworkBoard(artwork, artMm[0], artMm[1]) } : own;
     return { package: 'board', size, pins, textured: true, label: desc.name, board };
   }
   if (VIRTUAL.has(short)) return { package: 'virtual', size: [1, 1, 1], pins: {} };
+  // a small-outline part whose pins are fewer than its package's (an SO-8 MOSFET: S on 1 to 3,
+  // G on 4, D on 5 to 8): each pin at its number's place on the breakout's DIP pins
+  const so = smallOutline((desc as { part?: { package?: string } }).part?.package);
+  const numbered = (desc.pins ?? []).every((p) => typeof p.number === 'number' && p.number >= 1 && p.number <= (so?.pins ?? 0));
+  if (so && numbered && names.length < so.pins) {
+    const slots = Array.from({ length: so.pins }, (_, i) => `#${i + 1}`);
+    for (const p of desc.pins ?? []) slots[(p.number as number) - 1] = p.name;
+    const { size, pins } = dipPins(slots, 7.62);
+    return { package: 'dip', size, pins: Object.fromEntries(Object.entries(pins).filter(([n]) => !n.startsWith('#'))), label: desc.name.split(' ')[0] };
+  }
   const box = BOXES[short];
   if (box) {
     // binding posts along the front, 0.3 in apart when they fit

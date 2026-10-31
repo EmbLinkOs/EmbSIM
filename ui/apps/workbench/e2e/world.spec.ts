@@ -32,3 +32,25 @@ test('the world: declare the room, add a body, undo', async ({ page }) => {
   await expect(world).not.toContainText('Box 1');
   await expect(temperature).not.toBeChecked();
 });
+
+test('the room and the daylight: the sun by the time of day, said in words, undone', async ({ page }) => {
+  await page.goto('/?mock=1');
+  await expect(page.getByRole('application', { name: 'Schematic canvas' })).toBeVisible();
+  await page.getByRole('tab', { name: 'World' }).click();
+  const daylight = page.getByRole('region', { name: 'Room and daylight' });
+  await expect(daylight).toBeVisible();
+  const sun = daylight.getByRole('checkbox', { name: 'Sun' });
+  await expect(sun).not.toBeChecked();
+  await expect(daylight).toContainText('lamp');
+  await sun.click();
+  await expect(sun).toBeChecked();
+  // 45° N on 21 June at 10:00 solar time, the window looking south
+  await expect(daylight.getByTestId('sun-report')).toContainText(/Sun \d+° up in the (south-east|east)/);
+  await daylight.getByRole('combobox', { name: 'The window looks' }).selectOption('0');
+  await expect(daylight.getByTestId('sun-report')).toContainText('no direct sun on the bench');
+  // undo is the workbench's, not the select's: leave the form first
+  await daylight.getByRole('heading', { name: 'Room and daylight' }).click();
+  await page.keyboard.press('Control+z');
+  await page.keyboard.press('Control+z');
+  await expect(sun).not.toBeChecked();
+});

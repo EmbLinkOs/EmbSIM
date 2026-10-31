@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "scenario",
   "name": "NewPingExample",
-  "until": "2600ms",
+  "until": "3600ms",
   "inputs": [
     {
       "at": "500ms",
@@ -89,6 +89,32 @@
       "target": "world",
       "input": "temperature",
       "value": 0
+    },
+    {
+      "at": "2600ms",
+      "target": "world.wall",
+      "input": "body",
+      "value": {
+        "id": "wall",
+        "name": "A wall",
+        "shape": "box",
+        "at": [
+          0,
+          -1005,
+          100
+        ],
+        "size": [
+          2000,
+          10,
+          1000
+        ],
+        "velocity_mm_s": [
+          0,
+          400,
+          0
+        ],
+        "travel_mm": 600
+      }
     }
   ],
   "assertions": [
@@ -133,6 +159,22 @@
       }
     },
     {
+      "id": "approaching",
+      "at": "2800ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Ping: 105cm\r\nPing: 104cm\r\nPing: 101cm\r\nPing: 99cm\r\n"
+      }
+    },
+    {
+      "id": "approached",
+      "at": "3600ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Ping: 69cm\r\nPing: 66cm\r\nPing: 64cm\r\n"
+      }
+    },
+    {
       "id": "clean",
       "always": true,
       "diagnostics": {
@@ -144,5 +186,5 @@
       }
     }
   ],
-  "description": "NewPing's NewPingExample, unmodified, pinging every 50 ms at a wall moved in front of the sensor (ADR-026): the HC-SR04 measures the world, its beam meeting the wall's face. At 100 cm in air at 20 C the echo is 5824 us, which NewPing (57 us per cm, truncated) prints as 102 cm; at 30 cm, 1747 us, 30 cm; at 250 cm, past the sketch's 200 cm maximum, and at 1 cm, under the module's 2 cm (its 38 ms timeout), 0; at 100 cm with the room at 0 C, where sound is slower (331.3 m/s), 6037 us, 105 cm."
+  "description": "NewPing's NewPingExample, unmodified, pinging every 50 ms at a wall moved in front of the sensor (ADR-026): the HC-SR04 measures the world, its beam meeting the wall's face. At 100 cm in air at 20 C the echo is 5824 us, which NewPing (57 us per cm, truncated) prints as 102 cm; at 30 cm, 1747 us, 30 cm; at 250 cm, past the sketch's 200 cm maximum, and at 1 cm, under the module's 2 cm (its 38 ms timeout), 0; at 100 cm with the room at 0 C, where sound is slower (331.3 m/s), 6037 us, 105 cm. Then the wall comes towards the sensor at 40 cm/s (a moving body in the world, in virtual time): each ping about 2.3 cm nearer, 40 cm/s over the sketch's ~56 ms between pings, read 3.5 % long in the 0 C air."
 }

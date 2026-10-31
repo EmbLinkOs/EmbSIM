@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "captures",
+  "part": "Maxim DS3231",
+  "provenance": {
+    "source": "https://github.com/sigrokproject/sigrok-dumps (i2c/rtc_dallas_ds3231)",
+    "commit": "0ad13477abc959d37fc9a5acbd23901c371c9c76",
+    "license": "public domain (sigrok-dumps README: 'Unless noted otherwise, all dump files are hereby released into the public domain by their authors')",
+    "setup": "a DS3231 module (with an EEPROM at 0x50, played back as captured) in 24-hour mode, a Geeetech FX2 board at 4 MHz on SCL and SDA (README.sigrok)"
+  },
+  "cases": [
+    {
+      "name": "ds3231_ex1",
+      "capture": "ds3231_ex1.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/ds3231",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "addresses": [
+        "0x68"
+      ],
+      "protocol": "i2c",
+      "lead_s": 0.3,
+      "params": {
+        "start": "2020-09-07 14:05:53"
+      },
+      "inputs": [
+        {
+          "input": "temperature",
+          "value": 25.0
+        }
+      ],
+      "history": [
+        {
+          "transaction": 2,
+          "why": "the control register as set before the capture (1Fh: alarm interrupts enabled; power-on is 1Ch)"
+        },
+        {
+          "transaction": 5,
+          "why": "the status register as left before the capture (08h: OSF cleared earlier)"
+        }
+      ],
+      "doc": "read and write the control and status registers, set both alarms, read the time (the clock set before the capture: start) and the temperature"
+    },
+    {
+      "name": "ds3231_ex2",
+      "capture": "ds3231_ex2.sr",
+      "channel": [
+        0,
+        1
+      ],
+      "part": "emblink/ds3231",
+      "pins": {
+        "scl": "SCL",
+        "sda": "SDA"
+      },
+      "addresses": [
+        "0x68"
+      ],
+      "protocol": "i2c",
+      "lead_s": 0.3,
+      "params": {
+        "start": "2020-09-07 13:56:00"
+      },
+      "inputs": [
+        {
+          "input": "temperature",
+          "value": 24.0
+        }
+      ],
+      "history": [
+        {
+          "transaction": 2,
+          "why": "the status register with A2F set by the alarm armed before the capture (0Ah)"
+        }
+      ],
+      "doc": "after alarm 2: read and clear the status register's flag, read the time and the temperature"
+    }
+  ]
+}

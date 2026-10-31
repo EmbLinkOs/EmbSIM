@@ -122,6 +122,9 @@
     "sources": [
       {
         "title": "Murata PKM / TDK PS series piezo buzzer datasheets"
+      },
+      {
+        "title": "3D model: KiCad's Buzzer_12x9.5RM7.6.wrl (CC-BY-SA 4.0 with KiCad's exception), kicad-3d/"
       }
     ]
   },
@@ -144,5 +147,13 @@
   },
   "tests": [
     "tests/*.json"
-  ]
+  ],
+  "bench": {
+    "model3d": {
+      "file": "kicad-3d/Buzzer_12x9.5RM7.6.wrl",
+      "scale": 2.54,
+      "source": "KiCad library kicad-packages3D at b8b3cfd (2020-10-02, GitHub mirror of gitlab.com/kicad/libraries/kicad-packages3D): Buzzer_Beeper.3dshapes/Buzzer_12x9.5RM7.6.wrl",
+      "license": "CC-BY-SA 4.0 with KiCad's design exception (kicad-3d/LICENSE.md); shipped as a separate file with its attribution (ADR-029)"
+    }
+  }
 }

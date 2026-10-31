@@ -28,8 +28,9 @@
 --   - the temperature: converted at power-up and every 64 s, or when CONV
 --     is set (BSY and CONV set for the 125 ms conversion), in 0.25 C
 --     steps, two's complement;
---   - power-on: time 00:00:00, 01/01/00, day 1; control 0x1C, status 0x88
---     (OSF set: the oscillator was stopped; EN32kHz); RST held low 250 ms;
+--   - power-on: time 00:00:00, 01/01/00 (or `start`, the time a clock kept
+--     by its battery shows), day 1; control 0x1C, status 0x88 (OSF set: the
+--     oscillator was stopped; EN32kHz); RST held low 250 ms;
 --     below 2.3 V on VCC no answer.
 --
 -- Not modelled: the battery (VBAT) switchover and timekeeping on battery
@@ -245,8 +246,16 @@ local function power_on(ctx)
   for a = 0, 0x12 do s.reg[a] = 0 end
   s.reg[0x0E], s.reg[0x0F] = 0x1C, 0x88
   s.period = period(ctx)
-  s.t0, s.base, s.mode12, s.dow, s.dow_day = 0, ctx.now(), false, 1, 0
-  s.buf = time_regs(s, 0)
+  local y, mo, d, h, mi, se = string.match(ctx.params.start or "2000-01-01 00:00:00",
+    "^(%d+)-(%d+)-(%d+)[ T](%d+):(%d+):(%d+)$")
+  if not y then error("start must look like 2026-01-01 00:00:00") end
+  y, mo, d = tonumber(y), tonumber(mo), tonumber(d)
+  if y < 2000 or y > 2199 or mo < 1 or mo > 12 or d < 1 or d > 31 then
+    error("start: the DS3231 counts from 2000 to 2199")
+  end
+  local t = days(y, mo, d) * 86400 + tonumber(h) * 3600 + tonumber(mi) * 60 + tonumber(se)
+  s.t0, s.base, s.mode12, s.dow, s.dow_day = t, ctx.now(), false, 1, t // 86400
+  s.buf = time_regs(s, t)
   s.ptr = 0
   convert(ctx)
   s.next_auto = ctx.now() + 64 * PS

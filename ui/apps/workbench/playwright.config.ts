@@ -19,6 +19,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
     launchOptions: preinstalled ? { executablePath: preinstalled } : {},
   },
+  // the frame-time harness orbits the bench for tens of seconds; where the bench renders on the
+  // CPU (CI's SwiftShader) that would slow every spec running beside it, so it runs alone, last
+  projects: [
+    { name: 'workbench', testIgnore: /frame-budget\.spec\.ts/ },
+    { name: 'frame-budget', testMatch: /frame-budget\.spec\.ts/, dependencies: ['workbench'] },
+  ],
   webServer: {
     command: 'pnpm exec vite preview --port 4173 --strictPort --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',
