@@ -30,7 +30,7 @@ jobs:
           - { name: linux-gcc,   os: ubuntu-24.04, preset: ci-gcc }
           - { name: linux-clang, os: ubuntu-24.04, preset: ci-clang }
           - { name: linux-tcc,   os: ubuntu-24.04, preset: ci-tcc }
-          - { name: macos-clang, os: macos-14,     preset: ci-clang }
+          - { name: macos-clang, os: macos-15,     preset: ci-clang }
           - { name: windows-msvc, os: windows-2022, preset: ci-msvc }
           - { name: linux-asan,  os: ubuntu-24.04, preset: asan }
     steps:
@@ -247,7 +247,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-14, windows-2022]
+        os: [ubuntu-24.04, macos-15, windows-2022]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@v4
@@ -282,7 +282,7 @@ jobs:
       matrix:
         include:
           - { os: ubuntu-24.04, bundles: 'deb,appimage' }
-          - { os: macos-14, bundles: 'dmg' }
+          - { os: macos-15, bundles: 'dmg' }
           - { os: windows-2022, bundles: 'msi' }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

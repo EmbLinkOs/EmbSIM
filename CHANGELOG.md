@@ -54,6 +54,12 @@ versions follow semantic versioning. There is no release yet.
   still asserted when its handler returns is pending again.
 - A model can serve its peripheral's reserved ranges (an OTG core's FIFO
   windows); RCC gives the 48 MHz clock (`esk_stm32f4_ck48`).
+### CI on macOS 15
+
+- The macOS jobs (core with Apple Clang, workbench smoke, desktop bundle)
+  run on GitHub's `macos-15` image: `macos-14` is in scheduled brownouts
+  and is retired on 2 November 2026 (actions/runner-images#13518).
+
 ### The PIR's lens
 
 - `emblink/pir_sensor` now sees through its Fresnel lens's view cones
