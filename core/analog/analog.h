@@ -107,6 +107,9 @@ void esk_island_touch(esk_island *isl, es_time_t now);
 /* integrate a lagging island up to `now` with its sources as they are, so
  * that its voltages are now's (a quiet one is already) */
 void esk_island_sync(esk_island *isl, es_time_t now);
+/* a watched pin may cross its threshold within `ahead` of the island's
+ * accepted time, on its last two solutions' slope */
+int esk_island_may_cross(esk_island *isl, es_time_t ahead);
 /* a component wake for its analog device (a device with a clock of its own,
  * as a PTC fuse's temperatures) */
 void esk_adev_on_time(esk_adev *d, es_time_t now);

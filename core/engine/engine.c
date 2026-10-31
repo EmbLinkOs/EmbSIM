@@ -1145,12 +1145,15 @@ static void island_step_cb(void *ctx, void *arg, es_time_t now)
              * (esk_island_touch), so only its readings and crossings may
              * come that late */
             es_time_t lag = h < ISLAND_LAG_PS ? h : ISLAND_LAG_PS, at;
+            if (esk_island_may_cross(isl, lag))
+                goto step; /* a crossing may come: it must come on time */
             if (esk_time_add(now, lag, &at))
                 at = ES_TIME_MAX - 1;
             schedule_island(e, isl, at);
             return;
         }
     }
+step:
     st = esk_island_step(isl, until, &reached);
     if (st != ES_OK) {
         isl->failed = 1;
