@@ -750,7 +750,7 @@ static const esk_model_ops *const digital_table[] = {
     &wire_ops, &none_ops, &buffer_ops, &inverter_ops, &and_ops, &nand_ops, &or_ops, &nor_ops, &xor_ops, &xnor_ops,
     &tristate_ops, &dff_ops, &clock_ops, &pulse_ops, &level_ops, &pull_ops, &button_ops, &switch_ops,
     &indicator_ops, &rgb_indicator_ops, &probe_ops, &vt_ops, &hc_ops, &esk_wifi_ap_ops, &esk_ble_scanner_ops, &esk_web_server_ops, &esk_wifi_scanner_ops, &esk_air_sniffer_ops, &esk_usb_host_ops,
-    &esk_ble_central_ops
+    &esk_ble_central_ops, &esk_logic_analyzer_ops
 };
 
 const esk_model_ops *const *esk_digital_models(size_t *n)

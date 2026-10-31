@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pulse-seen-faster",
+  "description": "The same 5 ns pulses sampled at 50 MS/s (every 20 ns): every fifth 50 ns pulse holds a sample, so the capture holds changes.",
+  "policy": "functional",
+  "until": "20us",
+  "circuit": {
+    "components": [
+      {
+        "id": "CLK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "20meg",
+          "duty": 0.1,
+          "td": "10n"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/saleae_logic8",
+        "params": {
+          "sample_rate": "50meg",
+          "duration": "10u"
+        }
+      }
+    ],
+    "nets": {
+      "C": [
+        "CLK.OUT",
+        "DUT.D0"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.transitions": {
+      "at": "20us",
+      "min": 100
+    }
+  }
+}

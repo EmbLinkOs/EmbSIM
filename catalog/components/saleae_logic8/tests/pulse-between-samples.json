@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "pulse-between-samples",
+  "description": "A 5 ns pulse every 50 ns, starting 10 ns after each 50 ns mark, sampled at 1 MS/s (every 1 us, on the 50 ns marks): no sample falls in a pulse, so the capture holds only the start's record.",
+  "policy": "functional",
+  "until": "60us",
+  "circuit": {
+    "components": [
+      {
+        "id": "CLK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "20meg",
+          "duty": 0.1,
+          "td": "10n"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/saleae_logic8",
+        "params": {
+          "sample_rate": "1meg",
+          "duration": "50u"
+        }
+      }
+    ],
+    "nets": {
+      "C": [
+        "CLK.OUT",
+        "DUT.D0"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.transitions": {
+      "at": "60us",
+      "equals": 1
+    },
+    "output:DUT.state": {
+      "at": "60us",
+      "equals": "done"
+    }
+  }
+}

@@ -17,6 +17,7 @@ import type {
   DurationString,
   InputEntry,
   Instruction,
+  LogicCapture,
   Layout,
   ObserveUpdate,
   Peripheral,
@@ -116,6 +117,10 @@ export interface Methods {
   'probe.read': {
     params: { probe: string; from_ps?: PsString; to_ps?: PsString; max?: number };
     result: { samples: [PsString, number][]; gap?: boolean; dropped?: number; kind?: ProbeKind };
+  };
+  'instrument.read': {
+    params: { part: string; since?: number; max?: number };
+    result: LogicCapture;
   };
   /** SPEC-008 gives `{stream}`; the 0.1 server answers `{streams: [...], encoding}`. */
   'waveform.subscribe': { params: { probes: string[]; max_rate_hz?: number }; result: { stream?: string | number; streams?: (string | number)[]; encoding?: string } };
@@ -254,6 +259,7 @@ export const METHOD_NAMES = [
   'probe.remove',
   'probe.list',
   'probe.read',
+  'instrument.read',
   'waveform.subscribe',
   'waveform.unsubscribe',
   'observe.snapshot',

@@ -156,10 +156,20 @@ static int fixture_to_run(esk_alloc *a, const esk_json *fx, esk_json **proj_out,
         char id[16];
         int analog = esk_json_get(e, "min_v") || esk_json_get(e, "max_v");
         int digital = esk_json_get(e, "logic") || esk_json_get(e, "edges");
-        if (!probe || !as || !ex) {
+        if (!probe || !as || !ex || !e || e->type != ESK_JSON_OBJECT) {
+            /* an expectation is an object of a time selector and checks (an
+             * array of several is not a fixture's form): the fixture fails */
+            int malformed = probe && as && ex;
             esk_json_free(a, probe);
             esk_json_free(a, as);
             esk_json_free(a, ex);
+            if (malformed) {
+                esk_json_free(a, proj);
+                esk_json_free(a, scen);
+                esk_json_free(a, probes);
+                esk_json_free(a, asserts);
+                return -1;
+            }
             continue;
         }
         esk_snprintf(id, sizeof id, "e%u", (unsigned)i);

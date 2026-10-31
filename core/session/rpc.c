@@ -5,6 +5,7 @@
 #include "session/session_priv.h"
 #include "mcu/analysis.h"
 #include "mcu/mcu.h"
+#include "model/registry.h"
 #include <stdlib.h>
 #include <string.h>
 #include "host/host.h"
@@ -592,6 +593,24 @@ static es_status m_probe_read(rpc_ctx *r)
     esk_json_set_integer(r->s->a, r->result, "dropped", (int64_t)p->dropped);
     esk_json_set_string(r->s->a, r->result, "kind", p->kind == ESK_PROBE_DIGITAL ? "digital" : p->kind == ESK_PROBE_ANALOG ? "analog" : "value");
     return ES_OK;
+}
+
+/* an instrument part's capture (a logic analyzer's transitions) since a sequence number */
+static es_status m_instrument_read(rpc_ctx *r)
+{
+    const char *part = pstr(r, "part", NULL);
+    esk_comp *c = part ? esk_engine_comp(&r->s->eng, part) : NULL;
+    int64_t since = esk_json_get_int(r->params, "since", 0), max = esk_json_get_int(r->params, "max", 0);
+    es_status st;
+    if (!c)
+        return fail_status(r, ES_ENOTFOUND);
+    r->result = obj(r);
+    if (!r->result)
+        return ES_ENOMEM;
+    st = esk_logic_analyzer_read(c, since > 0 ? (uint64_t)since : 0, max > 0 ? (size_t)max : 0, r->result);
+    if (st == ES_EINVAL)
+        return fail(r, -32602, "this part is not an instrument with a capture");
+    return st;
 }
 
 static es_status m_waveform_subscribe(rpc_ctx *r)
@@ -1321,7 +1340,7 @@ static const method methods[] = {
     { "port.open", m_port_open }, { "port.close", m_port_close }, { "port.list", m_port_list },
     { "input.set", m_input_set }, { "input.press", m_input_press }, { "input.release", m_input_release },
     { "input.serial", m_input_serial }, { "input.list", m_input_list },
-    { "probe.add", m_probe_add }, { "probe.remove", m_probe_remove }, { "probe.list", m_probe_list }, { "probe.read", m_probe_read },
+    { "probe.add", m_probe_add }, { "probe.remove", m_probe_remove }, { "probe.list", m_probe_list }, { "probe.read", m_probe_read }, { "instrument.read", m_instrument_read },
     { "waveform.subscribe", m_waveform_subscribe }, { "waveform.unsubscribe", m_waveform_unsubscribe },
     { "observe.snapshot", m_observe_snapshot }, { "observe.subscribe", m_observe_subscribe }, { "observe.unsubscribe", m_observe_unsubscribe },
     { "catalog.list", m_catalog_list }, { "catalog.get", m_catalog_get }, { "catalog.libraries", m_catalog_libraries },
