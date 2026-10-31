@@ -318,6 +318,15 @@ typedef struct esk_mach_host {
     void (*usb_changed)(void *ctx);
     /* it signals remote wakeup (K on the suspended bus) */
     void (*usb_remote_wakeup)(void *ctx);
+    /* the chip's USB controller as a host (an OTG core in host mode): the
+     * pull-up of the device on its cable (engine/usb.h's ESK_USB_DETACHED,
+     * _FULL_SPEED, _LOW_SPEED), the bus states it drives and its
+     * transactions, answered as engine/usb.h says */
+    int (*usbh_pullup)(void *ctx);
+    void (*usbh_bus)(void *ctx, int ev, u32 frame);
+    int (*usbh_setup)(void *ctx, int addr, int ep, const u8 data[8]);
+    int (*usbh_out)(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len);
+    int (*usbh_in)(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1);
 } esk_mach_host;
 
 enum { ESK_RADIO_WIFI = 1, ESK_RADIO_BLE = 2 };
@@ -346,6 +355,10 @@ struct esk_usb_port {
     int (*setup)(void *ctx, int addr, int ep, const u8 data[8]);
     int (*out)(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len);
     int (*in)(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1);
+    /* as a host: the device on its cable changed its pull-up, or signals
+     * remote wakeup on the suspended bus */
+    void (*host_changed)(void *ctx);
+    void (*host_wakeup)(void *ctx);
 };
 
 /* ---- the machine ---------------------------------------------------------- */
