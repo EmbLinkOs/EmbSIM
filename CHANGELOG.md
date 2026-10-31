@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Parts from KiCad's 3D models
+
+- A catalog part may name a 3D model (`bench.model3d` in `component.json`:
+  a VRML file with its scale, offset, rotation, source and licence). The
+  server sends the file with the part, and the 3D bench draws it in place
+  of the built body, on the part's pins. Parsed once, shared by every part
+  that uses it.
+- The Bourns 3296W trimmers and the buzzer use KiCad's models, shipped with
+  KiCad's licence beside them.
+
 ### Boards as boards
 
 - A board's PCB on the 3D bench is cut from its artwork's outline, with its

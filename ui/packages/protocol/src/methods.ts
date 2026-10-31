@@ -165,7 +165,7 @@ export interface Methods {
   'catalog.list': { params: { kind?: string; category?: string; query?: string }; result: { items: CatalogItem[] } };
   'catalog.get': {
     params: { id: string; version?: string };
-    result: { description: ComponentDescription; files: { symbol?: string; artwork?: string } };
+    result: { description: ComponentDescription; files: { symbol?: string; artwork?: string; model3d?: string } };
   };
   'catalog.validate': { params: { path: string }; result: { ok: boolean; diagnostics: DiagnosticRecord[] } };
   'catalog.libraries': { params: Record<string, never>; result: { libraries: { path: string; name: string; version: string; items: number }[] } };

@@ -33,6 +33,7 @@ import {
   type Bench3DHandle,
   type Bench3DProps,
   type BenchPartView,
+  type Model3d,
   type BenchTool,
   type InsertionPreview,
 } from '@embsim/bench/model';
@@ -76,6 +77,14 @@ function webglAvailable(): boolean {
   } catch {
     return false;
   }
+}
+
+/** a part's 3D model from its catalog entry (bench.model3d), with the file's text the server sent */
+function modelOf(entry: { description: unknown; files: { model3d?: string } } | undefined): Model3d | undefined {
+  const text = entry?.files.model3d;
+  if (!text) return undefined;
+  const m = (entry.description as { bench?: { model3d?: { scale?: number; offset_mm?: [number, number, number]; rotation_deg?: number } } }).bench?.model3d;
+  return { text, scale: m?.scale, offset_mm: m?.offset_mm, rotation_deg: m?.rotation_deg };
 }
 
 /** a board's artwork bindings: its LEDs' glow from their luminance, its buttons */
@@ -207,6 +216,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         place: part.place,
         elevation: elevationOf(model, part.id),
         artwork: svg ? { svg, states: bindings.states, hotspots: bindings.hotspots, vars: ledColor(inst.params) } : undefined,
+        model3d: modelOf(entry),
         inputs: own,
         outputs: outs,
       };

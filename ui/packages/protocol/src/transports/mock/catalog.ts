@@ -91,7 +91,7 @@ const artworks: Record<string, string> = {
 </svg>`,
 };
 
-type Entry = { description: ComponentDescription; files: { symbol?: string; artwork?: string } };
+type Entry = { description: ComponentDescription; files: { symbol?: string; artwork?: string; model3d?: string } };
 
 function fid(functional: string, timed: string, electrical: string, omissions: string[] = []) {
   return {

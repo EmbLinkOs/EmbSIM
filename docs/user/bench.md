@@ -58,6 +58,15 @@ These work as an EDA tool's 3D viewer does
   - **GLB model** saves the bench as glTF binary, in metres, each part a node
     named by its id, for Blender or an MCAD tool.
 
+### Parts drawn from 3D models
+
+Some parts are drawn from a 3D model file instead of the bench's own body:
+the Bourns 3296W trimmers and the buzzer use KiCad's models. A trimmer's
+adjuster still turns with a drag (the model's screw does not rotate). A
+library part can do the same by naming a VRML file in its
+`component.json` (`bench.model3d`, with its source and licence); if the file
+does not load, the bench draws its own body.
+
 Projection, quality and layers persist on this device. Section, height plane
 and measurement are cleared when the page reloads.
 

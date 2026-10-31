@@ -12,6 +12,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature } from './shape';
+import { modelBody, type Model3d } from './models3d';
 import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, socketStrip, tactileSwitch, usbB } from './packages3d';
 
 export interface PartLook {
@@ -20,6 +21,8 @@ export interface PartLook {
   params?: Record<string, unknown>;
   /** the artwork's live picture for the top face, when it has one */
   texture?: THREE.Texture;
+  /** a 3D model from a file, drawn instead of the body built here (stage 3) */
+  model3d?: Model3d;
 }
 
 /** objects a pointer can act on carry what they are in userData */
@@ -884,9 +887,32 @@ export function buildPart(id: string, shape: BenchShape, look: PartLook): Built 
     default:
       built = { group: box(shape), pinTop: shape.size[2] + 4 };
   }
+  if (look.model3d) drawModel(built, shape, look.model3d, id);
   built.group.traverse((o) => {
     if (!o.userData.part) o.userData = { ...o.userData, part: id } satisfies PickData;
   });
   built.group.name = id;
   return built;
+}
+
+/**
+ * The model from the catalog in place of the built body, its origin on the
+ * first pin. A control (a trimmer's adjuster) keeps working: every mesh of
+ * the model takes the gesture, and the control becomes an unseen stand-in
+ * (the model's own adjuster does not turn).
+ */
+function drawModel(built: Built, shape: BenchShape, model: Model3d, id: string): void {
+  const first = Object.values(local(shape))[0] ?? [0, 0];
+  const body = modelBody(model, first);
+  if (!body) return; // the file did not parse: the built body stays
+  const gesture = built.control ? (built.control.userData as PickData) : undefined;
+  for (const child of [...built.group.children]) if (!(child instanceof THREE.Light) && !(child instanceof THREE.Sprite)) built.group.remove(child);
+  built.group.add(body);
+  if (gesture?.input) {
+    body.traverse((o) => { o.userData = { part: id, input: gesture.input, gesture: gesture.gesture } satisfies PickData; });
+    const proxy = new THREE.Object3D();
+    proxy.userData = { ...gesture };
+    built.group.add(proxy);
+    built.control = proxy;
+  }
 }

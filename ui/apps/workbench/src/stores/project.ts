@@ -15,7 +15,7 @@ import { diffProject } from './projectDiff';
 
 export interface CatalogEntry {
   description: ComponentDescription;
-  files: { symbol?: string; artwork?: string };
+  files: { symbol?: string; artwork?: string; model3d?: string };
 }
 
 const VALUE_PARAM: Record<string, string> = {

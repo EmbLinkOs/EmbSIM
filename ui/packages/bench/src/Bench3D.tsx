@@ -29,6 +29,7 @@ import type { InsertionPreview } from './layout';
 import type { Beam } from './world';
 import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, sectionPlane, snapPoint, viewPose, type BenchLayers, type Measurement, type Section, type StandardView, type Vec3 } from './inspect';
 import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
+import type { Model3d } from './models3d';
 
 
 
@@ -42,6 +43,8 @@ export interface BenchPartView {
   /** the height of the surface it stands on (a breadboard's top, or the desk) */
   elevation: number;
   artwork?: { svg: string; states?: ArtworkState[]; hotspots?: Hotspot[]; vars?: Record<string, string> };
+  /** a 3D model from the catalog drawn instead of the built body (bench.model3d) */
+  model3d?: Model3d;
   inputs?: Record<string, unknown>;
   outputs?: Record<string, OutputValue>;
 }
@@ -268,7 +271,9 @@ function deskTexture(surface: 'mat' | 'paper' | 'graphite' = 'mat'): THREE.Canva
 }
 
 function partKey(v: BenchPartView): string {
-  return JSON.stringify([v.component, v.params ?? {}, v.shape, v.artwork?.svg ?? '']);
+  // a model's text is long: its length and placement stand for it (the catalog's files do not change under a part)
+  const m = v.model3d;
+  return JSON.stringify([v.component, v.params ?? {}, v.shape, v.artwork?.svg ?? '', m ? [m.text.length, m.scale, m.offset_mm, m.rotation_deg] : null]);
 }
 
 function labelElement(text: string): HTMLDivElement {
@@ -663,7 +668,7 @@ export function Bench3D(props: Bench3DProps) {
         }
         const surface = v.artwork && v.shape.textured ? new ArtworkSurface(v.artwork.svg, v.shape.size[0], v.shape.size[1], v.artwork.states, v.artwork.hotspots, v.artwork.vars) : undefined;
         if (surface) surface.onDraw = invalidate;
-        const built = buildPart(v.id, v.shape, { component: v.component, params: v.params, texture: surface?.texture });
+        const built = buildPart(v.id, v.shape, { component: v.component, params: v.params, texture: surface?.texture, model3d: v.model3d });
         const label = new CSS2DObject(labelElement(v.label));
         const top = new THREE.Box3().setFromObject(built.group).max.y;
         const labelGap = Math.min(14, Math.max(1.5, Math.max(v.shape.size[0], v.shape.size[1]) * 0.15));

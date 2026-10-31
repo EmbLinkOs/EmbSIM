@@ -958,6 +958,49 @@
               "maximum": 30
             }
           }
+        },
+        "model3d": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "source",
+            "license"
+          ],
+          "description": "A 3D model drawn instead of the body the bench builds (docs/engineering/bench-3d.md, stage 3): a VRML file beside the description, placed so its legs land on the pins. Its licence and source are recorded here (ADR-029).",
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "\\.wrl$",
+              "description": "The model's file, relative to the description (VRML 2.0, as KiCad's library ships)."
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Millimetres per model unit (KiCad's VRML: 2.54)."
+            },
+            "offset_mm": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              },
+              "description": "Where the model's origin goes, mm from the part's centre: x right, y towards the viewer, z up."
+            },
+            "rotation_deg": {
+              "type": "number",
+              "description": "A turn about the vertical, degrees, after the model is stood Z-up."
+            },
+            "source": {
+              "type": "string",
+              "description": "Where the model comes from (its library, file and revision)."
+            },
+            "license": {
+              "type": "string",
+              "description": "The model's licence."
+            }
+          }
         }
       }
     },

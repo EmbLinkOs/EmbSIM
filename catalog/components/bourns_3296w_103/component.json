@@ -168,6 +168,9 @@
         "title": "Bourns 3296 reference; manufacturer PDF review pending",
         "url": "https://www.bourns.com/docs/product-datasheets/3296.pdf",
         "notes": "End numbering and wiper follow ECAD convention; verify mechanical orientation before transferring to hardware."
+      },
+      {
+        "title": "3D model: KiCad's Potentiometer_Bourns_3296W_Vertical.wrl (CC-BY-SA 4.0 with KiCad's exception), kicad-3d/"
       }
     ]
   },
@@ -179,5 +182,14 @@
     "manufacturer": "Bourns",
     "package": "3296W through-hole",
     "datasheet": "https://www.bourns.com/docs/product-datasheets/3296.pdf"
+  },
+  "bench": {
+    "model3d": {
+      "file": "kicad-3d/Potentiometer_Bourns_3296W_Vertical.wrl",
+      "scale": 2.54,
+      "source": "KiCad library kicad-packages3D at b8b3cfd (2020-10-02, GitHub mirror of gitlab.com/kicad/libraries/kicad-packages3D): Potentiometer_THT.3dshapes/Potentiometer_Bourns_3296W_Vertical.wrl",
+      "license": "CC-BY-SA 4.0 with KiCad's design exception (kicad-3d/LICENSE.md); shipped as a separate file with its attribution (ADR-029)",
+      "rotation_deg": 180
+    }
   }
 }

@@ -5,6 +5,22 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Parts from KiCad's 3D models (2026-10-31)
+
+Stage 3 of [the 3D plan](engineering/bench-3d.md) has begun. A catalog part
+may name a 3D model file (`bench.model3d`: a VRML file, its scale, offset,
+rotation, source and licence). The server sends the file with the part
+(`catalog.get`'s `files.model3d`), and the bench draws the model in place of
+the body it builds, its origin on the part's first pin. The Bourns 3296W
+trimmers and the buzzer use KiCad's models (CC-BY-SA 4.0 with KiCad's
+design exception, each a separate file with its licence, ADR-029).
+
+Evidence: `models3d.test.ts` (the legs of each model on its pins; a wrong
+turn fails; an unreadable file keeps the built body; Phong to physical
+materials) and the gallery. Not yet: glTF models, models for the other
+parts, and GPU instancing (parts share a model's geometry and materials,
+but each is drawn on its own).
+
 ## Boards as boards (2026-10-30)
 
 Stage 4 of [the 3D plan](engineering/bench-3d.md) has begun. Every board's

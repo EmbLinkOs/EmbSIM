@@ -703,6 +703,18 @@ static es_status m_catalog_get(rpc_ctx *r)
             }
         }
     }
+    {
+        /* a 3D model from a file (bench.model3d.file): text, as KiCad's VRML is */
+        const char *rel = esk_json_get_str(esk_json_get(esk_json_get(it->desc, "bench"), "model3d"), "file", NULL);
+        if (rel) {
+            size_t len;
+            char *text = esk_catalog_read_item_file(r->s->catalog, it, rel, &len);
+            if (text) {
+                esk_json_set_string(r->s->a, files, "model3d", text);
+                esk_free(r->s->catalog->a, text, len + 1);
+            }
+        }
+    }
     esk_json_object_set(r->s->a, r->result, "files", files);
     return ES_OK;
 }

@@ -123,6 +123,25 @@ Exit:
 - A loader caches models and instances repeated parts, so one model serves
   a hundred LEDs.
 
+Done (first step):
+- `bench.model3d` in `component.json` names a VRML file beside the part,
+  with its scale, offset, rotation, source and licence (the schema requires
+  the last two). KiCad's VRML is loaded directly (three.js's VRMLLoader,
+  MIT), so no conversion step is needed yet; glTF stays the plan for models
+  from other sources.
+- `catalog.get` returns the file's text as `files.model3d`; the bench stands
+  the model up (KiCad is Z-up in 2.54 mm units, origin at pad 1), puts its
+  origin on the part's first pin, and draws it instead of the built body. A
+  control (a trimmer's adjuster) keeps its gesture. Phong materials become
+  physical ones: a grey with a bright, tight specular is metal.
+- Each file is parsed once; every part using it shares its geometry and
+  materials.
+- The Bourns 3296W trimmers (10 kΩ and 100 kΩ) and the 12 × 9.5 mm buzzer
+  use KiCad's models, copied with KiCad's licence beside them.
+- `models3d.test.ts`: each model's legs stand in its pins' holes (a turn of
+  180° fails it), a file that does not parse keeps the built body, and the
+  material conversion.
+
 ### Stage 4: boards as boards (the stack-up)
 
 - From the board's artwork:
