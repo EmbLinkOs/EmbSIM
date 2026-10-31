@@ -5,6 +5,14 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The GPU's time per frame
+
+- Where the browser exposes GPU timer queries
+  (`EXT_disjoint_timer_query_webgl2`), each frame's GPU time is a second
+  measure (`embsim.bench3d.gpu`), read a few frames later and dropped on a
+  disjoint event; the frame-budget spec reports it beside the CPU's time.
+  Software renderers (SwiftShader in CI) have no timer queries.
+
 ### Capped sections
 
 - A section caps what it cuts: each closed body is drawn into the stencil

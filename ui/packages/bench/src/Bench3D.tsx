@@ -30,7 +30,7 @@ import type { Beam } from './world';
 import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, sectionPlane, snapPoint, viewPose, type BenchLayers, type Measurement, type Section, type StandardView, type Vec3 } from './inspect';
 import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
 import type { Model3d } from './models3d';
-import { recordFrame } from './frames';
+import { GpuTimer, recordFrame } from './frames';
 import { capSection, type Caps } from './caps';
 import { buildRoom, lightLevel, ROOM, windowOpening, type Room, type RoomSize } from './room';
 import { dayOfYear, solarPosition, sunColor, sunDirection, sunlit } from './sun';
@@ -377,6 +377,8 @@ export function Bench3D(props: Bench3DProps) {
     caps?: Caps | null;
     /** the section's planes, for the renderers' own passes */
     clipPlanes?: THREE.Plane[] | null;
+    /** the GPU's time per frame, where the browser can tell it */
+    gpu?: GpuTimer;
     sky: THREE.HemisphereLight;
     sun: THREE.DirectionalLight;
     labels: CSS2DRenderer;
@@ -410,6 +412,8 @@ export function Bench3D(props: Bench3DProps) {
     if (!s || s.raf) return;
     s.raf = requestAnimationFrame(() => {
       s.raf = 0;
+      s.gpu?.poll();
+      s.gpu?.begin();
       const t0 = performance.now();
       s.controls.update();
       // the selected part, and the part under the pointer, are outlined
@@ -437,7 +441,9 @@ export function Bench3D(props: Bench3DProps) {
         } else s.renderer.render(s.scene, s.camera);
       } else s.renderer.render(s.scene, s.camera);
       s.labels.render(s.scene, s.camera);
-      recordFrame(t0, s.quality ? 'quality' : s.outline && outlined.length ? 'outline' : 'draft');
+      const mode = s.quality ? 'quality' : s.outline && outlined.length ? 'outline' : 'draft';
+      recordFrame(t0, mode);
+      s.gpu?.end(mode);
       // the view cube turns with the camera: the scene's rotation seen from the camera, y down as CSS has it
       if (cubeRef.current) cubeRef.current.style.transform = cubeTransform(s.camera.matrixWorldInverse);
     });
@@ -625,7 +631,7 @@ export function Bench3D(props: Bench3DProps) {
     const inspect = new THREE.Group();
     scene.add(jumpers, links, notes, world, hints, preview, inspect);
     state.current = {
-      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, room, roomSize: ROOM, sky, sun, parts: new Map(), jumpers, links, notes, world, hints, preview,
+      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, room, roomSize: ROOM, gpu: renderer.capabilities.isWebGL2 ? new GpuTimer(renderer.getContext() as WebGL2RenderingContext) : undefined, sky, sun, parts: new Map(), jumpers, links, notes, world, hints, preview,
       inspect, quality: null, outline: null, hover: null, measureFrom: null, raf: 0, framed: false,
     };
 

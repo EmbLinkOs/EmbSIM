@@ -5,6 +5,15 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## GPU frame times (2026-10-31)
+
+`GpuTimer` (`frames.ts`) times each frame on the GPU where the browser
+exposes `EXT_disjoint_timer_query_webgl2`, as the measure
+`embsim.bench3d.gpu`; the frame-budget spec reports it. Evidence:
+`frames.test.ts` (results read in order once available, a disjoint event
+discards them, no extension does nothing). CI's SwiftShader has no timer
+queries, so the GPU column is measured only on real GPUs.
+
 ## Capped sections (2026-10-31)
 
 A section's cut faces are capped (`caps.ts`): stencil helpers per closed
@@ -56,8 +65,8 @@ Stage 7's harness: each frame's render is a User Timing measure, and
 bench in draft and quality (headless SwiftShader: draft p95 about 3 ms,
 quality p95 about 4.5 ms of CPU time). The time is the CPU's (the GPU's
 work is asynchronous, so it is a lower bound); CI reports it, and
-`EMBSIM_FRAME_BUDGET=enforce` judges it on a machine with a GPU. Not yet: GPU
-timer queries, instancing and level of detail.
+`EMBSIM_FRAME_BUDGET=enforce` judges it on a machine with a GPU. GPU timer queries
+followed (below); not yet: instancing and level of detail.
 
 ## Gull-wing leads and small-outline parts (2026-10-31)
 

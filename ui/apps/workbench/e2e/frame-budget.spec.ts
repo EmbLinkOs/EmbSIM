@@ -10,7 +10,7 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { BUDGET_120_MS, BUDGET_60_MS, FRAME_MEASURE, meets, summarize, type FrameSummary } from '../../../packages/bench/src/frames';
+import { BUDGET_120_MS, BUDGET_60_MS, FRAME_MEASURE, GPU_MEASURE, meets, summarize, type FrameSummary } from '../../../packages/bench/src/frames';
 
 const enforce = process.env.EMBSIM_FRAME_BUDGET === 'enforce';
 
@@ -56,7 +56,9 @@ test('frame times while orbiting the bench, draft and quality, against ADR-028',
   await page.waitForTimeout(500);
   const quality = summarize(await orbit(page, 60, 'quality'));
 
-  const report = [row('draft', draft), row('quality', quality)].join('\n');
+  // the GPU's own time, where the browser exposes timer queries (not SwiftShader)
+  const gpu = await page.evaluate((name) => performance.getEntriesByName(name).map((e) => e.duration), GPU_MEASURE);
+  const report = [row('draft', draft), row('quality', quality), gpu.length ? row('gpu', summarize(gpu)) : 'gpu      no timer queries in this browser (CPU time only)'].join('\n');
   console.log(`\n${report}${enforce ? '' : '\n(reported, not judged: set EMBSIM_FRAME_BUDGET=enforce on a GPU)'}`);
   await info.attach('frame-times', { body: JSON.stringify({ draft, quality, budgets: { draft: BUDGET_120_MS, quality: BUDGET_60_MS } }, null, 2), contentType: 'application/json' });
   mkdirSync('test-results', { recursive: true });

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
 import { describe, expect, it } from 'vitest';
-import { BUDGET_120_MS, BUDGET_60_MS, FRAME_MEASURE, meets, recordFrame, summarize } from './frames';
+import { BUDGET_120_MS, BUDGET_60_MS, FRAME_MEASURE, GpuTimer, meets, recordFrame, summarize } from './frames';
 
 describe('frame times', () => {
   it('summarizes by nearest rank and counts the frames over each budget', () => {
@@ -27,5 +27,52 @@ describe('frame times', () => {
     const [m] = performance.getEntriesByName(FRAME_MEASURE);
     expect(m?.duration).toBeGreaterThanOrEqual(2);
     expect((m as PerformanceMeasure).detail).toEqual({ mode: 'draft' });
+  });
+});
+
+describe('GPU frame times', () => {
+  function fakeGl(ext: boolean) {
+    const results = new Map<object, { available: boolean; ns: number }>();
+    let disjoint = false;
+    let n = 0;
+    const gl = {
+      QUERY_RESULT_AVAILABLE: 1, QUERY_RESULT: 2,
+      getExtension: () => (ext ? { TIME_ELAPSED_EXT: 10, GPU_DISJOINT_EXT: 11 } : null),
+      createQuery: () => { const q = { id: n++ }; results.set(q, { available: false, ns: 0 }); return q; },
+      beginQuery: () => undefined,
+      endQuery: () => undefined,
+      deleteQuery: (q: object) => results.delete(q),
+      getParameter: () => disjoint,
+      getQueryParameter: (q: object, p: number) => (p === 1 ? results.get(q)!.available : results.get(q)!.ns),
+    };
+    return { gl: gl as unknown as WebGL2RenderingContext, results, setDisjoint: (d: boolean) => { disjoint = d; } };
+  }
+
+  it('reads each frame\'s query once the GPU has its result, in order', () => {
+    const { gl, results } = fakeGl(true);
+    const t = new GpuTimer(gl);
+    expect(t.available).toBe(true);
+    t.begin(); t.end('draft');
+    t.begin(); t.end('draft');
+    expect(t.poll()).toEqual([]); // not ready yet
+    const [a, b] = [...results.keys()];
+    results.set(b!, { available: true, ns: 3e6 });
+    expect(t.poll()).toEqual([]); // the first is still pending: results come in order
+    results.set(a!, { available: true, ns: 5e6 });
+    expect(t.poll()).toEqual([5, 3]);
+    expect(results.size).toBe(0);
+  });
+
+  it('drops the queries a disjoint event spoiled, and does nothing without the extension', () => {
+    const { gl, results, setDisjoint } = fakeGl(true);
+    const t = new GpuTimer(gl);
+    t.begin(); t.end('quality');
+    setDisjoint(true);
+    expect(t.poll()).toEqual([]);
+    expect(results.size).toBe(0);
+    const none = new GpuTimer(fakeGl(false).gl);
+    expect(none.available).toBe(false);
+    none.begin(); none.end('draft');
+    expect(none.poll()).toEqual([]);
   });
 });

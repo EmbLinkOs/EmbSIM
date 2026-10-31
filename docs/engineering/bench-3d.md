@@ -206,8 +206,9 @@ measure (`frames.ts`); `e2e/frame-budget.spec.ts` orbits the demo bench in
 draft and quality and reports p50/p95/p99 and the share of frames over
 8.3 and 16.7 ms, enforcing the 95th percentile with
 `EMBSIM_FRAME_BUDGET=enforce` (CI renders on the CPU, so it reports only).
-The time is the CPU's; a GPU timer query
-(`EXT_disjoint_timer_query_webgl2`) would add the GPU's.
+The time is the CPU's; GPU timer queries
+(`EXT_disjoint_timer_query_webgl2`) add the GPU's where the browser has them
+(`GpuTimer`, done 2026-10-31).
 
 Done (2026-10-31): static batching per part (`batch.ts`): the meshes in the
 shared static materials merged, one per material (the NUCLEO: 581 to 22
