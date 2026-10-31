@@ -32,7 +32,9 @@ followed, above.) Bodies then walk paths (`path_mm`, `speed_mm_s`, `loop`):
 round a loop or there and back, in the engine and drawn the same way
 (`test_world.py` and `world-motion.test.ts` check a walker on a 1 m square at
 1 m/s at (1000, 500) after 1.5 s and home after 4 s, and one on an open path
-half a metre back after 2.5 s).
+half a metre back after 2.5 s). Shadows reach the floor: the shadow map
+follows what the camera shows (`shadowfit.test.ts`), the shell shades only
+the sun (`room.test.ts`), and the gallery shows the lamp's and the sun's.
 
 ## The window's sunlit patch (2026-10-31)
 

@@ -194,8 +194,10 @@ size and window direction (`world.room`) and the sun by latitude, date and
 solar time (`world.sun`, `sun.ts`): the key light is the sun when its beam
 reaches the table through the window, window daylight when not, the lamp at
 night. Then the window's patch: walls, ceiling and bars cast shadows from a
-sun whose shadow camera starts outside the room. Still to do: floor
-shadows, physics.
+sun whose shadow camera starts outside the room. Then floor shadows: the
+shadow map is framed on what the camera shows (`shadowfit.ts`), tight on
+the bench close in and the whole room standing back, the shell shading
+only the sun. Still to do: physics.
 
 ### Stage 7: performance and qualification
 

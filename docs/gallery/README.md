@@ -35,6 +35,17 @@ back the way it came; here a person walks round the table at 1.2 m/s
 
 ![A person walking round the table](bench-3d-world/6-walking-round.png)
 
+Shadows now reach the floor: the key light's shadow map is framed on what
+the camera shows, tight on the bench close in and taking in the room
+standing back. Under the lamp the person and the table shade the floor; in
+the winter sun the window's whole patch, bars and all, lies across the
+floor with the table's and the person's shadows in it (before, it stopped
+at the edge of a 2 m frame):
+
+| Under the lamp | In the sun through the window |
+|---|---|
+| ![The person and the table shading the floor](bench-3d-world/7-floor-shadows-lamp.png) | ![The window's patch across the floor](bench-3d-world/8-floor-shadows-sun.png) |
+
 ## Capped sections (2026-10-31)
 
 A section now shows solid red faces where it cuts a body, as a CAD tool's

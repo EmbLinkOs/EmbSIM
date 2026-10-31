@@ -33,7 +33,8 @@ import type { Model3d } from './models3d';
 import { GpuTimer, recordFrame } from './frames';
 import { isPerson, personFigure } from './figure';
 import { capSection, type Caps } from './caps';
-import { buildRoom, lightLevel, ROOM, windowOpening, type Room, type RoomSize } from './room';
+import { buildRoom, lightLevel, ROOM, shellShadows, windowOpening, type Room, type RoomSize } from './room';
+import { fitShadow } from './shadowfit';
 import { dayOfYear, solarPosition, sunColor, sunDirection, sunlit } from './sun';
 
 
@@ -324,6 +325,46 @@ function setOrthoFrustum(cam: THREE.OrthographicCamera, half: number, aspect: nu
 }
 
 /** the height of the bench's top under a point: what a draped wire rests on (the parts, not the wires) */
+/**
+ * Frames the key light's shadow map on what the camera shows (`fitShadow`): tight on the bench close
+ * in, taking in the floor (a person's shadow as they walk round the table) standing back.
+ */
+function frameShadow(s: {
+  key?: { dir: THREE.Vector3; outside: boolean; fit?: string };
+  sun: THREE.DirectionalLight;
+  camera: THREE.Camera;
+  perspective: THREE.PerspectiveCamera;
+  orthographic: THREE.OrthographicCamera;
+  controls: { target: THREE.Vector3 };
+  roomSize: RoomSize;
+}): void {
+  if (!s.key) return;
+  const aspect = Math.max(1, s.perspective.aspect);
+  const seen = s.camera === s.orthographic
+    ? ((s.orthographic.top - s.orthographic.bottom) / 2 / s.orthographic.zoom) * aspect
+    : s.camera.position.distanceTo(s.controls.target) * Math.tan(THREE.MathUtils.degToRad(s.perspective.fov / 2)) * aspect;
+  const f = fitShadow(seen, s.controls.target.toArray() as [number, number, number], s.key.outside, s.roomSize);
+  const id = `${f.half}|${f.centre.map((c) => Math.round(c / 50)).join(',')}|${s.key.outside}|${s.key.dir.toArray().join(',')}`;
+  if (s.key.fit === id) return;
+  s.key.fit = id;
+  const cam = s.sun.shadow.camera;
+  cam.left = -f.half;
+  cam.right = f.half;
+  cam.top = f.half;
+  cam.bottom = -f.half;
+  cam.near = f.near;
+  cam.far = f.far;
+  cam.updateProjectionMatrix();
+  // the bias is in the shadow camera's depth range: the same 0.6 mm either way; a coarser map
+  // (standing back) also leans off surfaces by half a texel
+  s.sun.shadow.bias = -0.6 / (cam.far - cam.near);
+  s.sun.shadow.normalBias = f.half > 1000 ? (f.half * 2) / s.sun.shadow.mapSize.x / 2 : 0;
+  const c = new THREE.Vector3(...f.centre);
+  s.sun.target.position.copy(c);
+  s.sun.target.updateMatrixWorld();
+  s.sun.position.copy(c).addScaledVector(s.key.dir, f.reach);
+}
+
 function floorOf(parts: Iterable<{ built: Built }>, camera: THREE.Camera): (x: number, z: number) => number {
   const objects = [...parts].map((e) => e.built.group).filter((g) => g.visible);
   const ray = new THREE.Raycaster();
@@ -406,6 +447,8 @@ export function Bench3D(props: Bench3DProps) {
     preview: THREE.Group;
     raf: number;
     framed: boolean;
+    /** the key light's direction (towards it) and whether it shines from outside the room */
+    key?: { dir: THREE.Vector3; outside: boolean; fit?: string };
   } | null>(null);
 
   const invalidate = useCallback(() => {
@@ -417,6 +460,7 @@ export function Bench3D(props: Bench3DProps) {
       s.gpu?.begin();
       const t0 = performance.now();
       s.controls.update();
+      frameShadow(s);
       // the selected part, and the part under the pointer, are outlined
       const outlined = [...new Set([propsRef.current.selected?.part, s.hover])]
         .map((id) => (id ? s.parts.get(id)?.built.group : undefined))
@@ -703,6 +747,7 @@ export function Bench3D(props: Bench3DProps) {
     s.room.dispose();
     s.roomSize = { width: roomW, depth: roomD, height: roomH };
     s.room = buildRoom(s.roomSize);
+    shellShadows(s.room, s.key?.outside ?? false);
     s.scene.add(s.room.group);
     invalidate();
   }, [roomW, roomD, roomH, invalidate]);
@@ -748,22 +793,10 @@ export function Bench3D(props: Bench3DProps) {
     // the frame's bars and the ceiling cast their shadows and only a window-shaped patch is sunlit;
     // it then covers the whole table. A lamp or the window's daylight is inside the room, framed
     // tight on the bench for crisp shadows of its small parts.
-    const outside = lighting === 'sun';
-    const reach = outside ? Math.hypot(s.roomSize.width, s.roomSize.depth, s.roomSize.height) : 520;
-    const v = new THREE.Vector3(...key.dir).normalize().multiplyScalar(reach);
-    const cam = s.sun.shadow.camera;
-    const half = outside ? 1000 : 400;
-    cam.left = -half;
-    cam.right = half;
-    cam.top = half;
-    cam.bottom = -half;
-    cam.near = outside ? 50 : 0.5;
-    cam.far = outside ? reach * 1.6 : 1500;
-    cam.updateProjectionMatrix();
-    // the bias is in the shadow camera's depth range: the same 0.6 mm either way
-    s.sun.shadow.bias = -0.6 / (cam.far - cam.near);
-    s.sun.position.copy(v);
-    s.sun.target.position.set(0, 0, 0);
+    // The frame follows what the camera shows (frameShadow, each frame).
+    s.key = { dir: new THREE.Vector3(...key.dir).normalize(), outside: lighting === 'sun' };
+    shellShadows(s.room, s.key.outside);
+    frameShadow(s);
     s.sun.color.setRGB(...key.color);
     s.sun.intensity = key.intensity * k;
     s.renderer.domElement.dataset.lighting = lighting;

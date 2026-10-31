@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Shadows on the floor
+
+- The key light's shadow map is framed on what the camera shows
+  (`shadowfit.ts`): tight on the bench close in (crisp shadows of a part's
+  legs, as before), widening in steps to the room standing back, so a
+  person walking round the table and the table itself shade the floor, and
+  the sun's window patch lies whole across the floor instead of ending at
+  the edge of a 2 m frame. The room's shell (walls, ceiling, the window's
+  bars) shades only the sun, which shines from outside, not the lamp.
+
 ### Walking a path
 
 - A world body may follow a path: `path_mm` (2 to 16 waypoints, starting at
