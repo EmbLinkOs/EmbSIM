@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "adc_regularconversion_dma",
+  "until": "300ms",
+  "description": "ADC_RegularConversion_DMA: ADC1 converts channel 10 (PC0, Arduino A1 on CN9 pin 3) continuously at 22.5 MHz with 3-cycle sampling, the reference VDDA at 3.3 V; 1.0 V from a source on A1 reads as floor(1.0 x 4096 / 3.3) = 1241 in uhADCxConvertedValue; LD1 is lit by the DMA's transfer-complete callback; LD2 (an error) stays dark.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "ld1",
+      "at": "250ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "code",
+      "at": "250ms",
+      "probe": "adc",
+      "expect": {
+        "min": 1240,
+        "max": 1242
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "20ms",
+        "290ms"
+      ],
+      "probe": "led2",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

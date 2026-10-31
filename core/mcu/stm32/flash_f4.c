@@ -30,9 +30,22 @@
  * A program or erase changes the memory's generation, so a core's
  * decoded code there is decoded again.
  *
- * Not modelled: the times a program or erase takes (BSY never reads 1:
- * the operation is done at the store or STRT; the datasheet's times are
- * not at hand here), the bus stall of a read during one, HCLK's 1 MHz
+ *   - timing: an accepted program or erase sets SR's BSY for DS10693's
+ *     typical time (a program 16 us; a sector's erase 250 ms to 2 s by its
+ *     size and PSIZE; the mass erase 8 to 16 s), EOP coming at its end;
+ *     CR is not written while BSY is set. A program running from the
+ *     flash stalls on its next fetch until the operation ends (RM0390
+ *     3.5.3: the bus waits, nothing runs, interrupts wait), as does a
+ *     store to the flash while BSY is set; one running from SRAM goes on
+ *     and polls BSY. The memory holds its new contents from the start
+ *     (a read of it would have waited).
+ *
+ * Not modelled: the times' spread (the typical value each time) and the
+ * maximum ones, the ART accelerator's cache hits during an operation (a
+ * program in the flash stalls whatever its cache holds), a program in
+ * SRAM whose interrupt handler is in the flash (it does not stall), the
+ * option bytes' programming time (OPTSTRT is done at once), the reset
+ * during an operation leaving the memory half-programmed, HCLK's 1 MHz
  * minimum, the read protection's levels (RDP is stored; a regression to
  * level 0 does not mass-erase), PCROP's read refusal (RDERR), the
  * ART accelerator's caches (DCRST, ICRST: the core reads the memory). */
@@ -57,6 +70,7 @@
 #define SR_PGPERR (1u << 6)
 #define SR_PGSERR (1u << 7)
 #define SR_RDERR (1u << 8)
+#define SR_BSY (1u << 16)
 #define SR_W1C (SR_EOP | SR_OPERR | SR_WRPERR | SR_PGAERR | SR_PGPERR | SR_PGSERR | SR_RDERR)
 
 #define CR_PG (1u << 0)
@@ -81,7 +95,22 @@ struct flash {
     int key_step, optkey_step; /* the keys written so far */
     int wrong_key;             /* locked until the next reset */
     u32 wrp;                   /* the sectors write-protected, from the option bytes */
+    /* the operation in progress: BSY until its time has passed */
+    int busy, running;
+    u64 left_ps, since;
 };
+
+/* DS10693's typical times (its table of the flash memory's programming
+ * characteristics), by the parallelism PSIZE gives (x8, x16, x32; x64,
+ * which needs VPP, as x32): a program 16 us, a 16 KiB sector's erase 400,
+ * 300 or 250 ms, a 64 KiB one's 1200, 700 or 550 ms, a 128 KiB one's 2,
+ * 1.3 or 1 s, the mass erase 16, 11 or 8 s */
+#define PS_MS 1000000000ull
+static const u64 erase16_ms[3] = { 400, 300, 250 };
+static const u64 erase64_ms[3] = { 1200, 700, 550 };
+static const u64 erase128_ms[3] = { 2000, 1300, 1000 };
+static const u64 mass_ms[3] = { 16000, 11000, 8000 };
+#define PROGRAM_PS 16000000ull
 
 static const u32 sector_kib[NSECTORS] = { 16, 16, 16, 16, 64, 128, 128, 128 };
 
@@ -112,6 +141,54 @@ static void irq_if(struct flash *f)
     u32 sr = (u32)f->sr->value, cr = (u32)f->cr->value;
     if (((sr & SR_EOP) && (cr & CR_EOPIE)) || ((sr & SR_OPERR) && (cr & CR_ERRIE)))
         esk_rf_interrupt(f->p, f->irq);
+}
+
+static int x_of(const struct flash *f)
+{
+    u32 p = (u32)f->cr->value >> 8 & 3u;
+    return p > 2 ? 2 : (int)p;
+}
+
+static void flash_clock(struct flash *f)
+{
+    if (f->busy && !f->running)
+        f->since = f->s->cycles;
+    esk_rf_clock(f->p, &f->running, f->busy);
+}
+
+static void done(struct flash *f, u32 err);
+
+/* the operation in progress ends: BSY clears, EOP */
+static void finish(struct flash *f)
+{
+    if (!f->busy)
+        return;
+    f->busy = 0;
+    esk_rf_hw(f->sr, f->sr->value & ~(u64)SR_BSY);
+    esk_rf_hw(f->cr, f->cr->value & ~(u64)CR_STRT); /* STRT clears with BSY */
+    flash_clock(f);
+    done(f, 0);
+}
+
+static u64 ps_to_cycles(const struct flash *f, u64 ps)
+{
+    u64 khz = esk_mach_core_hz(f->s) / 1000u;
+    return (ps * (khz ? khz : 16000u) + 999999999ull) / 1000000000ull;
+}
+
+/* an accepted operation takes `ps`: BSY until then, EOP at its end. A
+ * program in flash fetches its next instruction from it, and the bus
+ * stalls until the operation is done (RM0390 3.5.3) */
+static void begin(struct flash *f, u64 ps)
+{
+    u32 pc = f->s->cpu ? f->s->cpu->ops->pc(f->s->cpu) : 0;
+    finish(f); /* one in progress: the bus waited for it (below) */
+    f->busy = 1;
+    f->left_ps = ps;
+    esk_rf_hw(f->sr, f->sr->value | SR_BSY);
+    flash_clock(f);
+    if ((pc >= FLASH_BASE && pc < FLASH_BASE + 512u * 1024u) || pc < 512u * 1024u)
+        f->s->bus_stall += ps_to_cycles(f, ps);
 }
 
 /* an operation's end: EOP, or an error with OPERR */
@@ -175,10 +252,12 @@ static void rom_write(void *ctx, struct esk_region *r, u32 a, int n, u32 v)
         }
     }
     (void)off;
+    if (f->busy && f->s->bus_stall == 0)
+        f->s->bus_stall = ps_to_cycles(f, f->left_ps); /* a store while BSY waits for it */
     old = esk_mem_rd_le(r->mem + (a - r->base), n);
     esk_mem_wr_le(r->mem + (a - r->base), n, old & v);
     esk_bus_code_changed(&f->s->bus);
-    done(f, 0);
+    begin(f, PROGRAM_PS);
 }
 
 /* ---- erasing --------------------------------------------------------------------------- */
@@ -202,7 +281,7 @@ static void start(struct flash *f)
                 return;
             }
         erase(f, FLASH_BASE, 512u * 1024u);
-        done(f, 0);
+        begin(f, mass_ms[x_of(f)] * PS_MS);
         return;
     }
     if (cr & CR_SER) {
@@ -212,7 +291,8 @@ static void start(struct flash *f)
             return;
         }
         erase(f, sector_base(k), sector_kib[k] * 1024u);
-        done(f, 0);
+        begin(f, (sector_kib[k] == 16 ? erase16_ms : sector_kib[k] == 64 ? erase64_ms : erase128_ms)[x_of(f)] *
+                     PS_MS);
     }
 }
 
@@ -296,11 +376,14 @@ static void flash_write(void *ctx, u32 off, int n, u32 v)
         u32 was = (u32)f->cr->value, now;
         if (was & CR_LOCK)
             return; /* locked: only an unlock opens it */
+        if (f->busy)
+            return; /* not written while BSY is set (RM0390 3.8.5) */
         esk_rf_write(f->p, off, n, v);
         now = (u32)f->cr->value;
-        if (now & CR_STRT) {
-            esk_rf_hw(f->cr, now & ~(u64)CR_STRT); /* STRT reads 0 once BSY clears */
+        if ((now & CR_STRT) && !(was & CR_STRT)) {
             start(f);
+            if (!f->busy) /* refused: no operation */
+                esk_rf_hw(f->cr, f->cr->value & ~(u64)CR_STRT);
         }
         return;
     }
@@ -320,15 +403,47 @@ static void flash_write(void *ctx, u32 off, int n, u32 v)
     esk_rf_write(f->p, off, n, v); /* ACR */
 }
 
+static void flash_tick(void *ctx, u32 cycles)
+{
+    struct flash *f = (struct flash *)ctx;
+    u64 ps, khz;
+    if (!f->running)
+        return;
+    if (f->since > f->s->cycles)
+        f->since = 0;
+    cycles = esk_mach_after(f->s, cycles, f->since);
+    f->since = 0;
+    khz = esk_mach_core_hz(f->s) / 1000u;
+    ps = (u64)cycles * 1000000000ull / (khz ? khz : 16000u);
+    if (f->left_ps <= ps)
+        finish(f);
+    else
+        f->left_ps -= ps;
+}
+
+static int flash_next(void *ctx, u32 *cycles)
+{
+    struct flash *f = (struct flash *)ctx;
+    u64 n;
+    if (!f->running)
+        return 0;
+    n = ps_to_cycles(f, f->left_ps);
+    *cycles = n == 0 ? 1 : n > 0xffffffffu ? 0xffffffffu : (u32)n;
+    return 1;
+}
+
 static void flash_reset(void *ctx)
 {
     struct flash *f = (struct flash *)ctx;
+    f->busy = f->running = 0; /* a reset during an operation ends it */
     f->key_step = f->optkey_step = 0;
     f->wrong_key = 0;
     load_options(f);
 }
 
-const struct esk_dev_ops esk_stm32f4_flash_ops = { "stm32f4-flash", flash_read, flash_write, flash_reset, 0, 0 };
+const struct esk_dev_ops esk_stm32f4_flash_ops = {
+    "stm32f4-flash", flash_read, flash_write, flash_reset, flash_tick, flash_next,
+};
 
 void *esk_stm32f4_flash_create(struct esk_mach *s, struct esk_rf_periph *p)
 {

@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/tsv631",
+  "version": "1.0.0",
+  "name": "TSV631 rail-to-rail op-amp",
+  "category": "analog",
+  "description": "STMicroelectronics TSV631, a single micropower rail-to-rail input and output CMOS op-amp (880 kHz, 1.5 to 5.5 V) in SOT23-5: the NUCLEO-144's (MB1137) U7, a voltage follower that drives LD1 from PB0.",
+  "keywords": [
+    "op-amp",
+    "opamp",
+    "rail-to-rail",
+    "tsv631",
+    "tsv631ailt",
+    "stmicroelectronics",
+    "sot23-5",
+    "nucleo"
+  ],
+  "pins": [
+    {
+      "name": "OUT",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Output (SOT23-5 pin 1)"
+    },
+    {
+      "name": "VCC-",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Negative supply (pin 2)"
+    },
+    {
+      "name": "IN+",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Non-inverting input (pin 3)"
+    },
+    {
+      "name": "IN-",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Inverting input (pin 4)"
+    },
+    {
+      "name": "VCC+",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Positive supply (pin 5)"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "A",
+          "component": "emblink/opamp",
+          "params": {
+            "gain": "100k",
+            "gbw": "880k",
+            "rout": 30,
+            "headroom_high": 0.005,
+            "headroom_low": 0.005,
+            "slew": 0.34
+          }
+        }
+      ],
+      "nets": {},
+      "ports": {
+        "OUT": "A.OUT",
+        "IN+": "A.+",
+        "IN-": "A.-",
+        "VCC+": "A.V+",
+        "VCC-": "A.V-"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "IN+": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "IN-": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "OUT": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VCC+": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "VCC-": {
+        "x": 30,
+        "y": 60,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no analog voltages.",
+      "omissions": [
+        "amplification"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "A single op-amp of open-loop gain 100 000, 880 kHz gain-bandwidth and 0.34 V/us slew rate, its output within 5 mV of either rail and behind 30 ohm.",
+      "omissions": [
+        "the datasheet was not at hand: the gain, the headroom and the output resistance are assumed; 880 kHz and 0.34 V/us are the TSV63x family's headline figures",
+        "input offset, bias current and noise",
+        "the supply current (about 60 uA) and the output's current limit",
+        "temperature"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          5.5
+        ],
+        "current_a": [
+          -0.05,
+          0.05
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "MB1137 B-01 electrical schematics (NUCLEO-XXXXZX), sheet 6: U7 TSV631AILT as LD1's follower",
+        "url": "https://www.st.com/en/evaluation-tools/nucleo-f446ze.html#cad-resources",
+        "date": "2026-10-31"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "TSV631AILT",
+    "manufacturer": "STMicroelectronics",
+    "package": "SOT23-5",
+    "datasheet": "https://www.st.com/resource/en/datasheet/tsv631.pdf"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "cortexm_systick",
+  "until": "600ms",
+  "description": "CORTEXM_SysTick: SysTick at 1 ms drives HAL_Delay; each pass of the loop toggles LD2, waits HAL_Delay(50) (51 ms), toggles LD1 and LD3, waits HAL_Delay(100) (101 ms): each LED changes once every 152 ms.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "ld2",
+      "between": [
+        "100ms",
+        "556ms"
+      ],
+      "probe": "led2",
+      "expect": {
+        "edges": 3
+      }
+    },
+    {
+      "id": "ld1",
+      "between": [
+        "100ms",
+        "556ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 3
+      }
+    },
+    {
+      "id": "ld3",
+      "between": [
+        "100ms",
+        "556ms"
+      ],
+      "probe": "led3",
+      "expect": {
+        "edges": 3
+      }
+    }
+  ]
+}

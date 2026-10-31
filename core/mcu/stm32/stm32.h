@@ -16,7 +16,8 @@
  *   gpio_f4.c  an F4 GPIO port (MODER, AFR, LCKR): pins to the runtime
  *   syscfg_f4.c the F4's system configuration: EXTI line ports, boot remap
  *   dma_f4.c   the F4's DMA controllers: streams, channels, FIFO, double buffer
- *   storage.c  registers that only keep what is written (FLASH's ACR) */
+ *   storage.c  registers that only keep what is written (FLASH's ACR)
+ *   crc.c      the CRC calculation unit: CRC-32 of the words written to DR */
 #ifndef ESK_MCU_STM32_H
 #define ESK_MCU_STM32_H
 
@@ -36,6 +37,9 @@ void *esk_stm32_tim_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32f1_afio_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32_exti_create(struct esk_mach *m, struct esk_rf_periph *p);
 void *esk_stm32_storage_create(struct esk_mach *m, struct esk_rf_periph *p);
+
+extern const struct esk_dev_ops esk_stm32_crc_ops;
+void *esk_stm32_crc_create(struct esk_mach *m, struct esk_rf_periph *p);
 
 /* the F1's clocks in Hz: HCLK (0 without the F1's RCC) and PCLK1 or PCLK2 */
 u32 esk_stm32f1_hclk(struct esk_mach *m);

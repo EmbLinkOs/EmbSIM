@@ -5,6 +5,31 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The STM32F446 completed further, and the NUCLEO-F446ZE (2026-10-31)
+
+The F446's model gains what firmware sees of its clocks and flash: each
+oscillator and PLL is ready DS10693's typical start-up time after it is
+enabled (LSE's 2 s, a crystal's 2 ms, a PLL's 75 to 100 us), CIR's ready
+interrupts, the flash's program and erase times with BSY and the bus stall
+of code running from it, the CRC unit, and TIMx_OR's remaps (TIM5 measuring
+LSI). Evidence: `test_stm32f4`'s `test_startup_times`, `test_crc`,
+`test_tim5_lsi` and its flash test (BSY's 16 us and a sector's 250 ms with
+no instruction run meanwhile); CubeF4's NUCLEO-F446RE suite, its
+EEPROM_Emulation now ending past 13 s.
+
+The NUCLEO-F446ZE (MB1137, STM32F446ZE in LQFP144) is a board: its LEDs,
+buttons, power paths and jumpers, the Zio and morpho connectors (every I/O
+on the morpho once), CN13's lines and the VCP on USART3. Evidence: its six
+fixtures, and 21 of CubeF4's STM32F446ZE-Nucleo
+examples run unmodified under scenarios (`run.py --board nucleo_f446ze`).
+The board follows ST's MB1137 B-01 schematic part by part (its LED,
+button and USB circuits, its solder bridges), and the NUCLEO-F446RE was
+checked against MB1136 C-03 and C-04 (B1's network, CN7's SB48/SB49). Not
+yet: the USB OTG FS controller (CubeF4's USB device and host applications)
+and U12, the switch that powers VBUS for a host; MCO1/MCO2 on their pins;
+the ST890, TSV631 and S9013 datasheets' own values (their parts declare
+what is assumed).
+
 ## The PIR sensor (2026-10-31)
 
 `emblink/pir_sensor` is the HC-SR501 as its datasheet describes it (warm-up,

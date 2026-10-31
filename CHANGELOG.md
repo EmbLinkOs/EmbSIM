@@ -39,6 +39,62 @@ versions follow semantic versioning. There is no release yet.
   and striding with the distance walked. The World panel's **round** sends
   a body round the table at 1.2 m/s, half a metre clear of its edges.
 
+### The STM32F446 as it starts, erases and counts
+
+- RCC: each oscillator and PLL is ready its DS10693 start-up time after it
+  is turned on, no longer at once: HSI 2.2 us, an HSE crystal 2 ms (the
+  NUCLEO's bypassed MCO six of its periods), LSI 15 us, the LSE crystal 2 s,
+  a PLL 75 to 100 us by its VCO. LSE keeps running through every reset but
+  a power-on one. CIR's ready flags set with their RDYIE and raise the RCC
+  interrupt; RDYC clears them.
+- FLASH: a program keeps BSY set for 16 us, a sector erase 250 ms to 2 s by
+  its size and PSIZE, the mass erase 8 to 16 s; STRT stays set until BSY
+  clears, EOP comes at the end, and CR is not written meanwhile. Code
+  running from the flash stalls on the bus until the operation ends, as on
+  the part: CubeF4's EEPROM_Emulation now finishes past 13 s, as a real
+  board does.
+- The CRC calculation unit (F1 and F4): the CRC-32 of the words written to
+  DR, CR's RESET, IDR. ST's CRC_Example gets its 0x379E9F06.
+- TIMx_OR's remaps: TIM5's TI4 on LSI or LSE (HAL's way of measuring LSI,
+  as IWDG_Example does), TIM11's TI1 on HSE_RTC, TIM2's ITR1.
+- TIM3 and TIM4 are 16-bit, as RM0390 has them: ST's SVD gave their CNT,
+  ARR and CCRx the 32-bit TIM2's upper halves, so a compare value advanced
+  past 65535 never matched again (CubeF4's TIM_OCToggle stopped). The SVD
+  importer's `--reserve` takes such fields out.
+- The machine gains a bus stall the core waits out (`esk_mach.bus_stall`).
+
+### The NUCLEO-F446ZE
+
+- The STM32F446ZE (LQFP144, ports A to G, ADC3's inputs on port F, VREF+,
+  VDDUSB and VCAP_2 pins) from ST's open pin data, on the F446RE's model.
+- The NUCLEO-F446ZE, as ST's MB1137 B-01 schematic draws it: LD1 (green)
+  driven from PB0 through U7, a TSV631 follower; LD2 (blue, 680 ohm) on
+  PB7 and LD3 (red, 1 kOhm) on PB14; the active-high USER button (B1 to
+  VDD, R59 330 ohm to PC13, R58 220 kOhm down, no filter capacitor);
+  RESET; the green power LED LD6; U4 (ST890CDR) switching the ST-LINK's
+  5 V; JP3's U5V, VIN and E5V positions; JP5 (IDD); the Zio connectors
+  CN7 to CN10 and the 2 x 36 morpho headers CN11 and CN12 with their
+  solder bridges in the factory state (PC14, PC15 and PH0 off the morpho,
+  PH1 on it); CN13 (USB OTG FS) with VBUS to PA9 through R35, LD8 lit by
+  VBUS through T2, LD7 and the over-current line on PG7 through JP4, and
+  PG6's pull-down; the ST-LINK's VCP on USART3 (PD8/PD9). Its fixtures:
+  USB power, VBUS on CN13, VIN through JP3, the IDD ammeter, the button.
+- New parts for it: the ST890CDR power switch, the TSV631 op-amp and the
+  S9013 NPN transistor (each declaring what its datasheet would settle).
+- `tests/vendor/stm32cubef4/run.py --board nucleo_f446ze` builds 21 of
+  CubeF4's STM32F446ZE-Nucleo examples unmodified and runs them under
+  scenarios: ADC (DMA and interrupt), CRC, Cortex (MPU, SysTick), DMA,
+  FLASH_EraseProgram, GPIO (toggle, EXTI), HAL_TimeBase_TIM, IWDG, WWDG,
+  RTC_Calendar, seven TIM examples and UART_Printf.
+- The pin header part reaches 80 positions (a Nucleo-144's morpho header is
+  2 x 36).
+- The NUCLEO-F446RE's RTC_Calendar scenario says what the example does: its
+  RTC runs on LSI, its comment notwithstanding.
+- The NUCLEO-F446RE checked against ST's MB1136 C-03 and C-04 schematics:
+  R30 pulls PC13 up and B1 pulls it to ground through R29, so a pressed B1
+  reads about 69 mV, not 0 V; CN7 pins 25 and 27 no longer reach PC14/PC15
+  (SB49 and SB48 are open from the factory); VDDA's ferrite bead L1 is
+  declared as taken as a short.
 ### People drawn as people
 
 - A warm body of a person's size is drawn as a person (`figure.ts`): an

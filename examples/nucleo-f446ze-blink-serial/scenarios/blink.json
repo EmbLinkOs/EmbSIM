@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "blink",
+  "until": "2.2s",
+  "description": "The banner with SYSCLK as the RCC's registers give it and the flash size from the factory's F_SIZE; LD1's 1 Hz blink from SysTick; a press of B1 through EXTI13's rising edge, toggling LD2; text sent to the virtual COM port echoed in upper case; LD3 dark after the power-on reset.",
+  "inputs": [
+    {
+      "at": "1.2s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.25s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1.5s",
+      "target": "B1",
+      "input": "serial",
+      "value": "nucleo"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "20ms",
+      "probe": "console",
+      "expect": {
+        "contains": "nucleo-f446ze: STM32F446ZE, flash 512 KB, SYSCLK 180000 kHz, reset por"
+      }
+    },
+    {
+      "id": "vdd",
+      "at": "20ms",
+      "probe": "vdd",
+      "expect": {
+        "min_v": 3.25,
+        "max_v": 3.35
+      }
+    },
+    {
+      "id": "led-off",
+      "at": "0.4s",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "led-on",
+      "at": "0.6s",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "blink",
+      "between": [
+        "100ms",
+        "2.2s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 4
+      }
+    },
+    {
+      "id": "ld2-toggled",
+      "at": "1.3s",
+      "probe": "led2",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "ld3-dark",
+      "between": [
+        "20ms",
+        "2.2s"
+      ],
+      "probe": "led3",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "button",
+      "at": "1.3s",
+      "probe": "console",
+      "expect": {
+        "contains": "button 1"
+      }
+    },
+    {
+      "id": "echo",
+      "at": "1.6s",
+      "probe": "console",
+      "expect": {
+        "contains": "NUCLEO"
+      }
+    },
+    {
+      "id": "presses",
+      "at": "1.3s",
+      "probe": "presses",
+      "expect": {
+        "equals": 1
+      }
+    },
+    {
+      "id": "on-pll",
+      "at": "20ms",
+      "probe": "cfgr",
+      "expect": {
+        "equals": 37898
+      }
+    },
+    {
+      "id": "flash-size",
+      "at": "20ms",
+      "probe": "flash_size",
+      "expect": {
+        "equals": 512
+      }
+    }
+  ]
+}

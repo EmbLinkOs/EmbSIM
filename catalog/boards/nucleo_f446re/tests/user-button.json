@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "user-button",
-  "description": "B1 (USER) pulls PC13 low while pressed (through R29, 100 ohm); R30 (4.7 k) holds it at VDD otherwise (usb-powered checks the idle level).",
+  "description": "B1 (USER) pulls PC13 to ground through R29 (100 ohm) while pressed, against R30's 4.7 kOhm pull-up: about 69 mV (usb-powered checks the idle level).",
   "policy": "electrical",
   "until": "20ms",
   "circuit": {
@@ -63,7 +63,8 @@
   "expect": {
     "net:BTN": {
       "at": "15ms",
-      "max_v": 0.05
+      "min_v": 0.055,
+      "max_v": 0.085
     }
   }
 }

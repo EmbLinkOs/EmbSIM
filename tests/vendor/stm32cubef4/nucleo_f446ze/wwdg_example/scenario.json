@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "wwdg_example",
+  "until": "1s",
+  "description": "WWDG_Example: the window watchdog (PCLK1 / 4096 / 8, window 80, counter 127: 46 ms) refreshed every HAL_Delay(39), 40 ms, in the window while LD2 toggles; B1 at 500 ms makes the EXTI handler fault, the refreshes stop, the WWDG resets the part when T6 clears, and the program, finding WWDGRSTF, lights LD1. LD3 (an error) stays dark.",
+  "inputs": [
+    {
+      "at": "500ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "550ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "running",
+      "between": [
+        "100ms",
+        "420ms"
+      ],
+      "probe": "led2",
+      "expect": {
+        "edges": 8
+      }
+    },
+    {
+      "id": "no-reset-yet",
+      "between": [
+        "100ms",
+        "490ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "reset-seen",
+      "at": "900ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "100ms",
+        "990ms"
+      ],
+      "probe": "led3",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,3785 @@
+{
+ "schema_version": 1,
+ "kind": "board",
+ "id": "emblink/nucleo_f446ze",
+ "version": "1.0.0",
+ "name": "NUCLEO-F446ZE (STM32F446ZE)",
+ "description": "ST's NUCLEO-F446ZE (MB1137): an STM32F446ZET6 clocked from the ST-LINK's 8 MHz MCO, with a 32.768 kHz crystal, the user LEDs LD1 (green, PB0), LD2 (blue, PB7) and LD3 (red, PB14), the blue USER button B1 on PC13 (active high), the black RESET button B2, the green power LED LD6, JP3 choosing the 5 V source (U5V through the ST890 power switch, VIN or E5V), JP5 (IDD) to measure the MCU's current, the ST Zio connectors CN7 to CN10 (Arduino Uno V3 and more), the two ST morpho headers CN11 and CN12 reaching every I/O, and the USB OTG FS connector CN13 with its VBUS LED LD8 and over-current LED LD7. The ST-LINK/V2-1's virtual COM port is the session's serial console on USART3 (PD8/PD9), and a serial port on the host (embsim serve --serial).",
+ "keywords": [
+  "nucleo",
+  "nucleo-144",
+  "stm32f446",
+  "stm32f446ze",
+  "stm32",
+  "cortex-m4",
+  "st-link",
+  "zio"
+ ],
+ "revision": "MB1137 B-01",
+ "mcu": {
+  "ref": "st/stm32f446ze",
+  "package": "lqfp144",
+  "instance": "U8"
+ },
+ "oscillators": {
+  "hse": {
+   "hz": 8000000,
+   "source": "external_clock"
+  },
+  "lse": {
+   "hz": 32768,
+   "source": "external_crystal",
+   "component": "X2"
+  }
+ },
+ "components": [
+  {
+   "id": "U5",
+   "component": "emblink/regulator",
+   "params": {
+    "part": "LD1117S50"
+   },
+   "doc": "U5 LD1117S50TR: VIN_5V (5 V) from VIN (7 to 12 V) for JP3's VIN position"
+  },
+  {
+   "id": "U4",
+   "component": "emblink/st890cdr",
+   "doc": "U4 ST890CDR, the power switch that joins the ST-LINK's USB 5 V to JP3's U5V position while its active-low ON input (PWR_ENn) is low"
+  },
+  {
+   "id": "R27",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "doc": "R27: U4's ON input pulled up to U5V, the switch off until the ST-LINK enables it"
+  },
+  {
+   "id": "R_PWREN",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 40
+   },
+   "doc": "The ST-LINK's PWR_ENn output driving low (it has enumerated and the host granted 300 mA)"
+  },
+  {
+   "id": "JP3_U5V",
+   "component": "emblink/toggle_switch",
+   "params": {
+    "initially_closed": true
+   },
+   "doc": "JP3 (3 x 2) on pins 3-4, U5V: the board runs from the ST-LINK's USB through U4 (the factory position)"
+  },
+  {
+   "id": "JP3_VIN",
+   "component": "emblink/toggle_switch",
+   "doc": "JP3 on pins 5-6, VIN_5V: the board runs from VIN through U5"
+  },
+  {
+   "id": "JP3_E5V",
+   "component": "emblink/toggle_switch",
+   "doc": "JP3 on pins 1-2, E5V: the board runs from an external 5 V on CN11 pin 6"
+  },
+  {
+   "id": "U6",
+   "component": "emblink/regulator",
+   "params": {
+    "part": "LD39050PU33R"
+   },
+   "doc": "U6 LD39050PU33R: +3V3 from +5V (500 mA), through SB3 (closed); +3V3_PER through SB2 (closed)"
+  },
+  {
+   "id": "JP5",
+   "component": "emblink/toggle_switch",
+   "params": {
+    "initially_closed": true
+   },
+   "doc": "JP5 (IDD): +3V3 to the STM32's VDD; remove it and put an ammeter across IDD_3V3 and IDD_VDD"
+  },
+  {
+   "id": "LD6",
+   "component": "emblink/led",
+   "params": {
+    "color": "green"
+   },
+   "doc": "LD6 (PWR, green): +5V is present"
+  },
+  {
+   "id": "R29",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "1k"
+   }
+  },
+  {
+   "id": "U7",
+   "component": "emblink/tsv631",
+   "doc": "U7 TSV631AILT, a rail-to-rail op-amp as a voltage follower: PB0 through R34 drives LD1, so the pin sees only R34 and R33"
+  },
+  {
+   "id": "R34",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "doc": "R34: PB0 (through SB120, closed; SB119 to PA5 open) to U7's input"
+  },
+  {
+   "id": "R33",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "200k"
+   },
+   "doc": "R33: U7's input pulled down, LD1 dark while PB0 is not driven"
+  },
+  {
+   "id": "R32",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 510
+   },
+   "doc": "R32: U7's output to LD1"
+  },
+  {
+   "id": "LD1",
+   "component": "emblink/led",
+   "params": {
+    "color": "green"
+   },
+   "doc": "LD1 (USER, green): PB0 high lights it through U7"
+  },
+  {
+   "id": "LD2",
+   "component": "emblink/led",
+   "params": {
+    "color": "blue"
+   },
+   "doc": "LD2 (USER, blue): PB7 high lights it through SB139 and R31"
+  },
+  {
+   "id": "R31",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 680
+   }
+  },
+  {
+   "id": "LD3",
+   "component": "emblink/led",
+   "params": {
+    "color": "red"
+   },
+   "doc": "LD3 (USER, red): PB14 high lights it through SB118 and R30"
+  },
+  {
+   "id": "R30",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "1k"
+   }
+  },
+  {
+   "id": "B1",
+   "component": "emblink/push_button",
+   "doc": "B1 USER (blue): joins its node to VDD while pressed (active high, as ST's BSP reads it)"
+  },
+  {
+   "id": "R59",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 330
+   },
+   "doc": "R59: B1's node to PC13 (through SB173, closed; SB180 to PA0 open)"
+  },
+  {
+   "id": "R58",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "220k"
+   },
+   "doc": "R58: B1's node pulled down, PC13 low while B1 is released"
+  },
+  {
+   "id": "B2",
+   "component": "emblink/push_button",
+   "doc": "B2 RESET (black): pulls NRST low"
+  },
+  {
+   "id": "C53",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "100n"
+   },
+   "doc": "C53: NRST's capacitor; with the STM32's internal pull-up it holds the part in reset for about 1.5 ms at power-on"
+  },
+  {
+   "id": "C55",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "2.2u",
+    "esr": 0.01
+   },
+   "doc": "C55 (2.2 uF X7R): VCAP_1"
+  },
+  {
+   "id": "C56",
+   "component": "emblink/capacitor",
+   "params": {
+    "capacitance": "2.2u",
+    "esr": 0.01
+   },
+   "doc": "C56 (2.2 uF X7R): VCAP_2"
+  },
+  {
+   "id": "R36",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "doc": "R36: BOOT0 pulled down, the part boots its flash"
+  },
+  {
+   "id": "X2",
+   "component": "emblink/crystal",
+   "params": {
+    "hz": 32768,
+    "c0": "1.5p",
+    "cm": "3f",
+    "lm": "7.8k",
+    "rm": "50k"
+   },
+   "doc": "X2 NX3215SA-32.768KHZ-EXS00A-MU00525 on PC14/PC15 through R38 and R37 (0 ohm), with C36 and C35 (2 pF); the equivalent circuit of a 32.768 kHz tuning-fork crystal of its size"
+  },
+  {
+   "id": "SB12",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 0.001
+   },
+   "doc": "SB12 (closed), with the ferrite bead L1 in series: VDDA and VREF+ fed from VDD"
+  },
+  {
+   "id": "R35",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "doc": "R35: CN13's VBUS to PA9 (OTG_FS_VBUS), through SB127 (closed)"
+  },
+  {
+   "id": "R72",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "doc": "R72: PG6, U12's enable (USB_PowerSwitchOn), pulled down"
+  },
+  {
+   "id": "JP4",
+   "component": "emblink/toggle_switch",
+   "params": {
+    "initially_closed": true
+   },
+   "doc": "JP4: PG7 to USB_OverCurrent, U12's fault output"
+  },
+  {
+   "id": "R71",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "47k"
+   },
+   "doc": "R71: U12's open-drain FAULT output pulled up to +3V3_PER, so PG7 reads high without a fault"
+  },
+  {
+   "id": "LD7",
+   "component": "emblink/led",
+   "params": {
+    "color": "red"
+   },
+   "doc": "LD7 (red): U12 signals an over-current on VBUS"
+  },
+  {
+   "id": "R61",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 620
+   }
+  },
+  {
+   "id": "LD8",
+   "component": "emblink/led",
+   "params": {
+    "color": "green"
+   },
+   "doc": "LD8 (green): VBUS is present on CN13, switched by T2"
+  },
+  {
+   "id": "R64",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 330
+   }
+  },
+  {
+   "id": "T2",
+   "component": "emblink/s9013",
+   "doc": "T2 (9013): lights LD8 from VBUS through R68 and R69"
+  },
+  {
+   "id": "R68",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "47k"
+   }
+  },
+  {
+   "id": "R69",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "22k"
+   }
+  },
+  {
+   "id": "CN7",
+   "component": "emblink/header",
+   "params": {
+    "pins": 20
+   },
+   "doc": "ST Zio, right top (2 x 10): D8..D25 with D14/D15 (I2C), AREF, GND"
+  },
+  {
+   "id": "CN8",
+   "component": "emblink/header",
+   "params": {
+    "pins": 16
+   },
+   "doc": "ST Zio, left top (2 x 8): the Arduino power pins and D43..D50 (SDMMC)"
+  },
+  {
+   "id": "CN9",
+   "component": "emblink/header",
+   "params": {
+    "pins": 30
+   },
+   "doc": "ST Zio, left bottom (2 x 15): A0..A5 and D51..D72"
+  },
+  {
+   "id": "CN10",
+   "component": "emblink/header",
+   "params": {
+    "pins": 34
+   },
+   "doc": "ST Zio, right bottom (2 x 17): D0..D7, A6..A8, D26..D42"
+  },
+  {
+   "id": "CN11",
+   "component": "emblink/header",
+   "params": {
+    "pins": 72
+   },
+   "doc": "ST morpho, left (2 x 36)"
+  },
+  {
+   "id": "CN12",
+   "component": "emblink/header",
+   "params": {
+    "pins": 72
+   },
+   "doc": "ST morpho, right (2 x 36)"
+  },
+  {
+   "id": "CN13",
+   "component": "emblink/header",
+   "params": {
+    "pins": 5
+   },
+   "doc": "USB OTG FS, micro-AB: VBUS, D-, D+, ID, GND"
+  }
+ ],
+ "nets": {
+  "VIN": [
+   "U5.IN",
+   "CN8.15",
+   "CN11.24"
+  ],
+  "VIN_5V": [
+   "U5.OUT",
+   "JP3_VIN.1"
+  ],
+  "E5V": [
+   "JP3_E5V.1",
+   "CN11.6"
+  ],
+  "U5V": [
+   "U4.IN",
+   "R27.1",
+   "CN12.8"
+  ],
+  "PWR_ENN": [
+   "U4.ON",
+   "R27.2",
+   "R_PWREN.1"
+  ],
+  "U5V_SW": [
+   "U4.OUT",
+   "JP3_U5V.1"
+  ],
+  "5V": [
+   "JP3_U5V.2",
+   "JP3_VIN.2",
+   "JP3_E5V.2",
+   "U6.IN",
+   "R29.1",
+   "CN8.9",
+   "CN11.18"
+  ],
+  "LD6_A": [
+   "R29.2",
+   "LD6.A"
+  ],
+  "3V3": [
+   "U6.OUT",
+   "JP5.1",
+   "U7.VCC+",
+   "R71.1",
+   "R61.1",
+   "R64.1",
+   "CN8.3",
+   "CN8.7",
+   "CN11.12",
+   "CN11.16"
+  ],
+  "VDD": [
+   "JP5.2",
+   "U8.VDD",
+   "U8.VBAT",
+   "U8.VDDUSB",
+   "U8.PDR_ON",
+   "B1.2",
+   "SB12.1",
+   "CN11.5",
+   "CN11.33"
+  ],
+  "AVDD": [
+   "U8.VDDA",
+   "U8.VREFP",
+   "SB12.2",
+   "CN7.6",
+   "CN10.1",
+   "CN12.7"
+  ],
+  "GND": [
+   "U5.GND",
+   "U6.GND",
+   "LD6.K",
+   "LD1.K",
+   "LD2.K",
+   "LD3.K",
+   "R33.2",
+   "R58.2",
+   "B2.2",
+   "C53.2",
+   "C55.2",
+   "C56.2",
+   "R36.2",
+   "R_PWREN.2",
+   "U7.VCC-",
+   "R72.2",
+   "R69.2",
+   "T2.E",
+   "U8.VSS",
+   "U8.VSSA",
+   "CN7.8",
+   "CN8.11",
+   "CN8.13",
+   "CN9.12",
+   "CN9.23",
+   "CN10.3",
+   "CN10.5",
+   "CN10.17",
+   "CN10.22",
+   "CN10.27",
+   "CN11.8",
+   "CN11.19",
+   "CN11.20",
+   "CN11.22",
+   "CN11.49",
+   "CN11.60",
+   "CN11.71",
+   "CN11.72",
+   "CN12.9",
+   "CN12.20",
+   "CN12.32",
+   "CN12.39",
+   "CN12.54",
+   "CN12.63",
+   "CN12.71",
+   "CN12.72",
+   "CN13.5"
+  ],
+  "NRST": [
+   "U8.NRST",
+   "B2.1",
+   "C53.1",
+   "CN8.5",
+   "CN11.14"
+  ],
+  "VCAP_1": [
+   "U8.VCAP_1",
+   "C55.1"
+  ],
+  "VCAP_2": [
+   "U8.VCAP_2",
+   "C56.1"
+  ],
+  "BOOT0": [
+   "U8.BOOT0",
+   "R36.1",
+   "CN11.7"
+  ],
+  "B1_N": [
+   "B1.1",
+   "R59.1",
+   "R58.1"
+  ],
+  "PC13": [
+   "U8.PC13",
+   "R59.2",
+   "CN11.23"
+  ],
+  "PB0": [
+   "U8.PB0",
+   "R34.1",
+   "CN10.31",
+   "CN11.34"
+  ],
+  "LD1_IN": [
+   "R34.2",
+   "R33.1",
+   "U7.IN+"
+  ],
+  "LD1_OUT": [
+   "U7.OUT",
+   "U7.IN-",
+   "R32.1"
+  ],
+  "LD1_A": [
+   "R32.2",
+   "LD1.A"
+  ],
+  "PB7": [
+   "U8.PB7",
+   "R31.1",
+   "CN11.21"
+  ],
+  "LD2_A": [
+   "R31.2",
+   "LD2.A"
+  ],
+  "PB14": [
+   "U8.PB14",
+   "R30.1",
+   "CN12.28"
+  ],
+  "LD3_A": [
+   "R30.2",
+   "LD3.A"
+  ],
+  "PC14": [
+   "U8.PC14",
+   "X2.1"
+  ],
+  "PC15": [
+   "U8.PC15",
+   "X2.2"
+  ],
+  "USB_VBUS": [
+   "R35.1",
+   "R68.1",
+   "CN13.1"
+  ],
+  "PA9": [
+   "U8.PA9",
+   "R35.2",
+   "CN12.21"
+  ],
+  "PG6": [
+   "U8.PG6",
+   "R72.1",
+   "CN12.70"
+  ],
+  "PG7": [
+   "U8.PG7",
+   "JP4.1",
+   "CN12.67"
+  ],
+  "USB_OVCR": [
+   "JP4.2",
+   "R71.2",
+   "LD7.K"
+  ],
+  "LD7_A": [
+   "R61.2",
+   "LD7.A"
+  ],
+  "LD8_A": [
+   "R64.2",
+   "LD8.A"
+  ],
+  "LD8_K": [
+   "LD8.K",
+   "T2.C"
+  ],
+  "T2_B": [
+   "R68.2",
+   "R69.1",
+   "T2.B"
+  ],
+  "PA0": [
+   "U8.PA0",
+   "CN10.29",
+   "CN11.28"
+  ],
+  "PA1": [
+   "U8.PA1",
+   "CN11.30"
+  ],
+  "PA2": [
+   "U8.PA2",
+   "CN12.35"
+  ],
+  "PA3": [
+   "U8.PA3",
+   "CN9.1",
+   "CN12.37"
+  ],
+  "PA4": [
+   "U8.PA4",
+   "CN7.17",
+   "CN11.32"
+  ],
+  "PA5": [
+   "U8.PA5",
+   "CN7.10",
+   "CN12.11"
+  ],
+  "PA6": [
+   "U8.PA6",
+   "CN7.12",
+   "CN12.13"
+  ],
+  "PA7": [
+   "U8.PA7",
+   "CN7.14",
+   "CN12.15"
+  ],
+  "PA8": [
+   "U8.PA8",
+   "CN12.23"
+  ],
+  "PA10": [
+   "U8.PA10",
+   "CN12.33",
+   "CN13.4"
+  ],
+  "PA11": [
+   "U8.PA11",
+   "CN12.14",
+   "CN13.2"
+  ],
+  "PA12": [
+   "U8.PA12",
+   "CN12.12",
+   "CN13.3"
+  ],
+  "PA13": [
+   "U8.PA13",
+   "CN11.13"
+  ],
+  "PA14": [
+   "U8.PA14",
+   "CN11.15"
+  ],
+  "PA15": [
+   "U8.PA15",
+   "CN7.9",
+   "CN11.17"
+  ],
+  "PB1": [
+   "U8.PB1",
+   "CN10.7",
+   "CN12.24"
+  ],
+  "PB2": [
+   "U8.PB2",
+   "CN10.15",
+   "CN12.22"
+  ],
+  "PB3": [
+   "U8.PB3",
+   "CN7.15",
+   "CN12.31"
+  ],
+  "PB4": [
+   "U8.PB4",
+   "CN7.19",
+   "CN12.27"
+  ],
+  "PB5": [
+   "U8.PB5",
+   "CN7.13",
+   "CN12.29"
+  ],
+  "PB6": [
+   "U8.PB6",
+   "CN10.13",
+   "CN12.17"
+  ],
+  "PB8": [
+   "U8.PB8",
+   "CN7.2",
+   "CN12.3"
+  ],
+  "PB9": [
+   "U8.PB9",
+   "CN7.4",
+   "CN12.5"
+  ],
+  "PB10": [
+   "U8.PB10",
+   "CN10.32",
+   "CN12.25"
+  ],
+  "PB11": [
+   "U8.PB11",
+   "CN10.34",
+   "CN12.18"
+  ],
+  "PB12": [
+   "U8.PB12",
+   "CN7.7",
+   "CN12.16"
+  ],
+  "PB13": [
+   "U8.PB13",
+   "CN7.5",
+   "CN12.30"
+  ],
+  "PB15": [
+   "U8.PB15",
+   "CN7.3",
+   "CN12.26"
+  ],
+  "PC0": [
+   "U8.PC0",
+   "CN9.3",
+   "CN11.38"
+  ],
+  "PC1": [
+   "U8.PC1",
+   "CN11.36"
+  ],
+  "PC2": [
+   "U8.PC2",
+   "CN10.9",
+   "CN11.35"
+  ],
+  "PC3": [
+   "U8.PC3",
+   "CN9.5",
+   "CN11.37"
+  ],
+  "PC4": [
+   "U8.PC4",
+   "CN12.34"
+  ],
+  "PC5": [
+   "U8.PC5",
+   "CN12.6"
+  ],
+  "PC6": [
+   "U8.PC6",
+   "CN7.1",
+   "CN12.4"
+  ],
+  "PC7": [
+   "U8.PC7",
+   "CN7.11",
+   "CN12.19"
+  ],
+  "PC8": [
+   "U8.PC8",
+   "CN8.2",
+   "CN12.2"
+  ],
+  "PC9": [
+   "U8.PC9",
+   "CN8.4",
+   "CN12.1"
+  ],
+  "PC10": [
+   "U8.PC10",
+   "CN8.6",
+   "CN11.1"
+  ],
+  "PC11": [
+   "U8.PC11",
+   "CN8.8",
+   "CN11.2"
+  ],
+  "PC12": [
+   "U8.PC12",
+   "CN8.10",
+   "CN11.3"
+  ],
+  "PD0": [
+   "U8.PD0",
+   "CN9.25",
+   "CN11.57"
+  ],
+  "PD1": [
+   "U8.PD1",
+   "CN9.27",
+   "CN11.55"
+  ],
+  "PD2": [
+   "U8.PD2",
+   "CN8.12",
+   "CN11.4"
+  ],
+  "PD3": [
+   "U8.PD3",
+   "CN9.10",
+   "CN11.40"
+  ],
+  "PD4": [
+   "U8.PD4",
+   "CN9.8",
+   "CN11.39"
+  ],
+  "PD5": [
+   "U8.PD5",
+   "CN9.6",
+   "CN11.41"
+  ],
+  "PD6": [
+   "U8.PD6",
+   "CN9.4",
+   "CN11.43"
+  ],
+  "PD7": [
+   "U8.PD7",
+   "CN9.2",
+   "CN11.45"
+  ],
+  "PD8": [
+   "U8.PD8",
+   "CN12.10"
+  ],
+  "PD9": [
+   "U8.PD9",
+   "CN11.69"
+  ],
+  "PD10": [
+   "U8.PD10",
+   "CN12.65"
+  ],
+  "PD11": [
+   "U8.PD11",
+   "CN10.23",
+   "CN12.45"
+  ],
+  "PD12": [
+   "U8.PD12",
+   "CN10.21",
+   "CN12.43"
+  ],
+  "PD13": [
+   "U8.PD13",
+   "CN10.19",
+   "CN12.41"
+  ],
+  "PD14": [
+   "U8.PD14",
+   "CN7.16",
+   "CN12.46"
+  ],
+  "PD15": [
+   "U8.PD15",
+   "CN7.18",
+   "CN12.48"
+  ],
+  "PE0": [
+   "U8.PE0",
+   "CN10.33",
+   "CN12.64"
+  ],
+  "PE1": [
+   "U8.PE1",
+   "CN11.61"
+  ],
+  "PE2": [
+   "U8.PE2",
+   "CN9.14",
+   "CN10.25",
+   "CN11.46"
+  ],
+  "PE3": [
+   "U8.PE3",
+   "CN9.22",
+   "CN11.47"
+  ],
+  "PE4": [
+   "U8.PE4",
+   "CN9.16",
+   "CN11.48"
+  ],
+  "PE5": [
+   "U8.PE5",
+   "CN9.18",
+   "CN11.50"
+  ],
+  "PE6": [
+   "U8.PE6",
+   "CN9.20",
+   "CN11.62"
+  ],
+  "PE7": [
+   "U8.PE7",
+   "CN10.20",
+   "CN12.44"
+  ],
+  "PE8": [
+   "U8.PE8",
+   "CN10.18",
+   "CN12.40"
+  ],
+  "PE9": [
+   "U8.PE9",
+   "CN10.4",
+   "CN12.52"
+  ],
+  "PE10": [
+   "U8.PE10",
+   "CN10.24",
+   "CN12.47"
+  ],
+  "PE11": [
+   "U8.PE11",
+   "CN10.6",
+   "CN12.56"
+  ],
+  "PE12": [
+   "U8.PE12",
+   "CN10.26",
+   "CN12.49"
+  ],
+  "PE13": [
+   "U8.PE13",
+   "CN10.10",
+   "CN12.55"
+  ],
+  "PE14": [
+   "U8.PE14",
+   "CN10.28",
+   "CN12.51"
+  ],
+  "PE15": [
+   "U8.PE15",
+   "CN10.30",
+   "CN12.53"
+  ],
+  "PF0": [
+   "U8.PF0",
+   "CN9.21",
+   "CN11.53"
+  ],
+  "PF1": [
+   "U8.PF1",
+   "CN9.19",
+   "CN11.51"
+  ],
+  "PF2": [
+   "U8.PF2",
+   "CN9.17",
+   "CN11.52"
+  ],
+  "PF3": [
+   "U8.PF3",
+   "CN9.7",
+   "CN12.58"
+  ],
+  "PF4": [
+   "U8.PF4",
+   "CN10.11",
+   "CN12.38"
+  ],
+  "PF5": [
+   "U8.PF5",
+   "CN9.9",
+   "CN12.36"
+  ],
+  "PF6": [
+   "U8.PF6",
+   "CN11.9"
+  ],
+  "PF7": [
+   "U8.PF7",
+   "CN9.26",
+   "CN11.11"
+  ],
+  "PF8": [
+   "U8.PF8",
+   "CN9.24",
+   "CN11.54"
+  ],
+  "PF9": [
+   "U8.PF9",
+   "CN9.28",
+   "CN11.56"
+  ],
+  "PF10": [
+   "U8.PF10",
+   "CN9.11",
+   "CN12.42"
+  ],
+  "PF11": [
+   "U8.PF11",
+   "CN12.62"
+  ],
+  "PF12": [
+   "U8.PF12",
+   "CN7.20",
+   "CN12.59"
+  ],
+  "PF13": [
+   "U8.PF13",
+   "CN10.2",
+   "CN12.57"
+  ],
+  "PF14": [
+   "U8.PF14",
+   "CN10.8",
+   "CN12.50"
+  ],
+  "PF15": [
+   "U8.PF15",
+   "CN10.12",
+   "CN12.60"
+  ],
+  "PG0": [
+   "U8.PG0",
+   "CN9.29",
+   "CN11.59"
+  ],
+  "PG1": [
+   "U8.PG1",
+   "CN9.30",
+   "CN11.58"
+  ],
+  "PG2": [
+   "U8.PG2",
+   "CN8.14",
+   "CN11.42"
+  ],
+  "PG3": [
+   "U8.PG3",
+   "CN8.16",
+   "CN11.44"
+  ],
+  "PG4": [
+   "U8.PG4",
+   "CN12.69"
+  ],
+  "PG5": [
+   "U8.PG5",
+   "CN12.68"
+  ],
+  "PG8": [
+   "U8.PG8",
+   "CN12.66"
+  ],
+  "PG9": [
+   "U8.PG9",
+   "CN10.16",
+   "CN11.63"
+  ],
+  "PG10": [
+   "U8.PG10",
+   "CN11.66"
+  ],
+  "PG11": [
+   "U8.PG11",
+   "CN11.70"
+  ],
+  "PG12": [
+   "U8.PG12",
+   "CN11.65"
+  ],
+  "PG13": [
+   "U8.PG13",
+   "CN11.68"
+  ],
+  "PG14": [
+   "U8.PG14",
+   "CN10.14",
+   "CN12.61"
+  ],
+  "PG15": [
+   "U8.PG15",
+   "CN11.64"
+  ],
+  "PH0": [
+   "U8.PH0"
+  ],
+  "PH1": [
+   "U8.PH1",
+   "CN11.31"
+  ],
+  "CN11_25_NC": [
+   "CN11.25"
+  ],
+  "CN11_27_NC": [
+   "CN11.27"
+  ],
+  "CN11_29_NC": [
+   "CN11.29"
+  ]
+ },
+ "ports": {
+  "D16": {
+   "net": "PC6",
+   "connector": "CN7",
+   "pin": 1
+  },
+  "D15": {
+   "net": "PB8",
+   "connector": "CN7",
+   "pin": 2,
+   "doc": "PB8, I2C1_SCL"
+  },
+  "D17": {
+   "net": "PB15",
+   "connector": "CN7",
+   "pin": 3
+  },
+  "D14": {
+   "net": "PB9",
+   "connector": "CN7",
+   "pin": 4,
+   "doc": "PB9, I2C1_SDA"
+  },
+  "D18": {
+   "net": "PB13",
+   "connector": "CN7",
+   "pin": 5
+  },
+  "AREF": {
+   "net": "AVDD",
+   "connector": "CN7",
+   "pin": 6,
+   "doc": "AVDD (VDDA and VREF+)"
+  },
+  "D19": {
+   "net": "PB12",
+   "connector": "CN7",
+   "pin": 7
+  },
+  "GND": {
+   "net": "GND",
+   "connector": "CN7",
+   "pin": 8
+  },
+  "D20": {
+   "net": "PA15",
+   "connector": "CN7",
+   "pin": 9
+  },
+  "D13": {
+   "net": "PA5",
+   "connector": "CN7",
+   "pin": 10,
+   "doc": "PA5, SPI1_SCK"
+  },
+  "D21": {
+   "net": "PC7",
+   "connector": "CN7",
+   "pin": 11
+  },
+  "D12": {
+   "net": "PA6",
+   "connector": "CN7",
+   "pin": 12,
+   "doc": "PA6, SPI1_MISO"
+  },
+  "D22": {
+   "net": "PB5",
+   "connector": "CN7",
+   "pin": 13
+  },
+  "D11": {
+   "net": "PA7",
+   "connector": "CN7",
+   "pin": 14,
+   "doc": "PA7, SPI1_MOSI"
+  },
+  "D23": {
+   "net": "PB3",
+   "connector": "CN7",
+   "pin": 15
+  },
+  "D10": {
+   "net": "PD14",
+   "connector": "CN7",
+   "pin": 16,
+   "doc": "PD14, the shield's chip select"
+  },
+  "D24": {
+   "net": "PA4",
+   "connector": "CN7",
+   "pin": 17
+  },
+  "D9": {
+   "net": "PD15",
+   "connector": "CN7",
+   "pin": 18
+  },
+  "D25": {
+   "net": "PB4",
+   "connector": "CN7",
+   "pin": 19
+  },
+  "D8": {
+   "net": "PF12",
+   "connector": "CN7",
+   "pin": 20
+  },
+  "D43": {
+   "net": "PC8",
+   "connector": "CN8",
+   "pin": 2
+  },
+  "IOREF": {
+   "net": "3V3",
+   "connector": "CN8",
+   "pin": 3,
+   "doc": "3.3 V reference for shields"
+  },
+  "D44": {
+   "net": "PC9",
+   "connector": "CN8",
+   "pin": 4
+  },
+  "RESET": {
+   "net": "NRST",
+   "connector": "CN8",
+   "pin": 5
+  },
+  "D45": {
+   "net": "PC10",
+   "connector": "CN8",
+   "pin": 6
+  },
+  "3V3": {
+   "net": "3V3",
+   "connector": "CN8",
+   "pin": 7
+  },
+  "D46": {
+   "net": "PC11",
+   "connector": "CN8",
+   "pin": 8
+  },
+  "5V": {
+   "net": "5V",
+   "connector": "CN8",
+   "pin": 9,
+   "doc": "+5V: an output from USB, VIN or E5V through JP3"
+  },
+  "D47": {
+   "net": "PC12",
+   "connector": "CN8",
+   "pin": 10
+  },
+  "GND_2": {
+   "net": "GND",
+   "connector": "CN8",
+   "pin": 11
+  },
+  "D48": {
+   "net": "PD2",
+   "connector": "CN8",
+   "pin": 12
+  },
+  "GND_3": {
+   "net": "GND",
+   "connector": "CN8",
+   "pin": 13
+  },
+  "D49": {
+   "net": "PG2",
+   "connector": "CN8",
+   "pin": 14
+  },
+  "VIN": {
+   "net": "VIN",
+   "connector": "CN8",
+   "pin": 15,
+   "doc": "7 to 12 V into U5 (LD1117S50); JP3 must be on VIN"
+  },
+  "D50": {
+   "net": "PG3",
+   "connector": "CN8",
+   "pin": 16
+  },
+  "A0": {
+   "net": "PA3",
+   "connector": "CN9",
+   "pin": 1
+  },
+  "D51": {
+   "net": "PD7",
+   "connector": "CN9",
+   "pin": 2
+  },
+  "A1": {
+   "net": "PC0",
+   "connector": "CN9",
+   "pin": 3
+  },
+  "D52": {
+   "net": "PD6",
+   "connector": "CN9",
+   "pin": 4
+  },
+  "A2": {
+   "net": "PC3",
+   "connector": "CN9",
+   "pin": 5
+  },
+  "D53": {
+   "net": "PD5",
+   "connector": "CN9",
+   "pin": 6
+  },
+  "A3": {
+   "net": "PF3",
+   "connector": "CN9",
+   "pin": 7
+  },
+  "D54": {
+   "net": "PD4",
+   "connector": "CN9",
+   "pin": 8
+  },
+  "A4": {
+   "net": "PF5",
+   "connector": "CN9",
+   "pin": 9,
+   "doc": "PF5 by default; PB9 (I2C1_SDA) with the solder bridges moved"
+  },
+  "D55": {
+   "net": "PD3",
+   "connector": "CN9",
+   "pin": 10
+  },
+  "A5": {
+   "net": "PF10",
+   "connector": "CN9",
+   "pin": 11,
+   "doc": "PF10 by default; PB8 (I2C1_SCL) with the solder bridges moved"
+  },
+  "GND_4": {
+   "net": "GND",
+   "connector": "CN9",
+   "pin": 12
+  },
+  "D56": {
+   "net": "PE2",
+   "connector": "CN9",
+   "pin": 14,
+   "doc": "PE2, also D31 on CN10 pin 25"
+  },
+  "D57": {
+   "net": "PE4",
+   "connector": "CN9",
+   "pin": 16
+  },
+  "D70": {
+   "net": "PF2",
+   "connector": "CN9",
+   "pin": 17
+  },
+  "D58": {
+   "net": "PE5",
+   "connector": "CN9",
+   "pin": 18
+  },
+  "D69": {
+   "net": "PF1",
+   "connector": "CN9",
+   "pin": 19
+  },
+  "D59": {
+   "net": "PE6",
+   "connector": "CN9",
+   "pin": 20
+  },
+  "D68": {
+   "net": "PF0",
+   "connector": "CN9",
+   "pin": 21
+  },
+  "D60": {
+   "net": "PE3",
+   "connector": "CN9",
+   "pin": 22
+  },
+  "GND_5": {
+   "net": "GND",
+   "connector": "CN9",
+   "pin": 23
+  },
+  "D61": {
+   "net": "PF8",
+   "connector": "CN9",
+   "pin": 24
+  },
+  "D67": {
+   "net": "PD0",
+   "connector": "CN9",
+   "pin": 25
+  },
+  "D62": {
+   "net": "PF7",
+   "connector": "CN9",
+   "pin": 26
+  },
+  "D66": {
+   "net": "PD1",
+   "connector": "CN9",
+   "pin": 27
+  },
+  "D63": {
+   "net": "PF9",
+   "connector": "CN9",
+   "pin": 28
+  },
+  "D65": {
+   "net": "PG0",
+   "connector": "CN9",
+   "pin": 29
+  },
+  "D64": {
+   "net": "PG1",
+   "connector": "CN9",
+   "pin": 30
+  },
+  "AVDD": {
+   "net": "AVDD",
+   "connector": "CN10",
+   "pin": 1
+  },
+  "D7": {
+   "net": "PF13",
+   "connector": "CN10",
+   "pin": 2
+  },
+  "AGND": {
+   "net": "GND",
+   "connector": "CN10",
+   "pin": 3
+  },
+  "D6": {
+   "net": "PE9",
+   "connector": "CN10",
+   "pin": 4
+  },
+  "GND_6": {
+   "net": "GND",
+   "connector": "CN10",
+   "pin": 5
+  },
+  "D5": {
+   "net": "PE11",
+   "connector": "CN10",
+   "pin": 6
+  },
+  "A6": {
+   "net": "PB1",
+   "connector": "CN10",
+   "pin": 7
+  },
+  "D4": {
+   "net": "PF14",
+   "connector": "CN10",
+   "pin": 8
+  },
+  "A7": {
+   "net": "PC2",
+   "connector": "CN10",
+   "pin": 9
+  },
+  "D3": {
+   "net": "PE13",
+   "connector": "CN10",
+   "pin": 10
+  },
+  "A8": {
+   "net": "PF4",
+   "connector": "CN10",
+   "pin": 11
+  },
+  "D2": {
+   "net": "PF15",
+   "connector": "CN10",
+   "pin": 12
+  },
+  "D26": {
+   "net": "PB6",
+   "connector": "CN10",
+   "pin": 13
+  },
+  "D1": {
+   "net": "PG14",
+   "connector": "CN10",
+   "pin": 14,
+   "doc": "PG14, USART6_TX"
+  },
+  "D27": {
+   "net": "PB2",
+   "connector": "CN10",
+   "pin": 15
+  },
+  "D0": {
+   "net": "PG9",
+   "connector": "CN10",
+   "pin": 16,
+   "doc": "PG9, USART6_RX"
+  },
+  "GND_7": {
+   "net": "GND",
+   "connector": "CN10",
+   "pin": 17
+  },
+  "D42": {
+   "net": "PE8",
+   "connector": "CN10",
+   "pin": 18
+  },
+  "D28": {
+   "net": "PD13",
+   "connector": "CN10",
+   "pin": 19
+  },
+  "D41": {
+   "net": "PE7",
+   "connector": "CN10",
+   "pin": 20
+  },
+  "D29": {
+   "net": "PD12",
+   "connector": "CN10",
+   "pin": 21
+  },
+  "GND_8": {
+   "net": "GND",
+   "connector": "CN10",
+   "pin": 22
+  },
+  "D30": {
+   "net": "PD11",
+   "connector": "CN10",
+   "pin": 23
+  },
+  "D40": {
+   "net": "PE10",
+   "connector": "CN10",
+   "pin": 24
+  },
+  "D31": {
+   "net": "PE2",
+   "connector": "CN10",
+   "pin": 25,
+   "doc": "PE2, also D56 on CN9 pin 14"
+  },
+  "D39": {
+   "net": "PE12",
+   "connector": "CN10",
+   "pin": 26
+  },
+  "GND_9": {
+   "net": "GND",
+   "connector": "CN10",
+   "pin": 27
+  },
+  "D38": {
+   "net": "PE14",
+   "connector": "CN10",
+   "pin": 28
+  },
+  "D32": {
+   "net": "PA0",
+   "connector": "CN10",
+   "pin": 29
+  },
+  "D37": {
+   "net": "PE15",
+   "connector": "CN10",
+   "pin": 30
+  },
+  "D33": {
+   "net": "PB0",
+   "connector": "CN10",
+   "pin": 31,
+   "doc": "PB0, also the green LED LD1"
+  },
+  "D36": {
+   "net": "PB10",
+   "connector": "CN10",
+   "pin": 32
+  },
+  "D34": {
+   "net": "PE0",
+   "connector": "CN10",
+   "pin": 33
+  },
+  "D35": {
+   "net": "PB11",
+   "connector": "CN10",
+   "pin": 34
+  },
+  "CN11_1": {
+   "net": "PC10",
+   "connector": "CN11",
+   "pin": 1
+  },
+  "CN11_2": {
+   "net": "PC11",
+   "connector": "CN11",
+   "pin": 2
+  },
+  "CN11_3": {
+   "net": "PC12",
+   "connector": "CN11",
+   "pin": 3
+  },
+  "CN11_4": {
+   "net": "PD2",
+   "connector": "CN11",
+   "pin": 4
+  },
+  "CN11_5": {
+   "net": "VDD",
+   "connector": "CN11",
+   "pin": 5
+  },
+  "CN11_6": {
+   "net": "E5V",
+   "connector": "CN11",
+   "pin": 6,
+   "doc": "E5V: an external 5 V supply in (JP3 on E5V)"
+  },
+  "CN11_7": {
+   "net": "BOOT0",
+   "connector": "CN11",
+   "pin": 7
+  },
+  "CN11_8": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 8
+  },
+  "CN11_9": {
+   "net": "PF6",
+   "connector": "CN11",
+   "pin": 9
+  },
+  "CN11_11": {
+   "net": "PF7",
+   "connector": "CN11",
+   "pin": 11
+  },
+  "CN11_12": {
+   "net": "3V3",
+   "connector": "CN11",
+   "pin": 12
+  },
+  "CN11_13": {
+   "net": "PA13",
+   "connector": "CN11",
+   "pin": 13
+  },
+  "CN11_14": {
+   "net": "NRST",
+   "connector": "CN11",
+   "pin": 14
+  },
+  "CN11_15": {
+   "net": "PA14",
+   "connector": "CN11",
+   "pin": 15
+  },
+  "CN11_16": {
+   "net": "3V3",
+   "connector": "CN11",
+   "pin": 16
+  },
+  "CN11_17": {
+   "net": "PA15",
+   "connector": "CN11",
+   "pin": 17
+  },
+  "CN11_18": {
+   "net": "5V",
+   "connector": "CN11",
+   "pin": 18
+  },
+  "CN11_19": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 19
+  },
+  "CN11_20": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 20
+  },
+  "CN11_21": {
+   "net": "PB7",
+   "connector": "CN11",
+   "pin": 21
+  },
+  "CN11_22": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 22
+  },
+  "CN11_23": {
+   "net": "PC13",
+   "connector": "CN11",
+   "pin": 23
+  },
+  "CN11_24": {
+   "net": "VIN",
+   "connector": "CN11",
+   "pin": 24
+  },
+  "CN11_25": {
+   "net": "CN11_25_NC",
+   "connector": "CN11",
+   "pin": 25,
+   "doc": "PC14 only with SB144 closed (open from the factory: PC14 is X2's OSC32_IN)"
+  },
+  "CN11_27": {
+   "net": "CN11_27_NC",
+   "connector": "CN11",
+   "pin": 27,
+   "doc": "PC15 only with SB145 closed (open from the factory: PC15 is X2's OSC32_OUT)"
+  },
+  "CN11_28": {
+   "net": "PA0",
+   "connector": "CN11",
+   "pin": 28
+  },
+  "CN11_29": {
+   "net": "CN11_29_NC",
+   "connector": "CN11",
+   "pin": 29,
+   "doc": "PH0 only with SB148 closed (open from the factory: PH0 takes the ST-LINK's 8 MHz MCO through SB149)"
+  },
+  "CN11_30": {
+   "net": "PA1",
+   "connector": "CN11",
+   "pin": 30
+  },
+  "CN11_31": {
+   "net": "PH1",
+   "connector": "CN11",
+   "pin": 31,
+   "doc": "PH1, through SB163 (closed)"
+  },
+  "CN11_32": {
+   "net": "PA4",
+   "connector": "CN11",
+   "pin": 32
+  },
+  "CN11_33": {
+   "net": "VDD",
+   "connector": "CN11",
+   "pin": 33
+  },
+  "CN11_34": {
+   "net": "PB0",
+   "connector": "CN11",
+   "pin": 34
+  },
+  "CN11_35": {
+   "net": "PC2",
+   "connector": "CN11",
+   "pin": 35
+  },
+  "CN11_36": {
+   "net": "PC1",
+   "connector": "CN11",
+   "pin": 36
+  },
+  "CN11_37": {
+   "net": "PC3",
+   "connector": "CN11",
+   "pin": 37
+  },
+  "CN11_38": {
+   "net": "PC0",
+   "connector": "CN11",
+   "pin": 38
+  },
+  "CN11_39": {
+   "net": "PD4",
+   "connector": "CN11",
+   "pin": 39
+  },
+  "CN11_40": {
+   "net": "PD3",
+   "connector": "CN11",
+   "pin": 40
+  },
+  "CN11_41": {
+   "net": "PD5",
+   "connector": "CN11",
+   "pin": 41
+  },
+  "CN11_42": {
+   "net": "PG2",
+   "connector": "CN11",
+   "pin": 42
+  },
+  "CN11_43": {
+   "net": "PD6",
+   "connector": "CN11",
+   "pin": 43
+  },
+  "CN11_44": {
+   "net": "PG3",
+   "connector": "CN11",
+   "pin": 44
+  },
+  "CN11_45": {
+   "net": "PD7",
+   "connector": "CN11",
+   "pin": 45
+  },
+  "CN11_46": {
+   "net": "PE2",
+   "connector": "CN11",
+   "pin": 46
+  },
+  "CN11_47": {
+   "net": "PE3",
+   "connector": "CN11",
+   "pin": 47
+  },
+  "CN11_48": {
+   "net": "PE4",
+   "connector": "CN11",
+   "pin": 48
+  },
+  "CN11_49": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 49
+  },
+  "CN11_50": {
+   "net": "PE5",
+   "connector": "CN11",
+   "pin": 50
+  },
+  "CN11_51": {
+   "net": "PF1",
+   "connector": "CN11",
+   "pin": 51
+  },
+  "CN11_52": {
+   "net": "PF2",
+   "connector": "CN11",
+   "pin": 52
+  },
+  "CN11_53": {
+   "net": "PF0",
+   "connector": "CN11",
+   "pin": 53
+  },
+  "CN11_54": {
+   "net": "PF8",
+   "connector": "CN11",
+   "pin": 54
+  },
+  "CN11_55": {
+   "net": "PD1",
+   "connector": "CN11",
+   "pin": 55
+  },
+  "CN11_56": {
+   "net": "PF9",
+   "connector": "CN11",
+   "pin": 56
+  },
+  "CN11_57": {
+   "net": "PD0",
+   "connector": "CN11",
+   "pin": 57
+  },
+  "CN11_58": {
+   "net": "PG1",
+   "connector": "CN11",
+   "pin": 58
+  },
+  "CN11_59": {
+   "net": "PG0",
+   "connector": "CN11",
+   "pin": 59
+  },
+  "CN11_60": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 60
+  },
+  "CN11_61": {
+   "net": "PE1",
+   "connector": "CN11",
+   "pin": 61
+  },
+  "CN11_62": {
+   "net": "PE6",
+   "connector": "CN11",
+   "pin": 62
+  },
+  "CN11_63": {
+   "net": "PG9",
+   "connector": "CN11",
+   "pin": 63
+  },
+  "CN11_64": {
+   "net": "PG15",
+   "connector": "CN11",
+   "pin": 64
+  },
+  "CN11_65": {
+   "net": "PG12",
+   "connector": "CN11",
+   "pin": 65
+  },
+  "CN11_66": {
+   "net": "PG10",
+   "connector": "CN11",
+   "pin": 66
+  },
+  "CN11_68": {
+   "net": "PG13",
+   "connector": "CN11",
+   "pin": 68
+  },
+  "CN11_69": {
+   "net": "PD9",
+   "connector": "CN11",
+   "pin": 69,
+   "doc": "PD9, USART3_RX: the ST-LINK VCP's TX drives it"
+  },
+  "CN11_70": {
+   "net": "PG11",
+   "connector": "CN11",
+   "pin": 70
+  },
+  "CN11_71": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 71
+  },
+  "CN11_72": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 72
+  },
+  "CN12_1": {
+   "net": "PC9",
+   "connector": "CN12",
+   "pin": 1
+  },
+  "CN12_2": {
+   "net": "PC8",
+   "connector": "CN12",
+   "pin": 2
+  },
+  "CN12_3": {
+   "net": "PB8",
+   "connector": "CN12",
+   "pin": 3
+  },
+  "CN12_4": {
+   "net": "PC6",
+   "connector": "CN12",
+   "pin": 4
+  },
+  "CN12_5": {
+   "net": "PB9",
+   "connector": "CN12",
+   "pin": 5
+  },
+  "CN12_6": {
+   "net": "PC5",
+   "connector": "CN12",
+   "pin": 6
+  },
+  "CN12_7": {
+   "net": "AVDD",
+   "connector": "CN12",
+   "pin": 7
+  },
+  "CN12_8": {
+   "net": "U5V",
+   "connector": "CN12",
+   "pin": 8
+  },
+  "CN12_9": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 9
+  },
+  "CN12_10": {
+   "net": "PD8",
+   "connector": "CN12",
+   "pin": 10,
+   "doc": "PD8, USART3_TX: the ST-LINK VCP's RX listens to it"
+  },
+  "CN12_11": {
+   "net": "PA5",
+   "connector": "CN12",
+   "pin": 11
+  },
+  "CN12_12": {
+   "net": "PA12",
+   "connector": "CN12",
+   "pin": 12
+  },
+  "CN12_13": {
+   "net": "PA6",
+   "connector": "CN12",
+   "pin": 13
+  },
+  "CN12_14": {
+   "net": "PA11",
+   "connector": "CN12",
+   "pin": 14
+  },
+  "CN12_15": {
+   "net": "PA7",
+   "connector": "CN12",
+   "pin": 15
+  },
+  "CN12_16": {
+   "net": "PB12",
+   "connector": "CN12",
+   "pin": 16
+  },
+  "CN12_17": {
+   "net": "PB6",
+   "connector": "CN12",
+   "pin": 17
+  },
+  "CN12_18": {
+   "net": "PB11",
+   "connector": "CN12",
+   "pin": 18
+  },
+  "CN12_19": {
+   "net": "PC7",
+   "connector": "CN12",
+   "pin": 19
+  },
+  "CN12_20": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 20
+  },
+  "CN12_21": {
+   "net": "PA9",
+   "connector": "CN12",
+   "pin": 21
+  },
+  "CN12_22": {
+   "net": "PB2",
+   "connector": "CN12",
+   "pin": 22
+  },
+  "CN12_23": {
+   "net": "PA8",
+   "connector": "CN12",
+   "pin": 23
+  },
+  "CN12_24": {
+   "net": "PB1",
+   "connector": "CN12",
+   "pin": 24
+  },
+  "CN12_25": {
+   "net": "PB10",
+   "connector": "CN12",
+   "pin": 25
+  },
+  "CN12_26": {
+   "net": "PB15",
+   "connector": "CN12",
+   "pin": 26
+  },
+  "CN12_27": {
+   "net": "PB4",
+   "connector": "CN12",
+   "pin": 27
+  },
+  "CN12_28": {
+   "net": "PB14",
+   "connector": "CN12",
+   "pin": 28
+  },
+  "CN12_29": {
+   "net": "PB5",
+   "connector": "CN12",
+   "pin": 29
+  },
+  "CN12_30": {
+   "net": "PB13",
+   "connector": "CN12",
+   "pin": 30
+  },
+  "CN12_31": {
+   "net": "PB3",
+   "connector": "CN12",
+   "pin": 31
+  },
+  "CN12_32": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 32
+  },
+  "CN12_33": {
+   "net": "PA10",
+   "connector": "CN12",
+   "pin": 33
+  },
+  "CN12_34": {
+   "net": "PC4",
+   "connector": "CN12",
+   "pin": 34
+  },
+  "CN12_35": {
+   "net": "PA2",
+   "connector": "CN12",
+   "pin": 35
+  },
+  "CN12_36": {
+   "net": "PF5",
+   "connector": "CN12",
+   "pin": 36
+  },
+  "CN12_37": {
+   "net": "PA3",
+   "connector": "CN12",
+   "pin": 37
+  },
+  "CN12_38": {
+   "net": "PF4",
+   "connector": "CN12",
+   "pin": 38
+  },
+  "CN12_39": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 39
+  },
+  "CN12_40": {
+   "net": "PE8",
+   "connector": "CN12",
+   "pin": 40
+  },
+  "CN12_41": {
+   "net": "PD13",
+   "connector": "CN12",
+   "pin": 41
+  },
+  "CN12_42": {
+   "net": "PF10",
+   "connector": "CN12",
+   "pin": 42
+  },
+  "CN12_43": {
+   "net": "PD12",
+   "connector": "CN12",
+   "pin": 43
+  },
+  "CN12_44": {
+   "net": "PE7",
+   "connector": "CN12",
+   "pin": 44
+  },
+  "CN12_45": {
+   "net": "PD11",
+   "connector": "CN12",
+   "pin": 45
+  },
+  "CN12_46": {
+   "net": "PD14",
+   "connector": "CN12",
+   "pin": 46
+  },
+  "CN12_47": {
+   "net": "PE10",
+   "connector": "CN12",
+   "pin": 47
+  },
+  "CN12_48": {
+   "net": "PD15",
+   "connector": "CN12",
+   "pin": 48
+  },
+  "CN12_49": {
+   "net": "PE12",
+   "connector": "CN12",
+   "pin": 49
+  },
+  "CN12_50": {
+   "net": "PF14",
+   "connector": "CN12",
+   "pin": 50
+  },
+  "CN12_51": {
+   "net": "PE14",
+   "connector": "CN12",
+   "pin": 51
+  },
+  "CN12_52": {
+   "net": "PE9",
+   "connector": "CN12",
+   "pin": 52
+  },
+  "CN12_53": {
+   "net": "PE15",
+   "connector": "CN12",
+   "pin": 53
+  },
+  "CN12_54": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 54
+  },
+  "CN12_55": {
+   "net": "PE13",
+   "connector": "CN12",
+   "pin": 55
+  },
+  "CN12_56": {
+   "net": "PE11",
+   "connector": "CN12",
+   "pin": 56
+  },
+  "CN12_57": {
+   "net": "PF13",
+   "connector": "CN12",
+   "pin": 57
+  },
+  "CN12_58": {
+   "net": "PF3",
+   "connector": "CN12",
+   "pin": 58
+  },
+  "CN12_59": {
+   "net": "PF12",
+   "connector": "CN12",
+   "pin": 59
+  },
+  "CN12_60": {
+   "net": "PF15",
+   "connector": "CN12",
+   "pin": 60
+  },
+  "CN12_61": {
+   "net": "PG14",
+   "connector": "CN12",
+   "pin": 61
+  },
+  "CN12_62": {
+   "net": "PF11",
+   "connector": "CN12",
+   "pin": 62
+  },
+  "CN12_63": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 63
+  },
+  "CN12_64": {
+   "net": "PE0",
+   "connector": "CN12",
+   "pin": 64
+  },
+  "CN12_65": {
+   "net": "PD10",
+   "connector": "CN12",
+   "pin": 65
+  },
+  "CN12_66": {
+   "net": "PG8",
+   "connector": "CN12",
+   "pin": 66
+  },
+  "CN12_67": {
+   "net": "PG7",
+   "connector": "CN12",
+   "pin": 67
+  },
+  "CN12_68": {
+   "net": "PG5",
+   "connector": "CN12",
+   "pin": 68
+  },
+  "CN12_69": {
+   "net": "PG4",
+   "connector": "CN12",
+   "pin": 69
+  },
+  "CN12_70": {
+   "net": "PG6",
+   "connector": "CN12",
+   "pin": 70
+  },
+  "CN12_71": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 71
+  },
+  "CN12_72": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 72
+  },
+  "USB_VBUS": {
+   "net": "USB_VBUS",
+   "connector": "CN13",
+   "pin": 1,
+   "doc": "VBUS of the USB OTG connector: to PA9 (OTG_FS_VBUS) through R35 (10 kOhm), and lighting LD8"
+  },
+  "USB_DM": {
+   "net": "PA11",
+   "connector": "CN13",
+   "pin": 2,
+   "doc": "D-: PA11, OTG_FS_DM"
+  },
+  "USB_DP": {
+   "net": "PA12",
+   "connector": "CN13",
+   "pin": 3,
+   "doc": "D+: PA12, OTG_FS_DP"
+  },
+  "USB_ID": {
+   "net": "PA10",
+   "connector": "CN13",
+   "pin": 4,
+   "doc": "ID: PA10, OTG_FS_ID"
+  },
+  "USB_GND": {
+   "net": "GND",
+   "connector": "CN13",
+   "pin": 5
+  },
+  "U5V": {
+   "net": "U5V",
+   "doc": "The ST-LINK's USB 5 V (CN1, micro-B) from the host; also CN12 pin 8"
+  },
+  "IDD_3V3": {
+   "net": "3V3",
+   "doc": "JP5 pin 1, the regulator's side: an ammeter's + lead"
+  },
+  "IDD_VDD": {
+   "net": "VDD",
+   "doc": "JP5 pin 2, the STM32's side: an ammeter's - lead"
+  }
+ },
+ "leds": [
+  {
+   "name": "user",
+   "component": "LD1",
+   "gpio": "PB0",
+   "active": "high",
+   "color": "green"
+  },
+  {
+   "name": "user2",
+   "component": "LD2",
+   "gpio": "PB7",
+   "active": "high",
+   "color": "blue"
+  },
+  {
+   "name": "user3",
+   "component": "LD3",
+   "gpio": "PB14",
+   "active": "high",
+   "color": "red"
+  },
+  {
+   "name": "power",
+   "component": "LD6",
+   "color": "green"
+  },
+  {
+   "name": "usb_overcurrent",
+   "component": "LD7",
+   "color": "red"
+  },
+  {
+   "name": "usb_vbus",
+   "component": "LD8",
+   "color": "green"
+  }
+ ],
+ "buttons": [
+  {
+   "name": "user",
+   "component": "B1",
+   "gpio": "PC13",
+   "active": "high"
+  },
+  {
+   "name": "reset",
+   "component": "B2",
+   "signal": "NRST",
+   "active": "low"
+  }
+ ],
+ "console": {
+  "peripheral": "USART3",
+  "tx": "PD8",
+  "rx": "PD9",
+  "baud": 115200,
+  "bridge": {
+   "part": "STM32F103CBT6 (ST-LINK/V2-1)"
+  }
+ },
+ "bench": {
+  "thickness_mm": 1.6,
+  "standoff_mm": 3,
+  "headers": "female",
+  "features": [
+   {
+    "kind": "usb_micro",
+    "at": [
+     35.0,
+     1.5
+    ],
+    "label": "USB ST-LINK"
+   },
+   {
+    "kind": "qfp",
+    "at": [
+     52.0,
+     12.0
+    ],
+    "pins": 48,
+    "label": "STM32F103CBT6",
+    "rotation": 45
+   },
+   {
+    "kind": "qfp",
+    "at": [
+     35.0,
+     75.0
+    ],
+    "pins": 144,
+    "label": "STM32F446ZET6",
+    "rotation": 45
+   },
+   {
+    "kind": "crystal",
+    "at": [
+     27.0,
+     62.0
+    ],
+    "size": [
+     3.2,
+     1.5,
+     0.9
+    ],
+    "label": "32.768"
+   },
+   {
+    "kind": "button",
+    "at": [
+     17.0,
+     121.0
+    ],
+    "size": [
+     6.0,
+     6.0,
+     3.4
+    ],
+    "color": "#2554c7",
+    "input": "B1.pressed"
+   },
+   {
+    "kind": "button",
+    "at": [
+     53.0,
+     121.0
+    ],
+    "size": [
+     6.0,
+     6.0,
+     3.4
+    ],
+    "color": "#15171b",
+    "input": "B2.pressed"
+   },
+   {
+    "kind": "led",
+    "at": [
+     31.0,
+     115.0
+    ],
+    "size": [
+     2.0,
+     1.25,
+     0.8
+    ],
+    "color": "#4dff7a",
+    "output": "LD1.luminance"
+   },
+   {
+    "kind": "led",
+    "at": [
+     35.0,
+     115.0
+    ],
+    "size": [
+     2.0,
+     1.25,
+     0.8
+    ],
+    "color": "#5a9bff",
+    "output": "LD2.luminance"
+   },
+   {
+    "kind": "led",
+    "at": [
+     39.0,
+     115.0
+    ],
+    "size": [
+     2.0,
+     1.25,
+     0.8
+    ],
+    "color": "#ff5a5a",
+    "output": "LD3.luminance"
+   },
+   {
+    "kind": "led",
+    "at": [
+     60.0,
+     29.0
+    ],
+    "size": [
+     2.0,
+     1.25,
+     0.8
+    ],
+    "color": "#4dff7a",
+    "output": "LD6.luminance"
+   },
+   {
+    "kind": "led",
+    "at": [
+     30.0,
+     128.0
+    ],
+    "size": [
+     2.0,
+     1.25,
+     0.8
+    ],
+    "color": "#ff5a5a",
+    "output": "LD7.luminance"
+   },
+   {
+    "kind": "led",
+    "at": [
+     34.0,
+     128.0
+    ],
+    "size": [
+     2.0,
+     1.25,
+     0.8
+    ],
+    "color": "#4dff7a",
+    "output": "LD8.luminance"
+   },
+   {
+    "kind": "usb_micro",
+    "at": [
+     23.8,
+     132.0
+    ],
+    "rotation": 180,
+    "label": "CN13 USB OTG"
+   }
+  ]
+ },
+ "artwork": {
+  "svg": "artwork.svg",
+  "width_mm": 70.0,
+  "height_mm": 133.34,
+  "hotspots": [
+   {
+    "port": "U5V",
+    "selector": "#pin-u5v"
+   },
+   {
+    "port": "CN11_1",
+    "selector": "#pin-cn11_1"
+   },
+   {
+    "port": "CN11_2",
+    "selector": "#pin-cn11_2"
+   },
+   {
+    "port": "CN11_3",
+    "selector": "#pin-cn11_3"
+   },
+   {
+    "port": "CN11_4",
+    "selector": "#pin-cn11_4"
+   },
+   {
+    "port": "CN11_5",
+    "selector": "#pin-cn11_5"
+   },
+   {
+    "port": "CN11_6",
+    "selector": "#pin-cn11_6"
+   },
+   {
+    "port": "CN11_7",
+    "selector": "#pin-cn11_7"
+   },
+   {
+    "port": "CN11_8",
+    "selector": "#pin-cn11_8"
+   },
+   {
+    "port": "CN11_9",
+    "selector": "#pin-cn11_9"
+   },
+   {
+    "port": "CN11_11",
+    "selector": "#pin-cn11_11"
+   },
+   {
+    "port": "CN11_12",
+    "selector": "#pin-cn11_12"
+   },
+   {
+    "port": "CN11_13",
+    "selector": "#pin-cn11_13"
+   },
+   {
+    "port": "CN11_14",
+    "selector": "#pin-cn11_14"
+   },
+   {
+    "port": "CN11_15",
+    "selector": "#pin-cn11_15"
+   },
+   {
+    "port": "CN11_16",
+    "selector": "#pin-cn11_16"
+   },
+   {
+    "port": "CN11_17",
+    "selector": "#pin-cn11_17"
+   },
+   {
+    "port": "CN11_18",
+    "selector": "#pin-cn11_18"
+   },
+   {
+    "port": "CN11_19",
+    "selector": "#pin-cn11_19"
+   },
+   {
+    "port": "CN11_20",
+    "selector": "#pin-cn11_20"
+   },
+   {
+    "port": "CN11_21",
+    "selector": "#pin-cn11_21"
+   },
+   {
+    "port": "CN11_22",
+    "selector": "#pin-cn11_22"
+   },
+   {
+    "port": "CN11_23",
+    "selector": "#pin-cn11_23"
+   },
+   {
+    "port": "CN11_24",
+    "selector": "#pin-cn11_24"
+   },
+   {
+    "port": "CN11_25",
+    "selector": "#pin-cn11_25"
+   },
+   {
+    "port": "CN11_27",
+    "selector": "#pin-cn11_27"
+   },
+   {
+    "port": "CN11_28",
+    "selector": "#pin-cn11_28"
+   },
+   {
+    "port": "CN11_29",
+    "selector": "#pin-cn11_29"
+   },
+   {
+    "port": "CN11_30",
+    "selector": "#pin-cn11_30"
+   },
+   {
+    "port": "CN11_31",
+    "selector": "#pin-cn11_31"
+   },
+   {
+    "port": "CN11_32",
+    "selector": "#pin-cn11_32"
+   },
+   {
+    "port": "CN11_33",
+    "selector": "#pin-cn11_33"
+   },
+   {
+    "port": "CN11_34",
+    "selector": "#pin-cn11_34"
+   },
+   {
+    "port": "CN11_35",
+    "selector": "#pin-cn11_35"
+   },
+   {
+    "port": "CN11_36",
+    "selector": "#pin-cn11_36"
+   },
+   {
+    "port": "CN11_37",
+    "selector": "#pin-cn11_37"
+   },
+   {
+    "port": "CN11_38",
+    "selector": "#pin-cn11_38"
+   },
+   {
+    "port": "CN11_39",
+    "selector": "#pin-cn11_39"
+   },
+   {
+    "port": "CN11_40",
+    "selector": "#pin-cn11_40"
+   },
+   {
+    "port": "CN11_41",
+    "selector": "#pin-cn11_41"
+   },
+   {
+    "port": "CN11_42",
+    "selector": "#pin-cn11_42"
+   },
+   {
+    "port": "CN11_43",
+    "selector": "#pin-cn11_43"
+   },
+   {
+    "port": "CN11_44",
+    "selector": "#pin-cn11_44"
+   },
+   {
+    "port": "CN11_45",
+    "selector": "#pin-cn11_45"
+   },
+   {
+    "port": "CN11_46",
+    "selector": "#pin-cn11_46"
+   },
+   {
+    "port": "CN11_47",
+    "selector": "#pin-cn11_47"
+   },
+   {
+    "port": "CN11_48",
+    "selector": "#pin-cn11_48"
+   },
+   {
+    "port": "CN11_49",
+    "selector": "#pin-cn11_49"
+   },
+   {
+    "port": "CN11_50",
+    "selector": "#pin-cn11_50"
+   },
+   {
+    "port": "CN11_51",
+    "selector": "#pin-cn11_51"
+   },
+   {
+    "port": "CN11_52",
+    "selector": "#pin-cn11_52"
+   },
+   {
+    "port": "CN11_53",
+    "selector": "#pin-cn11_53"
+   },
+   {
+    "port": "CN11_54",
+    "selector": "#pin-cn11_54"
+   },
+   {
+    "port": "CN11_55",
+    "selector": "#pin-cn11_55"
+   },
+   {
+    "port": "CN11_56",
+    "selector": "#pin-cn11_56"
+   },
+   {
+    "port": "CN11_57",
+    "selector": "#pin-cn11_57"
+   },
+   {
+    "port": "CN11_58",
+    "selector": "#pin-cn11_58"
+   },
+   {
+    "port": "CN11_59",
+    "selector": "#pin-cn11_59"
+   },
+   {
+    "port": "CN11_60",
+    "selector": "#pin-cn11_60"
+   },
+   {
+    "port": "CN11_61",
+    "selector": "#pin-cn11_61"
+   },
+   {
+    "port": "CN11_62",
+    "selector": "#pin-cn11_62"
+   },
+   {
+    "port": "CN11_63",
+    "selector": "#pin-cn11_63"
+   },
+   {
+    "port": "CN11_64",
+    "selector": "#pin-cn11_64"
+   },
+   {
+    "port": "CN11_65",
+    "selector": "#pin-cn11_65"
+   },
+   {
+    "port": "CN11_66",
+    "selector": "#pin-cn11_66"
+   },
+   {
+    "port": "CN11_68",
+    "selector": "#pin-cn11_68"
+   },
+   {
+    "port": "CN11_69",
+    "selector": "#pin-cn11_69"
+   },
+   {
+    "port": "CN11_70",
+    "selector": "#pin-cn11_70"
+   },
+   {
+    "port": "CN11_71",
+    "selector": "#pin-cn11_71"
+   },
+   {
+    "port": "CN11_72",
+    "selector": "#pin-cn11_72"
+   },
+   {
+    "port": "CN12_1",
+    "selector": "#pin-cn12_1"
+   },
+   {
+    "port": "CN12_2",
+    "selector": "#pin-cn12_2"
+   },
+   {
+    "port": "CN12_3",
+    "selector": "#pin-cn12_3"
+   },
+   {
+    "port": "CN12_4",
+    "selector": "#pin-cn12_4"
+   },
+   {
+    "port": "CN12_5",
+    "selector": "#pin-cn12_5"
+   },
+   {
+    "port": "CN12_6",
+    "selector": "#pin-cn12_6"
+   },
+   {
+    "port": "CN12_7",
+    "selector": "#pin-cn12_7"
+   },
+   {
+    "port": "CN12_8",
+    "selector": "#pin-cn12_8"
+   },
+   {
+    "port": "CN12_9",
+    "selector": "#pin-cn12_9"
+   },
+   {
+    "port": "CN12_10",
+    "selector": "#pin-cn12_10"
+   },
+   {
+    "port": "CN12_11",
+    "selector": "#pin-cn12_11"
+   },
+   {
+    "port": "CN12_12",
+    "selector": "#pin-cn12_12"
+   },
+   {
+    "port": "CN12_13",
+    "selector": "#pin-cn12_13"
+   },
+   {
+    "port": "CN12_14",
+    "selector": "#pin-cn12_14"
+   },
+   {
+    "port": "CN12_15",
+    "selector": "#pin-cn12_15"
+   },
+   {
+    "port": "CN12_16",
+    "selector": "#pin-cn12_16"
+   },
+   {
+    "port": "CN12_17",
+    "selector": "#pin-cn12_17"
+   },
+   {
+    "port": "CN12_18",
+    "selector": "#pin-cn12_18"
+   },
+   {
+    "port": "CN12_19",
+    "selector": "#pin-cn12_19"
+   },
+   {
+    "port": "CN12_20",
+    "selector": "#pin-cn12_20"
+   },
+   {
+    "port": "CN12_21",
+    "selector": "#pin-cn12_21"
+   },
+   {
+    "port": "CN12_22",
+    "selector": "#pin-cn12_22"
+   },
+   {
+    "port": "CN12_23",
+    "selector": "#pin-cn12_23"
+   },
+   {
+    "port": "CN12_24",
+    "selector": "#pin-cn12_24"
+   },
+   {
+    "port": "CN12_25",
+    "selector": "#pin-cn12_25"
+   },
+   {
+    "port": "CN12_26",
+    "selector": "#pin-cn12_26"
+   },
+   {
+    "port": "CN12_27",
+    "selector": "#pin-cn12_27"
+   },
+   {
+    "port": "CN12_28",
+    "selector": "#pin-cn12_28"
+   },
+   {
+    "port": "CN12_29",
+    "selector": "#pin-cn12_29"
+   },
+   {
+    "port": "CN12_30",
+    "selector": "#pin-cn12_30"
+   },
+   {
+    "port": "CN12_31",
+    "selector": "#pin-cn12_31"
+   },
+   {
+    "port": "CN12_32",
+    "selector": "#pin-cn12_32"
+   },
+   {
+    "port": "CN12_33",
+    "selector": "#pin-cn12_33"
+   },
+   {
+    "port": "CN12_34",
+    "selector": "#pin-cn12_34"
+   },
+   {
+    "port": "CN12_35",
+    "selector": "#pin-cn12_35"
+   },
+   {
+    "port": "CN12_36",
+    "selector": "#pin-cn12_36"
+   },
+   {
+    "port": "CN12_37",
+    "selector": "#pin-cn12_37"
+   },
+   {
+    "port": "CN12_38",
+    "selector": "#pin-cn12_38"
+   },
+   {
+    "port": "CN12_39",
+    "selector": "#pin-cn12_39"
+   },
+   {
+    "port": "CN12_40",
+    "selector": "#pin-cn12_40"
+   },
+   {
+    "port": "CN12_41",
+    "selector": "#pin-cn12_41"
+   },
+   {
+    "port": "CN12_42",
+    "selector": "#pin-cn12_42"
+   },
+   {
+    "port": "CN12_43",
+    "selector": "#pin-cn12_43"
+   },
+   {
+    "port": "CN12_44",
+    "selector": "#pin-cn12_44"
+   },
+   {
+    "port": "CN12_45",
+    "selector": "#pin-cn12_45"
+   },
+   {
+    "port": "CN12_46",
+    "selector": "#pin-cn12_46"
+   },
+   {
+    "port": "CN12_47",
+    "selector": "#pin-cn12_47"
+   },
+   {
+    "port": "CN12_48",
+    "selector": "#pin-cn12_48"
+   },
+   {
+    "port": "CN12_49",
+    "selector": "#pin-cn12_49"
+   },
+   {
+    "port": "CN12_50",
+    "selector": "#pin-cn12_50"
+   },
+   {
+    "port": "CN12_51",
+    "selector": "#pin-cn12_51"
+   },
+   {
+    "port": "CN12_52",
+    "selector": "#pin-cn12_52"
+   },
+   {
+    "port": "CN12_53",
+    "selector": "#pin-cn12_53"
+   },
+   {
+    "port": "CN12_54",
+    "selector": "#pin-cn12_54"
+   },
+   {
+    "port": "CN12_55",
+    "selector": "#pin-cn12_55"
+   },
+   {
+    "port": "CN12_56",
+    "selector": "#pin-cn12_56"
+   },
+   {
+    "port": "CN12_57",
+    "selector": "#pin-cn12_57"
+   },
+   {
+    "port": "CN12_58",
+    "selector": "#pin-cn12_58"
+   },
+   {
+    "port": "CN12_59",
+    "selector": "#pin-cn12_59"
+   },
+   {
+    "port": "CN12_60",
+    "selector": "#pin-cn12_60"
+   },
+   {
+    "port": "CN12_61",
+    "selector": "#pin-cn12_61"
+   },
+   {
+    "port": "CN12_62",
+    "selector": "#pin-cn12_62"
+   },
+   {
+    "port": "CN12_63",
+    "selector": "#pin-cn12_63"
+   },
+   {
+    "port": "CN12_64",
+    "selector": "#pin-cn12_64"
+   },
+   {
+    "port": "CN12_65",
+    "selector": "#pin-cn12_65"
+   },
+   {
+    "port": "CN12_66",
+    "selector": "#pin-cn12_66"
+   },
+   {
+    "port": "CN12_67",
+    "selector": "#pin-cn12_67"
+   },
+   {
+    "port": "CN12_68",
+    "selector": "#pin-cn12_68"
+   },
+   {
+    "port": "CN12_69",
+    "selector": "#pin-cn12_69"
+   },
+   {
+    "port": "CN12_70",
+    "selector": "#pin-cn12_70"
+   },
+   {
+    "port": "CN12_71",
+    "selector": "#pin-cn12_71"
+   },
+   {
+    "port": "CN12_72",
+    "selector": "#pin-cn12_72"
+   },
+   {
+    "port": "D43",
+    "selector": "#pin-d43"
+   },
+   {
+    "port": "IOREF",
+    "selector": "#pin-ioref"
+   },
+   {
+    "port": "D44",
+    "selector": "#pin-d44"
+   },
+   {
+    "port": "RESET",
+    "selector": "#pin-reset"
+   },
+   {
+    "port": "D45",
+    "selector": "#pin-d45"
+   },
+   {
+    "port": "3V3",
+    "selector": "#pin-3v3"
+   },
+   {
+    "port": "D46",
+    "selector": "#pin-d46"
+   },
+   {
+    "port": "5V",
+    "selector": "#pin-5v"
+   },
+   {
+    "port": "D47",
+    "selector": "#pin-d47"
+   },
+   {
+    "port": "GND_2",
+    "selector": "#pin-gnd_2"
+   },
+   {
+    "port": "D48",
+    "selector": "#pin-d48"
+   },
+   {
+    "port": "GND_3",
+    "selector": "#pin-gnd_3"
+   },
+   {
+    "port": "D49",
+    "selector": "#pin-d49"
+   },
+   {
+    "port": "VIN",
+    "selector": "#pin-vin"
+   },
+   {
+    "port": "D50",
+    "selector": "#pin-d50"
+   },
+   {
+    "port": "A0",
+    "selector": "#pin-a0"
+   },
+   {
+    "port": "D51",
+    "selector": "#pin-d51"
+   },
+   {
+    "port": "A1",
+    "selector": "#pin-a1"
+   },
+   {
+    "port": "D52",
+    "selector": "#pin-d52"
+   },
+   {
+    "port": "A2",
+    "selector": "#pin-a2"
+   },
+   {
+    "port": "D53",
+    "selector": "#pin-d53"
+   },
+   {
+    "port": "A3",
+    "selector": "#pin-a3"
+   },
+   {
+    "port": "D54",
+    "selector": "#pin-d54"
+   },
+   {
+    "port": "A4",
+    "selector": "#pin-a4"
+   },
+   {
+    "port": "D55",
+    "selector": "#pin-d55"
+   },
+   {
+    "port": "A5",
+    "selector": "#pin-a5"
+   },
+   {
+    "port": "GND_4",
+    "selector": "#pin-gnd_4"
+   },
+   {
+    "port": "D56",
+    "selector": "#pin-d56"
+   },
+   {
+    "port": "D57",
+    "selector": "#pin-d57"
+   },
+   {
+    "port": "D70",
+    "selector": "#pin-d70"
+   },
+   {
+    "port": "D58",
+    "selector": "#pin-d58"
+   },
+   {
+    "port": "D69",
+    "selector": "#pin-d69"
+   },
+   {
+    "port": "D59",
+    "selector": "#pin-d59"
+   },
+   {
+    "port": "D68",
+    "selector": "#pin-d68"
+   },
+   {
+    "port": "D60",
+    "selector": "#pin-d60"
+   },
+   {
+    "port": "GND_5",
+    "selector": "#pin-gnd_5"
+   },
+   {
+    "port": "D61",
+    "selector": "#pin-d61"
+   },
+   {
+    "port": "D67",
+    "selector": "#pin-d67"
+   },
+   {
+    "port": "D62",
+    "selector": "#pin-d62"
+   },
+   {
+    "port": "D66",
+    "selector": "#pin-d66"
+   },
+   {
+    "port": "D63",
+    "selector": "#pin-d63"
+   },
+   {
+    "port": "D65",
+    "selector": "#pin-d65"
+   },
+   {
+    "port": "D64",
+    "selector": "#pin-d64"
+   },
+   {
+    "port": "D16",
+    "selector": "#pin-d16"
+   },
+   {
+    "port": "D15",
+    "selector": "#pin-d15"
+   },
+   {
+    "port": "D17",
+    "selector": "#pin-d17"
+   },
+   {
+    "port": "D14",
+    "selector": "#pin-d14"
+   },
+   {
+    "port": "D18",
+    "selector": "#pin-d18"
+   },
+   {
+    "port": "AREF",
+    "selector": "#pin-aref"
+   },
+   {
+    "port": "D19",
+    "selector": "#pin-d19"
+   },
+   {
+    "port": "GND",
+    "selector": "#pin-gnd"
+   },
+   {
+    "port": "D20",
+    "selector": "#pin-d20"
+   },
+   {
+    "port": "D13",
+    "selector": "#pin-d13"
+   },
+   {
+    "port": "D21",
+    "selector": "#pin-d21"
+   },
+   {
+    "port": "D12",
+    "selector": "#pin-d12"
+   },
+   {
+    "port": "D22",
+    "selector": "#pin-d22"
+   },
+   {
+    "port": "D11",
+    "selector": "#pin-d11"
+   },
+   {
+    "port": "D23",
+    "selector": "#pin-d23"
+   },
+   {
+    "port": "D10",
+    "selector": "#pin-d10"
+   },
+   {
+    "port": "D24",
+    "selector": "#pin-d24"
+   },
+   {
+    "port": "D9",
+    "selector": "#pin-d9"
+   },
+   {
+    "port": "D25",
+    "selector": "#pin-d25"
+   },
+   {
+    "port": "D8",
+    "selector": "#pin-d8"
+   },
+   {
+    "port": "AVDD",
+    "selector": "#pin-avdd"
+   },
+   {
+    "port": "D7",
+    "selector": "#pin-d7"
+   },
+   {
+    "port": "AGND",
+    "selector": "#pin-agnd"
+   },
+   {
+    "port": "D6",
+    "selector": "#pin-d6"
+   },
+   {
+    "port": "GND_6",
+    "selector": "#pin-gnd_6"
+   },
+   {
+    "port": "D5",
+    "selector": "#pin-d5"
+   },
+   {
+    "port": "A6",
+    "selector": "#pin-a6"
+   },
+   {
+    "port": "D4",
+    "selector": "#pin-d4"
+   },
+   {
+    "port": "A7",
+    "selector": "#pin-a7"
+   },
+   {
+    "port": "D3",
+    "selector": "#pin-d3"
+   },
+   {
+    "port": "A8",
+    "selector": "#pin-a8"
+   },
+   {
+    "port": "D2",
+    "selector": "#pin-d2"
+   },
+   {
+    "port": "D26",
+    "selector": "#pin-d26"
+   },
+   {
+    "port": "D1",
+    "selector": "#pin-d1"
+   },
+   {
+    "port": "D27",
+    "selector": "#pin-d27"
+   },
+   {
+    "port": "D0",
+    "selector": "#pin-d0"
+   },
+   {
+    "port": "GND_7",
+    "selector": "#pin-gnd_7"
+   },
+   {
+    "port": "D42",
+    "selector": "#pin-d42"
+   },
+   {
+    "port": "D28",
+    "selector": "#pin-d28"
+   },
+   {
+    "port": "D41",
+    "selector": "#pin-d41"
+   },
+   {
+    "port": "D29",
+    "selector": "#pin-d29"
+   },
+   {
+    "port": "GND_8",
+    "selector": "#pin-gnd_8"
+   },
+   {
+    "port": "D30",
+    "selector": "#pin-d30"
+   },
+   {
+    "port": "D40",
+    "selector": "#pin-d40"
+   },
+   {
+    "port": "D31",
+    "selector": "#pin-d31"
+   },
+   {
+    "port": "D39",
+    "selector": "#pin-d39"
+   },
+   {
+    "port": "GND_9",
+    "selector": "#pin-gnd_9"
+   },
+   {
+    "port": "D38",
+    "selector": "#pin-d38"
+   },
+   {
+    "port": "D32",
+    "selector": "#pin-d32"
+   },
+   {
+    "port": "D37",
+    "selector": "#pin-d37"
+   },
+   {
+    "port": "D33",
+    "selector": "#pin-d33"
+   },
+   {
+    "port": "D36",
+    "selector": "#pin-d36"
+   },
+   {
+    "port": "D34",
+    "selector": "#pin-d34"
+   },
+   {
+    "port": "D35",
+    "selector": "#pin-d35"
+   },
+   {
+    "component": "JP3_U5V",
+    "selector": "#jp3-u5v",
+    "input": "closed"
+   },
+   {
+    "component": "JP3_VIN",
+    "selector": "#jp3-vin",
+    "input": "closed"
+   },
+   {
+    "component": "JP3_E5V",
+    "selector": "#jp3-e5v",
+    "input": "closed"
+   },
+   {
+    "component": "JP4",
+    "selector": "#jp4",
+    "input": "closed"
+   },
+   {
+    "component": "JP5",
+    "selector": "#jp5",
+    "input": "closed"
+   },
+   {
+    "port": "IDD_3V3",
+    "selector": "#pin-idd_3v3"
+   },
+   {
+    "port": "IDD_VDD",
+    "selector": "#pin-idd_vdd"
+   },
+   {
+    "component": "B1",
+    "selector": "#btn-user",
+    "input": "pressed"
+   },
+   {
+    "component": "B2",
+    "selector": "#btn-reset",
+    "input": "pressed"
+   },
+   {
+    "component": "LD1",
+    "selector": "#led-ld1",
+    "output": "luminance"
+   },
+   {
+    "component": "LD2",
+    "selector": "#led-ld2",
+    "output": "luminance"
+   },
+   {
+    "component": "LD3",
+    "selector": "#led-ld3",
+    "output": "luminance"
+   },
+   {
+    "component": "LD6",
+    "selector": "#led-ld6",
+    "output": "luminance"
+   },
+   {
+    "component": "LD7",
+    "selector": "#led-ld7",
+    "output": "luminance"
+   },
+   {
+    "component": "LD8",
+    "selector": "#led-ld8",
+    "output": "luminance"
+   },
+   {
+    "port": "USB_VBUS",
+    "selector": "#pin-usb_vbus"
+   },
+   {
+    "port": "USB_DM",
+    "selector": "#pin-usb_dm"
+   },
+   {
+    "port": "USB_DP",
+    "selector": "#pin-usb_dp"
+   },
+   {
+    "port": "USB_ID",
+    "selector": "#pin-usb_id"
+   },
+   {
+    "port": "USB_GND",
+    "selector": "#pin-usb_gnd"
+   }
+  ]
+ },
+ "toolchains": {
+  "embcc": {
+   "target": "thumbv7em-none-eabihf",
+   "linker_script": "stm32f446ze.ld"
+  },
+  "gcc-arm": {
+   "cpu": "cortex-m4",
+   "flags": [
+    "-mthumb",
+    "-mcpu=cortex-m4",
+    "-mfpu=fpv4-sp-d16",
+    "-mfloat-abi=hard"
+   ],
+   "linker_script": "stm32f446ze.ld"
+  },
+  "clang": {
+   "target": "thumbv7em-none-eabihf",
+   "flags": [
+    "-mcpu=cortex-m4",
+    "-mfpu=fpv4-sp-d16",
+    "-mfloat-abi=hard"
+   ],
+   "linker_script": "stm32f446ze.ld"
+  }
+ },
+ "fidelity": {
+  "functional": {
+   "claims": "Nets, ports, LD1 to LD3 and LD6 to LD8, B1, B2 and the jumpers as parts, as MB1137 B-01's schematic draws them; the STM32F446ZE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (the ST-LINK's MCO through SB149: HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST Zio connectors CN7 to CN10 carry the NUCLEO-F446ZE's assignment (D0 to D72, A0 to A8, the solder bridges in their factory state) and the morpho headers CN11 and CN12 (2 x 36) every one of the part's 114 I/Os. CN13's VBUS reaches PA9 through R35 and lights LD8; its D-, D+ and ID are PA11, PA12 and PA10; PG6 and PG7 carry U12's enable and fault lines (R72's pull-down, R71's pull-up through JP4). The ST-LINK/V2-1's virtual COM port is the session's console on USART3 (PD8/PD9, through SB5 and SB6) and a serial port on the host.",
+   "omissions": [
+    "the ST-LINK/V2-1 itself: its USB enumeration, the mass-storage drag-and-drop programming, SWD and its NRST drive (the session programs and debugs the board, ADR-031)",
+    "the VCP's bytes reach USART3 directly, not as frames on PD9",
+    "LD4 (COM), the ST-LINK's tricolour LED",
+    "the USB OTG FS controller (no model yet: CN13's lines are the pins alone) and U12 (STMPS2151STR), the switch that would power VBUS from +5V for a USB host: VBUS comes only from what is plugged into CN13, and U12's fault output never asserts (LD7 stays dark)",
+    "the Ethernet PHY and RJ45 of sheet 5, which the NUCLEO-F446ZE does not carry (the STM32F446 has no Ethernet MAC)",
+    "the solder bridges are fixed in their factory state (SB120 on PB0, SB121 on PA7, SB144/SB145/SB148 open, SB163 closed, SB143/SB138 open, the F303ZE, F412ZG and L476ZG alternatives open)",
+    "one JP3 shunt sits on one position only; the three switches here can all be closed",
+    "U4's current limit (R28) and its fault output with LD5: the switch never trips",
+    "CN4 (SWD to an external target) and the ST-LINK's CN1 beyond its 5 V"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  },
+  "timed": {
+   "claims": "As functional.",
+   "omissions": [
+    "as functional"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  },
+  "electrical": {
+   "claims": "The power paths of sheet 1: the ST-LINK's USB 5 V (U5V) through U4 (ST890CDR, on while PWR_ENn is low, R27 pulling it up) to JP3's U5V position; VIN (7 to 12 V) through U5 (LD1117S50) to its VIN position; E5V to its E5V position; U6 (LD39050PU33R) makes +3V3 from +5V and JP5 (IDD) carries it to VDD, VBAT, VDDUSB and PDR_ON and, through SB12, to VDDA and VREF+. LD6 (green) shows +5V through R29 (1 kOhm). LD1 is driven by U7 (TSV631), a voltage follower of PB0 through R34 (10 kOhm, R33's 200 kOhm pulling it down), through R32 (510 ohm); LD2 (blue) by PB7 through R31 (680 ohm); LD3 (red) by PB14 through R30 (1 kOhm). B1 joins its node to VDD; R58 (220 kOhm) holds it low, and R59 (330 ohm) takes it to PC13, with no filter capacitor (C52 not fitted). C53 (100 nF) holds NRST low for about 1.5 ms at power-on; C55 and C56 (2.2 uF) sit on VCAP_1 and VCAP_2; R36 (10 kOhm) holds BOOT0 low. CN13's VBUS lights LD8 (green, R64 330 ohm) through T2, its base driven through R68 (47 kOhm) against R69 (22 kOhm).",
+   "omissions": [
+    "U4 is the catalog's ST890CDR (its on-resistance and ON threshold assumed until its datasheet is checked), U7 the catalog's TSV631 (its datasheet not at hand either), T2 the catalog's S9013 (a mid-range gain, its datasheet not at hand)",
+    "L1, the ferrite bead between VDD and VDDA (its part is not named on the schematic), is taken as a short",
+    "X2 (NX3215SA) is a 32.768 kHz tuning-fork crystal's equivalent circuit, its own motional values not at hand; C35 and C36 (2 pF) and R37 and R38 (0 ohm) are not modelled",
+    "the ST-LINK's current negotiation: PWR_ENn is low as after a host has granted 300 mA",
+    "the ST-LINK's own supply and current",
+    "decoupling and bulk capacitors, D6's ESD protection",
+    "the STM32's supply current: VDD carries only what the pins drive, so with JP5 removed and no ammeter VDD floats instead of falling to 0 V, and the STM32 keeps running whatever VDD is"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "MB1137 B-01 electrical schematics (NUCLEO-XXXXZX, sheets 1 to 6, 2015): the power paths, the LEDs, B1, the USB circuit, the Zio and morpho connectors and their solder bridges",
+    "url": "https://www.st.com/en/evaluation-tools/nucleo-f446ze.html#cad-resources"
+   },
+   {
+    "title": "UM1974 STM32 Nucleo-144 boards (MB1137) user manual",
+    "url": "https://www.st.com/resource/en/user_manual/um1974-stm32-nucleo144-boards-mb1137-stmicroelectronics.pdf"
+   },
+   {
+    "title": "UM1974 table 18 (NUCLEO-F446ZE and NUCLEO-F722ZE pin assignments), as Zephyr's boards/st/nucleo_f446ze/st_zio_connector.dtsi transcribes it (Apache-2.0); checked against STM32duino's variant_NUCLEO_F446ZE.cpp (BSD-3-Clause, 6a2cdda) and ST's stm32f4xx-nucleo-144-bsp"
+   },
+   {
+    "title": "STM32F446xC/E datasheet",
+    "rev": "DS10693"
+   }
+  ],
+  "notes": "Artwork is an original SVG drawn for EmbSIM to the board's 70 x 133.34 mm outline; no ST artwork or logo is used. The morpho assignment (CN11, CN12) places each of the 114 I/Os once, as MB1137's sheet 6 and MB1364's sheet 5 both draw it."
+ },
+ "tests": [
+  "tests/*.json"
+ ]
+}

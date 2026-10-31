@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "cortexm_mpu",
+  "until": "600ms",
+  "description": "CORTEXM_MPU: the MPU set up with its regions and a privileged read-only array read; the main loop toggles LD1 every HAL_Delay(100), 101 ms, no memory-management fault lighting LD3.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "blink",
+      "between": [
+        "150ms",
+        "554ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 4
+      }
+    },
+    {
+      "id": "no-fault",
+      "between": [
+        "20ms",
+        "590ms"
+      ],
+      "probe": "led3",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}
