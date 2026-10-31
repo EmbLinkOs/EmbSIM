@@ -5,6 +5,15 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The window's sunlit patch
+
+- The walls, the ceiling and the window's bars cast shadows, and the sun's
+  shadow camera starts outside the room: only a window-shaped patch of the
+  table is sunlit, crossed by the bars' shadows; the rest is in the wall's
+  shade. A lamp or the window's daylight keeps the tight shadow frame on
+  the bench. The edge falls where the geometry puts it (checked at 38° N,
+  December noon: within half a degree of the sun's elevation).
+
 ### The GPU's time per frame
 
 - Where the browser exposes GPU timer queries

@@ -743,7 +743,24 @@ export function Bench3D(props: Bench3DProps) {
       const day = Math.max(0, Math.min(1, (pos.elevation + 4) / 20));
       pane.setRGB(0.04 + 0.83 * day, 0.06 + 0.86 * day, 0.12 + 0.84 * day);
     }
-    const v = new THREE.Vector3(...key.dir).normalize().multiplyScalar(520);
+    // the sun shines from outside: its shadow camera starts beyond the window wall, so the wall,
+    // the frame's bars and the ceiling cast their shadows and only a window-shaped patch is sunlit;
+    // it then covers the whole table. A lamp or the window's daylight is inside the room, framed
+    // tight on the bench for crisp shadows of its small parts.
+    const outside = lighting === 'sun';
+    const reach = outside ? Math.hypot(s.roomSize.width, s.roomSize.depth, s.roomSize.height) : 520;
+    const v = new THREE.Vector3(...key.dir).normalize().multiplyScalar(reach);
+    const cam = s.sun.shadow.camera;
+    const half = outside ? 1000 : 400;
+    cam.left = -half;
+    cam.right = half;
+    cam.top = half;
+    cam.bottom = -half;
+    cam.near = outside ? 50 : 0.5;
+    cam.far = outside ? reach * 1.6 : 1500;
+    cam.updateProjectionMatrix();
+    // the bias is in the shadow camera's depth range: the same 0.6 mm either way
+    s.sun.shadow.bias = -0.6 / (cam.far - cam.near);
     s.sun.position.copy(v);
     s.sun.target.position.set(0, 0, 0);
     s.sun.color.setRGB(...key.color);

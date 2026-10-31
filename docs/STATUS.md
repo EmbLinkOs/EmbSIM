@@ -5,6 +5,17 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The window's sunlit patch (2026-10-31)
+
+When the sun shines through the window, only a window-shaped patch of the
+table is sunlit: the walls, ceiling and the window's bars cast shadows, and
+the sun's shadow camera starts outside the room. Evidence: `room.test.ts`
+(which room surfaces cast shadows, the pane not), the gallery, and the
+edge's position measured against the projected bench axis (38° N, 21
+December, noon: the edge at x = -29 mm where the frame's top bar puts it at
++24 mm, half a degree of elevation). Not yet: floor shadows outside the
+table's 2 m shadow frame, physics.
+
 ## GPU frame times (2026-10-31)
 
 `GpuTimer` (`frames.ts`) times each frame on the GPU where the browser
@@ -45,9 +56,8 @@ through the window, soft window daylight when it does not, the ceiling lamp
 at night. Evidence: `sun.test.ts` (noon elevations at 40° N in June and
 December, sunrise and sunset azimuths at an equinox, the beam through the
 window or the wall), `world-sun.test.ts`, the world spec in
-`e2e/world.spec.ts`, `tests/protocol/test_world.py`, and the gallery. Not yet:
-the sun's patch on the table (the whole bench is lit, walls do not cast
-shadows), the illuminance following the sun (it stays the declared field,
+`e2e/world.spec.ts`, `tests/protocol/test_world.py`, and the gallery. The sun's patch
+on the table followed (above). Not yet: the illuminance following the sun (it stays the declared field,
 which the light sensors read), physics.
 
 ## The room around the bench, and frame times (2026-10-31)

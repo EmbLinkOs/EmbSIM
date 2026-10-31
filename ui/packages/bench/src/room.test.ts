@@ -42,4 +42,14 @@ describe('the room around the bench', () => {
     expect(lightLevel(100000)).toBe(1.5);
     expect(lightLevel(1000)).toBeGreaterThan(1);
   });
+
+  it('walls, ceiling and the window\'s bars stop the sun; the pane lets it through', () => {
+    const { group, pane } = buildRoom();
+    const casters = group.children.filter((o) => (o as THREE.Mesh).castShadow);
+    const glass = group.children.find((o) => (o as THREE.Mesh).material === pane) as THREE.Mesh;
+    expect(glass.castShadow).toBe(false);
+    // floor, ceiling, four walls (one cut for the window), five bars, the table
+    expect(casters.filter((o) => (o as THREE.Mesh).geometry instanceof THREE.ShapeGeometry)).toHaveLength(1);
+    expect(casters.filter((o) => { const g = (o as THREE.Mesh).geometry; return g instanceof THREE.BoxGeometry && g.parameters.width === 60; })).toHaveLength(5);
+  });
 });

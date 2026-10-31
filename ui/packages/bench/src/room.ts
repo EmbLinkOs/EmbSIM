@@ -57,6 +57,8 @@ export function lightLevel(lux: number | undefined): number {
 function plane(w: number, h: number, material: THREE.Material): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
   m.receiveShadow = true;
+  // walls and ceiling stop the sun, so only what comes through the window reaches the table
+  m.castShadow = true;
   return m;
 }
 
@@ -139,11 +141,13 @@ export function buildRoom(size: RoomSize = ROOM): Room {
   shape.holes.push(hole);
   const left = new THREE.Mesh(new THREE.ShapeGeometry(shape), wallMat);
   left.receiveShadow = true;
+  left.castShadow = true;
   left.rotation.y = Math.PI / 2;
   left.position.set(-ROOM.width / 2, midY, 0);
   g.add(left);
   // the pane: the daylight outside, a little behind the wall; and the frame's bars
   const glass = plane(WINDOW.width, WINDOW.height, pane);
+  glass.castShadow = false; // the pane lets the light through
   glass.rotation.y = Math.PI / 2;
   glass.position.set(-ROOM.width / 2 - 40, floorY + WINDOW.sill + WINDOW.height / 2, WINDOW.z);
   g.add(glass);
@@ -153,6 +157,7 @@ export function buildRoom(size: RoomSize = ROOM): Room {
   ];
   for (const [w, h, dz, dy] of bars) {
     const bar = new THREE.Mesh(new THREE.BoxGeometry(60, h, w), frame);
+    bar.castShadow = true; // the frame's bars cross the sunlit patch
     bar.position.set(-ROOM.width / 2 - 20, floorY + WINDOW.sill + WINDOW.height / 2 + dy, WINDOW.z + dz);
     g.add(bar);
   }

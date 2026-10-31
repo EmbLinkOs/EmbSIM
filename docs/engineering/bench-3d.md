@@ -190,8 +190,9 @@ follows the world's illuminance (`room.ts`, `room.test.ts`). Then the room's
 size and window direction (`world.room`) and the sun by latitude, date and
 solar time (`world.sun`, `sun.ts`): the key light is the sun when its beam
 reaches the table through the window, window daylight when not, the lamp at
-night. Still to do: the sun's patch on the table and walls casting shadows,
-floor shadows, physics.
+night. Then the window's patch: walls, ceiling and bars cast shadows from a
+sun whose shadow camera starts outside the room. Still to do: floor
+shadows, physics.
 
 ### Stage 7: performance and qualification
 

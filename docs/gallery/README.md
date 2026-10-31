@@ -40,6 +40,15 @@ lights the bench:
 |---|---|---|
 | ![Daylight in the window](bench-3d-room/4-winter-noon-window.png) | ![Long shadows away from the window](bench-3d-room/5-winter-noon-shadows.png) | ![The window dark at night](bench-3d-room/6-night-window.png) |
 
+The walls, the ceiling and the window's bars stop the sun, so only what
+comes through the window reaches the table. At 38° N at noon in December
+the sun is 28.6° up: the wall above the window shades the far half of the
+table, and the window's patch and its bars' shadows lie on the near half:
+
+| The sunlit patch | From above: lit on the window's side |
+|---|---|
+| ![The window's patch on the table](bench-3d-room/7-sunlit-patch.png) | ![The table half sunlit](bench-3d-room/8-sunlit-patch-top.png) |
+
 ## Gull-wing leads, SO breakouts, the NUCLEO's 45° MCUs (2026-10-31)
 
 QFP and SO leads are bent as they are made: out of the body's side, down,
