@@ -1,0 +1,72 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "pixels",
+ "description": "Awake, the display on, 16 bits a pixel: a window of columns 2 and 3 on row 5 written red then green; the probe at (3, 5) reads green, (2, 5) red.",
+ "policy": "functional",
+ "until": "20ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "PG",
+    "component": "emblink/pattern_generator",
+    "params": {
+     "pattern": "0,1,0,1,0,1,2,3,0,1,0,1,0,1,2,3,9,0,1,0,1,2,3,0,1,2,3,0,1,0,1,2,3,9,0,1,0,1,2,3,2,3,2,3,0,1,2,3,0,1,9,4,5,4,5,4,5,4,5,4,5,6,7,4,5,6,7,d,0,1,0,1,2,3,0,1,2,3,0,1,2,3,0,1,9,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,6,7,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,6,7,6,7,d,0,1,0,1,2,3,0,1,2,3,0,1,2,3,2,3,9,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,6,7,4,5,6,7,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,6,7,4,5,6,7,d,0,1,0,1,2,3,0,1,2,3,2,3,0,1,0,1,9,6,7,6,7,6,7,6,7,6,7,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,6,7,6,7,6,7,6,7,6,7,6,7,4,5,4,5,4,5,4,5,4,5,d",
+     "period": 1e-07,
+     "start": 0.006,
+     "idle": 9
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/st7735_tft18"
+   }
+  ],
+  "nets": {
+   "SCK": [
+    "PG.OUT0",
+    "DUT.SCK"
+   ],
+   "SDA": [
+    "PG.OUT1",
+    "DUT.SDA"
+   ],
+   "DC": [
+    "PG.OUT2",
+    "DUT.DC"
+   ],
+   "CS": [
+    "PG.OUT3",
+    "DUT.CS"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.probe": {
+   "at": "19ms",
+   "equals": 2016
+  },
+  "output:DUT.on": {
+   "at": "19ms",
+   "equals": true
+  },
+  "output:DUT.ram_writes": {
+   "at": "19ms",
+   "equals": 2
+  }
+ },
+ "inputs": [
+  {
+   "at": "18ms",
+   "target": "DUT",
+   "input": "probe_x",
+   "value": 3
+  },
+  {
+   "at": "18ms",
+   "target": "DUT",
+   "input": "probe_y",
+   "value": 5
+  }
+ ]
+}
