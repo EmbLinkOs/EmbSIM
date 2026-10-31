@@ -46,6 +46,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, 
 import { errorMessage, inputs as inputActions } from '../actions';
 import { platform } from '../platform/platform';
 import { useProject, type CatalogEntry } from '../stores/project';
+import { benchInstrumentOf, openFrontPanel } from './run/benchInstruments';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
 import { BenchWireEditor } from './BenchWireEditor';
@@ -693,6 +694,7 @@ function BenchList({
         </button>
       </li>)}</ul></>}
       {children}
+      {part && <FrontPanelOnBench part={part.id} />}
       {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? 'Check the actual package and pinout before building hardware.' : 'Source metadata does not establish mechanical qualification.'}</p>}
       {part && editable && <BenchPlacement key={`${part.id}:${part.place.x}:${part.place.y}:${part.place.rotation}`} part={part} onPlace={onPlace} />}
       {part?.shape.package === 'breadboard' && editable && <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>Turn breadboard</Button>}
@@ -896,5 +898,17 @@ function Bench2D({ interactive }: { interactive: boolean }) {
         }}
       />
     </div>
+  );
+}
+
+/** An instrument on the bench opens its front panel, as reaching for it on a real bench */
+function FrontPanelOnBench({ part }: { part: string }) {
+  const ref = useProject((s) => s.project?.components.find((c) => c.id === part)?.component);
+  const instrument = benchInstrumentOf(ref);
+  if (!instrument) return null;
+  return (
+    <Button size="sm" variant="ghost" onClick={() => openFrontPanel(instrument, part)}>
+      Open {part}'s front panel
+    </Button>
   );
 }

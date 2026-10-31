@@ -15,6 +15,7 @@ import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
 import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { SchematicDisplayOptions } from '../run/SchematicDisplayOptions';
+import { benchInstrumentOf, openFrontPanel } from '../run/benchInstruments';
 import { BoardPanel } from '../BoardPanel';
 import { WorldPanel } from '../WorldPanel';
 import { InspectorPanel } from './InspectorPanel';
@@ -383,6 +384,7 @@ export function DesignPerspective() {
   const selectedNets = [...new Set((project?.layout?.wires ?? []).filter((_, i) => contextSelection.wires.includes(i)).map((w) => w.net))];
   const writable = editable && !store.busy && !previewProject && !insideOf;
   const hasParts = contextSelection.components.length > 0;
+  const contextInstrument = contextSelection.components.length === 1 ? benchInstrumentOf(project?.components.find((c) => c.id === contextSelection.components[0])?.component) : undefined;
   const copyable = hasParts && contextSelection.components.every((id) => project?.components.some((c) => c.id === id));
   const routeSelected = () => void store.rerouteNets(selectedNets).then((warnings) => { setSelection(EMPTY_SELECTION); if (selectedNets.length === 1) selectNet(selectedNets[0]!); toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? 'Routing needs attention' : 'Selected nets routed', description: warnings.join(' ') || undefined }); }).catch(fail('Routing failed'));
   const contextActions: ContextAction[] = [
@@ -390,6 +392,7 @@ export function DesignPerspective() {
     { label: 'Copy', shortcut: '⌘/Ctrl C', disabled: !copyable, run: () => store.copySelection(contextSelection) },
     { label: 'Duplicate', shortcut: '⌘/Ctrl D', disabled: !copyable || !writable, run: () => void store.duplicate(contextSelection).then((ids) => setSelection({ components: ids, wires: [] })).catch(fail('Duplicate failed')) },
     { label: 'Paste here', shortcut: '⌘/Ctrl V', disabled: !store.clipboard || !writable, run: () => void store.paste(context?.value.point).then((ids) => setSelection({ components: ids, wires: [] })).catch(fail('Paste failed')) },
+    ...(contextInstrument ? [{ label: 'Open front panel', run: () => openFrontPanel(contextInstrument, contextSelection.components[0]!) }] : []),
     { label: 'Rotate 90°', shortcut: 'R', disabled: !hasParts || !writable, run: () => void store.rotateComponents(contextSelection.components).catch(fail('Rotate failed')) },
     { label: 'Mirror', shortcut: 'M', disabled: !hasParts || !writable, run: () => void store.mirrorComponents(contextSelection.components).catch(fail('Mirror failed')) },
     { label: 'Route selected nets', disabled: !selectedNets.length || !writable, run: routeSelected },

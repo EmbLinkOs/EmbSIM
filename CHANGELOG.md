@@ -8,7 +8,8 @@ versions follow semantic versioning. There is no release yet.
 ### Front panels opened from their parts, docked or floating
 
 - An instrument with a front panel of its own (the DS1054Z, the PPK2, the
-  Logic 8) opens it from its part: the inspector's Open front panel, or the
+  Logic 8) opens it from its part: the inspector's Open front panel, the
+  schematic's right-click menu, the bench's list of what is on it, or the
   command palette's Open, Float and Dock commands for each one. Opened, it
   unfolds in the Run perspective's dock and takes the focus.
 - Float takes a panel out of the dock into a window over the workbench,

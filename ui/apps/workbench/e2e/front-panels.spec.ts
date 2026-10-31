@@ -57,3 +57,19 @@ test('a front panel opens from its part, floats over the perspectives and docks 
   await open.click();
   await expect(page.getByRole('region', { name: /^U\d+ oscilloscope$/ })).toBeVisible();
 });
+
+test('the schematic part\'s context menu opens its front panel', async ({ page }) => {
+  await page.goto('/?mock=1');
+  await expect(page.getByRole('application', { name: 'Schematic canvas' })).toBeVisible();
+  await page.keyboard.press('Control+k');
+  await page.getByRole('combobox').fill('Place Oscilloscope, 4 channels');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Open front panel' })).toBeVisible();
+
+  await page.getByRole('button', { name: /^U\d+, / }).last().click({ button: 'right', force: true });
+  const menu = page.getByRole('menu', { name: 'Schematic actions' });
+  await expect(menu).toBeVisible();
+  await menu.getByRole('menuitem', { name: 'Open front panel' }).click();
+  await expect(page.getByRole('main', { name: 'run perspective' })).toBeVisible();
+  await expect(page.getByRole('region', { name: /^U\d+ oscilloscope$/ })).toBeVisible();
+});
