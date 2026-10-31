@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "user-button",
-  "description": "B1 (USER) pulls PC13 up to VDD while pressed (through 100 ohm, against the 4.7 kOhm pull-down): the active-high button ST's BSP and GPIO_EXTI read with a rising edge.",
+  "description": "B1 (USER) joins its node to VDD while pressed; R59 (330 ohm) takes the node to PC13 and R58 (220 kOhm) pulls it down: PC13 low while B1 is released, at VDD while it is pressed (MB1137 sheet 2: active high, as ST's BSP reads it).",
   "policy": "electrical",
   "until": "20ms",
   "circuit": {
@@ -63,7 +63,7 @@
   "expect": {
     "net:BTN": {
       "at": "15ms",
-      "min_v": 3.2,
+      "min_v": 3.25,
       "max_v": 3.35
     }
   }

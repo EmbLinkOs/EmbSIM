@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "usb-powered",
-  "description": "Plugged into a computer's USB port through a 0.25 ohm cable, JP3 on U5V (the factory position): the power switch joins USB's 5 V to +5V, LD6 lights, U4 makes +3.3V and JP5 carries it to VDD, VBAT and VDDA; BOOT0 is held low and PC13 (B1 released) low through its pull-down; the user LEDs stay dark while their pins are not driven.",
+  "description": "Plugged into a computer's USB port through a 0.25 ohm cable, JP3 on U5V (the factory position): U4 (ST890) joins USB's 5 V to +5V, LD6 lights, U6 makes +3.3V and JP5 carries it to VDD, VBAT and VDDA; BOOT0 is held low, PC13 low through R58 (B1 released), PG7 high through JP4 and R71, and LD1, LD7 and LD8 stay dark (PB0 not driven, no fault, nothing on CN13's VBUS).",
   "policy": "electrical",
   "until": "10ms",
   "circuit": {
@@ -67,6 +67,9 @@
       ],
       "BTN": [
         "B1.CN11_23"
+      ],
+      "PG7": [
+        "B1.CN12_67"
       ]
     }
   },
@@ -108,6 +111,23 @@
     "net:BTN": {
       "at": "9ms",
       "max_v": 0.05
+    },
+    "net:PG7": {
+      "at": "9ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "output:B1.LD1.luminance": {
+      "at": "9ms",
+      "max": 0.001
+    },
+    "output:B1.LD7.luminance": {
+      "at": "9ms",
+      "max": 0.001
+    },
+    "output:B1.LD8.luminance": {
+      "at": "9ms",
+      "max": 0.001
     }
   }
 }

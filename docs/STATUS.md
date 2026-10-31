@@ -18,14 +18,17 @@ no instruction run meanwhile); CubeF4's NUCLEO-F446RE suite, its
 EEPROM_Emulation now ending past 13 s.
 
 The NUCLEO-F446ZE (MB1137, STM32F446ZE in LQFP144) is a board: its LEDs,
-buttons, power paths and jumpers, the Zio and morpho connectors (UM1974's
-pin assignment, every I/O on the morpho once), CN13's lines and the VCP on
-USART3. Evidence: its five fixtures, and 21 of CubeF4's STM32F446ZE-Nucleo
+buttons, power paths and jumpers, the Zio and morpho connectors (every I/O
+on the morpho once), CN13's lines and the VCP on USART3. Evidence: its six
+fixtures, and 21 of CubeF4's STM32F446ZE-Nucleo
 examples run unmodified under scenarios (`run.py --board nucleo_f446ze`).
-Not yet: the USB OTG FS controller (CubeF4's USB device and host
-applications), the board's USB power switch and its LEDs, MCO1/MCO2 on
-their pins, and the parts of MB1137 whose values UM1974 does not give (the
-board's fidelity lists them).
+The board follows ST's MB1137 B-01 schematic part by part (its LED,
+button and USB circuits, its solder bridges), and the NUCLEO-F446RE was
+checked against MB1136 C-03 and C-04 (B1's network, CN7's SB48/SB49). Not
+yet: the USB OTG FS controller (CubeF4's USB device and host applications)
+and U12, the switch that powers VBUS for a host; MCO1/MCO2 on their pins;
+the ST890, TSV631 and S9013 datasheets' own values (their parts declare
+what is assumed).
 
 ## Boards as boards (2026-10-30)
 

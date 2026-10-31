@@ -33,18 +33,27 @@ versions follow semantic versioning. There is no release yet.
 
 - The STM32F446ZE (LQFP144, ports A to G, ADC3's inputs on port F, VREF+,
   VDDUSB and VCAP_2 pins) from ST's open pin data, on the F446RE's model.
-- The NUCLEO-F446ZE (MB1137): LD1, LD2 and LD3 on PB0, PB7 and PB14, the
-  active-high USER button on PC13, RESET, the power LED, JP3's four supply
-  positions, JP5 (IDD), the ST Zio connectors CN7 to CN10 as UM1974 assigns
-  them, the morpho headers CN11 and CN12 reaching all 114 I/Os, CN13 (USB
-  OTG FS) on PA9 to PA12, and the ST-LINK's VCP on USART3 (PD8/PD9). Its
-  fixtures: USB power, VIN through JP3, the IDD ammeter, the button.
+- The NUCLEO-F446ZE, as ST's MB1137 B-01 schematic draws it: LD1 (green)
+  driven from PB0 through U7, a TSV631 follower; LD2 (blue, 680 ohm) on
+  PB7 and LD3 (red, 1 kOhm) on PB14; the active-high USER button (B1 to
+  VDD, R59 330 ohm to PC13, R58 220 kOhm down, no filter capacitor);
+  RESET; the green power LED LD6; U4 (ST890CDR) switching the ST-LINK's
+  5 V; JP3's U5V, VIN and E5V positions; JP5 (IDD); the Zio connectors
+  CN7 to CN10 and the 2 x 36 morpho headers CN11 and CN12 with their
+  solder bridges in the factory state (PC14, PC15 and PH0 off the morpho,
+  PH1 on it); CN13 (USB OTG FS) with VBUS to PA9 through R35, LD8 lit by
+  VBUS through T2, LD7 and the over-current line on PG7 through JP4, and
+  PG6's pull-down; the ST-LINK's VCP on USART3 (PD8/PD9). Its fixtures:
+  USB power, VBUS on CN13, VIN through JP3, the IDD ammeter, the button.
+- New parts for it: the ST890CDR power switch, the TSV631 op-amp and the
+  S9013 NPN transistor (each declaring what its datasheet would settle).
 - `tests/vendor/stm32cubef4/run.py --board nucleo_f446ze` builds 21 of
   CubeF4's STM32F446ZE-Nucleo examples unmodified and runs them under
   scenarios: ADC (DMA and interrupt), CRC, Cortex (MPU, SysTick), DMA,
   FLASH_EraseProgram, GPIO (toggle, EXTI), HAL_TimeBase_TIM, IWDG, WWDG,
   RTC_Calendar, seven TIM examples and UART_Printf.
-- The pin header part reaches 80 positions (a morpho header is 2 x 35).
+- The pin header part reaches 80 positions (a Nucleo-144's morpho header is
+  2 x 36).
 - The NUCLEO-F446RE's RTC_Calendar scenario says what the example does: its
   RTC runs on LSI, its comment notwithstanding.
 - The NUCLEO-F446RE checked against ST's MB1136 C-03 and C-04 schematics:

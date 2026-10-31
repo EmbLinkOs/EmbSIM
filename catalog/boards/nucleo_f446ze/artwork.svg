@@ -151,6 +151,10 @@
 <circle id="pin-cn11_69" class="pad" cx="38.1" cy="1173.6" r="7"><title>CN11 pin 69: PD9</title></circle>
 <rect class="hdr" x="50.8" y="1160.9" width="25.4" height="25.4"/>
 <circle id="pin-cn11_70" class="pad" cx="63.5" cy="1173.6" r="7"><title>CN11 pin 70: PG11</title></circle>
+<rect class="hdr" x="25.4" y="1186.3" width="25.4" height="25.4"/>
+<circle id="pin-cn11_71" class="pad" cx="38.1" cy="1199.0" r="7"><title>CN11 pin 71: GND</title></circle>
+<rect class="hdr" x="50.8" y="1186.3" width="25.4" height="25.4"/>
+<circle id="pin-cn11_72" class="pad" cx="63.5" cy="1199.0" r="7"><title>CN11 pin 72: GND</title></circle>
 <text class="silks" x="50.8" y="300.0">CN11</text>
 <rect class="hdr" x="623.7" y="297.3" width="25.4" height="25.4"/>
 <circle id="pin-cn12_1" class="pad" cx="636.4" cy="310.0" r="7"><title>CN12 pin 1: PC9</title></circle>
@@ -292,6 +296,10 @@
 <circle id="pin-cn12_69" class="pad" cx="636.4" cy="1173.6" r="7"><title>CN12 pin 69: PG4</title></circle>
 <rect class="hdr" x="649.1" y="1160.9" width="25.4" height="25.4"/>
 <circle id="pin-cn12_70" class="pad" cx="661.8" cy="1173.6" r="7"><title>CN12 pin 70: PG6</title></circle>
+<rect class="hdr" x="623.7" y="1186.3" width="25.4" height="25.4"/>
+<circle id="pin-cn12_71" class="pad" cx="636.4" cy="1199.0" r="7"><title>CN12 pin 71: GND</title></circle>
+<rect class="hdr" x="649.1" y="1186.3" width="25.4" height="25.4"/>
+<circle id="pin-cn12_72" class="pad" cx="661.8" cy="1199.0" r="7"><title>CN12 pin 72: GND</title></circle>
 <text class="silks" x="649.1" y="300.0">CN12</text>
 <rect class="hdr" x="101.6" y="327.3" width="25.4" height="25.4"/>
 <rect class="hdr" x="127.0" y="327.3" width="25.4" height="25.4"/>
@@ -598,8 +606,7 @@
 <text class="silks" x="246.0" y="345.0">VIN</text>
 <rect id="jp3-e5v" x="266.0" y="310.0" width="26" height="20" rx="3" fill="#2554c7" opacity="0.25"/>
 <text class="silks" x="279.0" y="345.0">E5V</text>
-<rect id="jp3-chgr" x="299.0" y="310.0" width="26" height="20" rx="3" fill="#2554c7" opacity="0.25"/>
-<text class="silks" x="312.0" y="345.0">CHGR</text>
+<text class="silks" x="440.0" y="1290.0">JP4</text><rect id="jp4" x="425.0" y="1295.0" width="30" height="16" rx="3" fill="#2554c7" opacity="0.85"/>
 <text class="silks" x="487.7" y="587.0">IDD JP5</text>
 <circle id="pin-idd_3v3" class="pad" cx="475.0" cy="605.0" r="7"/><circle id="pin-idd_vdd" class="pad" cx="500.4" cy="605.0" r="7"/>
 <rect id="jp5" x="465.0" y="595.0" width="45.4" height="20" rx="3" fill="#2554c7" opacity="0.85"/>
@@ -608,7 +615,9 @@
 <rect id="led-ld1" x="300.0" y="1144.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld1-glow" cx="310.0" cy="1150.0" r="22" fill="url(#glow-green)" opacity="0"/><text class="silks" x="310.0" y="1176.0">LD1</text>
 <rect id="led-ld2" x="340.0" y="1144.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld2-glow" cx="350.0" cy="1150.0" r="22" fill="url(#glow-blue)" opacity="0"/><text class="silks" x="350.0" y="1176.0">LD2</text>
 <rect id="led-ld3" x="380.0" y="1144.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld3-glow" cx="390.0" cy="1150.0" r="22" fill="url(#glow-red)" opacity="0"/><text class="silks" x="390.0" y="1176.0">LD3</text>
-<rect id="led-ld6" x="590.0" y="284.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld6-glow" cx="600.0" cy="290.0" r="22" fill="url(#glow-red)" opacity="0"/><text class="silks" x="600.0" y="316.0">LD6</text>
+<rect id="led-ld6" x="590.0" y="284.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld6-glow" cx="600.0" cy="290.0" r="22" fill="url(#glow-green)" opacity="0"/><text class="silks" x="600.0" y="316.0">LD6</text>
+<rect id="led-ld7" x="290.0" y="1274.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld7-glow" cx="300.0" cy="1280.0" r="22" fill="url(#glow-red)" opacity="0"/><text class="silks" x="300.0" y="1306.0">LD7</text>
+<rect id="led-ld8" x="330.0" y="1274.0" width="20" height="12" fill="#eef0e6" stroke="#8a8a80"/><circle id="led-ld8-glow" cx="340.0" cy="1280.0" r="22" fill="url(#glow-green)" opacity="0"/><text class="silks" x="340.0" y="1306.0">LD8</text>
 <g id="usb-otg"><rect class="metal" x="200.0" y="1290.0" width="76.0" height="50.0" rx="3"/><text class="silks" x="238.0" y="1280.0">CN13 USB OTG</text></g>
 <circle id="pin-usb_vbus" cx="208.0" cy="1325.0" r="5" fill="none"><title>CN13 pin 1: USB_VBUS</title></circle>
 <circle id="pin-usb_dm" cx="223.0" cy="1325.0" r="5" fill="none"><title>CN13 pin 2: USB_DM</title></circle>

@@ -4,7 +4,7 @@
  "id": "emblink/nucleo_f446ze",
  "version": "1.0.0",
  "name": "NUCLEO-F446ZE (STM32F446ZE)",
- "description": "ST's NUCLEO-F446ZE (MB1137): an STM32F446ZET6 clocked from the ST-LINK's 8 MHz MCO, with a 32.768 kHz crystal, the user LEDs LD1 (green, PB0), LD2 (blue, PB7) and LD3 (red, PB14), the blue USER button B1 on PC13 (active high), the black RESET button B2, the power LED LD6, JP3 choosing the 5 V source (U5V, VIN, E5V or CHGR), JP5 (IDD) to measure the MCU's current, the ST Zio connectors CN7 to CN10 (Arduino Uno V3 and more), the two ST morpho headers CN11 and CN12 reaching every I/O, and the USB OTG FS connector CN13. The ST-LINK/V2-1's virtual COM port is the session's serial console on USART3 (PD8/PD9), and a serial port on the host (embsim serve --serial).",
+ "description": "ST's NUCLEO-F446ZE (MB1137): an STM32F446ZET6 clocked from the ST-LINK's 8 MHz MCO, with a 32.768 kHz crystal, the user LEDs LD1 (green, PB0), LD2 (blue, PB7) and LD3 (red, PB14), the blue USER button B1 on PC13 (active high), the black RESET button B2, the green power LED LD6, JP3 choosing the 5 V source (U5V through the ST890 power switch, VIN or E5V), JP5 (IDD) to measure the MCU's current, the ST Zio connectors CN7 to CN10 (Arduino Uno V3 and more), the two ST morpho headers CN11 and CN12 reaching every I/O, and the USB OTG FS connector CN13 with its VBUS LED LD8 and over-current LED LD7. The ST-LINK/V2-1's virtual COM port is the session's serial console on USART3 (PD8/PD9), and a serial port on the host (embsim serve --serial).",
  "keywords": [
   "nucleo",
   "nucleo-144",
@@ -15,11 +15,11 @@
   "st-link",
   "zio"
  ],
- "revision": "MB1137",
+ "revision": "MB1137 B-01",
  "mcu": {
   "ref": "st/stm32f446ze",
   "package": "lqfp144",
-  "instance": "U5"
+  "instance": "U8"
  },
  "oscillators": {
   "hse": {
@@ -34,25 +34,25 @@
  },
  "components": [
   {
-   "id": "U3",
+   "id": "U5",
    "component": "emblink/regulator",
    "params": {
     "part": "LD1117S50"
    },
-   "doc": "LD1117S50TR: 5 V from VIN (7 to 12 V) for JP3's VIN position"
+   "doc": "U5 LD1117S50TR: VIN_5V (5 V) from VIN (7 to 12 V) for JP3's VIN position"
   },
   {
-   "id": "T2",
-   "component": "emblink/sts7pf30l",
-   "doc": "U5V's power switch: joins the ST-LINK's USB 5 V to JP3's U5V position once the ST-LINK pulls PWR_ENn low"
+   "id": "U4",
+   "component": "emblink/st890cdr",
+   "doc": "U4 ST890CDR, the power switch that joins the ST-LINK's USB 5 V to JP3's U5V position while its active-low ON input (PWR_ENn) is low"
   },
   {
-   "id": "R28",
+   "id": "R27",
    "component": "emblink/resistor",
    "params": {
-    "resistance": "4.7k"
+    "resistance": "10k"
    },
-   "doc": "The switch's gate pull-up to U5V: off until the ST-LINK enables it"
+   "doc": "R27: U4's ON input pulled up to U5V, the switch off until the ST-LINK enables it"
   },
   {
    "id": "R_PWREN",
@@ -68,30 +68,25 @@
    "params": {
     "initially_closed": true
    },
-   "doc": "JP3 (PWR) on U5V: the board runs from the ST-LINK's USB (the factory position)"
+   "doc": "JP3 (3 x 2) on pins 3-4, U5V: the board runs from the ST-LINK's USB through U4 (the factory position)"
   },
   {
    "id": "JP3_VIN",
    "component": "emblink/toggle_switch",
-   "doc": "JP3 (PWR) on VIN: the board runs from VIN through U3"
+   "doc": "JP3 on pins 5-6, VIN_5V: the board runs from VIN through U5"
   },
   {
    "id": "JP3_E5V",
    "component": "emblink/toggle_switch",
-   "doc": "JP3 (PWR) on E5V: the board runs from an external 5 V on CN11 pin 6"
+   "doc": "JP3 on pins 1-2, E5V: the board runs from an external 5 V on CN11 pin 6"
   },
   {
-   "id": "JP3_CHGR",
-   "component": "emblink/toggle_switch",
-   "doc": "JP3 (PWR) on CHGR: the ST-LINK's USB 5 V straight to +5V, without the power switch (a USB charger that does not enumerate)"
-  },
-  {
-   "id": "U4",
+   "id": "U6",
    "component": "emblink/regulator",
    "params": {
     "part": "LD39050PU33R"
    },
-   "doc": "LD39050PU33R: +3.3V from +5V (500 mA)"
+   "doc": "U6 LD39050PU33R: +3V3 from +5V (500 mA), through SB3 (closed); +3V3_PER through SB2 (closed)"
   },
   {
    "id": "JP5",
@@ -99,22 +94,51 @@
    "params": {
     "initially_closed": true
    },
-   "doc": "JP5 (IDD): +3.3V to the STM32's VDD; remove it and put an ammeter across IDD_3V3 and IDD_VDD"
+   "doc": "JP5 (IDD): +3V3 to the STM32's VDD; remove it and put an ammeter across IDD_3V3 and IDD_VDD"
   },
   {
    "id": "LD6",
    "component": "emblink/led",
    "params": {
-    "color": "red"
+    "color": "green"
    },
-   "doc": "LD6 (PWR): +5V is present"
+   "doc": "LD6 (PWR, green): +5V is present"
   },
   {
-   "id": "R_LD6",
+   "id": "R29",
    "component": "emblink/resistor",
    "params": {
     "resistance": "1k"
    }
+  },
+  {
+   "id": "U7",
+   "component": "emblink/tsv631",
+   "doc": "U7 TSV631AILT, a rail-to-rail op-amp as a voltage follower: PB0 through R34 drives LD1, so the pin sees only R34 and R33"
+  },
+  {
+   "id": "R34",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "doc": "R34: PB0 (through SB120, closed; SB119 to PA5 open) to U7's input"
+  },
+  {
+   "id": "R33",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "200k"
+   },
+   "doc": "R33: U7's input pulled down, LD1 dark while PB0 is not driven"
+  },
+  {
+   "id": "R32",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 510
+   },
+   "doc": "R32: U7's output to LD1"
   },
   {
    "id": "LD1",
@@ -122,14 +146,7 @@
    "params": {
     "color": "green"
    },
-   "doc": "LD1 (USER, green): PB0 high lights it (SB120 on, SB119 off)"
-  },
-  {
-   "id": "R_LD1",
-   "component": "emblink/resistor",
-   "params": {
-    "resistance": 510
-   }
+   "doc": "LD1 (USER, green): PB0 high lights it through U7"
   },
   {
    "id": "LD2",
@@ -137,13 +154,13 @@
    "params": {
     "color": "blue"
    },
-   "doc": "LD2 (USER, blue): PB7 high lights it"
+   "doc": "LD2 (USER, blue): PB7 high lights it through SB139 and R31"
   },
   {
-   "id": "R_LD2",
+   "id": "R31",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 510
+    "resistance": 680
    }
   },
   {
@@ -152,43 +169,35 @@
    "params": {
     "color": "red"
    },
-   "doc": "LD3 (USER, red): PB14 high lights it"
+   "doc": "LD3 (USER, red): PB14 high lights it through SB118 and R30"
   },
   {
-   "id": "R_LD3",
+   "id": "R30",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 510
+    "resistance": "1k"
    }
   },
   {
    "id": "B1",
    "component": "emblink/push_button",
-   "doc": "B1 USER (blue): pulls PC13 up to VDD while pressed (active high, as ST's BSP reads it)"
+   "doc": "B1 USER (blue): joins its node to VDD while pressed (active high, as ST's BSP reads it)"
   },
   {
-   "id": "R_B1",
+   "id": "R59",
    "component": "emblink/resistor",
    "params": {
-    "resistance": 100
+    "resistance": 330
    },
-   "doc": "B1's series resistor to PC13 (with C_B1, a 10 us filter)"
+   "doc": "R59: B1's node to PC13 (through SB173, closed; SB180 to PA0 open)"
   },
   {
-   "id": "R_B1PD",
+   "id": "R58",
    "component": "emblink/resistor",
    "params": {
-    "resistance": "4.7k"
+    "resistance": "220k"
    },
-   "doc": "B1's pull-down on PC13: low while B1 is released"
-  },
-  {
-   "id": "C_B1",
-   "component": "emblink/capacitor",
-   "params": {
-    "capacitance": "100n"
-   },
-   "doc": "B1's filter capacitor on PC13"
+   "doc": "R58: B1's node pulled down, PC13 low while B1 is released"
   },
   {
    "id": "B2",
@@ -196,38 +205,38 @@
    "doc": "B2 RESET (black): pulls NRST low"
   },
   {
-   "id": "C_NRST",
+   "id": "C53",
    "component": "emblink/capacitor",
    "params": {
     "capacitance": "100n"
    },
-   "doc": "NRST's capacitor: with the STM32's internal pull-up, it holds the part in reset for about 1.5 ms at power-on"
+   "doc": "C53: NRST's capacitor; with the STM32's internal pull-up it holds the part in reset for about 1.5 ms at power-on"
   },
   {
-   "id": "C_VCAP1",
+   "id": "C55",
    "component": "emblink/capacitor",
    "params": {
     "capacitance": "2.2u",
     "esr": 0.01
    },
-   "doc": "VCAP_1: one of the two low-ESR ceramics the core regulator needs on a part with VCAP_1 and VCAP_2"
+   "doc": "C55 (2.2 uF X7R): VCAP_1"
   },
   {
-   "id": "C_VCAP2",
+   "id": "C56",
    "component": "emblink/capacitor",
    "params": {
     "capacitance": "2.2u",
     "esr": 0.01
    },
-   "doc": "VCAP_2"
+   "doc": "C56 (2.2 uF X7R): VCAP_2"
   },
   {
-   "id": "R_BOOT0",
+   "id": "R36",
    "component": "emblink/resistor",
    "params": {
     "resistance": "10k"
    },
-   "doc": "BOOT0 pull-down: the part boots its flash"
+   "doc": "R36: BOOT0 pulled down, the part boots its flash"
   },
   {
    "id": "X2",
@@ -239,15 +248,96 @@
     "lm": "7.8k",
     "rm": "50k"
    },
-   "doc": "X2: the 32.768 kHz crystal on PC14/PC15 (6 pF load, 50 kOhm ESR maximum), the same equivalent circuit as the NUCLEO-F446RE's"
+   "doc": "X2 NX3215SA-32.768KHZ-EXS00A-MU00525 on PC14/PC15 through R38 and R37 (0 ohm), with C36 and C35 (2 pF); the equivalent circuit of a 32.768 kHz tuning-fork crystal of its size"
   },
   {
-   "id": "SB_VDDA",
+   "id": "SB12",
    "component": "emblink/resistor",
    "params": {
     "resistance": 0.001
    },
-   "doc": "The solder bridge (on) joining VDDA and VREF+ to VDD"
+   "doc": "SB12 (closed), with the ferrite bead L1 in series: VDDA and VREF+ fed from VDD"
+  },
+  {
+   "id": "R35",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "doc": "R35: CN13's VBUS to PA9 (OTG_FS_VBUS), through SB127 (closed)"
+  },
+  {
+   "id": "R72",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "10k"
+   },
+   "doc": "R72: PG6, U12's enable (USB_PowerSwitchOn), pulled down"
+  },
+  {
+   "id": "JP4",
+   "component": "emblink/toggle_switch",
+   "params": {
+    "initially_closed": true
+   },
+   "doc": "JP4: PG7 to USB_OverCurrent, U12's fault output"
+  },
+  {
+   "id": "R71",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "47k"
+   },
+   "doc": "R71: U12's open-drain FAULT output pulled up to +3V3_PER, so PG7 reads high without a fault"
+  },
+  {
+   "id": "LD7",
+   "component": "emblink/led",
+   "params": {
+    "color": "red"
+   },
+   "doc": "LD7 (red): U12 signals an over-current on VBUS"
+  },
+  {
+   "id": "R61",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 620
+   }
+  },
+  {
+   "id": "LD8",
+   "component": "emblink/led",
+   "params": {
+    "color": "green"
+   },
+   "doc": "LD8 (green): VBUS is present on CN13, switched by T2"
+  },
+  {
+   "id": "R64",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 330
+   }
+  },
+  {
+   "id": "T2",
+   "component": "emblink/s9013",
+   "doc": "T2 (9013): lights LD8 from VBUS through R68 and R69"
+  },
+  {
+   "id": "R68",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "47k"
+   }
+  },
+  {
+   "id": "R69",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": "22k"
+   }
   },
   {
    "id": "CN7",
@@ -285,17 +375,17 @@
    "id": "CN11",
    "component": "emblink/header",
    "params": {
-    "pins": 70
+    "pins": 72
    },
-   "doc": "ST morpho, left (2 x 35)"
+   "doc": "ST morpho, left (2 x 36)"
   },
   {
    "id": "CN12",
    "component": "emblink/header",
    "params": {
-    "pins": 70
+    "pins": 72
    },
-   "doc": "ST morpho, right (2 x 35)"
+   "doc": "ST morpho, right (2 x 36)"
   },
   {
    "id": "CN13",
@@ -308,12 +398,12 @@
  ],
  "nets": {
   "VIN": [
-   "U3.IN",
+   "U5.IN",
    "CN8.15",
    "CN11.24"
   ],
   "VIN_5V": [
-   "U3.OUT",
+   "U5.OUT",
    "JP3_VIN.1"
   ],
   "E5V": [
@@ -321,37 +411,39 @@
    "CN11.6"
   ],
   "U5V": [
-   "T2.S",
-   "R28.1",
-   "JP3_CHGR.1",
+   "U4.IN",
+   "R27.1",
    "CN12.8"
   ],
   "PWR_ENN": [
-   "T2.G",
-   "R28.2",
+   "U4.ON",
+   "R27.2",
    "R_PWREN.1"
   ],
   "U5V_SW": [
-   "T2.D",
+   "U4.OUT",
    "JP3_U5V.1"
   ],
   "5V": [
    "JP3_U5V.2",
    "JP3_VIN.2",
    "JP3_E5V.2",
-   "JP3_CHGR.2",
-   "U4.IN",
-   "R_LD6.1",
+   "U6.IN",
+   "R29.1",
    "CN8.9",
    "CN11.18"
   ],
   "LD6_A": [
-   "R_LD6.2",
+   "R29.2",
    "LD6.A"
   ],
   "3V3": [
-   "U4.OUT",
+   "U6.OUT",
    "JP5.1",
+   "U7.VCC+",
+   "R71.1",
+   "R61.1",
+   "R64.1",
    "CN8.3",
    "CN8.7",
    "CN11.12",
@@ -359,40 +451,44 @@
   ],
   "VDD": [
    "JP5.2",
-   "U5.VDD",
-   "U5.VBAT",
-   "U5.VDDUSB",
-   "U5.PDR_ON",
-   "B1.1",
-   "SB_VDDA.1",
+   "U8.VDD",
+   "U8.VBAT",
+   "U8.VDDUSB",
+   "U8.PDR_ON",
+   "B1.2",
+   "SB12.1",
    "CN11.5",
    "CN11.33"
   ],
   "AVDD": [
-   "U5.VDDA",
-   "U5.VREFP",
-   "SB_VDDA.2",
+   "U8.VDDA",
+   "U8.VREFP",
+   "SB12.2",
    "CN7.6",
    "CN10.1",
    "CN12.7"
   ],
   "GND": [
-   "U3.GND",
-   "U4.GND",
+   "U5.GND",
+   "U6.GND",
    "LD6.K",
    "LD1.K",
    "LD2.K",
    "LD3.K",
-   "R_B1PD.2",
-   "C_B1.2",
+   "R33.2",
+   "R58.2",
    "B2.2",
-   "C_NRST.2",
-   "C_VCAP1.2",
-   "C_VCAP2.2",
-   "R_BOOT0.2",
+   "C53.2",
+   "C55.2",
+   "C56.2",
+   "R36.2",
    "R_PWREN.2",
-   "U5.VSS",
-   "U5.VSSA",
+   "U7.VCC-",
+   "R72.2",
+   "R69.2",
+   "T2.E",
+   "U8.VSS",
+   "U8.VSSA",
    "CN7.8",
    "CN8.11",
    "CN8.13",
@@ -409,601 +505,645 @@
    "CN11.22",
    "CN11.49",
    "CN11.60",
+   "CN11.71",
+   "CN11.72",
    "CN12.9",
    "CN12.20",
    "CN12.32",
    "CN12.39",
    "CN12.54",
    "CN12.63",
+   "CN12.71",
+   "CN12.72",
    "CN13.5"
   ],
   "NRST": [
-   "U5.NRST",
+   "U8.NRST",
    "B2.1",
-   "C_NRST.1",
+   "C53.1",
    "CN8.5",
    "CN11.14"
   ],
   "VCAP_1": [
-   "U5.VCAP_1",
-   "C_VCAP1.1"
+   "U8.VCAP_1",
+   "C55.1"
   ],
   "VCAP_2": [
-   "U5.VCAP_2",
-   "C_VCAP2.1"
+   "U8.VCAP_2",
+   "C56.1"
   ],
   "BOOT0": [
-   "U5.BOOT0",
-   "R_BOOT0.1",
+   "U8.BOOT0",
+   "R36.1",
    "CN11.7"
   ],
   "B1_N": [
-   "B1.2",
-   "R_B1.1"
+   "B1.1",
+   "R59.1",
+   "R58.1"
   ],
   "PC13": [
-   "U5.PC13",
-   "R_B1.2",
-   "R_B1PD.1",
-   "C_B1.1",
+   "U8.PC13",
+   "R59.2",
    "CN11.23"
   ],
   "PB0": [
-   "U5.PB0",
-   "R_LD1.1",
+   "U8.PB0",
+   "R34.1",
    "CN10.31",
    "CN11.34"
   ],
+  "LD1_IN": [
+   "R34.2",
+   "R33.1",
+   "U7.IN+"
+  ],
+  "LD1_OUT": [
+   "U7.OUT",
+   "U7.IN-",
+   "R32.1"
+  ],
   "LD1_A": [
-   "R_LD1.2",
+   "R32.2",
    "LD1.A"
   ],
   "PB7": [
-   "U5.PB7",
-   "R_LD2.1",
+   "U8.PB7",
+   "R31.1",
    "CN11.21"
   ],
   "LD2_A": [
-   "R_LD2.2",
+   "R31.2",
    "LD2.A"
   ],
   "PB14": [
-   "U5.PB14",
-   "R_LD3.1",
+   "U8.PB14",
+   "R30.1",
    "CN12.28"
   ],
   "LD3_A": [
-   "R_LD3.2",
+   "R30.2",
    "LD3.A"
   ],
   "PC14": [
-   "U5.PC14",
-   "X2.1",
-   "CN11.25"
+   "U8.PC14",
+   "X2.1"
   ],
   "PC15": [
-   "U5.PC15",
-   "X2.2",
-   "CN11.27"
+   "U8.PC15",
+   "X2.2"
+  ],
+  "USB_VBUS": [
+   "R35.1",
+   "R68.1",
+   "CN13.1"
+  ],
+  "PA9": [
+   "U8.PA9",
+   "R35.2",
+   "CN12.21"
+  ],
+  "PG6": [
+   "U8.PG6",
+   "R72.1",
+   "CN12.70"
+  ],
+  "PG7": [
+   "U8.PG7",
+   "JP4.1",
+   "CN12.67"
+  ],
+  "USB_OVCR": [
+   "JP4.2",
+   "R71.2",
+   "LD7.K"
+  ],
+  "LD7_A": [
+   "R61.2",
+   "LD7.A"
+  ],
+  "LD8_A": [
+   "R64.2",
+   "LD8.A"
+  ],
+  "LD8_K": [
+   "LD8.K",
+   "T2.C"
+  ],
+  "T2_B": [
+   "R68.2",
+   "R69.1",
+   "T2.B"
   ],
   "PA0": [
-   "U5.PA0",
+   "U8.PA0",
    "CN10.29",
    "CN11.28"
   ],
   "PA1": [
-   "U5.PA1",
+   "U8.PA1",
    "CN11.30"
   ],
   "PA2": [
-   "U5.PA2",
+   "U8.PA2",
    "CN12.35"
   ],
   "PA3": [
-   "U5.PA3",
+   "U8.PA3",
    "CN9.1",
    "CN12.37"
   ],
   "PA4": [
-   "U5.PA4",
+   "U8.PA4",
    "CN7.17",
    "CN11.32"
   ],
   "PA5": [
-   "U5.PA5",
+   "U8.PA5",
    "CN7.10",
    "CN12.11"
   ],
   "PA6": [
-   "U5.PA6",
+   "U8.PA6",
    "CN7.12",
    "CN12.13"
   ],
   "PA7": [
-   "U5.PA7",
+   "U8.PA7",
    "CN7.14",
    "CN12.15"
   ],
   "PA8": [
-   "U5.PA8",
+   "U8.PA8",
    "CN12.23"
   ],
-  "PA9": [
-   "U5.PA9",
-   "CN12.21",
-   "CN13.1"
-  ],
   "PA10": [
-   "U5.PA10",
+   "U8.PA10",
    "CN12.33",
    "CN13.4"
   ],
   "PA11": [
-   "U5.PA11",
+   "U8.PA11",
    "CN12.14",
    "CN13.2"
   ],
   "PA12": [
-   "U5.PA12",
+   "U8.PA12",
    "CN12.12",
    "CN13.3"
   ],
   "PA13": [
-   "U5.PA13",
+   "U8.PA13",
    "CN11.13"
   ],
   "PA14": [
-   "U5.PA14",
+   "U8.PA14",
    "CN11.15"
   ],
   "PA15": [
-   "U5.PA15",
+   "U8.PA15",
    "CN7.9",
    "CN11.17"
   ],
   "PB1": [
-   "U5.PB1",
+   "U8.PB1",
    "CN10.7",
    "CN12.24"
   ],
   "PB2": [
-   "U5.PB2",
+   "U8.PB2",
    "CN10.15",
    "CN12.22"
   ],
   "PB3": [
-   "U5.PB3",
+   "U8.PB3",
    "CN7.15",
    "CN12.31"
   ],
   "PB4": [
-   "U5.PB4",
+   "U8.PB4",
    "CN7.19",
    "CN12.27"
   ],
   "PB5": [
-   "U5.PB5",
+   "U8.PB5",
    "CN7.13",
    "CN12.29"
   ],
   "PB6": [
-   "U5.PB6",
+   "U8.PB6",
    "CN10.13",
    "CN12.17"
   ],
   "PB8": [
-   "U5.PB8",
+   "U8.PB8",
    "CN7.2",
    "CN12.3"
   ],
   "PB9": [
-   "U5.PB9",
+   "U8.PB9",
    "CN7.4",
    "CN12.5"
   ],
   "PB10": [
-   "U5.PB10",
+   "U8.PB10",
    "CN10.32",
    "CN12.25"
   ],
   "PB11": [
-   "U5.PB11",
+   "U8.PB11",
    "CN10.34",
    "CN12.18"
   ],
   "PB12": [
-   "U5.PB12",
+   "U8.PB12",
    "CN7.7",
    "CN12.16"
   ],
   "PB13": [
-   "U5.PB13",
+   "U8.PB13",
    "CN7.5",
    "CN12.30"
   ],
   "PB15": [
-   "U5.PB15",
+   "U8.PB15",
    "CN7.3",
    "CN12.26"
   ],
   "PC0": [
-   "U5.PC0",
+   "U8.PC0",
    "CN9.3",
    "CN11.38"
   ],
   "PC1": [
-   "U5.PC1",
+   "U8.PC1",
    "CN11.36"
   ],
   "PC2": [
-   "U5.PC2",
+   "U8.PC2",
    "CN10.9",
    "CN11.35"
   ],
   "PC3": [
-   "U5.PC3",
+   "U8.PC3",
    "CN9.5",
    "CN11.37"
   ],
   "PC4": [
-   "U5.PC4",
+   "U8.PC4",
    "CN12.34"
   ],
   "PC5": [
-   "U5.PC5",
+   "U8.PC5",
    "CN12.6"
   ],
   "PC6": [
-   "U5.PC6",
+   "U8.PC6",
    "CN7.1",
    "CN12.4"
   ],
   "PC7": [
-   "U5.PC7",
+   "U8.PC7",
    "CN7.11",
    "CN12.19"
   ],
   "PC8": [
-   "U5.PC8",
+   "U8.PC8",
    "CN8.2",
    "CN12.2"
   ],
   "PC9": [
-   "U5.PC9",
+   "U8.PC9",
    "CN8.4",
    "CN12.1"
   ],
   "PC10": [
-   "U5.PC10",
+   "U8.PC10",
    "CN8.6",
    "CN11.1"
   ],
   "PC11": [
-   "U5.PC11",
+   "U8.PC11",
    "CN8.8",
    "CN11.2"
   ],
   "PC12": [
-   "U5.PC12",
+   "U8.PC12",
    "CN8.10",
    "CN11.3"
   ],
   "PD0": [
-   "U5.PD0",
+   "U8.PD0",
    "CN9.25",
    "CN11.57"
   ],
   "PD1": [
-   "U5.PD1",
+   "U8.PD1",
    "CN9.27",
    "CN11.55"
   ],
   "PD2": [
-   "U5.PD2",
+   "U8.PD2",
    "CN8.12",
    "CN11.4"
   ],
   "PD3": [
-   "U5.PD3",
+   "U8.PD3",
    "CN9.10",
    "CN11.40"
   ],
   "PD4": [
-   "U5.PD4",
+   "U8.PD4",
    "CN9.8",
    "CN11.39"
   ],
   "PD5": [
-   "U5.PD5",
+   "U8.PD5",
    "CN9.6",
    "CN11.41"
   ],
   "PD6": [
-   "U5.PD6",
+   "U8.PD6",
    "CN9.4",
    "CN11.43"
   ],
   "PD7": [
-   "U5.PD7",
+   "U8.PD7",
    "CN9.2",
    "CN11.45"
   ],
   "PD8": [
-   "U5.PD8",
+   "U8.PD8",
    "CN12.10"
   ],
   "PD9": [
-   "U5.PD9",
+   "U8.PD9",
    "CN11.69"
   ],
   "PD10": [
-   "U5.PD10",
+   "U8.PD10",
    "CN12.65"
   ],
   "PD11": [
-   "U5.PD11",
+   "U8.PD11",
    "CN10.23",
    "CN12.45"
   ],
   "PD12": [
-   "U5.PD12",
+   "U8.PD12",
    "CN10.21",
    "CN12.43"
   ],
   "PD13": [
-   "U5.PD13",
+   "U8.PD13",
    "CN10.19",
    "CN12.41"
   ],
   "PD14": [
-   "U5.PD14",
+   "U8.PD14",
    "CN7.16",
    "CN12.46"
   ],
   "PD15": [
-   "U5.PD15",
+   "U8.PD15",
    "CN7.18",
    "CN12.48"
   ],
   "PE0": [
-   "U5.PE0",
+   "U8.PE0",
    "CN10.33",
    "CN12.64"
   ],
   "PE1": [
-   "U5.PE1",
+   "U8.PE1",
    "CN11.61"
   ],
   "PE2": [
-   "U5.PE2",
+   "U8.PE2",
    "CN9.14",
    "CN10.25",
    "CN11.46"
   ],
   "PE3": [
-   "U5.PE3",
+   "U8.PE3",
    "CN9.22",
    "CN11.47"
   ],
   "PE4": [
-   "U5.PE4",
+   "U8.PE4",
    "CN9.16",
    "CN11.48"
   ],
   "PE5": [
-   "U5.PE5",
+   "U8.PE5",
    "CN9.18",
    "CN11.50"
   ],
   "PE6": [
-   "U5.PE6",
+   "U8.PE6",
    "CN9.20",
    "CN11.62"
   ],
   "PE7": [
-   "U5.PE7",
+   "U8.PE7",
    "CN10.20",
    "CN12.44"
   ],
   "PE8": [
-   "U5.PE8",
+   "U8.PE8",
    "CN10.18",
    "CN12.40"
   ],
   "PE9": [
-   "U5.PE9",
+   "U8.PE9",
    "CN10.4",
    "CN12.52"
   ],
   "PE10": [
-   "U5.PE10",
+   "U8.PE10",
    "CN10.24",
    "CN12.47"
   ],
   "PE11": [
-   "U5.PE11",
+   "U8.PE11",
    "CN10.6",
    "CN12.56"
   ],
   "PE12": [
-   "U5.PE12",
+   "U8.PE12",
    "CN10.26",
    "CN12.49"
   ],
   "PE13": [
-   "U5.PE13",
+   "U8.PE13",
    "CN10.10",
    "CN12.55"
   ],
   "PE14": [
-   "U5.PE14",
+   "U8.PE14",
    "CN10.28",
    "CN12.51"
   ],
   "PE15": [
-   "U5.PE15",
+   "U8.PE15",
    "CN10.30",
    "CN12.53"
   ],
   "PF0": [
-   "U5.PF0",
+   "U8.PF0",
    "CN9.21",
    "CN11.53"
   ],
   "PF1": [
-   "U5.PF1",
+   "U8.PF1",
    "CN9.19",
    "CN11.51"
   ],
   "PF2": [
-   "U5.PF2",
+   "U8.PF2",
    "CN9.17",
    "CN11.52"
   ],
   "PF3": [
-   "U5.PF3",
+   "U8.PF3",
    "CN9.7",
    "CN12.58"
   ],
   "PF4": [
-   "U5.PF4",
+   "U8.PF4",
    "CN10.11",
    "CN12.38"
   ],
   "PF5": [
-   "U5.PF5",
+   "U8.PF5",
    "CN9.9",
    "CN12.36"
   ],
   "PF6": [
-   "U5.PF6",
+   "U8.PF6",
    "CN11.9"
   ],
   "PF7": [
-   "U5.PF7",
+   "U8.PF7",
    "CN9.26",
    "CN11.11"
   ],
   "PF8": [
-   "U5.PF8",
+   "U8.PF8",
    "CN9.24",
    "CN11.54"
   ],
   "PF9": [
-   "U5.PF9",
+   "U8.PF9",
    "CN9.28",
    "CN11.56"
   ],
   "PF10": [
-   "U5.PF10",
+   "U8.PF10",
    "CN9.11",
    "CN12.42"
   ],
   "PF11": [
-   "U5.PF11",
+   "U8.PF11",
    "CN12.62"
   ],
   "PF12": [
-   "U5.PF12",
+   "U8.PF12",
    "CN7.20",
    "CN12.59"
   ],
   "PF13": [
-   "U5.PF13",
+   "U8.PF13",
    "CN10.2",
    "CN12.57"
   ],
   "PF14": [
-   "U5.PF14",
+   "U8.PF14",
    "CN10.8",
    "CN12.50"
   ],
   "PF15": [
-   "U5.PF15",
+   "U8.PF15",
    "CN10.12",
    "CN12.60"
   ],
   "PG0": [
-   "U5.PG0",
+   "U8.PG0",
    "CN9.29",
    "CN11.59"
   ],
   "PG1": [
-   "U5.PG1",
+   "U8.PG1",
    "CN9.30",
    "CN11.58"
   ],
   "PG2": [
-   "U5.PG2",
+   "U8.PG2",
    "CN8.14",
    "CN11.42"
   ],
   "PG3": [
-   "U5.PG3",
+   "U8.PG3",
    "CN8.16",
    "CN11.44"
   ],
   "PG4": [
-   "U5.PG4",
+   "U8.PG4",
    "CN12.69"
   ],
   "PG5": [
-   "U5.PG5",
+   "U8.PG5",
    "CN12.68"
   ],
-  "PG6": [
-   "U5.PG6",
-   "CN12.70"
-  ],
-  "PG7": [
-   "U5.PG7",
-   "CN12.67"
-  ],
   "PG8": [
-   "U5.PG8",
+   "U8.PG8",
    "CN12.66"
   ],
   "PG9": [
-   "U5.PG9",
+   "U8.PG9",
    "CN10.16",
    "CN11.63"
   ],
   "PG10": [
-   "U5.PG10",
+   "U8.PG10",
    "CN11.66"
   ],
   "PG11": [
-   "U5.PG11",
+   "U8.PG11",
    "CN11.70"
   ],
   "PG12": [
-   "U5.PG12",
+   "U8.PG12",
    "CN11.65"
   ],
   "PG13": [
-   "U5.PG13",
+   "U8.PG13",
    "CN11.68"
   ],
   "PG14": [
-   "U5.PG14",
+   "U8.PG14",
    "CN10.14",
    "CN12.61"
   ],
   "PG15": [
-   "U5.PG15",
+   "U8.PG15",
    "CN11.64"
   ],
   "PH0": [
-   "U5.PH0"
+   "U8.PH0"
   ],
   "PH1": [
-   "U5.PH1"
+   "U8.PH1",
+   "CN11.31"
+  ],
+  "CN11_25_NC": [
+   "CN11.25"
+  ],
+  "CN11_27_NC": [
+   "CN11.27"
   ],
   "CN11_29_NC": [
    "CN11.29"
-  ],
-  "CN11_31_NC": [
-   "CN11.31"
   ]
  },
  "ports": {
@@ -1185,7 +1325,7 @@
    "net": "VIN",
    "connector": "CN8",
    "pin": 15,
-   "doc": "7 to 12 V into U3 (LD1117S50); JP3 must be on VIN"
+   "doc": "7 to 12 V into U5 (LD1117S50); JP3 must be on VIN"
   },
   "D50": {
    "net": "PG3",
@@ -1626,14 +1766,16 @@
    "pin": 24
   },
   "CN11_25": {
-   "net": "PC14",
+   "net": "CN11_25_NC",
    "connector": "CN11",
-   "pin": 25
+   "pin": 25,
+   "doc": "PC14 only with SB144 closed (open from the factory: PC14 is X2's OSC32_IN)"
   },
   "CN11_27": {
-   "net": "PC15",
+   "net": "CN11_27_NC",
    "connector": "CN11",
-   "pin": 27
+   "pin": 27,
+   "doc": "PC15 only with SB145 closed (open from the factory: PC15 is X2's OSC32_OUT)"
   },
   "CN11_28": {
    "net": "PA0",
@@ -1644,7 +1786,7 @@
    "net": "CN11_29_NC",
    "connector": "CN11",
    "pin": 29,
-   "doc": "PH0 (OSC_IN) carries the ST-LINK's 8 MHz MCO; the morpho pin is not joined to it in the factory state"
+   "doc": "PH0 only with SB148 closed (open from the factory: PH0 takes the ST-LINK's 8 MHz MCO through SB149)"
   },
   "CN11_30": {
    "net": "PA1",
@@ -1652,10 +1794,10 @@
    "pin": 30
   },
   "CN11_31": {
-   "net": "CN11_31_NC",
+   "net": "PH1",
    "connector": "CN11",
    "pin": 31,
-   "doc": "PH1 (OSC_OUT): not joined to the morpho pin in the factory state"
+   "doc": "PH1, through SB163 (closed)"
   },
   "CN11_32": {
    "net": "PA4",
@@ -1847,6 +1989,16 @@
    "net": "PG11",
    "connector": "CN11",
    "pin": 70
+  },
+  "CN11_71": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 71
+  },
+  "CN11_72": {
+   "net": "GND",
+   "connector": "CN11",
+   "pin": 72
   },
   "CN12_1": {
    "net": "PC9",
@@ -2199,11 +2351,21 @@
    "connector": "CN12",
    "pin": 70
   },
+  "CN12_71": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 71
+  },
+  "CN12_72": {
+   "net": "GND",
+   "connector": "CN12",
+   "pin": 72
+  },
   "USB_VBUS": {
-   "net": "PA9",
+   "net": "USB_VBUS",
    "connector": "CN13",
    "pin": 1,
-   "doc": "VBUS of the USB OTG connector, sensed on PA9 (OTG_FS_VBUS)"
+   "doc": "VBUS of the USB OTG connector: to PA9 (OTG_FS_VBUS) through R35 (10 kOhm), and lighting LD8"
   },
   "USB_DM": {
    "net": "PA11",
@@ -2266,7 +2428,17 @@
   {
    "name": "power",
    "component": "LD6",
+   "color": "green"
+  },
+  {
+   "name": "usb_overcurrent",
+   "component": "LD7",
    "color": "red"
+  },
+  {
+   "name": "usb_vbus",
+   "component": "LD8",
+   "color": "green"
   }
  ],
  "buttons": [
@@ -2418,8 +2590,36 @@
      1.25,
      0.8
     ],
-    "color": "#ff5a5a",
+    "color": "#4dff7a",
     "output": "LD6.luminance"
+   },
+   {
+    "kind": "led",
+    "at": [
+     30.0,
+     128.0
+    ],
+    "size": [
+     2.0,
+     1.25,
+     0.8
+    ],
+    "color": "#ff5a5a",
+    "output": "LD7.luminance"
+   },
+   {
+    "kind": "led",
+    "at": [
+     34.0,
+     128.0
+    ],
+    "size": [
+     2.0,
+     1.25,
+     0.8
+    ],
+    "color": "#4dff7a",
+    "output": "LD8.luminance"
    },
    {
     "kind": "usb_micro",
@@ -2710,6 +2910,14 @@
     "selector": "#pin-cn11_70"
    },
    {
+    "port": "CN11_71",
+    "selector": "#pin-cn11_71"
+   },
+   {
+    "port": "CN11_72",
+    "selector": "#pin-cn11_72"
+   },
+   {
     "port": "CN12_1",
     "selector": "#pin-cn12_1"
    },
@@ -2988,6 +3196,14 @@
    {
     "port": "CN12_70",
     "selector": "#pin-cn12_70"
+   },
+   {
+    "port": "CN12_71",
+    "selector": "#pin-cn12_71"
+   },
+   {
+    "port": "CN12_72",
+    "selector": "#pin-cn12_72"
    },
    {
     "port": "D43",
@@ -3393,8 +3609,8 @@
     "input": "closed"
    },
    {
-    "component": "JP3_CHGR",
-    "selector": "#jp3-chgr",
+    "component": "JP4",
+    "selector": "#jp4",
     "input": "closed"
    },
    {
@@ -3438,6 +3654,16 @@
    {
     "component": "LD6",
     "selector": "#led-ld6",
+    "output": "luminance"
+   },
+   {
+    "component": "LD7",
+    "selector": "#led-ld7",
+    "output": "luminance"
+   },
+   {
+    "component": "LD8",
+    "selector": "#led-ld8",
     "output": "luminance"
    },
    {
@@ -3489,15 +3715,16 @@
  },
  "fidelity": {
   "functional": {
-   "claims": "Nets, ports, LD1, LD2, LD3, LD6, B1, B2 and the jumpers as parts; the STM32F446ZE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST Zio connectors CN7 to CN10 carry UM1974's pin assignment for the NUCLEO-F446ZE (the Arduino Uno V3 subset D0 to D15 and A0 to A5, and D16 to D72, A6 to A8) and the morpho headers CN11 and CN12 every one of the part's 114 I/Os; CN13 joins PA9 (VBUS), PA11 (D-), PA12 (D+) and PA10 (ID). The ST-LINK/V2-1's virtual COM port is the session's console on USART3 (PD8/PD9) and a serial port on the host.",
+   "claims": "Nets, ports, LD1 to LD3 and LD6 to LD8, B1, B2 and the jumpers as parts, as MB1137 B-01's schematic draws them; the STM32F446ZE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (the ST-LINK's MCO through SB149: HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST Zio connectors CN7 to CN10 carry the NUCLEO-F446ZE's assignment (D0 to D72, A0 to A8, the solder bridges in their factory state) and the morpho headers CN11 and CN12 (2 x 36) every one of the part's 114 I/Os. CN13's VBUS reaches PA9 through R35 and lights LD8; its D-, D+ and ID are PA11, PA12 and PA10; PG6 and PG7 carry U12's enable and fault lines (R72's pull-down, R71's pull-up through JP4). The ST-LINK/V2-1's virtual COM port is the session's console on USART3 (PD8/PD9, through SB5 and SB6) and a serial port on the host.",
    "omissions": [
     "the ST-LINK/V2-1 itself: its USB enumeration, the mass-storage drag-and-drop programming, SWD and its NRST drive (the session programs and debugs the board, ADR-031)",
     "the VCP's bytes reach USART3 directly, not as frames on PD9",
     "LD4 (COM), the ST-LINK's tricolour LED",
-    "the USB OTG FS controller (no model yet: CN13's lines are the pins alone), the USB power switch U12 (STMPS2151STR: PG6 its enable, PG7 its over-current flag) and its LEDs LD7 (VBUS) and LD8 (over-current)",
-    "the solder bridges are fixed in their factory state (LD1 on PB0, A4 on PF5 and A5 on PF10, CN11 pins 29 and 31 not joined to PH0/PH1, PD8/PD9 to the ST-LINK)",
-    "one JP3 shunt sits on one position only; the four switches here can all be closed",
-    "the ST-LINK's own over-current LED and limit on U5V",
+    "the USB OTG FS controller (no model yet: CN13's lines are the pins alone) and U12 (STMPS2151STR), the switch that would power VBUS from +5V for a USB host: VBUS comes only from what is plugged into CN13, and U12's fault output never asserts (LD7 stays dark)",
+    "the Ethernet PHY and RJ45 of sheet 5, which the NUCLEO-F446ZE does not carry (the STM32F446 has no Ethernet MAC)",
+    "the solder bridges are fixed in their factory state (SB120 on PB0, SB121 on PA7, SB144/SB145/SB148 open, SB163 closed, SB143/SB138 open, the F303ZE, F412ZG and L476ZG alternatives open)",
+    "one JP3 shunt sits on one position only; the three switches here can all be closed",
+    "U4's current limit (R28) and its fault output with LD5: the switch never trips",
     "CN4 (SWD to an external target) and the ST-LINK's CN1 beyond its 5 V"
    ],
    "validation": [
@@ -3514,13 +3741,14 @@
    ]
   },
   "electrical": {
-   "claims": "The power paths of UM1974's power supply section: the ST-LINK's USB 5 V (U5V) through its power switch (enabled by PWR_ENn low) to JP3's U5V position, or straight to its CHGR position; VIN (7 to 12 V) through U3 (LD1117S50) to its VIN position; E5V to its E5V position; U4 (LD39050PU33R) makes +3.3V from +5V and JP5 (IDD) carries it to VDD, VBAT, VDDUSB, PDR_ON and (through a solder bridge) VDDA and VREF+. LD6 shows +5V; LD1, LD2 and LD3 are lit by PB0, PB7 and PB14 high through 510 ohm; B1 pulls PC13 up to VDD through 100 ohm against a 4.7 kOhm pull-down, a 100 nF capacitor filtering it; a 100 nF capacitor holds NRST low for about 1.5 ms at power-on against the STM32's pull-up; VCAP_1 and VCAP_2 have 2.2 uF each; a 10 kOhm resistor holds BOOT0 low; X2 is the NUCLEO-F446RE's crystal's equivalent circuit.",
+   "claims": "The power paths of sheet 1: the ST-LINK's USB 5 V (U5V) through U4 (ST890CDR, on while PWR_ENn is low, R27 pulling it up) to JP3's U5V position; VIN (7 to 12 V) through U5 (LD1117S50) to its VIN position; E5V to its E5V position; U6 (LD39050PU33R) makes +3V3 from +5V and JP5 (IDD) carries it to VDD, VBAT, VDDUSB and PDR_ON and, through SB12, to VDDA and VREF+. LD6 (green) shows +5V through R29 (1 kOhm). LD1 is driven by U7 (TSV631), a voltage follower of PB0 through R34 (10 kOhm, R33's 200 kOhm pulling it down), through R32 (510 ohm); LD2 (blue) by PB7 through R31 (680 ohm); LD3 (red) by PB14 through R30 (1 kOhm). B1 joins its node to VDD; R58 (220 kOhm) holds it low, and R59 (330 ohm) takes it to PC13, with no filter capacitor (C52 not fitted). C53 (100 nF) holds NRST low for about 1.5 ms at power-on; C55 and C56 (2.2 uF) sit on VCAP_1 and VCAP_2; R36 (10 kOhm) holds BOOT0 low. CN13's VBUS lights LD8 (green, R64 330 ohm) through T2, its base driven through R68 (47 kOhm) against R69 (22 kOhm).",
    "omissions": [
-    "MB1137's schematic was not at hand: the user LEDs' and the power LED's resistors, B1's resistors and capacitor and the NRST and VCAP capacitors take the NUCLEO-F446RE's (MB1136's) values or the datasheet's recommendation, and the U5V power switch is the MB1136's P-MOSFET; reference designators beyond those UM1974 names (LDx, Bx, JPx, CNx) are EmbSIM's",
+    "U4 is the catalog's ST890CDR (its on-resistance and ON threshold assumed until its datasheet is checked), U7 the catalog's TSV631 (its datasheet not at hand either), T2 the catalog's S9013 (a mid-range gain, its datasheet not at hand)",
+    "L1, the ferrite bead between VDD and VDDA (its part is not named on the schematic), is taken as a short",
+    "X2 (NX3215SA) is a 32.768 kHz tuning-fork crystal's equivalent circuit, its own motional values not at hand; C35 and C36 (2 pF) and R37 and R38 (0 ohm) are not modelled",
     "the ST-LINK's current negotiation: PWR_ENn is low as after a host has granted 300 mA",
     "the ST-LINK's own supply and current",
-    "decoupling and bulk capacitors",
-    "ESD protection",
+    "decoupling and bulk capacitors, D6's ESD protection",
     "the STM32's supply current: VDD carries only what the pins drive, so with JP5 removed and no ammeter VDD floats instead of falling to 0 V, and the STM32 keeps running whatever VDD is"
    ],
    "validation": [
@@ -3533,21 +3761,22 @@
   "license": "Apache-2.0",
   "sources": [
    {
+    "title": "MB1137 B-01 electrical schematics (NUCLEO-XXXXZX, sheets 1 to 6, 2015): the power paths, the LEDs, B1, the USB circuit, the Zio and morpho connectors and their solder bridges",
+    "url": "https://www.st.com/en/evaluation-tools/nucleo-f446ze.html#cad-resources"
+   },
+   {
     "title": "UM1974 STM32 Nucleo-144 boards (MB1137) user manual",
     "url": "https://www.st.com/resource/en/user_manual/um1974-stm32-nucleo144-boards-mb1137-stmicroelectronics.pdf"
    },
    {
-    "title": "UM1974 table 18 (NUCLEO-F446ZE and NUCLEO-F722ZE pin assignments), as Zephyr's boards/st/nucleo_f446ze/st_zio_connector.dtsi transcribes it (Apache-2.0); checked against STM32duino's variant_NUCLEO_F446ZE.cpp (BSD-3-Clause, 6a2cdda) and ST's stm32f4xx-nucleo-144-bsp (LEDs, USER button, USB power switch pins)"
+    "title": "UM1974 table 18 (NUCLEO-F446ZE and NUCLEO-F722ZE pin assignments), as Zephyr's boards/st/nucleo_f446ze/st_zio_connector.dtsi transcribes it (Apache-2.0); checked against STM32duino's variant_NUCLEO_F446ZE.cpp (BSD-3-Clause, 6a2cdda) and ST's stm32f4xx-nucleo-144-bsp"
    },
    {
     "title": "STM32F446xC/E datasheet",
     "rev": "DS10693"
-   },
-   {
-    "title": "STS7PF30L P-channel 30 V STripFET II MOSFET datasheet: RDS(on) 0.016 ohm typical, 0.021 maximum"
    }
   ],
-  "notes": "Artwork is an original SVG drawn for EmbSIM to the board's 70 x 133.34 mm outline; no ST artwork or logo is used. The morpho pin assignment (CN11, CN12) places each of the 114 I/Os once. The morpho assignment matches, pin for pin, CN11 and CN12 of ST's MB1364 C-01 schematic (the Nucleo-144 board of the NUCLEO-H743ZI, sheet 5), whose morpho headers carry the same LQFP144 pins; MB1364's board-specific parts (its transistor-driven LEDs, LD2 on PE1, its USB switch enabled from PD10, the ST-LINK-V3E) are not MB1137's and none of its values is used here."
+  "notes": "Artwork is an original SVG drawn for EmbSIM to the board's 70 x 133.34 mm outline; no ST artwork or logo is used. The morpho assignment (CN11, CN12) places each of the 114 I/Os once, as MB1137's sheet 6 and MB1364's sheet 5 both draw it."
  },
  "tests": [
   "tests/*.json"
