@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "unplugged",
+  "description": "The cable out from the start (plugged false): no VBUS at the load, the host sees no cable.",
+  "policy": "electrical",
+  "until": "300ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/usb_host",
+        "params": {
+          "plugged": false
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100.0
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VBUS": [
+        "DUT.VBUS",
+        "RL.1"
+      ],
+      "GND": [
+        "DUT.GND",
+        "RL.2",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VBUS": {
+      "at": "250ms",
+      "max_v": 0.01
+    },
+    "output:DUT.HOST.plugged": {
+      "at": "290ms",
+      "equals": false
+    },
+    "output:DUT.HOST.state": {
+      "at": "290ms",
+      "equals": "detached"
+    }
+  }
+}

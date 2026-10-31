@@ -110,6 +110,7 @@ struct esk_cm_state {
 
     /* the NVIC and the SCB */
     u8 pend[NEXC], active[NEXC], irq_en[NEXC];
+    u8 line[NEXC];                  /* level-sensitive requests asserted (irq_level) */
     u8 prio[NEXC];                  /* as programmed, top bits significant */
     int npend;
     u32 vtor, aircr_prigroup, ccr, shcsr, cfsr, hfsr, mmfar, bfar, scr;

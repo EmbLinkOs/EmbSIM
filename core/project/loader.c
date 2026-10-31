@@ -1134,6 +1134,7 @@ static es_status project_load(es_session *s, const esk_json *project, const char
         esk_project_unload(s);
         s->project = copy;
         s->base_dir = dir;
+        s->eng.base_dir = dir;
     }
     project = s->project;
     s->name = project ? esk_strdup(s->a, esk_json_get_str(project, "name", "project")) : NULL;

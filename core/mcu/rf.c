@@ -603,16 +603,16 @@ static es_status read_reserved(struct esk_mach *m, struct esk_rf_periph *p, cons
     return ES_OK;
 }
 
-/* the access is inside a peripheral's reserved range */
-static int reserved(const struct esk_rf *rf, u32 a, int n)
+/* the peripheral whose reserved range the access is inside, or 0 */
+static struct esk_rf_periph *reserved_of(struct esk_rf *rf, u32 a, int n)
 {
     int i, k;
     for (i = 0; i < rf->np; i++) {
-        const struct esk_rf_periph *p = &rf->p[i];
+        struct esk_rf_periph *p = &rf->p[i];
         for (k = 0; k < p->nrsv; k++)
             if (a - (p->base + p->rsv[2 * k]) < p->rsv[2 * k + 1] &&
                 a + (u32)n - (p->base + p->rsv[2 * k]) <= p->rsv[2 * k + 1])
-                return 1;
+                return p;
     }
     return 0;
 }
@@ -798,6 +798,19 @@ void esk_rf_interrupt(struct esk_rf_periph *p, int irq)
 {
     if (irq >= 0)
         p->sim->cpu->ops->interrupt(p->sim->cpu, 16 + irq);
+}
+
+void esk_rf_irq_level(struct esk_rf_periph *p, int irq, int level, int *was)
+{
+    struct esk_cpu *c = p->sim->cpu;
+    level = level != 0;
+    if (irq < 0 || *was == level)
+        return;
+    *was = level;
+    if (c->ops->irq_level)
+        c->ops->irq_level(c, 16 + irq, level);
+    else if (level)
+        c->ops->interrupt(c, 16 + irq);
 }
 
 void esk_rf_hw(struct esk_rf_reg *r, u64 v) { r->value = v; }
@@ -1071,9 +1084,19 @@ static u32 map_read(void *ctx, u32 off, int n)
         return 0;
     }
     if (!r) {
-        if (!reserved(rf, a, n))
+        p = reserved_of(rf, a, n);
+        if (!p) {
             hole(rf, a, n, 0);
-        return 0;
+            return 0;
+        }
+        /* a model's own range there (an OTG core's FIFO windows) */
+        if (!p->model_rsv || !p->ops->read || rf->m->bus.debug)
+            return 0;
+        if (esk_rf_gated(p)) {
+            gated_access(rf, p, a, n, 0);
+            return 0;
+        }
+        return p->ops->read(p->ctx, a - p->base, n);
     }
     p = r->p;
     if (esk_rf_reg_gated(r)) {
@@ -1113,8 +1136,18 @@ static void map_write(void *ctx, u32 off, int n, u32 v)
         n = 4;
     }
     if (!r) {
-        if (!reserved(rf, a, n))
+        p = reserved_of(rf, a, n);
+        if (!p) {
             hole(rf, a, n, 1);
+            return;
+        }
+        if (!p->model_rsv || !p->ops->write || rf->m->bus.debug)
+            return;
+        if (esk_rf_gated(p)) {
+            gated_access(rf, p, a, n, 1);
+            return;
+        }
+        p->ops->write(p->ctx, a - p->base, n, v);
         return;
     }
     p = r->p;

@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "usb_device_dfu_fixed",
+  "until": "2.6s",
+  "description": "USB_Device/DFU_Standalone with MAX_STATIC_ALLOC_SIZE corrected to 264 words (the DFU handle's 1056 bytes; its only change, see usb_device_dfu_standalone), the application area empty. The host downloads ST's own Binary/STM32F446ZE_GPIOToggle_Nucleo_144.dfu as dfu-util does with :leave. It reads the interface string's memory layout (the loader's 48 KiB read-only, the rest erasable), erases the 16 KiB sector at 0x08008000, sets the address pointer, sends the 3480 bytes in 1024-byte blocks with a DFU_GETSTATUS after each, waiting its bwPollTimeout, then sets the address again and sends the zero-length DNLOAD. On the GETSTATUS after it, the loader manifests and resets itself (NVIC_SystemReset). The flash keeps what was written, the loader finds a valid stack pointer at 0x08008000 and jumps there, and ST's GPIOToggle toggles LD1 every 100 ms. No USB device remains on the cable.",
+  "inputs": [
+    {
+      "at": "400ms",
+      "target": "PC.HOST",
+      "input": "dfu_download",
+      "value": true
+    }
+  ],
+  "assertions": [
+    {
+      "id": "configured",
+      "by": "245ms",
+      "probe": "usb_state",
+      "expect": {
+        "equals": "configured"
+      }
+    },
+    {
+      "id": "empty-before",
+      "at": "390ms",
+      "probe": "app0",
+      "expect": {
+        "equals": 4294967295
+      }
+    },
+    {
+      "id": "layout-read",
+      "at": "500ms",
+      "probe": "usb_log",
+      "expect": {
+        "contains": "02*016Ka,02*016Kg"
+      }
+    },
+    {
+      "id": "one-sector-erased",
+      "at": "2.5s",
+      "probe": "usb_dfu_erased",
+      "expect": {
+        "equals": 1
+      }
+    },
+    {
+      "id": "all-bytes",
+      "at": "2.5s",
+      "probe": "usb_dfu_bytes",
+      "expect": {
+        "equals": 3480
+      }
+    },
+    {
+      "id": "done",
+      "at": "2.5s",
+      "probe": "usb_dfu_state",
+      "expect": {
+        "equals": "done"
+      }
+    },
+    {
+      "id": "device-left",
+      "between": [
+        "1.1s",
+        "2.5s"
+      ],
+      "probe": "usb_state",
+      "expect": {
+        "equals": "detached"
+      }
+    },
+    {
+      "id": "application-written",
+      "at": "2.5s",
+      "probe": "app0",
+      "expect": {
+        "equals": 536872288
+      }
+    },
+    {
+      "id": "led-dark-in-dfu-mode",
+      "between": [
+        "300ms",
+        "1s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 0
+      }
+    },
+    {
+      "id": "gpiotoggle-runs",
+      "between": [
+        "1.5s",
+        "2.5s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 10
+      }
+    }
+  ]
+}

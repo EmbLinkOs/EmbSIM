@@ -342,6 +342,7 @@ void esk_stm32f4_pins_changed(struct esk_mach *s)
             update((struct f4gpio *)p->ctx); /* its clock off, the pins keep their setting */
     }
     esk_stm32f4_pwr_pins_settled(s);
+    esk_stm32_otg_fs_pins(s);
 }
 
 void esk_stm32f4_port_changed(struct esk_mach *s, int port)

@@ -40,6 +40,11 @@ void *esk_stm32_storage_create(struct esk_mach *m, struct esk_rf_periph *p);
 
 extern const struct esk_dev_ops esk_stm32_crc_ops;
 void *esk_stm32_crc_create(struct esk_mach *m, struct esk_rf_periph *p);
+/* the USB OTG FS controller in device mode (otg_fs.c), and the pins'
+ * outside levels changing (VBUS on PA9) */
+extern const struct esk_dev_ops esk_stm32_otg_fs_ops;
+void *esk_stm32_otg_fs_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_stm32_otg_fs_pins(struct esk_mach *m);
 
 /* the F1's clocks in Hz: HCLK (0 without the F1's RCC) and PCLK1 or PCLK2 */
 u32 esk_stm32f1_hclk(struct esk_mach *m);
@@ -49,6 +54,8 @@ u32 esk_stm32f1_pclk(struct esk_mach *m, int apb);
 u32 esk_stm32_hclk(struct esk_mach *m);
 u32 esk_stm32_pclk(struct esk_mach *m, int apb);
 u32 esk_stm32_timclk(struct esk_mach *m, int apb);
+/* the F4's 48 MHz clock (CK48) in Hz: 0 while its PLL is not locked */
+u32 esk_stm32f4_ck48(struct esk_mach *m);
 /* the F4's PWR: VOSRDY, ODRDY and ODSWRDY as the RCC's PLL and PWR's
  * enables have them (pwr_f4.c); nothing without the F4's PWR */
 void esk_stm32f4_pwr_settle(struct esk_mach *m);

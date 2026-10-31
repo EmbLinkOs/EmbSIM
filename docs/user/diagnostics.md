@@ -59,6 +59,9 @@ run).
 | `mcu.clock_gated` | warning | board, register, pc | an access to a peripheral whose clock is off: reads 0, writes ignored |
 | `mcu.bus_error` | warning | board, address, pc | nothing answered an access: the core takes a bus fault |
 | `mcu.held_in_reset` | warning | board, register, pc | an access to a peripheral its reset controller holds in reset (the RP2040's RESETS): reads its reset values, writes ignored |
+| `mcu.usb_fifo` | warning | board | an STM32 OTG core's FIFOs as the program placed them: an IN endpoint's FIFO overlapping the receive FIFO or past the 320 words of FIFO RAM, or the receive FIFO read before GRXSTSP took a packet's status |
+| `usb.dfu` | warning | component | a USB host part's DFU download stopped: the device's status, a request it refused, an image outside its memory layout or a read-only segment, a file it could not read |
+| `usb.enumeration` | warning | component | a USB host part could not enumerate the device on its cable: the request that failed and why (a STALL, no answer, 5 s); its log has the steps |
 | `mcu.usb_boot` | warning | board | the program called the RP2040's `reset_to_usb_boot`: the part waits in its USB boot, which is not modelled |
 | `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot |
 | `mcu.watchdog_reset` | info | board | the watchdog reset the chip (the RP2040's counter reached 0 or CTRL.TRIGGER; the FE310's comparator fired with wdogrsten) |

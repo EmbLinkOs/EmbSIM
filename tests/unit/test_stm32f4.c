@@ -3360,6 +3360,274 @@ static void test_crc(void)
     f4_close(&f);
 }
 
+/* ---- USB OTG FS (otg_fs.c), driven as the HAL's PCD driver does, with
+ * the host's transactions made from here ------------------------------------- */
+
+#define OTG 0x50000000u
+#define RCC_AHB2ENR (RCC + 0x34u)
+#define G_GOTGCTL (OTG + 0x000u)
+#define G_GOTGINT (OTG + 0x004u)
+#define G_GAHBCFG (OTG + 0x008u)
+#define G_GUSBCFG (OTG + 0x00Cu)
+#define G_GRSTCTL (OTG + 0x010u)
+#define G_GINTSTS (OTG + 0x014u)
+#define G_GINTMSK (OTG + 0x018u)
+#define G_GRXSTSR (OTG + 0x01Cu)
+#define G_GRXSTSP (OTG + 0x020u)
+#define G_GRXFSIZ (OTG + 0x024u)
+#define G_DIEPTXF0 (OTG + 0x028u)
+#define G_GCCFG (OTG + 0x038u)
+#define G_GSNPSID (OTG + 0x040u)
+#define G_DIEPTXF1 (OTG + 0x104u)
+#define D_DCFG (OTG + 0x800u)
+#define D_DCTL (OTG + 0x804u)
+#define D_DSTS (OTG + 0x808u)
+#define D_DIEPMSK (OTG + 0x810u)
+#define D_DOEPMSK (OTG + 0x814u)
+#define D_DAINT (OTG + 0x818u)
+#define D_DAINTMSK (OTG + 0x81Cu)
+#define D_DIEPCTL(n) (OTG + 0x900u + 0x20u * (n))
+#define D_DIEPINT(n) (OTG + 0x908u + 0x20u * (n))
+#define D_DIEPTSIZ(n) (OTG + 0x910u + 0x20u * (n))
+#define D_DTXFSTS(n) (OTG + 0x918u + 0x20u * (n))
+#define D_DOEPCTL(n) (OTG + 0xB00u + 0x20u * (n))
+#define D_DOEPINT(n) (OTG + 0xB08u + 0x20u * (n))
+#define D_DOEPTSIZ(n) (OTG + 0xB10u + 0x20u * (n))
+#define FIFO(n) (OTG + 0x1000u * ((n) + 1u))
+#define NVIC_ISPR2 0xE000E208u
+/* PLLM 8, PLLN 336, PLLP /2, PLLQ 7 from the 8 MHz HSE: 168 MHz SYSCLK
+ * and 48 MHz on PLL_Q, the USB's clock */
+#define PLLCFGR_168 (8u | 336u << 6 | 0u << 16 | 1u << 22 | 7u << 24 | 2u << 28)
+
+static int usb_changes, otg_entries, usb_wakeups;
+static void r_usb_changed(void *ctx) { (void)ctx; usb_changes++; }
+static void r_usb_wakeup(void *ctx) { (void)ctx; usb_wakeups++; }
+static void r_exc(void *ctx, int core, int n)
+{
+    (void)ctx;
+    (void)core;
+    if (n == 16 + 67)
+        otg_entries++;
+}
+
+static void run_us(f4 *f, long us) { (void)wait_set(f, OTG + 0x3FFFCu, 1u, us); /* a word that stays 0 */ }
+
+/* PA11 and PA12 on AF10, VBUS (PA9) an input, the core's clock */
+static void otg_msp(f4 *f)
+{
+    wr(f, RCC_AHB1ENR, rd(f, RCC_AHB1ENR) | 1u);       /* GPIOAEN */
+    pin_af(f, GPIOA, 11, 10);
+    pin_af(f, GPIOA, 12, 10);
+    wr(f, RCC_AHB2ENR, rd(f, RCC_AHB2ENR) | 1u << 7);  /* OTGFSEN */
+}
+
+static int pulled(f4 *f) { return f->m.usb.pullup(f->m.usb.ctx); }
+
+static void test_otg_fs(void)
+{
+    f4 f;
+    static const u8 get_dev[8] = { 0x80, 6, 0, 1, 0, 0, 64, 0 };
+    static const u8 set_addr[8] = { 0x00, 5, 5, 0, 0, 0, 0, 0 };
+    u8 pkt[64], out4[4] = { 1, 2, 3, 4 };
+    u32 len = 0, st, i;
+    int d1 = 0;
+    if (!f4_open(&f, 1))
+        return;
+    f.m.host.usb_changed = r_usb_changed;
+    f.m.host.usb_remote_wakeup = r_usb_wakeup;
+    usb_changes = usb_wakeups = 0;
+    CHECK(f.m.usb.pullup != NULL);
+    CHECK_EQ(f.m.usb.dp_at, 12);
+    CHECK_EQ(rd(&f, G_GRSTCTL), 0u); /* the clock is off */
+    otg_msp(&f);
+    CHECK_EQ(rd(&f, G_GRSTCTL), 0x80000000u); /* AHBIDL */
+    CHECK_EQ(rd(&f, G_GSNPSID), 0x4F54320Au);
+    CHECK_EQ(rd(&f, D_DCTL), 2u);             /* SDIS out of reset */
+    CHECK_EQ(rd(&f, G_GINTSTS) & 1u, 0u);     /* CMOD: a device (ID high) */
+
+    /* USB_CoreReset without the 48 MHz clock: CSRST stays set, as the
+     * HAL's loop then times out */
+    wr(&f, G_GRSTCTL, rd(&f, G_GRSTCTL) | 1u);
+    CHECK_EQ(wait_clr(&f, G_GRSTCTL, 1u, 200), -1);
+    CHECK_EQ(esk_stm32f4_ck48(&f.m), 0u);
+    pll_from_hse(&f, PLLCFGR_168);
+    CHECK_EQ(esk_stm32f4_ck48(&f.m), 48000000u);
+    CHECK(wait_clr(&f, G_GRSTCTL, 1u, 10) >= 0);
+
+    /* a forced mode takes 25 ms */
+    wr(&f, G_GUSBCFG, rd(&f, G_GUSBCFG) | 1u << 29); /* FHMOD */
+    CHECK_EQ(wait_set(&f, G_GINTSTS, 1u, 20000), -1);
+    CHECK(wait_set(&f, G_GINTSTS, 1u, 10000) >= 0);
+    wr(&f, G_GUSBCFG, (rd(&f, G_GUSBCFG) & ~(1u << 29)) | 1u << 30); /* FDMOD */
+    CHECK(wait_clr(&f, G_GINTSTS, 1u, 30000) >= 20000);
+
+    /* USB_DevInit with VBUS sensing: the pull-up needs the transceiver,
+     * VBUS above 4 V on PA9 and SDIS cleared (USB_DevConnect) */
+    wr(&f, G_GCCFG, 1u << 16 | 1u << 21); /* PWRDWN, VBDEN */
+    wr(&f, G_GRXFSIZ, 0x80u);
+    wr(&f, G_DIEPTXF0, 0x40u << 16 | 0x80u);
+    wr(&f, G_DIEPTXF1, 0x80u << 16 | 0xC0u);
+    CHECK_EQ(rd(&f, G_GOTGCTL) & 1u << 19, 0u); /* no session */
+    f.has_volts[0][9] = 1;
+    f.volts[0][9] = 3.5;                         /* below the comparator */
+    esk_stm32_otg_fs_pins(&f.m);
+    CHECK_EQ(rd(&f, G_GOTGCTL) & 1u << 19, 0u);
+    f.volts[0][9] = 5.0;
+    esk_stm32_otg_fs_pins(&f.m);
+    CHECK(rd(&f, G_GOTGCTL) & 1u << 19);         /* BSVLD */
+    CHECK_EQ(pulled(&f), ESK_USB_DETACHED);      /* SDIS still set */
+    CHECK_EQ(usb_changes, 0);
+    wr(&f, D_DCTL, rd(&f, D_DCTL) & ~2u);
+    CHECK_EQ(pulled(&f), ESK_USB_FULL_SPEED);
+    CHECK_EQ(usb_changes, 1);
+    CHECK_EQ((rd(&f, D_DSTS) >> 22) & 3u, 2u);   /* the line idles at J */
+
+    /* idle 3 ms: suspend; the interrupt line with GINT and USBSUSPM */
+    wr(&f, G_GINTMSK, 1u << 11 | 1u << 12 | 1u << 13 | 1u << 4 | 1u << 18 | 1u << 19 | 1u << 31);
+    wr(&f, G_GAHBCFG, 1u);
+    CHECK_EQ(wait_set(&f, G_GINTSTS, 1u << 11, 2900), -1);
+    CHECK(wait_set(&f, G_GINTSTS, 1u << 11, 200) >= 0);
+    CHECK(rd(&f, G_GINTSTS) & 1u << 10);         /* ESUSP */
+    CHECK_EQ(rd(&f, D_DSTS) & 1u, 1u);           /* SUSPSTS */
+    CHECK(rd(&f, NVIC_ISPR2) & 1u << 3);         /* OTG_FS (67) pending */
+    /* a level: a handler that returns with the flags still set is entered
+     * again, and no more once they are cleared */
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x40u + 4u * 67u, 4, 0x201u), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x200u, 2, 0x4770u), 0); /* bx lr */
+    f.m.host.exc = r_exc;
+    otg_entries = 0;
+    wr(&f, 0xE000E108u, 1u << 3);                /* NVIC_ISER2 */
+    run_us(&f, 20);
+    CHECK(otg_entries > 3);
+    wr(&f, G_GINTSTS, 1u << 10 | 1u << 11);      /* ESUSP, USBSUSP */
+    otg_entries = 0;
+    run_us(&f, 20);
+    CHECK(otg_entries <= 1);
+    wr(&f, 0xE000E188u, 1u << 3);                /* NVIC_ICER2 */
+    f.m.host.exc = NULL;
+
+    /* RWUSIG while suspended: remote wakeup, heard by the host once */
+    wr(&f, D_DCTL, rd(&f, D_DCTL) | 1u);
+    CHECK_EQ(usb_wakeups, 1);
+    wr(&f, D_DCTL, rd(&f, D_DCTL) | 1u);         /* still set: no new edge */
+    CHECK_EQ(usb_wakeups, 1);
+    wr(&f, D_DCTL, rd(&f, D_DCTL) & ~1u);
+
+    /* the host resets the port: WKUINT (it was suspended), USBRST, and
+     * at its end ENUMDNE at full speed */
+    f.m.usb.bus(f.m.usb.ctx, ESK_USB_RESET, 0);
+    CHECK(rd(&f, G_GINTSTS) & 1u << 31);
+    CHECK(rd(&f, G_GINTSTS) & 1u << 12);
+    CHECK_EQ(rd(&f, D_DSTS) & 1u, 0u);
+    run_us(&f, 5000);                            /* SE0 is not idle: no suspend */
+    CHECK_EQ(rd(&f, G_GINTSTS) & 1u << 11, 0u);
+    wr(&f, G_GINTSTS, 0xFFFFFFFFu);              /* the HAL clears them */
+    CHECK_EQ(rd(&f, G_GINTSTS) & (1u << 11 | 1u << 12 | 1u << 31), 0u);
+    f.m.usb.bus(f.m.usb.ctx, ESK_USB_RESET_END, 0);
+    CHECK(rd(&f, G_GINTSTS) & 1u << 13);
+    CHECK_EQ((rd(&f, D_DSTS) >> 1) & 3u, 3u);    /* ENUMSPD full speed */
+    f.m.usb.bus(f.m.usb.ctx, ESK_USB_SOF, 0x123u);
+    CHECK_EQ((rd(&f, D_DSTS) >> 8) & 0x3FFFu, 0x123u);
+
+    /* USB_EP0_OutStart, then a SETUP: its status and data in the receive
+     * FIFO, STUP only once the "setup done" status is taken, which the
+     * host's next token puts there; EP0 NAKs until CNAK */
+    wr(&f, D_DOEPMSK, 1u | 1u << 3);
+    wr(&f, D_DIEPMSK, 1u);
+    wr(&f, D_DAINTMSK, 0x10001u);
+    wr(&f, D_DOEPTSIZ(0), 3u << 29 | 1u << 19 | 24u);
+    CHECK_EQ(f.m.usb.setup(f.m.usb.ctx, 0, 0, get_dev), ESK_USB_ACK);
+    CHECK(rd(&f, G_GINTSTS) & 1u << 4);          /* RXFLVL */
+    st = rd(&f, G_GRXSTSR);
+    CHECK_EQ(st, 6u << 17 | 8u << 4);            /* SETUP data, 8 bytes, EP0 */
+    CHECK_EQ(rd(&f, G_GRXSTSR), st);             /* a peek */
+    CHECK_EQ((rd(&f, D_DOEPTSIZ(0)) >> 29) & 3u, 2u); /* STUPCNT */
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 0, 0, pkt, sizeof pkt, &len, &d1), ESK_USB_NAK);
+    CHECK_EQ(rd(&f, G_GRXSTSP), st);
+    CHECK_EQ(rd(&f, FIFO(0)), 0x01000680u);
+    CHECK_EQ(rd(&f, FIFO(0)), 0x00400000u);
+    CHECK_EQ(rd(&f, D_DOEPINT(0)) & 1u << 3, 0u);
+    CHECK_EQ(rd(&f, G_GRXSTSP), 4u << 17);       /* SETUP stage done */
+    CHECK(rd(&f, D_DOEPINT(0)) & 1u << 3);       /* STUP */
+    CHECK(rd(&f, D_DAINT) & 1u << 16);
+    CHECK(rd(&f, G_GINTSTS) & 1u << 19);         /* OEPINT */
+    CHECK_EQ(rd(&f, G_GINTSTS) & 1u << 4, 0u);
+    wr(&f, D_DOEPINT(0), 1u << 3);
+
+    /* the data stage: an 18-byte packet goes once all its words are in
+     * EP0's FIFO; XFRC and EPENA's clearing after it */
+    wr(&f, D_DIEPTSIZ(0), 1u << 19 | 18u);
+    wr(&f, D_DIEPCTL(0), rd(&f, D_DIEPCTL(0)) | 1u << 26 | 1u << 31);
+    CHECK_EQ(rd(&f, D_DTXFSTS(0)), 0x40u);
+    for (i = 0; i < 4; i++)
+        wr(&f, FIFO(0), 0x03020100u + 0x04040404u * i);
+    CHECK_EQ(rd(&f, D_DTXFSTS(0)), 0x3Cu);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 0, 0, pkt, sizeof pkt, &len, &d1), ESK_USB_NAK);
+    wr(&f, FIFO(0), 0x00001110u);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 0, 0, pkt, sizeof pkt, &len, &d1), ESK_USB_ACK);
+    CHECK_EQ(len, 18u);
+    CHECK_EQ(d1, 1);                             /* DATA1 after a SETUP */
+    for (i = 0; i < 18; i++)
+        CHECK_EQ(pkt[i], (u8)i);
+    CHECK(rd(&f, D_DIEPINT(0)) & 1u);            /* XFRC */
+    CHECK_EQ(rd(&f, D_DIEPCTL(0)) & 1u << 31, 0u);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 0, 0, pkt, sizeof pkt, &len, &d1), ESK_USB_NAK);
+    wr(&f, D_DIEPINT(0), 1u);
+
+    /* SET_ADDRESS: the HAL writes DAD in its setup stage; the core answers
+     * address 0 until the status stage's IN packet has gone */
+    CHECK_EQ(f.m.usb.setup(f.m.usb.ctx, 0, 0, set_addr), ESK_USB_ACK);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 0, 0, pkt, sizeof pkt, &len, &d1), ESK_USB_NAK);
+    (void)rd(&f, G_GRXSTSP);
+    (void)rd(&f, FIFO(0));
+    (void)rd(&f, FIFO(0));
+    (void)rd(&f, G_GRXSTSP);
+    wr(&f, D_DCFG, (rd(&f, D_DCFG) & ~(0x7Fu << 4)) | 5u << 4);
+    wr(&f, D_DIEPTSIZ(0), 1u << 19);
+    wr(&f, D_DIEPCTL(0), rd(&f, D_DIEPCTL(0)) | 1u << 26 | 1u << 31);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 0, 0, pkt, sizeof pkt, &len, &d1), ESK_USB_ACK);
+    CHECK_EQ(len, 0u);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 0, 0, pkt, sizeof pkt, &len, &d1), ESK_USB_NONE);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 5, 0, pkt, sizeof pkt, &len, &d1), ESK_USB_NAK);
+
+    /* an interrupt OUT endpoint: DATA0 first; a DATA1 repeat is ACKed and
+     * dropped; the short packet ends the transfer (XFRC when its "OUT
+     * done" status is taken) */
+    wr(&f, D_DOEPCTL(1), 64u | 1u << 15 | 3u << 18 | 1u << 28);
+    wr(&f, D_DOEPTSIZ(1), 1u << 19 | 64u);
+    CHECK_EQ(f.m.usb.out(f.m.usb.ctx, 5, 1, 0, out4, 4), ESK_USB_NAK); /* not enabled */
+    wr(&f, D_DOEPCTL(1), rd(&f, D_DOEPCTL(1)) | 1u << 26 | 1u << 31);
+    CHECK_EQ(f.m.usb.out(f.m.usb.ctx, 5, 1, 1, out4, 4), ESK_USB_ACK);
+    CHECK_EQ(rd(&f, G_GINTSTS) & 1u << 4, 0u);   /* dropped */
+    CHECK_EQ(f.m.usb.out(f.m.usb.ctx, 5, 1, 0, out4, 4), ESK_USB_ACK);
+    CHECK_EQ(rd(&f, G_GRXSTSP), 2u << 17 | 4u << 4 | 1u);
+    CHECK_EQ(rd(&f, FIFO(0)), 0x04030201u);
+    CHECK_EQ(rd(&f, D_DOEPTSIZ(1)) & 0x7FFFFu, 60u);
+    CHECK_EQ(rd(&f, G_GRXSTSP), 3u << 17 | 1u);
+    CHECK(rd(&f, D_DOEPINT(1)) & 1u);
+    CHECK_EQ(rd(&f, D_DOEPCTL(1)) & 1u << 31, 0u);
+    CHECK_EQ(f.m.usb.out(f.m.usb.ctx, 5, 1, 1, out4, 4), ESK_USB_NAK);
+
+    /* a stalled IN endpoint; a token for an endpoint not active */
+    wr(&f, D_DIEPCTL(1), 4u | 1u << 15 | 3u << 18 | 1u << 22 | 1u << 21);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 5, 1, pkt, sizeof pkt, &len, &d1), ESK_USB_STALL);
+    CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 5, 2, pkt, sizeof pkt, &len, &d1), ESK_USB_NONE);
+
+    /* RWUSIG on a bus that is not suspended: nothing (USB 2.0 7.1.7.7) */
+    wr(&f, D_DCTL, rd(&f, D_DCTL) | 1u);
+    wr(&f, D_DCTL, rd(&f, D_DCTL) & ~1u);
+    CHECK_EQ(usb_wakeups, 1);
+
+    /* VBUS gone: the session ends (SEDET), the pull-up goes */
+    f.volts[0][9] = 0.0;
+    esk_stm32_otg_fs_pins(&f.m);
+    CHECK_EQ(pulled(&f), ESK_USB_DETACHED);
+    CHECK_EQ(usb_changes, 2);
+    CHECK(rd(&f, G_GOTGINT) & 1u << 2);
+    CHECK_STR(f.codes, "mcu.clock_gated "); /* the read before OTGFSEN */
+    f4_close(&f);
+}
+
 /* TIM5_OR's IT4_RMP: LSI on TI4, measured as HAL's GetLSIFrequency does
  * (input capture every 8 rising edges): 8 periods of 32 kHz are 4000
  * counts of a 16 MHz timer clock; nothing while LSI is off; the pin no
@@ -3469,4 +3737,5 @@ RUN(test_startup_times);
 RUN(test_crc);
 RUN(test_tim5_lsi);
 RUN(test_tim_widths);
+RUN(test_otg_fs);
 TEST_MAIN_END
