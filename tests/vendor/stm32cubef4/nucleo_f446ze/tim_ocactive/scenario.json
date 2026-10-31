@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_ocactive",
+  "until": "1.3s",
+  "description": "TIM_OCActive: TIM3 at 10 kHz, each channel's output set active at its match: PB1 (CH4) 125 ms, PB0 (CH3, LD1) 250 ms, PB5 (CH2) 500 ms and PB4 (CH1) 1 s after LD2 (PB7) is lit as the reference.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "ref",
+      "at": "60ms",
+      "probe": "led2",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "ch4-early",
+      "at": "60ms",
+      "probe": "pb1",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "ch4",
+      "at": "250ms",
+      "probe": "pb1",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "ch3-early",
+      "at": "250ms",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "ch3",
+      "at": "380ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "ch2-early",
+      "at": "500ms",
+      "probe": "pb5",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "ch2",
+      "at": "650ms",
+      "probe": "pb5",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "ch1-early",
+      "at": "1s",
+      "probe": "pb4",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "ch1",
+      "at": "1.2s",
+      "probe": "pb4",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

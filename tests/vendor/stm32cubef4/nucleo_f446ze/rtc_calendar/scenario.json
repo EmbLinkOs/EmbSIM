@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "rtc_calendar",
+  "until": "4s",
+  "description": "RTC_Calendar on the NUCLEO-F446ZE: the RTC on the LSE crystal X2, ready DS10693's tsu(LSE) of 2 s after LSEON, set to 02:00:00 on 18 February 2014 and the backup register DR1 marked 0x32F2; LD1 lights once it is configured and the time and date are formatted (%2d each) into aShowTime and aShowDate as they count.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "ld1",
+      "at": "3s",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "lse-wait",
+      "at": "1.5s",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "time",
+      "at": "3.6s",
+      "probe": "showtime",
+      "expect": {
+        "equals": " 2: 0: 1"
+      }
+    },
+    {
+      "id": "date",
+      "at": "3.6s",
+      "probe": "showdate",
+      "expect": {
+        "equals": " 2-18-2014"
+      }
+    },
+    {
+      "id": "bkp",
+      "at": "3.6s",
+      "probe": "bkp1r",
+      "expect": {
+        "equals": 13042
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "100ms",
+        "3.9s"
+      ],
+      "probe": "led3",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_pwmoutput",
+  "until": "100ms",
+  "description": "TIM_PWMOutput: TIM3 at 15 MHz (PSC from 90 MHz), ARR 665: four 22.5 kHz PWM channels, CH1 on PB4 at 50 %, CH2 on PB5 at 37.5 %, CH3 on PB0 (also LD1) at 25 %, CH4 on PB1 at 12.5 %.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "ch1-f",
+      "between": [
+        "40ms",
+        "90ms"
+      ],
+      "probe": "pb4",
+      "expect": {
+        "frequency_hz": 22522
+      },
+      "tolerance": 0.01
+    },
+    {
+      "id": "ch3-f",
+      "between": [
+        "40ms",
+        "90ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "frequency_hz": 22522
+      },
+      "tolerance": 0.01
+    },
+    {
+      "id": "ch1-duty",
+      "between": [
+        "40ms",
+        "90ms"
+      ],
+      "probe": "pb4",
+      "expect": {
+        "min": 0.495,
+        "max": 0.505
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "ch2-duty",
+      "between": [
+        "40ms",
+        "90ms"
+      ],
+      "probe": "pb5",
+      "expect": {
+        "min": 0.37,
+        "max": 0.38
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "ch3-duty",
+      "between": [
+        "40ms",
+        "90ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "min": 0.245,
+        "max": 0.255
+      },
+      "measure": "duty_cycle"
+    },
+    {
+      "id": "ch4-duty",
+      "between": [
+        "40ms",
+        "90ms"
+      ],
+      "probe": "pb1",
+      "expect": {
+        "min": 0.12,
+        "max": 0.13
+      },
+      "measure": "duty_cycle"
+    }
+  ]
+}

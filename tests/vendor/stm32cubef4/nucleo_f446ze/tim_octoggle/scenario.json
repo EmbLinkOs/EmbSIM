@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_octoggle",
+  "until": "200ms",
+  "description": "TIM_OCToggle: TIM3 at 9 MHz in toggle mode, each channel's CCR advanced in its interrupt: 195 Hz on PB4 (CH1), 390 Hz on PB5 (CH2), 780 Hz on PB0 (CH3, also LD1), 1560 Hz on PB1 (CH4).",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "ch1",
+      "between": [
+        "40ms",
+        "190ms"
+      ],
+      "probe": "pb4",
+      "expect": {
+        "frequency_hz": 195
+      },
+      "tolerance": 0.02
+    },
+    {
+      "id": "ch2",
+      "between": [
+        "40ms",
+        "190ms"
+      ],
+      "probe": "pb5",
+      "expect": {
+        "frequency_hz": 390
+      },
+      "tolerance": 0.02
+    },
+    {
+      "id": "ch3",
+      "between": [
+        "40ms",
+        "190ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "frequency_hz": 780
+      },
+      "tolerance": 0.02
+    },
+    {
+      "id": "ch4",
+      "between": [
+        "40ms",
+        "190ms"
+      ],
+      "probe": "pb1",
+      "expect": {
+        "frequency_hz": 1560
+      },
+      "tolerance": 0.02
+    }
+  ]
+}

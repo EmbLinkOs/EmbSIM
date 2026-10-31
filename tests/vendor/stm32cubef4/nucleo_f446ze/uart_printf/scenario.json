@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "uart_printf",
+  "until": "400ms",
+  "description": "UART_Printf: printf retargeted to USART3 (PD8/PD9), the ST-LINK's virtual COM port, at 9600 baud with 7 data bits and odd parity.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "banner",
+      "at": "300ms",
+      "probe": "console",
+      "expect": {
+        "contains": "UART Printf Example: retarget the C library printf function to the UART"
+      }
+    },
+    {
+      "id": "done",
+      "at": "390ms",
+      "probe": "console",
+      "expect": {
+        "contains": "** Test finished successfully. **"
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "20ms",
+        "390ms"
+      ],
+      "probe": "led2",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}
