@@ -267,6 +267,11 @@
    "doc": "R35: CN13's VBUS to PA9 (OTG_FS_VBUS), through SB127 (closed)"
   },
   {
+   "id": "U12",
+   "component": "emblink/stmps2151str",
+   "doc": "U12 (STMPS2151STR): +5V to CN13's VBUS while PG6 (USB_PowerSwitchOn) is high, for a device plugged into CN13 when the OTG core is a host; its FAULT to USB_OVCR (PG7 through JP4, LD7)"
+  },
+  {
    "id": "R72",
    "component": "emblink/resistor",
    "params": {
@@ -431,7 +436,8 @@
    "U6.IN",
    "R29.1",
    "CN8.9",
-   "CN11.18"
+   "CN11.18",
+   "U12.IN"
   ],
   "LD6_A": [
    "R29.2",
@@ -515,7 +521,8 @@
    "CN12.63",
    "CN12.71",
    "CN12.72",
-   "CN13.5"
+   "CN13.5",
+   "U12.GND"
   ],
   "NRST": [
    "U8.NRST",
@@ -596,7 +603,8 @@
   "USB_VBUS": [
    "R35.1",
    "R68.1",
-   "CN13.1"
+   "CN13.1",
+   "U12.OUT"
   ],
   "PA9": [
    "U8.PA9",
@@ -606,7 +614,8 @@
   "PG6": [
    "U8.PG6",
    "R72.1",
-   "CN12.70"
+   "CN12.70",
+   "U12.EN"
   ],
   "PG7": [
    "U8.PG7",
@@ -616,7 +625,8 @@
   "USB_OVCR": [
    "JP4.2",
    "R71.2",
-   "LD7.K"
+   "LD7.K",
+   "U12.FAULT"
   ],
   "LD7_A": [
    "R61.2",
@@ -3716,12 +3726,11 @@
  },
  "fidelity": {
   "functional": {
-   "claims": "Nets, ports, LD1 to LD3 and LD6 to LD8, B1, B2 and the jumpers as parts, as MB1137 B-01's schematic draws them; the STM32F446ZE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (the ST-LINK's MCO through SB149: HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST Zio connectors CN7 to CN10 carry the NUCLEO-F446ZE's assignment (D0 to D72, A0 to A8, the solder bridges in their factory state) and the morpho headers CN11 and CN12 (2 x 36) every one of the part's 114 I/Os. CN13's VBUS reaches PA9 through R35 and lights LD8; its D-, D+ and ID are PA11, PA12 and PA10, and a USB host on them (emblink/usb_host) enumerates the OTG FS controller in device mode (STM32CubeF4's HID_Standalone runs on it unmodified); PG6 and PG7 carry U12's enable and fault lines (R72's pull-down, R71's pull-up through JP4). The ST-LINK/V2-1's virtual COM port is the session's console on USART3 (PD8/PD9, through SB5 and SB6) and a serial port on the host.",
+   "claims": "Nets, ports, LD1 to LD3 and LD6 to LD8, B1, B2 and the jumpers as parts, as MB1137 B-01's schematic draws them; the STM32F446ZE runs its firmware (see its description), its HSE an 8 MHz clock on PH0 (the ST-LINK's MCO through SB149: HSEBYP needed, as on the real board) and its LSE the X2 crystal. The ST Zio connectors CN7 to CN10 carry the NUCLEO-F446ZE's assignment (D0 to D72, A0 to A8, the solder bridges in their factory state) and the morpho headers CN11 and CN12 (2 x 36) every one of the part's 114 I/Os. CN13's VBUS reaches PA9 through R35 and lights LD8; its D-, D+ and ID are PA11, PA12 and PA10, and a USB host on them (emblink/usb_host) enumerates the OTG FS controller in device mode (STM32CubeF4's HID_Standalone runs on it unmodified); U12 (STMPS2151STR) powers CN13's VBUS from 5V while PG6 is high (R72 pulls it down), for a device on CN13 when the OTG core is a host; its fault line reaches PG7 through JP4 (R71's pull-up) and never asserts. The ST-LINK/V2-1's virtual COM port is the session's console on USART3 (PD8/PD9, through SB5 and SB6) and a serial port on the host.",
    "omissions": [
     "the ST-LINK/V2-1 itself: its USB enumeration, the mass-storage drag-and-drop programming, SWD and its NRST drive (the session programs and debugs the board, ADR-031)",
     "the VCP's bytes reach USART3 directly, not as frames on PD9",
     "LD4 (COM), the ST-LINK's tricolour LED",
-    "U12 (STMPS2151STR), the switch that would power VBUS from +5V for a USB host (the OTG core's host mode is not modelled either): VBUS comes only from what is plugged into CN13, and U12's fault output never asserts (LD7 stays dark)",
     "the Ethernet PHY and RJ45 of sheet 5, which the NUCLEO-F446ZE does not carry (the STM32F446 has no Ethernet MAC)",
     "the solder bridges are fixed in their factory state (SB120 on PB0, SB121 on PA7, SB144/SB145/SB148 open, SB163 closed, SB143/SB138 open, the F303ZE, F412ZG and L476ZG alternatives open)",
     "one JP3 shunt sits on one position only; the three switches here can all be closed",

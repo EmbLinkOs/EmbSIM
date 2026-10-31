@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/stmps2151str",
+  "version": "1.0.0",
+  "name": "STMPS2151STR power distribution switch",
+  "category": "power",
+  "description": "STMicroelectronics STMPS2151STR, a 500 mA P-channel high-side power distribution switch for USB with an active-high enable and an open-drain fault output, in SOT23-5: the NUCLEO-144's (MB1137) U12, which powers CN13's VBUS from +5V when the MCU drives PG6 (USB_PowerSwitchOn) high, for the OTG core's host mode.",
+  "keywords": [
+    "power switch",
+    "load switch",
+    "high-side",
+    "usb",
+    "vbus",
+    "stmps2151",
+    "stmps2151str",
+    "stmicroelectronics",
+    "sot23-5",
+    "nucleo"
+  ],
+  "pins": [
+    {
+      "name": "OUT",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Output (SOT23-5 pin 1): VBUS"
+    },
+    {
+      "name": "GND",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Ground (SOT23-5 pin 2): the enable's reference"
+    },
+    {
+      "name": "FAULT",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Open-drain, active-low over-current and over-temperature flag (SOT23-5 pin 3): never asserted here, its off-state leakage a 1 GOhm path to GND",
+      "required": false
+    },
+    {
+      "name": "EN",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Active-high enable (SOT23-5 pin 4): logic high (above about 2 V) turns the switch on"
+    },
+    {
+      "name": "IN",
+      "number": 5,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Input (SOT23-5 pin 5): the supply, 2.7 to 5.5 V"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "M",
+          "component": "emblink/pmos",
+          "params": {
+            "part": "generic",
+            "vto": -1.0,
+            "kp": 2.8,
+            "lambda": 0.005
+          }
+        },
+        {
+          "id": "Q",
+          "component": "emblink/nmos",
+          "params": {
+            "part": "generic",
+            "vto": 1.0,
+            "kp": "0.05",
+            "lambda": 0.01
+          }
+        },
+        {
+          "id": "RG",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "100k"
+          }
+        },
+        {
+          "id": "RF",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "1G"
+          }
+        }
+      ],
+      "nets": {
+        "GATE": [
+          "M.G",
+          "Q.D",
+          "RG.2"
+        ],
+        "IN": [
+          "M.S",
+          "RG.1"
+        ],
+        "GND": [
+          "Q.S",
+          "RF.2"
+        ]
+      },
+      "ports": {
+        "IN": "M.S",
+        "OUT": "M.D",
+        "EN": "Q.G",
+        "GND": "Q.S",
+        "FAULT": "RF.1"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 60,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "EN": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "GND": {
+        "x": 40,
+        "y": 60,
+        "side": "bottom"
+      },
+      "OUT": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "FAULT": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no supply voltages.",
+      "omissions": [
+        "switching"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "The switch between IN and OUT, on while EN is high (an internal N-channel stage pulls the P-channel switch's gate to ground) and off while EN is low (the gate pulled to IN), as a P-channel MOSFET of about 90 mOhm with 5 V on IN; EN draws no current.",
+      "omissions": [
+        "the datasheet was not at hand (ST's site refused the download): the on-resistance (about 90 mOhm), EN's threshold (about 1 V, within the logic levels of 0.8 and 2 V) and the pinout are taken from memory, not checked",
+        "the current limit (about 0.8 A), the thermal shutdown and the fault output with its deglitch (FAULT never asserts)",
+        "the under-voltage lock-out, reverse-current blocking and the body diode",
+        "the turn-on and turn-off slew and the supply current",
+        "temperature, damage"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          6
+        ],
+        "current_a": [
+          -1,
+          1
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "MB1137 B-01 electrical schematics (NUCLEO-XXXXZX), USB OTG sheet: U12 STMPS2151STR from +5V to USB_VBUS, EN on PG6 (USB_PowerSwitchOn) with R72's pull-down, FAULT to PG7 (USB_OverCurrent) through JP4 with R71's pull-up and LD7",
+        "url": "https://www.st.com/en/evaluation-tools/nucleo-f446ze.html#cad-resources",
+        "date": "2026-10-31"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "STMPS2151STR",
+    "manufacturer": "STMicroelectronics",
+    "package": "SOT23-5",
+    "datasheet": "https://www.st.com/resource/en/datasheet/stmps2141.pdf"
+  }
+}
