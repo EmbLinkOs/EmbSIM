@@ -31,6 +31,7 @@ import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, section
 import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
 import type { Model3d } from './models3d';
 import { recordFrame } from './frames';
+import { capSection, type Caps } from './caps';
 import { buildRoom, lightLevel, ROOM, windowOpening, type Room, type RoomSize } from './room';
 import { dayOfYear, solarPosition, sunColor, sunDirection, sunlit } from './sun';
 
@@ -373,6 +374,9 @@ export function Bench3D(props: Bench3DProps) {
     desk: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
     room: Room;
     roomSize: RoomSize;
+    caps?: Caps | null;
+    /** the section's planes, for the renderers' own passes */
+    clipPlanes?: THREE.Plane[] | null;
     sky: THREE.HemisphereLight;
     sun: THREE.DirectionalLight;
     labels: CSS2DRenderer;
@@ -423,6 +427,7 @@ export function Bench3D(props: Bench3DProps) {
         const host = hostRef.current;
         if (!s.outline && host) {
           s.outline = new OutlineRenderer(s.renderer, s.scene, s.camera, host.clientWidth || 1, host.clientHeight || 1);
+          s.outline.setClipping(s.clipPlanes ?? null);
           s.outline.setSize(host.clientWidth || 1, host.clientHeight || 1, s.renderer.getPixelRatio());
         }
         if (s.outline) {
@@ -528,7 +533,7 @@ export function Bench3D(props: Bench3DProps) {
     if (s.jumpers.visible) { const j = s.jumpers.clone(true); j.name = 'jumpers'; root.add(j); }
     if (s.world.visible) { const w = s.world.clone(true); w.name = 'world'; root.add(w); }
     const drop: THREE.Object3D[] = [];
-    root.traverse((o) => { if (o instanceof THREE.Sprite || o instanceof THREE.Light || o instanceof THREE.Line || o instanceof CSS2DObject || o.userData.routePoint !== undefined) drop.push(o); });
+    root.traverse((o) => { if (o instanceof THREE.Sprite || o instanceof THREE.Light || o instanceof THREE.Line || o instanceof CSS2DObject || o.userData.routePoint !== undefined || o.userData.stencil) drop.push(o); });
     for (const o of drop) o.removeFromParent();
     const out = await new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true });
     return new Blob([out as ArrayBuffer], { type: 'model/gltf-binary' });
@@ -542,7 +547,8 @@ export function Bench3D(props: Bench3DProps) {
     if (!host) return;
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      // a stencil buffer for the section's caps
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, stencil: true });
     } catch {
       host.dataset.webgl = 'unavailable';
       propsRef.current.onRendererError?.();
@@ -657,6 +663,7 @@ export function Bench3D(props: Bench3DProps) {
       desk.material.dispose();
       desk.geometry.dispose();
       state.current?.room.dispose();
+      state.current?.caps?.dispose();
       renderer.dispose();
       pmrem.dispose();
       renderer.domElement.remove();
@@ -866,6 +873,7 @@ export function Bench3D(props: Bench3DProps) {
     if (!s || !host) return;
     if (props.quality === 'quality' && !s.quality) {
       s.quality = new QualityRenderer(s.renderer, s.scene, s.camera, host.clientWidth || 1, host.clientHeight || 1);
+      s.quality.setClipping(s.clipPlanes ?? null);
       s.quality.setSize(host.clientWidth || 1, host.clientHeight || 1, s.renderer.getPixelRatio());
       // softer, finer shadows to go with the occlusion
       s.scene.traverse((o) => { if (o instanceof THREE.DirectionalLight && o.castShadow) { o.shadow.mapSize.set(4096, 4096); o.shadow.map?.dispose(); o.shadow.map = null; } });
@@ -1127,6 +1135,12 @@ export function Bench3D(props: Bench3DProps) {
     clip(s.jumpers);
     clip(s.links);
     clip(s.world);
+    s.clipPlanes = planes;
+    s.quality?.setClipping(planes);
+    s.outline?.setClipping(planes);
+    // the cut faces, capped
+    s.caps?.dispose();
+    s.caps = planes ? capSection([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, s.world], planes[0]!, s.scene, 4000) : null;
     invalidate();
   }, [props.section, props.parts, props.jumpers, props.bodies, invalidate]);
 

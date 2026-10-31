@@ -44,7 +44,8 @@ These work as an EDA tool's 3D viewer does
   it falls on the grid. **Esc** clears it.
 - **Section.** In **Inspect**, cut across X, Y (depth) or Z (height) at a
   position in mm. **Keep the other side** flips the cut. The desk stays whole;
-  cut bodies show open.
+  where the cut passes through a body, its cut face is shown solid red, as
+  in a CAD section view.
 - **Explode.** The slider lifts every part plugged into a breadboard off it,
   so you can see which holes its legs use.
 - **Height plane.** A plane at a height above the desk, for an enclosure's

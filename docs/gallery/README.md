@@ -5,6 +5,14 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Capped sections (2026-10-31)
+
+A section now shows solid red faces where it cuts a body, as a CAD tool's
+section view does, instead of the body's hollow inside: here the
+breadboard cut along its length (quality render):
+
+![The breadboard cut, its cut face solid](bench-3d-inspect/6-capped-section.png)
+
 ## The room around the bench (2026-10-31)
 
 Stage 6 of [the 3D plan](../engineering/bench-3d.md) begins: the bench is the

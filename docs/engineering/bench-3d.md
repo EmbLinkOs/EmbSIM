@@ -63,8 +63,8 @@ is one PR, with its tests and gallery shots.
   simplest form.
 - **Section.** A cutting plane across X, Y or Z at a chosen position, either
   side kept (Altium's section view). The bench's objects and their shadows
-  are clipped; the desk stays whole. The cut faces are left open (capping
-  them is later work).
+  are clipped; the desk stays whole. The cut faces are capped (done
+  2026-10-31: a stencil count per closed body and a cap on the plane).
 - **Height plane.** A semi-transparent plane at a height above the desk.
   Parts whose bodies rise through it are outlined and listed (Proteus's
   height check, for an enclosure's lid).

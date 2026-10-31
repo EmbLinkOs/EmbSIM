@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Capped sections
+
+- A section caps what it cuts: each closed body is drawn into the stencil
+  buffer (back faces counting up, front faces down) and a solid face is
+  drawn on the plane where the count is not zero, as a CAD tool's section
+  view shows it.
+- Fixed: in the quality render, ambient occlusion and the glow drew the
+  bodies a section cuts away (their passes draw the scene with their own
+  materials, which were not clipped), leaving their ghosts on the desk.
+
 ### Static batching on the 3D bench
 
 - Once a part is built, its meshes in shared materials no part changes
