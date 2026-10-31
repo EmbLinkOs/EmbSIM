@@ -87,6 +87,12 @@ es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const e
     vec3(esk_json_get(spec, "velocity_mm_s"), b.vel, 0.0);
     b.travel = esk_json_get_num(spec, "travel_mm", 0.0);
     b.warm = esk_json_get_bool(spec, "warm", 0);
+    b.falls = esk_json_get_bool(spec, "falls", 0);
+    b.restitution = esk_json_get_num(spec, "restitution", 0.5);
+    if (b.restitution < 0)
+        b.restitution = 0;
+    if (b.restitution > 0.95)
+        b.restitution = 0.95; /* nothing bounces back higher, or for ever */
     {
         const esk_json *path = esk_json_get(spec, "path_mm");
         size_t k, n = esk_json_len(path);
@@ -158,11 +164,86 @@ static void path_at(const esk_body *b, double s, double out[3])
     }
 }
 
+/* the half height of a body: how far its centre stands above what it rests on */
+static double half_height(const esk_body *b)
+{
+    return (b->sphere ? b->size[0] : b->size[2]) / 2.0;
+}
+
+static int over_table(const double p[3])
+{
+    return fabs(p[0]) <= ESK_TABLE_WIDTH / 2 && fabs(p[1]) <= ESK_TABLE_DEPTH / 2;
+}
+
+/*
+ * A body let go: flights under gravity, each ending on the table's top (when it comes down over
+ * it from above) or on the floor, the bounce sending it up again at `restitution` times the speed
+ * it came down at, sideways speed kept, until a bounce would rise less than a tenth of a
+ * millimetre: then it rests there. Each flight is solved, not stepped, so the answer is the same
+ * whenever it is asked. Returns 1 when at rest by `dt`.
+ */
+static int fall_at(const esk_body *b, double dt, double out[3])
+{
+    const double g = ESK_GRAVITY, hh = half_height(b);
+    double p[3], v[3];
+    int k, n;
+    for (k = 0; k < 3; k++) {
+        p[k] = b->at[k];
+        v[k] = b->vel[k];
+    }
+    if (p[2] - hh < ESK_FLOOR_Z)
+        p[2] = ESK_FLOOR_Z + hh; /* never under the floor */
+    for (n = 0; n < 512; n++) {
+        double zs, t, rise, land[3];
+        /* where it would land on the table's top, if it comes down onto it from above */
+        zs = ESK_FLOOR_Z;
+        if (p[2] - hh >= -1e-9) {
+            rise = v[2] * v[2] + 2 * g * (p[2] - hh);
+            t = (v[2] + sqrt(rise > 0 ? rise : 0)) / g;
+            land[0] = p[0] + v[0] * t;
+            land[1] = p[1] + v[1] * t;
+            land[2] = 0;
+            if (over_table(land))
+                zs = 0;
+        }
+        rise = v[2] * v[2] + 2 * g * (p[2] - hh - zs);
+        t = (v[2] + sqrt(rise > 0 ? rise : 0)) / g;
+        if (t >= dt) {
+            for (k = 0; k < 2; k++)
+                out[k] = p[k] + v[k] * dt;
+            out[2] = p[2] + v[2] * dt - g * dt * dt / 2;
+            return 0;
+        }
+        for (k = 0; k < 2; k++)
+            p[k] += v[k] * t;
+        p[2] = zs + hh;
+        v[2] = -(v[2] - g * t) * b->restitution;
+        dt -= t;
+        if (v[2] * v[2] / (2 * g) < 0.1)
+            break; /* the bounce would rise less than 0.1 mm: it rests (and stops sliding) */
+    }
+    for (k = 0; k < 3; k++)
+        out[k] = p[k];
+    return 1;
+}
+
+int esk_world_body_moving(const esk_body *b, es_time_t now)
+{
+    double p[3];
+    if (b->falls)
+        return !fall_at(b, now > b->since ? (double)(now - b->since) / 1e12 : 0.0, p);
+    return b->vel[0] != 0 || b->vel[1] != 0 || b->vel[2] != 0 || (b->npath >= 2 && b->speed > 0);
+}
+
 void esk_world_body_at(const esk_body *b, es_time_t now, double out[3])
 {
     double speed = sqrt(b->vel[0] * b->vel[0] + b->vel[1] * b->vel[1] + b->vel[2] * b->vel[2]);
     double dt = now > b->since ? (double)(now - b->since) / 1e12 : 0.0, s;
     int k;
+    if (b->falls) {
+        (void)fall_at(b, dt, out);
+        return;
+    }
     if (b->npath >= 2 && b->speed > 0) {
         path_at(b, b->speed * dt, out);
         return;
@@ -253,7 +334,7 @@ int esk_world_motion(const esk_world *w, const double o[3], const double d[3], d
         const esk_body *b = &w->bodies.data[i];
         double p[3], r[3], dist, along;
         int k;
-        if (!b->warm || ((b->vel[0] == 0 && b->vel[1] == 0 && b->vel[2] == 0) && !(b->npath >= 2 && b->speed > 0)))
+        if (!b->warm || !esk_world_body_moving(b, now))
             continue; /* at the room's temperature, or still: nothing changes in the infrared */
         esk_world_body_at(b, now, p);
         for (k = 0; k < 3; k++)
@@ -292,7 +373,7 @@ esk_json *esk_world_json(esk_alloc *a, const esk_world *w, es_time_t now)
         const esk_body *b = &w->bodies.data[i];
         esk_json *j = esk_json_new_object(a), *at = esk_json_new_array(a), *size = esk_json_new_array(a);
         double pos[3];
-        int m, moving = b->vel[0] != 0 || b->vel[1] != 0 || b->vel[2] != 0;
+        int m, moving = (b->vel[0] != 0 || b->vel[1] != 0 || b->vel[2] != 0) && !b->falls;
         if (!j || !at || !size) {
             esk_json_free(a, j);
             esk_json_free(a, at);
@@ -333,6 +414,18 @@ esk_json *esk_world_json(esk_alloc *a, const esk_world *w, es_time_t now)
         esk_json_set_string(a, j, "shape", b->sphere ? "sphere" : "box");
         if (b->warm)
             esk_json_set_bool(a, j, "warm", 1);
+        if (b->falls) {
+            esk_json_set_bool(a, j, "falls", 1);
+            esk_json_set_number(a, j, "restitution", b->restitution);
+            esk_json_set_bool(a, j, "resting", !esk_world_body_moving(b, now));
+            if (b->vel[0] != 0 || b->vel[1] != 0 || b->vel[2] != 0) {
+                esk_json *v = esk_json_new_array(a);
+                for (m = 0; m < 3 && v; m++)
+                    esk_json_array_push(a, v, esk_json_new_number(a, b->vel[m]));
+                if (v)
+                    esk_json_object_set(a, j, "velocity_mm_s", v);
+            }
+        }
         esk_json_object_set(a, j, "at", at);
         esk_json_object_set(a, j, "size", size);
         esk_json_array_push(a, bodies, j);

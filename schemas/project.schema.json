@@ -168,6 +168,8 @@
               "speed_mm_s": {"type": "number", "minimum": 0, "maximum": 100000, "description": "Its speed along path_mm."},
               "loop": {"type": "boolean", "description": "Along path_mm: round again from the last waypoint to the first (else back the way it came)."},
               "warm": {"type": "boolean", "description": "Warmer than the room (a person, an animal): a PIR sensor sees it when it moves."},
+              "falls": {"type": "boolean", "description": "Let go: it falls under gravity from at (thrown at velocity_mm_s), bounces off the table's top or the floor and comes to rest."},
+              "restitution": {"type": "number", "minimum": 0, "maximum": 0.95, "description": "A falling body's bounce: the share of its speed it keeps (0: it stops dead; a rubber ball about 0.8). Default 0.5."},
                   "rise_mm": {"type": "number", "minimum": 0, "maximum": 1000, "description": "Automatic route rise above the higher terminal, in millimetres."},
                   "points": {"type": "array", "maxItems": 64, "description": "Intermediate route points [X, height, Y] in bench millimetres; endpoints stay attached to terminals.", "items": {"type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{"type": "number", "minimum": -1000000, "maximum": 1000000}, {"type": "number", "minimum": 0, "maximum": 1000000}, {"type": "number", "minimum": -1000000, "maximum": 1000000}], "items": false}}
                 }

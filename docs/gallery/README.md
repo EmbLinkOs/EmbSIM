@@ -46,6 +46,13 @@ at the edge of a 2 m frame):
 |---|---|
 | ![The person and the table shading the floor](bench-3d-world/7-floor-shadows-lamp.png) | ![The window's patch across the floor](bench-3d-world/8-floor-shadows-sun.png) |
 
+Gravity: a ball let go 370 mm above the bench (restitution 0.75) falls,
+bounces and comes to rest on the mat, its shadow meeting it as it lands:
+
+| Let go | 150 ms later | At rest |
+|---|---|---|
+| ![The ball held above the bench](bench-3d-world/9-ball-let-go.png) | ![The ball falling](bench-3d-world/10-ball-falling.png) | ![The ball at rest on the bench](bench-3d-world/11-ball-at-rest.png) |
+
 ## Capped sections (2026-10-31)
 
 A section now shows solid red faces where it cuts a body, as a CAD tool's

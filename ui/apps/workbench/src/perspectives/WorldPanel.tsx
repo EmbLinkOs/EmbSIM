@@ -316,6 +316,31 @@ export function WorldPanel() {
               />
               warm
             </label>
+            <label className="wb-world__coord" title="Let go: it falls under gravity (thrown at its speed), bounces off the table or the floor and comes to rest">
+              <input
+                type="checkbox"
+                aria-label={`${b.name ?? b.id} falls`}
+                checked={Boolean(b.falls)}
+                disabled={!editable}
+                onChange={(e) =>
+                  setBodies(`${b.name ?? b.id} ${e.target.checked ? 'let go' : 'held'}`, (list) => {
+                    const body = list[i]!;
+                    if (e.target.checked) {
+                      body.falls = true;
+                      delete body.path_mm;
+                      delete body.speed_mm_s;
+                      delete body.loop;
+                      delete body.travel_mm;
+                    } else {
+                      delete body.falls;
+                      delete body.restitution;
+                    }
+                    return list;
+                  })
+                }
+              />
+              falls
+            </label>
             <label className="wb-world__coord" title="Walks round the table at 1.2 m/s, a person's pace (a path of waypoints, looped)">
               <input
                 type="checkbox"
@@ -332,6 +357,7 @@ export function WorldPanel() {
                       body.at = [...body.path_mm[0]!];
                       delete body.velocity_mm_s;
                       delete body.travel_mm;
+                      delete body.falls;
                     } else {
                       delete body.path_mm;
                       delete body.speed_mm_s;

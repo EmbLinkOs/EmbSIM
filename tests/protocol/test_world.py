@@ -117,6 +117,31 @@ def main():
             assert abs(w["at"][0] - 1000) < 1e-6 and abs(w["at"][1] - 500) < 1e-6, w  # 2.5 m: to the end (2 m) and half a metre back
             client.call("input.set", {"target": "world.walker", "input": "body", "value": None})
 
+            # let go: a ball falls under gravity, bounces off the table's top (restitution 0.5) and rests
+            client.call("control.reset")
+            ball = {"shape": "sphere", "at": [0, 0, 1000], "size": [60, 60, 60], "falls": True, "restitution": 0.5}
+            client.call("input.set", {"target": "world.ball", "input": "body", "value": ball})
+            t1 = (2 * 970 / 9806.65) ** 0.5  # 970 mm down to the table, its centre 30 mm above it
+            client.call("control.advance", {"by": "300ms"})
+            b = client.call("world.get")["bodies"][0]
+            assert abs(b["at"][2] - (1000 - 9806.65 * 0.3 ** 2 / 2)) < 1e-6 and not b["resting"], b
+            peak = t1 + 0.5 * 9806.65 * t1 / 9806.65  # up again at half the speed it came down at
+            client.call("control.advance", {"by": "%dps" % round((peak - 0.3) * 1e12)})
+            b = client.call("world.get")["bodies"][0]
+            assert abs(b["at"][2] - (30 + 970 * 0.25)) < 1e-3, b  # a quarter of the height
+            client.call("control.advance", {"by": "2s"})
+            b = client.call("world.get")["bodies"][0]
+            assert b["resting"] and abs(b["at"][2] - 30) < 1e-9, b  # on the table
+            # beside the table it falls to the floor, 750 mm down; thrown off the table's edge too
+            client.call("input.set", {"target": "world.ball", "input": "body", "value": dict(ball, at=[1200, 0, 0])})
+            client.call("input.set", {"target": "world.throw", "input": "body", "value": dict(ball, at=[800, 0, 200], velocity_mm_s=[1000, 0, 0])})
+            client.call("control.advance", {"by": "3s"})
+            got = {x["id"]: x for x in client.call("world.get")["bodies"]}
+            assert got["ball"]["resting"] and abs(got["ball"]["at"][2] - (-750 + 30)) < 1e-9, got
+            assert got["throw"]["resting"] and abs(got["throw"]["at"][2] - (-720)) < 1e-9 and got["throw"]["at"][0] > 900, got
+            for name in ("ball", "throw"):
+                client.call("input.set", {"target": "world." + name, "input": "body", "value": None})
+
             # a project's moving body runs on the project's timeline (from 0), even when added later,
             # as the bench draws it: 100 mm/s since 0 has carried it 100 mm a second
             edit(client, [{"set_world": {"bodies": [{"id": "belt", "at": [0, -600, 50], "size": [50, 50, 50], "velocity_mm_s": [0, 100, 0]}]}}])

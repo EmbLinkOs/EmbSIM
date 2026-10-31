@@ -181,7 +181,9 @@ Done (first step):
   floor. First step done (2026-10-31): bodies move in virtual time in the
   engine (a velocity, a travel back and forth), seen by the distance sensors
   and drawn by the bench; then paths of waypoints walked at a speed, looped
-  or there and back (a person round the table).
+  or there and back (a person round the table); then gravity: a body let go
+  falls, bounces off the table or the floor and rests, solved in closed form
+  in the engine. Collisions between bodies are next (Rapier when they come).
 - Temperature and light as fields drawn when asked (a heat map over the
   bench).
 - The world's objects are what the sensors' rays hit, as today.

@@ -35,6 +35,13 @@ round a loop or there and back, in the engine and drawn the same way
 half a metre back after 2.5 s). Shadows reach the floor: the shadow map
 follows what the camera shows (`shadowfit.test.ts`), the shell shades only
 the sun (`room.test.ts`), and the gallery shows the lamp's and the sun's.
+Bodies fall (`falls`, `restitution`): under standard gravity, bouncing off
+the table or the floor, at rest once a bounce would rise under 0.1 mm
+(`test_world.py` and `world-motion.test.ts`: 0.3 s after letting go from
+1 m it has fallen g t²/2; the first bounce off the table rises a quarter of
+the drop at restitution 0.5; beside the table, or thrown off its edge, it
+rests on the floor). Not yet: collisions between bodies or with walls,
+rolling, sliding, spin.
 
 ## The window's sunlit patch (2026-10-31)
 

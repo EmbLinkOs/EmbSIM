@@ -17,6 +17,7 @@ import type { Point3 } from './Bench3D';
  */
 export function bodyAt(b: WorldBody, nowPs: bigint, sincePs = 0n): [number, number, number] {
   const dtPath = nowPs > sincePs ? Number(nowPs - sincePs) / 1e12 : 0;
+  if (b.falls) return fall(b, dtPath).at;
   if (b.path_mm && b.path_mm.length >= 2 && (b.speed_mm_s ?? 0) > 0) return walk(b, (b.speed_mm_s ?? 0) * dtPath).at;
   const v = b.velocity_mm_s;
   const speed = v ? Math.hypot(v[0], v[1], v[2]) : 0;
@@ -66,9 +67,46 @@ export function walk(b: WorldBody, s: number): { at: [number, number, number]; d
   return { at: [...p[0]!] as [number, number, number], dir: [0, 1, 0] };
 }
 
-/** whether a body moves (a velocity, or a path walked at a speed) */
+/** the table and floor the engine knows (core/engine/world.h, as room.ts draws them) */
+const TABLE_W = 1800;
+const TABLE_D = 900;
+const FLOOR_Z = -750;
+export const GRAVITY = 9806.65; // mm/s^2
+
+/**
+ * A body let go, after `dt` s, as core/engine/world.c's fall_at solves it: flights under gravity,
+ * each ending on the table's top (coming down onto it from above) or the floor, bouncing up at
+ * `restitution` times the speed it came down at, sideways speed kept, resting once a bounce would
+ * rise less than 0.1 mm.
+ */
+export function fall(b: WorldBody, dt: number): { at: [number, number, number]; resting: boolean } {
+  const g = GRAVITY;
+  const e = Math.min(0.95, Math.max(0, b.restitution ?? 0.5));
+  const hh = (b.shape === 'sphere' ? b.size[0] : b.size[2]) / 2;
+  const p: [number, number, number] = [...b.at];
+  const v: [number, number, number] = [...(b.velocity_mm_s ?? [0, 0, 0])];
+  if (p[2] - hh < FLOOR_Z) p[2] = FLOOR_Z + hh;
+  for (let n = 0; n < 512; n++) {
+    let zs = FLOOR_Z;
+    if (p[2] - hh >= -1e-9) {
+      const t = (v[2] + Math.sqrt(Math.max(0, v[2] * v[2] + 2 * g * (p[2] - hh)))) / g;
+      if (Math.abs(p[0] + v[0] * t) <= TABLE_W / 2 && Math.abs(p[1] + v[1] * t) <= TABLE_D / 2) zs = 0;
+    }
+    const t = (v[2] + Math.sqrt(Math.max(0, v[2] * v[2] + 2 * g * (p[2] - hh - zs)))) / g;
+    if (t >= dt) return { at: [p[0] + v[0] * dt, p[1] + v[1] * dt, p[2] + v[2] * dt - (g * dt * dt) / 2], resting: false };
+    p[0] += v[0] * t;
+    p[1] += v[1] * t;
+    p[2] = zs + hh;
+    v[2] = -(v[2] - g * t) * e;
+    dt -= t;
+    if ((v[2] * v[2]) / (2 * g) < 0.1) break;
+  }
+  return { at: p, resting: true };
+}
+
+/** whether a body moves (a velocity, a path walked at a speed, or let go to fall) */
 export function moves(b: WorldBody): boolean {
-  return Boolean(b.velocity_mm_s) || Boolean(b.path_mm && b.path_mm.length >= 2 && (b.speed_mm_s ?? 0) > 0);
+  return Boolean(b.falls) || Boolean(b.velocity_mm_s) || Boolean(b.path_mm && b.path_mm.length >= 2 && (b.speed_mm_s ?? 0) > 0);
 }
 
 /** the bodies where they are at `nowPs` (the project's are set at time 0); a walker carries its heading and distance */
@@ -79,6 +117,10 @@ export function bodiesAt(bodies: WorldBody[], nowPs: bigint): WorldBody[] {
       const w = walk(b, s);
       // its heading as a velocity (for facing and the gait); the distance walked drives the stride
       return { ...b, at: w.at, velocity_mm_s: w.dir.map((x) => x * (b.speed_mm_s ?? 0)) as [number, number, number], walked_mm: s } as WorldBody;
+    }
+    if (b.falls) {
+      const f = fall(b, Number(nowPs) / 1e12);
+      return { ...b, at: f.at, resting: f.resting };
     }
     return b.velocity_mm_s ? { ...b, at: bodyAt(b, nowPs) } : b;
   });
