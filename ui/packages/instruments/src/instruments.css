@@ -284,5 +284,5 @@
 .es-scope-screen__status { position: absolute; top: 4px; right: 18px; font: 600 11px var(--font-mono, monospace); padding: 1px 6px; border-radius: 3px; color: #05080c; background: #9aa3ad; }
 .es-scope-screen__status--td { background: #5cb85c; }
 .es-scope-screen__status--wait { background: #f0975a; }
-.es-scope-screen__status--auto { background: #4a90d9; color: #fff; }
-.es-scope-screen__status--stop { background: #d9534f; color: #fff; }
+.es-scope-screen__status--auto { background: #2a6db5; color: #fff; }
+.es-scope-screen__status--stop { background: #b52b27; color: #fff; }

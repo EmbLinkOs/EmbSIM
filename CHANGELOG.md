@@ -19,6 +19,10 @@ versions follow semantic versioning. There is no release yet.
   back. Each window's place and size are remembered for the next session.
 - `revealDockItem` in the design system unfolds and focuses a dock item
   wherever it is laid out, even one whose perspective is not open yet.
+- axe runs in the browser on the DS1054Z's docked panel and its floating
+  window (`e2e/front-panels.spec.ts`), contrast included. It found the
+  scope's STOP and AUTO badges below 4.5:1, so they are darker now: white
+  on #b52b27 (6.3:1) and on #2a6db5 (5.3:1).
 
 ### An oscilloscope: the Rigol DS1054Z
 

@@ -6,7 +6,22 @@
 // window of its own that stays over the other perspectives, moves from the
 // keyboard, and docks back.
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { createRequire } from 'node:module';
+
+const axePath = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
+
+/** axe on what `selector` matches, in the browser (layout, so contrast is checked too) */
+async function axeViolations(page: Page, selector: string): Promise<string[]> {
+  await page.addScriptTag({ path: axePath });
+  return page.evaluate(async (sel) => {
+    const w = window as unknown as { axe: { run(ctx: Element, opts: object): Promise<{ violations: { id: string; nodes: { target: string[] }[] }[] }> } };
+    const el = document.querySelector(sel);
+    if (!el) return [`no element for ${sel}`];
+    const r = await w.axe.run(el, {});
+    return r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+  }, selector);
+}
 
 test('a front panel opens from its part, floats over the perspectives and docks back', async ({ page }, info) => {
   await page.goto('/?mock=1');
@@ -24,6 +39,7 @@ test('a front panel opens from its part, floats over the perspectives and docks 
   const docked = page.getByRole('region', { name: /^U\d+ oscilloscope$/ });
   await expect(docked).toBeVisible();
   await expect(docked.getByRole('group', { name: / front panel$/ })).toBeVisible();
+  expect(await axeViolations(page, '.wb-ds1054z')).toEqual([]);
 
   // float it: a window over the workbench, the dock without it
   await page.getByRole('button', { name: /^Float .* DS1054Z oscilloscope in its own window$/ }).click();
@@ -31,6 +47,7 @@ test('a front panel opens from its part, floats over the perspectives and docks 
   await expect(win).toBeVisible();
   await expect(win.getByRole('region', { name: /^U\d+ oscilloscope$/ })).toBeVisible();
   await expect(page.getByRole('region', { name: /^U\d+ oscilloscope$/ })).toHaveCount(1);
+  expect(await axeViolations(page, '.wb-floating')).toEqual([]);
 
   // it stays over the Design perspective, and its title bar moves it from the keyboard
   await page.getByRole('radio', { name: 'Design', exact: true }).click();
