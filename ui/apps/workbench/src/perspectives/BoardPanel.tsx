@@ -488,6 +488,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           links={links}
           notes={project.layout?.bench?.notes ?? []}
           bodies={bodies}
+          illuminance={project.world?.fields?.illuminance}
           beams={sensed}
           onMoveBody={(id, at) =>
             mutate(`Move ${id}`, (p) => {

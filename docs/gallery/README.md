@@ -5,6 +5,22 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The room around the bench (2026-10-31)
+
+Stage 6 of [the 3D plan](../engineering/bench-3d.md) begins: the bench is the
+top of a 750 mm lab table, with an anti-static mat on it, in a room with a
+window on the left, where the light comes from:
+
+| Zoomed out: the table, the mat, the walls | From the right: the window |
+|---|---|
+| ![The table in its room](bench-3d-room/1-the-room.png) | ![The window in the left wall](bench-3d-room/2-window.png) |
+
+The room is as lit as the world's illuminance says, the value the light
+sensors read. At 0 lx the bench falls dark and the lit LED glows as it does
+in a dark lab:
+
+![The bench in a dark room, the LED glowing](bench-3d-room/3-dark-room.png)
+
 ## Gull-wing leads, SO breakouts, the NUCLEO's 45° MCUs (2026-10-31)
 
 QFP and SO leads are bent as they are made: out of the body's side, down,
@@ -21,6 +37,11 @@ it turns with the board's picture and carries its marking:
 | Before | After |
 |---|---|
 | ![The LQFP-64 square, the artwork's corners showing](bench-3d-gullwing/2-lqfp-square-before.png) | ![The LQFP-64 at 45°, marked STM32F446RET6](bench-3d-gullwing/3-lqfp-45-marked.png) |
+
+An SO-8 MOSFET with three pins (the STS7PF30L) stands on its breakout with
+S, G and D on pins 1, 4 and 5, as its datasheet numbers them:
+
+![The STS7PF30L's SOIC-8 on its breakout](bench-3d-gullwing/4-so8-mosfet-breakout.png)
 
 ## Parts from KiCad's 3D models (2026-10-31)
 

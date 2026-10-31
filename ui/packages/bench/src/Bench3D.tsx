@@ -30,6 +30,8 @@ import type { Beam } from './world';
 import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, sectionPlane, snapPoint, viewPose, type BenchLayers, type Measurement, type Section, type StandardView, type Vec3 } from './inspect';
 import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
 import type { Model3d } from './models3d';
+import { recordFrame } from './frames';
+import { buildRoom, lightLevel, type Room } from './room';
 
 
 
@@ -123,6 +125,8 @@ export interface Bench3DProps {
   traceTerminals?: string[];
   onRoute?(index: number, points: Point3[]): void;
   surface?: 'mat' | 'paper' | 'graphite';
+  /** the world's illuminance, lx (ADR-026): how lit the room is */
+  illuminance?: number;
   labels?: 'adaptive' | 'all' | 'selected';
   showNotes?: boolean;
   insertionPreview?: InsertionPreview;
@@ -244,6 +248,9 @@ export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: numb
   return new THREE.CatmullRomCurve3([A, A.clone().setY(A.y + UP), A.clone().lerp(B, 0.2).setY(top - lift * 0.25), mid, B.clone().lerp(A, 0.2).setY(top - lift * 0.25), B.clone().setY(B.y + UP), B], false, 'centripetal');
 }
 
+/** the anti-static mat on the table, mm */
+const MAT: [number, number] = [1400, 700];
+
 function deskTexture(surface: 'mat' | 'paper' | 'graphite' = 'mat'): THREE.CanvasTexture | undefined {
   if (typeof document === 'undefined') return undefined;
   const c = document.createElement('canvas');
@@ -265,7 +272,8 @@ function deskTexture(surface: 'mat' | 'paper' | 'graphite' = 'mat'): THREE.Canva
   }
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(100, 100);
+  // 100 mm a tile: a 10 mm grid on the 1400 x 700 mm mat
+  t.repeat.set(MAT[0] / 100, MAT[1] / 100);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
@@ -359,6 +367,9 @@ export function Bench3D(props: Bench3DProps) {
   const state = useRef<{
     renderer: THREE.WebGLRenderer;
     desk: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
+    room: Room;
+    sky: THREE.HemisphereLight;
+    sun: THREE.DirectionalLight;
     labels: CSS2DRenderer;
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
@@ -390,6 +401,7 @@ export function Bench3D(props: Bench3DProps) {
     if (!s || s.raf) return;
     s.raf = requestAnimationFrame(() => {
       s.raf = 0;
+      const t0 = performance.now();
       s.controls.update();
       // the selected part, and the part under the pointer, are outlined
       const outlined = [...new Set([propsRef.current.selected?.part, s.hover])]
@@ -415,6 +427,7 @@ export function Bench3D(props: Bench3DProps) {
         } else s.renderer.render(s.scene, s.camera);
       } else s.renderer.render(s.scene, s.camera);
       s.labels.render(s.scene, s.camera);
+      recordFrame(t0, s.quality ? 'quality' : s.outline && outlined.length ? 'outline' : 'draft');
       // the view cube turns with the camera: the scene's rotation seen from the camera, y down as CSS has it
       if (cubeRef.current) cubeRef.current.style.transform = cubeTransform(s.camera.matrixWorldInverse);
     });
@@ -552,11 +565,13 @@ export function Bench3D(props: Bench3DProps) {
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environmentIntensity = 0.55;
-    const camera = new THREE.PerspectiveCamera(38, 1, 1, 5000);
+    // far enough to see the room's far corner from the farthest orbit
+    const camera = new THREE.PerspectiveCamera(38, 1, 1, 12000);
     camera.position.set(0, 260, 240);
-    const orthographic = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 5000);
+    const orthographic = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 12000);
 
-    scene.add(new THREE.HemisphereLight(0xdfe9f3, 0x1d262c, 0.65));
+    const sky = new THREE.HemisphereLight(0xdfe9f3, 0x1d262c, 0.65);
+    scene.add(sky);
     const sun = new THREE.DirectionalLight(0xfff4e5, 2.1);
     sun.position.set(-160, 420, 260);
     sun.castShadow = true;
@@ -572,11 +587,14 @@ export function Bench3D(props: Bench3DProps) {
     scene.add(sun.target);
 
     const mat = deskTexture();
-    const desk = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshStandardMaterial({ map: mat ?? null, color: mat ? 0xffffff : 0x2f4f5f, roughness: 0.92 }));
+    const desk = new THREE.Mesh(new THREE.PlaneGeometry(MAT[0], MAT[1]), new THREE.MeshStandardMaterial({ map: mat ?? null, color: mat ? 0xffffff : 0x2f4f5f, roughness: 0.92 }));
     desk.rotation.x = -Math.PI / 2;
     desk.receiveShadow = true;
     desk.name = 'desk';
     scene.add(desk);
+    // the table under the mat, and the room around it (stage 6)
+    const room = buildRoom();
+    scene.add(room.group);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = false;
@@ -595,7 +613,7 @@ export function Bench3D(props: Bench3DProps) {
     const inspect = new THREE.Group();
     scene.add(jumpers, links, notes, world, hints, preview, inspect);
     state.current = {
-      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, parts: new Map(), jumpers, links, notes, world, hints, preview,
+      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, room, sky, sun, parts: new Map(), jumpers, links, notes, world, hints, preview,
       inspect, quality: null, outline: null, hover: null, measureFrom: null, raf: 0, framed: false,
     };
 
@@ -632,6 +650,7 @@ export function Bench3D(props: Bench3DProps) {
       desk.material.map?.dispose();
       desk.material.dispose();
       desk.geometry.dispose();
+      room.dispose();
       renderer.dispose();
       pmrem.dispose();
       renderer.domElement.remove();
@@ -651,6 +670,19 @@ export function Bench3D(props: Bench3DProps) {
     s.notes.visible = props.showNotes !== false;
     invalidate();
   }, [props.surface, props.showNotes, invalidate]);
+
+  // the room is as lit as the world says, the value the light sensors read
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const k = lightLevel(props.illuminance);
+    s.sky.intensity = 0.65 * k;
+    s.sun.intensity = 2.1 * k;
+    s.scene.environmentIntensity = 0.55 * k;
+    // the window shows the daylight: dim at night, white in sunshine
+    s.room.pane.color.setRGB(0.87, 0.92, 0.96).multiplyScalar(Math.min(1.2, Math.max(0.04, k * 0.9)));
+    invalidate();
+  }, [props.illuminance, invalidate]);
 
   // the parts: built when new or changed, moved when they move
   useEffect(() => {

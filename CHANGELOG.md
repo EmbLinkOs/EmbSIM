@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The room around the bench, and its frame times
+
+- The 3D bench's surface is the top of a 750 mm lab table, with a
+  1400 x 700 mm anti-static mat on it, in a room with walls, a floor, a
+  ceiling and a window on the left, where the light comes from. A wall
+  between the camera and the table is seen from behind and not drawn.
+- The room is as lit as the world's illuminance (ADR-026): 300 lx as the
+  bench has always looked, a dark room with only the LEDs glowing,
+  brighter in daylight.
+- Each frame of the 3D bench is a User Timing measure
+  (`embsim.bench3d.frame`). `e2e/frame-budget.spec.ts` orbits the demo bench
+  in draft and quality and reports the frames' percentiles against
+  ADR-028's budgets; `EMBSIM_FRAME_BUDGET=enforce` fails the run when the
+  95th percentile is over them.
+
 ### Gull-wing leads and small-outline parts
 
 - QFP leads are bent gull wings (MS-026: 1.0 mm to the tip, a 0.6 mm foot)
@@ -13,6 +28,8 @@ versions follow semantic versioning. There is no release yet.
   MS-012, MO-187, MO-153) is drawn on an SO-to-DIP breakout on its DIP
   pins, as one is put on a breadboard: the breakout's pin strips, plated
   rings, pads, traces under the mask, and the package at its real pitch.
+  A part with fewer pins than its package (the STS7PF30L's S, G and D on
+  SO-8 pins 1, 4 and 5) puts each pin at its number's place.
 - A board feature may turn by any angle (the schema took only quarter
   turns); the NUCLEO-F446RE's two MCUs sit at 45°, as on the board.
 

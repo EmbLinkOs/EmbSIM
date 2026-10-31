@@ -5,6 +5,24 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The room around the bench, and frame times (2026-10-31)
+
+Stage 6 of [the 3D plan](engineering/bench-3d.md) has begun: the bench's
+surface is the top of a 750 mm lab table in a room (walls, floor, ceiling,
+a window on the left), lit by the world's illuminance. Evidence:
+`room.test.ts` (the table's top at the bench's surface, the window a hole
+through the wall, the light level by illuminance) and the gallery. Not yet:
+the room's size from the project (it is a fixed 5.2 x 4.4 x 2.7 m), a sun
+by the time of day, shadows on the floor, and physics.
+
+Stage 7's harness: each frame's render is a User Timing measure, and
+`e2e/frame-budget.spec.ts` reports the percentiles while orbiting the demo
+bench in draft and quality (headless SwiftShader: draft p95 about 3 ms,
+quality p95 about 4.5 ms of CPU time). The time is the CPU's (the GPU's
+work is asynchronous, so it is a lower bound); CI reports it, and
+`EMBSIM_FRAME_BUDGET=enforce` judges it on a machine with a GPU. Not yet: GPU
+timer queries, instancing and level of detail.
+
 ## Gull-wing leads and small-outline parts (2026-10-31)
 
 More of stage 2: QFP leads are gull wings (MS-026), and parts whose package
@@ -14,7 +32,7 @@ turn by any angle; the NUCLEO-64's MCUs sit at 45°, marked. Evidence:
 `packages3d.test.ts` (the outlines' nominal dimensions, each foot on its
 pin, tip-to-tip span, the breakout's posts on the DIP pins) and
 `surface-packages.test.ts`. Not yet: J-leads (PLCC, SOJ), SO parts whose
-pins the catalog does not lay out as a DIP (the STS7PF30L stays a box).
+catalog pins carry no package numbers.
 
 ## Parts from KiCad's 3D models (2026-10-31)
 
@@ -28,8 +46,11 @@ design exception, each a separate file with its licence, ADR-029).
 
 Evidence: `models3d.test.ts` (the legs of each model on its pins; a wrong
 turn fails; an unreadable file keeps the built body; Phong to physical
-materials) and the gallery. Not yet: glTF models, models for the other
-parts, and GPU instancing (parts share a model's geometry and materials,
+materials) and the gallery. KiCad's 2020 library has no model for the
+other parts the bench draws approximately (the G5LE relay, the D2F switch;
+for the Phoenix MC 3.81 mm parts it has the fixed header, not the plug the
+catalog part is), so none is used for them. Not yet: glTF models, and GPU
+instancing (parts share a model's geometry and materials,
 but each is drawn on its own).
 
 ## Boards as boards (2026-10-30)

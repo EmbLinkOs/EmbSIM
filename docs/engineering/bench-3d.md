@@ -183,6 +183,13 @@ Done (first step):
   bench).
 - The world's objects are what the sensors' rays hit, as today.
 
+Done (first step, 2026-10-31): the bench's surface is the top of a 750 mm
+lab table with a 1400 x 700 mm mat, in a 5.2 x 4.4 x 2.7 m room with a
+window on the left; walls face inwards so none hides the bench; the light
+follows the world's illuminance (`room.ts`, `room.test.ts`). Still to do:
+the room's size and the time of day from the project, the sun through the
+window, floor shadows, physics.
+
 ### Stage 7: performance and qualification
 
 - Instancing for breadboard holes and repeated parts, level of detail by
@@ -190,6 +197,14 @@ Done (first step):
 - A Playwright harness measures frame times on the reference scenes and
   enforces ADR-028's budgets (8.3 ms at 120 Hz, a 16.7 ms floor).
 - The visual benchmark's V1 to V4 qualifications.
+
+Done (first step, 2026-10-31): each frame's render is a User Timing
+measure (`frames.ts`); `e2e/frame-budget.spec.ts` orbits the demo bench in
+draft and quality and reports p50/p95/p99 and the share of frames over
+8.3 and 16.7 ms, enforcing the 95th percentile with
+`EMBSIM_FRAME_BUDGET=enforce` (CI renders on the CPU, so it reports only).
+The time is the CPU's; a GPU timer query
+(`EXT_disjoint_timer_query_webgl2`) would add the GPU's.
 
 ## 4. Not planned
 

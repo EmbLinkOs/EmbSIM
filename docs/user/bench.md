@@ -58,6 +58,15 @@ These work as an EDA tool's 3D viewer does
   - **GLB model** saves the bench as glTF binary, in metres, each part a node
     named by its id, for Blender or an MCAD tool.
 
+### The room
+
+The bench stands on a lab table in a room, with a window on the left. Zoom
+out to see it. A wall between you and the table is not drawn, so the bench
+is always in view. The room is as lit as the world's **Light** field
+(illuminance) says: set it to 0 lx in the world panel to see the LEDs in a
+dark room, or to daylight values for a bright one. Only the picture
+changes; the light sensors read the same field.
+
 ### Parts drawn from 3D models
 
 Some parts are drawn from a 3D model file instead of the bench's own body:
