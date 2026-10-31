@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "on-a-computer",
+  "description": "Plugged into a computer's port: enumerated at low speed (8-byte EP0), configured, its HID interface ready; a move of 300 counts right goes in reports of 127, 127 and 46, and the button's press is seen.",
+  "policy": "electrical",
+  "until": "500ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/usb_mouse"
+      },
+      {
+        "id": "PC",
+        "component": "emblink/usb_host"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VBUS": [
+        "PC.VBUS",
+        "DUT.VBUS"
+      ],
+      "DM": [
+        "PC.DM",
+        "DUT.DM"
+      ],
+      "DP": [
+        "PC.DP",
+        "DUT.DP"
+      ],
+      "GND": [
+        "PC.GND",
+        "DUT.GND",
+        "G0.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "400ms",
+      "target": "DUT",
+      "input": "move_x",
+      "value": 300
+    },
+    {
+      "at": "400ms",
+      "target": "DUT",
+      "input": "buttons",
+      "value": 1
+    }
+  ],
+  "expect": {
+    "output:DUT.state": {
+      "at": "390ms",
+      "equals": "configured"
+    },
+    "output:PC.HOST.log": {
+      "at": "390ms",
+      "contains": "low-speed device attached"
+    },
+    "output:PC.HOST.product": {
+      "at": "390ms",
+      "equals": "USB Optical Mouse"
+    },
+    "output:PC.HOST.cursor_x": {
+      "at": "480ms",
+      "equals": 300
+    },
+    "output:PC.HOST.buttons": {
+      "at": "480ms",
+      "equals": 1
+    },
+    "output:DUT.reports": {
+      "at": "480ms",
+      "equals": 3
+    }
+  }
+}

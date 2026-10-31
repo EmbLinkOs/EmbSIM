@@ -31,6 +31,8 @@ extern const esk_model_ops esk_wifi_scanner_ops;
 extern const esk_model_ops esk_air_sniffer_ops;
 /* a computer's USB port: the host on a USB cable (usb_host.c) */
 extern const esk_model_ops esk_usb_host_ops;
+/* a USB mouse, a low-speed HID boot mouse (usb_mouse.c) */
+extern const esk_model_ops esk_usb_mouse_ops;
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;
 /* a phone connecting to a BLE peripheral and browsing its GATT database (ble_central.c) */
