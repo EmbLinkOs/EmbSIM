@@ -1415,7 +1415,30 @@ int esk_island_may_cross(esk_island *isl, es_time_t ahead)
     k = 2.0 * (double)ahead / dt;
     for (i = 0; i < p->n; i++)
         p->x_old[i] = isl->x[i] + (isl->x[i] - p->x_prev[i]) * k;
-    return any_crossing(isl, p->x_old);
+    if (any_crossing(isl, p->x_old))
+        return 1;
+    {
+        /* any digital pin's thresholds, whatever its role: a part reads
+         * back the pad it drives (an I2C master its released lines) */
+        size_t j;
+        for (j = 0; j < isl->devs.len; j++) {
+            const esk_adev *d = isl->devs.data[j];
+            double up, down, v, w;
+            int node;
+            if (!d->pin || (d->ops != &esk_bridge_in_ops && d->ops != &esk_bridge_out_ops) ||
+                d->pin->model.kind == ESK_PIN_POWER)
+                continue;
+            node = d->node[0];
+            if (node <= 0)
+                continue;
+            thresholds(d->pin, &up, &down);
+            v = isl->x[node - 1];
+            w = p->x_old[node - 1];
+            if ((v < up) != (w < up) || (v > down) != (w > down))
+                return 1;
+        }
+    }
+    return 0;
 }
 
 void esk_island_sync(esk_island *isl, es_time_t now)
