@@ -191,8 +191,8 @@ def block(in_eps=6, out_eps=6, channels=12, fifo_words=320):
 
 NOTE = ("; the USB OTG FS block (OTG_FS_GLOBAL, OTG_FS_HOST, OTG_FS_DEVICE, OTG_FS_PWRCLK: the F40x's "
         "layout) replaced by OTGFS as RM0390 30.15 lays it out, written by tools/importers/dwc2_regs.py "
-        "(six endpoints each way, GRXSTSP, GCCFG's VBDEN, GLPMCFG, GSNPSID 0x4F54320A: unconfirmed, no "
-        "ST document gives it)")
+        "(six endpoints each way, GRXSTSP, GCCFG's VBDEN, GLPMCFG; GSNPSID 0x4F54320A as TinyUSB's dwc2_info "
+        "table measures on the F412's and F76x's OTG_FS, the same core generation: no ST document gives it)")
 
 
 def splice(path):
@@ -205,8 +205,10 @@ def splice(path):
     new = [p for i, p in enumerate(ps) if i not in at]
     new.insert(at[0], block())
     d["peripherals"] = new
-    if NOTE not in d.get("source", ""):
-        d["source"] = d.get("source", "") + NOTE
+    src = d.get("source", "")
+    if "; the USB OTG FS block" in src:  # an earlier run's note, replaced
+        src = src[:src.index("; the USB OTG FS block")]
+    d["source"] = src + NOTE
     with open(path, "w", encoding="utf-8") as f:
         json.dump(d, f, indent=1, ensure_ascii=False)
         f.write("\n")
