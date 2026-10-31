@@ -47,6 +47,11 @@ versions follow semantic versioning. There is no release yet.
 - The pin header part reaches 80 positions (a morpho header is 2 x 35).
 - The NUCLEO-F446RE's RTC_Calendar scenario says what the example does: its
   RTC runs on LSI, its comment notwithstanding.
+- The NUCLEO-F446RE checked against ST's MB1136 C-03 and C-04 schematics:
+  R30 pulls PC13 up and B1 pulls it to ground through R29, so a pressed B1
+  reads about 69 mV, not 0 V; CN7 pins 25 and 27 no longer reach PC14/PC15
+  (SB49 and SB48 are open from the factory); VDDA's ferrite bead L1 is
+  declared as taken as a short.
 
 ### Boards as boards
 
