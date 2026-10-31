@@ -368,6 +368,32 @@ function breadboard830(): Entry {
 
 MOCK_CATALOG['emblink/breadboard_830'] = breadboard830();
 
+// an instrument with a front panel of its own (the demo session has no scope engine: its screen stays empty)
+MOCK_CATALOG['emblink/rigol_ds1054z'] = {
+  description: {
+    schema_version: 1,
+    kind: 'component',
+    id: 'emblink/rigol_ds1054z',
+    version: '1.0.0',
+    name: 'Oscilloscope, 4 channels (Rigol DS1054Z)',
+    category: 'instruments',
+    description: 'A four-channel digital storage oscilloscope.',
+    keywords: ['oscilloscope', 'scope', 'rigol'],
+    pins: ['CH1', 'CH2', 'CH3', 'CH4', 'GND'].map((name, i) => ({ name, number: i + 1, model: { kind: 'passive' as const } })),
+    params: {
+      timebase: { type: 'number', unit: 's', default: 1e-3, min: 5e-9, max: 50, doc: 'Seconds a division' },
+      sweep: { type: 'enum', enum: ['auto', 'normal', 'single'], default: 'auto', doc: 'Sweep' },
+    },
+    model: { primitive: 'oscilloscope' },
+    symbol: { svg: 'symbol.svg', width: 120, height: 80, pins: { CH1: { x: 0, y: 10, side: 'left' }, CH2: { x: 0, y: 20, side: 'left' }, CH3: { x: 0, y: 30, side: 'left' }, CH4: { x: 0, y: 40, side: 'left' }, GND: { x: 60, y: 80, side: 'bottom' } } },
+    fidelity: { functional: null, timed: null, electrical: { claims: 'Demo entry: the panel without the engine.', omissions: ['acquisition'] } },
+    provenance,
+  },
+  files: {
+    symbol: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" width="120" height="80"><rect x="1" y="1" width="118" height="78" rx="4" fill="var(--symbol-fill)" stroke="var(--symbol-stroke)"/><rect x="14" y="10" width="64" height="44" fill="none" stroke="var(--symbol-stroke)"/></svg>`,
+  },
+};
+
 export function catalogItems(): CatalogItem[] {
   return Object.values(MOCK_CATALOG).map(({ description }) => ({
     id: description.id,

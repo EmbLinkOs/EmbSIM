@@ -90,6 +90,17 @@ function initialState(items: DockItem[], key: string | undefined): Persisted & {
 /** a folded pane's thickness along the split, px */
 const RAIL = 34;
 
+// Items asked to be shown before their layout mounted (a perspective switch):
+// the layout that owns one unfolds and focuses it when it appears.
+const pendingReveal = new Set<string>();
+const REVEAL_EVENT = 'es-dock-reveal';
+
+/** Unfolds the dock item `id` wherever it is laid out, scrolls it into view and focuses it. */
+export function revealDockItem(id: string): void {
+  pendingReveal.add(id);
+  window.dispatchEvent(new CustomEvent<string>(REVEAL_EVENT, { detail: id }));
+}
+
 export function DockLayout({ direction, items, storageKey, className }: DockLayoutProps) {
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const [state, setState] = useState(() => initialState(items, storageKey));
@@ -133,6 +144,23 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
   const isCollapsed = (item: DockItem) => Boolean(item.collapsible && !item.bare && (state.collapsed?.[item.id] ?? item.defaultCollapsed ?? false));
   const setCollapsed = (id: string, folded: boolean) => setState((s) => ({ ...s, collapsed: { ...(s.collapsed ?? {}), [id]: folded } }));
   const folded = ordered.filter(isCollapsed).length;
+
+  useEffect(() => {
+    const reveal = (id: string) => {
+      if (!ids.includes(id)) return;
+      pendingReveal.delete(id);
+      setState((s) => (s.collapsed?.[id] === false ? s : { ...s, collapsed: { ...(s.collapsed ?? {}), [id]: false } }));
+      window.requestAnimationFrame(() => {
+        const pane = [...(containerRef.current?.querySelectorAll<HTMLElement>('.es-dock__pane') ?? [])].find((el) => el.dataset.dockId === id);
+        pane?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        pane?.querySelector<HTMLElement>('button, [tabindex="0"]')?.focus();
+      });
+    };
+    for (const id of [...pendingReveal]) reveal(id);
+    const on = (e: Event) => reveal((e as CustomEvent<string>).detail);
+    window.addEventListener(REVEAL_EVENT, on);
+    return () => window.removeEventListener(REVEAL_EVENT, on);
+  }, [ids]);
   const gutters = ordered.filter((item, index) => !isCollapsed(item) && ordered[index + 1] && !isCollapsed(ordered[index + 1]!)).length;
   const minimum = ordered.filter((item) => !isCollapsed(item)).reduce((sum, item) => sum + (item.minSize ?? 120), 0);
   const axisSize = direction === 'row' ? extent.width : extent.height;

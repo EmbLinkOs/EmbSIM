@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Front panels opened from their parts, docked or floating
+
+- An instrument with a front panel of its own (the DS1054Z, the PPK2, the
+  Logic 8) opens it from its part: the inspector's Open front panel, or the
+  command palette's Open, Float and Dock commands for each one. Opened, it
+  unfolds in the Run perspective's dock and takes the focus.
+- Float takes a panel out of the dock into a window over the workbench,
+  which stays over every perspective, so the scope can be watched while
+  the circuit is edited. Its title bar moves it (or the arrow keys on it),
+  its corner resizes it (or Shift with the arrow keys), and Dock puts it
+  back. Each window's place and size are remembered for the next session.
+- `revealDockItem` in the design system unfolds and focuses a dock item
+  wherever it is laid out, even one whose perspective is not open yet.
+
 ### An oscilloscope: the Rigol DS1054Z
 
 - `emblink/rigol_ds1054z` from Rigol's DS1000Z specifications: four inputs

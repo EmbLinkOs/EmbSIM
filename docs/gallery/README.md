@@ -5,6 +5,15 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Front panels docked or floating (2026-10-31)
+
+A DS1054Z placed in the demo session, its front panel opened from the
+inspector and floated: the window stays over the Design perspective while
+the schematic is edited, moved from its title bar or the keyboard, and
+docked back into Run:
+
+![The DS1054Z's front panel floating over the Design perspective](workbench-v0.1/1-floating-front-panel.png)
+
 ## An oscilloscope: the Rigol DS1054Z (2026-10-31)
 
 A DS1054Z on an RC network (10 kΩ, 10 nF) driven by a 1 kHz square wave,

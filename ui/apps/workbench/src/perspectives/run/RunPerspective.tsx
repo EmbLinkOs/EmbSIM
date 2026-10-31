@@ -3,7 +3,7 @@
 import { Button, DockLayout, IconButton, SegmentedControl, Tabs, Tooltip, useToast, type Command, type DockItem } from '@embsim/design';
 import { followWindow, LogicAnalyzer, Oscilloscope, SerialTerminal, type ScopeTrace } from '@embsim/instruments';
 import { SchematicCanvas, type CanvasMode, type Point, type SchematicCanvasHandle } from '@embsim/scene';
-import { Download, Locate, Maximize2, Trash2 } from 'lucide-react';
+import { Download, Locate, Maximize2, PictureInPicture2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { errorMessage, exportCsv, exportVcd, inputs as inputActions, probes as probeActions } from '../../actions';
 import { platform } from '../../platform/platform';
@@ -23,9 +23,8 @@ import { useHostPort } from './useHostPort';
 import { SchematicDisplayOptions } from './SchematicDisplayOptions';
 import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { isWiredInstrument, WiredInstrumentsPanel } from './WiredInstrumentsPanel';
-import { LOGIC8, Logic8Panel } from './Logic8Panel';
-import { PPK2, Ppk2Panel } from './Ppk2Panel';
-import { DS1054Z, Ds1054zPanel } from './Ds1054zPanel';
+import { benchInstrumentParts, dockIdOf, titleOf } from './benchInstruments';
+import { useFloating } from '../../stores/floating';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
@@ -35,6 +34,8 @@ export function RunPerspective() {
   const nets = useSession((s) => s.nets);
   const outputs = useSchematicOutputs();
   const inputs = useSession((s) => s.inputs);
+  const floating = useFloating((s) => s.floating);
+  const floatPanel = useFloating((s) => s.float);
   const [mode, setMode] = useState<CanvasMode>('interact');
   const [comparison, setComparison] = useState<{project: unknown; a?: string; b?: string; aPoint?: Point; bPoint?: Point}>({project:null});
   const [pickLead, setPickLead] = useState<'a'|'b'|null>(null);
@@ -199,17 +200,11 @@ export function RunPerspective() {
     { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
       <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
-    // each Rigol DS1054Z: its screen and front panel, live
-    ...(project?.components.filter((c) => c.component === DS1054Z) ?? []).map((c): DockItem => ({
-      id: `ds1054z-${c.id}`, title: `${c.id} · DS1054Z oscilloscope`, flush: true, weight: 1.6, minSize: 260, collapsible: true, content: <Ds1054zPanel part={c.id} />,
-    })),
-    // each Power Profiler Kit II: the current at 100 kS/s, as Nordic's Power Profiler app shows it
-    ...(project?.components.filter((c) => c.component === PPK2) ?? []).map((c): DockItem => ({
-      id: `ppk2-${c.id}`, title: `${c.id} · Power Profiler Kit II`, flush: true, weight: 1.3, minSize: 200, collapsible: true, content: <Ppk2Panel part={c.id} />,
-    })),
-    // each Saleae Logic 8 on the bench: its own capture, as Logic 2 shows it
-    ...(project?.components.filter((c) => c.component === LOGIC8) ?? []).map((c): DockItem => ({
-      id: `logic8-${c.id}`, title: `${c.id} · Logic 8`, flush: true, weight: 1.1, minSize: 160, collapsible: true, content: <Logic8Panel part={c.id} />,
+    // each bench instrument's front panel (the DS1054Z, the PPK2, the Logic 8), unless it floats
+    ...benchInstrumentParts(project).filter(({ part }) => !floating.includes(part)).map(({ part, instrument }): DockItem => ({
+      id: dockIdOf(instrument, part), title: titleOf(instrument, part), flush: true, weight: instrument.weight, minSize: instrument.minSize, collapsible: true,
+      actions: <IconButton size="sm" variant="ghost" label={`Float ${titleOf(instrument, part)} in its own window`} onClick={() => floatPanel(part)}><PictureInPicture2 /></IconButton>,
+      content: instrument.panel(part),
     })),
     {
       id: 'bottom',

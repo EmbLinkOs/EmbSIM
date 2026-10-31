@@ -11,6 +11,7 @@ import { VerifyPerspective } from './perspectives/verify/VerifyPerspective';
 import { useCommands, useGlobalShortcuts } from './shell/commands';
 import { NewProjectDialog } from './shell/NewProjectDialog';
 import { DiagnosticsPanel } from './shell/DiagnosticsPanel';
+import { FloatingPanels } from './shell/FloatingPanels';
 import { Toolbar } from './shell/Toolbar';
 import { WorkbenchStatusBar } from './shell/WorkbenchStatusBar';
 import { useLayout } from './stores/layout';
@@ -109,6 +110,7 @@ function Workbench({ connect }: AppProps) {
       <main className="wb__main" aria-label={`${perspective} perspective`}>
         {main}
       </main>
+      {status === 'open' && <FloatingPanels />}
       <WorkbenchStatusBar />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} commands={commands} />
       <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen} title="Diagnostics" className="wb-diagnostics-dialog">

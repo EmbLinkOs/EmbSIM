@@ -4,7 +4,9 @@ import { IndicatorEvidence } from './IndicatorEvidence';
 import { Badge, Button, EmptyState, Input, Select, SignalChip, Toggle, useToast } from '@embsim/design';
 import { type ParamDescription } from '@embsim/protocol';
 import { describeNetState } from '@embsim/scene';
-import { Layers, MousePointer2 } from 'lucide-react';
+import { Gauge, Layers, MousePointer2, PictureInPicture2 } from 'lucide-react';
+import { benchInstrumentOf, openFrontPanel } from '../run/benchInstruments';
+import { useFloating } from '../../stores/floating';
 import { useEffect, useState } from 'react';
 import { errorMessage } from '../../actions';
 import { insideOf, openInside } from '../../stores/openInside';
@@ -45,6 +47,26 @@ function OpenInsideButton({ id }: { id: string }) {
     <Button size="sm" variant="ghost" icon={<Layers />} onClick={() => void openInside(id).catch((e: unknown) => toast({ kind: 'error', title: 'Open failed', description: errorMessage(e) }))}>
       Open inside
     </Button>
+  );
+}
+
+/** An instrument's front panel: shown in Run's dock, or in a window of its own over any perspective. */
+function FrontPanelButtons({ id }: { id: string }) {
+  const ref = useProject((s) => s.project?.components.find((c) => c.id === id)?.component);
+  const floating = useFloating((s) => s.floating.includes(id));
+  const instrument = benchInstrumentOf(ref);
+  if (!instrument) return null;
+  return (
+    <div className="es-row" style={{ gap: 'var(--space-1)' }}>
+      <Button size="sm" variant="ghost" icon={<Gauge />} onClick={() => openFrontPanel(instrument, id)}>
+        Open front panel
+      </Button>
+      {!floating && (
+        <Button size="sm" variant="ghost" icon={<PictureInPicture2 />} onClick={() => useFloating.getState().float(id)}>
+          Float
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -112,6 +134,7 @@ function ComponentInspector({ id }: { id: string }) {
       </div>
       {desc?.qualification && <IndicatorEvidence evidence={desc.qualification} />}
       <OpenInsideButton id={id} />
+      <FrontPanelButtons id={id} />
       <SelectionProperties />
       {desc?.part && (
         <section className="wb-inspector__section" aria-label="Manufacturer part">
