@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Gull-wing leads and small-outline parts
+
+- QFP leads are bent gull wings (MS-026: 1.0 mm to the tip, a 0.6 mm foot)
+  instead of flat strips; QFPs carry their part number as a marking.
+- A part whose datasheet package is SO/SOIC, VSSOP/MSOP or TSSOP (JEDEC
+  MS-012, MO-187, MO-153) is drawn on an SO-to-DIP breakout on its DIP
+  pins, as one is put on a breadboard: the breakout's pin strips, plated
+  rings, pads, traces under the mask, and the package at its real pitch.
+- A board feature may turn by any angle (the schema took only quarter
+  turns); the NUCLEO-F446RE's two MCUs sit at 45°, as on the board.
+
 ### Parts from KiCad's 3D models
 
 - A catalog part may name a 3D model (`bench.model3d` in `component.json`:

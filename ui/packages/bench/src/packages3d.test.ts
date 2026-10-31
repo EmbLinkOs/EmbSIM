@@ -2,7 +2,8 @@
 // Copyright 2026 Junior Deogracias
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { barrelJack, crystalHC49, dipBody, dipDimensions, dipLabelSize, dipPinPositions, electrolytic, headerStrips, pinStrip, quadPackage, quadSize, rfModule, socketStrip, tactileSwitch, usbB, usbC, usbMicro } from './packages3d';
+import { barrelJack, crystalHC49, dipBody, GOLD_PLATE, gullWing, smallOutlineAdapter, smallOutlineBody, smallOutlinePins, dipDimensions, dipLabelSize, dipPinPositions, electrolytic, headerStrips, pinStrip, quadPackage, quadSize, rfModule, socketStrip, tactileSwitch, usbB, usbC, usbMicro } from './packages3d';
+import { smallOutline } from './shape';
 
 function size(o: THREE.Object3D): THREE.Vector3 {
   return new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
@@ -87,10 +88,15 @@ describe('connectors and parts', () => {
     expect(size(t.group).y).toBeCloseTo(4.3, 1);
     expect(t.cap.name).toBe('cap');
   });
-  it('a QFP has a lead per pin, on four sides', () => {
+  it('a QFP has a gull-wing lead per pin, on four sides, tips 1.0 mm out (MS-026 L1)', () => {
+    const qfp = quadPackage('qfp', 7, 7, 1.2, 32);
     let leads = 0;
-    quadPackage('qfp', 7, 7, 1.2, 32).traverse((o) => { if ((o as THREE.Mesh).isMesh && (o as THREE.Mesh).geometry instanceof THREE.BoxGeometry && ((o as THREE.Mesh).geometry as THREE.BoxGeometry).parameters.height === 0.15) leads++; });
+    qfp.traverse((o) => { if ((o as THREE.Mesh).isMesh && (o as THREE.Mesh).geometry instanceof THREE.ExtrudeGeometry) leads++; });
     expect(leads).toBe(32);
+    const b = bounds(qfp);
+    expect(b.max.x - b.min.x).toBeCloseTo(9, 1);
+    expect(b.max.z - b.min.z).toBeCloseTo(9, 1);
+    expect(b.min.y).toBeCloseTo(0);
   });
 });
 
@@ -132,3 +138,63 @@ describe('more packages', () => {
   });
 });
 
+
+describe('small-outline packages and gull-wing leads', () => {
+  it('reads the outline a datasheet names, at JEDEC nominal dimensions', () => {
+    expect(smallOutline('SO-8')).toMatchObject({ kind: 'SOIC', pitch: 1.27, length: 4.9, width: 3.9, span: 6.0 });
+    expect(smallOutline('SOIC-14')).toMatchObject({ kind: 'SOIC', length: 8.65 });
+    expect(smallOutline('VSSOP-8')).toMatchObject({ kind: 'VSSOP', pitch: 0.65, width: 3.0, span: 4.9 });
+    expect(smallOutline('TSSOP-20')).toMatchObject({ kind: 'TSSOP', length: 6.5, span: 6.4 });
+    expect(smallOutline('PDIP-8')).toBeUndefined();
+    expect(smallOutline('SO-7')).toBeUndefined();
+  });
+
+  it('a gull-wing lead leaves the body at its exit height and lies flat on the board at its tip', () => {
+    const lead = gullWing(0.3, 0.15, 0.5, 1.0, 0.6);
+    const b = bounds(lead);
+    expect(b.min.y).toBeCloseTo(0);
+    expect(b.max.y).toBeCloseTo(0.575);
+    expect(b.min.z).toBeCloseTo(0);
+    expect(b.max.z).toBeCloseTo(1.0);
+    expect(b.max.x - b.min.x).toBeCloseTo(0.3);
+  });
+
+  it('each lead\'s foot is on its pin, pin 1 at the front left, and tip to tip is E', () => {
+    for (const name of ['SO-8', 'VSSOP-8', 'TSSOP-14']) {
+      const so = smallOutline(name)!;
+      const g = smallOutlineBody(so);
+      const b = bounds(g);
+      expect(b.max.z - b.min.z).toBeCloseTo(so.span, 2);
+      expect(b.max.y).toBeLessThan(so.height + 0.03); // the dimple's paint on top
+      const pins = smallOutlinePins(so);
+      expect(pins[0]![0]).toBeLessThan(0);
+      expect(pins[0]![1]).toBeGreaterThan(0);
+      // the feet: the leads' lowest points, one cluster per pin
+      g.updateMatrixWorld(true);
+      const feet: THREE.Vector3[] = [];
+      g.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh || !(m.geometry instanceof THREE.ExtrudeGeometry)) return;
+        feet.push(new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()));
+      });
+      expect(feet).toHaveLength(so.pins);
+      for (const [x] of pins) expect(Math.min(...feet.map((f) => Math.abs(f.x - x)))).toBeLessThan(0.01);
+    }
+  });
+
+  it('on its breakout the posts stand on the DIP\'s pins and the package sits on the board', () => {
+    const so = smallOutline('VSSOP-8')!;
+    const { group, top } = smallOutlineAdapter(so, 7.62);
+    group.updateMatrixWorld(true);
+    const posts: THREE.Vector3[] = [];
+    group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && m.material === GOLD_PLATE && m.geometry instanceof THREE.BoxGeometry) posts.push(new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()));
+    });
+    const want = dipPinPositions(8, 7.62);
+    expect(posts).toHaveLength(8);
+    for (const [x, z] of want) expect(Math.min(...posts.map((p) => Math.hypot(p.x - x, p.z - z)))).toBeLessThan(0.01);
+    expect(top).toBeCloseTo(4.1);
+    expect(bounds(group).min.y).toBeLessThan(-2); // the posts go into the breadboard
+  });
+});

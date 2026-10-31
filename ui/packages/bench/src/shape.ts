@@ -53,8 +53,51 @@ export interface BenchShape {
   led?: LedBody;
   /** the artwork is the body's top face (modules, boards) */
   textured?: boolean;
+  /** a small-outline part drawn on its SO-to-DIP breakout (the DIP's pins are the breakout's) */
+  smallOutline?: SmallOutline;
   /** a distance sensor's beam: from `at` along `dir`, mm, x right, y towards the viewer, z up */
   sense?: { at?: [number, number, number]; dir?: [number, number, number] };
+}
+
+/** a small-outline package's dimensions (mm), nominal, from its JEDEC outline */
+export interface SmallOutline {
+  /** the outline's name: "SOIC" (MS-012), "VSSOP" (MO-187, TI's DGK), "TSSOP" (MO-153) */
+  kind: 'SOIC' | 'VSSOP' | 'TSSOP';
+  pins: number;
+  pitch: number;
+  /** the body: length along the rows (D), width across them (E1), height above the board (A) */
+  length: number;
+  width: number;
+  height: number;
+  /** the standoff (A1) */
+  standoff: number;
+  /** tip to tip across the rows (E) */
+  span: number;
+  /** a lead's width (b), thickness (c) and foot (L) */
+  lead: number;
+  thickness: number;
+  foot: number;
+}
+
+/** the small-outline package a part's datasheet names ("SO-8", "SOIC-14", "VSSOP-8", "TSSOP-20"), or undefined */
+export function smallOutline(name: string | undefined): SmallOutline | undefined {
+  const m = /^(SO|SOIC|VSSOP|MSOP|TSSOP)-?(\d+)$/i.exec((name ?? '').trim());
+  if (!m) return undefined;
+  const pins = Number(m[2]);
+  if (pins < 4 || pins % 2) return undefined;
+  const kind = m[1]!.toUpperCase();
+  if (kind === 'SO' || kind === 'SOIC') {
+    // MS-012: 3.90 mm body, 6.00 mm span, 1.27 mm pitch; D 4.90 (8), 8.65 (14), 9.90 (16)
+    const length = pins <= 8 ? 4.9 : pins <= 14 ? 8.65 : pins <= 16 ? 9.9 : (pins / 2) * 1.27 + 0.6;
+    return { kind: 'SOIC', pins, pitch: 1.27, length, width: 3.9, height: 1.55, standoff: 0.15, span: 6.0, lead: 0.41, thickness: 0.2, foot: 0.84 };
+  }
+  if (kind === 'VSSOP' || kind === 'MSOP') {
+    // MO-187 (TI DGK): 3.00 x 3.00 mm body, 4.90 mm span, 0.65 mm pitch, 1.1 mm high
+    return { kind: 'VSSOP', pins, pitch: 0.65, length: (pins / 2) * 0.65 + 0.4, width: 3.0, height: 1.0, standoff: 0.1, span: 4.9, lead: 0.3, thickness: 0.15, foot: 0.55 };
+  }
+  // MO-153: 4.40 mm body, 6.40 mm span, 0.65 mm pitch; D 3.0 (8), 5.0 (14, 16), 6.5 (20)
+  const length = pins <= 8 ? 3.0 : pins <= 16 ? 5.0 : pins <= 20 ? 6.5 : (pins / 2) * 0.65 + 0.4;
+  return { kind: 'TSSOP', pins, pitch: 0.65, length, width: 4.4, height: 1.1, standoff: 0.1, span: 6.4, lead: 0.25, thickness: 0.15, foot: 0.6 };
 }
 
 export function isSurfaceMount(shape: BenchShape): boolean {
@@ -336,6 +379,8 @@ export function benchShape(desc: Desc, params?: Record<string, unknown>, artwork
     : shape.textured && names.length > 0 && names.every((name) => anchors[name.toLowerCase()]) ? 'artwork' : 'approximate';
   const sense = (desc.bench as { sense?: BenchShape['sense'] } | undefined)?.sense;
   if (sense) shape.sense = sense;
+  const so = smallOutline((desc as { part?: { package?: string } }).part?.package);
+  if (so && shape.package === 'dip' && so.pins === Object.keys(shape.pins).length) shape.smallOutline = so;
   return shape;
 }
 

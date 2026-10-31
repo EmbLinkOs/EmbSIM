@@ -1201,7 +1201,8 @@
           9.0
         ],
         "pins": 48,
-        "label": "STM32F103CBT6"
+        "label": "STM32F103CBT6",
+        "rotation": 45
       },
       {
         "kind": "qfp",
@@ -1211,7 +1212,7 @@
         ],
         "pins": 64,
         "label": "STM32F446RET6",
-        "rotation": 0
+        "rotation": 45
       },
       {
         "kind": "crystal",

@@ -111,6 +111,11 @@ Exit:
   - each lead's tip against its pad;
   - the pin order against the part's pin table.
 
+Done (2026-10-31): gull-wing leads on QFPs; SOIC (MS-012), VSSOP
+(MO-187) and TSSOP (MO-153) bodies, drawn on an SO-to-DIP breakout when the
+part stands on a breadboard; quad packages marked with their part number;
+board features at any angle (the NUCLEO-64's 45° MCUs).
+
 ### Stage 3: model assets (glTF in, KiCad's models as references)
 
 - `component.json` may name a glTF model (`model3d: {file, offset,

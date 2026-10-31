@@ -66,3 +66,17 @@ describe('named surface-mount packages', () => {
     expect(jumperViews(p, benchModel(p, shapes, ctx.ties))[0]?.housings).toEqual([false, false]);
   });
 });
+
+describe('small-outline parts on breakouts', () => {
+  it('draws the VSSOP-8 LMV358 on its SO-to-DIP breakout, on the DIP-8 pins', () => {
+    const shape = benchShape(description('lmv358'));
+    expect(shape.package).toBe('dip');
+    expect(shape.smallOutline).toMatchObject({ kind: 'VSSOP', pins: 8, pitch: 0.65 });
+    const bounds = new Box3().setFromObject(buildPart('U1', shape, { component: 'emblink/lmv358' }).group);
+    expect(bounds.max.y).toBeGreaterThan(4.1 + 1); // the board on its spacers, the package on it
+    expect(bounds.min.y).toBeLessThan(-2);
+  });
+  it('a through-hole DIP stays a DIP', () => {
+    expect(benchShape(description('lm393p')).smallOutline).toBeUndefined();
+  });
+});

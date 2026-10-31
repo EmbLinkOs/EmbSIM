@@ -11,9 +11,9 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature } from './shape';
+import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature, type SmallOutline } from './shape';
 import { modelBody, type Model3d } from './models3d';
-import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, socketStrip, tactileSwitch, usbB } from './packages3d';
+import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, smallOutlineAdapter, socketStrip, tactileSwitch, usbB } from './packages3d';
 
 export interface PartLook {
   /** the component's id ("emblink/resistor") */
@@ -423,7 +423,25 @@ function standardDip(shape: BenchShape): THREE.Group | null {
   return g;
 }
 
+/** a small-outline part on its breakout, centred on the DIP's pins */
+function adapted(shape: BenchShape, so: SmallOutline): THREE.Group | null {
+  const pins = Object.values(local(shape));
+  const zs = [...new Set(pins.map(([, z]) => Math.round(z * 100) / 100))];
+  if (zs.length !== 2) return null;
+  const rows = Math.abs(zs[0]! - zs[1]!);
+  const cx = pins.reduce((t, [x]) => t + x, 0) / pins.length;
+  const cz = pins.reduce((t, [, z]) => t + z, 0) / pins.length;
+  const tex = labelTexture(shape.label ?? '', so.length * 0.7, so.width * 0.4, '#d0d0d0');
+  const { group } = smallOutlineAdapter(so, rows, tex ?? undefined);
+  group.position.set(cx, 0, cz);
+  const g = new THREE.Group();
+  g.add(group);
+  return g;
+}
+
 function dip(shape: BenchShape): THREE.Group {
+  const so = shape.smallOutline ? adapted(shape, shape.smallOutline) : null;
+  if (so) return so;
   const exact = standardDip(shape);
   if (exact) return exact;
   const g = new THREE.Group();
@@ -710,6 +728,15 @@ function feature(f: BoardFeature, id: string, indicators: Indicator[]): THREE.Ob
     case 'qfn': {
       const [qw, qd, qh] = f.size ?? quadSize(f.kind, f.pins ?? 32);
       g.add(quadPackage(f.kind, qw, qd, qh, f.pins ?? 32));
+      // the laser marking: the part number across the top, pale grey on the mould
+      const mark = f.label ? labelTexture(f.label, qd * 0.8, qw * 0.22, '#9da2a8') : undefined;
+      if (mark) {
+        const plate = new THREE.Mesh(new THREE.PlaneGeometry(qd * 0.8, qw * 0.22), new THREE.MeshBasicMaterial({ map: mark, transparent: true }));
+        // read upright, the pin-1 dimple (back left) is at the text's lower left, as vendors mark them
+        plate.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+        plate.position.y = qh + 0.012;
+        g.add(plate);
+      }
       break;
     }
     case 'crystal':

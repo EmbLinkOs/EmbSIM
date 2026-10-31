@@ -5,6 +5,17 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Gull-wing leads and small-outline parts (2026-10-31)
+
+More of stage 2: QFP leads are gull wings (MS-026), and parts whose package
+is SO/SOIC, VSSOP/MSOP or TSSOP stand on an SO-to-DIP breakout (the LMV358),
+the package at its JEDEC dimensions on the breakout's pads. Board features
+turn by any angle; the NUCLEO-64's MCUs sit at 45°, marked. Evidence:
+`packages3d.test.ts` (the outlines' nominal dimensions, each foot on its
+pin, tip-to-tip span, the breakout's posts on the DIP pins) and
+`surface-packages.test.ts`. Not yet: J-leads (PLCC, SOJ), SO parts whose
+pins the catalog does not lay out as a DIP (the STS7PF30L stays a box).
+
 ## Parts from KiCad's 3D models (2026-10-31)
 
 Stage 3 of [the 3D plan](engineering/bench-3d.md) has begun. A catalog part

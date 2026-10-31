@@ -5,6 +5,23 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Gull-wing leads, SO breakouts, the NUCLEO's 45° MCUs (2026-10-31)
+
+QFP and SO leads are bent as they are made: out of the body's side, down,
+and a flat foot on the pad. A small-outline part on a breadboard sits on an
+SO-to-DIP breakout, as on a real bench; here the LMV358's VSSOP-8 (0.65 mm
+pitch) with its traces running under the mask to the header holes:
+
+![The VSSOP-8 on its green breakout](bench-3d-gullwing/1-vssop-breakout.png)
+
+The NUCLEO-64's MCUs sit at 45° on the real board (and in its artwork). The
+3D chip used to sit square, the artwork's chip showing at its corners; now
+it turns with the board's picture and carries its marking:
+
+| Before | After |
+|---|---|
+| ![The LQFP-64 square, the artwork's corners showing](bench-3d-gullwing/2-lqfp-square-before.png) | ![The LQFP-64 at 45°, marked STM32F446RET6](bench-3d-gullwing/3-lqfp-45-marked.png) |
+
 ## Parts from KiCad's 3D models (2026-10-31)
 
 Stage 3 of [the 3D plan](../engineering/bench-3d.md): a part may be drawn
