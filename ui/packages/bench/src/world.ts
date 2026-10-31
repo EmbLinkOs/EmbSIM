@@ -10,6 +10,30 @@ import type { WorldBody } from '@embsim/protocol';
 import type { PlacedPart } from './layout';
 import type { Point3 } from './Bench3D';
 
+/**
+ * Where a body is at virtual time `nowPs` (picoseconds) when it was set at
+ * `sincePs`, as the engine moves it (core/engine/world.c): along its velocity,
+ * and back and forth over `travel_mm` when it has one.
+ */
+export function bodyAt(b: WorldBody, nowPs: bigint, sincePs = 0n): [number, number, number] {
+  const v = b.velocity_mm_s;
+  const speed = v ? Math.hypot(v[0], v[1], v[2]) : 0;
+  const dt = nowPs > sincePs ? Number(nowPs - sincePs) / 1e12 : 0;
+  if (!v || speed <= 0 || dt <= 0) return [b.at[0], b.at[1], b.at[2]];
+  let s = speed * dt;
+  const travel = b.travel_mm ?? 0;
+  if (travel > 0) {
+    s %= 2 * travel;
+    if (s > travel) s = 2 * travel - s;
+  }
+  return [b.at[0] + (v[0] / speed) * s, b.at[1] + (v[1] / speed) * s, b.at[2] + (v[2] / speed) * s];
+}
+
+/** the bodies where they are at `nowPs` (the project's are set at time 0) */
+export function bodiesAt(bodies: WorldBody[], nowPs: bigint): WorldBody[] {
+  return bodies.map((b) => (b.velocity_mm_s ? { ...b, at: bodyAt(b, nowPs) } : b));
+}
+
 /** the distance (mm) along the unit vector d from o to the nearest body, or -1 */
 export function rayDistance(bodies: WorldBody[], o: Point3, d: Point3): number {
   let best = -1;

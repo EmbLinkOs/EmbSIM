@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "retrigger",
+  "description": "Jumper at H (repeatable), 10 ms hold: motion 1 to 2 ms and 8 to 9 ms; Tx restarts, so OUT falls 10 ms after the last motion, at 19 ms.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pir_sensor",
+        "params": {
+          "hold": "10m",
+          "warmup": 0,
+          "lockout": "5m"
+        }
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "15ms",
+      "logic": "1"
+    },
+    "output:DUT.active": {
+      "at": "19500us",
+      "equals": false
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": true
+    },
+    {
+      "at": "2ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": false
+    },
+    {
+      "at": "8ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": true
+    },
+    {
+      "at": "9ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": false
+    }
+  ]
+}

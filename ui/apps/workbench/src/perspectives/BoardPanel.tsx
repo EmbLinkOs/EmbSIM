@@ -17,6 +17,7 @@ import {
   traceBench,
   addNote,
   beams,
+  bodiesAt,
   benchContext,
   benchModel,
   elevationOf,
@@ -33,6 +34,7 @@ import {
   type Bench3DHandle,
   type Bench3DProps,
   type BenchPartView,
+  type Model3d,
   type BenchTool,
   type InsertionPreview,
 } from '@embsim/bench/model';
@@ -76,6 +78,14 @@ function webglAvailable(): boolean {
   } catch {
     return false;
   }
+}
+
+/** a part's 3D model from its catalog entry (bench.model3d), with the file's text the server sent */
+function modelOf(entry: { description: unknown; files: { model3d?: string } } | undefined): Model3d | undefined {
+  const text = entry?.files.model3d;
+  if (!text) return undefined;
+  const m = (entry.description as { bench?: { model3d?: { scale?: number; offset_mm?: [number, number, number]; rotation_deg?: number } } }).bench?.model3d;
+  return { text, scale: m?.scale, offset_mm: m?.offset_mm, rotation_deg: m?.rotation_deg };
 }
 
 /** a board's artwork bindings: its LEDs' glow from their luminance, its buttons */
@@ -207,6 +217,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         place: part.place,
         elevation: elevationOf(model, part.id),
         artwork: svg ? { svg, states: bindings.states, hotspots: bindings.hotspots, vars: ledColor(inst.params) } : undefined,
+        model3d: modelOf(entry),
         inputs: own,
         outputs: outs,
       };
@@ -226,7 +237,11 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   const terminals = useMemo(() => (model ? terminalTargets(model) : []), [model]);
 
   // the world's bodies and what the distance sensors see of them (ADR-026)
-  const bodies = useMemo(() => project?.world?.bodies ?? [], [project]);
+  // a moving body is drawn where the engine has it now (virtual time; the project's are set at 0)
+  const declared = useMemo(() => project?.world?.bodies ?? [], [project]);
+  const moving = declared.some((b) => b.velocity_mm_s);
+  const nowPs = useSession((s) => (moving ? s.now : 0n));
+  const bodies = useMemo(() => (moving ? bodiesAt(declared, nowPs) : declared), [declared, moving, nowPs]);
   const sensed = useMemo(() => (model ? beams(model.parts, bodies) : []), [model, bodies]);
 
 
@@ -478,6 +493,9 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           links={links}
           notes={project.layout?.bench?.notes ?? []}
           bodies={bodies}
+          illuminance={project.world?.fields?.illuminance}
+          room={project.world?.room}
+          sun={project.world?.sun}
           beams={sensed}
           onMoveBody={(id, at) =>
             mutate(`Move ${id}`, (p) => {

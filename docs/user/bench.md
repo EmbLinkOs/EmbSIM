@@ -44,7 +44,8 @@ These work as an EDA tool's 3D viewer does
   it falls on the grid. **Esc** clears it.
 - **Section.** In **Inspect**, cut across X, Y (depth) or Z (height) at a
   position in mm. **Keep the other side** flips the cut. The desk stays whole;
-  cut bodies show open.
+  where the cut passes through a body, its cut face is shown solid red, as
+  in a CAD section view.
 - **Explode.** The slider lifts every part plugged into a breadboard off it,
   so you can see which holes its legs use.
 - **Height plane.** A plane at a height above the desk, for an enclosure's
@@ -57,6 +58,41 @@ These work as an EDA tool's 3D viewer does
     resolution, as PNG, without the HTML labels.
   - **GLB model** saves the bench as glTF binary, in metres, each part a node
     named by its id, for Blender or an MCAD tool.
+
+### The room
+
+The bench stands on a lab table in a room, with a window on the left. Zoom
+out to see it. A wall between you and the table is not drawn, so the bench
+is always in view. The room is as lit as the world's **Light** field
+(illuminance) says: set it to 0 lx in the world panel to see the LEDs in a
+dark room, or to daylight values for a bright one. Only the picture
+changes; the light sensors read the same field.
+
+A **Person** stands on the floor, 1.7 m tall and **warm**; a PIR motion
+sensor sees a warm body that moves in front of it (not a still one, and not
+a moving box at the room's temperature). Give the person a speed to walk
+past the sensor.
+
+A body in the World panel may move: **v** is its speed towards you in mm/s
+(negative: away), **↔** a distance it goes back and forth over. It moves as
+the circuit's time runs (paused, it stays), and the distance sensors measure
+it where it is.
+
+In the World panel, **Room and daylight** sets the room's size and which
+way its window looks. Tick **Sun** to light the bench by the time of day:
+set the latitude, the date (MM-DD) and the time (local solar time, so
+12:00 is when the sun is highest). The panel says where the sun is and
+whether it shines on the bench through the window; when it does not, the
+window's daylight lights the bench, and at night the ceiling lamp does.
+
+### Parts drawn from 3D models
+
+Some parts are drawn from a 3D model file instead of the bench's own body:
+the Bourns 3296W trimmers and the buzzer use KiCad's models. A trimmer's
+adjuster still turns with a drag (the model's screw does not rotate). A
+library part can do the same by naming a VRML file in its
+`component.json` (`bench.model3d`, with its source and licence); if the file
+does not load, the bench draws its own body.
 
 Projection, quality and layers persist on this device. Section, height plane
 and measurement are cleared when the page reloads.

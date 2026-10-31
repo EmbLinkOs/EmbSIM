@@ -424,7 +424,7 @@ static es_status m_input_serial(rpc_ctx *r)
 /* the world as it is now (ADR-026): its fields (value, unit, declared) and bodies */
 static es_status m_world_get(rpc_ctx *r)
 {
-    r->result = esk_world_json(r->s->a, &r->s->eng.world);
+    r->result = esk_world_json(r->s->a, &r->s->eng.world, esk_engine_now(&r->s->eng));
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
@@ -700,6 +700,18 @@ static es_status m_catalog_get(rpc_ctx *r)
                     esk_json_set_string(r->s->a, files, keys[i][0], text);
                     esk_free(r->s->catalog->a, text, len + 1);
                 }
+            }
+        }
+    }
+    {
+        /* a 3D model from a file (bench.model3d.file): text, as KiCad's VRML is */
+        const char *rel = esk_json_get_str(esk_json_get(esk_json_get(it->desc, "bench"), "model3d"), "file", NULL);
+        if (rel) {
+            size_t len;
+            char *text = esk_catalog_read_item_file(r->s->catalog, it, rel, &len);
+            if (text) {
+                esk_json_set_string(r->s->a, files, "model3d", text);
+                esk_free(r->s->catalog->a, text, len + 1);
             }
         }
     }

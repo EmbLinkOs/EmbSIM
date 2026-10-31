@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "lockout",
+  "description": "5 ms hold, 10 ms block: OUT falls at 7 ms; motion from 10 ms is not seen during the block, and still there when it ends at 17 ms it triggers again.",
+  "policy": "functional",
+  "until": "20ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pir_sensor",
+        "params": {
+          "hold": "5m",
+          "warmup": 0,
+          "lockout": "10m"
+        }
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "12ms",
+      "logic": "0"
+    },
+    "output:DUT.active": {
+      "at": "18ms",
+      "equals": true
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": true
+    },
+    {
+      "at": "2ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": false
+    },
+    {
+      "at": "10ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": true
+    }
+  ]
+}

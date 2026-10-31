@@ -537,19 +537,27 @@ int esk_project_apply_edit(esk_alloc *a, esk_json *project, const esk_json *edit
     }
     if (esk_str_eq(e->key, "set_world")) {
         /* the project's world (ADR-026): its fields and bodies, as given; not
-         * structural: the session applies the difference as inputs */
+         * structural: the session applies the difference as inputs. The room
+         * and the sun are presentation (the 3D bench's room and light); an
+         * empty one is removed, so an undo leaves the project as it was. */
         esk_json *world = object_member(a, project, "world");
-        static const char *const keys[] = {"fields", "bodies"};
+        static const char *const keys[] = {"fields", "bodies", "room", "sun"};
         size_t k;
         if (!world)
             return -1;
-        for (k = 0; k < 2; k++) {
+        for (k = 0; k < 4; k++) {
             const esk_json *v = esk_json_get(e, keys[k]);
             esk_json *copy;
+            int list = k == 1;
             if (!v)
                 continue;
-            if (v->type != (k ? ESK_JSON_ARRAY : ESK_JSON_OBJECT))
-                return err(why, cap, k ? "set_world: %s is a list" : "set_world: %s is an object", keys[k]);
+            if (v->type != (list ? ESK_JSON_ARRAY : ESK_JSON_OBJECT))
+                return err(why, cap, list ? "set_world: %s is a list" : "set_world: %s is an object", keys[k]);
+            if (k >= 2 && esk_json_len(v) == 0) {
+                /* an empty room or sun: the project has none (the default room, lamp light) */
+                esk_json_remove(a, world, keys[k]);
+                continue;
+            }
             copy = esk_json_clone(a, v);
             if (!copy || esk_json_object_set(a, world, keys[k], copy)) {
                 esk_json_free(a, copy);

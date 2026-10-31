@@ -162,6 +162,9 @@
                   "from": {"$ref": "common.schema.json#/$defs/pin_ref"},
                   "to": {"$ref": "common.schema.json#/$defs/pin_ref"},
                   "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+              "velocity_mm_s": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": -100000, "maximum": 100000}, "description": "Motion in virtual time from `at`, mm/s (x right, y towards the viewer, z up)."},
+              "travel_mm": {"type": "number", "minimum": 0, "description": "With a velocity: back and forth over this distance from `at` (0: straight on)."},
+              "warm": {"type": "boolean", "description": "Warmer than the room (a person, an animal): a PIR sensor sees it when it moves."},
                   "rise_mm": {"type": "number", "minimum": 0, "maximum": 1000, "description": "Automatic route rise above the higher terminal, in millimetres."},
                   "points": {"type": "array", "maxItems": 64, "description": "Intermediate route points [X, height, Y] in bench millimetres; endpoints stay attached to terminals.", "items": {"type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{"type": "number", "minimum": -1000000, "maximum": 1000000}, {"type": "number", "minimum": 0, "maximum": 1000000}, {"type": "number", "minimum": -1000000, "maximum": 1000000}], "items": false}}
                 }
@@ -200,6 +203,25 @@
             "illuminance": {"type": "number", "minimum": 0, "description": "lx"},
             "sound": {"type": "number", "description": "dB SPL"},
             "wind": {"type": "number", "minimum": 0, "description": "m/s"}
+          }
+        },
+        "room": {
+          "type": "object",
+          "description": "The room around the bench, as the 3D bench draws it (presentation only): its inside size and which way its window looks.",
+          "additionalProperties": false,
+          "properties": {
+            "size_mm": {"type": "array", "minItems": 3, "maxItems": 3, "prefixItems": [{"type": "number", "minimum": 2500, "maximum": 30000}, {"type": "number", "minimum": 2500, "maximum": 30000}, {"type": "number", "minimum": 2200, "maximum": 10000}], "items": false, "description": "Width, depth, height, mm."},
+            "window_azimuth_deg": {"type": "number", "minimum": 0, "exclusiveMaximum": 360, "description": "The way the window looks out, degrees clockwise from north (180: south)."}
+          }
+        },
+        "sun": {
+          "type": "object",
+          "description": "Where and when the room is, for the sun's position (presentation only; the illuminance field stays what light sensors read).",
+          "additionalProperties": false,
+          "properties": {
+            "latitude_deg": {"type": "number", "minimum": -90, "maximum": 90},
+            "date": {"type": "string", "pattern": "^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", "description": "MM-DD."},
+            "solar_time_h": {"type": "number", "minimum": 0, "maximum": 24, "description": "Local solar time, hours (12: the sun at its highest)."}
           }
         },
         "bodies": {

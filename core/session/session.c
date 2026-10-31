@@ -744,7 +744,7 @@ static void world_apply(es_session *s, const char *target, const char *input, co
         esk_engine_world_changed(&s->eng, f);
         return;
     }
-    if (esk_world_set_body(s->a, w, target + 6, value) == ES_OK)
+    if (esk_world_set_body(s->a, w, target + 6, value, esk_engine_now(&s->eng)) == ES_OK)
         esk_engine_world_changed(&s->eng, ESK_WF_DISTANCE);
 }
 
@@ -1290,7 +1290,7 @@ static void world_from_project(es_session *s)
     }
     for (i = 0; i < esk_json_len(bodies); i++) {
         const esk_json *b = esk_json_at(bodies, i);
-        (void)esk_world_set_body(s->a, &s->eng.world, esk_json_get_str(b, "id", NULL), b);
+        (void)esk_world_set_body(s->a, &s->eng.world, esk_json_get_str(b, "id", NULL), b, esk_engine_now(&s->eng));
     }
     (void)world_poses(s);
 }
@@ -1332,6 +1332,15 @@ void esk_session_world_sync(es_session *s, const esk_json *before)
         if (!id || (old && json_same(s->a, old, b)))
             continue;
         esk_snprintf(target, sizeof target, "world.%s", id);
+        if (esk_json_get(b, "velocity_mm_s")) {
+            /* a project's moving body runs on the project's timeline, from 0, whenever it is
+             * edited (as the bench draws it); said in the recorded input, so a replay agrees */
+            esk_json *spec = esk_json_clone(s->a, b);
+            if (spec && esk_json_set_string(s->a, spec, "since_ps", "0") == 0)
+                (void)esk_session_apply_input(s, target, "body", spec, now, NULL, NULL);
+            esk_json_free(s->a, spec);
+            continue;
+        }
         (void)esk_session_apply_input(s, target, "body", b, now, NULL, NULL);
     }
     for (k = 0; k < esk_json_len(ob); k++) {
