@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "usb_device_hid_standalone",
+  "until": "1s",
+  "description": "USB_Device/HID_Standalone on the computer's port (PC on CN13): VBUS reaches PA9 through R35, the OTG core's pull-up attaches once HAL_PCD_Start runs, and the host enumerates it on USB 2.0's timeline (the 100 ms debounce, a 50 ms reset, 10 ms of recovery, the 64-byte descriptor read, a second reset, SET_ADDRESS and its 2 ms) as ST's HID mouse: VID 0x0483, PID 0x5710, 'STMicroelectronics', 'HID Joystick in FS Mode' (the example's own strings). Each press of B1 sends one boot-mouse report when it is let go (the Nucleo-144 BSP's EXTI is on PC13's falling edge, B1 being active high), which the host's poll every bInterval (10 ms) collects: X -5 first (GetPointerData's cnt), then +5, +5. LD1 to LD3 toggle every 200 ms meanwhile (main's two HAL_Delay(100)). SOFs come every 1 ms but during the second reset.",
+  "inputs": [
+    {"at": "400ms", "target": "B1.B1", "input": "pressed", "value": true},
+    {"at": "450ms", "target": "B1.B1", "input": "pressed", "value": false},
+    {"at": "600ms", "target": "B1.B1", "input": "pressed", "value": true},
+    {"at": "650ms", "target": "B1.B1", "input": "pressed", "value": false},
+    {"at": "800ms", "target": "B1.B1", "input": "pressed", "value": true},
+    {"at": "850ms", "target": "B1.B1", "input": "pressed", "value": false}
+  ],
+  "assertions": [
+    {"id": "vbus-on-pa9", "at": "5ms", "probe": "vbus_sense", "expect": {"min_v": 4.9, "max_v": 5.01}},
+    {"id": "not-yet-attached", "at": "5ms", "probe": "usb_state", "expect": {"equals": "detached"}},
+    {"id": "attached-debouncing", "between": ["20ms", "110ms"], "probe": "usb_state", "expect": {"equals": "attached"}},
+    {"id": "reset-then-default", "between": ["170ms", "230ms"], "probe": "usb_state", "expect": {"equals": "default"}},
+    {"id": "two-resets", "at": "300ms", "probe": "usb_resets", "expect": {"equals": 2}},
+    {"id": "addressed", "at": "236ms", "probe": "usb_state", "expect": {"equals": "address"}},
+    {"id": "address-1", "at": "300ms", "probe": "usb_address", "expect": {"equals": 1}},
+    {"id": "configured", "by": "245ms", "probe": "usb_state", "expect": {"equals": "configured"}},
+    {"id": "vid", "at": "300ms", "probe": "usb_vid", "expect": {"equals": 1155}},
+    {"id": "pid", "at": "300ms", "probe": "usb_pid", "expect": {"equals": 22288}},
+    {"id": "manufacturer", "at": "300ms", "probe": "usb_manufacturer", "expect": {"equals": "STMicroelectronics"}},
+    {"id": "product", "at": "300ms", "probe": "usb_product", "expect": {"equals": "HID Joystick in FS Mode"}},
+    {"id": "hid-mouse-config", "at": "300ms", "probe": "usb_configuration", "expect": {"contains": "09040000010301020009"}},
+    {"id": "no-report-while-held", "at": "445ms", "probe": "usb_reports", "expect": {"equals": 0}},
+    {"id": "first-report-on-release", "at": "465ms", "probe": "usb_report", "expect": {"equals": "00fb0000"}},
+    {"id": "first-move", "at": "465ms", "probe": "usb_cursor_x", "expect": {"equals": -5}},
+    {"id": "three-reports", "at": "990ms", "probe": "usb_reports", "expect": {"equals": 3}},
+    {"id": "cursor-back-and-on", "at": "990ms", "probe": "usb_cursor_x", "expect": {"equals": 5}},
+    {"id": "frames-every-ms", "at": "990ms", "probe": "usb_frames", "expect": {"min": 772, "max": 780}},
+    {"id": "leds-blink", "between": ["300ms", "1s"], "probe": "led", "expect": {"edges": 4}},
+    {"id": "log", "at": "990ms", "probe": "usb_log", "expect": {"contains": "HID interface 0 ready"}}
+  ]
+}

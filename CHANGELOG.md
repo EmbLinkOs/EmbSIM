@@ -5,6 +5,35 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### USB on the bench: the STM32F446's OTG FS and a computer's port
+
+- USB cables between parts (`core/engine/usb.h`, ADR-031): a host and the
+  device whose controller's D+ shares its net, carried as what the bus does
+  (pull-up, reset, SOF, SETUP, IN and OUT with their handshakes), each
+  transaction taking its bits' time at 12 Mbit/s.
+- The STM32F446's USB OTG FS core in device mode (`stm32-otg-fs`): its
+  FIFO RAM and the receive FIFO's statuses, SETUPs, OUT and IN packets
+  with their toggles and NAKs, the address after SET_ADDRESS's status
+  stage, the pull-up from SDIS, PWRDWN, VBUS on PA9 and PA12's AF10,
+  reset, enumeration, SOF, suspend after 3 ms, the soft reset that needs
+  the 48 MHz clock, the forced modes' 25 ms. Its registers are now one
+  OTGFS block as RM0390 lays it out (six endpoints, GRXSTSP, VBDEN),
+  written by `tools/importers/dwc2_regs.py`, so OTGFSEN and OTGFSRST
+  gate and reset it.
+- `emblink/usb_host`, a computer's USB 2.0 port: VBUS behind the cable's
+  resistance and a host controller (`emblink/usb_host_controller`) that
+  enumerates the device as Windows and Linux do (100 ms debounce, 50 ms
+  resets, the 64-byte descriptor at address 0, a second reset,
+  SET_ADDRESS, descriptors, strings, SET_CONFIGURATION, HID's SET_IDLE and
+  report descriptor), then polls HID endpoints; its log and outputs show
+  the device and a boot mouse's cursor.
+- STM32CubeF4's USB_Device/HID_Standalone runs unmodified on the
+  NUCLEO-F446ZE and enumerates as ST's mouse (0483:5710) on CN13.
+- The NVIC takes level-sensitive requests (`esk_cpu_ops.irq_level`): one
+  still asserted when its handler returns is pending again.
+- A model can serve its peripheral's reserved ranges (an OTG core's FIFO
+  windows); RCC gives the 48 MHz clock (`esk_stm32f4_ck48`).
+
 ### The STM32F446 as it starts, erases and counts
 
 - RCC: each oscillator and PLL is ready its DS10693 start-up time after it

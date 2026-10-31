@@ -9,7 +9,8 @@ ST's files are not vendored. --st names a directory holding checkouts of:
 - STM32CubeF4 (`cubef4`, its Projects/STM32446E-Nucleo and
   Projects/STM32F446ZE-Nucleo);
 - the submodules it pins: stm32f4xx_hal_driver, cmsis_device_f4,
-  stm32f4xx-nucleo-bsp and (the NUCLEO-F446ZE's) stm32f4xx-nucleo-144-bsp;
+  stm32f4xx-nucleo-bsp and (the NUCLEO-F446ZE's) stm32f4xx-nucleo-144-bsp
+  and stm32-mw-usb-device (its USB device applications);
 - CMSIS_5's CMSIS/Core/Include.
 CI fetches them at the commits CubeF4 pins.
 
@@ -99,6 +100,7 @@ EXAMPLES_ZE = {
     "tim_pwminput": ZE + "Examples/TIM/TIM_PWMInput",
     "tim_pwmoutput": ZE + "Examples/TIM/TIM_PWMOutput",
     "uart_printf": ZE + "Examples/UART/UART_Printf",
+    "usb_device_hid_standalone": ZE + "Applications/USB_Device/HID_Standalone",
     "wwdg_example": ZE + "Examples/WWDG/WWDG_Example",
 }
 # each board: its examples, their directory here, its project, the linker
@@ -126,6 +128,7 @@ def checkouts(st: Path) -> dict:
         "Drivers/BSP/STM32F4xx-Nucleo": st / "stm32f4xx-nucleo-bsp",
         "Drivers/BSP/STM32F4xx_Nucleo_144": st / "stm32f4xx-nucleo-144-bsp",
         "Drivers/CMSIS/Include": st / "CMSIS_5" / "CMSIS" / "Core" / "Include",
+        "Middlewares/ST/STM32_USB_Device_Library": st / "stm32-mw-usb-device",
     }
 
 

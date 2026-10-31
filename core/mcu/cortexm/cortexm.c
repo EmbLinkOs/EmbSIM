@@ -524,6 +524,8 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
     int n = (int)cs->ipsr;
     esk_mach_exc_return(cs->sim, esk_cortexm_core(cs->sim));
     cs->active[n] = 0;
+    if (cs->line[n])
+        esk_cm_set_pend(cs, n); /* a level request still asserted */
     if (n == EXC_HARD || n == EXC_NMI)
         cs->faultmask = 0;
     int to_thread = (ret & 8) != 0;
@@ -966,6 +968,16 @@ static void cpu_interrupt(struct esk_cpu *c, int n)
     }
 }
 
+static void cpu_irq_level(struct esk_cpu *c, int n, int level)
+{
+    struct esk_cm_state *cs = (struct esk_cm_state *)c;
+    if (n <= 0 || n >= NEXC)
+        return;
+    cs->line[n] = (u8)(level != 0);
+    if (level && !cs->active[n] && !cs->pend[n])
+        cpu_interrupt(c, n);
+}
+
 static int cpu_wake_pending(struct esk_cpu *c)
 {
     struct esk_cm_state *cs = (struct esk_cm_state *)c;
@@ -1220,7 +1232,7 @@ static const struct esk_cpu_ops cortexm_ops = {
     "cortex-m", 40, "an ARM image",
     cpu_reset, step, cpu_pc, cpu_reg_read, cpu_reg_write,
     cpu_gdb_g_regs, cpu_gdb_xml, 2, cpu_interrupt, 15, 1, 0, cpu_reg_name, cpu_wake_pending,
-    cpu_disasm, cpu_run,
+    cpu_disasm, cpu_run, cpu_irq_level,
 };
 
 /* the core of an MCU: the model, its NVIC's priority bits, and its own

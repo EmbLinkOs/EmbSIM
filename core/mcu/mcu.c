@@ -138,6 +138,8 @@ typedef struct mcu_state {
     unsigned an_what;
     esk_air_node air; /* its radio on the session's air, when it has one */
     int on_air;
+    esk_usb_dev usb;  /* its USB device controller's end of a cable */
+    int on_usb;
     mcu_supply sup;
     /* each exception's entries in the current window, for mcu.irq_storm */
     es_time_t storm_t[MCU_STORM_N];
@@ -1326,6 +1328,78 @@ static int h_radio_tx(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32
     return 0;
 }
 
+/* ---- USB ----------------------------------------------------------------------- */
+
+/* a host on the cable reaches the controller: the machine is brought to the
+ * host's time first, and a core asleep wakes if the transaction gave it an
+ * interrupt */
+static int usb_pullup(void *ctx)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (!runnable(st) && !(st->attached && st->m.asleep))
+        return ESK_USB_DETACHED;
+    return st->m.usb.pullup ? st->m.usb.pullup(st->m.usb.ctx) : ESK_USB_DETACHED;
+}
+
+static void usb_enter(mcu_state *st, es_time_t at)
+{
+    catch_up(st, at);
+    esk_mach_outside(&st->m);
+}
+
+static void usb_bus(void *ctx, int ev, uint32_t frame, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (!st->m.usb.bus)
+        return;
+    usb_enter(st, at);
+    st->m.usb.bus(st->m.usb.ctx, ev, frame);
+    wake(st);
+}
+
+static int usb_setup(void *ctx, int addr, int ep, const uint8_t data[8], es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    int r;
+    if (!st->m.usb.setup || usb_pullup(st) == ESK_USB_DETACHED)
+        return ESK_USB_NONE;
+    usb_enter(st, at);
+    r = st->m.usb.setup(st->m.usb.ctx, addr, ep, data);
+    wake(st);
+    return r;
+}
+
+static int usb_out(void *ctx, int addr, int ep, int data1, const uint8_t *data, uint32_t len, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    int r;
+    if (!st->m.usb.out || usb_pullup(st) == ESK_USB_DETACHED)
+        return ESK_USB_NONE;
+    usb_enter(st, at);
+    r = st->m.usb.out(st->m.usb.ctx, addr, ep, data1, data, len);
+    wake(st);
+    return r;
+}
+
+static int usb_in(void *ctx, int addr, int ep, uint8_t *data, uint32_t cap, uint32_t *len, int *data1, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    int r;
+    if (!st->m.usb.in || usb_pullup(st) == ESK_USB_DETACHED)
+        return ESK_USB_NONE;
+    usb_enter(st, at);
+    r = st->m.usb.in(st->m.usb.ctx, addr, ep, data, cap, len, data1);
+    wake(st);
+    return r;
+}
+
+static void h_usb_changed(void *ctx)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (st->on_usb)
+        esk_usb_changed(st->c->e, &st->usb, local_now(st));
+}
+
 /* ---- the component ------------------------------------------------------------- */
 
 static es_status mcu_create(esk_comp *c)
@@ -1344,6 +1418,9 @@ static void mcu_destroy(esk_comp *c)
     if (st->on_air)
         esk_air_detach(e, &st->air);
     st->on_air = 0;
+    if (st->on_usb)
+        esk_usb_detach_dev(e, &st->usb);
+    st->on_usb = 0;
     esk_an_free(st->an);
     st->an = NULL;
     st->m.an = NULL;
@@ -1747,6 +1824,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.temperature = h_temperature;
     st->m.host.pin_watch = h_pin_watch;
     st->m.host.radio_tx = h_radio_tx;
+    st->m.host.usb_changed = h_usb_changed;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     supply_setup(st, su->mcu);
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);
@@ -1817,6 +1895,21 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
         if (esk_air_attach(e, &st->air) != ES_OK)
             return ES_ENOMEM;
         st->on_air = 1;
+    }
+    if (st->m.usb.pullup && !st->on_usb && st->m.usb.dp_at >= 0 && st->m.usb.dp_at / 32 < MCU_PORTS &&
+        st->m.usb.dp_at % 32 < 16 && st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32]) {
+        /* its USB controller's end of a cable: its D+ pin */
+        st->usb.ctx = st;
+        st->usb.comp = c;
+        st->usb.dp = st->gpio[st->m.usb.dp_at / 32][st->m.usb.dp_at % 32];
+        st->usb.pullup = usb_pullup;
+        st->usb.bus = usb_bus;
+        st->usb.setup = usb_setup;
+        st->usb.out = usb_out;
+        st->usb.in = usb_in;
+        if (esk_usb_attach_dev(e, &st->usb) != ES_OK)
+            return ES_ENOMEM;
+        st->on_usb = 1;
     }
     return ES_OK;
 }

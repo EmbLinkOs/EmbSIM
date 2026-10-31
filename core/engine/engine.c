@@ -177,6 +177,7 @@ es_status esk_engine_init(esk_engine *e, esk_alloc *a, esk_diag *diag, esk_polic
     esk_map_init(&e->net_by_name, a);
     esk_world_init(&e->world);
     esk_air_init(&e->air);
+    esk_usb_init(&e->usb);
     esk_inet_init(&e->inet);
     return esk_sched_init(&e->sched, a, 0, 0);
 }
@@ -250,6 +251,7 @@ void esk_engine_free(esk_engine *e)
     esk_map_free(&e->net_by_name);
     esk_world_free(e->a, &e->world);
     esk_air_free(e->a, &e->air);
+    esk_usb_free(e->a, &e->usb);
     esk_inet_free(e->a, &e->inet);
     esk_sched_free(&e->sched);
     if (e->ext && e->ext_free)

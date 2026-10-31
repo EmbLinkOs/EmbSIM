@@ -593,6 +593,31 @@ u32 esk_stm32_timclk(struct esk_mach *s, int apb)
     return d == 1 ? c->hclk : 2 * (c->hclk / d);
 }
 
+/* the 48 MHz clock (CK48): PLL_Q (PLLCFGR's PLLQ, 2 to 15), or on the
+ * F446 PLLSAI_P (PLLSAICFGR's own M, N and P) when DCKCFGR2's CK48MSEL
+ * (bit 27) chooses it; 0 while that PLL is off or not yet locked */
+u32 esk_stm32f4_ck48(struct esk_mach *s)
+{
+    struct rcc *c = any_rcc(s);
+    struct esk_rf_reg *d2;
+    u32 cr;
+    if (!c || !c->f4)
+        return 0;
+    cr = (u32)c->cr->value;
+    d2 = other_reg(s, "RCC", "DCKCFGR2");
+    if (d2 && c->pllsai && (d2->value >> 27 & 1)) {
+        u32 m = bits(c->pllsai, 0, 6), n = bits(c->pllsai, 6, 9), pdiv = 2 * (bits(c->pllsai, 16, 2) + 1);
+        if (!(cr & F4_PLLSAIRDY) || m < 2 || n < 2)
+            return 0;
+        return (u32)((u64)f4_pll_src_hz(c) * n / m / pdiv);
+    } else {
+        u32 q = bits(c->pllcfgr, 24, 4);
+        if (!(cr & F4_PLLRDY) || q < 2)
+            return 0;
+        return f4_vco(c) / q;
+    }
+}
+
 /* core cycles to picoseconds at HCLK (the time the start-ups count) */
 static u32 tick_hz(const struct rcc *c) { return c->hclk >= 1000u ? c->hclk : F4_HSI_HZ; }
 

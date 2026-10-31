@@ -116,6 +116,9 @@ struct esk_rf_periph {
      * offset and size */
     u32 *rsv;
     int nrsv;
+    /* its model serves those ranges itself (an OTG core's FIFO windows):
+     * its read and write hooks get the accesses there */
+    int model_rsv;
     /* in a backup domain (an STM32's RTC): its registers keep their values
      * through every reset but a power-on one (the model sets it) */
     int backup;
@@ -247,6 +250,10 @@ u32 esk_rf_config(const struct esk_rf *rf, const char *name, u32 dflt);
 int esk_rf_pps_out(const struct esk_rf *rf, const char *name);
 /* pend that interrupt in the core */
 void esk_rf_interrupt(struct esk_rf_periph *p, int irq);
+/* that interrupt's request line is a level (an OTG core's): asserted or
+ * not, as the core's irq_level takes it (a pulse when it rises, on a core
+ * without one) */
+void esk_rf_irq_level(struct esk_rf_periph *p, int irq, int level, int *was);
 /* the model's clock starts (1) or stops: while it runs, its tick hook is
  * called after each instruction and its next_event asked */
 void esk_rf_clock(struct esk_rf_periph *p, int *running, int on);

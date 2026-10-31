@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-device",
+  "description": "Nothing on the cable: VBUS is 5 V, no device attaches, no port reset and no frames.",
+  "policy": "electrical",
+  "until": "300ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/usb_host"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100.0
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VBUS": [
+        "DUT.VBUS",
+        "RL.1"
+      ],
+      "GND": [
+        "DUT.GND",
+        "RL.2",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:VBUS": {
+      "at": "250ms",
+      "min_v": 4.99,
+      "max_v": 5.01
+    },
+    "output:DUT.HOST.state": {
+      "at": "290ms",
+      "equals": "detached"
+    },
+    "output:DUT.HOST.frames": {
+      "at": "290ms",
+      "equals": 0
+    },
+    "output:DUT.HOST.resets": {
+      "at": "290ms",
+      "equals": 0
+    }
+  }
+}

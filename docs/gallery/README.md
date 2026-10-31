@@ -5,6 +5,19 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## USB on the bench (2026-10-31)
+
+STM32CubeF4's USB_Device/HID_Standalone, unmodified, on the NUCLEO-F446ZE
+with a computer's USB port (`emblink/usb_host`, PC) on CN13: VBUS, D- and
+D+ wired to the board's USB_VBUS, USB_DM and USB_DP. The port's 5 V reaches
+PA9 through R35; the host enumerates the board as ST's HID mouse. The
+workbench has no USB view yet: the host's state, descriptors and log are
+probes (`output:PC.HOST.*`), checked by the vendor scenario.
+
+| Design | Run |
+|---|---|
+| ![The USB project in the Design workspace: the board, the ST-LINK supply and the PC's port, the OTG nets listed](nucleo-f446ze/design-usb-hid.png) | ![It running past enumeration: the USB host's probes, OTG_VBUS at 5 V among the meters](nucleo-f446ze/run-usb-hid.png) |
+
 ## The NUCLEO-F446ZE (2026-10-31)
 
 ST's Nucleo-144 board (MB1137) with its STM32F446ZE in LQFP144, running

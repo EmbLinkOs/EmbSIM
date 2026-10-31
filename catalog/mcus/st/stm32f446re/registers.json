@@ -5,7 +5,7 @@
  "version": "1.0.0",
  "device": "STM32F446",
  "description": "STM32F446 peripheral registers at their addresses, reset values and field access, and its interrupt numbers, converted by tools/importers/svd2regs.py from STMicroelectronics' STM32F446.svd (version 1.9, from ST's STM32F4 SVD pack v2.0 as archived by modm-io/cmsis-svd-stm32), Copyright (c) 2024 STMicroelectronics, SPDX-License-Identifier: Apache-2.0 (LICENSES/Apache-2.0.txt). Where the SVD and RM0390 (the STM32F446 reference manual) disagree, the manual's value is used; the corrections are listed in source. DBG is the DBGMCU block on the external private peripheral bus.",
- "source": "converted from STMicroelectronics STM32F446.svd v1.9 by tools/importers/svd2regs.py; split fields joined: RCC.PLLCFGR.PLLM, RCC.PLLCFGR.PLLN, RCC.PLLCFGR.PLLP, RCC.PLLCFGR.PLLQ, RCC.CFGR.SW, RCC.CFGR.SWS; registers added from the reference manual: SYSCFG.CFGR=0x2C; fields corrected from the reference manual: RCC.PLLCFGR.PLLR:28:3, RCC.CR.PLLSAION:28:1, RCC.CR.PLLSAIRDY:29:1:r, FLASH.ACR.LATENCY:0:4, SYSCFG.CMPCR.CMP_PD:0:1, SYSCFG.CFGR.FMPI2C1_SCL:0:1, SYSCFG.CFGR.FMPI2C1_SDA:1:1; reset values corrected from the reference manual: GPIOA.OSPEEDR=0x0C000000, USART6.SR=0x000000C0, UART4.SR=0x000000C0, DBG.DBGMCU_IDCODE=0x10006421; interrupts reassigned from the reference manual: TIM9=TIM1_BRK_TIM9; TIM10=TIM1_UP_TIM10; TIM11=TIM1_TRG_COM_TIM11; TIM12=TIM8_BRK_TIM12; TIM13=TIM8_UP_TIM13; TIM14=TIM8_TRG_COM_TIM14; I2C1=I2C1_EV,I2C1_ER; FMPI2C=FMPI2C1,FMPI2C1_error; ADC1=ADC; ADC2=ADC; ADC3=ADC; DAC=TIM6_DAC; PWR=PVD; fields reserved by the reference manual taken out: TIM3.CNT.CNT_H, TIM3.ARR.ARR_H, TIM3.CCR1.CCR1_H, TIM3.CCR2.CCR2_H, TIM3.CCR3.CCR3_H, TIM3.CCR4.CCR4_H; fields corrected from the reference manual: TIM3.CNT.CNT:0:16, TIM3.ARR.ARR:0:16, TIM3.CCR1.CCR1:0:16, TIM3.CCR2.CCR2:0:16, TIM3.CCR3.CCR3:0:16, TIM3.CCR4.CCR4:0:16",
+ "source": "converted from STMicroelectronics STM32F446.svd v1.9 by tools/importers/svd2regs.py; split fields joined: RCC.PLLCFGR.PLLM, RCC.PLLCFGR.PLLN, RCC.PLLCFGR.PLLP, RCC.PLLCFGR.PLLQ, RCC.CFGR.SW, RCC.CFGR.SWS; registers added from the reference manual: SYSCFG.CFGR=0x2C; fields corrected from the reference manual: RCC.PLLCFGR.PLLR:28:3, RCC.CR.PLLSAION:28:1, RCC.CR.PLLSAIRDY:29:1:r, FLASH.ACR.LATENCY:0:4, SYSCFG.CMPCR.CMP_PD:0:1, SYSCFG.CFGR.FMPI2C1_SCL:0:1, SYSCFG.CFGR.FMPI2C1_SDA:1:1; reset values corrected from the reference manual: GPIOA.OSPEEDR=0x0C000000, USART6.SR=0x000000C0, UART4.SR=0x000000C0, DBG.DBGMCU_IDCODE=0x10006421; interrupts reassigned from the reference manual: TIM9=TIM1_BRK_TIM9; TIM10=TIM1_UP_TIM10; TIM11=TIM1_TRG_COM_TIM11; TIM12=TIM8_BRK_TIM12; TIM13=TIM8_UP_TIM13; TIM14=TIM8_TRG_COM_TIM14; I2C1=I2C1_EV,I2C1_ER; FMPI2C=FMPI2C1,FMPI2C1_error; ADC1=ADC; ADC2=ADC; ADC3=ADC; DAC=TIM6_DAC; PWR=PVD; fields reserved by the reference manual taken out: TIM3.CNT.CNT_H, TIM3.ARR.ARR_H, TIM3.CCR1.CCR1_H, TIM3.CCR2.CCR2_H, TIM3.CCR3.CCR3_H, TIM3.CCR4.CCR4_H; fields corrected from the reference manual: TIM3.CNT.CNT:0:16, TIM3.ARR.ARR:0:16, TIM3.CCR1.CCR1:0:16, TIM3.CCR2.CCR2:0:16, TIM3.CCR3.CCR3:0:16, TIM3.CCR4.CCR4:0:16; the USB OTG FS block (OTG_FS_GLOBAL, OTG_FS_HOST, OTG_FS_DEVICE, OTG_FS_PWRCLK: the F40x's layout) replaced by OTGFS as RM0390 30.15 lays it out, written by tools/importers/dwc2_regs.py (six endpoints each way, GRXSTSP, GCCFG's VBDEN, GLPMCFG, GSNPSID 0x4F54320A: unconfirmed, no ST document gives it)",
  "interrupts": {
   "WWDG": 0,
   "PVD": 1,
@@ -35164,17 +35164,17 @@
    ]
   },
   {
-   "name": "OTG_FS_GLOBAL",
+   "name": "OTGFS",
    "base": "0x50000000",
    "interrupts": [
-    "OTG_FS_WKUP",
-    "OTG_FS"
+    "OTG_FS",
+    "OTG_FS_WKUP"
    ],
    "registers": [
     {
-     "name": "FS_GOTGCTL",
-     "offset": "0x00",
-     "reset": "0x00000800",
+     "name": "GOTGCTL",
+     "offset": "0x000",
+     "reset": "0x00010000",
      "fields": [
       [
        "SRQSCS",
@@ -35185,6 +35185,36 @@
       [
        "SRQ",
        1,
+       1
+      ],
+      [
+       "VBVALOEN",
+       2,
+       1
+      ],
+      [
+       "VBVALOVAL",
+       3,
+       1
+      ],
+      [
+       "AVALOEN",
+       4,
+       1
+      ],
+      [
+       "AVALOVAL",
+       5,
+       1
+      ],
+      [
+       "BVALOEN",
+       6,
+       1
+      ],
+      [
+       "BVALOVAL",
+       7,
        1
       ],
       [
@@ -35206,6 +35236,11 @@
       [
        "DHNPEN",
        11,
+       1
+      ],
+      [
+       "EHEN",
+       12,
        1
       ],
       [
@@ -35231,48 +35266,65 @@
        19,
        1,
        "r"
+      ],
+      [
+       "OTGVER",
+       20,
+       1
       ]
      ]
     },
     {
-     "name": "FS_GOTGINT",
-     "offset": "0x04",
+     "name": "GOTGINT",
+     "offset": "0x004",
      "fields": [
       [
        "SEDET",
        2,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "SRSSCHG",
        8,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "HNSSCHG",
        9,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "HNGDET",
        17,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "ADTOCHG",
        18,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "DBCDNE",
        19,
-       1
+       1,
+       "rc_w1"
+      ],
+      [
+       "IDCHNG",
+       20,
+       1,
+       "rc_w1"
       ]
      ]
     },
     {
-     "name": "FS_GAHBCFG",
-     "offset": "0x08",
+     "name": "GAHBCFG",
+     "offset": "0x008",
      "fields": [
       [
        "GINT",
@@ -35292,9 +35344,9 @@
      ]
     },
     {
-     "name": "FS_GUSBCFG",
-     "offset": "0x0C",
-     "reset": "0x00000A00",
+     "name": "GUSBCFG",
+     "offset": "0x00C",
+     "reset": "0x00001440",
      "fields": [
       [
        "TOCAL",
@@ -35305,7 +35357,7 @@
        "PHYSEL",
        6,
        1,
-       "w"
+       "r"
       ],
       [
        "SRPCAP",
@@ -35323,6 +35375,16 @@
        4
       ],
       [
+       "PHYLPCS",
+       15,
+       1
+      ],
+      [
+       "TSDPS",
+       22,
+       1
+      ],
+      [
        "FHMOD",
        29,
        1
@@ -35331,18 +35393,13 @@
        "FDMOD",
        30,
        1
-      ],
-      [
-       "CTXPKT",
-       31,
-       1
       ]
      ]
     },
     {
-     "name": "FS_GRSTCTL",
-     "offset": "0x10",
-     "reset": "0x20000000",
+     "name": "GRSTCTL",
+     "offset": "0x010",
+     "reset": "0x80000000",
      "fields": [
       [
        "CSRST",
@@ -35383,8 +35440,8 @@
      ]
     },
     {
-     "name": "FS_GINTSTS",
-     "offset": "0x14",
+     "name": "GINTSTS",
+     "offset": "0x014",
      "reset": "0x04000020",
      "fields": [
       [
@@ -35396,7 +35453,8 @@
       [
        "MMIS",
        1,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "OTGINT",
@@ -35407,7 +35465,8 @@
       [
        "SOF",
        3,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "RXFLVL",
@@ -35428,7 +35487,7 @@
        "r"
       ],
       [
-       "GOUTNAKEFF",
+       "BOUTNAKEFF",
        7,
        1,
        "r"
@@ -35436,32 +35495,38 @@
       [
        "ESUSP",
        10,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "USBSUSP",
        11,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "USBRST",
        12,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "ENUMDNE",
        13,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "ISOODRP",
        14,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "EOPF",
        15,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "IEPINT",
@@ -35478,12 +35543,20 @@
       [
        "IISOIXFR",
        20,
-       1
+       1,
+       "rc_w1"
       ],
       [
-       "IPXFR_INCOMPISOOUT",
+       "PXFR_INCOMPISOOUT",
        21,
-       1
+       1,
+       "rc_w1"
+      ],
+      [
+       "RSTDET",
+       23,
+       1,
+       "rc_w1"
       ],
       [
        "HPRTINT",
@@ -35504,30 +35577,40 @@
        "r"
       ],
       [
+       "LPMINT",
+       27,
+       1,
+       "rc_w1"
+      ],
+      [
        "CIDSCHG",
        28,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "DISCINT",
        29,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "SRQINT",
        30,
-       1
+       1,
+       "rc_w1"
       ],
       [
-       "WKUPINT",
+       "WKUINT",
        31,
-       1
+       1,
+       "rc_w1"
       ]
      ]
     },
     {
-     "name": "FS_GINTMSK",
-     "offset": "0x18",
+     "name": "GINTMSK",
+     "offset": "0x018",
      "fields": [
       [
        "MMISM",
@@ -35615,15 +35698,19 @@
        1
       ],
       [
-       "IPXFRM_IISOOXFRM",
+       "PXFRM_IISOOXFRM",
        21,
+       1
+      ],
+      [
+       "RSTDETM",
+       23,
        1
       ],
       [
        "PRTIM",
        24,
-       1,
-       "r"
+       1
       ],
       [
        "HCIM",
@@ -35633,6 +35720,11 @@
       [
        "PTXFEM",
        26,
+       1
+      ],
+      [
+       "LPMINTM",
+       27,
        1
       ],
       [
@@ -35658,8 +35750,8 @@
      ]
     },
     {
-     "name": "FS_GRXSTSR_Device",
-     "offset": "0x1C",
+     "name": "GRXSTSR",
+     "offset": "0x01C",
      "fields": [
       [
        "EPNUM",
@@ -35694,8 +35786,44 @@
      ]
     },
     {
-     "name": "FS_GRXFSIZ",
-     "offset": "0x24",
+     "name": "GRXSTSP",
+     "offset": "0x020",
+     "fields": [
+      [
+       "EPNUM",
+       0,
+       4,
+       "r"
+      ],
+      [
+       "BCNT",
+       4,
+       11,
+       "r"
+      ],
+      [
+       "DPID",
+       15,
+       2,
+       "r"
+      ],
+      [
+       "PKTSTS",
+       17,
+       4,
+       "r"
+      ],
+      [
+       "FRMNUM",
+       21,
+       4,
+       "r"
+      ]
+     ]
+    },
+    {
+     "name": "GRXFSIZ",
+     "offset": "0x024",
      "reset": "0x00000200",
      "fields": [
       [
@@ -35706,9 +35834,9 @@
      ]
     },
     {
-     "name": "FS_GNPTXFSIZ_Device",
-     "offset": "0x28",
-     "reset": "0x00000200",
+     "name": "DIEPTXF0_HNPTXFSIZ",
+     "offset": "0x028",
+     "reset": "0x02000200",
      "fields": [
       [
        "TX0FSA",
@@ -35723,8 +35851,8 @@
      ]
     },
     {
-     "name": "FS_GNPTXSTS",
-     "offset": "0x2C",
+     "name": "HNPTXSTS",
+     "offset": "0x02C",
      "reset": "0x00080200",
      "fields": [
       [
@@ -35748,35 +35876,69 @@
      ]
     },
     {
-     "name": "FS_GCCFG",
-     "offset": "0x38",
+     "name": "GCCFG",
+     "offset": "0x038",
      "fields": [
+      [
+       "DCDET",
+       0,
+       1,
+       "r"
+      ],
+      [
+       "PDET",
+       1,
+       1,
+       "r"
+      ],
+      [
+       "SDET",
+       2,
+       1,
+       "r"
+      ],
+      [
+       "PS2DET",
+       3,
+       1,
+       "r"
+      ],
       [
        "PWRDWN",
        16,
        1
       ],
       [
-       "VBUSASEN",
+       "BCDEN",
+       17,
+       1
+      ],
+      [
+       "DCDEN",
        18,
        1
       ],
       [
-       "VBUSBSEN",
+       "PDEN",
        19,
        1
       ],
       [
-       "SOFOUTEN",
+       "SDEN",
        20,
+       1
+      ],
+      [
+       "VBDEN",
+       21,
        1
       ]
      ]
     },
     {
-     "name": "FS_CID",
-     "offset": "0x3C",
-     "reset": "0x00001000",
+     "name": "CID",
+     "offset": "0x03C",
+     "reset": "0x00002000",
      "fields": [
       [
        "PRODUCT_ID",
@@ -35786,7 +35948,107 @@
      ]
     },
     {
-     "name": "FS_HPTXFSIZ",
+     "name": "GSNPSID",
+     "offset": "0x040",
+     "reset": "0x4F54320A",
+     "fields": [
+      [
+       "GSNPSID",
+       0,
+       32,
+       "r"
+      ]
+     ]
+    },
+    {
+     "name": "GLPMCFG",
+     "offset": "0x054",
+     "fields": [
+      [
+       "LPMEN",
+       0,
+       1
+      ],
+      [
+       "LPMACK",
+       1,
+       1
+      ],
+      [
+       "BESL",
+       2,
+       4,
+       "r"
+      ],
+      [
+       "REMWAKE",
+       6,
+       1,
+       "r"
+      ],
+      [
+       "L1SSEN",
+       7,
+       1
+      ],
+      [
+       "BESLTHRS",
+       8,
+       4
+      ],
+      [
+       "L1DSEN",
+       12,
+       1
+      ],
+      [
+       "LPMRSP",
+       13,
+       2,
+       "r"
+      ],
+      [
+       "SLPSTS",
+       15,
+       1,
+       "r"
+      ],
+      [
+       "L1RSMOK",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "LPMCHIDX",
+       17,
+       4
+      ],
+      [
+       "LPMRCNT",
+       21,
+       3
+      ],
+      [
+       "SNDLPM",
+       24,
+       1
+      ],
+      [
+       "LPMRCNTSTS",
+       25,
+       3,
+       "r"
+      ],
+      [
+       "ENBESL",
+       28,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HPTXFSIZ",
      "offset": "0x100",
      "reset": "0x02000600",
      "fields": [
@@ -35796,14 +36058,14 @@
        16
       ],
       [
-       "PTXFSIZ",
+       "PTXFD",
        16,
        16
       ]
      ]
     },
     {
-     "name": "FS_DIEPTXF1",
+     "name": "DIEPTXF1",
      "offset": "0x104",
      "reset": "0x02000400",
      "fields": [
@@ -35820,7 +36082,7 @@
      ]
     },
     {
-     "name": "FS_DIEPTXF2",
+     "name": "DIEPTXF2",
      "offset": "0x108",
      "reset": "0x02000400",
      "fields": [
@@ -35837,7 +36099,7 @@
      ]
     },
     {
-     "name": "FS_DIEPTXF3",
+     "name": "DIEPTXF3",
      "offset": "0x10C",
      "reset": "0x02000400",
      "fields": [
@@ -35852,16 +36114,44 @@
        16
       ]
      ]
-    }
-   ]
-  },
-  {
-   "name": "OTG_FS_HOST",
-   "base": "0x50000400",
-   "registers": [
+    },
     {
-     "name": "FS_HCFG",
-     "offset": "0x00",
+     "name": "DIEPTXF4",
+     "offset": "0x110",
+     "reset": "0x02000400",
+     "fields": [
+      [
+       "INEPTXSA",
+       0,
+       16
+      ],
+      [
+       "INEPTXFD",
+       16,
+       16
+      ]
+     ]
+    },
+    {
+     "name": "DIEPTXF5",
+     "offset": "0x114",
+     "reset": "0x02000400",
+     "fields": [
+      [
+       "INEPTXSA",
+       0,
+       16
+      ],
+      [
+       "INEPTXFD",
+       16,
+       16
+      ]
+     ]
+    },
+    {
+     "name": "HCFG",
+     "offset": "0x400",
      "fields": [
       [
        "FSLSPCS",
@@ -35878,7 +36168,7 @@
     },
     {
      "name": "HFIR",
-     "offset": "0x04",
+     "offset": "0x404",
      "reset": "0x0000EA60",
      "fields": [
       [
@@ -35889,8 +36179,8 @@
      ]
     },
     {
-     "name": "FS_HFNUM",
-     "offset": "0x08",
+     "name": "HFNUM",
+     "offset": "0x408",
      "reset": "0x00003FFF",
      "fields": [
       [
@@ -35908,14 +36198,15 @@
      ]
     },
     {
-     "name": "FS_HPTXSTS",
-     "offset": "0x10",
+     "name": "HPTXSTS",
+     "offset": "0x410",
      "reset": "0x00080100",
      "fields": [
       [
        "PTXFSAVL",
        0,
-       16
+       16,
+       "r"
       ],
       [
        "PTXQSAV",
@@ -35933,7 +36224,7 @@
     },
     {
      "name": "HAINT",
-     "offset": "0x14",
+     "offset": "0x414",
      "fields": [
       [
        "HAINT",
@@ -35945,7 +36236,7 @@
     },
     {
      "name": "HAINTMSK",
-     "offset": "0x18",
+     "offset": "0x418",
      "fields": [
       [
        "HAINTM",
@@ -35955,8 +36246,8 @@
      ]
     },
     {
-     "name": "FS_HPRT",
-     "offset": "0x40",
+     "name": "HPRT",
+     "offset": "0x440",
      "fields": [
       [
        "PCSTS",
@@ -35967,17 +36258,20 @@
       [
        "PCDET",
        1,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "PENA",
        2,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "PENCHNG",
        3,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "POCA",
@@ -35988,7 +36282,8 @@
       [
        "POCCHNG",
        5,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "PRES",
@@ -35998,7 +36293,8 @@
       [
        "PSUSP",
        7,
-       1
+       1,
+       "rs"
       ],
       [
        "PRST",
@@ -36030,8 +36326,8 @@
      ]
     },
     {
-     "name": "FS_HCCHAR0",
-     "offset": "0x100",
+     "name": "HCCHAR0",
+     "offset": "0x500",
      "fields": [
       [
        "MPSIZ",
@@ -36059,7 +36355,7 @@
        2
       ],
       [
-       "MCNT",
+       "MC",
        20,
        2
       ],
@@ -36086,1276 +36382,68 @@
      ]
     },
     {
-     "name": "FS_HCCHAR1",
-     "offset": "0x120",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR2",
-     "offset": "0x140",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR3",
-     "offset": "0x160",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR4",
-     "offset": "0x180",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR5",
-     "offset": "0x1A0",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR6",
-     "offset": "0x1C0",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR7",
-     "offset": "0x1E0",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR8",
-     "offset": "0x200",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR9",
-     "offset": "0x220",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR10",
-     "offset": "0x240",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCCHAR11",
-     "offset": "0x260",
-     "fields": [
-      [
-       "MPSIZ",
-       0,
-       11
-      ],
-      [
-       "EPNUM",
-       11,
-       4
-      ],
-      [
-       "EPDIR",
-       15,
-       1
-      ],
-      [
-       "LSDEV",
-       17,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "MCNT",
-       20,
-       2
-      ],
-      [
-       "DAD",
-       22,
-       7
-      ],
-      [
-       "ODDFRM",
-       29,
-       1
-      ],
-      [
-       "CHDIS",
-       30,
-       1
-      ],
-      [
-       "CHENA",
-       31,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT0",
-     "offset": "0x108",
+     "name": "HCINT0",
+     "offset": "0x508",
      "fields": [
       [
        "XFRC",
        0,
-       1
+       1,
+       "rc_w1"
       ],
       [
        "CHH",
        1,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT1",
-     "offset": "0x128",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
        1,
-       1
+       "rc_w1"
       ],
       [
        "STALL",
        3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT2",
-     "offset": "0x148",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
        1,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
+       "rc_w1"
       ],
       [
        "NAK",
        4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT3",
-     "offset": "0x168",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
        1,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
+       "rc_w1"
       ],
       [
        "ACK",
        5,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT4",
-     "offset": "0x188",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
        1,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
+       "rc_w1"
       ],
       [
        "TXERR",
        7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT5",
-     "offset": "0x1A8",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
        1,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
+       "rc_w1"
       ],
       [
        "BBERR",
        8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT6",
-     "offset": "0x1C8",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
        1,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
+       "rc_w1"
       ],
       [
        "FRMOR",
        9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT7",
-     "offset": "0x1E8",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
        1,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
+       "rc_w1"
       ],
       [
        "DTERR",
        10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT8",
-     "offset": "0x208",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
        1,
-       1
-      ],
-      [
-       "AHBERR",
-       2,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "NYET",
-       6,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
+       "rc_w1"
       ]
      ]
     },
     {
-     "name": "FS_HCINT9",
-     "offset": "0x228",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
-       1,
-       1
-      ],
-      [
-       "AHBERR",
-       2,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "NYET",
-       6,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT10",
-     "offset": "0x248",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
-       1,
-       1
-      ],
-      [
-       "AHBERR",
-       2,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "NYET",
-       6,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINT11",
-     "offset": "0x268",
-     "fields": [
-      [
-       "XFRC",
-       0,
-       1
-      ],
-      [
-       "CHH",
-       1,
-       1
-      ],
-      [
-       "AHBERR",
-       2,
-       1
-      ],
-      [
-       "STALL",
-       3,
-       1
-      ],
-      [
-       "NAK",
-       4,
-       1
-      ],
-      [
-       "ACK",
-       5,
-       1
-      ],
-      [
-       "NYET",
-       6,
-       1
-      ],
-      [
-       "TXERR",
-       7,
-       1
-      ],
-      [
-       "BBERR",
-       8,
-       1
-      ],
-      [
-       "FRMOR",
-       9,
-       1
-      ],
-      [
-       "DTERR",
-       10,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCINTMSK0",
-     "offset": "0x10C",
+     "name": "HCINTMSK0",
+     "offset": "0x50C",
      "fields": [
       [
        "XFRCM",
@@ -37410,8 +36498,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK1",
-     "offset": "0x12C",
+     "name": "HCTSIZ0",
+     "offset": "0x510",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR1",
+     "offset": "0x520",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT1",
+     "offset": "0x528",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK1",
+     "offset": "0x52C",
      "fields": [
       [
        "XFRCM",
@@ -37466,8 +36691,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK2",
-     "offset": "0x14C",
+     "name": "HCTSIZ1",
+     "offset": "0x530",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR2",
+     "offset": "0x540",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT2",
+     "offset": "0x548",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK2",
+     "offset": "0x54C",
      "fields": [
       [
        "XFRCM",
@@ -37522,8 +36884,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK3",
-     "offset": "0x16C",
+     "name": "HCTSIZ2",
+     "offset": "0x550",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR3",
+     "offset": "0x560",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT3",
+     "offset": "0x568",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK3",
+     "offset": "0x56C",
      "fields": [
       [
        "XFRCM",
@@ -37578,8 +37077,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK4",
-     "offset": "0x18C",
+     "name": "HCTSIZ3",
+     "offset": "0x570",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR4",
+     "offset": "0x580",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT4",
+     "offset": "0x588",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK4",
+     "offset": "0x58C",
      "fields": [
       [
        "XFRCM",
@@ -37634,8 +37270,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK5",
-     "offset": "0x1AC",
+     "name": "HCTSIZ4",
+     "offset": "0x590",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR5",
+     "offset": "0x5A0",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT5",
+     "offset": "0x5A8",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK5",
+     "offset": "0x5AC",
      "fields": [
       [
        "XFRCM",
@@ -37690,8 +37463,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK6",
-     "offset": "0x1CC",
+     "name": "HCTSIZ5",
+     "offset": "0x5B0",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR6",
+     "offset": "0x5C0",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT6",
+     "offset": "0x5C8",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK6",
+     "offset": "0x5CC",
      "fields": [
       [
        "XFRCM",
@@ -37746,8 +37656,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK7",
-     "offset": "0x1EC",
+     "name": "HCTSIZ6",
+     "offset": "0x5D0",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR7",
+     "offset": "0x5E0",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT7",
+     "offset": "0x5E8",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK7",
+     "offset": "0x5EC",
      "fields": [
       [
        "XFRCM",
@@ -37802,8 +37849,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK8",
-     "offset": "0x20C",
+     "name": "HCTSIZ7",
+     "offset": "0x5F0",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR8",
+     "offset": "0x600",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT8",
+     "offset": "0x608",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK8",
+     "offset": "0x60C",
      "fields": [
       [
        "XFRCM",
@@ -37813,11 +37997,6 @@
       [
        "CHHM",
        1,
-       1
-      ],
-      [
-       "AHBERRM",
-       2,
        1
       ],
       [
@@ -37863,8 +38042,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK9",
-     "offset": "0x22C",
+     "name": "HCTSIZ8",
+     "offset": "0x610",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR9",
+     "offset": "0x620",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT9",
+     "offset": "0x628",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK9",
+     "offset": "0x62C",
      "fields": [
       [
        "XFRCM",
@@ -37874,11 +38190,6 @@
       [
        "CHHM",
        1,
-       1
-      ],
-      [
-       "AHBERRM",
-       2,
        1
       ],
       [
@@ -37924,8 +38235,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK10",
-     "offset": "0x24C",
+     "name": "HCTSIZ9",
+     "offset": "0x630",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR10",
+     "offset": "0x640",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT10",
+     "offset": "0x648",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK10",
+     "offset": "0x64C",
      "fields": [
       [
        "XFRCM",
@@ -37935,11 +38383,6 @@
       [
        "CHHM",
        1,
-       1
-      ],
-      [
-       "AHBERRM",
-       2,
        1
       ],
       [
@@ -37985,8 +38428,145 @@
      ]
     },
     {
-     "name": "FS_HCINTMSK11",
-     "offset": "0x26C",
+     "name": "HCTSIZ10",
+     "offset": "0x650",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "DPID",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "HCCHAR11",
+     "offset": "0x660",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "EPNUM",
+       11,
+       4
+      ],
+      [
+       "EPDIR",
+       15,
+       1
+      ],
+      [
+       "LSDEV",
+       17,
+       1
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "MC",
+       20,
+       2
+      ],
+      [
+       "DAD",
+       22,
+       7
+      ],
+      [
+       "ODDFRM",
+       29,
+       1
+      ],
+      [
+       "CHDIS",
+       30,
+       1
+      ],
+      [
+       "CHENA",
+       31,
+       1
+      ]
+     ]
+    },
+    {
+     "name": "HCINT11",
+     "offset": "0x668",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "CHH",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STALL",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ACK",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TXERR",
+       7,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BBERR",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "FRMOR",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "DTERR",
+       10,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "HCINTMSK11",
+     "offset": "0x66C",
      "fields": [
       [
        "XFRCM",
@@ -37996,11 +38576,6 @@
       [
        "CHHM",
        1,
-       1
-      ],
-      [
-       "AHBERRM",
-       2,
        1
       ],
       [
@@ -38046,8 +38621,8 @@
      ]
     },
     {
-     "name": "FS_HCTSIZ0",
-     "offset": "0x110",
+     "name": "HCTSIZ11",
+     "offset": "0x670",
      "fields": [
       [
        "XFRSIZ",
@@ -38067,245 +38642,8 @@
      ]
     },
     {
-     "name": "FS_HCTSIZ1",
-     "offset": "0x130",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ2",
-     "offset": "0x150",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ3",
-     "offset": "0x170",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ4",
-     "offset": "0x190",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ5",
-     "offset": "0x1B0",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ6",
-     "offset": "0x1D0",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ7",
-     "offset": "0x1F0",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ8",
-     "offset": "0x210",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ9",
-     "offset": "0x230",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ10",
-     "offset": "0x250",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    },
-    {
-     "name": "FS_HCTSIZ11",
-     "offset": "0x270",
-     "fields": [
-      [
-       "XFRSIZ",
-       0,
-       19
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "DPID",
-       29,
-       2
-      ]
-     ]
-    }
-   ]
-  },
-  {
-   "name": "OTG_FS_DEVICE",
-   "base": "0x50000800",
-   "registers": [
-    {
-     "name": "FS_DCFG",
-     "offset": "0x00",
+     "name": "DCFG",
+     "offset": "0x800",
      "reset": "0x02200000",
      "fields": [
       [
@@ -38329,15 +38667,26 @@
        2
       ],
       [
+       "XCVRDLY",
+       14,
+       1
+      ],
+      [
        "ERRATIM",
        15,
        1
+      ],
+      [
+       "PERSCHIVL",
+       24,
+       2
       ]
      ]
     },
     {
-     "name": "FS_DCTL",
-     "offset": "0x04",
+     "name": "DCTL",
+     "offset": "0x804",
+     "reset": "0x00000002",
      "fields": [
       [
        "RWUSIG",
@@ -38369,33 +38718,42 @@
       [
        "SGINAK",
        7,
-       1
+       1,
+       "w"
       ],
       [
        "CGINAK",
        8,
-       1
+       1,
+       "w"
       ],
       [
        "SGONAK",
        9,
-       1
+       1,
+       "w"
       ],
       [
        "CGONAK",
        10,
-       1
+       1,
+       "w"
       ],
       [
        "POPRGDNE",
        11,
        1
+      ],
+      [
+       "DSBESLRJCT",
+       18,
+       1
       ]
      ]
     },
     {
-     "name": "FS_DSTS",
-     "offset": "0x08",
+     "name": "DSTS",
+     "offset": "0x808",
      "reset": "0x00000010",
      "fields": [
       [
@@ -38421,12 +38779,18 @@
        8,
        14,
        "r"
+      ],
+      [
+       "DEVLNSTS",
+       22,
+       2,
+       "r"
       ]
      ]
     },
     {
-     "name": "FS_DIEPMSK",
-     "offset": "0x10",
+     "name": "DIEPMSK",
+     "offset": "0x810",
      "fields": [
       [
        "XFRCM",
@@ -38457,12 +38821,22 @@
        "INEPNEM",
        6,
        1
+      ],
+      [
+       "TXFURM",
+       8,
+       1
+      ],
+      [
+       "NAKM",
+       13,
+       1
       ]
      ]
     },
     {
-     "name": "FS_DOEPMSK",
-     "offset": "0x14",
+     "name": "DOEPMSK",
+     "offset": "0x814",
      "fields": [
       [
        "XFRCM",
@@ -38483,12 +38857,42 @@
        "OTEPDM",
        4,
        1
+      ],
+      [
+       "OTEPSPRM",
+       5,
+       1
+      ],
+      [
+       "B2BSTUP",
+       6,
+       1
+      ],
+      [
+       "OPEM",
+       8,
+       1
+      ],
+      [
+       "BOIM",
+       9,
+       1
+      ],
+      [
+       "NAKM",
+       13,
+       1
+      ],
+      [
+       "NYETM",
+       14,
+       1
       ]
      ]
     },
     {
-     "name": "FS_DAINT",
-     "offset": "0x18",
+     "name": "DAINT",
+     "offset": "0x818",
      "fields": [
       [
        "IEPINT",
@@ -38505,8 +38909,8 @@
      ]
     },
     {
-     "name": "FS_DAINTMSK",
-     "offset": "0x1C",
+     "name": "DAINTMSK",
+     "offset": "0x81C",
      "fields": [
       [
        "IEPM",
@@ -38514,7 +38918,7 @@
        16
       ],
       [
-       "OEPINT",
+       "OEPM",
        16,
        16
       ]
@@ -38522,7 +38926,7 @@
     },
     {
      "name": "DVBUSDIS",
-     "offset": "0x28",
+     "offset": "0x828",
      "reset": "0x000017D7",
      "fields": [
       [
@@ -38534,7 +38938,7 @@
     },
     {
      "name": "DVBUSPULSE",
-     "offset": "0x2C",
+     "offset": "0x82C",
      "reset": "0x000005B8",
      "fields": [
       [
@@ -38546,7 +38950,7 @@
     },
     {
      "name": "DIEPEMPMSK",
-     "offset": "0x34",
+     "offset": "0x834",
      "fields": [
       [
        "INEPTXFEM",
@@ -38556,8 +38960,9 @@
      ]
     },
     {
-     "name": "FS_DIEPCTL0",
-     "offset": "0x100",
+     "name": "DIEPCTL0",
+     "offset": "0x900",
+     "reset": "0x00008000",
      "fields": [
       [
        "MPSIZ",
@@ -38585,7 +38990,8 @@
       [
        "STALL",
        21,
-       1
+       1,
+       "rs"
       ],
       [
        "TXFNUM",
@@ -38608,53 +39014,153 @@
        "EPDIS",
        30,
        1,
-       "r"
+       "rs"
       ],
       [
        "EPENA",
        31,
        1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPINT0",
+     "offset": "0x908",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TOC",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ITTXFE",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNM",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNE",
+       6,
+       1,
+       "r"
+      ],
+      [
+       "TXFE",
+       7,
+       1,
+       "r"
+      ],
+      [
+       "TXFIFOUDRN",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BNA",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "PKTDRPSTS",
+       11,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPTSIZ0",
+     "offset": "0x910",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       7
+      ],
+      [
+       "PKTCNT",
+       19,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "DTXFSTS0",
+     "offset": "0x918",
+     "reset": "0x00000200",
+     "fields": [
+      [
+       "INEPTFSAV",
+       0,
+       16,
        "r"
       ]
      ]
     },
     {
      "name": "DIEPCTL1",
-     "offset": "0x120",
+     "offset": "0x920",
      "fields": [
       [
-       "EPENA",
-       31,
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
        1
       ],
       [
-       "EPDIS",
-       30,
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "STALL",
+       21,
        1
-      ],
-      [
-       "SODDFRM_SD1PID",
-       29,
-       1,
-       "w"
-      ],
-      [
-       "SD0PID_SEVNFRM",
-       28,
-       1,
-       "w"
-      ],
-      [
-       "SNAK",
-       27,
-       1,
-       "w"
-      ],
-      [
-       "CNAK",
-       26,
-       1,
-       "w"
       ],
       [
        "TXFNUM",
@@ -38662,56 +39168,14 @@
        4
       ],
       [
-       "Stall",
-       21,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "NAKSTS",
-       17,
+       "CNAK",
+       26,
        1,
-       "r"
+       "w"
       ],
       [
-       "EONUM_DPID",
-       16,
-       1,
-       "r"
-      ],
-      [
-       "USBAEP",
-       15,
-       1
-      ],
-      [
-       "MPSIZ",
-       0,
-       11
-      ]
-     ]
-    },
-    {
-     "name": "DIEPCTL2",
-     "offset": "0x140",
-     "fields": [
-      [
-       "EPENA",
-       31,
-       1
-      ],
-      [
-       "EPDIS",
-       30,
-       1
-      ],
-      [
-       "SODDFRM",
-       29,
+       "SNAK",
+       27,
        1,
        "w"
       ],
@@ -38722,472 +39186,66 @@
        "w"
       ],
       [
-       "SNAK",
-       27,
-       1,
-       "w"
-      ],
-      [
-       "CNAK",
-       26,
-       1,
-       "w"
-      ],
-      [
-       "TXFNUM",
-       22,
-       4
-      ],
-      [
-       "Stall",
-       21,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "NAKSTS",
-       17,
-       1,
-       "r"
-      ],
-      [
-       "EONUM_DPID",
-       16,
-       1,
-       "r"
-      ],
-      [
-       "USBAEP",
-       15,
-       1
-      ],
-      [
-       "MPSIZ",
-       0,
-       11
-      ]
-     ]
-    },
-    {
-     "name": "DIEPCTL3",
-     "offset": "0x160",
-     "fields": [
-      [
-       "EPENA",
-       31,
-       1
-      ],
-      [
-       "EPDIS",
-       30,
-       1
-      ],
-      [
        "SODDFRM",
        29,
        1,
        "w"
       ],
       [
-       "SD0PID_SEVNFRM",
-       28,
+       "EPDIS",
+       30,
        1,
-       "w"
+       "rs"
       ],
-      [
-       "SNAK",
-       27,
-       1,
-       "w"
-      ],
-      [
-       "CNAK",
-       26,
-       1,
-       "w"
-      ],
-      [
-       "TXFNUM",
-       22,
-       4
-      ],
-      [
-       "Stall",
-       21,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "NAKSTS",
-       17,
-       1,
-       "r"
-      ],
-      [
-       "EONUM_DPID",
-       16,
-       1,
-       "r"
-      ],
-      [
-       "USBAEP",
-       15,
-       1
-      ],
-      [
-       "MPSIZ",
-       0,
-       11
-      ]
-     ]
-    },
-    {
-     "name": "DOEPCTL0",
-     "offset": "0x300",
-     "reset": "0x00008000",
-     "fields": [
       [
        "EPENA",
        31,
        1,
-       "w"
-      ],
-      [
-       "EPDIS",
-       30,
-       1,
-       "r"
-      ],
-      [
-       "SNAK",
-       27,
-       1,
-       "w"
-      ],
-      [
-       "CNAK",
-       26,
-       1,
-       "w"
-      ],
-      [
-       "Stall",
-       21,
-       1
-      ],
-      [
-       "SNPM",
-       20,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2,
-       "r"
-      ],
-      [
-       "NAKSTS",
-       17,
-       1,
-       "r"
-      ],
-      [
-       "USBAEP",
-       15,
-       1,
-       "r"
-      ],
-      [
-       "MPSIZ",
-       0,
-       2,
-       "r"
-      ]
-     ]
-    },
-    {
-     "name": "DOEPCTL1",
-     "offset": "0x320",
-     "fields": [
-      [
-       "EPENA",
-       31,
-       1
-      ],
-      [
-       "EPDIS",
-       30,
-       1
-      ],
-      [
-       "SODDFRM",
-       29,
-       1,
-       "w"
-      ],
-      [
-       "SD0PID_SEVNFRM",
-       28,
-       1,
-       "w"
-      ],
-      [
-       "SNAK",
-       27,
-       1,
-       "w"
-      ],
-      [
-       "CNAK",
-       26,
-       1,
-       "w"
-      ],
-      [
-       "Stall",
-       21,
-       1
-      ],
-      [
-       "SNPM",
-       20,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "NAKSTS",
-       17,
-       1,
-       "r"
-      ],
-      [
-       "EONUM_DPID",
-       16,
-       1,
-       "r"
-      ],
-      [
-       "USBAEP",
-       15,
-       1
-      ],
-      [
-       "MPSIZ",
-       0,
-       11
-      ]
-     ]
-    },
-    {
-     "name": "DOEPCTL2",
-     "offset": "0x340",
-     "fields": [
-      [
-       "EPENA",
-       31,
-       1
-      ],
-      [
-       "EPDIS",
-       30,
-       1
-      ],
-      [
-       "SODDFRM",
-       29,
-       1,
-       "w"
-      ],
-      [
-       "SD0PID_SEVNFRM",
-       28,
-       1,
-       "w"
-      ],
-      [
-       "SNAK",
-       27,
-       1,
-       "w"
-      ],
-      [
-       "CNAK",
-       26,
-       1,
-       "w"
-      ],
-      [
-       "Stall",
-       21,
-       1
-      ],
-      [
-       "SNPM",
-       20,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "NAKSTS",
-       17,
-       1,
-       "r"
-      ],
-      [
-       "EONUM_DPID",
-       16,
-       1,
-       "r"
-      ],
-      [
-       "USBAEP",
-       15,
-       1
-      ],
-      [
-       "MPSIZ",
-       0,
-       11
-      ]
-     ]
-    },
-    {
-     "name": "DOEPCTL3",
-     "offset": "0x360",
-     "fields": [
-      [
-       "EPENA",
-       31,
-       1
-      ],
-      [
-       "EPDIS",
-       30,
-       1
-      ],
-      [
-       "SODDFRM",
-       29,
-       1,
-       "w"
-      ],
-      [
-       "SD0PID_SEVNFRM",
-       28,
-       1,
-       "w"
-      ],
-      [
-       "SNAK",
-       27,
-       1,
-       "w"
-      ],
-      [
-       "CNAK",
-       26,
-       1,
-       "w"
-      ],
-      [
-       "Stall",
-       21,
-       1
-      ],
-      [
-       "SNPM",
-       20,
-       1
-      ],
-      [
-       "EPTYP",
-       18,
-       2
-      ],
-      [
-       "NAKSTS",
-       17,
-       1,
-       "r"
-      ],
-      [
-       "EONUM_DPID",
-       16,
-       1,
-       "r"
-      ],
-      [
-       "USBAEP",
-       15,
-       1
-      ],
-      [
-       "MPSIZ",
-       0,
-       11
-      ]
-     ]
-    },
-    {
-     "name": "DIEPINT0",
-     "offset": "0x108",
-     "reset": "0x00000080",
-     "fields": [
-      [
-       "TXFE",
-       7,
-       1,
-       "r"
-      ],
-      [
-       "INEPNE",
-       6,
-       1
-      ],
-      [
-       "ITTXFE",
-       4,
-       1
-      ],
-      [
-       "TOC",
-       3,
-       1
-      ],
-      [
-       "EPDISD",
-       1,
-       1
-      ],
-      [
-       "XFRC",
-       0,
-       1
+       "rs"
       ]
      ]
     },
     {
      "name": "DIEPINT1",
-     "offset": "0x128",
+     "offset": "0x928",
      "reset": "0x00000080",
      "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TOC",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ITTXFE",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNM",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNE",
+       6,
+       1,
+       "r"
+      ],
       [
        "TXFE",
        7,
@@ -39195,281 +39253,39 @@
        "r"
       ],
       [
-       "INEPNE",
-       6,
-       1
-      ],
-      [
-       "ITTXFE",
-       4,
-       1
-      ],
-      [
-       "TOC",
-       3,
-       1
-      ],
-      [
-       "EPDISD",
+       "TXFIFOUDRN",
+       8,
        1,
-       1
+       "rc_w1"
       ],
       [
-       "XFRC",
-       0,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "DIEPINT2",
-     "offset": "0x148",
-     "reset": "0x00000080",
-     "fields": [
-      [
-       "TXFE",
-       7,
+       "BNA",
+       9,
        1,
-       "r"
+       "rc_w1"
       ],
       [
-       "INEPNE",
-       6,
-       1
-      ],
-      [
-       "ITTXFE",
-       4,
-       1
-      ],
-      [
-       "TOC",
-       3,
-       1
-      ],
-      [
-       "EPDISD",
+       "PKTDRPSTS",
+       11,
        1,
-       1
+       "rc_w1"
       ],
       [
-       "XFRC",
-       0,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "DIEPINT3",
-     "offset": "0x168",
-     "reset": "0x00000080",
-     "fields": [
-      [
-       "TXFE",
-       7,
+       "NAK",
+       13,
        1,
-       "r"
-      ],
-      [
-       "INEPNE",
-       6,
-       1
-      ],
-      [
-       "ITTXFE",
-       4,
-       1
-      ],
-      [
-       "TOC",
-       3,
-       1
-      ],
-      [
-       "EPDISD",
-       1,
-       1
-      ],
-      [
-       "XFRC",
-       0,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "DOEPINT0",
-     "offset": "0x308",
-     "reset": "0x00000080",
-     "fields": [
-      [
-       "B2BSTUP",
-       6,
-       1
-      ],
-      [
-       "OTEPDIS",
-       4,
-       1
-      ],
-      [
-       "STUP",
-       3,
-       1
-      ],
-      [
-       "EPDISD",
-       1,
-       1
-      ],
-      [
-       "XFRC",
-       0,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "DOEPINT1",
-     "offset": "0x328",
-     "reset": "0x00000080",
-     "fields": [
-      [
-       "B2BSTUP",
-       6,
-       1
-      ],
-      [
-       "OTEPDIS",
-       4,
-       1
-      ],
-      [
-       "STUP",
-       3,
-       1
-      ],
-      [
-       "EPDISD",
-       1,
-       1
-      ],
-      [
-       "XFRC",
-       0,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "DOEPINT2",
-     "offset": "0x348",
-     "reset": "0x00000080",
-     "fields": [
-      [
-       "B2BSTUP",
-       6,
-       1
-      ],
-      [
-       "OTEPDIS",
-       4,
-       1
-      ],
-      [
-       "STUP",
-       3,
-       1
-      ],
-      [
-       "EPDISD",
-       1,
-       1
-      ],
-      [
-       "XFRC",
-       0,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "DOEPINT3",
-     "offset": "0x368",
-     "reset": "0x00000080",
-     "fields": [
-      [
-       "B2BSTUP",
-       6,
-       1
-      ],
-      [
-       "OTEPDIS",
-       4,
-       1
-      ],
-      [
-       "STUP",
-       3,
-       1
-      ],
-      [
-       "EPDISD",
-       1,
-       1
-      ],
-      [
-       "XFRC",
-       0,
-       1
-      ]
-     ]
-    },
-    {
-     "name": "DIEPTSIZ0",
-     "offset": "0x110",
-     "fields": [
-      [
-       "PKTCNT",
-       19,
-       2
-      ],
-      [
-       "XFRSIZ",
-       0,
-       7
-      ]
-     ]
-    },
-    {
-     "name": "DOEPTSIZ0",
-     "offset": "0x310",
-     "fields": [
-      [
-       "STUPCNT",
-       29,
-       2
-      ],
-      [
-       "PKTCNT",
-       19,
-       1
-      ],
-      [
-       "XFRSIZ",
-       0,
-       7
+       "rc_w1"
       ]
      ]
     },
     {
      "name": "DIEPTSIZ1",
-     "offset": "0x130",
+     "offset": "0x930",
      "fields": [
       [
-       "MCNT",
-       29,
-       2
+       "XFRSIZ",
+       0,
+       19
       ],
       [
        "PKTCNT",
@@ -39477,93 +39293,388 @@
        10
       ],
       [
-       "XFRSIZ",
-       0,
-       19
-      ]
-     ]
-    },
-    {
-     "name": "DIEPTSIZ2",
-     "offset": "0x150",
-     "fields": [
-      [
-       "MCNT",
+       "MULCNT",
        29,
        2
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "XFRSIZ",
-       0,
-       19
-      ]
-     ]
-    },
-    {
-     "name": "DIEPTSIZ3",
-     "offset": "0x170",
-     "fields": [
-      [
-       "MCNT",
-       29,
-       2
-      ],
-      [
-       "PKTCNT",
-       19,
-       10
-      ],
-      [
-       "XFRSIZ",
-       0,
-       19
-      ]
-     ]
-    },
-    {
-     "name": "DTXFSTS0",
-     "offset": "0x118",
-     "fields": [
-      [
-       "INEPTFSAV",
-       0,
-       16,
-       "r"
       ]
      ]
     },
     {
      "name": "DTXFSTS1",
-     "offset": "0x138",
+     "offset": "0x938",
+     "reset": "0x00000400",
      "fields": [
       [
        "INEPTFSAV",
        0,
        16,
        "r"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPCTL2",
+     "offset": "0x940",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "TXFNUM",
+       22,
+       4
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPINT2",
+     "offset": "0x948",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TOC",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ITTXFE",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNM",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNE",
+       6,
+       1,
+       "r"
+      ],
+      [
+       "TXFE",
+       7,
+       1,
+       "r"
+      ],
+      [
+       "TXFIFOUDRN",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BNA",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "PKTDRPSTS",
+       11,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPTSIZ2",
+     "offset": "0x950",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "MULCNT",
+       29,
+       2
       ]
      ]
     },
     {
      "name": "DTXFSTS2",
-     "offset": "0x158",
+     "offset": "0x958",
+     "reset": "0x00000400",
      "fields": [
       [
        "INEPTFSAV",
        0,
        16,
        "r"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPCTL3",
+     "offset": "0x960",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "TXFNUM",
+       22,
+       4
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPINT3",
+     "offset": "0x968",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TOC",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ITTXFE",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNM",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNE",
+       6,
+       1,
+       "r"
+      ],
+      [
+       "TXFE",
+       7,
+       1,
+       "r"
+      ],
+      [
+       "TXFIFOUDRN",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BNA",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "PKTDRPSTS",
+       11,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPTSIZ3",
+     "offset": "0x970",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "MULCNT",
+       29,
+       2
       ]
      ]
     },
     {
      "name": "DTXFSTS3",
-     "offset": "0x178",
+     "offset": "0x978",
+     "reset": "0x00000400",
      "fields": [
       [
        "INEPTFSAV",
@@ -39574,13 +39685,165 @@
      ]
     },
     {
-     "name": "DOEPTSIZ1",
-     "offset": "0x330",
+     "name": "DIEPCTL4",
+     "offset": "0x980",
      "fields": [
       [
-       "RXDPID_STUPCNT",
-       29,
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
        2
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "TXFNUM",
+       22,
+       4
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPINT4",
+     "offset": "0x988",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TOC",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ITTXFE",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNM",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNE",
+       6,
+       1,
+       "r"
+      ],
+      [
+       "TXFE",
+       7,
+       1,
+       "r"
+      ],
+      [
+       "TXFIFOUDRN",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BNA",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "PKTDRPSTS",
+       11,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPTSIZ4",
+     "offset": "0x990",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
       ],
       [
        "PKTCNT",
@@ -39588,20 +39851,650 @@
        10
       ],
       [
+       "MULCNT",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "DTXFSTS4",
+     "offset": "0x998",
+     "reset": "0x00000400",
+     "fields": [
+      [
+       "INEPTFSAV",
+       0,
+       16,
+       "r"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPCTL5",
+     "offset": "0x9A0",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "TXFNUM",
+       22,
+       4
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPINT5",
+     "offset": "0x9A8",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "TOC",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "ITTXFE",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNM",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "INEPNE",
+       6,
+       1,
+       "r"
+      ],
+      [
+       "TXFE",
+       7,
+       1,
+       "r"
+      ],
+      [
+       "TXFIFOUDRN",
+       8,
+       1,
+       "rc_w1"
+      ],
+      [
+       "BNA",
+       9,
+       1,
+       "rc_w1"
+      ],
+      [
+       "PKTDRPSTS",
+       11,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DIEPTSIZ5",
+     "offset": "0x9B0",
+     "fields": [
+      [
        "XFRSIZ",
        0,
        19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "MULCNT",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "DTXFSTS5",
+     "offset": "0x9B8",
+     "reset": "0x00000400",
+     "fields": [
+      [
+       "INEPTFSAV",
+       0,
+       16,
+       "r"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPCTL0",
+     "offset": "0xB00",
+     "reset": "0x00008000",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       2,
+       "r"
+      ],
+      [
+       "USBAEP",
+       15,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2,
+       "r"
+      ],
+      [
+       "SNPM",
+       20,
+       1
+      ],
+      [
+       "STALL",
+       21,
+       1,
+       "rs"
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "r"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPINT0",
+     "offset": "0xB08",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STUP",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPDIS",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPSPR",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "B2BSTUP",
+       6,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STPKTRX",
+       15,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPTSIZ0",
+     "offset": "0xB10",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       7
+      ],
+      [
+       "PKTCNT",
+       19,
+       1
+      ],
+      [
+       "STUPCNT",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "DOEPCTL1",
+     "offset": "0xB20",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "SNPM",
+       20,
+       1
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPINT1",
+     "offset": "0xB28",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STUP",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPDIS",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPSPR",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "B2BSTUP",
+       6,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STPKTRX",
+       15,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPTSIZ1",
+     "offset": "0xB30",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "RXDPID_STUPCNT",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "DOEPCTL2",
+     "offset": "0xB40",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "SNPM",
+       20,
+       1
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPINT2",
+     "offset": "0xB48",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STUP",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPDIS",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPSPR",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "B2BSTUP",
+       6,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STPKTRX",
+       15,
+       1,
+       "rc_w1"
       ]
      ]
     },
     {
      "name": "DOEPTSIZ2",
-     "offset": "0x350",
+     "offset": "0xB50",
      "fields": [
       [
-       "RXDPID_STUPCNT",
-       29,
-       2
+       "XFRSIZ",
+       0,
+       19
       ],
       [
        "PKTCNT",
@@ -39609,20 +40502,154 @@
        10
       ],
       [
-       "XFRSIZ",
+       "RXDPID_STUPCNT",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "DOEPCTL3",
+     "offset": "0xB60",
+     "fields": [
+      [
+       "MPSIZ",
        0,
-       19
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "SNPM",
+       20,
+       1
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPINT3",
+     "offset": "0xB68",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STUP",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPDIS",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPSPR",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "B2BSTUP",
+       6,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STPKTRX",
+       15,
+       1,
+       "rc_w1"
       ]
      ]
     },
     {
      "name": "DOEPTSIZ3",
-     "offset": "0x370",
+     "offset": "0xB70",
      "fields": [
       [
-       "RXDPID_STUPCNT",
-       29,
-       2
+       "XFRSIZ",
+       0,
+       19
       ],
       [
        "PKTCNT",
@@ -39630,21 +40657,325 @@
        10
       ],
       [
+       "RXDPID_STUPCNT",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "DOEPCTL4",
+     "offset": "0xB80",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "SNPM",
+       20,
+       1
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPINT4",
+     "offset": "0xB88",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STUP",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPDIS",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPSPR",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "B2BSTUP",
+       6,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STPKTRX",
+       15,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPTSIZ4",
+     "offset": "0xB90",
+     "fields": [
+      [
        "XFRSIZ",
        0,
        19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "RXDPID_STUPCNT",
+       29,
+       2
       ]
      ]
-    }
-   ]
-  },
-  {
-   "name": "OTG_FS_PWRCLK",
-   "base": "0x50000E00",
-   "registers": [
+    },
     {
-     "name": "FS_PCGCCTL",
-     "offset": "0x00",
+     "name": "DOEPCTL5",
+     "offset": "0xBA0",
+     "fields": [
+      [
+       "MPSIZ",
+       0,
+       11
+      ],
+      [
+       "USBAEP",
+       15,
+       1
+      ],
+      [
+       "EONUM_DPID",
+       16,
+       1,
+       "r"
+      ],
+      [
+       "NAKSTS",
+       17,
+       1,
+       "r"
+      ],
+      [
+       "EPTYP",
+       18,
+       2
+      ],
+      [
+       "SNPM",
+       20,
+       1
+      ],
+      [
+       "STALL",
+       21,
+       1
+      ],
+      [
+       "CNAK",
+       26,
+       1,
+       "w"
+      ],
+      [
+       "SNAK",
+       27,
+       1,
+       "w"
+      ],
+      [
+       "SD0PID_SEVNFRM",
+       28,
+       1,
+       "w"
+      ],
+      [
+       "SODDFRM",
+       29,
+       1,
+       "w"
+      ],
+      [
+       "EPDIS",
+       30,
+       1,
+       "rs"
+      ],
+      [
+       "EPENA",
+       31,
+       1,
+       "rs"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPINT5",
+     "offset": "0xBA8",
+     "reset": "0x00000080",
+     "fields": [
+      [
+       "XFRC",
+       0,
+       1,
+       "rc_w1"
+      ],
+      [
+       "EPDISD",
+       1,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STUP",
+       3,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPDIS",
+       4,
+       1,
+       "rc_w1"
+      ],
+      [
+       "OTEPSPR",
+       5,
+       1,
+       "rc_w1"
+      ],
+      [
+       "B2BSTUP",
+       6,
+       1,
+       "rc_w1"
+      ],
+      [
+       "NAK",
+       13,
+       1,
+       "rc_w1"
+      ],
+      [
+       "STPKTRX",
+       15,
+       1,
+       "rc_w1"
+      ]
+     ]
+    },
+    {
+     "name": "DOEPTSIZ5",
+     "offset": "0xBB0",
+     "fields": [
+      [
+       "XFRSIZ",
+       0,
+       19
+      ],
+      [
+       "PKTCNT",
+       19,
+       10
+      ],
+      [
+       "RXDPID_STUPCNT",
+       29,
+       2
+      ]
+     ]
+    },
+    {
+     "name": "PCGCCTL",
+     "offset": "0xE00",
      "fields": [
       [
        "STPPCLK",
@@ -39659,10 +40990,34 @@
       [
        "PHYSUSP",
        4,
+       1,
+       "r"
+      ],
+      [
+       "ENL1GTG",
+       5,
        1
+      ],
+      [
+       "PHYSLEEP",
+       6,
+       1,
+       "r"
+      ],
+      [
+       "SUSP",
+       7,
+       1,
+       "r"
       ]
      ]
     }
+   ],
+   "reserved": [
+    [
+     "0x0",
+     "0x40000"
+    ]
    ]
   },
   {

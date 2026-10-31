@@ -247,7 +247,7 @@ static const struct esk_cpu_ops smp_ops = {
     "cortex-m", 40, "an ARM image",
     smp_reset, smp_step, smp_pc, smp_reg_read, smp_reg_write,
     smp_g_regs, smp_xml, 2, smp_interrupt, 15, 1, 0, smp_reg_name, smp_wake_pending,
-    smp_disasm, 0,
+    smp_disasm, 0, 0,
 };
 
 /* ---- each core's devices: the access goes to the core making it ---------- */
