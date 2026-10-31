@@ -5,6 +5,20 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## A logic analyzer: the Saleae Logic 8 (2026-10-31)
+
+A Saleae Logic 8 wired to a terminal's TX (D0) and a 1 kHz clock (D1),
+shown in the Run perspective as Logic 2 shows it. Triggered on D0's falling
+edge with a 20 ms capture at 1 MS/s, it opens 2 ms (10 %) before the start
+bit; the clock runs on D1 throughout:
+
+![A triggered capture: the UART bytes on D0, the clock on D1](instruments-logic8/1-triggered-capture.png)
+
+The Async Serial analyzer on D0 at 9600 baud reads the frames back from the
+capture: "H", "i" and the terminal's newline.
+
+![The Async Serial analyzer decoding H, i, newline](instruments-logic8/2-async-serial.png)
+
 ## USB on the bench (2026-10-31)
 
 STM32CubeF4's USB_Device/HID_Standalone, unmodified, on the NUCLEO-F446ZE

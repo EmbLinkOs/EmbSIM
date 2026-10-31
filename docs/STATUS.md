@@ -5,6 +5,27 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Bench instruments: the Saleae Logic 8 (2026-10-31)
+
+The first of three real bench instruments (`docs/engineering/bench-instruments.md`):
+`emblink/saleae_logic8`, Saleae's 8-channel logic analyzer. Its leads load
+the circuit (1 MΩ to ground ∥ 10 pF, high above 1.2 V and low below
+0.6 V); it samples at 1 to 100 MS/s (100 MS/s with up to three channels
+on) exactly as a sampler does, without waking at each sample: an edge lands
+on the first sample after it and a pulse between two samples is missed.
+Start/Stop, a capture length, a trigger on one channel's edge with a
+pre-trigger share; the capture is read live with `instrument.read`.
+Evidence: eight fixtures (a 1 MHz clock's 200 edges in 100 µs, a 5 ns pulse
+missed at 1 MS/s and seen at 50 MS/s, the rate limit, the trigger's armed,
+capturing and done), `tests/protocol/test_logic_analyzer.py` (a terminal's
+"Hi" at 9600 baud captured at 1 MS/s and decoded from the transitions alone;
+a capture triggered on the start bit opening 0.5 ms before it). Not yet:
+the Logic 8's analog inputs; the SPI and I²C analyzers in its panel
+(they need several channels mapped). The Run perspective's Logic 8 panel
+follows a capture live, decodes Async Serial, and exports Logic 2's CSV and
+VCD (`logicCapture.test.ts`; the gallery shows a triggered capture of a
+terminal's "Hi" decoded).
+
 ## USB on the bench: the STM32F446's OTG FS and a computer's port (2026-10-31)
 
 USB cables are part of the bench (`core/engine/usb.h`, ADR-031's native

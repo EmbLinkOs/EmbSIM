@@ -5,6 +5,27 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### A logic analyzer: the Saleae Logic 8
+
+- `emblink/saleae_logic8`: Saleae's 8-channel USB logic analyzer as a part
+  wired into the circuit (ADR-033). Each lead loads its net as the real one
+  does (1 MΩ to ground ∥ 10 pF) and reads high above 1.2 V and low below
+  0.6 V. It samples at 100, 50, 40, 25, 20, 10, 8, 5, 4, 2 or 1 MS/s
+  (100 MS/s with up to three channels on, as Saleae publishes), exactly as a
+  sampler does: an edge is seen at the first sample after it, a pulse
+  between two samples is missed. Start and Stop (`run`), a capture length,
+  a trigger on one channel's rising, falling or either edge with a
+  pre-trigger share.
+- The Run perspective has a panel for each Logic 8, as Saleae's Logic 2
+  shows it: sample rate, duration, trigger channel and edge, Start and Stop,
+  the channel rows in the leads' colours followed live, the Async Serial
+  (UART) analyzer on a channel at its baud rate, and export as Logic 2's
+  digital CSV or a VCD.
+- `instrument.read({part, since})` returns the capture's transitions on the
+  sample grid as they come, for the workbench to follow live (SPEC-008).
+- The fixture runner fails a malformed expectation (an array where an
+  object belongs) instead of crashing on it.
+
 ### USB on the bench: the STM32F446's OTG FS and a computer's port
 
 - USB cables between parts (`core/engine/usb.h`, ADR-031): a host and the
