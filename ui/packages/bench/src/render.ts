@@ -36,6 +36,25 @@ export function glows(material: THREE.Material): boolean {
 const MIX_VERTEX = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
 const MIX_FRAGMENT = 'uniform sampler2D tDiffuse; uniform sampler2D bloom; varying vec2 vUv; void main() { gl_FragColor = texture2D(tDiffuse, vUv) + vec4(texture2D(bloom, vUv).rgb, 0.0); }';
 
+/** clips a pass's own material as the section clips the bench's */
+function clipMaterial(m: THREE.Material, planes: THREE.Plane[] | null): void {
+  if (m.clippingPlanes === planes) return;
+  m.clippingPlanes = planes;
+  m.needsUpdate = true;
+}
+
+/** runs `draw` with the glow sprites and the section's stencil helpers hidden (passes that override materials) */
+function withoutHelpers(scene: THREE.Scene, draw: () => void): void {
+  const hidden: THREE.Object3D[] = [];
+  scene.traverseVisible((o) => { if (o instanceof THREE.Sprite || o.userData.stencil) hidden.push(o); });
+  for (const o of hidden) o.visible = false;
+  try {
+    draw();
+  } finally {
+    for (const o of hidden) o.visible = true;
+  }
+}
+
 /** the outline a selected part (and the part under the pointer) gets, as CAD tools draw it */
 function outlinePass(scene: THREE.Scene, camera: THREE.Camera, width: number, height: number): OutlinePass {
   const pass = new OutlinePass(new THREE.Vector2(width, height), scene, camera);
@@ -46,6 +65,19 @@ function outlinePass(scene: THREE.Scene, camera: THREE.Camera, width: number, he
   pass.edgeGlow = 0;
   pass.visibleEdgeColor.set('#0ea5e9').convertLinearToSRGB();
   pass.hiddenEdgeColor.set('#0b5d80').convertLinearToSRGB();
+  // a section clips the selection's mask too, so a cut part is outlined as cut: the mask shader
+  // takes three's clipping chunks (it has none of its own)
+  const mask = pass.prepareMaskMaterial;
+  mask.clipping = true;
+  mask.vertexShader = mask.vertexShader
+    .replace('#include <skinning_pars_vertex>', '#include <skinning_pars_vertex>\n#include <clipping_planes_pars_vertex>')
+    .replace('#include <project_vertex>', '#include <project_vertex>\n#include <clipping_planes_vertex>');
+  mask.fragmentShader = mask.fragmentShader
+    .replace('#include <packing>', '#include <packing>\n#include <clipping_planes_pars_fragment>')
+    .replace('void main() {', 'void main() {\n#include <clipping_planes_fragment>');
+  // the outline's mask and depth renders override materials: the section's helpers stay out of them
+  const render = pass.render.bind(pass);
+  pass.render = (...args: Parameters<OutlinePass['render']>) => withoutHelpers(scene, () => render(...args));
   return pass;
 }
 
@@ -59,7 +91,7 @@ export class OutlineRenderer {
   readonly outline: OutlinePass;
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, width: number, height: number) {
-    this.composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(width, height, { type: THREE.HalfFloatType, samples: 4 }));
+    this.composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(width, height, { type: THREE.HalfFloatType, samples: 4, stencilBuffer: true }));
     this.render = new RenderPass(scene, camera);
     this.outline = outlinePass(scene, camera, width, height);
     this.composer.addPass(this.render);
@@ -70,6 +102,12 @@ export class OutlineRenderer {
   setCamera(camera: THREE.Camera): void {
     this.render.camera = camera;
     this.outline.renderCamera = camera;
+  }
+
+  /** a section's planes (or none) for the outline's own depth render */
+  setClipping(planes: THREE.Plane[] | null): void {
+    clipMaterial(this.outline.depthMaterial, planes);
+    clipMaterial(this.outline.prepareMaskMaterial, planes);
   }
 
   setSize(width: number, height: number, pixelRatio: number): void {
@@ -94,7 +132,7 @@ export class QualityRenderer {
   private warmup = 4;
 
   constructor(renderer: THREE.WebGLRenderer, private readonly scene: THREE.Scene, camera: THREE.Camera, width: number, height: number) {
-    const target = () => new THREE.WebGLRenderTarget(width, height, { type: THREE.HalfFloatType, samples: 4 });
+    const target = () => new THREE.WebGLRenderTarget(width, height, { type: THREE.HalfFloatType, samples: 4, stencilBuffer: true });
     this.glow = new EffectComposer(renderer, target());
     this.glow.renderToScreen = false;
     const glowRender = new RenderPass(scene, camera);
@@ -107,15 +145,10 @@ export class QualityRenderer {
     // the scene is in millimetres: occlusion over the few mm between a body and its board
     ao.updateGtaoMaterial({ radius: 14, distanceExponent: 2, thickness: 10, scale: 1.4, samples: 16 });
     ao.blendIntensity = 1;
-    // the occlusion's depth and normals are of solid bodies: a glow sprite would be a solid quad there
+    // the occlusion's depth and normals are of solid bodies: a glow sprite would be a solid quad
+    // there, and a section's stencil helpers (drawn with an override material) whole, uncut bodies
     const aoRender = ao.render.bind(ao);
-    ao.render = (...args: Parameters<GTAOPass['render']>) => {
-      const sprites: THREE.Object3D[] = [];
-      scene.traverseVisible((o) => { if (o instanceof THREE.Sprite) sprites.push(o); });
-      for (const o of sprites) o.visible = false;
-      aoRender(...args);
-      for (const o of sprites) o.visible = true;
-    };
+    ao.render = (...args: Parameters<GTAOPass['render']>) => withoutHelpers(scene, () => aoRender(...args));
     const mix = new ShaderPass(new THREE.ShaderMaterial({
       uniforms: { tDiffuse: { value: null }, bloom: { value: this.glow.renderTarget2.texture } },
       vertexShader: MIX_VERTEX,
@@ -128,6 +161,14 @@ export class QualityRenderer {
     this.composer.addPass(new OutputPass());
     this.composer.addPass(this.outline);
     this.passes = { render, ao, glowRender };
+  }
+
+  /** a section's planes (or none) for the passes that draw the scene with their own materials */
+  setClipping(planes: THREE.Plane[] | null): void {
+    clipMaterial(this.passes.ao.normalMaterial, planes);
+    clipMaterial(this.outline.depthMaterial, planes);
+    clipMaterial(this.outline.prepareMaskMaterial, planes);
+    clipMaterial(this.black, planes);
   }
 
   setCamera(camera: THREE.Camera): void {
@@ -149,7 +190,7 @@ export class QualityRenderer {
     const swapped: [THREE.Mesh, THREE.Material | THREE.Material[]][] = [];
     const hidden: THREE.Object3D[] = [];
     this.scene.traverseVisible((o) => {
-      if ((o as THREE.Mesh).isMesh) {
+      if ((o as THREE.Mesh).isMesh && !o.userData.stencil) {
         const mesh = o as THREE.Mesh;
         const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         if (!mats.some(glows)) {
@@ -157,6 +198,7 @@ export class QualityRenderer {
           mesh.material = this.black;
         }
       } else if (o instanceof THREE.Sprite || o instanceof THREE.Line) hidden.push(o);
+      if (o.userData.stencil) hidden.push(o);
     });
     for (const o of hidden) o.visible = false;
     const background = this.scene.background;

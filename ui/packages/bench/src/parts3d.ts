@@ -11,8 +11,10 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature } from './shape';
-import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, socketStrip, tactileSwitch, usbB } from './packages3d';
+import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature, type SmallOutline } from './shape';
+import { modelBody, type Model3d } from './models3d';
+import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, smallOutlineAdapter, socketStrip, STATIC_MATERIALS, tactileSwitch, usbB } from './packages3d';
+import { batchStatic } from './batch';
 
 export interface PartLook {
   /** the component's id ("emblink/resistor") */
@@ -20,6 +22,8 @@ export interface PartLook {
   params?: Record<string, unknown>;
   /** the artwork's live picture for the top face, when it has one */
   texture?: THREE.Texture;
+  /** a 3D model from a file, drawn instead of the body built here (stage 3) */
+  model3d?: Model3d;
 }
 
 /** objects a pointer can act on carry what they are in userData */
@@ -36,6 +40,8 @@ const METAL = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, metalness: 0.9, 
 const GOLD = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.28 });
 const BLACK_PLASTIC = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.55 });
 const EPOXY = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.42 });
+/** the shared materials no part changes once built (merged per part, batch.ts) */
+const STATICS: ReadonlySet<THREE.Material> = new Set([...STATIC_MATERIALS, METAL, GOLD, BLACK_PLASTIC, EPOXY]);
 
 const COLOR_CODE = ['#111111', '#7b3f00', '#d63031', '#f39c12', '#f1c40f', '#27ae60', '#2e86de', '#8e44ad', '#808080', '#f5f5f5'];
 const GOLD_BAND = '#c9a227';
@@ -420,7 +426,25 @@ function standardDip(shape: BenchShape): THREE.Group | null {
   return g;
 }
 
+/** a small-outline part on its breakout, centred on the DIP's pins */
+function adapted(shape: BenchShape, so: SmallOutline): THREE.Group | null {
+  const pins = Object.values(local(shape));
+  const zs = [...new Set(pins.map(([, z]) => Math.round(z * 100) / 100))];
+  if (zs.length !== 2) return null;
+  const rows = Math.abs(zs[0]! - zs[1]!);
+  // the body is centred on the DIP footprint (a part may use only some of its pins)
+  const [cx, cz] = [0, 0];
+  const tex = labelTexture(shape.label ?? '', so.length * 0.7, so.width * 0.4, '#d0d0d0');
+  const { group } = smallOutlineAdapter(so, rows, tex ?? undefined);
+  group.position.set(cx, 0, cz);
+  const g = new THREE.Group();
+  g.add(group);
+  return g;
+}
+
 function dip(shape: BenchShape): THREE.Group {
+  const so = shape.smallOutline ? adapted(shape, shape.smallOutline) : null;
+  if (so) return so;
   const exact = standardDip(shape);
   if (exact) return exact;
   const g = new THREE.Group();
@@ -707,6 +731,15 @@ function feature(f: BoardFeature, id: string, indicators: Indicator[]): THREE.Ob
     case 'qfn': {
       const [qw, qd, qh] = f.size ?? quadSize(f.kind, f.pins ?? 32);
       g.add(quadPackage(f.kind, qw, qd, qh, f.pins ?? 32));
+      // the laser marking: the part number across the top, pale grey on the mould
+      const mark = f.label ? labelTexture(f.label, qd * 0.8, qw * 0.22, '#9da2a8') : undefined;
+      if (mark) {
+        const plate = new THREE.Mesh(new THREE.PlaneGeometry(qd * 0.8, qw * 0.22), new THREE.MeshBasicMaterial({ map: mark, transparent: true }));
+        // read upright, the pin-1 dimple (back left) is at the text's lower left, as vendors mark them
+        plate.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+        plate.position.y = qh + 0.012;
+        g.add(plate);
+      }
       break;
     }
     case 'crystal':
@@ -884,9 +917,34 @@ export function buildPart(id: string, shape: BenchShape, look: PartLook): Built 
     default:
       built = { group: box(shape), pinTop: shape.size[2] + 4 };
   }
+  if (look.model3d) drawModel(built, shape, look.model3d, id);
+  // one draw call per shared static material, not one per pin (stage 7)
+  batchStatic(built.group, STATICS, built.control);
   built.group.traverse((o) => {
     if (!o.userData.part) o.userData = { ...o.userData, part: id } satisfies PickData;
   });
   built.group.name = id;
   return built;
+}
+
+/**
+ * The model from the catalog in place of the built body, its origin on the
+ * first pin. A control (a trimmer's adjuster) keeps working: every mesh of
+ * the model takes the gesture, and the control becomes an unseen stand-in
+ * (the model's own adjuster does not turn).
+ */
+function drawModel(built: Built, shape: BenchShape, model: Model3d, id: string): void {
+  const first = Object.values(local(shape))[0] ?? [0, 0];
+  const body = modelBody(model, first);
+  if (!body) return; // the file did not parse: the built body stays
+  const gesture = built.control ? (built.control.userData as PickData) : undefined;
+  for (const child of [...built.group.children]) if (!(child instanceof THREE.Light) && !(child instanceof THREE.Sprite)) built.group.remove(child);
+  built.group.add(body);
+  if (gesture?.input) {
+    body.traverse((o) => { o.userData = { part: id, input: gesture.input, gesture: gesture.gesture } satisfies PickData; });
+    const proxy = new THREE.Object3D();
+    proxy.userData = { ...gesture };
+    built.group.add(proxy);
+    built.control = proxy;
+  }
 }

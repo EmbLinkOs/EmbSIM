@@ -63,8 +63,8 @@ is one PR, with its tests and gallery shots.
   simplest form.
 - **Section.** A cutting plane across X, Y or Z at a chosen position, either
   side kept (Altium's section view). The bench's objects and their shadows
-  are clipped; the desk stays whole. The cut faces are left open (capping
-  them is later work).
+  are clipped; the desk stays whole. The cut faces are capped (done
+  2026-10-31: a stencil count per closed body and a cap on the plane).
 - **Height plane.** A semi-transparent plane at a height above the desk.
   Parts whose bodies rise through it are outlined and listed (Proteus's
   height check, for an enclosure's lid).
@@ -111,6 +111,11 @@ Exit:
   - each lead's tip against its pad;
   - the pin order against the part's pin table.
 
+Done (2026-10-31): gull-wing leads on QFPs; SOIC (MS-012), VSSOP
+(MO-187) and TSSOP (MO-153) bodies, drawn on an SO-to-DIP breakout when the
+part stands on a breadboard; quad packages marked with their part number;
+board features at any angle (the NUCLEO-64's 45° MCUs).
+
 ### Stage 3: model assets (glTF in, KiCad's models as references)
 
 - `component.json` may name a glTF model (`model3d: {file, offset,
@@ -122,6 +127,25 @@ Exit:
   never merged into code.
 - A loader caches models and instances repeated parts, so one model serves
   a hundred LEDs.
+
+Done (first step):
+- `bench.model3d` in `component.json` names a VRML file beside the part,
+  with its scale, offset, rotation, source and licence (the schema requires
+  the last two). KiCad's VRML is loaded directly (three.js's VRMLLoader,
+  MIT), so no conversion step is needed yet; glTF stays the plan for models
+  from other sources.
+- `catalog.get` returns the file's text as `files.model3d`; the bench stands
+  the model up (KiCad is Z-up in 2.54 mm units, origin at pad 1), puts its
+  origin on the part's first pin, and draws it instead of the built body. A
+  control (a trimmer's adjuster) keeps its gesture. Phong materials become
+  physical ones: a grey with a bright, tight specular is metal.
+- Each file is parsed once; every part using it shares its geometry and
+  materials.
+- The Bourns 3296W trimmers (10 kΩ and 100 kΩ) and the 12 × 9.5 mm buzzer
+  use KiCad's models, copied with KiCad's licence beside them.
+- `models3d.test.ts`: each model's legs stand in its pins' holes (a turn of
+  180° fails it), a file that does not parse keeps the built body, and the
+  material conversion.
 
 ### Stage 4: boards as boards (the stack-up)
 
@@ -154,10 +178,23 @@ Exit:
 - A room around the bench: floor, walls, table, window light, a sun by the
   time of day.
 - Bodies with physics (Rapier, Apache-2.0, ADR-029), and a robot on the
-  floor.
+  floor. First step done (2026-10-31): bodies move in virtual time in the
+  engine (a velocity, a travel back and forth), seen by the distance sensors
+  and drawn by the bench.
 - Temperature and light as fields drawn when asked (a heat map over the
   bench).
 - The world's objects are what the sensors' rays hit, as today.
+
+Done (first step, 2026-10-31): the bench's surface is the top of a 750 mm
+lab table with a 1400 x 700 mm mat, in a 5.2 x 4.4 x 2.7 m room with a
+window on the left; walls face inwards so none hides the bench; the light
+follows the world's illuminance (`room.ts`, `room.test.ts`). Then the room's
+size and window direction (`world.room`) and the sun by latitude, date and
+solar time (`world.sun`, `sun.ts`): the key light is the sun when its beam
+reaches the table through the window, window daylight when not, the lamp at
+night. Then the window's patch: walls, ceiling and bars cast shadows from a
+sun whose shadow camera starts outside the room. Still to do: floor
+shadows, physics.
 
 ### Stage 7: performance and qualification
 
@@ -166,6 +203,19 @@ Exit:
 - A Playwright harness measures frame times on the reference scenes and
   enforces ADR-028's budgets (8.3 ms at 120 Hz, a 16.7 ms floor).
 - The visual benchmark's V1 to V4 qualifications.
+
+Done (first step, 2026-10-31): each frame's render is a User Timing
+measure (`frames.ts`); `e2e/frame-budget.spec.ts` orbits the demo bench in
+draft and quality and reports p50/p95/p99 and the share of frames over
+8.3 and 16.7 ms, enforcing the 95th percentile with
+`EMBSIM_FRAME_BUDGET=enforce` (CI renders on the CPU, so it reports only).
+The time is the CPU's; GPU timer queries
+(`EXT_disjoint_timer_query_webgl2`) add the GPU's where the browser has them
+(`GpuTimer`, done 2026-10-31).
+
+Done (2026-10-31): static batching per part (`batch.ts`): the meshes in the
+shared static materials merged, one per material (the NUCLEO: 581 to 22
+meshes). Still to do: instancing across parts, level of detail.
 
 ## 4. Not planned
 

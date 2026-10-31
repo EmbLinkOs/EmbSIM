@@ -26,6 +26,133 @@ Not yet: the USB OTG FS controller (CubeF4's USB device and host
 applications), the board's USB power switch and its LEDs, MCO1/MCO2 on
 their pins, and the parts of MB1137 whose values UM1974 does not give (the
 board's fidelity lists them).
+## The PIR sensor (2026-10-31)
+
+`emblink/pir_sensor` is the HC-SR501 as its datasheet describes it (warm-up,
+Tx, H/L trigger modes, the BISS0001's block), its motion read from the world
+when not set: a warm body moving in its cone and range. Evidence: five
+fixtures (hold, warm-up, single trigger, retrigger, block; flipping the mode
+breaks the retrigger one) and `tests/protocol/test_pir.py` (a cold moving box
+and a still person unseen, a walking person seen within 100 ms, OUT falling
+a hold after they leave the range). A person is drawn as a figure in the
+box the sensors see, walking in step with virtual time (`figure.test.ts`).
+Not yet: the lens's zones and the element's response to speed and
+direction; warm-up glitches on OUT.
+
+## Moving bodies (2026-10-31)
+
+World bodies move in virtual time (`velocity_mm_s`, `travel_mm`), in the
+engine (`esk_world_body_at`): distance sensors read them where they are.
+Evidence: `tests/protocol/test_world.py` (a cart out and back over its
+travel; a project body added at 3 s placed on the timeline from 0),
+NewPing's unmodified example measuring an approaching wall (105, 104, 101,
+99 ... 66, 64 cm, 8/8 assertions), `world-motion.test.ts` (the bench's copy of
+the motion, the same numbers), and the gallery. Not yet: physics (gravity,
+collisions; Rapier is the plan's choice), motion along a path. (PIR sensors
+reading motion followed, above.)
+
+## The window's sunlit patch (2026-10-31)
+
+When the sun shines through the window, only a window-shaped patch of the
+table is sunlit: the walls, ceiling and the window's bars cast shadows, and
+the sun's shadow camera starts outside the room. Evidence: `room.test.ts`
+(which room surfaces cast shadows, the pane not), the gallery, and the
+edge's position measured against the projected bench axis (38° N, 21
+December, noon: the edge at x = -29 mm where the frame's top bar puts it at
++24 mm, half a degree of elevation). Not yet: floor shadows outside the
+table's 2 m shadow frame, physics.
+
+## GPU frame times (2026-10-31)
+
+`GpuTimer` (`frames.ts`) times each frame on the GPU where the browser
+exposes `EXT_disjoint_timer_query_webgl2`, as the measure
+`embsim.bench3d.gpu`; the frame-budget spec reports it. Evidence:
+`frames.test.ts` (results read in order once available, a disjoint event
+discards them, no extension does nothing). CI's SwiftShader has no timer
+queries, so the GPU column is measured only on real GPUs.
+
+## Capped sections (2026-10-31)
+
+A section's cut faces are capped (`caps.ts`): stencil helpers per closed
+body, one cap plane on the cut. Evidence: `caps.test.ts` (the helpers' sides
+and stencil operations, plates and see-through bodies left out, the cap on
+the plane and never under the pointer, everything removed with the
+section) and the gallery. The quality passes' own materials are clipped too.
+The outline's mask shader takes three's clipping chunks, so a cut part is
+outlined as cut. Not yet: open meshes (a KiCad model with open surfaces)
+may cap imperfectly.
+
+## Static batching (2026-10-31)
+
+Stage 7: `batch.ts` merges each built part's meshes in the shared static
+materials, one mesh per material (the NUCLEO-F446RE: 581 meshes to 22).
+Evidence: `batch.test.ts` (a header strip's bounds and triangles unchanged,
+one gold mesh; the NUCLEO's buttons still pressable), the renders unchanged,
+and the frame harness (demo bench, headless: quality p95 10.4 to 6.5 ms).
+Not yet: instancing across parts (a hundred resistors are still a hundred
+batches), level of detail.
+
+## The sun by the time of day (2026-10-31)
+
+The world may declare the room's size and its window's direction
+(`world.room`) and where and when it is (`world.sun`); both are presentation
+and kept with the project (`set_world` takes them; an empty one is removed).
+The bench's key light follows the sun when its beam reaches the table
+through the window, soft window daylight when it does not, the ceiling lamp
+at night. Evidence: `sun.test.ts` (noon elevations at 40° N in June and
+December, sunrise and sunset azimuths at an equinox, the beam through the
+window or the wall), `world-sun.test.ts`, the world spec in
+`e2e/world.spec.ts`, `tests/protocol/test_world.py`, and the gallery. The sun's patch
+on the table followed (above). Not yet: the illuminance following the sun (it stays the declared field,
+which the light sensors read), physics.
+
+## The room around the bench, and frame times (2026-10-31)
+
+Stage 6 of [the 3D plan](engineering/bench-3d.md) has begun: the bench's
+surface is the top of a 750 mm lab table in a room (walls, floor, ceiling,
+a window on the left), lit by the world's illuminance. Evidence:
+`room.test.ts` (the table's top at the bench's surface, the window a hole
+through the wall, the light level by illuminance) and the gallery. Not yet:
+shadows on the floor, and physics (the room's size and the sun followed the
+same day, below).
+
+Stage 7's harness: each frame's render is a User Timing measure, and
+`e2e/frame-budget.spec.ts` reports the percentiles while orbiting the demo
+bench in draft and quality (headless SwiftShader: draft p95 about 3 ms,
+quality p95 about 4.5 ms of CPU time). The time is the CPU's (the GPU's
+work is asynchronous, so it is a lower bound); CI reports it, and
+`EMBSIM_FRAME_BUDGET=enforce` judges it on a machine with a GPU. GPU timer queries
+followed (below); not yet: instancing and level of detail.
+
+## Gull-wing leads and small-outline parts (2026-10-31)
+
+More of stage 2: QFP leads are gull wings (MS-026), and parts whose package
+is SO/SOIC, VSSOP/MSOP or TSSOP stand on an SO-to-DIP breakout (the LMV358),
+the package at its JEDEC dimensions on the breakout's pads. Board features
+turn by any angle; the NUCLEO-64's MCUs sit at 45°, marked. Evidence:
+`packages3d.test.ts` (the outlines' nominal dimensions, each foot on its
+pin, tip-to-tip span, the breakout's posts on the DIP pins) and
+`surface-packages.test.ts`. Not yet: J-leads (PLCC, SOJ), SO parts whose
+catalog pins carry no package numbers.
+
+## Parts from KiCad's 3D models (2026-10-31)
+
+Stage 3 of [the 3D plan](engineering/bench-3d.md) has begun. A catalog part
+may name a 3D model file (`bench.model3d`: a VRML file, its scale, offset,
+rotation, source and licence). The server sends the file with the part
+(`catalog.get`'s `files.model3d`), and the bench draws the model in place of
+the body it builds, its origin on the part's first pin. The Bourns 3296W
+trimmers and the buzzer use KiCad's models (CC-BY-SA 4.0 with KiCad's
+design exception, each a separate file with its licence, ADR-029).
+
+Evidence: `models3d.test.ts` (the legs of each model on its pins; a wrong
+turn fails; an unreadable file keeps the built body; Phong to physical
+materials) and the gallery. KiCad's 2020 library has no model for the
+other parts the bench draws approximately (the G5LE relay, the D2F switch;
+for the Phoenix MC 3.81 mm parts it has the fixed header, not the plug the
+catalog part is), so none is used for them. Not yet: glTF models, and GPU
+instancing (parts share a model's geometry and materials,
+but each is drawn on its own).
 
 ## Boards as boards (2026-10-30)
 

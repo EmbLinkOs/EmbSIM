@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "warmup",
+  "description": "Motion from 5 ms during a 20 ms warm-up: unseen until the module is ready, then OUT rises at 20 ms (motion still there).",
+  "policy": "functional",
+  "until": "25ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pir_sensor",
+        "params": {
+          "hold": "10m",
+          "warmup": "20m"
+        }
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "15ms",
+      "logic": "0"
+    },
+    "output:DUT.active": {
+      "at": "21ms",
+      "equals": true
+    }
+  },
+  "inputs": [
+    {
+      "at": "5ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": true
+    }
+  ]
+}

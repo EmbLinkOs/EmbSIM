@@ -12,7 +12,7 @@
 // luminance. Frames are drawn on demand (a change, a camera move), never
 // in a loop while nothing moves.
 
-import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue, WorldBody } from '@embsim/protocol';
+import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue, WorldBody, WorldRoom, WorldSun } from '@embsim/protocol';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 
 import * as THREE from 'three';
@@ -29,6 +29,12 @@ import type { InsertionPreview } from './layout';
 import type { Beam } from './world';
 import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, sectionPlane, snapPoint, viewPose, type BenchLayers, type Measurement, type Section, type StandardView, type Vec3 } from './inspect';
 import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
+import type { Model3d } from './models3d';
+import { GpuTimer, recordFrame } from './frames';
+import { isPerson, personFigure } from './figure';
+import { capSection, type Caps } from './caps';
+import { buildRoom, lightLevel, ROOM, windowOpening, type Room, type RoomSize } from './room';
+import { dayOfYear, solarPosition, sunColor, sunDirection, sunlit } from './sun';
 
 
 
@@ -42,6 +48,8 @@ export interface BenchPartView {
   /** the height of the surface it stands on (a breadboard's top, or the desk) */
   elevation: number;
   artwork?: { svg: string; states?: ArtworkState[]; hotspots?: Hotspot[]; vars?: Record<string, string> };
+  /** a 3D model from the catalog drawn instead of the built body (bench.model3d) */
+  model3d?: Model3d;
   inputs?: Record<string, unknown>;
   outputs?: Record<string, OutputValue>;
 }
@@ -120,6 +128,11 @@ export interface Bench3DProps {
   traceTerminals?: string[];
   onRoute?(index: number, points: Point3[]): void;
   surface?: 'mat' | 'paper' | 'graphite';
+  /** the world's illuminance, lx (ADR-026): how lit the room is */
+  illuminance?: number;
+  /** the room's size and window, and where and when it is (the sun's position) */
+  room?: WorldRoom;
+  sun?: WorldSun;
   labels?: 'adaptive' | 'all' | 'selected';
   showNotes?: boolean;
   insertionPreview?: InsertionPreview;
@@ -241,6 +254,9 @@ export function jumperCurve(a: Point3, b: Point3, points?: Point3[], rise?: numb
   return new THREE.CatmullRomCurve3([A, A.clone().setY(A.y + UP), A.clone().lerp(B, 0.2).setY(top - lift * 0.25), mid, B.clone().lerp(A, 0.2).setY(top - lift * 0.25), B.clone().setY(B.y + UP), B], false, 'centripetal');
 }
 
+/** the anti-static mat on the table, mm */
+const MAT: [number, number] = [1400, 700];
+
 function deskTexture(surface: 'mat' | 'paper' | 'graphite' = 'mat'): THREE.CanvasTexture | undefined {
   if (typeof document === 'undefined') return undefined;
   const c = document.createElement('canvas');
@@ -262,13 +278,16 @@ function deskTexture(surface: 'mat' | 'paper' | 'graphite' = 'mat'): THREE.Canva
   }
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(100, 100);
+  // 100 mm a tile: a 10 mm grid on the 1400 x 700 mm mat
+  t.repeat.set(MAT[0] / 100, MAT[1] / 100);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
 function partKey(v: BenchPartView): string {
-  return JSON.stringify([v.component, v.params ?? {}, v.shape, v.artwork?.svg ?? '']);
+  // a model's text is long: its length and placement stand for it (the catalog's files do not change under a part)
+  const m = v.model3d;
+  return JSON.stringify([v.component, v.params ?? {}, v.shape, v.artwork?.svg ?? '', m ? [m.text.length, m.scale, m.offset_mm, m.rotation_deg] : null]);
 }
 
 function labelElement(text: string): HTMLDivElement {
@@ -354,6 +373,15 @@ export function Bench3D(props: Bench3DProps) {
   const state = useRef<{
     renderer: THREE.WebGLRenderer;
     desk: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
+    room: Room;
+    roomSize: RoomSize;
+    caps?: Caps | null;
+    /** the section's planes, for the renderers' own passes */
+    clipPlanes?: THREE.Plane[] | null;
+    /** the GPU's time per frame, where the browser can tell it */
+    gpu?: GpuTimer;
+    sky: THREE.HemisphereLight;
+    sun: THREE.DirectionalLight;
     labels: CSS2DRenderer;
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
@@ -385,6 +413,9 @@ export function Bench3D(props: Bench3DProps) {
     if (!s || s.raf) return;
     s.raf = requestAnimationFrame(() => {
       s.raf = 0;
+      s.gpu?.poll();
+      s.gpu?.begin();
+      const t0 = performance.now();
       s.controls.update();
       // the selected part, and the part under the pointer, are outlined
       const outlined = [...new Set([propsRef.current.selected?.part, s.hover])]
@@ -401,6 +432,7 @@ export function Bench3D(props: Bench3DProps) {
         const host = hostRef.current;
         if (!s.outline && host) {
           s.outline = new OutlineRenderer(s.renderer, s.scene, s.camera, host.clientWidth || 1, host.clientHeight || 1);
+          s.outline.setClipping(s.clipPlanes ?? null);
           s.outline.setSize(host.clientWidth || 1, host.clientHeight || 1, s.renderer.getPixelRatio());
         }
         if (s.outline) {
@@ -410,6 +442,9 @@ export function Bench3D(props: Bench3DProps) {
         } else s.renderer.render(s.scene, s.camera);
       } else s.renderer.render(s.scene, s.camera);
       s.labels.render(s.scene, s.camera);
+      const mode = s.quality ? 'quality' : s.outline && outlined.length ? 'outline' : 'draft';
+      recordFrame(t0, mode);
+      s.gpu?.end(mode);
       // the view cube turns with the camera: the scene's rotation seen from the camera, y down as CSS has it
       if (cubeRef.current) cubeRef.current.style.transform = cubeTransform(s.camera.matrixWorldInverse);
     });
@@ -444,7 +479,8 @@ export function Bench3D(props: Bench3DProps) {
     s.controls.maxPolarAngle = mode === 'bottom' ? Math.PI : Math.PI * 0.48;
     for (const cam of [s.perspective, s.orthographic]) {
       cam.near = Math.max(0.5, pose.distance / 500);
-      cam.far = pose.distance * 20;
+      // far enough for the room's farthest corner from the farthest orbit (the window's pane included)
+      cam.far = Math.max(pose.distance * 20, Math.hypot(s.roomSize.width, s.roomSize.depth, s.roomSize.height) + s.controls.maxDistance);
     }
     s.orthographic.zoom = 1;
     setOrthoFrustum(s.orthographic, pose.halfHeight, s.perspective.aspect);
@@ -504,7 +540,7 @@ export function Bench3D(props: Bench3DProps) {
     if (s.jumpers.visible) { const j = s.jumpers.clone(true); j.name = 'jumpers'; root.add(j); }
     if (s.world.visible) { const w = s.world.clone(true); w.name = 'world'; root.add(w); }
     const drop: THREE.Object3D[] = [];
-    root.traverse((o) => { if (o instanceof THREE.Sprite || o instanceof THREE.Light || o instanceof THREE.Line || o instanceof CSS2DObject || o.userData.routePoint !== undefined) drop.push(o); });
+    root.traverse((o) => { if (o instanceof THREE.Sprite || o instanceof THREE.Light || o instanceof THREE.Line || o instanceof CSS2DObject || o.userData.routePoint !== undefined || o.userData.stencil) drop.push(o); });
     for (const o of drop) o.removeFromParent();
     const out = await new GLTFExporter().parseAsync(root, { binary: true, onlyVisible: true });
     return new Blob([out as ArrayBuffer], { type: 'model/gltf-binary' });
@@ -518,7 +554,8 @@ export function Bench3D(props: Bench3DProps) {
     if (!host) return;
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      // a stencil buffer for the section's caps
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, stencil: true });
     } catch {
       host.dataset.webgl = 'unavailable';
       propsRef.current.onRendererError?.();
@@ -547,11 +584,13 @@ export function Bench3D(props: Bench3DProps) {
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environmentIntensity = 0.55;
-    const camera = new THREE.PerspectiveCamera(38, 1, 1, 5000);
+    // far enough to see the room's far corner from the farthest orbit
+    const camera = new THREE.PerspectiveCamera(38, 1, 1, 12000);
     camera.position.set(0, 260, 240);
-    const orthographic = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 5000);
+    const orthographic = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 12000);
 
-    scene.add(new THREE.HemisphereLight(0xdfe9f3, 0x1d262c, 0.65));
+    const sky = new THREE.HemisphereLight(0xdfe9f3, 0x1d262c, 0.65);
+    scene.add(sky);
     const sun = new THREE.DirectionalLight(0xfff4e5, 2.1);
     sun.position.set(-160, 420, 260);
     sun.castShadow = true;
@@ -567,11 +606,14 @@ export function Bench3D(props: Bench3DProps) {
     scene.add(sun.target);
 
     const mat = deskTexture();
-    const desk = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshStandardMaterial({ map: mat ?? null, color: mat ? 0xffffff : 0x2f4f5f, roughness: 0.92 }));
+    const desk = new THREE.Mesh(new THREE.PlaneGeometry(MAT[0], MAT[1]), new THREE.MeshStandardMaterial({ map: mat ?? null, color: mat ? 0xffffff : 0x2f4f5f, roughness: 0.92 }));
     desk.rotation.x = -Math.PI / 2;
     desk.receiveShadow = true;
     desk.name = 'desk';
     scene.add(desk);
+    // the table under the mat, and the room around it (stage 6)
+    const room = buildRoom();
+    scene.add(room.group);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = false;
@@ -590,7 +632,7 @@ export function Bench3D(props: Bench3DProps) {
     const inspect = new THREE.Group();
     scene.add(jumpers, links, notes, world, hints, preview, inspect);
     state.current = {
-      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, parts: new Map(), jumpers, links, notes, world, hints, preview,
+      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, room, roomSize: ROOM, gpu: renderer.capabilities.isWebGL2 ? new GpuTimer(renderer.getContext() as WebGL2RenderingContext) : undefined, sky, sun, parts: new Map(), jumpers, links, notes, world, hints, preview,
       inspect, quality: null, outline: null, hover: null, measureFrom: null, raf: 0, framed: false,
     };
 
@@ -627,6 +669,8 @@ export function Bench3D(props: Bench3DProps) {
       desk.material.map?.dispose();
       desk.material.dispose();
       desk.geometry.dispose();
+      state.current?.room.dispose();
+      state.current?.caps?.dispose();
       renderer.dispose();
       pmrem.dispose();
       renderer.domElement.remove();
@@ -647,6 +691,85 @@ export function Bench3D(props: Bench3DProps) {
     invalidate();
   }, [props.surface, props.showNotes, invalidate]);
 
+  // the room's size, from the world (or the default room)
+  const roomW = props.room?.size_mm?.[0] ?? ROOM.width;
+  const roomD = props.room?.size_mm?.[1] ?? ROOM.depth;
+  const roomH = props.room?.size_mm?.[2] ?? ROOM.height;
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    if (s.roomSize.width === roomW && s.roomSize.depth === roomD && s.roomSize.height === roomH) return;
+    s.scene.remove(s.room.group);
+    s.room.dispose();
+    s.roomSize = { width: roomW, depth: roomD, height: roomH };
+    s.room = buildRoom(s.roomSize);
+    s.scene.add(s.room.group);
+    invalidate();
+  }, [roomW, roomD, roomH, invalidate]);
+
+  // the room is as lit as the world says (the value the light sensors read), its key light the sun
+  // through the window when the sun shines on the table, daylight from the window when it does not,
+  // the ceiling lamp at night
+  const sunSpec = props.sun;
+  const windowAz = props.room?.window_azimuth_deg ?? 180;
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    const k = lightLevel(props.illuminance);
+    s.sky.intensity = 0.65 * k;
+    s.scene.environmentIntensity = 0.55 * k;
+    const pane = s.room.pane.color;
+    let key: { dir: [number, number, number]; color: [number, number, number]; intensity: number };
+    let lighting: string;
+    if (!sunSpec) {
+      key = { dir: [-160, 420, 260], color: [1, 0.957, 0.898], intensity: 2.1 };
+      pane.setRGB(0.87, 0.92, 0.96).multiplyScalar(Math.min(1.2, Math.max(0.04, k * 0.9)));
+      lighting = 'lamp';
+    } else {
+      const pos = solarPosition(sunSpec.latitude_deg ?? 45, dayOfYear(sunSpec.date), sunSpec.solar_time_h ?? 12);
+      const dir = sunDirection(pos, windowAz);
+      if (sunlit(dir, [0, 0, 0], windowOpening(s.roomSize))) {
+        key = { dir, color: sunColor(pos.elevation), intensity: 2.6 };
+        lighting = 'sun';
+      } else if (pos.elevation > 0) {
+        // the sky seen through the window: soft, from the window's side, a little cool
+        const w = windowOpening(s.roomSize);
+        key = { dir: [-s.roomSize.width / 2, (w.bottom + w.top) / 2 + 600, w.z], color: [0.92, 0.96, 1], intensity: 1.5 };
+        lighting = 'daylight';
+      } else {
+        key = { dir: [120, 1000, 180], color: [1, 0.94, 0.86], intensity: 2.1 };
+        lighting = 'night';
+      }
+      // the window: the sky's brightness by the sun's height, a dark blue at night
+      const day = Math.max(0, Math.min(1, (pos.elevation + 4) / 20));
+      pane.setRGB(0.04 + 0.83 * day, 0.06 + 0.86 * day, 0.12 + 0.84 * day);
+    }
+    // the sun shines from outside: its shadow camera starts beyond the window wall, so the wall,
+    // the frame's bars and the ceiling cast their shadows and only a window-shaped patch is sunlit;
+    // it then covers the whole table. A lamp or the window's daylight is inside the room, framed
+    // tight on the bench for crisp shadows of its small parts.
+    const outside = lighting === 'sun';
+    const reach = outside ? Math.hypot(s.roomSize.width, s.roomSize.depth, s.roomSize.height) : 520;
+    const v = new THREE.Vector3(...key.dir).normalize().multiplyScalar(reach);
+    const cam = s.sun.shadow.camera;
+    const half = outside ? 1000 : 400;
+    cam.left = -half;
+    cam.right = half;
+    cam.top = half;
+    cam.bottom = -half;
+    cam.near = outside ? 50 : 0.5;
+    cam.far = outside ? reach * 1.6 : 1500;
+    cam.updateProjectionMatrix();
+    // the bias is in the shadow camera's depth range: the same 0.6 mm either way
+    s.sun.shadow.bias = -0.6 / (cam.far - cam.near);
+    s.sun.position.copy(v);
+    s.sun.target.position.set(0, 0, 0);
+    s.sun.color.setRGB(...key.color);
+    s.sun.intensity = key.intensity * k;
+    s.renderer.domElement.dataset.lighting = lighting;
+    invalidate();
+  }, [props.illuminance, sunSpec, windowAz, invalidate, roomW, roomD, roomH]);
+
   // the parts: built when new or changed, moved when they move
   useEffect(() => {
     const s = state.current;
@@ -663,7 +786,7 @@ export function Bench3D(props: Bench3DProps) {
         }
         const surface = v.artwork && v.shape.textured ? new ArtworkSurface(v.artwork.svg, v.shape.size[0], v.shape.size[1], v.artwork.states, v.artwork.hotspots, v.artwork.vars) : undefined;
         if (surface) surface.onDraw = invalidate;
-        const built = buildPart(v.id, v.shape, { component: v.component, params: v.params, texture: surface?.texture });
+        const built = buildPart(v.id, v.shape, { component: v.component, params: v.params, texture: surface?.texture, model3d: v.model3d });
         const label = new CSS2DObject(labelElement(v.label));
         const top = new THREE.Box3().setFromObject(built.group).max.y;
         const labelGap = Math.min(14, Math.max(1.5, Math.max(v.shape.size[0], v.shape.size[1]) * 0.15));
@@ -774,6 +897,7 @@ export function Bench3D(props: Bench3DProps) {
     if (!s || !host) return;
     if (props.quality === 'quality' && !s.quality) {
       s.quality = new QualityRenderer(s.renderer, s.scene, s.camera, host.clientWidth || 1, host.clientHeight || 1);
+      s.quality.setClipping(s.clipPlanes ?? null);
       s.quality.setSize(host.clientWidth || 1, host.clientHeight || 1, s.renderer.getPixelRatio());
       // softer, finer shadows to go with the occlusion
       s.scene.traverse((o) => { if (o instanceof THREE.DirectionalLight && o.castShadow) { o.shadow.mapSize.set(4096, 4096); o.shadow.map?.dispose(); o.shadow.map = null; } });
@@ -935,19 +1059,36 @@ export function Bench3D(props: Bench3DProps) {
     const s = state.current;
     if (!s) return;
     for (const c of [...s.world.children]) {
+      const mats = new Set<THREE.Material>();
       c.traverse((o) => {
         if (o instanceof CSS2DObject) o.element.remove();
-        if (o instanceof THREE.Mesh || o instanceof THREE.Line) o.geometry.dispose();
+        if (o instanceof THREE.Mesh || o instanceof THREE.Line) {
+          o.geometry.dispose();
+          for (const mat of Array.isArray(o.material) ? o.material : [o.material]) mats.add(mat);
+        }
       });
+      for (const mat of mats) mat.dispose();
       s.world.remove(c);
     }
     for (const b of props.bodies ?? []) {
       // bench (x, y, z up) to the scene (x, z up, y towards the viewer)
-      const geom = b.shape === 'sphere' ? new THREE.SphereGeometry(b.size[0] / 2, 32, 16) : new THREE.BoxGeometry(b.size[0], b.size[2], b.size[1]);
-      const m = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#b08d5b'), roughness: 0.85 }));
+      let m: THREE.Object3D;
+      if (isPerson(b)) {
+        // a person, drawn as one; the sensors still see the box
+        m = personFigure(b, {
+          clothes: new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#5a7fa8'), roughness: 0.8 }),
+          legs: new THREE.MeshStandardMaterial({ color: 0x2f3b4f, roughness: 0.85 }),
+          skin: new THREE.MeshStandardMaterial({ color: 0xc69477, roughness: 0.6 }),
+        });
+        m.traverse((o) => { o.userData = { body: b.id }; });
+      } else {
+        const geom = b.shape === 'sphere' ? new THREE.SphereGeometry(b.size[0] / 2, 32, 16) : new THREE.BoxGeometry(b.size[0], b.size[2], b.size[1]);
+        const box = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#b08d5b'), roughness: 0.85 }));
+        box.castShadow = true;
+        box.receiveShadow = true;
+        m = box;
+      }
       m.position.set(b.at[0], b.at[2], b.at[1]);
-      m.castShadow = true;
-      m.receiveShadow = true;
       m.userData = { body: b.id };
       const label = new CSS2DObject(labelElement(b.name ?? b.id));
       label.position.set(0, (b.shape === 'sphere' ? b.size[0] : b.size[2]) / 2 + 8, 0);
@@ -1035,6 +1176,12 @@ export function Bench3D(props: Bench3DProps) {
     clip(s.jumpers);
     clip(s.links);
     clip(s.world);
+    s.clipPlanes = planes;
+    s.quality?.setClipping(planes);
+    s.outline?.setClipping(planes);
+    // the cut faces, capped
+    s.caps?.dispose();
+    s.caps = planes ? capSection([...[...s.parts.values()].map((e) => e.built.group), s.jumpers, s.world], planes[0]!, s.scene, 4000) : null;
     invalidate();
   }, [props.section, props.parts, props.jumpers, props.bodies, invalidate]);
 

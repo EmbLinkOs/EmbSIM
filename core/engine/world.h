@@ -30,12 +30,21 @@ typedef enum {
 
 /* the pseudo-field a distance sensor binds: the nearest body along its beam */
 #define ESK_WF_DISTANCE ESK_WF_COUNT
+/* the pseudo-field a PIR sensor binds: a warm body moving in its field of view */
+#define ESK_WF_MOTION (ESK_WF_COUNT + 1)
 
 typedef struct esk_body {
     char *id;
     int sphere;     /* a sphere of diameter size[0]; else a box */
-    double at[3];   /* centre, mm: x right, y towards the viewer, z up */
+    double at[3];   /* centre when set, mm: x right, y towards the viewer, z up */
     double size[3]; /* width, depth, height, mm */
+    /* motion in virtual time (presentation and sensors alike): a constant
+     * velocity from `at`, set at `since`; with `travel` > 0 the body goes
+     * back and forth along it over that distance (a hand, a door, a cart) */
+    double vel[3];  /* mm/s */
+    double travel;  /* mm, 0: straight on */
+    es_time_t since;
+    int warm;       /* warmer than the room (a person, an animal, a hand): a PIR sees it move */
 } esk_body;
 
 typedef struct esk_world {
@@ -50,12 +59,19 @@ const char *esk_world_field_name(int field);
 const char *esk_world_field_unit(int field);
 void esk_world_init(esk_world *w);
 void esk_world_free(esk_alloc *a, esk_world *w);
-/* a body from {shape, at, size}; NULL (or a JSON null) removes it */
-es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const esk_json *spec);
+/* a body from {shape, at, size, velocity_mm_s, travel_mm, since_ps}, set at
+ * `now` (its motion counts from since_ps when given, else from now);
+ * NULL (or a JSON null) removes it */
+es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const esk_json *spec, es_time_t now);
+/* where a body's centre is at `now` */
+void esk_world_body_at(const esk_body *b, es_time_t now, double out[3]);
 /* the distance (mm) from `o` along the unit vector `d` to the nearest
- * body, or -1 when the ray meets none */
-double esk_world_ray(const esk_world *w, const double o[3], const double d[3]);
-/* the world as JSON: {fields: {name: {value, unit, set}}, bodies: [...]} */
-esk_json *esk_world_json(esk_alloc *a, const esk_world *w);
+ * body where the bodies are at `now`, or -1 when the ray meets none */
+double esk_world_ray(const esk_world *w, const double o[3], const double d[3], es_time_t now);
+/* whether a warm body moving at `now` is within `range_mm` of `o` and within
+ * `half_angle_deg` of the unit axis `d` (a PIR's field of view) */
+int esk_world_motion(const esk_world *w, const double o[3], const double d[3], double half_angle_deg, double range_mm, es_time_t now);
+/* the world as JSON at `now`: {fields: {name: {value, unit, set}}, bodies: [...]} */
+esk_json *esk_world_json(esk_alloc *a, const esk_world *w, es_time_t now);
 
 #endif

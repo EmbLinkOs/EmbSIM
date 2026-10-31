@@ -55,7 +55,7 @@ export type ProjectEdit =
   | { rename_net: { from: string; to: string } }
   | { add_board: { id: string; board: string; layout?: Layout; firmware?: ProjectBoard['firmware'] } }
   | { remove_board: { id: string } }
-  | { set_world: { fields?: NonNullable<Project['world']>['fields']; bodies?: NonNullable<Project['world']>['bodies'] } }
+  | { set_world: { fields?: NonNullable<Project['world']>['fields']; bodies?: NonNullable<Project['world']>['bodies']; room?: NonNullable<Project['world']>['room']; sun?: NonNullable<Project['world']>['sun'] } }
   | { set_layout: { id?: string; layout?: Layout; wires?: Project['layout'] extends infer L ? (L extends { wires?: infer W } ? W : never) : never; labels?: NonNullable<Project['layout']>['labels']; buses?: NonNullable<Project['layout']>['buses']; groups?: NonNullable<Project['layout']>['groups']; bench?: NonNullable<Project['layout']>['bench'] } };
 
 export interface Methods {
@@ -165,7 +165,7 @@ export interface Methods {
   'catalog.list': { params: { kind?: string; category?: string; query?: string }; result: { items: CatalogItem[] } };
   'catalog.get': {
     params: { id: string; version?: string };
-    result: { description: ComponentDescription; files: { symbol?: string; artwork?: string } };
+    result: { description: ComponentDescription; files: { symbol?: string; artwork?: string; model3d?: string } };
   };
   'catalog.validate': { params: { path: string }; result: { ok: boolean; diagnostics: DiagnosticRecord[] } };
   'catalog.libraries': { params: Record<string, never>; result: { libraries: { path: string; name: string; version: string; items: number }[] } };

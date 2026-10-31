@@ -18,6 +18,105 @@ Zio and morpho positions approximate until a dimensioned drawing gives
 | Design | Run |
 |---|---|
 | ![The NUCLEO-F446ZE example in the Design workspace](nucleo-f446ze/design-nucleo144.png) | ![The example running: VDD on the oscilloscope, the LEDs on the logic analyzer, JP3 and JP5 among the controls](nucleo-f446ze/run-nucleo144.png) |
+## Moving bodies in the world (2026-10-31)
+
+A body may move in virtual time (a velocity, and a travel to go back and
+forth over): the engine's distance sensors see it where it is, and the
+bench draws it there. The ball before and after 1.5 s of running:
+
+| At the start | After 1.5 s |
+|---|---|
+| ![The ball at the back of the desk](bench-3d-world/1-ball-before.png) | ![The ball nearer](bench-3d-world/2-ball-rolled.png) |
+
+A person (warm, 1.7 m, standing on the floor behind the table) walking past
+the PIR sensor, which sees them as the HC-SR501 would (drawn as the box the
+sensors use):
+
+![A person walking behind the table](bench-3d-world/3-person-walking.png)
+
+The person is now drawn as a person, in an adult's proportions within the
+box the sensors see, facing the way they walk, legs and arms swinging with
+the distance covered:
+
+| Walking behind the table | In stride, from the front |
+|---|---|
+| ![A walking figure beside the table](bench-3d-world/4-person-figure.png) | ![Legs and arms in stride](bench-3d-world/5-person-stride.png) |
+
+## Capped sections (2026-10-31)
+
+A section now shows solid red faces where it cuts a body, as a CAD tool's
+section view does, instead of the body's hollow inside: here the
+breadboard cut along its length (quality render):
+
+![The breadboard cut, its cut face solid](bench-3d-inspect/6-capped-section.png)
+
+## The room around the bench (2026-10-31)
+
+Stage 6 of [the 3D plan](../engineering/bench-3d.md) begins: the bench is the
+top of a 750 mm lab table, with an anti-static mat on it, in a room with a
+window on the left, where the light comes from:
+
+| Zoomed out: the table, the mat, the walls | From the right: the window |
+|---|---|
+| ![The table in its room](bench-3d-room/1-the-room.png) | ![The window in the left wall](bench-3d-room/2-window.png) |
+
+The room is as lit as the world's illuminance says, the value the light
+sensors read. At 0 lx the bench falls dark and the lit LED glows as it does
+in a dark lab:
+
+![The bench in a dark room, the LED glowing](bench-3d-room/3-dark-room.png)
+
+The sun by the time of day: the world says where and when the room is
+(latitude, date, solar time) and which way its window looks. At 48° N at
+noon on 21 December the sun is 18.6° up in the south; through a
+south-facing window it falls on the table and the supply's shadow runs
+away from the window. At night the window is dark and the ceiling lamp
+lights the bench:
+
+| Winter noon: daylight in the window | The low sun's long shadows | Night |
+|---|---|---|
+| ![Daylight in the window](bench-3d-room/4-winter-noon-window.png) | ![Long shadows away from the window](bench-3d-room/5-winter-noon-shadows.png) | ![The window dark at night](bench-3d-room/6-night-window.png) |
+
+The walls, the ceiling and the window's bars stop the sun, so only what
+comes through the window reaches the table. At 38° N at noon in December
+the sun is 28.6° up: the wall above the window shades the far half of the
+table, and the window's patch and its bars' shadows lie on the near half:
+
+| The sunlit patch | From above: lit on the window's side |
+|---|---|
+| ![The window's patch on the table](bench-3d-room/7-sunlit-patch.png) | ![The table half sunlit](bench-3d-room/8-sunlit-patch-top.png) |
+
+## Gull-wing leads, SO breakouts, the NUCLEO's 45° MCUs (2026-10-31)
+
+QFP and SO leads are bent as they are made: out of the body's side, down,
+and a flat foot on the pad. A small-outline part on a breadboard sits on an
+SO-to-DIP breakout, as on a real bench; here the LMV358's VSSOP-8 (0.65 mm
+pitch) with its traces running under the mask to the header holes:
+
+![The VSSOP-8 on its green breakout](bench-3d-gullwing/1-vssop-breakout.png)
+
+The NUCLEO-64's MCUs sit at 45° on the real board (and in its artwork). The
+3D chip used to sit square, the artwork's chip showing at its corners; now
+it turns with the board's picture and carries its marking:
+
+| Before | After |
+|---|---|
+| ![The LQFP-64 square, the artwork's corners showing](bench-3d-gullwing/2-lqfp-square-before.png) | ![The LQFP-64 at 45°, marked STM32F446RET6](bench-3d-gullwing/3-lqfp-45-marked.png) |
+
+An SO-8 MOSFET with three pins (the STS7PF30L) stands on its breakout with
+S, G and D on pins 1, 4 and 5, as its datasheet numbers them:
+
+![The STS7PF30L's SOIC-8 on its breakout](bench-3d-gullwing/4-so8-mosfet-breakout.png)
+
+## Parts from KiCad's 3D models (2026-10-31)
+
+Stage 3 of [the 3D plan](../engineering/bench-3d.md): a part may be drawn
+from a 3D model file. The Bourns 3296W trimmer and the buzzer are KiCad's
+own models, standing on their pins (quality render):
+
+| The 3296W trimmer (P1) | The 12 × 9.5 mm buzzer (BZ) |
+|---|---|
+| ![KiCad's 3296W model, blue with a slotted brass adjuster](bench-3d-models/1-trimmer-kicad.png) | ![KiCad's buzzer model with its sound port](bench-3d-models/2-buzzer-kicad.png) |
 
 ## Boards as boards: outline, holes, edge, mask (2026-10-30)
 

@@ -66,3 +66,31 @@ describe('named surface-mount packages', () => {
     expect(jumperViews(p, benchModel(p, shapes, ctx.ties))[0]?.housings).toEqual([false, false]);
   });
 });
+
+describe('small-outline parts on breakouts', () => {
+  it('draws the VSSOP-8 LMV358 on its SO-to-DIP breakout, on the DIP-8 pins', () => {
+    const shape = benchShape(description('lmv358'));
+    expect(shape.package).toBe('dip');
+    expect(shape.smallOutline).toMatchObject({ kind: 'VSSOP', pins: 8, pitch: 0.65 });
+    const bounds = new Box3().setFromObject(buildPart('U1', shape, { component: 'emblink/lmv358' }).group);
+    expect(bounds.max.y).toBeGreaterThan(4.1 + 1); // the board on its spacers, the package on it
+    expect(bounds.min.y).toBeLessThan(-2);
+  });
+  it('a through-hole DIP stays a DIP', () => {
+    expect(benchShape(description('lm393p')).smallOutline).toBeUndefined();
+  });
+});
+
+describe('an SO-8 part with fewer pins than its package', () => {
+  it('puts the STS7PF30L\'s S, G and D on SO-8 pins 1, 4 and 5 of its breakout', () => {
+    const shape = benchShape(description('sts7pf30l'));
+    expect(shape.package).toBe('dip');
+    expect(shape.smallOutline).toMatchObject({ kind: 'SOIC', pins: 8 });
+    const { S, G, D } = shape.pins as Record<string, [number, number]>;
+    expect(G![0] - S![0]).toBeCloseTo(3 * 2.54);
+    expect(G![1]).toBe(S![1]);
+    expect(D![0]).toBeCloseTo(G![0]);
+    expect(S![1] - D![1]).toBeCloseTo(7.62);
+    expect(Object.keys(shape.pins)).toHaveLength(3);
+  });
+});

@@ -20,6 +20,7 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import type { SmallOutline } from './shape';
 
 export const TIN = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, metalness: 0.9, roughness: 0.32 });
 export const NICKEL = new THREE.MeshStandardMaterial({ color: 0xd8dade, metalness: 0.95, roughness: 0.22 });
@@ -418,6 +419,132 @@ export function crystalHC49(length = 11.05, width = 4.65, height = 3.5): THREE.G
 }
 
 /**
+ * A gull-wing lead, as QFP and SO packages have: out of the body's side at
+ * `exit` above the seating plane, a short shoulder, bent down, and a flat
+ * foot `foot` long whose tip is `reach` from the body. Drawn as its bent
+ * profile (thickness `t`) extruded across its width; it runs along +z from
+ * the body's side at z = 0, centred on x = 0.
+ */
+export function gullWing(width: number, t: number, exit: number, reach: number, foot: number): THREE.Mesh {
+  const shoulder = Math.min(0.25, reach * 0.25);
+  const knee = reach - foot;
+  const top = [[0, exit + t / 2], [shoulder, exit + t / 2], [knee - t * 0.4, t], [reach, t]];
+  const bottom = [[reach, 0], [knee - t * 0.4 - t, 0], [shoulder - t * 0.3, exit - t / 2], [0, exit - t / 2]];
+  const profile = new THREE.Shape();
+  profile.moveTo(top[0]![0]!, top[0]![1]!);
+  for (const [u, v] of [...top.slice(1), ...bottom]) profile.lineTo(u!, v!);
+  profile.closePath();
+  const geometry = new THREE.ExtrudeGeometry(profile, { depth: width, bevelEnabled: false });
+  // the profile's u runs along +z, its extrusion along x
+  geometry.rotateY(-Math.PI / 2);
+  geometry.translate(width / 2, 0, 0);
+  return part(geometry, TIN);
+}
+
+/** a lead tip's centre for each pin, counter-clockwise from pin 1 at the front left (+z), seen from above */
+export function smallOutlinePins(so: SmallOutline): [number, number][] {
+  const n = so.pins / 2;
+  const out: [number, number][] = [];
+  const x = (i: number) => -((n - 1) * so.pitch) / 2 + i * so.pitch;
+  const tip = so.span / 2 - so.foot / 2;
+  for (let i = 0; i < n; i++) out.push([x(i), tip]);
+  for (let i = n - 1; i >= 0; i--) out.push([x(i), -tip]);
+  return out;
+}
+
+/** a small-outline package: its drafted body, gull-wing leads at the pitch and the pin-1 dimple */
+export function smallOutlineBody(so: SmallOutline, labelTexture?: THREE.Texture): THREE.Group {
+  const g = new THREE.Group();
+  const bodyH = so.height - so.standoff;
+  const body = draftedBody(so.length, so.width, bodyH, 0.06, MOULD);
+  body.position.y = so.standoff + bodyH / 2;
+  g.add(body);
+  const reach = (so.span - so.width) / 2;
+  for (const [x, z] of smallOutlinePins(so)) {
+    const lead = gullWing(so.lead, so.thickness, so.standoff + bodyH * 0.45, reach, so.foot);
+    lead.position.set(x, 0, Math.sign(z) * so.width / 2);
+    if (z < 0) lead.rotation.y = Math.PI;
+    g.add(lead);
+  }
+  const r = Math.min(0.35, so.width * 0.1);
+  const dimple = part(new THREE.CylinderGeometry(r, r, 0.02, 16), new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.3 }));
+  dimple.position.set(-so.length / 2 + r + 0.35, so.height + 0.005, so.width / 2 - r - 0.35);
+  g.add(dimple);
+  if (labelTexture) {
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(so.length * 0.7, so.width * 0.4), new THREE.MeshBasicMaterial({ map: labelTexture, transparent: true }));
+    plate.rotation.x = -Math.PI / 2;
+    plate.position.set(0.15, so.height + 0.01, -0.1);
+    g.add(plate);
+  }
+  return g;
+}
+
+const ADAPTER_MASK = new THREE.MeshStandardMaterial({ color: 0x1d5c34, roughness: 0.35, metalness: 0.05 });
+/** copper seen through green soldermask: the mask's colour, lighter */
+const COPPER_UNDER_MASK = new THREE.MeshStandardMaterial({ color: 0x3a8a4e, roughness: 0.3, metalness: 0.1 });
+
+/** the materials no part changes after it is built: their meshes can be merged (batch.ts) */
+export const STATIC_MATERIALS: ReadonlySet<THREE.Material> = new Set([TIN, NICKEL, GOLD_PLATE, MOULD, PLASTIC_BLACK, HOLE, INSULATOR_WHITE, INK, ADAPTER_MASK, COPPER_UNDER_MASK]);
+
+/** a DIP's pins counter-clockwise from pin 1 at the front left, `rows` apart, centred */
+function dipOrder(n: number, rows: number): [number, number][] {
+  const x = (i: number) => -((n - 1) * 2.54) / 2 + i * 2.54;
+  const out: [number, number][] = [];
+  for (let i = 0; i < n; i++) out.push([x(i), rows / 2]);
+  for (let i = n - 1; i >= 0; i--) out.push([x(i), -rows / 2]);
+  return out;
+}
+
+/**
+ * A small-outline part on a breadboard as engineers put one there: soldered
+ * to an SO-to-DIP breakout, whose two pin strips stand on the DIP's pins
+ * (`rows` apart, 2.54 mm pitch). The strips' spacers sit on the surface,
+ * the board on them, and the package on its pads on top.
+ */
+export function smallOutlineAdapter(so: SmallOutline, rows: number, labelTexture?: THREE.Texture): { group: THREE.Group; top: number } {
+  const g = new THREE.Group();
+  const n = so.pins / 2;
+  const spacer = 2.5;
+  const thick = 1.6;
+  const len = Math.max(n * 2.54, so.length + 2);
+  const depth = rows + 2.54;
+  const pcb = part(new RoundedBoxGeometry(len, thick, depth, 2, 0.3), ADAPTER_MASK);
+  pcb.position.y = spacer + thick / 2;
+  g.add(pcb);
+  for (const side of [1, -1]) {
+    const strip = pinStrip(n, { above: thick + 0.9, below: 3, spacer });
+    strip.position.z = (side * rows) / 2;
+    g.add(strip);
+    for (let i = 0; i < n; i++) {
+      const ring = part(new THREE.CylinderGeometry(0.85, 0.85, 0.04, 20), TIN);
+      ring.position.set(-(n * 2.54) / 2 + 1.27 + i * 2.54, spacer + thick + 0.02, (side * rows) / 2);
+      g.add(ring);
+    }
+  }
+  const top = spacer + thick;
+  const holes = dipOrder(n, rows);
+  smallOutlinePins(so).forEach(([x, z], i) => {
+    const pad = part(new THREE.BoxGeometry(so.lead + 0.15, 0.04, so.foot + 0.6), TIN);
+    const padZ = z + Math.sign(z) * 0.2;
+    pad.position.set(x, top + 0.02, padZ);
+    g.add(pad);
+    // its trace under the mask, from the pad's outer end to its hole (pin n to DIP pin n)
+    const from = new THREE.Vector3(x, top + 0.01, padZ + Math.sign(z) * (so.foot / 2 + 0.3));
+    const [hx, hz] = holes[i]!;
+    const to = new THREE.Vector3(hx, top + 0.01, hz);
+    const run = to.clone().sub(from);
+    const trace = part(new THREE.BoxGeometry(0.4, 0.02, run.length()), COPPER_UNDER_MASK);
+    trace.position.copy(from).add(to).multiplyScalar(0.5);
+    trace.rotation.y = Math.atan2(run.x, run.z);
+    g.add(trace);
+  });
+  const chip = smallOutlineBody(so, labelTexture);
+  chip.position.y = top + 0.04;
+  g.add(chip);
+  return { group: g, top };
+}
+
+/**
  * A quad flat package: the body and its gull-wing leads on four sides
  * (QFP), or end pads under its edges (QFN), and the pin-1 mark.
  */
@@ -442,8 +569,9 @@ export function quadPackage(kind: 'qfp' | 'qfn', w: number, d: number, h: number
       const sign = side < 2 ? 1 : -1;
       let lead: THREE.Mesh;
       if (kind === 'qfp') {
-        lead = part(new THREE.BoxGeometry(pitch * 0.45, 0.15, 1.0), TIN);
-        lead.position.set(0, 0.08, edge + 0.5);
+        // MS-026: 1.0 mm from the body to the tip (L1), a 0.6 mm foot, 0.15 mm thick
+        lead = gullWing(pitch * 0.45, 0.15, standoff + (h - standoff) * 0.45, 1.0, 0.6);
+        lead.position.set(0, 0, edge);
       } else {
         lead = part(new THREE.BoxGeometry(pitch * 0.5, 0.2, 0.4), TIN);
         lead.position.set(0, 0.1, edge - 0.19);

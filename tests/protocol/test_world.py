@@ -89,6 +89,25 @@ def main():
             client.call("input.set", {"target": "world.box", "input": "body", "value": None})
             assert client.call("world.get")["bodies"] == []
 
+            # a moving body: where it is follows virtual time; with a travel it goes back and forth
+            client.call("input.set", {"target": "world.cart", "input": "body", "value": {"shape": "box", "at": [0, -300, 50], "size": [100, 100, 100], "velocity_mm_s": [0, 100, 0], "travel_mm": 200}})
+            client.call("control.advance", {"by": "1s"})
+            cart = client.call("world.get")["bodies"][0]
+            assert abs(cart["at"][1] - (-200)) < 1e-6, cart  # 100 mm/s for 1 s
+            assert cart["velocity_mm_s"] == [0, 100, 0] and cart["travel_mm"] == 200, cart
+            client.call("control.advance", {"by": "2s"})
+            cart = client.call("world.get")["bodies"][0]
+            assert abs(cart["at"][1] - (-200)) < 1e-6, cart  # out 200 mm, then 100 back
+            client.call("input.set", {"target": "world.cart", "input": "body", "value": None})
+
+            # a project's moving body runs on the project's timeline (from 0), even when added later,
+            # as the bench draws it: 100 mm/s since 0 has carried it 100 mm a second
+            edit(client, [{"set_world": {"bodies": [{"id": "belt", "at": [0, -600, 50], "size": [50, 50, 50], "velocity_mm_s": [0, 100, 0]}]}}])
+            belt = [b for b in client.call("world.get")["bodies"] if b["id"] == "belt"][0]
+            elapsed = int(client.call("session.info")["now_ps"]) / 1e12
+            assert abs(belt["at"][1] - (-600 + 100 * elapsed)) < 1e-6, (belt, elapsed)
+            edit(client, [{"set_world": {"bodies": []}}])
+
             # set_world: the project's room changed without a restart, the change recorded as an input
             now = client.call("session.info")["now_ps"]
             result = edit(client, [{"set_world": {"fields": {"temperature": 30, "humidity": 40}, "bodies": [{"id": "wall", "at": [0, -500, 100], "size": [1000, 10, 200]}]}}])
@@ -101,11 +120,25 @@ def main():
             client.call("project.save", {"path": str(saved)})
             assert json.loads(saved.read_text(encoding="utf-8"))["world"]["fields"] == {"temperature": 30, "humidity": 40}
 
+            # the room and the sun (the 3D bench's presentation) are kept with the project, nothing restarts
+            result = edit(client, [{"set_world": {"room": {"size_mm": [6000, 5000, 3000], "window_azimuth_deg": 180}, "sun": {"latitude_deg": 48.1, "date": "06-21", "solar_time_h": 9.5}}}])
+            assert result["applied"] and not result["restarted"], result
+            world_spec = client.call("project.get")["project"]["world"]
+            assert world_spec["room"] == {"size_mm": [6000, 5000, 3000], "window_azimuth_deg": 180}, world_spec
+            assert world_spec["sun"]["solar_time_h"] == 9.5 and world_spec["fields"]["temperature"] == 30
+            edit(client, [{"set_world": {"sun": {}}}])
+            assert "sun" not in client.call("project.get")["project"]["world"]
+            try:
+                edit(client, [{"set_world": {"room": [6000, 5000, 3000]}}])
+                raise AssertionError("set_world took a room that is not an object")
+            except EmbsimError as e:
+                assert "room is an object" in str(e), e
+
             # a reset starts the room again as the project declares it
             client.call("input.set", {"target": "world", "input": "temperature", "value": -10})
             client.call("control.reset")
             assert client.call("world.get")["fields"]["temperature"]["value"] == 30
-        print("PASS: the world drives an LDR, a part's own value overrides it, set_world applies live, reset restores the project's room")
+        print("PASS: the world drives an LDR, a part's own value overrides it, set_world applies live (room and sun kept), reset restores the project's room")
 
 
 if __name__ == "__main__":
