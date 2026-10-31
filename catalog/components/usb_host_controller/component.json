@@ -81,6 +81,23 @@
       "type": "boolean",
       "default": true,
       "doc": "Arm the device's remote wakeup (SET_FEATURE) before suspending it, where its configuration offers it, as Linux does"
+    },
+    "dfu_file": {
+      "type": "string",
+      "default": "",
+      "doc": "A firmware image to download to a DFU device on dfu_download: a DfuSe file (UM0391, with its addresses) or a raw binary for dfu_address; relative to the project"
+    },
+    "dfu_address": {
+      "type": "integer",
+      "default": 134217728,
+      "min": 0,
+      "max": 4294967295,
+      "doc": "Where a raw binary goes (0x08000000)"
+    },
+    "dfu_leave": {
+      "type": "boolean",
+      "default": true,
+      "doc": "After the download, leave DFU mode for the image (as dfu-util :leave does)"
     }
   },
   "outputs": [
@@ -193,6 +210,26 @@
       "name": "wakeups",
       "type": "integer",
       "doc": "Remote wakeups the device signalled"
+    },
+    {
+      "name": "dfu_state",
+      "type": "string",
+      "doc": "idle, starting, erasing, addressing, downloading, leaving, done or error"
+    },
+    {
+      "name": "dfu_bytes",
+      "type": "integer",
+      "doc": "Bytes of the image downloaded"
+    },
+    {
+      "name": "dfu_erased",
+      "type": "integer",
+      "doc": "Sectors erased"
+    },
+    {
+      "name": "dfu_error",
+      "type": "string",
+      "doc": "Why the download stopped, when it failed"
     }
   ],
   "model": {
@@ -225,9 +262,9 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor. Suspend (the frames stop, SET_FEATURE(DEVICE_REMOTE_WAKEUP) sent first where the configuration offers it) and resume (20 ms of resume signalling, TDRSMDN, then frames and CLEAR_FEATURE); the device's remote wakeup answered by the host's own resume; the cable sensed by VBUS at its device end, a disconnect and a new attach as it is pulled and put back.",
+      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor. Suspend (the frames stop, SET_FEATURE(DEVICE_REMOTE_WAKEUP) sent first where the configuration offers it) and resume (20 ms of resume signalling, TDRSMDN, then frames and CLEAR_FEATURE); the device's remote wakeup answered by the host's own resume; the cable sensed by VBUS at its device end, a disconnect and a new attach as it is pulled and put back. DFU 1.1 with ST's DfuSe 1.1a extension (UM0424), as dfu-util drives it: the image a DfuSe file (UM0391: its targets' elements and addresses) or a raw binary; the interface string's memory layout read and honoured (read-only segments refused), each sector the image touches erased (0x41), the address pointer set (0x21), wTransferSize blocks from wBlockNum 2 with DFU_GETSTATUS after each, its bwPollTimeout waited out while the device is busy, DFU_CLRSTATUS for an error left from before, and :leave's zero-length DNLOAD and manifestation, the device going away counted as its leaving.",
       "omissions": [
-        "class drivers beyond HID's polling: a CDC, mass-storage or DFU device is configured, then left idle (no USB/IP bridge to the computer yet, ADR-031)",
+        "class drivers beyond HID's polling and DFU's download: a CDC or mass-storage device is configured, then left idle (no USB/IP bridge to the computer yet, ADR-031); DFU's upload, DETACH from run-time mode and plain DFU 1.1 devices without DfuSe's commands",
         "hubs and more than one device on a cable; low-speed devices",
         "J, K and SE0 levels on D+ and D- (the pins carry no signal: the cable is found by the net D+ is on)",
         "reports of HID devices that are not boot mice are kept whole but not decoded",
@@ -279,6 +316,12 @@
       "type": "boolean",
       "default": false,
       "doc": "Suspend the port (its frames stop; the device suspends after 3 ms); false resumes it with 20 ms of resume signalling"
+    },
+    {
+      "name": "dfu_download",
+      "type": "boolean",
+      "default": false,
+      "doc": "Download dfu_file to the device's DFU interface (once it is configured), as dfu-util -D does"
     }
   ]
 }

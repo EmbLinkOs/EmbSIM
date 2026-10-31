@@ -173,6 +173,9 @@ struct esk_engine {
     esk_air air;
     /* the USB cables between its hosts and devices (usb.h) */
     esk_usb usb;
+    /* the project's directory, for a part's files (a USB host's firmware
+     * image to download): the session's, or NULL */
+    const char *base_dir;
     /* the internet beyond its routers (inet.h) */
     esk_inet inet;
 };

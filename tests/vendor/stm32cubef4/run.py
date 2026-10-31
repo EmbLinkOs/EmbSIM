@@ -103,6 +103,16 @@ EXAMPLES_ZE = {
     "usb_device_hid_standalone": ZE + "Applications/USB_Device/HID_Standalone",
     # the same image, suspended, woken by B1, unplugged and plugged back
     "usb_device_hid_suspend": ZE + "Applications/USB_Device/HID_Standalone",
+    # ST's DFU loader as it ships: its static allocator (262 words, sized for
+    # MSC) is smaller than the DFU class's handle (1056 bytes with the
+    # middleware CubeF4 pins), so USBD_DFU_Init overruns it into hpcd
+    "usb_device_dfu_standalone": {"dir": ZE + "Applications/USB_Device/DFU_Standalone",
+                                  "files": {"app.dfu": "Binary/STM32F446ZE_GPIOToggle_Nucleo_144.dfu"}},
+    # the same with that one size corrected, downloading ST's GPIOToggle
+    "usb_device_dfu_fixed": {"dir": ZE + "Applications/USB_Device/DFU_Standalone",
+                             "files": {"app.dfu": "Binary/STM32F446ZE_GPIOToggle_Nucleo_144.dfu"},
+                             "patches": {"Inc/usbd_conf.h": [("#define MAX_STATIC_ALLOC_SIZE     262",
+                                                              "#define MAX_STATIC_ALLOC_SIZE     264")]}},
     "wwdg_example": ZE + "Examples/WWDG/WWDG_Example",
 }
 # each board: its examples, their directory here, its project, the linker
@@ -189,7 +199,8 @@ def project_sources(ide: Path) -> list:
 def record(name: str) -> dict:
     """the example's record: dir, defines, project, two_boards"""
     e = BOARD["examples"][name]
-    return dict({"defines": [], "project": None, "two_boards": False}, **(e if isinstance(e, dict) else {"dir": e}))
+    return dict({"defines": [], "project": None, "two_boards": False, "files": {}, "patches": {}},
+                **(e if isinstance(e, dict) else {"dir": e}))
 
 
 def project_of(name: str) -> Path:
@@ -215,6 +226,18 @@ def build(st: Path, name: str, out: Path, slave: bool = False) -> Path:
     tag = name + ("_slave" if slave else "")
     d = out / tag
     d.mkdir(parents=True, exist_ok=True)
+    patched = []
+    for rel, edits in record(name)["patches"].items():
+        # a header edited on a copy, found before the original (the record
+        # says why); the example's sources are not touched
+        text = (ex / rel).read_bytes()
+        for old, new in edits:
+            if old.encode() not in text:
+                raise SystemExit(f"{ex / rel} has no {old!r} to patch")
+            text = text.replace(old.encode(), new.encode(), 1)
+        (d / "patched").mkdir(exist_ok=True)
+        (d / "patched" / Path(rel).name).write_bytes(text)
+        patched = ["-I", d / "patched"]
     objs = []
     for n, src in enumerate(project_sources(ide)):
         src = resolve(st, src)
@@ -232,7 +255,7 @@ def build(st: Path, name: str, out: Path, slave: bool = False) -> Path:
         if src.suffix == ".s":
             sh(["arm-none-eabi-gcc", "-x", "assembler-with-cpp", "-c", *MCU, "-g3", *defs, src, "-o", o])
         else:
-            sh(["arm-none-eabi-gcc", "-c", *MCU, *CFLAGS, *defs, *incs, *incs_here, src, "-o", o])
+            sh(["arm-none-eabi-gcc", "-c", *MCU, *CFLAGS, *defs, *patched, *incs, *incs_here, src, "-o", o])
         objs.append(o)
     elf = out / (tag + ".elf")
     sh(["arm-none-eabi-gcc", *objs, *MCU, "-T", ide / BOARD["ld"], *LDFLAGS,
@@ -270,7 +293,9 @@ def main() -> int:
         for name in names:
             scenario = BOARD["dir"] / name / "scenario.json"
             elf = build(st, name, work)
-            extra = {"slave.elf": build(st, name, work, slave=True)} if record(name)["two_boards"] else None
+            extra = {"slave.elf": build(st, name, work, slave=True)} if record(name)["two_boards"] else {}
+            for file, there in record(name)["files"].items():  # the example's own files beside the project
+                extra[file] = st / "cubef4" / record(name)["dir"] / there
             bad += not run_scenario(Path(args.embsim), project_of(name), name, elf, scenario, work, extra)
     return 1 if bad else 0
 

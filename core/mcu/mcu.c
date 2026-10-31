@@ -1214,11 +1214,13 @@ static int level_of(const esk_pin *p, int dflt)
 }
 
 /* power-on or a pin reset: memory as the image left it, the machine's reset */
-/* the part comes out of reset with the image loaded again. RAM keeps its
- * contents through a reset from the part itself (a watchdog's, a system
- * reset request) or from its reset pin, as an SRAM does while it is
- * powered; at power-on (the session's start or reset, a new image) it is
- * erased */
+/* At power-on (the session's start or reset, a new image) the part's
+ * memory is erased and the image programmed again. Through a reset from
+ * the part itself (a watchdog's, a system reset request) or from its reset
+ * pin, RAM keeps its contents, as an SRAM does while it is powered, and
+ * the flash keeps what the firmware wrote to it (an EEPROM emulation's
+ * pages, an application a DFU loader or a bootloader programmed): it is
+ * not reloaded */
 static void mcu_reset_now(mcu_state *st, int power_on)
 {
     esk_engine *e = st->c->e;
@@ -1240,8 +1242,8 @@ static void mcu_reset_now(mcu_state *st, int power_on)
     }
     if (power_on)
         st->m.reset_cause = ESK_RESET_POWER;
-    for (r = 0; r < st->m.bus.nrg; r++)
-        if (!st->m.bus.rg[r].mirror && (power_on || st->m.bus.rg[r].kind != ESK_MEM_RAM))
+    for (r = 0; power_on && r < st->m.bus.nrg; r++)
+        if (!st->m.bus.rg[r].mirror)
             esk_bus_erase(&st->m.bus.rg[r]);
     if (!st->image && !esk_mach_store(&st->m, "flash")) {
         /* no image yet: the part sits blank, its pins inputs (a part that
@@ -1253,7 +1255,8 @@ static void mcu_reset_now(mcu_state *st, int power_on)
         st->t = e->sched.now;
         return;
     }
-    if (st->image && esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
+    if (power_on && st->image &&
+        esk_mach_load_image(&st->m, st->image, st->image_len, &entry, why, sizeof why) != ES_OK)
         raise(st, ES_SEV_ERROR, "mcu.image", "%s: %s", st->image_name, why);
     st->in_quantum = 0;
     esk_mach_reset(&st->m);

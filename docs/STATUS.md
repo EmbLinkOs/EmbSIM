@@ -23,10 +23,14 @@ host on CN13: enumerated as 0483:5710 'STMicroelectronics' 'HID Joystick in
 FS Mode' on USB 2.0's timeline and three presses of B1 moving the cursor
 -5, +5, +5; the same image suspended by the host (remote wakeup armed),
 woken by B1's remote wakeup, unplugged and enumerated again after the
-cable is put back, 16/16; `emblink/usb_host`'s and
+cable is put back, 16/16; CubeF4's DFU_Standalone downloading ST's
+GPIOToggle .dfu as dfu-util would (with its static allocator's size
+corrected: as shipped it overruns into the PCD handle and never answers
+SET_CONFIGURATION, which its own scenario asserts), resetting into it with
+the flash kept, 10/10 and 5/5; `emblink/usb_host`'s and
 `emblink/usb_host_controller`'s fixtures. Not yet: host mode and U12,
-class drivers beyond HID's polling (CDC, MSC, DFU are configured, then
-idle), the USB/IP bridge to the computer's own USB, LPM, low-speed devices
+class drivers beyond HID's polling and DFU's download (CDC and MSC are
+configured, then idle), the USB/IP bridge to the computer's own USB, LPM, low-speed devices
 and hubs, the other MCUs' USB controllers (RP2040, nRF52840, PIC32,
 ESP32-C3).
 

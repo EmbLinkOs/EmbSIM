@@ -37,6 +37,19 @@ versions follow semantic versioning. There is no release yet.
   is suspended, woken by B1, unplugged and enumerated again, 16/16.
 - GSNPSID's 0x4F54320A is the value TinyUSB's DWC2 table reads from the
   F412's and F76x's OTG_FS, the same core generation.
+- DFU: the computer's port downloads a firmware image to a DFU device as
+  dfu-util does with ST's DfuSe extension (the memory layout string, sector
+  erases, the address pointer, blocks with DFU_GETSTATUS and bwPollTimeout,
+  :leave), from a DfuSe file or a raw binary (`dfu_file`, `dfu_download`).
+  CubeF4's DFU_Standalone, with one size corrected, takes ST's own
+  GPIOToggle .dfu, resets into it and LD1 toggles, 10/10. As ST ships it,
+  the example never answers SET_CONFIGURATION: its static allocator (262
+  words) is smaller than the DFU handle (1056 bytes), and USBD_DFU_Init
+  overruns it into the PCD handle; its scenario asserts that, 5/5.
+- A reset from the part itself or its NRST pin no longer reloads the
+  firmware image into flash: the flash keeps what the firmware programmed
+  (a DFU loader's application, an EEPROM emulation's pages). Only power-on
+  programs the image again.
 - The NVIC takes level-sensitive requests (`esk_cpu_ops.irq_level`): one
   still asserted when its handler returns is pending again.
 - A model can serve its peripheral's reserved ranges (an OTG core's FIFO

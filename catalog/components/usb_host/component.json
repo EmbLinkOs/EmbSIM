@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "name": "Computer USB port (USB 2.0 host)",
   "category": "instruments",
-  "description": "A computer's USB 2.0 port at the end of a cable: its 5 V VBUS through the cable's resistance and the cable itself (the member CABLE, a switch: its closed input pulls the cable out and puts it back), and its host controller (emblink/usb_host_controller, the member HOST), which enumerates the full-speed device plugged in the way Windows and Linux do and polls its HID interfaces. HOST's outputs show the device's identity, descriptors and HID reports (a boot mouse's cursor included) and a log that reads like the kernel's.",
+  "description": "A computer's USB 2.0 port at the end of a cable: its 5 V VBUS through the cable's resistance and the cable itself (the member CABLE, a switch: its closed input pulls the cable out and puts it back), and its host controller (emblink/usb_host_controller, the member HOST), which enumerates the full-speed device plugged in the way Windows and Linux do polls its HID interfaces and downloads a firmware image to a DFU device. HOST's outputs show the device's identity, descriptors and HID reports (a boot mouse's cursor included) and a log that reads like the kernel's.",
   "keywords": [
     "usb",
     "host",
@@ -109,6 +109,23 @@
       "type": "boolean",
       "default": true,
       "doc": "As emblink/usb_host_controller's"
+    },
+    "dfu_file": {
+      "type": "string",
+      "default": "",
+      "doc": "As emblink/usb_host_controller's"
+    },
+    "dfu_address": {
+      "type": "integer",
+      "default": 134217728,
+      "min": 0,
+      "max": 4294967295,
+      "doc": "As emblink/usb_host_controller's"
+    },
+    "dfu_leave": {
+      "type": "boolean",
+      "default": true,
+      "doc": "As emblink/usb_host_controller's"
     }
   },
   "outputs": [],
@@ -144,7 +161,10 @@
             "address": "$address",
             "debounce_ms": "$debounce_ms",
             "reset_ms": "$reset_ms",
-            "remote_wakeup": "$remote_wakeup"
+            "remote_wakeup": "$remote_wakeup",
+            "dfu_file": "$dfu_file",
+            "dfu_address": "$dfu_address",
+            "dfu_leave": "$dfu_leave"
           }
         }
       ],
@@ -194,7 +214,10 @@
             "address": "$address",
             "debounce_ms": "$debounce_ms",
             "reset_ms": "$reset_ms",
-            "remote_wakeup": "$remote_wakeup"
+            "remote_wakeup": "$remote_wakeup",
+            "dfu_file": "$dfu_file",
+            "dfu_address": "$dfu_address",
+            "dfu_leave": "$dfu_leave"
           }
         }
       ],
