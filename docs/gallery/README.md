@@ -29,6 +29,12 @@ the distance covered:
 |---|---|
 | ![A walking figure beside the table](bench-3d-world/4-person-figure.png) | ![Legs and arms in stride](bench-3d-world/5-person-stride.png) |
 
+A body can follow a path of waypoints at a set speed, looping or going
+back the way it came; here a person walks round the table at 1.2 m/s
+(the World panel's "round"), 5.2 s into the run, turning at each corner:
+
+![A person walking round the table](bench-3d-world/6-walking-round.png)
+
 ## Capped sections (2026-10-31)
 
 A section now shows solid red faces where it cuts a body, as a CAD tool's

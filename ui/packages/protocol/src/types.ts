@@ -139,6 +139,11 @@ export interface WorldBody {
   velocity_mm_s?: [number, number, number];
   /** with a velocity: back and forth over this distance from `at`, mm (0: straight on) */
   travel_mm?: number;
+  /** waypoints (bench mm) walked at speed_mm_s, starting at the first */
+  path_mm?: [number, number, number][];
+  speed_mm_s?: number;
+  /** along the path: round again from the last waypoint (else back the way it came) */
+  loop?: boolean;
   /** warmer than the room (a person, an animal): a PIR sees it move */
   warm?: boolean;
 }

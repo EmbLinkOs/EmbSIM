@@ -87,6 +87,19 @@ es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const e
     vec3(esk_json_get(spec, "velocity_mm_s"), b.vel, 0.0);
     b.travel = esk_json_get_num(spec, "travel_mm", 0.0);
     b.warm = esk_json_get_bool(spec, "warm", 0);
+    {
+        const esk_json *path = esk_json_get(spec, "path_mm");
+        size_t k, n = esk_json_len(path);
+        for (k = 0; k < n && k < ESK_BODY_PATH_MAX; k++)
+            vec3(esk_json_at(path, k), b.path[k], 0.0);
+        b.npath = (int)(n < ESK_BODY_PATH_MAX ? n : ESK_BODY_PATH_MAX);
+        b.speed = esk_json_get_num(spec, "speed_mm_s", 0.0);
+        b.loop = esk_json_get_bool(spec, "loop", 0);
+        if (b.npath >= 2) {
+            for (k = 0; k < 3; k++)
+                b.at[k] = b.path[0][k]; /* it starts at the first waypoint */
+        }
+    }
     if (b.travel < 0)
         b.travel = 0;
     /* the motion counts from `since_ps` when the spec says (a project's bodies: from 0), else from now */
@@ -107,11 +120,53 @@ es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const e
     return ES_OK;
 }
 
+static double seg_len(const double a[3], const double b[3])
+{
+    double dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+    return sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+/* where a body walking its path at its speed is after `s` mm (looped, or there and back) */
+static void path_at(const esk_body *b, double s, double out[3])
+{
+    double total = 0, t;
+    int i, segs = b->loop ? b->npath : b->npath - 1, k;
+    for (i = 0; i < segs; i++)
+        total += seg_len(b->path[i], b->path[(i + 1) % b->npath]);
+    if (total <= 0) {
+        for (k = 0; k < 3; k++)
+            out[k] = b->path[0][k];
+        return;
+    }
+    if (b->loop)
+        s = fmod(s, total);
+    else {
+        s = fmod(s, 2 * total);
+        if (s > total)
+            s = 2 * total - s;
+    }
+    for (i = 0; i < segs; i++) {
+        const double *p = b->path[i], *q = b->path[(i + 1) % b->npath];
+        double len = seg_len(p, q);
+        if (s <= len || i == segs - 1) {
+            t = len > 0 ? (s > len ? 1.0 : s / len) : 0.0;
+            for (k = 0; k < 3; k++)
+                out[k] = p[k] + (q[k] - p[k]) * t;
+            return;
+        }
+        s -= len;
+    }
+}
+
 void esk_world_body_at(const esk_body *b, es_time_t now, double out[3])
 {
     double speed = sqrt(b->vel[0] * b->vel[0] + b->vel[1] * b->vel[1] + b->vel[2] * b->vel[2]);
     double dt = now > b->since ? (double)(now - b->since) / 1e12 : 0.0, s;
     int k;
+    if (b->npath >= 2 && b->speed > 0) {
+        path_at(b, b->speed * dt, out);
+        return;
+    }
     if (speed <= 0 || dt <= 0) {
         for (k = 0; k < 3; k++)
             out[k] = b->at[k];
@@ -198,7 +253,7 @@ int esk_world_motion(const esk_world *w, const double o[3], const double d[3], d
         const esk_body *b = &w->bodies.data[i];
         double p[3], r[3], dist, along;
         int k;
-        if (!b->warm || (b->vel[0] == 0 && b->vel[1] == 0 && b->vel[2] == 0))
+        if (!b->warm || ((b->vel[0] == 0 && b->vel[1] == 0 && b->vel[2] == 0) && !(b->npath >= 2 && b->speed > 0)))
             continue; /* at the room's temperature, or still: nothing changes in the infrared */
         esk_world_body_at(b, now, p);
         for (k = 0; k < 3; k++)
@@ -248,6 +303,22 @@ esk_json *esk_world_json(esk_alloc *a, const esk_world *w, es_time_t now)
         for (m = 0; m < 3; m++) {
             esk_json_array_push(a, at, esk_json_new_number(a, pos[m]));
             esk_json_array_push(a, size, esk_json_new_number(a, b->size[m]));
+        }
+        if (b->npath >= 2) {
+            esk_json *path = esk_json_new_array(a);
+            int q;
+            for (q = 0; q < b->npath && path; q++) {
+                esk_json *pt = esk_json_new_array(a);
+                for (m = 0; m < 3 && pt; m++)
+                    esk_json_array_push(a, pt, esk_json_new_number(a, b->path[q][m]));
+                if (pt)
+                    esk_json_array_push(a, path, pt);
+            }
+            if (path)
+                esk_json_object_set(a, j, "path_mm", path);
+            esk_json_set_number(a, j, "speed_mm_s", b->speed);
+            if (b->loop)
+                esk_json_set_bool(a, j, "loop", 1);
         }
         if (moving) {
             esk_json *v = esk_json_new_array(a);

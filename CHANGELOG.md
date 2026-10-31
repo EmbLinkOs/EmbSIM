@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Walking a path
+
+- A world body may follow a path: `path_mm` (2 to 16 waypoints, starting at
+  the first), `speed_mm_s` along it, and `loop` to go round again from the
+  last waypoint (else back the way it came). The engine walks it in
+  virtual time (`esk_world_body_at`), so distance and PIR sensors see it
+  where it is; `world.get` reports its waypoints. The bench draws it with
+  the same arithmetic (`walk()` in `world.ts`), a person facing each leg
+  and striding with the distance walked. The World panel's **round** sends
+  a body round the table at 1.2 m/s, half a metre clear of its edges.
+
 ### People drawn as people
 
 - A warm body of a person's size is drawn as a person (`figure.ts`): an

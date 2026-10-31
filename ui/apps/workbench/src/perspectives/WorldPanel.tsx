@@ -11,7 +11,7 @@
 
 import { Button, EmptyState, IconButton, useToast } from '@embsim/design';
 import { WORLD_FIELDS, type Project, type WorldBody, type WorldField, type WorldRoom, type WorldState, type WorldSun } from '@embsim/protocol';
-import { dayOfYear, ROOM, solarPosition, sunDirection, sunlit, windowOpening } from '@embsim/bench/model';
+import { dayOfYear, ROOM, roundTheTable, solarPosition, sunDirection, sunlit, windowOpening } from '@embsim/bench/model';
 import { Globe2, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getClient } from '../connection';
@@ -315,6 +315,33 @@ export function WorldPanel() {
                 }
               />
               warm
+            </label>
+            <label className="wb-world__coord" title="Walks round the table at 1.2 m/s, a person's pace (a path of waypoints, looped)">
+              <input
+                type="checkbox"
+                aria-label={`${b.name ?? b.id} walks round the table`}
+                checked={Boolean(b.path_mm)}
+                disabled={!editable}
+                onChange={(e) =>
+                  setBodies(`${b.name ?? b.id} ${e.target.checked ? 'walks round the table' : 'stands still'}`, (list) => {
+                    const body = list[i]!;
+                    if (e.target.checked) {
+                      body.path_mm = roundTheTable(body.at[2]);
+                      body.speed_mm_s = 1200;
+                      body.loop = true;
+                      body.at = [...body.path_mm[0]!];
+                      delete body.velocity_mm_s;
+                      delete body.travel_mm;
+                    } else {
+                      delete body.path_mm;
+                      delete body.speed_mm_s;
+                      delete body.loop;
+                    }
+                    return list;
+                  })
+                }
+              />
+              round
             </label>
             <label className="wb-world__coord" title="Back and forth over this distance, mm (0: straight on)">
               ↔

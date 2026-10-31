@@ -18,6 +18,12 @@ import * as THREE from 'three';
 export const TABLE = { width: 1800, depth: 900, thickness: 30, height: 750 };
 export const ROOM = { width: 5200, depth: 4400, height: 2700 };
 /** the window in the left wall: its centre along the wall (z), its sill above the floor, its size */
+/** a walk round the table, half a metre clear of its edges, at height `z` (bench mm; anticlockwise seen from above) */
+export function roundTheTable(z: number): [number, number, number][] {
+  const x = TABLE.width / 2 + 500;
+  const y = TABLE.depth / 2 + 500;
+  return [[-x, -y, z], [x, -y, z], [x, y, z], [-x, y, z]];
+}
 export const WINDOW = { z: 300, sill: 900, width: 1600, height: 1300 };
 
 export interface RoomSize {

@@ -33,6 +33,8 @@ typedef enum {
 /* the pseudo-field a PIR sensor binds: a warm body moving in its field of view */
 #define ESK_WF_MOTION (ESK_WF_COUNT + 1)
 
+#define ESK_BODY_PATH_MAX 16
+
 typedef struct esk_body {
     char *id;
     int sphere;     /* a sphere of diameter size[0]; else a box */
@@ -44,6 +46,11 @@ typedef struct esk_body {
     double vel[3];  /* mm/s */
     double travel;  /* mm, 0: straight on */
     es_time_t since;
+    /* or along a path of waypoints (bench mm) at `speed` mm/s, round again (`loop`) or back */
+    double path[ESK_BODY_PATH_MAX][3];
+    int npath;
+    double speed;
+    int loop;
     int warm;       /* warmer than the room (a person, an animal, a hand): a PIR sees it move */
 } esk_body;
 

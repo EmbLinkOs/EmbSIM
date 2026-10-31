@@ -239,7 +239,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
   // the world's bodies and what the distance sensors see of them (ADR-026)
   // a moving body is drawn where the engine has it now (virtual time; the project's are set at 0)
   const declared = useMemo(() => project?.world?.bodies ?? [], [project]);
-  const moving = declared.some((b) => b.velocity_mm_s);
+  const moving = declared.some((b) => b.velocity_mm_s || (b.path_mm && b.speed_mm_s));
   const nowPs = useSession((s) => (moving ? s.now : 0n));
   const bodies = useMemo(() => (moving ? bodiesAt(declared, nowPs) : declared), [declared, moving, nowPs]);
   const sensed = useMemo(() => (model ? beams(model.parts, bodies) : []), [model, bodies]);

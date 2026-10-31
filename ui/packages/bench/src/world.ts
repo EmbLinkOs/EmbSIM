@@ -16,6 +16,8 @@ import type { Point3 } from './Bench3D';
  * and back and forth over `travel_mm` when it has one.
  */
 export function bodyAt(b: WorldBody, nowPs: bigint, sincePs = 0n): [number, number, number] {
+  const dtPath = nowPs > sincePs ? Number(nowPs - sincePs) / 1e12 : 0;
+  if (b.path_mm && b.path_mm.length >= 2 && (b.speed_mm_s ?? 0) > 0) return walk(b, (b.speed_mm_s ?? 0) * dtPath).at;
   const v = b.velocity_mm_s;
   const speed = v ? Math.hypot(v[0], v[1], v[2]) : 0;
   const dt = nowPs > sincePs ? Number(nowPs - sincePs) / 1e12 : 0;
@@ -29,9 +31,57 @@ export function bodyAt(b: WorldBody, nowPs: bigint, sincePs = 0n): [number, numb
   return [b.at[0] + (v[0] / speed) * s, b.at[1] + (v[1] / speed) * s, b.at[2] + (v[2] / speed) * s];
 }
 
-/** the bodies where they are at `nowPs` (the project's are set at time 0) */
+/**
+ * Where a body walking its path is after `s` mm, and which way it is going
+ * (as core/engine/world.c walks it): looped, round again; else there and back.
+ */
+export function walk(b: WorldBody, s: number): { at: [number, number, number]; dir: [number, number, number] } {
+  const p = b.path_mm!;
+  const loop = b.loop === true;
+  const segs = loop ? p.length : p.length - 1;
+  const len = (i: number) => Math.hypot(...([0, 1, 2].map((k) => p[(i + 1) % p.length]![k]! - p[i]![k]!) as [number, number, number]));
+  let total = 0;
+  for (let i = 0; i < segs; i++) total += len(i);
+  if (total <= 0) return { at: [...p[0]!] as [number, number, number], dir: [0, 1, 0] };
+  let back = false;
+  if (loop) s %= total;
+  else {
+    s %= 2 * total;
+    if (s > total) {
+      s = 2 * total - s;
+      back = true;
+    }
+  }
+  for (let i = 0; i < segs; i++) {
+    const l = len(i);
+    if (s <= l || i === segs - 1) {
+      const a = p[i]!;
+      const c = p[(i + 1) % p.length]!;
+      const t = l > 0 ? Math.min(1, s / l) : 0;
+      const d = l > 0 ? ([0, 1, 2].map((k) => ((c[k]! - a[k]!) / l) * (back ? -1 : 1)) as [number, number, number]) : ([0, 1, 0] as [number, number, number]);
+      return { at: [0, 1, 2].map((k) => a[k]! + (c[k]! - a[k]!) * t) as [number, number, number], dir: d };
+    }
+    s -= l;
+  }
+  return { at: [...p[0]!] as [number, number, number], dir: [0, 1, 0] };
+}
+
+/** whether a body moves (a velocity, or a path walked at a speed) */
+export function moves(b: WorldBody): boolean {
+  return Boolean(b.velocity_mm_s) || Boolean(b.path_mm && b.path_mm.length >= 2 && (b.speed_mm_s ?? 0) > 0);
+}
+
+/** the bodies where they are at `nowPs` (the project's are set at time 0); a walker carries its heading and distance */
 export function bodiesAt(bodies: WorldBody[], nowPs: bigint): WorldBody[] {
-  return bodies.map((b) => (b.velocity_mm_s ? { ...b, at: bodyAt(b, nowPs) } : b));
+  return bodies.map((b) => {
+    if (b.path_mm && moves(b)) {
+      const s = (b.speed_mm_s ?? 0) * (Number(nowPs) / 1e12);
+      const w = walk(b, s);
+      // its heading as a velocity (for facing and the gait); the distance walked drives the stride
+      return { ...b, at: w.at, velocity_mm_s: w.dir.map((x) => x * (b.speed_mm_s ?? 0)) as [number, number, number], walked_mm: s } as WorldBody;
+    }
+    return b.velocity_mm_s ? { ...b, at: bodyAt(b, nowPs) } : b;
+  });
 }
 
 /** the distance (mm) along the unit vector d from o to the nearest body, or -1 */

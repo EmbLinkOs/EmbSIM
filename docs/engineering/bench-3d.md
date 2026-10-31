@@ -180,7 +180,8 @@ Done (first step):
 - Bodies with physics (Rapier, Apache-2.0, ADR-029), and a robot on the
   floor. First step done (2026-10-31): bodies move in virtual time in the
   engine (a velocity, a travel back and forth), seen by the distance sensors
-  and drawn by the bench.
+  and drawn by the bench; then paths of waypoints walked at a speed, looped
+  or there and back (a person round the table).
 - Temperature and light as fields drawn when asked (a heat map over the
   bench).
 - The world's objects are what the sensors' rays hit, as today.

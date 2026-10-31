@@ -2,7 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import type { WorldBody } from '@embsim/protocol';
 import { describe, expect, it } from 'vitest';
-import { bodiesAt, bodyAt, rayDistance } from './world';
+import { bodiesAt, bodyAt, rayDistance, walk } from './world';
 
 const cart: WorldBody = { id: 'cart', shape: 'box', at: [0, -300, 50], size: [100, 100, 100], velocity_mm_s: [0, 100, 0], travel_mm: 200 };
 const s = (seconds: number) => BigInt(Math.round(seconds * 1e12));
@@ -21,5 +21,25 @@ describe('moving bodies (as core/engine/world.c moves them)', () => {
     expect(bodiesAt([wall], s(9))[0]).toBe(wall);
     const moved = bodiesAt([{ ...wall, velocity_mm_s: [0, 200, 0] }], s(1));
     expect(rayDistance(moved, [0, 0, 50], [0, -1, 0])).toBeCloseTo(295); // the face, 300 mm minus half its depth
+  });
+  it('walks its path at its speed: round the loop, or there and back', () => {
+    const square: [number, number, number][] = [[0, 0, 0], [1000, 0, 0], [1000, 1000, 0], [0, 1000, 0]];
+    const walker: WorldBody = { id: 'walker', at: [0, 0, 0], size: [100, 100, 100], path_mm: square, speed_mm_s: 1000, loop: true };
+    // the numbers tests/protocol/test_world.py checks the engine with
+    const a = bodyAt(walker, s(1.5));
+    expect(a[0]).toBeCloseTo(1000);
+    expect(a[1]).toBeCloseTo(500);
+    const home = bodyAt(walker, s(4));
+    expect(home[0]).toBeCloseTo(0);
+    expect(home[1]).toBeCloseTo(0);
+    const there = { ...walker, path_mm: square.slice(0, 3), loop: false };
+    const b = bodyAt(there, s(2.5));
+    expect(b[0]).toBeCloseTo(1000);
+    expect(b[1]).toBeCloseTo(500);
+    expect(walk(there, 2500).dir[1]).toBeCloseTo(-1); // on its way back
+    // drawn, it carries its heading and the distance walked
+    const drawn = bodiesAt([walker], s(1.5))[0] as WorldBody & { walked_mm?: number };
+    expect(drawn.velocity_mm_s![1]).toBeCloseTo(1000);
+    expect(drawn.walked_mm).toBeCloseTo(1500);
   });
 });

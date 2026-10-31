@@ -100,6 +100,23 @@ def main():
             assert abs(cart["at"][1] - (-200)) < 1e-6, cart  # out 200 mm, then 100 back
             client.call("input.set", {"target": "world.cart", "input": "body", "value": None})
 
+            # a path: waypoints walked at a speed; looped, round again; else there and back
+            client.call("control.reset")
+            square = [[0, 0, 0], [1000, 0, 0], [1000, 1000, 0], [0, 1000, 0]]
+            client.call("input.set", {"target": "world.walker", "input": "body", "value": {"shape": "box", "at": [0, 0, 0], "size": [100, 100, 100], "path_mm": square, "speed_mm_s": 1000, "loop": True}})
+            client.call("control.advance", {"by": "1500ms"})
+            w = client.call("world.get")["bodies"][0]
+            assert abs(w["at"][0] - 1000) < 1e-6 and abs(w["at"][1] - 500) < 1e-6, w  # 1.5 m: along the first side, half up the second
+            assert w["loop"] is True and len(w["path_mm"]) == 4, w
+            client.call("control.advance", {"by": "2500ms"})
+            w = client.call("world.get")["bodies"][0]
+            assert abs(w["at"][0]) < 1e-6 and abs(w["at"][1]) < 1e-6, w  # 4 m: the whole square, home again
+            client.call("input.set", {"target": "world.walker", "input": "body", "value": {"shape": "box", "at": [0, 0, 0], "size": [100, 100, 100], "path_mm": square[:3], "speed_mm_s": 1000}})
+            client.call("control.advance", {"by": "2500ms"})
+            w = client.call("world.get")["bodies"][0]
+            assert abs(w["at"][0] - 1000) < 1e-6 and abs(w["at"][1] - 500) < 1e-6, w  # 2.5 m: to the end (2 m) and half a metre back
+            client.call("input.set", {"target": "world.walker", "input": "body", "value": None})
+
             # a project's moving body runs on the project's timeline (from 0), even when added later,
             # as the bench draws it: 100 mm/s since 0 has carried it 100 mm a second
             edit(client, [{"set_world": {"bodies": [{"id": "belt", "at": [0, -600, 50], "size": [50, 50, 50], "velocity_mm_s": [0, 100, 0]}]}}])
