@@ -5,7 +5,7 @@
  "version": "0.1.0",
  "name": "Adafruit 1.8\" TFT shield",
  "category": "displays",
- "description": "Adafruit's 1.8\" TFT shield (v1, product 802) on an Arduino Uno V3 header: a 128 x 160 ST7735R TFT on SPI (SCK D13, MOSI D11, TFT_CS D10, TFT_DC D8, its reset on the header's RESET), a five-way joystick read as one analog voltage on A3, and a microSD socket (SD_CS D4). ST's NUCLEO examples use it (STM32CubeF4's USB host and FatFs demos): they look for it by reading A3 high with a pull-down.",
+ "description": "Adafruit's 1.8\" TFT shield (v1, product 802) on an Arduino Uno V3 header: a 128 x 160 ST7735R TFT on SPI (SCK D13, MOSI D11, TFT_CS D10, TFT_DC D8, its reset on the header's RESET), a five-way joystick read as one analog voltage on A3 (a resistor ladder), and a microSD socket (SD_CS D4). ST's NUCLEO examples use it (STM32CubeF4's USB host and FatFs demos): they look for it by reading A3 high with a pull-down.",
  "keywords": [
   "shield",
   "adafruit",
@@ -65,7 +65,7 @@
    "model": {
     "kind": "passive"
    },
-   "doc": "MISO, from the microSD socket only (the socket is not modelled)",
+   "doc": "MISO, from the microSD socket only: the socket is empty here (a 1 GOhm leakage)",
    "required": false
   },
   {
@@ -98,7 +98,7 @@
    "model": {
     "kind": "passive"
    },
-   "doc": "SD_CS, the microSD socket's chip select (the socket is not modelled)",
+   "doc": "SD_CS, the microSD socket's chip select: the socket is empty here (a 1 GOhm leakage)",
    "required": false
   },
   {
@@ -122,7 +122,7 @@
      "id": "RPU",
      "component": "emblink/resistor",
      "params": {
-      "resistance": "10k"
+      "resistance": "1k"
      }
     },
     {
@@ -133,7 +133,7 @@
      "id": "RLEFT",
      "component": "emblink/resistor",
      "params": {
-      "resistance": "100k"
+      "resistance": "10k"
      }
     },
     {
@@ -144,7 +144,7 @@
      "id": "RUP",
      "component": "emblink/resistor",
      "params": {
-      "resistance": "10k"
+      "resistance": "1k"
      }
     },
     {
@@ -155,7 +155,7 @@
      "id": "RSEL",
      "component": "emblink/resistor",
      "params": {
-      "resistance": "4.7k"
+      "resistance": "470"
      }
     },
     {
@@ -166,7 +166,7 @@
      "id": "RRIGHT",
      "component": "emblink/resistor",
      "params": {
-      "resistance": "2.2k"
+      "resistance": "220"
      }
     },
     {
@@ -177,7 +177,21 @@
      "id": "RDOWN",
      "component": "emblink/resistor",
      "params": {
-      "resistance": "220"
+      "resistance": "22"
+     }
+    },
+    {
+     "id": "RMISO",
+     "component": "emblink/resistor",
+     "params": {
+      "resistance": "1G"
+     }
+    },
+    {
+     "id": "RSDCS",
+     "component": "emblink/resistor",
+     "params": {
+      "resistance": "1G"
      }
     }
    ],
@@ -196,7 +210,9 @@
      "RSEL.2",
      "RRIGHT.2",
      "RDOWN.2",
-     "TFT.GND"
+     "TFT.GND",
+     "RMISO.2",
+     "RSDCS.2"
     ],
     "V5": [
      "TFT.VCC"
@@ -231,7 +247,9 @@
     "D11": "TFT.SDA",
     "D10": "TFT.CS",
     "D8": "TFT.DC",
-    "A3": "RPU.2"
+    "A3": "RPU.2",
+    "D12": "RMISO.1",
+    "D4": "RSDCS.1"
    }
   }
  },
@@ -299,7 +317,7 @@
  },
  "fidelity": {
   "functional": {
-   "claims": "Its TFT as emblink/st7735_tft18 says, wired as the shield wires it; the joystick's five switches (LEFT, UP, SEL, RIGHT, DOWN, each a push button: its pressed input) as a ladder on A3.",
+   "claims": "Its TFT as emblink/st7735_tft18 says, wired as the shield wires it; the joystick's five switches (LEFT, UP, SEL, RIGHT, DOWN, BTN1's five contacts, each a push button: its pressed input) as a ladder on A3.",
    "omissions": [
     "the joystick's voltages: logic levels only (electrical gives them)"
    ],
@@ -312,12 +330,12 @@
    "omissions": []
   },
   "electrical": {
-   "claims": "A3 pulled up to 3V3 through 10 kOhm, a pressed direction pulling it down through its resistor: LEFT 100 kOhm (3.0 V), UP 10 kOhm (1.65 V), SEL 4.7 kOhm (1.06 V), RIGHT 2.2 kOhm (0.6 V), DOWN 220 Ohm (71 mV), 3.3 V with nothing pressed; the values put each direction in the middle of the ADC window ST's BSP decodes (BSP_JOY_GetState).",
+   "claims": "A3 (the schematic's NAV) pulled up to 3V3 through R8 (1 kOhm), a pressed direction of the five-way switch BTN1 pulling it to ground through its resistor: LEFT R6 (10 kOhm, 3.0 V), UP R3 (1.0 kOhm, 1.65 V), SEL R4 (470 Ohm, 1.05 V), RIGHT R5 (220 Ohm, 0.60 V), DOWN R7 (22 Ohm, 71 mV); 3.3 V with nothing pressed, so a pull-down of tens of kOhm (ST's shield detection) still reads high. Each lands in the window ST's BSP decodes (BSP_JOY_GetState).",
    "omissions": [
-    "the shield's schematic was not at hand: the ladder's resistors are the values that fit ST's BSP windows, not read from the board",
-    "the microSD socket (D4, D12)",
-    "the CD74HC4050 level shifter and the 3.3 V regulator: the TFT is fed and driven directly",
-    "the backlight's transistor (the backlight is always on)",
+    "the microSD socket (D4, D12): empty, each line a 1 GOhm leakage",
+    "the RT9193 3.3 V regulator (IC2) and the 5 V to 3.3 V level shifting (IC1): the TFT is fed from 5V and driven directly",
+    "the backlight's NPN (Q1, R1, R2, R9 on BACKLITE): always on",
+    "the shield's own reset button and the 0.1 uF and 10 uF decoupling",
     "two directions pressed at once read as their parallel resistance, as on the shield"
    ],
    "validation": [
@@ -329,6 +347,11 @@
   "author": "EmbSIM",
   "license": "Apache-2.0",
   "sources": [
+   {
+    "title": "Adafruit 1.8\" TFT shield Eagle schematic (Adafruit 1.8 TFTshield.sch, the original revision): BTN1, R3 to R8 on A3, Q1, IC2 RT9193-33",
+    "url": "https://github.com/adafruit/Adafruit-1.8-TFT-Shield-PCB",
+    "date": "2026-10-31"
+   },
    {
     "title": "Adafruit 1.8\" TFT shield (product 802) tutorial: its pins, the joystick on A3",
     "url": "https://learn.adafruit.com/1-8-tft-display",
