@@ -814,6 +814,10 @@ static es_status setup_devices(esk_island *isl)
     for (i = 0; i < isl->devs.len; i++) {
         esk_adev *d = isl->devs.data[i];
         int k;
+        /* what a device holds outside the island's allocator goes before its
+         * state is zeroed (a reset clears an instrument's capture) */
+        esk_power_profiler_free(d);
+        esk_oscilloscope_free(d);
         if (d->state)
             memset(d->state, 0, d->ops->state_size);
         d->nbranch = 0;
