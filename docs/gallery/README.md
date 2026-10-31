@@ -28,6 +28,20 @@ it and reads it back, then lists the disk.
 |---|---|
 | ![The MSC demo's log: 'USBHost.txt' opened and written, the text read back, 'FatFs data compare SUCCESS'](nucleo-f446ze/host-msc-file-written.png) | ![The disk's content listed: USBHOST.TXT](nucleo-f446ze/host-msc-disk-content.png) |
 
+## A logic analyzer: the Saleae Logic 8 (2026-10-31)
+
+A Saleae Logic 8 wired to a terminal's TX (D0) and a 1 kHz clock (D1),
+shown in the Run perspective as Logic 2 shows it. Triggered on D0's falling
+edge with a 20 ms capture at 1 MS/s, it opens 2 ms (10 %) before the start
+bit; the clock runs on D1 throughout:
+
+![A triggered capture: the UART bytes on D0, the clock on D1](instruments-logic8/1-triggered-capture.png)
+
+The Async Serial analyzer on D0 at 9600 baud reads the frames back from the
+capture: "H", "i" and the terminal's newline.
+
+![The Async Serial analyzer decoding H, i, newline](instruments-logic8/2-async-serial.png)
+
 ## USB on the bench (2026-10-31)
 
 STM32CubeF4's USB_Device/HID_Standalone, unmodified, on the NUCLEO-F446ZE

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rate-three-channels",
+  "description": "With three channels on (D0 to D2), it samples at 100 MS/s.",
+  "policy": "functional",
+  "until": "5us",
+  "circuit": {
+    "components": [
+      {
+        "id": "CLK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1meg",
+          "duty": 0.5,
+          "td": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/saleae_logic8",
+        "params": {
+          "sample_rate": "100meg",
+          "duration": "10u",
+          "channels": 7
+        }
+      }
+    ],
+    "nets": {
+      "C": [
+        "CLK.OUT",
+        "DUT.D0"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.rate": {
+      "at": "5us",
+      "equals": 100000000.0
+    }
+  }
+}

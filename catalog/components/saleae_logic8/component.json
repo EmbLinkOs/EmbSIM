@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/saleae_logic8",
+  "version": "0.1.0",
+  "name": "Logic analyzer, 8 channels (Saleae Logic 8)",
+  "category": "instruments",
+  "description": "Saleae's Logic 8 USB logic analyzer: eight channel leads and ground, each input 1 MOhm in parallel with 10 pF, high above 1.2 V and low below 0.6 V. It samples the eight inputs at its chosen rate (1 to 100 MS/s; 100 MS/s on up to 3 channels, 25 MS/s on all 8), from Start for a set duration or around a trigger on one channel's edge, and streams the capture to the workbench, where it is read as Saleae's Logic 2 software shows it: channel rows, protocol decoders, measurements.",
+  "keywords": [
+    "logic analyzer",
+    "saleae",
+    "logic 8",
+    "la",
+    "digital",
+    "capture",
+    "sigrok",
+    "pulseview",
+    "protocol",
+    "decoder",
+    "uart",
+    "spi",
+    "i2c"
+  ],
+  "pins": [
+    {
+      "name": "D0",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "vil": 0.6,
+        "vih": 1.2,
+        "pull": "down",
+        "rpull": 1000000.0,
+        "cin": 1e-11
+      },
+      "required": false,
+      "doc": "Channel 0's lead: 1 MOhm to ground in parallel with 10 pF; high above 1.2 V, low below 0.6 V"
+    },
+    {
+      "name": "D1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "vil": 0.6,
+        "vih": 1.2,
+        "pull": "down",
+        "rpull": 1000000.0,
+        "cin": 1e-11
+      },
+      "required": false,
+      "doc": "Channel 1's lead: 1 MOhm to ground in parallel with 10 pF; high above 1.2 V, low below 0.6 V"
+    },
+    {
+      "name": "D2",
+      "number": 3,
+      "model": {
+        "kind": "digital_in",
+        "vil": 0.6,
+        "vih": 1.2,
+        "pull": "down",
+        "rpull": 1000000.0,
+        "cin": 1e-11
+      },
+      "required": false,
+      "doc": "Channel 2's lead: 1 MOhm to ground in parallel with 10 pF; high above 1.2 V, low below 0.6 V"
+    },
+    {
+      "name": "D3",
+      "number": 4,
+      "model": {
+        "kind": "digital_in",
+        "vil": 0.6,
+        "vih": 1.2,
+        "pull": "down",
+        "rpull": 1000000.0,
+        "cin": 1e-11
+      },
+      "required": false,
+      "doc": "Channel 3's lead: 1 MOhm to ground in parallel with 10 pF; high above 1.2 V, low below 0.6 V"
+    },
+    {
+      "name": "D4",
+      "number": 5,
+      "model": {
+        "kind": "digital_in",
+        "vil": 0.6,
+        "vih": 1.2,
+        "pull": "down",
+        "rpull": 1000000.0,
+        "cin": 1e-11
+      },
+      "required": false,
+      "doc": "Channel 4's lead: 1 MOhm to ground in parallel with 10 pF; high above 1.2 V, low below 0.6 V"
+    },
+    {
+      "name": "D5",
+      "number": 6,
+      "model": {
+        "kind": "digital_in",
+        "vil": 0.6,
+        "vih": 1.2,
+        "pull": "down",
+        "rpull": 1000000.0,
+        "cin": 1e-11
+      },
+      "required": false,
+      "doc": "Channel 5's lead: 1 MOhm to ground in parallel with 10 pF; high above 1.2 V, low below 0.6 V"
+    },
+    {
+      "name": "D6",
+      "number": 7,
+      "model": {
+        "kind": "digital_in",
+        "vil": 0.6,
+        "vih": 1.2,
+        "pull": "down",
+        "rpull": 1000000.0,
+        "cin": 1e-11
+      },
+      "required": false,
+      "doc": "Channel 6's lead: 1 MOhm to ground in parallel with 10 pF; high above 1.2 V, low below 0.6 V"
+    },
+    {
+      "name": "D7",
+      "number": 8,
+      "model": {
+        "kind": "digital_in",
+        "vil": 0.6,
+        "vih": 1.2,
+        "pull": "down",
+        "rpull": 1000000.0,
+        "cin": 1e-11
+      },
+      "required": false,
+      "doc": "Channel 7's lead: 1 MOhm to ground in parallel with 10 pF; high above 1.2 V, low below 0.6 V"
+    },
+    {
+      "name": "GND",
+      "number": 9,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "doc": "The ground leads (the USB cable's ground: the computer's)"
+    }
+  ],
+  "params": {
+    "sample_rate": {
+      "type": "number",
+      "unit": "Hz",
+      "default": "10meg",
+      "min": "1meg",
+      "max": "100meg",
+      "doc": "Samples per second: 100, 50, 40, 25, 20, 10, 8, 5, 4, 2 or 1 MS/s (another value is taken down to the next of these); 100 MS/s on up to 3 channels, 50 on up to 6, 40 on up to 7, 25 on all 8"
+    },
+    "duration": {
+      "type": "number",
+      "unit": "s",
+      "default": 1,
+      "min": "1u",
+      "max": 3600,
+      "doc": "The capture's length (the Logic 8 streams to the computer: its memory is the limit)"
+    },
+    "channels": {
+      "type": "integer",
+      "default": 255,
+      "min": 1,
+      "max": 255,
+      "doc": "The channels on, channel n in bit n"
+    },
+    "trigger_channel": {
+      "type": "integer",
+      "default": -1,
+      "min": -1,
+      "max": 7,
+      "doc": "The channel whose edge starts the capture; -1 for none (the capture starts at Start)"
+    },
+    "trigger_edge": {
+      "type": "enum",
+      "default": "rising",
+      "enum": [
+        "rising",
+        "falling",
+        "both"
+      ],
+      "doc": "The trigger channel's edge"
+    },
+    "pretrigger": {
+      "type": "number",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "doc": "The share of the duration kept before the trigger"
+    }
+  },
+  "inputs": [
+    {
+      "name": "run",
+      "type": "boolean",
+      "default": false,
+      "doc": "Start (true) or Stop (false) a capture"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "state",
+      "type": "string",
+      "doc": "idle, armed (waiting for the trigger), capturing or done"
+    },
+    {
+      "name": "rate",
+      "type": "number",
+      "unit": "Hz",
+      "doc": "The rate it samples at (after the channel limit)"
+    },
+    {
+      "name": "channels_on",
+      "type": "integer",
+      "doc": "The channels on"
+    },
+    {
+      "name": "transitions",
+      "type": "integer",
+      "doc": "How many changes of the inputs the capture holds (the first is the inputs at its start)"
+    },
+    {
+      "name": "full",
+      "type": "boolean",
+      "doc": "The capture ended because its memory filled"
+    },
+    {
+      "name": "inputs",
+      "type": "integer",
+      "doc": "The inputs now, channel n in bit n"
+    }
+  ],
+  "model": {
+    "primitive": "logic_analyzer"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 100,
+    "pins": {
+      "D0": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "D1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "D2": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "D3": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D4": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "D5": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "D6": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "D7": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "GND": {
+        "x": 40,
+        "y": 100,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Samples the eight inputs at the chosen rate exactly as a sampler does (an edge at the first sample instant after it, a change undone before the next sample instant missed), the rate limited by the channels on as the data sheet gives it, a capture from Start for its duration or around a trigger on one channel's edge with a pre-trigger share, read live by instrument.read.",
+      "omissions": [
+        "the analog inputs (10 bits, 0 to 5 V, up to 10 MS/s)",
+        "the leads' inductance and crosstalk",
+        "inputs beyond the absolute maximum (-25 V to +25 V)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the analog inputs (10 bits, 0 to 5 V, up to 10 MS/s)",
+        "the leads' inductance and crosstalk",
+        "inputs beyond the absolute maximum (-25 V to +25 V)"
+      ]
+    },
+    "electrical": {
+      "claims": "As functional; each lead loads its net with 1 MOhm to ground in parallel with 10 pF, and reads high above 1.2 V and low below 0.6 V, holding its state in between.",
+      "omissions": [
+        "the analog inputs (10 bits, 0 to 5 V, up to 10 MS/s)",
+        "the leads' inductance and crosstalk",
+        "inputs beyond the absolute maximum (-25 V to +25 V)"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Saleae Logic 8 data sheet (DOC_620-00011_V20260521): input impedance 1 MOhm || 10 pF; digital threshold VIL +0.6 V, VIH +1.2 V; digital sample rates 100, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1 MSPS, footnote 1: 100 MSPS on up to 3 channels, 50 MSPS on up to 6, 40 MSPS on up to 7 (8 channels, digital only, 25 MSPS); 25 MHz digital bandwidth; -25 V to +25 V absolute maximum, 0 V to +5 V recommended",
+        "url": "https://downloads.saleae.com/specs/logic_8_data_sheet.pdf",
+        "date": "2026-10-31"
+      },
+      {
+        "title": "Saleae support, supported voltages: the Logic 8's digital threshold is fixed, input low 0.6 V, input high 1.2 V",
+        "url": "https://new.saleae.com/support/specifications-hardware/electrical-characteristics/supported-voltages",
+        "date": "2026-10-31",
+        "notes": "The data sheet labels the threshold 'Selectable' but gives one pair of levels; this page says the Logic 8's threshold is fixed, as modelled."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

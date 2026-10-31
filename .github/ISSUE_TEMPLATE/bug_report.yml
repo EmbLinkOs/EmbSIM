@@ -19,7 +19,7 @@ body:
     validations: { required: true }
   - type: input
     id: platform
-    attributes: { label: Platform and compiler, placeholder: Ubuntu 24.04, GCC 13; or macOS 14, Apple Clang 15 }
+    attributes: { label: Platform and compiler, placeholder: Ubuntu 24.04, GCC 13; or macOS 15, Apple Clang 17 }
     validations: { required: true }
   - type: textarea
     id: reproduction

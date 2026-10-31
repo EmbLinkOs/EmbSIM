@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "rate-seven-channels",
+  "description": "Asked for 100 MS/s with seven channels on, it samples at 40 MS/s (the data sheet: 40 MS/s on up to 7 channels).",
+  "policy": "functional",
+  "until": "5us",
+  "circuit": {
+    "components": [
+      {
+        "id": "CLK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1meg",
+          "duty": 0.5,
+          "td": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/saleae_logic8",
+        "params": {
+          "sample_rate": "100meg",
+          "duration": "10u",
+          "channels": 127
+        }
+      }
+    ],
+    "nets": {
+      "C": [
+        "CLK.OUT",
+        "DUT.D0"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.rate": {
+      "at": "5us",
+      "equals": 40000000.0
+    }
+  }
+}

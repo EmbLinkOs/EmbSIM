@@ -39,6 +39,10 @@ extern const esk_model_ops esk_st7735_ops;
 extern const esk_model_ops esk_usb_flash_drive_ops;
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;
+/* an 8-channel logic analyzer, the Saleae Logic 8 (logic_analyzer.c) */
+extern const esk_model_ops esk_logic_analyzer_ops;
+/* its capture's transitions since `since` (at most `max`, 0: a default), as JSON into `out` */
+es_status esk_logic_analyzer_read(esk_comp *c, uint64_t since, size_t max, esk_json *out);
 /* a phone connecting to a BLE peripheral and browsing its GATT database (ble_central.c) */
 extern const esk_model_ops esk_ble_central_ops;
 /* a JSON array of {name, kind: "digital"|"electrical"} */

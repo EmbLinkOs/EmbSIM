@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "counts-clock",
+  "description": "A 1 MHz clock on D0 sampled at 10 MS/s for 100 us: 200 changes after the start's record, then the capture is done.",
+  "policy": "functional",
+  "until": "150us",
+  "circuit": {
+    "components": [
+      {
+        "id": "CLK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1meg",
+          "duty": 0.5,
+          "td": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/saleae_logic8",
+        "params": {
+          "sample_rate": "10meg",
+          "duration": "100u"
+        }
+      }
+    ],
+    "nets": {
+      "C": [
+        "CLK.OUT",
+        "DUT.D0"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.state": {
+      "at": "150us",
+      "equals": "done"
+    },
+    "output:DUT.transitions": {
+      "at": "150us",
+      "min": 200,
+      "max": 202
+    },
+    "output:DUT.rate": {
+      "at": "150us",
+      "equals": 10000000.0
+    }
+  }
+}

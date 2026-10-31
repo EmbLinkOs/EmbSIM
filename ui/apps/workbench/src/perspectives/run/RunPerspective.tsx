@@ -23,6 +23,7 @@ import { useHostPort } from './useHostPort';
 import { SchematicDisplayOptions } from './SchematicDisplayOptions';
 import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { isWiredInstrument, WiredInstrumentsPanel } from './WiredInstrumentsPanel';
+import { LOGIC8, Logic8Panel } from './Logic8Panel';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
@@ -196,6 +197,10 @@ export function RunPerspective() {
     { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
       <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
+    // each Saleae Logic 8 on the bench: its own capture, as Logic 2 shows it
+    ...(project?.components.filter((c) => c.component === LOGIC8) ?? []).map((c): DockItem => ({
+      id: `logic8-${c.id}`, title: `${c.id} · Logic 8`, flush: true, weight: 1.1, minSize: 160, collapsible: true, content: <Logic8Panel part={c.id} />,
+    })),
     {
       id: 'bottom',
       title: { serial: 'Serial terminal', diagnostics: 'Diagnostics', meters: 'Meters', air: 'The air' }[bottomTab],
