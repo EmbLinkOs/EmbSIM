@@ -2,7 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { buildRoom, lightLevel, ROOM, TABLE, WINDOW } from './room';
+import { buildRoom, lightLevel, ROOM, shellShadows, TABLE, WINDOW } from './room';
 
 describe('the room around the bench', () => {
   it('the table\'s top is the bench\'s surface, 750 mm above the floor', () => {
@@ -51,5 +51,23 @@ describe('the room around the bench', () => {
     // floor, ceiling, four walls (one cut for the window), five bars, the table
     expect(casters.filter((o) => (o as THREE.Mesh).geometry instanceof THREE.ShapeGeometry)).toHaveLength(1);
     expect(casters.filter((o) => { const g = (o as THREE.Mesh).geometry; return g instanceof THREE.BoxGeometry && g.parameters.width === 60; })).toHaveLength(5);
+  });
+});
+
+describe('the shell and the shadows', () => {
+  it('casts them for the sun only', () => {
+    const room = buildRoom();
+    const shell: THREE.Object3D[] = [];
+    room.group.traverse((o) => { if (o.userData.shell) shell.push(o); });
+    expect(shell.length).toBeGreaterThanOrEqual(6 + 5); // floor, ceiling, four walls, the window's bars
+    shellShadows(room, false);
+    expect(shell.every((o) => !o.castShadow)).toBe(true);
+    shellShadows(room, true);
+    expect(shell.every((o) => o.castShadow)).toBe(true);
+    // the window's pane lets the sun through, whatever the shell does
+    let pane: THREE.Object3D | undefined;
+    room.group.traverse((o) => { if ((o as THREE.Mesh).material === room.pane) pane = o; });
+    expect(pane?.castShadow).toBe(false);
+    room.dispose();
   });
 });

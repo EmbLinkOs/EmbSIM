@@ -1332,7 +1332,7 @@ void esk_session_world_sync(es_session *s, const esk_json *before)
         if (!id || (old && json_same(s->a, old, b)))
             continue;
         esk_snprintf(target, sizeof target, "world.%s", id);
-        if (esk_json_get(b, "velocity_mm_s")) {
+        if (esk_json_get(b, "velocity_mm_s") || esk_json_get(b, "path_mm") || esk_json_get_bool(b, "falls", 0)) {
             /* a project's moving body runs on the project's timeline, from 0, whenever it is
              * edited (as the bench draws it); said in the recorded input, so a replay agrees */
             esk_json *spec = esk_json_clone(s->a, b);

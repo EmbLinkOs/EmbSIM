@@ -37,11 +37,17 @@ Tx, H/L trigger modes, the BISS0001's block), its motion read from the world
 when not set: a warm body moving in its cone and range. Evidence: five
 fixtures (hold, warm-up, single trigger, retrigger, block; flipping the mode
 breaks the retrigger one) and `tests/protocol/test_pir.py` (a cold moving box
-and a still person unseen, a walking person seen within 100 ms, OUT falling
+and a still person unseen, a walking person seen at the next look, OUT falling
 a hold after they leave the range). A person is drawn as a figure in the
 box the sensors see, walking in step with virtual time (`figure.test.ts`).
-Not yet: the lens's zones and the element's response to speed and
-direction; warm-up glitches on OUT.
+The lens's view cones followed (`zone`, 7.5° by default, an assumption as
+the HC-SR501's pitch is unpublished): the element sees a warm body whose
+image crosses from one cone to the next, so walking across is seen sooner
+than walking straight at it (`test_pir.py`: mid-cone at 2 m, walking across
+at 0.5 m/s, unseen at 150 ms and seen by 400 ms; walking straight at it from
+2.8 m at 1 m/s, unseen at 500 ms and seen by 800 ms, as the image climbs to
+the next cone at 2.17 m). Not yet: the lens's real pattern, the element's
+response to speed and size; warm-up glitches on OUT.
 
 ## Moving bodies (2026-10-31)
 
@@ -52,8 +58,21 @@ travel; a project body added at 3 s placed on the timeline from 0),
 NewPing's unmodified example measuring an approaching wall (105, 104, 101,
 99 ... 66, 64 cm, 8/8 assertions), `world-motion.test.ts` (the bench's copy of
 the motion, the same numbers), and the gallery. Not yet: physics (gravity,
-collisions; Rapier is the plan's choice), motion along a path. (PIR sensors
-reading motion followed, above.)
+collisions; Rapier is the plan's choice). (PIR sensors reading motion
+followed, above.) Bodies then walk paths (`path_mm`, `speed_mm_s`, `loop`):
+round a loop or there and back, in the engine and drawn the same way
+(`test_world.py` and `world-motion.test.ts` check a walker on a 1 m square at
+1 m/s at (1000, 500) after 1.5 s and home after 4 s, and one on an open path
+half a metre back after 2.5 s). Shadows reach the floor: the shadow map
+follows what the camera shows (`shadowfit.test.ts`), the shell shades only
+the sun (`room.test.ts`), and the gallery shows the lamp's and the sun's.
+Bodies fall (`falls`, `restitution`): under standard gravity, bouncing off
+the table or the floor, at rest once a bounce would rise under 0.1 mm
+(`test_world.py` and `world-motion.test.ts`: 0.3 s after letting go from
+1 m it has fallen g t²/2; the first bounce off the table rises a quarter of
+the drop at restitution 0.5; beside the table, or thrown off its edge, it
+rests on the floor). Not yet: collisions between bodies or with walls,
+rolling, sliding, spin.
 
 ## The window's sunlit patch (2026-10-31)
 

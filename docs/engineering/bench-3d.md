@@ -180,7 +180,10 @@ Done (first step):
 - Bodies with physics (Rapier, Apache-2.0, ADR-029), and a robot on the
   floor. First step done (2026-10-31): bodies move in virtual time in the
   engine (a velocity, a travel back and forth), seen by the distance sensors
-  and drawn by the bench.
+  and drawn by the bench; then paths of waypoints walked at a speed, looped
+  or there and back (a person round the table); then gravity: a body let go
+  falls, bounces off the table or the floor and rests, solved in closed form
+  in the engine. Collisions between bodies are next (Rapier when they come).
 - Temperature and light as fields drawn when asked (a heat map over the
   bench).
 - The world's objects are what the sensors' rays hit, as today.
@@ -193,8 +196,10 @@ size and window direction (`world.room`) and the sun by latitude, date and
 solar time (`world.sun`, `sun.ts`): the key light is the sun when its beam
 reaches the table through the window, window daylight when not, the lamp at
 night. Then the window's patch: walls, ceiling and bars cast shadows from a
-sun whose shadow camera starts outside the room. Still to do: floor
-shadows, physics.
+sun whose shadow camera starts outside the room. Then floor shadows: the
+shadow map is framed on what the camera shows (`shadowfit.ts`), tight on
+the bench close in and the whole room standing back, the shell shading
+only the sun. Still to do: physics.
 
 ### Stage 7: performance and qualification
 

@@ -14,7 +14,7 @@ test('preview every leg, reject occupied holes, move the assembly and undo', asy
   await page.getByRole('radio', { name: 'Bench', exact: true }).click();
   await page.getByRole('button', { name: 'Breadboard', exact: true }).click();
   const list = page.getByRole('complementary', { name: 'On the bench' });
-  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible();
+  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible({ timeout: 15_000 }); // the bench loads its 3D chunk first (CPU-rendering runners: seconds)
   const nets = page.getByRole('table', { name: 'Nets' });
   await list.getByRole('button', { name: /^R2/ }).click();
   await list.getByLabel("Plug R2's first leg into").fill('a10');
@@ -67,7 +67,7 @@ test('a typed jumper cannot reuse a hole occupied by a leg', async ({ page }) =>
   await page.getByRole('radio', { name: 'Bench', exact: true }).click();
   await page.getByRole('button', { name: 'Breadboard', exact: true }).click();
   const list = page.getByRole('complementary', { name: 'On the bench' });
-  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible();
+  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible({ timeout: 15_000 });
   await list.getByRole('button', { name: /^R2/ }).click();
   await list.getByLabel("Plug R2's first leg into").fill('a10');
   await list.getByRole('button', { name: 'Plug in', exact: true }).click();
