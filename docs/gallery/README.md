@@ -21,6 +21,14 @@ sensors use):
 
 ![A person walking behind the table](bench-3d-world/3-person-walking.png)
 
+The person is now drawn as a person, in an adult's proportions within the
+box the sensors see, facing the way they walk, legs and arms swinging with
+the distance covered:
+
+| Walking behind the table | In stride, from the front |
+|---|---|
+| ![A walking figure beside the table](bench-3d-world/4-person-figure.png) | ![Legs and arms in stride](bench-3d-world/5-person-stride.png) |
+
 ## Capped sections (2026-10-31)
 
 A section now shows solid red faces where it cuts a body, as a CAD tool's

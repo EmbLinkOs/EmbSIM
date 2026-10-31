@@ -136,7 +136,7 @@ export function WorldPanel() {
     // a person stands on the floor, 750 mm below the bench's surface: 1.7 m tall, warm (a PIR sees them move)
     const body: WorldBody =
       kind === 'person'
-        ? { id, name: `Person ${n}`, shape: 'box', at: [0, -1500, 100], size: [450, 300, 1700], color: '#c08a5b', warm: true }
+        ? { id, name: `Person ${n}`, shape: 'box', at: [0, -1500, 100], size: [450, 300, 1700], color: '#5a7fa8', warm: true }
         : kind === 'wall'
         ? { id, name: `Wall ${n}`, shape: 'box', at: [0, -400, 150], size: [600, 20, 300], color: '#d7d2c8' }
         : kind === 'ball'

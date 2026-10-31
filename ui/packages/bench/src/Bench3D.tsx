@@ -31,6 +31,7 @@ import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, section
 import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
 import type { Model3d } from './models3d';
 import { GpuTimer, recordFrame } from './frames';
+import { isPerson, personFigure } from './figure';
 import { capSection, type Caps } from './caps';
 import { buildRoom, lightLevel, ROOM, windowOpening, type Room, type RoomSize } from './room';
 import { dayOfYear, solarPosition, sunColor, sunDirection, sunlit } from './sun';
@@ -1058,19 +1059,36 @@ export function Bench3D(props: Bench3DProps) {
     const s = state.current;
     if (!s) return;
     for (const c of [...s.world.children]) {
+      const mats = new Set<THREE.Material>();
       c.traverse((o) => {
         if (o instanceof CSS2DObject) o.element.remove();
-        if (o instanceof THREE.Mesh || o instanceof THREE.Line) o.geometry.dispose();
+        if (o instanceof THREE.Mesh || o instanceof THREE.Line) {
+          o.geometry.dispose();
+          for (const mat of Array.isArray(o.material) ? o.material : [o.material]) mats.add(mat);
+        }
       });
+      for (const mat of mats) mat.dispose();
       s.world.remove(c);
     }
     for (const b of props.bodies ?? []) {
       // bench (x, y, z up) to the scene (x, z up, y towards the viewer)
-      const geom = b.shape === 'sphere' ? new THREE.SphereGeometry(b.size[0] / 2, 32, 16) : new THREE.BoxGeometry(b.size[0], b.size[2], b.size[1]);
-      const m = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#b08d5b'), roughness: 0.85 }));
+      let m: THREE.Object3D;
+      if (isPerson(b)) {
+        // a person, drawn as one; the sensors still see the box
+        m = personFigure(b, {
+          clothes: new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#5a7fa8'), roughness: 0.8 }),
+          legs: new THREE.MeshStandardMaterial({ color: 0x2f3b4f, roughness: 0.85 }),
+          skin: new THREE.MeshStandardMaterial({ color: 0xc69477, roughness: 0.6 }),
+        });
+        m.traverse((o) => { o.userData = { body: b.id }; });
+      } else {
+        const geom = b.shape === 'sphere' ? new THREE.SphereGeometry(b.size[0] / 2, 32, 16) : new THREE.BoxGeometry(b.size[0], b.size[2], b.size[1]);
+        const box = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: new THREE.Color(b.color ?? '#b08d5b'), roughness: 0.85 }));
+        box.castShadow = true;
+        box.receiveShadow = true;
+        m = box;
+      }
       m.position.set(b.at[0], b.at[2], b.at[1]);
-      m.castShadow = true;
-      m.receiveShadow = true;
       m.userData = { body: b.id };
       const label = new CSS2DObject(labelElement(b.name ?? b.id));
       label.position.set(0, (b.shape === 'sphere' ? b.size[0] : b.size[2]) / 2 + 8, 0);

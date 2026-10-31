@@ -13,8 +13,10 @@ when not set: a warm body moving in its cone and range. Evidence: five
 fixtures (hold, warm-up, single trigger, retrigger, block; flipping the mode
 breaks the retrigger one) and `tests/protocol/test_pir.py` (a cold moving box
 and a still person unseen, a walking person seen within 100 ms, OUT falling
-a hold after they leave the range). Not yet: the lens's zones and the
-element's response to speed and direction; warm-up glitches on OUT.
+a hold after they leave the range). A person is drawn as a figure in the
+box the sensors see, walking in step with virtual time (`figure.test.ts`).
+Not yet: the lens's zones and the element's response to speed and
+direction; warm-up glitches on OUT.
 
 ## Moving bodies (2026-10-31)
 

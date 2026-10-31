@@ -5,6 +5,13 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### People drawn as people
+
+- A warm body of a person's size is drawn as a person (`figure.ts`): an
+  adult's proportions within its box, facing its walk, legs and arms
+  swinging with the distance walked (a 1.5 m stride, so the gait follows
+  virtual time). The sensors still see the box.
+
 ### The PIR sensor as the HC-SR501 is
 
 - `emblink/pir_sensor` follows the HC-SR501 and its BISS0001: about a
