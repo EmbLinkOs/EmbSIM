@@ -380,7 +380,7 @@ export function benchShape(desc: Desc, params?: Record<string, unknown>, artwork
   const sense = (desc.bench as { sense?: BenchShape['sense'] } | undefined)?.sense;
   if (sense) shape.sense = sense;
   const so = smallOutline((desc as { part?: { package?: string } }).part?.package);
-  if (so && shape.package === 'dip' && so.pins === Object.keys(shape.pins).length) shape.smallOutline = so;
+  if (so && shape.package === 'dip' && Object.keys(shape.pins).length <= so.pins) shape.smallOutline = so;
   return shape;
 }
 
@@ -405,6 +405,16 @@ function deriveShape(desc: Desc, params?: Record<string, unknown>, artwork?: str
     return { package: 'board', size, pins, textured: true, label: desc.name, board };
   }
   if (VIRTUAL.has(short)) return { package: 'virtual', size: [1, 1, 1], pins: {} };
+  // a small-outline part whose pins are fewer than its package's (an SO-8 MOSFET: S on 1 to 3,
+  // G on 4, D on 5 to 8): each pin at its number's place on the breakout's DIP pins
+  const so = smallOutline((desc as { part?: { package?: string } }).part?.package);
+  const numbered = (desc.pins ?? []).every((p) => typeof p.number === 'number' && p.number >= 1 && p.number <= (so?.pins ?? 0));
+  if (so && numbered && names.length < so.pins) {
+    const slots = Array.from({ length: so.pins }, (_, i) => `#${i + 1}`);
+    for (const p of desc.pins ?? []) slots[(p.number as number) - 1] = p.name;
+    const { size, pins } = dipPins(slots, 7.62);
+    return { package: 'dip', size, pins: Object.fromEntries(Object.entries(pins).filter(([n]) => !n.startsWith('#'))), label: desc.name.split(' ')[0] };
+  }
   const box = BOXES[short];
   if (box) {
     // binding posts along the front, 0.3 in apart when they fit

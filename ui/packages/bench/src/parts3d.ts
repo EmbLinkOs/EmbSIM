@@ -429,8 +429,8 @@ function adapted(shape: BenchShape, so: SmallOutline): THREE.Group | null {
   const zs = [...new Set(pins.map(([, z]) => Math.round(z * 100) / 100))];
   if (zs.length !== 2) return null;
   const rows = Math.abs(zs[0]! - zs[1]!);
-  const cx = pins.reduce((t, [x]) => t + x, 0) / pins.length;
-  const cz = pins.reduce((t, [, z]) => t + z, 0) / pins.length;
+  // the body is centred on the DIP footprint (a part may use only some of its pins)
+  const [cx, cz] = [0, 0];
   const tex = labelTexture(shape.label ?? '', so.length * 0.7, so.width * 0.4, '#d0d0d0');
   const { group } = smallOutlineAdapter(so, rows, tex ?? undefined);
   group.position.set(cx, 0, cz);

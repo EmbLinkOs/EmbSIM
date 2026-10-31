@@ -80,3 +80,17 @@ describe('small-outline parts on breakouts', () => {
     expect(benchShape(description('lm393p')).smallOutline).toBeUndefined();
   });
 });
+
+describe('an SO-8 part with fewer pins than its package', () => {
+  it('puts the STS7PF30L\'s S, G and D on SO-8 pins 1, 4 and 5 of its breakout', () => {
+    const shape = benchShape(description('sts7pf30l'));
+    expect(shape.package).toBe('dip');
+    expect(shape.smallOutline).toMatchObject({ kind: 'SOIC', pins: 8 });
+    const { S, G, D } = shape.pins as Record<string, [number, number]>;
+    expect(G![0] - S![0]).toBeCloseTo(3 * 2.54);
+    expect(G![1]).toBe(S![1]);
+    expect(D![0]).toBeCloseTo(G![0]);
+    expect(S![1] - D![1]).toBeCloseTo(7.62);
+    expect(Object.keys(shape.pins)).toHaveLength(3);
+  });
+});
