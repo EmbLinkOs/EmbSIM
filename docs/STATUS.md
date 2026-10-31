@@ -5,6 +5,28 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The STM32F446 completed further, and the NUCLEO-F446ZE (2026-10-31)
+
+The F446's model gains what firmware sees of its clocks and flash: each
+oscillator and PLL is ready DS10693's typical start-up time after it is
+enabled (LSE's 2 s, a crystal's 2 ms, a PLL's 75 to 100 us), CIR's ready
+interrupts, the flash's program and erase times with BSY and the bus stall
+of code running from it, the CRC unit, and TIMx_OR's remaps (TIM5 measuring
+LSI). Evidence: `test_stm32f4`'s `test_startup_times`, `test_crc`,
+`test_tim5_lsi` and its flash test (BSY's 16 us and a sector's 250 ms with
+no instruction run meanwhile); CubeF4's NUCLEO-F446RE suite, its
+EEPROM_Emulation now ending past 13 s.
+
+The NUCLEO-F446ZE (MB1137, STM32F446ZE in LQFP144) is a board: its LEDs,
+buttons, power paths and jumpers, the Zio and morpho connectors (UM1974's
+pin assignment, every I/O on the morpho once), CN13's lines and the VCP on
+USART3. Evidence: its five fixtures, and 21 of CubeF4's STM32F446ZE-Nucleo
+examples run unmodified under scenarios (`run.py --board nucleo_f446ze`).
+Not yet: the USB OTG FS controller (CubeF4's USB device and host
+applications), the board's USB power switch and its LEDs, MCO1/MCO2 on
+their pins, and the parts of MB1137 whose values UM1974 does not give (the
+board's fidelity lists them).
+
 ## Boards as boards (2026-10-30)
 
 Stage 4 of [the 3D plan](engineering/bench-3d.md) has begun. Every board's
