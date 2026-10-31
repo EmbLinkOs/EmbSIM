@@ -65,6 +65,16 @@ function outlinePass(scene: THREE.Scene, camera: THREE.Camera, width: number, he
   pass.edgeGlow = 0;
   pass.visibleEdgeColor.set('#0ea5e9').convertLinearToSRGB();
   pass.hiddenEdgeColor.set('#0b5d80').convertLinearToSRGB();
+  // a section clips the selection's mask too, so a cut part is outlined as cut: the mask shader
+  // takes three's clipping chunks (it has none of its own)
+  const mask = pass.prepareMaskMaterial;
+  mask.clipping = true;
+  mask.vertexShader = mask.vertexShader
+    .replace('#include <skinning_pars_vertex>', '#include <skinning_pars_vertex>\n#include <clipping_planes_pars_vertex>')
+    .replace('#include <project_vertex>', '#include <project_vertex>\n#include <clipping_planes_vertex>');
+  mask.fragmentShader = mask.fragmentShader
+    .replace('#include <packing>', '#include <packing>\n#include <clipping_planes_pars_fragment>')
+    .replace('void main() {', 'void main() {\n#include <clipping_planes_fragment>');
   // the outline's mask and depth renders override materials: the section's helpers stay out of them
   const render = pass.render.bind(pass);
   pass.render = (...args: Parameters<OutlinePass['render']>) => withoutHelpers(scene, () => render(...args));
@@ -97,6 +107,7 @@ export class OutlineRenderer {
   /** a section's planes (or none) for the outline's own depth render */
   setClipping(planes: THREE.Plane[] | null): void {
     clipMaterial(this.outline.depthMaterial, planes);
+    clipMaterial(this.outline.prepareMaskMaterial, planes);
   }
 
   setSize(width: number, height: number, pixelRatio: number): void {
@@ -156,6 +167,7 @@ export class QualityRenderer {
   setClipping(planes: THREE.Plane[] | null): void {
     clipMaterial(this.passes.ao.normalMaterial, planes);
     clipMaterial(this.outline.depthMaterial, planes);
+    clipMaterial(this.outline.prepareMaskMaterial, planes);
     clipMaterial(this.black, planes);
   }
 

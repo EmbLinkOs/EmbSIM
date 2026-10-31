@@ -28,6 +28,8 @@ versions follow semantic versioning. There is no release yet.
   buffer (back faces counting up, front faces down) and a solid face is
   drawn on the plane where the count is not zero, as a CAD tool's section
   view shows it.
+- The outline of a selected or hovered part follows the cut (its mask shader
+  takes the section's planes).
 - Fixed: in the quality render, ambient occlusion and the glow drew the
   bodies a section cuts away (their passes draw the scene with their own
   materials, which were not clipped), leaving their ghosts on the desk.

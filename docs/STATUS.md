@@ -32,9 +32,9 @@ body, one cap plane on the cut. Evidence: `caps.test.ts` (the helpers' sides
 and stencil operations, plates and see-through bodies left out, the cap on
 the plane and never under the pointer, everything removed with the
 section) and the gallery. The quality passes' own materials are clipped too.
-Not yet: the hover outline still traces a cut body whole (the outline's mask
-shader takes no clipping planes); open meshes (a KiCad model with open
-surfaces) may cap imperfectly.
+The outline's mask shader takes three's clipping chunks, so a cut part is
+outlined as cut. Not yet: open meshes (a KiCad model with open surfaces)
+may cap imperfectly.
 
 ## Static batching (2026-10-31)
 
