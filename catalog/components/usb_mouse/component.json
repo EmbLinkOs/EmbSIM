@@ -4,7 +4,7 @@
   "id": "emblink/usb_mouse",
   "version": "0.1.0",
   "name": "USB mouse (low-speed HID boot mouse)",
-  "category": "input",
+  "category": "inputs",
   "description": "A wired USB mouse on its cable: a low-speed HID device of the boot mouse protocol (three buttons, X, Y and a wheel), bus powered. Its inputs move it and press its buttons; a host (a computer's port, a microcontroller's USB host) enumerates it and polls its reports.",
   "keywords": [
     "usb",
