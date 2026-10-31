@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The PIR sensor as the HC-SR501 is
+
+- `emblink/pir_sensor` follows the HC-SR501 and its BISS0001: about a
+  minute's warm-up after power-up, the hold time Tx, the H (retrigger) and
+  L (single trigger) jumper, and the ~2.5 s block after OUT falls, motion
+  still present at its end triggering again.
+- Left unset, its motion comes from the world: a warm body (`warm: true`: a
+  person, an animal) moving within the lens's field of view (110°) and range
+  (up to 7 m), looked at every 100 ms. A cold body moving, or a warm one
+  standing still, is not seen. The World panel adds a person (1.7 m, on the
+  floor) and marks bodies warm.
+
 ### Moving bodies in the world
 
 - A world body may move in virtual time: `velocity_mm_s`, and `travel_mm`

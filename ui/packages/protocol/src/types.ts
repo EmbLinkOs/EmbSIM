@@ -139,6 +139,8 @@ export interface WorldBody {
   velocity_mm_s?: [number, number, number];
   /** with a velocity: back and forth over this distance from `at`, mm (0: straight on) */
   travel_mm?: number;
+  /** warmer than the room (a person, an animal): a PIR sees it move */
+  warm?: boolean;
 }
 
 /** the room around the bench, as the 3D bench draws it (presentation only) */

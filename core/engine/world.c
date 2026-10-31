@@ -22,10 +22,13 @@ int esk_world_field_index(const char *name)
     for (i = 0; i < ESK_WF_COUNT; i++)
         if (esk_str_eq(name, NAMES[i]))
             return i;
-    return esk_str_eq(name, "distance") ? ESK_WF_DISTANCE : -1;
+    return esk_str_eq(name, "distance") ? ESK_WF_DISTANCE : esk_str_eq(name, "motion") ? ESK_WF_MOTION : -1;
 }
 
-const char *esk_world_field_name(int field) { return field >= 0 && field < ESK_WF_COUNT ? NAMES[field] : field == ESK_WF_DISTANCE ? "distance" : "?"; }
+const char *esk_world_field_name(int field)
+{
+    return field >= 0 && field < ESK_WF_COUNT ? NAMES[field] : field == ESK_WF_DISTANCE ? "distance" : field == ESK_WF_MOTION ? "motion" : "?";
+}
 
 const char *esk_world_field_unit(int field) { return field >= 0 && field < ESK_WF_COUNT ? UNITS[field] : field == ESK_WF_DISTANCE ? "mm" : ""; }
 
@@ -83,6 +86,7 @@ es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const e
     vec3(esk_json_get(spec, "size"), b.size, 50.0);
     vec3(esk_json_get(spec, "velocity_mm_s"), b.vel, 0.0);
     b.travel = esk_json_get_num(spec, "travel_mm", 0.0);
+    b.warm = esk_json_get_bool(spec, "warm", 0);
     if (b.travel < 0)
         b.travel = 0;
     /* the motion counts from `since_ps` when the spec says (a project's bodies: from 0), else from now */
@@ -186,6 +190,29 @@ double esk_world_ray(const esk_world *w, const double o[3], const double d[3], e
     return best;
 }
 
+int esk_world_motion(const esk_world *w, const double o[3], const double d[3], double half_angle_deg, double range_mm, es_time_t now)
+{
+    double cos_half = cos(half_angle_deg * 3.14159265358979323846 / 180.0);
+    size_t i;
+    for (i = 0; i < w->bodies.len; i++) {
+        const esk_body *b = &w->bodies.data[i];
+        double p[3], r[3], dist, along;
+        int k;
+        if (!b->warm || (b->vel[0] == 0 && b->vel[1] == 0 && b->vel[2] == 0))
+            continue; /* at the room's temperature, or still: nothing changes in the infrared */
+        esk_world_body_at(b, now, p);
+        for (k = 0; k < 3; k++)
+            r[k] = p[k] - o[k];
+        dist = sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
+        if (dist > range_mm)
+            continue;
+        along = r[0] * d[0] + r[1] * d[1] + r[2] * d[2];
+        if (dist <= 0 || along >= cos_half * dist)
+            return 1;
+    }
+    return 0;
+}
+
 esk_json *esk_world_json(esk_alloc *a, const esk_world *w, es_time_t now)
 {
     esk_json *o = esk_json_new_object(a), *fields = esk_json_new_object(a), *bodies = esk_json_new_array(a);
@@ -233,6 +260,8 @@ esk_json *esk_world_json(esk_alloc *a, const esk_world *w, es_time_t now)
         }
         esk_json_set_string(a, j, "id", b->id);
         esk_json_set_string(a, j, "shape", b->sphere ? "sphere" : "box");
+        if (b->warm)
+            esk_json_set_bool(a, j, "warm", 1);
         esk_json_object_set(a, j, "at", at);
         esk_json_object_set(a, j, "size", size);
         esk_json_array_push(a, bodies, j);

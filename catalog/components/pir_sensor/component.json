@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "PIR motion sensor",
   "category": "sensors",
-  "description": "Passive-infrared motion sensor module (HC-SR501 in retrigger mode): OUT goes high when motion starts and stays high for the hold time after it ends. Motion is an interactive input.",
+  "description": "Passive-infrared motion sensor module (HC-SR501, BISS0001): about a minute's warm-up after power-up; motion raises OUT (3.3 V) for the hold time Tx; with the jumper at H (default) motion during Tx restarts it, at L OUT falls Tx after it rose; after OUT falls the controller blocks for about 2.5 s. Motion is an interactive input or, left unset, a warm body (a person, an animal) moving within the lens's 110-degree field of view and its 3 to 7 m range.",
   "keywords": [
     "sensor",
     "pir",
@@ -55,7 +55,44 @@
       "default": 3,
       "min": "1m",
       "max": 300,
-      "doc": "Time OUT stays high after motion ends"
+      "doc": "Tx: how long OUT stays high (the 'time' trimmer, about 3 s to 300 s on the module)"
+    },
+    "warmup": {
+      "type": "number",
+      "unit": "s",
+      "default": 60,
+      "min": 0,
+      "max": 120,
+      "doc": "Initialisation after power-up, OUT low and motion unseen (about a minute per the datasheet)"
+    },
+    "lockout": {
+      "type": "number",
+      "unit": "s",
+      "default": 2.5,
+      "min": 0,
+      "max": 10,
+      "doc": "Ti: the BISS0001's block after OUT falls (about 2.5 s on the module)"
+    },
+    "retrigger": {
+      "type": "boolean",
+      "default": true,
+      "doc": "Jumper at H (repeatable trigger) rather than L (single trigger)"
+    },
+    "fov": {
+      "type": "number",
+      "unit": "deg",
+      "default": 110,
+      "min": 10,
+      "max": 180,
+      "doc": "The Fresnel lens's field of view (cone angle) for the world's bodies"
+    },
+    "range": {
+      "type": "number",
+      "unit": "m",
+      "default": 7,
+      "min": 0.5,
+      "max": 7,
+      "doc": "How far a warm body is seen (the sensitivity trimmer, about 3 to 7 m)"
     }
   },
   "inputs": [
@@ -63,7 +100,8 @@
       "name": "motion",
       "type": "boolean",
       "default": false,
-      "doc": "Something moves in front of the sensor"
+      "doc": "Something warm moves in front of the sensor; left unset, read from the world (a warm body moving in the field of view)",
+      "world": "motion"
     }
   ],
   "outputs": [
@@ -78,11 +116,11 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "OUT follows motion with the hold time, retriggerable.",
+      "claims": "Warm-up, hold time Tx, H (retrigger) and L (single) modes, the ~2.5 s block after OUT falls; motion from the world as warm bodies moving within the field of view and range, looked at every 100 ms. The world's motion is checked end to end by tests/protocol/test_pir.py.",
       "omissions": [
-        "the warm-up period",
-        "sensitivity and range",
-        "single-trigger mode"
+        "the lens's zones and the pyroelectric element's response to speed and direction (a warm body moving anywhere in the cone counts)",
+        "the temperature difference needed (a body is warm or not)",
+        "output glitches during warm-up (0 to 3 toggles on the module)"
       ],
       "validation": [
         "tests/*.json"
@@ -91,17 +129,17 @@
     "timed": {
       "claims": "As functional; delays as stated.",
       "omissions": [
-        "the warm-up period",
-        "sensitivity and range",
-        "single-trigger mode"
+        "the lens's zones and the pyroelectric element's response to speed and direction (a warm body moving anywhere in the cone counts)",
+        "the temperature difference needed (a body is warm or not)",
+        "output glitches during warm-up (0 to 3 toggles on the module)"
       ]
     },
     "electrical": {
       "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
       "omissions": [
-        "the warm-up period",
-        "sensitivity and range",
-        "single-trigger mode",
+        "the lens's zones and the pyroelectric element's response to speed and direction (a warm body moving anywhere in the cone counts)",
+        "the temperature difference needed (a body is warm or not)",
+        "output glitches during warm-up (0 to 3 toggles on the module)",
         "supply current",
         "output current limits"
       ],

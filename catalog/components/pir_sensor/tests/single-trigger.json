@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "single-trigger",
+  "description": "Jumper at L (single trigger), 10 ms hold: motion at 1 ms and again at 6 ms; OUT falls 10 ms after it rose, at 11 ms, not extended.",
+  "policy": "functional",
+  "until": "13ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/pir_sensor",
+        "params": {
+          "hold": "10m",
+          "warmup": 0,
+          "lockout": "5m",
+          "retrigger": false
+        }
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.OUT"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "10ms",
+      "logic": "1"
+    },
+    "output:DUT.active": {
+      "at": "12ms",
+      "equals": false
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": true
+    },
+    {
+      "at": "2ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": false
+    },
+    {
+      "at": "6ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": true
+    },
+    {
+      "at": "7ms",
+      "target": "DUT",
+      "input": "motion",
+      "value": false
+    }
+  ]
+}

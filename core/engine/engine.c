@@ -888,6 +888,17 @@ int esk_comp_world_input(const esk_comp *c, const char *input, double *out)
         *out = esk_str_eq(unit, "cm") ? mm / 10.0 : esk_str_eq(unit, "m") ? mm / 1000.0 : mm;
         return 1;
     }
+    if (f == ESK_WF_MOTION) {
+        /* a PIR: a warm body moving within its range and field of view (params fov, deg, and range, m) */
+        double o[3], d[3], fov = 110.0, range = 7.0;
+        if (!w->bodies.len)
+            goto fallback;
+        (void)esk_comp_param_double(c, "fov", &fov);
+        (void)esk_comp_param_double(c, "range", &range);
+        beam(c, o, d);
+        *out = esk_world_motion(w, o, d, fov / 2.0, range * 1000.0, esk_engine_now(c->e)) ? 1.0 : 0.0;
+        return 1;
+    }
     if (!((w->set >> f) & 1u))
         goto fallback;
     *out = w->value[f];

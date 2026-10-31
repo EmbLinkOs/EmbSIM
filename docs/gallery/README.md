@@ -15,6 +15,12 @@ bench draws it there. The ball before and after 1.5 s of running:
 |---|---|
 | ![The ball at the back of the desk](bench-3d-world/1-ball-before.png) | ![The ball nearer](bench-3d-world/2-ball-rolled.png) |
 
+A person (warm, 1.7 m, standing on the floor behind the table) walking past
+the PIR sensor, which sees them as the HC-SR501 would (drawn as the box the
+sensors use):
+
+![A person walking behind the table](bench-3d-world/3-person-walking.png)
+
 ## Capped sections (2026-10-31)
 
 A section now shows solid red faces where it cuts a body, as a CAD tool's

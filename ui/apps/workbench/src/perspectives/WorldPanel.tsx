@@ -128,13 +128,16 @@ export function WorldPanel() {
       return p;
     });
 
-  const addBody = (kind: 'box' | 'wall' | 'ball') => {
+  const addBody = (kind: 'box' | 'wall' | 'ball' | 'person') => {
     let n = 1;
     while (bodies.some((b) => b.id === `${kind}${n}`)) n++;
     const id = `${kind}${n}`;
     // in front of the bench's back edge, where a sensor facing the back sees it
+    // a person stands on the floor, 750 mm below the bench's surface: 1.7 m tall, warm (a PIR sees them move)
     const body: WorldBody =
-      kind === 'wall'
+      kind === 'person'
+        ? { id, name: `Person ${n}`, shape: 'box', at: [0, -1500, 100], size: [450, 300, 1700], color: '#c08a5b', warm: true }
+        : kind === 'wall'
         ? { id, name: `Wall ${n}`, shape: 'box', at: [0, -400, 150], size: [600, 20, 300], color: '#d7d2c8' }
         : kind === 'ball'
           ? { id, name: `Ball ${n}`, shape: 'sphere', at: [0, -200, 40], size: [80, 80, 80], color: '#e74c3c' }
@@ -297,6 +300,22 @@ export function WorldPanel() {
                 }}
               />
             </label>
+            <label className="wb-world__coord" title="Warmer than the room (a person, an animal): a PIR sensor sees it when it moves">
+              <input
+                type="checkbox"
+                aria-label={`${b.name ?? b.id} is warm`}
+                checked={Boolean(b.warm)}
+                disabled={!editable}
+                onChange={(e) =>
+                  setBodies(`${b.name ?? b.id} ${e.target.checked ? 'warm' : 'at room temperature'}`, (list) => {
+                    if (e.target.checked) list[i]!.warm = true;
+                    else delete list[i]!.warm;
+                    return list;
+                  })
+                }
+              />
+              warm
+            </label>
             <label className="wb-world__coord" title="Back and forth over this distance, mm (0: straight on)">
               ↔
               <input
@@ -331,6 +350,9 @@ export function WorldPanel() {
           </Button>
           <Button size="sm" variant="ghost" disabled={!editable} onClick={() => addBody('ball')}>
             <Plus /> Ball
+          </Button>
+          <Button size="sm" variant="ghost" disabled={!editable} onClick={() => addBody('person')}>
+            <Plus /> Person
           </Button>
         </div>
       </section>

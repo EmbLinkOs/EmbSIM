@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "hold",
-  "description": "Motion from 1 ms to 2 ms with a 10 ms hold: OUT high at 5 ms, low at 15 ms.",
+  "description": "Motion from 1 ms to 2 ms with a 10 ms hold (no warm-up): OUT high at 5 ms, low at 15 ms.",
   "policy": "functional",
   "until": "16ms",
   "circuit": {
@@ -11,7 +11,8 @@
         "id": "DUT",
         "component": "emblink/pir_sensor",
         "params": {
-          "hold": "10m"
+          "hold": "10m",
+          "warmup": 0
         }
       }
     ],

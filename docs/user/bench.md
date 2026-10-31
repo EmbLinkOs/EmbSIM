@@ -68,6 +68,11 @@ is always in view. The room is as lit as the world's **Light** field
 dark room, or to daylight values for a bright one. Only the picture
 changes; the light sensors read the same field.
 
+A **Person** stands on the floor, 1.7 m tall and **warm**; a PIR motion
+sensor sees a warm body that moves in front of it (not a still one, and not
+a moving box at the room's temperature). Give the person a speed to walk
+past the sensor.
+
 A body in the World panel may move: **v** is its speed towards you in mm/s
 (negative: away), **↔** a distance it goes back and forth over. It moves as
 the circuit's time runs (paused, it stays), and the distance sensors measure

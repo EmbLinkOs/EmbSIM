@@ -5,6 +5,17 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The PIR sensor (2026-10-31)
+
+`emblink/pir_sensor` is the HC-SR501 as its datasheet describes it (warm-up,
+Tx, H/L trigger modes, the BISS0001's block), its motion read from the world
+when not set: a warm body moving in its cone and range. Evidence: five
+fixtures (hold, warm-up, single trigger, retrigger, block; flipping the mode
+breaks the retrigger one) and `tests/protocol/test_pir.py` (a cold moving box
+and a still person unseen, a walking person seen within 100 ms, OUT falling
+a hold after they leave the range). Not yet: the lens's zones and the
+element's response to speed and direction; warm-up glitches on OUT.
+
 ## Moving bodies (2026-10-31)
 
 World bodies move in virtual time (`velocity_mm_s`, `travel_mm`), in the
@@ -14,8 +25,8 @@ travel; a project body added at 3 s placed on the timeline from 0),
 NewPing's unmodified example measuring an approaching wall (105, 104, 101,
 99 ... 66, 64 cm, 8/8 assertions), `world-motion.test.ts` (the bench's copy of
 the motion, the same numbers), and the gallery. Not yet: physics (gravity,
-collisions; Rapier is the plan's choice), motion along a path, PIR sensors
-reading motion (they take an input today).
+collisions; Rapier is the plan's choice), motion along a path. (PIR sensors
+reading motion followed, above.)
 
 ## The window's sunlit patch (2026-10-31)
 

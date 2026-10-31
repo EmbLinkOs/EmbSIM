@@ -378,7 +378,8 @@
             "illuminance",
             "sound",
             "wind",
-            "distance"
+            "distance",
+            "motion"
           ],
           "description": "The world's field the input reads while it is not set (ADR-026): its value in the input's unit (degC, %, hPa, lx, dB, m/s; distance, the nearest body along bench.sense, in mm, cm or m); the input's default while the world does not declare the field."
         }
