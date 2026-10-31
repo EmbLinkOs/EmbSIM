@@ -1,0 +1,207 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "stm32cubef4-nucleo-f446ze-usb-device",
+ "description": "A NUCLEO-F446ZE running one of STM32CubeF4's USB device applications for it, built from ST's unmodified sources (tests/vendor/stm32cubef4/run.py --board nucleo_f446ze puts the image beside this file as sketch.elf), on its ST-LINK's USB power, with a computer's USB port (PC) on CN13, the USB OTG FS connector: its VBUS, D-, D+ and GND.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/nucleo_f446ze",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  },
+  {
+   "id": "PC",
+   "component": "emblink/usb_host",
+   "layout": {
+    "x": 120,
+    "y": 480
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.U5V"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND",
+   "PC.GND"
+  ],
+  "OTG_VBUS": [
+   "PC.VBUS",
+   "B1.USB_VBUS"
+  ],
+  "OTG_DM": [
+   "PC.DM",
+   "B1.USB_DM"
+  ],
+  "OTG_DP": [
+   "PC.DP",
+   "B1.USB_DP"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "led",
+   "target": "net:B1.PB0",
+   "kind": "digital"
+  },
+  {
+   "id": "led2",
+   "target": "net:B1.PB7",
+   "kind": "digital"
+  },
+  {
+   "id": "led3",
+   "target": "net:B1.PB14",
+   "kind": "digital"
+  },
+  {
+   "id": "button",
+   "target": "net:B1.PC13",
+   "kind": "digital"
+  },
+  {
+   "id": "usb_state",
+   "target": "output:PC.HOST.state",
+   "kind": "value"
+  },
+  {
+   "id": "usb_vid",
+   "target": "output:PC.HOST.vid",
+   "kind": "value"
+  },
+  {
+   "id": "usb_pid",
+   "target": "output:PC.HOST.pid",
+   "kind": "value"
+  },
+  {
+   "id": "usb_manufacturer",
+   "target": "output:PC.HOST.manufacturer",
+   "kind": "value"
+  },
+  {
+   "id": "usb_product",
+   "target": "output:PC.HOST.product",
+   "kind": "value"
+  },
+  {
+   "id": "usb_serial",
+   "target": "output:PC.HOST.serial",
+   "kind": "value"
+  },
+  {
+   "id": "usb_reports",
+   "target": "output:PC.HOST.reports",
+   "kind": "value"
+  },
+  {
+   "id": "usb_report",
+   "target": "output:PC.HOST.report",
+   "kind": "value"
+  },
+  {
+   "id": "usb_cursor_x",
+   "target": "output:PC.HOST.cursor_x",
+   "kind": "value"
+  },
+  {
+   "id": "usb_buttons",
+   "target": "output:PC.HOST.buttons",
+   "kind": "value"
+  },
+  {
+   "id": "usb_frames",
+   "target": "output:PC.HOST.frames",
+   "kind": "value"
+  },
+  {
+   "id": "usb_resets",
+   "target": "output:PC.HOST.resets",
+   "kind": "value"
+  },
+  {
+   "id": "usb_log",
+   "target": "output:PC.HOST.log",
+   "kind": "value"
+  },
+  {
+   "id": "usb_address",
+   "target": "output:PC.HOST.device_address",
+   "kind": "value"
+  },
+  {
+   "id": "usb_configuration",
+   "target": "output:PC.HOST.configuration",
+   "kind": "value"
+  },
+  {
+   "id": "vbus_sense",
+   "target": "net:B1.PA9",
+   "kind": "analog"
+  },
+  {
+   "id": "ld8",
+   "target": "net:B1.USB_VBUS",
+   "kind": "analog"
+  },
+  {
+   "id": "usb_plugged",
+   "target": "output:PC.HOST.plugged",
+   "kind": "value"
+  },
+  {
+   "id": "usb_suspended",
+   "target": "output:PC.HOST.suspended",
+   "kind": "value"
+  },
+  {
+   "id": "usb_suspends",
+   "target": "output:PC.HOST.suspends",
+   "kind": "value"
+  },
+  {
+   "id": "usb_wakeups",
+   "target": "output:PC.HOST.wakeups",
+   "kind": "value"
+  }
+ ]
+}

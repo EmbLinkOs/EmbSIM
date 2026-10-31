@@ -38,6 +38,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "stm32-wwdg", &esk_stm32_wwdg_ops, esk_stm32_wwdg_create },
     { "stm32f4-rtc", &esk_stm32f4_rtc_ops, esk_stm32f4_rtc_create },
     { "stm32-crc", &esk_stm32_crc_ops, esk_stm32_crc_create },
+    { "stm32-otg-fs", &esk_stm32_otg_fs_ops, esk_stm32_otg_fs_create },
     { "storage", &esk_stm32_storage_ops, esk_stm32_storage_create },
     { "avr-port", &esk_avr_port_ops, esk_avr_port_create },
     { "avr-exint", &esk_avr_exint_ops, esk_avr_exint_create },

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-device",
+  "description": "No device's controller on its D+ net: nothing attaches, no port reset, no frames.",
+  "policy": "functional",
+  "until": "300ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/usb_host_controller"
+      }
+    ],
+    "nets": {}
+  },
+  "expect": {
+    "output:DUT.state": {
+      "at": "290ms",
+      "equals": "detached"
+    },
+    "output:DUT.frames": {
+      "at": "290ms",
+      "equals": 0
+    }
+  }
+}

@@ -1,0 +1,327 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/usb_host_controller",
+  "version": "0.1.0",
+  "name": "USB 2.0 host controller (a computer port's protocol side)",
+  "category": "instruments",
+  "description": "The host controller behind a computer's USB 2.0 port, its protocol side: it enumerates the full-speed device on its D+ and D- the way Windows and Linux do (debounce, port reset, the device descriptor at address 0, a second reset, SET_ADDRESS, the descriptors and strings, SET_CONFIGURATION), then polls its HID interfaces' interrupt endpoints. emblink/usb_host is the port with its VBUS; use this part alone where VBUS comes from elsewhere.",
+  "keywords": [
+    "usb",
+    "host",
+    "pc",
+    "computer",
+    "port",
+    "enumeration",
+    "descriptor",
+    "hid",
+    "mouse",
+    "host controller"
+  ],
+  "pins": [
+    {
+      "name": "DM",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "aliases": [
+        "D-"
+      ],
+      "doc": "D-"
+    },
+    {
+      "name": "DP",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "aliases": [
+        "D+"
+      ],
+      "doc": "D+: the device whose controller's D+ is on this net is the one on the cable"
+    },
+    {
+      "name": "VBUS",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "required": false,
+      "doc": "VBUS at the device end of the cable: above 4 V the cable is in (unwired: always in)"
+    }
+  ],
+  "params": {
+    "address": {
+      "type": "integer",
+      "default": 1,
+      "min": 1,
+      "max": 127,
+      "doc": "The address SET_ADDRESS gives the device"
+    },
+    "debounce_ms": {
+      "type": "number",
+      "unit": "ms",
+      "default": 100,
+      "min": 0,
+      "max": 1000,
+      "doc": "The attach debounce before the first reset (USB 2.0 7.1.7.3: at least 100 ms)",
+      "advanced": true
+    },
+    "reset_ms": {
+      "type": "number",
+      "unit": "ms",
+      "default": 50,
+      "min": 10,
+      "max": 100,
+      "doc": "How long a port reset drives SE0 (USB 2.0 7.1.7.5: 50 ms from a root port, at least 10 ms)",
+      "advanced": true
+    },
+    "remote_wakeup": {
+      "type": "boolean",
+      "default": true,
+      "doc": "Arm the device's remote wakeup (SET_FEATURE) before suspending it, where its configuration offers it, as Linux does"
+    },
+    "dfu_file": {
+      "type": "string",
+      "default": "",
+      "doc": "A firmware image to download to a DFU device on dfu_download: a DfuSe file (UM0391, with its addresses) or a raw binary for dfu_address; relative to the project"
+    },
+    "dfu_address": {
+      "type": "integer",
+      "default": 134217728,
+      "min": 0,
+      "max": 4294967295,
+      "doc": "Where a raw binary goes (0x08000000)"
+    },
+    "dfu_leave": {
+      "type": "boolean",
+      "default": true,
+      "doc": "After the download, leave DFU mode for the image (as dfu-util :leave does)"
+    }
+  },
+  "outputs": [
+    {
+      "name": "state",
+      "type": "string",
+      "doc": "detached, attached, default (after the reset), address, configured, or error (enumeration stopped: the log says why)"
+    },
+    {
+      "name": "device_address",
+      "type": "integer",
+      "doc": "The device's address once set"
+    },
+    {
+      "name": "vid",
+      "type": "integer",
+      "doc": "idVendor"
+    },
+    {
+      "name": "pid",
+      "type": "integer",
+      "doc": "idProduct"
+    },
+    {
+      "name": "manufacturer",
+      "type": "string",
+      "doc": "The manufacturer string"
+    },
+    {
+      "name": "product",
+      "type": "string",
+      "doc": "The product string"
+    },
+    {
+      "name": "serial",
+      "type": "string",
+      "doc": "The serial number string"
+    },
+    {
+      "name": "device_descriptor",
+      "type": "string",
+      "doc": "The device descriptor, in hex"
+    },
+    {
+      "name": "configuration",
+      "type": "string",
+      "doc": "The whole configuration descriptor, in hex"
+    },
+    {
+      "name": "report_descriptor",
+      "type": "string",
+      "doc": "The first HID interface's report descriptor, in hex"
+    },
+    {
+      "name": "reports",
+      "type": "integer",
+      "doc": "HID input reports received"
+    },
+    {
+      "name": "report",
+      "type": "string",
+      "doc": "The last one, in hex"
+    },
+    {
+      "name": "cursor_x",
+      "type": "integer",
+      "doc": "A boot mouse's cursor: the sum of its X movements"
+    },
+    {
+      "name": "cursor_y",
+      "type": "integer",
+      "doc": "The sum of its Y movements"
+    },
+    {
+      "name": "buttons",
+      "type": "integer",
+      "doc": "A boot mouse's buttons (bit 0 left, 1 right, 2 middle)"
+    },
+    {
+      "name": "frames",
+      "type": "integer",
+      "doc": "Start-of-frame packets sent"
+    },
+    {
+      "name": "resets",
+      "type": "integer",
+      "doc": "Port resets driven"
+    },
+    {
+      "name": "log",
+      "type": "string",
+      "doc": "What the host did and saw, a line each with its time"
+    },
+    {
+      "name": "plugged",
+      "type": "boolean",
+      "doc": "The cable is in (VBUS at its device end)"
+    },
+    {
+      "name": "suspended",
+      "type": "boolean",
+      "doc": "The port is suspended"
+    },
+    {
+      "name": "suspends",
+      "type": "integer",
+      "doc": "Suspends of the port"
+    },
+    {
+      "name": "wakeups",
+      "type": "integer",
+      "doc": "Remote wakeups the device signalled"
+    },
+    {
+      "name": "dfu_state",
+      "type": "string",
+      "doc": "idle, starting, erasing, addressing, downloading, leaving, done or error"
+    },
+    {
+      "name": "dfu_bytes",
+      "type": "integer",
+      "doc": "Bytes of the image downloaded"
+    },
+    {
+      "name": "dfu_erased",
+      "type": "integer",
+      "doc": "Sectors erased"
+    },
+    {
+      "name": "dfu_error",
+      "type": "string",
+      "doc": "Why the download stopped, when it failed"
+    }
+  ],
+  "model": {
+    "primitive": "usb_host"
+  },
+  "functional": {
+    "primitive": "usb_host"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 40,
+    "pins": {
+      "DM": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      },
+      "DP": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "VBUS": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor. Suspend (the frames stop, SET_FEATURE(DEVICE_REMOTE_WAKEUP) sent first where the configuration offers it) and resume (20 ms of resume signalling, TDRSMDN, then frames and CLEAR_FEATURE); the device's remote wakeup answered by the host's own resume; the cable sensed by VBUS at its device end, a disconnect and a new attach as it is pulled and put back. DFU 1.1 with ST's DfuSe 1.1a extension (UM0424), as dfu-util drives it: the image a DfuSe file (UM0391: its targets' elements and addresses) or a raw binary; the interface string's memory layout read and honoured (read-only segments refused), each sector the image touches erased (0x41), the address pointer set (0x21), wTransferSize blocks from wBlockNum 2 with DFU_GETSTATUS after each, its bwPollTimeout waited out while the device is busy, DFU_CLRSTATUS for an error left from before, and :leave's zero-length DNLOAD and manifestation, the device going away counted as its leaving.",
+      "omissions": [
+        "class drivers beyond HID's polling and DFU's download: a CDC or mass-storage device is configured, then left idle (no USB/IP bridge to the computer yet, ADR-031); DFU's upload, DETACH from run-time mode and plain DFU 1.1 devices without DfuSe's commands",
+        "hubs and more than one device on a cable; low-speed devices",
+        "J, K and SE0 levels on D+ and D- (the pins carry no signal: the cable is found by the net D+ is on)",
+        "reports of HID devices that are not boot mice are kept whole but not decoded",
+        "LPM (L1) and selective suspend timers: a suspend happens when the `suspend` input asks"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "As functional: its pins carry no signal.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Universal Serial Bus Specification, Revision 2.0 (USB-IF, 2000): 7.1.7 timing, 8 protocol, 9 device framework",
+        "url": "https://www.usb.org/document-library/usb-20-specification",
+        "date": "2026-10-31",
+        "notes": "TATTDB 100 ms, TDRSTR 50 ms, TRSTRCY 10 ms, the SET_ADDRESS recovery of 2 ms, the 5 s limit of a control request, packet formats and inter-packet delays, the standard requests and descriptors."
+      },
+      {
+        "title": "Device Class Definition for Human Interface Devices (HID), Version 1.11 (USB-IF, 2001)",
+        "url": "https://www.usb.org/document-library/device-class-definition-hid-111",
+        "date": "2026-10-31",
+        "notes": "The HID descriptor, SET_IDLE (7.2.4), the report descriptor request, the boot mouse report (appendix B.2)."
+      },
+      {
+        "title": "Linux drivers/usb/core/hub.c: hub_port_init()",
+        "url": "https://github.com/torvalds/linux/blob/master/drivers/usb/core/hub.c",
+        "date": "2026-10-31",
+        "notes": "The enumeration order of the 'new scheme': the 64-byte device descriptor read at address 0, a second reset, SET_ADDRESS, then the full descriptor; its log lines."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "inputs": [
+    {
+      "name": "suspend",
+      "type": "boolean",
+      "default": false,
+      "doc": "Suspend the port (its frames stop; the device suspends after 3 ms); false resumes it with 20 ms of resume signalling"
+    },
+    {
+      "name": "dfu_download",
+      "type": "boolean",
+      "default": false,
+      "doc": "Download dfu_file to the device's DFU interface (once it is configured), as dfu-util -D does"
+    }
+  ]
+}

@@ -5,6 +5,35 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## USB on the bench: the STM32F446's OTG FS and a computer's port (2026-10-31)
+
+USB cables are part of the bench (`core/engine/usb.h`, ADR-031's native
+USB devices as transactions): a host part and the device whose controller's
+D+ is on its net. The STM32F446's OTG FS core works in device mode
+(`stm32-otg-fs`, on an OTGFS register block laid out as RM0390 has it), and
+`emblink/usb_host` is a computer's USB 2.0 port that powers VBUS and
+enumerates the device as Windows and Linux do, then polls its HID
+endpoints. Evidence: `test_stm32f4`'s `test_otg_fs` (the soft reset waiting
+for the 48 MHz clock, the forced modes' 25 ms, VBUS sensing on PA9, suspend
+after 3 ms, SETUP and the receive FIFO's statuses, IN packets waiting for
+their words, SET_ADDRESS's status stage, data toggles, STALL, SEDET, the
+OTG_FS interrupt as a level re-entered while asserted); CubeF4's
+USB_Device/HID_Standalone, unmodified, 21/21 on the NUCLEO-F446ZE with a
+host on CN13: enumerated as 0483:5710 'STMicroelectronics' 'HID Joystick in
+FS Mode' on USB 2.0's timeline and three presses of B1 moving the cursor
+-5, +5, +5; the same image suspended by the host (remote wakeup armed),
+woken by B1's remote wakeup, unplugged and enumerated again after the
+cable is put back, 16/16; CubeF4's DFU_Standalone downloading ST's
+GPIOToggle .dfu as dfu-util would (with its static allocator's size
+corrected: as shipped it overruns into the PCD handle and never answers
+SET_CONFIGURATION, which its own scenario asserts), resetting into it with
+the flash kept, 10/10 and 5/5; `emblink/usb_host`'s and
+`emblink/usb_host_controller`'s fixtures. Not yet: host mode and U12,
+class drivers beyond HID's polling and DFU's download (CDC and MSC are
+configured, then idle), the USB/IP bridge to the computer's own USB, LPM, low-speed devices
+and hubs, the other MCUs' USB controllers (RP2040, nRF52840, PIC32,
+ESP32-C3).
+
 ## The STM32F446 completed further, and the NUCLEO-F446ZE (2026-10-31)
 
 The F446's model gains what firmware sees of its clocks and flash: each
@@ -25,8 +54,8 @@ examples run unmodified under scenarios (`run.py --board nucleo_f446ze`).
 The board follows ST's MB1137 B-01 schematic part by part (its LED,
 button and USB circuits, its solder bridges), and the NUCLEO-F446RE was
 checked against MB1136 C-03 and C-04 (B1's network, CN7's SB48/SB49). Not
-yet: the USB OTG FS controller (CubeF4's USB device and host applications)
-and U12, the switch that powers VBUS for a host; MCO1/MCO2 on their pins;
+yet (then): the USB OTG FS controller (now in device mode, above) and U12,
+the switch that powers VBUS for a host; MCO1/MCO2 on their pins;
 the ST890, TSV631 and S9013 datasheets' own values (their parts declare
 what is assumed).
 

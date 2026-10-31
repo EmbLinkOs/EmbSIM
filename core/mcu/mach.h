@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include "embsim/types.h"
 #include "util/alloc.h"
+#include "engine/usb.h"
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -235,6 +236,11 @@ struct esk_cpu_ops {
      * per-instruction checks, used while no breakpoint, analysis or
      * instruction limit applies. 0: step by step */
     void (*run)(struct esk_cpu *c, u64 end);
+    /* a level-sensitive request line `n` (ARM numbering) is asserted (1)
+     * or not: pending while asserted and not active, and pending again
+     * when its handler returns with the line still asserted. 0: the core
+     * takes pulses only (`interrupt`) */
+    void (*irq_level)(struct esk_cpu *c, int n, int level);
 };
 
 struct esk_cpu {
@@ -308,6 +314,10 @@ typedef struct esk_mach_host {
      * tx_done hears `token` back. 0 when the frame is on the air */
     int (*radio_tx)(void *ctx, const u8 *frame, u32 len, u32 mhz, int dbm, u32 rate_kbps, u64 airtime_ps,
                     int kind, u32 token);
+    /* the USB device controller's pull-up changed (esk_usb_port.pullup) */
+    void (*usb_changed)(void *ctx);
+    /* it signals remote wakeup (K on the suspended bus) */
+    void (*usb_remote_wakeup)(void *ctx);
 } esk_mach_host;
 
 enum { ESK_RADIO_WIFI = 1, ESK_RADIO_BLE = 2 };
@@ -323,6 +333,19 @@ struct esk_radio_port {
     int (*rx)(void *ctx, const u8 *frame, u32 len, u32 mhz, int rssi, u32 rate_kbps, int kind);
     /* the frame `token` went out, answered or not */
     void (*tx_done)(void *ctx, u32 token, int acked);
+};
+
+/* the chip's USB device controller, as a host's cable reaches it
+ * (esk_mach.usb; engine/usb.h's answers, bus states and pull-ups) */
+struct esk_usb_port {
+    void *ctx;
+    /* the pin D+ is on (port * 32 + bit, port 0 being A), the cable's end */
+    int dp_at;
+    int (*pullup)(void *ctx);
+    void (*bus)(void *ctx, int ev, u32 frame);
+    int (*setup)(void *ctx, int addr, int ep, const u8 data[8]);
+    int (*out)(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len);
+    int (*in)(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1);
 };
 
 /* ---- the machine ---------------------------------------------------------- */
@@ -484,6 +507,8 @@ struct esk_mach {
     struct esk_rx_port rx[ESK_MACH_RX_PORTS];
     /* the chip's radio, when it has one (its model sets it) */
     struct esk_radio_port radio;
+    /* its USB device controller, when it has one (its model sets it) */
+    struct esk_usb_port usb;
     int nrx;
     int bus_errors; /* reported by esk_mach_bus_error */
     /* breakpoints, by program counter; a run resumed from one steps off

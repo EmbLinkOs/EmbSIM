@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/usb_host",
+  "version": "0.1.0",
+  "name": "Computer USB port (USB 2.0 host)",
+  "category": "instruments",
+  "description": "A computer's USB 2.0 port at the end of a cable: its 5 V VBUS through the cable's resistance and the cable itself (the member CABLE, a switch: its closed input pulls the cable out and puts it back), and its host controller (emblink/usb_host_controller, the member HOST), which enumerates the full-speed device plugged in the way Windows and Linux do polls its HID interfaces and downloads a firmware image to a DFU device. HOST's outputs show the device's identity, descriptors and HID reports (a boot mouse's cursor included) and a log that reads like the kernel's.",
+  "keywords": [
+    "usb",
+    "host",
+    "pc",
+    "computer",
+    "port",
+    "enumeration",
+    "descriptor",
+    "hid",
+    "mouse",
+    "vbus"
+  ],
+  "pins": [
+    {
+      "name": "VBUS",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "The port's 5 V"
+    },
+    {
+      "name": "DM",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "D-"
+      ],
+      "doc": "D-"
+    },
+    {
+      "name": "DP",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "aliases": [
+        "D+"
+      ],
+      "doc": "D+: the device whose controller's D+ is on this net is the one on the cable"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "vbus": {
+      "type": "number",
+      "unit": "V",
+      "default": 5.0,
+      "min": 4.4,
+      "max": 5.25,
+      "doc": "VBUS at the port (USB 2.0 7.2.1: 4.75 to 5.25 V at a host's port)"
+    },
+    "address": {
+      "type": "integer",
+      "default": 1,
+      "min": 1,
+      "max": 127,
+      "doc": "The address SET_ADDRESS gives the device"
+    },
+    "debounce_ms": {
+      "type": "number",
+      "unit": "ms",
+      "default": 100,
+      "min": 0,
+      "max": 1000,
+      "doc": "The attach debounce before the first reset (USB 2.0 7.1.7.3: at least 100 ms)",
+      "advanced": true
+    },
+    "reset_ms": {
+      "type": "number",
+      "unit": "ms",
+      "default": 50,
+      "min": 10,
+      "max": 100,
+      "doc": "How long a port reset drives SE0 (USB 2.0 7.1.7.5: 50 ms from a root port, at least 10 ms)",
+      "advanced": true
+    },
+    "cable_resistance": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.2,
+      "min": 0.01,
+      "max": 2,
+      "doc": "VBUS's and GND's wires and contacts, both ways (a 1 m cable of 28 AWG power pairs: about 0.2 ohm)"
+    },
+    "plugged": {
+      "type": "boolean",
+      "default": true,
+      "doc": "The cable is in at the start (its member CABLE's closed input pulls it out and puts it back)"
+    },
+    "remote_wakeup": {
+      "type": "boolean",
+      "default": true,
+      "doc": "As emblink/usb_host_controller's"
+    },
+    "dfu_file": {
+      "type": "string",
+      "default": "",
+      "doc": "As emblink/usb_host_controller's"
+    },
+    "dfu_address": {
+      "type": "integer",
+      "default": 134217728,
+      "min": 0,
+      "max": 4294967295,
+      "doc": "As emblink/usb_host_controller's"
+    },
+    "dfu_leave": {
+      "type": "boolean",
+      "default": true,
+      "doc": "As emblink/usb_host_controller's"
+    }
+  },
+  "outputs": [],
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "V",
+          "component": "emblink/vsource",
+          "params": {
+            "kind": "dc",
+            "dc": "$vbus"
+          }
+        },
+        {
+          "id": "R",
+          "component": "emblink/resistor",
+          "params": {
+            "resistance": "$cable_resistance"
+          }
+        },
+        {
+          "id": "CABLE",
+          "component": "emblink/toggle_switch",
+          "params": {
+            "initially_closed": "$plugged"
+          }
+        },
+        {
+          "id": "HOST",
+          "component": "emblink/usb_host_controller",
+          "params": {
+            "address": "$address",
+            "debounce_ms": "$debounce_ms",
+            "reset_ms": "$reset_ms",
+            "remote_wakeup": "$remote_wakeup",
+            "dfu_file": "$dfu_file",
+            "dfu_address": "$dfu_address",
+            "dfu_leave": "$dfu_leave"
+          }
+        }
+      ],
+      "nets": {
+        "PORT_5V": [
+          "V.+",
+          "R.1"
+        ],
+        "LINE_5V": [
+          "R.2",
+          "CABLE.1"
+        ],
+        "BUS_5V": [
+          "CABLE.2",
+          "HOST.VBUS"
+        ]
+      },
+      "ports": {
+        "VBUS": "CABLE.2",
+        "GND": "V.-",
+        "DM": "HOST.DM",
+        "DP": "HOST.DP"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [
+        {
+          "id": "V",
+          "component": "emblink/vcc",
+          "params": {
+            "voltage": "$vbus"
+          }
+        },
+        {
+          "id": "CABLE",
+          "component": "emblink/toggle_switch",
+          "params": {
+            "initially_closed": "$plugged"
+          }
+        },
+        {
+          "id": "HOST",
+          "component": "emblink/usb_host_controller",
+          "params": {
+            "address": "$address",
+            "debounce_ms": "$debounce_ms",
+            "reset_ms": "$reset_ms",
+            "remote_wakeup": "$remote_wakeup",
+            "dfu_file": "$dfu_file",
+            "dfu_address": "$dfu_address",
+            "dfu_leave": "$dfu_leave"
+          }
+        }
+      ],
+      "nets": {
+        "PORT_5V": [
+          "V.VCC",
+          "CABLE.1"
+        ],
+        "BUS_5V": [
+          "CABLE.2",
+          "HOST.VBUS"
+        ]
+      },
+      "ports": {
+        "VBUS": "CABLE.2",
+        "DM": "HOST.DM",
+        "DP": "HOST.DP"
+      }
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "VBUS": {
+        "x": 60,
+        "y": 10,
+        "side": "right"
+      },
+      "DM": {
+        "x": 60,
+        "y": 20,
+        "side": "right"
+      },
+      "DP": {
+        "x": 60,
+        "y": 30,
+        "side": "right"
+      },
+      "GND": {
+        "x": 60,
+        "y": 50,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The port's VBUS (vbus volts behind cable_resistance), the cable (CABLE: VBUS and the data lines go together) and its host controller, HOST: emblink/usb_host_controller's fidelity.",
+      "omissions": [
+        "VBUS's 500 mA limit and the port's over-current shutdown",
+        "the order the cable's contacts make and break (VBUS and GND long, D+ and D- short): all at once here"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "As functional.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Universal Serial Bus Specification, Revision 2.0 (USB-IF, 2000): 7.1.7 timing, 8 protocol, 9 device framework",
+        "url": "https://www.usb.org/document-library/usb-20-specification",
+        "date": "2026-10-31",
+        "notes": "TATTDB 100 ms, TDRSTR 50 ms, TRSTRCY 10 ms, the SET_ADDRESS recovery of 2 ms, the 5 s limit of a control request, packet formats and inter-packet delays, the standard requests and descriptors."
+      },
+      {
+        "title": "Device Class Definition for Human Interface Devices (HID), Version 1.11 (USB-IF, 2001)",
+        "url": "https://www.usb.org/document-library/device-class-definition-hid-111",
+        "date": "2026-10-31",
+        "notes": "The HID descriptor, SET_IDLE (7.2.4), the report descriptor request, the boot mouse report (appendix B.2)."
+      },
+      {
+        "title": "Linux drivers/usb/core/hub.c: hub_port_init()",
+        "url": "https://github.com/torvalds/linux/blob/master/drivers/usb/core/hub.c",
+        "date": "2026-10-31",
+        "notes": "The enumeration order of the 'new scheme': the 64-byte device descriptor read at address 0, a second reset, SET_ADDRESS, then the full descriptor; its log lines."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

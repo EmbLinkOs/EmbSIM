@@ -1497,7 +1497,7 @@ static const struct esk_cpu_ops mips_ops = {
     "mips", 8, "a MIPS image",
     cpu_reset, step, cpu_pc, cpu_reg_read, cpu_reg_write,
     cpu_gdb_g_regs, cpu_gdb_xml, 4, cpu_interrupt, GR_PC, 1, cpu_phys, cpu_reg_name,
-    cpu_wake_pending, cpu_disasm, 0,
+    cpu_wake_pending, cpu_disasm, 0, 0,
 };
 
 int esk_mips_is(const struct esk_cpu *c)

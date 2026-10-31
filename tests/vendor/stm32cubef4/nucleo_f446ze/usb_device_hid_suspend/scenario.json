@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "usb_device_hid_suspend",
+  "until": "1.5s",
+  "description": "USB_Device/HID_Standalone on the computer's port, through a suspend, a remote wakeup and a replug. At 400 ms the host suspends the port: the configuration offers remote wakeup (bmAttributes 0xA0), so SET_FEATURE(DEVICE_REMOTE_WAKEUP) goes first, then the frames stop and the device suspends 3 ms later. B1's release at 650 ms is, to the suspended firmware, a remote wakeup (its EXTI callback sets RWUSIG for 10 ms instead of sending a report): the host answers with 20 ms of resume signalling, the frames start again and CLEAR_FEATURE follows. At 800 ms the cable comes out: VBUS leaves PA9, the session ends and the host sees the disconnect; put back at 900 ms, the device attaches at once (SDIS is still clear) and is enumerated anew, configured 222 ms later. B1 then sends a report again.",
+  "inputs": [
+    {
+      "at": "400ms",
+      "target": "PC.HOST",
+      "input": "suspend",
+      "value": true
+    },
+    {
+      "at": "600ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "650ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "800ms",
+      "target": "PC.CABLE",
+      "input": "closed",
+      "value": false
+    },
+    {
+      "at": "900ms",
+      "target": "PC.CABLE",
+      "input": "closed",
+      "value": true
+    },
+    {
+      "at": "1300ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1350ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "configured",
+      "by": "245ms",
+      "probe": "usb_state",
+      "expect": {
+        "equals": "configured"
+      }
+    },
+    {
+      "id": "armed-then-suspended",
+      "at": "450ms",
+      "probe": "usb_log",
+      "expect": {
+        "contains": "port suspended (remote wakeup enabled)"
+      }
+    },
+    {
+      "id": "suspended",
+      "between": [
+        "410ms",
+        "645ms"
+      ],
+      "probe": "usb_suspended",
+      "expect": {
+        "equals": true
+      }
+    },
+    {
+      "id": "no-frames-while-suspended",
+      "between": [
+        "410ms",
+        "645ms"
+      ],
+      "probe": "usb_frames",
+      "expect": {
+        "max": 400,
+        "min": 160
+      }
+    },
+    {
+      "id": "remote-wakeup",
+      "at": "700ms",
+      "probe": "usb_wakeups",
+      "expect": {
+        "equals": 1
+      }
+    },
+    {
+      "id": "resumed-after-20ms",
+      "at": "675ms",
+      "probe": "usb_suspended",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "resume-logged",
+      "at": "700ms",
+      "probe": "usb_log",
+      "expect": {
+        "contains": "670.000 ms: port resumed"
+      }
+    },
+    {
+      "id": "wakeup-press-sends-no-report",
+      "at": "790ms",
+      "probe": "usb_reports",
+      "expect": {
+        "equals": 0
+      }
+    },
+    {
+      "id": "unplugged",
+      "between": [
+        "805ms",
+        "895ms"
+      ],
+      "probe": "usb_plugged",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "detached",
+      "between": [
+        "805ms",
+        "895ms"
+      ],
+      "probe": "usb_state",
+      "expect": {
+        "equals": "detached"
+      }
+    },
+    {
+      "id": "no-vbus-on-pa9",
+      "at": "850ms",
+      "probe": "vbus_sense",
+      "expect": {
+        "max_v": 0.5
+      }
+    },
+    {
+      "id": "attached-again",
+      "between": [
+        "905ms",
+        "995ms"
+      ],
+      "probe": "usb_state",
+      "expect": {
+        "equals": "attached"
+      }
+    },
+    {
+      "id": "reconfigured",
+      "by": "1.13s",
+      "probe": "usb_state",
+      "expect": {
+        "equals": "configured"
+      }
+    },
+    {
+      "id": "four-resets",
+      "at": "1.2s",
+      "probe": "usb_resets",
+      "expect": {
+        "equals": 4
+      }
+    },
+    {
+      "id": "report-after-replug",
+      "at": "1.45s",
+      "probe": "usb_reports",
+      "expect": {
+        "equals": 1
+      }
+    },
+    {
+      "id": "one-suspend",
+      "at": "1.45s",
+      "probe": "usb_suspends",
+      "expect": {
+        "equals": 1
+      }
+    }
+  ]
+}

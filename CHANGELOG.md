@@ -5,6 +5,55 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### USB on the bench: the STM32F446's OTG FS and a computer's port
+
+- USB cables between parts (`core/engine/usb.h`, ADR-031): a host and the
+  device whose controller's D+ shares its net, carried as what the bus does
+  (pull-up, reset, SOF, SETUP, IN and OUT with their handshakes), each
+  transaction taking its bits' time at 12 Mbit/s.
+- The STM32F446's USB OTG FS core in device mode (`stm32-otg-fs`): its
+  FIFO RAM and the receive FIFO's statuses, SETUPs, OUT and IN packets
+  with their toggles and NAKs, the address after SET_ADDRESS's status
+  stage, the pull-up from SDIS, PWRDWN, VBUS on PA9 and PA12's AF10,
+  reset, enumeration, SOF, suspend after 3 ms, the soft reset that needs
+  the 48 MHz clock, the forced modes' 25 ms. Its registers are now one
+  OTGFS block as RM0390 lays it out (six endpoints, GRXSTSP, VBDEN),
+  written by `tools/importers/dwc2_regs.py`, so OTGFSEN and OTGFSRST
+  gate and reset it.
+- `emblink/usb_host`, a computer's USB 2.0 port: VBUS behind the cable's
+  resistance and a host controller (`emblink/usb_host_controller`) that
+  enumerates the device as Windows and Linux do (100 ms debounce, 50 ms
+  resets, the 64-byte descriptor at address 0, a second reset,
+  SET_ADDRESS, descriptors, strings, SET_CONFIGURATION, HID's SET_IDLE and
+  report descriptor), then polls HID endpoints; its log and outputs show
+  the device and a boot mouse's cursor.
+- STM32CubeF4's USB_Device/HID_Standalone runs unmodified on the
+  NUCLEO-F446ZE and enumerates as ST's mouse (0483:5710) on CN13.
+- The cable comes out and goes back in (`emblink/usb_host`'s CABLE switch;
+  the host senses VBUS at its device end); the host suspends the port on
+  its `suspend` input (SET_FEATURE(DEVICE_REMOTE_WAKEUP) first where the
+  device offers it) and resumes it with 20 ms of resume signalling; the
+  OTG core's RWUSIG is remote wakeup the host answers. The same HID image
+  is suspended, woken by B1, unplugged and enumerated again, 16/16.
+- GSNPSID's 0x4F54320A is the value TinyUSB's DWC2 table reads from the
+  F412's and F76x's OTG_FS, the same core generation.
+- DFU: the computer's port downloads a firmware image to a DFU device as
+  dfu-util does with ST's DfuSe extension (the memory layout string, sector
+  erases, the address pointer, blocks with DFU_GETSTATUS and bwPollTimeout,
+  :leave), from a DfuSe file or a raw binary (`dfu_file`, `dfu_download`).
+  CubeF4's DFU_Standalone, with one size corrected, takes ST's own
+  GPIOToggle .dfu, resets into it and LD1 toggles, 10/10. As ST ships it,
+  the example never answers SET_CONFIGURATION: its static allocator (262
+  words) is smaller than the DFU handle (1056 bytes), and USBD_DFU_Init
+  overruns it into the PCD handle; its scenario asserts that, 5/5.
+- A reset from the part itself or its NRST pin no longer reloads the
+  firmware image into flash: the flash keeps what the firmware programmed
+  (a DFU loader's application, an EEPROM emulation's pages). Only power-on
+  programs the image again.
+- The NVIC takes level-sensitive requests (`esk_cpu_ops.irq_level`): one
+  still asserted when its handler returns is pending again.
+- A model can serve its peripheral's reserved ranges (an OTG core's FIFO
+  windows); RCC gives the 48 MHz clock (`esk_stm32f4_ck48`).
 ### CI on macOS 15
 
 - The macOS jobs (core with Apple Clang, workbench smoke, desktop bundle)

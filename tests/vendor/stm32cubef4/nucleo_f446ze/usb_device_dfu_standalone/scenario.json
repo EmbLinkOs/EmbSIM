@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "usb_device_dfu_standalone",
+  "until": "1s",
+  "description": "USB_Device/DFU_Standalone as ST ships it, with an empty application area, so it starts in DFU mode. It enumerates as ST's DFU device (0483:DF11, 'DFU in FS Mode') and then never answers SET_CONFIGURATION. Its usbd_conf.h sizes the static allocator for the MSC class (MAX_STATIC_ALLOC_SIZE 262 words, 1048 bytes), but the DFU class's handle is 1056 bytes with the USB device middleware CubeF4 pins (v2.11.4). USBD_DFU_Init's writes run 8 bytes past `mem` into `hpcd`, which the linker places right after it, and dev_status[4] (DFU_STATE_IDLE, 2) becomes the low byte of hpcd.Instance: the HAL's OTG base is 0x50000002 from then on, every access is two bytes off, and the status stage is never queued, so the host keeps seeing NAKs. A board built from these sources does the same. usb_device_dfu_fixed corrects that one size.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "dfu-device",
+      "at": "300ms",
+      "probe": "usb_pid",
+      "expect": {
+        "equals": 57105
+      }
+    },
+    {
+      "id": "product",
+      "at": "300ms",
+      "probe": "usb_product",
+      "expect": {
+        "equals": "DFU in FS Mode"
+      }
+    },
+    {
+      "id": "set-configuration-unanswered",
+      "between": [
+        "300ms",
+        "1s"
+      ],
+      "probe": "usb_state",
+      "expect": {
+        "equals": "address"
+      }
+    },
+    {
+      "id": "not-configured",
+      "at": "990ms",
+      "probe": "usb_log",
+      "expect": {
+        "not_contains": "configuration 1 set"
+      }
+    },
+    {
+      "id": "application-area-empty",
+      "at": "990ms",
+      "probe": "app0",
+      "expect": {
+        "equals": 4294967295
+      }
+    }
+  ]
+}
