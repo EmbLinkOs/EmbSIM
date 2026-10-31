@@ -5,6 +5,40 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Gravity
+
+- A world body may be let go (`falls`): it falls under standard gravity
+  from `at` (thrown at `velocity_mm_s`), bounces off the table's top or the
+  floor keeping `restitution` of its speed (0.5 by default, 0 a dead drop,
+  at most 0.95), and comes to rest once a bounce would rise less than
+  0.1 mm; `world.get` says when it is `resting`. Each flight is solved in
+  closed form, so the engine and the bench (`fall()` in `world.ts`) agree
+  to the micrometre, distance and PIR sensors see it where it is, and a
+  replay is exact. The World panel's **falls** lets a body go. Not yet:
+  bodies colliding with each other or the walls, rolling and sliding (a
+  body stops where it comes to rest), spin.
+
+### Shadows on the floor
+
+- The key light's shadow map is framed on what the camera shows
+  (`shadowfit.ts`): tight on the bench close in (crisp shadows of a part's
+  legs, as before), widening in steps to the room standing back, so a
+  person walking round the table and the table itself shade the floor, and
+  the sun's window patch lies whole across the floor instead of ending at
+  the edge of a 2 m frame. The room's shell (walls, ceiling, the window's
+  bars) shades only the sun, which shines from outside, not the lamp.
+
+### Walking a path
+
+- A world body may follow a path: `path_mm` (2 to 16 waypoints, starting at
+  the first), `speed_mm_s` along it, and `loop` to go round again from the
+  last waypoint (else back the way it came). The engine walks it in
+  virtual time (`esk_world_body_at`), so distance and PIR sensors see it
+  where it is; `world.get` reports its waypoints. The bench draws it with
+  the same arithmetic (`walk()` in `world.ts`), a person facing each leg
+  and striding with the distance walked. The World panel's **round** sends
+  a body round the table at 1.2 m/s, half a metre clear of its edges.
+
 ### The STM32F446 as it starts, erases and counts
 
 - RCC: each oscillator and PLL is ready its DS10693 start-up time after it

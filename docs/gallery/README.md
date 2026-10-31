@@ -42,6 +42,30 @@ the distance covered:
 |---|---|
 | ![A walking figure beside the table](bench-3d-world/4-person-figure.png) | ![Legs and arms in stride](bench-3d-world/5-person-stride.png) |
 
+A body can follow a path of waypoints at a set speed, looping or going
+back the way it came; here a person walks round the table at 1.2 m/s
+(the World panel's "round"), 5.2 s into the run, turning at each corner:
+
+![A person walking round the table](bench-3d-world/6-walking-round.png)
+
+Shadows now reach the floor: the key light's shadow map is framed on what
+the camera shows, tight on the bench close in and taking in the room
+standing back. Under the lamp the person and the table shade the floor; in
+the winter sun the window's whole patch, bars and all, lies across the
+floor with the table's and the person's shadows in it (before, it stopped
+at the edge of a 2 m frame):
+
+| Under the lamp | In the sun through the window |
+|---|---|
+| ![The person and the table shading the floor](bench-3d-world/7-floor-shadows-lamp.png) | ![The window's patch across the floor](bench-3d-world/8-floor-shadows-sun.png) |
+
+Gravity: a ball let go 370 mm above the bench (restitution 0.75) falls,
+bounces and comes to rest on the mat, its shadow meeting it as it lands:
+
+| Let go | 150 ms later | At rest |
+|---|---|---|
+| ![The ball held above the bench](bench-3d-world/9-ball-let-go.png) | ![The ball falling](bench-3d-world/10-ball-falling.png) | ![The ball at rest on the bench](bench-3d-world/11-ball-at-rest.png) |
+
 ## Capped sections (2026-10-31)
 
 A section now shows solid red faces where it cuts a body, as a CAD tool's

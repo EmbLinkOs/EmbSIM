@@ -23,6 +23,9 @@ export function isPerson(b: WorldBody): boolean {
 
 /** how far through its stride (0 to 1) a walking body is, from where it has got to along its velocity */
 export function gaitPhase(b: WorldBody): number {
+  // a walker on a path carries the distance it has walked
+  const walked = (b as WorldBody & { walked_mm?: number }).walked_mm;
+  if (walked !== undefined) return (((walked / STRIDE) % 1) + 1) % 1;
   const v = b.velocity_mm_s;
   const speed = v ? Math.hypot(v[0], v[1], v[2]) : 0;
   if (!v || speed <= 0) return 0;

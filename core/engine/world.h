@@ -33,6 +33,8 @@ typedef enum {
 /* the pseudo-field a PIR sensor binds: a warm body moving in its field of view */
 #define ESK_WF_MOTION (ESK_WF_COUNT + 1)
 
+#define ESK_BODY_PATH_MAX 16
+
 typedef struct esk_body {
     char *id;
     int sphere;     /* a sphere of diameter size[0]; else a box */
@@ -44,8 +46,25 @@ typedef struct esk_body {
     double vel[3];  /* mm/s */
     double travel;  /* mm, 0: straight on */
     es_time_t since;
+    /* or along a path of waypoints (bench mm) at `speed` mm/s, round again (`loop`) or back */
+    double path[ESK_BODY_PATH_MAX][3];
+    int npath;
+    double speed;
+    int loop;
     int warm;       /* warmer than the room (a person, an animal, a hand): a PIR sees it move */
+    /* or let go: it falls under gravity from `at` with `vel` as its throw, bounces off the table's
+     * top or the floor losing speed by `restitution` (0: it stops dead), and comes to rest */
+    int falls;
+    double restitution;
 } esk_body;
+
+/* the room's furniture the engine knows, as the bench draws it (ui/packages/bench/src/room.ts):
+ * a 1800 x 900 mm table centred under the bench, its top at z = 0, the floor 750 mm below */
+#define ESK_TABLE_WIDTH 1800.0
+#define ESK_TABLE_DEPTH 900.0
+#define ESK_FLOOR_Z (-750.0)
+/* standard gravity, mm/s^2 */
+#define ESK_GRAVITY 9806.65
 
 typedef struct esk_world {
     double value[ESK_WF_COUNT];
@@ -59,12 +78,15 @@ const char *esk_world_field_name(int field);
 const char *esk_world_field_unit(int field);
 void esk_world_init(esk_world *w);
 void esk_world_free(esk_alloc *a, esk_world *w);
-/* a body from {shape, at, size, velocity_mm_s, travel_mm, since_ps}, set at
- * `now` (its motion counts from since_ps when given, else from now);
+/* a body from {shape, at, size, velocity_mm_s, travel_mm, path_mm, speed_mm_s,
+ * loop, warm, falls, restitution, since_ps}, set at `now` (its motion counts
+ * from since_ps when given, else from now);
  * NULL (or a JSON null) removes it */
 es_status esk_world_set_body(esk_alloc *a, esk_world *w, const char *id, const esk_json *spec, es_time_t now);
 /* where a body's centre is at `now` */
 void esk_world_body_at(const esk_body *b, es_time_t now, double out[3]);
+/* whether a body is moving at `now` (a velocity, a path, or falling and not yet at rest) */
+int esk_world_body_moving(const esk_body *b, es_time_t now);
 /* the distance (mm) from `o` along the unit vector `d` to the nearest
  * body where the bodies are at `now`, or -1 when the ray meets none */
 double esk_world_ray(const esk_world *w, const double o[3], const double d[3], es_time_t now);
