@@ -326,24 +326,68 @@ double esk_world_ray(const esk_world *w, const double o[3], const double d[3], e
     return best;
 }
 
-int esk_world_motion(const esk_world *w, const double o[3], const double d[3], double half_angle_deg, double range_mm, es_time_t now)
+/*
+ * Which of the lens's view cones a point is in, seen from `o` along `d` (z up): the Fresnel lens
+ * divides the field into cones `zone_deg` wide across and up, the optical axis on a boundary (the
+ * dual element's two halves side by side). Returns 0 outside the field of view or range.
+ */
+static int lens_zone(const double p[3], const double o[3], const double d[3], double cos_half, double range_mm,
+                     double zone_deg, long *ix, long *iy)
+{
+    const double rad = 180.0 / 3.14159265358979323846;
+    double r[3], right[3], up[3], dist, along, n;
+    int k;
+    for (k = 0; k < 3; k++)
+        r[k] = p[k] - o[k];
+    dist = sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
+    along = r[0] * d[0] + r[1] * d[1] + r[2] * d[2];
+    if (dist > range_mm || dist <= 0 || along < cos_half * dist)
+        return 0;
+    /* the lens's own across (right) and up, from the axis and the room's up */
+    right[0] = d[1];
+    right[1] = -d[0];
+    right[2] = 0;
+    n = sqrt(right[0] * right[0] + right[1] * right[1]);
+    if (n < 1e-9) {
+        right[0] = 1;
+        right[1] = 0;
+        n = 1;
+    }
+    right[0] /= n;
+    right[1] /= n;
+    up[0] = right[1] * d[2] - right[2] * d[1];
+    up[1] = right[2] * d[0] - right[0] * d[2];
+    up[2] = right[0] * d[1] - right[1] * d[0];
+    *ix = (long)floor(atan2(r[0] * right[0] + r[1] * right[1] + r[2] * right[2], along) * rad / zone_deg);
+    *iy = (long)floor(atan2(r[0] * up[0] + r[1] * up[1] + r[2] * up[2], along) * rad / zone_deg);
+    return 1;
+}
+
+int esk_world_motion(const esk_world *w, const double o[3], const double d[3], double half_angle_deg, double range_mm,
+                     double zone_deg, es_time_t look, es_time_t now)
 {
     double cos_half = cos(half_angle_deg * 3.14159265358979323846 / 180.0);
+    es_time_t then = now > look ? now - look : 0;
     size_t i;
     for (i = 0; i < w->bodies.len; i++) {
         const esk_body *b = &w->bodies.data[i];
-        double p[3], r[3], dist, along;
-        int k;
-        if (!b->warm || !esk_world_body_moving(b, now))
+        double p[3], q[3];
+        long ax = 0, ay = 0, bx = 0, by = 0;
+        int in_now, in_then;
+        if (!b->warm || (!esk_world_body_moving(b, now) && !esk_world_body_moving(b, then)))
             continue; /* at the room's temperature, or still: nothing changes in the infrared */
         esk_world_body_at(b, now, p);
-        for (k = 0; k < 3; k++)
-            r[k] = p[k] - o[k];
-        dist = sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
-        if (dist > range_mm)
+        esk_world_body_at(b, then, q);
+        in_now = lens_zone(p, o, d, cos_half, range_mm, zone_deg, &ax, &ay);
+        in_then = lens_zone(q, o, d, cos_half, range_mm, zone_deg, &bx, &by);
+        if (zone_deg <= 0) {
+            if (in_now)
+                return 1; /* no lens: any warm body moving in the field */
             continue;
-        along = r[0] * d[0] + r[1] * d[1] + r[2] * d[2];
-        if (dist <= 0 || along >= cos_half * dist)
+        }
+        /* the element sees a change when the body's image moves from one cone to the next, or into
+         * or out of the field */
+        if (in_now != in_then || (in_now && (ax != bx || ay != by)))
             return 1;
     }
     return 0;

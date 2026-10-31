@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The PIR's lens
+
+- `emblink/pir_sensor` now sees through its Fresnel lens's view cones
+  (`zone`, 7.5° across and up by default; the HC-SR501's pitch is not
+  published, so this is an assumption): its dual element responds when a
+  warm body's image crosses from one cone to the next, or into or out of
+  view, since its last look 100 ms before. Walking across the field is seen
+  sooner than walking straight at it, as on the real module
+  (`tests/protocol/test_pir.py`). `zone: 0` keeps the old behaviour (any
+  warm body moving in the field).
+
 ### Gravity
 
 - A world body may be let go (`falls`): it falls under standard gravity

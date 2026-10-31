@@ -12,11 +12,17 @@ Tx, H/L trigger modes, the BISS0001's block), its motion read from the world
 when not set: a warm body moving in its cone and range. Evidence: five
 fixtures (hold, warm-up, single trigger, retrigger, block; flipping the mode
 breaks the retrigger one) and `tests/protocol/test_pir.py` (a cold moving box
-and a still person unseen, a walking person seen within 100 ms, OUT falling
+and a still person unseen, a walking person seen at the next look, OUT falling
 a hold after they leave the range). A person is drawn as a figure in the
 box the sensors see, walking in step with virtual time (`figure.test.ts`).
-Not yet: the lens's zones and the element's response to speed and
-direction; warm-up glitches on OUT.
+The lens's view cones followed (`zone`, 7.5° by default, an assumption as
+the HC-SR501's pitch is unpublished): the element sees a warm body whose
+image crosses from one cone to the next, so walking across is seen sooner
+than walking straight at it (`test_pir.py`: mid-cone at 2 m, walking across
+at 0.5 m/s, unseen at 150 ms and seen by 400 ms; walking straight at it from
+2.8 m at 1 m/s, unseen at 500 ms and seen by 800 ms, as the image climbs to
+the next cone at 2.17 m). Not yet: the lens's real pattern, the element's
+response to speed and size; warm-up glitches on OUT.
 
 ## Moving bodies (2026-10-31)
 

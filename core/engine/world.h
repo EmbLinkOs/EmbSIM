@@ -90,9 +90,12 @@ int esk_world_body_moving(const esk_body *b, es_time_t now);
 /* the distance (mm) from `o` along the unit vector `d` to the nearest
  * body where the bodies are at `now`, or -1 when the ray meets none */
 double esk_world_ray(const esk_world *w, const double o[3], const double d[3], es_time_t now);
-/* whether a warm body moving at `now` is within `range_mm` of `o` and within
- * `half_angle_deg` of the unit axis `d` (a PIR's field of view) */
-int esk_world_motion(const esk_world *w, const double o[3], const double d[3], double half_angle_deg, double range_mm, es_time_t now);
+/* whether a PIR at `o` looking along the unit axis `d` sees a change at `now`:
+ * a warm body within `range_mm` and `half_angle_deg` of the axis whose image
+ * crossed from one of the lens's view cones (`zone_deg` wide; 0: no lens, any
+ * warm body moving) into another since `now - look`, or into or out of view */
+int esk_world_motion(const esk_world *w, const double o[3], const double d[3], double half_angle_deg, double range_mm,
+                     double zone_deg, es_time_t look, es_time_t now);
 /* the world as JSON at `now`: {fields: {name: {value, unit, set}}, bodies: [...]} */
 esk_json *esk_world_json(esk_alloc *a, const esk_world *w, es_time_t now);
 
