@@ -16,6 +16,11 @@ extern const esk_adev_ops esk_ptc_fuse_ops;
 /* an inline USB power meter (meter.c) */
 extern const esk_adev_ops esk_usb_meter_ops;
 void esk_usb_meter_on_time(esk_adev *d, es_time_t now);
+/* the PPK2's measurement core (power_profiler.c): its samples since `since`, and its sample ring freed */
+extern const esk_adev_ops esk_power_profiler_ops;
+es_status esk_power_profiler_read(esk_adev *d, uint64_t since, size_t max, esk_json *out);
+void esk_power_profiler_free(esk_adev *d);
+double esk_ppk2_quantize(double i);
 /* a PTC fuse's look at its temperatures (its component's wake) */
 void esk_ptc_on_time(esk_adev *d, es_time_t now);
 #endif

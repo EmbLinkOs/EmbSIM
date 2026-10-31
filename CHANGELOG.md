@@ -5,6 +5,25 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### A power profiler: the Nordic Power Profiler Kit II
+
+- `emblink/nordic_ppk2`, from Nordic's PPK2 user guide (section 8): as a
+  source meter it powers the board (0.8 to 5.0 V, at most 600 mA, then
+  holds 600 mA as its output falls), as an ampere meter it sits in series
+  with the board's own supply. It samples the current into the board at
+  100 kS/s, each sample the 10 µs average at the resolution of the range it
+  falls in (0.2, 0.5, 5, 50 or 1000 µA for the five ranges, switched by
+  itself); negative currents read 0. Its logic port samples D0 to D7 at
+  100 kHz on the same grid. It is a composite of its measurement core
+  (`emblink/ppk2_core`, the new `power_profiler` primitive) and its logic
+  port (`emblink/ppk2_logic_port`, the logic analyzer's sampler at a fixed
+  rate).
+- The Run perspective has a panel for each PPK2, as Nordic's Power Profiler
+  app shows it: Start and Stop, the mode and supply voltage, the current
+  followed live, the window's or A-B selection's average, peak and charge,
+  the logic port's channels underneath, export as CSV.
+- `instrument.read` gives a power profiler's samples (`kind: "power"`).
+
 ### A logic analyzer: the Saleae Logic 8
 
 - `emblink/saleae_logic8`: Saleae's 8-channel USB logic analyzer as a part

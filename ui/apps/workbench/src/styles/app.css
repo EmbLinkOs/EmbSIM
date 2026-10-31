@@ -1906,3 +1906,13 @@
 .wb-logic8__field input { width: 8ch; font: inherit; font-family: var(--font-mono); color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 3px 6px; }
 .wb-logic8__status { font-size: var(--text-sm); color: var(--text-muted); margin-left: auto; font-variant-numeric: tabular-nums; }
 .wb-logic8 > :last-child { flex: 1; min-height: 0; }
+
+/* a Power Profiler Kit II: Nordic's Power Profiler app's readouts above the current and the logic port */
+.wb-ppk2 { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.wb-ppk2__readouts { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.wb-ppk2__readouts div { display: flex; flex-direction: column; }
+.wb-ppk2__readouts dt { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.wb-ppk2__readouts dd { margin: 0; font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text); font-variant-numeric: tabular-nums; }
+.wb-ppk2__plots { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.wb-ppk2__plots > :first-child { flex: 2; min-height: 0; }
+.wb-ppk2__plots > :nth-child(2) { flex: 1; min-height: 0; }

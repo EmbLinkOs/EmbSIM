@@ -54,6 +54,7 @@ export function Logic8Panel({ part }: { part: string }) {
     let changed = false;
     for (let i = 0; i < 16; i++) {
       const cap = await getClient().instrument.read({ part, since: rec.next });
+      if (cap.kind !== 'logic') break;
       changed = rec.ingest(cap) || changed;
       if (rec.needsRestart) continue; // the capture moved on: read it again from its first record
       if (cap.next === cap.since || cap.transitions.length === 0) break;

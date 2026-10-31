@@ -1,0 +1,285 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ppk2_logic_port",
+  "version": "0.1.0",
+  "name": "PPK2 logic port (inside the Power Profiler Kit II)",
+  "category": "instruments",
+  "description": "The Power Profiler Kit II's 10-pin logic port, as the emblink/nordic_ppk2 part uses it: D0 to D7 sampled at 100 kHz with the current, referenced to the board's VCC. Place emblink/nordic_ppk2 rather than this.",
+  "keywords": [
+    "ppk2",
+    "logic port",
+    "internal"
+  ],
+  "pins": [
+    {
+      "name": "D0",
+      "number": 1,
+      "model": {
+        "kind": "digital_in",
+        "vil": "$vil",
+        "vih": "$vih"
+      },
+      "required": false,
+      "doc": "Logic port input D0"
+    },
+    {
+      "name": "D1",
+      "number": 2,
+      "model": {
+        "kind": "digital_in",
+        "vil": "$vil",
+        "vih": "$vih"
+      },
+      "required": false,
+      "doc": "Logic port input D1"
+    },
+    {
+      "name": "D2",
+      "number": 3,
+      "model": {
+        "kind": "digital_in",
+        "vil": "$vil",
+        "vih": "$vih"
+      },
+      "required": false,
+      "doc": "Logic port input D2"
+    },
+    {
+      "name": "D3",
+      "number": 4,
+      "model": {
+        "kind": "digital_in",
+        "vil": "$vil",
+        "vih": "$vih"
+      },
+      "required": false,
+      "doc": "Logic port input D3"
+    },
+    {
+      "name": "D4",
+      "number": 5,
+      "model": {
+        "kind": "digital_in",
+        "vil": "$vil",
+        "vih": "$vih"
+      },
+      "required": false,
+      "doc": "Logic port input D4"
+    },
+    {
+      "name": "D5",
+      "number": 6,
+      "model": {
+        "kind": "digital_in",
+        "vil": "$vil",
+        "vih": "$vih"
+      },
+      "required": false,
+      "doc": "Logic port input D5"
+    },
+    {
+      "name": "D6",
+      "number": 7,
+      "model": {
+        "kind": "digital_in",
+        "vil": "$vil",
+        "vih": "$vih"
+      },
+      "required": false,
+      "doc": "Logic port input D6"
+    },
+    {
+      "name": "D7",
+      "number": 8,
+      "model": {
+        "kind": "digital_in",
+        "vil": "$vil",
+        "vih": "$vih"
+      },
+      "required": false,
+      "doc": "Logic port input D7"
+    },
+    {
+      "name": "VCC",
+      "number": 9,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "The board's logic supply (1.65 to 5.5 V), the inputs' reference"
+    },
+    {
+      "name": "GND",
+      "number": 10,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "vil": {
+      "type": "number",
+      "unit": "V",
+      "default": 0.99,
+      "min": 0,
+      "max": 5.5,
+      "doc": "Low below this (an assumption: 0.3 of a 3.3 V VCC)"
+    },
+    "vih": {
+      "type": "number",
+      "unit": "V",
+      "default": 2.31,
+      "min": 0,
+      "max": 5.5,
+      "doc": "High above this (an assumption: 0.7 of a 3.3 V VCC)"
+    },
+    "sample_rate": {
+      "type": "number",
+      "unit": "Hz",
+      "default": 100000,
+      "min": 100000,
+      "max": 100000,
+      "doc": "Its sampling: 100 kHz"
+    },
+    "fixed_rate": {
+      "type": "boolean",
+      "default": true,
+      "doc": "It samples at sample_rate only"
+    },
+    "duration": {
+      "type": "number",
+      "unit": "s",
+      "default": 3600,
+      "min": "1u",
+      "max": 36000,
+      "doc": "How long a capture lasts once started"
+    }
+  },
+  "inputs": [
+    {
+      "name": "run",
+      "type": "boolean",
+      "default": false,
+      "doc": "Start (true) or Stop (false) sampling"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "state",
+      "type": "string",
+      "doc": "idle, capturing or done"
+    },
+    {
+      "name": "transitions",
+      "type": "integer",
+      "doc": "Changes held"
+    },
+    {
+      "name": "inputs",
+      "type": "integer",
+      "doc": "D0 to D7 now"
+    }
+  ],
+  "model": {
+    "primitive": "logic_analyzer"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 100,
+    "pins": {
+      "D0": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "D1": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "D2": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "D3": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "D4": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      },
+      "D5": {
+        "x": 0,
+        "y": 60,
+        "side": "left"
+      },
+      "D6": {
+        "x": 0,
+        "y": 70,
+        "side": "left"
+      },
+      "D7": {
+        "x": 0,
+        "y": 80,
+        "side": "left"
+      },
+      "VCC": {
+        "x": 30,
+        "y": 0,
+        "side": "top"
+      },
+      "GND": {
+        "x": 30,
+        "y": 100,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "D0 to D7 sampled at 100 kHz, an edge seen at the first sample after it.",
+      "omissions": [
+        "the inputs' thresholds and impedance (not published: VIL and VIH are assumptions, 0.3 and 0.7 of a 3.3 V VCC by default)",
+        "the 50 kHz bandwidth as a filter: a pulse shorter than a sample may still be seen if a sample falls in it"
+      ],
+      "validation": [
+        "../nordic_ppk2/tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "the inputs' thresholds and impedance (not published: VIL and VIH are assumptions, 0.3 and 0.7 of a 3.3 V VCC by default)",
+        "the 50 kHz bandwidth as a filter: a pulse shorter than a sample may still be seen if a sample falls in it"
+      ]
+    },
+    "electrical": {
+      "claims": "As functional; each input reads high above vih and low below vil.",
+      "omissions": [
+        "the inputs' thresholds and impedance (not published: VIL and VIH are assumptions, 0.3 and 0.7 of a 3.3 V VCC by default)",
+        "the 50 kHz bandwidth as a filter: a pulse shorter than a sample may still be seen if a sample falls in it"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nordic Semiconductor, Power Profiler Kit II User Guide v1.0.1 (4461_012), section 8: source meter 0.8-5.0 V at most 600 mA; ampere meter 1 A continuous; resolution 200 nA-50 uA 0.2 uA, 50-500 uA 0.5 uA, 0.5-5 mA 5 uA, 5-50 mA 50 uA, 50-1000 mA 1000 uA; accuracy +-10 % (+-15 % in the top range); 100 kS/s; logic port D0-D7 with VCC 1.65-5.5 V, sampled at 100 kHz; it cannot measure negative currents",
+        "url": "https://docs.nordicsemi.com/bundle/ug_ppk2/page/UG/ppk/PPK_user_guide_Intro.html",
+        "date": "2026-10-31",
+        "notes": "Read from the guide's PDF (DigiKey's copy, mm.digikey.com, the 2025-05-05 printing)."
+      }
+    ]
+  },
+  "tests": []
+}

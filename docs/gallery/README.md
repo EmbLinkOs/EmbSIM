@@ -5,6 +5,16 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## A power profiler: the Nordic PPK2 (2026-10-31)
+
+A Power Profiler Kit II powering a load at 3.3 V that sleeps at 1 mA and
+wakes for 1 ms every 10 ms at 101 mA (a MOSFET switched by a 100 Hz clock,
+the clock also on the logic port's D0), shown as Nordic's Power Profiler
+app shows it: the last 50 ms at 100 kS/s, the window's average (11 mA),
+peak (101 mA) and charge (550 µC), D0 in step underneath:
+
+![The PPK2 following a board sleeping and waking](instruments-ppk2/1-sleep-wake.png)
+
 ## A logic analyzer: the Saleae Logic 8 (2026-10-31)
 
 A Saleae Logic 8 wired to a terminal's TX (D0) and a 1 kHz clock (D1),

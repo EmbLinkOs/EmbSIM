@@ -125,7 +125,7 @@ Notation: `method(params) -> result`. Params and results are objects.
   Probe entries include `unit` from the declared output/native electrical
   quantity and actual `rate_hz` (zero for an event-driven probe).
 - `probe.read({probe, from_ps?, to_ps?, max?}) -> {samples: [[time_ps, value], ...], gap?}`
-- `instrument.read({part, since?, max?}) -> {state, sample_rate, start_ps, period_ps, trigger, end, channels, first, since, next, full, transitions: [[sample, bits], ...]}`:
+- `instrument.read({part, since?, max?}) -> {kind: "logic", state, sample_rate, start_ps, period_ps, trigger, end, channels, first, since, next, full, transitions: [[sample, bits], ...]}`:
   a logic analyzer part's capture (`docs/engineering/bench-instruments.md`)
   from sequence number `since`; `sample` counts from the capture's start
   (`start_ps`, `period_ps` apart), `bits` holds channel n in bit n, and the
@@ -135,6 +135,10 @@ Notation: `method(params) -> result`. Params and results are objects.
   the sequence number of its first record, which moves on (that record's
   sample moving to the window's start), and a reader starts over from
   `first` when it changes.
+- `instrument.read({part, since?, max?}) -> {kind: "power", state, mode, sample_rate, start_ps, period_ps, first, since, next, samples: [amperes, ...]}`:
+  a power profiler's measurement core (a PPK2's `METER`): one sample per
+  `period_ps` (10 µs) from `start_ps`, each the current averaged over its
+  window at its range's resolution; `first` is the oldest still held.
 - `waveform.subscribe({probes: [...], max_rate_hz?}) -> {stream}`; samples arrive as `waveform.samples` notifications (`base64`) or binary frames; `waveform.unsubscribe({stream})`.
 - Sample encodings: digital `u8` (`0,1,2=Z,3=X`), analog `f32`, serial bytes, value `f64`; each frame is monotonic in time; a `gap` marker reports dropped frames.
 - Native JSON waveform frames carry `through_time_ps`, the producer's completed

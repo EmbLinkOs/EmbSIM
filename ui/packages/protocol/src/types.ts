@@ -129,6 +129,7 @@ export const WORLD_FIELDS: { name: WorldField; label: string; unit: string; min:
 
 /** A logic analyzer part's capture (instrument.read): transitions on its sample grid. */
 export interface LogicCapture {
+  kind: 'logic';
   state: 'idle' | 'armed' | 'capturing' | 'done';
   sample_rate: number;
   /** the capture's first sample, and the samples' spacing */
@@ -146,6 +147,23 @@ export interface LogicCapture {
   full: boolean;
   /** [sample, inputs]: the inputs from that sample on; the first is the start */
   transitions: [number, number][];
+}
+
+/** A power profiler's samples (instrument.read on its measurement core): the current, 100 kS/s. */
+export interface PowerCapture {
+  kind: 'power';
+  state: 'idle' | 'sampling';
+  mode: 'source' | 'ampere';
+  sample_rate: number;
+  /** the first sample's window, and the samples' spacing */
+  start_ps: PsString;
+  period_ps: PsString;
+  /** sequence numbers: the oldest held, this read's first, the next read's */
+  first: number;
+  since: number;
+  next: number;
+  /** amperes, each the average over its window at its range's resolution */
+  samples: number[];
 }
 
 export interface WorldBody {

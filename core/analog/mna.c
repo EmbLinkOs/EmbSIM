@@ -7,6 +7,7 @@
  * stepping, and a transient of trapezoidal steps with backward-Euler restarts,
  * LTE step control, exact breakpoints and bisected comparator crossings. */
 #include "analog/analog.h"
+#include "analog/named.h"
 #include "host/host.h"
 #include "util/num.h"
 #include <math.h>
@@ -649,6 +650,7 @@ static void free_matrices(esk_island *isl)
 
 static void dev_free(esk_island *isl, esk_adev *d)
 {
+    esk_power_profiler_free(d); /* its sample ring, outside the island's allocator */
     if (d->ops && d->ops->state_size)
         esk_free(isl->a, d->state, d->ops->state_size);
     esk_free(isl->a, d, sizeof *d);

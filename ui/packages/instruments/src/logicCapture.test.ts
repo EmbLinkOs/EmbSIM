@@ -6,7 +6,7 @@ import { captureToCsv, captureToVcd, LogicCaptureRecords } from './logicCapture'
 
 // a UART byte's first edges on D0 at 1 MS/s, 1 ms in: idle high, the start bit's fall at sample 3, a 1 at 107
 const read = (over: Partial<LogicCapture>): LogicCapture => ({
-  state: 'capturing', sample_rate: 1e6, start_ps: '1000000000', period_ps: '1000000', trigger: -1, end: 5000,
+  kind: 'logic', state: 'capturing', sample_rate: 1e6, start_ps: '1000000000', period_ps: '1000000', trigger: -1, end: 5000,
   channels: 255, first: 0, since: 0, next: 3, full: false, transitions: [[0, 1], [3, 0], [107, 1]], ...over,
 });
 

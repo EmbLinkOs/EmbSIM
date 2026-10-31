@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-negative-current",
+  "description": "Ampere meter with the current flowing back (a 3.3 V source on VOUT, a 100 ohm load on VIN): the PPK2 cannot measure negative currents, it reads 0.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ppk2_core",
+        "params": {
+          "mode": "ampere"
+        }
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "LOAD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 100
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "BACK": [
+        "SUP.+",
+        "DUT.VOUT"
+      ],
+      "IN": [
+        "DUT.VIN",
+        "LOAD.1"
+      ],
+      "GND": [
+        "SUP.-",
+        "DUT.GND",
+        "LOAD.2",
+        "G.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.current": {
+      "at": "2ms",
+      "equals": 0
+    }
+  }
+}

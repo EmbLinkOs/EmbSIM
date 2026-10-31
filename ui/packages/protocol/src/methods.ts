@@ -18,6 +18,7 @@ import type {
   InputEntry,
   Instruction,
   LogicCapture,
+  PowerCapture,
   Layout,
   ObserveUpdate,
   Peripheral,
@@ -120,7 +121,7 @@ export interface Methods {
   };
   'instrument.read': {
     params: { part: string; since?: number; max?: number };
-    result: LogicCapture;
+    result: LogicCapture | PowerCapture;
   };
   /** SPEC-008 gives `{stream}`; the 0.1 server answers `{streams: [...], encoding}`. */
   'waveform.subscribe': { params: { probes: string[]; max_rate_hz?: number }; result: { stream?: string | number; streams?: (string | number)[]; encoding?: string } };

@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/ppk2_core",
+  "version": "0.1.0",
+  "name": "PPK2 measurement core (inside the Power Profiler Kit II)",
+  "category": "instruments",
+  "description": "The measurement core of Nordic's Power Profiler Kit II, as the emblink/nordic_ppk2 part uses it: a source (0.8 to 5.0 V, at most 600 mA) or a series meter, the current into the board sampled at 100 kS/s at the resolution of its range. Place emblink/nordic_ppk2 rather than this.",
+  "keywords": [
+    "ppk2",
+    "power profiler",
+    "current",
+    "internal"
+  ],
+  "pins": [
+    {
+      "name": "VIN",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false,
+      "doc": "Ampere meter mode: the board's own supply in"
+    },
+    {
+      "name": "VOUT",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "To the board (its supply)"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Ground"
+    }
+  ],
+  "params": {
+    "mode": {
+      "type": "enum",
+      "enum": [
+        "source",
+        "ampere"
+      ],
+      "default": "source",
+      "doc": "Source meter (it powers the board from VOUT) or ampere meter (in series, VIN to VOUT)"
+    },
+    "voltage": {
+      "type": "number",
+      "unit": "V",
+      "default": 3.3,
+      "min": 0.8,
+      "max": 5.0,
+      "doc": "Source meter mode: the voltage at VOUT"
+    },
+    "r_out": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "min": 0.001,
+      "max": 10,
+      "doc": "Source meter mode: the output's resistance below its current limit (an assumption)"
+    },
+    "r_series": {
+      "type": "number",
+      "unit": "ohm",
+      "default": 0.05,
+      "min": 0.001,
+      "max": 10,
+      "doc": "Ampere meter mode: the resistance in series, VIN to VOUT (not published: an assumption)"
+    }
+  },
+  "inputs": [
+    {
+      "name": "run",
+      "type": "boolean",
+      "default": false,
+      "doc": "Start (true) or Stop (false) sampling"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "state",
+      "type": "string",
+      "doc": "sampling or idle"
+    },
+    {
+      "name": "vout",
+      "type": "number",
+      "unit": "V",
+      "doc": "The voltage at VOUT"
+    },
+    {
+      "name": "current",
+      "type": "number",
+      "unit": "A",
+      "doc": "The last 10 us sample"
+    },
+    {
+      "name": "average",
+      "type": "number",
+      "unit": "A",
+      "doc": "The average since Start"
+    },
+    {
+      "name": "peak",
+      "type": "number",
+      "unit": "A",
+      "doc": "The largest sample since Start"
+    },
+    {
+      "name": "charge_uc",
+      "type": "number",
+      "unit": "uC",
+      "doc": "The charge since Start"
+    },
+    {
+      "name": "samples",
+      "type": "integer",
+      "doc": "Samples taken since Start"
+    },
+    {
+      "name": "limited",
+      "type": "boolean",
+      "doc": "Source meter mode: at its 600 mA limit"
+    }
+  ],
+  "model": {
+    "primitive": "power_profiler"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 40,
+    "pins": {
+      "VIN": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "VOUT": {
+        "x": 80,
+        "y": 10,
+        "side": "right"
+      },
+      "GND": {
+        "x": 40,
+        "y": 40,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": null,
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": [
+        "the measurement resistors' values and the voltage they drop (not published: r_series is an assumption)",
+        "the accuracy as an error (+-10 %, +-15 % in the top range): readings are exact to their resolution",
+        "the transients when the range switches",
+        "sinking current in source meter mode"
+      ]
+    },
+    "electrical": {
+      "claims": "Source meter (0.8 to 5.0 V behind r_out, at most 600 mA, then a constant 600 mA) or ampere meter (r_series in series); the current into the board averaged over each 10 us (100 kS/s), each sample at the resolution of its range (0.2, 0.5, 5, 50 or 1000 uA), negative currents read 0, above 1 A read 1 A.",
+      "omissions": [
+        "the measurement resistors' values and the voltage they drop (not published: r_series is an assumption)",
+        "the accuracy as an error (+-10 %, +-15 % in the top range): readings are exact to their resolution",
+        "the transients when the range switches",
+        "sinking current in source meter mode"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Nordic Semiconductor, Power Profiler Kit II User Guide v1.0.1 (4461_012), section 8: source meter 0.8-5.0 V at most 600 mA; ampere meter 1 A continuous; resolution 200 nA-50 uA 0.2 uA, 50-500 uA 0.5 uA, 0.5-5 mA 5 uA, 5-50 mA 50 uA, 50-1000 mA 1000 uA; accuracy +-10 % (+-15 % in the top range); 100 kS/s; logic port D0-D7 with VCC 1.65-5.5 V, sampled at 100 kHz; it cannot measure negative currents",
+        "url": "https://docs.nordicsemi.com/bundle/ug_ppk2/page/UG/ppk/PPK_user_guide_Intro.html",
+        "date": "2026-10-31",
+        "notes": "Read from the guide's PDF (DigiKey's copy, mm.digikey.com, the 2025-05-05 printing)."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

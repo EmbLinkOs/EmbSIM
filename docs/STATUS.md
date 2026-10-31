@@ -5,6 +5,25 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Bench instruments: the Nordic PPK2 (2026-10-31)
+
+The second bench instrument: `emblink/nordic_ppk2`, Nordic's Power Profiler
+Kit II, from its user guide's section 8. Source meter (0.8 to 5.0 V, at
+most 600 mA) or ampere meter (in series); the current at 100 kS/s, each
+10 µs sample at its range's resolution (five ranges, 0.2 µA to 1 mA);
+negative currents read 0; D0 to D7 of its logic port at 100 kHz. Evidence:
+six fixtures on its core (3.3 V into 330 Ω read 10.00 mA; into 1 Ω the
+600 mA limit and 0.6 V; 3.3 µA read 3.4 µA at 0.2 µA resolution; the
+ampere meter's 20.00 mA; a reverse current read 0; no samples before
+Start), one on the whole kit (current and logic port together), and
+`tests/protocol/test_power_profiler.py` (a load sleeping at 1 mA and waking
+for 1 ms every 10 ms at 101 mA: 5000 samples in 50 ms, both levels at their
+ranges' resolution, a 10 % duty, an 11.00 mA average, D0's edges where the
+current steps). The Run perspective's panel follows it live
+(`powerCapture.test.ts`; the gallery). Not yet: the measurement resistors'
+voltage drop (unpublished: `r_series` assumed), the accuracy as an error,
+range-switching transients, the logic port's thresholds (assumed).
+
 ## Bench instruments: the Saleae Logic 8 (2026-10-31)
 
 The first of three real bench instruments (`docs/engineering/bench-instruments.md`):

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "not-sampling",
+  "description": "Without Start it takes no samples.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/ppk2_core",
+        "params": {
+          "mode": "source",
+          "voltage": 3.3
+        }
+      },
+      {
+        "id": "LOAD",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 330
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "OUT": [
+        "DUT.VOUT",
+        "LOAD.1"
+      ],
+      "GND": [
+        "DUT.GND",
+        "LOAD.2",
+        "G.GND"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": false
+    }
+  ],
+  "expect": {
+    "output:DUT.samples": {
+      "at": "2ms",
+      "equals": 0
+    },
+    "output:DUT.state": {
+      "at": "2ms",
+      "equals": "idle"
+    }
+  }
+}

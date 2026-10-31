@@ -100,6 +100,11 @@ trigger level and mode, Run/Stop and Single, measurements and cursors.
 Not at first: the other trigger types, the serial decode options, math and
 FFT, the probe's compensation, XY and Roll.
 
+Built (2026-10-31): `emblink/nordic_ppk2` is a composite of its
+measurement core (`emblink/ppk2_core`, the `power_profiler` primitive) and
+its logic port (`emblink/ppk2_logic_port`, the logic analyzer's sampler at
+a fixed 100 kHz), each read with `instrument.read`.
+
 ## 2. How they fit the engine
 
 - **Leads load the circuit.** Each channel's input is a pin model with the
