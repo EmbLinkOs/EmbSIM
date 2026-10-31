@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "usb-powered",
+  "description": "Plugged into a computer's USB port through a 0.25 ohm cable, JP3 on U5V (the factory position): the power switch joins USB's 5 V to +5V, LD6 lights, U4 makes +3.3V and JP5 carries it to VDD, VBAT and VDDA; BOOT0 is held low and PC13 (B1 released) low through its pull-down; the user LEDs stay dark while their pins are not driven.",
+  "policy": "electrical",
+  "until": "10ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_f446ze"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.U5V"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "R5": [
+        "B1.5V"
+      ],
+      "R33": [
+        "B1.3V3"
+      ],
+      "VDD": [
+        "B1.CN11_5"
+      ],
+      "BOOT0": [
+        "B1.CN11_7"
+      ],
+      "AVDD": [
+        "B1.AREF"
+      ],
+      "VBAT": [
+        "B1.CN11_33"
+      ],
+      "BTN": [
+        "B1.CN11_23"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "net:R5": {
+      "at": "9ms",
+      "min_v": 4.85,
+      "max_v": 5.0
+    },
+    "net:R33": {
+      "at": "9ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "net:VDD": {
+      "at": "9ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "net:AVDD": {
+      "at": "9ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "net:VBAT": {
+      "at": "9ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "net:BOOT0": {
+      "at": "9ms",
+      "max_v": 0.05
+    },
+    "output:B1.LD6.luminance": {
+      "at": "9ms",
+      "min": 0.05
+    },
+    "net:BTN": {
+      "at": "9ms",
+      "max_v": 0.05
+    }
+  }
+}

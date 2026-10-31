@@ -5,6 +5,20 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The NUCLEO-F446ZE (2026-10-31)
+
+ST's Nucleo-144 board (MB1137) with its STM32F446ZE in LQFP144, running
+`examples/nucleo-f446ze-blink-serial`: 180 MHz from the ST-LINK's MCO, LD1
+blinking, the active-high USER button toggling LD2, the virtual COM port on
+USART3. Its jumpers are controls: JP3's four supply positions and JP5
+(IDD). The artwork is drawn for EmbSIM to the 70 x 133.34 mm outline, its
+Zio and morpho positions approximate until a dimensioned drawing gives
+`reference.json`.
+
+| Design | Run |
+|---|---|
+| ![The NUCLEO-F446ZE example in the Design workspace](nucleo-f446ze/design-nucleo144.png) | ![The example running: VDD on the oscilloscope, the LEDs on the logic analyzer, JP3 and JP5 among the controls](nucleo-f446ze/run-nucleo144.png) |
+
 ## Boards as boards: outline, holes, edge, mask (2026-10-30)
 
 Stage 4's first step: each board's PCB is cut from its artwork's own

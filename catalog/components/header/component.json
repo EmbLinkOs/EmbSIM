@@ -2,10 +2,10 @@
   "schema_version": 1,
   "kind": "component",
   "id": "emblink/header",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "Pin header",
   "category": "connectors",
-  "description": "Single-row pin header of up to 40 positions; the pins are isolated attachment points with no behaviour.",
+  "description": "Pin header of up to 80 positions (single or double row: an ST morpho header is 2 x 35); the pins are isolated attachment points with no behaviour.",
   "keywords": [
     "header",
     "connector",
@@ -332,6 +332,326 @@
         "kind": "passive"
       },
       "required": false
+    },
+    {
+      "name": "41",
+      "number": 41,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "42",
+      "number": 42,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "43",
+      "number": 43,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "44",
+      "number": 44,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "45",
+      "number": 45,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "46",
+      "number": 46,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "47",
+      "number": 47,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "48",
+      "number": 48,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "49",
+      "number": 49,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "50",
+      "number": 50,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "51",
+      "number": 51,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "52",
+      "number": 52,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "53",
+      "number": 53,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "54",
+      "number": 54,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "55",
+      "number": 55,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "56",
+      "number": 56,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "57",
+      "number": 57,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "58",
+      "number": 58,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "59",
+      "number": 59,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "60",
+      "number": 60,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "61",
+      "number": 61,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "62",
+      "number": 62,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "63",
+      "number": 63,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "64",
+      "number": 64,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "65",
+      "number": 65,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "66",
+      "number": 66,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "67",
+      "number": 67,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "68",
+      "number": 68,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "69",
+      "number": 69,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "70",
+      "number": 70,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "71",
+      "number": 71,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "72",
+      "number": 72,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "73",
+      "number": 73,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "74",
+      "number": 74,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "75",
+      "number": 75,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "76",
+      "number": 76,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "77",
+      "number": 77,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "78",
+      "number": 78,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "79",
+      "number": 79,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
+    },
+    {
+      "name": "80",
+      "number": 80,
+      "model": {
+        "kind": "passive"
+      },
+      "required": false
     }
   ],
   "params": {
@@ -339,7 +659,7 @@
       "type": "integer",
       "default": 20,
       "min": 1,
-      "max": 40,
+      "max": 80,
       "doc": "Number of populated positions (drawn by clients)"
     },
     "pitch_mm": {
@@ -369,7 +689,7 @@
   "symbol": {
     "svg": "symbol.svg",
     "width": 40,
-    "height": 410,
+    "height": 810,
     "pins": {
       "1": {
         "x": 0,
@@ -569,6 +889,206 @@
       "40": {
         "x": 0,
         "y": 400,
+        "side": "left"
+      },
+      "41": {
+        "x": 0,
+        "y": 410,
+        "side": "left"
+      },
+      "42": {
+        "x": 0,
+        "y": 420,
+        "side": "left"
+      },
+      "43": {
+        "x": 0,
+        "y": 430,
+        "side": "left"
+      },
+      "44": {
+        "x": 0,
+        "y": 440,
+        "side": "left"
+      },
+      "45": {
+        "x": 0,
+        "y": 450,
+        "side": "left"
+      },
+      "46": {
+        "x": 0,
+        "y": 460,
+        "side": "left"
+      },
+      "47": {
+        "x": 0,
+        "y": 470,
+        "side": "left"
+      },
+      "48": {
+        "x": 0,
+        "y": 480,
+        "side": "left"
+      },
+      "49": {
+        "x": 0,
+        "y": 490,
+        "side": "left"
+      },
+      "50": {
+        "x": 0,
+        "y": 500,
+        "side": "left"
+      },
+      "51": {
+        "x": 0,
+        "y": 510,
+        "side": "left"
+      },
+      "52": {
+        "x": 0,
+        "y": 520,
+        "side": "left"
+      },
+      "53": {
+        "x": 0,
+        "y": 530,
+        "side": "left"
+      },
+      "54": {
+        "x": 0,
+        "y": 540,
+        "side": "left"
+      },
+      "55": {
+        "x": 0,
+        "y": 550,
+        "side": "left"
+      },
+      "56": {
+        "x": 0,
+        "y": 560,
+        "side": "left"
+      },
+      "57": {
+        "x": 0,
+        "y": 570,
+        "side": "left"
+      },
+      "58": {
+        "x": 0,
+        "y": 580,
+        "side": "left"
+      },
+      "59": {
+        "x": 0,
+        "y": 590,
+        "side": "left"
+      },
+      "60": {
+        "x": 0,
+        "y": 600,
+        "side": "left"
+      },
+      "61": {
+        "x": 0,
+        "y": 610,
+        "side": "left"
+      },
+      "62": {
+        "x": 0,
+        "y": 620,
+        "side": "left"
+      },
+      "63": {
+        "x": 0,
+        "y": 630,
+        "side": "left"
+      },
+      "64": {
+        "x": 0,
+        "y": 640,
+        "side": "left"
+      },
+      "65": {
+        "x": 0,
+        "y": 650,
+        "side": "left"
+      },
+      "66": {
+        "x": 0,
+        "y": 660,
+        "side": "left"
+      },
+      "67": {
+        "x": 0,
+        "y": 670,
+        "side": "left"
+      },
+      "68": {
+        "x": 0,
+        "y": 680,
+        "side": "left"
+      },
+      "69": {
+        "x": 0,
+        "y": 690,
+        "side": "left"
+      },
+      "70": {
+        "x": 0,
+        "y": 700,
+        "side": "left"
+      },
+      "71": {
+        "x": 0,
+        "y": 710,
+        "side": "left"
+      },
+      "72": {
+        "x": 0,
+        "y": 720,
+        "side": "left"
+      },
+      "73": {
+        "x": 0,
+        "y": 730,
+        "side": "left"
+      },
+      "74": {
+        "x": 0,
+        "y": 740,
+        "side": "left"
+      },
+      "75": {
+        "x": 0,
+        "y": 750,
+        "side": "left"
+      },
+      "76": {
+        "x": 0,
+        "y": 760,
+        "side": "left"
+      },
+      "77": {
+        "x": 0,
+        "y": 770,
+        "side": "left"
+      },
+      "78": {
+        "x": 0,
+        "y": 780,
+        "side": "left"
+      },
+      "79": {
+        "x": 0,
+        "y": 790,
+        "side": "left"
+      },
+      "80": {
+        "x": 0,
+        "y": 800,
         "side": "left"
       }
     }

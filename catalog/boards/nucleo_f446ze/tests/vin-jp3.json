@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "vin-jp3",
+  "description": "9 V on VIN, JP3 moved to VIN and a 100 mA load on +5V: U3 (LD1117S50) supplies +5V and U4 still makes 3.3 V.",
+  "policy": "electrical",
+  "until": "15ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_f446ze"
+      }
+    ],
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 9.0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 50.0
+        }
+      }
+    ],
+    "nets": {
+      "VIN": [
+        "VS.+",
+        "B1.VIN"
+      ],
+      "GND": [
+        "VS.-",
+        "G.GND",
+        "B1.GND",
+        "RL.2"
+      ],
+      "R5": [
+        "B1.5V",
+        "RL.1"
+      ],
+      "VDD": [
+        "B1.CN11_5"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "B1.JP3_U5V",
+      "input": "closed",
+      "value": false
+    },
+    {
+      "at": "0ms",
+      "target": "B1.JP3_VIN",
+      "input": "closed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:R5": {
+      "at": "14ms",
+      "min_v": 4.85,
+      "max_v": 5.05
+    },
+    "net:VDD": {
+      "at": "14ms",
+      "min_v": 3.25,
+      "max_v": 3.35
+    },
+    "output:B1.LD6.luminance": {
+      "at": "14ms",
+      "min": 0.05
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "user-button",
+  "description": "B1 (USER) pulls PC13 up to VDD while pressed (through 100 ohm, against the 4.7 kOhm pull-down): the active-high button ST's BSP and GPIO_EXTI read with a rising edge.",
+  "policy": "electrical",
+  "until": "20ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_f446ze"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.U5V"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND"
+      ],
+      "BTN": [
+        "B1.CN11_23"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "10ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    }
+  ],
+  "expect": {
+    "net:BTN": {
+      "at": "15ms",
+      "min_v": 3.2,
+      "max_v": 3.35
+    }
+  }
+}
