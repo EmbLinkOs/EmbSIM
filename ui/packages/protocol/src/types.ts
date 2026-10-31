@@ -127,6 +127,27 @@ export const WORLD_FIELDS: { name: WorldField; label: string; unit: string; min:
   { name: 'wind', label: 'Wind', unit: 'm/s', min: 0, max: 40, step: 0.1, value: 0 },
 ];
 
+/** A logic analyzer part's capture (instrument.read): transitions on its sample grid. */
+export interface LogicCapture {
+  state: 'idle' | 'armed' | 'capturing' | 'done';
+  sample_rate: number;
+  /** the capture's first sample, and the samples' spacing */
+  start_ps: PsString;
+  period_ps: PsString;
+  /** sample numbers from the start; -1 until known */
+  trigger: number;
+  end: number;
+  /** enabled channels, channel n in bit n */
+  channels: number;
+  /** the sequence number of the first record held; a reader starts over from it when it changes */
+  first: number;
+  since: number;
+  next: number;
+  full: boolean;
+  /** [sample, inputs]: the inputs from that sample on; the first is the start */
+  transitions: [number, number][];
+}
+
 export interface WorldBody {
   id: string;
   name?: string;

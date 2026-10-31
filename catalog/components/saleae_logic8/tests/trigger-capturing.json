@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "trigger-capturing",
+  "description": "Triggered on D0's rising edge with a clock that starts at 50 us, a 20 us capture with 10% before the trigger: it captures after the trigger.",
+  "policy": "functional",
+  "until": "80us",
+  "circuit": {
+    "components": [
+      {
+        "id": "CLK",
+        "component": "emblink/clock_source",
+        "params": {
+          "freq": "1meg",
+          "duty": 0.5,
+          "td": "50u"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/saleae_logic8",
+        "params": {
+          "sample_rate": "10meg",
+          "duration": "20u",
+          "trigger_channel": 0,
+          "trigger_edge": "rising",
+          "pretrigger": 0.1
+        }
+      }
+    ],
+    "nets": {
+      "C": [
+        "CLK.OUT",
+        "DUT.D0"
+      ]
+    }
+  },
+  "inputs": [
+    {
+      "at": "0s",
+      "target": "DUT",
+      "input": "run",
+      "value": true
+    }
+  ],
+  "expect": {
+    "output:DUT.state": {
+      "at": "60us",
+      "equals": "capturing"
+    }
+  }
+}

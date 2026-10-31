@@ -1898,3 +1898,11 @@
 .wb-voltage-comparison__lead--b label { color: #c47419; }
 .wb-voltage-comparison select { min-width: 0; width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px; }
 .wb-voltage-comparison p, .wb-voltage-comparison small { font-size: 11px; line-height: 1.5; color: var(--text-muted); margin: 0; }
+
+/* a Saleae Logic 8: Logic 2's settings bar above its channel rows */
+.wb-logic8 { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.wb-logic8__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.wb-logic8__field { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-muted); }
+.wb-logic8__field input { width: 8ch; font: inherit; font-family: var(--font-mono); color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 3px 6px; }
+.wb-logic8__status { font-size: var(--text-sm); color: var(--text-muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+.wb-logic8 > :last-child { flex: 1; min-height: 0; }

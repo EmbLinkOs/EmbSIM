@@ -133,6 +133,8 @@ export class MockTransport extends TransportBase implements Transport {
       },
       'probe.list': () => ({ probes: s.listProbes() }),
       'probe.read': (p) => s.readProbe(p.probe, p.from_ps, p.to_ps, p.max),
+      // the demo session has no logic analyzer engine: an idle, empty capture
+      'instrument.read': (p) => ({ state: 'idle', sample_rate: 10e6, start_ps: '0', period_ps: '100000', trigger: -1, end: -1, channels: 255, first: 0, since: p.since ?? 0, next: p.since ?? 0, full: false, transitions: [] }),
       'waveform.subscribe': (p) => ({ stream: s.subscribe(p.probes, p.max_rate_hz) }),
       'waveform.unsubscribe': (p) => {
         s.unsubscribe(String(p.stream));
