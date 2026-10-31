@@ -6,7 +6,7 @@ terminal sends "Hi" at 9600 baud; the analyzer, sampling at 1 MS/s, holds
 the frames' edges on its 1 us grid, and decoding them from the capture
 alone gives the bytes back. A capture triggered on the line's first
 falling edge starts with the start bit, and one at 100 MS/s with eight
-channels on runs at 50 MS/s."""
+channels on runs at 25 MS/s, the data sheet's rate for all eight."""
 import argparse
 import json
 from pathlib import Path
@@ -102,12 +102,12 @@ def main():
             assert cap["trigger"] == 500 and edges[0][0] == 0, (edges[:3], cap["trigger"])
             assert decode_uart(edges, 1e6, 9600) == b"Hi"
 
-        # 100 MS/s is for three channels at most
+        # 100 MS/s is for three channels at most; eight run at 25 MS/s (the data sheet's footnote 1)
         src.write_text(json.dumps(project({"sample_rate": "100meg", "duration": "1m"})), encoding="utf-8")
         with StdioClient([args.embsim, "sidecar", str(src)]) as client:
             client.call("input.set", {"target": "LA", "input": "run", "value": True})
             client.call("control.advance", {"by": "10us"})
-            assert client.call("instrument.read", {"part": "LA"})["sample_rate"] == 50e6
+            assert client.call("instrument.read", {"part": "LA"})["sample_rate"] == 25e6
     print("PASS: the Logic 8 captured a UART line at 1 MS/s, decoded from its transitions; the trigger and the rate limit hold")
     return 0
 

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "rate-limit-channels",
-  "description": "Asked for 100 MS/s with all eight channels on, it samples at 50 MS/s (Saleae's 100 MS/s is for up to three channels).",
+  "description": "Asked for 100 MS/s with all eight channels on, it samples at 25 MS/s (the data sheet: 25 MS/s on all 8 channels).",
   "policy": "functional",
   "until": "5us",
   "circuit": {
@@ -43,7 +43,7 @@
   "expect": {
     "output:DUT.rate": {
       "at": "5us",
-      "equals": 50000000.0
+      "equals": 25000000.0
     }
   }
 }

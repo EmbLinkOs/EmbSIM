@@ -17,14 +17,14 @@ named as one in the part's fidelity.
 
 ### Saleae Logic 8 (logic analyzer)
 
-From Saleae's Logic 8 data sheet and its support pages:
+From Saleae's Logic 8 data sheet (DOC_620-00011_V20260521) and its support pages:
 
 | Property | Value |
 |---|---|
 | Digital channels | 8, each with a ground lead |
 | Input impedance | 1 MΩ ∥ 10 pF |
 | Threshold | fixed: low below 0.6 V, high above 1.2 V (no selectable threshold on the Logic 8) |
-| Sample rates | 100, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1 MS/s; the highest not on all channels at once (Saleae's example: 3 channels, digital only, at 100 MS/s) |
+| Sample rates | 100, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1 MS/s; 100 MS/s on up to 3 channels, 50 on up to 6, 40 on up to 7, 25 on all 8 (the data sheet's footnote 1) |
 | Digital bandwidth | 25 MHz |
 | Input voltage | 0 to 5 V recommended, −25 V to +25 V absolute maximum |
 | Memory | streams to the computer (the capture's length is the computer's memory) |
@@ -39,62 +39,66 @@ PulseView and Logic 2). The workbench draws it as Logic 2 does: channel
 rows, rate and duration, Start, the trigger, the protocol decoders
 (UART, SPI, I²C) already in the workbench.
 
-Not at first: the Logic 8's analog inputs, the channel-count limit for each
-rate beyond Saleae's published example (an assumption, named), abuse
-beyond the absolute maximum (ADR-034).
+Not at first: the Logic 8's analog inputs (10 bits, 0 to 5 V, up to
+10 MS/s), abuse beyond the absolute maximum (ADR-034).
 
 ### Nordic Power Profiler Kit II (power profiler)
 
-From Nordic's PPK2 product page, product brief and user guide:
+From Nordic's PPK2 user guide v1.0.1 (4461_012), section 8:
 
 | Property | Value |
 |---|---|
-| Modes | Source meter (it powers the board) and ampere meter (in series with the board's own supply) |
-| Source meter output | 0.8 to 5.0 V, up to 1 A |
-| Ampere meter | the supply 0.8 to 5 V, 1 A limit |
-| Current range | 200 nA to 1 A, five ranges switched automatically during measurement |
-| Resolution | 100 nA to 1 mA, by range |
+| Modes | Source meter (it powers the board) and ampere meter (in series with the board's own supply); it cannot measure negative currents |
+| Source meter | 0.8 to 5.0 V (VDD_DUT), at most 600 mA |
+| Ampere meter | the external supply 0.8 to 5.0 V (VDD_EXT), at most 1 A continuous |
+| Measurement | the nRF52840's ADC across a series of measurement resistors, five ranges switched automatically |
+| Ranges and resolution | 200 nA–50 µA: 0.2 µA; 50–500 µA: 0.5 µA; 500 µA–5 mA: 5 µA; 5–50 mA: 50 µA; 50–1000 mA: 1000 µA |
+| Accuracy (average readout) | ±10 % (offset ±2 %) in the four lower ranges, ±15 % (offset ±5 %) in 50–1000 mA |
 | Sampling | 100 kS/s |
-| Accuracy | better than ±20 % on average currents |
-| Logic port | 8 digital inputs, sampled with the current |
+| Logic port | D0–D7, its VCC from the board (1.65 to 5.5 V), sampled at 100 kHz, about 50 kHz bandwidth |
 
-What is modelled: both modes (a source with its current limit; a shunt in
-series), the five ranges switched by the current with each range's
-resolution, 100 kS/s samples streamed live, average, peak and charge over
-a window, the logic port, export as CSV. The workbench draws it as
-Nordic's Power Profiler app does: the live current graph, a selected
-window's average and charge, the digital channels underneath.
+What is modelled: both modes (a source with its 600 mA limit; the
+measurement resistors in series), the five ranges switched by the current
+with each range's resolution, 100 kS/s samples streamed live, average,
+peak and charge over a window, the logic port, export as CSV. The
+workbench draws it as Nordic's Power Profiler app does: the live current
+graph, a selected window's average and charge, the digital channels
+underneath.
 
-Not at first: each range's shunt and the voltage it drops (not published;
-an assumption, named), the switching transients between ranges.
+Not at first: the measurement resistors' values and the voltage they drop
+(not published: an assumption, named), the switching transients between
+ranges (the guide warns that a current near a switching point distorts the
+plot).
 
 ### Rigol DS1054Z (oscilloscope)
 
-From Rigol's MSO/DS1000Z specifications and the sigrok device page:
+From Rigol's MSO1000Z/DS1000Z User's Guide, chapter 18:
 
 | Property | Value |
 |---|---|
 | Channels | 4 analog |
-| Bandwidth | 50 MHz |
-| Sample rate | 1 GS/s (1 channel), 500 MS/s (2), 250 MS/s (3 or 4) |
-| Memory depth | 12 Mpts (24 Mpts with the memory option) |
-| Vertical | 8 bits, 1 mV/div to 10 V/div |
-| Input | 1 MΩ ±1 % ∥ 15 pF ±3 pF |
-| Triggers | edge, pulse, runt, window, nth edge, slope, video, pattern, delay, timeout, duration, setup/hold; RS232, I²C, SPI as options |
-| Sweep | Auto, Normal, Single |
+| Bandwidth (−3 dB) | 50 MHz (single-shot too); a 20 MHz limit; calculated rise time 7 ns |
+| Sample rate | 1 GSa/s (1 channel), 500 MSa/s (2), 250 MSa/s (3 or 4) |
+| Memory depth | 12 Mpts (1 channel), 6 Mpts (2), 3 Mpts (3 or 4); 24/12/6 Mpts with the option |
+| Vertical | 8 bits, 1 mV/div to 10 V/div (probe 1x); offset ±2 V to 499 mV/div, ±100 V from 500 mV/div |
+| Input | (1 MΩ ±1 %) ∥ (15 pF ±3 pF); DC, AC (≤5 Hz) or GND coupling; probe 0.01x to 1000x |
+| DC gain accuracy | ±4 % of full scale below 10 mV/div, ±3 % from 10 mV/div |
+| Timebase | 5 ns/div to 50 s/div; YT, XY and Roll |
+| Trigger | Auto, Normal, Single; level ±5 div from centre; holdoff 16 ns to 10 s; edge (rising, falling, either), pulse, slope and more; RS232, I²C, SPI as options |
+| Measurements | period, frequency, rise and fall time, widths, duty, peak-to-peak, amplitude, average, RMS and others |
 
 What is modelled: the four inputs loading the circuit (1 MΩ ∥ 15 pF, and a
-10x probe's 10 MΩ), the bandwidth as a first-order limit, sampling at the
-rate the enabled channels allow, 8-bit quantisation at the chosen V/div
-and offset, the memory depth, the edge trigger with Auto, Normal and
-Single, the timebase and trigger position, and live acquisitions as the
-circuit runs in real time (ADR-032). The workbench draws its front panel:
-the 12-division screen, each channel's V/div and offset, the timebase,
-the trigger level and mode, Run/Stop and Single, measurements (frequency,
-period, peak-to-peak, mean, RMS) and cursors.
+10x probe's 10 MΩ), the bandwidth as a first-order limit (and the 20 MHz
+limit), sampling at the rate the enabled channels allow, 8-bit
+quantisation at the chosen V/div and offset, the memory depth by channel
+count, the edge trigger with Auto, Normal and Single and its holdoff, the
+timebase and trigger position, and live acquisitions as the circuit runs
+in real time (ADR-032). The workbench draws its front panel: the
+12-division screen, each channel's V/div and offset, the timebase, the
+trigger level and mode, Run/Stop and Single, measurements and cursors.
 
 Not at first: the other trigger types, the serial decode options, math and
-FFT, the probe's compensation.
+FFT, the probe's compensation, XY and Roll.
 
 ## 2. How they fit the engine
 

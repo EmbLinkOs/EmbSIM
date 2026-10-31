@@ -11,7 +11,8 @@ versions follow semantic versioning. There is no release yet.
   wired into the circuit (ADR-033). Each lead loads its net as the real one
   does (1 MΩ to ground ∥ 10 pF) and reads high above 1.2 V and low below
   0.6 V. It samples at 100, 50, 40, 25, 20, 10, 8, 5, 4, 2 or 1 MS/s
-  (100 MS/s with up to three channels on, as Saleae publishes), exactly as a
+  (100 MS/s on up to 3 channels, 50 on up to 6, 40 on up to 7, 25 on all 8,
+  as its data sheet gives), exactly as a
   sampler does: an edge is seen at the first sample after it, a pulse
   between two samples is missed. Start and Stop (`run`), a capture length,
   a trigger on one channel's rising, falling or either edge with a

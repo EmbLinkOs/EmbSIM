@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "pulse-seen-faster",
-  "description": "The same 5 ns pulses sampled at 50 MS/s (every 20 ns): every fifth 50 ns pulse holds a sample, so the capture holds changes.",
+  "description": "The same 5 ns pulses sampled at 50 MS/s (every 20 ns) with D0 alone on: every fifth 50 ns pulse holds a sample, so the capture holds changes.",
   "policy": "functional",
   "until": "20us",
   "circuit": {
@@ -21,7 +21,8 @@
         "component": "emblink/saleae_logic8",
         "params": {
           "sample_rate": "50meg",
-          "duration": "10u"
+          "duration": "10u",
+          "channels": 1
         }
       }
     ],

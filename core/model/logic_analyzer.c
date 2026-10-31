@@ -17,10 +17,11 @@
  *     it comes, and a pending change is committed once a later sample
  *     instant is reached, so the record is the sampled one, exactly;
  *   - only the channels in `channels` (a bit mask, all eight by default)
- *     are recorded, the others read 0. Above 50 MS/s at most three
- *     channels may be on (Saleae's published example: 3 channels, digital
- *     only, at 100 MS/s); with more the rate is taken down to 50 MS/s, as
- *     the Logic software does not offer it;
+ *     are recorded, the others read 0. The USB link limits the rate by the
+ *     channels on (the data sheet's footnote 1): 100 MS/s on up to 3,
+ *     50 MS/s on up to 6, 40 MS/s on up to 7, 25 MS/s on all 8; asked for
+ *     more, it samples at the fastest the channels on allow, as the Logic 2
+ *     software offers no more;
  *   - the `run` input starts a capture (true) or stops it (false). Without
  *     a trigger (`trigger_channel` -1) it records from the start for
  *     `duration` seconds. With one, it waits for that channel's edge
@@ -36,9 +37,8 @@
  *     The computer's memory is the Logic 8's (it streams): here at most
  *     LA_MAX transitions, after which the capture ends as full.
  *
- * Not modelled: the analog inputs; which rates allow how many channels
- * beyond Saleae's example (an assumption: up to 50 MS/s on all eight);
- * the leads' inductance; inputs past the absolute maximum. */
+ * Not modelled: the analog inputs (10 bits, up to 10 MS/s); the leads'
+ * inductance; inputs past the absolute maximum. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -243,11 +243,16 @@ static void configure(esk_comp *c)
     esk_comp_param_int(c, "trigger_channel", &ch);
     edge = esk_comp_param_str(c, "trigger_edge", "rising");
     s->mask = (unsigned)mask & 0xffu;
-    if (rate > 50e6 && popcount8(s->mask) > 3) {
-        if (!s->warned)
-            esk_comp_diag(c, ES_SEV_WARNING, "LA_RATE", "%g MS/s takes at most 3 channels; capturing at 50 MS/s", rate / 1e6);
-        s->warned = 1;
-        rate = 50e6;
+    {
+        /* the fastest rate the channels on allow (data sheet, footnote 1) */
+        int on = popcount8(s->mask);
+        double most = on <= 3 ? 100e6 : on <= 6 ? 50e6 : on == 7 ? 40e6 : 25e6;
+        if (rate > most * 1.0001) {
+            if (!s->warned)
+                esk_comp_diag(c, ES_SEV_WARNING, "LA_RATE", "%g MS/s is not offered with %d channels on; capturing at %g MS/s", rate / 1e6, on, most / 1e6);
+            s->warned = 1;
+            rate = most;
+        }
     }
     for (i = 0; i < ES_COUNTOF(RATES); i++)
         if (rate >= RATES[i] * 0.999)
