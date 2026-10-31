@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "off",
+  "description": "ON at IN: the switch is off and the 10 ohm load sees nothing.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VS",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "VG",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/st890cdr"
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 10.0
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "VS.+",
+        "DUT.IN"
+      ],
+      "ON": [
+        "VG.+",
+        "DUT.ON"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "VS.-",
+        "VG.-",
+        "RL.2",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:OUT": {
+      "at": "1ms",
+      "max_v": 0.01
+    }
+  }
+}

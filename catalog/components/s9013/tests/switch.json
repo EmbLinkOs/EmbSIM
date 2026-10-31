@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "switch",
+  "description": "As MB1137's T2: 5 V through 47 kOhm into the base (22 kOhm to the emitter) saturates it, sinking an LED's few milliamps from 3.3 V through 330 ohm with the collector near ground.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "VB",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "VC",
+        "component": "emblink/vsource",
+        "params": {
+          "dc": 3.3
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/s9013"
+      },
+      {
+        "id": "RB",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 47000
+        }
+      },
+      {
+        "id": "RBE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 22000
+        }
+      },
+      {
+        "id": "RC",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 330
+        }
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VBN": [
+        "VB.+",
+        "RB.1"
+      ],
+      "B": [
+        "RB.2",
+        "RBE.1",
+        "DUT.B"
+      ],
+      "VCN": [
+        "VC.+",
+        "RC.1"
+      ],
+      "C": [
+        "RC.2",
+        "DUT.C"
+      ],
+      "GND": [
+        "VB.-",
+        "VC.-",
+        "RBE.2",
+        "DUT.E",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:C": {
+      "at": "1ms",
+      "max_v": 0.2
+    }
+  }
+}
