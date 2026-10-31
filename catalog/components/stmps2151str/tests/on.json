@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "component_test",
   "name": "on",
-  "description": "EN at 3.3 V (an MCU's high), 5 V on IN and a 10 ohm load (0.5 A): OUT about 45 mV below IN (about 90 mOhm).",
+  "description": "EN at 3.3 V (an MCU's high), 5 V on IN and a 10 ohm load (0.5 A): OUT about 45 mV below IN (90 mOhm typical, 110 mOhm maximum: at least 4.945 V).",
   "policy": "electrical",
   "until": "2ms",
   "circuit": {
@@ -62,7 +62,7 @@
   "expect": {
     "net:OUT": {
       "at": "1ms",
-      "min_v": 4.93,
+      "min_v": 4.945,
       "max_v": 4.99
     }
   }

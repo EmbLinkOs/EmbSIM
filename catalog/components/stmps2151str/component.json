@@ -25,7 +25,7 @@
       "model": {
         "kind": "analog"
       },
-      "doc": "Output (SOT23-5 pin 1): VBUS"
+      "doc": "Output of the power switch (SOT23-5L pin 1): VBUS"
     },
     {
       "name": "GND",
@@ -33,7 +33,7 @@
       "model": {
         "kind": "analog"
       },
-      "doc": "Ground (SOT23-5 pin 2): the enable's reference"
+      "doc": "Ground (SOT23-5L pin 2)"
     },
     {
       "name": "FAULT",
@@ -41,7 +41,7 @@
       "model": {
         "kind": "passive"
       },
-      "doc": "Open-drain, active-low over-current and over-temperature flag (SOT23-5 pin 3): never asserted here, its off-state leakage a 1 GOhm path to GND",
+      "doc": "Open-drain FAULT indicator, active low (SOT23-5L pin 3): never asserted here; its off current a 1 GOhm path to GND (the datasheet's IOFF is at most 1 uA)",
       "required": false
     },
     {
@@ -50,7 +50,7 @@
       "model": {
         "kind": "analog"
       },
-      "doc": "Active-high enable (SOT23-5 pin 4): logic high (above about 2 V) turns the switch on"
+      "doc": "Enable for the power switch, active high on the STMPS2151 (SOT23-5L pin 4): VIH 2.0 V, VIL 0.8 V with 4.5 to 5.5 V on IN"
     },
     {
       "name": "IN",
@@ -58,7 +58,7 @@
       "model": {
         "kind": "analog"
       },
-      "doc": "Input (SOT23-5 pin 5): the supply, 2.7 to 5.5 V"
+      "doc": "Input, 2.7 to 5.5 V (SOT23-5L pin 5)"
     }
   ],
   "params": {},
@@ -80,7 +80,7 @@
           "component": "emblink/nmos",
           "params": {
             "part": "generic",
-            "vto": 1.0,
+            "vto": 1.4,
             "kp": "0.05",
             "lambda": 0.01
           }
@@ -178,13 +178,14 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "The switch between IN and OUT, on while EN is high (an internal N-channel stage pulls the P-channel switch's gate to ground) and off while EN is low (the gate pulled to IN), as a P-channel MOSFET of about 90 mOhm with 5 V on IN; EN draws no current.",
+      "claims": "The switch between IN and OUT, on while EN is high and off while EN is low, its threshold at 1.4 V between the datasheet's VIL (0.8 V) and VIH (2.0 V); on, about 90 mOhm with 5 V on IN (the datasheet's 90 mOhm typical, 110 mOhm maximum, SOT23-5L at 25 C); off, high impedance both ways (section 3.4's reverse-current blocking); EN draws no current (at most 0.5 uA). Inside: a P-channel stand-in for the part's N-channel switch and its charge pump, with the same resistance and the same outside.",
       "omissions": [
-        "the datasheet was not at hand (ST's site refused the download): the on-resistance (about 90 mOhm), EN's threshold (about 1 V, within the logic levels of 0.8 and 2 V) and the pinout are taken from memory, not checked",
-        "the current limit (about 0.8 A), the thermal shutdown and the fault output with its deglitch (FAULT never asserts)",
-        "the under-voltage lock-out, reverse-current blocking and the body diode",
-        "the turn-on and turn-off slew and the supply current",
-        "temperature, damage"
+        "the current limit (0.6 to 1.0 A, 0.8 A typical, about 120 % of the rated 500 mA) and the short-circuit current (0.9 A): the switch passes what the load draws",
+        "FAULT: the over-current flag after its 4 to 15 ms blanking, the immediate flag on over-temperature and under-voltage; it never asserts",
+        "the thermal shutdown (145 C, recovery at 120 C) and the on-resistance's rise with temperature (to 135 mOhm at 125 C)",
+        "the under-voltage lock-out (2.0 to 2.5 V, 75 mV hysteresis): the switch's resistance only grows as IN falls",
+        "the output's rise time (0.05 to 2 ms), the turn-on and turn-off times (up to 5 and 10 ms) and the supply current (40 uA on, 6 uA off)",
+        "damage"
       ],
       "range": {
         "voltage_v": [
@@ -205,6 +206,11 @@
     "author": "EmbSIM",
     "license": "Apache-2.0",
     "sources": [
+      {
+        "title": "STMicroelectronics STMPS2141, STMPS2151, STMPS2161, STMPS2171 datasheet, Rev 3 (January 2008): pin connections (figure 2, table 2), functional description (section 3), electrical characteristics (tables 9, 11 to 16)",
+        "url": "https://www.st.com/resource/en/datasheet/stmps2141.pdf",
+        "date": "2026-10-31"
+      },
       {
         "title": "MB1137 B-01 electrical schematics (NUCLEO-XXXXZX), USB OTG sheet: U12 STMPS2151STR from +5V to USB_VBUS, EN on PG6 (USB_PowerSwitchOn) with R72's pull-down, FAULT to PG7 (USB_OverCurrent) through JP4 with R71's pull-up and LD7",
         "url": "https://www.st.com/en/evaluation-tools/nucleo-f446ze.html#cad-resources",
