@@ -29,6 +29,14 @@ versions follow semantic versioning. There is no release yet.
   the device and a boot mouse's cursor.
 - STM32CubeF4's USB_Device/HID_Standalone runs unmodified on the
   NUCLEO-F446ZE and enumerates as ST's mouse (0483:5710) on CN13.
+- The cable comes out and goes back in (`emblink/usb_host`'s CABLE switch;
+  the host senses VBUS at its device end); the host suspends the port on
+  its `suspend` input (SET_FEATURE(DEVICE_REMOTE_WAKEUP) first where the
+  device offers it) and resumes it with 20 ms of resume signalling; the
+  OTG core's RWUSIG is remote wakeup the host answers. The same HID image
+  is suspended, woken by B1, unplugged and enumerated again, 16/16.
+- GSNPSID's 0x4F54320A is the value TinyUSB's DWC2 table reads from the
+  F412's and F76x's OTG_FS, the same core generation.
 - The NVIC takes level-sensitive requests (`esk_cpu_ops.irq_level`): one
   still asserted when its handler returns is pending again.
 - A model can serve its peripheral's reserved ranges (an OTG core's FIFO

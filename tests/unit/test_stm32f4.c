@@ -3399,8 +3399,9 @@ static void test_crc(void)
  * and 48 MHz on PLL_Q, the USB's clock */
 #define PLLCFGR_168 (8u | 336u << 6 | 0u << 16 | 1u << 22 | 7u << 24 | 2u << 28)
 
-static int usb_changes, otg_entries;
+static int usb_changes, otg_entries, usb_wakeups;
 static void r_usb_changed(void *ctx) { (void)ctx; usb_changes++; }
+static void r_usb_wakeup(void *ctx) { (void)ctx; usb_wakeups++; }
 static void r_exc(void *ctx, int core, int n)
 {
     (void)ctx;
@@ -3433,7 +3434,8 @@ static void test_otg_fs(void)
     if (!f4_open(&f, 1))
         return;
     f.m.host.usb_changed = r_usb_changed;
-    usb_changes = 0;
+    f.m.host.usb_remote_wakeup = r_usb_wakeup;
+    usb_changes = usb_wakeups = 0;
     CHECK(f.m.usb.pullup != NULL);
     CHECK_EQ(f.m.usb.dp_at, 12);
     CHECK_EQ(rd(&f, G_GRSTCTL), 0u); /* the clock is off */
@@ -3503,6 +3505,13 @@ static void test_otg_fs(void)
     CHECK(otg_entries <= 1);
     wr(&f, 0xE000E188u, 1u << 3);                /* NVIC_ICER2 */
     f.m.host.exc = NULL;
+
+    /* RWUSIG while suspended: remote wakeup, heard by the host once */
+    wr(&f, D_DCTL, rd(&f, D_DCTL) | 1u);
+    CHECK_EQ(usb_wakeups, 1);
+    wr(&f, D_DCTL, rd(&f, D_DCTL) | 1u);         /* still set: no new edge */
+    CHECK_EQ(usb_wakeups, 1);
+    wr(&f, D_DCTL, rd(&f, D_DCTL) & ~1u);
 
     /* the host resets the port: WKUINT (it was suspended), USBRST, and
      * at its end ENUMDNE at full speed */
@@ -3603,6 +3612,11 @@ static void test_otg_fs(void)
     wr(&f, D_DIEPCTL(1), 4u | 1u << 15 | 3u << 18 | 1u << 22 | 1u << 21);
     CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 5, 1, pkt, sizeof pkt, &len, &d1), ESK_USB_STALL);
     CHECK_EQ(f.m.usb.in(f.m.usb.ctx, 5, 2, pkt, sizeof pkt, &len, &d1), ESK_USB_NONE);
+
+    /* RWUSIG on a bus that is not suspended: nothing (USB 2.0 7.1.7.7) */
+    wr(&f, D_DCTL, rd(&f, D_DCTL) | 1u);
+    wr(&f, D_DCTL, rd(&f, D_DCTL) & ~1u);
+    CHECK_EQ(usb_wakeups, 1);
 
     /* VBUS gone: the session ends (SEDET), the pull-up goes */
     f.volts[0][9] = 0.0;

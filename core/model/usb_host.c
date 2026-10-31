@@ -62,10 +62,12 @@ enum { S_DETACHED, S_ATTACHED, S_DEFAULT, S_ADDRESS, S_CONFIGURED, S_ERROR };
 enum { C_SETUP, C_DATA_IN, C_STATUS_OUT, C_STATUS_IN };
 enum {
     E_DESC64, E_SET_ADDRESS, E_DESC18, E_CFG9, E_CFG, E_LANG, E_STR_MANU, E_STR_PROD, E_STR_SER, E_SET_CONFIG,
-    E_HID_IDLE, E_HID_REPORT, E_DONE
+    E_HID_IDLE, E_HID_REPORT, E_DONE, E_WAKE_ON, E_WAKE_OFF
 };
 
 static const char *const state_names[] = { "detached", "attached", "default", "address", "configured", "error" };
+#define RESUME_PS (20u * PS_MS) /* TDRSMDN: the host's resume signalling (USB 2.0 7.1.7.7) */
+#define VBUS_SENSE_V 4.0        /* VBUS at the cable's device end: plugged */
 
 typedef struct uh_hid {
     int intf, ep, mps, interval, pid, mouse;
@@ -88,6 +90,13 @@ typedef struct uh_state {
     uint32_t frame;
     uint64_t frames;
     int after_reset; /* the step to go on with when the reset ends */
+    /* suspend and resume */
+    esk_pin *vbus;      /* VBUS at the device end of the cable, or NULL */
+    int allow_wakeup;   /* the host arms remote wakeup before a suspend */
+    int want_suspend;   /* the `suspend` input */
+    int suspended, resuming, wake_armed;
+    es_time_t resume_end;
+    uint64_t suspends, wakeups;
     /* the device */
     int state, addr, mps0, step, hid_i, cfg_value;
     uint8_t dev[18];
@@ -165,10 +174,21 @@ static void kick(uh_state *s, es_time_t t)
 
 static esk_usb_dev *device(uh_state *s) { return esk_usb_device_of(s->c->e, &s->link); }
 
+/* the cable is in: VBUS at its device end (no VBUS pin wired: always) */
+static int plugged(uh_state *s)
+{
+    esk_pin *p = s->vbus;
+    if (!p || !p->net)
+        return 1;
+    if (p->watch_on)
+        return p->watch_state == ESK_L1;
+    return esk_net_value(p->net) == ESK_L1;
+}
+
 static int attached(uh_state *s)
 {
     esk_usb_dev *d = device(s);
-    return d && d->pullup(d->ctx) != ESK_USB_DETACHED;
+    return plugged(s) && d && d->pullup(d->ctx) != ESK_USB_DETACHED;
 }
 
 /* ---- descriptors ----------------------------------------------------------- */
@@ -267,6 +287,8 @@ static const char *step_name(int step)
     case E_SET_CONFIG: return "SET_CONFIGURATION";
     case E_HID_IDLE: return "SET_IDLE";
     case E_HID_REPORT: return "GET_DESCRIPTOR(HID report)";
+    case E_WAKE_ON: return "SET_FEATURE(DEVICE_REMOTE_WAKEUP)";
+    case E_WAKE_OFF: return "CLEAR_FEATURE(DEVICE_REMOTE_WAKEUP)";
     default: return "?";
     }
 }
@@ -314,12 +336,37 @@ static void begin(uh_state *s, int step)
             control(s, 0x81, 6, 0x2200, (unsigned)s->hid[s->hid_i].intf,
                     s->hid[s->hid_i].report_len ? s->hid[s->hid_i].report_len : 255u);
             return;
+        case E_WAKE_ON: control(s, 0x00, 3, 1, 0, 0); return;
+        case E_WAKE_OFF: control(s, 0x00, 1, 1, 0, 0); return;
         default:
             s->step = E_DONE;
             s->ct.on = 0;
             return;
         }
     }
+}
+
+/* the port stops its frames: the device suspends after 3 ms of idle */
+static void enter_suspend(uh_state *s)
+{
+    s->suspended = 1;
+    s->sof_on = 0;
+    s->suspends++;
+    say(s, "port suspended%s", s->wake_armed ? " (remote wakeup enabled)" : "");
+}
+
+/* the host drives resume (K) for 20 ms, then EOP and frames again */
+static void start_resume(uh_state *s, const char *why)
+{
+    esk_usb_dev *d = device(s);
+    es_time_t now = esk_comp_now(s->c);
+    if (!s->suspended || s->resuming)
+        return;
+    s->resuming = 1;
+    s->resume_end = now + RESUME_PS;
+    if (d)
+        d->bus(d->ctx, ESK_USB_RESUME, 0, now);
+    say(s, "%s: resume signalling (20 ms)", why);
 }
 
 static void fail(uh_state *s, const char *why)
@@ -403,6 +450,16 @@ static void done(uh_state *s)
         break;
     case E_HID_IDLE:
         break;
+    case E_WAKE_ON:
+        s->wake_armed = 1;
+        s->step = E_DONE;
+        if (s->want_suspend)
+            enter_suspend(s);
+        return;
+    case E_WAKE_OFF:
+        s->wake_armed = 0;
+        s->step = E_DONE;
+        return;
     case E_HID_REPORT:
         if (s->hid_i == 0) {
             memcpy(s->rep, b, got);
@@ -433,6 +490,13 @@ static void stalled(uh_state *s)
     if (s->step == E_LANG || s->step == E_STR_MANU || s->step == E_STR_PROD || s->step == E_STR_SER) {
         s->ct.on = 0;
         begin(s, s->step == E_LANG ? E_SET_CONFIG : s->step + 1);
+        return;
+    }
+    if (s->step == E_WAKE_ON || s->step == E_WAKE_OFF) { /* not supported: suspend without it */
+        s->ct.on = 0;
+        s->step = E_DONE;
+        if (s->want_suspend && !s->suspended)
+            enter_suspend(s);
         return;
     }
     fail(s, "STALL");
@@ -563,6 +627,7 @@ static void detach(uh_state *s)
     s->addr = 0;
     s->ct.on = 0;
     s->nhid = 0;
+    s->suspended = s->resuming = s->wake_armed = 0;
 }
 
 static void run(uh_state *s)
@@ -611,6 +676,33 @@ static void run(uh_state *s)
         break;
     default:
         break;
+    }
+    /* resume signalling ends: EOP, the frames start again */
+    if (s->resuming) {
+        if (now < s->resume_end) {
+            kick(s, s->resume_end);
+            return;
+        }
+        s->resuming = 0;
+        s->suspended = 0;
+        d->bus(d->ctx, ESK_USB_RESUME_END, 0, now);
+        s->sof_on = 1;
+        s->next_sof = now;
+        say(s, "port resumed");
+        if (s->wake_armed && s->state == S_CONFIGURED)
+            begin(s, E_WAKE_OFF); /* as Linux does after a resume */
+    }
+    if (s->suspended)
+        return; /* nothing on the bus until a resume */
+    /* a suspend asked for: once no request is under way, arm remote
+     * wakeup where the configuration offers it, then stop the frames */
+    if (s->want_suspend && s->phase == P_RUN && !s->ct.on && s->state != S_ERROR) {
+        if (s->allow_wakeup && s->state == S_CONFIGURED && s->cfg_len >= 8 && (s->cfg[7] & 0x20) && !s->wake_armed) {
+            begin(s, E_WAKE_ON);
+        } else {
+            enter_suspend(s);
+            return;
+        }
     }
     /* the frames */
     while (s->sof_on && now >= s->next_sof) {
@@ -671,6 +763,44 @@ static void link_changed(void *ctx, es_time_t at)
     kick(s, at);
 }
 
+/* the device's K on the suspended bus: the host resumes the port within
+ * 1 ms (TURSM) and drives resume itself */
+static void link_wakeup(void *ctx, es_time_t at)
+{
+    uh_state *s = (uh_state *)ctx;
+    (void)at;
+    if (!s->suspended || s->resuming)
+        return;
+    s->wakeups++;
+    s->want_suspend = 0;
+    start_resume(s, s->wake_armed ? "remote wakeup" : "remote wakeup (not enabled by the host)");
+    kick(s, s->resume_end);
+}
+
+/* VBUS at the cable's device end crossed its threshold: plugged in or out */
+static void uh_input(esk_comp *c, esk_pin *pin)
+{
+    uh_state *s = st_of(c);
+    (void)pin;
+    kick(s, esk_comp_now(c));
+}
+
+static es_status uh_set(esk_comp *c, const char *input, const esk_json *value)
+{
+    uh_state *s = st_of(c);
+    if (!strcmp(input, "suspend") && value->type == ESK_JSON_BOOL) {
+        int want = value->u.boolean != 0;
+        if (want == s->want_suspend)
+            return ES_OK;
+        s->want_suspend = want;
+        if (!want && s->suspended)
+            start_resume(s, "resume");
+        kick(s, esk_comp_now(c));
+        return ES_OK;
+    }
+    return ES_EINVAL;
+}
+
 /* ---- the component --------------------------------------------------------- */
 
 static es_status uh_create(esk_comp *c)
@@ -699,6 +829,10 @@ static es_status uh_create(esk_comp *c)
     s->link.comp = c;
     s->link.dp = esk_comp_pin(c, "DP");
     s->link.changed = link_changed;
+    s->link.wakeup = link_wakeup;
+    s->allow_wakeup = 1;
+    esk_comp_param_bool(c, "remote_wakeup", &s->allow_wakeup);
+    s->vbus = esk_comp_pin(c, "VBUS");
     if (esk_usb_attach_host(c->e, &s->link) != ES_OK)
         return ES_ENOMEM;
     s->linked = 1;
@@ -716,7 +850,8 @@ static void uh_reset(esk_comp *c)
 {
     uh_state *s = st_of(c);
     es_time_t deb = s->debounce_ps, rst = s->reset_ps;
-    int a = s->new_addr;
+    int a = s->new_addr, wake = s->allow_wakeup;
+    esk_pin *vbus = s->vbus;
     esk_usb_host link = s->link;
     int linked = s->linked;
     memset(s, 0, sizeof *s);
@@ -726,6 +861,13 @@ static void uh_reset(esk_comp *c)
     s->new_addr = a;
     s->link = link;
     s->linked = linked;
+    s->allow_wakeup = wake;
+    s->vbus = vbus;
+    if (vbus && vbus->net) {
+        /* an analog VBUS net: the comparator's crossings; a digital one: its edges */
+        (void)esk_pin_compare(vbus, VBUS_SENSE_V);
+        esk_pin_watch(vbus, 1);
+    }
     s->frame = 0x7ffu; /* the first SOF is frame 0 */
     s->log[0] = 0;
     kick(s, esk_comp_now(c)); /* a device already pulled up */
@@ -766,8 +908,12 @@ static void uh_observe(esk_comp *c, esk_json *out)
     esk_json_set_integer(a, out, "buttons", s->buttons);
     esk_json_set_integer(a, out, "frames", (int64_t)s->frames);
     esk_json_set_integer(a, out, "resets", s->resets);
+    esk_json_set_bool(a, out, "plugged", plugged(s));
+    esk_json_set_bool(a, out, "suspended", s->suspended && !s->resuming);
+    esk_json_set_integer(a, out, "suspends", (int64_t)s->suspends);
+    esk_json_set_integer(a, out, "wakeups", (int64_t)s->wakeups);
     esk_json_set_string(a, out, "log", s->log);
 }
 
-const esk_model_ops esk_usb_host_ops = { "usb_host", sizeof(uh_state), uh_create, uh_destroy, uh_reset, NULL,
-                                         uh_time, NULL, uh_observe, NULL, 0 };
+const esk_model_ops esk_usb_host_ops = { "usb_host", sizeof(uh_state), uh_create, uh_destroy, uh_reset, uh_input,
+                                         uh_time, uh_set, uh_observe, NULL, 0 };

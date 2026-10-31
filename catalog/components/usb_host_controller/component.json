@@ -40,6 +40,15 @@
         "D+"
       ],
       "doc": "D+: the device whose controller's D+ is on this net is the one on the cable"
+    },
+    {
+      "name": "VBUS",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "required": false,
+      "doc": "VBUS at the device end of the cable: above 4 V the cable is in (unwired: always in)"
     }
   ],
   "params": {
@@ -67,6 +76,11 @@
       "max": 100,
       "doc": "How long a port reset drives SE0 (USB 2.0 7.1.7.5: 50 ms from a root port, at least 10 ms)",
       "advanced": true
+    },
+    "remote_wakeup": {
+      "type": "boolean",
+      "default": true,
+      "doc": "Arm the device's remote wakeup (SET_FEATURE) before suspending it, where its configuration offers it, as Linux does"
     }
   },
   "outputs": [
@@ -159,6 +173,26 @@
       "name": "log",
       "type": "string",
       "doc": "What the host did and saw, a line each with its time"
+    },
+    {
+      "name": "plugged",
+      "type": "boolean",
+      "doc": "The cable is in (VBUS at its device end)"
+    },
+    {
+      "name": "suspended",
+      "type": "boolean",
+      "doc": "The port is suspended"
+    },
+    {
+      "name": "suspends",
+      "type": "integer",
+      "doc": "Suspends of the port"
+    },
+    {
+      "name": "wakeups",
+      "type": "integer",
+      "doc": "Remote wakeups the device signalled"
     }
   ],
   "model": {
@@ -181,19 +215,23 @@
         "x": 60,
         "y": 30,
         "side": "right"
+      },
+      "VBUS": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
       }
     }
   },
   "fidelity": {
     "functional": {
-      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor.",
+      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor. Suspend (the frames stop, SET_FEATURE(DEVICE_REMOTE_WAKEUP) sent first where the configuration offers it) and resume (20 ms of resume signalling, TDRSMDN, then frames and CLEAR_FEATURE); the device's remote wakeup answered by the host's own resume; the cable sensed by VBUS at its device end, a disconnect and a new attach as it is pulled and put back.",
       "omissions": [
         "class drivers beyond HID's polling: a CDC, mass-storage or DFU device is configured, then left idle (no USB/IP bridge to the computer yet, ADR-031)",
         "hubs and more than one device on a cable; low-speed devices",
-        "suspend, resume and remote wakeup",
-        "unplugging the cable during a session (the cable is in from the start)",
         "J, K and SE0 levels on D+ and D- (the pins carry no signal: the cable is found by the net D+ is on)",
-        "reports of HID devices that are not boot mice are kept whole but not decoded"
+        "reports of HID devices that are not boot mice are kept whole but not decoded",
+        "LPM (L1) and selective suspend timers: a suspend happens when the `suspend` input asks"
       ]
     },
     "timed": {
@@ -234,5 +272,13 @@
   },
   "tests": [
     "tests/*.json"
+  ],
+  "inputs": [
+    {
+      "name": "suspend",
+      "type": "boolean",
+      "default": false,
+      "doc": "Suspend the port (its frames stop; the device suspends after 3 ms); false resumes it with 20 ms of resume signalling"
+    }
   ]
 }

@@ -101,6 +101,8 @@ EXAMPLES_ZE = {
     "tim_pwmoutput": ZE + "Examples/TIM/TIM_PWMOutput",
     "uart_printf": ZE + "Examples/UART/UART_Printf",
     "usb_device_hid_standalone": ZE + "Applications/USB_Device/HID_Standalone",
+    # the same image, suspended, woken by B1, unplugged and plugged back
+    "usb_device_hid_suspend": ZE + "Applications/USB_Device/HID_Standalone",
     "wwdg_example": ZE + "Examples/WWDG/WWDG_Example",
 }
 # each board: its examples, their directory here, its project, the linker

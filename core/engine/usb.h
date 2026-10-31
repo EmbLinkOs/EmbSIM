@@ -11,7 +11,8 @@
  *   - the device's pull-up: none (detached), D+'s (full speed) or D-'s
  *     (low speed); the host is told when it changes;
  *   - the bus states the host drives: a reset (SE0) and its end, a start of
- *     frame with its number, resume signalling;
+ *     frame with its number, resume signalling (K) and its end; and the
+ *     device's remote wakeup signalling back;
  *   - the transactions: SETUP with its 8 bytes, OUT with a data packet, IN
  *     with the device's packet; each answered ACK, NAK, STALL, or nothing
  *     (an address or endpoint the device does not answer: the host's
@@ -35,8 +36,10 @@ struct esk_pin;
 
 /* a transaction's answer */
 enum { ESK_USB_NONE = 0, ESK_USB_ACK = 1, ESK_USB_NAK = 2, ESK_USB_STALL = 3 };
-/* the bus states a host drives */
-enum { ESK_USB_RESET = 1, ESK_USB_RESET_END = 2, ESK_USB_SOF = 3, ESK_USB_RESUME = 4 };
+/* the bus states a host drives: a reset's SE0 from RESET to RESET_END, a
+ * frame's start, resume signalling (K) from RESUME to RESUME_END; no SOF
+ * for 3 ms is the suspend the device sees */
+enum { ESK_USB_RESET = 1, ESK_USB_RESET_END = 2, ESK_USB_SOF = 3, ESK_USB_RESUME = 4, ESK_USB_RESUME_END = 5 };
 /* the device's pull-up */
 enum { ESK_USB_DETACHED = 0, ESK_USB_FULL_SPEED = 1, ESK_USB_LOW_SPEED = 2 };
 
@@ -60,6 +63,8 @@ typedef struct esk_usb_host {
     struct esk_pin *dp;
     /* the pull-up of the device on its cable changed */
     void (*changed)(void *ctx, es_time_t at);
+    /* the device on its suspended cable signals remote wakeup (K) */
+    void (*wakeup)(void *ctx, es_time_t at);
 } esk_usb_host;
 
 typedef struct esk_usb {
@@ -77,6 +82,8 @@ void esk_usb_detach_host(struct esk_engine *e, esk_usb_host *h);
 esk_usb_dev *esk_usb_device_of(struct esk_engine *e, const esk_usb_host *h);
 /* a device's pull-up changed: the host on its cable hears it */
 void esk_usb_changed(struct esk_engine *e, const esk_usb_dev *d, es_time_t at);
+/* a device signals remote wakeup: the host on its cable hears it */
+void esk_usb_remote_wakeup(struct esk_engine *e, const esk_usb_dev *d, es_time_t at);
 /* a full-speed transaction's time on the bus: its token, its data packet
  * of `len` bytes (none for -1) and the handshake (when `handshake`), each
  * with its SYNC, PID, CRC and EOP, and the inter-packet gaps */

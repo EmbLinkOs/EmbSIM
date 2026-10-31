@@ -79,6 +79,18 @@ void esk_usb_changed(esk_engine *e, const esk_usb_dev *d, es_time_t at)
     }
 }
 
+void esk_usb_remote_wakeup(esk_engine *e, const esk_usb_dev *d, es_time_t at)
+{
+    size_t i;
+    if (!d->dp || !d->dp->net)
+        return;
+    for (i = 0; i < e->usb.hosts.len; i++) {
+        esk_usb_host *h = e->usb.hosts.data[i];
+        if (h->dp && h->dp->net == d->dp->net && h->wakeup)
+            h->wakeup(h->ctx, at);
+    }
+}
+
 /* SYNC (8 bits), PID (8), EOP (3 bits' time); a token's 11 bits of address
  * and endpoint and its CRC5; a data packet's bytes and CRC16; the gap
  * between packets, which USB 2.0 7.1.18 bounds at 2 to 7.5 bit times for

@@ -1400,6 +1400,13 @@ static void h_usb_changed(void *ctx)
         esk_usb_changed(st->c->e, &st->usb, local_now(st));
 }
 
+static void h_usb_remote_wakeup(void *ctx)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (st->on_usb)
+        esk_usb_remote_wakeup(st->c->e, &st->usb, local_now(st));
+}
+
 /* ---- the component ------------------------------------------------------------- */
 
 static es_status mcu_create(esk_comp *c)
@@ -1825,6 +1832,7 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.pin_watch = h_pin_watch;
     st->m.host.radio_tx = h_radio_tx;
     st->m.host.usb_changed = h_usb_changed;
+    st->m.host.usb_remote_wakeup = h_usb_remote_wakeup;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     supply_setup(st, su->mcu);
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);

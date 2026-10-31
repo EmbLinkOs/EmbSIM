@@ -182,6 +182,26 @@
    "id": "ld8",
    "target": "net:B1.USB_VBUS",
    "kind": "analog"
+  },
+  {
+   "id": "usb_plugged",
+   "target": "output:PC.HOST.plugged",
+   "kind": "value"
+  },
+  {
+   "id": "usb_suspended",
+   "target": "output:PC.HOST.suspended",
+   "kind": "value"
+  },
+  {
+   "id": "usb_suspends",
+   "target": "output:PC.HOST.suspends",
+   "kind": "value"
+  },
+  {
+   "id": "usb_wakeups",
+   "target": "output:PC.HOST.wakeups",
+   "kind": "value"
   }
  ]
 }

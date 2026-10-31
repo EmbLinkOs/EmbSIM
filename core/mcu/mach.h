@@ -316,6 +316,8 @@ typedef struct esk_mach_host {
                     int kind, u32 token);
     /* the USB device controller's pull-up changed (esk_usb_port.pullup) */
     void (*usb_changed)(void *ctx);
+    /* it signals remote wakeup (K on the suspended bus) */
+    void (*usb_remote_wakeup)(void *ctx);
 } esk_mach_host;
 
 enum { ESK_RADIO_WIFI = 1, ESK_RADIO_BLE = 2 };

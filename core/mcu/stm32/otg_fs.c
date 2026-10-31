@@ -40,8 +40,10 @@
  *   - a bus reset sets USBRST (and WKUINT when suspended) and its end
  *     ENUMDNE at full speed (DSTS's ENUMSPD 3); each SOF sets SOF and
  *     DSTS's frame number; 3 ms without bus activity while attached sets
- *     ESUSP, USBSUSP and SUSPSTS, the next activity WKUINT; VBUS dropping
- *     while VBDEN is on sets GOTGINT's SEDET;
+ *     ESUSP, USBSUSP and SUSPSTS, the next activity (the host's resume
+ *     signalling or reset) WKUINT; DCTL's RWUSIG set while suspended is
+ *     remote wakeup, which the host hears and answers with its resume;
+ *     VBUS dropping while VBDEN is on sets GOTGINT's SEDET;
  *   - the core's soft reset (GRSTCTL's CSRST) needs the 48 MHz clock: it
  *     stays set while RCC gives none (the HAL's USB_CoreReset times out),
  *     and clears the core's state but SDIS, DSPD and PCGCCTL's gating;
@@ -54,8 +56,8 @@
  * them (engine/usb.h); the device's turnaround is not seen. Not yet: host
  * mode (the host channel registers are storage), the ID pin and OTG's SRP
  * and HNP, isochronous endpoints' frame parity and incomplete-transfer
- * interrupts, LPM, the battery-charging detection of GCCFG, remote wakeup
- * signalling to the host (RWUSIG), the OTG_FS_WKUP interrupt through
+ * interrupts, LPM, the battery-charging detection of GCCFG, the
+ * OTG_FS_WKUP interrupt through
  * EXTI line 18, the SOF pulse on PA8, DMA (the F446's OTG_FS has none). */
 #include <string.h>
 
@@ -185,6 +187,7 @@ struct otg {
     int addr_pending;   /* DAD changed: the old one until the status stage */
     int pulled;         /* the pull-up as the host was last told */
     int suspended, reset_on, enumerated;
+    int resume_on;      /* the host drives resume (K): not an idle bus */
     int session;        /* B-session valid, as last seen */
     u32 frame;
     int running;
@@ -690,6 +693,11 @@ static void otg_write(void *ctx, u32 off, int n, u32 v)
         if (v & CGONAK)
             c &= ~GONSTS;
         rset(o, DCTL, c & ~(SGINAK | CGINAK | SGONAK | CGONAK));
+        /* RWUSIG on a suspended bus: remote wakeup (K), which the host
+         * hears and takes over with its own resume signalling (USB 2.0
+         * 7.1.7.7) */
+        if ((c & 1u) && !(old & 1u) && o->suspended && o->pulled && o->s->host.usb_remote_wakeup)
+            o->s->host.usb_remote_wakeup(o->s->host.ctx);
         break;
     }
     case DCFG:
@@ -745,7 +753,13 @@ static void usb_bus(void *ctx, int ev, u32 frame)
         o->frame = frame & 0x7ffu;
         rbits(o, GINTSTS, I_SOF, 0);
         break;
-    default: /* resume */
+    case ESK_USB_RESUME:
+        o->resume_on = 1;
+        break;
+    case ESK_USB_RESUME_END:
+        o->resume_on = 0;
+        break;
+    default:
         break;
     }
     after(o);
@@ -937,7 +951,7 @@ static void otg_tick(void *ctx, u32 cycles)
             changed = 1;
         }
     }
-    if (o->pulled && !o->suspended && !o->reset_on) {
+    if (o->pulled && !o->suspended && !o->reset_on && !o->resume_on) {
         o->idle_ps += ps;
         if (o->idle_ps >= SUSPEND_PS) {
             /* 3 ms of an idle bus: suspend (USB 2.0 7.1.7.6) */
@@ -960,7 +974,7 @@ static int otg_next(void *ctx, u32 *cycles)
         return 0;
     if (o->mode_wait)
         left = MODE_PS - o->mode_ps;
-    if (o->pulled && !o->suspended && !o->reset_on && SUSPEND_PS - o->idle_ps < left)
+    if (o->pulled && !o->suspended && !o->reset_on && !o->resume_on && SUSPEND_PS - o->idle_ps < left)
         left = SUSPEND_PS - o->idle_ps;
     if (left == ~0ull)
         return 0;
@@ -981,7 +995,7 @@ static void otg_reset(void *ctx)
     }
     o->setup_done = o->addr_pending = 0;
     o->addr = 0;
-    o->suspended = o->reset_on = o->enumerated = 0;
+    o->suspended = o->reset_on = o->enumerated = o->resume_on = 0;
     o->frame = 0;
     o->running = 0;
     o->idle_ps = o->mode_ps = 0;
