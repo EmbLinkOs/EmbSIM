@@ -10,7 +10,8 @@
 // running circuit; what scenarios have changed since shows as "now".
 
 import { Button, EmptyState, IconButton, useToast } from '@embsim/design';
-import { WORLD_FIELDS, type Project, type WorldBody, type WorldField, type WorldState } from '@embsim/protocol';
+import { WORLD_FIELDS, type Project, type WorldBody, type WorldField, type WorldRoom, type WorldState, type WorldSun } from '@embsim/protocol';
+import { dayOfYear, ROOM, solarPosition, sunDirection, sunlit, windowOpening } from '@embsim/bench/model';
 import { Globe2, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getClient } from '../connection';
@@ -28,6 +29,21 @@ const FORMAT: Record<WorldField, (v: number) => string> = {
 };
 
 /** the room's light on a logarithmic slider: 0.1 lx (night) to 100 000 lx (sun) */
+/** the eight ways a window can look */
+const FACINGS: [number, string][] = [[0, 'north'], [45, 'north-east'], [90, 'east'], [135, 'south-east'], [180, 'south'], [225, 'south-west'], [270, 'west'], [315, 'north-west']];
+const compass = (az: number) => FACINGS[Math.round(((az % 360) + 360) % 360 / 45) % 8]![1];
+const clock = (h: number) => `${String(Math.floor(h) % 24).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
+const DEFAULT_SUN: WorldSun = { latitude_deg: 45, date: '06-21', solar_time_h: 10 };
+
+/** what the bench sees of the sun: its place in the sky, and whether it shines on the table */
+export function describeSun(sun: WorldSun, room: WorldRoom | undefined): string {
+  const pos = solarPosition(sun.latitude_deg ?? 45, dayOfYear(sun.date), sun.solar_time_h ?? 12);
+  if (pos.elevation <= 0) return 'Night: the ceiling lamp lights the bench';
+  const size = room?.size_mm ? { width: room.size_mm[0], depth: room.size_mm[1], height: room.size_mm[2] } : ROOM;
+  const onBench = sunlit(sunDirection(pos, room?.window_azimuth_deg ?? 180), [0, 0, 0], windowOpening(size));
+  return `Sun ${pos.elevation.toFixed(0)}° up in the ${compass(pos.azimuth)}: ${onBench ? 'shining on the bench through the window' : 'daylight from the window, no direct sun on the bench'}`;
+}
+
 const logLux = { to: (lx: number) => Math.log10(Math.max(0.1, lx)), from: (s: number) => Math.round(10 ** s * 10) / 10 };
 
 export function WorldPanel() {
@@ -39,6 +55,7 @@ export function WorldPanel() {
   const { toast } = useToast();
   const [live, setLive] = useState<WorldState | null>(null);
   const [draft, setDraft] = useState<Partial<Record<WorldField, number>>>({});
+  const [hourDraft, setHourDraft] = useState<number | null>(null);
 
   // what the room is now, after the scenario's and the user's inputs
   useEffect(() => {
@@ -86,6 +103,24 @@ export function WorldPanel() {
       p.world = { ...(p.world ?? {}), fields: f };
       return p;
     });
+
+  const room = project.world?.room;
+  const sun = project.world?.sun;
+  const setRoom = (label: string, r: WorldRoom) =>
+    mutate(label, (p) => {
+      p.world = { ...(p.world ?? {}), room: r };
+      return p;
+    });
+  const setSun = (label: string, v: WorldSun | undefined) =>
+    mutate(label, (p) => {
+      const w = { ...(p.world ?? {}) };
+      if (v) w.sun = v;
+      else delete w.sun;
+      p.world = w;
+      return p;
+    });
+  const size = room?.size_mm ?? [ROOM.width, ROOM.depth, ROOM.height];
+  const sunNow = { ...DEFAULT_SUN, ...sun };
 
   const setBodies = (label: string, fn: (b: WorldBody[]) => WorldBody[]) =>
     mutate(label, (p) => {
@@ -146,6 +181,73 @@ export function WorldPanel() {
             </div>
           );
         })}
+      </section>
+      <section aria-label="Room and daylight">
+        <h3>Room and daylight</h3>
+        <p className="wb-world__hint">How the 3D bench draws the room and lights it. The light sensors read the Light field above, not the sun.</p>
+        <div className="wb-world__body">
+          <span className="wb-world__id">Size</span>
+          {(['width', 'depth', 'height'] as const).map((axis, k) => (
+            <label key={axis} className="wb-world__coord">
+              {axis[0]}
+              <input
+                type="number"
+                aria-label={`Room ${axis}, m`}
+                step={0.1}
+                min={k === 2 ? 2.2 : 2.5}
+                max={k === 2 ? 10 : 30}
+                value={size[k]! / 1000}
+                disabled={!editable}
+                onChange={(e) => {
+                  const v = Math.round(Number(e.target.value) * 1000);
+                  if (!Number.isFinite(v) || v < (k === 2 ? 2200 : 2500) || v > (k === 2 ? 10000 : 30000)) return;
+                  const next = [...size] as [number, number, number];
+                  next[k] = v;
+                  setRoom(`Room ${axis}`, { ...room, size_mm: next });
+                }}
+              />
+            </label>
+          ))}
+          <span className="wb-world__value">m</span>
+        </div>
+        <div className="wb-world__field">
+          <span>Window looks</span>
+          <select aria-label="The window looks" value={Math.round((room?.window_azimuth_deg ?? 180) / 45) * 45 % 360} disabled={!editable} onChange={(e) => setRoom('Window direction', { ...room, window_azimuth_deg: Number(e.target.value) })}>
+            {FACINGS.map(([az, name]) => <option key={az} value={az}>{name}</option>)}
+          </select>
+        </div>
+        <div className="wb-world__field">
+          <label className="wb-world__set">
+            <input type="checkbox" checked={Boolean(sun)} disabled={!editable} onChange={(e) => setSun(e.target.checked ? 'Sun by the time of day' : 'Lamp light', e.target.checked ? sunNow : undefined)} />
+            <span>Sun</span>
+          </label>
+          <input
+            type="range"
+            aria-label="Time of day, local solar time"
+            min={0}
+            max={24}
+            step={0.25}
+            value={hourDraft ?? sunNow.solar_time_h}
+            disabled={!editable || !sun}
+            onChange={(e) => setHourDraft(Number(e.target.value))}
+            onPointerUp={() => { if (hourDraft !== null) { setSun('Time of day', { ...sunNow, solar_time_h: hourDraft }); setHourDraft(null); } }}
+            onKeyUp={() => { if (hourDraft !== null) { setSun('Time of day', { ...sunNow, solar_time_h: hourDraft }); setHourDraft(null); } }}
+          />
+          <span className="wb-world__value">{sun ? clock(hourDraft ?? sunNow.solar_time_h ?? 12) : 'lamp'}</span>
+        </div>
+        {sun && (
+          <div className="wb-world__body">
+            <label className="wb-world__coord">
+              lat
+              <input type="number" aria-label="Latitude, degrees" step={0.5} min={-90} max={90} value={sunNow.latitude_deg} disabled={!editable} onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v) && Math.abs(v) <= 90) setSun('Latitude', { ...sunNow, latitude_deg: v }); }} />
+            </label>
+            <label className="wb-world__coord">
+              date
+              <input type="text" aria-label="Date, MM-DD" pattern="(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])" size={5} defaultValue={sunNow.date} key={sunNow.date} disabled={!editable} onBlur={(e) => { if (/^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/.test(e.target.value)) setSun('Date', { ...sunNow, date: e.target.value }); }} />
+            </label>
+          </div>
+        )}
+        {sun && <p className="wb-world__hint" data-testid="sun-report">{describeSun(sunNow, room)}</p>}
       </section>
       <section>
         <h3>On the bench</h3>

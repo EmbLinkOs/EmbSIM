@@ -21,6 +21,17 @@ in a dark lab:
 
 ![The bench in a dark room, the LED glowing](bench-3d-room/3-dark-room.png)
 
+The sun by the time of day: the world says where and when the room is
+(latitude, date, solar time) and which way its window looks. At 48° N at
+noon on 21 December the sun is 18.6° up in the south; through a
+south-facing window it falls on the table and the supply's shadow runs
+away from the window. At night the window is dark and the ceiling lamp
+lights the bench:
+
+| Winter noon: daylight in the window | The low sun's long shadows | Night |
+|---|---|---|
+| ![Daylight in the window](bench-3d-room/4-winter-noon-window.png) | ![Long shadows away from the window](bench-3d-room/5-winter-noon-shadows.png) | ![The window dark at night](bench-3d-room/6-night-window.png) |
+
 ## Gull-wing leads, SO breakouts, the NUCLEO's 45° MCUs (2026-10-31)
 
 QFP and SO leads are bent as they are made: out of the body's side, down,

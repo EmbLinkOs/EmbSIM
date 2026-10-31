@@ -101,11 +101,25 @@ def main():
             client.call("project.save", {"path": str(saved)})
             assert json.loads(saved.read_text(encoding="utf-8"))["world"]["fields"] == {"temperature": 30, "humidity": 40}
 
+            # the room and the sun (the 3D bench's presentation) are kept with the project, nothing restarts
+            result = edit(client, [{"set_world": {"room": {"size_mm": [6000, 5000, 3000], "window_azimuth_deg": 180}, "sun": {"latitude_deg": 48.1, "date": "06-21", "solar_time_h": 9.5}}}])
+            assert result["applied"] and not result["restarted"], result
+            world_spec = client.call("project.get")["project"]["world"]
+            assert world_spec["room"] == {"size_mm": [6000, 5000, 3000], "window_azimuth_deg": 180}, world_spec
+            assert world_spec["sun"]["solar_time_h"] == 9.5 and world_spec["fields"]["temperature"] == 30
+            edit(client, [{"set_world": {"sun": {}}}])
+            assert "sun" not in client.call("project.get")["project"]["world"]
+            try:
+                edit(client, [{"set_world": {"room": [6000, 5000, 3000]}}])
+                raise AssertionError("set_world took a room that is not an object")
+            except EmbsimError as e:
+                assert "room is an object" in str(e), e
+
             # a reset starts the room again as the project declares it
             client.call("input.set", {"target": "world", "input": "temperature", "value": -10})
             client.call("control.reset")
             assert client.call("world.get")["fields"]["temperature"]["value"] == 30
-        print("PASS: the world drives an LDR, a part's own value overrides it, set_world applies live, reset restores the project's room")
+        print("PASS: the world drives an LDR, a part's own value overrides it, set_world applies live (room and sun kept), reset restores the project's room")
 
 
 if __name__ == "__main__":

@@ -20,6 +20,25 @@ export const ROOM = { width: 5200, depth: 4400, height: 2700 };
 /** the window in the left wall: its centre along the wall (z), its sill above the floor, its size */
 export const WINDOW = { z: 300, sill: 900, width: 1600, height: 1300 };
 
+export interface RoomSize {
+  width: number;
+  depth: number;
+  height: number;
+}
+
+/** the window of a room this size: as WINDOW, narrowed and lowered to fit a small room's wall */
+export function windowOf(room: RoomSize): typeof WINDOW {
+  const width = Math.min(WINDOW.width, room.depth - 1000);
+  const height = Math.min(WINDOW.height, room.height - WINDOW.sill - 400);
+  return { z: Math.max(-room.depth / 2 + 500 + width / 2, Math.min(room.depth / 2 - 500 - width / 2, WINDOW.z)), sill: WINDOW.sill, width, height };
+}
+
+/** the window as the sun sees it: the wall's x, and the opening relative to the bench's surface */
+export function windowOpening(room: RoomSize): { wallX: number; z: number; width: number; bottom: number; top: number } {
+  const w = windowOf(room);
+  return { wallX: -room.width / 2, z: w.z, width: w.width, bottom: w.sill - TABLE.height, top: w.sill + w.height - TABLE.height };
+}
+
 /** the office lighting the bench was tuned for (EN 12464-1's 300 to 500 lx for desk work) */
 export const REFERENCE_LUX = 300;
 
@@ -48,7 +67,9 @@ export interface Room {
   dispose(): void;
 }
 
-export function buildRoom(): Room {
+export function buildRoom(size: RoomSize = ROOM): Room {
+  const ROOM = size;
+  const WINDOW = windowOf(size);
   const g = new THREE.Group();
   g.name = 'room';
   const floorY = -TABLE.height;

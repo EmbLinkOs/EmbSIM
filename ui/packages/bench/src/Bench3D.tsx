@@ -12,7 +12,7 @@
 // luminance. Frames are drawn on demand (a change, a camera move), never
 // in a loop while nothing moves.
 
-import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue, WorldBody } from '@embsim/protocol';
+import type { ArtworkState, BenchNote, BenchPlace, Hotspot, OutputValue, WorldBody, WorldRoom, WorldSun } from '@embsim/protocol';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 
 import * as THREE from 'three';
@@ -31,7 +31,8 @@ import { ALL_LAYERS, aboveHeight, describeMeasurement, layerOf, measure, section
 import { OutlineRenderer, QualityRenderer, type RenderQuality } from './render';
 import type { Model3d } from './models3d';
 import { recordFrame } from './frames';
-import { buildRoom, lightLevel, type Room } from './room';
+import { buildRoom, lightLevel, ROOM, windowOpening, type Room, type RoomSize } from './room';
+import { dayOfYear, solarPosition, sunColor, sunDirection, sunlit } from './sun';
 
 
 
@@ -127,6 +128,9 @@ export interface Bench3DProps {
   surface?: 'mat' | 'paper' | 'graphite';
   /** the world's illuminance, lx (ADR-026): how lit the room is */
   illuminance?: number;
+  /** the room's size and window, and where and when it is (the sun's position) */
+  room?: WorldRoom;
+  sun?: WorldSun;
   labels?: 'adaptive' | 'all' | 'selected';
   showNotes?: boolean;
   insertionPreview?: InsertionPreview;
@@ -368,6 +372,7 @@ export function Bench3D(props: Bench3DProps) {
     renderer: THREE.WebGLRenderer;
     desk: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
     room: Room;
+    roomSize: RoomSize;
     sky: THREE.HemisphereLight;
     sun: THREE.DirectionalLight;
     labels: CSS2DRenderer;
@@ -462,7 +467,8 @@ export function Bench3D(props: Bench3DProps) {
     s.controls.maxPolarAngle = mode === 'bottom' ? Math.PI : Math.PI * 0.48;
     for (const cam of [s.perspective, s.orthographic]) {
       cam.near = Math.max(0.5, pose.distance / 500);
-      cam.far = pose.distance * 20;
+      // far enough for the room's farthest corner from the farthest orbit (the window's pane included)
+      cam.far = Math.max(pose.distance * 20, Math.hypot(s.roomSize.width, s.roomSize.depth, s.roomSize.height) + s.controls.maxDistance);
     }
     s.orthographic.zoom = 1;
     setOrthoFrustum(s.orthographic, pose.halfHeight, s.perspective.aspect);
@@ -613,7 +619,7 @@ export function Bench3D(props: Bench3DProps) {
     const inspect = new THREE.Group();
     scene.add(jumpers, links, notes, world, hints, preview, inspect);
     state.current = {
-      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, room, sky, sun, parts: new Map(), jumpers, links, notes, world, hints, preview,
+      renderer, labels, scene, camera, perspective: camera, orthographic, controls, desk, room, roomSize: ROOM, sky, sun, parts: new Map(), jumpers, links, notes, world, hints, preview,
       inspect, quality: null, outline: null, hover: null, measureFrom: null, raf: 0, framed: false,
     };
 
@@ -650,7 +656,7 @@ export function Bench3D(props: Bench3DProps) {
       desk.material.map?.dispose();
       desk.material.dispose();
       desk.geometry.dispose();
-      room.dispose();
+      state.current?.room.dispose();
       renderer.dispose();
       pmrem.dispose();
       renderer.domElement.remove();
@@ -671,18 +677,67 @@ export function Bench3D(props: Bench3DProps) {
     invalidate();
   }, [props.surface, props.showNotes, invalidate]);
 
-  // the room is as lit as the world says, the value the light sensors read
+  // the room's size, from the world (or the default room)
+  const roomW = props.room?.size_mm?.[0] ?? ROOM.width;
+  const roomD = props.room?.size_mm?.[1] ?? ROOM.depth;
+  const roomH = props.room?.size_mm?.[2] ?? ROOM.height;
+  useEffect(() => {
+    const s = state.current;
+    if (!s) return;
+    if (s.roomSize.width === roomW && s.roomSize.depth === roomD && s.roomSize.height === roomH) return;
+    s.scene.remove(s.room.group);
+    s.room.dispose();
+    s.roomSize = { width: roomW, depth: roomD, height: roomH };
+    s.room = buildRoom(s.roomSize);
+    s.scene.add(s.room.group);
+    invalidate();
+  }, [roomW, roomD, roomH, invalidate]);
+
+  // the room is as lit as the world says (the value the light sensors read), its key light the sun
+  // through the window when the sun shines on the table, daylight from the window when it does not,
+  // the ceiling lamp at night
+  const sunSpec = props.sun;
+  const windowAz = props.room?.window_azimuth_deg ?? 180;
   useEffect(() => {
     const s = state.current;
     if (!s) return;
     const k = lightLevel(props.illuminance);
     s.sky.intensity = 0.65 * k;
-    s.sun.intensity = 2.1 * k;
     s.scene.environmentIntensity = 0.55 * k;
-    // the window shows the daylight: dim at night, white in sunshine
-    s.room.pane.color.setRGB(0.87, 0.92, 0.96).multiplyScalar(Math.min(1.2, Math.max(0.04, k * 0.9)));
+    const pane = s.room.pane.color;
+    let key: { dir: [number, number, number]; color: [number, number, number]; intensity: number };
+    let lighting: string;
+    if (!sunSpec) {
+      key = { dir: [-160, 420, 260], color: [1, 0.957, 0.898], intensity: 2.1 };
+      pane.setRGB(0.87, 0.92, 0.96).multiplyScalar(Math.min(1.2, Math.max(0.04, k * 0.9)));
+      lighting = 'lamp';
+    } else {
+      const pos = solarPosition(sunSpec.latitude_deg ?? 45, dayOfYear(sunSpec.date), sunSpec.solar_time_h ?? 12);
+      const dir = sunDirection(pos, windowAz);
+      if (sunlit(dir, [0, 0, 0], windowOpening(s.roomSize))) {
+        key = { dir, color: sunColor(pos.elevation), intensity: 2.6 };
+        lighting = 'sun';
+      } else if (pos.elevation > 0) {
+        // the sky seen through the window: soft, from the window's side, a little cool
+        const w = windowOpening(s.roomSize);
+        key = { dir: [-s.roomSize.width / 2, (w.bottom + w.top) / 2 + 600, w.z], color: [0.92, 0.96, 1], intensity: 1.5 };
+        lighting = 'daylight';
+      } else {
+        key = { dir: [120, 1000, 180], color: [1, 0.94, 0.86], intensity: 2.1 };
+        lighting = 'night';
+      }
+      // the window: the sky's brightness by the sun's height, a dark blue at night
+      const day = Math.max(0, Math.min(1, (pos.elevation + 4) / 20));
+      pane.setRGB(0.04 + 0.83 * day, 0.06 + 0.86 * day, 0.12 + 0.84 * day);
+    }
+    const v = new THREE.Vector3(...key.dir).normalize().multiplyScalar(520);
+    s.sun.position.copy(v);
+    s.sun.target.position.set(0, 0, 0);
+    s.sun.color.setRGB(...key.color);
+    s.sun.intensity = key.intensity * k;
+    s.renderer.domElement.dataset.lighting = lighting;
     invalidate();
-  }, [props.illuminance, invalidate]);
+  }, [props.illuminance, sunSpec, windowAz, invalidate, roomW, roomD, roomH]);
 
   // the parts: built when new or changed, moved when they move
   useEffect(() => {

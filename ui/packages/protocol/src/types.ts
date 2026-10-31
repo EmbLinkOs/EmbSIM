@@ -137,9 +137,28 @@ export interface WorldBody {
   color?: string;
 }
 
+/** the room around the bench, as the 3D bench draws it (presentation only) */
+export interface WorldRoom {
+  /** inside width, depth, height, mm */
+  size_mm?: [number, number, number];
+  /** the way the window looks out, degrees clockwise from north */
+  window_azimuth_deg?: number;
+}
+
+/** where and when the room is, for the sun's position (presentation only) */
+export interface WorldSun {
+  latitude_deg?: number;
+  /** MM-DD */
+  date?: string;
+  /** local solar time, hours */
+  solar_time_h?: number;
+}
+
 export interface WorldSpec {
   fields?: Partial<Record<WorldField, number>>;
   bodies?: WorldBody[];
+  room?: WorldRoom;
+  sun?: WorldSun;
 }
 
 /** world.get: the room as it is now */

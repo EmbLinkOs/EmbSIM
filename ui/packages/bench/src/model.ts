@@ -33,4 +33,6 @@ export {
 export { benchContext, elevationOf, jumperViews, linkViews, netColor, snapPart, terminalNear, terminalPoint, terminalTargets, WIRE_COLORS, type BenchCatalogEntry } from './view';
 export type { Bench3DHandle, Bench3DProps, BenchPartView, BenchTool, JumperView, LinkView, Point3, SnapResult, TerminalHit } from './Bench3D';
 export type { Model3d } from './models3d';
+export { dayOfYear, solarPosition, sunDirection, sunlit } from './sun';
+export { ROOM, windowOpening } from './room';
 export { beams, rayDistance, type Beam } from './world';

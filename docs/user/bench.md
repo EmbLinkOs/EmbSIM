@@ -67,6 +67,13 @@ is always in view. The room is as lit as the world's **Light** field
 dark room, or to daylight values for a bright one. Only the picture
 changes; the light sensors read the same field.
 
+In the World panel, **Room and daylight** sets the room's size and which
+way its window looks. Tick **Sun** to light the bench by the time of day:
+set the latitude, the date (MM-DD) and the time (local solar time, so
+12:00 is when the sun is highest). The panel says where the sun is and
+whether it shines on the bench through the window; when it does not, the
+window's daylight lights the bench, and at night the ceiling lamp does.
+
 ### Parts drawn from 3D models
 
 Some parts are drawn from a 3D model file instead of the bench's own body:

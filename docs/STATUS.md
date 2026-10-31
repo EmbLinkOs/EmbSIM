@@ -5,6 +5,21 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The sun by the time of day (2026-10-31)
+
+The world may declare the room's size and its window's direction
+(`world.room`) and where and when it is (`world.sun`); both are presentation
+and kept with the project (`set_world` takes them; an empty one is removed).
+The bench's key light follows the sun when its beam reaches the table
+through the window, soft window daylight when it does not, the ceiling lamp
+at night. Evidence: `sun.test.ts` (noon elevations at 40° N in June and
+December, sunrise and sunset azimuths at an equinox, the beam through the
+window or the wall), `world-sun.test.ts`, the world spec in
+`e2e/world.spec.ts`, `tests/protocol/test_world.py`, and the gallery. Not yet:
+the sun's patch on the table (the whole bench is lit, walls do not cast
+shadows), the illuminance following the sun (it stays the declared field,
+which the light sensors read), physics.
+
 ## The room around the bench, and frame times (2026-10-31)
 
 Stage 6 of [the 3D plan](engineering/bench-3d.md) has begun: the bench's
@@ -12,8 +27,8 @@ surface is the top of a 750 mm lab table in a room (walls, floor, ceiling,
 a window on the left), lit by the world's illuminance. Evidence:
 `room.test.ts` (the table's top at the bench's surface, the window a hole
 through the wall, the light level by illuminance) and the gallery. Not yet:
-the room's size from the project (it is a fixed 5.2 x 4.4 x 2.7 m), a sun
-by the time of day, shadows on the floor, and physics.
+shadows on the floor, and physics (the room's size and the sun followed the
+same day, below).
 
 Stage 7's harness: each frame's render is a User Timing measure, and
 `e2e/frame-budget.spec.ts` reports the percentiles while orbiting the demo

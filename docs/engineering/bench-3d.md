@@ -186,9 +186,12 @@ Done (first step):
 Done (first step, 2026-10-31): the bench's surface is the top of a 750 mm
 lab table with a 1400 x 700 mm mat, in a 5.2 x 4.4 x 2.7 m room with a
 window on the left; walls face inwards so none hides the bench; the light
-follows the world's illuminance (`room.ts`, `room.test.ts`). Still to do:
-the room's size and the time of day from the project, the sun through the
-window, floor shadows, physics.
+follows the world's illuminance (`room.ts`, `room.test.ts`). Then the room's
+size and window direction (`world.room`) and the sun by latitude, date and
+solar time (`world.sun`, `sun.ts`): the key light is the sun when its beam
+reaches the table through the window, window daylight when not, the lamp at
+night. Still to do: the sun's patch on the table and walls casting shadows,
+floor shadows, physics.
 
 ### Stage 7: performance and qualification
 

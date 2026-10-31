@@ -5,6 +5,21 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The sun by the time of day, the room from the project
+
+- The world may say the room's size and which way its window looks
+  (`world.room`), and where and when the room is (`world.sun`: latitude,
+  date, local solar time). The World panel edits them (Room and daylight)
+  and says where the sun is and whether it shines on the bench.
+- The 3D bench's key light is the sun when its beam reaches the table
+  through the window (its direction, and a warmer colour when low), soft
+  daylight from the window when it does not, and the ceiling lamp at
+  night; the window shows the sky's brightness. The sun's position is
+  solar geometry (declination and hour angle), within about a degree.
+- Fixed: the camera's far plane stopped at twenty times the framing
+  distance, which cut off the room's far wall and the window's pane when
+  zoomed out.
+
 ### The room around the bench, and its frame times
 
 - The 3D bench's surface is the top of a 750 mm lab table, with a
