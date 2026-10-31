@@ -78,6 +78,11 @@ A body in the World panel may move: **v** is its speed towards you in mm/s
 the circuit's time runs (paused, it stays), and the distance sensors measure
 it where it is.
 
+**round** sends a body (a person, say) walking round the table at 1.2 m/s,
+a person's pace, half a metre clear of its edges; in a project, a body's
+`path_mm` lists any waypoints, `speed_mm_s` its speed along them and `loop`
+whether it goes round again or back the way it came.
+
 In the World panel, **Room and daylight** sets the room's size and which
 way its window looks. Tick **Sun** to light the bench by the time of day:
 set the latitude, the date (MM-DD) and the time (local solar time, so

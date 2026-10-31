@@ -93,6 +93,14 @@
       "min": 0.5,
       "max": 7,
       "doc": "How far a warm body is seen (the sensitivity trimmer, about 3 to 7 m)"
+    },
+    "zone": {
+      "type": "number",
+      "unit": "deg",
+      "default": 7.5,
+      "min": 0,
+      "max": 60,
+      "doc": "The width of the Fresnel lens's view cones, across and up: the element sees a warm body change cones (walking across is seen sooner than walking straight at it); 0 for no lens. The HC-SR501's lens pitch is not published: 7.5 deg is an assumption"
     }
   },
   "inputs": [
@@ -116,9 +124,9 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Warm-up, hold time Tx, H (retrigger) and L (single) modes, the ~2.5 s block after OUT falls; motion from the world as warm bodies moving within the field of view and range, looked at every 100 ms. The world's motion is checked end to end by tests/protocol/test_pir.py.",
+      "claims": "Warm-up, hold time Tx, H (retrigger) and L (single) modes, the ~2.5 s block after OUT falls; motion from the world as a warm body whose image crosses from one of the Fresnel lens's view cones to the next (or into or out of view) within the field of view and range, looked at every 100 ms, so walking across is seen sooner than walking straight at it. The world's motion is checked end to end by tests/protocol/test_pir.py.",
       "omissions": [
-        "the lens's zones and the pyroelectric element's response to speed and direction (a warm body moving anywhere in the cone counts)",
+        "the lens's real pattern (its cones are a regular grid zone_deg wide, the HC-SR501's pitch being unpublished), the element's response to a body's speed and size (any cone crossed counts, however fast or slow)",
         "the temperature difference needed (a body is warm or not)",
         "output glitches during warm-up (0 to 3 toggles on the module)"
       ],
@@ -129,7 +137,7 @@
     "timed": {
       "claims": "As functional; delays as stated.",
       "omissions": [
-        "the lens's zones and the pyroelectric element's response to speed and direction (a warm body moving anywhere in the cone counts)",
+        "the lens's real pattern (its cones are a regular grid zone_deg wide, the HC-SR501's pitch being unpublished), the element's response to a body's speed and size (any cone crossed counts, however fast or slow)",
         "the temperature difference needed (a body is warm or not)",
         "output glitches during warm-up (0 to 3 toggles on the module)"
       ]
@@ -137,7 +145,7 @@
     "electrical": {
       "claims": "Pins bridge to analog nets with the family's pin-model defaults; the behaviour is the Lua model's.",
       "omissions": [
-        "the lens's zones and the pyroelectric element's response to speed and direction (a warm body moving anywhere in the cone counts)",
+        "the lens's real pattern (its cones are a regular grid zone_deg wide, the HC-SR501's pitch being unpublished), the element's response to a body's speed and size (any cone crossed counts, however fast or slow)",
         "the temperature difference needed (a body is warm or not)",
         "output glitches during warm-up (0 to 3 toggles on the module)",
         "supply current",

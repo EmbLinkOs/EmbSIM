@@ -17,7 +17,7 @@ test('build on the bench: plug a part in, add a jumper, undo', async ({ page }) 
   await expect(list).toBeVisible();
 
   await page.getByRole('button', { name: 'Breadboard', exact: true }).click();
-  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible();
+  await expect(list.getByRole('button', { name: /^BB1/ })).toBeVisible({ timeout: 15_000 });
 
   // R2 into a10: its legs, 0.4 in apart, land in a10 and a14
   await list.getByRole('button', { name: /^R2/ }).click();

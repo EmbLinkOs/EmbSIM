@@ -891,14 +891,16 @@ int esk_comp_world_input(const esk_comp *c, const char *input, double *out)
         return 1;
     }
     if (f == ESK_WF_MOTION) {
-        /* a PIR: a warm body moving within its range and field of view (params fov, deg, and range, m) */
-        double o[3], d[3], fov = 110.0, range = 7.0;
+        /* a PIR: a warm body crossing the lens's view cones within its range and field of view
+         * (params fov, deg, range, m, zone, deg), since the model's last look 100 ms before */
+        double o[3], d[3], fov = 110.0, range = 7.0, zone = 7.5;
         if (!w->bodies.len)
             goto fallback;
         (void)esk_comp_param_double(c, "fov", &fov);
         (void)esk_comp_param_double(c, "range", &range);
+        (void)esk_comp_param_double(c, "zone", &zone);
         beam(c, o, d);
-        *out = esk_world_motion(w, o, d, fov / 2.0, range * 1000.0, esk_engine_now(c->e)) ? 1.0 : 0.0;
+        *out = esk_world_motion(w, o, d, fov / 2.0, range * 1000.0, zone, 100 * ES_PS_PER_MS, esk_engine_now(c->e)) ? 1.0 : 0.0;
         return 1;
     }
     if (!((w->set >> f) & 1u))

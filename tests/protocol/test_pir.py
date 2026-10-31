@@ -57,17 +57,31 @@ def main():
             client.call("control.advance", {"by": "500ms"})
             assert out(client, probe) in (0, "0"), "a warm body standing still is not seen"
 
-            # the person walks across at 1 m/s: seen within one 100 ms look
-            body(client, "person", dict(person, velocity_mm_s=[1000, 0, 0]))
+            # the person, in the middle of one of the lens's 7.5 deg cones (3.75 deg, 131 mm to the side at
+            # 2 m), walks across at 0.5 m/s: seen once their image crosses into the next cone, 131 mm on
+            # (0.26 s), at the model's next 100 ms look
+            body(client, "person", dict(person, at=[131, -2000, 900], velocity_mm_s=[500, 0, 0]))
             client.call("control.advance", {"by": "150ms"})
+            assert out(client, probe) in (0, "0"), "still within its cone"
+            client.call("control.advance", {"by": "250ms"})
             assert out(client, probe) in (1, "1"), "a warm body walking across is seen"
             assert client.call("world.get")["bodies"][0]["warm"] is True
 
-            # walking on, out of the 3 m range (about 2.2 m to the side): OUT falls 1 s after the last sight
-            client.call("control.advance", {"by": "2500ms"})
-            assert out(client, probe) in (1, "1"), "still within 1 s of the last sight"
-            client.call("control.advance", {"by": "1000ms"})
+            # walking on, out of the 3 m range (2.04 m to the side, 3.8 s in): OUT falls 1 s after the last sight
+            client.call("control.advance", {"by": "3300ms"})
+            assert out(client, probe) in (1, "1"), "still in sight, or within 1 s of it"
+            client.call("control.advance", {"by": "2000ms"})
             assert out(client, probe) in (0, "0"), "out of range, and the hold over: OUT low"
+            # walking straight at it is seen later than across (the lens's cones are crossed slowly):
+            # from 2.8 m, 0.9 m above its axis, at 1 m/s, the image climbs from 17.8 deg to the
+            # 22.5 deg boundary at 2.17 m, 0.63 s in
+            body(client, "person", None)
+            client.call("control.advance", {"by": "3s"})  # past the ~2.5 s block after OUT fell
+            body(client, "person", dict(person, at=[0, -2800, 900], velocity_mm_s=[0, 1000, 0]))
+            client.call("control.advance", {"by": "500ms"})
+            assert out(client, probe) in (0, "0"), "walking straight at it: not yet seen"
+            client.call("control.advance", {"by": "300ms"})
+            assert out(client, probe) in (1, "1"), "seen once the image crosses a cone"
     print("PASS: the PIR sees a warm body walking, not a still one nor a cold moving one, and lets go a hold after it leaves")
     return 0
 

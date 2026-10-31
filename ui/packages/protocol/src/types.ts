@@ -139,8 +139,19 @@ export interface WorldBody {
   velocity_mm_s?: [number, number, number];
   /** with a velocity: back and forth over this distance from `at`, mm (0: straight on) */
   travel_mm?: number;
+  /** waypoints (bench mm) walked at speed_mm_s, starting at the first */
+  path_mm?: [number, number, number][];
+  speed_mm_s?: number;
+  /** along the path: round again from the last waypoint (else back the way it came) */
+  loop?: boolean;
   /** warmer than the room (a person, an animal): a PIR sees it move */
   warm?: boolean;
+  /** let go: it falls under gravity from `at` (thrown at velocity_mm_s), bounces and comes to rest */
+  falls?: boolean;
+  /** a falling body's bounce: the share of its speed it keeps (default 0.5) */
+  restitution?: number;
+  /** reported: a falling body has come to rest */
+  resting?: boolean;
 }
 
 /** the room around the bench, as the 3D bench draws it (presentation only) */

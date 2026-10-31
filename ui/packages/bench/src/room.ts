@@ -18,6 +18,12 @@ import * as THREE from 'three';
 export const TABLE = { width: 1800, depth: 900, thickness: 30, height: 750 };
 export const ROOM = { width: 5200, depth: 4400, height: 2700 };
 /** the window in the left wall: its centre along the wall (z), its sill above the floor, its size */
+/** a walk round the table, half a metre clear of its edges, at height `z` (bench mm; anticlockwise seen from above) */
+export function roundTheTable(z: number): [number, number, number][] {
+  const x = TABLE.width / 2 + 500;
+  const y = TABLE.depth / 2 + 500;
+  return [[-x, -y, z], [x, -y, z], [x, y, z], [-x, y, z]];
+}
 export const WINDOW = { z: 300, sill: 900, width: 1600, height: 1300 };
 
 export interface RoomSize {
@@ -58,8 +64,21 @@ function plane(w: number, h: number, material: THREE.Material): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
   m.receiveShadow = true;
   // walls and ceiling stop the sun, so only what comes through the window reaches the table
+  // (only the sun: a lamp or the window's daylight inside the room is not shaded by the room)
   m.castShadow = true;
+  m.userData.shell = true;
   return m;
+}
+
+/**
+ * Whether the room's shell (walls, ceiling, floor, the window's bars) casts shadows: it does for the
+ * sun, which shines from outside, and not for a light inside the room, whose shadow frame can take
+ * in the shell when it takes in the floor.
+ */
+export function shellShadows(room: Room, on: boolean): void {
+  room.group.traverse((o) => {
+    if (o.userData.shell) o.castShadow = on;
+  });
 }
 
 export interface Room {
@@ -87,16 +106,21 @@ export function buildRoom(size: RoomSize = ROOM): Room {
   const top = new THREE.Mesh(new THREE.BoxGeometry(TABLE.width, TABLE.thickness, TABLE.depth), laminate);
   top.position.y = -0.6 - TABLE.thickness / 2;
   top.receiveShadow = true;
+  // the table shades the floor under it (its shadow map draws the box's far faces, its underside,
+  // so the top 30 mm below the bench's surface never shades the bench)
+  top.castShadow = true;
   g.add(top);
   const legH = TABLE.height - TABLE.thickness - 0.6;
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
     const leg = new THREE.Mesh(new THREE.BoxGeometry(50, legH, 50), steel);
     leg.position.set(sx * (TABLE.width / 2 - 60), floorY + legH / 2, sz * (TABLE.depth / 2 - 60));
+    leg.castShadow = true;
     g.add(leg);
   }
   // a rail between the back legs, as lab benches have
   const rail = new THREE.Mesh(new THREE.BoxGeometry(TABLE.width - 120, 60, 30), steel);
   rail.position.set(0, floorY + 250, -(TABLE.depth / 2 - 60));
+  rail.castShadow = true;
   g.add(rail);
 
   // the floor and the ceiling
@@ -142,12 +166,14 @@ export function buildRoom(size: RoomSize = ROOM): Room {
   const left = new THREE.Mesh(new THREE.ShapeGeometry(shape), wallMat);
   left.receiveShadow = true;
   left.castShadow = true;
+  left.userData.shell = true;
   left.rotation.y = Math.PI / 2;
   left.position.set(-ROOM.width / 2, midY, 0);
   g.add(left);
   // the pane: the daylight outside, a little behind the wall; and the frame's bars
   const glass = plane(WINDOW.width, WINDOW.height, pane);
   glass.castShadow = false; // the pane lets the light through
+  glass.userData.shell = false;
   glass.rotation.y = Math.PI / 2;
   glass.position.set(-ROOM.width / 2 - 40, floorY + WINDOW.sill + WINDOW.height / 2, WINDOW.z);
   g.add(glass);
@@ -158,6 +184,7 @@ export function buildRoom(size: RoomSize = ROOM): Room {
   for (const [w, h, dz, dy] of bars) {
     const bar = new THREE.Mesh(new THREE.BoxGeometry(60, h, w), frame);
     bar.castShadow = true; // the frame's bars cross the sunlit patch
+    bar.userData.shell = true;
     bar.position.set(-ROOM.width / 2 - 20, floorY + WINDOW.sill + WINDOW.height / 2 + dy, WINDOW.z + dz);
     g.add(bar);
   }

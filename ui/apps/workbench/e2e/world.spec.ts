@@ -54,3 +54,23 @@ test('the room and the daylight: the sun by the time of day, said in words, undo
   await page.keyboard.press('Control+z');
   await expect(sun).not.toBeChecked();
 });
+
+test('a person walks round the table: a looped path, undone', async ({ page }) => {
+  await page.goto('/?mock=1');
+  await expect(page.getByRole('application', { name: 'Schematic canvas' })).toBeVisible();
+  await page.getByRole('tab', { name: 'World' }).click();
+  const world = page.getByLabel('The world');
+  await world.getByRole('button', { name: 'Person' }).click();
+  await expect(world).toContainText('Person 1');
+  const round = world.getByRole('checkbox', { name: 'Person 1 walks round the table' });
+  await expect(round).not.toBeChecked();
+  await round.click();
+  await expect(round).toBeChecked();
+  // it starts at the path's first waypoint, the table's far left corner, half a metre clear
+  const row = world.locator('.wb-world__body', { hasText: 'Person 1' });
+  await expect(row.getByRole('spinbutton', { name: 'x', exact: true })).toHaveValue('-1400');
+  await expect(row.getByRole('spinbutton', { name: 'y', exact: true })).toHaveValue('-950');
+  await round.blur(); // undo is the page's, not a focused field's
+  await page.keyboard.press('Control+z');
+  await expect(round).not.toBeChecked();
+});
