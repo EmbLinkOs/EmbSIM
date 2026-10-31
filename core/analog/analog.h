@@ -106,6 +106,8 @@ es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached);
 void esk_island_touch(esk_island *isl, es_time_t now);
 /* a component wake for its analog device (a device with a clock of its own,
  * as a PTC fuse's temperatures) */
+/* an interactive input set on the device's component at `now` (instruments act on Run at once) */
+void esk_adev_on_input(esk_adev *d, const char *input, es_time_t now);
 void esk_adev_on_time(esk_adev *d, es_time_t now);
 /* 1 when the island sits at its steady state: nothing changes until a touch
  * or *next, the next breakpoint of a source (ES_TIME_MAX for none) */

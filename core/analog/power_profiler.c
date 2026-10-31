@@ -143,6 +143,11 @@ static void follow_run(esk_adev *d, es_time_t now)
     }
 }
 
+void esk_power_profiler_on_input(esk_adev *d, es_time_t now)
+{
+    follow_run(d, now);
+}
+
 static es_status pp_setup(esk_adev *d)
 {
     pp_state *s = (pp_state *)d->state;

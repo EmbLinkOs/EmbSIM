@@ -166,6 +166,24 @@ export interface PowerCapture {
   samples: number[];
 }
 
+/** An oscilloscope's last acquisition (instrument.read): its screen's points, each channel's. */
+export interface ScopeCapture {
+  kind: 'scope';
+  /** as the screen's corner shows it */
+  status: 'WAIT' | "T'D" | 'AUTO' | 'STOP';
+  /** acquisitions so far; a read with `since` at or above it carries no points */
+  seq: number;
+  trigger_ps?: PsString;
+  /** the screen's first point and their spacing (12 divisions over the points) */
+  x0_ps?: PsString;
+  dx_ps?: PsString;
+  sample_rate?: number;
+  memory_points?: number;
+  /** Auto's acquisition with no trigger */
+  forced?: boolean;
+  channels: { channel: number; on: boolean; points?: number[] }[];
+}
+
 export interface WorldBody {
   id: string;
   name?: string;

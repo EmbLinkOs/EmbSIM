@@ -5,6 +5,24 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Bench instruments: the Rigol DS1054Z (2026-10-31)
+
+The third bench instrument: `emblink/rigol_ds1054z`, from Rigol's DS1000Z
+specifications. Inputs loading the circuit (1 MΩ or 10 MΩ ∥ 15 pF), the
+sample rate by channels and memory, 8-bit quantisation over 10 divisions,
+the 50 MHz (or 20 MHz) bandwidth, DC/AC/GND coupling, the edge trigger in
+Auto, Normal and Single with holdoff. Evidence: eight fixtures (1 V behind
+1 MΩ read 0.909 V through the 10x probe and 0.5 V at 1x; Normal triggering
+on a clock and waiting on a level; Auto refreshing; Single stopping; 100
+MSa/s at 10 ms/div from the memory; 250 MSa/s with four channels) and
+`tests/protocol/test_oscilloscope.py` (an RC step: the time constant
+measured from the trace as 100.5 µs for 100 µs, 63 % and 86 % at one and two
+time constants, 8-bit codes, Single re-armed). The Run perspective draws its
+screen and front panel live (`scopeMeasure.test.ts`; the gallery). Not yet:
+the other trigger types and serial decoders, math, FFT, XY, Roll, averaging
+and peak detect, gain and offset errors and noise; Auto's wait is assumed;
+measurements come from the screen's points, not the full memory.
+
 ## Bench instruments: the Nordic PPK2 (2026-10-31)
 
 The second bench instrument: `emblink/nordic_ppk2`, Nordic's Power Profiler

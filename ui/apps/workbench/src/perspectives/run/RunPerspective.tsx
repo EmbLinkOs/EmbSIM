@@ -25,6 +25,7 @@ import { useSchematicOutputs } from '../../stores/schematicDisplay';
 import { isWiredInstrument, WiredInstrumentsPanel } from './WiredInstrumentsPanel';
 import { LOGIC8, Logic8Panel } from './Logic8Panel';
 import { PPK2, Ppk2Panel } from './Ppk2Panel';
+import { DS1054Z, Ds1054zPanel } from './Ds1054zPanel';
 
 const TRACE_COLORS = ['#5fe3b1', '#f0975a', '#7cbcf5', '#f27d84', '#e9bd55', '#c48cf0'];
 
@@ -198,6 +199,10 @@ export function RunPerspective() {
     { id: 'logic', title: 'Logic analyzer', flush: true, weight: 1, minSize: 120, collapsible: true, defaultCollapsed: logicChannels.length === 0, actions: noScope && logicChannels.length > 0 ? instrumentActions : undefined, content: (
       <LogicAnalyzer channels={logicChannels} lookup={lookupRecord} window={win} onWindowChange={inst.setWindow} cursors={inst.cursors} onCursorsChange={inst.setCursors} now={now} selected={inst.selectedLogic} onSelect={inst.setSelectedLogic} revision={inst.revision} />
     ) },
+    // each Rigol DS1054Z: its screen and front panel, live
+    ...(project?.components.filter((c) => c.component === DS1054Z) ?? []).map((c): DockItem => ({
+      id: `ds1054z-${c.id}`, title: `${c.id} · DS1054Z oscilloscope`, flush: true, weight: 1.6, minSize: 260, collapsible: true, content: <Ds1054zPanel part={c.id} />,
+    })),
     // each Power Profiler Kit II: the current at 100 kS/s, as Nordic's Power Profiler app shows it
     ...(project?.components.filter((c) => c.component === PPK2) ?? []).map((c): DockItem => ({
       id: `ppk2-${c.id}`, title: `${c.id} · Power Profiler Kit II`, flush: true, weight: 1.3, minSize: 200, collapsible: true, content: <Ppk2Panel part={c.id} />,

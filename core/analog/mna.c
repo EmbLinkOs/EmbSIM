@@ -651,6 +651,7 @@ static void free_matrices(esk_island *isl)
 static void dev_free(esk_island *isl, esk_adev *d)
 {
     esk_power_profiler_free(d); /* its sample ring, outside the island's allocator */
+    esk_oscilloscope_free(d);   /* its history and acquisition */
     if (d->ops && d->ops->state_size)
         esk_free(isl->a, d->state, d->ops->state_size);
     esk_free(isl->a, d, sizeof *d);

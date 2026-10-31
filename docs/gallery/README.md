@@ -5,6 +5,16 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## An oscilloscope: the Rigol DS1054Z (2026-10-31)
+
+A DS1054Z on an RC network (10 kΩ, 10 nF) driven by a 1 kHz square wave,
+running in real time: CH1 (yellow) on the square wave, CH2 (cyan) on the
+capacitor charging and discharging, 200 µs/div at 500 MSa/s (two channels
+on, 1.2 Mpts), the edge trigger on CH1 rising at 1.65 V (T'D), the
+measurements on CH1 underneath (1 kHz, 3.28 V peak-to-peak, 50 % duty):
+
+![The DS1054Z showing an RC network live](instruments-ds1054z/1-rc-live.png)
+
 ## A power profiler: the Nordic PPK2 (2026-10-31)
 
 A Power Profiler Kit II powering a load at 3.3 V that sleeps at 1 mA and

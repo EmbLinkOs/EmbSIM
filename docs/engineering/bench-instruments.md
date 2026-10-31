@@ -105,6 +105,10 @@ measurement core (`emblink/ppk2_core`, the `power_profiler` primitive) and
 its logic port (`emblink/ppk2_logic_port`, the logic analyzer's sampler at
 a fixed 100 kHz), each read with `instrument.read`.
 
+Built (2026-10-31): `emblink/rigol_ds1054z` (the `oscilloscope`
+primitive): its inputs, acquisition, trigger and sweeps as above; its
+screen and front panel in the Run perspective, live.
+
 ## 2. How they fit the engine
 
 - **Leads load the circuit.** Each channel's input is a pin model with the

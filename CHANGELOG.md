@@ -5,6 +5,25 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### An oscilloscope: the Rigol DS1054Z
+
+- `emblink/rigol_ds1054z` from Rigol's DS1000Z specifications: four inputs
+  that load the circuit (1 MΩ ∥ 15 pF, 10 MΩ through the 10x probes it ships
+  with); acquisitions at 1 GSa/s with one channel on, 500 MSa/s with two,
+  250 MSa/s with three or four, lowered when the memory (12, 6 or 3 Mpts;
+  twice with the option) cannot hold the screen; 8 bits over 10 divisions
+  at 1 mV/div to 10 V/div times the probe, with offset; a first-order
+  50 MHz bandwidth (20 MHz limit); DC, AC (5 Hz) or GND coupling; the edge
+  trigger (level, slope, holdoff) in Auto, Normal or Single; Run/Stop.
+- The Run perspective draws its screen (12 by 8 divisions, the channels in
+  Rigol's colours, ground and trigger markers, the status) and its front
+  panel's controls, the acquisitions followed live as the circuit runs, and
+  the automatic measurements (frequency, period, Vpp, Vmax, Vmin, Vavg,
+  Vrms, duty, rise time) on a channel.
+- `instrument.read` gives an oscilloscope's last acquisition
+  (`kind: "scope"`). Electrical parts now hear an input as it is set
+  (`esk_adev_on_input`), so Run/Stop and Start/Stop act at their instant.
+
 ### A power profiler: the Nordic Power Profiler Kit II
 
 - `emblink/nordic_ppk2`, from Nordic's PPK2 user guide (section 8): as a

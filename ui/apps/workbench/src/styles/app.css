@@ -1916,3 +1916,14 @@
 .wb-ppk2__plots { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .wb-ppk2__plots > :first-child { flex: 2; min-height: 0; }
 .wb-ppk2__plots > :nth-child(2) { flex: 1; min-height: 0; }
+
+/* a Rigol DS1054Z: its screen beside its front panel, the measurements underneath */
+.wb-ds1054z { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.wb-ds1054z__body { flex: 1; min-height: 0; display: flex; gap: 8px; padding: 8px; }
+.wb-ds1054z__screen { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 8px; background: #0b0f15; }
+.wb-ds1054z__top, .wb-ds1054z__chips { display: flex; flex-wrap: wrap; gap: 14px; font: 11px var(--font-mono); color: #c9d1dc; }
+.wb-ds1054z__panel { width: 300px; flex: none; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.wb-ds1054z__row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.wb-ds1054z__channel { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0; padding: 4px 8px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.wb-ds1054z__channel legend { font-size: var(--text-sm); font-weight: 600; padding: 0 4px; }
+.wb-ds1054z__measure { display: flex; align-items: center; gap: 8px; padding: 0 8px; border-top: 1px solid var(--line); }

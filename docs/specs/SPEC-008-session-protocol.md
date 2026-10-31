@@ -139,6 +139,11 @@ Notation: `method(params) -> result`. Params and results are objects.
   a power profiler's measurement core (a PPK2's `METER`): one sample per
   `period_ps` (10 µs) from `start_ps`, each the current averaged over its
   window at its range's resolution; `first` is the oldest still held.
+- `instrument.read({part, since?}) -> {kind: "scope", status, seq, trigger_ps?, x0_ps?, dx_ps?, sample_rate?, memory_points?, forced?, channels: [{channel, on, points?}]}`:
+  an oscilloscope's last acquisition: `seq` counts them, and when it is
+  above `since` the screen's points come with it (volts, at the 8-bit
+  codes, `dx_ps` apart from `x0_ps` across 12 divisions); `status` is the
+  screen's WAIT, T'D, AUTO or STOP.
 - `waveform.subscribe({probes: [...], max_rate_hz?}) -> {stream}`; samples arrive as `waveform.samples` notifications (`base64`) or binary frames; `waveform.unsubscribe({stream})`.
 - Sample encodings: digital `u8` (`0,1,2=Z,3=X`), analog `f32`, serial bytes, value `f64`; each frame is monotonic in time; a `gap` marker reports dropped frames.
 - Native JSON waveform frames carry `through_time_ps`, the producer's completed

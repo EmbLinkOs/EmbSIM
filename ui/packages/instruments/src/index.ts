@@ -8,6 +8,8 @@ export { Oscilloscope, Measure, type OscilloscopeProps, type ScopeTrace } from '
 export { LogicAnalyzer, type LogicAnalyzerProps, type LogicChannel } from './LogicAnalyzer';
 export { captureToCsv, captureToVcd, LogicCaptureRecords, LOGIC_CHANNELS, type CaptureEdge } from './logicCapture';
 export { PowerCaptureRecords } from './powerCapture';
+export { ScopeScreen, SCOPE_COLORS, type ScopeChannelView, type ScopeScreenProps } from './ScopeScreen';
+export { measure as scopeMeasure, type ScopeMeasurements } from './scopeMeasure';
 export { appendSerialText, SerialTerminal, type SerialTerminalProps, type SerialLine, type HostPortView } from './SerialTerminal';
 export { Meter, formatMeterValue, type MeterProps } from './Meter';
 export { decode, decodeUart, decodeSpi, decodeI2c, byteText, transitions, type Annotation, type AnnotationKind, type DecoderSpec, type RecordLookup } from './decoders';

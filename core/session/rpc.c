@@ -608,7 +608,9 @@ static es_status m_instrument_read(rpc_ctx *r)
     r->result = obj(r);
     if (!r->result)
         return ES_ENOMEM;
-    if (c->adev && c->adev->ops == &esk_power_profiler_ops)
+    if (c->adev && c->adev->ops == &esk_oscilloscope_ops)
+        st = esk_oscilloscope_read(c->adev, since > 0 ? (uint64_t)since : 0, r->result);
+    else if (c->adev && c->adev->ops == &esk_power_profiler_ops)
         st = esk_power_profiler_read(c->adev, since > 0 ? (uint64_t)since : 0, max > 0 ? (size_t)max : 0, r->result);
     else
         st = esk_logic_analyzer_read(c, since > 0 ? (uint64_t)since : 0, max > 0 ? (size_t)max : 0, r->result);
