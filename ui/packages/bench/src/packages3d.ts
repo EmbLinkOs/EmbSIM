@@ -483,6 +483,9 @@ const ADAPTER_MASK = new THREE.MeshStandardMaterial({ color: 0x1d5c34, roughness
 /** copper seen through green soldermask: the mask's colour, lighter */
 const COPPER_UNDER_MASK = new THREE.MeshStandardMaterial({ color: 0x3a8a4e, roughness: 0.3, metalness: 0.1 });
 
+/** the materials no part changes after it is built: their meshes can be merged (batch.ts) */
+export const STATIC_MATERIALS: ReadonlySet<THREE.Material> = new Set([TIN, NICKEL, GOLD_PLATE, MOULD, PLASTIC_BLACK, HOLE, INSULATOR_WHITE, INK, ADAPTER_MASK, COPPER_UNDER_MASK]);
+
 /** a DIP's pins counter-clockwise from pin 1 at the front left, `rows` apart, centred */
 function dipOrder(n: number, rows: number): [number, number][] {
   const x = (i: number) => -((n - 1) * 2.54) / 2 + i * 2.54;

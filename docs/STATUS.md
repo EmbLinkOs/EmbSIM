@@ -5,6 +5,16 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Static batching (2026-10-31)
+
+Stage 7: `batch.ts` merges each built part's meshes in the shared static
+materials, one mesh per material (the NUCLEO-F446RE: 581 meshes to 22).
+Evidence: `batch.test.ts` (a header strip's bounds and triangles unchanged,
+one gold mesh; the NUCLEO's buttons still pressable), the renders unchanged,
+and the frame harness (demo bench, headless: quality p95 10.4 to 6.5 ms).
+Not yet: instancing across parts (a hundred resistors are still a hundred
+batches), level of detail.
+
 ## The sun by the time of day (2026-10-31)
 
 The world may declare the room's size and its window's direction

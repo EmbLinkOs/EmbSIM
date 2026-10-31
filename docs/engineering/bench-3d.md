@@ -209,6 +209,10 @@ draft and quality and reports p50/p95/p99 and the share of frames over
 The time is the CPU's; a GPU timer query
 (`EXT_disjoint_timer_query_webgl2`) would add the GPU's.
 
+Done (2026-10-31): static batching per part (`batch.ts`): the meshes in the
+shared static materials merged, one per material (the NUCLEO: 581 to 22
+meshes). Still to do: instancing across parts, level of detail.
+
 ## 4. Not planned
 
 - A full ray tracer in the browser. Quality mode's ambient occlusion and

@@ -13,7 +13,8 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { boardStack, surfaceLeadThickness, type BenchShape, type BoardFeature, type SmallOutline } from './shape';
 import { modelBody, type Model3d } from './models3d';
-import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, smallOutlineAdapter, socketStrip, tactileSwitch, usbB } from './packages3d';
+import { barrelJack, crystalHC49, pcbBody, dipBody, dipLabelSize, electrolytic, quadSize, rfModule, usbC, usbMicro, dipPinPositions, dipSocket, headerStrips, pinStrip, quadPackage, smallOutlineAdapter, socketStrip, STATIC_MATERIALS, tactileSwitch, usbB } from './packages3d';
+import { batchStatic } from './batch';
 
 export interface PartLook {
   /** the component's id ("emblink/resistor") */
@@ -39,6 +40,8 @@ const METAL = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, metalness: 0.9, 
 const GOLD = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.28 });
 const BLACK_PLASTIC = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.55 });
 const EPOXY = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.42 });
+/** the shared materials no part changes once built (merged per part, batch.ts) */
+const STATICS: ReadonlySet<THREE.Material> = new Set([...STATIC_MATERIALS, METAL, GOLD, BLACK_PLASTIC, EPOXY]);
 
 const COLOR_CODE = ['#111111', '#7b3f00', '#d63031', '#f39c12', '#f1c40f', '#27ae60', '#2e86de', '#8e44ad', '#808080', '#f5f5f5'];
 const GOLD_BAND = '#c9a227';
@@ -915,6 +918,8 @@ export function buildPart(id: string, shape: BenchShape, look: PartLook): Built 
       built = { group: box(shape), pinTop: shape.size[2] + 4 };
   }
   if (look.model3d) drawModel(built, shape, look.model3d, id);
+  // one draw call per shared static material, not one per pin (stage 7)
+  batchStatic(built.group, STATICS, built.control);
   built.group.traverse((o) => {
     if (!o.userData.part) o.userData = { ...o.userData, part: id } satisfies PickData;
   });

@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Static batching on the 3D bench
+
+- Once a part is built, its meshes in shared materials no part changes
+  (tin, gold plate, black plastic, the mould) are merged, one mesh per
+  material: the NUCLEO-F446RE goes from 581 meshes (each a draw call, twice
+  with shadows) to 22. Controls, anything with a gesture or hotspot, named
+  meshes and the circuit-driven materials stay separate. On the demo bench
+  the quality render's 95th percentile went from 10.4 to 6.5 ms of CPU time
+  (headless).
+
 ### The sun by the time of day, the room from the project
 
 - The world may say the room's size and which way its window looks
