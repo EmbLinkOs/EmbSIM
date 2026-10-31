@@ -23,6 +23,10 @@
 #define RCC_BDCR (RCC + 0x70u)
 #define RCC_CSR (RCC + 0x74u)
 #define RCC_DCKCFGR (RCC + 0x8Cu)
+#define RCC_CIR (RCC + 0x0Cu)
+#define CRC_DR 0x40023000u
+#define CRC_IDR 0x40023004u
+#define CRC_CR 0x40023008u
 #define PWR_CR 0x40007000u
 #define PWR_CSR 0x40007004u
 #define FLASH_ACR 0x40023C00u
@@ -49,6 +53,7 @@
 #define TIM1 0x40010000u
 #define TIM2 0x40000000u
 #define TIM3 0x40000400u
+#define TIM5 0x40000C00u
 #define T_CR1 0x00u
 #define T_CR2 0x04u
 #define T_SMCR 0x08u
@@ -57,6 +62,8 @@
 #define T_EGR 0x14u
 #define T_CCMR1 0x18u
 #define T_CCER 0x20u
+#define T_CCR4 0x40u
+#define T_CCMR2 0x1Cu
 #define T_CNT 0x24u
 #define T_PSC 0x28u
 #define T_ARR 0x2Cu
@@ -437,6 +444,31 @@ static u32 rd(f4 *f, u32 a)
 
 static void wr(f4 *f, u32 a, u32 v) { CHECK_EQ(esk_bus_write(&f->m.bus, a, 4, v), 0); }
 
+/* the core runs until the bit at `a` sets, as a program polls it: the
+ * microseconds that took, or -1 after `max_us` */
+static long wait_bits(f4 *f, u32 a, u32 mask, int set, long max_us);
+static long wait_set(f4 *f, u32 a, u32 mask, long max_us) { return wait_bits(f, a, mask, 1, max_us); }
+static long wait_clr(f4 *f, u32 a, u32 mask, long max_us) { return wait_bits(f, a, mask, 0, max_us); }
+
+static long wait_bits(f4 *f, u32 a, u32 mask, int set, long max_us)
+{
+    long step = max_us > 100000 ? 1000 : 1; /* polled every ms past 100 ms */
+    double us = 0; /* the machine's time since the wait began, at the core clocks it ran */
+    while (us <= (double)max_us) {
+        u32 hz = esk_mach_core_hz(&f->m);
+        u64 end, from;
+        if (((rd(f, a) & mask) != 0) == set)
+            return (long)(us + 0.5);
+        from = f->m.cycles;
+        end = from + (u64)(hz ? hz : 16000000u) / 1000000u * (u64)step;
+        while (f->m.cycles < end)
+            if (!esk_mach_run(&f->m, end - f->m.cycles, 0) && f->m.asleep)
+                esk_mach_idle(&f->m, end - f->m.cycles); /* as the runtime does */
+        us += (double)(f->m.cycles - from) * 1e6 / (double)(hz ? hz : 16000000u);
+    }
+    return -1;
+}
+
 /* SystemClock_Config up to the PLL running and over-drive on: PWR's clock,
  * scale 1, HSE bypass, the PLL from it */
 static void pll_from_hse(f4 *f, u32 pllcfgr)
@@ -445,10 +477,10 @@ static void pll_from_hse(f4 *f, u32 pllcfgr)
     wr(f, PWR_CR, (rd(f, PWR_CR) & ~(3u << 14)) | 3u << 14); /* VOS scale 1 */
     wr(f, RCC_CR, rd(f, RCC_CR) | 1u << 18);           /* HSEBYP */
     wr(f, RCC_CR, rd(f, RCC_CR) | 1u << 16);           /* HSEON */
-    CHECK(rd(f, RCC_CR) & 1u << 17);                   /* HSERDY */
+    CHECK(wait_set(f, RCC_CR, 1u << 17, 10) >= 0);     /* HSERDY */
     wr(f, RCC_PLLCFGR, pllcfgr);
     wr(f, RCC_CR, rd(f, RCC_CR) | 1u << 24); /* PLLON */
-    CHECK(rd(f, RCC_CR) & 1u << 25);         /* PLLRDY */
+    CHECK(wait_set(f, RCC_CR, 1u << 25, 200) > 0); /* PLLRDY: its lock time */
 }
 
 static void overdrive(f4 *f)
@@ -523,6 +555,7 @@ static void test_180mhz(void)
     CHECK_EQ(rd(&f, RCC_CFGR) & 0xFu, 0xCu);
     /* back to HSI, then the PLL and HSE may go */
     wr(&f, RCC_CR, rd(&f, RCC_CR) | 1u);
+    CHECK(wait_set(&f, RCC_CR, 2u, 10) > 0); /* HSIRDY: its start-up */
     CHECK_EQ(esk_mach_core_hz(&f.m), 16000000u);
     wr(&f, RCC_CR, 1u); /* HSEBYP stays: HSE was on as it was written */
     CHECK_EQ(rd(&f, RCC_CR) & 0xFFFF0003u, 0x00040003u);
@@ -546,7 +579,7 @@ static void test_hse_kind(void)
     wr(&f, RCC_CR, rd(&f, RCC_CR) & ~(1u << 16));
     wr(&f, RCC_CR, rd(&f, RCC_CR) | 1u << 18);
     wr(&f, RCC_CR, rd(&f, RCC_CR) | 1u << 16);
-    CHECK(rd(&f, RCC_CR) & 1u << 17);
+    CHECK(wait_set(&f, RCC_CR, 1u << 17, 10) >= 0);
     /* SW to HSE switches once it is ready: 8 MHz */
     wr(&f, RCC_CFGR, 1u);
     CHECK_EQ(rd(&f, RCC_CFGR) & 0xFu, 5u);
@@ -566,7 +599,8 @@ static void test_hse_kind(void)
     wr(&f, RCC_CR, rd(&f, RCC_CR) & ~(1u << 16));
     wr(&f, RCC_CR, rd(&f, RCC_CR) & ~(1u << 18));
     wr(&f, RCC_CR, rd(&f, RCC_CR) | 1u << 16);
-    CHECK(rd(&f, RCC_CR) & 1u << 25);
+    CHECK(wait_set(&f, RCC_CR, 1u << 17, 3000) > 1900); /* the crystal's 2 ms */
+    CHECK(wait_set(&f, RCC_CR, 1u << 25, 200) > 0);
     CHECK_EQ(rd(&f, RCC_CFGR) & 0xFu, 0xAu);
     f4_close(&f);
 }
@@ -608,9 +642,10 @@ static void test_backup_domain(void)
     wr(&f, RCC_APB1ENR, 1u << 28);
     wr(&f, PWR_CR, rd(&f, PWR_CR) | 1u << 8); /* DBP */
     wr(&f, RCC_BDCR, 1u);
-    CHECK_EQ(rd(&f, RCC_BDCR) & 3u, 3u); /* LSERDY */
+    CHECK_EQ(rd(&f, RCC_BDCR) & 3u, 1u);
+    CHECK(wait_set(&f, RCC_BDCR, 2u, 2100000) >= 1999000); /* LSERDY after tsu(LSE) */
     wr(&f, RCC_CSR, 1u);                 /* LSION */
-    CHECK_EQ(rd(&f, RCC_CSR) & 3u, 3u);  /* LSIRDY */
+    CHECK(wait_set(&f, RCC_CSR, 2u, 40) >= 14); /* LSIRDY after tsu(LSI) */
     CHECK_EQ(f.warnings, 0);
     f4_close(&f);
 }
@@ -2389,7 +2424,8 @@ static void run_for(f4 *f, u64 n)
 {
     u64 end = f->m.cycles + n;
     while (f->m.cycles < end)
-        esk_mach_run(&f->m, end - f->m.cycles, 0);
+        if (!esk_mach_run(&f->m, end - f->m.cycles, 0) && f->m.asleep)
+            esk_mach_idle(&f->m, end - f->m.cycles); /* as the runtime does */
 }
 
 /* one conversion (HAL_ADC_Start, PollForConversion): its code, its time
@@ -2688,7 +2724,8 @@ static void test_iwdg(void)
     CHECK_EQ(rd(&f, IWDG + 0x0C), 0u);
     CHECK_EQ(rd(&f, RCC_CSR) & 2u, 0u);          /* LSI off */
     wr(&f, IWDG, 0xcccc);
-    CHECK(rd(&f, RCC_CSR) & 2u);                 /* forced on: LSIRDY */
+    CHECK_EQ(rd(&f, RCC_CSR) & 2u, 0u);          /* forced on: LSI starts */
+    CHECK(wait_set(&f, RCC_CSR, 2u, 40) >= 14);  /* LSIRDY after tsu(LSI) */
     wr(&f, IWDG, 0xaaaa);                        /* 100 counts of 4 LSI clocks */
     t = run_to_reset(&f, 400000);
     CHECK(t >= 199000 && t <= 201000);           /* 12.5 ms at 16 MHz */
@@ -2701,7 +2738,7 @@ static void test_iwdg(void)
     f.m.reset_cause = ESK_RESET_PIN;
     esk_mach_reset(&f.m);
     CHECK_EQ(rd(&f, FLASH_OPTCR) & 0xffffu, 0xaacdu);           /* loaded at reset */
-    CHECK(rd(&f, RCC_CSR) & 2u);
+    CHECK(wait_set(&f, RCC_CSR, 2u, 40) >= 14);                 /* LSI forced on */
     wr(&f, IWDG, 0x5555);
     wr(&f, IWDG + 0x04, 0);
     wr(&f, IWDG + 0x08, 9);
@@ -2752,7 +2789,7 @@ static void rtc_on(f4 *f)
     wr(f, RCC_APB1ENR, rd(f, RCC_APB1ENR) | 1u << 28);  /* PWREN */
     wr(f, PWR_CR, rd(f, PWR_CR) | 1u << 8);             /* DBP */
     wr(f, RCC_BDCR, 1u);                                /* LSEON */
-    CHECK(rd(f, RCC_BDCR) & 2u);                        /* LSERDY */
+    CHECK(wait_set(f, RCC_BDCR, 2u, 2100000) >= 1999000); /* LSERDY: the crystal's 2 s */
     wr(f, RCC_BDCR, 1u | 1u << 8 | 1u << 15);           /* RTCSEL LSE, RTCEN */
     wr(f, RTC + R_WPR, 0xca);
     wr(f, RTC + R_WPR, 0x53);
@@ -3191,11 +3228,15 @@ static void test_flash(void)
     wr(&f, FLASH_CR, 1u << 24 | 1u << 8 | 1u);              /* EOPIE, PSIZE x16, PG */
     CHECK(esk_bus_write(&f.m.bus, SECTOR2, 2, 0x1234u) == 0);
     CHECK_EQ(flash16(&f, SECTOR2), 0x1234u);
-    CHECK_EQ(rd(&f, FLASH_SR) & 0x1ffu, 1u);                /* EOP, BSY never set */
+    CHECK_EQ(rd(&f, FLASH_SR), 1u << 16);                   /* BSY, no EOP yet */
+    r = (int)wait_clr(&f, FLASH_SR, 1u << 16, 100);         /* tprog's 16 us */
+    CHECK(r >= 15 && r <= 17);
+    CHECK_EQ(rd(&f, FLASH_SR) & 0x1ffffu, 1u);              /* EOP */
     CHECK(rd(&f, NVIC_ISPR0) & 1u << 4);                    /* FLASH, IRQ 4 */
     wr(&f, FLASH_SR, 1u);
     CHECK(esk_bus_write(&f.m.bus, SECTOR2, 2, 0xff0fu) == 0); /* bits only go to 0 */
     CHECK_EQ(flash16(&f, SECTOR2), 0x1204u);
+    CHECK(wait_clr(&f, FLASH_SR, 1u << 16, 100) >= 15);
     CHECK(esk_bus_write(&f.m.bus, SECTOR2 + 4, 4, 0u) == 0);  /* a word with x16 */
     CHECK(rd(&f, FLASH_SR) & 1u << 6);                      /* PGPERR */
     CHECK_EQ(flash16(&f, SECTOR2 + 4), 0xffffu);
@@ -3208,6 +3249,15 @@ static void test_flash(void)
     wr(&f, FLASH_CR, 1u << 9 | 2u << 3 | 1u << 1);          /* SER, SNB 2 */
     wr(&f, FLASH_CR, rd(&f, FLASH_CR) | 1u << 16);          /* STRT */
     CHECK_EQ(flash16(&f, SECTOR2), 0xffffu);
+    CHECK(rd(&f, FLASH_CR) & 1u << 16);                     /* STRT until BSY clears */
+    wr(&f, FLASH_CR, 1u << 31);                             /* BSY: CR is not written */
+    CHECK_EQ(rd(&f, FLASH_CR) & 1u << 31, 0u);
+    {   /* a 16 KiB sector at x32: 250 ms, the core (in flash) stalled */
+        u64 i0 = f.m.insns;
+        long ms = wait_clr(&f, FLASH_SR, 1u << 16, 300000);
+        CHECK(ms >= 249000 && ms <= 251000);
+        CHECK(f.m.insns - i0 <= 2); /* only after it: the core waited */
+    }
     CHECK_EQ(rd(&f, FLASH_CR) & 1u << 16, 0u);
     wr(&f, FLASH_CR, 1u << 31);                             /* LOCK again */
     CHECK(rd(&f, FLASH_CR) & 1u << 31);
@@ -3232,6 +3282,134 @@ static void test_flash(void)
     CHECK(esk_bus_write(&f.m.bus, SECTOR2, 4, 0u) == 0);
     CHECK(rd(&f, FLASH_SR) & 1u << 4);                      /* WRPERR */
     CHECK_EQ(flash16(&f, SECTOR2), 0xffffu);
+    f4_close(&f);
+}
+
+/* DS10693's start-up times: an 8 MHz crystal's 2 ms (a board with one),
+ * the ST-Link's clock with HSEBYP at once, the PLL's lock time between
+ * 75 and 100 us, LSI's 15 us and LSE's 2 s; a source that has become
+ * ready with its CIR enable sets its flag and the RCC interrupt, and the
+ * RDYC bit clears it */
+static void test_startup_times(void)
+{
+    f4 f;
+    long t;
+    if (!f4_open(&f, 0))
+        return;
+    wr(&f, RCC_CIR, 1u << 11 | 1u << 12);          /* HSERDYIE, PLLRDYIE */
+    wr(&f, RCC_CR, rd(&f, RCC_CR) | 1u << 16);     /* HSEON, a crystal */
+    CHECK_EQ(rd(&f, RCC_CR) & 1u << 17, 0u);
+    t = wait_set(&f, RCC_CR, 1u << 17, 3000);
+    CHECK(t >= 1999 && t <= 2001);
+    CHECK_EQ(rd(&f, RCC_CIR) & 0xffu, 1u << 3);    /* HSERDYF */
+    CHECK(rd(&f, NVIC_ISPR0) & 1u << 5);           /* RCC */
+    wr(&f, RCC_CIR, rd(&f, RCC_CIR) | 1u << 19);   /* HSERDYC */
+    CHECK_EQ(rd(&f, RCC_CIR), 1u << 11 | 1u << 12);
+    wr(&f, RCC_PLLCFGR, 4u | 90u << 6 | 1u << 22 | 2u << 24 | 2u << 28); /* from HSE: 2 MHz x 90 */
+    wr(&f, RCC_CR, rd(&f, RCC_CR) | 1u << 24);
+    t = wait_set(&f, RCC_CR, 1u << 25, 300);       /* a 180 MHz VCO: 81 us */
+    CHECK(t >= 80 && t <= 82);
+    CHECK_EQ(rd(&f, RCC_CIR) & 0xffu, 1u << 4);    /* PLLRDYF */
+    /* turned off, it is not ready at once; on again, it starts again */
+    wr(&f, RCC_CR, rd(&f, RCC_CR) & ~(1u << 24));
+    CHECK_EQ(rd(&f, RCC_CR) & 1u << 25, 0u);
+    wr(&f, RCC_CR, rd(&f, RCC_CR) | 1u << 24);
+    CHECK_EQ(rd(&f, RCC_CR) & 1u << 25, 0u);
+    CHECK(wait_set(&f, RCC_CR, 1u << 25, 300) >= 80);
+    f4_close(&f);
+    if (!f4_open(&f, 1))
+        return;
+    wr(&f, RCC_CR, rd(&f, RCC_CR) | 1u << 18 | 1u << 16); /* the ST-Link's MCO, bypassed */
+    CHECK_EQ(wait_set(&f, RCC_CR, 1u << 17, 10), 1);      /* six HSE clocks */
+    /* LSE through a pin reset: the backup domain's crystal keeps running */
+    wr(&f, RCC_APB1ENR, 1u << 28);
+    wr(&f, PWR_CR, rd(&f, PWR_CR) | 1u << 8);
+    wr(&f, RCC_BDCR, 1u);
+    t = wait_set(&f, RCC_BDCR, 2u, 2100000);
+    CHECK(t >= 1999000 && t <= 2001000);
+    f.m.reset_cause = ESK_RESET_PIN;
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, RCC_BDCR) & 3u, 3u);
+    CHECK_EQ(rd(&f, RCC_CR) & 3u, 3u);                    /* HSI on and ready out of reset */
+    f4_close(&f);
+}
+
+/* the CRC unit: CRC-32 (0x04C11DB7) of the words written, from 0xFFFFFFFF;
+ * the values CRC-32/MPEG-2 gives the same bytes, most significant first */
+static void test_crc(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    wr(&f, CRC_DR, 0x12345678u);                   /* its clock is off */
+    CHECK_EQ(rd(&f, CRC_DR), 0u);
+    wr(&f, RCC_AHB1ENR, rd(&f, RCC_AHB1ENR) | 1u << 12); /* CRCEN */
+    CHECK_EQ(rd(&f, CRC_DR), 0xFFFFFFFFu);
+    wr(&f, CRC_DR, 0x12345678u);
+    CHECK_EQ(rd(&f, CRC_DR), 0xDF8A8A2Bu);
+    wr(&f, CRC_DR, 0x9ABCDEF0u);
+    CHECK_EQ(rd(&f, CRC_DR), 0x7D24A31Bu);
+    wr(&f, CRC_IDR, 0x1A5u);                       /* a byte of storage */
+    CHECK_EQ(rd(&f, CRC_IDR), 0xA5u);
+    wr(&f, CRC_CR, 1u);                            /* RESET */
+    CHECK_EQ(rd(&f, CRC_CR), 0u);
+    CHECK_EQ(rd(&f, CRC_DR), 0xFFFFFFFFu);
+    CHECK_EQ(rd(&f, CRC_IDR), 0xA5u);              /* RESET leaves it */
+    wr(&f, CRC_DR, 0x31323334u);                   /* "1234" */
+    CHECK_EQ(rd(&f, CRC_DR), 0xA695C4AAu);
+    f4_close(&f);
+}
+
+/* TIM5_OR's IT4_RMP: LSI on TI4, measured as HAL's GetLSIFrequency does
+ * (input capture every 8 rising edges): 8 periods of 32 kHz are 4000
+ * counts of a 16 MHz timer clock; nothing while LSI is off; the pin no
+ * longer reaches TI4 */
+static void test_tim5_lsi(void)
+{
+    f4 f;
+    u32 a, b;
+    if (!f4_open(&f, 1))
+        return;
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 3); /* TIM5EN */
+    wr(&f, TIM5 + 0x50, 1u << 6);                       /* OR: IT4_RMP LSI */
+    wr(&f, TIM5 + T_CCMR2, 1u << 8 | 3u << 10);         /* CC4S TI4, IC4PSC /8 */
+    wr(&f, TIM5 + T_CCER, 1u << 12);                    /* CC4E, rising */
+    wr(&f, TIM5 + T_ARR, 0xffffffffu);
+    wr(&f, TIM5 + T_CR1, 1u);
+    CHECK_EQ(wait_set(&f, TIM5 + T_SR, 1u << 4, 2000), -1); /* LSI off: no edges */
+    esk_stm32_tim_signal_input(&f.m, "TIM5_CH4", 1);    /* the pin: not connected */
+    esk_stm32_tim_signal_input(&f.m, "TIM5_CH4", 0);
+    CHECK_EQ(rd(&f, TIM5 + T_SR) & 1u << 4, 0u);
+    wr(&f, RCC_CSR, 1u);                                /* LSION */
+    CHECK(wait_set(&f, RCC_CSR, 2u, 40) >= 14);
+    CHECK(wait_set(&f, TIM5 + T_SR, 1u << 4, 1000) >= 0);
+    a = rd(&f, TIM5 + T_CCR4);
+    CHECK(wait_set(&f, TIM5 + T_SR, 1u << 4, 1000) >= 0);
+    b = rd(&f, TIM5 + T_CCR4);
+    CHECK(b - a >= 3999u && b - a <= 4001u);
+    wr(&f, TIM5 + 0x50, 0);                             /* back to the pin */
+    wr(&f, TIM5 + T_SR, 0);
+    CHECK_EQ(wait_set(&f, TIM5 + T_SR, 1u << 4, 1000), -1);
+    f4_close(&f);
+}
+
+/* TIM3 and TIM4 are 16-bit (RM0390 16.4): the upper halves of CNT, ARR and
+ * CCRx are reserved, so a compare value advanced past 65535 (TIM_OCToggle's
+ * CCR + step) wraps as the counter does; TIM2's are 32-bit */
+static void test_tim_widths(void)
+{
+    f4 f;
+    if (!f4_open(&f, 1))
+        return;
+    wr(&f, RCC_APB1ENR, rd(&f, RCC_APB1ENR) | 1u << 0 | 1u << 1 | 1u << 2); /* TIM2-TIM4 */
+    wr(&f, TIM3 + T_CCR1, 0x12345u);
+    CHECK_EQ(rd(&f, TIM3 + T_CCR1), 0x2345u);
+    wr(&f, TIM3 + T_ARR, 0x1FFFFu);
+    CHECK_EQ(rd(&f, TIM3 + T_ARR), 0xFFFFu);
+    wr(&f, 0x40000800u + T_CCR4, 0x10001u);                 /* TIM4 */
+    CHECK_EQ(rd(&f, 0x40000800u + T_CCR4), 1u);
+    wr(&f, TIM2 + T_CCR1, 0x12345u);
+    CHECK_EQ(rd(&f, TIM2 + T_CCR1), 0x12345u);
     f4_close(&f);
 }
 
@@ -3287,4 +3465,8 @@ RUN(test_standby);
 RUN(test_low_power_reset);
 RUN(test_scr_sleep_bits);
 RUN(test_flash);
+RUN(test_startup_times);
+RUN(test_crc);
+RUN(test_tim5_lsi);
+RUN(test_tim_widths);
 TEST_MAIN_END

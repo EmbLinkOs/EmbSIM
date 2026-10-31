@@ -7,8 +7,9 @@
  *
  *   - a ready bit follows its enable: each field XRDY of a register with
  *     a field XON (CR's HSIRDY, HSERDY, PLLRDY and PLLI2SRDY, BDCR's
- *     LSERDY, CSR's LSIRDY). An oscillator or a PLL is ready the moment it
- *     is turned on, and not ready when off;
+ *     LSERDY, CSR's LSIRDY). On the F1, an oscillator or a PLL is ready the
+ *     moment it is turned on (the F4's start up, below), and not ready
+ *     when off;
  *   - CFGR's system clock switch status follows the switch: SWS from SW
  *     (ST's F4 file splits both into SW0, SW1 and SWS0, SWS1), at once;
  *   - the clock gates: a peripheral with an enable bit NAMEEN in one of the
@@ -37,7 +38,15 @@
  * more, its registers at RM0390's bit positions:
  *   - HSI 16 MHz; HSE the board's, ready only as the board drives OSC_IN: a
  *     crystal with HSEBYP clear, a clock (the NUCLEO's ST-Link MCO) with it
- *     set; LSE the board's 32.768 kHz crystal, LSI ready when on;
+ *     set; LSE the board's 32.768 kHz crystal; LSI 32 kHz;
+ *   - each source is ready its start-up time after it is turned on, at
+ *     DS10693's typical values: HSI 2.2 us, an HSE crystal 2 ms (an
+ *     external clock six of its periods), LSI 15 us, LSE 2 s, each PLL its
+ *     lock time (75 us at a 100 MHz VCO to 100 us at 432 MHz), counted from
+ *     its source being ready; off, it is not ready at once. LSE keeps
+ *     running through every reset but a power-on one, as the backup domain
+ *     does. CIR: a source that becomes ready with its RDYIE set sets its
+ *     RDYF and makes the RCC interrupt pending, its RDYC bit clears it;
  *   - the main PLL from HSI or HSE (PLLSRC): VCO = source / PLLM x PLLN,
  *     PLL_P = VCO / 2, 4, 6 or 8, PLL_R = VCO / PLLR; PLLRDY, PLLI2SRDY and
  *     PLLSAIRDY set when the PLL is on and its source is ready;
@@ -72,11 +81,14 @@
  * backup domain (the RTC's registers with it); LSIRDY is set while the
  * IWDG runs, which forces LSI on.
  *
- * Not modelled: the clock security system, the interrupts of CIR, the
+ * Not modelled: the clock security system's detection (CSSON is kept;
+ * the board's HSE never fails, so CSSF and its NMI never come), the
  * peripheral held in reset while its reset bit stays set (accesses then
- * land), the brownout reset (BORRSTF only at power-on), the oscillators'
- * and the PLL's start-up times (ready at once), MCO1 and MCO2 on their
- * pins, the I2S, SAI and SPDIF clocks from PLLI2S and PLLSAI.
+ * land), the brownout reset (BORRSTF only at power-on), the start-up
+ * times' spread between parts and with temperature (the typical value
+ * each time), LSEMOD's drive level, the F1's start-up times (its sources
+ * are ready at once), MCO1 and MCO2 on their pins, the I2S, SAI and SPDIF
+ * clocks from PLLI2S and PLLSAI.
  *
  * Provenance: EmbLinkOs/EmbCC aa4f10a tools/embsim/stm32-rcc.c. Changes:
  * the HSE frequency is the board's and the core clock is reported to the
@@ -108,8 +120,13 @@ struct rcc {
     u32 hclk;
     /* the F4's */
     int f4;
-    struct esk_rf_reg *pllcfgr, *csr, *bdcr, *dckcfgr;
+    struct esk_rf_reg *pllcfgr, *csr, *bdcr, *dckcfgr, *cir, *plli2s, *pllsai;
     unsigned warned;                /* the warnings already given */
+    /* the F4's oscillators and PLLs as they start (DS10693 6.3.7-6.3.11):
+     * ready, or starting with the time left before they are */
+    struct osc { int ready, starting; u64 left_ps; } osc[7];
+    int running, irq;
+    u64 since;                      /* the cycle the start-up clock began */
     /* both families: CSR's reset flags and BDCR, kept through resets */
     u32 csr_flags;
     u64 bdcr_kept;
@@ -279,6 +296,27 @@ u32 esk_stm32f1_pclk(struct esk_mach *s, int apb)
 #define F4_LSEBYP (1u << 2)
 #define F4_LSION (1u << 0)
 #define F4_LSIRDY (1u << 1)
+#define F4_CSSON (1u << 19)
+
+/* the F4's clock sources, in the order a PLL's source is settled before it */
+enum { O_HSI, O_HSE, O_PLL, O_PLLI2S, O_PLLSAI, O_LSI, O_LSE, O_N };
+/* their ready bits in CR (HSI to PLLSAI), and CIR's flag, enable and clear
+ * bits for each (CIR's RDYF bit k, RDYIE bit k + 8, RDYC bit k + 16) */
+static const u32 osc_cr_rdy[O_N] = { F4_HSIRDY, F4_HSERDY, F4_PLLRDY, F4_PLLI2SRDY, F4_PLLSAIRDY, 0, 0 };
+static const int osc_cir_bit[O_N] = { 2, 3, 4, 5, 6, 0, 1 };
+
+/* DS10693's typical start-up times, in picoseconds (its tables of the
+ * oscillators' and PLLs' characteristics): HSI's tsu(HSI) 2.2 us, a
+ * crystal's tsu(HSE) 2 ms at 8 MHz, LSI's tsu(LSI) 15 us, the 32.768 kHz
+ * crystal's tsu(LSE) 2 s; a PLL's lock time tLOCK, 75 us with its VCO at
+ * 100 MHz and 100 us at 432 MHz, in proportion between. An external clock
+ * on OSC_IN (HSEBYP) needs no oscillator to start: HSERDY follows six of
+ * its clocks, as RM0390 6.3.1 has the bit fall six after HSEON clears */
+#define PS_US 1000000ull
+#define HSI_STARTUP_PS (2200000ull)
+#define HSE_XTAL_STARTUP_PS (2000ull * PS_US)
+#define LSI_STARTUP_PS (15ull * PS_US)
+#define LSE_STARTUP_PS (2000000ull * PS_US)
 
 enum { W_VCO_IN = 1, W_VCO_OUT = 2, W_SYSCLK = 4, W_PCLK1 = 8, W_PCLK2 = 16, W_FLASH = 32 };
 
@@ -395,12 +433,70 @@ static void set_bit(u64 *v, u32 bit, int on)
     *v = on ? (*v | bit) : (*v & ~(u64)bit);
 }
 
+/* a PLL's lock time for its VCO (input / M x N, from its own M and N) */
+static u64 pll_lock_ps(const struct rcc *c, const struct esk_rf_reg *cfg)
+{
+    u32 m = bits(cfg, 0, 6), n = bits(cfg, 6, 9);
+    u64 vco = m < 2 || n < 2 ? 0 : (u64)f4_pll_src_hz(c) * n / m;
+    if (vco <= 100000000u)
+        return 75ull * PS_US;
+    if (vco >= 432000000u)
+        return 100ull * PS_US;
+    return 75ull * PS_US + (vco - 100000000u) * 25ull * PS_US / 332000000u;
+}
+
+static u64 startup_ps(const struct rcc *c, int i)
+{
+    switch (i) {
+    case O_HSI: return HSI_STARTUP_PS;
+    case O_HSE:
+        if (c->s->hse_clock)
+            return c->s->hse_hz ? 6000000000000ull / c->s->hse_hz : 1;
+        return HSE_XTAL_STARTUP_PS;
+    case O_PLL: return pll_lock_ps(c, c->pllcfgr);
+    case O_PLLI2S: return pll_lock_ps(c, c->plli2s ? c->plli2s : c->pllcfgr);
+    case O_PLLSAI: return pll_lock_ps(c, c->pllsai ? c->pllsai : c->pllcfgr);
+    case O_LSI: return LSI_STARTUP_PS;
+    default: return LSE_STARTUP_PS;
+    }
+}
+
+/* the start-up clock runs while a source is starting */
+static void rcc_clock(struct rcc *c)
+{
+    int i, any = 0;
+    for (i = 0; i < O_N; i++)
+        any |= c->osc[i].starting;
+    if (any && !c->running)
+        c->since = c->s->cycles;
+    esk_rf_clock(c->p, &c->running, any);
+}
+
+/* a source asked for starts, and is ready once its start-up time has
+ * passed; one no longer asked for stops at once */
+static void osc_follow(struct rcc *c, int i, int want)
+{
+    struct osc *o = &c->osc[i];
+    if (!want) {
+        o->ready = o->starting = 0;
+    } else if (!o->ready && !o->starting) {
+        o->starting = 1;
+        o->left_ps = startup_ps(c, i);
+    }
+}
+
 /* the F4's ready bits, the clock in use; a new HCLK ends the quantum */
 static void f4_settle(struct rcc *c)
 {
     u64 cr = c->cr->value, v;
     u32 sws = bits(c->cfgr, 2, 2), sw = bits(c->cfgr, 0, 2), h;
-    int pll_hse = (c->pllcfgr->value & F4_PLLSRC) != 0, hse_ok, src_ok;
+    int pll_hse = (c->pllcfgr->value & F4_PLLSRC) != 0, hse_ok, src_ok, i, want[O_N];
+    unsigned was_ready = 0; /* as the ready bits showed it */
+    for (i = 0; i < O_N; i++)
+        if (osc_cr_rdy[i] ? (cr & osc_cr_rdy[i]) != 0
+            : i == O_LSI ? c->csr && (c->csr->value & F4_LSIRDY)
+                         : c->bdcr && (c->bdcr->value & F4_LSERDY))
+            was_ready |= 1u << i;
     /* what the system clock uses cannot be turned off */
     if (sws == 0 || (sws >= 2 && !pll_hse))
         cr |= F4_HSION;
@@ -409,26 +505,47 @@ static void f4_settle(struct rcc *c)
     if (sws >= 2)
         cr |= F4_PLLON;
     hse_ok = c->s->hse_hz && ((cr & F4_HSEBYP) != 0) == (c->s->hse_clock != 0);
-    set_bit(&cr, F4_HSIRDY, (cr & F4_HSION) != 0);
-    set_bit(&cr, F4_HSERDY, (cr & F4_HSEON) && hse_ok);
-    src_ok = pll_hse ? (cr & F4_HSERDY) != 0 : (cr & F4_HSIRDY) != 0;
-    set_bit(&cr, F4_PLLRDY, (cr & F4_PLLON) && src_ok);
-    set_bit(&cr, F4_PLLI2SRDY, (cr & F4_PLLI2SON) && src_ok);
-    set_bit(&cr, F4_PLLSAIRDY, (cr & F4_PLLSAION) && src_ok);
+    want[O_HSI] = (cr & F4_HSION) != 0;
+    want[O_HSE] = (cr & F4_HSEON) && hse_ok;
+    want[O_LSI] = c->csr && ((c->csr->value & F4_LSION) || esk_stm32_iwdg_running(c->s));
+    want[O_LSE] = c->bdcr && (c->bdcr->value & F4_LSEON) && c->s->lse_hz && !(c->bdcr->value & F4_LSEBYP);
+    for (i = 0; i < O_N; i++) {
+        if (i == O_PLL) { /* the PLLs once their source is ready */
+            src_ok = c->osc[pll_hse ? O_HSE : O_HSI].ready;
+            want[O_PLL] = (cr & F4_PLLON) && src_ok;
+            want[O_PLLI2S] = (cr & F4_PLLI2SON) && src_ok;
+            want[O_PLLSAI] = (cr & F4_PLLSAION) && src_ok;
+        }
+        osc_follow(c, i, want[i]);
+        if (osc_cr_rdy[i])
+            set_bit(&cr, osc_cr_rdy[i], c->osc[i].ready);
+    }
     if (cr != c->cr->value)
         esk_rf_hw(c->cr, cr);
     if (c->csr) {
         v = c->csr->value;
-        set_bit(&v, F4_LSIRDY, (v & F4_LSION) != 0);
+        set_bit(&v, F4_LSIRDY, c->osc[O_LSI].ready);
         if (v != c->csr->value)
             esk_rf_hw(c->csr, v);
     }
     if (c->bdcr) {
         v = c->bdcr->value;
-        set_bit(&v, F4_LSERDY, (v & F4_LSEON) && c->s->lse_hz && !(v & F4_LSEBYP));
+        set_bit(&v, F4_LSERDY, c->osc[O_LSE].ready);
         if (v != c->bdcr->value)
             esk_rf_hw(c->bdcr, v);
     }
+    /* CIR: a source that has become ready with its interrupt enabled sets
+     * its flag, and the RCC interrupt is pending */
+    for (i = 0; i < O_N; i++)
+        if (c->osc[i].ready && !(was_ready >> i & 1) && c->cir) {
+            u64 f = 1u << osc_cir_bit[i];
+            if ((c->cir->value & f << 8) && !(c->cir->value & f)) {
+                esk_rf_hw(c->cir, c->cir->value | f);
+                if (c->irq >= 0)
+                    esk_rf_interrupt(c->p, c->irq);
+            }
+        }
+    rcc_clock(c);
     if (sw != sws && f4_src_ready(c, sw))
         esk_rf_hw(c->cfgr, (c->cfgr->value & ~(u64)0xC) | (u64)sw << 2);
     esk_stm32f4_pwr_settle(c->s);
@@ -474,6 +591,62 @@ u32 esk_stm32_timclk(struct esk_mach *s, int apb)
     if (c->dckcfgr && (c->dckcfgr->value >> 24 & 1)) /* TIMPRE */
         return d <= 4 ? c->hclk : 4 * (c->hclk / d);
     return d == 1 ? c->hclk : 2 * (c->hclk / d);
+}
+
+/* core cycles to picoseconds at HCLK (the time the start-ups count) */
+static u32 tick_hz(const struct rcc *c) { return c->hclk >= 1000u ? c->hclk : F4_HSI_HZ; }
+
+static void rcc_tick(void *ctx, u32 cycles)
+{
+    struct rcc *c = (struct rcc *)ctx;
+    u64 ps;
+    int i, done = 0;
+    if (!c->running)
+        return;
+    if (c->since > c->s->cycles)
+        c->since = 0; /* started during a reset, before the machine's time began again */
+    cycles = esk_mach_after(c->s, cycles, c->since);
+    c->since = 0;
+    ps = (u64)cycles * 1000000000ull / (tick_hz(c) / 1000u);
+    for (i = 0; i < O_N; i++) {
+        struct osc *o = &c->osc[i];
+        if (!o->starting)
+            continue;
+        if (o->left_ps <= ps) {
+            o->starting = 0;
+            o->ready = 1;
+            done = 1;
+        } else {
+            o->left_ps -= ps;
+        }
+    }
+    if (done) {
+        esk_stm32_rtc_sync(c->s); /* the RTC's time with LSE as it was */
+        f4_settle(c);
+        esk_stm32_rtc_sync(c->s);
+        c->s->yield = 1; /* a ready bit the program polls */
+    } else {
+        rcc_clock(c);
+    }
+}
+
+static int rcc_next(void *ctx, u32 *cycles)
+{
+    struct rcc *c = (struct rcc *)ctx;
+    u64 best = ~(u64)0, k = tick_hz(c) / 1000u;
+    int i;
+    if (!c->running)
+        return 0;
+    for (i = 0; i < O_N; i++)
+        if (c->osc[i].starting) {
+            u64 n = (c->osc[i].left_ps * k + 999999999ull) / 1000000000ull;
+            if (n < best)
+                best = n;
+        }
+    if (best == ~(u64)0)
+        return 0;
+    *cycles = best == 0 ? 1 : best > 0xffffffffu ? 0xffffffffu : (u32)best;
+    return 1;
 }
 
 static u32 rcc_read(void *ctx, u32 off, int n)
@@ -535,6 +708,9 @@ static void rcc_write(void *ctx, u32 off, int n, u32 v)
     }
     if (c->csr && (c->csr->value & CSR_RMVF))
         esk_rf_hw(c->csr, c->csr->value & ~(u64)CSR_RMVF);
+    if (c->f4 && c->cir && off - esk_rf_off(c->cir) < 4)
+        /* CIR's RDYC and CSSC bits clear their flags (and read 0) */
+        esk_rf_hw(c->cir, c->cir->value & ~((u64)(v >> 16 & 0xffu) | (u64)0xff0000u));
     for (i = 0; i < c->nrst; i++)
         if (off - esk_rf_off(c->rst[i].r) < 4 && (c->rst[i].r->value & c->rst[i].m))
             esk_rf_periph_reset(c->rst[i].q); /* its registers to their reset values */
@@ -579,6 +755,11 @@ static void reset_flags(struct rcc *c)
 /* the IWDG forces LSI on while it runs */
 static void lsi_forced(struct rcc *c)
 {
+    if (c->f4) { /* LSI starts as the IWDG asks for it */
+        if (esk_stm32_iwdg_running(c->s) && !c->osc[O_LSI].ready && !c->osc[O_LSI].starting)
+            f4_settle(c);
+        return;
+    }
     if (c->csr && esk_stm32_iwdg_running(c->s))
         esk_rf_hw(c->csr, c->csr->value | 2u);
 }
@@ -593,15 +774,31 @@ static void rcc_reset(void *ctx)
         f1_settle(c);
     }
     if (c->f4) {
+        int i;
         c->hclk = 0;
         c->warned = 0;
+        /* the machine's reset stopped the clocks, unless a model reset
+         * before this one (the IWDG, starting LSI) has started it again */
+        {
+            int k, listed = 0;
+            for (k = 0; k < c->p->rf->ntk; k++)
+                listed |= c->p->rf->tk[k] == c->p;
+            if (listed)
+                esk_rf_clock(c->p, &c->running, 0);
+            c->running = 0;
+        }
+        for (i = 0; i < O_N; i++)
+            if (i != O_LSE || c->s->reset_cause == ESK_RESET_POWER)
+                c->osc[i].ready = c->osc[i].starting = 0;
+        c->osc[O_HSI].ready = 1; /* the part leaves reset on HSI, once it runs */
         f4_settle(c);
+        c->since = 0; /* the machine's cycles start again from 0 */
     }
     lsi_forced(c);
 }
 
 const struct esk_dev_ops esk_stm32_rcc_ops = {
-    "stm32-rcc", rcc_read, rcc_write, rcc_reset, 0, 0,
+    "stm32-rcc", rcc_read, rcc_write, rcc_reset, rcc_tick, rcc_next,
 };
 
 static int ends_with(const char *s, const char *t)
@@ -712,6 +909,12 @@ void *esk_stm32_rcc_create(struct esk_mach *s, struct esk_rf_periph *p)
     c->bdcr = esk_rf_reg(p, "BDCR");
     if (c->f4) {
         c->dckcfgr = esk_rf_reg(p, "DCKCFGR");
+        c->cir = esk_rf_reg(p, "CIR");
+        c->plli2s = esk_rf_reg(p, "PLLI2SCFGR");
+        c->pllsai = esk_rf_reg(p, "PLLSAICFGR");
+        c->irq = esk_rf_irq(p, "RCC");
+        c->osc[O_HSI].ready = 1;
+        p->always_on = 1; /* LSE and LSI start through Stop too */
         s->core_hz = f4_core_hz;
         s->clock_ctx = c;
     }
@@ -725,7 +928,7 @@ void *esk_stm32_rcc_create(struct esk_mach *s, struct esk_rf_periph *p)
                 continue;
             if (c->f1 && (r == c->cr || r == c->cfgr))
                 continue; /* f1_settle's */
-            if (c->f4 && (r == c->cr || r == c->cfgr || r == c->csr || r == c->bdcr))
+            if (c->f4 && (r == c->cr || r == c->cfgr || r == c->csr || r == c->bdcr || r == c->cir))
                 continue; /* f4_settle's */
             if (l > 3 && ends_with(fn, "RDY")) { /* HSERDY: HSEON */
                 snprintf(base, sizeof base, "%.*sON", (int)(l - 3), fn);

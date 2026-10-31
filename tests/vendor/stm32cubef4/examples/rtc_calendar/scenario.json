@@ -3,7 +3,7 @@
   "kind": "scenario",
   "name": "rtc_calendar",
   "until": "1.6s",
-  "description": "RTC_Calendar: the RTC on the LSE crystal X2 (32.768 kHz) set to 02:00:00 on 14 April 2015, the backup register DR1 marked; the time and date are formatted into aShowTime and aShowDate as they count.",
+  "description": "RTC_Calendar: the RTC on LSI (the example's MSP selects RCC_RTCCLKSOURCE_LSI, its comment saying LSE) with LSE's prescalers (0x7F, 0xFF), so each of its seconds lasts 32768 / 32000 s; set to 02:00:00 on 14 April 2015, the backup register DR1 marked; the time and date are formatted into aShowTime and aShowDate as they count.",
   "inputs": [],
   "assertions": [
     {

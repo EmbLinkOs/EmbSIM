@@ -429,6 +429,11 @@ struct esk_mach {
      * see time pass. The low-power model sets it from deep_sleep; the
      * machine calls deep_wake once the core wakes, before it runs */
     int clocks_stopped;
+    /* cycles the core waits on its bus before its next instruction (an
+     * STM32's flash, read while it programs or erases): its time passes
+     * for the devices, no instruction runs and no exception is taken.
+     * A model sets it; the core uses it up */
+    u64 bus_stall;
     /* the core's domain is off (Standby): no interrupt wakes the core, only
      * a reset (the low-power model's reset_req) */
     int powered_down;

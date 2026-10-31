@@ -291,6 +291,7 @@ void esk_mach_reset(struct esk_mach *m)
     m->bus.watch_hit = 0;
     m->asleep = 0;
     m->clocks_stopped = 0;
+    m->bus_stall = 0;
     m->powered_down = 0;
     m->reset_req = 0;
     m->reset_cpu_only = 0;
