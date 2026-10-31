@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "hal_timebase_tim",
+  "until": "3.4s",
+  "description": "HAL_TimeBase_TIM: TIM6's update interrupt every 1 ms is the HAL's tick instead of SysTick; LD2 toggles every HAL_Delay(1000). B1 (active high, an EXTI rising edge) suspends the tick, freezing LD2, and a second press resumes it.",
+  "inputs": [
+    {
+      "at": "1.45s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "2.45s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2.5s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "blink",
+      "between": [
+        "600ms",
+        "1.4s"
+      ],
+      "probe": "led2",
+      "expect": {
+        "edges": 1
+      }
+    },
+    {
+      "id": "suspended",
+      "between": [
+        "1.5s",
+        "2.4s"
+      ],
+      "probe": "led2",
+      "expect": {
+        "edges": 0
+      }
+    }
+  ]
+}

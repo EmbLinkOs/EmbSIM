@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "dma_flashtoram",
+  "until": "300ms",
+  "description": "DMA_FLASHToRAM: DMA2 stream 0 copies 32 words from flash to SRAM, memory to memory; its transfer-complete interrupt turns LD1 on, LD2 (transfer error) and LD3 (Error_Handler) stay dark.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "ld1",
+      "at": "250ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "no-transfer-error",
+      "between": [
+        "20ms",
+        "290ms"
+      ],
+      "probe": "led2",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "20ms",
+        "290ms"
+      ],
+      "probe": "led3",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

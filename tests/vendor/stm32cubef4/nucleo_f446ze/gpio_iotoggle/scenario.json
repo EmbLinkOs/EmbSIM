@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "gpio_iotoggle",
+  "until": "1.2s",
+  "description": "GPIO_IOToggle on the NUCLEO-F446ZE: LD1 on PB0 toggled by HAL_GPIO_TogglePin every HAL_Delay(100), 101 ms of SysTick at 180 MHz.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "blink",
+      "between": [
+        "150ms",
+        "1.16s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 10
+      }
+    }
+  ]
+}

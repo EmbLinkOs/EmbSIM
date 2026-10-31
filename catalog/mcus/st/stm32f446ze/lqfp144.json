@@ -1,0 +1,600 @@
+{
+ "schema_version": 1,
+ "kind": "package",
+ "id": "st/stm32f446ze/lqfp144",
+ "name": "LQFP144",
+ "description": "LQFP144 package of the STM32F446Z(C-E)Tx, its pinout from ST's open pin data.",
+ "pins": [
+  {
+   "number": 1,
+   "signal": "PE2"
+  },
+  {
+   "number": 2,
+   "signal": "PE3"
+  },
+  {
+   "number": 3,
+   "signal": "PE4"
+  },
+  {
+   "number": 4,
+   "signal": "PE5"
+  },
+  {
+   "number": 5,
+   "signal": "PE6"
+  },
+  {
+   "number": 6,
+   "signal": "VBAT"
+  },
+  {
+   "number": 7,
+   "signal": "PC13"
+  },
+  {
+   "number": 8,
+   "signal": "PC14",
+   "doc": "PC14-OSC32_IN"
+  },
+  {
+   "number": 9,
+   "signal": "PC15",
+   "doc": "PC15-OSC32_OUT"
+  },
+  {
+   "number": 10,
+   "signal": "PF0"
+  },
+  {
+   "number": 11,
+   "signal": "PF1"
+  },
+  {
+   "number": 12,
+   "signal": "PF2"
+  },
+  {
+   "number": 13,
+   "signal": "PF3"
+  },
+  {
+   "number": 14,
+   "signal": "PF4"
+  },
+  {
+   "number": 15,
+   "signal": "PF5"
+  },
+  {
+   "number": 16,
+   "signal": "VSS"
+  },
+  {
+   "number": 17,
+   "signal": "VDD"
+  },
+  {
+   "number": 18,
+   "signal": "PF6"
+  },
+  {
+   "number": 19,
+   "signal": "PF7"
+  },
+  {
+   "number": 20,
+   "signal": "PF8"
+  },
+  {
+   "number": 21,
+   "signal": "PF9"
+  },
+  {
+   "number": 22,
+   "signal": "PF10"
+  },
+  {
+   "number": 23,
+   "signal": "PH0",
+   "doc": "PH0-OSC_IN"
+  },
+  {
+   "number": 24,
+   "signal": "PH1",
+   "doc": "PH1-OSC_OUT"
+  },
+  {
+   "number": 25,
+   "signal": "NRST"
+  },
+  {
+   "number": 26,
+   "signal": "PC0"
+  },
+  {
+   "number": 27,
+   "signal": "PC1"
+  },
+  {
+   "number": 28,
+   "signal": "PC2"
+  },
+  {
+   "number": 29,
+   "signal": "PC3"
+  },
+  {
+   "number": 30,
+   "signal": "VDD"
+  },
+  {
+   "number": 31,
+   "signal": "VSSA"
+  },
+  {
+   "number": 32,
+   "signal": "VREFP",
+   "doc": "VREF+"
+  },
+  {
+   "number": 33,
+   "signal": "VDDA"
+  },
+  {
+   "number": 34,
+   "signal": "PA0",
+   "doc": "PA0-WKUP"
+  },
+  {
+   "number": 35,
+   "signal": "PA1"
+  },
+  {
+   "number": 36,
+   "signal": "PA2"
+  },
+  {
+   "number": 37,
+   "signal": "PA3"
+  },
+  {
+   "number": 38,
+   "signal": "VSS"
+  },
+  {
+   "number": 39,
+   "signal": "VDD"
+  },
+  {
+   "number": 40,
+   "signal": "PA4"
+  },
+  {
+   "number": 41,
+   "signal": "PA5"
+  },
+  {
+   "number": 42,
+   "signal": "PA6"
+  },
+  {
+   "number": 43,
+   "signal": "PA7"
+  },
+  {
+   "number": 44,
+   "signal": "PC4"
+  },
+  {
+   "number": 45,
+   "signal": "PC5"
+  },
+  {
+   "number": 46,
+   "signal": "PB0"
+  },
+  {
+   "number": 47,
+   "signal": "PB1"
+  },
+  {
+   "number": 48,
+   "signal": "PB2"
+  },
+  {
+   "number": 49,
+   "signal": "PF11"
+  },
+  {
+   "number": 50,
+   "signal": "PF12"
+  },
+  {
+   "number": 51,
+   "signal": "VSS"
+  },
+  {
+   "number": 52,
+   "signal": "VDD"
+  },
+  {
+   "number": 53,
+   "signal": "PF13"
+  },
+  {
+   "number": 54,
+   "signal": "PF14"
+  },
+  {
+   "number": 55,
+   "signal": "PF15"
+  },
+  {
+   "number": 56,
+   "signal": "PG0"
+  },
+  {
+   "number": 57,
+   "signal": "PG1"
+  },
+  {
+   "number": 58,
+   "signal": "PE7"
+  },
+  {
+   "number": 59,
+   "signal": "PE8"
+  },
+  {
+   "number": 60,
+   "signal": "PE9"
+  },
+  {
+   "number": 61,
+   "signal": "VSS"
+  },
+  {
+   "number": 62,
+   "signal": "VDD"
+  },
+  {
+   "number": 63,
+   "signal": "PE10"
+  },
+  {
+   "number": 64,
+   "signal": "PE11"
+  },
+  {
+   "number": 65,
+   "signal": "PE12"
+  },
+  {
+   "number": 66,
+   "signal": "PE13"
+  },
+  {
+   "number": 67,
+   "signal": "PE14"
+  },
+  {
+   "number": 68,
+   "signal": "PE15"
+  },
+  {
+   "number": 69,
+   "signal": "PB10"
+  },
+  {
+   "number": 70,
+   "signal": "PB11"
+  },
+  {
+   "number": 71,
+   "signal": "VCAP_1"
+  },
+  {
+   "number": 72,
+   "signal": "VDD"
+  },
+  {
+   "number": 73,
+   "signal": "PB12"
+  },
+  {
+   "number": 74,
+   "signal": "PB13"
+  },
+  {
+   "number": 75,
+   "signal": "PB14"
+  },
+  {
+   "number": 76,
+   "signal": "PB15"
+  },
+  {
+   "number": 77,
+   "signal": "PD8"
+  },
+  {
+   "number": 78,
+   "signal": "PD9"
+  },
+  {
+   "number": 79,
+   "signal": "PD10"
+  },
+  {
+   "number": 80,
+   "signal": "PD11"
+  },
+  {
+   "number": 81,
+   "signal": "PD12"
+  },
+  {
+   "number": 82,
+   "signal": "PD13"
+  },
+  {
+   "number": 83,
+   "signal": "VSS"
+  },
+  {
+   "number": 84,
+   "signal": "VDD"
+  },
+  {
+   "number": 85,
+   "signal": "PD14"
+  },
+  {
+   "number": 86,
+   "signal": "PD15"
+  },
+  {
+   "number": 87,
+   "signal": "PG2"
+  },
+  {
+   "number": 88,
+   "signal": "PG3"
+  },
+  {
+   "number": 89,
+   "signal": "PG4"
+  },
+  {
+   "number": 90,
+   "signal": "PG5"
+  },
+  {
+   "number": 91,
+   "signal": "PG6"
+  },
+  {
+   "number": 92,
+   "signal": "PG7"
+  },
+  {
+   "number": 93,
+   "signal": "PG8"
+  },
+  {
+   "number": 94,
+   "signal": "VSS"
+  },
+  {
+   "number": 95,
+   "signal": "VDDUSB"
+  },
+  {
+   "number": 96,
+   "signal": "PC6"
+  },
+  {
+   "number": 97,
+   "signal": "PC7"
+  },
+  {
+   "number": 98,
+   "signal": "PC8"
+  },
+  {
+   "number": 99,
+   "signal": "PC9"
+  },
+  {
+   "number": 100,
+   "signal": "PA8"
+  },
+  {
+   "number": 101,
+   "signal": "PA9"
+  },
+  {
+   "number": 102,
+   "signal": "PA10"
+  },
+  {
+   "number": 103,
+   "signal": "PA11"
+  },
+  {
+   "number": 104,
+   "signal": "PA12"
+  },
+  {
+   "number": 105,
+   "signal": "PA13"
+  },
+  {
+   "number": 106,
+   "signal": "VCAP_2"
+  },
+  {
+   "number": 107,
+   "signal": "VSS"
+  },
+  {
+   "number": 108,
+   "signal": "VDD"
+  },
+  {
+   "number": 109,
+   "signal": "PA14"
+  },
+  {
+   "number": 110,
+   "signal": "PA15"
+  },
+  {
+   "number": 111,
+   "signal": "PC10"
+  },
+  {
+   "number": 112,
+   "signal": "PC11"
+  },
+  {
+   "number": 113,
+   "signal": "PC12"
+  },
+  {
+   "number": 114,
+   "signal": "PD0"
+  },
+  {
+   "number": 115,
+   "signal": "PD1"
+  },
+  {
+   "number": 116,
+   "signal": "PD2"
+  },
+  {
+   "number": 117,
+   "signal": "PD3"
+  },
+  {
+   "number": 118,
+   "signal": "PD4"
+  },
+  {
+   "number": 119,
+   "signal": "PD5"
+  },
+  {
+   "number": 120,
+   "signal": "VSS"
+  },
+  {
+   "number": 121,
+   "signal": "VDD"
+  },
+  {
+   "number": 122,
+   "signal": "PD6"
+  },
+  {
+   "number": 123,
+   "signal": "PD7"
+  },
+  {
+   "number": 124,
+   "signal": "PG9"
+  },
+  {
+   "number": 125,
+   "signal": "PG10"
+  },
+  {
+   "number": 126,
+   "signal": "PG11"
+  },
+  {
+   "number": 127,
+   "signal": "PG12"
+  },
+  {
+   "number": 128,
+   "signal": "PG13"
+  },
+  {
+   "number": 129,
+   "signal": "PG14"
+  },
+  {
+   "number": 130,
+   "signal": "VSS"
+  },
+  {
+   "number": 131,
+   "signal": "VDD"
+  },
+  {
+   "number": 132,
+   "signal": "PG15"
+  },
+  {
+   "number": 133,
+   "signal": "PB3"
+  },
+  {
+   "number": 134,
+   "signal": "PB4"
+  },
+  {
+   "number": 135,
+   "signal": "PB5"
+  },
+  {
+   "number": 136,
+   "signal": "PB6"
+  },
+  {
+   "number": 137,
+   "signal": "PB7"
+  },
+  {
+   "number": 138,
+   "signal": "BOOT0"
+  },
+  {
+   "number": 139,
+   "signal": "PB8"
+  },
+  {
+   "number": 140,
+   "signal": "PB9"
+  },
+  {
+   "number": 141,
+   "signal": "PE0"
+  },
+  {
+   "number": 142,
+   "signal": "PE1"
+  },
+  {
+   "number": 143,
+   "signal": "PDR_ON"
+  },
+  {
+   "number": 144,
+   "signal": "VDD"
+  }
+ ],
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "STMicroelectronics STM32_open_pin_data STM32F446Z(C-E)Tx.xml (BSD-3-Clause), converted by tools/importers/stm32pins.py"
+   }
+  ]
+ }
+}

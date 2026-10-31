@@ -5,7 +5,7 @@
  "version": "1.0.0",
  "device": "STM32F446",
  "description": "STM32F446 peripheral registers at their addresses, reset values and field access, and its interrupt numbers, converted by tools/importers/svd2regs.py from STMicroelectronics' STM32F446.svd (version 1.9, from ST's STM32F4 SVD pack v2.0 as archived by modm-io/cmsis-svd-stm32), Copyright (c) 2024 STMicroelectronics, SPDX-License-Identifier: Apache-2.0 (LICENSES/Apache-2.0.txt). Where the SVD and RM0390 (the STM32F446 reference manual) disagree, the manual's value is used; the corrections are listed in source. DBG is the DBGMCU block on the external private peripheral bus.",
- "source": "converted from STMicroelectronics STM32F446.svd v1.9 by tools/importers/svd2regs.py; split fields joined: RCC.PLLCFGR.PLLM, RCC.PLLCFGR.PLLN, RCC.PLLCFGR.PLLP, RCC.PLLCFGR.PLLQ, RCC.CFGR.SW, RCC.CFGR.SWS; registers added from the reference manual: SYSCFG.CFGR=0x2C; fields corrected from the reference manual: RCC.PLLCFGR.PLLR:28:3, RCC.CR.PLLSAION:28:1, RCC.CR.PLLSAIRDY:29:1:r, FLASH.ACR.LATENCY:0:4, SYSCFG.CMPCR.CMP_PD:0:1, SYSCFG.CFGR.FMPI2C1_SCL:0:1, SYSCFG.CFGR.FMPI2C1_SDA:1:1; reset values corrected from the reference manual: GPIOA.OSPEEDR=0x0C000000, USART6.SR=0x000000C0, UART4.SR=0x000000C0, DBG.DBGMCU_IDCODE=0x10006421; interrupts reassigned from the reference manual: TIM9=TIM1_BRK_TIM9; TIM10=TIM1_UP_TIM10; TIM11=TIM1_TRG_COM_TIM11; TIM12=TIM8_BRK_TIM12; TIM13=TIM8_UP_TIM13; TIM14=TIM8_TRG_COM_TIM14; I2C1=I2C1_EV,I2C1_ER; FMPI2C=FMPI2C1,FMPI2C1_error; ADC1=ADC; ADC2=ADC; ADC3=ADC; DAC=TIM6_DAC; PWR=PVD",
+ "source": "converted from STMicroelectronics STM32F446.svd v1.9 by tools/importers/svd2regs.py; split fields joined: RCC.PLLCFGR.PLLM, RCC.PLLCFGR.PLLN, RCC.PLLCFGR.PLLP, RCC.PLLCFGR.PLLQ, RCC.CFGR.SW, RCC.CFGR.SWS; registers added from the reference manual: SYSCFG.CFGR=0x2C; fields corrected from the reference manual: RCC.PLLCFGR.PLLR:28:3, RCC.CR.PLLSAION:28:1, RCC.CR.PLLSAIRDY:29:1:r, FLASH.ACR.LATENCY:0:4, SYSCFG.CMPCR.CMP_PD:0:1, SYSCFG.CFGR.FMPI2C1_SCL:0:1, SYSCFG.CFGR.FMPI2C1_SDA:1:1; reset values corrected from the reference manual: GPIOA.OSPEEDR=0x0C000000, USART6.SR=0x000000C0, UART4.SR=0x000000C0, DBG.DBGMCU_IDCODE=0x10006421; interrupts reassigned from the reference manual: TIM9=TIM1_BRK_TIM9; TIM10=TIM1_UP_TIM10; TIM11=TIM1_TRG_COM_TIM11; TIM12=TIM8_BRK_TIM12; TIM13=TIM8_UP_TIM13; TIM14=TIM8_TRG_COM_TIM14; I2C1=I2C1_EV,I2C1_ER; FMPI2C=FMPI2C1,FMPI2C1_error; ADC1=ADC; ADC2=ADC; ADC3=ADC; DAC=TIM6_DAC; PWR=PVD; fields reserved by the reference manual taken out: TIM3.CNT.CNT_H, TIM3.ARR.ARR_H, TIM3.CCR1.CCR1_H, TIM3.CCR2.CCR2_H, TIM3.CCR3.CCR3_H, TIM3.CCR4.CCR4_H; fields corrected from the reference manual: TIM3.CNT.CNT:0:16, TIM3.ARR.ARR:0:16, TIM3.CCR1.CCR1:0:16, TIM3.CCR2.CCR2:0:16, TIM3.CCR3.CCR3:0:16, TIM3.CCR4.CCR4:0:16",
  "interrupts": {
   "WWDG": 0,
   "PVD": 1,
@@ -1160,12 +1160,7 @@
      "offset": "0x24",
      "fields": [
       [
-       "CNT_H",
-       16,
-       16
-      ],
-      [
-       "CNT_L",
+       "CNT",
        0,
        16
       ]
@@ -1187,12 +1182,7 @@
      "offset": "0x2C",
      "fields": [
       [
-       "ARR_H",
-       16,
-       16
-      ],
-      [
-       "ARR_L",
+       "ARR",
        0,
        16
       ]
@@ -1203,12 +1193,7 @@
      "offset": "0x34",
      "fields": [
       [
-       "CCR1_H",
-       16,
-       16
-      ],
-      [
-       "CCR1_L",
+       "CCR1",
        0,
        16
       ]
@@ -1219,12 +1204,7 @@
      "offset": "0x38",
      "fields": [
       [
-       "CCR2_H",
-       16,
-       16
-      ],
-      [
-       "CCR2_L",
+       "CCR2",
        0,
        16
       ]
@@ -1235,12 +1215,7 @@
      "offset": "0x3C",
      "fields": [
       [
-       "CCR3_H",
-       16,
-       16
-      ],
-      [
-       "CCR3_L",
+       "CCR3",
        0,
        16
       ]
@@ -1251,12 +1226,7 @@
      "offset": "0x40",
      "fields": [
       [
-       "CCR4_H",
-       16,
-       16
-      ],
-      [
-       "CCR4_L",
+       "CCR4",
        0,
        16
       ]

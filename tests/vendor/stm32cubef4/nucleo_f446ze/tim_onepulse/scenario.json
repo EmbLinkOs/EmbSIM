@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_onepulse",
+  "until": "200ms",
+  "description": "TIM_OnePulse: TIM3 at 18 MHz in one-pulse mode, triggered by TI2 (PB5, Arduino D22): a 10 us pulse from a generator at 100 ms makes CH1 (PB4) rise 16383 counts later (910 us) and fall at ARR 65535 (2.73 ms after).",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "idle",
+      "between": [
+        "50ms",
+        "100.85ms"
+      ],
+      "probe": "pb4",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "pulse",
+      "between": [
+        "100.95ms",
+        "103.6ms"
+      ],
+      "probe": "pb4",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "after",
+      "between": [
+        "103.7ms",
+        "190ms"
+      ],
+      "probe": "pb4",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

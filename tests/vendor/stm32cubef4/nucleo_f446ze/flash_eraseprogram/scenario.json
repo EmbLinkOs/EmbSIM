@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "flash_eraseprogram",
+  "until": "7.5s",
+  "description": "FLASH_EraseProgram: sectors 2 to 7 erased (two of 16 KiB at 250 ms, one of 64 KiB at 550 ms, three of 128 KiB at 1 s each, DS10693's typical times at x32), then 480 KiB programmed a word at a time (16 us each, about 2 s), the core waiting on the flash throughout; every word read back as DATA_32 turns LD1 on near 6.1 s. LD2 (a word wrong) and LD3 (an error) stay dark.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "still-working",
+      "at": "5.5s",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "done",
+      "at": "7s",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "no-mismatch",
+      "between": [
+        "20ms",
+        "7.4s"
+      ],
+      "probe": "led2",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "20ms",
+        "7.4s"
+      ],
+      "probe": "led3",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

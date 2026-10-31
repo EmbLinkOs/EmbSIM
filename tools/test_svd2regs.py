@@ -101,6 +101,16 @@ class Svd2Regs(unittest.TestCase):
         with self.assertRaises(SystemExit):
             svd2regs.apply_merges(doc, ["RCC.PLLCFGR.PLLN"])
 
+    def test_reserved_field(self):
+        doc = {"source": "s", "interrupts": {}, "peripherals": [{"name": "TIM3", "base": "0x0", "registers": [
+            {"name": "CNT", "offset": "0x24", "fields": [["CNT_H", 16, 16], ["CNT_L", 0, 16]]}]}]}
+        svd2regs.apply_reserved(doc, ["TIM3.CNT.CNT_H"])
+        svd2regs.apply_fields(doc, ["TIM3.CNT=CNT:0:16"])
+        self.assertEqual(doc["peripherals"][0]["registers"][0]["fields"], [["CNT", 0, 16]])
+        self.assertIn("TIM3.CNT.CNT_H", doc["source"])
+        with self.assertRaises(SystemExit):
+            svd2regs.apply_reserved(doc, ["TIM3.CNT.CNT_H"])
+
     def test_added_register(self):
         doc = {"source": "s", "interrupts": {}, "peripherals": [{"name": "SYSCFG", "base": "0x0", "registers": [
             {"name": "CMPCR", "offset": "0x20", "fields": []}]}]}

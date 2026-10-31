@@ -10,7 +10,7 @@ toolchains.
 | --- | --- | --- |
 | `arduino/` | ArduinoCore-avr (Blink, a tour of the core) | `emblink/arduino_uno` |
 | `stm32cube/` | ST's STM32F1 HAL and CMSIS device files | `emblink/bluepill` |
-| `stm32cubef4/` | STM32CubeF4's own examples for the NUCLEO-F446RE (GPIO, HAL time bases, RCC, RTC, timers, UART, PWR's low-power modes, I2C between two boards, EEPROM emulation in flash) | `emblink/nucleo_f446re` |
+| `stm32cubef4/` | STM32CubeF4's own examples for the NUCLEO-F446RE (GPIO, HAL time bases, RCC, RTC, timers, UART, PWR's low-power modes, I2C between two boards, EEPROM emulation in flash) and, with `--board nucleo_f446ze`, for the NUCLEO-F446ZE (ADC, CRC, Cortex, DMA, flash erase and program, GPIO, the watchdogs, RTC, seven timer examples, UART) | `emblink/nucleo_f446re`, `emblink/nucleo_f446ze` |
 | `pico-sdk/` | The Raspberry Pi Pico SDK | `emblink/pico` |
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
 | `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |

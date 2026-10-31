@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "crc_example",
+  "until": "300ms",
+  "description": "CRC_Example: the CRC unit's CRC-32 (0x04C11DB7, from 0xFFFFFFFF) of a 114-word buffer is 0x379E9F06, as uwExpectedCRCValue has it: LD1 on, LD3 (the error LED) off.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "crc",
+      "at": "250ms",
+      "probe": "crc",
+      "expect": {
+        "equals": 933142278
+      }
+    },
+    {
+      "id": "ld1",
+      "at": "250ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "no-error",
+      "between": [
+        "20ms",
+        "290ms"
+      ],
+      "probe": "led3",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}

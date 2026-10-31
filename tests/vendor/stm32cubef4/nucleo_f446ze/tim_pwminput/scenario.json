@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_pwminput",
+  "until": "200ms",
+  "description": "TIM_PWMInput: TIM3 in PWM input mode on channel 2 (PB5, Arduino D22): a 20 kHz signal of 25 % duty from a generator gives uwFrequency = (HCLK / 2) / CCR2 = 20000 and uwDutyCycle = 25.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "frequency",
+      "at": "150ms",
+      "probe": "frequency",
+      "expect": {
+        "min": 19990,
+        "max": 20010
+      }
+    },
+    {
+      "id": "duty",
+      "at": "150ms",
+      "probe": "duty",
+      "expect": {
+        "min": 25,
+        "max": 25
+      }
+    }
+  ]
+}

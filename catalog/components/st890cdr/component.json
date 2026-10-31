@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/st890cdr",
+  "version": "1.0.0",
+  "name": "ST890CDR power distribution switch",
+  "category": "power",
+  "description": "STMicroelectronics ST890CDR, a P-channel high-side power distribution switch with an active-low ON input, a programmable current limit (SET) and a fault output, in SO-8: the NUCLEO-144's (MB1137) U4, which joins the ST-LINK's USB 5 V to the board once the ST-LINK pulls ON low.",
+  "keywords": [
+    "power switch",
+    "load switch",
+    "high-side",
+    "st890",
+    "st890cdr",
+    "stmicroelectronics",
+    "so-8",
+    "nucleo"
+  ],
+  "pins": [
+    {
+      "name": "IN",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Input (SO-8 pins 1 and 2)"
+    },
+    {
+      "name": "ON",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Active-low ON input (SO-8 pin 3)"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Ground (SO-8 pin 4): the switch draws no supply current here",
+      "required": false
+    },
+    {
+      "name": "SET",
+      "number": 5,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Current-limit setting resistor (SO-8 pin 5): no behaviour here",
+      "required": false
+    },
+    {
+      "name": "OUT",
+      "number": 6,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Output (SO-8 pins 6 and 7)"
+    },
+    {
+      "name": "FAULT",
+      "number": 8,
+      "model": {
+        "kind": "passive"
+      },
+      "doc": "Open-drain, active-low fault output (SO-8 pin 8): never asserted here",
+      "required": false
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "M",
+          "component": "emblink/pmos",
+          "params": {
+            "part": "generic",
+            "vto": -1.0,
+            "kp": 3.6,
+            "lambda": 0.005
+          }
+        }
+      ],
+      "nets": {},
+      "ports": {
+        "IN": "M.S",
+        "ON": "M.G",
+        "OUT": "M.D"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 60,
+    "pins": {
+      "IN": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "ON": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "GND": {
+        "x": 40,
+        "y": 60,
+        "side": "bottom"
+      },
+      "SET": {
+        "x": 60,
+        "y": 60,
+        "side": "bottom"
+      },
+      "OUT": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "FAULT": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no supply voltages.",
+      "omissions": [
+        "switching"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "The switch between IN and OUT, on while ON is held low and off while ON is at IN, as a P-channel MOSFET of about 70 mOhm with 5 V on IN and ON at 0 V.",
+      "omissions": [
+        "the datasheet was not at hand: the on-resistance (about 70 mOhm) and ON's threshold (about 1 V below IN) are assumed, not the ST890's values",
+        "the current limit SET programs, the thermal shutdown and the fault output (FAULT never asserts)",
+        "reverse-current blocking and the body diode",
+        "the turn-on slew and the supply current",
+        "temperature, damage"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.3,
+          6
+        ],
+        "current_a": [
+          -1,
+          1
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "MB1137 B-01 electrical schematics (NUCLEO-XXXXZX), sheet 1: U4 ST890CDR, R27 (10 kOhm) pulling ON up to U5V, R28 (2.7 kOhm) on SET, LD5 on FAULT",
+        "url": "https://www.st.com/en/evaluation-tools/nucleo-f446ze.html#cad-resources",
+        "date": "2026-10-31"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ],
+  "part": {
+    "mpn": "ST890CDR",
+    "manufacturer": "STMicroelectronics",
+    "package": "SO-8",
+    "datasheet": "https://www.st.com/resource/en/datasheet/st890.pdf"
+  }
+}
