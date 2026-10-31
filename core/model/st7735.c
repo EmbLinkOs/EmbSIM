@@ -12,20 +12,24 @@
  *   - the frame memory, 128 x 160 at 18 bits a pixel (GM 128 x 160), its
  *     content at power-up whatever the cells hold (noise here, the same
  *     each time);
- *   - CASET and RASET set the window, RAMWR writes it from its start,
+ *   - CASET and RASET set the window, each address as its two bytes come
+ *     (one cut short after its start keeps the end: ST's st7735 driver's
+ *     st7735_SetCursor relies on it), RAMWR writes it from its start,
  *     column by column then row by row as MADCTL's MV, MX and MY order
  *     them, wrapping at its end; COLMOD's 12, 16 and 18 bits a pixel;
  *     MADCTL's RGB bit swaps red and blue on the panel;
  *   - SLPIN, SLPOUT, DISPOFF, DISPON, INVOFF, INVON, IDMOFF, IDMON (eight
  *     colours: each component's top bit), NORON, PTLON with PTLAR (the
  *     rows outside the partial area blank), SWRESET and the RESX pin;
- *     after a reset (the pin, SWRESET, power-up) the controller takes no
- *     command for 5 ms (the datasheet's reset cancel time in sleep in
- *     mode), which is said once;
+ *     a byte within 5 ms of a reset (the pin, SWRESET, power-up: the
+ *     datasheet's reset cancel time in sleep in mode, a maximum) is
+ *     taken, as a typical part takes it, and warned of once;
  *   - after a reset: sleep in, display off, normal mode, no inversion,
  *     COLMOD 18 bits, MADCTL 0, the window the whole memory;
  *   - the panel: blank (white, a normally-white panel) while sleeping or
- *     the display is off, dark without power or backlight (LED low).
+ *     the display is off, dark without power or backlight (LED low); its
+ *     scan starts at its bottom right as the module is held, frame memory
+ *     (0, 0) there (MADCTL's MX and MY set: an upright image).
  * The parameters of the panel commands (frame rate B1 to B3, inversion
  * B4, power C0 to C5, gamma E0, E1 and GAMSET) are taken and kept, with
  * no effect on the image.
@@ -63,6 +67,11 @@ typedef struct st7735_state {
     int warned_busy;
     uint64_t ram_writes, commands;
     int probe_x, probe_y;
+    /* the image as last rendered, until it changes */
+    int dirty;
+    uint32_t white;
+    char hex[12];
+    char b64[(W * H * 2 + 2) / 3 * 4 + 1];
 } st7735_state;
 
 static int lv(esk_pin *p, int dflt)
@@ -114,6 +123,7 @@ static void soft_reset(st7735_state *s, esk_comp *c)
     s->per = H - 1;
     s->colmod = 6;
     s->madctl = 0;
+    s->dirty = 1;
     s->busy_until = esk_comp_now(c) + RESET_PS;
 }
 
@@ -124,8 +134,10 @@ static void store(st7735_state *s, uint32_t rgb)
     int maxc = mv ? H - 1 : W - 1, maxr = mv ? W - 1 : H - 1;
     int c = mx ? maxc - s->x : s->x, r = my ? maxr - s->y : s->y;
     int px = mv ? r : c, py = mv ? c : r;
-    if (px >= 0 && px < W && py >= 0 && py < H)
+    if (px >= 0 && px < W && py >= 0 && py < H) {
         s->mem[py * W + px] = rgb;
+        s->dirty = 1;
+    }
     s->ram_writes++;
     if (++s->x > s->xe) {
         s->x = s->xs;
@@ -159,6 +171,7 @@ static void pixel_byte(st7735_state *s, uint8_t b)
 static void command(st7735_state *s, esk_comp *c, uint8_t b)
 {
     s->cmd = b;
+    s->dirty = 1;
     s->nparam = 0;
     s->ramwr = 0;
     s->npx = 0;
@@ -218,28 +231,36 @@ static void data(st7735_state *s, uint8_t b)
         s->param[n] = b;
     s->nparam++;
     switch (s->cmd) {
-    case 0x2A: /* CASET: XS, XE (16 bits each) */
-    case 0x2B: /* RASET */
-        if (n == 3) {
-            int a0 = s->param[0] << 8 | s->param[1], a1 = s->param[2] << 8 | s->param[3];
+    case 0x2A: /* CASET: XS, then XE (16 bits each), each taken as it
+                * comes: a CASET cut short after XS keeps XE (ST's
+                * st7735_SetCursor sends only XS) */
+    case 0x2B: /* RASET: YS, YE */
+        if (n == 1 || n == 3) {
+            int v = s->param[n - 1] << 8 | s->param[n];
             if (s->cmd == 0x2A) {
-                s->xs = a0;
-                s->xe = a1;
+                if (n == 1)
+                    s->xs = v;
+                else
+                    s->xe = v;
             } else {
-                s->ys = a0;
-                s->ye = a1;
+                if (n == 1)
+                    s->ys = v;
+                else
+                    s->ye = v;
             }
         }
         break;
-    case 0x30: /* PTLAR: PSL, PEL */
-        if (n == 3) {
+    case 0x30: /* PTLAR: PSL, PEL, as they come */
+        s->dirty = 1;
+        if (n == 1)
             s->psr = s->param[0] << 8 | s->param[1];
+        else if (n == 3)
             s->per = s->param[2] << 8 | s->param[3];
-        }
         break;
     case 0x36: /* MADCTL */
         if (n == 0)
             s->madctl = b;
+        s->dirty = 1;
         break;
     case 0x3A: /* COLMOD: IFPF */
         if (n == 0)
@@ -252,14 +273,13 @@ static void data(st7735_state *s, uint8_t b)
 
 static void byte_in(st7735_state *s, esk_comp *c, uint8_t b, int is_data)
 {
-    if (esk_comp_now(c) < s->busy_until) {
-        if (!s->warned_busy) {
-            s->warned_busy = 1;
-            esk_comp_diag(c, ES_SEV_WARNING, "st7735.reset_wait",
-                          "a byte came within 5 ms of the controller's reset (RESX, SWRESET or power-up) and was "
-                          "ignored (ST7735R: the reset cancel time)");
-        }
-        return;
+    if (esk_comp_now(c) < s->busy_until && !s->warned_busy) {
+        /* the datasheet's reset cancel time is a maximum: a part may take
+         * it, or not; the program is told it relies on a typical part */
+        s->warned_busy = 1;
+        esk_comp_diag(c, ES_SEV_WARNING, "st7735.reset_wait",
+                      "a byte came within 5 ms of the controller's reset (RESX, SWRESET or power-up): the "
+                      "ST7735R's reset cancel time is up to 5 ms, so a part may miss it");
     }
     if (is_data)
         data(s, b);
@@ -271,8 +291,11 @@ static void st_input(esk_comp *c, esk_pin *p)
 {
     st7735_state *s = (st7735_state *)c->state;
     int scl, now_power = powered(s), rst;
+    if (p == s->led)
+        s->dirty = 1;
     if (now_power != s->powered) {
         s->powered = now_power;
+        s->dirty = 1;
         if (now_power) {
             noise(s);
             soft_reset(s, c);
@@ -298,7 +321,7 @@ static void st_input(esk_comp *c, esk_pin *p)
         return;
     scl = lv(s->scl, 0);
     if (scl && !s->last_scl && !lv(s->cs, 1)) {
-        s->shift = (uint8_t)(s->shift << 1 | (lv(s->sda, 0) ? 1u : 0u));
+        s->shift = (uint8_t)((unsigned)s->shift << 1 | (lv(s->sda, 0) ? 1u : 0u));
         if (++s->bits == 8) {
             s->bits = 0;
             byte_in(s, c, s->shift, lv(s->dc, 1));
@@ -359,10 +382,15 @@ static es_status st_set(esk_comp *c, const char *input, const esk_json *value)
     return ES_OK;
 }
 
-/* the panel as it shows: RGB565 */
+/* the panel as it shows, (0, 0) its top left as the module is held (its
+ * pins at the top): RGB565. The 1.8" panel's scan starts at its bottom
+ * right, so frame memory (0, 0) is there, and the drivers (Adafruit's,
+ * ST's) set MADCTL's MX and MY for an upright image */
 static uint16_t shown(const st7735_state *s, int px, int py)
 {
     uint32_t v, r, g, b;
+    px = W - 1 - px;
+    py = H - 1 - py;
     if (!s->powered || !lv(s->led, 1))
         return 0x0000; /* no backlight: dark */
     if (s->sleeping || !s->display_on || (s->partial && (py < s->psr || py > s->per)))
@@ -391,22 +419,20 @@ static uint16_t shown(const st7735_state *s, int px, int py)
 
 static const char B64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static void st_observe(esk_comp *c, esk_json *out)
+/* the image shown, rendered again only when something changed it */
+static void render(st7735_state *s)
 {
-    st7735_state *s = (st7735_state *)c->state;
-    esk_alloc *a = c->e->a;
     static uint8_t raw[W * H * 2];
-    static char b64[(W * H * 2 + 2) / 3 * 4 + 1];
-    uint32_t h = 2166136261u, i, o = 0, white = 0;
-    char hex[12];
+    uint32_t h = 2166136261u, i, o = 0;
     int x, y;
+    s->white = 0;
     for (y = 0; y < H; y++)
         for (x = 0; x < W; x++) {
             uint16_t v = shown(s, x, y);
             raw[2 * (y * W + x)] = (uint8_t)(v >> 8);
             raw[2 * (y * W + x) + 1] = (uint8_t)v;
             if (v == 0xFFFF)
-                white++;
+                s->white++;
         }
     for (i = 0; i < sizeof raw; i++) {
         h ^= raw[i];
@@ -414,20 +440,29 @@ static void st_observe(esk_comp *c, esk_json *out)
     }
     for (i = 0; i + 2 < sizeof raw; i += 3) {
         uint32_t v = (uint32_t)raw[i] << 16 | (uint32_t)raw[i + 1] << 8 | raw[i + 2];
-        b64[o++] = B64[v >> 18];
-        b64[o++] = B64[(v >> 12) & 63u];
-        b64[o++] = B64[(v >> 6) & 63u];
-        b64[o++] = B64[v & 63u];
+        s->b64[o++] = B64[v >> 18];
+        s->b64[o++] = B64[(v >> 12) & 63u];
+        s->b64[o++] = B64[(v >> 6) & 63u];
+        s->b64[o++] = B64[v & 63u];
     }
     if (i < sizeof raw) { /* the last one or two bytes */
         uint32_t v = (uint32_t)raw[i] << 16 | (i + 1 < sizeof raw ? (uint32_t)raw[i + 1] << 8 : 0u);
-        b64[o++] = B64[v >> 18];
-        b64[o++] = B64[(v >> 12) & 63u];
-        b64[o++] = i + 1 < sizeof raw ? B64[(v >> 6) & 63u] : '=';
-        b64[o++] = '=';
+        s->b64[o++] = B64[v >> 18];
+        s->b64[o++] = B64[(v >> 12) & 63u];
+        s->b64[o++] = i + 1 < sizeof raw ? B64[(v >> 6) & 63u] : '=';
+        s->b64[o++] = '=';
     }
-    b64[o] = 0;
-    (void)snprintf(hex, sizeof hex, "%08lx", (unsigned long)h);
+    s->b64[o] = 0;
+    (void)snprintf(s->hex, sizeof s->hex, "%08lx", (unsigned long)h);
+    s->dirty = 0;
+}
+
+static void st_observe(esk_comp *c, esk_json *out)
+{
+    st7735_state *s = (st7735_state *)c->state;
+    esk_alloc *a = c->e->a;
+    if (s->dirty)
+        render(s);
     esk_json_set_bool(a, out, "on", s->powered && !s->sleeping && s->display_on);
     esk_json_set_bool(a, out, "sleeping", s->sleeping);
     esk_json_set_bool(a, out, "inverted", s->inverted);
@@ -435,10 +470,10 @@ static void st_observe(esk_comp *c, esk_json *out)
     esk_json_set_integer(a, out, "madctl", s->madctl);
     esk_json_set_integer(a, out, "ram_writes", (int64_t)s->ram_writes);
     esk_json_set_integer(a, out, "commands", (int64_t)s->commands);
-    esk_json_set_integer(a, out, "white_pixels", white);
+    esk_json_set_integer(a, out, "white_pixels", s->white);
     esk_json_set_integer(a, out, "probe", shown(s, s->probe_x, s->probe_y));
-    esk_json_set_string(a, out, "checksum", hex);
-    esk_json_set_string(a, out, "frame", b64);
+    esk_json_set_string(a, out, "checksum", s->hex);
+    esk_json_set_string(a, out, "frame", s->b64);
 }
 
 const esk_model_ops esk_st7735_ops = { "st7735", sizeof(st7735_state), st_create, NULL, st_reset, st_input,

@@ -104,6 +104,9 @@ es_status esk_island_reset(esk_island *isl);
 es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached);
 /* a source changed (a bridge pin toggled): the island must re-evaluate from now */
 void esk_island_touch(esk_island *isl, es_time_t now);
+/* integrate a lagging island up to `now` with its sources as they are, so
+ * that its voltages are now's (a quiet one is already) */
+void esk_island_sync(esk_island *isl, es_time_t now);
 /* a component wake for its analog device (a device with a clock of its own,
  * as a PTC fuse's temperatures) */
 void esk_adev_on_time(esk_adev *d, es_time_t now);

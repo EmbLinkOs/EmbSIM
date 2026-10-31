@@ -69,6 +69,8 @@ void esk_stm32f4_rcc_stop(struct esk_mach *m);
  * Standby (its pins let go) */
 void esk_stm32f4_pwr_wakeup(struct esk_mach *m);
 int esk_stm32f4_pwr_wkup_pin(struct esk_mach *m, int port, int pin);
+/* the port's enabled WKUP pins, a bit each */
+u32 esk_stm32f4_pwr_wkup_mask(struct esk_mach *m, int port);
 void esk_stm32f4_pwr_pin_edge(struct esk_mach *m, int port, int pin, int level);
 void esk_stm32f4_pwr_pins_settled(struct esk_mach *m);
 int esk_stm32f4_pwr_standby(struct esk_mach *m);

@@ -10,7 +10,7 @@ toolchains.
 | --- | --- | --- |
 | `arduino/` | ArduinoCore-avr (Blink, a tour of the core) | `emblink/arduino_uno` |
 | `stm32cube/` | ST's STM32F1 HAL and CMSIS device files | `emblink/bluepill` |
-| `stm32cubef4/` | STM32CubeF4's own examples for the NUCLEO-F446RE (GPIO, HAL time bases, RCC, RTC, timers, UART, PWR's low-power modes, I2C between two boards, EEPROM emulation in flash) and, with `--board nucleo_f446ze`, for the NUCLEO-F446ZE (ADC, CRC, Cortex, DMA, flash erase and program, GPIO, the watchdogs, RTC, seven timer examples, UART, the USB device HID mouse on a computer's port; its middleware, stm32-mw-usb-device v2.11.4, fetched like the rest) | `emblink/nucleo_f446re`, `emblink/nucleo_f446ze` |
+| `stm32cubef4/` | STM32CubeF4's own examples for the NUCLEO-F446RE (GPIO, HAL time bases, RCC, RTC, timers, UART, PWR's low-power modes, I2C between two boards, EEPROM emulation in flash) and, with `--board nucleo_f446ze`, for the NUCLEO-F446ZE (ADC, CRC, Cortex, DMA, flash erase and program, GPIO, the watchdogs, RTC, seven timer examples, UART, the USB device HID mouse on a computer's port, the USB host HID demo with Adafruit's 1.8" TFT shield and a mouse; their middleware and components, stm32-mw-usb-device v2.11.4, stm32-mw-usb-host, stm32-mw-fatfs, stm32-st7735 and stm32-bsp-common at the commits CubeF4 pins, fetched like the rest and copied into CubeF4's tree, with its Adafruit_Shield BSP and Utilities' LCD log and fonts) | `emblink/nucleo_f446re`, `emblink/nucleo_f446ze` |
 | `pico-sdk/` | The Raspberry Pi Pico SDK | `emblink/pico` |
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
 | `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |

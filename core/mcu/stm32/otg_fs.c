@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright 2026 Junior Deogracias */
 /* otg_fs.c -- the STM32F4's USB on-the-go full-speed controller (RM0390
- * 30, the Synopsys DWC2 core) in device mode, over the register file's
- * OTGFS block (tools/importers/dwc2_regs.py), with the host on its cable
+ * 30, the Synopsys DWC2 core) in device and host mode, over the register
+ * file's OTGFS block (tools/importers/dwc2_regs.py), with the host on its cable
  * (engine/usb.h, ADR-031: the bus as transactions).
  *
  * As the core does it:
@@ -52,12 +52,48 @@
  *   - the OTG_FS interrupt is a level: GAHBCFG's GINT and any GINTSTS bit
  *     GINTMSK lets through (DAINT, DAINTMSK and the endpoints' masks
  *     behind IEPINT and OEPINT).
+ *
+ * As a host (CMOD 1: GUSBCFG's FHMOD), as RM0390 30.5 and the HAL's HCD
+ * driver have it:
+ *   - the port: with PPWR set, the pull-up of the device on the cable
+ *     (engine/usb.h) is a connection (PCSTS, PCDET and HPRTINT), its end a
+ *     disconnection (DISCINT, the port disabled, PENCHNG); PRST drives the
+ *     reset's SE0 for as long as it is set, and its end enables the port
+ *     (PENA, PENCHNG) at the device's speed (PSPD 1 full, 2 low); PENA
+ *     written 1 disables it; PSUSP stops the frames, PRES drives resume
+ *     (K) until it is cleared; PLSTS the line's state;
+ *   - the frames: an SOF (a low-speed device's keep-alive) every HFIR's
+ *     FRIVL clocks of HCFG's PHY clock (48 MHz full speed, 6 MHz low
+ *     speed), GINTSTS's SOF and HFNUM's frame number and time left;
+ *   - twelve channels: SETUP (DPID 3), OUT and IN transactions at the bus's
+ *     bit time, OUT's packet once all its words are in the channel's
+ *     transmit FIFO (the non-periodic one, or the periodic one for an
+ *     interrupt or isochronous channel; HNPTXSTS and HPTXSTS their words
+ *     free), one IN token for each CHENA (the HAL re-enables after each
+ *     packet) with room for its packet in the receive FIFO; the device's
+ *     ACK (the data toggle, PKTCNT and XFRSIZ counted down, XFRC and CHENA
+ *     cleared after the last OUT packet), NAK, STALL, no answer (TXERR),
+ *     more than MPSIZ (BBERR), a toggle not expected (DTERR); the channel
+ *     stops after any answer but ACK until the program halts it or
+ *     enables it again; an IN packet's data in the receive FIFO with
+ *     status 2 and, after the last or a short one, status 3, whose taking
+ *     is XFRC; CHDIS with CHENA halts the channel (CHH) once the bus is
+ *     done with it, flushing what it had queued; an interrupt channel
+ *     goes once a frame, in the frames of the parity ODDFRM asks, before
+ *     the non-periodic ones; a transaction starts only if it fits in what
+ *     is left of the frame;
+ *   - HAINT, HAINTMSK, GINTSTS's HCINT, HPRTINT, NPTXFE and PTXFE (TXFELVL
+ *     and PTXFELVL), the interrupt level as in device mode.
  * Inside: the transactions come whole at the time the host part sends
- * them (engine/usb.h); the device's turnaround is not seen. Not yet: host
- * mode (the host channel registers are storage), the ID pin and OTG's SRP
- * and HNP, isochronous endpoints' frame parity and incomplete-transfer
- * interrupts, LPM, the battery-charging detection of GCCFG, the
- * OTG_FS_WKUP interrupt through
+ * them, or this core sends them as a host (engine/usb.h); the device's
+ * turnaround is not seen; a host channel's OUT words are kept per channel
+ * (the core keeps them in its shared FIFO in order: the words free are
+ * the same). Not yet: the ID pin and OTG's SRP and HNP, split
+ * transactions through a hub (one device on a cable), isochronous
+ * endpoints' frame parity and incomplete-transfer interrupts and a host's
+ * isochronous channels' timing, FRMOR, LPM, the battery-charging
+ * detection of GCCFG, the over-current input (the F446 has none: a
+ * board's switch reports it on a GPIO), the OTG_FS_WKUP interrupt through
  * EXTI line 18, the SOF pulse on PA8, DMA (the F446's OTG_FS has none). */
 #include <string.h>
 

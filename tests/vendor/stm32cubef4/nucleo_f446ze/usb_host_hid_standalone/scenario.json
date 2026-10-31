@@ -1,0 +1,170 @@
+{
+ "schema_version": 1,
+ "kind": "scenario",
+ "name": "usb_host_hid_standalone",
+ "until": "3300ms",
+ "description": "USB_Host/HID_Standalone, as it ships, on a NUCLEO-F446ZE with Adafruit's 1.8\" TFT shield and a USB mouse (low speed) on CN13. It finds the shield (A3 high against its pull-down), starts the LCD (ST's st7735 driver: 'OTG FS HID Host' and its log), powers VBUS through U12 by driving PG6 high (USBH_LL_DriverVBUS), and its OTG core, as a host, sees the mouse's pull-up on D-, resets the port and enumerates it at low speed: address 1, its strings, its configuration, the HID class (SET_IDLE, the report descriptor), as the log on the LCD says. While the log scrolls the main loop is busy drawing and does not read the joystick; once it is quiet, SEL (the shield's joystick, read on ADC3) starts the mouse demo, which clears the log and draws its window (a white frame at x 7, y 52) and buttons; the mouse moved and clicked sends reports on its interrupt endpoint, which the host polls every 10 ms and the demo draws.",
+ "inputs": [
+  {
+   "at": "0ms",
+   "target": "SHIELD.TFT",
+   "input": "probe_x",
+   "value": 7
+  },
+  {
+   "at": "0ms",
+   "target": "SHIELD.TFT",
+   "input": "probe_y",
+   "value": 70
+  },
+  {
+   "at": "2000ms",
+   "target": "SHIELD.SEL",
+   "input": "pressed",
+   "value": true
+  },
+  {
+   "at": "2150ms",
+   "target": "SHIELD.SEL",
+   "input": "pressed",
+   "value": false
+  },
+  {
+   "at": "2500ms",
+   "target": "MOUSE",
+   "input": "move_x",
+   "value": 40
+  },
+  {
+   "at": "2500ms",
+   "target": "MOUSE",
+   "input": "move_y",
+   "value": 20
+  },
+  {
+   "at": "2800ms",
+   "target": "MOUSE",
+   "input": "buttons",
+   "value": 1
+  },
+  {
+   "at": "3000ms",
+   "target": "MOUSE",
+   "input": "buttons",
+   "value": 0
+  },
+  {
+   "at": "3100ms",
+   "target": "MOUSE",
+   "input": "move_x",
+   "value": -200
+  }
+ ],
+ "assertions": [
+  {
+   "id": "vbus-off-at-start",
+   "at": "50ms",
+   "probe": "pg6",
+   "expect": {
+    "logic": "0"
+   }
+  },
+  {
+   "id": "mouse-unpowered",
+   "at": "50ms",
+   "probe": "mouse_state",
+   "expect": {
+    "equals": "detached"
+   }
+  },
+  {
+   "id": "vbus-switched-on",
+   "at": "200ms",
+   "probe": "pg6",
+   "expect": {
+    "logic": "1"
+   }
+  },
+  {
+   "id": "vbus-5v",
+   "at": "200ms",
+   "probe": "vbus",
+   "expect": {
+    "min_v": 4.9,
+    "max_v": 5.05
+   }
+  },
+  {
+   "id": "port-reset",
+   "at": "250ms",
+   "probe": "mouse_state",
+   "expect": {
+    "equals": "default"
+   }
+  },
+  {
+   "id": "configured",
+   "by": "1200ms",
+   "probe": "mouse_state",
+   "expect": {
+    "equals": "configured"
+   }
+  },
+  {
+   "id": "address-1",
+   "at": "1500ms",
+   "probe": "mouse_address",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "report-protocol",
+   "at": "1500ms",
+   "probe": "mouse_protocol",
+   "expect": {
+    "equals": 1
+   }
+  },
+  {
+   "id": "lcd-on",
+   "at": "1000ms",
+   "probe": "lcd_on",
+   "expect": {
+    "equals": true
+   }
+  },
+  {
+   "id": "no-report-while-still",
+   "at": "2400ms",
+   "probe": "mouse_reports",
+   "expect": {
+    "equals": 0
+   }
+  },
+  {
+   "id": "mouse-window-drawn",
+   "at": "2400ms",
+   "probe": "lcd_pixel",
+   "expect": {
+    "equals": 65535
+   }
+  },
+  {
+   "id": "first-report",
+   "at": "2600ms",
+   "probe": "mouse_reports",
+   "expect": {
+    "min": 1
+   }
+  },
+  {
+   "id": "reports",
+   "at": "3250ms",
+   "probe": "mouse_reports",
+   "expect": {
+    "min": 4
+   }
+  }
+ ]
+}

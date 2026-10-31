@@ -5,6 +5,21 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## The NUCLEO-F446ZE as a USB host (2026-10-31)
+
+STM32CubeF4's USB_Host/HID_Standalone, unmodified, on the NUCLEO-F446ZE with
+Adafruit's 1.8" TFT shield (`emblink/adafruit_tft_shield18`) and a USB mouse
+(`emblink/usb_mouse`) on CN13. The firmware switches VBUS on through U12
+(PG6), its OTG core enumerates the mouse at low speed, and ST's LCD log
+shows it; SEL on the shield's joystick starts the mouse demo, which draws
+the pointer as the mouse moves. These are the ST7735's own frames (its
+`frame` output, 128 x 160 at 3x), as the panel shows them: the uninitialised
+memory's noise is gone once ST's BSP clears the screen.
+
+| Enumerated (1.95 s) | The mouse demo (3.25 s) |
+|---|---|
+| ![The LCD log after enumeration: the mouse's class, subclass and protocol, 'Mouse device found!', 'HID class started.', the HID menu](nucleo-f446ze/host-hid-enumerated.png) | ![The mouse demo: its window with the pointer moved, the three button boxes, the mouse menu](nucleo-f446ze/host-hid-mouse-demo.png) |
+
 ## USB on the bench (2026-10-31)
 
 STM32CubeF4's USB_Device/HID_Standalone, unmodified, on the NUCLEO-F446ZE

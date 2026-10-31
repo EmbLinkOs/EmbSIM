@@ -1388,6 +1388,26 @@ int esk_island_quiet(esk_island *isl, es_time_t *next)
     return 1;
 }
 
+/* an island that lags behind (engine.c's island_step_cb puts its steps
+ * off while another part's events come far faster) integrates up to `now`,
+ * its sources unchanged: a reading is then of now */
+void esk_island_sync(esk_island *isl, es_time_t now)
+{
+    mna *p = (mna *)isl->priv;
+    es_time_t reached = 0;
+    uint32_t guard = 0;
+    if (!p->running || isl->failed || p->in_step || p->quiet || isl->t_accepted >= now)
+        return;
+    p->exact_until = 1;
+    while (isl->t_accepted < now && guard++ < MNA_MAX_CATCHUP) {
+        if (esk_island_step(isl, now, &reached) != ES_OK) {
+            isl->failed = 1;
+            break;
+        }
+    }
+    p->exact_until = 0;
+}
+
 void esk_island_touch(esk_island *isl, es_time_t now)
 {
     mna *p = (mna *)isl->priv;

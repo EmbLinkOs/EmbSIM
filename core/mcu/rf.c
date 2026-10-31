@@ -358,6 +358,54 @@ int esk_rf_pin(const struct esk_rf *rf, const char *name)
     return -1;
 }
 
+#define AF_PINS (11 * 32) /* PA0 to PK15, as port * 32 + bit */
+
+struct af_key {
+    const char *sig;
+    int i;
+};
+
+static int af_key_cmp(const void *a, const void *b)
+{
+    const struct af_key *x = (const struct af_key *)a, *y = (const struct af_key *)b;
+    int c = strcmp(x->sig, y->sig);
+    return c ? c : (x->i > y->i) - (x->i < y->i);
+}
+
+/* the alternate functions' indexes, by pin and by signal: the same answers
+ * as a scan of the table, in its order */
+static es_status af_index(struct esk_mach *m, struct esk_rf *rf)
+{
+    int i, n = rf->naf, *count;
+    struct af_key *keys;
+    rf->af_by_pin = (int *)esk_mach_alloc(m, (size_t)(n ? n : 1) * sizeof *rf->af_by_pin);
+    rf->af_pin_first = (int *)esk_mach_alloc(m, (AF_PINS + 1) * sizeof *rf->af_pin_first);
+    rf->af_by_sig = (int *)esk_mach_alloc(m, (size_t)(n ? n : 1) * sizeof *rf->af_by_sig);
+    count = (int *)esk_mach_alloc(m, (AF_PINS + 1) * sizeof *count);
+    keys = (struct af_key *)esk_mach_alloc(m, (size_t)(n ? n : 1) * sizeof *keys);
+    if (!rf->af_by_pin || !rf->af_pin_first || !rf->af_by_sig || !count || !keys)
+        return ES_ENOMEM;
+    for (i = 0; i < n; i++)
+        if (rf->af_at[i] >= 0 && rf->af_at[i] < AF_PINS)
+            rf->af_pin_first[rf->af_at[i] + 1]++;
+    for (i = 0; i < AF_PINS; i++)
+        rf->af_pin_first[i + 1] += rf->af_pin_first[i];
+    for (i = 0; i < n; i++) {
+        int at = rf->af_at[i];
+        if (at >= 0 && at < AF_PINS)
+            rf->af_by_pin[rf->af_pin_first[at] + count[at]++] = i;
+    }
+    for (i = 0; i < n; i++) {
+        keys[i].sig = rf->af_sig[i];
+        keys[i].i = i;
+    }
+    if (n)
+        qsort(keys, (size_t)n, sizeof *keys, af_key_cmp);
+    for (i = 0; i < n; i++)
+        rf->af_by_sig[i] = keys[i].i;
+    return ES_OK;
+}
+
 es_status esk_rf_alternates(struct esk_mach *m, const esk_json *alt, char *why, size_t cap)
 {
     struct esk_rf *rf = m->rf;
@@ -409,7 +457,7 @@ es_status esk_rf_alternates(struct esk_mach *m, const esk_json *alt, char *why, 
         }
     }
     rf->naf = at;
-    return ES_OK;
+    return af_index(m, rf);
 }
 
 es_status esk_rf_dma_requests(struct esk_mach *m, const esk_json *map, char *why, size_t cap)
@@ -522,22 +570,37 @@ int esk_rf_dma_maps(const struct esk_rf *rf, const char *ctl, int stream, int ch
 const char *esk_rf_af_signal(const struct esk_rf *rf, int port, int bit, int af, int k)
 {
     int i, at = port * 32 + bit;
-    for (i = 0; rf && i < rf->naf; i++)
-        if (rf->af_at[i] == at && rf->af_num[i] == af && k-- == 0)
-            return rf->af_sig[i];
+    if (!rf || !rf->naf || !rf->af_pin_first || at < 0 || at >= AF_PINS)
+        return 0;
+    for (i = rf->af_pin_first[at]; i < rf->af_pin_first[at + 1]; i++) {
+        int e = rf->af_by_pin[i];
+        if (rf->af_num[e] == af && k-- == 0)
+            return rf->af_sig[e];
+    }
     return 0;
 }
 
 int esk_rf_af_pin(const struct esk_rf *rf, const char *sig, int k, int *af)
 {
-    int i;
-    for (i = 0; rf && sig && i < rf->naf; i++)
-        if (!strcmp(rf->af_sig[i], sig) && k-- == 0) {
-            if (af)
-                *af = rf->af_num[i];
-            return rf->af_at[i];
-        }
-    return -1;
+    int lo = 0, hi, e;
+    if (!rf || !sig || !rf->naf || !rf->af_by_sig || k < 0)
+        return -1;
+    hi = rf->naf;
+    while (lo < hi) { /* the first entry of `sig` */
+        int mid = lo + (hi - lo) / 2;
+        if (strcmp(rf->af_sig[rf->af_by_sig[mid]], sig) < 0)
+            lo = mid + 1;
+        else
+            hi = mid;
+    }
+    if (lo + k >= rf->naf)
+        return -1;
+    e = rf->af_by_sig[lo + k];
+    if (strcmp(rf->af_sig[e], sig) != 0)
+        return -1;
+    if (af)
+        *af = rf->af_num[e];
+    return rf->af_at[e];
 }
 
 static void sort_regs(struct esk_rf_reg **r, int n)
@@ -729,9 +792,21 @@ static struct esk_rf_reg *reg_at(struct esk_rf *rf, u32 a, int n)
 struct esk_rf_periph *esk_rf_periph(struct esk_rf *rf, const char *name)
 {
     int i;
-    for (i = 0; rf && i < rf->np; i++)
-        if (!strcmp(rf->p[i].name, name))
+    unsigned slot;
+    if (!rf || !name)
+        return 0;
+    /* the models ask by the same few names at every edge: the last answer
+     * for this address, if it still names that peripheral */
+    slot = (unsigned)(((uintptr_t)name >> 3) % ES_COUNTOF(rf->pcache_p));
+    if (rf->pcache_name[slot] == name && rf->pcache_p[slot] >= rf->p && rf->pcache_p[slot] < rf->p + rf->np &&
+        !strcmp(rf->pcache_p[slot]->name, name))
+        return rf->pcache_p[slot];
+    for (i = 0; i < rf->np; i++)
+        if (!strcmp(rf->p[i].name, name)) {
+            rf->pcache_name[slot] = name;
+            rf->pcache_p[slot] = &rf->p[i];
             return &rf->p[i];
+        }
     return 0;
 }
 

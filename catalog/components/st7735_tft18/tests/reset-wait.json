@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "component_test",
  "name": "reset-wait",
- "description": "A command within 5 ms of power-up is ignored (the reset cancel time): SLPOUT at 1 ms is lost and the controller still sleeps.",
+ "description": "SLPOUT and DISPON 1 ms after power-up, inside the reset cancel time (at most 5 ms): taken as a typical part takes them, with a warning; the display is on.",
  "policy": "functional",
  "until": "20ms",
  "circuit": {
@@ -44,11 +44,11 @@
  "expect": {
   "output:DUT.sleeping": {
    "at": "19ms",
-   "equals": true
+   "equals": false
   },
   "output:DUT.on": {
    "at": "19ms",
-   "equals": false
+   "equals": true
   }
  }
 }

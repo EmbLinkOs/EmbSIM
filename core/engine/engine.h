@@ -221,6 +221,9 @@ void esk_pin_drive(esk_pin *p, esk_logic value, esk_strength strength, es_time_t
 void esk_pin_release(esk_pin *p);
 esk_logic esk_pin_read(esk_pin *p);           /* samples the net with floating/unknown diagnostics */
 esk_logic esk_net_value(const esk_net *n);
+/* an analog net's voltage at the engine's time (its island, if it lagged
+ * behind, catches up first); 0 for a digital net */
+double esk_net_voltage_now(esk_net *n);
 /* Current opposing known digital drives. Analog islands compare active digital
  * output intents; digital nets compare known values at the strongest strength.
  * X by itself is not evidence of contention. */

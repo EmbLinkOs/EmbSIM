@@ -756,7 +756,7 @@ static int h_pin_volts(void *ctx, int port, int bit, double *v)
         return 0;
     n = p->net;
     if (n->island)
-        *v = n->voltage;
+        *v = esk_net_voltage_now(p->net); /* an ADC samples it now */
     else
         *v = esk_net_value(n) == ESK_L1 ? st->m.vdd : 0.0;
     return 1;
@@ -1589,6 +1589,11 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
         return;
     }
     if (st->held)
+        return;
+    /* the echo of its own output, which the net agrees with: IDR already
+     * has it (the GPIO model reads an output's own drive) */
+    if (p->is_output && p->drive_strength == ESK_STR_STRONG && p->drive_value != ESK_LZ && p->net &&
+        !p->net->island && esk_net_value(p->net) == p->drive_value)
         return;
     if (st->m.pins_changed) {
         es_time_t now = e->sched.now;

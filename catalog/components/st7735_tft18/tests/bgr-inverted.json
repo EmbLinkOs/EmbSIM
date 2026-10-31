@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "component_test",
  "name": "bgr-inverted",
- "description": "MADCTL's BGR bit swaps red and blue on the panel, and INVON inverts: a pure red pixel (F800) shows as the inverse of blue, FFE0.",
+ "description": "MADCTL's BGR bit swaps red and blue on the panel, and INVON inverts: a pure red pixel (F800) at frame memory (0, 0), the panel's bottom right, shows as the inverse of blue, FFE0.",
  "policy": "functional",
  "until": "20ms",
  "circuit": {
@@ -50,5 +50,19 @@
    "at": "19ms",
    "equals": true
   }
- }
+ },
+ "inputs": [
+  {
+   "at": "18ms",
+   "target": "DUT",
+   "input": "probe_x",
+   "value": 127
+  },
+  {
+   "at": "18ms",
+   "target": "DUT",
+   "input": "probe_y",
+   "value": 159
+  }
+ ]
 }

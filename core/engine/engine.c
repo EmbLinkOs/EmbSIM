@@ -946,6 +946,10 @@ es_status esk_engine_set_input(esk_engine *e, esk_comp *c, const char *input, co
     copy = esk_json_clone(e->a, value);
     if (!copy)
         return ES_ENOMEM;
+    /* an analog part's island, if it lagged, reaches now with the input as
+     * it was: the change is from now on */
+    if (c->adev && c->adev->isl)
+        esk_island_sync(c->adev->isl, e->sched.now);
     if (esk_json_object_set(e->a, c->inputs, input, copy)) {
         esk_json_free(e->a, copy);
         return ES_ENOMEM;
@@ -1092,6 +1096,12 @@ void esk_pin_refresh(esk_pin *p)
 }
 
 static void island_step_cb(void *ctx, void *arg, es_time_t now);
+/* a step clipped to less than 1/ISLAND_CHOP of the island's own proposal
+ * and shorter than ISLAND_DENSE_PS (another part's events tens of
+ * nanoseconds apart: a core's SPI clock) is put off, up to ISLAND_LAG_PS */
+#define ISLAND_CHOP 16u
+#define ISLAND_DENSE_PS ES_PS_PER_US
+#define ISLAND_LAG_PS (10u * ES_PS_PER_US)
 
 static es_status schedule_island(esk_engine *e, esk_island *isl, es_time_t at)
 {
@@ -1110,16 +1120,37 @@ static void island_step_cb(void *ctx, void *arg, es_time_t now)
      * events cannot (crossings arrive as SIGNAL events), so they are ignored */
     es_time_t next = esk_sched_next_time_excluding(&e->sched, ESK_EV_ANALOG), until, reached = now;
     es_status st;
+    es_time_t h = isl->h_next_ps ? isl->h_next_ps : isl->p.h_max_ps;
     isl->step_event = 0;
     if (isl->failed)
         return;
-    until = now;
-    if (esk_time_add(now, isl->h_next_ps ? isl->h_next_ps : isl->p.h_max_ps, &until))
-        until = ES_TIME_MAX - 1;
-    if (next < until)
-        until = next;
-    if (until <= now)
-        until = now + 1;
+    if (isl->t_accepted < now) {
+        /* lagging (below): integrate up to now, which no event can undo */
+        until = now;
+    } else {
+        until = now;
+        if (esk_time_add(now, h, &until))
+            until = ES_TIME_MAX - 1;
+        if (next < until)
+            until = next;
+        if (until <= now)
+            until = now + 1;
+        if (next > now && until - now < ISLAND_DENSE_PS && (until - now) * ISLAND_CHOP < h) {
+            /* another part's events come far faster than this island needs
+             * steps (a core's SPI clock beside a supply settling), under a
+             * microsecond apart: rather
+             * than a step to each, it lags behind and catches up in steps
+             * of its own, at most ISLAND_LAG_PS later; a part that changes
+             * its sources meanwhile integrates it up to that moment first
+             * (esk_island_touch), so only its readings and crossings may
+             * come that late */
+            es_time_t lag = h < ISLAND_LAG_PS ? h : ISLAND_LAG_PS, at;
+            if (esk_time_add(now, lag, &at))
+                at = ES_TIME_MAX - 1;
+            schedule_island(e, isl, at);
+            return;
+        }
+    }
     st = esk_island_step(isl, until, &reached);
     if (st != ES_OK) {
         isl->failed = 1;
@@ -1395,7 +1426,21 @@ es_status esk_engine_reset(esk_engine *e)
 
 static void sync_cb(void *ctx, void *arg, es_time_t now)
 {
-    ES_UNUSED(ctx); ES_UNUSED(arg); ES_UNUSED(now);
+    esk_engine *e = (esk_engine *)ctx;
+    size_t i;
+    ES_UNUSED(arg);
+    /* the advance ends here: an island that lagged catches up */
+    for (i = 0; i < e->islands.len; i++)
+        esk_island_sync(e->islands.data[i], now);
+}
+
+double esk_net_voltage_now(esk_net *n)
+{
+    if (n && n->island) {
+        esk_island_sync(n->island, n->island->e->sched.now);
+        return n->voltage;
+    }
+    return 0.0;
 }
 
 es_status esk_engine_advance(esk_engine *e, es_time_t until)

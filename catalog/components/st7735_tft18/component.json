@@ -147,7 +147,7 @@
   {
    "name": "probe",
    "type": "integer",
-   "doc": "The probed pixel's colour as shown, RGB565"
+   "doc": "The probed pixel's colour as shown, RGB565 ((0, 0) the top left as the module is held)"
   },
   {
    "name": "checksum",
@@ -157,7 +157,7 @@
   {
    "name": "frame",
    "type": "string",
-   "doc": "The image shown: 128 x 160 RGB565 pixels, big-endian, row by row, in base64"
+   "doc": "The image shown, as the module is held (its pins at the top): 128 x 160 RGB565 pixels, big-endian, row by row from the top left, in base64"
   }
  ],
  "model": {
@@ -215,13 +215,14 @@
  },
  "fidelity": {
   "functional": {
-   "claims": "The ST7735R's 4-wire serial interface (bits on SCL's rising edge, D/CX with the last bit, CSX resetting the bit counter only) and its frame memory of 128 x 160 pixels at 18 bits: CASET, RASET and RAMWR in the window, MADCTL's MV, MX, MY and RGB, COLMOD's 12, 16 and 18 bits a pixel, SLPIN/SLPOUT, DISPON/DISPOFF, INVON/INVOFF, IDMON/IDMOFF, PTLON with PTLAR, NORON, SWRESET and RESX with the 5 ms before a command is taken again (warned once); after a reset it sleeps with its display off. The panel shows white while blank and nothing without supply or backlight; the memory holds noise until written.",
+   "claims": "The ST7735R's 4-wire serial interface (bits on SCL's rising edge, D/CX with the last bit, CSX resetting the bit counter only) and its frame memory of 128 x 160 pixels at 18 bits: CASET, RASET (each address taken as its two bytes come, so one cut short after its start keeps the end, as ST's driver relies on) and RAMWR in the window, MADCTL's MV, MX, MY and RGB, COLMOD's 12, 16 and 18 bits a pixel, SLPIN/SLPOUT, DISPON/DISPOFF, INVON/INVOFF, IDMON/IDMOFF, PTLON with PTLAR, NORON, SWRESET and RESX, a byte within their 5 ms reset cancel time (the datasheet's maximum) taken and warned of once; after a reset it sleeps with its display off. The panel shows white while blank and nothing without supply or backlight; the memory holds noise until written. The panel as the module is held (its pins at the top): frame memory (0, 0) at its bottom right, so MADCTL's MX and MY (as Adafruit's and ST's drivers set them) give an upright image; the outputs show it that way.",
    "omissions": [
     "the 3-wire (9-bit) and parallel interfaces",
     "the read commands (RDDID, RDDST, RAMRD): SDA is never driven",
     "vertical scrolling (SCRLAR, VSCSAD) and the tearing effect output",
     "the frame rate, the panel's response time and the gamma curves' effect on colours (B1 to C5, E0, E1 and GAMSET are taken without effect)",
-    "the 120 ms an SLPOUT needs before an SLPIN, and the supply current"
+    "the 120 ms an SLPOUT needs before an SLPIN, and the supply current",
+    "a part slower than typical: a byte within the reset cancel time is always taken"
    ],
    "validation": [
     "tests/*.json"

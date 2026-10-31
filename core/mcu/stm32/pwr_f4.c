@@ -162,6 +162,19 @@ int esk_stm32f4_pwr_wkup_pin(struct esk_mach *m, int port, int pin)
     return w && b && (w->csr->value & b) != 0;
 }
 
+u32 esk_stm32f4_pwr_wkup_mask(struct esk_mach *m, int port)
+{
+    struct pwr *w = f4_pwr(m);
+    u32 mask = 0;
+    int pin;
+    if (!w || (port != 0 && port != 2))
+        return 0;
+    for (pin = 0; pin < 16; pin++)
+        if (wkup_bit(port, pin) && (w->csr->value & wkup_bit(port, pin)))
+            mask |= 1u << pin;
+    return mask;
+}
+
 void esk_stm32f4_pwr_pin_edge(struct esk_mach *m, int port, int pin, int level)
 {
     if (level && esk_stm32f4_pwr_wkup_pin(m, port, pin))

@@ -109,16 +109,17 @@ static void update_once(struct f4gpio *g)
     struct esk_mach *s = g->s;
     u32 idr = 0, odr = (u32)g->odr->value, old = (u32)g->idr->value & 0xffffu;
     int i, standby = esk_stm32f4_pwr_standby(s);
+    u32 wkup = esk_stm32f4_pwr_wkup_mask(s, g->port);
     for (i = 0; i < 16; i++) {
         u32 mode = field(g->moder, i, 2), pupd = field(g->pupdr, i, 2);
         int od = (int)field(g->otyper, i, 1), lvl, ext = 0;
         esk_mach_pin o;
         memset(&o, 0, sizeof o);
         o.drive = -1;
-        if (standby || esk_stm32f4_pwr_wkup_pin(s, g->port, i)) {
+        if (standby || (wkup >> i & 1u)) {
             /* Standby lets the pins go; an enabled WKUP pin is an input
              * with a pull-down (pwr_f4.c) */
-            o.pull = esk_stm32f4_pwr_wkup_pin(s, g->port, i) ? 2 : 0;
+            o.pull = (wkup >> i & 1u) ? 2 : 0;
         } else if (mode == 3) {
             o.analog = 1;
         } else {

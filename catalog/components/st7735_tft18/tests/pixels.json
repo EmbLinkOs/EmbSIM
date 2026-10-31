@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "component_test",
  "name": "pixels",
- "description": "Awake, the display on, 16 bits a pixel: a window of columns 2 and 3 on row 5 written red then green; the probe at (3, 5) reads green, (2, 5) red.",
+ "description": "Awake, the display on, 16 bits a pixel, MADCTL 0: a window of columns 2 and 3 on row 5 written red then green; frame memory (3, 5) is green, which the panel (its scan from its bottom right) shows at (124, 154).",
  "policy": "functional",
  "until": "20ms",
  "circuit": {
@@ -60,13 +60,13 @@
    "at": "18ms",
    "target": "DUT",
    "input": "probe_x",
-   "value": 3
+   "value": 124
   },
   {
    "at": "18ms",
    "target": "DUT",
    "input": "probe_y",
-   "value": 5
+   "value": 154
   }
  ]
 }
