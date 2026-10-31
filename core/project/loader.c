@@ -75,7 +75,7 @@ static void mcu_signal_model(const char *sig, const char *family, esk_pin_model 
     esk_pin_model_family(family, m);
     if (!strncmp(sig, "VSS", 3) || !strcmp(sig, "GND") || !strcmp(sig, "AVSS")) {
         m->kind = ESK_PIN_POWER; m->power_ground = 1; m->nominal_v = 0.0;
-    } else if (!strncmp(sig, "VDD", 3) || !strcmp(sig, "VBAT") || !strcmp(sig, "VCC") || !strcmp(sig, "VREF+") ||
+    } else if (!strncmp(sig, "VDD", 3) || !strcmp(sig, "VBAT") || !strcmp(sig, "VCC") || !strcmp(sig, "VREF+") || !strcmp(sig, "VREFP") ||
                !strcmp(sig, "AVCC") || !strcmp(sig, "AVDD") || !strcmp(sig, "VUSB3V3") || !strcmp(sig, "VCAP")) {
         m->kind = ESK_PIN_POWER; m->power_ground = 0;
     } else if ((sig[0] == 'P' && sig[1] >= 'A' && sig[1] <= 'Z' && sig[2] >= '0' && sig[2] <= '9') ||

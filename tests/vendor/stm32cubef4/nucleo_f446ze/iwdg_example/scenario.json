@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "iwdg_example",
+  "until": "2s",
+  "description": "IWDG_Example: TIM5's channel 4, remapped onto LSI (TIM5_OR), measures LSI (32 kHz) and the IWDG is set to 250 ms from it (/32, reload LSI / 128); the main loop toggles LD2 and refreshes it every 240 ms. B1 at 1 s makes the EXTI handler write an invalid address: the hard fault's loop stops the refreshes, the IWDG resets the part about 250 ms later, and the program, finding IWDGRSTF, lights LD1.",
+  "inputs": [
+    {
+      "at": "1s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1.1s",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "running",
+      "between": [
+        "100ms",
+        "900ms"
+      ],
+      "probe": "led2",
+      "expect": {
+        "edges": 3
+      }
+    },
+    {
+      "id": "no-reset-yet",
+      "between": [
+        "100ms",
+        "1.2s"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "reset-seen",
+      "at": "1.8s",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    }
+  ]
+}

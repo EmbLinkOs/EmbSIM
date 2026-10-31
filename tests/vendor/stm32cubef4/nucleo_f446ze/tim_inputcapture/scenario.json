@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_inputcapture",
+  "until": "200ms",
+  "description": "TIM_InputCapture: TIM3 (90 MHz, the timers' clock at APB1 x 2) captures channel 2 (PB5, Arduino D22) on rising edges; a 10 kHz square wave from a generator gives uwFrequency = 2 x PCLK1 / the difference of two captures = 10000.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "frequency",
+      "at": "150ms",
+      "probe": "frequency",
+      "expect": {
+        "min": 9999,
+        "max": 10001
+      }
+    }
+  ]
+}

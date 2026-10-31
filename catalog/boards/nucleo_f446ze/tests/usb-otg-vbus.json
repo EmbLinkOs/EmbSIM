@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "usb-otg-vbus",
+  "description": "Besides the ST-LINK's USB, a host's 5 V on CN13 (USB OTG, device mode): VBUS lights LD8 through T2 and reaches PA9 (OTG_FS_VBUS) through R35 (10 kOhm), the input drawing nothing.",
+  "policy": "electrical",
+  "until": "10ms",
+  "circuit": {
+    "boards": [
+      {
+        "id": "B1",
+        "board": "emblink/nucleo_f446ze"
+      }
+    ],
+    "components": [
+      {
+        "id": "HOST",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      },
+      {
+        "id": "CABLE",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 0.25
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "OTG",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5.0
+        }
+      }
+    ],
+    "nets": {
+      "HOSTV": [
+        "HOST.+",
+        "CABLE.1"
+      ],
+      "VBUS": [
+        "CABLE.2",
+        "B1.U5V"
+      ],
+      "GND": [
+        "HOST.-",
+        "G.GND",
+        "B1.GND",
+        "OTG.-"
+      ],
+      "OTGV": [
+        "OTG.+",
+        "B1.USB_VBUS"
+      ],
+      "PA9": [
+        "B1.CN12_21"
+      ]
+    }
+  },
+  "inputs": [],
+  "expect": {
+    "output:B1.LD8.luminance": {
+      "at": "9ms",
+      "min": 0.05
+    },
+    "net:PA9": {
+      "at": "9ms",
+      "min_v": 4.9,
+      "max_v": 5.05
+    },
+    "output:B1.LD7.luminance": {
+      "at": "9ms",
+      "max": 0.001
+    }
+  }
+}

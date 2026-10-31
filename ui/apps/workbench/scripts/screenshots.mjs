@@ -97,6 +97,7 @@ const explorer = 'examples/explorer16-pic32mx/project.json';
 const explorer24 = 'examples/explorer16-pic24/project.json';
 const picoDual = 'examples/pico-dual-core/project.json';
 const nucleo = 'examples/nucleo-f446re-blink-serial/project.json';
+const nucleo144 = 'examples/nucleo-f446ze-blink-serial/project.json';
 const faulting = 'tests/firmware/fault/project.json';
 
 /** the Debug perspective stopped at a breakpoint on `symbol` */
@@ -215,6 +216,12 @@ try {
     await run(page, 2700);
   }, { scale: 2, element: '.es-board svg' });
   await shot(browser, 'debug-nucleo', nucleo, (page) => debugAt(page, 'SysTick_Handler', 1500));
+  // the NUCLEO-F446ZE (STM32F446ZE in LQFP144, the Nucleo-144 MB1137)
+  await shot(browser, 'design-nucleo144', nucleo144, async (page) => run(page, 1500));
+  await shot(browser, 'run-nucleo144', nucleo144, async (page) => {
+    await perspective(page, 2);
+    await run(page, 2700);
+  });
   // M5: verification. A scenario opened, edited in place and run; coverage of
   // the Blue Pill's firmware with its source; a recording replayed
   const verifyRegion = (page, name) => page.getByRole('region', { name });

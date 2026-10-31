@@ -1,33 +1,38 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Junior Deogracias
-"""STM32CubeF4's own examples for the NUCLEO-F446RE, built unmodified and
-run on EmbSIM's NUCLEO-F446RE (the NUCLEO-F446RE plan, step 10; 01 §8.2).
+"""STM32CubeF4's own examples for the NUCLEO-F446RE and the NUCLEO-F446ZE,
+built unmodified and run on EmbSIM's boards (the NUCLEO-F446RE plan, step
+10; 01 §8.2).
 
 ST's files are not vendored. --st names a directory holding checkouts of:
-- STM32CubeF4 (`cubef4`, its Projects/STM32446E-Nucleo);
-- the submodules it pins: stm32f4xx_hal_driver, cmsis_device_f4 and
-  stm32f4xx-nucleo-bsp;
+- STM32CubeF4 (`cubef4`, its Projects/STM32446E-Nucleo and
+  Projects/STM32F446ZE-Nucleo);
+- the submodules it pins: stm32f4xx_hal_driver, cmsis_device_f4,
+  stm32f4xx-nucleo-bsp and (the NUCLEO-F446ZE's) stm32f4xx-nucleo-144-bsp;
 - CMSIS_5's CMSIS/Core/Include.
 CI fetches them at the commits CubeF4 pins.
 
-Each example under examples/<name>/ is one of CubeF4's (EXAMPLES below
-names its directory, and the defines that choose among its variants where
-its readme has a line uncommented for that: PWR_CurrentConsumption's
-low-power mode). It is built as its STM32CubeIDE project builds it:
+--board chooses the board: nucleo_f446re (the default; its examples under
+examples/) or nucleo_f446ze (under nucleo_f446ze/). Each example there is
+one of CubeF4's for that board (the board's EXAMPLES table names its
+directory, and the defines that choose among its variants where its readme
+has a line uncommented for that: PWR_CurrentConsumption's low-power mode).
+It is built as its STM32CubeIDE project builds it:
 - the sources its .project links;
 - the defines and include paths of its .cproject's Debug configuration,
   at -Os;
-- its own startup file, syscalls.c, sysmem.c and STM32F446RETX_FLASH.ld;
+- its own startup file, syscalls.c, sysmem.c and linker script
+  (STM32F446RETX_FLASH.ld, STM32F446ZETX_FLASH.ld);
 - newlib-nano.
-The image then runs examples/<name>/project.json (a variant's, its
-example's), the project EXAMPLES names, or this directory's, under the
-example's scenario.json, whose assertions must all pass. An example for two
-boards (I2C_TwoBoards_*) is built twice: as it is, the master board's
-sketch.elf, and with its main.c's `#define MASTER_BOARD` commented out as
-its readme asks for the slave board's, slave.elf.
+The image then runs <example>/project.json (a variant's, its example's),
+the project the table names, or the board directory's, under the example's
+scenario.json, whose assertions must all pass. An example for two boards
+(I2C_TwoBoards_*) is built twice: as it is, the master board's sketch.elf,
+and with its main.c's `#define MASTER_BOARD` commented out as its readme
+asks for the slave board's, slave.elf.
 
-    run.py --st DIR [--embsim PATH] [--keep DIR] [EXAMPLE...]
+    run.py --st DIR [--board B] [--embsim PATH] [--keep DIR] [EXAMPLE...]
 
 Without arm-none-eabi-gcc, or without --st (or STM32CUBE_F4), it skips."""
 import argparse
@@ -72,6 +77,41 @@ EXAMPLES = {
     "uart_receptiontoidle_circulardma": NUCLEO + "Examples/UART/UART_ReceptionToIdle_CircularDMA",
     "eeprom_emulation": NUCLEO + "Applications/EEPROM/EEPROM_Emulation",
 }
+ZE = "Projects/STM32F446ZE-Nucleo/"
+EXAMPLES_ZE = {
+    "adc_regularconversion_dma": ZE + "Examples/ADC/ADC_RegularConversion_DMA",
+    "adc_regularconversion_interrupt": ZE + "Examples/ADC/ADC_RegularConversion_Interrupt",
+    "cortexm_mpu": ZE + "Examples/Cortex/CORTEXM_MPU",
+    "cortexm_systick": ZE + "Examples/Cortex/CORTEXM_SysTick",
+    "crc_example": ZE + "Examples/CRC/CRC_Example",
+    "dma_flashtoram": ZE + "Examples/DMA/DMA_FLASHToRAM",
+    "flash_eraseprogram": ZE + "Examples/FLASH/FLASH_EraseProgram",
+    "gpio_exti": ZE + "Examples/GPIO/GPIO_EXTI",
+    "gpio_iotoggle": ZE + "Examples/GPIO/GPIO_IOToggle",
+    "hal_timebase_tim": ZE + "Examples/HAL/HAL_TimeBase_TIM",
+    "iwdg_example": ZE + "Examples/IWDG/IWDG_Example",
+    "rtc_calendar": ZE + "Examples/RTC/RTC_Calendar",
+    "tim_dma": ZE + "Examples/TIM/TIM_DMA",
+    "tim_inputcapture": ZE + "Examples/TIM/TIM_InputCapture",
+    "tim_ocactive": ZE + "Examples/TIM/TIM_OCActive",
+    "tim_octoggle": ZE + "Examples/TIM/TIM_OCToggle",
+    "tim_onepulse": ZE + "Examples/TIM/TIM_OnePulse",
+    "tim_pwminput": ZE + "Examples/TIM/TIM_PWMInput",
+    "tim_pwmoutput": ZE + "Examples/TIM/TIM_PWMOutput",
+    "uart_printf": ZE + "Examples/UART/UART_Printf",
+    "wwdg_example": ZE + "Examples/WWDG/WWDG_Example",
+}
+# each board: its examples, their directory here, its project, the linker
+# script its IDE projects carry, and the BSP checkout its examples include
+BOARDS = {
+    "nucleo_f446re": {"examples": EXAMPLES, "dir": HERE / "examples", "project": HERE / "project.json",
+                      "ld": "STM32F446RETX_FLASH.ld", "cube": NUCLEO,
+                      "bsp": "stm32f4xx-nucleo-bsp/stm32f4xx_nucleo.h"},
+    "nucleo_f446ze": {"examples": EXAMPLES_ZE, "dir": HERE / "nucleo_f446ze",
+                      "project": HERE / "nucleo_f446ze" / "project.json", "ld": "STM32F446ZETX_FLASH.ld",
+                      "cube": ZE, "bsp": "stm32f4xx-nucleo-144-bsp/stm32f4xx_nucleo_144.h"},
+}
+BOARD = BOARDS["nucleo_f446re"]
 MCU = ["-mcpu=cortex-m4", "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard", "-mthumb"]
 CFLAGS = ["-std=gnu11", "-g3", "-Os", "-ffunction-sections", "-fdata-sections", "-Wall", "--specs=nano.specs"]
 LDFLAGS = ["--specs=nosys.specs", "--specs=nano.specs", "-Wl,--gc-sections", "-static",
@@ -84,6 +124,7 @@ def checkouts(st: Path) -> dict:
         "Drivers/STM32F4xx_HAL_Driver": st / "stm32f4xx_hal_driver",
         "Drivers/CMSIS/Device/ST/STM32F4xx": st / "cmsis_device_f4",
         "Drivers/BSP/STM32F4xx-Nucleo": st / "stm32f4xx-nucleo-bsp",
+        "Drivers/BSP/STM32F4xx_Nucleo_144": st / "stm32f4xx-nucleo-144-bsp",
         "Drivers/CMSIS/Include": st / "CMSIS_5" / "CMSIS" / "Core" / "Include",
     }
 
@@ -142,17 +183,17 @@ def project_sources(ide: Path) -> list:
 
 def record(name: str) -> dict:
     """the example's record: dir, defines, project, two_boards"""
-    e = EXAMPLES[name]
+    e = BOARD["examples"][name]
     return dict({"defines": [], "project": None, "two_boards": False}, **(e if isinstance(e, dict) else {"dir": e}))
 
 
 def project_of(name: str) -> Path:
-    """examples/<name>/project.json, a variant's example's, the record's, or
-    this directory's"""
-    for n in [name] + [k for k in EXAMPLES if record(k)["dir"] == record(name)["dir"]]:
-        if (HERE / "examples" / n / "project.json").exists():
-            return HERE / "examples" / n / "project.json"
-    return HERE / (record(name)["project"] or "project.json")
+    """<name>/project.json, a variant's example's, the record's, or the
+    board's"""
+    for n in [name] + [k for k in BOARD["examples"] if record(k)["dir"] == record(name)["dir"]]:
+        if (BOARD["dir"] / n / "project.json").exists():
+            return BOARD["dir"] / n / "project.json"
+    return HERE / record(name)["project"] if record(name)["project"] else BOARD["project"]
 
 
 def build(st: Path, name: str, out: Path, slave: bool = False) -> Path:
@@ -189,7 +230,7 @@ def build(st: Path, name: str, out: Path, slave: bool = False) -> Path:
             sh(["arm-none-eabi-gcc", "-c", *MCU, *CFLAGS, *defs, *incs, *incs_here, src, "-o", o])
         objs.append(o)
     elf = out / (tag + ".elf")
-    sh(["arm-none-eabi-gcc", *objs, *MCU, "-T", ide / "STM32F446RETX_FLASH.ld", *LDFLAGS,
+    sh(["arm-none-eabi-gcc", *objs, *MCU, "-T", ide / BOARD["ld"], *LDFLAGS,
         f"-Wl,-Map={out / (tag + '.map')}", "-o", elf])
     return elf
 
@@ -200,26 +241,29 @@ def main() -> int:
                     help="a directory holding cubef4, stm32f4xx_hal_driver, cmsis_device_f4, "
                          "stm32f4xx-nucleo-bsp and CMSIS_5")
     ap.add_argument("--embsim", default=str(ROOT / "build" / "dev" / "bin" / "embsim"))
+    ap.add_argument("--board", choices=sorted(BOARDS), default="nucleo_f446re")
     ap.add_argument("--keep", help="build here, and keep it, instead of a temporary directory")
     ap.add_argument("examples", nargs="*")
     args = ap.parse_args()
     if not shutil.which("arm-none-eabi-gcc") or not args.st:
         print(f"SKIP: {'needs arm-none-eabi-gcc' if args.st else 'no --st (the ST and CMSIS checkouts)'}")
         return 0
+    global BOARD
+    BOARD = BOARDS[args.board]
     st = Path(args.st).resolve()
-    for need in ("cubef4/Projects/STM32446E-Nucleo", "stm32f4xx_hal_driver/Inc/stm32f4xx_hal.h",
-                 "cmsis_device_f4/Include/stm32f4xx.h", "stm32f4xx-nucleo-bsp/stm32f4xx_nucleo.h",
+    for need in ("cubef4/" + BOARD["cube"], "stm32f4xx_hal_driver/Inc/stm32f4xx_hal.h",
+                 "cmsis_device_f4/Include/stm32f4xx.h", BOARD["bsp"],
                  "CMSIS_5/CMSIS/Core/Include/core_cm4.h"):
         if not (st / need).exists():
             print(f"error: {st} has no {need}")
             return 2
-    names = args.examples or sorted(d.name for d in (HERE / "examples").iterdir() if d.is_dir())
+    names = args.examples or sorted(d.name for d in BOARD["dir"].iterdir() if d.is_dir())
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(args.keep).resolve() if args.keep else Path(tmp)
         work.mkdir(parents=True, exist_ok=True)
         bad = 0
         for name in names:
-            scenario = HERE / "examples" / name / "scenario.json"
+            scenario = BOARD["dir"] / name / "scenario.json"
             elf = build(st, name, work)
             extra = {"slave.elf": build(st, name, work, slave=True)} if record(name)["two_boards"] else None
             bad += not run_scenario(Path(args.embsim), project_of(name), name, elf, scenario, work, extra)

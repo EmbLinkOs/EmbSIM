@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 410" width="40" height="410" data-grid="10">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 810" width="40" height="810" data-grid="10">
   <style>.s{stroke:var(--symbol-stroke,#cdd6e4);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.f{stroke:var(--symbol-stroke,#cdd6e4);fill:var(--symbol-fill,#1b2230);stroke-width:1.5;stroke-linejoin:round}.k{fill:var(--symbol-stroke,#cdd6e4);stroke:none}.t{fill:var(--symbol-stroke,#cdd6e4);font-family:sans-serif;font-size:7px}</style>
   <line class="s" id="pin-1" x1="0" y1="10" x2="10" y2="10"/>
   <line class="s" id="pin-2" x1="0" y1="20" x2="10" y2="20"/>
@@ -40,5 +40,45 @@
   <line class="s" id="pin-38" x1="0" y1="380" x2="10" y2="380"/>
   <line class="s" id="pin-39" x1="0" y1="390" x2="10" y2="390"/>
   <line class="s" id="pin-40" x1="0" y1="400" x2="10" y2="400"/>
-  <rect class="f" x="10" y="5" width="20" height="400"/><circle class="k" cx="20" cy="10" r="2"/><circle class="k" cx="20" cy="20" r="2"/><circle class="k" cx="20" cy="30" r="2"/><circle class="k" cx="20" cy="40" r="2"/><circle class="k" cx="20" cy="50" r="2"/><circle class="k" cx="20" cy="60" r="2"/><circle class="k" cx="20" cy="70" r="2"/><circle class="k" cx="20" cy="80" r="2"/><circle class="k" cx="20" cy="90" r="2"/><circle class="k" cx="20" cy="100" r="2"/><circle class="k" cx="20" cy="110" r="2"/><circle class="k" cx="20" cy="120" r="2"/><circle class="k" cx="20" cy="130" r="2"/><circle class="k" cx="20" cy="140" r="2"/><circle class="k" cx="20" cy="150" r="2"/><circle class="k" cx="20" cy="160" r="2"/><circle class="k" cx="20" cy="170" r="2"/><circle class="k" cx="20" cy="180" r="2"/><circle class="k" cx="20" cy="190" r="2"/><circle class="k" cx="20" cy="200" r="2"/><circle class="k" cx="20" cy="210" r="2"/><circle class="k" cx="20" cy="220" r="2"/><circle class="k" cx="20" cy="230" r="2"/><circle class="k" cx="20" cy="240" r="2"/><circle class="k" cx="20" cy="250" r="2"/><circle class="k" cx="20" cy="260" r="2"/><circle class="k" cx="20" cy="270" r="2"/><circle class="k" cx="20" cy="280" r="2"/><circle class="k" cx="20" cy="290" r="2"/><circle class="k" cx="20" cy="300" r="2"/><circle class="k" cx="20" cy="310" r="2"/><circle class="k" cx="20" cy="320" r="2"/><circle class="k" cx="20" cy="330" r="2"/><circle class="k" cx="20" cy="340" r="2"/><circle class="k" cx="20" cy="350" r="2"/><circle class="k" cx="20" cy="360" r="2"/><circle class="k" cx="20" cy="370" r="2"/><circle class="k" cx="20" cy="380" r="2"/><circle class="k" cx="20" cy="390" r="2"/><circle class="k" cx="20" cy="400" r="2"/>
+  <line class="s" id="pin-41" x1="0" y1="410" x2="10" y2="410"/>
+  <line class="s" id="pin-42" x1="0" y1="420" x2="10" y2="420"/>
+  <line class="s" id="pin-43" x1="0" y1="430" x2="10" y2="430"/>
+  <line class="s" id="pin-44" x1="0" y1="440" x2="10" y2="440"/>
+  <line class="s" id="pin-45" x1="0" y1="450" x2="10" y2="450"/>
+  <line class="s" id="pin-46" x1="0" y1="460" x2="10" y2="460"/>
+  <line class="s" id="pin-47" x1="0" y1="470" x2="10" y2="470"/>
+  <line class="s" id="pin-48" x1="0" y1="480" x2="10" y2="480"/>
+  <line class="s" id="pin-49" x1="0" y1="490" x2="10" y2="490"/>
+  <line class="s" id="pin-50" x1="0" y1="500" x2="10" y2="500"/>
+  <line class="s" id="pin-51" x1="0" y1="510" x2="10" y2="510"/>
+  <line class="s" id="pin-52" x1="0" y1="520" x2="10" y2="520"/>
+  <line class="s" id="pin-53" x1="0" y1="530" x2="10" y2="530"/>
+  <line class="s" id="pin-54" x1="0" y1="540" x2="10" y2="540"/>
+  <line class="s" id="pin-55" x1="0" y1="550" x2="10" y2="550"/>
+  <line class="s" id="pin-56" x1="0" y1="560" x2="10" y2="560"/>
+  <line class="s" id="pin-57" x1="0" y1="570" x2="10" y2="570"/>
+  <line class="s" id="pin-58" x1="0" y1="580" x2="10" y2="580"/>
+  <line class="s" id="pin-59" x1="0" y1="590" x2="10" y2="590"/>
+  <line class="s" id="pin-60" x1="0" y1="600" x2="10" y2="600"/>
+  <line class="s" id="pin-61" x1="0" y1="610" x2="10" y2="610"/>
+  <line class="s" id="pin-62" x1="0" y1="620" x2="10" y2="620"/>
+  <line class="s" id="pin-63" x1="0" y1="630" x2="10" y2="630"/>
+  <line class="s" id="pin-64" x1="0" y1="640" x2="10" y2="640"/>
+  <line class="s" id="pin-65" x1="0" y1="650" x2="10" y2="650"/>
+  <line class="s" id="pin-66" x1="0" y1="660" x2="10" y2="660"/>
+  <line class="s" id="pin-67" x1="0" y1="670" x2="10" y2="670"/>
+  <line class="s" id="pin-68" x1="0" y1="680" x2="10" y2="680"/>
+  <line class="s" id="pin-69" x1="0" y1="690" x2="10" y2="690"/>
+  <line class="s" id="pin-70" x1="0" y1="700" x2="10" y2="700"/>
+  <line class="s" id="pin-71" x1="0" y1="710" x2="10" y2="710"/>
+  <line class="s" id="pin-72" x1="0" y1="720" x2="10" y2="720"/>
+  <line class="s" id="pin-73" x1="0" y1="730" x2="10" y2="730"/>
+  <line class="s" id="pin-74" x1="0" y1="740" x2="10" y2="740"/>
+  <line class="s" id="pin-75" x1="0" y1="750" x2="10" y2="750"/>
+  <line class="s" id="pin-76" x1="0" y1="760" x2="10" y2="760"/>
+  <line class="s" id="pin-77" x1="0" y1="770" x2="10" y2="770"/>
+  <line class="s" id="pin-78" x1="0" y1="780" x2="10" y2="780"/>
+  <line class="s" id="pin-79" x1="0" y1="790" x2="10" y2="790"/>
+  <line class="s" id="pin-80" x1="0" y1="800" x2="10" y2="800"/>
+  <rect class="f" x="10" y="5" width="20" height="800"/><circle class="k" cx="20" cy="10" r="2"/><circle class="k" cx="20" cy="20" r="2"/><circle class="k" cx="20" cy="30" r="2"/><circle class="k" cx="20" cy="40" r="2"/><circle class="k" cx="20" cy="50" r="2"/><circle class="k" cx="20" cy="60" r="2"/><circle class="k" cx="20" cy="70" r="2"/><circle class="k" cx="20" cy="80" r="2"/><circle class="k" cx="20" cy="90" r="2"/><circle class="k" cx="20" cy="100" r="2"/><circle class="k" cx="20" cy="110" r="2"/><circle class="k" cx="20" cy="120" r="2"/><circle class="k" cx="20" cy="130" r="2"/><circle class="k" cx="20" cy="140" r="2"/><circle class="k" cx="20" cy="150" r="2"/><circle class="k" cx="20" cy="160" r="2"/><circle class="k" cx="20" cy="170" r="2"/><circle class="k" cx="20" cy="180" r="2"/><circle class="k" cx="20" cy="190" r="2"/><circle class="k" cx="20" cy="200" r="2"/><circle class="k" cx="20" cy="210" r="2"/><circle class="k" cx="20" cy="220" r="2"/><circle class="k" cx="20" cy="230" r="2"/><circle class="k" cx="20" cy="240" r="2"/><circle class="k" cx="20" cy="250" r="2"/><circle class="k" cx="20" cy="260" r="2"/><circle class="k" cx="20" cy="270" r="2"/><circle class="k" cx="20" cy="280" r="2"/><circle class="k" cx="20" cy="290" r="2"/><circle class="k" cx="20" cy="300" r="2"/><circle class="k" cx="20" cy="310" r="2"/><circle class="k" cx="20" cy="320" r="2"/><circle class="k" cx="20" cy="330" r="2"/><circle class="k" cx="20" cy="340" r="2"/><circle class="k" cx="20" cy="350" r="2"/><circle class="k" cx="20" cy="360" r="2"/><circle class="k" cx="20" cy="370" r="2"/><circle class="k" cx="20" cy="380" r="2"/><circle class="k" cx="20" cy="390" r="2"/><circle class="k" cx="20" cy="400" r="2"/>
 </svg>

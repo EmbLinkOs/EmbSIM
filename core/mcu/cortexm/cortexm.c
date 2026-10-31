@@ -740,6 +740,16 @@ static void step(struct esk_cpu *c)
     u32 sit = cs->itstate, sctl = cs->control, sother = cs->other_sp;
     int spsp = cs->psp_active;
 
+    if (s->bus_stall) {
+        /* the bus is held (a flash operation): time passes, in slices the
+         * devices see, and nothing runs */
+        u32 n = s->bus_stall > 4096u ? 4096u : (u32)s->bus_stall;
+        s->bus_stall -= n;
+        s->cycles += n;
+        if (s->counting)
+            esk_mach_advance(s, n);
+        return;
+    }
     if (cs->npend) {
         int n = pending_to_take(cs);
         if (n) {

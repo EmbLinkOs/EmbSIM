@@ -1,0 +1,81 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "stm32cubef4-nucleo-f446ze",
+ "description": "A NUCLEO-F446ZE running one of STM32CubeF4's examples for it, built from ST's unmodified sources (tests/vendor/stm32cubef4/run.py --board nucleo_f446ze puts the image beside this file as sketch.elf), on its ST-LINK's USB power. The console is the ST-LINK's virtual COM port on USART3; LD1 is on PB0, LD2 on PB7, LD3 on PB14, B1 on PC13 (active high).",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/nucleo_f446ze",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 120,
+    "y": 160
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 120,
+    "y": 320
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.U5V"
+  ],
+  "GND": [
+   "USB.-",
+   "GND1.GND",
+   "B1.GND"
+  ]
+ },
+ "probes": [
+  {
+   "id": "console",
+   "target": "serial:B1",
+   "kind": "serial"
+  },
+  {
+   "id": "led",
+   "target": "net:B1.PB0",
+   "kind": "digital"
+  },
+  {
+   "id": "led2",
+   "target": "net:B1.PB7",
+   "kind": "digital"
+  },
+  {
+   "id": "led3",
+   "target": "net:B1.PB14",
+   "kind": "digital"
+  },
+  {
+   "id": "button",
+   "target": "net:B1.PC13",
+   "kind": "digital"
+  }
+ ]
+}

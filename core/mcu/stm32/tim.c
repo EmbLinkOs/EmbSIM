@@ -91,8 +91,15 @@
  *   the DMA; DMAR reaches the DBL + 1 registers from DCR's DBA in turn (the
  *   burst).
  *
- * Not modelled: the internal remaps of TIMx_OR (TIM2's ITR1, TIM5's TI4 to the LSI,
- * LSE or RTC, TIM11's TI1 to HSE_RTC), MSM's delay (TRGI acts at once
+ * TIMx_OR's internal remaps (the F4's): TIM5's IT4_RMP puts LSI (32 kHz,
+ * once RCC's LSIRDY) or LSE (once LSERDY) on TI4 instead of the pin, as
+ * HAL's way of measuring LSI does; TIM11's RMP puts HSE_RTC (HSE over
+ * CFGR's RTCPRE) on TI1; TIM2's ITR1_RMP takes ITR1 from TIM8's TRGO or
+ * the OTG controllers' SOF (none here). A remapped clock's edges come at
+ * its half periods, at the core clock.
+ *
+ * Not modelled: TIM5's TI4 on the RTC's wake-up interrupt (IT4_RMP 11:
+ * no edges), the OTG controllers' SOF on TIM2's ITR1, MSM's delay (TRGI acts at once
  * anyway), the forced idle levels' dead time after a break, the fast
  * output enable (OCxFE: the compare already acts at the match), the
  * F1's TIM1 complementary, break and ETR pins and TIM5-TIM8 (no F1 part
@@ -186,7 +193,18 @@ struct tim {
      * match) and TIMx_TRGO */
     char sig_cc[4][12], sig_trgo[12];
     int cc_level[4];
+    /* TIMx_OR's internal remaps: the input (0 for TI1, 3 for TI4) a clock
+     * inside the part drives instead of its pin, -1 none; its kind; the
+     * next edge, counted from t0 at the core clock it was scheduled at */
+    struct esk_rf_reg *orr;
+    int src_x, src_kind;
+    u64 src_t0, src_k, src_at;
+    u32 src_core_hz, src_hz_last;
 };
+
+enum { SRC_NONE, SRC_LSI, SRC_LSE, SRC_HSE_RTC };
+
+static void interconnect(struct tim *t);
 
 /* a DMA request (DIER's UDE, CCxDE, TDE, COMDE): it waits for the DMA */
 static void dma_req(struct tim *t, u32 de, const char *sig)
@@ -359,6 +377,8 @@ static void deadlines(struct tim *t)
         if (t->drefn_at[i] && (!best || t->drefn_at[i] < best))
             best = t->drefn_at[i];
     }
+    if (t->src_at && (!best || t->src_at < best))
+        best = t->src_at;
     t->next_at = best;
 }
 
@@ -930,6 +950,100 @@ static void run_clock(struct tim *t)
     esk_rf_clock(t->p, &t->running, (t->cr1->value & CEN) || pending(t));
 }
 
+/* ---- TIMx_OR's internal sources ------------------------------------------------ */
+
+static struct esk_rf_reg *rcc_reg(struct esk_mach *s, const char *name)
+{
+    struct esk_rf_periph *r = s->rf ? esk_rf_periph(s->rf, "RCC") : 0;
+    return r ? esk_rf_reg(r, name) : 0;
+}
+
+/* the frequency of the clock remapped onto the input now, 0 while it does
+ * not run: LSI (RCC's LSIRDY), LSE (LSERDY), HSE_RTC (HSE / RTCPRE, which
+ * is off below 2) */
+static u32 src_hz(const struct tim *t)
+{
+    struct esk_rf_reg *r;
+    u32 pre;
+    switch (t->src_kind) {
+    case SRC_LSI:
+        r = rcc_reg(t->s, "CSR");
+        return r && (r->value & 2u) ? 32000u : 0;
+    case SRC_LSE:
+        r = rcc_reg(t->s, "BDCR");
+        return r && (r->value & 2u) ? (t->s->lse_hz ? t->s->lse_hz : 32768u) : 0;
+    case SRC_HSE_RTC:
+        r = rcc_reg(t->s, "CR");
+        pre = (u32)bits(rcc_reg(t->s, "CFGR"), 16, 5);
+        return r && (r->value & (1u << 17)) && pre >= 2 ? t->s->hse_hz / pre : 0;
+    default: return 0;
+    }
+}
+
+/* the next edge of the source: half its period on, from t0 at the core
+ * clock; while it does not run, it is looked at again every 10 us */
+static void src_schedule(struct tim *t)
+{
+    u32 core = esk_mach_core_hz(t->s), hz;
+    if (t->src_x < 0) {
+        t->src_at = 0;
+        return;
+    }
+    hz = src_hz(t);
+    if (core != t->src_core_hz || hz != t->src_hz_last) {
+        t->src_t0 = t->now; /* a new clock: its edges from now */
+        t->src_k = 0;
+        t->src_core_hz = core;
+        t->src_hz_last = hz;
+    }
+    if (!hz) {
+        t->src_at = t->now + core / 100000u + 1;
+        return;
+    }
+    t->src_k++;
+    t->src_at = t->src_t0 + t->src_k * (u64)core / (2u * (u64)hz);
+    if (t->src_at <= t->now)
+        t->src_at = t->now + 1;
+}
+
+static void src_edges(struct tim *t)
+{
+    if (!t->src_at || t->now < t->src_at)
+        return;
+    if (src_hz(t))
+        input(t, t->src_x, t->raw[t->src_x] <= 0);
+    src_schedule(t);
+    deadlines(t);
+}
+
+/* OR as written: which input a clock inside the part drives (RM0390
+ * 13.4.20, 14.4.17, 18.5.13; TIM2's ITR1 remap is interconnect's) */
+static void remap(struct tim *t)
+{
+    u32 v = t->orr ? (u32)t->orr->value : 0;
+    int kind = SRC_NONE, x = -1;
+    if (t->unit == 5) {
+        u32 r = v >> 6 & 3u; /* IT4_RMP: GPIO, LSI, LSE, the RTC's wake-up interrupt */
+        kind = r == 1 ? SRC_LSI : r == 2 ? SRC_LSE : SRC_NONE;
+        x = kind ? 3 : -1;
+    } else if (t->unit == 11 && (v & 3u) == 2u) { /* RMP: HSE_RTC */
+        kind = SRC_HSE_RTC;
+        x = 0;
+    } else if (t->unit == 2) {
+        /* ITR1_RMP: TIM8's TRGO, or the OTG controllers' SOF (no model) */
+        t->itr[1] = (v >> 10 & 3u) == 0 ? 8 : 0;
+    }
+    if (kind == t->src_kind && x == t->src_x)
+        return;
+    t->src_kind = kind;
+    t->src_x = x;
+    t->src_core_hz = t->src_hz_last = 0;
+    t->src_at = 0;
+    src_schedule(t);
+    deadlines(t);
+    run_clock(t);
+}
+
 /* the timer's own clock for `cycles` core cycles: 1 when the counter moved
  * past its prescaler */
 static int clock_cycles(struct tim *t, u32 cycles)
@@ -966,6 +1080,7 @@ static void tim_tick(void *ctx, u32 cycles)
             any |= clock_cycles(t, (u32)(at - t->now));
         t->now = at > t->now ? at : t->now;
         filters(t);
+        src_edges(t);
         dead_times(t);
         outputs(t);
         any = 1;
@@ -1017,6 +1132,8 @@ static int tim_next_event(void *ctx, u32 *cycles)
     for (i = 0; i < 6; i++)
         if (t->pend_at[i] && (!best || t->pend_at[i] - t->now < best))
             best = t->pend_at[i] > t->now ? t->pend_at[i] - t->now : 1;
+    if (t->src_at && (!best || t->src_at - t->now < best))
+        best = t->src_at > t->now ? t->src_at - t->now : 1;
     for (i = 0; i < 3; i++) {
         u64 at[2];
         int k;
@@ -1203,6 +1320,8 @@ static void tim_write(void *ctx, u32 off, int n, u32 v)
         if (!(t->dier->value & (1u << 13)))
             esk_stm32_dma_request(t->s, t->sig_com, 0);
     }
+    if (t->orr && off == esk_rf_off(t->orr))
+        remap(t);
     run_clock(t);
     irq_check(t);
     outputs(t);
@@ -1238,6 +1357,10 @@ static void tim_reset(void *ctx)
         t->pend_at[x] = 0;
     }
     t->next_at = 0;
+    t->src_kind = SRC_NONE;
+    t->src_x = -1;
+    t->src_at = 0;
+    interconnect(t);
 }
 
 const struct esk_dev_ops esk_stm32_tim_ops = {
@@ -1293,6 +1416,8 @@ void esk_stm32_tim_signal_input(struct esk_mach *s, const char *sig, int level)
     struct tim *t;
     if (parse_signal(sig, &unit, &x, &neg) || neg || !(t = tim_unit(s, unit)))
         return;
+    if (x == t->src_x)
+        return; /* remapped: the pin does not reach it */
     input(t, x, level != 0);
 }
 
@@ -1438,6 +1563,8 @@ void *esk_stm32_tim_create(struct esk_mach *s, struct esk_rf_periph *p)
         t.raw[x] = -1;
     t.dcr = esk_rf_reg(p, "DCR");
     t.dmar = esk_rf_reg(p, "DMAR");
+    t.orr = t.unit == 2 || t.unit == 5 || t.unit == 11 ? esk_rf_reg(p, "OR") : 0;
+    t.src_x = -1;
     snprintf(t.sig_up, sizeof t.sig_up, "%s_UP", p->name);
     snprintf(t.sig_trig, sizeof t.sig_trig, "%s_TRIG", p->name);
     snprintf(t.sig_com, sizeof t.sig_com, "%s_COM", p->name);

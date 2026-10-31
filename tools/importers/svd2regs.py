@@ -290,6 +290,24 @@ def apply_fields(doc: dict, specs: list[str]) -> None:
         doc["source"] += "; fields corrected from the reference manual: " + ", ".join(done)
 
 
+def apply_reserved(doc: dict, specs: list[str]) -> None:
+    """Fields PERIPH.REG.NAME the SVD gives a register whose bits the
+    reference manual reserves (the upper halves of a 16-bit timer's CNT,
+    ARR and CCRx, which ST's F446 file copies from the 32-bit TIM2): taken
+    out, so the bits read 0 and ignore writes."""
+    done = []
+    for spec in specs:
+        target, _, name = spec.rpartition(".")
+        reg = find_reg(doc, target, "--reserve")
+        fields = [x for x in reg.get("fields", []) if x[0] != name]
+        if len(fields) == len(reg.get("fields", [])):
+            raise SystemExit(f"--reserve {spec}: {target} has no field {name}")
+        reg["fields"] = fields
+        done.append(spec)
+    if done:
+        doc["source"] += "; fields reserved by the reference manual taken out: " + ", ".join(done)
+
+
 def apply_merges(doc: dict, specs: list[str]) -> None:
     """The one-bit fields NAME0..NAMEn, contiguous, joined into NAME."""
     done = []
@@ -392,6 +410,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="a memory the SVD leaves out, as word registers NAME0..")
     ap.add_argument("--merge", action="append", default=[], metavar="PERIPH.REG.NAME",
                     help="one-bit fields NAME0..NAMEn joined into NAME")
+    ap.add_argument("--reserve", action="append", default=[], metavar="PERIPH.REG.NAME",
+                    help="a field whose bits the reference manual reserves, taken out")
     args = ap.parse_args(argv)
     doc = convert(args.svd, args.id or (args.svd.stem.lower() + "/registers"))
     apply_drops(doc, args.drop)
@@ -400,6 +420,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     apply_merges(doc, args.merge)
     apply_registers(doc, args.register)
     apply_fields(doc, args.field)
+    apply_reserved(doc, args.reserve)
     apply_resets(doc, args.reset)
     apply_interrupts(doc, args.interrupts)
     args.output.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")

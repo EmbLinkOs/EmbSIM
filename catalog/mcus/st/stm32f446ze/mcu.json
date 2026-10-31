@@ -1,0 +1,2844 @@
+{
+ "schema_version": 1,
+ "kind": "mcu",
+ "id": "st/stm32f446ze",
+ "version": "1.0.0",
+ "name": "STM32F446ZE",
+ "description": "STMicroelectronics STM32F446ZE: an Arm Cortex-M4F at up to 180 MHz with an MPU, 512 KiB of flash and 128 KiB of SRAM, in an LQFP144 with ports A to G and PH0/PH1, ADC3's channels on port F, VREF+ and VDDUSB on their own pins; the NUCLEO-F446ZE's MCU. The die is the STM32F446RE's.",
+ "keywords": [
+  "stm32f446ze",
+  "stm32f446",
+  "stm32f4",
+  "stm32",
+  "cortex-m4f",
+  "nucleo",
+  "nucleo-144"
+ ],
+ "vendor": "st",
+ "family": "stm32f4",
+ "core": {
+  "backend": "cortex-m",
+  "model": "cortex-m4",
+  "priority_bits": 4,
+  "timing_tier": "estimated",
+  "fpu": true,
+  "mpu": true,
+  "endian": "little",
+  "systick": {
+   "ref_div": 8,
+   "calib": "0x40000000"
+  }
+ },
+ "memory": [
+  {
+   "name": "flash",
+   "base": "0x08000000",
+   "size": "512K",
+   "kind": "flash",
+   "erased": "0xFFFFFFFF",
+   "doc": "Main memory: sectors 0-3 of 16 KiB, 4 of 64 KiB, 5-7 of 128 KiB"
+  },
+  {
+   "name": "flash_alias",
+   "base": "0x00000000",
+   "size": "512K",
+   "kind": "alias",
+   "target": "0x08000000",
+   "doc": "Boot alias of the main flash when BOOT0 is low"
+  },
+  {
+   "name": "sram",
+   "base": "0x20000000",
+   "size": "128K",
+   "kind": "ram",
+   "main": true,
+   "doc": "SRAM1 (112 KiB) and SRAM2 (16 KiB), contiguous"
+  },
+  {
+   "name": "system_memory",
+   "base": "0x1FFF0000",
+   "size": "30K",
+   "kind": "rom",
+   "doc": "ST's bootloader; contents not shipped"
+  },
+  {
+   "name": "otp",
+   "base": "0x1FFF7800",
+   "size": 528,
+   "kind": "flash",
+   "erased": "0xFFFFFFFF",
+   "doc": "One-time programmable area: 512 bytes and 16 lock bytes"
+  },
+  {
+   "name": "device_id",
+   "base": "0x1FFF7A10",
+   "size": 32,
+   "kind": "rom",
+   "erased": "0xFFFFFFFF",
+   "doc": "The device electronic signature (RM0390 39) and the factory calibration values (DS10693 6.3.21, 6.3.23). Each real part has its own; these are one part's, with the datasheet's typical values: VREFINT 1.21 V and the temperature sensor's 0.76 V at 25 degC, 2.5 mV/degC, read at VDDA 3.3 V",
+   "contents": [
+    {
+     "offset": "0x00",
+     "bytes": "47001a00074d495331424d45",
+     "doc": "UID: X 0x47, Y 0x1A on wafer 7 of lot EMBSIM1"
+    },
+    {
+     "offset": "0x12",
+     "bytes": "0002",
+     "doc": "F_SIZE: 512 Kbytes of flash"
+    },
+    {
+     "offset": "0x1A",
+     "bytes": "dd05",
+     "doc": "VREFINT_CAL: 1501, VREFINT at 30 degC and VDDA 3.3 V"
+    },
+    {
+     "offset": "0x1C",
+     "bytes": "bf03",
+     "doc": "TS_CAL1: 959, the temperature sensor at 30 degC and VDDA 3.3 V"
+    },
+    {
+     "offset": "0x1E",
+     "bytes": "b704",
+     "doc": "TS_CAL2: 1207, the temperature sensor at 110 degC and VDDA 3.3 V"
+    }
+   ]
+  },
+  {
+   "name": "option_bytes",
+   "base": "0x1FFFC000",
+   "size": 16,
+   "kind": "flash",
+   "erased": "0xFFFFFFFF",
+   "doc": "The option bytes as the part leaves the factory (RM0390 3.6): RDP level 0, the software watchdog, no write protection",
+   "contents": [
+    {
+     "offset": "0x0",
+     "bytes": "edaa",
+     "doc": "USER 0xED (nRST_STDBY, nRST_STOP, WDG_SW, BOR_LEV off), RDP 0xAA"
+    },
+    {
+     "offset": "0x8",
+     "bytes": "ff0f",
+     "doc": "nWRP: no sector write-protected"
+    }
+   ]
+  },
+  {
+   "name": "backup_sram",
+   "base": "0x40024000",
+   "size": "4K",
+   "kind": "ram",
+   "doc": "Backup SRAM, kept by VBAT"
+  }
+ ],
+ "bitband": [
+  {
+   "base": "0x22000000",
+   "size": "0x02000000",
+   "target": "0x20000000"
+  },
+  {
+   "base": "0x42000000",
+   "size": "0x02000000",
+   "target": "0x40000000"
+  }
+ ],
+ "clocks": {
+  "sources": [
+   {
+    "name": "hsi",
+    "hz": 16000000,
+    "doc": "Internal 16 MHz RC, the clock out of reset"
+   },
+   {
+    "name": "hse",
+    "hz": "board",
+    "doc": "External crystal 4 to 26 MHz, or an external clock up to 50 MHz (bypass)"
+   },
+   {
+    "name": "lsi",
+    "hz": 32000,
+    "doc": "Internal low-speed RC"
+   },
+   {
+    "name": "lse",
+    "hz": "board",
+    "doc": "External 32.768 kHz crystal"
+   }
+  ],
+  "reset_core_hz": 16000000,
+  "max_core_hz": 180000000
+ },
+ "register_file": {
+  "format": "embsim",
+  "file": "registers.json",
+  "vendored": true,
+  "license": "Apache-2.0 (converted from STMicroelectronics' STM32F446.svd v1.9, Copyright (c) 2024 STMicroelectronics; LICENSES/Apache-2.0.txt)"
+ },
+ "peripherals": [
+  {
+   "match": "RCC",
+   "model": "stm32-rcc",
+   "order": 0
+  },
+  {
+   "match": "FLASH",
+   "model": "stm32f4-flash",
+   "order": 1
+  },
+  {
+   "match": "PWR",
+   "model": "stm32f4-pwr"
+  },
+  {
+   "match": "SYSCFG",
+   "model": "stm32f4-syscfg"
+  },
+  {
+   "match": "EXTI",
+   "model": "stm32-exti"
+  },
+  {
+   "match": "GPIO*",
+   "model": "stm32f4-gpio"
+  },
+  {
+   "match": "TIM*",
+   "model": "stm32-tim"
+  },
+  {
+   "match": "USART*",
+   "model": "stm32-usart"
+  },
+  {
+   "match": "UART*",
+   "model": "stm32-usart"
+  },
+  {
+   "match": "DMA*",
+   "model": "stm32f4-dma"
+  },
+  {
+   "match": "SPI*",
+   "model": "stm32-spi"
+  },
+  {
+   "match": "I2C*",
+   "model": "stm32-i2c"
+  },
+  {
+   "match": "ADC?",
+   "model": "stm32f4-adc"
+  },
+  {
+   "match": "C_ADC",
+   "model": "stm32f4-adc-common"
+  },
+  {
+   "match": "DAC",
+   "model": "stm32f4-dac"
+  },
+  {
+   "match": "IWDG",
+   "model": "stm32-iwdg"
+  },
+  {
+   "match": "WWDG",
+   "model": "stm32-wwdg"
+  },
+  {
+   "match": "RTC",
+   "model": "stm32f4-rtc"
+  },
+  {
+   "match": "CRC",
+   "model": "stm32-crc"
+  }
+ ],
+ "dma_requests": {
+  "DMA1": {
+   "0": {
+    "0": [
+     "SPI3_RX"
+    ],
+    "1": [
+     "I2C1_RX"
+    ],
+    "2": [
+     "TIM4_CH1"
+    ],
+    "4": [
+     "UART5_RX"
+    ],
+    "6": [
+     "TIM5_CH3",
+     "TIM5_UP"
+    ]
+   },
+   "1": {
+    "0": [
+     "SPDIF_RX"
+    ],
+    "1": [
+     "I2C3_RX"
+    ],
+    "3": [
+     "TIM2_CH3",
+     "TIM2_UP"
+    ],
+    "4": [
+     "USART3_RX"
+    ],
+    "6": [
+     "TIM5_CH4",
+     "TIM5_TRIG"
+    ],
+    "7": [
+     "TIM6_UP"
+    ]
+   },
+   "2": {
+    "0": [
+     "SPI3_RX"
+    ],
+    "1": [
+     "TIM7_UP"
+    ],
+    "2": [
+     "FMPI2C1_RX"
+    ],
+    "3": [
+     "I2C3_RX"
+    ],
+    "4": [
+     "UART4_RX"
+    ],
+    "5": [
+     "TIM3_CH4",
+     "TIM3_UP"
+    ],
+    "6": [
+     "TIM5_CH1"
+    ],
+    "7": [
+     "I2C2_RX"
+    ]
+   },
+   "3": {
+    "0": [
+     "SPI2_RX"
+    ],
+    "2": [
+     "TIM4_CH2"
+    ],
+    "4": [
+     "USART3_TX"
+    ],
+    "6": [
+     "TIM5_CH4",
+     "TIM5_TRIG"
+    ],
+    "7": [
+     "I2C2_RX"
+    ]
+   },
+   "4": {
+    "0": [
+     "SPI2_TX"
+    ],
+    "1": [
+     "TIM7_UP"
+    ],
+    "3": [
+     "I2C3_TX"
+    ],
+    "4": [
+     "UART4_TX"
+    ],
+    "5": [
+     "TIM3_CH1",
+     "TIM3_TRIG"
+    ],
+    "6": [
+     "TIM5_CH2"
+    ],
+    "7": [
+     "USART3_TX"
+    ]
+   },
+   "5": {
+    "0": [
+     "SPI3_TX"
+    ],
+    "1": [
+     "I2C1_RX"
+    ],
+    "2": [
+     "FMPI2C1_TX"
+    ],
+    "3": [
+     "TIM2_CH1"
+    ],
+    "4": [
+     "USART2_RX"
+    ],
+    "5": [
+     "TIM3_CH2"
+    ],
+    "7": [
+     "DAC_CH1"
+    ]
+   },
+   "6": {
+    "0": [
+     "SPDIF_RX"
+    ],
+    "1": [
+     "I2C1_TX"
+    ],
+    "2": [
+     "TIM4_UP"
+    ],
+    "3": [
+     "TIM2_CH2",
+     "TIM2_CH4"
+    ],
+    "4": [
+     "USART2_TX"
+    ],
+    "6": [
+     "TIM5_UP"
+    ],
+    "7": [
+     "DAC_CH2"
+    ]
+   },
+   "7": {
+    "0": [
+     "SPI3_TX"
+    ],
+    "1": [
+     "I2C1_TX"
+    ],
+    "2": [
+     "TIM4_CH3"
+    ],
+    "3": [
+     "TIM2_CH4",
+     "TIM2_UP"
+    ],
+    "4": [
+     "UART5_TX"
+    ],
+    "5": [
+     "TIM3_CH3"
+    ],
+    "7": [
+     "I2C2_TX"
+    ]
+   }
+  },
+  "DMA2": {
+   "0": {
+    "0": [
+     "ADC1"
+    ],
+    "2": [
+     "ADC3"
+    ],
+    "3": [
+     "SPI1_RX"
+    ],
+    "6": [
+     "TIM1_TRIG"
+    ]
+   },
+   "1": {
+    "0": [
+     "SAI1_A"
+    ],
+    "1": [
+     "DCMI"
+    ],
+    "2": [
+     "ADC3"
+    ],
+    "5": [
+     "USART6_RX"
+    ],
+    "6": [
+     "TIM1_CH1"
+    ],
+    "7": [
+     "TIM8_UP"
+    ]
+   },
+   "2": {
+    "0": [
+     "TIM8_CH1",
+     "TIM8_CH2",
+     "TIM8_CH3"
+    ],
+    "1": [
+     "ADC2"
+    ],
+    "3": [
+     "SPI1_RX"
+    ],
+    "4": [
+     "USART1_RX"
+    ],
+    "5": [
+     "USART6_RX"
+    ],
+    "6": [
+     "TIM1_CH2"
+    ],
+    "7": [
+     "TIM8_CH1"
+    ]
+   },
+   "3": {
+    "0": [
+     "SAI1_A"
+    ],
+    "1": [
+     "ADC2"
+    ],
+    "3": [
+     "SPI1_TX"
+    ],
+    "4": [
+     "SDIO"
+    ],
+    "6": [
+     "TIM1_CH1"
+    ],
+    "7": [
+     "TIM8_CH2"
+    ]
+   },
+   "4": {
+    "0": [
+     "ADC1"
+    ],
+    "1": [
+     "SAI1_B"
+    ],
+    "6": [
+     "TIM1_CH4",
+     "TIM1_COM",
+     "TIM1_TRIG"
+    ],
+    "7": [
+     "TIM8_CH3"
+    ]
+   },
+   "5": {
+    "0": [
+     "SAI1_B"
+    ],
+    "3": [
+     "SPI1_TX"
+    ],
+    "4": [
+     "USART1_RX"
+    ],
+    "6": [
+     "TIM1_UP"
+    ]
+   },
+   "6": {
+    "0": [
+     "TIM1_CH1",
+     "TIM1_CH2",
+     "TIM1_CH3"
+    ],
+    "4": [
+     "SDIO"
+    ],
+    "5": [
+     "USART6_TX"
+    ],
+    "6": [
+     "TIM1_CH3"
+    ]
+   },
+   "7": {
+    "1": [
+     "DCMI"
+    ],
+    "3": [
+     "QUADSPI"
+    ],
+    "4": [
+     "USART1_TX"
+    ],
+    "5": [
+     "USART6_TX"
+    ],
+    "7": [
+     "TIM8_CH4",
+     "TIM8_COM",
+     "TIM8_TRIG"
+    ]
+   }
+  }
+ },
+ "io": {
+  "family": "cmos_3v3",
+  "ports": [
+   {
+    "name": "A",
+    "pins": 16
+   },
+   {
+    "name": "B",
+    "pins": 16
+   },
+   {
+    "name": "C",
+    "pins": 16
+   },
+   {
+    "name": "D",
+    "pins": 16
+   },
+   {
+    "name": "E",
+    "pins": 16
+   },
+   {
+    "name": "F",
+    "pins": 16
+   },
+   {
+    "name": "G",
+    "pins": 16
+   },
+   {
+    "name": "H",
+    "pins": 2
+   }
+  ],
+  "electrical": {
+   "vdd": 3.3,
+   "voh": 2.9,
+   "vol": 0.4,
+   "rout": {
+    "low": 60,
+    "medium": 50,
+    "fast": 40,
+    "high": 30
+   },
+   "vih": 1.79,
+   "vil": 0.99,
+   "hysteresis": 0.2,
+   "rpull": 40000,
+   "leak_a": 1e-06,
+   "slew_v_per_us": {
+    "low": 40,
+    "medium": 200,
+    "fast": 400,
+    "high": 700
+   },
+   "ioh_max": 0.025,
+   "iol_max": 0.025
+  },
+  "analog": {
+   "PA0": "ADC123_IN0",
+   "PA1": "ADC123_IN1",
+   "PA2": "ADC123_IN2",
+   "PA3": "ADC123_IN3",
+   "PA4": "ADC12_IN4",
+   "PA5": "ADC12_IN5",
+   "PA6": "ADC12_IN6",
+   "PA7": "ADC12_IN7",
+   "PB0": "ADC12_IN8",
+   "PB1": "ADC12_IN9",
+   "PC0": "ADC123_IN10",
+   "PC1": "ADC123_IN11",
+   "PC2": "ADC123_IN12",
+   "PC3": "ADC123_IN13",
+   "PC4": "ADC12_IN14",
+   "PC5": "ADC12_IN15",
+   "PF3": "ADC3_IN9",
+   "PF4": "ADC3_IN14",
+   "PF5": "ADC3_IN15",
+   "PF6": "ADC3_IN4",
+   "PF7": "ADC3_IN5",
+   "PF8": "ADC3_IN6",
+   "PF9": "ADC3_IN7",
+   "PF10": "ADC3_IN8"
+  },
+  "alternate": {
+   "PA0": {
+    "1": [
+     "TIM2_CH1",
+     "TIM2_ETR"
+    ],
+    "2": [
+     "TIM5_CH1"
+    ],
+    "3": [
+     "TIM8_ETR"
+    ],
+    "7": [
+     "USART2_CTS"
+    ],
+    "8": [
+     "UART4_TX"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA1": {
+    "1": [
+     "TIM2_CH2"
+    ],
+    "2": [
+     "TIM5_CH2"
+    ],
+    "7": [
+     "USART2_RTS"
+    ],
+    "8": [
+     "UART4_RX"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO3"
+    ],
+    "10": [
+     "SAI2_MCLK_B"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA2": {
+    "1": [
+     "TIM2_CH3"
+    ],
+    "2": [
+     "TIM5_CH3"
+    ],
+    "3": [
+     "TIM9_CH1"
+    ],
+    "7": [
+     "USART2_TX"
+    ],
+    "8": [
+     "SAI2_SCK_B"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA3": {
+    "1": [
+     "TIM2_CH4"
+    ],
+    "2": [
+     "TIM5_CH4"
+    ],
+    "3": [
+     "TIM9_CH2"
+    ],
+    "6": [
+     "SAI1_FS_A"
+    ],
+    "7": [
+     "USART2_RX"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA4": {
+    "5": [
+     "I2S1_WS",
+     "SPI1_NSS"
+    ],
+    "6": [
+     "I2S3_WS",
+     "SPI3_NSS"
+    ],
+    "7": [
+     "USART2_CK"
+    ],
+    "12": [
+     "USB_OTG_HS_SOF"
+    ],
+    "13": [
+     "DCMI_HSYNC"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA5": {
+    "1": [
+     "TIM2_CH1",
+     "TIM2_ETR"
+    ],
+    "3": [
+     "TIM8_CH1N"
+    ],
+    "5": [
+     "I2S1_CK",
+     "SPI1_SCK"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_CK"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA6": {
+    "1": [
+     "TIM1_BKIN"
+    ],
+    "2": [
+     "TIM3_CH1"
+    ],
+    "3": [
+     "TIM8_BKIN"
+    ],
+    "5": [
+     "SPI1_MISO"
+    ],
+    "6": [
+     "I2S2_MCK"
+    ],
+    "9": [
+     "TIM13_CH1"
+    ],
+    "13": [
+     "DCMI_PIXCLK"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA7": {
+    "1": [
+     "TIM1_CH1N"
+    ],
+    "2": [
+     "TIM3_CH2"
+    ],
+    "3": [
+     "TIM8_CH1N"
+    ],
+    "5": [
+     "I2S1_SD",
+     "SPI1_MOSI"
+    ],
+    "9": [
+     "TIM14_CH1"
+    ],
+    "12": [
+     "FMC_SDNWE"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA8": {
+    "0": [
+     "RCC_MCO_1"
+    ],
+    "1": [
+     "TIM1_CH1"
+    ],
+    "4": [
+     "I2C3_SCL"
+    ],
+    "7": [
+     "USART1_CK"
+    ],
+    "10": [
+     "USB_OTG_FS_SOF"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA9": {
+    "1": [
+     "TIM1_CH2"
+    ],
+    "4": [
+     "I2C3_SMBA"
+    ],
+    "5": [
+     "I2S2_CK",
+     "SPI2_SCK"
+    ],
+    "6": [
+     "SAI1_SD_B"
+    ],
+    "7": [
+     "USART1_TX"
+    ],
+    "13": [
+     "DCMI_D0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA10": {
+    "1": [
+     "TIM1_CH3"
+    ],
+    "7": [
+     "USART1_RX"
+    ],
+    "10": [
+     "USB_OTG_FS_ID"
+    ],
+    "13": [
+     "DCMI_D1"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA11": {
+    "1": [
+     "TIM1_CH4"
+    ],
+    "7": [
+     "USART1_CTS"
+    ],
+    "9": [
+     "CAN1_RX"
+    ],
+    "10": [
+     "USB_OTG_FS_DM"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA12": {
+    "1": [
+     "TIM1_ETR"
+    ],
+    "7": [
+     "USART1_RTS"
+    ],
+    "8": [
+     "SAI2_FS_B"
+    ],
+    "9": [
+     "CAN1_TX"
+    ],
+    "10": [
+     "USB_OTG_FS_DP"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA13": {
+    "0": [
+     "JTMS_SWDIO"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA14": {
+    "0": [
+     "JTCK_SWCLK"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PA15": {
+    "0": [
+     "JTDI"
+    ],
+    "1": [
+     "TIM2_CH1",
+     "TIM2_ETR"
+    ],
+    "4": [
+     "CEC"
+    ],
+    "5": [
+     "I2S1_WS",
+     "SPI1_NSS"
+    ],
+    "6": [
+     "I2S3_WS",
+     "SPI3_NSS"
+    ],
+    "8": [
+     "UART4_RTS"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB0": {
+    "1": [
+     "TIM1_CH2N"
+    ],
+    "2": [
+     "TIM3_CH3"
+    ],
+    "3": [
+     "TIM8_CH2N"
+    ],
+    "7": [
+     "I2S3_SD",
+     "SPI3_MOSI"
+    ],
+    "8": [
+     "UART4_CTS"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D1"
+    ],
+    "12": [
+     "SDIO_D1"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB1": {
+    "1": [
+     "TIM1_CH3N"
+    ],
+    "2": [
+     "TIM3_CH4"
+    ],
+    "3": [
+     "TIM8_CH3N"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D2"
+    ],
+    "12": [
+     "SDIO_D2"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB2": {
+    "1": [
+     "TIM2_CH4"
+    ],
+    "6": [
+     "SAI1_SD_A"
+    ],
+    "7": [
+     "I2S3_SD",
+     "SPI3_MOSI"
+    ],
+    "9": [
+     "QUADSPI_CLK"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D4"
+    ],
+    "12": [
+     "SDIO_CK"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB3": {
+    "0": [
+     "JTDO_SWO"
+    ],
+    "1": [
+     "TIM2_CH2"
+    ],
+    "4": [
+     "I2C2_SDA"
+    ],
+    "5": [
+     "I2S1_CK",
+     "SPI1_SCK"
+    ],
+    "6": [
+     "I2S3_CK",
+     "SPI3_SCK"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB4": {
+    "0": [
+     "JTRST"
+    ],
+    "2": [
+     "TIM3_CH1"
+    ],
+    "4": [
+     "I2C3_SDA"
+    ],
+    "5": [
+     "SPI1_MISO"
+    ],
+    "6": [
+     "SPI3_MISO"
+    ],
+    "7": [
+     "I2S2_WS",
+     "SPI2_NSS"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB5": {
+    "2": [
+     "TIM3_CH2"
+    ],
+    "4": [
+     "I2C1_SMBA"
+    ],
+    "5": [
+     "I2S1_SD",
+     "SPI1_MOSI"
+    ],
+    "6": [
+     "I2S3_SD",
+     "SPI3_MOSI"
+    ],
+    "9": [
+     "CAN2_RX"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D7"
+    ],
+    "12": [
+     "FMC_SDCKE1"
+    ],
+    "13": [
+     "DCMI_D10"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB6": {
+    "2": [
+     "TIM4_CH1"
+    ],
+    "3": [
+     "CEC"
+    ],
+    "4": [
+     "I2C1_SCL"
+    ],
+    "7": [
+     "USART1_TX"
+    ],
+    "9": [
+     "CAN2_TX"
+    ],
+    "10": [
+     "QUADSPI_BK1_NCS"
+    ],
+    "12": [
+     "FMC_SDNE1"
+    ],
+    "13": [
+     "DCMI_D5"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB7": {
+    "2": [
+     "TIM4_CH2"
+    ],
+    "4": [
+     "I2C1_SDA"
+    ],
+    "7": [
+     "USART1_RX"
+    ],
+    "8": [
+     "SPDIFRX_IN0"
+    ],
+    "12": [
+     "FMC_NL"
+    ],
+    "13": [
+     "DCMI_VSYNC"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB8": {
+    "1": [
+     "TIM2_CH1",
+     "TIM2_ETR"
+    ],
+    "2": [
+     "TIM4_CH3"
+    ],
+    "3": [
+     "TIM10_CH1"
+    ],
+    "4": [
+     "I2C1_SCL"
+    ],
+    "9": [
+     "CAN1_RX"
+    ],
+    "12": [
+     "SDIO_D4"
+    ],
+    "13": [
+     "DCMI_D6"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB9": {
+    "1": [
+     "TIM2_CH2"
+    ],
+    "2": [
+     "TIM4_CH4"
+    ],
+    "3": [
+     "TIM11_CH1"
+    ],
+    "4": [
+     "I2C1_SDA"
+    ],
+    "5": [
+     "I2S2_WS",
+     "SPI2_NSS"
+    ],
+    "6": [
+     "SAI1_FS_B"
+    ],
+    "9": [
+     "CAN1_TX"
+    ],
+    "12": [
+     "SDIO_D5"
+    ],
+    "13": [
+     "DCMI_D7"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB10": {
+    "1": [
+     "TIM2_CH3"
+    ],
+    "4": [
+     "I2C2_SCL"
+    ],
+    "5": [
+     "I2S2_CK",
+     "SPI2_SCK"
+    ],
+    "6": [
+     "SAI1_SCK_A"
+    ],
+    "7": [
+     "USART3_TX"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D3"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB11": {
+    "1": [
+     "TIM2_CH4"
+    ],
+    "4": [
+     "I2C2_SDA"
+    ],
+    "7": [
+     "USART3_RX"
+    ],
+    "8": [
+     "SAI2_SD_A"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D4"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB12": {
+    "1": [
+     "TIM1_BKIN"
+    ],
+    "4": [
+     "I2C2_SMBA"
+    ],
+    "5": [
+     "I2S2_WS",
+     "SPI2_NSS"
+    ],
+    "6": [
+     "SAI1_SCK_B"
+    ],
+    "7": [
+     "USART3_CK"
+    ],
+    "9": [
+     "CAN2_RX"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D5"
+    ],
+    "12": [
+     "USB_OTG_HS_ID"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB13": {
+    "1": [
+     "TIM1_CH1N"
+    ],
+    "5": [
+     "I2S2_CK",
+     "SPI2_SCK"
+    ],
+    "7": [
+     "USART3_CTS"
+    ],
+    "9": [
+     "CAN2_TX"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_D6"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB14": {
+    "1": [
+     "TIM1_CH2N"
+    ],
+    "3": [
+     "TIM8_CH2N"
+    ],
+    "5": [
+     "SPI2_MISO"
+    ],
+    "7": [
+     "USART3_RTS"
+    ],
+    "9": [
+     "TIM12_CH1"
+    ],
+    "12": [
+     "USB_OTG_HS_DM"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PB15": {
+    "0": [
+     "RTC_REFIN"
+    ],
+    "1": [
+     "TIM1_CH3N"
+    ],
+    "3": [
+     "TIM8_CH3N"
+    ],
+    "5": [
+     "I2S2_SD",
+     "SPI2_MOSI"
+    ],
+    "9": [
+     "TIM12_CH2"
+    ],
+    "12": [
+     "USB_OTG_HS_DP"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC0": {
+    "6": [
+     "SAI1_MCLK_B"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_STP"
+    ],
+    "12": [
+     "FMC_SDNWE"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC1": {
+    "5": [
+     "I2S3_SD",
+     "SPI3_MOSI"
+    ],
+    "6": [
+     "SAI1_SD_A"
+    ],
+    "7": [
+     "I2S2_SD",
+     "SPI2_MOSI"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC2": {
+    "5": [
+     "SPI2_MISO"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_DIR"
+    ],
+    "12": [
+     "FMC_SDNE0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC3": {
+    "5": [
+     "I2S2_SD",
+     "SPI2_MOSI"
+    ],
+    "10": [
+     "USB_OTG_HS_ULPI_NXT"
+    ],
+    "12": [
+     "FMC_SDCKE0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC4": {
+    "5": [
+     "I2S1_MCK"
+    ],
+    "8": [
+     "SPDIFRX_IN2"
+    ],
+    "12": [
+     "FMC_SDNE0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC5": {
+    "7": [
+     "USART3_RX"
+    ],
+    "8": [
+     "SPDIFRX_IN3"
+    ],
+    "12": [
+     "FMC_SDCKE0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC6": {
+    "2": [
+     "TIM3_CH1"
+    ],
+    "3": [
+     "TIM8_CH1"
+    ],
+    "4": [
+     "FMPI2C1_SCL"
+    ],
+    "5": [
+     "I2S2_MCK"
+    ],
+    "8": [
+     "USART6_TX"
+    ],
+    "12": [
+     "SDIO_D6"
+    ],
+    "13": [
+     "DCMI_D0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC7": {
+    "2": [
+     "TIM3_CH2"
+    ],
+    "3": [
+     "TIM8_CH2"
+    ],
+    "4": [
+     "FMPI2C1_SDA"
+    ],
+    "5": [
+     "I2S2_CK",
+     "SPI2_SCK"
+    ],
+    "6": [
+     "I2S3_MCK"
+    ],
+    "7": [
+     "SPDIFRX_IN1"
+    ],
+    "8": [
+     "USART6_RX"
+    ],
+    "12": [
+     "SDIO_D7"
+    ],
+    "13": [
+     "DCMI_D1"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC8": {
+    "0": [
+     "TRACED0"
+    ],
+    "2": [
+     "TIM3_CH3"
+    ],
+    "3": [
+     "TIM8_CH3"
+    ],
+    "7": [
+     "UART5_RTS"
+    ],
+    "8": [
+     "USART6_CK"
+    ],
+    "12": [
+     "SDIO_D0"
+    ],
+    "13": [
+     "DCMI_D2"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC9": {
+    "0": [
+     "RCC_MCO_2"
+    ],
+    "2": [
+     "TIM3_CH4"
+    ],
+    "3": [
+     "TIM8_CH4"
+    ],
+    "4": [
+     "I2C3_SDA"
+    ],
+    "5": [
+     "I2S_CKIN"
+    ],
+    "7": [
+     "UART5_CTS"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO0"
+    ],
+    "12": [
+     "SDIO_D1"
+    ],
+    "13": [
+     "DCMI_D3"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC10": {
+    "6": [
+     "I2S3_CK",
+     "SPI3_SCK"
+    ],
+    "7": [
+     "USART3_TX"
+    ],
+    "8": [
+     "UART4_TX"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO1"
+    ],
+    "12": [
+     "SDIO_D2"
+    ],
+    "13": [
+     "DCMI_D8"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC11": {
+    "6": [
+     "SPI3_MISO"
+    ],
+    "7": [
+     "USART3_RX"
+    ],
+    "8": [
+     "UART4_RX"
+    ],
+    "9": [
+     "QUADSPI_BK2_NCS"
+    ],
+    "12": [
+     "SDIO_D3"
+    ],
+    "13": [
+     "DCMI_D4"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC12": {
+    "4": [
+     "I2C2_SDA"
+    ],
+    "6": [
+     "I2S3_SD",
+     "SPI3_MOSI"
+    ],
+    "7": [
+     "USART3_CK"
+    ],
+    "8": [
+     "UART5_TX"
+    ],
+    "12": [
+     "SDIO_CK"
+    ],
+    "13": [
+     "DCMI_D9"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC13": {
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC14": {
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PC15": {
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD0": {
+    "5": [
+     "SPI4_MISO"
+    ],
+    "6": [
+     "I2S3_SD",
+     "SPI3_MOSI"
+    ],
+    "9": [
+     "CAN1_RX"
+    ],
+    "12": [
+     "FMC_D2",
+     "FMC_DA2"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD1": {
+    "7": [
+     "I2S2_WS",
+     "SPI2_NSS"
+    ],
+    "9": [
+     "CAN1_TX"
+    ],
+    "12": [
+     "FMC_D3",
+     "FMC_DA3"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD2": {
+    "2": [
+     "TIM3_ETR"
+    ],
+    "8": [
+     "UART5_RX"
+    ],
+    "12": [
+     "SDIO_CMD"
+    ],
+    "13": [
+     "DCMI_D11"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD3": {
+    "0": [
+     "TRACED1"
+    ],
+    "5": [
+     "I2S2_CK",
+     "SPI2_SCK"
+    ],
+    "7": [
+     "USART2_CTS"
+    ],
+    "9": [
+     "QUADSPI_CLK"
+    ],
+    "12": [
+     "FMC_CLK"
+    ],
+    "13": [
+     "DCMI_D5"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD4": {
+    "7": [
+     "USART2_RTS"
+    ],
+    "12": [
+     "FMC_NOE"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD5": {
+    "7": [
+     "USART2_TX"
+    ],
+    "12": [
+     "FMC_NWE"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD6": {
+    "5": [
+     "I2S3_SD",
+     "SPI3_MOSI"
+    ],
+    "6": [
+     "SAI1_SD_A"
+    ],
+    "7": [
+     "USART2_RX"
+    ],
+    "12": [
+     "FMC_NWAIT"
+    ],
+    "13": [
+     "DCMI_D10"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD7": {
+    "7": [
+     "USART2_CK"
+    ],
+    "8": [
+     "SPDIFRX_IN0"
+    ],
+    "12": [
+     "FMC_NE1"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD8": {
+    "7": [
+     "USART3_TX"
+    ],
+    "8": [
+     "SPDIFRX_IN1"
+    ],
+    "12": [
+     "FMC_D13",
+     "FMC_DA13"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD9": {
+    "7": [
+     "USART3_RX"
+    ],
+    "12": [
+     "FMC_D14",
+     "FMC_DA14"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD10": {
+    "7": [
+     "USART3_CK"
+    ],
+    "12": [
+     "FMC_D15",
+     "FMC_DA15"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD11": {
+    "4": [
+     "FMPI2C1_SMBA"
+    ],
+    "7": [
+     "USART3_CTS"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO0"
+    ],
+    "10": [
+     "SAI2_SD_A"
+    ],
+    "12": [
+     "FMC_A16"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD12": {
+    "2": [
+     "TIM4_CH1"
+    ],
+    "4": [
+     "FMPI2C1_SCL"
+    ],
+    "7": [
+     "USART3_RTS"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO1"
+    ],
+    "10": [
+     "SAI2_FS_A"
+    ],
+    "12": [
+     "FMC_A17"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD13": {
+    "2": [
+     "TIM4_CH2"
+    ],
+    "4": [
+     "FMPI2C1_SDA"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO3"
+    ],
+    "10": [
+     "SAI2_SCK_A"
+    ],
+    "12": [
+     "FMC_A18"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD14": {
+    "2": [
+     "TIM4_CH3"
+    ],
+    "4": [
+     "FMPI2C1_SCL"
+    ],
+    "8": [
+     "SAI2_SCK_A"
+    ],
+    "12": [
+     "FMC_D0",
+     "FMC_DA0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PD15": {
+    "2": [
+     "TIM4_CH4"
+    ],
+    "4": [
+     "FMPI2C1_SDA"
+    ],
+    "12": [
+     "FMC_D1",
+     "FMC_DA1"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE0": {
+    "2": [
+     "TIM4_ETR"
+    ],
+    "10": [
+     "SAI2_MCLK_A"
+    ],
+    "12": [
+     "FMC_NBL0"
+    ],
+    "13": [
+     "DCMI_D2"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE1": {
+    "12": [
+     "FMC_NBL1"
+    ],
+    "13": [
+     "DCMI_D3"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE2": {
+    "0": [
+     "TRACECLK"
+    ],
+    "5": [
+     "SPI4_SCK"
+    ],
+    "6": [
+     "SAI1_MCLK_A"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO2"
+    ],
+    "12": [
+     "FMC_A23"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE3": {
+    "0": [
+     "TRACED0"
+    ],
+    "6": [
+     "SAI1_SD_B"
+    ],
+    "12": [
+     "FMC_A19"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE4": {
+    "0": [
+     "TRACED1"
+    ],
+    "5": [
+     "SPI4_NSS"
+    ],
+    "6": [
+     "SAI1_FS_A"
+    ],
+    "12": [
+     "FMC_A20"
+    ],
+    "13": [
+     "DCMI_D4"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE5": {
+    "0": [
+     "TRACED2"
+    ],
+    "3": [
+     "TIM9_CH1"
+    ],
+    "5": [
+     "SPI4_MISO"
+    ],
+    "6": [
+     "SAI1_SCK_A"
+    ],
+    "12": [
+     "FMC_A21"
+    ],
+    "13": [
+     "DCMI_D6"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE6": {
+    "0": [
+     "TRACED3"
+    ],
+    "3": [
+     "TIM9_CH2"
+    ],
+    "5": [
+     "SPI4_MOSI"
+    ],
+    "6": [
+     "SAI1_SD_A"
+    ],
+    "12": [
+     "FMC_A22"
+    ],
+    "13": [
+     "DCMI_D7"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE7": {
+    "1": [
+     "TIM1_ETR"
+    ],
+    "8": [
+     "UART5_RX"
+    ],
+    "10": [
+     "QUADSPI_BK2_IO0"
+    ],
+    "12": [
+     "FMC_D4",
+     "FMC_DA4"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE8": {
+    "1": [
+     "TIM1_CH1N"
+    ],
+    "8": [
+     "UART5_TX"
+    ],
+    "10": [
+     "QUADSPI_BK2_IO1"
+    ],
+    "12": [
+     "FMC_D5",
+     "FMC_DA5"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE9": {
+    "1": [
+     "TIM1_CH1"
+    ],
+    "10": [
+     "QUADSPI_BK2_IO2"
+    ],
+    "12": [
+     "FMC_D6",
+     "FMC_DA6"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE10": {
+    "1": [
+     "TIM1_CH2N"
+    ],
+    "10": [
+     "QUADSPI_BK2_IO3"
+    ],
+    "12": [
+     "FMC_D7",
+     "FMC_DA7"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE11": {
+    "1": [
+     "TIM1_CH2"
+    ],
+    "5": [
+     "SPI4_NSS"
+    ],
+    "10": [
+     "SAI2_SD_B"
+    ],
+    "12": [
+     "FMC_D8",
+     "FMC_DA8"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE12": {
+    "1": [
+     "TIM1_CH3N"
+    ],
+    "5": [
+     "SPI4_SCK"
+    ],
+    "10": [
+     "SAI2_SCK_B"
+    ],
+    "12": [
+     "FMC_D9",
+     "FMC_DA9"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE13": {
+    "1": [
+     "TIM1_CH3"
+    ],
+    "5": [
+     "SPI4_MISO"
+    ],
+    "10": [
+     "SAI2_FS_B"
+    ],
+    "12": [
+     "FMC_D10",
+     "FMC_DA10"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE14": {
+    "1": [
+     "TIM1_CH4"
+    ],
+    "5": [
+     "SPI4_MOSI"
+    ],
+    "10": [
+     "SAI2_MCLK_B"
+    ],
+    "12": [
+     "FMC_D11",
+     "FMC_DA11"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PE15": {
+    "1": [
+     "TIM1_BKIN"
+    ],
+    "12": [
+     "FMC_D12",
+     "FMC_DA12"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF0": {
+    "4": [
+     "I2C2_SDA"
+    ],
+    "12": [
+     "FMC_A0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF1": {
+    "4": [
+     "I2C2_SCL"
+    ],
+    "12": [
+     "FMC_A1"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF2": {
+    "4": [
+     "I2C2_SMBA"
+    ],
+    "12": [
+     "FMC_A2"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF3": {
+    "12": [
+     "FMC_A3"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF4": {
+    "12": [
+     "FMC_A4"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF5": {
+    "12": [
+     "FMC_A5"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF6": {
+    "3": [
+     "TIM10_CH1"
+    ],
+    "6": [
+     "SAI1_SD_B"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO3"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF7": {
+    "3": [
+     "TIM11_CH1"
+    ],
+    "6": [
+     "SAI1_MCLK_B"
+    ],
+    "9": [
+     "QUADSPI_BK1_IO2"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF8": {
+    "6": [
+     "SAI1_SCK_B"
+    ],
+    "9": [
+     "TIM13_CH1"
+    ],
+    "10": [
+     "QUADSPI_BK1_IO0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF9": {
+    "6": [
+     "SAI1_FS_B"
+    ],
+    "9": [
+     "TIM14_CH1"
+    ],
+    "10": [
+     "QUADSPI_BK1_IO1"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF10": {
+    "13": [
+     "DCMI_D11"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF11": {
+    "10": [
+     "SAI2_SD_B"
+    ],
+    "12": [
+     "FMC_SDNRAS"
+    ],
+    "13": [
+     "DCMI_D12"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF12": {
+    "12": [
+     "FMC_A6"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF13": {
+    "4": [
+     "FMPI2C1_SMBA"
+    ],
+    "12": [
+     "FMC_A7"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF14": {
+    "4": [
+     "FMPI2C1_SCL"
+    ],
+    "12": [
+     "FMC_A8"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PF15": {
+    "4": [
+     "FMPI2C1_SDA"
+    ],
+    "12": [
+     "FMC_A9"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG0": {
+    "12": [
+     "FMC_A10"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG1": {
+    "12": [
+     "FMC_A11"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG2": {
+    "12": [
+     "FMC_A12"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG3": {
+    "12": [
+     "FMC_A13"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG4": {
+    "12": [
+     "FMC_A14",
+     "FMC_BA0"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG5": {
+    "12": [
+     "FMC_A15",
+     "FMC_BA1"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG6": {
+    "10": [
+     "QUADSPI_BK1_NCS"
+    ],
+    "13": [
+     "DCMI_D12"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG7": {
+    "8": [
+     "USART6_CK"
+    ],
+    "12": [
+     "FMC_INT3"
+    ],
+    "13": [
+     "DCMI_D13"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG8": {
+    "7": [
+     "SPDIFRX_IN2"
+    ],
+    "8": [
+     "USART6_RTS"
+    ],
+    "12": [
+     "FMC_SDCLK"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG9": {
+    "7": [
+     "SPDIFRX_IN3"
+    ],
+    "8": [
+     "USART6_RX"
+    ],
+    "9": [
+     "QUADSPI_BK2_IO2"
+    ],
+    "10": [
+     "SAI2_FS_B"
+    ],
+    "12": [
+     "FMC_NCE3",
+     "FMC_NE2"
+    ],
+    "13": [
+     "DCMI_VSYNC"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG10": {
+    "10": [
+     "SAI2_SD_B"
+    ],
+    "12": [
+     "FMC_NE3"
+    ],
+    "13": [
+     "DCMI_D2"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG11": {
+    "6": [
+     "SPI4_SCK"
+    ],
+    "7": [
+     "SPDIFRX_IN0"
+    ],
+    "13": [
+     "DCMI_D3"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG12": {
+    "6": [
+     "SPI4_MISO"
+    ],
+    "7": [
+     "SPDIFRX_IN1"
+    ],
+    "8": [
+     "USART6_RTS"
+    ],
+    "12": [
+     "FMC_NE4"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG13": {
+    "0": [
+     "TRACED2"
+    ],
+    "6": [
+     "SPI4_MOSI"
+    ],
+    "8": [
+     "USART6_CTS"
+    ],
+    "12": [
+     "FMC_A24"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG14": {
+    "0": [
+     "TRACED3"
+    ],
+    "6": [
+     "SPI4_NSS"
+    ],
+    "8": [
+     "USART6_TX"
+    ],
+    "9": [
+     "QUADSPI_BK2_IO3"
+    ],
+    "12": [
+     "FMC_A25"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PG15": {
+    "8": [
+     "USART6_CTS"
+    ],
+    "12": [
+     "FMC_SDNCAS"
+    ],
+    "13": [
+     "DCMI_D13"
+    ],
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PH0": {
+    "15": [
+     "EVENTOUT"
+    ]
+   },
+   "PH1": {
+    "15": [
+     "EVENTOUT"
+    ]
+   }
+  }
+ },
+ "signals": [
+  "VBAT",
+  "VSS",
+  "VDD",
+  "NRST",
+  "VSSA",
+  "VREFP",
+  "VDDA",
+  "VCAP_1",
+  "VDDUSB",
+  "VCAP_2",
+  "BOOT0",
+  "PDR_ON",
+  "PA0",
+  "PA1",
+  "PA2",
+  "PA3",
+  "PA4",
+  "PA5",
+  "PA6",
+  "PA7",
+  "PA8",
+  "PA9",
+  "PA10",
+  "PA11",
+  "PA12",
+  "PA13",
+  "PA14",
+  "PA15",
+  "PB0",
+  "PB1",
+  "PB2",
+  "PB3",
+  "PB4",
+  "PB5",
+  "PB6",
+  "PB7",
+  "PB8",
+  "PB9",
+  "PB10",
+  "PB11",
+  "PB12",
+  "PB13",
+  "PB14",
+  "PB15",
+  "PC0",
+  "PC1",
+  "PC2",
+  "PC3",
+  "PC4",
+  "PC5",
+  "PC6",
+  "PC7",
+  "PC8",
+  "PC9",
+  "PC10",
+  "PC11",
+  "PC12",
+  "PC13",
+  "PC14",
+  "PC15",
+  "PD0",
+  "PD1",
+  "PD2",
+  "PD3",
+  "PD4",
+  "PD5",
+  "PD6",
+  "PD7",
+  "PD8",
+  "PD9",
+  "PD10",
+  "PD11",
+  "PD12",
+  "PD13",
+  "PD14",
+  "PD15",
+  "PE0",
+  "PE1",
+  "PE2",
+  "PE3",
+  "PE4",
+  "PE5",
+  "PE6",
+  "PE7",
+  "PE8",
+  "PE9",
+  "PE10",
+  "PE11",
+  "PE12",
+  "PE13",
+  "PE14",
+  "PE15",
+  "PF0",
+  "PF1",
+  "PF2",
+  "PF3",
+  "PF4",
+  "PF5",
+  "PF6",
+  "PF7",
+  "PF8",
+  "PF9",
+  "PF10",
+  "PF11",
+  "PF12",
+  "PF13",
+  "PF14",
+  "PF15",
+  "PG0",
+  "PG1",
+  "PG2",
+  "PG3",
+  "PG4",
+  "PG5",
+  "PG6",
+  "PG7",
+  "PG8",
+  "PG9",
+  "PG10",
+  "PG11",
+  "PG12",
+  "PG13",
+  "PG14",
+  "PG15",
+  "PH0",
+  "PH1"
+ ],
+ "packages": {
+  "lqfp144": "lqfp144.json"
+ },
+ "console": {
+  "default": "USART3"
+ },
+ "fidelity": {
+  "functional": {
+   "claims": "Cortex-M4F instruction execution (Thumb-2 with ARMv7E-M's DSP instructions, FPv4-SP, NVIC with 4 priority bits, SCB, SysTick, DWT, the MPU with eight regions, lazy floating-point context stacking, semihosting); every register of ST's STM32F446 SVD at its address with its reset value and access type, corrected where RM0390 differs (the corrections are listed in registers.json). RCC: HSI 16 MHz, HSE ready only as the board drives OSC_IN (a crystal without HSEBYP, a clock with it), LSE and LSI, each source and PLL ready its DS10693 start-up time after it is enabled (HSI 2.2 us, an HSE crystal 2 ms, an external clock six of its periods, LSI 15 us, LSE 2 s, the PLLs' lock time 75 to 100 us by their VCO), LSE running on through every reset but a power-on one, CIR's ready flags and their RCC interrupt with RDYIE, cleared by RDYC; the main PLL (PLLM, PLLN, PLLP, PLLR from HSI or HSE), SYSCLK from HSI, HSE, PLL_P or PLL_R switched once ready (SWS), HPRE, PPRE1, PPRE2 and the timers' clock with TIMPRE, the PLLI2S and PLLSAI ready bits; what the system clock uses cannot be turned off, HSEBYP is kept while HSE is on, BDCR is written only while PWR's DBP is set; a VCO, SYSCLK, PCLK1 or PCLK2 outside the datasheet's limits and too few flash wait states for HCLK are reported (mcu.clock_out_of_spec, mcu.flash_wait_states). PWR: VOSRDY with the PLL, ODRDY and ODSWRDY as RM0390's over-drive sequence sets them, BRR with BRE. The low-power modes (RM0390 5.3): Sleep (WFI or WFE, SLEEPONEXIT); Stop (SLEEPDEEP, PDDS clear): the 1.2 V domain's clocks stop (the core, SysTick and every peripheral but the RTC and IWDG), HSE and the PLLs turn off, any EXTI line's interrupt or event wakes the core on HSI with the prescalers kept, under-drive's UDRDY with UDEN and LPUDS or MRUDS; Standby (PDDS set): RAM lost, the backup SRAM kept with BRE, the pins let go but the enabled WKUP pins (PA0, PC13: inputs with a pull-down, EWUP's in every mode) and RTC_OUT, no interrupt wakes it; a WKUP pin's rising edge, an RTC alarm, wake-up, tamper or timestamp event, NRST or the IWDG ends it with a reset that is a power reset but for the backup domain, CSR keeping WUF, EWUP and BRE with SBF set; WUF set at entry ends it at once, a WKUP pin enabled while high is a wake-up event; CWUF, CSBF; the option bytes' nRST_STOP and nRST_STDBY making entry a reset (LPWRRSTF). SCR's SEVONPEND. FLASH: an accepted program or erase keeps SR's BSY (and STRT) set for DS10693's typical time (16 us a program; 250 ms to 2 s a sector by its size and PSIZE; 8 to 16 s the mass erase), EOP at its end, CR not written meanwhile, and a program running from the flash stalls on its bus until it ends (no instruction, no interrupt taken); ACR keeps LATENCY, the ART accelerator's and the prefetch bits; KEYR's keys unlock CR (a wrong key a bus error, locked until reset); with PG a store programs the main memory or the OTP area (bits only from 1 to 0) at PSIZE's width, PGPERR, PGAERR across a 128-bit row, PGSERR without PG, WRPERR on a protected sector, a locked OTP block left; SER erases sector SNB, MER the main memory; EOP with EOPIE, OPERR with ERRIE, the FLASH interrupt; OPTKEYR unlocks OPTCR, OPTSTRT writes RDP, USER, nWRP and SPRMOD to the option bytes, loaded into OPTCR at each reset, their write protection acting. GPIO: MODER's input, output, alternate-function and analog modes, OTYPER's push-pull and open-drain, OSPEEDR's speed setting the pin's output resistance and edge rate, PUPDR's pulls in every mode but analog, BSRR (a set winning, halfword lanes), IDR from the pins, LCKR's key sequence freezing the locked pins until reset, AFRL and AFRH selecting among the alternate functions io.alternate lists (from ST's open pin data); an alternate function whose peripheral has no model lets its pin go. SYSCFG: EXTICR's port for each EXTI line, MEMRMP's memory at 0 (flash, system memory, SRAM1), CMPCR's READY. EXTI: lines 0 to 22, edges, SWIER, PR, the shared interrupts and the internal lines' (PVD, RTC alarm, tamper and wake-up, USB wake-ups), EMR's events ending a WFE. RCC's *RSTR bits reset their peripherals. Timers (TIM1-TIM14): up, down and center-aligned counting, the repetition counter, preloads, update events, output compare and PWM modes on the pins, input capture with its edge, prescaler and filter, TI1S, complementary outputs with dead time, MOE, OSSR/OSSI and idle levels, break, LOCK, COM events, the slave modes (reset, gated, trigger, external clock 1, encoder 1-3) on ITR0-3, TI1F_ED, TI1FP1, TI2FP2 or ETRF, external clock mode 2, TRGO for the timers that listen, at the clock RCC gives the timers. TIMx_OR's remaps: TIM5's TI4 on LSI or LSE (HAL's measurement of LSI), TIM11's TI1 on HSE_RTC, TIM2's ITR1 from TIM8's TRGO. SysTick's external reference is HCLK/8 (CLKSOURCE 0). The CRC unit: the CRC-32 (0x04C11DB7, MSB first, from 0xFFFFFFFF) of the words written to DR, CR's RESET, IDR. USART1-3, UART4-5 and USART6: 8 or 9 data bits with parity, 0.5 to 2 stop bits, OVER8, TXE/TC with the held frame, TE's idle frame, breaks (LIN's 13 bits), the receiver from the RX pin's waveform or the session with RXNE, ORE (frames lost), PE, FE, IDLE and LBD and their read-SR-then-DR clearing, mute mode by idle line or address mark, nCTS and nRTS flow control, half-duplex, the synchronous master clock on CK with RX sampled at its edges, every interrupt source. DMA1 and DMA2: eight streams each, CHSEL's channel taking the requests dma_requests maps (RM0390 tables 28 and 29), a request waiting for its stream; peripheral-to-memory, memory-to-peripheral and DMA2's memory-to-memory through the bus as the core's accesses go; direct mode and the FIFO's packing, threshold, peripheral bursts and FS; NDTR with HTIF and TCIF, circular mode, double buffer with CT, transfer errors, the FIFO configuration error; LIFCR/HIFCR and the streams' interrupts. The USARTs' DMAT/DMAR, the SPIs' TXDMAEN/RXDMAEN and the timers' UDE, CCxDE (CCDS), TDE, COMDE and DCR/DMAR burst make their requests. SPI1-4 on their alternate-function pins as masters or slaves: modes 0 to 3, 8 and 16 bits, MSB or LSB first, the baud prescaler, TXE, RXNE, OVR and its clearing, BSY, the receive-only and bidirectional modes with the master clocking on its own, NSS by SSM/SSI, SSOE or the pin, MODF and its write protection, a slave's selection with its bit count kept across NSS, the TI mode's frame pulse and FRE, CRC with CRCNEXT, CRCERR and the CRC frame after a DMA stream's last item, the interrupts. I2C1-3 as masters and slaves on their open-drain pins: START, repeated START (once the bus is free), STOP, 7-bit and 10-bit addressing (ADD10), ACK and POS, the SR1 and SR2 flags with their clearing sequences, BTF clock holding, CCR's standard and fast timing with a slave's clock stretching honoured, arbitration lost (ARLO), BUSY and BERR from the bus as the pins show it; the slave's OAR1 (7 or 10 bits), OAR2's dual address, the general call, the SMBus default, host and alert response addresses, ADDR, BTF and TXE stretching or NOSTRETCH's OVR, STOPF (not after the master's NACK), the master's NACK (AF), a byte received over what the program wrote to DR; PEC with CR1.PEC and PECERR; SMBus's TIMEOUT and SMBALERT; SWRST; the event and error interrupts; DMAEN's requests and LAST's NACK after the DMA's EOT-1, the PEC after a DMA transfer. ADC1-3: the regular and injected groups on SWSTART, JSWSTART, the timers' and EXTI's triggers with their edges or JAUTO; scan, continuous and discontinuous modes; SMPRx's sampling times and RES's 12, 10, 8 or 6 bits at the ADC clock CCR's ADCPRE gives; the pins' voltages (io.analog), VREFINT, the temperature sensor at the world's temperature and VBAT/4; EOC (EOCS), JEOC, STRT, JSTRT, OVR stopping the group, the analog watchdog, JOFRx's offsets and the signed alignments, DMA with DDS, the interrupts; the common CSR, CCR and the dual and triple modes (regular and injected simultaneous, interleaved with DELAY, alternate trigger) with CDR's DMA modes 1-3. The DAC's two channels on PA4 and PA5: the holding registers' views, DOR one APB1 clock after a write or three after a trigger (TIM2, 4-8 TRGO, EXTI9, SWTRIG), the noise and triangle waves, DMA with its underrun, the output buffer's range or 15 kOhm without it. The device signature's UID, flash size and the factory calibration values (TS_CAL1, TS_CAL2, VREFINT_CAL) in system memory. IWDG: the keys, PR and RLR with PVU and RVU, LSI forced on, RLR+1 counts to the reset (IWDGRSTF), the option bytes' hardware watchdog loaded at every reset. WWDG: the free-running counter at PCLK1/4096/2^WDGTB, WDGA, the window, T6's reset (WWDGRSTF), EWI and EWIF. RCC_CSR's reset flags (PORRSTF, PINRSTF, SFTRSTF, IWDGRSTF, WWDGRSTF, LPWRRSTF) kept until RMVF; RAM kept through every reset but a power-on one and Standby's. RTC: the BCD calendar with its leap years and 12/24-hour modes from LSE, LSI or HSE/RTCPRE through PREDIV_A and PREDIV_S, INIT and INITF, WPR's keys and DBP's protection, the shadow registers with RSF, their locking and BYPSHAD, alarms A and B with their masks and subseconds through EXTI17, the wakeup timer through EXTI22, the timestamp and tamper on PC13 through EXTI21 (the tamper erasing the backup registers), RTC_OUT on PC13, the smooth and coarse calibrations, SHIFTR, ADD1H/SUB1H, the twenty backup registers; the backup domain (BDCR, the RTC) keeps going through every reset but a power-on one, and BDRST resets it. The factory option bytes (RDP level 0, the software watchdog).",
+   "omissions": [
+    "watchdogs: LSI's spread (32 kHz here), the debug freeze bits (a debugger's halt stops all of the machine's time); the WWDG's counter while WDGA is clear counts from the last access made while its clock is on",
+    "RTC: the reference clock detection (REFCKON, RTC_REFIN), RTC_AF2 (PI8, not bonded), the tamper input's precharge and pull-up, the 8 and 16 s calibration windows (the rate is applied evenly), RECALPF's wait",
+    "ADC: the start-up time after ADON (conversions are exact at once), the input's source impedance against the sampling time, the converter's offset, gain, linearity errors and noise (the code is the ideal one), the die's self-heating; DAC: the buffer's offset and gain errors and load regulation, the conversion's non-linearity",
+    "I2C: FLTR's analog and digital noise filters (the circuit's edges are taken as they come), the SMBus's cumulative clock low extensions (TLOW:SEXT, TLOW:MEXT), clock synchronization between two masters, TRISE's rise time compensation, CR2.FREQ (times come from the real PCLK1); FMPI2C1 (another IP) keeps its registers",
+    "SPI: I2S (I2SCFGR's I2SMOD keeps its value and the SPI stays an SPI; no catalog part speaks I2S), the TI slave's MISO release half a clock after the last bit (let go at the frame's end)",
+    "DMA: the arbitration's delays between streams (a request is served at once), the direct mode and FIFO overrun/underrun errors (DMEIF never sets, FEIF only for the configuration error), the peripheral flow controller (PFCTRL), the bus matrix's timing (memory-to-memory moves an item every two cycles); dma_requests omits SAI2's and SPI4's requests",
+    "USART: noise detection (one sample a bit: NF never sets, ONEBIT changes nothing), smartcard mode (SCEN, NACK, GTPR) and IrDA (IREN, IRLP), which no catalog part speaks",
+    "timers: TIM5's TI4 on the RTC's wake-up interrupt (IT4_RMP 11) and TIM2's ITR1 on the OTG controllers' SOF, MSM's delay, the idle levels' dead time after a break, OCxFE; TIMx_CCy as an ADC trigger is OCyREF for an output channel and a pulse at a capture or a frozen channel's match",
+    "SysTick: STK_CALIB's TENMS (RM0390's value not taken: it reads 0 with SKEW set)",
+    "GPIO: EVENTOUT (AF15, SEV's pulse), the I/O compensation cell's effect on the edges",
+    "SYSCFG: the FMC memories MEMRMP can map at 0 (none is on the bus), PMC's ADC DC2 bits' effect",
+    "EXTI: the internal lines' sources but the RTC's (the PVD, the USB OTG controllers) until their models land; SWIER triggers them",
+    "RCC: the clock security system's detection (CSSON is kept; the board's HSE never fails), a peripheral held in reset while its *RSTR bit stays set (its reset happens on the write), the brownout reset (BORRSTF only at power-on), the start-up times' spread between parts and with temperature and LSEMOD's drive level (the typical times always), MCO1 and MCO2 on their pins, and the I2S, SAI, SPDIF-RX, CEC, FMPI2C and 48 MHz clocks from PLLI2S and PLLSAI (DCKCFGR, DCKCFGR2) beyond TIMPRE",
+    "PWR: the regulator's settling times and the low-power modes' wake-up times (DS10693's low-power mode wake-up timings: the core runs at the wake-up event), the regulator's settings (LPDS, FPDS, LPLVDS, MRLVDS: the supply current is not modelled), the programmable voltage detector, DBGMCU_CR's DBG_STOP and DBG_STANDBY (a debugger's halt stops all of the machine's time), the tamper and timestamp pin in Standby beyond RTC_OUT; DWT's CYCCNT counts through Stop",
+    "CAN, SDIO, QUADSPI, SAI, SPDIF-RX, HDMI-CEC, DCMI, FMC, FMPI2C and the USB OTG controllers",
+    "flash: the times' spread and their maximum values (the typical ones always), the ART accelerator's cache hits during an operation (a program in the flash stalls whatever its cache holds), a program in SRAM whose interrupt handler is in the flash (it does not stall), the option bytes' programming time (OPTSTRT is done at once), a reset during an operation leaving the memory half-programmed, HCLK's 1 MHz minimum, the read protection's levels (RDP stored, no mass erase on a regression), PCROP's read refusal (RDERR), the ART accelerator's caches (DCRST, ICRST)",
+    "CRC: the bus stall of a DR access while a word is computed (four AHB clocks), and a byte or halfword write to DR, which RM0390 does not allow, feeding its value zero-extended"
+   ],
+   "validation": [
+    "repo:tests/firmware/cm4-core",
+    "repo:tests/unit/test_stm32f4.c",
+    "repo:tests/vendor/stm32cubef4"
+   ]
+  },
+  "timed": {
+   "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact, at the core clock RCC gives (HCLK).",
+   "omissions": [
+    "flash wait states and the ART accelerator",
+    "bus arbitration",
+    "pipeline effects beyond branch refill"
+   ],
+   "validation": [
+    "repo:tests/firmware/cm4-core"
+   ]
+  },
+  "electrical": {
+   "claims": "GPIO pin-model defaults at 3.3 V: VIH 0.45 VDD + 0.3, VIL 0.3 VDD, 40 kOhm pull resistors, VOL 0.4 V at 8 mA; output resistance and slew estimated per OSPEEDR setting from the datasheet's maximum frequencies.",
+   "omissions": [
+    "5 V tolerance of the FT pins and the absolute maximum ratings",
+    "the I/O compensation cell's effect on the edges",
+    "per-pin current injection",
+    "the supply current: VDD and VDDA draw nothing beyond what the pins drive",
+    "the core regulator: VCAP_1 is a passive pin, its 1.2 V not driven",
+    "VREF+ (VREFP) is the ADC's reference only as VDDA (the NUCLEO-F446ZE ties them): a separate reference voltage on the pin is not read",
+    "VDDUSB powers nothing apart: the OTG_FS pins are 3.3 V I/Os like the rest",
+    "VCAP_2 is a passive pin, as VCAP_1"
+   ],
+   "validation": [
+    "repo:tests/firmware/cm4-core"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "RM0390 Reference manual: STM32F446xx advanced Arm-based 32-bit MCUs",
+    "rev": "6"
+   },
+   {
+    "title": "STM32F446xC/E datasheet (DS10693)"
+   },
+   {
+    "title": "PM0214 Programming manual: STM32 Cortex-M4 MCUs and MPUs"
+   },
+   {
+    "title": "STMicroelectronics STM32F446.svd 1.9 (STM32F4 SVD pack 2.0), Apache-2.0"
+   },
+   {
+    "title": "STMicroelectronics STM32_open_pin_data 7d1f151, STM32F446Z(C-E)Tx.xml and GPIO-STM32F446_gpio_v1_0_Modes.xml, BSD-3-Clause"
+   },
+   {
+    "title": "STMicroelectronics RM0390, tables 28 and 29 (DMA1 and DMA2 request mapping), transcribed into dma_requests"
+   }
+  ]
+ }
+}

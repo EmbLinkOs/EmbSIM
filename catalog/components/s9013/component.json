@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/s9013",
+  "version": "1.0.0",
+  "name": "S9013 NPN transistor",
+  "category": "transistors",
+  "description": "An S9013 (marked J3), a general-purpose 25 V, 500 mA NPN transistor in SOT-23: the NUCLEO-144's (MB1137) T2, which lights LD8 while VBUS is on CN13. Several makers produce it; MB1137's schematic names none.",
+  "keywords": [
+    "bjt",
+    "npn",
+    "transistor",
+    "9013",
+    "s9013",
+    "sot-23",
+    "nucleo"
+  ],
+  "pins": [
+    {
+      "name": "B",
+      "number": 1,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Base (SOT-23 pin 1)"
+    },
+    {
+      "name": "E",
+      "number": 2,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Emitter (pin 2)"
+    },
+    {
+      "name": "C",
+      "number": 3,
+      "model": {
+        "kind": "analog"
+      },
+      "doc": "Collector (pin 3)"
+    }
+  ],
+  "params": {},
+  "model": {
+    "composite": {
+      "components": [
+        {
+          "id": "Q",
+          "component": "emblink/bjt_npn",
+          "params": {
+            "part": "generic",
+            "bf": 200
+          }
+        }
+      ],
+      "nets": {},
+      "ports": {
+        "B": "Q.B",
+        "E": "Q.E",
+        "C": "Q.C"
+      }
+    }
+  },
+  "functional": {
+    "composite": {
+      "components": [],
+      "nets": {},
+      "ports": {}
+    }
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 80,
+    "pins": {
+      "B": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "C": {
+        "x": 40,
+        "y": 0,
+        "side": "top"
+      },
+      "E": {
+        "x": 40,
+        "y": 80,
+        "side": "bottom"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Pins only: the functional policy has no base currents.",
+      "omissions": [
+        "switching"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    },
+    "timed": {
+      "claims": "As electrical.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "A Gummel-Poon NPN of current gain 200 (the S9013's hFE ranges run from about 64 to 300), as a saturated switch or in its linear region.",
+      "omissions": [
+        "the datasheet was not at hand: the gain is a mid-range value and the other parameters are the generic NPN's",
+        "capacitances and switching times",
+        "temperature, damage"
+      ],
+      "range": {
+        "voltage_v": [
+          -5,
+          25
+        ],
+        "current_a": [
+          -0.5,
+          0.5
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "MB1137 B-01 electrical schematics (NUCLEO-XXXXZX), sheet 4: T2 9013 with R68 (47 kOhm), R69 (22 kOhm), LD8 and R64 (330 ohm)",
+        "url": "https://www.st.com/en/evaluation-tools/nucleo-f446ze.html#cad-resources",
+        "date": "2026-10-31"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

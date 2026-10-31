@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "gpio_exti",
+  "until": "1.2s",
+  "description": "GPIO_EXTI: EXTI15_10 on PC13's rising edge (B1, active high on the NUCLEO-F446ZE: the readme's 'falling edge' is not what main.c configures) toggles LD1 on PB0 in its callback, once per press.",
+  "inputs": [
+    {
+      "at": "200ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "300ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "700ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "800ms",
+      "target": "B1.B1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "dark",
+      "between": [
+        "100ms",
+        "190ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "first",
+      "at": "450ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "second",
+      "at": "1.1s",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    },
+    {
+      "id": "two-toggles",
+      "between": [
+        "100ms",
+        "1.15s"
+      ],
+      "probe": "led",
+      "expect": {
+        "edges": 2
+      }
+    }
+  ]
+}

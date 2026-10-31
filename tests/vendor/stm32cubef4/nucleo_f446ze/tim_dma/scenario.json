@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "tim_dma",
+  "until": "100ms",
+  "description": "TIM_DMA: TIM3's channel 3 on PB0 (also LD1) at 17.57 kHz (ARR 5121 at 90 MHz), its CCR3 rewritten by DMA1 stream 7 on TIM3's update request with 75 %, 50 % and 25 % in turn: the duty averages 50 %.",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "frequency",
+      "between": [
+        "40ms",
+        "90ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "frequency_hz": 17570
+      },
+      "tolerance": 0.01
+    },
+    {
+      "id": "duty",
+      "between": [
+        "40ms",
+        "90ms"
+      ],
+      "probe": "led",
+      "expect": {
+        "min": 0.48,
+        "max": 0.52
+      },
+      "measure": "duty_cycle"
+    }
+  ]
+}
