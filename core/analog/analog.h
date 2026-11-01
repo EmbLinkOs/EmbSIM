@@ -70,6 +70,7 @@ struct esk_island {
     double *x;                    /* accepted solution */
     es_time_t t_accepted;         /* time of the accepted solution */
     es_time_t h_next_ps;          /* proposed next step */
+    es_time_t active_at;          /* its last source change or crossing */
     esk_event_handle step_event;
     uint64_t steps, rejections, newton_iters;
     uint64_t quiet_steps;         /* steps a steady island took without a solve */

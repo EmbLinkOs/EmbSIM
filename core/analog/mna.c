@@ -539,10 +539,14 @@ static void deliver_crossings(esk_island *isl, es_time_t t)
     for (i = 0; i < isl->devs.len; i++) {
         esk_adev *d = isl->devs.data[i];
         esk_logic nv;
-        if (bridge_input_role(d) && crossing(d, isl->x, &nv))
+        if (bridge_input_role(d) && crossing(d, isl->x, &nv)) {
             esk_engine_bridge_crossed(isl->e, d->pin, nv, t);
-        if (watch_crossing(d, isl->x, &nv))
+            isl->active_at = t;
+        }
+        if (watch_crossing(d, isl->x, &nv)) {
             esk_engine_watch_crossed(isl->e, d->pin, nv, t);
+            isl->active_at = t;
+        }
     }
 }
 
@@ -1411,6 +1415,8 @@ int esk_island_may_cross(esk_island *isl, es_time_t ahead)
     int i;
     if (!p->x_prev || !p->x_iter || isl->t_accepted <= p->t_prev)
         return 1;
+    if (next_breakpoint(isl, isl->t_accepted) <= isl->t_accepted + ahead)
+        return 1; /* a source's ramp or edge within the lag: step to it */
     dt = (double)(isl->t_accepted - p->t_prev);
     k = 2.0 * (double)ahead / dt;
     for (i = 0; i < p->n; i++)
@@ -1479,6 +1485,8 @@ void esk_island_touch(esk_island *isl, es_time_t now)
         }
     }
     p->exact_until = 0;
+    if (now > isl->active_at)
+        isl->active_at = now;
     p->restart = 1;
     p->quiet = 0;
     p->still = 0;

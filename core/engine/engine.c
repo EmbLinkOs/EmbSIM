@@ -762,8 +762,13 @@ void esk_comp_set_supply(esk_comp *c, double amps, es_time_t at)
         for (j = 0; j < k && !seen; j++)
             seen = c->pins[j].model.kind == ESK_PIN_POWER && c->pins[j].bridge && c->pins[j].net &&
                    c->pins[j].net->island == isl;
-        if (!seen)
+        if (!seen) {
+            /* a part's load changed: integrated exactly, but no bus activity
+             * that would keep the island from lagging behind */
+            es_time_t active = isl->active_at;
             esk_island_touch(isl, at);
+            isl->active_at = active;
+        }
     }
     c->supply_a = amps;
 }
@@ -1102,6 +1107,9 @@ static void island_step_cb(void *ctx, void *arg, es_time_t now);
 #define ISLAND_CHOP 16u
 #define ISLAND_DENSE_PS ES_PS_PER_US
 #define ISLAND_LAG_PS (10u * ES_PS_PER_US)
+/* ... and only an island calm for ISLAND_CALM_PS (no source changed, no
+ * crossing): a bus's lines (I2C on its pull-ups) step as they always did */
+#define ISLAND_CALM_PS ES_PS_PER_MS
 
 static es_status schedule_island(esk_engine *e, esk_island *isl, es_time_t at)
 {
@@ -1135,7 +1143,8 @@ static void island_step_cb(void *ctx, void *arg, es_time_t now)
             until = next;
         if (until <= now)
             until = now + 1;
-        if (next > now && until - now < ISLAND_DENSE_PS && (until - now) * ISLAND_CHOP < h) {
+        if (next > now && until - now < ISLAND_DENSE_PS && (until - now) * ISLAND_CHOP < h &&
+            now - isl->active_at > ISLAND_CALM_PS) {
             /* another part's events come far faster than this island needs
              * steps (a core's SPI clock beside a supply settling), under a
              * microsecond apart: rather

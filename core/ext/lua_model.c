@@ -403,7 +403,7 @@ static int pin_field(lua_State *L)
         const esk_net *n = p->net;
         double volts = 0.0;
         if (n && n->island)
-            volts = n->voltage;
+            volts = esk_net_voltage_now(p->net); /* its island, if it lagged, caught up */
         else if (n && esk_net_value(n) == ESK_L1)
             volts = p->comp->e->default_supply_v;
         lua_pushnumber(L, (lua_Number)volts);
@@ -420,7 +420,7 @@ static int analog_volts(const esk_pin *p, double *v)
 {
     if (!p->net || !p->net->island)
         return 0;
-    *v = p->net->voltage;
+    *v = esk_net_voltage_now(p->net);
     return 1;
 }
 
