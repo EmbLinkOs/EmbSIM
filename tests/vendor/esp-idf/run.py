@@ -58,6 +58,7 @@ EXAMPLES = {
     "ledc_basic": "examples/peripherals/ledc/ledc_basic",
     "real_time_stats": "examples/system/freertos/real_time_stats",
     "sdm_led": "examples/peripherals/sigma_delta/sdm_led",
+    "twai_self_test": "examples/peripherals/twai/twai_self_test",
     "temp_sensor": "examples/peripherals/temperature_sensor/temp_sensor",
     "uart_echo": "examples/peripherals/uart/uart_echo",
     "wifi_scan": "examples/wifi/scan",

@@ -5,6 +5,26 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's TWAI (CAN 2.0)
+
+- TWAI0 (`esp32c3-twai`, TRM v1.4 chapter 22): an SJA1000-compatible
+  controller run bit by bit on twai_tx and twai_rx (matrix signal 74,
+  source 25). Base and extended, data and remote frames with stuffing and
+  CRC-15; arbitration (ALC, ALI); the ACK slot; self test and listen-only
+  modes; self reception, single shot and abort; the single and dual
+  acceptance filters; the 64-byte receive FIFO and its overrun; bit, stuff,
+  CRC, form and ACK errors with their capture (ECC, BEI) and error frames;
+  the counters, error warning and error passive, bus off and its recovery.
+- ESP-IDF v5.4's `twai_self_test` runs unmodified with GPIO0 jumpered to
+  GPIO2, as its README allows: three runs of 100 frames at 25 kbit/s, each
+  received through the filter (`tests/vendor/esp-idf`). `test_twai_frame`
+  checks a frame's every edge against one computed apart (CRC 0x3B93, its
+  stuff bits), its reception and release, and an unacknowledged frame's
+  error count and capture.
+- Not yet: overload frames, triple sampling, the clock output, the bus's
+  clock tolerance (no resynchronisation after the start of frame). The
+  ESP32-C3 has 28 of 35 peripherals modelled.
+
 ### The ESP32-C3's sigma-delta modulation
 
 - GPIO_SD (`esp32c3-sdm`, TRM v1.4 section 5.13): four pulse-density

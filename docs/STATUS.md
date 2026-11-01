@@ -5,6 +5,16 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The ESP32-C3's TWAI (2026-11-01)
+
+TWAI0 is modelled (`esp32c3-twai`): an SJA1000-compatible CAN 2.0
+controller run bit by bit on its matrix signals, with arbitration, the
+acceptance filters, the receive FIFO, error frames, the error counters and
+bus off. ESP-IDF v5.4's `twai_self_test` runs unmodified with TX jumpered
+to RX (300 frames at 25 kbit/s), and a unit test checks a frame's edges
+against an independently computed one. Not yet: overload frames, triple
+sampling, the clock output. 28 of 35 peripherals are modelled.
+
 ## The ESP32-C3's sigma-delta modulation (2026-11-01)
 
 GPIO_SD is modelled (`esp32c3-sdm`): four pulse-density channels on matrix
@@ -12,7 +22,7 @@ signals 55 to 58, a bit every SDn_PRESCALE + 1 APB cycles, (SDn_IN + 128) /
 256 of them high. ESP-IDF v5.4's `sdm_led` runs unmodified: over a whole
 2 s sweep of its density, GPIO0 is high 118/256 of the time. Probes take a
 `capacity` (their memory depth) for long, busy captures. The ESP32-C3 has
-27 of 35 peripherals modelled; TWAI, I2S, UHCI0/1, HMAC, the digital
+27 of 35 peripherals modelled; I2S, UHCI0/1, HMAC, the digital
 signature, XTS_AES and the permission control remain (`docs/coverage.md`).
 EmbLinkOs/EmbLinkRTOS#46 runs EmbLinkRTOS's ESP32-C3 board at 160 MHz from
 the PLL, as ESP-IDF's bootloader does.

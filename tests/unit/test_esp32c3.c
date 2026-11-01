@@ -2916,6 +2916,98 @@ static void test_sdm_density(void)
     c3_close(&f);
 }
 
+#define TWAI 0x6002B000u
+#define TWAI_MODE (TWAI + 0x00u)
+#define TWAI_CMD (TWAI + 0x04u)
+#define TWAI_STATUS (TWAI + 0x08u)
+#define TWAI_INT (TWAI + 0x0Cu)
+#define TWAI_BUF(i) (TWAI + 0x40u + 4u * (i))
+#define TWAI_RMC (TWAI + 0x74u)
+
+/* ID 0x555, one data byte 0x00, as sent: its stuff bits, CRC 0x3B93, the
+ * delimiters, an unacknowledged ACK slot and EOF (computed apart, in
+ * Python, from ISO 11898-1's CRC-15 and stuffing rule) */
+static const char twai_wire[] = "010101010101000001010000010000111011100100111111111111";
+
+/* TWAI's TX on GPIO8, its RX from the same pad; bits of 9 quanta of 2
+ * cycles: BRP 0, TSEG1 5, TSEG2 1, at APB_CLK = CPU_CLK */
+static void test_twai_frame(void)
+{
+    c3 f;
+    int i, n = (int)sizeof twai_wire - 1, level = 1, e = 0;
+    if (!gpio_open(&f))
+        return;
+    f.m.host.pin_cfg = h_edges;
+    edge_m = &f.m;
+    edge_pin = 8;
+    wr(&f, SYSTEM + 0x10u, rd(&f, SYSTEM + 0x10u) | 1u << 19); /* PERIP_CLK_EN0's TWAI */
+    wr(&f, SYSTEM + 0x18u, rd(&f, SYSTEM + 0x18u) & ~(1u << 19));
+    wr(&f, 0x60009004u + 4u * 8u, 1u << 12 | 1u << 9); /* IO MUX: GPIO, IE */
+    wr(&f, GPIO + 0x574u, 74u);                        /* GPIO8 out: twai_tx */
+    wr(&f, GPIO + 0x154u + 4u * 74u, 1u << 6 | 8u);    /* twai_rx from GPIO8 */
+    wr(&f, G_EN_W1TS, 1u << 8);
+    CHECK_EQ(rd(&f, TWAI_MODE) & 1u, 1u); /* in reset mode out of reset */
+    wr(&f, TWAI + 0x18u, 0u);             /* BRP 0 */
+    wr(&f, TWAI + 0x1Cu, 1u << 4 | 5u);   /* TSEG2 1, TSEG1 5 */
+    wr(&f, TWAI_BUF(0), 0xAAu);           /* ACR0: ID 0x555's top bits */
+    wr(&f, TWAI_BUF(1), 0xA0u);
+    wr(&f, TWAI_BUF(4), 0x00u);
+    wr(&f, TWAI_BUF(5), 0x1Fu); /* AMR1: RTR and the unused bits */
+    wr(&f, TWAI_BUF(6), 0xFFu);
+    wr(&f, TWAI_BUF(7), 0xFFu);
+    wr(&f, TWAI + 0x10u, 0xFFu);  /* INT_ENA */
+    wr(&f, TWAI_MODE, 4u | 8u);   /* operating, self test, single filter */
+    esk_mach_idle(&f.m, 12u * 18u); /* integrated: 11 recessive bits */
+    nedge = 0;
+    wr(&f, TWAI_BUF(0), 1u);    /* base frame, data, DLC 1 */
+    wr(&f, TWAI_BUF(1), 0xAAu); /* ID 0x555: 10101010 101 */
+    wr(&f, TWAI_BUF(2), 0xA0u);
+    wr(&f, TWAI_BUF(3), 0x00u);
+    wr(&f, TWAI_CMD, 0x10u); /* SRR: send and receive it */
+    CHECK_EQ(rd(&f, TWAI_STATUS) & 0x04u, 0u); /* TBS: the buffer is taken */
+    esk_mach_idle(&f.m, 70u * 18u);
+    /* every edge where the wire changes level, a bit's 18 cycles apart */
+    for (i = 0; i < n; i++) {
+        int b = twai_wire[i] - '0';
+        if (b != level) {
+            CHECK(e < nedge);
+            if (e >= nedge)
+                break;
+            CHECK_EQ(edge_lv[e], b);
+            CHECK_EQ(edge_t[e] - edge_t[0], (u64)i * 18u);
+            e++;
+            level = b;
+        }
+    }
+    CHECK_EQ(e, nedge);
+    /* sent, and received through the filter */
+    CHECK_EQ(rd(&f, TWAI_STATUS) & 0x0Du, 0x0Du); /* RBS, TBS, TCS */
+    CHECK_EQ(rd(&f, TWAI_RMC), 1u);
+    CHECK_EQ(rd(&f, TWAI_BUF(0)), 1u);
+    CHECK_EQ(rd(&f, TWAI_BUF(1)), 0xAAu);
+    CHECK_EQ(rd(&f, TWAI_BUF(2)), 0xA0u);
+    CHECK_EQ(rd(&f, TWAI_BUF(3)), 0x00u);
+    CHECK_EQ(rd(&f, TWAI_INT) & 3u, 3u); /* RI, TI */
+    CHECK_EQ(rd(&f, TWAI_INT) & 3u, 1u); /* the read cleared TI; RI stays */
+    wr(&f, TWAI_CMD, 0x04u);             /* RRB */
+    CHECK_EQ(rd(&f, TWAI_RMC), 0u);
+    CHECK_EQ(rd(&f, TWAI_INT) & 1u, 0u);
+    /* without self test nothing acknowledges: an ACK error, counted */
+    wr(&f, TWAI_MODE, 1u);
+    wr(&f, TWAI_MODE, 8u);
+    esk_mach_idle(&f.m, 12u * 18u);
+    wr(&f, TWAI_BUF(0), 1u);
+    wr(&f, TWAI_BUF(1), 0xAAu);
+    wr(&f, TWAI_BUF(2), 0xA0u);
+    wr(&f, TWAI_BUF(3), 0x00u);
+    wr(&f, TWAI_CMD, 0x03u); /* TR and AT: once */
+    esk_mach_idle(&f.m, 90u * 18u);
+    CHECK_EQ(rd(&f, TWAI + 0x3Cu), 8u);           /* TX_ERR_CNT */
+    CHECK_EQ(rd(&f, TWAI + 0x30u) & 0xffu, 0xD9u); /* ECC: other, TX, the ACK slot */
+    CHECK_EQ(rd(&f, TWAI_STATUS) & 0x0Cu, 0x04u);  /* released, not completed */
+    c3_close(&f);
+}
+
 #define I2C 0x60013000u
 #define I2C_SCL_LOW (I2C + 0x00u)
 #define I2C_CTR (I2C + 0x04u)
@@ -3709,6 +3801,7 @@ RUN(test_rmt_rx_filter);
 RUN(test_ledc_pwm);
 RUN(test_ledc_dither_and_fade);
 RUN(test_sdm_density);
+RUN(test_twai_frame);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);

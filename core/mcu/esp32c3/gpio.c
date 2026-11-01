@@ -42,8 +42,7 @@
  * D+ pull-up.
  * Not yet: the peripherals' signals but the UARTs' (a pin routed to one
  * is not driven), the input filter and synchronisation, sleep mode (the
- * MCU_ pad bits, SLP_SEL), the drive strengths' effect, the sigma-delta
- * outputs, the power-up glitches (table 5.12-2) and the pins' wake-up. */
+ * MCU_ pad bits, SLP_SEL), the drive strengths' effect, the power-up glitches (table 5.12-2) and the pins' wake-up. */
 #include <stdio.h>
 #include <string.h>
 
