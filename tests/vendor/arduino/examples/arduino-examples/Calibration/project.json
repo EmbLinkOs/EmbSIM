@@ -1,0 +1,123 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-calibration-ldr",
+ "description": "The IDE's Calibration (Examples > 03.Analog) with a GL5528 photoresistor as its analog sensor: the LDR from 5 V to A0 and 10 kOhm from A0 to GND (more light, higher voltage), the LED from D9 to GND through 220 Ohm as the sketch's comment wires it. The light changes during the five-second calibration (10, 1000, 1 lux), then the LED fades with it.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "LDR1",
+   "component": "emblink/gl5528",
+   "layout": {
+    "x": 120,
+    "y": 600
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 10000
+   },
+   "layout": {
+    "x": 120,
+    "y": 760
+   }
+  },
+  {
+   "id": "R2",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 600,
+    "y": 700
+   }
+  },
+  {
+   "id": "D1",
+   "component": "emblink/led",
+   "layout": {
+    "x": 700,
+    "y": 760
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "LDR1.1"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "R1.2",
+   "D1.K"
+  ],
+  "SENSE": [
+   "LDR1.2",
+   "R1.1",
+   "B1.A0"
+  ],
+  "PWM": [
+   "B1.D9",
+   "R2.1"
+  ],
+  "LEDA": [
+   "R2.2",
+   "D1.A"
+  ],
+  "CAL": [
+   "B1.D13"
+  ]
+ },
+ "probes": [
+  {
+   "id": "pwm",
+   "target": "net:PWM",
+   "kind": "digital"
+  },
+  {
+   "id": "calibrating",
+   "target": "net:CAL",
+   "kind": "digital"
+  }
+ ]
+}

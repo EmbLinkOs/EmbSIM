@@ -5,13 +5,16 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
-## Parts: the MAX7219 and the passive buzzer (2026-11-01)
+## Parts: the MAX7219, the passive buzzer and the GL5528 (2026-11-01)
 
-Two more of M6's most-used parts are verified by unmodified examples on
+Three more of M6's most-used parts are verified by unmodified examples on
 the Uno (tests/vendor/arduino): LedControl's `LCDemo7Segment` on the
 MAX7219 8-digit module (27 assertions: the text and each digit's lit
 segments) and the IDE's `toneMelody` on a passive buzzer (11: each note's
-Timer2 frequency, the rest and the gaps). The MAX7219 model shows decimal
+Timer2 frequency, the rest and the gaps), and the IDE's `Calibration` with a
+GL5528 photoresistor (5: the calibrated range, the LED's duty at 100 lux
+from the project's drawn parts, full on, off). The GL5528 now follows the
+GL55 datasheet: gamma 0.6, 10-20 kOhm at 10 lux drawn per part, 1 MOhm dark. The MAX7219 model shows decimal
 points, its code-B font per digit and the segment patterns libraries send,
 and shifts DOUT on CLK's falling edge; a passive buzzer falls silent two
 periods after its drive stops. Fixtures: `max7219_display/tests/raw_segments`,
@@ -19,7 +22,7 @@ periods after its drive stops. Fixtures: `max7219_display/tests/raw_segments`,
 
 Not yet: the MAX7219's 8x8 matrix variant and chained devices, its
 multiplexing and brightness as light; the buzzer's sound pressure and
-resonance.
+resonance; the GL5528's 20 ms rise and 30 ms decay.
 
 ## Visual Benchmark v0.1: the workbench redesigned, in English and French (2026-11-01)
 
