@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Parts: the GL5528's response time
+
+- The GL5528 follows a change of light as its datasheet's response time
+  says: its conductance moves toward the new light's in a first-order lag,
+  20 ms rising and 30 ms decaying (the times at 10 lux). The
+  `environment_resistor` primitive takes `rise_s` and `decay_s`. It carries
+  the conductance on its own clock between solutions and re-solves the
+  circuit at each 0.2 % of change, so a settled cell lets its island sleep.
+  New fixtures: `gl5528/tests/response-rise` (1.288 V one rise constant after
+  10 to 100 lux) and `response-decay` (1.615 V one decay constant after the
+  light goes back). The light-controlled switch example's scenario gives the
+  cell a few hundred milliseconds at each light.
+- Not yet: the times' dependence on the light level, and the slow tail
+  toward the 1 MOhm dark resistance, which the datasheet measures 10 s
+  after the light goes.
+
 ### Speed: the analog solver keeps the matrix sparse
 
 - The LU factorisation runs in a minimum-degree order of the unknowns,

@@ -31,11 +31,14 @@ GL55 datasheet: gamma 0.6, 10-20 kOhm at 10 lux drawn per part, 1 MOhm dark. The
 points, its code-B font per digit and the segment patterns libraries send,
 and shifts DOUT on CLK's falling edge; a passive buzzer falls silent two
 periods after its drive stops. Fixtures: `max7219_display/tests/raw_segments`,
-`buzzer/tests/stops`.
+`buzzer/tests/stops`. The GL5528 follows a change of light with its
+datasheet's response time, a first-order lag in conductance of 20 ms rising
+and 30 ms decaying (`gl5528/tests/response-rise`, `response-decay`).
 
 Not yet: the MAX7219's 8x8 matrix variant and chained devices, its
 multiplexing and brightness as light; the buzzer's sound pressure and
-resonance; the GL5528's 20 ms rise and 30 ms decay.
+resonance; the GL5528's response times as they vary with the light, and its
+slow tail toward the dark resistance.
 
 ## Visual Benchmark v0.1: the workbench redesigned, in English and French (2026-11-01)
 

@@ -2097,10 +2097,16 @@ void esk_adev_on_time(esk_adev *d, es_time_t now)
         esk_usb_meter_on_time(d, now);
     else if (d && d->ops == &esk_oscilloscope_ops)
         esk_oscilloscope_on_time(d, now);
+    else if (d && d->ops == &esk_environmental_ops)
+        esk_environmental_on_time(d, now);
 }
 
 void esk_adev_on_input(esk_adev *d, const char *input, es_time_t now)
 {
+    if (d && input && d->ops == &esk_environmental_ops) {
+        esk_environmental_on_input(d, now);
+        return;
+    }
     if (!d || !input || strcmp(input, "run"))
         return;
     if (d->ops == &esk_oscilloscope_ops)

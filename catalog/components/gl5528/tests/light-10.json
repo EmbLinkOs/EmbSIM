@@ -3,7 +3,7 @@
   "kind": "component_test",
   "name": "light-10",
   "policy": "electrical",
-  "until": "1ms",
+  "until": "6ms",
   "circuit": {
     "components": [
       {
@@ -50,7 +50,7 @@
   },
   "expect": {
     "net:SENSE": {
-      "at": "500us",
+      "at": "5ms",
       "min_v": 2.497,
       "max_v": 2.503
     }

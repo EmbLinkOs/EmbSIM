@@ -61,7 +61,7 @@ def main():
 
             # the room lit to 1000 lx: the LDR's resistance falls, OUT rises
             client.call("input.set", {"target": "world", "input": "illuminance", "value": 1000})
-            client.call("control.advance", {"by": "1ms"})
+            client.call("control.advance", {"by": "300ms"})  # the GL5528 settles: 20 ms rise, 30 ms decay
             lit = out_v(client, probe)
             assert lit > dark + 1.0, (dark, lit)
             ldr = next(i for i in client.call("input.list")["inputs"] if i["target"] == "LDR1")
@@ -69,10 +69,10 @@ def main():
 
             # the part's own value overrides the world
             client.call("input.set", {"target": "LDR1", "input": "illuminance", "value": 10})
-            client.call("control.advance", {"by": "1ms"})
+            client.call("control.advance", {"by": "300ms"})  # the GL5528 settles: 20 ms rise, 30 ms decay
             assert abs(out_v(client, probe) - dark) < 1e-6
             client.call("input.set", {"target": "world", "input": "illuminance", "value": 5000})
-            client.call("control.advance", {"by": "1ms"})
+            client.call("control.advance", {"by": "300ms"})  # the GL5528 settles: 20 ms rise, 30 ms decay
             assert abs(out_v(client, probe) - dark) < 1e-6
 
             # bad world inputs are refused

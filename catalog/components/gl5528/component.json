@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "GL5528",
   "category": "sensors",
-  "description": "GL5528 CdS photoresistor (Senba GL55 series): R = 15 kOhm x (E / 10 lx)^-0.6, each part's 10-lux resistance drawn inside the datasheet's 10-20 kOhm, at least 1 MOhm in darkness; reads the world's illuminance while its own is not set.",
+  "description": "GL5528 CdS photoresistor (Senba GL55 series): R = 15 kOhm x (E / 10 lx)^-0.6, each part's 10-lux resistance drawn inside the datasheet's 10-20 kOhm, at least 1 MOhm in darkness, following a change of light in 20 ms rising and 30 ms decaying; reads the world's illuminance while its own is not set.",
   "keywords": [
     "sensors",
     "GL5528",
@@ -70,6 +70,22 @@
       "unit": "ohm",
       "min": 1,
       "max": 1000000000000.0
+    },
+    "rise_s": {
+      "type": "number",
+      "default": 0.02,
+      "unit": "s",
+      "min": 0,
+      "max": 10,
+      "doc": "Rise time constant: after the light comes the conductance approaches the light's value in a first-order lag with this constant (the datasheet's 20 ms rise at 10 lux); 0 with decay_s 0 follows at once."
+    },
+    "decay_s": {
+      "type": "number",
+      "default": 0.03,
+      "unit": "s",
+      "min": 0,
+      "max": 10,
+      "doc": "Decay time constant: after the light goes or dims the conductance falls toward the new value with this constant (the datasheet's 30 ms decay at 10 lux)."
     },
     "tolerance": {
       "type": "number",
@@ -165,11 +181,11 @@
     "functional": null,
     "timed": null,
     "electrical": {
-      "claims": "The GL55 datasheet's light law for the GL5528: 10-20 kOhm at 10 lux (each part drawn from the seed), gamma 0.6 between 10 and 100 lux, 1 MOhm dark resistance as the cap.",
+      "claims": "The GL55 datasheet's light law for the GL5528: 10-20 kOhm at 10 lux (each part drawn from the seed), gamma 0.6 between 10 and 100 lux, 1 MOhm dark resistance as the cap; its response time as a first-order lag in conductance, 20 ms rising and 30 ms decaying.",
       "omissions": [
         "spectral response",
-        "response time (the datasheet's 20 ms rise, 30 ms decay): the resistance follows the illuminance at once",
-        "illumination history",
+        "the response time's dependence on the light level, and the slow tail toward the dark resistance (which the datasheet measures 10 s after the light goes): one rise and one decay constant, the datasheet's at 10 lux",
+        "illumination history (light memory)",
         "self-heating",
         "thermal damage and destructive limits"
       ],
