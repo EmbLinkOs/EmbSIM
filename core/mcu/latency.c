@@ -183,6 +183,40 @@ static int same(const esk_an_bound *x, int kind, u32 v)
     return x->kind == kind && x->v == v;
 }
 
+static void trace_add(esk_an *a, int kind, u32 v, u64 c, u64 ps)
+{
+    if (!a->tracing)
+        return;
+    if (!a->tstarted) {
+        if (a->tstart.kind && !(a->tstart.kind == kind && a->tstart.v == v))
+            return;
+        a->tstarted = 1;
+    }
+    if (a->ntev >= a->tlimit) {
+        a->tdropped++;
+        return;
+    }
+    if (a->ntev == a->captev) {
+        u64 cap = a->captev ? 2 * a->captev : 4096;
+        struct esk_an_tev *p;
+        if (cap > a->tlimit)
+            cap = a->tlimit;
+        p = (struct esk_an_tev *)esk_realloc(a->a, a->tev, (size_t)a->captev * sizeof *p, (size_t)cap * sizeof *p);
+        if (!p) {
+            a->tdropped++;
+            return;
+        }
+        a->tev = p;
+        a->captev = cap;
+    }
+    a->tev[a->ntev].c = c - a->cycles0;
+    a->tev[a->ntev].ps = ps;
+    a->tev[a->ntev].v = v;
+    a->tev[a->ntev].kind = (u8)kind;
+    a->tev[a->ntev].core = 0;
+    a->ntev++;
+}
+
 /* boundary (kind, v) at machine cycle c */
 static void stamp(esk_an *a, int kind, u32 v, u64 c)
 {
@@ -190,6 +224,7 @@ static void stamp(esk_an *a, int kind, u32 v, u64 c)
     u64 ps;
     t_sync(a, c);
     ps = a->t_ps;
+    trace_add(a, kind, v, c, ps);
     for (i = 0; i < a->nmeas; i++) {
         esk_an_meas *m = &a->meas[i];
         if (m->armed && same(&m->to, kind, v)) {
@@ -269,7 +304,7 @@ void esk_an_measure_after(esk_an *a, esk_an_core *k, int ran, u64 c0)
 void esk_an_pend(esk_an *a, int core, int n)
 {
     (void)core;
-    if (!(a->what & ESK_AN_MEASURE) || !a->nmeas)
+    if (!(a->what & ESK_AN_MEASURE) || (!a->nmeas && !a->tracing))
         return;
     if (a->in_step) {
         if (a->npend < (int)(sizeof a->pend / sizeof a->pend[0])) {
@@ -390,3 +425,114 @@ esk_json *esk_an_measure_json(esk_an *a, esk_alloc *al)
     esk_json_object_set(al, o, "measurements", list);
     return o;
 }
+
+/* ---- the trace ---- */
+
+es_status esk_an_trace(esk_an *a, const char *start, u64 limit, char *why, size_t cap)
+{
+    if (!(a->what & ESK_AN_MEASURE)) {
+        esk_snprintf(why, cap, "the trace is not on");
+        return ES_ESTATE;
+    }
+    memset(&a->tstart, 0, sizeof a->tstart);
+    if (start && !parse_bound(a, start, &a->tstart, why, cap))
+        return ES_EINVAL;
+    a->tracing = 1;
+    a->tstarted = 0;
+    a->tlimit = limit ? limit : 100000;
+    return ES_OK;
+}
+
+static const char *exc_name(u32 n)
+{
+    size_t i;
+    for (i = 0; i < sizeof exc_names / sizeof exc_names[0]; i++)
+        if ((u32)exc_names[i].n == n && strcmp(exc_names[i].name, "SVC"))
+            return exc_names[i].name;
+    return NULL;
+}
+
+static void ev_name(esk_strbuf *out, const struct esk_an_tev *e)
+{
+    const char *nm = exc_name(e->v);
+    if (nm)
+        esk_strbuf_printf(out, "%s", nm);
+    else if (e->v >= 16)
+        esk_strbuf_printf(out, "IRQ%u", (unsigned)(e->v - 16));
+    else
+        esk_strbuf_printf(out, "%u", (unsigned)e->v);
+}
+
+static void vcd_bits(esk_strbuf *out, u32 v, int n, const char *id)
+{
+    int i;
+    esk_strbuf_putc(out, 'b');
+    for (i = n - 1; i >= 0; i--)
+        esk_strbuf_putc(out, (v >> i) & 1 ? '1' : '0');
+    esk_strbuf_printf(out, " %s\n", id);
+}
+
+int esk_an_trace_write(esk_an *a, int vcd, esk_strbuf *out)
+{
+    u64 i;
+    if (!vcd) {
+        esk_strbuf_printf(out, "# simulated time; cycle\ttime_ns\tevent\tvalue\twhere\n");
+        for (i = 0; i < a->ntev; i++) {
+            const struct esk_an_tev *e = &a->tev[i];
+            esk_strbuf_printf(out, "%llu\t%llu.%03llu\t", (unsigned long long)e->c, (unsigned long long)(e->ps / 1000u),
+                              (unsigned long long)(e->ps % 1000u));
+            if (e->kind == ESK_AN_B_PC) {
+                int f = esk_an_fn_at(a, e->v);
+                esk_strbuf_printf(out, "insn\t0x%08x\t%s\n", (unsigned)e->v, f >= 0 && a->fn[f].name ? a->fn[f].name : "?");
+            } else {
+                esk_strbuf_printf(out, "%s\t", e->kind == ESK_AN_B_EXC ? "exc" : e->kind == ESK_AN_B_PEND ? "pend" : "ret");
+                ev_name(out, e);
+                esk_strbuf_printf(out, "\t\n");
+            }
+        }
+        if (a->tdropped)
+            esk_strbuf_printf(out, "# %llu events past the limit not recorded\n", (unsigned long long)a->tdropped);
+        return !out->oom;
+    }
+    /* a value change dump at 1 ps: pc (32 bits), the exception active (9),
+     * an event pulse per pending exception */
+    esk_strbuf_printf(out, "$comment EmbSIM trace: simulated time, the core's own cycles at its clock $end\n"
+                           "$timescale 1ps $end\n$scope module core $end\n"
+                           "$var wire 32 p pc $end\n$var wire 9 x exception $end\n$var wire 9 q pending $end\n"
+                           "$var wire 64 c cycle $end\n$upscope $end\n$enddefinitions $end\n");
+    {
+        u32 active[17];
+        int na = 0;
+        u64 last = (u64)-1;
+        for (i = 0; i < a->ntev; i++) {
+            const struct esk_an_tev *e = &a->tev[i];
+            if (e->ps != last) {
+                esk_strbuf_printf(out, "#%llu\n", (unsigned long long)e->ps);
+                last = e->ps;
+                {
+                    u64 cy = e->c;
+                    int b;
+                    esk_strbuf_putc(out, 'b');
+                    for (b = 63; b >= 0; b--)
+                        esk_strbuf_putc(out, (cy >> b) & 1 ? '1' : '0');
+                    esk_strbuf_printf(out, " c\n");
+                }
+            }
+            if (e->kind == ESK_AN_B_PC) {
+                vcd_bits(out, e->v, 32, "p");
+            } else if (e->kind == ESK_AN_B_EXC) {
+                if (na < 17)
+                    active[na++] = e->v;
+                vcd_bits(out, e->v, 9, "x");
+            } else if (e->kind == ESK_AN_B_RET) {
+                if (na > 0)
+                    na--;
+                vcd_bits(out, na ? active[na - 1] : 0, 9, "x");
+            } else {
+                vcd_bits(out, e->v, 9, "q");
+            }
+        }
+    }
+    return !out->oom;
+}
+

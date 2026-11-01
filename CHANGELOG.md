@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Timing: execution traces
+
+- `embsim run --trace FILE` records each instruction start (with its
+  function), and each exception pending, taken and returned. Every event
+  carries its cycle and simulated time.
+- The trace is a table, or with `.vcd` a waveform for GTKWave and similar
+  viewers (pc, exception active, pending, cycle).
+- `--trace-start BOUNDARY` and `--trace-limit N` bound it.
+- The FreeRTOS test checks that a traced context switch equals the measured
+  one.
+
 ### Timing: the STM32F4's flash wait states and ART accelerator
 
 - Code and literal pools in the STM32F446's flash now wait FLASH_ACR's

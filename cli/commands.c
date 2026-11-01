@@ -48,6 +48,8 @@ static void usage_to(FILE *out)
           "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
           "      [--measure [NAME=]FROM..TO]... [--measure-out FILE|-]   cycles and simulated time between\n"
           "      boundaries (a function or 0xADDR starting, exc:N taken, pend:N pending; .json for JSON)\n"
+          "      [--trace FILE [--trace-start BOUNDARY] [--trace-limit N]]   each instruction, exception, pending\n"
+          "      and return with its cycle and simulated time (.vcd: a value change dump)\n"
           "      [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
@@ -447,6 +449,25 @@ static int write_measure(es_session *s, const char *board, const char *path)
     return ok;
 }
 
+/* the trace into `path` (.vcd: a value change dump; else text) */
+static int write_trace(es_session *s, const char *board, const char *path)
+{
+    size_t n = strlen(path);
+    int vcd = n > 4 && !strcmp(path + n - 4, ".vcd"), ok = 1;
+    esk_strbuf b;
+    char why[160];
+    esk_strbuf_init(&b, s->a);
+    if (esk_session_trace_write(s, board, vcd, &b, why, sizeof why) != ES_OK || b.oom) {
+        fprintf(stderr, "embsim: --trace: %s\n", b.oom ? "out of memory" : why);
+        ok = 0;
+    } else if (esk_host_write_file(path, b.data, b.len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot write %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    return ok;
+}
+
 /* the coverage, profile, stack or fault report into `path` ("-": stderr) */
 static int write_analysis(es_session *s, const char *board, unsigned which, int fmt, const char *path)
 {
@@ -749,7 +770,8 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, fault_fmt = ESK_AN_TEXT, console = 0;
     int allow_no_image = 0, build = 0;
     const char *dump = NULL, *circuit = NULL, *rtos = NULL, *measure_out = NULL;
-    const char *measures[16];
+    const char *measures[16], *trace = NULL, *trace_start = NULL;
+    unsigned long long trace_limit = 0;
     int nmeasures = 0;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
@@ -787,6 +809,9 @@ static int cmd_run(int argc, char **argv, const char *argv0)
             measures[nmeasures++] = argv[++i];
         }
         else if (!strcmp(a, "--measure-out") && more) measure_out = argv[++i];
+        else if (!strcmp(a, "--trace") && more) trace = argv[++i];
+        else if (!strcmp(a, "--trace-start") && more) trace_start = argv[++i];
+        else if (!strcmp(a, "--trace-limit") && more) trace_limit = strtoull(argv[++i], NULL, 10);
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
                   !strcmp(a, "--faults-format")) && more) {
             unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
@@ -845,14 +870,16 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         if (esk_session_probe_add(s, NULL, probes[i], NULL, 0, NULL) != ES_OK)
             fprintf(stderr, "embsim: warning: probe %s not created\n", probes[i]);
     }
-    if (coverage || profile || stack || faults || nmeasures) {
+    if (coverage || profile || stack || faults || nmeasures || trace) {
         char why[160];
         unsigned what = (coverage ? ESK_AN_COVERAGE : 0u) | (profile ? ESK_AN_PROFILE : 0u) | (stack ? ESK_AN_STACK : 0u) |
-                        (faults ? ESK_AN_FAULT : 0u) | (nmeasures ? ESK_AN_MEASURE : 0u);
+                        (faults ? ESK_AN_FAULT : 0u) | (nmeasures || trace ? ESK_AN_MEASURE : 0u);
         for (i = 0; i < nmeasures; i++)
             (void)esk_session_measure(s, measures[i]);
+        if (trace)
+            (void)esk_session_trace(s, trace_start, (uint64_t)trace_limit);
         if (esk_session_analyze(s, board, what, why, sizeof why) != ES_OK) {
-            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : stack ? "--stack" : faults ? "--faults" : "--measure", why);
+            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : stack ? "--stack" : faults ? "--faults" : nmeasures ? "--measure" : "--trace", why);
             es_session_destroy(s);
             return 2;
         }
@@ -951,6 +978,8 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     if (faults && !write_analysis(s, board, ESK_AN_FAULT, fault_fmt, faults) && !rc)
         rc = 2;
     if (nmeasures && !write_measure(s, board, measure_out ? measure_out : "-") && !rc)
+        rc = 2;
+    if (trace && !write_trace(s, board, trace) && !rc)
         rc = 2;
     if (opt_json)
         print_json(report, s->a);

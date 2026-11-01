@@ -346,3 +346,22 @@ short by whatever the return takes. Also not modelled:
 - bus contention between the two cores and DMA, which the datasheet (2.1)
   says can add wait states on the AHB-Lite.
 
+### 4.6 Trace (step 3, continued)
+
+`run --trace FILE` (latency.c) records each instruction start (with its
+function), and each exception becoming pending, being taken and returning.
+Every event carries its cycle and simulated picoseconds, stamped at the same
+boundaries as the measurements. A `.vcd` file gets a waveform: pc, the
+exception active, the last one pended, the cycle count. Any other name gets
+a table. `--trace-start` and `--trace-limit` bound it.
+
+**Validated** by `tests/vendor/freertos/run.py`: in the trace from the first
+PendSV request, the cycles from `pend` to `ret` equal the context-switch
+measurement's first sample (156 cycles at 16 MHz). The test also checks that
+the `.vcd` file is a value change dump.
+
+**Not recorded:**
+- peripheral register accesses;
+- pin changes (the session's probes and the logic analyzer have those);
+- memory accesses.
+

@@ -122,6 +122,24 @@ def check_timing(embsim: str, elf: Path, work: Path) -> bool:
                 bad.append(f"ctxsw min {cs.get('cycles_min')} cycles, under the 24 of an entry and a return")
     if a.get("simulated") != b.get("simulated"):
         bad.append("two runs measured differently")
+    # the trace from the first PendSV request: its first switch, pend to ret,
+    # is the measurement's first sample; the dump is a value change dump
+    trace, vcd = work / "trace.txt", work / "trace.vcd"
+    for out in (trace, vcd):
+        subprocess.run([embsim, "run", "--target", "emblink/nucleo_f446re", "--image", str(elf), "--until", "50ms",
+                        "--quiet", "--trace", str(out), "--trace-start", "pend:PendSV", "--trace-limit", "400"],
+                       capture_output=True, text=True, errors="replace")
+    try:
+        rows = [ln.split("\t") for ln in trace.read_text(encoding="utf-8").splitlines() if not ln.startswith("#")]
+        t_pend = next(int(r[0]) for r in rows if r[2] == "pend" and r[3] == "PendSV")
+        t_ret = next(int(r[0]) for r in rows if r[2] == "ret" and r[3] == "PendSV")
+        first = (by.get("ctxsw", {}).get("samples") or [{}])[0].get("cycles")
+        if t_ret - t_pend != first:
+            bad.append(f"the trace's first switch is {t_ret - t_pend} cycles, the measurement's {first}")
+        if "$enddefinitions" not in vcd.read_text(encoding="utf-8"):
+            bad.append("the .vcd trace is not a value change dump")
+    except (OSError, StopIteration, ValueError, IndexError) as e:
+        bad.append(f"the trace could not be read ({e})")
     host = a.get("host") or {}
     for m in bad:
         print(f"  FAIL freertos/timing: {m}")

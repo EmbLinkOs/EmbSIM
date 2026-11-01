@@ -737,6 +737,8 @@ void esk_an_free(esk_an *a)
     if (!a)
         return;
     al = a->a;
+    if (a->tev)
+        esk_free(al, a->tev, (size_t)a->captev * sizeof *a->tev);
     if (a->fn_minsp)
         esk_an_stack_free(a);
     esk_an_fault_clear(a);

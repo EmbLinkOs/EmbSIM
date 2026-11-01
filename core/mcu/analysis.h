@@ -117,6 +117,14 @@ int esk_an_measure_text(esk_an *a, const char *name, esk_strbuf *out);
  * from, to, count, cycles_min, cycles_max, cycles_mean, ps_min, ps_max,
  * ps_mean, samples: [{start_cycle, cycles, ps}]}]} */
 esk_json *esk_an_measure_json(esk_an *a, esk_alloc *al);
+/* the trace (latency.c): from now, or from the first `start` boundary (a
+ * measurement's syntax, NULL for now), at most `limit` events: each
+ * instruction starting, exception taken, pending and returned, with its
+ * cycle and simulated time. ES_EINVAL with `why` for a bad boundary */
+es_status esk_an_trace(esk_an *a, const char *start, u64 limit, char *why, size_t cap);
+/* the trace written as text (cycle, time, event, function) or, with `vcd`,
+ * as a value change dump: pc, the exception active, each pending */
+int esk_an_trace_write(esk_an *a, int vcd, esk_strbuf *out);
 
 /* ---- shared by analysis.c, coverage.c, profile.c, stack.c and fault.c ---- */
 
@@ -277,6 +285,16 @@ struct esk_an {
     /* each core's exceptions in progress (innermost last), and the one that
      * just returned, for ret:N */
     int exc_stack[ESK_AN_CORES][16], nexc[ESK_AN_CORES], ret_n[ESK_AN_CORES];
+    /* the trace: its events, how many it may hold, whether it records yet
+     * (its start boundary) and how many it dropped past the limit */
+    struct esk_an_tev {
+        u64 c, ps;
+        u32 v;
+        u8 kind, core;
+    } *tev;
+    u64 ntev, captev, tlimit, tdropped;
+    int tracing, tstarted;
+    esk_an_bound tstart;
 };
 
 /* latency.c's part of the step (analysis.c): before it (the machine's

@@ -156,6 +156,25 @@ Cortex-M, instructions are estimated from the TRM's table, while exception
 entry, return and tail-chaining follow the TRM; flash wait states are not
 modelled yet.
 
+### Traces
+
+`--trace FILE` records every boundary as it happens:
+- each instruction starting, with its address and function;
+- each exception becoming pending, being taken, and returning.
+
+Each event carries the core's cycle and the simulated time. `--trace-start
+BOUNDARY` starts recording at the first such boundary (for example
+`pend:PendSV`), and `--trace-limit N` caps the events (100 000 by default;
+the file says how many it dropped).
+
+A file ending in `.vcd` gets a value change dump at 1 ps resolution, with
+four signals: `pc`, the exception active, the last exception pended, and the
+cycle count. GTKWave and other waveform viewers open it. Any other name gets
+a tab-separated table.
+
+    embsim run --target emblink/nucleo_f446re --image freertos.elf --until 50ms \
+        --trace switch.vcd --trace-start pend:PendSV --trace-limit 400
+
 ## FreeRTOS tasks
 
 `--rtos FILE` reads the FreeRTOS kernel's tasks from the firmware's memory at

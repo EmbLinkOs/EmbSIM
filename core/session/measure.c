@@ -54,6 +54,11 @@ es_status esk_session_analyze(es_session *s, const char *board, unsigned what, c
                 if (r != ES_OK)
                     return r;
             }
+            if (s->an_trace) {
+                r = esk_an_trace(esk_mcu_analysis(bi->mcu), s->an_trace_start, s->an_trace_limit, why, cap);
+                if (r != ES_OK)
+                    return r;
+            }
         }
         found = 1;
     }
@@ -73,6 +78,31 @@ es_status esk_session_measure(es_session *s, const char *spec)
         return ES_ENOMEM;
     s->an_nmeasure++;
     return ES_OK;
+}
+
+es_status esk_session_trace(es_session *s, const char *start, uint64_t limit)
+{
+    esk_strfree(s->a, s->an_trace_start);
+    s->an_trace_start = start ? esk_strdup(s->a, start) : NULL;
+    if (start && !s->an_trace_start)
+        return ES_ENOMEM;
+    s->an_trace = 1;
+    s->an_trace_limit = limit;
+    return ES_OK;
+}
+
+es_status esk_session_trace_write(es_session *s, const char *board, int vcd, esk_strbuf *out, char *why, size_t cap)
+{
+    size_t i;
+    for (i = 0; i < s->boards.len; i++) {
+        esk_board_inst *bi = s->boards.data[i];
+        esk_an *a = bi->mcu ? esk_mcu_analysis(bi->mcu) : NULL;
+        if (!a || (board && !esk_str_eq(board, bi->id)) || !(esk_an_what(a) & ESK_AN_MEASURE))
+            continue;
+        return esk_an_trace_write(a, vcd, out) ? ES_OK : ES_ENOMEM;
+    }
+    esk_snprintf(why, cap, "the trace is not on%s%s", board ? " for board " : "", board ? board : "");
+    return ES_ESTATE;
 }
 
 void esk_session_analyses_apply(es_session *s)
