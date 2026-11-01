@@ -3,6 +3,7 @@
 import { Meter } from '@embsim/instruments';
 import { useSession } from '../../stores/session';
 import { useProject } from '../../stores/project';
+import { t as tr } from '../../i18n';
 
 /** The unit of an output from its name (SPEC-005 output conventions). */
 function outputUnit(key: string): string {
@@ -38,7 +39,7 @@ export function MetersPanel() {
   const analog = Object.entries(nets)
     .filter(([, s]) => s.voltage !== undefined)
     .sort(([a], [b]) => a.localeCompare(b));
-  if (entries.length === 0 && analog.length === 0) return <div className="es-empty">No observations yet</div>;
+  if (entries.length === 0 && analog.length === 0) return <div className="es-empty">{tr('meters.none')}</div>;
   return (
     <div className="es-meter-grid">
       {entries.map(([k, v]) => (

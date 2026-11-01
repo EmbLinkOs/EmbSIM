@@ -2,6 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CanvasContext } from '@embsim/scene';
+import { t as tr } from '../../i18n';
 
 export interface ContextAction { label: string; shortcut?: string; disabled?: boolean; danger?: boolean; run(): void }
 
@@ -28,7 +29,7 @@ export function SchematicContextMenu({ context, actions, onClose }: { context: C
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, [onClose]);
-  return <div ref={ref} className="wb-schematic-context" role="menu" aria-label="Schematic actions" style={{ left: position.x, top: position.y }} onKeyDown={(e) => {
+  return <div ref={ref} className="wb-schematic-context" role="menu" aria-label={tr('ctx.region')} style={{ left: position.x, top: position.y }} onKeyDown={(e) => {
     if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); onClose(); return; }
     const buttons = [...ref.current!.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
     const current = buttons.indexOf(document.activeElement as HTMLButtonElement);

@@ -2,6 +2,7 @@
 // Copyright 2026 Junior Deogracias
 import { formatTime, type Time } from '@embsim/protocol';
 import { useEffect, useRef, useState } from 'react';
+import { uiText } from '@embsim/design';
 
 export interface SerialLine {
   at: Time;
@@ -98,7 +99,7 @@ export function SerialTerminal({ target, targets, onTargetChange, lines, onSend,
         <label className="es-terminal__label">
           Port
           <select className="es-terminal__select" value={target ?? ''} onChange={(e) => onTargetChange?.(e.target.value)} disabled={targets.length === 0}>
-            {targets.length === 0 && <option value="">none</option>}
+            {targets.length === 0 && <option value="">{uiText('serial.none', 'none')}</option>}
             {targets.map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -109,7 +110,7 @@ export function SerialTerminal({ target, targets, onTargetChange, lines, onSend,
         <span className="es-terminal__hint">{disabled ? disabledReason ?? 'unavailable' : `${lines.length} lines`}</span>
       </div>
       {onHostPort && target && !disabled && (
-        <div className="es-terminal__host" aria-label="Port on the host">
+        <div className="es-terminal__host" aria-label={uiText('serial.hostPort', 'Port on the host')}>
           {hostPort ? (
             <>
               <span className="es-terminal__host-path" title="Open it with any serial program: screen, minicom, the Arduino IDE's monitor, pyserial">
@@ -142,7 +143,7 @@ export function SerialTerminal({ target, targets, onTargetChange, lines, onSend,
         className="es-terminal__log"
         role="log"
         aria-live="polite"
-        aria-label="Serial output"
+        aria-label={uiText('serial.output', 'Serial output')}
         onScroll={(e) => {
           const el = e.currentTarget;
           setStick(el.scrollHeight - el.scrollTop - el.clientHeight < 4);
@@ -165,7 +166,7 @@ export function SerialTerminal({ target, targets, onTargetChange, lines, onSend,
         }}
       >
         <input
-          aria-label="Text to send"
+          aria-label={uiText('serial.toSend', 'Text to send')}
           placeholder={disabled ? 'No serial port' : 'Type and press Enter to send'}
           value={text}
           disabled={disabled || !target}

@@ -69,3 +69,15 @@ export function useT(): Translator {
   fn.lang = lang;
   return fn;
 }
+
+/** The shared packages' messages (catalog keys `pkg.*`) in `lang`, keyed as the packages name them. */
+export function packageMessages(lang: Language): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const key of Object.keys(en) as MessageKey[]) if (key.startsWith('pkg.')) out[key.slice(4)] = translate(lang, key);
+  return out;
+}
+
+/** `key` if a catalog has it, else undefined: for keys made from data (a catalog category). */
+export function tOptional(key: string, params?: Params): string | undefined {
+  return key in en ? translate(useSettings.getState().language, key as MessageKey, params) : undefined;
+}

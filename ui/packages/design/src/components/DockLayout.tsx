@@ -14,6 +14,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical } from 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { cx } from '../cx';
 import { Panel } from './Panel';
+import { uiText } from '../uiText';
 
 export interface DockItem {
   id: string;
@@ -274,8 +275,8 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
                 type="button"
                 className="es-dock__rail"
                 aria-expanded={false}
-                aria-label={`Expand ${item.title} panel`}
-                title={`Expand ${item.title}`}
+                aria-label={uiText('dock.expandPanel', 'Expand {title} panel', { title: item.title })}
+                title={uiText('dock.expand', 'Expand {title}', { title: item.title })}
                 onClick={() => setCollapsed(item.id, false)}
               >
                 <Unfold aria-hidden="true" />
@@ -291,8 +292,8 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
             type="button"
             className="es-button es-button--ghost es-button--sm es-icon-button es-dock__fold"
             aria-expanded={true}
-            aria-label={`Collapse ${item.title} panel`}
-            title={`Collapse ${item.title}`}
+            aria-label={uiText('dock.collapsePanel', 'Collapse {title} panel', { title: item.title })}
+            title={uiText('dock.collapse', 'Collapse {title}', { title: item.title })}
             onClick={() => setCollapsed(item.id, true)}
           >
             <Fold />
@@ -302,8 +303,8 @@ export function DockLayout({ direction, items, storageKey, className }: DockLayo
           <button
             type="button"
             className="es-button es-button--ghost es-button--sm es-icon-button es-dock__handle"
-            aria-label={`Move ${item.title} panel (drag, or Alt+Arrow keys)`}
-            title="Drag to reorder; Alt+Arrow to move"
+            aria-label={uiText('dock.move', 'Move {title} panel (drag, or Alt+Arrow keys)', { title: item.title })}
+            title={uiText('dock.reorder', 'Drag to reorder; Alt+Arrow to move')}
             draggable
             onDragStart={(e) => {
               e.dataTransfer.setData('text/x-embsim-dock', item.id);

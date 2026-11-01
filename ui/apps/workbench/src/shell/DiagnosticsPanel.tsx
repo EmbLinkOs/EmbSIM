@@ -8,6 +8,7 @@ import { useLayout } from '../stores/layout';
 import { useProject } from '../stores/project';
 import { useSelection } from '../stores/selection';
 import { useSession } from '../stores/session';
+import { t as tr } from '../i18n';
 
 const ICON: Record<DiagnosticRecord['severity'], React.ReactNode> = {
   info: <Info />,
@@ -49,7 +50,7 @@ export function DiagnosticsPanel() {
   const columns: Column<DiagnosticRecord & { key: string }>[] = [
     {
       id: 'severity',
-      header: 'Severity',
+      header: tr('diag.severity'),
       width: '90px',
       cell: (r) => (
         <span className={`wb-diagnostics__severity wb-diagnostics__severity--${r.severity}`}>
@@ -60,35 +61,35 @@ export function DiagnosticsPanel() {
     },
     {
       id: 'code',
-      header: 'Code',
+      header: tr('diag.code'),
       mono: true,
       cell: (r) => (
-        <a href={docsLink(r.code)} target="_blank" rel="noreferrer" title="Open the documentation for this code">
+        <a href={docsLink(r.code)} target="_blank" rel="noreferrer" title={tr('diag.docs')}>
           {r.code}
         </a>
       ),
     },
-    { id: 'time', header: 'Time', mono: true, width: '110px', cell: (r) => (r.time_ps ? formatTime(BigInt(r.time_ps), { padZeros: false }) : '—') },
+    { id: 'time', header: tr('se.time'), mono: true, width: '110px', cell: (r) => (r.time_ps ? formatTime(BigInt(r.time_ps), { padZeros: false }) : '—') },
     {
       id: 'subject',
-      header: 'Subject',
+      header: tr('diag.subject'),
       mono: true,
       cell: (r) =>
         r.subject ? (
-          <button type="button" className="es-button es-button--ghost es-button--sm" onClick={() => locate(r)} title="Select the affected element">
+          <button type="button" className="es-button es-button--ghost es-button--sm" onClick={() => locate(r)} title={tr('diag.select')}>
             {r.subject.kind}:{r.subject.name}
           </button>
         ) : (
           '—'
         ),
     },
-    { id: 'message', header: 'Message', cell: (r) => r.message },
+    { id: 'message', header: tr('diag.message'), cell: (r) => r.message },
   ];
   const rows = diagnostics.map((d, i) => ({ ...d, key: `${i}` }));
   if (rows.length === 0) {
     return (
-      <EmptyState icon={<CheckCircle2 />} title="No diagnostics">
-        Warnings and errors from the engine appear here, with a link to the documentation of each code.
+      <EmptyState icon={<CheckCircle2 />} title={tr('diag.none')}>
+        {tr('diag.appearHere')}
       </EmptyState>
     );
   }
@@ -96,10 +97,10 @@ export function DiagnosticsPanel() {
     <div>
       <div className="es-row" style={{ justifyContent: 'flex-end', padding: 'var(--space-1) var(--space-2)' }}>
         <Button size="sm" variant="ghost" onClick={clear}>
-          Clear
+          {tr('common.clear')}
         </Button>
       </div>
-      <Table label="Diagnostics" columns={columns} rows={rows} rowKey={(r) => r.key} />
+      <Table label={tr('run.tab.diagnostics')} columns={columns} rows={rows} rowKey={(r) => r.key} />
     </div>
   );
 }

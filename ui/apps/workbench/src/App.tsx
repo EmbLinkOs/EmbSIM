@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Junior Deogracias
-import { CommandPalette, Dialog, ToastProvider, TooltipProvider, resolveTheme, useToast, type ThemePreference } from '@embsim/design';
-import { useEffect, useState } from 'react';
+import { CommandPalette, Dialog, ToastProvider, TooltipProvider, resolveTheme, setUiMessages, useToast, type ThemePreference } from '@embsim/design';
+import { useEffect, useMemo, useState } from 'react';
 import { connectSession, tryClient, type ConnectOptions } from './connection';
 import { Gallery } from './gallery/Gallery';
 import { DebugPerspective } from './perspectives/debug/DebugPerspective';
@@ -14,7 +14,7 @@ import { DiagnosticsPanel } from './shell/DiagnosticsPanel';
 import { FloatingPanels } from './shell/FloatingPanels';
 import { Toolbar } from './shell/Toolbar';
 import { WorkbenchStatusBar } from './shell/WorkbenchStatusBar';
-import { t as tr, type MessageKey } from './i18n';
+import { packageMessages, t as tr, type MessageKey } from './i18n';
 import { ConnectionScreen } from './shell/ConnectionScreen';
 import { SettingsPage } from './shell/SettingsPage';
 import { useLayout } from './stores/layout';
@@ -72,6 +72,12 @@ function Workbench({ connect }: AppProps) {
   const theme = useSettingsTheme();
   const settingsOpen = useSettings((s) => s.settingsOpen);
   const layoutEpoch = useSettings((s) => s.layoutEpoch);
+  // the perspectives read their messages when they render: a language change
+  // rebuilds them (the layout, the project and the session are kept in stores)
+  const language = useSettings((s) => s.language);
+  const viewKey = `${layoutEpoch}.${language}`;
+  // the shared packages read the same language, before anything below renders
+  useMemo(() => setUiMessages(packageMessages(language)), [language]);
   useSettings((s) => s.language); // re-render the shell when the language changes
   const status = useSession((s) => s.status);
   const error = useSession((s) => s.error);
@@ -118,7 +124,7 @@ function Workbench({ connect }: AppProps) {
     main = <ConnectionScreen />;
   } else {
     main =
-      perspective === 'design' ? <DesignPerspective key={layoutEpoch} /> : perspective === 'run' ? <RunPerspective key={layoutEpoch} /> : perspective === 'debug' ? <DebugPerspective key={layoutEpoch} /> : <VerifyPerspective key={layoutEpoch} />;
+      perspective === 'design' ? <DesignPerspective key={viewKey} /> : perspective === 'run' ? <RunPerspective key={viewKey} /> : perspective === 'debug' ? <DebugPerspective key={viewKey} /> : <VerifyPerspective key={viewKey} />;
   }
   void error;
 
@@ -129,7 +135,7 @@ function Workbench({ connect }: AppProps) {
       <main className="wb__main" aria-label={settingsOpen ? tr('settings.title') : tr('perspective.region', { name: tr(`perspective.${perspective}` as MessageKey) })}>
         {main}
       </main>
-      {status === 'open' && !settingsOpen && <FloatingPanels key={layoutEpoch} />}
+      {status === 'open' && !settingsOpen && <FloatingPanels key={viewKey} />}
       <WorkbenchStatusBar />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} commands={commands} />
       <Dialog open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen} title={tr('diag.title')} className="wb-diagnostics-dialog">

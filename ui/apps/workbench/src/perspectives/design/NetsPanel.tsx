@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { useProject } from '../../stores/project';
 import { useSelection } from '../../stores/selection';
 import { useSession } from '../../stores/session';
+import { t as tr } from '../../i18n';
 
 interface NetRow {
   name: string;
@@ -29,12 +30,12 @@ export function NetsPanel({ live }: { live?: boolean }) {
   }, [project, topology]);
 
   const columns: Column<NetRow>[] = [
-    { id: 'name', header: 'Net', mono: true, cell: (r) => r.name },
-    { id: 'island', header: 'Island', mono: true, width: '70px', cell: (r) => r.island },
-    { id: 'pins', header: 'Pins', mono: true, cell: (r) => r.pins.join(' ') },
+    { id: 'name', header: tr('insp.net'), mono: true, cell: (r) => r.name },
+    { id: 'island', header: tr('insp.island'), mono: true, width: '70px', cell: (r) => r.island },
+    { id: 'pins', header: tr('library.tab.pins'), mono: true, cell: (r) => r.pins.join(' ') },
     {
       id: 'state',
-      header: 'State',
+      header: tr('insp.state'),
       width: '190px',
       cell: (r) => {
         const v = describeNetState(states[r.name], [0, 3.3]);
@@ -44,7 +45,7 @@ export function NetsPanel({ live }: { live?: boolean }) {
   ];
   return (
     <Table
-      label="Nets"
+      label={tr('design.tab.nets')}
       columns={columns}
       rows={rows}
       rowKey={(r) => r.name}

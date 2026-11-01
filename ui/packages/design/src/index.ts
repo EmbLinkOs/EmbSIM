@@ -19,3 +19,4 @@ export { DockLayout, revealDockItem, type DockItem, type DockLayoutProps } from 
 export { Menu, type MenuItem, type MenuProps } from './components/Menu';
 export { StatusBar, type StatusItem } from './components/StatusBar';
 export { Badge, Kbd, EmptyState, SignalChip, Table, type BadgeTone, type SignalKind, type Column, type TableProps } from './components/Misc';
+export { setUiMessages, uiText, type UiMessages } from './uiText';

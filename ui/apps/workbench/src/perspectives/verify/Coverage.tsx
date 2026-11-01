@@ -18,6 +18,7 @@ import { getClient } from '../../connection';
 import { platform } from '../../platform/platform';
 import { useSession } from '../../stores/session';
 import { useVerify } from '../../stores/verify';
+import { t as tr } from '../../i18n';
 
 type FileRow = CoverageReport['files'][number];
 
@@ -68,7 +69,7 @@ export function CoveragePanel() {
       setProf(null);
       setStack(null);
       setFaults(null);
-      if (!errorMessage(e).includes('not on')) toast({ kind: 'error', title: 'Coverage', description: errorMessage(e) });
+      if (!errorMessage(e).includes('not on')) toast({ kind: 'error', title: tr('verify.coverage'), description: errorMessage(e) });
     }
   };
   // the counts as the run stops (a pause, a scenario's end)
@@ -83,7 +84,7 @@ export function CoveragePanel() {
       setOn(true);
       await refresh();
     } catch (e) {
-      toast({ kind: 'error', title: 'Measuring could not start', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('cov.cannotStart'), description: errorMessage(e) });
     }
   };
   const stop = async () => {
@@ -101,54 +102,53 @@ export function CoveragePanel() {
       const p = await platform();
       await p.saveTextFile(what === 'lcov' ? `${id}.info` : `${id}.folded`, text ?? '', 'text/plain');
     } catch (e) {
-      toast({ kind: 'error', title: 'Download failed', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('cov.downloadFailed'), description: errorMessage(e) });
     }
   };
 
-  if (!mcus.length) return <EmptyState title="No firmware">The project has no board running firmware to measure.</EmptyState>;
+  if (!mcus.length) return <EmptyState title={tr('cov.noFirmware')}>{tr('cov.noBoard')}</EmptyState>;
   const fileColumns: Column<FileRow>[] = [
-    { id: 'path', header: 'File', mono: true, cell: (f) => f.path },
-    { id: 'lines', header: 'Lines', width: '150px', cell: (f) => (
+    { id: 'path', header: tr('se.file'), mono: true, cell: (f) => f.path },
+    { id: 'lines', header: tr('cov.lines'), width: '150px', cell: (f) => (
       <span className="es-row">
         <Bar h={f.lines} />
         <span className="wb-cov__num">{pct(f.lines)}</span>
       </span>
     ) },
-    { id: 'fns', header: 'Functions', width: '90px', mono: true, cell: (f) => (Array.isArray(f.functions) ? `${f.functions.filter((x) => x.count > 0).length}/${f.functions.length}` : `${f.functions.hit}/${f.functions.total}`) },
+    { id: 'fns', header: tr('cov.functions'), width: '90px', mono: true, cell: (f) => (Array.isArray(f.functions) ? `${f.functions.filter((x) => x.count > 0).length}/${f.functions.length}` : `${f.functions.hit}/${f.functions.total}`) },
   ];
   type FnRow = ProfileReport['functions'][number];
   const fnColumns: Column<FnRow>[] = [
-    { id: 'name', header: 'Function', mono: true, cell: (f) => f.name },
-    { id: 'self', header: 'Self', width: '80px', mono: true, cell: (f) => (prof?.cycles ? `${((100 * f.self_cycles) / prof.cycles).toFixed(1)}%` : '–') },
-    { id: 'incl', header: 'Incl.', width: '80px', mono: true, cell: (f) => (prof?.cycles ? `${((100 * f.incl_cycles) / prof.cycles).toFixed(1)}%` : '–') },
-    { id: 'calls', header: 'Calls', width: '70px', mono: true, cell: (f) => String(f.calls) },
+    { id: 'name', header: tr('cov.function'), mono: true, cell: (f) => f.name },
+    { id: 'self', header: tr('cov.self'), width: '80px', mono: true, cell: (f) => (prof?.cycles ? `${((100 * f.self_cycles) / prof.cycles).toFixed(1)}%` : '–') },
+    { id: 'incl', header: tr('cov.incl'), width: '80px', mono: true, cell: (f) => (prof?.cycles ? `${((100 * f.incl_cycles) / prof.cycles).toFixed(1)}%` : '–') },
+    { id: 'calls', header: tr('cov.calls'), width: '70px', mono: true, cell: (f) => String(f.calls) },
   ];
   const selected = cov?.files.find((f) => f.path === file) ?? null;
   return (
-    <div className="wb-verify__pane wb-cov" role="region" aria-label="Coverage">
+    <div className="wb-verify__pane wb-cov" role="region" aria-label={tr('verify.coverage')}>
       <div className="es-row wb-verify__toolbar">
-        <span className="wb-placeholder__title">Coverage</span>
         {mcus.length > 1 && (
-          <Select<string> label="Board" size="sm" value={id} onValueChange={(v) => setBoard(v)} options={mcus.map((b) => ({ value: b.id, label: b.id }))} />
+          <Select<string> label={tr('insp.board')} size="sm" value={id} onValueChange={(v) => setBoard(v)} options={mcus.map((b) => ({ value: b.id, label: b.id }))} />
         )}
         <span className="wb-verify__spacer" />
         {!on ? (
           <Button size="sm" variant="primary" icon={<Activity />} disabled={!can} onClick={() => void start()}>
-            Measure
+            {tr('cov.measure')}
           </Button>
         ) : (
           <>
             <Button size="sm" icon={<RefreshCw />} onClick={() => void refresh()}>
-              Refresh
+              {tr('cov.refresh')}
             </Button>
             <Button size="sm" variant="ghost" icon={<Download />} onClick={() => void download('lcov')}>
               lcov
             </Button>
             <Button size="sm" variant="ghost" icon={<Flame />} onClick={() => void download('collapsed')}>
-              Flame
+              {tr('cov.flame')}
             </Button>
             <Button size="sm" variant="ghost" icon={<Square />} onClick={() => void stop()}>
-              Stop
+              {tr('common.stop')}
             </Button>
           </>
         )}
@@ -166,17 +166,17 @@ export function CoveragePanel() {
             <Badge>functions {cov.functions.hit}/{cov.functions.total} · {pct(cov.functions)}</Badge>
             <Badge>{cov.insns.toLocaleString()} instructions</Badge>
           </div>
-          <Table label="Files" columns={fileColumns} rows={cov.files} rowKey={(f) => f.path} selectedKey={file} onSelect={(f) => setFile(f.path === file ? null : f.path)} />
+          <Table label={tr('cov.files')} columns={fileColumns} rows={cov.files} rowKey={(f) => f.path} selectedKey={file} onSelect={(f) => setFile(f.path === file ? null : f.path)} />
           {selected && <SourceCounts board={id} file={selected} />}
           {prof && prof.functions.length > 0 && (
             <>
               <div className="es-row">
-                <span className="es-caps">Where the cycles went</span>
+                <span className="es-caps">{tr('cov.cycles')}</span>
                 <span className="es-muted">
                   {prof.cycles.toLocaleString()} cycles run of {prof.elapsed_cycles.toLocaleString()} elapsed
                 </span>
               </div>
-              <Table label="Functions by self cycles" columns={fnColumns} rows={prof.functions} rowKey={(f) => f.name} />
+              <Table label={tr('cov.bySelf')} columns={fnColumns} rows={prof.functions} rowKey={(f) => f.name} />
             </>
           )}
           {faults && faults.count > 0 && <Faults faults={faults} />}
@@ -192,7 +192,7 @@ function Faults({ faults }: { faults: FaultReport }) {
   return (
     <>
       <div className="es-row">
-        <span className="es-caps">Faults</span>
+        <span className="es-caps">{tr('cov.faults')}</span>
         <Badge tone="danger">{faults.count}</Badge>
       </div>
       {faults.faults.map((f, i) => (
@@ -215,16 +215,16 @@ function hex(v: number): string {
 function Stacks({ stack }: { stack: StackReport }) {
   type Row = StackReport['functions'][number];
   const columns: Column<Row>[] = [
-    { id: 'name', header: 'Function', mono: true, cell: (f) => f.name },
-    { id: 'deepest', header: 'Deepest', width: '110px', mono: true, cell: (f) => hex(f.deepest) },
-    { id: 'frame', header: 'Frame', width: '70px', mono: true, cell: (f) => `${f.frame} B` },
-    { id: 'incl', header: 'Incl.', width: '80px', mono: true, cell: (f) => `${f.incl} B` },
+    { id: 'name', header: tr('cov.function'), mono: true, cell: (f) => f.name },
+    { id: 'deepest', header: tr('cov.deepest'), width: '110px', mono: true, cell: (f) => hex(f.deepest) },
+    { id: 'frame', header: tr('cov.frame'), width: '70px', mono: true, cell: (f) => `${f.frame} B` },
+    { id: 'incl', header: tr('cov.incl'), width: '80px', mono: true, cell: (f) => `${f.incl} B` },
   ];
   const ovf = stack.overflow;
   return (
     <>
       <div className="es-row">
-        <span className="es-caps">How deep the stacks went</span>
+        <span className="es-caps">{tr('cov.stacks')}</span>
         {stack.stacks.map((s) => (
           <Badge key={`${s.core}-${s.name}`} tone={ovf && ovf.core === s.core && s.name !== 'psp' ? 'danger' : undefined}>
             {stack.stacks.length > 1 && s.name !== 'psp' ? `core${s.core} ` : ''}
@@ -235,13 +235,13 @@ function Stacks({ stack }: { stack: StackReport }) {
       </div>
       {ovf && (
         <div className="wb-verify__divergence" role="alert">
-          <span className="es-caps">overflow</span>{' '}
+          <span className="es-caps">{tr('cov.overflow')}</span>{' '}
           <code>
             sp {hex(ovf.sp)} past {hex(ovf.limit)} ({ovf.limit_from}) in {ovf.function || hex(ovf.pc)}
           </code>
         </div>
       )}
-      {stack.functions.length > 0 && <Table label="Functions by stack depth" columns={columns} rows={stack.functions} rowKey={(f) => f.name} />}
+      {stack.functions.length > 0 && <Table label={tr('cov.byStack')} columns={columns} rows={stack.functions} rowKey={(f) => f.name} />}
     </>
   );
 }

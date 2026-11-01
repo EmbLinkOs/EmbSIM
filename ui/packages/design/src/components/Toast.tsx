@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, Info, OctagonAlert, X } from 'lucide-react
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { cx } from '../cx';
 import { IconButton } from './Button';
+import { uiText } from '../uiText';
 
 export type ToastKind = 'info' | 'success' | 'warning' | 'error';
 
@@ -82,13 +83,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               {e.description && <RadixToast.Description className="es-toast__description">{e.description}</RadixToast.Description>}
             </div>
             <RadixToast.Close asChild>
-              <IconButton label="Dismiss" variant="ghost" size="sm">
+              <IconButton label={uiText('dismiss', 'Dismiss')} variant="ghost" size="sm">
                 <X />
               </IconButton>
             </RadixToast.Close>
           </RadixToast.Root>
         ))}
-        <RadixToast.Viewport className="es-toast__viewport" label="Notifications" />
+        <RadixToast.Viewport className="es-toast__viewport" label={uiText('notifications', 'Notifications')} />
       </RadixToast.Provider>
     </ToastContext.Provider>
   );

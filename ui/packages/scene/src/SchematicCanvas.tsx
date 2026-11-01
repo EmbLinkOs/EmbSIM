@@ -8,6 +8,7 @@
 // them into project transactions and feeds the new project back in.
 
 import type { InputEntry, Layout, NetState, OutputValue, PinDescription, ProbeInfo, Project, SymbolDescription, Wire } from '@embsim/protocol';
+import { uiText } from '@embsim/design';
 import { memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type Ref } from 'react';
 import { componentValue, placeComponentLabels } from './componentLabels';
 import { MeasurementProbe } from './MeasurementProbe';
@@ -580,6 +581,21 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     },
     [placed],
   );
+  /** The pin a pointer went down on: the element's own pin, whatever the zoom
+   * makes of its hit area, so a click anywhere on a terminal's target takes it. */
+  const pinOfElement = useCallback(
+    (el: Element | null): PinRef | null => {
+      const id = el?.getAttribute('data-pin');
+      if (!id) return null;
+      for (const c of placed) {
+        if (!id.startsWith(`${c.id}.`)) continue;
+        const pin = c.pins.find((p) => p.name === id.slice(c.id.length + 1));
+        if (pin) return { component: c.id, pin: pin.name, net: pin.net, point: pin.point };
+      }
+      return null;
+    },
+    [placed],
+  );
 
   const findWireAt = useCallback(
     (p: Point, tolerance = 5): { index: number; wire: Wire; point: Point } | null => {
@@ -681,10 +697,10 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
     const compEl = target.closest('[data-component]');
     const wireEl = target.closest('[data-wire]');
 
-    if (pinEl && e.button === 0 && mode === 'probe') { const pin = findPinAt(world, 12); if (pin?.net) onNetClick?.(pin.net, pin.point); return; }
+    if (pinEl && e.button === 0 && mode === 'probe') { const pin = pinOfElement(pinEl) ?? findPinAt(world, 12); if (pin?.net) onNetClick?.(pin.net, pin.point); return; }
 
     if (pinEl && e.button === 0 && !readOnly && mode !== 'probe' && mode !== 'interact') {
-      const pin = findPinAt(world, 12);
+      const pin = pinOfElement(pinEl) ?? findPinAt(world, 12);
       if (pin) {
         e.preventDefault();
         svg.setPointerCapture(e.pointerId);
@@ -1303,7 +1319,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
                   className="es-scene__segment-handle" cx={(a.x + b.x) / 2} cy={(a.y + b.y) / 2} r={5 / viewport.k}
                   role="button" tabIndex={0} aria-label={`Move ${wire.net} segment ${segment + 1} ${a.y === b.y ? 'vertically' : 'horizontally'}`}
                   style={{ cursor: a.y === b.y ? 'ns-resize' : 'ew-resize' }}>
-                  <title>Drag to reshape · arrows move by 10 · Shift moves by 50 · Escape cancels</title>
+                  <title>{uiText('canvas.reshapeHint', 'Drag to reshape · arrows move by 10 · Shift moves by 50 · Escape cancels')}</title>
                 </circle>
               ) : null);
             })()}
@@ -1314,7 +1330,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
         </g>
       </svg>
       {highlightNet && <div className="es-net-spotlight" role="status"><strong>{highlightNet}</strong><span>{project.nets[highlightNet]?.length ?? 0} terminals{live ? ` · ${netVisual(highlightNet).text}` : ''}</span></div>}
-      {electricalIssues.length > 0 && <div className="es-electrical-feedback" aria-label="Live electrical warnings">
+      {electricalIssues.length > 0 && <div className="es-electrical-feedback" aria-label={uiText('canvas.liveWarnings', 'Live electrical warnings')}>
         <button type="button" aria-expanded={showElectricalIssues} onClick={() => setShowElectricalIssues((v) => !v)}>
           <span aria-hidden="true">⚠</span> {electricalIssues.length} electrical warning{electricalIssues.length === 1 ? '' : 's'} <span>{showElectricalIssues ? 'Hide' : 'Review'}</span>
         </button>
@@ -1327,9 +1343,9 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       </div>}
       {/* a narrow canvas keeps its sheet: the navigator would cover a third of it */}
       {showMinimap && size.width >= 640 && (
-        <div className="es-scene__navigator" aria-label="Sheet navigator">
-          <span>Navigator</span>
-          <svg viewBox={`${mapX} ${mapY} ${mapW} ${mapH}`} preserveAspectRatio="none" role="img" aria-label="Schematic overview. Click to navigate." onClick={(e) => {
+        <div className="es-scene__navigator" aria-label={uiText('canvas.sheetNavigator', 'Sheet navigator')}>
+          <span>{uiText('canvas.navigator', 'Navigator')}</span>
+          <svg viewBox={`${mapX} ${mapY} ${mapW} ${mapH}`} preserveAspectRatio="none" role="img" aria-label={uiText('canvas.overview', 'Schematic overview. Click to navigate.')} onClick={(e) => {
             const r = e.currentTarget.getBoundingClientRect();
             const x = mapX + (e.clientX - r.left) / r.width * mapW;
             const y = mapY + (e.clientY - r.top) / r.height * mapH;
@@ -1339,7 +1355,7 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
             {placed.map((p) => <rect key={p.id} {...p.bounds} className={selectedSet.has(p.id) ? 'es-scene__map-part is-selected' : 'es-scene__map-part'} />)}
             <rect {...visibleWorld} className="es-scene__map-viewport" />
           </svg>
-          <button type="button" onClick={zoomToFit}>Fit sheet <kbd>0</kbd></button>
+          <button type="button" onClick={zoomToFit}>{uiText('canvas.fitSheet', 'Fit sheet')} <kbd>0</kbd></button>
         </div>
       )}
       {hover && (
@@ -1353,11 +1369,11 @@ export function SchematicCanvas(props: SchematicCanvasProps) {
       </div>
       <div className="es-scene__hud" aria-hidden="true">
         <span className="es-mono">{Math.round(viewport.k * 100)}%</span>
-        {ratsnest.length > 0 && <span>{ratsnest.length} undrawn connection{ratsnest.length === 1 ? '' : 's'}</span>}
-        {routeBlocked && <span>No clear route · move the cursor or rearrange overlapping parts</span>}
+        {ratsnest.length > 0 && <span>{ratsnest.length === 1 ? uiText('canvas.undrawn.one', '1 undrawn connection') : uiText('canvas.undrawn.other', '{n} undrawn connections', { n: ratsnest.length })}</span>}
+        {routeBlocked && <span>{uiText('canvas.noRoute', 'No clear route · move the cursor or rearrange overlapping parts')}</span>}
         {wiring && <span>wiring from {wiring.from.component ? `${wiring.from.component}.${wiring.from.pin}` : wiring.from.net} · click to place bends · Space flips elbow · Backspace removes bend · Esc cancels</span>}
-        {mode === 'wire' && !wiring && <span>click a pin to start a wire</span>}
-        {mode === 'probe' && <span>click a wire or pin to add a probe</span>}
+        {mode === 'wire' && !wiring && <span>{uiText('canvas.wireHint', 'click a pin to start a wire')}</span>}
+        {mode === 'probe' && <span>{uiText('canvas.probeHint', 'click a wire or pin to add a probe')}</span>}
       </div>
     </div>
   );

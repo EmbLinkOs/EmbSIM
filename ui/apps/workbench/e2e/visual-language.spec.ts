@@ -28,7 +28,8 @@ test('colored selectable tracks, terminal sockets, semantic cursors and readable
   const fill = await pin.locator('.es-pin__dot').evaluate((el) => getComputedStyle(el).fill);
   const ring = await pin.locator('.es-pin__dot').evaluate((el) => getComputedStyle(el).stroke);
   expect(fill).not.toBe(ring);
-  await pin.click();
+  // the terminal's target, not the centre of the pin and its label (fonts move that)
+  await pin.locator('.es-pin__hit').click();
   await expect(page.locator('.es-scene__wire-preview')).toHaveCount(1);
   await page.keyboard.press('Escape');
   await expect(page.locator('.es-scene__wire-preview')).toHaveCount(0);

@@ -26,6 +26,7 @@ import { SchematicChecksPanel } from './SchematicChecksPanel';
 import { useSchematicChecks } from './useSchematicChecks';
 import { SchematicContextMenu, type ContextAction } from './SchematicContextMenu';
 import { LayoutStudio, SchematicToolbar, type CanvasDisplay, type LayoutPreview } from './SchematicTools';
+import { t as tr } from '../../i18n';
 
 export function DesignPerspective() {
   const compact = useMediaQuery('(max-width: 1199px)');
@@ -67,7 +68,7 @@ export function DesignPerspective() {
 
   const fail = useCallback((title: string) => (e: unknown) => toast({ kind: 'error', title, description: errorMessage(e) }), [toast]);
 
-  const sendInput = useCallback((target: string, input: string, value: unknown) => void inputActions.set(target, input, value).catch(fail('Input rejected')), [fail]);
+  const sendInput = useCallback((target: string, input: string, value: unknown) => void inputActions.set(target, input, value).catch(fail(tr('fail.input'))), [fail]);
   const sendInsideInput = useCallback((target: string, input: string, value: unknown) => sendInput(`${inside}.${target}`, input, value), [inside, sendInput]);
 
   const placeAtCentre = useCallback(
@@ -85,93 +86,93 @@ export function DesignPerspective() {
             toast({ kind: 'success', title: `Placed ${id}`, duration: 2000 });
           }
         })
-        .catch(fail('Place failed'));
+        .catch(fail(tr('fail.place')));
     },
     [store, setSelection, toast, fail],
   );
 
   const commands = useMemo<Command[]>(
     () => [
-      { id: 'canvas.fit', label: 'Zoom to fit', group: 'Schematic', icon: <Maximize2 />, shortcut: '0', run: () => canvasRef.current?.zoomToFit() },
-      { id: 'canvas.focus-mode', label: display.focusMode ? 'Show schematic side panels' : 'Focus canvas: hide side panels', group: 'Schematic', run: () => setDisplay((d) => ({ ...d, focusMode: !d.focusMode })) },
-      { id: 'canvas.objects', label: 'Open schematic objects and groups', group: 'Schematic', keywords: ['organize', 'lock', 'parts list'], run: () => setBottomTab('objects') },
-      { id: 'canvas.checks', label: 'Open schematic checks', group: 'Schematic', keywords: ['diagnostics', 'issues', 'validate'], run: () => setBottomTab('checks') },
-      { id: 'canvas.auto-layout', label: 'Open Layout Studio', group: 'Schematic', keywords: ['auto', 'arrange', 'route'], run: () => setBottomTab('studio') },
-      { id: 'canvas.focus-selection', label: 'Focus selection', group: 'Schematic', shortcut: 'F', disabled: !selection.components.length, run: () => canvasRef.current?.focusComponents(selection.components) },
-      { id: 'canvas.zoom-in', label: 'Zoom in', group: 'Schematic', icon: <ZoomIn />, shortcut: '+', run: () => canvasRef.current?.zoomBy(1.25) },
-      { id: 'canvas.zoom-out', label: 'Zoom out', group: 'Schematic', icon: <ZoomOut />, shortcut: '-', run: () => canvasRef.current?.zoomBy(0.8) },
-      { id: 'canvas.mode.select', label: 'Select tool', group: 'Schematic', icon: <MousePointer2 />, keywords: ['pointer'], run: () => setMode('select') },
-      { id: 'canvas.mode.wire', label: 'Wire tool', group: 'Schematic', icon: <Cable />, run: () => setMode('wire') },
+      { id: 'canvas.fit', label: tr('design.zoomFit'), group: tr('design.group.schematic'), icon: <Maximize2 />, shortcut: '0', run: () => canvasRef.current?.zoomToFit() },
+      { id: 'canvas.focus-mode', label: display.focusMode ? tr('design.showSidePanels') : tr('design.focusCanvas'), group: tr('design.group.schematic'), run: () => setDisplay((d) => ({ ...d, focusMode: !d.focusMode })) },
+      { id: 'canvas.objects', label: tr('design.openObjects'), group: tr('design.group.schematic'), keywords: ['organize', 'lock', 'parts list'], run: () => setBottomTab('objects') },
+      { id: 'canvas.checks', label: tr('design.openChecks'), group: tr('design.group.schematic'), keywords: ['diagnostics', 'issues', 'validate'], run: () => setBottomTab('checks') },
+      { id: 'canvas.auto-layout', label: tr('design.openStudio'), group: tr('design.group.schematic'), keywords: ['auto', 'arrange', 'route'], run: () => setBottomTab('studio') },
+      { id: 'canvas.focus-selection', label: tr('design.focusSelection'), group: tr('design.group.schematic'), shortcut: 'F', disabled: !selection.components.length, run: () => canvasRef.current?.focusComponents(selection.components) },
+      { id: 'canvas.zoom-in', label: tr('design.zoomIn'), group: tr('design.group.schematic'), icon: <ZoomIn />, shortcut: '+', run: () => canvasRef.current?.zoomBy(1.25) },
+      { id: 'canvas.zoom-out', label: tr('design.zoomOut'), group: tr('design.group.schematic'), icon: <ZoomOut />, shortcut: '-', run: () => canvasRef.current?.zoomBy(0.8) },
+      { id: 'canvas.mode.select', label: tr('design.selectTool'), group: tr('design.group.schematic'), icon: <MousePointer2 />, keywords: ['pointer'], run: () => setMode('select') },
+      { id: 'canvas.mode.wire', label: tr('design.wireTool'), group: tr('design.group.schematic'), icon: <Cable />, run: () => setMode('wire') },
       {
         id: 'canvas.delete',
-        label: 'Delete selection',
-        group: 'Schematic',
+        label: tr('design.deleteSelection'),
+        group: tr('design.group.schematic'),
         shortcut: 'Del',
         disabled: selection.components.length + selection.wires.length === 0,
-        run: () => void store.deleteSelection(selection).catch(fail('Delete failed')),
+        run: () => void store.deleteSelection(selection).catch(fail(tr('fail.delete'))),
       },
       {
         id: 'canvas.rotate',
-        label: 'Rotate selection',
-        group: 'Schematic',
+        label: tr('design.rotateSelection'),
+        group: tr('design.group.schematic'),
         shortcut: 'R',
         disabled: selection.components.length === 0,
-        run: () => void store.rotateComponents(selection.components).catch(fail('Rotate failed')),
+        run: () => void store.rotateComponents(selection.components).catch(fail(tr('fail.rotate'))),
       },
       {
         id: 'canvas.copy',
-        label: 'Copy selection',
-        group: 'Schematic',
+        label: tr('design.copySelection'),
+        group: tr('design.group.schematic'),
         shortcut: 'Ctrl+C',
         disabled: selection.components.length === 0,
         run: () => store.copySelection(selection),
       },
       {
         id: 'canvas.paste',
-        label: 'Paste',
-        group: 'Schematic',
+        label: tr('design.paste'),
+        group: tr('design.group.schematic'),
         shortcut: 'Ctrl+V',
         disabled: !store.clipboard,
-        run: () => void store.paste().then((ids) => ids.length && setSelection({ components: ids, wires: [] })).catch(fail('Paste failed')),
+        run: () => void store.paste().then((ids) => ids.length && setSelection({ components: ids, wires: [] })).catch(fail(tr('fail.paste'))),
       },
       {
         id: 'canvas.duplicate',
-        label: 'Duplicate selection',
-        group: 'Schematic',
+        label: tr('design.duplicateSelection'),
+        group: tr('design.group.schematic'),
         shortcut: 'Ctrl+D',
         disabled: selection.components.length === 0,
-        run: () => void store.duplicate(selection).then((ids) => ids.length && setSelection({ components: ids, wires: [] })).catch(fail('Duplicate failed')),
+        run: () => void store.duplicate(selection).then((ids) => ids.length && setSelection({ components: ids, wires: [] })).catch(fail(tr('fail.duplicate'))),
       },
       {
         id: 'canvas.label',
-        label: 'Label the selected wire’s net',
-        group: 'Schematic',
+        label: tr('design.labelWire'),
+        group: tr('design.group.schematic'),
         shortcut: 'L',
         disabled: selection.wires.length !== 1,
-        run: () => void store.labelWire(selection.wires[0]!).catch(fail('Label failed')),
+        run: () => void store.labelWire(selection.wires[0]!).catch(fail(tr('fail.label'))),
       },
       {
         id: 'canvas.bus',
-        label: 'Group the selected wires into a bus',
-        group: 'Schematic',
+        label: tr('design.groupBus'),
+        group: tr('design.group.schematic'),
         disabled: selection.wires.length < 2,
         run: () =>
           void store
             .groupIntoBus(selection.wires)
-            .then((name) => name && toast({ kind: 'success', title: `Bus ${name}`, duration: 2000 }))
-            .catch(fail('Bus failed')),
+            .then((name) => name && toast({ kind: 'success', title: tr('design.bus', { name }), duration: 2000 }))
+            .catch(fail(tr('fail.bus'))),
       },
       ...(project?.layout?.buses ?? []).map((b) => ({
         id: `bus.remove.${b.name}`,
-        label: `Remove bus ${b.name}`,
-        group: 'Schematic',
+        label: tr('design.removeBus', { name: b.name }),
+        group: tr('design.group.schematic'),
         keywords: ['bus', ...b.nets],
-        run: () => void store.removeBus(b.name).catch(fail('Remove failed')),
+        run: () => void store.removeBus(b.name).catch(fail(tr('fail.remove'))),
       })),
       ...Object.entries(sceneCatalog).map(([id, s]) => ({
         id: `place.${id}`,
-        label: `Place ${s.name}`,
-        group: 'Library',
+        label: tr('design.place', { name: s.name }),
+        group: tr('design.library'),
         keywords: [id],
         run: () => placeAtCentre(id),
       })),
@@ -184,7 +185,7 @@ export function DesignPerspective() {
   const openInsideOf = useCallback(
     (id: string) => {
       setSelection({ components: [id], wires: [] });
-      openInside(id).catch(fail('Open failed'));
+      openInside(id).catch(fail(tr('fail.open')));
     },
     [setSelection, fail],
   );
@@ -204,24 +205,24 @@ export function DesignPerspective() {
 
   const viewSwitch = (
     <SegmentedControl<DesignView>
-      label="Design view"
+      label={tr('design.view')}
       size="sm"
       value={designView}
       onValueChange={setDesignView}
       options={[
-        { value: 'schematic', label: 'Schematic', icon: <Workflow />, title: 'The schematic' },
-        { value: 'bench', label: 'Bench', icon: <Box />, title: 'The bench in 3D: breadboards, parts and jumpers, the same nets' },
+        { value: 'schematic', label: tr('design.group.schematic'), icon: <Workflow />, title: tr('design.view.schematic.hint') },
+        { value: 'bench', label: tr('design.bench'), icon: <Box />, title: tr('design.view.bench.hint') },
       ]}
     />
   );
 
   const canvasActions = insideOf ? (
     <div className="wb-canvas-actions">
-      <Badge tone="accent" title="The inside of a board or part: read-only, its nets live while it runs">
-        inside {insideOf.project.name}
+      <Badge tone="accent" title={tr('design.inside.hint')}>
+        {tr('design.insideBadge', { name: insideOf.project.name })}
       </Badge>
       <Button size="sm" variant="ghost" icon={<ArrowLeft />} onClick={() => setInside(null)}>
-        Back to the project
+        {tr('design.backToProject')}
       </Button>
     </div>
   ) : designView === 'bench' ? (
@@ -230,25 +231,25 @@ export function DesignPerspective() {
     <div className="wb-canvas-actions">
       {viewSwitch}
       {!editable && (
-        <Badge tone="warning" title="This server does not implement project.transaction; the schematic is read-only">
-          read-only
+        <Badge tone="warning" title={tr('design.readOnly.hint')}>
+          {tr('design.readOnly')}
         </Badge>
       )}
       <SegmentedControl<CanvasMode>
-        label="Canvas tool"
+        label={tr('design.canvasTool')}
         size="sm"
         value={mode}
         onValueChange={setMode}
         options={[
-          { value: 'select', label: 'Select', icon: <MousePointer2 />, title: 'Select and move (V)' },
-          { value: 'wire', label: 'Wire', icon: <Cable />, title: 'Wire pin to pin (W)' },
-          { value: 'interact', label: 'Operate', icon: <Hand />, title: 'Operate switches, buttons and controls' },
-          { value: 'probe', label: 'Probe', title: 'Click a net to add a trace' },
+          { value: 'select', label: tr('design.tool.select'), icon: <MousePointer2 />, title: tr('design.tool.select.hint') },
+          { value: 'wire', label: tr('design.tool.wire'), icon: <Cable />, title: tr('design.tool.wire.hint') },
+          { value: 'interact', label: tr('design.tool.operate'), icon: <Hand />, title: tr('design.tool.operate.hint') },
+          { value: 'probe', label: tr('design.tool.probe'), title: tr('design.tool.probe.hint') },
         ]}
       />
       <SchematicDisplayOptions />
-      <Tooltip content="Zoom to fit" shortcut="0">
-        <IconButton label="Zoom to fit" size="sm" variant="ghost" onClick={() => canvasRef.current?.zoomToFit()}>
+      <Tooltip content={tr('design.zoomFit')} shortcut="0">
+        <IconButton label={tr('design.zoomFit')} size="sm" variant="ghost" onClick={() => canvasRef.current?.zoomToFit()}>
           <Maximize2 />
         </IconButton>
       </Tooltip>
@@ -273,7 +274,7 @@ export function DesignPerspective() {
       netStates={insideOf.states}
       readOnly
       onOpenComponent={() => setInside(null)}
-      label={`Inside ${insideOf.project.name}`}
+      label={tr('design.insideOf', { name: insideOf.project.name })}
     />
   ) : project ? (
     <SchematicCanvas
@@ -299,31 +300,31 @@ export function DesignPerspective() {
       onHighlightNet={selectNet}
       issueMarker={activeIssue?.point ? { point: activeIssue.point, label: activeIssue.title, severity: activeIssue.severity } : undefined}
       onCanvasContext={(value) => setContext({ source: project, value })}
-      onReshapeWire={(index, segment, offset, source) => void store.reshapeWire(index, segment, offset, source).catch(fail('Reshape failed'))}
-      onMove={(ids, dx, dy) => void store.moveComponents(ids, dx, dy, display.smartWires).catch(fail('Move failed'))}
-      onRotate={(ids) => void store.rotateComponents(ids).catch(fail('Rotate failed'))}
-      onMirror={(ids) => void store.mirrorComponents(ids).catch(fail('Mirror failed'))}
-      onLabelWire={(w) => void store.labelWire(w).catch(fail('Label failed'))}
+      onReshapeWire={(index, segment, offset, source) => void store.reshapeWire(index, segment, offset, source).catch(fail(tr('fail.reshape')))}
+      onMove={(ids, dx, dy) => void store.moveComponents(ids, dx, dy, display.smartWires).catch(fail(tr('fail.move')))}
+      onRotate={(ids) => void store.rotateComponents(ids).catch(fail(tr('fail.rotate')))}
+      onMirror={(ids) => void store.mirrorComponents(ids).catch(fail(tr('fail.mirror')))}
+      onLabelWire={(w) => void store.labelWire(w).catch(fail(tr('fail.label')))}
       onDelete={(sel) => {
-        void store.deleteSelection(sel).catch(fail('Delete failed'));
+        void store.deleteSelection(sel).catch(fail(tr('fail.delete')));
         setSelection({ components: [], wires: [] });
       }}
       onWire={(from, to, points, manual) => {
         const path = !manual && display.smartWires && !display.autoArrange ? routeConnection(project, sceneCatalog, from, 'component' in to ? to : { point: to.point, net: to.net }) : points;
         void store.wire(from, to, path ?? [], !manual && display.autoArrange).then(() => {
-          if (!path) toast({ kind: 'warning', title: 'Connected with an airwire', description: 'No clear drawn route. Rearrange the parts or use Layout Studio to route the connection.' });
-        }).catch(fail('Wire failed'));
+          if (!path) toast({ kind: 'warning', title: tr('design.airwire'), description: tr('design.airwire.desc') });
+        }).catch(fail(tr('fail.wire')));
       }}
-      onPlace={(id, at) => void store.placeComponent(id, at).then((cid) => cid && setSelection({ components: [cid], wires: [] })).catch(fail('Place failed'))}
+      onPlace={(id, at) => void store.placeComponent(id, at).then((cid) => cid && setSelection({ components: [cid], wires: [] })).catch(fail(tr('fail.place')))}
       onRenameNet={(net) => setRename({ net, value: net })}
       onNetClick={(net) => {
         probeActions
           .add(`net:${net}`, 'analog', 200_000)
           .then((id) => toast({ kind: 'success', title: `Probe ${id} on ${net}` }))
-          .catch(fail('Probe failed'));
+          .catch(fail(tr('fail.probe')));
       }}
       onOpenComponent={openInsideOf}
-      label="Schematic canvas"
+      label={tr('design.canvasLabel')}
     />
   ) : null;
 
@@ -340,14 +341,14 @@ export function DesignPerspective() {
     });
   }
   function routeNet(net: string) {
-    void store.rerouteNets([net]).then((warnings) => { setSelection(EMPTY_SELECTION); selectNet(net); toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? 'Routing needs attention' : `Routed ${net}`, description: warnings.join(' ') || undefined }); }).catch(fail('Routing failed'));
+    void store.rerouteNets([net]).then((warnings) => { setSelection(EMPTY_SELECTION); selectNet(net); toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? tr('design.routingAttention') : tr('design.routed', { net }), description: warnings.join(' ') || undefined }); }).catch(fail(tr('fail.routing')));
   }
 
   const centre: DockItem[] = [
-    { id: 'canvas', title: designView === 'bench' && !insideOf ? 'Bench' : 'Schematic', content: <div className="wb-schematic-workspace">{canvas}{previewProject && <div className="wb-schematic-preview-banner"><Badge tone="accent">Layout preview</Badge><span>Review in Layout Studio · not applied</span><Button size="sm" variant="ghost" onClick={() => setPreview(null)}>Discard</Button></div>}</div>, actions: canvasActions, flush: true, weight: 3, minSize: 200 },
+    { id: 'canvas', title: designView === 'bench' && !insideOf ? tr('design.bench') : tr('design.group.schematic'), content: <div className="wb-schematic-workspace">{canvas}{previewProject && <div className="wb-schematic-preview-banner"><Badge tone="accent">{tr('design.layoutPreview')}</Badge><span>{tr('design.reviewInStudio')}</span><Button size="sm" variant="ghost" onClick={() => setPreview(null)}>{tr('common.discard')}</Button></div>}</div>, actions: canvasActions, flush: true, weight: 3, minSize: 200 },
     {
       id: 'bottom',
-      title: bottomTab === 'objects' ? 'Objects' : bottomTab === 'nets' ? 'Nets' : bottomTab === 'studio' ? 'Layout Studio' : bottomTab === 'world' ? 'World' : 'Checks',
+      title: bottomTab === 'objects' ? tr('design.tab.objects') : bottomTab === 'nets' ? tr('design.tab.nets') : bottomTab === 'studio' ? tr('design.tab.studio') : bottomTab === 'world' ? tr('design.tab.world') : tr('design.tab.checks'),
       flush: true,
       weight: 1,
       collapsible: true,
@@ -355,15 +356,15 @@ export function DesignPerspective() {
       content: (
         <Tabs<'nets' | 'studio' | 'checks' | 'objects' | 'world'>
           className={bottomTab === 'checks' ? 'wb-design-details--checks' : undefined}
-          label="Design details"
+          label={tr('design.details')}
           value={bottomTab}
           onValueChange={setBottomTab}
           items={[
-            { value: 'objects', label: 'Objects', content: <ObjectsPanel writable={!previewProject && !insideOf} onFocus={(ids) => { setPreview(null); if (previewProject) requestAnimationFrame(() => canvasRef.current?.focusComponents(ids)); else canvasRef.current?.focusComponents(ids); }} /> },
-            { value: 'checks', label: `Checks${checks.pending ? ' …' : ` ${checks.issues.length}`}`, content: <SchematicChecksPanel {...checks} selected={selectedIssue} onFocus={focusIssue} onRoute={routeNet} onRefresh={checks.refresh} writable={editable && !store.busy && !previewProject && !insideOf} /> },
-            { value: 'nets', label: 'Nets', content: <NetsPanel live={running} /> },
-            { value: 'world', label: 'World', content: <WorldPanel /> },
-            { value: 'studio', label: 'Layout Studio', content: <LayoutStudio preview={preview} onPreview={setPreview} onApplied={() => canvasRef.current?.zoomToFit()} /> },
+            { value: 'objects', label: tr('design.tab.objects'), content: <ObjectsPanel writable={!previewProject && !insideOf} onFocus={(ids) => { setPreview(null); if (previewProject) requestAnimationFrame(() => canvasRef.current?.focusComponents(ids)); else canvasRef.current?.focusComponents(ids); }} /> },
+            { value: 'checks', label: `${tr('design.tab.checks')}${checks.pending ? ' …' : ` ${checks.issues.length}`}`, content: <SchematicChecksPanel {...checks} selected={selectedIssue} onFocus={focusIssue} onRoute={routeNet} onRefresh={checks.refresh} writable={editable && !store.busy && !previewProject && !insideOf} /> },
+            { value: 'nets', label: tr('design.tab.nets'), content: <NetsPanel live={running} /> },
+            { value: 'world', label: tr('design.tab.world'), content: <WorldPanel /> },
+            { value: 'studio', label: tr('design.tab.studio'), content: <LayoutStudio preview={preview} onPreview={setPreview} onApplied={() => canvasRef.current?.zoomToFit()} /> },
           ]}
         />
       ),
@@ -375,9 +376,9 @@ export function DesignPerspective() {
   // window until the user opens it; folding or unfolding it by hand wins
   const nothingSelected = !selection.components.length && !selection.wires.length && !spotlight;
   const items: DockItem[] = [
-    ...(display.focusMode ? [] : [{ id: 'library', title: 'Library', content: <LibraryPanel onPlace={placeAtCentre} />, flush: true, weight: 1, minSize: 220, collapsible: true }]),
-    { id: 'centre', title: 'Schematic', bare: true, weight: 3.2, minSize: 360, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.design.centre.${project?.name ?? 'none'}`} /> },
-    ...(display.focusMode ? [] : [{ id: 'inspector', title: 'Inspector', content: <InspectorPanel />, weight: 1.2, minSize: 260, collapsible: true, defaultCollapsed: compact || nothingSelected }]),
+    ...(display.focusMode ? [] : [{ id: 'library', title: tr('design.library'), content: <LibraryPanel onPlace={placeAtCentre} />, flush: true, weight: 1, minSize: 220, collapsible: true }]),
+    { id: 'centre', title: tr('design.group.schematic'), bare: true, weight: 3.2, minSize: 360, content: <DockLayout direction="column" items={centre} storageKey={`embsim.layout.design.centre.${project?.name ?? 'none'}`} /> },
+    ...(display.focusMode ? [] : [{ id: 'inspector', title: tr('design.inspector'), content: <InspectorPanel />, weight: 1.2, minSize: 260, collapsible: true, defaultCollapsed: compact || nothingSelected }]),
   ];
 
   const contextSelection = context?.value.selection ?? selection;
@@ -386,22 +387,22 @@ export function DesignPerspective() {
   const hasParts = contextSelection.components.length > 0;
   const contextInstrument = contextSelection.components.length === 1 ? benchInstrumentOf(project?.components.find((c) => c.id === contextSelection.components[0])?.component) : undefined;
   const copyable = hasParts && contextSelection.components.every((id) => project?.components.some((c) => c.id === id));
-  const routeSelected = () => void store.rerouteNets(selectedNets).then((warnings) => { setSelection(EMPTY_SELECTION); if (selectedNets.length === 1) selectNet(selectedNets[0]!); toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? 'Routing needs attention' : 'Selected nets routed', description: warnings.join(' ') || undefined }); }).catch(fail('Routing failed'));
+  const routeSelected = () => void store.rerouteNets(selectedNets).then((warnings) => { setSelection(EMPTY_SELECTION); if (selectedNets.length === 1) selectNet(selectedNets[0]!); toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? tr('design.routingAttention') : 'Selected nets routed', description: warnings.join(' ') || undefined }); }).catch(fail(tr('fail.routing')));
   const contextActions: ContextAction[] = [
-    { label: 'Focus selection', shortcut: 'F', disabled: !hasParts && !selectedNets.length, run: () => hasParts ? canvasRef.current?.focusComponents(contextSelection.components) : canvasRef.current?.focusNet(selectedNets[0]!) },
-    { label: 'Copy', shortcut: '⌘/Ctrl C', disabled: !copyable, run: () => store.copySelection(contextSelection) },
-    { label: 'Duplicate', shortcut: '⌘/Ctrl D', disabled: !copyable || !writable, run: () => void store.duplicate(contextSelection).then((ids) => setSelection({ components: ids, wires: [] })).catch(fail('Duplicate failed')) },
-    { label: 'Paste here', shortcut: '⌘/Ctrl V', disabled: !store.clipboard || !writable, run: () => void store.paste(context?.value.point).then((ids) => setSelection({ components: ids, wires: [] })).catch(fail('Paste failed')) },
-    ...(contextInstrument ? [{ label: 'Open front panel', run: () => openFrontPanel(contextInstrument, contextSelection.components[0]!) }] : []),
-    { label: 'Rotate 90°', shortcut: 'R', disabled: !hasParts || !writable, run: () => void store.rotateComponents(contextSelection.components).catch(fail('Rotate failed')) },
-    { label: 'Mirror', shortcut: 'M', disabled: !hasParts || !writable, run: () => void store.mirrorComponents(contextSelection.components).catch(fail('Mirror failed')) },
-    { label: 'Route selected nets', disabled: !selectedNets.length || !writable, run: routeSelected },
-    { label: 'Remove drawn tracks (keep connections)', disabled: !contextSelection.wires.length || !writable, run: () => void store.eraseWireGeometry(contextSelection.wires).then(() => setSelection(EMPTY_SELECTION)).catch(fail('Remove tracks failed')) },
-    { label: 'Rename net…', disabled: selectedNets.length !== 1 || !writable, run: () => setRename({ net: selectedNets[0]!, value: selectedNets[0]! }) },
-    { label: 'Add net label', shortcut: 'L', disabled: contextSelection.wires.length !== 1 || !writable, run: () => void store.labelWire(contextSelection.wires[0]!).catch(fail('Label failed')) },
-    { label: 'Select all', shortcut: '⌘/Ctrl A', run: () => setSelection({ components: [...(project?.components ?? []), ...(project?.boards ?? [])].map((c) => c.id), wires: (project?.layout?.wires ?? []).map((_, i) => i) }) },
-    { label: 'Fit sheet', shortcut: '0', run: () => canvasRef.current?.zoomToFit() },
-    { label: 'Delete selection', shortcut: '⌫', disabled: (!hasParts && !contextSelection.wires.length) || !writable, danger: true, run: () => void store.deleteSelection(contextSelection).then(() => setSelection(EMPTY_SELECTION)).catch(fail('Delete failed')) },
+    { label: tr('design.focusSelection'), shortcut: 'F', disabled: !hasParts && !selectedNets.length, run: () => hasParts ? canvasRef.current?.focusComponents(contextSelection.components) : canvasRef.current?.focusNet(selectedNets[0]!) },
+    { label: tr('design.ctx.copy'), shortcut: '⌘/Ctrl C', disabled: !copyable, run: () => store.copySelection(contextSelection) },
+    { label: tr('design.ctx.duplicate'), shortcut: '⌘/Ctrl D', disabled: !copyable || !writable, run: () => void store.duplicate(contextSelection).then((ids) => setSelection({ components: ids, wires: [] })).catch(fail(tr('fail.duplicate'))) },
+    { label: tr('design.ctx.pasteHere'), shortcut: '⌘/Ctrl V', disabled: !store.clipboard || !writable, run: () => void store.paste(context?.value.point).then((ids) => setSelection({ components: ids, wires: [] })).catch(fail(tr('fail.paste'))) },
+    ...(contextInstrument ? [{ label: tr('design.ctx.frontPanel'), run: () => openFrontPanel(contextInstrument, contextSelection.components[0]!) }] : []),
+    { label: tr('design.ctx.rotate'), shortcut: 'R', disabled: !hasParts || !writable, run: () => void store.rotateComponents(contextSelection.components).catch(fail(tr('fail.rotate'))) },
+    { label: tr('design.ctx.mirror'), shortcut: 'M', disabled: !hasParts || !writable, run: () => void store.mirrorComponents(contextSelection.components).catch(fail(tr('fail.mirror'))) },
+    { label: tr('design.ctx.routeNets'), disabled: !selectedNets.length || !writable, run: routeSelected },
+    { label: tr('design.ctx.removeTracks'), disabled: !contextSelection.wires.length || !writable, run: () => void store.eraseWireGeometry(contextSelection.wires).then(() => setSelection(EMPTY_SELECTION)).catch(fail(tr('fail.removeTracks'))) },
+    { label: tr('design.ctx.renameNet'), disabled: selectedNets.length !== 1 || !writable, run: () => setRename({ net: selectedNets[0]!, value: selectedNets[0]! }) },
+    { label: tr('design.ctx.addLabel'), shortcut: 'L', disabled: contextSelection.wires.length !== 1 || !writable, run: () => void store.labelWire(contextSelection.wires[0]!).catch(fail(tr('fail.label'))) },
+    { label: tr('design.ctx.selectAll'), shortcut: '⌘/Ctrl A', run: () => setSelection({ components: [...(project?.components ?? []), ...(project?.boards ?? [])].map((c) => c.id), wires: (project?.layout?.wires ?? []).map((_, i) => i) }) },
+    { label: tr('design.ctx.fitSheet'), shortcut: '0', run: () => canvasRef.current?.zoomToFit() },
+    { label: tr('design.deleteSelection'), shortcut: '⌫', disabled: (!hasParts && !contextSelection.wires.length) || !writable, danger: true, run: () => void store.deleteSelection(contextSelection).then(() => setSelection(EMPTY_SELECTION)).catch(fail(tr('fail.delete'))) },
   ];
 
   return (
@@ -412,11 +413,11 @@ export function DesignPerspective() {
       <Dialog
         open={rename !== null}
         onOpenChange={(open) => !open && setRename(null)}
-        title={`Rename net ${rename?.net ?? ''}`}
+        title={tr('design.renameNet', { net: rename?.net ?? '' })}
         footer={
           <>
             <button type="button" className="es-button" onClick={() => setRename(null)}>
-              Cancel
+              {tr('common.cancel')}
             </button>
             <button
               type="button"
@@ -426,24 +427,24 @@ export function DesignPerspective() {
                 store
                   .renameNet(rename.net, rename.value)
                   .then(() => selectNet(rename.value))
-                  .catch(fail('Rename failed'));
+                  .catch(fail(tr('fail.rename')));
                 setRename(null);
               }}
             >
-              Rename
+              {tr('design.rename')}
             </button>
           </>
         }
       >
         <Input
-          label="New name"
+          label={tr('design.newName')}
           mono
           autoFocus
           value={rename?.value ?? ''}
           onChange={(e) => setRename((r) => (r ? { ...r, value: e.target.value } : r))}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && rename) {
-              store.renameNet(rename.net, rename.value).catch(fail('Rename failed'));
+              store.renameNet(rename.net, rename.value).catch(fail(tr('fail.rename')));
               setRename(null);
             }
           }}

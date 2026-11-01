@@ -12,6 +12,7 @@ import { axisLabels, formatMeterValue } from './Meter';
 import { ticks, timeToX, unitLabel, type TimeWindow } from './timeAxis';
 import { cssVar, useCanvas } from './useCanvas';
 import type { WaveformRecord } from './waveform';
+import { uiText } from '@embsim/design';
 
 export interface ScopeTrace {
   record: WaveformRecord;
@@ -262,10 +263,10 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
         {...handlers}
       >
         <canvas ref={ref} className="es-instrument__canvas" />
-        {visibleTraces.length === 0 && <div className="es-instrument__empty">No analog probes subscribed</div>}
+        {visibleTraces.length === 0 && <div className="es-instrument__empty">{uiText('scope.noProbes', 'No analog probes subscribed')}</div>}
       </div>
       <div className="es-instrument__strip">
-        <div className="es-instrument__traces" role="radiogroup" aria-label="Measured trace">
+        <div className="es-instrument__traces" role="radiogroup" aria-label={uiText('scope.measured', 'Measured trace')}>
           {traces.map((t) => (
             <button
               key={t.record.id}
@@ -282,9 +283,9 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
         </div>
         {measurements && current && (
           <dl className="es-instrument__measurements">
-            <Measure label="min" value={fmt(measurements.stats.min, current.record.unit)} />
-            <Measure label="max" value={fmt(measurements.stats.max, current.record.unit)} />
-            <Measure label="mean" value={fmt(measurements.weighted.mean, current.record.unit)} />
+            <Measure label={uiText('scope.min', 'min')} value={fmt(measurements.stats.min, current.record.unit)} />
+            <Measure label={uiText('scope.max', 'max')} value={fmt(measurements.stats.max, current.record.unit)} />
+            <Measure label={uiText('scope.mean', 'mean')} value={fmt(measurements.weighted.mean, current.record.unit)} />
             <Measure label="RMS" value={fmt(measurements.weighted.rms, current.record.unit)} />
             {current.record.kind === 'digital' && <Measure label="duty" value={Number.isFinite(measurements.weighted.dutyCycle) ? `${(100 * measurements.weighted.dutyCycle).toFixed(2)} %` : '—'} />}
             <Measure label="coverage" value={`${(100 * measurements.weighted.coverage).toFixed(1)} %`} />

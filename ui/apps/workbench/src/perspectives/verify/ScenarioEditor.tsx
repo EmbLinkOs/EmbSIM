@@ -18,6 +18,7 @@ import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { expectationProblem, scenarioProblems } from '../../stores/scenarioValidation';
 import { emptyScenario, formatValue, parseValue, useVerify, whenOf, withWhen, type AssertionWhen } from '../../stores/verify';
+import { t as tr } from '../../i18n';
 
 // a project without scenarios or probes: the same empty list each render (a
 // new one from a store selector renders again, without end)
@@ -58,23 +59,22 @@ export function ScenarioEditor() {
 
   if (!draft) {
     return (
-      <div className="wb-verify__pane" role="region" aria-label="Scenario editor">
+      <div className="wb-verify__pane" role="region" aria-label={tr('verify.editor')}>
         <div className="es-row">
-          <span className="wb-placeholder__title">Scenarios</span>
-          {!canEdit && <Badge tone="warning">{canRun ? 'run only' : 'not available'}</Badge>}
+          {!canEdit && <Badge tone="warning">{canRun ? tr('se.runOnly') : tr('ph.notAvailable')}</Badge>}
         </div>
         <div className="es-muted">
-          A scenario is a timeline of inputs and the checks a run must pass. Open one of the project's, start a new one, or make one from a recording.
+          {tr('se.intro')}
         </div>
         {scenarios.length === 0 ? (
-          <div className="es-muted">The project lists no scenarios.</div>
+          <div className="es-muted">{tr('se.none')}</div>
         ) : (
           <ul className="wb-verify__list">
             {scenarios.map((s) => (
               <li key={s} className="es-row">
                 <code>{s}</code>
                 <Button size="sm" icon={<FolderOpen />} disabled={!canEdit || busy !== null} onClick={() => void open(s)}>
-                  Open
+                  {tr('common.open')}
                 </Button>
                 <QuickRun path={s} disabled={!canRun || running || busy !== null} />
               </li>
@@ -83,7 +83,7 @@ export function ScenarioEditor() {
         )}
         <div className="es-row">
           <Button size="sm" icon={<FilePlus />} disabled={!canEdit} onClick={() => useVerify.getState().openDraft(null, emptyScenario())}>
-            New scenario
+            {tr('se.new')}
           </Button>
         </div>
       </div>
@@ -104,7 +104,7 @@ function QuickRun({ path, disabled }: { path: string; disabled: boolean }) {
       useVerify.getState().setReport(report);
       notify(toast, report, path);
     } catch (e) {
-      toast({ kind: 'error', title: 'Scenario failed', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('se.failed'), description: errorMessage(e) });
     } finally {
       setBusy(false);
     }
@@ -154,7 +154,7 @@ function DraftEditor({ canRun }: { canRun: boolean }) {
       useVerify.getState().setReport(report);
       notify(toast, report, sc.name);
     } catch (e) {
-      toast({ kind: 'error', title: 'Scenario failed', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('se.failed'), description: errorMessage(e) });
     } finally {
       setBusy(null);
     }
@@ -169,33 +169,33 @@ function DraftEditor({ canRun }: { canRun: boolean }) {
       await useProject.getState().loadAll();
       toast({ kind: 'success', title: `Saved ${path}`, description: draft.path ? undefined : 'Added to the project\'s scenarios: save the project to keep the list.' });
     } catch (e) {
-      toast({ kind: 'error', title: 'Cannot save the scenario', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('se.cannotSave'), description: errorMessage(e) });
     } finally {
       setBusy(null);
     }
   };
 
   return (
-    <div className="wb-verify__pane wb-verify__editor" role="region" aria-label="Scenario editor">
+    <div className="wb-verify__pane wb-verify__editor" role="region" aria-label={tr('verify.editor')}>
       <div className="es-row wb-verify__toolbar">
-        <span className="wb-placeholder__title">{draft.path ?? 'New scenario'}</span>
-        {draft.dirty && <Badge tone="warning">unsaved</Badge>}
+        <span className="wb-placeholder__title">{draft.path ?? tr('se.new')}</span>
+        {draft.dirty && <Badge tone="warning">{tr('se.unsaved')}</Badge>}
         <span className="wb-verify__spacer" />
         <Button size="sm" variant="primary" icon={<Play />} disabled={!canRun || busy !== null || problems.length > 0} onClick={() => void run()}>
           {busy === 'run' ? 'Running…' : 'Run'}
         </Button>
         <Button size="sm" icon={<Save />} disabled={busy !== null || problems.length > 0 || !!duplicate || (!draft.path && !savePath.trim())} onClick={() => void save()}>
-          Save
+          {tr('common.save')}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => useVerify.getState().closeDraft()}>
-          Close
+          {tr('common.close')}
         </Button>
       </div>
       <div className="wb-verify__fields">
-        <Input label="Name" value={sc.name} onChange={(e) => edit((s) => ({ ...s, name: e.target.value }))} />
-        <Input label="Until" mono value={sc.until ?? ''} error={sc.until ? timeError(sc.until) : undefined} onChange={(e) => edit((s) => ({ ...s, until: e.target.value }))} />
+        <Input label={tr('insp.name')} value={sc.name} onChange={(e) => edit((s) => ({ ...s, name: e.target.value }))} />
+        <Input label={tr('se.until')} mono value={sc.until ?? ''} error={sc.until ? timeError(sc.until) : undefined} onChange={(e) => edit((s) => ({ ...s, until: e.target.value }))} />
         <Select<string>
-          label="Policy"
+          label={tr('se.policy')}
           size="sm"
           value={sc.policy ?? 'project'}
           onValueChange={(v) => edit((s) => ({ ...s, policy: v === 'project' ? undefined : (v as Scenario['policy']) }))}
@@ -206,11 +206,11 @@ function DraftEditor({ canRun }: { canRun: boolean }) {
             { value: 'functional', label: 'functional' },
           ]}
         />
-        {!draft.path && <Input label="File" mono value={savePath} onChange={(e) => setSavePath(e.target.value)} hint="relative to the project's folder" />}
+        {!draft.path && <Input label={tr('se.file')} mono value={savePath} onChange={(e) => setSavePath(e.target.value)} hint="relative to the project's folder" />}
       </div>
       {problems.length > 0 && (
         <div role="alert" className="wb-verify__validation">
-          <strong>Fix these before running or saving:</strong>
+          <strong>{tr('se.fixFirst')}</strong>
           <ul>{problems.map((problem, index) => <li key={index}>{problem}</li>)}</ul>
         </div>
       )}
@@ -240,16 +240,16 @@ function InputsTable({ inputs, onChange }: { inputs: ScenarioInput[]; onChange: 
     onChange([...inputs, { at: inputs.length ? inputs[inputs.length - 1]!.at : '10ms', target: first?.target ?? '', input: first?.input ?? '', value: first?.type === 'boolean' ? true : '' }]);
   };
   return (
-    <section className="wb-verify__section" aria-label="Inputs">
+    <section className="wb-verify__section" aria-label={tr('run.group.inputs')}>
       <div className="es-row">
-        <span className="es-caps">Inputs</span>
+        <span className="es-caps">{tr('run.group.inputs')}</span>
         <span className="es-muted">{inputs.length}</span>
         <span className="wb-verify__spacer" />
         <Button size="sm" variant="ghost" disabled={inputs.length < 2} onClick={sortByTime}>
-          Sort by time
+          {tr('se.sort')}
         </Button>
         <Button size="sm" icon={<Plus />} onClick={add}>
-          Add input
+          {tr('se.addInput')}
         </Button>
       </div>
       <datalist id="wb-verify-targets">
@@ -258,16 +258,16 @@ function InputsTable({ inputs, onChange }: { inputs: ScenarioInput[]; onChange: 
         ))}
       </datalist>
       {inputs.length === 0 ? (
-        <div className="es-muted">No inputs: the run only observes.</div>
+        <div className="es-muted">{tr('se.noInputs')}</div>
       ) : (
         <table className="wb-verify__table">
           <thead>
             <tr>
               <th>At</th>
-              <th>Target</th>
-              <th>Input</th>
-              <th>Value</th>
-              <th className="wb-verify__narrow" aria-label="Remove" />
+              <th>{tr('se.target')}</th>
+              <th>{tr('se.input')}</th>
+              <th>{tr('se.value')}</th>
+              <th className="wb-verify__narrow" aria-label={tr('se.remove')} />
             </tr>
           </thead>
           <tbody>
@@ -319,14 +319,14 @@ function AssertionsTable({ assertions, duplicate, onChange, expectDraft, setExpe
     onChange([...assertions, { id: `check-${n}`, at: '10ms', probe: probes[0]?.id ?? '', expect: { logic: '1' } }]);
   };
   return (
-    <section className="wb-verify__section" aria-label="Assertions">
+    <section className="wb-verify__section" aria-label={tr('verify.assertions')}>
       <div className="es-row">
-        <span className="es-caps">Assertions</span>
+        <span className="es-caps">{tr('verify.assertions')}</span>
         <span className="es-muted">{assertions.length}</span>
         {duplicate && <Badge tone="danger">two assertions are named {duplicate}</Badge>}
         <span className="wb-verify__spacer" />
         <Button size="sm" icon={<Plus />} onClick={add}>
-          Add assertion
+          {tr('se.addAssertion')}
         </Button>
       </div>
       <datalist id="wb-verify-probes">
@@ -335,18 +335,18 @@ function AssertionsTable({ assertions, duplicate, onChange, expectDraft, setExpe
         ))}
       </datalist>
       {assertions.length === 0 ? (
-        <div className="es-muted">No assertions: the run passes when nothing fatal happens.</div>
+        <div className="es-muted">{tr('se.noAssertions')}</div>
       ) : (
         <table className="wb-verify__table">
           <thead>
             <tr>
-              <th className="wb-verify__result">Result</th>
+              <th className="wb-verify__result">{tr('se.result')}</th>
               <th>Id</th>
-              <th className="wb-verify__when">When</th>
-              <th style={{ width: '26%' }}>Time</th>
-              <th>Probe</th>
-              <th style={{ width: '24%' }}>Expect</th>
-              <th className="wb-verify__narrow" aria-label="Remove" />
+              <th className="wb-verify__when">{tr('se.when')}</th>
+              <th style={{ width: '26%' }}>{tr('se.time')}</th>
+              <th>{tr('se.probe')}</th>
+              <th style={{ width: '24%' }}>{tr('se.expect')}</th>
+              <th className="wb-verify__narrow" aria-label={tr('se.remove')} />
             </tr>
           </thead>
           <tbody>
@@ -376,10 +376,10 @@ function AssertionsTable({ assertions, duplicate, onChange, expectDraft, setExpe
                       value={when}
                       onValueChange={(w) => { setExpectDraft((d) => { const next = { ...d }; delete next[k]; return next; }); set(k, withWhen(a, w)); }}
                       options={[
-                        { value: 'at', label: 'at' },
-                        { value: 'between', label: 'between' },
-                        { value: 'by', label: 'by' },
-                        { value: 'always', label: 'always' },
+                        { value: 'at', label: tr('se.at') },
+                        { value: 'between', label: tr('se.between') },
+                        { value: 'by', label: tr('se.by') },
+                        { value: 'always', label: tr('se.always') },
                       ]}
                     />
                   </td>
@@ -392,11 +392,11 @@ function AssertionsTable({ assertions, duplicate, onChange, expectDraft, setExpe
                         <Input aria-label={`Assertion ${k + 1} to`} mono value={a.between?.[1] ?? ''} error={timeError(a.between?.[1])} onChange={(e) => set(k, { ...a, between: [a.between?.[0] ?? '', e.target.value] })} />
                       </span>
                     )}
-                    {when === 'always' && <span className="es-muted">the whole run</span>}
+                    {when === 'always' && <span className="es-muted">{tr('se.wholeRun')}</span>}
                   </td>
                   <td>
                     {when === 'always' ? (
-                      <span className="es-muted">diagnostics</span>
+                      <span className="es-muted">{tr('se.diagnostics')}</span>
                     ) : (
                       <>
                         <Input aria-label={`Assertion ${k + 1} probe`} mono list="wb-verify-probes" value={a.probe ?? ''} onChange={(e) => set(k, { ...a, probe: e.target.value })} />
@@ -404,7 +404,7 @@ function AssertionsTable({ assertions, duplicate, onChange, expectDraft, setExpe
                           label={`Assertion ${k + 1} measurement`}
                           size="sm"
                           value={a.measure ?? 'samples'}
-                          options={[{ value: 'samples', label: 'Every sample' }, { value: 'mean', label: 'Time mean' }, { value: 'rms', label: 'Time RMS' }, { value: 'duty_cycle', label: 'Duty cycle' }]}
+                          options={[{ value: 'samples', label: tr('se.everySample') }, { value: 'mean', label: tr('se.timeMean') }, { value: 'rms', label: tr('se.timeRms') }, { value: 'duty_cycle', label: tr('se.dutyCycle') }]}
                           onValueChange={(measure) => {
                             const next = { ...a };
                             if (measure !== 'samples') next.measure = measure;
@@ -456,7 +456,7 @@ function AssertionsTable({ assertions, duplicate, onChange, expectDraft, setExpe
           </tbody>
         </table>
       )}
-      {probes.length === 0 && <EmptyState title="No probes">Assertions read probes: add one to the project in the Run perspective.</EmptyState>}
+      {probes.length === 0 && <EmptyState title={tr('se.noProbes')}>{tr('se.needProbes')}</EmptyState>}
     </section>
   );
 }

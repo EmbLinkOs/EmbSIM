@@ -13,6 +13,7 @@ import { benchInstrumentOf, benchInstrumentParts, openFrontPanel, titleOf } from
 import { useRegisterCommands } from './commands';
 import { useFloating, type FloatingRect } from '../stores/floating';
 import { useProject } from '../stores/project';
+import { t as tr } from '../i18n';
 
 const MIN_W = 360;
 const MIN_H = 220;
@@ -37,10 +38,10 @@ export function FloatingPanels() {
   const commands = useMemo<Command[]>(
     () =>
       benchInstrumentParts(project).flatMap(({ part, instrument }) => [
-        { id: `panel.open.${part}`, group: 'Instruments', label: `Open ${titleOf(instrument, part)}`, icon: <Gauge />, keywords: ['front panel', 'instrument'], run: () => openFrontPanel(instrument, part) },
+        { id: `panel.open.${part}`, group: tr('run.group.instruments'), label: tr('fp.open', { name: titleOf(instrument, part) }), icon: <Gauge />, keywords: ['front panel', 'instrument'], run: () => openFrontPanel(instrument, part) },
         floating.includes(part)
-          ? { id: `panel.dock.${part}`, group: 'Instruments', label: `Dock ${titleOf(instrument, part)} in Run`, icon: <PanelBottomClose />, run: () => dock(part) }
-          : { id: `panel.float.${part}`, group: 'Instruments', label: `Float ${titleOf(instrument, part)}`, icon: <PictureInPicture2 />, keywords: ['window'], run: () => float(part) },
+          ? { id: `panel.dock.${part}`, group: tr('run.group.instruments'), label: tr('fp.dock', { name: titleOf(instrument, part) }), icon: <PanelBottomClose />, run: () => dock(part) }
+          : { id: `panel.float.${part}`, group: tr('run.group.instruments'), label: tr('fp.float', { name: titleOf(instrument, part) }), icon: <PictureInPicture2 />, keywords: ['window'], run: () => float(part) },
       ]),
     [project, floating, dock, float],
   );

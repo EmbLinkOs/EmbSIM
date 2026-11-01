@@ -11,6 +11,7 @@ import { CheckCircle2, Circle } from 'lucide-react';
 import { Badge } from '@embsim/design';
 import type { Capability } from '@embsim/protocol';
 import { useSession } from '../stores/session';
+import { t as tr } from '../i18n';
 
 export interface PlaceholderProps {
   title: string;
@@ -47,7 +48,7 @@ export function Placeholder({ title, description, requires = [], needsBoard, act
         {icon && <div className="wb-placeholder__icon">{icon}</div>}
         <div className="wb-placeholder__heading">
           <span className="wb-placeholder__title">{title}</span>
-          {!available && <Badge tone="warning">not available</Badge>}
+          {!available && <Badge tone="warning">{tr('ph.notAvailable')}</Badge>}
         </div>
         <p className="wb-placeholder__description">{description}</p>
         {(requires.length > 0 || needsBoard || actions.length > 0) && (
@@ -57,7 +58,7 @@ export function Placeholder({ title, description, requires = [], needsBoard, act
                 Requires server capability <code>{c}</code>.
               </Requirement>
             ))}
-            {needsBoard && <Requirement met={!noBoard}>Requires a board with an MCU in the project.</Requirement>}
+            {needsBoard && <Requirement met={!noBoard}>{tr('ph.requiresMcu')}</Requirement>}
             {actions.map((a) => (
               <Requirement key={a} met={false}>{a.charAt(0).toUpperCase() + a.slice(1)}</Requirement>
             ))}

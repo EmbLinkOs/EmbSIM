@@ -2434,3 +2434,13 @@
 
 /* empty states, everywhere the same */
 .es-empty { color: var(--text-muted); font-size: var(--text-sm); padding: var(--space-6) var(--space-4); text-align: center; }
+
+/* registers: name, hex and decimal read as one row, not spread over the panel;
+   the hex is the editable value, the decimal its reading */
+.wb-debug__table { width: auto; min-width: 0; }
+.wb-debug__table td { width: 1%; }
+.wb-debug__table td.wb-debug__dec { padding-left: var(--space-4); color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+.wb-debug__table tr.is-changed td.wb-debug__dec { color: var(--accent); }
+.wb-debug__table tr:hover { background: var(--surface-sunken); }
+.wb-debug__value { border-radius: var(--radius-sm); }
+.wb-debug__value:hover { background: var(--value-editable-bg); }
