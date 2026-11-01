@@ -113,7 +113,7 @@ export function SerialTerminal({ target, targets, onTargetChange, lines, onSend,
         <div className="es-terminal__host" aria-label={uiText('serial.hostPort', 'Port on the host')}>
           {hostPort ? (
             <>
-              <span className="es-terminal__host-path" title="Open it with any serial program: screen, minicom, the Arduino IDE's monitor, pyserial">
+              <span className="es-terminal__host-path" title={uiText('serial.hostHint', 'Open it with any serial program: screen, minicom, the Arduino IDE\'s monitor, pyserial')}>
                 <code>{hostPort.path}</code>
               </span>
               <span className={`es-terminal__host-state${hostPort.connected ? ' es-terminal__host-state--on' : ''}`}>

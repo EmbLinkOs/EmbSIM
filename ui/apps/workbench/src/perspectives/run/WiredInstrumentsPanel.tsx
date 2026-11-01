@@ -37,7 +37,7 @@ export function WiredInstrumentsPanel({ onLocate, onTrace }: { onLocate(id: stri
         <header><strong>{c.id}</strong><span>{kind.title}</span></header>
         <p className="wb-wired-instrument__impedance">{ammeter ? 'Shunt' : c.component === 'emblink/function_generator' ? 'Output' : 'Input'} {formatSi(r, 'Ω')}{c.component === 'emblink/scope_input' ? ` ∥ ${formatSi(cap, 'F')}` : ''}</p>
         <p className="wb-wired-instrument__leads"><span>+ {positive}</span><span>− {negative}</span></p>
-        {connected ? <div className="wb-wired-instrument__readings"><Meter label={ammeter ? 'Burden voltage' : 'Terminal voltage'} value={outputs[`${c.id}.voltage`]} unit="V" /><Meter label={c.component === 'emblink/function_generator' ? 'Current into output' : 'Current into +'} value={outputs[`${c.id}.${kind.current}`]} unit="A" /></div> : <p role="status">{tr('wired.wireBoth')}</p>}
+        {connected ? <div className="wb-wired-instrument__readings"><Meter label={ammeter ? tr('wired.burden') : tr('wired.terminalV')} value={outputs[`${c.id}.voltage`]} unit="V" /><Meter label={c.component === 'emblink/function_generator' ? tr('wired.currentOut') : tr('wired.currentPlus')} value={outputs[`${c.id}.${kind.current}`]} unit="A" /></div> : <p role="status">{tr('wired.wireBoth')}</p>}
         <div className="es-row"><Button size="sm" variant="ghost" onClick={() => onLocate(c.id)}>{tr('wired.viewLeads')}</Button><Button size="sm" variant="ghost" disabled={!connected} onClick={() => onTrace(`device:${c.id}.${ammeter ? 'current' : 'voltage'}`)}>{tr('wired.addTrace')}</Button></div>
       </section>;
     })}

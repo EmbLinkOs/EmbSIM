@@ -156,8 +156,8 @@ export function CoveragePanel() {
       {!on || !cov ? (
         <div className="es-muted">
           {can
-            ? 'Measure watches the firmware from now on: run the circuit, or a scenario, then see which lines ran and where the cycles went. The image needs its symbols and line tables (-g).'
-            : 'Requires server capability analysis.'}
+            ? tr('cov.intro')
+            : tr('cov.needsAnalysis')}
         </div>
       ) : (
         <>

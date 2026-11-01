@@ -36,7 +36,7 @@ export function ObjectsPanel({ onFocus, writable = true }: { onFocus(ids: string
       {(p.layout?.groups ?? []).filter((g) => matches(`${g.name} ${g.members.join(' ')}`)).map((g) => <div className="wb-objects__group" key={g.id}>
         <Button size="sm" onClick={() => focus(g.members)}>{g.name} · {g.members.length} parts</Button>
         <Button size="sm" disabled={disabled || !name.trim()} onClick={() => void store.mutate(`Rename ${g.name}`, (project) => { const group = project.layout?.groups?.find((v) => v.id === g.id); if (group) group.name = name.trim(); return project; }).then(() => setName('')).catch(fail)}>{tr('design.rename')}</Button>
-        <Button size="sm" disabled={disabled} onClick={() => void store.setPlacementLocked(g.members, !parts.some((c) => g.members.includes(c.id) && c.layout?.locked)).catch(fail)}>{parts.some((c) => g.members.includes(c.id) && c.layout?.locked) ? 'Unlock group' : 'Lock group'}</Button>
+        <Button size="sm" disabled={disabled} onClick={() => void store.setPlacementLocked(g.members, !parts.some((c) => g.members.includes(c.id) && c.layout?.locked)).catch(fail)}>{parts.some((c) => g.members.includes(c.id) && c.layout?.locked) ? tr('objects.unlock') : tr('objects.lock')}</Button>
         <Button size="sm" disabled={disabled} onClick={() => void store.mutate(`Ungroup ${g.name}`, (project) => { project.layout = { ...project.layout, groups: (project.layout?.groups ?? []).filter((v) => v.id !== g.id) }; return project; }).catch(fail)}>{tr('objects.ungroup')}</Button>
       </div>)}
     </div>

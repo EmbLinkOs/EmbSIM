@@ -31,7 +31,7 @@ function Requirement({ met, children }: { met: boolean; children: ReactNode }) {
     <li className={met ? 'is-met' : undefined}>
       {met ? <CheckCircle2 aria-hidden="true" /> : <Circle aria-hidden="true" />}
       <span>{children}</span>
-      <span className="es-sr-only">{met ? ' (met)' : ' (missing)'}</span>
+      <span className="es-sr-only">{met ? ` (${tr('ph.met')})` : ` (${tr('ph.missing')})`}</span>
     </li>
   );
 }
@@ -52,10 +52,10 @@ export function Placeholder({ title, description, requires = [], needsBoard, act
         </div>
         <p className="wb-placeholder__description">{description}</p>
         {(requires.length > 0 || needsBoard || actions.length > 0) && (
-          <ul className="wb-placeholder__needs" aria-label={available ? 'Next steps' : 'What this needs'}>
+          <ul className="wb-placeholder__needs" aria-label={available ? tr('ph.nextSteps') : tr('ph.needs')}>
             {requires.map((c) => (
               <Requirement key={c} met={!missing.includes(c)}>
-                Requires server capability <code>{c}</code>.
+                {tr('ph.requiresCapability')} <code>{c}</code>.
               </Requirement>
             ))}
             {needsBoard && <Requirement met={!noBoard}>{tr('ph.requiresMcu')}</Requirement>}

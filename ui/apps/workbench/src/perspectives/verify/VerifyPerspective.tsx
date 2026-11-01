@@ -48,7 +48,7 @@ function ReportsPanel() {
         icon={<ClipboardCheck />}
         description={tr('verify.reportDesc')}
         requires={['scenario']}
-        actions={['run a scenario from the scenario editor to see its report here']}
+        actions={[tr('verify.reportAction')]}
       />
     );
   }

@@ -30,7 +30,7 @@ export function SchematicChecksPanel({ issues, pending, error, selected, onFocus
       <Button size="sm" variant="ghost" icon={<RefreshCw />} disabled={pending} onClick={onRefresh}>{tr('checks.recheck')}</Button>
     </div>
     <p className="wb-checks-scope">Drawing and connectivity checks include unconnected digital inputs. Live net warnings report observed floating or unknown inputs and contention. Analog accuracy and physical clearances are not checked.</p>
-    {pending ? <p role="status" className="wb-checks-empty">{tr('checks.checking')}</p> : error ? <p role="alert" className="wb-checks-empty wb-properties-error">{error}</p> : !filtered.length ? <p role="status" className="wb-checks-empty"><CheckCircle2 size={18} />{issues.length ? 'No checks match these filters.' : 'No structural or drawing issues found.'}</p> : <div className="wb-checks-body">
+    {pending ? <p role="status" className="wb-checks-empty">{tr('checks.checking')}</p> : error ? <p role="alert" className="wb-checks-empty wb-properties-error">{error}</p> : !filtered.length ? <p role="status" className="wb-checks-empty"><CheckCircle2 size={18} />{issues.length ? tr('checks.noMatch') : tr('checks.none')}</p> : <div className="wb-checks-body">
       <div className="wb-checks-list" role="list" aria-label={tr('checks.results')}>
         {filtered.slice(0, 200).map((issue) => {
           const Icon = issue.severity === 'error' ? AlertCircle : issue.severity === 'warning' ? AlertTriangle : Info;

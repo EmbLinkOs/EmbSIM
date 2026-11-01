@@ -285,7 +285,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
           <button key={c} type="button" role="radio" aria-checked={c === wireColor} aria-label={`Jumper colour ${c}`} className="wb-bench-color" style={{ background: c }} onClick={() => setWireColor(c)} />
         ))}
       </div>
-      <Tooltip content={pending.length ? `Wire the ${pending.length} connection${pending.length > 1 ? 's' : ''} the schematic has that the bench does not` : 'Everything the schematic connects is built'}>
+      <Tooltip content={pending.length ? `Wire the ${pending.length} connection${pending.length > 1 ? 's' : ''} the schematic has that the bench does not` : tr('bench.allBuilt')}>
         <Button
           size="sm"
           variant="ghost"
@@ -392,21 +392,21 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
         onValueChange={(v) => { setRendererFailed(false); setFlat(v === '2d'); }}
         options={[
           { value: '3d', label: '3D', title: tr('bench.3d'), disabled: rendererLoadFailed },
-          { value: '2d', label: '2D', title: 'The parts\' artwork, flat' },
+          { value: '2d', label: '2D', title: tr('bench.2dHint') },
         ]}
       />
       <span className="wb-bench-status" aria-live="polite">
         {tool === 'measure'
-          ? measured ? describeMeasurement(measured) : 'Click two points to measure · a pin or hole snaps · Esc clears'
+          ? measured ? describeMeasurement(measured) : tr('bench.measureHelp')
           : selectedPart
           ? `${selectedPart.label}${selectedHoles.length ? ` · in ${selectedHoles.join(', ')}` : ' · not plugged in'}`
           : selectedJumper
             ? `Jumper ${selectedJumper.from} → ${selectedJumper.to}`
             : tool === 'wire'
-              ? 'Press on a hole or a pin and release on another'
+              ? tr('bench.jumperHelp')
               : heightPlane !== null
                   ? above.length ? `Above ${heightPlane} mm: ${above.map((a) => `${a.id} (${a.top} mm)`).join(', ')}` : `Nothing rises above ${heightPlane} mm`
-                  : 'Right drag orbits · wheel zooms · drag a part onto the breadboard'}
+                  : tr('bench.moveHelp')}
       </span>
     </div>
   );
@@ -463,7 +463,7 @@ export function BoardPanel({ interactive, editable: canEdit = true, onFocusCanva
     >
       {traceNet && <section className="wb-bench-trace" aria-label={tr('bench.tracedNet')}>
         <h3>Trace · {traceNet}</h3>
-        <p>{connected && netStates[traceNet] ? describeNetState(netStates[traceNet], [0, 3.3]).text : 'No engine observation'}</p>
+        <p>{connected && netStates[traceNet] ? describeNetState(netStates[traceNet], [0, 3.3]).text : tr('bench.noObservation')}</p>
         <p>{(project.nets[traceNet] ?? []).join(' · ')}</p>
         <Button size="sm" variant="ghost" onClick={() => { setJumper(undefined); useSelection.getState().selectNet(null); }}>{tr('bench.clearTrace')}</Button>
       </section>}
@@ -696,7 +696,7 @@ function BenchList({
       </li>)}</ul></>}
       {children}
       {part && <FrontPanelOnBench part={part.id} />}
-      {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? 'Check the actual package and pinout before building hardware.' : 'Source metadata does not establish mechanical qualification.'}</p>}
+      {part && <p className="wb-bench-geometry">Geometry: {part.shape.geometrySource === 'catalog' ? 'catalog dimensions' : part.shape.geometrySource === 'artwork' ? 'artwork anchors' : 'approximate package'}. {part.shape.geometrySource === 'approximate' ? tr('bench.checkPackage') : tr('bench.noMechanical')}</p>}
       {part && editable && <BenchPlacement key={`${part.id}:${part.place.x}:${part.place.y}:${part.place.rotation}`} part={part} onPlace={onPlace} />}
       {part?.shape.package === 'breadboard' && editable && <Button size="sm" variant="ghost" onClick={() => onTurn(part.id)}>{tr('bench.turnBreadboard')}</Button>}
       {part && isSurfaceMount(part.shape) && <p className="wb-bench-geometry">{tr('bench.smd')}</p>}
@@ -710,7 +710,7 @@ function BenchList({
         >
           <Input label={`Plug ${part.id}'s first leg into`} placeholder="a20" value={hole} onChange={(e) => onHoleChange(e.target.value)} />
           {hole.trim() && <div className="wb-bench-insertion" role="status" aria-label={tr('bench.insertionPreview')}>
-            {!proposal ? 'No matching breadboard hole. Use a name such as BB1.a20.' : proposal.contacts.map((contact) => <div key={contact.pin} data-blocked={contact.occupiedBy.length > 0}>
+            {!proposal ? tr('bench.noHole') : proposal.contacts.map((contact) => <div key={contact.pin} data-blocked={contact.occupiedBy.length > 0}>
               <strong>{contact.pin}</strong> → {contact.hole ?? 'unseated'}{contact.occupiedBy.length ? ` · occupied by ${contact.occupiedBy.join(', ')}` : ''}
             </div>)}
           </div>}
@@ -893,7 +893,7 @@ function Bench2D({ interactive }: { interactive: boolean }) {
         wires={wires}
         height={Math.max(160, ...items.map((i) => i.y + i.height + 24))}
         disabled={!interactive || !connected}
-        label={project?.boards?.length ? `Board ${project.boards[0]!.board}` : 'Component panel'}
+        label={project?.boards?.length ? `Board ${project.boards[0]!.board}` : tr('bench.componentPanel')}
         onInput={(target, input, value) => {
           inputActions.set(target, input, value).catch((e: unknown) => toast({ kind: 'error', title: tr('fail.input'), description: errorMessage(e) }));
         }}

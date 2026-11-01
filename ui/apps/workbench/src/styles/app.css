@@ -2237,7 +2237,7 @@
 .wb-wired-instrument__readings .es-meter__value { font-size: 18px; }
 
 .wb-schematic-exposure { display: inline-flex; gap: 6px; align-items: center; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
-.wb-schematic-exposure select { max-width: 180px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: var(--surface); font: inherit; padding: 3px 5px; }
+.wb-schematic-exposure select { max-width: 240px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: var(--surface); font: inherit; padding: 3px 5px; }
 
 .wb-voltage-comparison { padding: 12px; display: grid; gap: 10px; }
 .wb-voltage-comparison output { font: 24px var(--font-mono, monospace); color: var(--text); }

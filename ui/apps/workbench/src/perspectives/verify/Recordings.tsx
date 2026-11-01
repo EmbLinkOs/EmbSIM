@@ -86,7 +86,7 @@ function RecordingRow({ entry }: { entry: RecordingEntry }) {
       toast(
         r.ok
           ? { kind: 'success', title: tr('rec.identical'), description: `${r.compared ?? rec.observations.length} observations matched` }
-          : { kind: 'error', title: r.divergence ? `Diverged at observation ${r.divergence.index + 1}` : 'The project changed since the recording', description: r.drift?.map((d) => d.what).join(', ') },
+          : { kind: 'error', title: r.divergence ? `Diverged at observation ${r.divergence.index + 1}` : tr('rec.changed'), description: r.drift?.map((d) => d.what).join(', ') },
       );
     } catch (e) {
       toast({ kind: 'error', title: tr('rec.replayFailed'), description: errorMessage(e) });

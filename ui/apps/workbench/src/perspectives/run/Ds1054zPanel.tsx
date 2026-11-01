@@ -16,6 +16,7 @@ import { errorMessage } from '../../actions';
 import { getClient } from '../../connection';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
+import { t as tr } from '../../i18n';
 
 export const DS1054Z = 'emblink/rigol_ds1054z';
 
@@ -86,7 +87,7 @@ export function Ds1054zPanel({ part }: { part: string }) {
       await getClient().input.set({ target: part, input, value });
       await pull();
     } catch (e) {
-      toast({ kind: 'error', title: 'The scope did not take it', description: errorMessage(e) });
+      toast({ kind: 'error', title: tr('inst.scopeRefused'), description: errorMessage(e) });
     }
   };
   const status = (outputs[`${part}.status`] as string | undefined) ?? capture?.status ?? 'STOP';

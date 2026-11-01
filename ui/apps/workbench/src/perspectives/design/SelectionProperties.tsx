@@ -41,8 +41,8 @@ export function SelectionProperties() {
     <div className="wb-selection-properties">
       <section className="wb-inspector__section" aria-label={tr('objects.placement')}>
         <h3>{ids.length === 1 ? tr('objects.placement') : `Move ${ids.length} selected items`}</h3>
-        <p className="es-muted">{ids.length === 1 ? 'Sheet coordinates · snapped to 10 units' : 'Relative offset for the entire selection'}</p>
-        <Button size="sm" disabled={disabled} onClick={() => void store.setPlacementLocked(ids, !locked).catch(fail)}>{locked ? 'Unlock placement' : 'Lock placement'}</Button>
+        <p className="es-muted">{ids.length === 1 ? tr('sel.sheetCoords') : tr('sel.relative')}</p>
+        <Button size="sm" disabled={disabled} onClick={() => void store.setPlacementLocked(ids, !locked).catch(fail)}>{locked ? tr('sel.unlock') : tr('sel.lock')}</Button>
         {locked && <p className="es-muted">{tr('sel.unlock')}</p>}
         <form onSubmit={(e) => {
           e.preventDefault(); if (placementDisabled || !validPosition) return;
@@ -50,8 +50,8 @@ export function SelectionProperties() {
           void operation.then(() => toast({ kind: 'success', title: tr('sel.placementApplied'), duration: 1500 })).catch(fail);
         }}>
           <div className="wb-properties-pair">
-            <Input label={part ? 'Position X' : 'Offset X'} mono value={x} onChange={(e) => setX(e.target.value)} disabled={placementDisabled} />
-            <Input label={part ? 'Position Y' : 'Offset Y'} mono value={y} onChange={(e) => setY(e.target.value)} disabled={placementDisabled} />
+            <Input label={part ? tr('sel.posX') : tr('sel.offX')} mono value={x} onChange={(e) => setX(e.target.value)} disabled={placementDisabled} />
+            <Input label={part ? tr('sel.posY') : tr('sel.offY')} mono value={y} onChange={(e) => setY(e.target.value)} disabled={placementDisabled} />
           </div>
           {part && <>
             <Select label={tr('sel.rotation')} value={rotation} options={[0, 90, 180, 270].map((n) => ({ value: String(n), label: `${n}°` }))} onValueChange={setRotation} disabled={placementDisabled} />
@@ -64,7 +64,7 @@ export function SelectionProperties() {
       </section>
       {ids.length > 1 && <section className="wb-inspector__section" aria-label={tr('sel.shared')}>
         <h3>{tr('sel.shared')}</h3>
-        <p className="es-muted">{shared.length ? 'Choose the properties to apply to every selected part in one edit.' : 'No compatible parameters across this selection.'}</p>
+        <p className="es-muted">{shared.length ? tr('sel.choose') : tr('sel.noCompatible')}</p>
         <form onSubmit={(e) => {
           e.preventDefault(); if (disabled || batchErrors.length) return;
           const changes = Object.fromEntries(shared.filter((p) => enabled[p.name]).map((p) => [p.name, parameterValue(p.param, values[p.name] ?? '').value!]));
@@ -75,7 +75,7 @@ export function SelectionProperties() {
             const error = enabled[name] ? parameterValue(param, values[name] ?? '').error : undefined;
             return <div key={name} className="wb-batch-property">
               <label className="wb-property-toggle"><input type="checkbox" checked={!!enabled[name]} disabled={disabled} onChange={(e) => setEnabled({ ...enabled, [name]: e.target.checked })} />Set {name}{mixed && <span className="es-muted" aria-hidden="true">{tr('sel.mixed')}</span>}</label>
-              {enabled[name] && (param.type === 'boolean' || param.type === 'enum' ? <Select label={`Shared ${name}`} value={values[name] ?? ''} placeholder={tr('sel.chooseValue')} options={(param.type === 'boolean' ? ['true', 'false'] : param.enum ?? []).map((v) => ({ value: v, label: v }))} onValueChange={(v) => setValues({ ...values, [name]: v })} disabled={disabled} /> : <Input label={`Shared ${name}`} value={values[name] ?? ''} placeholder={mixed ? 'Mixed values' : undefined} unit={param.unit} onChange={(e) => setValues({ ...values, [name]: e.target.value })} error={error} disabled={disabled} />)}
+              {enabled[name] && (param.type === 'boolean' || param.type === 'enum' ? <Select label={`Shared ${name}`} value={values[name] ?? ''} placeholder={tr('sel.chooseValue')} options={(param.type === 'boolean' ? ['true', 'false'] : param.enum ?? []).map((v) => ({ value: v, label: v }))} onValueChange={(v) => setValues({ ...values, [name]: v })} disabled={disabled} /> : <Input label={`Shared ${name}`} value={values[name] ?? ''} placeholder={mixed ? tr('sel.mixedValues') : undefined} unit={param.unit} onChange={(e) => setValues({ ...values, [name]: e.target.value })} error={error} disabled={disabled} />)}
               {error && (param.type === 'enum' || param.type === 'boolean') && <p role="alert" className="wb-properties-error">{error}</p>}
             </div>;
           })}

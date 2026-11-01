@@ -114,7 +114,7 @@ export function RunPerspective() {
     () => [
       { id: 'run.export.csv', label: tr('run.exportCsv'), group: tr('run.group.instruments'), icon: <Download />, run: guard(() => exportAs('csv')) },
       { id: 'run.export.vcd', label: tr('run.exportVcd'), group: tr('run.group.instruments'), icon: <Download />, run: guard(() => exportAs('vcd')) },
-      { id: 'run.follow', label: inst.window.follow ? 'Stop following the clock' : 'Follow the clock', group: tr('run.group.instruments'), shortcut: 'F', run: () => inst.setWindow({ ...inst.window, follow: !inst.window.follow }) },
+      { id: 'run.follow', label: inst.window.follow ? tr('run.stopFollow') : tr('run.follow'), group: tr('run.group.instruments'), shortcut: 'F', run: () => inst.setWindow({ ...inst.window, follow: !inst.window.follow }) },
       { id: 'run.clear-cursors', label: tr('run.clearCursors'), group: tr('run.group.instruments'), run: () => inst.setCursors({ a: null, b: null }) },
       { id: 'run.fit-capture', label: tr('run.fitWaves'), group: tr('run.group.instruments'), run: fitCapture },
       ...(project ? Object.keys(project.nets).map((net) => ({ id: `probe.${net}`, label: tr('run.addProbe', { net }), group: tr('run.group.probes'), keywords: ['probe', net], run: guard(() => probeActions.add(`net:${net}`, 'analog', 200_000)) })) : []),
@@ -148,8 +148,8 @@ export function RunPerspective() {
       <Tooltip content={tr('run.fitWaves')}>
         <IconButton label={tr('run.fitWaves')} size="sm" variant="ghost" onClick={fitCapture}><Maximize2 /></IconButton>
       </Tooltip>
-      <Tooltip content={inst.window.follow ? 'Following the clock (F)' : 'Follow the clock (F)'}>
-        <IconButton label={inst.window.follow ? 'Stop following the clock' : 'Follow the clock'} size="sm" variant="ghost" pressed={inst.window.follow} onClick={() => inst.setWindow({ ...inst.window, follow: !inst.window.follow })}>
+      <Tooltip content={inst.window.follow ? tr('run.followingF') : tr('run.followF')}>
+        <IconButton label={inst.window.follow ? tr('run.stopFollow') : tr('run.follow')} size="sm" variant="ghost" pressed={inst.window.follow} onClick={() => inst.setWindow({ ...inst.window, follow: !inst.window.follow })}>
           <Locate />
         </IconButton>
       </Tooltip>
@@ -209,7 +209,7 @@ export function RunPerspective() {
     })),
     {
       id: 'bottom',
-      title: { serial: 'Serial terminal', diagnostics: tr('run.tab.diagnostics'), meters: tr('run.tab.meters'), air: 'The air' }[bottomTab],
+      title: { serial: tr('run.serialTerminal'), diagnostics: tr('run.tab.diagnostics'), meters: tr('run.tab.meters'), air: tr('run.theAir') }[bottomTab],
       flush: true,
       weight: 1,
       minSize: 140,

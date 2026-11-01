@@ -39,7 +39,7 @@ const DEFAULT_SUN: WorldSun = { latitude_deg: 45, date: '06-21', solar_time_h: 1
 /** what the bench sees of the sun: its place in the sky, and whether it shines on the table */
 export function describeSun(sun: WorldSun, room: WorldRoom | undefined): string {
   const pos = solarPosition(sun.latitude_deg ?? 45, dayOfYear(sun.date), sun.solar_time_h ?? 12);
-  if (pos.elevation <= 0) return 'Night: the ceiling lamp lights the bench';
+  if (pos.elevation <= 0) return tr('world.night');
   const size = room?.size_mm ? { width: room.size_mm[0], depth: room.size_mm[1], height: room.size_mm[2] } : ROOM;
   const onBench = sunlit(sunDirection(pos, room?.window_azimuth_deg ?? 180), [0, 0, 0], windowOpening(size));
   return `Sun ${pos.elevation.toFixed(0)}° up in the ${compass(pos.azimuth)}: ${onBench ? 'shining on the bench through the window' : 'daylight from the window, no direct sun on the bench'}`;
@@ -222,7 +222,7 @@ export function WorldPanel() {
         </div>
         <div className="wb-world__field">
           <label className="wb-world__set">
-            <input type="checkbox" checked={Boolean(sun)} disabled={!editable} onChange={(e) => setSun(e.target.checked ? 'Sun by the time of day' : 'Lamp light', e.target.checked ? sunNow : undefined)} />
+            <input type="checkbox" checked={Boolean(sun)} disabled={!editable} onChange={(e) => setSun(e.target.checked ? tr('world.sunByTime') : tr('world.lamp'), e.target.checked ? sunNow : undefined)} />
             <span>{tr('world.sun')}</span>
           </label>
           <input
@@ -280,7 +280,7 @@ export function WorldPanel() {
                 />
               </label>
             ))}
-            <label className="wb-world__coord" title="Speed towards you (y), mm/s: the body moves in virtual time; sensors see it where it is">
+            <label className="wb-world__coord" title={tr('world.speedHint')}>
               v
               <input
                 type="number"
@@ -301,7 +301,7 @@ export function WorldPanel() {
                 }}
               />
             </label>
-            <label className="wb-world__coord" title="Warmer than the room (a person, an animal): a PIR sensor sees it when it moves">
+            <label className="wb-world__coord" title={tr('world.warmHint')}>
               <input
                 type="checkbox"
                 aria-label={`${b.name ?? b.id} is warm`}
@@ -317,7 +317,7 @@ export function WorldPanel() {
               />
               warm
             </label>
-            <label className="wb-world__coord" title="Let go: it falls under gravity (thrown at its speed), bounces off the table or the floor and comes to rest">
+            <label className="wb-world__coord" title={tr('world.dropHint')}>
               <input
                 type="checkbox"
                 aria-label={`${b.name ?? b.id} falls`}
@@ -342,7 +342,7 @@ export function WorldPanel() {
               />
               falls
             </label>
-            <label className="wb-world__coord" title="Walks round the table at 1.2 m/s, a person's pace (a path of waypoints, looped)">
+            <label className="wb-world__coord" title={tr('world.walkHint')}>
               <input
                 type="checkbox"
                 aria-label={`${b.name ?? b.id} walks round the table`}
@@ -370,7 +370,7 @@ export function WorldPanel() {
               />
               round
             </label>
-            <label className="wb-world__coord" title="Back and forth over this distance, mm (0: straight on)">
+            <label className="wb-world__coord" title={tr('world.swingHint')}>
               ↔
               <input
                 type="number"

@@ -18,6 +18,7 @@ import { platform } from '../../platform/platform';
 import { useProject } from '../../stores/project';
 import { useSession } from '../../stores/session';
 import { LEAD_COLORS } from './Logic8Panel';
+import { t as tr } from '../../i18n';
 
 export const PPK2 = 'emblink/nordic_ppk2';
 
@@ -100,7 +101,7 @@ export function Ppk2Panel({ part }: { part: string }) {
       await getClient().input.set({ target: logicPart, input: 'run', value: on });
       await pull();
     } catch (e) {
-      toast({ kind: 'error', title: on ? 'Could not start sampling' : 'Could not stop sampling', description: errorMessage(e) });
+      toast({ kind: 'error', title: on ? tr('inst.cannotStartSampling') : tr('inst.cannotStopSampling'), description: errorMessage(e) });
     }
   };
   const set = (param: string, value: unknown) =>
@@ -167,7 +168,7 @@ export function Ppk2Panel({ part }: { part: string }) {
         <span className="wb-logic8__status" role="status">
           {sampling ? 'Sampling' : 'Stopped'} · 100 kS/s{outputs[`${meter}.limited`] === true ? ' · current limit (600 mA)' : ''}
         </span>
-        <Button size="sm" variant="ghost" disabled={!power.length} onClick={() => void save().catch((e: unknown) => toast({ kind: 'error', title: 'Could not export', description: errorMessage(e) }))}><Download /> CSV</Button>
+        <Button size="sm" variant="ghost" disabled={!power.length} onClick={() => void save().catch((e: unknown) => toast({ kind: 'error', title: tr('inst.exportFailed'), description: errorMessage(e) }))}><Download /> CSV</Button>
       </div>
       <dl className="wb-ppk2__readouts" aria-label={sel ? 'Selection' : 'Window'}>
         <div><dt>{sel ? 'Selection' : 'Window'} average</dt><dd>{amps(stats.average)}</dd></div>

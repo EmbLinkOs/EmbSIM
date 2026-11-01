@@ -111,7 +111,7 @@ function QuickRun({ path, disabled }: { path: string; disabled: boolean }) {
   };
   return (
     <Button size="sm" icon={<Play />} disabled={disabled || busy} onClick={() => void run()}>
-      {busy ? 'Running…' : 'Run'}
+      {busy ? tr('se.running') : tr('se.run')}
     </Button>
   );
 }
@@ -167,7 +167,7 @@ function DraftEditor({ canRun }: { canRun: boolean }) {
       await getClient().scenario.save({ path, scenario: sc, add: true });
       useVerify.getState().markSaved(path);
       await useProject.getState().loadAll();
-      toast({ kind: 'success', title: `Saved ${path}`, description: draft.path ? undefined : 'Added to the project\'s scenarios: save the project to keep the list.' });
+      toast({ kind: 'success', title: `Saved ${path}`, description: draft.path ? undefined : tr('se.added') });
     } catch (e) {
       toast({ kind: 'error', title: tr('se.cannotSave'), description: errorMessage(e) });
     } finally {
@@ -182,7 +182,7 @@ function DraftEditor({ canRun }: { canRun: boolean }) {
         {draft.dirty && <Badge tone="warning">{tr('se.unsaved')}</Badge>}
         <span className="wb-verify__spacer" />
         <Button size="sm" variant="primary" icon={<Play />} disabled={!canRun || busy !== null || problems.length > 0} onClick={() => void run()}>
-          {busy === 'run' ? 'Running…' : 'Run'}
+          {busy === 'run' ? tr('se.running') : tr('se.run')}
         </Button>
         <Button size="sm" icon={<Save />} disabled={busy !== null || problems.length > 0 || !!duplicate || (!draft.path && !savePath.trim())} onClick={() => void save()}>
           {tr('common.save')}

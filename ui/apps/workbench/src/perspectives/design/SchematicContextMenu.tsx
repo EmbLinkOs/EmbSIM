@@ -36,7 +36,7 @@ export function SchematicContextMenu({ context, actions, onClose }: { context: C
     const next = e.key === 'ArrowDown' ? (current + 1) % buttons.length : e.key === 'ArrowUp' ? (current - 1 + buttons.length) % buttons.length : e.key === 'Home' ? 0 : e.key === 'End' ? buttons.length - 1 : -1;
     if (next >= 0) { e.preventDefault(); buttons[next]?.focus(); }
   }}>
-    <div className="wb-schematic-context__heading">{context.selection.components.length ? `${context.selection.components.length} selected` : context.net ? `Net ${context.net}` : 'Sheet actions'}</div>
+    <div className="wb-schematic-context__heading">{context.selection.components.length ? `${context.selection.components.length} selected` : context.net ? `Net ${context.net}` : tr('ctx.sheet')}</div>
     {actions.map((action) => <button key={action.label} type="button" role="menuitem" aria-label={action.label} disabled={action.disabled} className={action.danger ? 'is-danger' : undefined} onClick={() => { onClose(); action.run(); }}><span>{action.label}</span>{action.shortcut && <kbd>{action.shortcut}</kbd>}</button>)}
   </div>;
 }

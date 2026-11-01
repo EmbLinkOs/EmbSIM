@@ -56,10 +56,10 @@ export function DebugPerspective() {
         <Placeholder
           title={tr('perspective.debug')}
           icon={<Bug />}
-          description="Halt, step and inspect a board's firmware: disassembly with breakpoints, registers, memory, peripherals and the console."
+          description={tr('debug.placeholderDesc')}
           requires={['debug']}
           needsBoard
-          actions={['a board whose MCU has firmware (boards[].firmware in the project)']}
+          actions={[tr('debug.placeholderAction')]}
         />
       </div>
     );
@@ -150,7 +150,7 @@ function SourcePanel() {
   if (!source) {
     return (
       <EmptyState title={tr('debug.noSource')}>
-        {where && !where.file ? 'The image has no line information: build it with -g.' : 'Halt the core to see the line it is at.'}
+        {where && !where.file ? tr('debug.noLines') : tr('debug.haltForLine')}
       </EmptyState>
     );
   }
@@ -417,7 +417,7 @@ function ConsolePanel() {
   return (
     <div className="wb-debug__scroll">
       <pre className="wb-debug__console" aria-label={tr('debug.console')} aria-live="polite">
-        {text || 'The console (the MCU’s default UART) is empty.'}
+        {text || tr('debug.consoleEmpty')}
       </pre>
       <div ref={end} />
     </div>

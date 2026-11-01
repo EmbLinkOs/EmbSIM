@@ -387,7 +387,7 @@ export function DesignPerspective() {
   const hasParts = contextSelection.components.length > 0;
   const contextInstrument = contextSelection.components.length === 1 ? benchInstrumentOf(project?.components.find((c) => c.id === contextSelection.components[0])?.component) : undefined;
   const copyable = hasParts && contextSelection.components.every((id) => project?.components.some((c) => c.id === id));
-  const routeSelected = () => void store.rerouteNets(selectedNets).then((warnings) => { setSelection(EMPTY_SELECTION); if (selectedNets.length === 1) selectNet(selectedNets[0]!); toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? tr('design.routingAttention') : 'Selected nets routed', description: warnings.join(' ') || undefined }); }).catch(fail(tr('fail.routing')));
+  const routeSelected = () => void store.rerouteNets(selectedNets).then((warnings) => { setSelection(EMPTY_SELECTION); if (selectedNets.length === 1) selectNet(selectedNets[0]!); toast({ kind: warnings.length ? 'warning' : 'success', title: warnings.length ? tr('design.routingAttention') : tr('design.netsRouted'), description: warnings.join(' ') || undefined }); }).catch(fail(tr('fail.routing')));
   const contextActions: ContextAction[] = [
     { label: tr('design.focusSelection'), shortcut: 'F', disabled: !hasParts && !selectedNets.length, run: () => hasParts ? canvasRef.current?.focusComponents(contextSelection.components) : canvasRef.current?.focusNet(selectedNets[0]!) },
     { label: tr('design.ctx.copy'), shortcut: '⌘/Ctrl C', disabled: !copyable, run: () => store.copySelection(contextSelection) },

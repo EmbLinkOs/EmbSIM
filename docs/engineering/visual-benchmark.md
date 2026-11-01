@@ -175,7 +175,9 @@ that act are offered.
   signal names, part numbers, units, protocol names, code, the engine's
   diagnostic messages (they come from the engine), catalog descriptions and
   fidelity notes (catalog data), and the instruments' front-panel legends
-  (as printed on the real DS1054Z, PPK2 and Logic 8).
+  (as printed on the real DS1054Z), and the PPK2's and Logic 8's controls
+  as their own applications (nRF Connect Power Profiler, Saleae Logic 2)
+  name them, which exist in English only.
 - **Longer words.** French runs about 20 % longer; labels wrap or give
   way to icons rather than clip. `settings-language.spec.ts` checks every
   perspective in French at 1280 px for horizontal overflow, and the
@@ -212,8 +214,8 @@ that act are offered.
 
 ## Limitations
 
-- The 3D bench's own controls are translated; its renderer's error texts
-  from three.js are not.
+- The 3D bench's controls and pointer feedback are translated; the
+  renderer's own error texts from three.js are not.
 - Catalog descriptions, fidelity notes and the engine's diagnostics are in
   English (they are data from the catalog and the engine, not the
   interface).
