@@ -185,3 +185,40 @@ fidelity):
   return, with a full entry, where the hardware abandons the unstacking);
 - ARMv6-M (the RP2040's M0+) entirely: its TRM's figures are not yet in
   the sources.
+
+### 4.2 Measurement (step 3)
+
+`run --measure FROM..TO` (`core/mcu/latency.c`, documented in
+`docs/user/cli.md`) stamps four kinds of boundary:
+- an instruction at an address or symbol starting;
+- an exception being taken (`exc:N`);
+- an exception becoming pending (`pend:N`);
+- an exception's return being done (`ret:N`).
+
+Each sample is given in cycles and in simulated picoseconds, converted
+exactly at the core clock that ran each cycle. Host wall time is reported
+apart. The analysis observes the run and adds nothing to the firmware's
+cycles; it does slow the host, because every step goes through the analysis
+hook.
+
+**Validated** by `tests/vendor/freertos/run.py` (CI's linux-gcc job, the
+unmodified FreeRTOS V11.1.0 kernel on the NUCLEO-F446RE, core on HSI at
+16 MHz):
+- the tick (`exc:SysTick..exc:SysTick`) averages exactly 16 000 cycles, 1 ms
+  at 1 kHz, with at most an instruction's jitter;
+- each context switch (`pend:PendSV..ret:PendSV`) equals its request
+  latency (`pend:PendSV..exc:PendSV`) plus PendSV's entry to return, sample
+  by sample;
+- a switch takes at least the 24 cycles of an entry and a return;
+- two runs measure exactly the same.
+
+**Measured** on that run: a context switch takes 155 to 167 cycles (9.69 to
+10.44 µs at 16 MHz). This counts the request latency (0 to 5 cycles), the
+12-cycle entry, the handler (the kernel's `xPortPendSVHandler` and
+`vTaskSwitchContext`, at the cost table's estimate), and the 12-cycle return.
+The instructions are estimated, so this is a simulated figure, not a hardware
+one. No capture from a real NUCLEO-F446RE is available yet to compare it
+with. Flash wait states are not modelled yet (step 5). What they add at this
+clock, and at 180 MHz, will be stated when step 5 takes their figures from
+RM0390.
+

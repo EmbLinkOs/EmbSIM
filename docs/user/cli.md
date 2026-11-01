@@ -117,6 +117,45 @@ flamegraph.pl prof.folded > profile.svg
 Diagnostics go to stderr as `embsim: <severity>: <code> (<subject>)` followed by
 the message; their codes are listed in [diagnostics](diagnostics.md).
 
+## Timing measurements
+
+`--measure [NAME=]FROM..TO` (up to 16) measures, each time it happens, the
+cycles and the simulated time from one boundary to the next. The report goes
+to `--measure-out FILE`; the default `-` is stderr, and a `.json` file gets
+JSON. A boundary is:
+
+| Boundary | When it is stamped |
+|---|---|
+| `SYMBOL` or `0xADDR` | the instruction at that address starts (before its own cycles, after any exception sequence before it) |
+| `exc:N` | the core starts taking exception N (before the entry's or tail-chain's cycles) |
+| `pend:N` | exception N becomes pending: an interrupt asserted, a PendSV or an SVC requested, at the cycle the device or instruction did it |
+| `ret:N` | exception N's return is done: the first instruction after it starts, or the tail-chain that takes its place starts |
+
+`N` is a number or a name: `Reset`, `NMI`, `HardFault`, `MemManage`,
+`BusFault`, `UsageFault`, `SVCall`, `DebugMon`, `PendSV`, `SysTick`, or
+`IRQn` (exception 16 + n). A sample starts at the first FROM after the last
+sample and ends at the next TO. When FROM and TO are the same boundary, each
+occurrence ends one sample and starts the next, which measures a period.
+
+    embsim run --target emblink/nucleo_f446re --image freertos.elf --until 200ms \
+        --measure ctxsw=pend:PendSV..ret:PendSV --measure tick=exc:SysTick..exc:SysTick
+
+`ctxsw` is an RTOS context switch, from the PendSV request to the first
+instruction of the task switched to. `tick` is the SysTick period.
+
+The numbers are simulated: cycles of the target's core, converted to time at
+the core clock that ran them. The host's speed does not change them, and
+the same image and inputs give the same numbers every time. The host's wall
+time is reported on a line of its own, apart from the measurements. The
+simulator watches from outside, so a measurement adds no instruction or
+cycle to the firmware; a DWT.CYCCNT read in the program does add its own.
+
+Measurements are as exact as the target's timing model. See
+`docs/engineering/timing-fidelity.md` for what each core models. On
+Cortex-M, instructions are estimated from the TRM's table, while exception
+entry, return and tail-chaining follow the TRM; flash wait states are not
+modelled yet.
+
 ## FreeRTOS tasks
 
 `--rtos FILE` reads the FreeRTOS kernel's tasks from the firmware's memory at

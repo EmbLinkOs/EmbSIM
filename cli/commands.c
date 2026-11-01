@@ -46,6 +46,8 @@ static void usage_to(FILE *out)
           "      [--coverage FILE [--coverage-format text|lcov|json]]\n"
           "      [--profile FILE [--profile-format text|collapsed|collapsed-insns|json]]\n"
           "      [--stack FILE [--stack-format text|json]] [--faults FILE [--faults-format text|json]]\n"
+          "      [--measure [NAME=]FROM..TO]... [--measure-out FILE|-]   cycles and simulated time between\n"
+          "      boundaries (a function or 0xADDR starting, exc:N taken, pend:N pending; .json for JSON)\n"
           "      [--board ID]\n"
           "  replay RECORDING [--allow-drift] [--json]   run a recording again and compare what it observed\n"
           "  record to-scenario RECORDING [-o FILE] [--assert probes,serial|none]\n"
@@ -407,6 +409,44 @@ static int an_format(const char *name, unsigned which)
     return -1;
 }
 
+/* the measurements into `path` ("-": stderr; .json: JSON): simulated time
+ * and cycles from the analysis, the host's wall time apart from them */
+static int write_measure(es_session *s, const char *board, const char *path)
+{
+    size_t n = strlen(path);
+    int json = n > 5 && !strcmp(path + n - 5, ".json"), ok = 1;
+    double sim_s = (double)s->eng.sched.now / (double)ES_PS_PER_S;
+    esk_strbuf b;
+    char why[160];
+    esk_strbuf_init(&b, s->a);
+    if (json) {
+        esk_json *o = esk_json_new_object(s->a), *host = esk_json_new_object(s->a);
+        esk_json_object_set(s->a, o, "simulated", esk_session_analysis_json(s, board, ESK_AN_MEASURE, 1));
+        esk_json_object_set(s->a, host, "wall_s", esk_json_new_number(s->a, s->wall_time_s));
+        esk_json_object_set(s->a, host, "simulated_s", esk_json_new_number(s->a, sim_s));
+        esk_json_object_set(s->a, o, "host", host);
+        (void)esk_json_write(&b, o, 1);
+        (void)esk_strbuf_putc(&b, '\n');
+        esk_json_free(s->a, o);
+    } else if (esk_session_analysis_text(s, board, ESK_AN_MEASURE, ESK_AN_TEXT, &b, why, sizeof why) != ES_OK) {
+        fprintf(stderr, "embsim: --measure: %s\n", why);
+        ok = 0;
+    } else {
+        esk_strbuf_printf(&b, "host (not part of the measurements): %.3f s of wall time for %.6f s simulated\n",
+                          s->wall_time_s, sim_s);
+    }
+    if (ok && b.oom)
+        ok = 0;
+    if (ok && !strcmp(path, "-"))
+        fwrite(b.data, 1, b.len, stderr);
+    else if (ok && esk_host_write_file(path, b.data, b.len) != ES_OK) {
+        fprintf(stderr, "embsim: cannot write %s\n", path);
+        ok = 0;
+    }
+    esk_strbuf_free(&b);
+    return ok;
+}
+
 /* the coverage, profile, stack or fault report into `path` ("-": stderr) */
 static int write_analysis(es_session *s, const char *board, unsigned which, int fmt, const char *path)
 {
@@ -708,7 +748,9 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     const char *coverage = NULL, *profile = NULL, *stack = NULL, *faults = NULL, *board = NULL, *target = NULL, *image = NULL, *until_text = NULL;
     int cov_fmt = ESK_AN_TEXT, prof_fmt = ESK_AN_TEXT, stack_fmt = ESK_AN_TEXT, fault_fmt = ESK_AN_TEXT, console = 0;
     int allow_no_image = 0, build = 0;
-    const char *dump = NULL, *circuit = NULL, *rtos = NULL;
+    const char *dump = NULL, *circuit = NULL, *rtos = NULL, *measure_out = NULL;
+    const char *measures[16];
+    int nmeasures = 0;
     const char *probes[32];
     int nprobes = 0, i, rc = 0;
     es_time_t until = 50 * ES_PS_PER_MS;
@@ -740,6 +782,11 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         else if (!strcmp(a, "--dump-regs") && more) dump = argv[++i];
         else if (!strcmp(a, "--circuit-profile") && more) circuit = argv[++i];
         else if (!strcmp(a, "--rtos") && more) rtos = argv[++i];
+        else if (!strcmp(a, "--measure") && more) {
+            if (nmeasures == 16) { fprintf(stderr, "embsim: at most 16 --measure\n"); return 2; }
+            measures[nmeasures++] = argv[++i];
+        }
+        else if (!strcmp(a, "--measure-out") && more) measure_out = argv[++i];
         else if ((!strcmp(a, "--coverage-format") || !strcmp(a, "--profile-format") || !strcmp(a, "--stack-format") ||
                   !strcmp(a, "--faults-format")) && more) {
             unsigned which = a[2] == 'c' ? ESK_AN_COVERAGE : a[2] == 's' ? ESK_AN_STACK : a[2] == 'f' ? ESK_AN_FAULT : ESK_AN_PROFILE;
@@ -798,12 +845,14 @@ static int cmd_run(int argc, char **argv, const char *argv0)
         if (esk_session_probe_add(s, NULL, probes[i], NULL, 0, NULL) != ES_OK)
             fprintf(stderr, "embsim: warning: probe %s not created\n", probes[i]);
     }
-    if (coverage || profile || stack || faults) {
+    if (coverage || profile || stack || faults || nmeasures) {
         char why[160];
         unsigned what = (coverage ? ESK_AN_COVERAGE : 0u) | (profile ? ESK_AN_PROFILE : 0u) | (stack ? ESK_AN_STACK : 0u) |
-                        (faults ? ESK_AN_FAULT : 0u);
+                        (faults ? ESK_AN_FAULT : 0u) | (nmeasures ? ESK_AN_MEASURE : 0u);
+        for (i = 0; i < nmeasures; i++)
+            (void)esk_session_measure(s, measures[i]);
         if (esk_session_analyze(s, board, what, why, sizeof why) != ES_OK) {
-            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : stack ? "--stack" : "--faults", why);
+            fprintf(stderr, "embsim: %s: %s\n", coverage ? "--coverage" : profile ? "--profile" : stack ? "--stack" : faults ? "--faults" : "--measure", why);
             es_session_destroy(s);
             return 2;
         }
@@ -900,6 +949,8 @@ static int cmd_run(int argc, char **argv, const char *argv0)
     if (stack && !write_analysis(s, board, ESK_AN_STACK, stack_fmt, stack) && !rc)
         rc = 2;
     if (faults && !write_analysis(s, board, ESK_AN_FAULT, fault_fmt, faults) && !rc)
+        rc = 2;
+    if (nmeasures && !write_measure(s, board, measure_out ? measure_out : "-") && !rc)
         rc = 2;
     if (opt_json)
         print_json(report, s->a);

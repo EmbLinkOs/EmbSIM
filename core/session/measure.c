@@ -47,12 +47,31 @@ es_status esk_session_analyze(es_session *s, const char *board, unsigned what, c
         r = esk_mcu_analyze(bi->mcu, what, why, cap);
         if (r != ES_OK)
             return r;
+        if (what & ESK_AN_MEASURE) {
+            int k;
+            for (k = 0; k < s->an_nmeasure; k++) {
+                r = esk_an_measure_add(esk_mcu_analysis(bi->mcu), s->an_measure[k], why, cap);
+                if (r != ES_OK)
+                    return r;
+            }
+        }
         found = 1;
     }
     if (what && !found) {
         esk_snprintf(why, cap, board ? "board %s runs no firmware" : "no board of the project runs firmware", board);
         return ES_ENOTFOUND;
     }
+    return ES_OK;
+}
+
+es_status esk_session_measure(es_session *s, const char *spec)
+{
+    if (s->an_nmeasure == (int)(sizeof s->an_measure / sizeof s->an_measure[0]))
+        return ES_EINVAL;
+    s->an_measure[s->an_nmeasure] = esk_strdup(s->a, spec);
+    if (!s->an_measure[s->an_nmeasure])
+        return ES_ENOMEM;
+    s->an_nmeasure++;
     return ES_OK;
 }
 
@@ -80,6 +99,7 @@ static char *image_dir(es_session *s, const esk_board_inst *bi)
 const char *esk_session_analysis_name(unsigned which)
 {
     return which == ESK_AN_COVERAGE ? "coverage"
+         : which == ESK_AN_MEASURE  ? "the measurements"
          : which == ESK_AN_STACK    ? "the stack analysis"
          : which == ESK_AN_FAULT    ? "the fault report"
                                     : "the profile";
@@ -99,7 +119,9 @@ es_status esk_session_analysis_text(es_session *s, const char *board, unsigned w
         if (!a || (board && !esk_str_eq(board, bi->id)) ||
             !(esk_an_what(a) & which))
             continue;
-        if (which == ESK_AN_STACK) {
+        if (which == ESK_AN_MEASURE) {
+            ok = esk_an_measure_text(a, bi->id, out);
+        } else if (which == ESK_AN_STACK) {
             ok = esk_an_stack(a, bi->id, out);
         } else if (which == ESK_AN_FAULT) {
             ok = esk_an_faults(a, bi->id, out);
@@ -133,7 +155,8 @@ esk_json *esk_session_analysis_json(es_session *s, const char *board, unsigned w
         esk_json *j;
         if (!a || (board && !esk_str_eq(board, bi->id)))
             continue;
-        j = which == ESK_AN_COVERAGE ? esk_an_coverage_json(a, s->a, detail)
+        j = which == ESK_AN_MEASURE  ? esk_an_measure_json(a, s->a)
+          : which == ESK_AN_COVERAGE ? esk_an_coverage_json(a, s->a, detail)
           : which == ESK_AN_STACK    ? esk_an_stack_json(a, s->a, detail ? 0 : 10)
           : which == ESK_AN_FAULT    ? esk_an_faults_json(a, s->a)
                                      : esk_an_profile_json(a, s->a, detail ? 0 : 10);

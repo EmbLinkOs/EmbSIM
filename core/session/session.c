@@ -218,6 +218,8 @@ void es_session_destroy(es_session *s)
     esk_strfree(s->a, s->project_path);
     esk_strfree(s->a, s->client_name);
     esk_strfree(s->a, s->an_board);
+    while (s->an_nmeasure)
+        esk_strfree(s->a, s->an_measure[--s->an_nmeasure]);
     esk_strfree(s->a, s->record_path);
     esk_json_free(s->a, s->inputs_log);
     esk_json_free(s->a, s->observations);

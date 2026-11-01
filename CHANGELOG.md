@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Timing: measurements between boundaries
+
+- `embsim run --measure [NAME=]FROM..TO` measures the cycles and the
+  simulated time between two boundaries each time they happen. A boundary
+  is an instruction starting at a symbol or address, an exception taken
+  (`exc:N`), an exception becoming pending (`pend:N`), or an exception's
+  return done (`ret:N`).
+- `--measure-out` writes the report as text or JSON, with the host's wall
+  time kept apart.
+- The measurement adds nothing to the firmware's cycles, and two runs give
+  identical numbers.
+- `pend:PendSV..ret:PendSV` measures an RTOS context switch. For FreeRTOS
+  V11.1.0 on the NUCLEO-F446RE at 16 MHz it is 155 to 167 cycles; the
+  FreeRTOS vendor test checks the tick period and that the parts of each
+  switch add up (`tests/vendor/freertos/run.py`).
+
 ### Timing: Cortex-M exception entry, return, tail-chaining and late arrival
 
 - `docs/engineering/timing-fidelity.md`: an audit of the simulator's timing

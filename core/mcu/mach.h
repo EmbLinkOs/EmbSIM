@@ -576,6 +576,7 @@ struct esk_an;
 void esk_an_step(struct esk_an *a, int core, struct esk_cpu *cpu);
 void esk_an_exc(struct esk_an *a, int core, int n, u32 ret);
 void esk_an_exc_return(struct esk_an *a, int core);
+void esk_an_pend(struct esk_an *a, int core, int n);
 /* a core enters exception or interrupt n (esk_mach_host.exc), to return to
  * `ret` */
 ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n, u32 ret)
@@ -584,6 +585,13 @@ ES_INLINE void esk_mach_exc(struct esk_mach *m, int core, int n, u32 ret)
         m->host.exc(m->host.ctx, core, n);
     if (m->an)
         esk_an_exc(m->an, core, n, ret);
+}
+/* exception or interrupt n of core `core` becomes pending (a measurement's
+ * boundary, latency.c) */
+ES_INLINE void esk_mach_pend(struct esk_mach *m, int core, int n)
+{
+    if (m->an)
+        esk_an_pend(m->an, core, n);
 }
 /* a core returns from an exception (RETFIE, MRET, ERET, RETI, a Cortex-M's
  * EXC_RETURN) */

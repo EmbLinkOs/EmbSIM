@@ -116,6 +116,9 @@ struct es_session {
      * on every board with firmware (NULL) */
     unsigned an_what;
     char *an_board;
+    /* the measurements set with the analyses (latency.c), kept across a reload */
+    char *an_measure[16];
+    int an_nmeasure;
     /* statistics */
     uint64_t rpc_count;
     double wall_time_s;
@@ -129,6 +132,8 @@ struct es_session {
  * board's with firmware (NULL); 0 turns them off. They stay on across a
  * project's reload (esk_session_analyses_apply, after a load) */
 es_status esk_session_analyze(es_session *s, const char *board, unsigned what, char *why, size_t cap);
+/* a measurement "[NAME=]FROM..TO" for the next esk_session_analyze (ES_EINVAL when full) */
+es_status esk_session_measure(es_session *s, const char *spec);
 void esk_session_analyses_apply(es_session *s);
 /* the boards' coverage, profile, stack or fault reports (`which`: one ESK_AN_*) as
  * text in format `fmt` (ESK_AN_TEXT, ...), one board's or every board's;

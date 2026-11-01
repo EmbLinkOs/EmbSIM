@@ -97,6 +97,7 @@ void esk_cm_set_pend(struct esk_cm_state *cs, int n)
     if (n > 0 && n < NEXC && !cs->pend[n]) {
         cs->pend[n] = 1;
         cs->npend++;
+        esk_mach_pend(cs->sim, esk_cortexm_core(cs->sim), n);
         if (n >= 16 && (cs->scr & SCR_SEVONPEND))
             cs->event = 1;
     }
@@ -814,6 +815,7 @@ static void step(struct esk_cpu *c)
             return;
         }
         charge_exc(cs, CM_RETURN_CYCLES);
+        return; /* a step of its own: the next instruction starts after it */
     }
     if (cs->npend) {
         int n = pending_to_take(cs);
