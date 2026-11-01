@@ -44,6 +44,11 @@ versions follow semantic versioning. There is no release yet.
 - The IDE's `RowColumnScanning` moves its cursor across the 8x8 LED matrix
   with two pots; the cursor glows at 0.4 % of full luminance, as dim as on
   a real matrix driven by this sketch.
+- The DS1307 follows its data sheet: reads from user buffers refreshed at
+  each START, a seconds write restarting the countdown chain, 12-hour mode,
+  a user-set day of the week, a new part's oscillator halted (CH) until the
+  sketch starts it, no answer below VPF. RTClib's `ds1307` and
+  `ds1307nvram` run unmodified against it.
 - The Arduino harness finds the IDE's built-in examples (arduino-examples,
   CC0) under their category folders.
 

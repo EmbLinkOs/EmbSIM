@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "ds1307nvram",
+  "until": "500ms",
+  "inputs": [],
+  "description": "RTClib's ds1307nvram example, unmodified: the RAM at 08h-0Dh read as a new part holds it (zeros here: the data sheet leaves it undefined), then FE ED written a byte at a time and BE EF 01 02 in one burst, and read back the same ways.",
+  "assertions": [
+    {
+      "id": "nvram",
+      "at": "500ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Current NVRAM values:\r\nAddress 0x0 = 0x0\r\nAddress 0x1 = 0x0\r\nAddress 0x2 = 0x0\r\nAddress 0x3 = 0x0\r\nAddress 0x4 = 0x0\r\nAddress 0x5 = 0x0\r\nWriting NVRAM values.\r\nReading NVRAM values:\r\nFE\r\nED\r\nBE\r\nEF\r\n1\r\n2\r\n"
+      }
+    },
+    {
+      "id": "clean",
+      "always": true,
+      "diagnostics": {
+        "forbid": [
+          "mcu.fault",
+          "mcu.bus_error",
+          "mcu.unsupported_access"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "power-on-halted",
+  "description": "A new DS1307 powers up with CH set: its oscillator is stopped and the time stands at 2000-01-01 00:00:00 for two seconds.",
+  "policy": "functional",
+  "until": "2100ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "3",
+          "period": "1u",
+          "drive": "open_drain",
+          "idle": 3,
+          "start": "0"
+        }
+      },
+      {
+        "id": "PU1",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU2",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "PU3",
+        "component": "emblink/pull_up"
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/ds1307"
+      }
+    ],
+    "nets": {
+      "SDA": [
+        "PG.OUT0",
+        "DUT.SDA",
+        "PU1.1"
+      ],
+      "SCL": [
+        "PG.OUT1",
+        "DUT.SCL",
+        "PU2.1"
+      ],
+      "SQW": [
+        "DUT.SQW",
+        "PU3.1"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.time": {
+      "at": "2000ms",
+      "equals": "2000-01-01 00:00:00"
+    },
+    "output:DUT.running": {
+      "at": "2000ms",
+      "equals": false
+    }
+  }
+}
