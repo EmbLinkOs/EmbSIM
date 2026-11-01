@@ -218,7 +218,75 @@ unmodified FreeRTOS V11.1.0 kernel on the NUCLEO-F446RE, core on HSI at
 `vTaskSwitchContext`, at the cost table's estimate), and the 12-cycle return.
 The instructions are estimated, so this is a simulated figure, not a hardware
 one. No capture from a real NUCLEO-F446RE is available yet to compare it
-with. Flash wait states are not modelled yet (step 5). What they add at this
-clock, and at 180 MHz, will be stated when step 5 takes their figures from
-RM0390.
+with. At 16 MHz, flash wait states play no part. RM0390's Table 5 (2.7 to
+3.6 V), as `core/mcu/stm32/rcc.c` transcribes it, asks for none up to
+30 MHz. At 180 MHz it asks for 5, and those are not modelled yet (step 5).
+
+### 4.3 Blocked: STM32F4 flash wait states and the ART accelerator (step 5)
+
+Modelling them needs RM0390 §3.4 (the flash interface):
+- the width of a flash read;
+- when the ART accelerator's instruction and data caches hit;
+- what the prefetch buffer hides.
+
+`rcc.c` already holds the wait-state count per clock from RM0390's Table 5,
+but the manual itself could not be downloaded in this environment (st.com
+refuses the request). Until it is in hand, all of the following run with
+zero-wait-state fetches, so they are optimistic above 30 MHz by up to 5
+cycles per flash access the ART would miss:
+- code running from flash on the F446 above 30 MHz (the F446ZE and RE
+  examples at 180 MHz);
+- the F103 when its clock calls for wait states (RM0008's table is not yet
+  in the sources either);
+- the nRF52840.
+
+No figure for those cases is claimed. Each MCU's fidelity lists the
+omission.
+
+### 4.4 Performance (step 7)
+
+`tools/perf/bench_mcu.py` runs fixed workloads headless and reports, in
+separate columns:
+- the simulated time each run covers (the same on every host);
+- the host's wall time (this machine's);
+- their ratio.
+
+It takes the fastest of `--repeat` runs. With `--freertos ELF` it adds
+FreeRTOS on the NUCLEO-F446RE, with and without the context-switch
+measurement.
+
+**Found and fixed.** An analog island counted as settled only when a step
+changed no unknown by more than 1e-14 relative. An RC tail, such as the
+NUCLEO's reset capacitor charging through its pull-up, kept the board's
+supply island awake for about 130 ms of every run. Every step was then cut
+at the running core's next 1 µs quantum, which cost 95% of the host time.
+
+The test now uses the solver's own absolute tolerances: vntol (1 µV) for
+node voltages and abstol (1 pA) for branch currents. The relative tolerance
+is left out on purpose. Any residual frozen into a sleeping island is below
+what Newton's convergence test resolves. All 56 test suites and the 640
+catalog fixtures, including the ngspice references, pass unchanged.
+
+Measured on this host, best of 2:
+
+| Workload | Simulated | Before | After |
+|---|---|---|---|
+| FreeRTOS, NUCLEO-F446RE at 16 MHz | 0.2 s | 3.05 s (0.07x) | 0.89 s (0.23x) |
+| FreeRTOS with the context switch measured | 0.2 s | 3.19 s | 0.76 s |
+| NUCLEO-F446RE blink and serial, 180 MHz | 1 s | 0.42 s (2.4x) | 0.22 s (4.6x) |
+| Uno blink and serial | 2 s | 0.92 s (2.2x) | 0.95 s (2.1x) |
+| RP2040, both cores | 1 s | 0.82 s (1.2x) | 0.81 s (1.2x) |
+| RC filter, analog only | 1 s | 2.28 s (0.44x) | 2.29 s (0.44x) |
+
+The measured context switch (155 to 167 cycles) is the same before and
+after: the change affects how often an island steps, not the core's
+timing.
+
+**Still slow:**
+- FreeRTOS's first 50 ms, while the reset RC really is moving by more than
+  1 µV a step;
+- the analog-only RC filter;
+- the RP2040, whose two cores run interleaved on one clock.
+
+Each is the next target.
 

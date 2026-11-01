@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Speed: analog islands settle at the solver's tolerance
+
+- An analog island now counts as settled when a step changes no node by more
+  than vntol (1 uV) and no branch current by more than abstol (1 pA). Before,
+  the limit was 1e-14 relative, so an RC tail such as a reset pin's kept the
+  board's supply island stepping at every 1 us core quantum for about 130 ms
+  of each run.
+- FreeRTOS on the NUCLEO-F446RE runs 3.4x faster (0.23x real time, from
+  0.07x), and the NUCLEO blink example 1.9x faster. All tests, catalog
+  fixtures and ngspice references are unchanged.
+- `tools/perf/bench_mcu.py` benchmarks fixed workloads, with simulated and
+  host time in separate columns.
+
 ### Timing: measurements between boundaries
 
 - `embsim run --measure [NAME=]FROM..TO` measures the cycles and the

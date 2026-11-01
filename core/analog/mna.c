@@ -1137,14 +1137,22 @@ static es_time_t step_horizon(const esk_island *isl, es_time_t until)
     return want > until ? want : until;
 }
 
-/* the step to x_iter changed no unknown beyond rounding */
+/* the step to x_iter changed no unknown by more than the solver resolves:
+ * a node voltage by vntol (1 uV), a branch current by abstol (1 pA), the
+ * absolute tolerances Newton's convergence test uses. Below them two
+ * solutions are the same to the solver; an exponential tail (an RC on a
+ * reset pin approaching its supply) would otherwise keep an island stepping
+ * for dozens of time constants after anything could see it move. The
+ * relative tolerance is left out on purpose: a slow ramp moving by less
+ * than reltol of its value per step can still be heading for a threshold. */
 static int unchanged(const esk_island *isl)
 {
     const mna *p = (const mna *)isl->priv;
     int i;
     for (i = 0; i < p->n; i++) {
         double a = isl->x[i], b = p->x_iter[i];
-        if (fabs(a - b) > 1e-14 * (1.0 + fabs(a)))
+        double tol = i + 1 < p->nnodes ? isl->p.vntol : isl->p.abstol;
+        if (fabs(a - b) > tol + 1e-14 * fabs(a))
             return 0;
     }
     return 1;
