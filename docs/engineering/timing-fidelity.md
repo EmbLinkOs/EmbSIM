@@ -173,8 +173,10 @@ core's state totals them.
 
 **Assumed:**
 - The TRM gives the entry as a maximum, and the model charges that maximum.
-- The STM32F103's Cortex-M3 is charged the M4 TRM's figures. The M3 TRM has
-  not yet been checked against them.
+- The STM32F103's Cortex-M3: its own TRM (ARM DDI 0337E, r1p1) gives the
+  same entry (12 cycles, §5.5 Figure 5-2) and tail-chain (6, §5.6 Figure
+  5-3). It gives no return figure, so the return's 12 cycles are the M4
+  TRM's, applied to the M3.
 
 **Not charged** (no figure in DDI 0439B; each is listed in the MCUs'
 fidelity):
