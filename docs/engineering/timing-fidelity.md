@@ -144,3 +144,44 @@ Per target today and the level each step aims for:
 ## 4. Validated, assumed, unsupported
 
 Filled in as the steps land. Nothing is validated by this document alone.
+
+### 4.1 Cortex-M exception timing (step 2, ARMv7-M)
+
+`core/mcu/cortexm/cortexm.c` charges ARM DDI 0439B 3.9.1's figures at zero
+wait states on ARMv7-M (the STM32F446, the STM32F103's M3, the nRF52840):
+
+| Sequence | Cycles | Boundary |
+|---|---|---|
+| Entry | 12 | from the end of the instruction after which the exception is taken, to the start of the handler's first instruction |
+| Return | 12 | from the end of the EXC_RETURN instruction (`bx lr`, `pop {.., pc}`, charged 1: its refill is the return's) to the start of the instruction returned to |
+| Tail-chain | 6 | from the end of one handler's EXC_RETURN instruction to the start of the next handler's first instruction, in place of the return and the entry |
+| Late arrival | 12, unchanged | an interrupt that becomes pending 1 to 12 cycles into a frame's stacking and outranks the one being entered takes the frame; the other then tail-chains |
+
+**Validated** by `tests/unit/test_cm_timing.c`, which runs hand-assembled
+code one instruction at a time and checks each count against the machine's
+cycles:
+- an entry (12), a tail-chain (6) and a return (12), each with the cost
+  table's charge for the instruction in between subtracted, as stated in
+  the test;
+- SysTick firing at each cycle of IRQ0's stacking. At 1 to 12 cycles in, its
+  handler runs first, 12 cycles after IRQ0 pended, and IRQ0 tail-chains in
+  6 after it. From cycle 13, IRQ0's handler has started and SysTick
+  preempts it.
+
+DWT.CYCCNT counts these cycles, as on the part, and `exc_cycles` in the
+core's state totals them.
+
+**Assumed:**
+- The TRM gives the entry as a maximum, and the model charges that maximum.
+- The STM32F103's Cortex-M3 is charged the M4 TRM's figures. The M3 TRM has
+  not yet been checked against them.
+
+**Not charged** (no figure in DDI 0439B; each is listed in the MCUs'
+fidelity):
+- the extended frame's 17 extra words when the FP context is stacked;
+- lazy stacking's later write;
+- flash wait states on the stacking and the vector fetch;
+- an interrupt arriving during unstacking (the core takes it after the
+  return, with a full entry, where the hardware abandons the unstacking);
+- ARMv6-M (the RP2040's M0+) entirely: its TRM's figures are not yet in
+  the sources.

@@ -324,14 +324,16 @@
       ]
     },
     "timed": {
-      "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact; peripherals count the cycles of their bus clock exactly from the clock tree (ADR-019).",
+      "claims": "Instruction timing is estimated from EmbCC's per-class cost table with the taken-branch refill (ADR-015), not cycle-exact; peripherals count the cycles of their bus clock exactly from the clock tree (ADR-019). Exception entry (12 cycles), return (12), tail-chaining (6) and late arrival are timed as the Cortex-M4 TRM (ARM DDI 0439B 3.9.1) gives them at zero wait states; the Cortex-M3 TRM's own figures are not yet checked against them.",
       "omissions": [
         "flash wait states",
         "bus arbitration",
-        "pipeline effects beyond branch refill"
+        "pipeline effects beyond branch refill",
+        "the extended (FP) frame's and lazy stacking's cycles",
+        "an interrupt during unstacking (taken after the return)"
       ],
       "validation": [
-        "repo:tests/firmware/bluepill-golden/deltas.json"
+        "repo:tests/firmware/bluepill-golden/deltas.json", "repo:tests/unit/test_cm_timing.c"
       ]
     },
     "electrical": {

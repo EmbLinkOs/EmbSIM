@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Timing: Cortex-M exception entry, return, tail-chaining and late arrival
+
+- `docs/engineering/timing-fidelity.md`: an audit of the simulator's timing
+  against what an RTOS context-switch measurement needs, the accuracy levels
+  (functional, estimated, cycle-exact for a stated scope, electrical), each
+  target's level, and the plan.
+- On ARMv7-M, exceptions now take the Cortex-M4 TRM's cycles (ARM DDI 0439B
+  3.9.1, zero wait states): 12 to enter, 12 to return, 6 to tail-chain. A
+  higher priority interrupt arriving while a frame is stacked takes it (late
+  arrival). Before this, exceptions cost nothing, and a PendSV context
+  switch read about 24 cycles short. `tests/unit/test_cm_timing.c` times
+  each case.
+
 ### Front panels opened from their parts, docked or floating
 
 - An instrument with a front panel of its own (the DS1054Z, the PPK2, the

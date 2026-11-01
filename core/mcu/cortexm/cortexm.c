@@ -377,6 +377,33 @@ static int derived_fault(struct esk_cm_state *cs, int prio)
     return EXC_HARD;
 }
 
+/* Exception timing on ARMv7-M at zero wait states, from the Cortex-M4 TRM
+ * (ARM DDI 0439B 3.9.1): at most 12 cycles from an interrupt to the first
+ * instruction of its handler, 12 for a return, 6 for a tail-chain (no
+ * unstacking and stacking, only the next handler's fetch). A higher
+ * priority interrupt that arrives while a frame is being stacked takes
+ * that frame (late arrival). Not charged, for want of a documented figure:
+ * the extended frame's 17 extra words when FP state is stacked, lazy
+ * stacking's later write, flash wait states on the stacking and vector
+ * fetch, an interrupt during unstacking (it is taken after the return),
+ * and ARMv6-M's latency (its TRM is not yet in the sources). */
+static int pending_to_take(struct esk_cm_state *cs);
+
+#define CM_ENTRY_CYCLES 12u
+#define CM_RETURN_CYCLES 12u
+#define CM_TAIL_CYCLES 6u
+
+static void charge_exc(struct esk_cm_state *cs, u32 v7m_cycles)
+{
+    struct esk_mach *s = cs->sim;
+    if (cs->model->arch != ARCH_V7M)
+        return;
+    s->cycles += v7m_cycles;
+    cs->exc_cycles += v7m_cycles;
+    if (s->counting)
+        esk_mach_advance(s, v7m_cycles);
+}
+
 /* ExceptionEntry: push the frame onto the stack in use, with the
  * interrupted code's privilege, and go to the handler. `ret` is the
  * address the frame returns to. With an active floating-point context the
@@ -385,8 +412,21 @@ static int derived_fault(struct esk_cm_state *cs, int prio)
  * (lazy state preservation, FPCCR.LSPACT). A fault while stacking takes
  * its derived exception instead, from the frame as far as it was written;
  * the exception being entered stays pending if it was asynchronous. */
-static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
+static void exc_enter(struct esk_cm_state *cs, int n, u32 ret, int charge)
 {
+    if (charge) {
+        /* the stacking's cycles: an interrupt that becomes pending in them
+         * and outranks n takes the frame, n staying pending (SVC pends) */
+        charge_exc(cs, CM_ENTRY_CYCLES);
+        if (cs->model->arch == ARCH_V7M) {
+            int m = pending_to_take(cs);
+            if (m && m != n && group_prio(cs, m) < group_prio(cs, n)) {
+                if (n == EXC_SVC)
+                    esk_cm_set_pend(cs, EXC_SVC);
+                n = m;
+            }
+        }
+    }
     int fp_frame = cs->model->fpu && (cs->control & 4);
     int lazy = fp_frame && (cs->fpccr & 0x40000000u);
     int was_thread = cs->ipsr == 0, was_priv = esk_cm_privileged(cs);
@@ -465,6 +505,11 @@ static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
         return;
     }
     exc_taken(cs, n, lr);
+}
+
+static void exc_entry(struct esk_cm_state *cs, int n, u32 ret)
+{
+    exc_enter(cs, n, ret, 1);
 }
 
 /* A synchronous fault, or SVC: taken at once, escalated to HardFault when
@@ -576,6 +621,7 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
             esk_cm_use_psp(cs, psp_was);
         cs->control = control;
         cs->other_sp = other;
+        charge_exc(cs, CM_RETURN_CYCLES);
         exc_taken(cs, d, ret);
         return;
     }
@@ -603,8 +649,12 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
     cs->ipsr = to_thread ? 0 : (x & 0x1ff);
     cs->excl_valid = 0;
     cs->pc = ra & ~1u;
-    if (to_thread && (cs->scr & SCR_SLEEPONEXIT))
+    if (to_thread && (cs->scr & SCR_SLEEPONEXIT)) {
+        charge_exc(cs, CM_RETURN_CYCLES);
         sleep_now(cs, 0);
+        return;
+    }
+    cs->tail_window = 1;
 }
 
 /* ---- semihosting ------------------------------------------------------ */
@@ -751,6 +801,19 @@ static void step(struct esk_cpu *c)
         if (s->counting)
             esk_mach_advance(s, n);
         return;
+    }
+    if (cs->tail_window) {
+        /* the instruction after an exception return: an exception that can
+         * be taken now tail-chains, in place of the return's cycles and the
+         * next entry's */
+        int n = pending_to_take(cs);
+        cs->tail_window = 0;
+        if (n) {
+            charge_exc(cs, CM_TAIL_CYCLES);
+            exc_enter(cs, n, cs->pc, 0);
+            return;
+        }
+        charge_exc(cs, CM_RETURN_CYCLES);
     }
     if (cs->npend) {
         int n = pending_to_take(cs);

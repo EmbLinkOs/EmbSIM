@@ -140,6 +140,11 @@ struct esk_cm_state {
     /* the cycles an instruction takes beyond its cost (a ROM host
      * function's), charged when it completes */
     u32 extra_cycles;
+    /* an exception return's cycles, charged at the next step unless an
+     * exception tail-chains in their place (ARM DDI 0439B 3.9.1) */
+    int tail_window;
+    /* cycles spent in exception entry, return and tail-chaining */
+    u64 exc_cycles;
 };
 
 

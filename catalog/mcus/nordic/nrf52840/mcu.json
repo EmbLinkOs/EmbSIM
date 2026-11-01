@@ -280,13 +280,15 @@
       ]
     },
     "timed": {
-      "claims": "Instruction timing estimated from EmbCC's Cortex-M4 cost table (ADR-015); the core at 64 MHz; TIMERs at 16 MHz / 2^PRESCALER and RTCs at 32.768 kHz exactly against it.",
+      "claims": "Instruction timing estimated from EmbCC's Cortex-M4 cost table (ADR-015); the core at 64 MHz; TIMERs at 16 MHz / 2^PRESCALER and RTCs at 32.768 kHz exactly against it. Exception entry (12 cycles), return (12), tail-chaining (6) and late arrival are timed as the Cortex-M4 TRM (ARM DDI 0439B 3.9.1) gives them at zero wait states.",
       "omissions": [
         "flash wait states and the instruction cache",
-        "the HFXO's power-up time"
+        "the HFXO's power-up time",
+        "the extended (FP) frame's and lazy stacking's cycles",
+        "an interrupt during unstacking (taken after the return)"
       ],
       "validation": [
-        "repo:tests/unit/test_nrf52.c"
+        "repo:tests/unit/test_nrf52.c", "repo:tests/unit/test_cm_timing.c"
       ]
     },
     "electrical": {
