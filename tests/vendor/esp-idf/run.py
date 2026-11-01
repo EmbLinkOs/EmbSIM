@@ -55,6 +55,7 @@ EXAMPLES = {
     "hello_world": "examples/get-started/hello_world",
     "http_request": "examples/protocols/http_request",
     "i2c_eeprom": "examples/peripherals/i2c/i2c_eeprom",
+    "i2s_std": "examples/peripherals/i2s/i2s_basic/i2s_std",
     "ledc_basic": "examples/peripherals/ledc/ledc_basic",
     "real_time_stats": "examples/system/freertos/real_time_stats",
     "sdm_led": "examples/peripherals/sigma_delta/sdm_led",

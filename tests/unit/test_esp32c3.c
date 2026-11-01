@@ -3008,6 +3008,44 @@ static void test_twai_frame(void)
     c3_close(&f);
 }
 
+#define I2S 0x6002D000u
+
+/* I2S's transmitter as a master: XTAL_CLK / 4 / 4 is BCK at 2.5 MHz, 8
+ * CPU cycles at XTAL_CLK / 2; two slots of 8 bits, WS low for the first
+ * (WS_IDLE_POL 0, WS width 8): WS on GPIO8 toggles every 64 cycles. With no
+ * GDMA list the samples are zeros and TX_HUNG is raised. */
+static void test_i2s_frame(void)
+{
+    c3 f;
+    int i;
+    if (!gpio_open(&f))
+        return;
+    f.m.host.pin_cfg = h_edges;
+    edge_m = &f.m;
+    edge_pin = 8;
+    wr(&f, SYSTEM + 0x10u, rd(&f, SYSTEM + 0x10u) | 1u << 21); /* PERIP_CLK_EN0's I2S0 */
+    wr(&f, SYSTEM + 0x18u, rd(&f, SYSTEM + 0x18u) & ~(1u << 21));
+    wr(&f, GPIO + 0x574u, 14u); /* GPIO8 out: I2SO_WS */
+    wr(&f, G_EN_W1TS, 1u << 8);
+    wr(&f, I2S + 0x34u, 1u << 26 | 0u << 27 | 4u);              /* TX_CLKM_CONF: active, XTAL, N 4 */
+    wr(&f, I2S + 0x3Cu, 0u);                                     /* no fraction */
+    wr(&f, I2S + 0x2Cu, 1u << 29 | 7u << 24 | 7u << 13 | 3u << 7 | 7u); /* shift, 8-bit slots and data, BCK /4, WS 8 */
+    wr(&f, I2S + 0x54u, 1u << 16 | 3u);                          /* two slots, both enabled */
+    wr(&f, I2S + 0x14u, 8u);                                     /* INT_ENA: TX_HUNG */
+    nedge = 0;
+    wr(&f, I2S + 0x24u, 1u << 19 | 1u << 2); /* TDM, start */
+    esk_mach_idle(&f.m, 64u * 12u);
+    CHECK(nedge >= 10);
+    for (i = 2; i < 10; i++)
+        CHECK_EQ(edge_t[i] - edge_t[i - 1], 64u);
+    CHECK_EQ(edge_lv[1], !edge_lv[2]);
+    CHECK(rd(&f, I2S + 0x0Cu) & 8u); /* TX_HUNG */
+    /* stopped: WS back at its idle level */
+    wr(&f, I2S + 0x24u, 1u << 19);
+    CHECK_EQ(pins_out[8].drive, 0);
+    c3_close(&f);
+}
+
 #define I2C 0x60013000u
 #define I2C_SCL_LOW (I2C + 0x00u)
 #define I2C_CTR (I2C + 0x04u)
@@ -3802,6 +3840,7 @@ RUN(test_ledc_pwm);
 RUN(test_ledc_dither_and_fade);
 RUN(test_sdm_density);
 RUN(test_twai_frame);
+RUN(test_i2s_frame);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);

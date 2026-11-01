@@ -34,6 +34,7 @@
  *             fading
  *   sdm.c     the sigma-delta modulation's four pulse-density channels
  *   twai.c    the TWAI (CAN 2.0) controller, SJA1000-compatible, bit by bit
+ *   i2s.c     the I2S controller as a master in TDM and standard formats
  *   i2c.c     the I2C controller, master and slave, on the pins
  *   gdma.c    the GDMA controller: three transmit and three receive
  *             channels on descriptor lists
@@ -150,6 +151,8 @@ extern const struct esk_dev_ops esk_esp32c3_sdm_ops;
 void *esk_esp32c3_sdm_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_twai_ops;
 void *esk_esp32c3_twai_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_i2s_ops;
+void *esk_esp32c3_i2s_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_i2c_ops;
 void *esk_esp32c3_i2c_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_gdma_ops;

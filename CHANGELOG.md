@@ -5,6 +5,23 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's I2S
+
+- I2S0 (`esp32c3-i2s`, TRM v1.4 chapter 28) as a master in TDM and the
+  standard formats: BCK, WS and the data on their matrix signals, the
+  fractional MCLK divider and the BCK divider, slot and data widths, WS by
+  its idle polarity and width, MSB shift, alignment, bit order, endianness,
+  the channel enables, mono, the GDMA both ways, and the receiver on the
+  transmitter's clock (SIG_LOOPBACK, ESP-IDF's duplex mode).
+- ESP-IDF v5.4's `i2s_std` runs unmodified in its duplex mode: the buffer
+  it writes comes back through the shared data pin as its README shows
+  (`12 34 56 78 9a bc de f0`), BCLK at 1.024 MHz and WS at 16 kHz.
+  `test_i2s_frame` checks WS's frame from the dividers and TX_HUNG.
+- Fixed: SYSTEM's PERIP_CLK_EN0 gave I2S0 bit 4; it is bit 21 (ESP-IDF's
+  SYSTEM_I2S0_CLK_EN), so I2S stayed unclocked and read 0.
+- Not yet: slave mode, PDM transmission, the MCLK output, the FIFO's
+  depth and hung timeout. The ESP32-C3 has 29 of 35 peripherals modelled.
+
 ### The ESP32-C3's TWAI (CAN 2.0)
 
 - TWAI0 (`esp32c3-twai`, TRM v1.4 chapter 22): an SJA1000-compatible

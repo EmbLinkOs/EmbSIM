@@ -5,6 +5,17 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The ESP32-C3's I2S (2026-11-01)
+
+I2S0 is modelled (`esp32c3-i2s`) as a master in TDM and the standard
+formats, through the GDMA both ways. ESP-IDF v5.4's `i2s_std` runs
+unmodified in duplex mode: what it writes comes back through the shared
+data pin, with BCLK at 1.024 MHz and WS at 16 kHz. I2S0's clock enable was
+on the wrong bit of PERIP_CLK_EN0 (4, not 21) and is fixed. Not yet: slave
+mode, PDM transmission, the MCLK output. 29 of 35 peripherals are modelled;
+UHCI0/1, HMAC, the digital signature, XTS_AES and the permission control
+remain.
+
 ## The ESP32-C3's TWAI (2026-11-01)
 
 TWAI0 is modelled (`esp32c3-twai`): an SJA1000-compatible CAN 2.0

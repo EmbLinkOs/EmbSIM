@@ -80,6 +80,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "esp32c3-ledc", &esk_esp32c3_ledc_ops, esk_esp32c3_ledc_create },
     { "esp32c3-sdm", &esk_esp32c3_sdm_ops, esk_esp32c3_sdm_create },
     { "esp32c3-twai", &esk_esp32c3_twai_ops, esk_esp32c3_twai_create },
+    { "esp32c3-i2s", &esk_esp32c3_i2s_ops, esk_esp32c3_i2s_create },
     { "esp32c3-i2c", &esk_esp32c3_i2c_ops, esk_esp32c3_i2c_create },
     { "esp32c3-gdma", &esk_esp32c3_gdma_ops, esk_esp32c3_gdma_create },
     { "esp32c3-spi2", &esk_esp32c3_spi2_ops, esk_esp32c3_spi2_create },

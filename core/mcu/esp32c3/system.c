@@ -35,7 +35,7 @@ struct gate {
 static const struct gate gates[] = {
     { "UART0", "PERIP_CLK_EN0", 2 },         { "UART1", "PERIP_CLK_EN0", 5 },
     { "SPI0", "PERIP_CLK_EN0", 1 },          { "SPI1", "PERIP_CLK_EN0", 1 },
-    { "I2S0", "PERIP_CLK_EN0", 4 },          { "SPI2", "PERIP_CLK_EN0", 6 },
+    { "I2S0", "PERIP_CLK_EN0", 21 },         { "SPI2", "PERIP_CLK_EN0", 6 },
     { "I2C0", "PERIP_CLK_EN0", 7 },          { "UHCI0", "PERIP_CLK_EN0", 8 },
     { "RMT", "PERIP_CLK_EN0", 9 },           { "LEDC", "PERIP_CLK_EN0", 11 },
     { "UHCI1", "PERIP_CLK_EN0", 12 },        { "TIMG0", "PERIP_CLK_EN0", 13 },
