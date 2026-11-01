@@ -48,6 +48,8 @@ headers:
 | Servo `Sweep` | SG90-class servo on D9 | The horn holding 90 deg until the library's first pulse (32.8 ms: a full Timer1 wrap), turning at the rated 625 deg/s at 5 V, then following the sweep 1 deg (10.3 us, past the 10 us dead band) every 15 ms |
 | Servo `Knob` | Potentiometer on A0, servo on D9 | The knob read and mapped to the horn (half: 2.500 V on the 511/512 boundary, 89 deg), the horn turning at its rated speed when the knob moves |
 | DHT-sensor-library `DHTtester` | DHT22 on D2 with a 10 kOhm pull-up | Every read decoded, temperature and humidity as set; the sensor sending its previous measurement and its element lagging a step from 23.4 to -5.3 C with its 10 s response time (23.4, 23.4, 20.6, 15.9 C) |
+| LedControl `LCDemo7Segment` | 8-digit 7-segment MAX7219 module, DIN on D12, CLK on D11, LOAD on D10 | Woken from shutdown at intensity 8; "Arduino" spelled on DIG0 from the library's character table and raw rows (a, r, d, u, i, n, o: the r as segments E and G, `05`), then the hex digits scrolling across DIG3 to DIG0 (0123 to CdEF as lowercase b, c, d), cleared, and the loop again at 5.5 s |
+| arduino-examples `toneMelody` (the IDE's 02.Digital) | Passive piezo buzzer on D8 in place of the sketch's speaker | Each note at the frequency Timer2 can make from it (C4 262.6 Hz, G3 196.5 Hz, A3 220.1 Hz, B3 247.0 Hz: F_CPU / (2 · prescaler · (OCR2A + 1))), for its duration, the rest silent, silent in the 30 % gap after each note and after the melody |
 
 The core is LGPL-2.1 and is not vendored here; `run.py` takes a checkout of
 it:

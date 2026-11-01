@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Parts: the MAX7219 and the passive buzzer verified by their examples
+
+- LedControl's `LCDemo7Segment` runs unmodified on the Uno against the
+  MAX7219 8-digit module and passes 27 assertions: woken from shutdown,
+  "Arduino" spelled from the library's character table and raw rows, the
+  hex digits scrolling, the loop repeating. The model gains the decimal
+  points, the code-B font per digit, the patterns the library sends ("r",
+  "u", "i", "n", "o" and others), each digit's lit segments as an output,
+  and DOUT on CLK's falling edge (datasheet Figure 1).
+- The IDE's `toneMelody` plays on a passive buzzer: each note at the
+  frequency Timer2 can make from it, for its length, silent between notes.
+  A passive buzzer now falls silent two periods after its drive stops,
+  instead of 50 ms later; below 20 Hz the edges are clicks, not a tone.
+- The Arduino harness finds the IDE's built-in examples (arduino-examples,
+  CC0) under their category folders.
+
 ### Workbench: Visual Benchmark v0.1, settings, English and French
 
 - A two-row header: navigation (project, the four perspectives, diagnostics,

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "raw-segments",
+  "description": "No-decode mode, scan all, normal operation: DIG0 = 0x85 (the segments E, G and the decimal point: 'r.'), DIG7 = 0x77 ('A'), intensity 8. The text reads 'A      r.', the segments 77 00 00 00 00 00 00 85 (datasheet Table 6's bit order).",
+  "policy": "functional",
+  "until": "224us",
+  "circuit": {
+    "components": [
+      {
+        "id": "PG",
+        "component": "emblink/pattern_generator",
+        "params": {
+          "pattern": "4,0,0,2,0,2,0,2,0,2,1,3,0,2,0,2,1,3,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,4,0,0,2,0,2,0,2,0,2,1,3,0,2,1,3,1,3,0,2,0,2,0,2,0,2,0,2,1,3,1,3,1,3,0,4,0,0,2,0,2,0,2,0,2,1,3,1,3,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,2,0,2,1,3,0,4,0,0,2,0,2,0,2,0,2,0,2,0,2,0,2,1,3,1,3,0,2,0,2,0,2,0,2,1,3,0,2,1,3,0,4,0,0,2,0,2,0,2,0,2,1,3,0,2,0,2,0,2,0,2,1,3,1,3,1,3,0,2,1,3,1,3,1,3,0,4,0,0,2,0,2,0,2,0,2,1,3,0,2,1,3,0,2,0,2,0,2,0,2,0,2,1,3,0,2,0,2,0,2,0,4,0,4,4",
+          "period": "1u"
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/max7219_display"
+      }
+    ],
+    "nets": {
+      "DIN": [
+        "PG.OUT0",
+        "DUT.DIN"
+      ],
+      "CLK": [
+        "PG.OUT1",
+        "DUT.CLK"
+      ],
+      "CS": [
+        "PG.OUT2",
+        "DUT.CS"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.text": {
+      "by": "219us",
+      "equals": "A      r."
+    },
+    "output:DUT.segments": {
+      "by": "219us",
+      "equals": "77 00 00 00 00 00 00 85"
+    },
+    "output:DUT.intensity": {
+      "by": "219us",
+      "equals": 8
+    }
+  }
+}

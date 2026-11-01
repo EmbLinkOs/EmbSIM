@@ -5,7 +5,7 @@
   "version": "1.1.0",
   "name": "MAX7219 8-digit display",
   "category": "displays",
-  "description": "An 8-digit 7-segment display module driven by a MAX7219: 16-bit frames shifted on CLK rising (MSB first) and latched when CS rises set the digits, the code-B decode mode, intensity, scan limit and shutdown. The display shows on the board view.",
+  "description": "An 8-digit 7-segment display module driven by a MAX7219: 16-bit frames shifted in on CLK's rising edge (MSB first) and latched when LOAD (CS) rises set the digits, the code-B decode mode, intensity, scan limit, shutdown and display test; DOUT shifts each bit out on CLK's falling edge, 16 clocks later, for a chained device. The display shows on the board view.",
   "keywords": [
     "display",
     "MAX7219",
@@ -81,7 +81,12 @@
     {
       "name": "text",
       "type": "string",
-      "doc": "The eight digits, left to right"
+      "doc": "The eight digits, DIG7 (left) to DIG0 (right), as a person reads them: '.' after a digit whose decimal point is lit, '?' for a lit pattern that is no character"
+    },
+    {
+      "name": "segments",
+      "type": "string",
+      "doc": "Each digit's lit segments, DIG7 to DIG0, as hex bytes (bit 7 DP, bit 6 A ... bit 0 G; datasheet Table 6)"
     },
     {
       "name": "on",
@@ -92,6 +97,13 @@
       "type": "integer",
       "min": 0,
       "max": 15
+    },
+    {
+      "name": "scan_limit",
+      "type": "integer",
+      "min": 0,
+      "max": 7,
+      "doc": "The scan-limit register: the digits shown are DIG0 to this one"
     }
   ],
   "model": {
@@ -114,7 +126,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "The MAX7219 register map: digits, decode mode, intensity, scan limit, shutdown and display test; DOUT shifts the frame out 16 clocks later.",
+      "claims": "The MAX7219 register map: digits with their decimal points, the code-B font (Table 5) per digit, intensity, scan limit, shutdown (power-up state) and display test; each digit's lit segments as an output; DOUT presenting bit 15 on CLK's falling edge.",
       "omissions": [
         "the segment and digit driver pins (the display is part of the module)",
         "multiplexing and brightness",

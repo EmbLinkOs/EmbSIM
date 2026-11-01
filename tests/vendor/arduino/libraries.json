@@ -167,6 +167,20 @@
       "commit": "be5e3d251b0aa6c1279edf76ab985825de4ebfd9",
       "version": "0.7.5",
       "license": "MIT"
+    },
+    {
+      "name": "LedControl",
+      "repo": "https://github.com/wayoda/LedControl",
+      "commit": "f86a18493e9594d7b7198bf894f529a1c79d5802",
+      "version": "1.0.6",
+      "license": "MIT"
+    },
+    {
+      "name": "arduino-examples",
+      "repo": "https://github.com/arduino/arduino-examples",
+      "commit": "50b66a3ce1e4e5e69cd96d3af5ca41a3383b311a",
+      "version": "built-in examples",
+      "license": "CC0-1.0"
     }
   ]
 }

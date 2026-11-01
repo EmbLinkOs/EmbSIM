@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "name": "Buzzer",
   "category": "indicators",
-  "description": "Piezo buzzer: an active one sounds while + is high and - low; a passive one sounds at the frequency of the square wave on + (tone_hz), silent 50 ms after the last edge.",
+  "description": "Piezo buzzer: an active one sounds while + is high and - low; a passive one sounds at the frequency of the square wave on + (tone_hz, from the period between rising edges), silent once two periods pass without an edge; below 20 Hz the edges are clicks, not a tone.",
   "keywords": [
     "buzzer",
     "piezo",
@@ -84,7 +84,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Sounding and tone from the logic levels on its pins.",
+      "claims": "Sounding and tone from the logic levels on its pins: a passive buzzer's tone is the drive's frequency from one period to the next, and it falls silent two periods after the drive stops.",
       "omissions": [
         "sound pressure",
         "resonance",

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "toneMelody",
+  "until": "3s",
+  "inputs": [],
+  "assertions": [
+    {
+      "id": "note0",
+      "at": "125ms",
+      "probe": "hz",
+      "expect": {
+        "equals": 262.605,
+        "tolerance": 0.05
+      }
+    },
+    {
+      "id": "note1",
+      "at": "387.5ms",
+      "probe": "hz",
+      "expect": {
+        "equals": 196.54,
+        "tolerance": 0.05
+      }
+    },
+    {
+      "id": "note2",
+      "at": "550ms",
+      "probe": "hz",
+      "expect": {
+        "equals": 196.54,
+        "tolerance": 0.05
+      }
+    },
+    {
+      "id": "note3",
+      "at": "775ms",
+      "probe": "hz",
+      "expect": {
+        "equals": 220.07,
+        "tolerance": 0.05
+      }
+    },
+    {
+      "id": "note4",
+      "at": "1100ms",
+      "probe": "hz",
+      "expect": {
+        "equals": 196.54,
+        "tolerance": 0.05
+      }
+    },
+    {
+      "id": "rest5",
+      "at": "1425ms",
+      "probe": "sounding",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "note6",
+      "at": "1750ms",
+      "probe": "hz",
+      "expect": {
+        "equals": 247.04,
+        "tolerance": 0.05
+      }
+    },
+    {
+      "id": "note7",
+      "at": "2075ms",
+      "probe": "hz",
+      "expect": {
+        "equals": 262.605,
+        "tolerance": 0.05
+      }
+    },
+    {
+      "id": "gap-after-note0",
+      "at": "300ms",
+      "probe": "sounding",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "gap-after-note1",
+      "at": "475ms",
+      "probe": "sounding",
+      "expect": {
+        "equals": false
+      }
+    },
+    {
+      "id": "melody-over",
+      "at": "2500ms",
+      "probe": "sounding",
+      "expect": {
+        "equals": false
+      }
+    }
+  ]
+}
