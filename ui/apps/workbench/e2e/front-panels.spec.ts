@@ -35,7 +35,7 @@ test('a front panel opens from its part, floats over the perspectives and docks 
   await expect(open).toBeVisible();
 
   await open.click();
-  await expect(page.getByRole('main', { name: 'run perspective' })).toBeVisible();
+  await expect(page.getByRole('main', { name: 'Run perspective' })).toBeVisible();
   const docked = page.getByRole('region', { name: /^U\d+ oscilloscope$/ });
   await expect(docked).toBeVisible();
   await expect(docked.getByRole('group', { name: / front panel$/ })).toBeVisible();
@@ -51,7 +51,7 @@ test('a front panel opens from its part, floats over the perspectives and docks 
 
   // it stays over the Design perspective, and its title bar moves it from the keyboard
   await page.getByRole('radio', { name: 'Design', exact: true }).click();
-  await expect(page.getByRole('main', { name: 'design perspective' })).toBeVisible();
+  await expect(page.getByRole('main', { name: 'Design perspective' })).toBeVisible();
   await expect(win).toBeVisible();
   const bar = win.getByLabel(/arrow keys move the window/);
   const before = (await win.boundingBox())!;
@@ -66,7 +66,7 @@ test('a front panel opens from its part, floats over the perspectives and docks 
 
   // Open front panel on a floating part brings its window forward, without leaving Design
   await open.click();
-  await expect(page.getByRole('main', { name: 'design perspective' })).toBeVisible();
+  await expect(page.getByRole('main', { name: 'Design perspective' })).toBeVisible();
 
   // dock it back into Run
   await win.getByRole('button', { name: /^Dock .* in Run$/ }).click();
@@ -87,7 +87,7 @@ test('the schematic part\'s context menu opens its front panel', async ({ page }
   const menu = page.getByRole('menu', { name: 'Schematic actions' });
   await expect(menu).toBeVisible();
   await menu.getByRole('menuitem', { name: 'Open front panel' }).click();
-  await expect(page.getByRole('main', { name: 'run perspective' })).toBeVisible();
+  await expect(page.getByRole('main', { name: 'Run perspective' })).toBeVisible();
   await expect(page.getByRole('region', { name: /^U\d+ oscilloscope$/ })).toBeVisible();
 });
 
@@ -106,7 +106,7 @@ for (const scheme of ['light', 'dark'] as const)
       await page.getByRole('combobox').fill(place);
       await page.keyboard.press('Enter');
       await page.getByRole('button', { name: 'Open front panel' }).click();
-      await expect(page.getByRole('main', { name: 'run perspective' })).toBeVisible();
+      await expect(page.getByRole('main', { name: 'Run perspective' })).toBeVisible();
       await expect(page.getByRole('region', { name: region })).toBeVisible();
       expect(await axeViolations(page, cls)).toEqual([]);
       await page.getByRole('button', { name: /^Float .* in its own window$/ }).click();

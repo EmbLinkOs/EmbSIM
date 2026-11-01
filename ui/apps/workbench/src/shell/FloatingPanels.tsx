@@ -102,8 +102,9 @@ function FloatingWindow({ part, z, title, size, content }: { part: string; z: nu
       style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height, zIndex: 40 + z }}
       onPointerDownCapture={() => raise(part)}
     >
-      <header
+      <div
         className="wb-floating__bar"
+        role="group"
         tabIndex={0}
         aria-label={`${title}: arrow keys move the window, Shift+arrow keys resize it`}
         onPointerDown={drag('move')}
@@ -111,7 +112,7 @@ function FloatingWindow({ part, z, title, size, content }: { part: string; z: nu
       >
         <span className="wb-floating__title">{title}</span>
         <IconButton size="sm" variant="ghost" label={`Dock ${title} in Run`} onClick={() => dock(part)}><PanelBottomClose /></IconButton>
-      </header>
+      </div>
       <div className="wb-floating__body">{content}</div>
       <div className="wb-floating__grip" aria-hidden="true" onPointerDown={drag('size')} />
     </div>

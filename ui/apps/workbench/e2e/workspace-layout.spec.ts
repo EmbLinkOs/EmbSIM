@@ -27,12 +27,12 @@ test('global navigation and simulation controls stay reachable with a long proje
       const target = page.getByRole('radio', { name, exact: true });
       await insideWindow(page, target);
       await target.click();
-      await expect(page.getByRole('main', { name: `${name.toLowerCase()} perspective`, exact: true })).toBeVisible();
+      await expect(page.getByRole('main', { name: `${name} perspective`, exact: true })).toBeVisible();
     }
     await insideWindow(page, page.getByRole('button', { name: 'Run', exact: true }));
     await insideWindow(page, page.getByRole('combobox', { name: 'Fidelity policy', exact: true }));
     await insideWindow(page, page.getByRole('button', { name: 'Open command palette', exact: true }));
-    await insideWindow(page, page.getByRole('button', { name: /^Switch to .* theme$/ }));
+    await insideWindow(page, page.getByRole('button', { name: 'Settings', exact: true }));
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
   const status = page.getByRole('contentinfo', { name: 'Status', exact: true });

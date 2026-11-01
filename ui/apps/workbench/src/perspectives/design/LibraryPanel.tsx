@@ -96,10 +96,10 @@ function LibraryItem({ item, entry, policy, selected, onPreview, onPlace }: { it
   return (
     <li className={cx('wb-library__item', selected && 'wb-library__item--selected')} draggable={!item.broken && item.fidelity_tiers.includes(policy)} onDragStart={(e) => { e.dataTransfer.setData('text/x-embsim-component', item.id); e.dataTransfer.effectAllowed = 'copy'; }}>
       <button type="button" className="wb-library__part" aria-label={`Preview ${item.name}`} aria-pressed={selected} onClick={onPreview} title={entry?.description.description ?? item.name}>
-        <span className="wb-library__thumb">{entry && <SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={entry.description.symbol} size={40} />}</span>
+        <span className="wb-library__thumb">{entry && <SymbolThumbnail svg={entry.files.symbol ?? ''} symbol={entry.description.symbol} size={30} />}</span>
         <span className="wb-library__identity"><strong className="wb-library__name">{item.name}</strong><span className="wb-library__subtitle">{entry?.description.part ? `${entry.description.part.manufacturer} · ${entry.description.part.package}` : categoryName(item.category)}</span><span className="wb-library__meta"><FidelityBadges tiers={item.fidelity_tiers} />{item.broken ? <span className="es-badge es-badge--danger">broken</span> : entry?.description.inputs?.length ? <span className="wb-library__interactive">Interactive</span> : null}</span></span>
       </button>
-      <Button size="sm" variant="ghost" icon={<Plus />} aria-label={`Place ${item.name}`} disabled={unavailable || item.broken || !item.fidelity_tiers.includes(policy)} title={item.fidelity_tiers.includes(policy) ? `Place in ${policy} circuit` : `No ${policy} model; preview for supported policies`} onClick={() => onPlace(item.id)}>Place</Button>
+      <Button size="sm" variant="ghost" icon={<Plus />} aria-label={`Place ${item.name}`} disabled={unavailable || item.broken || !item.fidelity_tiers.includes(policy)} title={item.fidelity_tiers.includes(policy) ? `Place in ${policy} circuit` : `No ${policy} model; preview for supported policies`} onClick={() => onPlace(item.id)}><span className="wb-library__place-label">Place</span></Button>
     </li>
   );
 }

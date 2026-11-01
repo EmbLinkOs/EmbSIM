@@ -36,6 +36,23 @@
   --info-muted: rgba(124, 188, 245, 0.16);
   --success: #5fe3b1;
 
+  /* simulation state (shown with an icon and a word, never colour alone) */
+  --state-running: #4cd38a;
+  --state-running-bg: rgba(76, 211, 138, 0.14);
+  --state-paused: #e9bd55;
+  --state-paused-bg: rgba(233, 189, 85, 0.14);
+  --state-stopped: #9aa5b8;
+  --state-stopped-bg: rgba(154, 165, 184, 0.12);
+  --state-loading: #7cbcf5;
+  --state-loading-bg: rgba(124, 188, 245, 0.14);
+  --state-failed: #f27d84;
+  --state-failed-bg: rgba(242, 125, 132, 0.16);
+
+  /* values: measured by the engine, edited by the user, unavailable */
+  --value-measured: #a9e7ff;
+  --value-editable-bg: #0b101a;
+  --value-unavailable: #6b7689;
+
   /* signal palette: low, high, floating (Z), contention (X), analog */
   --signal-low: #7591d8;
   --signal-high: #5fe3b1;
@@ -58,11 +75,13 @@
   /* typography */
   --font-ui: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-md: 13px;
-  --text-lg: 15px;
-  --text-xl: 18px;
+  /* the type scale follows the Settings page's text size (--ui-scale) */
+  --ui-scale: 1;
+  --text-xs: calc(11px * var(--ui-scale));
+  --text-sm: calc(12px * var(--ui-scale));
+  --text-md: calc(13px * var(--ui-scale));
+  --text-lg: calc(15px * var(--ui-scale));
+  --text-xl: calc(18px * var(--ui-scale));
   --leading: 1.45;
   --tracking-caps: 0.06em;
 
@@ -94,11 +113,14 @@
   --ease: cubic-bezier(0.2, 0, 0, 1);
 
   /* layout */
-  --control-height: 28px;
-  --control-height-sm: 24px;
-  --panel-header-height: 32px;
+  --control-height: calc(28px * var(--ui-scale));
+  --control-height-sm: calc(24px * var(--ui-scale));
+  --panel-header-height: calc(30px * var(--ui-scale));
   --toolbar-height: 44px;
-  --statusbar-height: 26px;
+  --statusbar-height: calc(26px * var(--ui-scale));
+  --row-height: calc(26px * var(--ui-scale));
+  --row-pad-y: 4px;
+  --gutter: 4px;
   --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--line-focus);
 
   color-scheme: dark;
@@ -129,6 +151,20 @@
   --info: #1f63b8;
   --info-muted: rgba(31, 99, 184, 0.12);
   --success: #0e8a66;
+
+  --state-running: #0f7a46;
+  --state-running-bg: rgba(15, 122, 70, 0.1);
+  --state-paused: #8a5a00;
+  --state-paused-bg: rgba(190, 130, 0, 0.13);
+  --state-stopped: #51606f;
+  --state-stopped-bg: rgba(81, 96, 111, 0.1);
+  --state-loading: #1f63b8;
+  --state-loading-bg: rgba(31, 99, 184, 0.1);
+  --state-failed: #c22f3a;
+  --state-failed-bg: rgba(194, 47, 58, 0.1);
+  --value-measured: #0b5c8a;
+  --value-editable-bg: #ffffff;
+  --value-unavailable: #7a8696;
 
   --signal-low: #3b5fc2;
   --signal-high: #0e8a66;
@@ -180,6 +216,19 @@
     --info: #1f63b8;
     --info-muted: rgba(31, 99, 184, 0.12);
     --success: #0e8a66;
+    --state-running: #0f7a46;
+    --state-running-bg: rgba(15, 122, 70, 0.1);
+    --state-paused: #8a5a00;
+    --state-paused-bg: rgba(190, 130, 0, 0.13);
+    --state-stopped: #51606f;
+    --state-stopped-bg: rgba(81, 96, 111, 0.1);
+    --state-loading: #1f63b8;
+    --state-loading-bg: rgba(31, 99, 184, 0.1);
+    --state-failed: #c22f3a;
+    --state-failed-bg: rgba(194, 47, 58, 0.1);
+    --value-measured: #0b5c8a;
+    --value-editable-bg: #ffffff;
+    --value-unavailable: #7a8696;
     --signal-low: #3b5fc2;
     --signal-high: #0e8a66;
     --signal-z: #946100;
@@ -200,6 +249,20 @@
     --elevation-3: 0 12px 32px rgba(20, 30, 50, 0.18), 0 2px 6px rgba(20, 30, 50, 0.12);
     color-scheme: light;
   }
+}
+
+/* text size and density (the Settings page) */
+:root[data-text-size='small'] { --ui-scale: 0.92; }
+:root[data-text-size='large'] { --ui-scale: 1.12; }
+:root[data-density='compact'] {
+  --control-height: calc(24px * var(--ui-scale));
+  --control-height-sm: calc(20px * var(--ui-scale));
+  --panel-header-height: calc(26px * var(--ui-scale));
+  --row-height: calc(22px * var(--ui-scale));
+  --row-pad-y: 2px;
+  --gutter: 3px;
+  --space-3: 10px;
+  --space-4: 13px;
 }
 
 @media (prefers-reduced-motion: reduce) {

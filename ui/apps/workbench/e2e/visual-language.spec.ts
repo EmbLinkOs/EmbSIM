@@ -19,7 +19,7 @@ test('colored selectable tracks, terminal sockets, semantic cursors and readable
   });
   await expect(line).toHaveCSS('stroke', selectedStroke);
   await page.getByRole('button', { name: 'Run', exact: true }).click();
-  await expect(page.getByTestId('clock')).toContainText('run');
+  await expect(page.getByTestId('sim-state')).toHaveAttribute('data-state', 'running');
   await expect.poll(() => line.evaluate((el) => getComputedStyle(el).stroke)).toBe(selectedStroke);
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   const pin = page.locator('[data-pin="R1.1"]');
