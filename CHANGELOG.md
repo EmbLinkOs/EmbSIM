@@ -28,6 +28,8 @@ versions follow semantic versioning. There is no release yet.
 - A 10-segment LED bar graph (`emblink/led_bargraph_10`): ten independent
   red LED junctions in the common 20-pin DIP pinout (Kingbright DC-10),
   verified by the IDE's `barGraph` with a potentiometer.
+- The IDE's `ReadAnalogVoltage` reads an LM35DZ at 25, 37.5 and 60 degC
+  and prints 0.25, 0.37 and 0.60 V.
 - The Arduino harness finds the IDE's built-in examples (arduino-examples,
   CC0) under their category folders.
 

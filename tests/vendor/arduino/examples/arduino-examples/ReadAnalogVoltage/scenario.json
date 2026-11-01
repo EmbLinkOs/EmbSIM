@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "ReadAnalogVoltage",
+  "until": "3s",
+  "description": "The LM35DZ's 10 mV/degC at 25, 37.5 and 60 degC: 0.250, 0.375 and 0.600 V read by the 10-bit ADC against the 5 V supply (51, 76 and 122) and printed as the sketch scales them (x 5/1023): 0.25, 0.37, 0.60.",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "U1",
+      "input": "temperature",
+      "value": 25
+    },
+    {
+      "at": "1s",
+      "target": "U1",
+      "input": "temperature",
+      "value": 37.5
+    },
+    {
+      "at": "2s",
+      "target": "U1",
+      "input": "temperature",
+      "value": 60
+    }
+  ],
+  "assertions": [
+    {
+      "id": "at-25",
+      "at": "900ms",
+      "probe": "console",
+      "expect": {
+        "contains": "0.25\r\n"
+      }
+    },
+    {
+      "id": "not-yet-37",
+      "at": "900ms",
+      "probe": "console",
+      "expect": {
+        "not_contains": "0.37"
+      }
+    },
+    {
+      "id": "at-37.5",
+      "at": "1900ms",
+      "probe": "console",
+      "expect": {
+        "contains": "0.37\r\n"
+      }
+    },
+    {
+      "id": "at-60",
+      "at": "2900ms",
+      "probe": "console",
+      "expect": {
+        "contains": "0.60\r\n"
+      }
+    }
+  ]
+}

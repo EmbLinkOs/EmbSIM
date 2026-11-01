@@ -5,9 +5,9 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
-## Parts: the MAX7219, the buzzer, the GL5528, the push button and a 10-segment bar graph (2026-11-01)
+## Parts: the MAX7219, the buzzer, the GL5528, the push button, a bar graph and the LM35DZ (2026-11-01)
 
-Five more of M6's most-used parts are verified by unmodified examples on
+Six more of M6's most-used parts are verified by unmodified examples on
 the Uno (tests/vendor/arduino): LedControl's `LCDemo7Segment` on the
 MAX7219 8-digit module (27 assertions: the text and each digit's lit
 segments) and the IDE's `toneMelody` on a passive buzzer (11: each note's
@@ -17,7 +17,8 @@ from the project's drawn parts, full on, off), and the IDE's `Debounce` and
 `StateChangeDetection` against a bouncing push button (7 and 8: seven edges
 for one press, yet one toggle or count each; a 20 ms tap ignored), and the
 IDE's `barGraph` on a new 10-segment bar graph of independent LED junctions
-in the DC-10 pinout (`emblink/led_bargraph_10`). The GL5528 now follows the
+in the DC-10 pinout (`emblink/led_bargraph_10`), and the IDE's
+`ReadAnalogVoltage` on an LM35DZ (0.25, 0.37, 0.60 V at 25, 37.5, 60 degC). The GL5528 now follows the
 GL55 datasheet: gamma 0.6, 10-20 kOhm at 10 lux drawn per part, 1 MOhm dark. The MAX7219 model shows decimal
 points, its code-B font per digit and the segment patterns libraries send,
 and shifts DOUT on CLK's falling edge; a passive buzzer falls silent two
