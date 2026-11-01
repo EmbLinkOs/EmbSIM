@@ -66,11 +66,18 @@ Defaults (per session, overridable per island in the project): `reltol
 
 ## 5. Linear solver
 
-Dense LU with partial pivoting for islands up to 64 unknowns; a sparse
-direct solver (Markowitz ordering computed once per topology, numeric
-refactorization per Newton step) above that. Pivot order is a function of
-the topology only, so results are deterministic for a given platform and
-flags. Singular matrices (a floating node, two ideal sources in parallel)
+LU with partial pivoting on a dense matrix, ordered to keep it sparse: once
+per topology a minimum-degree order of the unknowns is taken from the
+Jacobian's (symmetrised) pattern, the matrix is factored in that order, and
+each elimination step updates only the pivot row's nonzero columns. Assembly
+clears only the entries the stamps write. The order is a function of the
+topology only, and ties go to the lowest index, so results are deterministic
+for a given platform and flags. On the Uno driving an 8x8 LED matrix (111
+unknowns, 428 nonzeros) the factors keep their sparsity instead of filling
+to a third of the matrix, and a run takes 0.61 of the time it took. Not yet:
+sparse storage for islands of thousands of unknowns (the dense matrix is
+n x n doubles; the minimum-degree order is skipped above 2048 unknowns).
+Singular matrices (a floating node, two ideal sources in parallel)
 are detected at topology time and reported as `analog.singular_topology`
 naming the node; `gmin` to ground is added to every node so a floating node
 yields 0 V with a warning rather than a failure.

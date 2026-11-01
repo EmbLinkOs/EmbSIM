@@ -5,6 +5,15 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Speed: the analog solver keeps the matrix sparse
+
+- The LU factorisation runs in a minimum-degree order of the unknowns,
+  computed once per topology, and each step updates only the pivot row's
+  nonzero columns; assembly clears only the entries stamps write. On the
+  Uno driving an 8x8 LED matrix (111 unknowns) a run takes 0.61 of the time
+  it took, with the same steps and Newton iterations. SPEC-004 §5 now says
+  what the solver does (it had promised a sparse solver it never had).
+
 ### Parts: the MAX7219, the buzzer, the GL5528, the push button and a 10-segment bar graph verified by their examples
 
 - LedControl's `LCDemo7Segment` runs unmodified on the Uno against the
@@ -32,6 +41,9 @@ versions follow semantic versioning. There is no release yet.
   and prints 0.25, 0.37 and 0.60 V.
 - ShiftRegister74HC595's example drives a 74HC595 from D0 to D2, through
   the board's own 1 kOhm resistors to the USB-serial bridge on D0 and D1.
+- The IDE's `RowColumnScanning` moves its cursor across the 8x8 LED matrix
+  with two pots; the cursor glows at 0.4 % of full luminance, as dim as on
+  a real matrix driven by this sketch.
 - The Arduino harness finds the IDE's built-in examples (arduino-examples,
   CC0) under their category folders.
 

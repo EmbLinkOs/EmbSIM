@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "RowColumnScanning",
+  "until": "1.6s",
+  "inputs": [
+    {
+      "at": "0ms",
+      "target": "POTX",
+      "input": "position",
+      "value": 0.5
+    },
+    {
+      "at": "0ms",
+      "target": "POTY",
+      "input": "position",
+      "value": 0.5
+    },
+    {
+      "at": "800ms",
+      "target": "POTX",
+      "input": "position",
+      "value": 0.0
+    },
+    {
+      "at": "800ms",
+      "target": "POTY",
+      "input": "position",
+      "value": 1.0
+    }
+  ],
+  "assertions": [
+    {
+      "id": "cursor",
+      "between": [
+        "200ms",
+        "700ms"
+      ],
+      "probe": "p54",
+      "expect": {
+        "min": 0.002,
+        "max": 0.008
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "neighbour",
+      "between": [
+        "200ms",
+        "700ms"
+      ],
+      "probe": "p55",
+      "expect": {
+        "max": 1e-06
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "other",
+      "between": [
+        "200ms",
+        "700ms"
+      ],
+      "probe": "p44",
+      "expect": {
+        "max": 1e-06
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "moved",
+      "between": [
+        "1000ms",
+        "1500ms"
+      ],
+      "probe": "p88",
+      "expect": {
+        "min": 0.002,
+        "max": 0.008
+      },
+      "measure": "mean"
+    },
+    {
+      "id": "old-off",
+      "between": [
+        "1000ms",
+        "1500ms"
+      ],
+      "probe": "p54",
+      "expect": {
+        "max": 1e-06
+      },
+      "measure": "mean"
+    }
+  ],
+  "description": "The pots at their halves put the cursor at row 5, column 4; turned to X 0 and Y full they move it to row 8, column 8. The sketch lights a pixel only between two digitalWrite calls of each refresh, so the cursor glows dimly (0.4 % of full luminance on average, as on a real matrix wired this way) and every other pixel stays dark."
+}

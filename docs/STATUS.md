@@ -5,9 +5,9 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
-## Parts: the MAX7219, the buzzer, the GL5528, the push button, a bar graph, the LM35DZ and the 74HC595 (2026-11-01)
+## Parts: the MAX7219, the buzzer, the GL5528, the push button, a bar graph, the LM35DZ, the 74HC595 and the 8x8 matrix (2026-11-01)
 
-Seven more of M6's most-used parts are verified by unmodified examples on
+Eight more of M6's most-used parts are verified by unmodified examples on
 the Uno (tests/vendor/arduino): LedControl's `LCDemo7Segment` on the
 MAX7219 8-digit module (27 assertions: the text and each digit's lit
 segments) and the IDE's `toneMelody` on a passive buzzer (11: each note's
@@ -20,7 +20,10 @@ IDE's `barGraph` on a new 10-segment bar graph of independent LED junctions
 in the DC-10 pinout (`emblink/led_bargraph_10`), and the IDE's
 `ReadAnalogVoltage` on an LM35DZ (0.25, 0.37, 0.60 V at 25, 37.5, 60 degC),
 and ShiftRegister74HC595's example on a 74HC595 wired to D0-D2 as it says
-(through the board's resistors to the USB-serial bridge). The GL5528 now follows the
+(through the board's resistors to the USB-serial bridge), and the IDE's
+`RowColumnScanning` on the 8x8 LED matrix (its dim cursor moved by two pots).
+The analog solver now factors in a minimum-degree order over each pivot row's
+nonzeros (0.61 of the time on that matrix circuit, same steps). The GL5528 now follows the
 GL55 datasheet: gamma 0.6, 10-20 kOhm at 10 lux drawn per part, 1 MOhm dark. The MAX7219 model shows decimal
 points, its code-B font per digit and the segment patterns libraries send,
 and shifts DOUT on CLK's falling edge; a passive buzzer falls silent two

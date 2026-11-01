@@ -55,6 +55,7 @@ headers:
 | arduino-examples `Debounce` (02.Digital) | Push button from 5 V to D2, 10 kOhm to GND, the L LED | The press chatters (seven edges on D2 within the button's 2 ms of bounce), yet each of three presses toggles the LED once after the sketch's 50 ms; a 20 ms tap changes nothing |
 | arduino-examples `StateChangeDetection` (02.Digital) | The same button, the counts at 9600 baud | Five presses counted once each through the bounce (the sketch's 50 ms delay after a change), on and off printed with each, the L LED lit after the fourth push and off at the fifth |
 | arduino-examples `barGraph` (07.Display) | 10-segment LED bar graph (DC-10 pinout) on D2 to D11 through 220 Ohm each, a 10 kOhm pot on A0 | The pot at 0, a quarter, 55 % and full lights 0, 2, 5 and 10 segments, each segment its own LED junction |
+| arduino-examples `RowColumnScanning` (07.Display) | 8x8 row-anode LED matrix on the sketch's twelve pins and A2-A5, 220 Ohm on each column, pots on A0 and A1 | The cursor at row 5, column 4, then at row 8, column 8 when the pots turn; it glows at 0.4 % of full luminance on average (the sketch lights a pixel only between two digitalWrite calls, as dim as on a real matrix wired this way), every other pixel dark |
 | arduino-examples `ReadAnalogVoltage` (01.Basics) | LM35DZ: +VS on 5 V, VOUT on A0 | 25, 37.5 and 60 degC as 10 mV/degC, read by the 10-bit ADC against the 5 V supply and printed as the sketch scales them: 0.25, 0.37, 0.60 |
 
 The core is LGPL-2.1 and is not vendored here; `run.py` takes a checkout of
