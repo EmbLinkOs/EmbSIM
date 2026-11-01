@@ -219,8 +219,9 @@ that act are offered.
 - Catalog descriptions, fidelity notes and the engine's diagnostics are in
   English (they are data from the catalog and the engine, not the
   interface).
-- Compact density changes rows and gutters; it does not yet change the
-  canvas or the instruments' plots.
+- Compact density changes rows and gutters; it does not change the
+  schematic canvas (it has its own zoom) or the plots' layout. The plots'
+  axis labels follow the text size.
 - Floating front panels keep their own sizes when the text size changes;
   resize them by hand.
 - Panels are resizable, collapsible and reorderable within their

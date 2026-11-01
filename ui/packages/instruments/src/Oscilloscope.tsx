@@ -87,7 +87,8 @@ export function Oscilloscope({ traces, window: win, onWindowChange, cursors, onC
       cursorB: cssVar(el, '--warning', '#e9bd55'),
       now: cssVar(el, '--text-faint', '#6b7689'),
     };
-    const mono = `11px ${cssVar(el, '--font-mono', 'monospace')}`;
+    // the axis labels follow the workbench's text size (--ui-scale: small, medium, large)
+    const mono = `${Math.round(11 * (Number.parseFloat(cssVar(el, '--ui-scale', '1')) || 1))}px ${cssVar(el, '--font-mono', 'monospace')}`;
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
