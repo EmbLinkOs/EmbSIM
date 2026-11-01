@@ -310,13 +310,19 @@ The measured context switch (155 to 167 cycles) is the same before and
 after: the change affects how often an island steps, not the core's
 timing.
 
-**Still slow:**
-- FreeRTOS's first 50 ms, while the reset RC really is moving by more than
-  1 µV a step;
-- the analog-only RC filter;
-- the RP2040, whose two cores run interleaved on one clock.
-
-Each is the next target.
+**Remaining slow workloads, looked at:**
+- **FreeRTOS's first 50 ms on the NUCLEO.** The reset RC really is moving
+  by more than 1 µV a step in that time, so the steps are real. Settling it
+  sooner would need a looser tolerance, which would trade accuracy.
+- **The RC filter (0.44x).** Its two probes sample at 1 MHz. Each exact
+  sample is a solution at that instant, which costs 2 million solves a
+  second. With 10 kHz probes the same circuit runs at 10.6x real time.
+  Interpolating probes between solver steps would be faster, but a probe
+  would no longer report the solver's own solution at its instant, so this
+  is left as the honest cost of the sampling asked for.
+- **The RP2040 (1.1x).** The analog engine takes 25 steps a second there.
+  Its two 125 MHz cores are executing that much code, at the interpreter's
+  speed.
 
 ### 4.5 Cortex-M0+ (the RP2040)
 
