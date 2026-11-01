@@ -18,6 +18,8 @@ from embsim_client import StdioClient, EmbsimError  # noqa: E402
 
 PROJECT = {
     "schema_version": 1, "kind": "project", "name": "bench", "policy": "electrical",
+    # exact parts: the check is the engine's and the instrument's numbers, not a resistor's spread (ADR-034)
+    "settings": {"imperfections": "ideal"},
     "components": [
         {"id": "V1", "component": "emblink/vsource", "params": {"kind": "dc", "dc": 5}},
         {"id": "BB1", "component": "emblink/breadboard_830"},

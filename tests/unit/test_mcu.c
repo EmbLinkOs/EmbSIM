@@ -438,34 +438,37 @@ static void test_session_runtime(void)
     r = rpc(s, &a, "probe.add", "{\"target\":\"serial:B1.USART1\",\"kind\":\"serial\"}");
     CHECK(r != NULL);
     esk_json_free(&a, r);
-    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"2ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3ms\"}"));
     /* the board's console input: USART1's receiver, at its baud rate */
     esk_json_free(&a, rpc(s, &a, "input.serial", "{\"target\":\"B1\",\"text\":\"abc\"}"));
-    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"5ms\"}"));
     serial_text(s, &a, "console", text, sizeof text);
     CHECK(strstr(text, "EmbSIM Blue Pill demo\r\nABC") != NULL);
     mcu_output(s, &a, "state", state, sizeof state);
     CHECK_STR(state, "sleeping");
-    /* the reset button holds NRST low: the core is held, then boots again */
+    /* the reset button holds NRST low: the core is held, then boots again once
+     * the 100 nF NRST capacitor charges (the button's bounce, ADR-034, is
+     * filtered by it; the core boots a little after power-up for the same
+     * reason, so the console input comes after its banner) */
     esk_json_free(&a, rpc(s, &a, "input.press", "{\"target\":\"B1.SW_RESET\"}"));
-    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3.5ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"7.5ms\"}"));
     mcu_output(s, &a, "state", state, sizeof state);
     CHECK_STR(state, "reset");
     esk_json_free(&a, rpc(s, &a, "input.release", "{\"target\":\"B1.SW_RESET\"}"));
-    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"6ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"14ms\"}"));
     serial_text(s, &a, "console", text, sizeof text);
     CHECK(strstr(text, "ABCEmbSIM Blue Pill demo\r\n") != NULL);
     mcu_output(s, &a, "instructions", insns, sizeof insns);
     snprintf(first, sizeof first, "%s", text);
     /* a session reset runs the same again, to the instruction */
     esk_json_free(&a, rpc(s, &a, "control.reset", "{}"));
-    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"2ms\"}"));
-    esk_json_free(&a, rpc(s, &a, "input.serial", "{\"target\":\"B1.USART1\",\"text\":\"abc\"}"));
     esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "input.serial", "{\"target\":\"B1.USART1\",\"text\":\"abc\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"5ms\"}"));
     esk_json_free(&a, rpc(s, &a, "input.press", "{\"target\":\"B1.SW_RESET\"}"));
-    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"3.5ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"7.5ms\"}"));
     esk_json_free(&a, rpc(s, &a, "input.release", "{\"target\":\"B1.SW_RESET\"}"));
-    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"6ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"14ms\"}"));
     serial_text(s, &a, "console", text, sizeof text);
     CHECK_STR(text, first);
     mcu_output(s, &a, "instructions", insns2, sizeof insns2);
@@ -718,12 +721,50 @@ static void test_tim_pwm_and_adc(void)
     CHECK_EQ(a.live_bytes, 0);
 }
 
+/* a reset is a fresh start: a recording begun mid-run, while the board's
+ * NRST RC is still charging (an analog island stepping), replays from reset
+ * to the picosecond. Before the islands stopped at a reset, a pin the MCU
+ * reconfigured there touched an island still running the previous run, and
+ * its stale crossing moved the press's interrupt by 1.4 ns */
+static void test_reset_is_load(void)
+{
+    es_session *s = NULL;
+    esk_alloc a;
+    char path[1024];
+    const char *rec = "test_mcu_reset_is_load.json";
+    esk_json *r;
+    esk_alloc_init(&a, NULL);
+    snprintf(path, sizeof path, "%s/examples/bluepill-button-led/project.json", EMBSIM_SOURCE_DIR);
+    CHECK_EQ(es_session_create(NULL, &s), ES_OK);
+    if (!s)
+        return;
+    CHECK_EQ(es_session_load_file(s, path), ES_OK);
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"7ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "record.start", "{\"path\":\"test_mcu_reset_is_load.json\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"9ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "input.press", "{\"target\":\"SW1\"}"));
+    esk_json_free(&a, rpc(s, &a, "control.advance", "{\"until\":\"10ms\"}"));
+    esk_json_free(&a, rpc(s, &a, "record.stop", "{}"));
+    r = rpc(s, &a, "record.replay", "{\"path\":\"test_mcu_reset_is_load.json\"}");
+    CHECK(r != NULL && esk_json_get_bool(r, "ok", 0));
+    if (r && !esk_json_get_bool(r, "ok", 0)) {
+        const esk_json *d = esk_json_get(r, "divergence");
+        fprintf(stderr, "divergence: expected %s, observed %s\n",
+                esk_json_get_str(esk_json_get(d, "expected"), "at_ps", "?"),
+                esk_json_get_str(esk_json_get(d, "observed"), "at_ps", "?"));
+    }
+    esk_json_free(&a, r);
+    remove(rec);
+    es_session_destroy(s);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_hello);
 RUN(test_quanta_and_breakpoints);
 RUN(test_bluepill_golden);
 RUN(test_bluepill_input);
 RUN(test_session_runtime);
+RUN(test_reset_is_load);
 RUN(test_breakpoint_continue_equivalence);
 RUN(test_source_lines);
 RUN(test_tim_pwm_and_adc);

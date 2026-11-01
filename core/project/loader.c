@@ -106,6 +106,99 @@ static esk_json *num_param(esk_alloc *a, const char *type, double d)
     return esk_json_new_number(a, d);
 }
 
+/* ---- tolerances (ADR-034) --------------------------------------------------------
+ * A parameter whose definition names `"spread": "<param>"` is drawn, per instance,
+ * inside the band that parameter gives in percent: nominal x (1 + tol x (2u - 1)),
+ * u uniform in [0, 1). A manufacturer guarantees the band, not a distribution, so
+ * uniform is the choice that claims nothing more. u comes from the project's seed
+ * and the instance's id and parameter name alone: the same project draws the same
+ * parts on every host and every run, two resistors of one project differ, and a
+ * part keeps its value when others are added. Ideal projects (settings.imperfections
+ * "ideal", Q17) keep the nominal values. */
+
+static uint64_t mix64(uint64_t z)
+{
+    z += 0x9E3779B97F4A7C15ull;
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+    return z ^ (z >> 31);
+}
+
+static uint64_t fnv1a(uint64_t h, const char *str)
+{
+    for (; *str; str++) {
+        h ^= (unsigned char)*str;
+        h *= 0x100000001B3ull;
+    }
+    h ^= 0xFF; /* a separator: ("ab", "c") and ("a", "bc") differ */
+    h *= 0x100000001B3ull;
+    return h;
+}
+
+static double tolerance_unit(uint64_t seed, const char *id, const char *param)
+{
+    uint64_t h = fnv1a(fnv1a(0xCBF29CE484222325ull, id), param);
+    return (double)(mix64(h ^ mix64(seed)) >> 11) * (1.0 / 9007199254740992.0);
+}
+
+static es_status draw_tolerances(es_session *s, const char *id, const esk_json *pdefs, esk_json *params)
+{
+    size_t i;
+    if (s->ideal) {
+        /* an imperfection a part switches on (a contact's bounce) is off */
+        for (i = 0; i < esk_json_len(pdefs); i++) {
+            const esk_json *pd = esk_json_at(pdefs, i);
+            esk_json *f;
+            if (!esk_json_get_bool(pd, "imperfection", 0) || !esk_json_get(params, pd->key))
+                continue;
+            f = esk_json_new_bool(s->a, 0);
+            if (!f || esk_json_object_set(s->a, params, pd->key, f)) {
+                esk_json_free(s->a, f);
+                return ES_ENOMEM;
+            }
+        }
+        return ES_OK;
+    }
+    for (i = 0; i < esk_json_len(pdefs); i++) {
+        const esk_json *pd = esk_json_at(pdefs, i);
+        const char *tolp = esk_json_get_str(pd, "spread", NULL);
+        double nominal, tol = 0.0, u, v;
+        esk_json *rec, *one, *nv;
+        if (!tolp || esk_json_to_double(esk_json_get(params, pd->key), &nominal) != 0)
+            continue;
+        if (esk_json_to_double(esk_json_get(params, tolp), &tol) != 0 || !(tol > 0.0))
+            continue;
+        u = tolerance_unit(s->seed, id, pd->key);
+        v = nominal * (1.0 + tol * 0.01 * (2.0 * u - 1.0));
+        nv = esk_json_new_number(s->a, v);
+        if (!nv || esk_json_object_set(s->a, params, pd->key, nv)) {
+            esk_json_free(s->a, nv);
+            return ES_ENOMEM;
+        }
+        if (!s->drawn && !(s->drawn = esk_json_new_object(s->a)))
+            return ES_ENOMEM;
+        rec = esk_json_get_mut(s->drawn, id);
+        if (!rec) {
+            rec = esk_json_new_object(s->a);
+            if (!rec || esk_json_object_set(s->a, s->drawn, id, rec)) {
+                esk_json_free(s->a, rec);
+                return ES_ENOMEM;
+            }
+        }
+        one = esk_json_new_object(s->a);
+        if (!one)
+            return ES_ENOMEM;
+        esk_json_set_number(s->a, one, "nominal", nominal);
+        esk_json_set_number(s->a, one, "value", v);
+        esk_json_set_number(s->a, one, "tolerance_pct", tol);
+        if (esk_json_object_set(s->a, rec, pd->key, one)) {
+            esk_json_free(s->a, one);
+            return ES_ENOMEM;
+        }
+    }
+    return ES_OK;
+}
+
 static es_status build_params(es_session *s, const char *id, const esk_json *desc, const esk_json *inst_params, esk_json **out)
 {
     esk_json *params = esk_json_new_object(s->a);
@@ -215,6 +308,8 @@ static es_status build_params(es_session *s, const char *id, const esk_json *des
             }
         }
     }
+    if (st == ES_OK)
+        st = draw_tolerances(s, id, pdefs, params);
     if (st != ES_OK) {
         esk_json_free(s->a, params);
         return st;
@@ -1055,6 +1150,8 @@ static es_status apply_settings(es_session *s, const esk_json *settings)
     n = esk_json_get_int(settings, "max_pending_events", 0);
     if (n > 0)
         s->eng.sched.max = (size_t)n;
+    s->seed = (uint64_t)esk_json_get_int(settings, "seed", 0);
+    s->ideal = esk_str_eq(esk_json_get_str(settings, "imperfections", "real"), "ideal");
     return ES_OK;
 }
 
@@ -1379,6 +1476,8 @@ void esk_project_unload(es_session *s)
     s->eng.on_irq_ctx = s;
     esk_json_free(s->a, s->project);
     s->project = NULL;
+    esk_json_free(s->a, s->drawn);
+    s->drawn = NULL;
     esk_strfree(s->a, s->base_dir);
     esk_strfree(s->a, s->name);
     s->base_dir = s->name = NULL;

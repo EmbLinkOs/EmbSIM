@@ -1024,6 +1024,14 @@ es_status esk_island_start(esk_island *isl)
     return st;
 }
 
+void esk_island_halt(esk_island *isl)
+{
+    mna *p = (mna *)isl->priv;
+    p->running = 0;
+    p->touched = 0;
+    isl->step_event = 0; /* the scheduler it was in was cleared */
+}
+
 es_status esk_island_reset(esk_island *isl)
 {
     return start_or_reset(isl);

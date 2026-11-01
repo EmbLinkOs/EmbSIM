@@ -43,6 +43,10 @@
     {
       "id": "SW1",
       "component": "emblink/push_button",
+      "params": {
+        "bounce": false
+      },
+      "doc": "An ideal contact: the scenario holds it for 2 ms, as long as a real button bounces (ADR-034)",
       "layout": {
         "x": 380,
         "y": 310,

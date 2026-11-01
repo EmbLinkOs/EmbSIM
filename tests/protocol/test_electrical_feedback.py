@@ -69,7 +69,9 @@ def main():
         for ref, resistance in [('voltmeter', 1e7), ('ammeter', 1), ('scope_input', 1e6), ('function_generator', 50)]:
             for leads in ([], ['+'], ['-'], ['+', '-']):
                 generator = ref == 'function_generator'
+                # exact parts: the check is each meter's input path against 1 Mohm, not a resistor's spread
                 project = dict(schema_version=1, kind='project', name='incremental-instrument', policy='electrical',
+                               settings={'imperfections': 'ideal'},
                                components=[dict(id='DUT', component='emblink/' + ref), dict(id='G', component='emblink/gnd')],
                                nets={'NODE': [], 'GND': ['G.GND']})
                 if generator:

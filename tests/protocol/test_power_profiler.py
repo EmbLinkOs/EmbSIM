@@ -21,6 +21,8 @@ from embsim_client import StdioClient  # noqa: E402
 
 PROJECT = {
     "schema_version": 1, "kind": "project", "name": "ppk2", "policy": "electrical",
+    # exact parts: the check is the engine's and the instrument's numbers, not a resistor's spread (ADR-034)
+    "settings": {"imperfections": "ideal"},
     "components": [
         {"id": "PPK", "component": "emblink/nordic_ppk2", "params": {"mode": "source", "voltage": 3.3}},
         {"id": "SLEEP", "component": "emblink/resistor", "params": {"resistance": 3300}},

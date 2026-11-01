@@ -1239,7 +1239,7 @@ static void test_quiet_island(void)
     CHECK_NEAR(v_of(&e, "out"), 5.0 * (1.0 - exp(-2.0)), 1e-4);
     CHECK_EQ(isl->quiet_steps, 0);
     CHECK(esk_engine_advance(&e, 40 * ES_PS_PER_MS) == ES_OK);
-    CHECK_NEAR(v_of(&e, "out"), 5.0, 1e-8);
+    CHECK_NEAR(v_of(&e, "out"), 5.0, 1e-6); /* to vntol, the floor where an island is still */
     CHECK_EQ(diag_errors, 0);
     esk_engine_free(&e);
 }
@@ -1731,6 +1731,35 @@ static void test_fixtures(void)
     run_fixture("pot-divider");
 }
 
+/* the analog grid: a run cut into whole-millisecond slices (paced real time
+ * ends its slices on the grid) computes the same values, to the bit, as one
+ * that is not cut, while an RC is still charging. Each slice's end is a grid
+ * point the islands stop at in either run */
+static double rc_after(int slices)
+{
+    esk_engine e;
+    double v;
+    int k;
+    engine_open(&e);
+    add_power(&e, "G", "gnd", 0.0);
+    add_dev2(&e, "vsource", "V1", "{\"dc\": 5}", "vin", "gnd");
+    add_dev2(&e, "resistor", "R1", "{\"r\": \"4.7k\"}", "vin", "out");
+    add_dev2(&e, "capacitor", "C1", "{\"c\": \"1u\", \"ic\": 0}", "out", "gnd");
+    engine_run(&e);
+    for (k = 1; k <= slices; k++)
+        CHECK(esk_engine_advance(&e, (es_time_t)k * 7 * ES_PS_PER_MS / (es_time_t)slices) == ES_OK);
+    v = v_of(&e, "out");
+    esk_engine_free(&e);
+    return v;
+}
+
+static void test_grid_slices(void)
+{
+    double whole = rc_after(1), sliced = rc_after(7);
+    CHECK(whole > 3.86 && whole < 3.88); /* 5 V x (1 - e^-(7/4.7)) = 3.872 V: still charging */
+    CHECK(memcmp(&whole, &sliced, sizeof whole) == 0);
+}
+
 TEST_MAIN_BEGIN
 esk_alloc_init(&A, NULL);
 esk_diag_init(&D, &A, 64);
@@ -1774,6 +1803,7 @@ RUN(test_opamp_inverting);
 RUN(test_regulator);
 RUN(test_pull_device);
 RUN(test_bounce);
+RUN(test_grid_slices);
 RUN(test_quiet_island);
 RUN(test_two_islands_step_independently);
 RUN(test_regulator_board_rails);

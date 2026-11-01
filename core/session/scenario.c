@@ -674,6 +674,7 @@ esk_json *esk_session_report(es_session *s, const char *ended_reason, esk_json *
             esk_json_array_push(s->a, inc, esk_json_new_string(s->a, "nets"));
             esk_json_array_push(s->a, inc, esk_json_new_string(s->a, "outputs"));
             esk_json_array_push(s->a, inc, esk_json_new_string(s->a, "probes"));
+            esk_json_array_push(s->a, inc, esk_json_new_string(s->a, "drawn"));
             esk_json_object_set(s->a, root, "snapshot", esk_session_snapshot(s, inc));
             esk_json_free(s->a, inc);
         }

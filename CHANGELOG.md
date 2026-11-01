@@ -5,6 +5,59 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Imperfections: contact bounce and tolerances on by default (ADR-034)
+
+- Push buttons and toggle switches bounce by default, as real contacts do
+  (2 ms and 5 ms; `"bounce": false` gives an ideal contact). The keypad
+  already did.
+- Resistors, capacitors, electrolytics and inductors gain a `tolerance`
+  (IEC 60062's J, K, M and M grades: 5, 10, 20 and 20 %). Each part's value
+  is drawn inside that band from the project's `settings.seed` and the
+  instance's id, so a run is the same on every host and two parts of one
+  project differ. A catalog parameter names its tolerance with `spread`.
+- `settings.imperfections: "ideal"` gives nominal values and no bounce, for
+  a lesson that says so (Q17). Component fixtures run ideal unless they name
+  their `settings`.
+- The run report's `snapshot.drawn` lists each drawn value with its nominal
+  value and tolerance.
+- The Blue Pill gains its 100 nF NRST capacitor. It filters the reset
+  button's bounce and delays the boot by about 0.8 ms after power-up.
+- The Uno's DTR auto-reset is its own bounce-free part (`DTR_RESET`), not a
+  press of the reset button.
+- `examples/button-bounce` shows a raw button line chattering and an RC
+  with a Schmitt inverter debouncing it.
+- Firmware written for EmbSIM's own tests and examples now debounces its
+  buttons in software: the NUCLEO-F446ZE example, and the Arduino, STM32F1
+  HAL, Pico SDK and nrfx tours.
+- Examples and tests that check exact values declare their parts exact,
+  each with the reason.
+
+### Fixed: a reset is a fresh start
+
+- A session reset could leave a stale analog crossing from the previous run.
+  The MCU reconfigured its pins during the reset and touched islands still
+  running. So a run after a reset (a replay, or a recording begun at 0)
+  could differ from the run after loading, by 1.4 ns in an interrupt on the
+  Blue Pill.
+- Islands now stop at the start of a reset.
+- `test_reset_is_load` replays a recording begun mid-run while an RC is
+  still charging, and gets the same result to the picosecond.
+
+### Timing: paced real time no longer depends on the host's speed
+
+- Analog islands take a step boundary at each millisecond of simulated
+  time, and paced slices end on that grid.
+- A run cut into slices by the host's speed now computes the same values as
+  an uncut one, to the bit (`test_grid_slices`).
+
+### Timing: vendor expectations after the cycle-accurate cores
+
+- STM32CubeF4's EEPROM_Emulation now ends between 15.5 and 15.75 s, not
+  just past 13 s: its code is fetched from flash at five wait states.
+- The Pico SDK's polls and PWM wraps follow the Cortex-M0+'s cycle costs:
+  540 polls through the 25LC040's write cycle, and the 520th wrap just
+  after the 520 ms line.
+
 ### Timing: execution traces
 
 - `embsim run --trace FILE` records each instruction start (with its

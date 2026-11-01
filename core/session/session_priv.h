@@ -103,7 +103,13 @@ struct es_session {
     uint64_t last_host_ms;
     es_time_t run_until;     /* ES_TIME_MAX when unbounded */
     es_time_t run_slice_ps;
+    es_time_t pace_carry_ps; /* paced time not yet a whole analog grid step */
     es_time_t core_quantum_ps;
+    /* imperfections (ADR-034): the project's seed, ideal parts when set, and the
+     * values drawn inside each part's tolerance ({instance: {param: {...}}}) */
+    uint64_t seed;
+    int ideal;
+    esk_json *drawn;
     /* clients */
     es_notification_fn notify;
     void *notify_ctx;

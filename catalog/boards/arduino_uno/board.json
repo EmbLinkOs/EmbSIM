@@ -85,6 +85,14 @@
       "doc": "Reset, pulls RESET low"
     },
     {
+      "id": "DTR_RESET",
+      "component": "emblink/push_button",
+      "params": {
+        "bounce": false
+      },
+      "doc": "The 16U2's auto-reset: DTR falling pulls RESET low through the 100 nF capacitor until the pull-up recharges it (the console bridge's dtr_reset). An electronic pulse, not a contact: it does not bounce"
+    },
+    {
       "id": "R_RESET",
       "component": "emblink/pull_up",
       "params": {
@@ -186,6 +194,7 @@
       "LED_L.K",
       "LED_ON.K",
       "SW_RESET.2",
+      "DTR_RESET.2",
       "J_PWR.6",
       "J_PWR.7",
       "J_DHI.7",
@@ -203,6 +212,7 @@
     "RESET": [
       "U1.NRST",
       "SW_RESET.1",
+      "DTR_RESET.1",
       "R_RESET.1",
       "J_PWR.3"
     ],
@@ -528,7 +538,7 @@
     "bridge": {
       "part": "ATmega16U2",
       "dtr_reset": {
-        "component": "SW_RESET",
+        "component": "DTR_RESET",
         "ms": 0.7
       }
     }

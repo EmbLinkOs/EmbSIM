@@ -44,7 +44,16 @@
       "default": "100u",
       "min": "100n",
       "max": "1",
-      "doc": "Capacitance"
+      "doc": "Capacitance",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 20,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's capacitance lies within this band of the nominal, drawn from the project's seed (ADR-034). 20 % is IEC 60062's code M, the usual grade of aluminium electrolytic capacitors; 0 for an exact part."
     },
     "esr": {
       "type": "number",
@@ -86,12 +95,13 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Linear capacitance with ESR and initial condition (SPEC-004 §7 capacitor).",
+      "claims": "Linear capacitance with ESR and initial condition (SPEC-004 §7 capacitor); each instance's capacitance drawn uniformly inside ±tolerance of the nominal from the project's seed and its id (ADR-034; nominal with settings.imperfections \"ideal\").",
       "omissions": [
         "polarity: reverse bias is not diagnosed",
         "leakage current",
         "ESR frequency dependence",
-        "ageing"
+        "ageing",
+        "the distribution inside the tolerance band (uniform: a manufacturer guarantees the band only)"
       ],
       "range": {
         "voltage_v": [

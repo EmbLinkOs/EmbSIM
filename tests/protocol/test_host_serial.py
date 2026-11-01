@@ -124,7 +124,7 @@ def main() -> int:
             states = [n.params for n in heard if n.method == "port.state"]
             check(any(s["connected"] for s in states), "port.state told of the connection")
             inputs = [n.params for n in heard if n.method == "record.input"]
-            check(any(i["target"] == "B1.SW_RESET" and i["input"] == "pressed" for i in inputs)
+            check(any(i["target"] == "B1.DTR_RESET" and i["input"] == "pressed" for i in inputs)
                   and any(i["target"] == "B1" and i["input"] == "serial" and i["value"] == "hello, uno\n" for i in inputs),
                   "the DTR reset and the host's bytes are recorded inputs")
 

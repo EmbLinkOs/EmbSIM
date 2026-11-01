@@ -5,6 +5,54 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Imperfections on by default: bounce and tolerances (2026-11-01)
+
+ADR-034's first imperfections are on by default.
+
+**Bounce.**
+- Push buttons and toggle switches bounce: six transitions over 2 ms and
+  5 ms, on press and on release. The keypad already bounced.
+- `"bounce": false` gives an ideal contact.
+
+**Tolerances.**
+- Resistors, capacitors, electrolytics and inductors carry a tolerance.
+- Each instance's value is drawn uniformly inside it, from the project's
+  `settings.seed` and the instance's id.
+- The run report's `snapshot.drawn` lists the values.
+- `settings.imperfections: "ideal"` gives nominal parts (Q17).
+
+**Evidence.**
+- `examples/button-bounce` passes for 31 seeds: six raw edges per press,
+  and one debounced edge behind an RC and a Schmitt inverter.
+- The resistor's tolerance fixture checks seed 7's draw (1026.41 ohm).
+- The push button's and keypad's bounce fixtures count their edges.
+
+**Board changes.**
+- The Blue Pill gains its 100 nF NRST capacitor, which filters the reset
+  button and delays the boot by about 0.8 ms.
+- The Uno's DTR auto-reset is a bounce-free part of its own.
+
+**Paced real time is host-independent.** Islands take a step boundary on a 1 ms simulated grid and paced slices end on it, so a sliced run equals an uncut one to the bit (`test_grid_slices`).
+
+**A reset is now a fresh start.** Islands stop at the start of a reset, so
+a replay from reset matches a recording begun mid-run to the picosecond
+(`test_reset_is_load`, the Python client's recording tests).
+
+**Firmware.** EmbSIM's own tours and the NUCLEO-F446ZE example debounce in
+software. ST's unmodified F446ZE examples that press B1 (gpio_exti and the
+USB HID mouse) run with ideal contacts, and the project says why: the board
+has no filter on B1 (C52 not fitted), and how many times the example acts
+depends on the real switch.
+
+**Not yet.**
+- Temperature coefficients drawn per part.
+- Noise on converters and sensors.
+- Missing-decoupling effects.
+- Breadboard contact resistance.
+- Bounce varying from press to press: every press of a part bounces the
+  same way.
+- Tolerances on parts other than R, C and L.
+
 ## Bench instruments: the Rigol DS1054Z (2026-10-31)
 
 The third bench instrument: `emblink/rigol_ds1054z`, from Rigol's DS1000Z

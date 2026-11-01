@@ -283,6 +283,7 @@ static es_status m_control_run(rpc_ctx *r)
     esk_debug_resume_all(s);
     s->running = 1;
     s->last_host_ms = esk_host_monotonic_ms();
+    s->pace_carry_ps = 0;
     r->result = obj(r);
     if (!r->result) return ES_ENOMEM;
     esk_json_set_bool(s->a, r->result, "running", 1);

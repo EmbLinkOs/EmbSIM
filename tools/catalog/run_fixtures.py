@@ -44,7 +44,7 @@ def convert(fixture: dict) -> tuple[dict, dict]:
     assertions.append({'id': 'solver-health', 'always': True, 'diagnostics': {'forbid': ['analog.no_convergence', 'analog.timestep_too_small', 'sched.delta_overflow']}})
     project = {'schema_version': 1, 'kind': 'project', 'name': 'catalog-fixture',
                'libraries': [str(ROOT / 'catalog')], 'policy': fixture.get('policy', 'electrical'),
-               **fixture['circuit'], 'probes': probes, 'settings': {'max_delta_cycles': 1000}}
+               **fixture['circuit'], 'probes': probes, 'settings': {'max_delta_cycles': 1000, **fixture.get('settings', {'imperfections': 'ideal'})}}
     scenario = {'schema_version': 1, 'kind': 'scenario', 'name': fixture.get('name', 'fixture'),
                 'until': fixture.get('until', '1ms'), 'inputs': fixture.get('inputs', []), 'assertions': assertions}
     return project, scenario

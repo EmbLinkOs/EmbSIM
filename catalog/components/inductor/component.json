@@ -35,7 +35,16 @@
       "default": "10u",
       "doc": "Inductance (motional inductances of low-frequency crystals reach kilohenries)",
       "min": "1p",
-      "max": "100k"
+      "max": "100k",
+      "spread": "tolerance"
+    },
+    "tolerance": {
+      "type": "number",
+      "unit": "%",
+      "default": 20,
+      "min": 0,
+      "max": 50,
+      "doc": "Tolerance: each part's inductance lies within this band of the nominal, drawn from the project's seed (ADR-034). 20 % is IEC 60062's code M, the usual grade of power inductors; 0 for an exact part."
     },
     "dcr": {
       "type": "number",
@@ -93,11 +102,12 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "Linear inductance with series dcr and initial current; branch current is a solver unknown (SPEC-004 \u00a77 inductor).",
+      "claims": "Linear inductance with series dcr and initial current; branch current is a solver unknown (SPEC-004 §7 inductor); each instance's inductance drawn uniformly inside ±tolerance of the nominal from the project's seed and its id (ADR-034; nominal with settings.imperfections \"ideal\").",
       "omissions": [
         "saturation",
         "core loss",
-        "parasitic capacitance"
+        "parasitic capacitance",
+        "the distribution inside the tolerance band (uniform: a manufacturer guarantees the band only)"
       ],
       "range": {
         "current_a": [

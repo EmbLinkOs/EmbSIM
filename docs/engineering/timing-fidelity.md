@@ -373,3 +373,45 @@ the `.vcd` file is a value change dump.
 - pin changes (the session's probes and the logic analyzer have those);
 - memory accesses.
 
+### 4.7 A reset is a fresh start
+
+A session reset left the analog islands running while the models reset.
+The MCU reconfigured its pins at the reset and touched an island still in
+the previous run. That island took a step and scheduled a crossing at 1 ps
+into the new run.
+
+So a run after a reset (a replay, or a recording begun at 0) could differ
+from the run after loading. It showed once the Blue Pill had its NRST
+capacitor: the press's interrupt moved by 1.4 ns.
+
+Islands now stop at the start of a reset (`esk_island_halt`).
+
+**Validated** by `test_reset_is_load`: a recording begun at 7 ms, while
+the RC is still charging, replays from reset to the picosecond. Without the
+fix it fails with 9000188921 ps expected and 9000187555 ps observed.
+
+**The analog grid.** An `advance` ends exactly at its `until`, so an island
+that is integrating at that instant takes a step boundary there.
+
+Paced real time chooses its slices by the host's speed, so slice ends would
+cut the islands at host-dependent places. Two hosts could then differ within
+the solver's local error tolerance while an RC was still settling.
+
+The fix has two parts:
+- Every island now takes a step boundary at each millisecond of simulated
+  time, in every run (`grid_cb`, `ESK_ANALOG_GRID_PS`).
+- Paced slices end only on that grid. What does not make a whole step
+  carries over to the next slice.
+
+A slice end is therefore never a cut that an uncut run lacks. The host only
+decides how many grid steps a slice runs.
+
+**Validated:**
+- `test_grid_slices`: an RC still charging after 7 ms is the same, bit for
+  bit, run uncut or in seven 1 ms slices. It fails without the grid.
+- `test_reset_is_load`.
+- The vendor suites' numbers are unchanged by the grid.
+
+**Still true:** an `advance` to an instant off the grid (3.5 ms, say) cuts
+the islands there, exactly as asked. The same requests give the same run,
+and a replay applies each input where it was given.

@@ -300,6 +300,14 @@
         "advanced": {
           "type": "boolean"
         },
+        "imperfection": {
+          "type": "boolean",
+          "description": "A boolean switching on one of the part's imperfections (a contact's bounce): false in a project with ideal parts (ADR-034, Q17)."
+        },
+        "spread": {
+          "type": "string",
+          "description": "The parameter giving this one's tolerance in percent: each instance draws its value inside that band from the project's seed (ADR-034)."
+        },
         "presets": {
           "type": "object",
           "description": "For enum parameters: values of other parameters applied when this value is chosen (a named part sets its device parameters).",

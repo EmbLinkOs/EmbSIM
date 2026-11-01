@@ -143,6 +143,17 @@ static int fixture_to_run(esk_alloc *a, const esk_json *fx, esk_json **proj_out,
     esk_json_object_set(a, proj, "nets", esk_json_clone(a, esk_json_get(circuit, "nets")));
     if (esk_json_get(circuit, "boards"))
         esk_json_object_set(a, proj, "boards", esk_json_clone(a, esk_json_get(circuit, "boards")));
+    /* a fixture checks a part's nominal behaviour unless it names its settings
+     * (a seed, to check the spread a tolerance draws: ADR-034) */
+    if (esk_json_get(fx, "settings")) {
+        esk_json_object_set(a, proj, "settings", esk_json_clone(a, esk_json_get(fx, "settings")));
+    } else {
+        esk_json *st = esk_json_new_object(a);
+        if (st) {
+            esk_json_set_string(a, st, "imperfections", "ideal");
+            esk_json_object_set(a, proj, "settings", st);
+        }
+    }
     esk_json_set_integer(a, scen, "schema_version", 1);
     esk_json_set_string(a, scen, "kind", "scenario");
     esk_json_set_string(a, scen, "name", esk_json_get_str(fx, "name", "fixture"));

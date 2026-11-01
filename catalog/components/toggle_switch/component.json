@@ -58,8 +58,9 @@
     },
     "bounce": {
       "type": "boolean",
-      "default": false,
-      "doc": "Model contact bounce"
+      "default": true,
+      "doc": "Contact bounce on press and release, on by default as on a real part (ADR-034); off for an ideal contact",
+      "imperfection": true
     },
     "bounce_ms": {
       "type": "number",
@@ -160,7 +161,7 @@
       ]
     },
     "timed": {
-      "claims": "Optional bounce on each transition.",
+      "claims": "Bounce (on by default, ADR-034) on each transition.",
       "omissions": [
         "wear"
       ]

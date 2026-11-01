@@ -2,7 +2,10 @@
   "schema_version": 1,
   "kind": "project",
   "name": "instrument-loading",
-  "description": "Four analytic before/after comparisons: voltmeter input resistance, ammeter burden, 50 Ω generator termination and scope input capacitance. Generic configurable equivalents; no commercial instrument accuracy or protection qualification.",
+  "settings": {
+    "imperfections": "ideal"
+  },
+  "description": "Four analytic before/after comparisons: voltmeter input resistance, ammeter burden, 50 Ω generator termination and scope input capacitance. Generic configurable equivalents; no commercial instrument accuracy or protection qualification. Its parts are ideal (exact values, settings.imperfections): the lesson is each instrument's loading, measured to parts per million.",
   "policy": "electrical",
   "components": [
     {

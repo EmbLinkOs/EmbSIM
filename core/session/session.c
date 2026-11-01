@@ -955,6 +955,8 @@ esk_json *esk_session_snapshot(es_session *s, const esk_json *include)
     esk_json_set_string(s->a, root, "policy", s->eng.policy == ESK_POLICY_FUNCTIONAL ? "functional" : s->eng.policy == ESK_POLICY_TIMED ? "timed" : "electrical");
     esk_json_set_bool(s->a, root, "running", s->running);
     esk_json_set_number(s->a, root, "speed", s->speed);
+    if (want(include, "drawn") && s->drawn && esk_json_len(s->drawn))
+        esk_json_object_set(s->a, root, "drawn", esk_json_clone(s->a, s->drawn));
     if (want(include, "nets")) {
         esk_json *nets = esk_json_new_object(s->a);
         for (i = 0; nets && i < s->eng.nets.len; i++) {
@@ -1452,10 +1454,23 @@ es_status esk_session_run_slice(es_session *s)
     }
     s->last_host_ms = now_ms;
     esk_session_ports_poll(s);
+    /* the slice ends on the analog grid (or at the run's end), so the host's
+     * speed decides how far a slice goes, never where the islands are cut;
+     * what does not make a whole grid step carries over to the next slice */
+    if (esk_time_add(s->pace_carry_ps, delta, &delta))
+        delta = ES_TIME_MAX - 1;
     if (esk_time_add(s->eng.sched.now, delta, &until))
         until = ES_TIME_MAX - 1;
-    if (until >= s->run_until)
+    if (until < s->run_until) {
+        until -= until % ESK_ANALOG_GRID_PS;
+        if (until <= s->eng.sched.now) {
+            s->pace_carry_ps = delta;
+            return ES_OK;
+        }
+    } else {
         until = s->run_until;
+    }
+    s->pace_carry_ps = until - s->eng.sched.now <= delta ? delta - (until - s->eng.sched.now) : 0;
     st = esk_session_do_advance(s, until);
     if (st != ES_OK || s->diag.fatal) {
         s->running = 0;

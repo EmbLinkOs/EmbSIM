@@ -5,6 +5,9 @@
   "description": "The membrane bounces for 5 ms after a press: column 2 chatters through six transitions spread over that time (five edges after the first) before it settles low (the press fixture checks it settled).",
   "policy": "electrical",
   "until": "11ms",
+  "settings": {
+    "imperfections": "real"
+  },
   "circuit": {
     "components": [
       {

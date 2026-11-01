@@ -99,6 +99,10 @@ es_status esk_island_add_bridge(esk_island *isl, esk_pin *pin, esk_adev **out);
 es_status esk_island_start(esk_island *isl);
 /* reset to the operating point and reschedule */
 es_status esk_island_reset(esk_island *isl);
+/* the session is resetting: the island stops (a pin a model reconfigures
+ * meanwhile touches nothing) until esk_island_reset starts it again, so a
+ * reset leaves no step or crossing of the run before it behind */
+void esk_island_halt(esk_island *isl);
 /* step from t_accepted to at most `until` (clipped by the caller to the next event);
  * stops early at a bridge crossing; sets *reached; schedules nothing itself */
 es_status esk_island_step(esk_island *isl, es_time_t until, es_time_t *reached);
