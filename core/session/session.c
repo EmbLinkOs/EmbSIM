@@ -26,6 +26,7 @@
 #endif
 #define ES_ABI_VERSION 1
 #define PROBE_DEFAULT_CAP 65536
+#define PROBE_MAX_CAP 16777216u /* 256 MB of samples at most */
 
 /* ---- version and errors ---------------------------------------------------- */
 
@@ -503,6 +504,23 @@ static es_status mem_probe(es_session *s, esk_probe *p, const char *head, const 
         p->mem_addr = v;
         p->mem_len = size;
     }
+    return ES_OK;
+}
+
+/* a probe's depth: the samples its ring keeps, as a logic analyzer's memory
+ * depth is set for a capture; only while it holds none */
+es_status esk_session_probe_capacity(es_session *s, esk_probe *p, size_t cap)
+{
+    es_sample_t *ring;
+    if (!p || p->kind == ESK_PROBE_SERIAL || p->len || cap < 1u || cap > PROBE_MAX_CAP)
+        return ES_EINVAL;
+    ring = (es_sample_t *)esk_calloc(s->a, cap, sizeof *ring);
+    if (!ring)
+        return ES_ENOMEM;
+    esk_free(s->a, p->ring, p->cap * sizeof *p->ring);
+    p->ring = ring;
+    p->cap = cap;
+    p->head = 0;
     return ES_OK;
 }
 

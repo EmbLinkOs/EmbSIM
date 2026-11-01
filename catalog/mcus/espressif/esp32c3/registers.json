@@ -8036,12 +8036,12 @@
      "reset": "0x0000FF00",
      "fields": [
       [
-       "SD0_IN",
+       "SD1_IN",
        0,
        8
       ],
       [
-       "SD0_PRESCALE",
+       "SD1_PRESCALE",
        8,
        8
       ]
@@ -8053,12 +8053,12 @@
      "reset": "0x0000FF00",
      "fields": [
       [
-       "SD0_IN",
+       "SD2_IN",
        0,
        8
       ],
       [
-       "SD0_PRESCALE",
+       "SD2_PRESCALE",
        8,
        8
       ]
@@ -8070,12 +8070,12 @@
      "reset": "0x0000FF00",
      "fields": [
       [
-       "SD0_IN",
+       "SD3_IN",
        0,
        8
       ],
       [
-       "SD0_PRESCALE",
+       "SD3_PRESCALE",
        8,
        8
       ]

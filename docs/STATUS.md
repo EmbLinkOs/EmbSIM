@@ -5,6 +5,18 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The ESP32-C3's sigma-delta modulation (2026-11-01)
+
+GPIO_SD is modelled (`esp32c3-sdm`): four pulse-density channels on matrix
+signals 55 to 58, a bit every SDn_PRESCALE + 1 APB cycles, (SDn_IN + 128) /
+256 of them high. ESP-IDF v5.4's `sdm_led` runs unmodified: over a whole
+2 s sweep of its density, GPIO0 is high 118/256 of the time. Probes take a
+`capacity` (their memory depth) for long, busy captures. The ESP32-C3 has
+27 of 35 peripherals modelled; TWAI, I2S, UHCI0/1, HMAC, the digital
+signature, XTS_AES and the permission control remain (`docs/coverage.md`).
+EmbLinkOs/EmbLinkRTOS#46 runs EmbLinkRTOS's ESP32-C3 board at 160 MHz from
+the PLL, as ESP-IDF's bootloader does.
+
 ## Parts: the MAX7219, the buzzer, the GL5528, the push button, a bar graph, the LM35DZ, the 74HC595, the 8x8 matrix and the DS1307 (2026-11-01)
 
 Nine more of M6's most-used parts are verified by unmodified examples on

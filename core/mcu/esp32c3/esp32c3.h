@@ -32,6 +32,7 @@
  *             receivers, its RAM
  *   ledc.c    the LED PWM controller: four timers, six PWM generators,
  *             fading
+ *   sdm.c     the sigma-delta modulation's four pulse-density channels
  *   i2c.c     the I2C controller, master and slave, on the pins
  *   gdma.c    the GDMA controller: three transmit and three receive
  *             channels on descriptor lists
@@ -144,6 +145,8 @@ extern const struct esk_dev_ops esk_esp32c3_rmt_ops;
 void *esk_esp32c3_rmt_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_ledc_ops;
 void *esk_esp32c3_ledc_create(struct esk_mach *s, struct esk_rf_periph *p);
+extern const struct esk_dev_ops esk_esp32c3_sdm_ops;
+void *esk_esp32c3_sdm_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_i2c_ops;
 void *esk_esp32c3_i2c_create(struct esk_mach *s, struct esk_rf_periph *p);
 extern const struct esk_dev_ops esk_esp32c3_gdma_ops;

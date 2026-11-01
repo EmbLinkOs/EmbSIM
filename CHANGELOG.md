@@ -5,6 +5,26 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's sigma-delta modulation
+
+- GPIO_SD (`esp32c3-sdm`, TRM v1.4 section 5.13): four pulse-density
+  channels on gpio_sd0_out to gpio_sd3_out (matrix signals 55 to 58). A
+  channel's bit is APB_CLK over SDn_PRESCALE + 1, and (SDn_IN + 128) / 256
+  of its bits are high; FUNCTION_CLK_EN clocks them. ESP-IDF v5.4's
+  `sdm_led` runs unmodified (`tests/vendor/esp-idf`): over a whole sweep of
+  its density GPIO0 is high 46.09 % of the time, 118/256 as the density
+  gives. `test_sdm_density` checks the bit rate, densities 0, -64, 127 and
+  -128, and the held output. The ESP32-C3 has 27 of its 35 peripherals
+  modelled (`docs/coverage.md`).
+- Inside, the bit pattern is a first-order modulator's: the TRM gives the
+  density, not the pattern. Not yet: SIGMADELTA_CG's register clock gate,
+  SPI_SWAP.
+- Probes take `capacity`, the samples they keep (their memory depth, 1 to
+  16777216; 65536 when absent), so a waveform measurement over a long, busy
+  window keeps all of it (SPEC-007).
+- The register description named every channel's fields SD0_*; they are
+  SDn_IN and SDn_PRESCALE.
+
 ### Parts: the GL5528's response time
 
 - The GL5528 follows a change of light as its datasheet's response time

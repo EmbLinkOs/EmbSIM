@@ -335,5 +335,6 @@ Started only once the NUCLEO-F446RE is done.
    second-stage bootloader); the console is UART0 at the ROM's 115200 baud
    and 20 MHz. The twelve test images of its checked base profile pass on
    `emblink/esp32c3_devkitm1`, booted by Espressif's ROM, in its
-   `rv32-embsim` CI job (EmbLinkOs/EmbLinkRTOS#20). The board does not yet
-   switch to the 160 MHz PLL.
+   `rv32-embsim` CI job (EmbLinkOs/EmbLinkRTOS#20). EmbLinkOs/EmbLinkRTOS#46
+   moves the board to 160 MHz from the PLL as ESP-IDF's bootloader does,
+   and its EmbSIM tests check the clock the MCU ends at.

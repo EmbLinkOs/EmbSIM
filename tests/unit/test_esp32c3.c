@@ -2848,6 +2848,74 @@ static void test_ledc_dither_and_fade(void)
     c3_close(&f);
 }
 
+#define GPIO_SD 0x60004F00u
+#define SD_CONF(n) (GPIO_SD + 4u * (n))
+#define SD_MISC (GPIO_SD + 0x24u)
+
+/* channel 0 on GPIO8; APB_CLK is CPU_CLK (XTAL_CLK / 2) out of reset, so a
+ * bit of PRESCALE + 1 APB cycles is as many CPU cycles */
+static int sdm_open(c3 *f, int in, u32 prescale)
+{
+    if (!gpio_open(f))
+        return 0;
+    f->m.host.pin_cfg = h_edges;
+    edge_m = &f->m;
+    edge_pin = 8;
+    wr(f, SD_CONF(0), (u32)(in & 0xff) | prescale << 8);
+    wr(f, GPIO + 0x574u, 55u); /* GPIO8 out: gpio_sd0_out */
+    wr(f, G_EN_W1TS, 1u << 8);
+    nedge = 0;
+    wr(f, SD_MISC, 1u << 30); /* FUNCTION_CLK_EN */
+    return 1;
+}
+
+static void test_sdm_density(void)
+{
+    c3 f;
+    int i;
+    u64 high = 0;
+    /* SD0_IN 0: half the bits, alternating, 4 cycles each */
+    if (!sdm_open(&f, 0, 3u))
+        return;
+    esk_mach_idle(&f.m, 100u);
+    CHECK(nedge >= 20);
+    for (i = 1; i < 20; i++)
+        CHECK_EQ(edge_t[i] - edge_t[i - 1], 4u);
+    c3_close(&f);
+    /* SD0_IN -64: one bit of four, high 4 cycles of every 16 */
+    if (!sdm_open(&f, -64, 3u))
+        return;
+    esk_mach_idle(&f.m, 400u);
+    CHECK(nedge >= 40);
+    for (i = 0; i + 1 < 40; i++)
+        if (edge_lv[i])
+            high += edge_t[i + 1] - edge_t[i];
+    CHECK_EQ(high, 20u * 4u);
+    CHECK_EQ(edge_t[2] - edge_t[0], 16u);
+    /* SD0_IN 127: 255 bits of 256 high, one low bit */
+    wr(&f, SD_CONF(0), 127u | 3u << 8);
+    esk_mach_idle(&f.m, 2u * 256u * 4u + 8u);
+    nedge = 0;
+    esk_mach_idle(&f.m, 2u * 256u * 4u);
+    CHECK(nedge >= 3 && nedge <= 4);
+    CHECK_EQ(edge_lv[0] ? edge_t[2] - edge_t[1] : edge_t[1] - edge_t[0], 4u); /* the low bit */
+    /* -128: low throughout */
+    wr(&f, SD_CONF(0), 0x80u | 3u << 8);
+    esk_mach_idle(&f.m, 16u);
+    nedge = 0;
+    esk_mach_idle(&f.m, 400u);
+    CHECK_EQ(nedge, 0);
+    CHECK_EQ(pins_out[8].drive, 0);
+    /* unclocked, it holds */
+    wr(&f, SD_CONF(0), 0u | 3u << 8);
+    esk_mach_idle(&f.m, 9u);
+    wr(&f, SD_MISC, 0u);
+    nedge = 0;
+    esk_mach_idle(&f.m, 100u);
+    CHECK_EQ(nedge, 0);
+    c3_close(&f);
+}
+
 #define I2C 0x60013000u
 #define I2C_SCL_LOW (I2C + 0x00u)
 #define I2C_CTR (I2C + 0x04u)
@@ -3640,6 +3708,7 @@ RUN(test_rmt_carrier_and_filter);
 RUN(test_rmt_rx_filter);
 RUN(test_ledc_pwm);
 RUN(test_ledc_dither_and_fade);
+RUN(test_sdm_density);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);

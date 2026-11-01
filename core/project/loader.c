@@ -1419,6 +1419,15 @@ static es_status project_load(es_session *s, const esk_json *project, const char
         esk_probe *p = NULL;
         es_status ps = esk_session_probe_add(s, esk_json_get_str(pe, "id", NULL), esk_json_get_str(pe, "target", ""),
                                              esk_json_get_str(pe, "kind", NULL), esk_json_get_num(pe, "rate_hz", 0), &p);
+        if (ps == ES_OK && esk_json_get(pe, "capacity")) {
+            double cap = esk_json_get_num(pe, "capacity", 0);
+            if (esk_session_probe_capacity(s, p, cap >= 1.0 && cap <= 16777216.0 ? (size_t)cap : 0u) != ES_OK) {
+                ld_diag(s, ES_SEV_ERROR, "probe.invalid", esk_json_get_str(pe, "id", "probe"),
+                        "probe %s: %s", esk_json_get_str(pe, "id", "?"),
+                        "capacity is 1 to 16777216 samples, on a probe that records samples");
+                st = ES_ESCHEMA;
+            }
+        }
         if (ps != ES_OK) {
             char why[320];
             probe_problem(s, esk_json_get_str(pe, "target", ""), why, sizeof why);

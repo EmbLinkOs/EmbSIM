@@ -57,6 +57,7 @@ EXAMPLES = {
     "i2c_eeprom": "examples/peripherals/i2c/i2c_eeprom",
     "ledc_basic": "examples/peripherals/ledc/ledc_basic",
     "real_time_stats": "examples/system/freertos/real_time_stats",
+    "sdm_led": "examples/peripherals/sigma_delta/sdm_led",
     "temp_sensor": "examples/peripherals/temperature_sensor/temp_sensor",
     "uart_echo": "examples/peripherals/uart/uart_echo",
     "wifi_scan": "examples/wifi/scan",
