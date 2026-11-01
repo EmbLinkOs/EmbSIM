@@ -90,3 +90,27 @@ test('the schematic part\'s context menu opens its front panel', async ({ page }
   await expect(page.getByRole('main', { name: 'run perspective' })).toBeVisible();
   await expect(page.getByRole('region', { name: /^U\d+ oscilloscope$/ })).toBeVisible();
 });
+
+// each instrument's front panel, docked and floating, passes axe in the browser, in both themes
+for (const scheme of ['light', 'dark'] as const)
+  for (const { place, region, cls } of [
+    { place: 'Place Oscilloscope, 4 channels', region: /^U\d+ oscilloscope$/, cls: '.wb-ds1054z' },
+    { place: 'Place Logic analyzer, 8 channels', region: /^U\d+ logic analyzer$/, cls: '.wb-logic8' },
+    { place: 'Place Power profiler', region: /^U\d+ power profiler$/, cls: '.wb-ppk2' },
+  ]) {
+    test(`${place.slice(6)} (${scheme}): its front panel passes axe docked and floating`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto('/?mock=1');
+      await expect(page.getByRole('application', { name: 'Schematic canvas' })).toBeVisible();
+      await page.keyboard.press('Control+k');
+      await page.getByRole('combobox').fill(place);
+      await page.keyboard.press('Enter');
+      await page.getByRole('button', { name: 'Open front panel' }).click();
+      await expect(page.getByRole('main', { name: 'run perspective' })).toBeVisible();
+      await expect(page.getByRole('region', { name: region })).toBeVisible();
+      expect(await axeViolations(page, cls)).toEqual([]);
+      await page.getByRole('button', { name: /^Float .* in its own window$/ }).click();
+      await expect(page.getByRole('dialog').getByRole('region', { name: region })).toBeVisible();
+      expect(await axeViolations(page, '.wb-floating')).toEqual([]);
+    });
+  }

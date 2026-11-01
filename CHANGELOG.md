@@ -21,10 +21,18 @@ versions follow semantic versioning. There is no release yet.
   wherever it is laid out, even one whose perspective is not open yet.
 - `docs/user/instruments.md`: how to wire the three instruments, open and
   float their panels, and read each one.
-- axe runs in the browser on the DS1054Z's docked panel and its floating
-  window (`e2e/front-panels.spec.ts`), contrast included. It found the
-  scope's STOP and AUTO badges below 4.5:1, so they are darker now: white
-  on #b52b27 (6.3:1) and on #2a6db5 (5.3:1).
+- axe runs in the browser on each instrument's front panel (the DS1054Z,
+  the Logic 8, the PPK2), docked and floating, in the light and the dark
+  theme, contrast included (`e2e/front-panels.spec.ts`; the demo session
+  has stand-in catalog entries for the three). It found, and these now
+  meet 4.5:1:
+  - the scope's STOP and AUTO badges: white on #b52b27 (6.3:1) and on
+    #2a6db5 (5.3:1);
+  - the light theme's accent, white on #0e8a66 at 4.33:1 under every small
+    primary button: #0c7f5e (4.98:1);
+  - the instruments' measurement labels, in --text-faint (3.2-4.2:1): now
+    --text-muted (6.5:1 on white). The token file says --text-faint is not
+    for text.
 
 ### An oscilloscope: the Rigol DS1054Z
 

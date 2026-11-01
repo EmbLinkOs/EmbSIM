@@ -5,7 +5,8 @@
  * restrained mint accent, monospaced identifiers and time. Light is selected
  * by `data-theme="light"` on <html> or by the system preference when no
  * theme is forced. Every text/background pair below meets WCAG AA (4.5:1 for
- * text, 3:1 for UI components) in both themes.
+ * text, 3:1 for UI components) in both themes, but --text-faint (3.2-4.2:1),
+ * which is for decoration and placeholders, never for text a person must read.
  */
 
 :root {
@@ -117,10 +118,10 @@
   --text-muted: #51606f;
   --text-faint: #7a8696;
   --text-on-accent: #ffffff;
-  --accent: #0e8a66;
+  --accent: #0c7f5e;
   --accent-strong: #0a6c50;
-  --accent-muted: rgba(14, 138, 102, 0.12);
-  --accent-line: rgba(14, 138, 102, 0.5);
+  --accent-muted: rgba(12, 127, 94, 0.12);
+  --accent-line: rgba(12, 127, 94, 0.5);
   --danger: #c22f3a;
   --danger-muted: rgba(194, 47, 58, 0.12);
   --warning: #8a5a00;
@@ -168,10 +169,10 @@
     --text-muted: #51606f;
     --text-faint: #7a8696;
     --text-on-accent: #ffffff;
-    --accent: #0e8a66;
+    --accent: #0c7f5e;
     --accent-strong: #0a6c50;
-    --accent-muted: rgba(14, 138, 102, 0.12);
-    --accent-line: rgba(14, 138, 102, 0.5);
+    --accent-muted: rgba(12, 127, 94, 0.12);
+    --accent-line: rgba(12, 127, 94, 0.5);
     --danger: #c22f3a;
     --danger-muted: rgba(194, 47, 58, 0.12);
     --warning: #8a5a00;
