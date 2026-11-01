@@ -59,9 +59,9 @@ esk_usb_dev *esk_usb_device_of(esk_engine *e, const esk_usb_host *h)
     size_t i;
     if (!h->dp || !h->dp->net)
         return NULL;
-    for (i = 0; i < e->usb.devs.len; i++) {
+    for (i = 0; i < e->usb.devs.len; i++) { /* not its own device side (an OTG core's) */
         esk_usb_dev *d = e->usb.devs.data[i];
-        if (d->dp && d->dp->net == h->dp->net)
+        if (d->dp && d->dp->net == h->dp->net && d->comp != h->comp)
             return d;
     }
     return NULL;
@@ -74,7 +74,7 @@ void esk_usb_changed(esk_engine *e, const esk_usb_dev *d, es_time_t at)
         return;
     for (i = 0; i < e->usb.hosts.len; i++) {
         esk_usb_host *h = e->usb.hosts.data[i];
-        if (h->dp && h->dp->net == d->dp->net && h->changed)
+        if (h->dp && h->dp->net == d->dp->net && h->comp != d->comp && h->changed)
             h->changed(h->ctx, at);
     }
 }
@@ -86,7 +86,7 @@ void esk_usb_remote_wakeup(esk_engine *e, const esk_usb_dev *d, es_time_t at)
         return;
     for (i = 0; i < e->usb.hosts.len; i++) {
         esk_usb_host *h = e->usb.hosts.data[i];
-        if (h->dp && h->dp->net == d->dp->net && h->wakeup)
+        if (h->dp && h->dp->net == d->dp->net && h->comp != d->comp && h->wakeup)
             h->wakeup(h->ctx, at);
     }
 }
@@ -104,3 +104,5 @@ es_time_t esk_usb_fs_time(int len, int handshake)
         bits += 8 + 8 + 3 + 8;
     return (es_time_t)(bits * FS_BIT_PS_X3 / 3);
 }
+
+es_time_t esk_usb_ls_time(int len, int handshake) { return esk_usb_fs_time(len, handshake) * 8u; }

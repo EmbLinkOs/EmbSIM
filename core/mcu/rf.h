@@ -172,6 +172,14 @@ struct esk_rf {
     int *af_at, *af_num;
     const char **af_sig;
     int naf;
+    /* their indexes (esk_rf_alternates builds them): the entries of pin
+     * `at` are af_by_pin[af_pin_first[at]] to [af_pin_first[at + 1] - 1],
+     * in the table's order; af_by_sig holds them all by signal name, a
+     * name's entries in the table's order */
+    int *af_by_pin, *af_pin_first, *af_by_sig;
+    /* esk_rf_periph's last answers, by the name's address */
+    struct esk_rf_periph *pcache_p[16];
+    const char *pcache_name[16];
     /* the MCU description's DMA request mapping (dma_requests): the
      * controller, stream, channel and request of each entry */
     const char **dma_ctl, **dma_sig;

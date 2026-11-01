@@ -86,12 +86,16 @@ jobs:
             if [ -n "$4" ]; then git -C "$RUNNER_TEMP/st/$1" sparse-checkout set $4; fi
             git -C "$RUNNER_TEMP/st/$1" checkout -q FETCH_HEAD
           }
-          fetch cubef4 https://github.com/STMicroelectronics/STM32CubeF4.git 60c8abe0ae88a23bbd1c925358330031e36dd20f "Projects/STM32446E-Nucleo Projects/STM32F446ZE-Nucleo"
+          fetch cubef4 https://github.com/STMicroelectronics/STM32CubeF4.git 60c8abe0ae88a23bbd1c925358330031e36dd20f "Projects/STM32446E-Nucleo Projects/STM32F446ZE-Nucleo Drivers/BSP/Adafruit_Shield Utilities/Log Utilities/Fonts"
           fetch stm32f4xx_hal_driver https://github.com/STMicroelectronics/stm32f4xx_hal_driver.git 1f6451c3e07728b4c830744de380e56bf5bc0026
           fetch cmsis_device_f4 https://github.com/STMicroelectronics/cmsis_device_f4.git 9192c7b9df75a142f2027ab266601fe061fc00b3
           fetch stm32f4xx-nucleo-bsp https://github.com/STMicroelectronics/stm32f4xx-nucleo-bsp.git 84b99c762908ef56f711acf970ab13d4ec278df6
           fetch stm32f4xx-nucleo-144-bsp https://github.com/STMicroelectronics/stm32f4xx-nucleo-144-bsp.git 1daff230cd72b9860df011c25d815e399af6d117
           fetch stm32-mw-usb-device https://github.com/STMicroelectronics/stm32-mw-usb-device.git 2a0a3521ac4d84e6e494d37bed615e2d36c373f5
+          fetch stm32-mw-usb-host https://github.com/STMicroelectronics/stm32-mw-usb-host.git 9d46e44c858a77bf126920b7bcc258d59afa89b1
+          fetch stm32-mw-fatfs https://github.com/STMicroelectronics/stm32-mw-fatfs.git fc7f8edc3ac2e263c2f231026053e15d3587b34b
+          fetch stm32-st7735 https://github.com/STMicroelectronics/stm32-st7735.git 2b7db825b3946fd19a158947f9be685e761bed3d
+          fetch stm32-bsp-common https://github.com/STMicroelectronics/stm32-bsp-common.git 1e18c5afdf1f5971a35c8e2f88b6a21e5568ed92
           python3 tests/vendor/stm32cubef4/run.py --st "$RUNNER_TEMP/st" --embsim build/${{ matrix.preset }}/bin/embsim
           python3 tests/vendor/stm32cubef4/run.py --st "$RUNNER_TEMP/st" --board nucleo_f446ze --embsim build/${{ matrix.preset }}/bin/embsim
       - name: Pico SDK applications on the unmodified SDK

@@ -1,0 +1,262 @@
+{
+ "schema_version": 1,
+ "kind": "component",
+ "id": "emblink/st7735_tft18",
+ "version": "0.1.0",
+ "name": "1.8\" 128 x 160 TFT (ST7735R)",
+ "category": "displays",
+ "description": "A 1.8 inch 128 x 160 colour TFT on a Sitronix ST7735R controller, driven over its 4-wire SPI interface (SCK, SDA, CS, D/C, RESET), with its backlight: the display of Adafruit's 1.8\" TFT breakout and shield and of many 1.8\" modules.",
+ "keywords": [
+  "tft",
+  "lcd",
+  "display",
+  "st7735",
+  "st7735r",
+  "spi",
+  "128x160",
+  "1.8 inch",
+  "adafruit"
+ ],
+ "pins": [
+  {
+   "name": "VCC",
+   "number": 1,
+   "model": {
+    "kind": "digital_in"
+   },
+   "doc": "Supply (3.3 V logic on the module): the controller resets as it rises past about 2.3 V",
+   "required": false
+  },
+  {
+   "name": "GND",
+   "number": 2,
+   "model": {
+    "kind": "power",
+    "role": "ground"
+   },
+   "doc": "Ground"
+  },
+  {
+   "name": "SCK",
+   "number": 3,
+   "model": {
+    "kind": "digital_in"
+   },
+   "doc": "SCL: the serial clock, each bit taken on its rising edge"
+  },
+  {
+   "name": "SDA",
+   "number": 4,
+   "model": {
+    "kind": "digital_in"
+   },
+   "doc": "SDA: serial data in (MOSI), MSB first"
+  },
+  {
+   "name": "CS",
+   "number": 5,
+   "model": {
+    "kind": "digital_in"
+   },
+   "doc": "CSX: chip select, active low",
+   "required": false
+  },
+  {
+   "name": "DC",
+   "number": 6,
+   "model": {
+    "kind": "digital_in"
+   },
+   "doc": "D/CX (A0): low for a command, high for data, read with each byte's last bit"
+  },
+  {
+   "name": "RST",
+   "number": 7,
+   "model": {
+    "kind": "digital_in"
+   },
+   "doc": "RESX: reset, active low",
+   "required": false
+  },
+  {
+   "name": "LED",
+   "number": 8,
+   "model": {
+    "kind": "digital_in"
+   },
+   "doc": "The backlight's enable (LITE): high or open lights it",
+   "required": false
+  }
+ ],
+ "params": {},
+ "inputs": [
+  {
+   "name": "probe_x",
+   "type": "integer",
+   "default": 0,
+   "doc": "The probed pixel's column"
+  },
+  {
+   "name": "probe_y",
+   "type": "integer",
+   "default": 0,
+   "doc": "The probed pixel's row"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "on",
+   "type": "boolean",
+   "doc": "Awake and its display on"
+  },
+  {
+   "name": "sleeping",
+   "type": "boolean",
+   "doc": "In sleep mode (SLPIN, after a reset)"
+  },
+  {
+   "name": "inverted",
+   "type": "boolean",
+   "doc": "INVON"
+  },
+  {
+   "name": "colmod",
+   "type": "integer",
+   "doc": "COLMOD's interface format: 3 (12 bits a pixel), 5 (16), 6 (18)"
+  },
+  {
+   "name": "madctl",
+   "type": "integer",
+   "doc": "MADCTL: MY, MX, MV, ML, RGB order"
+  },
+  {
+   "name": "ram_writes",
+   "type": "integer",
+   "doc": "Pixels written to the frame memory"
+  },
+  {
+   "name": "commands",
+   "type": "integer",
+   "doc": "Commands taken"
+  },
+  {
+   "name": "white_pixels",
+   "type": "integer",
+   "doc": "Pixels the panel shows white"
+  },
+  {
+   "name": "probe",
+   "type": "integer",
+   "doc": "The probed pixel's colour as shown, RGB565 ((0, 0) the top left as the module is held)"
+  },
+  {
+   "name": "checksum",
+   "type": "string",
+   "doc": "FNV-1a of the image shown (RGB565, big-endian, row by row)"
+  },
+  {
+   "name": "frame",
+   "type": "string",
+   "doc": "The image shown, as the module is held (its pins at the top): 128 x 160 RGB565 pixels, big-endian, row by row from the top left, in base64"
+  }
+ ],
+ "model": {
+  "primitive": "st7735"
+ },
+ "functional": {
+  "primitive": "st7735"
+ },
+ "symbol": {
+  "svg": "symbol.svg",
+  "width": 80,
+  "height": 100,
+  "pins": {
+   "VCC": {
+    "x": 0,
+    "y": 10,
+    "side": "left"
+   },
+   "GND": {
+    "x": 0,
+    "y": 20,
+    "side": "left"
+   },
+   "SCK": {
+    "x": 0,
+    "y": 30,
+    "side": "left"
+   },
+   "SDA": {
+    "x": 0,
+    "y": 40,
+    "side": "left"
+   },
+   "CS": {
+    "x": 0,
+    "y": 50,
+    "side": "left"
+   },
+   "DC": {
+    "x": 0,
+    "y": 60,
+    "side": "left"
+   },
+   "RST": {
+    "x": 0,
+    "y": 70,
+    "side": "left"
+   },
+   "LED": {
+    "x": 0,
+    "y": 80,
+    "side": "left"
+   }
+  }
+ },
+ "fidelity": {
+  "functional": {
+   "claims": "The ST7735R's 4-wire serial interface (bits on SCL's rising edge, D/CX with the last bit, CSX resetting the bit counter only) and its frame memory of 128 x 160 pixels at 18 bits: CASET, RASET (each address taken as its two bytes come, so one cut short after its start keeps the end, as ST's driver relies on) and RAMWR in the window, MADCTL's MV, MX, MY and RGB, COLMOD's 12, 16 and 18 bits a pixel, SLPIN/SLPOUT, DISPON/DISPOFF, INVON/INVOFF, IDMON/IDMOFF, PTLON with PTLAR, NORON, SWRESET and RESX, a byte within their 5 ms reset cancel time (the datasheet's maximum) taken and warned of once; after a reset it sleeps with its display off. The panel shows white while blank and nothing without supply or backlight; the memory holds noise until written. The panel as the module is held (its pins at the top): frame memory (0, 0) at its bottom right, so MADCTL's MX and MY (as Adafruit's and ST's drivers set them) give an upright image; the outputs show it that way.",
+   "omissions": [
+    "the 3-wire (9-bit) and parallel interfaces",
+    "the read commands (RDDID, RDDST, RAMRD): SDA is never driven",
+    "vertical scrolling (SCRLAR, VSCSAD) and the tearing effect output",
+    "the frame rate, the panel's response time and the gamma curves' effect on colours (B1 to C5, E0, E1 and GAMSET are taken without effect)",
+    "the 120 ms an SLPOUT needs before an SLPIN, and the supply current",
+    "a part slower than typical: a byte within the reset cancel time is always taken"
+   ],
+   "validation": [
+    "tests/*.json"
+   ]
+  },
+  "timed": {
+   "claims": "As functional.",
+   "omissions": []
+  },
+  "electrical": {
+   "claims": "As functional, its supply a threshold on VCC.",
+   "omissions": [],
+   "validation": [
+    "tests/*.json"
+   ]
+  }
+ },
+ "provenance": {
+  "author": "EmbSIM",
+  "license": "Apache-2.0",
+  "sources": [
+   {
+    "title": "Sitronix ST7735R datasheet V2.1: the serial interface (9.4), the command set (10.1, 10.2), the reset timing (9.15) and the frame memory (9.7)",
+    "url": "https://www.displayfuture.com/Display/datasheet/controller/ST7735.pdf",
+    "date": "2026-10-31"
+   },
+   {
+    "title": "STMicroelectronics stm32-st7735 driver (st7735.c), the sequence ST's BSP sends",
+    "url": "https://github.com/STMicroelectronics/stm32-st7735",
+    "date": "2026-10-31"
+   }
+  ]
+ },
+ "tests": [
+  "tests/*.json"
+ ]
+}

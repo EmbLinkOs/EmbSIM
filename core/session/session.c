@@ -347,7 +347,7 @@ static double probe_value(es_session *s, esk_probe *p)
     case ESK_PROBE_DIGITAL:
         if (p->net && p->net->island) {
             /* threshold with the default family's levels and hysteresis */
-            double volts = p->net->voltage;
+            double volts = esk_net_voltage_now(p->net);
             if (!p->has_last)
                 return volts >= 1.4 ? 1.0 : 0.0;
             if (p->last >= 1.0)
@@ -357,7 +357,8 @@ static double probe_value(es_session *s, esk_probe *p)
         return p->net ? (double)esk_net_value(p->net) : 2.0;
     case ESK_PROBE_ANALOG:
         if (p->net)
-            return p->net->island ? p->net->voltage : (esk_net_value(p->net) == ESK_L1 ? s->eng.default_supply_v : 0.0);
+            return p->net->island ? esk_net_voltage_now(p->net)
+                                  : (esk_net_value(p->net) == ESK_L1 ? s->eng.default_supply_v : 0.0);
         /* a device quantity: same as a value probe */
         /* fall through */
     case ESK_PROBE_VALUE:

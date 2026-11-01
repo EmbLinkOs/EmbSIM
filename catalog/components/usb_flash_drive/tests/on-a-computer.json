@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "on-a-computer",
+  "description": "Plugged into a computer's port: enumerated at full speed, configured as a mass storage device (its serial number read); its medium out of the box lists no files.",
+  "policy": "electrical",
+  "until": "500ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/usb_flash_drive"
+      },
+      {
+        "id": "PC",
+        "component": "emblink/usb_host"
+      },
+      {
+        "id": "G0",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "VBUS": [
+        "PC.VBUS",
+        "DUT.VBUS"
+      ],
+      "DM": [
+        "PC.DM",
+        "DUT.DM"
+      ],
+      "DP": [
+        "PC.DP",
+        "DUT.DP"
+      ],
+      "GND": [
+        "PC.GND",
+        "DUT.GND",
+        "G0.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.state": {
+      "at": "390ms",
+      "equals": "configured"
+    },
+    "output:PC.HOST.product": {
+      "at": "390ms",
+      "equals": "USB Flash Drive"
+    },
+    "output:PC.HOST.log": {
+      "at": "390ms",
+      "contains": "new full-speed USB device"
+    },
+    "output:DUT.files": {
+      "at": "390ms",
+      "equals": ""
+    },
+    "output:DUT.capacity_sectors": {
+      "at": "390ms",
+      "equals": 16384
+    }
+  }
+}

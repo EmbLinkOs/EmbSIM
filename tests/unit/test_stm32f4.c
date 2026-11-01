@@ -3681,6 +3681,340 @@ static void test_tim_widths(void)
     f4_close(&f);
 }
 
+/* ---- the OTG core as a host (otg_fs.c), driven as the HAL's HCD driver
+ * does, with a scripted device on its cable ---- */
+
+#define H_HNPTXSTS (OTG + 0x02Cu)
+#define H_HPTXFSIZ (OTG + 0x100u)
+#define H_HCFG (OTG + 0x400u)
+#define H_HFIR (OTG + 0x404u)
+#define H_HFNUM (OTG + 0x408u)
+#define H_HAINT (OTG + 0x414u)
+#define H_HAINTMSK (OTG + 0x418u)
+#define H_HPRT (OTG + 0x440u)
+#define H_HCCHAR(n) (OTG + 0x500u + 0x20u * (n))
+#define H_HCINT(n) (OTG + 0x508u + 0x20u * (n))
+#define H_HCINTMSK(n) (OTG + 0x50Cu + 0x20u * (n))
+#define H_HCTSIZ(n) (OTG + 0x510u + 0x20u * (n))
+#define HPRT_W1C (1u << 1 | 1u << 2 | 1u << 3 | 1u << 5)
+
+static struct {
+    int pull, resets, reset_ends, sofs, setups, outs, ins, naks;
+    u32 last_frame;
+    u8 setup[8];
+    u8 out[64];
+    u32 out_len;
+    int out_d1;
+    const u8 *in;
+    u32 in_len;
+    int in_d1, answer;
+} sd;
+
+static int sd_pullup(void *ctx)
+{
+    (void)ctx;
+    return sd.pull;
+}
+
+static void sd_bus(void *ctx, int ev, u32 frame)
+{
+    (void)ctx;
+    if (ev == ESK_USB_RESET)
+        sd.resets++;
+    else if (ev == ESK_USB_RESET_END)
+        sd.reset_ends++;
+    else if (ev == ESK_USB_SOF) {
+        sd.sofs++;
+        sd.last_frame = frame;
+    }
+}
+
+static int sd_setup(void *ctx, int addr, int ep, const u8 data[8])
+{
+    (void)ctx;
+    if (addr != 0 || ep != 0)
+        return ESK_USB_NONE;
+    memcpy(sd.setup, data, 8);
+    sd.setups++;
+    return ESK_USB_ACK;
+}
+
+static int sd_out(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len)
+{
+    (void)ctx;
+    (void)addr;
+    (void)ep;
+    sd.outs++;
+    if (sd.answer != ESK_USB_ACK)
+        return sd.answer;
+    memcpy(sd.out, data, len < 64u ? len : 64u);
+    sd.out_len = len;
+    sd.out_d1 = data1;
+    return ESK_USB_ACK;
+}
+
+static int sd_in(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1)
+{
+    (void)ctx;
+    (void)addr;
+    (void)ep;
+    sd.ins++;
+    if (sd.answer != ESK_USB_ACK) {
+        if (sd.answer == ESK_USB_NAK)
+            sd.naks++;
+        return sd.answer;
+    }
+    *len = sd.in_len < cap ? sd.in_len : cap;
+    memcpy(data, sd.in, *len);
+    *data1 = sd.in_d1;
+    return ESK_USB_ACK;
+}
+
+/* HPRT written as the HAL does: its write-1-to-clear bits masked out */
+static void host_hprt(f4 *f, u32 set, u32 clear)
+{
+    u32 v = rd(f, H_HPRT) & ~HPRT_W1C;
+    wr(f, H_HPRT, (v | set) & ~clear);
+}
+
+/* USB_HC_Halt for a control or bulk channel, then CHH taken */
+static void host_halt(f4 *f, u32 n)
+{
+    wr(f, H_HCCHAR(n), rd(f, H_HCCHAR(n)) | 1u << 30);
+    wr(f, H_HCCHAR(n), rd(f, H_HCCHAR(n)) | 1u << 31);
+    CHECK(wait_set(f, H_HCINT(n), 1u << 1, 10) >= 0);
+    CHECK_EQ(rd(f, H_HCCHAR(n)) >> 30, 0u);
+    wr(f, H_HCINT(n), 0xFFFFFFFFu);
+}
+
+static void host_enable(f4 *f, u32 n) { wr(f, H_HCCHAR(n), (rd(f, H_HCCHAR(n)) & ~(1u << 30)) | 1u << 31); }
+
+static void test_otg_host(void)
+{
+    f4 f;
+    static const u8 get_dev[8] = { 0x80, 6, 0, 1, 0, 0, 64, 0 };
+    static const u8 desc[18] = { 18, 1, 0, 2, 0, 0, 0, 64, 0x83, 0x04, 0x40, 0x57, 0, 2, 1, 2, 3, 1 };
+    u32 st, w[5], i, f0;
+    long t;
+    if (!f4_open(&f, 1))
+        return;
+    memset(&sd, 0, sizeof sd);
+    sd.answer = ESK_USB_ACK;
+    f.m.host.usbh_pullup = sd_pullup;
+    f.m.host.usbh_bus = sd_bus;
+    f.m.host.usbh_setup = sd_setup;
+    f.m.host.usbh_out = sd_out;
+    f.m.host.usbh_in = sd_in;
+    CHECK(f.m.usb.host_changed != NULL);
+    otg_msp(&f);
+    pll_from_hse(&f, PLLCFGR_168);
+    wr(&f, G_GRSTCTL, 1u);
+    CHECK(wait_clr(&f, G_GRSTCTL, 1u, 10) >= 0);
+    wr(&f, G_GUSBCFG, rd(&f, G_GUSBCFG) | 1u << 29); /* FHMOD */
+    CHECK(wait_set(&f, G_GINTSTS, 1u, 30000) >= 20000);
+
+    /* USB_HostInit, as the HAL does it */
+    wr(&f, G_GCCFG, 1u << 16);                       /* PWRDWN, no VBUS sensing */
+    CHECK(rd(&f, H_HCFG) & 1u << 2);                 /* FSLSS: FS and LS only */
+    wr(&f, H_HCFG, 1u);                              /* FSLSPCS 48 MHz */
+    wr(&f, H_HFIR, 48000u);
+    wr(&f, G_GRXFSIZ, 0x80u);
+    wr(&f, G_DIEPTXF0, 0x60u << 16 | 0x80u);         /* HNPTXFSIZ */
+    wr(&f, H_HPTXFSIZ, 0x40u << 16 | 0xE0u);
+    wr(&f, G_GINTSTS, 0xFFFFFFFFu);
+    wr(&f, G_GINTMSK, 1u << 4 | 1u << 24 | 1u << 25 | 1u << 3 | 1u << 29);
+    wr(&f, G_GAHBCFG, 1u);
+    CHECK_EQ(rd(&f, H_HNPTXSTS), 8u << 16 | 0x60u);  /* the FIFO's words free, the queue */
+
+    /* a device pulled up while the port is off: nothing; PPWR: connected */
+    sd.pull = ESK_USB_FULL_SPEED;
+    f.m.usb.host_changed(f.m.usb.ctx);
+    CHECK_EQ(rd(&f, H_HPRT) & 3u, 0u);
+    host_hprt(&f, 1u << 12, 0);                      /* PPWR (USB_DriveVbus) */
+    CHECK_EQ(rd(&f, H_HPRT) & 3u, 3u);               /* PCSTS, PCDET */
+    CHECK(rd(&f, G_GINTSTS) & 1u << 24);             /* HPRTINT */
+    CHECK_EQ((rd(&f, H_HPRT) >> 10) & 3u, 1u);       /* the line at J: D+ high */
+    CHECK(rd(&f, NVIC_ISPR2) & 1u << 3);
+    wr(&f, H_HPRT, (rd(&f, H_HPRT) & ~HPRT_W1C) | 1u << 1);
+    CHECK_EQ(rd(&f, G_GINTSTS) & 1u << 24, 0u);
+
+    /* USB_ResetPort: SE0 while PRST is set, then the port enabled at the
+     * device's speed, and SOFs every 1 ms */
+    host_hprt(&f, 1u << 8, 0);
+    CHECK_EQ(sd.resets, 1);
+    CHECK_EQ((rd(&f, H_HPRT) >> 10) & 3u, 0u);       /* SE0 */
+    run_us(&f, 10000);
+    CHECK_EQ(sd.sofs, 0);
+    host_hprt(&f, 0, 1u << 8);
+    CHECK_EQ(sd.reset_ends, 1);
+    CHECK(rd(&f, H_HPRT) & 1u << 2);                 /* PENA */
+    CHECK(rd(&f, H_HPRT) & 1u << 3);                 /* PENCHNG */
+    CHECK_EQ((rd(&f, H_HPRT) >> 17) & 3u, 1u);       /* PSPD full speed */
+    wr(&f, H_HPRT, (rd(&f, H_HPRT) & ~HPRT_W1C) | 1u << 3);
+    CHECK(rd(&f, H_HPRT) & 1u << 2);                 /* PENA stays */
+    wr(&f, G_GINTSTS, 1u << 3);
+    f0 = rd(&f, H_HFNUM) & 0xFFFFu;
+    t = wait_set(&f, G_GINTSTS, 1u << 3, 2000);
+    CHECK(t > 0 && t <= 1001);
+    CHECK_EQ(rd(&f, H_HFNUM) & 0xFFFFu, f0 + 1u);
+    CHECK(rd(&f, H_HFNUM) >> 16 > 40000u);           /* FTREM: most of the frame left */
+    CHECK_EQ(sd.last_frame, f0 + 1u);
+    sd.sofs = 0;
+    run_us(&f, 10000);
+    CHECK(sd.sofs >= 9 && sd.sofs <= 11);
+
+    /* a SETUP on channel 0 (USB_HC_Init, USB_HC_StartXfer): it goes once
+     * its 8 bytes are in the non-periodic FIFO; ACK, XFRC, CHENA cleared,
+     * the data stage's DATA1 next */
+    wr(&f, H_HCINT(0), 0xFFFFFFFFu);
+    wr(&f, H_HCINTMSK(0), 1u | 1u << 1 | 1u << 3 | 1u << 4 | 1u << 7 | 1u << 10);
+    wr(&f, H_HAINTMSK, 7u);
+    wr(&f, H_HCCHAR(0), 64u);                        /* MPSIZ 64, EP0 OUT, control, address 0 */
+    wr(&f, H_HCTSIZ(0), 8u | 1u << 19 | 3u << 29);   /* SETUP */
+    host_enable(&f, 0);
+    run_us(&f, 100);
+    CHECK_EQ(sd.setups, 0);                          /* no data yet */
+    wr(&f, FIFO(0), 0x01000680u);
+    CHECK_EQ(rd(&f, H_HNPTXSTS) & 0xFFFFu, 0x5Fu);
+    wr(&f, FIFO(0), 0x00400000u);
+    t = wait_set(&f, H_HCINT(0), 1u, 100);
+    CHECK(t >= 13 && t <= 16);                       /* 169 bits at 12 Mbit/s: 14 us */
+    CHECK_EQ(sd.setups, 1);
+    CHECK(memcmp(sd.setup, get_dev, 8) == 0);
+    CHECK(rd(&f, H_HCINT(0)) & 1u << 5);             /* ACK */
+    CHECK_EQ(rd(&f, H_HCCHAR(0)) >> 31, 0u);
+    CHECK_EQ(rd(&f, H_HCTSIZ(0)), 2u << 29);         /* DATA1, nothing left */
+    CHECK_EQ(rd(&f, H_HNPTXSTS) & 0xFFFFu, 0x60u);
+    CHECK(rd(&f, H_HAINT) & 1u);
+    CHECK(rd(&f, G_GINTSTS) & 1u << 25);             /* HCINT */
+    wr(&f, H_HCINT(0), 0xFFFFFFFFu);
+    host_halt(&f, 0);
+
+    /* the data stage on channel 1, IN: the device's 18 bytes in the
+     * receive FIFO with their status, then "transfer done", whose taking
+     * is XFRC */
+    sd.in = desc;
+    sd.in_len = 18;
+    sd.in_d1 = 1;
+    wr(&f, H_HCINT(1), 0xFFFFFFFFu);
+    wr(&f, H_HCINTMSK(1), 1u | 1u << 1 | 1u << 3 | 1u << 4 | 1u << 7 | 1u << 8 | 1u << 10);
+    wr(&f, H_HCCHAR(1), 64u | 1u << 15);
+    wr(&f, H_HCTSIZ(1), 64u | 1u << 19 | 2u << 29);
+    host_enable(&f, 1);
+    CHECK(wait_set(&f, G_GINTSTS, 1u << 4, 100) >= 0); /* RXFLVL */
+    CHECK_EQ(sd.ins, 1);
+    st = rd(&f, G_GRXSTSP);
+    CHECK_EQ(st, 1u | 18u << 4 | 2u << 15 | 2u << 17);
+    for (i = 0; i < 5u; i++)
+        w[i] = rd(&f, FIFO(1));
+    CHECK_EQ(w[0], 0x02000112u);
+    CHECK_EQ(w[4] & 0xFFFFu, 0x0103u);
+    CHECK_EQ(rd(&f, H_HCINT(1)) & 1u, 0u);
+    CHECK_EQ(rd(&f, G_GRXSTSP), 1u | 0u << 15 | 3u << 17); /* done, DATA0 next */
+    CHECK(rd(&f, H_HCINT(1)) & 1u);                  /* XFRC */
+    CHECK_EQ(rd(&f, H_HCTSIZ(1)), 46u);              /* 64 - 18, DATA0, no packets */
+    CHECK_EQ(rd(&f, G_GINTSTS) & 1u << 4, 0u);
+    wr(&f, H_HCINT(1), 0xFFFFFFFFu);
+    host_halt(&f, 1);
+
+    /* a NAK: the channel stops until the program halts and re-enables it */
+    sd.answer = ESK_USB_NAK;
+    wr(&f, H_HCTSIZ(1), 64u | 1u << 19 | 2u << 29);
+    host_enable(&f, 1);
+    CHECK(wait_set(&f, H_HCINT(1), 1u << 4, 100) >= 0);
+    run_us(&f, 200);
+    CHECK_EQ(sd.naks, 1);
+    wr(&f, H_HCINT(1), 0xFFFFFFFFu);
+    host_halt(&f, 1);
+    host_enable(&f, 1);
+    CHECK(wait_set(&f, H_HCINT(1), 1u << 4, 100) >= 0);
+    CHECK_EQ(sd.naks, 2);
+    host_halt(&f, 1);
+    /* no answer at all (an address nobody has): TXERR */
+    sd.answer = ESK_USB_NONE;
+    host_enable(&f, 1);
+    CHECK(wait_set(&f, H_HCINT(1), 1u << 7, 100) >= 0);
+    host_halt(&f, 1);
+    sd.answer = ESK_USB_ACK;
+
+    /* an OUT with its data toggle: DATA1, 4 bytes */
+    wr(&f, H_HCCHAR(0), 64u);
+    wr(&f, H_HCTSIZ(0), 4u | 1u << 19 | 2u << 29);
+    host_enable(&f, 0);
+    wr(&f, FIFO(0), 0x44332211u);
+    CHECK(wait_set(&f, H_HCINT(0), 1u, 100) >= 0);
+    CHECK_EQ(sd.out_len, 4u);
+    CHECK_EQ(sd.out_d1, 1);
+    CHECK_EQ(sd.out[3], 0x44u);
+    CHECK_EQ(rd(&f, H_HCTSIZ(0)) >> 29, 0u);         /* DATA0 next */
+    wr(&f, H_HCINT(0), 0xFFFFFFFFu);
+    host_halt(&f, 0);
+
+    /* an interrupt IN channel goes once a frame, in the frames ODDFRM
+     * says: a NAK stops it */
+    sd.answer = ESK_USB_NAK;
+    sd.naks = 0;
+    wr(&f, H_HCINTMSK(2), 1u | 1u << 1 | 1u << 3 | 1u << 4 | 1u << 7);
+    wr(&f, H_HCCHAR(2), 8u | 1u << 11 | 1u << 15 | 3u << 18 | ((rd(&f, H_HFNUM) & 1u) ? 0u : 1u << 29));
+    wr(&f, H_HCTSIZ(2), 8u | 1u << 19);
+    host_enable(&f, 2);
+    run_us(&f, 3000);
+    CHECK_EQ(sd.naks, 1);
+    host_halt(&f, 2);
+    sd.answer = ESK_USB_ACK;
+
+    /* the device goes: DISCINT, the port disabled, no more frames */
+    sd.pull = ESK_USB_DETACHED;
+    f.m.usb.host_changed(f.m.usb.ctx);
+    CHECK(rd(&f, G_GINTSTS) & 1u << 29);
+    CHECK_EQ(rd(&f, H_HPRT) & (1u | 1u << 2), 0u);
+    CHECK(rd(&f, H_HPRT) & 1u << 3);                 /* PENCHNG */
+    wr(&f, G_GINTSTS, 1u << 29);
+    wr(&f, H_HPRT, (rd(&f, H_HPRT) & ~HPRT_W1C) | HPRT_W1C);
+    sd.sofs = 0;
+    run_us(&f, 3000);
+    CHECK_EQ(sd.sofs, 0);
+
+    /* a low-speed device: D- at J, PSPD 2, transactions at 1.5 Mbit/s */
+    sd.pull = ESK_USB_LOW_SPEED;
+    f.m.usb.host_changed(f.m.usb.ctx);
+    CHECK_EQ(rd(&f, H_HPRT) & 3u, 3u);
+    CHECK_EQ((rd(&f, H_HPRT) >> 10) & 3u, 2u);
+    host_hprt(&f, 1u << 8, 0);
+    run_us(&f, 10000);
+    host_hprt(&f, 0, 1u << 8);
+    CHECK_EQ((rd(&f, H_HPRT) >> 17) & 3u, 2u);
+    wr(&f, H_HCFG, 2u);                              /* 6 MHz, as the HAL then sets */
+    wr(&f, H_HFIR, 6000u);
+    wr(&f, H_HCINT(0), 0xFFFFFFFFu);
+    wr(&f, H_HCCHAR(0), 8u);
+    wr(&f, H_HCTSIZ(0), 8u | 1u << 19 | 3u << 29);
+    host_enable(&f, 0);
+    wr(&f, FIFO(0), 0x01000680u);
+    wr(&f, FIFO(0), 0x00080000u);
+    t = wait_set(&f, H_HCINT(0), 1u, 1000);
+    CHECK(t >= 100 && t <= 130);                     /* 169 bits at 1.5 Mbit/s: 113 us */
+    host_halt(&f, 0);
+    sd.sofs = 0;
+    run_us(&f, 5000);
+    CHECK(sd.sofs >= 4 && sd.sofs <= 6);             /* keep-alives each 1 ms */
+
+    /* PSUSP: no more frames; PRES, then its end: frames again */
+    host_hprt(&f, 1u << 7, 0);
+    CHECK(rd(&f, H_HPRT) & 1u << 7);
+    sd.sofs = 0;
+    run_us(&f, 5000);
+    CHECK_EQ(sd.sofs, 0);
+    host_hprt(&f, 1u << 6, 0);
+    CHECK_EQ((rd(&f, H_HPRT) >> 10) & 3u, 1u);       /* K at low speed: D+ high */
+    run_us(&f, 20000);
+    host_hprt(&f, 0, 1u << 6);
+    CHECK_EQ(rd(&f, H_HPRT) & 1u << 7, 0u);
+    run_us(&f, 3000);
+    CHECK(sd.sofs >= 2);
+    f4_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_reset);
 RUN(test_180mhz);
@@ -3738,4 +4072,5 @@ RUN(test_crc);
 RUN(test_tim5_lsi);
 RUN(test_tim_widths);
 RUN(test_otg_fs);
+RUN(test_otg_host);
 TEST_MAIN_END

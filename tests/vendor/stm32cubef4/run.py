@@ -103,6 +103,9 @@ EXAMPLES_ZE = {
     "usb_device_hid_standalone": ZE + "Applications/USB_Device/HID_Standalone",
     # the same image, suspended, woken by B1, unplugged and plugged back
     "usb_device_hid_suspend": ZE + "Applications/USB_Device/HID_Standalone",
+    # the host side, the Adafruit 1.8" TFT shield on the Arduino connectors
+    "usb_host_hid_standalone": ZE + "Applications/USB_Host/HID_Standalone",
+    "usb_host_msc_standalone": ZE + "Applications/USB_Host/MSC_Standalone",
     # ST's DFU loader as it ships: its static allocator (262 words, sized for
     # MSC) is smaller than the DFU class's handle (1056 bytes with the
     # middleware CubeF4 pins), so USBD_DFU_Init overruns it into hpcd
@@ -141,7 +144,28 @@ def checkouts(st: Path) -> dict:
         "Drivers/BSP/STM32F4xx_Nucleo_144": st / "stm32f4xx-nucleo-144-bsp",
         "Drivers/CMSIS/Include": st / "CMSIS_5" / "CMSIS" / "Core" / "Include",
         "Middlewares/ST/STM32_USB_Device_Library": st / "stm32-mw-usb-device",
+        "Middlewares/ST/STM32_USB_Host_Library": st / "stm32-mw-usb-host",
+        "Middlewares/Third_Party/FatFs": st / "stm32-mw-fatfs",
+        "Drivers/BSP/Components/st7735": st / "stm32-st7735",
+        "Drivers/BSP/Components/Common": st / "stm32-bsp-common",
     }
+
+
+def link_checkouts(st: Path) -> None:
+    """each submodule's checkout also where CubeF4 has it: its sources
+    include one another by paths relative to CubeF4's tree (the Adafruit
+    shield's BSP: "../Components/st7735/st7735.h")"""
+    for prefix, there in checkouts(st).items():
+        here = st / "cubef4" / prefix
+        if not there.exists() or (here.exists() and any(here.iterdir())):
+            continue
+        if here.is_symlink():
+            here.unlink()
+        elif here.exists():
+            here.rmdir()  # the submodule's empty place
+        # a copy, not a link: "../" in their includes is resolved from the
+        # file's real directory
+        shutil.copytree(there, here, ignore=shutil.ignore_patterns(".git"))
 
 
 def resolve(st: Path, path: Path) -> Path:
@@ -153,8 +177,10 @@ def resolve(st: Path, path: Path) -> Path:
     except ValueError:
         return p
     for prefix, there in checkouts(st).items():
-        if rel == prefix or rel.startswith(prefix + "/"):
+        if (rel == prefix or rel.startswith(prefix + "/")) and not (cube / prefix).is_dir():
             return there / rel[len(prefix):].lstrip("/")
+        if rel == prefix or rel.startswith(prefix + "/"):
+            return p  # its copy in CubeF4's tree (link_checkouts)
     return p
 
 
@@ -285,6 +311,7 @@ def main() -> int:
         if not (st / need).exists():
             print(f"error: {st} has no {need}")
             return 2
+    link_checkouts(st)
     names = args.examples or sorted(d.name for d in BOARD["dir"].iterdir() if d.is_dir())
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(args.keep).resolve() if args.keep else Path(tmp)

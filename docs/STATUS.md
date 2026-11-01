@@ -5,6 +5,45 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## USB host mode, a USB mouse, a flash drive, and Adafruit's TFT shield (2026-10-31)
+
+The STM32F446's OTG FS core works as a host too (`stm32-otg-fs` with
+FHMOD: the port, frames and twelve channels as ST's HCD driver uses them),
+and the MCU is both ends of its cable. USB parts share a device core
+(`core/model/usb_dev.c`); `emblink/usb_mouse` is a low-speed HID boot mouse,
+`emblink/usb_flash_drive` a full-speed mass storage device (Bulk-Only,
+SCSI) whose medium is FAT16 as from the shop.
+The NUCLEO-F446ZE's U12 (`emblink/stmps2151str`, values from ST's
+datasheet) powers CN13's VBUS from PG6. `emblink/st7735_tft18` (a C model of
+the ST7735R and its 1.8" panel) and `emblink/adafruit_tft_shield18` (its
+joystick ladder from Adafruit's schematic) give ST's host examples their
+display. Evidence: `test_stm32f4`'s `test_otg_host` (connection with PPWR,
+PRST's reset and the port enabled at full and low speed, SOFs every 1 ms,
+a SETUP waiting for its FIFO words and taking 14 us, IN data with its
+statuses and XFRC on the taking, NAK stopping the channel, TXERR, the halt
+and CHH, an OUT's toggle, an interrupt channel once a frame, disconnection,
+a low-speed SETUP's 113 us, PSUSP and PRES); the mouse's fixture on the
+PC's host; U12's four fixtures (on at 0.5 A within the datasheet's
+resistance, EN at VIL and VIH) and the board's `usb-host-vbus`; the TFT's
+six fixtures (16 bits a pixel, MADCTL's mirroring, BGR and inversion,
+sleep, the reset cancel time, ST's cursor-only CASET); the shield's six
+(each direction in BSP_JOY_GetState's window); CubeF4's USB_Host/
+HID_Standalone, unmodified, 13/13: VBUS on through U12 at 150 ms, the
+mouse enumerated at low speed (address 1, report protocol), the log on the
+LCD, SEL starting the mouse demo once the log is quiet (while it scrolls
+the main loop draws and does not read the joystick, as on the board), its
+window drawn, reports as the mouse moves and clicks; the drive's fixture on
+the PC's port; CubeF4's USB_Host/MSC_Standalone, unmodified, 14/14: the
+drive enumerated at full speed, its LUN taken, FatFs mounting it, B1
+writing 'USBHost.txt' and reading it back, the drive then holding
+USBHOST.TXT (40 bytes). The analog islands
+lag up to 10 us behind an MCU's SPI clock instead of stepping at each edge
+(caught up before any reading), which brought this run from 18 min to
+2.5 min. Not yet: the ID pin, SRP and HNP, the drive's NAND busy times
+and an image file kept between runs, hubs and split transactions, the over-current flag's
+blanking and current limit in U12, the shield's microSD socket, a
+workbench view of the LCD and the USB host's state.
+
 ## Bench instruments: the Saleae Logic 8 (2026-10-31)
 
 The first of three real bench instruments (`docs/engineering/bench-instruments.md`):
@@ -49,10 +88,10 @@ GPIOToggle .dfu as dfu-util would (with its static allocator's size
 corrected: as shipped it overruns into the PCD handle and never answers
 SET_CONFIGURATION, which its own scenario asserts), resetting into it with
 the flash kept, 10/10 and 5/5; `emblink/usb_host`'s and
-`emblink/usb_host_controller`'s fixtures. Not yet: host mode and U12,
-class drivers beyond HID's polling and DFU's download (CDC and MSC are
+`emblink/usb_host_controller`'s fixtures. Not yet (then): host mode and U12
+(now above), class drivers beyond HID's polling and DFU's download (CDC and MSC are
 configured, then idle), the USB/IP bridge to the computer's own USB, LPM, low-speed devices
-and hubs, the other MCUs' USB controllers (RP2040, nRF52840, PIC32,
+(now above) and hubs, the other MCUs' USB controllers (RP2040, nRF52840, PIC32,
 ESP32-C3).
 
 ## The STM32F446 completed further, and the NUCLEO-F446ZE (2026-10-31)

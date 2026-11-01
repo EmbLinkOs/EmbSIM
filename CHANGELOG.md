@@ -5,6 +5,58 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### USB host mode: the NUCLEO-F446ZE drives a mouse and a flash drive, with Adafruit's TFT shield
+
+- The STM32F446's OTG FS core as a host (`stm32-otg-fs`, FHMOD): the port
+  (PPWR, connection and disconnection, PRST's reset, the port enabled at
+  the device's full or low speed, PSUSP and PRES, PLSTS), an SOF or a
+  low-speed keep-alive every HFIR frame, and twelve channels with SETUP,
+  OUT and IN transactions at the bus's bit time, their data toggles, ACK,
+  NAK, STALL, time-outs, babble and toggle errors, the CHDIS/CHENA halt
+  and its CHH, one IN token per enable, interrupt channels once a frame on
+  ODDFRM's parity, the transmit FIFOs' space and the receive FIFO's host
+  statuses, as ST's HCD driver expects them. The MCU is both ends of its
+  cable: a device's pull-up reaches its host side (`mach.h`'s usbh hooks).
+- USB device parts share a device core (`core/model/usb_dev.c`: chapter 9's
+  standard requests, EP0 in bMaxPacketSize0 packets, toggles, halts,
+  VBUS above 4.4 V); `emblink/usb_mouse`, a low-speed HID boot mouse
+  (046D:C06C) whose inputs move it and press its buttons. The PC's host
+  enumerates low-speed devices at 1.5 Mbit/s.
+- `emblink/stmps2151str`, ST's 500 mA USB power switch with an active-high
+  enable, its values from ST's datasheet (90 mOhm, VIL 0.8 V, VIH 2.0 V);
+  the NUCLEO-F446ZE's U12 powers CN13's VBUS from 5V while PG6 is high.
+- `emblink/st7735_tft18`, a 1.8" 128 x 160 TFT on a Sitronix ST7735R as a C
+  model: its 4-wire SPI, the 18-bit frame memory, CASET/RASET (each address
+  as its bytes come), RAMWR, MADCTL's order, COLMOD's 12, 16 and 18 bits,
+  sleep, display, inversion, idle and partial modes, the resets; its image
+  (as the module is held), a checksum and a pixel probe are outputs.
+- `emblink/adafruit_tft_shield18`, Adafruit's 1.8" TFT shield (product
+  802) on the Arduino header: the TFT and the five-way joystick's ladder
+  on A3, its resistors from Adafruit's schematic.
+- `emblink/usb_flash_drive`, a USB flash drive: a full-speed mass storage
+  device (Bulk-Only Transport with its CBW, CSW, residues, STALLs and reset
+  recovery; SCSI's INQUIRY, TEST UNIT READY, REQUEST SENSE, MODE SENSE,
+  READ FORMAT CAPACITIES, READ CAPACITY(10), READ(10), WRITE(10) and the
+  rest a host sends), its medium formatted as from the shop (an MBR, one
+  FAT16 partition); its outputs list its files as a computer would.
+- STM32CubeF4's USB_Host/MSC_Standalone runs unmodified on the
+  NUCLEO-F446ZE with the shield and the drive on CN13: it mounts the drive
+  with FatFs, writes 'USBHost.txt', reads it back ('FatFs data compare
+  SUCCESS') and lists it; the drive then holds USBHOST.TXT, 40 bytes
+  (14/14).
+- STM32CubeF4's USB_Host/HID_Standalone runs unmodified on the NUCLEO-F446ZE
+  with the shield and a mouse on CN13: it switches VBUS on through U12,
+  enumerates the mouse at low speed, logs it on the LCD, starts its mouse
+  demo on the joystick's SEL and draws the mouse's moves (13/13).
+- The engine: an analog island chopped by another part's events under a
+  microsecond apart (a core's SPI clock beside a settling supply) lags up
+  to 10 us behind instead of a step to each, and catches up before a part
+  changes its sources, an MCU or a probe reads it, and at an advance's end;
+  the STM32's alternate-function table is indexed and its peripherals'
+  names cached, and an MCU no longer re-reads its ports on its own
+  outputs' echoes. The HID host scenario runs 7 times faster than before
+  these (18 min to 2.5 min for 3.3 s).
+
 ### A logic analyzer: the Saleae Logic 8
 
 - `emblink/saleae_logic8`: Saleae's 8-channel USB logic analyzer as a part

@@ -78,7 +78,8 @@ es_status esk_usb_attach_dev(struct esk_engine *e, esk_usb_dev *d);
 void esk_usb_detach_dev(struct esk_engine *e, esk_usb_dev *d);
 es_status esk_usb_attach_host(struct esk_engine *e, esk_usb_host *h);
 void esk_usb_detach_host(struct esk_engine *e, esk_usb_host *h);
-/* the device on the host's cable (its D+ on the host's D+ net), or NULL */
+/* the device on the host's cable (its D+ on the host's D+ net, another
+ * part than the host: an OTG core is both), or NULL */
 esk_usb_dev *esk_usb_device_of(struct esk_engine *e, const esk_usb_host *h);
 /* a device's pull-up changed: the host on its cable hears it */
 void esk_usb_changed(struct esk_engine *e, const esk_usb_dev *d, es_time_t at);
@@ -88,5 +89,7 @@ void esk_usb_remote_wakeup(struct esk_engine *e, const esk_usb_dev *d, es_time_t
  * of `len` bytes (none for -1) and the handshake (when `handshake`), each
  * with its SYNC, PID, CRC and EOP, and the inter-packet gaps */
 es_time_t esk_usb_fs_time(int len, int handshake);
+/* the same at low speed (1.5 Mbit/s, a low-speed device on a root port) */
+es_time_t esk_usb_ls_time(int len, int handshake);
 
 #endif

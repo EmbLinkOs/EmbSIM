@@ -48,6 +48,8 @@ typedef struct mna {
     int nextra; /* branch currents and internal nodes */
     int n;
     double *J, *f, *x_iter, *x_old, *dx;
+    double *x_prev;       /* the solution accepted before isl->x, for the slope */
+    es_time_t t_prev;
     int *piv;
     int allocated;
     int started, running, in_step;
@@ -419,6 +421,10 @@ static void publish(esk_island *isl, es_time_t t)
 {
     mna *p = (mna *)isl->priv;
     size_t i;
+    if (p->x_prev && t > isl->t_accepted) {
+        memcpy(p->x_prev, isl->x, (size_t)p->n * sizeof *p->x_prev);
+        p->t_prev = isl->t_accepted;
+    }
     memcpy(isl->x, p->x_iter, (size_t)p->n * sizeof *isl->x);
     isl->t_accepted = t;
     for (i = 1; i < isl->nets.len; i++) {
@@ -533,10 +539,14 @@ static void deliver_crossings(esk_island *isl, es_time_t t)
     for (i = 0; i < isl->devs.len; i++) {
         esk_adev *d = isl->devs.data[i];
         esk_logic nv;
-        if (bridge_input_role(d) && crossing(d, isl->x, &nv))
+        if (bridge_input_role(d) && crossing(d, isl->x, &nv)) {
             esk_engine_bridge_crossed(isl->e, d->pin, nv, t);
-        if (watch_crossing(d, isl->x, &nv))
+            isl->active_at = t;
+        }
+        if (watch_crossing(d, isl->x, &nv)) {
             esk_engine_watch_crossed(isl->e, d->pin, nv, t);
+            isl->active_at = t;
+        }
     }
 }
 
@@ -638,10 +648,11 @@ static void free_matrices(esk_island *isl)
     esk_free(isl->a, p->f, n * sizeof *p->f);
     esk_free(isl->a, p->x_iter, n * sizeof *p->x_iter);
     esk_free(isl->a, p->x_old, n * sizeof *p->x_old);
+    esk_free(isl->a, p->x_prev, n * sizeof *p->x_prev);
     esk_free(isl->a, p->dx, n * sizeof *p->dx);
     esk_free(isl->a, p->piv, n * sizeof *p->piv);
     esk_free(isl->a, isl->x, n * sizeof *isl->x);
-    p->J = p->f = p->x_iter = p->x_old = p->dx = NULL;
+    p->J = p->f = p->x_iter = p->x_old = p->x_prev = p->dx = NULL;
     p->piv = NULL;
     isl->x = NULL;
     p->allocated = 0;
@@ -841,21 +852,23 @@ static es_status allocate(esk_island *isl)
     p->f = (double *)esk_calloc(isl->a, n, sizeof *p->f);
     p->x_iter = (double *)esk_calloc(isl->a, n, sizeof *p->x_iter);
     p->x_old = (double *)esk_calloc(isl->a, n, sizeof *p->x_old);
+    p->x_prev = (double *)esk_calloc(isl->a, n, sizeof *p->x_prev);
     p->dx = (double *)esk_calloc(isl->a, n, sizeof *p->dx);
     p->piv = (int *)esk_calloc(isl->a, n, sizeof *p->piv);
     isl->x = (double *)esk_calloc(isl->a, n, sizeof *isl->x);
     p->allocated = 1;
-    if (!p->J || !p->f || !p->x_iter || !p->x_old || !p->dx || !p->piv || !isl->x) {
+    if (!p->J || !p->f || !p->x_iter || !p->x_old || !p->x_prev || !p->dx || !p->piv || !isl->x) {
         /* sizes were computed from n: free with the same n */
         size_t nn = n;
         esk_free(isl->a, p->J, nn * nn * sizeof *p->J);
         esk_free(isl->a, p->f, nn * sizeof *p->f);
         esk_free(isl->a, p->x_iter, nn * sizeof *p->x_iter);
         esk_free(isl->a, p->x_old, nn * sizeof *p->x_old);
+        esk_free(isl->a, p->x_prev, nn * sizeof *p->x_prev);
         esk_free(isl->a, p->dx, nn * sizeof *p->dx);
         esk_free(isl->a, p->piv, nn * sizeof *p->piv);
         esk_free(isl->a, isl->x, nn * sizeof *isl->x);
-        p->J = p->f = p->x_iter = p->x_old = p->dx = NULL;
+        p->J = p->f = p->x_iter = p->x_old = p->x_prev = p->dx = NULL;
         p->piv = NULL;
         isl->x = NULL;
         p->allocated = 0;
@@ -1388,6 +1401,69 @@ int esk_island_quiet(esk_island *isl, es_time_t *next)
     return 1;
 }
 
+/* an island that lags behind (engine.c's island_step_cb puts its steps
+ * off while another part's events come far faster) integrates up to `now`,
+ * its sources unchanged: a reading is then of now */
+/* might a watched pin's node cross its threshold within `ahead` of the
+ * accepted time, its last two solutions' slope kept (with a margin of
+ * two)? Then the island does not put its steps off: a crossing found late
+ * would come late */
+int esk_island_may_cross(esk_island *isl, es_time_t ahead)
+{
+    mna *p = (mna *)isl->priv;
+    double dt, k;
+    int i;
+    if (!p->x_prev || !p->x_iter || isl->t_accepted <= p->t_prev)
+        return 1;
+    if (next_breakpoint(isl, isl->t_accepted) <= isl->t_accepted + ahead)
+        return 1; /* a source's ramp or edge within the lag: step to it */
+    dt = (double)(isl->t_accepted - p->t_prev);
+    k = 2.0 * (double)ahead / dt;
+    for (i = 0; i < p->n; i++)
+        p->x_old[i] = isl->x[i] + (isl->x[i] - p->x_prev[i]) * k;
+    if (any_crossing(isl, p->x_old))
+        return 1;
+    {
+        /* any digital pin's thresholds, whatever its role: a part reads
+         * back the pad it drives (an I2C master its released lines) */
+        size_t j;
+        for (j = 0; j < isl->devs.len; j++) {
+            const esk_adev *d = isl->devs.data[j];
+            double up, down, v, w;
+            int node;
+            if (!d->pin || (d->ops != &esk_bridge_in_ops && d->ops != &esk_bridge_out_ops) ||
+                d->pin->model.kind == ESK_PIN_POWER)
+                continue;
+            node = d->node[0];
+            if (node <= 0)
+                continue;
+            thresholds(d->pin, &up, &down);
+            v = isl->x[node - 1];
+            w = p->x_old[node - 1];
+            if ((v < up) != (w < up) || (v > down) != (w > down))
+                return 1;
+        }
+    }
+    return 0;
+}
+
+void esk_island_sync(esk_island *isl, es_time_t now)
+{
+    mna *p = (mna *)isl->priv;
+    es_time_t reached = 0;
+    uint32_t guard = 0;
+    if (!p->running || isl->failed || p->in_step || p->quiet || isl->t_accepted >= now)
+        return;
+    p->exact_until = 1;
+    while (isl->t_accepted < now && guard++ < MNA_MAX_CATCHUP) {
+        if (esk_island_step(isl, now, &reached) != ES_OK) {
+            isl->failed = 1;
+            break;
+        }
+    }
+    p->exact_until = 0;
+}
+
 void esk_island_touch(esk_island *isl, es_time_t now)
 {
     mna *p = (mna *)isl->priv;
@@ -1409,6 +1485,8 @@ void esk_island_touch(esk_island *isl, es_time_t now)
         }
     }
     p->exact_until = 0;
+    if (now > isl->active_at)
+        isl->active_at = now;
     p->restart = 1;
     p->quiet = 0;
     p->still = 0;

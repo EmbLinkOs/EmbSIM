@@ -140,6 +140,7 @@ typedef struct mcu_state {
     int on_air;
     esk_usb_dev usb;  /* its USB device controller's end of a cable */
     int on_usb;
+    esk_usb_host usbh; /* the same controller as a host (an OTG core) */
     mcu_supply sup;
     /* each exception's entries in the current window, for mcu.irq_storm */
     es_time_t storm_t[MCU_STORM_N];
@@ -755,7 +756,7 @@ static int h_pin_volts(void *ctx, int port, int bit, double *v)
         return 0;
     n = p->net;
     if (n->island)
-        *v = n->voltage;
+        *v = esk_net_voltage_now(p->net); /* an ADC samples it now */
     else
         *v = esk_net_value(n) == ESK_L1 ? st->m.vdd : 0.0;
     return 1;
@@ -1403,6 +1404,67 @@ static void h_usb_changed(void *ctx)
         esk_usb_changed(st->c->e, &st->usb, local_now(st));
 }
 
+/* as a host: the device on its cable, at the machine's time */
+static esk_usb_dev *usbh_dev(mcu_state *st) { return st->on_usb ? esk_usb_device_of(st->c->e, &st->usbh) : NULL; }
+
+static int h_usbh_pullup(void *ctx)
+{
+    esk_usb_dev *d = usbh_dev((mcu_state *)ctx);
+    return d ? d->pullup(d->ctx) : ESK_USB_DETACHED;
+}
+
+static void h_usbh_bus(void *ctx, int ev, u32 frame)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_usb_dev *d = usbh_dev(st);
+    if (d)
+        d->bus(d->ctx, ev, frame, local_now(st));
+}
+
+static int h_usbh_setup(void *ctx, int addr, int ep, const u8 data[8])
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_usb_dev *d = usbh_dev(st);
+    return d ? d->setup(d->ctx, addr, ep, data, local_now(st)) : ESK_USB_NONE;
+}
+
+static int h_usbh_out(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_usb_dev *d = usbh_dev(st);
+    return d ? d->out(d->ctx, addr, ep, data1, data, len, local_now(st)) : ESK_USB_NONE;
+}
+
+static int h_usbh_in(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    esk_usb_dev *d = usbh_dev(st);
+    return d ? d->in(d->ctx, addr, ep, data, cap, len, data1, local_now(st)) : ESK_USB_NONE;
+}
+
+/* the device on its cable pulled up or let go */
+static void usbh_changed(void *ctx, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (!st->m.usb.host_changed)
+        return;
+    catch_up(st, at);
+    esk_mach_outside(&st->m);
+    st->m.usb.host_changed(st->m.usb.ctx);
+    wake(st);
+}
+
+static void usbh_wakeup(void *ctx, es_time_t at)
+{
+    mcu_state *st = (mcu_state *)ctx;
+    if (!st->m.usb.host_wakeup)
+        return;
+    catch_up(st, at);
+    esk_mach_outside(&st->m);
+    st->m.usb.host_wakeup(st->m.usb.ctx);
+    wake(st);
+}
+
 static void h_usb_remote_wakeup(void *ctx)
 {
     mcu_state *st = (mcu_state *)ctx;
@@ -1428,8 +1490,10 @@ static void mcu_destroy(esk_comp *c)
     if (st->on_air)
         esk_air_detach(e, &st->air);
     st->on_air = 0;
-    if (st->on_usb)
+    if (st->on_usb) {
         esk_usb_detach_dev(e, &st->usb);
+        esk_usb_detach_host(e, &st->usbh);
+    }
     st->on_usb = 0;
     esk_an_free(st->an);
     st->an = NULL;
@@ -1525,6 +1589,11 @@ static void mcu_on_input(esk_comp *c, esk_pin *p)
         return;
     }
     if (st->held)
+        return;
+    /* the echo of its own output, which the net agrees with, where the GPIO
+     * model reads an output's own drive: it has it already */
+    if (st->m.outputs_read_back && p->is_output && p->drive_strength == ESK_STR_STRONG && p->drive_value != ESK_LZ && p->net &&
+        !p->net->island && esk_net_value(p->net) == p->drive_value)
         return;
     if (st->m.pins_changed) {
         es_time_t now = e->sched.now;
@@ -1836,6 +1905,11 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
     st->m.host.radio_tx = h_radio_tx;
     st->m.host.usb_changed = h_usb_changed;
     st->m.host.usb_remote_wakeup = h_usb_remote_wakeup;
+    st->m.host.usbh_pullup = h_usbh_pullup;
+    st->m.host.usbh_bus = h_usbh_bus;
+    st->m.host.usbh_setup = h_usbh_setup;
+    st->m.host.usbh_out = h_usbh_out;
+    st->m.host.usbh_in = h_usbh_in;
     st->quantum_ps = su->quantum_ps ? su->quantum_ps : MCU_DEFAULT_QUANTUM_PS;
     supply_setup(st, su->mcu);
     speed_table(esk_json_get(esk_json_get(esk_json_get(su->mcu, "io"), "electrical"), "rout"), st->rout);
@@ -1921,6 +1995,14 @@ es_status esk_mcu_attach(esk_comp *c, const esk_mcu_setup *su, char *why, size_t
         if (esk_usb_attach_dev(e, &st->usb) != ES_OK)
             return ES_ENOMEM;
         st->on_usb = 1;
+        /* and the other end, for its host mode */
+        st->usbh.ctx = st;
+        st->usbh.comp = c;
+        st->usbh.dp = st->usb.dp;
+        st->usbh.changed = usbh_changed;
+        st->usbh.wakeup = usbh_wakeup;
+        if (esk_usb_attach_host(e, &st->usbh) != ES_OK)
+            return ES_ENOMEM;
     }
     return ES_OK;
 }

@@ -1,0 +1,64 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "mirrored",
+ "description": "MADCTL 0xC0 (MY and MX, as ST's st7735 driver sets it): the window's first pixel, address (0, 0), lands in frame memory (127, 159), the panel's top left as the module is held: the image is upright.",
+ "policy": "functional",
+ "until": "20ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "PG",
+    "component": "emblink/pattern_generator",
+    "params": {
+     "pattern": "0,1,0,1,0,1,2,3,0,1,0,1,0,1,2,3,9,0,1,0,1,2,3,0,1,2,3,0,1,0,1,2,3,9,0,1,0,1,2,3,2,3,2,3,0,1,2,3,0,1,9,4,5,4,5,4,5,4,5,4,5,6,7,4,5,6,7,d,0,1,0,1,2,3,2,3,0,1,2,3,2,3,0,1,9,6,7,6,7,4,5,4,5,4,5,4,5,4,5,4,5,d,0,1,0,1,2,3,0,1,2,3,0,1,2,3,0,1,9,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,d,0,1,0,1,2,3,0,1,2,3,0,1,2,3,2,3,9,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,d,0,1,0,1,2,3,0,1,2,3,2,3,0,1,0,1,9,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,4,5,6,7,6,7,6,7,6,7,6,7,d",
+     "period": 1e-07,
+     "start": 0.006,
+     "idle": 9
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/st7735_tft18"
+   }
+  ],
+  "nets": {
+   "SCK": [
+    "PG.OUT0",
+    "DUT.SCK"
+   ],
+   "SDA": [
+    "PG.OUT1",
+    "DUT.SDA"
+   ],
+   "DC": [
+    "PG.OUT2",
+    "DUT.DC"
+   ],
+   "CS": [
+    "PG.OUT3",
+    "DUT.CS"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.probe": {
+   "at": "19ms",
+   "equals": 31
+  }
+ },
+ "inputs": [
+  {
+   "at": "18ms",
+   "target": "DUT",
+   "input": "probe_x",
+   "value": 0
+  },
+  {
+   "at": "18ms",
+   "target": "DUT",
+   "input": "probe_y",
+   "value": 0
+  }
+ ]
+}

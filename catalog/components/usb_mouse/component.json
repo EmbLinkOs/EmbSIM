@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/usb_mouse",
+  "version": "0.1.0",
+  "name": "USB mouse (low-speed HID boot mouse)",
+  "category": "inputs",
+  "description": "A wired USB mouse on its cable: a low-speed HID device of the boot mouse protocol (three buttons, X, Y and a wheel), bus powered. Its inputs move it and press its buttons; a host (a computer's port, a microcontroller's USB host) enumerates it and polls its reports.",
+  "keywords": [
+    "usb",
+    "mouse",
+    "hid",
+    "boot protocol",
+    "low speed",
+    "pointer",
+    "host"
+  ],
+  "pins": [
+    {
+      "name": "VBUS",
+      "number": 1,
+      "model": {
+        "kind": "digital_in"
+      },
+      "doc": "VBUS from the host: it attaches while VBUS is above 4.4 V"
+    },
+    {
+      "name": "DM",
+      "number": 2,
+      "model": {
+        "kind": "digital_in"
+      },
+      "aliases": [
+        "D-"
+      ],
+      "doc": "D-: its pull-up (low speed)"
+    },
+    {
+      "name": "DP",
+      "number": 3,
+      "model": {
+        "kind": "digital_in"
+      },
+      "aliases": [
+        "D+"
+      ],
+      "doc": "D+: the host on this net is the one it talks to"
+    },
+    {
+      "name": "GND",
+      "number": 4,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "doc": "Ground"
+    }
+  ],
+  "params": {},
+  "inputs": [
+    {
+      "name": "move_x",
+      "type": "number",
+      "default": 0,
+      "doc": "Counts to move along X (right positive), added to what is still to send"
+    },
+    {
+      "name": "move_y",
+      "type": "number",
+      "default": 0,
+      "doc": "Counts to move along Y (down positive)"
+    },
+    {
+      "name": "wheel",
+      "type": "number",
+      "default": 0,
+      "doc": "Wheel detents (away from the user positive)"
+    },
+    {
+      "name": "buttons",
+      "type": "integer",
+      "default": 0,
+      "doc": "The buttons held: bit 0 left, 1 right, 2 middle"
+    },
+    {
+      "name": "plugged",
+      "type": "boolean",
+      "default": true,
+      "doc": "Its cable is in"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "state",
+      "type": "string",
+      "doc": "detached, default, address or configured"
+    },
+    {
+      "name": "address",
+      "type": "integer",
+      "doc": "Its USB address"
+    },
+    {
+      "name": "reports",
+      "type": "integer",
+      "doc": "Reports sent"
+    },
+    {
+      "name": "sent_x",
+      "type": "integer",
+      "doc": "X counts sent so far"
+    },
+    {
+      "name": "sent_y",
+      "type": "integer",
+      "doc": "Y counts sent so far"
+    },
+    {
+      "name": "protocol",
+      "type": "integer",
+      "doc": "0 boot, 1 report"
+    },
+    {
+      "name": "idle_ms",
+      "type": "integer",
+      "doc": "The idle rate SET_IDLE set (0: reports only on change)"
+    }
+  ],
+  "model": {
+    "primitive": "usb_mouse"
+  },
+  "functional": {
+    "primitive": "usb_mouse"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 60,
+    "height": 60,
+    "pins": {
+      "VBUS": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "DM": {
+        "x": 0,
+        "y": 20,
+        "side": "left"
+      },
+      "DP": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "GND": {
+        "x": 0,
+        "y": 50,
+        "side": "left"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "A low-speed USB 2.0 device (D- pulled up) with chapter 9's standard requests (GET_DESCRIPTOR, SET_ADDRESS in effect after its status stage, SET/GET_CONFIGURATION, GET_STATUS, SET/CLEAR_FEATURE for remote wakeup and endpoint halt, GET/SET_INTERFACE), EP0 in 8-byte packets, data toggles per endpoint, attached while VBUS is above 4.4 V; HID 1.11's boot mouse: its HID and report descriptors, GET_REPORT, GET/SET_IDLE (an idle report every duration), GET/SET_PROTOCOL, an interrupt IN endpoint of 4 bytes polled every 10 ms that answers with a report when the buttons or the movement changed (at most 127 counts each way a report), NAK otherwise.",
+      "omissions": [
+        "its supply current from VBUS (a mouse's 20 to 100 mA)",
+        "remote wakeup signalling (a button press on a suspended bus)",
+        "an optical sensor's resolution and acceleration: the movement is the inputs' counts"
+      ]
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": []
+    },
+    "electrical": {
+      "claims": "As functional.",
+      "omissions": [],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Device Class Definition for Human Interface Devices (HID), Version 1.11 (USB-IF, 2001)",
+        "url": "https://www.usb.org/document-library/device-class-definition-hid-111",
+        "date": "2026-10-31",
+        "notes": "The boot mouse (appendix B.2), its report descriptor (appendix E.10), the class requests (7.2)."
+      },
+      {
+        "title": "Universal Serial Bus Specification, Revision 2.0 (USB-IF, 2000): chapter 9",
+        "url": "https://www.usb.org/document-library/usb-20-specification",
+        "date": "2026-10-31",
+        "notes": "The standard requests and descriptors, low-speed EP0's 8-byte packets."
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

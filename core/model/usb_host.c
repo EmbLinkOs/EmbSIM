@@ -109,6 +109,7 @@ typedef struct uh_state {
     uint32_t frame;
     uint64_t frames;
     int after_reset; /* the step to go on with when the reset ends */
+    int low_speed;   /* the device pulled D- up */
     /* suspend and resume */
     esk_pin *vbus;      /* VBUS at the device end of the cable, or NULL */
     int allow_wakeup;   /* the host arms remote wakeup before a suspend */
@@ -213,6 +214,12 @@ static void kick(uh_state *s, es_time_t t)
     s->wake_set = 1;
     s->wake_at = t;
     (void)esk_comp_wake_at(s->c, t, T_RUN);
+}
+
+/* a transaction's bus time at the device's speed */
+static es_time_t xtime(const uh_state *s, int len, int handshake)
+{
+    return s->low_speed ? esk_usb_ls_time(len, handshake) : esk_usb_fs_time(len, handshake);
 }
 
 static esk_usb_dev *device(uh_state *s) { return esk_usb_device_of(s->c->e, &s->link); }
@@ -497,7 +504,7 @@ static void done(uh_state *s)
         s->i_manu = b[14];
         s->i_prod = b[15];
         s->i_ser = b[16];
-        say(s, "new full-speed USB device: idVendor %04x, idProduct %04x, bcdDevice %x.%02x", u16le(b + 8),
+        say(s, "new %s-speed USB device: idVendor %04x, idProduct %04x, bcdDevice %x.%02x", s->low_speed ? "low" : "full", u16le(b + 8),
             u16le(b + 10), (unsigned)b[13], (unsigned)b[12]);
         break;
     case E_CFG9:
@@ -611,14 +618,14 @@ static es_time_t control_step(uh_state *s, esk_usb_dev *d, es_time_t now)
         } else if (++s->ct.errs >= ERR_RETRIES) {
             fail(s, "no handshake to SETUP");
         }
-        return esk_usb_fs_time(8, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
+        return xtime(s, 8, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
     case C_DATA_IN: {
         uint32_t room = s->ct.want - s->ct.got;
         r = d->in(d->ctx, s->addr, 0, pkt, sizeof pkt, &len, &pid, now);
         if (r == ESK_USB_ACK) {
             if (len > (uint32_t)s->mps0) {
                 fail(s, "a packet longer than bMaxPacketSize0 (babble)");
-                return esk_usb_fs_time((int)len, 1);
+                return xtime(s, (int)len, 1);
             }
             if ((pid != 0) == (s->ct.pid != 0)) {
                 memcpy(s->ct.buf + s->ct.got, pkt, len < room ? len : room);
@@ -628,13 +635,13 @@ static es_time_t control_step(uh_state *s, esk_usb_dev *d, es_time_t now)
                     s->ct.stage = C_STATUS_OUT;
             } /* else a repeat: the host ACKs it and keeps what it has */
             s->ct.errs = 0;
-            return esk_usb_fs_time((int)len, 1);
+            return xtime(s, (int)len, 1);
         }
         if (r == ESK_USB_STALL)
             stalled(s);
         else if (r == ESK_USB_NONE && ++s->ct.errs >= ERR_RETRIES)
             fail(s, "no answer to IN");
-        return esk_usb_fs_time(-1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
+        return xtime(s, -1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
     }
     case C_DATA_OUT: {
         uint32_t n = s->ct.want - s->ct.got;
@@ -652,7 +659,7 @@ static es_time_t control_step(uh_state *s, esk_usb_dev *d, es_time_t now)
         } else if (r == ESK_USB_NONE && ++s->ct.errs >= ERR_RETRIES) {
             fail(s, "no answer to OUT");
         }
-        return esk_usb_fs_time((int)n, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
+        return xtime(s, (int)n, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
     }
     case C_STATUS_OUT:
         r = d->out(d->ctx, s->addr, 0, 1, NULL, 0, now);
@@ -662,7 +669,7 @@ static es_time_t control_step(uh_state *s, esk_usb_dev *d, es_time_t now)
             stalled(s);
         else if (r == ESK_USB_NONE && ++s->ct.errs >= ERR_RETRIES)
             fail(s, "no answer to the status stage");
-        return esk_usb_fs_time(0, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
+        return xtime(s, 0, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
     default: /* C_STATUS_IN */
         r = d->in(d->ctx, s->addr, 0, pkt, sizeof pkt, &len, &pid, now);
         if (r == ESK_USB_ACK) {
@@ -670,13 +677,13 @@ static es_time_t control_step(uh_state *s, esk_usb_dev *d, es_time_t now)
                 done(s);
             else
                 fail(s, "data in the status stage");
-            return esk_usb_fs_time((int)len, 1);
+            return xtime(s, (int)len, 1);
         }
         if (r == ESK_USB_STALL)
             stalled(s);
         else if (r == ESK_USB_NONE && ++s->ct.errs >= ERR_RETRIES)
             fail(s, "no answer to the status stage");
-        return esk_usb_fs_time(-1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
+        return xtime(s, -1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
     }
 }
 
@@ -699,11 +706,11 @@ static es_time_t poll_hid(uh_state *s, esk_usb_dev *d, uh_hid *h, es_time_t now)
                 s->y += (int8_t)pkt[2];
             }
         }
-        return esk_usb_fs_time((int)len, 1);
+        return xtime(s, (int)len, 1);
     }
     if (r == ESK_USB_STALL)
         say(s, "HID endpoint %d stalls", h->ep);
-    return esk_usb_fs_time(-1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
+    return xtime(s, -1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
 }
 
 
@@ -1072,12 +1079,13 @@ static void run(uh_state *s)
     switch (s->phase) {
     case P_DETACHED:
         /* until the device descriptor says, EP0 takes 64-byte packets at
-         * full speed (as Linux and Windows assume) */
-        s->mps0 = 64;
+         * full speed (as Linux and Windows assume), 8 at low speed */
+        s->low_speed = d->pullup(d->ctx) == ESK_USB_LOW_SPEED;
+        s->mps0 = s->low_speed ? 8 : 64;
         s->phase = P_DEBOUNCE;
         s->state = S_ATTACHED;
         s->phase_end = now + s->debounce_ps;
-        say(s, "full-speed device attached");
+        say(s, s->low_speed ? "low-speed device attached" : "full-speed device attached");
         kick(s, s->phase_end);
         return;
     case P_DEBOUNCE:
@@ -1139,7 +1147,7 @@ static void run(uh_state *s)
         s->frames++;
         d->bus(d->ctx, ESK_USB_SOF, s->frame, now);
         s->next_sof += FRAME_PS;
-        s->busy_until = now + esk_usb_fs_time(-1, 0);
+        s->busy_until = now + xtime(s, -1, 0);
         for (i = 0; i < s->nhid && s->state == S_CONFIGURED; i++) {
             uh_hid *h = &s->hid[i];
             if (s->hid_i > i && ((s->frame - h->next_frame) & 0x7ffu) < 0x400u) {
@@ -1176,7 +1184,7 @@ static void run(uh_state *s)
             dfu_start(s);
         }
         if (!d_t && s->ct.on) {
-            if (now + esk_usb_fs_time(64, 1) + EOF_PS > s->next_sof) {
+            if (now + xtime(s, 64, 1) + EOF_PS > s->next_sof) {
                 kick(s, s->next_sof); /* not across the frame's start */
                 return;
             }

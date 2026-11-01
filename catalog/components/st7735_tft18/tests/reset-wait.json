@@ -1,0 +1,54 @@
+{
+ "schema_version": 1,
+ "kind": "component_test",
+ "name": "reset-wait",
+ "description": "SLPOUT and DISPON 1 ms after power-up, inside the reset cancel time (at most 5 ms): taken as a typical part takes them, with a warning; the display is on.",
+ "policy": "functional",
+ "until": "20ms",
+ "circuit": {
+  "components": [
+   {
+    "id": "PG",
+    "component": "emblink/pattern_generator",
+    "params": {
+     "pattern": "0,1,0,1,0,1,2,3,0,1,0,1,0,1,2,3,9,0,1,0,1,2,3,0,1,2,3,0,1,0,1,2,3,9",
+     "period": 1e-07,
+     "start": 0.001,
+     "idle": 9
+    }
+   },
+   {
+    "id": "DUT",
+    "component": "emblink/st7735_tft18"
+   }
+  ],
+  "nets": {
+   "SCK": [
+    "PG.OUT0",
+    "DUT.SCK"
+   ],
+   "SDA": [
+    "PG.OUT1",
+    "DUT.SDA"
+   ],
+   "DC": [
+    "PG.OUT2",
+    "DUT.DC"
+   ],
+   "CS": [
+    "PG.OUT3",
+    "DUT.CS"
+   ]
+  }
+ },
+ "expect": {
+  "output:DUT.sleeping": {
+   "at": "19ms",
+   "equals": false
+  },
+  "output:DUT.on": {
+   "at": "19ms",
+   "equals": true
+  }
+ }
+}
