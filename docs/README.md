@@ -19,6 +19,7 @@
 | [specs/](specs/index.md) | SPEC-001 to SPEC-014: the contracts |
 | [requirements/](requirements/index.md) | Numbered requirements with verification methods |
 | [engineering/](engineering/repository-workflow.md) | Repository workflow, required checks, coding standard, evidence rules; what each milestone built ([M0](engineering/m0-foundation.md), [M1](engineering/m1-firmware.md), [M2](engineering/m2-workbench.md), [M3](engineering/m3-catalog.md), [M4](engineering/m4-cores.md), [M5](engineering/m5-verification.md)) |
+| [Bench instruments](user/instruments.md) | The Logic 8, the PPK2 and the DS1054Z: wiring them, their front panels docked or floating, what each measures |
 | [Physical bench](user/bench.md) | 3D inspection, named wiring, keyboard construction, recovery and geometry limits |
 | [user/](user/getting-started.md) | Getting started, firmware (run, build, debug), the command line, [CI](user/ci.md), diagnostics codes; the [Python client](../python/README.md) |
 | [CODING-STANDARD.md](CODING-STANDARD.md) | Rules every C file follows |
