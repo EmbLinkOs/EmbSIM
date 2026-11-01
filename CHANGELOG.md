@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Timing: the STM32F4's flash wait states and ART accelerator
+
+- Code and literal pools in the STM32F446's flash now wait FLASH_ACR's
+  LATENCY cycles for each 128-bit line (RM0390 3.4).
+- The ART accelerator hides those waits the way RM0390 describes:
+  - prefetch reads the next line while the current one executes;
+  - the instruction cache holds 64 lines (LRU);
+  - the data cache holds 8 lines;
+  - ICRST and DCRST empty the caches.
+- `test_flash_read_timing` checks RM0390 Figure 4's prefetch case, a loop
+  in the instruction cache, and a literal in the data cache.
+- 180 MHz results are no longer optimistic by the waits.
+
 ### Timing: the Cortex-M0+ (RP2040) from its own manual
 
 - The RP2040's cores now take the Cortex-M0+ TRM's cycles (ARM DDI 0484C

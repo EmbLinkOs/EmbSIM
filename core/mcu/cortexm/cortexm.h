@@ -232,8 +232,11 @@ ES_INLINE u32 esk_cm_ld(struct esk_cm_state *cs, u32 a, int n)
     struct esk_bus *b = &cs->sim->bus;
     if (!b->nwatch) {
         struct esk_region *r = esk_bus_region(b, a, (u32)n);
-        if (r)
+        if (r) {
+            if (r->mem == cs->sim->ftime.mem && cs->sim->ftime.dread && cs->executing && cs->access == ACC_NORMAL)
+                cs->extra_cycles += cs->sim->ftime.dread(cs->sim->ftime.ctx, a - r->base); /* the flash's wait */
             return esk_mem_rd_le(r->mem + (a - r->base), n);
+        }
     }
     return esk_cm_ld_bus(cs, a, n);
 }

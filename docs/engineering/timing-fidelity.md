@@ -222,26 +222,52 @@ with. At 16 MHz, flash wait states play no part. RM0390's Table 5 (2.7 to
 3.6 V), as `core/mcu/stm32/rcc.c` transcribes it, asks for none up to
 30 MHz. At 180 MHz it asks for 5, and those are not modelled yet (step 5).
 
-### 4.3 Blocked: STM32F4 flash wait states and the ART accelerator (step 5)
+### 4.3 STM32F4 flash wait states and the ART accelerator (step 5)
 
-Modelling them needs RM0390 §3.4 (the flash interface):
-- the width of a flash read;
-- when the ART accelerator's instruction and data caches hit;
-- what the prefetch buffer hides.
+The source is RM0390 §3.4 (read through a text rendition of Rev 6's flash
+chapter, because st.com refuses downloads from this environment).
+`core/mcu/stm32/flash_f4.c` models the read interface from FLASH_ACR:
+- **Line reads.** The memory is read 128 bits at a time. A read takes
+  LATENCY wait states plus a cycle (Table 5). A fetch from the line already
+  executing waits nothing.
+- **Prefetch.** With PRFTEN, the next sequential line is read while the
+  current one executes. It is ready LATENCY + 1 cycles after the current
+  line arrived, and a fetch from it waits only what is left of that time.
+- **Instruction cache.** ICEN enables 64 lines with LRU replacement. A hit
+  waits nothing, and a line read on a miss is copied in.
+- **Misses.** Any other fetch waits LATENCY cycles. RM0390 gives the miss
+  penalty as "at least" the wait states, and the model charges that least.
+- **Data reads.** A literal pool read through D-Code waits LATENCY cycles
+  unless DCEN's 8-line data cache holds its line.
+- **Resets.** ICRST and DCRST empty the caches.
 
-`rcc.c` already holds the wait-state count per clock from RM0390's Table 5,
-but the manual itself could not be downloaded in this environment (st.com
-refuses the request). Until it is in hand, all of the following run with
-zero-wait-state fetches, so they are optimistic above 30 MHz by up to 5
-cycles per flash access the ART would miss:
-- code running from flash on the F446 above 30 MHz (the F446ZE and RE
-  examples at 180 MHz);
-- the F103 when its clock calls for wait states (RM0008's table is not yet
-  in the sources either);
-- the nRF52840.
+The core adds instruction stalls to the instruction's cost, and data stalls
+to its completion.
 
-No figure for those cases is claimed. Each MCU's fidelity lists the
-omission.
+**Validated** by `tests/unit/test_stm32f4.c`'s `test_flash_read_timing`,
+code in the F446's flash:
+- RM0390 Figure 4's case, sequential 32-bit instructions at 3 wait states:
+  7 cycles per line without prefetch, 4 with it after the first (0
+  wait-state speed);
+- at 5 wait states with prefetch, 6 cycles per line: the 4 instructions,
+  plus the 2 cycles the 6-cycle read does not hide;
+- a two-line loop at 5 wait states takes 28 cycles a pass without ICEN, and
+  18 once the cache holds it;
+- a literal read waits 5 cycles each time without DCEN, and once with it;
+- at 0 wait states nothing waits.
+
+At 16 MHz (0 wait states) the FreeRTOS context switch is unchanged.
+
+**Not modelled:**
+- D-Code's priority over I-Code when both read at once;
+- a branch to the prefetched line before it has arrived (it waits as a
+  sequential fetch would);
+- DMA's reads of the flash;
+- the vector fetch on exception entry;
+- a miss penalty above the "at least" the manual gives.
+
+The STM32F103's flash timing (RM0008) and the nRF52840's are not modelled
+yet, and their fidelity says so.
 
 ### 4.4 Performance (step 7)
 

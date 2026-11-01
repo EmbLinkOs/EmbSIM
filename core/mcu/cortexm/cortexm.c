@@ -912,6 +912,16 @@ static void step(struct esk_cpu *c)
             e->ls = (u8)ls;
         }
     }
+    if (s->ftime.ifetch) {
+        /* an instruction from the flash waits for its line (flash_f4.c) */
+        const struct esk_region *fr = esk_bus_region(&s->bus, cs->pc, 2);
+        if (fr && fr->mem == s->ftime.mem) {
+            u32 off = cs->pc - fr->base, st = s->ftime.ifetch(s->ftime.ctx, off, s->cycles);
+            if (size == 4 && ((off + 2) >> 4) != (off >> 4))
+                st += s->ftime.ifetch(s->ftime.ctx, off + 2, s->cycles + st);
+            cost += st;
+        }
+    }
     s->insns++;
     s->cycles += cost;
 

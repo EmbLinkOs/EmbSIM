@@ -526,6 +526,16 @@ struct esk_mach {
      * core interface steps its cores itself, through esk_mach_step_core
      * (smp.c) */
     struct esk_an *an;
+    /* the flash interface's read timing (an STM32F4's wait states and ART
+     * accelerator, flash_f4.c), or 0s: the memory it covers (by its bytes,
+     * so an alias of it counts), the stall of an instruction fetch at
+     * offset `off` at machine cycle `now`, and of a data read */
+    struct {
+        const u8 *mem;
+        u32 (*ifetch)(void *ctx, u32 off, u64 now);
+        u32 (*dread)(void *ctx, u32 off);
+        void *ctx;
+    } ftime;
     int steps_cores;
     /* the ROM's host functions (struct esk_rom_call): 1 when `bkpt #n` at
      * `pc` is one, 0 for an ordinary breakpoint instruction */
