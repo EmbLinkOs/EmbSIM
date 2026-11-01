@@ -53,6 +53,7 @@ headers:
 | arduino-examples `Calibration` (03.Analog) | GL5528 photoresistor from 5 V to A0 over 10 kOhm to GND, LED on D9 through 220 Ohm | The light during the five-second calibration (10, 1000, 1 lux) sets the range; then 100 lux fades the LED to 0.80 duty (from this project's drawn parts: the LDR 10.22 kOhm at 10 lux, gamma 0.6), 1000 lux full on, darkness off; the L LED lit only while calibrating |
 | arduino-examples `Debounce` (02.Digital) | Push button from 5 V to D2, 10 kOhm to GND, the L LED | The press chatters (seven edges on D2 within the button's 2 ms of bounce), yet each of three presses toggles the LED once after the sketch's 50 ms; a 20 ms tap changes nothing |
 | arduino-examples `StateChangeDetection` (02.Digital) | The same button, the counts at 9600 baud | Five presses counted once each through the bounce (the sketch's 50 ms delay after a change), on and off printed with each, the L LED lit after the fourth push and off at the fifth |
+| arduino-examples `barGraph` (07.Display) | 10-segment LED bar graph (DC-10 pinout) on D2 to D11 through 220 Ohm each, a 10 kOhm pot on A0 | The pot at 0, a quarter, 55 % and full lights 0, 2, 5 and 10 segments, each segment its own LED junction |
 
 The core is LGPL-2.1 and is not vendored here; `run.py` takes a checkout of
 it:

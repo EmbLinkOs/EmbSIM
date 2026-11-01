@@ -5,7 +5,7 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### Parts: the MAX7219, the buzzer, the GL5528 and the push button verified by their examples
+### Parts: the MAX7219, the buzzer, the GL5528, the push button and a 10-segment bar graph verified by their examples
 
 - LedControl's `LCDemo7Segment` runs unmodified on the Uno against the
   MAX7219 8-digit module and passes 27 assertions: woken from shutdown,
@@ -25,6 +25,9 @@ versions follow semantic versioning. There is no release yet.
 - The IDE's `Debounce` and `StateChangeDetection` run against a bouncing
   push button: one press chatters (seven edges on D2), yet each is counted
   or toggles once, and a tap shorter than the debounce delay is ignored.
+- A 10-segment LED bar graph (`emblink/led_bargraph_10`): ten independent
+  red LED junctions in the common 20-pin DIP pinout (Kingbright DC-10),
+  verified by the IDE's `barGraph` with a potentiometer.
 - The Arduino harness finds the IDE's built-in examples (arduino-examples,
   CC0) under their category folders.
 

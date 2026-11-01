@@ -1,0 +1,306 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-bargraph",
+ "description": "The IDE's barGraph (Examples > 07.Display) as its comment wires it: a 10-segment LED bar graph with segments 1 to 10 on D2 to D11, each through its own 220 Ohm resistor, the cathodes to GND; a 10 kOhm potentiometer from GND (pin 1) to 5 V (pin 3) with its wiper on A0, so turning it clockwise raises the reading.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "BAR",
+   "component": "emblink/led_bargraph_10",
+   "layout": {
+    "x": 600,
+    "y": 700
+   }
+  },
+  {
+   "id": "POT",
+   "component": "emblink/potentiometer",
+   "params": {
+    "resistance": 10000
+   },
+   "layout": {
+    "x": 120,
+    "y": 600
+   }
+  },
+  {
+   "id": "R1",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 430,
+    "y": 600
+   }
+  },
+  {
+   "id": "R2",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 460,
+    "y": 600
+   }
+  },
+  {
+   "id": "R3",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 490,
+    "y": 600
+   }
+  },
+  {
+   "id": "R4",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 520,
+    "y": 600
+   }
+  },
+  {
+   "id": "R5",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 550,
+    "y": 600
+   }
+  },
+  {
+   "id": "R6",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 580,
+    "y": 600
+   }
+  },
+  {
+   "id": "R7",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 610,
+    "y": 600
+   }
+  },
+  {
+   "id": "R8",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 640,
+    "y": 600
+   }
+  },
+  {
+   "id": "R9",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 670,
+    "y": 600
+   }
+  },
+  {
+   "id": "R10",
+   "component": "emblink/resistor",
+   "params": {
+    "resistance": 220
+   },
+   "layout": {
+    "x": 700,
+    "y": 600
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "POT.2"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "POT.1",
+   "BAR.K1",
+   "BAR.K2",
+   "BAR.K3",
+   "BAR.K4",
+   "BAR.K5",
+   "BAR.K6",
+   "BAR.K7",
+   "BAR.K8",
+   "BAR.K9",
+   "BAR.K10"
+  ],
+  "WIPER": [
+   "POT.W",
+   "B1.A0"
+  ],
+  "D2": [
+   "B1.D2",
+   "R1.1"
+  ],
+  "SEG1": [
+   "R1.2",
+   "BAR.A1"
+  ],
+  "D3": [
+   "B1.D3",
+   "R2.1"
+  ],
+  "SEG2": [
+   "R2.2",
+   "BAR.A2"
+  ],
+  "D4": [
+   "B1.D4",
+   "R3.1"
+  ],
+  "SEG3": [
+   "R3.2",
+   "BAR.A3"
+  ],
+  "D5": [
+   "B1.D5",
+   "R4.1"
+  ],
+  "SEG4": [
+   "R4.2",
+   "BAR.A4"
+  ],
+  "D6": [
+   "B1.D6",
+   "R5.1"
+  ],
+  "SEG5": [
+   "R5.2",
+   "BAR.A5"
+  ],
+  "D7": [
+   "B1.D7",
+   "R6.1"
+  ],
+  "SEG6": [
+   "R6.2",
+   "BAR.A6"
+  ],
+  "D8": [
+   "B1.D8",
+   "R7.1"
+  ],
+  "SEG7": [
+   "R7.2",
+   "BAR.A7"
+  ],
+  "D9": [
+   "B1.D9",
+   "R8.1"
+  ],
+  "SEG8": [
+   "R8.2",
+   "BAR.A8"
+  ],
+  "D10": [
+   "B1.D10",
+   "R9.1"
+  ],
+  "SEG9": [
+   "R9.2",
+   "BAR.A9"
+  ],
+  "D11": [
+   "B1.D11",
+   "R10.1"
+  ],
+  "SEG10": [
+   "R10.2",
+   "BAR.A10"
+  ]
+ },
+ "probes": [
+  {
+   "id": "seg1",
+   "target": "output:BAR.D1.lit",
+   "kind": "value"
+  },
+  {
+   "id": "seg3",
+   "target": "output:BAR.D3.lit",
+   "kind": "value"
+  },
+  {
+   "id": "seg5",
+   "target": "output:BAR.D5.lit",
+   "kind": "value"
+  },
+  {
+   "id": "seg6",
+   "target": "output:BAR.D6.lit",
+   "kind": "value"
+  },
+  {
+   "id": "seg10",
+   "target": "output:BAR.D10.lit",
+   "kind": "value"
+  }
+ ]
+}
