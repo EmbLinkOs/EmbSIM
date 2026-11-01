@@ -181,6 +181,13 @@
       "commit": "50b66a3ce1e4e5e69cd96d3af5ca41a3383b311a",
       "version": "built-in examples",
       "license": "CC0-1.0"
+    },
+    {
+      "name": "ShiftRegister74HC595",
+      "repo": "https://github.com/Simsso/ShiftRegister74HC595",
+      "commit": "f93e313ca7991f382b83e70d09a4067620b953ac",
+      "version": "1.3.1",
+      "license": "MIT"
     }
   ]
 }

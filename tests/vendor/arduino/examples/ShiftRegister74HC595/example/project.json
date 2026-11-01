@@ -1,0 +1,85 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "arduino-74hc595",
+ "description": "ShiftRegister74HC595's example as its constructor wires it: one 74HC595 with DS on D0, SHCP on D1 and STCP on D2 (D0 and D1 are also the USB-serial lines, through the board's 1 kOhm resistors to the ATmega16U2, as on a real Uno), /OE to GND, /MR to 5 V.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/arduino_uno",
+   "layout": {
+    "x": 300,
+    "y": 260
+   },
+   "firmware": {
+    "image": "sketch.elf",
+    "format": "elf"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 720,
+    "y": 60
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 900,
+    "y": 200
+   }
+  },
+  {
+   "id": "U1",
+   "component": "emblink/ic_74hc595",
+   "layout": {
+    "x": 600,
+    "y": 700
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.5V",
+   "U1.VCC",
+   "U1.MR_N"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "U1.GND",
+   "U1.OE_N"
+  ],
+  "DS": [
+   "B1.D0",
+   "U1.DS"
+  ],
+  "SHCP": [
+   "B1.D1",
+   "U1.SHCP"
+  ],
+  "STCP": [
+   "B1.D2",
+   "U1.STCP"
+  ]
+ },
+ "probes": [
+  {
+   "id": "latch",
+   "target": "output:U1.latch",
+   "kind": "value"
+  }
+ ]
+}

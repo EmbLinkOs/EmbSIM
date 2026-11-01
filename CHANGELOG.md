@@ -30,6 +30,8 @@ versions follow semantic versioning. There is no release yet.
   verified by the IDE's `barGraph` with a potentiometer.
 - The IDE's `ReadAnalogVoltage` reads an LM35DZ at 25, 37.5 and 60 degC
   and prints 0.25, 0.37 and 0.60 V.
+- ShiftRegister74HC595's example drives a 74HC595 from D0 to D2, through
+  the board's own 1 kOhm resistors to the USB-serial bridge on D0 and D1.
 - The Arduino harness finds the IDE's built-in examples (arduino-examples,
   CC0) under their category folders.
 
