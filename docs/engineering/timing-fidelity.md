@@ -290,3 +290,33 @@ timing.
 
 Each is the next target.
 
+### 4.5 Cortex-M0+ (the RP2040)
+
+`esk_cm0p_cost` (`core/mcu/cortexm/cost.h`) charges each instruction as the
+Cortex-M0+ TRM's Table 3-1 gives it (ARM DDI 0484C, zero wait states):
+- most instructions take 1 cycle;
+- a load or store takes 2 on the AHB-Lite bus, and 1 on the single-cycle I/O
+  port, which is the RP2040's 0xd0000000-0xdfffffff (its datasheet 2.3.1);
+- LDM, STM and PUSH take 1+N, POP takes 1+N, and POP with PC takes 3+N;
+- a conditional branch takes 1, or 2 if taken; B and BX take 2, BL takes 3;
+- MRS, MSR and the barriers take 3, WFI and WFE take 2;
+- MULS takes 1, for the fast multiplier the RP2040 is configured with
+  (datasheet 2.4).
+
+An exception's entry takes 15 cycles. That is the worst-case latency the
+TRM (3.4) and the RP2040 datasheet (2.4) give, and the model charges it on
+every entry. Late arrival applies, as on ARMv7-M.
+
+**Validated** by `tests/unit/test_cm_timing.c`, which runs hand-assembled
+code on a Cortex-M0+ and checks:
+- each of those instruction classes;
+- an IOPORT load and store taking 1 cycle each;
+- an entry taking 15 cycles.
+
+**Not charged**, for want of a figure: the return and a tail-chain. Neither
+the TRM nor the RP2040 datasheet gives one, so an M0+ context switch reads
+short by whatever the return takes. Also not modelled:
+- XIP flash fetches, which run through the RP2040's cache;
+- bus contention between the two cores and DMA, which the datasheet (2.1)
+  says can add wait states on the AHB-Lite.
+

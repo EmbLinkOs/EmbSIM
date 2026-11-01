@@ -71,7 +71,7 @@ struct esk_cm_dc {
     const struct esk_region *r; /* the region it came from; 0: empty */
     u32 gen, pc;
     u16 h0, h1;
-    u8 size, cost, br;
+    u8 size, cost, br, ls; /* br: a taken branch's refill cycles; ls: a single load or store */
 };
 
 struct esk_cm_state {
@@ -143,6 +143,9 @@ struct esk_cm_state {
     /* an exception return's cycles, charged at the next step unless an
      * exception tail-chains in their place (ARM DDI 0439B 3.9.1) */
     int tail_window;
+    /* the instruction under way made a load or store on the single-cycle
+     * I/O port (ARMv6-M's IOPORT: 1 cycle, not the AHB's 2) */
+    int ioport_hit;
     /* cycles spent in exception entry, return and tail-chaining */
     u64 exc_cycles;
 };

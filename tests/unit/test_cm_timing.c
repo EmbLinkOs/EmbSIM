@@ -48,15 +48,22 @@ static void ldr_lit(struct prog *p, int rd, u32 lit)
 #define PC_IRQ1 0x300u
 #define PC_SYSTICK 0x400u
 
+static int machine_of(struct esk_mach *m, esk_alloc *a, const char *model);
+
 static int machine(struct esk_mach *m, esk_alloc *a)
+{
+    return machine_of(m, a, "cortex-m4");
+}
+
+static int machine_of(struct esk_mach *m, esk_alloc *a, const char *model)
 {
     struct esk_cpu *cpu = NULL;
     esk_mach_init(m, a);
     m->reset_hz = 16000000u;
     CHECK_EQ(esk_bus_add_region(m, 0x00000000u, 4096u, ESK_MEM_RAM), ES_OK);
     CHECK_EQ(esk_bus_add_region(m, 0x20000000u, 4096u, ESK_MEM_RAM), ES_OK);
-    if (esk_cortexm_create(m, "cortex-m4", 4, &cpu) != ES_OK) {
-        FAIL("cortex-m4");
+    if (esk_cortexm_create(m, model, strcmp(model, "cortex-m4") ? 2 : 4, &cpu) != ES_OK) {
+        FAIL(model);
         return 0;
     }
     word(m, 0x00, 0x20001000u);
@@ -235,8 +242,110 @@ static void test_late_arrival(void)
     }
 }
 
+/* ---- the Cortex-M0+ (ARMv6-M): ARM DDI 0484C Table 3-1 and 3.4 ---- */
+
+/* a device on the single-cycle I/O port, as the RP2040's SIO is */
+static u32 io_read(void *ctx, u32 off, int n) { (void)ctx; (void)off; (void)n; return 0x5a; }
+static void io_write(void *ctx, u32 off, int n, u32 v) { (void)ctx; (void)off; (void)n; (void)v; }
+static const struct esk_dev_ops io_ops = { "ioport", io_read, io_write, 0, 0, 0 };
+
+#define LIT_RAM 0x494u
+#define LIT_IO 0x498u
+
+static void bl_to(struct prog *p, u32 target)
+{
+    u32 off = target - (p->at + 4);
+    h16(p, 0xf000u | ((off >> 12) & 0x3ffu));
+    h16(p, 0xf800u | ((off >> 1) & 0x7ffu));
+}
+
+static void test_m0plus_instructions(void)
+{
+    esk_alloc a;
+    struct esk_mach m;
+    struct prog p;
+    u32 func = 0x180;
+    esk_alloc_init(&a, NULL);
+    if (!machine_of(&m, &a, "cortex-m0plus"))
+        return;
+    CHECK_EQ(esk_bus_add_device(&m.bus, 0xd0000000u, 0x100, &io_ops, NULL), ES_OK);
+    word(&m, LIT_RAM, 0x20000000u);
+    word(&m, LIT_IO, 0xd0000000u);
+    p.m = &m;
+    p.at = PC_RESET;
+    h16(&p, 0x2001);            /* movs r0, #1: 1 */
+    ldr_lit(&p, 1, LIT_RAM);    /* ldr r1, =RAM (AHB): 2 */
+    h16(&p, 0x6008);            /* str r0, [r1] (AHB): 2 */
+    ldr_lit(&p, 2, LIT_IO);     /* ldr r2, =IOPORT: 2 */
+    h16(&p, 0x6813);            /* ldr r3, [r2] (IOPORT): 1 */
+    h16(&p, 0x6010);            /* str r0, [r2] (IOPORT): 1 */
+    h16(&p, 0x2800);            /* cmp r0, #0: 1 */
+    h16(&p, 0xd000);            /* beq (not taken): 1 */
+    h16(&p, 0xd100);            /* bne (taken, over the nop): 2 */
+    h16(&p, 0xbf00);            /* nop, skipped */
+    bl_to(&p, func);            /* bl func: 3 */
+    h16(&p, 0xe7fe);            /* b .: 2 */
+    p.at = func;
+    h16(&p, 0xb500);            /* push {lr}: 1+N = 2 */
+    h16(&p, 0xbd00);            /* pop {pc}: 3+N = 4 */
+    esk_mach_reset(&m);
+    CHECK_EQ(step1(&m), 1);
+    CHECK_EQ(step1(&m), 2);
+    CHECK_EQ(step1(&m), 2);
+    CHECK_EQ(step1(&m), 2);
+    CHECK_EQ(step1(&m), 1);     /* the I/O port's single cycle */
+    CHECK_EQ(step1(&m), 1);
+    CHECK_EQ(step1(&m), 1);
+    CHECK_EQ(step1(&m), 1);
+    CHECK_EQ(step1(&m), 2);
+    CHECK_EQ(step1(&m), 3);     /* bl */
+    CHECK_EQ(pc_of(&m), func);
+    CHECK_EQ(step1(&m), 2);     /* push {lr} */
+    CHECK_EQ(step1(&m), 4);     /* pop {pc} */
+    CHECK_EQ(step1(&m), 2);     /* b . */
+    esk_mach_free(&m);
+    CHECK_EQ(a.live_bytes, 0);
+}
+
+/* an interrupt pended by a store: its handler starts 15 cycles on (the
+ * worst case the TRM gives, charged on every entry); the return is charged
+ * nothing, for want of a figure */
+static void test_m0plus_entry(void)
+{
+    esk_alloc a;
+    struct esk_mach m;
+    struct prog p;
+    int i;
+    esk_alloc_init(&a, NULL);
+    if (!machine_of(&m, &a, "cortex-m0plus"))
+        return;
+    p.m = &m;
+    p.at = PC_RESET;
+    ldr_lit(&p, 0, LIT_ISER);
+    h16(&p, 0x2101);            /* movs r1, #1 */
+    h16(&p, 0x6001);            /* str r1, [r0]: IRQ0 enabled */
+    ldr_lit(&p, 0, LIT_ISPR);
+    h16(&p, 0x6001);            /* str r1, [r0]: IRQ0 pends */
+    h16(&p, 0xbf00);            /* nop */
+    h16(&p, 0xe7fe);            /* b . */
+    p.at = PC_IRQ0;
+    h16(&p, 0xbf00);            /* nop: 1 */
+    h16(&p, 0x4770);            /* bx lr (EXC_RETURN): 2 */
+    esk_mach_reset(&m);
+    for (i = 0; i < 5; i++)
+        step1(&m);
+    CHECK_EQ(step1(&m), 15 + 1);
+    CHECK_EQ(pc_of(&m), PC_IRQ0 + 2);
+    step1(&m);                  /* bx lr */
+    CHECK_EQ(step1(&m), 1);     /* the nop returned to, the return charged nothing */
+    esk_mach_free(&m);
+    CHECK_EQ(a.live_bytes, 0);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_entry_tailchain_return);
 RUN(test_late_arrival);
+RUN(test_m0plus_instructions);
+RUN(test_m0plus_entry);
 CHECK(t_str_eq("cortex-m4", "cortex-m4"));
 TEST_MAIN_END

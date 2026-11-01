@@ -169,11 +169,20 @@ static int watched(struct esk_cm_state *cs, u32 a, int n, int write)
 }
 
 /* what is not plain memory, or is watched: through the bus */
+/* ARMv6-M's single-cycle I/O port: the RP2040's 0xd0000000-0xdfffffff
+ * (its datasheet 2.3.1) */
+static void ioport_note(struct esk_cm_state *cs, u32 a)
+{
+    if (cs->model->arch == ARCH_V6M && (a >> 28) == 0xD && cs->executing && cs->access == ACC_NORMAL)
+        cs->ioport_hit = 1;
+}
+
 u32 esk_cm_ld_bus(struct esk_cm_state *cs, u32 a, int n)
 {
     u32 v;
     if (watched(cs, a, n, 0) || ppb_refused(cs, a, 0))
         return 0;
+    ioport_note(cs, a);
     cs->sim->bus.unmapped = 0;
     if (esk_bus_read(&cs->sim->bus, a, n, &v) == 0)
         return v;
@@ -187,6 +196,7 @@ void esk_cm_st_bus(struct esk_cm_state *cs, u32 a, int n, u32 v)
 {
     if (watched(cs, a, n, 1) || ppb_refused(cs, a, 1))
         return;
+    ioport_note(cs, a);
     cs->sim->bus.unmapped = 0;
     if (esk_bus_write(&cs->sim->bus, a, n, v)) {
         if (cs->sim->bus.unmapped)
@@ -386,23 +396,32 @@ static int derived_fault(struct esk_cm_state *cs, int prio)
  * that frame (late arrival). Not charged, for want of a documented figure:
  * the extended frame's 17 extra words when FP state is stacked, lazy
  * stacking's later write, flash wait states on the stacking and vector
- * fetch, an interrupt during unstacking (it is taken after the return),
- * and ARMv6-M's latency (its TRM is not yet in the sources). */
+ * fetch, an interrupt during unstacking (it is taken after the return).
+ * ARMv6-M's figures are exc_cost's. */
 static int pending_to_take(struct esk_cm_state *cs);
 
-#define CM_ENTRY_CYCLES 12u
-#define CM_RETURN_CYCLES 12u
-#define CM_TAIL_CYCLES 6u
+enum { CM_ENTRY, CM_RETURN, CM_TAIL };
 
-static void charge_exc(struct esk_cm_state *cs, u32 v7m_cycles)
+/* ARMv6-M (the Cortex-M0+ TRM, ARM DDI 0484C 3.4, and the RP2040
+ * datasheet 2.4): a worst-case interrupt latency of 15 cycles at zero wait
+ * states, charged on every entry; the TRM gives no figure for the return or
+ * a tail-chain, and none is charged for them. */
+static u32 exc_cost(const struct esk_cm_state *cs, int what)
+{
+    static const u32 v7m[3] = { 12u, 12u, 6u }, v6m[3] = { 15u, 0u, 0u };
+    return cs->model->arch == ARCH_V7M ? v7m[what] : v6m[what];
+}
+
+static void charge_exc(struct esk_cm_state *cs, int what)
 {
     struct esk_mach *s = cs->sim;
-    if (cs->model->arch != ARCH_V7M)
+    u32 c = exc_cost(cs, what);
+    if (!c)
         return;
-    s->cycles += v7m_cycles;
-    cs->exc_cycles += v7m_cycles;
+    s->cycles += c;
+    cs->exc_cycles += c;
     if (s->counting)
-        esk_mach_advance(s, v7m_cycles);
+        esk_mach_advance(s, c);
 }
 
 /* ExceptionEntry: push the frame onto the stack in use, with the
@@ -418,8 +437,10 @@ static void exc_enter(struct esk_cm_state *cs, int n, u32 ret, int charge)
     if (charge) {
         /* the stacking's cycles: an interrupt that becomes pending in them
          * and outranks n takes the frame, n staying pending (SVC pends) */
-        charge_exc(cs, CM_ENTRY_CYCLES);
-        if (cs->model->arch == ARCH_V7M) {
+        charge_exc(cs, CM_ENTRY);
+        {
+            /* both architectures implement late arrival (ARMv7-M; ARMv6-M,
+             * the Cortex-M0+ TRM 3.4) */
             int m = pending_to_take(cs);
             if (m && m != n && group_prio(cs, m) < group_prio(cs, n)) {
                 if (n == EXC_SVC)
@@ -622,7 +643,7 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
             esk_cm_use_psp(cs, psp_was);
         cs->control = control;
         cs->other_sp = other;
-        charge_exc(cs, CM_RETURN_CYCLES);
+        charge_exc(cs, CM_RETURN);
         exc_taken(cs, d, ret);
         return;
     }
@@ -651,7 +672,7 @@ static void exc_return(struct esk_cm_state *cs, u32 ret)
     cs->excl_valid = 0;
     cs->pc = ra & ~1u;
     if (to_thread && (cs->scr & SCR_SLEEPONEXIT)) {
-        charge_exc(cs, CM_RETURN_CYCLES);
+        charge_exc(cs, CM_RETURN);
         sleep_now(cs, 0);
         return;
     }
@@ -810,11 +831,11 @@ static void step(struct esk_cpu *c)
         int n = pending_to_take(cs);
         cs->tail_window = 0;
         if (n) {
-            charge_exc(cs, CM_TAIL_CYCLES);
+            charge_exc(cs, CM_TAIL);
             exc_enter(cs, n, cs->pc, 0);
             return;
         }
-        charge_exc(cs, CM_RETURN_CYCLES);
+        charge_exc(cs, CM_RETURN);
         return; /* a step of its own: the next instruction starts after it */
     }
     if (cs->npend) {
@@ -834,7 +855,7 @@ static void step(struct esk_cpu *c)
         return;
     }
     u32 h[2];
-    int size, br;
+    int size, br, ls;
     u32 cost;
     struct esk_cm_dc *e = &cs->dc[(cs->pc >> 1) & (ESK_CM_DC - 1)];
     if (e->r && e->pc == cs->pc && e->gen == e->r->gen) {
@@ -844,6 +865,7 @@ static void step(struct esk_cpu *c)
         size = e->size;
         cost = e->cost;
         br = e->br;
+        ls = e->ls;
         if (size == 4 && (cs->mpu_on || cs->pc + 2 >= 0x40000000u) &&
             esk_cm_mpu_denied(cs, cs->pc + 2, 2, 0, 1)) {
             take_sync(cs, EXC_MEM, MMFSR_IACCVIOL, cs->pc);
@@ -870,7 +892,13 @@ static void step(struct esk_cpu *c)
             h[1] = (u32)b[2] | (u32)b[3] << 8;
             size = 4;
         }
-        cost = (u32)esk_cm_cost(b, (size_t)size, &br);
+        if (cs->model->arch == ARCH_V6M) {
+            cost = (u32)esk_cm0p_cost(b, (size_t)size, &br, &ls);
+        } else {
+            cost = (u32)esk_cm_cost(b, (size_t)size, &br);
+            br = br ? 2 : 0; /* the M4 table's refill */
+            ls = 0;
+        }
         /* kept when it all came from one read-only region */
         if (r0 && (size == 2 || r1 == r0) && cost < 256) {
             e->r = r0;
@@ -881,6 +909,7 @@ static void step(struct esk_cpu *c)
             e->size = (u8)size;
             e->cost = (u8)cost;
             e->br = (u8)br;
+            e->ls = (u8)ls;
         }
     }
     s->insns++;
@@ -941,8 +970,16 @@ static void step(struct esk_cpu *c)
     if (was_in_it && !is_it)
         esk_cm_it_advance(cs);
     if (br && cs->npc != cs->pc + (u32)size) {
-        s->cycles += 2;
-        cost += 2;
+        s->cycles += (u32)br;
+        cost += (u32)br;
+    }
+    if (cs->ioport_hit) {
+        /* a single load or store on the IOPORT: 1 cycle, not 2 */
+        cs->ioport_hit = 0;
+        if (ls && cost > 1) {
+            s->cycles -= 1;
+            cost -= 1;
+        }
     }
     if (cs->extra_cycles) {
         s->cycles += cs->extra_cycles;

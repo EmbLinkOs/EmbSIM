@@ -322,17 +322,17 @@
         "the QSPI bank's pins"
       ],
       "validation": [
-        "repo:tests/unit/test_rp2040.c",
+        "repo:tests/unit/test_rp2040.c", "repo:tests/unit/test_cm_timing.c",
         "repo:examples/pico-blink-serial",
         "repo:examples/pico-dual-core",
         "repo:tests/vendor/pico-sdk"
       ]
     },
     "timed": {
-      "claims": "Instruction timing estimated from EmbCC's Cortex-M0+ cost table (ADR-015): single-cycle ALU, 2-cycle loads and stores, 3 cycles for a taken branch; flash runs at the core's speed (no cache misses). The timer counts the watchdog's microsecond tick of clk_ref exactly against clk_sys.",
+      "claims": "Instruction timing is the Cortex-M0+ TRM's Table 3-1 (ARM DDI 0484C, zero wait states): loads and stores 2 cycles, 1 on the SIO's single-cycle I/O port; a taken branch 2, BL 3, POP with PC 3+N; MULS 1 (the RP2040's fast multiplier). An exception's entry takes the TRM's worst-case 15 cycles, with late arrival. Flash runs at the core's speed (no cache misses). The timer counts the watchdog's microsecond tick of clk_ref exactly against clk_sys.",
       "omissions": [
         "XIP cache misses",
-        "bus contention",
+        "bus contention", "an exception's return and tail-chain cycles (no figure in the TRM)",
         "the divider's 8 cycles but in CSR.READY"
       ],
       "validation": [

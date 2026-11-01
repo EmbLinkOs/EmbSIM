@@ -5,6 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Timing: the Cortex-M0+ (RP2040) from its own manual
+
+- The RP2040's cores now take the Cortex-M0+ TRM's cycles (ARM DDI 0484C
+  Table 3-1), not the Cortex-M4's: a load or store 2 cycles, 1 on the SIO's
+  single-cycle I/O port; a taken branch 2, BL 3, POP with PC 3+N; MULS 1
+  (the RP2040's fast multiplier, datasheet 2.4).
+- An exception's entry takes the TRM's worst-case 15 cycles, with late
+  arrival. The return and tail-chain are not charged, because neither the
+  TRM nor the datasheet gives a figure.
+- `tests/unit/test_cm_timing.c` times each class.
+
 ### Speed: analog islands settle at the solver's tolerance
 
 - An analog island now counts as settled when a step changes no node by more
