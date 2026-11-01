@@ -5,7 +5,7 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### Parts: the MAX7219, the passive buzzer and the GL5528 verified by their examples
+### Parts: the MAX7219, the buzzer, the GL5528 and the push button verified by their examples
 
 - LedControl's `LCDemo7Segment` runs unmodified on the Uno against the
   MAX7219 8-digit module and passes 27 assertions: woken from shutdown,
@@ -22,6 +22,9 @@ versions follow semantic versioning. There is no release yet.
   the light during calibration sets the range, then the LED fades with it.
   The GL5528 follows its datasheet: gamma 0.6 (was an illustrative 0.7),
   each part's 10-lux resistance drawn inside 10-20 kOhm, 1 MOhm dark.
+- The IDE's `Debounce` and `StateChangeDetection` run against a bouncing
+  push button: one press chatters (seven edges on D2), yet each is counted
+  or toggles once, and a tap shorter than the debounce delay is ignored.
 - The Arduino harness finds the IDE's built-in examples (arduino-examples,
   CC0) under their category folders.
 

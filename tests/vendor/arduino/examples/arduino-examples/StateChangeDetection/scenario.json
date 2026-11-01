@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "StateChangeDetection",
+  "until": "3.2s",
+  "description": "Five presses, each counted once although the contacts bounce (the sketch waits 50 ms after each change); on and off printed with each; the L LED lit after every fourth push.",
+  "inputs": [
+    {
+      "at": "500ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "650ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1000ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1150ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "1500ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "1650ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "2000ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2150ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    },
+    {
+      "at": "2500ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": true
+    },
+    {
+      "at": "2650ms",
+      "target": "SW1",
+      "input": "pressed",
+      "value": false
+    }
+  ],
+  "assertions": [
+    {
+      "id": "first",
+      "at": "700ms",
+      "probe": "console",
+      "expect": {
+        "contains": "on\r\nnumber of button pushes: 1\r\n"
+      }
+    },
+    {
+      "id": "released",
+      "at": "900ms",
+      "probe": "console",
+      "expect": {
+        "contains": "number of button pushes: 1\r\noff\r\n"
+      }
+    },
+    {
+      "id": "fourth",
+      "at": "2200ms",
+      "probe": "console",
+      "expect": {
+        "contains": "number of button pushes: 4\r\n"
+      }
+    },
+    {
+      "id": "no-fifth-yet",
+      "at": "2400ms",
+      "probe": "console",
+      "expect": {
+        "not_contains": "number of button pushes: 5"
+      }
+    },
+    {
+      "id": "fifth",
+      "at": "2700ms",
+      "probe": "console",
+      "expect": {
+        "contains": "number of button pushes: 5\r\n"
+      }
+    },
+    {
+      "id": "never-six",
+      "at": "3200ms",
+      "probe": "console",
+      "expect": {
+        "not_contains": "number of button pushes: 6"
+      }
+    },
+    {
+      "id": "led-on-at-four",
+      "at": "2300ms",
+      "probe": "led",
+      "expect": {
+        "logic": "1"
+      }
+    },
+    {
+      "id": "led-off-at-five",
+      "at": "2900ms",
+      "probe": "led",
+      "expect": {
+        "logic": "0"
+      }
+    }
+  ]
+}
