@@ -6,6 +6,8 @@
 #include "engine/engine.h"
 #include "harness.h"
 #include "util/num.h"
+#include <math.h>
+#include <string.h>
 
 #ifndef EMBSIM_SOURCE_DIR
 #define EMBSIM_SOURCE_DIR "."

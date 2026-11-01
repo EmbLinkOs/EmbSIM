@@ -5,6 +5,17 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Imperfections on by default (2026-11-01)
+
+`examples/button-bounce`: two push buttons, which now bounce as real ones
+do. SW1 pulls a logic line straight down and chatters through every bounce.
+SW2 discharges C1 through R3, and while the contacts spring open, R2
+recharges C1 too slowly to cross the Schmitt inverter's threshold. So U1's
+output changes once per press. R1 to R3 and C1 are drawn inside their
+tolerances from the project's seed:
+
+![The button-bounce example in the Design perspective](imperfections/1-button-bounce-design.png)
+
 ## Front panels docked or floating (2026-10-31)
 
 A DS1054Z placed in the demo session, its front panel opened from the
