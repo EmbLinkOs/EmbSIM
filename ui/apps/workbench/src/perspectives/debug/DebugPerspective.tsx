@@ -240,7 +240,7 @@ function RegistersPanel() {
   if (!regs.length) return <EmptyState title={tr('debug.noRegisters')}>{tr('debug.haltToRead')}</EmptyState>;
   return (
     <div className="wb-debug__scroll">
-      <table className="wb-debug__table" aria-label={tr('debug.registers')}>
+      <table className="wb-debug__table wb-debug__regs" aria-label={tr('debug.registers')}>
         <tbody>
           {regs.map((r) => {
             const changed = previous[r.name] !== undefined && previous[r.name] !== r.value;

@@ -5,6 +5,7 @@
 | [Component library](../catalog/README.md) | Named parts, categories, source status, model limits and executable fixtures |
 | [Interactive library](engineering/interactive-library.md) | Explorer, next named batch, electrical models, four circuit examples and regression commands |
 | [Arrange your workspace](user/workspace.md) | Global controls, panel resizing/folding and compact-window navigation |
+| [Visual Benchmark v0.1](engineering/visual-benchmark.md) | The redesign: review, design system, default workspaces, settings, English and French, verification and limits |
 | [Workspace layout](engineering/workspace-layout.md) | Responsive navigation, constrained panel resizing and saved preferences |
 | [Bench loading](engineering/bench-loading.md) | Optional renderer loading, recovery and measured production bundle sizes |
 | [Named package geometry](engineering/package-geometry.md) | Reviewed SOT-23/SOT-223 bodies, terminal identity and mechanical representation limits |

@@ -5,6 +5,42 @@ evolves. Newer milestones come first. The milestone sets from M1 on are captured
 `ui/apps/workbench/scripts/screenshots.mjs` (the same views each time:
 `pnpm build`, then `node scripts/screenshots.mjs --out ../../../docs/gallery/<milestone>`).
 
+## Visual Benchmark v0.1: the redesigned workbench, in English and French (2026-11-01)
+
+The same twelve workflows before and after the redesign, captured by
+`ui/apps/workbench/scripts/benchmark-shots.mjs` against `embsim serve` on
+the real examples (`pnpm build`, then `node scripts/benchmark-shots.mjs
+--out ../../../docs/gallery/visual-benchmark-v0.1/after`, and `--lang fr`
+for French). The full sets are in `visual-benchmark-v0.1/before`, `after`
+and `after-fr`; what changed is in `docs/user/workspace.md` and the
+CHANGELOG.
+
+Design (`examples/uno-breadboard`), before and after:
+
+![Before: Design](visual-benchmark-v0.1/before/02-design-board.png)
+![After: Design](visual-benchmark-v0.1/after/02-design-board.png)
+
+Running firmware on the Blue Pill: the state named in words with its icon,
+simulated time apart from the host's rate:
+
+![Before: Run](visual-benchmark-v0.1/before/04-run-firmware.png)
+![After: Run](visual-benchmark-v0.1/after/04-run-firmware.png)
+
+Debug, paused, in French; the registers read as rows:
+
+![After, French: Debug](visual-benchmark-v0.1/after-fr/06-debug.png)
+
+The engine gone: a screen that says so and offers the way back, instead of
+an empty perspective:
+
+![Before: disconnected](visual-benchmark-v0.1/before/11-disconnected.png)
+![After: disconnected](visual-benchmark-v0.1/after/11-disconnected.png)
+
+The Settings page, in English and in French:
+
+![Settings](visual-benchmark-v0.1/after/12-settings.png)
+![Paramètres](visual-benchmark-v0.1/after-fr/12-settings.png)
+
 ## Imperfections on by default (2026-11-01)
 
 `examples/button-bounce`: two push buttons, which now bounce as real ones

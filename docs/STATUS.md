@@ -5,6 +5,28 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## Visual Benchmark v0.1: the workbench redesigned, in English and French (2026-11-01)
+
+The workbench's shell and perspectives redesigned around the simulation
+(docs/engineering/visual-benchmark.md): a navigation bar and a simulation
+bar; the state named in words and an icon, never by colour alone; simulated
+time apart from the measured host rate; a status bar led by the simulation;
+a connection screen when the engine is not there; a Settings page
+(language, theme, text size, density, layout restore and reset, time unit,
+precision, rate format) applied at once and persisted; English and French
+from typed catalogs with English fallback, the shared packages included.
+
+Evidence: `pnpm typecheck`, `lint`, `test` (370, `i18n.test.ts` among them:
+key parity, placeholders, plural pairs); the Playwright suite with
+`e2e/settings-language.spec.ts` (settings applied and kept, the workbench
+in French without overflow, back to English) and `workspace-layout.spec.ts`
+at 1440, 900 and 768 px; twelve workflows captured before, after and in
+French (docs/gallery/visual-benchmark-v0.1).
+
+Not yet: catalog descriptions, fidelity notes and engine diagnostics in
+French (they are data); compact density on the canvas and plots; panels
+moving between perspectives; languages beyond English and French.
+
 ## Imperfections on by default: bounce and tolerances (2026-11-01)
 
 ADR-034's first imperfections are on by default.

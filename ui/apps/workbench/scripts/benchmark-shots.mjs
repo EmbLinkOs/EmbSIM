@@ -9,6 +9,7 @@
 //   pnpm build
 //   node scripts/benchmark-shots.mjs --out ../../../docs/gallery/visual-benchmark-v0.1/after \
 //     [--embsim ../../../build/dev/bin/embsim] [--chromium PATH] [--only design,run] [--lang fr]
+//     [--settings '{"textSize":"large","density":"compact"}']
 //
 // Each shot starts its own `embsim serve` on the built workbench (dist/).
 import { spawn } from 'node:child_process';
@@ -27,6 +28,7 @@ const embsim = resolve(args.embsim ?? `${root}/build/dev/bin/embsim`);
 const chromiumPath = args.chromium;
 const only = args.only ? new Set(args.only.split(',')) : null;
 const lang = args.lang ?? null;
+const extraSettings = args.settings ? JSON.parse(args.settings) : null;
 const dist = resolve(here, '../dist');
 let port = Number(args.port ?? 19100);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -51,7 +53,10 @@ async function shot(browser, name, project, act, { dark = false, width = 1600, h
   if (only && !only.has(name)) return;
   const srv = await serve(project);
   const ctx = await browser.newContext({ viewport: { width, height }, colorScheme: dark ? 'dark' : 'light' });
-  if (lang) await ctx.addInitScript((l) => { try { localStorage.setItem('embsim.settings', JSON.stringify({ language: l })); } catch { /* none */ } }, lang);
+  if (lang || extraSettings) {
+    const settings = { ...(lang ? { language: lang } : {}), ...(extraSettings ?? {}) };
+    await ctx.addInitScript((v) => { try { localStorage.setItem('embsim.settings', v); } catch { /* none */ } }, JSON.stringify(settings));
+  }
   const page = await ctx.newPage();
   page.setDefaultTimeout(10000);
   try {

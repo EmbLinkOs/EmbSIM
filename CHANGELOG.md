@@ -5,6 +5,36 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Workbench: Visual Benchmark v0.1, settings, English and French
+
+- A two-row header: navigation (project, the four perspectives, diagnostics,
+  Settings, commands), then the simulation bar (transport, readout, speed,
+  fidelity, undo). The readout names the state in words and an icon
+  (running, paused, stopped, loading, failed, disconnected) and shows
+  **Simulated** time apart from the **Host** rate, which is measured or "—".
+- The status bar leads with the state and simulated time, then the project,
+  timing tiers, error and warning counts, the engine connection last; it
+  scrolls on a narrow window. A connection screen replaces the perspective
+  while connecting and when the engine is gone, with Reconnect.
+- A Settings page (Ctrl+,): language, theme, text size, density, restore
+  and reset panel layout, time unit, time precision, host-rate format,
+  restore defaults; applied at once and kept between sessions.
+- The interface in English and French from typed catalogs (`src/i18n`),
+  English as the fallback; the shared packages take their words through
+  `uiText` in `@embsim/design`. Technical identifiers, catalog data, the
+  engine's diagnostics and the instruments' front-panel legends stay as
+  written.
+- Design tokens for state and value colours, a text-size scale and compact
+  density; panels, titles, ribbons, library rows, controls, meters and
+  tables brought onto them. Debug's registers read as rows; Verify's panes
+  no longer repeat their titles. Nothing overflows at 768 px.
+- Fixed: a pointer going down near the edge of a pin's target started no
+  wire (the pin was looked up by distance); the pin under the pointer is
+  now taken.
+- `docs/engineering/visual-benchmark.md` gives the review, the design
+  system, the default workspaces, the verification and the limits; the
+  gallery has the same twelve workflows before, after and in French.
+
 ### Imperfections: contact bounce and tolerances on by default (ADR-034)
 
 - Push buttons and toggle switches bounce by default, as real contacts do
