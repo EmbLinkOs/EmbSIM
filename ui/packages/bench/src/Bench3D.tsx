@@ -1244,12 +1244,16 @@ export function Bench3D(props: Bench3DProps) {
       m.userData.measurement = true;
       s.inspect.add(m);
     };
-    const measureAt = () => {
+    const measureAt = (ev: PointerEvent) => {
       const p = propsRef.current;
+      // a contact the pointer names (as the jumper tool would, in screen
+      // space, whatever the zoom) is taken exactly; elsewhere the surface
+      // hit snaps to a contact within 1.5 mm
+      const pick = terminalAtPointer(ev);
       const hit = hitParts()[0];
       const raw = hit?.point ?? onDesk();
-      if (!raw) return;
-      const { at, snapped } = snapPoint(raw.toArray() as Vec3, p.terminals.map((t) => t.at), 1.5);
+      if (pick.kind !== 'terminal' && !raw) return;
+      const { at, snapped } = pick.kind === 'terminal' ? { at: [...pick.terminal.at] as Vec3, snapped: true } : snapPoint(raw!.toArray() as Vec3, p.terminals.map((t) => t.at), 1.5);
       const done = s.inspect.children.some((c) => c.userData.measurement === 'line');
       if (!s.measureFrom || done) {
         for (const child of [...s.inspect.children]) if (child.userData.measurement) { s.inspect.remove(child); disposeTree(child); }
@@ -1358,7 +1362,7 @@ export function Bench3D(props: Bench3DProps) {
       // Route handles are visible overlay controls, so their picking priority
       // matches their depth-independent display even over a component body.
       if (p.tool === 'measure') {
-        measureAt();
+        measureAt(ev);
         return;
       }
       const hit = p.editable && p.tool === 'select' ? hits.find((h) => h.object.userData.routePoint !== undefined) ?? hits[0] : hits[0];

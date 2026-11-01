@@ -30,7 +30,9 @@ versions follow semantic versioning. There is no release yet.
   no longer repeat their titles. Nothing overflows at 768 px.
 - Fixed: a pointer going down near the edge of a pin's target started no
   wire (the pin was looked up by distance); the pin under the pointer is
-  now taken.
+  now taken. On the 3D bench, the measure tool takes the contact the
+  pointer names, as the jumper tool does, instead of snapping only within
+  1.5 mm of the surface hit.
 - `docs/engineering/visual-benchmark.md` gives the review, the design
   system, the default workspaces, the verification and the limits; the
   gallery has the same twelve workflows before, after and in French.

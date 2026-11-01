@@ -203,6 +203,12 @@ that act are offered.
   its edge fell through to the sheet (the pin was looked up by distance,
   not by the element); macOS's and Windows's fonts moved the pin label's
   box enough to show it. The canvas now takes the pin under the pointer.
+- Another: the 3D bench's measure tool snapped to a contact only within
+  1.5 mm of the surface it hit, while the jumper tool names a contact
+  within 11 screen pixels; with the new header's smaller bench canvas a
+  click the jumper tool would call "R2.1" measured from a hole. The
+  measure tool now takes the contact the pointer names, as the jumper tool
+  does.
 
 ## Limitations
 
@@ -218,5 +224,3 @@ that act are offered.
 - Panels are resizable, collapsible and reorderable within their
   perspective and the front panels float; panels do not yet move between
   perspectives.
-- The `bench-tools` measurement spec is timing-sensitive under a loaded
-  machine running several workers; it passes alone and on CI's runners.
