@@ -202,6 +202,11 @@ static int wr(struct esk_bus *b, u32 a, int n, u32 v, int debug)
             b->rom_write(b->rom_write_ctx, r, a, n, v);
         if (r->rom && debug)
             esk_bus_code_changed(b);
+        if (b->dev_fault) { /* the flash interface refused the store */
+            b->dev_fault = 0;
+            b->fail_addr = a;
+            return -1;
+        }
         return 0;
     }
     u32 t, byte;

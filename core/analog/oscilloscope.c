@@ -32,7 +32,9 @@
  * those points resampled at the sample rate, through the bandwidth filter,
  * then quantised. The record is decimated to at most SC_SHOW points a
  * channel for the screen (as the scope's display is), the full record's
- * length and rate reported. The trigger's crossing is placed between two
+ * length and rate reported. The automatic measurements (the workbench's
+ * scopeMeasure.ts) are made on those points, as the DS1000Z makes them on
+ * its screen data: a fast signal on a slow timebase measures badly on both. The trigger's crossing is placed between two
  * accepted steps by linear interpolation. History beyond SC_HIST steps is
  * forgotten, so a very busy circuit on a slow timebase shows only what it
  * holds.
@@ -40,7 +42,8 @@
  * Not modelled: the other trigger types and the serial decoders, math, FFT,
  * XY and Roll, the probe's compensation and its own bandwidth, averaging,
  * peak detect and high resolution modes, the DC gain and offset errors (the
- * readings are exact to their 8 bits), noise. */
+ * readings are exact to their 8 bits), noise, the hardware frequency
+ * counter. */
 #include "analog/named.h"
 #include "util/num.h"
 #include <math.h>

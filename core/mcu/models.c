@@ -24,7 +24,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "stm32f1-adc", &esk_stm32f1_adc_ops, esk_stm32f1_adc_create },
     { "stm32-spi", &esk_stm32_spi_ops, esk_stm32_spi_create },
     { "stm32-i2c", &esk_stm32_i2c_ops, esk_stm32_i2c_create },
-    { "stm32f1-flash", &esk_stm32_storage_ops, esk_stm32_storage_create },
+    { "stm32f1-flash", &esk_stm32f1_flash_ops, esk_stm32f1_flash_create },
     { "stm32-pwr", &esk_stm32_storage_ops, esk_stm32_storage_create },
     { "stm32f4-pwr", &esk_stm32f4_pwr_ops, esk_stm32f4_pwr_create },
     { "stm32f4-flash", &esk_stm32f4_flash_ops, esk_stm32f4_flash_create },

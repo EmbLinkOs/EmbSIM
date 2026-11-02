@@ -311,7 +311,7 @@ ES_INLINE void esk_cm_st(struct esk_cm_state *cs, u32 a, int n, u32 v)
             if (!r->rom)
                 esk_mem_wr_le(r->mem + (a - r->base), n, v);
             else if (b->rom_write)
-                b->rom_write(b->rom_write_ctx, r, a, n, v); /* the flash interface's */
+                esk_cm_st_bus(cs, a, n, v); /* the flash interface's, which may refuse it */
             return;
         }
     }

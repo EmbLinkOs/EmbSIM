@@ -5,6 +5,8 @@
 // as the DS1054Z computes them from what it acquired: maximum, minimum,
 // peak-to-peak, average, RMS, and from the crossings of the middle level,
 // period, frequency and positive duty; the rise time between 10 % and 90 %.
+// They are made on the screen's points (1200 a channel), as the DS1000Z makes
+// them on its screen data, not on the full memory.
 
 export interface ScopeMeasurements {
   max: number;

@@ -726,6 +726,157 @@ static void test_tim_pwm_and_adc(void)
  * to the picosecond. Before the islands stopped at a reset, a pin the MCU
  * reconfigured there touched an island still running the previous run, and
  * its stale crossing moved the press's interrupt by 1.4 ns */
+/* ---- the F1's flash interface (PM0075) ---- */
+
+#define F1_KEYR 0x40022004u
+#define F1_OPTKEYR 0x40022008u
+#define F1_SR 0x4002200Cu
+#define F1_CR 0x40022010u
+#define F1_AR 0x40022014u
+#define F1_OBR 0x4002201Cu
+#define F1_WRPR 0x40022020u
+#define F1_PAGE8 0x08002000u
+
+static u32 f1_h(struct esk_mach *m, u32 a)
+{
+    u32 v = 0;
+    CHECK_EQ(esk_bus_debug_read(&m->bus, a, 2, &v), 0);
+    return v & 0xffffu;
+}
+
+/* the core runs (it branches to itself in the flash) until BSY clears:
+ * the cycles that took, or 0 after `max` */
+static u64 f1_busy(struct esk_mach *m, u64 max)
+{
+    u64 c0 = m->cycles;
+    while (r32(m, F1_SR) & 1u) {
+        if (m->cycles - c0 > max)
+            return 0;
+        esk_mach_run(m, 64, 0);
+    }
+    return m->cycles - c0;
+}
+
+static void f1_unlock(struct esk_mach *m)
+{
+    w32(m, F1_KEYR, 0x45670123u);
+    w32(m, F1_KEYR, 0xCDEF89ABu);
+    CHECK_EQ(r32(m, F1_CR) & 0x80u, 0u);
+}
+
+/* the keys; a halfword's programming and its 52.5 us, PGERR on a programmed
+ * location but for 0x0000, a word's bus error; a page's and the mass
+ * erase's 20 ms with the core stalled; EOP and the interrupt; the option
+ * bytes' factory OBR and WRPR, OPTWRE, OPTER and OPTPG with the complement,
+ * WRP0's protection loaded at reset and its WRPRTERR */
+static void test_f1_flash(void)
+{
+    esk_alloc a;
+    esk_json *mcu, *regs;
+    struct esk_mach m;
+    char why[200];
+    u64 c, i0;
+    int r;
+    esk_alloc_init(&a, NULL);
+    mcu = load_json(&a, "catalog/mcus/st/stm32f103c8/mcu.json");
+    regs = load_json(&a, "catalog/mcus/st/stm32f103c8/registers.json");
+    esk_mach_init(&m, &a);
+    if (esk_mach_build(&m, mcu, regs, 8000000u, why, sizeof why) != ES_OK) {
+        FAIL(why);
+        return;
+    }
+    CHECK_EQ(esk_bus_debug_write(&m.bus, 0x08000000u, 4, 0x20005000u), 0);
+    CHECK_EQ(esk_bus_debug_write(&m.bus, 0x08000004u, 4, 0x08000009u), 0);
+    CHECK_EQ(esk_bus_debug_write(&m.bus, 0x08000008u, 4, 0xe7fee7feu), 0); /* b . */
+    for (r = 0; r < m.bus.nrg; r++) /* read-only to the core, as an image's load leaves it */
+        m.bus.rg[r].rom = m.bus.rg[r].kind == ESK_MEM_FLASH || m.bus.rg[r].kind == ESK_MEM_ROM;
+    esk_mach_reset(&m);
+    esk_mach_run(&m, 100, 0);
+    CHECK_EQ(r32(&m, F1_OBR), 0x03FFFFFCu); /* the factory's: no error, unprotected */
+    CHECK_EQ(r32(&m, F1_WRPR), 0xFFFFFFFFu);
+    CHECK_EQ(r32(&m, F1_CR), 0x80u);         /* LOCK */
+    w32(&m, F1_CR, 1u);                      /* locked: ignored */
+    CHECK_EQ(r32(&m, F1_CR), 0x80u);
+    CHECK(esk_bus_write(&m.bus, F1_PAGE8, 2, 0x1234u) == 0); /* no PG: nothing */
+    CHECK_EQ(f1_h(&m, F1_PAGE8), 0xffffu);
+    f1_unlock(&m);
+    w32(&m, F1_CR, 1u << 12 | 1u);           /* EOPIE, PG */
+    CHECK(esk_bus_write(&m.bus, F1_PAGE8, 2, 0x1234u) == 0);
+    CHECK_EQ(f1_h(&m, F1_PAGE8), 0x1234u);
+    CHECK_EQ(r32(&m, F1_SR), 1u);            /* BSY, no EOP yet */
+    i0 = m.insns;
+    c = f1_busy(&m, 10000);                  /* 52.5 us at 8 MHz: 420 cycles */
+    CHECK(c >= 420 && c <= 490);
+    CHECK(m.insns - i0 <= 2);                /* the core (in the flash) waited */
+    CHECK_EQ(r32(&m, F1_SR), 1u << 5);       /* EOP */
+    CHECK(r32(&m, 0xE000E200u) & 1u << 4);   /* FLASH, IRQ 4 */
+    w32(&m, F1_SR, 1u << 5);                 /* rc_w1 */
+    CHECK_EQ(r32(&m, F1_SR), 0u);
+    CHECK(esk_bus_write(&m.bus, F1_PAGE8, 2, 0x0204u) == 0); /* not erased */
+    CHECK_EQ(r32(&m, F1_SR), 1u << 2);       /* PGERR, skipped */
+    CHECK_EQ(f1_h(&m, F1_PAGE8), 0x1234u);
+    w32(&m, F1_SR, 1u << 2);
+    CHECK(esk_bus_write(&m.bus, F1_PAGE8, 2, 0u) == 0); /* 0x0000 is programmed */
+    CHECK_EQ(f1_h(&m, F1_PAGE8), 0u);
+    CHECK(f1_busy(&m, 10000) > 0);
+    w32(&m, F1_SR, 0x34u);
+    CHECK(esk_bus_write(&m.bus, F1_PAGE8 + 4, 4, 0u) != 0); /* a word: a bus error */
+    CHECK_EQ(f1_h(&m, F1_PAGE8 + 4), 0xffffu);
+    /* page 8's erase: 20 ms, the core stalled */
+    w32(&m, F1_CR, 1u << 1);                 /* PER */
+    w32(&m, F1_AR, F1_PAGE8);
+    w32(&m, F1_CR, 1u << 1 | 1u << 6);       /* STRT */
+    CHECK_EQ(f1_h(&m, F1_PAGE8), 0xffffu);
+    CHECK(r32(&m, F1_CR) & 1u << 6);         /* STRT until BSY clears */
+    i0 = m.insns;
+    c = f1_busy(&m, 400000);
+    CHECK(c >= 160000 && c <= 160100);       /* 20 ms at 8 MHz */
+    CHECK(m.insns - i0 <= 2);
+    CHECK_EQ(r32(&m, F1_CR) & 1u << 6, 0u);
+    CHECK_EQ(r32(&m, F1_SR), 1u << 5);       /* EOP without EOPIE */
+    w32(&m, F1_SR, 1u << 5);
+    /* the option bytes: WRP0's bit 2 (pages 8 to 11) protected */
+    w32(&m, F1_OPTKEYR, 0x45670123u);
+    w32(&m, F1_OPTKEYR, 0xCDEF89ABu);
+    CHECK(r32(&m, F1_CR) & 1u << 9);         /* OPTWRE */
+    w32(&m, F1_CR, 1u << 9 | 1u << 5);       /* OPTER */
+    w32(&m, F1_CR, 1u << 9 | 1u << 5 | 1u << 6);
+    CHECK(f1_busy(&m, 400000) >= 160000);
+    CHECK_EQ(f1_h(&m, 0x1FFFF800u), 0xffffu);
+    w32(&m, F1_SR, 1u << 5);
+    w32(&m, F1_CR, 1u << 9 | 1u << 4);       /* OPTPG */
+    CHECK(esk_bus_write(&m.bus, 0x1FFFF800u, 2, 0x00a5u) == 0);
+    CHECK(f1_busy(&m, 10000) > 0);
+    CHECK_EQ(f1_h(&m, 0x1FFFF800u), 0x5aa5u); /* the complement written */
+    CHECK(esk_bus_write(&m.bus, 0x1FFFF802u, 2, 0x00ffu) == 0);
+    CHECK(f1_busy(&m, 10000) > 0);
+    CHECK(esk_bus_write(&m.bus, 0x1FFFF808u, 2, 0x00fbu) == 0); /* WRP0 bit 2 */
+    CHECK(f1_busy(&m, 10000) > 0);
+    esk_mach_reset(&m);
+    esk_mach_run(&m, 100, 0);
+    CHECK_EQ(r32(&m, F1_WRPR), 0xFFFFFFFBu);
+    CHECK_EQ(r32(&m, F1_OBR) & 3u, 0u);      /* erased Data0, Data1, WRP1-3: valid, 0xFF */
+    CHECK_EQ(r32(&m, F1_OBR) >> 10 & 0xffffu, 0xffffu);
+    f1_unlock(&m);
+    w32(&m, F1_CR, 1u);
+    CHECK(esk_bus_write(&m.bus, F1_PAGE8 + 4, 2, 0u) == 0);
+    CHECK_EQ(r32(&m, F1_SR), 1u << 4);       /* WRPRTERR */
+    w32(&m, F1_CR, 1u << 2);                 /* MER: a page protected */
+    w32(&m, F1_CR, 1u << 2 | 1u << 6);
+    CHECK_EQ(r32(&m, F1_SR) & 1u, 0u);
+    CHECK_EQ(f1_h(&m, 0x08000000u), 0x5000u); /* nothing erased */
+    /* a wrong key: a bus error, locked until reset */
+    w32(&m, F1_CR, 0x80u);
+    CHECK(esk_bus_write(&m.bus, F1_KEYR, 4, 0x12345678u) != 0);
+    w32(&m, F1_KEYR, 0x45670123u);
+    w32(&m, F1_KEYR, 0xCDEF89ABu);
+    CHECK(r32(&m, F1_CR) & 0x80u);
+    esk_mach_free(&m);
+    esk_json_free(&a, mcu);
+    esk_json_free(&a, regs);
+    CHECK_EQ(a.live_bytes, 0);
+}
+
 static void test_reset_is_load(void)
 {
     es_session *s = NULL;
@@ -768,4 +919,5 @@ RUN(test_reset_is_load);
 RUN(test_breakpoint_continue_equivalence);
 RUN(test_source_lines);
 RUN(test_tim_pwm_and_adc);
+RUN(test_f1_flash);
 TEST_MAIN_END

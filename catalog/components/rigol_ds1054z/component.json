@@ -399,7 +399,8 @@
         "averaging, peak detect and high resolution acquisition",
         "the probe's compensation and its own bandwidth",
         "the DC gain and offset errors and noise: the readings are exact to their 8 bits",
-        "Auto's wait before forcing a trigger (assumed: the screen's time, at least 10 ms)"
+        "Auto's wait before forcing a trigger (assumed: the screen's time, at least 10 ms)",
+        "the hardware frequency counter (Measure, Counter): the measurements are the automatic ones, made as the scope makes them on the screen's 1200 points a channel"
       ]
     },
     "electrical": {
@@ -410,7 +411,8 @@
         "averaging, peak detect and high resolution acquisition",
         "the probe's compensation and its own bandwidth",
         "the DC gain and offset errors and noise: the readings are exact to their 8 bits",
-        "Auto's wait before forcing a trigger (assumed: the screen's time, at least 10 ms)"
+        "Auto's wait before forcing a trigger (assumed: the screen's time, at least 10 ms)",
+        "the hardware frequency counter (Measure, Counter): the measurements are the automatic ones, made as the scope makes them on the screen's 1200 points a channel"
       ],
       "validation": [
         "tests/*.json"

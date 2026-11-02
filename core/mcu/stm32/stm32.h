@@ -16,7 +16,8 @@
  *   gpio_f4.c  an F4 GPIO port (MODER, AFR, LCKR): pins to the runtime
  *   syscfg_f4.c the F4's system configuration: EXTI line ports, boot remap
  *   dma_f4.c   the F4's DMA controllers: streams, channels, FIFO, double buffer
- *   storage.c  registers that only keep what is written (FLASH's ACR)
+ *   flash_f1.c the F1's flash interface (FPEC): program, erase, option bytes
+ *   storage.c  registers that only keep what is written (PWR's CR)
  *   crc.c      the CRC calculation unit: CRC-32 of the words written to DR */
 #ifndef ESK_MCU_STM32_H
 #define ESK_MCU_STM32_H
@@ -87,6 +88,10 @@ void esk_stm32f4_port_changed(struct esk_mach *m, int port);
 /* the port (0 for A) SYSCFG's EXTICR gives EXTI line 0-15, or -1 */
 int esk_stm32f4_exti_port(struct esk_mach *m, int line);
 extern const struct esk_dev_ops esk_stm32f4_pwr_ops;
+/* the F1's flash interface, the FPEC: programming, erasing, the option bytes (flash_f1.c) */
+extern const struct esk_dev_ops esk_stm32f1_flash_ops;
+void *esk_stm32f1_flash_create(struct esk_mach *m, struct esk_rf_periph *p);
+
 /* the F4's flash interface: programming, erasing, the option bytes (flash_f4.c) */
 extern const struct esk_dev_ops esk_stm32f4_flash_ops;
 void *esk_stm32f4_flash_create(struct esk_mach *m, struct esk_rf_periph *p);

@@ -8,13 +8,13 @@
  *     Standby) the debug port answers only while its bit is set, else the
  *     probe loses the target until the part wakes (mcu.c);
  *   - DBGMCU_APB1_FZ and DBGMCU_APB2_FZ: while the core is halted by a
- *     debugger, the independent and window watchdogs whose bit is set
- *     stop counting (wdg.c);
+ *     debugger, the timers (tim.c: TIM1-TIM14) and the independent and
+ *     window watchdogs (wdg.c) whose bit is set stop counting;
  *   - the registers are reset at power-on only: a system reset keeps what
  *     a debugger wrote (OpenOCD's stm32f4x.cfg sets them, then resets).
- * Omissions: the timers' freeze bits (DBG_TIMx_STOP: they count on while
- * the core is halted), the RTC's, the I2C SMBus time-outs' and CAN's, and
- * TRACE_IOEN and TRACE_MODE (no trace port). */
+ * Omissions: the RTC's, the I2C SMBus time-outs' and CAN's freeze bits,
+ * and TRACE_IOEN and TRACE_MODE (no trace port); a frozen timer's input
+ * filters hold too. */
 #include <string.h>
 
 #include "mcu/stm32/stm32.h"

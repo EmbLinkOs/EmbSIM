@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The STM32F103's flash interface
+
+- The STM32F103's flash interface (`stm32f1-flash`, PM0075): the keys,
+  halfword programming (PGERR over a location not erased, a bus error for
+  another size), page and mass erase, the write protection, EOP and the
+  interrupt, and the option bytes (each byte's complement written by the
+  interface, loaded into OBR and WRPR at each reset), with BSY lasting
+  DS5319's times (a halfword 52.5 us, a page 20 ms) and a program in the
+  flash waiting them out. The factory's option bytes are in the part's
+  description. ST's HAL programs and erases the flash and its option bytes
+  unmodified (`tests/vendor/stm32cube`'s `flash`, 9/9). A store that a
+  flash interface refuses is now a BusFault, as on the part.
+- The oscilloscope's automatic measurements stay on the screen's 1200
+  points, as the DS1000Z makes them; its fidelity says so and names the
+  hardware frequency counter as not modelled.
+
 ### Debug probes: the NUCLEO's ST-LINK, through the Cortex-M's own debug
 
 - The NUCLEO-F446RE's ST-LINK/V2-1 (`emblink/st_link_v21`, the board's U2
@@ -32,8 +48,8 @@ versions follow semantic versioning. There is no release yet.
 - The STM32F4's DBGMCU: IDCODE (0x10006421 on the F446) is readable (the
   core's read-as-zero range no longer hides the external PPB), DBG_STOP and
   DBG_STANDBY keep a probe's connection in Stop and Standby, and
-  DBG_IWDG_STOP and DBG_WWDG_STOP freeze the watchdogs while the core is
-  halted. The Cortex-M's ROM table is at 0xE00FF000.
+  DBG_TIMx_STOP, DBG_IWDG_STOP and DBG_WWDG_STOP freeze the timers and the
+  watchdogs while the core is halted. The Cortex-M's ROM table is at 0xE00FF000.
 
 - The Cortex-M cores' halting debug, as a probe drives it through the
   debug port (ARM DDI 0403E and DDI 0419E, C1): DHCSR halts, steps and

@@ -15,6 +15,8 @@ ST-LINK commands:
     the flash, the program's first words read back from 0x08000000,
     DBGMCU_IDCODE 0x10006421, a word written to SRAM and read back, an
     access nothing answers reported by GETLASTRWSTATUS2 with its address;
+  - DBGMCU's DBG_TIM2_STOP: TIM2's counter holds while the core is halted,
+    and counts once the bit is cleared;
   - DBGMCU's DBG_IWDG_STOP: the independent watchdog, started (its 512 ms
     time-out) while the core is halted, does not reset the part until the
     bit is cleared;
@@ -191,6 +193,20 @@ def protocol(embsim: str, tmp: Path) -> None:
         def wr(addr: int, val: int) -> None:
             v.usb(dbg(0x35) + u32(addr) + u32(val), 2)
 
+        # TIM2 counting while the core is halted: DBG_TIM2_STOP holds its counter
+        wr(0x40023840, rdreg(0x40023840) | 1)    # RCC_APB1ENR: TIM2EN
+        wr(0x40000028, 0)                        # PSC: the timer clock itself
+        wr(0x4000002C, 0xFFFFFFFF)               # ARR
+        wr(0x40000000, 1)                        # CR1: CEN, counting
+        check(until(lambda: rdreg(0x40000024) != 0, 5.0), "TIM2 counts while the core is halted")
+        wr(0xE0042008, 1 << 0)                   # DBGMCU_APB1_FZ: DBG_TIM2_STOP
+        c1 = rdreg(0x40000024)
+        time.sleep(0.3)
+        c2 = rdreg(0x40000024)
+        check(c1 == c2 and c1 != 0, f"DBG_TIM2_STOP set: CNT holds at {c2}")
+        wr(0xE0042008, 0)
+        check(until(lambda: rdreg(0x40000024) != c2, 5.0), "the freeze bit cleared: TIM2 counts on while the core is halted")
+        wr(0x40000000, 0)
         wr(0xE0042008, 1 << 12)                  # DBGMCU_APB1_FZ: DBG_IWDG_STOP
         rdreg(0xE000EDF0)                        # S_RESET_ST read away
         wr(0x40003000, 0xCCCC)                   # IWDG started: 4096 counts of 32 kHz / 4, 512 ms

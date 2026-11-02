@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "scenario",
+  "name": "flash",
+  "until": "300ms",
+  "description": "ST's F1 HAL programming the flash (PM0075, DS5319's times at 72 MHz on the DWT's cycle counter, the core waiting in the flash): the factory option bytes (RDP 0xA5, no write protection); HAL_FLASHEx_Erase's page in 20 ms (DS5319's minimum: it gives no typical); HAL_FLASH_Program's halfword in 52.5 us and the HAL's few cycles more (55 us), a word as two (109 us) and a doubleword as four (218 us), read back; a halfword over a programmed one refused with HAL_FLASH_ERROR_PROG (PGERR); HAL_FLASHEx_OBErase's erase and RDP's reprogramming (40 ms), Data0 programmed with its complement, and HAL_FLASH_OB_Launch's reset loading it: the second boot reads Data0 0x42 and the page as it was left.",
+  "assertions": [
+    {
+      "id": "factory",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "EmbSIM STM32F1 flash: RDP 0xa5, USER 0x07, WRP 0xffffffff, Data0 0xff"
+      }
+    },
+    {
+      "id": "erase",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "erase ok in 20003 us, first word ffffffff"
+      }
+    },
+    {
+      "id": "halfword",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "halfword ok in 55 us"
+      }
+    },
+    {
+      "id": "word",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "word ok in 109 us"
+      }
+    },
+    {
+      "id": "doubleword",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "doubleword ok in 218 us"
+      }
+    },
+    {
+      "id": "readback",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "read back beef 12345678 0123456789abcdef"
+      }
+    },
+    {
+      "id": "pgerr",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "over a programmed halfword: refused, error 0x1, still beef"
+      }
+    },
+    {
+      "id": "ob_erase",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "option bytes erased ok in 40060 us"
+      }
+    },
+    {
+      "id": "reloaded",
+      "at": "300ms",
+      "probe": "terminal",
+      "expect": {
+        "contains": "Data0 0x42\r\nsecond boot: Data0 0x42, the page kept: beef 12345678 0123456789abcdef"
+      }
+    }
+  ]
+}
