@@ -98,6 +98,14 @@ static void peri(const struct io *x, int n, int *out, int *oe)
         if ((n & 3) != RP_SPI_RX && esk_rp2040_spi_out(x->s, spi_unit(n), n & 3, out))
             *oe = 1;
         break;
+    case F_PIO0:
+    case F_PIO1: {
+        u32 po, pe;
+        esk_rp2040_pio_pins(x->s, (int)fld(x->ctrl[n], x->m_funcsel) == F_PIO1, &po, &pe);
+        *out = (int)(po >> n & 1u);
+        *oe = (int)(pe >> n & 1u);
+        break;
+    }
     case F_I2C: {
         int level = 1;
         if (esk_rp2040_i2c_out(x->s, i2c_unit(n), n & 1, &level))
@@ -131,7 +139,8 @@ static void settle(struct io *x)
         memset(&o, 0, sizeof o);
         o.drive = drive ? pout : -1;
         o.pull = pue && !pde ? 1 : pde && !pue ? 2 : 0;
-        o.af = func == F_UART || func == F_PWM || func == F_SPI || func == F_I2C; /* the peripherals modelled */
+        o.af = func == F_UART || func == F_PWM || func == F_SPI || func == F_I2C || func == F_PIO0 ||
+               func == F_PIO1; /* the peripherals modelled */
         o.analog = !fld(x->pad[n], x->m_ie) && !drive;
         if (s->host.pin_cfg && (!x->known || memcmp(&x->out[n], &o, sizeof o) != 0))
             s->host.pin_cfg(s->host.ctx, n / 16, n % 16, &o);

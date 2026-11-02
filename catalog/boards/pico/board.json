@@ -170,7 +170,7 @@
       "params": {
         "pins": 2
       },
-      "doc": "The micro-USB connector's data lines: the RP2040's USB device (its bootrom's USB boot, core/mcu/rp2040/usbboot.c; a program's own USB is plain registers)"
+      "doc": "The micro-USB connector's data lines: the RP2040's USB device (its bootrom's USB boot and the USB controller in device mode, core/mcu/rp2040/usbboot.c)"
     },
     {
       "id": "J_SWD",

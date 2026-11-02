@@ -681,3 +681,17 @@ void *esk_rp2040_i2c_create(struct esk_mach *s, struct esk_rf_periph *p)
     *c = k;
     return c;
 }
+
+/* its DMA requests (IC_DMA_CR): TX while the transmit FIFO holds no more
+ * than IC_DMA_TDLR, RX while the receive FIFO holds more than IC_DMA_RDLR */
+int esk_rp2040_i2c_dreq(struct esk_mach *s, int unit, int rx)
+{
+    const struct rpi2c *k = i2c_unit(s, unit);
+    struct esk_rf_reg *cr = k ? esk_rf_reg(k->p, "IC_DMA_CR") : 0;
+    struct esk_rf_reg *tdl = k ? esk_rf_reg(k->p, "IC_DMA_TDLR") : 0, *rdl = k ? esk_rf_reg(k->p, "IC_DMA_RDLR") : 0;
+    if (!cr || !tdl || !rdl)
+        return 0;
+    if (rx)
+        return (cr->value & 1u) && (u64)k->nrx > (rdl->value & 15u);
+    return (cr->value & 2u) && (u64)k->ntx <= (tdl->value & 15u);
+}

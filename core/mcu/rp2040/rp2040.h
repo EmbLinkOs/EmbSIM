@@ -128,6 +128,25 @@ void esk_rp2040_bootrom_resets(struct esk_mach *m);
 void esk_rp2040_rom(u8 *rom, u32 size);
 void esk_rp2040_rom_install(struct esk_mach *m);
 
+/* the DMA controller (dma.c) and the peripherals' DMA requests: a level
+ * (1 while the peripheral wants a transfer) or, for the PWM wraps and the
+ * pacing timers, a pulse the DMA counts (esk_rp2040_dreq_pulse, `dma`
+ * the caller's cache of the controller, 0 at first) */
+extern const struct esk_dev_ops esk_rp2040_dma_ops;
+void *esk_rp2040_dma_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_rp2040_dreq_pulse(struct esk_mach *m, void **dma, int dreq);
+int esk_rp2040_uart_dreq(struct esk_mach *m, int unit, int rx);
+int esk_rp2040_spi_dreq(struct esk_mach *m, int unit, int rx);
+int esk_rp2040_i2c_dreq(struct esk_mach *m, int unit, int rx);
+int esk_rp2040_adc_dreq(struct esk_mach *m);
+
+/* the PIO blocks (pio.c): their pins' outputs and enables, their FIFOs'
+ * DMA requests */
+extern const struct esk_dev_ops esk_rp2040_pio_ops;
+void *esk_rp2040_pio_create(struct esk_mach *m, struct esk_rf_periph *p);
+void esk_rp2040_pio_pins(struct esk_mach *m, int unit, u32 *out, u32 *oe);
+int esk_rp2040_pio_dreq(struct esk_mach *m, int unit, int sm, int rx);
+
 /* the real-time clock (rtc.c) */
 extern const struct esk_dev_ops esk_rp2040_rtc_ops;
 void *esk_rp2040_rtc_create(struct esk_mach *m, struct esk_rf_periph *p);

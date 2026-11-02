@@ -5,6 +5,27 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The RP2040's PIO and DMA
+
+- PIO0 and PIO1: four state machines each on their fractional clock
+  dividers, all nine instructions, side-set and delays, the wrap, autopush
+  and autopull, FJOIN, the IRQ flags, EXEC and SMx_INSTR, the FIFOs and
+  their status, interrupts and DMA requests, driving the GPIOs whose
+  FUNCSEL gives them to the PIO. A state machine stalled on its FIFOs costs
+  nothing while it waits.
+- DMA: twelve channels through their four register aliases, 8, 16 and
+  32-bit transfers through the bus as the core makes them, the increments,
+  rings and byte swap, priority and round robin, the DREQs of the PIOs,
+  SPI, UART, PWM, I2C and the ADC and the four pacing timers, chaining,
+  MULTI_CHAN_TRIGGER and CHAN_ABORT, the interrupts, and the sniffer's
+  CRC-32, CRC-16-CCITT, XOR and sum.
+- The Pico SDK's `pio_dma` (`tests/vendor/pico-sdk/apps/pio_dma`): a
+  serial line out of a PIO program (assembled by the SDK's pioasm) read by
+  a terminal, a 1 kHz PIO square wave, DMA copies, a chain with its
+  interrupt, the CRC-32 check value from the sniffer, and DMA paced by
+  UART0, PIO0 and the ADC. MicroPython's `rp2.StateMachine` and `rp2.DMA`
+  are checked at its prompt.
+
 ### MicroPython on the Pico
 
 - A USB device's serial port is a serial port on the computer: `port.open`

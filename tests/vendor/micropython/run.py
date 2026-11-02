@@ -161,6 +161,16 @@ def main() -> int:
                   f"the LED on GPIO25 lit from machine.Pin: {samples[-1] if samples else None}")
             out = repl("import os; open('hello.txt','w').write('hi'); print(os.listdir())", "]\r\n")
             check("'hello.txt'" in out, f"a file in its flash filesystem: {out.strip().splitlines()[-2:] if out else ''}")
+            # rp2.asm_pio: a state machine returns each word it is given, inverted
+            out = repl("import rp2; f=rp2.asm_pio()(lambda: (pull(), mov(isr, invert(osr)), push())); "
+                       "sm=rp2.StateMachine(0, f); sm.active(1); sm.put(0x1234); print('pio', hex(sm.get()))",
+                       "pio ")
+            check("pio 0xffffedcb" in out, f"rp2.StateMachine runs a PIO program: {out.strip().splitlines()[-2:] if out else ''}")
+            # rp2.DMA: a copy of a bytearray
+            out = repl("import rp2; d=rp2.DMA(); a=bytearray(b'dma copies this!'); b=bytearray(len(a)); "
+                       "d.config(read=a, write=b, count=len(a)//4, ctrl=d.pack_ctrl(), trigger=True); "
+                       "import time; time.sleep_ms(1); print('dma', bytes(b))", "dma ")
+            check("dma b'dma copies this!'" in out, f"rp2.DMA copies memory: {out.strip().splitlines()[-2:] if out else ''}")
 
             # its serial port on this computer, the session in real time
             if os.name == "posix":
