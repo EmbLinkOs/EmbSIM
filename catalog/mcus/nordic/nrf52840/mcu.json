@@ -112,11 +112,11 @@
     },
     {
       "match": "UICR",
-      "model": "storage"
+      "model": "nrf-uicr"
     },
     {
       "match": "NVMC",
-      "model": "storage"
+      "model": "nrf-nvmc"
     },
     {
       "match": "FPU",
@@ -260,7 +260,7 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "Armv7E-M (Cortex-M4 with the single-precision FPU) execution by the Cortex-M core extracted from EmbCC; every register of nrf52840.svd with its reset value, shared address spaces as one peripheral; behavioural models of CLOCK (HFXO's debounce, LFCLK), the GPIO ports (direction, drive modes, pulls, SENSE, LATCH and DETECT), GPIOTE (event and task channels, PORT), UART0/UARTE0 and UARTE1 (the UART's RXD FIFO, EasyDMA buffers, SHORTS, frames at BAUDRATE's rate on their PSEL pins), TIMER0-4 (timer and counter modes, compares, shorts) and RTC0-2 (prescaled 24-bit counters, compares, overflow), extracted from EmbCC but GPIOTE; and, written for EmbSIM, SPIM0-3 (EasyDMA transfers in modes 0 to 3 at FREQUENCY's rates on their PSEL pins, ORC, END_START, SPIM3's CSN), TWIM0-1 (START, repeated START and STOP on open-drain SCL and SDA at 100, 250 or 400 kbps, EasyDMA buffers, LASTTX and LASTRX with their shorts, SUSPEND and RESUME, ERRORSRC's ANACK and DNACK), PWM0-3 (the four channels from EasyDMA sequences in the Common, Grouped, Individual and WaveForm decodings, Up and UpAndDown counting, REFRESH, ENDDELAY, LOOP and the shorts) and the SAADC (eight channels on AIN0-7, VDD and VDDH/5, single-ended and differential, the gains and references, 8 to 14 bits, oversampling and burst, the limits, scans into Data RAM at TACQ + 2 us a conversion, the local timer); FICR carries a part's factory words. The core's halting debug as a probe drives it through the debug port (ARM DDI 0419E C1 / DDI 0403E C1): DHCSR's halt, step and restart with C_MASKINTS, DCRSR and DCRDR for every core register, DEMCR's reset vector catch and fault catches, DFSR, BKPT halting a debugged core, the FPB's six code comparators and the DWT's four comparators as watchpoints; a halted core runs nothing while the clocks and peripherals go on, and a system reset keeps the debug domain (a power-on clears it).",
+      "claims": "Armv7E-M (Cortex-M4 with the single-precision FPU) execution by the Cortex-M core extracted from EmbCC; every register of nrf52840.svd with its reset value, shared address spaces as one peripheral; behavioural models of CLOCK (HFXO's debounce, LFCLK), the GPIO ports (direction, drive modes, pulls, SENSE, LATCH and DETECT), GPIOTE (event and task channels, PORT), UART0/UARTE0 and UARTE1 (the UART's RXD FIFO, EasyDMA buffers, SHORTS, frames at BAUDRATE's rate on their PSEL pins), TIMER0-4 (timer and counter modes, compares, shorts) and RTC0-2 (prescaled 24-bit counters, compares, overflow), extracted from EmbCC but GPIOTE; and, written for EmbSIM, SPIM0-3 (EasyDMA transfers in modes 0 to 3 at FREQUENCY's rates on their PSEL pins, ORC, END_START, SPIM3's CSN), TWIM0-1 (START, repeated START and STOP on open-drain SCL and SDA at 100, 250 or 400 kbps, EasyDMA buffers, LASTTX and LASTRX with their shorts, SUSPEND and RESUME, ERRORSRC's ANACK and DNACK), PWM0-3 (the four channels from EasyDMA sequences in the Common, Grouped, Individual and WaveForm decodings, Up and UpAndDown counting, REFRESH, ENDDELAY, LOOP and the shorts) and the SAADC (eight channels on AIN0-7, VDD and VDDH/5, single-ended and differential, the gains and references, 8 to 14 bits, oversampling and burst, the limits, scans into Data RAM at TACQ + 2 us a conversion, the local timer); FICR carries a part's factory words. The NVMC: CONFIG's read, write and erase modes, word writes to the flash and the UICR (bits only to 0), ERASEPAGE, ERASEPCR0, ERASEALL, ERASEUICR and ERASEPAGEPARTIAL with ERASEPAGEPARTIALCFG's duration, READY and READYNEXT for the Product Specification's maxima (a page 85 ms, a word 41 us, ERASEALL 169 ms) with a program in the flash halted until the operation ends; the UICR kept through resets, an image's UICR segment loaded into it. The core's halting debug as a probe drives it through the debug port (ARM DDI 0419E C1 / DDI 0403E C1): DHCSR's halt, step and restart with C_MASKINTS, DCRSR and DCRDR for every core register, DEMCR's reset vector catch and fault catches, DFSR, BKPT halting a debugged core, the FPB's six code comparators and the DWT's four comparators as watchpoints; a halted core runs nothing while the clocks and peripherals go on, and a system reset keeps the debug domain (a power-on clears it).",
       "omissions": [
         "the debug monitor exception (DEMCR's MON_ bits), C_SNAPSTALL, the FPB's flash patching (FP_REMAP), the DWT's counters other than CYCCNT, PC sampling, data value matching and linked comparators, the ITM and TPIU (no SWO trace); a halted core draws its sleep current",
         "the radio",
@@ -270,7 +270,7 @@
         "USBD",
         "QSPI",
         "the CryptoCell",
-        "the NVMC's flash writes",
+        "the NVMC's word write (41 us) and ERASEALL (169 ms) times are the Product Specification's maxima as recalled, not checked against it (its page erase, 85 ms, is the value nrfx gives); the times' spread, nWRITE, a partially erased page's undefined contents, the ACLs and APPROTECT, the instruction cache's IHIT and IMISS, the UICR across a power cycle",
         "POWER's sleep modes (System OFF)",
         "UARTE flow control and errors"
       ],

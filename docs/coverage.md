@@ -12,7 +12,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 | ATmega328P | 15 | 0 | 0 | 15 |
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
-| nRF52840 | 23 | 4 | 22 | 49 |
+| nRF52840 | 25 | 2 | 22 | 49 |
 | RP2040 | 29 | 6 | 0 | 35 |
 | FE310-G002 | 13 | 0 | 1 | 14 |
 | STM32F103C8 | 26 | 0 | 1 | 27 |
@@ -204,12 +204,12 @@ Declared omissions: the ADC, SPI, I2C, input capture, output compare, the PMP, t
 ## nRF52840 (`nordic/nrf52840`)
 
 Boards: nRF52840 DK (PCA10056).  
-23 of 49 peripherals modelled, 4 registers only, 22 missing.
+25 of 49 peripherals modelled, 2 registers only, 22 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
 | FICR | `storage` | registers only |
-| UICR | `storage` | registers only |
+| UICR | `nrf-uicr` | modelled |
 | CLOCK | `nrf-clock` | modelled |
 | RADIO | `nrf-radio` | **missing** |
 | UARTE0 | `nrf-uart` | modelled |
@@ -240,7 +240,7 @@ Boards: nRF52840 DK (PCA10056).
 | TIMER4 | `nrf-timer` | modelled |
 | PWM0 | `nrf-pwm` | modelled |
 | PDM | — | **missing** |
-| NVMC | `storage` | registers only |
+| NVMC | `nrf-nvmc` | modelled |
 | PPI | `nrf-ppi` | **missing** |
 | MWU | — | **missing** |
 | PWM1 | `nrf-pwm` | modelled |
@@ -258,7 +258,7 @@ Boards: nRF52840 DK (PCA10056).
 | P1 | `nrf-gpio` | modelled |
 | CRYPTOCELL | — | **missing** |
 
-Declared omissions: the debug monitor exception (DEMCR's MON_ bits), C_SNAPSTALL, the FPB's flash patching (FP_REMAP), the DWT's counters other than CYCCNT, PC sampling, data value matching and linked comparators, the ITM and TPIU (no SWO trace); a halted core draws its sleep current; the radio; PPI and the DPPI-like EGUs; SPIS, TWIS, the legacy SPI and TWI, PDM, I2S, QDEC, COMP (plain registers); SPIM's and TWIM's EasyDMA lists, clock stretching by an I2C slave, arbitration; the SAADC's resistor ladders, its load on the circuit, noise and offset and gain errors; USBD; QSPI; the CryptoCell; the NVMC's flash writes; POWER's sleep modes (System OFF); UARTE flow control and errors.
+Declared omissions: the debug monitor exception (DEMCR's MON_ bits), C_SNAPSTALL, the FPB's flash patching (FP_REMAP), the DWT's counters other than CYCCNT, PC sampling, data value matching and linked comparators, the ITM and TPIU (no SWO trace); a halted core draws its sleep current; the radio; PPI and the DPPI-like EGUs; SPIS, TWIS, the legacy SPI and TWI, PDM, I2S, QDEC, COMP (plain registers); SPIM's and TWIM's EasyDMA lists, clock stretching by an I2C slave, arbitration; the SAADC's resistor ladders, its load on the circuit, noise and offset and gain errors; USBD; QSPI; the CryptoCell; the NVMC's word write (41 us) and ERASEALL (169 ms) times are the Product Specification's maxima as recalled, not checked against it (its page erase, 85 ms, is the value nrfx gives); the times' spread, nWRITE, a partially erased page's undefined contents, the ACLs and APPROTECT, the instruction cache's IHIT and IMISS, the UICR across a power cycle; POWER's sleep modes (System OFF); UARTE flow control and errors.
 
 ## RP2040 (`raspberrypi/rp2040`)
 

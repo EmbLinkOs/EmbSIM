@@ -101,6 +101,8 @@ static const struct esk_rf_model_type model_types[] = {
     { "nrf-spim", &esk_nrf_spim_ops, esk_nrf_spim_create },
     { "nrf-pwm", &esk_nrf_pwm_ops, esk_nrf_pwm_create },
     { "nrf-saadc", &esk_nrf_saadc_ops, esk_nrf_saadc_create },
+    { "nrf-nvmc", &esk_nrf_nvmc_ops, esk_nrf_nvmc_create },
+    { "nrf-uicr", &esk_nrf_uicr_ops, esk_nrf_uicr_create },
     { "rp2040-resets", &esk_rp2040_resets_ops, esk_rp2040_resets_create },
     { "rp2040-clocks", &esk_rp2040_clocks_ops, esk_rp2040_clocks_create },
     { "rp2040-xosc", &esk_rp2040_xosc_ops, esk_rp2040_xosc_create },

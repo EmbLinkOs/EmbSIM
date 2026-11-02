@@ -5,7 +5,17 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
-### The STM32F103's flash interface
+### The flash interfaces of the STM32F103 and the nRF52840
+
+- The nRF52840's NVMC (`nrf-nvmc`) and UICR (`nrf-uicr`): CONFIG's modes,
+  word writes to the flash and the UICR, page, partial, UICR and whole
+  erases, READY and READYNEXT for 85 ms a page (the value nrfx gives), and
+  41 us a word and 169 ms for ERASEALL, which are the Product
+  Specification's maxima as recalled and are marked unchecked in the
+  fidelity. A program in the flash is halted until an operation ends. The
+  UICR is kept through resets, and an image's UICR segment is loaded into
+  it. Nordic's nrfx NVMC driver runs on it unmodified
+  (`tests/vendor/nrfx`'s `nrfx_nvmc`, 9/9).
 
 - The STM32F103's flash interface (`stm32f1-flash`, PM0075): the keys,
   halfword programming (PGERR over a location not erased, a bus error for
