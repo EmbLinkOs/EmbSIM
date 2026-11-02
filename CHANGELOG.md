@@ -13,6 +13,11 @@ versions follow semantic versioning. There is no release yet.
   exactly, the room the world's temperature), burning out open when it
   passes 125 C: straight across 5 V within milliseconds, at 110 mA within
   two minutes, at 45 mA never. A `replace` input fits a new one.
+- A regulator's thermal shutdown: with `rth_ja` and `tsd` its die heats
+  with what it drops and its current limit falls to what holds the die at
+  `tsd`. The Uno's 5 V regulator is now the NCP1117ST50 it carries
+  (onsemi NCP1117/D: 160 K/W, 15 K/W, about 175 C, 1.07 V dropout, 1.5 A
+  limit, 6 mA ground current).
 - The fault mode: a project's `faults` list (a pin cut, two nets or pins
   bridged, a two-terminal part failed open or short), each an
   `emblink/fault` switch wired in at load and turned on and off by its

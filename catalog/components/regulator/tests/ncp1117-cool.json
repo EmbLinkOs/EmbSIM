@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "ncp1117-cool",
+  "description": "The NCP1117ST50 from 12 V into 100 ohm (50 mA, 0.39 W with its 6 mA ground current): its die settles near 25 + 0.39 x 160 = 87 C and 5.000 V holds.",
+  "policy": "electrical",
+  "until": "600s",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/regulator",
+        "params": {
+          "part": "NCP1117ST50"
+        }
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 12
+        }
+      },
+      {
+        "id": "RL",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "100",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      }
+    ],
+    "nets": {
+      "IN": [
+        "SUP.+",
+        "DUT.IN"
+      ],
+      "OUT": [
+        "DUT.OUT",
+        "RL.1"
+      ],
+      "GND": [
+        "SUP.-",
+        "DUT.GND",
+        "RL.2",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.tj": {
+      "at": "600s",
+      "min": 75,
+      "max": 95
+    },
+    "output:DUT.thermal_limit": {
+      "at": "600s",
+      "equals": false
+    },
+    "device:DUT.vout": {
+      "at": "600s",
+      "min": 4.99,
+      "max": 5.01
+    }
+  }
+}

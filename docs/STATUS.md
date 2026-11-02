@@ -223,7 +223,12 @@ power through the datasheet's thermal resistances (560 K/W to ambient,
 390 K/W to the leads; two thermal nodes solved in closed form, so a quiet
 circuit warms for minutes at no cost and the part wakes exactly when its
 junction passes 125 C), then burnt out open (`part.damaged`) until its
-`replace` input. A project's `faults` (a cut pin, a short between nets or
+`replace` input. A regulator with its thermal resistances and shutdown
+temperature (the Uno's NCP1117ST50, from onsemi's NCP1117/D: SOT-223
+160 K/W minimum pad, 15 K/W to the case, the die held near 175 C) heats with
+what it drops; its thermal shutdown then limits its current to what holds
+the die there, so 12 V into 25 ohm without a heatsink settles at about
+2.2 V with a 175 C die (`part.thermal_shutdown`). A project's `faults` (a cut pin, a short between nets or
 pins, a two-terminal part failed open or short) are `emblink/fault`
 switches wired in at load and switched by their `active` input at any
 time. Evidence: the LED's fixtures (no resistor: burnt out in milliseconds;
@@ -232,7 +237,7 @@ alive after 1 s, dead within 2 minutes; replaced after the fault), the fault
 part's fixtures, and `tests/protocol/test_faults.py` (a cut anode, a
 bridged LED, a shorted resistor burning the LED, replacement, the project
 keeping its list). Not yet: noise on converters and sensors; damage to
-MCU pins, regulators (thermal shutdown), capacitors and semiconductors other
+MCU pins, capacitors and semiconductors other
 than the LED; the LED's heat capacities are estimates (not published) and
 it is taken to fail at its absolute maximum junction temperature; an
 intermittent fault's chatter.

@@ -53,6 +53,7 @@
       "enum": [
         "LM1117-3.3",
         "LM1117-5.0",
+        "NCP1117ST50",
         "AMS1117-3.3",
         "LD1117S50",
         "LD39050PU33R",
@@ -103,6 +104,15 @@
           "dropout": 0.39,
           "imax": 1.1,
           "quiescent": "80u"
+        },
+        "NCP1117ST50": {
+          "vout": 5.0,
+          "dropout": 1.07,
+          "imax": 1.5,
+          "quiescent": "6m",
+          "rth_ja": 160,
+          "rth_jc": 15,
+          "tsd": 175
         }
       }
     },
@@ -137,6 +147,51 @@
       "doc": "Ground pin current",
       "min": 0,
       "advanced": true
+    },
+    "rth_ja": {
+      "type": "number",
+      "unit": "K/W",
+      "min": 0,
+      "max": 1000,
+      "advanced": true,
+      "doc": "Thermal resistance, junction to ambient; 0: no thermal model (with tsd: thermal limiting on)",
+      "default": 0
+    },
+    "rth_jc": {
+      "type": "number",
+      "unit": "K/W",
+      "default": 15,
+      "min": 0.1,
+      "max": 1000,
+      "advanced": true,
+      "doc": "Thermal resistance, junction to case"
+    },
+    "tsd": {
+      "type": "number",
+      "unit": "degC",
+      "min": 0,
+      "max": 250,
+      "advanced": true,
+      "doc": "The temperature its thermal shutdown holds the die at; 0: none",
+      "default": 0
+    },
+    "cth_j": {
+      "type": "number",
+      "unit": "J/K",
+      "default": 0.0005,
+      "min": 1e-07,
+      "max": 10,
+      "advanced": true,
+      "doc": "Heat capacity of the die (not published: an estimate)"
+    },
+    "cth_s": {
+      "type": "number",
+      "unit": "J/K",
+      "default": 0.1,
+      "min": 1e-05,
+      "max": 100,
+      "advanced": true,
+      "doc": "Heat capacity of the package and its pad (not published: an estimate)"
     }
   },
   "model": {
@@ -184,12 +239,13 @@
       "omissions": []
     },
     "electrical": {
-      "claims": "vout while vin > vout + dropout, otherwise tracks vin - dropout; current limited to imax; quiescent current into GND (SPEC-004 §7 regulator).",
+      "claims": "vout while vin > vout + dropout, otherwise tracks vin - dropout; current limited to imax; quiescent current into GND (SPEC-004 §7 regulator). With rth_ja and tsd (the NCP1117ST50 preset, from onsemi's NCP1117/D: SOT-223 160 K/W minimum pad, 15 K/W junction to case, the die held at about 175 C), its die heats with its own dissipation and thermal shutdown takes its current limit to nothing over 2 K above tsd, so an overloaded regulator without a heatsink sags and holds its die near 175 C.",
       "omissions": [
         "load and line regulation",
         "thermal shutdown",
         "stability versus output capacitor",
-        "noise"
+        "noise",
+        "thermal limiting's exact control law (not published: a 2 K band above tsd) and the heat capacities (estimates)"
       ],
       "range": {
         "voltage_v": [
@@ -224,10 +280,44 @@
       },
       {
         "title": "SGM2212 800mA, low noise, low quiescent current, high PSRR, low dropout linear regulator datasheet (SG Micro), Rev. A.2: 390 mV dropout at 800 mA, 1.1 A current limit, 80 uA ground current (typical)"
+      },
+      {
+        "title": "onsemi NCP1117/D: 1.0 A low-dropout positive fixed and adjustable voltage regulators: SOT-223 thermal resistance junction-to-ambient 160 C/W (minimum pad), junction-to-case 15 C/W; junction temperature -55 to 150 C; internal thermal shutdown limits the die to approximately 175 C; dropout 1.07 V typical at 800 mA; current limit 1.5 A typical; quiescent current 6.0 mA typical (5.0 V)",
+        "url": "https://www.onsemi.com/download/data-sheet/pdf/ncp1117-d.pdf",
+        "date": "2026-11-02"
       }
     ]
   },
   "tests": [
     "tests/*.json"
+  ],
+  "inputs": [
+    {
+      "name": "temperature",
+      "type": "number",
+      "unit": "degC",
+      "default": 25,
+      "world": "temperature",
+      "doc": "The room's temperature (the world's while not set)"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "iout",
+      "type": "number",
+      "unit": "A",
+      "doc": "The output's current"
+    },
+    {
+      "name": "tj",
+      "type": "number",
+      "unit": "degC",
+      "doc": "The die's temperature (with thermal limiting)"
+    },
+    {
+      "name": "thermal_limit",
+      "type": "boolean",
+      "doc": "Its thermal shutdown is limiting the output"
+    }
   ]
 }

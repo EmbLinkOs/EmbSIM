@@ -1034,8 +1034,8 @@ The second step (2026-11-02):
   fail_short) wired in as `emblink/fault` switches, each turned on and off
   by its `active` input while the session runs.
 - A multimeter's fuses blow (ADR-033).
-- Noise, and damage to other parts (an MCU pin, a regulator's thermal
-  shutdown), remain.
+- A regulator's thermal shutdown (the Uno's NCP1117ST50).
+- Noise, and damage to other parts (an MCU pin), remain.
 
 ## ADR-035 AI assistants and scripts use the same session as people
 

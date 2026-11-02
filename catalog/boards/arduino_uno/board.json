@@ -30,9 +30,9 @@
       "id": "U2",
       "component": "emblink/regulator",
       "params": {
-        "part": "LM1117-5.0"
+        "part": "NCP1117ST50"
       },
-      "doc": "5 V regulator from VIN (an NCP1117ST50 on the R3)"
+      "doc": "5 V regulator from VIN, the R3's NCP1117ST50 (SOT-223): its die heats with what it drops, and its thermal shutdown limits it near 175 C"
     },
     {
       "id": "U3",
