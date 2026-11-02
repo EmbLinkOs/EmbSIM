@@ -187,6 +187,11 @@ es_status esk_bus_remap_mirror(struct esk_bus *b, u32 base, u32 target, u32 size
  * takes its bus fault, as when nothing answers */
 ES_INLINE void esk_bus_fault(struct esk_bus *b) { b->dev_fault = 1; }
 /* The core's accesses: 0, or -1 with fail_addr when nothing answers. */
+/* the access kinds access_denied is asked about */
+#define ESK_ACCESS_FETCH 0
+#define ESK_ACCESS_LOAD 1
+#define ESK_ACCESS_STORE 2
+
 int esk_bus_read(struct esk_bus *b, u32 a, int n, u32 *v);
 int esk_bus_write(struct esk_bus *b, u32 a, int n, u32 v);
 /* whether an access of the core's touches a watchpoint (1), recording the
@@ -462,6 +467,12 @@ struct esk_mach {
     int powered_down;
     void (*deep_sleep)(struct esk_mach *m);
     void (*deep_wake)(struct esk_mach *m);
+    /* the chip's permission control on the core's own accesses (an
+     * ESP32-C3's SENSITIVE): nonzero blocks the access, which then reads 0
+     * (a fetch 0, an illegal instruction) or writes nothing, without an
+     * exception; the model records it. NULL while nothing is checked */
+    int (*access_denied)(void *ctx, u32 addr, int n, int kind);
+    void *access_ctx;
     /* the program asked for a system reset (AIRCR.SYSRESETREQ) */
     int reset_req;
     /* that reset is the core's alone (an ESP32-C3's CPU reset): the

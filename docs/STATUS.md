@@ -5,6 +5,17 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The ESP32-C3's permission control (2026-11-02)
+
+SENSITIVE is modelled (`esp32c3-pms`): the CPU's fetches, loads and stores
+to internal SRAM, the RTC memory and the ROM are checked against the areas
+and permissions ESP-IDF's memory protection sets, a denied access is
+blocked and the monitors latch it and interrupt. ESP-IDF v5.4's memprot
+test app passes all 16 of its ESP32-C3 checks unmodified, and every other
+ESP-IDF example still runs with the protection on. Not yet: world 1, the
+peripheral regions, the DMA and cache checks. 33 of 35 peripherals are
+modelled; UHCI0/1 remain.
+
 ## The ESP32-C3's flash encryption (2026-11-02)
 
 XTS-AES is modelled (`esp32c3-xts`): manual encryption through SPI1's page

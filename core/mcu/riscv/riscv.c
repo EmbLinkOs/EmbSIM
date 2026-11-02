@@ -296,6 +296,8 @@ u64 rv_load(struct rv_state *rs, u64 a, int n)
         rv_trap(rs, EXC_BREAKPOINT, a);
         return 0;
     }
+    if (rs->sim->access_denied && rs->sim->access_denied(rs->sim->access_ctx, a32, n, ESK_ACCESS_LOAD))
+        return 0; /* blocked by the chip's permission control */
     struct esk_region *r = esk_bus_region(b, a32, (u32)n);
     u64 v = 0;
     if (r) {
@@ -340,6 +342,8 @@ void rv_store(struct rv_state *rs, u64 a, int n, u64 v)
         rv_trap(rs, EXC_BREAKPOINT, a);
         return;
     }
+    if (rs->sim->access_denied && rs->sim->access_denied(rs->sim->access_ctx, a32, n, ESK_ACCESS_STORE))
+        return; /* blocked by the chip's permission control */
     struct esk_region *r = esk_bus_region(b, a32, (u32)n);
     if (r) {
         if (!r->rom) {
@@ -1368,7 +1372,13 @@ static int take_interrupt(struct rv_state *rs)
  * ROM); 0 when there is nothing to fetch */
 static int fetch16(struct rv_state *rs, u32 a, u32 *h)
 {
-    struct esk_region *r = esk_bus_region(&rs->sim->bus, a, 2);
+    struct esk_mach *m = rs->sim;
+    struct esk_region *r;
+    if (m->access_denied && m->access_denied(m->access_ctx, a, 2, ESK_ACCESS_FETCH)) {
+        *h = 0; /* blocked by the chip's permission control */
+        return 1;
+    }
+    r = esk_bus_region(&m->bus, a, 2);
     if (r) {
         const u8 *p = r->mem + (a - r->base);
         *h = (u32)p[0] | (u32)p[1] << 8;

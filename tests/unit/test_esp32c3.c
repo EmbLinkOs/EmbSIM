@@ -3254,6 +3254,65 @@ static void test_xts_flash_encryption(void)
     c3_close(&f);
 }
 
+#define PMS 0x600C1000u
+
+static u32 sw(u32 rs2, u32 rs1, s32 imm)
+{
+    u32 u = (u32)imm & 0xfffu;
+    return (u >> 5) << 25 | rs2 << 20 | rs1 << 15 | 2u << 12 | (u & 0x1fu) << 7 | 0x23u;
+}
+
+/* the permission control, set as ESP-IDF's esp_memprot sets it with its
+ * main line at 0x403A0000 (0x3FCA0000 on the data bus): DRAM0's area 0
+ * (below the line) neither read nor written, IRAM0's area 3 (above it) not
+ * executed. A load there reads 0 and the DRAM0 monitor latches it (address,
+ * world 0, the byte lanes); a store there writes nothing; area 1 works; a
+ * jump into IRAM0's area 3 fetches 0, an illegal instruction, and the
+ * IRAM0 monitor latches a fetch */
+static void test_pms(void)
+{
+    const u32 prog[] = { MTVEC_AT_VEC, lui(8, 0x3fc90), lw(10, 8, 0), lui(9, 0x3fca0), lw(11, 9, 0),
+                         addi(12, 0, 7), sw(12, 9, 0), sw(12, 8, 0), lui(13, 0x403a0),
+                         0x000680e7u /* jalr ra, 0(x13) */, JAL_SELF };
+    u32 v = 0;
+    c3 f;
+    if (!c3_open(&f, prog, sizeof prog / sizeof prog[0], vec5(), NVEC5))
+        return;
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x3FC90000u, 4, 0x1234u), 0);
+    CHECK_EQ(esk_bus_debug_write(&f.m.bus, 0x3FCA0000u, 4, 0x5678u), 0);
+    wr(&f, PMS + 0x94u, 2u << 2 | 3u << 4); /* the main line: the start of the second block */
+    wr(&f, PMS + 0x98u, 2u << 2 | 3u << 4); /* I0 and I1 at it too */
+    wr(&f, PMS + 0x9Cu, 2u << 2 | 3u << 4);
+    wr(&f, PMS + 0xA0u, 2u << 2 | 3u << 4); /* D0 and D1 */
+    wr(&f, PMS + 0xA4u, 2u << 2 | 3u << 4);
+    wr(&f, PMS + 0xB0u, 0x001C7FFFu & ~(7u << 9)); /* IRAM0 area 3: nothing */
+    wr(&f, PMS + 0xC4u, 0x0F0FF0FFu & ~3u);        /* DRAM0 area 0: nothing */
+    wr(&f, PMS + 0xB8u, 3u);
+    wr(&f, PMS + 0xB8u, 2u); /* the IRAM0 monitor: cleared, enabled */
+    wr(&f, PMS + 0xCCu, 3u);
+    wr(&f, PMS + 0xCCu, 2u);
+    esk_mach_run(&f.m, 0xffffff, 20);
+    CHECK_EQ(x(&f, 10), 0u);      /* the load blocked */
+    CHECK_EQ(x(&f, 11), 0x5678u); /* area 1 */
+    CHECK_EQ(rd(&f, PMS + 0xD0u),
+             1u | 1u << 2 | ((0x3FC90000u - 0x3C000000u) >> 2) << 4); /* its first violation */
+    CHECK_EQ(rd(&f, PMS + 0xD4u), 0xfu << 1);                          /* a read of four bytes */
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x3FCA0000u, 4, &v), 0);
+    CHECK_EQ(v, 7u);
+    CHECK_EQ(esk_bus_debug_read(&f.m.bus, 0x3FC90000u, 4, &v), 0);
+    CHECK_EQ(v, 0x1234u); /* the store blocked */
+    CHECK_EQ(x(&f, 20), 2u); /* an illegal instruction */
+    CHECK_EQ(x(&f, 21), 0x403A0000u);
+    CHECK_EQ(rd(&f, PMS + 0xBCu), 1u | 1u << 3 | ((0x403A0000u - 0x40000000u) >> 2) << 5); /* a fetch */
+    wr(&f, PMS + 0xCCu, 3u); /* VIOLATE_CLR */
+    CHECK_EQ(rd(&f, PMS + 0xD0u), 0u);
+    /* locked, the permissions no longer change */
+    wr(&f, PMS + 0xC0u, 1u);
+    wr(&f, PMS + 0xC4u, 0x0F0FF0FFu);
+    CHECK_EQ(rd(&f, PMS + 0xC4u), 0x0F0FF0FFu & ~3u);
+    c3_close(&f);
+}
+
 #define I2C 0x60013000u
 #define I2C_SCL_LOW (I2C + 0x00u)
 #define I2C_CTR (I2C + 0x04u)
@@ -4052,6 +4111,7 @@ RUN(test_i2s_frame);
 RUN(test_hmac_upstream);
 RUN(test_ds_sign);
 RUN(test_xts_flash_encryption);
+RUN(test_pms);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);

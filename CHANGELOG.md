@@ -5,6 +5,26 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's permission control
+
+- SENSITIVE (`esp32c3-pms`, TRM v1.4 chapter 14) checks the CPU's own
+  fetches, loads and stores, as ESP-IDF's memory protection (on by
+  default) sets it: internal SRAM's four instruction-bus and four data-bus
+  areas between the split lines, each with world 0's permissions; the RTC
+  memory's low and high areas; the ROM and the cache's 16 KB. A denied
+  load reads 0, a store writes nothing and a fetch reads an illegal
+  instruction; the IRAM0, DRAM0 and PIF monitors latch the first violation
+  (address, kind, world, byte lanes or size) and raise interrupt sources
+  56 to 58, which ESP-IDF routes to its panic handler. The lock registers
+  hold the configuration until a reset.
+- The RISC-V core asks its machine's permission check (`access_denied`)
+  before each fetch, load and store.
+- ESP-IDF v5.4's `tools/test_apps/system/memprot` runs unmodified and
+  passes all 16 of Espressif's checks for the ESP32-C3 (read, write and
+  execution below and above the line in IRAM0, DRAM0 and the RTC memory).
+  `test_pms` checks a blocked load, store and fetch, the monitors'
+  status and the lock. The ESP32-C3 has 33 of 35 peripherals modelled.
+
 ### The ESP32-C3's flash encryption (XTS-AES)
 
 - XTS-AES (`esp32c3-xts`, TRM v1.4 chapter 22): XTS-AES-128 under the

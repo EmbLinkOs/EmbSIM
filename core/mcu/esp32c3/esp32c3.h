@@ -38,6 +38,7 @@
  *   hmac.c    the HMAC accelerator under eFuse keys, upstream and downstream
  *   ds.c      the digital signature: RSA under parameters only it decrypts
  *   xts.c     XTS-AES flash encryption: manual encryption, the cache's decryption
+ *   pms.c     the permission control on the CPU's accesses to SRAM, RTC memory and ROM
  *   i2c.c     the I2C controller, master and slave, on the pins
  *   gdma.c    the GDMA controller: three transmit and three receive
  *             channels on descriptor lists
@@ -147,6 +148,8 @@ int esk_esp32c3_efuse_wdt_delay_sel(struct esk_mach *m);
 int esk_esp32c3_efuse_key(struct esk_mach *m, int id, u8 key[32], int *purpose);
 int esk_esp32c3_efuse_flash_crypt(struct esk_mach *m);
 extern const struct esk_dev_ops esk_esp32c3_xts_ops;
+extern const struct esk_dev_ops esk_esp32c3_pms_ops;
+void *esk_esp32c3_pms_create(struct esk_mach *s, struct esk_rf_periph *p);
 void *esk_esp32c3_xts_create(struct esk_mach *s, struct esk_rf_periph *p);
 void esk_esp32c3_xts_crypt(struct esk_mach *m, u32 addr, u8 *buf, u32 len, int decrypt);
 int esk_esp32c3_xts_take(struct esk_mach *m, u32 *addr, u8 *data, int *len);
