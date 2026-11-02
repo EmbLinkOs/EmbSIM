@@ -13,7 +13,7 @@ evidence for each model is in [STATUS.md](STATUS.md).
 | PIC24FJ1024GB610 | 11 | 4 | 17 | 32 |
 | PIC32MX795F512L | 15 | 4 | 41 | 60 |
 | nRF52840 | 23 | 4 | 22 | 49 |
-| RP2040 | 25 | 6 | 4 | 35 |
+| RP2040 | 26 | 6 | 3 | 35 |
 | FE310-G002 | 13 | 0 | 1 | 14 |
 | STM32F103C8 | 26 | 0 | 1 | 27 |
 | STM32F446RE | 52 | 0 | 16 | 68 |
@@ -263,7 +263,7 @@ Declared omissions: the radio; PPI and the DPPI-like EGUs; SPIS, TWIS, the legac
 ## RP2040 (`raspberrypi/rp2040`)
 
 Boards: Raspberry Pi Pico (RP2040).  
-25 of 35 peripherals modelled, 6 registers only, 4 missing.
+26 of 35 peripherals modelled, 6 registers only, 3 missing.
 
 | Peripheral | Model | State |
 |---|---|---|
@@ -292,7 +292,7 @@ Boards: Raspberry Pi Pico (RP2040).
 | PWM | `rp2040-pwm` | modelled |
 | TIMER | `rp2040-timer` | modelled |
 | WATCHDOG | `rp2040-watchdog` | modelled |
-| RTC | `rp2040-rtc` | **missing** |
+| RTC | `rp2040-rtc` | modelled |
 | ROSC | `rp2040-rosc` | modelled |
 | VREG_AND_CHIP_RESET | `storage` | registers only |
 | TBMAN | `storage` | registers only |
@@ -303,7 +303,7 @@ Boards: Raspberry Pi Pico (RP2040).
 | PIO1 | `rp2040-pio` | **missing** |
 | SIO | `rp2040-sio` | modelled |
 
-Declared omissions: the bootrom's code (EmbSIM's stand-in does what it does: boot2, the function and data tables, the USB boot); a debugger's choice of core (it sees the one that runs next); the XIP cache; DMA, the PIOs and the RTC (plain registers); USB host mode; SPI and I2C slave modes, TI's and Microwire's SPI formats, the SPI receive timeout, 10-bit I2C addresses, general call and START bytes, clock stretching by an I2C slave, arbitration, the I2C spike filter; PWM's gated and edge-counting DIVMODEs and phase advance; the ADC's error flags and DMA requests; the interpolators; DORMANT and SLEEP; the QSPI bank's pins; the USB boot's PICOBOOT interface (picotool), UF2 files for RAM, the activity LED; its serial number and INDEX.HTM's version argument are not the bootrom's; the USB controller's isochronous endpoints, suspend detection (no SOF for 3 ms) and remote wakeup, NAK and stall interrupts, data sequence errors; the flash's unique ID is EmbSIM's (45 6d 62 53 69 6d 00 01), not a part's.
+Declared omissions: the bootrom's code (EmbSIM's stand-in does what it does: boot2, the function and data tables, the USB boot); a debugger's choice of core (it sees the one that runs next); the XIP cache; DMA and the PIOs (plain registers); USB host mode; SPI and I2C slave modes, TI's and Microwire's SPI formats, the SPI receive timeout, 10-bit I2C addresses, general call and START bytes, clock stretching by an I2C slave, arbitration, the I2C spike filter; PWM's gated and edge-counting DIVMODEs and phase advance; the ADC's error flags and DMA requests; the interpolators; DORMANT and SLEEP; the QSPI bank's pins; the USB boot's PICOBOOT interface (picotool), UF2 files for RAM, the activity LED; its serial number and INDEX.HTM's version argument are not the bootrom's; the USB controller's isochronous endpoints, suspend detection (no SOF for 3 ms) and remote wakeup, NAK and stall interrupts, data sequence errors; the flash's unique ID is EmbSIM's (45 6d 62 53 69 6d 00 01), not a part's; the RTC's RTC_ACTIVE follows RTC_ENABLE at once (the part takes a few clk_rtc edges), out-of-range times loaded are not checked.
 
 ## FE310-G002 (`sifive/fe310_g002`)
 

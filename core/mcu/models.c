@@ -118,6 +118,7 @@ static const struct esk_rf_model_type model_types[] = {
     { "rp2040-spi", &esk_rp2040_spi_ops, esk_rp2040_spi_create },
     { "rp2040-i2c", &esk_rp2040_i2c_ops, esk_rp2040_i2c_create },
     { "rp2040-usb", &esk_rp2040_usb_ops, esk_rp2040_usb_create },
+    { "rp2040-rtc", &esk_rp2040_rtc_ops, esk_rp2040_rtc_create },
     { "pic32-evic", &esk_pic32_evic_ops, esk_pic32_evic_create },
     { "pic32-osc", &esk_pic32_osc_ops, esk_pic32_osc_create },
     { "pic32-cfg", &esk_pic32_cfg_ops, esk_pic32_cfg_create },

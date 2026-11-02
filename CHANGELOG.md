@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### MicroPython on the Pico
+
+- MicroPython v1.24.1 (its rp2 port for RPI_PICO, built unmodified) is put
+  on the Pico as a person does it: plugged in with BOOTSEL held,
+  firmware.uf2 copied onto the RPI-RP2 drive, the Pico reboots, and its
+  prompt answers over its own USB serial port: `print(1+1)`, the LED lit
+  from `machine.Pin`, a file written to its littlefs filesystem in flash
+  and listed (`tests/vendor/micropython/run.py`, in CI).
+- The RP2040's RTC: its seconds from clk_rtc and CLKDIV_M1, LOAD, the
+  calendar with leap years, RTC_1/RTC_0, the alarm on RTC_IRQ (MicroPython
+  waits for it to run at boot).
+
 ### USB for a Pico's own program: TinyUSB and stdio over USB (ADR-031)
 
 - The RP2040's USB controller in device mode, as TinyUSB drives it: the

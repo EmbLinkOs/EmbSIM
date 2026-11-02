@@ -437,6 +437,23 @@ December, noon: the edge at x = -29 mm where the frame's top bar puts it at
 +24 mm, half a degree of elevation). Not yet: floor shadows outside the
 table's 2 m shadow frame, physics.
 
+## MicroPython on the Pico (2026-11-02)
+
+MicroPython v1.24.1's rp2 port, built unmodified for RPI_PICO, goes onto
+the Pico as on the bench: a Pico running pico-blink-serial is plugged into
+a computer's port with BOOTSEL held, MicroPython's firmware.uf2 (666 KB) is
+copied onto the RPI-RP2 drive (about 4.8 simulated seconds of erasing and
+programming), the Pico reboots into it, enumerates as MicroPython's own USB
+device (2e8a:0005 "MicroPython" "Board in FS mode") and the terminal opens
+its serial port. At the prompt `print(1+1)` answers 2,
+`machine.Pin('LED', machine.Pin.OUT).value(1)` puts GPIO25's net high, and
+a file written to its littlefs filesystem (formatted at the first boot
+through the bootrom's flash functions) is listed by `os.listdir()`
+(`tests/vendor/micropython/run.py`, CI's linux-gcc job). The whole run
+takes about 1.2 s of wall time. For it the RP2040 gained its RTC (MicroPython
+sets the time at boot and waits for it to run). Not yet: the REPL as a
+serial port on the computer (ADR-032), `mpremote`, PIO and DMA programs.
+
 ## USB for a Pico's own program (ADR-031, 2026-11-02)
 
 The RP2040's USB controller works in device mode as TinyUSB drives it: the

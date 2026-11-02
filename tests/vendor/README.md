@@ -12,6 +12,7 @@ toolchains.
 | `stm32cube/` | ST's STM32F1 HAL and CMSIS device files | `emblink/bluepill` |
 | `stm32cubef4/` | STM32CubeF4's own examples for the NUCLEO-F446RE (GPIO, HAL time bases, RCC, RTC, timers, UART, PWR's low-power modes, I2C between two boards, EEPROM emulation in flash) and, with `--board nucleo_f446ze`, for the NUCLEO-F446ZE (ADC, CRC, Cortex, DMA, flash erase and program, GPIO, the watchdogs, RTC, seven timer examples, UART, the USB device HID mouse on a computer's port; its middleware, stm32-mw-usb-device v2.11.4, fetched like the rest) | `emblink/nucleo_f446re`, `emblink/nucleo_f446ze` |
 | `pico-sdk/` | The Raspberry Pi Pico SDK | `emblink/pico` |
+| `micropython/` | MicroPython v1.24.1's rp2 port (RPI_PICO), built with its own Makefile and copied as firmware.uf2 onto the Pico's BOOTSEL drive; its prompt over its USB serial port: arithmetic, `machine.Pin` lighting the LED, a file in its flash filesystem | `emblink/pico` |
 | `freedom-metal/` | SiFive's freedom-metal and freedom-e-sdk's examples | `emblink/hifive1_revb` |
 | `nrfx/` | Nordic's nrfx drivers and MDK | `emblink/nrf52840dk` |
 | `freertos/` | The FreeRTOS kernel (V11.1.0), its tasks read back through the image's symbols and DWARF (`run --rtos`, scenario `rtos` assertions) | `emblink/nucleo_f446re` |

@@ -106,6 +106,22 @@ jobs:
           git -C "$RUNNER_TEMP/pico-sdk/lib/tinyusb" fetch -q --depth 1 https://github.com/hathach/tinyusb.git 86ad6e56c1700e85f1c5678607a762cfe3aa2f47
           git -C "$RUNNER_TEMP/pico-sdk/lib/tinyusb" checkout -q FETCH_HEAD
           python3 tests/vendor/pico-sdk/run.py --sdk "$RUNNER_TEMP/pico-sdk" --embsim build/${{ matrix.preset }}/bin/embsim
+      - name: MicroPython on the Pico, copied onto its BOOTSEL drive
+        if: matrix.name == 'linux-gcc'
+        run: |
+          mp="$RUNNER_TEMP/micropython"
+          git init -q "$mp"
+          git -C "$mp" fetch -q --depth 1 https://github.com/micropython/micropython.git refs/tags/v1.24.1
+          git -C "$mp" checkout -q FETCH_HEAD
+          # the submodules the RPI_PICO build needs, at the commits v1.24.1 pins
+          for sub in lib/pico-sdk lib/tinyusb lib/micropython-lib lib/mbedtls; do
+            url=$(git -C "$mp" config -f .gitmodules "submodule.$sub.url")
+            rev=$(git -C "$mp" ls-tree HEAD "$sub" | awk '{print $3}')
+            git init -q "$mp/$sub"
+            git -C "$mp/$sub" fetch -q --depth 1 "$url" "$rev"
+            git -C "$mp/$sub" checkout -q FETCH_HEAD
+          done
+          python3 tests/vendor/micropython/run.py --mp "$mp" --embsim build/${{ matrix.preset }}/bin/embsim
       - name: nrfx applications on Nordic's unmodified nrfx and MDK
         if: matrix.name == 'linux-gcc'
         # CMSIS_5's core headers are the STM32 step's checkout

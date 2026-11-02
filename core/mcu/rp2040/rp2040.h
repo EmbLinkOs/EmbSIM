@@ -128,6 +128,10 @@ void esk_rp2040_bootrom_resets(struct esk_mach *m);
 void esk_rp2040_rom(u8 *rom, u32 size);
 void esk_rp2040_rom_install(struct esk_mach *m);
 
+/* the real-time clock (rtc.c) */
+extern const struct esk_dev_ops esk_rp2040_rtc_ops;
+void *esk_rp2040_rtc_create(struct esk_mach *m, struct esk_rf_periph *p);
+
 /* the USB boot (usbboot.c): the bootrom's drive on the USB cable */
 extern const struct esk_dev_ops esk_rp2040_usb_ops;
 void *esk_rp2040_usb_create(struct esk_mach *m, struct esk_rf_periph *p);
