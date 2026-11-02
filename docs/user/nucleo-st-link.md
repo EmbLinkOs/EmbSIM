@@ -64,6 +64,21 @@ SysTick handler's write to `ticks`. While the core is halted, the clocks
 and peripherals go on, as on the board. A timer keeps counting, and a UART
 keeps sending what is in its shift register.
 
+## Program the board by copying a file
+
+Plugged into a computer's USB port (a `usb_host` part on the board's
+`USB_VBUS`, `USB_DP` and `USB_DM`: CN1), the ST-LINK enumerates as it does
+on a desk: 0483:374B, "STM32 STLink", with its debug interface, a drive
+labelled `NODE_F446RE` (MBED.HTM, DETAILS.TXT) and its virtual COM port's
+interfaces. A `.bin` file copied onto the drive (`objcopy -O binary` of
+the program) is programmed into the STM32's flash from 0x08000000: the
+probe halts the core, unlocks the flash interface, erases each sector the
+file covers and programs it a word at a time, at the flash's own times (a
+16 KiB sector in 250 ms, 16 us a word), then resets the part. The drive
+leaves the bus and comes back without the file, as the real one does; a
+copy it could not program leaves `FAIL.TXT`. `tests/protocol/test_stlink_drive.py`
+copies the example's program onto a blank board this way.
+
 ## printf over SWO
 
 The ST-LINK also reads the STM32's serial wire output: on the NUCLEO its SWO
@@ -116,8 +131,6 @@ and GDB stopping at `main`. VS Code itself is not run.
 - Tools that only open a USB device do not see the probe: `st-flash` and
   `st-util`, and STM32CubeProgrammer without stlink-server. That needs the
   USB/IP step of ADR-031.
-- The probe's mass-storage drive (`NODE_F446RE`), which flashes a `.bin`
-  copied onto it.
 - The other boards' probes: the Pico's debug probe, the nRF52840 DK's
   J-Link OB, the Explorer 16/32's PICkit.
 

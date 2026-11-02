@@ -43,11 +43,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "engine/engine.h"
-#include "mcu/mcu.h"
-#include "model/registry.h"
+#include "model/st_link_priv.h"
 
-#define LOG_CAP 4096
 #define V_MAJOR 2u
 #define V_JTAG 37u
 #define V_MSD 26u
@@ -55,29 +52,10 @@
 enum { MODE_DFU = 0, MODE_MASS = 1, MODE_DEBUG = 2 };
 enum { ST_OK = 0x80, ST_FAULT = 0x81, ST_NO_TARGET = 0x09, ST_AP_FAULT = 0x11 };
 enum { P_SWDIO, P_SWCLK, P_NRST, P_TVCC, P_GND, P_SWO };
-#define TRACE_CAP 4096u /* the probe's trace buffer: OpenOCD's STLINK_TRACE_SIZE */
 #define TRACE_MAX_HZ 2000000u /* the V2-1's highest SWO rate */
 enum { TOK_NRST = 1 };
 
-typedef struct sl_state {
-    esk_comp *c;
-    int mode;
-    int swd;          /* SWD entered: the debug port powered up */
-    int nrst_low;     /* the probe pulls NRST low */
-    uint8_t rw_status;
-    uint32_t rw_addr; /* the address of the last transfer's fault */
-    uint32_t dp_select, ap_csw, ap_tar;
-    unsigned divisor; /* SWD_SET_FREQ's */
-    uint64_t commands;
-    /* SWO trace: START_TRACE_RX's rate, the bytes received and not read */
-    int trace_on;
-    uint32_t trace_hz;
-    uint8_t trace[TRACE_CAP];
-    uint32_t trace_n;
-    uint64_t trace_bytes, trace_lost, trace_garbled;
-    char log[LOG_CAP];
-    size_t log_len;
-} sl_state;
+
 
 static void say(sl_state *s, const char *fmt, const char *a)
 {
@@ -536,8 +514,10 @@ static es_status sl_create(esk_comp *c)
 {
     sl_state *s = (sl_state *)c->state;
     s->c = c;
-    return ES_OK;
+    return sl_usb_create(s);
 }
+
+static void sl_destroy(esk_comp *c) { sl_usb_destroy((sl_state *)c->state); }
 
 static void sl_reset(esk_comp *c)
 {
@@ -558,6 +538,7 @@ static void sl_reset(esk_comp *c)
     s->log[0] = 0;
     if (pin(s, P_NRST))
         esk_pin_release(pin(s, P_NRST));
+    sl_usb_reset(s);
 }
 
 static void sl_on_time(esk_comp *c, uint32_t token)
@@ -565,6 +546,8 @@ static void sl_on_time(esk_comp *c, uint32_t token)
     sl_state *s = (sl_state *)c->state;
     if (token == TOK_NRST)
         nrst(s, 0); /* the pulse ends */
+    else
+        sl_usb_on_time(s, token);
 }
 
 static void sl_observe(esk_comp *c, esk_json *o)
@@ -583,9 +566,15 @@ static void sl_observe(esk_comp *c, esk_json *o)
     esk_json_set_integer(a, o, "trace_bytes", (int64_t)s->trace_bytes);
     esk_json_set_integer(a, o, "trace_lost", (int64_t)s->trace_lost);
     esk_json_set_integer(a, o, "trace_garbled", (int64_t)s->trace_garbled);
+    sl_usb_observe(s, o);
     esk_json_set_string(a, o, "log", s->log);
 }
 
 const esk_model_ops esk_st_link_ops = {
-    "st_link", sizeof(sl_state), sl_create, NULL, sl_reset, NULL, sl_on_time, NULL, sl_observe, NULL, 0,
+    "st_link", sizeof(sl_state), sl_create, sl_destroy, sl_reset, NULL, sl_on_time, NULL, sl_observe, NULL, 0,
 };
+
+esk_comp *sl_target(sl_state *s) { return target(s); }
+int sl_powered(sl_state *s) { return powered(s); }
+int sl_mem(sl_state *s, uint32_t addr, int bytes, int write, uint32_t *v) { return mem(s, addr, bytes, write, v) ? 0 : -1; }
+void sl_say(sl_state *s, const char *fmt, const char *a) { say(s, fmt, a); }

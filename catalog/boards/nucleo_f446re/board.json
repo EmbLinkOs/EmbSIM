@@ -256,6 +256,14 @@
       "id": "U2",
       "component": "emblink/st_link_v21",
       "doc": "The ST-LINK/V2-1 (MB1136's U2, an STM32F103CBT6 with ST's firmware): SWD on PA13 and PA14, NRST, VDD_TARGET sensed on VDD"
+    },
+    {
+      "id": "CN1",
+      "component": "emblink/header",
+      "params": {
+        "pins": 5
+      },
+      "doc": "CN1, the ST-LINK's mini-USB: 1 VBUS (U5V), 2 D-, 3 D+, 4 ID, 5 GND"
     }
   ],
   "nets": {
@@ -288,7 +296,8 @@
       "CN10.20",
       "CN10.32",
       "R29.2",
-      "U2.GND"
+      "U2.GND",
+      "CN1.5"
     ],
     "U3_OUT": [
       "U3.OUT",
@@ -302,7 +311,9 @@
     "U5V": [
       "T2.S",
       "R28.1",
-      "CN10.8"
+      "CN10.8",
+      "CN1.1",
+      "U2.VBUS"
     ],
     "PWR_ENN": [
       "T2.G",
@@ -611,6 +622,14 @@
     "D1": [
       "CN9.2",
       "CN10.35"
+    ],
+    "USB_DM": [
+      "U2.USB_DM",
+      "CN1.2"
+    ],
+    "USB_DP": [
+      "U2.USB_DP",
+      "CN1.3"
     ]
   },
   "ports": {
@@ -1152,6 +1171,24 @@
     "IDD_VDD": {
       "net": "VDD",
       "doc": "JP6 pin 2, the STM32's side: an ammeter's - lead"
+    },
+    "USB_VBUS": {
+      "net": "U5V",
+      "connector": "CN1",
+      "pin": 1,
+      "doc": "The ST-LINK's mini-USB VBUS: a computer's 5 V powers the probe and, through T2 and JP5, the board"
+    },
+    "USB_DM": {
+      "net": "USB_DM",
+      "connector": "CN1",
+      "pin": 2,
+      "doc": "The ST-LINK's USB D-"
+    },
+    "USB_DP": {
+      "net": "USB_DP",
+      "connector": "CN1",
+      "pin": 3,
+      "doc": "The ST-LINK's USB D+: its composite device (debug, the NODE_F446RE drive, the virtual COM port)"
     }
   },
   "leds": [

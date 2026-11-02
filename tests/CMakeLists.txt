@@ -58,6 +58,9 @@ if(Python3_Interpreter_FOUND)
   # the NUCLEO's ST-LINK through stlink-server's protocol, and OpenOCD programming a blank board
   add_test(NAME stlink COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_stlink.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # the ST-LINK's own USB device: a .bin copied onto its NODE_F446RE drive programs the board
+  add_test(NAME stlink_drive COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_stlink_drive.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   # embsim ide's VS Code launch configurations, carried out as VS Code carries them out
   add_test(NAME ide COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_ide.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

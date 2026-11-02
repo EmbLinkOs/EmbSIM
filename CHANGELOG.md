@@ -5,6 +5,18 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The NUCLEO's ST-LINK drive: programming by copying a file
+
+- The ST-LINK/V2-1's own USB device on the NUCLEO's CN1 (`USB_VBUS`,
+  `USB_DP`, `USB_DM`): full-speed composite 0483:374B, "STM32 STLink",
+  with the debug interface (its commands and SWO trace on their bulk
+  endpoints), the mass-storage drive and the virtual COM port's
+  interfaces. The drive, NODE_F446RE, holds MBED.HTM and DETAILS.TXT; a
+  .bin copied onto it is programmed through the STM32's flash interface
+  over SWD (halt, unlock, sector erases, word programming at the flash's
+  times, reset), and the drive comes back without it, or with FAIL.TXT
+  (`tests/protocol/test_stlink_drive.py`).
+
 ### SWO trace through the NUCLEO's ST-LINK
 
 - The ARMv7-M cores' ITM and TPIU (`cortexm/itm.c`): the 32 stimulus ports

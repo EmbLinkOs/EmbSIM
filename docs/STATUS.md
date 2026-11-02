@@ -489,15 +489,19 @@ on the host as ST's stlink-server does (`stlink.serve`, `embsim serve
   TPIU's rate is not the probe's (the ARMv7-M cores' ITM and TPIU,
   `cortexm/itm.c`).
 
+The probe's own USB device on CN1 (0483:374B, composite) with its
+NODE_F446RE drive: a .bin copied onto it by a computer's USB port is
+programmed into the flash over SWD at the flash's times and the board
+runs it (`tests/protocol/test_stlink_drive.py`).
+
 `embsim ide` writes VS Code's launch configurations and tasks from the
 board's `debug` section: through the probe with OpenOCD, and on EmbSIM's
 GDB server for any board. `tests/protocol/test_ide.py` carries both out as
 VS Code does.
 
 Not yet:
-- the probe's USB transport (tools that open the USB device, as `st-flash`
-  does, need USB/IP);
-- its mass-storage drive;
+- the probe's USB device on the computer itself (tools that open it, as
+  `st-flash` does, need USB/IP); its virtual COM port's data on USB;
 - SWO in Manchester (the V2-1 reads NRZ), and the F103's and nRF52840's
   trace pins (their ITM and TPIU are there, no pin carries TRACESWO);
 - the other boards' probes (steps 4, 6 and 7; the PICkit's host protocol is

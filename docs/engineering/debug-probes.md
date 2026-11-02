@@ -130,7 +130,14 @@ GDB server, and `tests/protocol/test_ide.py` carries them out as VS Code
 does. PlatformIO's `debug_tool` is not done yet. SWO trace is in: the
 ARMv7-M cores' ITM and TPIU (`cortexm/itm.c`), PB3's TRACESWO under
 DBGMCU's TRACE_IOEN, and the probe's trace receiver, which OpenOCD's
-`tpiu` and `itm` commands read (`test_stlink.py`). Steps 4, 6 and 7 remain.
+`tpiu` and `itm` commands read (`test_stlink.py`). Step 4 is in: the
+probe's own USB device on the NUCLEO's CN1 (0483:374B, composite: the
+debug interface, the NODE_F446RE drive, the virtual COM port's
+interfaces), a .bin copied onto the drive programmed through the target's
+flash interface over SWD at the flash's times, then the part reset and the
+drive re-enumerated (`test_stlink_drive.py`). The virtual COM port's data
+is not on USB yet (the console bridge stands for it). Steps 6 and 7
+remain, and USB/IP for the tools that open the probe's USB device.
 
 ## 6. Not planned
 
