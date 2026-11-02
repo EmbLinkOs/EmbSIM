@@ -13,6 +13,8 @@
  *     `flash_dbus` its alias on the data bus. A page reads the flash's
  *     bytes its entry names (the flash's address wraps at its size), an
  *     invalid one zeros.
+ *   - While flash encryption is on (eFuse SPI_BOOT_CRYPT_CNT odd), a page
+ *     reads the flash decrypted by XTS-AES at its flash address (xts.c).
  *   - The operations the program starts and polls complete at once:
  *     invalidate (SYNC_CTRL.INVALIDATE_ENA, then SYNC_DONE), preload
  *     (PRELOAD_ENA, then PRELOAD_DONE), lock and unlock (LOCK_DONE), freeze
@@ -26,8 +28,8 @@
  * see them only for the lines the cache still holds.
  * Not yet: the cache's enable and the buses' shut bits (ICACHE_CTRL,
  * ICACHE_CTRL1) do not stop accesses; an access through an invalid entry
- * reads zeros without the MMU entry fault interrupt; the access counters,
- * the PMS split and the flash encryption. */
+ * reads zeros without the MMU entry fault interrupt; the access counters
+ * and the PMS split. */
 #include <string.h>
 
 #include "mcu/esp32c3/esp32c3.h"
@@ -69,8 +71,12 @@ static void fill(struct c3_cache *k, int i)
     dst = w->mem + (u32)i * PAGE;
     if ((k->mmu[i] & MMU_INVALID) || !st || st->size < PAGE)
         memset(dst, 0, PAGE);
-    else
-        memcpy(dst, st->mem + ((u32)(k->mmu[i] & 0xffu) * PAGE) % st->size, PAGE);
+    else {
+        u32 at = ((u32)(k->mmu[i] & 0xffu) * PAGE) % st->size;
+        memcpy(dst, st->mem + at, PAGE);
+        if (esk_esp32c3_efuse_flash_crypt(k->s))
+            esk_esp32c3_xts_crypt(k->s, at, dst, PAGE, 1);
+    }
     k->stale[i] = 0;
     esk_bus_code_changed(&k->s->bus);
 }

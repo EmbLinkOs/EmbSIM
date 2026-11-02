@@ -40916,6 +40916,66 @@
      "offset": "0x0C"
     },
     {
+     "name": "PLAIN_MEM4",
+     "offset": "0x10",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM5",
+     "offset": "0x14",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM6",
+     "offset": "0x18",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM7",
+     "offset": "0x1C",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM8",
+     "offset": "0x20",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM9",
+     "offset": "0x24",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM10",
+     "offset": "0x28",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM11",
+     "offset": "0x2C",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM12",
+     "offset": "0x30",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM13",
+     "offset": "0x34",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM14",
+     "offset": "0x38",
+     "fields": []
+    },
+    {
+     "name": "PLAIN_MEM15",
+     "offset": "0x3C",
+     "fields": []
+    },
+    {
      "name": "LINESIZE",
      "offset": "0x40",
      "fields": [

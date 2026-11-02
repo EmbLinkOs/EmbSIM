@@ -5,6 +5,17 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## The ESP32-C3's flash encryption (2026-11-02)
+
+XTS-AES is modelled (`esp32c3-xts`): manual encryption through SPI1's page
+programs and the cache's decryption while SPI_BOOT_CRYPT_CNT is odd, with
+Espressif's addressing as espsecure computes it. ESP-IDF v5.4's
+`flash_encryption` in Development mode burns a key and encrypts the flash
+in place at the first boot; its second boot is still being brought up. A
+unit test checks the ciphertext against espsecure's. Not
+yet: the encryption's time, the download-mode encryption controls. 32 of 35
+peripherals are modelled; UHCI0/1 and the permission control remain.
+
 ## The ESP32-C3's HMAC and digital signature (2026-11-01)
 
 The HMAC accelerator and the digital signature are modelled, with the

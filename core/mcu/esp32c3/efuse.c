@@ -199,3 +199,21 @@ int esk_esp32c3_efuse_key(struct esk_mach *m, int id, u8 key[32], int *purpose)
     }
     return -1;
 }
+
+/* SPI_BOOT_CRYPT_CNT (BLOCK0 bits 82-84): flash encryption is on while an
+ * odd number of its bits is set */
+int esk_esp32c3_efuse_flash_crypt(struct esk_mach *m)
+{
+    int i;
+    for (i = 0; m->rf; i++) {
+        struct esk_rf_periph *p = esk_rf_periph_at(m->rf, i);
+        u32 cnt;
+        if (!p)
+            break;
+        if (p->ops != &esk_esp32c3_efuse_ops)
+            continue;
+        cnt = (((struct c3_efuse *)p->ctx)->bits[0][2] >> 18) & 7u;
+        return ((cnt & 1u) + ((cnt >> 1) & 1u) + ((cnt >> 2) & 1u)) & 1;
+    }
+    return 0;
+}

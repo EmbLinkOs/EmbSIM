@@ -5,6 +5,23 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The ESP32-C3's flash encryption (XTS-AES)
+
+- XTS-AES (`esp32c3-xts`, TRM v1.4 chapter 22): XTS-AES-128 under the
+  eFuse key block with the XTS_AES_128_KEY purpose, with Espressif's
+  addressing as espsecure computes it (each 128-byte data unit reversed,
+  tweaked by its flash address, reversed again; the key block's bytes
+  reversed). Manual encryption of 16- and 32-byte lines (PLAIN_MEM at the
+  address modulo 32, TRIGGER, RELEASE, DESTROY, STATE) while SYSTEM's
+  ENABLE_SPI_MANUAL_ENCRYPT is set; SPI1's next page program at the
+  released address writes the ciphertext instead of its own data.
+- The cache decrypts the pages it maps from the flash while eFuse
+  SPI_BOOT_CRYPT_CNT has an odd number of bits set; SPI1's reads stay raw.
+- `test_xts_flash_encryption` checks 64 bytes encrypted by hand in two
+  lines against `espsecure.py encrypt_flash_data --aes_xts` and their
+  decryption through the cache. The ESP32-C3 has 32 of 35 peripherals
+  modelled.
+
 ### The ESP32-C3's HMAC, digital signature and eFuse key protection
 
 - HMAC (`esp32c3-hmac`, TRM v1.4 chapter 18): HMAC-SHA256 under an eFuse

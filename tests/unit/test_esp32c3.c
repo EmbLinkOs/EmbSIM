@@ -3180,6 +3180,80 @@ static void test_ds_sign(void)
     c3_close(&f);
 }
 
+#define XTS 0x600CC000u
+
+/* XTS-AES: a key file of bytes (7i + 1), burned as espefuse burn_key does
+ * (reversed) into BLOCK_KEY0 with purpose XTS_AES_128_KEY; 64 bytes of
+ * (13i + 5) encrypted by hand at 0x20040 in two lines and programmed by SPI1 give what
+ * `espsecure.py encrypt_flash_data --aes_xts --address 0x20040` gives, and
+ * the cache reads them back decrypted once SPI_BOOT_CRYPT_CNT is odd */
+static void test_xts_flash_encryption(void)
+{
+    static const u8 want[64] = { 0x2du, 0xd1u, 0x75u, 0x08u, 0xf2u, 0x7cu, 0x26u, 0x4au, 0x64u, 0x9bu, 0x60u, 0xd9u, 0x2bu, 0xd4u, 0xd2u, 0xdeu, 0x34u, 0xddu, 0x15u, 0xe7u, 0x4bu, 0x0du, 0x8au, 0x52u, 0xefu, 0x29u, 0xe3u, 0xa3u, 0x53u, 0xf1u, 0xdbu, 0x31u, 0x9fu, 0x93u, 0x87u, 0xc6u, 0xeeu, 0x66u, 0xcbu, 0xacu, 0x64u, 0x67u, 0x7fu, 0x94u, 0x03u, 0x1au, 0xa4u, 0xb7u, 0xadu, 0xeeu, 0x70u, 0x84u, 0x31u, 0xb0u, 0x35u, 0x31u, 0xb5u, 0x97u, 0x53u, 0x89u, 0x5au, 0x7du, 0x89u, 0x3au };
+    u8 keyfile[32], plain[64];
+    u32 key[8], b0[8] = { 0 }, line;
+    struct esk_store *fl;
+    c3 f;
+    int i;
+    if (!c3_open(&f, NULL, 0, NULL, 0))
+        return;
+    for (i = 0; i < 32; i++)
+        keyfile[i] = (u8)((7 * i + 1) & 0xff);
+    for (i = 0; i < 64; i++)
+        plain[i] = (u8)((13 * i + 5) & 0xff);
+    for (i = 0; i < 8; i++)
+        key[i] = (u32)keyfile[31 - 4 * i] | (u32)keyfile[30 - 4 * i] << 8 |
+                 (u32)keyfile[29 - 4 * i] << 16 | (u32)keyfile[28 - 4 * i] << 24;
+    efuse_burn(&f, 4u, key);
+    b0[1] = 1u;       /* RD_DIS.BLOCK_KEY0 */
+    b0[2] = 4u << 24; /* KEY_PURPOSE_0: XTS_AES_128_KEY */
+    efuse_burn(&f, 0u, b0);
+    /* manual encryption is refused until SYSTEM enables it */
+    wr(&f, XTS + 0x40u, 1u);       /* LINESIZE: 32 bytes */
+    wr(&f, XTS + 0x44u, 0u);       /* DESTINATION: flash */
+    wr(&f, XTS + 0x48u, 0x20040u); /* PHYSICAL_ADDRESS */
+    wr(&f, XTS + 0x4Cu, 1u);
+    CHECK_EQ(rd(&f, XTS + 0x58u), 0u);
+    wr(&f, SYSTEM + 0x44u, 1u); /* ENABLE_SPI_MANUAL_ENCRYPT */
+    /* two lines of 32 bytes, as esp_flash_write_encrypted writes them */
+    for (line = 0; line < 2; line++) {
+        u32 at = 0x20040u + 32u * line;
+        for (i = 0; i < 32; i += 4)
+            wr(&f, XTS + (at % 32u) + (u32)i,
+               (u32)plain[32u * line + (u32)i] | (u32)plain[32u * line + (u32)i + 1u] << 8 |
+                   (u32)plain[32u * line + (u32)i + 2u] << 16 | (u32)plain[32u * line + (u32)i + 3u] << 24);
+        wr(&f, XTS + 0x48u, at);
+        wr(&f, XTS + 0x4Cu, 1u); /* TRIGGER */
+        CHECK_EQ(rd(&f, XTS + 0x58u), 2u);
+        wr(&f, XTS + 0x50u, 1u); /* RELEASE */
+        CHECK_EQ(rd(&f, XTS + 0x58u), 3u);
+        /* SPI1 programs its own (zero) bytes: the ciphertext lands instead */
+        wr(&f, SPI_CMD, 1u << 30);
+        for (i = 0; i < 8; i++)
+            wr(&f, SPI_W0 + 4u * (u32)i, 0u);
+        if (line == 0u)
+            wr(&f, SPI_ADDR, at | 32u << 24);
+        /* the second as the ROM's esp_rom_spiflash_write_encrypted: ADDR
+         * left as it was, the line giving the address */
+        wr(&f, SPI_CMD, 1u << 25);
+        esk_mach_idle(&f.m, esk_mach_core_hz(&f.m) / 2000u + 100u); /* tPP 0.5 ms */
+        wr(&f, XTS + 0x54u, 1u); /* DESTROY */
+        CHECK_EQ(rd(&f, XTS + 0x58u), 0u);
+    }
+    fl = esk_mach_store(&f.m, "flash");
+    CHECK(memcmp(fl->mem + 0x20040, want, 64) == 0);
+    /* flash encryption on: the cache decrypts */
+    memset(b0, 0, sizeof b0);
+    b0[2] = 1u << 18; /* SPI_BOOT_CRYPT_CNT = 1 */
+    efuse_burn(&f, 0u, b0);
+    wr(&f, MMU + 4u * 5u, 2u);
+    for (i = 0; i < 64; i += 4)
+        CHECK_EQ(rd(&f, 0x3C050040u + (u32)i),
+                 (u32)plain[i] | (u32)plain[i + 1] << 8 | (u32)plain[i + 2] << 16 |
+                     (u32)plain[i + 3] << 24);
+    c3_close(&f);
+}
+
 #define I2C 0x60013000u
 #define I2C_SCL_LOW (I2C + 0x00u)
 #define I2C_CTR (I2C + 0x04u)
@@ -3977,6 +4051,7 @@ RUN(test_twai_frame);
 RUN(test_i2s_frame);
 RUN(test_hmac_upstream);
 RUN(test_ds_sign);
+RUN(test_xts_flash_encryption);
 RUN(test_i2c_master);
 RUN(test_i2c_stretch_and_end);
 RUN(test_i2c_slave);
