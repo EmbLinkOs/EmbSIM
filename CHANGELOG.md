@@ -5,6 +5,22 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### AI assistants use the same session (ADR-035)
+
+- `embsim-mcp` (`python/embsim/mcp.py`): a Model Context Protocol server on
+  stdio, dependency-free, over one `embsim sidecar` session. Its tools are
+  a person's operations: create, load, edit (one transaction), validate
+  and save a project; search the catalog; build firmware; run and reset;
+  press, release, set inputs and type into serial ports; read the
+  consoles, nets, outputs, probes and diagnostics; run scenarios; record;
+  read a board's registers and memory. A refused operation is the tool's
+  error with the session's message. `docs/user/ai-assistants.md` says how
+  to connect Claude Code, Claude Desktop and other clients;
+  `python/tests/test_mcp.py` (ctest `mcp_server`) drives the protocol and
+  an assistant's session: the Blue Pill example's firmware, and an LED
+  circuit built from nothing and its current checked against Ohm's law
+  with the resistor's drawn value.
+
 ### M6 delivered, and a faster ESP32-C3
 
 - M6, the flagship, is delivered: STATUS.md maps each of its exit

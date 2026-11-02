@@ -5,6 +5,16 @@ maintained by hand until evidence tooling exists. It is not a generated
 support matrix. Specifications define target contracts; their acceptance
 does not mean the described behaviour exists.
 
+## AI assistants: the MCP server (2026-11-02)
+
+`embsim-mcp` gives an AI assistant the session a person has (ADR-035):
+27 tools over the session protocol, from creating and wiring a project to
+building firmware, running, working inputs and reading what the circuit and
+boards do. `python/tests/test_mcp.py` checks the JSON-RPC (initialize,
+tools, errors, batches) and an assistant's session against the engine. Not
+yet: MCP resources and prompts, notifications of the session's changes to
+the assistant, the bench's 3D layout tools beyond `set_layout`.
+
 ## M6, the flagship, delivered (2026-11-02)
 
 Each of M6's exit criteria (07-roadmap) and its evidence:

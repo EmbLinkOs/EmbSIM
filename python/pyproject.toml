@@ -21,6 +21,9 @@ classifiers = [
 [project.optional-dependencies]
 pytest = ["pytest>=7"]
 
+[project.scripts]
+embsim-mcp = "embsim.mcp:main"
+
 [project.entry-points.pytest11]
 embsim = "embsim.pytest_plugin"
 

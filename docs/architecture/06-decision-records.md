@@ -1042,7 +1042,9 @@ gives no access a person lacks and no shortcut past the models.
 the protocol's conformance suite; examples show an assistant building and
 verifying a circuit.
 
-**Status.** Accepted direction (owner, 2026-10-18).
+**Status.** Accepted direction (owner, 2026-10-18); implemented 2026-11-02:
+`embsim-mcp` (`python/embsim/mcp.py`), its use in `docs/user/ai-assistants.md`,
+tested by `python/tests/test_mcp.py`.
 
 ## ADR-036 Parts draw the current their datasheets give
 
