@@ -73,7 +73,16 @@ static const u8 cfg_desc[55] = {
     7, 5, 0x84, 2, 64, 0, 0,
 };
 
+struct dpram {
+    int kind; /* K_DPRAM */
+    struct esk_rf_periph *p;
+    u8 mem[0x1000]; /* the buffers (0x100 up); the control words are the register file's */
+};
+
+enum { K_USB = 1, K_DPRAM = 2 };
+
 struct usbboot {
+    int kind; /* K_USB */
     struct esk_mach *s;
     struct esk_rf_periph *p;
     int active, attached;
@@ -98,6 +107,10 @@ struct usbboot {
     u8 erased[512]; /* a bit per 4 KiB flash sector */
     u64 busy_until; /* the core's cycle when the flash is ready again */
     int reboot;
+    /* the controller as a program uses it (USBCTRL_REGS and the DPRAM) */
+    struct dpram *dp;
+    int irq, irq_was, dev_sof, pull_was;
+    u8 sel[32]; /* each endpoint's next buffer (0 or 1) when double buffered */
 };
 
 static u32 le32(const u8 *b) { return (u32)b[0] | (u32)b[1] << 8 | (u32)b[2] << 16 | (u32)b[3] << 24; }
@@ -309,13 +322,13 @@ static void command(struct usbboot *u, const u8 *cbw)
         u->bot = (cbw[12] & 0x80u) ? B_IN : B_OUT;
 }
 
-static int pullup(void *ctx)
+static int boot_pullup(void *ctx)
 {
     struct usbboot *u = (struct usbboot *)ctx;
     return u->active ? ESK_USB_FULL_SPEED : ESK_USB_DETACHED; /* until the reboot's reset */
 }
 
-static void bus(void *ctx, int ev, u32 frame)
+static void boot_bus(void *ctx, int ev, u32 frame)
 {
     struct usbboot *u = (struct usbboot *)ctx;
     (void)frame;
@@ -349,7 +362,7 @@ static void string_desc(struct usbboot *u, int idx)
     u->ep0_len = 2u + 2u * n;
 }
 
-static int setup(void *ctx, int addr, int ep, const u8 d[8])
+static int boot_setup(void *ctx, int addr, int ep, const u8 d[8])
 {
     struct usbboot *u = (struct usbboot *)ctx;
     u32 wlen = (u32)d[6] | (u32)d[7] << 8, value = (u32)d[2] | (u32)d[3] << 8;
@@ -405,7 +418,7 @@ static int setup(void *ctx, int addr, int ep, const u8 d[8])
     return ESK_USB_ACK;
 }
 
-static int out(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len)
+static int boot_out(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len)
 {
     struct usbboot *u = (struct usbboot *)ctx;
     struct esk_mach *s = u->s;
@@ -451,7 +464,7 @@ static int out(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len)
     return ESK_USB_ACK;
 }
 
-static int in(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1)
+static int boot_in(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1)
 {
     struct usbboot *u = (struct usbboot *)ctx;
     u32 n = 0;
@@ -534,6 +547,305 @@ static int in(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *dat
     return ESK_USB_NAK;
 }
 
+
+/* ---- the controller as a program uses it (the datasheet's 4.1) ------------
+ *
+ * USBCTRL_REGS and the DPRAM in device mode, as TinyUSB (the Pico SDK's
+ * stdio_usb, MicroPython) drives them: the pull-up with MAIN_CTRL's
+ * CONTROLLER_EN and SIE_CTRL's PULLUP_EN (not HOST_NDEVICE); a bus reset
+ * sets SIE_STATUS.BUS_RESET and CONNECTED; each SOF its frame in SOF_RD and
+ * DEV_SOF until SOF_RD is read; a SETUP at the device's address is put at
+ * the DPRAM's start, SETUP_REC set and EP_STALL_ARM cleared. A transaction
+ * on an endpoint uses its buffer control word (EP0's at 0x80 and 0x84, its
+ * buffer at 0x100; the others enabled by their endpoint control word, which
+ * gives the buffer's place): an IN sends a buffer the program made FULL and
+ * AVAILABLE (LENGTH bytes, its PID) and clears both; an OUT fills an
+ * AVAILABLE buffer, setting LENGTH and FULL and clearing AVAILABLE; neither
+ * is a NAK; STALL (EP0's armed by EP_STALL_ARM) a STALL. Double buffered,
+ * the buffers alternate from buffer 0 (the RESET bit starts again from
+ * it); BUFF_STATUS is set per buffer, or per pair with
+ * INTERRUPT_PER_DOUBLE_BUFF, or at a short packet; EP0 per buffer with
+ * SIE_CTRL's EP0_INT_1BUF. EP_ABORT is done at once (EP_ABORT_DONE). INTR
+ * is made from these, INTS from INTR, INTF and INTE, and USBCTRL_IRQ
+ * follows INTS. Omissions: host mode, isochronous endpoints, suspend
+ * detection (no SOF for 3 ms) and remote wakeup, NAK and stall interrupts,
+ * data sequence errors (a packet with the other PID is taken as it is). */
+
+#define R_ADDR 0x00u
+#define R_MAIN 0x40u
+#define R_SOF_RD 0x48u
+#define R_SIE_CTRL 0x4cu
+#define R_SIE_STATUS 0x50u
+#define R_BUFF_STATUS 0x58u
+#define R_EP_ABORT 0x60u
+#define R_EP_ABORT_DONE 0x64u
+#define R_EP_STALL_ARM 0x68u
+#define R_INTR 0x8cu
+#define R_INTE 0x90u
+#define R_INTF 0x94u
+#define R_INTS 0x98u
+
+#define ST_BUS_RESET (1u << 19)
+#define ST_SETUP_REC (1u << 17)
+#define ST_CONNECTED (1u << 16)
+#define ST_RESUME (1u << 11)
+#define ST_SUSPENDED (1u << 4)
+
+#define BC_FULL 0x8000u
+#define BC_LAST 0x4000u
+#define BC_PID 0x2000u
+#define BC_RESET 0x1000u
+#define BC_STALL 0x0800u
+#define BC_AVAIL 0x0400u
+#define BC_LEN 0x03ffu
+
+#define EC_ENABLE 0x80000000u
+#define EC_DOUBLE 0x40000000u
+#define EC_PER_BUFF 0x20000000u
+#define EC_PER_DOUBLE 0x10000000u
+
+/* the register at `off` in a peripheral's block */
+static struct esk_rf_reg *reg_at_off(struct esk_rf_periph *p, u32 off)
+{
+    int i;
+    for (i = 0; i < p->nreg; i++)
+        if (p->reg[i]->addr == p->base + off)
+            return p->reg[i];
+    return 0;
+}
+
+static u32 rd(struct usbboot *u, u32 off) { return esk_rf_read(u->p, off, 4); }
+static void hw(struct usbboot *u, u32 off, u32 v)
+{
+    struct esk_rf_reg *r = reg_at_off(u->p, off);
+    if (r)
+        esk_rf_hw(r, v);
+}
+
+static struct dpram *dpram_of(struct usbboot *u)
+{
+    if (!u->dp) {
+        struct esk_rf_periph *p = u->s->rf ? esk_rf_periph(u->s->rf, "USB_DPRAM") : 0;
+        if (p && p->ops == &esk_rp2040_usb_ops && p->ctx && ((struct dpram *)p->ctx)->kind == K_DPRAM)
+            u->dp = (struct dpram *)p->ctx;
+    }
+    return u->dp;
+}
+
+static u32 dp_word(struct usbboot *u, u32 off)
+{
+    struct dpram *d = dpram_of(u);
+    return d ? esk_rf_read(d->p, off, 4) : 0;
+}
+
+static void dp_set(struct usbboot *u, u32 off, u32 v)
+{
+    struct dpram *d = dpram_of(u);
+    struct esk_rf_reg *r = d ? reg_at_off(d->p, off) : 0;
+    if (r)
+        esk_rf_hw(r, v);
+}
+
+static int ctrl_pullup(struct usbboot *u)
+{
+    u32 m = rd(u, R_MAIN);
+    return (m & 1u) && !(m & 2u) && (rd(u, R_SIE_CTRL) & (1u << 16));
+}
+
+/* INTR from the controller's state, INTS from it, and the interrupt line */
+static void ctrl_update(struct usbboot *u)
+{
+    u32 st = rd(u, R_SIE_STATUS), intr = 0, ints;
+    int level;
+    if (rd(u, R_BUFF_STATUS))
+        intr |= 1u << 4;
+    if (st & ST_BUS_RESET)
+        intr |= 1u << 12;
+    if (st & ST_CONNECTED)
+        intr |= 1u << 13;
+    if (st & ST_SUSPENDED)
+        intr |= 1u << 14;
+    if (st & ST_RESUME)
+        intr |= 1u << 15;
+    if (st & ST_SETUP_REC)
+        intr |= 1u << 16;
+    if (u->dev_sof)
+        intr |= 1u << 17;
+    if (rd(u, R_EP_ABORT_DONE))
+        intr |= 1u << 18;
+    hw(u, R_INTR, intr);
+    ints = (intr | rd(u, R_INTF)) & rd(u, R_INTE);
+    hw(u, R_INTS, ints);
+    level = ints != 0;
+    esk_rf_irq_level(u->p, u->irq, level, &u->irq_was);
+}
+
+static void ctrl_bus(struct usbboot *u, int ev, u32 frame)
+{
+    u32 st = rd(u, R_SIE_STATUS);
+    if (ev == ESK_USB_RESET) {
+        st |= ST_BUS_RESET | ST_CONNECTED;
+        st &= ~ST_SUSPENDED;
+        memset(u->sel, 0, sizeof u->sel);
+    } else if (ev == ESK_USB_SOF) {
+        hw(u, R_SOF_RD, frame & 0x7ffu);
+        u->dev_sof = 1;
+        st &= ~ST_SUSPENDED;
+    } else if (ev == ESK_USB_RESUME) {
+        st |= ST_RESUME;
+    }
+    hw(u, R_SIE_STATUS, st);
+    ctrl_update(u);
+}
+
+static int ctrl_setup(struct usbboot *u, int addr, int ep, const u8 d[8])
+{
+    if (!ctrl_pullup(u) || addr != (int)(rd(u, R_ADDR) & 0x7fu) || ep != 0)
+        return ESK_USB_NONE;
+    dp_set(u, 0, le32(d));
+    dp_set(u, 4, le32(d + 4));
+    hw(u, R_SIE_STATUS, rd(u, R_SIE_STATUS) | ST_SETUP_REC);
+    hw(u, R_EP_STALL_ARM, 0);
+    u->sel[0] = u->sel[1] = 0;
+    ctrl_update(u);
+    return ESK_USB_ACK;
+}
+
+/* an endpoint's buffer control word, its buffer's place and its control
+ * word (EP0's: none, EP0_INT_1BUF instead); 0 when it is not enabled */
+static int ep_words(struct usbboot *u, int ep, int out, u32 *bc_off, u32 *buf, u32 *ec)
+{
+    *bc_off = 0x80u + (u32)ep * 8u + (out ? 4u : 0u);
+    if (ep == 0) {
+        *buf = 0x100u;
+        *ec = EC_ENABLE | ((rd(u, R_SIE_CTRL) & (1u << 29)) ? EC_PER_BUFF : 0);
+        return 1;
+    }
+    *ec = dp_word(u, 0x08u + (u32)(ep - 1) * 8u + (out ? 4u : 0u));
+    *buf = *ec & 0xffc0u;
+    return (*ec & EC_ENABLE) != 0;
+}
+
+/* a buffer done: which half, its endpoint's interrupt rules */
+static void buffer_done(struct usbboot *u, int id, u32 ec, int half, int short_pkt)
+{
+    int raise = 1;
+    if (ec & EC_DOUBLE) {
+        u->sel[id] ^= 1;
+        if ((ec & EC_PER_DOUBLE) && !(ec & EC_PER_BUFF))
+            raise = half == 1 || short_pkt;
+    } else if (!(ec & (EC_PER_BUFF | EC_PER_DOUBLE))) {
+        raise = 0;
+    }
+    if (raise)
+        hw(u, R_BUFF_STATUS, rd(u, R_BUFF_STATUS) | 1u << id);
+}
+
+/* the half of the buffer control word this transaction uses */
+static int half_of(struct usbboot *u, int id, u32 bc, u32 ec)
+{
+    if (bc & BC_RESET) /* the program starts again from buffer 0 */
+        u->sel[id] = 0;
+    return (ec & EC_DOUBLE) ? u->sel[id] : 0;
+}
+
+static int ctrl_out(struct usbboot *u, int addr, int ep, int data1, const u8 *data, u32 len)
+{
+    struct dpram *d = dpram_of(u);
+    u32 bc_off, buf, ec, bc, hv;
+    int id = ep * 2 + 1, half;
+    (void)data1;
+    if (!ctrl_pullup(u) || addr != (int)(rd(u, R_ADDR) & 0x7fu) || !d)
+        return ESK_USB_NONE;
+    if (ep < 0 || ep > 15 || !ep_words(u, ep, 1, &bc_off, &buf, &ec))
+        return ESK_USB_NONE;
+    bc = dp_word(u, bc_off);
+    if ((bc & BC_STALL) && (ep != 0 || (rd(u, R_EP_STALL_ARM) & 2u)))
+        return ESK_USB_STALL;
+    half = half_of(u, id, bc, ec);
+    hv = bc >> (16 * half) & 0xffffu;
+    if (!(hv & BC_AVAIL) || (hv & BC_FULL))
+        return ESK_USB_NAK;
+    if (len > 64u)
+        len = 64u;
+    if (buf + (u32)half * 64u + len <= sizeof d->mem)
+        memcpy(d->mem + buf + (u32)half * 64u, data, len);
+    hv = (hv & ~(BC_AVAIL | BC_LEN | BC_RESET)) | BC_FULL | len;
+    bc = (bc & ~(0xffffu << (16 * half))) | hv << (16 * half);
+    dp_set(u, bc_off, bc & ~(u32)BC_RESET);
+    buffer_done(u, id, ec, half, len < 64u);
+    ctrl_update(u);
+    return ESK_USB_ACK;
+}
+
+static int ctrl_in(struct usbboot *u, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1)
+{
+    struct dpram *d = dpram_of(u);
+    u32 bc_off, buf, ec, bc, hv, n;
+    int id = ep * 2, half;
+    if (!ctrl_pullup(u) || addr != (int)(rd(u, R_ADDR) & 0x7fu) || !d)
+        return ESK_USB_NONE;
+    if (ep < 0 || ep > 15 || !ep_words(u, ep, 0, &bc_off, &buf, &ec))
+        return ESK_USB_NONE;
+    bc = dp_word(u, bc_off);
+    if ((bc & BC_STALL) && (ep != 0 || (rd(u, R_EP_STALL_ARM) & 1u)))
+        return ESK_USB_STALL;
+    half = half_of(u, id, bc, ec);
+    hv = bc >> (16 * half) & 0xffffu;
+    if (!(hv & BC_AVAIL) || !(hv & BC_FULL))
+        return ESK_USB_NAK;
+    n = hv & BC_LEN;
+    if (n > cap)
+        n = cap;
+    if (buf + (u32)half * 64u + n <= sizeof d->mem)
+        memcpy(data, d->mem + buf + (u32)half * 64u, n);
+    *len = n;
+    *data1 = (hv & BC_PID) != 0;
+    hv &= ~(BC_AVAIL | BC_FULL | BC_RESET);
+    bc = (bc & ~(0xffffu << (16 * half))) | hv << (16 * half);
+    dp_set(u, bc_off, bc & ~(u32)BC_RESET);
+    buffer_done(u, id, ec, half, n < 64u);
+    ctrl_update(u);
+    return ESK_USB_ACK;
+}
+
+/* ---- the cable's end: the bootrom's device while in its USB boot, else the program's */
+
+static int pullup(void *ctx)
+{
+    struct usbboot *u = (struct usbboot *)ctx;
+    if (u->active)
+        return boot_pullup(ctx);
+    return ctrl_pullup(u) ? ESK_USB_FULL_SPEED : ESK_USB_DETACHED;
+}
+
+static void bus(void *ctx, int ev, u32 frame)
+{
+    struct usbboot *u = (struct usbboot *)ctx;
+    if (u->active)
+        boot_bus(ctx, ev, frame);
+    else
+        ctrl_bus(u, ev, frame);
+}
+
+static int setup(void *ctx, int addr, int ep, const u8 d[8])
+{
+    struct usbboot *u = (struct usbboot *)ctx;
+    return u->active ? boot_setup(ctx, addr, ep, d) : ctrl_setup(u, addr, ep, d);
+}
+
+static int out(void *ctx, int addr, int ep, int data1, const u8 *data, u32 len)
+{
+    struct usbboot *u = (struct usbboot *)ctx;
+    return u->active ? boot_out(ctx, addr, ep, data1, data, len) : ctrl_out(u, addr, ep, data1, data, len);
+}
+
+static int in(void *ctx, int addr, int ep, u8 *data, u32 cap, u32 *len, int *data1)
+{
+    struct usbboot *u = (struct usbboot *)ctx;
+    return u->active ? boot_in(ctx, addr, ep, data, cap, len, data1) : ctrl_in(u, addr, ep, data, cap, len, data1);
+}
+
 void esk_rp2040_usb_boot(struct esk_mach *s)
 {
     struct usbboot *u = of(s);
@@ -554,14 +866,68 @@ int esk_rp2040_in_usb_boot(struct esk_mach *s)
     return u && u->active;
 }
 
-static u32 usb_read(void *ctx, u32 off, int n) { return esk_rf_read(((struct usbboot *)ctx)->p, off, n); }
-static void usb_write(void *ctx, u32 off, int n, u32 v) { esk_rf_write(((struct usbboot *)ctx)->p, off, n, v); }
+static u32 usb_read(void *ctx, u32 off, int n)
+{
+    u32 v;
+    if (*(int *)ctx == K_DPRAM) {
+        struct dpram *d = (struct dpram *)ctx;
+        if (off < 0x100u)
+            return esk_rf_read(d->p, off, n);
+        v = 0;
+        if (off + (u32)n <= sizeof d->mem)
+            memcpy(&v, d->mem + off, (size_t)n); /* little-endian, as the bus */
+        return v;
+    } else {
+        struct usbboot *u = (struct usbboot *)ctx;
+        v = esk_rf_read(u->p, off, n);
+        if ((off & ~3u) == R_SOF_RD && u->dev_sof) { /* reading the frame clears DEV_SOF */
+            u->dev_sof = 0;
+            ctrl_update(u);
+        }
+        return v;
+    }
+}
+
+static void usb_write(void *ctx, u32 off, int n, u32 v)
+{
+    if (*(int *)ctx == K_DPRAM) {
+        struct dpram *d = (struct dpram *)ctx;
+        if (off < 0x100u)
+            esk_rf_write(d->p, off, n, v);
+        else if (off + (u32)n <= sizeof d->mem)
+            memcpy(d->mem + off, &v, (size_t)n);
+    } else {
+        struct usbboot *u = (struct usbboot *)ctx;
+        int pull;
+        esk_rf_write(u->p, off, n, v);
+        if ((off & ~3u) == R_EP_ABORT) /* nothing is under way between transactions: done at once */
+            hw(u, R_EP_ABORT_DONE, rd(u, R_EP_ABORT_DONE) | rd(u, R_EP_ABORT));
+        ctrl_update(u);
+        pull = ctrl_pullup(u);
+        if (pull != u->pull_was && !u->active) {
+            u->pull_was = pull;
+            if (u->s->host.usb_changed)
+                u->s->host.usb_changed(u->s->host.ctx);
+        }
+    }
+}
 
 /* a chip reset: the bootrom decides again whether it boots USB (boot.c
  * calls esk_rp2040_usb_leave, then esk_rp2040_usb_boot when it does) */
 static void usb_reset(void *ctx)
 {
     struct usbboot *u = (struct usbboot *)ctx;
+    if (u->kind == K_DPRAM) {
+        memset(((struct dpram *)ctx)->mem, 0, sizeof ((struct dpram *)ctx)->mem);
+        return;
+    }
+    u->dev_sof = 0;
+    memset(u->sel, 0, sizeof u->sel);
+    if (u->pull_was) {
+        u->pull_was = 0;
+        if (u->s->host.usb_changed)
+            u->s->host.usb_changed(u->s->host.ctx);
+    }
     u->addr = u->new_addr = u->config = 0;
     u->bot = B_CBW;
     u->busy_until = 0;
@@ -583,11 +949,22 @@ const struct esk_dev_ops esk_rp2040_usb_ops = { "rp2040-usb", usb_read, usb_writ
 void *esk_rp2040_usb_create(struct esk_mach *s, struct esk_rf_periph *p)
 {
     struct usbboot *u;
+    if (!strcmp(p->name, "USB_DPRAM")) {
+        struct dpram *d = (struct dpram *)esk_mach_alloc(s, sizeof *d);
+        if (!d)
+            return 0;
+        d->kind = K_DPRAM;
+        d->p = p;
+        p->model_rsv = 1; /* the buffers past the control words */
+        return d;
+    }
     if (strcmp(p->name, "USB") != 0)
-        return 0; /* the DPRAM: plain memory, its register file answers */
+        return 0;
     u = (struct usbboot *)esk_mach_alloc(s, sizeof *u);
     if (!u)
         return 0;
+    u->kind = K_USB;
+    u->irq = esk_rf_irq(p, "USBCTRL");
     u->s = s;
     u->p = p;
     s->usb.ctx = u;

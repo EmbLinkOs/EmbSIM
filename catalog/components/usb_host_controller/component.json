@@ -255,6 +255,21 @@
       "name": "copy_error",
       "type": "string",
       "doc": "Why the copy failed"
+    },
+    {
+      "name": "cdc_open",
+      "type": "boolean",
+      "doc": "The device's CDC ACM serial port is open (line coding set, DTR raised)"
+    },
+    {
+      "name": "cdc_text",
+      "type": "string",
+      "doc": "What came from the serial port (the last 4 KiB)"
+    },
+    {
+      "name": "cdc_bytes",
+      "type": "integer",
+      "doc": "Bytes that came from the serial port"
     }
   ],
   "model": {
@@ -287,14 +302,14 @@
   },
   "fidelity": {
     "functional": {
-      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor. Suspend (the frames stop, SET_FEATURE(DEVICE_REMOTE_WAKEUP) sent first where the configuration offers it) and resume (20 ms of resume signalling, TDRSMDN, then frames and CLEAR_FEATURE); the device's remote wakeup answered by the host's own resume; the cable sensed by VBUS at its device end, a disconnect and a new attach as it is pulled and put back. DFU 1.1 with ST's DfuSe 1.1a extension (UM0424), as dfu-util drives it: the image a DfuSe file (UM0391: its targets' elements and addresses) or a raw binary; the interface string's memory layout read and honoured (read-only segments refused), each sector the image touches erased (0x41), the address pointer set (0x21), wTransferSize blocks from wBlockNum 2 with DFU_GETSTATUS after each, its bwPollTimeout waited out while the device is busy, DFU_CLRSTATUS for an error left from before, and :leave's zero-length DNLOAD and manifestation, the device going away counted as its leaving. Mass storage (bulk only transport, SCSI): a file copied onto the drive as a file manager does on a FAT16 volume (INQUIRY and READ CAPACITY, the boot sector, the FAT and the root directory read, clusters taken after the last one in use, the FAT's copies and the directory entry written, then the data in WRITE(10) commands of up to 64 KiB), NAKs retried every 125 us; a drive that goes away once its last command is answered (a UF2 bootloader's reboot) counts as copied.",
+      "claims": "A USB 2.0 root port at full speed as the device on its cable sees it, carried as transactions (engine/usb.h, ADR-031): the attach debounce (100 ms), port resets of reset_ms (50 ms) and the 10 ms reset recovery, SOFs every 1.000 ms with their frame number; enumeration as Windows and Linux order it: GET_DESCRIPTOR(device, 64) at address 0, a second reset, SET_ADDRESS and its 2 ms recovery, the device descriptor, the configuration (9 bytes, then wTotalLength), the language table and the manufacturer, product and serial strings, SET_CONFIGURATION; each HID interface's SET_IDLE (a STALL allowed) and report descriptor, then its interrupt IN endpoint polled every bInterval frames at the frame's start. Control transfers by SETUP, IN packets of bMaxPacketSize0 with their data toggles checked, and the status stage; NAKs retried, three time-outs or a STALL or 5 s failing the request; each transaction's bits at 12 Mbit/s and no transaction across a frame's start. A boot mouse's reports move its cursor. Suspend (the frames stop, SET_FEATURE(DEVICE_REMOTE_WAKEUP) sent first where the configuration offers it) and resume (20 ms of resume signalling, TDRSMDN, then frames and CLEAR_FEATURE); the device's remote wakeup answered by the host's own resume; the cable sensed by VBUS at its device end, a disconnect and a new attach as it is pulled and put back. DFU 1.1 with ST's DfuSe 1.1a extension (UM0424), as dfu-util drives it: the image a DfuSe file (UM0391: its targets' elements and addresses) or a raw binary; the interface string's memory layout read and honoured (read-only segments refused), each sector the image touches erased (0x41), the address pointer set (0x21), wTransferSize blocks from wBlockNum 2 with DFU_GETSTATUS after each, its bwPollTimeout waited out while the device is busy, DFU_CLRSTATUS for an error left from before, and :leave's zero-length DNLOAD and manifestation, the device going away counted as its leaving. Mass storage (bulk only transport, SCSI): a file copied onto the drive as a file manager does on a FAT16 volume (INQUIRY and READ CAPACITY, the boot sector, the FAT and the root directory read, clusters taken after the last one in use, the FAT's copies and the directory entry written, then the data in WRITE(10) commands of up to 64 KiB), NAKs retried every 125 us; a drive that goes away once its last command is answered (a UF2 bootloader's reboot) counts as copied. CDC ACM (a USB serial port) as a terminal opens it: SET_LINE_CODING (115200 8N1) and SET_CONTROL_LINE_STATE (DTR and RTS) once configured, the bulk IN endpoint read every frame into cdc_text, and the cdc_send input's bytes sent on bulk OUT.",
       "omissions": [
-        "class drivers beyond HID's polling and DFU's download: a CDC or mass-storage device is configured, then left idle (no USB/IP bridge to the computer yet, ADR-031); DFU's upload, DETACH from run-time mode and plain DFU 1.1 devices without DfuSe's commands",
         "hubs and more than one device on a cable; low-speed devices",
         "J, K and SE0 levels on D+ and D- (the pins carry no signal: the cable is found by the net D+ is on)",
         "reports of HID devices that are not boot mice are kept whole but not decoded",
         "LPM (L1) and selective suspend timers: a suspend happens when the `suspend` input asks",
-        "mass storage: one file into the root directory under its 8.3 name, free clusters looked for in the FAT's first sector only, no long file names, no REQUEST SENSE after a failed command"
+        "mass storage: one file into the root directory under its 8.3 name, free clusters looked for in the FAT's first sector only, no long file names, no REQUEST SENSE after a failed command",
+        "CDC ACM's notifications (the interrupt endpoint), BREAK and line coding changes after opening; the port is not yet a serial port on the computer (ADR-032)"
       ]
     },
     "timed": {
@@ -354,6 +369,11 @@
       "type": "boolean",
       "default": false,
       "doc": "Copy copy_file onto the device's drive (once it is configured), as a file dropped on it"
+    },
+    {
+      "name": "cdc_send",
+      "type": "string",
+      "doc": "Text the terminal sends on the device's CDC ACM serial port (bulk OUT), once it is open"
     }
   ]
 }

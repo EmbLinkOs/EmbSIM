@@ -417,6 +417,14 @@ static u32 cycles_of(struct esk_mach *s, double seconds)
     return c > 4e9 ? 0xffffffffu : (u32)c;
 }
 
+/* a register of the SSI written as the bootrom writes it (its model sees it) */
+static void ssi_write(struct esk_mach *s, u32 off, u32 v)
+{
+    struct esk_rf_periph *p = s->rf ? esk_rf_periph(s->rf, "SSI") : 0;
+    if (p && p->ops && p->ops->write)
+        p->ops->write(p->ctx, off, 4, v);
+}
+
 static u32 flash_op(struct esk_mach *s, int f, struct esk_rom_call *c)
 {
     struct esk_region *fl = esk_bus_region(&s->bus, FLASH_BASE, FLASH_SIZE);
@@ -496,7 +504,26 @@ static int rom_call(struct esk_mach *s, u32 pc, unsigned n, struct esk_rom_call 
     case F_MEMSET: case F_MEMSET4: case F_MEMCPY: case F_MEMCPY44:
         c->cycles = memops(s, (int)n, c);
         break;
-    case F_CONNECT_FLASH: case F_EXIT_XIP: case F_FLUSH_CACHE: case F_ENTER_XIP:
+    case F_EXIT_XIP:
+        /* the SSI left as the bootrom's flash_exit_xip leaves it: serial,
+         * 8-bit frames out and in, the flash selected, so the program's own
+         * commands (flash_do_cmd: the unique ID, the JEDEC ID) reach it */
+        ssi_write(s, 0x08, 0);
+        ssi_write(s, 0x00, 7u << 16); /* DFS_32 8 bits, TMOD transmit and receive, SPI_FRF standard */
+        ssi_write(s, 0x10, 1);
+        ssi_write(s, 0x08, 1);
+        c->cycles = 100;
+        break;
+    case F_ENTER_XIP:
+        /* flash_enter_cmd_xip: serial XIP with the 0x03 read, 24-bit addresses */
+        ssi_write(s, 0x08, 0);
+        ssi_write(s, 0x00, 31u << 16 | 3u << 8); /* DFS_32 32 bits, TMOD EEPROM read */
+        ssi_write(s, 0xf4, 0x03u << 24 | 2u << 8 | 6u << 2); /* XIP_CMD 0x03, INST_L 8 bits, ADDR_L 24 bits */
+        ssi_write(s, 0x04, 0);
+        ssi_write(s, 0x08, 1);
+        c->cycles = 100;
+        break;
+    case F_CONNECT_FLASH: case F_FLUSH_CACHE:
         c->cycles = 100;
         break;
     case F_ERASE: case F_PROGRAM: c->cycles = flash_op(s, (int)n, c); break;

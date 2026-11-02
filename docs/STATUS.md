@@ -437,6 +437,22 @@ December, noon: the edge at x = -29 mm where the frame's top bar puts it at
 +24 mm, half a degree of elevation). Not yet: floor shadows outside the
 table's 2 m shadow frame, physics.
 
+## USB for a Pico's own program (ADR-031, 2026-11-02)
+
+The RP2040's USB controller works in device mode as TinyUSB drives it: the
+pull-up from MAIN_CTRL and SIE_CTRL, bus reset and SOF, SETUP into the
+DPRAM, each endpoint's buffer control words (single and double buffered,
+the RESET bit, BUFF_STATUS per buffer or per pair), STALL with EP_STALL_ARM,
+EP_ABORT, INTR, INTS and USBCTRL_IRQ. The Pico SDK's stdio over USB, built
+with the unmodified SDK and TinyUSB, enumerates on a computer's port as
+2e8a:000a "Raspberry Pi" "Pico" with the flash's unique ID as its serial
+number, and the port (`emblink/usb_host`) opens its CDC ACM serial port as
+a terminal does: the greeting arrives, and what is typed comes back in upper
+case (`tests/vendor/pico-sdk/apps/usb_hello`, 6/6). Not yet: the CDC port as
+a serial port on the computer itself (ADR-032), host mode, isochronous
+endpoints, suspend and remote wakeup on the RP2040, MicroPython (next: its
+rp2 port uses this USB stack).
+
 ## The Pico's USB boot and UF2 files (ADR-031, 2026-11-02)
 
 The Pico is programmed as a real one is: with BOOTSEL held at reset (the

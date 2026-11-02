@@ -74,7 +74,9 @@ enum { S_DETACHED, S_ATTACHED, S_DEFAULT, S_ADDRESS, S_CONFIGURED, S_ERROR };
 enum { C_SETUP, C_DATA_IN, C_DATA_OUT, C_STATUS_OUT, C_STATUS_IN };
 enum {
     E_DESC64, E_SET_ADDRESS, E_DESC18, E_CFG9, E_CFG, E_LANG, E_STR_MANU, E_STR_PROD, E_STR_SER, E_SET_CONFIG,
-    E_HID_IDLE, E_HID_REPORT, E_DONE, E_WAKE_ON, E_WAKE_OFF, E_DFU_LAYOUT, E_DFU_STATUS, E_DFU_CLEAR, E_DFU_DNLOAD
+    E_HID_IDLE, E_HID_REPORT, E_DONE, E_WAKE_ON, E_WAKE_OFF, E_CDC_LINE, E_CDC_STATE,
+    /* the DFU requests come last: a step from E_DFU_LAYOUT on is DFU's */
+    E_DFU_LAYOUT, E_DFU_STATUS, E_DFU_CLEAR, E_DFU_DNLOAD
 };
 
 static const char *const state_names[] = { "detached", "attached", "default", "address", "configured", "error" };
@@ -186,6 +188,16 @@ typedef struct uh_state {
         int result;     /* 0 none yet, 1 copied, -1 failed */
     } msc;
     char copy_path[256];
+    /* CDC ACM (a USB serial port): its interfaces, endpoints, and what came
+     * and what is to go */
+    struct {
+        int present, intf, ep_in, ep_out, mps, open, due, tin, tout;
+        char text[4096];
+        size_t len;
+        uint64_t bytes;
+        uint8_t tx[256];
+        uint32_t tx_len;
+    } cdc;
     /* what came */
     uint64_t reports;
     uint8_t last[64];
@@ -267,11 +279,13 @@ static unsigned u16le(const uint8_t *p) { return (unsigned)p[0] | (unsigned)p[1]
 static void parse_config(uh_state *s)
 {
     uint32_t i = 0;
-    int intf = -1, is_hid = 0, is_dfu = 0, is_msc = 0, proto = 0;
+    int intf = -1, is_hid = 0, is_dfu = 0, is_msc = 0, is_cdc_data = 0, proto = 0;
     uint32_t rlen = 0;
     s->nhid = 0;
     s->dfu.present = 0;
     s->msc.present = 0;
+    s->cdc.present = 0;
+    s->cdc.ep_in = s->cdc.ep_out = 0;
     s->cfg_value = s->cfg_len >= 6 ? s->cfg[5] : 1;
     while (i + 2u <= s->cfg_len && s->cfg[i] >= 2) {
         const uint8_t *d = s->cfg + i;
@@ -285,6 +299,11 @@ static void parse_config(uh_state *s)
             rlen = 0;
             is_dfu = d[5] == 0xFE && d[6] == 1;
             is_msc = d[5] == 8 && d[6] == 6 && d[7] == 0x50 && !s->msc.present;
+            if (d[5] == 2 && d[6] == 2 && !s->cdc.present) { /* communications, abstract control model */
+                s->cdc.present = 1;
+                s->cdc.intf = intf;
+            }
+            is_cdc_data = d[5] == 0x0A && s->cdc.present && !s->cdc.ep_in;
             if (is_msc) {
                 s->msc.intf = intf;
                 s->msc.ep_in = s->msc.ep_out = 0;
@@ -301,6 +320,12 @@ static void parse_config(uh_state *s)
         } else if (d[1] == 0x21 && len >= 9 && is_hid) { /* HID */
             if (d[6] == 0x22)
                 rlen = u16le(d + 7);
+        } else if (d[1] == 5 && len >= 7 && is_cdc_data && (d[3] & 3) == 2) { /* the data interface's bulk pair */
+            if (d[2] & 0x80)
+                s->cdc.ep_in = d[2] & 0x0f;
+            else
+                s->cdc.ep_out = d[2] & 0x0f;
+            s->cdc.mps = (int)(u16le(d + 4) & 0x7ffu);
         } else if (d[1] == 5 && len >= 7 && is_msc && (d[3] & 3) == 2) { /* a bulk endpoint of the drive */
             if (d[2] & 0x80)
                 s->msc.ep_in = d[2] & 0x0f;
@@ -395,6 +420,8 @@ static const char *step_name(int step)
     case E_DFU_STATUS: return "DFU_GETSTATUS";
     case E_DFU_CLEAR: return "DFU_CLRSTATUS";
     case E_DFU_DNLOAD: return "DFU_DNLOAD";
+    case E_CDC_LINE: return "SET_LINE_CODING";
+    case E_CDC_STATE: return "SET_CONTROL_LINE_STATE";
     default: return "?";
     }
 }
@@ -402,6 +429,8 @@ static const char *step_name(int step)
 static void start_reset(uh_state *s, int then);
 
 /* the next request of enumeration, from `step` on */
+static void cdc_opened(uh_state *s);
+
 static void begin(uh_state *s, int step)
 {
     for (;;) {
@@ -433,7 +462,7 @@ static void begin(uh_state *s, int step)
         case E_SET_CONFIG: control(s, 0x00, 9, (unsigned)s->cfg_value, 0, 0); return;
         case E_HID_IDLE:
             if (s->hid_i >= s->nhid) {
-                step = E_DONE;
+                step = s->cdc.present && s->cdc.ep_in && s->cdc.ep_out ? E_CDC_LINE : E_DONE;
                 continue;
             }
             control(s, 0x21, 0x0A, 0, (unsigned)s->hid[s->hid_i].intf, 0);
@@ -442,6 +471,12 @@ static void begin(uh_state *s, int step)
             control(s, 0x81, 6, 0x2200, (unsigned)s->hid[s->hid_i].intf,
                     s->hid[s->hid_i].report_len ? s->hid[s->hid_i].report_len : 255u);
             return;
+        case E_CDC_LINE: { /* SET_LINE_CODING: 115200 baud, 8N1, as a terminal opens the port */
+            static const uint8_t lc[7] = { 0x00, 0xc2, 0x01, 0x00, 0, 0, 8 };
+            control_out(s, 0x21, 0x20, 0, (unsigned)s->cdc.intf, lc, 7);
+            return;
+        }
+        case E_CDC_STATE: control(s, 0x21, 0x22, 3, (unsigned)s->cdc.intf, 0); return; /* DTR and RTS */
         case E_WAKE_ON: control(s, 0x00, 3, 1, 0, 0); return;
         case E_WAKE_OFF: control(s, 0x00, 1, 1, 0, 0); return;
         default:
@@ -584,6 +619,13 @@ static void done(uh_state *s)
         s->wake_armed = 0;
         s->step = E_DONE;
         return;
+    case E_CDC_LINE:
+        break;
+    case E_CDC_STATE:
+        cdc_opened(s);
+        s->step = E_DONE;
+        s->ct.on = 0;
+        return;
     case E_HID_REPORT:
         if (s->hid_i == 0) {
             memcpy(s->rep, b, got);
@@ -604,8 +646,25 @@ static void done(uh_state *s)
 }
 
 /* a request's STALL: the ones that may be refused go on */
+static void cdc_opened(uh_state *s)
+{
+    s->cdc.open = 1;
+    s->cdc.tin = s->cdc.tout = 0;
+    say(s, "CDC ACM interface %d open: 115200 8N1, DTR and RTS", s->cdc.intf);
+}
+
 static void stalled(uh_state *s)
 {
+    if (s->step == E_CDC_LINE || s->step == E_CDC_STATE) { /* a port that refuses them is used all the same */
+        s->ct.on = 0;
+        if (s->step == E_CDC_LINE) {
+            begin(s, E_CDC_STATE);
+        } else {
+            cdc_opened(s);
+            s->step = E_DONE;
+        }
+        return;
+    }
     if (s->step >= E_DFU_LAYOUT) {
         fail(s, "STALL");
         return;
@@ -745,6 +804,52 @@ static es_time_t poll_hid(uh_state *s, esk_usb_dev *d, uh_hid *h, es_time_t now)
     return esk_usb_fs_time(-1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
 }
 
+
+/* ---- CDC ACM: the device's serial port, as a terminal on the computer
+ * uses it: once a frame the bulk IN endpoint is read (all it has, a
+ * packet a transaction) and what is to be sent goes out on bulk OUT */
+static es_time_t poll_cdc(uh_state *s, esk_usb_dev *d, es_time_t now)
+{
+    uint8_t pkt[64];
+    uint32_t len = 0, mps = s->cdc.mps > 0 && s->cdc.mps <= 64 ? (uint32_t)s->cdc.mps : 64u, i;
+    int pid = 0, r;
+    if (s->cdc.tx_len) {
+        uint32_t n = s->cdc.tx_len < mps ? s->cdc.tx_len : mps;
+        r = d->out(d->ctx, s->addr, s->cdc.ep_out, s->cdc.tout, s->cdc.tx, n, now);
+        if (r == ESK_USB_ACK) {
+            s->cdc.tout ^= 1;
+            memmove(s->cdc.tx, s->cdc.tx + n, s->cdc.tx_len - n);
+            s->cdc.tx_len -= n;
+            return esk_usb_fs_time((int)n, 1);
+        }
+        if (r == ESK_USB_STALL) {
+            say(s, "CDC OUT endpoint %d stalls", s->cdc.ep_out);
+            s->cdc.tx_len = 0;
+        }
+    }
+    r = d->in(d->ctx, s->addr, s->cdc.ep_in, pkt, mps, &len, &pid, now);
+    if (r == ESK_USB_ACK) {
+        if ((pid != 0) == (s->cdc.tin != 0)) {
+            s->cdc.tin ^= 1;
+            s->cdc.bytes += len;
+            for (i = 0; i < len; i++) {
+                if (s->cdc.len + 1u >= sizeof s->cdc.text) { /* the oldest half goes */
+                    memmove(s->cdc.text, s->cdc.text + sizeof s->cdc.text / 2, s->cdc.len - sizeof s->cdc.text / 2);
+                    s->cdc.len -= sizeof s->cdc.text / 2;
+                }
+                s->cdc.text[s->cdc.len++] = (char)pkt[i];
+            }
+            s->cdc.text[s->cdc.len] = 0;
+        }
+        if (len < mps)
+            s->cdc.due = 0; /* a short packet: all it had */
+        return esk_usb_fs_time((int)len, 1);
+    }
+    s->cdc.due = 0; /* a NAK: nothing until the next frame */
+    if (r == ESK_USB_STALL)
+        say(s, "CDC IN endpoint %d stalls", s->cdc.ep_in);
+    return esk_usb_fs_time(-1, r != ESK_USB_NONE) + (r == ESK_USB_NONE ? TIMEOUT_EXTRA_PS : 0);
+}
 
 /* ---- mass storage: bulk only transport and SCSI (USB MSC BOT 1.0, SPC/SBC) ----
  *
@@ -1467,6 +1572,8 @@ static void detach(uh_state *s)
         dfu_fail(s, "the device went away");
     }
     s->msc.present = 0;
+    s->cdc.open = s->cdc.due = 0;
+    s->cdc.tx_len = 0;
     if (s->msc.job == J_DATA && s->msc.sent >= s->msc.file_len && s->msc.phase == M_IDLE) {
         /* the last command was answered, then the drive went (a UF2
          * bootloader reboots once a file is all written) */
@@ -1561,6 +1668,8 @@ static void run(uh_state *s)
         d->bus(d->ctx, ESK_USB_SOF, s->frame, now);
         s->next_sof += FRAME_PS;
         s->busy_until = now + esk_usb_fs_time(-1, 0);
+        if (s->cdc.open && s->state == S_CONFIGURED)
+            s->cdc.due = 1;
         for (i = 0; i < s->nhid && s->state == S_CONFIGURED; i++) {
             uh_hid *h = &s->hid[i];
             if (s->hid_i > i && ((s->frame - h->next_frame) & 0x7ffu) < 0x400u) {
@@ -1584,6 +1693,8 @@ static void run(uh_state *s)
                 d_t = poll_hid(s, d, &s->hid[i], now);
                 break;
             }
+        if (!d_t && s->cdc.due && s->cdc.open)
+            d_t = poll_cdc(s, d, now);
         if (!d_t && !s->ct.on && s->dfu_again) {
             if (now < s->dfu.poll_until) {
                 kick(s, s->dfu.poll_until < s->next_sof ? s->dfu.poll_until : s->next_sof);
@@ -1674,6 +1785,15 @@ static es_status uh_set(esk_comp *c, const char *input, const esk_json *value)
             s->msc.result = 0;
             kick(s, esk_comp_now(c));
         }
+        return ES_OK;
+    }
+    if (!strcmp(input, "cdc_send") && esk_json_str(value)) {
+        size_t n = value->u.string.len;
+        if (n > sizeof s->cdc.tx - s->cdc.tx_len)
+            n = sizeof s->cdc.tx - s->cdc.tx_len;
+        memcpy(s->cdc.tx + s->cdc.tx_len, value->u.string.data, n);
+        s->cdc.tx_len += (uint32_t)n;
+        kick(s, esk_comp_now(c));
         return ES_OK;
     }
     if (!strcmp(input, "suspend") && value->type == ESK_JSON_BOOL) {
@@ -1833,6 +1953,9 @@ static void uh_observe(esk_comp *c, esk_json *out)
     esk_json_set_integer(a, out, "dfu_bytes", (int64_t)s->dfu.bytes);
     esk_json_set_integer(a, out, "dfu_erased", (int64_t)s->dfu.erased);
     esk_json_set_string(a, out, "dfu_error", s->dfu.why);
+    esk_json_set_bool(a, out, "cdc_open", s->cdc.open != 0);
+    esk_json_set_string(a, out, "cdc_text", s->cdc.text);
+    esk_json_set_integer(a, out, "cdc_bytes", (int64_t)s->cdc.bytes);
     esk_json_set_string(a, out, "copy_state", job_names[s->msc.job]);
     esk_json_set_integer(a, out, "copy_bytes", (int64_t)s->msc.bytes);
     esk_json_set_string(a, out, "copy_result", s->msc.result > 0 ? "copied" : s->msc.result < 0 ? "failed" : "");

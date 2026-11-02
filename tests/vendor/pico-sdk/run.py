@@ -7,7 +7,7 @@ does on the part).
 
 The SDK is not vendored: --sdk names a checkout of
 https://github.com/raspberrypi/pico-sdk (its submodules are not needed:
-the applications use no USB), CI's at a pinned release. Each application
+usb_hello's needs lib/tinyusb), CI's at a pinned release. Each application
 here (apps/<name>/: its CMakeLists.txt and sources, as an SDK project has
 them) is configured with the SDK's own CMake (PICO_BOARD=pico, Release)
 and built with Ninja and arm-none-eabi-gcc; its ELF then runs this
@@ -61,7 +61,8 @@ def main() -> int:
         bad = 0
         for name in names:
             elf = build_app(sdk, HERE / "apps" / name, work)
-            bad += not run_scenario(Path(args.embsim), HERE / "project.json", name, elf,
+            own = HERE / "apps" / name / "project.json"  # an application's own circuit, else the shared one
+            bad += not run_scenario(Path(args.embsim), own if own.is_file() else HERE / "project.json", name, elf,
                                     HERE / "apps" / name / "scenario.json", work)
     return 1 if bad else 0
 

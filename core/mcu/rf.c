@@ -1077,6 +1077,12 @@ static void alias_write(struct esk_rf_reg *r, int kind, u32 v)
         else
             keep = f->mwv >= ESK_MWV_0CLR && f->mwv <= ESK_MWV_0TOG ? fm : 0;
         to = kind == 1 ? ~old : kind == 2 ? ~UINT64_C(0) : 0;
+        /* a write-1-to-clear bit an alias names is cleared whatever the
+         * alias: the alias strobes the bit's write, and that write clears
+         * it (the Pico SDK's TinyUSB clears the RP2040's BUFF_STATUS and
+         * SIE_STATUS through the clear alias) */
+        if (f->mwv == ESK_MWV_1CLR)
+            to = ~UINT64_C(0);
         w |= (keep & ~hit) | (to & hit & fm);
     }
     if (p->ops->write)

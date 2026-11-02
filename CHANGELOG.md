@@ -5,6 +5,26 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### USB for a Pico's own program: TinyUSB and stdio over USB (ADR-031)
+
+- The RP2040's USB controller in device mode, as TinyUSB drives it: the
+  pull-up, bus reset and SOF, SETUP into the DPRAM, each endpoint's buffer
+  control words (single and double buffered), STALL, BUFF_STATUS, EP_ABORT,
+  the interrupt. The Pico SDK's stdio over USB enumerates as 2e8a:000a
+  "Raspberry Pi" "Pico" and talks through a CDC ACM serial port
+  (`tests/vendor/pico-sdk/apps/usb_hello`, on the unmodified SDK and
+  TinyUSB).
+- `emblink/usb_host` opens a CDC ACM serial port as a terminal does (line
+  coding, DTR) and reads and writes it (`cdc_text`, `cdc_send`).
+- A write-1-to-clear bit hit by an RP2040 atomic alias (TinyUSB's
+  `usb_hw_clear`) is cleared; the bootrom's `flash_exit_xip` and
+  `flash_enter_cmd_xip` set the SSI as the bootrom does, so the flash's
+  unique ID (the USB serial number) is read.
+- Speed: the RP2040's clock frequencies are kept until a clock changes
+  (the watchdog's tick asked for them by name at every step); a program
+  polling in a tight loop runs about 3.5 times slower than the part instead
+  of 40 times.
+
 ### The Pico programmed with BOOTSEL and a UF2 file (ADR-031)
 
 - The RP2040's USB boot, as its bootrom does it: BOOTSEL held at reset (the

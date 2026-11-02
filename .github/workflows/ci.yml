@@ -101,6 +101,10 @@ jobs:
           git init -q "$RUNNER_TEMP/pico-sdk"
           git -C "$RUNNER_TEMP/pico-sdk" fetch -q --depth 1 https://github.com/raspberrypi/pico-sdk.git 079c6f39023649b154152db30f1d781e884879bc
           git -C "$RUNNER_TEMP/pico-sdk" checkout -q FETCH_HEAD
+          # TinyUSB at the commit the SDK pins (lib/tinyusb), for usb_hello's stdio over USB
+          git init -q "$RUNNER_TEMP/pico-sdk/lib/tinyusb"
+          git -C "$RUNNER_TEMP/pico-sdk/lib/tinyusb" fetch -q --depth 1 https://github.com/hathach/tinyusb.git 86ad6e56c1700e85f1c5678607a762cfe3aa2f47
+          git -C "$RUNNER_TEMP/pico-sdk/lib/tinyusb" checkout -q FETCH_HEAD
           python3 tests/vendor/pico-sdk/run.py --sdk "$RUNNER_TEMP/pico-sdk" --embsim build/${{ matrix.preset }}/bin/embsim
       - name: nrfx applications on Nordic's unmodified nrfx and MDK
         if: matrix.name == 'linux-gcc'
