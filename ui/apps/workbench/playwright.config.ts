@@ -23,7 +23,8 @@ export default defineConfig({
   // CPU (CI's SwiftShader) that would slow every spec running beside it, so it runs alone, last
   projects: [
     { name: 'workbench', testIgnore: /frame-budget\.spec\.ts/ },
-    { name: 'frame-budget', testMatch: /frame-budget\.spec\.ts/, dependencies: ['workbench'] },
+    // no trace: its DOM snapshot at every input walks the whole sheet and would be most of what a frame measures
+    { name: 'frame-budget', testMatch: /frame-budget\.spec\.ts/, dependencies: ['workbench'], use: { trace: 'off' } },
   ],
   webServer: {
     command: 'pnpm exec vite preview --port 4173 --strictPort --host 127.0.0.1',

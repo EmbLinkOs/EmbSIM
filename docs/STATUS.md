@@ -437,6 +437,28 @@ December, noon: the edge at x = -29 mm where the frame's top bar puts it at
 +24 mm, half a degree of elevation). Not yet: floor shadows outside the
 table's 2 m shadow frame, physics.
 
+## The schematic's frame times (ADR-028, 2026-11-02)
+
+`e2e/schematic-frame-budget.spec.ts` measures the schematic on a 500-part
+sheet (250 RC sections in a ladder, about 750 wires and 250 labels) opened
+as a person opens a file: each frame's main-thread work (input, style,
+layout, paint recording) while zooming 40 wheel notches, panning with the
+middle button and dragging a part, reported against ADR-028's 8.3 ms and
+16.7 ms. In headless Chromium on a shared CPU (SwiftShader): panning and
+dragging a part within 2 and 5 ms at the median, 15 to 45 ms at the 95th
+percentile depending on the load beside it; zooming 2 to 3 ms at the median
+and 27 to 30 ms at the 95th percentile, its slow frames those with the whole
+sheet in view, where Blink repaints every symbol at the new scale (the
+JavaScript in them is under 1 ms). So the schematic does not yet meet the
+budget while zoomed out on a large sheet: ADR-028's WebGL path for the
+schematic is the remedy, not yet built. A compositor-only transform was
+tried and measured worse on the main thread (the `<svg>`'s style change per
+frame costs more than the paint it saves), so it was not kept. The numbers
+are reported in CI, judged with `EMBSIM_FRAME_BUDGET=enforce` on a reference
+machine; the frame-budget specs run without Playwright's trace (its DOM
+snapshot at every input was most of a measured frame). Not yet: the
+instruments at their widest in the harness, a reference machine in CI.
+
 ## GPU frame times (2026-10-31)
 
 `GpuTimer` (`frames.ts`) times each frame on the GPU where the browser

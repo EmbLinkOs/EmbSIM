@@ -5,6 +5,16 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The schematic's frame times measured (ADR-028)
+
+- `e2e/schematic-frame-budget.spec.ts`: a 500-part sheet (250 RC sections,
+  about 750 wires and 250 labels) opened as a file, then zoomed, panned and
+  a part dragged, each frame's main-thread work measured (from the frame's
+  start to a message posted from it) and reported against 8.3 ms and
+  16.7 ms; `EMBSIM_FRAME_BUDGET=enforce` judges it on a reference machine.
+  The frame-budget specs run without Playwright's trace, whose DOM snapshot
+  at every input was most of what a frame measured.
+
 ### Damage and the fault mode (ADR-034)
 
 - An LED past its absolute maximum ratings: a warning above 30 mA DC or

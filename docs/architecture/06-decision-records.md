@@ -794,7 +794,14 @@ schematic's renderer and the instruments may need WebGL paths; the 3D view
 carries level-of-detail and a 2D fallback for machines that cannot meet the
 budget.
 
-**Status.** Accepted (owner, 2026-10-17); the harness is planned with M7.
+**Status.** Accepted (owner, 2026-10-17). The harness (2026-11-02): the 3D
+bench orbited in draft and quality (`e2e/frame-budget.spec.ts`) and the
+schematic zoomed, panned and dragged on a 500-part sheet
+(`e2e/schematic-frame-budget.spec.ts`), each frame's work reported in CI
+and judged with `EMBSIM_FRAME_BUDGET=enforce` on a reference machine. The
+schematic misses the budget zoomed out on a large sheet (Blink's repaint of
+every symbol, 27 to 30 ms at the 95th percentile on CI's CPU), so its WebGL
+path is the next step; the instruments join the harness after.
 
 ---
 
