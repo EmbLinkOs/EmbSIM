@@ -843,6 +843,17 @@ static int sw_input(const esk_adev *d)
     int closed = 0;
     if (!d->comp)
         return 0;
+    {
+        /* an injected fault (ADR-034): a cut conducts until it is active, a
+         * short only while it is */
+        const char *fault = esk_comp_param_str(d->comp, "fault", NULL);
+        if (fault) {
+            int start = 0, active;
+            (void)esk_comp_param_bool(d->comp, "initially_active", &start);
+            active = esk_comp_input_bool(d->comp, "active", start);
+            return strcmp(fault, "short") ? !active : active;
+        }
+    }
     if (esk_comp_input_bool(d->comp, "pressed", 0) || esk_comp_input_bool(d->comp, "closed", 0) ||
         esk_comp_input_bool(d->comp, "state", 0))
         closed = 1;
@@ -1054,6 +1065,11 @@ typedef struct diode_state {
     double id_trial, vd_trial;
     double emission_s, emission_level;
     es_time_t emission_at;
+    /* an LED's limits (ADR-034): its junction heated by its own power */
+    esk_thermal2 th;
+    double tj_max, if_max, vr_max, p_last;
+    es_time_t t_last, wake;
+    int damaged, over_if, over_vr, thermal;
 } diode_state;
 
 /* Integral of illustrative normalized emission over accepted electrical time.
@@ -1128,6 +1144,18 @@ static es_status led_setup(esk_adev *d)
         vf = 2.0;
     s->if_nom = pd(d, "if_nom", 0.02);
     s->vf = pd(d, "vf", vf);
+    /* the absolute maximum ratings and thermal resistances (Kingbright's
+     * WP7113 5 mm parts) and the heat capacities, which no datasheet gives */
+    s->tj_max = pd(d, "tj_max", 125.0);
+    s->if_max = pd(d, "if_max", 0.030);
+    s->vr_max = pd(d, "vr_max", 5.0);
+    s->thermal = d->comp != NULL;
+    esk_thermal2_init(&s->th, d->comp ? esk_comp_input_double(d->comp, "temperature", 25.0) : 25.0,
+                      pd(d, "rth_js", 390.0), pd(d, "rth_ja", 560.0), pd(d, "cth_j", 3e-5), pd(d, "cth_s", 0.36));
+    s->t_last = d->comp ? d->comp->e->sched.now : 0;
+    s->damaged = s->over_if = s->over_vr = 0;
+    s->p_last = 0.0;
+    s->wake = 0;
     n = pd(d, "n", n);
     if (!(s->if_nom > 0.0)) {
         param_error(d, "if_nom", "must be > 0");
@@ -1168,6 +1196,15 @@ static void junction_stamp(esk_adev *d, esk_amatrix *m, diode_state *s)
 {
     int a = s->rs > 0.0 ? d->branch[0] : d->node[0], k = d->node[1];
     double vd = esk_am_v(m, a, k), vlim, id, gd;
+    if (s->kind == JN_LED && s->damaged) {
+        /* burnt out: the die or its bond wire open */
+        esk_am_stamp_g(m, a, k, 1e-12);
+        if (s->rs > 0.0)
+            esk_am_stamp_g(m, d->node[0], a, 1.0 / s->rs);
+        s->id_trial = 0.0;
+        s->vd_trial = vd;
+        return;
+    }
     if (s->has_bv && vd < -s->bv) {
         /* breakdown: a forward junction in the reverse direction */
         double vr = -(vd + s->bv), vr_lim = pnjlim(vr, s->vr_old, s->nvt, s->vcrit), idr, gdr;
@@ -1200,11 +1237,101 @@ static void diode_load(esk_adev *d, esk_amatrix *m)
     junction_stamp(d, m, (diode_state *)d->state);
 }
 
+/* the LED's junction carried from t_last to t at the power held since; it
+ * burns out (open) where the junction passes its absolute maximum */
+static int led_heat(esk_adev *d, diode_state *s, es_time_t t)
+{
+    double ta, dt, cross;
+    if (!s->thermal || s->damaged || t <= s->t_last) {
+        if (t > s->t_last)
+            s->t_last = t;
+        return 0;
+    }
+    ta = esk_comp_input_double(d->comp, "temperature", 25.0);
+    dt = ps_to_s(t - s->t_last);
+    cross = esk_thermal2_cross(&s->th, s->p_last, ta, s->tj_max);
+    s->t_last = t;
+    if (cross >= 0.0 && cross <= dt * (1.0 + 1e-9)) {
+        esk_thermal2_advance(&s->th, s->p_last, ta, cross);
+        s->damaged = 1;
+        esk_comp_diag(d->comp, ES_SEV_WARNING, "part.damaged",
+                      "%s: its junction passed %.0f C, its absolute maximum, at %.0f mW: the LED has burnt out (open); "
+                      "replace it (its replace input) after limiting its current",
+                      d->comp->id, s->tj_max, s->p_last * 1e3);
+        return 1;
+    }
+    esk_thermal2_advance(&s->th, s->p_last, ta, dt);
+    return 0;
+}
+
+static void led_schedule(esk_adev *d, diode_state *s)
+{
+    double cross;
+    if (!s->thermal || s->damaged)
+        return;
+    cross = esk_thermal2_cross(&s->th, s->p_last, esk_comp_input_double(d->comp, "temperature", 25.0), s->tj_max);
+    if (cross >= 0.0) {
+        es_time_t at = d->comp->e->sched.now + (es_time_t)(cross * 1e12) + 1;
+        if ((!s->wake || s->wake <= d->comp->e->sched.now || s->wake > at) && esk_comp_wake_at(d->comp, at, 0) == ES_OK)
+            s->wake = at;
+    }
+}
+
+static void led_accept(esk_adev *d, diode_state *s, es_time_t t)
+{
+    double v = esk_island_node_v(d->isl, d->node[0]) - esk_island_node_v(d->isl, d->node[1]);
+    int burnt = led_heat(d, s, t);
+    s->p_last = s->damaged ? 0.0 : v * s->id_trial;
+    if (s->thermal && !s->damaged) {
+        int over = s->id_trial > s->if_max * 1.0001;
+        if (over && !s->over_if)
+            esk_comp_diag(d->comp, ES_SEV_WARNING, "part.over_rating",
+                          "%s: %.1f mA forward, above its %.0f mA DC rating: it heats (%.0f mW) and dims with age; "
+                          "a series resistor limits it",
+                          d->comp->id, s->id_trial * 1e3, s->if_max * 1e3, s->p_last * 1e3);
+        s->over_if = over;
+        over = -v > s->vr_max * 1.0001;
+        if (over && !s->over_vr)
+            esk_comp_diag(d->comp, ES_SEV_WARNING, "part.over_rating",
+                          "%s: %.2f V reverse, above its %.0f V rating", d->comp->id, -v, s->vr_max);
+        s->over_vr = over;
+    }
+    if (burnt)
+        esk_island_touch(d->isl, t);
+    led_schedule(d, s);
+}
+
+static void esk_led_on_time(esk_adev *d, es_time_t now)
+{
+    diode_state *s = (diode_state *)d->state;
+    s->wake = 0;
+    if (led_heat(d, s, now))
+        esk_island_touch(d->isl, now);
+    led_schedule(d, s);
+}
+
+static void esk_led_on_input(esk_adev *d, const char *input, es_time_t now)
+{
+    diode_state *s = (diode_state *)d->state;
+    if (!strcmp(input, "replace") && esk_comp_input_bool(d->comp, "replace", 0) && s->damaged) {
+        double ta = esk_comp_input_double(d->comp, "temperature", 25.0);
+        s->damaged = 0;
+        s->th.tj = s->th.ts = ta;
+        s->t_last = now;
+        s->p_last = 0.0;
+    } else {
+        (void)led_heat(d, s, now); /* the room's temperature changed */
+    }
+    esk_island_touch(d->isl, now);
+}
+
 static void diode_accept(esk_adev *d, es_time_t t)
 {
     diode_state *s = (diode_state *)d->state;
-    if (s->kind == JN_LED)
+    if (s->kind == JN_LED) {
         emission_accept(s, t);
+        led_accept(d, s, t);
+    }
     set_pin_currents2(d, s->id_trial);
 }
 
@@ -1224,6 +1351,15 @@ static void diode_observe(esk_adev *d, esk_json *o)
         esk_json_set_number(a, o, "luminance", lum);
         esk_json_set_bool(a, o, "lit", s->id_trial > 1e-6);
         esk_json_set_number(a, o, "emission_integral", emission_integral(d, s));
+        {
+            /* the junction as of now: a quiet island has not stepped since */
+            esk_thermal2 th = s->th;
+            if (s->thermal && !s->damaged && d->comp && d->comp->e->sched.now > s->t_last)
+                esk_thermal2_advance(&th, s->p_last, esk_comp_input_double(d->comp, "temperature", 25.0),
+                                     ps_to_s(d->comp->e->sched.now - s->t_last));
+            esk_json_set_number(a, o, "tj", th.tj);
+        }
+        esk_json_set_bool(a, o, "damaged", s->damaged);
     }
 }
 
@@ -2105,6 +2241,8 @@ void esk_adev_on_time(esk_adev *d, es_time_t now)
         esk_environmental_on_time(d, now);
     else if (d && d->ops == &esk_multimeter_ops)
         esk_multimeter_on_time(d, now);
+    else if (d && d->ops == &led_ops)
+        esk_led_on_time(d, now);
 }
 
 void esk_adev_on_input(esk_adev *d, const char *input, es_time_t now)
@@ -2115,6 +2253,10 @@ void esk_adev_on_input(esk_adev *d, const char *input, es_time_t now)
     }
     if (d && input && d->ops == &esk_multimeter_ops) {
         esk_multimeter_on_input(d, input, now);
+        return;
+    }
+    if (d && input && d->ops == &led_ops) {
+        esk_led_on_input(d, input, now);
         return;
     }
     if (!d || !input || strcmp(input, "run"))

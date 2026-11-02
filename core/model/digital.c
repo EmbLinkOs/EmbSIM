@@ -515,6 +515,33 @@ static void sw_observe(esk_comp *c, esk_json *out)
     sw_state *s = (sw_state *)c->state;
     esk_json_set_bool(c->e->a, out, "closed", s->closed);
 }
+/* an injected fault (ADR-034): a cut (closed until active) or a short (closed while active) */
+static int fault_closed(esk_comp *c, int active)
+{
+    return strcmp(esk_comp_param_str(c, "fault", "open"), "short") ? !active : active;
+}
+static es_status fault_create(esk_comp *c) { return sw_create_common(c, "active"); }
+static void fault_reset(esk_comp *c)
+{
+    sw_state *s = (sw_state *)c->state;
+    int start = 0;
+    (void)esk_comp_param_bool(c, "initially_active", &start);
+    s->closed = fault_closed(c, esk_comp_input_bool(c, "active", start));
+    esk_pin_set_direction(s->p1, 1);
+    esk_pin_set_direction(s->p2, 1);
+    sw_eval(c);
+}
+static es_status fault_set(esk_comp *c, const char *input, const esk_json *value)
+{
+    sw_state *s = (sw_state *)c->state;
+    if (strcmp(input, "active") || value->type != ESK_JSON_BOOL)
+        return ES_EINVAL;
+    s->closed = fault_closed(c, value->u.boolean);
+    esk_comp_diag(c, ES_SEV_INFO, "fault.injected", "%s: fault %s", c->id, value->u.boolean ? "injected" : "cleared");
+    sw_eval(c);
+    return ES_OK;
+}
+static const esk_model_ops fault_ops = { "fault_digital", sizeof(sw_state), fault_create, NULL, fault_reset, sw_in, NULL, fault_set, sw_observe, NULL, 0 };
 static const esk_model_ops button_ops = { "push_button_digital", sizeof(sw_state), btn_create, NULL, sw_reset, sw_in, NULL, sw_set, sw_observe, NULL, 0 };
 static const esk_model_ops switch_ops = { "switch_digital", sizeof(sw_state), swd_create, NULL, sw_reset, sw_in, NULL, sw_set, sw_observe, NULL, 0 };
 
@@ -793,7 +820,7 @@ static const esk_model_ops vt_ops = { "virtual_terminal", sizeof(vt_state), vt_c
 
 static const esk_model_ops *const digital_table[] = {
     &wire_ops, &none_ops, &buffer_ops, &inverter_ops, &and_ops, &nand_ops, &or_ops, &nor_ops, &xor_ops, &xnor_ops,
-    &tristate_ops, &dff_ops, &clock_ops, &pulse_ops, &level_ops, &pull_ops, &button_ops, &switch_ops,
+    &tristate_ops, &dff_ops, &clock_ops, &pulse_ops, &level_ops, &pull_ops, &button_ops, &switch_ops, &fault_ops,
     &indicator_ops, &rgb_indicator_ops, &probe_ops, &vt_ops, &hc_ops, &esk_wifi_ap_ops, &esk_ble_scanner_ops, &esk_web_server_ops, &esk_wifi_scanner_ops, &esk_air_sniffer_ops, &esk_usb_host_ops,
     &esk_ble_central_ops, &esk_logic_analyzer_ops
 };

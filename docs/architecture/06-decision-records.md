@@ -1024,6 +1024,19 @@ The first step is in (2026-11-01):
 - The seed is in the project, which a recording carries.
 - Limits, damage, noise and the fault mode remain.
 
+The second step (2026-11-02):
+- An LED's limits from its datasheet: above its DC current or reverse
+  voltage rating a warning; its junction heated by its own power through
+  the datasheet's thermal resistances (two thermal nodes, the room the
+  world's temperature), burning out (open, `part.damaged`) when it passes
+  its absolute maximum junction temperature, until its `replace` input.
+- The fault mode: a project's `faults` (open, short, fail_open,
+  fail_short) wired in as `emblink/fault` switches, each turned on and off
+  by its `active` input while the session runs.
+- A multimeter's fuses blow (ADR-033).
+- Noise, and damage to other parts (an MCU pin, a regulator's thermal
+  shutdown), remain.
+
 ## ADR-035 AI assistants and scripts use the same session as people
 
 **Context.** The owner wants AIs to be able to use the app. Everything the

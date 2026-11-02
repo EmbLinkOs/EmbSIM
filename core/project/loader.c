@@ -1289,9 +1289,18 @@ static es_status project_load(es_session *s, const esk_json *project, const char
     esk_map_init(&g.rec_by_name, s->a);
     /* settings first: the MCU runtime reads its quantum when a board is loaded */
     apply_settings(s, esk_json_get(project, "settings"));
+    /* the fault mode: the project's faults wired in for the load (ADR-034) */
+    {
+        char why[256];
+        s->fault_view = esk_project_with_faults(s->a, project, why, sizeof why);
+        if (why[0]) {
+            ld_diag(s, ES_SEV_ERROR, "schema.faults", "faults", "%s%s", why, "");
+            return ES_ESCHEMA;
+        }
+    }
     /* boards */
     boards = esk_json_get(project, "boards");
-    comps = esk_json_get(project, "components");
+    comps = esk_json_get(s->fault_view ? s->fault_view : project, "components");
     for (i = 0; i < esk_json_len(boards) && st == ES_OK; i++)
         st = load_board(s, &g, esk_json_at(boards, i), comps);
     /* components */
@@ -1314,7 +1323,7 @@ static es_status project_load(es_session *s, const esk_json *project, const char
         st = instantiate(s, &g, cid, ci, esk_json_get(ce, "params"), 0, &c);
     }
     /* project nets */
-    nets = esk_json_get(project, "nets");
+    nets = esk_json_get(s->fault_view ? s->fault_view : project, "nets");
     if (nets && nets->type != ESK_JSON_OBJECT && esk_json_len(nets) && st == ES_OK) {
         /* an array of nets is not the format: refused, not read */
         ld_diag(s, ES_SEV_ERROR, "schema.type", "nets", "nets is an object of net names to pin lists%s%s", "", "");
@@ -1484,6 +1493,8 @@ es_status esk_project_load(es_session *s, const esk_json *project, const char *b
 void esk_project_unload(es_session *s)
 {
     size_t i;
+    esk_json_free(s->a, s->fault_view);
+    s->fault_view = NULL;
     for (i = 0; i < s->probes.len; i++) {
         esk_probe *p = s->probes.data[i];
         esk_strfree(s->a, p->name);

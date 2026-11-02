@@ -5,6 +5,20 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### Damage and the fault mode (ADR-034)
+
+- An LED past its absolute maximum ratings: a warning above 30 mA DC or
+  5 V reverse (Kingbright WP7113ID); its junction heated by its own power
+  through the datasheet's 560 K/W and 390 K/W (two thermal nodes solved
+  exactly, the room the world's temperature), burning out open when it
+  passes 125 C: straight across 5 V within milliseconds, at 110 mA within
+  two minutes, at 45 mA never. A `replace` input fits a new one.
+- The fault mode: a project's `faults` list (a pin cut, two nets or pins
+  bridged, a two-terminal part failed open or short), each an
+  `emblink/fault` switch wired in at load and turned on and off by its
+  `active` input while the session runs; the project keeps the list, not
+  the switches. `tests/protocol/test_faults.py`.
+
 ### A multimeter used like the real one (ADR-033)
 
 - `emblink/fluke_87v`, the Fluke 87V: COM, V Ω, mA/µA and A jacks, the

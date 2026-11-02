@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "overdriven-warns-survives",
+  "description": "45 mA (68 ohm from 5 V): above its 30 mA DC rating (a warning), but its junction settles under 125 C, so it survives.",
+  "policy": "electrical",
+  "until": "300s",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/led"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": 68,
+          "tolerance": 0
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "R1.1"
+      ],
+      "A": [
+        "R1.2",
+        "DUT.A"
+      ],
+      "GND": [
+        "DUT.K",
+        "SUP.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.damaged": {
+      "at": "300s",
+      "equals": false
+    },
+    "output:DUT.tj": {
+      "at": "300s",
+      "min": 60,
+      "max": 120
+    }
+  }
+}

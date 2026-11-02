@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "no-resistor-burns-out",
+  "description": "A red LED straight across 5 V (no series resistor): the current runs to amperes, the junction passes 125 C within milliseconds and the LED burns out open; nothing flows afterwards.",
+  "policy": "electrical",
+  "until": "50ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "DUT",
+        "component": "emblink/led"
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "DUT.A"
+      ],
+      "GND": [
+        "DUT.K",
+        "SUP.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "output:DUT.damaged": {
+      "at": "50ms",
+      "equals": true
+    },
+    "output:DUT.current": {
+      "at": "50ms",
+      "min": -1e-06,
+      "max": 1e-06
+    }
+  }
+}

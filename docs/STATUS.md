@@ -215,6 +215,28 @@ depends on the real switch.
   same way.
 - Tolerances on parts other than R, C and L.
 
+## Damage and the fault mode (ADR-034, 2026-11-02)
+
+An LED is damaged as a real one is: above its 30 mA DC or 5 V reverse
+rating a warning (Kingbright WP7113ID), its junction heated by its own
+power through the datasheet's thermal resistances (560 K/W to ambient,
+390 K/W to the leads; two thermal nodes solved in closed form, so a quiet
+circuit warms for minutes at no cost and the part wakes exactly when its
+junction passes 125 C), then burnt out open (`part.damaged`) until its
+`replace` input. A project's `faults` (a cut pin, a short between nets or
+pins, a two-terminal part failed open or short) are `emblink/fault`
+switches wired in at load and switched by their `active` input at any
+time. Evidence: the LED's fixtures (no resistor: burnt out in milliseconds;
+20 mA for 10 minutes: about 50 C, alive; 45 mA: warned, alive; 110 mA:
+alive after 1 s, dead within 2 minutes; replaced after the fault), the fault
+part's fixtures, and `tests/protocol/test_faults.py` (a cut anode, a
+bridged LED, a shorted resistor burning the LED, replacement, the project
+keeping its list). Not yet: noise on converters and sensors; damage to
+MCU pins, regulators (thermal shutdown), capacitors and semiconductors other
+than the LED; the LED's heat capacities are estimates (not published) and
+it is taken to fail at its absolute maximum junction temperature; an
+intermittent fault's chatter.
+
 ## Bench instruments: the Fluke 87V multimeter (2026-11-02)
 
 The fourth bench instrument (ADR-033): `emblink/fluke_87v`, from Fluke's

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "component_test",
+  "name": "short-while-active",
+  "description": "A short across the lower half of a 1 k / 1 k divider: 2.5 V, then 0 V while injected.",
+  "policy": "electrical",
+  "until": "2ms",
+  "circuit": {
+    "components": [
+      {
+        "id": "SUP",
+        "component": "emblink/vsource",
+        "params": {
+          "kind": "dc",
+          "dc": 5
+        }
+      },
+      {
+        "id": "R1",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "G",
+        "component": "emblink/gnd"
+      },
+      {
+        "id": "R2",
+        "component": "emblink/resistor",
+        "params": {
+          "resistance": "1k",
+          "tolerance": 0
+        }
+      },
+      {
+        "id": "DUT",
+        "component": "emblink/fault",
+        "params": {
+          "fault": "short"
+        }
+      }
+    ],
+    "nets": {
+      "P": [
+        "SUP.+",
+        "R1.1"
+      ],
+      "M": [
+        "R1.2",
+        "R2.1",
+        "DUT.1"
+      ],
+      "GND": [
+        "R2.2",
+        "DUT.2",
+        "SUP.-",
+        "G.GND"
+      ]
+    }
+  },
+  "expect": {
+    "net:M": {
+      "at": "2ms",
+      "min": -0.01,
+      "max": 0.01
+    }
+  },
+  "inputs": [
+    {
+      "at": "1ms",
+      "target": "DUT",
+      "input": "active",
+      "value": true
+    }
+  ]
+}

@@ -52,6 +52,9 @@ if(Python3_Interpreter_FOUND)
   # a board's serial port on the host, paced (ADR-031, ADR-032)
   add_test(NAME host_serial COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_host_serial.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # the fault mode and damage (ADR-034)
+  add_test(NAME faults COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_faults.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   add_test(NAME analysis COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_analysis.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   add_test(NAME waveform_measurements COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_waveform_measurements.py

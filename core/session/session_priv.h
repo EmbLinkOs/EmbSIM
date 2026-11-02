@@ -80,6 +80,7 @@ struct es_session {
     int n_allow_origin;
     /* project.transaction: the project as edited between begin and commit */
     esk_json *tx_project;
+    esk_json *fault_view;   /* the components and nets as loaded, with the faults wired in (or NULL) */
     int tx_id, tx_last, tx_structural;
     ESK_VEC(esk_board_inst *) boards;
     ESK_VEC(esk_probe *) probes;

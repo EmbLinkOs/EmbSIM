@@ -282,6 +282,26 @@
       }
     },
     "scenarios": {"type": "array", "items": {"type": "string", "pattern": "\\.json$"}},
+    "faults": {
+      "type": "array",
+      "description": "The fault mode (ADR-034): cuts, shorts and failed parts wired in on purpose, each a part (emblink/fault) whose input `active` turns it on and off; `active` is its state at the start.",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "common.schema.json#/$defs/instance_id"},
+          "kind": {"type": "string", "enum": ["open", "short", "fail_open", "fail_short"]},
+          "pin": {"type": "string", "description": "open: the pin cut from its net"},
+          "nets": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2, "description": "short: the two nets bridged"},
+          "pins": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2, "description": "short: two pins whose nets are bridged"},
+          "part": {"type": "string", "description": "fail_open, fail_short: a two-terminal part"},
+          "resistance": {"$ref": "common.schema.json#/$defs/si_number", "description": "Its resistance while it conducts (1 mOhm by default)"},
+          "active": {"type": "boolean", "description": "Injected from the start"},
+          "doc": {"type": "string"}
+        }
+      }
+    },
     "settings": {"$ref": "common.schema.json#/$defs/settings"}
   }
 }

@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/fault",
+  "version": "0.1.0",
+  "name": "Injected fault",
+  "category": "misc",
+  "description": "A fault put into a circuit on purpose (ADR-034's fault mode): a cut (a broken wire, a cracked joint, a pin lifted from its pad) that conducts until it is made active, or a short (a solder bridge, a crushed cable, a failed part) that conducts only while active. The loader wires one in for each of a project's faults; its active input turns it on and off at any time.",
+  "keywords": [
+    "fault",
+    "fault injection",
+    "open",
+    "short",
+    "cut",
+    "solder bridge",
+    "broken wire",
+    "failure"
+  ],
+  "pins": [
+    {
+      "name": "1",
+      "number": 1,
+      "model": {
+        "kind": "passive"
+      }
+    },
+    {
+      "name": "2",
+      "number": 2,
+      "model": {
+        "kind": "passive"
+      }
+    }
+  ],
+  "params": {
+    "fault": {
+      "type": "enum",
+      "enum": [
+        "open",
+        "short"
+      ],
+      "default": "open",
+      "doc": "open: a cut, conducting until active; short: conducting while active"
+    },
+    "ron": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1m",
+      "min": "1u",
+      "max": "1M",
+      "doc": "Its resistance while it conducts"
+    },
+    "roff": {
+      "type": "number",
+      "unit": "ohm",
+      "default": "1G",
+      "min": "1k",
+      "advanced": true,
+      "doc": "Its leakage while it does not"
+    },
+    "initially_active": {
+      "type": "boolean",
+      "default": false,
+      "doc": "Injected from the start (the active input's first value)"
+    }
+  },
+  "inputs": [
+    {
+      "name": "active",
+      "type": "boolean",
+      "default": false,
+      "doc": "The fault injected (true) or cleared (false)"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "closed",
+      "type": "boolean",
+      "doc": "It conducts"
+    }
+  ],
+  "model": {
+    "primitive": "switch",
+    "bind": {
+      "ron": "ron",
+      "roff": "roff"
+    }
+  },
+  "functional": {
+    "primitive": "fault_digital"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 40,
+    "height": 20,
+    "pins": {
+      "1": {
+        "x": 0,
+        "y": 10,
+        "side": "left"
+      },
+      "2": {
+        "x": 40,
+        "y": 10,
+        "side": "right"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "Conducting or not as the fault and its active input say."
+    },
+    "timed": {
+      "claims": "As functional.",
+      "omissions": [
+        "an intermittent fault's chatter: it changes when the input does"
+      ]
+    },
+    "electrical": {
+      "claims": "ron while it conducts, roff while it does not.",
+      "omissions": [
+        "a cut's arcing or a short's resistance changing as it heats"
+      ],
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "ADR-034: imperfections, limits and damage; the fault mode injects cuts, shorts and failed parts on purpose",
+        "url": "https://github.com/EmbLinkOs/EmbSIM/blob/main/docs/architecture/06-decision-records.md",
+        "date": "2026-11-02"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

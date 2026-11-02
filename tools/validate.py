@@ -83,7 +83,7 @@ PRIMITIVE_PINS = {
     "pull": ["1"], "indicator": ["A", "K"],
 }
 PRIMITIVE_INPUTS = {
-    "switch": {"pressed", "closed"}, "push_button_digital": {"pressed"},
+    "switch": {"pressed", "closed", "active"}, "push_button_digital": {"pressed"}, "fault_digital": {"active"},
     "switch_digital": {"closed"}, "potentiometer": {"position"},
 }
 TOOLCHAIN_PLACEHOLDERS = {

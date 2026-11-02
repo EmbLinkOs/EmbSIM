@@ -15,6 +15,17 @@ extern const esk_adev_ops esk_button4_ops;
 extern const esk_adev_ops esk_ptc_fuse_ops;
 /* an inline USB power meter (meter.c) */
 extern const esk_adev_ops esk_usb_meter_ops;
+/* a part's junction and package temperatures (thermal.c, ADR-034) */
+typedef struct esk_thermal2 {
+    double tj, ts;       /* the junction's and the solder point's (case's) temperatures, C */
+    double rjs, rsa;     /* junction to solder point, solder point to room, K/W */
+    double cj, cs;       /* heat capacities, J/K */
+} esk_thermal2;
+void esk_thermal2_init(esk_thermal2 *th, double ta, double rjs, double rja, double cj, double cs);
+void esk_thermal2_advance(esk_thermal2 *th, double p, double ta, double dt);
+double esk_thermal2_steady(const esk_thermal2 *th, double p, double ta);
+/* seconds until the junction passes `limit` under constant p, or -1 never */
+double esk_thermal2_cross(const esk_thermal2 *th, double p, double ta, double limit);
 extern const esk_adev_ops esk_multimeter_ops;
 void esk_multimeter_on_time(esk_adev *d, es_time_t now);
 void esk_multimeter_on_input(esk_adev *d, const char *input, es_time_t now);
