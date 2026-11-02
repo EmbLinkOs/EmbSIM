@@ -120,6 +120,7 @@ Notation: `method(params) -> result`. Params and results are objects.
 
 ### stlink (the bench's ST-LINK probes on the host, docs/engineering/debug-probes.md)
 - `stlink.serve({host?, port?}) -> {port, probes: [{id, serial}]}`: the session serves its ST-LINK probes (`emblink/st_link_v21`, the NUCLEO's `U2`) as ST's stlink-server does, a TCP service on `host` (default `127.0.0.1`) and `port` (default 7184, 0 for any free port; the bound one is returned). STM32CubeIDE's stlink-server clients and OpenOCD 0.12 (`hla_stlink_backend tcp PORT` after `interface/stlink.cfg`) reach the probe through it, and through the probe the target's debug port. Serving again returns the same port. Error `-32008` when it cannot listen.
+- `usbip.serve({host?, port?}) -> {port, devices: [{id, busid}]}`: the session serves the bench's USB devices that no host part holds (a NUCLEO's ST-LINK with its CN1 free) over USB/IP, the protocol Linux's usbip-host speaks to a computer's vhci-hcd, on `host` (default `127.0.0.1`) and `port` (default 3240, usbipd's; 0 for any). A computer then attaches the device (`usbip attach -r HOST -b BUSID`) and its tools open it as a local USB device. `usbip.stop()` ends it. Error `-32008` when it cannot listen.
 - `stlink.stop({}) -> {}`: closes the service and its clients' connections.
 - Requests are answered at each run slice while the session runs. A paused session holds them (a client waiting more than its time-out, 1 s for OpenOCD, gives up), as a probe's host would.
 

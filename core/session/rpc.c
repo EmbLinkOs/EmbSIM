@@ -495,6 +495,50 @@ static es_status m_stlink_stop(rpc_ctx *r)
     return r->result ? ES_OK : ES_ENOMEM;
 }
 
+/* usbip.serve({host?, port?}) -> {port, devices: [{id}]}: the bench's USB
+ * devices no host part holds, served over USB/IP (usbipsrv.c) */
+static es_status m_usbip_serve(rpc_ctx *r)
+{
+    const char *host = pstr(r, "host", "127.0.0.1");
+    int port = (int)esk_json_get_num(r->params, "port", 3240), bound = 0;
+    esk_json *list;
+    size_t i;
+    if (port < 0 || port > 65535)
+        return fail(r, -32602, "port must be 0 to 65535");
+    if (esk_session_usbip_serve(r->s, host, port, &bound) != ES_OK) {
+        fail(r, -32008, "cannot listen");
+        esk_snprintf(r->err_msg, sizeof r->err_msg, "the USB/IP server cannot listen on %s:%d", host, port);
+        return ES_EIO;
+    }
+    r->result = obj(r);
+    list = esk_json_new_array(r->s->a);
+    if (!r->result || !list)
+        return ES_ENOMEM;
+    for (i = 0; i < r->s->eng.usb.devs.len; i++) {
+        const esk_usb_dev *d = r->s->eng.usb.devs.data[i];
+        if (esk_session_usbip_free(r->s, d) && d->comp) {
+            esk_json *o = esk_json_new_object(r->s->a);
+            char busid[16];
+            if (!o)
+                return ES_ENOMEM;
+            esk_snprintf(busid, sizeof busid, "1-%d", (int)i + 1);
+            esk_json_set_string(r->s->a, o, "id", d->comp->id);
+            esk_json_set_string(r->s->a, o, "busid", busid);
+            esk_json_array_push(r->s->a, list, o);
+        }
+    }
+    esk_json_set_integer(r->s->a, r->result, "port", bound);
+    esk_json_object_set(r->s->a, r->result, "devices", list);
+    return ES_OK;
+}
+
+static es_status m_usbip_stop(rpc_ctx *r)
+{
+    esk_session_usbip_close(r->s);
+    r->result = obj(r);
+    return r->result ? ES_OK : ES_ENOMEM;
+}
+
 static es_status m_port_close(rpc_ctx *r)
 {
     const char *target = pstr(r, "target", NULL);
@@ -1389,6 +1433,7 @@ static const method methods[] = {
     { "world.get", m_world_get },
     { "port.open", m_port_open }, { "port.close", m_port_close }, { "port.list", m_port_list },
     { "stlink.serve", m_stlink_serve }, { "stlink.stop", m_stlink_stop },
+    { "usbip.serve", m_usbip_serve }, { "usbip.stop", m_usbip_stop },
     { "input.set", m_input_set }, { "input.press", m_input_press }, { "input.release", m_input_release },
     { "input.serial", m_input_serial }, { "input.list", m_input_list },
     { "probe.add", m_probe_add }, { "probe.remove", m_probe_remove }, { "probe.list", m_probe_list }, { "probe.read", m_probe_read }, { "instrument.read", m_instrument_read },

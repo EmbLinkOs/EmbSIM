@@ -5,6 +5,19 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### USB/IP: the bench's USB devices on the computer's own USB stack
+
+- The session serves the bench's USB devices that no host part holds over
+  USB/IP (`usbip.serve`, `embsim serve --usbip [PORT]`), as Linux's
+  usbip-host does: the device list, the import (the session resets the
+  device and gives it its address), each URB carried out as the bus's
+  transactions with their data toggles, a NAKed URB kept until it
+  completes or is unlinked. `usbip attach` then puts the NUCLEO's ST-LINK
+  on the computer for st-flash, st-info and STM32CubeProgrammer
+  (`tests/protocol/test_usbip.py`: the device list, the import, the
+  enumeration, ST-LINK commands on its bulk endpoints, an unlinked URB,
+  the drive's INQUIRY).
+
 ### The NUCLEO's ST-LINK drive: programming by copying a file
 
 - The ST-LINK/V2-1's own USB device on the NUCLEO's CN1 (`USB_VBUS`,

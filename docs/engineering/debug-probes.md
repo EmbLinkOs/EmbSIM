@@ -137,7 +137,9 @@ interfaces), a .bin copied onto the drive programmed through the target's
 flash interface over SWD at the flash's times, then the part reset and the
 drive re-enumerated (`test_stlink_drive.py`). The virtual COM port's data
 is not on USB yet (the console bridge stands for it). Steps 6 and 7
-remain, and USB/IP for the tools that open the probe's USB device.
+remain. USB/IP is in too: the session serves the bench's free USB
+devices as usbip-host does (`usbipsrv.c`, `test_usbip.py`), so tools that
+open the probe's USB device reach it through `usbip attach`.
 
 ## 6. Not planned
 

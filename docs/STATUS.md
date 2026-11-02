@@ -492,7 +492,12 @@ on the host as ST's stlink-server does (`stlink.serve`, `embsim serve
 The probe's own USB device on CN1 (0483:374B, composite) with its
 NODE_F446RE drive: a .bin copied onto it by a computer's USB port is
 programmed into the flash over SWD at the flash's times and the board
-runs it (`tests/protocol/test_stlink_drive.py`).
+runs it (`tests/protocol/test_stlink_drive.py`). With CN1 free, the
+session's USB/IP server (`usbip.serve`, `embsim serve --usbip`) puts that
+USB device on the computer's USB stack for st-flash, st-info and
+STM32CubeProgrammer (`tests/protocol/test_usbip.py`: device list, import,
+enumeration, ST-LINK commands on the bulk endpoints, an unlinked URB, the
+drive's INQUIRY).
 
 `embsim ide` writes VS Code's launch configurations and tasks from the
 board's `debug` section: through the probe with OpenOCD, and on EmbSIM's
@@ -500,8 +505,9 @@ GDB server for any board. `tests/protocol/test_ide.py` carries both out as
 VS Code does.
 
 Not yet:
-- the probe's USB device on the computer itself (tools that open it, as
-  `st-flash` does, need USB/IP); its virtual COM port's data on USB;
+- its virtual COM port's data on USB; the kernel's vhci-hcd with
+  stlink-tools run against the USB/IP server (the protocol is tested with
+  its own client);
 - SWO in Manchester (the V2-1 reads NRZ), and the F103's and nRF52840's
   trace pins (their ITM and TPIU are there, no pin carries TRACESWO);
 - the other boards' probes (steps 4, 6 and 7; the PICkit's host protocol is

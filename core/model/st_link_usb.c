@@ -155,6 +155,15 @@ static void put32b(uint8_t *b, uint32_t v)
     put16(b + 2, v >> 16);
 }
 
+/* SCSI fields are big-endian. */
+static void put_be32(uint8_t *b, uint32_t v)
+{
+    b[0] = (uint8_t)(v >> 24);
+    b[1] = (uint8_t)(v >> 16);
+    b[2] = (uint8_t)(v >> 8);
+    b[3] = (uint8_t)v;
+}
+
 static uint32_t get16(const uint8_t *b) { return (uint32_t)b[0] | (uint32_t)b[1] << 8; }
 static uint32_t get32(const uint8_t *b) { return get16(b) | get16(b + 2) << 16; }
 static uint32_t be32(const uint8_t *b) { return (uint32_t)b[0] << 24 | (uint32_t)b[1] << 16 | (uint32_t)b[2] << 8 | b[3]; }
@@ -544,19 +553,13 @@ static void scsi(struct sl_usb *u)
         reply(u, r, 18);
         return;
     case 0x25: /* READ CAPACITY(10) */
-        r[0] = (uint8_t)((VOL_SECTORS - 1u) >> 24);
-        r[1] = (uint8_t)((VOL_SECTORS - 1u) >> 16);
-        r[2] = (uint8_t)((VOL_SECTORS - 1u) >> 8);
-        r[3] = (uint8_t)(VOL_SECTORS - 1u);
+        put_be32(r, VOL_SECTORS - 1u);
         r[6] = SECTOR >> 8;
         reply(u, r, 8);
         return;
     case 0x23: /* READ FORMAT CAPACITIES */
         r[3] = 8;
-        r[4] = (uint8_t)(VOL_SECTORS >> 24);
-        r[5] = (uint8_t)(VOL_SECTORS >> 16);
-        r[6] = (uint8_t)(VOL_SECTORS >> 8);
-        r[7] = (uint8_t)VOL_SECTORS;
+        put_be32(r + 4, VOL_SECTORS);
         r[8] = 2;
         r[10] = SECTOR >> 8;
         reply(u, r, 12);

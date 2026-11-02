@@ -88,6 +88,8 @@ struct es_session {
     ESK_VEC(struct esk_host_port *) host_ports;
     /* the probes shared as stlink-server shares them (stlinksrv.c), or NULL */
     struct esk_stlink_server *stlink;
+    /* the bench's free USB devices over USB/IP (usbipsrv.c), or NULL */
+    struct esk_usbip_server *usbip;
     uint32_t next_probe_id;
     size_t probe_memory_bytes;
     /* inputs record (SPEC-012 §1 inputs) */
@@ -181,6 +183,15 @@ es_status esk_session_stlink_serve(es_session *s, const char *host, int port, in
 void esk_session_stlink_close(es_session *s);
 int esk_session_stlink_port(const es_session *s);
 void esk_session_stlink_poll(es_session *s);
+/* USB/IP (usbipsrv.c): the bench's USB devices no host part holds, on
+ * host:port (0: any port; 3240 is usbipd's), served as the session runs */
+es_status esk_session_usbip_serve(es_session *s, const char *host, int port, int *bound);
+void esk_session_usbip_close(es_session *s);
+int esk_session_usbip_port(const es_session *s);
+void esk_session_usbip_poll(es_session *s);
+/* a device USB/IP can serve: on its cable's end with its pull-up, no host
+ * part holding it */
+int esk_session_usbip_free(es_session *s, const esk_usb_dev *d);
 void esk_session_ports_free(es_session *s);
 /* bytes sent back to back at `from` baud (8N1) as a UART at `to` baud reads them */
 size_t esk_uart_rebaud(const unsigned char *in, size_t n, double from, double to, unsigned char *out, size_t cap);

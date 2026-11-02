@@ -79,6 +79,30 @@ leaves the bus and comes back without the file, as the real one does; a
 copy it could not program leaves `FAIL.TXT`. `tests/protocol/test_stlink_drive.py`
 copies the example's program onto a blank board this way.
 
+## The probe as a USB device on your computer: USB/IP
+
+Tools that open the ST-LINK as a USB device themselves (`st-info`,
+`st-flash` and `st-util` from stlink-tools, STM32CubeProgrammer without
+stlink-server) reach the simulated probe through USB/IP, as they would
+reach a probe plugged into another computer:
+
+```sh
+embsim serve project.json --usbip --run
+# embsim: USB/IP on 127.0.0.1:3240 (usbip list -r 127.0.0.1; usbip attach -r 127.0.0.1 -b 1-N)
+sudo modprobe vhci-hcd                   # Linux; usbip-win2 on Windows
+usbip list -r 127.0.0.1                  # the ST-LINK, 0483:374b, on bus id 1-N
+sudo usbip attach -r 127.0.0.1 -b 1-2
+st-info --probe
+```
+
+The session serves the bench's USB devices that no `usb_host` part holds
+(leave the board's CN1 free) and carries each request the computer makes
+to the device as the bus's transactions: its debug interface, its trace
+endpoint, its drive. `tests/protocol/test_usbip.py` drives it as vhci-hcd
+does (the device list, the import, the enumeration, ST-LINK commands on
+the bulk endpoints, an unlinked request, the drive's INQUIRY); the kernel's
+own vhci-hcd and stlink-tools are not run by the tests.
+
 ## printf over SWO
 
 The ST-LINK also reads the STM32's serial wire output: on the NUCLEO its SWO
@@ -128,9 +152,8 @@ and GDB stopping at `main`. VS Code itself is not run.
 
 ## What is not there yet
 
-- Tools that only open a USB device do not see the probe: `st-flash` and
-  `st-util`, and STM32CubeProgrammer without stlink-server. That needs the
-  USB/IP step of ADR-031.
+- The probe's virtual COM port on its USB device (the session's serial
+  console stands for it: `embsim serve --serial B1`).
 - The other boards' probes: the Pico's debug probe, the nRF52840 DK's
   J-Link OB, the Explorer 16/32's PICkit.
 

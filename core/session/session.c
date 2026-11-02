@@ -209,6 +209,7 @@ void es_session_destroy(es_session *s)
         return;
     esk_session_ports_free(s);
     esk_session_stlink_close(s);
+    esk_session_usbip_close(s);
     esk_project_unload(s);
     esk_engine_free(&s->eng);
     esk_vec_free(s->a, &s->boards);
@@ -1474,6 +1475,7 @@ es_status esk_session_run_slice(es_session *s)
     s->last_host_ms = now_ms;
     esk_session_ports_poll(s);
     esk_session_stlink_poll(s);
+    esk_session_usbip_poll(s);
     /* the slice ends on the analog grid (or at the run's end), so the host's
      * speed decides how far a slice goes, never where the islands are cut;
      * what does not make a whole grid step carries over to the next slice */

@@ -58,6 +58,7 @@ static void usage_to(FILE *out)
           "  serve PROJECT [--port N] [--host H] [--ui DIR] [--open] [--allow-origin ORIGIN]...\n"
           "        [--serial B1]...      a board's serial port on the host (a pseudo-terminal)\n"
           "        [--stlink [PORT]]     the board's ST-LINK as stlink-server shares it (TCP, 7184)\n"
+          "        [--usbip [PORT]]      the bench's free USB devices over USB/IP (TCP, 3240): usbip attach\n"
           "        [--run]               run at real time from the start, no client needed\n"
           "  sidecar [PROJECT]           speak the session protocol on stdin/stdout\n"
           "  gdb PROJECT [--board B] [--port N] [--host H]   a GDB server for a board's MCU\n"
@@ -1228,7 +1229,7 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
 {
     const char *project = NULL, *host = "127.0.0.1", *ui = NULL, *policy = NULL, *library = NULL;
     const char *origins[8], *serials[4];
-    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0, run = 0, stlink = -1;
+    int port = 8765, open = 0, i, n_origins = 0, n_serials = 0, run = 0, stlink = -1, usbip = -1;
     es_session *s;
     es_status st;
     for (i = 0; i < argc; i++) {
@@ -1243,6 +1244,11 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
             stlink = 7184;
             if (more && argv[i + 1][0] >= '0' && argv[i + 1][0] <= '9')
                 stlink = atoi(argv[++i]);
+        }
+        else if (!strcmp(a, "--usbip")) {
+            usbip = 3240;
+            if (more && argv[i + 1][0] >= '0' && argv[i + 1][0] <= '9')
+                usbip = atoi(argv[++i]);
         }
         else if (!strcmp(a, "--allow-origin") && more) {
             if (n_origins == (int)ES_COUNTOF(origins)) { fprintf(stderr, "embsim: at most 8 --allow-origin\n"); return 2; }
@@ -1280,6 +1286,17 @@ static int cmd_serve(int argc, char **argv, const char *argv0, int sidecar)
         o = esk_session_port_json(s, hp);
         fprintf(stderr, "embsim: %s's serial port is %s\n", serials[i], esk_json_get_str(o, "path", "?"));
         esk_json_free(s->a, o);
+    }
+    if (usbip >= 0) {
+        /* the bench's USB devices on the computer's USB stack: usbip attach -r HOST -b 1-N */
+        int bound = 0;
+        if (esk_session_usbip_serve(s, host, usbip, &bound) != ES_OK) {
+            fprintf(stderr, "embsim: --usbip: cannot listen on %s:%d\n", host, usbip);
+            es_session_destroy(s);
+            return 2;
+        }
+        fprintf(stderr, "embsim: USB/IP on %s:%d (usbip list -r %s; usbip attach -r %s -b 1-N)\n", host, bound, host,
+                host);
     }
     if (stlink >= 0) {
         /* the probes as stlink-server shares them: OpenOCD's
