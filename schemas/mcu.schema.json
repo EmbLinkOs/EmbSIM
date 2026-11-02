@@ -204,6 +204,9 @@
             "slew_v_per_us": {"oneOf": [{"type": "number"}, {"type": "object", "additionalProperties": {"type": "number"}}]},
             "ioh_max": {"type": "number"},
             "iol_max": {"type": "number"},
+            "iabs_max": {"type": "number", "exclusiveMinimum": 0, "description": "absolute maximum DC current through an I/O pin, either way (A); past it a warning (ADR-034)"},
+            "vabs_hi": {"type": "number", "exclusiveMinimum": 0, "description": "absolute maximum voltage on an I/O pin above its supply (V)"},
+            "vabs_lo": {"type": "number", "exclusiveMinimum": 0, "description": "absolute maximum voltage on an I/O pin below ground (V)"},
             "five_volt_tolerant": {"type": "array", "items": {"type": "string"}}
           }
         },

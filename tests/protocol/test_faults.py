@@ -14,6 +14,13 @@ session runs, as a scenario, the workbench or a script would:
   and stays dead with F3 cleared, until it is replaced.
 The project as the session holds it keeps its `faults` list, not the switches.
 
+Then the Uno blinking its L LED on D13 (examples/uno-blink-serial), with D13
+shorted to ground by a fault: while it drives high it sources far more than
+the ATmega328P's 40 mA absolute maximum, a pin.over_current warning; and 6 V
+through 100 ohm into D3 (a cut wire mended), the pin clamped a diode drop
+above VCC by its protection diodes, past VCC + 0.5 V: a pin.over_voltage
+warning. Intact, neither is raised, the cut's leakage into D3 clamped.
+
     test_faults.py --embsim PATH
 """
 import argparse
@@ -100,8 +107,51 @@ def main() -> int:
             proj = proj.get("project", proj)
             check(len(proj.get("faults", [])) == 3 and not any(x["id"].startswith("F") for x in proj["components"]),
                   "the project keeps its faults list, not the switches")
+        uno_pins(args.embsim, Path(tmp), check)
     print("faults: %s" % ("ok" if not failures else f"{failures} failure(s)"))
     return 1 if failures else 0
+
+
+def uno_pins(embsim: str, tmp: Path, check) -> None:
+    example = ROOT / "examples" / "uno-blink-serial"
+    project = json.loads((example / "project.json").read_text(encoding="utf-8"))
+    project["boards"][0]["firmware"] = {"image": str(example / "firmware" / "blink-serial.elf"), "format": "elf"}
+    project.pop("scenarios", None)
+    project["components"] += [
+        {"id": "HI", "component": "emblink/vsource", "params": {"kind": "dc", "dc": 6}},
+        {"id": "RHI", "component": "emblink/resistor", "params": {"resistance": 100}},
+    ]
+    project["nets"]["D13"] = ["B1.D13"]
+    project["nets"]["SIX"] = ["HI.+", "RHI.1"]
+    project["nets"]["D3"] = ["B1.D3", "RHI.2"]
+    project["nets"]["GND"].append("HI.-")
+    project["faults"] = [
+        {"id": "SHORT", "kind": "short", "nets": ["D13", "GND"]},
+        {"id": "CUT", "kind": "open", "pin": "RHI.2", "active": True},
+    ]
+    src = tmp / "uno.json"
+    src.write_text(json.dumps(project), encoding="utf-8")
+    with StdioClient([embsim, "sidecar", str(src)]) as c:
+        def pins() -> str:
+            got = c.call("diagnostics.list", {})
+            items = got if isinstance(got, list) else next((v for v in got.values() if isinstance(v, list)), [])
+            return json.dumps([d for d in items if str(d.get("code", "")).startswith("pin.over")])
+
+        c.call("control.advance", {"until": str(int(1.2e12))})
+        quiet = pins()
+        check(quiet == "[]", f"the Uno intact: no pin past its ratings ({quiet[:200]})")
+        c.call("input.set", {"target": "SHORT", "input": "active", "value": True})
+        c.call("control.advance", {"until": str(int(2.4e12))})
+        d = pins()
+        check("pin.over_current" in d and "40 mA" in d, f"D13 shorted to ground: pin.over_current ({d[:240]})")
+        c.call("input.set", {"target": "CUT", "input": "active", "value": False})
+        c.call("control.advance", {"until": str(int(2.5e12))})
+        d = pins()
+        ov = [x for x in json.loads(d) if x["code"] == "pin.over_voltage"]
+        check(len(ov) == 1 and "5.5 V" in ov[0]["message"] and "mA" in ov[0]["message"],
+              f"6 V through 100 ohm into D3: pin.over_voltage ({ov[0]['message'] if ov else d[:240]})")
+        v = float(c.call("observe.snapshot", {"include": ["nets"]})["nets"]["D3"]["voltage"])
+        check(5.5 < v < 5.8, f"D3 held a diode drop above VCC by its protection diodes: {v:.2f} V")
 
 
 if __name__ == "__main__":

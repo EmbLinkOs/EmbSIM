@@ -34,6 +34,9 @@
         "slew_v_per_us": {"$ref": "#/$defs/num"},
         "ioh_max": {"$ref": "#/$defs/num"},
         "iol_max": {"$ref": "#/$defs/num"},
+        "iabs_max": {"$ref": "#/$defs/num", "description": "Absolute maximum DC current through the pin either way (A): past it a warning (ADR-034)"},
+        "vabs_hi": {"$ref": "#/$defs/num", "description": "Absolute maximum voltage above the pin's supply (V)"},
+        "vabs_lo": {"$ref": "#/$defs/num", "description": "Absolute maximum voltage below ground (V)"},
         "family": {"$ref": "#/$defs/family"}
       }
     },
@@ -66,6 +69,9 @@
         "slew_v_per_us": {"$ref": "#/$defs/num"},
         "ioh_max": {"$ref": "#/$defs/num"},
         "iol_max": {"$ref": "#/$defs/num"},
+        "iabs_max": {"$ref": "#/$defs/num", "description": "Absolute maximum DC current through the pin either way (A): past it a warning (ADR-034)"},
+        "vabs_hi": {"$ref": "#/$defs/num", "description": "Absolute maximum voltage above the pin's supply (V)"},
+        "vabs_lo": {"$ref": "#/$defs/num", "description": "Absolute maximum voltage below ground (V)"},
         "family": {"$ref": "#/$defs/family"}
       }
     },

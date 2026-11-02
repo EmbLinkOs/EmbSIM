@@ -228,7 +228,10 @@ temperature (the Uno's NCP1117ST50, from onsemi's NCP1117/D: SOT-223
 160 K/W minimum pad, 15 K/W to the case, the die held near 175 C) heats with
 what it drops; its thermal shutdown then limits its current to what holds
 the die there, so 12 V into 25 ohm without a heatsink settles at about
-2.2 V with a 175 C die (`part.thermal_shutdown`). A project's `faults` (a cut pin, a short between nets or
+2.2 V with a 175 C die (`part.thermal_shutdown`). The ATmega328P's pins warn past their
+absolute maximum ratings (40 mA, -0.5 V to VCC + 0.5 V; datasheet section
+28.1) and are held about a diode drop past their rails by their protection
+diodes. A project's `faults` (a cut pin, a short between nets or
 pins, a two-terminal part failed open or short) are `emblink/fault`
 switches wired in at load and switched by their `active` input at any
 time. Evidence: the LED's fixtures (no resistor: burnt out in milliseconds;
@@ -236,9 +239,12 @@ time. Evidence: the LED's fixtures (no resistor: burnt out in milliseconds;
 alive after 1 s, dead within 2 minutes; replaced after the fault), the fault
 part's fixtures, and `tests/protocol/test_faults.py` (a cut anode, a
 bridged LED, a shorted resistor burning the LED, replacement, the project
-keeping its list). Not yet: noise on converters and sensors; damage to
-MCU pins, capacitors and semiconductors other
-than the LED; the LED's heat capacities are estimates (not published) and
+keeping its list; the Uno with D13 shorted to ground warning of 60 mA
+out of the pin, and 6 V through 100 ohm into D3 held at 5.7 V and warned).
+Not yet: noise on converters and sensors; the other MCUs' pin ratings
+(their `ioh_max`/`iol_max` are recommended drive currents, not absolute
+maxima); damage to MCU pins (no failure point is published), capacitors and
+semiconductors other than the LED; the LED's heat capacities are estimates (not published) and
 it is taken to fail at its absolute maximum junction temperature; an
 intermittent fault's chatter.
 

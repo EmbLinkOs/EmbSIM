@@ -18,6 +18,15 @@ versions follow semantic versioning. There is no release yet.
   `tsd`. The Uno's 5 V regulator is now the NCP1117ST50 it carries
   (onsemi NCP1117/D: 160 K/W, 15 K/W, about 175 C, 1.07 V dropout, 1.5 A
   limit, 6 mA ground current).
+- An MCU's pins past their absolute maximum ratings: the ATmega328P warns
+  past 40 mA through a pin (`pin.over_current`) and outside -0.5 V to
+  VCC + 0.5 V (`pin.over_voltage`), its pins held about a diode drop past
+  their rails by their protection diodes (Microchip's datasheet, section
+  28.1, and AVR182). MCUs describe them with `iabs_max`, `vabs_hi` and
+  `vabs_lo` in `io.electrical`.
+- A PTC fuse on a busy island now looks at its temperatures when due (a
+  step clipped at its look no longer pushed the look on, so it could stop
+  heating while the circuit kept stepping).
 - The fault mode: a project's `faults` list (a pin cut, two nets or pins
   bridged, a two-terminal part failed open or short), each an
   `emblink/fault` switch wired in at load and turned on and off by its

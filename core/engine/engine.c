@@ -129,6 +129,9 @@ static int parse_fields(const esk_json *obj, esk_pin_model *out)
     if (get_d(obj, "leak_a", &v)) out->leak_a = v;
     if (get_d(obj, "nominal_v", &v)) { out->nominal_v = v; out->has_electrical = 1; }
     if (get_d(obj, "tolerance", &v)) out->tolerance = v;
+    if (get_d(obj, "iabs_max", &v)) out->iabs_max = v;
+    if (get_d(obj, "vabs_hi", &v)) out->vabs_hi = v;
+    if (get_d(obj, "vabs_lo", &v)) out->vabs_lo = v;
     if (out->kind == ESK_PIN_POWER && out->power_ground)
         out->nominal_v = 0.0;
     return 0;

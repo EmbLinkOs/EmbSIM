@@ -68,6 +68,13 @@ static void mcu_electrical(const esk_json *el, esk_pin_model *m)
         m->rout = v;
     if (esk_json_to_double(esk_json_get(el, "slew_v_per_us"), &v) == 0 && isfinite(v) && v > 0)
         m->slew_v_per_us = v;
+    /* the absolute maximum ratings (ADR-034) */
+    if (esk_json_to_double(esk_json_get(el, "iabs_max"), &v) == 0 && isfinite(v) && v > 0)
+        m->iabs_max = v;
+    if (esk_json_to_double(esk_json_get(el, "vabs_hi"), &v) == 0 && isfinite(v) && v > 0)
+        m->vabs_hi = v;
+    if (esk_json_to_double(esk_json_get(el, "vabs_lo"), &v) == 0 && isfinite(v) && v > 0)
+        m->vabs_lo = v;
 }
 
 static void mcu_signal_model(const char *sig, const char *family, esk_pin_model *m)

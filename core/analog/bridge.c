@@ -28,6 +28,8 @@ typedef struct bridge_state {
      * of the part's supply current to the part's ground pin's node */
     int load, gnd;
     double share;
+    int over_i, over_v; /* past an absolute maximum rating, as last accepted (ADR-034) */
+    double i_clamp;     /* the protection diodes' current out of the node, this trial */
 } bridge_state;
 
 /* below about this, a part draws less than its model says, as its supply
@@ -282,6 +284,63 @@ static void retarget(esk_adev *d, bridge_state *s, es_time_t at)
     }
 }
 
+/* An I/O pin's protection diodes, to its supply and to ground, where the
+ * part gives its absolute maximum voltages (they are what makes a pin
+ * survive a little past its rails, and what Microchip's AVR182 zero-cross
+ * detector leans on through 1 Mohm). Inside: a smooth knee (softplus) at
+ * CLAMP_VF past the rail with CLAMP_R behind it, to the pin's nominal
+ * supply as an ideal rail; the outside is the pin held about a diode drop
+ * past its rail with the current that takes. Where the current goes in the
+ * part (into VCC, powering an unpowered part through its pins) is an
+ * omission. */
+#define CLAMP_VF 0.6
+#define CLAMP_R 25.0
+#define CLAMP_S 0.025
+/* off inside the rails (a diode at zero bias passes nothing; the knee's tail
+ * there is under 1e-13 A), so a pin between them is untouched and settles */
+#define CLAMP_OFF (-CLAMP_VF / CLAMP_S)
+
+static double softplus(double x) { return x > 30.0 ? x : log1p(exp(x)); }
+static double sigmoid(double x) { return x > 30.0 ? 1.0 : x < -30.0 ? 0.0 : 1.0 / (1.0 + exp(-x)); }
+
+/* a clamp's current and its slope at x past its cutoff: the softplus less
+ * its value and slope at the cutoff, so it starts from nothing smoothly
+ * (Newton does not chatter across the cutoff) */
+static void clamp_iv(double x, double *f, double *gd)
+{
+    const double g = 1.0 / CLAMP_R, s0 = sigmoid(CLAMP_OFF);
+    *f = g * CLAMP_S * (softplus(x) - softplus(CLAMP_OFF) - s0 * (x - CLAMP_OFF));
+    *gd = g * (sigmoid(x) - s0);
+}
+
+static void stamp_clamps(esk_adev *d, bridge_state *s, esk_amatrix *m, double scale)
+{
+    const esk_pin_model *pm = &d->pin->model;
+    int n = d->node[0];
+    double v, x, f, gd;
+    s->i_clamp = 0.0;
+    if (pm->vabs_hi <= 0.0 && pm->vabs_lo <= 0.0)
+        return;
+    v = esk_am_v(m, n, 0);
+    if (pm->nominal_v > 0.0) { /* to the supply: current out of the node */
+        x = (v - (pm->nominal_v + CLAMP_VF) * scale) / CLAMP_S;
+        if (x > CLAMP_OFF) {
+            clamp_iv(x, &f, &gd);
+            esk_am_stamp_g(m, n, 0, gd);
+            esk_am_stamp_i(m, n, 0, f - gd * v);
+            s->i_clamp += f;
+        }
+    }
+    /* from ground: current into the node */
+    x = (-CLAMP_VF * scale - v) / CLAMP_S;
+    if (x > CLAMP_OFF) {
+        clamp_iv(x, &f, &gd);
+        esk_am_stamp_g(m, n, 0, gd);
+        esk_am_stamp_i(m, n, 0, -f - gd * v);
+        s->i_clamp -= f;
+    }
+}
+
 static void bridge_stamp(esk_adev *d, esk_amatrix *m, es_time_t t)
 {
     bridge_state *s = (bridge_state *)d->state;
@@ -289,6 +348,9 @@ static void bridge_stamp(esk_adev *d, esk_amatrix *m, es_time_t t)
     double scale = esk_am_source_scale(m);
     s->i_trial = 0.0;
     s->v_src_trial = 0.0;
+    s->i_clamp = 0.0;
+    if (!s->is_power && !s->disabled)
+        stamp_clamps(d, s, m, scale);
     if (s->disabled) {
         if (s->load)
             stamp_load(d, s, m);
@@ -332,6 +394,45 @@ static void bridge_load_tr(esk_adev *d, esk_amatrix *m, const esk_integ *in)
     bridge_stamp(d, m, esk_integ_t(in));
 }
 
+/* a pin past its absolute maximum ratings (ADR-034): the datasheet's DC
+ * current per pin and voltage beyond the rails. A warning as it starts; the
+ * datasheets give no point where the damage they warn of happens, so none
+ * is modelled */
+static void check_ratings(esk_adev *d, bridge_state *s)
+{
+    const esk_pin_model *m = &d->pin->model;
+    double v, i = s->i_trial + s->i_clamp, top;
+    int over;
+    char msg[240];
+    if (s->is_power || s->disabled)
+        return;
+    if (m->iabs_max > 0.0) {
+        /* the current from the net into the pin: its driver's or pull's and its clamps' */
+        over = fabs(i) > m->iabs_max * 1.0001;
+        if (over && !s->over_i) {
+            esk_snprintf(msg, sizeof msg,
+                         "%.1f mA %s the pin, above its %.0f mA absolute maximum DC current: the datasheet warns of "
+                         "permanent damage; limit it with a resistor or a driver",
+                         fabs(i) * 1e3, i > 0.0 ? "into" : "out of", m->iabs_max * 1e3);
+            raise_pin(d, ES_SEV_WARNING, "pin.over_current", msg);
+        }
+        s->over_i = over;
+    }
+    if (m->vabs_hi > 0.0 || m->vabs_lo > 0.0) {
+        v = esk_island_node_v(d->isl, d->node[0]);
+        top = m->nominal_v + m->vabs_hi;
+        over = (m->vabs_hi > 0.0 && v > top + 1e-6) || (m->vabs_lo > 0.0 && v < -m->vabs_lo - 1e-6);
+        if (over && !s->over_v) {
+            esk_snprintf(msg, sizeof msg,
+                         "%.2f V on the pin, outside its absolute maximum of %.1f to %.1f V: its protection diodes "
+                         "carry %.1f mA and the datasheet warns of permanent damage; limit the current with a resistor",
+                         v, -m->vabs_lo, top, fabs(s->i_clamp) * 1e3);
+            raise_pin(d, ES_SEV_WARNING, "pin.over_voltage", msg);
+        }
+        s->over_v = over;
+    }
+}
+
 static void bridge_accept(esk_adev *d, es_time_t t)
 {
     bridge_state *s = (bridge_state *)d->state;
@@ -339,7 +440,8 @@ static void bridge_accept(esk_adev *d, es_time_t t)
         s->ramping = 0;
         s->v_cur = s->v_to;
     }
-    d->i_last[0] = s->i_trial;
+    d->i_last[0] = s->i_trial + s->i_clamp;
+    check_ratings(d, s);
 }
 
 static int bridge_breakpoint(esk_adev *d, es_time_t after, es_time_t *at)

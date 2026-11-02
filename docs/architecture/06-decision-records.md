@@ -1035,7 +1035,11 @@ The second step (2026-11-02):
   by its `active` input while the session runs.
 - A multimeter's fuses blow (ADR-033).
 - A regulator's thermal shutdown (the Uno's NCP1117ST50).
-- Noise, and damage to other parts (an MCU pin), remain.
+- An MCU pin's absolute maximum ratings (the ATmega328P's 40 mA and
+  -0.5 V to VCC + 0.5 V) raise warnings, and its protection diodes hold it
+  near its rails. Datasheets give a stress rating, not a point of failure,
+  so a pin is warned of, not stuck; that stays declared in the fidelity.
+- Noise remains.
 
 ## ADR-035 AI assistants and scripts use the same session as people
 
