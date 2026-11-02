@@ -52,6 +52,8 @@ int esk_stlink_is(const struct esk_comp *c);
  * up to `cap` bytes of the SWO it has received */
 size_t esk_stlink_trace(struct esk_comp *c, uint8_t *in, size_t cap);
 const char *esk_stlink_serial(struct esk_comp *c);
+/* the Raspberry Pi Debug Probe: CMSIS-DAP v2 and a UART on its USB (debug_probe.c) */
+extern const esk_model_ops esk_debug_probe_ops;
 /* a web server on the internet beyond the routers (web_server.c) */
 extern const esk_model_ops esk_web_server_ops;
 /* an 8-channel logic analyzer, the Saleae Logic 8 (logic_analyzer.c) */

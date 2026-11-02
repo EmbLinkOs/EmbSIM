@@ -5,6 +5,30 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The Raspberry Pi Debug Probe on the Pico
+
+- `emblink/rpi_debug_probe`: Raspberry Pi's Debug Probe as its debugprobe
+  firmware's CMSIS-DAP v2 build shows itself to a computer (2e8a:000c,
+  "CMSIS-DAP v2 Interface" on bulk 0x04/0x85, a CDC ACM UART, picotool's
+  reset interface, the BOS with its Microsoft OS 2.0 descriptor set):
+  DAP_Info, Connect, the transfers with posted reads, value match, WAIT
+  retries and timestamps, TransferBlock, the SWJ and SWD sequences,
+  ExecuteCommands and QueueCommands as its endpoint handler holds them,
+  eight 64-byte request and response buffers, each answer ready once the
+  wire has carried its bits at SWJ_Clock's rate. Its SWD packets are
+  clocked bit by bit on the target's serial wire; its U port is a UART at
+  the computer's line coding, bridged while DTR is set.
+- The Pico's SWD pads are board ports (`SWCLK`, `SWDIO`, `SWD_GND`);
+  `examples/pico-debug-probe` wires a probe to a Pico as Raspberry Pi's
+  guide does.
+- Proven over USB/IP by `tests/protocol/test_debug_probe.py` (OpenOCD's
+  own packets: the multi-drop wake-up and TARGETSEL, both cores' debug,
+  the vector table by TransferBlock, the UART's echo, the Rescue DP) and,
+  in CI's linux-gcc job, by unmodified OpenOCD 0.12 with
+  `interface/cmsis-dap.cfg` and `target/rp2040.cfg` on the kernel's
+  vhci-hcd (`tests/protocol/usbip_kernel.sh`), next to stlink-tools'
+  st-info reading the NUCLEO's STM32F446 through its ST-LINK.
+
 ### The serial wire, clock by clock: the RP2040's multi-drop debug ports
 
 - An Arm MCU's serial wire as a probe drives it, one SWCLK cycle at a time

@@ -136,8 +136,16 @@ debug interface, the NODE_F446RE drive, the virtual COM port's
 interfaces), a .bin copied onto the drive programmed through the target's
 flash interface over SWD at the flash's times, then the part reset and the
 drive re-enumerated (`test_stlink_drive.py`). The virtual COM port's data
-is not on USB yet (the console bridge stands for it). Steps 6 and 7
-remain. USB/IP is in too: the session serves the bench's free USB
+is not on USB yet (the console bridge stands for it). Step 6's Pico
+probe is in: the Raspberry Pi Debug Probe (`emblink/rpi_debug_probe`,
+`core/model/debug_probe.c`), the debugprobe firmware's CMSIS-DAP v2 build
+as a computer sees it, clocking its SWD packets bit by bit on the target's
+own serial wire (`core/mcu/swd.c`: the SW-DP state machine, the RP2040's
+three multi-drop ports with TARGETSEL, dormant and the Rescue DP), its UART
+bridged on CDC ACM; proven by `test_debug_probe.py` over USB/IP and by
+unmodified OpenOCD (`interface/cmsis-dap.cfg`, `target/rp2040.cfg`) on the
+kernel's vhci-hcd in CI (`usbip_kernel.sh`). The Blue Pill's ST-Link
+clone, the nRF52840 DK's J-Link OB and step 7 remain. USB/IP is in too: the session serves the bench's free USB
 devices as usbip-host does (`usbipsrv.c`, `test_usbip.py`), so tools that
 open the probe's USB device reach it through `usbip attach`.
 

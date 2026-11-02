@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "kind": "component",
+  "id": "emblink/rpi_debug_probe",
+  "version": "0.1.0",
+  "name": "Raspberry Pi Debug Probe",
+  "category": "instruments",
+  "description": "Raspberry Pi's Debug Probe: an RP2040 running the debugprobe firmware (CMSIS-DAP v2), one USB cable to the computer (2e8a:000c). Its D port (SC, SD, GND) drives a target's serial wire, its U port (TX, RX, GND) is a UART bridged to the computer's serial port. OpenOCD, pyOCD and probe-rs drive it as they drive the real probe: over the session's USB/IP server (usbip.serve), the computer's own USB stack opens it.",
+  "keywords": [
+    "debug probe",
+    "raspberry pi",
+    "picoprobe",
+    "debugprobe",
+    "cmsis-dap",
+    "swd",
+    "openocd",
+    "pyocd",
+    "pico",
+    "rp2040",
+    "uart"
+  ],
+  "family": "cmos_3v3",
+  "pins": [
+    {
+      "name": "SC",
+      "number": 1,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_3v3"
+      },
+      "doc": "The D port's SWCLK (the orange wire), to the target's SWCLK: held high, as the clock is not simulated edge by edge"
+    },
+    {
+      "name": "SD",
+      "number": 2,
+      "model": {
+        "kind": "digital_io",
+        "family": "cmos_3v3"
+      },
+      "doc": "The D port's SWDIO (the yellow wire), to the target's SWDIO: the MCU on this net is the probe's target"
+    },
+    {
+      "name": "GND",
+      "number": 3,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "The D port's ground (black)"
+    },
+    {
+      "name": "TX",
+      "number": 4,
+      "model": {
+        "kind": "digital_out",
+        "family": "cmos_3v3"
+      },
+      "doc": "The U port's TX (orange): the probe's UART output, to the target's RX (a Pico's GP1)"
+    },
+    {
+      "name": "RX",
+      "number": 5,
+      "model": {
+        "kind": "digital_in",
+        "family": "cmos_3v3"
+      },
+      "doc": "The U port's RX (yellow): the probe's UART input, from the target's TX (a Pico's GP0)"
+    },
+    {
+      "name": "GND_U",
+      "number": 6,
+      "model": {
+        "kind": "power",
+        "role": "ground"
+      },
+      "required": false,
+      "doc": "The U port's ground (black)"
+    },
+    {
+      "name": "USB_DP",
+      "number": 7,
+      "model": {
+        "kind": "digital_io",
+        "family": "cmos_3v3"
+      },
+      "doc": "Its micro-USB connector's D+: the probe's USB device, 2e8a:000c"
+    },
+    {
+      "name": "USB_DM",
+      "number": 8,
+      "model": {
+        "kind": "digital_io",
+        "family": "cmos_3v3"
+      },
+      "doc": "Its micro-USB connector's D-"
+    },
+    {
+      "name": "VBUS",
+      "number": 9,
+      "model": {
+        "kind": "power",
+        "role": "supply"
+      },
+      "required": false,
+      "doc": "The USB cable's 5 V, which powers the probe"
+    }
+  ],
+  "params": {
+    "serial": {
+      "type": "string",
+      "default": "E6614103E7176A25",
+      "doc": "The probe's serial number (its RP2040's flash unique ID, 16 hex digits), as USB reports it"
+    }
+  },
+  "outputs": [
+    {
+      "name": "target",
+      "type": "string",
+      "doc": "The MCU on SD's net, empty when none"
+    },
+    {
+      "name": "usb_attached",
+      "type": "boolean",
+      "doc": "Its USB device is on a cable"
+    },
+    {
+      "name": "usb_address",
+      "type": "integer",
+      "doc": "The address the computer gave it"
+    },
+    {
+      "name": "usb_configured",
+      "type": "boolean",
+      "doc": "The computer configured it"
+    },
+    {
+      "name": "dap_connected",
+      "type": "boolean",
+      "doc": "DAP_Connect selected SWD"
+    },
+    {
+      "name": "led_connected",
+      "type": "boolean",
+      "doc": "The DAP's connected LED (DAP_HostStatus)"
+    },
+    {
+      "name": "led_running",
+      "type": "boolean",
+      "doc": "The DAP's running LED (DAP_HostStatus)"
+    },
+    {
+      "name": "swj_clock_hz",
+      "type": "integer",
+      "unit": "Hz",
+      "doc": "SWJ_Clock's rate"
+    },
+    {
+      "name": "commands",
+      "type": "integer",
+      "doc": "CMSIS-DAP packets answered"
+    },
+    {
+      "name": "transfers",
+      "type": "integer",
+      "doc": "SWD packets clocked on the wire"
+    },
+    {
+      "name": "faults",
+      "type": "integer",
+      "doc": "SWD packets the target answered FAULT"
+    },
+    {
+      "name": "target_packets",
+      "type": "integer",
+      "doc": "Packets the target's debug ports answered"
+    },
+    {
+      "name": "target_port",
+      "type": "integer",
+      "doc": "The target's debug port selected (0 core 0, 1 core 1, 2 the RP2040's Rescue DP), -1 for none"
+    },
+    {
+      "name": "uart_baud",
+      "type": "integer",
+      "unit": "baud",
+      "doc": "The UART's rate, from the computer's line coding"
+    },
+    {
+      "name": "uart_open",
+      "type": "boolean",
+      "doc": "The computer holds the serial port open (DTR)"
+    },
+    {
+      "name": "uart_tx_bytes",
+      "type": "integer",
+      "doc": "Bytes sent on TX"
+    },
+    {
+      "name": "uart_rx_bytes",
+      "type": "integer",
+      "doc": "Bytes received on RX"
+    },
+    {
+      "name": "uart_lost",
+      "type": "integer",
+      "doc": "Bytes received and dropped: the port closed and its FIFO full, or the computer not reading"
+    },
+    {
+      "name": "uart_errors",
+      "type": "integer",
+      "doc": "Frames received with a framing or parity error (passed on all the same)"
+    },
+    {
+      "name": "log",
+      "type": "string",
+      "doc": "What the probe did: DAP connections, the UART's line coding"
+    }
+  ],
+  "model": {
+    "primitive": "debug_probe"
+  },
+  "symbol": {
+    "svg": "symbol.svg",
+    "width": 80,
+    "height": 70,
+    "pins": {
+      "SC": {
+        "x": 80,
+        "y": 10,
+        "side": "right"
+      },
+      "SD": {
+        "x": 80,
+        "y": 20,
+        "side": "right"
+      },
+      "GND": {
+        "x": 80,
+        "y": 30,
+        "side": "right"
+      },
+      "TX": {
+        "x": 80,
+        "y": 40,
+        "side": "right"
+      },
+      "RX": {
+        "x": 80,
+        "y": 50,
+        "side": "right"
+      },
+      "GND_U": {
+        "x": 80,
+        "y": 60,
+        "side": "right"
+      },
+      "USB_DP": {
+        "x": 0,
+        "y": 30,
+        "side": "left"
+      },
+      "USB_DM": {
+        "x": 0,
+        "y": 40,
+        "side": "left"
+      },
+      "VBUS": {
+        "x": 20,
+        "y": 0,
+        "side": "top"
+      }
+    }
+  },
+  "fidelity": {
+    "functional": {
+      "claims": "The debugprobe firmware's CMSIS-DAP v2 build as a computer sees it (debugprobe's usb_descriptors.c, DAP_config.h, tusb_edpt_handler.c and cdc_uart.c, Arm's DAP.c v2.0.0 it builds): the USB device 2e8a:000c, USB 2.1, bcdDevice 0x0231, \"Raspberry Pi\" / \"Debug Probe (CMSIS-DAP)\" and its serial number; interface 0 \"CMSIS-DAP v2 Interface\" (vendor class, bulk 0x04 OUT and 0x85 IN, 64 bytes), interfaces 1 and 2 the CDC ACM UART (0x81 notifications, 0x02 and 0x83 data), interface 3 picotool's reset interface; the BOS with its Microsoft OS 2.0 descriptor set (WinUSB and the interfaces' GUIDs). DAP_Info (firmware 2.0.0; capabilities SWD, atomic commands, the 1 MHz timestamp; 64-byte packets, 6 of them; no vendor, product or serial strings), DAP_HostStatus's connected and running LEDs, DAP_Connect (SWD; JTAG refused), Disconnect, TransferConfigure (idle cycles, WAIT retries, match retries), Transfer with posted AP reads, the match mask and value match, WAIT retries and timestamps, TransferBlock, WriteABORT, Delay, ResetTarget (no reset sequence), SWJ_Pins (the D port has no nRESET: the inputs read 0), SWJ_Clock, SWJ_Sequence, SWD_Configure (turnaround, data phase), SWD_Sequence (TARGETSEL for multi-drop), ExecuteCommands and QueueCommands held until a packet that is not one; the JTAG commands answer DAP_ERROR, the SWO and UART commands, the vendor commands and TransferAbort ID_DAP_Invalid, as this build does. Eight request and eight response buffers of 64 bytes: the OUT endpoint NAKs when full, each answer waits until the wire has carried its bits at SWJ_Clock's rate. Each SWD packet is clocked on the target's own serial wire bit by bit (the header, turnarounds, the ACK, the data and parity, the idle cycles; a protocol error's backed-off data phase), so the target's debug ports answer as theirs do (the RP2040's multi-drop ports, the Rescue DP). The UART on the U port at the computer's line coding (5 to 8 data bits, none, odd or even parity, 1 or 2 stop bits; 1.5 taken as 2), bridged while DTR is set; with the port closed the receiver's 32-byte FIFO fills and drops; a frame with a framing or parity error (a break's 0x00) is passed on and counted, as the firmware's uart_getc takes it; SEND_BREAK holds TX low for its time.",
+      "omissions": [
+        "SWCLK's edges on the net (the wire is the target's own, clocked bit by bit; SC stays high); the firmware's processing time between packets",
+        "the magic baud rate's autobaud, the UART's flow control (no RTS or CTS on the U port), CDC serial state notifications",
+        "the reset interface's reboots into BOOTSEL or flash (acknowledged, not carried out); the LEDs as pins; USB suspend; the probe's own firmware update (its RP2040's BOOTSEL)",
+        "JTAG and SWO (not in the Debug Probe's firmware); CMSIS-DAP v1 over HID (another firmware build)"
+      ]
+    },
+    "electrical": {
+      "claims": "The D and U ports' pins as 3.3 V CMOS (the probe's RP2040 GPIOs: SC and TX driven, SD and RX inputs with cmos_3v3 thresholds); its USB pins carry the bus as transactions (engine/usb.h).",
+      "omissions": [
+        "the ports' series resistors and ESD protection",
+        "SD's direction switching on the net (the wire is clocked inside the target's model)",
+        "the probe's own supply current from VBUS"
+      ],
+      "range": {
+        "voltage_v": [
+          -0.5,
+          3.63
+        ]
+      },
+      "validation": [
+        "tests/*.json"
+      ]
+    }
+  },
+  "provenance": {
+    "author": "EmbSIM",
+    "license": "Apache-2.0",
+    "sources": [
+      {
+        "title": "Raspberry Pi Debug Probe documentation",
+        "url": "https://www.raspberrypi.com/documentation/microcontrollers/debug-probe.html",
+        "notes": "The D and U ports' wiring"
+      },
+      {
+        "title": "raspberrypi/debugprobe (MIT)",
+        "url": "https://github.com/raspberrypi/debugprobe",
+        "notes": "usb_descriptors.c, DAP_config.h, tusb_edpt_handler.c, cdc_uart.c and its DAP.c: the USB identity, descriptors, packet buffering and the UART bridge; read for their behaviour, not copied"
+      },
+      {
+        "title": "Arm CMSIS-DAP (Apache-2.0)",
+        "url": "https://arm-software.github.io/CMSIS-DAP/latest/",
+        "notes": "The command set and its responses"
+      },
+      {
+        "title": "OpenOCD 0.12.0 src/jtag/drivers/cmsis_dap.c",
+        "url": "https://github.com/openocd-org/openocd/blob/v0.12.0/src/jtag/drivers/cmsis_dap.c",
+        "notes": "How OpenOCD drives a CMSIS-DAP probe, TARGETSEL by SWD_Sequence; read only (GPL-2.0)"
+      }
+    ]
+  },
+  "tests": [
+    "tests/*.json"
+  ]
+}

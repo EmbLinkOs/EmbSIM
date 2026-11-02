@@ -95,10 +95,10 @@ jobs:
           fetch stm32-mw-usb-device https://github.com/STMicroelectronics/stm32-mw-usb-device.git 2a0a3521ac4d84e6e494d37bed615e2d36c373f5
           python3 tests/vendor/stm32cubef4/run.py --st "$RUNNER_TEMP/st" --embsim build/${{ matrix.preset }}/bin/embsim
           python3 tests/vendor/stm32cubef4/run.py --st "$RUNNER_TEMP/st" --board nucleo_f446ze --embsim build/${{ matrix.preset }}/bin/embsim
-      - name: The ST-LINK over USB/IP on the kernel's vhci-hcd, read by stlink-tools
+      - name: The ST-LINK and the Debug Probe over USB/IP on the kernel's vhci-hcd, driven by stlink-tools and OpenOCD
         if: matrix.name == 'linux-gcc'
         run: |
-          sudo apt-get install -y "linux-tools-$(uname -r)" stlink-tools || true
+          sudo apt-get install -y "linux-tools-$(uname -r)" stlink-tools openocd || true
           sh tests/protocol/usbip_kernel.sh build/${{ matrix.preset }}/bin/embsim
       - name: Pico SDK applications on the unmodified SDK
         if: matrix.name == 'linux-gcc'

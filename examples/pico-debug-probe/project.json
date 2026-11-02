@@ -1,0 +1,97 @@
+{
+ "schema_version": 1,
+ "kind": "project",
+ "name": "pico-debug-probe",
+ "description": "A Raspberry Pi Pico running pico-blink-serial's firmware with a Raspberry Pi Debug Probe on it, wired as Raspberry Pi's guide wires one: the probe's D port (SC, SD, GND) on the Pico's SWD pads, its U port (TX, RX, GND) on GP1 and GP0. Served over USB/IP, the probe is a CMSIS-DAP v2 device on the computer: OpenOCD with interface/cmsis-dap.cfg and target/rp2040.cfg halts either core through the RP2040's multi-drop wire, and the probe's serial port carries the Pico's UART.",
+ "policy": "electrical",
+ "boards": [
+  {
+   "id": "B1",
+   "board": "emblink/pico",
+   "layout": {
+    "x": 360,
+    "y": 120
+   },
+   "firmware": {
+    "image": "../pico-blink-serial/firmware/blink-serial.elf",
+    "format": "elf",
+    "toolchain": "clang",
+    "sources": [
+     "../pico-blink-serial/firmware/boot2.c",
+     "../pico-blink-serial/firmware/startup.c",
+     "../pico-blink-serial/firmware/main.c"
+    ],
+    "flags": [
+     "-ffreestanding",
+     "-fno-builtin"
+    ],
+    "linker_script": "../pico-blink-serial/firmware/rp2040.ld"
+   }
+  }
+ ],
+ "components": [
+  {
+   "id": "USB",
+   "component": "emblink/vsource",
+   "params": {
+    "kind": "dc",
+    "dc": 5
+   },
+   "layout": {
+    "x": 700,
+    "y": 500
+   }
+  },
+  {
+   "id": "GND1",
+   "component": "emblink/gnd",
+   "layout": {
+    "x": 700,
+    "y": 340
+   }
+  },
+  {
+   "id": "P1",
+   "component": "emblink/rpi_debug_probe",
+   "layout": {
+    "x": 60,
+    "y": 160
+   }
+  }
+ ],
+ "nets": {
+  "USB5V": [
+   "USB.+",
+   "B1.VBUS"
+  ],
+  "GND": [
+   "B1.GND",
+   "GND1.GND",
+   "USB.-",
+   "P1.GND",
+   "P1.GND_U"
+  ],
+  "SWCLK": [
+   "P1.SC",
+   "B1.SWCLK"
+  ],
+  "SWDIO": [
+   "P1.SD",
+   "B1.SWDIO"
+  ],
+  "PICO_TX": [
+   "B1.GP0",
+   "P1.RX"
+  ],
+  "PICO_RX": [
+   "B1.GP1",
+   "P1.TX"
+  ],
+  "PROBE_USB_DP": [
+   "P1.USB_DP"
+  ],
+  "PROBE_USB_DM": [
+   "P1.USB_DM"
+  ]
+ }
+}

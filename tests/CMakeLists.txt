@@ -64,6 +64,9 @@ if(Python3_Interpreter_FOUND)
   # the bench's USB devices on the computer's own USB stack, through USB/IP
   add_test(NAME usbip COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_usbip.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  # a Raspberry Pi Debug Probe on a Pico: CMSIS-DAP v2 over USB/IP on the RP2040's multi-drop wire
+  add_test(NAME debug_probe COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_debug_probe.py
+           --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
   # embsim ide's VS Code launch configurations, carried out as VS Code carries them out
   add_test(NAME ide COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/protocol/test_ide.py
            --embsim $<TARGET_FILE:embsim_cli> WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

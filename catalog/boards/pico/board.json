@@ -668,6 +668,24 @@
       "connector": "J_USB",
       "pin": 2,
       "doc": "Micro-USB D- (the RP2040's USB_DM)"
+    },
+    "SWCLK": {
+      "net": "SWCLK",
+      "connector": "J_SWD",
+      "pin": 1,
+      "doc": "The debug pads' SWCLK (a Debug Probe's SC): the RP2040's serial wire clock"
+    },
+    "SWD_GND": {
+      "net": "GND",
+      "connector": "J_SWD",
+      "pin": 2,
+      "doc": "The debug pads' GND"
+    },
+    "SWDIO": {
+      "net": "SWDIO",
+      "connector": "J_SWD",
+      "pin": 3,
+      "doc": "The debug pads' SWDIO (a Debug Probe's SD): the multi-drop wire to both cores' debug ports and the Rescue DP"
     }
   },
   "leds": [

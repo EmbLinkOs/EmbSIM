@@ -462,7 +462,7 @@ time. Not yet: mpremote itself in CI (its raw-REPL protocol is what the
 test speaks). At the prompt `rp2.StateMachine` runs an `rp2.asm_pio`
 program and `rp2.DMA` copies memory.
 
-## Debug probes: the NUCLEO's ST-LINK (2026-11-02)
+## Debug probes: the NUCLEO's ST-LINK, the Pico's Debug Probe (2026-11-02)
 
 The plan is `docs/engineering/debug-probes.md`; its first three steps are
 in. Every Cortex-M core has its halting debug as a debugger reaches it
@@ -499,19 +499,32 @@ STM32CubeProgrammer (`tests/protocol/test_usbip.py`: device list, import,
 enumeration, ST-LINK commands on the bulk endpoints, an unlinked URB, the
 drive's INQUIRY).
 
+In CI's linux-gcc job the kernel's own vhci-hcd attaches that device and
+stlink-tools' st-info reads the STM32F446's chip id through it
+(`tests/protocol/usbip_kernel.sh`).
+
+The Raspberry Pi Debug Probe (`emblink/rpi_debug_probe`) drives a Pico's
+SWD pads and bridges its UART, as the debugprobe firmware's CMSIS-DAP v2
+build: its packets are clocked bit by bit on the RP2040's own serial wire,
+whose three multi-drop debug ports (each core's and the Rescue DP) answer
+as ADIv5.2 has them (`core/mcu/swd.c`; `test_rp2040`'s bit-level checks).
+`tests/protocol/test_debug_probe.py` drives it over USB/IP with OpenOCD's
+packets (the dormant wake-up, TARGETSEL, both cores' debug, TransferBlock,
+the UART's echo, the Rescue DP), and unmodified OpenOCD with
+`target/rp2040.cfg` halts both cores and reads the flash through it on
+vhci-hcd in CI (`examples/pico-debug-probe`, `docs/user/pico-debug-probe.md`).
+
 `embsim ide` writes VS Code's launch configurations and tasks from the
 board's `debug` section: through the probe with OpenOCD, and on EmbSIM's
 GDB server for any board. `tests/protocol/test_ide.py` carries both out as
 VS Code does.
 
 Not yet:
-- its virtual COM port's data on USB; the kernel's vhci-hcd with
-  stlink-tools run against the USB/IP server (the protocol is tested with
-  its own client);
+- the ST-LINK's virtual COM port's data on USB;
 - SWO in Manchester (the V2-1 reads NRZ), and the F103's and nRF52840's
   trace pins (their ITM and TPIU are there, no pin carries TRACESWO);
-- the other boards' probes (steps 4, 6 and 7; the PICkit's host protocol is
-  unpublished).
+- the Blue Pill's ST-Link clone, the nRF52840 DK's J-Link OB, and the
+  PICkit (its host protocol is unpublished).
 
 ## The RP2040's PIO and DMA (2026-11-02)
 
