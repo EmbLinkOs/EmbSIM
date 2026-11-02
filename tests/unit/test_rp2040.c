@@ -3,11 +3,14 @@
 /* test_rp2040.c -- the RP2040's models (SPEC-009) on the machine the
  * catalog's description builds: the boot through boot2, the bus rules, the
  * resets, the clocks, the timer on the watchdog's tick, the SIO's divider,
- * the UART's bit time and core 1. The program's accesses are made from here, as a
- * core's would be. */
+ * the UART's bit time and core 1; its serial wire's multi-drop debug ports
+ * driven bit by bit as a probe drives them. The program's accesses are made
+ * from here, as a core's would be. */
 #include "harness.h"
 #include "mcu/build.h"
 #include "mcu/rp2040/rp2040.h"
+#include "mcu/swd.h"
+#include "util/num.h"
 #include "util/json.h"
 
 typedef struct rp {
@@ -782,6 +785,307 @@ static void test_busctrl(void)
     rp_close(&f);
 }
 
+/* ---- the serial wire: a probe's bits on the RP2040's SWDIO --------------------- */
+
+typedef struct wire {
+    rp *f;
+    esk_swd *w;
+    int rescue, rescues;
+} wire;
+
+static int w_mem(void *ctx, int core, u32 addr, int bytes, int write, u32 *v)
+{
+    wire *x = (wire *)ctx;
+    int r;
+    x->f->m.bus.dap = 1 + core;
+    r = write ? esk_bus_write(&x->f->m.bus, addr, bytes, *v) : esk_bus_read(&x->f->m.bus, addr, bytes, v);
+    x->f->m.bus.dap = 0;
+    return r;
+}
+
+static int w_instance(void *ctx, int port)
+{
+    wire *x = (wire *)ctx;
+    u32 pc = rd(x->f, 0x40004008u); /* SYSCFG.PROC_CONFIG */
+    return port == 0 ? (int)((pc >> 24) & 15u) : port == 1 ? (int)(pc >> 28) : -1;
+}
+
+static void w_rescue(void *ctx, int hold)
+{
+    wire *x = (wire *)ctx;
+    x->rescue = hold;
+    x->rescues += hold;
+}
+
+static void sw_out(esk_swd *w, u64 v, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        (void)esk_swd_clock(w, 1, (int)((v >> i) & 1u));
+}
+
+static u32 sw_in(esk_swd *w, int n)
+{
+    u32 v = 0;
+    int i;
+    for (i = 0; i < n; i++)
+        v |= (u32)esk_swd_clock(w, 0, 1) << i;
+    return v;
+}
+
+static int par(u32 v)
+{
+    int p = 0;
+    while (v) {
+        p ^= (int)(v & 1u);
+        v >>= 1;
+    }
+    return p;
+}
+
+/* a packet as CMSIS-DAP's SWD_Transfer makes it, with 8 idle cycles after:
+ * the ACK (7: nobody answered), a read's data and parity check */
+static u32 sw_xfer(esk_swd *w, int ap, int rnw, int a, u32 *data, int bad_parity)
+{
+    u32 req = 1u | (u32)ap << 1 | (u32)rnw << 2 | (u32)((a >> 2) & 3) << 3, ack, d;
+    req |= (u32)par(req & 0x1Eu) << 5 | 1u << 7;
+    sw_out(w, req, 8);
+    (void)sw_in(w, 1);
+    ack = sw_in(w, 3);
+    if (ack == 1u && rnw) {
+        d = sw_in(w, 32);
+        CHECK_EQ((int)sw_in(w, 1), par(d));
+        (void)sw_in(w, 1);
+        *data = d;
+    } else if (ack == 1u) {
+        (void)sw_in(w, 1);
+        sw_out(w, *data, 32);
+        sw_out(w, (u64)(par(*data) ^ bad_parity), 1);
+    } else {
+        (void)sw_in(w, 1);
+    }
+    sw_out(w, 0, 8);
+    return ack;
+}
+
+static void sw_line_reset(esk_swd *w)
+{
+    sw_out(w, 0x00FFFFFFFFFFFFFFull, 64); /* 56 high, 8 idle */
+}
+
+/* TARGETSEL: no ACK from anyone (CMSIS-DAP's SWD_Sequence) */
+static void sw_targetsel(esk_swd *w, u32 id)
+{
+    sw_out(w, 0x99u, 8);
+    (void)sw_in(w, 5);
+    sw_out(w, id, 32);
+    sw_out(w, (u64)par(id), 1);
+    sw_out(w, 0, 8);
+}
+
+static u32 sw_dp_read(esk_swd *w, int a)
+{
+    u32 v = 0xDEADu;
+    CHECK_EQ(sw_xfer(w, 0, 1, a, &v, 0), 1u);
+    return v;
+}
+
+static void sw_write(esk_swd *w, int ap, int a, u32 v)
+{
+    CHECK_EQ(sw_xfer(w, ap, 0, a, &v, 0), 1u);
+}
+
+/* an AP read as CMSIS-DAP makes it: posted, then RDBUFF */
+static u32 sw_ap_read(esk_swd *w, int a)
+{
+    u32 v = 0;
+    CHECK_EQ(sw_xfer(w, 1, 1, a, &v, 0), 1u);
+    return sw_dp_read(w, 0xC);
+}
+
+static void test_swd(void)
+{
+    /* OpenOCD's sequences (src/jtag/swd.h) */
+    static const u8 to_dormant[9] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xbc, 0xe3 };
+    static const u8 dormant_to_swd[28] = { 0xff, 0x92, 0xf3, 0x09, 0x62, 0x95, 0x2d, 0x85, 0x86, 0xe9,
+                                           0xaf, 0xdd, 0xe3, 0xa2, 0x0e, 0xbc, 0x19, 0xa0, 0xf1, 0xff,
+                                           0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00 };
+    rp f;
+    wire x;
+    esk_swd_port_cfg cfg[3];
+    esk_swd_target t;
+    const esk_json *sw, *ports;
+    uint64_t v64;
+    u32 v;
+    int i;
+    if (!rp_open(&f, 1))
+        return;
+    memset(&x, 0, sizeof x);
+    x.f = &f;
+    /* the ports as the catalog's description gives them */
+    sw = esk_json_get(esk_json_get(f.mcu, "core"), "swd");
+    ports = esk_json_get(sw, "ports");
+    CHECK_EQ((int)esk_json_len(ports), 3);
+    memset(cfg, 0, sizeof cfg);
+    for (i = 0; i < 3; i++) {
+        const esk_json *pj = esk_json_at(ports, (size_t)i);
+        cfg[i].version = (int)esk_json_get_int(sw, "version", 1);
+        CHECK_EQ(esk_json_to_u64(esk_json_get(sw, "dpidr"), &v64), 0);
+        cfg[i].dpidr = (u32)v64;
+        CHECK_EQ(esk_json_to_u64(esk_json_get(sw, "targetid"), &v64), 0);
+        cfg[i].targetid = (u32)v64;
+        cfg[i].multidrop = esk_json_get_bool(sw, "multidrop", 0);
+        cfg[i].ap_idr = 0x04770031u;
+        cfg[i].ap_base = 0xE00FF003u;
+        cfg[i].core = (int)esk_json_get_int(pj, "core", 0);
+        cfg[i].instance = (int)esk_json_get_int(pj, "instance", 0);
+        cfg[i].rescue = esk_json_get_bool(pj, "rescue", 0);
+        if (cfg[i].rescue)
+            cfg[i].core = -1;
+    }
+    t.ctx = &x;
+    t.mem = w_mem;
+    t.instance = w_instance;
+    t.rescue = w_rescue;
+    t.present = NULL;
+    x.w = esk_swd_create(&f.a, cfg, 3, &t);
+    CHECK(x.w != NULL);
+
+    /* after power-on nothing answers before a line reset */
+    v = 0;
+    CHECK_EQ(sw_xfer(x.w, 0, 1, 0, &v, 0), 7u);
+    /* dormant: a line reset alone wakes nobody */
+    for (i = 0; i < 9; i++)
+        sw_out(x.w, to_dormant[i], 8);
+    sw_line_reset(x.w);
+    CHECK_EQ(sw_xfer(x.w, 0, 1, 0, &v, 0), 7u);
+    /* the selection alert and SWD's activation code, then a line reset */
+    for (i = 0; i < 28; i++)
+        sw_out(x.w, dormant_to_swd[i], 8);
+    /* core 0's port selected: DPIDR, TARGETID, DLPIDR */
+    sw_targetsel(x.w, 0x01002927u);
+    CHECK_EQ(sw_dp_read(x.w, 0), 0x0BC12477u);
+    sw_write(x.w, 0, 8, 2u); /* SELECT: DPBANKSEL 2 */
+    CHECK_EQ(sw_dp_read(x.w, 4), 0x01002927u);
+    sw_write(x.w, 0, 8, 3u);
+    CHECK_EQ(sw_dp_read(x.w, 4), 0x00000001u); /* TINSTANCE 0, protocol 1 */
+    sw_write(x.w, 0, 8, 0u);
+    /* an AP access before the debug domain is powered up: STICKYERR, then FAULT */
+    v = 0;
+    CHECK_EQ(sw_xfer(x.w, 1, 1, 0, &v, 0), 1u);
+    CHECK_EQ(sw_dp_read(x.w, 4) & 0x20u, 0x20u);
+    CHECK_EQ(sw_xfer(x.w, 1, 1, 0, &v, 0), 4u);
+    sw_write(x.w, 0, 0, 0x1Eu); /* ABORT: the sticky flags cleared */
+    sw_write(x.w, 0, 4, 0x50000000u);
+    CHECK_EQ(sw_dp_read(x.w, 4), 0xF0000000u); /* both acknowledged */
+    /* the MEM-AP */
+    sw_write(x.w, 0, 8, 0xF0u);
+    CHECK_EQ(sw_ap_read(x.w, 0xC), 0x04770031u); /* IDR */
+    CHECK_EQ(sw_ap_read(x.w, 0x8), 0xE00FF003u); /* BASE */
+    sw_write(x.w, 0, 8, 0x00u);
+    sw_write(x.w, 1, 0, 0x23000022u);            /* 32 bits, packed */
+    CHECK_EQ(sw_ap_read(x.w, 0) & 0x77u, 0x42u);  /* packed reads back off, DeviceEn */
+    sw_write(x.w, 1, 0, 0x23000012u);            /* single increment */
+    sw_write(x.w, 1, 4, 0x20000100u);
+    sw_write(x.w, 1, 0xC, 0x12345678u);
+    sw_write(x.w, 1, 0xC, 0xCAFEBABEu);
+    CHECK_EQ(rd(&f, 0x20000100u), 0x12345678u);
+    CHECK_EQ(rd(&f, 0x20000104u), 0xCAFEBABEu);
+    CHECK_EQ(sw_ap_read(x.w, 4), 0x20000108u); /* TAR moved on */
+    /* posted reads: each AP read answers the one before */
+    sw_write(x.w, 1, 4, 0x20000100u);
+    v = 0;
+    CHECK_EQ(sw_xfer(x.w, 1, 1, 0xC, &v, 0), 1u);
+    CHECK_EQ(sw_xfer(x.w, 1, 1, 0xC, &v, 0), 1u);
+    CHECK_EQ(v, 0x12345678u);
+    CHECK_EQ(sw_dp_read(x.w, 0xC), 0xCAFEBABEu);
+    CHECK_EQ(sw_dp_read(x.w, 8), 0xCAFEBABEu); /* RESEND */
+    /* bytes on their lanes, the increment wrapping within 1 KiB */
+    sw_write(x.w, 1, 0, 0x23000010u);
+    sw_write(x.w, 1, 4, 0x20000101u);
+    sw_write(x.w, 1, 0xC, 0x0000AB00u);
+    CHECK_EQ(rd(&f, 0x20000100u), 0x1234AB78u);
+    sw_write(x.w, 1, 0, 0x23000012u);
+    sw_write(x.w, 1, 4, 0x200003FCu);
+    sw_write(x.w, 1, 0xC, 1u);
+    CHECK_EQ(sw_ap_read(x.w, 4), 0x20000000u);
+    /* BD0-3 */
+    sw_write(x.w, 1, 4, 0x20000100u);
+    sw_write(x.w, 0, 8, 0x10u);
+    CHECK_EQ(sw_ap_read(x.w, 4), 0xCAFEBABEu);
+    sw_write(x.w, 0, 8, 0x00u);
+    /* core 0 halted through its own debug */
+    sw_write(x.w, 1, 0, 0x23000002u);            /* no increment */
+    sw_write(x.w, 1, 4, 0xE000EDF0u);
+    sw_write(x.w, 1, 0xC, 0xA05F0003u);
+    CHECK_EQ(sw_ap_read(x.w, 0xC) & 0x20003u, 0x20003u);
+    /* a bus error: STICKYERR, FAULT, cleared by ABORT */
+    sw_write(x.w, 1, 4, 0x30000000u);
+    v = 0;
+    CHECK_EQ(sw_xfer(x.w, 1, 1, 0xC, &v, 0), 1u);
+    CHECK_EQ(sw_xfer(x.w, 0, 1, 0xC, &v, 0), 4u);
+    CHECK_EQ(sw_dp_read(x.w, 4) & 0x20u, 0x20u);
+    sw_write(x.w, 0, 0, 0x4u);
+    CHECK_EQ(sw_dp_read(x.w, 4) & 0x20u, 0u);
+    /* a write with a bad parity: WDATAERR, nothing written */
+    v = 0x20000100u;
+    CHECK_EQ(sw_xfer(x.w, 1, 0, 4, &v, 1), 1u);
+    CHECK_EQ(sw_dp_read(x.w, 4) & 0x80u, 0x80u);
+    sw_write(x.w, 0, 0, 0x8u);
+
+    /* core 1's port: its own debug, not halted */
+    sw_line_reset(x.w);
+    sw_targetsel(x.w, 0x11002927u);
+    CHECK_EQ(sw_dp_read(x.w, 0), 0x0BC12477u);
+    sw_write(x.w, 0, 8, 3u);
+    CHECK_EQ(sw_dp_read(x.w, 4), 0x10000001u);
+    sw_write(x.w, 0, 8, 0u);
+    sw_write(x.w, 0, 4, 0x50000000u);
+    sw_write(x.w, 1, 0, 0x23000002u);
+    sw_write(x.w, 1, 4, 0xE000EDF0u);
+    CHECK_EQ(sw_ap_read(x.w, 0xC) & 0x20003u, 0u);
+    /* every port answers a first packet that is not TARGETSEL (core 0's
+     * and core 1's DPIDR are the same, so the wire reads it) */
+    sw_line_reset(x.w);
+    CHECK_EQ(sw_dp_read(x.w, 0), 0x0BC12477u);
+    /* no port has instance 2: all locked out until the next line reset */
+    sw_line_reset(x.w);
+    sw_targetsel(x.w, 0x21002927u);
+    CHECK_EQ(sw_xfer(x.w, 0, 1, 0, &v, 0), 7u);
+    /* SYSCFG.PROC_CONFIG moves core 0's port to instance 3 (SYSCFG out of
+     * reset first: in reset its registers keep their reset values) */
+    wr(&f, 0x4000C000u + 0x3000u, 1u << 18);
+    wr(&f, 0x40004008u, (rd(&f, 0x40004008u) & ~0x0F000000u) | 0x03000000u);
+    sw_line_reset(x.w);
+    sw_targetsel(x.w, 0x01002927u);
+    CHECK_EQ(sw_xfer(x.w, 0, 1, 0, &v, 0), 7u);
+    sw_line_reset(x.w);
+    sw_targetsel(x.w, 0x31002927u);
+    CHECK_EQ(sw_dp_read(x.w, 0), 0x0BC12477u);
+
+    /* the Rescue DP: CDBGPWRUPREQ holds the rescue, no CSYSPWRUPACK */
+    sw_line_reset(x.w);
+    sw_targetsel(x.w, 0xF1002927u);
+    CHECK_EQ(sw_dp_read(x.w, 0), 0x0BC12477u);
+    sw_write(x.w, 0, 4, 0x50000000u);
+    CHECK_EQ(x.rescue, 1);
+    CHECK_EQ(sw_dp_read(x.w, 4) & 0xF0000000u, 0x70000000u);
+    sw_write(x.w, 0, 4, 0u);
+    CHECK_EQ(x.rescue, 0);
+    CHECK_EQ(x.rescues, 1);
+    esk_swd_destroy(&f.a, x.w);
+
+    /* the rescue's reset: the bootrom halts in its dead loop, CHIP_RESET
+     * says HAD_PSM_RESTART */
+    f.m.reset_cause = ESK_RESET_RESCUE;
+    esk_mach_reset(&f.m);
+    CHECK_EQ(rd(&f, 0x40064008u) & 0x01110100u, 0x00100000u);
+    for (i = 0; i < 20; i++)
+        f.m.cpu->ops->step(f.m.cpu);
+    CHECK((reg(&f, 15) & ~3u) == 0x28u); /* wfi; b dead */
+    rp_close(&f);
+}
+
 TEST_MAIN_BEGIN
 RUN(test_boot);
 RUN(test_busctrl);
@@ -796,4 +1100,5 @@ RUN(test_core1);
 RUN(test_rom);
 RUN(test_pwm_adc);
 RUN(test_spi_i2c);
+RUN(test_swd);
 TEST_MAIN_END

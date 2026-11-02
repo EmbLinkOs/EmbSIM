@@ -114,7 +114,7 @@ struct esk_bus {
     int watch_hit, watch_kind; /* the first watchpoint the core hit */
     u32 watch_addr;
     int debug;     /* the access is a debugger's */
-    int dap;       /* the access is the debug port's (a probe's MEM-AP), not the core's */
+    int dap;       /* the access is a debug port's (a probe's MEM-AP), not a core's: 1 + the core whose debug it reaches */
     int dev_fault; /* the device refused it: esk_bus_fault */
     /* an arbiter between the bus's masters (the RP2040's crossbar,
      * rp2040/busctrl.c): told of each access the core or a master makes to
@@ -421,7 +421,10 @@ enum esk_reset_cause {
     ESK_RESET_LOW_POWER, /* entering a low-power mode the option bytes forbid */
     /* leaving a mode that powered the core's domain off (an STM32's
      * Standby): a power reset of all but the backup domain, RAM lost */
-    ESK_RESET_STANDBY
+    ESK_RESET_STANDBY,
+    /* a rescue debug port's (the RP2040's Rescue DP): as a power-on, but
+     * memory kept, the part's bootrom told */
+    ESK_RESET_RESCUE
 };
 
 struct esk_mach {

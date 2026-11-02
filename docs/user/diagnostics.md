@@ -65,6 +65,7 @@ run).
 | `mcu.usb_boot` | warning or info | board | the RP2040 goes to its USB boot (the program called `reset_to_usb_boot`, a warning; BOOTSEL held at reset, info): the RPI-RP2 drive on its USB cable |
 | `mcu.uf2_written` | info | board | every block of a UF2 file copied onto the RP2040's USB boot drive is in flash: the part reboots into it |
 | `mcu.no_boot2` | warning | board | the RP2040's bootrom finds no boot2 with a good CRC in flash: the part waits in its USB boot (the RPI-RP2 drive) |
+| `mcu.rescue` | info | board | the RP2040 was reset by its Rescue DP (a probe set the Rescue DP's CDBGPWRUPREQ, then cleared it): its bootrom halts in its dead loop for the debugger to take over |
 | `mcu.watchdog_reset` | info | board | the watchdog reset the chip (the RP2040's counter reached 0 or CTRL.TRIGGER; the FE310's comparator fired with wdogrsten) |
 | `mcu.low_power_reset` | info | board | an STM32F4 entered Stop or Standby while its option bytes' nRST_STOP or nRST_STDBY is 0: the part resets instead (LPWRRSTF) |
 | `mcu.easydma_range` | warning | board, peripheral | an nRF52840 EasyDMA buffer outside Data RAM: nothing is moved |

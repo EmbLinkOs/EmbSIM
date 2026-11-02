@@ -17,7 +17,9 @@
  * The ROM's vector table gives the bootrom's stack top (0x20041f00), its
  * header the bootrom's magic and version (B2's, 3); its function and data
  * tables, and the functions themselves, are rom.c's. Core 1 waits in its
- * bootrom until core 0 launches it; sio.c answers for that bootrom. */
+ * bootrom until core 0 launches it; sio.c answers for that bootrom. After
+ * the Rescue DP's reset the bootrom halts in its dead loop (a WFI loop in
+ * ROM) instead of booting. */
 #include <stdio.h>
 #include <string.h>
 
@@ -84,6 +86,24 @@ void esk_rp2040_boot(struct esk_mach *s)
     esk_rp2040_rom(rom->mem + (0 - rom->base), 0x4000u);
     esk_rp2040_rom_install(s);
     esk_bus_code_changed(&s->bus);
+    if (s->reset_cause == ESK_RESET_RESCUE) {
+        /* the Rescue DP's reset (datasheet 2.3.4.2, 2.12.6): CHIP_RESET
+         * says so (HAD_PSM_RESTART), and the bootrom, first thing, clears
+         * PSM_RESTART_FLAG and halts in its dead loop, before the flash or
+         * the USB boot, for the debugger to take over */
+        p = esk_rf_periph(s->rf, "VREG_AND_CHIP_RESET");
+        {
+            struct esk_rf_reg *r = p ? esk_rf_reg(p, "CHIP_RESET") : NULL;
+            if (r)
+                esk_rf_hw(r, esk_rf_mask(r, "HAD_PSM_RESTART"));
+        }
+        rom->mem[4] = (u8)ROM_DEAD;
+        rom->mem[5] = rom->mem[6] = rom->mem[7] = 0;
+        esk_bus_code_changed(&s->bus);
+        esk_rf_diag(s, ES_SEV_INFO, "mcu.rescue",
+                    "the RP2040 was reset by its Rescue DP: its bootrom halts in its dead loop for the debugger");
+        return;
+    }
     b2 = f->mem + (FLASH_BASE - f->base);
     sum = esk_rp2040_crc32(b2, 252);
     want = (u32)b2[252] | (u32)b2[253] << 8 | (u32)b2[254] << 16 | (u32)b2[255] << 24;

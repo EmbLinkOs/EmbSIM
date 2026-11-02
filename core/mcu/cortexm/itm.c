@@ -152,7 +152,7 @@ static void itm_write(void *ctx, u32 off, int n, u32 v)
 static void itm_reset(void *ctx)
 {
     struct itm *t = (struct itm *)ctx;
-    if (t->sim->reset_cause != ESK_RESET_POWER)
+    if (t->sim->reset_cause != ESK_RESET_POWER && t->sim->reset_cause != ESK_RESET_RESCUE)
         return; /* the debug domain: a system reset keeps what a debugger set */
     t->ter = t->tpr = t->tcr = 0;
     t->locked = 1;
@@ -201,7 +201,7 @@ static void tpiu_write(void *ctx, u32 off, int n, u32 v)
 static void tpiu_reset(void *ctx)
 {
     struct itm *t = (struct itm *)ctx;
-    if (t->sim->reset_cause != ESK_RESET_POWER)
+    if (t->sim->reset_cause != ESK_RESET_POWER && t->sim->reset_cause != ESK_RESET_RESCUE)
         return;
     t->cspsr = 1;
     t->acpr = 0;

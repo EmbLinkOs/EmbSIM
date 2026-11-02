@@ -74,8 +74,8 @@ static int next_core(const struct smp *x)
 
 static int current(const struct smp *x)
 {
-    if (x->m->bus.dap)
-        return 0; /* the debug port's access reaches core 0's debug (no multi-drop) */
+    if (x->m->bus.dap) /* a debug port's access reaches its core's debug */
+        return x->m->bus.dap - 1 < x->n ? x->m->bus.dap - 1 : 0;
     return x->stepping ? x->cur : next_core(x);
 }
 

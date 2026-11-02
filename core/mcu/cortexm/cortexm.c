@@ -1081,7 +1081,7 @@ static void cpu_reset(struct esk_cpu *c)
     /* the debug domain: a system reset keeps it, a power-on clears it */
     struct esk_cm_debug dbg = k->dbg;
     u32 demcr = k->demcr;
-    int keep_debug = s->reset_cause != ESK_RESET_POWER;
+    int keep_debug = s->reset_cause != ESK_RESET_POWER && s->reset_cause != ESK_RESET_RESCUE;
     memset(k, 0, sizeof *k);
     if (keep_debug) {
         k->dbg = dbg;

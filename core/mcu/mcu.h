@@ -114,6 +114,18 @@ esk_json *esk_mcu_rtos_json(esk_comp *c, esk_alloc *a, char *why, size_t cap);
 enum { ESK_DAP_OK = 0, ESK_DAP_FAULT = 1, ESK_DAP_NO_TARGET = 2 };
 uint32_t esk_mcu_dap_idcode(esk_comp *c);
 int esk_mcu_dap_mem(esk_comp *c, uint32_t addr, int bytes, int write, uint32_t *v);
+/* the same for the debug of core `core` (a part with a debug port for each
+ * of its cores: the RP2040's) */
+int esk_mcu_dap_mem_core(esk_comp *c, int core, uint32_t addr, int bytes, int write, uint32_t *v);
+/* The MCU's serial wire as a probe drives it, clock by clock (mcu/swd.h):
+ * `n` SWCLK cycles with the probe driving SWDIO to `bits` (first bit lowest
+ * of bits[0]), or sampling it into `bits` (1 where nothing drives it). An
+ * MCU without an Arm debug port leaves SWDIO to its pull-up. */
+void esk_mcu_swd_out(esk_comp *c, const uint8_t *bits, uint32_t n);
+void esk_mcu_swd_in(esk_comp *c, uint8_t *bits, uint32_t n);
+/* the packets its debug ports answered, those answered FAULT, and the
+ * port selected (-1 for none) */
+void esk_mcu_swd_counts(esk_comp *c, uint64_t *packets, uint64_t *faults, int *selected);
 /* the MCU's pin that can carry its serial wire output (the alternate
  * function JTDO_SWO or TRACESWO: an STM32's PB3), or NULL */
 esk_pin *esk_mcu_swo_pin(esk_comp *c);

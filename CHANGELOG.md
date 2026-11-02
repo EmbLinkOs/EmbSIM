@@ -5,6 +5,27 @@ versions follow semantic versioning. There is no release yet.
 
 ## Unreleased
 
+### The serial wire, clock by clock: the RP2040's multi-drop debug ports
+
+- An Arm MCU's serial wire as a probe drives it, one SWCLK cycle at a time
+  (`core/mcu/swd.c`, ARM IHI 0031F B4): SWJ-DPs that start in JTAG and
+  take the JTAG-to-SWD sequence, SW-DP v2 ports with the dormant state
+  (the selection alert, SWD's activation code), the line reset, packets
+  with their turnarounds, ACKs and parities, protocol errors left
+  unanswered, the DP registers (CTRL/STAT's power-up handshake and sticky
+  flags answered FAULT, ABORT, SELECT, RESEND, RDBUFF, DLCR, TARGETID,
+  DLPIDR) and the MEM-AP with its posted reads, byte lanes and 1 KiB
+  auto-increment (`esk_mcu_swd_out`, `esk_mcu_swd_in`).
+- The RP2040's three ports on one multi-drop wire (`core.swd` in its
+  description): TARGETSEL selects core 0's (0x01002927), core 1's
+  (0x11002927) or the Rescue DP (0xf1002927) and locks the others out;
+  each core's AHB-AP reaches that core's own debug (DHCSR, the FPB, the
+  DWT); SYSCFG.PROC_CONFIG moves the instance IDs; RUN low holds the
+  ports in reset; the Rescue DP's CDBGPWRUPREQ holds the chip in its
+  rescue reset, after which CHIP_RESET reads HAD_PSM_RESTART and the
+  bootrom halts in its dead loop (`mcu.rescue`). Proven bit by bit with
+  OpenOCD's own sequences in `tests/unit/test_rp2040.c`.
+
 ### USB/IP: the bench's USB devices on the computer's own USB stack
 
 - The session serves the bench's USB devices that no host part holds over
